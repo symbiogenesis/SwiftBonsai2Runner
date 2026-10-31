@@ -250,6 +250,8 @@
       }
     ],
     "helperSourceRevision": "584a667fdfbe88d239b392553062590b798f745f",
+    "helperSourceTag": "evidence/prism-0110-owner-wrapper-20261031",
+    "helperSourcePath": "tools/validation/Invoke-TemporaryNativeAcceptanceOwner.ps1",
     "helperScript": "Invoke-TemporaryNativeAcceptanceOwner.ps1",
     "helperScriptSha256": "c0e6545fbcf540b8ffb7a1a6407e81f791b16a930c69e52645f72a13e1069c55"
   },

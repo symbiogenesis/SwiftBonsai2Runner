@@ -3,6 +3,7 @@
   "kind": "runner-vulkan-worker-failure-evidence",
   "captured_date": "2026-10-29",
   "source_commit": "fe68af25baa713956a516b9d6d7ca7b719374d24",
+  "source_tag": "evidence/vulkan-x2-worker-failure-20261029",
   "tool": {
     "name": "bonsai-tools.exe",
     "bytes": 3102720,
