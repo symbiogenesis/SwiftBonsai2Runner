@@ -1,0 +1,167 @@
+{
+  "schemaVersion": 1,
+  "kind": "hosted-rust-ptq1-collector-build-qualification",
+  "recordedDate": "2026-10-31",
+  "status": "hosted-source-bound-build-and-model-free-controls-passed",
+  "scope": "The Rust DLL collector and pinned Rust comparison checker build and package on owning main hosted Windows ARM64. This closes the hosted collector-tooling gate only.",
+  "execution": {
+    "repository": "symbiogenesis/SwiftBonsai2Runner",
+    "revision": "485b9d5d4606bcb0c4b0b8010a1e8156098ef1fe",
+    "gitRef": "refs/heads/main",
+    "workflowPath": ".github/workflows/native-ptq1-numerics.yml",
+    "runId": "41221141903",
+    "runAttempt": 1,
+    "runUrl": "https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41221141903",
+    "conclusion": "success",
+    "architecture": "ARM64",
+    "selfHosted": false,
+    "prepareJobId": "124595767509",
+    "prepareConclusion": "success",
+    "numericsConclusion": "skipped",
+    "runDevice": false
+  },
+  "artifacts": [
+    {
+      "artifactId": "13050107277",
+      "artifactName": "ptq1-capture-tools-41221141903-1",
+      "bytes": 462109,
+      "sha256": "77a25a065088364206a63ced09f5f4a7d232477e3c22749227d52e704b2d45ff",
+      "exactZipMembers": [
+        "capture-tools.json",
+        "swift-ptq1-reference.exe",
+        "swift_model_check.exe"
+      ],
+      "archiveAndMemberDigestsVerified": true
+    },
+    {
+      "artifactId": "13050072293",
+      "artifactName": "ptq1-collector-build-41221141903-1",
+      "bytes": 3655,
+      "sha256": "a39f37ef07e48c8ae571fad3dff0f8527f250c376ee3fcb7013b19bd6f4846eb",
+      "exactZipMembers": [
+        "build-receipt.json",
+        "cargo-path.txt",
+        "collector-build.txt",
+        "collector-test-build.txt",
+        "collector-tests.txt",
+        "rust-build.txt",
+        "rustc-path.txt",
+        "rustc.txt"
+      ],
+      "archiveAndMemberDigestsVerified": true
+    },
+    {
+      "artifactId": "13050017517",
+      "artifactName": "bonsai-tools-windows-arm64-485b9d5d4606bcb0c4b0b8010a1e8156098ef1fe",
+      "bytes": 1506843,
+      "sha256": "c80a67a74fa7098741833cb67365076f99effee5af71b5ca73ef2892d13b0478",
+      "exactZipMembers": [
+        "bonsai-completion-test-probe.exe",
+        "bonsai-tools.exe",
+        "receipt.json"
+      ],
+      "archiveAndMemberDigestsVerified": true
+    }
+  ],
+  "collector": {
+    "language": "rust",
+    "sourcePath": "tools/native-reference/swift_ptq1_reference.rs",
+    "sourceSha256": "02b7ac89084f34761ded80d28e16f6bc427a51773d50e1f33e0bf71053cc70d7",
+    "nativeSource": {
+      "commit": "73bfe6cc485554822f80c473a3c0c4f25e80f41b",
+      "url": "https://github.com/PrismML-Eng/llama.cpp/archive/73bfe6cc485554822f80c473a3c0c4f25e80f41b.zip",
+      "bytes": 39423279,
+      "sha256": "5ee8738706229e84e85db7051d7a40797c91e22a7ffa8f4bfb8fea4bf2cb0293",
+      "headerSha256": "50d9375b080df279b9a5d93df9e489f18785b0b9fa98a51045a7c637433e0d9c"
+    },
+    "rustComparisonSource": {
+      "commit": "27e4860ea71b998b896191524ed980a586f022c6",
+      "url": "https://github.com/symbiogenesis/prism-inference/archive/27e4860ea71b998b896191524ed980a586f022c6.zip",
+      "bytes": 4193790,
+      "sha256": "dfbd4f09692a3ca6805776a6a605a2acc0736e9bb2b21c5a72d97df0e7724e1d"
+    },
+    "abiControlSha256": "c1481b9101d5de3e05fccf53d04080f3a73e5b113949af964bbfe3cb041d175f",
+    "abiProvenanceSha256": "2dd9eb831c46bf2112f6d97530371b6c1b48e930e73d1cba7000945f53d156f1",
+    "receiptBytes": 2890,
+    "receiptSha256": "2bf38c6bd913bcf3fbe344d98d51d5ae6afc4d2004b208ad8d99a1abdbd06ea0",
+    "files": [
+      {
+        "Name": "swift-ptq1-reference.exe",
+        "Bytes": 228352,
+        "Sha256": "b93796e2fd69f4eebf9634f60725011c6b7a41c4714371a81707ce5c5af125fe"
+      },
+      {
+        "Name": "swift_model_check.exe",
+        "Bytes": 704512,
+        "Sha256": "afa16c4b2ecbf09a0cd63ae2a5247f0290bfce2d77186adab212a8792bd59bce"
+      }
+    ]
+  },
+  "validation": {
+    "pinnedNativeArm64Compiler": "nightly-2026-10-22-aarch64-pc-windows-msvc",
+    "compilerCommit": "1a2c4797ef2570bd76ca5dee34449169bc7dc457",
+    "compilerSha256": "c699eed79646b5b33a9d92245cf12087b203dc2eb86ab3c34f22a423cf7dddc7",
+    "linkerSha256": "1a3faad685e009b25fc068b3d1b583ff3512327055896a67c35ec9def6470479",
+    "collectorAndTestBuildsPassed": true,
+    "comparisonCheckerBuildPassed": true,
+    "compilerWarningsDenied": true,
+    "overflowChecksEnabled": true,
+    "collectorTestsPassed": 7,
+    "collectorTestIds": [
+      "native::tests::every_native_capture_failure_releases_only_acquired_dependencies_in_order",
+      "native::tests::output_failure_preserves_written_evidence_and_releases_native_state",
+      "native::tests::snapshot_collisions_retain_existing_and_completed_evidence_with_native_cleanup",
+      "native::tests::snapshot_creation_preserves_original_bytes_and_refuses_overwrite",
+      "native::tests::successful_capture_keeps_exact_controls_outputs_and_release_order",
+      "tests::collector_rejects_unsupported_and_ambiguous_paths_before_loading",
+      "tests::token_control_preserves_first_finite_maximum_and_exact_json"
+    ],
+    "powerShellControlsPassed": [
+      "HostedGuard",
+      "CollectorControls",
+      "BuildEvidence"
+    ],
+    "selectedPythonControlsPassed": 5,
+    "archiveAndMemberDigestsVerified": true,
+    "sourceControlAndCompilerReceiptsVerified": true,
+    "arm64PeVerified": true,
+    "selectedPythonControlIds": [
+      "NativeStateTests.test_transposed_v_and_complete_recurrent_inventory_match_logical_rows",
+      "NativeStateTests.test_state_decoder_rejects_truncation_trailing_bytes_and_changed_schema",
+      "NativeStateTests.test_comparator_enforces_finite_values_exact_extents_and_original_tolerance",
+      "NativeStateTests.test_control_binding_rejects_changed_adapter_scale_tokens_and_backend",
+      "NativeStateTests.test_capture_pre_read_bounds_reject_oversized_json_and_logits"
+    ],
+    "collectorTestLogSha256": "e655095a21f69587793f960ebb6d7dd48ef9bfd4782ccfb3d5526fa83b1b024e",
+    "buildReceiptSha256": "51243187c7d0192b05ddd21cae3083e14e5466c9d0489f88a26d3392fa65bcc4"
+  },
+  "runnerFoundation": {
+    "runId": "41221140592",
+    "statusAtReview": "queued",
+    "conclusionAtReview": null,
+    "qualifiedByThisReview": false
+  },
+  "archive": {
+    "directory": "C:\\Users\\symbi\\AppData\\Local\\SwiftBonsai2\\qualification\\ptq1-collector-hosted-41221141903",
+    "manifest": "file-manifest.json",
+    "manifestSha256": "6f8f3c09a415a560c835978e663b282441f6c11cafc69318f3b4bed7143ef949",
+    "manifestEntries": 30,
+    "listedBytes": 6520628,
+    "independentReview": "independent-review.json",
+    "reviewSha256": "5f689ac93e9f4bbf440c9358d6207a1eccfdbdb7dae0e9f8defb1a34818bf059",
+    "reviewerId": "Codex:/root/ptq1_tools",
+    "digestVerifiedRetrievalReplayed": true,
+    "contents": "Exact capture/build/checked-maintenance ZIPs and members; public hosted run logs; run/job/artifact metadata; exact workflow/build/control/collector/pin source; pending Foundation metadata; independent review. No weights, credentials or generated model responses.",
+    "publicHostedLogsSha256": "0377c21215030fac6eeaf0af5804a85e7aa7d55859aeccb291a3cc6df0dd3412"
+  },
+  "reviewBinaryExecutions": 0,
+  "actualDllExecutions": 0,
+  "modelExecutions": 0,
+  "defaultPromotionQualified": false,
+  "remaining": [
+    "Actual-model PTQ1 logits and complete-state comparison with this Rust collector remains pending.",
+    "Writer authoring basis, scalar/explicit NEON and broader PTQ1/adapter qualification remain pending.",
+    "Owning Runner Foundation at the selected application revision remains separate; its retained status was pending.",
+    "Numerical, lifecycle, security, quality, resource, performance and all other default-runtime promotion gates remain independent."
+  ]
+}

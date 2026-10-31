@@ -64,10 +64,10 @@ ARM64 MSVC exceptional-float behavior when qualifying other compiler versions.
 Measure adaptive broker forwarding and retained idle speech scratch before
 claiming a latency, throughput or process-memory gain.
 
-The Rust PTQ1 DLL collector also needs the hosted source-bound build/test bundle
-and main-only numerical workflow. Its pinned-DLL probe and complete 369-record
-ABI/default/configuration comparison pass locally without weights; this does not
-close actual-model logits/state comparison, writer-basis or promotion gates.
+Qualify the Rust PTQ1 DLL collector through the main-only actual-model numerical
+workflow. The [hosted source-bound build/test bundle](docs/evidence/ptq1-collector-hosted.json)
+and local pinned-DLL probe/complete 369-record ABI/default/configuration comparison
+do not close actual-model logits/state comparison, writer-basis or promotion gates.
 
 - Qualify startup, supplied-history streaming, full 8K context and 4K output, long
   conversations, speech, offline restart and recovery. Cover Stop, abandonment,
@@ -161,16 +161,26 @@ and retain the reset-every-request serving policy until reuse is qualified.
 - Complete bounded Prism-owned actual-model acceptance for the released private HTTP
   service and its internal model worker: canonical counting/generation, adapter
   readiness, scale changes, active cancellation, reset, rollback and stale-state
-  rejection. Add an audited bounded Prism-owned device job around a trusted owner
-  to consume the [hosted-prepared checker](docs/evidence/prism-service-checker-tools.json)
+  rejection. Qualify the audited bounded Prism-owned device job around the pinned
+  trusted Runner owner and consume its source-bound checker/owner package
   from the same owning workflow/run with
-  one aggregate device allowance. The current workflow prepares tools only;
-  its provisional-disconnect/reset replay leaves
+  one aggregate device allowance. Retain the separate release/source/bytes and
+  harness/source/run/artifact identities under the
+  [preparation record](docs/evidence/prism-parity-preparation.json).
+  Provisional-disconnect/reset replay leaves
   active graph cancellation and complete-state rollback pending. Runner lifecycle
   receipts alone do not close this Prism-owned gate. Use version-2 promotion evidence
   to bind tested release/source/bytes separately from the exact owning main
   harness/workflow/run and retained artifact identities. Preserve exact-source
   runtime Foundation/conformance gates and independent review.
+- Qualify Prism's source-bound `swift_model_check rollback` capture on the actual
+  original PQ2 model and approved adapter. Require every committed token, logits and
+  live KV/convolution/recurrent bit to match before any reset, then full-state/logit
+  continuation parity against fresh recomputation. Its four focused controls reject
+  incomplete restore, unrelated graph failures and capture-bound violations; they
+  do not replace actual-model evidence or qualify private HTTP cancellation,
+  production sampling or interruption inside a graph kernel. Keep this independent
+  capture pending when it cannot fit the shared owner-device allowance.
 - Release the reviewed Windows read-consumer helper API through the registry,
   replace Prism server's exact Git dependency with that reviewed registry release,
   and validate packaging before re-enabling server crate publication. Preserve

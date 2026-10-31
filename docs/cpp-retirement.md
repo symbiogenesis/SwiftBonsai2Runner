@@ -73,7 +73,7 @@ and external-engine retirement remain separate.
 | `src/speech-tts/tests/tokenizer-error.h` | Logging/exception fixture removed. Rust reports registration/encoding failure and owns result cleanup, with copy refusal and safe-Rust unwind checks. The remaining native callback catches allocation exceptions before returning failure to Rust. |
 | `src/speech-tts/tests/tokenizer_lifecycle.cpp` | Source and compile/launch path removed after its assertions move to the production Rust loader, actual Box replacement and result ownership path. Exact original identities and assertion mapping remain in `tokenizer-lifecycle-v1.provenance.json`. The thin generated holder retains no-copy/no-move static assertions; bridge compilation, full hosted linkage and actual-model acceptance remain distinct checks. |
 | `src/speech-tts/tests/decode_graph_cache.cpp` | Source and native test DLL compiler/loader removed. The production Rust owner now holds one keyed graph resource, drops it before replacement, recovers from failed builds and prevents eviction/free during compute leases. Native lease teardown synchronizes before Rust completion; pipeline teardown drops the cache before persistent resources. Rust tests preserve every original allocation/window/batch/failure assertion. `decode-graph-v1.provenance.json` retains source identities and assertion mappings. Native graph construction/compute callbacks remain generated glue; owning hosted linkage and lifetime/lease controls pass in the retained main run, while model acceptance remains pending. |
-| `tools/native-reference/swift_ptq1_reference.cpp` | Replaced by the single-file Rust collector. Native source-header download and C++ compilation are removed from bundle preparation. Immutable observations retain all 369 layout/default/configuration/returned-aggregate controls; compile-time guards cover all 62 offsets, three sizes and alignments. The actual pinned-DLL probe/observations and seven Rust success/failure/output/cleanup checks pass locally. Schema-two receipts bind Rust source and controls; owner preflight compares the complete observation set before admission. Hosted bundle and actual-model logits/state comparison remain pending. The DLL engine itself is still native and has a separate retirement gate. |
+| `tools/native-reference/swift_ptq1_reference.cpp` | Replaced by the single-file Rust collector. Native source-header download and C++ compilation are removed from bundle preparation. Immutable observations retain all 369 layout/default/configuration/returned-aggregate controls; compile-time guards cover all 62 offsets, three sizes and alignments. The actual pinned-DLL probe/observations pass locally. The [source-bound hosted bundle](evidence/ptq1-collector-hosted.json) passes collector compilation and all seven Rust success/failure/output/cleanup controls. Schema-two receipts bind Rust source and controls; owner preflight compares the complete observation set before admission. Actual-model logits/state comparison remains pending. The DLL engine itself is still native and has a separate retirement gate. |
 
 [Initial capture evidence](evidence/cpp-retirement-model-free.json) retains the
 first 30 model-free checks. [Final control evidence](evidence/cpp-retirement-final-controls.json)
@@ -82,8 +82,8 @@ checks, the complete actual-DLL ABI comparison, receipt/observation rejection an
 syntax compilation of both affected pinned Qwen source units. The subsequent
 retained main run closes the full TTS owning-crate integration, including native
 bridge compilation and linked tokenizer/cache/lease controls. The source-bound
-PTQ1 collector bundle and actual-model gates remain pending in
-[PLAN.md](../PLAN.md).
+PTQ1 collector's [hosted build/test bundle](evidence/ptq1-collector-hosted.json)
+now passes separately; actual-model gates remain pending in [PLAN.md](../PLAN.md).
 
 ## Prism checked-in native files
 
