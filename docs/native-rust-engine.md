@@ -310,13 +310,23 @@ established. The explicit adapter lifecycle workload in
 [validation](validation.md#actual-model-application-acceptance) also remains pending
 actual-device evidence. None of these candidates satisfies default promotion.
 
-The [Prism-owned service checker preparation](evidence/prism-service-checker-tools.json)
-retains a main-source/run-bound ARM64 package with passing formatting, Clippy,
-build and five model-free controls, plus passing checker-main Foundation. The
-workflow currently prepares tools only. An audited Prism-owned device job must
-consume its same-run artifact through a trusted process owner before actual-model
-capture. Provisional disconnect/reset replay leaves active graph cancellation and
-complete-state rollback unqualified; this tooling does not close the service gate.
+The [initial Prism-owned service checker preparation](evidence/prism-service-checker-tools.json)
+retains a main-source/run-bound ARM64 checker and model-free controls. The
+[later preparation record](evidence/prism-parity-preparation.json) binds the added
+opt-in device job, pinned trusted Runner owner, exact same-run package intake and
+mandatory original owner deadline. The workflow's default remains hosted preparation;
+an admitted device attempt shares one five-minute allowance across intake,
+registration, checkout, verification, model work, cleanup and retention.
+Provisional disconnect/reset replay leaves active graph cancellation and
+complete-state rollback unqualified; a checker receipt does not close the service gate.
+
+Prism's separate source-graph `swift_model_check rollback` mode captures every
+committed token, logits and logical KV/convolution/recurrent state before reset,
+then checks continuation against fresh recomputation. Four focused controls pass,
+including rejection of deliberately incomplete recurrent restoration. Actual-model
+capture remains pending. The diagnostic uses a caller-stop logits probe and
+cooperative cancellation after a completed step; it does not qualify private HTTP
+cancellation, production sampling or interruption inside a graph kernel.
 
 ### Inspect the policy
 

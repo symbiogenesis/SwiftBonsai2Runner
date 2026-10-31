@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "kind": "prism-parity-tooling-and-owning-validation",
+  "recordedDate": "2026-10-31",
+  "status": "hosted-packages-passed-owning-foundation-pending-device-not-started",
+  "prism": {
+    "repository": "symbiogenesis/prism-inference",
+    "mainRevision": "e722ef1f1f3f1316baecac47e182067c3fd28e4a",
+    "commits": [
+      "85f9f46",
+      "7300b47",
+      "7cff7e1",
+      "e722ef1"
+    ],
+    "rollbackCapture": {
+      "scope": "source-graph diagnostic; actual-model capture pending",
+      "focusedControlsPassed": 4,
+      "releaseClippyPassed": true,
+      "tests": [
+        "Complete state/logits/tokens match before reset and after fresh continuation",
+        "Deliberately incomplete recurrent restoration rejects before reset",
+        "Unrelated pre-callback graph failure cannot pass as cancellation",
+        "Snapshot payload bounds and existing output directories reject"
+      ],
+      "sourceSha256": "1cb4c5708f336f66c143422e0d26c83817d5914ac4513e9400fb9ddfff4aec61",
+      "sourceDigestPolicy": "Reviewed local worktree source bytes, retained without rewriting; this is not a hosted compiled-checkout attestation"
+    },
+    "privateServiceOwner": {
+      "runnerRevision": "1914330f8a31769bfe8368ca9728fe7a418ed84e",
+      "sourceSha256": "a8035e8a1b6d01c8592f558183ff4ce75c150534e9f456ce48e68cfbaa5a3c8c",
+      "profile": "original-pq2-approved-adapter-row4-reset-every-request",
+      "focusedRustControlsPassed": 2,
+      "releaseClippyPassed": true,
+      "packageIntakeAndDeadlineControlsPassed": true,
+      "independentSourceReviewers": ["Codex:/root/ptq1_tools", "Codex:/root/parity_audit"],
+      "hostedRunId": "41221367710",
+      "hostedRunUrl": "https://github.com/symbiogenesis/prism-inference/actions/runs/41221367710",
+      "hostedPrepareConclusion": "success",
+      "artifactId": "13050082669",
+      "artifactName": "private-service-check-e722ef1f1f3f1316baecac47e182067c3fd28e4a-41221367710-1",
+      "artifactBytes": 977426,
+      "artifactSha256": "1f81dc437383865b7f76a9a403136397e3518c6ef8892dd8ed4b01fe0141d76f",
+      "artifactVerification": "API metadata only; package not yet downloaded or executed",
+      "foundationRunId": "41221367484",
+      "standardsRunId": "41221367814",
+      "standardsConclusion": "success",
+      "conformanceRunId": "41221367722",
+      "deviceAttemptStarted": false
+    }
+  },
+  "runner": {
+    "mainRevision": "485b9d5d4606bcb0c4b0b8010a1e8156098ef1fe",
+    "pullRequest": "https://github.com/symbiogenesis/SwiftBonsai2Runner/pull/11",
+    "premergeRunId": "41221001692",
+    "premergeConclusion": "success",
+    "ptq1PreparationRunId": "41221141903",
+    "ptq1PreparationRunUrl": "https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41221141903",
+    "ptq1PreparationConclusion": "success",
+    "ptq1Evidence": "docs/evidence/ptq1-collector-hosted.json",
+    "deviceRequested": false,
+    "scope": "Rust collector hosted preparation only; DLL/model numerical execution remains separate"
+  },
+  "sourceArchive": {
+    "directory": "C:\\Users\\symbi\\AppData\\Local\\SwiftBonsai2\\qualification\\prism-parity-source-e722ef1",
+    "manifest": "file-manifest.json",
+    "manifestSha256": "d80375bd5d54448702adb43a89dd96fb68f368eaedf0e83ed1d0083d33c4ee61",
+    "scope": "Reviewed source bytes and focused model-free test/lint outputs; owner.rs uses canonical LF and the existing CRLF checkout is retained separately"
+  },
+  "ownerDeviceMaximumAggregateSeconds": 300,
+  "modelExecutions": 0,
+  "activePrivateServiceGraphCancellationQualified": false,
+  "completePrivateServiceStateRollbackQualified": false,
+  "defaultPromotionQualified": false
+}
