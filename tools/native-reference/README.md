@@ -58,8 +58,11 @@ expected control bytes after receipt validation. These checks share the existing
 
 Actual execution belongs only to the main-only manual
 `native-ptq1-numerics.yml` workflow on the existing native ARM64 Snapdragon runner,
-with its physical-runner concurrency group and credential-clean child. The exact
-PTQ1 export, approved adapter and native package must already be provisioned.
+with `run_device: true`, its physical-runner concurrency group and credential-clean
+child. The default `run_device: false` prepares and tests the source-bound bundle
+on hosted CI only. It retains bounded compiler/test log tails and a build receipt,
+including failed preparation; it does not start an owner-device or model process.
+The exact PTQ1 export, approved adapter and native package must already be provisioned.
 One model runs at a time. The shared policy retains 15.5 GiB admission, 11.5 GiB
 Job commit and 4 GiB physical reserve. Source preparation and compilation run in
 hosted CI; all owner preparation is included in its 240-second work budget.

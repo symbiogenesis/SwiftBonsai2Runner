@@ -1,6 +1,11 @@
 name: Native and Rust PTQ1 five-minute smoke
 on:
   workflow_dispatch:
+    inputs:
+      run_device:
+        description: Run the single five-minute owner-device trial after hosted preparation
+        type: boolean
+        default: false
 permissions:
   contents: read
 concurrency:
@@ -25,6 +30,9 @@ jobs:
       - name: Check collector receipt and complete ABI observation rejection
         shell: pwsh
         run: ./tests/Test-NativePtq1CaptureTools.ps1 -Case CollectorControls
+      - name: Check bounded compiler and failure evidence
+        shell: pwsh
+        run: ./tests/Test-NativePtq1CaptureTools.ps1 -Case BuildEvidence
       - name: Validate fixed native-state decoding and control binding
         shell: pwsh
         run: >-
@@ -56,6 +64,14 @@ jobs:
             Sha256 = (Get-FileHash -LiteralPath $tool -Algorithm SHA256).Hash.ToLowerInvariant()
             ProbeSha256 = (Get-FileHash -LiteralPath $probe -Algorithm SHA256).Hash.ToLowerInvariant()
           } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $package 'receipt.json') -Encoding utf8NoBOM
+      - name: Retain bounded hosted compiler and collector-test evidence
+        if: always() && env.BONSAI_PTQ1_BUILD_EVIDENCE != ''
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: ptq1-collector-build-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ env.BONSAI_PTQ1_BUILD_EVIDENCE }}
+          if-no-files-found: error
+          retention-days: 90
       - name: Share source-bound capture binaries
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
@@ -72,7 +88,7 @@ jobs:
           retention-days: 90
   numerics:
     needs: prepare
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && inputs.run_device
     runs-on: [self-hosted, Windows, ARM64, swift-bonsai-snapdragon]
     timeout-minutes: 5
     steps:
