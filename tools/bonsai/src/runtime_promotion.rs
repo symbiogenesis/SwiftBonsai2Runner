@@ -15,6 +15,8 @@ const RUNNER: &str = "symbiogenesis/SwiftBonsai2Runner";
 const PRISM: &str = "symbiogenesis/prism-inference";
 const MANIFEST_LIMIT: u64 = 1024 * 1024;
 const REPORT_LIMIT: u64 = 16 * 1024 * 1024;
+const HARNESS_LIMIT: u64 = 64 * 1024 * 1024;
+const SERVICE_GATE: &str = "released-adapter-service-integration";
 
 struct Gate {
     id: &'static str,
@@ -154,6 +156,8 @@ enum Request {
         runner_revision: String,
         #[serde(rename = "nativeRowWorkers", default = "default_row_workers")]
         native_row_workers: u8,
+        #[serde(rename = "serviceHarnessRevision")]
+        service_harness_revision: Option<String>,
     },
     FileScore {
         #[serde(rename = "runnerRevision")]
@@ -162,6 +166,8 @@ enum Request {
         evidence_path: PathBuf,
         #[serde(rename = "nativeRowWorkers", default = "default_row_workers")]
         native_row_workers: u8,
+        #[serde(rename = "serviceHarnessRevision")]
+        service_harness_revision: Option<String>,
     },
 }
 
@@ -185,6 +191,8 @@ struct Record {
     reviewer_id: Option<String>,
     #[serde(default)]
     human_reviewed: bool,
+    tested_runtime: Option<Value>,
+    harness: Option<Harness>,
 }
 
 #[derive(Clone, Copy, Deserialize, PartialEq, Eq)]
@@ -217,6 +225,15 @@ struct Execution {
     self_hosted: bool,
 }
 
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct Harness {
+    workflow_path: String,
+    artifact_id: String,
+    artifact_name: String,
+    package: Report,
+}
+
 fn require(condition: bool, message: &str) -> crate::Result<()> {
     condition.ok_or_else(|| message.into())
 }
@@ -225,7 +242,11 @@ const fn default_row_workers() -> u8 {
     1
 }
 
-fn policy(revision: &str, native_row_workers: u8) -> crate::Result<Value> {
+fn policy(
+    revision: &str,
+    native_row_workers: u8,
+    service_harness_revision: Option<&str>,
+) -> crate::Result<Value> {
     require(
         matches!(native_row_workers, 1 | 4),
         "Promotion requires an explicitly supported native row-worker count (1 or 4).",
@@ -250,19 +271,27 @@ fn policy(revision: &str, native_row_workers: u8) -> crate::Result<Value> {
         .map_err(|error| error.to_string())?;
     let metadata: Value = serde_json::from_str(include_str!("../../../config/swift.metadata.json"))
         .map_err(|error| error.to_string())?;
-    let server = runtime["files"]
-        .as_array()
-        .and_then(|files| {
-            files
-                .iter()
-                .find(|file| file["name"] == "prism-inference-server.exe")
-        })
-        .ok_or("Release lock has no server identity.")?;
+    let executable = |name| {
+        runtime["files"]
+            .as_array()
+            .and_then(|files| files.iter().find(|file| file["name"] == name))
+            .ok_or("Release lock has no required executable identity.")
+    };
+    let server = executable("prism-inference-server.exe")?;
+    let worker = executable("bonsai-swift-worker.exe")?;
+    let service_harness_revision = service_harness_revision
+        .or_else(|| runtime["commit"].as_str())
+        .ok_or("Release lock has no source revision.")?;
+    require(
+        is_lower_hex(service_harness_revision, 40),
+        "Service harness revision must be a full lowercase Git commit.",
+    )?;
     for (value, length) in [
         (&runtime["commit"], 40),
         (&reference["runtime"]["commit"], 40),
         (&runtime["asset"]["sha256"], 64),
         (&server["sha256"], 64),
+        (&worker["sha256"], 64),
         (&reference["model"]["sha256"], 64),
         (&adapter["adapter"]["sha256"], 64),
         (
@@ -278,14 +307,16 @@ fn policy(revision: &str, native_row_workers: u8) -> crate::Result<Value> {
         )?;
     }
     Ok(json!({
-        "schemaVersion": 1,
+        "schemaVersion": 2,
         "profile": "swift-pq2-standard-lora-1.3",
         "identities": {
             "runnerRevision": revision, "runtimeRevision": runtime["commit"],
+            "serviceHarnessRevision": service_harness_revision,
             "runtimeLockSha256": sha256(include_bytes!("../../../config/prism-inference.lock.json")),
             "assessmentLockSha256": sha256(include_bytes!("../../../config/swift-assessment.lock.json")),
             "adapterLockSha256": sha256(include_bytes!("../../../config/swift-lora.lock.json")),
             "runtimeArchiveSha256": runtime["asset"]["sha256"], "serverSha256": server["sha256"],
+            "runtimeVersion": runtime["version"], "workerSha256": worker["sha256"],
             "modelSha256": reference["model"]["sha256"], "referenceRuntimeRevision": reference["runtime"]["commit"],
             "adapterSha256": adapter["adapter"]["sha256"], "adapterScale": 1.3,
             "templateSha256": metadata["EmbeddedTemplates"]["tokenizer.chat_template"]["Sha256"],
@@ -296,7 +327,7 @@ fn policy(revision: &str, native_row_workers: u8) -> crate::Result<Value> {
             "servingStatePolicy": "reset-every-request",
             "target": "aarch64-pc-windows-msvc"
         },
-        "requiredGates": GATES.iter().map(|gate| json!({"id": gate.id, "repository": gate.repository, "snapdragonRequired": gate.device, "humanReviewRequired": gate.human, "requirement": gate.requirement})).collect::<Vec<_>>()
+        "requiredGates": GATES.iter().map(|gate| json!({"id": gate.id, "repository": gate.repository, "snapdragonRequired": gate.device, "humanReviewRequired": gate.human, "revisionBinding": if gate.id == SERVICE_GATE {"serviceHarnessRevision"} else if gate.repository == PRISM {"runtimeRevision"} else {"runnerRevision"}, "requirement": gate.requirement})).collect::<Vec<_>>()
     }))
 }
 
@@ -335,43 +366,34 @@ fn validate_record(
         .report
         .as_ref()
         .ok_or("Completed promotion gate is missing its report.")?;
-    require(
-        !report.file.as_os_str().is_empty()
-            && report
-                .file
-                .components()
-                .all(|part| matches!(part, Component::Normal(_))),
-        "Promotion report must be a relative path without traversal.",
-    )?;
-    require(
-        is_lower_hex(&report.sha256, 64),
-        "Promotion report digest is invalid.",
-    )?;
-    let bytes = read(&directory.join(&report.file), REPORT_LIMIT)?;
-    require(
-        !bytes.is_empty() && sha256(&bytes) == report.sha256,
-        "Promotion report is empty or its digest does not match.",
-    )?;
+    validate_report(report, directory, REPORT_LIMIT)?;
     let execution = record
         .execution
         .as_ref()
         .ok_or("Completed promotion gate is missing CI provenance.")?;
-    let revision = if gate.repository == PRISM {
-        &policy["identities"]["runtimeRevision"]
+    let revision_key = if gate.id == SERVICE_GATE {
+        "serviceHarnessRevision"
+    } else if gate.repository == PRISM {
+        "runtimeRevision"
     } else {
-        &policy["identities"]["runnerRevision"]
+        "runnerRevision"
     };
     require(
         execution.repository == gate.repository
-            && revision.as_str() == Some(&execution.revision)
+            && policy["identities"][revision_key].as_str() == Some(&execution.revision)
             && execution.git_ref == "refs/heads/main"
             && execution.run_attempt > 0
-            && !execution.run_id.is_empty()
-            && execution.run_id.len() <= 24
-            && execution.run_id.bytes().all(|byte| byte.is_ascii_digit())
-            && execution.run_id.bytes().any(|byte| byte != b'0'),
+            && valid_run_id(&execution.run_id),
         "Promotion gate does not identify the expected exact main CI revision/run.",
     )?;
+    if gate.id == SERVICE_GATE {
+        validate_service(record, policy, directory)?;
+    } else {
+        require(
+            record.tested_runtime.is_none() && record.harness.is_none(),
+            "Separate harness provenance is supported only for the released service gate.",
+        )?;
+    }
     require(
         !gate.device
             || (execution.architecture == "ARM64"
@@ -399,6 +421,69 @@ fn validate_record(
     Ok(())
 }
 
+fn validate_report(report: &Report, directory: &Path, limit: u64) -> crate::Result<()> {
+    require(
+        !report.file.as_os_str().is_empty()
+            && report
+                .file
+                .components()
+                .all(|part| matches!(part, Component::Normal(_))),
+        "Promotion report must be a relative path without traversal.",
+    )?;
+    require(
+        is_lower_hex(&report.sha256, 64),
+        "Promotion report digest is invalid.",
+    )?;
+    let bytes = read(&directory.join(&report.file), limit)?;
+    require(
+        !bytes.is_empty() && sha256(&bytes) == report.sha256,
+        "Promotion report is empty or its digest does not match.",
+    )?;
+    Ok(())
+}
+
+fn valid_run_id(value: &str) -> bool {
+    !value.is_empty()
+        && value.len() <= 24
+        && value.bytes().all(|byte| byte.is_ascii_digit())
+        && value.bytes().any(|byte| byte != b'0')
+}
+
+fn tested_runtime(policy: &Value) -> Value {
+    let identity = &policy["identities"];
+    json!({
+        "revision": identity["runtimeRevision"], "version": identity["runtimeVersion"],
+        "archiveSha256": identity["runtimeArchiveSha256"],
+        "serverSha256": identity["serverSha256"], "workerSha256": identity["workerSha256"]
+    })
+}
+
+fn validate_service(record: &Record, policy: &Value, directory: &Path) -> crate::Result<()> {
+    require(
+        record.tested_runtime.as_ref() == Some(&tested_runtime(policy)),
+        "Released service evidence must bind the exact tested release, archive, server and worker.",
+    )?;
+    let harness = record
+        .harness
+        .as_ref()
+        .ok_or("Missing retained service harness identity.")?;
+    let execution = record
+        .execution
+        .as_ref()
+        .ok_or("Missing service harness execution.")?;
+    require(
+        harness.workflow_path == ".github/workflows/private-service-acceptance.yml"
+            && valid_run_id(&harness.artifact_id)
+            && harness.artifact_name
+                == format!(
+                    "private-service-check-{}-{}-{}",
+                    execution.revision, execution.run_id, execution.run_attempt
+                ),
+        "Released service evidence must identify the owning workflow and retained harness artifact.",
+    )?;
+    validate_report(&harness.package, directory, HARNESS_LIMIT)
+}
+
 fn score(value: Value, policy: &Value, directory: &Path) -> crate::Result<Value> {
     require(
         value.is_object()
@@ -417,7 +502,7 @@ fn score(value: Value, policy: &Value, directory: &Path) -> crate::Result<Value>
     )?;
     let evidence: Evidence = serde_json::from_value(value).map_err(|error| error.to_string())?;
     require(
-        evidence.schema_version == 1
+        evidence.schema_version == 2
             && evidence.policy_sha256
                 == sha256(&serde_json::to_vec(policy).map_err(|error| error.to_string())?)
             && evidence.identities == policy["identities"],
@@ -476,10 +561,10 @@ fn score(value: Value, policy: &Value, directory: &Path) -> crate::Result<Value>
                     execution.repository, execution.run_id, execution.run_attempt
                 )
             });
-        gates.push(json!({"id": gate.id, "status": match verdict {Status::Passed => "passed", Status::Pending => "pending", Status::Rejected => "rejected"}, "runUrl": run_url, "deviceModel": record.and_then(|record| record.execution.as_ref()).map(|execution| &execution.device_model), "processorName": record.and_then(|record| record.execution.as_ref()).and_then(|execution| execution.processor_name.as_ref()), "reportSha256": record.and_then(|record| record.report.as_ref()).map(|report| &report.sha256)}));
+        gates.push(json!({"id": gate.id, "status": match verdict {Status::Passed => "passed", Status::Pending => "pending", Status::Rejected => "rejected"}, "runUrl": run_url, "executionRevision": record.and_then(|record| record.execution.as_ref()).map(|execution| &execution.revision), "deviceModel": record.and_then(|record| record.execution.as_ref()).map(|execution| &execution.device_model), "processorName": record.and_then(|record| record.execution.as_ref()).and_then(|execution| execution.processor_name.as_ref()), "reportSha256": record.and_then(|record| record.report.as_ref()).map(|report| &report.sha256), "testedRuntime": record.and_then(|record| record.tested_runtime.as_ref()), "harness": record.and_then(|record| record.harness.as_ref()).map(|harness| json!({"workflowPath": harness.workflow_path, "artifactId": harness.artifact_id, "artifactName": harness.artifact_name, "packageSha256": harness.package.sha256}))}));
     }
     Ok(
-        json!({"schemaVersion": 1, "status": match status {Status::Passed => "passed", Status::Pending => "pending", Status::Rejected => "rejected"}, "promotionReady": status == Status::Passed, "gates": gates, "scope": "Offline integrity and reviewer-attested evidence completeness only. CI provenance and human identity require independent review. Does not collect qualification, authenticate attestations, enable serving defaults or qualify PTQ1."}),
+        json!({"schemaVersion": 2, "status": match status {Status::Passed => "passed", Status::Pending => "pending", Status::Rejected => "rejected"}, "promotionReady": status == Status::Passed, "gates": gates, "scope": "Offline integrity and reviewer-attested evidence completeness only. CI provenance and human identity require independent review. Does not collect qualification, authenticate attestations, enable serving defaults or qualify PTQ1."}),
     )
 }
 
@@ -494,18 +579,28 @@ pub fn run(request: Value) -> crate::Result<Value> {
         Request::Plan {
             runner_revision,
             native_row_workers,
+            service_harness_revision,
         } => {
-            let policy = policy(&runner_revision, native_row_workers)?;
+            let policy = policy(
+                &runner_revision,
+                native_row_workers,
+                service_harness_revision.as_deref(),
+            )?;
             let digest = sha256(&serde_json::to_vec(&policy).map_err(|error| error.to_string())?);
             Ok(json!({"policySha256": digest, "policy": policy,
-                    "evidenceTemplate": {"schemaVersion": 1, "policySha256": digest, "identities": policy["identities"], "gates": GATES.iter().map(|gate| json!({"id": gate.id, "status": "pending", "note": "Evidence has not yet been collected and reviewed."})).collect::<Vec<_>>()}}))
+                    "evidenceTemplate": {"schemaVersion": 2, "policySha256": digest, "identities": policy["identities"], "gates": GATES.iter().map(|gate| json!({"id": gate.id, "status": "pending", "note": "Evidence has not yet been collected and reviewed."})).collect::<Vec<_>>()}}))
         }
         Request::FileScore {
             runner_revision,
             evidence_path,
             native_row_workers,
+            service_harness_revision,
         } => {
-            let policy = policy(&runner_revision, native_row_workers)?;
+            let policy = policy(
+                &runner_revision,
+                native_row_workers,
+                service_harness_revision.as_deref(),
+            )?;
             let value = serde_json::from_slice(&read(&evidence_path, MANIFEST_LIMIT)?)
                 .map_err(|error| error.to_string())?;
             score(

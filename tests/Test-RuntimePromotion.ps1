@@ -16,11 +16,19 @@ $script = Join-Path $PSScriptRoot '../scripts/Get-RuntimePromotion.ps1'
 $revision = 'a' * 40
 $plan = & $script -RunnerRevision $revision -ToolPath $ToolPath
 if ($plan.policy.identities.runnerRevision -cne $revision -or
+    $plan.policy.schemaVersion -ne 2 -or $plan.evidenceTemplate.schemaVersion -ne 2 -or
     $plan.policy.identities.adapterScale -ne 1.3 -or
     $plan.policy.identities.nativeRowWorkers -ne 1 -or
     $plan.policy.identities.servingStatePolicy -cne 'reset-every-request' -or
     $plan.policy.requiredGates.Count -lt 17) {
     throw 'Promotion wrapper did not preserve the complete standard-profile policy.'
+}
+$harness = & $script -RunnerRevision $revision -ServiceHarnessRevision ('b' * 40) -ToolPath $ToolPath
+if ($harness.policy.identities.serviceHarnessRevision -cne ('b' * 40) -or
+    $harness.policy.identities.runtimeRevision -cne $plan.policy.identities.runtimeRevision -or
+    $harness.policySha256 -ceq $plan.policySha256 -or
+    $harness.policy.identities.workerSha256 -cnotmatch '^[0-9a-f]{64}$') {
+    throw 'Promotion wrapper did not separate the exact released runtime and selected service harness.'
 }
 $parallel = & $script -RunnerRevision $revision -NativeRowWorkers 4 -ToolPath $ToolPath
 if ($parallel.policy.identities.nativeRowWorkers -ne 4 -or

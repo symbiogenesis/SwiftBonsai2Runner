@@ -1,13 +1,33 @@
 use super::*;
 
 fn policy_fixture() -> crate::Result<Value> {
-    policy(&"a".repeat(40), 1)
+    policy(&"a".repeat(40), 1, None)
 }
 
 fn evidence(policy: &Value) -> crate::Result<Value> {
     Ok(
-        json!({"schemaVersion": 1, "policySha256": sha256(&serde_json::to_vec(policy).map_err(|error| error.to_string())?), "identities": policy["identities"], "gates": []}),
+        json!({"schemaVersion": 2, "policySha256": sha256(&serde_json::to_vec(policy).map_err(|error| error.to_string())?), "identities": policy["identities"], "gates": []}),
     )
+}
+
+fn bind_service(input: &mut Value, policy: &Value) -> crate::Result<()> {
+    let record = input["gates"]
+        .as_array_mut()
+        .and_then(|records| {
+            records
+                .iter_mut()
+                .find(|record| record["id"] == SERVICE_GATE)
+        })
+        .ok_or("Missing released service test record.")?;
+    record["execution"]["revision"] = policy["identities"]["serviceHarnessRevision"].clone();
+    record["testedRuntime"] = tested_runtime(policy);
+    record["harness"] = json!({
+        "workflowPath": ".github/workflows/private-service-acceptance.yml",
+        "artifactId": "456",
+        "artifactName": format!("private-service-check-{}-123-1", policy["identities"]["serviceHarnessRevision"].as_str().ok_or("Missing harness revision.")?),
+        "package": record["report"]
+    });
+    Ok(())
 }
 
 #[test]
@@ -46,7 +66,7 @@ fn missing_evidence_stays_pending_and_policy_binds_standard_profile() -> crate::
 #[test]
 fn row_worker_evidence_cannot_qualify_a_different_execution_policy() -> crate::Result<()> {
     let single = policy_fixture()?;
-    let parallel = policy(&"a".repeat(40), 4)?;
+    let parallel = policy(&"a".repeat(40), 4, None)?;
     let plan = run(json!({
         "operation": "plan", "runnerRevision": "a".repeat(40), "nativeRowWorkers": 4
     }))?;
@@ -94,6 +114,127 @@ fn stale_artifacts_unknown_duplicate_and_array_records_reject() -> crate::Result
     Ok(())
 }
 
+fn assert_service_rejections(input: &Value, policy: &Value, directory: &Path) -> crate::Result<()> {
+    for (pointer, value) in [
+        ("/schemaVersion", json!(1)),
+        ("/gates/0/testedRuntime", Value::Null),
+        (
+            "/gates/0/testedRuntime/revision",
+            policy["identities"]["serviceHarnessRevision"].clone(),
+        ),
+        ("/gates/0/testedRuntime/workerSha256", json!("c".repeat(64))),
+        ("/gates/0/testedRuntime/serverSha256", json!("c".repeat(64))),
+        (
+            "/gates/0/testedRuntime/archiveSha256",
+            json!("c".repeat(64)),
+        ),
+        ("/gates/0/testedRuntime/version", json!("0.0.0")),
+        ("/gates/0/harness", Value::Null),
+        (
+            "/gates/0/harness/workflowPath",
+            json!(".github/workflows/work.yml"),
+        ),
+        ("/gates/0/harness/artifactId", json!("0")),
+        ("/gates/0/harness/artifactName", json!("unbound-harness")),
+        ("/gates/0/harness/package/file", json!("../harness.zip")),
+        ("/gates/0/harness/package/sha256", json!("c".repeat(64))),
+        (
+            "/gates/0/execution/revision",
+            policy["identities"]["runtimeRevision"].clone(),
+        ),
+        ("/gates/0/execution/gitRef", json!("refs/heads/candidate")),
+        ("/gates/0/reviewerId", Value::Null),
+    ] {
+        let mut changed = input.clone();
+        *changed
+            .pointer_mut(pointer)
+            .ok_or("Missing service provenance fixture field.")? = value;
+        assert!(score(changed, policy, directory).is_err(), "{pointer}");
+    }
+    for gate in ["runtime-foundation", "runtime-conformance"] {
+        let mut changed = input.clone();
+        changed["gates"][0]["id"] = json!(gate);
+        let _ = changed["gates"][0]
+            .as_object_mut()
+            .ok_or("Missing gate.")?
+            .remove("testedRuntime");
+        let _ = changed["gates"][0]
+            .as_object_mut()
+            .ok_or("Missing gate.")?
+            .remove("harness");
+        assert!(score(changed.clone(), policy, directory).is_err());
+        changed["gates"][0]["execution"]["revision"] =
+            policy["identities"]["runtimeRevision"].clone();
+        assert_eq!(score(changed, policy, directory)?["status"], "pending");
+    }
+    Ok(())
+}
+
+#[test]
+fn later_service_harness_preserves_exact_release_and_retained_package() -> crate::Result<()> {
+    let harness_revision = "b".repeat(40);
+    let policy = policy(&"a".repeat(40), 1, Some(&harness_revision))?;
+    let plan = run(
+        json!({"operation": "plan", "runnerRevision": "a".repeat(40), "serviceHarnessRevision": harness_revision}),
+    )?;
+    assert_eq!(plan["policy"], policy);
+    for invalid in [
+        json!(""),
+        json!("B".repeat(40)),
+        json!("b".repeat(39)),
+        json!(1),
+    ] {
+        assert!(run(json!({"operation": "plan", "runnerRevision": "a".repeat(40), "serviceHarnessRevision": invalid})).is_err());
+    }
+    assert_ne!(
+        policy["identities"]["serviceHarnessRevision"],
+        policy["identities"]["runtimeRevision"]
+    );
+    let directory =
+        std::env::temp_dir().join(format!("Prism-Service-Provenance-{}", std::process::id()));
+    std::fs::create_dir(&directory).map_err(|error| error.to_string())?;
+    let report = b"reviewed released service capture";
+    let package = b"retained hosted harness package";
+    std::fs::write(directory.join("report.json"), report).map_err(|error| error.to_string())?;
+    std::fs::write(directory.join("harness.zip"), package).map_err(|error| error.to_string())?;
+    let result = (|| {
+        let mut input = evidence(&policy)?;
+        input["gates"] = json!([{
+            "id": SERVICE_GATE, "status": "passed", "note": "Independent release/harness review.",
+            "report": {"file": "report.json", "sha256": sha256(report)},
+            "execution": {"repository": PRISM, "revision": harness_revision,
+                "gitRef": "refs/heads/main", "runId": "123", "runAttempt": 1,
+                "architecture": "ARM64", "deviceModel": "Snapdragon X Elite", "selfHosted": true},
+            "reviewerId": "independent-reviewer"
+        }]);
+        bind_service(&mut input, &policy)?;
+        input["gates"][0]["harness"]["package"] =
+            json!({"file": "harness.zip", "sha256": sha256(package)});
+        let scored = score(input.clone(), &policy, &directory)?;
+        assert_eq!(scored["status"], "pending");
+        assert_eq!(scored["gates"][16]["status"], "passed");
+        assert_eq!(scored["gates"][16]["executionRevision"], harness_revision);
+        assert_eq!(
+            scored["gates"][16]["testedRuntime"],
+            tested_runtime(&policy)
+        );
+        assert_eq!(
+            scored["gates"][16]["harness"]["packageSha256"],
+            sha256(package)
+        );
+        assert_service_rejections(&input, &policy, &directory)?;
+        std::fs::write(directory.join("harness.zip"), b"changed")
+            .map_err(|error| error.to_string())?;
+        assert!(score(input, &policy, &directory).is_err());
+        Ok(())
+    })();
+    for name in ["report.json", "harness.zip"] {
+        std::fs::remove_file(directory.join(name)).map_err(|error| error.to_string())?;
+    }
+    std::fs::remove_dir(&directory).map_err(|error| error.to_string())?;
+    result
+}
+
 #[test]
 fn reviewed_pass_requires_report_device_main_and_human_identity() -> crate::Result<()> {
     let policy = policy_fixture()?;
@@ -110,6 +251,7 @@ fn reviewed_pass_requires_report_device_main_and_human_identity() -> crate::Resu
     std::fs::write(directory.join("report.json"), report).map_err(|error| error.to_string())?;
     let mut input = evidence(&policy)?;
     input["gates"] = json!(GATES.iter().map(|gate| json!({"id":gate.id, "status":"passed", "note":"Review checked the exact retained report and required scope.", "report":{"file":"report.json","sha256":sha256(report)}, "execution":{"repository":gate.repository,"revision":if gate.repository == PRISM {policy["identities"]["runtimeRevision"].clone()} else {policy["identities"]["runnerRevision"].clone()},"gitRef":"refs/heads/main","runId":"123","runAttempt":1,"architecture":"ARM64","deviceModel":"Snapdragon X Elite","selfHosted":true},"reviewerId":"external-reviewer","humanReviewed":gate.human})).collect::<Vec<_>>());
+    bind_service(&mut input, &policy)?;
     let result = (|| {
         assert_eq!(
             score(input.clone(), &policy, &directory)?["status"],

@@ -319,16 +319,24 @@ $plan.policy.requiredGates
 ./scripts/Get-RuntimePromotion.ps1 -RunnerRevision $revision -EvidencePath D:\Evidence\promotion.json
 # Review the four-worker candidate independently; its evidence cannot qualify one worker.
 ./scripts/Get-RuntimePromotion.ps1 -RunnerRevision $revision -NativeRowWorkers 4
+# Bind a later owning Prism main harness separately from the unchanged release.
+./scripts/Get-RuntimePromotion.ps1 -RunnerRevision $revision -ServiceHarnessRevision $reviewedPrismMain
 ```
 
 The evaluator checks offline completeness and byte integrity, without inference,
 benchmarks, selection changes, reviewer authentication or network provenance checks.
-The policy binds the selected `nativeRowWorkers` (one by default, or explicit four)
+The version-2 policy binds the selected `nativeRowWorkers` (one by default, or explicit four)
 and `servingStatePolicy: reset-every-request`. Evidence for a different worker count
 or experimental state reuse cannot qualify this policy. Regenerate pending manifests
 after a policy identity change; retained historical reports remain unchanged.
 Independently review CI/source/report/reviewer identities and require `promotionReady:
 true`; command success alone cannot authorize promotion.
+
+`serviceHarnessRevision` defaults to the pinned runtime source; explicitly select a
+reviewed later Prism main revision when its private-service checker tests an older
+release. Only `released-adapter-service-integration` uses that harness revision.
+Runtime Foundation/conformance and all other Prism gates still require the exact
+released source, and Runner gates retain their exact application revision.
 
 ### Required evidence
 
@@ -365,7 +373,7 @@ shape:
 
 ```json
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "policySha256": "<exact plan policySha256>",
   "identities": { "<copy every policy.identities member>": "<unchanged>" },
   "gates": [
@@ -394,10 +402,40 @@ shape:
 Each completed (`passed` or `rejected`) gate requires a nonempty report, bounded to 16
 MiB, with an exact lowercase SHA-256 and a relative path without traversal. Reports must
 remain outside Git, namespace paths and reparse points. Runtime gates bind the selected
-Prism source revision; application gates bind the supplied settled Runner revision. Each
+Prism source revision except the explicitly separated released-service harness;
+application gates bind the supplied settled Runner revision. Each
 named CI execution must use `refs/heads/main`. Passed gates require an identified
 reviewer; human quality and sustained comfort also require `humanReviewed: true`.
 Pending records need only `id`, `status` and a bounded nonempty `note`.
+
+A completed released-service record additionally requires `testedRuntime` equal to
+the selected policy's release identity, and `harness` identifying the exact owning
+workflow and retained package. Its `execution` describes the selected Prism harness
+main revision, run and device. For example (placeholders must be replaced):
+
+```json
+{
+  "testedRuntime": {
+    "revision": "<runtimeRevision>", "version": "<runtimeVersion>",
+    "archiveSha256": "<runtimeArchiveSha256>",
+    "serverSha256": "<serverSha256>", "workerSha256": "<workerSha256>"
+  },
+  "harness": {
+    "workflowPath": ".github/workflows/private-service-acceptance.yml",
+    "artifactId": "<numeric Actions artifact ID>",
+    "artifactName": "private-service-check-<harness revision>-<run ID>-<attempt>",
+    "package": { "file": "prism/harness.zip", "sha256": "<retained package SHA-256>" }
+  }
+}
+```
+
+The retained package is bounded to 64 MiB and uses the same external relative-path,
+locked-file and digest checks as reports. Artifact ID, owning workflow/run and
+package contents still need independent provenance review; the offline evaluator
+does not query GitHub or authenticate those claims. Separate harness fields on
+other completed gates reject. Historical version-1 snapshots remain historical
+records; regenerate pending manifests under version 2, retaining prior reports and
+reviews. Version-1 manifests cannot pass version-2 scoring.
 
 ### Evaluation rules
 
