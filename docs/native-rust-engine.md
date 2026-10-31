@@ -320,6 +320,19 @@ registration, checkout, verification, model work, cleanup and retention.
 Provisional disconnect/reset replay leaves active graph cancellation and
 complete-state rollback unqualified; a checker receipt does not close the service gate.
 
+The [first owning device attempt](evidence/prism-owned-service-attempt.json) has a
+green capture step and verified owner cleanup, but the workflow fails when artifact
+creation returns `ENOTFOUND`. The runner subsequently clears its temporary receipts.
+The exact hosted package, public CI verdicts and fixed cleanup reports survive;
+the four model-case receipts do not. Intake through retained failure evidence takes
+283.3 seconds without another model attempt. This is an unqualified run, not a
+completed service gate. The follow-up durable staging fix copies only the four
+bounded, schema-checked public receipts outside runner temp before upload, preserving
+the private credential/log boundary and partial failures. Focused controls include
+simulated temp cleanup, malformed and stale receipt rejection, unsafe paths and
+secret exclusion. The preparation record tracks its owning hosted checks; the
+failed device trial is not repeated or retroactively qualified.
+
 Prism's separate source-graph `swift_model_check rollback` mode captures every
 committed token, logits and logical KV/convolution/recurrent state before reset,
 then checks continuation against fresh recomputation. Four focused controls pass,
