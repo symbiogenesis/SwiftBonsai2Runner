@@ -67,16 +67,19 @@ and [local API contract](docs/broker-policy.md#public-request-contract).
 | **CPU profile** | One active request · 8K-token context · FP16 attention caches |
 | **Outstanding work** | [Central TODO](PLAN.md) |
 
-## Memory footprint
+## Performance
 
-| Model | Runtime | Model file | Job commit cap / measured peak | Available RAM admission | Restore copy saved vs. Rust 0.1.4 |
-| --- | --- | ---: | ---: | ---: | ---: |
-| **Swift Bonsai 2 `PTQ1_0` (diagnostic only)** | **Rust 0.1.10 prerelease + LoRA 1.3** | **5.54 GiB** | **11.5 GiB / not recorded** | **15.5 GiB** | **149.625 MiB** |
-| Swift Bonsai 2 `PQ2_0` (experimental Rust) | Rust 0.1.10 prerelease + LoRA 1.3 | 6.71 GiB | 11.5 GiB / not recorded | 15.5 GiB | 149.625 MiB |
-| Swift Bonsai 2 `PQ2_0` (captured source diagnostic) | Rust 0.1.9, four workers + LoRA 1.3 | 6.71 GiB | 11.5 GiB / 7.04 GiB | 15.5 GiB | 149.625 MiB |
-| Swift Bonsai 2 `PTQ1_0` | PrismML C++ CPU | 5.54 GiB | 11.5 GiB / — | 15.5 GiB | — |
-| Swift Bonsai 2 `PQ2_0` (current default) | PrismML C++ CPU | 6.71 GiB | 11.5 GiB / — | 15.5 GiB | — |
-| Qwen3.8-27B `UD-Q3_K_XL` | llama.cpp reference | 12.24 GiB | 18 GiB / — | 22 GiB | — |
+| Model | Runtime | Tokens/second | Model file | Job commit cap / measured peak | Available RAM admission | Restore copy saved vs. Rust 0.1.4 |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| **Swift Bonsai 2 `PTQ1_0` (diagnostic only)** | **Rust 0.1.10 prerelease + LoRA 1.3** | **Not measured** | **5.54 GiB** | **11.5 GiB / not recorded** | **15.5 GiB** | **149.625 MiB** |
+| Swift Bonsai 2 `PQ2_0` (experimental Rust) | Rust 0.1.10 prerelease + LoRA 1.3 | Not measured | 6.71 GiB | 11.5 GiB / not recorded | 15.5 GiB | 149.625 MiB |
+| Swift Bonsai 2 `PQ2_0` (captured source diagnostic) | Rust 0.1.9, four workers + LoRA 1.3 | Not measured | 6.71 GiB | 11.5 GiB / 7.04 GiB | 15.5 GiB | 149.625 MiB |
+| Swift Bonsai 2 `PTQ1_0` | PrismML C++ CPU | Not measured | 5.54 GiB | 11.5 GiB / — | 15.5 GiB | — |
+| Swift Bonsai 2 `PQ2_0` (current default) | PrismML C++ CPU | Not measured | 6.71 GiB | 11.5 GiB / — | 15.5 GiB | — |
+| Qwen3.8-27B `UD-Q3_K_XL` | llama.cpp reference | Not measured | 12.24 GiB | 18 GiB / — | 22 GiB | — |
+
+Tokens/second refers to application generation throughput on Snapdragon hardware;
+measurements for these profiles are pending.
 
 > [!NOTE]
 > **PTQ1 is diagnostic only; shipping it as the app default remains no-go.**
