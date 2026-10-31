@@ -34,97 +34,149 @@ $scratch = Resolve-ExternalPath (Join-Path ([IO.Path]::GetTempPath()) ('Bonsai-H
 [void][IO.Directory]::CreateDirectory($scratch)
 $pins = Get-Content -LiteralPath (Join-Path $repo 'tools/native-reference/pins.json') -Raw | ConvertFrom-Json -DateKind String
 $source = $pins.rustSource
-$archive = Join-Path $scratch ($source.commit + '.zip')
-Receive-LockedArtifact -Uri $source.url -Path $archive -Bytes $source.bytes -Sha256 $source.sha256 -TimeoutSeconds 180 | Out-Null
-Expand-Archive -LiteralPath $archive -DestinationPath (Join-Path $scratch $source.commit)
-$rust = Join-Path $scratch ($pins.rustSource.commit + '/prism-inference-' + $pins.rustSource.commit)
-$collectorSourcePath = 'tools/native-reference/swift_ptq1_reference.rs'
-$collectorSource = Join-Path $repo $collectorSourcePath
-$collectorSourceSha256 = (Get-FileHash -LiteralPath $collectorSource -Algorithm SHA256).Hash.ToLowerInvariant()
-$abiControlPath = Join-Path $repo 'tools/native-reference/fixtures/collector-abi-v1.txt'
-$abiProvenancePath = Join-Path $repo 'tools/native-reference/fixtures/collector-abi-v1.provenance.json'
-if ((Get-Item -LiteralPath $abiControlPath).Length -gt 65536 -or (Get-Item -LiteralPath $abiProvenancePath).Length -gt 65536) {
-    throw 'Native ABI controls exceed their fixed pre-read bound.'
-}
-$abiProvenance = Get-Content -LiteralPath $abiProvenancePath -Raw | ConvertFrom-Json -DateKind String
-$abiControlSha256 = (Get-FileHash -LiteralPath $abiControlPath -Algorithm SHA256).Hash.ToLowerInvariant()
-$abiProvenanceSha256 = (Get-FileHash -LiteralPath $abiProvenancePath -Algorithm SHA256).Hash.ToLowerInvariant()
-if ($abiProvenance.schema_version -ne 1 -or $abiProvenance.source.revision -cne $pins.nativeSource.commit -or
-    $abiProvenance.source.headers.'include/llama.h'.sha256 -cne $pins.nativeSource.headerSha256 -or
-    $abiProvenance.fixture.file -cne 'collector-abi-v1.txt' -or
-    $abiProvenance.fixture.bytes -ne (Get-Item -LiteralPath $abiControlPath).Length -or
-    $abiProvenance.fixture.sha256 -cne $abiControlSha256) {
-    throw 'Native ABI controls differ from the reviewed source pins.'
-}
 $channel = 'nightly-2026-10-22-aarch64-pc-windows-msvc'
-$rustup = @(Get-Command rustup -CommandType Application -ErrorAction Stop)[0].Source
-$resolvedCargo = Invoke-BonsaiNativeProcess -Executable $rustup -WorkingDirectory $scratch -TimeoutSeconds 30 -ArgumentList @('which', '--toolchain', $channel, 'cargo')
-$resolvedRustc = Invoke-BonsaiNativeProcess -Executable $rustup -WorkingDirectory $scratch -TimeoutSeconds 30 -ArgumentList @('which', '--toolchain', $channel, 'rustc')
-if ($resolvedCargo.ExitCode -ne 0 -or $resolvedRustc.ExitCode -ne 0) { throw 'The exact pinned Rust executables are unavailable.' }
-$cargo = Resolve-ExternalPath ($resolvedCargo.StandardOutput.Trim())
-$rustc = Resolve-ExternalPath ($resolvedRustc.StandardOutput.Trim())
-$toolchainBin = [IO.Path]::GetDirectoryName($rustc)
-if ($cargo -cne (Join-Path $toolchainBin 'cargo.exe') -or [IO.Path]::GetFileName($rustc) -cne 'rustc.exe') {
-    throw 'Cargo and rustc must belong to the same exact pinned toolchain.'
+$evidence = Join-Path $scratch 'evidence'
+[void][IO.Directory]::CreateDirectory($evidence)
+$env:BONSAI_PTQ1_BUILD_EVIDENCE = $evidence
+if ($env:GITHUB_ENV) { Add-Content -LiteralPath $env:GITHUB_ENV -Value "BONSAI_PTQ1_BUILD_EVIDENCE=$evidence" -Encoding utf8NoBOM }
+$buildReceipt = [ordered]@{
+    SchemaVersion = 1; Scope = 'hosted-ptq1-capture-build-only'; RunnerRevision = $env:GITHUB_SHA
+    NativeSource = $pins.nativeSource; RustSource = $source; RustToolchain = $channel
+    Phase = 'download'; Status = 'running'; ModelProcessStarted = $false
+    DescendantOwnership = 'kill-on-close-job; reject-and-stop-leftover-descendants'
 }
-$toolchainRoot = [IO.Path]::GetDirectoryName($toolchainBin)
-$linker = Join-Path $toolchainRoot 'lib/rustlib/aarch64-pc-windows-msvc/bin/rust-lld.exe'
-foreach ($path in @($cargo, $rustc, $linker)) { Assert-Arm64PE $path }
-$rustVersion = Invoke-BonsaiNativeProcess -Executable $rustc -WorkingDirectory $scratch -TimeoutSeconds 30 -ArgumentList @('-vV')
-if ($rustVersion.ExitCode -ne 0 -or $rustVersion.StandardOutput -notmatch 'host: aarch64-pc-windows-msvc') {
-    throw 'The pinned native ARM64 Rust compiler is unavailable.'
-}
-$collector = Join-Path $scratch 'swift-ptq1-reference.exe'
-$compilerOptions = @('--edition=2024', '--target', 'aarch64-pc-windows-msvc', '--deny', 'warnings',
-    '-C', 'opt-level=2', '-C', 'overflow-checks=on', '-C', 'panic=unwind',
-    '-C', "linker=$linker", '-C', 'linker-flavor=lld-link')
-$compilerArguments = $compilerOptions + @($collectorSource, '-o', $collector)
-$built = Invoke-BonsaiNativeProcess -Executable $rustc -WorkingDirectory $scratch -TimeoutSeconds 120 -OwnDescendants -LogPath (Join-Path $scratch 'collector-build.txt') -ArgumentList $compilerArguments
-if ($built.ExitCode -ne 0) { throw "Hosted Rust reference collector build failed; inspect $scratch" }
-Assert-Arm64PE $collector
-$collectorTests = Join-Path $scratch 'collector-tests.exe'
-$builtTests = Invoke-BonsaiNativeProcess -Executable $rustc -WorkingDirectory $scratch -TimeoutSeconds 120 -OwnDescendants -LogPath (Join-Path $scratch 'collector-test-build.txt') -ArgumentList ($compilerOptions + @('--test', $collectorSource, '-o', $collectorTests))
-if ($builtTests.ExitCode -ne 0) { throw "Hosted Rust collector test build failed; inspect $scratch" }
-$tested = Invoke-BonsaiNativeProcess -Executable $collectorTests -WorkingDirectory $scratch -TimeoutSeconds 30 -OwnDescendants -LogPath (Join-Path $scratch 'collector-tests.txt') -ArgumentList @('--test-threads=1')
-if ($tested.ExitCode -ne 0) { throw "Hosted Rust collector controls failed; inspect $scratch" }
-if ((Get-FileHash -LiteralPath $collectorSource -Algorithm SHA256).Hash.ToLowerInvariant() -cne $collectorSourceSha256 -or
-    (Get-FileHash -LiteralPath $abiControlPath -Algorithm SHA256).Hash.ToLowerInvariant() -cne $abiControlSha256 -or
-    (Get-FileHash -LiteralPath $abiProvenancePath -Algorithm SHA256).Hash.ToLowerInvariant() -cne $abiProvenanceSha256) {
-    throw 'Collector source or ABI controls changed during compilation.'
-}
-$target = Join-Path $scratch 'rust-build'
-$built = Invoke-BonsaiNativeProcess -Executable $cargo -WorkingDirectory $scratch -TimeoutSeconds 1200 -OwnDescendants -LogPath (Join-Path $scratch 'rust-build.txt') -ArgumentList @(
-    'build', '--locked', '--release', '--manifest-path', (Join-Path $rust 'Cargo.toml'),
-    '-p', 'prism-inference', '--example', 'swift_model_check', '--target-dir', $target) -Environment @{
-        RUSTC = $rustc; RUSTC_WRAPPER = ''; RUSTC_WORKSPACE_WRAPPER = ''
-        CARGO_ENCODED_RUSTFLAGS = @('-C', "linker=$linker", '-C', 'linker-flavor=lld-link') -join [char]0x1f
+function Save-Ptq1BuildEvidence {
+    <# .SYNOPSIS
+    Retains public-source build identity and at most 64 KiB from each compiler/test log.
+    #>
+    [CmdletBinding()]
+    [OutputType([void])]
+    param()
+    foreach ($name in @('cargo-path.txt', 'rustc-path.txt', 'rustc.txt', 'collector-build.txt',
+        'collector-test-build.txt', 'collector-tests.txt', 'rust-build.txt')) {
+        $path = Join-Path $scratch $name
+        if (-not [IO.File]::Exists($path)) { continue }
+        $log = [IO.FileStream]::new($path, [IO.FileMode]::Open, [IO.FileAccess]::Read, [IO.FileShare]::Read)
+        try {
+            $count = [int][Math]::Min(65536, $log.Length)
+            [void]$log.Seek(-$count, [IO.SeekOrigin]::End)
+            $tail = [byte[]]::new($count)
+            $log.ReadExactly($tail, 0, $tail.Length)
+            [IO.File]::WriteAllBytes((Join-Path $evidence $name), $tail)
+        } finally { $log.Dispose() }
     }
-if ($built.ExitCode -ne 0) { throw "Hosted Rust numerical checker build failed; inspect $scratch" }
-$qualifier = Join-Path $target 'release/examples/swift_model_check.exe'
-Assert-Arm64PE $qualifier
-$files = foreach ($path in @($collector, $qualifier)) {
-    $name = [IO.Path]::GetFileName($path)
-    $destination = Join-Path $output $name
-    [IO.File]::Copy($path, $destination, $false)
-    [ordered]@{ Name = $name; Bytes = (Get-Item -LiteralPath $destination).Length
-        Sha256 = (Get-FileHash -LiteralPath $destination -Algorithm SHA256).Hash.ToLowerInvariant() }
+    $json = [Text.UTF8Encoding]::new($false).GetBytes(($buildReceipt | ConvertTo-Json -Depth 20) + "`n")
+    if ($json.Length -gt 65536) { throw 'Hosted PTQ1 build receipt exceeds its fixed bound.' }
+    [IO.File]::WriteAllBytes((Join-Path $evidence 'build-receipt.json'), $json)
 }
-$receipt = [ordered]@{
-    SchemaVersion = 2; RunnerRevision = $env:GITHUB_SHA; NativeSource = $pins.nativeSource; RustSource = $pins.rustSource
-    CollectorLanguage = 'rust'; CollectorSourcePath = $collectorSourcePath; CollectorSourceSha256 = $collectorSourceSha256
-    AbiControlSha256 = $abiControlSha256; AbiProvenanceSha256 = $abiProvenanceSha256; RustToolchain = $channel
-    Compiler = [ordered]@{ Path = $rustc; Sha256 = (Get-FileHash -LiteralPath $rustc -Algorithm SHA256).Hash.ToLowerInvariant()
-        LinkerSha256 = (Get-FileHash -LiteralPath $linker -Algorithm SHA256).Hash.ToLowerInvariant(); CollectorArguments = $compilerArguments
-        RustcVerbose = $rustVersion.StandardOutput.Trim() }
-    Files = @($files)
-}
-$receiptPath = Join-Path $output 'capture-tools.json'
-$stream = [IO.FileStream]::new($receiptPath, [IO.FileMode]::CreateNew, [IO.FileAccess]::Write, [IO.FileShare]::None)
+Save-Ptq1BuildEvidence
 try {
-    $bytes = [Text.UTF8Encoding]::new($false).GetBytes(($receipt | ConvertTo-Json -Depth 20) + "`n")
-    if ($bytes.Length -gt 65536) { throw 'Capture bundle receipt exceeds its fixed bound.' }
-    $stream.Write($bytes, 0, $bytes.Length)
-    $stream.Flush($true)
-} finally { $stream.Dispose() }
+    $archive = Join-Path $scratch ($source.commit + '.zip')
+    Receive-LockedArtifact -Uri $source.url -Path $archive -Bytes $source.bytes -Sha256 $source.sha256 -TimeoutSeconds 180 | Out-Null
+    Expand-Archive -LiteralPath $archive -DestinationPath (Join-Path $scratch $source.commit)
+    $rust = Join-Path $scratch ($pins.rustSource.commit + '/prism-inference-' + $pins.rustSource.commit)
+    $collectorSourcePath = 'tools/native-reference/swift_ptq1_reference.rs'
+    $collectorSource = Join-Path $repo $collectorSourcePath
+    $collectorSourceSha256 = (Get-FileHash -LiteralPath $collectorSource -Algorithm SHA256).Hash.ToLowerInvariant()
+    $abiControlPath = Join-Path $repo 'tools/native-reference/fixtures/collector-abi-v1.txt'
+    $abiProvenancePath = Join-Path $repo 'tools/native-reference/fixtures/collector-abi-v1.provenance.json'
+    if ((Get-Item -LiteralPath $abiControlPath).Length -gt 65536 -or (Get-Item -LiteralPath $abiProvenancePath).Length -gt 65536) {
+        throw 'Native ABI controls exceed their fixed pre-read bound.'
+    }
+    $abiProvenance = Get-Content -LiteralPath $abiProvenancePath -Raw | ConvertFrom-Json -DateKind String
+    $abiControlSha256 = (Get-FileHash -LiteralPath $abiControlPath -Algorithm SHA256).Hash.ToLowerInvariant()
+    $abiProvenanceSha256 = (Get-FileHash -LiteralPath $abiProvenancePath -Algorithm SHA256).Hash.ToLowerInvariant()
+    if ($abiProvenance.schema_version -ne 1 -or $abiProvenance.source.revision -cne $pins.nativeSource.commit -or
+        $abiProvenance.source.headers.'include/llama.h'.sha256 -cne $pins.nativeSource.headerSha256 -or
+        $abiProvenance.fixture.file -cne 'collector-abi-v1.txt' -or
+        $abiProvenance.fixture.bytes -ne (Get-Item -LiteralPath $abiControlPath).Length -or
+        $abiProvenance.fixture.sha256 -cne $abiControlSha256) {
+        throw 'Native ABI controls differ from the reviewed source pins.'
+    }
+    $buildReceipt.Phase = 'toolchain'
+    Save-Ptq1BuildEvidence
+    $rustup = @(Get-Command rustup -CommandType Application -ErrorAction Stop)[0].Source
+    $resolvedCargo = Invoke-BonsaiNativeProcess -Executable $rustup -WorkingDirectory $scratch -TimeoutSeconds 30 -LogPath (Join-Path $scratch 'cargo-path.txt') -ArgumentList @('which', '--toolchain', $channel, 'cargo')
+    $resolvedRustc = Invoke-BonsaiNativeProcess -Executable $rustup -WorkingDirectory $scratch -TimeoutSeconds 30 -LogPath (Join-Path $scratch 'rustc-path.txt') -ArgumentList @('which', '--toolchain', $channel, 'rustc')
+    if ($resolvedCargo.ExitCode -ne 0 -or $resolvedRustc.ExitCode -ne 0) { throw 'The exact pinned Rust executables are unavailable.' }
+    $cargo = Resolve-ExternalPath ($resolvedCargo.StandardOutput.Trim())
+    $rustc = Resolve-ExternalPath ($resolvedRustc.StandardOutput.Trim())
+    $toolchainBin = [IO.Path]::GetDirectoryName($rustc)
+    if ($cargo -cne (Join-Path $toolchainBin 'cargo.exe') -or [IO.Path]::GetFileName($rustc) -cne 'rustc.exe') {
+        throw 'Cargo and rustc must belong to the same exact pinned toolchain.'
+    }
+    $toolchainRoot = [IO.Path]::GetDirectoryName($toolchainBin)
+    $linker = Join-Path $toolchainRoot 'lib/rustlib/aarch64-pc-windows-msvc/bin/rust-lld.exe'
+    foreach ($path in @($cargo, $rustc, $linker)) { Assert-Arm64PE $path }
+    $rustVersion = Invoke-BonsaiNativeProcess -Executable $rustc -WorkingDirectory $scratch -TimeoutSeconds 30 -LogPath (Join-Path $scratch 'rustc.txt') -ArgumentList @('-vV')
+    if ($rustVersion.ExitCode -ne 0 -or $rustVersion.StandardOutput -notmatch 'host: aarch64-pc-windows-msvc') {
+        throw 'The pinned native ARM64 Rust compiler is unavailable.'
+    }
+    $collector = Join-Path $scratch 'swift-ptq1-reference.exe'
+    $compilerOptions = @('--edition=2024', '--target', 'aarch64-pc-windows-msvc', '--deny', 'warnings',
+        '-C', 'opt-level=2', '-C', 'overflow-checks=on', '-C', 'panic=unwind',
+        '-C', "linker=$linker", '-C', 'linker-flavor=lld-link')
+    $compilerArguments = $compilerOptions + @($collectorSource, '-o', $collector)
+    $buildReceipt.Phase = 'collector-build-and-tests'
+    Save-Ptq1BuildEvidence
+    $built = Invoke-BonsaiNativeProcess -Executable $rustc -WorkingDirectory $scratch -TimeoutSeconds 120 -OwnDescendants -LogPath (Join-Path $scratch 'collector-build.txt') -ArgumentList $compilerArguments
+    if ($built.ExitCode -ne 0) { throw "Hosted Rust reference collector build failed; inspect $scratch" }
+    Assert-Arm64PE $collector
+    $collectorTests = Join-Path $scratch 'collector-tests.exe'
+    $builtTests = Invoke-BonsaiNativeProcess -Executable $rustc -WorkingDirectory $scratch -TimeoutSeconds 120 -OwnDescendants -LogPath (Join-Path $scratch 'collector-test-build.txt') -ArgumentList ($compilerOptions + @('--test', $collectorSource, '-o', $collectorTests))
+    if ($builtTests.ExitCode -ne 0) { throw "Hosted Rust collector test build failed; inspect $scratch" }
+    $tested = Invoke-BonsaiNativeProcess -Executable $collectorTests -WorkingDirectory $scratch -TimeoutSeconds 30 -OwnDescendants -LogPath (Join-Path $scratch 'collector-tests.txt') -ArgumentList @('--test-threads=1')
+    if ($tested.ExitCode -ne 0) { throw "Hosted Rust collector controls failed; inspect $scratch" }
+    if ((Get-FileHash -LiteralPath $collectorSource -Algorithm SHA256).Hash.ToLowerInvariant() -cne $collectorSourceSha256 -or
+        (Get-FileHash -LiteralPath $abiControlPath -Algorithm SHA256).Hash.ToLowerInvariant() -cne $abiControlSha256 -or
+        (Get-FileHash -LiteralPath $abiProvenancePath -Algorithm SHA256).Hash.ToLowerInvariant() -cne $abiProvenanceSha256) {
+        throw 'Collector source or ABI controls changed during compilation.'
+    }
+    $target = Join-Path $scratch 'rust-build'
+    $buildReceipt.Phase = 'checker-build'
+    Save-Ptq1BuildEvidence
+    $built = Invoke-BonsaiNativeProcess -Executable $cargo -WorkingDirectory $scratch -TimeoutSeconds 1200 -OwnDescendants -LogPath (Join-Path $scratch 'rust-build.txt') -ArgumentList @(
+        'build', '--locked', '--release', '--manifest-path', (Join-Path $rust 'Cargo.toml'),
+        '-p', 'prism-inference', '--example', 'swift_model_check', '--target-dir', $target) -Environment @{
+            RUSTC = $rustc; RUSTC_WRAPPER = ''; RUSTC_WORKSPACE_WRAPPER = ''
+            CARGO_ENCODED_RUSTFLAGS = @('-C', "linker=$linker", '-C', 'linker-flavor=lld-link') -join [char]0x1f
+        }
+    if ($built.ExitCode -ne 0) { throw "Hosted Rust numerical checker build failed; inspect $scratch" }
+    $qualifier = Join-Path $target 'release/examples/swift_model_check.exe'
+    Assert-Arm64PE $qualifier
+    $buildReceipt.Phase = 'package'
+    $files = foreach ($path in @($collector, $qualifier)) {
+        $name = [IO.Path]::GetFileName($path)
+        $destination = Join-Path $output $name
+        [IO.File]::Copy($path, $destination, $false)
+        [ordered]@{ Name = $name; Bytes = (Get-Item -LiteralPath $destination).Length
+            Sha256 = (Get-FileHash -LiteralPath $destination -Algorithm SHA256).Hash.ToLowerInvariant() }
+    }
+    $receipt = [ordered]@{
+        SchemaVersion = 2; RunnerRevision = $env:GITHUB_SHA; NativeSource = $pins.nativeSource; RustSource = $pins.rustSource
+        CollectorLanguage = 'rust'; CollectorSourcePath = $collectorSourcePath; CollectorSourceSha256 = $collectorSourceSha256
+        AbiControlSha256 = $abiControlSha256; AbiProvenanceSha256 = $abiProvenanceSha256; RustToolchain = $channel
+        Compiler = [ordered]@{ Path = $rustc; Sha256 = (Get-FileHash -LiteralPath $rustc -Algorithm SHA256).Hash.ToLowerInvariant()
+            LinkerSha256 = (Get-FileHash -LiteralPath $linker -Algorithm SHA256).Hash.ToLowerInvariant(); CollectorArguments = $compilerArguments
+            RustcVerbose = $rustVersion.StandardOutput.Trim() }
+        Files = @($files)
+    }
+    $receiptPath = Join-Path $output 'capture-tools.json'
+    $stream = [IO.FileStream]::new($receiptPath, [IO.FileMode]::CreateNew, [IO.FileAccess]::Write, [IO.FileShare]::None)
+    try {
+        $bytes = [Text.UTF8Encoding]::new($false).GetBytes(($receipt | ConvertTo-Json -Depth 20) + "`n")
+        if ($bytes.Length -gt 65536) { throw 'Capture bundle receipt exceeds its fixed bound.' }
+        $stream.Write($bytes, 0, $bytes.Length)
+        $stream.Flush($true)
+    } finally { $stream.Dispose() }
+    $buildReceipt.CaptureReceiptSha256 = (Get-FileHash -LiteralPath $receiptPath -Algorithm SHA256).Hash.ToLowerInvariant()
+    $buildReceipt.Status = 'completed'
+    $buildReceipt.Phase = 'completed'
+} catch {
+    $buildReceipt.Status = 'failed'
+    $message = $_.Exception.Message
+    $buildReceipt.Failure = $message.Substring(0, [Math]::Min(4096, $message.Length))
+    throw
+} finally { Save-Ptq1BuildEvidence }
 [pscustomobject]@{ Status = 'hosted-capture-tools-built'; OutputDirectory = $output; ReceiptPath = $receiptPath
-    EvidenceDirectory = $scratch; ModelProcessStarted = $false }
+    EvidenceDirectory = $evidence; ModelProcessStarted = $false }
