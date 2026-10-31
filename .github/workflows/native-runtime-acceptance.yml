@@ -34,14 +34,6 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
-      - name: Check bounded credential-free startup diagnostic retention
-        shell: pwsh
-        run: |
-          Set-StrictMode -Version Latest
-          $ErrorActionPreference = 'Stop'
-          $PSNativeCommandUseErrorActionPreference = $true
-          ./tests/Test-NativeStartupDiagnostics.ps1
-          ./tests/Test-NativeAcceptanceBudget.ps1
       - uses: ./.github/actions/bonsai-tools
       - uses: ./.github/actions/rust-toolchain
         with:
@@ -243,16 +235,19 @@ jobs:
             # then thirty seconds for forced teardown, diagnostics and uploads.
             # An inherited owner clock starts before registration and may only
             # shorten these limits, preserving exit time before its watchdog.
-            Import-Module (Join-Path $env:GITHUB_WORKSPACE 'scripts/Bonsai.NativeAcceptanceBudget.psm1')
+            Import-Module (Join-Path $env:GITHUB_WORKSPACE 'scripts/Bonsai.Tools.psm1')
             $ownerDeadline = @{
               RunId=$env:BONSAI_NATIVE_OWNER_RUN_ID; Revision=$env:BONSAI_NATIVE_OWNER_REVISION
               StartedTick=$env:BONSAI_NATIVE_OWNER_STARTED_TICK; StartedUtc=$env:BONSAI_NATIVE_OWNER_STARTED_UTC
               WorkSeconds=$env:BONSAI_NATIVE_OWNER_WORK_SECONDS
             }
             try {
-              $limits = Get-NativeAcceptanceBudget -JobStartedUtc $jobStarted -NowUtc ([DateTime]::UtcNow) `
-                -NowTick ([Diagnostics.Stopwatch]::GetTimestamp()) -TickFrequency ([Diagnostics.Stopwatch]::Frequency) `
-                -RunId $env:GITHUB_RUN_ID -Revision $env:GITHUB_SHA -OwnerDeadline $ownerDeadline
+              if (-not $env:BONSAI_TOOLS_PATH) { throw 'The source-bound hosted maintenance tool is required.' }
+              $limits = Invoke-BonsaiTool -Command native-acceptance-budget -ToolPath $env:BONSAI_TOOLS_PATH -Request @{
+                jobStartedUtc=$jobStarted.ToString('o'); nowUtc=[DateTime]::UtcNow.ToString('o')
+                nowTick=[Diagnostics.Stopwatch]::GetTimestamp(); tickFrequency=[Diagnostics.Stopwatch]::Frequency
+                runId=$env:GITHUB_RUN_ID; revision=$env:GITHUB_SHA; ownerDeadline=$ownerDeadline
+              }
             } catch {
               $hostReport.AggregateBudgetExpired = $true
               throw
@@ -310,10 +305,19 @@ jobs:
             $env:BONSAI_NATIVE_DIAGNOSTICS_STATUS = 'collection-failed'
             'BONSAI_NATIVE_DIAGNOSTICS_READY=false' >> $env:GITHUB_ENV
             try {
-              & (Join-Path $env:GITHUB_WORKSPACE 'scripts/Save-NativeStartupDiagnostics.ps1') `
-                -EvidenceDirectory $env:BONSAI_NATIVE_EVIDENCE `
-                -AcceptanceExitCode $hostReport.AcceptanceProcessExitCode `
-                -BudgetExpired:$hostReport.AggregateBudgetExpired
+              if (-not $env:BONSAI_TOOLS_PATH) { throw 'The source-bound hosted maintenance tool is required.' }
+              Import-Module (Join-Path $env:GITHUB_WORKSPACE 'scripts/Bonsai.Tools.psm1')
+              $diagnostics = Invoke-BonsaiTool -Command startup-diagnostics -ToolPath $env:BONSAI_TOOLS_PATH -TimeoutSeconds 10 -Request @{
+                evidenceDirectory=$env:BONSAI_NATIVE_EVIDENCE
+                acceptanceExitCode=$hostReport.AcceptanceProcessExitCode; budgetExpired=$hostReport.AggregateBudgetExpired
+              }
+              $env:BONSAI_NATIVE_DIAGNOSTICS_READY = if ($diagnostics.Ready -ceq $true) { 'true' } else { 'false' }
+              $env:BONSAI_NATIVE_DIAGNOSTICS_STATUS = $diagnostics.Classification
+            } catch {
+              # Keep collection errors value-free: paths and raw tool diagnostics
+              # must never enter the public host receipt or diagnostic upload.
+              $env:BONSAI_NATIVE_DIAGNOSTICS_READY = 'false'
+              $env:BONSAI_NATIVE_DIAGNOSTICS_STATUS = 'collection-failed'
             } finally {
               $hostReport.StartupDiagnosticsReady = $env:BONSAI_NATIVE_DIAGNOSTICS_READY -ceq 'true'
               $hostReport.StartupDiagnosticsClassification = $env:BONSAI_NATIVE_DIAGNOSTICS_STATUS
