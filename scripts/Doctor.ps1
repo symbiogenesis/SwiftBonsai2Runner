@@ -9,9 +9,11 @@ OutputPath is optional, must be a new absolute file outside Git, and its parent
 must already exist. The JSON contains exact tool paths; review it before sharing.
 Version commands run in a unique system-temp directory with the inherited environment.
 Presence, executable architecture, and version do not establish backend correctness.
-ToolPath optionally selects an existing checked maintenance executable for native
-CPU-set and bounded Vulkan observations. Omitting it keeps inventory independent
-of a Rust build. Vulkan inventory never selects or qualifies an inference backend.
+ToolPath or BONSAI_TOOLS_PATH selects an existing checked maintenance executable
+for Rust capability policy. Without either, detailed capabilities and CPU identity
+remain unavailable while Windows and tool inventory still run without a Rust build.
+An explicit ToolPath also requests native CPU-set and bounded graphics observations.
+Graphics inventory never selects or qualifies an inference backend.
 .EXAMPLE
 ./scripts/Doctor.ps1
 .EXAMPLE
@@ -38,7 +40,6 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 Import-Module (Join-Path $PSScriptRoot 'Bonsai.Native.psm1')
-Import-Module (Join-Path $PSScriptRoot 'Bonsai.Capabilities.psm1')
 if (-not $IsWindows) { throw 'Doctor requires Windows and PowerShell 7.6 or later.' }
 
 $issues = [Collections.Generic.List[string]]::new()
@@ -208,6 +209,27 @@ function Get-CimFact {
     }
 }
 
+function ConvertTo-CapabilityFact {
+    <# .SYNOPSIS
+    Selects CIM fields and normalizes date types for the Rust JSON policy boundary.
+    #>
+    [CmdletBinding()]
+    [OutputType([Collections.IDictionary])]
+    param([AllowNull()][object]$Value, [Parameter(Mandatory)][string[]]$Property)
+    if ($null -eq $Value) { return $null }
+    $result = [ordered]@{}
+    foreach ($name in $Property) {
+        $member = $Value.PSObject.Properties[$name]
+        $fact = if ($null -ne $member) { $member.Value } else { $null }
+        if ($name -ceq 'DriverDate' -and $null -ne $fact) {
+            if ($fact -isnot [datetime] -and $fact -isnot [datetimeoffset]) { throw 'Invalid CIM driver date type.' }
+            $fact = $fact.ToUniversalTime().ToString('o', [Globalization.CultureInfo]::InvariantCulture)
+        }
+        $result[$name] = $fact
+    }
+    return $result
+}
+
 try {
     # Query only required properties, avoiding user, hostname, serial, and network inventories.
     $os = Get-CimFact 'Win32_OperatingSystem' @('Caption', 'Version', 'BuildNumber', 'TotalVisibleMemorySize')
@@ -299,19 +321,33 @@ try {
     }
     else { $issues.Add('No external data directory selected; storage capacity remains unverified.') }
 
-    $capabilities = Get-BonsaiHostCapability -Facts @{
-        OsArchitecture = $osArchitecture; ProcessArchitecture = $processArchitecture
-        OperatingSystem = $os; Computer = $computer; Processors = $cpus; Graphics = $gpus
-        Memory = $memoryStatus; NpuDrivers = $npuDrivers; Isa = $isa
-        Probes = @{
-            OperatingSystem = [bool]$probeResults['Win32_OperatingSystem']
-            Computer = [bool]$probeResults['Win32_ComputerSystem']
-            Processors = [bool]$probeResults['Win32_Processor']
-            Graphics = [bool]$probeResults['Win32_VideoController']
-            Memory = [bool]$probeResults['Win32_PerfFormattedData_PerfOS_Memory']
-            NpuDrivers = [bool]$probeResults['Win32_PnPSignedDriver']
-            Isa = $isaProbeSucceeded
-        }
+    $capabilityTool = if ($ToolPath) { $ToolPath } else { $env:BONSAI_TOOLS_PATH }
+    $capabilities = $null
+    $cpuCompatibilityIdentity = $null
+    if ($capabilityTool) {
+        Import-Module (Join-Path $PSScriptRoot 'Bonsai.Tools.psm1')
+        $capabilities = Invoke-BonsaiTool -Command host-capabilities -ToolPath $capabilityTool -Request @{ operation = 'project'; facts = @{
+            OsArchitecture = $osArchitecture; ProcessArchitecture = $processArchitecture
+            OperatingSystem = ConvertTo-CapabilityFact $os @('Version', 'BuildNumber', 'TotalVisibleMemorySize')
+            Computer = ConvertTo-CapabilityFact $computer @('TotalPhysicalMemory')
+            Processors = @($cpus | ForEach-Object { ConvertTo-CapabilityFact $_ @('Name', 'Manufacturer', 'NumberOfCores', 'NumberOfLogicalProcessors') })
+            Graphics = @($gpus | ForEach-Object { ConvertTo-CapabilityFact $_ @('Name', 'AdapterCompatibility', 'DriverVersion', 'DriverDate') })
+            Memory = ConvertTo-CapabilityFact $memoryStatus @('AvailableBytes', 'CommitLimit', 'CommittedBytes')
+            NpuDrivers = @($npuDrivers | ForEach-Object { ConvertTo-CapabilityFact $_ @('DeviceName', 'Manufacturer', 'DriverVersion', 'DriverDate', 'IsSigned') })
+            Isa = $isa
+            Probes = @{
+                OperatingSystem = [bool]$probeResults['Win32_OperatingSystem']
+                Computer = [bool]$probeResults['Win32_ComputerSystem']
+                Processors = [bool]$probeResults['Win32_Processor']
+                Graphics = [bool]$probeResults['Win32_VideoController']
+                Memory = [bool]$probeResults['Win32_PerfFormattedData_PerfOS_Memory']
+                NpuDrivers = [bool]$probeResults['Win32_PnPSignedDriver']
+                Isa = $isaProbeSucceeded
+            }
+        } }
+        $cpuCompatibilityIdentity = Invoke-BonsaiTool -Command host-capabilities -ToolPath $capabilityTool -Request @{ operation = 'identity'; capabilities = $capabilities }
+    } else {
+        $issues.Add('Detailed capability policy requires a prebuilt maintenance tool selected with ToolPath or BONSAI_TOOLS_PATH; capabilities and CPU identity remain unavailable.')
     }
     $nativeCpu = $null
     $nativeGpu = $null
@@ -365,7 +401,7 @@ try {
         NativeCpuObservations = $nativeCpu
         NativeGpuObservations = $nativeGpu
         NativeOpenClObservations = $nativeOpenCl
-        CpuCompatibilityIdentity = Get-BonsaiCpuCompatibilityIdentity -Capabilities $capabilities
+        CpuCompatibilityIdentity = $cpuCompatibilityIdentity
         Gaps = @($issues)
         Qualification = 'Inventory only: no engine, GPU backend, memory admission, or daily security policy has been qualified.'
     }

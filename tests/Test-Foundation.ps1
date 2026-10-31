@@ -1,7 +1,7 @@
 #requires -Version 7.6
 [CmdletBinding()]
 [OutputType([void])]
-param([ValidateSet('All','Download','Configuration','Paths','PE','Doctor','Capabilities','ServerPolicy','ChatInstance')][string]$Case = 'All')
+param([ValidateSet('All','Download','Configuration','Paths','PE','Doctor','ServerPolicy','ChatInstance')][string]$Case = 'All')
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
@@ -279,156 +279,21 @@ if ($Case -in @('All','ServerPolicy')) {
     Assert ($before.Count -eq $after.Count) 'Planning changed the parent environment.'
     foreach ($name in $before.Keys) { Assert ($after[$name] -ceq $before[$name]) 'Planning changed an inherited environment value.' }
 }
-if ($Case -in @('All','Capabilities')) {
-    Import-Module (Join-Path $repo 'scripts/Bonsai.Capabilities.psm1') -Force
-    $unknown = Get-BonsaiHostCapability -Facts @{}
-    Assert ($unknown.schema_version -eq 1 -and $unknown.kind -ceq 'runner-host-capabilities') 'Capability identity changed.'
-    Assert ($unknown.cpu.status -ceq 'unknown' -and $null -eq $unknown.cpu.isa.advsimd -and
-        $null -eq $unknown.memory.available_physical_bytes -and $unknown.npu.status -ceq 'unknown') 'Missing probes fabricated support or memory.'
-    $facts = @{
-        OsArchitecture = 'Arm64'; ProcessArchitecture = 'Arm64'
-        OperatingSystem = @{ Version = '10.0.26100'; BuildNumber = '26100'; TotalVisibleMemorySize = [uint64]33554432 }
-        Computer = @{ TotalPhysicalMemory = [uint64]34359738368 }
-        Processors = @(@{ Name = 'Snapdragon X2E-96-100'; Manufacturer = 'Qualcomm'; NumberOfCores = 18; NumberOfLogicalProcessors = 18 })
-        Graphics = @(@{ Name = 'Adreno'; AdapterCompatibility = 'Qualcomm'; DriverVersion = '1.2.3'; DriverDate = [datetime]'2026-01-01T00:00:00Z' })
-        NpuDrivers = @(@{ DeviceName = 'Compute accelerator'; Manufacturer = 'Qualcomm'; DriverVersion = '4.5.6'; DriverDate = [datetime]'2026-01-01T00:00:00Z'; IsSigned = $true })
-        Memory = @{ AvailableBytes = [uint64]17179869184; CommitLimit = [uint64]68719476736; CommittedBytes = [uint64]8589934592 }
-        Isa = @{ AdvSimd = $false; DotProd = $false }
-        Probes = @{ OperatingSystem = $true; Computer = $true; Processors = $true; Graphics = $true; NpuDrivers = $true; Memory = $true; Isa = $true }
-    }
-    $known = Get-BonsaiHostCapability -Facts $facts
-    Assert ($known.cpu.identities[0].name -ceq 'Snapdragon X2E-96-100' -and $known.cpu.identities[0].physical_cores -eq 18) 'Observed processor identity or counts were lost.'
-    Assert ($known.memory.reported_total_physical_bytes -eq [uint64]34359738368 -and
-        $known.memory.usable_physical_bytes -eq [uint64]34359738368 -and
-        $known.memory.commit_limit_bytes -eq [uint64]68719476736 -and $known.memory.status -ceq 'observed') 'Memory units or observed commit facts changed.'
-    Assert ($known.cpu.isa.advsimd -ceq $false -and $known.cpu.isa.dotprod -ceq $false -and
-        $null -eq $known.cpu.topology.processor_groups -and $null -eq $known.gpu.api_features -and
-        $null -eq $known.npu.architecture -and $null -eq $known.npu.backend_readiness) 'Marketing identity or signed-driver inventory enabled unobserved capabilities.'
-    $cpuIdentity = Get-BonsaiCpuCompatibilityIdentity -Capabilities $known
-    Assert ($cpuIdentity.status -ceq 'observed' -and $cpuIdentity.qualification -ceq 'unqualified' -and
-        $cpuIdentity.scope -ceq 'native-windows-arm64-cpu-observations-v1' -and
-        $cpuIdentity.capability_class_sha256 -cmatch '^[a-f0-9]{64}$' -and
-        $cpuIdentity.backend_driver_sha256 -cmatch '^[a-f0-9]{64}$') 'Static CPU identity was missing, unscoped or asserted qualification.'
-    $expectedCapabilityJson = '{"schema_version":1,"kind":"runner-cpu-capability-class","scope":"native-windows-arm64-cpu-observations-v1","architecture":"arm64","identities":[{"name":"Snapdragon X2E-96-100","manufacturer":"Qualcomm","physical_cores":18,"logical_processors":18}],"isa":{"advsimd":false,"dotprod":false}}'
-    $expectedBackendJson = '{"schema_version":1,"kind":"runner-cpu-backend-driver","scope":"native-windows-arm64-cpu-observations-v1","backend":"cpu","operating_system":{"architecture":"arm64","version":"10.0.26100","build_number":"26100"}}'
-    Assert ($cpuIdentity.capability_class_json -ceq $expectedCapabilityJson -and
-        $cpuIdentity.backend_driver_json -ceq $expectedBackendJson) 'Version-one canonical CPU record bytes changed.'
-    foreach ($kind in @('capability_class', 'backend_driver')) {
-        $expectedHash = [Convert]::ToHexStringLower([Security.Cryptography.SHA256]::HashData(
-            [Text.Encoding]::UTF8.GetBytes($cpuIdentity[$kind + '_json'])))
-        Assert ($cpuIdentity[$kind + '_sha256'] -ceq $expectedHash) 'Retained CPU record did not reproduce its digest.'
-    }
-    $knownJson = $known | ConvertTo-Json -Depth 8
-    $changed = $knownJson | ConvertFrom-Json -AsHashtable -DateKind String
-    $changed.memory.available_physical_bytes = [uint64]1
-    $changed.memory.commit_limit_bytes = [uint64]1
-    $changed.memory.committed_bytes = [uint64]1
-    $changed.memory.usable_physical_bytes = [uint64]1
-    $changed.gpu.devices[0].driver_version = 'other-gpu-driver'
-    $changed.npu.devices[0].driver_version = 'other-npu-driver'
-    $changed['CollectedAtUtc'] = '2099-01-01T00:00:00Z'
-    $changed['Tools'] = @('C:\private\tool.exe')
-    $stable = Get-BonsaiCpuCompatibilityIdentity -Capabilities $changed
-    Assert ($stable.capability_class_json -ceq $cpuIdentity.capability_class_json -and
-        $stable.backend_driver_sha256 -ceq $cpuIdentity.backend_driver_sha256) 'CPU identities included live budgets, timestamps, paths or accelerator drivers.'
-    $changed = $knownJson | ConvertFrom-Json -AsHashtable -DateKind String
-    $changed.operating_system.build_number = '26101'
-    $updated = Get-BonsaiCpuCompatibilityIdentity -Capabilities $changed
-    Assert ($updated.capability_class_sha256 -ceq $cpuIdentity.capability_class_sha256 -and
-        $updated.backend_driver_sha256 -cne $cpuIdentity.backend_driver_sha256) 'An OS build update did not invalidate only the CPU backend record.'
-    $changed = $knownJson | ConvertFrom-Json -AsHashtable -DateKind String
-    $changed.cpu.isa.advsimd = $true
-    $updated = Get-BonsaiCpuCompatibilityIdentity -Capabilities $changed
-    Assert ($updated.capability_class_sha256 -cne $cpuIdentity.capability_class_sha256 -and
-        $updated.backend_driver_sha256 -ceq $cpuIdentity.backend_driver_sha256) 'An observed ISA change did not invalidate only the CPU capability record.'
-    $changed = $knownJson | ConvertFrom-Json -AsHashtable -DateKind String
-    $changed.cpu.identities += @{ name = 'Other CPU'; manufacturer = 'Other vendor'; physical_cores = 2; logical_processors = 4 }
-    $ordered = Get-BonsaiCpuCompatibilityIdentity -Capabilities $changed
-    [Array]::Reverse($changed.cpu.identities)
-    $reordered = Get-BonsaiCpuCompatibilityIdentity -Capabilities $changed
-    Assert ($ordered.capability_class_sha256 -ceq $reordered.capability_class_sha256 -and
-        $ordered.capability_class_sha256 -cne $cpuIdentity.capability_class_sha256) 'CPU inventory order affected identity or added processors were ignored.'
-    $changed.cpu.identities += $changed.cpu.identities[0]
-    Assert ((Get-BonsaiCpuCompatibilityIdentity -Capabilities $changed).capability_class_sha256 -cne
-        $ordered.capability_class_sha256) 'Repeated CPU entries lost their multiplicity.'
-    foreach ($missing in @('os', 'process', 'cpu', 'isa', 'native', 'scope', 'architecture', 'version', 'name', 'manufacturer', 'cores', 'logical', 'flag', 'contradictory', 'empty')) {
-        $changed = $knownJson | ConvertFrom-Json -AsHashtable -DateKind String
-        switch ($missing) {
-            'os' { $changed.operating_system.status = 'partial' }
-            'process' { $changed.process.status = 'unknown' }
-            'cpu' { $changed.cpu.status = 'unknown' }
-            'isa' { $changed.cpu.isa.status = 'unknown' }
-            'native' { $changed.process.is_native = $false }
-            'scope' { $changed.cpu.isa.scope = 'other-process' }
-            'architecture' { $changed.cpu.isa.architecture = 'x64' }
-            'version' { $changed.operating_system.version = 'UNKNOWN' }
-            'name' { $changed.cpu.identities[0].name = $null }
-            'manufacturer' { $changed.cpu.identities[0].manufacturer = 'unknown' }
-            'cores' { $changed.cpu.identities[0].physical_cores = 0 }
-            'logical' { $changed.cpu.identities[0].logical_processors = 1 }
-            'flag' { $changed.cpu.isa.advsimd = $null }
-            'contradictory' { $changed.cpu.isa.dotprod = $true }
-            'empty' { $changed.cpu.identities = @() }
-        }
-        $missingIdentity = Get-BonsaiCpuCompatibilityIdentity -Capabilities $changed
-        Assert ($missingIdentity.status -ceq 'unknown' -and $missingIdentity.fallback_reason -ceq 'unknown-capability' -and
-            $null -eq $missingIdentity.capability_class_json -and $null -eq $missingIdentity.backend_driver_json -and
-            $null -eq $missingIdentity.capability_class_sha256 -and $null -eq $missingIdentity.backend_driver_sha256) "Incomplete $missing facts produced concrete CPU identity."
-    }
-    foreach ($schema in @(2, '1', $null)) {
-        $changed = $knownJson | ConvertFrom-Json -AsHashtable -DateKind String
-        $changed.schema_version = $schema
-        Assert-Failure { Get-BonsaiCpuCompatibilityIdentity -Capabilities $changed } 'An unsupported CPU identity input schema was accepted.'
-    }
-    foreach ($kind in @(@(), @('runner-host-capabilities'), 1, $null)) {
-        $changed = $knownJson | ConvertFrom-Json -AsHashtable -DateKind String
-        $changed.kind = $kind
-        Assert-Failure { Get-BonsaiCpuCompatibilityIdentity -Capabilities $changed } 'A non-string host capability kind produced an identity.'
-    }
-    $missingIdentity = Get-BonsaiCpuCompatibilityIdentity -Capabilities $unknown
-    Assert ($missingIdentity.status -ceq 'unknown' -and $null -eq $missingIdentity.capability_class_sha256) 'Missing observations became a CPU identity.'
-    $facts.ProcessArchitecture = 'X64'
-    $emulated = Get-BonsaiHostCapability -Facts $facts
-    Assert ($emulated.process.is_native -ceq $false -and $emulated.cpu.isa.architecture -ceq 'x64' -and
-        $emulated.cpu.isa.scope -ceq 'current-process') 'Process ISA claims lost their emulation scope.'
-    Assert ((Get-BonsaiCpuCompatibilityIdentity -Capabilities $emulated).status -ceq 'unknown') 'Emulated ISA observations produced a native CPU identity.'
-    $facts.Probes.Isa = $false
-    $failedIsa = Get-BonsaiHostCapability -Facts $facts
-    Assert ($failedIsa.cpu.isa.status -ceq 'unknown' -and $null -eq $failedIsa.cpu.isa.advsimd) 'A failed ISA probe reused stale facts.'
-    $facts.NpuDrivers = @()
-    $empty = Get-BonsaiHostCapability -Facts $facts
-    Assert ($empty.npu.status -ceq 'observed' -and $empty.npu.devices.Count -eq 0) 'An empty successful inventory became a failed probe.'
-    $facts.Probes.NpuDrivers = $false
-    $failed = Get-BonsaiHostCapability -Facts $facts
-    Assert ($failed.npu.status -ceq 'unknown' -and $failed.npu.devices.Count -eq 0) 'Failed and empty inventories were conflated.'
-    foreach ($invalid in @(-1, '17179869184', 1.5, $true)) {
-        $facts.Memory.AvailableBytes = $invalid
-        Assert-Failure { Get-BonsaiHostCapability -Facts $facts } 'A non-integer or negative memory fact was accepted.'
-    }
-    $facts.Memory.AvailableBytes = [uint64]0
-    Assert ((Get-BonsaiHostCapability -Facts $facts).memory.available_physical_bytes -eq 0) 'Zero available memory became unknown.'
-    $facts.OperatingSystem.TotalVisibleMemorySize = [uint64]::MaxValue
-    Assert-Failure { Get-BonsaiHostCapability -Facts $facts } 'KiB conversion overflow was accepted.'
-    $facts.OperatingSystem.TotalVisibleMemorySize = [uint64]33554432
-    $facts.Probes.Isa = $true
-    $facts.Isa.AdvSimd = 'false'
-    Assert-Failure { Get-BonsaiHostCapability -Facts $facts } 'A string ISA flag was accepted.'
-    $facts.Isa.AdvSimd = $false
-    $facts.Processors[0].Name = "invalid`nidentity"
-    Assert-Failure { Get-BonsaiHostCapability -Facts $facts } 'Control characters in hardware identity were accepted.'
-    $facts.Processors = @(1..65 | ForEach-Object { @{ Name = 'CPU' } })
-    Assert-Failure { Get-BonsaiHostCapability -Facts $facts } 'Unbounded processor inventory was accepted.'
-}
 if ($Case -in @('All','Doctor')) {
     $reportPath = Join-Path $scratch 'doctor.json'
     $report = & (Join-Path $repo 'scripts/Doctor.ps1') -DataPath $scratch -OutputPath $reportPath -PassThru
     $saved = Get-Content -LiteralPath $reportPath -Raw | ConvertFrom-Json -DateKind String
     Assert ($saved.SchemaVersion -eq 1 -and $report.Runtime.ProcessArchitecture) 'Doctor did not produce a versioned architecture report.'
-    Assert ($saved.Capabilities.schema_version -eq 1 -and $saved.Capabilities.kind -ceq 'runner-host-capabilities' -and
-        $saved.Capabilities.cpu.isa.scope -ceq 'current-process' -and $null -eq $saved.Capabilities.npu.backend_readiness) 'Doctor lost its bounded host capability contract.'
-    Assert ($saved.CpuCompatibilityIdentity.schema_version -eq 1 -and
-        $saved.CpuCompatibilityIdentity.kind -ceq 'runner-cpu-compatibility-identity' -and
-        $saved.CpuCompatibilityIdentity.qualification -ceq 'unqualified') 'Doctor lost its scoped unqualified CPU identity.'
+    if ($env:BONSAI_TOOLS_PATH) {
+        Assert ($saved.Capabilities.schema_version -eq 1 -and $saved.Capabilities.kind -ceq 'runner-host-capabilities' -and
+            $saved.Capabilities.cpu.isa.scope -ceq 'current-process' -and $null -eq $saved.Capabilities.npu.backend_readiness) 'Doctor lost its bounded host capability contract.'
+        Assert ($saved.CpuCompatibilityIdentity.schema_version -eq 1 -and
+            $saved.CpuCompatibilityIdentity.kind -ceq 'runner-cpu-compatibility-identity' -and
+            $saved.CpuCompatibilityIdentity.qualification -ceq 'unqualified') 'Doctor lost its scoped unqualified CPU identity.'
+    } else {
+        Assert ($null -eq $saved.Capabilities -and $null -eq $saved.CpuCompatibilityIdentity) 'Doctor started capability policy without a selected prebuilt tool.'
+        Assert (@($saved.Gaps | Where-Object { $_ -like '*prebuilt maintenance tool*' }).Count -eq 1) 'Doctor omitted guidance for unavailable native capability policy.'
+    }
     if ($null -ne $saved.Memory.UsablePhysicalBytes) { Assert ($saved.Memory.UsablePhysicalBytes -gt 0) 'Usable memory must be positive bytes.' }
     Assert-Failure { & (Join-Path $repo 'scripts/Doctor.ps1') -OutputPath $reportPath } 'Doctor overwrote an existing report.'
 }
