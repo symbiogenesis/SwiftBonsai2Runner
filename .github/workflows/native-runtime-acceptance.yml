@@ -6,7 +6,7 @@ on:
       profile:
         description: Explicit bounded profile; all setup/model work/cleanup shares one five-minute job
         type: choice
-        options: [pq2-no-adapter, ptq1-adapter, pq2-adapter-row4, pq2-adapter-lifecycle-row4]
+        options: [pq2-no-adapter, ptq1-adapter, pq2-adapter-row4, pq2-adapter-lifecycle-row4, pq2-adapter-speed]
         default: pq2-no-adapter
         required: false
       bounded_history:
@@ -58,6 +58,10 @@ jobs:
           $modelFreeCases = @(& (Join-Path $package 'native-model-acceptance.exe') --list)
           if ($LASTEXITCODE -ne 0) { throw 'Hosted acceptance case inventory failed.' }
           foreach ($case in @('native_profile_selection_and_scale_receipts_preserve_bounded_scope', 'native_row4_profile_is_explicit_original_pq2_and_one_stream_only',
+              'speed::native_speed_metric_uses_reported_tokens_and_complete_request_time',
+              'speed::native_speed_comparison_requires_matched_output_usage_and_cleanup',
+              'speed::native_speed_stream_waits_for_complete_framing_and_uses_usage_not_events',
+              'speed::native_speed_profile_shares_deadline_and_rejects_extra_workloads',
               'native_adapter_scale_history_profile_requires_separate_explicit_selection',
               'native_adapter_scale_history_retains_partial_steps_without_qualifying_missing_work',
               'native_adapter_request_budget_drops_inflight_work_before_owned_cleanup',
@@ -212,6 +216,12 @@ jobs:
                 }
                 'pinned_native_pq2_adapter_row4_checks_scale_change_rejection_and_history'
               }
+              'pq2-adapter-speed' {
+                if ($env:BONSAI_NATIVE_EXTENDED -ceq 'true' -or $env:BONSAI_NATIVE_STALLED_CONSUMER -ceq 'true') {
+                  throw 'The paired request-throughput profile does not admit extended_history or stalled_consumer.'
+                }
+                'speed::pinned_native_pq2_adapter_compares_request_throughput'
+              }
               default { throw 'Unknown actual-model acceptance profile.' }
             }
             $test = $env:BONSAI_NATIVE_TEST
@@ -341,6 +351,8 @@ jobs:
             'Original PQ2 with the approved adapter explicitly configures four native row workers and requires exactly one scale-1.3 four-token-cap stream, verified model/adapter readiness and owned cleanup. This does not independently observe thread count or establish TPS. Multi-scale, rejection/reuse, history, context, restart, performance and quality gates remain unrun.'
           } elseif ($env:BONSAI_NATIVE_PROFILE -ceq 'pq2-adapter-lifecycle-row4') {
             'Original PQ2 with four row workers requires scale-1.3 and scale-zero streams, invalid-scale connection closure without a response, then scale-1.3 streaming with supplied assistant history in the same owner. Each further request requires more than 45 seconds remaining; a request timeout reserves 30 seconds for owned cleanup. Any missing required step remains pending and fails after cleanup. This does not prove zero/no-adapter logits identity, generated-history state reuse, numerical parity, quality or TPS.'
+          } elseif ($env:BONSAI_NATIVE_PROFILE -ceq 'pq2-adapter-speed') {
+            'One fixed-order paired request measures original PQ2 with adapter 1.3 and one versus four workers, each in a fresh owner, using identical eight-token-cap counting prompts and seed 42. Request TPS includes prefill and complete HTTP response delivery, excludes startup, and is not device decode TPS. A ratio requires reported usage at the cap, identical visible output and both owned cleanups. No retry, repeated-trial benefit or default promotion is qualified.'
           } else {
             'No adapter was enabled. Full-context numerical/resource, performance, quality and daily-service qualification remain separate.'
           }

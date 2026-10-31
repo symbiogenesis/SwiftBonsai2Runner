@@ -22,6 +22,9 @@ use tokio::{
     time::timeout,
 };
 
+#[path = "native_model/speed.rs"]
+mod speed;
+
 const CASE: &str = "pinned_native_model_streams_recovers_and_restarts_in_required_sandbox";
 const PTQ1_ADAPTER_CASE: &str =
     "pinned_native_ptq1_adapter_starts_and_streams_within_device_budget";
@@ -255,7 +258,7 @@ fn json_response(bytes: &[u8], status: &str) -> Value {
     serde_json::from_slice(body).unwrap()
 }
 
-fn streamed_response(bytes: &[u8]) -> StreamSummary {
+fn stream_payload(bytes: &[u8]) -> Vec<u8> {
     let (head, mut body) = response(bytes, "HTTP/1.1 200 OK");
     assert!(
         head.lines()
@@ -275,6 +278,11 @@ fn streamed_response(bytes: &[u8]) -> StreamSummary {
         }
     }
     assert_eq!(body, b"");
+    payload
+}
+
+fn streamed_response(bytes: &[u8]) -> StreamSummary {
+    let payload = stream_payload(bytes);
     let payload = std::str::from_utf8(&payload).unwrap();
     let mut terminal = false;
     let mut done = false;
@@ -1172,6 +1180,7 @@ fn profile_case(profile: &str, extended: bool, stalled: bool) -> Option<&'static
     }
     match profile {
         "pq2-no-adapter" => Some(CASE),
+        speed::PROFILE => Some(speed::CASE),
         name => adapter_profile(name).map(|selected| selected.case),
     }
 }

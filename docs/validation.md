@@ -107,6 +107,27 @@ drops the in-flight request before Stop, retains completed observations, records
 confirming the owned Job is empty and the listener released. No HTTP work starts
 when only the cleanup allowance remains.
 
+Explicit `profile: pq2-adapter-speed` makes one fixed-order application request
+comparison with original PQ2, adapter scale 1.3, seed 42 and one then four row
+workers, each in a fresh required-sandbox owner. Both use the same short public
+counting prompt, thinking disabled and an eight-token output cap. Setup, both
+model loads, requests, comparison and cleanup share the existing aggregate
+five-minute owner deadline; no retry or continuation job is permitted. A new
+owner needs more than 60 seconds remaining and each request ends at least 30
+seconds before the deadline for owned cleanup. Completed observations are saved
+before the second startup; a skipped or expired half remains pending.
+
+`requestTokensPerSecond` divides reported completion usage by monotonic elapsed
+time from connection start through complete framed HTTP response delivery,
+including prefill, generation and transport. Model startup and response parsing
+are excluded; startup is recorded separately. This is application request
+throughput, **not device decode TPS**, TTFT or a rate inferred from SSE event or
+byte counts. The ratio requires both streams to end with `length` at eight
+reported tokens, identical visible output, empty Jobs and released listeners.
+Early stop, unknown usage, different output or missing cleanup leaves comparison
+pending. A single fixed-order pair establishes neither repeated-trial benefit,
+complete-state parity, energy/comfort, creative quality nor default promotion.
+
 Before runner temp cleanup, the workflow reads only `backend.stdout` and
 `backend.stderr` from at most eight immediate protected session directories, with
 a 64 KiB limit per log and strict UTF-8 decoding. It validates both actual keys
