@@ -6,7 +6,6 @@ on:
       - 'tools/bonsai/**'
       - 'src/artifacts/**'
       - 'src/broker/**'
-      - 'scripts/Get-RuntimePromotion.ps1'
       - 'tests/Test-RuntimePromotion.ps1'
       - '.github/workflows/runtime-parity-candidate.yml'
   workflow_dispatch:

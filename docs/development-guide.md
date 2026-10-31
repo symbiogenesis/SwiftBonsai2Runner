@@ -619,13 +619,15 @@ into a new system-temp lane outside Git. Use the independently reviewed revision
 and run identity, rather than copying them from an unreviewed receipt:
 
 ```powershell
-./scripts/New-InferenceLock.ps1 `
-    -ReceiptPath (Join-Path $lane 'prism-inference-0.1.6-aarch64-pc-windows-msvc.receipt.json') `
-    -ArchivePath (Join-Path $lane 'prism-inference-0.1.6-aarch64-pc-windows-msvc.zip') `
-    -SourceArchivePath (Join-Path $lane 'source.zip') `
-    -SourceRevision $reviewedRevision -Version 0.1.6 `
-    -RunId $reviewedRunId -RunAttempt 1 `
-    -OutputPath (Join-Path $lane 'prism-inference.lock.candidate.json')
+Import-Module ./scripts/Bonsai.Tools.psm1
+Invoke-BonsaiTool -Command inference-lock -TimeoutSeconds 120 -Request @{
+    receiptPath = Join-Path $lane 'prism-inference-0.1.6-aarch64-pc-windows-msvc.receipt.json'
+    archivePath = Join-Path $lane 'prism-inference-0.1.6-aarch64-pc-windows-msvc.zip'
+    sourceArchivePath = Join-Path $lane 'source.zip'
+    sourceRevision = $reviewedRevision; version = '0.1.6'
+    runId = $reviewedRunId; runAttempt = 1
+    outputPath = Join-Path $lane 'prism-inference.lock.candidate.json'
+}
 ```
 
 The command uses `bonsai-tools`; supply a trusted build with `-ToolPath` or

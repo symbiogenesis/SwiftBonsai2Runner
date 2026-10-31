@@ -280,7 +280,7 @@ optimize and estimate first rather than scheduling a trial that cannot fit.
 
 ## Default-runtime promotion
 
-`Get-RuntimePromotion.ps1` reports the reviewed requirements for replacing the current
+The Rust `runtime-promotion` command reports the reviewed requirements for replacing the current
 Swift PQ2 standard profile with Rust Prism while retaining its pinned LoRA at scale 1.3.
 It reads the compiled release/model/adapter/template locks and requires an explicit full
 Runner revision. PTQ1 is evaluated separately.
@@ -345,13 +345,24 @@ cancellation, production sampling or interruption inside a graph kernel.
 
 ```powershell
 $revision = git rev-parse main
-$plan = ./scripts/Get-RuntimePromotion.ps1 -RunnerRevision $revision
+Import-Module ./scripts/Bonsai.Tools.psm1
+$plan = Invoke-BonsaiTool -Command runtime-promotion -Request @{
+    operation = 'plan'; runnerRevision = $revision; nativeRowWorkers = 1
+}
 $plan.policy.requiredGates
-./scripts/Get-RuntimePromotion.ps1 -RunnerRevision $revision -EvidencePath D:\Evidence\promotion.json
+Invoke-BonsaiTool -Command runtime-promotion -Request @{
+    operation = 'file-score'; runnerRevision = $revision; nativeRowWorkers = 1
+    evidencePath = 'D:\Evidence\promotion.json'
+}
 # Review the four-worker candidate independently; its evidence cannot qualify one worker.
-./scripts/Get-RuntimePromotion.ps1 -RunnerRevision $revision -NativeRowWorkers 4
+Invoke-BonsaiTool -Command runtime-promotion -Request @{
+    operation = 'plan'; runnerRevision = $revision; nativeRowWorkers = 4
+}
 # Bind a later owning Prism main harness separately from the unchanged release.
-./scripts/Get-RuntimePromotion.ps1 -RunnerRevision $revision -ServiceHarnessRevision $reviewedPrismMain
+Invoke-BonsaiTool -Command runtime-promotion -Request @{
+    operation = 'plan'; runnerRevision = $revision; nativeRowWorkers = 1
+    serviceHarnessRevision = $reviewedPrismMain
+}
 ```
 
 The evaluator checks offline completeness and byte integrity, without inference,

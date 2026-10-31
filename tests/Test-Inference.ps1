@@ -8,6 +8,7 @@ $PSNativeCommandUseErrorActionPreference = $true
 if (-not $IsWindows) { throw 'Inference provisioning targets Windows ARM64.' }
 if ($Case -eq 'All' -and $env:GITHUB_ACTIONS -ne 'true') { throw 'The complete suite runs only in CI. Select one focused case locally.' }
 Import-Module (Join-Path $PSScriptRoot '../scripts/Bonsai.Inference.psm1') -Force
+Import-Module (Join-Path $PSScriptRoot '../scripts/Bonsai.Tools.psm1')
 Import-Module (Join-Path $PSScriptRoot 'Bonsai.TestSupport.psm1')
 $scratch = Join-Path ([IO.Path]::GetTempPath()) ('SwiftBonsai-InferenceTest-' + [guid]::NewGuid().ToString('N'))
 [void][IO.Directory]::CreateDirectory($scratch)
@@ -142,12 +143,10 @@ if ($Case -in @('All', 'ReleaseLock')) {
         }
     } finally { $source.Dispose() }
     $parameters = @{
-        ReceiptPath = $receiptPath; ArchivePath = $archivePath; SourceArchivePath = $sourcePath
-        SourceRevision = $fixture.Lock.commit; Version = '0.1.0'; RunId = '12345'; RunAttempt = 2; OutputPath = $outputPath
-        ToolPath = $ToolPath
+        receiptPath = $receiptPath; archivePath = $archivePath; sourceArchivePath = $sourcePath
+        sourceRevision = $fixture.Lock.commit; version = '0.1.0'; runId = '12345'; runAttempt = 2; outputPath = $outputPath
     }
-    $script = Join-Path $PSScriptRoot '../scripts/New-InferenceLock.ps1'
-    $result = & $script @parameters
+    $result = Invoke-BonsaiTool -Command inference-lock -ToolPath $ToolPath -TimeoutSeconds 120 -Request $parameters
     $candidate = Read-BonsaiInferenceLock -Path $outputPath
     Assert ($result.Verified -and $candidate.files.Count -eq 9 -and $candidate.commit -ceq $fixture.Lock.commit) 'The reviewed release did not produce a complete candidate lock.'
     Assert ([IO.File]::Exists((Join-Path $result.VerificationDirectory 'candidate.lock.json')) -and
@@ -157,7 +156,7 @@ if ($Case -in @('All', 'ReleaseLock')) {
         $candidate.Source.Bytes -eq ([IO.FileInfo]$sourcePath).Length -and
         $candidate.Source.Sha256 -ceq (Get-FileHash -LiteralPath $sourcePath -Algorithm SHA256).Hash.ToLowerInvariant()) 'Candidate source identity does not match the source archive.'
     $original = [IO.File]::ReadAllText($outputPath)
-    Assert-Failure { & $script @parameters } 'The candidate generator overwrote an existing output file.'
+    Assert-Failure { Invoke-BonsaiTool -Command inference-lock -ToolPath $ToolPath -TimeoutSeconds 120 -Request $parameters } 'The candidate generator overwrote an existing output file.'
     Assert ([IO.File]::ReadAllText($outputPath) -ceq $original) 'Rejected candidate replacement modified the output.'
     foreach ($mutation in @('revision', 'run', 'target', 'missing-license', 'file-hash', 'archive-hash', 'toolchain')) {
         $changed = $receipt | ConvertTo-Json -Depth 8 | ConvertFrom-Json -AsHashtable
@@ -172,7 +171,7 @@ if ($Case -in @('All', 'ReleaseLock')) {
         }
         [IO.File]::WriteAllText($receiptPath, ($changed | ConvertTo-Json -Depth 8))
         $parameters.OutputPath = Join-Path $fixture.Root "$mutation.json"
-        Assert-Failure { & $script @parameters } "Unsafe release receipt accepted: $mutation"
+        Assert-Failure { Invoke-BonsaiTool -Command inference-lock -ToolPath $ToolPath -TimeoutSeconds 120 -Request $parameters } "Unsafe release receipt accepted: $mutation"
         Assert (-not [IO.File]::Exists($parameters.OutputPath)) "Rejected release produced a candidate: $mutation"
     }
     [IO.File]::WriteAllText($receiptPath, ($receipt | ConvertTo-Json -Depth 8))
@@ -194,14 +193,14 @@ if ($Case -in @('All', 'ReleaseLock')) {
     [IO.File]::WriteAllText($receiptPath, ($changed | ConvertTo-Json -Depth 8))
     $parameters.ArchivePath = $wrongMachineArchive
     $parameters.OutputPath = Join-Path $fixture.Root 'wrong-machine.json'
-    Assert-Failure { & $script @parameters } 'A correctly hashed x64 server was accepted in an ARM64 bundle.'
+    Assert-Failure { Invoke-BonsaiTool -Command inference-lock -ToolPath $ToolPath -TimeoutSeconds 120 -Request $parameters } 'A correctly hashed x64 server was accepted in an ARM64 bundle.'
     Assert (-not [IO.File]::Exists($parameters.OutputPath)) 'Wrong-machine bundle produced a candidate lock.'
     $parameters.ArchivePath = $archivePath
     $parameters.SourceRevision = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
     $receipt.SourceRevision = $parameters.SourceRevision
     [IO.File]::WriteAllText($receiptPath, ($receipt | ConvertTo-Json -Depth 8))
     $parameters.OutputPath = Join-Path $fixture.Root 'source-mismatch.json'
-    Assert-Failure { & $script @parameters } 'A source archive for a different commit was accepted.'
+    Assert-Failure { Invoke-BonsaiTool -Command inference-lock -ToolPath $ToolPath -TimeoutSeconds 120 -Request $parameters } 'A source archive for a different commit was accepted.'
     Assert (-not [IO.File]::Exists($parameters.OutputPath)) 'Mismatched source produced a candidate lock.'
     $parameters.SourceRevision = $fixture.Lock.commit
     $receipt.SourceRevision = $fixture.Lock.commit
@@ -215,7 +214,7 @@ if ($Case -in @('All', 'ReleaseLock')) {
         finally { $writer.Dispose() }
     } finally { $source.Dispose() }
     $parameters.OutputPath = Join-Path $fixture.Root 'source-version.json'
-    Assert-Failure { & $script @parameters } 'An independently mismatched source package version was accepted.'
+    Assert-Failure { Invoke-BonsaiTool -Command inference-lock -ToolPath $ToolPath -TimeoutSeconds 120 -Request $parameters } 'An independently mismatched source package version was accepted.'
     Assert (-not [IO.File]::Exists($parameters.OutputPath)) 'Wrong-version source produced a candidate lock.'
     $source = [IO.Compression.ZipArchive]::new([IO.File]::Open($sourcePath, [IO.FileMode]::Open), [IO.Compression.ZipArchiveMode]::Update)
     try {
@@ -225,6 +224,6 @@ if ($Case -in @('All', 'ReleaseLock')) {
         try { $stream.WriteByte(0xFF) } finally { $stream.Dispose() }
     } finally { $source.Dispose() }
     $parameters.OutputPath = Join-Path $fixture.Root 'source-encoding.json'
-    Assert-Failure { & $script @parameters } 'Malformed UTF-8 source was accepted.'
+    Assert-Failure { Invoke-BonsaiTool -Command inference-lock -ToolPath $ToolPath -TimeoutSeconds 120 -Request $parameters } 'Malformed UTF-8 source was accepted.'
     Assert (-not [IO.File]::Exists($parameters.OutputPath)) 'Malformed UTF-8 source produced a candidate lock.'
 }

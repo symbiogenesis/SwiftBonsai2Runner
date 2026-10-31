@@ -9,6 +9,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 Import-Module (Join-Path $PSScriptRoot '../scripts/Bonsai.Qualification.psm1')
+Import-Module (Join-Path $PSScriptRoot '../scripts/Bonsai.Tools.psm1')
 $toolArguments = @{}
 if ($ToolPath) { $toolArguments.ToolPath = $ToolPath }
 
@@ -68,10 +69,15 @@ if ($Case -ceq 'AppSettings') {
     $reviewPath = Join-Path $scratch 'review.json'
     [IO.File]::WriteAllText($evidencePath, ($fixture.Evidence | ConvertTo-Json -Depth 30))
     [IO.File]::WriteAllText($reviewPath, ($fixture.Review | ConvertTo-Json -Depth 30))
-    $command = Join-Path $PSScriptRoot '../scripts/Get-LoraQualification.ps1'
-    $result = & $command @toolArguments -EvidencePath $evidencePath -ReviewPath $reviewPath -AppSettings
+    $result = Invoke-BonsaiTool -Command qualification @toolArguments -Request @{
+        operation = 'file-score'; qualificationProfile = 'app-scale-1.3'; evidencePath = $evidencePath; reviewPath = $reviewPath
+    }
     Assert ($result.AppSettingGatesPassed -and $result.AdapterScale -eq 1.3) 'AppSettings did not reach file scoring.'
-    Assert-Failure { & $command @toolArguments -EvidencePath $evidencePath -ReviewPath $reviewPath } 'Scale-one scoring accepted app evidence.'
+    Assert-Failure {
+        Invoke-BonsaiTool -Command qualification @toolArguments -Request @{
+            operation = 'file-score'; qualificationProfile = 'standard-scale-one'; evidencePath = $evidencePath; reviewPath = $reviewPath
+        }
+    } 'Scale-one scoring accepted app evidence.'
 } elseif ($Case -ceq 'Compatibility') {
     Assert-JsonEqual -Actual (Get-BonsaiLoraQualificationPlan @toolArguments) -Expected $golden.plan -Message 'The packaged plan differs from the frozen PowerShell contract.'
     foreach ($vector in $golden.controlVectors) {
@@ -96,13 +102,18 @@ if ($Case -ceq 'AppSettings') {
         $json[$name] = $fixture[$name] | ConvertTo-Json -Depth 30
         [IO.File]::WriteAllText($paths[$name], $json[$name])
     }
-    $command = Join-Path $PSScriptRoot '../scripts/Get-LoraQualification.ps1'
-    $result = & $command @toolArguments -EvidencePath $paths.Evidence -ReviewPath $paths.Review
+    $result = Invoke-BonsaiTool -Command qualification @toolArguments -Request @{
+        operation = 'file-score'; qualificationProfile = 'standard-scale-one'; evidencePath = $paths.Evidence; reviewPath = $paths.Review
+    }
     Assert ($result.Status -ceq 'accepted') 'JSON object evidence and timestamp-preserving review did not pass.'
     foreach ($name in @('Evidence', 'Review')) {
         foreach ($root in @("[$($json[$name])]", "[[$($json[$name])]]", '[]', 'null', 'true', '"text"')) {
             [IO.File]::WriteAllText($paths[$name], $root)
-            Assert-Failure { & $command @toolArguments -EvidencePath $paths.Evidence -ReviewPath $paths.Review } "A non-object $name root was accepted."
+            Assert-Failure {
+                Invoke-BonsaiTool -Command qualification @toolArguments -Request @{
+                    operation = 'file-score'; qualificationProfile = 'standard-scale-one'; evidencePath = $paths.Evidence; reviewPath = $paths.Review
+                }
+            } "A non-object $name root was accepted."
         }
         [IO.File]::WriteAllText($paths[$name], $json[$name])
     }

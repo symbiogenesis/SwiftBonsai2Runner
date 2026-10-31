@@ -287,7 +287,10 @@ Inspect its plan without loading a model:
 Inspect a capture offline:
 
 ```powershell
-./scripts/Get-Ptq1Screen.ps1 -EvidencePath C:/external/screen-evidence.json
+Import-Module ./scripts/Bonsai.Tools.psm1
+Invoke-BonsaiTool -Command qualification -Request @{
+    operation = 'screen-file-score'; evidencePath = 'C:/external/screen-evidence.json'; reviewPath = $null
+}
 ```
 
 The screen verifies artifacts/resources, retains failures and compares median decode

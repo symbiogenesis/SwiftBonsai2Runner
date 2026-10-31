@@ -13,7 +13,11 @@ revision and extract it outside Git:
 $env:BONSAI_TOOLS_PATH = 'C:\BonsaiTools\bonsai-tools.exe'
 ./scripts/New-DevelopmentKeys.ps1 -ParentDirectory C:\BonsaiData
 ./scripts/Invoke-CpuCheck.ps1 -DataDirectory C:\BonsaiData -CheckOnly
-./scripts/Get-LoraQualification.ps1 -EvidencePath C:\Evidence\capture.json
+Import-Module ./scripts/Bonsai.Tools.psm1
+Invoke-BonsaiTool -Command qualification -Request @{
+    operation = 'file-score'; qualificationProfile = 'standard-scale-one'
+    evidencePath = 'C:\Evidence\capture.json'; reviewPath = $null
+}
 ```
 
 Wrappers also accept `-ToolPath` where applicable. Version/protocol checks establish

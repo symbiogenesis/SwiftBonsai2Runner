@@ -158,7 +158,11 @@ manual workflow, or inspect it without inference:
 
 ```powershell
 ./scripts/Invoke-LoraQualification.ps1 -DataDirectory "$env:LOCALAPPDATA/SwiftBonsai2" -UseRepackedPtq1 -AppSettings -PlanOnly
-./scripts/Get-LoraQualification.ps1 -EvidencePath C:/external/evidence.json -ReviewPath C:/external/review.json -AppSettings
+Import-Module ./scripts/Bonsai.Tools.psm1
+Invoke-BonsaiTool -Command qualification -Request @{
+    operation = 'file-score'; qualificationProfile = 'app-scale-1.3'
+    evidencePath = 'C:/external/evidence.json'; reviewPath = 'C:/external/review.json'
+}
 ```
 
 `AppSettingGatesPassed` reports only these matched LoRA gates.
@@ -238,7 +242,11 @@ visible.
 After external human review, score the capture without loading a model:
 
 ```powershell
-./scripts/Get-LoraQualification.ps1 -EvidencePath C:/external/evidence.json -ReviewPath C:/external/review.json
+Import-Module ./scripts/Bonsai.Tools.psm1
+Invoke-BonsaiTool -Command qualification -Request @{
+    operation = 'file-score'; qualificationProfile = 'standard-scale-one'
+    evidencePath = 'C:/external/evidence.json'; reviewPath = 'C:/external/review.json'
+}
 ```
 
 Supply a genuine review of every sample in this form:
