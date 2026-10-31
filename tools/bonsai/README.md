@@ -55,7 +55,39 @@ bonsai-tools speech-build --request ABSOLUTE_JSON_PATH
 bonsai-tools source-build --request ABSOLUTE_JSON_PATH
 bonsai-tools chat-launch --request ABSOLUTE_JSON_PATH
 bonsai-tools chat-package --request ABSOLUTE_JSON_PATH
+bonsai-tools host-capabilities --request ABSOLUTE_JSON_PATH
+bonsai-tools native-acceptance-budget --request ABSOLUTE_JSON_PATH
+bonsai-tools startup-diagnostics --request ABSOLUTE_JSON_PATH
+bonsai-tools ptq1-capture --request ABSOLUTE_JSON_PATH
 ```
+
+Host capability projection/CPU identities, acceptance-deadline policy, sanitized
+startup diagnostics and PTQ1 collector receipt/ABI checks live in Rust. Their
+former PowerShell modules/scripts have been removed. The offline qualification,
+PTQ1 screen, runtime promotion and inference-lock wrapper scripts have also been
+removed; invoke the existing native JSON commands directly or use the shared
+`Invoke-BonsaiTool` bridge as in the examples above.
+
+`host-capabilities` accepts `operation: "project"` with bounded `facts`, or
+`operation: "identity"` with the v1 `capabilities` report. Doctor copies selected
+CIM fields and UTC date strings; Rust owns validation, status, canonical ordering
+and digest bytes. Doctor requires a selected prebuilt tool for these optional
+details, and otherwise retains basic Windows/tool inventory without compilation.
+
+`native-acceptance-budget` receives canonical seven-fraction UTC timestamps,
+monotonic ticks/frequency, run/revision and the optional complete owner binding.
+It can only shorten the original job allowance. The owning workflow charges
+tool-resolution/IPC time before starting the acceptance process. Both this call
+and `startup-diagnostics` require the source-bound hosted maintenance tool on
+the owner device; no source build can start inside their allowance.
+
+`startup-diagnostics` receives `evidenceDirectory`, nullable `acceptanceExitCode`
+and `budgetExpired`. It reads only the fixed bounded worker logs, validates all
+session keys before publication, sanitizes across sessions, and returns only
+`Ready`/`Classification`. Unsafe paths or incomplete collection suppress uploads.
+`ptq1-capture` supports `receipt` with bundle/repository directories, revision and
+reviewed pins, and `compare-abi` with actual/expected paths and the source-bound
+expected SHA-256. Neither command loads a model or qualifies numerical parity.
 
 Requests are JSON objects read through a retained read-only handle, capped at
 16 MiB. Qualification envelopes allow 160 MiB for escaped responses; original

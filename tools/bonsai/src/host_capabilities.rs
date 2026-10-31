@@ -11,7 +11,7 @@ const SCOPE: &str = "native-windows-arm64-cpu-observations-v1";
 ///
 /// # Errors
 /// Rejects invalid fact types, oversized inventories and unsupported input schemas.
-pub fn run(request: Value) -> Result<Value> {
+pub fn run(request: &Value) -> Result<Value> {
     let object = request
         .as_object()
         .ok_or("Capability request must be an object.")?;
@@ -62,7 +62,7 @@ fn flag(value: &Value) -> Result<Option<bool>> {
         .ok_or_else(|| "Capability flags must be boolean facts.".into())
 }
 
-fn status(succeeded: bool, incomplete: bool) -> &'static str {
+const fn status(succeeded: bool, incomplete: bool) -> &'static str {
     if !succeeded {
         "unknown"
     } else if incomplete {
@@ -260,7 +260,7 @@ struct OperatingSystem<'a> {
     build_number: &'a str,
 }
 #[derive(Serialize)]
-struct Backend<'a> {
+struct DriverRecord<'a> {
     schema_version: u8,
     kind: &'static str,
     scope: &'static str,
@@ -278,6 +278,50 @@ fn canonical_json(value: &impl Serialize) -> Result<String> {
                 .replace('\u{2029}', "\\u2029")
         })
         .map_err(|error| error.to_string())
+}
+
+fn processors(identities: &[Value]) -> Result<Option<Vec<Processor<'_>>>> {
+    if identities.len() > 64 {
+        return Err("Too many CPU compatibility identities.".into());
+    }
+    if identities.is_empty() {
+        return Ok(None);
+    }
+    let mut processors = Vec::with_capacity(identities.len());
+    for cpu in identities {
+        let name = text(&cpu["name"])?;
+        let manufacturer = text(&cpu["manufacturer"])?;
+        let cores = count(&cpu["physical_cores"])?;
+        let logical = count(&cpu["logical_processors"])?;
+        let (Some(name), Some(manufacturer), Some(cores), Some(logical)) =
+            (name, manufacturer, cores, logical)
+        else {
+            return Ok(None);
+        };
+        if name.eq_ignore_ascii_case("unknown")
+            || manufacturer.eq_ignore_ascii_case("unknown")
+            || cores == 0
+            || logical < cores
+        {
+            return Ok(None);
+        }
+        let processor = Processor {
+            name,
+            manufacturer,
+            physical_cores: cores,
+            logical_processors: logical,
+        };
+        let canonical = canonical_json(&processor)?;
+        processors.push((canonical, processor));
+    }
+    // Match .NET ordinal UTF-16 order, including non-BMP processor names.
+    processors.sort_by(|(left, _), (right, _)| left.encode_utf16().cmp(right.encode_utf16()));
+    Ok(Some(
+        processors
+            .into_iter()
+            .map(|(_, processor)| processor)
+            .collect(),
+    ))
 }
 
 fn identity(capabilities: &Value) -> Result<Value> {
@@ -334,53 +378,18 @@ fn identity(capabilities: &Value) -> Result<Value> {
     let Some(identities) = cpu["identities"].as_array() else {
         return Ok(result);
     };
-    if identities.len() > 64 {
-        return Err("Too many CPU compatibility identities.".into());
-    }
-    if identities.is_empty() {
+    let Some(processors) = processors(identities)? else {
         return Ok(result);
-    }
-    let mut processors = Vec::with_capacity(identities.len());
-    for cpu in identities {
-        let name = text(&cpu["name"])?;
-        let manufacturer = text(&cpu["manufacturer"])?;
-        let cores = count(&cpu["physical_cores"])?;
-        let logical = count(&cpu["logical_processors"])?;
-        let (Some(name), Some(manufacturer), Some(cores), Some(logical)) =
-            (name, manufacturer, cores, logical)
-        else {
-            return Ok(result);
-        };
-        if name.eq_ignore_ascii_case("unknown")
-            || manufacturer.eq_ignore_ascii_case("unknown")
-            || cores == 0
-            || logical < cores
-        {
-            return Ok(result);
-        }
-        let processor = Processor {
-            name,
-            manufacturer,
-            physical_cores: cores,
-            logical_processors: logical,
-        };
-        let canonical = canonical_json(&processor)?;
-        processors.push((canonical, processor));
-    }
-    // Match .NET ordinal UTF-16 order, including non-BMP processor names.
-    processors.sort_by(|(left, _), (right, _)| left.encode_utf16().cmp(right.encode_utf16()));
+    };
     let capability = canonical_json(&CapabilityClass {
         schema_version: 1,
         kind: "runner-cpu-capability-class",
         scope: SCOPE,
         architecture: "arm64",
-        identities: processors
-            .into_iter()
-            .map(|(_, processor)| processor)
-            .collect(),
+        identities: processors,
         isa: Isa { advsimd, dotprod },
     })?;
-    let backend = canonical_json(&Backend {
+    let backend = canonical_json(&DriverRecord {
         schema_version: 1,
         kind: "runner-cpu-backend-driver",
         scope: SCOPE,
@@ -407,10 +416,10 @@ mod tests {
     fn facts() -> Value {
         json!({
             "OsArchitecture": "Arm64", "ProcessArchitecture": "Arm64",
-            "OperatingSystem": { "Version": "10.0.26100", "BuildNumber": "26100", "TotalVisibleMemorySize": 33554432_u64 },
-            "Computer": { "TotalPhysicalMemory": 34359738368_u64 },
+            "OperatingSystem": { "Version": "10.0.26100", "BuildNumber": "26100", "TotalVisibleMemorySize": 33_554_432_u64 },
+            "Computer": { "TotalPhysicalMemory": 34_359_738_368_u64 },
             "Processors": [{ "Name": "Snapdragon X2E-96-100", "Manufacturer": "Qualcomm", "NumberOfCores": 18, "NumberOfLogicalProcessors": 18 }],
-            "Graphics": [], "NpuDrivers": [], "Memory": { "AvailableBytes": 17179869184_u64, "CommitLimit": 68719476736_u64, "CommittedBytes": 8589934592_u64 },
+            "Graphics": [], "NpuDrivers": [], "Memory": { "AvailableBytes": 17_179_869_184_u64, "CommitLimit": 68_719_476_736_u64, "CommittedBytes": 8_589_934_592_u64 },
             "Isa": { "AdvSimd": false, "DotProd": false },
             "Probes": { "OperatingSystem": true, "Computer": true, "Processors": true, "Graphics": true, "NpuDrivers": true, "Memory": true, "Isa": true }
         })
@@ -421,7 +430,7 @@ mod tests {
         let projected = project(&facts())?;
         assert_eq!(
             projected["memory"]["usable_physical_bytes"],
-            34359738368_u64
+            34_359_738_368_u64
         );
         let result = identity(&projected)?;
         let capability = r#"{"schema_version":1,"kind":"runner-cpu-capability-class","scope":"native-windows-arm64-cpu-observations-v1","architecture":"arm64","identities":[{"name":"Snapdragon X2E-96-100","manufacturer":"Qualcomm","physical_cores":18,"logical_processors":18}],"isa":{"advsimd":false,"dotprod":false}}"#;
@@ -595,12 +604,12 @@ mod tests {
 
     #[test]
     fn command_and_device_transport_boundaries() -> Result<()> {
-        assert!(run(json!({ "operation": "project", "facts": {}, "extra": true })).is_err());
-        assert!(run(json!({ "operation": "project", "facts": [] })).is_err());
-        assert!(run(json!({ "operation": "identity", "capabilities": [] })).is_err());
+        assert!(run(&json!({ "operation": "project", "facts": {}, "extra": true })).is_err());
+        assert!(run(&json!({ "operation": "project", "facts": [] })).is_err());
+        assert!(run(&json!({ "operation": "identity", "capabilities": [] })).is_err());
         let mut input = facts();
         input["Graphics"] = json!([{ "Name": "Adreno", "AdapterCompatibility": "Qualcomm", "DriverVersion": "1.2.3", "DriverDate": "2026-01-01T00:00:00.0000000Z" }]);
-        let result = run(json!({ "operation": "project", "facts": input }))?;
+        let result = run(&json!({ "operation": "project", "facts": input }))?;
         assert_eq!(result["gpu"]["status"], "observed");
         assert_eq!(
             result["gpu"]["devices"][0]["driver_date"],

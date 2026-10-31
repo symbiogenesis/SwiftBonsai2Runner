@@ -67,7 +67,11 @@ fn observations(bytes: &[u8]) -> crate::Result<BTreeMap<&str, u64>> {
         if line.is_empty() && lines.peek().is_none() {
             break;
         }
-        let line = line.strip_suffix('\r').unwrap_or(line);
+        let line = if lines.peek().is_some() {
+            line.strip_suffix('\r').unwrap_or(line)
+        } else {
+            line
+        };
         let (key, number) = line
             .split_once('=')
             .ok_or("Invalid ABI observation record.")?;
@@ -290,6 +294,7 @@ mod tests {
             "1a=0",
             "a=0\r\r\n",
             "a= 0",
+            "a=1\r",
         ] {
             assert!(observations(invalid.as_bytes()).is_err(), "{invalid:?}");
         }

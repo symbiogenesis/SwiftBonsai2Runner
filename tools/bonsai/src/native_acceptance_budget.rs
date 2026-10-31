@@ -97,8 +97,7 @@ fn calculate(request: &Request) -> crate::Result<Budget> {
                 .is_some_and(|value| !value.is_null() && value != "")
         })
         .count();
-    let mut owner_elapsed = None;
-    if supplied != 0 {
+    let owner_elapsed = if supplied != 0 {
         if supplied != OWNER_FIELDS.len() {
             return Err("The complete owner deadline binding is required.".into());
         }
@@ -131,8 +130,10 @@ fn calculate(request: &Request) -> crate::Result<Budget> {
         // Fifteen seconds remain for process completion, collection and runner
         // exit before the independent original 210-second owner work cutoff.
         hard_limit = hard_limit.min(195 - i128::from(elapsed_ticks.div_ceil(frequency)));
-        owner_elapsed = Some(seconds(elapsed_ticks, frequency)?);
-    }
+        Some(seconds(elapsed_ticks, frequency)?)
+    } else {
+        None
+    };
     let case_budget = 240_i128.min(hard_limit - 10);
     if case_budget < 1 {
         return Err(

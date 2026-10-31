@@ -243,7 +243,8 @@ jobs:
             }
             try {
               if (-not $env:BONSAI_TOOLS_PATH) { throw 'The source-bound hosted maintenance tool is required.' }
-              $limits = Invoke-BonsaiTool -Command native-acceptance-budget -ToolPath $env:BONSAI_TOOLS_PATH -Request @{
+              $budgetClock = [Diagnostics.Stopwatch]::StartNew()
+              $limits = Invoke-BonsaiTool -Command native-acceptance-budget -ToolPath $env:BONSAI_TOOLS_PATH -TimeoutSeconds 10 -Request @{
                 jobStartedUtc=$jobStarted.ToString('o'); nowUtc=[DateTime]::UtcNow.ToString('o')
                 nowTick=[Diagnostics.Stopwatch]::GetTimestamp(); tickFrequency=[Diagnostics.Stopwatch]::Frequency
                 runId=$env:GITHUB_RUN_ID; revision=$env:GITHUB_SHA; ownerDeadline=$ownerDeadline
@@ -252,12 +253,20 @@ jobs:
               $hostReport.AggregateBudgetExpired = $true
               throw
             }
-            $setupElapsed = $limits.PreparationElapsedSeconds
-            $hardLimitSeconds = $limits.HardLimitSeconds
-            $caseBudgetSeconds = $limits.CaseBudgetSeconds
+            # Charge tool resolution, handshake and JSON execution after the
+            # supplied clocks. IPC must never extend either original deadline.
+            $budgetBridgeElapsed = $budgetClock.Elapsed.TotalSeconds
+            $budgetBridgeCharge = [int][Math]::Ceiling($budgetBridgeElapsed)
+            $setupElapsed = $limits.PreparationElapsedSeconds + $budgetBridgeElapsed
+            $hardLimitSeconds = $limits.HardLimitSeconds - $budgetBridgeCharge
+            $caseBudgetSeconds = $limits.CaseBudgetSeconds - $budgetBridgeCharge
+            if ($caseBudgetSeconds -lt 1) {
+              $hostReport.AggregateBudgetExpired = $true
+              throw 'Preparation exhausted the acceptance allowance; qualification remains pending.'
+            }
             $hostReport.OwnerDeadlineApplied = $limits.OwnerDeadlineApplied
             if ($limits.OwnerDeadlineApplied) {
-              $hostReport.OwnerElapsedMilliseconds = [Math]::Ceiling($limits.OwnerElapsedSeconds * 1000)
+              $hostReport.OwnerElapsedMilliseconds = [Math]::Ceiling(($limits.OwnerElapsedSeconds + $budgetBridgeElapsed) * 1000)
               $hostReport.OwnerProcessExitReserveSeconds = 15
             }
             $hostReport.PreparationElapsedMilliseconds = [Math]::Ceiling($setupElapsed * 1000)

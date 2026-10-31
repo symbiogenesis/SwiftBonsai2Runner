@@ -50,7 +50,8 @@ owner-device budget; performance comparisons and complete checks remain in ownin
 CI. The new publishable hash dependency also needs registry delivery, a new GGUF
 version and an updated exact runtime dependency before registry publication.
 
-Retain hosted regression coverage for acceptance receipt retention, Find
+Retain hosted regression coverage for Rust acceptance deadlines, startup receipt
+retention/redaction, host capability identities, PTQ1 collector admission, Find
 replacement/Unicode matching and speech-runner policy before owner-device trials.
 
 Qualify Rust speech tokenization/loading, greedy sampling, decode-workspace

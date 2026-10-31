@@ -7,9 +7,13 @@ defines eligibility; [PLAN.md](../PLAN.md#hardware-selection) owns outstanding w
 
 ## Host inventory
 
-`./scripts/Doctor.ps1 -PassThru` preserves its v1 outer report and adds `Capabilities`
-(`schema_version: 1`, `kind: runner-host-capabilities`). The pure `Get-BonsaiHostCapability`
-projection in `scripts/Bonsai.Capabilities.psm1` also serves fixture checks.
+`./scripts/Doctor.ps1 -PassThru` preserves its v1 outer report. With a prebuilt
+maintenance tool selected through `-ToolPath` or `BONSAI_TOOLS_PATH`, it adds
+`Capabilities` (`schema_version: 1`, `kind: runner-host-capabilities`) and the CPU
+compatibility identity. Rust's `host-capabilities` command owns projection and
+canonical identities; Doctor only gathers and serializes Windows facts. Without
+a selected tool these properties remain null with an explanatory gap, and basic
+inventory never triggers a compiler build.
 
 | Section | Observations | Unknowns |
 | --- | --- | --- |
@@ -229,7 +233,7 @@ SHA-256 values are 64 lowercase hex digits; Git revisions are 40. Static capabil
 observed facts, excluding timestamps, paths and live RAM/power; marketing family names are insufficient.
 
 Doctor's `CpuCompatibilityIdentity` retains canonical UTF-8 JSON/lowercase SHA-256.
-`Get-BonsaiCpuCompatibilityIdentity -Capabilities $report.Capabilities` reproduces it without probes.
+`host-capabilities` with `{"operation":"identity","capabilities":...}` reproduces it without probes.
 Scope `native-windows-arm64-cpu-observations-v1` binds native architecture, ordinally sorted CPU
 names/vendors/core counts and AdvSimd/dot-product flags; CPU backend binds OS version/build.
 Duplicate processors retain multiplicity. Paths/timestamps/live RAM/power/accelerators do not
@@ -395,7 +399,7 @@ benchmarks and performance captures; local builds/focused untimed checks are all
 From an external temp working directory, use absolute checkout/build paths:
 
 ```text
-pwsh -NoProfile -File <repo>/tests/Test-Foundation.ps1 -Case Capabilities
+cargo test --manifest-path <repo>/Cargo.toml --target-dir <temp>/target --locked --offline --release -p bonsai-tools --lib host_capabilities::tests
 pwsh -NoProfile -File <repo>/tests/Test-Foundation.ps1 -Case Doctor
 cargo test --manifest-path <repo>/Cargo.toml --target-dir <temp>/target --locked --offline --release -p bonsai-cpu-policy hardware::tests
 ```

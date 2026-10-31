@@ -53,6 +53,10 @@ fn version_advertises_policy_commands_without_resolving_a_request_file()
         "chat-launch",
         "chat-prepare",
         "chat-package",
+        "ptq1-capture",
+        "host-capabilities",
+        "native-acceptance-budget",
+        "startup-diagnostics",
     ] {
         assert!(commands.iter().any(|command| command == name));
     }

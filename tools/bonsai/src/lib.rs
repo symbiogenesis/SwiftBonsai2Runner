@@ -30,6 +30,9 @@ pub const COMMANDS: &[&str] = &[
     "chat-prepare",
     "chat-package",
     "ptq1-capture",
+    "host-capabilities",
+    "native-acceptance-budget",
+    "startup-diagnostics",
 ];
 
 /// Returns the native maintenance protocol capabilities without reading a request.
@@ -101,6 +104,15 @@ pub mod chat_package;
 
 /// Source-bound PTQ1 collector receipts and complete unsigned ABI comparisons.
 pub mod ptq1_capture;
+
+/// Pure host capability projection and canonical CPU observation identities.
+pub mod host_capabilities;
+
+/// Aggregate owner and job deadline calculations for native acceptance.
+pub mod native_acceptance_budget;
+
+/// Bounded and credential-checked native startup log publication.
+pub mod startup_diagnostics;
 
 /// Retained caller identity for cancellation of native startup work.
 pub mod startup_cancel;

@@ -348,6 +348,9 @@ fn final_check(root: &Path, keys: &[String]) -> Result<(), &'static str> {
 ///
 /// All collection failures suppress readiness. No filesystem error, raw log,
 /// credential, or private path enters the command's JSON or stderr diagnostics.
+///
+/// # Errors
+/// Rejects malformed requests; collection failures return a closed upload decision.
 pub fn run(request: Value) -> crate::Result<Value> {
     let request: Request = serde_json::from_value(request)
         .map_err(|_| "Invalid native startup diagnostics request.")?;
