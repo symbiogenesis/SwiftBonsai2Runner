@@ -122,6 +122,7 @@ fn execute() -> bonsai_tools::Result<serde_json::Value> {
         Some("chat-launch") => bonsai_tools::chat_launch::run(request),
         Some("chat-prepare") => bonsai_tools::chat_launch::prepare_run(request),
         Some("chat-package") => bonsai_tools::chat_package::run(request),
+        Some("ptq1-capture") => bonsai_tools::ptq1_capture::run(request),
         _ => Err("Unknown maintenance command.".into()),
     }
 }

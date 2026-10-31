@@ -29,6 +29,7 @@ pub const COMMANDS: &[&str] = &[
     "chat-launch",
     "chat-prepare",
     "chat-package",
+    "ptq1-capture",
 ];
 
 /// Returns the native maintenance protocol capabilities without reading a request.
@@ -97,6 +98,9 @@ pub mod chat_launch;
 
 /// Installed native chat package selection and integrity checks.
 pub mod chat_package;
+
+/// Source-bound PTQ1 collector receipts and complete unsigned ABI comparisons.
+pub mod ptq1_capture;
 
 /// Retained caller identity for cancellation of native startup work.
 pub mod startup_cancel;

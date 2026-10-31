@@ -47,7 +47,7 @@ if ($Case -ceq 'BuildEvidence') {
     return "Focused $Case capture preparation checks passed."
 }
 if ($Case -ceq 'CollectorControls') {
-    Import-Module (Join-Path $PSScriptRoot '../scripts/Bonsai.Ptq1Capture.psm1')
+    Import-Module (Join-Path $PSScriptRoot '../scripts/Bonsai.Tools.psm1')
     $tempRoot = [IO.Path]::GetFullPath([IO.Path]::GetTempPath())
     $working = [IO.Path]::GetFullPath((Join-Path $tempRoot ('Bonsai-Ptq1CollectorControls-' + [guid]::NewGuid().ToString('N'))))
     $fixtureDirectory = Join-Path $working 'tools/native-reference/fixtures'
@@ -75,9 +75,9 @@ if ($Case -ceq 'CollectorControls') {
         $receiptPath = Join-Path $working 'capture-tools.json'
         $reviewedJson = $receipt | ConvertTo-Json -Depth 12
         [IO.File]::WriteAllText($receiptPath, $reviewedJson)
-        $accepted = Read-BonsaiPtq1CaptureReceipt -BundleDirectory $working -RepositoryDirectory $working -Revision ('a' * 40) -Pins $pins
+        $accepted = Invoke-BonsaiTool -Command ptq1-capture -Request @{ operation='receipt'; bundleDirectory=$working; repositoryDirectory=$working; revision=('a' * 40); pins=$pins }
         Assert ($accepted.CollectorLanguage -ceq 'rust') 'The reviewed Rust collector receipt was rejected.'
-        Assert-BonsaiPtq1AbiObservationSet -ActualPath $actual -ExpectedPath $expected -ExpectedSha256 $receipt.AbiControlSha256
+        Invoke-BonsaiTool -Command ptq1-capture -Request @{ operation='compare-abi'; actualPath=$actual; expectedPath=$expected; expectedSha256=$receipt.AbiControlSha256 }
         foreach ($mutation in @(
             @{ SchemaVersion = 1 }, @{ CollectorLanguage = 'cpp' }, @{ RunnerRevision = ('b' * 40) },
             @{ CollectorSourceSha256 = ('0' * 64) }, @{ AbiControlSha256 = ('0' * 64) }, @{ AbiProvenanceSha256 = ('0' * 64) }
@@ -86,7 +86,7 @@ if ($Case -ceq 'CollectorControls') {
             foreach ($key in $mutation.Keys) { $changed.$key = $mutation[$key] }
             [IO.File]::WriteAllText($receiptPath, ($changed | ConvertTo-Json -Depth 12))
             $failure = Assert-Failure -PassThru {
-                Read-BonsaiPtq1CaptureReceipt -BundleDirectory $working -RepositoryDirectory $working -Revision ('a' * 40) -Pins $pins
+                Invoke-BonsaiTool -Command ptq1-capture -Request @{ operation='receipt'; bundleDirectory=$working; repositoryDirectory=$working; revision=('a' * 40); pins=$pins }
             }
             Assert ($failure -like '*reviewed source/revision pins*') 'An unreviewed collector receipt was accepted.'
         }
@@ -100,11 +100,11 @@ if ($Case -ceq 'CollectorControls') {
             ('x' * 65537)
         )) {
             [IO.File]::WriteAllText($actual, $text)
-            Assert-Failure { Assert-BonsaiPtq1AbiObservationSet -ActualPath $actual -ExpectedPath $expected -ExpectedSha256 $receipt.AbiControlSha256 }
+            Assert-Failure { Invoke-BonsaiTool -Command ptq1-capture -Request @{ operation='compare-abi'; actualPath=$actual; expectedPath=$expected; expectedSha256=$receipt.AbiControlSha256 } }
         }
         [IO.File]::WriteAllText($actual, "model.size=81`nbatch.size=56`nsigned=18446744073709551615`n")
         [IO.File]::Copy($actual, $expected, $true)
-        $failure = Assert-Failure -PassThru { Assert-BonsaiPtq1AbiObservationSet -ActualPath $actual -ExpectedPath $expected -ExpectedSha256 $receipt.AbiControlSha256 }
+        $failure = Assert-Failure -PassThru { Invoke-BonsaiTool -Command ptq1-capture -Request @{ operation='compare-abi'; actualPath=$actual; expectedPath=$expected; expectedSha256=$receipt.AbiControlSha256 } }
         Assert ($failure -like '*control bytes differ*') 'Changed control bytes were accepted after receipt validation.'
     } finally {
         $prefix = $tempRoot.TrimEnd([IO.Path]::DirectorySeparatorChar) + [IO.Path]::DirectorySeparatorChar

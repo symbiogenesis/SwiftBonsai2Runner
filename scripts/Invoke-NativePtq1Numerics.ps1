@@ -18,7 +18,6 @@ $workClock = [Diagnostics.Stopwatch]::StartNew()
 Import-Module (Join-Path $PSScriptRoot 'Bonsai.Common.psm1')
 Import-Module (Join-Path $PSScriptRoot 'Bonsai.Tools.psm1')
 Import-Module (Join-Path $PSScriptRoot 'Bonsai.Native.psm1')
-Import-Module (Join-Path $PSScriptRoot 'Bonsai.Ptq1Capture.psm1')
 $repo = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $pins = Get-Content -LiteralPath (Join-Path $repo 'tools/native-reference/pins.json') -Raw | ConvertFrom-Json -DateKind String
 $pending = @('no-adapter', 'loaded-zero-identity', 'nonzero-change', 'scalar', 'explicit-neon',
@@ -59,7 +58,9 @@ if (-not $ToolPath) { throw 'Provide the hosted-prepared maintenance ToolPath; o
 $data = Resolve-ExternalPath $DataDirectory
 $bundle = Resolve-ExternalPath $CaptureToolsDirectory
 $receiptPath = Join-Path $bundle 'capture-tools.json'
-$receipt = Read-BonsaiPtq1CaptureReceipt -BundleDirectory $bundle -RepositoryDirectory $repo -Revision $env:GITHUB_SHA -Pins $pins
+$receipt = [pscustomobject](Invoke-BonsaiTool -Command ptq1-capture -ToolPath $ToolPath -TimeoutSeconds (Get-Ptq1WorkAllowance $workClock) -Request @{
+    operation = 'receipt'; bundleDirectory = $bundle; repositoryDirectory = $repo; revision = $env:GITHUB_SHA; pins = $pins
+})
 $toolGuards = @()
 foreach ($name in @('swift-ptq1-reference.exe', 'swift_model_check.exe')) {
     $entry = @($receipt.Files | Where-Object Name -CEQ $name)
@@ -120,7 +121,10 @@ try {
         memoryLimitBytes = 536870912; requiredAvailableBytes = $plan.AdmissionBytes; physicalReserveBytes = $plan.PhysicalReserveBytes
         timeoutSeconds = [int][Math]::Min(10, $remaining); stdoutLimitBytes = 65536; stderrLimitBytes = 65536; requireNonemptyStdout = $true; ciOnly = $false
     }
-    Assert-BonsaiPtq1AbiObservationSet -ActualPath (Join-Path $abiLane 'stdout.txt') -ExpectedPath (Join-Path $repo 'tools/native-reference/fixtures/collector-abi-v1.txt') -ExpectedSha256 $receipt.AbiControlSha256
+    $null = Invoke-BonsaiTool -Command ptq1-capture -ToolPath $ToolPath -TimeoutSeconds (Get-Ptq1WorkAllowance $workClock) -Request @{
+        operation = 'compare-abi'; actualPath = (Join-Path $abiLane 'stdout.txt')
+        expectedPath = (Join-Path $repo 'tools/native-reference/fixtures/collector-abi-v1.txt'); expectedSha256 = $receipt.AbiControlSha256
+    }
     $checked = Invoke-BonsaiTool -Command cpu-check-report -ToolPath $ToolPath -TimeoutSeconds (Get-Ptq1WorkAllowance $workClock) -Request @{
         operation = 'plan'; dataDirectory = $data; profile = 'swift-pq2-assessment'; useAbliterateLora = $true; useRepackedPtq1 = $true
     }
