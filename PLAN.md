@@ -167,6 +167,11 @@ and retain the reset-every-request serving policy until reuse is qualified.
   one aggregate device allowance. Retain the separate release/source/bytes and
   harness/source/run/artifact identities under the
   [preparation record](docs/evidence/prism-parity-preparation.json).
+  The [first owning attempt](docs/evidence/prism-owned-service-attempt.json)
+  passed its capture step but failed artifact upload with `ENOTFOUND`; runner
+  cleanup removed all four temporary case receipts. Requalify after durable
+  selected-receipt staging passes owning checks. A green capture step without
+  retained model receipts does not close this gate.
   Provisional-disconnect/reset replay leaves
   active graph cancellation and complete-state rollback pending. Runner lifecycle
   receipts alone do not close this Prism-owned gate. Use version-2 promotion evidence
