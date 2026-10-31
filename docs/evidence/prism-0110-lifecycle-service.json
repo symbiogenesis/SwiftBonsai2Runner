@@ -73,6 +73,10 @@
   "budgetAndCleanup": {
     "maximumAggregateSeconds": 300,
     "aggregateSeconds": 124.7811869,
+    "aggregateScope": "artifact intake through owned cleanup",
+    "retentionObservedCompleteByUtc": "2026-10-31T16:24:49Z",
+    "intakeThroughRetentionUpperBoundSeconds": 284.158,
+    "retentionTimingBasis": "Root observed the completed independent archive verification before this clock reading; this is an upper bound including intervening source and CI review, not a separately timed trial.",
     "intakeSeconds": 1.472036,
     "ownerSeconds": 122.836,
     "ownerMaximumSeconds": 240,
