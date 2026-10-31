@@ -310,6 +310,14 @@ established. The explicit adapter lifecycle workload in
 [validation](validation.md#actual-model-application-acceptance) also remains pending
 actual-device evidence. None of these candidates satisfies default promotion.
 
+The [Prism-owned service checker preparation](evidence/prism-service-checker-tools.json)
+retains a main-source/run-bound ARM64 package with passing formatting, Clippy,
+build and five model-free controls, plus passing checker-main Foundation. The
+workflow currently prepares tools only. An audited Prism-owned device job must
+consume its same-run artifact through a trusted process owner before actual-model
+capture. Provisional disconnect/reset replay leaves active graph cancellation and
+complete-state rollback unqualified; this tooling does not close the service gate.
+
 ### Inspect the policy
 
 ```powershell
@@ -344,9 +352,15 @@ The [frozen 0.1.10/a809 snapshot](evidence/rust-runtime-promotion-0110-a809.json
 records the actual evaluator result: four documentary gates passed and thirteen
 pending. It binds the exact reviewed runtime release and historical Runner main
 revision; it cannot qualify later revisions or the four-worker device profile.
-The [bounded device attempt](evidence/prism-0110-service-attempt.json) separately
-retains verified readiness and two streams before the acceptance-checker mismatch;
-the missing rejection/history/Stop observations remain pending.
+The [corrected bounded device trial](evidence/prism-0110-lifecycle-service.json)
+passes all three streams on X2 with four configured workers: scale 1.3, scale zero,
+invalid-scale connection closure, then scale 1.3 with static supplied history and
+owned Stop/empty Job/released listener. Artifact intake, registration, model work
+and cleanup take 124.781 seconds. The streams report one, one and two completion
+tokens; this is lifecycle evidence, with no numerical, quality or performance
+claim. The [earlier failed attempt](evidence/prism-0110-service-attempt.json) remains
+retained. Neither receipt qualifies one-worker execution or the separate
+Prism-owned service gate.
 
 Required gates cover release provenance, runtime Foundation/conformance, Runner
 Foundation, 8K logits/full state, prompts/sampling/stops, 4K-output lifecycle/recovery,

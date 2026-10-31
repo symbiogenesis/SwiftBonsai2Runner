@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "kind": "released-private-service-checker-tooling-review",
+  "recordedDate": "2026-10-31",
+  "status": "hosted-tools-ready-device-workflow-and-capture-pending",
+  "scope": "Independent source/artifact review of the Prism-owned checker; no checker binary or model was executed by this review. This preparation workflow does not qualify the released-service promotion gate.",
+  "harness": {
+    "repository": "symbiogenesis/prism-inference",
+    "sourceRevision": "4bf1d34701c89fc353cdc5d92181bfa2d701a4e2",
+    "workflowPath": ".github/workflows/private-service-acceptance.yml",
+    "gitRef": "refs/heads/main",
+    "runId": "41219497840",
+    "runAttempt": 1,
+    "runUrl": "https://github.com/symbiogenesis/prism-inference/actions/runs/41219497840",
+    "conclusion": "success",
+    "architecture": "ARM64",
+    "selfHosted": false,
+    "artifactId": "13049302729",
+    "artifactName": "private-service-check-4bf1d34701c89fc353cdc5d92181bfa2d701a4e2-41219497840-1",
+    "artifactBytes": 150623,
+    "artifactSha256": "590f50c9c8dcd86fce18dab5bb6a0de22b73863fb64c8a9026e51cffaef0d6c4",
+    "checkerBytes": 299008,
+    "checkerSha256": "6792f5929182498aa2a39797e53923dd84273c4ff06fb8d86241470e704cc345",
+    "receiptSha256": "cc835a94a5a9d5607eb9bb0213728291257cb4d1cd2899b52a353742fb30a24f",
+    "exactZipMembers": ["private-service-check.exe", "receipt.json"],
+    "zipAndMemberDigestsVerified": true,
+    "receiptSourceWorkflowRunVerified": true,
+    "arm64PeVerified": true,
+    "formattingPassed": true,
+    "clippyPassed": true,
+    "buildPassed": true,
+    "modelFreeTestsPassed": 5
+  },
+  "priorPackagingAttempt": {
+    "sourceRevision": "a21acbcb366b5a5168a65002a51d33707eda6be6",
+    "runUrl": "https://github.com/symbiogenesis/prism-inference/actions/runs/41219154972",
+    "conclusion": "failure",
+    "sourceChecks": "passed-including-five-model-free-tests",
+    "failure": "The packaging step received a null CARGO_TARGET_DIR because the preceding step had not retained it through GITHUB_ENV.",
+    "reviewedFix": "4bf1d34701c89fc353cdc5d92181bfa2d701a4e2"
+  },
+  "owningHarnessMainChecks": {
+    "sourceRevision": "4bf1d34701c89fc353cdc5d92181bfa2d701a4e2",
+    "foundationUrl": "https://github.com/symbiogenesis/prism-inference/actions/runs/41219497770",
+    "foundationConclusion": "success",
+    "foundationJobsCompleted": 15,
+    "conformanceUrl": "https://github.com/symbiogenesis/prism-inference/actions/runs/41219497774",
+    "conformanceStatusAtReview": "pending",
+    "scope": "Owning checker-main controls remain separate from exact-source Foundation/conformance at the pinned runtime release."
+  },
+  "archive": {
+    "directory": "C:\\Users\\symbi\\AppData\\Local\\SwiftBonsai2\\qualification\\prism-service-checker-41219497840",
+    "manifest": "file-manifest.json",
+    "manifestSha256": "db2d08bee5c4997fe03a5e5b98e267161709bd89162aeb70a0919ac244bf5195",
+    "manifestEntries": 15,
+    "listedBytes": 663184,
+    "independentReview": "independent-review.json",
+    "reviewSha256": "c90b185b683a06d95498ef93a31c05d9b65718eb0ed5972e1acfe2634562a24b",
+    "reviewerId": "Codex:/root/promotion_provenance",
+    "contents": "Exact checker ZIP and members, public preparation log ZIP, run/job/artifact API metadata, exact workflow source, prior packaging metadata/log and checker-main Foundation metadata. No credentials, weights or generated responses."
+  },
+  "remaining": [
+    "Add audited bounded Prism-owned device execution around the trusted owner in the same workflow run that prepares the source-bound harness artifact; the current workflow contains only hosted preparation.",
+    "Capture the released private service and its internal model worker on the owner device within the aggregate five-minute allowance, binding tested release/source/archive/server/worker identities separately from the later harness source/workflow/run/artifact.",
+    "Retain process ownership, admission and cleanup evidence; manual checker execution cannot substitute for the required Prism-owned self-hosted device run.",
+    "Active graph cancellation, complete-state rollback and all other default-runtime promotion gates remain pending; a passed checker receipt alone cannot close them."
+  ],
+  "checkerExecutions": 0,
+  "modelExecutions": 0,
+  "defaultPromotionQualified": false
+}
