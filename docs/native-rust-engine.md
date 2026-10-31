@@ -310,6 +310,14 @@ established. The explicit adapter lifecycle workload in
 [validation](validation.md#actual-model-application-acceptance) also remains pending
 actual-device evidence. None of these candidates satisfies default promotion.
 
+The [Prism-owned service checker preparation](evidence/prism-service-checker-tools.json)
+retains a main-source/run-bound ARM64 package with passing formatting, Clippy,
+build and five model-free controls, plus passing checker-main Foundation. The
+workflow currently prepares tools only. An audited Prism-owned device job must
+consume its same-run artifact through a trusted process owner before actual-model
+capture. Provisional disconnect/reset replay leaves active graph cancellation and
+complete-state rollback unqualified; this tooling does not close the service gate.
+
 ### Inspect the policy
 
 ```powershell

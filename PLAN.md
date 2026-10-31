@@ -162,7 +162,8 @@ and retain the reset-every-request serving policy until reuse is qualified.
   service and its internal model worker: canonical counting/generation, adapter
   readiness, scale changes, active cancellation, reset, rollback and stale-state
   rejection. Add an audited bounded Prism-owned device job around a trusted owner
-  to consume the hosted-prepared checker from the same owning workflow/run with
+  to consume the [hosted-prepared checker](docs/evidence/prism-service-checker-tools.json)
+  from the same owning workflow/run with
   one aggregate device allowance. The current workflow prepares tools only;
   its provisional-disconnect/reset replay leaves
   active graph cancellation and complete-state rollback pending. Runner lifecycle
