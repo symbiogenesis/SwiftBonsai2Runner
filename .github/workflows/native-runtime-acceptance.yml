@@ -61,6 +61,7 @@ jobs:
               'speed::native_speed_metric_uses_reported_tokens_and_complete_request_time',
               'speed::native_speed_comparison_requires_matched_output_usage_and_cleanup',
               'speed::native_speed_stream_waits_for_complete_framing_and_uses_usage_not_events',
+              'speed::native_speed_partial_pair_survives_cancelled_second_request',
               'speed::native_speed_profile_shares_deadline_and_rejects_extra_workloads',
               'native_adapter_scale_history_profile_requires_separate_explicit_selection',
               'native_adapter_scale_history_retains_partial_steps_without_qualifying_missing_work',

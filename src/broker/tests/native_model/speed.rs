@@ -68,6 +68,24 @@ async fn measured_stream(port: u16, credential: &str) -> Value {
     observed
 }
 
+async fn record_measured_request(
+    port: u16,
+    credential: &str,
+    evidence: &Path,
+    deadline: tokio::time::Instant,
+    report: &mut Value,
+    index: usize,
+) -> bool {
+    let observed = adapter_work_before_cleanup(deadline, measured_stream(port, credential)).await;
+    let completed = observed.is_some();
+    report["samples"][index]["stream"] = observed.unwrap_or(Value::Null);
+    if !completed {
+        report["pendingReason"] = json!("request-budget-expired");
+    }
+    save_acceptance_report(evidence, report);
+    completed
+}
+
 fn comparison(samples: &[Value]) -> Value {
     let pending = |reason| {
         json!({"status":"pending", "reason":reason,
@@ -141,13 +159,8 @@ async fn paired_requests(
             "stream":null, "cleanup":null}));
         report["phase"] = json!(format!("row{}-request", profile.row_workers));
         save_acceptance_report(evidence, report);
-        let observed =
-            adapter_work_before_cleanup(deadline, measured_stream(port, &credential)).await;
-        let expired = observed.is_none();
-        report["samples"][index]["stream"] = observed.unwrap_or(Value::Null);
-        if expired {
-            report["pendingReason"] = json!("request-budget-expired");
-        }
+        let expired =
+            !record_measured_request(port, &credential, evidence, deadline, report, index).await;
         report["phase"] = json!(format!("row{}-cleanup", profile.row_workers));
         save_acceptance_report(evidence, report);
         report["samples"][index]["cleanup"] =
@@ -254,6 +267,69 @@ fn native_speed_stream_waits_for_complete_framing_and_uses_usage_not_events() {
             assert_eq!(measured["visibleContent"], "1 2 3 4");
             assert!(measured["requestMilliseconds"].as_f64().unwrap() >= 20.0);
             assert!(measured["requestTokensPerSecond"].as_f64().unwrap() <= 400.0);
+        }).await.unwrap();
+    });
+}
+
+#[test]
+fn native_speed_partial_pair_survives_cancelled_second_request() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    runtime.block_on(async {
+        timeout(Duration::from_secs(10), async {
+            let evidence = env::temp_dir().join(format!("Bonsai-Speed-Partial-{}-{}",
+                std::process::id(), std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos()));
+            fs::create_dir(&evidence).unwrap();
+            let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+            let port = listener.local_addr().unwrap().port();
+            let fixture = tokio::spawn(async move {
+                for step in 0..2 {
+                    let (peer, _) = listener.accept().await.unwrap();
+                    let mut peer = BufReader::new(peer);
+                    let mut length = None;
+                    loop {
+                        let line = prefix_line(&mut peer, 16 * 1024).await;
+                        if let Some(value) = line.strip_prefix("Content-Length: ") {
+                            length = Some(value.trim().parse::<usize>().unwrap());
+                        }
+                        if line == "\r\n" { break; }
+                    }
+                    let mut body = vec![0; length.unwrap()];
+                    peer.read_exact(&mut body).await.unwrap();
+                    if step == 0 {
+                        let payload = concat!(
+                            "data: {\"choices\":[{\"delta\":{\"content\":\"1 2 3 4\"},\"finish_reason\":null}]}\n\n",
+                            "data: {\"choices\":[{\"delta\":{},\"finish_reason\":\"length\"}],\"usage\":{\"completion_tokens\":8}}\n\n",
+                            "data: [DONE]\n\n"
+                        );
+                        let response = format!("HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n{:X}\r\n{payload}\r\n0\r\n\r\n", payload.len());
+                        peer.get_mut().write_all(response.as_bytes()).await.unwrap();
+                        peer.get_mut().shutdown().await.unwrap();
+                    } else {
+                        // The deadline must drop the in-flight second connection.
+                        assert_eq!(peer.read(&mut [0]).await.unwrap(), 0);
+                    }
+                }
+            });
+            let deadline = tokio::time::Instant::now() + STOP_WAIT + Duration::from_secs(2);
+            let mut report = json!({"passed":false,"samples":[{"configuredNativeRowWorkers":1},
+                {"configuredNativeRowWorkers":4}]});
+            assert!(record_measured_request(port, "fixture", &evidence, deadline, &mut report, 0).await);
+            let first = report["samples"][0].clone();
+            assert!(!record_measured_request(port, "fixture", &evidence, deadline, &mut report, 1).await);
+            fixture.await.unwrap();
+            let saved: Value = serde_json::from_slice(&fs::read(evidence.join("acceptance.json")).unwrap()).unwrap();
+            assert_eq!(saved["samples"][0], first);
+            assert_eq!(saved["samples"][0]["stream"]["reportedCompletionTokens"], 8);
+            assert!(saved["samples"][1]["stream"].is_null());
+            assert_eq!(saved["pendingReason"], "request-budget-expired");
+            assert_eq!(saved["passed"], false);
+            assert_eq!(comparison(saved["samples"].as_array().unwrap())["status"], "pending");
+            fs::remove_file(evidence.join("acceptance.json")).unwrap();
+            fs::remove_dir(&evidence).unwrap();
         }).await.unwrap();
     });
 }
