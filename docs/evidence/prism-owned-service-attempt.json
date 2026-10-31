@@ -1,0 +1,165 @@
+{
+  "schemaVersion": 1,
+  "kind": "prism-owned-released-private-service-attempt",
+  "recordedDate": "2026-10-31",
+  "status": "failed-retention-case-receipts-lost-gate-pending",
+  "scope": "One bounded owning-main original-PQ2/approved-adapter/four-row-worker service attempt. The capture step passed, but no original model-case receipt or acceptance artifact survived; this does not qualify the released-service gate.",
+  "harness": {
+    "repository": "symbiogenesis/prism-inference",
+    "revision": "e722ef1f1f3f1316baecac47e182067c3fd28e4a",
+    "gitRef": "refs/heads/main",
+    "workflowPath": ".github/workflows/private-service-acceptance.yml",
+    "runId": "41221367710",
+    "runAttempt": 1,
+    "runUrl": "https://github.com/symbiogenesis/prism-inference/actions/runs/41221367710",
+    "conclusion": "failure",
+    "prepareJobId": "124596436437",
+    "prepareConclusion": "success",
+    "acceptanceJobId": "124597880021",
+    "acceptanceConclusion": "failure",
+    "runSpecificLabel": "private-service-acceptance-41221367710",
+    "runnerName": "codex-prism-service-41221367710-ecb59e2c",
+    "trustedOwnerFoundationRunId": "41221367484"
+  },
+  "preparedTools": {
+    "artifactId": "13050082669",
+    "artifactName": "private-service-check-e722ef1f1f3f1316baecac47e182067c3fd28e4a-41221367710-1",
+    "bytes": 977426,
+    "sha256": "1f81dc437383865b7f76a9a403136397e3518c6ef8892dd8ed4b01fe0141d76f",
+    "exactZipMembers": [
+      "private-service-check.exe",
+      "private-service-owner.exe",
+      "receipt.json"
+    ],
+    "receiptBytes": 1143,
+    "receiptSha256": "27083f5977cf2e17ed388d989990ea9c3fdb289298af3707b16b58a8b2381721",
+    "receiptSchemaVersion": 2,
+    "runnerOwnerRevision": "1914330f8a31769bfe8368ca9728fe7a418ed84e",
+    "ownerSourceSha256": "a8035e8a1b6d01c8592f558183ff4ce75c150534e9f456ce48e68cfbaa5a3c8c",
+    "compilerIdentity": "rustc 1.101.0-nightly (1a2c4797e 2026-10-21)\nbinary: rustc\ncommit-hash: 1a2c4797ef2570bd76ca5dee34449169bc7dc457\ncommit-date: 2026-10-21\nhost: aarch64-pc-windows-msvc\nrelease: 1.101.0-nightly\nLLVM version: 23.1.4",
+    "files": [
+      {
+        "name": "private-service-check.exe",
+        "bytes": 299008,
+        "sha256": "3528443da9561e4adad14d7b2c9b7ebc80ef10e473cb1b9e956677bd56d77b74"
+      },
+      {
+        "name": "private-service-owner.exe",
+        "bytes": 1787392,
+        "sha256": "f99fdaa6adfe09d5ec3586bda9213b035a616f7ac598e6998ce6cd2e206b3976"
+      }
+    ],
+    "archiveAndMemberDigestsVerified": true,
+    "arm64PeVerified": true,
+    "hostedPreparationModelExecuted": false
+  },
+  "sourceExpectedRuntime": {
+    "revision": "749a5f5b43bf77764a29682557ec91a8de8dcdef",
+    "version": "0.1.10",
+    "archiveSha256": "72aa9856cf9ad6b37b8815cc43c0da5168a74c5b2dbdc1f0ffc828dd75a30769",
+    "serverSha256": "58e61f153853a04f811ea26656fad9d76fb4655fb69197854fd556e901d863a7",
+    "workerSha256": "6854196e29fed34c6989667d85e84448d96f95ad36dec1b18209095db69e0ec4",
+    "identityBasis": "Exact config/prism-inference.lock.json compiled from Runner owner revision 1914330f8a31769bfe8368ca9728fe7a418ed84e; original runtime/model case receipts were not retained.",
+    "observedCaseReceiptAvailable": false
+  },
+  "requestedProfile": {
+    "weightRepresentation": "original-PQ2_0",
+    "modelSha256": "5912bb739217cf25b4283a098c7b893d9baff36bdf2e72d3dbf4cb999d5633d5",
+    "adapterSha256": "f1669534803d340a496015f5c45125f3437b4d13ec764f40e34488ce83967f42",
+    "standardAdapterScale": 1.3,
+    "checkerAlsoRequestsScaleZero": true,
+    "nativeRowWorkersRequested": 4,
+    "servingStatePolicy": "reset-every-request",
+    "requiredNativeSandbox": true,
+    "scopeBasis": "Reviewed immutable owner/checker source and exact hosted package; per-case model/device observations were lost.",
+    "independentlyRetainedWorkerCountObservation": false,
+    "separateJsonlWorkerExecutionQualified": false
+  },
+  "observations": {
+    "captureStep": {
+      "name": "Capture the released private service under the trusted owner and one aggregate deadline",
+      "conclusion": "success",
+      "startedAtUtc": "2026-10-31T17:02:41Z",
+      "completedAtUtc": "2026-10-31T17:04:51Z"
+    },
+    "retentionStep": {
+      "name": "Retain only the credential-free service, owner and source receipts",
+      "conclusion": "failure",
+      "error": "Failed to CreateArtifact: Unable to make request: ENOTFOUND",
+      "filesDiscoveredForUpload": 4,
+      "expectedFiles": [
+        "host.json",
+        "hosted-build.json",
+        "owner.json",
+        "service.json"
+      ]
+    },
+    "acceptanceArtifactCreated": false,
+    "originalCaseReceiptsRetained": false,
+    "localCaseReceiptsRecovered": false,
+    "runnerTemporaryEvidenceCleared": true,
+    "runtimeDeviceIdentityReceiptAvailable": false
+  },
+  "cleanup": {
+    "basis": "Retained trusted-owner fixed cleanup reports, independently checked as data; no fresh process, filesystem-credential or remote-registration query in this audit.",
+    "reportSha256": "a0528810fe9e488e43f9c703f8d4a1db6b8aefca65ef413be81fd15127428ec2",
+    "cleanupCompleteReported": true,
+    "registeredRunnersRemainingReported": 0,
+    "ownedProcessIdsRemainingReported": [],
+    "runnerCredentialFiles": [
+      {
+        "Exists": false,
+        "Name": ".runner"
+      },
+      {
+        "Exists": false,
+        "Name": ".credentials"
+      },
+      {
+        "Exists": false,
+        "Name": ".credentials_rsaparams"
+      }
+    ],
+    "credentialOwnerMatchedReported": true,
+    "wholeOwnerLimitSatisfiedReported": true
+  },
+  "budget": {
+    "maximumSeconds": 300,
+    "sessionReceiptSeconds": 190.1416239,
+    "ownerReceiptSeconds": 188.232,
+    "retentionObservationSeconds": 283.1029919,
+    "finalAggregateSecondsReportedByParent": 283.2548,
+    "finalAggregateReportBasis": "Parent owner attestation in this session; retained observation is the earlier monotonic reading."
+  },
+  "archive": {
+    "directory": "C:\\Users\\symbi\\AppData\\Local\\SwiftBonsai2\\qualification\\prism-private-service-41221367710",
+    "manifest": "file-manifest.json",
+    "manifestSha256": "be655e265574a0a183c74704e795db2d063ea1851127e708487a8961e74a6d47",
+    "manifestEntries": 21,
+    "listedBytes": 3157125,
+    "allListedDigestsReplayed": true,
+    "originalArchiveUnmodifiedByReview": true,
+    "independentReview": "C:\\Users\\symbi\\AppData\\Local\\SwiftBonsai2\\qualification\\prism-private-service-41221367710.independent-review.json",
+    "reviewSha256": "9b09a6a16182e11b2c30cdd9a95f720b6ecdc458d7dd51fe232efffb5c0f8adf",
+    "reviewerId": "Codex:/root/ptq1_tools",
+    "publicUploadFailureLogSha256": "e4ba7555511ed26288d7cf031b9d27f8b7f0accbe995bfdac40038f449ed4faa",
+    "contents": "Exact hosted checker/owner package and receipt; public completed-run/job/artifact metadata and upload-failure log; reviewed temporary intake/owner scripts; fixed owner and retention receipts. No model outputs, case receipts, weights or credentials."
+  },
+  "modelTrialsInAttempt": 1,
+  "additionalModelAttempts": 0,
+  "auditModelExecutions": 0,
+  "auditBinaryExecutions": 0,
+  "auditDownloads": 0,
+  "auditHardwareQueries": 0,
+  "releasedServiceGateQualified": false,
+  "activeGraphCancellationQualified": false,
+  "completeStateRollbackQualified": false,
+  "fullStateNumericalParityQualified": false,
+  "defaultPromotionQualified": false,
+  "remaining": [
+    "Preserve the four credential-free case receipts durably before temporary runner cleanup, including artifact-upload failure.",
+    "A later bounded attempt must retain original case receipts, exact device/runtime and source/artifact identity, and independent review before closing this service gate.",
+    "Active graph cancellation, complete-state rollback, numerical parity, quality, resource, performance and other default-promotion gates remain independent.",
+    "This session has no further owner-device trial allowance; no repeated run was performed."
+  ]
+}
