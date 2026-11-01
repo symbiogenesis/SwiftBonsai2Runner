@@ -3,9 +3,9 @@
 use std::io::Write as _;
 
 use super::{
-    BTreeMap, CHANNEL, OpenOptions, OsString, Path, PathBuf, Value, capture, environment, execute,
-    external, fs, github_environment, hosted_context, image, json, read_json, save, save_evidence,
-    stage_output, text, text_arguments,
+    BTreeMap, CHANNEL, OpenOptions, OsString, Path, PathBuf, Value, capture, environment,
+    execute_strict, external, fs, github_environment, hosted_context, image, json, read_json, save,
+    save_evidence, stage_output, text, text_arguments,
 };
 
 fn checked_maintenance(environment: &BTreeMap<String, String>) -> crate::Result<(PathBuf, Value)> {
@@ -347,7 +347,7 @@ pub(super) fn build(repository: &Path, output: &Path, speech_build: bool) -> cra
                     ),
                 ),
             ]);
-            execute(&cargo, &arguments, output, &overlay, "build.txt", 1200)?;
+            execute_strict(&cargo, &arguments, output, &overlay, "build.txt", 1200)?;
             let mut files = Vec::new();
             for name in ["bonsai-chat.exe", "bonsai-broker.exe"] {
                 let source = target.join("release").join(name);

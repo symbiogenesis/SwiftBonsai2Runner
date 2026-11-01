@@ -220,7 +220,7 @@ impl Candidate<'_> {
         name: &str,
         seconds: u64,
     ) -> crate::Result<String> {
-        let result = crate::startup_process::run_with_checkpoint(
+        let result = crate::startup_process::run_strict_with_checkpoint(
             executable.as_os_str(),
             arguments,
             self.working,

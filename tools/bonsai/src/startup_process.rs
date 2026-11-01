@@ -99,6 +99,12 @@ struct ChildGuard {
     finished: bool,
 }
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum ExitPolicy {
+    StopDescendants,
+    RejectSurvivors,
+}
+
 impl ChildGuard {
     #[cfg_attr(
         windows,
@@ -151,12 +157,12 @@ impl ChildGuard {
         }
     }
 
-    fn stop_after_exit(&mut self) -> crate::Result<u32> {
+    fn stop_after_exit(&mut self, policy: ExitPolicy) -> crate::Result<u32> {
         // A successful compiler root can exit just before its normal children.
         // Retain ownership through a short grace, then terminate the complete
         // tree and report any surviving members as a failed tool invocation.
         #[cfg(windows)]
-        let survivors = {
+        let survivors = if policy == ExitPolicy::RejectSurvivors {
             let grace = Instant::now();
             loop {
                 let active = self
@@ -168,9 +174,14 @@ impl ChildGuard {
                 }
                 thread::sleep(Duration::from_millis(10));
             }
+        } else {
+            0
         };
         #[cfg(not(windows))]
-        let survivors = 0;
+        let survivors = {
+            let _ = policy;
+            0
+        };
         self.stop()?;
         self.finished = true;
         Ok(survivors)
@@ -273,8 +284,86 @@ pub(crate) fn run_with_checkpoint(
     environment: &BTreeMap<String, String>,
     timeout: Duration,
     log: &Path,
+    checkpoint: impl FnMut() -> crate::Result<()>,
+) -> crate::Result<ProcessOutput> {
+    run_owned(
+        &RunSpec {
+            executable,
+            args,
+            working,
+            environment,
+            timeout,
+            log,
+        },
+        ExitPolicy::StopDescendants,
+        checkpoint,
+    )
+}
+
+pub(crate) fn run_strict(
+    executable: &OsStr,
+    args: &[OsString],
+    working: &Path,
+    environment: &BTreeMap<String, String>,
+    timeout: Duration,
+    log: &Path,
+) -> crate::Result<ProcessOutput> {
+    run_strict_with_checkpoint(
+        executable,
+        args,
+        working,
+        environment,
+        timeout,
+        log,
+        crate::startup_cancel::checkpoint,
+    )
+}
+
+pub(crate) fn run_strict_with_checkpoint(
+    executable: &OsStr,
+    args: &[OsString],
+    working: &Path,
+    environment: &BTreeMap<String, String>,
+    timeout: Duration,
+    log: &Path,
+    checkpoint: impl FnMut() -> crate::Result<()>,
+) -> crate::Result<ProcessOutput> {
+    run_owned(
+        &RunSpec {
+            executable,
+            args,
+            working,
+            environment,
+            timeout,
+            log,
+        },
+        ExitPolicy::RejectSurvivors,
+        checkpoint,
+    )
+}
+
+struct RunSpec<'a> {
+    executable: &'a OsStr,
+    args: &'a [OsString],
+    working: &'a Path,
+    environment: &'a BTreeMap<String, String>,
+    timeout: Duration,
+    log: &'a Path,
+}
+
+fn run_owned(
+    spec: &RunSpec<'_>,
+    policy: ExitPolicy,
     mut checkpoint: impl FnMut() -> crate::Result<()>,
 ) -> crate::Result<ProcessOutput> {
+    let &RunSpec {
+        executable,
+        args,
+        working,
+        environment,
+        timeout,
+        log,
+    } = spec;
     checkpoint()?;
     validate_external_path(working).map_err(|error| error.to_string())?;
     validate_external_path(log).map_err(|error| error.to_string())?;
@@ -357,7 +446,7 @@ pub(crate) fn run_with_checkpoint(
         }
         thread::sleep(Duration::from_millis(20));
     };
-    let survivors = guard.stop_after_exit()?;
+    let survivors = guard.stop_after_exit(policy)?;
     checkpoint()?;
     let output = ProcessOutput {
         stdout: text(&stdout_path)?,
@@ -693,7 +782,31 @@ mod tests {
         let scratch = std::env::temp_dir().join(format!("Bonsai-Process-RootExit-{}", unique()));
         fs::create_dir(&scratch).map_err(|error| error.to_string())?;
         let (executable, args, marker) = process_tree(&scratch, false)?;
-        let result = run(
+        let output = run(
+            executable.as_os_str(),
+            &args,
+            &scratch,
+            &BTreeMap::new(),
+            Duration::from_secs(10),
+            &scratch.join("root-exit.log"),
+        )?;
+        assert_eq!(output.code, 0);
+        assert!(marker.is_file());
+        assert!(
+            descendant(&marker).is_err(),
+            "Compiler descendant survived root exit."
+        );
+        Ok(())
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn strict_completed_root_rejects_and_stops_compiler_descendants() -> crate::Result<()> {
+        let scratch =
+            std::env::temp_dir().join(format!("Bonsai-Process-StrictRootExit-{}", unique()));
+        fs::create_dir(&scratch).map_err(|error| error.to_string())?;
+        let (executable, args, marker) = process_tree(&scratch, false)?;
+        let result = run_strict(
             executable.as_os_str(),
             &args,
             &scratch,

@@ -292,6 +292,33 @@ fn execute(
         Duration::from_secs(seconds),
         &log,
     )?;
+    checked_execution(result, &log)
+}
+
+fn execute_strict(
+    executable: &Path,
+    arguments: &[OsString],
+    working: &Path,
+    environment: &BTreeMap<String, String>,
+    name: &str,
+    seconds: u64,
+) -> crate::Result<crate::startup_process::ProcessOutput> {
+    let log = working.join(name);
+    let result = crate::startup_process::run_strict(
+        executable.as_os_str(),
+        arguments,
+        working,
+        environment,
+        Duration::from_secs(seconds),
+        &log,
+    )?;
+    checked_execution(result, &log)
+}
+
+fn checked_execution(
+    result: crate::startup_process::ProcessOutput,
+    log: &Path,
+) -> crate::Result<crate::startup_process::ProcessOutput> {
     if result.code != 0 {
         return Err(format!(
             "Build tool failed ({}); inspect {}",

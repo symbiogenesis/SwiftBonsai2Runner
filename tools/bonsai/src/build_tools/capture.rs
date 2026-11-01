@@ -4,8 +4,8 @@ use std::io::Write as _;
 
 use super::{
     BTreeMap, CHANNEL, OpenOptions, OsString, Path, PathBuf, Value, download, environment, execute,
-    external, extract_zip, fs, hosted_context, image, json, ordinary, read_json, save,
-    save_evidence, scratch, stage_output, text, text_arguments,
+    execute_strict, external, extract_zip, fs, hosted_context, image, json, ordinary, read_json,
+    save, save_evidence, scratch, stage_output, text, text_arguments,
 };
 
 const LOGS: &[&str] = &[
@@ -202,7 +202,7 @@ pub(super) fn build(repository: &Path, output: &Path, ptq1: bool) -> crate::Resu
             ]);
             receipt["Phase"] = "collector-build-and-tests".into();
             save_evidence(&working, &evidence, &receipt, LOGS)?;
-            execute(
+            execute_strict(
                 &rustc,
                 &compiler_arguments,
                 &working,
@@ -219,7 +219,7 @@ pub(super) fn build(repository: &Path, output: &Path, ptq1: bool) -> crate::Resu
                 "-o".into(),
                 tests.clone().into_os_string(),
             ]);
-            execute(
+            execute_strict(
                 &rustc,
                 &arguments,
                 &working,
@@ -227,7 +227,7 @@ pub(super) fn build(repository: &Path, output: &Path, ptq1: bool) -> crate::Resu
                 "collector-test-build.txt",
                 120,
             )?;
-            execute(
+            execute_strict(
                 &tests,
                 &["--test-threads=1".into()],
                 &working,
@@ -270,7 +270,7 @@ pub(super) fn build(repository: &Path, output: &Path, ptq1: bool) -> crate::Resu
             "--target-dir".into(),
             target.clone().into_os_string(),
         ];
-        execute(
+        execute_strict(
             &cargo,
             &arguments,
             &working,
