@@ -26,6 +26,20 @@ default with the standard adapter at scale 1.3 on the owner-managed hardware. Re
 original PQ2 as the explicit rollback. Close the application, isolation, creative-quality,
 resource and installation gates below with reproducible evidence before promotion.
 
+The PTQ1 critical path is:
+
+1. Obtain the approved adapter's immutable authoring inputs and independently
+   verify all 48 SSM writer mappings; successful loading or matching runtimes
+   cannot recover missing provenance.
+2. Qualify the selected worker policy's complete generated-history lifecycle,
+   scalar/explicit-NEON logits and live state, loaded-zero identity and nonzero
+   application on the pinned released service.
+3. Retain matched complete-answer benefit, per-prompt adapter throughput and
+   independent human quality/comfort review, then close full context/output,
+   resources, isolation, recovery, installation and original-PQ2 rollback.
+4. Independently score every gate against settled source/release/app identities
+   before changing the engine/representation defaults or README qualification.
+
 ## Research scope and practical budgets
 
 Follow the [research scope, budgets and experiment
@@ -78,6 +92,13 @@ Qualify the complete three-stream sequence as one feasible workload, including a
 separately scoped `ptq1-adapter-lifecycle-row4` candidate and a matching numerical
 capture with `native_row_workers: 4` when selected;
 do not continue missing steps through additional owner jobs. Retain
+the [pre-model row4 no-go](docs/evidence/ptq1-delivery-20261101.json) separately:
+an existing user chat was observed, no owner runner or model was started, and the
+original clock was not restarted. Close the application before a future bounded
+owner session; do not stop an existing user session as qualification cleanup.
+Qualify the prepared scoped resource receipts on the actual model, distinguishing
+OS lifetime Job commit, root mapped residency and sampled serving bounds; these
+do not replace full-context, paging or sustained-comfort acceptance. Retain
 exact generated source-response/message digests; empty or unbound output leaves
 generated history pending. Attribute the observed 35.46-second startup, roughly
 38–39-second one-token requests and incomplete history request before optimizing a
@@ -95,21 +116,23 @@ close actual-model logits/state, writer-basis or promotion gates. Keep intake,
 verification, model work and cleanup inside one aggregate five-minute owner allowance;
 the [default-readiness audit](docs/evidence/ptq1-default-readiness.json) separates
 historical passes from current-release qualification.
-The [frozen current PTQ1 promotion score](docs/evidence/ptq1-promotion-cfdc498.json)
-passes four independently reviewed documentary gates and leaves fifteen pending.
+The [frozen current PTQ1 promotion score](docs/evidence/ptq1-promotion-85fd2f1.json)
+passes five independently reviewed documentary/packing gates and leaves fourteen
+pending for the explicit four-worker candidate.
 Close its actual-model, adapter provenance, paired benefit, quality, resource,
 isolation, recovery and installation gates before changing defaults or removing
 the README's adapter qualification. Later application identities need their own review.
-Bind the [completed independent packing scan](docs/evidence/ptq1-delivery-52f98b3.json)
-to appropriate main-only CI provenance and independent promotion review before
-scoring that gate. It verified all 209,920,000 blocks with an exporter-independent
-decoder, but ran outside the Actions job; synthetic controls or local execution
-cannot substitute for the evaluator's CI identity. Use the validated residual
-original-owner allowance for the three-stream lifecycle, preserving the 300-second
-aggregate ceiling, original clocks and all model cleanup reserves. Never restart a
-clock or continue a partial matrix. The approved adapter's missing immutable
-checkpoint/conversion identity and all-48-SSM mapping remain an external provenance
-prerequisite; additional native/Rust agreement cannot supply it.
+Preserve the 300-second aggregate owner ceiling, original clocks and model cleanup
+reserves; never restart a clock or continue a partial matrix. Obtain the approved
+adapter's immutable checkpoint, conversion and direction identities and
+independently verify all 48 SSM mappings; this remains an external provenance
+prerequisite that native/Rust agreement cannot supply.
+
+Publish and integrate the prepared Prism effective-row-worker readiness field only
+through a reviewed new release and exact lock update. Require matching private
+identity for future pins; the current 0.1.10 legacy response leaves actual worker
+identity unobserved. Preserve explicit version admission for four workers and
+qualify the new release/profile independently before using it for promotion.
 
 - Qualify startup, supplied-history streaming, full 8K context and 4K output, long
   conversations, speech, offline restart and recovery. Cover Stop, abandonment,

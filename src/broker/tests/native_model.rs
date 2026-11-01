@@ -1279,6 +1279,7 @@ fn profile_case(profile: &str, extended: bool, stalled: bool) -> Option<&'static
         "pq2-no-adapter" => Some(CASE),
         PQ2_ADAPTER_SPEED_PROFILE => Some(PQ2_ADAPTER_SPEED_CASE),
         representation::PROFILE => Some(representation::CASE),
+        representation::ROW4_PROFILE => Some(representation::ROW4_CASE),
         name => adapter_profile(name).map(|selected| selected.case),
     }
 }

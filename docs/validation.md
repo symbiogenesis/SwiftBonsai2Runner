@@ -192,6 +192,14 @@ template and sampler controls, startup and framed request times are retained.
 Different complete responses remain available for review; the request-latency
 ratio requires identical response bytes and completion usage.
 
+Explicit `profile: ptq1-pq2-complete-response-row4` selects the same fixed pair
+with four configured native row workers for both fresh owners. Its separate
+case and receipts retain that policy; the original complete-response profile
+keeps one worker. Prompt, sampler, adapter, model identities and all completion,
+cleanup and budget requirements are identical. Worker counts are configured,
+not independently observed, and qualification does not transfer between them.
+Neither profile admits extra history or stalled-consumer workloads.
+
 The existing aggregate deadline includes both loads and cleanup. Each startup
 requires more than 60 seconds remaining, each request reserves 30 seconds for
 owned cleanup, and completed observations are saved before the next operation.
@@ -259,6 +267,8 @@ Model-free acceptance regressions:
 | `native_stalled_consumer_never_qualifies_natural_completion_as_interruption` | Operation-counter interruption guard |
 | `native_stalled_consumer_rejects_error_or_unframed_stream_headers` | HTTP 200 and chunked event-stream framing before accepting content |
 | `native_case_budget_rejects_missing_unbounded_and_malformed_allowances` | Reject missing, zero, malformed, overflowing and over-240-second allowances; optional workloads use the reduced allowance and retain the 120-second recovery reserve |
+| `native_representation_row4_profile_is_explicit_and_preserves_pair` | Separate complete-response selection configures both fixed-order owners with four workers while retaining the one-worker profile and identical approved model, adapter, request and containment policies |
+| `native_representation_profiles_leave_skipped_arms_pending_at_original_deadline` | Both worker policies retain partial observations and pending status when the original shared deadline reaches the 60-second startup/cleanup reserve; no missing owner starts or receives a new clock |
 | `native_adapter_scale_history_profile_requires_separate_explicit_selection` | Scale/history lifecycle is a distinct original-PQ2 row4 selection; the one-stream smoke and no-extra-workload restrictions remain |
 | `native_adapter_scale_history_retains_partial_steps_without_qualifying_missing_work` | Real model-free HTTP peers verify zero/rejected/changed-back scales and supplied history; cancelling after zero or rejection preserves completed receipts without qualifying later work; exhausted request reserve starts no HTTP work |
 | `native_adapter_request_budget_drops_inflight_work_before_owned_cleanup` | Paused-time cancellation drops request-owned state before Stop and preserves the complete cleanup allowance; no request starts at or below the reserve and successful work retains the remaining budget |
