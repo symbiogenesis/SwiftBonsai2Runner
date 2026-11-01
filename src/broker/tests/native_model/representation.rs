@@ -55,11 +55,24 @@ fn model_identity(repacked: bool) -> Value {
     }
 }
 
-async fn measured_response(port: u16, credential: &str) -> Value {
-    // Parsing and hashing happen after the complete framed connection closes.
-    // This timer includes prefill, generation and transport, excluding startup.
+async fn measured_response(
+    port: u16,
+    credential: &str,
+    evidence: &Path,
+    report: &mut Value,
+) -> Value {
+    // Final parsing and hashing follow connection closure. This timer includes
+    // prefill, generation, transport and incremental observer/receipt I/O.
     let started = tokio::time::Instant::now();
-    let bytes = exchange(port, credential, &body()).await;
+    let bytes = progress::exchange(
+        port,
+        credential,
+        &body(),
+        evidence,
+        report,
+        "representation-complete-response",
+    )
+    .await;
     let elapsed = started.elapsed();
     let summary = streamed_response(&bytes);
     let mut observed = stream_observation(&summary, CAP);
@@ -79,7 +92,11 @@ async fn record_response(
     report: &mut Value,
     index: usize,
 ) -> bool {
-    let observed = adapter_work_before_cleanup(deadline, measured_response(port, credential)).await;
+    let observed = adapter_work_before_cleanup(
+        deadline,
+        measured_response(port, credential, evidence, report),
+    )
+    .await;
     let completed = observed.is_some();
     report["samples"][index]["stream"] = observed.unwrap_or(Value::Null);
     if !completed {
@@ -346,7 +363,7 @@ fn pinned_native_ptq1_pq2_capture_complete_responses() {
         "templateSha256":"c3cf9e34abf4f9e36c2d72165aa9c132d3e2a725b6c2586aaa3a8af9d7a81041",
         "sampler":{"temperature":1,"topP":0.95,"topK":20,"minP":0,
             "repeatPenalty":1,"presencePenalty":0,"frequencyPenalty":0},
-        "metricDefinition":"complete framed request milliseconds including prefill, generation and transport; startup recorded separately; no decode timing",
+        "metricDefinition":"complete framed request milliseconds including prefill, generation, transport and incremental observer/receipt I/O; startup recorded separately; no decode timing",
         "aggregateModelCaseBudgetSeconds":budget.as_secs(),"maximumModelCaseBudgetSeconds":CASE_BUDGET.as_secs(),
         "wholeJobMaximumSeconds":300,"requiredNativeSandbox":true,"samples":[],"comparison":{"status":"pending"},
         "runtimeLock":serde_json::from_str::<Value>(include_str!("../../../../config/prism-inference.lock.json")).unwrap(),

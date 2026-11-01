@@ -22,6 +22,8 @@ use tokio::{
     time::timeout,
 };
 
+#[path = "native_model/progress.rs"]
+mod progress;
 #[path = "native_model/representation.rs"]
 mod representation;
 #[path = "native_model/speed.rs"]
@@ -1322,20 +1324,19 @@ fn save_acceptance_report(evidence: &Path, report: &Value) {
 }
 
 async fn adapter_stream(
-    profile: &AdapterProfile,
     port: u16,
     credential: &str,
-    scale: f64,
+    body: &Value,
     label: &str,
-    cap: u32,
+    evidence: &Path,
+    report: &mut Value,
 ) -> Value {
-    let messages = adapter_messages(profile, false);
     adapter_summary(
         label,
-        scale,
-        cap,
+        body["abliteration_scale"].as_f64().unwrap(),
+        u32::try_from(body["max_completion_tokens"].as_u64().unwrap()).unwrap(),
         &streamed_response(
-            &exchange(port, credential, &adapter_request(messages, scale, cap)).await,
+            &progress::exchange(port, credential, body, evidence, report, label).await,
         ),
     )
 }
@@ -1398,14 +1399,15 @@ async fn required_adapter_scale_history(
             } else {
                 (1.3, adapter_messages(profile, true), history_cap)
             };
-            let summary = adapter_summary(
+            let summary = adapter_stream(
+                port,
+                credential,
+                &adapter_request(messages, scale, cap),
                 phase,
-                scale,
-                cap,
-                &streamed_response(
-                    &exchange(port, credential, &adapter_request(messages, scale, cap)).await,
-                ),
-            );
+                evidence,
+                report,
+            )
+            .await;
             report["streams"].as_array_mut().unwrap().push(summary);
             let field = if phase == "scale-zero" {
                 "scaleZeroPassed"
@@ -1521,12 +1523,12 @@ async fn adapter_requests(
     let first_cap = adapter_completion_caps(profile)[0];
     let mut streams = vec![
         adapter_stream(
-            profile,
             port,
             credential,
-            1.3,
+            &adapter_request(adapter_messages(profile, false), 1.3, first_cap),
             "required-scale-1.3-stream",
-            first_cap,
+            evidence,
+            report,
         )
         .await,
     ];
@@ -1539,8 +1541,17 @@ async fn adapter_requests(
     {
         report["phase"] = json!("optional-scale-zero");
         save_acceptance_report(evidence, report);
-        streams
-            .push(adapter_stream(profile, port, credential, 0.0, "optional-scale-zero", 2).await);
+        streams.push(
+            adapter_stream(
+                port,
+                credential,
+                &adapter_request(adapter_messages(profile, false), 0.0, 2),
+                "optional-scale-zero",
+                evidence,
+                report,
+            )
+            .await,
+        );
         report["streams"] = json!(streams);
         save_acceptance_report(evidence, report);
         if deadline.saturating_duration_since(tokio::time::Instant::now()) > OPTIONAL_RESERVE {
@@ -1555,12 +1566,12 @@ async fn adapter_requests(
             save_acceptance_report(evidence, report);
             streams.push(
                 adapter_stream(
-                    profile,
                     port,
                     credential,
-                    1.3,
+                    &adapter_request(adapter_messages(profile, false), 1.3, 2),
                     "same-owner-after-invalid-scale",
-                    2,
+                    evidence,
+                    report,
                 )
                 .await,
             );

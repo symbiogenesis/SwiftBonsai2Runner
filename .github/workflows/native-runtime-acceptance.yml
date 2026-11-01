@@ -67,6 +67,8 @@ jobs:
               'representation::native_representation_pair_requires_completion_identity_and_cleanup',
               'representation::native_representation_profile_is_explicit_and_keeps_original_deadline',
               'representation::native_representation_complete_bytes_survive_expired_second_request',
+              'progress::native_progress_decodes_fragmented_chunks_without_counting_events_as_tokens',
+              'progress::native_progress_drop_retains_partial_content_without_qualifying_completion',
               'native_ptq1_lifecycle_minimizes_tokens_without_changing_required_steps',
               'native_adapter_scale_history_profile_requires_separate_explicit_selection',
               'native_adapter_scale_history_retains_partial_steps_without_qualifying_missing_work',
