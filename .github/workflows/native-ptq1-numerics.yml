@@ -19,7 +19,8 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: swift-lora-snapdragon
+  # Tool-only preparation uses no physical device and must not occupy its lane.
+  group: ${{ inputs.run_device && 'swift-lora-snapdragon' || format('ptq1-tools-hosted-{0}', github.run_id) }}
   cancel-in-progress: false
 jobs:
   prepare:
