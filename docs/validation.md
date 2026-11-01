@@ -294,7 +294,7 @@ contains application packages, not upstream runtime catalogs.
 | Broker, UI, speech, maintenance | Affected packages/consumers with independent caches |
 | Standards | PowerShell contracts/analyzers and strict embedded C# |
 | Foundation/native scripts | Provisioning, plans, process wrappers, packaged supervision, portable package lifecycle/tamper/path checks and copied-launcher dependencies |
-| Released runtime | Archive/install/profile/adapter/admission policy, GGUF wrappers, help switching and actual pinned `Get-Inference.ps1 -IncludeCapabilities` reports |
+| Released runtime | Archive/install/profile/adapter/admission policy, GGUF wrappers, help switching and actual pinned Rust inference provisioning with `includeCapabilities: true` |
 
 For example, a broker edit selects broker checks; shared Windows-boundary edits
 also select broker/CLI consumers. CLI edits select CLI/app integration; script
@@ -450,7 +450,7 @@ $scratch = Join-Path ([IO.Path]::GetTempPath()) ('Runner-Checks-' + [guid]::NewG
 bonsai-ci rust-check --root $PWD --package bonsai-broker --target (Join-Path $scratch 'target') --evidence (Join-Path $scratch 'evidence')
 ```
 
-Choose a relevant named regression, e.g. `./tests/Test-Foundation.ps1 -Case Download`
+Choose a relevant named Rust regression, e.g. `cargo test --package bonsai-tools startup_download::tests::corrupt_completed_partial_is_preserved_and_fresh_retry_publishes -- --exact`
 or `./tests/Test-NativeProcess.ps1 -Case Capture`. Direct Cargo tests select one
 regression with external target/working directories. `--full-tests` is reserved
 for main-branch GitHub Actions; benchmarks are always CI-only.
@@ -482,8 +482,8 @@ to run a complete module or reconstruct a suite locally.
 | TTS [`build_overlay`](../src/speech-tts/build_overlay.rs) | Compiles the actual generated decode block with the provisioned compiler; checks cache hits, window/batch replacement, allocation failure, completed-graph lifetime/teardown, immutable source and drift rejection. |
 | Transcript [`cache_tests`](../src/chat-ui/src/window/transcript/cache_tests.rs), [`search` work tests](../src/chat-ui/src/window/transcript/search/performance_tests.rs) and [`shortcuts`](../src/chat-ui/src/window/transcript/search/shortcuts.rs) | Fixed highlight identities at 10,000 results; navigation, same-length replacements/queries, Find reopen/eviction and no duplicated range vectors. Appends scan/copy only new bytes/results with one continuation, query-sized scratch and folded-Unicode oracle checks; saturated prefixes skip tail work while preserving lookahead, selection and navigation. Accounting checks exact totals and a combined count/byte eviction prefix at the shared 512-message live/restore limit, without visiting completed messages on ordinary append. Keyboard/IME/Escape precedence needs no service. |
 
-For promotion tooling, `./tests/Test-Inference.ps1 -Case ReleaseLock` (also in
-Foundation `-Case All`) uses synthetic bundles without a model. Candidate generation
+For promotion tooling, the Rust `release_lock` integration test (also in
+Foundation's maintenance crate checks) uses synthetic bundles without a model. Candidate generation
 cannot promote a pin; follow the [lock-update review](development-guide.md#prepare-a-runtime-lock-update).
 
 ## Acceptance limits

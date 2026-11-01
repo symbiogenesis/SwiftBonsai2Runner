@@ -87,6 +87,10 @@ pub(super) fn native_build_host() -> io::Result<crate::NativeBuildHost> {
     host::query()
 }
 
+pub(super) fn computer_identity() -> io::Result<crate::ComputerIdentity> {
+    host::computer_identity()
+}
+
 pub(super) fn power_status() -> io::Result<crate::PowerStatus> {
     power::query()
 }
@@ -806,6 +810,28 @@ pub(super) fn available_memory_bytes() -> io::Result<u64> {
     // SAFETY: Structure is initialized with its required exact length and writable.
     check(unsafe { GlobalMemoryStatusEx(&raw mut status) })?;
     Ok(status.ullAvailPhys)
+}
+
+pub(super) fn memory_status() -> io::Result<crate::MemoryStatus> {
+    use windows_sys::Win32::System::SystemInformation::GetPhysicallyInstalledSystemMemory;
+    let mut status = MEMORYSTATUSEX {
+        dwLength: win_size::<MEMORYSTATUSEX>(),
+        ..MEMORYSTATUSEX::default()
+    };
+    // SAFETY: The initialized structure has the exact advertised size, is live
+    // and writable for this call, and the API retains no pointer.
+    check(unsafe { GlobalMemoryStatusEx(&raw mut status) })?;
+    let mut installed_kib = 0_u64;
+    // SAFETY: The initialized output integer is writable for this call. The API
+    // retains no pointer and writes installed physical memory in KiB on success.
+    let installed = unsafe { GetPhysicallyInstalledSystemMemory(&raw mut installed_kib) };
+    Ok(crate::MemoryStatus {
+        installed_physical_bytes: if installed != 0 { installed_kib.checked_mul(1024) } else { None },
+        total_physical_bytes: status.ullTotalPhys,
+        available_physical_bytes: status.ullAvailPhys,
+        commit_limit_bytes: status.ullTotalPageFile,
+        available_commit_bytes: status.ullAvailPageFile,
+    })
 }
 
 pub(super) fn require_exclusive_address(socket: &impl AsSocket) -> io::Result<()> {

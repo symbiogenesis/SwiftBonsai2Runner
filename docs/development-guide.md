@@ -37,9 +37,9 @@ Provision Swift and its pinned adapter, then launch:
 
 ```powershell
 $data = Join-Path $env:LOCALAPPDATA 'SwiftBonsai2'
-./scripts/Get-Engine.ps1 -DataDirectory $data -LockPath ./config/swift-assessment.lock.json
-./scripts/Get-Model.ps1 -DataDirectory $data -LockPath ./config/swift-assessment.lock.json
-./scripts/Get-Adapter.ps1 -DataDirectory $data
+bonsai-tools provision --json (@{ operation = 'engine'; dataDirectory = $data; lockPath = (Join-Path $PWD 'config/swift-assessment.lock.json') } | ConvertTo-Json -Compress)
+bonsai-tools provision --json (@{ operation = 'model'; dataDirectory = $data; lockPath = (Join-Path $PWD 'config/swift-assessment.lock.json') } | ConvertTo-Json -Compress)
+bonsai-tools provision --json (@{ operation = 'adapter'; dataDirectory = $data } | ConvertTo-Json -Compress)
 ./scripts/Start-Chat.ps1 -DataDirectory $data
 ```
 
@@ -136,7 +136,7 @@ $speech.TtsVoiceModelPath
 ```
 
 Rust `speech-build` with `operation: "models"` and `model: "Canary"` or `"QwenTts"`
-selects one engine. `Get-SpeechModels.ps1` explicitly provisions original reference
+selects one engine. Rust `provision` with `operation: "speech-reference"` explicitly provisions original reference
 snapshots, which the app no longer uses. `-NoTts` skips automatic TTS setup;
 `-NoSpeechModels` skips all automatic speech setup/downloads. Neither provisioning
 nor compiling opens a microphone.
@@ -283,14 +283,14 @@ bypass the script guard. Installed launches use [package verification](chat-pack
 its control. Provision the native release before selecting it:
 
 ```powershell
-./scripts/Get-Inference.ps1 -DataDirectory $data
+bonsai-tools provision --json (@{ operation = 'inference'; dataDirectory = $data } | ConvertTo-Json -Compress)
 ./scripts/Start-Chat.ps1 -DataDirectory $data -NativeEngine -NoAbliterateLora
 ```
 
 A publisher startup diagnostic of `process=exited-0xC0000142` means Windows failed
 runtime initialization. **Retry model** repeats the selected runtime; it does not
 switch to Rust. Close the window and relaunch with `-NativeEngine` after provisioning
-with `Get-Inference.ps1`. Retain the same data directory, model and adapter options;
+with Rust `provision` operation `inference`. Retain the same data directory, model and adapter options;
 `-NativeEngine` alone keeps original PQ2 and the approved adapter selected.
 
 `-NativeEngine -NativeRowWorkers 4` explicitly selects the reviewed 0.1.10
@@ -326,29 +326,31 @@ such as NTFS; junctions/device paths reject. The default retains `SwiftBonsai2`
 for installation compatibility, separate from the `SwiftBonsai2Runner` checkout.
 
 ```powershell
-./scripts/Doctor.ps1
+bonsai-tools doctor --json '{}'
 # Optional existing data directory and new report file:
-./scripts/Doctor.ps1 -DataPath D:\BonsaiData -OutputPath D:\Reports\doctor.json
+bonsai-tools doctor --json '{"dataPath":"D:\\BonsaiData","outputPath":"D:\\Reports\\doctor.json"}'
 
 $data = Join-Path $env:LOCALAPPDATA 'SwiftBonsai2'
-./scripts/Get-Engine.ps1 -DataDirectory $data
-./scripts/Get-Model.ps1 -DataDirectory $data
-./scripts/Get-Engine.ps1 -DataDirectory $data -VerifyOnly
-./scripts/Get-Model.ps1 -DataDirectory $data -VerifyOnly
+bonsai-tools provision --json (@{ operation = 'engine'; dataDirectory = $data } | ConvertTo-Json -Compress)
+bonsai-tools provision --json (@{ operation = 'model'; dataDirectory = $data } | ConvertTo-Json -Compress)
+bonsai-tools provision --json (@{ operation = 'engine'; dataDirectory = $data; verifyOnly = $true } | ConvertTo-Json -Compress)
+bonsai-tools provision --json (@{ operation = 'model'; dataDirectory = $data; verifyOnly = $true } | ConvertTo-Json -Compress)
 ```
 
 These defaults provision the Qwen reference lock: about 13.15 GB of model data
-and a 12.78 MB CPU runtime archive. To provision Swift instead, pass
-`-LockPath ./config/swift-assessment.lock.json` to both provisioning commands.
+and a 12.78 MB CPU runtime archive. To provision Swift instead, add
+`lockPath = (Join-Path $PWD 'config/swift-assessment.lock.json')` to both requests.
 Neither path downloads fallback, projector or full-precision weights.
 
 Model bytes live under `models/<revision>/`, archives under `downloads/`, and
-installed runtimes under `runtime/<commit>/`. Downloads resume immutable URLs;
-ignored Range requests restart. The same exclusive `.partial` handle remains held
-through size/hash verification and same-volume hard-link publication, which cannot
-overwrite a destination. Cancellation reaches streamed bodies: header timeouts
-alone cannot bound reads. Invalid partials, publication failures and failed extraction staging
-remain for inspection. Scripts never substitute another model/runtime.
+installed runtimes under `runtime/<commit>/`. Native downloads resume immutable URLs
+through a bounded HTTPS-only curl process and per-artifact synchronization lock.
+The verified partial remains open with writes/deletion denied through same-volume
+hard-link publication, which cannot overwrite a destination. Invalid complete
+partials are quarantined before one fresh retry; a second digest failure stops.
+Cancellation and deadlines stop the complete owned transfer. Publication failures,
+invalid bytes and failed extraction staging remain for inspection. Provisioning
+never substitutes another model/runtime.
 
 `bonsai-artifacts` shares ZIP, SHA-256, installed-file and PE checks between the
 broker and maintenance. Extraction rejects unsafe or duplicate paths and excessive
@@ -357,10 +359,10 @@ ARM64 PE architecture and reported build identity. Guards deny write/delete acce
 to the archive, verified files and ancestors through bounded version/help probes.
 CPU and paired completion re-verify and hold fresh guards through execution;
 GGUF inspection/export holds its source and validates output before publication.
-Provisioning uses the packaged maintenance tool or builds it from pinned sources.
+Provisioning invokes a trusted maintenance executable directly and never builds it.
 Receipts cannot transfer live file ownership, prove parser isolation or attest
 source-to-binary provenance. See the API contracts for
-[streamed HTTP](https://learn.microsoft.com/en-us/dotnet/api/system.net.http.httpcompletionoption),
+[bounded native downloads](../tools/bonsai/src/startup_download.rs),
 [PE images](https://learn.microsoft.com/en-us/windows/win32/debug/pe-format),
 [exclusive creation](https://doc.rust-lang.org/std/fs/struct.OpenOptions.html#method.create_new)
 and [hard links](https://learn.microsoft.com/en-us/windows/win32/fileio/hard-links-and-junctions).
@@ -371,7 +373,7 @@ local paths; review them before sharing.
 For bounded GGUF v3 metadata inspection after full size/SHA-256 verification:
 
 ```powershell
-$inference = ./scripts/Get-Inference.ps1 -DataDirectory $data
+$inference = bonsai-tools provision --json (@{ operation = 'inference'; dataDirectory = $data } | ConvertTo-Json -Compress) | ConvertFrom-Json
 $request = Join-Path $data 'inspect-request.json'
 @{ operation = 'inspect'; modelPath = (Join-Path $data 'models/4ca720788d1e01f1bff70c033e0d0028fd02e502/Qwen3.8-27B-UD-Q3_K_XL.gguf'); ggufToolPath = $inference.Gguf } |
     ConvertTo-Json | Set-Content -LiteralPath $request -Encoding utf8NoBOM
@@ -581,8 +583,8 @@ Provision the independently released
 executables, then add `--native-engine` to the owned launcher:
 
 ```powershell
-$inference = ./scripts/Get-Inference.ps1 -DataDirectory $data
-./scripts/Get-Inference.ps1 -DataDirectory $data -VerifyOnly
+$inference = bonsai-tools provision --json (@{ operation = 'inference'; dataDirectory = $data } | ConvertTo-Json -Compress) | ConvertFrom-Json
+bonsai-tools provision --json (@{ operation = 'inference'; dataDirectory = $data; verifyOnly = $true } | ConvertTo-Json -Compress)
 & $broker --launch-development --allow-unisolated-backend `
     --profile swift-pq2-assessment --native-engine `
     --data-directory $data --evidence-parent ([IO.Path]::GetTempPath()) `
@@ -593,7 +595,7 @@ The [release lock](../config/prism-inference.lock.json) pins the source revision
 archive and every installed file by length and SHA-256. Provisioning checks the
 ARM64 executable architecture and installs under
 `inference/<commit>/aarch64-pc-windows-msvc/` in the external data directory.
-`Get-Inference.ps1` and the launcher consume these binaries without invoking
+Rust `provision` and the launcher consume these binaries without invoking
 Cargo. Updating the runtime means reviewing a new release lock and provisioning
 that release. For GGUF commands using a custom data directory, set
 `BONSAI_DATA_DIRECTORY` to the same absolute path, or supply the native `gguf`
@@ -601,11 +603,11 @@ request's `dataDirectory` or explicit `ggufToolPath`.
 The crates.io packages provide the Rust source distribution;
 ordinary `cargo install` compiles that source.
 
-Add `-IncludeCapabilities` to `Get-Inference.ps1` for a bounded model-free probe
+Add `includeCapabilities: true` to the inference provisioning request for a bounded model-free probe
 of the verified release. It checks the reported version/native target and the
 shared H0 schema, retains archive/file guards through exit and returns external
-verification evidence. This optional probe uses `bonsai-tools`; supply `-ToolPath`
-or a trusted `BONSAI_TOOLS_PATH` to avoid building the maintenance tool. See the
+verification evidence. Invoke a trusted prebuilt `bonsai-tools` directly; provisioning
+does not build the maintenance tool. See the
 [capability contract](hardware-capabilities.md#runtime-inventory).
 
 Run from an external native working directory. The selection accepts only the
@@ -649,7 +651,7 @@ Invoke-BonsaiTool -Command inference-lock -TimeoutSeconds 120 -Request @{
 
 The command uses `bonsai-tools`; supply a trusted build with `-ToolPath` or
 `BONSAI_TOOLS_PATH`, or let the resolver build the maintenance CLI in system temp.
-Production `Get-Inference.ps1` provisioning still requires no Rust toolchain.
+Production Rust provisioning still requires no Rust toolchain when using a prebuilt executable.
 The review checks receipt identities, archive and individual file hashes,
 the complete executable/license inventory, ARM64 PE headers and the source
 archive's commit root, package versions and compiler pin. It writes a new
@@ -662,7 +664,7 @@ Publication requires separate authorization under the session's repository
 rules. After the exact checked bundle is available at the candidate's immutable
 release URL, verify those downloaded bytes and review the candidate before
 replacing `config/prism-inference.lock.json`. Rebuild the broker, which embeds
-that lock, provision through `Get-Inference.ps1`, and run the required checks on
+that lock, provision through Rust `provision` operation `inference`, and run the required checks on
 the settled `main` revision. Preserve the prior release for rollback. Packaging
 and hosted synthetic checks do not broaden the retained model/device evidence.
 
@@ -672,7 +674,7 @@ Install Visual Studio 2026 native ARM64 C++ tools and CMake, or explicitly choos
 the supported Visual Studio 2022 generator. The builder installs no toolchain.
 
 ```powershell
-$doctor = ./scripts/Doctor.ps1 -PassThru
+$doctor = bonsai-tools doctor --json '{}' | ConvertFrom-Json
 $gitPath = ($doctor.Tools | Where-Object Name -eq Git).Path
 $cmakePath = ($doctor.Tools | Where-Object Name -eq CMake).Path
 & $env:BONSAI_TOOLS_PATH build-tools --json (@{ operation = 'engine'; repositoryRoot = $PWD.Path; dataDirectory = $data; gitPath = $gitPath; cmakePath = $cmakePath; fetchSource = $true } | ConvertTo-Json -Compress)

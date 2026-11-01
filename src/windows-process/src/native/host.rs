@@ -2,7 +2,6 @@
 
 use std::io;
 
-#[cfg(any(target_arch = "aarch64", test))]
 fn decode_registry_text(buffer: &[u16], bytes: u32) -> io::Result<String> {
     let units = usize::try_from(bytes / 2)
         .map_err(|_| io::Error::other("registry string length is not representable"))?;
@@ -24,12 +23,12 @@ fn decode_registry_text(buffer: &[u16], bytes: u32) -> io::Result<String> {
     Ok(text)
 }
 
-#[cfg(target_arch = "aarch64")]
-fn registry_text(value: &str) -> io::Result<String> {
+fn registry_text(subkey: &str, value: &str) -> io::Result<String> {
     use windows_sys::Win32::System::Registry::{
         HKEY_LOCAL_MACHINE, RRF_RT_REG_SZ, RRF_SUBKEY_WOW6464KEY, RRF_ZEROONFAILURE, RegGetValueW,
     };
 
+    let subkey: Vec<_> = subkey.encode_utf16().chain(Some(0)).collect();
     let value: Vec<_> = value.encode_utf16().chain(Some(0)).collect();
     let mut buffer = [0_u16; 512];
     let mut bytes = 1024_u32;
@@ -39,7 +38,7 @@ fn registry_text(value: &str) -> io::Result<String> {
     let status = unsafe {
         RegGetValueW(
             HKEY_LOCAL_MACHINE,
-            windows_sys::core::w!("HARDWARE\\DESCRIPTION\\System\\CentralProcessor\\0"),
+            subkey.as_ptr(),
             value.as_ptr(),
             RRF_RT_REG_SZ | RRF_SUBKEY_WOW6464KEY | RRF_ZEROONFAILURE,
             std::ptr::null_mut(),
@@ -51,6 +50,14 @@ fn registry_text(value: &str) -> io::Result<String> {
         return Err(io::Error::from_raw_os_error(status.cast_signed()));
     }
     decode_registry_text(&buffer, bytes)
+}
+
+pub(super) fn computer_identity() -> io::Result<crate::ComputerIdentity> {
+    const BIOS: &str = "HARDWARE\\DESCRIPTION\\System\\BIOS";
+    Ok(crate::ComputerIdentity {
+        manufacturer: registry_text(BIOS, "SystemManufacturer")?,
+        model: registry_text(BIOS, "SystemProductName")?,
+    })
 }
 
 pub(super) fn query() -> io::Result<crate::NativeBuildHost> {
@@ -84,9 +91,18 @@ pub(super) fn query() -> io::Result<crate::NativeBuildHost> {
             })
             .collect();
         Ok(crate::NativeBuildHost {
-            processor_name: registry_text("ProcessorNameString")?,
-            processor_identifier: registry_text("Identifier")?,
-            vendor_identifier: registry_text("VendorIdentifier")?,
+            processor_name: registry_text(
+                "HARDWARE\\DESCRIPTION\\System\\CentralProcessor\\0",
+                "ProcessorNameString",
+            )?,
+            processor_identifier: registry_text(
+                "HARDWARE\\DESCRIPTION\\System\\CentralProcessor\\0",
+                "Identifier",
+            )?,
+            vendor_identifier: registry_text(
+                "HARDWARE\\DESCRIPTION\\System\\CentralProcessor\\0",
+                "VendorIdentifier",
+            )?,
             windows_version: [
                 version.dwMajorVersion,
                 version.dwMinorVersion,

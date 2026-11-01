@@ -235,9 +235,9 @@ $maintenanceExecutable = 'C:\BonsaiTools\bonsai-tools.exe'
 $data = Join-Path $env:LOCALAPPDATA 'SwiftBonsai2'
 $lockPath = Join-Path $PWD 'config/swift-assessment.lock.json'
 $lock = Get-Content -Raw -LiteralPath $lockPath | ConvertFrom-Json -DateKind String
-./scripts/Get-Model.ps1 -DataDirectory $data -LockPath $lockPath
-./scripts/Get-Engine.ps1 -DataDirectory $data -LockPath $lockPath
-./scripts/Get-Inference.ps1 -DataDirectory $data
+& $maintenanceExecutable provision --json (@{ operation = 'model'; dataDirectory = $data; lockPath = $lockPath } | ConvertTo-Json -Compress)
+& $maintenanceExecutable provision --json (@{ operation = 'engine'; dataDirectory = $data; lockPath = $lockPath } | ConvertTo-Json -Compress)
+& $maintenanceExecutable provision --json (@{ operation = 'inference'; dataDirectory = $data } | ConvertTo-Json -Compress)
 $model = Join-Path $data -ChildPath 'models', $lock.model.revision, $lock.model.filename
 $request = Join-Path $data 'swift-census-request.json'
 @{ operation = 'inspect'; modelPath = $model; expectedBytes = $lock.model.bytes; expectedSha256 = $lock.model.sha256;
@@ -258,7 +258,7 @@ $request = Join-Path $data 'swift-export-request.json'
     ConvertTo-Json | Set-Content -LiteralPath $request -Encoding utf8NoBOM
 & $maintenanceExecutable gguf --request $request
 & $maintenanceExecutable cpu-check --json (@{ dataDirectory = $data; profile = 'swift-pq2-assessment'; useRepackedPtq1 = $true } | ConvertTo-Json -Depth 64 -Compress) | ConvertFrom-Json -AsHashtable
-./scripts/Get-Adapter.ps1 -DataDirectory $data
+& $maintenanceExecutable provision --json (@{ operation = 'adapter'; dataDirectory = $data } | ConvertTo-Json -Compress)
 & $maintenanceExecutable cpu-check --json (@{ dataDirectory = $data; profile = 'swift-pq2-assessment'; useRepackedPtq1 = $true; useAbliterateLora = $true } | ConvertTo-Json -Depth 64 -Compress) | ConvertFrom-Json -AsHashtable
 ```
 

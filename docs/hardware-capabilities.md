@@ -7,35 +7,41 @@ defines eligibility; [PLAN.md](../PLAN.md#hardware-selection) owns outstanding w
 
 ## Host inventory
 
-`./scripts/Doctor.ps1 -PassThru` preserves its v1 outer report. With a prebuilt
-maintenance tool selected through `-ToolPath` or `BONSAI_TOOLS_PATH`, it adds
-`Capabilities` (`schema_version: 1`, `kind: runner-host-capabilities`) and the CPU
-compatibility identity. Rust's `host-capabilities` command owns projection and
-canonical identities; Doctor only gathers and serializes Windows facts. Without
-a selected tool these properties remain null with an explanatory gap, and basic
-inventory never triggers a compiler build.
+`bonsai-tools doctor --json '{}'` returns a v2 native report containing
+`Capabilities` (`schema_version: 1`, `kind: runner-host-capabilities`), the CPU
+compatibility identity and native observations. Rust owns discovery, projection,
+bounded tool probes and optional create-new JSON publication. Invoke a trusted
+prebuilt executable; inventory never builds or installs dependencies.
+
+`dataPath` selects an existing external data directory; `outputPath` selects a
+new external report file with an existing parent. `nativeGraphics: true` adds
+the separately bounded Vulkan/OpenCL probes. Exact tool paths and retained
+version-probe logs need review before sharing.
 
 | Section | Observations | Unknowns |
 | --- | --- | --- |
 | `operating_system`, `process` | Native OS/current-process architectures, available OS version/build, emulation | Unavailable facts |
-| `cpu.identities` | CIM names/vendors/core/logical counts | Groups/efficiency classes |
-| `cpu.isa` | .NET AdvSimd/dot product for current process architecture | Other ISA/native eligibility from emulation |
-| `memory` | CIM total, OS-usable/available physical bytes, available commit limit/current usage | Installed capacity from CIM alone |
-| `gpu` | CIM device/vendor/driver | API features/device budgets |
-| `npu` | ComputeAccelerator signed drivers | Architecture/firmware/backend readiness |
+| `cpu.identities` | Registry names/vendors and native CPU-set core/logical counts | Unavailable topology; observations are current-process scoped |
+| `cpu.isa` | Native Windows AdvSimd/dot-product flags | Native eligibility from emulation |
+| `memory` | SMBIOS installed bytes and OS-usable/available physical bytes | System-wide committed usage; `Memory` separately labels effective process/system commit limits |
+| `gpu` | SetupAPI device/vendor and driver-registry version/date | Driver signatures, API features/device budgets |
+| `npu` | SetupAPI ComputeAccelerator device/vendor and driver-registry version/date | Driver signatures, architecture/firmware/backend readiness |
 
 Each section retains source and `observed`/`partial`/`unknown` status; unknown values are null.
-Empty lists indicate successful queries; failures stay unknown. CIM queries time out at ten seconds.
-Capabilities exclude hostnames, serials and user/network inventory; review outer Doctor tool paths
-before sharing. CIM `memory.reported_total_physical_bytes` can omit hardware-reserved RAM. Live
+Empty lists indicate successful queries; failures stay unknown. Native device inventories
+are bounded to 16 entries per class; version probes use owned processes and a shared
+90-second allowance. BIOS manufacturer/model excludes serials; capabilities omit
+hostnames, device-instance IDs and user/network inventory. SMBIOS installed bytes and
+OS-usable bytes retain their distinct sources. Live
 memory does not replace admission. Family names/driver signatures do not prove ISA, execution or
 deployment trust; emulated-process ISA cannot qualify a native runtime.
 
 ### Native CPU observations
 
-`Doctor.ps1 -ToolPath <existing-bonsai-tools.exe>` adds Rust `host-cpu`'s v1
-`runner-native-cpu-observations`. Doctor never builds the tool; without it, the property is null.
-Existing host projection and CPU digest retain their original scope.
+`bonsai-tools doctor --json '{}'` includes Rust `host-cpu`'s v1
+`runner-native-cpu-observations`. The pure `host-capabilities` command still accepts
+archived CIM facts for historical evidence; the native Doctor labels its current
+registry/CPU-set sources explicitly.
 
 | Observation | Contract |
 | --- | --- |
@@ -57,14 +63,16 @@ no optional instruction and changes no dispatch/selection.
 
 Malformed, missing or oversized registry values make the whole host identity unknown. Registry
 name is an independent observation, not verified silicon SKU/firmware. Identity is separate from
-live availability/power. The [X2 screen](cpu-kernels.md#x2-cpu-thread-screen) requires CIM/registry-name agreement
-and retains exact identity in plans/receipts. Unknown/changed identity, including legacy receipts
+live availability/power. The [X2 screen](cpu-kernels.md#x2-cpu-thread-screen) retains
+exact identity in plans/receipts. Historical CIM/registry-name agreement does not
+become an independent comparison when both current observations use the registry.
+Unknown/changed identity, including legacy receipts
 lacking it, suppresses timing ratios. Kernel/feature changes require fresh captures; compare the
 whole bounded feature list, not descriptive `isa` flags. No new digest/backend permission follows.
 
 ### Native Vulkan observations
 
-The same `-ToolPath` adds `NativeGpuObservations` from `host-gpu`. A native ARM64 child queries
+`nativeGraphics: true` adds `NativeGpuObservations` from `host-gpu`. A native ARM64 child queries
 absolute system `vulkan-1.dll` with ordinary headless mitigations, 512 MiB one-process Job,
 bounded output and ten-second deadline. Failure returns `status: unknown`, `adapters: null`;
 successful zero-device enumeration is observed. `VK_*` overrides reject; custom loaders/layers/ICD
@@ -186,7 +194,7 @@ included in the digest-verified owner archive; GPU worker access remains unquali
 
 ### Native OpenCL observations
 
-The same `-ToolPath` adds `NativeOpenClObservations` from bounded `host-opencl`: GPU information
+`nativeGraphics: true` adds `NativeOpenClObservations` from bounded `host-opencl`: GPU information
 through the absolute system loader under unchanged headless policy, with no context, queue,
 program, kernel or device allocation. It retains architecture/platform/device/driver/compiler
 facts and bounded loader size/hash; provenance stays unverified, `backend_ready: false`.
@@ -200,9 +208,9 @@ OpenCL observations do not resolve Vulkan worker access.
 compiler target, scalar support, production NEON build predicate, exact graph identity suffixes
 and unavailable Vulkan/Hexagon. `qualification` is always `unqualified`.
 
-Provision/probe with
-`./scripts/Get-Inference.ps1 -DataDirectory <absolute-path> -IncludeCapabilities`;
-add `-VerifyOnly` to require existing files. Results add `Capabilities`/`CapabilityVerification`,
+Provision/probe with the Rust `provision` command using
+`{"operation":"inference","dataDirectory":"C:\\BonsaiData","includeCapabilities":true}`;
+add `verifyOnly: true` to require existing files. Results add `Capabilities`/`CapabilityVerification`,
 runtime file/archive identities and external diagnostics. Verification guards stay held through
 exit. Custom locks reject; reported version/native target must match the compiled release pin.
 
@@ -400,7 +408,7 @@ From an external temp working directory, use absolute checkout/build paths:
 
 ```text
 cargo test --manifest-path <repo>/Cargo.toml --target-dir <temp>/target --locked --offline --release -p bonsai-tools --lib host_capabilities::tests
-pwsh -NoProfile -File <repo>/tests/Test-Foundation.ps1 -Case Doctor
+cargo test --manifest-path <repo>/Cargo.toml --target-dir <temp>/target --locked --offline --release -p bonsai-tools --lib doctor::tests
 cargo test --manifest-path <repo>/Cargo.toml --target-dir <temp>/target --locked --offline --release -p bonsai-cpu-policy hardware::tests
 ```
 

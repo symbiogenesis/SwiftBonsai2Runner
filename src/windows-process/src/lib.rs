@@ -470,6 +470,23 @@ pub fn native_build_host() -> io::Result<NativeBuildHost> {
     native::native_build_host()
 }
 
+/// Native system manufacturer and product name from the fixed BIOS registry key.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ComputerIdentity {
+    /// Firmware-reported system manufacturer, without serial or user identity.
+    pub manufacturer: String,
+    /// Firmware-reported system product name.
+    pub model: String,
+}
+
+/// Returns bounded firmware-reported manufacturer/model strings without WMI.
+///
+/// # Errors
+/// Rejects unavailable, oversized, malformed or empty registry strings.
+pub fn computer_identity() -> io::Result<ComputerIdentity> {
+    native::computer_identity()
+}
+
 /// Current Windows power-source and battery-saver snapshot.
 ///
 /// These changing status values are neither energy telemetry nor immutable
@@ -886,6 +903,29 @@ fn validate_process(spec: &ProcessSpec) -> io::Result<()> {
 /// Returns a failed Windows memory-status query.
 pub fn available_memory_bytes() -> io::Result<u64> {
     native::available_memory_bytes()
+}
+
+/// Native physical and effective commit observations from `GlobalMemoryStatusEx`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct MemoryStatus {
+    /// SMBIOS-reported installed physical memory, if the native query succeeds.
+    pub installed_physical_bytes: Option<u64>,
+    /// OS-usable physical memory in bytes.
+    pub total_physical_bytes: u64,
+    /// Physical memory currently available to the system in bytes.
+    pub available_physical_bytes: u64,
+    /// Effective commit limit: the smaller current-process or system limit.
+    pub commit_limit_bytes: u64,
+    /// Commit bytes currently available to this process.
+    pub available_commit_bytes: u64,
+}
+
+/// Returns a native memory snapshot without loading models or changing policy.
+///
+/// # Errors
+/// Rejects a failed Windows memory query.
+pub fn memory_status() -> io::Result<MemoryStatus> {
+    native::memory_status()
 }
 
 /// Finds the process listening specifically on IPv4 `127.0.0.1:port`.

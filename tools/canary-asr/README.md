@@ -16,7 +16,7 @@ The native [model lock](../../src/speech-asr/model.lock.json) pins the conversio
 source model revision, exact size and SHA-256. Canary is Copyright NVIDIA
 Corporation, CC BY 4.0; retain attribution and the model license. The legacy
 `model.lock.json` and `tokenizer.lock.json` here describe original reference
-snapshots for the explicit `Get-SpeechModels.ps1` utility; the app does not load
+snapshots for the explicit Rust `provision` operation `speech-reference`; the app does not load
 them, and existing downloaded snapshots are preserved.
 
 ## Standalone service

@@ -190,7 +190,7 @@ jobs:
           Set-StrictMode -Version Latest
           $ErrorActionPreference = 'Stop'
           $PSNativeCommandUseErrorActionPreference = $true
-          & (Join-Path $env:GITHUB_WORKSPACE 'scripts/Get-Inference.ps1') -DataDirectory $env:BONSAI_NATIVE_DATA -VerifyOnly
+          & $env:BONSAI_TOOLS_PATH provision --json (@{ operation = 'inference'; dataDirectory = $env:BONSAI_NATIVE_DATA; verifyOnly = $true } | ConvertTo-Json -Compress)
       - name: Exercise actual-model broker lifecycle under the required native sandbox
         shell: pwsh
         working-directory: ${{ env.BONSAI_NATIVE_WORK }}

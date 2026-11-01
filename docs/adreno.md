@@ -19,7 +19,7 @@ establish Adreno kernel or graph coverage.
 | [Assessment lock](../config/swift-assessment.lock.json): 6.71 GiB PQ2, Prism `73bfe6cc485554822f80c473a3c0c4f25e80f41b`, `win-cpu-arm64` | Installed runtime is a CPU reference |
 | [Native baseline build](../tools/bonsai/src/build_tools/engine.rs) and [overlay build][overlay] disable Vulkan/OpenCL | CPU recipes do not produce an accelerated runtime |
 | [Completion](../src/cpu-policy/src/lib.rs), [server](../tools/bonsai/src/server.rs) and [broker](../src/broker/src/launch_policy.rs) use `--gpu-layers 0` / `--device none` | Drivers do not activate offload; server policy also disables KV/operation offload |
-| [Doctor](../scripts/Doctor.ps1) reports GPU identity/driver | Inventory does not establish loader/ICD, API features, kernels or budgets |
+| Rust [Doctor](hardware-capabilities.md#host-inventory) reports GPU identity/driver | Inventory does not establish loader/ICD, API features, kernels or budgets |
 
 [OpenCL access and source coverage](#opencl-access-and-source-audit) remain unqualified for Swift;
 X2 prebuilt-kernel claims do not qualify X1-85. [DirectML][directml]/Windows ML needs faithful
@@ -136,7 +136,7 @@ every dependency were executed. DLL signatures, ICD dependencies and provenance 
 Global/local memory and maximum-allocation capacities are not live free-memory budgets and cannot
 change admission. `backend_ready` stays false.
 
-`Doctor.ps1 -ToolPath <existing-bonsai-tools.exe>` adds this report as `NativeOpenClObservations`.
+`bonsai-tools doctor --json '{"nativeGraphics":true}'` adds this report as `NativeOpenClObservations`.
 It neither builds tools nor changes the existing CPU compatibility digest or launch policy. The
 native query follows the Khronos
 [platform](https://registry.khronos.org/OpenCL/specs/unified/refpages/man/html/clGetPlatformIDs.html),

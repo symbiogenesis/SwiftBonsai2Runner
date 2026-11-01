@@ -282,7 +282,7 @@ $request = Join-Path $env:TEMP 'x2-plan-request.json'
 @{ operation = 'observed-plan'; dataDirectory = $data; cimProcessors = $processors } |
     ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $request -Encoding utf8NoBOM
 & $tool cpu-evaluation --request $request
-./scripts/Doctor.ps1 -ToolPath $tool -PassThru
+& $tool doctor --json '{"nativeGraphics":true}'
 ```
 
 Plan inspection probes hardware and reads compiled policy without loading a model. It requires an

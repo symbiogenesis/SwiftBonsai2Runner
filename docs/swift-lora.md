@@ -26,8 +26,8 @@ Bonsai model.
 Provision or reverify the fixed artifact:
 
 ```powershell
-./scripts/Get-Adapter.ps1 -DataDirectory "$env:LOCALAPPDATA/SwiftBonsai2"
-./scripts/Get-Adapter.ps1 -DataDirectory "$env:LOCALAPPDATA/SwiftBonsai2" -VerifyOnly
+bonsai-tools provision --json (@{ operation = 'adapter'; dataDirectory = "$env:LOCALAPPDATA/SwiftBonsai2" } | ConvertTo-Json -Compress)
+bonsai-tools provision --json (@{ operation = 'adapter'; dataDirectory = "$env:LOCALAPPDATA/SwiftBonsai2"; verifyOnly = $true } | ConvertTo-Json -Compress)
 ```
 
 The destination is `adapters/<pinned-source-commit>/bonsai-abliterate-lora.gguf` in the
