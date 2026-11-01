@@ -386,7 +386,10 @@ not close pending hosted integration or full-model acceptance.
   and independent human reviews. Require both same-engine decode TPS and quality parity,
   bounded RAM premium and visible regressions. Qualify app scale 1.3 and other intended
   scales separately from the scale-one, 512-token contract; one response cannot choose a
-  scale.
+  scale. Provide a hosted Snapdragon target for the full 28-sample LoRA and
+  14-sample PTQ1 matrices, or define an independently useful owner capture whose
+  complete workload fits five minutes. Their nonlaunching workflow plans leave
+  qualification pending; splitting either matrix across owner runs is unsupported.
 - Compare Q8_0/Q4_K_M and bounded speech thread choices through [paired device CI and
   independent listening](docs/validation.md#paired-speech-comparison). Retain quality,
   startup, first-audio, synthesis latency and resources; attribute bootstrap, warm Base
