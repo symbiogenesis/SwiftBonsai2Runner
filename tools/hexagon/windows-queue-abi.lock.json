@@ -1,0 +1,30 @@
+{
+    "schemaVersion":  1,
+    "purpose":  "hosted-native-Windows-ARM64-public-queue-and-explicit-public-branch-wire-control",
+    "deviceInvocationAuthorized":  false,
+    "profileEligible":  false,
+    "queueHeaderWindowsConditionals":  true,
+    "generatedWirePreprocessorSelection":  "/U_WIN32; _WIN64 and _M_ARM64 retained",
+    "wholeWindowsRemoteHeaderClosureQualified":  false,
+    "sdkEquivalenceQualified":  false,
+    "publicInputs":  [
+                         {
+                             "name":  "dspqueue.h",
+                             "bytes":  24632,
+                             "sha256":  "571c74ce3651042873b0e93eb53baa7d9ec0963665355933d4a8518272e1e2a3",
+                             "repository":  "qualcomm/fastrpc",
+                             "revision":  "a56e9d4de3614a8d8f4b0e15ff561350c4b686e3",
+                             "path":  "inc/dspqueue.h",
+                             "url":  "https://raw.githubusercontent.com/qualcomm/fastrpc/a56e9d4de3614a8d8f4b0e15ff561350c4b686e3/inc/dspqueue.h"
+                         },
+                         {
+                             "name":  "htp-ops.h",
+                             "bytes":  8311,
+                             "sha256":  "ce6c7d7c5ad5f9ad9eae4b096f3cedecd5f885b642213a5ea0c448cbb911fea0",
+                             "repository":  "ggml-org/llama.cpp",
+                             "revision":  "19cce6919992fdffd92e0ac152caaf1e2b8f254e",
+                             "path":  "ggml/src/ggml-hexagon/htp/htp-ops.h",
+                             "url":  "https://raw.githubusercontent.com/ggml-org/llama.cpp/19cce6919992fdffd92e0ac152caaf1e2b8f254e/ggml/src/ggml-hexagon/htp/htp-ops.h"
+                         }
+                     ]
+}
