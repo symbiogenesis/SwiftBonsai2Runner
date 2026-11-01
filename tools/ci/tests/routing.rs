@@ -430,7 +430,7 @@ fn runner_ci_speech_selects_checked_tools_without_unrelated_lanes() -> TestResul
         for group in [lane, "speech", "maintenance", "tools"] {
             assert!(plan.groups[group], "{package}: {group}");
         }
-        for group in ["broker_checks", "ui", "scripts", "release"] {
+        for group in ["broker_checks", "ui", "integration", "release"] {
             assert!(!plan.groups[group], "{package}: {group}");
         }
     }
