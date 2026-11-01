@@ -71,7 +71,7 @@ and [local API contract](docs/broker-policy.md#public-request-contract).
 
 | Model | Runtime | Tokens/second | Model file | Job commit cap / measured peak | Available RAM admission | Restore copy saved vs. Rust 0.1.4 |
 | --- | --- | ---: | ---: | ---: | ---: | ---: |
-| **Swift Bonsai 2 `PTQ1_0` (diagnostic only)** | **Rust 0.1.10 prerelease + LoRA 1.3** | **Not measured** | **5.54 GiB** | **11.5 GiB / not recorded** | **15.5 GiB** | **149.625 MiB** |
+| **Swift Bonsai 2 `PTQ1_0` (experimental opt-in)** | **Rust 0.1.10 prerelease + LoRA 1.3** | **Not measured** | **5.54 GiB** | **11.5 GiB / not recorded** | **15.5 GiB** | **149.625 MiB** |
 | Swift Bonsai 2 `PQ2_0` (experimental Rust) | Rust 0.1.10 prerelease, one worker + LoRA 1.3 | 0.105 (truncated request) | 6.71 GiB | 11.5 GiB / not recorded | 15.5 GiB | 149.625 MiB |
 | Swift Bonsai 2 `PQ2_0` (experimental Rust) | Rust 0.1.10 prerelease, four workers + LoRA 1.3 | Pending (deadline) | 6.71 GiB | 11.5 GiB / not recorded | 15.5 GiB | 149.625 MiB |
 | Swift Bonsai 2 `PQ2_0` (captured source diagnostic) | Rust 0.1.9, four workers + LoRA 1.3 | Not measured | 6.71 GiB | 11.5 GiB / 7.04 GiB | 15.5 GiB | 149.625 MiB |
@@ -92,7 +92,10 @@ The [verified PTQ1 export](config/swift.ptq1-export.json) saves **1,259,520,000 
 unmeasured; the packing saving alone does not qualify resources or performance.
 
 > [!NOTE]
-> **PTQ1 is diagnostic only; shipping it as the app default remains no-go.**
+> **PTQ1 is an experimental opt-in; qualification for the app default is pending.**
+> Select the verified current-weight export with
+> `./scripts/Start-Chat.ps1 -NativeEngine -UseRepackedPtq1` after
+> [provisioning it](docs/development-guide.md#runtime-selection).
 > The bold row names the pinned Rust 0.1.10 profile; historical measurements do not
 > transfer to it. The [0.1.7 source diagnostic](docs/evidence/ptq1-rust-smoke.json)
 > measured **5.85 GiB peak Job commit** for one supplied token at adapter scale 1.3:

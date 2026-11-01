@@ -66,14 +66,17 @@ Measure adaptive broker forwarding and retained idle speech scratch before
 claiming a latency, throughput or process-memory gain.
 
 Qualify the Rust PTQ1 DLL collector against the current locked Prism source through
-the main-only numerical workflow. The [current-release one-worker
+the main-only numerical workflow, explicitly selecting the intended Auto, scalar or
+NEON backend. Selection prepares one bounded comparison, not a matrix or permission
+to split a matrix across repeated owner-device runs. The [current-release one-worker
 attempt](docs/evidence/ptq1-0110-service-attempt.json) reached PTQ1/adapter readiness
 but its initial scale-1.3 request exhausted the request allowance; zero-scale,
 invalid-scale and supplied-history checks remain pending. Qualify the reduced
 `ptq1-adapter-lifecycle` workload with three one-token streams and minimal public
 history, retaining startup/request attribution and all required steps. Retain
-bounded live request/partial-prefix attribution before optimizing a measured
-hotspot; completed-operation counts do not prove zero emitted tokens. Qualify the
+bounded live request/partial-prefix receipts from the incremental observer before
+optimizing a measured hotspot; observed SSE delivery is not backend kernel timing
+or decode TPS, and completed-operation counts do not prove zero emitted tokens. Qualify the
 explicit `ptq1-pq2-complete-response` Rust-service pair within the same aggregate
 budget before planning broader comparisons. Its single tree-name prompt and
 fixed-order pair establish feasibility only; repeated interleaving, stable-device
@@ -379,7 +382,9 @@ not close pending hosted integration or full-model acceptance.
   from private commit and preserve reserves. Collect and independently review all
   gates in the explicit PTQ1 promotion policy, including exact packing provenance
   and actual-device original-PQ2 rollback; PQ2 and worker variants cannot supply
-  a PTQ1 promotion verdict.
+  a PTQ1 promotion verdict. Retain the self-contained promotion score with its exact
+  policy/profile identities and remaining gate requirements alongside reviewed evidence;
+  an actionable pending-gate report does not close those gates.
   Replace the publisher-only prefix screen and oversized complete-answer matrix
   with a reviewed, feasible Rust-service capture while retaining complete-response,
   per-prompt adapter TPS/quality, stable conditions and independent-review gates.
