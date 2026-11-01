@@ -28,6 +28,9 @@ fn quote(value: &str) -> String {
 
 fn run() -> Result<String, hexagon_native_rpc::Error> {
     let arguments: Vec<_> = std::env::args_os().skip(1).collect();
+    let queue_compute = arguments
+        .first()
+        .is_some_and(|value| value == "--reference-queue-compute-probe");
     let reference_probe = arguments
         .first()
         .is_some_and(|value| value == "--reference-session-mapping-probe");
@@ -35,7 +38,7 @@ fn run() -> Result<String, hexagon_native_rpc::Error> {
         || arguments
             .first()
             .is_some_and(|value| value == "--session-mapping-probe");
-    if arguments.len() != if session_probe { 2 } else { 1 } {
+    if arguments.len() != if session_probe || queue_compute { 2 } else { 1 } {
         return Err(hexagon_native_rpc::Error::Contract);
     }
     if arguments[0] == "--self-test" {
@@ -51,7 +54,7 @@ fn run() -> Result<String, hexagon_native_rpc::Error> {
             quote(&location.path().to_string_lossy())
         ));
     }
-    let package = session_probe.then(|| std::path::Path::new(&arguments[1]));
+    let package = (session_probe || queue_compute).then(|| std::path::Path::new(&arguments[1]));
     let forbidden = [
         "ADSP_", "CDSP_", "FASTRPC_", "RPCMEM_", "GGML_", "GENIEX_", "QNN_", "QAIRT_", "HEXAGON_",
     ];
@@ -66,6 +69,14 @@ fn run() -> Result<String, hexagon_native_rpc::Error> {
     if let Some(package) = package {
         let driver = Driver::open_system()?;
         let driver_path = driver.path().to_string_lossy().into_owned();
+        if queue_compute {
+            let report = driver.reference_queue_compute_probe(package, |snapshot| {
+                let mut output = io::stderr().lock();
+                let _ = writeln!(output, "hexagon-compute:stage={}", snapshot.stage);
+                let _ = output.flush();
+            })?;
+            return Ok(queue_compute_json(&driver_path, &report));
+        }
         let progress = |snapshot: &hexagon_native_rpc::SessionMappingReport| {
             let mut output = io::stderr().lock();
             let _ = writeln!(output, "hexagon-session:stage={}", snapshot.stage);
@@ -204,6 +215,53 @@ fn session_mapping_json(path: &str, report: &hexagon_native_rpc::SessionMappingR
         raw(report.process_initialization_domain_after),
         raw(report.process_initialization_enable_after),
         report.unsigned_process_requested,
+    )
+}
+
+fn queue_compute_json(path: &str, report: &hexagon_native_rpc::QueueComputeReport) -> String {
+    let raw =
+        |value: Option<i32>| value.map_or_else(|| String::from("null"), |value| value.to_string());
+    let architecture = report
+        .metadata
+        .architecture
+        .map_or_else(|| String::from("null"), |value| value.to_string());
+    format!(
+        "{{\"schemaVersion\":1,\"kind\":\"native-fastrpc-queue-compute-probe\",\"driverDll\":{},\"passed\":{},\"stage\":{},\"metadataPrepared\":{},\"architectureRaw\":{},\"architecture\":{},\"sessionId\":0,\"domainResult\":{},\"effectiveDomain\":{},\"uriResult\":{},\"uriVerified\":{},\"processInitializationResult\":{},\"processInitializationDomainAfter\":{},\"processInitializationEnableAfter\":{},\"unsignedProcessRequested\":{},\"moduleOpenResult\":{},\"handleObserved\":{},\"allocationSucceeded\":{},\"mappingResult\":{},\"queueCreateResult\":{},\"queueExportResult\":{},\"queueStartResult\":{},\"queueWriteResult\":{},\"queueReadResult\":{},\"computeSubmitted\":{},\"responseValidated\":{},\"numericValidated\":{},\"computeExecuted\":{},\"queueStopResult\":{},\"queueCloseResult\":{},\"unmappingResult\":{},\"freeCompleted\":{},\"moduleCloseResult\":{},\"ownerPinnedUntilExit\":{},\"poisoned\":{},\"driverLoaded\":true,\"sessionTeardownVerified\":false,\"signedDeploymentVerified\":false,\"profileEligible\":false,\"k\":32,\"m\":32,\"n\":2,\"outputElements\":64,\"bytes\":16384,\"requestBytes\":24,\"responseBytes\":88,\"nHvx\":1,\"nHmx\":0,\"powerMode\":4,\"ggmlSource\":{}}}",
+        quote(path),
+        report.completed_cycle(),
+        quote(report.stage),
+        report.metadata.metadata_prepared(),
+        report.metadata.architecture_raw,
+        architecture,
+        raw(report.metadata.domain_result),
+        raw(report.metadata.effective_domain),
+        raw(report.metadata.uri_result),
+        report.metadata.uri_verified,
+        raw(report.process_initialization_result),
+        raw(report.process_initialization_domain_after),
+        raw(report.process_initialization_enable_after),
+        report.unsigned_process_requested,
+        raw(report.module_open_result),
+        report.handle_observed,
+        report.allocation_succeeded,
+        raw(report.mapping_result),
+        raw(report.queue_create_result),
+        raw(report.queue_export_result),
+        raw(report.queue_start_result),
+        raw(report.queue_write_result),
+        raw(report.queue_read_result),
+        report.compute_submitted,
+        report.response_validated,
+        report.numeric_validated,
+        report.compute_executed(),
+        raw(report.queue_stop_result),
+        raw(report.queue_close_result),
+        raw(report.unmapping_result),
+        report.free_completed,
+        raw(report.module_close_result),
+        report.owner_pinned_until_exit,
+        report.poisoned,
+        quote(hexagon_native_rpc::COMPUTE_GGML_SOURCE),
     )
 }
 
