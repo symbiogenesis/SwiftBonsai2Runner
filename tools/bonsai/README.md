@@ -64,8 +64,8 @@ builds/downloads nothing; setup, verification, workers and teardown share the on
 allowance. A successful smoke does not qualify numerics, adapters or performance.
 See the [candidate examples](../../docs/runtime-candidates/README.md).
 
-The remaining cold-bootstrap bridge requires `bonsai-tools` version 0.1.0,
-protocol 5 and checks the advertised commands before forwarding a request. Runtime guards remain held
+The maintenance executable reports version 0.1.0, protocol 5 and its supported
+commands through `--version`. Runtime guards remain held
 through version/help probes and complete completion batches. Older protocols are
 rejected before an operation can start.
 
@@ -105,14 +105,12 @@ Host capability projection/CPU identities, acceptance-deadline policy, sanitized
 startup diagnostics and PTQ1 collector receipt/ABI checks live in Rust. Their
 former PowerShell modules/scripts have been removed. The offline qualification,
 PTQ1 screen, runtime promotion and inference-lock wrapper scripts have also been
-removed; invoke the existing native JSON commands directly or use the shared
-`Invoke-BonsaiTool` bridge as in the examples above.
+removed; invoke the native JSON commands directly as in the examples above.
 
 `host-capabilities` accepts `operation: "project"` with bounded `facts`, or
-`operation: "identity"` with the v1 `capabilities` report. Doctor copies selected
-CIM fields and UTC date strings; Rust owns validation, status, canonical ordering
-and digest bytes. Doctor requires a selected prebuilt tool for these optional
-details, and otherwise retains basic Windows/tool inventory without compilation.
+`operation: "identity"` with the v1 `capabilities` report. Native `doctor` supplies registry, CPU-set, memory and SetupAPI observations;
+optional unavailable fields remain explicit unknowns. Rust owns projection,
+canonical ordering and digest bytes. See [host inventory](../../docs/hardware-capabilities.md).
 
 `native-acceptance-budget` receives canonical seven-fraction UTC timestamps,
 monotonic ticks/frequency, run/revision and the optional complete owner binding.
@@ -192,9 +190,9 @@ Requests are JSON objects read through a retained read-only handle, capped at
 16 MiB. Qualification envelopes allow 160 MiB for escaped responses; original
 evidence/review files remain limited to 16 MiB each and require standard JSON.
 Success writes one JSON object to stdout; failure writes stderr diagnostics and
-returns nonzero. Credential receipts contain paths only. The bridge uses external
-native working directories, retains failed requests and preserves inherited
-Windows/profile environment variables.
+returns nonzero. Credential receipts contain paths only. Native execution uses
+external working directories and preserves inherited Windows/profile environment
+variables. Caller identities are observed natively when omitted for supervised work.
 
 `speech-models` validates the compiled native Canary and Qwen GGUF locks and
 returns the selected download plan and aggregate paths/byte total without
@@ -207,15 +205,11 @@ cached speech files; the native services verify their hashes before first use.
 `source-build` owns content fingerprints, executable digest receipts, immutable
 maintenance snapshots and the pinned Cargo invocation for source maintenance/chat
 builds. Native publication writes a bounded atomic bootstrap receipt with the
-snapshot digest and checked capabilities. Warm PowerShell bootstrap checks the
-receipt and image digest without starting a separate version process; changed
-images receive their version handshake in Rust. `-ForceBuild` can repair a
-damaged bootstrap through the cold compiler path. Cache hits skip Cargo;
-rebuilds use content freshness without cache cleanup. `chat-launch` owns
-the source launcher's option validation, provisioning selection, credentials,
-arguments and native app lifetime. PowerShell remains a bootstrap/parameter bridge.
-Rust holds the persistent per-user instance lock until the owned app tree exits;
-the PowerShell wrapper only probes for an existing owner before tool resolution.
+snapshot digest and checked capabilities. Changed images receive their version
+handshake in Rust. Cache hits skip Cargo; rebuilds use content freshness without
+cache cleanup. `chat` and JSON `chat-launch` own option validation, provisioning,
+credentials, arguments and native app lifetime. Rust holds the persistent per-user
+instance lock until the owned app tree exits.
 Build variants use independent, flushed-and-atomically-published receipts.
 Non-build documentation/helper changes preserve reuse; referenced embedded
 content and configuration changes invalidate it. Damaged outputs and incomplete
@@ -284,10 +278,10 @@ Ordinary Rust unit tests cover command policy without requiring that release.
 It retains read-only input handles, checks bounded inventories, file hashes,
 ARM64 headers, source package versions and the compiler pin, then writes a new
 candidate lock and review evidence. It does not extract or execute the release
-bundle. `Get-Inference.ps1` keeps its separate provisioning path without a
-maintenance-tool or Cargo dependency.
+bundle. `provision` operation `inference` owns explicit acquisition/staging; it
+does not build the runtime or require Cargo.
 
-`Get-Inference.ps1 -IncludeCapabilities` additionally invokes
+`provision` operation `inference` with `includeCapabilities: true` invokes
 `inference-capabilities` to verify the compiled release archive and every
 installed file, retaining their read handles through an owned ten-second,
 512 MiB model-free `--capabilities` probe. The exact v1 report is parsed with
@@ -295,8 +289,7 @@ the shared CPU-policy contract and must match the pinned version and native
 Windows ARM64 target. Each output stream is limited to 16 KiB; stdout remains
 separate from stderr. The result adds `Capabilities` and `CapabilityVerification`,
 including the retained evidence directory. No model is loaded or profile selected.
-This option requires a trusted current maintenance tool (or the normal source
-build fallback) and rejects custom locks. Ordinary provisioning is unchanged.
+This option requires a trusted current maintenance tool and rejects custom locks.
 
 `speech-build` validates the compiled native compiler/source pins, checks compiler
 archive names in bulk and stages source ZIPs. ZIP identity, complete path inventory,
@@ -413,13 +406,12 @@ CI on an actual native Snapdragon X/X2 Elite. The 28/14-process full matrices ha
 no demonstrated complete five-minute owner bound, so self-hosted/owner execution
 rejects before preparation. Their manual workflows retain hosted nonlaunching
 `plan`/`screen-plan` results and leave qualification pending. The removed
-PowerShell wrappers are unnecessary; `Invoke-BonsaiTool` remains an optional JSON
-bridge and requires a prebuilt executable for capture operations. Never split a
+PowerShell wrappers are retired; use a prebuilt executable for capture operations. Never split a
 matrix across repeated owner jobs to bypass the aggregate allowance.
 
 Frozen pre-port PowerShell fixtures cover complete CPU policies, artifact identities
 and argument vectors, including Unicode prompts and adapter scale syntax. Pure
-policy tests run in Rust; focused script checks cover the packaged JSON bridge.
+policy and packaged command checks run in Rust.
 
 ## Development checks
 

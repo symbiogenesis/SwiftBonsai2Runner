@@ -266,8 +266,8 @@ Selection reviewed **2026-10-29**; this date is not a claim of continuing freshn
 | `rustix` | 1.1.6 |
 | `schannel` | 0.1.30 |
 | `unicode-width` | 0.2.3 |
-| .NET SDK | 10.0.403, listed on the [release page](https://dotnet.microsoft.com/en-us/download/dotnet/10.0) and installed |
-| PSScriptAnalyzer / cargo-audit / LLVM | 1.25.0 / 0.22.2 / 23.1.4 |
+| .NET SDK | Retired from Runner validation with the PowerShell/C# bootstrap |
+| cargo-audit / LLVM | 0.22.2 / 23.1.4; PSScriptAnalyzer retired with repository scripts |
 
 At review, `cargo update --dry-run --verbose` found no further compatible updates;
 Actions/tool pins were current and windows-future 0.3.2 was deliberate. Nightly,
@@ -285,8 +285,9 @@ provisioned ASR/TTS binaries. Focused Release regressions:
 - `json_candidate::fixed_candidate_preserves_unicode_and_rejections`
 - `json_candidate_parser::tests::reuse_preserves_parity_through_failures_and_size_changes`
 
-PSScriptAnalyzer covers 62 scripts; strict Release C# covers the extracted helper
-under SDK 10.0.403. The 2026-10-26 evidence also covers format/Release
+The earlier 62-script PSScriptAnalyzer and embedded C# checks are historical
+evidence; those implementations and validation dependencies are retired. The
+2026-10-26 evidence also covers format/Release
 Clippy/docs/build for `bonsai-artifacts`, `bonsai-broker`, `bonsai-tools`, archive
 path/expansion/hostile-source regressions, actionlint 1.7.12 and YAML/event/permission
 checks, without hosted-validation receipts. These checks establish no performance

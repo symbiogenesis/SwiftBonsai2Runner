@@ -292,13 +292,11 @@ contains application packages, not upstream runtime catalogs.
 | Group | Coverage |
 | --- | --- |
 | Broker, UI, speech, maintenance | Affected packages/consumers with independent caches |
-| Standards | PowerShell contracts/analyzers and strict embedded C# |
-| Foundation/native scripts | Provisioning, plans, process wrappers, packaged supervision, portable package lifecycle/tamper/path checks and copied-launcher dependencies |
+| Native integration | Released GGUF/Python integration and admission-only checks; Rust maintenance tests own provisioning, plans, supervision and package lifecycle/tamper/path checks |
 | Released runtime | Archive/install/profile/adapter/admission policy, GGUF wrappers, help switching and actual pinned Rust inference provisioning with `includeCapabilities: true` |
 
 For example, a broker edit selects broker checks; shared Windows-boundary edits
-also select broker/CLI consumers. CLI edits select CLI/app integration; script
-standards run only for their inputs. Missing/unclassified diffs or changes to
+also select broker/CLI consumers. CLI edits select CLI/app integration. Missing/unclassified diffs or changes to
 workspace/lockfile/toolchain/CI inputs select full coverage. Manual dispatch
 selects everything. Each workflow compares with its newest successful main-push
 ancestor, covering failed/cancelled intervening changes. New automatic pushes
@@ -310,7 +308,8 @@ Maintenance owns affected Windows Job tests and produces a CLI plus feature-gate
 Rust completion probe. Consumers verify revision, both digests and ARM64 identities;
 lifecycle fixtures retain production headless mitigations. Script/released-runtime
 lanes start after maintenance without waiting for independent broker/UI/speech.
-Only standards installs .NET; scripts use PowerShell's bundled `Add-Type` compiler.
+The PowerShell/C# bootstrap, script tests, analyzer job and .NET SDK pin were
+retired with their Rust replacements.
 
 ASR/TTS use separate lanes and the checked CLI for pinned source preparation.
 TTS caches four native static libraries plus digest receipt through
@@ -333,7 +332,7 @@ inputs/receipts, non-build versus embedded-input changes, interrupted publicatio
 model-only provisioning and resumable partial downloads. Synthetic compiler trees
 must leave no descendants after cancellation/timeout/early root exit before lock
 reacquisition. Environment checks preserve Unicode/profile entries and reject
-protected overlays. PowerShell checks copied packages and single-instance launch. These establish
+protected overlays. Rust checks packages and single-instance launch. These establish
 correctness, not startup speed or inference performance.
 
 Upstream-only coverage runs in Prism's [conformance](https://github.com/symbiogenesis/prism-inference/blob/main/.github/workflows/runtime-conformance.yml),
@@ -430,11 +429,6 @@ Existing HTML caches/machine settings are untouched. Recheck the [unstable outpu
 on toolchain changes. Ordinary validation builds neither browsable docs nor doctests;
 complete tests retain their CI guard.
 
-PowerShell 7.6+ uses latest strict mode, terminating native errors, advanced
-functions and typed output. PSScriptAnalyzer 1.25.0 rejects unsuppressed diagnostics.
-The [pinned .NET SDK](../global.json) checks every embedded Add-Type helper in
-Release with nullable/checked arithmetic and unsafe compilation disabled.
-
 ## Focused local checks
 
 Keep scripts/logs/captures/native working directories in a unique system-temp
@@ -442,18 +436,15 @@ lane outside Git. Expand absolute paths, preserve inherited Windows/profile
 environment variables and choose the compiler explicitly.
 
 ```powershell
-$tooling = Join-Path ([IO.Path]::GetTempPath()) ('Runner-Tooling-' + [guid]::NewGuid().ToString('N'))
-Save-Module PSScriptAnalyzer -RequiredVersion 1.25.0 -Repository PSGallery -Path $tooling -Force
-./tests/Test-Standards.ps1 -AnalyzerModulePath (Join-Path $tooling 'PSScriptAnalyzer/1.25.0/PSScriptAnalyzer.psd1')
-
 $scratch = Join-Path ([IO.Path]::GetTempPath()) ('Runner-Checks-' + [guid]::NewGuid().ToString('N'))
 bonsai-ci rust-check --root $PWD --package bonsai-broker --target (Join-Path $scratch 'target') --evidence (Join-Path $scratch 'evidence')
 ```
 
-Choose a relevant named Rust regression, e.g. `cargo test --package bonsai-tools startup_download::tests::corrupt_completed_partial_is_preserved_and_fresh_retry_publishes -- --exact`
-or `./tests/Test-NativeProcess.ps1 -Case Capture`. Direct Cargo tests select one
-regression with external target/working directories. `--full-tests` is reserved
-for main-branch GitHub Actions; benchmarks are always CI-only.
+Choose a relevant named Rust regression, such as
+`cli::tests::bounded_input_rejects_nonobjects_truncation_and_overflow`, with
+`cargo test --package bonsai-tools --lib NAME -- --exact` and external target/working
+directories. `--full-tests` is reserved for main-branch GitHub Actions; benchmarks
+are always CI-only.
 
 `window::interaction_tests::` drives egui input/accessibility with inert channels:
 Enter/Shift+Enter, streaming selection and startup drafting, with no GPU/model/audio

@@ -28,19 +28,25 @@ actual-model and broker-only/same-user isolation limits still apply.
 ## Native chat app
 
 The [portable package workflow](chat-packages.md) installs reviewed prebuilt app
-files without a checkout/compiler. Source launch requires native Windows ARM64
-PowerShell 7.6+, the pinned Rust toolchain, Swift model/runtime files and
+files without a checkout/compiler. Source launch requires native Windows ARM64,
+the pinned Rust toolchain, a built maintenance executable, Swift model/runtime files and
 **15.5 GiB available RAM**. Serviced Windows 11 must admit PSEC 1.1 and
 container-hosted loopback; failed containment never falls back to caller authority.
 
-Provision Swift and its pinned adapter, then launch:
+Build the maintenance executable outside Git once, then provision Swift and its
+pinned adapter. Rebuild it after maintenance-source changes:
 
 ```powershell
+$repo = $PWD.Path
+$target = Join-Path $env:LOCALAPPDATA 'SwiftBonsai2/build/maintenance'
+cargo build --locked --release --manifest-path (Join-Path $repo 'Cargo.toml') --package bonsai-tools --bin bonsai-tools --target-dir $target
+$env:BONSAI_TOOLS_PATH = Join-Path $target 'release/bonsai-tools.exe'
+$env:PATH = (Split-Path $env:BONSAI_TOOLS_PATH) + [IO.Path]::PathSeparator + $env:PATH
 $data = Join-Path $env:LOCALAPPDATA 'SwiftBonsai2'
 bonsai-tools provision --json (@{ operation = 'engine'; dataDirectory = $data; lockPath = (Join-Path $PWD 'config/swift-assessment.lock.json') } | ConvertTo-Json -Compress)
 bonsai-tools provision --json (@{ operation = 'model'; dataDirectory = $data; lockPath = (Join-Path $PWD 'config/swift-assessment.lock.json') } | ConvertTo-Json -Compress)
 bonsai-tools provision --json (@{ operation = 'adapter'; dataDirectory = $data } | ConvertTo-Json -Compress)
-./scripts/Start-Chat.ps1 -DataDirectory $data
+bonsai-tools chat --data-directory $data
 ```
 
 The native Rust `egui`/`eframe` app follows the [UI contract](ui-architecture.md).
@@ -128,7 +134,7 @@ files before first load. Original snapshots/private runtimes are preserved.
 Download and verify without compiling or launching:
 
 ```powershell
-$speech = ./scripts/Start-Chat.ps1 -DataDirectory $data -SpeechModelsOnly
+$speech = bonsai-tools chat --data-directory $data --speech-models-only
 $speech.CanaryModelPath
 $speech.TtsModelPath
 $speech.TtsCodecPath
@@ -137,8 +143,8 @@ $speech.TtsVoiceModelPath
 
 Rust `speech-build` with `operation: "models"` and `model: "Canary"` or `"QwenTts"`
 selects one engine. Rust `provision` with `operation: "speech-reference"` explicitly provisions original reference
-snapshots, which the app no longer uses. `-NoTts` skips automatic TTS setup;
-`-NoSpeechModels` skips all automatic speech setup/downloads. Neither provisioning
+snapshots, which the app no longer uses. `--no-tts` skips automatic TTS setup;
+`--no-speech-models` skips all automatic speech setup/downloads. Neither provisioning
 nor compiling opens a microphone.
 
 Native speech builds require the pinned Rust compiler, Visual Studio 18 ARM64 C++
@@ -196,13 +202,12 @@ default. Evaluate smaller Q4_K_M talkers with
 the unchanged Q8 codec explicitly:
 
 ```powershell
-./scripts/Start-Chat.ps1 -DataDirectory $data -TtsQuantization Q4_K_M
-Import-Module ./scripts/Bonsai.Tools.psm1
-Invoke-BonsaiTool -Command speech-build -TimeoutSeconds 0 -Request @{
+bonsai-tools chat --data-directory $data --tts-quantization Q4_K_M
+& $env:BONSAI_TOOLS_PATH speech-build --json (@{
     operation = 'models'; dataDirectory = $data; workingDirectory = [IO.Path]::GetTempPath()
     model = 'QwenTts'; ttsQuantization = 'Q4_K_M'; verifyOnly = $false; deferCachedVerification = $false
-}
-Invoke-BonsaiTool -Command speech-evaluation -Request @{ operation = 'host-plan'; repetitions = 2 }
+} | ConvertTo-Json -Depth 64 -Compress) | ConvertFrom-Json -AsHashtable
+& $env:BONSAI_TOOLS_PATH speech-evaluation --json (@{ operation = 'host-plan'; repetitions = 2 } | ConvertTo-Json -Depth 64 -Compress) | ConvertFrom-Json -AsHashtable
 ```
 
 Each immutable profile is verified before loading. Actual evaluation belongs to
@@ -222,22 +227,18 @@ working path, not full audio quality, latency or daily-use qualification.
 
 ### Source launch, caches and runtime selection
 
-`Start-Chat.ps1` bridges to Rust `chat-launch`; an owned `chat-prepare` worker runs
-after the first UI tick. Rust owns option validation, speech setup, build selection,
-credentials and app launch. `BONSAI_TOOLS_PATH` or `-ToolPath` selects a trusted
-packaged maintenance CLI. Otherwise its reusable cache is
-`%LOCALAPPDATA%/SwiftBonsai2/build/tools/`, separated by checkout/compiler. An
-immutable bootstrap copy permits rebuilding without replacing the running tool.
-This resolver also serves model-only provisioning without loading models or
-building speech engines.
+`bonsai-tools chat` directly opens the native application; an owned `chat-prepare`
+worker runs after the first UI tick. Rust owns options, speech setup, builds,
+credentials, per-user admission and teardown. The maintenance executable can be
+selected from a trusted hosted artifact or built once with the commands above;
+there is no source-bootstrap script or PowerShell module dependency. Unchanged
+launches call the executable directly without running Cargo. The JSON
+`chat-launch` command remains available for automation.
 
-Cold Cargo bootstrap gates a no-profile PowerShell trampoline into a verified,
-unnamed kill-on-close Windows Job before starting Cargo, preserving Unicode
-arguments, inherited environment and separate output streams. Caller loss before
-assignment closes the gate without launching Cargo; unexpected surviving
-descendants reject the build, and Job cleanup precedes release of the live
-caller's build lock. Rust owns subsequent builds and publication; ordinary
-native-tool probes retain their existing cleanup unless `OwnDescendants` is selected.
+Native commands observe and retain the caller's PID and creation identity before
+supervised work; explicit caller identities remain supported. Caller loss stops
+owned work, and native Jobs retain descendant cleanup. Source builds publish
+checked immutable snapshots when requested through `source-build`.
 
 Chat/broker outputs use `DataDirectory/build/chat/`; companions use
 `DataDirectory/build/native-speech/`. Source/build fingerprints and SHA-256 executable
@@ -247,7 +248,7 @@ and OS processor-feature observations: moving X1 data to X2 rebuilds native
 objects and CMake ISA probes. Missing mandatory host facts reject reuse/build.
 Source, embedded/configuration pins, locks, local dependencies, build environment
 or executable changes invalidate receipts; unknown embedded inputs disable reuse.
-Documentation/CI/PowerShell helper changes alone do not rebuild Rust. Cargo's
+Documentation and CI changes alone do not rebuild Rust. Cargo's
 content freshness handles preserved timestamps. Each variant has an atomic receipt,
 short labels protect MSVC path space, and no startup cache cleanup is needed.
 A version probe is reused only for the executable digest checked during that launch.
@@ -260,40 +261,40 @@ there disable receipt reuse rather than treating untracked dependencies as stabl
 Build cancellation, owner exit or crash closes its Windows Job and waits for
 descendants before releasing the build lock. Writes complete before source/receipt
 publication; corrupt completed partials are preserved before one fresh attempt.
-Session credentials and diagnostics stay fresh. `-ForceBuild` repeats Cargo/native
-preparation, including after external compiler/cache changes. Absolute `-ChatPath`
-and `-BrokerPath` must select matching current builds; older apps lack deferred
+Session credentials and diagnostics stay fresh. `--force-build` repeats Cargo/native
+preparation, including after external compiler/cache changes. Absolute `--chat-path`
+and `--broker-path` must select matching current builds; older apps lack deferred
 startup flags. Unique system-temp lanes retain `source-build-*.log` and `chat.log`.
 
 One user-wide exclusive `%LOCALAPPDATA%/SwiftBonsai2/chat.lock` covers preparation
 through app exit, including launches from other checkouts/packages/data/ports.
 Repeated launches report already starting/running. The empty sentinel persists
-after release; `-SpeechModelsOnly` is independent and direct executable launches
-bypass the script guard. Installed launches use [package verification](chat-packages.md#launch-without-a-checkout).
+after release; `--speech-models-only` is independent. Direct `bonsai-tools chat`
+and installed-package launches retain native admission. Installed launches use [package verification](chat-packages.md#launch-without-a-checkout).
 
 ### Runtime selection
 
 | Runtime/model | Source and installed launch options | Boundary |
 | --- | --- | --- |
 | Publisher Prism CPU, original Swift PQ2 | Default; pinned adapter enabled | Adapter scale follows response settings. Missing/altered adapters fail with provisioning guidance, without download or fallback. |
-| Publisher Prism CPU, current-weight PTQ1 export | `-UseRepackedPtq1` (app/broker `--use-repacked-ptq1`) | Same adapter opt-out/scale. Missing/changed bytes reject; no older publisher PTQ1 substitution or fallback. |
-| Experimental native Rust 0.1.10, original Swift PQ2 or exact current-weight PTQ1 | `-NativeEngine`, optionally `-UseRepackedPtq1` and `-NoAbliterateLora` (app/broker `--native-engine`) | Exact model, approved adapter and representation-aware readiness are verified; no engine switch after failure. Separate [PTQ1 qualification](swift-memory.md#current-weight-ptq1-option) is pending. |
+| Publisher Prism CPU, current-weight PTQ1 export | `--use-repacked-ptq1` (app/broker `--use-repacked-ptq1`) | Same adapter opt-out/scale. Missing/changed bytes reject; no older publisher PTQ1 substitution or fallback. |
+| Experimental native Rust 0.1.10, original Swift PQ2 or exact current-weight PTQ1 | `--native-engine`, optionally `--use-repacked-ptq1` and `--no-abliterate-lora` (app/broker `--native-engine`) | Exact model, approved adapter and representation-aware readiness are verified; no engine switch after failure. Separate [PTQ1 qualification](swift-memory.md#current-weight-ptq1-option) is pending. |
 
-`-NoAbliterateLora` (direct app `--no-abliterate-lora`) omits the adapter and disables
+`--no-abliterate-lora` (direct app `--no-abliterate-lora`) omits the adapter and disables
 its control. Provision the native release before selecting it:
 
 ```powershell
 bonsai-tools provision --json (@{ operation = 'inference'; dataDirectory = $data } | ConvertTo-Json -Compress)
-./scripts/Start-Chat.ps1 -DataDirectory $data -NativeEngine -NoAbliterateLora
+bonsai-tools chat --data-directory $data --native-engine --no-abliterate-lora
 ```
 
 A publisher startup diagnostic of `process=exited-0xC0000142` means Windows failed
 runtime initialization. **Retry model** repeats the selected runtime; it does not
-switch to Rust. Close the window and relaunch with `-NativeEngine` after provisioning
+switch to Rust. Close the window and relaunch with `--native-engine` after provisioning
 with Rust `provision` operation `inference`. Retain the same data directory, model and adapter options;
-`-NativeEngine` alone keeps original PQ2 and the approved adapter selected.
+`--native-engine` alone keeps original PQ2 and the approved adapter selected.
 
-`-NativeEngine -NativeRowWorkers 4` explicitly selects the reviewed 0.1.10
+`--native-engine -NativeRowWorkers 4` explicitly selects the reviewed 0.1.10
 four-worker implementation. The default remains one worker; publisher/reference
 launches reject four, and no request can override this private launch setting.
 The [fixed-input comparison](evidence/row-parallel-smoke.json) preserves all logits
@@ -434,7 +435,7 @@ Job peaks can include denied allocations; these diagnostics are not performance
 or peak-memory acceptance.
 
 Select a trusted prebuilt Windows ARM64 `bonsai-tools` executable from the evaluated
-main revision through `BONSAI_TOOLS_PATH` or `-ToolPath`. CPU execution requires
+main revision through `BONSAI_TOOLS_PATH` or `--tool-path`. CPU execution requires
 that selection before the device allowance begins. Model-free planning may build
 the maintenance tool with pinned Rust in external temp, but never starts inference.
 
@@ -499,8 +500,7 @@ $broker = Join-Path $scratch 'build/release/bonsai-broker.exe'
 Create fresh protected keys under an existing owner-controlled external parent:
 
 ```powershell
-Import-Module ./scripts/Bonsai.Tools.psm1
-$keys = Invoke-BonsaiTool -Command credentials -Request @{ parentDirectory = $data }
+$keys = & $env:BONSAI_TOOLS_PATH credentials --json (@{ parentDirectory = $data } | ConvertTo-Json -Depth 64 -Compress) | ConvertFrom-Json -AsHashtable
 ```
 
 Configure the separate backend to use `$keys.BackendKeyFile`, then run the broker
@@ -638,18 +638,17 @@ into a new system-temp lane outside Git. Use the independently reviewed revision
 and run identity, rather than copying them from an unreviewed receipt:
 
 ```powershell
-Import-Module ./scripts/Bonsai.Tools.psm1
-Invoke-BonsaiTool -Command inference-lock -TimeoutSeconds 120 -Request @{
+& $env:BONSAI_TOOLS_PATH inference-lock --json (@{
     receiptPath = Join-Path $lane 'prism-inference-0.1.6-aarch64-pc-windows-msvc.receipt.json'
     archivePath = Join-Path $lane 'prism-inference-0.1.6-aarch64-pc-windows-msvc.zip'
     sourceArchivePath = Join-Path $lane 'source.zip'
     sourceRevision = $reviewedRevision; version = '0.1.6'
     runId = $reviewedRunId; runAttempt = 1
     outputPath = Join-Path $lane 'prism-inference.lock.candidate.json'
-}
+} | ConvertTo-Json -Depth 64 -Compress) | ConvertFrom-Json -AsHashtable
 ```
 
-The command uses `bonsai-tools`; supply a trusted build with `-ToolPath` or
+The command uses `bonsai-tools`; supply a trusted build with `--tool-path` or
 `BONSAI_TOOLS_PATH`, or let the resolver build the maintenance CLI in system temp.
 Production Rust provisioning still requires no Rust toolchain when using a prebuilt executable.
 The review checks receipt identities, archive and individual file hashes,

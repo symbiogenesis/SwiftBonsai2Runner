@@ -88,5 +88,6 @@ and a separate target/image so it can subsequently check and rebuild itself.
 A self-hosted cache miss does not compile the CI bootstrap. The deleted
 PowerShell registry, check module and check script have no compatibility
 wrappers; feature, batching, selection and suite-guard regressions are Rust
-tests. `Test-ToolBootstrap.ps1` retains only the still-required PowerShell
-maintenance bootstrap's own integrity and repair tests.
+tests. The maintenance PowerShell/C# bootstrap and its tests have also been
+retired; native command input, caller identity, build ownership and immutable
+publication tests own those contracts.

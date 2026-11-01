@@ -40,6 +40,27 @@ fn initialize_startup(request: &mut serde_json::Value) -> bonsai_tools::Result<(
     bonsai_tools::startup_cancel::initialize(parent)
 }
 
+fn startup_command(command: &str, request: &serde_json::Value) -> bool {
+    matches!(
+        command,
+            "source-build"
+                | "chat-launch"
+                | "chat-prepare"
+                | "hexagon-tools"
+                | "build-tools"
+                | "provision"
+                | "artifact"
+                | "doctor"
+    ) || (command == "speech-build"
+        && matches!(
+            request["operation"].as_str(),
+            Some("models" | "environment" | "build")
+        ))
+        || (command == "speech-evaluation" && request["operation"] == "evaluate")
+        || (command == "chat-package"
+            && matches!(request["operation"].as_str(), Some("launch" | "start")))
+}
+
 fn execute() -> bonsai_tools::Result<serde_json::Value> {
     let arguments: Vec<_> = std::env::args_os().skip(1).collect();
     if arguments.len() == 1 && arguments[0] == "--version" {
@@ -66,27 +87,7 @@ fn execute() -> bonsai_tools::Result<serde_json::Value> {
     } else {
         command
     };
-    let startup = matches!(
-        Some(command),
-        Some(
-            "source-build"
-                | "chat-launch"
-                | "chat-prepare"
-                | "hexagon-tools"
-                | "tool-process"
-                | "build-tools"
-                | "provision"
-                | "artifact"
-                | "doctor"
-        )
-    ) || (command == "speech-build"
-        && matches!(
-            request["operation"].as_str(),
-            Some("models" | "environment" | "build")
-        ))
-        || (command == "speech-evaluation" && request["operation"] == "evaluate")
-        || (command == "chat-package"
-            && matches!(request["operation"].as_str(), Some("launch" | "start")));
+    let startup = startup_command(command, &request);
     if startup {
         initialize_startup(&mut request)?;
     }
@@ -101,52 +102,55 @@ fn execute() -> bonsai_tools::Result<serde_json::Value> {
         request["parentProcessId"] = id.into();
         request["parentCreationTimeFileTime"] = creation.into();
     }
-    match Some(command) {
-        Some("tool-process") => bonsai_tools::tool_process::run(request),
-        Some("hexagon-tools") => bonsai_tools::hexagon_tools::run(request),
-        Some("build-tools") => bonsai_tools::build_tools::run(request),
-        Some("provision") => bonsai_tools::provision::run(request),
-        Some("artifact") => bonsai_tools::provision::artifact_run(request),
-        Some("doctor") => bonsai_tools::doctor::run(request),
-        Some("credentials") => bonsai_tools::credentials::run(request),
-        Some("completion") => bonsai_tools::completion::run(request),
-        Some("host-cpu") => bonsai_tools::host_cpu::run(&request),
-        Some("host-gpu") => bonsai_tools::host_gpu::run(&request),
-        Some("host-gpu-query") => bonsai_tools::host_gpu::query(&request),
-        Some("host-opencl") => bonsai_tools::host_opencl::run(&request),
-        Some("host-opencl-query") => bonsai_tools::host_opencl::query(&request),
-        Some("cpu-evaluation") => bonsai_tools::cpu_evaluation::run(request),
-        Some("cpu-check-plan") => bonsai_tools::completion::cpu_check_plan(request),
-        Some("cpu-check-report") => bonsai_tools::completion::cpu_check_report(request),
-        Some("cpu-check") => bonsai_tools::cpu_check::run(request),
-        Some("server-plan") => bonsai_tools::server::plan(request),
-        Some("server-policy") => bonsai_tools::server::run(request),
-        Some("runtime-stage") => bonsai_tools::install::run(request),
-        Some("runtime-verify") => bonsai_tools::runtime::run(request),
-        Some("memory") if request.as_object().is_some_and(serde_json::Map::is_empty) => {
+    dispatch(command, request)
+}
+
+fn dispatch(command: &str, request: serde_json::Value) -> bonsai_tools::Result<serde_json::Value> {
+    match command {
+        "hexagon-tools" => bonsai_tools::hexagon_tools::run(request),
+        "build-tools" => bonsai_tools::build_tools::run(request),
+        "provision" => bonsai_tools::provision::run(request),
+        "artifact" => bonsai_tools::provision::artifact_run(request),
+        "doctor" => bonsai_tools::doctor::run(request),
+        "credentials" => bonsai_tools::credentials::run(request),
+        "completion" => bonsai_tools::completion::run(request),
+        "host-cpu" => bonsai_tools::host_cpu::run(&request),
+        "host-gpu" => bonsai_tools::host_gpu::run(&request),
+        "host-gpu-query" => bonsai_tools::host_gpu::query(&request),
+        "host-opencl" => bonsai_tools::host_opencl::run(&request),
+        "host-opencl-query" => bonsai_tools::host_opencl::query(&request),
+        "cpu-evaluation" => bonsai_tools::cpu_evaluation::run(request),
+        "cpu-check-plan" => bonsai_tools::completion::cpu_check_plan(request),
+        "cpu-check-report" => bonsai_tools::completion::cpu_check_report(request),
+        "cpu-check" => bonsai_tools::cpu_check::run(request),
+        "server-plan" => bonsai_tools::server::plan(request),
+        "server-policy" => bonsai_tools::server::run(request),
+        "runtime-stage" => bonsai_tools::install::run(request),
+        "runtime-verify" => bonsai_tools::runtime::run(request),
+        "memory" if request.as_object().is_some_and(serde_json::Map::is_empty) => {
             bonsai_tools::completion::available_memory()
         }
-        Some("qualification") => bonsai_tools::qualification::run(request),
-        Some("runtime-promotion") => bonsai_tools::runtime_promotion::run(request),
-        Some("speech-models") => bonsai_tools::speech::run(request),
-        Some("inference-lock") => bonsai_tools::inference_lock::run(request),
-        Some("inference-capabilities") => bonsai_tools::inference_capabilities::run(request),
-        Some("speech-build") => bonsai_tools::speech_build::run(request),
-        Some("speech-evaluation") => bonsai_tools::speech_evaluation::run(request),
-        Some("source-build") => bonsai_tools::source_build::run(request),
-        Some("chat-launch") => bonsai_tools::chat_launch::run(request),
-        Some("chat-prepare") => bonsai_tools::chat_launch::prepare_run(request),
-        Some("chat-package") => bonsai_tools::chat_package::run(request),
-        Some("gguf") => bonsai_tools::gguf::run(request),
+        "qualification" => bonsai_tools::qualification::run(request),
+        "runtime-promotion" => bonsai_tools::runtime_promotion::run(request),
+        "speech-models" => bonsai_tools::speech::run(request),
+        "inference-lock" => bonsai_tools::inference_lock::run(request),
+        "inference-capabilities" => bonsai_tools::inference_capabilities::run(request),
+        "speech-build" => bonsai_tools::speech_build::run(request),
+        "speech-evaluation" => bonsai_tools::speech_evaluation::run(request),
+        "source-build" => bonsai_tools::source_build::run(request),
+        "chat-launch" => bonsai_tools::chat_launch::run(request),
+        "chat-prepare" => bonsai_tools::chat_launch::prepare_run(request),
+        "chat-package" => bonsai_tools::chat_package::run(request),
+        "gguf" => bonsai_tools::gguf::run(request),
         Some("ptq1-capture") => bonsai_tools::ptq1_capture::run(request),
-        Some("native-qualification") => bonsai_tools::native_qualification::run(request),
+        "native-qualification" => bonsai_tools::native_qualification::run(request),
         Some("ptq1-packing") => bonsai_tools::ptq1_packing::run(request),
-        Some("packing-qualification") => bonsai_tools::packing_qualification::run(request),
-        Some("host-capabilities") => bonsai_tools::host_capabilities::run(&request),
-        Some("native-acceptance-budget") => bonsai_tools::native_acceptance_budget::run(request),
-        Some("hexagon-policy") => bonsai_tools::hexagon_policy::run(request),
-        Some("publisher-startup") => bonsai_tools::publisher_startup::run(request),
-        Some("startup-diagnostics") => bonsai_tools::startup_diagnostics::run(request),
+        "packing-qualification" => bonsai_tools::packing_qualification::run(request),
+        "host-capabilities" => bonsai_tools::host_capabilities::run(&request),
+        "native-acceptance-budget" => bonsai_tools::native_acceptance_budget::run(request),
+        "hexagon-policy" => bonsai_tools::hexagon_policy::run(request),
+        "publisher-startup" => bonsai_tools::publisher_startup::run(request),
+        "startup-diagnostics" => bonsai_tools::startup_diagnostics::run(request),
         _ => Err("Unknown maintenance command.".into()),
     }
 }

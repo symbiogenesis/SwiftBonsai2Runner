@@ -7,7 +7,6 @@ pub type Result<T> = std::result::Result<T, String>;
 /// Commands exposed by the maintenance executable and its checked bootstrap receipts.
 pub const COMMANDS: &[&str] = &[
     "chat",
-    "tool-process",
     "hexagon-tools",
     "build-tools",
     "provision",
@@ -155,9 +154,6 @@ pub mod startup_cancel;
 
 /// Direct native command-line input and chat launch options.
 pub mod cli;
-
-/// Bounded trusted compiler/tool execution with native process ownership.
-pub mod tool_process;
 
 /// Hosted Hexagon source builds and bounded SDK inventory.
 pub mod hexagon_tools;
