@@ -21,9 +21,10 @@ including reference tests, generated code, external inference dependencies and
 compiler/build plumbing. Follow the [file-by-file contract and inventory](docs/cpp-retirement.md);
 native reference controls are temporary, with independent evidence retained as data.
 
-The next delivery milestone is an accepted daily-use Swift PQ2 CPU profile on the
-owner-managed hardware. Close the application, isolation, creative-quality, resource
-and installation gates below with reproducible evidence before expanding that profile.
+The next delivery milestone is an accepted daily-use Swift current-weight PTQ1 CPU
+default with the standard adapter at scale 1.3 on the owner-managed hardware. Retain
+original PQ2 as the explicit rollback. Close the application, isolation, creative-quality,
+resource and installation gates below with reproducible evidence before promotion.
 
 ## Research scope and practical budgets
 
@@ -95,6 +96,15 @@ passes four independently reviewed documentary gates and leaves fifteen pending.
 Close its actual-model, adapter provenance, paired benefit, quality, resource,
 isolation, recovery and installation gates before changing defaults or removing
 the README's adapter qualification. Later application identities need their own review.
+Run the independent Rust `ptq1-packing` verifier against both exact artifacts and
+retain its complete, source-bound report and independent review for the packing
+gate. Its decoder is separate from the exporter; synthetic controls and the
+exporter's self-check do not replace the complete scan. Use the validated residual
+original-owner allowance for the three-stream lifecycle, preserving the 300-second
+aggregate ceiling, original clocks and all model cleanup reserves. Never restart a
+clock or continue a partial matrix. The approved adapter's missing immutable
+checkpoint/conversion identity and all-48-SSM mapping remain an external provenance
+prerequisite; additional native/Rust agreement cannot supply it.
 
 - Qualify startup, supplied-history streaming, full 8K context and 4K output, long
   conversations, speech, offline restart and recovery. Cover Stop, abandonment,

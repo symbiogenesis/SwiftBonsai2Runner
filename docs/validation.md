@@ -47,6 +47,14 @@ source-bound test and maintenance binaries without loading models; the owner job
 verifies their run/revision, SHA-256 and native architecture before direct execution,
 with no Cargo build on the laptop.
 
+An inherited owner may predeclare a canonical work allowance of 1–270 seconds.
+The budget tool subtracts all elapsed time from its original monotonic start and
+retains fifteen seconds for owner process exit plus the ten-second case/process
+gap. The independent five-minute job limit, thirty-second postprocess reserve and
+240-second case maximum still apply. The original 210-second declaration retains
+its earlier limits; a larger declaration neither resets the clock nor authorizes
+another attempt. Receipts record the declared work and exit reserve separately.
+
 The workflow defaults to `profile: pq2-no-adapter`, preserving the original case
 within that aggregate bound. Explicit `bounded_history` and `stalled_consumer`
 dispatch inputs add reduced workloads only to `pq2-no-adapter`; both default to

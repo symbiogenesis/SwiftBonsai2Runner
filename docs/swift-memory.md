@@ -159,6 +159,14 @@ preserve symbols, raw scale bits, other tensor bytes and tokenizer/template/tran
 metadata without floating-point quantization. Bounded caller-owned buffers and
 batchwise byte-identical PQ2 reconstruction checks avoid a complete expanded model.
 
+Runner also provides the independent Rust `ptq1-packing` verifier through
+`Invoke-BonsaiTool`. It binds both complete artifact hashes and the compiled export
+receipt, compares every original symbol and raw scale with a separately derived
+decoder, and checks preserved metadata and non-PQ tensor bytes. Header reads,
+payload buffers and execution time are bounded. Its synthetic controls cover all
+wire bytes in every lane and malformed tensor extents; actual complete-file
+verification and independent review are still required for the promotion gate.
+
 All converted tensor block counts are divisible by sixteen, retaining 32-byte alignment.
 Non-tensor bytes occupy the 11,120,992-byte header/data-offset region; there are no
 source inter-tensor or trailing gaps. Retain the original source on disk, but avoid
