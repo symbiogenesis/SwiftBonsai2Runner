@@ -63,9 +63,11 @@ fn run_with(
     mut checkpoint: impl FnMut() -> Result<()>,
     launch: fn(&ProcessSpec) -> std::io::Result<OwnedProcess>,
 ) -> Result<Output> {
+    crate::startup_cancel::checkpoint()?;
     let process = launch(spec).map_err(|error| error.to_string())?;
     let deadline = Instant::now() + Duration::from_secs(10);
     let result = (|| loop {
+        crate::startup_cancel::checkpoint()?;
         checkpoint()?;
         if Instant::now() >= deadline {
             return Err(format!("{label} probe timed out."));
@@ -91,6 +93,7 @@ fn run_with(
         .stop(Duration::from_secs(10))
         .map_err(|error| error.to_string());
     result.and(stopped)?;
+    crate::startup_cancel::checkpoint()?;
     Ok(Output {
         stdout: read_output(&spec.stdout, maximum, label)?,
         stderr: read_output(&spec.stderr, maximum, label)?,
