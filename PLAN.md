@@ -66,9 +66,14 @@ Measure adaptive broker forwarding and retained idle speech scratch before
 claiming a latency, throughput or process-memory gain.
 
 Qualify the Rust PTQ1 DLL collector against the current locked Prism source through
-the main-only numerical workflow, then the explicit one-worker
-`ptq1-adapter-lifecycle` profile with mandatory zero-scale, invalid-scale and
-supplied-history steps. Source guards, [hosted build/ABI
+the main-only numerical workflow. The [current-release one-worker
+attempt](docs/evidence/ptq1-0110-service-attempt.json) reached PTQ1/adapter readiness
+but its initial scale-1.3 request exhausted the request allowance; zero-scale,
+invalid-scale and supplied-history checks remain pending. Retain bounded live
+request/partial-prefix attribution before choosing a smaller feasible workload or
+optimizing a measured hotspot; completed-operation counts do not prove zero emitted
+tokens. Do not repeat the matrix to bypass the shared device budget.
+Source guards, [hosted build/ABI
 controls](docs/evidence/ptq1-collector-hosted.json) and the prepared profile do not
 close actual-model logits/state, writer-basis or promotion gates. Keep intake,
 verification, model work and cleanup inside one aggregate five-minute owner allowance;
@@ -369,6 +374,9 @@ not close pending hosted integration or full-model acceptance.
   gates in the explicit PTQ1 promotion policy, including exact packing provenance
   and actual-device original-PQ2 rollback; PQ2 and worker variants cannot supply
   a PTQ1 promotion verdict.
+  Replace the publisher-only prefix screen and oversized complete-answer matrix
+  with a reviewed, feasible Rust-service capture while retaining complete-response,
+  per-prompt adapter TPS/quality, stable conditions and independent-review gates.
 - Capture prefill, first useful answer, decode TPS, task time, retries and truncation,
   working, private, Job, system and device memory peaks, hard faults, observable energy,
   responsiveness and sustained heat and fan behavior. Retain X2 `ProcessMemory`

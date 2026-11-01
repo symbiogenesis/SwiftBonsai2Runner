@@ -104,6 +104,12 @@ unmeasured; the packing saving alone does not qualify resources or performance.
 > quality and benefit remain unqualified. PQ2 remains the app default; the
 > [release decision](docs/swift-memory.md#release-decision) retains earlier failures.
 >
+> The [current 0.1.10 PTQ1 attempt](docs/evidence/ptq1-0110-service-attempt.json)
+> reached verified readiness, but its initial scale-1.3 request did not complete
+> within the request allowance. Intake, cleanup and receipt retention took
+> **168.70 s**; that duration is not a request-speed measurement. Partial response
+> progress is unknown, and zero-scale/rejection/history checks remain pending.
+>
 > The later [0.1.10 PQ2 lifecycle check](docs/evidence/prism-0110-lifecycle-service.json)
 > passed readiness, scales 1.3/zero/1.3, invalid-scale rejection, static supplied
 > history and owned cleanup in **124.781 s** from artifact intake through cleanup.
