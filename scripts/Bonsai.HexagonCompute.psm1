@@ -5,6 +5,7 @@ $PSNativeCommandUseErrorActionPreference = $true
 Import-Module (Join-Path $PSScriptRoot 'Bonsai.HexagonSession.psm1')
 Import-Module (Join-Path $PSScriptRoot 'Bonsai.HexagonDispatch.psm1')
 Import-Module (Join-Path $PSScriptRoot 'Bonsai.HexagonIdentity.psm1')
+Import-Module (Join-Path $PSScriptRoot 'Bonsai.Common.psm1')
 Import-Module (Join-Path $PSScriptRoot 'Bonsai.Native.psm1')
 
 function Get-BonsaiHexagonComputeResult {
