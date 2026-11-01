@@ -62,6 +62,7 @@ mod isa;
 mod opencl;
 mod power;
 mod power_policy;
+pub(super) mod signature;
 mod vulkan;
 
 pub(super) fn vulkan_inventory() -> io::Result<crate::VulkanInventory> {
@@ -103,6 +104,13 @@ pub(super) fn tool_environment(
         return Ok(None);
     }
     environment::build(std::env::vars_os(), overlay).map(Some)
+}
+
+pub(super) fn tool_environment_with_removed(
+    overlay: &std::collections::BTreeMap<String, String>,
+    removed: &[String],
+) -> io::Result<Vec<u16>> {
+    environment::build_with_removed(std::env::vars_os(), overlay, removed)
 }
 
 struct LaunchSpec<'a> {
@@ -168,6 +176,13 @@ impl ParentProcess {
             _ => Err(io::Error::last_os_error()),
         }
     }
+}
+
+pub(super) fn process_creation_time(id: u32) -> io::Result<u64> {
+    if id == 0 { return Err(invalid("Process identity must be nonzero.")); }
+    // SAFETY: The numeric PID requests only a fresh noninheritable query handle.
+    let handle = owned(unsafe { OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, 0, id) })?;
+    creation_file_time(&handle)
 }
 
 fn creation_file_time(handle: &OwnedHandle) -> io::Result<u64> {

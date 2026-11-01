@@ -33,6 +33,44 @@ pub fn current_process_creation_time() -> io::Result<u64> {
     native::maintenance::current_creation_time()
 }
 
+/// Returns the Windows creation FILETIME for an explicitly selected process.
+///
+/// # Errors
+/// Rejects PID zero and failed process/query operations.
+pub fn process_creation_file_time(id: u32) -> io::Result<u64> {
+    native::process_creation_time(id)
+}
+
+/// A verified Authenticode leaf signer from the Windows trust provider.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct AuthenticodeSigner {
+    /// Signer certificate common name; trust does not grant device admission.
+    pub common_name: String,
+    /// Lowercase SHA-1 certificate thumbprint, distinct from the file SHA-256.
+    pub thumbprint: String,
+}
+
+/// Verifies Authenticode against cached Windows trust and returns its leaf signer.
+///
+/// The caller retains an immutable file guard. No UI or network retrieval occurs.
+/// Run this potentially provider-blocking operation in a deadline-owned worker.
+///
+/// # Errors
+/// Rejects failed trust/revocation checks, missing signers and malformed names.
+pub fn verify_authenticode(file: &std::fs::File, path: &Path) -> io::Result<AuthenticodeSigner> {
+    native::signature::verify(file, path)
+}
+
+/// Lists matching module paths from a bounded read-only snapshot of a live process.
+///
+/// Paths identify observed modules, not independently verified mapped bytes.
+///
+/// # Errors
+/// Rejects invalid selections, failed snapshots and oversized inventories.
+pub fn process_module_paths(id: u32, basename: &str) -> io::Result<Vec<PathBuf>> {
+    native::signature::modules(id, basename)
+}
+
 /// Returns the current UTC wall clock in the canonical round-trip receipt format.
 #[must_use]
 pub fn utc_now() -> String {
@@ -645,6 +683,25 @@ impl OwnedProcess {
         let command = tool_command_line(&spec.executable, &spec.arguments)?;
         let environment = native::tool_environment(&spec.environment)?;
         native::NativeProcess::start_tool(spec, command, environment.as_deref()).map(Self)
+    }
+
+    /// Starts a tool with explicit child-only environment removals.
+    ///
+    /// Uses the same atomic Job ownership as `start_tool`. Windows system/profile
+    /// variables are protected; the parent environment is never changed.
+    ///
+    /// # Errors
+    /// Rejects invalid removals and every path, Job or creation failure from `start_tool`.
+    pub fn start_tool_with_removed(spec: &ToolProcessSpec, removed: &[String]) -> io::Result<Self> {
+        for path in [&spec.executable, &spec.working_directory, &spec.stdout, &spec.stderr] {
+            validate_path(path)?;
+        }
+        if !spec.executable.is_file() || !spec.working_directory.is_dir() {
+            return Err(invalid("executable or working directory does not exist"));
+        }
+        let command = tool_command_line(&spec.executable, &spec.arguments)?;
+        let environment = native::tool_environment_with_removed(&spec.environment, removed)?;
+        native::NativeProcess::start_tool(spec, command, Some(&environment)).map(Self)
     }
 
     /// Creates evidence files, atomically assigns a suspended root, then resumes.
