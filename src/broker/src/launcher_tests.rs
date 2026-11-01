@@ -114,10 +114,71 @@ fn owned_ready_backend_stops_with_service() -> io::Result<()> {
         assert_eq!(report.completed, 0);
         assert_eq!(report.failed, 0);
         assert_eq!(report.peak_in_flight, 0);
+        let resources = report
+            .backend_resources
+            .ok_or_else(|| io::Error::other("Missing owned resource observation."))?;
+        assert!(
+            resources
+                .os_peak_job_commit_bytes
+                .is_some_and(|bytes| bytes > 0)
+        );
+        assert!(
+            resources
+                .os_peak_root_working_set_bytes
+                .is_some_and(|bytes| bytes > 0)
+        );
         assert_eq!(listener_process_id(port)?, None);
         assert_eq!(listener_process_id(frontend_port)?, None);
         Ok(())
     })
+}
+
+#[test]
+fn resource_observations_keep_sampled_and_lifetime_counters_distinct() {
+    let observed = BackendResources {
+        os_peak_job_commit_bytes: Some(1000),
+        os_peak_root_working_set_bytes: Some(900),
+        ..BackendResources::default()
+    };
+    let first = resource_sample(
+        observed,
+        ProcessMemory {
+            private_bytes: 80,
+            working_set_bytes: 70,
+            peak_working_set_bytes: 900,
+        },
+        5000,
+    );
+    let second = resource_sample(
+        first,
+        ProcessMemory {
+            private_bytes: 60,
+            working_set_bytes: 85,
+            peak_working_set_bytes: 900,
+        },
+        6000,
+    );
+    assert_eq!(second.sample_count, 2);
+    assert_eq!(second.sampled_peak_root_private_bytes, 80);
+    assert_eq!(second.sampled_peak_root_working_set_bytes, 85);
+    assert_eq!(second.sampled_min_available_physical_bytes, Some(5000));
+    assert_eq!(second.os_peak_job_commit_bytes, Some(1000));
+    assert_eq!(second.os_peak_root_working_set_bytes, Some(900));
+    let saturated = resource_sample(
+        BackendResources {
+            sample_count: u64::MAX,
+            ..second
+        },
+        ProcessMemory {
+            private_bytes: 0,
+            working_set_bytes: 0,
+            peak_working_set_bytes: 900,
+        },
+        4000,
+    );
+    assert_eq!(saturated.sample_count, u64::MAX);
+    assert_eq!(saturated.sampled_min_available_physical_bytes, Some(4000));
+    assert_eq!(saturated.sampled_peak_root_private_bytes, 80);
 }
 
 #[test]

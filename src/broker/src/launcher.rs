@@ -11,14 +11,14 @@ use identity::validate_native_identity;
 use crate::{
     artifacts::VerifiedArtifacts,
     launch_policy::{LaunchPlan, LaunchProfile},
-    runtime::{RunExit, RunReport, run},
+    runtime::{BackendResources, RunExit, RunReport, run},
     scheduler::MAX_WAITING,
     service::{LocalChatService, bound_loopback_socket},
 };
 use bonsai_windows_credentials::{PrivateCredentials, validate_external_path};
 use bonsai_windows_process::{
-    OwnedProcess, ProcessSpec, SandboxPolicy, available_memory_bytes, listener_process_id,
-    native_sandbox_available,
+    OwnedProcess, ProcessMemory, ProcessSpec, SandboxPolicy, available_memory_bytes,
+    listener_process_id, native_sandbox_available,
 };
 use std::{
     cell::Cell,
@@ -664,13 +664,18 @@ impl LaunchedService {
         shutdown: impl Future<Output = io::Result<()>>,
     ) -> Result<RunReport, LaunchError> {
         let failure = Cell::new(None);
+        let resources = Cell::new(BackendResources::default());
         let mut shutdown = pin!(shutdown);
         let monitoring = async {
             let mut tick = interval(Duration::from_millis(250));
             loop {
                 tick.tick().await;
-                let status = guard(&self.process, self.memory_limit_bytes)
-                    .and_then(|()| owner(&self.process, self.backend_port));
+                let status = guard(&self.process, self.memory_limit_bytes).and_then(
+                    |(memory, available)| {
+                        resources.set(resource_sample(resources.get(), memory, available));
+                        owner(&self.process, self.backend_port)
+                    },
+                );
                 if let Err(error) = status {
                     failure.set(Some(error));
                     return Err(io::Error::other("Owned backend guard failed."));
@@ -684,7 +689,17 @@ impl LaunchedService {
             }
             monitoring.as_mut().poll(cx)
         });
-        let report = run(&self.service, monitor).await;
+        let mut report = run(&self.service, monitor).await;
+        // Query before stopping the process. The OS Job peak includes startup
+        // and descendants; root working-set residency has a different scope.
+        // An unavailable observation never bypasses or delays owned cleanup.
+        let mut observed = resources.get();
+        observed.os_peak_job_commit_bytes = self.process.peak_job_memory_bytes().ok();
+        observed.os_peak_root_working_set_bytes = self
+            .process
+            .memory_usage()
+            .ok()
+            .map(|memory| memory.peak_working_set_bytes);
         self.process
             .stop(STOP_TIMEOUT)
             .map_err(|_| LaunchError::Stop)?;
@@ -694,6 +709,7 @@ impl LaunchedService {
         if report.exit == RunExit::ShutdownFailure {
             return Err(LaunchError::Cancelled);
         }
+        report.backend_resources = Some(observed);
         Ok(report)
     }
 }
@@ -717,7 +733,7 @@ fn admit(required: u64) -> Result<(), LaunchError> {
     Ok(())
 }
 
-fn guard(process: &OwnedProcess, limit: usize) -> Result<(), LaunchError> {
+fn guard(process: &OwnedProcess, limit: usize) -> Result<(ProcessMemory, u64), LaunchError> {
     if process
         .try_wait()
         .map_err(|_| LaunchError::Backend)?
@@ -729,7 +745,33 @@ fn guard(process: &OwnedProcess, limit: usize) -> Result<(), LaunchError> {
     if memory.private_bytes > limit || memory.working_set_bytes > limit {
         return Err(LaunchError::Memory);
     }
-    admit(PHYSICAL_RESERVE)
+    let available = available_memory_bytes().map_err(|_| LaunchError::Memory)?;
+    if available < PHYSICAL_RESERVE {
+        return Err(LaunchError::Memory);
+    }
+    Ok((memory, available))
+}
+
+fn resource_sample(
+    mut observed: BackendResources,
+    memory: ProcessMemory,
+    available_physical_bytes: u64,
+) -> BackendResources {
+    observed.sample_count = observed.sample_count.saturating_add(1);
+    observed.sampled_peak_root_private_bytes = observed
+        .sampled_peak_root_private_bytes
+        .max(memory.private_bytes);
+    observed.sampled_peak_root_working_set_bytes = observed
+        .sampled_peak_root_working_set_bytes
+        .max(memory.working_set_bytes);
+    observed.sampled_min_available_physical_bytes = Some(
+        observed
+            .sampled_min_available_physical_bytes
+            .map_or(available_physical_bytes, |previous| {
+                previous.min(available_physical_bytes)
+            }),
+    );
+    observed
 }
 
 fn owner(process: &OwnedProcess, port: u16) -> Result<(), LaunchError> {

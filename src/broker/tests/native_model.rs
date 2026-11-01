@@ -8,7 +8,7 @@
 
 use bonsai_broker::{
     launcher::{LaunchConfig, LaunchedService},
-    runtime::{RunExit, RunReport},
+    runtime::{BackendResources, RunExit, RunReport},
 };
 use serde_json::{Value, json};
 use std::{
@@ -167,7 +167,72 @@ fn cleanup_observation(report: &RunReport, expected: RunExit) -> Value {
     // empty. Callers separately verify the frontend listener is released.
     json!({"exit":exit, "completedOperations":report.completed,
         "failedOperations":report.failed, "peakInFlight":report.peak_in_flight,
+        "backendResources":backend_resource_observation(report.backend_resources),
         "ownedJobEmpty":true, "listenerReleased":true})
+}
+
+fn backend_resource_observation(resources: Option<BackendResources>) -> Value {
+    resources.map_or(Value::Null, |resources| {
+        let sampled = resources.sample_count > 0;
+        json!({"successfulGuardSamples":resources.sample_count,
+            "guardIntervalMilliseconds":250,
+            "sampledPeakRootPrivateBytes":sampled.then_some(resources.sampled_peak_root_private_bytes),
+            "sampledPeakRootWorkingSetBytes":sampled.then_some(resources.sampled_peak_root_working_set_bytes),
+            "sampledMinimumSystemAvailablePhysicalBytes":resources.sampled_min_available_physical_bytes,
+            "osLifetimePeakJobCommitBytes":resources.os_peak_job_commit_bytes,
+            "osLifetimePeakRootWorkingSetBytes":resources.os_peak_root_working_set_bytes,
+            "scope":"Job commitment includes descendants and startup; root working sets include mapped residency and exclude descendants; sampled bounds cover serving guard observations only; residency and commitment are non-additive",
+            "fullResourceGateQualified":false, "pagingQualified":false,
+            "sustainedComfortQualified":false})
+    })
+}
+
+#[test]
+fn native_owned_resource_receipt_preserves_scopes_and_missing_queries() {
+    assert_eq!(backend_resource_observation(None), Value::Null);
+    let missing = backend_resource_observation(Some(BackendResources::default()));
+    assert_eq!(missing["successfulGuardSamples"], 0);
+    for field in [
+        "sampledPeakRootPrivateBytes",
+        "sampledPeakRootWorkingSetBytes",
+        "sampledMinimumSystemAvailablePhysicalBytes",
+        "osLifetimePeakJobCommitBytes",
+        "osLifetimePeakRootWorkingSetBytes",
+    ] {
+        assert_eq!(missing[field], Value::Null);
+    }
+    let resources = BackendResources {
+        sample_count: 2,
+        sampled_peak_root_private_bytes: 40,
+        sampled_peak_root_working_set_bytes: 90,
+        sampled_min_available_physical_bytes: Some(1000),
+        os_peak_job_commit_bytes: Some(150),
+        os_peak_root_working_set_bytes: Some(110),
+    };
+    let report = RunReport {
+        exit: RunExit::Shutdown,
+        completed: 3,
+        failed: 0,
+        peak_in_flight: 1,
+        backend_resources: Some(resources),
+    };
+    let retained = cleanup_observation(&report, RunExit::Shutdown);
+    let observed = &retained["backendResources"];
+    assert_eq!(observed["successfulGuardSamples"], 2);
+    assert_eq!(observed["sampledPeakRootPrivateBytes"], 40);
+    assert_eq!(observed["sampledPeakRootWorkingSetBytes"], 90);
+    assert_eq!(observed["sampledMinimumSystemAvailablePhysicalBytes"], 1000);
+    assert_eq!(observed["osLifetimePeakJobCommitBytes"], 150);
+    assert_eq!(observed["osLifetimePeakRootWorkingSetBytes"], 110);
+    for field in [
+        "fullResourceGateQualified",
+        "pagingQualified",
+        "sustainedComfortQualified",
+    ] {
+        assert_eq!(observed[field], false);
+    }
+    assert_eq!(retained["ownedJobEmpty"], true);
+    assert_eq!(retained["listenerReleased"], true);
 }
 
 fn ci_only() {
@@ -842,6 +907,7 @@ fn native_stalled_consumer_never_qualifies_natural_completion_as_interruption() 
         completed: 2,
         failed: 2,
         peak_in_flight: 1,
+        backend_resources: None,
     };
     let summary = stalled_stop_summary(&interrupted, 2, 1, 5);
     assert_eq!(summary["nonreadingPauseCompleted"], true);
@@ -1079,6 +1145,7 @@ fn native_lifecycle_observations_separate_generation_usage_and_owned_cleanup() {
         completed: 0,
         failed: 1,
         peak_in_flight: 1,
+        backend_resources: None,
     };
     let cleanup = cleanup_observation(&abandoned, RunExit::AdmissionClosed);
     assert_eq!(cleanup["exit"], "admission-closed");

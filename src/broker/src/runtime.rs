@@ -263,6 +263,28 @@ pub struct RunReport {
     pub failed: usize,
     /// Largest number of simultaneously owned accepted request futures.
     pub peak_in_flight: usize,
+    /// Owned backend counters; absent for the development transport alone.
+    pub backend_resources: Option<BackendResources>,
+}
+
+/// Resource observations with distinct sampled, root-process and Job scopes.
+///
+/// Working sets include mapped residency and must not be added to commitment.
+/// Sampling does not establish a lifetime maximum, paging or sustained comfort.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct BackendResources {
+    /// Successful resource-guard samples while serving, normally 250 ms apart.
+    pub sample_count: u64,
+    /// Largest sampled root-process private commitment, excluding descendants.
+    pub sampled_peak_root_private_bytes: usize,
+    /// Largest sampled root-process working set, excluding descendants.
+    pub sampled_peak_root_working_set_bytes: usize,
+    /// Smallest sampled system available physical memory; absent without samples.
+    pub sampled_min_available_physical_bytes: Option<u64>,
+    /// OS lifetime peak committed bytes for the entire owned Job, if queryable.
+    pub os_peak_job_commit_bytes: Option<usize>,
+    /// OS lifetime peak root-process working set, if queryable before teardown.
+    pub os_peak_root_working_set_bytes: Option<usize>,
 }
 
 type RequestFuture<'a> = Pin<Box<dyn Future<Output = Result<(), ServiceError>> + 'a>>;
@@ -301,6 +323,7 @@ pub async fn run(
         completed: 0,
         failed: 0,
         peak_in_flight: 0,
+        backend_resources: None,
     };
     loop {
         let accepting = service.accept();
