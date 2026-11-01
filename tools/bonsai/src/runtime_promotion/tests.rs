@@ -1,7 +1,7 @@
 use super::*;
 
 fn policy_fixture() -> crate::Result<Value> {
-    policy(&"a".repeat(40), 1, None)
+    policy(&"a".repeat(40), 1, None, WeightRepresentation::OriginalPq2)
 }
 
 fn evidence(policy: &Value) -> crate::Result<Value> {
@@ -64,9 +64,185 @@ fn missing_evidence_stays_pending_and_policy_binds_standard_profile() -> crate::
 }
 
 #[test]
+fn ptq1_plan_binds_export_rollback_and_all_independent_gates() -> crate::Result<()> {
+    let pq2 = policy_fixture()?;
+    let explicit_pq2 = run(json!({
+        "operation": "plan", "runnerRevision": "a".repeat(40),
+        "weightRepresentation": "original-PQ2_0"
+    }))?;
+    assert_eq!(explicit_pq2["policy"], pq2);
+    let plan = run(json!({
+        "operation": "plan", "runnerRevision": "a".repeat(40),
+        "weightRepresentation": "current-repacked-PTQ1_0"
+    }))?;
+    let ptq1 = &plan["policy"];
+    assert_eq!(ptq1["profile"], "swift-ptq1-standard-lora-1.3");
+    assert_eq!(
+        ptq1["identities"]["modelSha256"],
+        "e658f0f0736a03a4549535a439f9b07254ebf8ab88ae27cbe6e52d098ca5d1f5"
+    );
+    assert_eq!(ptq1["identities"]["modelBytes"], 5_946_648_928_u64);
+    assert_eq!(
+        ptq1["identities"]["ptq1ExportReceiptSha256"],
+        sha256(include_bytes!("../../../../config/swift.ptq1-export.json"))
+    );
+    assert_eq!(
+        ptq1["identities"]["rollback"]["modelSha256"],
+        pq2["identities"]["modelSha256"]
+    );
+    assert_eq!(
+        ptq1["identities"]["rollback"]["modelBytes"],
+        7_206_168_928_u64
+    );
+    for field in [
+        "runtimeLockSha256",
+        "adapterSha256",
+        "adapterScale",
+        "nativeRowWorkers",
+        "servingStatePolicy",
+    ] {
+        assert_eq!(
+            ptq1["identities"]["rollback"][field],
+            pq2["identities"][field]
+        );
+    }
+    for field in [
+        "admissionBytes",
+        "jobCommitLimitBytes",
+        "physicalReserveBytes",
+    ] {
+        assert_eq!(ptq1["identities"][field], pq2["identities"][field]);
+    }
+    let gates = ptq1["requiredGates"]
+        .as_array()
+        .ok_or("Missing PTQ1 gates.")?;
+    assert_eq!(gates.len(), GATES.len() + PTQ1_GATES.len());
+    for gate in GATES.iter().chain(PTQ1_GATES) {
+        assert!(gates.iter().any(|entry| entry["id"] == gate.id));
+    }
+    let result = score(
+        plan["evidenceTemplate"].clone(),
+        ptq1,
+        &std::env::temp_dir(),
+    )?;
+    assert_eq!(result["status"], "pending");
+    assert_eq!(result["promotionReady"], false);
+    assert!(score(evidence(&pq2)?, ptq1, &std::env::temp_dir()).is_err());
+    assert!(score(evidence(ptq1)?, &pq2, &std::env::temp_dir()).is_err());
+    Ok(())
+}
+
+#[test]
+fn ptq1_changed_identities_and_ambiguous_representation_reject() -> crate::Result<()> {
+    let ptq1 = policy(
+        &"a".repeat(40),
+        1,
+        None,
+        WeightRepresentation::CurrentRepackedPtq1,
+    )?;
+    for pointer in [
+        "/identities/modelSha256",
+        "/identities/ptq1ExportReceiptSha256",
+        "/identities/rollback/modelSha256",
+        "/identities/rollback/runtimeLockSha256",
+    ] {
+        let mut changed = evidence(&ptq1)?;
+        *changed
+            .pointer_mut(pointer)
+            .ok_or("Missing PTQ1 identity.")? = json!("0".repeat(64));
+        assert!(
+            score(changed, &ptq1, &std::env::temp_dir()).is_err(),
+            "{pointer}"
+        );
+    }
+    for invalid in [
+        json!("PTQ1"),
+        json!("original-PTQ1_0"),
+        json!(true),
+        json!(1),
+        Value::Null,
+    ] {
+        assert!(
+            run(
+                json!({"operation": "plan", "runnerRevision": "a".repeat(40),
+            "weightRepresentation": invalid})
+            )
+            .is_err()
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn ptq1_export_requires_exact_original_and_complete_lossless_controls() -> crate::Result<()> {
+    let export: Value =
+        serde_json::from_str(include_str!("../../../../config/swift.ptq1-export.json"))
+            .map_err(|error| error.to_string())?;
+    let reference: Value = serde_json::from_str(include_str!(
+        "../../../../config/swift-assessment.lock.json"
+    ))
+    .map_err(|error| error.to_string())?;
+    validate_ptq1_export(&export, &reference)?;
+    for (field, value) in [
+        ("SourceSha256", json!("0".repeat(64))),
+        ("SourceBytes", json!(5_946_648_928_u64)),
+        ("SourceRevision", json!("a".repeat(40))),
+        ("SourceRepository", json!("other/model")),
+        ("SourceFilename", json!("other.gguf")),
+        ("CodecCommit", json!("b".repeat(40))),
+        ("OutputBytes", json!(0)),
+        ("OutputBytes", json!(u64::MAX)),
+        ("OutputSha256", json!("invalid")),
+        ("OutputFilename", json!("published-original-PTQ1.gguf")),
+        ("ConvertedTensorCount", json!(401)),
+        ("ConvertedBlocks", json!(209_919_999)),
+        ("ExactPq2ReconstructionVerified", json!(false)),
+        ("NonPq2TensorBytesCopiedVerbatim", json!(false)),
+        ("SavingBytes", json!(0)),
+    ] {
+        let mut changed = export.clone();
+        changed[field] = value;
+        assert!(
+            validate_ptq1_export(&changed, &reference).is_err(),
+            "{field}"
+        );
+    }
+    Ok(())
+}
+
+fn assert_ptq1_requires_additional_gates(input: &Value, directory: &Path) -> crate::Result<()> {
+    let ptq1 = policy(
+        &"a".repeat(40),
+        1,
+        None,
+        WeightRepresentation::CurrentRepackedPtq1,
+    )?;
+    let mut selected = evidence(&ptq1)?;
+    selected["gates"] = input["gates"].clone();
+    let scored = score(selected, &ptq1, directory)?;
+    assert_eq!(scored["promotionReady"], false);
+    let verdicts = scored["gates"].as_array().ok_or("Missing PTQ1 verdicts.")?;
+    assert_eq!(
+        verdicts
+            .iter()
+            .filter(|gate| gate["status"] == "pending")
+            .count(),
+        PTQ1_GATES.len()
+    );
+    for gate in PTQ1_GATES {
+        assert!(
+            verdicts
+                .iter()
+                .any(|entry| entry["id"] == gate.id && entry["status"] == "pending")
+        );
+    }
+    Ok(())
+}
+
+#[test]
 fn row_worker_evidence_cannot_qualify_a_different_execution_policy() -> crate::Result<()> {
     let single = policy_fixture()?;
-    let parallel = policy(&"a".repeat(40), 4, None)?;
+    let parallel = policy(&"a".repeat(40), 4, None, WeightRepresentation::OriginalPq2)?;
     let plan = run(json!({
         "operation": "plan", "runnerRevision": "a".repeat(40), "nativeRowWorkers": 4
     }))?;
@@ -173,7 +349,12 @@ fn assert_service_rejections(input: &Value, policy: &Value, directory: &Path) ->
 #[test]
 fn later_service_harness_preserves_exact_release_and_retained_package() -> crate::Result<()> {
     let harness_revision = "b".repeat(40);
-    let policy = policy(&"a".repeat(40), 1, Some(&harness_revision))?;
+    let policy = policy(
+        &"a".repeat(40),
+        1,
+        Some(&harness_revision),
+        WeightRepresentation::OriginalPq2,
+    )?;
     let plan = run(
         json!({"operation": "plan", "runnerRevision": "a".repeat(40), "serviceHarnessRevision": harness_revision}),
     )?;
@@ -257,6 +438,7 @@ fn reviewed_pass_requires_report_device_main_and_human_identity() -> crate::Resu
             score(input.clone(), &policy, &directory)?["status"],
             "passed"
         );
+        assert_ptq1_requires_additional_gates(&input, &directory)?;
         let mut x2 = input.clone();
         for record in x2["gates"]
             .as_array_mut()

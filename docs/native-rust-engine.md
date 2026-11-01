@@ -293,7 +293,13 @@ throughput and resource qualification remain pending before release integration.
 The Rust `runtime-promotion` command reports the reviewed requirements for replacing the current
 Swift PQ2 standard profile with Rust Prism while retaining its pinned LoRA at scale 1.3.
 It reads the compiled release/model/adapter/template locks and requires an explicit full
-Runner revision. PTQ1 is evaluated separately.
+Runner revision. Omitting `weightRepresentation`, or explicitly selecting
+`original-PQ2_0`, preserves the existing PQ2 policy. Select
+`current-repacked-PTQ1_0` for a separate PTQ1 policy bound to the complete export
+receipt, exact derived model and original PQ2 rollback identities. It retains all
+seventeen runtime/application gates and adds independently reviewed lossless-packing
+and actual-device original-PQ2 rollback gates. Its paired benefit gate compares
+PQ2 and PTQ1 on the same released engine and app settings. No default is changed.
 
 ### Integrated parity work
 
@@ -368,6 +374,11 @@ Invoke-BonsaiTool -Command runtime-promotion -Request @{
 Invoke-BonsaiTool -Command runtime-promotion -Request @{
     operation = 'plan'; runnerRevision = $revision; nativeRowWorkers = 4
 }
+# Review the current-weight PTQ1 candidate independently from original PQ2.
+Invoke-BonsaiTool -Command runtime-promotion -Request @{
+    operation = 'plan'; runnerRevision = $revision; nativeRowWorkers = 1
+    weightRepresentation = 'current-repacked-PTQ1_0'
+}
 # Bind a later owning Prism main harness separately from the unchanged release.
 Invoke-BonsaiTool -Command runtime-promotion -Request @{
     operation = 'plan'; runnerRevision = $revision; nativeRowWorkers = 1
@@ -381,6 +392,8 @@ The version-2 policy binds the selected `nativeRowWorkers` (one by default, or e
 and `servingStatePolicy: reset-every-request`. Evidence for a different worker count
 or experimental state reuse cannot qualify this policy. Regenerate pending manifests
 after a policy identity change; retained historical reports remain unchanged.
+PTQ1 `file-score` requests must select the same `weightRepresentation`; PQ2 evidence,
+changed packing receipts and changed original-PQ2 rollback identities are rejected.
 Independently review CI/source/report/reviewer identities and require `promotionReady:
 true`; command success alone cannot authorize promotion.
 
