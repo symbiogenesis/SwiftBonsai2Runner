@@ -55,7 +55,7 @@ pub fn available_memory() -> crate::Result<serde_json::Value> {
 /// # Errors
 /// Rejects malformed plans, invalid lexical storage or unavailable memory facts.
 pub fn cpu_check_plan(request: serde_json::Value) -> crate::Result<serde_json::Value> {
-    // This operation only plans. The script validates external storage, while
+    // This operation only plans. Callers validate external storage, while
     // supervision separately verifies every path before opening artifacts.
     // Do not require unprovisioned ancestor directories to exist for CheckOnly.
     let mut plan = bonsai_cpu_policy::run(request)?;
@@ -63,7 +63,7 @@ pub fn cpu_check_plan(request: serde_json::Value) -> crate::Result<serde_json::V
     Ok(plan)
 }
 
-/// Add the existing PowerShell report contract to one CPU plan and memory observation.
+/// Add the stable report contract to one CPU plan and memory observation.
 ///
 /// # Errors
 /// Rejects the same invalid inputs as [`cpu_check_plan`] and incomplete report fields.

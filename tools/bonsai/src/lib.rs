@@ -1,4 +1,4 @@
-//! Shared maintenance commands for Bonsai's PowerShell entry points.
+//! Native maintenance, provisioning and qualification commands for Bonsai.
 #![forbid(unsafe_code)]
 
 /// A command result suitable for a JSON receipt or a diagnostic on stderr.

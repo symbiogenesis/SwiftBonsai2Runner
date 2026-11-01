@@ -15,7 +15,7 @@ mod planning;
 #[path = "checks/mod.rs"]
 mod checks;
 
-const USAGE: &str = "Usage: bonsai-ci impact [--root PATH] [--config PATH] [--workflow FILE] [--before REV] [--after REV] [--full]\n       bonsai-ci gate [--root PATH] [--config PATH] --workflow NAME";
+const USAGE: &str = "Usage: bonsai-ci impact [--root PATH] [--config PATH] [--workflow FILE] [--before REV] [--after REV] [--full]\n       bonsai-ci gate [--root PATH] [--config PATH] --workflow NAME\n       bonsai-ci rust-select --root PATH\n       bonsai-ci rust-plan --root PATH [--package NAME] [--phase PHASE]\n       bonsai-ci rust-check --root PATH --target PATH --evidence PATH [--package NAME] [--phase PHASE]";
 
 #[derive(Default)]
 struct Arguments {
