@@ -148,6 +148,36 @@ const GATES: &[Gate] = &[
     },
 ];
 
+const PTQ1_GATES: &[Gate] = &[
+    Gate {
+        id: "current-weight-ptq1-packing",
+        repository: RUNNER,
+        device: false,
+        human: false,
+        requirement: "Independently verify every current-weight PTQ1 block reconstructs the exact original PQ2 symbols and raw scales, other tensor bytes and tokenizer/transform identities; bind both artifact hashes and the complete export receipt. Packing parity alone establishes no activation, logits or state parity.",
+    },
+    Gate {
+        id: "original-pq2-rollback",
+        repository: RUNNER,
+        device: true,
+        human: false,
+        requirement: "Explicitly restore the retained original PQ2 artifact with the pinned released runtime, standard adapter/scale and worker policy, then verify readiness, response and owned cleanup without replay or weaker containment. Preserve the exact original artifact on disk and the unchanged admission/reserve policy.",
+    },
+];
+
+fn required_gates(ptq1: bool) -> impl Iterator<Item = &'static Gate> {
+    GATES.iter().chain(PTQ1_GATES.iter().filter(move |_| ptq1))
+}
+
+#[derive(Clone, Copy, Default, Deserialize, PartialEq, Eq)]
+enum WeightRepresentation {
+    #[default]
+    #[serde(rename = "original-PQ2_0")]
+    OriginalPq2,
+    #[serde(rename = "current-repacked-PTQ1_0")]
+    CurrentRepackedPtq1,
+}
+
 #[derive(Deserialize)]
 #[serde(tag = "operation", rename_all = "kebab-case", deny_unknown_fields)]
 enum Request {
@@ -158,6 +188,8 @@ enum Request {
         native_row_workers: u8,
         #[serde(rename = "serviceHarnessRevision")]
         service_harness_revision: Option<String>,
+        #[serde(rename = "weightRepresentation", default)]
+        weight_representation: WeightRepresentation,
     },
     FileScore {
         #[serde(rename = "runnerRevision")]
@@ -168,6 +200,8 @@ enum Request {
         native_row_workers: u8,
         #[serde(rename = "serviceHarnessRevision")]
         service_harness_revision: Option<String>,
+        #[serde(rename = "weightRepresentation", default)]
+        weight_representation: WeightRepresentation,
     },
 }
 
@@ -246,6 +280,7 @@ fn policy(
     revision: &str,
     native_row_workers: u8,
     service_harness_revision: Option<&str>,
+    weight_representation: WeightRepresentation,
 ) -> crate::Result<Value> {
     require(
         matches!(native_row_workers, 1 | 4),
@@ -306,7 +341,8 @@ fn policy(
             "Promotion policy is missing a complete pinned artifact identity.",
         )?;
     }
-    Ok(json!({
+    let ptq1 = weight_representation == WeightRepresentation::CurrentRepackedPtq1;
+    let mut selected = json!({
         "schemaVersion": 2,
         "profile": "swift-pq2-standard-lora-1.3",
         "identities": {
@@ -327,8 +363,68 @@ fn policy(
             "servingStatePolicy": "reset-every-request",
             "target": "aarch64-pc-windows-msvc"
         },
-        "requiredGates": GATES.iter().map(|gate| json!({"id": gate.id, "repository": gate.repository, "snapdragonRequired": gate.device, "humanReviewRequired": gate.human, "revisionBinding": if gate.id == SERVICE_GATE {"serviceHarnessRevision"} else if gate.repository == PRISM {"runtimeRevision"} else {"runnerRevision"}, "requirement": gate.requirement})).collect::<Vec<_>>()
-    }))
+        "requiredGates": required_gates(ptq1).map(|gate| json!({"id": gate.id, "repository": gate.repository, "snapdragonRequired": gate.device, "humanReviewRequired": gate.human, "revisionBinding": if gate.id == SERVICE_GATE {"serviceHarnessRevision"} else if gate.repository == PRISM {"runtimeRevision"} else {"runnerRevision"}, "requirement": if ptq1 && gate.id == "paired-target-device-benefit" {"Matched original-PQ2/current-weight-PTQ1 trials on the same pinned runtime, device, standard adapter at 1.3 and worker policy retain complete responses, cold load, prefill, decode, end-to-end latency, resources and losing outcomes; demonstrate at least 10% lower end-to-end latency or a reviewed capacity/energy benefit within accepted latency and quality limits."} else {gate.requirement}})).collect::<Vec<_>>()
+    });
+    if ptq1 {
+        select_ptq1(&mut selected, &reference)?;
+    }
+    Ok(selected)
+}
+
+fn validate_ptq1_export(export: &Value, reference: &Value) -> crate::Result<()> {
+    let source_bytes = reference["model"]["bytes"]
+        .as_u64()
+        .ok_or("Original PQ2 model size is missing.")?;
+    let output_bytes = export["OutputBytes"]
+        .as_u64()
+        .ok_or("PTQ1 export output size is missing.")?;
+    require(
+        export["SchemaVersion"] == 1
+            && export["SourceSha256"] == reference["model"]["sha256"]
+            && export["SourceBytes"] == reference["model"]["bytes"]
+            && export["SourceRevision"] == reference["model"]["revision"]
+            && export["SourceRepository"] == reference["model"]["repository"]
+            && export["SourceFilename"] == reference["model"]["filename"]
+            && export["CodecCommit"] == reference["runtime"]["commit"]
+            && export["OutputFilename"] == "Swift-Bonsai-2-current-repacked-PTQ1_0.gguf"
+            && export["OutputSha256"]
+                .as_str()
+                .is_some_and(|digest| is_lower_hex(digest, 64))
+            && export["ConvertedTensorCount"] == 402
+            && export["ConvertedBlocks"] == 209_920_000_u64
+            && export["ExactPq2ReconstructionVerified"] == true
+            && export["NonPq2TensorBytesCopiedVerbatim"] == true
+            && source_bytes.checked_sub(output_bytes) == Some(1_259_520_000)
+            && export["SavingBytes"] == 1_259_520_000_u64,
+        "PTQ1 promotion requires the reviewed complete current-weight export and original PQ2 identity.",
+    )
+}
+
+fn select_ptq1(policy: &mut Value, reference: &Value) -> crate::Result<()> {
+    let export: Value =
+        serde_json::from_str(include_str!("../../../config/swift.ptq1-export.json"))
+            .map_err(|error| error.to_string())?;
+    validate_ptq1_export(&export, reference)?;
+    policy["profile"] = json!("swift-ptq1-standard-lora-1.3");
+    let identity = &mut policy["identities"];
+    identity["weightRepresentation"] = json!("current-repacked-PTQ1_0");
+    identity["modelSha256"] = export["OutputSha256"].clone();
+    identity["modelBytes"] = export["OutputBytes"].clone();
+    identity["modelFilename"] = export["OutputFilename"].clone();
+    identity["ptq1ExportReceiptSha256"] = json!(sha256(include_bytes!(
+        "../../../config/swift.ptq1-export.json"
+    )));
+    identity["rollback"] = json!({
+        "weightRepresentation": "original-PQ2_0",
+        "modelSha256": reference["model"]["sha256"],
+        "modelBytes": reference["model"]["bytes"],
+        "modelFilename": reference["model"]["filename"],
+        "runtimeLockSha256": identity["runtimeLockSha256"],
+        "adapterSha256": identity["adapterSha256"], "adapterScale": identity["adapterScale"],
+        "nativeRowWorkers": identity["nativeRowWorkers"],
+        "servingStatePolicy": identity["servingStatePolicy"]
+    });
+    Ok(())
 }
 
 fn read(path: &Path, limit: u64) -> crate::Result<Vec<u8>> {
@@ -485,6 +581,8 @@ fn validate_service(record: &Record, policy: &Value, directory: &Path) -> crate:
 }
 
 fn score(value: Value, policy: &Value, directory: &Path) -> crate::Result<Value> {
+    let gates =
+        required_gates(policy["profile"] == "swift-ptq1-standard-lora-1.3").collect::<Vec<_>>();
     require(
         value.is_object()
             && value["gates"].as_array().is_some_and(|gates| {
@@ -509,7 +607,7 @@ fn score(value: Value, policy: &Value, directory: &Path) -> crate::Result<Value>
         "Promotion evidence does not match the selected policy and exact artifact identities.",
     )?;
     require(
-        evidence.gates.len() <= GATES.len(),
+        evidence.gates.len() <= gates.len(),
         "Too many promotion gate records.",
     )?;
     let mut records = BTreeMap::new();
@@ -519,14 +617,14 @@ fn score(value: Value, policy: &Value, directory: &Path) -> crate::Result<Value>
             "Duplicate promotion gate record.",
         )?;
         require(
-            GATES.iter().any(|gate| gate.id == record.id),
+            gates.iter().any(|gate| gate.id == record.id),
             "Unknown promotion gate record.",
         )?;
     }
     let mut status = Status::Passed;
-    let mut gates = Vec::new();
+    let mut verdicts = Vec::new();
     let mut device_family = None;
-    for gate in GATES {
+    for gate in gates {
         let record = records.get(gate.id);
         let verdict = if let Some(record) = record {
             validate_record(gate, record, policy, directory)?;
@@ -561,10 +659,10 @@ fn score(value: Value, policy: &Value, directory: &Path) -> crate::Result<Value>
                     execution.repository, execution.run_id, execution.run_attempt
                 )
             });
-        gates.push(json!({"id": gate.id, "status": match verdict {Status::Passed => "passed", Status::Pending => "pending", Status::Rejected => "rejected"}, "runUrl": run_url, "executionRevision": record.and_then(|record| record.execution.as_ref()).map(|execution| &execution.revision), "deviceModel": record.and_then(|record| record.execution.as_ref()).map(|execution| &execution.device_model), "processorName": record.and_then(|record| record.execution.as_ref()).and_then(|execution| execution.processor_name.as_ref()), "reportSha256": record.and_then(|record| record.report.as_ref()).map(|report| &report.sha256), "testedRuntime": record.and_then(|record| record.tested_runtime.as_ref()), "harness": record.and_then(|record| record.harness.as_ref()).map(|harness| json!({"workflowPath": harness.workflow_path, "artifactId": harness.artifact_id, "artifactName": harness.artifact_name, "packageSha256": harness.package.sha256}))}));
+        verdicts.push(json!({"id": gate.id, "status": match verdict {Status::Passed => "passed", Status::Pending => "pending", Status::Rejected => "rejected"}, "runUrl": run_url, "executionRevision": record.and_then(|record| record.execution.as_ref()).map(|execution| &execution.revision), "deviceModel": record.and_then(|record| record.execution.as_ref()).map(|execution| &execution.device_model), "processorName": record.and_then(|record| record.execution.as_ref()).and_then(|execution| execution.processor_name.as_ref()), "reportSha256": record.and_then(|record| record.report.as_ref()).map(|report| &report.sha256), "testedRuntime": record.and_then(|record| record.tested_runtime.as_ref()), "harness": record.and_then(|record| record.harness.as_ref()).map(|harness| json!({"workflowPath": harness.workflow_path, "artifactId": harness.artifact_id, "artifactName": harness.artifact_name, "packageSha256": harness.package.sha256}))}));
     }
     Ok(
-        json!({"schemaVersion": 2, "status": match status {Status::Passed => "passed", Status::Pending => "pending", Status::Rejected => "rejected"}, "promotionReady": status == Status::Passed, "gates": gates, "scope": "Offline integrity and reviewer-attested evidence completeness only. CI provenance and human identity require independent review. Does not collect qualification, authenticate attestations, enable serving defaults or qualify PTQ1."}),
+        json!({"schemaVersion": 2, "status": match status {Status::Passed => "passed", Status::Pending => "pending", Status::Rejected => "rejected"}, "promotionReady": status == Status::Passed, "gates": verdicts, "scope": "Offline integrity and reviewer-attested evidence completeness only for the selected representation. CI provenance and human identity require independent review. Does not collect qualification, authenticate attestations or enable serving defaults."}),
     )
 }
 
@@ -580,26 +678,30 @@ pub fn run(request: Value) -> crate::Result<Value> {
             runner_revision,
             native_row_workers,
             service_harness_revision,
+            weight_representation,
         } => {
             let policy = policy(
                 &runner_revision,
                 native_row_workers,
                 service_harness_revision.as_deref(),
+                weight_representation,
             )?;
             let digest = sha256(&serde_json::to_vec(&policy).map_err(|error| error.to_string())?);
             Ok(json!({"policySha256": digest, "policy": policy,
-                    "evidenceTemplate": {"schemaVersion": 2, "policySha256": digest, "identities": policy["identities"], "gates": GATES.iter().map(|gate| json!({"id": gate.id, "status": "pending", "note": "Evidence has not yet been collected and reviewed."})).collect::<Vec<_>>()}}))
+                    "evidenceTemplate": {"schemaVersion": 2, "policySha256": digest, "identities": policy["identities"], "gates": required_gates(weight_representation == WeightRepresentation::CurrentRepackedPtq1).map(|gate| json!({"id": gate.id, "status": "pending", "note": "Evidence has not yet been collected and reviewed."})).collect::<Vec<_>>()}}))
         }
         Request::FileScore {
             runner_revision,
             evidence_path,
             native_row_workers,
             service_harness_revision,
+            weight_representation,
         } => {
             let policy = policy(
                 &runner_revision,
                 native_row_workers,
                 service_harness_revision.as_deref(),
+                weight_representation,
             )?;
             let value = serde_json::from_slice(&read(&evidence_path, MANIFEST_LIMIT)?)
                 .map_err(|error| error.to_string())?;

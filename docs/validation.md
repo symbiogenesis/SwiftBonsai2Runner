@@ -72,6 +72,20 @@ terminal reason, reported usage when supplied and cleanup. Partial failure retai
 completed observations with `passed: false`. This does not establish complete-state
 parity, adapter authoring basis, performance, output quality or default promotion.
 
+Explicit `profile: ptq1-adapter-lifecycle` requires the current pinned Rust
+service, exact current-weight PTQ1 and approved adapter with one row worker
+through the mandatory scale/history sequence below. It has the same three
+short streams, invalid-scale connection-close check, public assistant fixture,
+request deadlines, cleanup reserve and partial-evidence rules as
+`pq2-adapter-lifecycle-row4`. Its receipt binds the actual PTQ1 filename, byte
+count and digest plus the complete export receipt; it cannot inherit PQ2 or
+historical-release acceptance. Optional history/stalled-consumer dispatch inputs
+are rejected. Missing, skipped or cancelled required steps keep `passed: false`
+and fail after owned cleanup. This prepares a bounded qualification lane;
+actual-model evidence for it remains pending. It does not qualify zero/no-adapter
+logit identity, writer basis, generated/edited history, full context/output,
+recovery, quality, benefit or daily-service isolation.
+
 Explicit `profile: pq2-adapter-row4` selects original PQ2, the approved adapter at
 scale 1.3 and pinned Prism 0.1.10 with `--native-row-workers 4`. It requires exactly
 one four-token-cap stream, verified model/adapter readiness and owned Job/listener

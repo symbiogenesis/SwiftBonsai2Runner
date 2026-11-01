@@ -59,7 +59,7 @@ its behavior, runtime cost and standard-profile qualification are independent.
 
 ## Release decision
 
-**2026-10-30: no-go for shipping PTQ1 as the app default; diagnostic use only.**
+**2026-10-31: PTQ1 default promotion remains pending; diagnostic use only.**
 The lossless representation is not rejected. The historical [decision receipt](evidence/ptq1-release-decision.json)
 binds the local and CI X2 startup failures, exact runtime/build identities and retained raw
 evidence digests. Rust service [source `27e4860`](https://github.com/symbiogenesis/prism-inference/pull/2)
@@ -67,11 +67,13 @@ introduced PTQ1/approved-adapter profiles and passed its owning
 [Foundation](https://github.com/symbiogenesis/prism-inference/actions/runs/41009394716)
 and [conformance](https://github.com/symbiogenesis/prism-inference/actions/runs/41009394718).
 The [one-token device smoke](evidence/ptq1-rust-smoke.json) passes complete numerical
-comparison at scale 1.3 for that historical source. Runner now pins Rust **0.1.9**,
-source `7aca2251f09acb345d4afb53d5ce411f81017745`; its [release receipt](evidence/prism-019-release.json)
-binds both complete upstream CI gates, public bundles, source/helper archives and
-the reviewed pin. Release integration is complete. Actual service evidence remains
-versioned, and the independent qualification gates below remain open.
+comparison at scale 1.3 for that historical source. Runner now pins Rust **0.1.10**,
+source `749a5f5b43bf77764a29682557ec91a8de8dcdef`; the [main integration record](evidence/prism-main-integration.json)
+binds both complete upstream CI gates, published bundles, reviewed source bytes and
+the exact pin. Its bounded current-release lifecycle evidence uses original PQ2
+with four workers; it does not qualify PTQ1 or the default one-worker lane. The
+[readiness audit](evidence/ptq1-default-readiness.json) separates those identities
+and records the evidence gaps. [PLAN.md](../PLAN.md) remains the backlog.
 
 | Gate | Evidence and decision |
 | --- | --- |
@@ -80,7 +82,8 @@ versioned, and the independent qualification gates below remain open.
 | Historical Rust 0.1.6 app integration | This version accepts original PQ2 without LoRA; PTQ1 and adapter service support are absent. The earlier three-token diagnostic remains valid only for its no-adapter scope. |
 | Rust replacement source | Source `27e4860` implements explicit PTQ1/approved-adapter service and sealed scale/reset semantics. A single supplied token at scale 1.3 on X2 matches all native logits and live state exactly. This does not establish actual service, quality or resource qualification. |
 | Rust 0.1.8 required-sandbox smoke | [X2 main-only application CI](https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41020705958) passes exact readiness, one scale-1.3 streamed response and owned Job/listener cleanup in a three-minute owner job. The four-token cap yields one reported output token and three visible bytes with `stop`; zero-scale and invalid-scale/reuse checks are skipped. [History](evidence/ptq1-native-service.json) retains the earlier 0.1.7 startup failure. This does not qualify broader lifecycle, answers, quality, resources or default promotion. |
-| Current Rust 0.1.9 release | [Exact published artifacts and reviewed pin](evidence/prism-019-release.json) include optional row-worker support and retain one worker by default. Artifact verification does not transfer the 0.1.8 service smoke to these binaries or establish PTQ1 quality, performance or default promotion. |
+| Current Rust 0.1.10 release | [Exact published artifacts and reviewed pin](evidence/prism-main-integration.json) retain one worker and reset every request by default. [Bounded lifecycle acceptance](evidence/prism-0110-lifecycle-service.json) covers original PQ2 with four workers. Artifact verification and that different-format receipt do not transfer historical PTQ1 numerical/service evidence to these binaries. |
+| Rust DLL collector replacement | [Hosted source-bound compilation and model-free controls](evidence/ptq1-collector-hosted.json) pass, including seven collector controls. Exact-source Runner Foundation [subsequently passed](https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41221140592). Actual-model capture with this collector and the current-release checker remains pending; hosted success does not establish model parity. |
 | Complete correctness, answers and sustained use | Scalar/explicit NEON trajectories, PTQ1 LoRA basis/forward execution, 8K context/4K output, recovery, independent answer quality, target-device benefit and owner-accepted comfort remain unqualified. No throughput or quality verdict was collected in this session. |
 
 The startup failure is shared by the publisher executable, so it also blocks that
@@ -107,6 +110,22 @@ Then run the stable-condition prefix screen, the separate
 full-context/output and cancellation/recovery trials, independent quality review,
 and sustained resource/comfort and installation acceptance with PQ2 rollback.
 All independent [promotion criteria](validation.md#promotion-criteria) still apply.
+
+The immediate evidence gaps are current-release PTQ1 numerical/state and
+one-worker service captures, followed by immutable adapter writer-basis and
+loaded-zero/nonzero controls. The existing publisher-based prefix/LoRA matrices
+cannot supply a Rust-service decision: the publisher startup gate fails on X2,
+and their fourteen/twenty-eight fresh-process workloads have not been redesigned
+to fit the five-minute total laptop allowance. Complete-response comparison must
+first have a reviewed, bounded Rust-service capture contract. Do not dispatch the
+legacy matrices or split them across repeated owner jobs. Missing full-context,
+output, human quality, security, resource and comfort evidence remains pending.
+The offline `runtime-promotion` evaluator now has a separate explicit PTQ1
+policy with nineteen gates, binding the complete export receipt and original-PQ2
+rollback identities. The [preparation follow-up](evidence/ptq1-default-readiness.json)
+records its source review and the current-source numerical and required one-worker
+lifecycle lanes. Hosted checks and actual-model/evaluator executions remain pending;
+the policy's availability does not authorize a PTQ1 default.
 
 A reproducible correctness/security/recovery regression rejects the tested
 configuration. A performance no-go must use the predeclared device/settings and

@@ -4,11 +4,71 @@ Checks capture preparation and the Rust collector's source/ABI admission boundar
 #>
 [CmdletBinding()]
 [OutputType([string])]
-param([Parameter(Mandatory)][ValidateSet('HostedGuard', 'CollectorControls', 'BuildEvidence')][string]$Case)
+param([Parameter(Mandatory)][ValidateSet('HostedGuard', 'CollectorControls', 'BuildEvidence', 'CapturePolicy')][string]$Case)
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 Import-Module (Join-Path $PSScriptRoot 'Bonsai.TestSupport.psm1')
+if ($Case -ceq 'CapturePolicy') {
+    Import-Module (Join-Path $PSScriptRoot '../scripts/Bonsai.Ptq1.psm1')
+    $repo = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
+    $pins = Get-Ptq1CapturePin -RepositoryDirectory $repo
+    $tempRoot = [IO.Path]::GetFullPath([IO.Path]::GetTempPath())
+    $fixture = [IO.Path]::GetFullPath((Join-Path $tempRoot ('Bonsai-Ptq1CapturePolicy-' + [guid]::NewGuid().ToString('N'))))
+    [void][IO.Directory]::CreateDirectory((Join-Path $fixture 'tools/native-reference'))
+    [void][IO.Directory]::CreateDirectory((Join-Path $fixture 'config'))
+    try {
+        $lockPath = Join-Path $fixture 'config/prism-inference.lock.json'
+        $pinsPath = Join-Path $fixture 'tools/native-reference/pins.json'
+        Copy-Item -LiteralPath (Join-Path $repo 'config/prism-inference.lock.json') -Destination $lockPath
+        $original = $pins | ConvertTo-Json -Depth 12
+        foreach ($field in @('commit', 'url', 'bytes', 'sha256')) {
+            $changed = $original | ConvertFrom-Json -DateKind String
+            $changed.rustSource.$field = if ($field -ceq 'bytes') { $changed.rustSource.bytes + 1 } else { 'stale' }
+            $changed | ConvertTo-Json -Depth 12 | Set-Content -LiteralPath $pinsPath -Encoding utf8NoBOM
+            $failure = Assert-Failure -PassThru { Get-Ptq1CapturePin -RepositoryDirectory $fixture }
+            Assert ($failure -like '*differs from the pinned Rust runtime*') 'Historical or changed numerical source was accepted.'
+        }
+        [IO.File]::WriteAllText($pinsPath, $original)
+        $lock = Get-Content -LiteralPath $lockPath -Raw | ConvertFrom-Json -DateKind String
+        $lock.commit = 'stale'
+        $lock | ConvertTo-Json -Depth 12 | Set-Content -LiteralPath $lockPath -Encoding utf8NoBOM
+        Assert-Failure { Get-Ptq1CapturePin -RepositoryDirectory $fixture }
+        foreach ($allowance in @(0, -1, 241)) {
+            $failure = Assert-Failure -PassThru {
+                & (Join-Path $repo 'scripts/Invoke-NativePtq1Numerics.ps1') -DataDirectory $fixture -WorkBudgetSeconds $allowance
+            }
+            Assert ($failure -like '*remaining complete owner-job work allowance*') 'Invalid work allowance reached owner/model preparation.'
+        }
+        $failure = Assert-Failure -PassThru {
+            & (Join-Path $repo 'scripts/Invoke-NativePtq1Numerics.ps1') -DataDirectory $fixture -WorkBudgetSeconds 240
+        }
+        Assert ($failure -like '*original monotonic owner-job work deadline*') 'A fresh child-relative deadline was accepted.'
+        $tokens = $null; $parseErrors = $null
+        $ast = [Management.Automation.Language.Parser]::ParseFile((Join-Path $repo 'scripts/Invoke-NativePtq1Numerics.ps1'), [ref]$tokens, [ref]$parseErrors)
+        Assert ($parseErrors.Count -eq 0) 'Capture wrapper did not parse.'
+        $function = $ast.Find({ param($node)
+            $node -is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -ceq 'Get-Ptq1WorkAllowance'
+        }, $true)
+        Assert ($null -ne $function) 'The original-deadline allowance check was not found.'
+        . ([scriptblock]::Create($function.Extent.Text))
+        # Supply the extracted production helper's dynamic-scope inputs explicitly.
+        Set-Variable -Name WorkBudgetSeconds -Value 240 -Scope Local
+        Set-Variable -Name WorkDeadlineTick -Value ([Diagnostics.Stopwatch]::GetTimestamp() - 1) -Scope Local
+        $clock = [Diagnostics.Stopwatch]::StartNew()
+        Assert-Failure { Get-Ptq1WorkAllowance $clock }
+        Set-Variable -Name WorkDeadlineTick -Value ([Diagnostics.Stopwatch]::GetTimestamp() + (10 * [Diagnostics.Stopwatch]::Frequency)) -Scope Local
+        $remaining = Get-Ptq1WorkAllowance $clock
+        Assert ($remaining -ge 1 -and $remaining -le 10) 'Child startup reset the original work deadline.'
+    } finally {
+        $prefix = $tempRoot.TrimEnd([IO.Path]::DirectorySeparatorChar) + [IO.Path]::DirectorySeparatorChar
+        if (-not $fixture.StartsWith($prefix, [StringComparison]::OrdinalIgnoreCase) -or $fixture -ceq $tempRoot) {
+            throw 'Refusing cleanup outside the generated temporary test directory.'
+        }
+        Remove-Item -LiteralPath $fixture -Recurse -Force
+    }
+    return "Focused $Case capture preparation checks passed."
+}
 if ($Case -ceq 'BuildEvidence') {
     $tokens = $null; $parseErrors = $null
     $ast = [Management.Automation.Language.Parser]::ParseFile((Join-Path $PSScriptRoot '../scripts/Build-NativePtq1CaptureTools.ps1'), [ref]$tokens, [ref]$parseErrors)

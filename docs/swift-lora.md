@@ -89,6 +89,22 @@ Native residual-writer evidence must establish the correction's basis on Swift;
 loading or changed text cannot. Even correct input order does not establish that an
 original-Bonsai correction suits Swift's modified weights. The approved file is unmodified.
 
+The [2026-10-31 readiness audit](evidence/ptq1-adapter-basis-readiness.json) binds
+the reviewed publisher source digests and exact PTQ1/adapter identities. Closing
+this gate requires the following evidence together:
+
+- Immutable checkpoint, conversion and direction identities tied to the shipped
+  adapter, with an explicit authoring-to-native SSM channel mapping.
+- Independent verification of all 48 shipped SSM A vectors under that mapping,
+  declared numerical bounds and native writer input/correction captures.
+- Separate no-adapter/loaded-zero logits and state identity, scale-1.3 nonzero
+  application and scalar/explicit-NEON qualification on the intended release.
+- Retained evidence digests and independent review in the durable promotion archive.
+
+The missing checkpoint/conversion identity is external evidence; additional
+native/Rust agreement cannot reconstruct its provenance. The audit closes no
+model qualification gate.
+
 ## Memory and execution cost
 
 The adapter contains **9,664,512 F32 payload bytes** (about 9.23 MiB on disk). Prism

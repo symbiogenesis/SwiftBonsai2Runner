@@ -65,10 +65,15 @@ ARM64 MSVC exceptional-float behavior when qualifying other compiler versions.
 Measure adaptive broker forwarding and retained idle speech scratch before
 claiming a latency, throughput or process-memory gain.
 
-Qualify the Rust PTQ1 DLL collector through the main-only actual-model numerical
-workflow. The [hosted source-bound build/test bundle](docs/evidence/ptq1-collector-hosted.json)
-and local pinned-DLL probe/complete 369-record ABI/default/configuration comparison
-do not close actual-model logits/state comparison, writer-basis or promotion gates.
+Qualify the Rust PTQ1 DLL collector against the current locked Prism source through
+the main-only numerical workflow, then the explicit one-worker
+`ptq1-adapter-lifecycle` profile with mandatory zero-scale, invalid-scale and
+supplied-history steps. Source guards, [hosted build/ABI
+controls](docs/evidence/ptq1-collector-hosted.json) and the prepared profile do not
+close actual-model logits/state, writer-basis or promotion gates. Keep intake,
+verification, model work and cleanup inside one aggregate five-minute owner allowance;
+the [default-readiness audit](docs/evidence/ptq1-default-readiness.json) separates
+historical passes from current-release qualification.
 
 - Qualify startup, supplied-history streaming, full 8K context and 4K output, long
   conversations, speech, offline restart and recovery. Cover Stop, abandonment,
@@ -360,7 +365,10 @@ not close pending hosted integration or full-model acceptance.
   and comfort with PQ2 rollback. Promote or reduce admission only after suitability,
   using the verified
   **1,259,520,000-byte** packing difference. Account for mapped residency separately
-  from private commit and preserve reserves.
+  from private commit and preserve reserves. Collect and independently review all
+  gates in the explicit PTQ1 promotion policy, including exact packing provenance
+  and actual-device original-PQ2 rollback; PQ2 and worker variants cannot supply
+  a PTQ1 promotion verdict.
 - Capture prefill, first useful answer, decode TPS, task time, retries and truncation,
   working, private, Job, system and device memory peaks, hard faults, observable energy,
   responsiveness and sustained heat and fan behavior. Retain X2 `ProcessMemory`

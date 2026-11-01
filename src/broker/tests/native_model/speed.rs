@@ -319,7 +319,10 @@ fn native_speed_partial_pair_survives_cancelled_second_request() {
             let mut report = json!({"passed":false,"samples":[{"configuredNativeRowWorkers":1},
                 {"configuredNativeRowWorkers":4}]});
             assert!(record_measured_request(port, "fixture", &evidence, deadline, &mut report, 0).await);
-            let first = report["samples"][0].clone();
+            // Compare persisted receipts on both sides. Parsing a measured f64
+            // can round by one ULP; that does not mean a later write changed it.
+            let first: Value = serde_json::from_slice(&fs::read(evidence.join("acceptance.json")).unwrap()).unwrap();
+            let first = first["samples"][0].clone();
             assert!(!record_measured_request(port, "fixture", &evidence, deadline, &mut report, 1).await);
             fixture.await.unwrap();
             let saved: Value = serde_json::from_slice(&fs::read(evidence.join("acceptance.json")).unwrap()).unwrap();

@@ -10,7 +10,8 @@ No zero, scalar, explicit NEON, writer-basis, quality or performance gate passes
 [CmdletBinding()]
 [OutputType([pscustomobject])]
 param([Parameter(Mandatory)][string]$DataDirectory, [switch]$PlanOnly,
-      [string]$CaptureToolsDirectory, [string]$ToolPath)
+      [string]$CaptureToolsDirectory, [string]$ToolPath, [int]$WorkBudgetSeconds,
+      [long]$WorkDeadlineTick)
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
@@ -18,8 +19,9 @@ $workClock = [Diagnostics.Stopwatch]::StartNew()
 Import-Module (Join-Path $PSScriptRoot 'Bonsai.Common.psm1')
 Import-Module (Join-Path $PSScriptRoot 'Bonsai.Tools.psm1')
 Import-Module (Join-Path $PSScriptRoot 'Bonsai.Native.psm1')
+Import-Module (Join-Path $PSScriptRoot 'Bonsai.Ptq1.psm1')
 $repo = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
-$pins = Get-Content -LiteralPath (Join-Path $repo 'tools/native-reference/pins.json') -Raw | ConvertFrom-Json -DateKind String
+$pins = Get-Ptq1CapturePin -RepositoryDirectory $repo
 $pending = @('no-adapter', 'loaded-zero-identity', 'nonzero-change', 'scalar', 'explicit-neon',
     'writer-authoring-basis', 'quality', 'performance', 'full-context', 'service')
 $plan = [pscustomobject]@{
@@ -32,6 +34,11 @@ $plan = [pscustomobject]@{
     PendingControls = $pending; WriterBasisQualified = $false; DefaultMayChange = $false
 }
 if ($PlanOnly) { return $plan }
+if ($WorkBudgetSeconds -lt 1 -or $WorkBudgetSeconds -gt 240) {
+    throw 'Provide the remaining complete owner-job work allowance in 1..240 seconds.'
+}
+if ($WorkDeadlineTick -le 0) { throw 'Provide the original monotonic owner-job work deadline.' }
+$plan.WorkBudgetSeconds = $WorkBudgetSeconds
 function Get-Ptq1WorkAllowance {
     <# .SYNOPSIS
     Caps every external operation by the remaining complete smoke budget.
@@ -39,8 +46,9 @@ function Get-Ptq1WorkAllowance {
     [CmdletBinding()]
     [OutputType([int])]
     param([Parameter(Mandatory)][Diagnostics.Stopwatch]$Clock)
-    $remaining = [int][Math]::Floor(240 - $Clock.Elapsed.TotalSeconds)
-    if ($remaining -lt 1) { throw 'The 240-second total PTQ1 smoke budget is exhausted.' }
+    $deadlineSeconds = ($WorkDeadlineTick - [Diagnostics.Stopwatch]::GetTimestamp()) / [double][Diagnostics.Stopwatch]::Frequency
+    $remaining = [int][Math]::Floor([Math]::Min($WorkBudgetSeconds - $Clock.Elapsed.TotalSeconds, $deadlineSeconds))
+    if ($remaining -lt 1) { throw 'The remaining complete PTQ1 smoke budget is exhausted.' }
     return $remaining
 }
 if (-not $IsWindows -or [Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture -ne 'Arm64' -or
@@ -81,7 +89,7 @@ if ([string]::IsNullOrWhiteSpace($env:GITHUB_ENV)) { throw 'Expected the CI envi
 $reportPath = Join-Path $evidence 'numerics.json'
 $report = [ordered]@{ Status = 'preparing'; Plan = $plan; Revision = $env:GITHUB_SHA
     RunUrl = "https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/$env:GITHUB_RUN_ID"
-    RunAttempt = $env:GITHUB_RUN_ATTEMPT; ProcessorName = $processor[0].Name
+    RunAttempt = $env:GITHUB_RUN_ATTEMPT; ProcessorName = $processor[0].Name; WorkDeadlineTick = $WorkDeadlineTick
     ModelTrialsRequested = $false; PendingControls = $pending; WriterBasisQualified = $false; DefaultMayChange = $false
     Samples = [Collections.Generic.List[object]]::new() }
 try {
@@ -143,6 +151,8 @@ try {
         $artifacts | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath (Join-Path $sampleLane 'artifacts.json') -Encoding utf8
         $remaining = Get-Ptq1WorkAllowance $workClock
         $report.ModelTrialsRequested = $true
+        $report.Status = 'capturing'; $report['ActiveBackend'] = $backend
+        $report | ConvertTo-Json -Depth 40 | Set-Content -LiteralPath $reportPath -Encoding utf8
         $supervision = Invoke-BonsaiTool -Command completion -ToolPath $ToolPath -TimeoutSeconds $remaining -Request @{
             schemaVersion = 1; executable = $executable; arguments = $arguments; workingDirectory = $sampleLane; evidenceDirectory = $sampleLane
             artifacts = $artifacts; memoryLimitBytes = $plan.JobBytes; requiredAvailableBytes = $plan.AdmissionBytes
@@ -154,6 +164,8 @@ try {
     }
     $python = @(Get-Command python -CommandType Application -ErrorAction Stop)[0].Source
     $output = Join-Path $evidence 'comparison.json'
+    $report.Status = 'comparing'; $report['ActiveBackend'] = $null
+    $report | ConvertTo-Json -Depth 40 | Set-Content -LiteralPath $reportPath -Encoding utf8
     $compared = Invoke-BonsaiNativeProcess -Executable $python -WorkingDirectory $evidence -TimeoutSeconds (Get-Ptq1WorkAllowance $workClock) -LogPath (Join-Path $evidence 'comparison.txt') -ArgumentList @(
         '-B', (Join-Path $repo 'tools/native-reference/compare.py'), '--native', (Join-Path $evidence 'native'), '--rust', (Join-Path $evidence 'auto'), '--backend', 'auto', '--output', $output)
     if ($compared.ExitCode -ne 0) { throw 'Native/Rust one-token smoke comparison failed.' }
