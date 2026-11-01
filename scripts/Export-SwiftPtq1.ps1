@@ -9,6 +9,8 @@ batch by byte-identical PQ2 reconstruction. PTQ1's native activation quantizatio
 differs; this does not qualify logits, quality, speed or enable an inference profile.
 Creates a unique partial file, then publishes the new output name after validation.
 Failed partial files are retained for diagnosis. No model process is started.
+TimeoutSeconds bounds the complete exporter process, including source/output
+hashing outside the codec's internal conversion deadline.
 #>
 [CmdletBinding(SupportsShouldProcess)]
 [OutputType([Collections.IDictionary])]
@@ -30,6 +32,6 @@ if (-not (Test-Path -LiteralPath ([IO.Path]::GetDirectoryName($OutputPath)) -Pat
 $lock = Get-Content -Raw -LiteralPath (Join-Path $PSScriptRoot '../config/swift-assessment.lock.json') | ConvertFrom-Json -DateKind String
 if (-not $PSCmdlet.ShouldProcess($OutputPath, 'Export pinned Swift weights to experimental PTQ1')) { return }
 $arguments = @('export-ptq1', '--model', $ModelPath, '--output', $OutputPath, '--expected-bytes', ([long]$lock.model.bytes).ToString([Globalization.CultureInfo]::InvariantCulture), '--expected-sha256', [string]$lock.model.sha256, '--timeout-seconds', $TimeoutSeconds.ToString([Globalization.CultureInfo]::InvariantCulture))
-$result = Invoke-GgufTool -Arguments $arguments -GgufToolPath $GgufToolPath
+$result = Invoke-GgufTool -Arguments $arguments -GgufToolPath $GgufToolPath -TimeoutSeconds $TimeoutSeconds
 $result['SourceRevision'] = [string]$lock.model.revision
 return $result

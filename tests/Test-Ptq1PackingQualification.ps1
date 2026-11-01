@@ -61,6 +61,35 @@ $falseBoolean.headerBytesPreservedExceptDeclaredEdits = 'true'
 Assert-Failure { Assert-Ptq1PackingResult -Expected $expected -Export $export -Packing $falseBoolean -ExportReceiptSha256 $digest } 'String-valued success bypassed independent packing checks.'
 Assert-Failure { Assert-Ptq1PackingResult -Expected $expected -Export $export -Packing $packing -ExportReceiptSha256 'missing' }
 
+# The published exporter verifies source/output outside its internal codec
+# deadline. Exercise the actual process timeout through the GGUF wrapper, then
+# verify Export-SwiftPtq1 forwards its selected bound to that wrapper.
+Import-Module (Join-Path $repo 'scripts/Bonsai.Gguf.psm1')
+$failure = Assert-Failure -PassThru {
+    Invoke-GgufTool -GgufToolPath ([Environment]::ProcessPath) -TimeoutSeconds 1 -Arguments @(
+        '-NoLogo', '-NoProfile', '-NonInteractive', '-Command', 'Start-Sleep -Seconds 5; [Console]::Write("{}")')
+}
+Assert ($failure -like '*Native process exceeded 1 seconds:*') 'The whole GGUF process failed for a reason other than its selected timeout.'
+$unbounded = Invoke-GgufTool -GgufToolPath ([Environment]::ProcessPath) -Arguments @(
+    '-NoLogo', '-NoProfile', '-NonInteractive', '-Command', '[Console]::Write("{}")')
+Assert ($unbounded.Count -eq 0) 'Omitting the optional GGUF process timeout changed ordinary JSON tool behavior.'
+$parseTokens = $null
+$parseErrors = $null
+$exportAst = [Management.Automation.Language.Parser]::ParseFile((Join-Path $repo 'scripts/Export-SwiftPtq1.ps1'), [ref]$parseTokens, [ref]$parseErrors)
+$invoke = @($exportAst.FindAll({
+    param([Management.Automation.Language.Ast]$Node)
+    $Node -is [Management.Automation.Language.CommandAst] -and $Node.GetCommandName() -ceq 'Invoke-GgufTool'
+}, $true))
+Assert ($parseErrors.Count -eq 0 -and $invoke.Count -eq 1) 'The exporter timeout source control did not identify its one tool invocation.'
+$forwarded = $false
+for ($index = 0; $index -lt $invoke[0].CommandElements.Count - 1; $index++) {
+    $element = $invoke[0].CommandElements[$index]
+    if ($element -is [Management.Automation.Language.CommandParameterAst] -and $element.ParameterName -ceq 'TimeoutSeconds') {
+        $forwarded = $invoke[0].CommandElements[$index + 1].Extent.Text -ceq '$TimeoutSeconds'
+    }
+}
+Assert $forwarded 'The export caller omitted its whole-process bound, leaving source/output verification unbounded.'
+
 $baseline = [ordered]@{
     GITHUB_ACTIONS = 'true'; RUNNER_ENVIRONMENT = 'github-hosted'; GITHUB_REPOSITORY = 'symbiogenesis/SwiftBonsai2Runner'
     GITHUB_REF = 'refs/heads/main'; RUNNER_ARCH = 'ARM64'; GITHUB_SHA = 'a' * 40

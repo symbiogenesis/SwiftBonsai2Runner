@@ -38,11 +38,12 @@ function Invoke-GgufTool {
     [OutputType([Collections.IDictionary])]
     param(
         [Parameter(Mandatory)][string[]]$Arguments,
-        [string]$GgufToolPath
+        [string]$GgufToolPath,
+        [ValidateRange(0,86400)][int]$TimeoutSeconds = 0
     )
     $tool = Resolve-GgufTool -GgufToolPath $GgufToolPath
     $scratch = Get-BonsaiToolScratch -Name 'bonsai-gguf'
-    $process = Invoke-BonsaiNativeProcess -Executable $tool -ArgumentList $Arguments -WorkingDirectory $scratch
+    $process = Invoke-BonsaiNativeProcess -Executable $tool -ArgumentList $Arguments -WorkingDirectory $scratch -TimeoutSeconds $TimeoutSeconds
     if ($process.ExitCode -ne 0) {
         throw "GGUF tool exited with code $($process.ExitCode).`n$($process.StandardError)$($process.StandardOutput)"
     }
