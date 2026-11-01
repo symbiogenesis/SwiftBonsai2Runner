@@ -226,9 +226,12 @@ and recovery. Serialized savings alone do not lower admission or promote PTQ1.
 ## Reproduce the assessment
 
 Use native ARM64 PowerShell 7.6, the existing owner-selected external data directory and
-a new external report path. These explicit locks leave the Qwen default unchanged:
+a new external report path. Select a trusted prebuilt maintenance executable from the
+evaluated main revision, replacing the example tool path below. These explicit locks
+leave the Qwen default unchanged:
 
 ```powershell
+$maintenanceExecutable = 'C:\BonsaiTools\bonsai-tools.exe'
 $data = Join-Path $env:LOCALAPPDATA 'SwiftBonsai2'
 $lockPath = Join-Path $PWD 'config/swift-assessment.lock.json'
 $lock = Get-Content -Raw -LiteralPath $lockPath | ConvertFrom-Json -DateKind String
@@ -243,8 +246,8 @@ $request = Join-Path $data 'swift-census-request.json'
     ConvertTo-Json | Set-Content -LiteralPath $request -Encoding utf8NoBOM
 & $maintenanceExecutable gguf --request $request
 Import-Module ./scripts/Bonsai.Tools.psm1
-Invoke-BonsaiTool -Command cpu-check -Request @{ dataDirectory = $data; profile = 'swift-pq2-assessment'; checkOnly = $true }
-Invoke-BonsaiTool -Command cpu-check -TimeoutSeconds 300 -Request @{ dataDirectory = $data; profile = 'swift-pq2-assessment' }
+Invoke-BonsaiTool -Command cpu-check -ToolPath $maintenanceExecutable -Request @{ dataDirectory = $data; profile = 'swift-pq2-assessment'; checkOnly = $true }
+Invoke-BonsaiTool -Command cpu-check -ToolPath $maintenanceExecutable -TimeoutSeconds 300 -Request @{ dataDirectory = $data; profile = 'swift-pq2-assessment' }
 ```
 
 Optional exact export and adapter assessment:
@@ -255,9 +258,9 @@ $request = Join-Path $data 'swift-export-request.json'
 @{ operation = 'export-ptq1'; modelPath = $model; outputPath = $derived; dataDirectory = $data; timeoutSeconds = 240 } |
     ConvertTo-Json | Set-Content -LiteralPath $request -Encoding utf8NoBOM
 & $maintenanceExecutable gguf --request $request
-Invoke-BonsaiTool -Command cpu-check -TimeoutSeconds 300 -Request @{ dataDirectory = $data; profile = 'swift-pq2-assessment'; useRepackedPtq1 = $true }
+Invoke-BonsaiTool -Command cpu-check -ToolPath $maintenanceExecutable -TimeoutSeconds 300 -Request @{ dataDirectory = $data; profile = 'swift-pq2-assessment'; useRepackedPtq1 = $true }
 ./scripts/Get-Adapter.ps1 -DataDirectory $data
-Invoke-BonsaiTool -Command cpu-check -TimeoutSeconds 300 -Request @{ dataDirectory = $data; profile = 'swift-pq2-assessment'; useRepackedPtq1 = $true; useAbliterateLora = $true }
+Invoke-BonsaiTool -Command cpu-check -ToolPath $maintenanceExecutable -TimeoutSeconds 300 -Request @{ dataDirectory = $data; profile = 'swift-pq2-assessment'; useRepackedPtq1 = $true; useAbliterateLora = $true }
 ```
 
 Inspection/export use a trusted prebuilt `bonsai-tools.exe` selected as

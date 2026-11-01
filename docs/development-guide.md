@@ -431,11 +431,10 @@ file-backed mapping, so the physical-memory watchdog remains necessary. Reported
 Job peaks can include denied allocations; these diagnostics are not performance
 or peak-memory acceptance.
 
-Select a trusted Windows ARM64 `bonsai-tools` executable from the evaluated main
-revision through `BONSAI_TOOLS_PATH` or `-ToolPath` to avoid compilation during
-routine commands. Otherwise the bridge builds with pinned Rust in external temp.
-Key creation with `-WhatIf` resolves no executable. Planning may resolve the tool
-but never starts inference.
+Select a trusted prebuilt Windows ARM64 `bonsai-tools` executable from the evaluated
+main revision through `BONSAI_TOOLS_PATH` or `-ToolPath`. CPU execution requires
+that selection before the device allowance begins. Model-free planning may build
+the maintenance tool with pinned Rust in external temp, but never starts inference.
 
 Swift and LoRA load/decode success does not establish finished-answer quality,
 throughput, numerical basis or refusal behavior. The approved standard LoRA
