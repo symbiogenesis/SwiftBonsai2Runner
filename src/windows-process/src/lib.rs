@@ -71,6 +71,34 @@ pub fn process_module_paths(id: u32, basename: &str) -> io::Result<Vec<PathBuf>>
     native::signature::modules(id, basename)
 }
 
+/// One present SetupAPI device, with optional read-only driver registry metadata.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct DeviceInventoryEntry {
+    /// Device description, unknown when the property cannot be read.
+    pub name: Option<String>,
+    /// Device manufacturer, unknown when the property cannot be read.
+    pub manufacturer: Option<String>,
+    /// Present device instance identifier.
+    pub device_id: String,
+    /// Driver registry version; this does not establish package identity.
+    pub driver_version: Option<String>,
+    /// Driver registry date; this does not establish package identity.
+    pub driver_date: Option<String>,
+    /// Driver registry INF basename, unknown when unavailable.
+    pub inf_name: Option<String>,
+}
+
+/// Inventories up to sixteen present devices in one explicit SetupAPI class.
+///
+/// Supports `ComputeAccelerator`, `Display` and `Media`; never loads a driver or
+/// verifies a deployment signature. Optional unavailable properties stay unknown.
+///
+/// # Errors
+/// Rejects unsupported classes, failed native snapshots and oversized inventories.
+pub fn device_inventory(class: &str) -> io::Result<Vec<DeviceInventoryEntry>> {
+    native::devices::inventory(class)
+}
+
 /// Returns the current UTC wall clock in the canonical round-trip receipt format.
 #[must_use]
 pub fn utc_now() -> String {

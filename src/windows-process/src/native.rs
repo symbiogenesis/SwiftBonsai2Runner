@@ -56,6 +56,7 @@ use crate::{ProcessMemory, ProcessSpec, SandboxPolicy, ToolProcessSpec, invalid}
 
 mod containment;
 mod cpu;
+pub(super) mod devices;
 mod environment;
 mod host;
 mod isa;
