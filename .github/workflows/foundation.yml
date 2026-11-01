@@ -353,19 +353,6 @@ jobs:
           $result = Invoke-BonsaiTool -Command cpu-check -Request @{ dataDirectory = (Join-Path $env:RUNNER_TEMP 'SwiftBonsai-Runtime'); checkOnly = $true }
           if ($result.ModelProcessStarted -or $result.AvailablePhysicalBytesAtAdmission -le 0) { throw 'Invalid admission-only result.' }
           $result | ConvertTo-Json
-      - name: Mandatory standard LoRA scorer and capture argument contracts
-        if: matrix.lane == 'native'
-        shell: pwsh
-        working-directory: ${{ runner.temp }}
-        run: |
-          Set-StrictMode -Version Latest
-          $ErrorActionPreference = 'Stop'
-          $PSNativeCommandUseErrorActionPreference = $true
-          & (Join-Path $env:GITHUB_WORKSPACE 'tests/Test-LoraEvaluation.ps1') -Case All
-          & (Join-Path $env:GITHUB_WORKSPACE 'tests/Test-Ptq1Screen.ps1') -Case All
-          $plan = & (Join-Path $env:GITHUB_WORKSPACE 'scripts/Invoke-LoraQualification.ps1') -DataDirectory (Join-Path $env:RUNNER_TEMP 'SwiftBonsai-Runtime') -PlanOnly
-          if ($plan.ModelProcessStarted -or $plan.PairedSamples -ne 24 -or $plan.ZeroScaleSamples -ne 4) { throw 'Invalid nonlaunching LoRA qualification plan.' }
-          $plan | ConvertTo-Json
   release-integration:
     if: needs.changes.outputs.release == 'true'
     needs: [changes, maintenance]

@@ -45,6 +45,7 @@ struct Context {
 }
 
 fn ci_context(processor_name: &str) -> Result<Context> {
+    super::prepare::require_hosted_capture()?;
     bonsai_cpu_policy::server::validate_environment(
         std::env::vars_os().map(|(name, _)| name.to_string_lossy().into_owned()),
     )?;
@@ -69,6 +70,11 @@ fn ci_context(processor_name: &str) -> Result<Context> {
             && run_id.bytes().all(|byte| byte.is_ascii_digit())
             && !runner_name.trim().is_empty(),
         "Paired capture requires an identified native Snapdragon X/X2 Elite CI runner.",
+    )?;
+    require(
+        std::env::var("GITHUB_SHA")
+            .is_ok_and(|revision| crate::identity::is_lower_hex(&revision, 40)),
+        "Capture requires the current full Runner source revision.",
     )?;
     Ok(Context {
         run_url: format!(

@@ -1,4 +1,4 @@
-name: Swift standard LoRA paired capture
+name: Swift LoRA qualification plan (capture pending)
 on:
   workflow_dispatch:
     inputs:
@@ -14,83 +14,37 @@ on:
         default: standard-scale-one
 permissions:
   contents: read
-concurrency:
-  group: swift-lora-snapdragon
-  cancel-in-progress: false
 jobs:
-  capture:
+  plan:
     if: github.ref == 'refs/heads/main'
-    # Requires the owner-managed laptop runner and already verified artifacts.
-    # Never executes on pull requests or substitutes a hosted ARM processor.
-    runs-on: [self-hosted, Windows, ARM64, swift-bonsai-snapdragon]
-    timeout-minutes: 5
+    # Full matrices cannot fit the owner's aggregate five-minute allowance.
+    # Preserve the fixed contract and leave captures pending a hosted target device.
+    runs-on: windows-11-arm
+    timeout-minutes: 20
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
-      - name: Build packaged maintenance tools once for paired capture
-        uses: ./.github/actions/bonsai-tools
-      - name: Capture matched throughput and exact responses; qualification may remain pending
+      - uses: ./.github/actions/bonsai-tools
+      - name: Retain the nonlaunching native qualification plan
         shell: pwsh
         working-directory: ${{ runner.temp }}
         env:
           BONSAI_REPRESENTATION: ${{ inputs.representation }}
           BONSAI_QUALIFICATION: ${{ inputs.qualification }}
         run: |
-          Set-StrictMode -Version Latest
           $ErrorActionPreference = 'Stop'
           $PSNativeCommandUseErrorActionPreference = $true
-          $script = Join-Path $env:GITHUB_WORKSPACE 'scripts/Invoke-LoraQualification.ps1'
-          $data = Join-Path $env:LOCALAPPDATA 'SwiftBonsai2'
-          $ptq = $env:BONSAI_REPRESENTATION -ceq 'current-repacked-PTQ1_0'
-          $appSettings = $env:BONSAI_QUALIFICATION -ceq 'app-scale-1.3'
-          # Keep upload credentials outside the model evaluation process tree.
-          $start = [Diagnostics.ProcessStartInfo]::new((Join-Path $PSHOME 'pwsh.exe'))
-          $start.WorkingDirectory = $env:RUNNER_TEMP
-          $start.UseShellExecute = $false
-          $start.CreateNoWindow = $true
-          $start.RedirectStandardOutput = $true
-          $start.RedirectStandardError = $true
-          foreach ($argument in @('-NoProfile', '-File', $script, '-DataDirectory', $data)) {
-            $start.ArgumentList.Add($argument)
-          }
-          if ($ptq) { $start.ArgumentList.Add('-UseRepackedPtq1') }
-          if ($appSettings) { $start.ArgumentList.Add('-AppSettings') }
-          foreach ($name in @('ACTIONS_RUNTIME_TOKEN', 'ACTIONS_ID_TOKEN_REQUEST_TOKEN', 'GITHUB_TOKEN', 'GH_TOKEN', 'ACTIONS_RUNNER_INPUT_TOKEN')) {
-            [void]$start.Environment.Remove($name)
-          }
-          $child = [Diagnostics.Process]::Start($start)
-          try {
-            $stdout = $child.StandardOutput.ReadToEndAsync()
-            $stderr = $child.StandardError.ReadToEndAsync()
-            $child.WaitForExit()
-            [Console]::Out.Write($stdout.GetAwaiter().GetResult())
-            [Console]::Error.Write($stderr.GetAwaiter().GetResult())
-            $code = $child.ExitCode
-          } finally {
-            try {
-              if (-not $child.HasExited) { $child.Kill($true); $child.WaitForExit() }
-            } finally { $child.Dispose() }
-          }
-          if ($code -ne 0) { throw 'LoRA capture failed; inspect retained evidence.' }
-          $entry = @(Get-Content -LiteralPath $env:GITHUB_ENV | Where-Object { $_.StartsWith('BONSAI_LORA_EVIDENCE=') })
-          if ($entry.Count -ne 1) { throw 'LoRA evidence path is missing or ambiguous.' }
-          $evidence = $entry[0].Substring('BONSAI_LORA_EVIDENCE='.Length)
-          $result = Get-Content -LiteralPath (Join-Path $evidence 'receipt.json') -Raw | ConvertFrom-Json
-          @('Paired capture completed (' + $env:BONSAI_QUALIFICATION + '). Qualification: ' + $result.QualificationStatus,
-            'Tokens/sec and human-reviewed output quality are independent mandatory gates.',
-            'Missing native logits/basis evidence and human reviews remain pending.') | Add-Content -LiteralPath $env:GITHUB_STEP_SUMMARY
-          if ($result.QualificationStatus -ceq 'rejected') { throw 'A mandatory matched qualification gate regressed; inspect retained evidence.' }
-      - name: Retain capture, controls, technical logs and independent gate report
-        if: always() && env.BONSAI_LORA_EVIDENCE != ''
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+          $request = Join-Path $env:RUNNER_TEMP 'lora-plan-request.json'
+          @{ operation='plan'; qualificationProfile=$env:BONSAI_QUALIFICATION; weightRepresentation=$env:BONSAI_REPRESENTATION } |
+            ConvertTo-Json | Set-Content -LiteralPath $request -Encoding utf8NoBOM
+          & $env:BONSAI_TOOLS_PATH qualification --request $request |
+            Set-Content -LiteralPath (Join-Path $env:RUNNER_TEMP 'lora-plan.json') -Encoding utf8NoBOM
+          'Qualification remains pending. This workflow records the fixed plan without model execution. The 28-sample matrix requires a hosted Snapdragon target; it must not be split across owner runs to evade the five-minute total allowance.' |
+            Add-Content -LiteralPath $env:GITHUB_STEP_SUMMARY
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
-          name: swift-lora-${{ github.run_id }}-${{ github.run_attempt }}
-          # Deliberately list technical evidence; never upload model/adapter files.
-          path: |
-            ${{ env.BONSAI_LORA_EVIDENCE }}/**/*.json
-            ${{ env.BONSAI_LORA_EVIDENCE }}/**/*.txt
+          name: swift-lora-plan-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/lora-plan.json
           if-no-files-found: error
           retention-days: 90
-          # Keep text compression, with less CPU spent packaging every capture.
-          compression-level: 1

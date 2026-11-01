@@ -173,8 +173,11 @@ scale-one evidence cannot satisfy it. Select `qualification: app-scale-1.3` in t
 manual workflow, or inspect it without inference:
 
 ```powershell
-./scripts/Invoke-LoraQualification.ps1 -DataDirectory "$env:LOCALAPPDATA/SwiftBonsai2" -UseRepackedPtq1 -AppSettings -PlanOnly
 Import-Module ./scripts/Bonsai.Tools.psm1
+Invoke-BonsaiTool -Command qualification -Request @{
+    operation = 'plan'; qualificationProfile = 'app-scale-1.3'
+    weightRepresentation = 'current-repacked-PTQ1_0'
+}
 Invoke-BonsaiTool -Command qualification -Request @{
     operation = 'file-score'; qualificationProfile = 'app-scale-1.3'
     evidencePath = 'C:/external/evidence.json'; reviewPath = 'C:/external/review.json'
@@ -185,7 +188,7 @@ Invoke-BonsaiTool -Command qualification -Request @{
 `StandardProfileMayEnable` stays false for this separate contract. The 512-token cap
 does not prove answer completeness: every exact response still requires human review.
 Thinking, sampler changes, full 4K output, long context, broad creative quality,
-comfort and daily service remain separate qualification. Omitting `AppSettings`
+comfort and daily service remain separate qualification. Omitting `qualificationProfile`
 preserves the original scale-one contract.
 
 ### Fixed acceptance contract
@@ -216,27 +219,32 @@ rewrite evidence or review hashes.
 ### Capture on the target device
 
 The manually dispatched [workflow](../.github/workflows/swift-lora-qualification.yml)
-runs only on `main`, using a Windows ARM64 self-hosted Snapdragon X Elite runner
-labelled `swift-bonsai-snapdragon` and a read-only token. The owner must provide the
-runner and already provisioned external artifacts; the workflow downloads no model
-weights. PQ2 is the default. The exact current-weight PTQ1 export is a separate fixed
-comparison because its activation quantization differs.
+runs only on `main` and retains the nonlaunching plan on hosted Windows ARM64.
+It downloads no model weights and schedules no owner-device capture. PQ2 is the
+default. The exact current-weight PTQ1 export is a separate fixed comparison because
+its activation quantization differs.
 
 Inspect the plan locally without model loading or benchmarking:
 
 ```powershell
-./scripts/Invoke-LoraQualification.ps1 -DataDirectory "$env:LOCALAPPDATA/SwiftBonsai2" -PlanOnly
+Import-Module ./scripts/Bonsai.Tools.psm1
+Invoke-BonsaiTool -Command qualification -Request @{
+    operation = 'plan'; weightRepresentation = 'PQ2_0'
+}
 ```
 
-Actual capture rejects local execution. The legacy matrix requires 24 paired samples
-plus four loaded-at-zero controls, including completed samples before any later batch
-failure. Redesign it to fit the owner's five-minute whole-job limit before scheduling
-it; do not split the matrix across repeated owner jobs.
+Native `qualification` operation `run` constructs and verifies the complete capture
+envelope from `dataDirectory`, optional `useRepackedPtq1` and `qualificationProfile`.
+It requires credential-free, main-branch hosted CI on an actual Snapdragon X/X2 Elite.
+Both the front door and low-level capture reject owner/self-hosted execution.
+The 24 paired samples plus four loaded-at-zero controls have no demonstrated complete
+five-minute bound. The manual workflow therefore retains a hosted nonlaunching plan
+and leaves capture pending; do not split the matrix across repeated owner jobs.
 
 | Capture component | Contract |
 | --- | --- |
 | Integrity and lifetime | Verify the complete publisher package/model/adapter, retain write/delete-denying handles and copy the verified adapter into a unique external temp lane. Every process enters a one-process kill-on-close Windows Job at creation, with a three-minute worker deadline and bounded diagnostics. All owner-device setup, samples, comparison and cleanup must fit five minutes total. |
-| Receipts | Rust parses timings, strictly decodes UTF-8 and hashes exact responses. Each sample has `capture.json`, raw stdout and `diagnostics.json`; completed supervision is written last. PowerShell assembles paired evidence. Upload controls, stdout/logs/arguments/counters/failures; exclude model/adapter files. |
+| Receipts | Rust parses timings, strictly decodes UTF-8 and hashes exact responses. Each sample has `capture.json`, raw stdout and `diagnostics.json`; completed supervision is written last. Rust assembles paired evidence and retains preparation failures. Upload controls, stdout/logs/arguments/counters/failures; exclude model/adapter files. |
 | Scale | The pinned [`--lora-scaled` parser](https://github.com/PrismML-Eng/llama.cpp/blob/73bfe6cc485554822f80c473a3c0c4f25e80f41b/common/arg.cpp) splits every colon in `FNAME:SCALE`; relative filenames avoid drive-colon ambiguity. [Zero scale](https://github.com/PrismML-Eng/llama.cpp/blob/73bfe6cc485554822f80c473a3c0c4f25e80f41b/src/llama-context.cpp) loads the adapter without its active graph branch. |
 | Throughput | Native single-token **eval-run count / eval time**, from the pinned [stderr timing printer](https://github.com/PrismML-Eng/llama.cpp/blob/73bfe6cc485554822f80c473a3c0c4f25e80f41b/common/sampling.cpp), invariant decimals, missing/duplicate/invalid counters rejected. `decodeTokens` counts eval runs: final sampled tokens normally are not decoded, and a one-token prompt remainder may count. [Completion diagnostics](https://github.com/PrismML-Eng/llama.cpp/blob/73bfe6cc485554822f80c473a3c0c4f25e80f41b/tools/completion/completion.cpp) cross-check sampler accepts minus verbose-prompt tokens, including EOG; visible text is not a token counter. |
 | Limits | Exact stdout preserves reasoning, EOG and trailing newlines; EOG is not an authoritative finish reason. Wall time includes startup; first-token latency, power and thermals are absent. This small greedy corpus proves neither broad creative quality nor statistical equivalence. |

@@ -6,6 +6,7 @@
 
 mod capture;
 mod invocation;
+mod prepare;
 mod schema;
 mod score;
 mod screen;
@@ -375,6 +376,9 @@ pub fn run(request: Value) -> Result<Value> {
         return Err("Qualification request must be an object.".into());
     };
     let operation: String = take(&mut request, "operation")?;
+    if matches!(operation.as_str(), "run" | "screen-run") {
+        return prepare::run(request, operation == "screen-run");
+    }
     if operation == "capture" {
         return capture::run(request);
     }

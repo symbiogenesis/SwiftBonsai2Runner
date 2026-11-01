@@ -324,11 +324,15 @@ ceiling/admission by themselves; the physical reserve stays mandatory.
 
 ## Bounded decision-screen interface
 
-The manual main-only `swift-ptq1-screen.yml` workflow uses already provisioned artifacts
-on the native ARM64 Snapdragon runner. Its fixed workload is one creative prompt, both
+The manual main-only `swift-ptq1-screen.yml` workflow retains a hosted nonlaunching
+plan and leaves capture pending. The fourteen-process matrix has no demonstrated
+complete five-minute owner bound; native capture rejects self-hosted/owner execution.
+Native `qualification` operation `screen-run` prepares verified external artifacts
+from `dataDirectory` and requires a credential-free hosted ARM64 Snapdragon target.
+Its fixed workload is one creative prompt, both
 packings, adapter off/on at 1.3 and three interleaved repetitions: **12 timed 64-token
 prefixes plus two zero-scale controls**. All benchmark execution is CI-only.
-The workflow omits Actions credentials from the evaluation process tree. Before
+The native capture rejects Actions credentials in the evaluation process tree. Before
 model admission or artifact hashing, the verified completion executable must pass
 a retained, model-free `--version` preflight under the ordinary headless worker
 policy: ten seconds, 512 MiB Job, unchanged admission and physical reserve.
@@ -339,7 +343,8 @@ publisher runtime's known X2 DLL startup failure is tracked under
 Inspect its plan without loading a model:
 
 ```powershell
-./scripts/Invoke-Ptq1Screen.ps1 -DataDirectory "$env:LOCALAPPDATA/SwiftBonsai2" -PlanOnly
+Import-Module ./scripts/Bonsai.Tools.psm1
+Invoke-BonsaiTool -Command qualification -Request @{ operation = 'screen-plan' }
 ```
 
 Inspect a capture offline:

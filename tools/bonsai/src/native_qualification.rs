@@ -178,7 +178,7 @@ fn plan(request: &Request, pins: &Value) -> Value {
 }
 
 #[cfg(any(windows, test))]
-fn save_report(path: &Path, report: &Value) -> crate::Result<()> {
+pub(crate) fn save_report(path: &Path, report: &Value) -> crate::Result<()> {
     bonsai_artifacts::validate_external_path(path).map_err(|error| error.to_string())?;
     let bytes = serde_json::to_vec_pretty(report).map_err(|error| error.to_string())?;
     if u64::try_from(bytes.len()).map_err(|error| error.to_string())? > LIMIT {

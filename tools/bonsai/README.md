@@ -360,6 +360,25 @@ serialization, Unicode response hashes and accepted/pending/rejected reports.
 Missing human reviews, native logits or basis evidence remain pending; known
 regressions still reject. Scoring never launches inference.
 
+`qualification` operations `run` and `screen-run` own complete native preparation
+for the paired LoRA and PTQ1 prefix-screen captures. Supply an expanded absolute
+`dataDirectory`; `run` also accepts `useRepackedPtq1` and `qualificationProfile`
+(`standard-scale-one` or `app-scale-1.3`). Rust observes the processor and admission,
+verifies the compiled runtime and adapter identities, retains the adapter guard,
+constructs the capture envelope, and records atomic preparation failures. The
+screen's ordinary headless `--version` worker preflight must pass before either
+model admission or adapter verification. Runtime files and model/adapter bytes are
+verified again and retained by the existing capture supervisor.
+
+Both front-door and low-level captures require credential-free main-branch hosted
+CI on an actual native Snapdragon X/X2 Elite. The 28/14-process full matrices have
+no demonstrated complete five-minute owner bound, so self-hosted/owner execution
+rejects before preparation. Their manual workflows retain hosted nonlaunching
+`plan`/`screen-plan` results and leave qualification pending. The removed
+PowerShell wrappers are unnecessary; `Invoke-BonsaiTool` remains an optional JSON
+bridge and requires a prebuilt executable for capture operations. Never split a
+matrix across repeated owner jobs to bypass the aggregate allowance.
+
 Frozen pre-port PowerShell fixtures cover complete CPU policies, artifact identities
 and argument vectors, including Unicode prompts and adapter scale syntax. Pure
 policy tests run in Rust; focused script checks cover the packaged JSON bridge.
