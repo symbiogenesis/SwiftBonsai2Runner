@@ -75,7 +75,8 @@ one-token streams at scales 1.3 and zero, and invalid-scale rejection. Its
 generated-history change-back request expired after 72.29 seconds within the
 215-second model-case allowance; complete lifecycle acceptance remains pending.
 Qualify the complete three-stream sequence as one feasible workload, including a
-separately scoped four-worker candidate and matching numerical capture when selected;
+separately scoped `ptq1-adapter-lifecycle-row4` candidate and a matching numerical
+capture with `native_row_workers: 4` when selected;
 do not continue missing steps through additional owner jobs. Retain
 exact generated source-response/message digests; empty or unbound output leaves
 generated history pending. Attribute the observed 35.46-second startup, roughly

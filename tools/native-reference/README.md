@@ -1,8 +1,10 @@
 # Five-minute PTQ1 correctness smoke
 
-The owner-laptop trial is one native reference plus one Rust Auto process, each
+The owner-laptop trial is one native reference plus one Rust process, each
 evaluating the single supplied ID `[248045]` with the approved adapter at scale
-1.3. **The entire owner job, including setup, loading, comparison, cleanup and
+1.3. Select one Rust backend (`auto`, `scalar` or `neon`) and one row-worker count
+(`1`, the default, or `4`). This remains one comparison, not a worker/backend matrix.
+**The entire owner job, including setup, loading, comparison, cleanup and
 artifact upload, has a five-minute hard limit.** The wrapper starts its separate
 work clock before preparation and caps external calls by the remaining
 allowance. The job clock starts before checkout/tool intake; the checked budget
@@ -17,7 +19,10 @@ comparison phases are saved before launching external work.
 
 No-adapter, loaded-zero identity, changed nonzero logits, scalar, explicit NEON,
 writer authoring basis, quality, performance, full context and service remain
-pending. A passing result covers only one Auto-requested token at scale 1.3.
+pending. A passing result covers only one supplied token at scale 1.3 with the exact
+selected backend and worker count. The comparator requires the reported worker
+count to match and requires positive parallel-operation counts for four workers
+(zero for one); these counters do not establish a performance gain.
 Backend requests do not provide operation-level dispatch counters. No default or
 admission change is authorized.
 
@@ -43,13 +48,16 @@ preparation and capture require the Rust source's commit, archive size, digest
 and URL to equal the current runtime lock; historical checkers cannot qualify a
 new release. Capture
 tools must be built in hosted CI and delivered with `capture-tools.json`:
-`SchemaVersion: 2`, `RunnerRevision`, `NativeSource`, `RustSource`,
+`SchemaVersion: 3`, `CheckerFeatures: ["parallel-rows"]`,
+`SupportedRowWorkers: [1,4]`, `RunnerRevision`, `NativeSource`, `RustSource`,
 `CollectorLanguage: rust`, `CollectorSourcePath`, `CollectorSourceSha256`,
 `AbiControlSha256`, `AbiProvenanceSha256`, `Compiler`, `RustToolchain`, and exactly two `Files`
 entries (`Name`, `Bytes`, lowercase `Sha256`) for `swift-ptq1-reference.exe` and
 `swift_model_check.exe`. The wrapper checks the current Runner revision, source
 pins, Rust source/control digests, binary hashes/sizes and ARM64 PE architecture. Both binaries
-and their receipt are guarded during execution. There is no owner build fallback.
+and their receipt are guarded during execution. A historical schema-2 receipt is
+accepted only for one worker and cannot acquire parallel capabilities through
+injected fields. There is no owner build fallback.
 Supply the separately hosted-prepared maintenance executable through `ToolPath`
 or `BONSAI_TOOLS_PATH`.
 
