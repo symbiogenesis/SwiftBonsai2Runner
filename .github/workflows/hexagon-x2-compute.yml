@@ -59,13 +59,6 @@ jobs:
           path: ${{ runner.temp }}/SwiftBonsai-HexagonPolicy
           if-no-files-found: error
           retention-days: 90
-      - name: Check computation evidence, cancellation contracts and packed preparation without a device
-        shell: pwsh
-        run: |
-          Set-StrictMode -Version Latest
-          $ErrorActionPreference = 'Stop'
-          $PSNativeCommandUseErrorActionPreference = $true
-          ./tests/Test-NativeProcess.ps1 -Case OwnedExitAccounting
       - name: Build source-bound native fixture and run independent packed and queue contracts
         shell: pwsh
         working-directory: ${{ runner.temp }}

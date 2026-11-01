@@ -216,6 +216,7 @@ fn driver(path: &Path, holds: &mut Vec<File>) -> Result<Value> {
 #[cfg(windows)]
 #[expect(
     clippy::too_many_arguments,
+    clippy::too_many_lines,
     reason = "Explicit capture inputs bind process ownership, progress and retained artifact guards."
 )]
 fn capture(
@@ -615,6 +616,10 @@ fn verify_fixture(
 }
 
 #[cfg(windows)]
+#[expect(
+    clippy::too_many_lines,
+    reason = "One ordered worker owns immutable source/runtime guards through catalog verification, driver inspection and the fixed device probe."
+)]
 fn execute_worker(request: &Probe, report: &mut Value, progress: &Path) -> Result<()> {
     let mut inputs = Inputs { holds: Vec::new() };
     let lock_path = request

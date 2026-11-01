@@ -294,6 +294,10 @@ fn compile_arguments(manifest: &Path) -> Vec<OsString> {
     .collect()
 }
 
+#[expect(
+    clippy::too_many_lines,
+    reason = "The fixed hosted recipe retains all compiler/source/output identities through its three independent controls."
+)]
 fn dispatch(mut context: Context) -> Result<Value> {
     let manifest = context.repo.join("tools/hexagon/diagnostic.manifest");
     let manifest_digest = context.digest(&manifest, 65_536)?;
@@ -460,6 +464,10 @@ fn dispatch(mut context: Context) -> Result<Value> {
     Ok(receipt)
 }
 
+#[expect(
+    clippy::too_many_lines,
+    reason = "The source-bound extractor recipe retains exact dependency artifacts, compiler images and model-free controls together."
+)]
 fn packed_artifact(mut context: Context, gguf: &Path) -> Result<Value> {
     const PIN: &str = "7aca2251f09acb345d4afb53d5ce411f81017745";
     plain(gguf)?;
