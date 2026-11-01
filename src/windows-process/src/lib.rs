@@ -863,6 +863,7 @@ impl OwnedProcess {
     ///
     /// Native-query, 64-member and snapshot-bound failures are retained inline.
     #[cfg(feature = "test-probe")]
+    #[must_use]
     pub fn test_job_accounting(&self) -> String {
         self.0.test_job_accounting()
     }
