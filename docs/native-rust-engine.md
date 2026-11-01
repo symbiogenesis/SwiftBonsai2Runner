@@ -400,6 +400,12 @@ device/human-review requirements and submitted review note and reviewer identity
 so a retained score identifies the candidate and the work still pending. Filter
 `gates` by `status` to review pending or rejected requirements; a successful command
 with either status still leaves `promotionReady: false`.
+File scores also retain `evidenceManifest.bytes` and `evidenceManifest.sha256`
+over the exact input file bytes before parsing. This digest differs from the
+canonical JSON `policySha256`. Completed gate records include the verified
+relative `reportFile` and service `harness.packageFile` for archive retrieval;
+pending attachments expose no unverified retrieval path. Archive the original
+manifest and those files with the score.
 Independently review CI/source/report/reviewer identities and require `promotionReady:
 true`; command success alone cannot authorize promotion.
 

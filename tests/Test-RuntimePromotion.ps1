@@ -85,6 +85,8 @@ $ptq1Score = Invoke-BonsaiTool -Command runtime-promotion -ToolPath $ToolPath -R
     weightRepresentation = 'current-repacked-PTQ1_0'
 }
 if ($ptq1Score.promotionReady -or $ptq1Score.status -cne 'pending' -or
+    $ptq1Score.evidenceManifest.bytes -ne (Get-Item -LiteralPath $evidence).Length -or
+    $ptq1Score.evidenceManifest.sha256 -cne (Get-FileHash -LiteralPath $evidence -Algorithm SHA256).Hash.ToLowerInvariant() -or
     $ptq1Score.gates.Count -ne $ptq1.policy.requiredGates.Count -or
     $ptq1Score.profile -cne $ptq1.policy.profile -or
     $ptq1Score.policySha256 -cne $ptq1.policySha256 -or
