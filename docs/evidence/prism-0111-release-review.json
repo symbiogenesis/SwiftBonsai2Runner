@@ -3,7 +3,7 @@
   "kind": "independent-prism-0.1.11-release-data-review",
   "recordedDate": "2026-11-01",
   "reviewer": "Codex:/root/review",
-  "status": "static-source-arm64-x64-passed-publication-pending-conformance",
+  "status": "independently-reviewed-github-binary-publication-ready",
   "sourceRevision": "4ce85bdd92f30dc4badb4b5f16307611fa6408c7",
   "version": "0.1.11",
   "target": "aarch64-pc-windows-msvc",
@@ -91,13 +91,16 @@
   },
   "owningConformance": {
     "runId": "41332186586",
-    "status": "in_progress",
-    "conclusion": null,
+    "status": "completed",
+    "conclusion": "success",
     "url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41332186586",
     "event": "push",
-    "branch": "main"
+    "branch": "main",
+    "completedJobCount": 58,
+    "allJobsSuccessful": true,
+    "remainingJobs": []
   },
-  "publicationReady": false,
+  "publicationReady": true,
   "x64Reviewed": true,
   "runtimeExecutionQualified": false,
   "deviceBenefitQualified": false,
@@ -184,5 +187,9 @@
     ],
     "actualDeviceRollbackQualified": false,
     "hostedChecksRequired": true
-  }
+  },
+  "publicationScope": "Exact reviewed ARM64 and x64 GitHub binary prerelease archives and source-bound receipts only; registry publication and Runner default promotion remain separate.",
+  "gateSourceRevision": "4ce85bdd92f30dc4badb4b5f16307611fa6408c7",
+  "bothOwningMainPushGatesMatchSource": true,
+  "archiveHashesRecheckedAfterGateCompletion": true
 }
