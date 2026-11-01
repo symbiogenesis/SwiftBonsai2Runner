@@ -372,12 +372,18 @@ For bounded GGUF v3 metadata inspection after full size/SHA-256 verification:
 
 ```powershell
 $inference = ./scripts/Get-Inference.ps1 -DataDirectory $data
-./scripts/Read-Gguf.ps1 -ModelPath (Join-Path $data 'models/4ca720788d1e01f1bff70c033e0d0028fd02e502/Qwen3.8-27B-UD-Q3_K_XL.gguf') -GgufToolPath $inference.Gguf
+$request = Join-Path $data 'inspect-request.json'
+@{ operation = 'inspect'; modelPath = (Join-Path $data 'models/4ca720788d1e01f1bff70c033e0d0028fd02e502/Qwen3.8-27B-UD-Q3_K_XL.gguf'); ggufToolPath = $inference.Gguf } |
+    ConvertTo-Json | Set-Content -LiteralPath $request -Encoding utf8NoBOM
+& $maintenanceExecutable gguf --request $request
 ```
 
 The [GGUF tool](https://github.com/symbiogenesis/prism-inference/blob/main/tools/gguf/README.md) also supports explicit Prism census and
-streaming PQ2-to-PTQ1 export. `-GgufToolPath` selects a prebuilt executable;
-otherwise the wrapper builds pinned Rust sources in external temp storage.
+streaming PQ2-to-PTQ1 export. Use a trusted prebuilt `bonsai-tools.exe` as
+`$maintenanceExecutable`; its [native `gguf` command](../tools/bonsai/README.md)
+owns artifact defaults, policy and complete-process deadlines. `ggufToolPath`
+selects an explicit trusted GGUF executable; otherwise Rust verifies the installed
+pinned inference release without compiling or downloading.
 Metadata inspection skips tensor payloads; census and export read them.
 
 ## Bounded CPU load/decode check
@@ -591,7 +597,8 @@ ARM64 executable architecture and installs under
 `Get-Inference.ps1` and the launcher consume these binaries without invoking
 Cargo. Updating the runtime means reviewing a new release lock and provisioning
 that release. For GGUF commands using a custom data directory, set
-`BONSAI_DATA_DIRECTORY` to the same absolute path, or supply `-GgufToolPath`.
+`BONSAI_DATA_DIRECTORY` to the same absolute path, or supply the native `gguf`
+request's `dataDirectory` or explicit `ggufToolPath`.
 The crates.io packages provide the Rust source distribution;
 ordinary `cargo install` compiles that source.
 

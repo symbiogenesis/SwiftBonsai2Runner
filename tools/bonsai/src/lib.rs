@@ -31,6 +31,7 @@ pub const COMMANDS: &[&str] = &[
     "chat-launch",
     "chat-prepare",
     "chat-package",
+    "gguf",
     "ptq1-capture",
     "ptq1-packing",
     "packing-qualification",
@@ -108,6 +109,9 @@ pub mod chat_launch;
 
 /// Installed native chat package selection and integrity checks.
 pub mod chat_package;
+
+/// Verified GGUF inspection, pinned Swift export and hosted integration fixtures.
+pub mod gguf;
 
 /// Source-bound PTQ1 collector receipts and complete unsigned ABI comparisons.
 pub mod ptq1_capture;

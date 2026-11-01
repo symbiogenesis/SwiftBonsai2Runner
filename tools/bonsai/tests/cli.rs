@@ -55,6 +55,7 @@ fn version_advertises_policy_commands_without_resolving_a_request_file()
         "chat-launch",
         "chat-prepare",
         "chat-package",
+        "gguf",
         "ptq1-capture",
         "ptq1-packing",
         "host-capabilities",

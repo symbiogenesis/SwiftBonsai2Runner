@@ -125,6 +125,7 @@ fn execute() -> bonsai_tools::Result<serde_json::Value> {
         Some("chat-launch") => bonsai_tools::chat_launch::run(request),
         Some("chat-prepare") => bonsai_tools::chat_launch::prepare_run(request),
         Some("chat-package") => bonsai_tools::chat_package::run(request),
+        Some("gguf") => bonsai_tools::gguf::run(request),
         Some("ptq1-capture") => bonsai_tools::ptq1_capture::run(request),
         Some("ptq1-packing") => bonsai_tools::ptq1_packing::run(request),
         Some("packing-qualification") => bonsai_tools::packing_qualification::run(request),

@@ -311,10 +311,21 @@ jobs:
               $inference.Capabilities.runtime.target.architecture -cne 'aarch64') {
             throw 'Invalid verified released-runtime capability report.'
           }
-          $env:BONSAI_GGUF_TOOL = $inference.Gguf
-          & (Join-Path $env:GITHUB_WORKSPACE 'tests/Test-Gguf.ps1') -Case All
-          & (Join-Path $env:GITHUB_WORKSPACE 'tests/Test-Pq2Census.ps1')
-          & (Join-Path $env:GITHUB_WORKSPACE 'tests/Test-Ptq1Export.ps1') -Case All
+          $evidence = Join-Path $env:RUNNER_TEMP 'SwiftBonsai-GgufChecks'
+          "BONSAI_GGUF_EVIDENCE=$evidence" >> $env:GITHUB_ENV
+          $request = Join-Path $env:RUNNER_TEMP 'gguf-check-request.json'
+          @{ operation = 'check'; ggufToolPath = $inference.Gguf; evidenceDirectory = $evidence; case = 'all' } |
+            ConvertTo-Json | Set-Content -LiteralPath $request -Encoding utf8NoBOM
+          & $env:BONSAI_TOOLS_PATH gguf --request $request
+          if ($LASTEXITCODE -ne 0) { throw 'Native GGUF integration checks failed; inspect the retained fixture evidence.' }
+      - name: Retain independent GGUF fixture evidence
+        if: always() && matrix.lane == 'foundation' && env.BONSAI_GGUF_EVIDENCE != ''
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: gguf-integration-${{ github.sha }}
+          path: ${{ env.BONSAI_GGUF_EVIDENCE }}
+          if-no-files-found: warn
+          retention-days: 30
       - name: Native tool invocation contracts
         if: matrix.lane == 'native'
         shell: pwsh

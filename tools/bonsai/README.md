@@ -24,7 +24,7 @@ Wrappers also accept `-ToolPath` where applicable. Version/protocol checks estab
 compatibility, not source-to-binary attestation; use a trusted build. Without a
 selected binary, the resolver builds pinned sources with `--locked --release` in
 an external incremental system-temp lane. This requires Rust and locked
-dependencies. GGUF wrappers share the resolver through `-GgufToolPath`.
+dependencies. GGUF inspection and export use the native `gguf` command below.
 
 Credential requests contain only `parentDirectory`, an existing absolute external
 local directory. The command creates fresh protected files and returns paths only.
@@ -59,6 +59,7 @@ bonsai-tools speech-build --request ABSOLUTE_JSON_PATH
 bonsai-tools source-build --request ABSOLUTE_JSON_PATH
 bonsai-tools chat-launch --request ABSOLUTE_JSON_PATH
 bonsai-tools chat-package --request ABSOLUTE_JSON_PATH
+bonsai-tools gguf --request ABSOLUTE_JSON_PATH
 bonsai-tools host-capabilities --request ABSOLUTE_JSON_PATH
 bonsai-tools native-acceptance-budget --request ABSOLUTE_JSON_PATH
 bonsai-tools startup-diagnostics --request ABSOLUTE_JSON_PATH
@@ -183,6 +184,37 @@ the active package and derives its fixed executable paths before native launch.
 The legacy `launch` operation still supports a caller-bound directory, ID and
 manifest digest. Caller options cannot override paths or request a source build.
 The native launcher opens the pending UI before preparing backend and speech.
+
+`gguf` replaces `Read-Gguf.ps1`, `Export-SwiftPtq1.ps1` and their module. Use
+`operation: "inspect"` with `modelPath`, optional new `outputPath`, and either
+both `expectedBytes`/`expectedSha256` or neither. Omitted identity fields use the
+compiled reference-Qwen pin. `dialect` defaults to `"Stock"`; `censusPq2: true`
+requires `"Prism-73bfe6cc485554822f80c473a3c0c4f25e80f41b"`. Inspection defaults
+to a 300-second complete-process deadline, including artifact hashing.
+`operation: "export-ptq1"` requires `modelPath` and new `outputPath`, uses the
+compiled original-Swift identity and annotates `SourceRevision` after success.
+Its `timeoutSeconds` defaults to 1800; both operations accept 1 through 3600.
+The export limit covers the complete owned process and is also passed to the
+exporter's conversion deadline. Owner-device diagnostics still share the
+five-minute total allowance; select a feasible bound including setup/cleanup.
+
+Both operations accept an explicit trusted `ggufToolPath` (or
+`BONSAI_GGUF_TOOL`). Otherwise they verify the compiled inference archive and
+complete installed inventory under `dataDirectory`, `BONSAI_DATA_DIRECTORY`,
+or `%LOCALAPPDATA%/SwiftBonsai2`, retaining artifact guards through execution.
+Missing binaries fail; these operations never download or compile tools.
+Metadata inspection skips tensor payloads; census and export read them.
+
+`gguf` operation `check` replaces the PowerShell GGUF, PQ2 census and PTQ1
+export tests and fixture module. It requires `ggufToolPath` matching the exact
+compiled release digest and a new `evidenceDirectory`. `case` defaults to `all`;
+individual cases are `parser`, `strings`, `arrays`, `descriptors`, `artifact`,
+`census`, `repack` and `rejection`. Fixture execution is restricted to hosted
+native Windows ARM64 CI on `main`, and missing tools fail without skips.
+Independent byte serialization, tokenizer hashes, exact descriptor diagnostics,
+all 256 packed-byte patterns, invalid scales, buffer-boundary payloads, the PTQ1
+wire oracle and failed-publication controls remain outside the released codec.
+Ordinary Rust unit tests cover command policy without requiring that release.
 
 `inference-lock` reviews independently selected Prism release and source ZIPs.
 It retains read-only input handles, checks bounded inventories, file hashes,

@@ -9,7 +9,7 @@
   "package_inputs": {
     "bonsai-cpu-policy": ["config/runtime.lock.json", "config/swift-assessment.lock.json", "config/swift-lora.lock.json", "config/swift.ptq1-export.json", "config/profiles/reference-cpu.json"],
     "bonsai-broker": ["config/runtime.lock.json", "config/swift-assessment.lock.json", "config/swift.metadata.json", "config/profiles/reference-cpu.json", "config/prism-inference.lock.json"],
-    "bonsai-tools": ["LICENSE", "NOTICE", "config/swift-assessment.lock.json", "config/swift-lora.lock.json", "config/swift.ptq1-export.json", "config/swift-lora.qualification.json", "config/swift-lora.app-qualification.json", "config/swift.metadata.json", "tests/fixtures/lora-qualification-v1.json", "src/speech-asr/model.lock.json", "src/speech-tts/model*.lock.json", "config/native-speech.lock.json", "config/prism-inference.lock.json"]
+    "bonsai-tools": ["LICENSE", "NOTICE", "config/runtime.lock.json", "config/swift-assessment.lock.json", "config/swift-lora.lock.json", "config/swift.ptq1-export.json", "config/swift-lora.qualification.json", "config/swift-lora.app-qualification.json", "config/swift.metadata.json", "tests/fixtures/lora-qualification-v1.json", "src/speech-asr/model.lock.json", "src/speech-tts/model*.lock.json", "config/native-speech.lock.json", "config/prism-inference.lock.json"]
   },
   "groups": {
     "broker": {"packages": ["bonsai-broker", "bonsai-speech-service"]},
@@ -37,7 +37,6 @@
         "config/hexagon-dispatch.lock.json", "tests/Test-HexagonDispatch.ps1",
         "scripts/Invoke-HexagonSessionProbe.ps1", "scripts/Bonsai.HexagonSession.psm1",
         "scripts/Bonsai.HexagonIdentity.psm1", "tests/Test-HexagonSession.ps1",
-        "scripts/Read-Gguf.ps1", "scripts/Export-SwiftPtq1.ps1", "scripts/Bonsai.Gguf.psm1",
         "scripts/Get-Model.ps1", "scripts/Start-Chat.ps1",
         "scripts/Get-SpeechModels.ps1", "scripts/Bonsai.SpeechModels.psm1", "tests/Test-SpeechModels.ps1",
         "config/native-speech.lock.json",
@@ -45,7 +44,7 @@
         "tools/canary-asr/model.lock.json", "tools/canary-asr/tokenizer.lock.json", "tools/qwen-tts/model.lock.json",
         "scripts/Bonsai.Inference.psm1",
         "scripts/Bonsai.Common.psm1", "scripts/Bonsai.Tools.psm1", "scripts/Bonsai.Native.psm1",
-        "tests/Test-Foundation.ps1", "tests/Test-ChatInstance.ps1", "tests/Test-Inference*.ps1", "tests/Test-Gguf.ps1",
+        "tests/Test-Foundation.ps1", "tests/Test-ChatInstance.ps1", "tests/Test-Inference*.ps1",
         "tests/Test-RuntimePromotion.ps1",
         "scripts/Bonsai.Ptq1.psm1", "scripts/Build-NativePtq1CaptureTools.ps1",
         "scripts/Invoke-NativePtq1Numerics.ps1", "tests/Test-NativePtq1CaptureTools.ps1",
@@ -53,7 +52,6 @@
         "tools/native-reference/**", ".github/workflows/native-ptq1-numerics.yml",
         "scripts/Invoke-HeadlessPublisherStartup.ps1", "tests/Test-HeadlessPublisherStartup.ps1",
         "docs/evidence/headless-publisher-startup.json", "docs/runtime-candidates/headless-ucrt-argv.json",
-        "tests/Test-Pq2Census.ps1", "tests/Test-Ptq1Export.ps1",
         "tests/Test-ToolBootstrap.ps1", "tests/*Support*", "tests/fixtures/**",
         "config/prism-inference.lock.json", "config/model.metadata.json"
       ]

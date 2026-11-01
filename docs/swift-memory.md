@@ -223,8 +223,12 @@ $lock = Get-Content -Raw -LiteralPath $lockPath | ConvertFrom-Json -DateKind Str
 ./scripts/Get-Model.ps1 -DataDirectory $data -LockPath $lockPath
 ./scripts/Get-Engine.ps1 -DataDirectory $data -LockPath $lockPath
 $model = Join-Path $data -ChildPath 'models', $lock.model.revision, $lock.model.filename
-./scripts/Read-Gguf.ps1 -ModelPath $model -ExpectedBytes $lock.model.bytes -ExpectedSha256 $lock.model.sha256 `
-    -Dialect Prism-73bfe6cc485554822f80c473a3c0c4f25e80f41b -CensusPq2 -OutputPath D:\Reports\new-swift-census.json
+$request = Join-Path $data 'swift-census-request.json'
+@{ operation = 'inspect'; modelPath = $model; expectedBytes = $lock.model.bytes; expectedSha256 = $lock.model.sha256;
+   dialect = 'Prism-73bfe6cc485554822f80c473a3c0c4f25e80f41b'; censusPq2 = $true;
+   outputPath = 'D:\Reports\new-swift-census.json'; dataDirectory = $data } |
+    ConvertTo-Json | Set-Content -LiteralPath $request -Encoding utf8NoBOM
+& $maintenanceExecutable gguf --request $request
 Import-Module ./scripts/Bonsai.Tools.psm1
 Invoke-BonsaiTool -Command cpu-check -Request @{ dataDirectory = $data; profile = 'swift-pq2-assessment'; checkOnly = $true }
 Invoke-BonsaiTool -Command cpu-check -TimeoutSeconds 300 -Request @{ dataDirectory = $data; profile = 'swift-pq2-assessment' }
@@ -234,15 +238,21 @@ Optional exact export and adapter assessment:
 
 ```powershell
 $derived = Join-Path ([IO.Path]::GetDirectoryName($model)) 'Swift-Bonsai-2-current-repacked-PTQ1_0.gguf'
-./scripts/Export-SwiftPtq1.ps1 -ModelPath $model -OutputPath $derived
+$request = Join-Path $data 'swift-export-request.json'
+@{ operation = 'export-ptq1'; modelPath = $model; outputPath = $derived; dataDirectory = $data; timeoutSeconds = 240 } |
+    ConvertTo-Json | Set-Content -LiteralPath $request -Encoding utf8NoBOM
+& $maintenanceExecutable gguf --request $request
 Invoke-BonsaiTool -Command cpu-check -TimeoutSeconds 300 -Request @{ dataDirectory = $data; profile = 'swift-pq2-assessment'; useRepackedPtq1 = $true }
 ./scripts/Get-Adapter.ps1 -DataDirectory $data
 Invoke-BonsaiTool -Command cpu-check -TimeoutSeconds 300 -Request @{ dataDirectory = $data; profile = 'swift-pq2-assessment'; useRepackedPtq1 = $true; useAbliterateLora = $true }
 ```
 
-Inspection/export share one Rust CLI and release buffers before inference.
-`-GgufToolPath` selects a prebuilt CLI; otherwise wrappers build pinned sources
-in external storage.
+Inspection/export use a trusted prebuilt `bonsai-tools.exe` selected as
+`$maintenanceExecutable`, invoke the pinned GGUF CLI and release buffers before
+inference. `ggufToolPath` selects an explicit trusted GGUF tool; otherwise Rust
+verifies the installed inference release in `dataDirectory`. No tool is built or
+downloaded by these commands. The complete-process deadline includes hashing;
+leave the gate pending if setup, work and cleanup cannot fit the owner budget.
 
 ## Native CPU status
 

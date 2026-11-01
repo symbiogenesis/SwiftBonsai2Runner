@@ -36,7 +36,8 @@ allocation bounds before input arrives and nesting depth.
 Runner keeps `bonsai-gguf.exe` as format authority: little-endian v3 with an explicit
 Prism dialect. Released-tool checks use the actual provisioned binary, independent
 serialized fixtures, hashing, bounded strings/arrays and malformed extents. Adopted
-[`HostileDescriptors`](../tests/Test-Gguf.ps1) runs in Foundation `-Case All`:
+The native [`descriptors` fixtures](../tools/bonsai/src/gguf/checks/parser.rs)
+run through `gguf` operation `check` in Foundation's complete integration case:
 over-limit/`u64::MAX` tensor and metadata counts, duplicate keys/names, overlapping
 extents, plus valid distinct keys and out-of-order nonoverlapping tensors. Each
 15-second hostile probe requires the expected diagnostic, ordinary error exit and empty
