@@ -120,8 +120,12 @@ to fit the five-minute total laptop allowance. Complete-response comparison must
 first have a reviewed, bounded Rust-service capture contract. Do not dispatch the
 legacy matrices or split them across repeated owner jobs. Missing full-context,
 output, human quality, security, resource and comfort evidence remains pending.
-The offline `runtime-promotion` evaluator currently binds the original PQ2 model;
-its verdict cannot authorize a PTQ1 default.
+The offline `runtime-promotion` evaluator now has a separate explicit PTQ1
+policy with nineteen gates, binding the complete export receipt and original-PQ2
+rollback identities. The [preparation follow-up](evidence/ptq1-default-readiness.json)
+records its source review and the current-source numerical and required one-worker
+lifecycle lanes. Hosted checks and actual-model/evaluator executions remain pending;
+the policy's availability does not authorize a PTQ1 default.
 
 A reproducible correctness/security/recovery regression rejects the tested
 configuration. A performance no-go must use the predeclared device/settings and

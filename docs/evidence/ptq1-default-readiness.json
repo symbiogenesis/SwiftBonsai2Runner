@@ -109,5 +109,53 @@
     "defaultsChanged": false,
     "admissionOrReservesChanged": false
   },
+  "followUpPreparation": {
+    "recordedDate": "2026-10-31",
+    "status": "integrated-source-preparation-execution-pending",
+    "scope": "Later integrated preparation supersedes the earlier tooling gaps only. The audited revision and evidence entries above remain the original documentary snapshot; none of these source changes qualifies actual-model behavior or default promotion.",
+    "numericalCapture": {
+      "sourceCommits": ["84598bf6ba9916abf3f92438989a942e851860e7", "9fcfc75119318a078eb16c2703671b211006cea6", "f8f1c4bd9d3e594baa11f361625f4618399e0db9"],
+      "workflow": ".github/workflows/native-ptq1-numerics.yml",
+      "runtimeRelease": "v0.1.10",
+      "runtimeSourceRevision": "749a5f5b43bf77764a29682557ec91a8de8dcdef",
+      "preparation": "Checker source commit, URL, length and SHA-256 must match the current runtime lock. Owner intake and checkout reduce the shared allowance; absolute original monotonic work and hard deadlines include budget IPC and child startup. The child cannot reset those deadlines.",
+      "actualCollectorAndComparisonExecution": "pending"
+    },
+    "requiredOneWorkerLifecycle": {
+      "sourceCommits": ["395ebe56c214797f5e389c3ec7ee1391ade2ce36", "9fcfc75119318a078eb16c2703671b211006cea6"],
+      "workflow": ".github/workflows/native-runtime-acceptance.yml",
+      "profile": "ptq1-adapter-lifecycle",
+      "preparation": "Requires the exact current PTQ1 model and approved adapter with one worker, scale 1.3 and zero streams, invalid-scale connection closure, then scale 1.3 with supplied assistant history. Incomplete required steps retain partial observations, remain pending and fail acceptance after owned cleanup. The host receipt carries the required-workload result.",
+      "actualModelExecution": "pending"
+    },
+    "explicitPtq1PromotionPolicy": {
+      "sourceCommit": "8daae06e577607ec7e389bc0ccfb65d6ae01a9e2",
+      "weightRepresentation": "current-repacked-PTQ1_0",
+      "requiredGateCount": 19,
+      "preparation": "Separate policy binds the full compiled PTQ1 export receipt, derived model and original-PQ2 rollback identities. It preserves all seventeen runtime/application gates and adds current-weight packing and actual-device original-PQ2 rollback. Omitted or explicit original-PQ2 selection preserves the prior policy; representation and worker variants cannot inherit evidence.",
+      "policyCommandExecution": "pending"
+    },
+    "independentSourceReview": {
+      "reviewerId": "Codex:/root/ptq1_gates",
+      "reviewed": [
+        "Required lifecycle sequence, partial-step receipts and post-cleanup failure",
+        "Default PQ2 policy preservation, export validation, all nineteen PTQ1 gates and cross-policy isolation",
+        "Current-source guard and absolute original work/hard deadlines"
+      ],
+      "blockingSourceFindingsRemaining": 0,
+      "scope": "Read-only source review; no qualification binaries, collector, model or benchmark executed by this reviewer. Hosted compilation and actual-device evidence remain separate."
+    },
+    "localFocusedControl": {
+      "reportedBy": "Codex:/root",
+      "case": "Test-NativePtq1CaptureTools.ps1 -Case CapturePolicy",
+      "status": "passed-model-free",
+      "elapsedSeconds": 0.289534,
+      "scope": "PowerShell parse/source-policy controls only; no analyzer was installed. This is not hosted compilation, evaluator execution or actual-model qualification."
+    },
+    "hostedChecks": "pending",
+    "defaultPromotionQualified": false,
+    "defaultsChanged": false,
+    "admissionOrReservesChanged": false
+  },
   "defaultPromotionQualified": false
 }
