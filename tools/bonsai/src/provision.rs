@@ -873,7 +873,10 @@ mod tests {
 
     #[test]
     fn provisioning_rejects_inapplicable_and_custom_capability_options_before_io() {
-        let data = std::env::temp_dir().join("Bonsai-Provision-RejectedOptions");
+        let data = std::env::temp_dir().join(format!(
+            "Bonsai-Provision-RejectedOptions-{}",
+            crate::startup_process::unique()
+        ));
         for extra in [
             json!({"operation": "inference", "includeCapabilities": true, "lockPath": data.join("untrusted.json")}),
             json!({"operation": "model", "includeHelp": true}),

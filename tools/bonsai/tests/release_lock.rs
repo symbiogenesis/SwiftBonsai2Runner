@@ -65,6 +65,10 @@ fn source(path: &Path, server_version: &str, malformed: bool) -> TestResult {
 }
 
 #[test]
+#[expect(
+    clippy::too_many_lines,
+    reason = "One model-free release review transaction retains its source, bundle, run and output-mutation controls together."
+)]
 fn release_review_binds_source_bundle_run_and_architecture_without_replacing_outputs() -> TestResult
 {
     let root = std::env::temp_dir().join(format!(
