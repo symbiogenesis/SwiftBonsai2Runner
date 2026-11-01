@@ -131,12 +131,13 @@ function Invoke-BonsaiTool {
           [Collections.IDictionary]$Request = @{}, [string]$ToolPath,
           [ValidateRange(0,86400)][int]$TimeoutSeconds = 60)
     if (-not $ToolPath -and $env:BONSAI_TOOLS_PATH) { $ToolPath = $env:BONSAI_TOOLS_PATH }
-    if ((($Command -eq 'cpu-check' -and -not $Request['checkOnly']) -or ($Command -in @('native-qualification', 'cpu-evaluation') -and $Request['operation'] -eq 'capture') -or
+    if ((($Command -eq 'cpu-check' -and -not $Request['checkOnly']) -or $Command -eq 'publisher-startup' -or ($Command -in @('native-qualification', 'cpu-evaluation') -and $Request['operation'] -eq 'capture') -or
         ($Command -eq 'qualification' -and $Request['operation'] -in @('run', 'screen-run', 'capture', 'screen-capture'))) -and -not $ToolPath) {
         throw 'Owner execution requires a prebuilt maintenance executable; source bootstrap cannot consume the owner-device allowance.'
     }
     if ($Command -in @('cpu-check', 'server-plan', 'native-qualification') -and -not $PSBoundParameters.ContainsKey('TimeoutSeconds')) { $TimeoutSeconds = 300 }
     if ($Command -eq 'cpu-evaluation' -and $Request['operation'] -eq 'capture' -and -not $PSBoundParameters.ContainsKey('TimeoutSeconds')) { $TimeoutSeconds = 240 }
+    if ($Command -eq 'publisher-startup' -and -not $PSBoundParameters.ContainsKey('TimeoutSeconds')) { $TimeoutSeconds = 190 }
     # The native supervisor owns each sample deadline. Full qualification
     # matrices reject owner-device execution and require hosted CI.
     if ($Command -eq 'completion' -and -not $PSBoundParameters.ContainsKey('TimeoutSeconds')) { $TimeoutSeconds = 0 }
@@ -173,7 +174,7 @@ function Invoke-BonsaiTool {
     $requestPath = Join-Path $lane 'request.json'
     $payload = [ordered]@{}
     foreach ($key in $Request.Keys) { $payload[$key] = $Request[$key] }
-    if ($startup -or $Command -in @('completion','runtime-verify','inference-capabilities','cpu-check','server-plan','native-qualification') -or
+    if ($startup -or $Command -in @('completion','runtime-verify','inference-capabilities','cpu-check','server-plan','native-qualification','publisher-startup') -or
         ($Command -eq 'cpu-evaluation' -and $Request['operation'] -eq 'capture') -or
         ($Command -eq 'speech-evaluation' -and $Request['operation'] -eq 'session') -or
         ($Command -eq 'qualification' -and $Request['operation'] -in @('run', 'screen-run', 'capture', 'screen-capture'))) {
