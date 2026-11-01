@@ -172,7 +172,7 @@ fn independent_packing_rejects_invalid_tensor_geometry_and_array_tags() -> crate
         changed[name + 21..name + 29].copy_from_slice(&offset.to_le_bytes());
         cases.push(changed);
     }
-    let mut changed = source.clone();
+    let mut changed = source;
     changed[signs + 24..signs + 28].copy_from_slice(&999_u32.to_le_bytes());
     changed[signs + 28..signs + 36].copy_from_slice(&0_u64.to_le_bytes());
     cases.push(changed);

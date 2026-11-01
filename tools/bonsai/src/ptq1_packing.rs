@@ -113,7 +113,7 @@ const fn digit_table() -> [Digits; 256] {
 
 const DIGITS: [Digits; 256] = digit_table();
 
-fn strided_five(source: &[u8], start: usize, stride: usize) -> u64 {
+const fn strided_five(source: &[u8], start: usize, stride: usize) -> u64 {
     u64::from_le_bytes([
         source[start],
         source[start + stride],
@@ -131,7 +131,7 @@ fn block_matches(source: &[u8], output: &[u8]) -> crate::Result<()> {
         return Err("PTQ1 packing changed raw scale bytes or block extent.".into());
     }
     let scale = u16::from_le_bytes([source[0], source[1]]);
-    if scale & 0x7fff == 0 || scale & 0x7c00 == 0x7c00 {
+    if scale.trailing_zeros() >= 15 || scale & 0x7c00 == 0x7c00 {
         return Err("PTQ1 packing requires finite nonzero raw FP16 scales.".into());
     }
     for (first, start, stride, groups) in [(0, 2, 4, 4), (16, 22, 2, 2)] {
@@ -195,8 +195,10 @@ fn compare_payloads(
                 read_exact(source, &mut left[..count * 34], deadline)?;
                 read_exact(output, &mut right[..count * 28], deadline)?;
                 for (a, b) in left[..count * 34]
-                    .chunks_exact(34)
-                    .zip(right[..count * 28].chunks_exact(28))
+                    .as_chunks::<34>()
+                    .0
+                    .iter()
+                    .zip(right[..count * 28].as_chunks::<28>().0)
                 {
                     block_matches(a, b)?;
                 }
