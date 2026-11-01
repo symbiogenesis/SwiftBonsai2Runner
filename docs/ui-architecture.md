@@ -28,7 +28,7 @@ editing and native-control accessibility parity still require qualification.
 
 ### Launch and ownership
 
-PowerShell bootstraps a trusted maintenance executable; Rust owns build reuse,
+The native `bonsai-tools chat` command owns build reuse,
 immutable tool snapshots and the per-user launch guard through teardown.
 The [development guide](development-guide.md#source-launch-caches-and-runtime-selection)
 owns source-launch receipts/cache rules; the [package contract](chat-packages.md#launch-without-a-checkout)

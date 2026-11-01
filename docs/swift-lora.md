@@ -1,7 +1,7 @@
 # Swift LoRA: artifact, basis and qualification
 
 The native app enables the pinned OrcaRouter adapter experimentally at scale **1.3**;
-`Start-Chat.ps1 -NoAbliterateLora` opts out. Settings accepts 0 to 2 in 0.1 steps for the
+`bonsai-tools chat --no-abliterate-lora` opts out. Settings accepts 0 to 2 in 0.1 steps for the
 next response and every Extra effort pass, without reloading; zero disables correction
 but retains the adapter. Bounded native ARM64 loading/decode passes, but **Swift basis
 correctness, effectiveness, quality and standard/daily-service acceptance are unqualified**.

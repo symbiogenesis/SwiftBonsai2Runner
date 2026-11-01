@@ -745,7 +745,7 @@ impl State {
 
     const fn microphone_help(&self) -> &'static str {
         if !self.canary_configured {
-            "Launch scripts/Start-Chat.ps1 with its default speech settings to prepare native Canary Qwen 2.5B automatically. The model loads after you enable the microphone and permit Windows microphone access. See tools/canary-asr/README.md. Nothing is recording now."
+            "Launch bonsai-tools chat with its default speech settings to prepare native Canary Qwen 2.5B automatically. The model loads after you enable the microphone and permit Windows microphone access. See tools/canary-asr/README.md. Nothing is recording now."
         } else if self.microphone.is_none() {
             "Windows microphone access could not initialize. Check Windows microphone privacy settings and restart the app. Nothing is recording."
         } else {
@@ -757,7 +757,7 @@ impl State {
         if self.tts_configured {
             "Qwen3-TTS VoiceDesign is not ready. Start its service on the configured port, check its protected key file, then restart the app. See tools/qwen-tts/README.md. Your voice description will be used when the service is ready."
         } else {
-            "Launch the app with scripts/Start-Chat.ps1 to prepare Qwen3-TTS 1.7B VoiceDesign automatically. Use its default settings without -NoTts or -NoSpeechModels. Selecting a response's speaker button starts the local service. Describe your desired voice in Voice profile; no preset or reference recording is required. See tools/qwen-tts/README.md."
+            "Launch the app with bonsai-tools chat to prepare Qwen3-TTS 1.7B VoiceDesign automatically. Use its default settings without --no-tts or --no-speech-models. Selecting a response's speaker button starts the local service. Describe your desired voice in Voice profile; no preset or reference recording is required. See tools/qwen-tts/README.md."
         }
     }
 

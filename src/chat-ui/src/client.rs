@@ -45,7 +45,7 @@ const MAX_ERROR_BODY: usize = 256;
 const READ_SIZE: usize = 8192;
 const EVIDENCE_PREFIX: &str = "Protected credentials and technical evidence: ";
 const RUNNING_MEMORY_MESSAGE: &str = "Swift stopped because its running memory requirements were no longer met. Close other apps, then select Retry model. Completed conversation turns remain in memory.";
-const PUBLISHER_INIT_FAILURE_MESSAGE: &str = "The publisher CPU runtime failed Windows initialization (0xC0000142). Retry model repeats that runtime choice. Copy any conversation or drafts you want to keep before closing. Close this app and relaunch scripts/Start-Chat.ps1 with -NativeEngine to try the experimental Rust runtime, preserving your DataDirectory and the same model and adapter options.";
+const PUBLISHER_INIT_FAILURE_MESSAGE: &str = "The publisher CPU runtime failed Windows initialization (0xC0000142). Retry model repeats that runtime choice. Copy any conversation or drafts you want to keep before closing. Close this app and relaunch bonsai-tools chat with --native-engine to try the experimental Rust runtime, preserving your DataDirectory and the same model and adapter options.";
 const LOCAL_CONNECTION_CLOSED: &str = "The connection to the model on this computer closed before a complete reply was received. The cause was not reported.";
 const CONTEXT_LIMIT_MESSAGE: &str = "This conversation and the selected output cap do not fit within the model's 8,192-token context limit. Choose a smaller output cap or start a new conversation, then send again.";
 const CONTROL_TOKEN_MESSAGE: &str = "This conversation contains reserved chat markers, such as <|im_start|> or <think>. Remove them or start a new conversation before sending again.";
@@ -518,11 +518,11 @@ fn startup_failure(diagnostic: &[u8], native_engine: bool) -> Failure {
         )
     } else if text.contains("Adapter") {
         Failure::Message(
-            "The pinned abliteration LoRA could not be verified. Run scripts/Get-Adapter.ps1 for this data directory, or restart with -NoAbliterateLora.",
+            "The pinned abliteration LoRA could not be verified. Run bonsai-tools provision with operation adapter for this data directory, or restart with --no-abliterate-lora.",
         )
     } else if text.contains("Artifacts") {
         Failure::Message(
-            "The pinned Swift model or selected CPU runtime could not be verified. Provision the model with the Swift assessment lock. Use scripts/Get-Inference.ps1 for -NativeEngine, or scripts/Get-Engine.ps1 with the Swift assessment lock for the publisher runtime.",
+            "The pinned Swift model or selected CPU runtime could not be verified. Use bonsai-tools provision with operation model and the Swift assessment lock, then operation inference for --native-engine or operation engine with the same assessment lock for the publisher runtime.",
         )
     } else {
         Failure::Message("Swift could not start. Check the retained broker diagnostic logs.")
@@ -1948,7 +1948,7 @@ mod tests {
         assert!(message.contains("Close this app"));
         assert!(message.contains("Retry model repeats that runtime choice"));
         assert!(message.contains("Copy any conversation or drafts"));
-        assert!(message.contains("Start-Chat.ps1 with -NativeEngine"));
+        assert!(message.contains("bonsai-tools chat with --native-engine"));
         assert!(message.contains("experimental Rust runtime"));
         assert!(message.contains("DataDirectory"));
         assert!(message.contains("same model and adapter options"));
@@ -1960,7 +1960,7 @@ mod tests {
         );
         assert!(
             matches!(startup_failure(diagnostic, true), Failure::Message(native)
-                if !native.contains("-NativeEngine") && !native.contains("publisher"))
+                if !native.contains("--native-engine") && !native.contains("publisher"))
         );
         assert_eq!(
             startup_failure(b"Development backend launch failed: Memory.", true),
@@ -1999,8 +1999,8 @@ mod tests {
         else {
             return Err(Failure::Message("Missing adapter startup guidance"));
         };
-        assert!(message.contains("Get-Adapter.ps1"));
-        assert!(message.contains("-NoAbliterateLora"));
+        assert!(message.contains("bonsai-tools provision"));
+        assert!(message.contains("--no-abliterate-lora"));
         Ok(())
     }
 

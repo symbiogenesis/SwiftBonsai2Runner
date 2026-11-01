@@ -1,45 +1,8 @@
 //! JSON command entry point for packaged Bonsai maintenance tools.
 #![forbid(unsafe_code)]
 
-use std::fs::OpenOptions;
-use std::io::{Read as _, Write as _};
-use std::path::Path;
+use std::io::Write as _;
 use std::process::ExitCode;
-
-const MAX_REQUEST_BYTES: u64 = 16 * 1024 * 1024;
-// Legacy in-memory scoring permits 24 responses of 1 Mi UTF-16 units each.
-// JSON escaping can use six bytes per unit, plus the bounded review records.
-const MAX_QUALIFICATION_REQUEST_BYTES: u64 = 160 * 1024 * 1024;
-
-fn read_request(path: &Path, maximum: u64) -> bonsai_tools::Result<serde_json::Value> {
-    if !path.is_absolute() {
-        return Err("Request path must be expanded and absolute.".into());
-    }
-    let mut options = OpenOptions::new();
-    options.read(true);
-    #[cfg(windows)]
-    {
-        use std::os::windows::fs::OpenOptionsExt as _;
-        options.share_mode(1);
-    }
-    let file = options.open(path).map_err(|error| error.to_string())?;
-    if file.metadata().map_err(|error| error.to_string())?.len() > maximum {
-        return Err(format!("Command request exceeds {maximum} bytes."));
-    }
-    let mut bytes = Vec::new();
-    file.take(maximum + 1)
-        .read_to_end(&mut bytes)
-        .map_err(|error| error.to_string())?;
-    if u64::try_from(bytes.len()).map_err(|error| error.to_string())? > maximum {
-        return Err(format!("Command request exceeds {maximum} bytes."));
-    }
-    let request: serde_json::Value =
-        serde_json::from_slice(&bytes).map_err(|error| error.to_string())?;
-    if !request.is_object() {
-        return Err("Command request must be a JSON object.".into());
-    }
-    Ok(request)
-}
 
 fn initialize_startup(request: &mut serde_json::Value) -> bonsai_tools::Result<()> {
     let object = request.as_object_mut().ok_or("Invalid startup request.")?;
@@ -70,33 +33,36 @@ fn execute() -> bonsai_tools::Result<serde_json::Value> {
     if arguments.len() == 1 && arguments[0] == "--version" {
         return Ok(bonsai_tools::version());
     }
-    if arguments.len() != 3 || arguments[1] != "--request" {
-        return Err(format!(
-            "Usage: bonsai-tools <{}> --request ABSOLUTE_JSON_PATH; or --version",
-            bonsai_tools::COMMANDS.join("|")
-        ));
+    if arguments.len() == 1 && arguments[0] == "--help" {
+        return Ok(serde_json::json!({
+            "Usage": "bonsai-tools COMMAND --request ABSOLUTE_JSON_PATH | --request - | --json JSON_OBJECT; bonsai-tools chat [--repository-root PATH] [--data-directory PATH] [--native-engine] [--use-repacked-ptq1] [--no-speech-models]",
+            "Commands": bonsai_tools::COMMANDS,
+            "Chat": "All native launch options are documented in tools/bonsai/README.md."
+        }));
     }
-    let maximum = if arguments[0] == "qualification" {
-        MAX_QUALIFICATION_REQUEST_BYTES
+    let command = arguments.first().and_then(|value| value.to_str())
+        .ok_or("Unknown or missing maintenance command; use --help.")?;
+    let mut request = if command == "chat" {
+        bonsai_tools::cli::chat(&arguments[1..])?
     } else {
-        MAX_REQUEST_BYTES
+        bonsai_tools::cli::request(command, &arguments[1..])?
     };
-    let mut request = read_request(Path::new(&arguments[2]), maximum)?;
+    let command = if command == "chat" { "chat-launch" } else { command };
     let startup = matches!(
-        arguments[0].to_str(),
+        Some(command),
         Some("source-build" | "chat-launch" | "chat-prepare")
-    ) || (arguments[0] == "speech-build"
+    ) || (command == "speech-build"
         && matches!(
             request["operation"].as_str(),
             Some("models" | "environment" | "build")
         ))
-        || (arguments[0] == "speech-evaluation" && request["operation"] == "evaluate")
-        || (arguments[0] == "chat-package"
+        || (command == "speech-evaluation" && request["operation"] == "evaluate")
+        || (command == "chat-package"
             && matches!(request["operation"].as_str(), Some("launch" | "start")));
     if startup {
         initialize_startup(&mut request)?;
     }
-    match arguments[0].to_str() {
+    match Some(command) {
         Some("credentials") => bonsai_tools::credentials::run(request),
         Some("completion") => bonsai_tools::completion::run(request),
         Some("host-cpu") => bonsai_tools::host_cpu::run(&request),

@@ -211,11 +211,11 @@ serialized-size disadvantage alone excludes the proposed layout.
 
 ## Supported selection and resource policy
 
-`scripts/Start-Chat.ps1 -UseRepackedPtq1` selects only this verified artifact on the pinned
+`bonsai-tools chat --use-repacked-ptq1` selects only this verified artifact on the pinned
 publisher Prism CPU server; direct app/broker launches use `--use-repacked-ptq1`. The
 artifact handle stays verified/held through owned teardown. Arbitrary paths, checkpoint
 substitutions and missing-file fallback are unsupported. The explicit experimental
-`-NativeEngine` route implements this selection and the approved adapter in Rust
+`--native-engine` route implements this selection and the approved adapter in Rust
 [0.1.9 prerelease](evidence/prism-019-release.json); service implementation alone does
 not establish release qualification. Row workers remain one unless explicitly
 selected; separate source-checker evidence does not qualify app TPS.

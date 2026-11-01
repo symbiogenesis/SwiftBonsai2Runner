@@ -13,18 +13,41 @@ revision and extract it outside Git:
 $env:BONSAI_TOOLS_PATH = 'C:\BonsaiTools\bonsai-tools.exe'
 & $env:BONSAI_TOOLS_PATH credentials --request C:\Evidence\credentials.json
 & $env:BONSAI_TOOLS_PATH cpu-check --request C:\Evidence\cpu-check.json
-Import-Module ./scripts/Bonsai.Tools.psm1
-Invoke-BonsaiTool -Command qualification -Request @{
+& $env:BONSAI_TOOLS_PATH qualification --json (@{
     operation = 'file-score'; qualificationProfile = 'standard-scale-one'
     evidencePath = 'C:\Evidence\capture.json'; reviewPath = $null
-}
+} | ConvertTo-Json -Compress)
+& $env:BONSAI_TOOLS_PATH chat --repository-root $PWD --native-engine
 ```
 
-Wrappers also accept `-ToolPath` where applicable. Version/protocol checks establish
-compatibility, not source-to-binary attestation; use a trusted build. Without a
-selected binary, the resolver builds pinned sources with `--locked --release` in
-an external incremental system-temp lane. This requires Rust and locked
-dependencies. GGUF inspection and export use the native `gguf` command below.
+Every JSON command accepts `--json JSON_OBJECT`, `--request ABSOLUTE_JSON_PATH`,
+or `--request -` for standard input. Rust enforces the same object, size and
+schema checks for all three sources. No PowerShell module is needed for direct
+use. `--version` advertises capabilities; use a trusted source-bound build.
+
+For a source checkout, build the maintenance executable once with the pinned
+compiler and an external target, then run it directly:
+
+```powershell
+$repo = $PWD.Path
+$target = Join-Path $env:LOCALAPPDATA 'SwiftBonsai2/build/maintenance'
+cargo build --locked --release --manifest-path (Join-Path $repo 'Cargo.toml') --package bonsai-tools --bin bonsai-tools --target-dir $target
+$bonsai = Join-Path $target 'release/bonsai-tools.exe'
+& $bonsai chat --repository-root $repo --native-engine
+```
+
+`chat` replaces `Start-Chat.ps1`. It uses the nearest Runner checkout and
+`%LOCALAPPDATA%/SwiftBonsai2` unless `--repository-root` or `--data-directory`
+is supplied. Boolean options are `--native-engine`, `--use-repacked-ptq1`,
+`--no-abliterate-lora`, `--no-tts`, `--no-speech-models`, `--speech-models-only`
+and `--force-build`. Value options are `--native-row-workers`, `--tts-quantization`,
+`--tts-threads`, `--frontend-port`, `--backend-port`, `--canary-port`, `--tts-port`,
+`--chat-path`, `--broker-path`, `--asr-path`, `--tts-path`, `--canary-key-file`,
+`--tts-key-file` and `--working-directory`. All existing launch admission,
+cache, verification, cancellation and teardown policy remains in Rust. An
+unchanged direct launch needs no Cargo invocation. Rebuild the maintenance
+executable after updating its sources; `--force-build` rebuilds application
+companions, not the running maintenance image.
 
 Credential requests contain only `parentDirectory`, an existing absolute external
 local directory. The command creates fresh protected files and returns paths only.
@@ -41,9 +64,8 @@ builds/downloads nothing; setup, verification, workers and teardown share the on
 allowance. A successful smoke does not qualify numerics, adapters or performance.
 See the [candidate examples](../../docs/runtime-candidates/README.md).
 
-These wrappers require `bonsai-tools` version 0.1.0, protocol 5. The version
-handshake advertises supported commands, so a selected binary must support the
-requested operation before its request is written. Runtime guards remain held
+The remaining cold-bootstrap bridge requires `bonsai-tools` version 0.1.0,
+protocol 5 and checks the advertised commands before forwarding a request. Runtime guards remain held
 through version/help probes and complete completion batches. Older protocols are
 rejected before an operation can start.
 

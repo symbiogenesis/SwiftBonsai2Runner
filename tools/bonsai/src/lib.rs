@@ -6,6 +6,7 @@ pub type Result<T> = std::result::Result<T, String>;
 
 /// Commands exposed by the maintenance executable and its checked bootstrap receipts.
 pub const COMMANDS: &[&str] = &[
+    "chat",
     "credentials",
     "memory",
     "host-cpu",
@@ -145,6 +146,9 @@ pub mod publisher_startup;
 
 /// Retained caller identity for cancellation of native startup work.
 pub mod startup_cancel;
+
+/// Direct native command-line input and chat launch options.
+pub mod cli;
 
 mod identity;
 mod native_startup;

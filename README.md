@@ -27,11 +27,11 @@ planned.
 
 The native Rust engine lives in [Prism Inference](https://github.com/symbiogenesis/prism-inference).
 This project consumes a pinned prebuilt server; ordinary builds do not compile
-the inference engine. Provision it with `./scripts/Get-Inference.ps1 -DataDirectory <absolute-path>`.
+the inference engine. Provision it with `bonsai-tools provision --json` using operation `inference` and an absolute `dataDirectory`; see the [setup commands](docs/development-guide.md#native-chat-app).
 
 Once you've [set up the model and runtime](docs/development-guide.md#native-chat-app),
-run `./scripts/Start-Chat.ps1 -NativeEngine` to select the Rust engine, or
-`./scripts/Start-Chat.ps1` for the publisher C++ default. Updating the Rust runtime
+run `bonsai-tools chat --native-engine` to select the Rust engine, or
+`bonsai-tools chat` for the publisher C++ default. Updating the Rust runtime
 pin alone does not change that selection. Both open the native Windows chat app.
 
 Keep separate conversations and unsent drafts, rename your chats, and find text
@@ -94,7 +94,7 @@ unmeasured; the packing saving alone does not qualify resources or performance.
 > [!NOTE]
 > **PTQ1 is an experimental opt-in; qualification for the app default is pending.**
 > Select the verified current-weight export with
-> `./scripts/Start-Chat.ps1 -NativeEngine -UseRepackedPtq1` after
+> `bonsai-tools chat --native-engine --use-repacked-ptq1` after
 > [provisioning it](docs/development-guide.md#runtime-selection).
 > The bold row names the pinned Rust 0.1.10 profile; historical measurements do not
 > transfer to it. The [0.1.7 source diagnostic](docs/evidence/ptq1-rust-smoke.json)

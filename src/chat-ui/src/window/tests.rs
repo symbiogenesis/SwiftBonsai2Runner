@@ -286,9 +286,9 @@ fn speech_controls_stay_visible_and_explain_unconfigured_services_without_listen
     let (mut state, _commands, _events) = state();
     assert!(!state.dictation_requested);
     assert!(state.microphone.is_none());
-    assert!(state.microphone_help().contains("Start-Chat.ps1"));
-    assert!(state.read_aloud_help().contains("Start-Chat.ps1"));
-    assert!(state.read_aloud_help().contains("-NoTts"));
+    assert!(state.microphone_help().contains("bonsai-tools chat"));
+    assert!(state.read_aloud_help().contains("bonsai-tools chat"));
+    assert!(state.read_aloud_help().contains("--no-tts"));
     state.toggle_streaming_read_aloud();
     assert!(state.help.is_some());
     assert!(!state.streaming_read_aloud);

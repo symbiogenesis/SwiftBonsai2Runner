@@ -1,4 +1,4 @@
-//! Native chat startup policy and orchestration behind the thin PowerShell entry point.
+//! Native chat startup policy and orchestration for the direct Rust launcher.
 
 mod instance;
 
@@ -16,7 +16,7 @@ use serde_json::{Value, json};
 #[serde(rename_all = "PascalCase", deny_unknown_fields)]
 #[expect(
     clippy::struct_excessive_bools,
-    reason = "The JSON boundary preserves the existing independent PowerShell switches."
+    reason = "The launch boundary preserves independent user options."
 )]
 struct Request {
     data_directory: PathBuf,
@@ -152,9 +152,9 @@ fn validate_paths(request: &Request) -> crate::Result<()> {
     external(&request.data_directory)?;
     if !request.data_directory.is_dir() && !request.speech_models_only {
         if request.native_engine {
-            return Err("Provision Swift first with scripts/Get-Model.ps1 -LockPath config/swift-assessment.lock.json and scripts/Get-Inference.ps1 using the same DataDirectory. See docs/development-guide.md#native-chat-app.".into());
+            return Err("Provision Swift with bonsai-tools provision: operation model using the Swift assessment lock, then operation inference using the same dataDirectory. See docs/development-guide.md#native-chat-app.".into());
         }
-        return Err("Provision Swift first with scripts/Get-Model.ps1 -LockPath config/swift-assessment.lock.json and scripts/Get-Engine.ps1 using the same lock and DataDirectory. See docs/development-guide.md#native-chat-app.".into());
+        return Err("Provision Swift with bonsai-tools provision: operations model and engine using the Swift assessment lock and the same dataDirectory. See docs/development-guide.md#native-chat-app.".into());
     }
     if let Some(working) = &request.working_directory {
         external(working)?;
@@ -190,7 +190,7 @@ fn prepare(mut request: Request, native_host: bool) -> crate::Result<Plan> {
         return Err("NativeRowWorkers must be 1 or 4; four requires NativeEngine.".into());
     }
     if !request.speech_models_only && !native_host {
-        return Err("Run chat in native ARM64 PowerShell on Windows ARM64.".into());
+        return Err("Run chat in the native ARM64 executable on Windows ARM64.".into());
     }
     for path in [
         &mut request.chat_path,
@@ -624,7 +624,7 @@ pub fn run(value: Value) -> crate::Result<Value> {
     crate::startup_cancel::checkpoint()?;
     let request: Request = serde_json::from_value(value).map_err(|error| error.to_string())?;
     if !request.speech_models_only && !cfg!(all(windows, target_arch = "aarch64")) {
-        return Err("Run chat in native ARM64 PowerShell on Windows ARM64.".into());
+        return Err("Run chat in the native ARM64 executable on Windows ARM64.".into());
     }
     let _instance = if request.speech_models_only {
         None
