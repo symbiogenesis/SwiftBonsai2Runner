@@ -39,6 +39,17 @@ fn main() -> io::Result<ExitCode> {
             fs::write("next-started.txt", b"unexpected")?;
             Ok(ExitCode::SUCCESS)
         }
+        #[cfg(windows)]
+        "completion-owner" => {
+            let tool = arguments.next().ok_or_else(|| io::Error::other("missing owner tool"))?;
+            let request_path = arguments.next().ok_or_else(|| io::Error::other("missing owner request"))?;
+            let mut request: serde_json::Value = serde_json::from_slice(&fs::read(request_path)?)?;
+            request["parentProcessId"] = std::process::id().into();
+            request["parentCreationTimeFileTime"] = bonsai_windows_process::process_creation_file_time(std::process::id())?.into();
+            let status = std::process::Command::new(tool)
+                .args(["completion", "--json", &serde_json::to_string(&request)?]).status()?;
+            Ok(if status.success() { ExitCode::SUCCESS } else { ExitCode::from(1) })
+        }
         "supervision" => {
             let marker = arguments
                 .next()

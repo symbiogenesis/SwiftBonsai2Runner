@@ -410,3 +410,67 @@ fn capture_write_failure_cannot_publish_a_completed_sample() -> Result<()> {
     assert_eq!(receipt["Status"], "failed");
     Ok(())
 }
+
+#[cfg(target_arch = "aarch64")]
+#[test]
+fn packaged_supervisor_retains_parent_death_timeout_and_exit_code() -> Result<()> {
+    use std::time::{Duration, Instant};
+    for mode in ["ParentDeath", "Timeout", "ExitCode"] {
+        let (lane, mut request) = fixture(mode)?;
+        let marker = lane.join("child.json");
+        request["arguments"] = json!(["supervision", marker, mode]);
+        request["timeoutSeconds"] = if mode == "ParentDeath" { 120 } else { 2 }.into();
+        let request_path = lane.join("request.json");
+        fs::write(&request_path, serde_json::to_vec(&request)?)?;
+        if mode == "ParentDeath" {
+            let mut caller = Command::new(env!("CARGO_BIN_EXE_bonsai-completion-test-probe"))
+                .arg("completion-owner").arg(env!("CARGO_BIN_EXE_bonsai-tools")).arg(&request_path)
+                .stdin(Stdio::null()).stdout(Stdio::null()).stderr(Stdio::null())
+                .creation_flags(0x0800_0000).spawn()?;
+            let observed = (|| -> Result<()> {
+                let deadline = Instant::now() + Duration::from_secs(15);
+                let id = loop {
+                    if let Ok(bytes) = fs::read(&marker)
+                        && let Ok(value) = serde_json::from_slice::<Value>(&bytes)
+                        && let Some(id) = value["ProcessId"].as_u64().and_then(|id| u32::try_from(id).ok()) {
+                            break id;
+                        }
+                    if Instant::now() >= deadline { return Err("Synthetic completion child did not start.".into()); }
+                    std::thread::sleep(Duration::from_millis(20));
+                };
+                let child = bonsai_windows_process::ParentProcess::open(id,
+                    bonsai_windows_process::process_creation_file_time(id)?)?;
+                caller.kill()?;
+                caller.wait()?;
+                let deadline = Instant::now() + Duration::from_secs(10);
+                while child.ensure_alive().is_ok() {
+                    if Instant::now() >= deadline { return Err("Caller death left a completion child running.".into()); }
+                    std::thread::sleep(Duration::from_millis(20));
+                }
+                Ok(())
+            })();
+            if caller.try_wait()?.is_none() { caller.kill()?; caller.wait()?; }
+            observed?;
+        } else {
+            let result = Command::new(env!("CARGO_BIN_EXE_bonsai-tools"))
+                .arg("completion").arg("--request").arg(&request_path)
+                .creation_flags(0x0800_0000).output()?;
+            assert!(!result.status.success());
+        }
+        let deadline = Instant::now() + Duration::from_secs(10);
+        let receipt: Value = loop {
+            if let Ok(bytes) = fs::read(lane.join("supervision.json"))
+                && let Ok(receipt) = serde_json::from_slice(&bytes) { break receipt; }
+            if Instant::now() >= deadline { return Err("Missing completion failure receipt.".into()); }
+            std::thread::sleep(Duration::from_millis(20));
+        };
+        assert_eq!(receipt["Status"], "failed");
+        assert_eq!(receipt["ModelProcessStarted"], true);
+        match mode {
+            "ParentDeath" => assert!(receipt["Failure"].as_str().is_some_and(|s| s.contains("caller process exited"))),
+            "Timeout" => assert!(receipt["Failure"].as_str().is_some_and(|s| s.contains("timeout"))),
+            _ => assert_eq!(receipt["ExitCode"], 7),
+        }
+    }
+    Ok(())
+}
