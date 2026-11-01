@@ -77,7 +77,7 @@ Job; stdout and stderr each have a 16 MiB bound. Nonzero checks are retained
 while later planned checks continue. Process/timeout errors stop the plan.
 
 Complete suites require `GITHUB_ACTIONS=true` and `GITHUB_REF=refs/heads/main`
-before creating outputs. Hosted checks retain per-command timeouts (1?3600
+before creating outputs. Hosted checks retain per-command timeouts (1-3600
 seconds). Other executions share a 290-second maximum, reserving time within
 the owner's five-minute aggregate allowance for teardown; setup before this
 command still consumes that allowance. The caller must select a feasible

@@ -227,7 +227,7 @@ fn resolve(explicit: Option<PathBuf>, data: Option<PathBuf>) -> crate::Result<To
         }
         let path = directory.join(name);
         guards.push(verify(&path, file)?);
-        if name.ends_with(".exe") {
+        if Path::new(name).extension().is_some_and(|extension| extension.eq_ignore_ascii_case("exe")) {
             crate::startup_cache::assert_arm64(&path)?;
         }
     }
