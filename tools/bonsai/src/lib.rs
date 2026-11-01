@@ -10,6 +10,9 @@ pub const COMMANDS: &[&str] = &[
     "tool-process",
     "hexagon-tools",
     "build-tools",
+    "provision",
+    "artifact",
+    "doctor",
     "credentials",
     "memory",
     "host-cpu",
@@ -161,6 +164,12 @@ pub mod hexagon_tools;
 
 /// Source-bound engine, capture collector and publisher candidate builds.
 pub mod build_tools;
+
+/// Locked-artifact acquisition, verification and explicit runtime provisioning.
+pub mod provision;
+
+/// Model-free native host, driver and bounded tool inventory.
+pub mod doctor;
 
 mod identity;
 mod native_startup;
