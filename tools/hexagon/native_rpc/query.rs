@@ -31,6 +31,9 @@ fn run() -> Result<String, hexagon_native_rpc::Error> {
     let queue_compute = arguments
         .first()
         .is_some_and(|value| value == "--reference-queue-compute-probe");
+    let queue_q2 = arguments
+        .first()
+        .is_some_and(|value| value == "--reference-queue-q2-probe");
     let reference_probe = arguments
         .first()
         .is_some_and(|value| value == "--reference-session-mapping-probe");
@@ -38,7 +41,13 @@ fn run() -> Result<String, hexagon_native_rpc::Error> {
         || arguments
             .first()
             .is_some_and(|value| value == "--session-mapping-probe");
-    if arguments.len() != if session_probe || queue_compute { 2 } else { 1 } {
+    if arguments.len()
+        != if session_probe || queue_compute || queue_q2 {
+            2
+        } else {
+            1
+        }
+    {
         return Err(hexagon_native_rpc::Error::Contract);
     }
     if arguments[0] == "--self-test" {
@@ -54,7 +63,8 @@ fn run() -> Result<String, hexagon_native_rpc::Error> {
             quote(&location.path().to_string_lossy())
         ));
     }
-    let package = (session_probe || queue_compute).then(|| std::path::Path::new(&arguments[1]));
+    let package =
+        (session_probe || queue_compute || queue_q2).then(|| std::path::Path::new(&arguments[1]));
     let forbidden = [
         "ADSP_", "CDSP_", "FASTRPC_", "RPCMEM_", "GGML_", "GENIEX_", "QNN_", "QAIRT_", "HEXAGON_",
     ];
@@ -69,12 +79,17 @@ fn run() -> Result<String, hexagon_native_rpc::Error> {
     if let Some(package) = package {
         let driver = Driver::open_system()?;
         let driver_path = driver.path().to_string_lossy().into_owned();
-        if queue_compute {
-            let report = driver.reference_queue_compute_probe(package, |snapshot| {
+        if queue_compute || queue_q2 {
+            let progress = |snapshot: &hexagon_native_rpc::QueueComputeReport| {
                 let mut output = io::stderr().lock();
                 let _ = writeln!(output, "hexagon-compute:stage={}", snapshot.stage);
                 let _ = output.flush();
-            })?;
+            };
+            let report = if queue_q2 {
+                driver.reference_queue_q2_probe(package, progress)?
+            } else {
+                driver.reference_queue_compute_probe(package, progress)?
+            };
             return Ok(queue_compute_json(&driver_path, &report));
         }
         let progress = |snapshot: &hexagon_native_rpc::SessionMappingReport| {
@@ -225,8 +240,20 @@ fn queue_compute_json(path: &str, report: &hexagon_native_rpc::QueueComputeRepor
         .metadata
         .architecture
         .map_or_else(|| String::from("null"), |value| value.to_string());
+    let guarded_q2 = report.is_guarded_q2_control();
+    let kind = if guarded_q2 {
+        "native-fastrpc-queue-q2-probe"
+    } else {
+        "native-fastrpc-queue-compute-probe"
+    };
+    let columns = if guarded_q2 {
+        hexagon_native_rpc::COMPUTE_Q2_K
+    } else {
+        hexagon_native_rpc::COMPUTE_K
+    };
     format!(
-        "{{\"schemaVersion\":1,\"kind\":\"native-fastrpc-queue-compute-probe\",\"driverDll\":{},\"passed\":{},\"stage\":{},\"metadataPrepared\":{},\"architectureRaw\":{},\"architecture\":{},\"sessionId\":0,\"domainResult\":{},\"effectiveDomain\":{},\"uriResult\":{},\"uriVerified\":{},\"processInitializationResult\":{},\"processInitializationDomainAfter\":{},\"processInitializationEnableAfter\":{},\"unsignedProcessRequested\":{},\"moduleOpenResult\":{},\"handleObserved\":{},\"allocationSucceeded\":{},\"mappingResult\":{},\"queueCreateResult\":{},\"queueExportResult\":{},\"queueStartResult\":{},\"queueWriteResult\":{},\"queueReadResult\":{},\"computeSubmitted\":{},\"responseValidated\":{},\"numericValidated\":{},\"computeExecuted\":{},\"queueStopResult\":{},\"queueCloseResult\":{},\"unmappingResult\":{},\"freeCompleted\":{},\"moduleCloseResult\":{},\"ownerPinnedUntilExit\":{},\"poisoned\":{},\"driverLoaded\":true,\"sessionTeardownVerified\":false,\"signedDeploymentVerified\":false,\"profileEligible\":false,\"k\":32,\"m\":32,\"n\":2,\"outputElements\":64,\"bytes\":16384,\"requestBytes\":24,\"responseBytes\":88,\"nHvx\":1,\"nHmx\":0,\"powerMode\":4,\"ggmlSource\":{}}}",
+        "{{\"schemaVersion\":1,\"kind\":{},\"driverDll\":{},\"passed\":{},\"stage\":{},\"metadataPrepared\":{},\"architectureRaw\":{},\"architecture\":{},\"sessionId\":0,\"domainResult\":{},\"effectiveDomain\":{},\"uriResult\":{},\"uriVerified\":{},\"processInitializationResult\":{},\"processInitializationDomainAfter\":{},\"processInitializationEnableAfter\":{},\"unsignedProcessRequested\":{},\"moduleOpenResult\":{},\"handleObserved\":{},\"allocationSucceeded\":{},\"mappingResult\":{},\"queueCreateResult\":{},\"queueExportResult\":{},\"queueStartResult\":{},\"queueWriteResult\":{},\"queueReadResult\":{},\"computeSubmitted\":{},\"responseValidated\":{},\"numericValidated\":{},\"computeExecuted\":{},\"queueStopResult\":{},\"queueCloseResult\":{},\"unmappingResult\":{},\"freeCompleted\":{},\"moduleCloseResult\":{},\"ownerPinnedUntilExit\":{},\"poisoned\":{},\"driverLoaded\":true,\"sessionTeardownVerified\":false,\"signedDeploymentVerified\":false,\"profileEligible\":false,\"k\":{},\"m\":32,\"n\":2,\"outputElements\":64,\"bytes\":16384,\"requestBytes\":24,\"responseBytes\":88,\"nHvx\":1,\"nHmx\":0,\"powerMode\":4,\"ggmlSource\":{}}}",
+        quote(kind),
         quote(path),
         report.completed_cycle(),
         quote(report.stage),
@@ -261,6 +288,7 @@ fn queue_compute_json(path: &str, report: &hexagon_native_rpc::QueueComputeRepor
         raw(report.module_close_result),
         report.owner_pinned_until_exit,
         report.poisoned,
+        columns,
         quote(hexagon_native_rpc::COMPUTE_GGML_SOURCE),
     )
 }
