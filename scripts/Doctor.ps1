@@ -214,7 +214,7 @@ function ConvertTo-CapabilityFact {
     Selects CIM fields and normalizes date types for the Rust JSON policy boundary.
     #>
     [CmdletBinding()]
-    [OutputType([Collections.IDictionary])]
+    [OutputType([Collections.Specialized.OrderedDictionary])]
     param([AllowNull()][object]$Value, [Parameter(Mandatory)][string[]]$Property)
     if ($null -eq $Value) { return $null }
     $result = [ordered]@{}
