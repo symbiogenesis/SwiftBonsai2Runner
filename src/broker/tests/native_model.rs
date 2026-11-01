@@ -28,6 +28,8 @@ mod speed;
 const CASE: &str = "pinned_native_model_streams_recovers_and_restarts_in_required_sandbox";
 const PTQ1_ADAPTER_CASE: &str =
     "pinned_native_ptq1_adapter_starts_and_streams_within_device_budget";
+const PTQ1_ADAPTER_LIFECYCLE_CASE: &str =
+    "pinned_native_ptq1_adapter_checks_scale_change_rejection_and_history";
 const PQ2_ADAPTER_ROW4_CASE: &str =
     "pinned_native_pq2_adapter_row4_starts_and_streams_within_device_budget";
 const PQ2_ADAPTER_LIFECYCLE_CASE: &str =
@@ -90,6 +92,14 @@ const PTQ1_ADAPTER_PROFILE: AdapterProfile = AdapterProfile {
     row_workers: 1,
     optional_requests: true,
     required_scale_history: false,
+};
+const PTQ1_ADAPTER_LIFECYCLE_PROFILE: AdapterProfile = AdapterProfile {
+    name: "ptq1-adapter-lifecycle",
+    case: PTQ1_ADAPTER_LIFECYCLE_CASE,
+    repacked: true,
+    row_workers: 1,
+    optional_requests: false,
+    required_scale_history: true,
 };
 const PQ2_ADAPTER_ROW4_PROFILE: AdapterProfile = AdapterProfile {
     name: "pq2-adapter-row4",
@@ -1190,6 +1200,7 @@ fn profile_case(profile: &str, extended: bool, stalled: bool) -> Option<&'static
 fn adapter_profile(name: &str) -> Option<&'static AdapterProfile> {
     match name {
         "ptq1-adapter" => Some(&PTQ1_ADAPTER_PROFILE),
+        "ptq1-adapter-lifecycle" => Some(&PTQ1_ADAPTER_LIFECYCLE_PROFILE),
         "pq2-adapter-row4" => Some(&PQ2_ADAPTER_ROW4_PROFILE),
         "pq2-adapter-lifecycle-row4" => Some(&PQ2_ADAPTER_LIFECYCLE_PROFILE),
         _ => None,
@@ -1755,26 +1766,48 @@ fn native_adapter_scale_history_retains_partial_steps_without_qualifying_missing
 
 #[test]
 fn native_adapter_scale_history_profile_requires_separate_explicit_selection() {
-    let selected = adapter_profile("pq2-adapter-lifecycle-row4").unwrap();
-    assert_eq!(
-        profile_case(selected.name, false, false),
-        Some(PQ2_ADAPTER_LIFECYCLE_CASE)
-    );
-    assert_eq!(profile_case(selected.name, true, false), None);
-    assert_eq!(profile_case(selected.name, false, true), None);
-    assert!(selected.required_scale_history);
-    assert!(!selected.optional_requests);
-    assert!(!selected.repacked);
-    assert_eq!(selected.row_workers, 4);
-    let args = adapter_arguments(selected, "8081");
-    assert!(
-        args.windows(2)
-            .any(|pair| pair[0] == "--native-row-workers" && pair[1] == "4")
-    );
-    assert!(args.iter().any(|arg| arg == "--use-abliterate-lora"));
-    assert!(!args.iter().any(|arg| arg == "--use-repacked-ptq1"));
+    for (name, case, repacked, workers) in [
+        (
+            "pq2-adapter-lifecycle-row4",
+            PQ2_ADAPTER_LIFECYCLE_CASE,
+            false,
+            4,
+        ),
+        (
+            "ptq1-adapter-lifecycle",
+            PTQ1_ADAPTER_LIFECYCLE_CASE,
+            true,
+            1,
+        ),
+    ] {
+        let selected = adapter_profile(name).unwrap();
+        assert_eq!(profile_case(name, false, false), Some(case));
+        assert_eq!(profile_case(name, true, false), None);
+        assert_eq!(profile_case(name, false, true), None);
+        assert!(selected.required_scale_history);
+        assert!(!selected.optional_requests);
+        assert_eq!(selected.repacked, repacked);
+        assert_eq!(selected.row_workers, workers);
+        let args = adapter_arguments(selected, "8081");
+        assert!(args.iter().any(|arg| arg == "--use-abliterate-lora"));
+        assert!(args.iter().any(|arg| arg == "--require-native-sandbox"));
+        assert_eq!(
+            args.iter().any(|arg| arg == "--use-repacked-ptq1"),
+            repacked
+        );
+        assert_eq!(
+            args.windows(2)
+                .any(|pair| pair[0] == "--native-row-workers" && pair[1] == "4"),
+            workers == 4
+        );
+    }
     assert!(
         !adapter_profile("pq2-adapter-row4")
+            .unwrap()
+            .required_scale_history
+    );
+    assert!(
+        !adapter_profile("ptq1-adapter")
             .unwrap()
             .required_scale_history
     );
@@ -1952,6 +1985,16 @@ fn pinned_native_pq2_adapter_row4_starts_and_streams_within_device_budget() {
 #[test]
 #[ignore = "Actual PQ2 adapter scale/history lifecycle; explicit bounded main-only device CI."]
 fn pinned_native_pq2_adapter_row4_checks_scale_change_rejection_and_history() {
+    adapter_scale_history_acceptance(&PQ2_ADAPTER_LIFECYCLE_PROFILE);
+}
+
+#[test]
+#[ignore = "Actual PTQ1 adapter scale/history lifecycle; explicit bounded main-only device CI."]
+fn pinned_native_ptq1_adapter_checks_scale_change_rejection_and_history() {
+    adapter_scale_history_acceptance(&PTQ1_ADAPTER_LIFECYCLE_PROFILE);
+}
+
+fn adapter_scale_history_acceptance(profile: &AdapterProfile) {
     ci_only();
     let budget = case_budget();
     assert_eq!(
@@ -1960,21 +2003,31 @@ fn pinned_native_pq2_adapter_row4_checks_scale_change_rejection_and_history() {
             env::var("BONSAI_NATIVE_EXTENDED").as_deref() == Ok("true"),
             env::var("BONSAI_NATIVE_STALLED_CONSUMER").as_deref() == Ok("true")
         ),
-        Some(PQ2_ADAPTER_LIFECYCLE_CASE)
+        Some(profile.case)
     );
     let data = env::var_os("BONSAI_NATIVE_DATA").unwrap();
     let evidence = env::var_os("BONSAI_NATIVE_EVIDENCE").unwrap();
-    let mut report = json!({"schemaVersion":1, "case":PQ2_ADAPTER_LIFECYCLE_CASE,
+    let representation = if profile.repacked {
+        "current-repacked-PTQ1_0"
+    } else {
+        "PQ2_0"
+    };
+    let scope = if profile.repacked {
+        "bounded-actual-model-ptq1-adapter-scale-history-lifecycle"
+    } else {
+        "bounded-actual-model-pq2-adapter-scale-history-lifecycle"
+    };
+    let mut report = json!({"schemaVersion":1, "case":profile.case,
         "revision":env::var("GITHUB_SHA").unwrap(), "runId":env::var("GITHUB_RUN_ID").unwrap(),
         "runAttempt":env::var("GITHUB_RUN_ATTEMPT").unwrap(),
-        "scope":"bounded-actual-model-pq2-adapter-scale-history-lifecycle",
-        "profile":PQ2_ADAPTER_LIFECYCLE_PROFILE.name, "passed":false, "lifecyclePassed":false,
+        "scope":scope,
+        "profile":profile.name, "passed":false, "lifecyclePassed":false,
         "allRequestedWorkloadsPassed":false, "requiredNativeSandbox":true,
         "aggregateModelCaseBudgetSeconds":budget.as_secs(), "maximumModelCaseBudgetSeconds":CASE_BUDGET.as_secs(),
-        "wholeJobMaximumSeconds":300, "configuredNativeRowWorkers":4,
+        "wholeJobMaximumSeconds":300, "configuredNativeRowWorkers":profile.row_workers,
         "rowWorkerCountIndependentlyObserved":false, "requiredStreams":3,
         "requestedAdapterScales":[1.3,0.0,1.3], "requestedCompletionCaps":[4,2,2],
-        "weightRepresentation":"PQ2_0",
+        "weightRepresentation":representation,
         "runtimeLock":serde_json::from_str::<Value>(include_str!("../../../config/prism-inference.lock.json")).unwrap(),
         "modelIdentity":serde_json::from_str::<Value>(include_str!("../../../config/swift-assessment.lock.json")).unwrap()["model"],
         "adapterLock":serde_json::from_str::<Value>(include_str!("../../../config/swift-lora.lock.json")).unwrap(),
@@ -1986,6 +2039,13 @@ fn pinned_native_pq2_adapter_row4_checks_scale_change_rejection_and_history() {
         "completeStateParityQualified":false, "authoringBasisQualified":false,
         "fullContextQualified":false, "fullOutputQualified":false, "performanceQualified":false,
         "qualityQualified":false, "dailyServiceIsolationQualified":false, "defaultRuntimeQualified":false});
+    if profile.repacked {
+        let export: Value =
+            serde_json::from_str(include_str!("../../../config/swift.ptq1-export.json")).unwrap();
+        report["modelIdentity"] = json!({"filename":export["OutputFilename"],
+            "bytes":export["OutputBytes"], "sha256":export["OutputSha256"]});
+        report["modelExportReceipt"] = export;
+    }
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
@@ -1994,7 +2054,7 @@ fn pinned_native_pq2_adapter_row4_checks_scale_change_rejection_and_history() {
         timeout(
             budget,
             bounded_adapter_acceptance(
-                &PQ2_ADAPTER_LIFECYCLE_PROFILE,
+                profile,
                 Path::new(&data),
                 Path::new(&evidence),
                 budget,
