@@ -29,18 +29,24 @@ if ([IO.Directory]::Exists($output) -or [IO.File]::Exists($output)) { throw 'Out
 $bundle = Join-Path $output 'bundle'
 [void][IO.Directory]::CreateDirectory($bundle)
 $repo = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
-$rustup = (Get-Command -Name rustup.exe -CommandType Application -ErrorAction Stop).Source
 $toolchain = 'nightly-2026-10-22-aarch64-pc-windows-msvc'
+# Call the selected compiler directly: rustup's proxy can outlive its parent
+# long enough to violate the strict owned-descendant completion contract.
+# Keep the Job check intact rather than accepting those surviving processes.
+$rustupDirectory = if ($env:RUSTUP_HOME) { $env:RUSTUP_HOME } else { Join-Path $env:USERPROFILE '.rustup' }
+if (-not [IO.Path]::IsPathFullyQualified($rustupDirectory) -or $rustupDirectory -match '[\r\n%]') { throw 'Expected an expanded absolute rustup directory.' }
+$rustc = Join-Path $rustupDirectory ('toolchains/' + $toolchain + '/bin/rustc.exe')
+if (-not [IO.File]::Exists($rustc)) { throw 'The exact hosted compiler must already be provisioned.' }
 $source = Join-Path $repo 'tools/hexagon/dispatch_fixture.rs'
 $manifest = Join-Path $repo 'tools/hexagon/diagnostic.manifest'
 $lock = Join-Path $repo 'config/hexagon-dispatch.lock.json'
-$compiler = Invoke-BonsaiNativeProcess -Executable $rustup -ArgumentList @('run', $toolchain, 'rustc', '-vV') -WorkingDirectory $output -TimeoutSeconds 20 -OwnDescendants
+$compiler = Invoke-BonsaiNativeProcess -Executable $rustc -ArgumentList @('-vV') -WorkingDirectory $output -TimeoutSeconds 20 -OwnDescendants
 if ($compiler.ExitCode -ne 0 -or $compiler.StandardOutput -cnotmatch '(?m)^host: aarch64-pc-windows-msvc\r?$') { throw 'Native compiler identity did not match the pinned target.' }
 $compilerDigest = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes($compiler.StandardOutput))).ToLowerInvariant()
 $compiledExe = Join-Path $output 'hexagon-dispatch-fixture.exe'
 $exe = Join-Path $bundle 'hexagon-dispatch-fixture.exe'
-$arguments = @('run', $toolchain, 'rustc', '--edition=2024', '--target', 'aarch64-pc-windows-msvc', '-C', 'opt-level=2', '-C', 'overflow-checks=yes', '-C', 'link-arg=/MANIFEST:EMBED', '-C', ('link-arg=/MANIFESTINPUT:' + $manifest), '-D', 'warnings', $source, '-o', $compiledExe)
-$build = Invoke-BonsaiNativeProcess -Executable $rustup -ArgumentList $arguments -WorkingDirectory $output -TimeoutSeconds 120 -OwnDescendants -LogPath (Join-Path $output 'dispatch-build.txt')
+$arguments = @('--edition=2024', '--target', 'aarch64-pc-windows-msvc', '-C', 'opt-level=2', '-C', 'overflow-checks=yes', '-C', 'link-arg=/MANIFEST:EMBED', '-C', ('link-arg=/MANIFESTINPUT:' + $manifest), '-D', 'warnings', $source, '-o', $compiledExe)
+$build = Invoke-BonsaiNativeProcess -Executable $rustc -ArgumentList $arguments -WorkingDirectory $output -TimeoutSeconds 120 -OwnDescendants -LogPath (Join-Path $output 'dispatch-build.txt')
 if ($build.ExitCode -ne 0) { throw 'Hexagon dispatch fixture compilation failed.' }
 Copy-Item -LiteralPath $compiledExe -Destination $exe
 $check = Invoke-BonsaiNativeProcess -Executable $exe -ArgumentList @('--self-test') -WorkingDirectory $output -TimeoutSeconds 15 -OwnDescendants
@@ -74,8 +80,8 @@ foreach ($buildCase in @(
     @{ Name = 'query'; Arguments = @((Join-Path $nativeSource 'query.rs'),'--extern',('hexagon_native_rpc=' + $nativeLibrary),'-o',$nativeExe) },
     @{ Name = 'contract'; Arguments = @('--test',(Join-Path $nativeSource 'lib.rs'),'-o',$nativeTest) }
 )) {
-    $compileArguments = @('run',$toolchain,'rustc','--edition=2024','--target','aarch64-pc-windows-msvc','-C','opt-level=2','-C','overflow-checks=yes','-C','link-arg=/MANIFEST:EMBED','-C',('link-arg=/MANIFESTINPUT:' + $manifest),'-D','warnings') + $buildCase.Arguments
-    $nativeBuild = Invoke-BonsaiNativeProcess -Executable $rustup -ArgumentList $compileArguments -WorkingDirectory $output -TimeoutSeconds 120 -OwnDescendants -LogPath (Join-Path $nativeOutput ($buildCase.Name + '-build.txt'))
+    $compileArguments = @('--edition=2024','--target','aarch64-pc-windows-msvc','-C','opt-level=2','-C','overflow-checks=yes','-C','link-arg=/MANIFEST:EMBED','-C',('link-arg=/MANIFESTINPUT:' + $manifest),'-D','warnings') + $buildCase.Arguments
+    $nativeBuild = Invoke-BonsaiNativeProcess -Executable $rustc -ArgumentList $compileArguments -WorkingDirectory $output -TimeoutSeconds 120 -OwnDescendants -LogPath (Join-Path $nativeOutput ($buildCase.Name + '-build.txt'))
     if ($nativeBuild.ExitCode -ne 0) { throw 'Direct Rust native capability control failed to compile.' }
 }
 $nativeCheck = Invoke-BonsaiNativeProcess -Executable $nativeExe -ArgumentList @('--self-test') -WorkingDirectory $output -TimeoutSeconds 15 -OwnDescendants
@@ -106,7 +112,7 @@ $packedOutput = Join-Path $output 'packed-projection'
 [void][IO.Directory]::CreateDirectory($packedOutput)
 $packedSource = Join-Path $repo 'tools/hexagon/packed_projection.rs'
 $packedTest = Join-Path $packedOutput 'packed-projection-contract.exe'
-$packedBuild = Invoke-BonsaiNativeProcess -Executable $rustup -ArgumentList @('run',$toolchain,'rustc','--edition=2024','--target','aarch64-pc-windows-msvc','--test','-C','opt-level=2','-C','overflow-checks=yes','-D','warnings',$packedSource,'-o',$packedTest) -WorkingDirectory $output -TimeoutSeconds 120 -OwnDescendants -LogPath (Join-Path $packedOutput 'build.txt')
+$packedBuild = Invoke-BonsaiNativeProcess -Executable $rustc -ArgumentList @('--edition=2024','--target','aarch64-pc-windows-msvc','--test','-C','opt-level=2','-C','overflow-checks=yes','-D','warnings',$packedSource,'-o',$packedTest) -WorkingDirectory $output -TimeoutSeconds 120 -OwnDescendants -LogPath (Join-Path $packedOutput 'build.txt')
 if ($packedBuild.ExitCode -ne 0) { throw 'The CPU packed-projection control failed to compile.' }
 $packedCheck = Invoke-BonsaiNativeProcess -Executable $packedTest -WorkingDirectory $output -TimeoutSeconds 30 -OwnDescendants
 [IO.File]::WriteAllText((Join-Path $packedOutput 'contract-tests.txt'),$packedCheck.StandardOutput + $packedCheck.StandardError)
