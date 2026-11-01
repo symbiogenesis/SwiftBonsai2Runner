@@ -74,7 +74,7 @@ and [local API contract](docs/broker-policy.md#public-request-contract).
 
 | Model | Runtime | Tokens/second | Model file | Job commit cap / measured peak | Available RAM admission | Restore copy saved vs. Rust 0.1.4 |
 | --- | --- | ---: | ---: | ---: | ---: | ---: |
-| **Swift Bonsai 2 `PTQ1_0` (experimental opt-in)** | **Rust 0.1.11 prerelease + LoRA 1.3** | **Not measured** | **5.54 GiB** | **11.5 GiB / not recorded** | **15.5 GiB** | **149.625 MiB** |
+| **Swift Bonsai 2 `PTQ1_0` (experimental opt-in)** | **Rust 0.1.12 release + LoRA 1.3** | **Not measured** | **5.54 GiB** | **11.5 GiB / not recorded** | **15.5 GiB** | **149.625 MiB** |
 | Swift Bonsai 2 `PQ2_0` (experimental Rust) | Rust 0.1.10 prerelease, one worker + LoRA 1.3 | 0.105 (truncated request) | 6.71 GiB | 11.5 GiB / not recorded | 15.5 GiB | 149.625 MiB |
 | Swift Bonsai 2 `PQ2_0` (experimental Rust) | Rust 0.1.10 prerelease, four workers + LoRA 1.3 | Pending (deadline) | 6.71 GiB | 11.5 GiB / not recorded | 15.5 GiB | 149.625 MiB |
 | Swift Bonsai 2 `PQ2_0` (captured source diagnostic) | Rust 0.1.9, four workers + LoRA 1.3 | Not measured | 6.71 GiB | 11.5 GiB / 7.04 GiB | 15.5 GiB | 149.625 MiB |
@@ -99,7 +99,7 @@ unmeasured; the packing saving alone does not qualify resources or performance.
 > Select the verified current-weight export with
 > `bonsai-tools chat --native-engine --use-repacked-ptq1` after
 > [provisioning it](docs/development-guide.md#runtime-selection).
-> The bold row names the pinned Rust 0.1.11 profile; historical measurements do not
+> The bold row names the pinned Rust 0.1.12 profile; historical measurements do not
 > transfer to it. The [0.1.7 source diagnostic](docs/evidence/ptq1-rust-smoke.json)
 > measured **5.85 GiB peak Job commit** for one supplied token at adapter scale 1.3:
 > all **129 files / 39,504,384 logits and live-state values** matched the native

@@ -69,8 +69,8 @@ attribution and complete checksum/cancellation controls. Qualify the integrated
 Prism 0.1.10 CNG verifier through Runner's settled-main release integration and
 actual-model startup. End-to-end startup gains remain pending within the
 owner-device budget; performance comparisons and complete checks remain in owning
-CI. The new publishable hash dependency also needs registry delivery, a new GGUF
-version and an updated exact runtime dependency before registry publication.
+CI. Complete separate registry delivery for the reviewed native-hash, GGUF 0.1.1
+and Prism 0.1.12 packages; hosted source-package checks do not publish them.
 
 Retain hosted regression coverage for Rust acceptance deadlines, startup receipt
 retention/redaction, host capability identities, PTQ1 collector admission, Find
@@ -130,7 +130,7 @@ the [default-readiness audit](docs/evidence/ptq1-default-readiness.json) separat
 historical passes from current-release qualification.
 The [frozen 0.1.10 PTQ1 promotion score](docs/evidence/ptq1-promotion-85fd2f1.json)
 passes five independently reviewed documentary/packing gates and leaves fourteen
-pending for its explicit four-worker candidate. The pinned 0.1.11 runtime and
+pending for its explicit four-worker candidate. The pinned 0.1.12 runtime and
 later application identities require their own evidence and applicability review.
 Close its actual-model, adapter provenance, paired benefit, quality, resource,
 isolation, recovery and installation gates before changing defaults or removing
@@ -141,7 +141,7 @@ adapter's immutable checkpoint, conversion and direction identities and
 independently verify all 48 SSM mappings; this remains an external provenance
 prerequisite that native/Rust agreement cannot supply.
 
-Qualify the pinned Prism 0.1.11 release and its required effective-row-worker
+Qualify the pinned Prism 0.1.12 release and its required effective-row-worker
 readiness on the actual model before using it for promotion. Retain historical
 0.1.10 configured-worker observations separately. Retain the previously released
 copy-then-scale recurrent path until the fused source candidate has actual-model

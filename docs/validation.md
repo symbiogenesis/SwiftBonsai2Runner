@@ -256,9 +256,9 @@ reported usage and fixed failure reason before owned cleanup; events and bytes
 cannot replace worker token accounting.
 
 Adapter lifecycle and paired-response receipts distinguish configured row workers
-from the effective graph budget verified at readiness. Only the reviewed exact
-`0.1.11` release records that budget as independently observed after successful
-strict readiness, bound to the compiled runtime lock and selected one/four-worker
+from the effective graph budget verified at readiness. The reviewed exact
+`0.1.11` and `0.1.12` releases record that budget as independently observed after
+successful strict readiness, bound to the compiled runtime lock and selected one/four-worker
 policy. Startup receipts and legacy releases retain an unobserved/null result.
 This observes neither executing threads nor parallel operations or device benefit.
 
