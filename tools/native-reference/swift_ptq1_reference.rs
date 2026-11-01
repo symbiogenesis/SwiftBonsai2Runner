@@ -708,6 +708,12 @@ mod native {
                 )
             })
             .transpose()?;
+        // Keep the pointer/scale storage live until after context destruction:
+        // the pinned API is permitted to retain these borrowed spans.
+        let mut application = adapter
+            .as_ref()
+            .zip(adapter_selection)
+            .map(|(adapter, (_, scale))| (adapter.pointer.as_ptr(), scale));
         // SAFETY: The live model and exact by-value context parameters follow
         // the pinned header ABI; one guard owns the returned context.
         let context = native_call(|| unsafe {
@@ -719,18 +725,11 @@ mod native {
             api,
             "native context allocation failed",
         )?;
-        if let (Some(adapter), Some((_, scale))) = (&adapter, adapter_selection) {
-            let mut pointer = adapter.pointer.as_ptr();
-            let mut scale = scale;
+        if let Some((pointer, scale)) = application.as_mut() {
             // SAFETY: One live adapter pointer and its selected matching scale
             // are borrowed synchronously; both outlive subsequent context work.
             let applied = native_call(|| unsafe {
-                (api.set_adapter)(
-                    context.pointer.as_ptr(),
-                    &raw mut pointer,
-                    1,
-                    &raw mut scale,
-                )
+                (api.set_adapter)(context.pointer.as_ptr(), pointer, 1, scale)
             });
             require(applied == 0, "native adapter application failed")?;
         }
