@@ -52,7 +52,7 @@ pub(super) fn attach(plan: &mut Value, available: u64) -> crate::Result<()> {
     for &name in FIELDS {
         let value = match name {
             "SchemaVersion" | "ActiveProcessLimit" => json!(1),
-            // PowerShell stamps its existing round-trip UTC string after the CLI returns.
+            // Pure planning leaves the clock unset; native CPU execution stamps UTC.
             "RecordedAtUtc" => Value::Null,
             "Profile" => policy["Name"].clone(),
             "Status" => json!(if admitted {

@@ -55,6 +55,13 @@ benchmarks and performance captures stay in owning CI.
 
 ### Actual-model acceptance
 
+Qualify the Rust-only maintenance migration through settled-main hosted ARM64
+Foundation, released-runtime provisioning, source-bound collector/candidate builds,
+speech static-cache preparation and signed Hexagon worker integration. Focused
+model-free checks and removal of PowerShell/C# implementations do not qualify
+actual devices, models, startup performance or promotion; retain the existing
+bounded owner-device gates and exact source/release identities below.
+
 Qualify source-launch time to the first native frame and authenticated model
 readiness after excluding worker checkouts from startup fingerprints and switching
 shared Windows artifact hashing to CNG. Retain cold-build versus unchanged-launch

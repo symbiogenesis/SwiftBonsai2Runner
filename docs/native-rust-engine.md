@@ -242,7 +242,7 @@ scale 1.3. One forward evaluation falls from 1,553.3135 ms to 575.6722 ms, with
 outer runner lifetime 131.13 seconds; the later explicit cleanup confirmation is
 also retained. These are fixed-step source-checker observations, not application
 TPS or complete performance qualification. Explicit app selection uses
-`-NativeEngine -NativeRowWorkers 4`; one remains the default and unsupported
+`bonsai-tools chat --native-engine --native-row-workers 4`; one remains the default and unsupported
 versions/engine selections fail closed.
 The [published-runtime service check](evidence/pq2-native-service-row4.json)
 also starts verified 0.1.9 with original PQ2, the approved adapter at scale 1.3

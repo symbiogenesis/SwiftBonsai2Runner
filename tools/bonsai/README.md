@@ -156,7 +156,7 @@ running maintenance executable's revision receipt, then owns memory admission,
 ABI preflights, capture supervision and atomic bounded partial receipts.
 Its independent Python comparator runs in an owned process under the same
 remaining allowance. Model-free plan, source, deadline and receipt regressions
-run in Rust; only hosted compiler preparation remains PowerShell.
+and hosted compiler preparation run in Rust.
 
 `ptq1-packing` independently verifies the complete current-weight export against
 the original PQ2 file. Supply expanded absolute `sourcePath`, `outputPath` and
@@ -219,15 +219,14 @@ retaining diagnostic bytes.
 
 Startup commands additionally advertise `StartupProtocolVersion: 1`. Their
 optional `parentProcessId` and `parentCreationTimeFileTime` fields bind long work
-to the caller's retained Windows creation identity. PowerShell supplies these
-fields automatically; selected older tools receive current-build guidance.
+to the caller's retained Windows creation identity. Native CLI admission observes
+these fields when omitted; explicit identities remain validated.
 Compiler/tool descendants belong to an atomic Windows Job with an inherited
 Unicode environment and child-only overlays. Cancellation waits for the tree to
 exit before build-lock release; owner death closes the Job. Model memory and
 process policies remain separate and unchanged.
 
-`ChatLaunchProtocolVersion: 1` identifies native instance-lock ownership;
-PowerShell rejects older launch tools before sending a request.
+`ChatLaunchProtocolVersion: 1` identifies native instance-lock ownership.
 `BootstrapProtocolVersion: 1` identifies native maintenance snapshot publication.
 These additive contracts leave the general JSON protocol at version 5.
 
@@ -373,8 +372,8 @@ to extract and verify a fresh external staging directory. It rejects unsafe
 directory entries, Windows filename aliases, collisions, incorrect ARM64 PE
 headers, and archives exceeding 4096 entries or 512 MiB expanded. It runs no probes
 and publishes no installation. Failed staging is retained for inspection.
-PowerShell downloads the archive, publishes staging with its existing
-no-overwrite directory move, then calls `runtime-verify`. Staging receipts do not
+Rust `provision` downloads the archive, publishes staging with a no-overwrite
+directory move, then calls `runtime-verify`. Staging receipts do not
 retain handles across that boundary; the published runtime is verified again
 before probes or execution.
 
@@ -382,7 +381,7 @@ Completed CI samples publish a single `capture.json` containing exact response
 text, its UTF-8 SHA-256 and diagnostics. Rust decodes stdout strictly and retains
 leading U+FEFF and trailing newlines. `diagnostics.json` remains available for
 inspection; the completed `supervision.json` is published after the capture
-records. PowerShell joins these records without rereading native stdout. Failed
+records. Native qualification joins these records without rereading stdout. Failed
 and incomplete samples never contribute completed response records to scoring.
 
 Qualification scoring reads bounded original evidence/reviews directly.

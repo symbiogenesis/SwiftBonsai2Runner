@@ -162,8 +162,8 @@ preserve symbols, raw scale bits, other tensor bytes and tokenizer/template/tran
 metadata without floating-point quantization. Bounded caller-owned buffers and
 batchwise byte-identical PQ2 reconstruction checks avoid a complete expanded model.
 
-Runner also provides the independent Rust `ptq1-packing` verifier through
-`Invoke-BonsaiTool`. It binds both complete artifact hashes and the compiled export
+Runner also provides the independent Rust verifier through
+`bonsai-tools ptq1-packing`. It binds both complete artifact hashes and the compiled export
 receipt, compares every original symbol and raw scale with a separately derived
 decoder, and checks preserved metadata and non-PQ tensor bytes. Header reads,
 payload buffers and execution time are bounded. Its synthetic controls cover all

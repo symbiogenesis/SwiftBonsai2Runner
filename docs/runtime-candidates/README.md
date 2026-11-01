@@ -171,7 +171,7 @@ cmake --build $build --target llama-completion test-headless-argv --parallel 4
 
 The fixture deliberately requires worker creation mitigations and is an explicit build
 target, outside ordinary CTest. Use Runner's existing checked maintenance tool and
-`Invoke-BonsaiTool -Command completion` from an external directory, with `ciOnly=false`,
+`bonsai-tools completion --request ABSOLUTE_JSON_PATH` from an external directory, with `ciOnly=false`,
 no runtime override, all generated EXE/DLL files listed as exact `artifacts`, the limits
 above and no model artifacts. Probe `llama-completion.exe` with only `--version`. For
 `test-headless-argv.exe`, pass `@('--model','模型/test.gguf','--seed','1','--prompt','日本語

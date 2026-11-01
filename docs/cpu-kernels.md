@@ -292,8 +292,7 @@ processor/kernel/feature identity rejects planning. The plan retains `HostIdenti
 live power or CPU availability. The planner never treats a name as kernel eligibility. Unknown
 topology or a foreign device rejects the screen.
 
-Doctor exposes the same `host-cpu` output as optional `NativeCpuObservations`; without `-ToolPath`
-it retains build-independent inventory. [Native CPU observations](hardware-capabilities.md#native-cpu-observations)
+Native `doctor` exposes the same `host-cpu` output as `NativeCpuObservations`. [Native CPU observations](hardware-capabilities.md#native-cpu-observations)
 defines group-relative topology, transient availability and the separate compatibility-digest scope.
 CPU-set IDs/classes are not persistent affinity settings.
 

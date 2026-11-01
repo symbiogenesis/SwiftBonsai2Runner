@@ -5,8 +5,8 @@
 use std::fs;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use bonsai_windows_process::ProcessSpec;
 use bonsai_tools::startup_cancel;
+use bonsai_windows_process::ProcessSpec;
 
 // Exercise the private implementation without exposing a production test API.
 #[path = "../src/runtime_probe.rs"]

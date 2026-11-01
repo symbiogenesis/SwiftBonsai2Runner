@@ -28,7 +28,7 @@ set and rejects planner failure, malformed results and unsuccessful selected
 jobs. Only deliberately unselected skips are permitted.
 The workflow transfers the planner's tested Linux executable to this gate rather
 than installing Rust and compiling it a second time. Maintenance is an independent
-producer; scripts and native speech depend on its checked CLI artifact while the
+producer; native integration and speech depend on its checked CLI artifact while the
 broker and UI lanes run concurrently. The configured aggregate still requires
 all selected jobs, including maintenance and speech.
 
