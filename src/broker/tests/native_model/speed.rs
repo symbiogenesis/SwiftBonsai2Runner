@@ -2,8 +2,8 @@
 
 use super::*;
 
-pub(super) const PROFILE: &str = "pq2-adapter-speed";
-pub(super) const CASE: &str = "speed::pinned_native_pq2_adapter_compares_request_throughput";
+pub const PROFILE: &str = "pq2-adapter-speed";
+pub const CASE: &str = "speed::pinned_native_pq2_adapter_compares_request_throughput";
 const CAP: u32 = 8;
 const PROMPT: &str = "Count from 1 to 100.";
 // A second owner must have time to start, execute, and release its Job.
