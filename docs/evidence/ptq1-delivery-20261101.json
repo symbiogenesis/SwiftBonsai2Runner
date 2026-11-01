@@ -160,6 +160,31 @@
       "full context/output, resources, restricted identity, recovery, installation, rollback and owner comfort"
     ]
   },
+  "laterComparisonHarnessPreparation": {
+    "revision": "b8df51ad177e3e4fbd838ed5a603bc2ff540f5d2",
+    "profile": "ptq1-pq2-complete-response-row4",
+    "comparisonWorkersForBothModels": 4,
+    "originalOneWorkerProfilePreserved": true,
+    "independentSourceReviewer": "Codex:/root/lifecycle",
+    "foundationRunId": "41323946405",
+    "foundationConclusion": "success",
+    "preparationRunId": "41323946846",
+    "hostedPrepareConclusion": "success",
+    "overallRunConclusion": "cancelled-after-hosted-preparation",
+    "artifactId": "13090561794",
+    "artifactBytes": 3010530,
+    "artifactSha256": "eaeda1a61af50bb8f54e306021ca9762c3bc2e595863b4142a23c86cffd553c4",
+    "archiveRelativeToLocalAppData": "SwiftBonsai2/qualification/ptq1-complete-response-row4-preparation-41323946846",
+    "archiveReviewSha256": "004039ab1aaee5555a94a2095f552dff80cdacdac3b483476fefed559555a882",
+    "archiveManifestSha256": "14f863f86311ddbcfe36a25444e118f979ba340e493782af54066ced17f69e89",
+    "independentDocumentChecksPassed": 24,
+    "acceptanceJobStepsExecuted": 0,
+    "ownerRunnerRegistered": false,
+    "modelExecutions": 0,
+    "promotionGatesAdded": 0,
+    "evidence": "docs/evidence/ptq1-complete-response-row4-preparation.json",
+    "scope": "Later test-harness preparation only. Both complete-response arms use the selected four-worker policy and the original aggregate deadline/reserves. Missing arms, truncation, unknown/zero usage, cross-worker captures or missing cleanup stay pending. This does not add gates or alter the frozen 85fd2f1 score."
+  },
   "defaultPromotionQualified": false,
   "defaultsChanged": false,
   "admissionOrReservesChanged": false
