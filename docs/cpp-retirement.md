@@ -53,6 +53,13 @@ Missing captures or unimplemented assertions remain visible pending/red outcomes
 
 Paths below are relative to Runner. No tracked C/C++ source/header files remain
 from the initial eleven; removed controls retain their identities and observations as data.
+The separate hosted Hexagon ABI controls (`tools/hexagon/public_qaic_wire.c` and
+`windows_queue_abi.c`) remain temporary C references. They compile against pinned
+public declarations and immutable generated observations without linking an
+inference library, SDK runtime or driver. Retire their compilation only after
+independent retained ABI/wire observations and Rust replacement assertions pass
+the owning acceptance contract. They are excluded from production Rust inference
+and remain part of the retirement inventory.
 Generated private-source C++ and external dependencies are tracked separately.
 
 The [retained owning main run](evidence/prism-main-integration.json) passes the

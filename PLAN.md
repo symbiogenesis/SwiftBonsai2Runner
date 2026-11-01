@@ -620,7 +620,16 @@ Follow [Adreno contracts](docs/adreno.md); discovery alone changes no CPU profil
 
 Follow [Hexagon contracts](docs/hexagon.md).
 
-- Complete independent X1/v73 access and X2/v81 native compute, deployment,
+Use the [bounded native F32/Q2 evidence](docs/evidence/hexagon-x2-queue-compute.json)
+for the next original-projection milestone. Its fixed guarded-Q2 integer and explicit
+cleanup cycle do not qualify a complete projection, model, selected DSP bytes,
+vendor teardown or speed. Retain timed-write14 and old close-before-unmap512 as
+losing observations. The investigation charged 223,797 ms of its single 300,000 ms
+owner allowance including preparation, capture and final review; its remainder
+cannot fit another supported control plus teardown. Hosted waits and date changes
+do not reset it. Further owner qualification remains pending for this investigation.
+
+- Complete independent X1/v73 access and extend X2/v81 numerical, deployment,
   license/resource and effective-placement qualification. Bind the
   [driver-bound generic X2 dispatch](docs/evidence/hexagon-x2-driver-bound-dispatch.json)
   and [native FD cycle](docs/evidence/hexagon-x2-native-fd-cycle.json) to independently
@@ -630,8 +639,9 @@ Follow [Hexagon contracts](docs/hexagon.md).
 - Qualify the separate [newer signed Q2 candidate](docs/hexagon-source-audit.md#newer-signed-q2-candidate)
   before choosing a packed route. Its v0.10.0 archive, seventeen runtime files and
   five catalog members are [verified as data](docs/evidence/hexagon-signed-q2-package.json);
-  its changed seven-argument start ABI, queue ownership, actual operation support
-  and Q8_1 numerical path remain pending. Compare the bounded guarded integer-dot
+  extend the fixed signed Q2/Q8_1 integer result to actual projection inputs,
+  broader shapes, quantizer edges and long-lived queue ownership. Compare the
+  bounded guarded integer-dot
   composition with a directly fused packed kernel; ordinary Q2/Q8_1 substitution
   does not preserve Swift Q8_K/per-128 FMA. Custom kernels still require a supported
   signing/distribution operator, but they are not the only signed route to research.
@@ -662,8 +672,14 @@ Follow [Hexagon contracts](docs/hexagon.md).
   timeout default. Compare public infinite-wait, FD/cache/callback/import-close
   contracts and authoritative u64 close against the matching SDK; the reference
   wrapper's narrowing pointer typedef is not an ABI to reuse.
-  Implement the reviewed queue/IDL, correlated responses, bounded waits, in-use
-  buffer retention and stop/drain contract before submitting a device kernel.
+  Extend the fixed native Rust F32/Q2 observations and independent Windows ARM64
+  queue/packet and public-branch start/stop wire controls to actual projection and
+  longer lifecycle evidence. Retain exact-source hosted tests, numerical output,
+  correlated responses, bounded waits, in-use buffer retention and explicit
+  stop/close/unmap evidence. The public
+  wire control selects the non-Windows Qualcomm header branch on a native ARM64
+  compiler; it does not establish the missing Windows whole-header closure or SDK
+  equivalence. Preserve the signed guarded-Q2 arithmetic when consuming a projection.
 - Start with `blk.0.ffn_up.weight`, K=5120/M=17408/N=1, keeping transforms, adapter
   corrections and committed state on CPU. Consume the [verified original projection
   and signs](docs/evidence/hexagon-swift-projection-binding.json) through the
@@ -672,7 +688,11 @@ Follow [Hexagon contracts](docs/hexagon.md).
   expanding placement. Preserve Q8_K preparation and original per-128 FMA; qualify
   PTQ1 canonicality/Q8_0 independently. The model-free PQ2/Q2 weight-layout control
   adds 419,840,000 bytes for a whole packed copy and is not a production bridge.
-  Extend actual placement/fallback/transfer accounting, including the guarded
+  Qualify the bounded guarded-Q2 projection submitter, including its source-native
+  576-byte host tile stride and separate 640-byte aligned VTCM destination stride.
+  Full-M scheduling retains 40 original-block operations; it needs signed solver,
+  quantizer and total-cost evidence before model integration. Extend actual
+  placement/fallback/transfer accounting, including the guarded
   primitive's additional weights, activations, returned limb dots and CPU reduction.
   Effective VTCM, DMA descriptors, session/queue/mapping costs, all host scratch and
   resources outside Job commit remain admission charges; the proposed 18,752-byte

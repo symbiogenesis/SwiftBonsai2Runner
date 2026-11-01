@@ -118,6 +118,15 @@ creative outputs, occupied state, cancellation and failed recovery. Larger conte
 Compare same-contract CPU, qualified Vulkan and NPU; retain median/p95/variance and separate 15–30-minute
 sustained runs in CI. Owner diagnostics/trials remain subject to the single five-minute total ceiling.
 Missing evidence or critical failures keep profiles experimental; absence supplies no verdict.
+The [fixed native Rust compute probe](../scripts/Invoke-HexagonComputeProbe.ps1)
+offers F32 and guarded-Q2 controls with separate timed/nonblocking writes,
+checked queue responses and poisoned output. The [bounded X2 capture](evidence/hexagon-x2-queue-compute.json)
+verified all 64 guarded integer outputs and its explicit cleanup cycle. Its
+supervisor verifies exact sources, all seventeen newer
+runtime files, five catalog members and the installed driver, retaining uncertain
+owners until the owned process exits. This qualifies fixed access/arithmetic;
+Swift inference and a performance comparison remain separate. Independent hosted ABI/build controls must
+pass before owner-device intake; the caller verifies trusted same-run provenance.
 Native diagnostics use absolute system-temp lanes with inherited Windows system/profile variables.
 
 ## 2026 research evidence

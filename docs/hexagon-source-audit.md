@@ -1,15 +1,25 @@
 # Hexagon source, placement and evidence
 
-Source reviews: **2026-10-30–31**. [Hexagon contracts](hexagon.md) govern execution;
+Source reviews: **2026-10-30 through 2026-11-01**. [Hexagon contracts](hexagon.md) govern execution;
 [PLAN.md](../PLAN.md#hexagon-npu) owns outstanding work. The
 [experiment lock](../config/hexagon-experiment.lock.json) and separate
 [Q2 candidate lock](../config/hexagon-signed-q2-candidate.lock.json) retain exact
 source/package identities and keep admission disabled. Production CPU policy,
 runtime pins and backend availability are unchanged; automatic selection is absent.
 
-X2 has generic signed-package numeric access and a native terminal FD cycle.
-The original Swift projection/signs are bound as data. Native Rust DSP computation,
-selected DSP-byte identity, Swift numerics/state, resources and performance remain
+X2 has generic signed-package numeric access, a native terminal FD cycle and a
+[native created/exported/started queue](evidence/hexagon-x2-queue-compute.json).
+The finite-timeout write returned 14; no numeric reply was checked. The later
+nonblocking F32 control returned write/read zero and verified all 64 output bits.
+Stop and queue close passed; host unmap returned 512 after module close. The
+corrected source unmaps before module close and retains allocation ownership
+through both releases. The final guarded-Q2 K=256/M=32/N=2 control verified all
+64 literal integer outputs and completed stop, queue close, host unmap, module
+close and free with an empty owned Job. This qualifies that fixed synthetic
+integer primitive and explicit cleanup cycle; full native inference and vendor
+teardown remain independently pending.
+The original Swift projection/signs are bound as data. Selected DSP-byte identity,
+Swift numerics/state, resources and performance remain
 unqualified; X1 needs independent evidence. The sections below distinguish source
 eligibility, data verification, native access and hosted wire controls.
 
@@ -65,10 +75,11 @@ safe ownership; it must add no C/C++ inference-library dependency. DSP kernels
 remain separately versioned/signed. GenieX is an access/deployment reference,
 not the replacement engine or a required production dependency.
 
-The [Prism source candidate, draft PR 6](https://github.com/symbiogenesis/prism-inference/pull/6)
-on `codex/hexagon-session-native-next-1030` extends `17ca7b3` from the audited Prism
-pin. `bonsai-hexagon-native` is isolated and `publish = false`; the engine neither
-consumes nor re-exports it. Runner and Prism retain the same seven native sources.
+The [Prism native boundary](https://github.com/symbiogenesis/prism-inference/tree/e83807110652cb2073676f09006ec611beb542e9/tools/hexagon-native)
+is integrated on owning `main`. `bonsai-hexagon-native` remains isolated and
+`publish = false`; the engine neither consumes nor re-exports it. Runner and Prism
+retain the same nine native library sources and source manifest. Registry/runtime
+pins and automatic selection remain unchanged by these experimental controls.
 The [boundary guide](../tools/hexagon/native_rpc/README.md) owns CLI/ABI details.
 One nonblocking process lease, fixed capability/URI/family/layout controls, guarded
 files and consuming terminal probes retain uncertain buffers/modules/driver owners.
@@ -374,9 +385,20 @@ hash checks supplement CStub/Stub notices; that pair alone is incomplete. Public
 terms do not establish SDK terms. Both generation controls stay outside production
 Rust inference dependencies.
 
-A native old-package F32 fixture can follow reviewed queue/lifetime implementation;
-generic C++ access evidence is separate. New Q2 additionally needs source-bound
-native intake/new ABI and signed quantizer/integer parity before consuming the bound
-projection. Neither is implemented by an unchecked invoke. Qualification and any
+The implemented [native Rust fixed F32 probe](../tools/hexagon/native_rpc/compute_native.rs)
+uses the newer package directly. Independent hosted C/public-header and Rust controls
+check queue layouts/prototypes and HTP packet offsets; unchanged generated start/stop
+code is compiled by native Windows ARM64 MSVC with the explicitly selected public
+non-Windows header branch. This establishes neither the absent Windows-specific
+header closure nor SDK equivalence. The probe verifies a correlated numerical reply
+and retains uncertain owners. Its [source-bound supervisor](../scripts/Invoke-HexagonComputeProbe.ps1)
+checks all seventeen package files, five catalog members and the installed driver
+inside one owned deadline. Generic C++ access evidence remains separate.
+New Q2 additionally needs source-bound native intake and signed quantizer/integer
+parity before consuming the bound projection. The bounded guarded projection API
+packs 576-byte host tiles; 640 bytes is the separate aligned VTCM destination
+stride. Full-M preparation reduces the proposed schedule to forty operations while
+preserving original CPU Q8_K and per-128 FMA. These are derived work/storage bounds,
+not measured device performance. Qualification and any
 future CPU/GPU/NPU choice remain subject to [PLAN](../PLAN.md#hexagon-npu) and the
 [execution/resource/failure contracts](hexagon.md).

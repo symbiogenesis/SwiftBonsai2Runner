@@ -262,25 +262,29 @@ HMX condition excludes N at or below four. This does not prove that a selected
 signed deployment admits the constructed operation or that native Rust can
 submit its supported entry correctly.
 
-The control exposes only ordinary logical Q2 records and F32 rows. It does not
-guess the DSP's repack or RPC ABI. A block needs 72 logical Q2 bytes and 2048 F32
-activation bytes, with eight returned bytes per original row. The source's
-640-byte Q2 tile for 32 rows and K=64 implies four tiles, or 2560 bytes for this
-K=256 primitive, before other framing/storage. For the full first projection:
+The block control exposes ordinary logical Q2 records and F32 rows. The separate
+[`q2_projection.rs`](q2_projection.rs) preparation/reduction API now packs the
+source-native host layout and accepts a synchronous submitter. Each host tile
+for 32 rows and K=64 is **576 bytes**: 512 symbol bytes and 64 scale bytes. DMA
+copies those 576 bytes into a **640-byte aligned VTCM destination**; host tiles
+are not padded to that destination stride. The K=256 primitive therefore has
+2304 host weight bytes and 2560 VTCM weight bytes per 32 rows, before additional
+kernel scratch. Activation inputs occupy 2048 F32 bytes, with eight returned
+limb bytes per original row. Full first-projection derived costs are:
 
-| Proposed bounded schedule cost | Bytes or work units |
-| --- | ---: |
-| Original 128-column slices, before row tiling | 40 |
-| 32-row tile work units across all slices | 21,760 |
-| Repacked weight transfer, once per tile work unit | 55,705,600 bytes |
-| F32 activation transfer charged once per tile work unit | 44,564,480 bytes |
-| Two F32 limb results per original row/block | 5,570,560 bytes |
-| Final complete CPU projection | 69,632 bytes |
+| Proposed schedule cost | M=32 tiles | Full M=17408 |
+| --- | ---: | ---: |
+| Operations preserving original per-128 reduction | 21,760 | 40 |
+| Repacked host weight traffic | 50,135,040 bytes | 50,135,040 bytes |
+| F32 activation traffic without assumed reuse | 44,564,480 bytes | 81,920 bytes |
+| Returned F32 limb dots | 5,570,560 bytes | 5,570,560 bytes |
+| Complete CPU output | 69,632 bytes | 69,632 bytes |
 
 These are conservative derived extents, not observed transfers, native request
-counts or admitted memory. Actual entry/queue batching is pending; 40 column
-slices do not establish 40 submissions. A whole-M logical operation may require
-larger host staging, while a 32-row submission may incur many more RPCs. Reuse
+counts or admitted memory. The full-M plan bounds its owned payload at 1,470,160
+bytes, including 1,253,376 host staging bytes, original Q8_K preparation, guarded
+activation rows, limb outputs and the private final output. The submitter must
+independently qualify solver support and actual completion/ownership. Reuse
 or residency cannot reduce the charged traffic without matching ownership and
 device evidence. Charge internal Q8_1 quantization, padded activation tiles,
 output padding, original scales, DMA, queues, mappings, synchronization and
@@ -290,8 +294,17 @@ packing and never justifies a persistent expanded whole-model copy.
 Model-free controls cover every packed byte, the complete i8 range, mixed codes,
 31-lane boundaries and guards, scale-one records, retained native per-block FMA
 bits and rejection of fractional, nonfinite or oversized returned dots. The
-retained FMA capture also rejects nonfused complete-projection reduction. Device
+retained FMA capture also rejects nonfused complete-projection reduction. Source
+layout fixtures distinguish the 576-byte host stride from 640-byte VTCM padding;
+complete projection replay, awkward row tails, cancellation and failed/poisoned
+submissions preserve atomic output publication. Device
 quantizer/integer parity, original artifact consumption, signed native entry,
-lifetime/rollback, complete state and performance remain pending. This lead may
+lifetime/rollback, complete state and performance remain pending beyond the
+[fixed signed Q2 device capture](../../docs/evidence/hexagon-x2-queue-compute.json).
+That X2 K=256/M=32/N=2 control verified 64 literal integer outputs, including
+guard extremes and odd values above FP16's exact integer range, and completed
+explicit stop/queue close/host unmap/module close/free. It consumed synthetic
+inputs; it did not execute this full projection schedule or measure a speedup.
+This lead may
 avoid a custom-kernel signing requirement for a narrow exact primitive if those
 gates pass; its extra work and traffic may also make it uncompetitive.

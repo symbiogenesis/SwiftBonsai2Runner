@@ -59,6 +59,35 @@ one of the following arguments:
 - `--mapping-probe`: consumes one driver/process admission for a fixed 4096-byte
   system-heap allocation, descriptor lookup, CPU byte check, static domain-3
   registration, matching unmap and free. It never submits or reads DSP work.
+- `--reference-queue-compute-probe ABSOLUTE_PACKAGE_DIRECTORY`: consumes one
+  native owner for the separately pinned GenieX v0.10.0 X2/v81 package. It uses
+  the explicit reference process initializer, a single bounded queue and one
+  mapped 16 KiB allocation to submit F32 K=32/M=32/N=2 work without an inference
+  library. All 64 poisoned outputs must match independent exact signed results.
+  Correlation, response extents, counts, buffer identity/cache flags and explicit
+  stop/queue-close/module-close/unmap/free must pass. Any uncertain consumer pins
+  its allocation and owners through supervised process exit. This fixed access
+  control qualifies neither Swift arithmetic, selected DSP bytes, full vendor
+  teardown nor speed. The [compute supervisor](../../../scripts/Invoke-HexagonComputeProbe.ps1)
+  requires trusted hosted ABI/build intake and independently rechecks package,
+  catalog and driver identities before native calls.
+- `--reference-queue-q2-probe ABSOLUTE_PACKAGE_DIRECTORY`: uses the same ownership
+  contract for a separately fixed Q2_0 K=256/M=32/N=2 integer control. Four
+  576-byte host tiles feed the signed HVX kernel with guarded F32 activation
+  limbs. Its 64 literal expected dots include all weight symbols, both guard
+  signs, extreme sums and odd values above FP16's exact integer range. The
+  solver requests 61,440 bytes of VTCM scratch. The supervisor selects this case
+  with `-Case GuardedQ2`; it cannot substitute F32 evidence for the Q2 gate.
+- `--reference-queue-noblock-probe` and `--reference-queue-q2-noblock-probe`, each
+  followed by the absolute package directory, separately select the documented
+  six-argument `dspqueue_write_noblock` entry for the identical F32 or guarded-Q2
+  packet. The supervisor cases are `F32NoBlock` and `GuardedQ2NoBlock`. Only the
+  selected export is resolved and called once; a refusal retains uncertain owners
+  and triggers no retry. A single bounded read/drain can still observe an exact
+  response after a write error; that observation never permits normal cleanup
+  or a complete-cycle claim, and the original error remains in the receipt.
+  This isolates the unresolved finite-timeout write return
+  14; implementation alone establishes neither its cause nor a remedy.
 
 Before driver loading, the query/mapping CLI rejects inherited names beginning
 with `ADSP_`, `CDSP_`, `FASTRPC_`, `RPCMEM_`, `GGML_`, `GENIEX_`, `QNN_`,
@@ -66,6 +95,13 @@ with `ADSP_`, `CDSP_`, `FASTRPC_`, `RPCMEM_`, `GGML_`, `GENIEX_`, `QNN_`,
 exact explicitly selected `ADSP_LIBRARY_PATH`. It logs no names/values and mutates
 no environment. The trusted library caller and supervisor own the corresponding
 child-environment policy; these restrictions do not change the parent process.
+
+The [2026-11-01 guarded-Q2 capture](../../../docs/evidence/hexagon-x2-queue-compute.json)
+passed the fixed nonblocking integer control and all explicit release steps on
+X2/v81. F32 arithmetic also passed; the earlier post-close unmap refusal remains
+recorded separately. Actual original-projection inputs, model/state and adapter
+parity, selected DSP-byte identity, full vendor teardown and measured benefit
+remain independent gates. Production runtime/defaults remain on CPU.
 
 The terminal probe uses heap ID 25, cached allocation flags 1, offset 0, length
 4096 and `FASTRPC_MAP_STATIC=0`. The public vendor header documents that mapping
