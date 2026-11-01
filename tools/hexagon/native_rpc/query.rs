@@ -37,6 +37,9 @@ fn run() -> Result<String, hexagon_native_rpc::Error> {
     let queue_noblock = arguments
         .first()
         .is_some_and(|value| value == "--reference-queue-noblock-probe");
+    let queue_q2_noblock = arguments
+        .first()
+        .is_some_and(|value| value == "--reference-queue-q2-noblock-probe");
     let reference_probe = arguments
         .first()
         .is_some_and(|value| value == "--reference-session-mapping-probe");
@@ -45,7 +48,7 @@ fn run() -> Result<String, hexagon_native_rpc::Error> {
             .first()
             .is_some_and(|value| value == "--session-mapping-probe");
     if arguments.len()
-        != if session_probe || queue_compute || queue_q2 || queue_noblock {
+        != if session_probe || queue_compute || queue_q2 || queue_noblock || queue_q2_noblock {
             2
         } else {
             1
@@ -66,7 +69,7 @@ fn run() -> Result<String, hexagon_native_rpc::Error> {
             quote(&location.path().to_string_lossy())
         ));
     }
-    let package = (session_probe || queue_compute || queue_q2 || queue_noblock)
+    let package = (session_probe || queue_compute || queue_q2 || queue_noblock || queue_q2_noblock)
         .then(|| std::path::Path::new(&arguments[1]));
     let forbidden = [
         "ADSP_", "CDSP_", "FASTRPC_", "RPCMEM_", "GGML_", "GENIEX_", "QNN_", "QAIRT_", "HEXAGON_",
@@ -82,13 +85,15 @@ fn run() -> Result<String, hexagon_native_rpc::Error> {
     if let Some(package) = package {
         let driver = Driver::open_system()?;
         let driver_path = driver.path().to_string_lossy().into_owned();
-        if queue_compute || queue_q2 || queue_noblock {
+        if queue_compute || queue_q2 || queue_noblock || queue_q2_noblock {
             let progress = |snapshot: &hexagon_native_rpc::QueueComputeReport| {
                 let mut output = io::stderr().lock();
                 let _ = writeln!(output, "hexagon-compute:stage={}", snapshot.stage);
                 let _ = output.flush();
             };
-            let report = if queue_noblock {
+            let report = if queue_q2_noblock {
+                driver.reference_queue_q2_noblock_probe(package, progress)?
+            } else if queue_noblock {
                 driver.reference_queue_noblock_probe(package, progress)?
             } else if queue_q2 {
                 driver.reference_queue_q2_probe(package, progress)?
@@ -247,7 +252,9 @@ fn queue_compute_json(path: &str, report: &hexagon_native_rpc::QueueComputeRepor
         .map_or_else(|| String::from("null"), |value| value.to_string());
     let guarded_q2 = report.is_guarded_q2_control();
     let nonblocking = report.is_nonblocking_write_control();
-    let kind = if nonblocking {
+    let kind = if nonblocking && guarded_q2 {
+        "native-fastrpc-queue-q2-noblock-probe"
+    } else if nonblocking {
         "native-fastrpc-queue-noblock-probe"
     } else if guarded_q2 {
         "native-fastrpc-queue-q2-probe"
