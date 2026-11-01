@@ -417,11 +417,15 @@ fn extract_inference(
     let mut names = BTreeSet::new();
     for index in 0..archive.len() {
         let mut entry = archive.by_index(index).map_err(|error| error.to_string())?;
+        let name = entry
+            .name()
+            .map_err(|error| error.to_string())?
+            .into_owned();
         let expected = files
             .iter()
-            .find(|file| file.name == entry.name())
+            .find(|file| file.name == name)
             .ok_or("Unexpected inference archive entry.")?;
-        if !names.insert(entry.name().to_owned())
+        if !names.insert(name)
             || entry.size() != expected.bytes
             || !entry.is_file()
             || entry
@@ -837,7 +841,11 @@ mod tests {
             .as_array()
             .ok_or("Missing tensor histogram.")?
             .iter()
-            .map(|row| row["Count"].as_u64().ok_or("Invalid tensor count."))
+            .map(|row| {
+                row["Count"]
+                    .as_u64()
+                    .ok_or_else(|| "Invalid tensor count.".to_owned())
+            })
             .collect::<crate::Result<Vec<_>>>()?
             .iter()
             .sum::<u64>();
@@ -851,7 +859,11 @@ mod tests {
             "estimatedRuntimeHeadroomBytes",
         ]
         .iter()
-        .map(|name| profile[*name].as_u64().ok_or("Missing memory estimate."))
+        .map(|name| {
+            profile[*name]
+                .as_u64()
+                .ok_or_else(|| "Missing memory estimate.".to_owned())
+        })
         .collect::<crate::Result<Vec<_>>>()?
         .iter()
         .sum::<u64>();

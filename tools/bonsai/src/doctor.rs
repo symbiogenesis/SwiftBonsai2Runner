@@ -451,12 +451,15 @@ mod tests {
             "status": "observed", "processor_name": "Snapdragon X2", "vendor_identifier": "Qualcomm",
             "windows_version": [10, 0, 26300]}, "topology": {"physical_cores": 18, "logical_processors": 18},
             "isa": {"status": "observed", "advsimd": true, "dotprod": true}}),
-            &json!({"status": "observed", "usable_physical_bytes": 68719476736_u64, "available_physical_bytes": 42949672960_u64}),
+            &json!({"status": "observed", "usable_physical_bytes": 68_719_476_736_u64, "available_physical_bytes": 42_949_672_960_u64}),
             &json!({}),
         )?;
         assert_eq!(result["cpu"]["identities"][0]["physical_cores"], 18);
         assert_eq!(result["operating_system"]["version"], "10.0.26300");
-        assert_eq!(result["memory"]["usable_physical_bytes"], 68719476736_u64);
+        assert_eq!(
+            result["memory"]["usable_physical_bytes"],
+            68_719_476_736_u64
+        );
         assert!(result["memory"]["reported_total_physical_bytes"].is_null());
         Ok(())
     }
