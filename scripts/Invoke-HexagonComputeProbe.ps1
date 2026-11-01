@@ -17,6 +17,7 @@ param(
     [Parameter(Mandatory, ParameterSetName = 'Execute')][string]$SigntoolPath,
     [Parameter(Mandatory, ParameterSetName = 'Execute')][ValidatePattern('^[a-f0-9]{40}$')][string]$ExpectedRunnerRevision,
     [ValidateRange(1,240)][int]$MaximumSeconds = 120,
+    [ValidateSet('F32','GuardedQ2')][string]$Case = 'F32',
     [Parameter(Mandatory, ParameterSetName = 'Plan')][switch]$PlanOnly
 )
 $clock = [Diagnostics.Stopwatch]::StartNew()
@@ -31,7 +32,8 @@ if ($PlanOnly) {
     return [ordered]@{
         SchemaVersion = 1; Kind = 'runner-hexagon-compute-plan'; MaximumSeconds = $MaximumSeconds
         CleanupReserveSeconds = 75; QueueSlots = 1; Operations = 1; Package = 'GenieX-v0.10.0'
-        Columns = 32; Rows = 32; Batch = 2; ModelLoaded = $false; ProfileEligible = $false
+        Columns = if ($Case -ceq 'F32') { 32 } else { 256 }; Rows = 32; Batch = 2; ComputeCase = $Case
+        ModelLoaded = $false; ProfileEligible = $false
         OwnedJobRequired = $true; IndependentWindowsAbiRequired = $true; CatalogVerificationRequired = $true
         SourceBoundHostedFixtureRequired = $true; TrustChangesAllowed = $false; AutomaticRetryAllowed = $false
     }
@@ -48,7 +50,7 @@ if (-not [IO.Directory]::Exists($PackageDirectory) -or -not [IO.Directory]::Exis
 }
 [void][IO.Directory]::CreateDirectory($OutputDirectory)
 $report = [ordered]@{
-    SchemaVersion = 1; Kind = 'runner-hexagon-compute'; Outcome = 'pending'; Failure = $null
+    SchemaVersion = 1; Kind = 'runner-hexagon-compute'; ComputeCase = $Case; Outcome = 'pending'; Failure = $null
     ExpectedRunnerRevision = $ExpectedRunnerRevision; MaximumSeconds = $MaximumSeconds; CleanupReserveSeconds = 75
     ElapsedMilliseconds = 0; WorkerAttempted = $false; OwnedJobTeardown = 'not-started'; Worker = $null
     ComputeExecuted = $false; ModelLoaded = $false; SwiftQualified = $false; ProfileEligible = $false
@@ -60,7 +62,7 @@ try {
     $repo = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
     $request = @{
         PackageDirectory = $PackageDirectory; FixtureDirectory = $FixtureDirectory; SigntoolPath = $SigntoolPath
-        ExpectedRunnerRevision = $ExpectedRunnerRevision; LockPath = Join-Path $repo 'config/hexagon-dispatch.lock.json'
+        ExpectedRunnerRevision = $ExpectedRunnerRevision; ComputeCase = $Case; LockPath = Join-Path $repo 'config/hexagon-dispatch.lock.json'
         CandidateLockPath = Join-Path $repo 'config/hexagon-signed-q2-candidate.lock.json'
         NativeSourceDirectory = Join-Path $repo 'tools/hexagon/native_rpc'
         ManifestPath = Join-Path $repo 'tools/hexagon/diagnostic.manifest'
@@ -78,13 +80,13 @@ try {
     $report.OwnedJobTeardown = 'confirmed-empty'
     if ($owned.ExitCode -ne 0 -or $owned.StandardOutput.Length -gt 65536 -or $owned.StandardError.Length -gt 65536) { throw 'Owned compute worker failed its output contract.' }
     $worker = ConvertFrom-BonsaiHexagonDispatchJson -Json $owned.StandardOutput
-    if ($worker.Kind -cne 'runner-hexagon-compute-worker' -or $worker.SourceRevision -cne $ExpectedRunnerRevision -or
+    if ($worker.Kind -cne 'runner-hexagon-compute-worker' -or $worker.ComputeCase -cne $Case -or $worker.SourceRevision -cne $ExpectedRunnerRevision -or
         $worker.Outcome -cnotin @('passed','pending') -or $worker.ModelLoaded -cne $false -or
         $worker.SwiftQualified -cne $false -or $worker.ProfileEligible -cne $false -or $worker.TrustChanged -cne $false) {
         throw 'Invalid owned compute worker result.'
     }
     if ($worker.Outcome -ceq 'passed') {
-        $native = Get-BonsaiHexagonComputeResult -Json ($worker.NativeResult | ConvertTo-Json -Depth 10 -Compress) -ExitCode 0
+        $native = Get-BonsaiHexagonComputeResult -Json ($worker.NativeResult | ConvertTo-Json -Depth 10 -Compress) -ExitCode 0 -Case $Case
         if (-not $native.passed -or $worker.SignedPackageVerified -cne $true -or $worker.RuntimeFilesVerified -ne 17 -or $worker.ComputeExecuted -cne $true) {
             throw 'Incomplete verified computation.'
         }

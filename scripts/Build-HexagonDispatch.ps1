@@ -30,9 +30,8 @@ $bundle = Join-Path $output 'bundle'
 [void][IO.Directory]::CreateDirectory($bundle)
 $repo = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $toolchain = 'nightly-2026-10-22-aarch64-pc-windows-msvc'
-# Call the selected compiler directly: rustup's proxy can outlive its parent
-# long enough to violate the strict owned-descendant completion contract.
-# Keep the Job check intact rather than accepting those surviving processes.
+# Call the selected compiler directly and retain the owned-descendant gate.
+# The exact toolchain is already provisioned by the owning hosted workflow.
 $rustupDirectory = if ($env:RUSTUP_HOME) { $env:RUSTUP_HOME } else { Join-Path $env:USERPROFILE '.rustup' }
 if (-not [IO.Path]::IsPathFullyQualified($rustupDirectory) -or $rustupDirectory -match '[\r\n%]') { throw 'Expected an expanded absolute rustup directory.' }
 $rustc = Join-Path $rustupDirectory ('toolchains/' + $toolchain + '/bin/rustc.exe')

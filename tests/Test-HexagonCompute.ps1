@@ -17,6 +17,9 @@ if ($Case -ceq 'Plan') {
         $plan.CatalogVerificationRequired -and $plan.SourceBoundHostedFixtureRequired) 'Compute plan lost its fixed operation or owned deadline.'
     Assert (-not $plan.ModelLoaded -and -not $plan.ProfileEligible -and -not $plan.TrustChangesAllowed -and
         -not $plan.AutomaticRetryAllowed) 'Compute plan authorized an independent gate or replay.'
+    $q2Plan = & (Join-Path $PSScriptRoot '../scripts/Invoke-HexagonComputeProbe.ps1') -PlanOnly -Case GuardedQ2
+    Assert ($q2Plan.ComputeCase -ceq 'GuardedQ2' -and $q2Plan.Columns -eq 256 -and $q2Plan.Rows -eq 32 -and
+        $q2Plan.Batch -eq 2 -and $q2Plan.Operations -eq 1 -and -not $q2Plan.ProfileEligible) 'Guarded Q2 plan changed its fixed primitive.'
 } else {
     $native = @{
         schemaVersion = 1; kind = 'native-fastrpc-queue-compute-probe'; driverDll = 'C:\Windows\System32\DriverStore\FileRepository\fixture\libcdsprpc.dll'
@@ -57,5 +60,15 @@ if ($Case -ceq 'Plan') {
     Assert (-not $result.passed -and $result.poisoned) 'An uncertain submitted buffer did not remain a partial observation.'
     Assert-Failure { Get-BonsaiHexagonComputeResult -Json ($native | ConvertTo-Json -Compress) -ExitCode 1 } 'A failed child became successful evidence.'
     Assert-Failure { Get-BonsaiHexagonComputeResult -Json '{"schemaVersion":1,"schemaVersion":1}' -ExitCode 0 } 'Duplicate evidence keys admitted.'
+    $q2 = $native.Clone(); $q2.kind = 'native-fastrpc-queue-q2-probe'
+    $q2.columns = 256; $q2.rows = 32; $q2.batch = 2; $q2.outputValuesChecked = 64
+    $result = Get-BonsaiHexagonComputeResult -Json ($q2 | ConvertTo-Json -Compress) -ExitCode 0 -Case GuardedQ2
+    Assert $result.passed 'Complete fixed guarded Q2 receipt was rejected.'
+    Assert-Failure { Get-BonsaiHexagonComputeResult -Json ($q2 | ConvertTo-Json -Compress) -ExitCode 0 } 'Q2 receipt supplied the F32 gate.'
+    Assert-Failure { Get-BonsaiHexagonComputeResult -Json ($native | ConvertTo-Json -Compress) -ExitCode 0 -Case GuardedQ2 } 'F32 receipt supplied the Q2 gate.'
+    foreach ($field in @('columns','rows','batch','outputValuesChecked')) {
+        $changed = $q2.Clone(); $changed[$field] = $null
+        Assert-Failure { Get-BonsaiHexagonComputeResult -Json ($changed | ConvertTo-Json -Compress) -ExitCode 0 -Case GuardedQ2 } 'Incomplete guarded Q2 geometry admitted.'
+    }
 }
 return 'Native queue compute evidence controls passed without opening a device.'

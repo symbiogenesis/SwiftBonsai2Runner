@@ -33,6 +33,7 @@ jobs:
           $PSNativeCommandUseErrorActionPreference = $true
           foreach ($case in @('Plan','Result')) { ./tests/Test-HexagonCompute.ps1 -Case $case }
           foreach ($case in @('Plan','Build','Result','Environment')) { ./tests/Test-HexagonSession.ps1 -Case $case }
+          ./tests/Test-NativeProcess.ps1 -Case OwnedExitAccounting
       - name: Build source-bound native fixture and run independent packed and queue contracts
         shell: pwsh
         working-directory: ${{ runner.temp }}

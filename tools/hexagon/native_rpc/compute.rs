@@ -8,11 +8,6 @@
     reason = "Private packet helpers remain accessible only to their safe parent and native sibling"
 )]
 
-#![allow(
-    clippy::redundant_pub_crate,
-    reason = "Private packet helpers remain accessible only to their safe parent and native sibling"
-)]
-
 use crate::SessionPreparationReport;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

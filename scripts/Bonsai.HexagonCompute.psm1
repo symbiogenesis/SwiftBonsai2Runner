@@ -13,13 +13,21 @@ function Get-BonsaiHexagonComputeResult {
     #>
     [CmdletBinding()]
     [OutputType([Collections.IDictionary])]
-    param([Parameter(Mandatory)][string]$Json, [Parameter(Mandatory)][int]$ExitCode)
+    param([Parameter(Mandatory)][string]$Json, [Parameter(Mandatory)][int]$ExitCode,
+        [ValidateSet('F32','GuardedQ2')][string]$Case = 'F32')
     $record = ConvertFrom-BonsaiHexagonDispatchJson -Json $Json
-    if ($ExitCode -ne 0 -or $record.schemaVersion -cne 1 -or
-        $record.kind -cne 'native-fastrpc-queue-compute-probe' -or
+    $kind = if ($Case -ceq 'F32') { 'native-fastrpc-queue-compute-probe' } else { 'native-fastrpc-queue-q2-probe' }
+    if ($ExitCode -ne 0 -or ($record.schemaVersion -isnot [int] -and $record.schemaVersion -isnot [long]) -or $record.schemaVersion -ne 1 -or
+        $record.kind -cne $kind -or
         $record.stage -isnot [string] -or $record.stage -cnotmatch '^[a-z][a-z0-9-]{0,95}$' -or
         $record.driverDll -isnot [string] -or -not [IO.Path]::IsPathFullyQualified($record.driverDll)) {
         throw 'Invalid fixed native computation receipt.'
+    }
+    if ($Case -ceq 'GuardedQ2') {
+        foreach ($pair in @(@('columns',256),@('rows',32),@('batch',2),@('outputValuesChecked',64))) {
+            $value = $record[$pair[0]]
+            if (($value -isnot [int] -and $value -isnot [long]) -or $value -ne $pair[1]) { throw 'Guarded Q2 probe changed its fixed geometry.' }
+        }
     }
     foreach ($name in @('passed','uriVerified','unsignedProcessRequested','handleObserved',
         'responseValidated','numericValidated','freeCompleted','ownerPinnedUntilExit','poisoned',
@@ -56,9 +64,10 @@ function Invoke-BonsaiHexagonComputeWorker {
     [CmdletBinding()]
     [OutputType([Collections.Specialized.OrderedDictionary])]
     param([Parameter(Mandatory)][Collections.IDictionary]$Request)
+    if ($Request.ComputeCase -isnot [string] -or $Request.ComputeCase -cnotin @('F32','GuardedQ2')) { throw 'Select exactly one fixed compute case.' }
     $holds = [Collections.Generic.List[IO.FileStream]]::new()
     $report = [ordered]@{
-        SchemaVersion = 1; Kind = 'runner-hexagon-compute-worker'; SourceRevision = $Request.ExpectedRunnerRevision
+        SchemaVersion = 1; Kind = 'runner-hexagon-compute-worker'; SourceRevision = $Request.ExpectedRunnerRevision; ComputeCase = $Request.ComputeCase
         Outcome = 'pending'; Stage = 'source-identity'; LastNativeStage = 'not-started'; Failure = $null
         SignedPackageVerified = $false; RuntimeFilesVerified = 0; DriverIdentity = $null; NativeResult = $null
         BuildReceiptSha256 = $null; CandidateLockSha256 = $null; ComputeExecuted = $false
@@ -153,8 +162,9 @@ function Invoke-BonsaiHexagonComputeWorker {
         $report.Stage = 'queue-compute'
         Save-BonsaiHexagonDispatchWorkerReceipt -Report $report -Path $Request.WorkerReceiptPath
         [Environment]::SetEnvironmentVariable('ADSP_LIBRARY_PATH', $Request.PackageDirectory, 'Process')
-        $probe = Invoke-BonsaiHexagonBoundedCapture -Executable $exe -ArgumentList @('--reference-queue-compute-probe', $Request.PackageDirectory) -WorkingDirectory $Request.PackageDirectory -ProgressReceipt $report -ProgressPath $Request.WorkerReceiptPath -ProgressKind Compute
-        $native = Get-BonsaiHexagonComputeResult -Json $probe.StandardOutput -ExitCode $probe.ExitCode
+        $mode = if ($Request.ComputeCase -ceq 'F32') { '--reference-queue-compute-probe' } else { '--reference-queue-q2-probe' }
+        $probe = Invoke-BonsaiHexagonBoundedCapture -Executable $exe -ArgumentList @($mode, $Request.PackageDirectory) -WorkingDirectory $Request.PackageDirectory -ProgressReceipt $report -ProgressPath $Request.WorkerReceiptPath -ProgressKind Compute
+        $native = Get-BonsaiHexagonComputeResult -Json $probe.StandardOutput -ExitCode $probe.ExitCode -Case $Request.ComputeCase
         if ($native.driverDll -cne $guard.Identity.Path) { throw 'Native computation loaded a different inspected driver.' }
         $report.NativeResult = $native; $report.ComputeExecuted = $native.computeExecuted
         if ($native.passed) { $report.Outcome = 'passed'; $report.Stage = 'queue-compute-complete' }
