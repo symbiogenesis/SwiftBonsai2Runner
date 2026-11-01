@@ -468,10 +468,7 @@ fn later_service_harness_preserves_exact_release_and_retained_package() -> crate
             sha256(package)
         );
         assert_eq!(scored["gates"][16]["reportFile"], "report.json");
-        assert_eq!(
-            scored["gates"][16]["harness"]["packageFile"],
-            "harness.zip"
-        );
+        assert_eq!(scored["gates"][16]["harness"]["packageFile"], "harness.zip");
         assert_service_rejections(&input, &policy, &directory)?;
         std::fs::write(directory.join("harness.zip"), b"changed")
             .map_err(|error| error.to_string())?;
@@ -585,8 +582,10 @@ fn reviewed_pass_requires_report_device_main_and_human_identity() -> crate::Resu
 fn assert_file_score_input_identity(manifest: &Path, input: &Value) -> crate::Result<()> {
     let bytes = serde_json::to_vec(input).map_err(|error| error.to_string())?;
     let score_file = || {
-        run(json!({"operation": "file-score", "runnerRevision": "a".repeat(40),
-            "evidencePath": manifest}))
+        run(
+            json!({"operation": "file-score", "runnerRevision": "a".repeat(40),
+            "evidencePath": manifest}),
+        )
     };
     let scored = score_file()?;
     assert_eq!(scored["promotionReady"], true);
