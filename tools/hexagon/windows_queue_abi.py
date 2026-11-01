@@ -13,6 +13,7 @@ import json
 import os
 from pathlib import Path
 import platform
+import re
 import shutil
 import struct
 import subprocess
@@ -212,6 +213,14 @@ def compare_layout(control, compiler, inputs, rustc):
         shutil.copyfile(path, control.review / (name + ".c.txt"))
         control.run(name, [compiler, "/nologo", "/std:c11", "/TC", "/W4", "/WX", "/c", "/I" + str(inputs),
                            "/Fo" + str(control.output / (name + ".obj")), path], expected_failure=True)
+        diagnostics = b"\n".join((control.review / (name + suffix)).read_bytes()
+                                   for suffix in (".stdout.log", ".stderr.log"))
+        if name == "narrow-queue-pointer":
+            if not re.search(rb"\bC(?:4113|4133|4047)\b", diagnostics):
+                raise ValueError("narrowed queue signature failed for an unrelated reason")
+        elif ("deliberate wrong " + ("buffer" if name == "wrong-buffer-layout" else "operation") +
+              " ABI").encode("ascii") not in diagnostics:
+            raise ValueError("wrong layout control failed for an unrelated reason")
     control.report["queueAbi"]["negativeControlsRejected"] = list(negatives)
 
 
