@@ -1,0 +1,90 @@
+#requires -Version 7.6
+<# .SYNOPSIS
+Checks hosted-only packing admission, complete receipt binding and failure retention.
+#>
+[CmdletBinding()]
+[OutputType([string])]
+param()
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+$PSNativeCommandUseErrorActionPreference = $true
+Import-Module (Join-Path $PSScriptRoot 'Bonsai.TestSupport.psm1')
+Import-Module (Join-Path $PSScriptRoot '../scripts/Bonsai.Ptq1Packing.psm1')
+$repo = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
+$expectedPath = Join-Path $repo 'config/swift.ptq1-export.json'
+$expected = Get-Content -LiteralPath $expectedPath -Raw | ConvertFrom-Json -AsHashtable -DateKind String
+$digest = (Get-FileHash -LiteralPath $expectedPath -Algorithm SHA256).Hash.ToLowerInvariant()
+$packing = [ordered]@{
+    schemaVersion = 1; kind = 'independent-current-weight-ptq1-packing'; status = 'matched'
+    sourceBytes = $expected.SourceBytes; sourceSha256 = $expected.SourceSha256
+    outputBytes = $expected.OutputBytes; outputSha256 = $expected.OutputSha256
+    convertedTensors = $expected.ConvertedTensorCount; reconstructedBlocks = $expected.ConvertedBlocks
+    exportReceiptSha256 = $digest; headerBytesPreservedExceptDeclaredEdits = $true
+    unchangedOtherTensorBytes = 57767936; workingPayloadBufferBytes = 131072
+}
+Assert-Ptq1PackingResult -Expected $expected -Export $expected -Packing $packing -ExportReceiptSha256 $digest
+foreach ($name in @($packing.Keys)) {
+    $changed = $packing | ConvertTo-Json | ConvertFrom-Json -AsHashtable -DateKind String
+    $changed[$name] = 'unbound'
+    Assert-Failure { Assert-Ptq1PackingResult -Expected $expected -Export $expected -Packing $changed -ExportReceiptSha256 $digest } "Changed independent packing field was accepted: $name."
+    [void]$changed.Remove($name)
+    Assert-Failure { Assert-Ptq1PackingResult -Expected $expected -Export $expected -Packing $changed -ExportReceiptSha256 $digest } "Missing independent packing field was accepted: $name."
+}
+foreach ($name in @('SchemaVersion', 'CodecCommit', 'SourceBytes', 'OutputBytes', 'SourceSha256', 'OutputSha256',
+    'SourceRevision', 'ConvertedTensorCount', 'ConvertedBlocks', 'ExactPq2ReconstructionVerified',
+    'NonPq2TensorBytesCopiedVerbatim', 'TokenizerMetadataSha256')) {
+    $changed = $expected | ConvertTo-Json | ConvertFrom-Json -AsHashtable -DateKind String
+    $changed[$name] = 'unbound'
+    Assert-Failure { Assert-Ptq1PackingResult -Expected $expected -Export $changed -Packing $packing -ExportReceiptSha256 $digest } "Changed export field was accepted: $name."
+    [void]$changed.Remove($name)
+    Assert-Failure { Assert-Ptq1PackingResult -Expected $expected -Export $changed -Packing $packing -ExportReceiptSha256 $digest } "Missing export field was accepted: $name."
+}
+$falseBoolean = $packing | ConvertTo-Json | ConvertFrom-Json -AsHashtable -DateKind String
+$falseBoolean.headerBytesPreservedExceptDeclaredEdits = 'true'
+Assert-Failure { Assert-Ptq1PackingResult -Expected $expected -Export $expected -Packing $falseBoolean -ExportReceiptSha256 $digest } 'String-valued success bypassed independent packing checks.'
+Assert-Failure { Assert-Ptq1PackingResult -Expected $expected -Export $expected -Packing $packing -ExportReceiptSha256 'missing' }
+
+$baseline = [ordered]@{
+    GITHUB_ACTIONS = 'true'; RUNNER_ENVIRONMENT = 'github-hosted'; GITHUB_REPOSITORY = 'symbiogenesis/SwiftBonsai2Runner'
+    GITHUB_REF = 'refs/heads/main'; RUNNER_ARCH = 'ARM64'; GITHUB_SHA = 'a' * 40
+    GITHUB_RUN_ID = '123'; GITHUB_RUN_ATTEMPT = '1'; BONSAI_TOOLS_SOURCE_ID = 'b' * 64
+}
+$saved = @{}
+foreach ($name in $baseline.Keys) { $saved[$name] = [Environment]::GetEnvironmentVariable($name) }
+$tempRoot = [IO.Path]::GetFullPath([IO.Path]::GetTempPath())
+$fixture = [IO.Path]::GetFullPath((Join-Path $tempRoot ('SwiftBonsai-Ptq1PackingControls-' + [guid]::NewGuid().ToString('N'))))
+try {
+    foreach ($name in $baseline.Keys) { [Environment]::SetEnvironmentVariable($name, $baseline[$name]) }
+    Assert-Ptq1PackingHostedContext
+    foreach ($name in $baseline.Keys) {
+        [Environment]::SetEnvironmentVariable($name, 'unbound')
+        $failure = Assert-Failure -PassThru { Assert-Ptq1PackingHostedContext }
+        Assert ($failure -like '*GitHub-hosted*owner-device execution is disabled*') "Invalid hosted context was accepted: $name."
+        [Environment]::SetEnvironmentVariable($name, $baseline[$name])
+    }
+    $evidence = Join-Path $fixture 'evidence'
+    Assert-Failure {
+        & (Join-Path $repo 'scripts/Invoke-Ptq1PackingQualification.ps1') -DataDirectory (Join-Path $fixture 'data') -EvidenceDirectory $evidence -ToolPath (Join-Path $fixture 'absent.exe')
+    } 'Missing tool unexpectedly reached download or packing.'
+    $failed = Get-Content -LiteralPath (Join-Path $evidence 'qualification.json') -Raw | ConvertFrom-Json -DateKind String
+    Assert ($failed.status -ceq 'failed' -and $failed.phase -ceq 'intake' -and
+        -not $failed.modelProcessStarted -and -not $failed.ownerDeviceExecuted -and -not $failed.defaultMayChange -and
+        $failed.execution.revision -ceq $baseline.GITHUB_SHA -and $failed.execution.runId -ceq $baseline.GITHUB_RUN_ID) 'Pre-download failure lost its exact execution or qualification boundary.'
+    $manifest = Get-Content -LiteralPath (Join-Path $evidence 'manifest.json') -Raw | ConvertFrom-Json -DateKind String
+    foreach ($file in $manifest.files) {
+        $path = Join-Path $evidence $file.file
+        Assert ($file.bytes -eq (Get-Item -LiteralPath $path).Length -and
+            $file.sha256 -ceq (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash.ToLowerInvariant()) 'Failed packing attempt retained an unbound evidence file.'
+    }
+    $reportPath = Join-Path $evidence 'qualification.json'
+    $retained = [IO.File]::ReadAllText($reportPath)
+    Assert-Failure { Save-Ptq1PackingQualification -Report @{ oversized = 'x' * 1048577 } -Path $reportPath }
+    Assert ([IO.File]::ReadAllText($reportPath) -ceq $retained) 'An oversized update replaced the last complete packing receipt.'
+    Assert-Failure { Save-Ptq1PackingQualification -Report @{ status = 'failed' } -Path $evidence }
+    Assert (@(Get-ChildItem -LiteralPath $fixture -Filter '*.tmp').Count -eq 0) 'Failed receipt replacement left a temporary file.'
+} finally {
+    foreach ($name in $baseline.Keys) { [Environment]::SetEnvironmentVariable($name, $saved[$name]) }
+    if (-not $fixture.StartsWith($tempRoot, [StringComparison]::OrdinalIgnoreCase)) { throw 'Packing-control cleanup escaped its temporary root.' }
+    if ([IO.Directory]::Exists($fixture)) { Remove-Item -LiteralPath $fixture -Recurse -Force }
+}
+'Hosted PTQ1 packing context, complete receipts and failure retention checks passed.'

@@ -1,0 +1,47 @@
+name: PTQ1 independent complete packing qualification
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ptq1-hosted-packing-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  packing:
+    if: github.ref == 'refs/heads/main'
+    runs-on: windows-11-arm
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/bonsai-tools
+      - name: Reject owner-device, stale-source and incomplete packing receipts
+        shell: pwsh
+        run: ./tests/Test-Ptq1PackingQualification.ps1
+      - name: Reproduce the exact export and independently verify every block
+        timeout-minutes: 30
+        shell: pwsh
+        working-directory: ${{ runner.temp }}
+        env:
+          RUNNER_ENVIRONMENT: ${{ runner.environment }}
+        run: |
+          Set-StrictMode -Version Latest
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          $evidence = Join-Path $env:RUNNER_TEMP ('SwiftBonsai-Ptq1PackingEvidence-' + [guid]::NewGuid().ToString('N'))
+          "BONSAI_PTQ1_PACKING_EVIDENCE=$evidence" >> $env:GITHUB_ENV
+          $data = Join-Path $env:RUNNER_TEMP ('SwiftBonsai-Ptq1PackingData-' + [guid]::NewGuid().ToString('N'))
+          & (Join-Path $env:GITHUB_WORKSPACE 'scripts/Invoke-Ptq1PackingQualification.ps1') -DataDirectory $data -EvidenceDirectory $evidence -ToolPath $env:BONSAI_TOOLS_PATH | ConvertTo-Json -Depth 12
+          @('Every original PQ2 symbol/raw scale, preserved metadata and non-PQ tensor byte was independently checked against the reproduced exact PTQ1 export.',
+            'This job runs on GitHub-hosted hardware; no owner-device inference, diagnostics or benchmark was performed.',
+            'Independent review and digest-verified durable archival are required before scoring the packing gate.',
+            'Activation/logit/state parity, adapter provenance, quality, benefit and default promotion remain separate gates.') | Add-Content -LiteralPath $env:GITHUB_STEP_SUMMARY
+      - name: Retain source-bound complete packing receipts including failures
+        if: always() && env.BONSAI_PTQ1_PACKING_EVIDENCE != ''
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: ptq1-complete-packing-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ env.BONSAI_PTQ1_PACKING_EVIDENCE }}/*.json
+          if-no-files-found: error
+          retention-days: 90

@@ -50,6 +50,8 @@
         "tests/Test-RuntimePromotion.ps1",
         "scripts/Bonsai.Ptq1.psm1", "scripts/Build-NativePtq1CaptureTools.ps1",
         "scripts/Invoke-NativePtq1Numerics.ps1", "tests/Test-NativePtq1CaptureTools.ps1",
+        "scripts/Invoke-Ptq1PackingQualification.ps1", "scripts/Bonsai.Ptq1Packing.psm1", "tests/Test-Ptq1PackingQualification.ps1",
+        ".github/workflows/ptq1-packing-qualification.yml",
         "tools/native-reference/**", ".github/workflows/native-ptq1-numerics.yml",
         "scripts/Invoke-HeadlessPublisherStartup.ps1", "tests/Test-HeadlessPublisherStartup.ps1",
         "docs/evidence/headless-publisher-startup.json", "docs/runtime-candidates/headless-ucrt-argv.json",
