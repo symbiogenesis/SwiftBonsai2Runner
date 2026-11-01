@@ -68,10 +68,32 @@ namespace Bonsai
         /// <returns>Whether members remained when cleanup started.</returns>
         public bool Stop(int milliseconds)
         {
+            return StopCore(milliseconds, 0);
+        }
+
+        /// <summary>Allows just-exited members' Job accounting to settle before classifying survivors.</summary>
+        /// <param name="milliseconds">The total positive cleanup interval, including natural exit grace.</param>
+        /// <returns>Whether members remained after at most 250 milliseconds of natural exit grace.</returns>
+        public bool StopAfterExit(int milliseconds)
+        {
+            return StopCore(milliseconds, 250);
+        }
+
+        private bool StopCore(int milliseconds, int naturalExitMilliseconds)
+        {
             ArgumentOutOfRangeException.ThrowIfNegativeOrZero(milliseconds);
-            bool remaining = ActiveProcesses() != 0;
-            if (!NativeMethods.TerminateJobObject(handle, 1)) { throw new Win32Exception(Marshal.GetLastPInvokeError()); }
             Stopwatch timer = Stopwatch.StartNew();
+            uint active = ActiveProcesses();
+            int grace = Math.Min(naturalExitMilliseconds, milliseconds);
+            while (active != 0 && timer.ElapsedMilliseconds < grace)
+            {
+                Thread.Sleep(checked((int)Math.Max(0, Math.Min(10, grace - timer.ElapsedMilliseconds))));
+                active = ActiveProcesses();
+            }
+            bool remaining = active != 0;
+            // Retain explicit termination even for an apparently empty Job. The
+            // grace never removes kill-on-close ownership or the empty-Job gate.
+            if (!NativeMethods.TerminateJobObject(handle, 1)) { throw new Win32Exception(Marshal.GetLastPInvokeError()); }
             while (ActiveProcesses() != 0)
             {
                 if (timer.ElapsedMilliseconds >= milliseconds) { throw new TimeoutException("Bootstrap Job did not become empty."); }
@@ -222,7 +244,12 @@ try { $child.StandardInput.Close(); $child.WaitForExit(); exit $child.ExitCode }
             if ($null -ne $job) { $null = $job.Stop(10000) } else { $process.Kill($true) }
             if (-not $process.WaitForExit(10000)) { throw "Native process did not terminate: $Executable" }
         }
-        if ($null -ne $job) { $leftDescendants = $job.Stop(10000) }
+        if ($null -ne $job) {
+            # Process signaling can precede removal from Job active accounting.
+            # Only normal root exit permits a short natural-empty grace; timeout
+            # and finally cleanup still terminate the complete Job immediately.
+            $leftDescendants = if ($timedOut) { $job.Stop(10000) } else { $job.StopAfterExit(10000) }
+        }
         # A descendant may keep a redirected pipe open after the root exits.
         if (-not $stdout.Wait(10000) -or -not $stderr.Wait(10000)) { throw "Native process output drain timed out: $Executable" }
         $result = [pscustomobject]@{

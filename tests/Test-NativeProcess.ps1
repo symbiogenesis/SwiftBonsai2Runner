@@ -8,7 +8,7 @@ checks exercise process mechanics without models, builds, or benchmarks.
 #>
 [CmdletBinding()]
 [OutputType([string])]
-param([Parameter(Mandatory)][ValidateSet('Capture', 'Failure', 'Environment', 'Timeout', 'Drain', 'OwnedCapture', 'OwnedFailure', 'OwnedEnvironment', 'OwnedTimeout', 'OwnedDrain', 'OwnedGate', 'OwnedOwnerExit')][string]$Case)
+param([Parameter(Mandatory)][ValidateSet('Capture', 'Failure', 'Environment', 'Timeout', 'Drain', 'OwnedCapture', 'OwnedFailure', 'OwnedEnvironment', 'OwnedTimeout', 'OwnedDrain', 'OwnedGate', 'OwnedOwnerExit', 'OwnedExitAccounting')][string]$Case)
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
@@ -66,6 +66,18 @@ switch ($Mode) {
     'Sleep' {
         [IO.File]::WriteAllText($Values[0], [string]$PID)
         Start-Sleep -Seconds 300
+    }
+    'Grace' {
+        [IO.File]::WriteAllText($Values[0], [string]$PID)
+        $timer = [Diagnostics.Stopwatch]::StartNew()
+        while (-not [IO.File]::Exists($Values[0] + '.release')) {
+            if ($timer.ElapsedMilliseconds -ge 30000) { exit 124 }
+            [Threading.Thread]::Sleep(5)
+        }
+        # A naturally finishing Job member must survive the accounting grace;
+        # eager TerminateJobObject would replace this independent exit code.
+        [Threading.Thread]::Sleep(75)
+        exit 37
     }
     { $_ -in @('Tree', 'Drain') } {
         $start = [Diagnostics.ProcessStartInfo]::new([Environment]::ProcessPath)
@@ -211,6 +223,45 @@ switch ($Case) {
         } finally {
             if (-not $processIds.Count -and [IO.File]::Exists($marker)) { $processIds = @([IO.File]::ReadAllText($marker) | ConvertFrom-Json -DateKind String) }
             foreach ($processId in $processIds) { Stop-TestProcess -ProcessId ([int]$processId) }
+        }
+    }
+    'OwnedExitAccounting' {
+        if (-not $IsWindows) { throw 'Bootstrap exit-accounting checks require Windows.' }
+        & (Get-Module Bonsai.Native) { Initialize-BonsaiBootstrapJob }
+        foreach ($naturalExit in @($true, $false)) {
+            $job = [Bonsai.BootstrapJob]::new()
+            $process = $null
+            $marker = Join-Path $scratch ('accounting-' + [string]$naturalExit + '.pid')
+            try {
+                $start = [Diagnostics.ProcessStartInfo]::new($executable)
+                $start.UseShellExecute = $false
+                $start.CreateNoWindow = $true
+                $start.WorkingDirectory = $workingDirectory
+                $mode = if ($naturalExit) { 'Grace' } else { 'Sleep' }
+                foreach ($argument in @('-NoLogo', '-NoProfile', '-NonInteractive', '-File', $probe, '-Mode', $mode, $marker)) { $start.ArgumentList.Add($argument) }
+                $process = [Diagnostics.Process]::Start($start)
+                $job.Assign($process)
+                $deadline = [Diagnostics.Stopwatch]::StartNew()
+                while (-not [IO.File]::Exists($marker) -and $deadline.ElapsedMilliseconds -lt 30000 -and -not $process.HasExited) { [Threading.Thread]::Sleep(10) }
+                Assert ([IO.File]::Exists($marker) -and -not $process.HasExited) 'The accounting control did not reach its owned waiting state.'
+                if ($naturalExit) { [IO.File]::WriteAllText($marker + '.release', 'finish') }
+                $remaining = $job.StopAfterExit(1000)
+                Assert ($process.WaitForExit(1000)) 'The bounded accounting cleanup left an owned member running.'
+                if ($naturalExit) {
+                    Assert (-not $remaining -and $process.ExitCode -eq 37) 'A naturally finishing member was killed or classified as a surviving descendant.'
+                } else {
+                    Assert ($remaining -and $process.ExitCode -eq 1) 'A member surviving the grace was accepted or escaped Job termination.'
+                }
+            } finally {
+                try { $null = $job.Stop(10000) } finally {
+                    $job.Dispose()
+                    if ($null -ne $process) {
+                        try {
+                            if (-not $process.HasExited) { $process.Kill($true); $null = $process.WaitForExit(1000) }
+                        } finally { $process.Dispose() }
+                    }
+                }
+            }
         }
     }
     'OwnedGate' {
