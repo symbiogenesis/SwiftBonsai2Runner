@@ -245,9 +245,8 @@ $request = Join-Path $data 'swift-census-request.json'
    outputPath = 'D:\Reports\new-swift-census.json'; dataDirectory = $data } |
     ConvertTo-Json | Set-Content -LiteralPath $request -Encoding utf8NoBOM
 & $maintenanceExecutable gguf --request $request
-Import-Module ./scripts/Bonsai.Tools.psm1
-Invoke-BonsaiTool -Command cpu-check -ToolPath $maintenanceExecutable -Request @{ dataDirectory = $data; profile = 'swift-pq2-assessment'; checkOnly = $true }
-Invoke-BonsaiTool -Command cpu-check -ToolPath $maintenanceExecutable -TimeoutSeconds 300 -Request @{ dataDirectory = $data; profile = 'swift-pq2-assessment' }
+& $maintenanceExecutable cpu-check --json (@{ dataDirectory = $data; profile = 'swift-pq2-assessment'; checkOnly = $true } | ConvertTo-Json -Depth 64 -Compress) | ConvertFrom-Json -AsHashtable
+& $maintenanceExecutable cpu-check --json (@{ dataDirectory = $data; profile = 'swift-pq2-assessment' } | ConvertTo-Json -Depth 64 -Compress) | ConvertFrom-Json -AsHashtable
 ```
 
 Optional exact export and adapter assessment:
@@ -258,9 +257,9 @@ $request = Join-Path $data 'swift-export-request.json'
 @{ operation = 'export-ptq1'; modelPath = $model; outputPath = $derived; dataDirectory = $data; timeoutSeconds = 240 } |
     ConvertTo-Json | Set-Content -LiteralPath $request -Encoding utf8NoBOM
 & $maintenanceExecutable gguf --request $request
-Invoke-BonsaiTool -Command cpu-check -ToolPath $maintenanceExecutable -TimeoutSeconds 300 -Request @{ dataDirectory = $data; profile = 'swift-pq2-assessment'; useRepackedPtq1 = $true }
+& $maintenanceExecutable cpu-check --json (@{ dataDirectory = $data; profile = 'swift-pq2-assessment'; useRepackedPtq1 = $true } | ConvertTo-Json -Depth 64 -Compress) | ConvertFrom-Json -AsHashtable
 ./scripts/Get-Adapter.ps1 -DataDirectory $data
-Invoke-BonsaiTool -Command cpu-check -ToolPath $maintenanceExecutable -TimeoutSeconds 300 -Request @{ dataDirectory = $data; profile = 'swift-pq2-assessment'; useRepackedPtq1 = $true; useAbliterateLora = $true }
+& $maintenanceExecutable cpu-check --json (@{ dataDirectory = $data; profile = 'swift-pq2-assessment'; useRepackedPtq1 = $true; useAbliterateLora = $true } | ConvertTo-Json -Depth 64 -Compress) | ConvertFrom-Json -AsHashtable
 ```
 
 Inspection/export use a trusted prebuilt `bonsai-tools.exe` selected as
@@ -346,17 +345,15 @@ publisher runtime's known X2 DLL startup failure is tracked under
 Inspect its plan without loading a model:
 
 ```powershell
-Import-Module ./scripts/Bonsai.Tools.psm1
-Invoke-BonsaiTool -Command qualification -Request @{ operation = 'screen-plan' }
+& $env:BONSAI_TOOLS_PATH qualification --json (@{ operation = 'screen-plan' } | ConvertTo-Json -Depth 64 -Compress) | ConvertFrom-Json -AsHashtable
 ```
 
 Inspect a capture offline:
 
 ```powershell
-Import-Module ./scripts/Bonsai.Tools.psm1
-Invoke-BonsaiTool -Command qualification -Request @{
+& $env:BONSAI_TOOLS_PATH qualification --json (@{
     operation = 'screen-file-score'; evidencePath = 'C:/external/screen-evidence.json'; reviewPath = $null
-}
+} | ConvertTo-Json -Depth 64 -Compress) | ConvertFrom-Json -AsHashtable
 ```
 
 The screen verifies artifacts/resources, retains failures and compares median decode

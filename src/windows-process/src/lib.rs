@@ -41,6 +41,18 @@ pub fn process_creation_file_time(id: u32) -> io::Result<u64> {
     native::process_creation_time(id)
 }
 
+/// Observes the direct caller PID and Windows creation FILETIME.
+///
+/// The parent's creation must precede this process, preventing PID reuse from
+/// admitting a replacement caller. The supervisor must retain the returned
+/// identity with `ParentProcess::open` before beginning owned work.
+///
+/// # Errors
+/// Rejects inaccessible, exited or replaced callers and failed process snapshots.
+pub fn parent_process_identity() -> io::Result<(u32, u64)> {
+    native::caller::identity()
+}
+
 /// A verified Authenticode leaf signer from the Windows trust provider.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct AuthenticodeSigner {

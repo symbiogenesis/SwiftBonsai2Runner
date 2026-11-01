@@ -10,7 +10,12 @@ fn initialize_startup(request: &mut serde_json::Value) -> bonsai_tools::Result<(
         object.remove("parentProcessId"),
         object.remove("parentCreationTimeFileTime"),
     ) {
-        (None, None) => None,
+        (None, None) => {
+            #[cfg(windows)]
+            { Some(bonsai_windows_process::parent_process_identity().map_err(|error| error.to_string())?) }
+            #[cfg(not(windows))]
+            { None }
+        },
         (Some(id), Some(creation)) => {
             let id = id
                 .as_u64()
@@ -50,7 +55,7 @@ fn execute() -> bonsai_tools::Result<serde_json::Value> {
     let command = if command == "chat" { "chat-launch" } else { command };
     let startup = matches!(
         Some(command),
-        Some("source-build" | "chat-launch" | "chat-prepare")
+        Some("source-build" | "chat-launch" | "chat-prepare" | "hexagon-tools" | "tool-process" | "build-tools" | "provision" | "artifact" | "doctor")
     ) || (command == "speech-build"
         && matches!(
             request["operation"].as_str(),
@@ -62,7 +67,18 @@ fn execute() -> bonsai_tools::Result<serde_json::Value> {
     if startup {
         initialize_startup(&mut request)?;
     }
+    #[cfg(windows)]
+    if !startup && needs_caller(command, &request)
+        && request.get("parentProcessId").is_none()
+        && request.get("parentCreationTimeFileTime").is_none()
+    {
+        let (id, creation) = bonsai_windows_process::parent_process_identity().map_err(|error| error.to_string())?;
+        request["parentProcessId"] = id.into();
+        request["parentCreationTimeFileTime"] = creation.into();
+    }
     match Some(command) {
+        Some("tool-process") => bonsai_tools::tool_process::run(request),
+        Some("hexagon-tools") => bonsai_tools::hexagon_tools::run(request),
         Some("credentials") => bonsai_tools::credentials::run(request),
         Some("completion") => bonsai_tools::completion::run(request),
         Some("host-cpu") => bonsai_tools::host_cpu::run(&request),
@@ -104,6 +120,14 @@ fn execute() -> bonsai_tools::Result<serde_json::Value> {
         Some("startup-diagnostics") => bonsai_tools::startup_diagnostics::run(request),
         _ => Err("Unknown maintenance command.".into()),
     }
+}
+
+#[cfg(windows)]
+fn needs_caller(command: &str, request: &serde_json::Value) -> bool {
+    matches!(command, "completion" | "runtime-verify" | "inference-capabilities" | "cpu-check" | "server-plan" | "native-qualification" | "publisher-startup")
+        || (command == "cpu-evaluation" && request["operation"] == "capture")
+        || (command == "speech-evaluation" && request["operation"] == "session")
+        || (command == "qualification" && matches!(request["operation"].as_str(), Some("run" | "screen-run" | "capture" | "screen-capture")))
 }
 
 fn main() -> ExitCode {

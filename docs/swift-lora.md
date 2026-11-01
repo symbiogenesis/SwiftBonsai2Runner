@@ -173,15 +173,14 @@ scale-one evidence cannot satisfy it. Select `qualification: app-scale-1.3` in t
 manual workflow, or inspect it without inference:
 
 ```powershell
-Import-Module ./scripts/Bonsai.Tools.psm1
-Invoke-BonsaiTool -Command qualification -Request @{
+& $env:BONSAI_TOOLS_PATH qualification --json (@{
     operation = 'plan'; qualificationProfile = 'app-scale-1.3'
     weightRepresentation = 'current-repacked-PTQ1_0'
-}
-Invoke-BonsaiTool -Command qualification -Request @{
+} | ConvertTo-Json -Depth 64 -Compress) | ConvertFrom-Json -AsHashtable
+& $env:BONSAI_TOOLS_PATH qualification --json (@{
     operation = 'file-score'; qualificationProfile = 'app-scale-1.3'
     evidencePath = 'C:/external/evidence.json'; reviewPath = 'C:/external/review.json'
-}
+} | ConvertTo-Json -Depth 64 -Compress) | ConvertFrom-Json -AsHashtable
 ```
 
 `AppSettingGatesPassed` reports only these matched LoRA gates.
@@ -227,10 +226,9 @@ its activation quantization differs.
 Inspect the plan locally without model loading or benchmarking:
 
 ```powershell
-Import-Module ./scripts/Bonsai.Tools.psm1
-Invoke-BonsaiTool -Command qualification -Request @{
+& $env:BONSAI_TOOLS_PATH qualification --json (@{
     operation = 'plan'; weightRepresentation = 'PQ2_0'
-}
+} | ConvertTo-Json -Depth 64 -Compress) | ConvertFrom-Json -AsHashtable
 ```
 
 Native `qualification` operation `run` constructs and verifies the complete capture
@@ -266,11 +264,10 @@ visible.
 After external human review, score the capture without loading a model:
 
 ```powershell
-Import-Module ./scripts/Bonsai.Tools.psm1
-Invoke-BonsaiTool -Command qualification -Request @{
+& $env:BONSAI_TOOLS_PATH qualification --json (@{
     operation = 'file-score'; qualificationProfile = 'standard-scale-one'
     evidencePath = 'C:/external/evidence.json'; reviewPath = 'C:/external/review.json'
-}
+} | ConvertTo-Json -Depth 64 -Compress) | ConvertFrom-Json -AsHashtable
 ```
 
 Supply a genuine review of every sample in this form:

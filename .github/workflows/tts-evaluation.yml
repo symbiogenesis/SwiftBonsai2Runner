@@ -58,11 +58,10 @@ jobs:
           Set-StrictMode -Version Latest
           $ErrorActionPreference = 'Stop'
           $data = Join-Path $env:RUNNER_TEMP 'Bonsai-TtsEvaluationData'
-          Import-Module (Join-Path $env:GITHUB_WORKSPACE 'scripts/Bonsai.Tools.psm1')
-          $result = Invoke-BonsaiTool -Command speech-evaluation -ToolPath $env:BONSAI_TOOLS_PATH -Request @{
+          $result = & $env:BONSAI_TOOLS_PATH speech-evaluation --json (@{
             operation = 'evaluate'; repositoryRoot = $env:GITHUB_WORKSPACE; dataDirectory = $data
             repetitions = [int]$env:EVALUATION_REPETITIONS; responseFormat = $env:EVALUATION_FORMAT
-          }
+          } | ConvertTo-Json -Depth 64 -Compress) | ConvertFrom-Json -AsHashtable
           $result | ConvertTo-Json -Depth 8
           $report = Get-Content -LiteralPath $result.ReportPath -Raw | ConvertFrom-Json
           @('CPU: ' + $report.Cpu,

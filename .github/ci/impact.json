@@ -1,95 +1,238 @@
 {
   "shared": [
-    "Cargo.toml", "Cargo.lock", "rust-toolchain.toml", "rustfmt.toml", "clippy.toml", ".cargo/**",
-    ".github/ci/**", "tools/ci/**", ".github/workflows/foundation.yml", ".github/workflows/premerge.yml", ".github/actions/rust-toolchain/**",
-    ".github/actions/check-rust/**", ".github/actions/native-speech/**",
-    "config/rust-packages.json", "tools/ci/src/checks/**", ".github/actions/ci-tool/**"
+    "Cargo.toml",
+    "Cargo.lock",
+    "rust-toolchain.toml",
+    "rustfmt.toml",
+    "clippy.toml",
+    ".cargo/**",
+    ".github/ci/**",
+    "tools/ci/**",
+    ".github/workflows/foundation.yml",
+    ".github/workflows/premerge.yml",
+    ".github/actions/rust-toolchain/**",
+    ".github/actions/check-rust/**",
+    ".github/actions/native-speech/**",
+    "config/rust-packages.json",
+    "tools/ci/src/checks/**",
+    ".github/actions/ci-tool/**"
   ],
-  "ignored": ["*.md", "docs/**", ".gitignore"],
+  "ignored": [
+    "*.md",
+    "docs/**",
+    ".gitignore"
+  ],
   "package_inputs": {
-    "bonsai-cpu-policy": ["config/runtime.lock.json", "config/swift-assessment.lock.json", "config/swift-lora.lock.json", "config/swift.ptq1-export.json", "config/profiles/reference-cpu.json"],
-    "bonsai-broker": ["config/runtime.lock.json", "config/swift-assessment.lock.json", "config/swift.metadata.json", "config/profiles/reference-cpu.json", "config/prism-inference.lock.json"],
-    "bonsai-tools": ["LICENSE", "NOTICE", "config/runtime.lock.json", "config/swift-assessment.lock.json", "config/swift-lora.lock.json", "config/swift.ptq1-export.json", "config/swift-lora.qualification.json", "config/swift-lora.app-qualification.json", "config/swift.metadata.json", "tests/fixtures/lora-qualification-v1.json", "src/speech-asr/model.lock.json", "src/speech-tts/model*.lock.json", "config/native-speech.lock.json", "config/prism-inference.lock.json"]
+    "bonsai-cpu-policy": [
+      "config/runtime.lock.json",
+      "config/swift-assessment.lock.json",
+      "config/swift-lora.lock.json",
+      "config/swift.ptq1-export.json",
+      "config/profiles/reference-cpu.json"
+    ],
+    "bonsai-broker": [
+      "config/runtime.lock.json",
+      "config/swift-assessment.lock.json",
+      "config/swift.metadata.json",
+      "config/profiles/reference-cpu.json",
+      "config/prism-inference.lock.json"
+    ],
+    "bonsai-tools": [
+      "LICENSE",
+      "NOTICE",
+      "config/runtime.lock.json",
+      "config/swift-assessment.lock.json",
+      "config/swift-lora.lock.json",
+      "config/swift.ptq1-export.json",
+      "config/swift-lora.qualification.json",
+      "config/swift-lora.app-qualification.json",
+      "config/swift.metadata.json",
+      "tests/fixtures/lora-qualification-v1.json",
+      "src/speech-asr/model.lock.json",
+      "src/speech-tts/model*.lock.json",
+      "config/native-speech.lock.json",
+      "config/prism-inference.lock.json"
+    ]
   },
   "groups": {
-    "broker": {"packages": ["bonsai-broker", "bonsai-speech-service"]},
-    "ui": {"packages": ["bonsai-chat"]},
-    "speech_asr": {"packages": ["bonsai-speech-asr"]},
-    "speech_tts": {"packages": ["bonsai-speech-tts"]},
-    "broker_checks": {"groups": ["broker", "ui"]},
-    "speech": {"groups": ["speech_asr", "speech_tts"]},
+    "broker": {
+      "packages": [
+        "bonsai-broker",
+        "bonsai-speech-service"
+      ]
+    },
+    "ui": {
+      "packages": [
+        "bonsai-chat"
+      ]
+    },
+    "speech_asr": {
+      "packages": [
+        "bonsai-speech-asr"
+      ]
+    },
+    "speech_tts": {
+      "packages": [
+        "bonsai-speech-tts"
+      ]
+    },
+    "broker_checks": {
+      "groups": [
+        "broker",
+        "ui"
+      ]
+    },
+    "speech": {
+      "groups": [
+        "speech_asr",
+        "speech_tts"
+      ]
+    },
     "maintenance": {
-      "packages": ["*"], "exclude_packages": ["bonsai-broker", "bonsai-chat", "bonsai-speech-asr", "bonsai-speech-tts", "bonsai-speech-service"],
-      "groups": ["tools"]
+      "packages": [
+        "*"
+      ],
+      "exclude_packages": [
+        "bonsai-broker",
+        "bonsai-chat",
+        "bonsai-speech-asr",
+        "bonsai-speech-tts",
+        "bonsai-speech-service"
+      ],
+      "groups": [
+        "tools"
+      ]
     },
     "tools": {
-      "packages": ["bonsai-tools"], "groups": ["scripts", "release", "speech"],
-      "paths": [".github/actions/bonsai-tools/**", ".github/actions/use-bonsai-tools/**"]
-    },
-    "rust_lanes": {"groups": ["broker_checks", "speech", "maintenance"]},
-    "foundation_scripts": {
-      "packages": ["bonsai-tools"],
+      "packages": [
+        "bonsai-tools"
+      ],
+      "groups": [
+        "scripts",
+        "release",
+        "speech"
+      ],
       "paths": [
-        "scripts/Doctor.ps1", "scripts/Get-Inference.ps1",
-        "scripts/Invoke-HexagonPreflight.ps1", "scripts/Bonsai.Hexagon.psm1", "tests/Test-HexagonPreflight.ps1",
-        "tools/hexagon/**", "config/hexagon-experiment.lock.json", "config/hexagon-signed-q2-candidate.lock.json", ".github/workflows/hexagon-qualification.yml",
-        "scripts/Build-HexagonDispatch.ps1", "scripts/Build-HexagonPackedArtifact.ps1", "scripts/Invoke-HexagonDispatch.ps1", "scripts/Bonsai.HexagonDispatch.psm1",
-        "config/hexagon-dispatch.lock.json", "tests/Test-HexagonCapture.ps1",
-        "scripts/Invoke-HexagonSessionProbe.ps1", "scripts/Bonsai.HexagonSession.psm1",
-        "scripts/Bonsai.HexagonIdentity.psm1", "scripts/Bonsai.HexagonPolicy.psm1",
-        "scripts/Get-Model.ps1", "scripts/Start-Chat.ps1",
-        "scripts/Get-SpeechModels.ps1", "scripts/Bonsai.SpeechModels.psm1", "tests/Test-SpeechModels.ps1",
+        ".github/actions/bonsai-tools/**",
+        ".github/actions/use-bonsai-tools/**"
+      ]
+    },
+    "rust_lanes": {
+      "groups": [
+        "broker_checks",
+        "speech",
+        "maintenance"
+      ]
+    },
+    "foundation_scripts": {
+      "packages": [
+        "bonsai-tools"
+      ],
+      "paths": [
+        "tools/hexagon/**",
+        "config/hexagon-experiment.lock.json",
+        "config/hexagon-signed-q2-candidate.lock.json",
+        ".github/workflows/hexagon-qualification.yml",
+        "config/hexagon-dispatch.lock.json",
         "config/native-speech.lock.json",
         ".github/workflows/tts-evaluation.yml",
-        "tools/canary-asr/model.lock.json", "tools/canary-asr/tokenizer.lock.json", "tools/qwen-tts/model.lock.json",
-        "scripts/Bonsai.Inference.psm1",
-        "scripts/Bonsai.Common.psm1", "scripts/Bonsai.Tools.psm1", "scripts/Bonsai.Native.psm1",
-        "tests/Test-Foundation.ps1", "tests/Test-ChatInstance.ps1", "tests/Test-Inference*.ps1",
-        "tests/Test-RuntimePromotion.ps1",
-        "scripts/Build-NativePtq1CaptureTools.ps1",
-        "tests/Test-NativePtq1CaptureTools.ps1",
+        "tools/canary-asr/model.lock.json",
+        "tools/canary-asr/tokenizer.lock.json",
+        "tools/qwen-tts/model.lock.json",
+        "scripts/Bonsai.Common.psm1",
+        "scripts/Bonsai.Tools.psm1",
+        "scripts/Bonsai.Native.psm1",
         ".github/workflows/ptq1-packing-qualification.yml",
-        "tools/native-reference/**", ".github/workflows/native-ptq1-numerics.yml",
-        "docs/evidence/headless-publisher-startup.json", "docs/runtime-candidates/headless-ucrt-argv.json",
-        "tests/Test-ToolBootstrap.ps1", "tests/*Support*", "tests/fixtures/**",
-        "config/prism-inference.lock.json", "config/model.metadata.json"
+        "tools/native-reference/**",
+        ".github/workflows/native-ptq1-numerics.yml",
+        "docs/evidence/headless-publisher-startup.json",
+        "docs/runtime-candidates/headless-ucrt-argv.json",
+        "tests/Test-ToolBootstrap.ps1",
+        "tests/*Support*",
+        "tests/fixtures/**",
+        "config/prism-inference.lock.json",
+        "config/model.metadata.json"
       ]
     },
     "native_scripts": {
-      "packages": ["bonsai-tools"],
+      "packages": [
+        "bonsai-tools"
+      ],
       "paths": [
-        "scripts/Bonsai.Common.psm1", "scripts/Bonsai.Tools.psm1", "scripts/Bonsai.Native.psm1",
-        "scripts/Build-Engine.ps1", "scripts/Invoke-*Completion.ps1", "scripts/Invoke-Lora*.ps1",
-        "scripts/Bonsai.Build.psm1",
+        "scripts/Bonsai.Common.psm1",
+        "scripts/Bonsai.Tools.psm1",
+        "scripts/Bonsai.Native.psm1",
+        "scripts/Invoke-*Completion.ps1",
+        "scripts/Invoke-Lora*.ps1",
         ".github/workflows/x2-cpu-evaluation.yml",
-        "tests/Test-NativeProcess.ps1", "tests/Test-CompletionSupervision.ps1",
-        "tests/Test-EngineBuild.ps1", "tests/Test-Lora*.ps1", "tests/*Support*", "tests/fixtures/**",
-        ".github/workflows/swift-lora-qualification.yml", ".github/workflows/swift-ptq1-screen.yml",
+        "tests/Test-NativeProcess.ps1",
+        "tests/Test-Lora*.ps1",
+        "tests/*Support*",
+        "tests/fixtures/**",
+        ".github/workflows/swift-lora-qualification.yml",
+        ".github/workflows/swift-ptq1-screen.yml",
         ".github/workflows/native-runtime-acceptance.yml"
       ]
     },
-    "scripts": {"groups": ["foundation_scripts", "native_scripts"]},
+    "scripts": {
+      "groups": [
+        "foundation_scripts",
+        "native_scripts"
+      ]
+    },
     "release": {
-      "packages": ["bonsai-tools"],
+      "packages": [
+        "bonsai-tools"
+      ],
       "paths": [
-        "scripts/Get-Engine.ps1", "scripts/Get-Adapter.ps1",
         "scripts/Bonsai.Common.psm1",
-        "scripts/Bonsai.Tools.psm1", "scripts/Bonsai.Native.psm1",
-        "tests/*Support*", "config/runtime.lock.json", "config/swift-assessment.lock.json",
-        "config/swift-lora.lock.json", "config/swift.ptq1-export.json", "config/profiles/**"
+        "scripts/Bonsai.Tools.psm1",
+        "scripts/Bonsai.Native.psm1",
+        "tests/*Support*",
+        "config/runtime.lock.json",
+        "config/swift-assessment.lock.json",
+        "config/swift-lora.lock.json",
+        "config/swift.ptq1-export.json",
+        "config/profiles/**"
       ]
     },
     "standards": {
-      "paths": ["tests/Test-Standards.ps1", "tests/Test-ProcessLifecycle.ps1", "tools/validation/**", "global.json", "PSScriptAnalyzerSettings.psd1", ".editorconfig"],
-      "observes": ["**/*.ps1", "**/*.psm1", "**/*.psd1"]
+      "paths": [
+        "tests/Test-Standards.ps1",
+        "tools/validation/**",
+        "global.json",
+        "PSScriptAnalyzerSettings.psd1",
+        ".editorconfig"
+      ],
+      "observes": [
+        "**/*.ps1",
+        "**/*.psm1",
+        "**/*.psd1"
+      ]
     }
   },
   "matrices": {
-    "broker_lanes": {"core": "broker", "ui": "ui"},
-    "speech_lanes": {"asr": "speech_asr", "tts": "speech_tts"},
-    "script_lanes": {"foundation": "foundation_scripts", "native": "native_scripts"}
+    "broker_lanes": {
+      "core": "broker",
+      "ui": "ui"
+    },
+    "speech_lanes": {
+      "asr": "speech_asr",
+      "tts": "speech_tts"
+    },
+    "script_lanes": {
+      "foundation": "foundation_scripts",
+      "native": "native_scripts"
+    }
   },
   "workflows": {
-    "foundation": {"broker": "broker_checks", "speech": "speech", "maintenance": "maintenance", "standards": "standards", "foundation-tests": "scripts", "release-integration": "release"}
+    "foundation": {
+      "broker": "broker_checks",
+      "speech": "speech",
+      "maintenance": "maintenance",
+      "standards": "standards",
+      "foundation-tests": "scripts",
+      "release-integration": "release"
+    }
   }
 }

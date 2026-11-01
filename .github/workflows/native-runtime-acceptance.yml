@@ -299,7 +299,6 @@ jobs:
             # then thirty seconds for forced teardown, diagnostics and uploads.
             # An inherited owner clock starts before registration and may only
             # shorten these limits, preserving exit time before its watchdog.
-            Import-Module (Join-Path $env:GITHUB_WORKSPACE 'scripts/Bonsai.Tools.psm1')
             $ownerDeadline = @{
               RunId=$env:BONSAI_NATIVE_OWNER_RUN_ID; Revision=$env:BONSAI_NATIVE_OWNER_REVISION
               StartedTick=$env:BONSAI_NATIVE_OWNER_STARTED_TICK; StartedUtc=$env:BONSAI_NATIVE_OWNER_STARTED_UTC
@@ -308,11 +307,11 @@ jobs:
             try {
               if (-not $env:BONSAI_TOOLS_PATH) { throw 'The source-bound hosted maintenance tool is required.' }
               $budgetClock = [Diagnostics.Stopwatch]::StartNew()
-              $limits = Invoke-BonsaiTool -Command native-acceptance-budget -ToolPath $env:BONSAI_TOOLS_PATH -TimeoutSeconds 10 -Request @{
+              $limits = & $env:BONSAI_TOOLS_PATH native-acceptance-budget --json (@{
                 jobStartedUtc=$jobStarted.ToString('o'); nowUtc=[DateTime]::UtcNow.ToString('o')
                 nowTick=[Diagnostics.Stopwatch]::GetTimestamp(); tickFrequency=[Diagnostics.Stopwatch]::Frequency
                 runId=$env:GITHUB_RUN_ID; revision=$env:GITHUB_SHA; ownerDeadline=$ownerDeadline
-              }
+              } | ConvertTo-Json -Depth 64 -Compress) | ConvertFrom-Json -AsHashtable
             } catch {
               $hostReport.AggregateBudgetExpired = $true
               throw
@@ -376,11 +375,10 @@ jobs:
             'BONSAI_NATIVE_DIAGNOSTICS_READY=false' >> $env:GITHUB_ENV
             try {
               if (-not $env:BONSAI_TOOLS_PATH) { throw 'The source-bound hosted maintenance tool is required.' }
-              Import-Module (Join-Path $env:GITHUB_WORKSPACE 'scripts/Bonsai.Tools.psm1')
-              $diagnostics = Invoke-BonsaiTool -Command startup-diagnostics -ToolPath $env:BONSAI_TOOLS_PATH -TimeoutSeconds 10 -Request @{
+              $diagnostics = & $env:BONSAI_TOOLS_PATH startup-diagnostics --json (@{
                 evidenceDirectory=$env:BONSAI_NATIVE_EVIDENCE
                 acceptanceExitCode=$hostReport.AcceptanceProcessExitCode; budgetExpired=$hostReport.AggregateBudgetExpired
-              }
+              } | ConvertTo-Json -Depth 64 -Compress) | ConvertFrom-Json -AsHashtable
               # Recover the bounded typed workload result even when the test
               # exits 101 after retaining partial progress and owned cleanup.
               # Missing/malformed receipts remain unknown; this never changes

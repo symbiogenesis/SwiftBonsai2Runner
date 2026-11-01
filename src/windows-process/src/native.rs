@@ -55,6 +55,7 @@ use windows_sys::Win32::System::Threading::{
 use crate::{ProcessMemory, ProcessSpec, SandboxPolicy, ToolProcessSpec, invalid};
 
 mod containment;
+pub(super) mod caller;
 mod cpu;
 pub(super) mod devices;
 mod environment;

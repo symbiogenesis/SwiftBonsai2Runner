@@ -252,32 +252,8 @@ jobs:
           persist-credentials: false
       - name: Use the checked maintenance CLI
         uses: ./.github/actions/use-bonsai-tools
-      - name: Full foundation suite
-        if: matrix.lane == 'foundation'
-        shell: pwsh
-        run: ./tests/Test-Foundation.ps1 -Case All
-      - name: Verified speech model provisioning and demo launch contracts
-        if: matrix.lane == 'foundation'
-        shell: pwsh
-        working-directory: ${{ runner.temp }}
-        run: '& (Join-Path $env:GITHUB_WORKSPACE "tests/Test-SpeechModels.ps1") -Case All'
-      - name: Pinned inference binary contracts
-        if: matrix.lane == 'foundation'
-        shell: pwsh
-        run: |
-          ./tests/Test-Inference.ps1 -Case All
-      - name: Runtime promotion PowerShell and packaged tool handoff
-        if: matrix.lane == 'foundation'
-        shell: pwsh
-        working-directory: ${{ runner.temp }}
-        run: '& (Join-Path $env:GITHUB_WORKSPACE "tests/Test-RuntimePromotion.ps1")'
-      - name: PTQ1 current-source and original-deadline admission controls
-        if: matrix.lane == 'foundation'
-        shell: pwsh
-        run: |
-          foreach ($case in @('HostedGuard', 'BuildEvidence')) {
-            ./tests/Test-NativePtq1CaptureTools.ps1 -Case $case
-          }
+      # Domain regressions (provisioning, builds, promotion and process ownership)
+      # run as native Rust tests in the maintenance producer before this handoff.
       - name: Hexagon packed-layout and bounded inventory controls without devices
         if: matrix.lane == 'foundation'
         shell: pwsh
@@ -287,8 +263,6 @@ jobs:
           $PSNativeCommandUseErrorActionPreference = $true
           python -B tools/hexagon/test_pq2_bridge.py
           python -B tools/hexagon/pq2_bridge.py
-          ./tests/Test-HexagonPreflight.ps1
-          ./tests/Test-HexagonCapture.ps1
       - name: Released GGUF command integration
         if: matrix.lane == 'foundation'
         shell: pwsh
@@ -300,7 +274,7 @@ jobs:
           $ErrorActionPreference = 'Stop'
           $PSNativeCommandUseErrorActionPreference = $true
           $data = Join-Path $env:RUNNER_TEMP 'SwiftBonsai-Inference'
-          $inference = & (Join-Path $env:GITHUB_WORKSPACE 'scripts/Get-Inference.ps1') -DataDirectory $data -IncludeCapabilities
+          $inference = & $env:BONSAI_TOOLS_PATH provision --json (@{ operation = 'inference'; dataDirectory = $data; includeCapabilities = $true } | ConvertTo-Json -Compress) | ConvertFrom-Json
           if ($inference.CapabilityVerification.Status -cne 'verified' -or
               $inference.Capabilities.qualification -cne 'unqualified' -or
               $inference.Capabilities.runtime.target.architecture -cne 'aarch64') {
@@ -328,17 +302,6 @@ jobs:
           foreach ($case in @('Capture','Failure','Environment','Timeout','Drain','OwnedCapture','OwnedFailure','OwnedEnvironment','OwnedTimeout','OwnedDrain','OwnedGate','OwnedOwnerExit','OwnedExitAccounting')) {
             ./tests/Test-NativeProcess.ps1 -Case $case
           }
-      - name: Packaged supervisor caller death and failure contracts
-        if: matrix.lane == 'native'
-        shell: pwsh
-        run: |
-          foreach ($case in @('ParentDeath', 'Timeout', 'ExitCode')) {
-            ./tests/Test-CompletionSupervision.ps1 -Case $case -ToolPath $env:BONSAI_TOOLS_PATH
-          }
-      - name: Engine build scheduling correctness
-        if: matrix.lane == 'native'
-        shell: pwsh
-        run: ./tests/Test-EngineBuild.ps1 -Case Parallelism
       - name: Maintenance bootstrap integrity and repair
         if: matrix.lane == 'foundation'
         shell: pwsh
@@ -349,8 +312,8 @@ jobs:
         run: |
           Set-StrictMode -Version Latest
           $ErrorActionPreference = 'Stop'
-          Import-Module ./scripts/Bonsai.Tools.psm1
-          $result = Invoke-BonsaiTool -Command cpu-check -Request @{ dataDirectory = (Join-Path $env:RUNNER_TEMP 'SwiftBonsai-Runtime'); checkOnly = $true }
+          $PSNativeCommandUseErrorActionPreference = $true
+          $result = & $env:BONSAI_TOOLS_PATH cpu-check --json (@{ dataDirectory = (Join-Path $env:RUNNER_TEMP 'SwiftBonsai-Runtime'); checkOnly = $true } | ConvertTo-Json -Compress) | ConvertFrom-Json
           if ($result.ModelProcessStarted -or $result.AvailablePhysicalBytesAtAdmission -le 0) { throw 'Invalid admission-only result.' }
           $result | ConvertTo-Json
   release-integration:
@@ -369,30 +332,30 @@ jobs:
         run: |
           Set-StrictMode -Version Latest
           $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
           $data = Join-Path $env:RUNNER_TEMP 'SwiftBonsai-Runtime'
           $lockPath = Join-Path $env:GITHUB_WORKSPACE 'config/swift-assessment.lock.json'
-          ./scripts/Get-Engine.ps1 -DataDirectory $data -LockPath $lockPath
-          ./scripts/Get-Adapter.ps1 -DataDirectory $data
-          ./scripts/Get-Adapter.ps1 -DataDirectory $data -VerifyOnly
-          Import-Module ./scripts/Bonsai.Tools.psm1
-          $result = Invoke-BonsaiTool -Command cpu-check -Request @{ dataDirectory = $data; profile = 'swift-pq2-assessment'; checkOnly = $true }
+          & $env:BONSAI_TOOLS_PATH provision --json (@{ operation = 'engine'; dataDirectory = $data; lockPath = $lockPath } | ConvertTo-Json -Compress)
+          & $env:BONSAI_TOOLS_PATH provision --json (@{ operation = 'adapter'; dataDirectory = $data } | ConvertTo-Json -Compress)
+          & $env:BONSAI_TOOLS_PATH provision --json (@{ operation = 'adapter'; dataDirectory = $data; verifyOnly = $true } | ConvertTo-Json -Compress)
+          $result = & $env:BONSAI_TOOLS_PATH cpu-check --json (@{ dataDirectory = $data; profile = 'swift-pq2-assessment'; checkOnly = $true } | ConvertTo-Json -Compress) | ConvertFrom-Json
           if ($result.ModelProcessStarted -or $result.RequiredAvailableBytes -ne 16642998272 -or
               $result.ServiceCeilingBytes -ne 12348030976 -or $result.AvailableMemoryFloorBytes -ne 4GB) { throw 'Invalid Swift admission-only result.' }
           $result | ConvertTo-Json
-          $adapterCheck = Invoke-BonsaiTool -Command cpu-check -Request @{ dataDirectory = $data; profile = 'swift-pq2-assessment'; useAbliterateLora = $true; checkOnly = $true }
+          $adapterCheck = & $env:BONSAI_TOOLS_PATH cpu-check --json (@{ dataDirectory = $data; profile = 'swift-pq2-assessment'; useAbliterateLora = $true; checkOnly = $true } | ConvertTo-Json -Compress) | ConvertFrom-Json
           if ($adapterCheck.ModelProcessStarted -or -not $adapterCheck.AdapterRequested -or $adapterCheck.EstimatedAdapterBytes -ne 9682464) { throw 'Invalid explicit adapter admission-only result.' }
           $adapterCheck | ConvertTo-Json
-          $ptqCheck = Invoke-BonsaiTool -Command cpu-check -Request @{ dataDirectory = $data; profile = 'swift-pq2-assessment'; useRepackedPtq1 = $true; checkOnly = $true }
+          $ptqCheck = & $env:BONSAI_TOOLS_PATH cpu-check --json (@{ dataDirectory = $data; profile = 'swift-pq2-assessment'; useRepackedPtq1 = $true; checkOnly = $true } | ConvertTo-Json -Compress) | ConvertFrom-Json
           if ($ptqCheck.ModelProcessStarted -or $ptqCheck.EstimatedWeightBytes -ne 5946648928 -or $ptqCheck.WeightRepresentation -cne 'current-repacked-PTQ1_0') { throw 'Invalid derived PTQ1 admission-only result.' }
       - name: Verify publisher ARM64 runtime and planned server switches
         shell: pwsh
         run: |
           Set-StrictMode -Version Latest
           $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
           $data = Join-Path $env:RUNNER_TEMP 'SwiftBonsai-Runtime'
-          ./scripts/Get-Engine.ps1 -DataDirectory $data
-          Import-Module ./scripts/Bonsai.Tools.psm1
-          $plan = Invoke-BonsaiTool -Command server-plan -Request @{ dataDirectory = $data; verification = 'runtime' }
+          & $env:BONSAI_TOOLS_PATH provision --json (@{ operation = 'engine'; dataDirectory = $data } | ConvertTo-Json -Compress)
+          $plan = & $env:BONSAI_TOOLS_PATH server-plan --json (@{ dataDirectory = $data; verification = 'runtime' } | ConvertTo-Json -Compress) | ConvertFrom-Json
           if ($plan.LaunchEnabled -or $plan.ModelProcessStarted -or
               $plan.RuntimeHelpVerification -notlike 'all-planned-switches-advertised*' -or
               $plan.ArtifactVerification -notlike '*model-not-checked') { throw 'Invalid runtime-only preflight result.' }

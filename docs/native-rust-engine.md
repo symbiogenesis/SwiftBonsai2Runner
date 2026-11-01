@@ -265,8 +265,7 @@ five-minute limit; the child process has a shared 240-second work allowance.
 Admission, Job limit and physical reserve remain 15.5 GiB, 11.5 GiB and 4 GiB.
 
 ```powershell
-Import-Module ./scripts/Bonsai.Tools.psm1
-Invoke-BonsaiTool -Command native-qualification -Request @{ operation = 'plan'; kind = 'rows'; repositoryDirectory = $PWD.Path }
+& $env:BONSAI_TOOLS_PATH native-qualification --json (@{ operation = 'plan'; kind = 'rows'; repositoryDirectory = $PWD.Path } | ConvertTo-Json -Depth 64 -Compress) | ConvertFrom-Json -AsHashtable
 ```
 
 The comparator requires the exact model/adapter/scale graph identity, observed
@@ -381,29 +380,28 @@ cancellation, production sampling or interruption inside a graph kernel.
 
 ```powershell
 $revision = git rev-parse main
-Import-Module ./scripts/Bonsai.Tools.psm1
-$plan = Invoke-BonsaiTool -Command runtime-promotion -Request @{
+$plan = & $env:BONSAI_TOOLS_PATH runtime-promotion --json (@{
     operation = 'plan'; runnerRevision = $revision; nativeRowWorkers = 1
-}
+} | ConvertTo-Json -Depth 64 -Compress) | ConvertFrom-Json -AsHashtable
 $plan.policy.requiredGates
-Invoke-BonsaiTool -Command runtime-promotion -Request @{
+& $env:BONSAI_TOOLS_PATH runtime-promotion --json (@{
     operation = 'file-score'; runnerRevision = $revision; nativeRowWorkers = 1
     evidencePath = 'D:\Evidence\promotion.json'
-}
+} | ConvertTo-Json -Depth 64 -Compress) | ConvertFrom-Json -AsHashtable
 # Review the four-worker candidate independently; its evidence cannot qualify one worker.
-Invoke-BonsaiTool -Command runtime-promotion -Request @{
+& $env:BONSAI_TOOLS_PATH runtime-promotion --json (@{
     operation = 'plan'; runnerRevision = $revision; nativeRowWorkers = 4
-}
+} | ConvertTo-Json -Depth 64 -Compress) | ConvertFrom-Json -AsHashtable
 # Review the current-weight PTQ1 candidate independently from original PQ2.
-Invoke-BonsaiTool -Command runtime-promotion -Request @{
+& $env:BONSAI_TOOLS_PATH runtime-promotion --json (@{
     operation = 'plan'; runnerRevision = $revision; nativeRowWorkers = 1
     weightRepresentation = 'current-repacked-PTQ1_0'
-}
+} | ConvertTo-Json -Depth 64 -Compress) | ConvertFrom-Json -AsHashtable
 # Bind a later owning Prism main harness separately from the unchanged release.
-Invoke-BonsaiTool -Command runtime-promotion -Request @{
+& $env:BONSAI_TOOLS_PATH runtime-promotion --json (@{
     operation = 'plan'; runnerRevision = $revision; nativeRowWorkers = 1
     serviceHarnessRevision = $reviewedPrismMain
-}
+} | ConvertTo-Json -Depth 64 -Compress) | ConvertFrom-Json -AsHashtable
 ```
 
 The evaluator checks offline completeness and byte integrity, without inference,

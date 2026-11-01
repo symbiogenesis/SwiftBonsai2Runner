@@ -132,7 +132,6 @@ jobs:
           $PSNativeCommandUseErrorActionPreference = $true
           if ($env:BONSAI_PTQ1_RUST_BACKEND -cnotin @('auto', 'scalar', 'neon')) { throw 'Select one explicit supported Rust capture backend.' }
           if ($env:BONSAI_PTQ1_ROW_WORKERS -cnotin @('1', '4')) { throw 'Select one exact Rust capture row-worker count.' }
-          Import-Module (Join-Path $env:GITHUB_WORKSPACE 'scripts/Bonsai.Tools.psm1')
           $budgetPath = Join-Path $env:RUNNER_TEMP 'ptq1-owner-budget.json'
           $budgetReport = [ordered]@{
             Revision=$env:GITHUB_SHA; RunId=$env:GITHUB_RUN_ID; RunAttempt=$env:GITHUB_RUN_ATTEMPT
@@ -143,7 +142,7 @@ jobs:
           try {
             $budgetTick = [Diagnostics.Stopwatch]::GetTimestamp()
             $frequency = [Diagnostics.Stopwatch]::Frequency
-            $limits = Invoke-BonsaiTool -Command native-acceptance-budget -ToolPath $env:BONSAI_TOOLS_PATH -TimeoutSeconds 10 -Request @{
+            $limits = & $env:BONSAI_TOOLS_PATH native-acceptance-budget --json (@{
               jobStartedUtc=$env:BONSAI_PTQ1_JOB_STARTED_UTC; nowUtc=[DateTime]::UtcNow.ToString('o')
               nowTick=$budgetTick; tickFrequency=$frequency
               runId=$env:GITHUB_RUN_ID; revision=$env:GITHUB_SHA
@@ -152,7 +151,7 @@ jobs:
                 StartedTick=$env:BONSAI_NATIVE_OWNER_STARTED_TICK; StartedUtc=$env:BONSAI_NATIVE_OWNER_STARTED_UTC
                 WorkSeconds=$env:BONSAI_NATIVE_OWNER_WORK_SECONDS
               }
-            }
+            } | ConvertTo-Json -Depth 64 -Compress) | ConvertFrom-Json -AsHashtable
             # Absolute monotonic deadlines include IPC, receipts and process startup.
             $workSeconds = $limits.CaseBudgetSeconds
             $workDeadline = $budgetTick + ([long]$workSeconds * $frequency)
