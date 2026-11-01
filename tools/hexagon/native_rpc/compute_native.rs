@@ -435,97 +435,6 @@ fn write_packet(
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use std::sync::atomic::{AtomicU32, Ordering};
-
-    static TIMED_CALLS: AtomicU32 = AtomicU32::new(0);
-    static NONBLOCKING_CALLS: AtomicU32 = AtomicU32::new(0);
-
-    extern "C" fn timed_refusal(
-        queue: *mut c_void,
-        flags: u32,
-        count: u32,
-        buffers: *mut QueueBuffer,
-        bytes: u32,
-        message: *const u8,
-        timeout: u32,
-    ) -> i32 {
-        TIMED_CALLS.fetch_add(1, Ordering::Relaxed);
-        if queue.is_null()
-            && flags == 0
-            && count == 1
-            && !buffers.is_null()
-            && bytes == 24
-            && !message.is_null()
-            && timeout == 100_000
-        {
-            14
-        } else {
-            -77
-        }
-    }
-
-    extern "C" fn nonblocking_refusal(
-        queue: *mut c_void,
-        flags: u32,
-        count: u32,
-        buffers: *mut QueueBuffer,
-        bytes: u32,
-        message: *const u8,
-    ) -> i32 {
-        NONBLOCKING_CALLS.fetch_add(1, Ordering::Relaxed);
-        if queue.is_null()
-            && flags == 0
-            && count == 1
-            && !buffers.is_null()
-            && bytes == 24
-            && !message.is_null()
-        {
-            14
-        } else {
-            -77
-        }
-    }
-
-    #[test]
-    fn refused_nonblocking_write_never_retries_or_calls_timed_api() {
-        TIMED_CALLS.store(0, Ordering::Relaxed);
-        NONBLOCKING_CALLS.store(0, Ordering::Relaxed);
-        let mut descriptor = QueueBuffer {
-            fd: 7,
-            size: 16_384,
-            offset: 0,
-            flags: 0x90,
-            pointer: null_mut(),
-        };
-        let request = compute::request_wire();
-        assert_eq!(
-            write_packet(
-                &WriteCall::Nonblocking(nonblocking_refusal),
-                null_mut(),
-                &mut descriptor,
-                &request
-            ),
-            14
-        );
-        assert_eq!(NONBLOCKING_CALLS.load(Ordering::Relaxed), 1);
-        assert_eq!(TIMED_CALLS.load(Ordering::Relaxed), 0);
-        assert_eq!(
-            write_packet(
-                &WriteCall::Timed(timed_refusal),
-                null_mut(),
-                &mut descriptor,
-                &request
-            ),
-            14
-        );
-        assert_eq!(NONBLOCKING_CALLS.load(Ordering::Relaxed), 1);
-        assert_eq!(TIMED_CALLS.load(Ordering::Relaxed), 1);
-    }
-}
-
 fn read_reply(
     report: &mut QueueComputeReport,
     calls: &Calls,
@@ -651,4 +560,95 @@ fn cleanup(
     report.poisoned = false;
     report.stage = "compute-numeric-verified-stopped-unmapped-freed";
     report
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::sync::atomic::{AtomicU32, Ordering};
+
+    static TIMED_CALLS: AtomicU32 = AtomicU32::new(0);
+    static NONBLOCKING_CALLS: AtomicU32 = AtomicU32::new(0);
+
+    extern "C" fn timed_refusal(
+        queue: *mut c_void,
+        flags: u32,
+        count: u32,
+        buffers: *mut QueueBuffer,
+        bytes: u32,
+        message: *const u8,
+        timeout: u32,
+    ) -> i32 {
+        TIMED_CALLS.fetch_add(1, Ordering::Relaxed);
+        if queue.is_null()
+            && flags == 0
+            && count == 1
+            && !buffers.is_null()
+            && bytes == 24
+            && !message.is_null()
+            && timeout == 100_000
+        {
+            14
+        } else {
+            -77
+        }
+    }
+
+    extern "C" fn nonblocking_refusal(
+        queue: *mut c_void,
+        flags: u32,
+        count: u32,
+        buffers: *mut QueueBuffer,
+        bytes: u32,
+        message: *const u8,
+    ) -> i32 {
+        NONBLOCKING_CALLS.fetch_add(1, Ordering::Relaxed);
+        if queue.is_null()
+            && flags == 0
+            && count == 1
+            && !buffers.is_null()
+            && bytes == 24
+            && !message.is_null()
+        {
+            14
+        } else {
+            -77
+        }
+    }
+
+    #[test]
+    fn refused_nonblocking_write_never_retries_or_calls_timed_api() {
+        TIMED_CALLS.store(0, Ordering::Relaxed);
+        NONBLOCKING_CALLS.store(0, Ordering::Relaxed);
+        let mut descriptor = QueueBuffer {
+            fd: 7,
+            size: 16_384,
+            offset: 0,
+            flags: 0x90,
+            pointer: null_mut(),
+        };
+        let request = compute::request_wire();
+        assert_eq!(
+            write_packet(
+                &WriteCall::Nonblocking(nonblocking_refusal),
+                null_mut(),
+                &mut descriptor,
+                &request
+            ),
+            14
+        );
+        assert_eq!(NONBLOCKING_CALLS.load(Ordering::Relaxed), 1);
+        assert_eq!(TIMED_CALLS.load(Ordering::Relaxed), 0);
+        assert_eq!(
+            write_packet(
+                &WriteCall::Timed(timed_refusal),
+                null_mut(),
+                &mut descriptor,
+                &request
+            ),
+            14
+        );
+        assert_eq!(NONBLOCKING_CALLS.load(Ordering::Relaxed), 1);
+        assert_eq!(TIMED_CALLS.load(Ordering::Relaxed), 1);
+    }
 }
