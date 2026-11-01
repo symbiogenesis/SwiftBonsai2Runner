@@ -161,8 +161,8 @@ certificate or boot-policy change occurred. X1/v73 qualification is separate.
 [Rust Hexagon preparation](../tools/bonsai/src/hexagon_tools.rs) prepares the Rust
 fixture/query and model-free tests, retaining a two-file access bundle separately
 from compiler evidence. Its `asInvoker` [manifest](../tools/hexagon/diagnostic.manifest)
-is source/build-bound. [Dispatch](../scripts/Invoke-HexagonDispatch.ps1) and
-[session](../scripts/Invoke-HexagonSessionProbe.ps1) supervisors verify source/build,
+is source/build-bound. [Dispatch](../tools/bonsai/src/hexagon_tools/device.rs) and
+[session](../tools/bonsai/src/hexagon_tools/device.rs) supervisors verify source/build,
 package/member and independent driver identities. Child-only environment cleanup
 removes inherited accelerator/FastRPC overrides and Actions credentials; bounded
 streams, checked-file lifetime and a kill-on-close Job cover the process tree.
@@ -391,7 +391,7 @@ check queue layouts/prototypes and HTP packet offsets; unchanged generated start
 code is compiled by native Windows ARM64 MSVC with the explicitly selected public
 non-Windows header branch. This establishes neither the absent Windows-specific
 header closure nor SDK equivalence. The probe verifies a correlated numerical reply
-and retains uncertain owners. Its [source-bound supervisor](../scripts/Invoke-HexagonComputeProbe.ps1)
+and retains uncertain owners. Its [source-bound supervisor](../tools/bonsai/src/hexagon_tools/device.rs)
 checks all seventeen package files, five catalog members and the installed driver
 inside one owned deadline. Generic C++ access evidence remains separate.
 New Q2 additionally needs source-bound native intake and signed quantizer/integer

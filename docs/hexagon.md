@@ -12,9 +12,9 @@ Swift prototype is one stateless FFN projection. CPU-only [layout](../tools/hexa
 [operation/wire controls](../tools/hexagon/packed-projection.md) qualify no signed device implementation,
 measured VTCM/traffic or inference.
 
-[Preflight](../scripts/Invoke-HexagonPreflight.ps1) inventories drivers and an explicit optional package
-without loading/installing it. It has an aggregate deadline and normal cancellation cleanup; abrupt
-parent-death Job containment remains a diagnostic-helper limitation. [Hosted CI](../.github/workflows/hexagon-qualification.yml)
+[Preflight](../tools/bonsai/src/hexagon_tools/preflight.rs) inventories drivers and an explicit optional package
+without loading/installing it. It uses a native Rust worker with an aggregate deadline and kill-on-close Job ownership.
+Present devices come from SetupAPI; unavailable driver signatures and dates remain unknown. [Hosted CI](../.github/workflows/hexagon-qualification.yml)
 owns full regressions and source-bound preparation. Its main-only opt-in owner job selects one inventory,
 numeric dispatch or native session probe within five minutes total, including setup and cleanup.
 
@@ -118,7 +118,7 @@ creative outputs, occupied state, cancellation and failed recovery. Larger conte
 Compare same-contract CPU, qualified Vulkan and NPU; retain median/p95/variance and separate 15–30-minute
 sustained runs in CI. Owner diagnostics/trials remain subject to the single five-minute total ceiling.
 Missing evidence or critical failures keep profiles experimental; absence supplies no verdict.
-The [fixed native Rust compute probe](../scripts/Invoke-HexagonComputeProbe.ps1)
+The [fixed native Rust compute probe](../tools/bonsai/src/hexagon_tools/device.rs)
 offers F32 and guarded-Q2 controls with separate timed/nonblocking writes,
 checked queue responses and poisoned output. The [bounded X2 capture](evidence/hexagon-x2-queue-compute.json)
 verified all 64 guarded integer outputs and its explicit cleanup cycle. Its

@@ -6,10 +6,11 @@ on:
       - .github/workflows/hexagon-x2-compute.yml
       - .github/workflows/hexagon-windows-abi.yml
       - tools/hexagon/**
-      - scripts/*Hexagon*
+      - tools/bonsai/src/hexagon_tools*
+      - tools/bonsai/src/hexagon_tools/**
+      - src/windows-process/**
       - tools/bonsai/src/hexagon_policy/**
       - tools/bonsai/tests/fixtures/hexagon-*.json
-      - tests/Test-HexagonCapture.ps1
   workflow_dispatch:
 permissions:
   contents: read
@@ -33,7 +34,7 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           $PSNativeCommandUseErrorActionPreference = $true
-          cargo +nightly-2026-10-22-aarch64-pc-windows-msvc test --locked --release --manifest-path (Join-Path $env:GITHUB_WORKSPACE 'Cargo.toml') --package bonsai-tools --all-features --target-dir $env:BONSAI_TOOLS_TARGET --lib hexagon_policy::
+          cargo +nightly-2026-10-22-aarch64-pc-windows-msvc test --locked --release --manifest-path (Join-Path $env:GITHUB_WORKSPACE 'Cargo.toml') --package bonsai-tools --all-features --target-dir $env:BONSAI_TOOLS_TARGET --lib hexagon_
       - name: Stage the current source-bound policy executable
         shell: pwsh
         working-directory: ${{ runner.temp }}
@@ -64,7 +65,6 @@ jobs:
           Set-StrictMode -Version Latest
           $ErrorActionPreference = 'Stop'
           $PSNativeCommandUseErrorActionPreference = $true
-          ./tests/Test-HexagonCapture.ps1
           ./tests/Test-NativeProcess.ps1 -Case OwnedExitAccounting
       - name: Build source-bound native fixture and run independent packed and queue contracts
         shell: pwsh

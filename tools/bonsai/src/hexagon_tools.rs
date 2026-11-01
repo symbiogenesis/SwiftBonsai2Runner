@@ -15,6 +15,9 @@ use serde_json::{Value, json};
 
 use crate::{Result, identity, startup_cache, startup_process};
 
+mod device;
+mod preflight;
+
 const TOOLCHAIN: &str = "nightly-2026-10-22-aarch64-pc-windows-msvc";
 const TARGET: &str = "aarch64-pc-windows-msvc";
 const NATIVE_INPUTS: &[&str] = &[
@@ -52,6 +55,21 @@ enum Request {
         repository_directory: PathBuf,
         output_directory: PathBuf,
     },
+    #[cfg(windows)]
+    Device { request: device::Probe },
+    #[cfg(windows)]
+    DeviceWorker { request: device::Probe },
+    Preflight {
+        #[serde(default)]
+        package_path: Option<PathBuf>,
+        #[serde(default)]
+        output_path: Option<PathBuf>,
+        maximum_seconds: u32,
+    },
+    PreflightWorker {
+        #[serde(default)]
+        package_path: Option<PathBuf>,
+    },
 }
 
 struct Context {
@@ -85,7 +103,7 @@ fn hosted() -> Result<(String, String, String)> {
 }
 
 fn plain(path: &Path) -> Result<()> {
-    if !path.is_absolute() {
+    if !path.is_absolute() || path.to_string_lossy().contains(['%', '\0']) {
         return Err("Use expanded absolute Hexagon paths.".into());
     }
     for ancestor in path.ancestors() {
@@ -783,6 +801,16 @@ pub fn run(request: Value) -> Result<Value> {
             repository_directory,
             output_directory,
         } => sdk_inventory(Context::new(repository_directory, output_directory)?),
+        #[cfg(windows)]
+        Request::Device { request } => device::supervise(request),
+        #[cfg(windows)]
+        Request::DeviceWorker { request } => device::worker(request),
+        Request::Preflight {
+            package_path,
+            output_path,
+            maximum_seconds,
+        } => preflight::supervise(package_path, output_path, maximum_seconds),
+        Request::PreflightWorker { package_path } => preflight::inventory(package_path.as_deref()),
     }
 }
 

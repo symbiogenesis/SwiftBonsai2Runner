@@ -476,3 +476,28 @@ limits readiness/audio requests to 300/190 seconds. Strict HTTP framing and the
 shared mono PCM16 codec bound every listening clip to 120 seconds at 24 kHz.
 Failure receipts, phase timings, raw clips and separate process-lifetime memory
 counter differences remain available; voice quality stays pending human listening.
+
+## Hexagon preparation and bounded device probes
+
+`hexagon-tools` replaces the Hexagon PowerShell scripts and modules. Hosted-only
+`build-dispatch`, `build-packed-artifact` and `sdk-inventory` requests take
+`repositoryDirectory` and a new external `outputDirectory`; the extractor also
+takes `ggufSourceDirectory`. They retain exact source/tool/lock/run identities
+and never load device code or admit profiles.
+
+`preflight` takes optional `packagePath`/new `outputPath` and `maximumSeconds`
+(5..300). The Rust worker inventories present SetupAPI ComputeAccelerator devices
+and bounded top-level package files. Signature failures remain unverified.
+
+`device` takes a `request` object with `kind` (`dispatch`, `session`, `compute`),
+`repositoryDirectory`, `packageDirectory`, `fixtureDirectory`, `outputDirectory`,
+`signtoolPath`, `expectedRunnerRevision` and `maximumSeconds` (1..240). Session
+accepts `referenceInitialization`; compute accepts one `case`: `F32`, `GuardedQ2`,
+`F32NoBlock` or `GuardedQ2NoBlock`. The native supervisor reserves 75 seconds
+for owned cleanup, verifies every pinned file and catalog member, retains
+immutable input handles through child exit, and records only fixed entered-stage
+markers. Windows verifies the observed DriverStore signer's trust and publisher.
+Same-run artifact provenance remains the caller's responsibility; no command
+changes OS trust, installs drivers, loads a model or qualifies Swift inference.
+All setup/intake/execution/cleanup shares the owner's five-minute total budget.
+Offline `hexagon-policy` plans and evidence validators remain available.

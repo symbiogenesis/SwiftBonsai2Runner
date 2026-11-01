@@ -5,11 +5,11 @@ on:
     paths:
       - .github/workflows/hexagon-qualification.yml
       - tools/hexagon/**
-      - scripts/*Hexagon*
+      - tools/bonsai/src/hexagon_tools*
+      - tools/bonsai/src/hexagon_tools/**
+      - src/windows-process/**
       - tools/bonsai/src/hexagon_policy/**
       - tools/bonsai/tests/fixtures/hexagon-*.json
-      - tests/Test-HexagonCapture.ps1
-      - tests/Test-HexagonPreflight.ps1
       - src/cpu-policy/**
       - config/hexagon-experiment.lock.json
       - config/hexagon-signed-q2-candidate.lock.json
@@ -60,7 +60,7 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           $PSNativeCommandUseErrorActionPreference = $true
-          cargo +nightly-2026-10-22-aarch64-pc-windows-msvc test --locked --release --manifest-path (Join-Path $env:GITHUB_WORKSPACE 'Cargo.toml') --package bonsai-tools --all-features --target-dir $env:BONSAI_TOOLS_TARGET --lib hexagon_policy::
+          cargo +nightly-2026-10-22-aarch64-pc-windows-msvc test --locked --release --manifest-path (Join-Path $env:GITHUB_WORKSPACE 'Cargo.toml') --package bonsai-tools --all-features --target-dir $env:BONSAI_TOOLS_TARGET --lib hexagon_
       - name: Stage the current source-bound policy executable
         shell: pwsh
         working-directory: ${{ runner.temp }}
@@ -98,8 +98,6 @@ jobs:
           python -B tools/hexagon/test_pq2_bridge.py
           python -B tools/hexagon/pq2_bridge.py
           python -B tools/hexagon/verify_packed_fixture.py
-          ./tests/Test-HexagonPreflight.ps1
-          ./tests/Test-HexagonCapture.ps1
       - name: Validate comparative CPU GPU NPU ranking without opening a device
         shell: pwsh
         working-directory: ${{ runner.temp }}
@@ -278,7 +276,7 @@ jobs:
           $evidence = Join-Path $env:RUNNER_TEMP ('SwiftBonsai-Hexagon-Session-' + [guid]::NewGuid().ToString('N'))
           "BONSAI_HEXAGON_SESSION_EVIDENCE=$evidence" >> $env:GITHUB_ENV
           if ($env:HEXAGON_REFERENCE_INITIALIZATION -cnotin @('true','false')) { throw 'Reference initialization selection must be explicit.' }
-          $result = & (Join-Path $env:GITHUB_WORKSPACE 'scripts/Invoke-HexagonSessionProbe.ps1') -PackageDirectory $env:HEXAGON_PACKAGE_DIRECTORY -FixtureDirectory $bundle -OutputDirectory $evidence -SigntoolPath $env:HEXAGON_SIGNTOOL_PATH -ExpectedRunnerRevision $env:GITHUB_SHA -MaximumSeconds $allowance -ReferenceInitialization:($env:HEXAGON_REFERENCE_INITIALIZATION -ceq 'true')
+          $result = @{ operation = 'device'; request = @{ kind = 'session'; repositoryDirectory = $env:GITHUB_WORKSPACE; packageDirectory = $env:HEXAGON_PACKAGE_DIRECTORY; fixtureDirectory = $bundle; outputDirectory = $evidence; signtoolPath = $env:HEXAGON_SIGNTOOL_PATH; expectedRunnerRevision = $env:GITHUB_SHA; maximumSeconds = $allowance; referenceInitialization = ($env:HEXAGON_REFERENCE_INITIALIZATION -ceq 'true') } } | ConvertTo-Json -Depth 5 -Compress | & $env:BONSAI_TOOLS_PATH hexagon-tools --request - | ConvertFrom-Json -AsHashtable
           [ordered]@{
             SchemaVersion = 1; RunnerRevision = $env:GITHUB_SHA; RunId = $env:GITHUB_RUN_ID; RunAttempt = $env:GITHUB_RUN_ATTEMPT
             WholeJobMaximumSeconds = 300; PreparationElapsedMilliseconds = [Math]::Ceiling($setup * 1000)
@@ -316,6 +314,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
+      - uses: ./.github/actions/use-bonsai-tools
       - name: Retain bounded device and selected-package inventory
         shell: pwsh
         working-directory: ${{ runner.temp }}
@@ -336,15 +335,14 @@ jobs:
           [void][IO.Directory]::CreateDirectory($evidence)
           "BONSAI_HEXAGON_EVIDENCE=$evidence" >> $env:GITHUB_ENV
           $report = Join-Path $evidence 'preflight.json'
-          $result = & (Join-Path $env:GITHUB_WORKSPACE 'scripts/Invoke-HexagonPreflight.ps1') -PackagePath $env:HEXAGON_PACKAGE_DIRECTORY -OutputPath $report -MaximumSeconds $allowance -PassThru
+          $result = @{ operation = 'preflight'; packagePath = $(if ($env:HEXAGON_PACKAGE_DIRECTORY) { $env:HEXAGON_PACKAGE_DIRECTORY } else { $null }); outputPath = $report; maximumSeconds = $allowance } | ConvertTo-Json -Compress | & $env:BONSAI_TOOLS_PATH hexagon-tools --request - | ConvertFrom-Json -AsHashtable
           [ordered]@{
             SchemaVersion = 1; SourceRevision = $env:GITHUB_SHA
             RunId = $env:GITHUB_RUN_ID; RunAttempt = $env:GITHUB_RUN_ATTEMPT
             JobStartedUtc = $env:BONSAI_HEXAGON_JOB_STARTED_UTC
             PreparationElapsedMilliseconds = [Math]::Ceiling($setupSeconds * 1000)
             InventoryAllowanceSeconds = $allowance; WholeJobMaximumSeconds = 300
-            ScriptSha256 = (Get-FileHash -LiteralPath (Join-Path $env:GITHUB_WORKSPACE 'scripts/Invoke-HexagonPreflight.ps1') -Algorithm SHA256).Hash.ToLowerInvariant()
-            ModuleSha256 = (Get-FileHash -LiteralPath (Join-Path $env:GITHUB_WORKSPACE 'scripts/Bonsai.Hexagon.psm1') -Algorithm SHA256).Hash.ToLowerInvariant()
+            SupervisorSha256 = (Get-FileHash -LiteralPath (Join-Path $env:GITHUB_WORKSPACE 'tools/bonsai/src/hexagon_tools/preflight.rs') -Algorithm SHA256).Hash.ToLowerInvariant()
             ExperimentLockSha256 = (Get-FileHash -LiteralPath (Join-Path $env:GITHUB_WORKSPACE 'config/hexagon-experiment.lock.json') -Algorithm SHA256).Hash.ToLowerInvariant()
             ReceiptSha256 = (Get-FileHash -LiteralPath $report -Algorithm SHA256).Hash.ToLowerInvariant()
             CollectionStatus = $result.CollectionStatus
@@ -406,7 +404,7 @@ jobs:
           if ($setup -lt 0 -or $allowance -le 75) { throw 'Owner setup consumed the verified teardown reserve; dispatch remains pending.' }
           $evidence = Join-Path $env:RUNNER_TEMP ('SwiftBonsai-Hexagon-Dispatch-' + [guid]::NewGuid().ToString('N'))
           "BONSAI_HEXAGON_DISPATCH_EVIDENCE=$evidence" >> $env:GITHUB_ENV
-          $result = & (Join-Path $env:GITHUB_WORKSPACE 'scripts/Invoke-HexagonDispatch.ps1') -PackageDirectory $env:HEXAGON_PACKAGE_DIRECTORY -FixtureDirectory $bundle -OutputDirectory $evidence -SigntoolPath $env:HEXAGON_SIGNTOOL_PATH -ExpectedRunnerRevision $env:GITHUB_SHA -MaximumSeconds $allowance
+          $result = @{ operation = 'device'; request = @{ kind = 'dispatch'; repositoryDirectory = $env:GITHUB_WORKSPACE; packageDirectory = $env:HEXAGON_PACKAGE_DIRECTORY; fixtureDirectory = $bundle; outputDirectory = $evidence; signtoolPath = $env:HEXAGON_SIGNTOOL_PATH; expectedRunnerRevision = $env:GITHUB_SHA; maximumSeconds = $allowance } } | ConvertTo-Json -Depth 5 -Compress | & $env:BONSAI_TOOLS_PATH hexagon-tools --request - | ConvertFrom-Json -AsHashtable
           [ordered]@{
             SchemaVersion = 1; RunnerRevision = $env:GITHUB_SHA; RunId = $env:GITHUB_RUN_ID; RunAttempt = $env:GITHUB_RUN_ATTEMPT
             WholeJobMaximumSeconds = 300; PreparationElapsedMilliseconds = [Math]::Ceiling($setup * 1000)
