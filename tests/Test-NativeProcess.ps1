@@ -207,6 +207,13 @@ switch ($Case) {
                 Assert ([IO.File]::Exists($log)) 'Timeout output was not retained.'
                 $output = [IO.File]::ReadAllText($log)
                 Assert ($output.Contains('before-timeout stdout') -and $output.Contains('before-timeout stderr')) 'The timeout log omitted pre-timeout output.'
+                if ($Case -eq 'OwnedDrain') {
+                    $survivorLine = @($output -split '\r?\n' | Where-Object { $_.StartsWith('Bootstrap job survivors:', [StringComparison]::Ordinal) })
+                    Assert ($survivorLine.Count -eq 1 -and $survivorLine[0].Length -le 8192) 'The surviving descendant evidence was missing or unbounded.'
+                    $expectedMember = 'pid=' + [string]$processIds[1] + ';role=descendant;state=live;name=[A-Za-z0-9._-]{1,64}'
+                    Assert ($survivorLine[0] -match $expectedMember) 'The Job snapshot did not identify the actual live descendant before terminating it.'
+                    Assert (-not $survivorLine[0].Contains($marker) -and -not $survivorLine[0].Contains($workingDirectory)) 'The bounded Job snapshot exposed a path or argument.'
+                }
                 foreach ($processId in $processIds) {
                     $process = $null
                     try {
@@ -249,8 +256,11 @@ switch ($Case) {
                 Assert ($process.WaitForExit(1000)) 'The bounded accounting cleanup left an owned member running.'
                 if ($naturalExit) {
                     Assert (-not $remaining -and $process.ExitCode -eq 37) 'A naturally finishing member was killed or classified as a surviving descendant.'
+                    Assert ($job.RemainingProcessEvidence -ceq 'not-captured') 'An empty Job was spuriously labelled as a surviving process.'
                 } else {
                     Assert ($remaining -and $process.ExitCode -eq 1) 'A member surviving the grace was accepted or escaped Job termination.'
+                    $expectedMember = 'pid=' + [string]$process.Id + ';role=root;state=live;name=[A-Za-z0-9._-]{1,64}'
+                    Assert ($job.RemainingProcessEvidence -match $expectedMember) 'The pre-termination snapshot confused a live assigned root with stale accounting.'
                 }
             } finally {
                 try { $null = $job.Stop(10000) } finally {
