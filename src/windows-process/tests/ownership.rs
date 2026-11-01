@@ -385,10 +385,18 @@ fn stop_and_drop_kill_descendants_and_observe_memory() -> io::Result<()> {
         .map_err(|error| {
             io::Error::new(
                 error.kind(),
-                format!("two-process tree accounting did not settle (last={observed}): {error}"),
+                format!(
+                    "two-process tree accounting did not settle (root={}, descendant={descendant}, last={observed}): {error}; diagnostic={:?}",
+                    process.id(), process.test_job_accounting()
+                ),
             )
         })?;
-        assert_eq!(process.active_processes()?, 2);
+        assert_eq!(
+            process.active_processes()?,
+            2,
+            "{:?}",
+            process.test_job_accounting()
+        );
         assert!(process.memory_usage()?.private_bytes > 0);
         assert!(process.memory_usage()?.working_set_bytes > 0);
         assert!(process.peak_job_memory_bytes()? > 0);

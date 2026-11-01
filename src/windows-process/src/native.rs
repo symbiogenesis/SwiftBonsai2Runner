@@ -61,6 +61,8 @@ pub(super) mod devices;
 mod environment;
 mod host;
 mod isa;
+#[cfg(feature = "test-probe")]
+mod job_probe;
 mod opencl;
 mod power;
 mod power_policy;
@@ -512,6 +514,11 @@ impl NativeProcess {
             )
         })?;
         Ok(accounting.ActiveProcesses)
+    }
+
+    #[cfg(feature = "test-probe")]
+    pub(super) fn test_job_accounting(&self) -> io::Result<String> {
+        job_probe::observe(self)
     }
 
     pub(super) fn stop(&self, timeout: Duration) -> io::Result<()> {

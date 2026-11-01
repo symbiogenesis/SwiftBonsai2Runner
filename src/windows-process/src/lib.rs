@@ -853,6 +853,19 @@ impl OwnedProcess {
         self.0.active_processes()
     }
 
+    /// Captures bounded synthetic-fixture Job counters and member identities.
+    ///
+    /// Available only with `test-probe`. Returns accounting plus retained member
+    /// PIDs, snapshot parent PIDs and executable basenames; no paths, arguments
+    /// or environment values. Snapshot metadata is diagnostic, not admission.
+    ///
+    /// # Errors
+    /// Rejects failed native queries, more than 64 members or oversized snapshots.
+    #[cfg(feature = "test-probe")]
+    pub fn test_job_accounting(&self) -> io::Result<String> {
+        self.0.test_job_accounting()
+    }
+
     /// Returns the observed peak job-wide committed bytes.
     /// Windows may include denied allocation requests in this diagnostic counter;
     /// it is not a measurement of successfully resident or accepted allocations.
