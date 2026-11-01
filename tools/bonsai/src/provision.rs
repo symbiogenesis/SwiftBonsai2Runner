@@ -1061,16 +1061,31 @@ mod tests {
         .enumerate()
         {
             let mut archive = ZipWriter::new(Cursor::new(Vec::new()));
-            for name in [*first, names[1], names[2], names[3]] {
+            // ZIP 9 rejects duplicate names when writing. Corrupt a same-size
+            // alias after finishing to exercise duplicate intake explicitly.
+            let alias = "xonsai-token-worker.exe";
+            let first_name = if *first == names[1] { alias } else { *first };
+            for name in [first_name, names[1], names[2], names[3]] {
                 archive
                     .start_file(name, SimpleFileOptions::default())
                     .map_err(|error| error.to_string())?;
                 archive.write_all(&[0]).map_err(|error| error.to_string())?;
             }
-            let bytes = archive
+            let mut bytes = archive
                 .finish()
                 .map_err(|error| error.to_string())?
                 .into_inner();
+            if *first == names[1] {
+                let mut offset = 0;
+                while let Some(position) = bytes[offset..]
+                    .windows(alias.len())
+                    .position(|part| part == alias.as_bytes())
+                {
+                    let start = offset + position;
+                    bytes[start..start + alias.len()].copy_from_slice(names[1].as_bytes());
+                    offset = start + alias.len();
+                }
+            }
             let archive_path = root.join(format!("archive-{index}.zip"));
             fs::write(&archive_path, &bytes).map_err(|error| error.to_string())?;
             let pin = json!({"bytes": bytes.len(), "sha256": crate::identity::hex(&Sha256::digest(&bytes))});
