@@ -15,7 +15,8 @@ jobs:
       - uses: ./.github/actions/bonsai-tools
       - name: Check native hosted preparation, extraction and CMake path policy
         shell: pwsh
-        run: cargo +nightly-2026-10-22 test --locked --release --target-dir $env:BONSAI_TOOLS_TARGET -p bonsai-tools --lib build_tools::
+        run: |
+          cargo +nightly-2026-10-22 test --locked --release --target-dir $env:BONSAI_TOOLS_TARGET -p bonsai-tools --lib build_tools::
       - name: Check static dependency rejection without executable targets
         shell: pwsh
         run: python -B tools/runtime-candidates/test_pe_closure.py

@@ -43,14 +43,14 @@ fn initialize_startup(request: &mut serde_json::Value) -> bonsai_tools::Result<(
 fn startup_command(command: &str, request: &serde_json::Value) -> bool {
     matches!(
         command,
-            "source-build"
-                | "chat-launch"
-                | "chat-prepare"
-                | "hexagon-tools"
-                | "build-tools"
-                | "provision"
-                | "artifact"
-                | "doctor"
+        "source-build"
+            | "chat-launch"
+            | "chat-prepare"
+            | "hexagon-tools"
+            | "build-tools"
+            | "provision"
+            | "artifact"
+            | "doctor"
     ) || (command == "speech-build"
         && matches!(
             request["operation"].as_str(),

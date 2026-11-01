@@ -37,7 +37,8 @@ jobs:
           toolchain: nightly-2026-10-22-aarch64-pc-windows-msvc
       - name: Check native hosted build policy and bounded failure evidence
         shell: pwsh
-        run: cargo +nightly-2026-10-22 test --locked --release --target-dir $env:BONSAI_TOOLS_TARGET -p bonsai-tools --lib build_tools::
+        run: |
+          cargo +nightly-2026-10-22 test --locked --release --target-dir $env:BONSAI_TOOLS_TARGET -p bonsai-tools --lib build_tools::
       - name: Check native source, receipt and original-deadline policy
         shell: pwsh
         run: cargo +nightly-2026-10-22 test --locked --release --target-dir $env:BONSAI_TOOLS_TARGET -p bonsai-tools --lib native_qualification::tests
