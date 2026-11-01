@@ -164,8 +164,13 @@ Runner also provides the independent Rust `ptq1-packing` verifier through
 receipt, compares every original symbol and raw scale with a separately derived
 decoder, and checks preserved metadata and non-PQ tensor bytes. Header reads,
 payload buffers and execution time are bounded. Its synthetic controls cover all
-wire bytes in every lane and malformed tensor extents; actual complete-file
-verification and independent review are still required for the promotion gate.
+wire bytes in every lane and malformed tensor extents. The [complete external-owner
+scan](evidence/ptq1-delivery-52f98b3.json) verified all 209,920,000 blocks, preserved
+metadata and 57,767,936 other tensor bytes in 11.88 seconds using 128 KiB of payload
+buffers, after owned model cleanup inside the same five-minute allowance. This is
+data verification, outside Actions CI; it establishes no inference speed, answer
+quality or activation/state parity. Appropriate CI provenance and independent
+promotion review remain required before scoring the packing gate.
 
 All converted tensor block counts are divisible by sixteen, retaining 32-byte alignment.
 Non-tensor bytes occupy the 11,120,992-byte header/data-offset region; there are no

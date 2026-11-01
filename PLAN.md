@@ -69,15 +69,18 @@ claiming a latency, throughput or process-memory gain.
 Qualify the Rust PTQ1 DLL collector against the current locked Prism source through
 the main-only numerical workflow, explicitly selecting the intended Auto, scalar or
 NEON backend. Selection prepares one bounded comparison, not a matrix or permission
-to split a matrix across repeated owner-device runs. The [reduced current-release
-attempt](docs/evidence/ptq1-0110-bounded-scale-streams.json) passed PTQ1/adapter
-readiness and one-token streams at scales 1.3 and zero, then stopped before
-invalid-scale rejection and captured-history change-back to preserve the required
-45-second request-and-cleanup reserve. Qualify the complete three-stream sequence as one feasible
-workload; do not continue its missing steps through additional owner jobs. Retain
+to split a matrix across repeated owner-device runs. The [latest one-worker
+attempt](docs/evidence/ptq1-delivery-52f98b3.json) passed PTQ1/adapter readiness,
+one-token streams at scales 1.3 and zero, and invalid-scale rejection. Its
+generated-history change-back request expired after 72.29 seconds within the
+215-second model-case allowance; complete lifecycle acceptance remains pending.
+Qualify the complete three-stream sequence as one feasible workload, including a
+separately scoped four-worker candidate and matching numerical capture when selected;
+do not continue missing steps through additional owner jobs. Retain
 exact generated source-response/message digests; empty or unbound output leaves
-generated history pending. Attribute the observed 36.75-second startup and roughly
-40-second one-token requests before optimizing a measured hotspot. Retain bounded
+generated history pending. Attribute the observed 35.46-second startup, roughly
+38–39-second one-token requests and incomplete history request before optimizing a
+measured hotspot. Retain bounded
 live request/partial-prefix receipts; observed SSE delivery is not backend kernel
 timing or decode TPS, and completed-operation counts do not prove zero emitted tokens. Qualify the
 explicit `ptq1-pq2-complete-response` Rust-service pair within the same aggregate
@@ -96,10 +99,11 @@ passes four independently reviewed documentary gates and leaves fifteen pending.
 Close its actual-model, adapter provenance, paired benefit, quality, resource,
 isolation, recovery and installation gates before changing defaults or removing
 the README's adapter qualification. Later application identities need their own review.
-Run the independent Rust `ptq1-packing` verifier against both exact artifacts and
-retain its complete, source-bound report and independent review for the packing
-gate. Its decoder is separate from the exporter; synthetic controls and the
-exporter's self-check do not replace the complete scan. Use the validated residual
+Bind the [completed independent packing scan](docs/evidence/ptq1-delivery-52f98b3.json)
+to appropriate main-only CI provenance and independent promotion review before
+scoring that gate. It verified all 209,920,000 blocks with an exporter-independent
+decoder, but ran outside the Actions job; synthetic controls or local execution
+cannot substitute for the evaluator's CI identity. Use the validated residual
 original-owner allowance for the three-stream lifecycle, preserving the 300-second
 aggregate ceiling, original clocks and all model cleanup reserves. Never restart a
 clock or continue a partial matrix. The approved adapter's missing immutable
