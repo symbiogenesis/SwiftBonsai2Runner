@@ -366,6 +366,28 @@ fn stop_and_drop_kill_descendants_and_observe_memory() -> io::Result<()> {
         let descendant =
             listener_process_id(port)?.ok_or_else(|| io::Error::other("listener disappeared"))?;
         assert_ne!(descendant, process.id());
+        // ActiveProcesses can temporarily include a failed Job association
+        // until the terminated process and its references are released:
+        // https://learn.microsoft.com/windows/win32/api/winnt/ns-winnt-jobobject_basic_accounting_information
+        // Require the exact two-process tree within the existing bound, keeping
+        // both the root and the observed descendant live throughout the wait.
+        // Persistent extra processes still fail; no process limit is relaxed.
+        let mut observed = 0;
+        until(|| {
+            if process.try_wait()?.is_some() || listener_process_id(port)? != Some(descendant) {
+                return Err(io::Error::other(
+                    "owned root or descendant exited before tree accounting settled",
+                ));
+            }
+            observed = process.active_processes()?;
+            Ok(observed == 2)
+        })
+        .map_err(|error| {
+            io::Error::new(
+                error.kind(),
+                format!("two-process tree accounting did not settle (last={observed}): {error}"),
+            )
+        })?;
         assert_eq!(process.active_processes()?, 2);
         assert!(process.memory_usage()?.private_bytes > 0);
         assert!(process.memory_usage()?.working_set_bytes > 0);
