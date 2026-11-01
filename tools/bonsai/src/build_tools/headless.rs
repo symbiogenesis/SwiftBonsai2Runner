@@ -141,7 +141,7 @@ fn sdk_environment(
         let version = name
             .split('.')
             .map(str::parse::<u32>)
-            .collect::<std::result::Result<Vec<_>, _>>();
+            .collect::<Result<Vec<_>, _>>();
         if let Ok(version) = version
             && version.len() == 4
             && version[..2] == [10, 0]
@@ -278,12 +278,18 @@ pub(super) fn build(repository: &Path, output: &Path) -> crate::Result<Value> {
     if Path::new(patch_name).components().count() != 1 {
         return Err("Reviewed patch filename is unsafe.".into());
     }
-    let patch = repository.join("docs/runtime-candidates").join(patch_name);
-    crate::startup_download::verify(
-        &patch,
-        count(&manifest["patch"], "bytes")?,
-        text(&manifest["patch"], "sha256")?,
-    )?;
+    let reviewed_patch = repository.join("docs/runtime-candidates").join(patch_name);
+    let patch_guard = super::input_file(&reviewed_patch)?;
+    if patch_guard
+        .metadata()
+        .map_err(|error| error.to_string())?
+        .len()
+        != count(&manifest["patch"], "bytes")?
+        || crate::startup_cache::digest_file(&reviewed_patch)?
+            != text(&manifest["patch"], "sha256")?
+    {
+        return Err("Reviewed headless patch identity changed.".into());
+    }
     stage_output(output, false)?;
     let working = scratch("HostedHeadless")?;
     let mut candidate = Candidate {
@@ -322,11 +328,12 @@ pub(super) fn build(repository: &Path, output: &Path) -> crate::Result<Value> {
             "apply".into(),
         ];
         let mut check = arguments.to_vec();
-        check.extend(["--check".into(), patch.clone().into_os_string()]);
+        check.extend(["--check".into(), reviewed_patch.clone().into_os_string()]);
         candidate.tool(&git, &check, "patch-check.txt", 120)?;
         let mut apply = arguments.to_vec();
-        apply.push(patch.into_os_string());
+        apply.push(reviewed_patch.into_os_string());
         candidate.tool(&git, &apply, "patch-apply.txt", 120)?;
+        drop(patch_guard);
         candidates_unchanged(&source, &manifest, true)?;
         if crate::startup_cache::digest_file(&source.join("LICENSE"))?
             != text(&manifest["license"], "sha256")?

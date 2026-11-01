@@ -53,8 +53,7 @@ fn candidate_image(path: &Path) -> crate::Result<Value> {
 }
 
 fn copy(source: &Path, destination: &Path) -> crate::Result<()> {
-    let mut source =
-        bonsai_artifacts::open_locked_file(source).map_err(|error| error.to_string())?;
+    let mut source = super::input_file(source)?;
     external(destination)?;
     let mut output = OpenOptions::new()
         .write(true)

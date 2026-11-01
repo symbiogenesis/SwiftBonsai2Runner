@@ -126,8 +126,43 @@ fn ordinary(path: &Path) -> crate::Result<()> {
     Ok(())
 }
 
+fn input_file(path: &Path) -> crate::Result<fs::File> {
+    if !path.is_absolute()
+        || path
+            .to_str()
+            .is_none_or(|value| value.contains(['%', '\0']))
+        || path.components().any(|component| {
+            matches!(
+                component,
+                std::path::Component::ParentDir | std::path::Component::CurDir
+            )
+        })
+    {
+        return Err("Build inputs must use expanded absolute paths.".into());
+    }
+    for ancestor in path.ancestors() {
+        let metadata = fs::symlink_metadata(ancestor).map_err(|error| error.to_string())?;
+        if is_redirect(&metadata) {
+            return Err("Build inputs must not traverse redirected paths.".into());
+        }
+    }
+    let mut options = OpenOptions::new();
+    options.read(true);
+    #[cfg(windows)]
+    {
+        use std::os::windows::fs::OpenOptionsExt as _;
+        options.share_mode(1).custom_flags(0x0020_0000);
+    }
+    let file = options.open(path).map_err(|error| error.to_string())?;
+    let metadata = file.metadata().map_err(|error| error.to_string())?;
+    if !metadata.is_file() || is_redirect(&metadata) {
+        return Err("Build inputs must be ordinary files.".into());
+    }
+    Ok(file)
+}
+
 fn read_json(path: &Path) -> crate::Result<Value> {
-    let file = bonsai_artifacts::open_locked_file(path).map_err(|error| error.to_string())?;
+    let file = input_file(path)?;
     let mut bytes = Vec::new();
     file.take(u64::try_from(RECEIPT_LIMIT + 1).map_err(|error| error.to_string())?)
         .read_to_end(&mut bytes)
@@ -395,8 +430,7 @@ pub fn run(request: Value) -> crate::Result<Value> {
             if crate::source_build::channel(repository_root)? != CHANNEL {
                 return Err("Build tools require the reviewed repository compiler pin.".into());
             }
-            let _manifest = bonsai_artifacts::open_locked_file(&repository_root.join("Cargo.toml"))
-                .map_err(|error| error.to_string())?;
+            let _manifest = input_file(&repository_root.join("Cargo.toml"))?;
         }
         Request::SpeechEnvironment { .. } | Request::SpeechStaticVerify { .. } => {}
     }
@@ -496,6 +530,19 @@ mod tests {
             assert!(hosted_context(true, &changed).is_err(), "{key}");
         }
         Ok(())
+    }
+
+    #[test]
+    fn repository_json_inputs_keep_source_access_separate_from_external_artifacts()
+    -> crate::Result<()> {
+        let working = scratch("BuildSourceInputTest")?;
+        fs::create_dir(working.join(".git")).map_err(|error| error.to_string())?;
+        let path = working.join("pin.json");
+        fs::write(&path, b"{\"pin\":1}").map_err(|error| error.to_string())?;
+        assert!(validate_external_path(&path).is_err());
+        assert_eq!(read_json(&path)?, json!({"pin":1}));
+        assert!(input_file(Path::new("relative.json")).is_err());
+        fs::remove_dir_all(working).map_err(|error| error.to_string())
     }
 
     #[test]

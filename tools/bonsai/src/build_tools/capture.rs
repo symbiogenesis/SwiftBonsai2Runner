@@ -3,8 +3,8 @@
 use std::io::Write as _;
 
 use super::{
-    BTreeMap, CHANNEL, OpenOptions, OsString, Path, PathBuf, Value, count, download, environment,
-    execute, external, extract_zip, fs, hosted_context, image, json, ordinary, read_json, save,
+    BTreeMap, CHANNEL, OpenOptions, OsString, Path, PathBuf, Value, download, environment, execute,
+    external, extract_zip, fs, hosted_context, image, json, ordinary, read_json, save,
     save_evidence, scratch, stage_output, text, text_arguments,
 };
 
