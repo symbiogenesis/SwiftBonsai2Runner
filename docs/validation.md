@@ -118,7 +118,8 @@ seconds before the deadline for owned cleanup. Completed observations are saved
 before the second startup; a skipped or expired half remains pending.
 
 `requestTokensPerSecond` divides reported completion usage by monotonic elapsed
-time from connection start through complete framed HTTP response delivery,
+time from connection start through complete framed HTTP response delivery and
+connection closure,
 including prefill, generation and transport. Model startup and response parsing
 are excluded; startup is recorded separately. This is application request
 throughput, **not device decode TPS**, TTFT or a rate inferred from SSE event or

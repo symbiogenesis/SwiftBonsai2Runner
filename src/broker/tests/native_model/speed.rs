@@ -54,7 +54,8 @@ fn visible_output(bytes: &[u8]) -> String {
 
 async fn measured_stream(port: u16, credential: &str) -> Value {
     // The timer includes connection, request delivery, prefill, generation and
-    // complete response framing. Parsing and model startup are outside it.
+    // complete response framing and connection closure. Parsing and model
+    // startup are outside it.
     let started = tokio::time::Instant::now();
     let bytes = exchange(port, credential, &speed_request()).await;
     let elapsed = started.elapsed();
@@ -382,7 +383,7 @@ fn pinned_native_pq2_adapter_compares_request_throughput() {
         "revision":env::var("GITHUB_SHA").unwrap(), "runId":env::var("GITHUB_RUN_ID").unwrap(),
         "runAttempt":env::var("GITHUB_RUN_ATTEMPT").unwrap(), "passed":false,
         "scope":"single-pair-application-request-throughput-not-decode-TPS",
-        "metricDefinition":"reported completion tokens / seconds from connection start through complete framed HTTP response; includes prefill, generation and transport; excludes model startup and response parsing",
+        "metricDefinition":"reported completion tokens / seconds from connection start through complete framed HTTP response and connection closure; includes prefill, generation and transport; excludes model startup and response parsing",
         "aggregateModelCaseBudgetSeconds":budget.as_secs(), "maximumModelCaseBudgetSeconds":CASE_BUDGET.as_secs(),
         "wholeJobMaximumSeconds":300, "requiredNativeSandbox":true,
         "weightRepresentation":"PQ2_0", "requestedAdapterScale":1.3,
