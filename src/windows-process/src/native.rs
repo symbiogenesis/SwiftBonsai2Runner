@@ -492,6 +492,22 @@ impl NativeProcess {
         }
     }
 
+    pub(super) fn active_processes(&self) -> io::Result<u32> {
+        let mut accounting = JOBOBJECT_BASIC_ACCOUNTING_INFORMATION::default();
+        // SAFETY: The owned Job handle remains live. The class matches the
+        // initialized writable structure and exact byte count; no pointer is retained.
+        check(unsafe {
+            QueryInformationJobObject(
+                self.job.as_raw_handle(),
+                JobObjectBasicAccountingInformation,
+                ptr::from_mut(&mut accounting).cast(),
+                win_size::<JOBOBJECT_BASIC_ACCOUNTING_INFORMATION>(),
+                null_mut(),
+            )
+        })?;
+        Ok(accounting.ActiveProcesses)
+    }
+
     pub(super) fn stop(&self, timeout: Duration) -> io::Result<()> {
         if timeout.is_zero() {
             return Err(invalid("cleanup timeout must be positive"));
@@ -505,21 +521,9 @@ impl NativeProcess {
         check(unsafe { TerminateJobObject(self.job.as_raw_handle(), 1) })?;
         let members = members?;
         loop {
-            let mut accounting = JOBOBJECT_BASIC_ACCOUNTING_INFORMATION::default();
-            // SAFETY: The class matches the writable, initialized structure and
-            // exact byte count. The optional returned-size pointer is null.
-            check(unsafe {
-                QueryInformationJobObject(
-                    self.job.as_raw_handle(),
-                    JobObjectBasicAccountingInformation,
-                    ptr::from_mut(&mut accounting).cast(),
-                    win_size::<JOBOBJECT_BASIC_ACCOUNTING_INFORMATION>(),
-                    null_mut(),
-                )
-            })?;
             // Job accounting can reach zero just before the root handle becomes
             // signaled. A successful stop also guarantees try_wait sees exit.
-            if accounting.ActiveProcesses == 0
+            if self.active_processes()? == 0
                 && self.try_wait()?.is_some()
                 && members_exited(&members)?
             {

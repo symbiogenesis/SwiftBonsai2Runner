@@ -320,8 +320,23 @@ pub(crate) fn run_with_checkpoint(
         }
         thread::sleep(Duration::from_millis(20));
     };
-    // A compiler root can exit before a descendant. Empty the owned Job before
-    // accepting its result, so no compiler outlives the enclosing build lock.
+    // A compiler root can exit just before its normal children. Retain the Job
+    // through a short natural-exit grace, then reject surviving workers even
+    // when their root returned success. Always stop the tree before returning.
+    #[cfg(windows)]
+    let survivors = {
+        let grace = Instant::now();
+        loop {
+            let active = guard
+                .child
+                .active_processes()
+                .map_err(|error| error.to_string())?;
+            if active == 0 || grace.elapsed() >= Duration::from_millis(250) {
+                break active;
+            }
+            thread::sleep(Duration::from_millis(10));
+        }
+    };
     guard.stop()?;
     checkpoint()?;
     let output = ProcessOutput {
@@ -330,6 +345,19 @@ pub(crate) fn run_with_checkpoint(
         code: status,
     };
     write_log(log, &output)?;
+    #[cfg(windows)]
+    if survivors > 0 {
+        let message = format!(
+            "Tool root exited with {survivors} surviving owned Job members; descendants were stopped."
+        );
+        fs::OpenOptions::new()
+            .append(true)
+            .open(log)
+            .and_then(|mut file| writeln!(file, "\n{message}"))
+            .map_err(|error| error.to_string())?;
+        guard.finished = true;
+        return Err(format!("{message} Evidence: {}", log.display()));
+    }
     checkpoint()?;
     guard.finished = true;
     Ok(output)
@@ -658,15 +686,15 @@ mod tests {
         let scratch = std::env::temp_dir().join(format!("Bonsai-Process-RootExit-{}", unique()));
         fs::create_dir(&scratch).map_err(|error| error.to_string())?;
         let (executable, args, marker) = process_tree(&scratch, false)?;
-        let output = run(
+        let result = run(
             executable.as_os_str(),
             &args,
             &scratch,
             &BTreeMap::new(),
             Duration::from_secs(10),
             &scratch.join("root-exit.log"),
-        )?;
-        assert_eq!(output.code, 0);
+        );
+        assert!(result.is_err_and(|error| error.contains("surviving owned Job members")));
         assert!(marker.is_file());
         assert!(
             descendant(&marker).is_err(),

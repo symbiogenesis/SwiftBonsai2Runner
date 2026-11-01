@@ -366,6 +366,7 @@ fn stop_and_drop_kill_descendants_and_observe_memory() -> io::Result<()> {
         let descendant =
             listener_process_id(port)?.ok_or_else(|| io::Error::other("listener disappeared"))?;
         assert_ne!(descendant, process.id());
+        assert_eq!(process.active_processes()?, 2);
         assert!(process.memory_usage()?.private_bytes > 0);
         assert!(process.memory_usage()?.working_set_bytes > 0);
         assert!(process.peak_job_memory_bytes()? > 0);
@@ -373,6 +374,7 @@ fn stop_and_drop_kill_descendants_and_observe_memory() -> io::Result<()> {
             assert!(process.stop(Duration::ZERO).is_err());
             process.stop(TIMEOUT)?;
             assert!(process.try_wait()?.is_some());
+            assert_eq!(process.active_processes()?, 0);
         }
         drop(process);
         until(|| listener_process_id(port).map(|owner| owner.is_none()))?;

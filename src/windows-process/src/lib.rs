@@ -820,6 +820,17 @@ impl OwnedProcess {
         self.0.stop(timeout)
     }
 
+    /// Returns the current number of live members in this owned Job.
+    ///
+    /// A completed root may still have descendants; callers must retain ownership
+    /// until this count reaches zero or complete explicit tree termination.
+    ///
+    /// # Errors
+    /// Returns failed Windows Job accounting operations.
+    pub fn active_processes(&self) -> io::Result<u32> {
+        self.0.active_processes()
+    }
+
     /// Returns the observed peak job-wide committed bytes.
     /// Windows may include denied allocation requests in this diagnostic counter;
     /// it is not a measurement of successfully resident or accepted allocations.
