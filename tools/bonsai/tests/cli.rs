@@ -38,6 +38,8 @@ fn version_advertises_policy_commands_without_resolving_a_request_file()
     for name in [
         "server-policy",
         "cpu-check-report",
+        "cpu-check",
+        "server-plan",
         "host-cpu",
         "host-gpu",
         "host-opencl",
