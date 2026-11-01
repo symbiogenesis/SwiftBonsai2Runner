@@ -115,18 +115,7 @@ fn calculate(request: &Request) -> crate::Result<Budget> {
         if field("RunId")? != request.run_id || field("Revision")? != request.revision {
             return Err("The owner deadline run or revision differs.".into());
         }
-        // The owner may predeclare a smaller allowance, including the original
-        // 210 seconds, but cannot consume the final thirty seconds of its
-        // absolute five-minute lifetime. This is not a new clock or a request
-        // to continue a previous capture: every cost uses the original start.
-        let work_seconds = field("WorkSeconds")?;
-        let work_seconds = canonical_decimal(work_seconds, 3)
-            .then(|| work_seconds.parse::<u16>().ok())
-            .flatten()
-            .filter(|seconds| *seconds <= MAXIMUM_OWNER_WORK_SECONDS)
-            .ok_or(
-                "The original owner work allowance must be canonical and at most 270 seconds.",
-            )?;
+        let work_seconds = owner_work_allowance(field("WorkSeconds")?)?;
         owner_work_seconds = Some(work_seconds);
         let started_tick = field("StartedTick")?;
         if !canonical_decimal(started_tick, 19) {
@@ -171,6 +160,19 @@ fn calculate(request: &Request) -> crate::Result<Budget> {
         owner_process_exit_reserve_seconds: owner_work_seconds
             .map(|_| OWNER_PROCESS_EXIT_RESERVE_SECONDS),
     })
+}
+
+fn owner_work_allowance(value: &str) -> crate::Result<u16> {
+    // The owner may predeclare a smaller allowance, including the original
+    // 210 seconds, but cannot consume the final thirty seconds of its
+    // absolute five-minute lifetime. Every cost uses the original start.
+    canonical_decimal(value, 3)
+        .then(|| value.parse::<u16>().ok())
+        .flatten()
+        .filter(|seconds| *seconds <= MAXIMUM_OWNER_WORK_SECONDS)
+        .ok_or_else(|| {
+            "The original owner work allowance must be canonical and at most 270 seconds.".into()
+        })
 }
 
 fn seconds(ticks: u64, frequency: u64) -> crate::Result<f64> {
