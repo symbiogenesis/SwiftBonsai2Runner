@@ -153,6 +153,7 @@ mod tests {
             ("0.1.9", true),
             ("0.1.10", true),
             ("0.1.11", false),
+            ("0.1.12", false),
             ("1.0.0", false),
             ("0.1.010", false),
             ("v0.1.10", false),
@@ -187,50 +188,52 @@ mod tests {
     -> Result<(), serde_json::Error> {
         use serde_json::json;
 
-        for repacked in [false, true] {
-            for adapter in [false, true] {
-                for expected in [1, 4] {
-                    let mut model = json!({
-                        "id": if repacked { "Swift-Bonsai-2-current-repacked-PTQ1_0" } else { "Swift-Bonsai-2-PQ2_0" },
-                        "object": "model",
-                        "model_sha256": if repacked { crate::inference::REPACKED_PTQ1_SHA256 } else { crate::inference::MODEL_SHA256 },
-                        "template_sha256": crate::inference::TEMPLATE_SHA256,
-                        "runtime": "prism-inference", "context_tokens": 8192, "seed": 42,
-                    });
-                    if repacked || adapter {
-                        model["weight_representation"] = json!(if repacked {
-                            "current-repacked-PTQ1_0"
-                        } else {
-                            "PQ2_0"
+        for version in ["0.1.11", "0.1.12"] {
+            for repacked in [false, true] {
+                for adapter in [false, true] {
+                    for expected in [1, 4] {
+                        let mut model = json!({
+                            "id": if repacked { "Swift-Bonsai-2-current-repacked-PTQ1_0" } else { "Swift-Bonsai-2-PQ2_0" },
+                            "object": "model",
+                            "model_sha256": if repacked { crate::inference::REPACKED_PTQ1_SHA256 } else { crate::inference::MODEL_SHA256 },
+                            "template_sha256": crate::inference::TEMPLATE_SHA256,
+                            "runtime": "prism-inference", "context_tokens": 8192, "seed": 42,
                         });
-                        model["adapter_sha256"] =
-                            json!(adapter.then_some(crate::inference::ADAPTER_SHA256));
-                        model["supports_abliteration_scale"] = json!(adapter);
-                        if adapter {
-                            model["abliteration_scale_range"] = json!([0, 2]);
+                        if repacked || adapter {
+                            model["weight_representation"] = json!(if repacked {
+                                "current-repacked-PTQ1_0"
+                            } else {
+                                "PQ2_0"
+                            });
+                            model["adapter_sha256"] =
+                                json!(adapter.then_some(crate::inference::ADAPTER_SHA256));
+                            model["supports_abliteration_scale"] = json!(adapter);
+                            if adapter {
+                                model["abliteration_scale_range"] = json!([0, 2]);
+                            }
                         }
-                    }
-                    for observed in [None, Some(1), Some(4)] {
-                        let mut candidate = model.clone();
-                        if let Some(workers) = observed {
-                            candidate["row_workers"] = json!(workers);
+                        for observed in [None, Some(1), Some(4)] {
+                            let mut candidate = model.clone();
+                            if let Some(workers) = observed {
+                                candidate["row_workers"] = json!(workers);
+                            }
+                            let body = serde_json::to_string(&json!({"data": [candidate]}))?;
+                            let framed = format!(
+                                "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\n\r\n{body}",
+                                body.len()
+                            );
+                            assert_eq!(
+                                validate_native_identity(
+                                    framed.as_bytes(),
+                                    repacked,
+                                    adapter,
+                                    WorkerReadiness::for_version(version, expected)
+                                )
+                                .is_ok(),
+                                observed == Some(expected),
+                                "version={version}, repacked={repacked}, adapter={adapter}, expected={expected}, observed={observed:?}"
+                            );
                         }
-                        let body = serde_json::to_string(&json!({"data": [candidate]}))?;
-                        let framed = format!(
-                            "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\n\r\n{body}",
-                            body.len()
-                        );
-                        assert_eq!(
-                            validate_native_identity(
-                                framed.as_bytes(),
-                                repacked,
-                                adapter,
-                                WorkerReadiness::for_version("0.1.11", expected)
-                            )
-                            .is_ok(),
-                            observed == Some(expected),
-                            "repacked={repacked}, adapter={adapter}, expected={expected}, observed={observed:?}"
-                        );
                     }
                 }
             }
@@ -240,7 +243,7 @@ mod tests {
 
     #[test]
     fn worker_readiness_rejects_coercion_unbounded_counts_and_duplicate_fields() {
-        for version in ["0.1.10", "0.1.11"] {
+        for version in ["0.1.10", "0.1.11", "0.1.12"] {
             let policy = WorkerReadiness::for_version(version, 4);
             for invalid in [
                 "null",
