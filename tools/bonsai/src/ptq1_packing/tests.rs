@@ -98,29 +98,38 @@ fn with_files<T>(
 
 #[test]
 fn independent_packing_checks_every_wire_byte_and_scale_bit() -> crate::Result<()> {
-    for byte in 0_u16..=255 {
-        // Native repeated-times-three decoder oracle, independently transposed
-        // into the original PQ2 bit layout for every possible first wire byte.
-        let mut source = [0_u8; 34];
-        source[1] = 0xbc;
-        let mut output = [0_u8; 28];
-        output[27] = 0xbc;
-        output[0] = u8::try_from(byte).map_err(|error| error.to_string())?;
-        let mut fraction = byte;
-        let mut value = 0;
-        for digit in 0..5 {
-            fraction *= 3;
-            let trit = fraction >> 8;
-            fraction &= 255;
-            value = value * 3 + trit;
-            let index = digit * 16;
-            source[2 + index / 4] |=
-                u8::try_from(trit).map_err(|error| error.to_string())? << (2 * (index % 4));
+    for (lane, start, stride, digits) in (0..16)
+        .map(|lane| (lane, lane, 16, 5))
+        .chain((16..24).map(|lane| (lane, 80 + lane - 16, 8, 5)))
+        .chain((24..26).map(|lane| (lane, 120 + lane - 24, 2, 4)))
+    {
+        for byte in 0_u16..=255 {
+            // Native repeated-times-three decoder oracle, independently transposed
+            // into the original PQ2 bit layout for every possible first wire byte.
+            let mut source = [0_u8; 34];
+            source[1] = 0xbc;
+            let mut output = [0_u8; 28];
+            output[27] = 0xbc;
+            output[lane] = u8::try_from(byte).map_err(|error| error.to_string())?;
+            let mut fraction = byte;
+            let mut value = 0;
+            for digit in 0..digits {
+                fraction *= 3;
+                let trit = fraction >> 8;
+                fraction &= 255;
+                value = value * 3 + trit;
+                let index = start + digit * stride;
+                source[2 + index / 4] |=
+                    u8::try_from(trit).map_err(|error| error.to_string())? << (2 * (index % 4));
+            }
+            if digits == 4 {
+                value *= 3;
+            }
+            assert_eq!(
+                block_matches(&source, &output).is_ok(),
+                (value * 256).div_ceil(243) == byte
+            );
         }
-        assert_eq!(
-            block_matches(&source, &output).is_ok(),
-            (value * 256).div_ceil(243) == byte
-        );
     }
     let mut source = [0xaa; 34];
     source[..2].copy_from_slice(&[0, 0xbc]);
@@ -136,6 +145,39 @@ fn independent_packing_checks_every_wire_byte_and_scale_bit() -> crate::Result<(
         source[..2].copy_from_slice(&scale);
         output[26..].copy_from_slice(&scale);
         assert!(block_matches(&source, &output).is_err());
+    }
+    Ok(())
+}
+
+#[test]
+fn independent_packing_rejects_invalid_tensor_geometry_and_array_tags() -> crate::Result<()> {
+    let source = fixture(false)?;
+    let output = fixture(true)?;
+    let name = source
+        .windows(5)
+        .position(|bytes| bytes == b"quant")
+        .ok_or("Missing fixture descriptor.")?;
+    let signs = source
+        .windows(20)
+        .position(|bytes| bytes == b"prism.hadamard.signs")
+        .ok_or("Missing fixture signs.")?;
+    let mut cases = Vec::new();
+    for extent in [0_u64, 127, u64::MAX] {
+        let mut changed = source.clone();
+        changed[name + 9..name + 17].copy_from_slice(&extent.to_le_bytes());
+        cases.push(changed);
+    }
+    for offset in [1_u64, 0, u64::MAX - 31] {
+        let mut changed = source.clone();
+        changed[name + 21..name + 29].copy_from_slice(&offset.to_le_bytes());
+        cases.push(changed);
+    }
+    let mut changed = source.clone();
+    changed[signs + 24..signs + 28].copy_from_slice(&999_u32.to_le_bytes());
+    changed[signs + 28..signs + 36].copy_from_slice(&0_u64.to_le_bytes());
+    cases.push(changed);
+    for changed in cases {
+        assert!(with_files(&changed, &output, |a, b| compare(a, b, &deadline())).is_err());
     }
     Ok(())
 }

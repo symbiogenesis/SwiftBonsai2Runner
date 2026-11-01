@@ -102,7 +102,7 @@ impl Reader<'_> {
             9 => {
                 let item = self.u32(false)?;
                 let count = self.u64(false)?;
-                if count > ELEMENT_LIMIT.saturating_sub(self.elements) {
+                if item > 12 || count > ELEMENT_LIMIT.saturating_sub(self.elements) {
                     return Err("PTQ1 packing metadata array exceeds its element bound.".into());
                 }
                 for _ in 0..count {

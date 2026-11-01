@@ -72,9 +72,60 @@ fn verify_digest(
     seek(file, 0)
 }
 
-// This verifier deliberately does not call the exporter's pack/unpack routines.
-// Recover each base-three digit directly from the fractional native encoding,
-// then demand the unique wire byte and compare the original two-bit symbol.
+#[derive(Clone, Copy)]
+struct Digits {
+    lanes: u64,
+    canonical_five: bool,
+    canonical_four: bool,
+}
+
+// Derive this independent table from fractional native decoding, rather than
+// calling the exporter's codec. Five recovered trits occupy separate byte lanes;
+// four table entries combine into five original PQ2 bytes without a digit loop.
+const fn digit_table() -> [Digits; 256] {
+    let mut table = [Digits {
+        lanes: 0,
+        canonical_five: false,
+        canonical_four: false,
+    }; 256];
+    let mut index = 0;
+    let mut byte = 0_u16;
+    while index < 256 {
+        let mut fraction = byte;
+        let mut integer = 0;
+        let mut digit = 0;
+        while digit < 5 {
+            fraction *= 3;
+            let trit = fraction >> 8;
+            fraction &= 255;
+            integer = integer * 3 + trit;
+            table[index].lanes |=
+                u64::from_le_bytes([trit.to_le_bytes()[0], 0, 0, 0, 0, 0, 0, 0]) << (digit * 8);
+            digit += 1;
+        }
+        table[index].canonical_five = (integer * 256).div_ceil(243) == byte;
+        table[index].canonical_four = (integer / 3 * 3 * 256).div_ceil(243) == byte;
+        index += 1;
+        byte += 1;
+    }
+    table
+}
+
+const DIGITS: [Digits; 256] = digit_table();
+
+fn strided_five(source: &[u8], start: usize, stride: usize) -> u64 {
+    u64::from_le_bytes([
+        source[start],
+        source[start + stride],
+        source[start + stride * 2],
+        source[start + stride * 3],
+        source[start + stride * 4],
+        0,
+        0,
+        0,
+    ])
+}
+
 fn block_matches(source: &[u8], output: &[u8]) -> crate::Result<()> {
     if source.len() != 34 || output.len() != 28 || source[..2] != output[26..] {
         return Err("PTQ1 packing changed raw scale bytes or block extent.".into());
@@ -83,33 +134,35 @@ fn block_matches(source: &[u8], output: &[u8]) -> crate::Result<()> {
     if scale & 0x7fff == 0 || scale & 0x7c00 == 0x7c00 {
         return Err("PTQ1 packing requires finite nonzero raw FP16 scales.".into());
     }
-    for (lane, packed) in output[..26].iter().copied().enumerate() {
-        let (start, width, digits) = if lane < 16 {
-            (lane, 16, 5)
-        } else if lane < 24 {
-            (80 + lane - 16, 8, 5)
-        } else {
-            (120 + lane - 24, 2, 4)
-        };
-        let mut remainder = u16::from(packed);
-        let mut integer = 0_u16;
-        for digit in 0..digits {
-            remainder *= 3;
-            let recovered = remainder >> 8;
-            remainder &= 255;
-            integer = integer * 3 + recovered;
-            let index = start + digit * width;
-            let original = (source[2 + index / 4] >> (2 * (index % 4))) & 3;
-            if u16::from(original) != recovered {
+    for (first, start, stride, groups) in [(0, 2, 4, 4), (16, 22, 2, 2)] {
+        for group in 0..groups {
+            let offset = first + group * 4;
+            let a = DIGITS[usize::from(output[offset])];
+            let b = DIGITS[usize::from(output[offset + 1])];
+            let c = DIGITS[usize::from(output[offset + 2])];
+            let d = DIGITS[usize::from(output[offset + 3])];
+            if !(a.canonical_five && b.canonical_five && c.canonical_five && d.canonical_five) {
+                return Err("PTQ1 packing uses a noncanonical wire byte.".into());
+            }
+            let recovered = a.lanes | (b.lanes << 2) | (c.lanes << 4) | (d.lanes << 6);
+            if recovered != strided_five(source, start + group, stride) {
                 return Err("PTQ1 packing changed an original PQ2 symbol.".into());
             }
         }
-        if digits == 4 {
-            integer *= 3;
-        }
-        if (integer * 256).div_ceil(243) != u16::from(packed) {
-            return Err("PTQ1 packing uses a noncanonical wire byte.".into());
-        }
+    }
+    let a = DIGITS[usize::from(output[24])];
+    let b = DIGITS[usize::from(output[25])];
+    if !(a.canonical_four && b.canonical_four) {
+        return Err("PTQ1 packing uses a noncanonical tail wire byte.".into());
+    }
+    let tail = u32::from_le_bytes([
+        source[32] & 15,
+        source[32] >> 4,
+        source[33] & 15,
+        source[33] >> 4,
+    ]);
+    if a.lanes | (b.lanes << 2) != u64::from(tail) {
+        return Err("PTQ1 packing changed an original PQ2 tail symbol.".into());
     }
     Ok(())
 }
