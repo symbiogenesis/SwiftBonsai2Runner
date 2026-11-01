@@ -15,15 +15,20 @@ function Get-BonsaiHexagonComputeResult {
     [CmdletBinding()]
     [OutputType([Collections.IDictionary])]
     param([Parameter(Mandatory)][string]$Json, [Parameter(Mandatory)][int]$ExitCode,
-        [ValidateSet('F32','GuardedQ2')][string]$Case = 'F32')
+        [ValidateSet('F32','GuardedQ2','F32NoBlock')][string]$Case = 'F32')
     $record = ConvertFrom-BonsaiHexagonDispatchJson -Json $Json
-    $kind = if ($Case -ceq 'F32') { 'native-fastrpc-queue-compute-probe' } else { 'native-fastrpc-queue-q2-probe' }
+    $kind = switch ($Case) {
+        'F32' { 'native-fastrpc-queue-compute-probe' }
+        'GuardedQ2' { 'native-fastrpc-queue-q2-probe' }
+        'F32NoBlock' { 'native-fastrpc-queue-noblock-probe' }
+    }
     if ($ExitCode -ne 0 -or ($record.schemaVersion -isnot [int] -and $record.schemaVersion -isnot [long]) -or $record.schemaVersion -ne 1 -or
         $record.kind -cne $kind -or
         $record.stage -isnot [string] -or $record.stage -cnotmatch '^[a-z][a-z0-9-]{0,95}$' -or
         $record.driverDll -isnot [string] -or -not [IO.Path]::IsPathFullyQualified($record.driverDll)) {
         throw 'Invalid fixed native computation receipt.'
     }
+    if ($Case -ceq 'F32NoBlock' -and $record.writeMode -cne 'nonblocking') { throw 'The nonblocking control omitted its distinct write mode.' }
     if ($Case -ceq 'GuardedQ2') {
         foreach ($pair in @(@('columns',256),@('rows',32),@('batch',2),@('outputValuesChecked',64))) {
             $value = $record[$pair[0]]
@@ -65,7 +70,7 @@ function Invoke-BonsaiHexagonComputeWorker {
     [CmdletBinding()]
     [OutputType([Collections.Specialized.OrderedDictionary])]
     param([Parameter(Mandatory)][Collections.IDictionary]$Request)
-    if ($Request.ComputeCase -isnot [string] -or $Request.ComputeCase -cnotin @('F32','GuardedQ2')) { throw 'Select exactly one fixed compute case.' }
+    if ($Request.ComputeCase -isnot [string] -or $Request.ComputeCase -cnotin @('F32','GuardedQ2','F32NoBlock')) { throw 'Select exactly one fixed compute case.' }
     $holds = [Collections.Generic.List[IO.FileStream]]::new()
     $report = [ordered]@{
         SchemaVersion = 1; Kind = 'runner-hexagon-compute-worker'; SourceRevision = $Request.ExpectedRunnerRevision; ComputeCase = $Request.ComputeCase
@@ -108,9 +113,11 @@ function Invoke-BonsaiHexagonComputeWorker {
         $lockStream.Position = 0
         $lockHash = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData($lockStream)).ToLowerInvariant()
         Assert-BonsaiHexagonSessionBuild -Receipt $receipt -ExpectedRunnerRevision $Request.ExpectedRunnerRevision -SourceDigests $sourceDigests -ManifestSha256 $manifestHash -LockSha256 $lockHash
+        $report.Stage = 'image-identity'
         $exe = Join-Path $Request.FixtureDirectory 'native-hexagon-query.exe'
         $holds.Add((Get-BonsaiHexagonDispatchFile -Path $exe -Pin @{ bytes = $receipt.Executable.Bytes; sha256 = $receipt.Executable.Sha256 }))
         Assert-Arm64PE -Path $exe
+        $report.Stage = 'candidate-identity'
         $candidateStream = [IO.FileStream]::new($Request.CandidateLockPath, 'Open', 'Read', 'Read'); $holds.Add($candidateStream)
         # This source audit is larger than a runtime receipt. It is never child output.
         if ($candidateStream.Length -le 0 -or $candidateStream.Length -gt 1MB) { throw 'Candidate lock exceeds its byte bound.' }
@@ -163,7 +170,11 @@ function Invoke-BonsaiHexagonComputeWorker {
         $report.Stage = 'queue-compute'
         Save-BonsaiHexagonDispatchWorkerReceipt -Report $report -Path $Request.WorkerReceiptPath
         [Environment]::SetEnvironmentVariable('ADSP_LIBRARY_PATH', $Request.PackageDirectory, 'Process')
-        $mode = if ($Request.ComputeCase -ceq 'F32') { '--reference-queue-compute-probe' } else { '--reference-queue-q2-probe' }
+        $mode = switch ($Request.ComputeCase) {
+            'F32' { '--reference-queue-compute-probe' }
+            'GuardedQ2' { '--reference-queue-q2-probe' }
+            'F32NoBlock' { '--reference-queue-noblock-probe' }
+        }
         $probe = Invoke-BonsaiHexagonBoundedCapture -Executable $exe -ArgumentList @($mode, $Request.PackageDirectory) -WorkingDirectory $Request.PackageDirectory -ProgressReceipt $report -ProgressPath $Request.WorkerReceiptPath -ProgressKind Compute
         $native = Get-BonsaiHexagonComputeResult -Json $probe.StandardOutput -ExitCode $probe.ExitCode -Case $Request.ComputeCase
         if ($native.driverDll -cne $guard.Identity.Path) { throw 'Native computation loaded a different inspected driver.' }

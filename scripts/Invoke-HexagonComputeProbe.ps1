@@ -17,7 +17,7 @@ param(
     [Parameter(Mandatory, ParameterSetName = 'Execute')][string]$SigntoolPath,
     [Parameter(Mandatory, ParameterSetName = 'Execute')][ValidatePattern('^[a-f0-9]{40}$')][string]$ExpectedRunnerRevision,
     [ValidateRange(1,240)][int]$MaximumSeconds = 120,
-    [ValidateSet('F32','GuardedQ2')][string]$Case = 'F32',
+    [ValidateSet('F32','GuardedQ2','F32NoBlock')][string]$Case = 'F32',
     [Parameter(Mandatory, ParameterSetName = 'Plan')][switch]$PlanOnly
 )
 $clock = [Diagnostics.Stopwatch]::StartNew()
@@ -32,7 +32,7 @@ if ($PlanOnly) {
     return [ordered]@{
         SchemaVersion = 1; Kind = 'runner-hexagon-compute-plan'; MaximumSeconds = $MaximumSeconds
         CleanupReserveSeconds = 75; QueueSlots = 1; Operations = 1; Package = 'GenieX-v0.10.0'
-        Columns = if ($Case -ceq 'F32') { 32 } else { 256 }; Rows = 32; Batch = 2; ComputeCase = $Case
+        Columns = if ($Case -ceq 'GuardedQ2') { 256 } else { 32 }; Rows = 32; Batch = 2; ComputeCase = $Case
         ModelLoaded = $false; ProfileEligible = $false
         OwnedJobRequired = $true; IndependentWindowsAbiRequired = $true; CatalogVerificationRequired = $true
         SourceBoundHostedFixtureRequired = $true; TrustChangesAllowed = $false; AutomaticRetryAllowed = $false

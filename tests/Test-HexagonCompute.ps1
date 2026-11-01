@@ -11,6 +11,13 @@ $PSNativeCommandUseErrorActionPreference = $true
 Import-Module (Join-Path $PSScriptRoot 'Bonsai.TestSupport.psm1')
 Import-Module (Join-Path $PSScriptRoot '../scripts/Bonsai.HexagonCompute.psm1')
 if ($Case -ceq 'Plan') {
+    $computeModule = Get-Module -Name Bonsai.HexagonCompute
+    $helpers = @(& $computeModule {
+        foreach ($name in @('Assert-Arm64PE','Assert-BonsaiHexagonSessionBuild','Get-BonsaiHexagonDispatchFile','Get-BonsaiHexagonDriverGuard','Invoke-BonsaiHexagonBoundedCapture')) {
+            (Get-Command -Name $name -CommandType Function -ErrorAction Stop).Name
+        }
+    })
+    Assert ($helpers.Count -eq 5) 'The owned worker cannot resolve a required verification helper.'
     $plan = & (Join-Path $PSScriptRoot '../scripts/Invoke-HexagonComputeProbe.ps1') -PlanOnly
     Assert ($plan.MaximumSeconds -eq 120 -and $plan.CleanupReserveSeconds -eq 75 -and $plan.Operations -eq 1 -and
         $plan.QueueSlots -eq 1 -and $plan.OwnedJobRequired -and $plan.IndependentWindowsAbiRequired -and
@@ -70,5 +77,11 @@ if ($Case -ceq 'Plan') {
         $changed = $q2.Clone(); $changed[$field] = $null
         Assert-Failure { Get-BonsaiHexagonComputeResult -Json ($changed | ConvertTo-Json -Compress) -ExitCode 0 -Case GuardedQ2 } 'Incomplete guarded Q2 geometry admitted.'
     }
+    $noBlock = $native.Clone(); $noBlock.kind = 'native-fastrpc-queue-noblock-probe'; $noBlock.writeMode = 'nonblocking'
+    $result = Get-BonsaiHexagonComputeResult -Json ($noBlock | ConvertTo-Json -Compress) -ExitCode 0 -Case F32NoBlock
+    Assert $result.passed 'Explicit nonblocking control was rejected.'
+    Assert-Failure { Get-BonsaiHexagonComputeResult -Json ($noBlock | ConvertTo-Json -Compress) -ExitCode 0 } 'A nonblocking observation supplied the timed-write gate.'
+    $changed = $noBlock.Clone(); $changed.writeMode = 'timed'
+    Assert-Failure { Get-BonsaiHexagonComputeResult -Json ($changed | ConvertTo-Json -Compress) -ExitCode 0 -Case F32NoBlock } 'An ambiguous write mode supplied the nonblocking gate.'
 }
 return 'Native queue compute evidence controls passed without opening a device.'
