@@ -98,7 +98,7 @@ fn production_batches_preserve_explicit_package_coverage_and_release_policy() ->
                 "--profile".into(),
                 profile.into(),
             ];
-            for phase in PHASES.iter().chain(["fmt"].iter()) {
+            for phase in PHASES.iter().chain(std::iter::once(&"fmt")) {
                 cli.extend(["--phase".into(), (*phase).into()]);
             }
             let mut options = parse(&cli)?;
@@ -194,8 +194,14 @@ fn lane_selection_rejects_unknown_packages_and_never_expands_empty_sets() -> Res
         select_lane(&packages, &both, &["second".into()], "maintenance")?,
         ["second"]
     );
-    assert!(select_lane(&packages, &[], &both, "core")?.is_empty());
-    assert!(select_lane(&packages, &both, &[], "core")?.is_empty());
+    assert_eq!(
+        select_lane(&packages, &[], &both, "core")?,
+        Vec::<String>::new()
+    );
+    assert_eq!(
+        select_lane(&packages, &both, &[], "core")?,
+        Vec::<String>::new()
+    );
     assert!(select_lane(&packages, &["missing".into()], &both, "core").is_err());
     assert!(select_lane(&packages, &both, &["missing".into()], "core").is_err());
     assert!(select_lane(&packages, &both, &both, "bad\nname").is_err());

@@ -56,7 +56,7 @@ fn executable(name: &str) -> Result<PathBuf> {
 fn digest(path: &Path) -> Result<String> {
     let mut file = File::open(path).map_err(|error| error.to_string())?;
     let length = file.metadata().map_err(|error| error.to_string())?.len();
-    hash_reader(&mut file, length, &mut [0; 65536], &mut || Ok(()))
+    hash_reader(&mut file, length, &mut vec![0; 65536], &mut || Ok(()))
         .map_err(|error| error.to_string())
 }
 

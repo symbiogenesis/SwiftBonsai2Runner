@@ -24,7 +24,7 @@ fn external(path: &Path) -> crate::Result<()> {
     bonsai_artifacts::validate_external_path(path).map_err(|error| error.to_string())
 }
 
-fn create_file(path: &Path) -> crate::Result<std::fs::File> {
+fn create_file(path: &Path) -> crate::Result<fs::File> {
     external(path)?;
     let mut options = OpenOptions::new();
     options.write(true).create_new(true);

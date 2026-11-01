@@ -112,7 +112,7 @@ fn parse(arguments: &[OsString]) -> Result<Options> {
                     "--toolchain" => options.toolchain = Some(value.to_str().ok_or(USAGE)?.into()),
                     "--timeout-seconds" => {
                         options.timeout_seconds =
-                            value.to_str().ok_or(USAGE)?.parse().map_err(|_| USAGE)?
+                            value.to_str().ok_or(USAGE)?.parse().map_err(|_| USAGE)?;
                     }
                     _ => return Err(USAGE.into()),
                 }

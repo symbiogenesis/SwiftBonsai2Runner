@@ -225,7 +225,10 @@ fn retained_runtime(directory: &Path, runtime: &Value) -> crate::Result<Vec<Veri
             VerifiedFile::verify(&path, count(pin, "bytes")?, text(pin, "sha256")?)
                 .map_err(|error| error.to_string())?,
         );
-        if name.ends_with(".exe") {
+        if Path::new(name)
+            .extension()
+            .is_some_and(|extension| extension.eq_ignore_ascii_case("exe"))
+        {
             crate::startup_cache::assert_arm64(&path)?;
         }
     }
@@ -273,9 +276,10 @@ fn stage_runtime(data: &Path, runtime: &Value, archive_path: &Path) -> crate::Re
     let mut seen = BTreeSet::new();
     for index in 0..archive.len() {
         let mut entry = archive.by_index(index).map_err(|error| error.to_string())?;
+        let entry_name = entry.name().map_err(|error| error.to_string())?;
         let pin = pins
             .iter()
-            .find(|pin| pin["name"].as_str() == Some(entry.name()))
+            .find(|pin| pin["name"].as_str() == Some(entry_name.as_ref()))
             .ok_or("Unpinned inference archive entry.")?;
         let name = text(pin, "name")?;
         let length = count(pin, "bytes")?;
@@ -354,7 +358,9 @@ fn command(
     )?;
     if output.code != 0 {
         return Err(format!(
-            "Packing phase {name} failed; inspect retained process logs."
+            "Packing phase {name} failed ({}): {}",
+            output.code,
+            output.stderr.chars().take(4096).collect::<String>()
         ));
     }
     let result: Value = serde_json::from_str(&output.stdout).map_err(|error| error.to_string())?;
@@ -396,7 +402,10 @@ struct Receipt {
 impl Receipt {
     fn phase(&mut self, name: &str) -> crate::Result<()> {
         let now = self.clock.elapsed();
-        let previous = json!({"phase":self.value["phase"], "startedElapsedSeconds":self.phase_started.as_secs_f64(), "elapsedSeconds":(now - self.phase_started).as_secs_f64()});
+        let elapsed = now
+            .checked_sub(self.phase_started)
+            .ok_or("Packing phase clock moved backwards.")?;
+        let previous = json!({"phase":self.value["phase"], "startedElapsedSeconds":self.phase_started.as_secs_f64(), "elapsedSeconds":elapsed.as_secs_f64()});
         self.value["phaseDurations"]
             .as_array_mut()
             .ok_or("Missing phase attribution.")?
@@ -533,7 +542,7 @@ fn execute(
 ) -> crate::Result<Value> {
     external(data)?;
     external(evidence)?;
-    if data.starts_with(evidence) || evidence.starts_with(data) {
+    if overlapping(data, evidence) {
         return Err("Packing data and evidence directories must be separate.".into());
     }
     fs::create_dir(evidence)
@@ -591,6 +600,20 @@ fn execute(
     manifest(evidence, environment)?;
     result?;
     Ok(receipt.value)
+}
+
+fn overlapping(first: &Path, second: &Path) -> bool {
+    let normalize = |path: &Path| {
+        path.to_string_lossy()
+            .replace('\\', "/")
+            .trim_end_matches('/')
+            .to_uppercase()
+    };
+    let first = normalize(first);
+    let second = normalize(second);
+    first == second
+        || first.starts_with(&(second.clone() + "/"))
+        || second.starts_with(&(first + "/"))
 }
 
 /// Execute the compiled hosted packing policy, or inspect its fixed limits.

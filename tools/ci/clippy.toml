@@ -1,3 +1,5 @@
 # Target-specific native-tls metadata includes OpenSSL's Syn 2 macros, while the
 # workspace's pinned Serde uses Syn 3. Neither version is under this crate's control.
-allowed-duplicate-crates = ["syn"]
+# Native process ownership also brings MXC's independently pinned base64, nix and
+# Windows bindings alongside the HTTP client's versions. Neither is selected by CI policy.
+allowed-duplicate-crates = ["syn", "base64", "nix", "windows-sys"]

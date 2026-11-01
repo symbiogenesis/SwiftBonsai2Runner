@@ -145,6 +145,20 @@ fn retained_bounds_fit_the_owning_workflow_without_retries() -> crate::Result<()
 }
 
 #[test]
+fn data_and_uploaded_receipts_cannot_alias_through_windows_path_case() {
+    assert!(overlapping(Path::new("C:/Data"), Path::new("c:\\data")));
+    assert!(overlapping(
+        Path::new("C:/Data"),
+        Path::new("c:/DATA/evidence")
+    ));
+    assert!(overlapping(Path::new("C:/Data/work"), Path::new("c:/data")));
+    assert!(!overlapping(
+        Path::new("C:/Data"),
+        Path::new("c:/data-evidence")
+    ));
+}
+
+#[test]
 fn atomic_receipts_preserve_prior_evidence_and_bounded_partial_observations() -> crate::Result<()> {
     let root = std::env::temp_dir().join(format!(
         "Bonsai-PackingReceipt-{}",
