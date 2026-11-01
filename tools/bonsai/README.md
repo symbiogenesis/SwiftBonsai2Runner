@@ -344,3 +344,33 @@ Use explicit workspace packages/features and external working/target directories
 Prism native linking and compiler trials need separate build lanes. Local builds,
 Release analyzers and focused regressions are allowed; complete suites and all
 benchmarks remain CI-only. See [validation](../../docs/validation.md).
+
+## Offline Hexagon policy
+
+`bonsai-tools hexagon-policy --request ABSOLUTE_JSON_PATH` owns fixed dispatch,
+session and computation plans; hosted source/build and retained driver identity
+validation; and native/worker result consistency. Operations are `dispatch-plan`,
+`session-plan`, `compute-plan`, `environment`, `json`, `driver-identity`,
+`dispatch-build`, `session-build`, `dispatch-result`, `dispatch-worker`,
+`session-result`, `session-worker` and `compute-result`. Plan requests supply
+`maximumSeconds`; session requests explicitly supply `referenceInitialization`.
+Compute requests select exactly one `case`: `F32`, `GuardedQ2`, `F32NoBlock` or
+`GuardedQ2NoBlock`. Result requests carry original JSON in the `json` string and
+native results carry `exitCode`. Build/worker requests supply the expected
+source identities independently of the receipt.
+
+Evidence JSON is limited to 64 KiB and depth 32. Parsing rejects duplicate or
+case-aliased object names before map construction, trailing data and non-object
+roots. The fixed native ABI uses ASCII object names; non-ASCII aliases are also
+rejected. Exact integers and booleans cannot be replaced with strings, floats or
+each other. Successful mapping never implies compute, and verified computation
+never implies session teardown, Swift qualification or profile admission.
+
+PowerShell retains OS signature observation, held file handles and owned worker
+lifecycles. Its policy adapters require `BONSAI_TOOLS_PATH` from the source-bound
+hosted build and never bootstrap Cargo on the owner device. Hexagon hosted
+controls run the native policy regressions and publish a revision/digest-bound
+maintenance artifact. Session/dispatch owner jobs verify that same-run artifact
+inside the existing aggregate setup clock. Rust tests replace the former
+PowerShell build/result/plan tests; `Test-HexagonCapture.ps1` keeps only the
+remaining PowerShell pipe-capture and progress-retention checks.

@@ -1,0 +1,36 @@
+{
+  "SchemaVersion": 1,
+  "Kind": "runner-hexagon-dispatch-fixture",
+  "Outcome": "passed",
+  "Stage": "numeric-dispatch-complete",
+  "Failure": null,
+  "NativeCode": null,
+  "SourceRevision": "94256114c229674ef96e76eb2dea596e65b43818",
+  "SelfTest": false,
+  "BackendName": "HTP0",
+  "DispatchEvidence": "explicit-hexagon-compute-sync-and-full-output-oracle",
+  "SessionCleanup": "supervised-process-exit-required",
+  "DeviceDispatchVerified": true,
+  "CpuFallbackAllowed": false,
+  "ModelLoaded": false,
+  "SwiftQualified": false,
+  "ProfileEligible": false,
+  "Cases": [
+    {
+      "Columns": 128,
+      "Rows": 32,
+      "Batch": 1,
+      "OutputValuesChecked": 32,
+      "MatmulParity": true,
+      "ExecutedOnHexagon": true
+    },
+    {
+      "Columns": 128,
+      "Rows": 32,
+      "Batch": 32,
+      "OutputValuesChecked": 1024,
+      "MatmulParity": true,
+      "ExecutedOnHexagon": true
+    }
+  ]
+}

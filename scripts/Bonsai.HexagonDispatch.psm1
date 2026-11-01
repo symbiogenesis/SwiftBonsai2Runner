@@ -2,6 +2,7 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
+Import-Module (Join-Path $PSScriptRoot 'Bonsai.HexagonPolicy.psm1')
 Import-Module (Join-Path $PSScriptRoot 'Bonsai.Common.psm1')
 Import-Module (Join-Path $PSScriptRoot 'Bonsai.Native.psm1')
 Import-Module (Join-Path $PSScriptRoot 'Bonsai.HexagonIdentity.psm1')
@@ -11,16 +12,9 @@ function Get-BonsaiHexagonDispatchPlan {
     Describes the fixed supported-type access fixture without opening files or devices.
     #>
     [CmdletBinding()]
-    [OutputType([Collections.Specialized.OrderedDictionary])]
+    [OutputType([Collections.IDictionary])]
     param([ValidateRange(1,240)][int]$MaximumSeconds = 120)
-    return [ordered]@{
-        SchemaVersion = 1; Kind = 'runner-hexagon-dispatch-plan'; MaximumSeconds = $MaximumSeconds
-        CleanupReserveSeconds = 75; ModelLoaded = $false; CpuFallbackAllowed = $false
-        OwnedJobRequired = $true; CatalogMemberVerificationRequired = $true
-        SourceBoundHostedFixtureRequired = $true; AsInvokerManifestRequired = $true; DriverInstallationAllowed = $false
-        Cases = @(@{ Columns = 128; Rows = 32; Batch = 1 }, @{ Columns = 128; Rows = 32; Batch = 32 })
-        Qualification = 'device-access-only'; ProfileEligible = $false
-    }
+    return Invoke-BonsaiHexagonPolicy -Request @{ operation = 'dispatch-plan'; maximumSeconds = $MaximumSeconds }
 }
 
 function Assert-BonsaiHexagonDispatchBuild {
@@ -34,27 +28,7 @@ function Assert-BonsaiHexagonDispatchBuild {
         [Parameter(Mandatory)][string]$SourceSha256,
         [Parameter(Mandatory)][string]$ManifestSha256,
         [Parameter(Mandatory)][string]$LockSha256)
-    foreach ($digest in @($SourceSha256, $ManifestSha256, $LockSha256)) {
-        if ($digest -cnotmatch '^[a-f0-9]{64}$') { throw 'Invalid dispatch source identity.' }
-    }
-    if ($ExpectedRunnerRevision -cnotmatch '^[a-f0-9]{40}$' -or
-        ($Receipt.SchemaVersion -isnot [long] -and $Receipt.SchemaVersion -isnot [int]) -or $Receipt.SchemaVersion -ne 1 -or
-        $Receipt.RunnerRevision -isnot [string] -or $Receipt.RunnerRevision -cne $ExpectedRunnerRevision -or
-        $Receipt.RustToolchain -isnot [string] -or $Receipt.RustToolchain -cne 'nightly-2026-10-22-aarch64-pc-windows-msvc' -or
-        $Receipt.SourceSha256 -isnot [string] -or $Receipt.SourceSha256 -cne $SourceSha256 -or
-        $Receipt.ManifestSha256 -isnot [string] -or $Receipt.ManifestSha256 -cne $ManifestSha256 -or
-        $Receipt.LockSha256 -isnot [string] -or $Receipt.LockSha256 -cne $LockSha256 -or
-        $Receipt.HostedBuild -isnot [bool] -or -not $Receipt.HostedBuild -or
-        $Receipt.Target -isnot [string] -or $Receipt.Target -cne 'aarch64-pc-windows-msvc' -or
-        $Receipt.CompilerIdentitySha256 -isnot [string] -or $Receipt.CompilerIdentitySha256 -cnotmatch '^[a-f0-9]{64}$' -or
-        $Receipt.Executable -isnot [Collections.IDictionary]) { throw 'Dispatch fixture build identity differs from the trusted source selection.' }
-    $entry = $Receipt.Executable
-    if ($entry.Name -isnot [string] -or $entry.Name -cne 'hexagon-dispatch-fixture.exe' -or
-        ($entry.Bytes -isnot [long] -and $entry.Bytes -isnot [int]) -or
-        $entry.Bytes -le 0 -or $entry.Bytes -gt 16MB -or
-        $entry.Sha256 -isnot [string] -or $entry.Sha256 -cnotmatch '^[a-f0-9]{64}$') {
-        throw 'Invalid dispatch fixture executable identity.'
-    }
+    $null = Invoke-BonsaiHexagonPolicy -Request @{ operation = 'dispatch-build'; json = (ConvertTo-Json -InputObject $Receipt -Depth 32 -Compress); expectedRunnerRevision = $ExpectedRunnerRevision; sourceSha256 = $SourceSha256; manifestSha256 = $ManifestSha256; lockSha256 = $LockSha256 }
 }
 
 function Get-BonsaiHexagonDispatchEnvironment {
@@ -62,14 +36,9 @@ function Get-BonsaiHexagonDispatchEnvironment {
     Returns the reviewed child-only environment removal and lookup policy.
     #>
     [CmdletBinding()]
-    [OutputType([Collections.Specialized.OrderedDictionary])]
+    [OutputType([Collections.IDictionary])]
     param([Parameter(Mandatory)][string]$RuntimeDirectory, [Parameter(Mandatory)][string]$SystemDirectory)
-    return [ordered]@{
-        RemovePrefixes = @('GGML_', 'GENIEX_', 'QNN_', 'QAIRT_', 'HEXAGON_', 'ADSP_', 'CDSP_', 'FASTRPC_', 'RPCMEM_')
-        RemoveNames = @('ACTIONS_RUNTIME_TOKEN', 'ACTIONS_ID_TOKEN_REQUEST_TOKEN', 'ACTIONS_ID_TOKEN_REQUEST_URL',
-            'GITHUB_TOKEN', 'GH_TOKEN', 'ACTIONS_RUNNER_INPUT_TOKEN', 'LD_LIBRARY_PATH', 'LD_PRELOAD')
-        Set = @{ PATH = $RuntimeDirectory + ';' + $SystemDirectory; ADSP_LIBRARY_PATH = $RuntimeDirectory }
-    }
+    return Invoke-BonsaiHexagonPolicy -Request @{ operation = 'environment'; runtimeDirectory = $RuntimeDirectory; systemDirectory = $SystemDirectory }
 }
 
 function ConvertFrom-BonsaiHexagonDispatchJson {
@@ -79,29 +48,7 @@ function ConvertFrom-BonsaiHexagonDispatchJson {
     [CmdletBinding()]
     [OutputType([Collections.IDictionary])]
     param([Parameter(Mandatory)][AllowEmptyString()][string]$Json)
-    if ([Text.Encoding]::UTF8.GetByteCount($Json) -gt 65536) { throw 'Dispatch JSON exceeds its byte bound.' }
-    $options = [System.Text.Json.JsonDocumentOptions]::new()
-    $options.MaxDepth = 32
-    $document = [System.Text.Json.JsonDocument]::Parse($Json, $options)
-    try {
-        $pending = [Collections.Generic.Stack[System.Text.Json.JsonElement]]::new()
-        $pending.Push($document.RootElement)
-        while ($pending.Count) {
-            $element = $pending.Pop()
-            if ($element.ValueKind -eq [System.Text.Json.JsonValueKind]::Object) {
-                $names = [Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
-                foreach ($property in $element.EnumerateObject()) {
-                    if (-not $names.Add($property.Name)) { throw 'Dispatch JSON contains duplicate object names.' }
-                    $pending.Push($property.Value)
-                }
-            } elseif ($element.ValueKind -eq [System.Text.Json.JsonValueKind]::Array) {
-                foreach ($value in $element.EnumerateArray()) { $pending.Push($value) }
-            }
-        }
-    } finally { $document.Dispose() }
-    $record = ConvertFrom-Json -InputObject $Json -AsHashtable -NoEnumerate -DateKind String -Depth 32
-    if ($record -isnot [Collections.IDictionary]) { throw 'Dispatch JSON must contain one object.' }
-    return $record
+    return Invoke-BonsaiHexagonPolicy -Request @{ operation = 'json'; json = $Json }
 }
 
 function Get-BonsaiHexagonDispatchFixtureResult {
@@ -111,56 +58,7 @@ function Get-BonsaiHexagonDispatchFixtureResult {
     [CmdletBinding()]
     [OutputType([Collections.IDictionary])]
     param([Parameter(Mandatory)][AllowEmptyString()][string]$Json, [Parameter(Mandatory)][int]$ExitCode)
-    $record = ConvertFrom-BonsaiHexagonDispatchJson -Json $Json
-    if ($record -isnot [Collections.IDictionary] -or
-        ($record.SchemaVersion -isnot [long] -and $record.SchemaVersion -isnot [int]) -or $record.SchemaVersion -ne 1 -or
-        $record.Kind -isnot [string] -or $record.Kind -cne 'runner-hexagon-dispatch-fixture' -or
-        $record.SourceRevision -isnot [string] -or $record.SourceRevision -cne '94256114c229674ef96e76eb2dea596e65b43818' -or
-        $record.Outcome -isnot [string] -or $record.Outcome -cnotin @('passed', 'pending', 'failed') -or
-        $record.SelfTest -isnot [bool] -or $record.SelfTest -or
-        $record.DispatchEvidence -isnot [string] -or $record.DispatchEvidence -cne 'explicit-hexagon-compute-sync-and-full-output-oracle' -or
-        $record.SessionCleanup -isnot [string] -or $record.SessionCleanup -cne 'supervised-process-exit-required' -or
-        $record.Stage -isnot [string] -or $record.Stage -cnotmatch '^[a-z][a-z0-9-]{0,63}$' -or
-        ($null -ne $record.Failure -and ($record.Failure -isnot [string] -or $record.Failure -cnotmatch '^[a-z][a-z0-9-]{0,95}$')) -or
-        $record.DeviceDispatchVerified -isnot [bool] -or
-        $record.CpuFallbackAllowed -isnot [bool] -or $record.CpuFallbackAllowed -or
-        $record.ModelLoaded -isnot [bool] -or $record.ModelLoaded -or
-        $record.SwiftQualified -isnot [bool] -or $record.SwiftQualified -or
-        $record.ProfileEligible -isnot [bool] -or $record.ProfileEligible -or
-        $record.Cases -isnot [array] -or $record.Cases.Count -gt 2) {
-        throw 'Invalid dispatch fixture result contract.'
-    }
-    if ($null -ne $record.NativeCode -and
-        (($record.NativeCode -isnot [long] -and $record.NativeCode -isnot [int]) -or
-            $record.NativeCode -lt 0 -or $record.NativeCode -gt [uint]::MaxValue)) { throw 'Invalid native dispatch error code.' }
-    if ($null -ne $record.BackendName -and ($record.BackendName -isnot [string] -or $record.BackendName -cne 'HTP0')) {
-        throw 'Dispatch reported an unreviewed backend identity.'
-    }
-    $expectedExit = switch -CaseSensitive ($record.Outcome) { 'passed' { 0 }; 'pending' { 2 }; 'failed' { 1 } }
-    if ($ExitCode -ne $expectedExit -or $record.DeviceDispatchVerified -ne ($record.Outcome -ceq 'passed')) {
-        throw 'Dispatch exit status and device result disagree.'
-    }
-    if ($record.Outcome -ceq 'passed') {
-        if ($record.Cases.Count -ne 2 -or $null -ne $record.Failure -or $null -ne $record.NativeCode -or
-            $record.BackendName -cne 'HTP0' -or $record.Stage -cne 'numeric-dispatch-complete') {
-            throw 'Dispatch did not complete both fixed numeric cases on HTP0.'
-        }
-    } elseif ($null -eq $record.Failure) { throw 'Incomplete dispatch omitted its fixed failure reason.' }
-    $batches = [Collections.Generic.HashSet[int]]::new()
-    foreach ($case in $record.Cases) {
-        if ($case -isnot [Collections.IDictionary]) { throw 'Dispatch case must be an object.' }
-        foreach ($field in @('Columns', 'Rows', 'Batch', 'OutputValuesChecked')) {
-            if ($case[$field] -isnot [long] -and $case[$field] -isnot [int]) { throw 'Dispatch case requires exact integer extents.' }
-        }
-        if ($record.BackendName -cne 'HTP0' -or $case.Columns -ne 128 -or $case.Rows -ne 32 -or
-            $case.Batch -notin @(1, 32) -or -not $batches.Add([int]$case.Batch) -or
-            $case.OutputValuesChecked -ne (32 * $case.Batch) -or
-            $case.MatmulParity -isnot [bool] -or -not $case.MatmulParity -or
-            $case.ExecutedOnHexagon -isnot [bool] -or -not $case.ExecutedOnHexagon) {
-            throw 'Dispatch fixture output lacks complete fixed-shape parity.'
-        }
-    }
-    return $record
+    return Invoke-BonsaiHexagonPolicy -Request @{ operation = 'dispatch-result'; json = $Json; exitCode = $ExitCode }
 }
 
 function Get-BonsaiHexagonDispatchWorkerResult {
@@ -170,56 +68,7 @@ function Get-BonsaiHexagonDispatchWorkerResult {
     [CmdletBinding()]
     [OutputType([Collections.IDictionary])]
     param([Parameter(Mandatory)][string]$Json, [Parameter(Mandatory)][string]$ExpectedRunnerRevision)
-    $record = ConvertFrom-BonsaiHexagonDispatchJson -Json $Json
-    if (($record.SchemaVersion -isnot [long] -and $record.SchemaVersion -isnot [int]) -or $record.SchemaVersion -ne 1 -or
-        $record.Kind -isnot [string] -or $record.Kind -cne 'runner-hexagon-dispatch-worker' -or
-        $record.SourceRevision -isnot [string] -or $record.SourceRevision -cne $ExpectedRunnerRevision -or
-        $record.Outcome -isnot [string] -or $record.Outcome -cnotin @('passed', 'pending', 'failed') -or
-        $record.Stage -isnot [string] -or $record.Stage -cnotmatch '^[a-z][a-z0-9-]{0,63}$' -or
-        $record.LastFixtureStage -isnot [string] -or $record.LastFixtureStage -cnotin @('not-started', 'load', 'registry', 'backend-init', 'context', 'allocation', 'transfer', 'dispatch', 'readback') -or
-        ($null -ne $record.Failure -and ($record.Failure -isnot [string] -or $record.Failure -cnotmatch '^[a-z][a-z0-9-]{0,95}$')) -or
-        $record.SelectedDspArchitecture -isnot [string] -or $record.SelectedDspArchitecture -cne 'unknown') {
-        throw 'Invalid dispatch worker identity or stage.'
-    }
-    if ($record.LoadedDriverObservation -isnot [string] -or
-        $record.LoadedDriverObservation -cnotin @('not-started', 'not-observed', 'observed-verified', 'observation-rejected')) {
-        throw 'Invalid loaded-driver observation stage.'
-    }
-    if ($record.LoadedDriverObservation -ceq 'observed-verified') {
-        if ($record.LoadedDriverIdentity -isnot [Collections.IDictionary]) { throw 'Loaded driver observation omitted its identity.' }
-        Assert-BonsaiHexagonDriverIdentity -Identity $record.LoadedDriverIdentity
-    } elseif ($null -ne $record.LoadedDriverIdentity) { throw 'Unverified loaded driver identity was retained.' }
-    foreach ($field in @('ModelLoaded', 'SwiftQualified', 'ProfileEligible', 'DriverInstalled', 'TrustChanged')) {
-        if ($record[$field] -isnot [bool] -or $record[$field]) { throw 'Dispatch worker claimed an independent qualification or deployment gate.' }
-    }
-    if ($record.DeviceDispatchVerified -isnot [bool] -or $record.DeviceDispatchVerified -ne ($record.Outcome -ceq 'passed') -or
-        $record.CatalogMemberVerified -isnot [bool] -or
-        ($record.CatalogMembersVerified -isnot [long] -and $record.CatalogMembersVerified -isnot [int]) -or
-        $record.CatalogMemberNames -isnot [array] -or
-        ($record.RuntimeFilesVerified -isnot [long] -and $record.RuntimeFilesVerified -isnot [int]) -or
-        $record.RuntimeFilesVerified -lt 0 -or $record.RuntimeFilesVerified -gt 16) {
-        throw 'Invalid dispatch worker completion counters.'
-    }
-    $members = @('libggml-htp-v73.so', 'libggml-htp-v75.so', 'libggml-htp-v79.so', 'libggml-htp-v81.so')
-    if ($record.CatalogMemberVerified) {
-        if ($record.CatalogMembersVerified -ne 4 -or $record.CatalogMemberNames.Count -ne 4) { throw 'Dispatch omitted reviewed catalog members.' }
-        for ($index = 0; $index -lt 4; $index++) {
-            if ($record.CatalogMemberNames[$index] -isnot [string] -or $record.CatalogMemberNames[$index] -cne $members[$index]) { throw 'Dispatch catalog member identity changed.' }
-        }
-    } elseif ($record.CatalogMembersVerified -ne 0 -or $record.CatalogMemberNames.Count) { throw 'Unverified catalog membership was counted.' }
-    foreach ($field in @('FixtureSha256', 'FixtureSourceSha256', 'ManifestSha256', 'LockSha256', 'SigntoolSha256')) {
-        if ($null -ne $record[$field] -and ($record[$field] -isnot [string] -or $record[$field] -cnotmatch '^[a-f0-9]{64}$')) { throw 'Invalid dispatch worker source digest.' }
-        if ($record.DeviceDispatchVerified -and $null -eq $record[$field]) { throw 'Completed dispatch omitted its source identity.' }
-    }
-    if ($null -ne $record.FixtureResult) {
-        $fixtureExit = switch -CaseSensitive ($record.FixtureResult.Outcome) { 'passed' { 0 }; 'pending' { 2 }; 'failed' { 1 }; default { throw 'Unknown nested fixture outcome.' } }
-        $fixture = Get-BonsaiHexagonDispatchFixtureResult -Json ($record.FixtureResult | ConvertTo-Json -Depth 16 -Compress) -ExitCode $fixtureExit
-        if ($record.Outcome -cne $fixture.Outcome -or $record.Stage -cne $fixture.Stage -or $record.Failure -cne $fixture.Failure) { throw 'Dispatch worker and fixture disagree.' }
-    } elseif ($record.DeviceDispatchVerified -or $record.Outcome -ceq 'failed') { throw 'Dispatch claimed execution without numeric fixture evidence.' }
-    if ($record.DeviceDispatchVerified -and (-not $record.CatalogMemberVerified -or $record.RuntimeFilesVerified -ne 16)) {
-        throw 'Completed dispatch omitted verified runtime inputs.'
-    }
-    return $record
+    return Invoke-BonsaiHexagonPolicy -Request @{ operation = 'dispatch-worker'; json = $Json; expectedRunnerRevision = $ExpectedRunnerRevision }
 }
 
 function Get-BonsaiHexagonDispatchFile {

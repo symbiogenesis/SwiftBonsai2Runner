@@ -2,6 +2,7 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
+Import-Module (Join-Path $PSScriptRoot 'Bonsai.HexagonPolicy.psm1')
 Import-Module (Join-Path $PSScriptRoot 'Bonsai.HexagonSession.psm1')
 Import-Module (Join-Path $PSScriptRoot 'Bonsai.HexagonDispatch.psm1')
 Import-Module (Join-Path $PSScriptRoot 'Bonsai.HexagonIdentity.psm1')
@@ -16,64 +17,7 @@ function Get-BonsaiHexagonComputeResult {
     [OutputType([Collections.IDictionary])]
     param([Parameter(Mandatory)][string]$Json, [Parameter(Mandatory)][int]$ExitCode,
         [ValidateSet('F32','GuardedQ2','F32NoBlock','GuardedQ2NoBlock')][string]$Case = 'F32')
-    $record = ConvertFrom-BonsaiHexagonDispatchJson -Json $Json
-    $kind = switch ($Case) {
-        'F32' { 'native-fastrpc-queue-compute-probe' }
-        'GuardedQ2' { 'native-fastrpc-queue-q2-probe' }
-        'F32NoBlock' { 'native-fastrpc-queue-noblock-probe' }
-        'GuardedQ2NoBlock' { 'native-fastrpc-queue-q2-noblock-probe' }
-    }
-    if ($ExitCode -ne 0 -or ($record.schemaVersion -isnot [int] -and $record.schemaVersion -isnot [long]) -or $record.schemaVersion -ne 1 -or
-        $record.kind -cne $kind -or
-        $record.stage -isnot [string] -or $record.stage -cnotmatch '^[a-z][a-z0-9-]{0,95}$' -or
-        $record.driverDll -isnot [string] -or -not [IO.Path]::IsPathFullyQualified($record.driverDll)) {
-        throw 'Invalid fixed native computation receipt.'
-    }
-    if ($Case -cin @('F32NoBlock','GuardedQ2NoBlock') -and $record.writeMode -cne 'nonblocking') { throw 'The nonblocking control omitted its distinct write mode.' }
-    if ($Case -cin @('GuardedQ2','GuardedQ2NoBlock')) {
-        foreach ($pair in @(@('columns',256),@('rows',32),@('batch',2),@('outputValuesChecked',64))) {
-            $value = $record[$pair[0]]
-            if (($value -isnot [int] -and $value -isnot [long]) -or $value -ne $pair[1]) { throw 'Guarded Q2 probe changed its fixed geometry.' }
-        }
-    }
-    foreach ($name in @('passed','uriVerified','unsignedProcessRequested','handleObserved',
-        'responseValidated','numericValidated','freeCompleted','ownerPinnedUntilExit','poisoned',
-        'computeSubmitted','computeExecuted','profileEligible','sessionTeardownVerified')) {
-        if ($record[$name] -isnot [bool]) { throw 'Native computation flags require exact booleans.' }
-    }
-    if ($record.profileEligible -or $record.sessionTeardownVerified -or
-        ($record.computeExecuted -and (-not $record.computeSubmitted -or -not $record.numericValidated -or -not $record.responseValidated))) {
-        throw 'Native computation claimed an unsupported independent gate.'
-    }
-    if ($record.computeExecuted -and (($record.queueReadResult -isnot [int] -and $record.queueReadResult -isnot [long]) -or
-        $record.queueReadResult -ne 0 -or ($record.queueWriteResult -isnot [int] -and $record.queueWriteResult -isnot [long]))) {
-        throw 'A numerical observation requires a completed correlated read and a recorded write result.'
-    }
-    if ($record.computeSubmitted -and $null -ne $record.queueWriteResult -and $record.queueWriteResult -ne 0) {
-        if (-not $record.poisoned -or -not $record.ownerPinnedUntilExit -or $record.freeCompleted) {
-            throw 'A write error must retain every uncertain owner even after a valid reply.'
-        }
-        foreach ($name in @('queueStopResult','queueCloseResult','unmappingResult','moduleCloseResult')) {
-            if ($null -ne $record[$name]) { throw 'A write-error observation attempted unsupported normal cleanup.' }
-        }
-    }
-    if ($record.passed) {
-        foreach ($name in @('uriVerified','unsignedProcessRequested','handleObserved','responseValidated',
-            'numericValidated','freeCompleted','ownerPinnedUntilExit','computeSubmitted','computeExecuted')) {
-            if (-not $record[$name]) { throw 'Incomplete native computation claimed success.' }
-        }
-        foreach ($name in @('domainResult','uriResult','processInitializationResult','moduleOpenResult',
-            'queueCreateResult','queueExportResult','queueStartResult','queueWriteResult','queueReadResult',
-            'queueStopResult','queueCloseResult','mappingResult','unmappingResult','moduleCloseResult')) {
-            if (($record[$name] -isnot [int] -and $record[$name] -isnot [long]) -or $record[$name] -ne 0) {
-                throw 'Native computation omitted a completed lifecycle step.'
-            }
-        }
-        if ($record.architecture -ne 81 -or $record.effectiveDomain -ne 3 -or $record.poisoned) {
-            throw 'Native computation changed its fixed X2 domain or retained uncertain work.'
-        }
-    }
-    return $record
+    return Invoke-BonsaiHexagonPolicy -Request @{ operation = 'compute-result'; json = $Json; exitCode = $ExitCode; case = $Case }
 }
 
 function Invoke-BonsaiHexagonComputeWorker {

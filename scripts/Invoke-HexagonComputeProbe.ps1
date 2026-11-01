@@ -29,14 +29,8 @@ Import-Module (Join-Path $PSScriptRoot 'Bonsai.HexagonDispatch.psm1')
 Import-Module (Join-Path $PSScriptRoot 'Bonsai.Common.psm1')
 Import-Module (Join-Path $PSScriptRoot 'Bonsai.Native.psm1')
 if ($PlanOnly) {
-    return [ordered]@{
-        SchemaVersion = 1; Kind = 'runner-hexagon-compute-plan'; MaximumSeconds = $MaximumSeconds
-        CleanupReserveSeconds = 75; QueueSlots = 1; Operations = 1; Package = 'GenieX-v0.10.0'
-        Columns = if ($Case -cin @('GuardedQ2','GuardedQ2NoBlock')) { 256 } else { 32 }; Rows = 32; Batch = 2; ComputeCase = $Case
-        ModelLoaded = $false; ProfileEligible = $false
-        OwnedJobRequired = $true; IndependentWindowsAbiRequired = $true; CatalogVerificationRequired = $true
-        SourceBoundHostedFixtureRequired = $true; TrustChangesAllowed = $false; AutomaticRetryAllowed = $false
-    }
+    Import-Module (Join-Path $PSScriptRoot 'Bonsai.HexagonPolicy.psm1')
+    return Invoke-BonsaiHexagonPolicy -Request @{ operation = 'compute-plan'; maximumSeconds = $MaximumSeconds; case = $Case }
 }
 if (-not $IsWindows -or [Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture -cne 'Arm64' -or
     [Runtime.InteropServices.RuntimeInformation]::OSArchitecture -cne 'Arm64') { throw 'Native Windows ARM64 is required.' }

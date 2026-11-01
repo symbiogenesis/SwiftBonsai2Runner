@@ -131,6 +131,7 @@ fn execute() -> bonsai_tools::Result<serde_json::Value> {
         Some("packing-qualification") => bonsai_tools::packing_qualification::run(request),
         Some("host-capabilities") => bonsai_tools::host_capabilities::run(&request),
         Some("native-acceptance-budget") => bonsai_tools::native_acceptance_budget::run(request),
+        Some("hexagon-policy") => bonsai_tools::hexagon_policy::run(request),
         Some("startup-diagnostics") => bonsai_tools::startup_diagnostics::run(request),
         _ => Err("Unknown maintenance command.".into()),
     }

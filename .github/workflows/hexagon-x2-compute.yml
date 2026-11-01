@@ -7,8 +7,9 @@ on:
       - .github/workflows/hexagon-windows-abi.yml
       - tools/hexagon/**
       - scripts/*Hexagon*
-      - tests/Test-HexagonCompute.ps1
-      - tests/Test-HexagonSession.ps1
+      - tools/bonsai/src/hexagon_policy/**
+      - tools/bonsai/tests/fixtures/hexagon-*.json
+      - tests/Test-HexagonCapture.ps1
   workflow_dispatch:
 permissions:
   contents: read
@@ -25,14 +26,45 @@ jobs:
       - uses: ./.github/actions/rust-toolchain
         with:
           toolchain: nightly-2026-10-22-aarch64-pc-windows-msvc
+      - uses: ./.github/actions/bonsai-tools
+      - name: Check native Hexagon evidence policy without opening a device
+        shell: pwsh
+        working-directory: ${{ runner.temp }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          cargo +nightly-2026-10-22-aarch64-pc-windows-msvc test --locked --release --manifest-path (Join-Path $env:GITHUB_WORKSPACE 'Cargo.toml') --package bonsai-tools --all-features --target-dir $env:BONSAI_TOOLS_TARGET --lib hexagon_policy::
+      - name: Stage the current source-bound policy executable
+        shell: pwsh
+        working-directory: ${{ runner.temp }}
+        run: |
+          Set-StrictMode -Version Latest
+          $ErrorActionPreference = 'Stop'
+          $package = Join-Path $env:RUNNER_TEMP 'SwiftBonsai-HexagonPolicy'
+          [void][IO.Directory]::CreateDirectory($package)
+          $tool = Join-Path $package 'bonsai-tools.exe'
+          $probe = Join-Path $package 'bonsai-completion-test-probe.exe'
+          Copy-Item -LiteralPath $env:BONSAI_TOOLS_PATH -Destination $tool
+          Copy-Item -LiteralPath $env:BONSAI_COMPLETION_PROBE_PATH -Destination $probe
+          @{
+            SchemaVersion = 2; Revision = $env:GITHUB_SHA
+            Sha256 = (Get-FileHash -LiteralPath $tool -Algorithm SHA256).Hash.ToLowerInvariant()
+            ProbeSha256 = (Get-FileHash -LiteralPath $probe -Algorithm SHA256).Hash.ToLowerInvariant()
+          } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $package 'receipt.json')
+      - name: Share the checked policy executable for bounded same-run intake
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: bonsai-tools-windows-arm64-${{ github.sha }}
+          path: ${{ runner.temp }}/SwiftBonsai-HexagonPolicy
+          if-no-files-found: error
+          retention-days: 90
       - name: Check computation evidence, cancellation contracts and packed preparation without a device
         shell: pwsh
         run: |
           Set-StrictMode -Version Latest
           $ErrorActionPreference = 'Stop'
           $PSNativeCommandUseErrorActionPreference = $true
-          foreach ($case in @('Plan','Result')) { ./tests/Test-HexagonCompute.ps1 -Case $case }
-          foreach ($case in @('Plan','Build','Result','Environment')) { ./tests/Test-HexagonSession.ps1 -Case $case }
+          ./tests/Test-HexagonCapture.ps1
           ./tests/Test-NativeProcess.ps1 -Case OwnedExitAccounting
       - name: Build source-bound native fixture and run independent packed and queue contracts
         shell: pwsh

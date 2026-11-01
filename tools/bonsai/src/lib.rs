@@ -38,6 +38,7 @@ pub const COMMANDS: &[&str] = &[
     "host-capabilities",
     "native-acceptance-budget",
     "startup-diagnostics",
+    "hexagon-policy",
 ];
 
 /// Returns the native maintenance protocol capabilities without reading a request.
@@ -130,6 +131,9 @@ pub mod native_acceptance_budget;
 
 /// Bounded and credential-checked native startup log publication.
 pub mod startup_diagnostics;
+
+/// Offline Hexagon plans, source bindings and native evidence validation.
+pub mod hexagon_policy;
 
 /// Retained caller identity for cancellation of native startup work.
 pub mod startup_cancel;

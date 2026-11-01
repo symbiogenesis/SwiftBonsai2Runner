@@ -2,6 +2,7 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
+Import-Module (Join-Path $PSScriptRoot 'Bonsai.HexagonPolicy.psm1')
 Import-Module (Join-Path $PSScriptRoot 'Bonsai.Common.psm1')
 
 function Get-BonsaiHexagonDriverGuard {
@@ -47,16 +48,7 @@ function Assert-BonsaiHexagonDriverIdentity {
     [CmdletBinding()]
     [OutputType([void])]
     param([Parameter(Mandatory)][Collections.IDictionary]$Identity)
-    if ($Identity.Path -isnot [string] -or -not [IO.Path]::IsPathFullyQualified($Identity.Path) -or
-        [IO.Path]::GetFileName($Identity.Path) -ine 'libcdsprpc.dll' -or
-        ($Identity.Bytes -isnot [int] -and $Identity.Bytes -isnot [long]) -or $Identity.Bytes -le 0 -or $Identity.Bytes -gt 32MB -or
-        $Identity.Sha256 -isnot [string] -or $Identity.Sha256 -cnotmatch '^[a-f0-9]{64}$' -or
-        $Identity.SignatureStatus -isnot [string] -or $Identity.SignatureStatus -cne 'Valid' -or
-        $Identity.Publisher -isnot [string] -or $Identity.Publisher -cne 'Microsoft Windows Hardware Compatibility Publisher' -or
-        $Identity.SignerThumbprint -isnot [string] -or $Identity.SignerThumbprint -cnotmatch '^[a-f0-9]{40,64}$' -or
-        $Identity.FileHeldAgainstMutation -isnot [bool] -or -not $Identity.FileHeldAgainstMutation) {
-        throw 'Invalid independently captured FastRPC driver identity.'
-    }
+    $null = Invoke-BonsaiHexagonPolicy -Request @{ operation = 'driver-identity'; json = (ConvertTo-Json -InputObject $Identity -Depth 32 -Compress) }
 }
 
 Export-ModuleMember -Function Get-BonsaiHexagonDriverGuard, Assert-BonsaiHexagonDriverIdentity
