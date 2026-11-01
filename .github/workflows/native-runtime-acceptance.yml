@@ -49,6 +49,7 @@ jobs:
           [void][IO.Directory]::CreateDirectory($package)
           $env:CARGO_TARGET_DIR = Join-Path $env:RUNNER_TEMP 'Native-Acceptance-Build'
           $messages = Join-Path $env:RUNNER_TEMP 'native-acceptance-build.jsonl'
+          "BONSAI_NATIVE_BUILD_EVIDENCE=$messages" >> $env:GITHUB_ENV
           $cargo = (Get-Command cargo -CommandType Application -ErrorAction Stop | Select-Object -First 1).Source
           & $cargo +nightly-2026-10-22 test --locked --release --no-run --message-format=json --manifest-path (Join-Path $env:GITHUB_WORKSPACE 'Cargo.toml') --package bonsai-broker --test native_model | Set-Content -LiteralPath $messages -Encoding utf8NoBOM
           if ($LASTEXITCODE -ne 0) { throw 'Hosted acceptance binary build failed.' }
@@ -90,6 +91,14 @@ jobs:
             ToolsSourceId=$env:BONSAI_TOOLS_SOURCE_ID; Files=@($files); ModelExecuted=$false
           } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $package 'receipt.json') -Encoding utf8NoBOM
           "BONSAI_ACCEPTANCE_PACKAGE=$package" >> $env:GITHUB_ENV
+      - name: Retain hosted compiler diagnostics even when preparation fails
+        if: always() && env.BONSAI_NATIVE_BUILD_EVIDENCE != ''
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: native-acceptance-build-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ env.BONSAI_NATIVE_BUILD_EVIDENCE }}
+          if-no-files-found: error
+          retention-days: 90
       - name: Retain public-source binaries and source/digest receipt
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
