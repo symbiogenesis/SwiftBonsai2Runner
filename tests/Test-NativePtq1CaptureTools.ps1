@@ -18,6 +18,21 @@ if ($Case -ceq 'CapturePolicy') {
     [void][IO.Directory]::CreateDirectory((Join-Path $fixture 'tools/native-reference'))
     [void][IO.Directory]::CreateDirectory((Join-Path $fixture 'config'))
     try {
+        $numericsPath = Join-Path $fixture 'numerics.json'
+        $observations = [ordered]@{ Status = 'preparing'; ModelTrialsRequested = $false; Phase = 'capture-tool-intake' }
+        Save-Ptq1NumericsReport -Report $observations -Path $numericsPath
+        $observations.Status = 'failed'
+        Save-Ptq1NumericsReport -Report $observations -Path $numericsPath
+        $failed = Get-Content -LiteralPath $numericsPath -Raw | ConvertFrom-Json -DateKind String
+        Assert ($failed.Status -ceq 'failed' -and -not $failed.ModelTrialsRequested -and
+            $failed.Phase -ceq 'capture-tool-intake') 'Pre-model rejection lost its phase or model-execution boundary.'
+        $retained = [IO.File]::ReadAllText($numericsPath)
+        $observations['Failure'] = 'x' * 1048577
+        Assert-Failure { Save-Ptq1NumericsReport -Report $observations -Path $numericsPath }
+        Assert ([IO.File]::ReadAllText($numericsPath) -ceq $retained) 'Rejected receipt overwrote the last complete observations.'
+        $observations.Remove('Failure')
+        Assert-Failure { Save-Ptq1NumericsReport -Report $observations -Path (Join-Path $fixture 'config') }
+        Assert (@(Get-ChildItem -LiteralPath $fixture -Filter '*.tmp').Count -eq 0) 'Failed receipt replacement left an unselected temporary file.'
         $lockPath = Join-Path $fixture 'config/prism-inference.lock.json'
         $pinsPath = Join-Path $fixture 'tools/native-reference/pins.json'
         Copy-Item -LiteralPath (Join-Path $repo 'config/prism-inference.lock.json') -Destination $lockPath

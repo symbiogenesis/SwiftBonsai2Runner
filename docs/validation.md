@@ -73,11 +73,17 @@ completed observations with `passed: false`. This does not establish complete-st
 parity, adapter authoring basis, performance, output quality or default promotion.
 
 Explicit `profile: ptq1-adapter-lifecycle` requires the current pinned Rust
-service, exact current-weight PTQ1 and approved adapter with one row worker
-through the mandatory scale/history sequence below. It has the same three
-short streams, invalid-scale connection-close check, public assistant fixture,
-request deadlines, cleanup reserve and partial-evidence rules as
-`pq2-adapter-lifecycle-row4`. Its receipt binds the actual PTQ1 filename, byte
+service, exact current-weight PTQ1 and approved adapter with one row worker.
+It requires three one-token-cap streams: scale 1.3, scale zero, then scale 1.3
+with supplied user/assistant/user history after the invalid-scale connection-close
+check. Each message is the fixed public word `Hi`; the assistant history remains
+supplied text rather than captured model output. The earlier four/two/two-token
+trial reached verified readiness but exhausted its first request. This smaller
+workload preserves every required scale, rejection and history transition while
+reducing prompt and generation work; execution within the budget remains pending.
+It preserves the request deadlines, cleanup reserve and partial-evidence rules of
+`pq2-adapter-lifecycle-row4`, whose prompts and caps are unchanged. Its receipt
+binds the exact messages and completion caps, actual PTQ1 filename, byte
 count and digest plus the complete export receipt; it cannot inherit PQ2 or
 historical-release acceptance. Optional history/stalled-consumer dispatch inputs
 are rejected. Missing, skipped or cancelled required steps keep `passed: false`
@@ -142,6 +148,27 @@ reported tokens, identical visible output, empty Jobs and released listeners.
 Early stop, unknown usage, different output or missing cleanup leaves comparison
 pending. A single fixed-order pair establishes neither repeated-trial benefit,
 complete-state parity, energy/comfort, creative quality nor default promotion.
+
+Explicit `profile: ptq1-pq2-complete-response` prepares a separate complete-response
+feasibility pair with original PQ2 then the verified current-weight PTQ1 export,
+each in a fresh required-sandbox owner with one row worker, the approved adapter
+at scale 1.3, production sampling and seed 42. The fixed public request asks for
+one tree name with thinking disabled and a 32-token ceiling. Both responses must
+stop naturally, report positive completion usage and complete owned cleanup;
+`length` means a truncated capture and leaves the pair pending. Exact UTF-8
+response strings and SHA-256 digests, model/export/runtime/adapter identities,
+template and sampler controls, startup and framed request times are retained.
+Different complete responses remain available for review; the request-latency
+ratio requires identical response bytes and completion usage.
+
+The existing aggregate deadline includes both loads and cleanup. Each startup
+requires more than 60 seconds remaining, each request reserves 30 seconds for
+owned cleanup, and completed observations are saved before the next operation.
+An unfittable arm stays pending; do not split the pair or a larger matrix into
+repeated owner jobs. The small prompt measures feasibility only. It does not
+replace repeated interleaved complete-task trials, independent quality review,
+per-prompt adapter decode-TPS gates, loaded-zero/no-adapter controls, writer-basis
+evidence, full context/output acceptance or default promotion.
 
 Before runner temp cleanup, the workflow reads only `backend.stdout` and
 `backend.stderr` from at most eight immediate protected session directories, with
