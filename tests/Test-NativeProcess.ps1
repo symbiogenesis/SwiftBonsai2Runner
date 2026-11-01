@@ -77,7 +77,7 @@ switch ($Mode) {
         # A naturally finishing Job member must survive the accounting grace;
         # eager TerminateJobObject would replace this independent exit code.
         [Threading.Thread]::Sleep(75)
-        exit 37
+        [Environment]::Exit(37)
     }
     { $_ -in @('Tree', 'Drain') } {
         $start = [Diagnostics.ProcessStartInfo]::new([Environment]::ProcessPath)
