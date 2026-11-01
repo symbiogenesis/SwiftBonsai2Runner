@@ -106,11 +106,28 @@ fn plain(path: &Path) -> Result<()> {
     if !path.is_absolute() || path.to_string_lossy().contains(['%', '\0']) {
         return Err("Use expanded absolute Hexagon paths.".into());
     }
+    #[cfg(windows)]
+    {
+        use std::path::{Component, Prefix};
+        if !matches!(path.components().next(),Some(Component::Prefix(prefix)) if matches!(prefix.kind(),Prefix::Disk(_)))
+            || path
+                .to_string_lossy()
+                .get(2..)
+                .is_none_or(|tail| tail.contains(':'))
+        {
+            return Err(
+                "Use expanded local drive paths without device syntax or alternate streams.".into(),
+            );
+        }
+    }
     for ancestor in path.ancestors() {
-        if let Ok(metadata) = fs::symlink_metadata(ancestor) {
-            if is_redirect(&metadata) {
+        match fs::symlink_metadata(ancestor) {
+            Ok(metadata) if is_redirect(&metadata) => {
                 return Err("Hexagon paths cannot redirect.".into());
             }
+            Ok(_) => {}
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+            Err(error) => return Err(error.to_string()),
         }
     }
     Ok(())
@@ -658,36 +675,14 @@ fn receive(context: &mut Context, pin: &Value, name: &str, seconds: u64) -> Resu
         .filter(|url| url.starts_with("https://") && !url.contains(['\r', '\n']))
         .ok_or("SDK inputs require HTTPS.")?;
     let path = context.output.join(name);
-    let partial = context.output.join(format!("{name}.partial"));
-    let curl = crate::startup_download::system_tool("curl.exe")?;
-    context.run(
-        curl.as_os_str(),
-        &[
-            "--fail".into(),
-            "--location".into(),
-            "--proto".into(),
-            "=https".into(),
-            "--proto-redir".into(),
-            "=https".into(),
-            "--silent".into(),
-            "--show-error".into(),
-            "--retry".into(),
-            "0".into(),
-            "--max-time".into(),
-            seconds.to_string().into(),
-            "--output".into(),
-            partial.clone().into_os_string(),
-            url.into(),
-        ],
-        seconds + 5,
-        &context.output.join(format!("download-{name}.txt")),
+    crate::startup_download::receive_with_timeout(
+        url,
+        &path,
+        bytes,
+        digest,
+        &context.output,
+        Duration::from_secs(seconds),
     )?;
-    let (file, actual) = hold(&partial, bytes)?;
-    if file.metadata().map_err(|error| error.to_string())?.len() != bytes || actual != digest {
-        return Err("SDK download differs from exact pinned bytes.".into());
-    }
-    drop(file);
-    fs::rename(&partial, &path).map_err(|error| error.to_string())?;
     context.digest(&path, bytes)?;
     Ok(path)
 }
