@@ -100,6 +100,25 @@
     "unfittableGatesRemainPending": true,
     "fullSuitesAndBenchmarks": "Owning CI only; hosted cloud CI has separate workflow limits."
   },
+  "followUpExecution": {
+    "runnerRevision": "e8d20b57dcc5fa1af2c0fb012fe21fa67475b97d",
+    "qualificationPullRequest": "https://github.com/symbiogenesis/SwiftBonsai2Runner/pull/14",
+    "settledMainFoundationRunId": "41263673245",
+    "settledMainFoundationConclusion": "success",
+    "hostedCurrentSourceNumericalToolsRunId": "41263674932",
+    "hostedCurrentSourceNumericalToolsConclusion": "success",
+    "numericalDeviceJobExecuted": false,
+    "ptq1LifecycleAttemptRunId": "41263980337",
+    "ptq1LifecycleConclusion": "failure",
+    "ptq1LifecycleEvidence": "docs/evidence/ptq1-0110-service-attempt.json",
+    "scope": "Verified current-release PTQ1/adapter readiness, then initial scale-1.3 request allowance expired before a completed stream was retained. Zero-scale/rejection/history remain pending; cleanup and durable selected-receipt retention passed. Partial response progress and compute/transport attribution remain unknown.",
+    "modelAttempts": 1,
+    "additionalModelAttempts": 0,
+    "aggregateSeconds": 168.7016575,
+    "independentReviewRetainedWithinSecondsFromTrialStart": 267.1241991,
+    "currentReleaseFullNumericalAndLifecycleQualified": false,
+    "defaultPromotionQualified": false
+  },
   "reviewOperations": {
     "modelExecutions": 0,
     "collectorExecutions": 0,
