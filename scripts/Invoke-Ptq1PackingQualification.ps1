@@ -27,8 +27,10 @@ $tool = Resolve-ExternalPath $ToolPath
 if ([IO.Directory]::Exists($evidence)) { throw 'Use a new evidence directory for each hosted packing attempt.' }
 [void][IO.Directory]::CreateDirectory($evidence)
 $clock = [Diagnostics.Stopwatch]::StartNew()
+$limits = Get-Ptq1PackingHostedLimit
 $report = [ordered]@{
     schemaVersion = 1; kind = 'hosted-current-weight-ptq1-packing-qualification'; status = 'preparing'; phase = 'intake'
+    limits = $limits; phaseStartedElapsedSeconds = 0.0; phaseDurations = [Collections.Generic.List[object]]::new()
     execution = [ordered]@{
         repository = $env:GITHUB_REPOSITORY; revision = $env:GITHUB_SHA; gitRef = $env:GITHUB_REF
         runId = $env:GITHUB_RUN_ID; runAttempt = [int]$env:GITHUB_RUN_ATTEMPT
@@ -67,35 +69,44 @@ try {
     if ([IO.DriveInfo]::new([IO.Path]::GetPathRoot($data)).AvailableFreeSpace -lt $requiredDisk) {
         throw 'Hosted packing qualification needs room for both complete artifacts and 512 MiB reserve.'
     }
-    $report.phase = 'original-pq2-download'
+    Set-Ptq1PackingPhase -Report $report -Clock $clock -Phase 'original-pq2-download'
     Save-Ptq1PackingQualification -Report $report -Path $reportPath
     $source = Join-Path $data $expected.SourceFilename
     $sourceUri = "https://huggingface.co/$($assessment.model.repository)/resolve/$($assessment.model.revision)/$($assessment.model.filename)"
-    Receive-LockedArtifact -Uri $sourceUri -Path $source -Bytes $expected.SourceBytes -Sha256 $expected.SourceSha256 -TimeoutSeconds 600 | Out-Null
-    $report.phase = 'pinned-exporter-provisioning'
+    Receive-LockedArtifact -Uri $sourceUri -Path $source -Bytes $expected.SourceBytes -Sha256 $expected.SourceSha256 -TimeoutSeconds $limits.originalDownloadSeconds | Out-Null
+    Set-Ptq1PackingPhase -Report $report -Clock $clock -Phase 'pinned-exporter-provisioning'
     Save-Ptq1PackingQualification -Report $report -Path $reportPath
     $archive = Join-Path $data ('downloads/' + $runtimeLock.asset.filename)
-    Receive-LockedArtifact -Uri $runtimeLock.asset.url -Path $archive -Bytes $runtimeLock.asset.bytes -Sha256 $runtimeLock.asset.sha256 -TimeoutSeconds 120 | Out-Null
+    Receive-LockedArtifact -Uri $runtimeLock.asset.url -Path $archive -Bytes $runtimeLock.asset.bytes -Sha256 $runtimeLock.asset.sha256 -TimeoutSeconds $limits.runtimeDownloadSeconds | Out-Null
     $runtime = & (Join-Path $PSScriptRoot 'Get-Inference.ps1') -DataDirectory $data
     if (-not $runtime.Gguf) { throw 'The pinned release has no GGUF exporter.' }
-    $report.phase = 'ptq1-reproduction'
+    Set-Ptq1PackingPhase -Report $report -Clock $clock -Phase 'ptq1-reproduction'
     Save-Ptq1PackingQualification -Report $report -Path $reportPath
     $output = Join-Path $data $expected.OutputFilename
-    $export = & (Join-Path $PSScriptRoot 'Export-SwiftPtq1.ps1') -ModelPath $source -OutputPath $output -GgufToolPath $runtime.Gguf -TimeoutSeconds 600
+    $export = & (Join-Path $PSScriptRoot 'Export-SwiftPtq1.ps1') -ModelPath $source -OutputPath $output -GgufToolPath $runtime.Gguf -TimeoutSeconds $limits.exporterProcessSeconds
     $export | ConvertTo-Json -Depth 12 | Set-Content -LiteralPath (Join-Path $evidence 'reproduced-export.json') -Encoding utf8NoBOM
-    $report.phase = 'independent-complete-packing'
+    Set-Ptq1PackingPhase -Report $report -Clock $clock -Phase 'independent-complete-packing'
     Save-Ptq1PackingQualification -Report $report -Path $reportPath
-    $packing = Invoke-BonsaiTool -Command ptq1-packing -ToolPath $tool -TimeoutSeconds 305 -Request @{
-        sourcePath = $source; outputPath = $output; timeoutSeconds = 300
+    $packing = Invoke-BonsaiTool -Command ptq1-packing -ToolPath $tool -TimeoutSeconds $limits.independentProcessSeconds -Request @{
+        sourcePath = $source; outputPath = $output; timeoutSeconds = $limits.independentVerificationSeconds
     }
     $packing | ConvertTo-Json -Depth 12 | Set-Content -LiteralPath (Join-Path $evidence 'independent-packing.json') -Encoding utf8NoBOM
     Assert-Ptq1PackingResult -Expected $expected -Export $export -Packing $packing -ExportReceiptSha256 $expectedDigest
-    $report.status = 'matched'; $report.phase = 'complete'
+    $report.status = 'matched'
 } catch {
     $report.status = 'failed'
     $report['failure'] = 'The selected hosted packing phase failed; inspect the phase and workflow log. No promotion is inferred.'
+    try {
+        if ($report.phase -ceq 'original-pq2-download') {
+            $report['partialDownload'] = Get-Ptq1PackingPartialObservation -Path ($source + '.partial') -ExpectedBytes $expected.SourceBytes
+        } elseif ($report.phase -ceq 'pinned-exporter-provisioning') {
+            $report['partialDownload'] = Get-Ptq1PackingPartialObservation -Path ($archive + '.partial') -ExpectedBytes $runtimeLock.asset.bytes
+        }
+    } catch { $report['partialDownload'] = @{ status = 'unavailable' } }
     throw
 } finally {
+    $finalPhase = if ($report.status -ceq 'matched') { 'complete' } else { $report.phase }
+    Set-Ptq1PackingPhase -Report $report -Clock $clock -Phase $finalPhase
     $report['elapsedSeconds'] = $clock.Elapsed.TotalSeconds
     Save-Ptq1PackingQualification -Report $report -Path $reportPath
     $files = @(Get-ChildItem -LiteralPath $evidence -File | Sort-Object Name | ForEach-Object {

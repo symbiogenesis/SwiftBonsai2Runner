@@ -3,6 +3,62 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 
+function Get-Ptq1PackingHostedLimit {
+    <# .SYNOPSIS
+    Declares the single hosted packing attempt's transfer, process and workflow bounds.
+    #>
+    [CmdletBinding()]
+    [OutputType([Collections.IDictionary])]
+    param()
+    return [ordered]@{
+        originalDownloadSeconds = 1800; runtimeDownloadSeconds = 120
+        exporterProcessSeconds = 600; independentVerificationSeconds = 300; independentProcessSeconds = 305
+        workflowStepMinutes = 50; workflowJobMinutes = 60; retries = 0
+    }
+}
+
+function Set-Ptq1PackingPhase {
+    <# .SYNOPSIS
+    Retains elapsed attribution for the previous packing phase without restarting a deadline.
+    #>
+    [CmdletBinding()]
+    [OutputType([void])]
+    param([Parameter(Mandatory)][Collections.IDictionary]$Report,
+          [Parameter(Mandatory)][Diagnostics.Stopwatch]$Clock,
+          [Parameter(Mandatory)][string]$Phase)
+    $now = $Clock.Elapsed.TotalSeconds
+    $Report.phaseDurations.Add([ordered]@{
+        phase = $Report.phase; startedElapsedSeconds = $Report.phaseStartedElapsedSeconds
+        elapsedSeconds = $now - $Report.phaseStartedElapsedSeconds
+    })
+    $Report.phase = $Phase
+    $Report.phaseStartedElapsedSeconds = $now
+}
+
+function Get-Ptq1PackingPartialObservation {
+    <# .SYNOPSIS
+    Observes bounded partial-download length without retaining its path or payload.
+    #>
+    [CmdletBinding()]
+    [OutputType([Collections.IDictionary])]
+    param([Parameter(Mandatory)][string]$Path,
+          [Parameter(Mandatory)][long]$ExpectedBytes)
+    $observation = [ordered]@{ status = 'absent'; expectedBytes = $ExpectedBytes; partialBytes = $null }
+    try {
+        if ([IO.File]::Exists($Path)) {
+            $file = Get-Item -LiteralPath $Path -Force -ErrorAction Stop
+            if ($file.PSIsContainer -or ($file.Attributes -band [IO.FileAttributes]::ReparsePoint) -or
+                $ExpectedBytes -lt 1 -or $file.Length -lt 0 -or $file.Length -gt $ExpectedBytes) {
+                $observation.status = 'not-regular-or-oversized'
+            } else {
+                $observation.status = 'bounded-partial'
+                $observation.partialBytes = $file.Length
+            }
+        }
+    } catch { $observation.status = 'unavailable' }
+    return $observation
+}
+
 function Assert-Ptq1PackingHostedContext {
     <# .SYNOPSIS
     Rejects owner-device and unbound CI execution before any artifact work.
@@ -78,4 +134,4 @@ function Save-Ptq1PackingQualification {
     }
 }
 
-Export-ModuleMember -Function Assert-Ptq1PackingHostedContext, Assert-Ptq1PackingResult, Save-Ptq1PackingQualification
+Export-ModuleMember -Function Get-Ptq1PackingHostedLimit, Set-Ptq1PackingPhase, Get-Ptq1PackingPartialObservation, Assert-Ptq1PackingHostedContext, Assert-Ptq1PackingResult, Save-Ptq1PackingQualification

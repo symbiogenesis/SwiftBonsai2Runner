@@ -90,6 +90,34 @@ for ($index = 0; $index -lt $invoke[0].CommandElements.Count - 1; $index++) {
 }
 Assert $forwarded 'The export caller omitted its whole-process bound, leaving source/output verification unbounded.'
 
+$limits = Get-Ptq1PackingHostedLimit
+Assert ($limits.originalDownloadSeconds -eq 1800 -and $limits.runtimeDownloadSeconds -eq 120 -and
+    $limits.exporterProcessSeconds -eq 600 -and $limits.independentVerificationSeconds -eq 300 -and
+    $limits.independentProcessSeconds -eq 305 -and $limits.retries -eq 0) 'The one-attempt hosted transfer or process contract changed.'
+$maximumPhaseSeconds = $limits.originalDownloadSeconds + $limits.runtimeDownloadSeconds +
+    $limits.exporterProcessSeconds + $limits.independentProcessSeconds
+Assert ($maximumPhaseSeconds + 120 -le $limits.workflowStepMinutes * 60 -and
+    $limits.workflowStepMinutes + 10 -le $limits.workflowJobMinutes) 'Declared hosted phase bounds do not fit the owning step/job with cleanup and setup headroom.'
+$workflow = [IO.File]::ReadAllText((Join-Path $repo '.github/workflows/ptq1-packing-qualification.yml'))
+Assert ($workflow -match ('(?m)^    timeout-minutes: ' + $limits.workflowJobMinutes + '\r?$') -and
+    $workflow -match ('(?m)^        timeout-minutes: ' + $limits.workflowStepMinutes + '\r?$')) 'The workflow and retained declared hosted bounds disagree.'
+$qualificationAst = [Management.Automation.Language.Parser]::ParseFile((Join-Path $repo 'scripts/Invoke-Ptq1PackingQualification.ps1'), [ref]$parseTokens, [ref]$parseErrors)
+$timeoutExpressions = [Collections.Generic.List[string]]::new()
+foreach ($command in $qualificationAst.FindAll({
+    param([Management.Automation.Language.Ast]$Node)
+    $Node -is [Management.Automation.Language.CommandAst]
+}, $true)) {
+    for ($index = 0; $index -lt $command.CommandElements.Count - 1; $index++) {
+        $element = $command.CommandElements[$index]
+        if ($element -is [Management.Automation.Language.CommandParameterAst] -and $element.ParameterName -ceq 'TimeoutSeconds') {
+            $timeoutExpressions.Add($command.CommandElements[$index + 1].Extent.Text)
+        }
+    }
+}
+foreach ($field in @('originalDownloadSeconds', 'runtimeDownloadSeconds', 'exporterProcessSeconds', 'independentProcessSeconds')) {
+    Assert ($timeoutExpressions -ccontains ('$limits.' + $field)) "The retained hosted bound was not passed to its operation: $field."
+}
+
 $baseline = [ordered]@{
     GITHUB_ACTIONS = 'true'; RUNNER_ENVIRONMENT = 'github-hosted'; GITHUB_REPOSITORY = 'symbiogenesis/SwiftBonsai2Runner'
     GITHUB_REF = 'refs/heads/main'; RUNNER_ARCH = 'ARM64'; GITHUB_SHA = 'a' * 40
@@ -116,6 +144,10 @@ try {
     Assert ($failed.status -ceq 'failed' -and $failed.phase -ceq 'intake' -and
         -not $failed.modelProcessStarted -and -not $failed.ownerDeviceExecuted -and -not $failed.defaultMayChange -and
         $failed.execution.revision -ceq $baseline.GITHUB_SHA -and $failed.execution.runId -ceq $baseline.GITHUB_RUN_ID) 'Pre-download failure lost its exact execution or qualification boundary.'
+    Assert ($failed.limits.originalDownloadSeconds -eq $limits.originalDownloadSeconds -and $failed.limits.retries -eq 0 -and
+        $failed.phaseDurations.Count -eq 1 -and $failed.phaseDurations[0].phase -ceq 'intake' -and
+        $failed.phaseDurations[0].startedElapsedSeconds -eq 0 -and $failed.phaseDurations[0].elapsedSeconds -ge 0 -and
+        $failed.phaseDurations[0].elapsedSeconds -le $failed.elapsedSeconds) 'A failed phase lost its declared bounds or elapsed attribution.'
     $manifest = Get-Content -LiteralPath (Join-Path $evidence 'manifest.json') -Raw | ConvertFrom-Json -DateKind String
     foreach ($file in $manifest.files) {
         $path = Join-Path $evidence $file.file
@@ -128,6 +160,15 @@ try {
     Assert ([IO.File]::ReadAllText($reportPath) -ceq $retained) 'An oversized update replaced the last complete packing receipt.'
     Assert-Failure { Save-Ptq1PackingQualification -Report @{ status = 'failed' } -Path $evidence }
     Assert (@(Get-ChildItem -LiteralPath $fixture -Filter '*.tmp').Count -eq 0) 'Failed receipt replacement left a temporary file.'
+    $partialPath = Join-Path $fixture 'transfer.partial'
+    $absent = Get-Ptq1PackingPartialObservation -Path $partialPath -ExpectedBytes 3
+    Assert ($absent.status -ceq 'absent' -and $null -eq $absent.partialBytes) 'Missing transfer payload was reported as retained bytes.'
+    [IO.File]::WriteAllBytes($partialPath, [byte[]]@(1, 2, 3))
+    $partial = Get-Ptq1PackingPartialObservation -Path $partialPath -ExpectedBytes 3
+    Assert ($partial.status -ceq 'bounded-partial' -and $partial.partialBytes -eq 3 -and
+        $partial.expectedBytes -eq 3 -and -not ($partial | ConvertTo-Json).Contains($partialPath)) 'Bounded transfer observation lost its byte count or exposed a path.'
+    $oversized = Get-Ptq1PackingPartialObservation -Path $partialPath -ExpectedBytes 2
+    Assert ($oversized.status -ceq 'not-regular-or-oversized' -and $null -eq $oversized.partialBytes) 'An over-limit partial download was accepted as a bounded receipt.'
 } finally {
     foreach ($name in $baseline.Keys) { [Environment]::SetEnvironmentVariable($name, $saved[$name]) }
     if (-not $fixture.StartsWith($tempRoot, [StringComparison]::OrdinalIgnoreCase)) { throw 'Packing-control cleanup escaped its temporary root.' }
