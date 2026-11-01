@@ -66,6 +66,7 @@ jobs:
               'speed::native_speed_profile_shares_deadline_and_rejects_extra_workloads',
               'native_adapter_scale_history_profile_requires_separate_explicit_selection',
               'native_adapter_scale_history_retains_partial_steps_without_qualifying_missing_work',
+              'native_adapter_first_request_cancellation_retains_ready_phase_and_missing_work',
               'native_adapter_request_budget_drops_inflight_work_before_owned_cleanup',
               'native_bounded_history_and_stall_requests_preserve_distinct_output_limits',
               'native_extended_acceptance_distinguishes_output_usage_from_delta_count',
@@ -334,10 +335,6 @@ jobs:
             if ($code -ne 0) { throw 'Actual-model application acceptance failed.' }
             $receipt = Join-Path $env:BONSAI_NATIVE_EVIDENCE 'acceptance.json'
             if (-not (Test-Path -LiteralPath $receipt -PathType Leaf)) { throw 'Actual-model acceptance receipt is missing.' }
-            if ($env:BONSAI_NATIVE_PROFILE -cin @('pq2-no-adapter', 'pq2-adapter-lifecycle-row4', 'ptq1-adapter-lifecycle')) {
-              $accepted = Get-Content -LiteralPath $receipt -Raw | ConvertFrom-Json
-              $hostReport.AllRequestedWorkloadsPassed = $accepted.allRequestedWorkloadsPassed
-            }
             $hostReport.Passed = $true
           } finally {
             $env:BONSAI_NATIVE_DIAGNOSTICS_READY = 'false'
@@ -349,6 +346,14 @@ jobs:
               $diagnostics = Invoke-BonsaiTool -Command startup-diagnostics -ToolPath $env:BONSAI_TOOLS_PATH -TimeoutSeconds 10 -Request @{
                 evidenceDirectory=$env:BONSAI_NATIVE_EVIDENCE
                 acceptanceExitCode=$hostReport.AcceptanceProcessExitCode; budgetExpired=$hostReport.AggregateBudgetExpired
+              }
+              # Recover the bounded typed workload result even when the test
+              # exits 101 after retaining partial progress and owned cleanup.
+              # Missing/malformed receipts remain unknown; this never changes
+              # Passed or the original failing process disposition.
+              if ($env:BONSAI_NATIVE_PROFILE -cin @('pq2-no-adapter', 'pq2-adapter-lifecycle-row4', 'ptq1-adapter-lifecycle') -and
+                  $diagnostics.AllRequestedWorkloadsPassed -is [bool]) {
+                $hostReport.AllRequestedWorkloadsPassed = $diagnostics.AllRequestedWorkloadsPassed
               }
               $env:BONSAI_NATIVE_DIAGNOSTICS_READY = if ($diagnostics.Ready -ceq $true) { 'true' } else { 'false' }
               $env:BONSAI_NATIVE_DIAGNOSTICS_STATUS = $diagnostics.Classification

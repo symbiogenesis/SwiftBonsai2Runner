@@ -11,6 +11,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 
 const MAX_LOG_BYTES: usize = 65_536;
+const MAX_ACCEPTANCE_BYTES: usize = 1024 * 1024;
 const MAX_SESSIONS: usize = 8;
 const PUBLIC_FILES: [&str; 3] = [
     "startup-backend.stdout.txt",
@@ -26,6 +27,13 @@ struct Request {
     acceptance_exit_code: Option<i32>,
     #[serde(default)]
     budget_expired: bool,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct AcceptanceSummary {
+    schema_version: u32,
+    all_requested_workloads_passed: Option<bool>,
 }
 
 #[derive(Serialize)]
@@ -344,10 +352,23 @@ fn final_check(root: &Path, keys: &[String]) -> Result<(), &'static str> {
     Ok(())
 }
 
-/// Collects only fixed worker logs and returns a value-free upload decision.
+fn acceptance_workloads_passed(root: &Path) -> Option<bool> {
+    let (bytes, _guard) = read_bounded(&root.join("acceptance.json"), MAX_ACCEPTANCE_BYTES).ok()?;
+    // Serde structs also accept tuple sequences; a receipt must be an object.
+    if bytes.iter().find(|byte| !byte.is_ascii_whitespace()) != Some(&b'{') {
+        return None;
+    }
+    let summary: AcceptanceSummary = serde_json::from_slice(&bytes).ok()?;
+    (summary.schema_version == 1)
+        .then_some(summary.all_requested_workloads_passed)
+        .flatten()
+}
+
+/// Collects fixed worker logs and a bounded optional boolean workload result.
 ///
 /// All collection failures suppress readiness. No filesystem error, raw log,
 /// credential, or private path enters the command's JSON or stderr diagnostics.
+/// The workload result remains separate from upload readiness and process success.
 ///
 /// # Errors
 /// Rejects malformed requests; collection failures return a closed upload decision.
@@ -367,10 +388,15 @@ pub fn run(request: Value) -> crate::Result<Value> {
     };
     let root = &request.evidence_directory;
     if ordinary_directory(root).is_err() {
-        return Ok(json!({"Ready": false, "Classification": receipt.classification}));
+        return Ok(
+            json!({"Ready": false, "Classification": receipt.classification,
+            "AllRequestedWorkloadsPassed": null}),
+        );
     }
+    let all_requested_workloads_passed = acceptance_workloads_passed(root);
     if let Err(classification) = output_preflight(root) {
-        return Ok(json!({"Ready": false, "Classification": classification}));
+        return Ok(json!({"Ready": false, "Classification": classification,
+            "AllRequestedWorkloadsPassed": all_requested_workloads_passed}));
     }
     let mut keys = Vec::new();
     let mut guards = Vec::new();
@@ -388,7 +414,10 @@ pub fn run(request: Value) -> crate::Result<Value> {
     } else {
         "publication-check-failed"
     };
-    Ok(json!({"Ready": complete && published && checked, "Classification": classification}))
+    Ok(
+        json!({"Ready": complete && published && checked, "Classification": classification,
+        "AllRequestedWorkloadsPassed": all_requested_workloads_passed}),
+    )
 }
 
 #[cfg(test)]

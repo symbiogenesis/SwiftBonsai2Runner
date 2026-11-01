@@ -49,6 +49,50 @@ impl Drop for Fixture {
 }
 
 #[test]
+fn failed_acceptance_preserves_typed_workload_result_without_qualifying_logs() -> crate::Result<()>
+{
+    let fixture = Fixture::new()?;
+    let path = fixture.0.join("acceptance.json");
+    assert!(fixture.collect()?["AllRequestedWorkloadsPassed"].is_null());
+    for passed in [false, true] {
+        fs::write(
+            &path,
+            serde_json::to_vec(&json!({"schemaVersion":1,
+            "allRequestedWorkloadsPassed":passed, "private":"not-for-public-output"}))
+            .map_err(|error| error.to_string())?,
+        )
+        .map_err(|error| error.to_string())?;
+        let result = run(json!({"evidenceDirectory":fixture.0,
+            "acceptanceExitCode":101, "budgetExpired":true}))?;
+        assert_eq!(result["AllRequestedWorkloadsPassed"], passed);
+        assert_eq!(result["Ready"], false);
+        assert_eq!(result["Classification"], "no-protected-worker-directory");
+        assert!(!result.to_string().contains("not-for-public-output"));
+    }
+    for text in [
+        "{}",
+        "[]",
+        "[1,true]",
+        "not-json",
+        "{\"schemaVersion\":1}",
+        "{\"schemaVersion\":2,\"allRequestedWorkloadsPassed\":true}",
+        "{\"schemaVersion\":1,\"allRequestedWorkloadsPassed\":null}",
+        "{\"schemaVersion\":1,\"allRequestedWorkloadsPassed\":\"false\"}",
+        "{\"schemaVersion\":1,\"allRequestedWorkloadsPassed\":0}",
+        "{\"schemaVersion\":1,\"allRequestedWorkloadsPassed\":false,\"allRequestedWorkloadsPassed\":true}",
+    ] {
+        fs::write(&path, text).map_err(|error| error.to_string())?;
+        assert!(fixture.collect()?["AllRequestedWorkloadsPassed"].is_null());
+    }
+    fs::write(&path, vec![b' '; MAX_ACCEPTANCE_BYTES + 1]).map_err(|error| error.to_string())?;
+    assert!(fixture.collect()?["AllRequestedWorkloadsPassed"].is_null());
+    fs::remove_file(&path).map_err(|error| error.to_string())?;
+    fs::create_dir(&path).map_err(|error| error.to_string())?;
+    assert!(fixture.collect()?["AllRequestedWorkloadsPassed"].is_null());
+    Ok(())
+}
+
+#[test]
 fn logs_redact_every_session_key_and_unknown_hex_without_traversing_nested_files()
 -> crate::Result<()> {
     let fixture = Fixture::new()?;

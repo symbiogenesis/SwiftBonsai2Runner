@@ -1396,6 +1396,28 @@ fn pending_adapter_scale_history() -> Value {
         "minimumRemainingBudgetSeconds":ADAPTER_LIFECYCLE_RESERVE.as_secs()})
 }
 
+fn begin_adapter_requests(profile: &AdapterProfile, evidence: &Path, report: &mut Value) {
+    report["phase"] = json!("required-scale-1.3-stream");
+    report["streams"] = json!([]);
+    if profile.required_scale_history {
+        report["scaleHistoryWorkload"]["phase"] = report["phase"].clone();
+    }
+    save_acceptance_report(evidence, report);
+}
+
+fn adapter_request_budget_expired(profile: &AdapterProfile, evidence: &Path, report: &mut Value) {
+    report["requestBudgetExpired"] = json!(true);
+    report["requestFailurePhase"] = if profile.required_scale_history {
+        report["scaleHistoryWorkload"]["phase"].clone()
+    } else {
+        report["phase"].clone()
+    };
+    if profile.required_scale_history {
+        report["scaleHistoryWorkload"]["reason"] = json!("request-budget-expired");
+    }
+    save_acceptance_report(evidence, report);
+}
+
 async fn bounded_adapter_acceptance(
     profile: &AdapterProfile,
     data: &Path,
@@ -1412,8 +1434,7 @@ async fn bounded_adapter_acceptance(
     let owner = start_adapter(profile, data, evidence).await;
     report["verifiedReadinessObserved"] = json!(true);
     report["adapterEnabled"] = json!(true);
-    report["phase"] = json!("required-scale-1.3-stream");
-    save_acceptance_report(evidence, report);
+    begin_adapter_requests(profile, evidence, report);
     let port = owner.port();
     let credential = key(&owner);
     let (stop, stopped) = oneshot::channel();
@@ -1426,11 +1447,7 @@ async fn bounded_adapter_acceptance(
     )
     .await
     .unwrap_or_else(|| {
-        report["requestBudgetExpired"] = json!(true);
-        if profile.required_scale_history {
-            report["scaleHistoryWorkload"]["reason"] = json!("request-budget-expired");
-        }
-        save_acceptance_report(evidence, report);
+        adapter_request_budget_expired(profile, evidence, report);
         false
     });
     report["phase"] = json!("owned-cleanup");
@@ -1668,6 +1685,124 @@ async fn adapter_scale_history_fixture(
         reached.send(()).unwrap();
         pending::<()>().await;
     }
+}
+
+async fn adapter_first_request_fixture(
+    listener: tokio::net::TcpListener,
+    evidence: std::path::PathBuf,
+    reached: oneshot::Sender<()>,
+) {
+    let (peer, _) = listener.accept().await.unwrap();
+    let saved: Value =
+        serde_json::from_slice(&fs::read(evidence.join("acceptance.json")).unwrap()).unwrap();
+    assert_eq!(saved["verifiedReadinessObserved"], true);
+    assert_eq!(
+        saved["scaleHistoryWorkload"]["phase"],
+        "required-scale-1.3-stream"
+    );
+    let mut peer = BufReader::new(peer);
+    let mut length = None;
+    loop {
+        let line = prefix_line(&mut peer, 16 * 1024).await;
+        if let Some(value) = line.strip_prefix("Content-Length: ") {
+            length = Some(value.trim().parse::<usize>().unwrap());
+        }
+        if line == "\r\n" {
+            break;
+        }
+    }
+    let mut body = vec![0; length.unwrap()];
+    peer.read_exact(&mut body).await.unwrap();
+    let body: Value = serde_json::from_slice(&body).unwrap();
+    assert_eq!(body["max_completion_tokens"], 4);
+    assert_eq!(body["abliteration_scale"], 1.3);
+    reached.send(()).unwrap();
+    pending::<()>().await;
+}
+
+#[test]
+fn native_adapter_first_request_cancellation_retains_ready_phase_and_missing_work() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    runtime.block_on(async {
+        timeout(Duration::from_secs(10), async {
+            let evidence = env::temp_dir().join(format!(
+                "Bonsai-Adapter-First-Request-{}-{}",
+                std::process::id(),
+                std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap()
+                    .as_nanos()
+            ));
+            fs::create_dir(&evidence).unwrap();
+            let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+            let port = listener.local_addr().unwrap().port();
+            let (reached, waiting) = oneshot::channel();
+            let fixture = tokio::spawn(adapter_first_request_fixture(
+                listener,
+                evidence.clone(),
+                reached,
+            ));
+            let profile = &PTQ1_ADAPTER_LIFECYCLE_PROFILE;
+            let mut report = json!({"passed":false, "allRequestedWorkloadsPassed":false,
+                "verifiedReadinessObserved":true,
+                "scaleHistoryWorkload":pending_adapter_scale_history()});
+            begin_adapter_requests(profile, &evidence, &mut report);
+            let deadline = tokio::time::Instant::now() + CASE_BUDGET;
+            let mut running = Box::pin(adapter_requests(
+                profile,
+                port,
+                "model-free-fixture",
+                &evidence,
+                deadline,
+                &mut report,
+            ));
+            let mut waiting = std::pin::pin!(waiting);
+            std::future::poll_fn(|cx| {
+                if let std::task::Poll::Ready(result) = waiting.as_mut().poll(cx) {
+                    result.unwrap();
+                    return std::task::Poll::Ready(());
+                }
+                assert!(running.as_mut().poll(cx).is_pending());
+                std::task::Poll::Pending
+            })
+            .await;
+            drop(running);
+            adapter_request_budget_expired(profile, &evidence, &mut report);
+            // The outer owner advances through cleanup after cancellation.
+            // Preserve the exact failing request independently of that phase.
+            report["phase"] = json!("completed");
+            save_acceptance_report(&evidence, &report);
+            fixture.abort();
+            assert!(fixture.await.unwrap_err().is_cancelled());
+            let saved: Value =
+                serde_json::from_slice(&fs::read(evidence.join("acceptance.json")).unwrap())
+                    .unwrap();
+            assert_eq!(saved["requestFailurePhase"], "required-scale-1.3-stream");
+            assert_eq!(saved["requestBudgetExpired"], true);
+            assert_eq!(
+                saved["scaleHistoryWorkload"]["reason"],
+                "request-budget-expired"
+            );
+            assert_eq!(saved["scaleHistoryWorkload"]["status"], "pending");
+            for field in [
+                "scaleZeroPassed",
+                "invalidScaleRejected",
+                "changeBackHistoryPassed",
+            ] {
+                assert_eq!(saved["scaleHistoryWorkload"][field], false);
+            }
+            assert_eq!(saved["streams"], json!([]));
+            assert_eq!(saved["allRequestedWorkloadsPassed"], false);
+            assert_eq!(saved["passed"], false);
+            fs::remove_file(evidence.join("acceptance.json")).unwrap();
+            fs::remove_dir(evidence).unwrap();
+        })
+        .await
+        .unwrap();
+    });
 }
 
 #[test]
