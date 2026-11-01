@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "kind": "independent-ptq1-source-and-pre-model-preflight-review",
+  "recordedDate": "2026-11-01",
+  "reviewerId": "Codex:/root/review",
+  "status": "reviewed-pre-model-no-go",
+  "frozenApplication": {
+    "runnerRevision": "17a76fbad91e8add5d18677362dbf26fa34163b1",
+    "foundationRunId": "41320576241",
+    "foundationUrl": "https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41320576241",
+    "foundationConclusionIndependentlyVerified": "success",
+    "acceptanceRunId": "41320577718",
+    "acceptanceUrl": "https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41320577718",
+    "acceptanceConclusionIndependentlyVerified": "cancelled",
+    "acceptanceJobRunnerId": 0,
+    "acceptanceJobExecutedSteps": 0,
+    "preparationArtifactId": "13089616211",
+    "preparationArtifactBytes": 2966780,
+    "preparationArtifactSha256": "67c742a8eb4fc97ca8ea0507a78074ebb34bf860f4b768ae12ac4a8959bdafa9",
+    "preparationReceiptSha256": "9d3d5e81e78e99eeeebf9cbe03ccd75fccd35831f058fed71501e8379713c8ac",
+    "sourceRunCompilerBinaryAndArchiveMemberIdentitiesVerified": true,
+    "modelAttempts": 0,
+    "additionalModelAttempts": 0
+  },
+  "preflightInterpretation": {
+    "classification": "pre-existing-chat-inferred-preflight-blocker",
+    "basis": "Root reported a pre-existing bonsai-chat process and preserved it. The reviewed helper rejects matching idle blockers before registration and before creating owner evidence. Raw wrapper stderr was discarded, so the exact underlying exception is not independently established.",
+    "ownerEvidenceDirectoryAbsentIndependentlyVerified": true,
+    "remoteRunnerInventoryEmptyIndependentlyVerified": true,
+    "runnerCredentialFilesAbsentIndependentlyVerified": true,
+    "aggregateOwnerAttemptedMeaning": "The dedicated wrapper process was invoked; this field does not establish a model attempt.",
+    "originalAggregateCleanupVerified": false,
+    "cleanupInterpretation": "The original failed aggregate receipt remains unchanged. Independent absence checks establish that no owned registration or model state was created, rather than successful model cleanup."
+  },
+  "durableIndependentReview": {
+    "directoryRelativeToLocalAppData": "SwiftBonsai2/qualification/ptq1-lifecycle-41320577718",
+    "reviewFile": "independent-review.json",
+    "reviewSha256": "960a3ef70641d1381c5b08371a0089c6b336f6dcc8c6072993de9569f3044ad0",
+    "selectionFile": "independent-review-selection.json",
+    "selectionSha256": "6d9553ea1a15e5f70903baef8abb7a225c5b8aac418dd4855b7a89461356cdc1",
+    "allOriginalManifestEntriesVerified": true,
+    "selectedFilesIncludingReview": 11,
+    "originalClockRestarted": false,
+    "finishedOriginalSeconds": 161.4497928,
+    "reviewOperationSeconds": 0.6169503000000134,
+    "aggregateMaximumSeconds": 290,
+    "earlierDiagnosticsChargeSeconds": 10
+  },
+  "sourceReview": {
+    "resourceTelemetry": "Approved distinct sampled root/private/working-set, OS root-working-set and whole-Job commitment scopes without changing guard thresholds or inferring resource qualification.",
+    "hostedPacking": "Approved exact-main hosted admission, immutable original artifact and exporter, exporter-independent complete scanner, failure receipts and digest-bound selected artifacts. The attempted download did not yield a packing result.",
+    "workerReadinessConsumer": "Approved exact legacy omission policy and strict future matching worker identity, rejecting malformed, duplicate, unsupported and mismatched values. Current 0.1.10 still provides no worker observation.",
+    "laterExporterTimeoutCommit": "dd6e1ccb2cfae0c0e3ac4523ea40ad9dd2043d19",
+    "laterHostedBudgetAndFailureReceiptCommit": "45ced81b10b7c8fa87fee12f24245915eb48e70e",
+    "laterScriptsQualificationTransferAllowed": false,
+    "prismWorkerIdentitySourceCommit": "f9c7f258c5f67efa7dacee0735fd6a5ce8aac53a",
+    "prismWorkerIdentityScope": "Source preparation reports the actual instantiated graph's configured worker budget. It establishes no executed parallel-operation count, utilization, speedup or released-runtime qualification."
+  },
+  "reviewBinaryExecutions": 0,
+  "reviewModelExecutions": 0,
+  "reviewNewDeviceDiagnostics": 0,
+  "lifecycleGateClosed": false,
+  "packingGateClosed": false,
+  "defaultPromotionQualified": false,
+  "remaining": [
+    "Complete the bounded three-stream PTQ1 lifecycle on an otherwise idle owner device in a future session that preserves the shared execution budget.",
+    "Collect exact-source complete hosted packing evidence and independent review.",
+    "Obtain immutable adapter authoring checkpoint/conversion provenance and independently verify all 48 SSM mappings.",
+    "Retain independent numerical, quality, benefit, full-context/output, resource, isolation, recovery, installation and owner-comfort qualification."
+  ]
+}
