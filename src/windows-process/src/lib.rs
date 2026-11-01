@@ -855,14 +855,15 @@ impl OwnedProcess {
 
     /// Captures bounded synthetic-fixture Job counters and member identities.
     ///
-    /// Available only with `test-probe`. Returns accounting plus retained member
-    /// PIDs, snapshot parent PIDs and executable basenames; no paths, arguments
-    /// or environment values. Snapshot metadata is diagnostic, not admission.
+    /// Available only with `test-probe`. Returns independent accounting, raw
+    /// assigned/listed/PID fields, retained member PIDs and snapshot parent PIDs
+    /// and executable basenames; no paths, arguments or environment values.
+    /// Later query failures remain inline and never erase earlier observations.
+    /// Snapshot metadata is diagnostic, not admission.
     ///
-    /// # Errors
-    /// Rejects failed native queries, more than 64 members or oversized snapshots.
+    /// Native-query, 64-member and snapshot-bound failures are retained inline.
     #[cfg(feature = "test-probe")]
-    pub fn test_job_accounting(&self) -> io::Result<String> {
+    pub fn test_job_accounting(&self) -> String {
         self.0.test_job_accounting()
     }
 

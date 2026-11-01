@@ -517,7 +517,7 @@ impl NativeProcess {
     }
 
     #[cfg(feature = "test-probe")]
-    pub(super) fn test_job_accounting(&self) -> io::Result<String> {
+    pub(super) fn test_job_accounting(&self) -> String {
         job_probe::observe(self)
     }
 
