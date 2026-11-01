@@ -127,8 +127,7 @@ fn ordinary(path: &Path) -> crate::Result<()> {
 }
 
 fn read_json(path: &Path) -> crate::Result<Value> {
-    ordinary(path)?;
-    let file = fs::File::open(path).map_err(|error| error.to_string())?;
+    let file = bonsai_artifacts::open_locked_file(path).map_err(|error| error.to_string())?;
     let mut bytes = Vec::new();
     file.take(u64::try_from(RECEIPT_LIMIT + 1).map_err(|error| error.to_string())?)
         .read_to_end(&mut bytes)
@@ -371,6 +370,36 @@ fn save_evidence(
 /// changed source/compiler identities, unowned processes and incomplete output receipts.
 pub fn run(request: Value) -> crate::Result<Value> {
     let request: Request = serde_json::from_value(request).map_err(|error| error.to_string())?;
+    match &request {
+        Request::ChatCandidate {
+            repository_root, ..
+        }
+        | Request::SpeechCandidate {
+            repository_root, ..
+        }
+        | Request::SpeechStaticBuild {
+            repository_root, ..
+        }
+        | Request::Ptq1Capture {
+            repository_root, ..
+        }
+        | Request::RowCapture {
+            repository_root, ..
+        }
+        | Request::HeadlessPublisher {
+            repository_root, ..
+        }
+        | Request::Engine {
+            repository_root, ..
+        } => {
+            if crate::source_build::channel(repository_root)? != CHANNEL {
+                return Err("Build tools require the reviewed repository compiler pin.".into());
+            }
+            let _manifest = bonsai_artifacts::open_locked_file(&repository_root.join("Cargo.toml"))
+                .map_err(|error| error.to_string())?;
+        }
+        Request::SpeechEnvironment { .. } | Request::SpeechStaticVerify { .. } => {}
+    }
     match request {
         Request::ChatCandidate {
             repository_root,
