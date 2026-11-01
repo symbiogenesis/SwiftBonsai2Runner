@@ -18,7 +18,7 @@ const LOGS: &[&str] = &[
     "rust-build.txt",
 ];
 
-fn toolchain(working: &Path) -> crate::Result<(PathBuf, PathBuf, PathBuf, String)> {
+pub(super) fn toolchain(working: &Path) -> crate::Result<(PathBuf, PathBuf, PathBuf, String)> {
     let rustup = crate::startup_process::resolve("rustup.exe".as_ref())?;
     let resolve = |name: &str| -> crate::Result<PathBuf> {
         let result = execute(

@@ -18,14 +18,8 @@ runs:
       run: |
         Set-StrictMode -Version Latest
         $ErrorActionPreference = 'Stop'
-        if (-not $env:BONSAI_TOOLS_PATH) { throw 'Native preparation requires the current run checked maintenance CLI.' }
-        if ($env:NATIVE_SPEECH_HOST_KEY -cnotmatch '^[a-f0-9]{64}$') { throw 'Native preparation requires the checked host cache identity.' }
-        Import-Module (Join-Path $env:GITHUB_WORKSPACE 'scripts/Bonsai.Tools.psm1')
-        $native = Invoke-BonsaiTool -Command speech-build -ToolPath $env:BONSAI_TOOLS_PATH -TimeoutSeconds 0 -Request @{
-          operation = 'environment'; dataDirectory = (Join-Path $env:RUNNER_TEMP 'SwiftBonsai-NativeSpeech'); workingDirectory = $env:RUNNER_TEMP
-        }
-        foreach ($key in $native.Environment.Keys) { "$key=$($native.Environment[$key])" >> $env:GITHUB_ENV }
-        "NATIVE_SPEECH_EVIDENCE=$(Join-Path $env:RUNNER_TEMP 'SwiftBonsai-NativePreparation')" >> $env:GITHUB_ENV
+        $PSNativeCommandUseErrorActionPreference = $true
+        & $env:BONSAI_TOOLS_PATH build-tools --json (@{ operation = 'speech-environment'; dataDirectory = (Join-Path $env:RUNNER_TEMP 'SwiftBonsai-NativeSpeech'); workingDirectory = $env:RUNNER_TEMP } | ConvertTo-Json -Compress)
     - name: Reuse exact Qwen static libraries
       id: static-cache
       if: inputs.lane == 'tts'
@@ -43,27 +37,13 @@ runs:
       run: |
         Set-StrictMode -Version Latest
         $ErrorActionPreference = 'Stop'
-        Import-Module (Join-Path $env:GITHUB_WORKSPACE 'scripts/Bonsai.Native.psm1')
-        [void][IO.Directory]::CreateDirectory($env:NATIVE_SPEECH_EVIDENCE)
-        $build = Invoke-BonsaiNativeProcess -Executable (Get-Command cargo -CommandType Application).Source -ArgumentList @(
-          '+nightly-2026-10-22-aarch64-pc-windows-msvc', 'build', '--manifest-path', (Join-Path $env:GITHUB_WORKSPACE 'Cargo.toml'),
-          '--package', 'bonsai-speech-tts', '--locked', '--release', '--all-features', '--message-format=json', '--target-dir', $env:CARGO_TARGET_DIR
-        ) -WorkingDirectory $env:RUNNER_TEMP -TimeoutSeconds 1800 -LogPath (Join-Path $env:NATIVE_SPEECH_EVIDENCE 'static-build.log')
-        if ($build.ExitCode -ne 0) { throw 'Native speech static library preparation failed.' }
-        $records = @($build.StandardOutput -split '\r?\n' | Where-Object { $_ } | ForEach-Object { ConvertFrom-Json -InputObject $_ })
-        $outputs = @($records | Where-Object { $_.reason -ceq 'build-script-executed' -and $_.package_id -match '#bonsai-speech-tts@' })
-        if ($outputs.Count -ne 1 -or -not [IO.Path]::IsPathFullyQualified($outputs[0].out_dir)) { throw 'Expected exactly one native speech build-script output.' }
-        $package = Join-Path $env:RUNNER_TEMP 'BQ-CI'
-        $files = [ordered]@{}
-        foreach ($name in @('qwen-core', 'ggml', 'ggml-base', 'ggml-cpu')) {
-          $relative = if ($name -ceq 'qwen-core') { 'Release/qwen-core.lib' } else { "ggml/src/Release/$name.lib" }
-          $destination = Join-Path $package $relative
-          [void][IO.Directory]::CreateDirectory([IO.Path]::GetDirectoryName($destination))
-          Copy-Item -LiteralPath (Join-Path $outputs[0].out_dir "$name.lib") -Destination $destination
-          $files[$relative] = (Get-FileHash -LiteralPath $destination -Algorithm SHA256).Hash.ToLowerInvariant()
-        }
-        @{ SchemaVersion = 2; SourceId = $env:STATIC_SOURCE_ID; HostCacheKey = $env:NATIVE_SPEECH_HOST_KEY; Files = $files } |
-          ConvertTo-Json | Set-Content -LiteralPath (Join-Path $package 'receipt.json')
+        $PSNativeCommandUseErrorActionPreference = $true
+        & $env:BONSAI_TOOLS_PATH build-tools --json (@{
+          operation = 'speech-static-build'; repositoryRoot = $env:GITHUB_WORKSPACE
+          workingDirectory = $env:RUNNER_TEMP; targetDirectory = $env:CARGO_TARGET_DIR
+          packageDirectory = (Join-Path $env:RUNNER_TEMP 'BQ-CI'); evidenceDirectory = $env:NATIVE_SPEECH_EVIDENCE
+          sourceId = $env:STATIC_SOURCE_ID; hostCacheKey = $env:NATIVE_SPEECH_HOST_KEY
+        } | ConvertTo-Json -Compress)
     - name: Verify and share the static libraries across Cargo phases
       if: inputs.lane == 'tts'
       shell: pwsh
@@ -73,16 +53,8 @@ runs:
       run: |
         Set-StrictMode -Version Latest
         $ErrorActionPreference = 'Stop'
-        $package = Join-Path $env:RUNNER_TEMP 'BQ-CI'
-        $receipt = Get-Content -LiteralPath (Join-Path $package 'receipt.json') -Raw | ConvertFrom-Json -AsHashtable
-        $expected = @('Release/qwen-core.lib', 'ggml/src/Release/ggml.lib', 'ggml/src/Release/ggml-base.lib', 'ggml/src/Release/ggml-cpu.lib')
-        if ($env:NATIVE_SPEECH_HOST_KEY -cnotmatch '^[a-f0-9]{64}$' -or $receipt.SchemaVersion -ne 2 -or
-            $receipt.HostCacheKey -cne $env:NATIVE_SPEECH_HOST_KEY -or
-            $receipt.SourceId -cne $env:STATIC_SOURCE_ID -or $receipt.Files.Count -ne $expected.Count) { throw 'Native static library cache source or host identity differs.' }
-        foreach ($relative in $expected) {
-          if ($receipt.Files[$relative] -cne (Get-FileHash -LiteralPath (Join-Path $package $relative) -Algorithm SHA256).Hash.ToLowerInvariant()) { throw 'Native static library cache digest differs.' }
-        }
-        "BONSAI_TTS_NATIVE_BUILD_DIR=$package" >> $env:GITHUB_ENV
+        $PSNativeCommandUseErrorActionPreference = $true
+        & $env:BONSAI_TOOLS_PATH build-tools --json (@{ operation = 'speech-static-verify'; packageDirectory = (Join-Path $env:RUNNER_TEMP 'BQ-CI'); sourceId = $env:STATIC_SOURCE_ID; hostCacheKey = $env:NATIVE_SPEECH_HOST_KEY } | ConvertTo-Json -Compress)
     - name: Retain native preparation build evidence
       if: always() && env.NATIVE_SPEECH_EVIDENCE != ''
       uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

@@ -13,9 +13,11 @@ use bonsai_artifacts::{is_redirect, validate_external_path};
 use serde::Deserialize;
 use serde_json::{Value, json};
 
+mod candidates;
 mod capture;
 mod engine;
 mod headless;
+mod speech_cache;
 
 const CHANNEL: &str = "nightly-2026-10-22-aarch64-pc-windows-msvc";
 const RECEIPT_LIMIT: usize = 65_536;
@@ -23,6 +25,37 @@ const RECEIPT_LIMIT: usize = 65_536;
 #[derive(Deserialize)]
 #[serde(tag = "operation", rename_all = "kebab-case", deny_unknown_fields)]
 enum Request {
+    #[serde(rename_all = "camelCase")]
+    ChatCandidate {
+        repository_root: PathBuf,
+        output_directory: PathBuf,
+    },
+    #[serde(rename_all = "camelCase")]
+    SpeechCandidate {
+        repository_root: PathBuf,
+        output_directory: PathBuf,
+    },
+    #[serde(rename_all = "camelCase")]
+    SpeechEnvironment {
+        data_directory: PathBuf,
+        working_directory: PathBuf,
+    },
+    #[serde(rename_all = "camelCase")]
+    SpeechStaticBuild {
+        repository_root: PathBuf,
+        working_directory: PathBuf,
+        target_directory: PathBuf,
+        package_directory: PathBuf,
+        evidence_directory: PathBuf,
+        source_id: String,
+        host_cache_key: String,
+    },
+    #[serde(rename_all = "camelCase")]
+    SpeechStaticVerify {
+        package_directory: PathBuf,
+        source_id: String,
+        host_cache_key: String,
+    },
     #[serde(rename_all = "camelCase")]
     Ptq1Capture {
         repository_root: PathBuf,
@@ -156,6 +189,25 @@ fn text_arguments(arguments: &[OsString]) -> crate::Result<Vec<&str>> {
                 .ok_or_else(|| "Build arguments must be Unicode.".to_owned())
         })
         .collect()
+}
+
+fn github_environment(name: &str, value: &str) -> crate::Result<()> {
+    if name.is_empty()
+        || !name
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || byte == b'_')
+        || value.contains(['\r', '\n', '\0'])
+    {
+        return Err("Invalid GitHub environment output.".into());
+    }
+    if let Some(path) = std::env::var_os("GITHUB_ENV") {
+        let mut file = OpenOptions::new()
+            .append(true)
+            .open(path)
+            .map_err(|error| error.to_string())?;
+        writeln!(file, "{name}={value}").map_err(|error| error.to_string())?;
+    }
+    Ok(())
 }
 
 fn stage_output(path: &Path, empty_allowed: bool) -> crate::Result<()> {
@@ -320,6 +372,40 @@ fn save_evidence(
 pub fn run(request: Value) -> crate::Result<Value> {
     let request: Request = serde_json::from_value(request).map_err(|error| error.to_string())?;
     match request {
+        Request::ChatCandidate {
+            repository_root,
+            output_directory,
+        } => candidates::build(&repository_root, &output_directory, false),
+        Request::SpeechCandidate {
+            repository_root,
+            output_directory,
+        } => candidates::build(&repository_root, &output_directory, true),
+        Request::SpeechEnvironment {
+            data_directory,
+            working_directory,
+        } => speech_cache::environment(&data_directory, &working_directory),
+        Request::SpeechStaticBuild {
+            repository_root,
+            working_directory,
+            target_directory,
+            package_directory,
+            evidence_directory,
+            source_id,
+            host_cache_key,
+        } => speech_cache::build(
+            &repository_root,
+            &working_directory,
+            &target_directory,
+            &package_directory,
+            &evidence_directory,
+            &source_id,
+            &host_cache_key,
+        ),
+        Request::SpeechStaticVerify {
+            package_directory,
+            source_id,
+            host_cache_key,
+        } => speech_cache::verify(&package_directory, &source_id, &host_cache_key),
         Request::Ptq1Capture {
             repository_root,
             output_directory,

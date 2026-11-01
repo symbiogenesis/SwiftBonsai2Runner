@@ -3,9 +3,9 @@
 use std::time::{Duration, Instant};
 
 use super::{
-    BTreeMap, OsString, Path, PathBuf, Value, count, download, environment, execute, external,
-    extract_zip, fs, hosted_context, image, json, ordinary, read_json, save, save_evidence,
-    scratch, stage_output, text, text_arguments,
+    BTreeMap, OsString, Path, PathBuf, Value, count, download, environment, external, extract_zip,
+    fs, hosted_context, image, json, ordinary, read_json, save, save_evidence, scratch,
+    stage_output, text, text_arguments,
 };
 
 const TOKENS: &[&str] = &[
@@ -92,7 +92,7 @@ fn candidates_unchanged(source: &Path, manifest: &Value, patched: bool) -> crate
 }
 
 fn sdk_environment(
-    working: &Path,
+    candidate: &Candidate<'_>,
     llvm: &Path,
 ) -> crate::Result<(BTreeMap<String, String>, String, String, PathBuf)> {
     let program_files = PathBuf::from(
@@ -100,7 +100,7 @@ fn sdk_environment(
     );
     external(&program_files)?;
     let vswhere = program_files.join("Microsoft Visual Studio/Installer/vswhere.exe");
-    let result = execute(
+    let result = candidate.tool(
         &vswhere,
         &[
             "-latest".into(),
@@ -111,12 +111,10 @@ fn sdk_environment(
             "-property".into(),
             "installationPath".into(),
         ],
-        working,
-        &BTreeMap::new(),
         "visual-studio.txt",
         30,
     )?;
-    let visual_studio = PathBuf::from(result.stdout.trim());
+    let visual_studio = PathBuf::from(result.trim());
     external(&visual_studio)?;
     let vc_version = fs::read_to_string(
         visual_studio.join("VC/Auxiliary/Build/Microsoft.VCToolsVersion.default.txt"),
@@ -389,7 +387,7 @@ pub(super) fn build(repository: &Path, output: &Path) -> crate::Result<Value> {
             crate::startup_cache::assert_arm64(&path)?;
             crate::startup_download::verify(&path, count(pin, "bytes")?, text(pin, "sha256")?)?;
         }
-        let (overlay, vc_version, sdk_version, sdk_bin) = sdk_environment(&working, &llvm)?;
+        let (overlay, vc_version, sdk_version, sdk_bin) = sdk_environment(&candidate, &llvm)?;
         candidate.environment = overlay;
         let compiler = llvm.join("clang-cl.exe");
         let linker = llvm.join("lld-link.exe");

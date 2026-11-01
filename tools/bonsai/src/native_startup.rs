@@ -399,6 +399,18 @@ pub(crate) fn build(
     model: &str,
     force: bool,
 ) -> crate::Result<Value> {
+    build_with_environment(repo, data, working, model, force, &BTreeMap::new())
+}
+
+/// Hosted candidate builds bind exact compiler/linker overlays to the receipt.
+pub(crate) fn build_with_environment(
+    repo: &Path,
+    data: &Path,
+    working: &Path,
+    model: &str,
+    force: bool,
+    build_environment: &BTreeMap<String, String>,
+) -> crate::Result<Value> {
     require_host()?;
     external(data)?;
     external(working)?;
@@ -406,13 +418,17 @@ pub(crate) fn build(
     let native_host = host()?;
     let target_directory =
         host_cache_directory(data, repo, &channel, text(&native_host, "HostCacheKey")?);
-    let identity = format!(
+    let mut identity = format!(
         "{}\n{}\n{native_host}",
         crate::speech_build::build_plan()?,
         crate::startup_cache::digest_file(
             &std::env::current_exe().map_err(|error| error.to_string())?
         )?
     );
+    if !build_environment.is_empty() {
+        use std::fmt::Write as _;
+        write!(identity, "\n{build_environment:?}").map_err(|error| error.to_string())?;
+    }
     let spec = crate::source_build::BuildSpec {
         repository_root: repo.to_path_buf(),
         working_directory: working.to_path_buf(),
@@ -423,10 +439,21 @@ pub(crate) fn build(
         identity,
         force,
     };
-    let outputs = crate::source_build::cached_build(&spec, || {
-        serde_json::from_value(environment(data, working)?["Environment"].clone())
-            .map_err(|error| error.to_string())
-    })?;
+    let outputs = crate::source_build::cached_build_with_timeout(
+        &spec,
+        || {
+            let mut overlay: BTreeMap<String, String> =
+                serde_json::from_value(environment(data, working)?["Environment"].clone())
+                    .map_err(|error| error.to_string())?;
+            overlay.extend(build_environment.clone());
+            Ok(overlay)
+        },
+        Duration::from_secs(if build_environment.is_empty() {
+            3600
+        } else {
+            1200
+        }),
+    )?;
     Ok(
         json!({"AsrPath": outputs.get("bonsai-speech-asr"), "TtsPath": outputs.get("bonsai-speech-tts"),
             "NativeBuildHost": native_host}),

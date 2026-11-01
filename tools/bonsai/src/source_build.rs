@@ -148,13 +148,21 @@ pub(crate) fn cached_build(
     spec: &BuildSpec,
     prepare: impl FnOnce() -> crate::Result<BTreeMap<String, String>>,
 ) -> crate::Result<BTreeMap<String, PathBuf>> {
+    cached_build_with_timeout(spec, prepare, Duration::from_secs(3600))
+}
+
+pub(crate) fn cached_build_with_timeout(
+    spec: &BuildSpec,
+    prepare: impl FnOnce() -> crate::Result<BTreeMap<String, String>>,
+    timeout: Duration,
+) -> crate::Result<BTreeMap<String, PathBuf>> {
     cached_build_with(spec, prepare, |spec, environment, arguments, log| {
         let result = startup_process::run(
             "cargo.exe".as_ref(),
             arguments,
             &spec.working_directory,
             environment,
-            Duration::from_secs(3600),
+            timeout,
             log,
         )?;
         if result.code != 0 {
