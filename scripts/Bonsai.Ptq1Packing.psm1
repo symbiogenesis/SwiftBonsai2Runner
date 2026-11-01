@@ -8,7 +8,7 @@ function Get-Ptq1PackingHostedLimit {
     Declares the single hosted packing attempt's transfer, process and workflow bounds.
     #>
     [CmdletBinding()]
-    [OutputType([Collections.IDictionary])]
+    [OutputType([Collections.Specialized.OrderedDictionary])]
     param()
     return [ordered]@{
         originalDownloadSeconds = 1800; runtimeDownloadSeconds = 120
@@ -21,6 +21,7 @@ function Set-Ptq1PackingPhase {
     <# .SYNOPSIS
     Retains elapsed attribution for the previous packing phase without restarting a deadline.
     #>
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '', Justification = 'Only updates the caller-owned in-memory receipt; durable writes are separate explicit operations.')]
     [CmdletBinding()]
     [OutputType([void])]
     param([Parameter(Mandatory)][Collections.IDictionary]$Report,
@@ -40,7 +41,7 @@ function Get-Ptq1PackingPartialObservation {
     Observes bounded partial-download length without retaining its path or payload.
     #>
     [CmdletBinding()]
-    [OutputType([Collections.IDictionary])]
+    [OutputType([Collections.Specialized.OrderedDictionary])]
     param([Parameter(Mandatory)][string]$Path,
           [Parameter(Mandatory)][long]$ExpectedBytes)
     $observation = [ordered]@{ status = 'absent'; expectedBytes = $ExpectedBytes; partialBytes = $null }
