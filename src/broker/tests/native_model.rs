@@ -2170,18 +2170,7 @@ fn native_adapter_scale_history_retains_partial_steps_without_qualifying_missing
                 assert_eq!(observed["scaleZeroPassed"], completed_steps >= 1);
                 assert_eq!(observed["invalidScaleRejected"], completed_steps >= 2);
                 assert_eq!(observed["changeBackHistoryPassed"], completed_steps == 3);
-                assert_eq!(
-                    observed["suppliedAssistantHistoryIsCapturedModelOutput"],
-                    completed_steps >= 2
-                );
-                assert_eq!(observed["generatedHistoryStateReuseQualified"], false);
-                if completed_steps >= 2 {
-                    assert_eq!(
-                        observed["suppliedAssistantHistorySource"],
-                        adapter_initial_fixture(profile)
-                    );
-                    assert_eq!(saved["suppliedHistoryMessages"][1]["content"], "cèdre\n");
-                }
+                assert_generated_history_retention(profile, completed_steps, &saved);
                 assert_eq!(saved["passed"], false);
                 assert_eq!(saved["allRequestedWorkloadsPassed"], false);
                 assert_eq!(
@@ -2198,6 +2187,26 @@ fn native_adapter_scale_history_retains_partial_steps_without_qualifying_missing
         .await
         .unwrap();
     });
+}
+
+fn assert_generated_history_retention(
+    profile: &AdapterProfile,
+    completed_steps: usize,
+    saved: &Value,
+) {
+    let observed = &saved["scaleHistoryWorkload"];
+    assert_eq!(
+        observed["suppliedAssistantHistoryIsCapturedModelOutput"],
+        completed_steps >= 2
+    );
+    assert_eq!(observed["generatedHistoryStateReuseQualified"], false);
+    if completed_steps >= 2 {
+        assert_eq!(
+            observed["suppliedAssistantHistorySource"],
+            adapter_initial_fixture(profile)
+        );
+        assert_eq!(saved["suppliedHistoryMessages"][1]["content"], "cèdre\n");
+    }
 }
 
 #[test]
