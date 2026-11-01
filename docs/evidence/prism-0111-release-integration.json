@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "kind": "reviewed-released-runtime-pin",
+  "recordedDate": "2026-11-01",
+  "version": "0.1.11",
+  "sourceRevision": "4ce85bdd92f30dc4badb4b5f16307611fa6408c7",
+  "releaseUrl": "https://github.com/symbiogenesis/prism-inference/releases/tag/v0.1.11",
+  "prerelease": true,
+  "owningChecks": {
+    "foundation": { "runId": "41332186603", "conclusion": "success", "completedJobs": 15 },
+    "conformance": { "runId": "41332186586", "conclusion": "success", "completedJobs": 58 }
+  },
+  "independentReview": "docs/evidence/prism-0111-release-review.json",
+  "reviewer": "Codex:/root/review",
+  "sourceArchive": {
+    "bytes": 4324925,
+    "sha256": "577e7413ad02a6f8916b1d91d1748862b5ad3ad2fca854b98b1f40761c485bea"
+  },
+  "publishedArchives": [
+    {
+      "target": "aarch64-pc-windows-msvc",
+      "bytes": 3197045,
+      "sha256": "556077cd1d85f0ba75852741e11604501e9aac4fa2b9dd6250b2649040e36c01",
+      "receiptSha256": "a32249683ea2f80aaf1d54027533b1fa1b40ade03b42a7483719d3b0be3cb45d"
+    },
+    {
+      "target": "x86_64-pc-windows-msvc",
+      "bytes": 3471304,
+      "sha256": "2bfa5fcba2a979f0d282fa479abb9ac46cccfe5d2e27d41340a23ecdc85c4eaa",
+      "receiptSha256": "c99facc5ff8c4f76206991a30de41e51321d9359bf79949d1098981b123128eb"
+    }
+  ],
+  "publicationVerification": {
+    "tagCommitMatchesReviewedSource": true,
+    "allFourDownloadedAssetsMatchReviewedBytes": true,
+    "everyBundledFileAndExecutableMachineReviewed": true,
+    "runtimeExecuted": false
+  },
+  "productionDelta": {
+    "effectiveGraphRowWorkerReadiness": "required matching integer for this pin",
+    "unqualifiedRecurrentFusionIncluded": false,
+    "recurrentExecution": "Previously released 749a5f5 copy-then-scale sequence; fusion candidate retained in history and test-only controls.",
+    "cngAndOptionalLatestPrefixReuse": "Already present in 0.1.10; no new performance claim or reuse selection."
+  },
+  "runnerIntegration": {
+    "runtimeLock": "config/prism-inference.lock.json",
+    "numericalSourcePins": "tools/native-reference/pins.json",
+    "sameExactSourceArchive": true,
+    "oneAndFourWorkersExplicitlyAdmitted": true,
+    "originalPq2RollbackOption": "--use-original-pq2",
+    "applicationFoundation": "pending settled-main validation",
+    "actualModelQualification": "pending"
+  },
+  "publisherEngineRemainsDefault": true,
+  "originalPq2RemainsDefault": true,
+  "adapterScale": 1.3,
+  "admissionChanged": false,
+  "registryPublished": false,
+  "defaultMayChange": false,
+  "scope": "Exact binary/source publication and integration preparation only. No transfer of historical device evidence, actual-model parity, writer provenance, quality, resources, isolation, benefit or default promotion."
+}

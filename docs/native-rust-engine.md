@@ -12,11 +12,11 @@ feature parity does not qualify inference.
 ## Swift CPU supported subset
 
 The target is native Windows ARM64, initially the 32 GB Snapdragon X Elite. Runner
-pins [**0.1.10 prerelease**](https://github.com/symbiogenesis/prism-inference/releases/tag/v0.1.10),
-main revision `749a5f5b43bf77764a29682557ec91a8de8dcdef`, with passing owning
-[Foundation](https://github.com/symbiogenesis/prism-inference/actions/runs/41178893822)
+pins [**0.1.11 prerelease**](https://github.com/symbiogenesis/prism-inference/releases/tag/v0.1.11),
+main revision `4ce85bdd92f30dc4badb4b5f16307611fa6408c7`, with passing owning
+[Foundation](https://github.com/symbiogenesis/prism-inference/actions/runs/41332186603)
 and
-[conformance](https://github.com/symbiogenesis/prism-inference/actions/runs/41178893812).
+[conformance](https://github.com/symbiogenesis/prism-inference/actions/runs/41332186586).
 Release/focused integration does not establish full-context, sustained-performance,
 creative, adapter or daily-isolation acceptance.
 
@@ -85,15 +85,15 @@ changes preserve sampler draw progression; explicit session reset reseeds it. Th
 readiness shape remains supported. There is no inference-library dependency or
 engine switch after failure.
 
-Private readiness may additionally report integer `row_workers`; when present,
-Runner requires it to match the selected one- or four-worker policy. Only the
-reviewed 0.1.8, 0.1.9 and 0.1.10 pins may omit the field; a future pin must report
-it. Null, coerced, duplicate, unsupported and mismatched values reject readiness.
+Private readiness in 0.1.11 must report integer `row_workers`, matching the
+selected one- or four-worker policy and derived from the instantiated graph.
+Only the reviewed 0.1.8, 0.1.9 and 0.1.10 pins may omit the field. Null, coerced,
+duplicate, unsupported and mismatched values reject readiness.
 This identifies the installed projection-worker budget, without proving executed
-parallel operations, active utilization or device benefit. The current 0.1.10
-release omits this observation, so its worker count remains configured rather
-than independently observed. This consumer preparation changes no release pin,
-default or admission limit, and exposes no public request override.
+parallel operations, active utilization or device benefit. Historical 0.1.10
+receipts remain configured-worker observations. Updating the pin does not transfer
+their model qualification to 0.1.11, change defaults or admission, or expose a
+public request override.
 
 This service implementation does not qualify PTQ1 or adapters for release. Cache
 reuse, speculation and offload remain outside Runner's serving subset. The
@@ -230,7 +230,7 @@ for CI-only timing/tracing, actual-model comparisons and evidence limits.
 
 ## Bounded parallel-row qualification
 
-The published 0.1.8 app path uses one compute worker. The 0.1.9 and 0.1.10 prereleases make
+The published 0.1.8 app path uses one compute worker. The 0.1.9 through 0.1.11 prereleases make
 the existing bounded `parallel-rows` implementation available in its binary
 bundle; all runtime entry points still default to one worker. Feature availability
 does not qualify a worker budget or change the selected engine.
@@ -304,8 +304,10 @@ subsequent dot/update order remain unchanged, with provisional state kept separa
 from committed state. Its [owning Foundation](https://github.com/symbiogenesis/prism-inference/actions/runs/41259682083)
 and [conformance](https://github.com/symbiogenesis/prism-inference/actions/runs/41259682092)
 pass, including bitwise, independent native-reference and graph recovery controls.
-Runner's pinned 0.1.10 does not contain this change; actual-model numerical,
-throughput and resource qualification remain pending before release integration.
+The 0.1.11 binary keeps the previously released copy-then-scale path; the fused
+candidate is retained in source history and model-free controls until actual-model
+numerical, throughput and resource qualification permit release integration.
+The removed copy alone establishes no speed or memory benefit.
 
 ## Default-runtime promotion
 
@@ -339,7 +341,7 @@ work. The subsequent [hosted candidate run](https://github.com/symbiogenesis/pri
 passes on Windows ARM64, Windows x64 and Linux ARM64, exercising GGUF/default-report
 and hash controls, the graph, full sampled logits/state, worker/server protocols,
 strict analyzers and documentation without weights. These are candidate source
-checks; Runner pins 0.1.10 and does
+checks; Runner pins 0.1.11 and does
 not expose the experimental reuse option. No load-time or generation-speed gain is
 established. The explicit adapter lifecycle workload in
 [validation](validation.md#actual-model-application-acceptance) also remains pending

@@ -128,9 +128,10 @@ close actual-model logits/state, writer-basis or promotion gates. Keep intake,
 verification, model work and cleanup inside one aggregate five-minute owner allowance;
 the [default-readiness audit](docs/evidence/ptq1-default-readiness.json) separates
 historical passes from current-release qualification.
-The [frozen current PTQ1 promotion score](docs/evidence/ptq1-promotion-85fd2f1.json)
+The [frozen 0.1.10 PTQ1 promotion score](docs/evidence/ptq1-promotion-85fd2f1.json)
 passes five independently reviewed documentary/packing gates and leaves fourteen
-pending for the explicit four-worker candidate.
+pending for its explicit four-worker candidate. The pinned 0.1.11 runtime and
+later application identities require their own evidence and applicability review.
 Close its actual-model, adapter provenance, paired benefit, quality, resource,
 isolation, recovery and installation gates before changing defaults or removing
 the README's adapter qualification. Later application identities need their own review.
@@ -140,11 +141,15 @@ adapter's immutable checkpoint, conversion and direction identities and
 independently verify all 48 SSM mappings; this remains an external provenance
 prerequisite that native/Rust agreement cannot supply.
 
-Publish and integrate the prepared Prism effective-row-worker readiness field only
-through a reviewed new release and exact lock update. Require matching private
-identity for future pins; the current 0.1.10 legacy response leaves actual worker
-identity unobserved. Preserve explicit version admission for four workers and
-qualify the new release/profile independently before using it for promotion.
+Qualify the pinned Prism 0.1.11 release and its required effective-row-worker
+readiness on the actual model before using it for promotion. Retain historical
+0.1.10 configured-worker observations separately. Retain the previously released
+copy-then-scale recurrent path until the fused source candidate has actual-model
+numerical, throughput and resource evidence. Exercise the selected numerical
+adapter condition explicitly
+(`standard`, `loaded-zero` or `no-adapter`), without turning separate owner runs
+into a control matrix. One native/Rust condition pair does not close loaded-zero
+identity or nonzero application across conditions.
 
 - Qualify startup, supplied-history streaming, full 8K context and 4K output, long
   conversations, speech, offline restart and recovery. Cover Stop, abandonment,
