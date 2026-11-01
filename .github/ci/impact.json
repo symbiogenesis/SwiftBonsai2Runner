@@ -141,6 +141,7 @@
         "bonsai-tools"
       ],
       "paths": [
+        "scripts/Start-Chat.ps1",
         "tools/hexagon/**",
         "config/hexagon-experiment.lock.json",
         "config/hexagon-signed-q2-candidate.lock.json",

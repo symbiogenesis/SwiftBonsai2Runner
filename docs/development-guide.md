@@ -49,6 +49,18 @@ bonsai-tools provision --json (@{ operation = 'adapter'; dataDirectory = $data }
 bonsai-tools chat --data-directory $data
 ```
 
+The optional convenience launcher uses the same prebuilt executable:
+
+```powershell
+./scripts/Start-Chat.ps1
+./scripts/Start-Chat.ps1 -NativeEngine
+```
+
+It accepts `-DataDirectory` and `-ToolPath`, otherwise selecting
+`BONSAI_TOOLS_PATH`, the maintenance build above, or `bonsai-tools.exe` on PATH.
+Omitting `-NativeEngine` preserves the publisher engine default. The script
+only forwards to Rust and propagates its exit code; it builds or provisions nothing.
+
 The native Rust `egui`/`eframe` app follows the [UI contract](ui-architecture.md).
 The window opens before broker/speech preparation finishes, so drafting remains
 available during setup. Setup errors stay visible; close and relaunch after
@@ -231,7 +243,8 @@ working path, not full audio quality, latency or daily-use qualification.
 worker runs after the first UI tick. Rust owns options, speech setup, builds,
 credentials, per-user admission and teardown. The maintenance executable can be
 selected from a trusted hosted artifact or built once with the commands above;
-there is no source-bootstrap script or PowerShell module dependency. Unchanged
+the optional `Start-Chat.ps1` only forwards to this command. There is no
+source-bootstrap script or PowerShell module dependency. Unchanged
 launches call the executable directly without running Cargo. The JSON
 `chat-launch` command remains available for automation.
 

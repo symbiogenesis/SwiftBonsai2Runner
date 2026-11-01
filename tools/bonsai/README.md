@@ -36,7 +36,8 @@ $bonsai = Join-Path $target 'release/bonsai-tools.exe'
 & $bonsai chat --repository-root $repo --native-engine
 ```
 
-`chat` replaces `Start-Chat.ps1`. It uses the nearest Runner checkout and
+`chat` is the native launch entry point; optional `scripts/Start-Chat.ps1`
+forwards to it and offers `-NativeEngine`. It uses the nearest Runner checkout and
 `%LOCALAPPDATA%/SwiftBonsai2` unless `--repository-root` or `--data-directory`
 is supplied. Boolean options are `--native-engine`, `--use-repacked-ptq1`,
 `--no-abliterate-lora`, `--no-tts`, `--no-speech-models`, `--speech-models-only`

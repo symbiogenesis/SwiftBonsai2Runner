@@ -34,6 +34,9 @@ run `bonsai-tools chat --native-engine` to select the Rust engine, or
 `bonsai-tools chat` for the publisher C++ default. Updating the Rust runtime
 pin alone does not change that selection. Both open the native Windows chat app.
 
+The convenience launcher `./scripts/Start-Chat.ps1` uses the same prebuilt Rust
+tool; add `-NativeEngine` to select the Rust inference engine.
+
 Keep separate conversations and unsent drafts, rename your chats, and find text
 with **Ctrl+F**. Enable **Save conversations on this device** in Settings to
 recover your workspace after closing; saved conversations use Windows user
