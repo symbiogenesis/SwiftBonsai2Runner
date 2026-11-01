@@ -73,7 +73,9 @@ attempt](docs/evidence/ptq1-0110-service-attempt.json) reached PTQ1/adapter read
 but its initial scale-1.3 request exhausted the request allowance; zero-scale,
 invalid-scale and supplied-history checks remain pending. Qualify the reduced
 `ptq1-adapter-lifecycle` workload with three one-token streams and minimal public
-history, retaining startup/request attribution and all required steps. Retain
+prompts, replaying the exact first generated response in its final history stream.
+Retain source-response/message digests, startup/request attribution and all required
+steps; empty or unbound source output leaves generated history pending. Retain
 bounded live request/partial-prefix receipts from the incremental observer before
 optimizing a measured hotspot; observed SSE delivery is not backend kernel timing
 or decode TPS, and completed-operation counts do not prove zero emitted tokens. Qualify the
