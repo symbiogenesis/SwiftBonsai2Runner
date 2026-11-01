@@ -68,7 +68,14 @@ claiming a latency, throughput or process-memory gain.
 Qualify the Rust PTQ1 DLL collector against the current locked Prism source through
 the main-only numerical workflow, then the explicit one-worker
 `ptq1-adapter-lifecycle` profile with mandatory zero-scale, invalid-scale and
-supplied-history steps. Source guards, [hosted build/ABI
+supplied-history steps. Use the reduced three one-token streams and minimal
+public history after the current-release initial request exceeded its allowance;
+retain startup/request attribution and missing steps as pending. Qualify the
+explicit `ptq1-pq2-complete-response` Rust-service pair within that same aggregate
+budget before planning broader comparisons. Its single tree-name prompt and
+fixed-order pair establish feasibility only; repeated interleaving, stable-device
+conditions, per-prompt adapter decode throughput and independent complete-answer
+quality remain separate. Source guards, [hosted build/ABI
 controls](docs/evidence/ptq1-collector-hosted.json) and the prepared profile do not
 close actual-model logits/state, writer-basis or promotion gates. Keep intake,
 verification, model work and cleanup inside one aggregate five-minute owner allowance;
@@ -368,7 +375,10 @@ not close pending hosted integration or full-model acceptance.
   from private commit and preserve reserves. Collect and independently review all
   gates in the explicit PTQ1 promotion policy, including exact packing provenance
   and actual-device original-PQ2 rollback; PQ2 and worker variants cannot supply
-  a PTQ1 promotion verdict.
+  a PTQ1 promotion verdict. Replace publisher-only qualification matrices with a
+  reviewed Rust-service contract that fits the owner allowance while preserving
+  complete responses and all independent throughput/quality gates; an incomplete
+  feasibility pair cannot be resumed through additional jobs.
 - Capture prefill, first useful answer, decode TPS, task time, retries and truncation,
   working, private, Job, system and device memory peaks, hard faults, observable energy,
   responsiveness and sustained heat and fan behavior. Retain X2 `ProcessMemory`
