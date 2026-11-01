@@ -257,7 +257,9 @@ pub(super) async fn exchange(
     receipt.save();
     let mut stream = connect(port, credential, body).await;
     let mut bytes = Vec::new();
-    let mut buffer = [0; 8192];
+    // Keep the fixed read scratch out of every enclosing future's inline state.
+    // This observer nests inside acceptance deadlines and rollback fixtures.
+    let mut buffer = vec![0; 8192];
     loop {
         let count = stream.read(&mut buffer).await.unwrap();
         if count == 0 {
