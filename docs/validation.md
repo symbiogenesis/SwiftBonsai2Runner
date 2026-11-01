@@ -76,21 +76,26 @@ Explicit `profile: ptq1-adapter-lifecycle` requires the current pinned Rust
 service, exact current-weight PTQ1 and approved adapter with one row worker.
 It requires three one-token-cap streams: scale 1.3, scale zero, then scale 1.3
 with supplied user/assistant/user history after the invalid-scale connection-close
-check. Each message is the fixed public word `Hi`; the assistant history remains
-supplied text rather than captured model output. The earlier four/two/two-token
-trial reached verified readiness but exhausted its first request. This smaller
+check. User messages remain the fixed public word `Hi`; the assistant message is
+the exact UTF-8 visible response from the initial scale-1.3 stream. Its text,
+SHA-256, source-message hash, finish reason and reported usage are retained and
+bound before replay. Missing visible output or an incomplete source identity
+keeps acceptance pending; no fixture text substitutes for model output. The
+earlier four/two/two-token trial reached verified readiness but exhausted its first request. This smaller
 workload preserves every required scale, rejection and history transition while
 reducing prompt and generation work; execution within the budget remains pending.
 It preserves the request deadlines, cleanup reserve and partial-evidence rules of
-`pq2-adapter-lifecycle-row4`, whose prompts and caps are unchanged. Its receipt
+`pq2-adapter-lifecycle-row4`, whose user prompts and caps are unchanged. Its receipt
 binds the exact messages and completion caps, actual PTQ1 filename, byte
 count and digest plus the complete export receipt; it cannot inherit PQ2 or
 historical-release acceptance. Optional history/stalled-consumer dispatch inputs
 are rejected. Missing, skipped or cancelled required steps keep `passed: false`
 and fail after owned cleanup. This prepares a bounded qualification lane;
 actual-model evidence for it remains pending. It does not qualify zero/no-adapter
-logit identity, writer basis, generated/edited history, full context/output,
-recovery, quality, benefit or daily-service isolation.
+logit identity, writer basis, generated/edited-history parity, full context/output,
+recovery, quality, benefit or daily-service isolation. Supplying the captured
+short response checks application history input only; fresh recomputation and
+complete-state parity of generated/edited history remain independent.
 
 Explicit `profile: pq2-adapter-row4` selects original PQ2, the approved adapter at
 scale 1.3 and pinned Prism 0.1.10 with `--native-row-workers 4`. It requires exactly
@@ -105,7 +110,8 @@ Explicit `profile: pq2-adapter-lifecycle-row4` separately requires the original
 PQ2 and approved adapter with four row workers through three short streams in
 one owner: scale 1.3 (four-token cap), scale zero (two-token cap), invalid-scale
 connection close, then scale 1.3 with a supplied user/assistant/user history (two-token
-cap). The assistant fixture is fixed public text, not captured model output.
+cap). The assistant message is the exact initial scale-1.3 model output, with
+the same retained source binding and missing-output policy as the PTQ1 profile.
 Every further request needs more than 45 seconds remaining; the complete
 sequence has a request deadline thirty seconds before the aggregate deadline
 for owned cleanup. A completed zero-scale or rejection observation is saved

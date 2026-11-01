@@ -298,11 +298,16 @@ fn stream_payload(bytes: &[u8]) -> Vec<u8> {
 }
 
 fn streamed_response(bytes: &[u8]) -> StreamSummary {
+    let summary = framed_stream_response(bytes);
+    assert!(summary.content_bytes > 0);
+    summary
+}
+
+fn framed_stream_response(bytes: &[u8]) -> StreamSummary {
     let payload = stream_payload(bytes);
     let payload = std::str::from_utf8(&payload).unwrap();
     let mut terminal = false;
     let mut done = false;
-    let mut content = false;
     let mut finish_reason = String::new();
     let mut content_bytes = 0;
     let mut completion_tokens = None;
@@ -328,7 +333,6 @@ fn streamed_response(bytes: &[u8]) -> StreamSummary {
                 "No generation event may follow a terminal reason."
             );
             if let Some(text) = choice["delta"]["content"].as_str() {
-                content |= !text.is_empty();
                 content_bytes += text.len();
             }
             if let Some(reason) = choice["finish_reason"].as_str() {
@@ -339,7 +343,7 @@ fn streamed_response(bytes: &[u8]) -> StreamSummary {
             }
         }
     }
-    assert!(terminal && done && content);
+    assert!(terminal && done);
     StreamSummary {
         finish_reason,
         content_bytes,
@@ -1301,14 +1305,13 @@ fn adapter_messages(profile: &AdapterProfile, supplied_history: bool) -> Value {
 }
 
 fn adapter_summary(label: &str, scale: f64, cap: u32, summary: &StreamSummary) -> Value {
-    assert!(summary.content_bytes > 0);
     assert!(["length", "stop"].contains(&summary.finish_reason.as_str()));
     assert!(
         summary
             .completion_tokens
             .is_none_or(|tokens| tokens <= u64::from(cap))
     );
-    json!({"phase":label, "requestedScale":scale,
+    json!({"phase":label, "requestedScale":scale, "passed":summary.content_bytes > 0,
         "requestedScaleF64Bits":format!("{:016x}", scale.to_bits()),
         "requestedCompletionCap":cap, "finishReason":summary.finish_reason,
         "visibleContentBytes":summary.content_bytes,
@@ -1331,14 +1334,56 @@ async fn adapter_stream(
     evidence: &Path,
     report: &mut Value,
 ) -> Value {
-    adapter_summary(
+    let bytes = progress::exchange(port, credential, body, evidence, report, label).await;
+    let mut observed = adapter_summary(
         label,
         body["abliteration_scale"].as_f64().unwrap(),
         u32::try_from(body["max_completion_tokens"].as_u64().unwrap()).unwrap(),
-        &streamed_response(
-            &progress::exchange(port, credential, body, evidence, report, label).await,
-        ),
+        &framed_stream_response(&bytes),
+    );
+    let content = speed::visible_output(&bytes);
+    observed["visibleContentSha256"] = json!(adapter_digest(content.as_bytes()));
+    observed["visibleContent"] = json!(content);
+    observed["requestMessagesSha256"] = json!(adapter_digest(
+        &serde_json::to_vec(&body["messages"]).unwrap()
+    ));
+    observed
+}
+
+fn adapter_digest(bytes: &[u8]) -> String {
+    bonsai_artifacts::hash_reader(
+        &mut io::Cursor::new(bytes),
+        u64::try_from(bytes.len()).unwrap(),
+        &mut [0; 4096],
+        &mut || Ok(()),
     )
+    .unwrap()
+}
+
+fn generated_adapter_history(profile: &AdapterProfile, report: &Value) -> Option<Value> {
+    let initial = &report["streams"][0];
+    let content = initial["visibleContent"].as_str()?;
+    if initial["phase"] != "required-scale-1.3-stream"
+        || initial["passed"] != true
+        || initial["requestedScaleF64Bits"] != format!("{:016x}", 1.3_f64.to_bits())
+        || initial["requestedCompletionCap"] != adapter_completion_caps(profile)[0]
+        || !["stop", "length"].contains(&initial["finishReason"].as_str()?)
+        || initial["reportedCompletionTokens"]
+            .as_u64()
+            .is_none_or(|count| {
+                !(1..=u64::from(adapter_completion_caps(profile)[0])).contains(&count)
+            })
+        || initial["visibleContentBytes"] != content.len()
+        || content.is_empty()
+        || initial["visibleContentSha256"] != adapter_digest(content.as_bytes())
+        || initial["requestMessagesSha256"]
+            != adapter_digest(&serde_json::to_vec(&adapter_messages(profile, false)).unwrap())
+    {
+        return None;
+    }
+    let mut messages = adapter_messages(profile, true);
+    messages[1]["content"] = json!(content);
+    Some(messages)
 }
 
 async fn adapter_owned_stop(
@@ -1397,7 +1442,21 @@ async fn required_adapter_scale_history(
             let (scale, messages, cap) = if phase == "scale-zero" {
                 (0.0, adapter_messages(profile, false), zero_cap)
             } else {
-                (1.3, adapter_messages(profile, true), history_cap)
+                let Some(messages) = generated_adapter_history(profile, report) else {
+                    report["scaleHistoryWorkload"]["reason"] =
+                        json!("missing-bound-initial-model-output");
+                    save_acceptance_report(evidence, report);
+                    return false;
+                };
+                // Bind the exact public response and request before awaiting the
+                // stream, so cancellation preserves the history actually selected.
+                report["scaleHistoryWorkload"]["suppliedAssistantHistorySource"] =
+                    report["streams"][0].clone();
+                report["scaleHistoryWorkload"]["suppliedAssistantHistoryIsCapturedModelOutput"] =
+                    json!(true);
+                report["suppliedHistoryMessages"] = messages.clone();
+                save_acceptance_report(evidence, report);
+                (1.3, messages, history_cap)
             };
             let summary = adapter_stream(
                 port,
@@ -1408,7 +1467,14 @@ async fn required_adapter_scale_history(
                 report,
             )
             .await;
+            let visible = summary["passed"] == true;
             report["streams"].as_array_mut().unwrap().push(summary);
+            if !visible {
+                report["scaleHistoryWorkload"]["reason"] =
+                    json!("stream-completed-without-visible-content");
+                save_acceptance_report(evidence, report);
+                return false;
+            }
             let field = if phase == "scale-zero" {
                 "scaleZeroPassed"
             } else {
@@ -1431,6 +1497,7 @@ fn pending_adapter_scale_history() -> Value {
     json!({"status":"pending", "phase":"initial-owner-startup",
         "scaleZeroPassed":false, "invalidScaleRejected":false, "changeBackHistoryPassed":false,
         "suppliedAssistantHistoryIsCapturedModelOutput":false,
+        "generatedHistoryStateReuseQualified":false,
         "minimumRemainingBudgetSeconds":ADAPTER_LIFECYCLE_RESERVE.as_secs()})
 }
 
@@ -1534,6 +1601,14 @@ async fn adapter_requests(
     ];
     report["streams"] = json!(streams);
     save_acceptance_report(evidence, report);
+    if streams[0]["passed"] != true {
+        report["pendingReason"] = json!("initial-stream-completed-without-visible-content");
+        if profile.required_scale_history {
+            report["scaleHistoryWorkload"]["reason"] = report["pendingReason"].clone();
+        }
+        save_acceptance_report(evidence, report);
+        return false;
+    }
     // Optional requests share this one aggregate budget; no matrix or restart
     // can continue in another job. Preserve a conservative teardown reserve.
     if profile.optional_requests
@@ -1554,6 +1629,11 @@ async fn adapter_requests(
         );
         report["streams"] = json!(streams);
         save_acceptance_report(evidence, report);
+        if streams.last().unwrap()["passed"] != true {
+            report["pendingReason"] = json!("optional-stream-completed-without-visible-content");
+            save_acceptance_report(evidence, report);
+            return false;
+        }
         if deadline.saturating_duration_since(tokio::time::Instant::now()) > OPTIONAL_RESERVE {
             report["phase"] = json!("optional-invalid-scale-and-reuse");
             save_acceptance_report(evidence, report);
@@ -1576,8 +1656,14 @@ async fn adapter_requests(
                 .await,
             );
             report["streams"] = json!(streams);
-            report["sameOwnerAfterInvalidScalePassed"] = json!(true);
+            report["sameOwnerAfterInvalidScalePassed"] = streams.last().unwrap()["passed"].clone();
             save_acceptance_report(evidence, report);
+            if streams.last().unwrap()["passed"] != true {
+                report["pendingReason"] =
+                    json!("optional-stream-completed-without-visible-content");
+                save_acceptance_report(evidence, report);
+                return false;
+            }
         }
     }
     if profile.required_scale_history {
@@ -1724,7 +1810,16 @@ async fn adapter_scale_history_fixture(
             body["abliteration_scale"].as_f64().unwrap().to_bits(),
             expected_scale.to_bits()
         );
-        assert_eq!(body["messages"], adapter_messages(profile, step == 2));
+        let messages = if step == 2 {
+            generated_adapter_history(
+                profile,
+                &json!({"streams":[adapter_initial_fixture(profile)]}),
+            )
+            .unwrap()
+        } else {
+            adapter_messages(profile, false)
+        };
+        assert_eq!(body["messages"], messages);
         let response = if step == 1 {
             // Match the production ChatSchema transport disposition.
             String::new()
@@ -1747,6 +1842,133 @@ async fn adapter_scale_history_fixture(
         reached.send(()).unwrap();
         pending::<()>().await;
     }
+}
+
+fn adapter_initial_fixture(profile: &AdapterProfile) -> Value {
+    let content = "cèdre\n";
+    let cap = adapter_completion_caps(profile)[0];
+    let mut captured = adapter_summary(
+        "required-scale-1.3-stream",
+        1.3,
+        cap,
+        &StreamSummary {
+            finish_reason: "length".into(),
+            content_bytes: content.len(),
+            completion_tokens: Some(u64::from(cap)),
+        },
+    );
+    captured["visibleContent"] = json!(content);
+    captured["visibleContentSha256"] = json!(adapter_digest(content.as_bytes()));
+    captured["requestMessagesSha256"] = json!(adapter_digest(
+        &serde_json::to_vec(&adapter_messages(profile, false)).unwrap()
+    ));
+    captured
+}
+
+#[test]
+fn native_adapter_generated_history_requires_exact_bound_initial_output() {
+    let profile = &PTQ1_ADAPTER_LIFECYCLE_PROFILE;
+    let report = json!({"streams":[adapter_initial_fixture(profile)]});
+    let messages = generated_adapter_history(profile, &report).unwrap();
+    assert_eq!(messages[0], adapter_messages(profile, false)[0]);
+    assert_eq!(messages[1], json!({"role":"assistant","content":"cèdre\n"}));
+    assert_eq!(messages[2], adapter_messages(profile, true)[2]);
+    for (field, value) in [
+        ("phase", json!("scale-zero")),
+        ("passed", json!(false)),
+        ("requestedScaleF64Bits", json!("0000000000000000")),
+        ("requestedCompletionCap", json!(4)),
+        ("finishReason", json!("error")),
+        ("reportedCompletionTokens", Value::Null),
+        ("reportedCompletionTokens", json!(2)),
+        ("visibleContent", json!("fabricated")),
+        ("visibleContentBytes", json!(0)),
+        ("visibleContentSha256", json!("0".repeat(64))),
+        ("requestMessagesSha256", json!("0".repeat(64))),
+    ] {
+        let mut changed = report.clone();
+        changed["streams"][0][field] = value;
+        assert!(
+            generated_adapter_history(profile, &changed).is_none(),
+            "{field}"
+        );
+    }
+    assert!(generated_adapter_history(profile, &json!({"streams":[]})).is_none());
+}
+
+#[test]
+fn native_adapter_empty_initial_response_keeps_history_pending() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    runtime.block_on(async {
+        timeout(Duration::from_secs(10), async {
+            let evidence = env::temp_dir().join(format!(
+                "Bonsai-Adapter-Empty-{}-{}",
+                std::process::id(),
+                std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap()
+                    .as_nanos()
+            ));
+            fs::create_dir(&evidence).unwrap();
+            let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+            let port = listener.local_addr().unwrap().port();
+            let fixture = tokio::spawn(async move {
+                let (peer, _) = listener.accept().await.unwrap();
+                let mut peer = BufReader::new(peer);
+                let mut length = None;
+                loop {
+                    let line = prefix_line(&mut peer, 16 * 1024).await;
+                    if let Some(value) = line.strip_prefix("Content-Length: ") {
+                        length = Some(value.trim().parse::<usize>().unwrap());
+                    }
+                    if line == "\r\n" {
+                        break;
+                    }
+                }
+                let mut body = vec![0; length.unwrap()];
+                peer.read_exact(&mut body).await.unwrap();
+                let payload = concat!(
+                    "data: {\"choices\":[{\"delta\":{},\"finish_reason\":\"length\"}],\"usage\":{\"completion_tokens\":1}}\n\n",
+                    "data: [DONE]\n\n"
+                );
+                let wire = format!(
+                    "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n{:X}\r\n{payload}\r\n0\r\n\r\n",
+                    payload.len()
+                );
+                peer.get_mut().write_all(wire.as_bytes()).await.unwrap();
+                peer.get_mut().shutdown().await.unwrap();
+            });
+            let profile = &PTQ1_ADAPTER_LIFECYCLE_PROFILE;
+            let mut report = json!({"passed":false, "allRequestedWorkloadsPassed":false,
+                "scaleHistoryWorkload":pending_adapter_scale_history()});
+            begin_adapter_requests(profile, &evidence, &mut report);
+            assert!(!adapter_requests(
+                profile,
+                port,
+                "model-free-fixture",
+                &evidence,
+                tokio::time::Instant::now() + CASE_BUDGET,
+                &mut report,
+            ).await);
+            fixture.await.unwrap();
+            let saved: Value =
+                serde_json::from_slice(&fs::read(evidence.join("acceptance.json")).unwrap()).unwrap();
+            assert_eq!(saved["streams"].as_array().unwrap().len(), 1);
+            assert_eq!(saved["streams"][0]["visibleContent"], "");
+            assert_eq!(saved["streams"][0]["visibleContentSha256"], adapter_digest(b""));
+            assert_eq!(saved["streams"][0]["reportedCompletionTokens"], 1);
+            assert_eq!(saved["pendingReason"], "initial-stream-completed-without-visible-content");
+            assert_eq!(saved["scaleHistoryWorkload"]["status"], "pending");
+            assert_eq!(saved["scaleHistoryWorkload"]["suppliedAssistantHistoryIsCapturedModelOutput"], false);
+            assert_eq!(saved["allRequestedWorkloadsPassed"], false);
+            assert!(generated_adapter_history(profile, &saved).is_none());
+            fs::remove_file(evidence.join("acceptance.json")).unwrap();
+            fs::remove_dir(evidence).unwrap();
+        }).await.unwrap();
+    });
 }
 
 async fn adapter_first_request_fixture(
@@ -1901,7 +2123,8 @@ fn native_adapter_scale_history_retains_partial_steps_without_qualifying_missing
                     reached,
                 ));
                 let mut report = json!({"passed":false, "allRequestedWorkloadsPassed":false,
-                    "streams":[], "scaleHistoryWorkload":pending_adapter_scale_history()});
+                    "streams":[adapter_initial_fixture(profile)],
+                    "scaleHistoryWorkload":pending_adapter_scale_history()});
                 let deadline = tokio::time::Instant::now()
                     + if completed_steps == 0 {
                         ADAPTER_LIFECYCLE_RESERVE
@@ -1949,13 +2172,21 @@ fn native_adapter_scale_history_retains_partial_steps_without_qualifying_missing
                 assert_eq!(observed["changeBackHistoryPassed"], completed_steps == 3);
                 assert_eq!(
                     observed["suppliedAssistantHistoryIsCapturedModelOutput"],
-                    false
+                    completed_steps >= 2
                 );
+                assert_eq!(observed["generatedHistoryStateReuseQualified"], false);
+                if completed_steps >= 2 {
+                    assert_eq!(
+                        observed["suppliedAssistantHistorySource"],
+                        adapter_initial_fixture(profile)
+                    );
+                    assert_eq!(saved["suppliedHistoryMessages"][1]["content"], "cèdre\n");
+                }
                 assert_eq!(saved["passed"], false);
                 assert_eq!(saved["allRequestedWorkloadsPassed"], false);
                 assert_eq!(
                     saved["streams"].as_array().unwrap().len(),
-                    usize::from(completed_steps >= 1) + usize::from(completed_steps == 3)
+                    1 + usize::from(completed_steps >= 1) + usize::from(completed_steps == 3)
                 );
                 if completed_steps == 0 {
                     assert_eq!(observed["reason"], "insufficient-owned-cleanup-reserve");
@@ -2268,7 +2499,7 @@ fn adapter_scale_history_acceptance(profile: &AdapterProfile) {
         "rowWorkerCountIndependentlyObserved":false, "requiredStreams":3,
         "requestedAdapterScales":[1.3,0.0,1.3], "requestedCompletionCaps":adapter_completion_caps(profile),
         "initialMessages":adapter_messages(profile, false),
-        "suppliedHistoryMessages":adapter_messages(profile, true),
+        "suppliedHistoryMessages":null,
         "weightRepresentation":representation,
         "runtimeLock":serde_json::from_str::<Value>(include_str!("../../../config/prism-inference.lock.json")).unwrap(),
         "modelIdentity":serde_json::from_str::<Value>(include_str!("../../../config/swift-assessment.lock.json")).unwrap()["model"],
