@@ -4,8 +4,11 @@ The owner-laptop trial is one native reference plus one Rust Auto process, each
 evaluating the single supplied ID `[248045]` with the approved adapter at scale
 1.3. **The entire owner job, including setup, loading, comparison, cleanup and
 artifact upload, has a five-minute hard limit.** The wrapper starts its separate
-240-second work clock before preparation and caps external calls by the remaining
-allowance, reserving the remainder of the job for cleanup/upload. This is one
+work clock before preparation and caps external calls by the remaining
+allowance. The job clock starts before checkout/tool intake; the checked budget
+tool subtracts those costs from the at-most-240-second work allowance and honors
+any earlier owner deadline, retaining separate teardown/upload reserves. A missing
+or out-of-range work allowance rejects before owner/model preparation. This is one
 bounded trial; omitted controls are not split into repeated jobs.
 
 No-adapter, loaded-zero identity, changed nonzero logits, scalar, explicit NEON,
@@ -31,7 +34,10 @@ cleanup order, bounded output, create-new collisions and partial evidence.
 Returned native errors release acquired resources in order; an unexpected foreign
 exception aborts the isolated collector before damaged native state can be reused.
 
-`pins.json` binds native and Rust source archives and the native header. Capture
+`pins.json` binds native and Rust source archives and the native header. Both
+preparation and capture require the Rust source's commit, archive size, digest
+and URL to equal the current runtime lock; historical checkers cannot qualify a
+new release. Capture
 tools must be built in hosted CI and delivered with `capture-tools.json`:
 `SchemaVersion: 2`, `RunnerRevision`, `NativeSource`, `RustSource`,
 `CollectorLanguage: rust`, `CollectorSourcePath`, `CollectorSourceSha256`,
@@ -57,8 +63,8 @@ expected control bytes after receipt validation. These checks share the existing
 ```
 
 Actual execution belongs only to the main-only manual
-`native-ptq1-numerics.yml` workflow on the existing native ARM64 Snapdragon runner,
-with `run_device: true`, its physical-runner concurrency group and credential-clean
+`native-ptq1-numerics.yml` workflow on a native ARM64 Snapdragon ephemeral runner
+with only the `ptq1-numerics-<run_id>` label, `run_device: true`, its physical-runner concurrency group and credential-clean
 child. The default `run_device: false` prepares and tests the source-bound bundle
 on hosted CI only. It retains bounded compiler/test log tails and a build receipt,
 including failed preparation; it does not start an owner-device or model process.

@@ -10,7 +10,7 @@ No zero, scalar, explicit NEON, writer-basis, quality or performance gate passes
 [CmdletBinding()]
 [OutputType([pscustomobject])]
 param([Parameter(Mandatory)][string]$DataDirectory, [switch]$PlanOnly,
-      [string]$CaptureToolsDirectory, [string]$ToolPath)
+      [string]$CaptureToolsDirectory, [string]$ToolPath, [int]$WorkBudgetSeconds)
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
@@ -18,8 +18,9 @@ $workClock = [Diagnostics.Stopwatch]::StartNew()
 Import-Module (Join-Path $PSScriptRoot 'Bonsai.Common.psm1')
 Import-Module (Join-Path $PSScriptRoot 'Bonsai.Tools.psm1')
 Import-Module (Join-Path $PSScriptRoot 'Bonsai.Native.psm1')
+Import-Module (Join-Path $PSScriptRoot 'Bonsai.Ptq1.psm1')
 $repo = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
-$pins = Get-Content -LiteralPath (Join-Path $repo 'tools/native-reference/pins.json') -Raw | ConvertFrom-Json -DateKind String
+$pins = Get-Ptq1CapturePins -RepositoryDirectory $repo
 $pending = @('no-adapter', 'loaded-zero-identity', 'nonzero-change', 'scalar', 'explicit-neon',
     'writer-authoring-basis', 'quality', 'performance', 'full-context', 'service')
 $plan = [pscustomobject]@{
@@ -32,6 +33,10 @@ $plan = [pscustomobject]@{
     PendingControls = $pending; WriterBasisQualified = $false; DefaultMayChange = $false
 }
 if ($PlanOnly) { return $plan }
+if ($WorkBudgetSeconds -lt 1 -or $WorkBudgetSeconds -gt 240) {
+    throw 'Provide the remaining complete owner-job work allowance in 1..240 seconds.'
+}
+$plan.WorkBudgetSeconds = $WorkBudgetSeconds
 function Get-Ptq1WorkAllowance {
     <# .SYNOPSIS
     Caps every external operation by the remaining complete smoke budget.
@@ -39,8 +44,8 @@ function Get-Ptq1WorkAllowance {
     [CmdletBinding()]
     [OutputType([int])]
     param([Parameter(Mandatory)][Diagnostics.Stopwatch]$Clock)
-    $remaining = [int][Math]::Floor(240 - $Clock.Elapsed.TotalSeconds)
-    if ($remaining -lt 1) { throw 'The 240-second total PTQ1 smoke budget is exhausted.' }
+    $remaining = [int][Math]::Floor($WorkBudgetSeconds - $Clock.Elapsed.TotalSeconds)
+    if ($remaining -lt 1) { throw 'The remaining complete PTQ1 smoke budget is exhausted.' }
     return $remaining
 }
 if (-not $IsWindows -or [Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture -ne 'Arm64' -or

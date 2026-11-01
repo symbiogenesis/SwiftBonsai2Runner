@@ -22,6 +22,7 @@ if (-not $IsWindows -or [Runtime.InteropServices.RuntimeInformation]::ProcessArc
 }
 Import-Module (Join-Path $PSScriptRoot 'Bonsai.Common.psm1')
 Import-Module (Join-Path $PSScriptRoot 'Bonsai.Native.psm1')
+Import-Module (Join-Path $PSScriptRoot 'Bonsai.Ptq1.psm1')
 $repo = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $output = Resolve-ExternalPath $OutputDirectory
 if (Test-Path -LiteralPath $output) {
@@ -32,7 +33,7 @@ if (Test-Path -LiteralPath $output) {
 [void][IO.Directory]::CreateDirectory($output)
 $scratch = Resolve-ExternalPath (Join-Path ([IO.Path]::GetTempPath()) ('Bonsai-HostedPtq1Build-' + [guid]::NewGuid().ToString('N')))
 [void][IO.Directory]::CreateDirectory($scratch)
-$pins = Get-Content -LiteralPath (Join-Path $repo 'tools/native-reference/pins.json') -Raw | ConvertFrom-Json -DateKind String
+$pins = Get-Ptq1CapturePins -RepositoryDirectory $repo
 $source = $pins.rustSource
 $channel = 'nightly-2026-10-22-aarch64-pc-windows-msvc'
 $evidence = Join-Path $scratch 'evidence'

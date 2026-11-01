@@ -4,11 +4,51 @@ Checks capture preparation and the Rust collector's source/ABI admission boundar
 #>
 [CmdletBinding()]
 [OutputType([string])]
-param([Parameter(Mandatory)][ValidateSet('HostedGuard', 'CollectorControls', 'BuildEvidence')][string]$Case)
+param([Parameter(Mandatory)][ValidateSet('HostedGuard', 'CollectorControls', 'BuildEvidence', 'CapturePolicy')][string]$Case)
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 Import-Module (Join-Path $PSScriptRoot 'Bonsai.TestSupport.psm1')
+if ($Case -ceq 'CapturePolicy') {
+    Import-Module (Join-Path $PSScriptRoot '../scripts/Bonsai.Ptq1.psm1')
+    $repo = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
+    $pins = Get-Ptq1CapturePins -RepositoryDirectory $repo
+    $tempRoot = [IO.Path]::GetFullPath([IO.Path]::GetTempPath())
+    $fixture = [IO.Path]::GetFullPath((Join-Path $tempRoot ('Bonsai-Ptq1CapturePolicy-' + [guid]::NewGuid().ToString('N'))))
+    [void][IO.Directory]::CreateDirectory((Join-Path $fixture 'tools/native-reference'))
+    [void][IO.Directory]::CreateDirectory((Join-Path $fixture 'config'))
+    try {
+        $lockPath = Join-Path $fixture 'config/prism-inference.lock.json'
+        $pinsPath = Join-Path $fixture 'tools/native-reference/pins.json'
+        Copy-Item -LiteralPath (Join-Path $repo 'config/prism-inference.lock.json') -Destination $lockPath
+        $original = $pins | ConvertTo-Json -Depth 12
+        foreach ($field in @('commit', 'url', 'bytes', 'sha256')) {
+            $changed = $original | ConvertFrom-Json -DateKind String
+            $changed.rustSource.$field = if ($field -ceq 'bytes') { $changed.rustSource.bytes + 1 } else { 'stale' }
+            $changed | ConvertTo-Json -Depth 12 | Set-Content -LiteralPath $pinsPath -Encoding utf8NoBOM
+            $failure = Assert-Failure -PassThru { Get-Ptq1CapturePins -RepositoryDirectory $fixture }
+            Assert ($failure -like '*differs from the pinned Rust runtime*') 'Historical or changed numerical source was accepted.'
+        }
+        [IO.File]::WriteAllText($pinsPath, $original)
+        $lock = Get-Content -LiteralPath $lockPath -Raw | ConvertFrom-Json -DateKind String
+        $lock.commit = 'stale'
+        $lock | ConvertTo-Json -Depth 12 | Set-Content -LiteralPath $lockPath -Encoding utf8NoBOM
+        Assert-Failure { Get-Ptq1CapturePins -RepositoryDirectory $fixture }
+        foreach ($allowance in @(0, -1, 241)) {
+            $failure = Assert-Failure -PassThru {
+                & (Join-Path $repo 'scripts/Invoke-NativePtq1Numerics.ps1') -DataDirectory $fixture -WorkBudgetSeconds $allowance
+            }
+            Assert ($failure -like '*remaining complete owner-job work allowance*') 'Invalid work allowance reached owner/model preparation.'
+        }
+    } finally {
+        $prefix = $tempRoot.TrimEnd([IO.Path]::DirectorySeparatorChar) + [IO.Path]::DirectorySeparatorChar
+        if (-not $fixture.StartsWith($prefix, [StringComparison]::OrdinalIgnoreCase) -or $fixture -ceq $tempRoot) {
+            throw 'Refusing cleanup outside the generated temporary test directory.'
+        }
+        Remove-Item -LiteralPath $fixture -Recurse -Force
+    }
+    return "Focused $Case capture preparation checks passed."
+}
 if ($Case -ceq 'BuildEvidence') {
     $tokens = $null; $parseErrors = $null
     $ast = [Management.Automation.Language.Parser]::ParseFile((Join-Path $PSScriptRoot '../scripts/Build-NativePtq1CaptureTools.ps1'), [ref]$tokens, [ref]$parseErrors)
