@@ -7,6 +7,8 @@ Compiles standalone Rust diagnostics; no inference libraries are linked at build
 time. Self checks never load driver or inference DLLs. Device execution is a
 separate, explicitly bounded operation. The receipt identifies source and compiler
 inputs; trusted same-run artifact intake remains the caller's responsibility.
+Hosted CI owns compiler/helper lifetime through its bounded job and VM cleanup.
+Device execution separately requires the supervisor's private kill-on-close Job.
 #>
 [CmdletBinding()]
 [OutputType([Collections.Specialized.OrderedDictionary])]
@@ -42,15 +44,15 @@ $lock = Join-Path $repo 'config/hexagon-dispatch.lock.json'
 # Microsoft gates its developer-shell telemetry launch on this child-only key:
 # https://github.com/microsoft/vcpkg/pull/11202/files
 # This tests a narrow launch setting; it does not prove all VCTIP creation stops.
-# Every existing private Job and surviving-descendant rejection is retained.
+# Compiler calls use the owner-approved hosted job lifetime; device Jobs remain strict.
 $buildEnvironment = @{ VSCMD_SKIP_SENDTELEMETRY = '1' }
-$compiler = Invoke-BonsaiNativeProcess -Executable $rustc -ArgumentList @('-vV') -WorkingDirectory $output -TimeoutSeconds 20 -OwnDescendants -Environment $buildEnvironment
+$compiler = Invoke-BonsaiNativeProcess -Executable $rustc -ArgumentList @('-vV') -WorkingDirectory $output -TimeoutSeconds 20 -Environment $buildEnvironment
 if ($compiler.ExitCode -ne 0 -or $compiler.StandardOutput -cnotmatch '(?m)^host: aarch64-pc-windows-msvc\r?$') { throw 'Native compiler identity did not match the pinned target.' }
 $compilerDigest = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes($compiler.StandardOutput))).ToLowerInvariant()
 $compiledExe = Join-Path $output 'hexagon-dispatch-fixture.exe'
 $exe = Join-Path $bundle 'hexagon-dispatch-fixture.exe'
 $arguments = @('--edition=2024', '--target', 'aarch64-pc-windows-msvc', '-C', 'opt-level=2', '-C', 'overflow-checks=yes', '-C', 'link-arg=/MANIFEST:EMBED', '-C', ('link-arg=/MANIFESTINPUT:' + $manifest), '-D', 'warnings', $source, '-o', $compiledExe)
-$build = Invoke-BonsaiNativeProcess -Executable $rustc -ArgumentList $arguments -WorkingDirectory $output -TimeoutSeconds 120 -OwnDescendants -Environment $buildEnvironment -LogPath (Join-Path $output 'dispatch-build.txt')
+$build = Invoke-BonsaiNativeProcess -Executable $rustc -ArgumentList $arguments -WorkingDirectory $output -TimeoutSeconds 120 -Environment $buildEnvironment -LogPath (Join-Path $output 'dispatch-build.txt')
 if ($build.ExitCode -ne 0) { throw 'Hexagon dispatch fixture compilation failed.' }
 Copy-Item -LiteralPath $compiledExe -Destination $exe
 $check = Invoke-BonsaiNativeProcess -Executable $exe -ArgumentList @('--self-test') -WorkingDirectory $output -TimeoutSeconds 15 -OwnDescendants -Environment $buildEnvironment
@@ -85,7 +87,7 @@ foreach ($buildCase in @(
     @{ Name = 'contract'; Arguments = @('--test',(Join-Path $nativeSource 'lib.rs'),'-o',$nativeTest) }
 )) {
     $compileArguments = @('--edition=2024','--target','aarch64-pc-windows-msvc','-C','opt-level=2','-C','overflow-checks=yes','-C','link-arg=/MANIFEST:EMBED','-C',('link-arg=/MANIFESTINPUT:' + $manifest),'-D','warnings') + $buildCase.Arguments
-    $nativeBuild = Invoke-BonsaiNativeProcess -Executable $rustc -ArgumentList $compileArguments -WorkingDirectory $output -TimeoutSeconds 120 -OwnDescendants -Environment $buildEnvironment -LogPath (Join-Path $nativeOutput ($buildCase.Name + '-build.txt'))
+    $nativeBuild = Invoke-BonsaiNativeProcess -Executable $rustc -ArgumentList $compileArguments -WorkingDirectory $output -TimeoutSeconds 120 -Environment $buildEnvironment -LogPath (Join-Path $nativeOutput ($buildCase.Name + '-build.txt'))
     if ($nativeBuild.ExitCode -ne 0) { throw 'Direct Rust native capability control failed to compile.' }
 }
 $nativeCheck = Invoke-BonsaiNativeProcess -Executable $nativeExe -ArgumentList @('--self-test') -WorkingDirectory $output -TimeoutSeconds 15 -OwnDescendants -Environment $buildEnvironment
@@ -116,7 +118,7 @@ $packedOutput = Join-Path $output 'packed-projection'
 [void][IO.Directory]::CreateDirectory($packedOutput)
 $packedSource = Join-Path $repo 'tools/hexagon/packed_projection.rs'
 $packedTest = Join-Path $packedOutput 'packed-projection-contract.exe'
-$packedBuild = Invoke-BonsaiNativeProcess -Executable $rustc -ArgumentList @('--edition=2024','--target','aarch64-pc-windows-msvc','--test','-C','opt-level=2','-C','overflow-checks=yes','-D','warnings',$packedSource,'-o',$packedTest) -WorkingDirectory $output -TimeoutSeconds 120 -OwnDescendants -Environment $buildEnvironment -LogPath (Join-Path $packedOutput 'build.txt')
+$packedBuild = Invoke-BonsaiNativeProcess -Executable $rustc -ArgumentList @('--edition=2024','--target','aarch64-pc-windows-msvc','--test','-C','opt-level=2','-C','overflow-checks=yes','-D','warnings',$packedSource,'-o',$packedTest) -WorkingDirectory $output -TimeoutSeconds 120 -Environment $buildEnvironment -LogPath (Join-Path $packedOutput 'build.txt')
 if ($packedBuild.ExitCode -ne 0) { throw 'The CPU packed-projection control failed to compile.' }
 $packedCheck = Invoke-BonsaiNativeProcess -Executable $packedTest -WorkingDirectory $output -TimeoutSeconds 30 -OwnDescendants -Environment $buildEnvironment
 [IO.File]::WriteAllText((Join-Path $packedOutput 'contract-tests.txt'),$packedCheck.StandardOutput + $packedCheck.StandardError)
