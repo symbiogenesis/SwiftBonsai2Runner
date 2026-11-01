@@ -213,7 +213,7 @@ impl Context {
         seconds: u64,
         log: &Path,
     ) -> Result<startup_process::ProcessOutput> {
-        let output = startup_process::run(
+        let output = startup_process::run_strict(
             executable,
             args,
             &self.output,

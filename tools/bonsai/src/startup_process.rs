@@ -351,6 +351,18 @@ struct RunSpec<'a> {
     log: &'a Path,
 }
 
+fn write_failure_log(log: &Path, message: &str, stdout: &Path, stderr: &Path) -> crate::Result<()> {
+    fs::write(
+        log,
+        format!(
+            "{message}\nstdout: {}\nstderr: {}\n",
+            stdout.display(),
+            stderr.display()
+        ),
+    )
+    .map_err(|error| error.to_string())
+}
+
 fn run_owned(
     spec: &RunSpec<'_>,
     policy: ExitPolicy,
@@ -406,15 +418,7 @@ fn run_owned(
     let started = Instant::now();
     let status = loop {
         if let Err(error) = checkpoint() {
-            fs::write(
-                log,
-                format!(
-                    "{error}\nstdout: {}\nstderr: {}\n",
-                    stdout_path.display(),
-                    stderr_path.display()
-                ),
-            )
-            .map_err(|error| error.to_string())?;
+            write_failure_log(log, &error, &stdout_path, &stderr_path)?;
             return Err(format!("{error} Evidence: {}", log.display()));
         }
         if let Some(status) = guard.try_wait()? {
@@ -430,15 +434,12 @@ fn run_owned(
                 .len()
                 > MAX_OUTPUT
         {
-            fs::write(
+            write_failure_log(
                 log,
-                format!(
-                    "Tool timed out or exceeded its output bound.\nstdout: {}\nstderr: {}\n",
-                    stdout_path.display(),
-                    stderr_path.display()
-                ),
-            )
-            .map_err(|error| error.to_string())?;
+                "Tool timed out or exceeded its output bound.",
+                &stdout_path,
+                &stderr_path,
+            )?;
             return Err(format!(
                 "Tool timed out or exceeded its output bound. Evidence: {}",
                 log.display()
