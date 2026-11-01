@@ -149,6 +149,27 @@ Early stop, unknown usage, different output or missing cleanup leaves comparison
 pending. A single fixed-order pair establishes neither repeated-trial benefit,
 complete-state parity, energy/comfort, creative quality nor default promotion.
 
+Explicit `profile: ptq1-pq2-complete-response` prepares a separate complete-response
+feasibility pair with original PQ2 then the verified current-weight PTQ1 export,
+each in a fresh required-sandbox owner with one row worker, the approved adapter
+at scale 1.3, production sampling and seed 42. The fixed public request asks for
+one tree name with thinking disabled and a 32-token ceiling. Both responses must
+stop naturally, report positive completion usage and complete owned cleanup;
+`length` means a truncated capture and leaves the pair pending. Exact UTF-8
+response strings and SHA-256 digests, model/export/runtime/adapter identities,
+template and sampler controls, startup and framed request times are retained.
+Different complete responses remain available for review; the request-latency
+ratio requires identical response bytes and completion usage.
+
+The existing aggregate deadline includes both loads and cleanup. Each startup
+requires more than 60 seconds remaining, each request reserves 30 seconds for
+owned cleanup, and completed observations are saved before the next operation.
+An unfittable arm stays pending; do not split the pair or a larger matrix into
+repeated owner jobs. The small prompt measures feasibility only. It does not
+replace repeated interleaved complete-task trials, independent quality review,
+per-prompt adapter decode-TPS gates, loaded-zero/no-adapter controls, writer-basis
+evidence, full context/output acceptance or default promotion.
+
 Before runner temp cleanup, the workflow reads only `backend.stdout` and
 `backend.stderr` from at most eight immediate protected session directories, with
 a 64 KiB limit per log and strict UTF-8 decoding. It validates both actual keys

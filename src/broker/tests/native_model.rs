@@ -22,6 +22,8 @@ use tokio::{
     time::timeout,
 };
 
+#[path = "native_model/representation.rs"]
+mod representation;
 #[path = "native_model/speed.rs"]
 mod speed;
 
@@ -1193,6 +1195,7 @@ fn profile_case(profile: &str, extended: bool, stalled: bool) -> Option<&'static
     match profile {
         "pq2-no-adapter" => Some(CASE),
         PQ2_ADAPTER_SPEED_PROFILE => Some(PQ2_ADAPTER_SPEED_CASE),
+        representation::PROFILE => Some(representation::CASE),
         name => adapter_profile(name).map(|selected| selected.case),
     }
 }
