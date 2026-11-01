@@ -1,0 +1,93 @@
+{
+  "schemaVersion": 1,
+  "kind": "independently-reviewed-complete-hosted-ptq1-packing",
+  "recordedDate": "2026-11-01",
+  "status": "matched-exact-source-packing-only",
+  "execution": {
+    "repository": "symbiogenesis/SwiftBonsai2Runner",
+    "revision": "85fd2f1565018ac9a0bb6ce02fd1f333d27dfe80",
+    "gitRef": "refs/heads/main",
+    "runId": "41322548428",
+    "runAttempt": 1,
+    "workflowPath": ".github/workflows/ptq1-packing-qualification.yml",
+    "runUrl": "https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41322548428",
+    "conclusion": "success",
+    "hostedJobLabel": "windows-11-arm",
+    "selfHosted": false,
+    "producerRunArtifactAndHostedJobIndependentlyVerified": true
+  },
+  "artifact": {
+    "id": "13090260824",
+    "name": "ptq1-complete-packing-41322548428-1",
+    "bytes": 4132,
+    "sha256": "ddad4cb0da72a0570c4f3709f225493d237b9e4397a51a3d7f01d72cc094b005",
+    "selectedMembers": [
+      "expected-export.json",
+      "manifest.json",
+      "qualification.json",
+      "reproduced-export.json",
+      "independent-packing.json"
+    ],
+    "exactArchiveAndEverySelectedManifestDigestVerified": true,
+    "allSelectedMembersBoundedRegularJson": true
+  },
+  "packing": {
+    "sourceBytes": 7206168928,
+    "sourceSha256": "5912bb739217cf25b4283a098c7b893d9baff36bdf2e72d3dbf4cb999d5633d5",
+    "outputBytes": 5946648928,
+    "outputSha256": "e658f0f0736a03a4549535a439f9b07254ebf8ab88ae27cbe6e52d098ca5d1f5",
+    "convertedTensors": 402,
+    "reconstructedBlocks": 209920000,
+    "unchangedOtherTensorBytes": 57767936,
+    "workingPayloadBufferBytes": 131072,
+    "allOriginalSymbolsAndRawScalesMatchedByExporterIndependentScanner": true,
+    "headerBytesPreservedExceptDeclaredEdits": true,
+    "exporterReconstructionVerified": true,
+    "tokenizerMetadataSha256": "4ac520292c253d0f559aa3a22de4784dee3eefec14cc0d62e2507c47063c1fe5",
+    "rawHostedExportReceiptSha256": "c184dea2089127201a15595af86e61005ec5b3f9c14e8089fee5c8f630a762d5",
+    "gitBlobExportReceiptSha256": "f9e60c47db8b6cc00780a391791436b20521afe3a64cf6d1c8236c3a85a6214c",
+    "receiptByteIdentity": "Archived and compiled raw hosted receipt bytes match exactly. The immutable Git blob differs only by reversible LF-to-CRLF checkout conversion; every other byte is identical. Neither raw digest substitutes for the other.",
+    "runtimeExporterRevision": "749a5f5b43bf77764a29682557ec91a8de8dcdef",
+    "codecCommit": "73bfe6cc485554822f80c473a3c0c4f25e80f41b"
+  },
+  "hostedPhaseAttribution": {
+    "singleClockContinuityVerified": true,
+    "intakeSeconds": 0.1222641,
+    "originalDownloadSeconds": 74.195154,
+    "exporterProvisioningSeconds": 0.8598934999999983,
+    "exportReproductionSeconds": 93.8589651,
+    "independentPackingPhaseSeconds": 158.65665199999998,
+    "independentScannerReportedSeconds": 158.4235321,
+    "qualificationElapsedSeconds": 327.6936368,
+    "declaredStepMinutes": 50,
+    "declaredJobMinutes": 60,
+    "retries": 0,
+    "interpretation": "Hosted phase attribution establishes completion within that workflow's bounds. It is not an owner-device benchmark, inference throughput or paired performance evidence."
+  },
+  "durableArchive": {
+    "directoryRelativeToLocalAppData": "SwiftBonsai2/qualification/ptq1-packing-41322548428",
+    "archiveFile": "hosted-packing.zip",
+    "reviewFile": "independent-review.json",
+    "reviewSha256": "cb02ab18b850246918b30417e622be08220e85cb06d88190108b1b54f2d0940a",
+    "manifestFile": "file-manifest.json",
+    "manifestSha256": "cd4157fc5de74b9342c6a7751a3aab415ecec49871c4a081a9336b71de5e8966",
+    "manifestEntries": 8,
+    "reviewerId": "Codex:/root/review",
+    "toolIdentityLimit": "Executable identities are reported by the source-bound owning hosted job. The selected artifact contains receipts rather than executables; the independent reviewer did not execute or separately hash those tool binaries."
+  },
+  "earlierFailureRetained": "docs/evidence/ptq1-hosted-packing-download-failure.json",
+  "ownerDeviceExecuted": false,
+  "modelExecutions": 0,
+  "reviewedPackageBinaryExecutions": 0,
+  "currentSourcePromotionGateScored": false,
+  "defaultPromotionQualified": false,
+  "scope": "Complete exact-source weight packing only. Activation/logit/state parity, adapter authoring basis, service lifecycle, quality, resources, benefit and default promotion remain separate gates.",
+  "earlierSuccessfulSourceRecord": "docs/evidence/ptq1-hosted-packing-c1c1704.json",
+  "qualificationTransferredFromEarlierSource": false,
+  "maintenanceToolReportedIdentity": {
+    "bytes": 3474432,
+    "sourceId": "5da6b3db1969cc2dcd67c45ba0a46b3a80c6df732686d3e667a8e3b6eb6fdb4f",
+    "sha256": "29a31989a13733fb25220246d24befb08697d4351a7d0398a8b9b5d7255daada"
+  },
+  "exactSourcePackingGateReadyForIndependentScoring": true
+}
