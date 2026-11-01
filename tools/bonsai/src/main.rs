@@ -123,6 +123,7 @@ fn execute() -> bonsai_tools::Result<serde_json::Value> {
         Some("chat-prepare") => bonsai_tools::chat_launch::prepare_run(request),
         Some("chat-package") => bonsai_tools::chat_package::run(request),
         Some("ptq1-capture") => bonsai_tools::ptq1_capture::run(request),
+        Some("ptq1-packing") => bonsai_tools::ptq1_packing::run(request),
         Some("host-capabilities") => bonsai_tools::host_capabilities::run(&request),
         Some("native-acceptance-budget") => bonsai_tools::native_acceptance_budget::run(request),
         Some("startup-diagnostics") => bonsai_tools::startup_diagnostics::run(request),

@@ -59,6 +59,7 @@ bonsai-tools host-capabilities --request ABSOLUTE_JSON_PATH
 bonsai-tools native-acceptance-budget --request ABSOLUTE_JSON_PATH
 bonsai-tools startup-diagnostics --request ABSOLUTE_JSON_PATH
 bonsai-tools ptq1-capture --request ABSOLUTE_JSON_PATH
+bonsai-tools ptq1-packing --request ABSOLUTE_JSON_PATH
 ```
 
 Host capability projection/CPU identities, acceptance-deadline policy, sanitized
@@ -88,6 +89,22 @@ session keys before publication, sanitizes across sessions, and returns only
 `ptq1-capture` supports `receipt` with bundle/repository directories, revision and
 reviewed pins, and `compare-abi` with actual/expected paths and the source-bound
 expected SHA-256. Neither command loads a model or qualifies numerical parity.
+
+`ptq1-packing` independently verifies the complete current-weight export against
+the original PQ2 file. Supply expanded absolute `sourcePath`, `outputPath` and
+`timeoutSeconds` (1 through 300). Both complete file lengths and SHA-256 digests
+must match the compiled export receipt. The verifier uses its own GGUF header
+reader and fractional-trit decoder rather than the exporter or its codec. It
+checks every canonical PTQ1 block against the original raw PQ2 symbols and scale
+bits, every other tensor payload and every header byte except the declared
+file-type/tensor-type/offset edits. The receipt binds the export receipt digest
+and full block/tensor counts; retain it with source/build/run identities for
+independent promotion review. No payload sample can substitute for a full pass.
+The entire verification shares one deadline, including file hashing. On an
+owner device, setup, intake and retention also consume the shared five-minute
+allowance; leave the gate pending if the complete scan cannot fit. This reads
+weights as data without starting inference, and qualifies no logits, state,
+adapter basis, quality, resource or speed behavior.
 
 Requests are JSON objects read through a retained read-only handle, capped at
 16 MiB. Qualification envelopes allow 160 MiB for escaped responses; original
