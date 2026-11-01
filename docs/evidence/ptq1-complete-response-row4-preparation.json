@@ -1,0 +1,102 @@
+{
+  "schemaVersion": 1,
+  "kind": "hosted-complete-response-row4-source-preparation",
+  "recordedDate": "2026-11-01",
+  "status": "hosted-preparation-and-independent-package-review-passed",
+  "scope": "Source-only preparation for the explicit four-worker original-PQ2/current-weight-PTQ1 complete-response pair. No actual-model attempt ran, and no promotion gate was added.",
+  "runnerRevision": "b8df51ad177e3e4fbd838ed5a603bc2ff540f5d2",
+  "profile": "ptq1-pq2-complete-response-row4",
+  "case": "representation::pinned_native_ptq1_pq2_row4_capture_complete_responses",
+  "configuredNativeRowWorkers": 4,
+  "rowWorkerCountIndependentlyObserved": false,
+  "sourceReview": {
+    "reviewerId": "Codex:/root/lifecycle",
+    "reviewedCommit": "3238a3e86a4070fb987e9100596c3655db539b27",
+    "preparedSourceMatchesReviewedPair": true,
+    "preservedControls": [
+      "The original complete-response profile retains one worker; both fresh owners in the separate row4 profile configure four workers.",
+      "Both owners share the original aggregate deadline, require more than 60 seconds before startup and reserve 30 seconds for request cleanup.",
+      "Both exact model identities, approved adapter at scale 1.3, natural stop, positive completion usage, response digests and owned cleanup are required.",
+      "Missing, truncated, swapped or mismatched worker captures remain pending; no retry or matrix continuation is permitted.",
+      "A request-latency ratio requires identical output and usage; feasibility supplies no decode-TPS, quality or default-promotion verdict."
+    ]
+  },
+  "foundation": {
+    "runId": "41323946405",
+    "url": "https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41323946405",
+    "conclusion": "success",
+    "selectedObligationsPassed": ["broker / core", "maintenance", "scripts / native", "foundation"],
+    "scope": "Owning exact-source Foundation passed every selected impact obligation; skipped standards, speech and release-integration lanes are not claimed executed."
+  },
+  "preparation": {
+    "runId": "41323946846",
+    "url": "https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41323946846",
+    "workflowPath": ".github/workflows/native-runtime-acceptance.yml",
+    "runAttempt": 1,
+    "gitRef": "refs/heads/main",
+    "overallConclusion": "cancelled",
+    "prepareJobId": "124899844888",
+    "prepareConclusion": "success",
+    "prepareLabels": ["windows-11-arm"],
+    "hostedBuildAndExplicitModelFreeControlsPassed": true,
+    "acceptanceJobId": "124900702628",
+    "acceptanceConclusion": "cancelled",
+    "acceptanceRunnerId": 0,
+    "acceptanceStepCount": 0,
+    "ownerRunnerRegisteredForThisReview": false,
+    "interpretation": "Hosted preparation succeeded. The unassigned owner acceptance job was cancelled with zero steps; overall cancellation is not an actual-model failure or acceptance pass."
+  },
+  "artifact": {
+    "id": "13090561794",
+    "name": "native-acceptance-bin-41323946846-1",
+    "bytes": 3010530,
+    "sha256": "eaeda1a61af50bb8f54e306021ca9762c3bc2e595863b4142a23c86cffd553c4",
+    "exactZipMembers": ["bonsai-tools.exe", "native-model-acceptance.exe", "receipt.json"],
+    "receiptSha256": "f670454d76d8bbc24cd128f4e656027e980e001e7b1a54bd0dca5e3a7163dbc5",
+    "toolchain": "nightly-2026-10-22-aarch64-pc-windows-msvc",
+    "compilerCommit": "1a2c4797ef2570bd76ca5dee34449169bc7dc457",
+    "toolsSourceId": "5da6b3db1969cc2dcd67c45ba0a46b3a80c6df732686d3e667a8e3b6eb6fdb4f",
+    "files": [
+      {
+        "name": "bonsai-tools.exe",
+        "bytes": 3474432,
+        "sha256": "29a31989a13733fb25220246d24befb08697d4351a7d0398a8b9b5d7255daada",
+        "arm64PeHeaderVerified": true
+      },
+      {
+        "name": "native-model-acceptance.exe",
+        "bytes": 3589120,
+        "sha256": "e19bb679ca776167d21042caa80f50edff40a318fef9055115fd9058ae7dbfe7",
+        "arm64PeHeaderVerified": true
+      }
+    ]
+  },
+  "independentRetention": {
+    "reviewerId": "Codex:/root/lifecycle",
+    "directoryRelativeToLocalAppData": "SwiftBonsai2/qualification/ptq1-complete-response-row4-preparation-41323946846",
+    "reviewFile": "independent-review.json",
+    "reviewSha256": "004039ab1aaee5555a94a2095f552dff80cdacdac3b483476fefed559555a882",
+    "manifestFile": "file-manifest.json",
+    "manifestSha256": "14f863f86311ddbcfe36a25444e118f979ba340e493782af54066ced17f69e89",
+    "manifestEntries": 11,
+    "independentChecksPassed": 24,
+    "sourceArtifactIntakeSeconds": 1.511852399999043,
+    "sourceArtifactIntakeMaximumSeconds": 10,
+    "artifactDownloadAttempts": 1,
+    "artifactDownloadRetries": 0,
+    "scope": "The intake bound covers one metadata lookup and exact artifact transfer. Subsequent API/document/ZIP review is source-only archival work, separate from the earlier owner preflight and from any owner model trial.",
+    "localPackageBinaryExecutions": 0,
+    "modelExecutions": 0,
+    "hardwareDiagnostics": 0
+  },
+  "promotion": {
+    "newGatesAdded": 0,
+    "frozenCandidateRevision": "85fd2f1565018ac9a0bb6ce02fd1f333d27dfe80",
+    "frozenCandidateReport": "ptq1-promotion-85fd2f1.json",
+    "frozenCandidateGateCounts": {"passed": 5, "pending": 14, "rejected": 0},
+    "laterHarnessInheritsFrozenQualification": false,
+    "actualModelAcceptanceQualified": false,
+    "defaultPromotionQualified": false,
+    "defaultsChanged": false
+  }
+}
