@@ -377,7 +377,10 @@ fn verify_inference(
     for file in files {
         let path = destination.join(&file.name);
         crate::startup_download::verify(&path, file.bytes, &file.sha256)?;
-        if file.name.ends_with(".exe") {
+        if Path::new(&file.name)
+            .extension()
+            .is_some_and(|extension| extension.eq_ignore_ascii_case("exe"))
+        {
             crate::startup_cache::assert_arm64(&path)?;
         }
     }
