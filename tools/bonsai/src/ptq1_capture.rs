@@ -24,6 +24,8 @@ enum Request {
         repository_directory: PathBuf,
         revision: String,
         pins: Value,
+        #[serde(default = "one_row_worker")]
+        row_workers: u8,
     },
     #[serde(rename_all = "camelCase")]
     CompareAbi {
@@ -31,6 +33,10 @@ enum Request {
         expected_path: PathBuf,
         expected_sha256: String,
     },
+}
+
+const fn one_row_worker() -> u8 {
+    1
 }
 
 fn read_bounded(path: &Path, maximum: u64) -> crate::Result<Vec<u8>> {
@@ -118,11 +124,36 @@ fn compare(actual: &[u8], expected: &[u8], digest: &str) -> crate::Result<Value>
     Ok(json!({"Status": "matched", "ObservationCount": expected.len()}))
 }
 
-fn receipt(bundle: &Path, repository: &Path, revision: &str, pins: &Value) -> crate::Result<Value> {
+fn validate_checker_capability(receipt: &Value, row_workers: u8) -> crate::Result<()> {
+    let accepted = match receipt["SchemaVersion"].as_u64() {
+        Some(2) => {
+            row_workers == 1
+                && receipt.get("CheckerFeatures").is_none()
+                && receipt.get("SupportedRowWorkers").is_none()
+        }
+        Some(3) => {
+            matches!(row_workers, 1 | 4)
+                && receipt["CheckerFeatures"] == json!(["parallel-rows"])
+                && receipt["SupportedRowWorkers"] == json!([1, 4])
+        }
+        _ => false,
+    };
+    if !accepted {
+        return Err(PIN_MISMATCH.into());
+    }
+    Ok(())
+}
+
+fn receipt(
+    bundle: &Path,
+    repository: &Path,
+    revision: &str,
+    pins: &Value,
+    row_workers: u8,
+) -> crate::Result<Value> {
     let bytes = read_bounded(&bundle.join("capture-tools.json"), LIMIT)?;
     let receipt: Value = serde_json::from_slice(&bytes).map_err(|error| error.to_string())?;
     if !is_lower_hex(revision, 40)
-        || receipt["SchemaVersion"].as_u64() != Some(2)
         || receipt["RunnerRevision"] != revision
         || receipt["CollectorLanguage"] != "rust"
         || receipt["CollectorSourcePath"] != COLLECTOR
@@ -131,6 +162,7 @@ fn receipt(bundle: &Path, repository: &Path, revision: &str, pins: &Value) -> cr
     {
         return Err(PIN_MISMATCH.into());
     }
+    validate_checker_capability(&receipt, row_workers)?;
     for (receipt_key, pin_key, fields) in [
         (
             "NativeSource",
@@ -185,7 +217,14 @@ pub fn run(request: Value) -> crate::Result<Value> {
             repository_directory,
             revision,
             pins,
-        } => receipt(&bundle_directory, &repository_directory, &revision, &pins),
+            row_workers,
+        } => receipt(
+            &bundle_directory,
+            &repository_directory,
+            &revision,
+            &pins,
+            row_workers,
+        ),
         Request::CompareAbi {
             actual_path,
             expected_path,
@@ -200,9 +239,9 @@ pub fn run(request: Value) -> crate::Result<Value> {
 
 #[cfg(test)]
 mod tests {
-    use super::{compare, observations, read_bounded, receipt};
+    use super::{compare, observations, read_bounded, receipt, validate_checker_capability};
     use crate::identity::sha256;
-    use serde_json::json;
+    use serde_json::{Value, json};
 
     #[test]
     fn collector_receipt_binds_sources_pins_and_pre_read_limits() -> crate::Result<()> {
@@ -259,7 +298,7 @@ mod tests {
                 )
                 .map_err(|error| error.to_string())?;
                 assert_eq!(
-                    receipt(&root, &root, &revision, &pins).is_ok(),
+                    receipt(&root, &root, &revision, &pins, 1).is_ok(),
                     field.is_none()
                 );
             }
@@ -272,6 +311,37 @@ mod tests {
             std::fs::remove_dir_all(&root).map_err(|error| error.to_string())?;
         }
         result
+    }
+
+    #[test]
+    fn collector_receipt_rejects_unbound_parallel_capability() -> crate::Result<()> {
+        let old = json!({"SchemaVersion": 2});
+        validate_checker_capability(&old, 1)?;
+        assert!(validate_checker_capability(&old, 4).is_err());
+        let current = json!({
+            "SchemaVersion": 3, "CheckerFeatures": ["parallel-rows"],
+            "SupportedRowWorkers": [1, 4]
+        });
+        for workers in [1, 4] {
+            validate_checker_capability(&current, workers)?;
+        }
+        for workers in [0, 2, 16] {
+            assert!(validate_checker_capability(&current, workers).is_err());
+        }
+        for (field, changed) in [
+            ("SchemaVersion", json!(2)),
+            ("CheckerFeatures", Value::Null),
+            ("CheckerFeatures", json!([])),
+            ("CheckerFeatures", json!(["parallel-rows", "unreviewed"])),
+            ("SupportedRowWorkers", json!([1])),
+            ("SupportedRowWorkers", json!([1, 4, 4])),
+            ("SupportedRowWorkers", json!(["1", "4"])),
+        ] {
+            let mut receipt = current.clone();
+            receipt[field] = changed;
+            assert!(validate_checker_capability(&receipt, 4).is_err());
+        }
+        Ok(())
     }
 
     #[test]

@@ -43,6 +43,7 @@ if ($env:GITHUB_ENV) { Add-Content -LiteralPath $env:GITHUB_ENV -Value "BONSAI_P
 $buildReceipt = [ordered]@{
     SchemaVersion = 1; Scope = 'hosted-ptq1-capture-build-only'; RunnerRevision = $env:GITHUB_SHA
     NativeSource = $pins.nativeSource; RustSource = $source; RustToolchain = $channel
+    CheckerFeatures = @('parallel-rows'); SupportedRowWorkers = @(1, 4)
     Phase = 'download'; Status = 'running'; ModelProcessStarted = $false
     DescendantOwnership = 'kill-on-close-job; reject-and-stop-leftover-descendants'
 }
@@ -138,7 +139,7 @@ try {
     Save-Ptq1BuildEvidence
     $built = Invoke-BonsaiNativeProcess -Executable $cargo -WorkingDirectory $scratch -TimeoutSeconds 1200 -OwnDescendants -LogPath (Join-Path $scratch 'rust-build.txt') -ArgumentList @(
         'build', '--locked', '--release', '--manifest-path', (Join-Path $rust 'Cargo.toml'),
-        '-p', 'prism-inference', '--example', 'swift_model_check', '--target-dir', $target) -Environment @{
+        '-p', 'prism-inference', '--features', 'parallel-rows', '--example', 'swift_model_check', '--target-dir', $target) -Environment @{
             RUSTC = $rustc; RUSTC_WRAPPER = ''; RUSTC_WORKSPACE_WRAPPER = ''
             CARGO_ENCODED_RUSTFLAGS = @('-C', "linker=$linker", '-C', 'linker-flavor=lld-link') -join [char]0x1f
         }
@@ -154,7 +155,8 @@ try {
             Sha256 = (Get-FileHash -LiteralPath $destination -Algorithm SHA256).Hash.ToLowerInvariant() }
     }
     $receipt = [ordered]@{
-        SchemaVersion = 2; RunnerRevision = $env:GITHUB_SHA; NativeSource = $pins.nativeSource; RustSource = $pins.rustSource
+        SchemaVersion = 3; RunnerRevision = $env:GITHUB_SHA; NativeSource = $pins.nativeSource; RustSource = $pins.rustSource
+        CheckerFeatures = @('parallel-rows'); SupportedRowWorkers = @(1, 4)
         CollectorLanguage = 'rust'; CollectorSourcePath = $collectorSourcePath; CollectorSourceSha256 = $collectorSourceSha256
         AbiControlSha256 = $abiControlSha256; AbiProvenanceSha256 = $abiProvenanceSha256; RustToolchain = $channel
         Compiler = [ordered]@{ Path = $rustc; Sha256 = (Get-FileHash -LiteralPath $rustc -Algorithm SHA256).Hash.ToLowerInvariant()

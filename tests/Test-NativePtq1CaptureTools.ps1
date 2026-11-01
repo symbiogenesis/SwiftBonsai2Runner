@@ -13,10 +13,17 @@ if ($Case -ceq 'CapturePolicy') {
     Import-Module (Join-Path $PSScriptRoot '../scripts/Bonsai.Ptq1.psm1')
     $repo = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
     $pins = Get-Ptq1CapturePin -RepositoryDirectory $repo
-    foreach ($backend in @('auto', 'scalar', 'neon')) {
-        $plan = & (Join-Path $repo 'scripts/Invoke-NativePtq1Numerics.ps1') -DataDirectory $repo -PlanOnly -RustBackend $backend
-        Assert ($plan.RustBackend -ceq $backend -and $plan.NativeSamples -eq 1 -and $plan.RustSamples -eq 1 -and
+    foreach ($workers in @(1, 4)) {
+      foreach ($backend in @('auto', 'scalar', 'neon')) {
+        $plan = & (Join-Path $repo 'scripts/Invoke-NativePtq1Numerics.ps1') -DataDirectory $repo -PlanOnly -RustBackend $backend -NativeRowWorkers $workers
+        Assert ($plan.RustBackend -ceq $backend -and $plan.RustRowWorkers -eq $workers -and $plan.NativeSamples -eq 1 -and $plan.RustSamples -eq 1 -and
             $plan.WorkBudgetSeconds -eq 240 -and $plan.WholeJobMinutes -eq 5 -and -not $plan.DefaultMayChange) 'Backend selection changed the bounded capture workload or promotion boundary.'
+      }
+    }
+    $defaultPlan = & (Join-Path $repo 'scripts/Invoke-NativePtq1Numerics.ps1') -DataDirectory $repo -PlanOnly
+    Assert ($defaultPlan.RustRowWorkers -eq 1) 'The default numerical capture worker policy changed.'
+    foreach ($workers in @(0, 2, 16)) {
+        Assert-Failure { & (Join-Path $repo 'scripts/Invoke-NativePtq1Numerics.ps1') -DataDirectory $repo -PlanOnly -NativeRowWorkers $workers }
     }
     Assert-Failure { & (Join-Path $repo 'scripts/Invoke-NativePtq1Numerics.ps1') -DataDirectory $repo -PlanOnly -RustBackend 'invalid' }
     Assert-Failure { & (Join-Path $repo 'scripts/Invoke-NativePtq1Numerics.ps1') -DataDirectory $repo -PlanOnly -RustBackend 'AUTO' }
@@ -159,6 +166,25 @@ if ($Case -ceq 'CollectorControls') {
         [IO.File]::WriteAllText($receiptPath, $reviewedJson)
         $accepted = Invoke-BonsaiTool -Command ptq1-capture -Request @{ operation='receipt'; bundleDirectory=$working; repositoryDirectory=$working; revision=('a' * 40); pins=$pins }
         Assert ($accepted.CollectorLanguage -ceq 'rust') 'The reviewed Rust collector receipt was rejected.'
+        Assert-Failure { Invoke-BonsaiTool -Command ptq1-capture -Request @{ operation='receipt'; bundleDirectory=$working; repositoryDirectory=$working; revision=('a' * 40); pins=$pins; rowWorkers=4 } }
+        $parallelReceipt = $reviewedJson | ConvertFrom-Json -AsHashtable -DateKind String
+        $parallelReceipt.SchemaVersion = 3
+        $parallelReceipt.CheckerFeatures = @('parallel-rows')
+        $parallelReceipt.SupportedRowWorkers = @(1, 4)
+        [IO.File]::WriteAllText($receiptPath, ($parallelReceipt | ConvertTo-Json -Depth 12))
+        foreach ($workers in @(1, 4)) {
+            $accepted = Invoke-BonsaiTool -Command ptq1-capture -Request @{ operation='receipt'; bundleDirectory=$working; repositoryDirectory=$working; revision=('a' * 40); pins=$pins; rowWorkers=$workers }
+            Assert ($accepted.SchemaVersion -eq 3) 'Source-bound parallel checker capability was rejected.'
+        }
+        foreach ($mutation in @(
+            @{ CheckerFeatures = @() }, @{ CheckerFeatures = @('parallel-rows', 'unreviewed') },
+            @{ SupportedRowWorkers = @(1) }, @{ SupportedRowWorkers = @('1', '4') }, @{ SchemaVersion = 2 }
+        )) {
+            $changed = $parallelReceipt | ConvertTo-Json -Depth 12 | ConvertFrom-Json -AsHashtable -DateKind String
+            foreach ($key in $mutation.Keys) { $changed[$key] = $mutation[$key] }
+            [IO.File]::WriteAllText($receiptPath, ($changed | ConvertTo-Json -Depth 12))
+            Assert-Failure { Invoke-BonsaiTool -Command ptq1-capture -Request @{ operation='receipt'; bundleDirectory=$working; repositoryDirectory=$working; revision=('a' * 40); pins=$pins; rowWorkers=4 } }
+        }
         Invoke-BonsaiTool -Command ptq1-capture -Request @{ operation='compare-abi'; actualPath=$actual; expectedPath=$expected; expectedSha256=$receipt.AbiControlSha256 }
         foreach ($mutation in @(
             @{ SchemaVersion = 1 }, @{ CollectorLanguage = 'cpp' }, @{ RunnerRevision = ('b' * 40) },

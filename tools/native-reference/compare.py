@@ -27,6 +27,7 @@ class Layout:
 LAYOUT = Layout()
 TOKENS = (248045,)
 BACKENDS = ("auto", "scalar", "neon")
+ROW_WORKERS = (1, 4)
 
 
 def require(condition, message):
@@ -151,8 +152,10 @@ def compare_payload(reference, code, actual_path):
             "byteExact": exact}
 
 
-def validate_rust_controls(rust, capture, backend):
+def validate_rust_controls(rust, capture, backend, row_workers=1):
     require(backend in BACKENDS, "unsupported Rust comparison backend")
+    require(type(row_workers) is int and row_workers in ROW_WORKERS,
+            "unsupported Rust comparison row-worker count")
     records = [json.loads(line) for line in read_bounded(rust / "stdout.txt", 65536).splitlines() if line]
     weights = [r for r in records if r.get("event") == "weights-loaded"]
     steps = [r for r in records if r.get("event") == "forward-step"]
@@ -164,6 +167,12 @@ def validate_rust_controls(rust, capture, backend):
             and [s["input_token"] for s in steps] == list(TOKENS)
             and all(s["backend_requested"] == backend for s in steps),
             "Rust supplied tokens/backend differ from comparison controls")
+    require(all(type(s.get("row_workers")) is int and s["row_workers"] == row_workers
+                for s in steps), "Rust row-worker policy differs from comparison controls")
+    require(all(type(s.get("parallel_row_operations")) is int
+                and (s["parallel_row_operations"] > 0 if row_workers == 4
+                     else s["parallel_row_operations"] == 0) for s in steps),
+            "Rust row-worker execution is missing or inconsistent with the selected policy")
     require(type(capture["adapterLoaded"]) is bool, "invalid native adapter control")
     if capture["adapterLoaded"]:
         bits = struct.pack(">f", capture["adapterScale"]).hex()
@@ -175,7 +184,7 @@ def validate_rust_controls(rust, capture, backend):
     return steps
 
 
-def compare(native, rust, backend):
+def compare(native, rust, backend, row_workers=1):
     native, rust = Path(native), Path(rust)
     native_inventory = {file.relative_to(native).as_posix() for file in native.rglob("*")
                         if file.is_file() and file.suffix in (".f32le", ".native-seq")}
@@ -191,7 +200,7 @@ def compare(native, rust, backend):
             and capture["steps"][0]["logitsCount"] == LAYOUT.vocabulary,
             "native smoke position/logits geometry changed")
     require(capture["adapterLoaded"] is True and capture["adapterScale"] == 1.3, "native smoke adapter control changed")
-    steps = validate_rust_controls(rust, capture, backend)
+    steps = validate_rust_controls(rust, capture, backend, row_workers)
     files = []
     expected = set()
     for position in range(1):
@@ -221,7 +230,8 @@ def compare(native, rust, backend):
             "nativeCaptureSha256": digest(native / "native-capture.json"),
             "nativeStateSha256": [digest(native / "state-0.native-seq")],
             "maximumAbsoluteError": max(f["maximumAbsoluteError"] for f in files), "comparisons": files,
-            "backendRequested": backend, "greedyTokensMatch": greedy,
+            "backendRequested": backend, "rustRowWorkers": row_workers, "greedyTokensMatch": greedy,
+            "parallelRowOperations": [s["parallel_row_operations"] for s in steps],
             "rustStdoutSha256": digest(rust / "stdout.txt"),
             "writerBasisQualified": False, "qualityQualified": False, "defaultMayChange": False,
             "pendingControls": ["no-adapter", "loaded-zero-identity", "nonzero-change", "scalar", "explicit-neon",
@@ -233,9 +243,10 @@ if __name__ == "__main__":
     parser.add_argument("--native", required=True, type=Path)
     parser.add_argument("--rust", required=True, type=Path)
     parser.add_argument("--backend", required=True, choices=BACKENDS)
+    parser.add_argument("--row-workers", type=int, choices=ROW_WORKERS, default=1)
     parser.add_argument("--output", required=True, type=Path)
     arguments = parser.parse_args()
-    report = compare(arguments.native, arguments.rust, arguments.backend)
+    report = compare(arguments.native, arguments.rust, arguments.backend, arguments.row_workers)
     with arguments.output.open("x", encoding="utf-8") as output:
         json.dump(report, output, indent=2, allow_nan=False)
         output.write("\n")

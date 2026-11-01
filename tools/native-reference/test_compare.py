@@ -75,7 +75,7 @@ class NativeStateTests(unittest.TestCase):
                    {"event": "rank-one-adapter-loaded", "model_sha256": MODULE.MODEL,
                     "adapter_sha256": MODULE.ADAPTER, "target_pairs": 129, "scale_bits": "3fa66666"},
                    {"event": "forward-step", "position": 0, "input_token": 248045,
-                    "backend_requested": "auto"}]
+                    "backend_requested": "auto", "row_workers": 1, "parallel_row_operations": 0}]
         capture = {"adapterLoaded": True, "adapterScale": 1.3}
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory)
@@ -98,7 +98,8 @@ class NativeStateTests(unittest.TestCase):
                    {"event": "rank-one-adapter-loaded", "model_sha256": MODULE.MODEL,
                     "adapter_sha256": MODULE.ADAPTER, "target_pairs": 129, "scale_bits": "3fa66666"}]
         records += [{"event": "forward-step", "position": i, "input_token": token,
-                     "backend_requested": "auto"} for i, token in enumerate((248045,))]
+                     "backend_requested": "auto", "row_workers": 1, "parallel_row_operations": 0}
+                    for i, token in enumerate((248045,))]
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory)
             (path / "stdout.txt").write_text("\n".join(map(json.dumps, records)), encoding="utf-8")
@@ -112,6 +113,46 @@ class NativeStateTests(unittest.TestCase):
             (path / "stdout.txt").write_text("\n".join(map(json.dumps, records)), encoding="utf-8")
             with self.assertRaises(ValueError):
                 MODULE.validate_rust_controls(path, {"adapterLoaded": True, "adapterScale": 1.3}, "auto")
+
+    def test_row_worker_controls_reject_cross_worker_and_missing_parallel_execution(self):
+        records = [{"event": "weights-loaded", "model_sha256": MODULE.MODEL,
+                    "weight_representation": "current-repacked-PTQ1_0"},
+                   {"event": "rank-one-adapter-loaded", "model_sha256": MODULE.MODEL,
+                    "adapter_sha256": MODULE.ADAPTER, "target_pairs": 129, "scale_bits": "3fa66666"},
+                   {"event": "forward-step", "position": 0, "input_token": 248045,
+                    "backend_requested": "auto", "row_workers": 1, "parallel_row_operations": 0}]
+        capture = {"adapterLoaded": True, "adapterScale": 1.3}
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory)
+            def write():
+                (path / "stdout.txt").write_text("\n".join(map(json.dumps, records)), encoding="utf-8")
+            for workers, operations in ((1, 0), (4, 123)):
+                for backend in MODULE.BACKENDS:
+                    records[-1].update(row_workers=workers, parallel_row_operations=operations,
+                                       backend_requested=backend)
+                    write()
+                    self.assertEqual(len(MODULE.validate_rust_controls(path, capture, backend, workers)), 1)
+                    with self.assertRaises(ValueError):
+                        MODULE.validate_rust_controls(path, capture, backend, 4 if workers == 1 else 1)
+            for field, value in (("row_workers", None), ("row_workers", True), ("row_workers", "4"),
+                                 ("row_workers", 1), ("parallel_row_operations", None),
+                                 ("parallel_row_operations", False), ("parallel_row_operations", 0),
+                                 ("parallel_row_operations", -1), ("parallel_row_operations", 1.0)):
+                records[-1].update(row_workers=4, parallel_row_operations=123, backend_requested="auto")
+                if value is None:
+                    records[-1].pop(field)
+                else:
+                    records[-1][field] = value
+                write()
+                with self.assertRaises(ValueError):
+                    MODULE.validate_rust_controls(path, capture, "auto", 4)
+            records[-1].update(row_workers=1, parallel_row_operations=1)
+            write()
+            with self.assertRaises(ValueError):
+                MODULE.validate_rust_controls(path, capture, "auto", 1)
+            for unsupported in (0, 2, 16, True, "4"):
+                with self.assertRaises(ValueError):
+                    MODULE.validate_rust_controls(path, capture, "auto", unsupported)
 
     def test_transposed_v_and_complete_recurrent_inventory_match_logical_rows(self):
         with tempfile.TemporaryDirectory() as directory:

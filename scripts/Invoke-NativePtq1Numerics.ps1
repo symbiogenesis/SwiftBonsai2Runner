@@ -11,7 +11,8 @@ No zero, broader scalar/NEON trajectory, writer-basis, quality or performance ga
 [OutputType([pscustomobject])]
 param([Parameter(Mandatory)][string]$DataDirectory, [switch]$PlanOnly,
       [string]$CaptureToolsDirectory, [string]$ToolPath, [int]$WorkBudgetSeconds,
-      [long]$WorkDeadlineTick, [ValidateSet('auto', 'scalar', 'neon', IgnoreCase = $false)][string]$RustBackend = 'auto')
+      [long]$WorkDeadlineTick, [ValidateSet('auto', 'scalar', 'neon', IgnoreCase = $false)][string]$RustBackend = 'auto',
+      [ValidateSet(1, 4)][int]$NativeRowWorkers = 1)
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
@@ -26,7 +27,7 @@ $pending = @('no-adapter', 'loaded-zero-identity', 'nonzero-change', 'scalar', '
     'writer-authoring-basis', 'quality', 'performance', 'full-context', 'service')
 $plan = [pscustomobject]@{
     Status = 'plan-only'; ModelProcessStarted = $false; SuppliedTokens = @(248045)
-    Representation = 'current-repacked-PTQ1_0'; AdapterScale = 1.3; RustBackend = $RustBackend
+    Representation = 'current-repacked-PTQ1_0'; AdapterScale = 1.3; RustBackend = $RustBackend; RustRowWorkers = $NativeRowWorkers
     NativeSamples = 1; RustSamples = 1; WorkBudgetSeconds = 240; WholeJobMinutes = 5
     EstimatedSnapshotBytes = 315971136; RequiredFreeDiskBytes = 1073741824
     ContextTokens = 8192; JobBytes = 12348030976; AdmissionBytes = 16642998272
@@ -80,7 +81,7 @@ try {
     $bundle = Resolve-ExternalPath $CaptureToolsDirectory
     $receiptPath = Join-Path $bundle 'capture-tools.json'
     $receipt = [pscustomobject](Invoke-BonsaiTool -Command ptq1-capture -ToolPath $ToolPath -TimeoutSeconds (Get-Ptq1WorkAllowance $workClock) -Request @{
-        operation = 'receipt'; bundleDirectory = $bundle; repositoryDirectory = $repo; revision = $env:GITHUB_SHA; pins = $pins
+        operation = 'receipt'; bundleDirectory = $bundle; repositoryDirectory = $repo; revision = $env:GITHUB_SHA; pins = $pins; rowWorkers = $NativeRowWorkers
     })
     $toolGuards = @()
     foreach ($name in @('swift-ptq1-reference.exe', 'swift_model_check.exe')) {
@@ -155,7 +156,7 @@ try {
         $executable = if ($backend -ceq 'native') { $collector } else { $qualifier }
         $arguments = if ($backend -ceq 'native') {
             @('capture', $runtime.Runtime.runtimeDirectory, $admission.ModelPath, $sampleLane, $adapter.AdapterPath, '1.3')
-        } else { @('--use-repacked-ptq1', '--rank-one-adapter', $adapter.AdapterPath, '1.3', 'forward', $admission.ModelPath, $sampleLane, $RustBackend, '248045') }
+        } else { @('--use-repacked-ptq1', '--row-workers', [string]$NativeRowWorkers, '--rank-one-adapter', $adapter.AdapterPath, '1.3', 'forward', $admission.ModelPath, $sampleLane, $RustBackend, '248045') }
         $arguments | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $sampleLane 'arguments.json') -Encoding utf8
         $artifacts | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath (Join-Path $sampleLane 'artifacts.json') -Encoding utf8
         $remaining = Get-Ptq1WorkAllowance $workClock
@@ -168,7 +169,7 @@ try {
             physicalReserveBytes = $plan.PhysicalReserveBytes; timeoutSeconds = $remaining
             stdoutLimitBytes = 65536; stderrLimitBytes = 67108864; requireNonemptyStdout = $true; ciOnly = $false
         }
-        $report.Samples.Add(@{ Backend = $backend; Supervision = $supervision })
+        $report.Samples.Add(@{ Backend = $backend; RustRowWorkers = $(if ($backend -ceq 'native') { $null } else { $NativeRowWorkers }); Supervision = $supervision })
         Save-Ptq1NumericsReport -Report $report -Path $reportPath
     }
     $python = @(Get-Command python -CommandType Application -ErrorAction Stop)[0].Source
@@ -176,7 +177,7 @@ try {
     $report.Status = 'comparing'; $report.Phase = 'logits-and-complete-state-comparison'; $report['ActiveBackend'] = $null
     Save-Ptq1NumericsReport -Report $report -Path $reportPath
     $compared = Invoke-BonsaiNativeProcess -Executable $python -WorkingDirectory $evidence -TimeoutSeconds (Get-Ptq1WorkAllowance $workClock) -LogPath (Join-Path $evidence 'comparison.txt') -ArgumentList @(
-        '-B', (Join-Path $repo 'tools/native-reference/compare.py'), '--native', (Join-Path $evidence 'native'), '--rust', (Join-Path $evidence $RustBackend), '--backend', $RustBackend, '--output', $output)
+        '-B', (Join-Path $repo 'tools/native-reference/compare.py'), '--native', (Join-Path $evidence 'native'), '--rust', (Join-Path $evidence $RustBackend), '--backend', $RustBackend, '--row-workers', [string]$NativeRowWorkers, '--output', $output)
     if ($compared.ExitCode -ne 0) { throw 'Native/Rust one-token smoke comparison failed.' }
     $report['Comparison'] = Get-Content -LiteralPath $output -Raw | ConvertFrom-Json -AsHashtable -DateKind String
     $report.Status = 'completed-one-token-smoke'; $report.Phase = 'completed'; $report['WorkElapsedSeconds'] = $workClock.Elapsed.TotalSeconds

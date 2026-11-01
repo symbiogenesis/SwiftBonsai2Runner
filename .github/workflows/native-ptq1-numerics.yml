@@ -11,6 +11,11 @@ on:
         type: choice
         options: [auto, scalar, neon]
         default: auto
+      native_row_workers:
+        description: One exact Rust row-worker policy; qualification does not transfer between worker counts
+        type: choice
+        options: ['1', '4']
+        default: '1'
 permissions:
   contents: read
 concurrency:
@@ -51,6 +56,7 @@ jobs:
           NativeStateTests.test_exact_chunks_reject_nonfinite_values_and_preserve_signed_zero
           NativeStateTests.test_control_binding_rejects_changed_adapter_scale_tokens_and_backend
           NativeStateTests.test_explicit_backend_controls_reject_substitution_and_unknown_backends
+          NativeStateTests.test_row_worker_controls_reject_cross_worker_and_missing_parallel_execution
           NativeStateTests.test_capture_pre_read_bounds_reject_oversized_json_and_logits
       - name: Prepare exact capture binaries and maintenance receipt without models
         shell: pwsh
@@ -121,11 +127,13 @@ jobs:
         working-directory: ${{ runner.temp }}
         env:
           BONSAI_PTQ1_RUST_BACKEND: ${{ inputs.rust_backend }}
+          BONSAI_PTQ1_ROW_WORKERS: ${{ inputs.native_row_workers }}
         run: |
           Set-StrictMode -Version Latest
           $ErrorActionPreference = 'Stop'
           $PSNativeCommandUseErrorActionPreference = $true
           if ($env:BONSAI_PTQ1_RUST_BACKEND -cnotin @('auto', 'scalar', 'neon')) { throw 'Select one explicit supported Rust capture backend.' }
+          if ($env:BONSAI_PTQ1_ROW_WORKERS -cnotin @('1', '4')) { throw 'Select one exact Rust capture row-worker count.' }
           Import-Module (Join-Path $env:GITHUB_WORKSPACE 'scripts/Bonsai.Tools.psm1')
           $budgetPath = Join-Path $env:RUNNER_TEMP 'ptq1-owner-budget.json'
           $budgetReport = [ordered]@{
@@ -168,7 +176,7 @@ jobs:
           $start.RedirectStandardError = $true
           # A hosted preparation job supplies the checked capture and maintenance
           # tools. Owner-laptop builds/downloads are intentionally unavailable.
-          foreach ($argument in @('-NoProfile', '-File', (Join-Path $env:GITHUB_WORKSPACE 'scripts/Invoke-NativePtq1Numerics.ps1'), '-DataDirectory', (Join-Path $env:LOCALAPPDATA 'SwiftBonsai2'), '-CaptureToolsDirectory', (Join-Path $env:RUNNER_TEMP 'SwiftBonsai-Ptq1CaptureTools'), '-WorkBudgetSeconds', [string]$workSeconds, '-WorkDeadlineTick', [string]$workDeadline, '-RustBackend', $env:BONSAI_PTQ1_RUST_BACKEND)) {
+          foreach ($argument in @('-NoProfile', '-File', (Join-Path $env:GITHUB_WORKSPACE 'scripts/Invoke-NativePtq1Numerics.ps1'), '-DataDirectory', (Join-Path $env:LOCALAPPDATA 'SwiftBonsai2'), '-CaptureToolsDirectory', (Join-Path $env:RUNNER_TEMP 'SwiftBonsai-Ptq1CaptureTools'), '-WorkBudgetSeconds', [string]$workSeconds, '-WorkDeadlineTick', [string]$workDeadline, '-RustBackend', $env:BONSAI_PTQ1_RUST_BACKEND, '-NativeRowWorkers', $env:BONSAI_PTQ1_ROW_WORKERS)) {
             $start.ArgumentList.Add($argument)
           }
           foreach ($name in @('ACTIONS_RUNTIME_TOKEN', 'ACTIONS_ID_TOKEN_REQUEST_TOKEN', 'GITHUB_TOKEN', 'GH_TOKEN', 'ACTIONS_RUNNER_INPUT_TOKEN')) {
@@ -194,6 +202,7 @@ jobs:
           if ($code -ne 0) { throw 'PTQ1 numerical capture/comparison failed; inspect retained evidence.' }
           @('One supplied token [248045], exact current-weight PTQ1 and approved adapter at 1.3.',
             "One native reference process and one Rust $env:BONSAI_PTQ1_RUST_BACKEND process; at most 240 seconds reduced by all checkout, intake and setup costs inside this five-minute job.",
+            "Rust row workers: $env:BONSAI_PTQ1_ROW_WORKERS; exact worker count and actual parallel operations are checked independently of backend selection. Other worker policies remain unqualified.",
             'All logits and complete logical KV/convolution/recurrent values use the unchanged tolerance.',
             'No-adapter, loaded zero, nonzero-change, broader scalar/explicit-NEON trajectories, writer authoring basis, quality, performance and full context remain pending.',
             'A selected-backend smoke cannot be split into repeated owner-device runs to bypass the aggregate five-minute budget.',
