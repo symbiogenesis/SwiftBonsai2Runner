@@ -394,6 +394,12 @@ or experimental state reuse cannot qualify this policy. Regenerate pending manif
 after a policy identity change; retained historical reports remain unchanged.
 PTQ1 `file-score` requests must select the same `weightRepresentation`; PQ2 evidence,
 changed packing receipts and changed original-PQ2 rollback identities are rejected.
+The scored report retains the policy digest, profile, exact identities, gate counts
+and observed device family. Each gate includes its requirement, owning repository,
+device/human-review requirements and submitted review note and reviewer identity,
+so a retained score identifies the candidate and the work still pending. Filter
+`gates` by `status` to review pending or rejected requirements; a successful command
+with either status still leaves `promotionReady: false`.
 Independently review CI/source/report/reviewer identities and require `promotionReady:
 true`; command success alone cannot authorize promotion.
 

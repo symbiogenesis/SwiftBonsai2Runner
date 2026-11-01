@@ -85,7 +85,26 @@ $ptq1Score = Invoke-BonsaiTool -Command runtime-promotion -ToolPath $ToolPath -R
     weightRepresentation = 'current-repacked-PTQ1_0'
 }
 if ($ptq1Score.promotionReady -or $ptq1Score.status -cne 'pending' -or
-    $ptq1Score.gates.Count -ne $ptq1.policy.requiredGates.Count) {
+    $ptq1Score.gates.Count -ne $ptq1.policy.requiredGates.Count -or
+    $ptq1Score.profile -cne $ptq1.policy.profile -or
+    $ptq1Score.policySha256 -cne $ptq1.policySha256 -or
+    $ptq1Score.identities.modelSha256 -cne $ptq1.policy.identities.modelSha256 -or
+    $ptq1Score.identities.nativeRowWorkers -ne 1 -or
+    $ptq1Score.identities.ptq1ExportReceiptSha256 -cne $ptq1.policy.identities.ptq1ExportReceiptSha256 -or
+    $ptq1Score.gateCounts.passed -ne 0 -or $ptq1Score.gateCounts.rejected -ne 0 -or
+    $ptq1Score.gateCounts.pending -ne $ptq1.policy.requiredGates.Count -or
+    $null -ne $ptq1Score.deviceFamily) {
     throw 'Uncollected PTQ1 evidence incorrectly qualified default promotion.'
+}
+foreach ($gate in $ptq1Score.gates) {
+    $requirement = @($ptq1.policy.requiredGates | Where-Object id -CEQ $gate.id)
+    if ($requirement.Count -ne 1 -or $gate.requirement -cne $requirement[0].requirement -or
+        $gate.repository -cne $requirement[0].repository -or
+        $gate.snapdragonRequired -ne $requirement[0].snapdragonRequired -or
+        $gate.humanReviewRequired -ne $requirement[0].humanReviewRequired -or
+        $gate.note -cne 'Evidence has not yet been collected and reviewed.' -or
+        $null -ne $gate.reviewerId -or $gate.humanReviewed) {
+        throw 'PTQ1 score omitted actionable remaining-gate requirements or review attribution.'
+    }
 }
 'Runtime promotion command preserves exact policy and pending evidence.'

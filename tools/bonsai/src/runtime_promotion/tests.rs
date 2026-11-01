@@ -37,6 +37,14 @@ fn missing_evidence_stays_pending_and_policy_binds_standard_profile() -> crate::
     assert_eq!(result["status"], "pending");
     assert_eq!(result["promotionReady"], false);
     assert_eq!(result["gates"].as_array().map(Vec::len), Some(GATES.len()));
+    assert_eq!(result["profile"], policy["profile"]);
+    assert_eq!(result["identities"], policy["identities"]);
+    assert_eq!(result["policySha256"], evidence(&policy)?["policySha256"]);
+    assert_eq!(
+        result["gateCounts"],
+        json!({"passed": 0, "pending": GATES.len(), "rejected": 0})
+    );
+    assert_eq!(result["deviceFamily"], Value::Null);
     assert_eq!(policy["identities"]["adapterScale"], 1.3);
     assert_eq!(policy["identities"]["contextTokens"], 8192);
     assert_eq!(policy["identities"]["maxCompletionTokens"], 4096);
@@ -127,6 +135,35 @@ fn ptq1_plan_binds_export_rollback_and_all_independent_gates() -> crate::Result<
     )?;
     assert_eq!(result["status"], "pending");
     assert_eq!(result["promotionReady"], false);
+    assert_eq!(result["profile"], ptq1["profile"]);
+    assert_eq!(result["policySha256"], plan["policySha256"]);
+    assert_eq!(result["identities"], ptq1["identities"]);
+    assert_eq!(
+        result["gateCounts"],
+        json!({"passed": 0, "pending": GATES.len() + PTQ1_GATES.len(), "rejected": 0})
+    );
+    for (verdict, requirement) in result["gates"]
+        .as_array()
+        .ok_or("Missing scored PTQ1 gates.")?
+        .iter()
+        .zip(gates)
+    {
+        for field in [
+            "id",
+            "repository",
+            "requirement",
+            "snapdragonRequired",
+            "humanReviewRequired",
+        ] {
+            assert_eq!(verdict[field], requirement[field], "{field}");
+        }
+        assert_eq!(
+            verdict["note"],
+            "Evidence has not yet been collected and reviewed."
+        );
+        assert_eq!(verdict["reviewerId"], Value::Null);
+        assert_eq!(verdict["humanReviewed"], false);
+    }
     assert!(score(evidence(&pq2)?, ptq1, &std::env::temp_dir()).is_err());
     assert!(score(evidence(ptq1)?, &pq2, &std::env::temp_dir()).is_err());
     Ok(())
@@ -393,7 +430,16 @@ fn later_service_harness_preserves_exact_release_and_retained_package() -> crate
             json!({"file": "harness.zip", "sha256": sha256(package)});
         let scored = score(input.clone(), &policy, &directory)?;
         assert_eq!(scored["status"], "pending");
+        assert_eq!(scored["gateCounts"]["passed"], 1);
+        assert_eq!(scored["gateCounts"]["pending"], GATES.len() - 1);
+        assert_eq!(scored["gateCounts"]["rejected"], 0);
+        assert_eq!(scored["deviceFamily"], "Snapdragon X Elite");
         assert_eq!(scored["gates"][16]["status"], "passed");
+        assert_eq!(
+            scored["gates"][16]["note"],
+            "Independent release/harness review."
+        );
+        assert_eq!(scored["gates"][16]["reviewerId"], "independent-reviewer");
         assert_eq!(scored["gates"][16]["executionRevision"], harness_revision);
         assert_eq!(
             scored["gates"][16]["testedRuntime"],
@@ -456,6 +502,13 @@ fn reviewed_pass_requires_report_device_main_and_human_identity() -> crate::Resu
         let x2_result = score(x2.clone(), &policy, &directory)?;
         assert_eq!(x2_result["status"], "passed");
         assert_eq!(
+            x2_result["gateCounts"],
+            json!({"passed": GATES.len(), "pending": 0, "rejected": 0})
+        );
+        assert_eq!(x2_result["deviceFamily"], "Snapdragon X2 Elite Extreme");
+        assert_eq!(x2_result["gates"][10]["humanReviewRequired"], true);
+        assert_eq!(x2_result["gates"][10]["humanReviewed"], true);
+        assert_eq!(
             x2_result["gates"][4]["deviceModel"],
             "Snapdragon X2 Elite Extreme"
         );
@@ -496,7 +549,13 @@ fn reviewed_pass_requires_report_device_main_and_human_identity() -> crate::Resu
         }
         input["gates"][4]["status"] = json!("rejected");
         input["gates"][5]["status"] = json!("pending");
-        assert_eq!(score(input, &policy, &directory)?["status"], "rejected");
+        let rejected = score(input, &policy, &directory)?;
+        assert_eq!(rejected["status"], "rejected");
+        assert_eq!(rejected["promotionReady"], false);
+        assert_eq!(
+            rejected["gateCounts"],
+            json!({"passed": GATES.len() - 2, "pending": 1, "rejected": 1})
+        );
         Ok(())
     })();
     std::fs::remove_file(directory.join("report.json")).map_err(|error| error.to_string())?;

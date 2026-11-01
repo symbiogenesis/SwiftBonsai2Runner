@@ -169,6 +169,14 @@ fn required_gates(ptq1: bool) -> impl Iterator<Item = &'static Gate> {
     GATES.iter().chain(PTQ1_GATES.iter().filter(move |_| ptq1))
 }
 
+fn gate_requirement(gate: &Gate, ptq1: bool) -> &'static str {
+    if ptq1 && gate.id == "paired-target-device-benefit" {
+        "Matched original-PQ2/current-weight-PTQ1 trials on the same pinned runtime, device, standard adapter at 1.3 and worker policy retain complete responses, cold load, prefill, decode, end-to-end latency, resources and losing outcomes; demonstrate at least 10% lower end-to-end latency or a reviewed capacity/energy benefit within accepted latency and quality limits."
+    } else {
+        gate.requirement
+    }
+}
+
 #[derive(Clone, Copy, Default, Deserialize, PartialEq, Eq)]
 enum WeightRepresentation {
     #[default]
@@ -363,7 +371,7 @@ fn policy(
             "servingStatePolicy": "reset-every-request",
             "target": "aarch64-pc-windows-msvc"
         },
-        "requiredGates": required_gates(ptq1).map(|gate| json!({"id": gate.id, "repository": gate.repository, "snapdragonRequired": gate.device, "humanReviewRequired": gate.human, "revisionBinding": if gate.id == SERVICE_GATE {"serviceHarnessRevision"} else if gate.repository == PRISM {"runtimeRevision"} else {"runnerRevision"}, "requirement": if ptq1 && gate.id == "paired-target-device-benefit" {"Matched original-PQ2/current-weight-PTQ1 trials on the same pinned runtime, device, standard adapter at 1.3 and worker policy retain complete responses, cold load, prefill, decode, end-to-end latency, resources and losing outcomes; demonstrate at least 10% lower end-to-end latency or a reviewed capacity/energy benefit within accepted latency and quality limits."} else {gate.requirement}})).collect::<Vec<_>>()
+        "requiredGates": required_gates(ptq1).map(|gate| json!({"id": gate.id, "repository": gate.repository, "snapdragonRequired": gate.device, "humanReviewRequired": gate.human, "revisionBinding": if gate.id == SERVICE_GATE {"serviceHarnessRevision"} else if gate.repository == PRISM {"runtimeRevision"} else {"runnerRevision"}, "requirement": gate_requirement(gate, ptq1)})).collect::<Vec<_>>()
     });
     if ptq1 {
         select_ptq1(&mut selected, &reference)?;
@@ -581,8 +589,8 @@ fn validate_service(record: &Record, policy: &Value, directory: &Path) -> crate:
 }
 
 fn score(value: Value, policy: &Value, directory: &Path) -> crate::Result<Value> {
-    let gates =
-        required_gates(policy["profile"] == "swift-ptq1-standard-lora-1.3").collect::<Vec<_>>();
+    let ptq1 = policy["profile"] == "swift-ptq1-standard-lora-1.3";
+    let gates = required_gates(ptq1).collect::<Vec<_>>();
     require(
         value.is_object()
             && value["gates"].as_array().is_some_and(|gates| {
@@ -624,6 +632,9 @@ fn score(value: Value, policy: &Value, directory: &Path) -> crate::Result<Value>
     let mut status = Status::Passed;
     let mut verdicts = Vec::new();
     let mut device_family = None;
+    let mut passed = 0;
+    let mut pending = 0;
+    let mut rejected = 0;
     for gate in gates {
         let record = records.get(gate.id);
         let verdict = if let Some(record) = record {
@@ -651,6 +662,11 @@ fn score(value: Value, policy: &Value, directory: &Path) -> crate::Result<Value>
         if verdict == Status::Rejected || (verdict == Status::Pending && status == Status::Passed) {
             status = verdict;
         }
+        match verdict {
+            Status::Passed => passed += 1,
+            Status::Pending => pending += 1,
+            Status::Rejected => rejected += 1,
+        }
         let run_url = record
             .and_then(|record| record.execution.as_ref())
             .map(|execution| {
@@ -659,10 +675,10 @@ fn score(value: Value, policy: &Value, directory: &Path) -> crate::Result<Value>
                     execution.repository, execution.run_id, execution.run_attempt
                 )
             });
-        verdicts.push(json!({"id": gate.id, "status": match verdict {Status::Passed => "passed", Status::Pending => "pending", Status::Rejected => "rejected"}, "runUrl": run_url, "executionRevision": record.and_then(|record| record.execution.as_ref()).map(|execution| &execution.revision), "deviceModel": record.and_then(|record| record.execution.as_ref()).map(|execution| &execution.device_model), "processorName": record.and_then(|record| record.execution.as_ref()).and_then(|execution| execution.processor_name.as_ref()), "reportSha256": record.and_then(|record| record.report.as_ref()).map(|report| &report.sha256), "testedRuntime": record.and_then(|record| record.tested_runtime.as_ref()), "harness": record.and_then(|record| record.harness.as_ref()).map(|harness| json!({"workflowPath": harness.workflow_path, "artifactId": harness.artifact_id, "artifactName": harness.artifact_name, "packageSha256": harness.package.sha256}))}));
+        verdicts.push(json!({"id": gate.id, "status": match verdict {Status::Passed => "passed", Status::Pending => "pending", Status::Rejected => "rejected"}, "repository": gate.repository, "requirement": gate_requirement(gate, ptq1), "snapdragonRequired": gate.device, "humanReviewRequired": gate.human, "note": record.map(|record| &record.note), "reviewerId": record.and_then(|record| record.reviewer_id.as_ref()), "humanReviewed": record.is_some_and(|record| record.human_reviewed), "runUrl": run_url, "executionRevision": record.and_then(|record| record.execution.as_ref()).map(|execution| &execution.revision), "deviceModel": record.and_then(|record| record.execution.as_ref()).map(|execution| &execution.device_model), "processorName": record.and_then(|record| record.execution.as_ref()).and_then(|execution| execution.processor_name.as_ref()), "reportSha256": record.and_then(|record| record.report.as_ref()).map(|report| &report.sha256), "testedRuntime": record.and_then(|record| record.tested_runtime.as_ref()), "harness": record.and_then(|record| record.harness.as_ref()).map(|harness| json!({"workflowPath": harness.workflow_path, "artifactId": harness.artifact_id, "artifactName": harness.artifact_name, "packageSha256": harness.package.sha256}))}));
     }
     Ok(
-        json!({"schemaVersion": 2, "status": match status {Status::Passed => "passed", Status::Pending => "pending", Status::Rejected => "rejected"}, "promotionReady": status == Status::Passed, "gates": verdicts, "scope": "Offline integrity and reviewer-attested evidence completeness only for the selected representation. CI provenance and human identity require independent review. Does not collect qualification, authenticate attestations or enable serving defaults."}),
+        json!({"schemaVersion": 2, "policySha256": evidence.policy_sha256, "profile": policy["profile"], "identities": policy["identities"], "status": match status {Status::Passed => "passed", Status::Pending => "pending", Status::Rejected => "rejected"}, "promotionReady": status == Status::Passed, "gateCounts": {"passed": passed, "pending": pending, "rejected": rejected}, "deviceFamily": device_family.map(SnapdragonFamily::device_model), "gates": verdicts, "scope": "Offline integrity and reviewer-attested evidence completeness only for the selected representation. CI provenance and human identity require independent review. Does not collect qualification, authenticate attestations or enable serving defaults."}),
     )
 }
 
