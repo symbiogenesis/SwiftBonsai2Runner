@@ -34,6 +34,9 @@ fn run() -> Result<String, hexagon_native_rpc::Error> {
     let queue_q2 = arguments
         .first()
         .is_some_and(|value| value == "--reference-queue-q2-probe");
+    let queue_noblock = arguments
+        .first()
+        .is_some_and(|value| value == "--reference-queue-noblock-probe");
     let reference_probe = arguments
         .first()
         .is_some_and(|value| value == "--reference-session-mapping-probe");
@@ -42,7 +45,7 @@ fn run() -> Result<String, hexagon_native_rpc::Error> {
             .first()
             .is_some_and(|value| value == "--session-mapping-probe");
     if arguments.len()
-        != if session_probe || queue_compute || queue_q2 {
+        != if session_probe || queue_compute || queue_q2 || queue_noblock {
             2
         } else {
             1
@@ -63,8 +66,8 @@ fn run() -> Result<String, hexagon_native_rpc::Error> {
             quote(&location.path().to_string_lossy())
         ));
     }
-    let package =
-        (session_probe || queue_compute || queue_q2).then(|| std::path::Path::new(&arguments[1]));
+    let package = (session_probe || queue_compute || queue_q2 || queue_noblock)
+        .then(|| std::path::Path::new(&arguments[1]));
     let forbidden = [
         "ADSP_", "CDSP_", "FASTRPC_", "RPCMEM_", "GGML_", "GENIEX_", "QNN_", "QAIRT_", "HEXAGON_",
     ];
@@ -79,13 +82,15 @@ fn run() -> Result<String, hexagon_native_rpc::Error> {
     if let Some(package) = package {
         let driver = Driver::open_system()?;
         let driver_path = driver.path().to_string_lossy().into_owned();
-        if queue_compute || queue_q2 {
+        if queue_compute || queue_q2 || queue_noblock {
             let progress = |snapshot: &hexagon_native_rpc::QueueComputeReport| {
                 let mut output = io::stderr().lock();
                 let _ = writeln!(output, "hexagon-compute:stage={}", snapshot.stage);
                 let _ = output.flush();
             };
-            let report = if queue_q2 {
+            let report = if queue_noblock {
+                driver.reference_queue_noblock_probe(package, progress)?
+            } else if queue_q2 {
                 driver.reference_queue_q2_probe(package, progress)?
             } else {
                 driver.reference_queue_compute_probe(package, progress)?
@@ -241,7 +246,10 @@ fn queue_compute_json(path: &str, report: &hexagon_native_rpc::QueueComputeRepor
         .architecture
         .map_or_else(|| String::from("null"), |value| value.to_string());
     let guarded_q2 = report.is_guarded_q2_control();
-    let kind = if guarded_q2 {
+    let nonblocking = report.is_nonblocking_write_control();
+    let kind = if nonblocking {
+        "native-fastrpc-queue-noblock-probe"
+    } else if guarded_q2 {
         "native-fastrpc-queue-q2-probe"
     } else {
         "native-fastrpc-queue-compute-probe"
@@ -256,6 +264,7 @@ fn queue_compute_json(path: &str, report: &hexagon_native_rpc::QueueComputeRepor
     } else {
         ""
     };
+    let write_mode = if nonblocking { "nonblocking" } else { "finite" };
     format!(
         "{{\"schemaVersion\":1,\"kind\":{},\"driverDll\":{},\"passed\":{},\"stage\":{},\"metadataPrepared\":{},\"architectureRaw\":{},\"architecture\":{},\"sessionId\":0,\"domainResult\":{},\"effectiveDomain\":{},\"uriResult\":{},\"uriVerified\":{},\"processInitializationResult\":{},\"processInitializationDomainAfter\":{},\"processInitializationEnableAfter\":{},\"unsignedProcessRequested\":{},\"moduleOpenResult\":{},\"handleObserved\":{},\"allocationSucceeded\":{},\"mappingResult\":{},\"queueCreateResult\":{},\"queueExportResult\":{},\"queueStartResult\":{},\"queueWriteResult\":{},\"queueReadResult\":{},\"computeSubmitted\":{},\"responseValidated\":{},\"numericValidated\":{},\"computeExecuted\":{},\"queueStopResult\":{},\"queueCloseResult\":{},\"unmappingResult\":{},\"freeCompleted\":{},\"moduleCloseResult\":{},\"ownerPinnedUntilExit\":{},\"poisoned\":{},\"driverLoaded\":true,\"sessionTeardownVerified\":false,\"signedDeploymentVerified\":false,\"profileEligible\":false,\"k\":{},\"m\":32,\"n\":2,\"outputElements\":64,\"bytes\":16384,\"requestBytes\":24,\"responseBytes\":88,\"nHvx\":1,\"nHmx\":0,\"powerMode\":4,\"ggmlSource\":{}{}}}",
         quote(kind),
@@ -295,7 +304,7 @@ fn queue_compute_json(path: &str, report: &hexagon_native_rpc::QueueComputeRepor
         report.poisoned,
         columns,
         quote(hexagon_native_rpc::COMPUTE_GGML_SOURCE),
-        q2_geometry,
+        format!("{q2_geometry},\"writeMode\":{}", quote(write_mode)),
     )
 }
 
