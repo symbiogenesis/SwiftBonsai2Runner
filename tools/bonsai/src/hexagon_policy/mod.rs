@@ -171,13 +171,13 @@ impl<'a> Record<'a> {
     }
     fn optional_digests(&self, names: &[&str], required: bool) -> Result<()> {
         for name in names {
-            if !self.get(name)?.is_null() {
-                self.digest(name)?;
-            } else {
+            if self.get(name)?.is_null() {
                 require(
                     !required,
                     "Completed Hexagon evidence omitted its source binding.",
                 )?;
+            } else {
+                self.digest(name)?;
             }
         }
         Ok(())

@@ -394,7 +394,7 @@ fn dispatch_partial_cases_and_loaded_driver_cannot_become_independent_gates() ->
     let mut bad = pending.clone();
     bad["Cases"][0]["OutputValuesChecked"] = json!(1);
     assert!(dispatch_check(&bad, 2).is_err());
-    for code in [json!(true), json!(1.5), json!(-1), json!(4294967296_u64)] {
+    for code in [json!(true), json!(1.5), json!(-1), json!(4_294_967_296_u64)] {
         rejects(&pending, &["NativeCode"], &code, |value| {
             dispatch_check(value, 2)
         });
@@ -584,7 +584,7 @@ fn reference_initialization_preserves_selection_returned_bytes_and_prerequisites
         "processInitializationDomainAfter",
         "processInitializationEnableAfter",
     ] {
-        for invalid in [Value::Null, json!(true), json!(1.5), json!(2147483648_i64)] {
+        for invalid in [Value::Null, json!(true), json!(1.5), json!(2_147_483_648_i64)] {
             rejects(&reference, &[name], &invalid, |value| {
                 session_check(value, true)
             });
@@ -599,8 +599,8 @@ fn reference_initialization_preserves_selection_returned_bytes_and_prerequisites
     let returned = changed(
         &reference,
         &[
-            ("processInitializationDomainAfter", json!(-2147483648_i64)),
-            ("processInitializationEnableAfter", json!(2147483647_i64)),
+            ("processInitializationDomainAfter", json!(-2_147_483_648_i64)),
+            ("processInitializationEnableAfter", json!(2_147_483_647_i64)),
         ],
     );
     session_check(&returned, true)?;

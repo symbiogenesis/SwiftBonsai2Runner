@@ -111,7 +111,7 @@ fn mapping(n: &Native, metadata: bool) -> Result<bool> {
             && n.descriptor_error
                 .is_none_or(|error| error < 0 && n.allocation_succeeded && !n.descriptor_observed)
             && (n.allocation_succeeded && !n.descriptor_observed) == n.descriptor_error.is_some()
-            && (!n.cpu_roundtrip_verified || (n.descriptor_observed && n.allocation_succeeded)),
+            && (!n.cpu_roundtrip_verified || n.descriptor_observed),
         "Native allocation evidence is contradictory.",
     )?;
     require(
