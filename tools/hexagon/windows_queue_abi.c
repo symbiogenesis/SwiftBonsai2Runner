@@ -84,6 +84,8 @@ _Static_assert(HTP_OP_MUL_MAT == 4 && HTP_TYPE_F32 == 0 && HTP_TYPE_Q2_0 == 42 &
 static unsigned char queue_marker;
 static unsigned int calls;
 static unsigned int unexpected;
+static unsigned int timed_write_calls;
+static unsigned int noblock_write_calls;
 static const uint8_t payload[8] = {1, 3, 5, 7, 9, 11, 13, 15};
 static const struct dspqueue_buffer original = {
     UINT32_C(0xfedcba98), UINT32_C(0x10203040), UINT32_C(0x01020304),
@@ -114,8 +116,21 @@ AEEResult dspqueue_export(dspqueue_t queue, uint64_t *id) {
 AEEResult dspqueue_write(dspqueue_t queue, uint32_t flags, uint32_t n,
                         struct dspqueue_buffer *buffers, uint32_t length,
                         const uint8_t *message, uint32_t timeout_us) {
+    ++timed_write_calls;
     if (calls++ != 2 || queue != (dspqueue_t)&queue_marker || flags != 3 || n != 1 ||
         buffers == NULL || length != sizeof(payload) || message == NULL || timeout_us != 100000 ||
+        memcmp(buffers, &original, sizeof(original)) != 0 || memcmp(message, payload, sizeof(payload)) != 0) {
+        ++unexpected; return -77;
+    }
+    return 0;
+}
+
+AEEResult dspqueue_write_noblock(dspqueue_t queue, uint32_t flags, uint32_t n,
+                                struct dspqueue_buffer *buffers, uint32_t length,
+                                const uint8_t *message) {
+    ++noblock_write_calls;
+    if (calls++ != 3 || queue != (dspqueue_t)&queue_marker || flags != 3 || n != 1 ||
+        buffers == NULL || length != sizeof(payload) || message == NULL ||
         memcmp(buffers, &original, sizeof(original)) != 0 || memcmp(message, payload, sizeof(payload)) != 0) {
         ++unexpected; return -77;
     }
@@ -125,7 +140,7 @@ AEEResult dspqueue_write(dspqueue_t queue, uint32_t flags, uint32_t n,
 AEEResult dspqueue_read_noblock(dspqueue_t queue, uint32_t *flags, uint32_t max_buffers,
                                uint32_t *n, struct dspqueue_buffer *buffers, uint32_t max_length,
                                uint32_t *length, uint8_t *message) {
-    if (calls++ != 3 || queue != (dspqueue_t)&queue_marker || flags == NULL || n == NULL ||
+    if (calls++ != 4 || queue != (dspqueue_t)&queue_marker || flags == NULL || n == NULL ||
         buffers == NULL || length == NULL || message == NULL || max_buffers != 1 ||
         max_length != sizeof(payload) || *flags != UINT32_C(0xcccccccc) ||
         *n != UINT32_C(0xcccccccc) || *length != UINT32_C(0xcccccccc)) {
@@ -138,7 +153,7 @@ AEEResult dspqueue_read_noblock(dspqueue_t queue, uint32_t *flags, uint32_t max_
 }
 
 AEEResult dspqueue_close(dspqueue_t queue) {
-    if (calls++ != 4 || queue != (dspqueue_t)&queue_marker) { ++unexpected; return -77; }
+    if (calls++ != 5 || queue != (dspqueue_t)&queue_marker) { ++unexpected; return -77; }
     return 0;
 }
 
@@ -150,6 +165,8 @@ typedef int (*close_signature)(dspqueue_t);
 typedef int (*export_signature)(dspqueue_t, uint64_t *);
 typedef int (*write_signature)(dspqueue_t, uint32_t, uint32_t, struct dspqueue_buffer *,
                                uint32_t, const uint8_t *, uint32_t);
+typedef int (*write_noblock_signature)(dspqueue_t, uint32_t, uint32_t, struct dspqueue_buffer *,
+                                       uint32_t, const uint8_t *);
 typedef int (*read_signature)(dspqueue_t, uint32_t *, uint32_t, uint32_t *,
                               struct dspqueue_buffer *, uint32_t, uint32_t *, uint8_t *);
 
@@ -159,6 +176,7 @@ int main(void) {
     close_signature close_fn = dspqueue_close;
     export_signature export_fn = dspqueue_export;
     write_signature write_fn = dspqueue_write;
+    write_noblock_signature write_noblock_fn = dspqueue_write_noblock;
     read_signature read_fn = dspqueue_read_noblock;
     dspqueue_t queue = NULL;
     uint64_t id = 0;
@@ -170,6 +188,7 @@ int main(void) {
     int result = create_fn(3, 0, 4096, 4096, NULL, NULL, NULL, &queue);
     result |= export_fn(queue, &id);
     result |= write_fn(queue, 3, 1, &sent, (uint32_t)sizeof(payload), payload, 100000);
+    result |= write_noblock_fn(queue, 3, 1, &sent, (uint32_t)sizeof(payload), payload);
     result |= read_fn(queue, &flags, 1, &n, &received, (uint32_t)sizeof(message), &length, message);
     result |= close_fn(queue);
     if (id != UINT64_C(0xf102030405060708) || flags != 3 || n != 1 || length != 8 ||
@@ -181,6 +200,8 @@ int main(void) {
            "\"sizeOffset\":%zu,\"offsetOffset\":%zu,\"flagsOffset\":%zu,\"addressOffset\":%zu},"
            "\"htp\":{\"tensorBytes\":%zu,\"bufferBytes\":%zu,\"operationBytes\":%zu,"
            "\"requestBytes\":%zu,\"responseBytes\":%zu,\"profileBytes\":%zu},"
+           "\"queueWrites\":{\"timed\":{\"arguments\":7,\"timeoutMicroseconds\":100000,\"calls\":%u},"
+           "\"nonblocking\":{\"arguments\":6,\"calls\":%u}},"
            "\"infiniteTimeout\":%" PRIu32 ",\"mockCalls\":%u,\"unexpectedCalls\":%u,"
            "\"returnCode\":%d,\"bufferHex\":\"",
            sizeof(original), _Alignof(struct dspqueue_buffer), offsetof(struct dspqueue_buffer, fd),
@@ -188,10 +209,11 @@ int main(void) {
            offsetof(struct dspqueue_buffer, flags), offsetof(struct dspqueue_buffer, address),
            sizeof(struct htp_tensor), sizeof(struct htp_buf_desc), sizeof(struct htp_op_desc),
            sizeof(struct htp_opbatch_req), sizeof(struct htp_opbatch_rsp), sizeof(struct htp_prof_desc),
-           (uint32_t)DSPQUEUE_TIMEOUT_NONE, calls, unexpected, result);
+           timed_write_calls, noblock_write_calls, (uint32_t)DSPQUEUE_TIMEOUT_NONE, calls, unexpected, result);
     for (size_t index = 0; index < sizeof(original); ++index) {
         printf("%02x", (unsigned int)((const unsigned char *)&original)[index]);
     }
     printf("\",\"driverLoaded\":false,\"deviceExecuted\":false,\"profileEligible\":false}\n");
-    return calls == 5 && unexpected == 0 && result == 0 ? 0 : 1;
+    return calls == 6 && timed_write_calls == 1 && noblock_write_calls == 1 &&
+           unexpected == 0 && result == 0 ? 0 : 1;
 }

@@ -183,7 +183,9 @@ def compare_layout(control, compiler, inputs, rustc):
                                 "offsetOffset": 8, "flagsOffset": 12, "addressOffset": 16},
                 "htp": {"tensorBytes": 56, "bufferBytes": 24, "operationBytes": 232,
                         "requestBytes": 24, "responseBytes": 88, "profileBytes": 48},
-                "infiniteTimeout": 4294967295, "mockCalls": 5, "unexpectedCalls": 0, "returnCode": 0,
+                "queueWrites": {"timed": {"arguments": 7, "timeoutMicroseconds": 100000, "calls": 1},
+                                "nonblocking": {"arguments": 6, "calls": 1}},
+                "infiniteTimeout": 4294967295, "mockCalls": 6, "unexpectedCalls": 0, "returnCode": 0,
                 "bufferHex": "98badcfe403020100403020194000000efcdab8967452381",
                 "driverLoaded": False, "deviceExecuted": False, "profileEligible": False}
     if not equal_typed(observed, expected):
@@ -204,6 +206,8 @@ def compare_layout(control, compiler, inputs, rustc):
                                    "executable": identity(executable), "rustExecutable": identity(rust_executable)}
     negatives = {
         "narrow-queue-pointer": '#include "dspqueue.h"\ntypedef int (*bad_close)(uint32_t);\nbad_close narrowed = dspqueue_close;\n',
+        "timed-write-without-timeout": '#include "dspqueue.h"\ntypedef AEEResult (*bad_write)(dspqueue_t, uint32_t, uint32_t, struct dspqueue_buffer *, uint32_t, const uint8_t *);\nbad_write missing_timeout = dspqueue_write;\n',
+        "noblock-write-with-timeout": '#include "dspqueue.h"\ntypedef AEEResult (*bad_noblock)(dspqueue_t, uint32_t, uint32_t, struct dspqueue_buffer *, uint32_t, const uint8_t *, uint32_t);\nbad_noblock extra_timeout = dspqueue_write_noblock;\n',
         "wrong-buffer-layout": '#include "dspqueue.h"\n_Static_assert(sizeof(struct dspqueue_buffer) == 20, "deliberate wrong buffer ABI");\n',
         "wrong-operation-layout": '#include <stdint.h>\n#include "htp-ops.h"\n_Static_assert(sizeof(struct htp_op_desc) == 224, "deliberate wrong operation ABI");\n',
     }
@@ -215,9 +219,9 @@ def compare_layout(control, compiler, inputs, rustc):
                            "/Fo" + str(control.output / (name + ".obj")), path], expected_failure=True)
         diagnostics = b"\n".join((control.review / (name + suffix)).read_bytes()
                                    for suffix in (".stdout.log", ".stderr.log"))
-        if name == "narrow-queue-pointer":
+        if name in {"narrow-queue-pointer", "timed-write-without-timeout", "noblock-write-with-timeout"}:
             if not re.search(rb"\bC(?:4113|4133|4047)\b", diagnostics):
-                raise ValueError("narrowed queue signature failed for an unrelated reason")
+                raise ValueError("incompatible queue signature failed for an unrelated reason: " + name)
         elif ("deliberate wrong " + ("buffer" if name == "wrong-buffer-layout" else "operation") +
               " ABI").encode("ascii") not in diagnostics:
             raise ValueError("wrong layout control failed for an unrelated reason")
