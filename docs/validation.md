@@ -83,7 +83,12 @@ bound before replay. Missing visible output or an incomplete source identity
 keeps acceptance pending; no fixture text substitutes for model output. The
 earlier four/two/two-token trial reached verified readiness but exhausted its first request. This smaller
 workload preserves every required scale, rejection and history transition while
-reducing prompt and generation work; execution within the budget remains pending.
+reducing prompt and generation work. The [bounded follow-up](evidence/ptq1-0110-bounded-scale-streams.json)
+passes readiness and its first two streams in a 161.31-second complete session,
+then skips invalid-scale rejection and history/change-back to retain the required
+45-second request-and-cleanup reserve (30 seconds of cleanup plus 15 seconds of
+request headroom). Overall required acceptance fails; no continuation job
+or additional model attempt runs.
 It preserves the request deadlines, cleanup reserve and partial-evidence rules of
 `pq2-adapter-lifecycle-row4`, whose user prompts and caps are unchanged. Its receipt
 binds the exact messages and completion caps, actual PTQ1 filename, byte
@@ -91,7 +96,7 @@ count and digest plus the complete export receipt; it cannot inherit PQ2 or
 historical-release acceptance. Optional history/stalled-consumer dispatch inputs
 are rejected. Missing, skipped or cancelled required steps keep `passed: false`
 and fail after owned cleanup. This prepares a bounded qualification lane;
-actual-model evidence for it remains pending. It does not qualify zero/no-adapter
+actual-model evidence for its complete required sequence remains pending. It does not qualify zero/no-adapter
 logit identity, writer basis, generated/edited-history parity, full context/output,
 recovery, quality, benefit or daily-service isolation. Supplying the captured
 short response checks application history input only; fresh recomputation and

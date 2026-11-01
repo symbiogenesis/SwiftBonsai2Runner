@@ -39,3 +39,6 @@ docs/evidence/hexagon-public-qaic-41171448060/** -text -whitespace
 
 # Preserve exact JSON bytes and hashes from the bounded inference-speed attempt.
 docs/evidence/native-request-speed-20261031/*.json -text whitespace=cr-at-eol
+
+# Preserve the exact archived PTQ1 promotion score and its recorded SHA-256.
+docs/evidence/ptq1-promotion-cfdc498.json -text whitespace=cr-at-eol

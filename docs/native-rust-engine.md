@@ -34,6 +34,15 @@ and invalid-scale/reuse checks are skipped; restart, cancellation, full context/
 quality and resource/benefit qualification remain pending. This is an application
 smoke, not completed-answer or default-runtime acceptance.
 
+The [bounded 0.1.10 one-worker follow-up](evidence/ptq1-0110-bounded-scale-streams.json)
+passes verified PTQ1/adapter readiness and complete one-token-cap streams at scales
+1.3 and zero. Startup takes 36.75 seconds and the client observes requests of 40.14
+and 40.35 seconds. Both return `Hello` with `length`; these are capped streams,
+not complete-answer, decode-TPS or zero/no-adapter logits evidence. The 45-second
+request-and-cleanup threshold stops the required workload before invalid-scale rejection and
+captured-history change-back. Overall acceptance fails, with owned cleanup and
+durable selected receipts verified; no additional model attempt follows.
+
 Version 0.1.8 uses the reviewed Windows read-consumer helper at Runner revision
 `abe04b4a8eff18388af96f0e75c8a8d180b81989`. Inside an actual AppContainer, it skips
 only the denied volume-root metadata check; the owner still validates ancestry,
@@ -416,6 +425,16 @@ Runtime Foundation/conformance and all other Prism gates still require the exact
 released source, and Runner gates retain their exact application revision.
 
 ### Required evidence
+
+The [frozen PTQ1/cfdc498 score](evidence/ptq1-promotion-cfdc498.json) retains the exact
+version-2 policy and input-manifest digest: **four documentary gates passed,
+fifteen pending, none rejected**, with `promotionReady: false`. A new independent
+applicability review reverified the unchanged released-source raw CI and nine-file
+ARM64 bundle, and current Runner Foundation
+[41271135189](https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41271135189).
+It transfers no historical PQ2 policy verdict or actual-model result. The
+[readiness audit](evidence/ptq1-default-readiness.json) binds its durable archive,
+independent review and raw score digests. Later revisions require their own review.
 
 The [frozen 0.1.10/a809 snapshot](evidence/rust-runtime-promotion-0110-a809.json)
 records the actual evaluator result: four documentary gates passed and thirteen

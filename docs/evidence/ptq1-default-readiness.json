@@ -176,5 +176,70 @@
     "defaultsChanged": false,
     "admissionOrReservesChanged": false
   },
+  "latestQualification": {
+    "recordedDate": "2026-10-31",
+    "runnerRevision": "cfdc4986b56a7b2b808b303466742acf71702128",
+    "scope": "Later retained evidence supersedes only the identified tooling and bounded-stream gaps. Earlier audit snapshots remain historical. No actual-model gate or policy verdict transfers between identities.",
+    "implementation": {
+      "explicitScalarAndNeonSelection": "497496c",
+      "boundedLiveResponseProgress": "8304038",
+      "exactCapturedResponseHistory": "e277774",
+      "promotionManifestAndVerifiedPaths": "f40b49b",
+      "nativeBridgeDigestControl": "757db2c",
+      "hostedAnalyzerAndFormattingFixes": ["c203abb", "c544a70", "cfdc498"],
+      "independentSourceReviewer": "Codex:/root/independent_audit",
+      "blockingSourceFindingsRemaining": 0
+    },
+    "hostedChecks": {
+      "foundationRunId": "41271135189",
+      "foundationConclusion": "success",
+      "successfulJobs": 8,
+      "speechMatrixSkipped": true,
+      "acceptancePreparationRunId": "41271137487",
+      "acceptancePreparationConclusion": "success",
+      "numericalToolsRunId": "41270885512",
+      "numericalToolsRevision": "c544a70b7909892291f061ba4d1c1cb9f487382c",
+      "numericalToolsConclusion": "success",
+      "numericalDeviceJobExecuted": false
+    },
+    "boundedLifecycle": {
+      "evidence": "docs/evidence/ptq1-0110-bounded-scale-streams.json",
+      "runId": "41271137487",
+      "readinessPassed": true,
+      "scale13StreamPassed": true,
+      "scaleZeroStreamPassed": true,
+      "invalidScaleRejected": false,
+      "capturedHistoryChangeBackPassed": false,
+      "pendingReason": "insufficient-owned-cleanup-reserve",
+      "allRequestedWorkloadsPassed": false,
+      "overallConclusion": "failure",
+      "aggregateSeconds": 161.3098316,
+      "conservativeReviewRetentionSeconds": 221.884618,
+      "earlierDiagnosticReserveSeconds": 10,
+      "modelAttempts": 1,
+      "additionalModelAttempts": 0,
+      "cleanupVerified": true,
+      "independentReviewer": "Codex:/root/independent_audit"
+    },
+    "promotionEvaluation": {
+      "report": "docs/evidence/ptq1-promotion-cfdc498.json",
+      "policySha256": "bcf9d5e250c3997b179fe96aa6694aa97f6e4f909c0861c69f0b887da10311c8",
+      "rawScoreSha256": "f1e31eb2f52990a1f88f68b11047b9c3fd660b9f5b7d22b9aed50be818c7c968",
+      "inputManifestSha256": "29755655cd632c1ade029484bfe97cdc23a485003b87b4d2653383fa1932f51f",
+      "gateCounts": {"passed": 4, "pending": 15, "rejected": 0},
+      "status": "pending",
+      "promotionReady": false,
+      "reviewer": "Codex:/root/promotion_gaps",
+      "humanReviewed": false,
+      "historicalPolicyVerdictsCopied": false,
+      "scope": "New documentary applicability review preserves the exact original released-source Prism executions and the exact current Runner Foundation. All fifteen remaining representation, actual-model and application gates remain pending. Plan and score ran model-free in parallel within the original bounded owner session.",
+      "archiveDirectoryRelativeToLocalAppData": "SwiftBonsai2/qualification/ptq1-promotion-cfdc498-20261031",
+      "archiveManifestSha256": "e8d38b88b1a6f3a4013a6e940130d9f691036168e17898bd14ac3792e37a88ac",
+      "independentReviewSha256": "3052dd17f8abb9afb3047a8f168c08a45a48fddf142e2fb1c128fac707e5d4e8"
+    },
+    "defaultPromotionQualified": false,
+    "defaultsChanged": false,
+    "admissionOrReservesChanged": false
+  },
   "defaultPromotionQualified": false
 }

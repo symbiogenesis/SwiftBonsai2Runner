@@ -68,17 +68,17 @@ claiming a latency, throughput or process-memory gain.
 Qualify the Rust PTQ1 DLL collector against the current locked Prism source through
 the main-only numerical workflow, explicitly selecting the intended Auto, scalar or
 NEON backend. Selection prepares one bounded comparison, not a matrix or permission
-to split a matrix across repeated owner-device runs. The [current-release one-worker
-attempt](docs/evidence/ptq1-0110-service-attempt.json) reached PTQ1/adapter readiness
-but its initial scale-1.3 request exhausted the request allowance; zero-scale,
-invalid-scale and supplied-history checks remain pending. Qualify the reduced
-`ptq1-adapter-lifecycle` workload with three one-token streams and minimal public
-prompts, replaying the exact first generated response in its final history stream.
-Retain source-response/message digests, startup/request attribution and all required
-steps; empty or unbound source output leaves generated history pending. Retain
-bounded live request/partial-prefix receipts from the incremental observer before
-optimizing a measured hotspot; observed SSE delivery is not backend kernel timing
-or decode TPS, and completed-operation counts do not prove zero emitted tokens. Qualify the
+to split a matrix across repeated owner-device runs. The [reduced current-release
+attempt](docs/evidence/ptq1-0110-bounded-scale-streams.json) passed PTQ1/adapter
+readiness and one-token streams at scales 1.3 and zero, then stopped before
+invalid-scale rejection and captured-history change-back to preserve the required
+45-second request-and-cleanup reserve. Qualify the complete three-stream sequence as one feasible
+workload; do not continue its missing steps through additional owner jobs. Retain
+exact generated source-response/message digests; empty or unbound output leaves
+generated history pending. Attribute the observed 36.75-second startup and roughly
+40-second one-token requests before optimizing a measured hotspot. Retain bounded
+live request/partial-prefix receipts; observed SSE delivery is not backend kernel
+timing or decode TPS, and completed-operation counts do not prove zero emitted tokens. Qualify the
 explicit `ptq1-pq2-complete-response` Rust-service pair within the same aggregate
 budget before planning broader comparisons. Its single tree-name prompt and
 fixed-order pair establish feasibility only; repeated interleaving, stable-device
@@ -90,6 +90,11 @@ close actual-model logits/state, writer-basis or promotion gates. Keep intake,
 verification, model work and cleanup inside one aggregate five-minute owner allowance;
 the [default-readiness audit](docs/evidence/ptq1-default-readiness.json) separates
 historical passes from current-release qualification.
+The [frozen current PTQ1 promotion score](docs/evidence/ptq1-promotion-cfdc498.json)
+passes four independently reviewed documentary gates and leaves fifteen pending.
+Close its actual-model, adapter provenance, paired benefit, quality, resource,
+isolation, recovery and installation gates before changing defaults or removing
+the README's adapter qualification. Later application identities need their own review.
 
 - Qualify startup, supplied-history streaming, full 8K context and 4K output, long
   conversations, speech, offline restart and recovery. Cover Stop, abandonment,
