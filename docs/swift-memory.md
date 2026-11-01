@@ -122,12 +122,15 @@ to fit the five-minute total laptop allowance. Complete-response comparison must
 first have a reviewed, bounded Rust-service capture contract. Do not dispatch the
 legacy matrices or split them across repeated owner jobs. Missing full-context,
 output, human quality, security, resource and comfort evidence remains pending.
-The offline `runtime-promotion` evaluator now has a separate explicit PTQ1
-policy with nineteen gates, binding the complete export receipt and original-PQ2
-rollback identities. The [preparation follow-up](evidence/ptq1-default-readiness.json)
-records its source review and the current-source numerical and required one-worker
-lifecycle lanes. Hosted checks and actual-model/evaluator executions remain pending;
-the policy's availability does not authorize a PTQ1 default.
+The offline `runtime-promotion` evaluator has a separate explicit PTQ1 policy
+with nineteen gates, binding the complete export receipt and original-PQ2 rollback
+identities. The [frozen four-worker score](evidence/ptq1-promotion-85fd2f1.json)
+passes five independently reviewed documentary/packing gates and leaves fourteen
+pending. Its [independent review](evidence/ptq1-promotion-85fd2f1-review.json)
+binds the exact runtime, source, hosted packing and durable archive without
+transferring historical device results. The [delivery record](evidence/ptq1-delivery-20261101.json)
+also retains the pre-model owner no-go: no model or owner runner started, and the
+existing user chat remained open. The score does not authorize a PTQ1 default.
 
 A reproducible correctness/security/recovery regression rejects the tested
 configuration. A performance no-go must use the predeclared device/settings and
@@ -169,8 +172,17 @@ scan](evidence/ptq1-delivery-52f98b3.json) verified all 209,920,000 blocks, pres
 metadata and 57,767,936 other tensor bytes in 11.88 seconds using 128 KiB of payload
 buffers, after owned model cleanup inside the same five-minute allowance. This is
 data verification, outside Actions CI; it establishes no inference speed, answer
-quality or activation/state parity. Appropriate CI provenance and independent
-promotion review remain required before scoring the packing gate.
+quality or activation/state parity.
+
+The [reviewed main-only hosted reproduction](evidence/ptq1-hosted-packing-85fd2f1.json)
+subsequently reproduced the exact pinned PTQ1 artifact and independently checked
+all 209,920,000 blocks, raw scales, preserved headers and other tensor bytes.
+Its source/run/artifact identities, selected JSON digests and durable archive were
+independently verified. The raw compiled/archived export receipt uses Windows
+CRLF; its distinct Git-blob LF digest is bound by an exact reversible line-ending
+check. These identities remain separate. This is complete packing evidence for
+that source, without activation, state, adapter-basis or performance qualification;
+later source and promotion records require their own review.
 
 All converted tensor block counts are divisible by sixteen, retaining 32-byte alignment.
 Non-tensor bytes occupy the 11,120,992-byte header/data-offset region; there are no
