@@ -111,11 +111,11 @@ AEEResult dspqueue_export(dspqueue_t queue, uint64_t *id) {
     return 0;
 }
 
-AEEResult dspqueue_write_noblock(dspqueue_t queue, uint32_t flags, uint32_t n,
-                                struct dspqueue_buffer *buffers, uint32_t length,
-                                const uint8_t *message) {
+AEEResult dspqueue_write(dspqueue_t queue, uint32_t flags, uint32_t n,
+                        struct dspqueue_buffer *buffers, uint32_t length,
+                        const uint8_t *message, uint32_t timeout_us) {
     if (calls++ != 2 || queue != (dspqueue_t)&queue_marker || flags != 3 || n != 1 ||
-        buffers == NULL || length != sizeof(payload) || message == NULL ||
+        buffers == NULL || length != sizeof(payload) || message == NULL || timeout_us != 100000 ||
         memcmp(buffers, &original, sizeof(original)) != 0 || memcmp(message, payload, sizeof(payload)) != 0) {
         ++unexpected; return -77;
     }
@@ -149,7 +149,7 @@ typedef int (*create_signature)(int, uint32_t, uint32_t, uint32_t,
 typedef int (*close_signature)(dspqueue_t);
 typedef int (*export_signature)(dspqueue_t, uint64_t *);
 typedef int (*write_signature)(dspqueue_t, uint32_t, uint32_t, struct dspqueue_buffer *,
-                               uint32_t, const uint8_t *);
+                               uint32_t, const uint8_t *, uint32_t);
 typedef int (*read_signature)(dspqueue_t, uint32_t *, uint32_t, uint32_t *,
                               struct dspqueue_buffer *, uint32_t, uint32_t *, uint8_t *);
 
@@ -158,7 +158,7 @@ int main(void) {
     create_signature create_fn = dspqueue_create;
     close_signature close_fn = dspqueue_close;
     export_signature export_fn = dspqueue_export;
-    write_signature write_fn = dspqueue_write_noblock;
+    write_signature write_fn = dspqueue_write;
     read_signature read_fn = dspqueue_read_noblock;
     dspqueue_t queue = NULL;
     uint64_t id = 0;
@@ -169,7 +169,7 @@ int main(void) {
     memset(message, 0xcc, sizeof(message));
     int result = create_fn(3, 0, 4096, 4096, NULL, NULL, NULL, &queue);
     result |= export_fn(queue, &id);
-    result |= write_fn(queue, 3, 1, &sent, (uint32_t)sizeof(payload), payload);
+    result |= write_fn(queue, 3, 1, &sent, (uint32_t)sizeof(payload), payload, 100000);
     result |= read_fn(queue, &flags, 1, &n, &received, (uint32_t)sizeof(message), &length, message);
     result |= close_fn(queue);
     if (id != UINT64_C(0xf102030405060708) || flags != 3 || n != 1 || length != 8 ||
