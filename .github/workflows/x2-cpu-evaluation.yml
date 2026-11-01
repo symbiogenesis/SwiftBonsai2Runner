@@ -27,6 +27,12 @@ jobs:
         with:
           persist-credentials: false
       - uses: ./.github/actions/bonsai-tools
+      - uses: ./.github/actions/rust-toolchain
+        with:
+          toolchain: nightly-2026-10-22-aarch64-pc-windows-msvc
+      - name: Check native X2 observation, deadline and pair-comparison controls
+        shell: pwsh
+        run: cargo +nightly-2026-10-22 test --locked --release --target-dir $env:BONSAI_TOOLS_TARGET -p bonsai-tools --lib cpu_evaluation
       - name: Bind checked tools to this exact source revision
         shell: pwsh
         run: |
@@ -75,26 +81,38 @@ jobs:
           Set-StrictMode -Version Latest
           $ErrorActionPreference = 'Stop'
           $PSNativeCommandUseErrorActionPreference = $true
-          $script = Join-Path $env:GITHUB_WORKSPACE 'scripts/Invoke-X2CpuEvaluation.ps1'
           $data = Join-Path $env:LOCALAPPDATA 'SwiftBonsai2'
           $jobStarted = [DateTime]::Parse($env:BONSAI_X2_JOB_STARTED_UTC, [Globalization.CultureInfo]::InvariantCulture, [Globalization.DateTimeStyles]::RoundtripKind)
           # All checkout/download/intake time is charged to the same job clock.
           # Stop work by 270 seconds, retaining thirty seconds for teardown/upload.
           $workSeconds = [int][Math]::Floor([Math]::Min(240, 270 - ([DateTime]::UtcNow - $jobStarted).TotalSeconds))
           if ($workSeconds -lt 1) { throw 'Owner-job setup exhausted the complete X2 budget; qualification remains pending.' }
+          $frequency = [Diagnostics.Stopwatch]::Frequency
+          $workDeadline = [Diagnostics.Stopwatch]::GetTimestamp() + ([long]$workSeconds * $frequency)
+          # CIM remains an independent OS observation; Rust verifies its count/name
+          # against native topology and registry identity before planning or capture.
+          $processors = @(Get-CimInstance -ClassName Win32_Processor -Property Name, NumberOfLogicalProcessors -OperationTimeoutSec 10 |
+            ForEach-Object { @{ name = $_.Name; logicalProcessors = [int]$_.NumberOfLogicalProcessors } })
+          if ($env:BONSAI_X2_ATTRIBUTION -cnotin @('true', 'false')) { throw 'Invalid attribution input.' }
+          $caller = [Diagnostics.Process]::GetCurrentProcess()
+          try { $creation = $caller.StartTime.ToUniversalTime().ToFileTimeUtc() } finally { $caller.Dispose() }
+          $request = Join-Path $env:RUNNER_TEMP 'x2-cpu-request.json'
+          @{ operation = 'capture'; dataDirectory = $data; cimProcessors = $processors
+             workBudgetSeconds = $workSeconds; workDeadlineTick = $workDeadline
+             observeOutputProgress = ($env:BONSAI_X2_ATTRIBUTION -ceq 'true')
+             parentProcessId = $PID; parentCreationTimeFileTime = $creation } |
+            ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $request -Encoding utf8NoBOM
           # Keep Actions upload credentials in this step, outside the complete
           # evaluation/model process tree. Preserve CI identity and Windows env.
-          $start = [Diagnostics.ProcessStartInfo]::new((Join-Path $PSHOME 'pwsh.exe'))
+          $start = [Diagnostics.ProcessStartInfo]::new($env:BONSAI_TOOLS_PATH)
           $start.WorkingDirectory = $env:RUNNER_TEMP
           $start.UseShellExecute = $false
           $start.CreateNoWindow = $true
           $start.RedirectStandardOutput = $true
           $start.RedirectStandardError = $true
-          foreach ($argument in @('-NoProfile', '-File', $script, '-DataDirectory', $data, '-WorkBudgetSeconds', [string]$workSeconds)) {
+          foreach ($argument in @('cpu-evaluation', '--request', $request)) {
             $start.ArgumentList.Add($argument)
           }
-          if ($env:BONSAI_X2_ATTRIBUTION -cnotin @('true', 'false')) { throw 'Invalid attribution input.' }
-          if ($env:BONSAI_X2_ATTRIBUTION -ceq 'true') { $start.ArgumentList.Add('-ObserveOutputProgress') }
           foreach ($name in @('ACTIONS_RUNTIME_TOKEN', 'ACTIONS_ID_TOKEN_REQUEST_TOKEN', 'GITHUB_TOKEN', 'GH_TOKEN', 'ACTIONS_RUNNER_INPUT_TOKEN')) {
             [void]$start.Environment.Remove($name)
           }
@@ -102,7 +120,8 @@ jobs:
           try {
             $stdout = $child.StandardOutput.ReadToEndAsync()
             $stderr = $child.StandardError.ReadToEndAsync()
-            if (-not $child.WaitForExit($workSeconds * 1000)) { throw 'The complete X2 screen exceeded its remaining owner-job budget.' }
+            $remainingMilliseconds = [int][Math]::Floor(($workDeadline - [Diagnostics.Stopwatch]::GetTimestamp()) * 1000.0 / $frequency) - 10000
+            if ($remainingMilliseconds -lt 1 -or -not $child.WaitForExit($remainingMilliseconds)) { throw 'The complete X2 screen exceeded its original owner-job deadline.' }
             [Console]::Out.Write($stdout.GetAwaiter().GetResult())
             [Console]::Error.Write($stderr.GetAwaiter().GetResult())
             $code = $child.ExitCode

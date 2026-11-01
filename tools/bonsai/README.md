@@ -107,6 +107,22 @@ session keys before publication, sanitizes across sessions, and returns only
 reviewed pins, and `compare-abi` with actual/expected paths and the source-bound
 expected SHA-256. Neither command loads a model or qualifies numerical parity.
 
+`cpu-evaluation` additionally owns `observed-plan` and `capture` operations for
+the fixed four-trial X2 thread screen. Supply `dataDirectory` and `cimProcessors`
+with one independent `{name, logicalProcessors}` CIM observation; Rust checks it
+against native topology and complete processor/kernel identity. Capture requires
+main-only native ARM64 owner CI, the checked maintenance receipt for `GITHUB_SHA`,
+original `workDeadlineTick`, `workBudgetSeconds` in 1..240 and the owning
+`parentProcessId`/`parentCreationTimeFileTime`. Setup, verification, preflight,
+all four samples and reconciliation share that deadline, retaining twenty seconds
+for cleanup/reporting. The workflow launches the native command directly and
+retains CIM as its only host observation adapter. No downloads or builds occur.
+`observeOutputProgress: true` retains the separate file/exit attribution and
+suppresses every timing ratio. Rust owns atomic partial evidence, complete sample
+identity checks, fixed-token pairing and observed-condition comparisons; the
+former X2 PowerShell controller is removed. Pure `plan`, `compare-conditions`
+and `compare-sample-conditions` operations remain available.
+
 `native-qualification` owns one fixed numerical workload: `kind: "ptq1"`
 selects one native/Rust pair at backend `auto`, `scalar` or `neon` and row-worker
 count 1 or 4; `kind: "rows"` fixes the original PQ2 serial/four-worker pair.

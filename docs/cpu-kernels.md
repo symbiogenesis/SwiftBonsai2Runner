@@ -241,7 +241,7 @@ process budget within the five-minute owner job. Hosted tool compilation is outs
 job; the device verifies this run's exact revision, digest and ARM64 tools instead of compiling.
 The parent charges checkout and tool intake to its remaining job clock, caps the child at the
 lesser of 240 seconds and the remaining time before 270 job seconds, and bounds teardown at ten
-seconds. The script reserves twenty seconds for cleanup/reporting and refuses model trials when
+seconds, within the original deadline. Rust reserves twenty seconds for cleanup/reporting and refuses model trials when
 the remaining budget cannot fit the four per-sample deadlines plus teardown room.
 
 The completion batch's opt-in `totalTimeoutSeconds` (1..240) charges artifact/runtime hashing and
@@ -267,7 +267,7 @@ executable with only `--version` under the ordinary headless worker policy. This
 preflight retains a separate `worker-preflight/` receipt and bounded logs, with a 512 MiB Job and
 ten-second deadline. Failure stops the screen and leaves `ModelTrialsRequested: false` in its
 report. The shared supervisor's `ModelProcessStarted` field means an executable was started; the
-preflight's explicit `ModelLoaded: false` distinguishes it from model trials. PlanOnly remains
+preflight's explicit `ModelLoaded: false` distinguishes it from model trials. `observed-plan` remains
 nonexecuting. The relaxed inspection launch cannot satisfy this worker check.
 
 ### Inspecting the plan
@@ -276,7 +276,12 @@ From native ARM64 PowerShell 7.6+, use an existing checked maintenance executabl
 data directory outside Git:
 
 ```powershell
-./scripts/Invoke-X2CpuEvaluation.ps1 -DataDirectory $data -ToolPath $tool -PlanOnly
+$processors = @(Get-CimInstance Win32_Processor -Property Name, NumberOfLogicalProcessors -OperationTimeoutSec 10 |
+    ForEach-Object { @{ name = $_.Name; logicalProcessors = [int]$_.NumberOfLogicalProcessors } })
+$request = Join-Path $env:TEMP 'x2-plan-request.json'
+@{ operation = 'observed-plan'; dataDirectory = $data; cimProcessors = $processors } |
+    ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $request -Encoding utf8NoBOM
+& $tool cpu-evaluation --request $request
 ./scripts/Doctor.ps1 -ToolPath $tool -PassThru
 ```
 
@@ -311,8 +316,8 @@ Private commit, working set, Job commit and available RAM overlap: never add the
 aggregates identify neither phase allocations/lifetimes, complete model storage nor energy.
 
 For a separate main-only CI attribution capture, select the X2 workflow's
-`observe_output_progress` dispatch input, or pass `-ObserveOutputProgress` to
-`Invoke-X2CpuEvaluation.ps1` in its owning CI lane. The default remains off.
+`observe_output_progress` dispatch input, or set `observeOutputProgress: true` in
+the native `cpu-evaluation` capture request in its owning CI lane. The default remains off.
 Supervision's optional `observeOutputProgress: true` requires a finite stdout cap and reuses the existing
 file-length checks; it reads no payload and creates no extra polling loop.
 `ProcessMemory.OutputProgress` partitions current-counter samples before the first

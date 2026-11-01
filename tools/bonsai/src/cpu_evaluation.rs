@@ -6,6 +6,7 @@ use serde_json::{Value, json};
 
 use crate::Result;
 
+mod capture;
 mod conditions;
 
 #[derive(Deserialize)]
@@ -107,16 +108,22 @@ fn arguments(model: &str, threads: Threads, prompt: &str) -> Result<Vec<String>>
     Ok(result)
 }
 
-/// Plan a fixed X2 CPU screen or compare its observed execution conditions.
+/// Plan, capture or compare a fixed X2 CPU screen and its execution conditions.
 ///
 /// The caller supplies observed processor identity/count, verifies native topology
 /// and retains the report. Plans never establish evidence, change launch defaults
-/// or infer ISA support. Only the separate CI wrapper executes these invocations.
+/// or infer ISA support. Capture owns the original bounded main-only CI workload.
 ///
 /// # Errors
 /// Rejects unknown fields, unsupported operations/devices, unbounded CPU counts,
 /// unavailable candidate budgets and invalid compiled CPU plans.
 pub fn run(request: Value) -> Result<Value> {
+    if matches!(
+        request["operation"].as_str(),
+        Some("observed-plan" | "capture")
+    ) {
+        return capture::run(request);
+    }
     if request["operation"] == "compare-sample-conditions" {
         return conditions::compare_samples(request);
     }
