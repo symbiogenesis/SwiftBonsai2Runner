@@ -182,20 +182,35 @@ fn inline_and_stdin_json_preserve_native_promotion_roundtrip()
         "nativeRowWorkers": 4, "weightRepresentation": "current-repacked-PTQ1_0"});
     let text = serde_json::to_string(&payload)?;
     let output = Command::new(env!("CARGO_BIN_EXE_bonsai-tools"))
-        .args(["runtime-promotion", "--json", &text]).output()?;
-    assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
+        .args(["runtime-promotion", "--json", &text])
+        .output()?;
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
     let plan: Value = serde_json::from_slice(&output.stdout)?;
     assert_eq!(plan["policy"]["identities"]["nativeRowWorkers"], 4);
     assert_eq!(plan["policy"]["identities"]["adapterScale"], 1.3);
     let mut child = Command::new(env!("CARGO_BIN_EXE_bonsai-tools"))
         .args(["runtime-promotion", "--request", "-"])
-        .stdin(Stdio::piped()).stdout(Stdio::piped()).stderr(Stdio::piped()).spawn()?;
-    child.stdin.take().ok_or("Missing command stdin.")?.write_all(text.as_bytes())?;
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()?;
+    child
+        .stdin
+        .take()
+        .ok_or("Missing command stdin.")?
+        .write_all(text.as_bytes())?;
     let streamed = child.wait_with_output()?;
     assert!(streamed.status.success());
     assert_eq!(serde_json::from_slice::<Value>(&streamed.stdout)?, plan);
-    let lane = std::env::temp_dir().join(format!("Bonsai-NativePromotion-{}-{}",
-        std::process::id(), SystemTime::now().duration_since(UNIX_EPOCH)?.as_nanos()));
+    let lane = std::env::temp_dir().join(format!(
+        "Bonsai-NativePromotion-{}-{}",
+        std::process::id(),
+        SystemTime::now().duration_since(UNIX_EPOCH)?.as_nanos()
+    ));
     fs::create_dir(&lane)?;
     let evidence = lane.join("evidence.json");
     let bytes = serde_json::to_vec(&plan["evidenceTemplate"])?;
@@ -204,9 +219,18 @@ fn inline_and_stdin_json_preserve_native_promotion_roundtrip()
     score_request["operation"] = "file-score".into();
     score_request["evidencePath"] = serde_json::to_value(&evidence)?;
     let result = Command::new(env!("CARGO_BIN_EXE_bonsai-tools"))
-        .args(["runtime-promotion", "--json", &serde_json::to_string(&score_request)?])
-        .current_dir(&lane).output()?;
-    assert!(result.status.success(), "{}", String::from_utf8_lossy(&result.stderr));
+        .args([
+            "runtime-promotion",
+            "--json",
+            &serde_json::to_string(&score_request)?,
+        ])
+        .current_dir(&lane)
+        .output()?;
+    assert!(
+        result.status.success(),
+        "{}",
+        String::from_utf8_lossy(&result.stderr)
+    );
     let score: Value = serde_json::from_slice(&result.stdout)?;
     assert_eq!(score["promotionReady"], false);
     assert_eq!(score["status"], "pending");
@@ -214,11 +238,19 @@ fn inline_and_stdin_json_preserve_native_promotion_roundtrip()
     assert_eq!(score["identities"], plan["policy"]["identities"]);
     assert_eq!(score["evidenceManifest"]["bytes"], bytes.len());
     let gates = score["gates"].as_array().ok_or("Missing gates.")?;
-    let requirements = plan["policy"]["requiredGates"].as_array().ok_or("Missing requirements.")?;
+    let requirements = plan["policy"]["requiredGates"]
+        .as_array()
+        .ok_or("Missing requirements.")?;
     assert_eq!(gates.len(), requirements.len());
     for (gate, requirement) in gates.iter().zip(requirements) {
         assert_eq!(gate["status"], "pending");
-        for field in ["id", "repository", "requirement", "snapdragonRequired", "humanReviewRequired"] {
+        for field in [
+            "id",
+            "repository",
+            "requirement",
+            "snapdragonRequired",
+            "humanReviewRequired",
+        ] {
             assert_eq!(gate[field], requirement[field]);
         }
         assert!(gate["reviewerId"].is_null());
@@ -228,7 +260,8 @@ fn inline_and_stdin_json_preserve_native_promotion_roundtrip()
     fs::remove_dir(lane)?;
     for invalid in ["[]", "null", "{} trailing"] {
         let result = Command::new(env!("CARGO_BIN_EXE_bonsai-tools"))
-            .args(["runtime-promotion", "--json", invalid]).output()?;
+            .args(["runtime-promotion", "--json", invalid])
+            .output()?;
         assert!(!result.status.success());
         assert!(result.stdout.is_empty());
     }

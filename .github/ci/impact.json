@@ -139,16 +139,11 @@
         "tools/canary-asr/model.lock.json",
         "tools/canary-asr/tokenizer.lock.json",
         "tools/qwen-tts/model.lock.json",
-        "scripts/Bonsai.Common.psm1",
-        "scripts/Bonsai.Tools.psm1",
-        "scripts/Bonsai.Native.psm1",
         ".github/workflows/ptq1-packing-qualification.yml",
         "tools/native-reference/**",
         ".github/workflows/native-ptq1-numerics.yml",
         "docs/evidence/headless-publisher-startup.json",
         "docs/runtime-candidates/headless-ucrt-argv.json",
-        "tests/Test-ToolBootstrap.ps1",
-        "tests/*Support*",
         "tests/fixtures/**",
         "config/prism-inference.lock.json",
         "config/model.metadata.json"
@@ -159,15 +154,7 @@
         "bonsai-tools"
       ],
       "paths": [
-        "scripts/Bonsai.Common.psm1",
-        "scripts/Bonsai.Tools.psm1",
-        "scripts/Bonsai.Native.psm1",
-        "scripts/Invoke-*Completion.ps1",
-        "scripts/Invoke-Lora*.ps1",
         ".github/workflows/x2-cpu-evaluation.yml",
-        "tests/Test-NativeProcess.ps1",
-        "tests/Test-Lora*.ps1",
-        "tests/*Support*",
         "tests/fixtures/**",
         ".github/workflows/swift-lora-qualification.yml",
         ".github/workflows/swift-ptq1-screen.yml",
@@ -185,29 +172,11 @@
         "bonsai-tools"
       ],
       "paths": [
-        "scripts/Bonsai.Common.psm1",
-        "scripts/Bonsai.Tools.psm1",
-        "scripts/Bonsai.Native.psm1",
-        "tests/*Support*",
         "config/runtime.lock.json",
         "config/swift-assessment.lock.json",
         "config/swift-lora.lock.json",
         "config/swift.ptq1-export.json",
         "config/profiles/**"
-      ]
-    },
-    "standards": {
-      "paths": [
-        "tests/Test-Standards.ps1",
-        "tools/validation/**",
-        "global.json",
-        "PSScriptAnalyzerSettings.psd1",
-        ".editorconfig"
-      ],
-      "observes": [
-        "**/*.ps1",
-        "**/*.psm1",
-        "**/*.psd1"
       ]
     }
   },
@@ -230,7 +199,6 @@
       "broker": "broker_checks",
       "speech": "speech",
       "maintenance": "maintenance",
-      "standards": "standards",
       "foundation-tests": "scripts",
       "release-integration": "release"
     }

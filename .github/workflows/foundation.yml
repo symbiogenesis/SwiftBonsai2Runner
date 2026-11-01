@@ -35,7 +35,6 @@ jobs:
       broker_lanes: ${{ steps.impact.outputs.broker_lanes }}
       script_lanes: ${{ steps.impact.outputs.script_lanes }}
       scripts: ${{ steps.impact.outputs.scripts }}
-      standards: ${{ steps.impact.outputs.standards }}
       release: ${{ steps.impact.outputs.release }}
       tools: ${{ steps.impact.outputs.tools }}
     steps:
@@ -173,51 +172,10 @@ jobs:
           lane: ${{ matrix.lane }}
           packages: ${{ matrix.lane == 'asr' && '["bonsai-speech-asr"]' || '["bonsai-speech-tts"]' }}
           affected: ${{ needs.changes.outputs.packages }}
-  standards:
-    if: needs.changes.outputs.standards == 'true'
-    needs: changes
-    runs-on: windows-11-arm
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - name: Install the C# analyzer SDK
-        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
-        with:
-          dotnet-version: '10.0.4xx'
-      - name: Reuse the pinned PowerShell analyzer
-        id: analyzer-cache
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: ${{ runner.temp }}/SwiftBonsai-Standards-Tools
-          key: psscriptanalyzer-v1-${{ runner.os }}-${{ runner.arch }}-1.25.0
-      - name: Save the pinned PowerShell analyzer on a cache miss
-        if: steps.analyzer-cache.outputs.cache-hit != 'true'
-        shell: pwsh
-        working-directory: ${{ runner.temp }}
-        run: |
-          Set-StrictMode -Version Latest
-          $ErrorActionPreference = 'Stop'
-          Save-Module -Name PSScriptAnalyzer -RequiredVersion 1.25.0 -Repository PSGallery -Path (Join-Path $env:RUNNER_TEMP 'SwiftBonsai-Standards-Tools') -Force
-      - name: Enforce PowerShell and C# standards
-        shell: pwsh
-        working-directory: ${{ runner.temp }}
-        run: |
-          Set-StrictMode -Version Latest
-          $ErrorActionPreference = 'Stop'
-          $PSNativeCommandUseErrorActionPreference = $true
-          if ($PSVersionTable.PSVersion -lt [version]'7.6' -or $PSVersionTable.PSVersion.PreReleaseLabel) {
-            throw 'Foundation requires stable PowerShell 7.6 or later on the runner.'
-          }
-          $tooling = Join-Path $env:RUNNER_TEMP 'SwiftBonsai-Standards-Tools'
-          $analyzer = Join-Path $tooling 'PSScriptAnalyzer/1.25.0/PSScriptAnalyzer.psd1'
-          & (Join-Path $env:GITHUB_WORKSPACE 'tests/Test-StandardsAnalyzer.ps1') -AnalyzerModulePath $analyzer
-          & (Join-Path $env:GITHUB_WORKSPACE 'tests/Test-Standards.ps1') -AnalyzerModulePath $analyzer
   # Preserve the required check name; only the planner may authorize skips.
   foundation:
     if: always() && github.ref == 'refs/heads/main'
-    needs: [changes, broker, maintenance, speech, standards, foundation-tests, release-integration]
+    needs: [changes, broker, maintenance, speech, foundation-tests, release-integration]
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 10
     steps:
@@ -295,17 +253,6 @@ jobs:
           path: ${{ env.BONSAI_GGUF_EVIDENCE }}
           if-no-files-found: warn
           retention-days: 30
-      - name: Native tool invocation contracts
-        if: matrix.lane == 'native'
-        shell: pwsh
-        run: |
-          foreach ($case in @('Capture','Failure','Environment','Timeout','Drain','OwnedCapture','OwnedFailure','OwnedEnvironment','OwnedTimeout','OwnedDrain','OwnedGate','OwnedOwnerExit','OwnedExitAccounting')) {
-            ./tests/Test-NativeProcess.ps1 -Case $case
-          }
-      - name: Maintenance bootstrap integrity and repair
-        if: matrix.lane == 'foundation'
-        shell: pwsh
-        run: ./tests/Test-ToolBootstrap.ps1
       - name: CPU admission diagnostics without model launch
         if: matrix.lane == 'foundation'
         shell: pwsh

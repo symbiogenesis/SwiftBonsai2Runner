@@ -171,13 +171,14 @@ jobs:
               $receipt.Toolchain -cne 'nightly-2026-10-22-aarch64-pc-windows-msvc' -or
               $receipt.ModelExecuted -ne $false -or $receipt.ToolsSourceId -cnotmatch '^[a-f0-9]{64}$' -or
               [string]::IsNullOrWhiteSpace($receipt.CompilerIdentity) -or @($receipt.Files).Count -ne 2) { throw 'Hosted acceptance source/run identity mismatch.' }
-          Import-Module (Join-Path $env:GITHUB_WORKSPACE 'scripts/Bonsai.Common.psm1')
           foreach ($name in @('native-model-acceptance.exe', 'bonsai-tools.exe')) {
             $matching = @($receipt.Files | Where-Object Name -CEQ $name)
             $path = Join-Path $package $name
             if ($matching.Count -ne 1 -or (Get-Item -LiteralPath $path).Length -ne $matching[0].Bytes -or
                 (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash.ToLowerInvariant() -cne $matching[0].Sha256) { throw 'Hosted acceptance binary digest mismatch.' }
-            Assert-Arm64PE -Path $path
+          }
+          foreach ($name in @('native-model-acceptance.exe', 'bonsai-tools.exe')) {
+            & (Join-Path $package 'bonsai-tools.exe') artifact --json (@{ operation = 'arm64'; path = (Join-Path $package $name) } | ConvertTo-Json -Compress) | Out-Null
           }
           Copy-Item -LiteralPath $receiptPath -Destination (Join-Path $root 'evidence/hosted-build.json')
           "BONSAI_NATIVE_TEST=$(Join-Path $package 'native-model-acceptance.exe')" >> $env:GITHUB_ENV

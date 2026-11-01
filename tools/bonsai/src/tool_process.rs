@@ -37,17 +37,27 @@ pub fn run(value: Value) -> crate::Result<Value> {
         || request.arguments.len() > 4096
         || !request.executable.is_absolute()
     {
-        return Err("Use an absolute tool and a feasible bounded deadline (owner maximum 290 seconds).".into());
+        return Err(
+            "Use an absolute tool and a feasible bounded deadline (owner maximum 290 seconds)."
+                .into(),
+        );
     }
-    bonsai_artifacts::validate_external_path(&request.log_path).map_err(|error| error.to_string())?;
+    bonsai_artifacts::validate_external_path(&request.log_path)
+        .map_err(|error| error.to_string())?;
     let output = crate::startup_process::run(
         request.executable.as_os_str(),
-        &request.arguments.into_iter().map(Into::into).collect::<Vec<_>>(),
+        &request
+            .arguments
+            .into_iter()
+            .map(Into::into)
+            .collect::<Vec<_>>(),
         &request.working_directory,
         &request.environment,
         Duration::from_secs(request.timeout_seconds),
         &request.log_path,
     )?;
-    Ok(json!({"ExitCode": output.code, "StandardOutput": output.stdout,
-        "StandardError": output.stderr, "LogPath": request.log_path}))
+    Ok(
+        json!({"ExitCode": output.code, "StandardOutput": output.stdout,
+        "StandardError": output.stderr, "LogPath": request.log_path}),
+    )
 }

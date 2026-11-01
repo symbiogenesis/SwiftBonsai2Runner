@@ -733,7 +733,12 @@ impl OwnedProcess {
     /// # Errors
     /// Rejects invalid removals and every path, Job or creation failure from `start_tool`.
     pub fn start_tool_with_removed(spec: &ToolProcessSpec, removed: &[String]) -> io::Result<Self> {
-        for path in [&spec.executable, &spec.working_directory, &spec.stdout, &spec.stderr] {
+        for path in [
+            &spec.executable,
+            &spec.working_directory,
+            &spec.stdout,
+            &spec.stderr,
+        ] {
             validate_path(path)?;
         }
         if !spec.executable.is_file() || !spec.working_directory.is_dir() {

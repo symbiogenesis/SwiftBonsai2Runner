@@ -12,6 +12,7 @@ runs:
       run: |
         Set-StrictMode -Version Latest
         $ErrorActionPreference = 'Stop'
+        $PSNativeCommandUseErrorActionPreference = $true
         if (-not $IsWindows -or [Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture -ne 'Arm64') { throw 'Packaged tools require native Windows ARM64.' }
         if ($env:TOOLS_SOURCE_ID -cnotmatch '^[a-f0-9]{64}$') { throw 'An exact source identity is required.' }
         if ($env:RUNNER_ENVIRONMENT -ceq 'github-hosted' -and (-not $env:ImageOS -or -not $env:ImageVersion)) { throw 'Hosted executable caching requires the runner image identity.' }
@@ -61,6 +62,7 @@ runs:
         Set-StrictMode -Version Latest
         $ErrorActionPreference = 'Stop'
         $PSNativeCommandUseErrorActionPreference = $true
+        $PSNativeCommandUseErrorActionPreference = $true
         & $env:BONSAI_CI_PATH rust-check --root $env:GITHUB_WORKSPACE --package bonsai-tools --phase build --target $env:BONSAI_TOOLS_TARGET --evidence $env:BONSAI_TOOLS_BUILD_EVIDENCE
         $builtTool = Join-Path $env:BONSAI_TOOLS_TARGET 'release/bonsai-tools.exe'
         if (-not [IO.File]::Exists($builtTool)) { throw 'Packaged maintenance CLI build output is missing.' }
@@ -84,6 +86,7 @@ runs:
       run: |
         Set-StrictMode -Version Latest
         $ErrorActionPreference = 'Stop'
+        $PSNativeCommandUseErrorActionPreference = $true
         $tool = Join-Path $env:BONSAI_TOOLS_PACKAGE 'bonsai-tools.exe'
         $probe = Join-Path $env:BONSAI_TOOLS_PACKAGE 'bonsai-completion-test-probe.exe'
         $receipt = Get-Content -LiteralPath (Join-Path $env:BONSAI_TOOLS_PACKAGE 'receipt.json') -Raw | ConvertFrom-Json
@@ -91,9 +94,8 @@ runs:
             $receipt.Toolchain -cne 'nightly-2026-10-22-aarch64-pc-windows-msvc' -or
             $receipt.Sha256 -cne (Get-FileHash -LiteralPath $tool -Algorithm SHA256).Hash.ToLowerInvariant() -or
             $receipt.ProbeSha256 -cne (Get-FileHash -LiteralPath $probe -Algorithm SHA256).Hash.ToLowerInvariant()) { throw 'Packaged CLI digest or build identity differs.' }
-        Import-Module (Join-Path $env:GITHUB_WORKSPACE 'scripts/Bonsai.Common.psm1')
-        Assert-Arm64PE -Path $tool
-        Assert-Arm64PE -Path $probe
+        & $tool artifact --json (@{ operation = 'arm64'; path = $tool } | ConvertTo-Json -Compress) | Out-Null
+        & $tool artifact --json (@{ operation = 'arm64'; path = $probe } | ConvertTo-Json -Compress) | Out-Null
         "BONSAI_TOOLS_PATH=$tool" >> $env:GITHUB_ENV
         "BONSAI_COMPLETION_PROBE_PATH=$probe" >> $env:GITHUB_ENV
         "Exact packaged CLI cache hit: $env:EXECUTABLE_CACHE_HIT; correctness checks still run in every lane." >> $env:GITHUB_STEP_SUMMARY

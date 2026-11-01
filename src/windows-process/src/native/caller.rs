@@ -4,11 +4,10 @@ use std::io;
 use std::os::windows::io::AsRawHandle as _;
 
 use windows_sys::Win32::System::Diagnostics::ToolHelp::{
-    CreateToolhelp32Snapshot, PROCESSENTRY32W, Process32FirstW, Process32NextW,
-    TH32CS_SNAPPROCESS,
+    CreateToolhelp32Snapshot, PROCESSENTRY32W, Process32FirstW, Process32NextW, TH32CS_SNAPPROCESS,
 };
 
-pub(super) fn identity() -> io::Result<(u32, u64)> {
+pub(crate) fn identity() -> io::Result<(u32, u64)> {
     // SAFETY: A process snapshot has no pointer arguments and returns a fresh
     // owning handle. The standard OwnedHandle closes it on every return path.
     let snapshot = super::owned(unsafe { CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0) })?;
@@ -39,5 +38,7 @@ pub(super) fn identity() -> io::Result<(u32, u64)> {
         // SAFETY: The same snapshot and initialized writable entry remain live.
         found = unsafe { Process32NextW(snapshot.as_raw_handle(), &raw mut entry) };
     }
-    Err(super::invalid("Caller process inventory exceeds its bound."))
+    Err(super::invalid(
+        "Caller process inventory exceeds its bound.",
+    ))
 }

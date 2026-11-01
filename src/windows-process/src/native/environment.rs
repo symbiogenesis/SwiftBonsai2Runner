@@ -114,15 +114,31 @@ pub(super) fn build_with_removed(
     overlay: &BTreeMap<String, String>,
     removed: &[String],
 ) -> io::Result<Vec<u16>> {
-    if removed.len() > 256 || removed.iter().any(|name| name.is_empty() || name.len() > 260 || !name.is_ascii() || name.contains(['=', '\0'])) {
+    if removed.len() > 256
+        || removed.iter().any(|name| {
+            name.is_empty() || name.len() > 260 || !name.is_ascii() || name.contains(['=', '\0'])
+        })
+    {
         return Err(invalid("Invalid child environment removal selection."));
     }
     for name in removed {
-        if PROTECTED.iter().any(|protected| name.eq_ignore_ascii_case(protected)) {
-            return Err(invalid("Cannot remove a Windows system/profile environment variable."));
+        if PROTECTED
+            .iter()
+            .any(|protected| name.eq_ignore_ascii_case(protected))
+        {
+            return Err(invalid(
+                "Cannot remove a Windows system/profile environment variable.",
+            ));
         }
     }
-    build(inherited.into_iter().filter(|(name, _)| !removed.iter().any(|selected| name.to_string_lossy().eq_ignore_ascii_case(selected))), overlay)
+    build(
+        inherited.into_iter().filter(|(name, _)| {
+            !removed
+                .iter()
+                .any(|selected| name.to_string_lossy().eq_ignore_ascii_case(selected))
+        }),
+        overlay,
+    )
 }
 
 #[cfg(test)]

@@ -9,6 +9,7 @@ pub const COMMANDS: &[&str] = &[
     "chat",
     "tool-process",
     "hexagon-tools",
+    "build-tools",
     "credentials",
     "memory",
     "host-cpu",
@@ -157,6 +158,9 @@ pub mod tool_process;
 
 /// Hosted Hexagon source builds and bounded SDK inventory.
 pub mod hexagon_tools;
+
+/// Source-bound engine, capture collector and publisher candidate builds.
+pub mod build_tools;
 
 mod identity;
 mod native_startup;

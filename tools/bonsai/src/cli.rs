@@ -13,7 +13,9 @@ const MAX_QUALIFICATION_REQUEST_BYTES: u64 = 160 * 1024 * 1024;
 
 fn decode(reader: impl Read, maximum: u64) -> crate::Result<Value> {
     let mut bytes = Vec::new();
-    reader.take(maximum + 1).read_to_end(&mut bytes)
+    reader
+        .take(maximum + 1)
+        .read_to_end(&mut bytes)
         .map_err(|error| error.to_string())?;
     if u64::try_from(bytes.len()).map_err(|error| error.to_string())? > maximum {
         return Err(format!("Command request exceeds {maximum} bytes."));
@@ -54,20 +56,29 @@ pub fn request(command: &str, arguments: &[OsString]) -> crate::Result<Value> {
         MAX_REQUEST_BYTES
     };
     match arguments {
-        [option, source] if option == "--request" && source == "-" =>
-            decode(std::io::stdin().lock(), maximum),
+        [option, source] if option == "--request" && source == "-" => {
+            decode(std::io::stdin().lock(), maximum)
+        }
         [option, source] if option == "--request" => file_request(Path::new(source), maximum),
         [option, source] if option == "--json" => decode(
-            source.to_str().ok_or("Inline JSON must be Unicode.")?.as_bytes(), maximum),
+            source
+                .to_str()
+                .ok_or("Inline JSON must be Unicode.")?
+                .as_bytes(),
+            maximum,
+        ),
         _ => Err("Use --request ABSOLUTE_JSON_PATH, --request -, or --json JSON_OBJECT.".into()),
     }
 }
 
 fn repository() -> crate::Result<PathBuf> {
     let current = std::env::current_dir().map_err(|error| error.to_string())?;
-    current.ancestors().find(|path|
-        path.join("tools/bonsai/Cargo.toml").is_file()
-            && path.join("config/prism-inference.lock.json").is_file())
+    current
+        .ancestors()
+        .find(|path| {
+            path.join("tools/bonsai/Cargo.toml").is_file()
+                && path.join("config/prism-inference.lock.json").is_file()
+        })
         .map(Path::to_owned)
         .ok_or_else(|| "Run chat from a Runner checkout or supply --repository-root PATH.".into())
 }
@@ -103,12 +114,21 @@ fn chat_options(arguments: &[OsString]) -> crate::Result<Map<String, Value>> {
             "--force-build" => ("ForceBuild", true, false),
             _ => return Err(format!("Unknown chat option: {option}")),
         };
-        let value = if boolean { Value::Bool(true) } else {
-            let text = values.next().and_then(|value| value.to_str())
+        let value = if boolean {
+            Value::Bool(true)
+        } else {
+            let text = values
+                .next()
+                .and_then(|value| value.to_str())
                 .ok_or_else(|| format!("Missing Unicode value for {option}."))?;
             if numeric {
-                Value::from(text.parse::<u64>().map_err(|_| format!("{option} requires an unsigned integer."))?)
-            } else { Value::from(text) }
+                Value::from(
+                    text.parse::<u64>()
+                        .map_err(|_| format!("{option} requires an unsigned integer."))?,
+                )
+            } else {
+                Value::from(text)
+            }
         };
         if request.insert(key.into(), value).is_some() {
             return Err(format!("Duplicate chat option: {option}"));
@@ -125,11 +145,21 @@ fn chat_options(arguments: &[OsString]) -> crate::Result<Map<String, Value>> {
 pub fn chat(arguments: &[OsString]) -> crate::Result<Value> {
     let mut request = chat_options(arguments)?;
     if !request.contains_key("RepositoryRoot") {
-        request.insert("RepositoryRoot".into(), serde_json::to_value(repository()?).map_err(|error| error.to_string())?);
+        request.insert(
+            "RepositoryRoot".into(),
+            serde_json::to_value(repository()?).map_err(|error| error.to_string())?,
+        );
     }
     if !request.contains_key("DataDirectory") {
-        let data = PathBuf::from(std::env::var_os("LOCALAPPDATA").ok_or("Supply --data-directory or set LOCALAPPDATA.")?).join("SwiftBonsai2");
-        request.insert("DataDirectory".into(), serde_json::to_value(data).map_err(|error| error.to_string())?);
+        let data = PathBuf::from(
+            std::env::var_os("LOCALAPPDATA")
+                .ok_or("Supply --data-directory or set LOCALAPPDATA.")?,
+        )
+        .join("SwiftBonsai2");
+        request.insert(
+            "DataDirectory".into(),
+            serde_json::to_value(data).map_err(|error| error.to_string())?,
+        );
     }
     Ok(Value::Object(request))
 }
@@ -150,12 +180,26 @@ mod tests {
 
     #[test]
     fn chat_options_preserve_types_and_reject_ambiguous_input() -> crate::Result<()> {
-        let options = chat_options(&["--native-engine".into(), "--native-row-workers".into(), "4".into(), "--data-directory".into(), "C:\\Data with spaces".into()])?;
+        let options = chat_options(&[
+            "--native-engine".into(),
+            "--native-row-workers".into(),
+            "4".into(),
+            "--data-directory".into(),
+            "C:\\Data with spaces".into(),
+        ])?;
         assert_eq!(options["NativeEngine"], true);
         assert_eq!(options["NativeRowWorkers"], 4);
         assert_eq!(options["DataDirectory"], "C:\\Data with spaces");
-        for arguments in [vec!["--no-tts", "--no-tts"], vec!["--native-row-workers", "-1"], vec!["--data-directory"], vec!["--typo"], vec!["--no-tts", "false"]] {
-            assert!(chat_options(&arguments.into_iter().map(Into::into).collect::<Vec<_>>()).is_err());
+        for arguments in [
+            vec!["--no-tts", "--no-tts"],
+            vec!["--native-row-workers", "-1"],
+            vec!["--data-directory"],
+            vec!["--typo"],
+            vec!["--no-tts", "false"],
+        ] {
+            assert!(
+                chat_options(&arguments.into_iter().map(Into::into).collect::<Vec<_>>()).is_err()
+            );
         }
         Ok(())
     }

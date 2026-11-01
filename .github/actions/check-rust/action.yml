@@ -30,6 +30,7 @@ runs:
         Set-StrictMode -Version Latest
         $ErrorActionPreference = 'Stop'
         $PSNativeCommandUseErrorActionPreference = $true
+        $PSNativeCommandUseErrorActionPreference = $true
         & $env:BONSAI_CI_PATH rust-select --root $env:GITHUB_WORKSPACE
     - name: Reuse the pinned native Rust compiler
       if: steps.packages.outputs.has-packages == 'true'
@@ -45,6 +46,7 @@ runs:
       run: |
         Set-StrictMode -Version Latest
         $ErrorActionPreference = 'Stop'
+        $PSNativeCommandUseErrorActionPreference = $true
         $cargoHome = if ($env:CARGO_HOME) { $env:CARGO_HOME } else { Join-Path $env:USERPROFILE '.cargo' }
         $target = Join-Path $env:RUNNER_TEMP 'SwiftBonsai-Broker'
         foreach ($path in @($cargoHome, $target)) {
@@ -55,8 +57,7 @@ runs:
         $hostKey = "$env:ImageOS-$env:ImageVersion-$([Environment]::OSVersion.Version)"
         if ($env:RUST_LANE -cin @('asr', 'tts')) {
           if (-not $env:BONSAI_TOOLS_PATH) { throw 'Native speech cache selection requires the checked maintenance CLI.' }
-          Import-Module (Join-Path $env:GITHUB_WORKSPACE 'scripts/Bonsai.Tools.psm1')
-          $nativeHost = Invoke-BonsaiTool -Command speech-build -Request @{ operation = 'host' }
+          $nativeHost = & $env:BONSAI_TOOLS_PATH speech-build --json '{"operation":"host"}' | ConvertFrom-Json -AsHashtable
           if ($nativeHost.SchemaVersion -ne 1 -or $nativeHost.Kind -cne 'runner-native-speech-host' -or
               $nativeHost.HostCacheKey -cnotmatch '^[a-f0-9]{64}$') { throw 'Native speech host cache identity is unavailable.' }
           # Cargo objects and CMake's native ISA probes must both miss after a CPU
@@ -96,6 +97,7 @@ runs:
       run: |
         Set-StrictMode -Version Latest
         $ErrorActionPreference = 'Stop'
+        $PSNativeCommandUseErrorActionPreference = $true
         $evidence = Join-Path $env:RUNNER_TEMP ('SwiftBonsai-BrokerChecks-' + [guid]::NewGuid().ToString('N'))
         "BROKER_CHECK_EVIDENCE=$evidence" >> $env:GITHUB_ENV
         $PSNativeCommandUseErrorActionPreference = $true

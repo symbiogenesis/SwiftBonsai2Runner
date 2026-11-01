@@ -54,8 +54,8 @@ use windows_sys::Win32::System::Threading::{
 
 use crate::{ProcessMemory, ProcessSpec, SandboxPolicy, ToolProcessSpec, invalid};
 
-mod containment;
 pub(super) mod caller;
+mod containment;
 mod cpu;
 pub(super) mod devices;
 mod environment;
@@ -181,7 +181,9 @@ impl ParentProcess {
 }
 
 pub(super) fn process_creation_time(id: u32) -> io::Result<u64> {
-    if id == 0 { return Err(invalid("Process identity must be nonzero.")); }
+    if id == 0 {
+        return Err(invalid("Process identity must be nonzero."));
+    }
     // SAFETY: The numeric PID requests only a fresh noninheritable query handle.
     let handle = owned(unsafe { OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, 0, id) })?;
     creation_file_time(&handle)
