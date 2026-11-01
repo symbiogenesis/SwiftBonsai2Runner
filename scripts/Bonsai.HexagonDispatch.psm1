@@ -290,7 +290,7 @@ function Invoke-BonsaiHexagonBoundedCapture {
         [Parameter(Mandatory)][string]$WorkingDirectory,
         [Collections.IDictionary]$ProgressReceipt,
         [string]$ProgressPath,
-        [ValidateSet('Fixture','Session')][string]$ProgressKind = 'Fixture',
+        [ValidateSet('Fixture','Session','Compute')][string]$ProgressKind = 'Fixture',
         [switch]$ObserveLoadedDriver)
     if (($null -ne $ProgressReceipt) -ne (-not [string]::IsNullOrEmpty($ProgressPath))) { throw 'Progress receipt and path must be supplied together.' }
     $start = [Diagnostics.ProcessStartInfo]::new($Executable)
@@ -331,11 +331,13 @@ function Invoke-BonsaiHexagonBoundedCapture {
                             $progress = [Text.Encoding]::UTF8.GetString($channel.Store.ToArray())
                             $pattern = if ($ProgressKind -ceq 'Session') {
                                 '(?m)^hexagon-session:stage=(reference-process-init-entered|module-open-entered|allocation-entered|descriptor-entered|fd-mapping-entered|fd-unmapping-entered|free-entered|module-close-entered)\r?\n'
+                            } elseif ($ProgressKind -ceq 'Compute') {
+                                '(?m)^hexagon-compute:stage=([a-z][a-z0-9-]{0,95})\r?\n'
                             } else { '(?m)^hexagon-fixture:stage=(load|registry|backend-init|context|allocation|transfer|dispatch|readback)\r?\n' }
                             $markers = [regex]::Matches($progress, $pattern)
                             if ($markers.Count) {
                                 $stage = $markers[$markers.Count - 1].Groups[1].Value
-                                $stageField = if ($ProgressKind -ceq 'Session') { 'LastNativeStage' } else { 'LastFixtureStage' }
+                                $stageField = if ($ProgressKind -cin @('Session','Compute')) { 'LastNativeStage' } else { 'LastFixtureStage' }
                                 if ($ProgressReceipt[$stageField] -cne $stage) {
                                     $ProgressReceipt[$stageField] = $stage
                                     Save-BonsaiHexagonDispatchWorkerReceipt -Report $ProgressReceipt -Path $ProgressPath

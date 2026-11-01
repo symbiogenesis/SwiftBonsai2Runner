@@ -39,7 +39,7 @@ function Assert-BonsaiHexagonSessionBuild {
         [Parameter(Mandatory)][Collections.IDictionary]$SourceDigests,
         [Parameter(Mandatory)][string]$ManifestSha256,
         [Parameter(Mandatory)][string]$LockSha256)
-    $names = @('lib.rs','windows.rs','mapping.rs','session.rs','session_native.rs','session_mapping.rs','session_mapping_native.rs','query.rs','sources.json')
+    $names = @('lib.rs','windows.rs','mapping.rs','session.rs','session_native.rs','session_mapping.rs','session_mapping_native.rs','compute.rs','compute_native.rs','query.rs','sources.json')
     foreach ($digest in @($ManifestSha256, $LockSha256) + @($SourceDigests.Values)) {
         if ($digest -isnot [string] -or $digest -cnotmatch '^[a-f0-9]{64}$') { throw 'Invalid native source digest.' }
     }
@@ -279,7 +279,7 @@ function Invoke-BonsaiHexagonSessionWorker {
         $receiptStream.Position = 0
         $report.BuildReceiptSha256 = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData($receiptStream)).ToLowerInvariant()
         $sourceDigests = @{}
-        foreach ($name in @('lib.rs','windows.rs','mapping.rs','session.rs','session_native.rs','session_mapping.rs','session_mapping_native.rs','query.rs','sources.json')) {
+        foreach ($name in @('lib.rs','windows.rs','mapping.rs','session.rs','session_native.rs','session_mapping.rs','session_mapping_native.rs','compute.rs','compute_native.rs','query.rs','sources.json')) {
             $stream = [IO.FileStream]::new((Join-Path $Request.NativeSourceDirectory $name), 'Open', 'Read', 'Read'); $holds.Add($stream)
             if ($stream.Length -le 0 -or $stream.Length -gt 1MB) { throw 'Native source exceeds its byte bound.' }
             $sourceDigests[$name] = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData($stream)).ToLowerInvariant()

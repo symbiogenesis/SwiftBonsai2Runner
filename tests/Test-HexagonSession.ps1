@@ -24,7 +24,7 @@ if ($Case -ceq 'Plan') {
 } elseif ($Case -ceq 'Build') {
     $revision = '1' * 40
     $digests = @{}
-    $files = @(foreach ($name in @('lib.rs','windows.rs','mapping.rs','session.rs','session_native.rs','session_mapping.rs','session_mapping_native.rs','query.rs','sources.json')) {
+    $files = @(foreach ($name in @('lib.rs','windows.rs','mapping.rs','session.rs','session_native.rs','session_mapping.rs','session_mapping_native.rs','compute.rs','compute_native.rs','query.rs','sources.json')) {
         $digests[$name] = '2' * 64
         @{ Name = $name; Sha256 = '2' * 64 }
     })
@@ -45,7 +45,7 @@ if ($Case -ceq 'Plan') {
         $changed = $receipt.Clone(); $changed[$field] = 0
         Assert-Failure { Assert-BonsaiHexagonSessionBuild -Receipt $changed @arguments } 'Coerced hosted device claim admitted.'
     }
-    $changed = $receipt.Clone(); $changed.SourceFiles = @($files[0]) * 9
+    $changed = $receipt.Clone(); $changed.SourceFiles = @($files[0]) * 11
     Assert-Failure { Assert-BonsaiHexagonSessionBuild -Receipt $changed @arguments } 'Duplicate native source identity admitted.'
     $changed = $receipt.Clone(); $changed.Executable = $receipt.Executable.Clone(); $changed.Executable.Name = '../native-hexagon-query.exe'
     Assert-Failure { Assert-BonsaiHexagonSessionBuild -Receipt $changed @arguments } 'Native executable path traversal admitted.'

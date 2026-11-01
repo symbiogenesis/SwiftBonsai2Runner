@@ -84,7 +84,7 @@ if ($nativeCheck.ExitCode -ne 0) { throw 'Direct Rust model-free capability self
 $contractCheck = Invoke-BonsaiNativeProcess -Executable $nativeTest -WorkingDirectory $output -TimeoutSeconds 15 -OwnDescendants
 [IO.File]::WriteAllText((Join-Path $nativeOutput 'contract-tests.txt'),$contractCheck.StandardOutput + $contractCheck.StandardError)
 if ($contractCheck.ExitCode -ne 0) { throw 'Direct Rust capability contract regressions failed.' }
-$nativeInputs = @(foreach ($name in @('lib.rs','windows.rs','mapping.rs','session.rs','session_native.rs','session_mapping.rs','session_mapping_native.rs','query.rs','sources.json')) {
+$nativeInputs = @(foreach ($name in @('lib.rs','windows.rs','mapping.rs','session.rs','session_native.rs','session_mapping.rs','session_mapping_native.rs','compute.rs','compute_native.rs','query.rs','sources.json')) {
     $inputPath = Join-Path $nativeSource $name
     [ordered]@{ Name = $name; Sha256 = (Get-FileHash -LiteralPath $inputPath -Algorithm SHA256).Hash.ToLowerInvariant() }
 })
@@ -111,7 +111,7 @@ if ($packedBuild.ExitCode -ne 0) { throw 'The CPU packed-projection control fail
 $packedCheck = Invoke-BonsaiNativeProcess -Executable $packedTest -WorkingDirectory $output -TimeoutSeconds 30 -OwnDescendants
 [IO.File]::WriteAllText((Join-Path $packedOutput 'contract-tests.txt'),$packedCheck.StandardOutput + $packedCheck.StandardError)
 if ($packedCheck.ExitCode -ne 0) { throw 'The CPU packed-projection contract regressions failed.' }
-$packedInputs = @(foreach ($name in @('packed_projection.rs','packed_tiles.rs','q2_integer.rs','packed-sources.json','verify_packed_fixture.py','fixtures/swift-q8k-parity.bin','fixtures/swift-q8k-parity.json')) {
+$packedInputs = @(foreach ($name in @('packed_projection.rs','packed_tiles.rs','q2_integer.rs','q2_projection.rs','packed-sources.json','verify_packed_fixture.py','fixtures/swift-q8k-parity.bin','fixtures/swift-q8k-parity.json')) {
     [ordered]@{ Name = $name; Sha256 = (Get-FileHash -LiteralPath (Join-Path $repo ('tools/hexagon/' + $name)) -Algorithm SHA256).Hash.ToLowerInvariant() }
 })
 [ordered]@{
