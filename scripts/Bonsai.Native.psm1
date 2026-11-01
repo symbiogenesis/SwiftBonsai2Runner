@@ -85,6 +85,8 @@ namespace Bonsai
             return StopCore(milliseconds, 250);
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1031:Do not catch general exception types",
+            Justification = "Best-effort survivor diagnostics must never prevent termination of the owned Job; no exception is accepted as cleanup success.")]
         private bool StopCore(int milliseconds, int naturalExitMilliseconds)
         {
             ArgumentOutOfRangeException.ThrowIfNegativeOrZero(milliseconds);
@@ -185,6 +187,7 @@ namespace Bonsai
 
         private static string SafeProcessName(string name)
         {
+            ArgumentNullException.ThrowIfNull(name);
             if (name.Length == 0) { return "unknown"; }
             int length = Math.Min(name.Length, 64);
             StringBuilder result = new StringBuilder(length);
