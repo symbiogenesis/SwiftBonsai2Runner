@@ -6,7 +6,7 @@
 
 mod identity;
 
-use identity::validate_native_identity;
+use identity::{WorkerReadiness, validate_native_identity};
 
 use crate::{
     artifacts::VerifiedArtifacts,
@@ -550,6 +550,7 @@ impl LaunchConfig {
                 process.id(),
                 self.uses_repacked_ptq1(),
                 self.use_abliterate_lora,
+                self.native_row_workers,
             )
             .await
         {
@@ -835,12 +836,16 @@ async fn native_identity(
     process_id: u32,
     repacked: bool,
     adapter: bool,
+    row_workers: u8,
 ) -> bool {
     timeout(Duration::from_secs(2), async {
+        let version = crate::inference::pinned_version()
+            .map_err(|_| io::Error::other("native runtime pin mismatch"))?;
         validate_native_identity(
             &exchange(port, "/v1/models", Some(key), process_id).await?,
             repacked,
             adapter,
+            WorkerReadiness::for_version(&version, row_workers),
         )
     })
     .await
@@ -1332,12 +1337,13 @@ mod tests {
     fn native_readiness_requires_exact_model_template_runtime_context_and_seed()
     -> std::io::Result<()> {
         use serde_json::json;
+        let workers = super::WorkerReadiness::for_version("0.1.10", 1);
         let model = json!({"id":"Swift-Bonsai-2-PQ2_0","object":"model",
             "model_sha256":crate::inference::MODEL_SHA256,
             "template_sha256":crate::inference::TEMPLATE_SHA256,
             "runtime":"prism-inference","context_tokens":8192,"seed":42});
         let body = serde_json::to_string(&json!({"data":[model]}))?;
-        assert!(super::validate_native_identity(&response(&body), false, false).is_ok());
+        assert!(super::validate_native_identity(&response(&body), false, false, workers).is_ok());
         for (field, changed) in [
             ("id", json!("foreign")),
             ("object", json!("list")),
@@ -1351,7 +1357,7 @@ mod tests {
             changed_model[field] = changed;
             let body = serde_json::to_string(&json!({"data":[changed_model]}))?;
             assert!(
-                super::validate_native_identity(&response(&body), false, false).is_err(),
+                super::validate_native_identity(&response(&body), false, false, workers).is_err(),
                 "{field}"
             );
         }
@@ -1361,7 +1367,9 @@ mod tests {
             json!([["positional"]]),
         ] {
             let body = serde_json::to_string(&json!({"data":data}))?;
-            assert!(super::validate_native_identity(&response(&body), false, false).is_err());
+            assert!(
+                super::validate_native_identity(&response(&body), false, false, workers).is_err()
+            );
         }
         for field in [
             "weight_representation",
@@ -1373,12 +1381,14 @@ mod tests {
             changed_model[field] = json!(null);
             let body = serde_json::to_string(&json!({"data":[changed_model]}))?;
             assert!(
-                super::validate_native_identity(&response(&body), false, false).is_err(),
+                super::validate_native_identity(&response(&body), false, false, workers).is_err(),
                 "{field}"
             );
         }
         let duplicate = body.replace("\"seed\":42", "\"seed\":42,\"seed\":42");
-        assert!(super::validate_native_identity(&response(&duplicate), false, false).is_err());
+        assert!(
+            super::validate_native_identity(&response(&duplicate), false, false, workers).is_err()
+        );
         Ok(())
     }
 
@@ -1388,6 +1398,7 @@ mod tests {
         use super::validate_native_identity;
         use serde_json::json;
         use std::io;
+        let workers = super::WorkerReadiness::for_version("0.1.10", 1);
         for (repacked, adapter) in [(true, false), (false, true), (true, true)] {
             let mut model = json!({
                 "id": if repacked { "Swift-Bonsai-2-current-repacked-PTQ1_0" } else { "Swift-Bonsai-2-PQ2_0" },
@@ -1403,9 +1414,13 @@ mod tests {
                 model["abliteration_scale_range"] = json!([0, 2]);
             }
             let body = serde_json::to_string(&json!({"data":[model]}))?;
-            assert!(validate_native_identity(&response(&body), repacked, adapter).is_ok());
-            assert!(validate_native_identity(&response(&body), !repacked, adapter).is_err());
-            assert!(validate_native_identity(&response(&body), repacked, !adapter).is_err());
+            assert!(validate_native_identity(&response(&body), repacked, adapter, workers).is_ok());
+            assert!(
+                validate_native_identity(&response(&body), !repacked, adapter, workers).is_err()
+            );
+            assert!(
+                validate_native_identity(&response(&body), repacked, !adapter, workers).is_err()
+            );
             for (field, value) in [
                 ("weight_representation", json!("other")),
                 ("adapter_sha256", json!("0".repeat(64))),
@@ -1417,7 +1432,7 @@ mod tests {
                 changed[field] = value;
                 let body = serde_json::to_string(&json!({"data":[changed]}))?;
                 assert!(
-                    validate_native_identity(&response(&body), repacked, adapter).is_err(),
+                    validate_native_identity(&response(&body), repacked, adapter, workers).is_err(),
                     "{field}"
                 );
             }
@@ -1433,7 +1448,7 @@ mod tests {
                     .remove(field);
                 let body = serde_json::to_string(&json!({"data":[changed]}))?;
                 assert!(
-                    validate_native_identity(&response(&body), repacked, adapter).is_err(),
+                    validate_native_identity(&response(&body), repacked, adapter, workers).is_err(),
                     "{field}"
                 );
             }

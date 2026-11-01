@@ -139,6 +139,10 @@ fn row_workers_supported(version: &str, workers: u8) -> Result<(), LaunchError> 
     }
 }
 
+pub(super) fn pinned_version() -> Result<String, LaunchError> {
+    release(LOCK).map(|release| release.version)
+}
+
 pub(super) fn verify(data: &Path, row_workers: u8) -> Result<(PathBuf, VerifiedFile), LaunchError> {
     let release = release(LOCK)?;
     row_workers_supported(&release.version, row_workers)?;

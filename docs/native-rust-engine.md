@@ -85,6 +85,16 @@ changes preserve sampler draw progression; explicit session reset reseeds it. Th
 readiness shape remains supported. There is no inference-library dependency or
 engine switch after failure.
 
+Private readiness may additionally report integer `row_workers`; when present,
+Runner requires it to match the selected one- or four-worker policy. Only the
+reviewed 0.1.8, 0.1.9 and 0.1.10 pins may omit the field; a future pin must report
+it. Null, coerced, duplicate, unsupported and mismatched values reject readiness.
+This identifies the installed projection-worker budget, without proving executed
+parallel operations, active utilization or device benefit. The current 0.1.10
+release omits this observation, so its worker count remains configured rather
+than independently observed. This consumer preparation changes no release pin,
+default or admission limit, and exposes no public request override.
+
 This service implementation does not qualify PTQ1 or adapters for release. Cache
 reuse, speculation and offload remain outside Runner's serving subset. The
 upstream service's explicit latest-prefix option is separate from that subset.

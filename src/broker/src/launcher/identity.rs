@@ -3,6 +3,31 @@
 use serde::{Deserialize, Deserializer};
 use std::io;
 
+/// The selected private projection-worker budget, separate from execution evidence.
+#[derive(Clone, Copy)]
+pub(super) struct WorkerReadiness {
+    expected: u8,
+    legacy_missing_allowed: bool,
+}
+
+impl WorkerReadiness {
+    pub(super) fn for_version(version: &str, expected: u8) -> Self {
+        Self {
+            expected,
+            // Only these reviewed historical releases omit this identity. A
+            // later pin must report its graph's effective worker budget.
+            legacy_missing_allowed: matches!(version, "0.1.8" | "0.1.9" | "0.1.10"),
+        }
+    }
+
+    fn accepts(self, observed: Option<u8>) -> bool {
+        matches!(self.expected, 1 | 4)
+            && observed.map_or(self.legacy_missing_allowed, |workers| {
+                workers == self.expected
+            })
+    }
+}
+
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Models {
@@ -39,6 +64,8 @@ struct NativeModel {
     context_tokens: usize,
     seed: u32,
     #[serde(default, deserialize_with = "present")]
+    row_workers: Option<u8>,
+    #[serde(default, deserialize_with = "present")]
     weight_representation: Option<String>,
     #[serde(default)]
     adapter_sha256: AdapterIdentity,
@@ -52,6 +79,7 @@ pub(super) fn validate_native_identity(
     bytes: &[u8],
     repacked: bool,
     adapter: bool,
+    workers: WorkerReadiness,
 ) -> io::Result<()> {
     let body = super::validate_response(bytes, 200)?;
     let crate::Object(models): crate::Object<Models> =
@@ -91,9 +119,109 @@ pub(super) fn validate_native_identity(
         || model.runtime != "prism-inference"
         || model.context_tokens != crate::CONTEXT_TOKENS
         || model.seed != 42
+        || !workers.accepts(model.row_workers)
         || !extensions_match
     {
         return Err(io::Error::other("native model readiness identity mismatch"));
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{WorkerReadiness, validate_native_identity};
+
+    fn response(workers: Option<&str>) -> Vec<u8> {
+        let extension =
+            workers.map_or_else(String::new, |workers| format!(",\"row_workers\":{workers}"));
+        let body = format!(
+            "{{\"data\":[{{\"id\":\"Swift-Bonsai-2-PQ2_0\",\"object\":\"model\",\"model_sha256\":\"{}\",\"template_sha256\":\"{}\",\"runtime\":\"prism-inference\",\"context_tokens\":8192,\"seed\":42{extension}}}]}}",
+            crate::inference::MODEL_SHA256,
+            crate::inference::TEMPLATE_SHA256,
+        );
+        format!(
+            "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\n\r\n{body}",
+            body.len()
+        )
+        .into_bytes()
+    }
+
+    #[test]
+    fn worker_readiness_missing_field_is_limited_to_exact_legacy_pins() {
+        for (version, legacy) in [
+            ("0.1.8", true),
+            ("0.1.9", true),
+            ("0.1.10", true),
+            ("0.1.11", false),
+            ("1.0.0", false),
+            ("0.1.010", false),
+            ("v0.1.10", false),
+            ("", false),
+        ] {
+            for expected in [1, 4] {
+                let policy = WorkerReadiness::for_version(version, expected);
+                assert_eq!(
+                    validate_native_identity(&response(None), false, false, policy).is_ok(),
+                    legacy,
+                    "{version}/{expected}"
+                );
+                assert!(
+                    validate_native_identity(
+                        &response(Some(&expected.to_string())),
+                        false,
+                        false,
+                        policy,
+                    )
+                    .is_ok()
+                );
+                let other = if expected == 1 { "4" } else { "1" };
+                assert!(
+                    validate_native_identity(&response(Some(other)), false, false, policy).is_err()
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn worker_readiness_rejects_coercion_unbounded_counts_and_duplicate_fields() {
+        for version in ["0.1.10", "0.1.11"] {
+            let policy = WorkerReadiness::for_version(version, 4);
+            for invalid in [
+                "null",
+                "\"4\"",
+                "0",
+                "2",
+                "16",
+                "17",
+                "-1",
+                "256",
+                "18446744073709551616",
+                "4.0",
+                "true",
+                "[]",
+                "{}",
+                "4,\"row_workers\":4",
+                "4,\"row_workers\":null",
+            ] {
+                assert!(
+                    validate_native_identity(&response(Some(invalid)), false, false, policy)
+                        .is_err(),
+                    "{version}/{invalid}"
+                );
+            }
+        }
+        for expected in [0, 2, 16, 255] {
+            let policy = WorkerReadiness::for_version("0.1.10", expected);
+            assert!(validate_native_identity(&response(None), false, false, policy).is_err());
+            assert!(
+                validate_native_identity(
+                    &response(Some(&expected.to_string())),
+                    false,
+                    false,
+                    policy,
+                )
+                .is_err()
+            );
+        }
+    }
 }
