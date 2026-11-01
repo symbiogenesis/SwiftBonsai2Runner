@@ -189,7 +189,7 @@ verdict. Benchmarks and full suites remain CI-only.
 ### Hosted headless comparator preparation
 
 The explicit [hosted candidate workflow](../../.github/workflows/publisher-headless-candidate.yml)
-uses [Build-HeadlessPublisherCandidate.ps1](../../scripts/Build-HeadlessPublisherCandidate.ps1)
+uses the native [build-tools headless publisher operation](../../tools/bonsai/src/build_tools/headless.rs)
 to apply this exact patch to the verified source archive. It builds separate
 `llama-completion`, `llama-server`, `llama-bench` and argument-fixture executables.
 The existing installed publisher bundle, Runner runtime locks, app selection,

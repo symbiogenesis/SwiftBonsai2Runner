@@ -31,7 +31,7 @@ jobs:
           $ErrorActionPreference = 'Stop'
           $PSNativeCommandUseErrorActionPreference = $true
           python -B tools/row-parallel/test_compare.py
-          ./tests/Test-NativeRowQualification.ps1 -Case HostedGuard
+          cargo +nightly-2026-10-22 test --locked --release --target-dir $env:BONSAI_TOOLS_TARGET -p bonsai-tools --lib build_tools::
           cargo +nightly-2026-10-22 test --locked --release --target-dir $env:BONSAI_TOOLS_TARGET -p bonsai-tools --lib native_qualification::tests
       - name: Prepare source-bound parallel-capable checker and checked maintenance tools
         shell: pwsh
@@ -43,7 +43,7 @@ jobs:
           $ErrorActionPreference = 'Stop'
           $PSNativeCommandUseErrorActionPreference = $true
           $capture = Join-Path $env:RUNNER_TEMP 'SwiftBonsai-RowCaptureTools'
-          & (Join-Path $env:GITHUB_WORKSPACE 'scripts/Build-NativeRowCaptureTools.ps1') -OutputDirectory $capture | ConvertTo-Json -Depth 6
+          & $env:BONSAI_TOOLS_PATH build-tools --json (@{ operation = 'row-capture'; repositoryRoot = $env:GITHUB_WORKSPACE; outputDirectory = $capture } | ConvertTo-Json -Compress)
           $package = Join-Path $env:RUNNER_TEMP 'SwiftBonsai-CheckedRowTools'
           [void][IO.Directory]::CreateDirectory($package)
           $tool = Join-Path $package 'bonsai-tools.exe'

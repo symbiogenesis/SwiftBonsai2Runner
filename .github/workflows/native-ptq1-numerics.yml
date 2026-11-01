@@ -35,12 +35,9 @@ jobs:
       - uses: ./.github/actions/rust-toolchain
         with:
           toolchain: nightly-2026-10-22-aarch64-pc-windows-msvc
-      - name: Check the hosted-only build boundary
+      - name: Check native hosted build policy and bounded failure evidence
         shell: pwsh
-        run: ./tests/Test-NativePtq1CaptureTools.ps1 -Case HostedGuard
-      - name: Check bounded compiler and failure evidence
-        shell: pwsh
-        run: ./tests/Test-NativePtq1CaptureTools.ps1 -Case BuildEvidence
+        run: cargo +nightly-2026-10-22 test --locked --release --target-dir $env:BONSAI_TOOLS_TARGET -p bonsai-tools --lib build_tools::
       - name: Check native source, receipt and original-deadline policy
         shell: pwsh
         run: cargo +nightly-2026-10-22 test --locked --release --target-dir $env:BONSAI_TOOLS_TARGET -p bonsai-tools --lib native_qualification::tests
@@ -66,7 +63,7 @@ jobs:
           $ErrorActionPreference = 'Stop'
           $PSNativeCommandUseErrorActionPreference = $true
           $capture = Join-Path $env:RUNNER_TEMP 'SwiftBonsai-Ptq1CaptureTools'
-          & (Join-Path $env:GITHUB_WORKSPACE 'scripts/Build-NativePtq1CaptureTools.ps1') -OutputDirectory $capture | ConvertTo-Json -Depth 5
+          & $env:BONSAI_TOOLS_PATH build-tools --json (@{ operation = 'ptq1-capture'; repositoryRoot = $env:GITHUB_WORKSPACE; outputDirectory = $capture } | ConvertTo-Json -Compress)
           $package = Join-Path $env:RUNNER_TEMP 'SwiftBonsai-CheckedTools'
           [void][IO.Directory]::CreateDirectory($package)
           $tool = Join-Path $package 'bonsai-tools.exe'

@@ -675,7 +675,7 @@ the supported Visual Studio 2022 generator. The builder installs no toolchain.
 $doctor = ./scripts/Doctor.ps1 -PassThru
 $gitPath = ($doctor.Tools | Where-Object Name -eq Git).Path
 $cmakePath = ($doctor.Tools | Where-Object Name -eq CMake).Path
-./scripts/Build-Engine.ps1 -DataDirectory $data -GitPath $gitPath -CMakePath $cmakePath -FetchSource
+& $env:BONSAI_TOOLS_PATH build-tools --json (@{ operation = 'engine'; repositoryRoot = $PWD.Path; dataDirectory = $data; gitPath = $gitPath; cmakePath = $cmakePath; fetchSource = $true } | ConvertTo-Json -Compress)
 ```
 
 The builder fetches only the pinned commit, requires an exact clean checkout on

@@ -6,7 +6,7 @@ on:
       - 'tools/bonsai/**'
       - 'src/artifacts/**'
       - 'src/broker/**'
-      - 'tests/Test-NativePtq1CaptureTools.ps1'
+      - 'tools/bonsai/src/build_tools/**'
       - '.github/workflows/runtime-parity-candidate.yml'
   workflow_dispatch:
 permissions:

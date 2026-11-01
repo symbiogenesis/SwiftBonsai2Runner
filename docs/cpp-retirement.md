@@ -161,8 +161,8 @@ the downloaded header, generated shim or linked engine that still contains it.
 Remove retired paths from `speech-tts/build*.rs`, native-speech provisioning/cache
 actions and scripts, `native_startup.rs`/`speech_build.rs`, compiler/source locks,
 Cargo edges and package notices where no longer required. Retire operative publisher
-routes in `runtime.lock.json`, `swift-assessment.lock.json`, `Build-Engine.ps1`,
-`Build-HeadlessPublisherCandidate.ps1`, native capture tooling and candidate patches
+routes in `runtime.lock.json`, `swift-assessment.lock.json`, Rust `build-tools`
+engine/headless-publisher operations, native capture tooling and candidate patches
 only after their replacement/fallback and distribution gates pass.
 
 The PTQ1 Rust collector still uses the pinned native reference DLLs. Its source

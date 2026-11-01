@@ -10,7 +10,7 @@ use std::{
     fs::{self, File, OpenOptions},
     io::{Seek as _, SeekFrom},
     path::{Path, PathBuf},
-    time::Duration,
+    time::{Duration, Instant},
 };
 
 use bonsai_artifacts::{
@@ -229,6 +229,74 @@ pub(crate) fn receive(
     working: &Path,
 ) -> crate::Result<()> {
     receive_with(uri, path, bytes, sha256, working, transfer)
+}
+
+/// Retains one aggregate transfer allowance across resume/restart attempts.
+pub(crate) fn receive_with_timeout(
+    uri: &str,
+    path: &Path,
+    bytes: u64,
+    sha256: &str,
+    working: &Path,
+    timeout: Duration,
+) -> crate::Result<()> {
+    let started = Instant::now();
+    receive_with(
+        uri,
+        path,
+        bytes,
+        sha256,
+        working,
+        |uri, partial, offset, bytes, working| {
+            let remaining = || {
+                crate::startup_cancel::checkpoint()?;
+                timeout
+                    .checked_sub(started.elapsed())
+                    .filter(|value| !value.is_zero())
+                    .ok_or_else(|| "Pinned download exceeded its aggregate allowance.".to_owned())
+            };
+            remaining()?;
+            let curl = download_tool(working)?;
+            let mut current_offset = offset;
+            loop {
+                let allowance = remaining()?;
+                let mut arguments = curl_arguments(uri, partial, current_offset, bytes);
+                let position = arguments
+                    .iter()
+                    .position(|value| value == "--max-time")
+                    .ok_or("Missing download deadline argument.")?;
+                arguments[position + 1] = allowance.as_secs_f64().to_string().into();
+                let result = crate::startup_process::run_with_checkpoint(
+                    curl.as_os_str(),
+                    &arguments,
+                    working,
+                    &BTreeMap::new(),
+                    allowance,
+                    &working.join(format!("download-{}.log", crate::startup_process::unique())),
+                    || remaining().map(|_| ()),
+                )?;
+                if result.code == 33 && current_offset > 0 {
+                    validate_external_path(partial).map_err(|error| error.to_string())?;
+                    OpenOptions::new()
+                        .write(true)
+                        .truncate(true)
+                        .open(partial)
+                        .map_err(|error| error.to_string())?;
+                    current_offset = 0;
+                    continue;
+                }
+                if result.code != 0 {
+                    return Err(format!(
+                        "Pinned download failed ({}): {}; partial bytes retained at {}",
+                        result.code,
+                        result.stderr.trim(),
+                        partial.display()
+                    ));
+                }
+                return Ok(());
+            }
+        },
+    )
 }
 
 fn receive_with(
