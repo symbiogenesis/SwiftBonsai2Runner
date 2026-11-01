@@ -255,6 +255,13 @@ workload pending even when visible text arrived. The receipt preserves the text,
 reported usage and fixed failure reason before owned cleanup; events and bytes
 cannot replace worker token accounting.
 
+Adapter lifecycle and paired-response receipts distinguish configured row workers
+from the effective graph budget verified at readiness. Only the reviewed exact
+`0.1.11` release records that budget as independently observed after successful
+strict readiness, bound to the compiled runtime lock and selected one/four-worker
+policy. Startup receipts and legacy releases retain an unobserved/null result.
+This observes neither executing threads nor parallel operations or device benefit.
+
 Optional supplied-history receipts persist context rejection and the completed
 history stream separately before same-owner reuse. Cancellation or failure of a
 later step leaves the workload pending while preserving those observations.
@@ -279,6 +286,7 @@ Model-free acceptance regressions:
 | `native_adapter_scale_history_profile_requires_separate_explicit_selection` | Scale/history lifecycle is a distinct original-PQ2 row4 selection; the one-stream smoke and no-extra-workload restrictions remain |
 | `native_adapter_scale_history_retains_partial_steps_without_qualifying_missing_work` | Real model-free HTTP peers verify zero/rejected/changed-back scales and supplied history; cancelling after zero or rejection preserves completed receipts without qualifying later work; exhausted request reserve starts no HTTP work |
 | `native_adapter_scale_history_requires_reported_bounded_terminal_usage` | Model-free zero/history HTTP responses with missing, zero, excessive or inconsistent usage retain exact visible output and pending status for each explicit worker policy; valid earlier steps remain recorded |
+| `native_worker_receipts_require_exact_release_and_verified_readiness` | Exact reviewed release admission and worker identities; no observed budget before readiness, for legacy/missing versions or invalid counts; mutable report fields cannot replace the compiled runtime identity |
 | `native_adapter_request_budget_drops_inflight_work_before_owned_cleanup` | Paused-time cancellation drops request-owned state before Stop and preserves the complete cleanup allowance; no request starts at or below the reserve and successful work retains the remaining budget |
 
 ### Foundation and routing

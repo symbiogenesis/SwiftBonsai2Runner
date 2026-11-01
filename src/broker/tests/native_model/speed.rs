@@ -162,6 +162,7 @@ async fn paired_requests(
             "rowWorkerCountIndependentlyObserved":false,
             "verifiedReadinessObserved":true, "startupMilliseconds":startup_ms,
             "stream":null, "cleanup":null}));
+        record_worker_readiness(&mut report["samples"][index], profile.row_workers, true);
         report["phase"] = json!(format!("row{}-request", profile.row_workers));
         save_acceptance_report(evidence, report);
         let expired =

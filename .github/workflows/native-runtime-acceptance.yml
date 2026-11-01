@@ -60,6 +60,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Hosted acceptance case inventory failed.' }
           foreach ($case in @('native_profile_selection_and_scale_receipts_preserve_bounded_scope', 'native_row4_profile_is_explicit_original_pq2_and_one_stream_only',
               'native_owned_resource_receipt_preserves_scopes_and_missing_queries',
+              'native_worker_receipts_require_exact_release_and_verified_readiness',
               'speed::native_speed_metric_uses_reported_tokens_and_complete_request_time',
               'speed::native_speed_comparison_requires_matched_output_usage_and_cleanup',
               'speed::native_speed_stream_waits_for_complete_framing_and_uses_usage_not_events',

@@ -178,6 +178,7 @@ async fn paired_responses(
             "modelIdentity":model_identity(profile.repacked), "configuredNativeRowWorkers":profile.row_workers,
             "rowWorkerCountIndependentlyObserved":false, "verifiedReadinessObserved":false,
             "startupMilliseconds":null, "stream":null, "cleanup":null}));
+        record_worker_readiness(&mut report["samples"][index], profile.row_workers, false);
         report["phase"] = json!(format!("arm-{index}-startup"));
         save_acceptance_report(evidence, report);
         let started = tokio::time::Instant::now();
@@ -189,7 +190,7 @@ async fn paired_responses(
         };
         report["samples"][index]["startupMilliseconds"] =
             json!(started.elapsed().as_secs_f64() * 1000.0);
-        report["samples"][index]["verifiedReadinessObserved"] = json!(true);
+        record_worker_readiness(&mut report["samples"][index], profile.row_workers, true);
         let port = owner.port();
         let credential = key(&owner);
         let (stop, stopped) = oneshot::channel();

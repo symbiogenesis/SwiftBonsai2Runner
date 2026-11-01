@@ -132,6 +132,81 @@ const PQ2_ADAPTER_LIFECYCLE_PROFILE: AdapterProfile = AdapterProfile {
     required_scale_history: true,
 };
 
+fn native_four_worker_release(version: Option<&str>) -> bool {
+    matches!(version, Some("0.1.9" | "0.1.10" | "0.1.11"))
+}
+
+fn worker_readiness_receipt(version: Option<&str>, expected: u8, verified: bool) -> Value {
+    // The 0.1.11 owner requires a matching field from the instantiated graph.
+    // Historical versions may omit it, and later versions need another review.
+    // A configured argument or a receipt written before start cannot supply it.
+    let observed = version == Some("0.1.11") && matches!(expected, 1 | 4) && verified;
+    json!({"configuredNativeRowWorkers":expected, "verifiedReadinessObserved":verified,
+        "rowWorkerReadinessVersion":version,
+        "rowWorkerCountIndependentlyObserved":observed,
+        "observedNativeRowWorkers":observed.then_some(expected),
+        "rowWorkerObservationScope":"effective configured graph budget verified by private readiness; no executing-thread, parallel-operation or benefit evidence"})
+}
+
+fn record_worker_readiness(report: &mut Value, expected: u8, verified: bool) {
+    // Read the same compiled lock as LaunchConfig; never trust a mutable report
+    // field to turn a legacy or missing readiness result into observed identity.
+    let runtime_lock: Value =
+        serde_json::from_str(include_str!("../../../config/prism-inference.lock.json")).unwrap();
+    let observation =
+        worker_readiness_receipt(runtime_lock["version"].as_str(), expected, verified);
+    report
+        .as_object_mut()
+        .unwrap()
+        .extend(observation.as_object().unwrap().clone());
+}
+
+#[test]
+fn native_worker_receipts_require_exact_release_and_verified_readiness() {
+    for (version, four_admitted, worker_field_required) in [
+        (Some("0.1.8"), false, false),
+        (Some("0.1.9"), true, false),
+        (Some("0.1.10"), true, false),
+        (Some("0.1.11"), true, true),
+        (Some("0.1.12"), false, false),
+        (Some("v0.1.11"), false, false),
+        (Some("0.1.11-dev"), false, false),
+        (Some("0.1.11.0"), false, false),
+        (Some("0.1.011"), false, false),
+        (Some(""), false, false),
+        (None, false, false),
+    ] {
+        assert_eq!(native_four_worker_release(version), four_admitted);
+        for expected in [0, 1, 2, 4, 16] {
+            for verified in [false, true] {
+                let observed = worker_field_required && matches!(expected, 1 | 4) && verified;
+                let receipt = worker_readiness_receipt(version, expected, verified);
+                assert_eq!(receipt["rowWorkerReadinessVersion"], json!(version));
+                assert_eq!(receipt["verifiedReadinessObserved"], verified);
+                assert_eq!(receipt["configuredNativeRowWorkers"], expected);
+                assert_eq!(receipt["rowWorkerCountIndependentlyObserved"], observed);
+                assert_eq!(
+                    receipt["observedNativeRowWorkers"],
+                    json!(observed.then_some(expected))
+                );
+            }
+        }
+    }
+    let runtime_lock: Value =
+        serde_json::from_str(include_str!("../../../config/prism-inference.lock.json")).unwrap();
+    let mut report = json!({"runtimeLock":{"version":"untrusted-report-value"},
+        "rowWorkerCountIndependentlyObserved":true,"observedNativeRowWorkers":4});
+    record_worker_readiness(&mut report, 4, false);
+    assert_eq!(report["rowWorkerReadinessVersion"], runtime_lock["version"]);
+    assert_eq!(report["rowWorkerCountIndependentlyObserved"], false);
+    assert_eq!(report["observedNativeRowWorkers"], Value::Null);
+    record_worker_readiness(&mut report, 4, true);
+    assert_eq!(
+        report["rowWorkerCountIndependentlyObserved"],
+        runtime_lock["version"] == "0.1.11"
+    );
+}
+
 #[derive(Debug, PartialEq, Eq)]
 struct StreamSummary {
     finish_reason: String,
@@ -1622,6 +1697,7 @@ async fn bounded_adapter_acceptance(
     report: &mut Value,
 ) {
     let deadline = tokio::time::Instant::now() + budget;
+    record_worker_readiness(report, profile.row_workers, false);
     if profile.required_scale_history {
         report["scaleHistoryWorkload"] = pending_adapter_scale_history();
     }
@@ -1630,7 +1706,7 @@ async fn bounded_adapter_acceptance(
     let startup_started = tokio::time::Instant::now();
     let owner = start_adapter(profile, data, evidence).await;
     report["startupMilliseconds"] = json!(startup_started.elapsed().as_secs_f64() * 1000.0);
-    report["verifiedReadinessObserved"] = json!(true);
+    record_worker_readiness(report, profile.row_workers, true);
     report["adapterEnabled"] = json!(true);
     begin_adapter_requests(profile, evidence, report);
     let port = owner.port();
@@ -2658,7 +2734,7 @@ fn pinned_native_pq2_adapter_row4_starts_and_streams_within_device_budget() {
     let runtime_lock =
         serde_json::from_str::<Value>(include_str!("../../../config/prism-inference.lock.json"))
             .unwrap();
-    assert_eq!(runtime_lock["version"], "0.1.10");
+    assert!(native_four_worker_release(runtime_lock["version"].as_str()));
     let data = env::var_os("BONSAI_NATIVE_DATA").unwrap();
     let evidence = env::var_os("BONSAI_NATIVE_EVIDENCE").unwrap();
     let evidence = Path::new(&evidence);
