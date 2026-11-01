@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "kind": "hosted-synthetic-ownership-conhost-investigation",
+  "recordedDate": "2026-11-01",
+  "reviewer": "Codex:/root/review",
+  "status": "fixture-source-corrected-hosted-validation-pending",
+  "scope": "Read-only review of retained hosted diagnostics and a test-probe-only linker subsystem change. No owner-device processes, models, tests or builds were executed.",
+  "failure": {
+    "repository": "symbiogenesis/SwiftBonsai2Runner",
+    "revision": "69e44cf6566c2225eb4a055d2c0dcf37e6ed3f07",
+    "runId": "41333126433",
+    "runUrl": "https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41333126433",
+    "conclusion": "failure",
+    "artifactName": "broker-checks-maintenance-41333126433",
+    "test": "stop_and_drop_kill_descendants_and_observe_memory",
+    "expectedActiveProcesses": 2,
+    "observedTotalProcesses": 4,
+    "observedActiveProcesses": 4,
+    "observedLimitTerminatedProcesses": 0,
+    "retainedDiagnostics": [
+      {
+        "name": "packages-test.stdout",
+        "sha256": "aba3a9a0709f7ce27ab4c5427a8a7fa684c49f0124b44a385b81795b29b21a3f"
+      },
+      {
+        "name": "rust-checks.json",
+        "sha256": "93ccc617fd7727ee82f39e174b8f0ad74c84e1c8421e37b7846bdbf319cb7365"
+      }
+    ],
+    "members": [
+      { "pid": 8744, "parentPid": 6852, "basename": "bonsai-process-test-probe.exe", "exitCode": 259 },
+      { "pid": 6224, "parentPid": 8744, "basename": "conhost.exe", "exitCode": 259 },
+      { "pid": 1288, "parentPid": 8744, "basename": "bonsai-process-test-probe.exe", "exitCode": 259 },
+      { "pid": 2060, "parentPid": 1288, "basename": "conhost.exe", "exitCode": 259 }
+    ],
+    "interpretation": "Retained exact Job membership and process-snapshot metadata identify two conhost.exe children, one under each synthetic probe node. The count of four comprises real members; waiting for accounting to settle cannot remove these live hosts. Basenames and parent IDs do not establish mapped executable provenance or explain every Windows console-creation condition."
+  },
+  "sourceCorrection": {
+    "file": "src/windows-process/tests/support/probe.rs",
+    "attribute": "#![windows_subsystem = \"windows\"]",
+    "binary": "bonsai-process-test-probe",
+    "feature": "test-probe",
+    "reason": "Every synthetic mode uses files, sockets, process APIs or redirected/null standard handles and requires no console. Linking this disposable fixture with the Windows subsystem avoids requesting a startup console while preserving redirected handle inheritance.",
+    "productionLaunchFlagsChanged": false,
+    "productionSubsystemChanged": false,
+    "ownershipAssertionsRelaxed": false,
+    "jobLimitsChanged": false,
+    "existingExactTwoProcessAndEmptyAfterStopChecksRetained": true,
+    "hostedFixtureValidation": "pending"
+  },
+  "primaryReferences": [
+    "https://doc.rust-lang.org/reference/runtime.html#the-windows_subsystem-attribute",
+    "https://learn.microsoft.com/en-us/windows/console/creation-of-a-console",
+    "https://learn.microsoft.com/en-us/windows/console/attachconsole"
+  ],
+  "actualDeviceOwnershipQualified": false,
+  "defaultMayChange": false
+}

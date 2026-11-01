@@ -366,12 +366,11 @@ fn stop_and_drop_kill_descendants_and_observe_memory() -> io::Result<()> {
         let descendant =
             listener_process_id(port)?.ok_or_else(|| io::Error::other("listener disappeared"))?;
         assert_ne!(descendant, process.id());
-        // ActiveProcesses can temporarily include a failed Job association
-        // until the terminated process and its references are released:
-        // https://learn.microsoft.com/windows/win32/api/winnt/ns-winnt-jobobject_basic_accounting_information
-        // Require the exact two-process tree within the existing bound, keeping
-        // both the root and the observed descendant live throughout the wait.
-        // Persistent extra processes still fail; no process limit is relaxed.
+        // Hosted run 41333126433 identified two extra conhost.exe children, one
+        // per console-subsystem probe. The fixture now links without a console.
+        // Require exactly the two intended nodes within the existing bound;
+        // the root and same listening descendant must stay live throughout.
+        // Extra processes still fail and remain in bounded failure diagnostics.
         let mut observed = 0;
         until(|| {
             if process.try_wait()?.is_some() || listener_process_id(port)? != Some(descendant) {

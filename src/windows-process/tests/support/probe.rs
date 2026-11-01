@@ -1,5 +1,9 @@
 //! Synthetic subprocess fixture; built only with the explicit test-probe feature.
 #![cfg(windows)]
+// File/sockets and redirected standard handles provide every fixture result.
+// A console subsystem introduced an extra conhost for each synthetic tree node
+// in hosted run 41333126433, invalidating its exact root-plus-descendant shape.
+#![windows_subsystem = "windows"]
 
 use std::ffi::OsString;
 use std::fmt::Write as _;
