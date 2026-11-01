@@ -28,6 +28,7 @@ LAYOUT = Layout()
 TOKENS = (248045,)
 BACKENDS = ("auto", "scalar", "neon")
 ROW_WORKERS = (1, 4)
+ADAPTER_CONDITIONS = ("standard", "loaded-zero", "no-adapter")
 
 
 def require(condition, message):
@@ -184,7 +185,19 @@ def validate_rust_controls(rust, capture, backend, row_workers=1):
     return steps
 
 
-def compare(native, rust, backend, row_workers=1):
+def validate_adapter_condition(capture, condition):
+    require(condition in ADAPTER_CONDITIONS, "unsupported adapter comparison condition")
+    loaded = condition != "no-adapter"
+    scale = 1.3 if condition == "standard" else 0.0
+    require(type(capture["adapterLoaded"]) is bool and capture["adapterLoaded"] == loaded,
+            "native adapter loading differs from selected condition")
+    require(type(capture["adapterScale"]) in (int, float)
+            and capture["adapterScale"] == scale
+            and struct.pack("<f", capture["adapterScale"]) == struct.pack("<f", scale),
+            "native adapter scale differs from selected condition")
+
+
+def compare(native, rust, backend, row_workers=1, adapter_condition="standard"):
     native, rust = Path(native), Path(rust)
     native_inventory = {file.relative_to(native).as_posix() for file in native.rglob("*")
                         if file.is_file() and file.suffix in (".f32le", ".native-seq")}
@@ -199,7 +212,7 @@ def compare(native, rust, backend, row_workers=1):
     require([step["position"] for step in capture["steps"]] == [0]
             and capture["steps"][0]["logitsCount"] == LAYOUT.vocabulary,
             "native smoke position/logits geometry changed")
-    require(capture["adapterLoaded"] is True and capture["adapterScale"] == 1.3, "native smoke adapter control changed")
+    validate_adapter_condition(capture, adapter_condition)
     steps = validate_rust_controls(rust, capture, backend, row_workers)
     files = []
     expected = set()
@@ -231,9 +244,13 @@ def compare(native, rust, backend, row_workers=1):
             "nativeStateSha256": [digest(native / "state-0.native-seq")],
             "maximumAbsoluteError": max(f["maximumAbsoluteError"] for f in files), "comparisons": files,
             "backendRequested": backend, "rustRowWorkers": row_workers, "greedyTokensMatch": greedy,
+            "adapterCondition": adapter_condition, "adapterLoaded": capture["adapterLoaded"],
+            "adapterScale": capture["adapterScale"],
+            "adapterSha256": ADAPTER if capture["adapterLoaded"] else None,
             "parallelRowOperations": [s["parallel_row_operations"] for s in steps],
             "rustStdoutSha256": digest(rust / "stdout.txt"),
             "writerBasisQualified": False, "qualityQualified": False, "defaultMayChange": False,
+            "loadedZeroIdentityQualified": False, "nonzeroApplicationQualified": False,
             "pendingControls": ["no-adapter", "loaded-zero-identity", "nonzero-change", "scalar", "explicit-neon",
                                 "writer-authoring-basis", "quality", "performance", "full-context"]}
 
@@ -244,9 +261,11 @@ if __name__ == "__main__":
     parser.add_argument("--rust", required=True, type=Path)
     parser.add_argument("--backend", required=True, choices=BACKENDS)
     parser.add_argument("--row-workers", type=int, choices=ROW_WORKERS, default=1)
+    parser.add_argument("--adapter-condition", choices=ADAPTER_CONDITIONS, default="standard")
     parser.add_argument("--output", required=True, type=Path)
     arguments = parser.parse_args()
-    report = compare(arguments.native, arguments.rust, arguments.backend, arguments.row_workers)
+    report = compare(arguments.native, arguments.rust, arguments.backend, arguments.row_workers,
+                     arguments.adapter_condition)
     with arguments.output.open("x", encoding="utf-8") as output:
         json.dump(report, output, indent=2, allow_nan=False)
         output.write("\n")

@@ -16,6 +16,11 @@ on:
         type: choice
         options: ['1', '4']
         default: '1'
+      adapter_condition:
+        description: One adapter condition for both captures; this does not schedule a control matrix
+        type: choice
+        options: [standard, loaded-zero, no-adapter]
+        default: standard
 permissions:
   contents: read
 concurrency:
@@ -53,6 +58,7 @@ jobs:
           NativeStateTests.test_control_binding_rejects_changed_adapter_scale_tokens_and_backend
           NativeStateTests.test_explicit_backend_controls_reject_substitution_and_unknown_backends
           NativeStateTests.test_row_worker_controls_reject_cross_worker_and_missing_parallel_execution
+          NativeStateTests.test_selected_adapter_condition_binds_loading_scale_and_rust_identity
           NativeStateTests.test_capture_pre_read_bounds_reject_oversized_json_and_logits
       - name: Prepare exact capture binaries and maintenance receipt without models
         shell: pwsh
@@ -124,12 +130,14 @@ jobs:
         env:
           BONSAI_PTQ1_RUST_BACKEND: ${{ inputs.rust_backend }}
           BONSAI_PTQ1_ROW_WORKERS: ${{ inputs.native_row_workers }}
+          BONSAI_PTQ1_ADAPTER_CONDITION: ${{ inputs.adapter_condition }}
         run: |
           Set-StrictMode -Version Latest
           $ErrorActionPreference = 'Stop'
           $PSNativeCommandUseErrorActionPreference = $true
           if ($env:BONSAI_PTQ1_RUST_BACKEND -cnotin @('auto', 'scalar', 'neon')) { throw 'Select one explicit supported Rust capture backend.' }
           if ($env:BONSAI_PTQ1_ROW_WORKERS -cnotin @('1', '4')) { throw 'Select one exact Rust capture row-worker count.' }
+          if ($env:BONSAI_PTQ1_ADAPTER_CONDITION -cnotin @('standard', 'loaded-zero', 'no-adapter')) { throw 'Select one exact adapter condition.' }
           $budgetPath = Join-Path $env:RUNNER_TEMP 'ptq1-owner-budget.json'
           $budgetReport = [ordered]@{
             Revision=$env:GITHUB_SHA; RunId=$env:GITHUB_RUN_ID; RunAttempt=$env:GITHUB_RUN_ATTEMPT
@@ -171,6 +179,7 @@ jobs:
             captureToolsDirectory=(Join-Path $env:RUNNER_TEMP 'SwiftBonsai-Ptq1CaptureTools')
             workBudgetSeconds=$workSeconds; workDeadlineTick=$workDeadline
             rustBackend=$env:BONSAI_PTQ1_RUST_BACKEND; rowWorkers=[int]$env:BONSAI_PTQ1_ROW_WORKERS
+            adapterCondition=$env:BONSAI_PTQ1_ADAPTER_CONDITION
             parentProcessId=$PID; parentCreationTimeFileTime=$callerCreation
           } | ConvertTo-Json | Set-Content -LiteralPath $requestPath -Encoding utf8NoBOM
           $start = [Diagnostics.ProcessStartInfo]::new($env:BONSAI_TOOLS_PATH)
@@ -205,11 +214,11 @@ jobs:
             } finally { $child.Dispose() }
           }
           if ($code -ne 0) { throw 'PTQ1 numerical capture/comparison failed; inspect retained evidence.' }
-          @('One supplied token [248045], exact current-weight PTQ1 and approved adapter at 1.3.',
+          @("One supplied token [248045], exact current-weight PTQ1; adapter condition: $env:BONSAI_PTQ1_ADAPTER_CONDITION (standard is 1.3; loaded-zero loads the approved adapter at zero; no-adapter omits it).",
             "One native reference process and one Rust $env:BONSAI_PTQ1_RUST_BACKEND process; at most 240 seconds reduced by all checkout, intake and setup costs inside this five-minute job.",
             "Rust row workers: $env:BONSAI_PTQ1_ROW_WORKERS; exact worker count and actual parallel operations are checked independently of backend selection. Other worker policies remain unqualified.",
             'All logits and complete logical KV/convolution/recurrent values use the unchanged tolerance.',
-            'No-adapter, loaded zero, nonzero-change, broader scalar/explicit-NEON trajectories, writer authoring basis, quality, performance and full context remain pending.',
+            'This one condition does not establish cross-condition loaded-zero identity or nonzero application. Broader scalar/explicit-NEON trajectories, writer authoring basis, quality, performance and full context remain pending.',
             'A selected-backend smoke cannot be split into repeated owner-device runs to bypass the aggregate five-minute budget.',
             'No default or admission change is authorized.') | Add-Content -LiteralPath $env:GITHUB_STEP_SUMMARY
       - name: Retain complete owner-job budget attribution

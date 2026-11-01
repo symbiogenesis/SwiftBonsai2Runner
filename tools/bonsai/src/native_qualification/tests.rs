@@ -53,6 +53,86 @@ fn plans_keep_one_selected_ptq1_pair_and_the_fixed_row_pair() -> crate::Result<(
 }
 
 #[test]
+fn adapter_conditions_select_one_bound_pair_and_cannot_change_the_row_control() -> crate::Result<()>
+{
+    for condition in ["standard", "loaded-zero", "no-adapter"] {
+        let request = json!({"operation":"plan", "repositoryDirectory":repository(), "adapterCondition":condition});
+        let report = run(request.clone())?;
+        assert_eq!(report["AdapterCondition"], condition);
+        assert_eq!(report["AdapterLoaded"], condition != "no-adapter");
+        assert_eq!(
+            report["AdapterScale"],
+            if condition == "standard" { 1.3 } else { 0.0 }
+        );
+        assert_eq!(report["NativeSamples"], 1);
+        assert_eq!(report["RustSamples"], 1);
+        assert_eq!(report["WorkBudgetSeconds"], 240);
+        assert_eq!(report["DefaultMayChange"], false);
+        let decoded: super::Request =
+            serde_json::from_value(request.clone()).map_err(|error| error.to_string())?;
+        let admission =
+            json!({"ModelPath":"C:/models/ptq1.gguf", "AdapterPath":"C:/adapters/approved.gguf"});
+        let runtime = json!({"Runtime":{"runtimeDirectory":"C:/runtime"}});
+        let lane = std::path::Path::new("C:/evidence");
+        let scale = if condition == "standard" { "1.3" } else { "0" };
+        let native = super::sample_arguments(&decoded, &admission, Some(&runtime), lane, 0)?;
+        assert_eq!(
+            native,
+            json!([
+                "capture",
+                "C:/runtime",
+                admission["ModelPath"],
+                lane,
+                if condition == "no-adapter" {
+                    json!("none")
+                } else {
+                    admission["AdapterPath"].clone()
+                },
+                scale
+            ])
+        );
+        assert!(super::sample_arguments(&decoded, &admission, None, lane, 0).is_err());
+        for workers in [1, 4] {
+            let rust = super::sample_arguments(&decoded, &admission, None, lane, workers)?;
+            let mut expected = vec![
+                json!("--use-repacked-ptq1"),
+                json!("--row-workers"),
+                json!(workers.to_string()),
+            ];
+            if condition != "no-adapter" {
+                expected.extend([
+                    json!("--rank-one-adapter"),
+                    admission["AdapterPath"].clone(),
+                    json!(scale),
+                ]);
+            }
+            expected.extend([
+                json!("forward"),
+                admission["ModelPath"].clone(),
+                json!(lane),
+                json!("auto"),
+                json!("248045"),
+            ]);
+            assert_eq!(rust, json!(expected));
+        }
+        if condition != "standard" {
+            let mut rows = request;
+            rows["kind"] = json!("rows");
+            assert!(run(rows).is_err());
+        }
+    }
+    for invalid in [
+        json!("zero"),
+        json!("STANDARD"),
+        json!(null),
+        json!(["standard", "loaded-zero"]),
+    ] {
+        assert!(run(json!({"operation":"plan", "repositoryDirectory":repository(), "adapterCondition":invalid})).is_err());
+    }
+    Ok(())
+}
+
+#[test]
 fn capture_source_cannot_substitute_an_internally_consistent_stale_checkout() -> crate::Result<()> {
     let pins = source_pins(&repository(), Kind::Ptq1)?;
     let compiled = read_json(

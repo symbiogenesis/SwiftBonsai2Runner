@@ -60,7 +60,7 @@ enum Mode {
     Capture {
         model: PathBuf,
         evidence: PathBuf,
-        adapter: PathBuf,
+        adapter: Option<(PathBuf, f32)>,
     },
 }
 
@@ -68,7 +68,7 @@ impl Request {
     fn parse(arguments: &[OsString]) -> io::Result<Self> {
         require(
             matches!(arguments.len(), 3 | 7),
-            "usage: --abi-probe RUNTIME | capture RUNTIME PTQ1 EVIDENCE ADAPTER 1.3",
+            "usage: --abi-probe RUNTIME | capture RUNTIME PTQ1 EVIDENCE ADAPTER <1.3|0> | capture RUNTIME PTQ1 EVIDENCE none 0",
         )?;
         let mode = if arguments[1] == "--abi-probe" && arguments.len() == 3 {
             Mode::Probe
@@ -81,7 +81,6 @@ impl Request {
             )?;
             let model = PathBuf::from(&arguments[3]);
             let evidence = PathBuf::from(&arguments[4]);
-            let adapter = PathBuf::from(&arguments[5]);
             require(
                 absolute(model.as_os_str()) && basename_is(model.as_os_str(), MODEL_NAME),
                 "exact current-weight PTQ1 filename and absolute path required",
@@ -90,14 +89,24 @@ impl Request {
                 absolute(evidence.as_os_str()) && evidence.exists(),
                 "existing absolute evidence directory required",
             )?;
-            require(
-                absolute(adapter.as_os_str()) && basename_is(adapter.as_os_str(), ADAPTER_NAME),
-                "approved absolute adapter path required",
-            )?;
-            require(
-                arguments[6] == "1.3",
-                "only the fixed adapter 1.3 smoke is supported",
-            )?;
+            let adapter = if arguments[5] == "none" {
+                require(
+                    arguments[6] == "0",
+                    "no-adapter capture requires zero scale",
+                )?;
+                None
+            } else {
+                let path = PathBuf::from(&arguments[5]);
+                require(
+                    absolute(path.as_os_str()) && basename_is(path.as_os_str(), ADAPTER_NAME),
+                    "approved absolute adapter path required",
+                )?;
+                require(
+                    matches!(arguments[6].to_str(), Some("1.3" | "0")),
+                    "only the fixed standard or loaded-zero adapter control is supported",
+                )?;
+                Some((path, if arguments[6] == "1.3" { 1.3 } else { 0.0 }))
+            };
             Mode::Capture {
                 model,
                 evidence,
@@ -132,9 +141,11 @@ fn token_record(
     ))
 }
 
-fn report(record: &str) -> String {
+fn report(record: &str, adapter: Option<f32>) -> String {
+    let loaded = adapter.is_some();
+    let scale = adapter.unwrap_or(0.0);
     format!(
-        "{{\"schemaVersion\":1,\"nativeCommit\":\"73bfe6cc485554822f80c473a3c0c4f25e80f41b\",\"modelSha256\":\"e658f0f0736a03a4549535a439f9b07254ebf8ab88ae27cbe6e52d098ca5d1f5\",\"adapterLoaded\":true,\"adapterScale\":1.3,\"contextTokens\":8192,\"threads\":4,\"stateFormat\":\"pinned-llama_state_seq_get_data-sequence-zero\",\"writerBasisQualified\":false,\"numericalParityQualified\":false,\"steps\":[{record}]}}\n"
+        "{{\"schemaVersion\":1,\"nativeCommit\":\"73bfe6cc485554822f80c473a3c0c4f25e80f41b\",\"modelSha256\":\"e658f0f0736a03a4549535a439f9b07254ebf8ab88ae27cbe6e52d098ca5d1f5\",\"adapterLoaded\":{loaded},\"adapterScale\":{scale},\"contextTokens\":8192,\"threads\":4,\"stateFormat\":\"pinned-llama_state_seq_get_data-sequence-zero\",\"writerBasisQualified\":false,\"numericalParityQualified\":false,\"steps\":[{record}]}}\n"
     )
 }
 
@@ -651,14 +662,14 @@ mod native {
         runtime: &Path,
         model_path: &Path,
         evidence: &Path,
-        adapter_path: &Path,
+        adapter_selection: Option<(&Path, f32)>,
         output: &mut impl io::Write,
     ) -> io::Result<()> {
         // Retain all CStrings until native context/model destruction: the pinned
         // loader may retain path pointers rather than making independent copies.
         let cpu_path = utf8(&runtime.join("ggml-cpu.dll"))?;
         let model_path = utf8(model_path)?;
-        let adapter_path = utf8(adapter_path)?;
+        let adapter_path = adapter_selection.map(|(path, _)| utf8(path)).transpose()?;
         // SAFETY: The complete verified absolute CPU DLL path is NUL-terminated
         // and retained throughout backend/model lifetime.
         let backend = native_call(|| unsafe { (api.load_backend)(cpu_path.as_ptr()) });
@@ -681,17 +692,22 @@ mod native {
         // SAFETY: The vocabulary pointer is nonnull, live and model-owned.
         let count = native_call(|| unsafe { (api.vocab_count)(vocabulary) });
         require(count == 248_320, "native vocabulary mismatch")?;
-        // SAFETY: This model and the retained adapter path remain live until
-        // after the adapter's matching release.
-        let adapter = native_call(|| unsafe {
-            (api.load_adapter)(model.pointer.as_ptr(), adapter_path.as_ptr())
-        });
-        let adapter = Owned::new(
-            adapter,
-            api.free_adapter,
-            api,
-            "approved native adapter loading failed",
-        )?;
+        let adapter = adapter_path
+            .as_ref()
+            .map(|path| {
+                // SAFETY: This model and the retained adapter path remain live until
+                // after the adapter's matching release.
+                let pointer = native_call(|| unsafe {
+                    (api.load_adapter)(model.pointer.as_ptr(), path.as_ptr())
+                });
+                Owned::new(
+                    pointer,
+                    api.free_adapter,
+                    api,
+                    "approved native adapter loading failed",
+                )
+            })
+            .transpose()?;
         // SAFETY: The live model and exact by-value context parameters follow
         // the pinned header ABI; one guard owns the returned context.
         let context = native_call(|| unsafe {
@@ -703,19 +719,21 @@ mod native {
             api,
             "native context allocation failed",
         )?;
-        let mut pointer = adapter.pointer.as_ptr();
-        let mut scale = 1.3_f32;
-        // SAFETY: One live adapter pointer and its one matching scale are
-        // borrowed synchronously; both outlive all subsequent context work.
-        let applied = native_call(|| unsafe {
-            (api.set_adapter)(
-                context.pointer.as_ptr(),
-                &raw mut pointer,
-                1,
-                &raw mut scale,
-            )
-        });
-        require(applied == 0, "native adapter application failed")?;
+        if let (Some(adapter), Some((_, scale))) = (&adapter, adapter_selection) {
+            let mut pointer = adapter.pointer.as_ptr();
+            let mut scale = scale;
+            // SAFETY: One live adapter pointer and its selected matching scale
+            // are borrowed synchronously; both outlive subsequent context work.
+            let applied = native_call(|| unsafe {
+                (api.set_adapter)(
+                    context.pointer.as_ptr(),
+                    &raw mut pointer,
+                    1,
+                    &raw mut scale,
+                )
+            });
+            require(applied == 0, "native adapter application failed")?;
+        }
         let mut token = INPUT_TOKEN;
         // SAFETY: The batch borrows this one live token. The following decode
         // consumes it synchronously without transferring/freeing its storage.
@@ -763,7 +781,7 @@ mod native {
         output.flush()?;
         write_new(
             &evidence.join("native-capture.json"),
-            report(&record).as_bytes(),
+            report(&record, adapter_selection.map(|(_, scale)| scale)).as_bytes(),
         )
     }
 
@@ -800,7 +818,9 @@ mod native {
                     &request.runtime,
                     model,
                     evidence,
-                    adapter,
+                    adapter
+                        .as_ref()
+                        .map(|(path, scale)| (path.as_path(), *scale)),
                     output,
                 )
             }
@@ -1223,6 +1243,7 @@ mod native {
             static FAIL: Cell<&'static str> = const { Cell::new("") };
             static CALLS: RefCell<Vec<&'static str>> = const { RefCell::new(Vec::new()) };
             static VALID: Cell<bool> = const { Cell::new(true) };
+            static SCALE: Cell<f32> = const { Cell::new(1.3) };
             static ROW: RefCell<Vec<f32>> = const { RefCell::new(Vec::new()) };
         }
 
@@ -1353,7 +1374,7 @@ mod native {
             // scale; this synchronous mock does not retain either borrowed span.
             observed(unsafe { (*adapters).addr() == 2 });
             // SAFETY: Same complete single-element scale span.
-            observed(unsafe { (*scales).to_bits() == 1.3_f32.to_bits() });
+            observed(unsafe { (*scales).to_bits() == SCALE.with(Cell::get).to_bits() });
             i32::from(called("set_adapter"))
         }
 
@@ -1485,6 +1506,7 @@ mod native {
             FAIL.with(|value| value.set(fail));
             CALLS.with(|calls| calls.borrow_mut().clear());
             VALID.with(|value| value.set(true));
+            SCALE.with(|value| value.set(1.3));
             ROW.with(|row| {
                 let mut row = row.borrow_mut();
                 *row = vec![-1.0; VOCABULARY];
@@ -1502,7 +1524,10 @@ mod native {
                 Path::new("C:/runtime"),
                 &Path::new("C:/models").join(super::super::MODEL_NAME),
                 &directory.0,
-                &Path::new("C:/adapters").join(super::super::ADAPTER_NAME),
+                Some((
+                    &Path::new("C:/adapters").join(super::super::ADAPTER_NAME),
+                    1.3,
+                )),
                 output,
             )
         }
@@ -1595,7 +1620,7 @@ mod native {
             let record = token_record(0, INPUT_TOKEN, 16, &ROW.with(|row| row.borrow().clone()))?;
             assert_eq!(
                 std::fs::read_to_string(directory.0.join("native-capture.json"))?,
-                report(&record)
+                report(&record, Some(1.3))
             );
             CALLS.with(|calls| {
                 assert_eq!(
@@ -1603,6 +1628,55 @@ mod native {
                     ["free_context", "free_adapter", "free_model", "backend_free"]
                 );
             });
+            Ok(())
+        }
+
+        #[test]
+        fn baseline_omits_adapter_calls_and_loaded_zero_applies_exact_zero() -> io::Result<()> {
+            for selected in [None, Some(0.0_f32)] {
+                reset("");
+                SCALE.with(|value| value.set(0.0));
+                let directory = Directory::new("adapter-control")?;
+                let path = Path::new("C:/adapters").join(super::super::ADAPTER_NAME);
+                capture(
+                    &mock_api(),
+                    &mock_defaults(),
+                    Path::new("C:/runtime"),
+                    &Path::new("C:/models").join(super::super::MODEL_NAME),
+                    &directory.0,
+                    selected.map(|scale| (path.as_path(), scale)),
+                    &mut Vec::new(),
+                )?;
+                assert!(VALID.with(Cell::get));
+                CALLS.with(|calls| {
+                    let calls = calls.borrow();
+                    for name in ["load_adapter", "set_adapter", "free_adapter"] {
+                        assert_eq!(
+                            calls.iter().filter(|&&call| call == name).count(),
+                            usize::from(selected.is_some())
+                        );
+                    }
+                    let releases: Vec<_> = calls
+                        .iter()
+                        .copied()
+                        .filter(|name| name.starts_with("free_") || *name == "backend_free")
+                        .collect();
+                    assert_eq!(
+                        releases,
+                        if selected.is_some() {
+                            vec!["free_context", "free_adapter", "free_model", "backend_free"]
+                        } else {
+                            vec!["free_context", "free_model", "backend_free"]
+                        }
+                    );
+                });
+                let record =
+                    token_record(0, INPUT_TOKEN, 16, &ROW.with(|row| row.borrow().clone()))?;
+                assert_eq!(
+                    std::fs::read_to_string(directory.0.join("native-capture.json"))?,
+                    report(&record, selected)
+                );
+            }
             Ok(())
         }
 
@@ -1744,6 +1818,47 @@ mod tests {
     }
 
     #[test]
+    fn selected_adapter_conditions_require_exact_unambiguous_arguments() -> io::Result<()> {
+        let mut arguments = vec![
+            "collector".into(),
+            "capture".into(),
+            format!("C:/runtime/{COMMIT}").into(),
+            format!("C:/models/{MODEL_NAME}").into(),
+            std::env::temp_dir().into_os_string(),
+            format!("C:/adapters/{ADAPTER_NAME}").into(),
+            "1.3".into(),
+        ];
+        for scale in ["1.3", "0"] {
+            arguments[6] = scale.into();
+            let parsed = Request::parse(&arguments)?;
+            let Mode::Capture {
+                adapter: Some((_, actual)),
+                ..
+            } = parsed.mode
+            else {
+                return Err(io::Error::other("adapter condition was lost"));
+            };
+            assert_eq!(
+                actual.to_bits(),
+                if scale == "1.3" { 1.3_f32 } else { 0.0_f32 }.to_bits()
+            );
+        }
+        for scale in ["0.0", "-0", "nan", "NaN", "inf", "2", "1.30"] {
+            arguments[6] = scale.into();
+            assert!(Request::parse(&arguments).is_err());
+        }
+        arguments[5] = "none".into();
+        arguments[6] = "0".into();
+        assert!(matches!(
+            Request::parse(&arguments)?.mode,
+            Mode::Capture { adapter: None, .. }
+        ));
+        arguments[6] = "1.3".into();
+        assert!(Request::parse(&arguments).is_err());
+        Ok(())
+    }
+
+    #[test]
     fn token_control_preserves_first_finite_maximum_and_exact_json() -> io::Result<()> {
         let mut logits = vec![f32::NEG_INFINITY; VOCABULARY];
         assert!(token_record(0, INPUT_TOKEN, 1, &logits).is_err());
@@ -1755,7 +1870,7 @@ mod tests {
             record,
             "{\"position\":0,\"inputToken\":248045,\"greedyToken\":11,\"logitsCount\":248320,\"sequenceStateBytes\":42}"
         );
-        assert!(report(&record).ends_with(&format!("\"steps\":[{record}]}}\n")));
+        assert!(report(&record, Some(1.3)).ends_with(&format!("\"steps\":[{record}]}}\n")));
         for invalid in [f32::INFINITY, f32::NEG_INFINITY, f32::NAN] {
             logits[17] = invalid;
             assert!(token_record(0, INPUT_TOKEN, 1, &logits).is_err());

@@ -39,6 +39,32 @@ enum Kind {
     Rows,
 }
 
+#[derive(Clone, Copy, Default, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
+enum AdapterCondition {
+    #[default]
+    Standard,
+    LoadedZero,
+    NoAdapter,
+}
+
+impl AdapterCondition {
+    const fn name(self) -> &'static str {
+        match self {
+            Self::Standard => "standard",
+            Self::LoadedZero => "loaded-zero",
+            Self::NoAdapter => "no-adapter",
+        }
+    }
+
+    const fn scale(self) -> f64 {
+        match self {
+            Self::Standard => 1.3,
+            Self::LoadedZero | Self::NoAdapter => 0.0,
+        }
+    }
+}
+
 #[derive(Deserialize)]
 #[serde(rename_all = "kebab-case")]
 enum Operation {
@@ -65,6 +91,8 @@ struct Request {
     rust_backend: String,
     #[serde(default = "one_worker")]
     row_workers: u8,
+    #[serde(default)]
+    adapter_condition: AdapterCondition,
     data_directory: Option<PathBuf>,
     capture_tools_directory: Option<PathBuf>,
     work_budget_seconds: Option<u64>,
@@ -153,7 +181,7 @@ fn require_runtime_source(source: &Value, runtime: &Value) -> crate::Result<()> 
 
 fn plan(request: &Request, pins: &Value) -> Value {
     let mut value = json!({"Status": "plan-only", "ModelProcessStarted": false,
-        "SuppliedTokens": [248_045], "AdapterScale": 1.3, "RustBackend": request.rust_backend,
+        "SuppliedTokens": [248_045], "AdapterScale": request.adapter_condition.scale(), "RustBackend": request.rust_backend,
         "WorkBudgetSeconds": 240, "WholeJobMinutes": 5, "RequiredFreeDiskBytes": 1_073_741_824,
         "ContextTokens": 8192, "JobBytes": 12_348_030_976_u64, "AdmissionBytes": 16_642_998_272_u64,
         "PhysicalReserveBytes": 4_294_967_296_u64, "RustSource": pins["rustSource"],
@@ -161,6 +189,8 @@ fn plan(request: &Request, pins: &Value) -> Value {
     if request.kind == Kind::Ptq1 {
         value["Representation"] = json!("current-repacked-PTQ1_0");
         value["RustRowWorkers"] = json!(request.row_workers);
+        value["AdapterCondition"] = json!(request.adapter_condition.name());
+        value["AdapterLoaded"] = json!(request.adapter_condition != AdapterCondition::NoAdapter);
         value["NativeSamples"] = json!(1);
         value["RustSamples"] = json!(1);
         value["EstimatedSnapshotBytes"] = json!(315_971_136);
@@ -175,6 +205,53 @@ fn plan(request: &Request, pins: &Value) -> Value {
         value["AppTpsQualified"] = json!(false);
     }
     value
+}
+
+#[cfg(any(windows, test))]
+fn sample_arguments(
+    request: &Request,
+    admission: &Value,
+    runtime: Option<&Value>,
+    lane: &Path,
+    workers: u8,
+) -> crate::Result<Value> {
+    let standard = request.adapter_condition == AdapterCondition::Standard;
+    let loaded = request.adapter_condition != AdapterCondition::NoAdapter;
+    if workers == 0 {
+        return Ok(json!([
+            "capture",
+            runtime.ok_or("Missing reference runtime.")?["Runtime"]["runtimeDirectory"],
+            admission["ModelPath"],
+            lane,
+            if loaded {
+                admission["AdapterPath"].clone()
+            } else {
+                json!("none")
+            },
+            if standard { "1.3" } else { "0" }
+        ]));
+    }
+    let mut arguments = if request.kind == Kind::Ptq1 {
+        vec![json!("--use-repacked-ptq1")]
+    } else {
+        vec![]
+    };
+    arguments.extend([json!("--row-workers"), json!(workers.to_string())]);
+    if loaded {
+        arguments.extend([
+            json!("--rank-one-adapter"),
+            admission["AdapterPath"].clone(),
+            json!(if standard { "1.3" } else { "0" }),
+        ]);
+    }
+    arguments.extend([
+        json!("forward"),
+        admission["ModelPath"].clone(),
+        json!(lane),
+        json!(request.rust_backend),
+        json!("248045"),
+    ]);
+    Ok(json!(arguments))
 }
 
 #[cfg(any(windows, test))]
@@ -241,7 +318,9 @@ pub fn run(value: Value) -> crate::Result<Value> {
     if !["auto", "scalar", "neon"].contains(&request.rust_backend.as_str())
         || !matches!(request.row_workers, 1 | 4)
         || (request.kind == Kind::Rows
-            && (request.rust_backend != "auto" || request.row_workers != 1))
+            && (request.rust_backend != "auto"
+                || request.row_workers != 1
+                || request.adapter_condition != AdapterCondition::Standard))
     {
         return Err("Select one supported backend and exact one/four-worker PTQ1 policy; row qualification fixes both worker conditions.".into());
     }

@@ -1,9 +1,12 @@
 # Five-minute PTQ1 correctness smoke
 
 The owner-laptop trial is one native reference plus one Rust process, each
-evaluating the single supplied ID `[248045]` with the approved adapter at scale
-1.3. Select one Rust backend (`auto`, `scalar` or `neon`) and one row-worker count
-(`1`, the default, or `4`). This remains one comparison, not a worker/backend matrix.
+evaluating the single supplied ID `[248045]`. Select one Rust backend (`auto`,
+`scalar` or `neon`), one row-worker count (`1`, the default, or `4`), and one
+`adapter_condition`: `standard` (default, approved adapter at 1.3), `loaded-zero`
+(approved adapter loaded at zero) or `no-adapter` (adapter loading omitted).
+Both processes use that same condition. This remains one comparison, without
+a worker, backend or adapter matrix.
 **The entire owner job, including setup, loading, comparison, cleanup and
 artifact upload, has a five-minute hard limit.** The Rust command starts its separate
 work clock before preparation and caps external calls by the remaining
@@ -17,10 +20,11 @@ recomputes the watchdog's remaining time after process startup. Receipt writing,
 Native process startup and handoff cannot renew either deadline. Active capture and
 comparison phases are saved before launching external work.
 
-No-adapter, loaded-zero identity, changed nonzero logits, scalar, explicit NEON,
+Cross-condition loaded-zero identity, changed nonzero logits, scalar, explicit NEON,
 writer authoring basis, quality, performance, full context and service remain
-pending. A passing result covers only one supplied token at scale 1.3 with the exact
-selected backend and worker count. The comparator requires the reported worker
+pending. A passing result covers only one supplied token with the exact
+selected adapter condition, backend and worker count. One condition cannot prove
+identity or application relative to another condition. The comparator requires the reported worker
 count to match and requires positive parallel-operation counts for four workers
 (zero for one); these counters do not establish a performance gain.
 Backend requests do not provide operation-level dispatch counters. No default or
@@ -38,7 +42,7 @@ type, enum, default/configured parameter and returned-aggregate observations.
 Adjacent provenance binds the exact headers, compiler, DLLs, original driver and
 license. Rust computes observations from its own declarations and the actual DLLs;
 expected records are not used to generate observations. The original C++ driver
-is removed. Seven focused tests retain success, every native failure phase,
+is removed. Focused tests retain success, every native failure phase,
 cleanup order, bounded output, create-new collisions and partial evidence.
 Returned native errors release acquired resources in order; an unexpected foreign
 exception aborts the isolated collector before damaged native state can be reused.
@@ -64,6 +68,9 @@ Run the separately hosted-prepared maintenance executable directly. Its adjacent
 Hosted preparation uses the pinned Rust compiler/LLD for the collector and its
 model-free tests; it no longer downloads native source headers or invokes a C++
 compiler for this tool. The native source pins remain provenance for the DLL ABI.
+Model-free collector controls distinguish omitted adapter calls from an adapter
+loaded and applied at exact positive zero, retain dependency release order and
+reject unsupported scale spellings before native loading.
 Before owner model admission, both the original JSON ABI probe and the complete
 live 369-record observation set must match the frozen native control. Duplicate,
 missing, extra, changed or overflowing records reject the trial, as do changed
@@ -75,7 +82,7 @@ bonsai-tools native-qualification --request C:\Evidence\native-plan.json
 ```
 
 ```json
-{"operation":"plan","kind":"ptq1","repositoryDirectory":"C:\\Source\\SwiftBonsai2Runner","rustBackend":"auto","rowWorkers":1}
+{"operation":"plan","kind":"ptq1","repositoryDirectory":"C:\\Source\\SwiftBonsai2Runner","rustBackend":"auto","rowWorkers":1,"adapterCondition":"standard"}
 ```
 
 The owning workflow uses `operation: "capture"` and adds existing
@@ -91,7 +98,9 @@ with only the `ptq1-numerics-<run_id>` label, `run_device: true`, its physical-r
 child. The default `run_device: false` prepares and tests the source-bound bundle
 on hosted CI only. It retains bounded compiler/test log tails and a build receipt,
 including failed preparation; it does not start an owner-device or model process.
-The exact PTQ1 export, approved adapter and native package must already be provisioned.
+The exact PTQ1 export and native package must already be provisioned; loaded
+conditions also require the approved adapter. Both numerical workloads refuse
+an existing Bonsai app or project model process before model work.
 One model runs at a time. The shared policy retains 15.5 GiB admission, 11.5 GiB
 Job commit and 4 GiB physical reserve. Source preparation and compilation run in
 hosted CI; all owner preparation is included in its 240-second work budget.

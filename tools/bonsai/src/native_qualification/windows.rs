@@ -12,14 +12,17 @@ use serde_json::{Value, json};
 use sha2::{Digest as _, Sha256};
 
 use super::{
-    CHANNEL, Kind, LIMIT, PENDING, Request, plan, read_json, remaining_seconds,
-    require_runtime_source, save_report,
+    AdapterCondition, CHANNEL, Kind, LIMIT, PENDING, Request, plan, read_json, remaining_seconds,
+    require_runtime_source, sample_arguments, save_report,
 };
 
 const ACTIVE_MODELS: &[&str] = &[
     "bonsai-chat.exe",
     "bonsai-broker.exe",
     "prism-inference-server.exe",
+    "prism-inference.exe",
+    "bonsai-swift-worker.exe",
+    "bonsai-token-worker.exe",
     "llama-server.exe",
     "llama-completion.exe",
     "llama-bench.exe",
@@ -276,6 +279,8 @@ impl Context<'_> {
                 self.request.rust_backend.clone().into(),
                 "--row-workers".into(),
                 self.request.row_workers.to_string().into(),
+                "--adapter-condition".into(),
+                self.request.adapter_condition.name().into(),
                 "--output".into(),
                 output.as_os_str().to_owned(),
             ]
@@ -437,7 +442,8 @@ fn admission(context: &mut Context<'_>) -> crate::Result<Value> {
     context.phase("model-and-adapter-admission")?;
     let checked = crate::completion::cpu_check_report(
         json!({"operation": "plan", "dataDirectory": context.data,
-        "profile": "swift-pq2-assessment", "useAbliterateLora": true, "useRepackedPtq1": context.request.kind == Kind::Ptq1}),
+        "profile": "swift-pq2-assessment", "useAbliterateLora": context.request.adapter_condition != AdapterCondition::NoAdapter,
+        "useRepackedPtq1": context.request.kind == Kind::Ptq1}),
     )?;
     let report = &checked["Report"];
     if report["Status"] != "admission-passed"
@@ -448,11 +454,13 @@ fn admission(context: &mut Context<'_>) -> crate::Result<Value> {
         return Err("The unchanged Swift artifact/resource admission did not pass.".into());
     }
     context.artifacts.push(json!({"path": report["ModelPath"], "bytes": checked["Artifact"]["Bytes"], "sha256": checked["Artifact"]["Sha256"]}));
-    let adapter = &checked["AdapterLock"]["adapter"];
-    context.artifacts.push(json!({"path": report["AdapterPath"], "bytes": adapter["bytes"], "sha256": adapter["sha256"]}));
+    if context.request.adapter_condition != AdapterCondition::NoAdapter {
+        let adapter = &checked["AdapterLock"]["adapter"];
+        context.artifacts.push(json!({"path": report["AdapterPath"], "bytes": adapter["bytes"], "sha256": adapter["sha256"]}));
+    }
     context.report["Admission"] = report.clone();
     context.report["AdmissionScope"] = json!(
-        "Resource planning only; publisher arguments are not executed. Rust controls and adapter scale 1.3 are recorded separately."
+        "Resource planning only; publisher arguments are not executed. The one selected adapter condition and Rust controls are recorded separately."
     );
     Ok(checked)
 }
@@ -547,35 +555,7 @@ fn model_samples(
         } else {
             "swift_model_check.exe"
         });
-        let arguments = if native {
-            json!([
-                "capture",
-                runtime.ok_or("Missing reference runtime.")?["Runtime"]["runtimeDirectory"],
-                admission["ModelPath"],
-                lane,
-                admission["AdapterPath"],
-                "1.3"
-            ])
-        } else {
-            let mut arguments = if context.request.kind == Kind::Ptq1 {
-                vec![json!("--use-repacked-ptq1")]
-            } else {
-                vec![]
-            };
-            arguments.extend([
-                json!("--row-workers"),
-                json!(workers.to_string()),
-                json!("--rank-one-adapter"),
-                admission["AdapterPath"].clone(),
-                json!("1.3"),
-                json!("forward"),
-                admission["ModelPath"].clone(),
-                json!(lane),
-                json!(context.request.rust_backend),
-                json!("248045"),
-            ]);
-            json!(arguments)
-        };
+        let arguments = sample_arguments(context.request, admission, runtime, &lane, workers)?;
         save_report(&lane.join("arguments.json"), &arguments)?;
         save_report(&lane.join("artifacts.json"), &json!(context.artifacts))?;
         if context.request.kind == Kind::Rows {
@@ -625,9 +605,8 @@ fn execute(context: &mut Context<'_>) -> crate::Result<()> {
         return Err("Expected the native Snapdragon X/X2 Elite processor.".into());
     }
     context.report["ProcessorName"] = json!(host.processor_name);
-    if context.request.kind == Kind::Rows
-        && bonsai_windows_process::has_running_process(ACTIVE_MODELS)
-            .map_err(|error| error.to_string())?
+    if bonsai_windows_process::has_running_process(ACTIVE_MODELS)
+        .map_err(|error| error.to_string())?
     {
         return Err("Close the existing Bonsai app and project model processes before qualification; no process was interrupted.".into());
     }

@@ -146,7 +146,11 @@ and `compare-sample-conditions` operations remain available.
 
 `native-qualification` owns one fixed numerical workload: `kind: "ptq1"`
 selects one native/Rust pair at backend `auto`, `scalar` or `neon` and row-worker
-count 1 or 4; `kind: "rows"` fixes the original PQ2 serial/four-worker pair.
+count 1 or 4. Its `adapterCondition` selects `standard` (default, approved adapter
+at 1.3), `loaded-zero` (the approved adapter is loaded at zero) or `no-adapter`
+(adapter loading is omitted) for both processes. Exactly one condition runs;
+there is no control matrix. `kind: "rows"` fixes the original PQ2
+serial/four-worker pair with the standard adapter.
 Requests provide `repositoryDirectory` and `operation: "plan"`, `"source-pins"`
 or `"capture"`. Capture additionally requires existing `dataDirectory`,
 `captureToolsDirectory`, `workBudgetSeconds` in 1..240 and the original
@@ -155,9 +159,14 @@ The deadline can only shrink; the tool never bootstraps, provisions or renews it
 Rust validates current source pins, exact hosted binary inventories and the
 running maintenance executable's revision receipt, then owns memory admission,
 ABI preflights, capture supervision and atomic bounded partial receipts.
+Both workloads refuse an existing Bonsai app or model process before model work.
 Its independent Python comparator runs in an owned process under the same
 remaining allowance. Model-free plan, source, deadline and receipt regressions
 and hosted compiler preparation run in Rust.
+An isolated loaded-zero or no-adapter pass establishes only that selected native/Rust
+one-token comparison. Cross-condition logits/state identity, nonzero application
+and immutable writer authoring provenance require their own matched evidence;
+do not collect them by splitting a matrix into repeated owner-device jobs.
 
 `ptq1-packing` independently verifies the complete current-weight export against
 the original PQ2 file. Supply expanded absolute `sourcePath`, `outputPath` and

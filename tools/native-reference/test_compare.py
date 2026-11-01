@@ -39,6 +39,38 @@ def fixture(transposed):
 
 
 class NativeStateTests(unittest.TestCase):
+    def test_selected_adapter_condition_binds_loading_scale_and_rust_identity(self):
+        records = [{"event": "weights-loaded", "model_sha256": MODULE.MODEL,
+                    "weight_representation": "current-repacked-PTQ1_0"},
+                   {"event": "forward-step", "position": 0, "input_token": 248045,
+                    "backend_requested": "scalar", "row_workers": 1, "parallel_row_operations": 0}]
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory)
+            for condition in MODULE.ADAPTER_CONDITIONS:
+                capture = {"adapterLoaded": condition != "no-adapter",
+                           "adapterScale": 1.3 if condition == "standard" else 0}
+                adapter = [{"event": "rank-one-adapter-loaded", "model_sha256": MODULE.MODEL,
+                            "adapter_sha256": MODULE.ADAPTER, "target_pairs": 129,
+                            "scale_bits": "3fa66666" if condition == "standard" else "00000000"}]
+                selected = records + (adapter if capture["adapterLoaded"] else [])
+                (path / "stdout.txt").write_text("\n".join(map(json.dumps, selected)), encoding="utf-8")
+                MODULE.validate_adapter_condition(capture, condition)
+                self.assertEqual(len(MODULE.validate_rust_controls(path, capture, "scalar")), 1)
+                for other in (*MODULE.ADAPTER_CONDITIONS, "unknown"):
+                    if other != condition:
+                        with self.assertRaises(ValueError):
+                            MODULE.validate_adapter_condition(capture, other)
+                if capture["adapterLoaded"]:
+                    for field, value in (("adapter_sha256", "0" * 64), ("scale_bits", "80000000"),
+                                         ("model_sha256", "0" * 64), ("target_pairs", 128)):
+                        changed = [*records, {**adapter[0], field: value}]
+                        (path / "stdout.txt").write_text("\n".join(map(json.dumps, changed)), encoding="utf-8")
+                        with self.assertRaises(ValueError):
+                            MODULE.validate_rust_controls(path, capture, "scalar")
+            for value in (True, None, "0", -0.0, float("nan"), float("inf")):
+                with self.assertRaises(ValueError):
+                    MODULE.validate_adapter_condition({"adapterLoaded": True, "adapterScale": value}, "loaded-zero")
+
     def test_exact_chunks_reject_nonfinite_values_and_preserve_signed_zero(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "actual"
