@@ -3,7 +3,7 @@
   "kind": "hosted-synthetic-ownership-conhost-investigation",
   "recordedDate": "2026-11-01",
   "reviewer": "Codex:/root/review",
-  "status": "fixture-source-corrected-hosted-validation-pending",
+  "status": "hosted-fixture-passed-foundation-pending-cli-clippy-correction",
   "scope": "Read-only review of retained hosted diagnostics and a test-probe-only linker subsystem change. No owner-device processes, models, tests or builds were executed.",
   "failure": {
     "repository": "symbiogenesis/SwiftBonsai2Runner",
@@ -46,7 +46,25 @@
     "ownershipAssertionsRelaxed": false,
     "jobLimitsChanged": false,
     "existingExactTwoProcessAndEmptyAfterStopChecksRetained": true,
-    "hostedFixtureValidation": "pending"
+    "hostedFixtureValidation": "passed"
+  },
+  "hostedFixtureValidation": {
+    "revision": "fd05da94cf93c996d0af9c71939370b8b158895b",
+    "runId": "41334226661",
+    "runUrl": "https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41334226661",
+    "test": "stop_and_drop_kill_descendants_and_observe_memory",
+    "testConclusion": "passed",
+    "ownershipTargetCounts": { "passed": 11, "failed": 0, "ignored": 4 },
+    "ignoredScope": "Existing explicit native-PSEC requirements remain unexecuted; no ignored gate is claimed passed.",
+    "exactTwoProcessAssertionRetained": true,
+    "explicitStopAndDropCleanupRetained": true,
+    "allMaintenanceCargoTestsPassed": true,
+    "overallFoundationConclusion": "failure",
+    "foundationFailure": "Clippy match_same_arms in tools/bonsai/src/cli.rs for the two representation option classifications; the source correction is separate from this fixture pass.",
+    "retainedDiagnostics": [
+      { "name": "packages-test.stdout", "sha256": "22f4a46b12ac7e437a5dfc2b927d3b4a5790ebbe9b260586be8505c1d5f64e7a" },
+      { "name": "rust-checks.json", "sha256": "df9ee84dd2cf171b1244d2819196127cd5d153014032513acaf9c555efd0ecdb" }
+    ]
   },
   "primaryReferences": [
     "https://doc.rust-lang.org/reference/runtime.html#the-windows_subsystem-attribute",
