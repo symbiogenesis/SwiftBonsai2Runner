@@ -36,3 +36,6 @@ docs/evidence/hexagon-public-qaic-41171073546/** -text -whitespace
 # Preserve final public wire evidence and the separate standard-mode compile refusal.
 docs/evidence/hexagon-public-qaic-41171859264/** -text -whitespace
 docs/evidence/hexagon-public-qaic-41171448060/** -text -whitespace
+
+# Preserve exact JSON bytes and hashes from the bounded inference-speed attempt.
+docs/evidence/native-request-speed-20261031/*.json -text whitespace=cr-at-eol

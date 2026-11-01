@@ -278,6 +278,16 @@ The 4,096-token output gate alone
 would require more than 17 tokens/s to fit a 240-second case before any prefill;
 optimize and estimate first rather than scheduling a trial that cannot fit.
 
+Prism source [`f1b49cd`](https://github.com/symbiogenesis/prism-inference/commit/f1b49cd5ae1335e9b42a0f35745f0c72775f6f6f)
+also fuses the recurrent-state copy with per-head decay, removing a separate
+144 MiB payload copy per processed Swift token. The F32 multiplications and
+subsequent dot/update order remain unchanged, with provisional state kept separate
+from committed state. Its [owning Foundation](https://github.com/symbiogenesis/prism-inference/actions/runs/41259682083)
+and [conformance](https://github.com/symbiogenesis/prism-inference/actions/runs/41259682092)
+pass, including bitwise, independent native-reference and graph recovery controls.
+Runner's pinned 0.1.10 does not contain this change; actual-model numerical,
+throughput and resource qualification remain pending before release integration.
+
 ## Default-runtime promotion
 
 The Rust `runtime-promotion` command reports the reviewed requirements for replacing the current

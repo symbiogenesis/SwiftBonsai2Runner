@@ -467,6 +467,11 @@ bandwidth, packing and dispatch evidence.
 - Qualify actual prompt/response latency and complete application lifecycle for the
   [shared-slice row-parallel candidate](docs/oxibonsai-reuse.md#implementation-status),
   beyond the retained [fixed-step and short service evidence](docs/native-rust-engine.md#bounded-parallel-row-qualification).
+  Complete a matched request-throughput pair after the [bounded attempt](docs/evidence/native-request-speed.json)
+  retained only the one-worker measurement and cancelled the four-worker request
+  at its shared soft deadline. Prepare a workload and owner allowance that fit
+  both requests and every cleanup/retention cost inside one five-minute attempt;
+  keep decode timing separate from request TPS and do not retry this capture.
   Preserve shared packed weights and prepared Q8 activations, complete state,
   cancellation, pool/task accounting and whole-request cost. Leave further shapes,
   formats and worker budgets pending; do not split a longer matrix across short jobs.
@@ -492,6 +497,9 @@ bandwidth, packing and dispatch evidence.
 - Optimize measured transforms, elementwise work, quantizers, reductions and prefill
   through safe APIs or audited isolated unsafe code. Cover edges, malformed input,
   rollback, non-ARM and absent ISA; recheck dependencies, licenses and codegen.
+  Qualify the [fused recurrent copy/decay source candidate](docs/native-rust-engine.md#bounded-parallel-row-qualification)
+  on actual-model logits/state, throughput and resources before releasing and
+  repinning it; fewer copied bytes alone do not establish a speed or RAM gain.
 - During planned tiled prefill, attention and chunkwise GDN work, check whether
   signed padded/relative index mapping introduces repeated floor division by a fixed
   non-power-of-two constant. Consider [Joffe's algorithm](docs/cpu-kernels.md#signed-constant-floor-division)

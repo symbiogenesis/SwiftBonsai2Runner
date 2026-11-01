@@ -1,0 +1,23 @@
+{
+  "Repository": "symbiogenesis/SwiftBonsai2Runner",
+  "RunId": "41260645322",
+  "Revision": "8c76cf52205463490f87d59e3c5a618069d0ae99",
+  "RunAttempt": 1,
+  "FoundationRunId": "41260645673",
+  "StartedAtUtc": "2026-11-01T01:33:01.9111513Z",
+  "FinishedAtUtc": "2026-11-01T01:35:50.7503818Z",
+  "TotalSeconds": 168.8393113,
+  "IntakeSeconds": 1.4296496,
+  "ExitCode": 1,
+  "OuterTimedOut": false,
+  "MaximumSeconds": 300,
+  "OwnerProcessMaximumSeconds": 240,
+  "OwnerWorkMaximumSeconds": 210,
+  "OwnerAttempted": true,
+  "AdditionalModelAttempts": 0,
+  "CleanupVerified": true,
+  "Status": "failed",
+  "LastStage": "credential-free-retention",
+  "AcceptanceArtifactRetention": "retained-exact-credential-free-artifact",
+  "DefaultPromotionQualified": false
+}

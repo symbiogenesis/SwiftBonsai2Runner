@@ -1,0 +1,25 @@
+{
+  "RunId": "41260645322",
+  "Revision": "8c76cf52205463490f87d59e3c5a618069d0ae99",
+  "RecordedAtUtc": "2026-11-01T01:35:49.6632492Z",
+  "ElapsedSeconds": 166.108,
+  "OwnedRegistrationAbsent": true,
+  "RegisteredRunnerCount": 0,
+  "CredentialOwnerMatched": true,
+  "RunnerCredentialFiles": [
+    {
+      "Name": ".runner",
+      "Exists": false
+    },
+    {
+      "Name": ".credentials",
+      "Exists": false
+    },
+    {
+      "Name": ".credentials_rsaparams",
+      "Exists": false
+    }
+  ],
+  "RemainingOwnedProcessIds": [],
+  "CleanupComplete": true
+}

@@ -72,14 +72,18 @@ and [local API contract](docs/broker-policy.md#public-request-contract).
 | Model | Runtime | Tokens/second | Model file | Job commit cap / measured peak | Available RAM admission | Restore copy saved vs. Rust 0.1.4 |
 | --- | --- | ---: | ---: | ---: | ---: | ---: |
 | **Swift Bonsai 2 `PTQ1_0` (diagnostic only)** | **Rust 0.1.10 prerelease + LoRA 1.3** | **Not measured** | **5.54 GiB** | **11.5 GiB / not recorded** | **15.5 GiB** | **149.625 MiB** |
-| Swift Bonsai 2 `PQ2_0` (experimental Rust) | Rust 0.1.10 prerelease + LoRA 1.3 | Not measured | 6.71 GiB | 11.5 GiB / not recorded | 15.5 GiB | 149.625 MiB |
+| Swift Bonsai 2 `PQ2_0` (experimental Rust) | Rust 0.1.10 prerelease, one worker + LoRA 1.3 | 0.105 (request) | 6.71 GiB | 11.5 GiB / not recorded | 15.5 GiB | 149.625 MiB |
+| Swift Bonsai 2 `PQ2_0` (experimental Rust) | Rust 0.1.10 prerelease, four workers + LoRA 1.3 | Pending (deadline) | 6.71 GiB | 11.5 GiB / not recorded | 15.5 GiB | 149.625 MiB |
 | Swift Bonsai 2 `PQ2_0` (captured source diagnostic) | Rust 0.1.9, four workers + LoRA 1.3 | Not measured | 6.71 GiB | 11.5 GiB / 7.04 GiB | 15.5 GiB | 149.625 MiB |
 | Swift Bonsai 2 `PTQ1_0` | PrismML C++ CPU | Not measured | 5.54 GiB | 11.5 GiB / — | 15.5 GiB | — |
 | Swift Bonsai 2 `PQ2_0` (current default) | PrismML C++ CPU | Not measured | 6.71 GiB | 11.5 GiB / — | 15.5 GiB | — |
 | Qwen3.8-27B `UD-Q3_K_XL` | llama.cpp reference | Not measured | 12.24 GiB | 18 GiB / — | 22 GiB | — |
 
-Tokens/second refers to application generation throughput on Snapdragon hardware;
-measurements for these profiles are pending.
+The [bounded X2 Elite Extreme attempt](docs/evidence/native-request-speed.json)
+measured eight output tokens in 76.21 s: **0.105 request tokens/second**, including
+prefill and HTTP delivery through connection closure, excluding startup. The
+four-worker request reached the shared soft deadline; its rate and the paired
+speedup remain pending. Sustained decode TPS and the other profiles are unmeasured.
 
 > [!NOTE]
 > **PTQ1 is diagnostic only; shipping it as the app default remains no-go.**
@@ -123,8 +127,9 @@ See the [Swift memory assessment](docs/swift-memory.md) and
 ### Response speed
 
 Compact weights can reduce memory traffic, but response speed also depends on
-the hardware, runtime and prompt length. **Swift's Snapdragon tokens/second have
-not been measured yet.** For context, these are Prism's published results for
+the hardware, runtime and prompt length. **Swift's sustained Snapdragon decode
+rate remains unmeasured; the table above records one short-request rate.**
+For context, these are Prism's published results for
 the **base Bonsai 2 model**, using PQ2 weights on other hardware:
 
 ![Base Bonsai 2 PQ2 generation speed: Apple M5 Pro 28.1, RTX 4090 81.2 and RTX 5090 129.9 tokens per second.](docs/assets/reference-throughput.svg)

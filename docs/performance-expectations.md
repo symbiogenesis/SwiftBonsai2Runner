@@ -30,7 +30,13 @@ The publisher reports uneven instruction following, tool use and open-ended codi
 
 The [memory guide](swift-memory.md) records 16-token Prism CPU decode and PTQ1 results;
 the [Rust runtime contract](native-rust-engine.md) owns NEON/hybrid-graph evidence.
-Neither establishes complete-answer performance. Snapdragon TPS, sustained comfort,
+Neither establishes complete-answer performance. A [bounded original-PQ2 Rust
+0.1.10 attempt](evidence/native-request-speed.json) with adapter 1.3 records one
+eight-token request in 76.2149 s with one worker: **0.104966 request tokens/s**,
+including prefill and HTTP/connection closure, excluding startup. Four-worker
+readiness passed, but its request reached the shared soft deadline; no candidate
+rate or speedup exists. The full attempt took 168.84 s with both owned Jobs and
+listeners cleaned up, no retry and retained receipts. Decode TPS, sustained comfort,
 creative quality, GPU/NPU profiles, isolation and actual-model app acceptance remain
 unqualified. [PLAN.md](../PLAN.md) owns delivery; [validation](validation.md) and
 independent [LoRA gates](swift-lora.md#standard-profile-qualification) govern acceptance.
