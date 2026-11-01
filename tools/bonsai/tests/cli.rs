@@ -57,6 +57,7 @@ fn version_advertises_policy_commands_without_resolving_a_request_file()
         "chat-package",
         "gguf",
         "ptq1-capture",
+        "native-qualification",
         "ptq1-packing",
         "host-capabilities",
         "native-acceptance-budget",

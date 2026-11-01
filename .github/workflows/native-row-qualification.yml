@@ -31,9 +31,8 @@ jobs:
           $ErrorActionPreference = 'Stop'
           $PSNativeCommandUseErrorActionPreference = $true
           python -B tools/row-parallel/test_compare.py
-          foreach ($caseName in @('Plan', 'HostedGuard', 'OwnerGuard')) {
-            ./tests/Test-NativeRowQualification.ps1 -Case $caseName
-          }
+          ./tests/Test-NativeRowQualification.ps1 -Case HostedGuard
+          cargo +nightly-2026-10-22 test --locked --release --target-dir $env:BONSAI_TOOLS_TARGET -p bonsai-tools --lib native_qualification::tests
       - name: Prepare source-bound parallel-capable checker and checked maintenance tools
         shell: pwsh
         working-directory: ${{ runner.temp }}
@@ -84,6 +83,9 @@ jobs:
     runs-on: [self-hosted, Windows, ARM64, swift-bonsai-snapdragon]
     timeout-minutes: 5
     steps:
+      - name: Start the aggregate owner clock before checkout and intake
+        shell: pwsh
+        run: '"BONSAI_ROW_JOB_STARTED_UTC=$([DateTime]::UtcNow.ToString(''o''))" >> $env:GITHUB_ENV'
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
@@ -102,13 +104,34 @@ jobs:
           Set-StrictMode -Version Latest
           $ErrorActionPreference = 'Stop'
           $PSNativeCommandUseErrorActionPreference = $true
-          $start = [Diagnostics.ProcessStartInfo]::new((Join-Path $PSHOME 'pwsh.exe'))
+          Import-Module (Join-Path $env:GITHUB_WORKSPACE 'scripts/Bonsai.Tools.psm1')
+          $budgetTick = [Diagnostics.Stopwatch]::GetTimestamp()
+          $frequency = [Diagnostics.Stopwatch]::Frequency
+          $limits = Invoke-BonsaiTool -Command native-acceptance-budget -ToolPath $env:BONSAI_TOOLS_PATH -TimeoutSeconds 10 -Request @{
+            jobStartedUtc=$env:BONSAI_ROW_JOB_STARTED_UTC; nowUtc=[DateTime]::UtcNow.ToString('o')
+            nowTick=$budgetTick; tickFrequency=$frequency; runId=$env:GITHUB_RUN_ID; revision=$env:GITHUB_SHA
+            ownerDeadline=@{ RunId=$env:BONSAI_NATIVE_OWNER_RUN_ID; Revision=$env:BONSAI_NATIVE_OWNER_REVISION
+              StartedTick=$env:BONSAI_NATIVE_OWNER_STARTED_TICK; StartedUtc=$env:BONSAI_NATIVE_OWNER_STARTED_UTC
+              WorkSeconds=$env:BONSAI_NATIVE_OWNER_WORK_SECONDS }
+          }
+          $workDeadline = $budgetTick + ([long]$limits.CaseBudgetSeconds * $frequency)
+          $hardDeadline = $budgetTick + ([long]$limits.HardLimitSeconds * $frequency)
+          $requestPath = Join-Path $env:RUNNER_TEMP 'native-row-request.json'
+          $caller = [Diagnostics.Process]::GetCurrentProcess()
+          try { $callerCreation = $caller.StartTime.ToUniversalTime().ToFileTimeUtc() } finally { $caller.Dispose() }
+          @{ operation='capture'; kind='rows'; repositoryDirectory=$env:GITHUB_WORKSPACE
+            dataDirectory=(Join-Path $env:LOCALAPPDATA 'SwiftBonsai2')
+            captureToolsDirectory=(Join-Path $env:RUNNER_TEMP 'SwiftBonsai-RowCaptureTools')
+            workBudgetSeconds=$limits.CaseBudgetSeconds; workDeadlineTick=$workDeadline
+            parentProcessId=$PID; parentCreationTimeFileTime=$callerCreation
+          } | ConvertTo-Json | Set-Content -LiteralPath $requestPath -Encoding utf8NoBOM
+          $start = [Diagnostics.ProcessStartInfo]::new($env:BONSAI_TOOLS_PATH)
           $start.WorkingDirectory = $env:RUNNER_TEMP
           $start.UseShellExecute = $false
           $start.CreateNoWindow = $true
           $start.RedirectStandardOutput = $true
           $start.RedirectStandardError = $true
-          foreach ($argument in @('-NoProfile', '-File', (Join-Path $env:GITHUB_WORKSPACE 'scripts/Invoke-NativeRowQualification.ps1'), '-DataDirectory', (Join-Path $env:LOCALAPPDATA 'SwiftBonsai2'), '-CaptureToolsDirectory', (Join-Path $env:RUNNER_TEMP 'SwiftBonsai-RowCaptureTools'))) {
+          foreach ($argument in @('native-qualification', '--request', $requestPath)) {
             $start.ArgumentList.Add($argument)
           }
           foreach ($name in @('ACTIONS_RUNTIME_TOKEN', 'ACTIONS_ID_TOKEN_REQUEST_TOKEN', 'GITHUB_TOKEN', 'GH_TOKEN', 'ACTIONS_RUNNER_INPUT_TOKEN')) {
@@ -118,7 +141,8 @@ jobs:
           try {
             $stdout = $child.StandardOutput.ReadToEndAsync()
             $stderr = $child.StandardError.ReadToEndAsync()
-            if (-not $child.WaitForExit(240000)) { throw 'The complete row-worker trial exceeded its 240-second process budget.' }
+            $remainingMilliseconds = [int][Math]::Floor(($hardDeadline - [Diagnostics.Stopwatch]::GetTimestamp()) * 1000.0 / $frequency)
+            if ($remainingMilliseconds -lt 1 -or -not $child.WaitForExit($remainingMilliseconds)) { throw 'The complete row-worker trial exhausted its original process deadline.' }
             [Console]::Out.Write($stdout.GetAwaiter().GetResult())
             [Console]::Error.Write($stderr.GetAwaiter().GetResult())
             $code = $child.ExitCode
@@ -146,6 +170,8 @@ jobs:
             ${{ env.BONSAI_ROW_QUALIFICATION_EVIDENCE }}/qualification.json
             ${{ env.BONSAI_ROW_QUALIFICATION_EVIDENCE }}/comparison.json
             ${{ env.BONSAI_ROW_QUALIFICATION_EVIDENCE }}/comparison.txt
+            ${{ env.BONSAI_ROW_QUALIFICATION_EVIDENCE }}/comparison.*.stdout
+            ${{ env.BONSAI_ROW_QUALIFICATION_EVIDENCE }}/comparison.*.stderr
             ${{ env.BONSAI_ROW_QUALIFICATION_EVIDENCE }}/capture-tools.json
             ${{ env.BONSAI_ROW_QUALIFICATION_EVIDENCE }}/maintenance-tools.json
             ${{ env.BONSAI_ROW_QUALIFICATION_EVIDENCE }}/serial/*.json

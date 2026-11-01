@@ -43,3 +43,19 @@ fn observations_preserve_canonical_time_and_reject_nonlocal_storage() -> std::io
     assert!(bonsai_windows_process::available_disk_bytes(Path::new("C:\\nul\0tail")).is_err());
     Ok(())
 }
+
+#[test]
+fn shared_clock_and_process_snapshot_observe_the_live_test_process() -> std::io::Result<()> {
+    let (first, frequency) = bonsai_windows_process::monotonic_ticks()?;
+    let (second, next_frequency) = bonsai_windows_process::monotonic_ticks()?;
+    assert!(frequency > 0 && second >= first);
+    assert_eq!(frequency, next_frequency);
+    let executable = std::env::current_exe()?;
+    let name = executable
+        .file_name()
+        .and_then(|name| name.to_str())
+        .ok_or_else(|| std::io::Error::other("Missing test executable name."))?;
+    assert!(bonsai_windows_process::has_running_process(&[name])?);
+    assert!(bonsai_windows_process::has_running_process(&[""]).is_err());
+    Ok(())
+}

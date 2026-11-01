@@ -18,16 +18,10 @@ if (-not $IsWindows -or [Runtime.InteropServices.RuntimeInformation]::ProcessArc
 }
 Import-Module (Join-Path $PSScriptRoot 'Bonsai.Common.psm1')
 Import-Module (Join-Path $PSScriptRoot 'Bonsai.Native.psm1')
+Import-Module (Join-Path $PSScriptRoot 'Bonsai.Tools.psm1')
 $repo = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
-$pinsPath = Join-Path $repo 'tools/row-parallel/pins.json'
-if ((Get-Item -LiteralPath $pinsPath).Length -gt 65536) { throw 'Source pins exceed their pre-read bound.' }
-$pins = Get-Content -LiteralPath $pinsPath -Raw | ConvertFrom-Json -DateKind String
+$pins = Invoke-BonsaiTool -Command native-qualification -Request @{ operation = 'source-pins'; kind = 'rows'; repositoryDirectory = $repo }
 $source = $pins.rustSource
-if ($source.commit -cnotmatch '^[a-f0-9]{40}$' -or $source.sha256 -cnotmatch '^[a-f0-9]{64}$' -or
-    $source.bytes -lt 1 -or $source.bytes -gt 67108864 -or
-    $source.url -cne "https://github.com/symbiogenesis/prism-inference/archive/$($source.commit).zip") {
-    throw 'Reviewed exact Prism source archive pins are required.'
-}
 $output = Resolve-ExternalPath $OutputDirectory
 if (Test-Path -LiteralPath $output) {
     if (-not [IO.Directory]::Exists($output) -or @(Get-ChildItem -LiteralPath $output -Force).Count) {

@@ -55,6 +55,22 @@ pub fn available_disk_bytes(path: &Path) -> io::Result<u64> {
     native::maintenance::available_disk_bytes(path)
 }
 
+/// Returns the shared Windows performance counter and its ticks-per-second rate.
+///
+/// # Errors
+/// Rejects failed or invalid native counter queries.
+pub fn monotonic_ticks() -> io::Result<(u64, u64)> {
+    native::maintenance::monotonic_ticks()
+}
+
+/// Checks a bounded process snapshot for any explicitly selected executable name.
+///
+/// # Errors
+/// Rejects invalid selections, oversized inventories and failed native enumeration.
+pub fn has_running_process(names: &[&str]) -> io::Result<bool> {
+    native::maintenance::has_running_process(names)
+}
+
 /// Bounded failure context retained inside a Vulkan query's `io::Error`.
 ///
 /// Downcast `io::Error::get_ref()` to this type to distinguish failed discovery

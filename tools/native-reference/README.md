@@ -5,7 +5,7 @@ evaluating the single supplied ID `[248045]` with the approved adapter at scale
 1.3. Select one Rust backend (`auto`, `scalar` or `neon`) and one row-worker count
 (`1`, the default, or `4`). This remains one comparison, not a worker/backend matrix.
 **The entire owner job, including setup, loading, comparison, cleanup and
-artifact upload, has a five-minute hard limit.** The wrapper starts its separate
+artifact upload, has a five-minute hard limit.** The Rust command starts its separate
 work clock before preparation and caps external calls by the remaining
 allowance. The job clock starts before checkout/tool intake; the checked budget
 tool subtracts those costs from the at-most-240-second work allowance and honors
@@ -14,7 +14,7 @@ or out-of-range work allowance rejects before owner/model preparation. This is o
 bounded trial; omitted controls are not split into repeated jobs.
 The parent also passes its original monotonic work deadline into the child and
 recomputes the watchdog's remaining time after process startup. Receipt writing,
-PowerShell startup and handoff cannot renew either deadline. Active capture and
+Native process startup and handoff cannot renew either deadline. Active capture and
 comparison phases are saved before launching external work.
 
 No-adapter, loaded-zero identity, changed nonzero logits, scalar, explicit NEON,
@@ -53,13 +53,13 @@ tools must be built in hosted CI and delivered with `capture-tools.json`:
 `CollectorLanguage: rust`, `CollectorSourcePath`, `CollectorSourceSha256`,
 `AbiControlSha256`, `AbiProvenanceSha256`, `Compiler`, `RustToolchain`, and exactly two `Files`
 entries (`Name`, `Bytes`, lowercase `Sha256`) for `swift-ptq1-reference.exe` and
-`swift_model_check.exe`. The wrapper checks the current Runner revision, source
+`swift_model_check.exe`. Rust checks the current Runner revision, source
 pins, Rust source/control digests, binary hashes/sizes and ARM64 PE architecture. Both binaries
 and their receipt are guarded during execution. A historical schema-2 receipt is
 accepted only for one worker and cannot acquire parallel capabilities through
 injected fields. There is no owner build fallback.
-Supply the separately hosted-prepared maintenance executable through `ToolPath`
-or `BONSAI_TOOLS_PATH`.
+Run the separately hosted-prepared maintenance executable directly. Its adjacent
+`receipt.json` must bind its complete digest to the current Runner revision.
 
 Hosted preparation uses the pinned Rust compiler/LLD for the collector and its
 model-free tests; it no longer downloads native source headers or invokes a C++
@@ -70,9 +70,20 @@ missing, extra, changed or overflowing records reject the trial, as do changed
 expected control bytes after receipt validation. These checks share the existing
 240-second work allowance and do not replace the logits/state comparison.
 
-```powershell
-./scripts/Invoke-NativePtq1Numerics.ps1 -DataDirectory "$env:LOCALAPPDATA/SwiftBonsai2" -PlanOnly
+```text
+bonsai-tools native-qualification --request C:\Evidence\native-plan.json
 ```
+
+```json
+{"operation":"plan","kind":"ptq1","repositoryDirectory":"C:\\Source\\SwiftBonsai2Runner","rustBackend":"auto","rowWorkers":1}
+```
+
+The owning workflow uses `operation: "capture"` and adds existing
+`dataDirectory`, `captureToolsDirectory`, `workBudgetSeconds` and the original
+`workDeadlineTick`. Source pins, hosted tool receipts, native ABI checks, model
+admission, each owned capture and bounded atomic partial receipts live in Rust.
+The independent Python full-state comparator remains an owned, deadline-bound
+child of the Rust command. No PowerShell capture wrapper remains.
 
 Actual execution belongs only to the main-only manual
 `native-ptq1-numerics.yml` workflow on a native ARM64 Snapdragon ephemeral runner
@@ -84,13 +95,13 @@ The exact PTQ1 export, approved adapter and native package must already be provi
 One model runs at a time. The shared policy retains 15.5 GiB admission, 11.5 GiB
 Job commit and 4 GiB physical reserve. Source preparation and compilation run in
 hosted CI; all owner preparation is included in its 240-second work budget.
-Snapshots occupy approximately 301 MiB before metadata/compression; the wrapper
+Snapshots occupy approximately 301 MiB before metadata/compression; the Rust owner
 requires 1 GiB external disk headroom. The upload selection excludes weights,
 adapters and build caches. Archive credential-free evidence durably before
 temporary artifacts expire.
 
 The collector saves one logits row and complete native sequence-zero state. Its
-expected artifact identity is meaningful together with the wrapper's retained
+expected artifact identity is meaningful together with the Rust owner's retained
 guards; the standalone collector does not attest authenticity. All writes are
 create-new and each state snapshot is capped at 512 MiB. It samples no token.
 The native sequence header must be magic `0xaf143cd8`, then sequence ID zero.

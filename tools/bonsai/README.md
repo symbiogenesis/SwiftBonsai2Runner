@@ -64,6 +64,7 @@ bonsai-tools host-capabilities --request ABSOLUTE_JSON_PATH
 bonsai-tools native-acceptance-budget --request ABSOLUTE_JSON_PATH
 bonsai-tools startup-diagnostics --request ABSOLUTE_JSON_PATH
 bonsai-tools ptq1-capture --request ABSOLUTE_JSON_PATH
+bonsai-tools native-qualification --request ABSOLUTE_JSON_PATH
 bonsai-tools ptq1-packing --request ABSOLUTE_JSON_PATH
 bonsai-tools packing-qualification --request ABSOLUTE_JSON_PATH
 ```
@@ -95,6 +96,21 @@ session keys before publication, sanitizes across sessions, and returns only
 `ptq1-capture` supports `receipt` with bundle/repository directories, revision and
 reviewed pins, and `compare-abi` with actual/expected paths and the source-bound
 expected SHA-256. Neither command loads a model or qualifies numerical parity.
+
+`native-qualification` owns one fixed numerical workload: `kind: "ptq1"`
+selects one native/Rust pair at backend `auto`, `scalar` or `neon` and row-worker
+count 1 or 4; `kind: "rows"` fixes the original PQ2 serial/four-worker pair.
+Requests provide `repositoryDirectory` and `operation: "plan"`, `"source-pins"`
+or `"capture"`. Capture additionally requires existing `dataDirectory`,
+`captureToolsDirectory`, `workBudgetSeconds` in 1..240 and the original
+`workDeadlineTick` from Windows QueryPerformanceCounter/.NET Stopwatch.
+The deadline can only shrink; the tool never bootstraps, provisions or renews it.
+Rust validates current source pins, exact hosted binary inventories and the
+running maintenance executable's revision receipt, then owns memory admission,
+ABI preflights, capture supervision and atomic bounded partial receipts.
+Its independent Python comparator runs in an owned process under the same
+remaining allowance. Model-free plan, source, deadline and receipt regressions
+run in Rust; only hosted compiler preparation remains PowerShell.
 
 `ptq1-packing` independently verifies the complete current-weight export against
 the original PQ2 file. Supply expanded absolute `sourcePath`, `outputPath` and

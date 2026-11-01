@@ -1,11 +1,78 @@
 //! Small operating-system observations for native maintenance commands.
 
 use std::io;
+use std::os::windows::io::AsRawHandle as _;
 use std::path::Path;
 
 use windows_sys::Win32::Foundation::SYSTEMTIME;
 use windows_sys::Win32::Storage::FileSystem::{GetDiskFreeSpaceExW, GetDriveTypeW};
+use windows_sys::Win32::System::Diagnostics::ToolHelp::{
+    CreateToolhelp32Snapshot, PROCESSENTRY32W, Process32FirstW, Process32NextW, TH32CS_SNAPPROCESS,
+};
+use windows_sys::Win32::System::Performance::{QueryPerformanceCounter, QueryPerformanceFrequency};
 use windows_sys::Win32::System::SystemInformation::GetSystemTime;
+
+pub(crate) fn monotonic_ticks() -> io::Result<(u64, u64)> {
+    let mut ticks = 0;
+    let mut frequency = 0;
+    // SAFETY: Both calls receive live writable i64 outputs and retain no pointers.
+    super::check(unsafe { QueryPerformanceCounter(&raw mut ticks) })?;
+    // SAFETY: The frequency output remains writable for the complete synchronous call.
+    super::check(unsafe { QueryPerformanceFrequency(&raw mut frequency) })?;
+    let ticks = u64::try_from(ticks).map_err(|_| super::invalid("Negative monotonic counter."))?;
+    let frequency = u64::try_from(frequency)
+        .ok()
+        .filter(|value| *value != 0)
+        .ok_or_else(|| super::invalid("Invalid monotonic frequency."))?;
+    Ok((ticks, frequency))
+}
+
+pub(crate) fn has_running_process(names: &[&str]) -> io::Result<bool> {
+    if names.len() > 64
+        || names
+            .iter()
+            .any(|name| name.is_empty() || !name.is_ascii() || name.len() > 260)
+    {
+        return Err(super::invalid(
+            "Process-name selection exceeds its fixed bound.",
+        ));
+    }
+    // SAFETY: A process-only snapshot takes no caller pointers and returns a fresh handle.
+    let snapshot = super::owned(unsafe { CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0) })?;
+    let mut entry = PROCESSENTRY32W {
+        dwSize: u32::try_from(std::mem::size_of::<PROCESSENTRY32W>())
+            .map_err(|_| super::invalid("Process entry size overflow."))?,
+        ..PROCESSENTRY32W::default()
+    };
+    // SAFETY: snapshot remains owned; entry is correctly sized and writable.
+    let mut found = unsafe { Process32FirstW(snapshot.as_raw_handle(), &raw mut entry) };
+    let mut count = 0;
+    while found != 0 {
+        count += 1;
+        if count > 16384 {
+            return Err(super::invalid("Process inventory exceeds its fixed bound."));
+        }
+        let end = entry
+            .szExeFile
+            .iter()
+            .position(|unit| *unit == 0)
+            .ok_or_else(|| super::invalid("Unterminated process name."))?;
+        let name = String::from_utf16_lossy(&entry.szExeFile[..end]);
+        if names
+            .iter()
+            .any(|selected| name.eq_ignore_ascii_case(selected))
+        {
+            return Ok(true);
+        }
+        // SAFETY: The same owned snapshot and initialized entry remain live for the next record.
+        found = unsafe { Process32NextW(snapshot.as_raw_handle(), &raw mut entry) };
+    }
+    let error = io::Error::last_os_error();
+    if error.raw_os_error() != Some(18) {
+        return Err(error);
+    }
+    Ok(false)
+}
 
 pub(crate) fn current_creation_time() -> io::Result<u64> {
     // SAFETY: The process ID belongs to this live process; the returned handle is owned below.

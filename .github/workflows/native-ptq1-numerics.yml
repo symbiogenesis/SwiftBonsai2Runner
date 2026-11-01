@@ -38,15 +38,12 @@ jobs:
       - name: Check the hosted-only build boundary
         shell: pwsh
         run: ./tests/Test-NativePtq1CaptureTools.ps1 -Case HostedGuard
-      - name: Check collector receipt and complete ABI observation rejection
-        shell: pwsh
-        run: ./tests/Test-NativePtq1CaptureTools.ps1 -Case CollectorControls
       - name: Check bounded compiler and failure evidence
         shell: pwsh
         run: ./tests/Test-NativePtq1CaptureTools.ps1 -Case BuildEvidence
-      - name: Reject stale runtime source and missing owner allowances
+      - name: Check native source, receipt and original-deadline policy
         shell: pwsh
-        run: ./tests/Test-NativePtq1CaptureTools.ps1 -Case CapturePolicy
+        run: cargo +nightly-2026-10-22 test --locked --release --target-dir $env:BONSAI_TOOLS_TARGET -p bonsai-tools --lib native_qualification::tests
       - name: Validate fixed native-state decoding and control binding
         shell: pwsh
         run: >-
@@ -169,7 +166,17 @@ jobs:
           } finally {
             $budgetReport | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $budgetPath -Encoding utf8NoBOM
           }
-          $start = [Diagnostics.ProcessStartInfo]::new((Join-Path $PSHOME 'pwsh.exe'))
+          $requestPath = Join-Path $env:RUNNER_TEMP 'native-ptq1-request.json'
+          $caller = [Diagnostics.Process]::GetCurrentProcess()
+          try { $callerCreation = $caller.StartTime.ToUniversalTime().ToFileTimeUtc() } finally { $caller.Dispose() }
+          @{ operation='capture'; kind='ptq1'; repositoryDirectory=$env:GITHUB_WORKSPACE
+            dataDirectory=(Join-Path $env:LOCALAPPDATA 'SwiftBonsai2')
+            captureToolsDirectory=(Join-Path $env:RUNNER_TEMP 'SwiftBonsai-Ptq1CaptureTools')
+            workBudgetSeconds=$workSeconds; workDeadlineTick=$workDeadline
+            rustBackend=$env:BONSAI_PTQ1_RUST_BACKEND; rowWorkers=[int]$env:BONSAI_PTQ1_ROW_WORKERS
+            parentProcessId=$PID; parentCreationTimeFileTime=$callerCreation
+          } | ConvertTo-Json | Set-Content -LiteralPath $requestPath -Encoding utf8NoBOM
+          $start = [Diagnostics.ProcessStartInfo]::new($env:BONSAI_TOOLS_PATH)
           $start.WorkingDirectory = $env:RUNNER_TEMP
           $start.UseShellExecute = $false
           $start.CreateNoWindow = $true
@@ -177,7 +184,7 @@ jobs:
           $start.RedirectStandardError = $true
           # A hosted preparation job supplies the checked capture and maintenance
           # tools. Owner-laptop builds/downloads are intentionally unavailable.
-          foreach ($argument in @('-NoProfile', '-File', (Join-Path $env:GITHUB_WORKSPACE 'scripts/Invoke-NativePtq1Numerics.ps1'), '-DataDirectory', (Join-Path $env:LOCALAPPDATA 'SwiftBonsai2'), '-CaptureToolsDirectory', (Join-Path $env:RUNNER_TEMP 'SwiftBonsai-Ptq1CaptureTools'), '-WorkBudgetSeconds', [string]$workSeconds, '-WorkDeadlineTick', [string]$workDeadline, '-RustBackend', $env:BONSAI_PTQ1_RUST_BACKEND, '-NativeRowWorkers', $env:BONSAI_PTQ1_ROW_WORKERS)) {
+          foreach ($argument in @('native-qualification', '--request', $requestPath)) {
             $start.ArgumentList.Add($argument)
           }
           foreach ($name in @('ACTIONS_RUNTIME_TOKEN', 'ACTIONS_ID_TOKEN_REQUEST_TOKEN', 'GITHUB_TOKEN', 'GH_TOKEN', 'ACTIONS_RUNNER_INPUT_TOKEN')) {
@@ -225,7 +232,10 @@ jobs:
             ${{ env.BONSAI_PTQ1_NUMERICS_EVIDENCE }}/numerics.json
             ${{ env.BONSAI_PTQ1_NUMERICS_EVIDENCE }}/comparison.json
             ${{ env.BONSAI_PTQ1_NUMERICS_EVIDENCE }}/comparison.txt
+            ${{ env.BONSAI_PTQ1_NUMERICS_EVIDENCE }}/comparison.*.stdout
+            ${{ env.BONSAI_PTQ1_NUMERICS_EVIDENCE }}/comparison.*.stderr
             ${{ env.BONSAI_PTQ1_NUMERICS_EVIDENCE }}/capture-tools.json
+            ${{ env.BONSAI_PTQ1_NUMERICS_EVIDENCE }}/maintenance-tools.json
             ${{ env.BONSAI_PTQ1_NUMERICS_EVIDENCE }}/abi-preflight/*.json
             ${{ env.BONSAI_PTQ1_NUMERICS_EVIDENCE }}/abi-preflight/*.txt
             ${{ env.BONSAI_PTQ1_NUMERICS_EVIDENCE }}/abi-observations/*.json

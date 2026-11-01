@@ -229,7 +229,7 @@ pub(crate) fn run(
     )
 }
 
-fn run_with_checkpoint(
+pub(crate) fn run_with_checkpoint(
     executable: &OsStr,
     args: &[OsString],
     working: &Path,

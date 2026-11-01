@@ -265,7 +265,8 @@ five-minute limit; the child process has a shared 240-second work allowance.
 Admission, Job limit and physical reserve remain 15.5 GiB, 11.5 GiB and 4 GiB.
 
 ```powershell
-./scripts/Invoke-NativeRowQualification.ps1 -DataDirectory $data -PlanOnly
+Import-Module ./scripts/Bonsai.Tools.psm1
+Invoke-BonsaiTool -Command native-qualification -Request @{ operation = 'plan'; kind = 'rows'; repositoryDirectory = $PWD.Path }
 ```
 
 The comparator requires the exact model/adapter/scale graph identity, observed

@@ -275,7 +275,7 @@ jobs:
         if: matrix.lane == 'foundation'
         shell: pwsh
         run: |
-          foreach ($case in @('HostedGuard', 'CollectorControls', 'BuildEvidence', 'CapturePolicy')) {
+          foreach ($case in @('HostedGuard', 'BuildEvidence')) {
             ./tests/Test-NativePtq1CaptureTools.ps1 -Case $case
           }
       - name: Exact headless candidate owner-startup planning

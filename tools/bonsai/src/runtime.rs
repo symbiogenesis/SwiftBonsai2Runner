@@ -54,6 +54,7 @@ mod windows {
         parent_creation_time_file_time: u64,
         #[serde(default)]
         include_help: bool,
+        timeout_seconds: Option<u64>,
     }
 
     fn matches_commit(text: &str, commit: &str) -> bool {
@@ -79,6 +80,7 @@ mod windows {
         parent: &ParentProcess,
         scratch: &Path,
         kind: &str,
+        deadline: Instant,
     ) -> Result<String> {
         let stdout = scratch.join(format!("{kind}.stdout.txt"));
         let stderr = scratch.join(format!("{kind}.stderr.txt"));
@@ -94,7 +96,12 @@ mod windows {
             },
             1_048_576,
             &format!("Runtime {kind}"),
-            || parent.ensure_alive().map_err(|error| error.to_string()),
+            || {
+                if Instant::now() >= deadline {
+                    return Err("Runtime verification exhausted its shared deadline.".into());
+                }
+                parent.ensure_alive().map_err(|error| error.to_string())
+            },
         )?;
         Ok(output.stdout + &output.stderr)
     }
@@ -113,8 +120,13 @@ mod windows {
         )
         .map_err(|error| error.to_string())?;
         let started = Instant::now();
+        let timeout = request.timeout_seconds.unwrap_or(60);
+        if !(1..=240).contains(&timeout) {
+            return Err("Runtime verification allowance must be in 1..240 seconds.".into());
+        }
+        let deadline = started + Duration::from_secs(timeout);
         let runtime = VerifiedRuntime::verify_with(&request.runtime, || {
-            if started.elapsed() >= Duration::from_secs(60) {
+            if Instant::now() >= deadline {
                 return Err(ArtifactError::Cancelled);
             }
             parent.ensure_alive().map_err(|_| ArtifactError::Cancelled)
@@ -130,13 +142,13 @@ mod windows {
         ));
         validate_external_path(&scratch).map_err(|error| error.to_string())?;
         fs::create_dir(&scratch).map_err(|error| error.to_string())?;
-        let version = probe(&runtime, &parent, &scratch, "version")?;
+        let version = probe(&runtime, &parent, &scratch, "version", deadline)?;
         if !matches_commit(&version, &request.commit) {
             return Err("Runtime reported build identity differs from the lock file.".into());
         }
         let help = request
             .include_help
-            .then(|| probe(&runtime, &parent, &scratch, "help"))
+            .then(|| probe(&runtime, &parent, &scratch, "help", deadline))
             .transpose()?;
         Ok(json!({"Status": "verified", "Commit": request.commit,
             "ServerPath": runtime.executable(), "ArchivePath": runtime.archive_path(),

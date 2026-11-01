@@ -131,10 +131,10 @@ function Invoke-BonsaiTool {
           [Collections.IDictionary]$Request = @{}, [string]$ToolPath,
           [ValidateRange(0,86400)][int]$TimeoutSeconds = 60)
     if (-not $ToolPath -and $env:BONSAI_TOOLS_PATH) { $ToolPath = $env:BONSAI_TOOLS_PATH }
-    if ($Command -eq 'cpu-check' -and -not $Request['checkOnly'] -and -not $ToolPath) {
-        throw 'CPU execution requires a prebuilt maintenance executable; source bootstrap cannot consume the owner-device allowance.'
+    if ((($Command -eq 'cpu-check' -and -not $Request['checkOnly']) -or ($Command -eq 'native-qualification' -and $Request['operation'] -eq 'capture')) -and -not $ToolPath) {
+        throw 'Owner execution requires a prebuilt maintenance executable; source bootstrap cannot consume the owner-device allowance.'
     }
-    if ($Command -in @('cpu-check', 'server-plan') -and -not $PSBoundParameters.ContainsKey('TimeoutSeconds')) { $TimeoutSeconds = 300 }
+    if ($Command -in @('cpu-check', 'server-plan', 'native-qualification') -and -not $PSBoundParameters.ContainsKey('TimeoutSeconds')) { $TimeoutSeconds = 300 }
     # The supervisor owns each sample deadline; hashing precedes that deadline
     # and paired captures can contain many ten-minute samples.
     if ($Command -eq 'completion' -and -not $PSBoundParameters.ContainsKey('TimeoutSeconds')) { $TimeoutSeconds = 0 }
@@ -170,7 +170,7 @@ function Invoke-BonsaiTool {
     $requestPath = Join-Path $lane 'request.json'
     $payload = [ordered]@{}
     foreach ($key in $Request.Keys) { $payload[$key] = $Request[$key] }
-    if ($startup -or $Command -in @('completion','runtime-verify','inference-capabilities','cpu-check','server-plan') -or
+    if ($startup -or $Command -in @('completion','runtime-verify','inference-capabilities','cpu-check','server-plan','native-qualification') -or
         ($Command -eq 'speech-evaluation' -and $Request['operation'] -eq 'session') -or
         ($Command -eq 'qualification' -and $Request['operation'] -in @('capture', 'screen-capture'))) {
         $currentProcess = [Diagnostics.Process]::GetCurrentProcess()
