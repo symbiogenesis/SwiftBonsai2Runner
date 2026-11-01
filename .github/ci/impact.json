@@ -40,10 +40,10 @@
         "scripts/Read-Gguf.ps1", "scripts/Export-SwiftPtq1.ps1", "scripts/Bonsai.Gguf.psm1",
         "scripts/Get-Model.ps1", "scripts/Start-Chat.ps1",
         "scripts/Get-SpeechModels.ps1", "scripts/Bonsai.SpeechModels.psm1", "tests/Test-SpeechModels.ps1",
-        "scripts/Bonsai.NativeSpeech.psm1", "scripts/Get-NativeSpeechModels.ps1", "config/native-speech.lock.json",
+        "config/native-speech.lock.json",
         "scripts/Invoke-TtsEvaluation.ps1", ".github/workflows/tts-evaluation.yml",
         "tools/canary-asr/model.lock.json", "tools/canary-asr/tokenizer.lock.json", "tools/qwen-tts/model.lock.json",
-        "scripts/New-DevelopmentKeys.ps1", "scripts/Bonsai.Inference.psm1",
+        "scripts/Bonsai.Inference.psm1",
         "scripts/Bonsai.Common.psm1", "scripts/Bonsai.Tools.psm1", "scripts/Bonsai.Native.psm1",
         "tests/Test-Foundation.ps1", "tests/Test-ChatInstance.ps1", "tests/Test-Inference*.ps1", "tests/Test-Gguf.ps1",
         "tests/Test-RuntimePromotion.ps1",
@@ -53,7 +53,7 @@
         "tools/native-reference/**", ".github/workflows/native-ptq1-numerics.yml",
         "scripts/Invoke-HeadlessPublisherStartup.ps1", "tests/Test-HeadlessPublisherStartup.ps1",
         "docs/evidence/headless-publisher-startup.json", "docs/runtime-candidates/headless-ucrt-argv.json",
-        "tests/Test-Pq2Census.ps1", "tests/Test-Ptq1Export.ps1", "tests/Test-DevelopmentKeys.ps1",
+        "tests/Test-Pq2Census.ps1", "tests/Test-Ptq1Export.ps1",
         "tests/Test-ToolBootstrap.ps1", "tests/*Support*", "tests/fixtures/**",
         "config/prism-inference.lock.json", "config/model.metadata.json"
       ]

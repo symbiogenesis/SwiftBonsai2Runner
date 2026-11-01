@@ -31,7 +31,6 @@ if (-not $PlanOnly) {
 }
 $repo = Split-Path $PSScriptRoot -Parent
 Import-Module (Join-Path $PSScriptRoot 'Bonsai.Common.psm1')
-Import-Module (Join-Path $PSScriptRoot 'Bonsai.NativeSpeech.psm1')
 Import-Module (Join-Path $PSScriptRoot 'Bonsai.Tools.psm1')
 $available = [Environment]::ProcessorCount
 if ($available -lt 1 -or $available -gt 256) { throw 'Evaluation CPU count exceeds the supported bound.' }
@@ -53,14 +52,16 @@ $reportPath = Join-Path $evidence 'tts-evaluation.json'
 @{ SchemaVersion = 2; Revision = $env:GITHUB_SHA; Status = 'preparing'; QualityVerdict = 'pending-human-listening' } |
     ConvertTo-Json | Set-Content -LiteralPath $reportPath
 if (-not $TtsPath) {
-    $built = Invoke-NativeSpeechBuild -DataDirectory $data -WorkingDirectory $evidence -RepositoryRoot $repo -Model QwenTts
+    $built = Invoke-BonsaiTool -Command speech-build -ToolPath $ToolPath -TimeoutSeconds 0 -Request @{
+        operation = 'build'; dataDirectory = $data; workingDirectory = $evidence; repositoryRoot = $repo; model = 'QwenTts'; forceBuild = $false
+    }
     $TtsPath = $built.TtsPath
 }
 $TtsPath = Resolve-ExternalPath -Path $TtsPath
 Assert-Arm64PE -Path $TtsPath
 $ttsFile = Get-Item -LiteralPath $TtsPath
 $ttsSha256 = (Get-FileHash -LiteralPath $TtsPath -Algorithm SHA256).Hash.ToLowerInvariant()
-$keys = & (Join-Path $PSScriptRoot 'New-DevelopmentKeys.ps1') -ParentDirectory $evidence -ToolPath $ToolPath
+$keys = Invoke-BonsaiTool -Command credentials -ToolPath $ToolPath -Request @{ parentDirectory = $evidence }
 $key = [IO.File]::ReadAllText($keys.FrontendKeyFile)
 if ($key -cnotmatch '^[0-9a-f]{64}$') { throw 'Evaluation credential has invalid framing.' }
 $handler = [Net.Http.HttpClientHandler]::new()
@@ -112,7 +113,10 @@ function ConvertTo-EvaluationWave {
 try {
     # Provision both arms before timed trials so downloads never bias either arm.
     foreach ($quantization in @('Q8_0', 'Q4_K_M')) {
-        $null = Install-NativeSpeechModels -DataDirectory $data -Model QwenTts -TtsQuantization $quantization -ToolPath $tool
+        $null = Invoke-BonsaiTool -Command speech-build -ToolPath $tool -TimeoutSeconds 0 -Request @{
+            operation = 'models'; dataDirectory = $data; model = 'QwenTts'; ttsQuantization = $quantization
+            verifyOnly = $false; deferCachedVerification = $false; workingDirectory = $evidence
+        }
     }
     foreach ($trial in $plan.Schedule) {
         $quantization = $trial.Quantization

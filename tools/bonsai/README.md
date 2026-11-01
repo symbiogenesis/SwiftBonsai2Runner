@@ -11,7 +11,7 @@ revision and extract it outside Git:
 
 ```powershell
 $env:BONSAI_TOOLS_PATH = 'C:\BonsaiTools\bonsai-tools.exe'
-./scripts/New-DevelopmentKeys.ps1 -ParentDirectory C:\BonsaiData
+& $env:BONSAI_TOOLS_PATH credentials --request C:\Evidence\credentials.json
 & $env:BONSAI_TOOLS_PATH cpu-check --request C:\Evidence\cpu-check.json
 Import-Module ./scripts/Bonsai.Tools.psm1
 Invoke-BonsaiTool -Command qualification -Request @{
@@ -26,8 +26,10 @@ selected binary, the resolver builds pinned sources with `--locked --release` in
 an external incremental system-temp lane. This requires Rust and locked
 dependencies. GGUF wrappers share the resolver through `-GgufToolPath`.
 
-Key creation with `-WhatIf` creates nothing and resolves no executable. Planning
-may resolve the maintenance tool but never starts inference.
+Credential requests contain only `parentDirectory`, an existing absolute external
+local directory. The command creates fresh protected files and returns paths only.
+Speech provisioning/build requests go directly to `speech-build`; their former
+PowerShell wrappers have been removed. Planning never starts inference.
 
 These wrappers require `bonsai-tools` version 0.1.0, protocol 5. The version
 handshake advertises supported commands, so a selected binary must support the

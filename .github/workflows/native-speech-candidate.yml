@@ -157,8 +157,11 @@ jobs:
               'CARGO_BUILD_RUSTC', 'CARGO_BUILD_RUSTC_WRAPPER', 'CARGO_BUILD_RUSTC_WORKSPACE_WRAPPER')) {
             Remove-Item -LiteralPath ('Env:' + $name) -ErrorAction SilentlyContinue
           }
-          Import-Module (Join-Path $RepositoryRoot 'scripts/Bonsai.NativeSpeech.psm1')
-          $result = Invoke-NativeSpeechBuild -RepositoryRoot $RepositoryRoot -DataDirectory $DataDirectory -WorkingDirectory $WorkingDirectory -Model All -ToolPath $ToolPath
+          Import-Module (Join-Path $RepositoryRoot 'scripts/Bonsai.Tools.psm1')
+          $result = Invoke-BonsaiTool -Command speech-build -ToolPath $ToolPath -TimeoutSeconds 0 -Request @{
+            operation = 'build'; repositoryRoot = $RepositoryRoot; dataDirectory = $DataDirectory
+            workingDirectory = $WorkingDirectory; model = 'All'; forceBuild = $false
+          }
           $result | ConvertTo-Json -Depth 12 -Compress
           '@ | Set-Content -LiteralPath $childScript -Encoding utf8NoBOM
             $pwsh = @(Get-Command pwsh -CommandType Application -ErrorAction Stop)[0].Source

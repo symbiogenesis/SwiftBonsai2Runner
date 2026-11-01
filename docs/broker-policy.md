@@ -318,7 +318,7 @@ deny write/delete opens. ACLs and ancestor ownership are explicitly unverified.
 Routine output contains the numeric endpoint and value-free status, never keys,
 prompts, arguments or raw I/O errors.
 
-`scripts/New-DevelopmentKeys.ps1` creates a fresh random directory with distinct
+The Rust `credentials` command creates a fresh random directory with distinct
 random keys under an existing owner-controlled external local parent. Protected
 owner/LocalSystem ACLs exist before secret writes and are verified. Existing
 objects are never reused. It returns paths only; `-WhatIf` resolves no executable

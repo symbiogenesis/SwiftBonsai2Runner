@@ -135,7 +135,7 @@ $speech.TtsCodecPath
 $speech.TtsVoiceModelPath
 ```
 
-`Get-NativeSpeechModels.ps1 -DataDirectory $data -Model Canary` or `-Model QwenTts`
+Rust `speech-build` with `operation: "models"` and `model: "Canary"` or `"QwenTts"`
 selects one engine. `Get-SpeechModels.ps1` explicitly provisions original reference
 snapshots, which the app no longer uses. `-NoTts` skips automatic TTS setup;
 `-NoSpeechModels` skips all automatic speech setup/downloads. Neither provisioning
@@ -197,7 +197,11 @@ the unchanged Q8 codec explicitly:
 
 ```powershell
 ./scripts/Start-Chat.ps1 -DataDirectory $data -TtsQuantization Q4_K_M
-./scripts/Get-NativeSpeechModels.ps1 -DataDirectory $data -Model QwenTts -TtsQuantization Q4_K_M
+Import-Module ./scripts/Bonsai.Tools.psm1
+Invoke-BonsaiTool -Command speech-build -TimeoutSeconds 0 -Request @{
+    operation = 'models'; dataDirectory = $data; workingDirectory = [IO.Path]::GetTempPath()
+    model = 'QwenTts'; ttsQuantization = 'Q4_K_M'; verifyOnly = $false; deferCachedVerification = $false
+}
 ./scripts/Invoke-TtsEvaluation.ps1 -DataDirectory $data -PlanOnly
 ```
 
@@ -488,7 +492,8 @@ $broker = Join-Path $scratch 'build/release/bonsai-broker.exe'
 Create fresh protected keys under an existing owner-controlled external parent:
 
 ```powershell
-$keys = ./scripts/New-DevelopmentKeys.ps1 -ParentDirectory $data
+Import-Module ./scripts/Bonsai.Tools.psm1
+$keys = Invoke-BonsaiTool -Command credentials -Request @{ parentDirectory = $data }
 ```
 
 Configure the separate backend to use `$keys.BackendKeyFile`, then run the broker
