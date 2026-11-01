@@ -16,6 +16,13 @@ CI-only; hosted cloud CI has its own workflow limits.
 Each worker in a parallel fan-out must use its own individual Git worktree.
 Within each worktree, place each logical change in its own individual commit.
 
+# Runner repository workflow
+
+Keep the primary checkout on local `main` and push completed Runner changes directly
+to `origin/main`. Do not create Runner pull requests as the routine delivery workflow.
+Parallel workers must still use individual Git worktrees and one commit per logical
+change; review and integrate their commits into local `main` before pushing.
+
 # Prism repository workflow
 
 On this computer, the owner authorizes direct pushes to `main` from the sibling
