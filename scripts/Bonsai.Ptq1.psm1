@@ -2,7 +2,7 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-function Get-Ptq1CapturePins {
+function Get-Ptq1CapturePin {
     <# .SYNOPSIS
     Requires numerical captures to test the exact currently pinned Rust source.
     #>
@@ -21,4 +21,4 @@ function Get-Ptq1CapturePins {
     return $pins
 }
 
-Export-ModuleMember -Function Get-Ptq1CapturePins
+Export-ModuleMember -Function Get-Ptq1CapturePin

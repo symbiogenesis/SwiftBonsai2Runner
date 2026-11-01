@@ -21,7 +21,7 @@ Import-Module (Join-Path $PSScriptRoot 'Bonsai.Tools.psm1')
 Import-Module (Join-Path $PSScriptRoot 'Bonsai.Native.psm1')
 Import-Module (Join-Path $PSScriptRoot 'Bonsai.Ptq1.psm1')
 $repo = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
-$pins = Get-Ptq1CapturePins -RepositoryDirectory $repo
+$pins = Get-Ptq1CapturePin -RepositoryDirectory $repo
 $pending = @('no-adapter', 'loaded-zero-identity', 'nonzero-change', 'scalar', 'explicit-neon',
     'writer-authoring-basis', 'quality', 'performance', 'full-context', 'service')
 $plan = [pscustomobject]@{

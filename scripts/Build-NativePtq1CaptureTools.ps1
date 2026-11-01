@@ -33,7 +33,7 @@ if (Test-Path -LiteralPath $output) {
 [void][IO.Directory]::CreateDirectory($output)
 $scratch = Resolve-ExternalPath (Join-Path ([IO.Path]::GetTempPath()) ('Bonsai-HostedPtq1Build-' + [guid]::NewGuid().ToString('N')))
 [void][IO.Directory]::CreateDirectory($scratch)
-$pins = Get-Ptq1CapturePins -RepositoryDirectory $repo
+$pins = Get-Ptq1CapturePin -RepositoryDirectory $repo
 $source = $pins.rustSource
 $channel = 'nightly-2026-10-22-aarch64-pc-windows-msvc'
 $evidence = Join-Path $scratch 'evidence'

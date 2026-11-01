@@ -365,7 +365,10 @@ not close pending hosted integration or full-model acceptance.
   and comfort with PQ2 rollback. Promote or reduce admission only after suitability,
   using the verified
   **1,259,520,000-byte** packing difference. Account for mapped residency separately
-  from private commit and preserve reserves.
+  from private commit and preserve reserves. Collect and independently review all
+  gates in the explicit PTQ1 promotion policy, including exact packing provenance
+  and actual-device original-PQ2 rollback; PQ2 and worker variants cannot supply
+  a PTQ1 promotion verdict.
 - Capture prefill, first useful answer, decode TPS, task time, retries and truncation,
   working, private, Job, system and device memory peaks, hard faults, observable energy,
   responsiveness and sustained heat and fan behavior. Retain X2 `ProcessMemory`

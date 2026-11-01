@@ -276,6 +276,13 @@ jobs:
         shell: pwsh
         working-directory: ${{ runner.temp }}
         run: '& (Join-Path $env:GITHUB_WORKSPACE "tests/Test-RuntimePromotion.ps1")'
+      - name: PTQ1 current-source and original-deadline admission controls
+        if: matrix.lane == 'foundation'
+        shell: pwsh
+        run: |
+          foreach ($case in @('HostedGuard', 'CollectorControls', 'BuildEvidence', 'CapturePolicy')) {
+            ./tests/Test-NativePtq1CaptureTools.ps1 -Case $case
+          }
       - name: Exact headless candidate owner-startup planning
         if: matrix.lane == 'foundation'
         shell: pwsh

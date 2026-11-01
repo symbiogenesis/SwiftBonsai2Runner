@@ -12,7 +12,7 @@ Import-Module (Join-Path $PSScriptRoot 'Bonsai.TestSupport.psm1')
 if ($Case -ceq 'CapturePolicy') {
     Import-Module (Join-Path $PSScriptRoot '../scripts/Bonsai.Ptq1.psm1')
     $repo = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
-    $pins = Get-Ptq1CapturePins -RepositoryDirectory $repo
+    $pins = Get-Ptq1CapturePin -RepositoryDirectory $repo
     $tempRoot = [IO.Path]::GetFullPath([IO.Path]::GetTempPath())
     $fixture = [IO.Path]::GetFullPath((Join-Path $tempRoot ('Bonsai-Ptq1CapturePolicy-' + [guid]::NewGuid().ToString('N'))))
     [void][IO.Directory]::CreateDirectory((Join-Path $fixture 'tools/native-reference'))
@@ -26,14 +26,14 @@ if ($Case -ceq 'CapturePolicy') {
             $changed = $original | ConvertFrom-Json -DateKind String
             $changed.rustSource.$field = if ($field -ceq 'bytes') { $changed.rustSource.bytes + 1 } else { 'stale' }
             $changed | ConvertTo-Json -Depth 12 | Set-Content -LiteralPath $pinsPath -Encoding utf8NoBOM
-            $failure = Assert-Failure -PassThru { Get-Ptq1CapturePins -RepositoryDirectory $fixture }
+            $failure = Assert-Failure -PassThru { Get-Ptq1CapturePin -RepositoryDirectory $fixture }
             Assert ($failure -like '*differs from the pinned Rust runtime*') 'Historical or changed numerical source was accepted.'
         }
         [IO.File]::WriteAllText($pinsPath, $original)
         $lock = Get-Content -LiteralPath $lockPath -Raw | ConvertFrom-Json -DateKind String
         $lock.commit = 'stale'
         $lock | ConvertTo-Json -Depth 12 | Set-Content -LiteralPath $lockPath -Encoding utf8NoBOM
-        Assert-Failure { Get-Ptq1CapturePins -RepositoryDirectory $fixture }
+        Assert-Failure { Get-Ptq1CapturePin -RepositoryDirectory $fixture }
         foreach ($allowance in @(0, -1, 241)) {
             $failure = Assert-Failure -PassThru {
                 & (Join-Path $repo 'scripts/Invoke-NativePtq1Numerics.ps1') -DataDirectory $fixture -WorkBudgetSeconds $allowance
