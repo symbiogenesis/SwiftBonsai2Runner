@@ -142,7 +142,7 @@ fn checks(
 pub(super) fn repack(harness: &Harness<'_>) -> crate::Result<()> {
     let fixture = fixture(1928, 141)?;
     let target = harness.directory.join("export.gguf");
-    let result = super::super::decode(invoke(harness, "export-source", &fixture.bytes, &target)?)?;
+    let result = super::super::decode(&invoke(harness, "export-source", &fixture.bytes, &target)?)?;
     let bytes = fs::read(target).map_err(|error| error.to_string())?;
     let original = harness.inspect(
         "export-original-inspect",
@@ -159,7 +159,7 @@ pub(super) fn repack(harness: &Harness<'_>) -> crate::Result<()> {
     checks(&result, &original, &converted, &fixture, &bytes)
 }
 
-fn rejection_result(output: crate::startup_process::ProcessOutput) -> crate::Result<()> {
+fn rejection_result(output: &crate::startup_process::ProcessOutput) -> crate::Result<()> {
     require(
         output.code == 1 && output.stdout.is_empty() && !output.stderr.is_empty(),
         "Expected exporter rejection rather than crash, timeout or success.",
@@ -170,7 +170,7 @@ pub(super) fn rejection(harness: &Harness<'_>) -> crate::Result<()> {
     let mut fixture = fixture(1, 141)?;
     fixture.bytes[fixture.data + fixture.last + 2] = 255;
     let target = harness.directory.join("failed.partial");
-    rejection_result(invoke(harness, "export-invalid", &fixture.bytes, &target)?)?;
+    rejection_result(&invoke(harness, "export-invalid", &fixture.bytes, &target)?)?;
     require(!target.exists(), "Failed export published a final output.")?;
     let partials = fs::read_dir(harness.directory)
         .map_err(|error| error.to_string())?
@@ -189,13 +189,18 @@ pub(super) fn rejection(harness: &Harness<'_>) -> crate::Result<()> {
         "Export failure evidence was unexpectedly removed.",
     )?;
     fs::write(&target, [1, 2, 3, 4]).map_err(|error| error.to_string())?;
-    rejection_result(invoke(harness, "export-existing", &fixture.bytes, &target)?)?;
+    rejection_result(&invoke(
+        harness,
+        "export-existing",
+        &fixture.bytes,
+        &target,
+    )?)?;
     require(
         fs::read(&target).map_err(|error| error.to_string())? == [1, 2, 3, 4],
         "CreateNew rejection modified existing output.",
     )?;
     let wrong = self::fixture(1, 143)?;
-    rejection_result(invoke(
+    rejection_result(&invoke(
         harness,
         "export-wrong-file-type",
         &wrong.bytes,

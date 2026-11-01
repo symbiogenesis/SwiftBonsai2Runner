@@ -69,7 +69,7 @@ fn mixed() -> crate::Result<Fixture> {
     small[2] = 0x58;
     small[67] = 0x95;
     let mut large = vec![0x64; 34 * BLOCKS];
-    for block in large.chunks_exact_mut(34) {
+    for block in large.as_chunks_mut::<34>().0 {
         block[0] = 0;
         block[1] = 0x3c;
     }

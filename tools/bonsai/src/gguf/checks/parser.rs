@@ -281,7 +281,7 @@ pub(super) fn arrays(harness: &Harness<'_>) -> crate::Result<()> {
     let (bytes, start, digest) = array_fixture(7, 131_077, &flags)?;
     let report = harness.inspect("boolean-array", &bytes, "Stock", false)?;
     require(
-        report["Arrays"]["tokenizer.test_array"] == json!({"Count":131077,"ElementTypeId":7}),
+        report["Arrays"]["tokenizer.test_array"] == json!({"Count":131_077,"ElementTypeId":7}),
         "Large boolean array descriptor changed.",
     )?;
     require(

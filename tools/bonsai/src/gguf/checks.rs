@@ -130,7 +130,7 @@ impl Harness<'_> {
         census: bool,
     ) -> crate::Result<Value> {
         let arguments = self.arguments(name, bytes, dialect, census)?;
-        super::decode(super::invoke(self.tool, &arguments, self.directory, 15)?)
+        super::decode(&super::invoke(self.tool, &arguments, self.directory, 15)?)
     }
     fn reject(
         &self,
@@ -199,7 +199,7 @@ impl Harness<'_> {
     }
 }
 
-pub(super) fn run(request: Request) -> crate::Result<Value> {
+pub(super) fn run(request: &Request) -> crate::Result<Value> {
     let cases = [
         "parser",
         "strings",

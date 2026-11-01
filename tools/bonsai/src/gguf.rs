@@ -270,7 +270,7 @@ fn invoke(
     )
 }
 
-fn decode(output: crate::startup_process::ProcessOutput) -> crate::Result<Value> {
+fn decode(output: &crate::startup_process::ProcessOutput) -> crate::Result<Value> {
     if output.code != 0 {
         return Err(format!(
             "GGUF tool exited with code {}: {}{}",
@@ -300,7 +300,7 @@ fn execute(
     ));
     external(&work)?;
     fs::create_dir(&work).map_err(|error| error.to_string())?;
-    decode(invoke(&tool.path, arguments, &work, seconds)?)
+    decode(&invoke(&tool.path, arguments, &work, seconds)?)
 }
 
 /// Inspect verified metadata, count pinned PQ2 symbols, export the pinned Swift
@@ -331,7 +331,7 @@ pub fn run(value: Value) -> crate::Result<Value> {
             result["SourceRevision"] = pin(SWIFT)?["model"]["revision"].clone();
             Ok(result)
         }
-        Request::Check(request) => checks::run(request),
+        Request::Check(request) => checks::run(&request),
     }
 }
 
