@@ -14,11 +14,11 @@ if ($Case -ceq 'CapturePolicy') {
     $repo = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
     $pins = Get-Ptq1CapturePin -RepositoryDirectory $repo
     foreach ($workers in @(1, 4)) {
-      foreach ($backend in @('auto', 'scalar', 'neon')) {
-        $plan = & (Join-Path $repo 'scripts/Invoke-NativePtq1Numerics.ps1') -DataDirectory $repo -PlanOnly -RustBackend $backend -NativeRowWorkers $workers
-        Assert ($plan.RustBackend -ceq $backend -and $plan.RustRowWorkers -eq $workers -and $plan.NativeSamples -eq 1 -and $plan.RustSamples -eq 1 -and
-            $plan.WorkBudgetSeconds -eq 240 -and $plan.WholeJobMinutes -eq 5 -and -not $plan.DefaultMayChange) 'Backend selection changed the bounded capture workload or promotion boundary.'
-      }
+        foreach ($backend in @('auto', 'scalar', 'neon')) {
+            $plan = & (Join-Path $repo 'scripts/Invoke-NativePtq1Numerics.ps1') -DataDirectory $repo -PlanOnly -RustBackend $backend -NativeRowWorkers $workers
+            Assert ($plan.RustBackend -ceq $backend -and $plan.RustRowWorkers -eq $workers -and $plan.NativeSamples -eq 1 -and $plan.RustSamples -eq 1 -and
+                $plan.WorkBudgetSeconds -eq 240 -and $plan.WholeJobMinutes -eq 5 -and -not $plan.DefaultMayChange) 'Backend selection changed the bounded capture workload or promotion boundary.'
+        }
     }
     $defaultPlan = & (Join-Path $repo 'scripts/Invoke-NativePtq1Numerics.ps1') -DataDirectory $repo -PlanOnly
     Assert ($defaultPlan.RustRowWorkers -eq 1) 'The default numerical capture worker policy changed.'
