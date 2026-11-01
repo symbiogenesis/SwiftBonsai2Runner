@@ -194,7 +194,7 @@ pub(super) fn build(repository: &Path, output: &Path, ptq1: bool) -> crate::Resu
         if ptq1 {
             let identities = abi_controls(repository, &pins)?;
             let source_path = repository.join("tools/native-reference/swift_ptq1_reference.rs");
-            compiler_arguments = compiler_options.clone();
+            compiler_arguments.clone_from(&compiler_options);
             compiler_arguments.extend([
                 source_path.clone().into_os_string(),
                 "-o".into(),
@@ -212,7 +212,7 @@ pub(super) fn build(repository: &Path, output: &Path, ptq1: bool) -> crate::Resu
             )?;
             crate::startup_cache::assert_arm64(&collector)?;
             let tests = working.join("collector-tests.exe");
-            let mut arguments = compiler_options.clone();
+            let mut arguments = compiler_options;
             arguments.extend([
                 "--test".into(),
                 source_path.into_os_string(),

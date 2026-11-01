@@ -102,7 +102,12 @@ fn retain_logs(output: &Path, evidence: &Path, receipt: &Value) -> crate::Result
             .map_err(|error| error.to_string())?
             .into_iter()
             .filter_map(|entry| entry.file_name().into_string().ok())
-            .filter(|name| name.starts_with("source-build-") && name.ends_with(".log"))
+            .filter(|name| {
+                name.starts_with("source-build-")
+                    && Path::new(name)
+                        .extension()
+                        .is_some_and(|extension| extension.eq_ignore_ascii_case("log"))
+            })
             .take(4)
             .collect::<Vec<_>>();
         save_evidence(
@@ -167,10 +172,12 @@ fn speech(
         .map_err(|error| error.to_string())?
         .into_iter()
         .filter(|entry| {
-            entry
-                .file_name()
-                .to_str()
-                .is_some_and(|name| name.starts_with("startup-build-") && name.ends_with(".json"))
+            entry.file_name().to_str().is_some_and(|name| {
+                name.starts_with("startup-build-")
+                    && Path::new(name)
+                        .extension()
+                        .is_some_and(|extension| extension.eq_ignore_ascii_case("json"))
+            })
         })
         .collect::<Vec<_>>();
     if native_receipts.len() != 1 {

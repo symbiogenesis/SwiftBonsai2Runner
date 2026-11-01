@@ -1,4 +1,4 @@
-//! Locked CPU comparator source build and shared MSBuild scheduling limits.
+//! Locked CPU comparator source build and shared `MSBuild` scheduling limits.
 
 use super::{
     BTreeMap, OsString, Path, Value, execute, external, fs, is_redirect, json, ordinary, read_json,
@@ -141,10 +141,6 @@ fn available() -> Option<u64> {
     }
 }
 
-#[expect(
-    clippy::too_many_arguments,
-    reason = "Each argument is one validated field of the fixed engine-build request."
-)]
 #[expect(
     clippy::too_many_lines,
     reason = "One engine build transaction keeps source, configuration and output identities together."
@@ -347,7 +343,7 @@ pub(super) fn build(
     save(&marker, &configuration, false)?;
     let mut configure = vec![
         "-S".into(),
-        source.clone().into_os_string(),
+        source.into_os_string(),
         "-B".into(),
         build.clone().into_os_string(),
         "-G".into(),

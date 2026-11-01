@@ -7,7 +7,7 @@
 use std::{
     collections::BTreeMap,
     ffi::{OsStr, OsString},
-    fs::{self, File},
+    fs::{self, File, OpenOptions},
     io::{Read as _, Write as _},
     path::{Path, PathBuf},
     string::FromUtf8Error,
@@ -17,10 +17,7 @@ use std::{
 };
 
 #[cfg(not(windows))]
-use std::{
-    fs::OpenOptions,
-    process::{Child, Command, Stdio},
-};
+use std::process::{Child, Command, Stdio};
 
 #[cfg(windows)]
 use bonsai_windows_process::{OwnedProcess, ToolProcessSpec};
@@ -153,6 +150,31 @@ impl ChildGuard {
                 .map_err(|error| error.to_string())
         }
     }
+
+    fn stop_after_exit(&mut self) -> crate::Result<u32> {
+        // A successful compiler root can exit just before its normal children.
+        // Retain ownership through a short grace, then terminate the complete
+        // tree and report any surviving members as a failed tool invocation.
+        #[cfg(windows)]
+        let survivors = {
+            let grace = Instant::now();
+            loop {
+                let active = self
+                    .child
+                    .active_processes()
+                    .map_err(|error| error.to_string())?;
+                if active == 0 || grace.elapsed() >= Duration::from_millis(250) {
+                    break active;
+                }
+                thread::sleep(Duration::from_millis(10));
+            }
+        };
+        #[cfg(not(windows))]
+        let survivors = 0;
+        self.stop()?;
+        self.finished = true;
+        Ok(survivors)
+    }
 }
 
 impl Drop for ChildGuard {
@@ -208,6 +230,21 @@ fn write_log(log: &Path, output: &ProcessOutput) -> crate::Result<()> {
     file.write_all(output.stdout.as_bytes())
         .and_then(|()| file.write_all(output.stderr.as_bytes()))
         .map_err(|error| error.to_string())
+}
+
+fn reject_survivors(survivors: u32, log: &Path) -> crate::Result<()> {
+    if survivors == 0 {
+        return Ok(());
+    }
+    let message = format!(
+        "Tool root exited with {survivors} surviving owned Job members; descendants were stopped."
+    );
+    OpenOptions::new()
+        .append(true)
+        .open(log)
+        .and_then(|mut file| writeln!(file, "\n{message}"))
+        .map_err(|error| error.to_string())?;
+    Err(format!("{message} Evidence: {}", log.display()))
 }
 
 pub(crate) fn run(
@@ -320,24 +357,7 @@ pub(crate) fn run_with_checkpoint(
         }
         thread::sleep(Duration::from_millis(20));
     };
-    // A compiler root can exit just before its normal children. Retain the Job
-    // through a short natural-exit grace, then reject surviving workers even
-    // when their root returned success. Always stop the tree before returning.
-    #[cfg(windows)]
-    let survivors = {
-        let grace = Instant::now();
-        loop {
-            let active = guard
-                .child
-                .active_processes()
-                .map_err(|error| error.to_string())?;
-            if active == 0 || grace.elapsed() >= Duration::from_millis(250) {
-                break active;
-            }
-            thread::sleep(Duration::from_millis(10));
-        }
-    };
-    guard.stop()?;
+    let survivors = guard.stop_after_exit()?;
     checkpoint()?;
     let output = ProcessOutput {
         stdout: text(&stdout_path)?,
@@ -345,21 +365,8 @@ pub(crate) fn run_with_checkpoint(
         code: status,
     };
     write_log(log, &output)?;
-    #[cfg(windows)]
-    if survivors > 0 {
-        let message = format!(
-            "Tool root exited with {survivors} surviving owned Job members; descendants were stopped."
-        );
-        fs::OpenOptions::new()
-            .append(true)
-            .open(log)
-            .and_then(|mut file| writeln!(file, "\n{message}"))
-            .map_err(|error| error.to_string())?;
-        guard.finished = true;
-        return Err(format!("{message} Evidence: {}", log.display()));
-    }
+    reject_survivors(survivors, log)?;
     checkpoint()?;
-    guard.finished = true;
     Ok(output)
 }
 

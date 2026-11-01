@@ -83,10 +83,6 @@ pub(super) fn verify(package: &Path, source: &str, host: &str) -> crate::Result<
     )
 }
 
-#[expect(
-    clippy::too_many_arguments,
-    reason = "The hosted static-cache request supplies separate checked input/output roots and immutable identities."
-)]
 pub(super) fn build(
     repository: &Path,
     working: &Path,

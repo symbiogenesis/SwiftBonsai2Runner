@@ -205,7 +205,7 @@ struct Candidate<'a> {
 impl Candidate<'_> {
     fn remaining(&self) -> crate::Result<Duration> {
         crate::startup_cancel::checkpoint()?;
-        Duration::from_secs(2100)
+        Duration::from_mins(35)
             .checked_sub(self.started.elapsed())
             .filter(|duration| !duration.is_zero())
             .ok_or_else(|| {
