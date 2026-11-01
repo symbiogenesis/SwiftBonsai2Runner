@@ -102,6 +102,18 @@ recovery, quality, benefit or daily-service isolation. Supplying the captured
 short response checks application history input only; fresh recomputation and
 complete-state parity of generated/edited history remain independent.
 
+Explicit `profile: ptq1-adapter-lifecycle-row4` prepares the same three-stream
+PTQ1 scale/rejection/captured-history workload with four native row workers.
+It keeps the same model and adapter identities, prompt, one-token caps, sampler,
+request deadline, cleanup reserves and missing-evidence failures. Only the worker
+count and selected case/profile change. Its receipt separately identifies four
+configured workers; this does not independently observe actual thread use or
+establish a throughput gain. One-worker or PQ2 evidence cannot qualify this
+profile, and its evidence cannot qualify those controls. Hosted argument and
+partial-progress controls prepare the lane; actual-device acceptance remains
+pending. A later bounded trial requires its own complete allowance and cannot
+continue the missing steps of an earlier workload.
+
 Explicit `profile: pq2-adapter-row4` selects original PQ2, the approved adapter at
 scale 1.3 and pinned Prism 0.1.10 with `--native-row-workers 4`. It requires exactly
 one four-token-cap stream, verified model/adapter readiness and owned Job/listener

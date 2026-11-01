@@ -310,6 +310,34 @@ fn row_worker_evidence_cannot_qualify_a_different_execution_policy() -> crate::R
 }
 
 #[test]
+fn ptq1_parallel_evidence_cannot_qualify_single_worker_or_original_pq2() -> crate::Result<()> {
+    let parallel = policy(
+        &"a".repeat(40),
+        4,
+        None,
+        WeightRepresentation::CurrentRepackedPtq1,
+    )?;
+    assert_eq!(parallel["identities"]["nativeRowWorkers"], 4);
+    assert_eq!(
+        parallel["identities"]["weightRepresentation"],
+        "current-repacked-PTQ1_0"
+    );
+    for (workers, representation) in [
+        (1, WeightRepresentation::CurrentRepackedPtq1),
+        (4, WeightRepresentation::OriginalPq2),
+    ] {
+        let control = policy(&"a".repeat(40), workers, None, representation)?;
+        assert!(score(evidence(&control)?, &parallel, &std::env::temp_dir()).is_err());
+        assert!(score(evidence(&parallel)?, &control, &std::env::temp_dir()).is_err());
+    }
+    assert_eq!(
+        score(evidence(&parallel)?, &parallel, &std::env::temp_dir())?["promotionReady"],
+        false
+    );
+    Ok(())
+}
+
+#[test]
 fn stale_artifacts_unknown_duplicate_and_array_records_reject() -> crate::Result<()> {
     let policy = policy_fixture()?;
     let mut input = evidence(&policy)?;

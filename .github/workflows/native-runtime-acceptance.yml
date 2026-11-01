@@ -6,7 +6,7 @@ on:
       profile:
         description: Explicit bounded profile; all setup/model work/cleanup shares one five-minute job
         type: choice
-        options: [pq2-no-adapter, ptq1-adapter, ptq1-adapter-lifecycle, pq2-adapter-row4, pq2-adapter-lifecycle-row4, pq2-adapter-speed, ptq1-pq2-complete-response]
+        options: [pq2-no-adapter, ptq1-adapter, ptq1-adapter-lifecycle, ptq1-adapter-lifecycle-row4, pq2-adapter-row4, pq2-adapter-lifecycle-row4, pq2-adapter-speed, ptq1-pq2-complete-response]
         default: pq2-no-adapter
         required: false
       bounded_history:
@@ -70,6 +70,7 @@ jobs:
               'progress::native_progress_decodes_fragmented_chunks_without_counting_events_as_tokens',
               'progress::native_progress_drop_retains_partial_content_without_qualifying_completion',
               'native_ptq1_lifecycle_minimizes_tokens_without_changing_required_steps',
+              'native_ptq1_row4_lifecycle_is_explicit_and_preserves_the_required_workload',
               'native_adapter_scale_history_profile_requires_separate_explicit_selection',
               'native_adapter_scale_history_retains_partial_steps_without_qualifying_missing_work',
               'native_adapter_generated_history_requires_exact_bound_initial_output',
@@ -90,6 +91,7 @@ jobs:
             if ($LASTEXITCODE -ne 0) { throw 'Hosted acceptance profile/argument checks failed.' }
           }
           foreach ($case in @('pinned_native_ptq1_adapter_checks_scale_change_rejection_and_history',
+              'pinned_native_ptq1_adapter_row4_checks_scale_change_rejection_and_history',
               'pinned_native_pq2_adapter_row4_checks_scale_change_rejection_and_history',
               'representation::pinned_native_ptq1_pq2_capture_complete_responses')) {
             if ($modelFreeCases -cnotcontains ($case + ': test')) { throw 'Required bounded lifecycle case was not found.' }
@@ -234,6 +236,12 @@ jobs:
                 }
                 'pinned_native_ptq1_adapter_checks_scale_change_rejection_and_history'
               }
+              'ptq1-adapter-lifecycle-row4' {
+                if ($env:BONSAI_NATIVE_EXTENDED -ceq 'true' -or $env:BONSAI_NATIVE_STALLED_CONSUMER -ceq 'true') {
+                  throw 'The bounded four-row PTQ1 adapter scale/history profile does not admit extended_history or stalled_consumer.'
+                }
+                'pinned_native_ptq1_adapter_row4_checks_scale_change_rejection_and_history'
+              }
               'pq2-adapter-row4' {
                 if ($env:BONSAI_NATIVE_EXTENDED -ceq 'true' -or $env:BONSAI_NATIVE_STALLED_CONSUMER -ceq 'true') {
                   throw 'The bounded PQ2 four-row adapter profile does not admit extended_history or stalled_consumer.'
@@ -367,7 +375,7 @@ jobs:
               # exits 101 after retaining partial progress and owned cleanup.
               # Missing/malformed receipts remain unknown; this never changes
               # Passed or the original failing process disposition.
-              if ($env:BONSAI_NATIVE_PROFILE -cin @('pq2-no-adapter', 'pq2-adapter-lifecycle-row4', 'ptq1-adapter-lifecycle') -and
+              if ($env:BONSAI_NATIVE_PROFILE -cin @('pq2-no-adapter', 'pq2-adapter-lifecycle-row4', 'ptq1-adapter-lifecycle', 'ptq1-adapter-lifecycle-row4') -and
                   $diagnostics.AllRequestedWorkloadsPassed -is [bool]) {
                 $hostReport.AllRequestedWorkloadsPassed = $diagnostics.AllRequestedWorkloadsPassed
               }
@@ -388,8 +396,9 @@ jobs:
           }
           $profileScope = if ($env:BONSAI_NATIVE_PROFILE -ceq 'ptq1-adapter') {
             'PTQ1 with the approved adapter requires one scale-1.3 four-token stream; scale-zero and invalid-scale/reuse checks run only within the same budget. Unrun multi-scale, history, context and restart gates remain pending.'
-          } elseif ($env:BONSAI_NATIVE_PROFILE -ceq 'ptq1-adapter-lifecycle') {
-            'Current-weight PTQ1 with one row worker requires three one-token-cap streams: scale 1.3, scale zero, then scale 1.3 with the exact captured initial response supplied as assistant history after invalid-scale connection closure without a response, all in the same owner. Text, SHA-256, source messages, finish reason and usage bind that history; missing visible output keeps acceptance pending. Each further request requires more than 45 seconds remaining; a request timeout reserves 30 seconds for owned cleanup. Any missing required step remains pending and fails after cleanup. This does not prove zero/no-adapter logits identity, generated-history state reuse or parity, numerical parity, quality or TPS.'
+          } elseif ($env:BONSAI_NATIVE_PROFILE -cin @('ptq1-adapter-lifecycle', 'ptq1-adapter-lifecycle-row4')) {
+            $workers = if ($env:BONSAI_NATIVE_PROFILE -ceq 'ptq1-adapter-lifecycle-row4') { 'four' } else { 'one' }
+            ('Current-weight PTQ1 with ' + $workers + ' explicitly configured row workers requires three one-token-cap streams: scale 1.3, scale zero, then scale 1.3 with the exact captured initial response supplied as assistant history after invalid-scale connection closure without a response, all in the same owner. Text, SHA-256, source messages, finish reason and usage bind that history; missing visible output keeps acceptance pending. Each further request requires more than 45 seconds remaining; a request timeout reserves 30 seconds for owned cleanup. Any missing required step remains pending and fails after cleanup. One-worker and four-worker evidence remain separate. This does not prove zero/no-adapter logits identity, generated-history state reuse or parity, numerical parity, quality or TPS.')
           } elseif ($env:BONSAI_NATIVE_PROFILE -ceq 'pq2-adapter-row4') {
             'Original PQ2 with the approved adapter explicitly configures four native row workers and requires exactly one scale-1.3 four-token-cap stream, verified model/adapter readiness and owned cleanup. This does not independently observe thread count or establish TPS. Multi-scale, rejection/reuse, history, context, restart, performance and quality gates remain unrun.'
           } elseif ($env:BONSAI_NATIVE_PROFILE -ceq 'pq2-adapter-lifecycle-row4') {

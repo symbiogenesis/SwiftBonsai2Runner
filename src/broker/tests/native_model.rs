@@ -34,6 +34,8 @@ const PTQ1_ADAPTER_CASE: &str =
     "pinned_native_ptq1_adapter_starts_and_streams_within_device_budget";
 const PTQ1_ADAPTER_LIFECYCLE_CASE: &str =
     "pinned_native_ptq1_adapter_checks_scale_change_rejection_and_history";
+const PTQ1_ADAPTER_LIFECYCLE_ROW4_CASE: &str =
+    "pinned_native_ptq1_adapter_row4_checks_scale_change_rejection_and_history";
 const PQ2_ADAPTER_ROW4_CASE: &str =
     "pinned_native_pq2_adapter_row4_starts_and_streams_within_device_budget";
 const PQ2_ADAPTER_LIFECYCLE_CASE: &str =
@@ -102,6 +104,14 @@ const PTQ1_ADAPTER_LIFECYCLE_PROFILE: AdapterProfile = AdapterProfile {
     case: PTQ1_ADAPTER_LIFECYCLE_CASE,
     repacked: true,
     row_workers: 1,
+    optional_requests: false,
+    required_scale_history: true,
+};
+const PTQ1_ADAPTER_LIFECYCLE_ROW4_PROFILE: AdapterProfile = AdapterProfile {
+    name: "ptq1-adapter-lifecycle-row4",
+    case: PTQ1_ADAPTER_LIFECYCLE_ROW4_CASE,
+    repacked: true,
+    row_workers: 4,
     optional_requests: false,
     required_scale_history: true,
 };
@@ -1210,6 +1220,7 @@ fn adapter_profile(name: &str) -> Option<&'static AdapterProfile> {
     match name {
         "ptq1-adapter" => Some(&PTQ1_ADAPTER_PROFILE),
         "ptq1-adapter-lifecycle" => Some(&PTQ1_ADAPTER_LIFECYCLE_PROFILE),
+        "ptq1-adapter-lifecycle-row4" => Some(&PTQ1_ADAPTER_LIFECYCLE_ROW4_PROFILE),
         "pq2-adapter-row4" => Some(&PQ2_ADAPTER_ROW4_PROFILE),
         "pq2-adapter-lifecycle-row4" => Some(&PQ2_ADAPTER_LIFECYCLE_PROFILE),
         _ => None,
@@ -2099,6 +2110,7 @@ fn native_adapter_scale_history_retains_partial_steps_without_qualifying_missing
         timeout(Duration::from_secs(10), async {
             for (profile, completed_steps) in [
                 &PTQ1_ADAPTER_LIFECYCLE_PROFILE,
+                &PTQ1_ADAPTER_LIFECYCLE_ROW4_PROFILE,
                 &PQ2_ADAPTER_LIFECYCLE_PROFILE,
             ]
             .into_iter()
@@ -2224,6 +2236,12 @@ fn native_adapter_scale_history_profile_requires_separate_explicit_selection() {
             true,
             1,
         ),
+        (
+            "ptq1-adapter-lifecycle-row4",
+            PTQ1_ADAPTER_LIFECYCLE_ROW4_CASE,
+            true,
+            4,
+        ),
     ] {
         let selected = adapter_profile(name).unwrap();
         assert_eq!(profile_case(name, false, false), Some(case));
@@ -2255,6 +2273,51 @@ fn native_adapter_scale_history_profile_requires_separate_explicit_selection() {
         !adapter_profile("ptq1-adapter")
             .unwrap()
             .required_scale_history
+    );
+}
+
+#[test]
+fn native_ptq1_row4_lifecycle_is_explicit_and_preserves_the_required_workload() {
+    let single = &PTQ1_ADAPTER_LIFECYCLE_PROFILE;
+    let parallel = adapter_profile("ptq1-adapter-lifecycle-row4").unwrap();
+    assert_ne!(single.name, parallel.name);
+    assert_ne!(single.case, parallel.case);
+    assert_eq!(single.row_workers, 1);
+    assert_eq!(parallel.row_workers, 4);
+    assert!(parallel.repacked && parallel.required_scale_history && !parallel.optional_requests);
+    assert_eq!(adapter_completion_caps(parallel), [1, 1, 1]);
+    for history in [false, true] {
+        assert_eq!(
+            adapter_messages(single, history),
+            adapter_messages(parallel, history)
+        );
+    }
+    for scale in [1.3, 0.0] {
+        assert_eq!(
+            adapter_request(adapter_messages(single, false), scale, 1),
+            adapter_request(adapter_messages(parallel, false), scale, 1)
+        );
+    }
+    let mut expected = adapter_arguments(single, "8081");
+    expected.extend(["--native-row-workers", "4"].map(OsString::from));
+    let mut actual = adapter_arguments(parallel, "8081");
+    assert_eq!(actual, expected);
+    actual.extend(
+        [
+            "--data-directory",
+            "C:/model-not-opened",
+            "--evidence-parent",
+            "C:/evidence-not-opened",
+        ]
+        .map(OsString::from),
+    );
+    let config = LaunchConfig::parse(actual).unwrap();
+    assert!(config.uses_native_engine() && config.uses_repacked_ptq1());
+    assert!(config.requires_native_sandbox());
+    let report = json!({"streams":[adapter_initial_fixture(parallel)]});
+    assert_eq!(
+        generated_adapter_history(parallel, &report),
+        generated_adapter_history(single, &report)
     );
 }
 
@@ -2474,6 +2537,12 @@ fn pinned_native_ptq1_adapter_checks_scale_change_rejection_and_history() {
     adapter_scale_history_acceptance(&PTQ1_ADAPTER_LIFECYCLE_PROFILE);
 }
 
+#[test]
+#[ignore = "Actual PTQ1 adapter scale/history with four row workers; explicit bounded main-only device CI."]
+fn pinned_native_ptq1_adapter_row4_checks_scale_change_rejection_and_history() {
+    adapter_scale_history_acceptance(&PTQ1_ADAPTER_LIFECYCLE_ROW4_PROFILE);
+}
+
 fn adapter_scale_history_acceptance(profile: &AdapterProfile) {
     ci_only();
     let budget = case_budget();
@@ -2492,7 +2561,9 @@ fn adapter_scale_history_acceptance(profile: &AdapterProfile) {
     } else {
         "PQ2_0"
     };
-    let scope = if profile.repacked {
+    let scope = if profile.repacked && profile.row_workers == 4 {
+        "bounded-actual-model-ptq1-adapter-scale-history-lifecycle-row4"
+    } else if profile.repacked {
         "bounded-actual-model-ptq1-adapter-scale-history-lifecycle"
     } else {
         "bounded-actual-model-pq2-adapter-scale-history-lifecycle"
