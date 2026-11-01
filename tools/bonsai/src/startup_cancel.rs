@@ -59,7 +59,11 @@ pub fn initialize(parent: Option<(u32, u64)>) -> crate::Result<()> {
         .map_err(|_| "Startup cancellation context was already initialized.".into())
 }
 
-pub(crate) fn checkpoint() -> crate::Result<()> {
+/// Checks whether the retained startup caller remains alive.
+///
+/// # Errors
+/// Rejects an exited caller or failed native wait after initialization.
+pub fn checkpoint() -> crate::Result<()> {
     CONTEXT.get().map_or(Ok(()), Context::checkpoint)
 }
 

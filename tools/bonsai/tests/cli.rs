@@ -263,7 +263,7 @@ fn inline_and_stdin_json_preserve_native_promotion_roundtrip()
             .args(["runtime-promotion", "--json", invalid])
             .output()?;
         assert!(!result.status.success());
-        assert!(result.stdout.is_empty());
+        assert_eq!(result.stdout, Vec::<u8>::new());
     }
     Ok(())
 }
