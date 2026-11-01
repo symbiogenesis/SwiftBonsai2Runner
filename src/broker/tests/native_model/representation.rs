@@ -8,17 +8,28 @@ use super::*;
 
 pub(super) const PROFILE: &str = "ptq1-pq2-complete-response";
 pub(super) const CASE: &str = "representation::pinned_native_ptq1_pq2_capture_complete_responses";
+pub(super) const ROW4_PROFILE: &str = "ptq1-pq2-complete-response-row4";
+pub(super) const ROW4_CASE: &str =
+    "representation::pinned_native_ptq1_pq2_row4_capture_complete_responses";
 const CAP: u32 = 32;
 const PROMPT: &str = "Name one tree. Answer with only its name.";
 const NEXT_OWNER_RESERVE: Duration = Duration::from_secs(60);
-const PQ2: AdapterProfile = AdapterProfile {
-    name: PROFILE,
-    case: CASE,
-    repacked: false,
-    row_workers: 1,
-    optional_requests: false,
-    required_scale_history: false,
-};
+fn profiles(row_workers: u8) -> [AdapterProfile; 2] {
+    assert!([1, 4].contains(&row_workers));
+    let (name, case) = if row_workers == 1 {
+        (PROFILE, CASE)
+    } else {
+        (ROW4_PROFILE, ROW4_CASE)
+    };
+    [false, true].map(|repacked| AdapterProfile {
+        name,
+        case,
+        repacked,
+        row_workers,
+        optional_requests: false,
+        required_scale_history: false,
+    })
+}
 
 fn body() -> Value {
     let mut body = request(json!([{"role":"user","content":PROMPT}]), true, CAP);
@@ -106,12 +117,12 @@ async fn record_response(
     completed
 }
 
-fn comparison(samples: &[Value]) -> Value {
+fn comparison(samples: &[Value], row_workers: u8) -> Value {
     let pending = |reason| {
         json!({"status":"pending", "reason":reason,
         "ptq1OverPq2RequestLatency":null})
     };
-    if samples.len() != 2 {
+    if !matches!(row_workers, 1 | 4) || samples.len() != 2 {
         return pending("incomplete-pair");
     }
     for (index, sample) in samples.iter().enumerate() {
@@ -119,7 +130,7 @@ fn comparison(samples: &[Value]) -> Value {
         let expected = model_identity(index == 1);
         let content = stream["visibleContent"].as_str().unwrap_or("");
         if sample["modelIdentity"] != expected
-            || sample["configuredNativeRowWorkers"] != 1
+            || sample["configuredNativeRowWorkers"] != row_workers
             || sample["verifiedReadinessObserved"] != true
             || stream["finishReason"] != "stop"
             || stream["naturallyStopped"] != true
@@ -152,18 +163,19 @@ async fn paired_responses(
     data: &Path,
     evidence: &Path,
     deadline: tokio::time::Instant,
+    row_workers: u8,
     report: &mut Value,
 ) {
-    for profile in [&PQ2, &PTQ1_ADAPTER_PROFILE] {
+    for profile in &profiles(row_workers) {
         // Decide before each startup, charging the first owner and all prior
         // setup against the same deadline. Missing arms may not become jobs.
-        if deadline.saturating_duration_since(tokio::time::Instant::now()) <= NEXT_OWNER_RESERVE {
+        if !can_start_owner(deadline) {
             report["pendingReason"] = json!("insufficient-next-owner-and-cleanup-reserve");
             break;
         }
         let index = report["samples"].as_array().unwrap().len();
         report["samples"].as_array_mut().unwrap().push(json!({
-            "modelIdentity":model_identity(profile.repacked), "configuredNativeRowWorkers":1,
+            "modelIdentity":model_identity(profile.repacked), "configuredNativeRowWorkers":profile.row_workers,
             "rowWorkerCountIndependentlyObserved":false, "verifiedReadinessObserved":false,
             "startupMilliseconds":null, "stream":null, "cleanup":null}));
         report["phase"] = json!(format!("arm-{index}-startup"));
@@ -194,57 +206,84 @@ async fn paired_responses(
             break;
         }
     }
-    report["comparison"] = comparison(report["samples"].as_array().unwrap());
+    report["comparison"] = comparison(report["samples"].as_array().unwrap(), row_workers);
     report["passed"] = json!(report["comparison"]["status"] == "captured-complete-pair");
     report["phase"] = json!("completed");
     save_acceptance_report(evidence, report);
 }
 
+fn can_start_owner(deadline: tokio::time::Instant) -> bool {
+    deadline.saturating_duration_since(tokio::time::Instant::now()) > NEXT_OWNER_RESERVE
+}
+
 #[test]
 fn native_representation_pair_requires_completion_identity_and_cleanup() {
-    let sample = |repacked| {
-        json!({"modelIdentity":model_identity(repacked),
-        "configuredNativeRowWorkers":1,"verifiedReadinessObserved":true,
+    for row_workers in [1, 4] {
+        let pair = vec![
+            complete_sample(false, row_workers),
+            complete_sample(true, row_workers),
+        ];
+        assert_eq!(
+            comparison(&pair, row_workers)["ptq1OverPq2RequestLatency"],
+            1.0
+        );
+        for (path, value) in [
+            ("/stream/finishReason", json!("length")),
+            ("/stream/reportedCompletionTokens", Value::Null),
+            ("/stream/reportedCompletionTokens", json!(0)),
+            ("/stream/reportedCompletionTokens", json!(33)),
+            ("/stream/visibleContentSha256", json!("0".repeat(64))),
+            ("/stream/requestMilliseconds", json!(0)),
+            ("/modelIdentity/sha256", json!("0".repeat(64))),
+            (
+                "/configuredNativeRowWorkers",
+                json!(if row_workers == 1 { 4 } else { 1 }),
+            ),
+            ("/cleanup/ownedJobEmpty", json!(false)),
+            ("/cleanup/listenerReleased", json!(false)),
+        ] {
+            let mut changed = pair.clone();
+            *changed[1].pointer_mut(path).unwrap() = value;
+            assert_eq!(
+                comparison(&changed, row_workers)["status"],
+                "pending",
+                "{path}"
+            );
+        }
+        let mut changed = pair.clone();
+        changed[1]["stream"]["visibleContent"] = json!("Elm");
+        changed[1]["stream"]["visibleContentSha256"] = json!(digest(b"Elm"));
+        let result = comparison(&changed, row_workers);
+        assert_eq!(result["status"], "captured-complete-pair");
+        assert!(result["ptq1OverPq2RequestLatency"].is_null());
+        assert_eq!(result["qualityReview"], "pending");
+        assert_eq!(comparison(&pair[..1], row_workers)["status"], "pending");
+        assert_eq!(
+            comparison(&pair, if row_workers == 1 { 4 } else { 1 })["status"],
+            "pending"
+        );
+        assert_eq!(
+            comparison(&[pair[1].clone(), pair[0].clone()], row_workers)["status"],
+            "pending"
+        );
+    }
+}
+
+fn complete_sample(repacked: bool, row_workers: u8) -> Value {
+    json!({"modelIdentity":model_identity(repacked),
+        "configuredNativeRowWorkers":row_workers,"verifiedReadinessObserved":true,
         "stream":{"finishReason":"stop","naturallyStopped":true,"reportedCompletionTokens":3,
             "visibleContent":"Oak","visibleContentSha256":digest(b"Oak"),"requestMilliseconds":1000},
         "cleanup":{"ownedJobEmpty":true,"listenerReleased":true}})
-    };
-    let pair = vec![sample(false), sample(true)];
-    assert_eq!(comparison(&pair)["ptq1OverPq2RequestLatency"], 1.0);
-    for (path, value) in [
-        ("/stream/finishReason", json!("length")),
-        ("/stream/reportedCompletionTokens", Value::Null),
-        ("/stream/reportedCompletionTokens", json!(33)),
-        ("/stream/visibleContentSha256", json!("0".repeat(64))),
-        ("/stream/requestMilliseconds", json!(0)),
-        ("/modelIdentity/sha256", json!("0".repeat(64))),
-        ("/configuredNativeRowWorkers", json!(4)),
-        ("/cleanup/ownedJobEmpty", json!(false)),
-        ("/cleanup/listenerReleased", json!(false)),
-    ] {
-        let mut changed = pair.clone();
-        *changed[1].pointer_mut(path).unwrap() = value;
-        assert_eq!(comparison(&changed)["status"], "pending", "{path}");
-    }
-    let mut changed = pair.clone();
-    changed[1]["stream"]["visibleContent"] = json!("Elm");
-    changed[1]["stream"]["visibleContentSha256"] = json!(digest(b"Elm"));
-    let result = comparison(&changed);
-    assert_eq!(result["status"], "captured-complete-pair");
-    assert!(result["ptq1OverPq2RequestLatency"].is_null());
-    assert_eq!(result["qualityReview"], "pending");
-    assert_eq!(comparison(&pair[..1])["status"], "pending");
-    assert_eq!(
-        comparison(&[pair[1].clone(), pair[0].clone()])["status"],
-        "pending"
-    );
 }
 
 #[test]
 fn native_representation_profile_is_explicit_and_keeps_original_deadline() {
-    assert_eq!(profile_case(PROFILE, false, false), Some(CASE));
-    assert_eq!(profile_case(PROFILE, true, false), None);
-    assert_eq!(profile_case(PROFILE, false, true), None);
+    for (profile, case) in [(PROFILE, CASE), (ROW4_PROFILE, ROW4_CASE)] {
+        assert_eq!(profile_case(profile, false, false), Some(case));
+        assert_eq!(profile_case(profile, true, false), None);
+        assert_eq!(profile_case(profile, false, true), None);
+    }
     assert_eq!(body()["max_completion_tokens"], CAP);
     assert_eq!(body()["enable_thinking"], false);
     assert_eq!(body()["abliteration_scale"], 1.3);
@@ -268,6 +307,98 @@ fn native_representation_profile_is_explicit_and_keeps_original_deadline() {
             deadline.saturating_duration_since(tokio::time::Instant::now()),
             STOP_WAIT
         );
+    });
+}
+
+#[test]
+fn native_representation_row4_profile_is_explicit_and_preserves_pair() {
+    assert_ne!(PROFILE, ROW4_PROFILE);
+    assert_ne!(CASE, ROW4_CASE);
+    for (single, parallel) in profiles(1).iter().zip(profiles(4).iter()) {
+        assert_eq!(
+            (single.name, single.case, single.row_workers),
+            (PROFILE, CASE, 1)
+        );
+        assert_eq!(
+            (parallel.name, parallel.case, parallel.row_workers),
+            (ROW4_PROFILE, ROW4_CASE, 4)
+        );
+        assert_eq!(single.repacked, parallel.repacked);
+        assert!(!parallel.optional_requests && !parallel.required_scale_history);
+        let mut expected = adapter_arguments(single, "8081");
+        expected.extend(["--native-row-workers", "4"].map(OsString::from));
+        let mut actual = adapter_arguments(parallel, "8081");
+        assert_eq!(actual, expected);
+        actual.extend(
+            [
+                "--data-directory",
+                "C:/model-not-opened",
+                "--evidence-parent",
+                "C:/evidence-not-opened",
+            ]
+            .map(OsString::from),
+        );
+        let config = LaunchConfig::parse(actual).unwrap();
+        assert!(config.uses_native_engine() && config.requires_native_sandbox());
+        assert_eq!(config.uses_repacked_ptq1(), parallel.repacked);
+    }
+    assert!(!profiles(4)[0].repacked && profiles(4)[1].repacked);
+    assert_eq!(NEXT_OWNER_RESERVE, Duration::from_secs(60));
+    assert_eq!(STOP_WAIT, Duration::from_secs(30));
+    assert_eq!(CASE_BUDGET, Duration::from_secs(240));
+}
+
+#[test]
+fn native_representation_profiles_leave_skipped_arms_pending_at_original_deadline() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    runtime.block_on(async {
+        tokio::time::pause();
+        let evidence = env::temp_dir().join(format!(
+            "Bonsai-Representation-Reserve-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        fs::create_dir(&evidence).unwrap();
+        let deadline = tokio::time::Instant::now() + NEXT_OWNER_RESERVE + Duration::from_secs(1);
+        assert!(can_start_owner(deadline));
+        tokio::time::advance(Duration::from_secs(1)).await;
+        assert!(!can_start_owner(deadline));
+        for row_workers in [1, 4] {
+            for samples in [vec![], vec![complete_sample(false, row_workers)]] {
+                let mut report = json!({"passed":false,"samples":samples});
+                paired_responses(
+                    Path::new("C:/model-not-opened"),
+                    &evidence,
+                    deadline,
+                    row_workers,
+                    &mut report,
+                )
+                .await;
+                assert_eq!(report["samples"], json!(samples));
+                assert_eq!(report["passed"], false);
+                assert_eq!(report["comparison"]["status"], "pending");
+                assert_eq!(
+                    report["pendingReason"],
+                    "insufficient-next-owner-and-cleanup-reserve"
+                );
+                assert_eq!(
+                    deadline.saturating_duration_since(tokio::time::Instant::now()),
+                    NEXT_OWNER_RESERVE
+                );
+                let retained: Value =
+                    serde_json::from_slice(&fs::read(evidence.join("acceptance.json")).unwrap())
+                        .unwrap();
+                assert_eq!(retained, report);
+            }
+        }
+        fs::remove_file(evidence.join("acceptance.json")).unwrap();
+        fs::remove_dir(evidence).unwrap();
     });
 }
 
@@ -330,7 +461,7 @@ fn native_representation_complete_bytes_survive_expired_second_request() {
             assert!(saved["samples"][1]["stream"].is_null());
             assert_eq!(saved["pendingReason"],"request-budget-expired");
             assert_eq!(saved["passed"],false);
-            assert_eq!(comparison(saved["samples"].as_array().unwrap())["status"],"pending");
+            assert_eq!(comparison(saved["samples"].as_array().unwrap(),1)["status"],"pending");
             fs::remove_file(evidence.join("acceptance.json")).unwrap();
             fs::remove_dir(evidence).unwrap();
         }).await.unwrap();
@@ -340,7 +471,18 @@ fn native_representation_complete_bytes_survive_expired_second_request() {
 #[test]
 #[ignore = "Actual-model complete-response PQ2/PTQ1 feasibility pair; one bounded main-only device CI job."]
 fn pinned_native_ptq1_pq2_capture_complete_responses() {
+    capture_complete_responses(1);
+}
+
+#[test]
+#[ignore = "Actual-model complete-response four-worker PQ2/PTQ1 feasibility pair; one bounded main-only device CI job."]
+fn pinned_native_ptq1_pq2_row4_capture_complete_responses() {
+    capture_complete_responses(4);
+}
+
+fn capture_complete_responses(row_workers: u8) {
     ci_only();
+    let [profile, _] = profiles(row_workers);
     let budget = case_budget();
     assert_eq!(
         profile_case(
@@ -348,17 +490,17 @@ fn pinned_native_ptq1_pq2_capture_complete_responses() {
             env::var("BONSAI_NATIVE_EXTENDED").as_deref() == Ok("true"),
             env::var("BONSAI_NATIVE_STALLED_CONSUMER").as_deref() == Ok("true")
         ),
-        Some(CASE)
+        Some(profile.case)
     );
     let data = env::var_os("BONSAI_NATIVE_DATA").unwrap();
     let evidence = env::var_os("BONSAI_NATIVE_EVIDENCE").unwrap();
     let evidence = Path::new(&evidence);
-    let mut report = json!({"schemaVersion":1,"case":CASE,"profile":PROFILE,
+    let mut report = json!({"schemaVersion":1,"case":profile.case,"profile":profile.name,
         "revision":env::var("GITHUB_SHA").unwrap(),"runId":env::var("GITHUB_RUN_ID").unwrap(),
         "runAttempt":env::var("GITHUB_RUN_ATTEMPT").unwrap(),"passed":false,
         "scope":"bounded-single-pair-complete-response-feasibility",
         "request":body(),"requestSha256":digest(&serde_json::to_vec(&body()).unwrap()),
-        "representationOrder":["PQ2_0","current-repacked-PTQ1_0"],"configuredNativeRowWorkers":1,
+        "representationOrder":["PQ2_0","current-repacked-PTQ1_0"],"configuredNativeRowWorkers":row_workers,
         "configuredSeed":42,"requestedAdapterScale":1.3,"servingStatePolicy":"reset-every-request",
         "templateSha256":"c3cf9e34abf4f9e36c2d72165aa9c132d3e2a725b6c2586aaa3a8af9d7a81041",
         "sampler":{"temperature":1,"topP":0.95,"topK":20,"minP":0,
@@ -384,6 +526,7 @@ fn pinned_native_ptq1_pq2_capture_complete_responses() {
                 Path::new(&data),
                 evidence,
                 tokio::time::Instant::now() + budget,
+                row_workers,
                 &mut report,
             ),
         )

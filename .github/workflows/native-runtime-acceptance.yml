@@ -6,7 +6,7 @@ on:
       profile:
         description: Explicit bounded profile; all setup/model work/cleanup shares one five-minute job
         type: choice
-        options: [pq2-no-adapter, ptq1-adapter, ptq1-adapter-lifecycle, ptq1-adapter-lifecycle-row4, pq2-adapter-row4, pq2-adapter-lifecycle-row4, pq2-adapter-speed, ptq1-pq2-complete-response]
+        options: [pq2-no-adapter, ptq1-adapter, ptq1-adapter-lifecycle, ptq1-adapter-lifecycle-row4, pq2-adapter-row4, pq2-adapter-lifecycle-row4, pq2-adapter-speed, ptq1-pq2-complete-response, ptq1-pq2-complete-response-row4]
         default: pq2-no-adapter
         required: false
       bounded_history:
@@ -67,6 +67,8 @@ jobs:
               'speed::native_speed_profile_shares_deadline_and_rejects_extra_workloads',
               'representation::native_representation_pair_requires_completion_identity_and_cleanup',
               'representation::native_representation_profile_is_explicit_and_keeps_original_deadline',
+              'representation::native_representation_row4_profile_is_explicit_and_preserves_pair',
+              'representation::native_representation_profiles_leave_skipped_arms_pending_at_original_deadline',
               'representation::native_representation_complete_bytes_survive_expired_second_request',
               'progress::native_progress_decodes_fragmented_chunks_without_counting_events_as_tokens',
               'progress::native_progress_drop_retains_partial_content_without_qualifying_completion',
@@ -94,7 +96,8 @@ jobs:
           foreach ($case in @('pinned_native_ptq1_adapter_checks_scale_change_rejection_and_history',
               'pinned_native_ptq1_adapter_row4_checks_scale_change_rejection_and_history',
               'pinned_native_pq2_adapter_row4_checks_scale_change_rejection_and_history',
-              'representation::pinned_native_ptq1_pq2_capture_complete_responses')) {
+              'representation::pinned_native_ptq1_pq2_capture_complete_responses',
+              'representation::pinned_native_ptq1_pq2_row4_capture_complete_responses')) {
             if ($modelFreeCases -cnotcontains ($case + ': test')) { throw 'Required bounded lifecycle case was not found.' }
           }
           Copy-Item -LiteralPath $env:BONSAI_TOOLS_PATH -Destination (Join-Path $package 'bonsai-tools.exe')
@@ -267,6 +270,12 @@ jobs:
                 }
                 'representation::pinned_native_ptq1_pq2_capture_complete_responses'
               }
+              'ptq1-pq2-complete-response-row4' {
+                if ($env:BONSAI_NATIVE_EXTENDED -ceq 'true' -or $env:BONSAI_NATIVE_STALLED_CONSUMER -ceq 'true') {
+                  throw 'The four-worker complete-response representation pair does not admit extended_history or stalled_consumer.'
+                }
+                'representation::pinned_native_ptq1_pq2_row4_capture_complete_responses'
+              }
               default { throw 'Unknown actual-model acceptance profile.' }
             }
             $test = $env:BONSAI_NATIVE_TEST
@@ -406,8 +415,9 @@ jobs:
             'Original PQ2 with four row workers requires scale-1.3 and scale-zero streams, invalid-scale connection closure without a response, then scale-1.3 streaming with the exact captured initial response supplied as assistant history in the same owner. Text, SHA-256, source messages, finish reason and usage bind that history; missing visible output keeps acceptance pending. Each further request requires more than 45 seconds remaining; a request timeout reserves 30 seconds for owned cleanup. Any missing required step remains pending and fails after cleanup. This does not prove zero/no-adapter logits identity, generated-history state reuse or parity, numerical parity, quality or TPS.'
           } elseif ($env:BONSAI_NATIVE_PROFILE -ceq 'pq2-adapter-speed') {
             'One fixed-order paired request measures original PQ2 with adapter 1.3 and one versus four workers, each in a fresh owner, using identical eight-token-cap counting prompts and seed 42. Request TPS includes prefill and complete HTTP response delivery, excludes startup, and is not device decode TPS. A ratio requires reported usage at the cap, identical visible output and both owned cleanups. No retry, repeated-trial benefit or default promotion is qualified.'
-          } elseif ($env:BONSAI_NATIVE_PROFILE -ceq 'ptq1-pq2-complete-response') {
-            'One fixed-order original-PQ2/current-weight-PTQ1 pair captures complete responses to a short public tree-naming prompt, each with adapter 1.3, one row worker, production sampler and seed 42 in a fresh required-sandbox owner. Both must stop naturally within a 32-token cap, report usage and release their owned Job and listener. Exact UTF-8 responses and SHA-256 are retained, including losing or truncated completed captures. A latency ratio requires identical output and usage. Every startup requires more than 60 seconds remaining, requests reserve 30 seconds for cleanup, and an incomplete pair stays pending; no continuation jobs may split the matrix. This is feasibility evidence only; repeated trials, decode TPS, adapter baseline/zero controls, quality, numerical parity, comfort and default promotion remain pending.'
+          } elseif ($env:BONSAI_NATIVE_PROFILE -cin @('ptq1-pq2-complete-response', 'ptq1-pq2-complete-response-row4')) {
+            $workers = if ($env:BONSAI_NATIVE_PROFILE -ceq 'ptq1-pq2-complete-response-row4') { 'four row workers' } else { 'one row worker' }
+            ('One fixed-order original-PQ2/current-weight-PTQ1 pair captures complete responses to a short public tree-naming prompt, each with adapter 1.3, ' + $workers + ', production sampler and seed 42 in a fresh required-sandbox owner. Both must stop naturally within a 32-token cap, report usage and release their owned Job and listener. Exact UTF-8 responses and SHA-256 are retained, including losing or truncated completed captures. A latency ratio requires identical output and usage. Every startup requires more than 60 seconds remaining, requests reserve 30 seconds for cleanup, and an incomplete pair stays pending; no continuation jobs may split the matrix. One-worker and four-worker evidence remain separate. This is feasibility evidence only; repeated trials, decode TPS, adapter baseline/zero controls, quality, numerical parity, comfort and default promotion remain pending.')
           } else {
             'No adapter was enabled. Full-context numerical/resource, performance, quality and daily-service qualification remain separate.'
           }
