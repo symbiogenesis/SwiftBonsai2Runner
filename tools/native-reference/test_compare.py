@@ -39,6 +39,36 @@ def fixture(transposed):
 
 
 class NativeStateTests(unittest.TestCase):
+    def test_exact_chunks_reject_nonfinite_values_and_preserve_signed_zero(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "actual"
+            for code in ("e", "f"):
+                # Span the chunk boundary and a partial tail, including distinct
+                # signed zeros, subnormals and the largest finite binary16.
+                values = [0.0, -0.0, 2 ** -24, -65504.0] * 1024 + [1.0]
+                reference = struct.pack(f"<{len(values)}{code}", *values)
+                path.write_bytes(struct.pack(f"<{len(values)}f", *values))
+                result = MODULE.compare_payload(reference, code, path)
+                self.assertTrue(result["byteExact"])
+                self.assertEqual(result["elements"], len(values))
+                self.assertEqual(result["failedElements"], 0)
+                self.assertEqual(result["maximumAbsoluteError"], 0.0)
+                # A sign-only zero change is within tolerance, but not exact.
+                observed = bytearray(path.read_bytes())
+                observed[7] ^= 0x80
+                path.write_bytes(observed)
+                result = MODULE.compare_payload(reference, code, path)
+                self.assertFalse(result["byteExact"])
+                self.assertEqual(result["failedElements"], 0)
+                for special in (float("nan"), float("inf"), -float("inf")):
+                    for index in (0, 4095, 4096):
+                        values[index] = special
+                        reference = struct.pack(f"<{len(values)}{code}", *values)
+                        path.write_bytes(struct.pack(f"<{len(values)}f", *values))
+                        with self.assertRaises(ValueError):
+                            MODULE.compare_payload(reference, code, path)
+                        values[index] = 1.0
+
     def test_explicit_backend_controls_reject_substitution_and_unknown_backends(self):
         records = [{"event": "weights-loaded", "model_sha256": MODULE.MODEL,
                     "weight_representation": "current-repacked-PTQ1_0"},

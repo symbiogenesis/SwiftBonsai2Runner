@@ -48,6 +48,7 @@ jobs:
           NativeStateTests.test_transposed_v_and_complete_recurrent_inventory_match_logical_rows
           NativeStateTests.test_state_decoder_rejects_truncation_trailing_bytes_and_changed_schema
           NativeStateTests.test_comparator_enforces_finite_values_exact_extents_and_original_tolerance
+          NativeStateTests.test_exact_chunks_reject_nonfinite_values_and_preserve_signed_zero
           NativeStateTests.test_control_binding_rejects_changed_adapter_scale_tokens_and_backend
           NativeStateTests.test_explicit_backend_controls_reject_substitution_and_unknown_backends
           NativeStateTests.test_capture_pre_read_bounds_reject_oversized_json_and_logits

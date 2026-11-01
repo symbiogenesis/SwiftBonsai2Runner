@@ -133,12 +133,16 @@ def compare_payload(reference, code, actual_path):
             expected = reference[start * width:(start + size) * width]
             observed = actual.read(size * 4)
             require(len(observed) == size * 4, "truncated Rust component")
-            canonical = expected if code == "f" else b"".join(
-                struct.pack("<f", value[0]) for value in struct.iter_unpack("<e", expected))
+            values = struct.unpack(f"<{size}{code}", expected)
+            # Exact chunks still need a finite-value check: identical NaN/Inf
+            # payloads must never turn a broken graph into a passing capture.
+            require(all(map(math.isfinite, values)), "nonfinite compared value")
+            canonical = expected if code == "f" else struct.pack(f"<{size}f", *values)
             exact &= canonical == observed
-            for (ref,), (value,) in zip(struct.iter_unpack("<" + code, expected),
-                                       struct.iter_unpack("<f", observed), strict=True):
-                require(math.isfinite(ref) and math.isfinite(value), "nonfinite compared value")
+            if canonical == observed:
+                continue
+            for ref, (value,) in zip(values, struct.iter_unpack("<f", observed), strict=True):
+                require(math.isfinite(value), "nonfinite compared value")
                 difference = abs(value - ref)
                 maximum = max(maximum, difference)
                 failed += difference > 1e-3 + 1e-3 * abs(ref)
