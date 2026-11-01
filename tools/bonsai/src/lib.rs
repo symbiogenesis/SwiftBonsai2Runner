@@ -31,6 +31,7 @@ pub const COMMANDS: &[&str] = &[
     "chat-package",
     "ptq1-capture",
     "ptq1-packing",
+    "packing-qualification",
     "host-capabilities",
     "native-acceptance-budget",
     "startup-diagnostics",
@@ -108,6 +109,9 @@ pub mod ptq1_capture;
 
 /// Independent complete current-weight PTQ1 packing and preserved-byte checks.
 pub mod ptq1_packing;
+
+/// Hosted-only complete PTQ1 reproduction, worker deadlines and evidence retention.
+pub mod packing_qualification;
 
 /// Pure host capability projection and canonical CPU observation identities.
 pub mod host_capabilities;

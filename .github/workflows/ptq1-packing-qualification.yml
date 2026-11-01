@@ -16,9 +16,6 @@ jobs:
         with:
           persist-credentials: false
       - uses: ./.github/actions/bonsai-tools
-      - name: Reject owner-device, stale-source and incomplete packing receipts
-        shell: pwsh
-        run: ./tests/Test-Ptq1PackingQualification.ps1
       - name: Reproduce the exact export and independently verify every block
         timeout-minutes: 50
         shell: pwsh
@@ -32,7 +29,11 @@ jobs:
           $evidence = Join-Path $env:RUNNER_TEMP ('SwiftBonsai-Ptq1PackingEvidence-' + [guid]::NewGuid().ToString('N'))
           "BONSAI_PTQ1_PACKING_EVIDENCE=$evidence" >> $env:GITHUB_ENV
           $data = Join-Path $env:RUNNER_TEMP ('SwiftBonsai-Ptq1PackingData-' + [guid]::NewGuid().ToString('N'))
-          & (Join-Path $env:GITHUB_WORKSPACE 'scripts/Invoke-Ptq1PackingQualification.ps1') -DataDirectory $data -EvidenceDirectory $evidence -ToolPath $env:BONSAI_TOOLS_PATH | ConvertTo-Json -Depth 12
+          $request = Join-Path $env:RUNNER_TEMP ('packing-request-' + [guid]::NewGuid().ToString('N') + '.json')
+          @{ operation = 'execute'; dataDirectory = $data; evidenceDirectory = $evidence } |
+            ConvertTo-Json | Set-Content -LiteralPath $request -Encoding utf8NoBOM
+          & $env:BONSAI_TOOLS_PATH packing-qualification --request $request
+          if ($LASTEXITCODE -ne 0) { throw 'Hosted packing qualification failed; inspect retained receipts.' }
           @('Every original PQ2 symbol/raw scale, preserved metadata and non-PQ tensor byte was independently checked against the reproduced exact PTQ1 export.',
             'This job runs on GitHub-hosted hardware; no owner-device inference, diagnostics or benchmark was performed.',
             'Independent review and digest-verified durable archival are required before scoring the packing gate.',

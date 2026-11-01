@@ -60,6 +60,7 @@ bonsai-tools native-acceptance-budget --request ABSOLUTE_JSON_PATH
 bonsai-tools startup-diagnostics --request ABSOLUTE_JSON_PATH
 bonsai-tools ptq1-capture --request ABSOLUTE_JSON_PATH
 bonsai-tools ptq1-packing --request ABSOLUTE_JSON_PATH
+bonsai-tools packing-qualification --request ABSOLUTE_JSON_PATH
 ```
 
 Host capability projection/CPU identities, acceptance-deadline policy, sanitized
@@ -105,6 +106,18 @@ owner device, setup, intake and retention also consume the shared five-minute
 allowance; leave the gate pending if the complete scan cannot fit. This reads
 weights as data without starting inference, and qualifies no logits, state,
 adapter basis, quality, resource or speed behavior.
+
+`packing-qualification` owns the complete hosted reproduction workflow in Rust.
+`operation: "execute"` accepts `dataDirectory` and a new `evidenceDirectory`,
+both expanded absolute external paths. It rejects owner-device execution and
+requires source-bound main-only GitHub-hosted Windows ARM64 context before any
+artifact work. Compiled pins select the original model and exporter release.
+Owned child processes bound download/verification, runtime staging, export and
+independent scanning, including hashing outside the exporter's codec deadline.
+Atomic phase receipts and a digest manifest survive failure. `operation: "limits"`
+returns the fixed hosted budgets without accessing artifacts. Foundation's Rust
+suite owns admission, receipt mutation, workflow-budget and failure-retention
+controls; the former packing PowerShell module, script and tests are removed.
 
 Requests are JSON objects read through a retained read-only handle, capped at
 16 MiB. Qualification envelopes allow 160 MiB for escaped responses; original

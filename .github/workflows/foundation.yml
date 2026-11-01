@@ -283,7 +283,6 @@ jobs:
           foreach ($case in @('HostedGuard', 'CollectorControls', 'BuildEvidence', 'CapturePolicy')) {
             ./tests/Test-NativePtq1CaptureTools.ps1 -Case $case
           }
-          ./tests/Test-Ptq1PackingQualification.ps1
       - name: Exact headless candidate owner-startup planning
         if: matrix.lane == 'foundation'
         shell: pwsh
