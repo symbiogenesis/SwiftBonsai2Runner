@@ -851,7 +851,7 @@ mod tests {
             "estimatedRuntimeHeadroomBytes",
         ]
         .iter()
-            .map(|name| profile[*name].as_u64().ok_or("Missing memory estimate."))
+        .map(|name| profile[*name].as_u64().ok_or("Missing memory estimate."))
         .collect::<crate::Result<Vec<_>>>()?
         .iter()
         .sum::<u64>();

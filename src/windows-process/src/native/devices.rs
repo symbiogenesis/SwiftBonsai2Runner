@@ -1,4 +1,4 @@
-//! Read-only, bounded SetupAPI inventories; presence does not establish signed deployment.
+//! Read-only, bounded `SetupAPI` inventories; presence does not establish signed deployment.
 
 use std::io;
 use std::ptr;

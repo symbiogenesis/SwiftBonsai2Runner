@@ -1,6 +1,6 @@
 //! Installed catalog member verification using the retained file handle.
 //!
-//! Reference: https://learn.microsoft.com/windows/win32/api/mscat/nf-mscat-cryptcatadminenumcatalogfromhash
+//! Reference: <https://learn.microsoft.com/windows/win32/api/mscat/nf-mscat-cryptcatadminenumcatalogfromhash>
 
 use std::fs::File;
 use std::io;
@@ -38,6 +38,7 @@ impl Drop for Catalog<'_> {
     }
 }
 
+#[expect(clippy::too_many_lines, reason = "Keep catalog verification and provider state closure in one auditable lifetime scope.")]
 pub(super) fn verify(file: &File, path: &Path) -> io::Result<crate::AuthenticodeSigner> {
     let mut admin = 0;
     let subsystem = DRIVER_ACTION_VERIFY;

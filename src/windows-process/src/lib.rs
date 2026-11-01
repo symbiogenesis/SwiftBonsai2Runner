@@ -83,7 +83,7 @@ pub fn process_module_paths(id: u32, basename: &str) -> io::Result<Vec<PathBuf>>
     native::signature::modules(id, basename)
 }
 
-/// One present SetupAPI device, with optional read-only driver registry metadata.
+/// One present `SetupAPI` device, with optional read-only driver registry metadata.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct DeviceInventoryEntry {
     /// Device description, unknown when the property cannot be read.
@@ -100,7 +100,7 @@ pub struct DeviceInventoryEntry {
     pub inf_name: Option<String>,
 }
 
-/// Inventories up to sixteen present devices in one explicit SetupAPI class.
+/// Inventories up to sixteen present devices in one explicit `SetupAPI` class.
 ///
 /// Supports `ComputeAccelerator`, `Display` and `Media`; never loads a driver or
 /// verifies a deployment signature. Optional unavailable properties stay unknown.

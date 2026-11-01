@@ -826,7 +826,11 @@ pub(super) fn memory_status() -> io::Result<crate::MemoryStatus> {
     // retains no pointer and writes installed physical memory in KiB on success.
     let installed = unsafe { GetPhysicallyInstalledSystemMemory(&raw mut installed_kib) };
     Ok(crate::MemoryStatus {
-        installed_physical_bytes: if installed != 0 { installed_kib.checked_mul(1024) } else { None },
+        installed_physical_bytes: if installed != 0 {
+            installed_kib.checked_mul(1024)
+        } else {
+            None
+        },
         total_physical_bytes: status.ullTotalPhys,
         available_physical_bytes: status.ullAvailPhys,
         commit_limit_bytes: status.ullTotalPageFile,

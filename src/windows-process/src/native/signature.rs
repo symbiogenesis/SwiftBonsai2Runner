@@ -27,7 +27,9 @@ use windows_sys::Win32::System::Diagnostics::ToolHelp::{
 
 pub(crate) fn verify(file: &File, path: &Path) -> io::Result<crate::AuthenticodeSigner> {
     if !path.is_absolute() || path.as_os_str().encode_wide().any(|unit| unit == 0) {
-        return Err(super::invalid("Signature verification requires an absolute path."));
+        return Err(super::invalid(
+            "Signature verification requires an absolute path.",
+        ));
     }
     // Installed catalog membership takes precedence, matching Windows' signature
     // observation boundary for driver files that have no embedded signature.
