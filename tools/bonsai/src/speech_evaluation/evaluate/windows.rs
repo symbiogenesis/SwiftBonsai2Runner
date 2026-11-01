@@ -369,9 +369,10 @@ fn trial(prepared: &Prepared<'_>, trial: &Value, report: &mut Value) -> crate::R
             if let Ok(memory) = read_memory(&lane.join("memory.json")) {
                 session["Memory"] = memory;
             }
-            captured.and(finished.map(|memory| {
+            let finished = finished.map(|memory| {
                 session["Memory"] = memory;
-            }))
+            });
+            captured.and(finished)
         }
         Err(error) => Err(error),
     };

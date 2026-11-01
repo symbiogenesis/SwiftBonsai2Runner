@@ -95,7 +95,7 @@ fn comparisons_keep_counter_domains_and_reject_failed_or_incomplete_pairs() -> c
             assert!(comparisons(&invalid, &[4], 1).is_err());
         }
     }
-    let mut duplicate = pair.clone();
+    let mut duplicate = pair;
     duplicate[1] = duplicate[0].clone();
     assert!(comparisons(&duplicate, &[4], 1).is_err());
     Ok(())

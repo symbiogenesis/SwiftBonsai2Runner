@@ -138,9 +138,9 @@ fn pair_ratios_require_uninstrumented_stable_complete_fixed_token_observations()
     let mut changed = pair.clone();
     changed[1]["Timing"]["PromptTokens"] = 101.into();
     cases.push((changed, execution.clone(), false));
-    let mut changed = pair.clone();
+    let mut changed = pair;
     changed[1]["CpuConditions"]["After"]["power_snapshot"]["ac_online"] = false.into();
-    cases.push((changed, execution.clone(), false));
+    cases.push((changed, execution, false));
     for (pair, execution, instrumented) in cases {
         let compared = compare_pair(&pair, &execution, instrumented)?;
         assert_eq!(compared["ComparableAtFixedTokenCap"], false);

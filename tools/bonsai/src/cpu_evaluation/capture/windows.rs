@@ -221,7 +221,7 @@ fn adapter_copy(context: &Context<'_>) -> crate::Result<PathBuf> {
         .create_new(true)
         .open(&destination)
         .map_err(|error| error.to_string())?;
-    let mut buffer = [0; 65_536];
+    let mut buffer = vec![0; 65_536];
     let mut total = 0_u64;
     loop {
         context.checkpoint()?;
