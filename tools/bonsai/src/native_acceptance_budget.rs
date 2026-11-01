@@ -6,6 +6,8 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 const TICKS_PER_SECOND: u64 = 10_000_000;
+const MAXIMUM_OWNER_WORK_SECONDS: u16 = 270;
+const OWNER_PROCESS_EXIT_RESERVE_SECONDS: u16 = 15;
 const OWNER_FIELDS: [&str; 5] = [
     "RunId",
     "Revision",
@@ -39,6 +41,8 @@ struct Budget {
     case_budget_seconds: u16,
     owner_deadline_applied: bool,
     owner_elapsed_seconds: Option<f64>,
+    owner_work_seconds: Option<u16>,
+    owner_process_exit_reserve_seconds: Option<u16>,
 }
 
 /// Calculates limits without reading the host clock, environment or model files.
@@ -97,6 +101,7 @@ fn calculate(request: &Request) -> crate::Result<Budget> {
                 .is_some_and(|value| !value.is_null() && value != "")
         })
         .count();
+    let mut owner_work_seconds = None;
     let owner_elapsed = if supplied != 0 {
         if supplied != OWNER_FIELDS.len() {
             return Err("The complete owner deadline binding is required.".into());
@@ -107,12 +112,22 @@ fn calculate(request: &Request) -> crate::Result<Budget> {
                 .and_then(Value::as_str)
                 .ok_or_else(|| "Owner deadline fields must be strings.".to_owned())
         };
-        if field("RunId")? != request.run_id
-            || field("Revision")? != request.revision
-            || field("WorkSeconds")? != "210"
-        {
-            return Err("The owner deadline run, revision or fixed allowance differs.".into());
+        if field("RunId")? != request.run_id || field("Revision")? != request.revision {
+            return Err("The owner deadline run or revision differs.".into());
         }
+        // The owner may predeclare a smaller allowance, including the original
+        // 210 seconds, but cannot consume the final thirty seconds of its
+        // absolute five-minute lifetime. This is not a new clock or a request
+        // to continue a previous capture: every cost uses the original start.
+        let work_seconds = field("WorkSeconds")?;
+        let work_seconds = canonical_decimal(work_seconds, 3)
+            .then(|| work_seconds.parse::<u16>().ok())
+            .flatten()
+            .filter(|seconds| *seconds <= MAXIMUM_OWNER_WORK_SECONDS)
+            .ok_or(
+                "The original owner work allowance must be canonical and at most 270 seconds.",
+            )?;
+        owner_work_seconds = Some(work_seconds);
         let started_tick = field("StartedTick")?;
         if !canonical_decimal(started_tick, 19) {
             return Err("The original owner monotonic start is invalid or in the future.".into());
@@ -128,8 +143,14 @@ fn calculate(request: &Request) -> crate::Result<Budget> {
         }
         let elapsed_ticks = now_tick - started_tick;
         // Fifteen seconds remain for process completion, collection and runner
-        // exit before the independent original 210-second owner work cutoff.
-        hard_limit = hard_limit.min(195 - i128::from(elapsed_ticks.div_ceil(frequency)));
+        // exit before the independently enforced original owner work cutoff.
+        // Its remaining thirty-second lifetime reserve is separate from these
+        // fifteen seconds and the ten-second hard/case gap below.
+        hard_limit = hard_limit.min(
+            i128::from(work_seconds)
+                - i128::from(OWNER_PROCESS_EXIT_RESERVE_SECONDS)
+                - i128::from(elapsed_ticks.div_ceil(frequency)),
+        );
         Some(seconds(elapsed_ticks, frequency)?)
     } else {
         None
@@ -146,6 +167,9 @@ fn calculate(request: &Request) -> crate::Result<Budget> {
         case_budget_seconds: u16::try_from(case_budget).map_err(|error| error.to_string())?,
         owner_deadline_applied: supplied == OWNER_FIELDS.len(),
         owner_elapsed_seconds: owner_elapsed,
+        owner_work_seconds,
+        owner_process_exit_reserve_seconds: owner_work_seconds
+            .map(|_| OWNER_PROCESS_EXIT_RESERVE_SECONDS),
     })
 }
 
@@ -269,6 +293,8 @@ mod tests {
             assert_eq!(report["PreparationElapsedSeconds"].as_f64(), Some(20.0));
             assert_eq!(report["OwnerDeadlineApplied"], false);
             assert!(report["OwnerElapsedSeconds"].is_null());
+            assert!(report["OwnerWorkSeconds"].is_null());
+            assert!(report["OwnerProcessExitReserveSeconds"].is_null());
         }
         input["jobStartedUtc"] = json!("2026-10-30T23:56:40.0000000Z");
         let report = run(input)?;
@@ -286,6 +312,8 @@ mod tests {
         assert_eq!(report["CaseBudgetSeconds"], 135);
         assert_eq!(report["OwnerElapsedSeconds"].as_f64(), Some(50.0));
         assert_eq!(report["OwnerDeadlineApplied"], true);
+        assert_eq!(report["OwnerWorkSeconds"], 210);
+        assert_eq!(report["OwnerProcessExitReserveSeconds"], 15);
         input["ownerDeadline"]["StartedTick"] = json!("350000");
         let report = run(input.clone())?;
         assert_eq!(report["HardLimitSeconds"], 45);
@@ -295,6 +323,55 @@ mod tests {
         let report = run(input)?;
         assert_eq!(report["HardLimitSeconds"], 20);
         assert_eq!(report["CaseBudgetSeconds"], 10);
+        Ok(())
+    }
+
+    #[test]
+    fn predeclared_owner_allowance_uses_residual_time_without_extending_any_deadline()
+    -> crate::Result<()> {
+        for work_seconds in [60_u16, 210, 211, 240, 270] {
+            for elapsed_milliseconds in [0_u32, 10_001, 30_000, 50_000, 184_000, 244_000, 244_001] {
+                let mut input = request();
+                input["ownerDeadline"] = owner();
+                input["ownerDeadline"]["WorkSeconds"] = json!(work_seconds.to_string());
+                input["ownerDeadline"]["StartedTick"] =
+                    json!((500_000 - elapsed_milliseconds).to_string());
+                let expected_hard = 250.min(
+                    i64::from(work_seconds) - 15 - i64::from(elapsed_milliseconds.div_ceil(1000)),
+                );
+                let result = run(input);
+                if expected_hard <= 10 {
+                    assert!(result.is_err());
+                    continue;
+                }
+                let report = result?;
+                let hard = report["HardLimitSeconds"]
+                    .as_i64()
+                    .ok_or("Missing hard limit.")?;
+                let case = report["CaseBudgetSeconds"]
+                    .as_i64()
+                    .ok_or("Missing case limit.")?;
+                assert_eq!(hard, expected_hard);
+                assert_eq!(case, 240.min(expected_hard - 10));
+                assert!(case + 10 <= hard);
+                assert!(
+                    hard * 1000 + i64::from(elapsed_milliseconds)
+                        <= i64::from(work_seconds - 15) * 1000
+                );
+                assert!(hard + 20 <= 270);
+                assert_eq!(report["OwnerWorkSeconds"], work_seconds);
+                assert_eq!(report["OwnerProcessExitReserveSeconds"], 15);
+            }
+        }
+        // A feasible lifecycle gets the original residual 215 seconds after
+        // thirty seconds of setup, with all teardown/retention reserves intact.
+        let mut input = request();
+        input["ownerDeadline"] = owner();
+        input["ownerDeadline"]["WorkSeconds"] = json!("270");
+        input["ownerDeadline"]["StartedTick"] = json!("470000");
+        let report = run(input)?;
+        assert_eq!(report["HardLimitSeconds"], 225);
+        assert_eq!(report["CaseBudgetSeconds"], 215);
         Ok(())
     }
 
@@ -331,7 +408,16 @@ mod tests {
         let invalid = [
             ("RunId", json!("54321")),
             ("Revision", json!("b".repeat(40))),
-            ("WorkSeconds", json!("211")),
+            ("WorkSeconds", json!("0")),
+            ("WorkSeconds", json!("-1")),
+            ("WorkSeconds", json!("+270")),
+            ("WorkSeconds", json!("270.0")),
+            ("WorkSeconds", json!("271")),
+            ("WorkSeconds", json!("300")),
+            ("WorkSeconds", json!("999")),
+            ("WorkSeconds", json!("1000")),
+            ("WorkSeconds", json!(270)),
+            ("WorkSeconds", json!("1")),
             ("WorkSeconds", json!("0210")),
             ("StartedTick", json!("500001")),
             ("StartedTick", json!("0")),

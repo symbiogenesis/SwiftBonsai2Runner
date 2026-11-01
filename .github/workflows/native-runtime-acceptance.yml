@@ -212,7 +212,7 @@ jobs:
             PreparationElapsedMilliseconds=$null; ModelCaseBudgetSeconds=$null
             TestProcessHardLimitSeconds=$null
             OwnerDeadlineApplied=$false; OwnerElapsedMilliseconds=$null
-            OwnerProcessExitReserveSeconds=$null
+            OwnerWorkSeconds=$null; OwnerProcessExitReserveSeconds=$null
             StartupDiagnosticsReceipt='startup-diagnostics.json'
             StartupDiagnosticsReady=$false; StartupDiagnosticsClassification='not-collected'
             StartupFailureMarkers=@()
@@ -313,7 +313,8 @@ jobs:
             $hostReport.OwnerDeadlineApplied = $limits.OwnerDeadlineApplied
             if ($limits.OwnerDeadlineApplied) {
               $hostReport.OwnerElapsedMilliseconds = [Math]::Ceiling(($limits.OwnerElapsedSeconds + $budgetBridgeElapsed) * 1000)
-              $hostReport.OwnerProcessExitReserveSeconds = 15
+              $hostReport.OwnerWorkSeconds = $limits.OwnerWorkSeconds
+              $hostReport.OwnerProcessExitReserveSeconds = $limits.OwnerProcessExitReserveSeconds
             }
             $hostReport.PreparationElapsedMilliseconds = [Math]::Ceiling($setupElapsed * 1000)
             $hostReport.ModelCaseBudgetSeconds = $caseBudgetSeconds
