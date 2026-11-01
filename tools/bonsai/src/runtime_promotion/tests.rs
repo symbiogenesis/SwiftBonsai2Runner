@@ -327,6 +327,24 @@ fn stale_artifacts_unknown_duplicate_and_array_records_reject() -> crate::Result
     Ok(())
 }
 
+#[test]
+fn pending_attachments_do_not_advertise_unverified_retrieval_paths() -> crate::Result<()> {
+    let policy = policy_fixture()?;
+    let mut input = evidence(&policy)?;
+    input["gates"] = json!([{
+        "id": SERVICE_GATE, "status": "pending", "note": "Capture and review remain pending.",
+        "report": {"file": "../uncollected.json", "sha256": "0".repeat(64)},
+        "harness": {"workflowPath": "unreviewed", "artifactId": "0", "artifactName": "pending",
+            "package": {"file": "../uncollected.zip", "sha256": "0".repeat(64)}}
+    }]);
+    let scored = score(input, &policy, &std::env::temp_dir())?;
+    assert_eq!(scored["promotionReady"], false);
+    assert_eq!(scored["gateCounts"]["passed"], 0);
+    assert_eq!(scored["gates"][16]["reportFile"], Value::Null);
+    assert_eq!(scored["gates"][16]["harness"], Value::Null);
+    Ok(())
+}
+
 fn assert_service_rejections(input: &Value, policy: &Value, directory: &Path) -> crate::Result<()> {
     for (pointer, value) in [
         ("/schemaVersion", json!(1)),
@@ -449,6 +467,11 @@ fn later_service_harness_preserves_exact_release_and_retained_package() -> crate
             scored["gates"][16]["harness"]["packageSha256"],
             sha256(package)
         );
+        assert_eq!(scored["gates"][16]["reportFile"], "report.json");
+        assert_eq!(
+            scored["gates"][16]["harness"]["packageFile"],
+            "harness.zip"
+        );
         assert_service_rejections(&input, &policy, &directory)?;
         std::fs::write(directory.join("harness.zip"), b"changed")
             .map_err(|error| error.to_string())?;
@@ -526,12 +549,7 @@ fn reviewed_pass_requires_report_device_main_and_human_identity() -> crate::Resu
             serde_json::to_vec(&input).map_err(|error| error.to_string())?,
         )
         .map_err(|error| error.to_string())?;
-        assert_eq!(
-            run(
-                json!({"operation": "file-score", "runnerRevision": "a".repeat(40), "evidencePath": manifest})
-            )?["promotionReady"],
-            true
-        );
+        assert_file_score_input_identity(&manifest, &input)?;
         for (pointer, value) in [
             (
                 "/gates/4/execution/deviceModel",
@@ -562,4 +580,28 @@ fn reviewed_pass_requires_report_device_main_and_human_identity() -> crate::Resu
     std::fs::remove_file(directory.join("promotion.json")).map_err(|error| error.to_string())?;
     std::fs::remove_dir(&directory).map_err(|error| error.to_string())?;
     result
+}
+
+fn assert_file_score_input_identity(manifest: &Path, input: &Value) -> crate::Result<()> {
+    let bytes = serde_json::to_vec(input).map_err(|error| error.to_string())?;
+    let score_file = || {
+        run(json!({"operation": "file-score", "runnerRevision": "a".repeat(40),
+            "evidencePath": manifest}))
+    };
+    let scored = score_file()?;
+    assert_eq!(scored["promotionReady"], true);
+    assert_eq!(scored["evidenceManifest"]["sha256"], sha256(&bytes));
+    assert_eq!(scored["evidenceManifest"]["bytes"], bytes.len());
+    assert_eq!(scored["gates"][0]["reportFile"], "report.json");
+    // Equivalent JSON with different exact bytes must identify a different input.
+    let mut spaced = bytes;
+    spaced.push(b'\n');
+    std::fs::write(manifest, &spaced).map_err(|error| error.to_string())?;
+    let rescored = score_file()?;
+    assert_eq!(rescored["gates"], scored["gates"]);
+    assert_eq!(rescored["promotionReady"], true);
+    assert_eq!(rescored["evidenceManifest"]["sha256"], sha256(&spaced));
+    assert_eq!(rescored["evidenceManifest"]["bytes"], spaced.len());
+    assert_ne!(rescored["evidenceManifest"], scored["evidenceManifest"]);
+    Ok(())
 }

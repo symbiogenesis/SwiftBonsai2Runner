@@ -675,7 +675,13 @@ fn score(value: Value, policy: &Value, directory: &Path) -> crate::Result<Value>
                     execution.repository, execution.run_id, execution.run_attempt
                 )
             });
-        verdicts.push(json!({"id": gate.id, "status": match verdict {Status::Passed => "passed", Status::Pending => "pending", Status::Rejected => "rejected"}, "repository": gate.repository, "requirement": gate_requirement(gate, ptq1), "snapdragonRequired": gate.device, "humanReviewRequired": gate.human, "note": record.map(|record| &record.note), "reviewerId": record.and_then(|record| record.reviewer_id.as_ref()), "humanReviewed": record.is_some_and(|record| record.human_reviewed), "runUrl": run_url, "executionRevision": record.and_then(|record| record.execution.as_ref()).map(|execution| &execution.revision), "deviceModel": record.and_then(|record| record.execution.as_ref()).map(|execution| &execution.device_model), "processorName": record.and_then(|record| record.execution.as_ref()).and_then(|execution| execution.processor_name.as_ref()), "reportSha256": record.and_then(|record| record.report.as_ref()).map(|report| &report.sha256), "testedRuntime": record.and_then(|record| record.tested_runtime.as_ref()), "harness": record.and_then(|record| record.harness.as_ref()).map(|harness| json!({"workflowPath": harness.workflow_path, "artifactId": harness.artifact_id, "artifactName": harness.artifact_name, "packageSha256": harness.package.sha256}))}));
+        let retained_report = record
+            .filter(|record| record.status != Status::Pending)
+            .and_then(|record| record.report.as_ref());
+        let retained_harness = record
+            .filter(|record| record.status != Status::Pending)
+            .and_then(|record| record.harness.as_ref());
+        verdicts.push(json!({"id": gate.id, "status": match verdict {Status::Passed => "passed", Status::Pending => "pending", Status::Rejected => "rejected"}, "repository": gate.repository, "requirement": gate_requirement(gate, ptq1), "snapdragonRequired": gate.device, "humanReviewRequired": gate.human, "note": record.map(|record| &record.note), "reviewerId": record.and_then(|record| record.reviewer_id.as_ref()), "humanReviewed": record.is_some_and(|record| record.human_reviewed), "runUrl": run_url, "executionRevision": record.and_then(|record| record.execution.as_ref()).map(|execution| &execution.revision), "deviceModel": record.and_then(|record| record.execution.as_ref()).map(|execution| &execution.device_model), "processorName": record.and_then(|record| record.execution.as_ref()).and_then(|execution| execution.processor_name.as_ref()), "reportFile": retained_report.map(|report| &report.file), "reportSha256": record.and_then(|record| record.report.as_ref()).map(|report| &report.sha256), "testedRuntime": record.and_then(|record| record.tested_runtime.as_ref()), "harness": retained_harness.map(|harness| json!({"workflowPath": harness.workflow_path, "artifactId": harness.artifact_id, "artifactName": harness.artifact_name, "packageFile": harness.package.file, "packageSha256": harness.package.sha256}))}));
     }
     Ok(
         json!({"schemaVersion": 2, "policySha256": evidence.policy_sha256, "profile": policy["profile"], "identities": policy["identities"], "status": match status {Status::Passed => "passed", Status::Pending => "pending", Status::Rejected => "rejected"}, "promotionReady": status == Status::Passed, "gateCounts": {"passed": passed, "pending": pending, "rejected": rejected}, "deviceFamily": device_family.map(SnapdragonFamily::device_model), "gates": verdicts, "scope": "Offline integrity and reviewer-attested evidence completeness only for the selected representation. CI provenance and human identity require independent review. Does not collect qualification, authenticate attestations or enable serving defaults."}),
@@ -683,6 +689,7 @@ fn score(value: Value, policy: &Value, directory: &Path) -> crate::Result<Value>
 }
 
 /// Produce the exact promotion plan or score an external, bounded evidence bundle.
+/// File scores retain the exact input-byte digest and report paths for archival retrieval.
 ///
 /// # Errors
 /// Rejects malformed records, stale identities, unreviewed passes, wrong devices,
@@ -719,15 +726,20 @@ pub fn run(request: Value) -> crate::Result<Value> {
                 service_harness_revision.as_deref(),
                 weight_representation,
             )?;
-            let value = serde_json::from_slice(&read(&evidence_path, MANIFEST_LIMIT)?)
-                .map_err(|error| error.to_string())?;
-            score(
+            let manifest = read(&evidence_path, MANIFEST_LIMIT)?;
+            let value = serde_json::from_slice(&manifest).map_err(|error| error.to_string())?;
+            let mut result = score(
                 value,
                 &policy,
                 evidence_path
                     .parent()
                     .ok_or("Promotion evidence needs an external parent directory.")?,
-            )
+            )?;
+            result["evidenceManifest"] = json!({
+                "bytes": manifest.len(), "sha256": sha256(&manifest),
+                "digestScope": "Exact input file bytes before JSON parsing; not a canonical JSON digest."
+            });
+            Ok(result)
         }
     }
 }
