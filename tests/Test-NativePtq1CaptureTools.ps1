@@ -40,6 +40,25 @@ if ($Case -ceq 'CapturePolicy') {
             }
             Assert ($failure -like '*remaining complete owner-job work allowance*') 'Invalid work allowance reached owner/model preparation.'
         }
+        $failure = Assert-Failure -PassThru {
+            & (Join-Path $repo 'scripts/Invoke-NativePtq1Numerics.ps1') -DataDirectory $fixture -WorkBudgetSeconds 240
+        }
+        Assert ($failure -like '*original monotonic owner-job work deadline*') 'A fresh child-relative deadline was accepted.'
+        $tokens = $null; $parseErrors = $null
+        $ast = [Management.Automation.Language.Parser]::ParseFile((Join-Path $repo 'scripts/Invoke-NativePtq1Numerics.ps1'), [ref]$tokens, [ref]$parseErrors)
+        Assert ($parseErrors.Count -eq 0) 'Capture wrapper did not parse.'
+        $function = $ast.Find({ param($node)
+            $node -is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -ceq 'Get-Ptq1WorkAllowance'
+        }, $true)
+        Assert ($null -ne $function) 'The original-deadline allowance check was not found.'
+        . ([scriptblock]::Create($function.Extent.Text))
+        $WorkBudgetSeconds = 240
+        $WorkDeadlineTick = [Diagnostics.Stopwatch]::GetTimestamp() - 1
+        $clock = [Diagnostics.Stopwatch]::StartNew()
+        Assert-Failure { Get-Ptq1WorkAllowance $clock }
+        $WorkDeadlineTick = [Diagnostics.Stopwatch]::GetTimestamp() + (10 * [Diagnostics.Stopwatch]::Frequency)
+        $remaining = Get-Ptq1WorkAllowance $clock
+        Assert ($remaining -ge 1 -and $remaining -le 10) 'Child startup reset the original work deadline.'
     } finally {
         $prefix = $tempRoot.TrimEnd([IO.Path]::DirectorySeparatorChar) + [IO.Path]::DirectorySeparatorChar
         if (-not $fixture.StartsWith($prefix, [StringComparison]::OrdinalIgnoreCase) -or $fixture -ceq $tempRoot) {

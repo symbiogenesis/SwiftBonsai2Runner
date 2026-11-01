@@ -334,7 +334,7 @@ jobs:
             if ($code -ne 0) { throw 'Actual-model application acceptance failed.' }
             $receipt = Join-Path $env:BONSAI_NATIVE_EVIDENCE 'acceptance.json'
             if (-not (Test-Path -LiteralPath $receipt -PathType Leaf)) { throw 'Actual-model acceptance receipt is missing.' }
-            if ($env:BONSAI_NATIVE_PROFILE -cin @('pq2-no-adapter', 'pq2-adapter-lifecycle-row4')) {
+            if ($env:BONSAI_NATIVE_PROFILE -cin @('pq2-no-adapter', 'pq2-adapter-lifecycle-row4', 'ptq1-adapter-lifecycle')) {
               $accepted = Get-Content -LiteralPath $receipt -Raw | ConvertFrom-Json
               $hostReport.AllRequestedWorkloadsPassed = $accepted.allRequestedWorkloadsPassed
             }

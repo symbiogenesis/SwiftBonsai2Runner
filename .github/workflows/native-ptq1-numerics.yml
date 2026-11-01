@@ -117,30 +117,39 @@ jobs:
           $ErrorActionPreference = 'Stop'
           $PSNativeCommandUseErrorActionPreference = $true
           Import-Module (Join-Path $env:GITHUB_WORKSPACE 'scripts/Bonsai.Tools.psm1')
-          $budgetClock = [Diagnostics.Stopwatch]::StartNew()
-          $limits = Invoke-BonsaiTool -Command native-acceptance-budget -ToolPath $env:BONSAI_TOOLS_PATH -TimeoutSeconds 10 -Request @{
-            jobStartedUtc=$env:BONSAI_PTQ1_JOB_STARTED_UTC; nowUtc=[DateTime]::UtcNow.ToString('o')
-            nowTick=[Diagnostics.Stopwatch]::GetTimestamp(); tickFrequency=[Diagnostics.Stopwatch]::Frequency
-            runId=$env:GITHUB_RUN_ID; revision=$env:GITHUB_SHA
-            ownerDeadline=@{
-              RunId=$env:BONSAI_NATIVE_OWNER_RUN_ID; Revision=$env:BONSAI_NATIVE_OWNER_REVISION
-              StartedTick=$env:BONSAI_NATIVE_OWNER_STARTED_TICK; StartedUtc=$env:BONSAI_NATIVE_OWNER_STARTED_UTC
-              WorkSeconds=$env:BONSAI_NATIVE_OWNER_WORK_SECONDS
-            }
-          }
-          # Charge the budget-tool handshake and IPC to both original deadlines.
-          $bridgeCharge = [int][Math]::Ceiling($budgetClock.Elapsed.TotalSeconds)
-          $workSeconds = $limits.CaseBudgetSeconds - $bridgeCharge
-          $hardSeconds = $limits.HardLimitSeconds - $bridgeCharge
-          if ($workSeconds -lt 1) { throw 'Owner setup exhausted the complete PTQ1 budget; qualification remains pending.' }
           $budgetPath = Join-Path $env:RUNNER_TEMP 'ptq1-owner-budget.json'
-          @{
+          $budgetReport = [ordered]@{
             Revision=$env:GITHUB_SHA; RunId=$env:GITHUB_RUN_ID; RunAttempt=$env:GITHUB_RUN_ATTEMPT
-            Limits=$limits; BridgeChargeSeconds=$bridgeCharge; WorkBudgetSeconds=$workSeconds
-            ProcessHardLimitSeconds=$hardSeconds; WholeJobMaximumSeconds=300
-            ModelProcessStarted=$false; DefaultMayChange=$false
-          } | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $budgetPath -Encoding utf8NoBOM
+            Status='preparing'; WholeJobMaximumSeconds=300; DefaultMayChange=$false
+          }
+          $budgetReport | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $budgetPath -Encoding utf8NoBOM
           "BONSAI_PTQ1_OWNER_BUDGET=$budgetPath" >> $env:GITHUB_ENV
+          try {
+            $budgetTick = [Diagnostics.Stopwatch]::GetTimestamp()
+            $frequency = [Diagnostics.Stopwatch]::Frequency
+            $limits = Invoke-BonsaiTool -Command native-acceptance-budget -ToolPath $env:BONSAI_TOOLS_PATH -TimeoutSeconds 10 -Request @{
+              jobStartedUtc=$env:BONSAI_PTQ1_JOB_STARTED_UTC; nowUtc=[DateTime]::UtcNow.ToString('o')
+              nowTick=$budgetTick; tickFrequency=$frequency
+              runId=$env:GITHUB_RUN_ID; revision=$env:GITHUB_SHA
+              ownerDeadline=@{
+                RunId=$env:BONSAI_NATIVE_OWNER_RUN_ID; Revision=$env:BONSAI_NATIVE_OWNER_REVISION
+                StartedTick=$env:BONSAI_NATIVE_OWNER_STARTED_TICK; StartedUtc=$env:BONSAI_NATIVE_OWNER_STARTED_UTC
+                WorkSeconds=$env:BONSAI_NATIVE_OWNER_WORK_SECONDS
+              }
+            }
+            # Absolute monotonic deadlines include IPC, receipts and process startup.
+            $workSeconds = $limits.CaseBudgetSeconds
+            $workDeadline = $budgetTick + ([long]$workSeconds * $frequency)
+            $hardDeadline = $budgetTick + ([long]$limits.HardLimitSeconds * $frequency)
+            $budgetReport.Status = 'budget-established'
+            $budgetReport['Limits'] = $limits; $budgetReport['WorkBudgetSeconds'] = $workSeconds
+            $budgetReport['WorkDeadlineTick'] = $workDeadline; $budgetReport['HardDeadlineTick'] = $hardDeadline
+          } catch {
+            $budgetReport.Status = 'budget-rejected'
+            throw
+          } finally {
+            $budgetReport | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $budgetPath -Encoding utf8NoBOM
+          }
           $start = [Diagnostics.ProcessStartInfo]::new((Join-Path $PSHOME 'pwsh.exe'))
           $start.WorkingDirectory = $env:RUNNER_TEMP
           $start.UseShellExecute = $false
@@ -149,7 +158,7 @@ jobs:
           $start.RedirectStandardError = $true
           # A hosted preparation job supplies the checked capture and maintenance
           # tools. Owner-laptop builds/downloads are intentionally unavailable.
-          foreach ($argument in @('-NoProfile', '-File', (Join-Path $env:GITHUB_WORKSPACE 'scripts/Invoke-NativePtq1Numerics.ps1'), '-DataDirectory', (Join-Path $env:LOCALAPPDATA 'SwiftBonsai2'), '-CaptureToolsDirectory', (Join-Path $env:RUNNER_TEMP 'SwiftBonsai-Ptq1CaptureTools'), '-WorkBudgetSeconds', [string]$workSeconds)) {
+          foreach ($argument in @('-NoProfile', '-File', (Join-Path $env:GITHUB_WORKSPACE 'scripts/Invoke-NativePtq1Numerics.ps1'), '-DataDirectory', (Join-Path $env:LOCALAPPDATA 'SwiftBonsai2'), '-CaptureToolsDirectory', (Join-Path $env:RUNNER_TEMP 'SwiftBonsai-Ptq1CaptureTools'), '-WorkBudgetSeconds', [string]$workSeconds, '-WorkDeadlineTick', [string]$workDeadline)) {
             $start.ArgumentList.Add($argument)
           }
           foreach ($name in @('ACTIONS_RUNTIME_TOKEN', 'ACTIONS_ID_TOKEN_REQUEST_TOKEN', 'GITHUB_TOKEN', 'GH_TOKEN', 'ACTIONS_RUNNER_INPUT_TOKEN')) {
@@ -159,7 +168,8 @@ jobs:
           try {
             $stdout = $child.StandardOutput.ReadToEndAsync()
             $stderr = $child.StandardError.ReadToEndAsync()
-            if (-not $child.WaitForExit($hardSeconds * 1000)) { throw 'The complete PTQ1 smoke exceeded its remaining owner-job process budget.' }
+            $hardMilliseconds = [int][Math]::Floor(($hardDeadline - [Diagnostics.Stopwatch]::GetTimestamp()) * 1000.0 / $frequency)
+            if ($hardMilliseconds -lt 1 -or -not $child.WaitForExit($hardMilliseconds)) { throw 'The complete PTQ1 smoke exceeded its remaining owner-job process budget.' }
             [Console]::Out.Write($stdout.GetAwaiter().GetResult())
             [Console]::Error.Write($stderr.GetAwaiter().GetResult())
             $code = $child.ExitCode

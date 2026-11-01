@@ -10,6 +10,10 @@ tool subtracts those costs from the at-most-240-second work allowance and honors
 any earlier owner deadline, retaining separate teardown/upload reserves. A missing
 or out-of-range work allowance rejects before owner/model preparation. This is one
 bounded trial; omitted controls are not split into repeated jobs.
+The parent also passes its original monotonic work deadline into the child and
+recomputes the watchdog's remaining time after process startup. Receipt writing,
+PowerShell startup and handoff cannot renew either deadline. Active capture and
+comparison phases are saved before launching external work.
 
 No-adapter, loaded-zero identity, changed nonzero logits, scalar, explicit NEON,
 writer authoring basis, quality, performance, full context and service remain

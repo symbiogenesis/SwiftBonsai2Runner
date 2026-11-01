@@ -65,10 +65,15 @@ ARM64 MSVC exceptional-float behavior when qualifying other compiler versions.
 Measure adaptive broker forwarding and retained idle speech scratch before
 claiming a latency, throughput or process-memory gain.
 
-Qualify the Rust PTQ1 DLL collector through the main-only actual-model numerical
-workflow. The [hosted source-bound build/test bundle](docs/evidence/ptq1-collector-hosted.json)
-and local pinned-DLL probe/complete 369-record ABI/default/configuration comparison
-do not close actual-model logits/state comparison, writer-basis or promotion gates.
+Qualify the Rust PTQ1 DLL collector against the current locked Prism source through
+the main-only numerical workflow, then the explicit one-worker
+`ptq1-adapter-lifecycle` profile with mandatory zero-scale, invalid-scale and
+supplied-history steps. Source guards, [hosted build/ABI
+controls](docs/evidence/ptq1-collector-hosted.json) and the prepared profile do not
+close actual-model logits/state, writer-basis or promotion gates. Keep intake,
+verification, model work and cleanup inside one aggregate five-minute owner allowance;
+the [default-readiness audit](docs/evidence/ptq1-default-readiness.json) separates
+historical passes from current-release qualification.
 
 - Qualify startup, supplied-history streaming, full 8K context and 4K output, long
   conversations, speech, offline restart and recovery. Cover Stop, abandonment,
