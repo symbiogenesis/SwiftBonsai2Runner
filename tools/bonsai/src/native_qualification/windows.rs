@@ -179,7 +179,7 @@ impl Context<'_> {
             return Err("Qualification artifact exceeds its fixed byte bound.".into());
         }
         let mut hash = Sha256::new();
-        let mut buffer = [0; 65_536];
+        let mut buffer = vec![0; 65_536];
         let mut total = 0_u64;
         loop {
             self.checkpoint()?;
@@ -219,7 +219,7 @@ impl Context<'_> {
     fn completion(
         &self,
         executable: &Path,
-        arguments: Value,
+        arguments: &Value,
         lane: &Path,
         model: bool,
     ) -> crate::Result<Value> {
@@ -496,7 +496,7 @@ fn runtime(context: &mut Context<'_>, receipt: &Value) -> crate::Result<Value> {
         let lane = context.lane(phase)?;
         context.report[field] = context.completion(
             &collector,
-            json!([flag, runtime["Runtime"]["runtimeDirectory"]]),
+            &json!([flag, runtime["Runtime"]["runtimeDirectory"]]),
             &lane,
             false,
         )?;
@@ -595,7 +595,7 @@ fn model_samples(
             "ActiveCondition"
         }] = json!(name);
         context.phase("model-capture")?;
-        let supervision = context.completion(&executable, arguments, &lane, true)?;
+        let supervision = context.completion(&executable, &arguments, &lane, true)?;
         let sample = if context.request.kind == Kind::Ptq1 {
             json!({"Backend": name, "RustRowWorkers": if native { Value::Null } else { json!(workers) }, "Supervision": supervision})
         } else {

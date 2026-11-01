@@ -584,7 +584,12 @@ fn reference_initialization_preserves_selection_returned_bytes_and_prerequisites
         "processInitializationDomainAfter",
         "processInitializationEnableAfter",
     ] {
-        for invalid in [Value::Null, json!(true), json!(1.5), json!(2_147_483_648_i64)] {
+        for invalid in [
+            Value::Null,
+            json!(true),
+            json!(1.5),
+            json!(2_147_483_648_i64),
+        ] {
             rejects(&reference, &[name], &invalid, |value| {
                 session_check(value, true)
             });
@@ -599,7 +604,10 @@ fn reference_initialization_preserves_selection_returned_bytes_and_prerequisites
     let returned = changed(
         &reference,
         &[
-            ("processInitializationDomainAfter", json!(-2_147_483_648_i64)),
+            (
+                "processInitializationDomainAfter",
+                json!(-2_147_483_648_i64),
+            ),
             ("processInitializationEnableAfter", json!(2_147_483_647_i64)),
         ],
     );

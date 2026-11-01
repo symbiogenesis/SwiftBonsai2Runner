@@ -13,6 +13,10 @@ fn credential_command_rejects_positional_and_unknown_fields() {
 
 #[cfg(windows)]
 #[test]
+#[expect(
+    clippy::manual_assert_eq,
+    reason = "Credential bytes and environment secrets must not enter assertion diagnostics."
+)]
 fn native_credentials_reject_unsafe_parents_and_preserve_path_only_receipts()
 -> Result<(), Box<dyn std::error::Error>> {
     use std::{

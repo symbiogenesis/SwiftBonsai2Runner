@@ -175,7 +175,12 @@ fn atomic_receipts_preserve_prior_evidence_and_bounded_partial_observations() ->
         previous
     );
     assert!(save(&root, &json!({"status":"failed"})).is_err());
-    let own_prefix = format!("{}.", root.file_name().ok_or("Missing fixture name.")?.to_string_lossy());
+    let own_prefix = format!(
+        "{}.",
+        root.file_name()
+            .ok_or("Missing fixture name.")?
+            .to_string_lossy()
+    );
     assert!(
         !fs::read_dir(root.parent().ok_or("Missing parent.")?)
             .map_err(|error| error.to_string())?
@@ -183,10 +188,7 @@ fn atomic_receipts_preserve_prior_evidence_and_bounded_partial_observations() ->
                 .path()
                 .extension()
                 .is_some_and(|extension| extension == "tmp")
-                && entry
-                    .file_name()
-                    .to_string_lossy()
-                    .starts_with(&own_prefix)))
+                && entry.file_name().to_string_lossy().starts_with(&own_prefix)))
     );
     let payload = root.join("transfer.partial");
     assert_eq!(partial(&payload, 3)["status"], "absent");
