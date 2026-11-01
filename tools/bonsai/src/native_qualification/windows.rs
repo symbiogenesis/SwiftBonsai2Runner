@@ -238,8 +238,8 @@ impl Context<'_> {
             "memoryLimitBytes": if model { 12_348_030_976_u64 } else { 536_870_912 },
             "requiredAvailableBytes": 16_642_998_272_u64, "physicalReserveBytes": 4_294_967_296_u64,
             "timeoutSeconds": if model { remaining - 32 } else { 10_u64.min(remaining - 32) },
-            "totalTimeoutSeconds": remaining, "stdoutLimitBytes": 65536,
-            "stderrLimitBytes": if model { 67_108_864 } else { 65536 }, "requireNonemptyStdout": true,
+            "totalTimeoutSeconds": remaining, "stdoutLimitBytes": 65_536,
+            "stderrLimitBytes": if model { 67_108_864 } else { 65_536 }, "requireNonemptyStdout": true,
             "ciOnly": false, "parentProcessId": self.parent_id, "parentCreationTimeFileTime": self.parent_creation }),
         )
     }
@@ -314,7 +314,9 @@ impl Context<'_> {
         } else {
             "fixed-step-serial-parallel-byte-exact"
         };
-        if comparison["status"] != expected || comparison["defaultMayChange"] != false {
+        if comparison["status"] != expected
+            || comparison["defaultMayChange"].as_bool() != Some(false)
+        {
             return Err("Numerical comparison did not report the fixed successful scope.".into());
         }
         self.report["Comparison"] = comparison;
@@ -501,7 +503,7 @@ fn runtime(context: &mut Context<'_>, receipt: &Value) -> crate::Result<Value> {
         if field == "AbiPreflight" {
             let probe = read_json(&lane.join("stdout.txt"), 65_536)?;
             if probe["status"] != "native-default-parameter-abi-probe-passed"
-                || probe["modelLoaded"] != false
+                || probe["modelLoaded"].as_bool() != Some(false)
                 || probe["modelParamsBytes"] != 80
                 || probe["contextParamsBytes"] != 168
                 || probe["batchBytes"] != 56
@@ -582,7 +584,7 @@ fn model_samples(
                 &json!({"SchemaVersion": 1, "RunnerRevision": context.report["Revision"],
                 "RustSource": context.pins["rustSource"], "Condition": name, "RowWorkers": workers, "Representation": "PQ2_0",
                 "ModelSha256": checked["Artifact"]["Sha256"], "AdapterSha256": checked["AdapterLock"]["adapter"]["sha256"],
-                "AdapterScale": 1.3, "SuppliedTokens": [248045], "Backend": "auto", "AppTpsQualified": false}),
+                "AdapterScale": 1.3, "SuppliedTokens": [248_045], "Backend": "auto", "AppTpsQualified": false}),
             )?;
         }
         context.report["ModelTrialsRequested"] = json!(true);

@@ -24,7 +24,7 @@ fn plans_keep_one_selected_ptq1_pair_and_the_fixed_row_pair() -> crate::Result<(
             assert_eq!(result["RustRowWorkers"], workers);
             assert_eq!(result["NativeSamples"], 1);
             assert_eq!(result["RustSamples"], 1);
-            assert_eq!(result["SuppliedTokens"], json!([248045]));
+            assert_eq!(result["SuppliedTokens"], json!([248_045]));
             assert_eq!(result["WorkBudgetSeconds"], 240);
             assert_eq!(result["ModelProcessStarted"], false);
             assert_eq!(result["DefaultMayChange"], false);

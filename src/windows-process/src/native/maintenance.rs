@@ -40,7 +40,7 @@ pub(crate) fn has_running_process(names: &[&str]) -> io::Result<bool> {
     // SAFETY: A process-only snapshot takes no caller pointers and returns a fresh handle.
     let snapshot = super::owned(unsafe { CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0) })?;
     let mut entry = PROCESSENTRY32W {
-        dwSize: u32::try_from(std::mem::size_of::<PROCESSENTRY32W>())
+        dwSize: u32::try_from(size_of::<PROCESSENTRY32W>())
             .map_err(|_| super::invalid("Process entry size overflow."))?,
         ..PROCESSENTRY32W::default()
     };
@@ -49,7 +49,7 @@ pub(crate) fn has_running_process(names: &[&str]) -> io::Result<bool> {
     let mut count = 0;
     while found != 0 {
         count += 1;
-        if count > 16384 {
+        if count > 16_384 {
             return Err(super::invalid("Process inventory exceeds its fixed bound."));
         }
         let end = entry

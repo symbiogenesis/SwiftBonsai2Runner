@@ -153,10 +153,10 @@ fn require_runtime_source(source: &Value, runtime: &Value) -> crate::Result<()> 
 
 fn plan(request: &Request, pins: &Value) -> Value {
     let mut value = json!({"Status": "plan-only", "ModelProcessStarted": false,
-        "SuppliedTokens": [248045], "AdapterScale": 1.3, "RustBackend": request.rust_backend,
-        "WorkBudgetSeconds": 240, "WholeJobMinutes": 5, "RequiredFreeDiskBytes": 1073741824,
-        "ContextTokens": 8192, "JobBytes": 12348030976_u64, "AdmissionBytes": 16642998272_u64,
-        "PhysicalReserveBytes": 4294967296_u64, "RustSource": pins["rustSource"],
+        "SuppliedTokens": [248_045], "AdapterScale": 1.3, "RustBackend": request.rust_backend,
+        "WorkBudgetSeconds": 240, "WholeJobMinutes": 5, "RequiredFreeDiskBytes": 1_073_741_824,
+        "ContextTokens": 8192, "JobBytes": 12_348_030_976_u64, "AdmissionBytes": 16_642_998_272_u64,
+        "PhysicalReserveBytes": 4_294_967_296_u64, "RustSource": pins["rustSource"],
         "WriterBasisQualified": false, "DefaultMayChange": false });
     if request.kind == Kind::Ptq1 {
         value["Representation"] = json!("current-repacked-PTQ1_0");
