@@ -2,14 +2,20 @@
 
 use super::{plain, write_json};
 use crate::{Result, startup_process};
-use bonsai_artifacts::{hash_reader, is_redirect, validate_external_path};
+use bonsai_artifacts::validate_external_path;
+#[cfg(any(windows, test))]
+use bonsai_artifacts::{hash_reader, is_redirect};
 use serde_json::{Value, json};
 use std::collections::BTreeMap;
-use std::fs::{self, File, OpenOptions};
+use std::fs;
+#[cfg(any(windows, test))]
+use std::fs::{File, OpenOptions};
+#[cfg(any(windows, test))]
 use std::io::Seek as _;
 use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant};
 
+#[cfg(any(windows, test))]
 fn eligible(path: &Path) -> bool {
     let extension = path
         .extension()
@@ -35,6 +41,7 @@ fn eligible(path: &Path) -> bool {
                     .all(|byte| byte.is_ascii_alphanumeric() || b"_-".contains(&byte))
         })
 }
+#[cfg(any(windows, test))]
 fn signature(file: &File, path: &Path) -> Value {
     #[cfg(windows)]
     if let Ok(signer) = bonsai_windows_process::verify_authenticode(file, path) {
@@ -44,6 +51,7 @@ fn signature(file: &File, path: &Path) -> Value {
     let _ = (file, path);
     json!({"Status":"Unverified","SignerThumbprint":null,"Scope":"signature-observation-only; trust and member binding unknown"})
 }
+#[cfg(any(windows, test))]
 fn package(path: Option<&Path>) -> Result<Value> {
     let Some(root) = path else {
         return Ok(json!({"Status":"not-selected","Files":[],"TotalBytes":0}));

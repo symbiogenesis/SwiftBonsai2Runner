@@ -82,6 +82,10 @@ fn save(path: &Path, value: &Value) -> Result<()> {
 }
 
 fn bounded_text(path: &Path, maximum: u64) -> Result<String> {
+    String::from_utf8(bounded_bytes(path, maximum)?).map_err(|error| error.to_string())
+}
+
+fn bounded_bytes(path: &Path, maximum: u64) -> Result<Vec<u8>> {
     let file = File::open(path).map_err(|error| error.to_string())?;
     if file.metadata().map_err(|error| error.to_string())?.len() > maximum {
         return Err("Hexagon capture exceeded its fixed byte cap.".into());
@@ -93,7 +97,7 @@ fn bounded_text(path: &Path, maximum: u64) -> Result<String> {
     if u64::try_from(bytes.len()).map_err(|error| error.to_string())? > maximum {
         return Err("Hexagon capture exceeded its fixed byte cap.".into());
     }
-    String::from_utf8(bytes).map_err(|error| error.to_string())
+    Ok(bytes)
 }
 
 fn marker<'a>(text: &'a str, kind: &str) -> Option<&'a str> {
@@ -273,7 +277,8 @@ fn capture(
             {
                 return Err("Hexagon fixture stream exceeded its fixed byte cap.".into());
             }
-            let error_text = bounded_text(&stderr, 65_536)?;
+            let error_bytes = bounded_bytes(&stderr, 65_536)?;
+            let error_text = String::from_utf8_lossy(&error_bytes);
             if let Some(label) = marker(&error_text, kind) {
                 let field = if kind == "dispatch" {
                     "LastFixtureStage"
@@ -307,9 +312,23 @@ fn capture(
                 }
             }
             if let Some(code) = process.try_wait().map_err(|error| error.to_string())? {
+                // Root exit can race the last progress read. Observe complete
+                // stderr once more after all child writes have finished.
+                let bytes = bounded_bytes(&stderr, 65_536)?;
+                if let Some(label) = marker(&String::from_utf8_lossy(&bytes), kind) {
+                    let field = if kind == "dispatch" {
+                        "LastFixtureStage"
+                    } else {
+                        "LastNativeStage"
+                    };
+                    if report[field] != label {
+                        report[field] = json!(label);
+                        save(progress, report)?;
+                    }
+                }
                 return Ok((code, bounded_text(&stdout, 131_072)?));
             }
-            if clock.elapsed() >= Duration::from_secs(240) {
+            if clock.elapsed() >= Duration::from_secs(if kind == "catalog" { 10 } else { 240 }) {
                 return Err("Hexagon capture exhausted its worker deadline.".into());
             }
             std::thread::sleep(Duration::from_millis(10));
