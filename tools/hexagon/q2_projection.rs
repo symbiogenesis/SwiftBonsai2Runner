@@ -11,7 +11,9 @@ use super::{
 };
 
 const TILE_ROWS: usize = 32;
-const TILE_BYTES: usize = 640;
+// Host storage is tightly packed. DMA copies each 576-byte tile into a
+// separately 640-byte-aligned VTCM slot; that padding is not on the host wire.
+const TILE_BYTES: usize = 576;
 const BLOCK_TILES: usize = PADDED_K / 64;
 
 /// Derived host bounds for one complete original-PQ2 projection, not admission.
@@ -21,7 +23,7 @@ pub struct GuardedQ2Ledger {
     pub operation_count: usize,
     /// Caller-owned original weights, borrowed without a second complete copy.
     pub original_weight_bytes: usize,
-    /// Peak Q2 tile staging, including all 640-byte tile alignment/padding.
+    /// Peak tightly packed 576-byte Q2 host tile staging, without VTCM padding.
     pub repacked_stage_bytes: usize,
     /// Original pinned Q8_K preparation retained across row tiles.
     pub prepared_activation_bytes: usize,
@@ -156,10 +158,12 @@ impl GuardedQ2Operation {
         self.rows
     }
 
-    /// Four 640-byte tiles per 32 weight rows, with K-tile varying fastest.
+    /// Four 576-byte host tiles per 32 weight rows, with K-tile varying fastest.
     ///
     /// The pinned scalar layout stores 512 symbol bytes, 32 little-endian FP16
-    /// scales at 512..576 and 64 zero padding bytes. Actual rows use scale one.
+    /// scales at 512..576. DMA separately pads VTCM destinations to 640 bytes;
+    /// inserting that padding in host storage would change the signed layout.
+    /// Actual rows use scale one.
     #[must_use]
     pub fn repacked_weights(&self) -> &[u8] {
         &self.weights
@@ -350,8 +354,9 @@ mod tests {
             for scale in block[512..576].chunks_exact(2) {
                 assert_eq!(scale, [0x00, 0x3c]);
             }
-            assert_eq!(&block[576..], &[0; 64]);
         }
+        assert_eq!(&tile[574..576], &[0x00, 0x3c]);
+        assert_eq!(&tile[576..580], &[0xe4; 4]);
 
         // Asymmetric row/K-tile fixture: only row 5 is active in the first row
         // tile and only row 0 in the second. Literal offsets distinguish row,
@@ -365,13 +370,14 @@ mod tests {
         assert_eq!(&isolated[276..280], &[0xe4; 4]);
         assert_eq!(&isolated[404..408], &[0xe4; 4]);
         assert_eq!(&isolated[522..524], &[0x00, 0x3c]);
-        assert_eq!(&isolated[660..664], &[0xe4; 4]);
-        assert_eq!(&isolated[2560..2564], &[0xff; 4]);
-        assert_eq!(&isolated[3072..3074], &[0x00, 0x3c]);
-        assert_eq!(&isolated[3200..3204], &[0xe4; 4]);
-        assert_eq!(&isolated[3712..3714], &[0x00, 0x3c]);
+        assert_eq!(&isolated[596..600], &[0xe4; 4]);
+        assert_eq!(&isolated[660..664], &[0; 4]); // Not a 640-byte host stride.
+        assert_eq!(&isolated[2304..2308], &[0xff; 4]);
+        assert_eq!(&isolated[2816..2818], &[0x00, 0x3c]);
+        assert_eq!(&isolated[2880..2884], &[0xe4; 4]);
+        assert_eq!(&isolated[3392..3394], &[0x00, 0x3c]);
         assert!(isolated[..20].iter().all(|&byte| byte == 0));
-        assert!(isolated[576..640].iter().all(|&byte| byte == 0));
+        assert!(isolated[576..596].iter().all(|&byte| byte == 0));
     }
 
     #[test]
@@ -380,13 +386,13 @@ mod tests {
         let ledger = plan.ledger();
         assert_eq!(ledger.operation_count, 40);
         assert_eq!(ledger.original_weight_bytes, 23_674_880);
-        assert_eq!(ledger.repacked_stage_bytes, 1_392_640);
+        assert_eq!(ledger.repacked_stage_bytes, 1_253_376);
         assert_eq!(ledger.prepared_activation_bytes, 5840);
         assert_eq!(ledger.guarded_activation_bytes, 2048);
         assert_eq!(ledger.limb_output_bytes, 139_264);
         assert_eq!(ledger.final_output_bytes, 69_632);
-        assert_eq!(ledger.owned_payload_bytes, 1_609_424);
-        assert_eq!(ledger.repacked_weight_transfer_bytes, 55_705_600);
+        assert_eq!(ledger.owned_payload_bytes, 1_470_160);
+        assert_eq!(ledger.repacked_weight_transfer_bytes, 50_135_040);
         assert_eq!(ledger.activation_transfer_bytes, 81_920);
         assert_eq!(ledger.limb_return_bytes, 5_570_560);
         assert_eq!(
