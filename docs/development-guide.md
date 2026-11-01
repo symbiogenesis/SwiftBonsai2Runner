@@ -202,7 +202,7 @@ Invoke-BonsaiTool -Command speech-build -TimeoutSeconds 0 -Request @{
     operation = 'models'; dataDirectory = $data; workingDirectory = [IO.Path]::GetTempPath()
     model = 'QwenTts'; ttsQuantization = 'Q4_K_M'; verifyOnly = $false; deferCachedVerification = $false
 }
-./scripts/Invoke-TtsEvaluation.ps1 -DataDirectory $data -PlanOnly
+Invoke-BonsaiTool -Command speech-evaluation -Request @{ operation = 'host-plan'; repetitions = 2 }
 ```
 
 Each immutable profile is verified before loading. Actual evaluation belongs to

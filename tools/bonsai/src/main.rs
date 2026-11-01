@@ -90,6 +90,7 @@ fn execute() -> bonsai_tools::Result<serde_json::Value> {
             request["operation"].as_str(),
             Some("models" | "environment" | "build")
         ))
+        || (arguments[0] == "speech-evaluation" && request["operation"] == "evaluate")
         || (arguments[0] == "chat-package"
             && matches!(request["operation"].as_str(), Some("launch" | "start")));
     if startup {

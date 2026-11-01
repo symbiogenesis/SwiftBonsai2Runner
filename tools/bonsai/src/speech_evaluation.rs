@@ -3,12 +3,19 @@
 use serde::Deserialize;
 use serde_json::{Value, json};
 
+mod evaluate;
+#[cfg(any(windows, test))]
+mod http;
 #[cfg(windows)]
 mod windows;
 
 #[derive(Deserialize)]
 #[serde(tag = "operation", deny_unknown_fields)]
 enum Request {
+    #[serde(rename = "host-plan")]
+    HostPlan { repetitions: u8 },
+    #[serde(rename = "evaluate")]
+    Evaluate(evaluate::Request),
     #[serde(rename = "plan")]
     Plan {
         threads: Vec<usize>,
@@ -101,10 +108,12 @@ fn validate_context(
     Ok(())
 }
 
-/// Plans paired fresh-process trials or runs one bounded native TTS capture session.
+/// Plans paired trials, evaluates the hosted matrix, or supervises one TTS session.
 ///
 /// Planning is model-free. Sessions require this repository's Windows ARM64 main
 /// hosted CI lane, retain verified artifacts, and use fixed speech resource guards.
+/// Evaluation owns preparation, authenticated loopback HTTP, bounded WAV evidence
+/// and completed-pair comparisons; listening quality remains pending.
 /// The complete matrix cannot establish bounded owner-device qualification.
 ///
 /// # Errors
@@ -112,6 +121,13 @@ fn validate_context(
 /// changed artifacts, unsafe paths, caller death or resource/capture failures.
 pub fn run(request: Value) -> crate::Result<Value> {
     match serde_json::from_value(request).map_err(|error| error.to_string())? {
+        Request::HostPlan { repetitions } => {
+            let available = std::thread::available_parallelism()
+                .map_err(|error| error.to_string())?
+                .get();
+            plan(&evaluate::thread_grid(available)?, repetitions)
+        }
+        Request::Evaluate(request) => evaluate::run(&request),
         Request::Plan {
             threads,
             repetitions,

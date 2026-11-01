@@ -435,3 +435,22 @@ maintenance artifact. Session/dispatch owner jobs verify that same-run artifact
 inside the existing aggregate setup clock. Rust tests replace the former
 PowerShell build/result/plan tests; `Test-HexagonCapture.ps1` keeps only the
 remaining PowerShell pipe-capture and progress-retention checks.
+
+`speech-evaluation` also owns the complete hosted TTS comparison. A model-free
+`{"operation":"host-plan","repetitions":2}` request derives the bounded local
+thread grid; `plan` still accepts explicit thread counts. `evaluate` accepts
+`repositoryRoot`, `dataDirectory`, optional `ttsPath` and `evidenceDirectory`,
+`repetitions` (1–3, default 2), and `responseFormat` (`pcm` or `wav`, default `pcm`).
+Execution requires this repository's hosted Windows ARM64 main CI and a prebuilt
+tool. The workflow's retained Snapdragon selector rejects before checkout/setup;
+owner-device speech qualification remains pending.
+
+The native evaluator provisions both pinned quantizations before timed trials,
+retains protected credentials, and starts the existing `session` supervisor in
+an owned Windows Job. The supervisor keeps the unchanged memory limits and
+25 ms observations. Native HTTP connects only to numeric IPv4 loopback, never
+uses proxies/cookies/redirects, checks caller/session liveness while waiting, and
+limits readiness/audio requests to 300/190 seconds. Strict HTTP framing and the
+shared mono PCM16 codec bound every listening clip to 120 seconds at 24 kHz.
+Failure receipts, phase timings, raw clips and separate process-lifetime memory
+counter differences remain available; voice quality stays pending human listening.

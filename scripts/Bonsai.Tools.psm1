@@ -132,8 +132,9 @@ function Invoke-BonsaiTool {
           [ValidateRange(0,86400)][int]$TimeoutSeconds = 60)
     if (-not $ToolPath -and $env:BONSAI_TOOLS_PATH) { $ToolPath = $env:BONSAI_TOOLS_PATH }
     if ((($Command -eq 'cpu-check' -and -not $Request['checkOnly']) -or $Command -eq 'publisher-startup' -or ($Command -in @('native-qualification', 'cpu-evaluation') -and $Request['operation'] -eq 'capture') -or
-        ($Command -eq 'qualification' -and $Request['operation'] -in @('run', 'screen-run', 'capture', 'screen-capture'))) -and -not $ToolPath) {
-        throw 'Owner execution requires a prebuilt maintenance executable; source bootstrap cannot consume the owner-device allowance.'
+        ($Command -eq 'qualification' -and $Request['operation'] -in @('run', 'screen-run', 'capture', 'screen-capture')) -or
+        ($Command -eq 'speech-evaluation' -and $Request['operation'] -eq 'evaluate')) -and -not $ToolPath) {
+        throw 'Execution requires a prebuilt maintenance executable; source bootstrap must be prepared separately from the device allowance and execution gate.'
     }
     if ($Command -in @('cpu-check', 'server-plan', 'native-qualification') -and -not $PSBoundParameters.ContainsKey('TimeoutSeconds')) { $TimeoutSeconds = 300 }
     if ($Command -eq 'cpu-evaluation' -and $Request['operation'] -eq 'capture' -and -not $PSBoundParameters.ContainsKey('TimeoutSeconds')) { $TimeoutSeconds = 240 }
@@ -142,7 +143,7 @@ function Invoke-BonsaiTool {
     # matrices reject owner-device execution and require hosted CI.
     if ($Command -eq 'completion' -and -not $PSBoundParameters.ContainsKey('TimeoutSeconds')) { $TimeoutSeconds = 0 }
     if ($Command -eq 'qualification' -and $Request['operation'] -in @('run', 'screen-run', 'capture', 'screen-capture') -and -not $PSBoundParameters.ContainsKey('TimeoutSeconds')) { $TimeoutSeconds = 0 }
-    if ($Command -eq 'speech-evaluation' -and $Request['operation'] -eq 'session' -and -not $PSBoundParameters.ContainsKey('TimeoutSeconds')) { $TimeoutSeconds = 0 }
+    if ($Command -eq 'speech-evaluation' -and $Request['operation'] -in @('session', 'evaluate') -and -not $PSBoundParameters.ContainsKey('TimeoutSeconds')) { $TimeoutSeconds = 0 }
     if ($Command -in @('runtime-stage','runtime-verify','inference-capabilities') -and -not $PSBoundParameters.ContainsKey('TimeoutSeconds')) { $TimeoutSeconds = 120 }
     $tool = Resolve-BonsaiRustTool -Name 'bonsai-tools' -ManifestRelativePath '../tools/bonsai/Cargo.toml' -ToolPath $ToolPath
     $scratch = Get-BonsaiToolScratch -Name 'bonsai-tools'
@@ -165,7 +166,8 @@ function Invoke-BonsaiTool {
         throw 'Use a current bonsai-tools build with native chat admission protocol 1.'
     }
     $startup = $Command -cin @('source-build', 'chat-launch') -or
-        ($Command -ceq 'speech-build' -and $Request['operation'] -cin @('models', 'environment', 'build'))
+        ($Command -ceq 'speech-build' -and $Request['operation'] -cin @('models', 'environment', 'build')) -or
+        ($Command -ceq 'speech-evaluation' -and $Request['operation'] -ceq 'evaluate')
     if ($startup -and (-not $version.Contains('StartupProtocolVersion') -or $version.StartupProtocolVersion -ne 1)) {
         throw 'Use a current bonsai-tools build with startup protocol 1 for cancellable startup operations.'
     }

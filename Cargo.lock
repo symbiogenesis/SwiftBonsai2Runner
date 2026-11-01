@@ -591,9 +591,11 @@ name = "bonsai-tools"
 version = "0.1.0"
 dependencies = [
  "bonsai-artifacts",
+ "bonsai-audio",
  "bonsai-cpu-policy",
  "bonsai-windows-credentials",
  "bonsai-windows-process",
+ "httparse",
  "serde",
  "serde_json",
  "sha2",
