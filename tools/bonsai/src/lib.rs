@@ -14,6 +14,8 @@ pub const COMMANDS: &[&str] = &[
     "cpu-evaluation",
     "cpu-check-plan",
     "cpu-check-report",
+    "cpu-check",
+    "server-plan",
     "server-policy",
     "runtime-stage",
     "runtime-verify",
@@ -76,6 +78,9 @@ pub mod runtime_promotion;
 
 /// Pure server preflight policy shared with the development broker.
 pub mod server;
+
+/// Native CPU admission, verification and bounded decode checks.
+pub mod cpu_check;
 
 /// Offline runtime archive staging through the shared artifact policy.
 pub mod install;

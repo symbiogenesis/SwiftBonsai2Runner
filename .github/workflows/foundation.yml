@@ -349,7 +349,8 @@ jobs:
         run: |
           Set-StrictMode -Version Latest
           $ErrorActionPreference = 'Stop'
-          $result = ./scripts/Invoke-CpuCheck.ps1 -DataDirectory (Join-Path $env:RUNNER_TEMP 'SwiftBonsai-Runtime') -CheckOnly
+          Import-Module ./scripts/Bonsai.Tools.psm1
+          $result = Invoke-BonsaiTool -Command cpu-check -Request @{ dataDirectory = (Join-Path $env:RUNNER_TEMP 'SwiftBonsai-Runtime'); checkOnly = $true }
           if ($result.ModelProcessStarted -or $result.AvailablePhysicalBytesAtAdmission -le 0) { throw 'Invalid admission-only result.' }
           $result | ConvertTo-Json
       - name: Mandatory standard LoRA scorer and capture argument contracts
@@ -360,11 +361,6 @@ jobs:
           Set-StrictMode -Version Latest
           $ErrorActionPreference = 'Stop'
           $PSNativeCommandUseErrorActionPreference = $true
-          & (Join-Path $env:GITHUB_WORKSPACE 'tests/Test-LoraQualification.ps1') -Case Scoring
-          & (Join-Path $env:GITHUB_WORKSPACE 'tests/Test-LoraQualification.ps1') -Case Rejection
-          & (Join-Path $env:GITHUB_WORKSPACE 'tests/Test-LoraQualification.ps1') -Case Json
-          & (Join-Path $env:GITHUB_WORKSPACE 'tests/Test-LoraQualification.ps1') -Case Compatibility
-          & (Join-Path $env:GITHUB_WORKSPACE 'tests/Test-LoraQualification.ps1') -Case AppSettings
           & (Join-Path $env:GITHUB_WORKSPACE 'tests/Test-LoraEvaluation.ps1') -Case All
           & (Join-Path $env:GITHUB_WORKSPACE 'tests/Test-Ptq1Screen.ps1') -Case All
           $plan = & (Join-Path $env:GITHUB_WORKSPACE 'scripts/Invoke-LoraQualification.ps1') -DataDirectory (Join-Path $env:RUNNER_TEMP 'SwiftBonsai-Runtime') -PlanOnly
@@ -386,21 +382,20 @@ jobs:
         run: |
           Set-StrictMode -Version Latest
           $ErrorActionPreference = 'Stop'
-          ./tests/Test-CpuCheckPolicy.ps1 -Case Profiles
-          ./tests/Test-CpuCheckPolicy.ps1 -Case Artifacts
           $data = Join-Path $env:RUNNER_TEMP 'SwiftBonsai-Runtime'
           $lockPath = Join-Path $env:GITHUB_WORKSPACE 'config/swift-assessment.lock.json'
           ./scripts/Get-Engine.ps1 -DataDirectory $data -LockPath $lockPath
           ./scripts/Get-Adapter.ps1 -DataDirectory $data
           ./scripts/Get-Adapter.ps1 -DataDirectory $data -VerifyOnly
-          $result = ./scripts/Invoke-CpuCheck.ps1 -DataDirectory $data -ProfileName swift-pq2-assessment -CheckOnly
+          Import-Module ./scripts/Bonsai.Tools.psm1
+          $result = Invoke-BonsaiTool -Command cpu-check -Request @{ dataDirectory = $data; profile = 'swift-pq2-assessment'; checkOnly = $true }
           if ($result.ModelProcessStarted -or $result.RequiredAvailableBytes -ne 16642998272 -or
               $result.ServiceCeilingBytes -ne 12348030976 -or $result.AvailableMemoryFloorBytes -ne 4GB) { throw 'Invalid Swift admission-only result.' }
           $result | ConvertTo-Json
-          $adapterCheck = ./scripts/Invoke-CpuCheck.ps1 -DataDirectory $data -ProfileName swift-pq2-assessment -UseAbliterateLora -CheckOnly
+          $adapterCheck = Invoke-BonsaiTool -Command cpu-check -Request @{ dataDirectory = $data; profile = 'swift-pq2-assessment'; useAbliterateLora = $true; checkOnly = $true }
           if ($adapterCheck.ModelProcessStarted -or -not $adapterCheck.AdapterRequested -or $adapterCheck.EstimatedAdapterBytes -ne 9682464) { throw 'Invalid explicit adapter admission-only result.' }
           $adapterCheck | ConvertTo-Json
-          $ptqCheck = ./scripts/Invoke-CpuCheck.ps1 -DataDirectory $data -ProfileName swift-pq2-assessment -UseRepackedPtq1 -CheckOnly
+          $ptqCheck = Invoke-BonsaiTool -Command cpu-check -Request @{ dataDirectory = $data; profile = 'swift-pq2-assessment'; useRepackedPtq1 = $true; checkOnly = $true }
           if ($ptqCheck.ModelProcessStarted -or $ptqCheck.EstimatedWeightBytes -ne 5946648928 -or $ptqCheck.WeightRepresentation -cne 'current-repacked-PTQ1_0') { throw 'Invalid derived PTQ1 admission-only result.' }
       - name: Verify publisher ARM64 runtime and planned server switches
         shell: pwsh
@@ -409,7 +404,8 @@ jobs:
           $ErrorActionPreference = 'Stop'
           $data = Join-Path $env:RUNNER_TEMP 'SwiftBonsai-Runtime'
           ./scripts/Get-Engine.ps1 -DataDirectory $data
-          $plan = ./scripts/Get-ServerPlan.ps1 -DataDirectory $data -VerifyRuntime
+          Import-Module ./scripts/Bonsai.Tools.psm1
+          $plan = Invoke-BonsaiTool -Command server-plan -Request @{ dataDirectory = $data; verification = 'runtime' }
           if ($plan.LaunchEnabled -or $plan.ModelProcessStarted -or
               $plan.RuntimeHelpVerification -notlike 'all-planned-switches-advertised*' -or
               $plan.ArtifactVerification -notlike '*model-not-checked') { throw 'Invalid runtime-only preflight result.' }

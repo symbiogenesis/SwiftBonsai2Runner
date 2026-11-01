@@ -106,6 +106,8 @@ fn execute() -> bonsai_tools::Result<serde_json::Value> {
         Some("cpu-evaluation") => bonsai_tools::cpu_evaluation::run(request),
         Some("cpu-check-plan") => bonsai_tools::completion::cpu_check_plan(request),
         Some("cpu-check-report") => bonsai_tools::completion::cpu_check_report(request),
+        Some("cpu-check") => bonsai_tools::cpu_check::run(request),
+        Some("server-plan") => bonsai_tools::server::plan(request),
         Some("server-policy") => bonsai_tools::server::run(request),
         Some("runtime-stage") => bonsai_tools::install::run(request),
         Some("runtime-verify") => bonsai_tools::runtime::run(request),

@@ -12,7 +12,7 @@ revision and extract it outside Git:
 ```powershell
 $env:BONSAI_TOOLS_PATH = 'C:\BonsaiTools\bonsai-tools.exe'
 ./scripts/New-DevelopmentKeys.ps1 -ParentDirectory C:\BonsaiData
-./scripts/Invoke-CpuCheck.ps1 -DataDirectory C:\BonsaiData -CheckOnly
+& $env:BONSAI_TOOLS_PATH cpu-check --request C:\Evidence\cpu-check.json
 Import-Module ./scripts/Bonsai.Tools.psm1
 Invoke-BonsaiTool -Command qualification -Request @{
     operation = 'file-score'; qualificationProfile = 'standard-scale-one'
@@ -41,6 +41,8 @@ rejected before an operation can start.
 bonsai-tools --version
 bonsai-tools credentials --request ABSOLUTE_JSON_PATH
 bonsai-tools memory --request ABSOLUTE_JSON_PATH
+bonsai-tools cpu-check --request ABSOLUTE_JSON_PATH
+bonsai-tools server-plan --request ABSOLUTE_JSON_PATH
 bonsai-tools cpu-check-plan --request ABSOLUTE_JSON_PATH
 bonsai-tools cpu-check-report --request ABSOLUTE_JSON_PATH
 bonsai-tools server-policy --request ABSOLUTE_JSON_PATH
@@ -227,16 +229,23 @@ available-memory observation. Its request contains `operation: "plan"`,
 the policy, compiled pins, selected paths and complete CPU-check argv without
 reading model bytes or starting inference. `cpu-check-report` adds the existing
 ordered CPU report and admission status using that same single observation;
-`Invoke-CpuCheck.ps1 -CheckOnly` stamps its UTC time and preserves its PowerShell
-value types. The original plan command retains its response and avoids report work.
+the native `cpu-check` command owns timestamping, installed-runtime probes,
+artifact selection, aggregate deadlines, supervision and retained failure receipts.
+Its request contains `dataDirectory`, optional `profile` (default `reference-cpu`),
+`checkOnly`, `useAbliterateLora` and `useRepackedPtq1` (all default `false`).
+The original plan commands retain their existing responses. `cpu-check` loads no
+model when `checkOnly` is true or memory admission fails; execution charges setup,
+verification and cleanup to one 240-second allowance, within the owner budget.
 
-`server-policy` owns reference preflight profile validation, environment-name
-rejection and fixed server arguments through `bonsai-cpu-policy`. The development
-broker shares the environment and argument policy. PowerShell validates local
-storage and matches advertised help switches. Requests carry environment names
-only; values are never serialized. Planning remains launch-disabled and may use
-the tool resolver's external build/request storage without creating model or key
-storage.
+`server-plan` accepts `dataDirectory`, optional `port` (8080) and `verification`
+(`none`, `runtime`, or `artifacts`). Rust owns local storage checks, environment
+policy, installed version/help probes and optional model verification. The fixed
+profile remains launch-disabled; no request may add arguments or provision keys.
+The lower-level `server-policy` command retains the pure shared broker policy.
+
+The removed CPU/server and qualification compatibility wrappers are replaced by
+these native commands and the existing `qualification` command. Their model-free
+regressions run in Rust, retaining the independent frozen policy/scoring fixtures.
 
 Upstream partitioning and baseline policy are owned by Prism's
 [conformance policy tool](https://github.com/symbiogenesis/prism-inference/blob/main/tools/conformance-policy/README.md).

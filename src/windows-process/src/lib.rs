@@ -25,6 +25,36 @@ use std::time::Duration;
 )]
 mod native;
 
+/// Returns this process's creation FILETIME for retained supervision identity.
+///
+/// # Errors
+/// Rejects a failed process-handle or process-time query.
+pub fn current_process_creation_time() -> io::Result<u64> {
+    native::maintenance::current_creation_time()
+}
+
+/// Returns the current UTC wall clock in the canonical round-trip receipt format.
+#[must_use]
+pub fn utc_now() -> String {
+    native::maintenance::utc_now()
+}
+
+/// Requires a dedicated directory on a recognized local Windows drive.
+///
+/// # Errors
+/// Rejects drive roots, relative, UNC, device and unavailable/network drives.
+pub fn require_local_data_drive(path: &Path) -> io::Result<()> {
+    native::maintenance::local_drive(path)
+}
+
+/// Returns bytes available to this caller on the selected directory's filesystem.
+///
+/// # Errors
+/// Rejects an invalid path or failed Windows free-space query.
+pub fn available_disk_bytes(path: &Path) -> io::Result<u64> {
+    native::maintenance::available_disk_bytes(path)
+}
+
 /// Bounded failure context retained inside a Vulkan query's `io::Error`.
 ///
 /// Downcast `io::Error::get_ref()` to this type to distinguish failed discovery

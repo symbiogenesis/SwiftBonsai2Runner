@@ -78,8 +78,8 @@ try {
     $preflightReport.Status = 'passed'
     $preflightReport['Supervision'] = $preflight
     $preflightReport | ConvertTo-Json -Depth 32 | Set-Content -LiteralPath $preflightPath -Encoding utf8
-    $pq2 = & (Join-Path $PSScriptRoot 'Invoke-CpuCheck.ps1') -DataDirectory $data -Profile swift-pq2-assessment -UseAbliterateLora -CheckOnly -ToolPath $ToolPath
-    $ptq1 = & (Join-Path $PSScriptRoot 'Invoke-CpuCheck.ps1') -DataDirectory $data -Profile swift-pq2-assessment -UseAbliterateLora -UseRepackedPtq1 -CheckOnly -ToolPath $ToolPath
+    $pq2 = Invoke-BonsaiTool -Command cpu-check -ToolPath $ToolPath -Request @{ dataDirectory = $data; profile = 'swift-pq2-assessment'; useAbliterateLora = $true; checkOnly = $true }
+    $ptq1 = Invoke-BonsaiTool -Command cpu-check -ToolPath $ToolPath -Request @{ dataDirectory = $data; profile = 'swift-pq2-assessment'; useAbliterateLora = $true; useRepackedPtq1 = $true; checkOnly = $true }
     if ($pq2.Status -cne 'admission-passed' -or $ptq1.Status -cne 'admission-passed') {
         throw 'Both representations must meet the shared 15.5 GiB available-memory admission requirement.'
     }

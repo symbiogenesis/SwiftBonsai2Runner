@@ -40,6 +40,10 @@ function Invoke-BonsaiTool {
             'Plan' | Add-Content -LiteralPath $env:BONSAI_PREFLIGHT_FIXTURE_EVENTS
             return @{ Policy = @{ RequiredAvailableBytes = 16642998272; AvailableMemoryFloorBytes = 4294967296 } }
         }
+        'cpu-check' {
+            'Admission' | Add-Content -LiteralPath $env:BONSAI_PREFLIGHT_FIXTURE_EVENTS
+            return @{ Status = 'admission-passed' }
+        }
         'completion' {
             'Preflight' | Add-Content -LiteralPath $env:BONSAI_PREFLIGHT_FIXTURE_EVENTS
             $Request | ConvertTo-Json -Depth 20 | Set-Content -LiteralPath $env:BONSAI_PREFLIGHT_FIXTURE_REQUEST
@@ -60,11 +64,6 @@ param([string]$DataDirectory, [string]$LockPath, [switch]$VerifyOnly, [string]$T
 'Runtime' | Add-Content -LiteralPath $env:BONSAI_PREFLIGHT_FIXTURE_EVENTS
 @{ Commit = 'fixture-runtime'; Runtime = @{ runtimeDirectory = $DataDirectory } }
 '@ | Set-Content -LiteralPath (Join-Path $fixture 'Get-Engine.ps1') -Encoding utf8
-    @'
-param([string]$DataDirectory, [string]$Profile, [switch]$UseAbliterateLora, [switch]$UseRepackedPtq1, [switch]$CheckOnly, [string]$ToolPath)
-'Admission' | Add-Content -LiteralPath $env:BONSAI_PREFLIGHT_FIXTURE_EVENTS
-@{ Status = 'admission-passed' }
-'@ | Set-Content -LiteralPath (Join-Path $fixture 'Invoke-CpuCheck.ps1') -Encoding utf8
     @'
 param([string]$DataDirectory, [switch]$VerifyOnly)
 'Adapter' | Add-Content -LiteralPath $env:BONSAI_PREFLIGHT_FIXTURE_EVENTS

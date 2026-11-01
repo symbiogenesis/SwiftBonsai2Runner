@@ -33,6 +33,6 @@ foreach ($rule in @('PSReservedCmdletChar', 'PSProvideCommentHelp', 'PSAvoidUsin
     if ($rule -cnotin $diagnostics.RuleName) { throw "The scheduled analyzer lost required rule $rule." }
 }
 if ('PSUseBOMForUnicodeEncodedFile' -cin $diagnostics.RuleName) { throw 'The existing configured exclusion changed.' }
-$real = @(Invoke-BonsaiStandardsAnalyzer -Path (Join-Path $PSScriptRoot '../scripts/Bonsai.ServerPolicy.psm1') -Settings $settings)
+$real = @(Invoke-BonsaiStandardsAnalyzer -Path (Join-Path $PSScriptRoot '../scripts/Bonsai.Tools.psm1') -Settings $settings)
 if ($real.Count) { throw 'The unchanged server policy module produced diagnostics.' }
 Write-Output 'Focused export scheduling checks passed; both export rules and ordinary rules remain enforced.'

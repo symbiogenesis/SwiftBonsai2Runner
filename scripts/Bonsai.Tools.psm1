@@ -127,10 +127,14 @@ function Invoke-BonsaiTool {
     #>
     [CmdletBinding()]
     [OutputType([Collections.IDictionary])]
-    param([Parameter(Mandatory)][ValidateSet('credentials','memory','host-cpu','host-gpu','host-opencl','host-capabilities','cpu-evaluation','cpu-check-plan','cpu-check-report','server-policy','runtime-stage','runtime-verify','completion','qualification','runtime-promotion','speech-models','inference-lock','inference-capabilities','speech-build','speech-evaluation','source-build','chat-launch','ptq1-capture','ptq1-packing','native-acceptance-budget','startup-diagnostics')][string]$Command,
+    param([Parameter(Mandatory)][ValidateSet('credentials','memory','host-cpu','host-gpu','host-opencl','host-capabilities','cpu-evaluation','cpu-check-plan','cpu-check-report','cpu-check','server-plan','server-policy','runtime-stage','runtime-verify','completion','qualification','runtime-promotion','speech-models','inference-lock','inference-capabilities','speech-build','speech-evaluation','source-build','chat-launch','ptq1-capture','ptq1-packing','native-acceptance-budget','startup-diagnostics')][string]$Command,
           [Collections.IDictionary]$Request = @{}, [string]$ToolPath,
           [ValidateRange(0,86400)][int]$TimeoutSeconds = 60)
     if (-not $ToolPath -and $env:BONSAI_TOOLS_PATH) { $ToolPath = $env:BONSAI_TOOLS_PATH }
+    if ($Command -eq 'cpu-check' -and -not $Request['checkOnly'] -and -not $ToolPath) {
+        throw 'CPU execution requires a prebuilt maintenance executable; source bootstrap cannot consume the owner-device allowance.'
+    }
+    if ($Command -in @('cpu-check', 'server-plan') -and -not $PSBoundParameters.ContainsKey('TimeoutSeconds')) { $TimeoutSeconds = 300 }
     # The supervisor owns each sample deadline; hashing precedes that deadline
     # and paired captures can contain many ten-minute samples.
     if ($Command -eq 'completion' -and -not $PSBoundParameters.ContainsKey('TimeoutSeconds')) { $TimeoutSeconds = 0 }
@@ -166,7 +170,7 @@ function Invoke-BonsaiTool {
     $requestPath = Join-Path $lane 'request.json'
     $payload = [ordered]@{}
     foreach ($key in $Request.Keys) { $payload[$key] = $Request[$key] }
-    if ($startup -or $Command -in @('completion','runtime-verify','inference-capabilities') -or
+    if ($startup -or $Command -in @('completion','runtime-verify','inference-capabilities','cpu-check','server-plan') -or
         ($Command -eq 'speech-evaluation' -and $Request['operation'] -eq 'session') -or
         ($Command -eq 'qualification' -and $Request['operation'] -in @('capture', 'screen-capture'))) {
         $currentProcess = [Diagnostics.Process]::GetCurrentProcess()

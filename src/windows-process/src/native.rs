@@ -1,6 +1,8 @@
 //! Audited Win32 boundary. Handles use standard-library RAII; attribute buffers
 //! remain allocated and aligned until after `DeleteProcThreadAttributeList`.
 
+pub(super) mod maintenance;
+
 use std::ffi::{OsStr, c_void};
 use std::io;
 use std::os::windows::ffi::OsStrExt as _;

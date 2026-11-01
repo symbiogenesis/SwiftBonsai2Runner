@@ -378,19 +378,25 @@ Metadata inspection skips tensor payloads; census and export read them.
 
 ## Bounded CPU load/decode check
 
-```powershell
-./scripts/Invoke-CpuCheck.ps1 -DataDirectory $data -CheckOnly
-./scripts/Invoke-CpuCheck.ps1 -DataDirectory $data
-# Explicit Swift assessment, after provisioning its separate lock:
-./scripts/Invoke-CpuCheck.ps1 -DataDirectory $data -Profile swift-pq2-assessment
-# Optional pinned pretrained adapter:
-./scripts/Get-Adapter.ps1 -DataDirectory $data
-./scripts/Invoke-CpuCheck.ps1 -DataDirectory $data -Profile swift-pq2-assessment -UseAbliterateLora
+Run the trusted prebuilt maintenance executable directly:
+
+```text
+bonsai-tools cpu-check --request C:\Evidence\cpu-check.json
 ```
 
-`-CheckOnly` reports admission without starting a model. Execution uses in-process
+```json
+{"dataDirectory":"C:\\BonsaiData","profile":"swift-pq2-assessment","checkOnly":true,"useAbliterateLora":false,"useRepackedPtq1":false}
+```
+
+Set `checkOnly` to `false` for one bounded load/decode check. The default profile
+is `reference-cpu`; Swift options require `swift-pq2-assessment`. Provision the
+selected runtime, model and optional adapter first. Select one workload within
+the shared owner-device budget.
+
+`checkOnly: true` reports admission without starting a model. Execution uses in-process
 `llama-completion`, a 16-token cap, 8K context, FP16 K/V, F32 recurrent/convolution
-state, no prompt-cache reuse and a ten-minute deadline. Swift uses batch
+state, no prompt-cache reuse and a 180-second model deadline. One 240-second
+aggregate allowance includes setup, artifact verification and owned cleanup. Swift uses batch
 128/microbatch 64. The embedded template's
 thinking behavior is requested explicitly with `--reasoning on` and
 `--reasoning-effort xhigh`, alongside the publisher sampler. No system-only
@@ -427,26 +433,26 @@ requires [paired same-backend TPS and quality gates](swift-lora.md#standard-prof
 
 ## Prepare the server policy
 
-```powershell
-./scripts/Get-ServerPlan.ps1 -DataDirectory $data
-./scripts/Get-ServerPlan.ps1 -DataDirectory $data -VerifyRuntime
-./scripts/Get-ServerPlan.ps1 -DataDirectory $data -VerifyArtifacts
+```text
+bonsai-tools server-plan --request C:\Evidence\server-plan.json
 ```
 
-Policy planning uses the maintenance tool without model/key storage, inference
-or a listener. Resolution may compile pinned Rust and retain build/request evidence
-in external temp; `-ToolPath`/`BONSAI_TOOLS_PATH` selects a trusted packaged binary.
-`-VerifyRuntime` verifies installed runtime files and runs bounded version/help
-probes; `-VerifyArtifacts` also hashes the existing model. Neither downloads nor
-loads a model. The preflight rejects unknown profile fields, unsafe/network paths
-and inherited runtime overrides, including `AIP_*`/`MTMD_*`, while preserving
-Windows/profile environment variables.
+```json
+{"dataDirectory":"C:\\BonsaiData","port":8080,"verification":"none"}
+```
+
+Native policy planning creates no model/key storage, inference process or listener.
+Set `verification` to `runtime` for bounded installed-runtime version/help probes,
+or `artifacts` to additionally verify the existing model. These operations never
+download or load a model. Rust rejects unknown options, unsafe/network paths and
+inherited runtime overrides, including `AIP_*`/`MTMD_*`, and checks every planned
+switch against the verified server help. Environment values stay in the parent.
 
 The planned arguments select numeric loopback, one 8K FP16 CPU slot, a private
 key-file path, no host tools/MCP/UI, no reuse/speculation and the reference sampler.
 Help checks establish switch availability, not option enforcement. Native server
 Host/Origin checks, control routes, per-request overrides and total duration need
-the broker policy; an offline flag is not OS egress denial. The PowerShell
+the broker policy; an offline flag is not OS egress denial. The Rust
 preflight remains launch-disabled even though the separate development broker
 implements authentication, request bounds and lifecycle controls.
 

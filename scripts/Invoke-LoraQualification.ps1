@@ -26,13 +26,12 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 Import-Module (Join-Path $PSScriptRoot 'Bonsai.Common.psm1') -Force
-Import-Module (Join-Path $PSScriptRoot 'Bonsai.Qualification.psm1') -Force
 Import-Module (Join-Path $PSScriptRoot 'Bonsai.Tools.psm1')
 $data = Resolve-ExternalPath $DataDirectory
 $qualificationProfile = if ($AppSettings) { 'app-scale-1.3' } else { 'standard-scale-one' }
 $representation = if ($UseRepackedPtq1) { 'current-repacked-PTQ1_0' } else { 'PQ2_0' }
 if ($PlanOnly) {
-    $plan = Get-BonsaiLoraQualificationPlan -ToolPath $ToolPath -WeightRepresentation $representation -AppSettings:$AppSettings
+    $plan = Invoke-BonsaiTool -Command qualification -ToolPath $ToolPath -Request @{ operation = 'plan'; qualificationProfile = $qualificationProfile; weightRepresentation = $representation }
     $contract = $plan.Contract
     $policy = [pscustomobject]$plan.CpuPolicy
     return [pscustomobject]@{ Status = 'plan-only'; ModelProcessStarted = $false
@@ -57,7 +56,7 @@ $processors = @(Get-CimInstance Win32_Processor)
 if ($processors.Count -ne 1 -or $processors[0].Name -notmatch 'Snapdragon.*X.*Elite') { throw 'The required Snapdragon X Elite device was not identified.' }
 $overrides = @(Get-ChildItem Env: | Where-Object Name -Match '^(LLAMA_|LLAMACPP_|GGML_|AIP_|MTMD_|HF_TOKEN$|HF_ENDPOINT$|MODEL_ENDPOINT$)')
 if ($overrides.Count) { throw ('Inherited model/backend overrides are unsupported: ' + ($overrides.Name -join ', ')) }
-$admission = & (Join-Path $PSScriptRoot 'Invoke-CpuCheck.ps1') -DataDirectory $data -Profile swift-pq2-assessment -UseAbliterateLora -UseRepackedPtq1:$UseRepackedPtq1 -CheckOnly -ToolPath $ToolPath
+$admission = Invoke-BonsaiTool -Command cpu-check -ToolPath $ToolPath -Request @{ dataDirectory = $data; profile = 'swift-pq2-assessment'; useAbliterateLora = $true; useRepackedPtq1 = $UseRepackedPtq1.IsPresent; checkOnly = $true }
 if ($admission.Status -cne 'admission-passed') { throw 'The shared 15.5 GiB available-memory admission requirement was not met.' }
 $lockPath = Join-Path $PSScriptRoot '../config/swift-assessment.lock.json'
 $lock = Read-BonsaiLock $lockPath

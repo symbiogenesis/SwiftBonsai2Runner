@@ -225,8 +225,9 @@ $lock = Get-Content -Raw -LiteralPath $lockPath | ConvertFrom-Json -DateKind Str
 $model = Join-Path $data -ChildPath 'models', $lock.model.revision, $lock.model.filename
 ./scripts/Read-Gguf.ps1 -ModelPath $model -ExpectedBytes $lock.model.bytes -ExpectedSha256 $lock.model.sha256 `
     -Dialect Prism-73bfe6cc485554822f80c473a3c0c4f25e80f41b -CensusPq2 -OutputPath D:\Reports\new-swift-census.json
-./scripts/Invoke-CpuCheck.ps1 -DataDirectory $data -Profile swift-pq2-assessment -CheckOnly
-./scripts/Invoke-CpuCheck.ps1 -DataDirectory $data -Profile swift-pq2-assessment
+Import-Module ./scripts/Bonsai.Tools.psm1
+Invoke-BonsaiTool -Command cpu-check -Request @{ dataDirectory = $data; profile = 'swift-pq2-assessment'; checkOnly = $true }
+Invoke-BonsaiTool -Command cpu-check -TimeoutSeconds 300 -Request @{ dataDirectory = $data; profile = 'swift-pq2-assessment' }
 ```
 
 Optional exact export and adapter assessment:
@@ -234,9 +235,9 @@ Optional exact export and adapter assessment:
 ```powershell
 $derived = Join-Path ([IO.Path]::GetDirectoryName($model)) 'Swift-Bonsai-2-current-repacked-PTQ1_0.gguf'
 ./scripts/Export-SwiftPtq1.ps1 -ModelPath $model -OutputPath $derived
-./scripts/Invoke-CpuCheck.ps1 -DataDirectory $data -Profile swift-pq2-assessment -UseRepackedPtq1
+Invoke-BonsaiTool -Command cpu-check -TimeoutSeconds 300 -Request @{ dataDirectory = $data; profile = 'swift-pq2-assessment'; useRepackedPtq1 = $true }
 ./scripts/Get-Adapter.ps1 -DataDirectory $data
-./scripts/Invoke-CpuCheck.ps1 -DataDirectory $data -Profile swift-pq2-assessment -UseRepackedPtq1 -UseAbliterateLora
+Invoke-BonsaiTool -Command cpu-check -TimeoutSeconds 300 -Request @{ dataDirectory = $data; profile = 'swift-pq2-assessment'; useRepackedPtq1 = $true; useAbliterateLora = $true }
 ```
 
 Inspection/export share one Rust CLI and release buffers before inference.
@@ -355,7 +356,7 @@ adapter and speech artifact verification. Native readiness speed remains to be
 measured: the separately pinned Rust inference runtime performs its own complete
 model hash using RustCrypto before loading, and that additional pass remains.
 
-The [CPU check](../scripts/Invoke-CpuCheck.ps1) selects mmap, no repack, no warmup, CPU
+The [CPU check](../tools/bonsai/src/cpu_check.rs) selects mmap, no repack, no warmup, CPU
 buffers and 128/64 batch/microbatch. The
 [loader](https://github.com/PrismML-Eng/llama.cpp/blob/73bfe6cc485554822f80c473a3c0c4f25e80f41b/src/llama-model-loader.cpp)
 can point supported CPU tensors into the read-only mapping; other buffer types may copy
