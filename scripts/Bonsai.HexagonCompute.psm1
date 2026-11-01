@@ -15,12 +15,13 @@ function Get-BonsaiHexagonComputeResult {
     [CmdletBinding()]
     [OutputType([Collections.IDictionary])]
     param([Parameter(Mandatory)][string]$Json, [Parameter(Mandatory)][int]$ExitCode,
-        [ValidateSet('F32','GuardedQ2','F32NoBlock')][string]$Case = 'F32')
+        [ValidateSet('F32','GuardedQ2','F32NoBlock','GuardedQ2NoBlock')][string]$Case = 'F32')
     $record = ConvertFrom-BonsaiHexagonDispatchJson -Json $Json
     $kind = switch ($Case) {
         'F32' { 'native-fastrpc-queue-compute-probe' }
         'GuardedQ2' { 'native-fastrpc-queue-q2-probe' }
         'F32NoBlock' { 'native-fastrpc-queue-noblock-probe' }
+        'GuardedQ2NoBlock' { 'native-fastrpc-queue-q2-noblock-probe' }
     }
     if ($ExitCode -ne 0 -or ($record.schemaVersion -isnot [int] -and $record.schemaVersion -isnot [long]) -or $record.schemaVersion -ne 1 -or
         $record.kind -cne $kind -or
@@ -28,8 +29,8 @@ function Get-BonsaiHexagonComputeResult {
         $record.driverDll -isnot [string] -or -not [IO.Path]::IsPathFullyQualified($record.driverDll)) {
         throw 'Invalid fixed native computation receipt.'
     }
-    if ($Case -ceq 'F32NoBlock' -and $record.writeMode -cne 'nonblocking') { throw 'The nonblocking control omitted its distinct write mode.' }
-    if ($Case -ceq 'GuardedQ2') {
+    if ($Case -cin @('F32NoBlock','GuardedQ2NoBlock') -and $record.writeMode -cne 'nonblocking') { throw 'The nonblocking control omitted its distinct write mode.' }
+    if ($Case -cin @('GuardedQ2','GuardedQ2NoBlock')) {
         foreach ($pair in @(@('columns',256),@('rows',32),@('batch',2),@('outputValuesChecked',64))) {
             $value = $record[$pair[0]]
             if (($value -isnot [int] -and $value -isnot [long]) -or $value -ne $pair[1]) { throw 'Guarded Q2 probe changed its fixed geometry.' }
@@ -70,7 +71,7 @@ function Invoke-BonsaiHexagonComputeWorker {
     [CmdletBinding()]
     [OutputType([Collections.Specialized.OrderedDictionary])]
     param([Parameter(Mandatory)][Collections.IDictionary]$Request)
-    if ($Request.ComputeCase -isnot [string] -or $Request.ComputeCase -cnotin @('F32','GuardedQ2','F32NoBlock')) { throw 'Select exactly one fixed compute case.' }
+    if ($Request.ComputeCase -isnot [string] -or $Request.ComputeCase -cnotin @('F32','GuardedQ2','F32NoBlock','GuardedQ2NoBlock')) { throw 'Select exactly one fixed compute case.' }
     $holds = [Collections.Generic.List[IO.FileStream]]::new()
     $report = [ordered]@{
         SchemaVersion = 1; Kind = 'runner-hexagon-compute-worker'; SourceRevision = $Request.ExpectedRunnerRevision; ComputeCase = $Request.ComputeCase
@@ -174,6 +175,7 @@ function Invoke-BonsaiHexagonComputeWorker {
             'F32' { '--reference-queue-compute-probe' }
             'GuardedQ2' { '--reference-queue-q2-probe' }
             'F32NoBlock' { '--reference-queue-noblock-probe' }
+            'GuardedQ2NoBlock' { '--reference-queue-q2-noblock-probe' }
         }
         $probe = Invoke-BonsaiHexagonBoundedCapture -Executable $exe -ArgumentList @($mode, $Request.PackageDirectory) -WorkingDirectory $Request.PackageDirectory -ProgressReceipt $report -ProgressPath $Request.WorkerReceiptPath -ProgressKind Compute
         $native = Get-BonsaiHexagonComputeResult -Json $probe.StandardOutput -ExitCode $probe.ExitCode -Case $Request.ComputeCase

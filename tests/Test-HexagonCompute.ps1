@@ -83,5 +83,9 @@ if ($Case -ceq 'Plan') {
     Assert-Failure { Get-BonsaiHexagonComputeResult -Json ($noBlock | ConvertTo-Json -Compress) -ExitCode 0 } 'A nonblocking observation supplied the timed-write gate.'
     $changed = $noBlock.Clone(); $changed.writeMode = 'timed'
     Assert-Failure { Get-BonsaiHexagonComputeResult -Json ($changed | ConvertTo-Json -Compress) -ExitCode 0 -Case F32NoBlock } 'An ambiguous write mode supplied the nonblocking gate.'
+    $q2NoBlock = $q2.Clone(); $q2NoBlock.kind = 'native-fastrpc-queue-q2-noblock-probe'; $q2NoBlock.writeMode = 'nonblocking'
+    $result = Get-BonsaiHexagonComputeResult -Json ($q2NoBlock | ConvertTo-Json -Compress) -ExitCode 0 -Case GuardedQ2NoBlock
+    Assert $result.passed 'Explicit guarded Q2 nonblocking control was rejected.'
+    Assert-Failure { Get-BonsaiHexagonComputeResult -Json ($q2NoBlock | ConvertTo-Json -Compress) -ExitCode 0 -Case GuardedQ2 } 'Nonblocking Q2 supplied the timed Q2 gate.'
 }
 return 'Native queue compute evidence controls passed without opening a device.'
