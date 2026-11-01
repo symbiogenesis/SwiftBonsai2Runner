@@ -63,38 +63,41 @@ foreach ($name in @('ACTIONS_RUNTIME_TOKEN', 'ACTIONS_ID_TOKEN_REQUEST_TOKEN', '
 if (-not $CaptureToolsDirectory) { throw 'Provide hosted-prepared CaptureToolsDirectory; owner builds are disabled.' }
 if (-not $ToolPath) { $ToolPath = $env:BONSAI_TOOLS_PATH }
 if (-not $ToolPath) { throw 'Provide the hosted-prepared maintenance ToolPath; owner builds are disabled.' }
-$data = Resolve-ExternalPath $DataDirectory
-$bundle = Resolve-ExternalPath $CaptureToolsDirectory
-$receiptPath = Join-Path $bundle 'capture-tools.json'
-$receipt = [pscustomobject](Invoke-BonsaiTool -Command ptq1-capture -ToolPath $ToolPath -TimeoutSeconds (Get-Ptq1WorkAllowance $workClock) -Request @{
-    operation = 'receipt'; bundleDirectory = $bundle; repositoryDirectory = $repo; revision = $env:GITHUB_SHA; pins = $pins
-})
-$toolGuards = @()
-foreach ($name in @('swift-ptq1-reference.exe', 'swift_model_check.exe')) {
-    $entry = @($receipt.Files | Where-Object Name -CEQ $name)
-    if ($entry.Count -ne 1 -or $entry[0].Bytes -lt 1 -or $entry[0].Bytes -gt 134217728 -or $entry[0].Sha256 -cnotmatch '^[a-f0-9]{64}$') { throw 'Invalid capture tool inventory.' }
-    $path = Join-Path $bundle $name
-    if ((Get-Item -LiteralPath $path).Length -ne $entry[0].Bytes -or (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash.ToLowerInvariant() -cne $entry[0].Sha256) { throw 'Capture tool bytes/hash changed.' }
-    Assert-Arm64PE $path
-    $toolGuards += @{ path = $path; bytes = [long]$entry[0].Bytes; sha256 = $entry[0].Sha256 }
-}
-$toolGuards += @{ path = $receiptPath; bytes = (Get-Item -LiteralPath $receiptPath).Length; sha256 = (Get-FileHash -LiteralPath $receiptPath -Algorithm SHA256).Hash.ToLowerInvariant() }
-$processor = @(Get-CimInstance -ClassName Win32_Processor -Property Name -OperationTimeoutSec ([int][Math]::Min(10, (Get-Ptq1WorkAllowance $workClock))))
-if ($processor.Count -ne 1 -or $processor[0].Name -notmatch 'Snapdragon.*X.*Elite') { throw 'Expected one native Snapdragon X/X2 Elite processor.' }
 $evidence = Resolve-ExternalPath (Join-Path ([IO.Path]::GetTempPath()) ('Bonsai-NativePtq1Smoke-' + [guid]::NewGuid().ToString('N')))
 [void][IO.Directory]::CreateDirectory($evidence)
-if ([IO.DriveInfo]::new([IO.Path]::GetPathRoot($evidence)).AvailableFreeSpace -lt $plan.RequiredFreeDiskBytes) { throw 'The smoke needs at least 1 GiB external disk headroom.' }
 if ([string]::IsNullOrWhiteSpace($env:GITHUB_ENV)) { throw 'Expected the CI environment file.' }
 "BONSAI_PTQ1_NUMERICS_EVIDENCE=$evidence" | Add-Content -LiteralPath (Resolve-ExternalPath $env:GITHUB_ENV) -Encoding utf8
 $reportPath = Join-Path $evidence 'numerics.json'
-$report = [ordered]@{ Status = 'preparing'; Plan = $plan; Revision = $env:GITHUB_SHA
+$report = [ordered]@{ SchemaVersion = 1; Status = 'preparing'; Phase = 'capture-tool-intake'; Plan = $plan; Revision = $env:GITHUB_SHA
     RunUrl = "https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/$env:GITHUB_RUN_ID"
-    RunAttempt = $env:GITHUB_RUN_ATTEMPT; ProcessorName = $processor[0].Name; WorkDeadlineTick = $WorkDeadlineTick
+    RunAttempt = $env:GITHUB_RUN_ATTEMPT; ProcessorName = $null; WorkDeadlineTick = $WorkDeadlineTick
     ModelTrialsRequested = $false; PendingControls = $pending; WriterBasisQualified = $false; DefaultMayChange = $false
     Samples = [Collections.Generic.List[object]]::new() }
+Save-Ptq1NumericsReport -Report $report -Path $reportPath
 try {
+    if ([IO.DriveInfo]::new([IO.Path]::GetPathRoot($evidence)).AvailableFreeSpace -lt $plan.RequiredFreeDiskBytes) { throw 'The smoke needs at least 1 GiB external disk headroom.' }
+    $data = Resolve-ExternalPath $DataDirectory
+    $bundle = Resolve-ExternalPath $CaptureToolsDirectory
+    $receiptPath = Join-Path $bundle 'capture-tools.json'
+    $receipt = [pscustomobject](Invoke-BonsaiTool -Command ptq1-capture -ToolPath $ToolPath -TimeoutSeconds (Get-Ptq1WorkAllowance $workClock) -Request @{
+        operation = 'receipt'; bundleDirectory = $bundle; repositoryDirectory = $repo; revision = $env:GITHUB_SHA; pins = $pins
+    })
+    $toolGuards = @()
+    foreach ($name in @('swift-ptq1-reference.exe', 'swift_model_check.exe')) {
+        $entry = @($receipt.Files | Where-Object Name -CEQ $name)
+        if ($entry.Count -ne 1 -or $entry[0].Bytes -lt 1 -or $entry[0].Bytes -gt 134217728 -or $entry[0].Sha256 -cnotmatch '^[a-f0-9]{64}$') { throw 'Invalid capture tool inventory.' }
+        $path = Join-Path $bundle $name
+        if ((Get-Item -LiteralPath $path).Length -ne $entry[0].Bytes -or (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash.ToLowerInvariant() -cne $entry[0].Sha256) { throw 'Capture tool bytes/hash changed.' }
+        Assert-Arm64PE $path
+        $toolGuards += @{ path = $path; bytes = [long]$entry[0].Bytes; sha256 = $entry[0].Sha256 }
+    }
+    $toolGuards += @{ path = $receiptPath; bytes = (Get-Item -LiteralPath $receiptPath).Length; sha256 = (Get-FileHash -LiteralPath $receiptPath -Algorithm SHA256).Hash.ToLowerInvariant() }
+    $processor = @(Get-CimInstance -ClassName Win32_Processor -Property Name -OperationTimeoutSec ([int][Math]::Min(10, (Get-Ptq1WorkAllowance $workClock))))
+    if ($processor.Count -ne 1 -or $processor[0].Name -notmatch 'Snapdragon.*X.*Elite') { throw 'Expected one native Snapdragon X/X2 Elite processor.' }
+    $report.ProcessorName = $processor[0].Name
+    $report.Phase = 'runtime-verification'
     Copy-Item -LiteralPath $receiptPath -Destination (Join-Path $evidence 'capture-tools.json')
-    $report | ConvertTo-Json -Depth 30 | Set-Content -LiteralPath $reportPath -Encoding utf8
+    Save-Ptq1NumericsReport -Report $report -Path $reportPath
     $lock = Read-BonsaiLock (Join-Path $repo 'config/swift-assessment.lock.json')
     if ($lock.runtime.commit -cne $pins.nativeSource.commit) { throw 'Native reference runtime differs from the reviewed source.' }
     $runtime = Invoke-BonsaiTool -Command runtime-verify -ToolPath $ToolPath -TimeoutSeconds (Get-Ptq1WorkAllowance $workClock) -Request @{
@@ -108,6 +111,8 @@ try {
     $artifacts = @($runtime.RuntimeFiles | ForEach-Object { @{ path = $_.Path; bytes = [long]$_.Bytes; sha256 = $_.Sha256 } }) + @($toolGuards)
     $artifacts += @{ path = $runtime.ArchivePath; bytes = [long]$lock.runtime.asset.bytes; sha256 = $lock.runtime.asset.sha256 }
     $report['RuntimeFiles'] = $runtime.RuntimeFiles
+    $report.Phase = 'abi-preflight'
+    Save-Ptq1NumericsReport -Report $report -Path $reportPath
     $preflightLane = Join-Path $evidence 'abi-preflight'; [void][IO.Directory]::CreateDirectory($preflightLane)
     $collector = Join-Path $bundle 'swift-ptq1-reference.exe'
     $qualifier = Join-Path $bundle 'swift_model_check.exe'
@@ -121,6 +126,8 @@ try {
     $probe = Get-Content -LiteralPath (Join-Path $preflightLane 'stdout.txt') -Raw | ConvertFrom-Json -DateKind String
     if ($probe.status -cne 'native-default-parameter-abi-probe-passed' -or $probe.modelLoaded -or
         $probe.modelParamsBytes -ne 80 -or $probe.contextParamsBytes -ne 168 -or $probe.batchBytes -ne 56) { throw 'Exact native public-header ABI preflight failed.' }
+    $report.Phase = 'abi-observations'
+    Save-Ptq1NumericsReport -Report $report -Path $reportPath
     $abiLane = Join-Path $evidence 'abi-observations'; [void][IO.Directory]::CreateDirectory($abiLane)
     $remaining = Get-Ptq1WorkAllowance $workClock
     $report['AbiObservations'] = Invoke-BonsaiTool -Command completion -ToolPath $ToolPath -TimeoutSeconds $remaining -Request @{
@@ -133,6 +140,8 @@ try {
         operation = 'compare-abi'; actualPath = (Join-Path $abiLane 'stdout.txt')
         expectedPath = (Join-Path $repo 'tools/native-reference/fixtures/collector-abi-v1.txt'); expectedSha256 = $receipt.AbiControlSha256
     }
+    $report.Phase = 'model-and-adapter-admission'
+    Save-Ptq1NumericsReport -Report $report -Path $reportPath
     $checked = Invoke-BonsaiTool -Command cpu-check-report -ToolPath $ToolPath -TimeoutSeconds (Get-Ptq1WorkAllowance $workClock) -Request @{
         operation = 'plan'; dataDirectory = $data; profile = 'swift-pq2-assessment'; useAbliterateLora = $true; useRepackedPtq1 = $true
     }
@@ -151,8 +160,8 @@ try {
         $artifacts | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath (Join-Path $sampleLane 'artifacts.json') -Encoding utf8
         $remaining = Get-Ptq1WorkAllowance $workClock
         $report.ModelTrialsRequested = $true
-        $report.Status = 'capturing'; $report['ActiveBackend'] = $backend
-        $report | ConvertTo-Json -Depth 40 | Set-Content -LiteralPath $reportPath -Encoding utf8
+        $report.Status = 'capturing'; $report.Phase = 'model-capture'; $report['ActiveBackend'] = $backend
+        Save-Ptq1NumericsReport -Report $report -Path $reportPath
         $supervision = Invoke-BonsaiTool -Command completion -ToolPath $ToolPath -TimeoutSeconds $remaining -Request @{
             schemaVersion = 1; executable = $executable; arguments = $arguments; workingDirectory = $sampleLane; evidenceDirectory = $sampleLane
             artifacts = $artifacts; memoryLimitBytes = $plan.JobBytes; requiredAvailableBytes = $plan.AdmissionBytes
@@ -160,22 +169,23 @@ try {
             stdoutLimitBytes = 65536; stderrLimitBytes = 67108864; requireNonemptyStdout = $true; ciOnly = $false
         }
         $report.Samples.Add(@{ Backend = $backend; Supervision = $supervision })
-        $report | ConvertTo-Json -Depth 40 | Set-Content -LiteralPath $reportPath -Encoding utf8
+        Save-Ptq1NumericsReport -Report $report -Path $reportPath
     }
     $python = @(Get-Command python -CommandType Application -ErrorAction Stop)[0].Source
     $output = Join-Path $evidence 'comparison.json'
-    $report.Status = 'comparing'; $report['ActiveBackend'] = $null
-    $report | ConvertTo-Json -Depth 40 | Set-Content -LiteralPath $reportPath -Encoding utf8
+    $report.Status = 'comparing'; $report.Phase = 'logits-and-complete-state-comparison'; $report['ActiveBackend'] = $null
+    Save-Ptq1NumericsReport -Report $report -Path $reportPath
     $compared = Invoke-BonsaiNativeProcess -Executable $python -WorkingDirectory $evidence -TimeoutSeconds (Get-Ptq1WorkAllowance $workClock) -LogPath (Join-Path $evidence 'comparison.txt') -ArgumentList @(
         '-B', (Join-Path $repo 'tools/native-reference/compare.py'), '--native', (Join-Path $evidence 'native'), '--rust', (Join-Path $evidence 'auto'), '--backend', 'auto', '--output', $output)
     if ($compared.ExitCode -ne 0) { throw 'Native/Rust one-token smoke comparison failed.' }
     $report['Comparison'] = Get-Content -LiteralPath $output -Raw | ConvertFrom-Json -AsHashtable -DateKind String
-    $report.Status = 'completed-one-token-smoke'; $report['WorkElapsedSeconds'] = $workClock.Elapsed.TotalSeconds
-    $report | ConvertTo-Json -Depth 40 | Set-Content -LiteralPath $reportPath -Encoding utf8
+    $report.Status = 'completed-one-token-smoke'; $report.Phase = 'completed'; $report['WorkElapsedSeconds'] = $workClock.Elapsed.TotalSeconds
+    Save-Ptq1NumericsReport -Report $report -Path $reportPath
     [pscustomobject]@{ Status = $report.Status; EvidenceDirectory = $evidence; PendingControls = $pending; DefaultMayChange = $false }
 } catch {
-    $report.Status = 'failed'; $report['Failure'] = $_.Exception.Message; $report['WorkElapsedSeconds'] = $workClock.Elapsed.TotalSeconds
-    $report | ConvertTo-Json -Depth 40 | Set-Content -LiteralPath $reportPath -Encoding utf8
+    $message = $_.Exception.Message
+    $report.Status = 'failed'; $report['Failure'] = $message.Substring(0, [Math]::Min(4096, $message.Length)); $report['WorkElapsedSeconds'] = $workClock.Elapsed.TotalSeconds
+    Save-Ptq1NumericsReport -Report $report -Path $reportPath
     Write-Warning "Native PTQ1 smoke evidence retained at $evidence"
     throw
 }

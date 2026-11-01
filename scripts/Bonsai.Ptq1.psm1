@@ -22,4 +22,27 @@ function Get-Ptq1CapturePin {
     return $pins
 }
 
-Export-ModuleMember -Function Get-Ptq1CapturePin
+function Save-Ptq1NumericsReport {
+    <# .SYNOPSIS
+    Flushes bounded partial observations before replacing the prior numerical receipt.
+    #>
+    [CmdletBinding()]
+    [OutputType([void])]
+    param([Parameter(Mandatory)][Collections.IDictionary]$Report,
+          [Parameter(Mandatory)][string]$Path)
+    $bytes = [Text.UTF8Encoding]::new($false).GetBytes(($Report | ConvertTo-Json -Depth 40) + "`n")
+    if ($bytes.Length -gt 1048576) { throw 'PTQ1 numerical receipt exceeds its fixed byte bound.' }
+    $temporary = $Path + '.' + [guid]::NewGuid().ToString('N') + '.tmp'
+    try {
+        $stream = [IO.FileStream]::new($temporary, [IO.FileMode]::CreateNew, [IO.FileAccess]::Write, [IO.FileShare]::None)
+        try {
+            $stream.Write($bytes, 0, $bytes.Length)
+            $stream.Flush($true)
+        } finally { $stream.Dispose() }
+        [IO.File]::Move($temporary, $Path, $true)
+    } finally {
+        if ([IO.File]::Exists($temporary)) { [IO.File]::Delete($temporary) }
+    }
+}
+
+Export-ModuleMember -Function Get-Ptq1CapturePin, Save-Ptq1NumericsReport
