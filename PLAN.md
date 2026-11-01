@@ -97,7 +97,7 @@ an existing user chat was observed, no owner runner or model was started, and th
 original clock was not restarted. Close the application before a future bounded
 owner session; do not stop an existing user session as qualification cleanup.
 Qualify the prepared scoped resource receipts on the actual model, distinguishing
-OS lifetime Job commit, root mapped residency and sampled serving bounds; these
+OS lifetime Job commit, root working-set residency and sampled serving bounds; these
 do not replace full-context, paging or sustained-comfort acceptance. Retain
 exact generated source-response/message digests; empty or unbound output leaves
 generated history pending. Attribute the observed 35.46-second startup, roughly
@@ -105,8 +105,13 @@ generated history pending. Attribute the observed 35.46-second startup, roughly
 measured hotspot. Retain bounded
 live request/partial-prefix receipts; observed SSE delivery is not backend kernel
 timing or decode TPS, and completed-operation counts do not prove zero emitted tokens. Qualify the
-explicit `ptq1-pq2-complete-response` Rust-service pair within the same aggregate
-budget before planning broader comparisons. Its single tree-name prompt and
+explicit `ptq1-pq2-complete-response` (one worker) or
+`ptq1-pq2-complete-response-row4` Rust-service pair for the intended worker policy
+within the same aggregate budget before planning broader comparisons. The
+[four-worker preparation](docs/evidence/ptq1-complete-response-row4-preparation.json)
+closes the harness-policy mismatch only; its device workload remains pending.
+Select one policy, without transferring evidence or dispatching a worker matrix.
+The single tree-name prompt and
 fixed-order pair establish feasibility only; repeated interleaving, stable-device
 conditions, per-prompt adapter decode throughput and independent complete-answer
 quality remain separate. Do not repeat the matrix to bypass the shared device budget.
