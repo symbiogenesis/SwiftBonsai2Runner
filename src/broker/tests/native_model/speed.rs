@@ -33,6 +33,10 @@ fn request_rate(summary: &StreamSummary, elapsed: Duration) -> Option<f64> {
     rate.is_finite().then_some(rate)
 }
 
+#[expect(
+    clippy::redundant_pub_crate,
+    reason = "Only the parent harness and its sibling capture module share this test parser."
+)]
 pub(super) fn visible_output(bytes: &[u8]) -> String {
     let payload = stream_payload(bytes);
     let mut output = String::new();

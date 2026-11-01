@@ -1266,7 +1266,7 @@ fn adapter_request(messages: Value, scale: f64, limit: u32) -> Value {
     body
 }
 
-fn adapter_completion_caps(profile: &AdapterProfile) -> [u32; 3] {
+const fn adapter_completion_caps(profile: &AdapterProfile) -> [u32; 3] {
     if profile.repacked && profile.required_scale_history {
         // The current-release PTQ1 trial exhausted its first four-token request.
         // Keep every required lifecycle transition with less generation work.

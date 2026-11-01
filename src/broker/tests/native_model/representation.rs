@@ -1,4 +1,8 @@
 //! A bounded complete-response feasibility pair, independent of decode-TPS gates.
+#![expect(
+    clippy::redundant_pub_crate,
+    reason = "The private test module shares profile constants only with its parent harness."
+)]
 
 use super::*;
 
