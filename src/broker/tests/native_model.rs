@@ -32,6 +32,8 @@ const PQ2_ADAPTER_ROW4_CASE: &str =
     "pinned_native_pq2_adapter_row4_starts_and_streams_within_device_budget";
 const PQ2_ADAPTER_LIFECYCLE_CASE: &str =
     "pinned_native_pq2_adapter_row4_checks_scale_change_rejection_and_history";
+const PQ2_ADAPTER_SPEED_PROFILE: &str = "pq2-adapter-speed";
+const PQ2_ADAPTER_SPEED_CASE: &str = "speed::pinned_native_pq2_adapter_compares_request_throughput";
 const CASE_BUDGET: Duration = Duration::from_secs(240);
 const OPTIONAL_RESERVE: Duration = Duration::from_secs(120);
 const WAIT: Duration = Duration::from_secs(600);
@@ -1180,7 +1182,7 @@ fn profile_case(profile: &str, extended: bool, stalled: bool) -> Option<&'static
     }
     match profile {
         "pq2-no-adapter" => Some(CASE),
-        speed::PROFILE => Some(speed::CASE),
+        PQ2_ADAPTER_SPEED_PROFILE => Some(PQ2_ADAPTER_SPEED_CASE),
         name => adapter_profile(name).map(|selected| selected.case),
     }
 }
