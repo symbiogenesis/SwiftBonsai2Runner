@@ -12,6 +12,9 @@ use crate::{Result, gate, impact};
 #[path = "planning.rs"]
 mod planning;
 
+#[path = "checks/mod.rs"]
+mod checks;
+
 const USAGE: &str = "Usage: bonsai-ci impact [--root PATH] [--config PATH] [--workflow FILE] [--before REV] [--after REV] [--full]\n       bonsai-ci gate [--root PATH] [--config PATH] --workflow NAME";
 
 #[derive(Default)]
@@ -123,8 +126,17 @@ fn action_outputs(plan: &impact::Plan, config: &Value, serialized: &str) -> Resu
 /// Rejects invalid arguments/configuration, failed output writes and incomplete
 /// or unsuccessful selected gates. Baseline failures select full coverage.
 pub fn run(arguments: &[OsString]) -> Result<String> {
+    if arguments
+        .first()
+        .and_then(|value| value.to_str())
+        .is_some_and(|command| matches!(command, "rust-select" | "rust-plan" | "rust-check"))
+    {
+        return checks::run(arguments);
+    }
     if arguments.len() == 1 && arguments[0] == "--help" {
-        return Ok(USAGE.into());
+        return Ok(format!(
+            "{USAGE}\n       bonsai-ci rust-select|rust-plan|rust-check (see tools/ci/README.md)"
+        ));
     }
     let arguments = parse(arguments)?;
     let root = arguments

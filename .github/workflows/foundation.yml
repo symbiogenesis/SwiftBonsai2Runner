@@ -333,10 +333,10 @@ jobs:
         if: matrix.lane == 'native'
         shell: pwsh
         run: ./tests/Test-EngineBuild.ps1 -Case Parallelism
-      - name: Rust check feature isolation and local-suite policy
+      - name: Maintenance bootstrap integrity and repair
         if: matrix.lane == 'foundation'
         shell: pwsh
-        run: ./tests/Test-RustTooling.ps1
+        run: ./tests/Test-ToolBootstrap.ps1
       - name: Development credential creation and path policy
         if: matrix.lane == 'foundation'
         shell: pwsh

@@ -1,0 +1,446 @@
+//! Native Cargo selection, feature policy and evidence-preserving checks.
+
+use std::collections::BTreeSet;
+use std::ffi::OsString;
+use std::fs;
+use std::path::{Path, PathBuf};
+
+use serde::{Deserialize, Serialize};
+
+use crate::Result;
+
+#[cfg(windows)]
+mod execute;
+#[cfg(test)]
+mod tests;
+
+const USAGE: &str = "bonsai-ci rust-select [--root PATH]\n       bonsai-ci rust-plan|rust-check [--root PATH] [--package NAME] [--packages-json JSON] [--group All|Broker] [--profile Foundation|Compatibility|Native] [--phase fmt|clippy|doc|test|build] [--toolchain NAME] [--offline] [--full-tests] [--build] [--target PATH --evidence PATH --timeout-seconds N]";
+const PHASES: &[&str] = &["fmt", "clippy", "doc", "test", "build"];
+
+#[derive(Clone, Deserialize)]
+#[serde(rename_all = "PascalCase", deny_unknown_fields)]
+struct Package {
+    name: String,
+    manifest: String,
+    group: String,
+    features: Vec<String>,
+    compatibility_compile_features: Option<Vec<String>>,
+    native_features: Option<Vec<String>>,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "PascalCase", deny_unknown_fields)]
+struct Registry {
+    packages: Vec<Package>,
+}
+
+struct Options {
+    command: String,
+    root: PathBuf,
+    packages: Vec<String>,
+    group: String,
+    profile: String,
+    phases: Vec<String>,
+    toolchain: Option<String>,
+    offline: bool,
+    target: Option<PathBuf>,
+    evidence: Option<PathBuf>,
+    timeout_seconds: u64,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "PascalCase")]
+struct Check {
+    name: String,
+    phase: String,
+    packages: Vec<String>,
+    arguments: Vec<String>,
+}
+
+fn parse(arguments: &[OsString]) -> Result<Options> {
+    let mut values = arguments.iter();
+    let mut options = Options {
+        command: values
+            .next()
+            .and_then(|value| value.to_str())
+            .ok_or(USAGE)?
+            .into(),
+        root: std::env::var_os("GITHUB_WORKSPACE")
+            .map_or_else(std::env::current_dir, |path| Ok(path.into()))
+            .map_err(|error| error.to_string())?,
+        packages: Vec::new(),
+        group: "All".into(),
+        profile: "Foundation".into(),
+        phases: Vec::new(),
+        toolchain: None,
+        offline: false,
+        target: None,
+        evidence: None,
+        timeout_seconds: 900,
+    };
+    let mut extra_phases = Vec::new();
+    while let Some(option) = values.next() {
+        let option = option.to_str().ok_or(USAGE)?;
+        if options.command == "rust-select" && option != "--root" {
+            return Err(USAGE.into());
+        }
+        match option {
+            "--offline" => options.offline = true,
+            "--full-tests" => extra_phases.push("test".into()),
+            "--build" => extra_phases.push("build".into()),
+            _ => {
+                let value = values.next().ok_or(USAGE)?;
+                match option {
+                    "--root" => options.root = value.into(),
+                    "--target" => options.target = Some(value.into()),
+                    "--evidence" => options.evidence = Some(value.into()),
+                    "--package" => options.packages.push(value.to_str().ok_or(USAGE)?.into()),
+                    "--packages-json" => {
+                        let selected =
+                            serde_json::from_str::<Vec<String>>(value.to_str().ok_or(USAGE)?)
+                                .map_err(|error| error.to_string())?;
+                        if selected.is_empty() {
+                            return Err(
+                                "An explicit Rust package selection must not be empty.".into()
+                            );
+                        }
+                        options.packages.extend(selected);
+                    }
+                    "--phase" => options.phases.push(value.to_str().ok_or(USAGE)?.into()),
+                    "--group" => options.group = value.to_str().ok_or(USAGE)?.into(),
+                    "--profile" => options.profile = value.to_str().ok_or(USAGE)?.into(),
+                    "--toolchain" => options.toolchain = Some(value.to_str().ok_or(USAGE)?.into()),
+                    "--timeout-seconds" => {
+                        options.timeout_seconds =
+                            value.to_str().ok_or(USAGE)?.parse().map_err(|_| USAGE)?
+                    }
+                    _ => return Err(USAGE.into()),
+                }
+            }
+        }
+    }
+    if options.phases.is_empty() {
+        options.phases = ["fmt", "clippy", "doc"].map(String::from).to_vec();
+    }
+    options.phases.extend(extra_phases);
+    let mut seen = BTreeSet::new();
+    options.phases.retain(|phase| seen.insert(phase.clone()));
+    if !["All", "Broker"].contains(&options.group.as_str())
+        || !["Foundation", "Compatibility", "Native"].contains(&options.profile.as_str())
+        || options
+            .phases
+            .iter()
+            .any(|phase| !PHASES.contains(&phase.as_str()))
+        || !(1..=3600).contains(&options.timeout_seconds)
+    {
+        return Err(USAGE.into());
+    }
+    options.root = std::path::absolute(&options.root).map_err(|error| error.to_string())?;
+    Ok(options)
+}
+
+fn identifier(value: &str) -> bool {
+    !value.is_empty()
+        && value.len() <= 128
+        && value
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || b"-_.".contains(&byte))
+        && value.as_bytes()[0].is_ascii_alphanumeric()
+}
+
+fn registry(root: &Path) -> Result<Vec<Package>> {
+    let registry: Registry = serde_json::from_slice(
+        &fs::read(root.join("config/rust-packages.json")).map_err(|error| error.to_string())?,
+    )
+    .map_err(|error| error.to_string())?;
+    let mut names = BTreeSet::new();
+    for package in &registry.packages {
+        if !identifier(&package.name)
+            || !names.insert(&package.name)
+            || package.group != "Broker"
+            || Path::new(&package.manifest).is_absolute()
+            || package
+                .manifest
+                .split('/')
+                .any(|part| part.is_empty() || part == "." || part == "..")
+            || package.manifest.contains('\\')
+        {
+            return Err("Invalid Rust package registry.".into());
+        }
+        let manifest: toml::Value = toml::from_str(
+            &fs::read_to_string(root.join(&package.manifest)).map_err(|error| error.to_string())?,
+        )
+        .map_err(|error| error.to_string())?;
+        if manifest
+            .get("package")
+            .and_then(|value| value.get("name"))
+            .and_then(toml::Value::as_str)
+            != Some(package.name.as_str())
+        {
+            return Err("Rust registry package differs from its manifest.".into());
+        }
+        for features in [
+            &package.features,
+            package
+                .compatibility_compile_features
+                .as_ref()
+                .unwrap_or(&package.features),
+            package
+                .native_features
+                .as_ref()
+                .unwrap_or(&package.features),
+        ] {
+            if (features.iter().any(|feature| feature == "*") && features.len() != 1)
+                || features
+                    .iter()
+                    .any(|feature| feature != "*" && !identifier(feature))
+            {
+                return Err("Invalid Rust feature policy.".into());
+            }
+        }
+    }
+    if registry.packages.is_empty() {
+        return Err("The Rust package registry is empty.".into());
+    }
+    Ok(registry.packages)
+}
+
+fn select<'a>(packages: &'a [Package], names: &[String], group: &str) -> Result<Vec<&'a Package>> {
+    let selected: Vec<_> = packages
+        .iter()
+        .filter(|package| group == "All" || package.group == group)
+        .collect();
+    for name in names {
+        if !selected.iter().any(|package| package.name == *name) {
+            return Err(format!("Unknown Rust package in group {group}: {name}"));
+        }
+    }
+    Ok(selected
+        .into_iter()
+        .filter(|package| names.is_empty() || names.contains(&package.name))
+        .collect())
+}
+
+fn features<'a>(package: &'a Package, phase: &str, profile: &str) -> &'a [String] {
+    if profile == "Native" {
+        package
+            .native_features
+            .as_deref()
+            .unwrap_or(&package.features)
+    } else if profile == "Compatibility" && phase != "test" {
+        package
+            .compatibility_compile_features
+            .as_deref()
+            .unwrap_or(&package.features)
+    } else {
+        &package.features
+    }
+}
+
+fn all_features(features: &[String]) -> bool {
+    features.len() == 1 && features[0] == "*"
+}
+
+fn arguments(
+    packages: &[&Package],
+    phase: &str,
+    profile: &str,
+    toolchain: &str,
+    manifest: &str,
+    offline: bool,
+) -> Result<Vec<String>> {
+    let first = packages
+        .first()
+        .ok_or("Select at least one registered package.")?;
+    let mut arguments = vec![
+        format!("+{toolchain}"),
+        phase.into(),
+        "--manifest-path".into(),
+        manifest.into(),
+    ];
+    for package in packages {
+        arguments.extend(["--package".into(), package.name.clone()]);
+    }
+    if phase == "fmt" {
+        arguments.push("--check".into());
+        return Ok(arguments);
+    }
+    if packages.len() > 1
+        && packages
+            .iter()
+            .any(|package| !all_features(features(package, phase, profile)))
+    {
+        return Err("Only all-feature packages can share a Cargo compile command.".into());
+    }
+    arguments.extend(["--locked".into(), "--release".into()]);
+    if offline {
+        arguments.push("--offline".into());
+    }
+    let selected_features = features(first, phase, profile);
+    if all_features(selected_features) {
+        arguments.push("--all-features".into());
+    } else if !selected_features.is_empty() {
+        arguments.extend(["--features".into(), selected_features.join(",")]);
+    }
+    let suffix: &[&str] = match phase {
+        "clippy" => &["--all-targets", "--", "-D", "warnings"],
+        "doc" => &[
+            "--no-deps",
+            "-Z",
+            "unstable-options",
+            "--output-format",
+            "json",
+        ],
+        "test" => &["--no-fail-fast"],
+        _ => &[],
+    };
+    arguments.extend(suffix.iter().map(|value| (*value).into()));
+    Ok(arguments)
+}
+
+fn plan(options: &Options, packages: &[&Package], toolchain: &str) -> Result<Vec<Check>> {
+    let manifest = options.root.join("Cargo.toml");
+    let manifest = manifest
+        .to_str()
+        .ok_or("The workspace path must be UTF-8.")?;
+    let mut plan = Vec::new();
+    for phase in &options.phases {
+        let batches = if phase == "fmt" {
+            vec![packages.to_vec()]
+        } else {
+            let (all, restricted): (Vec<_>, Vec<_>) = packages
+                .iter()
+                .copied()
+                .partition(|package| all_features(features(package, phase, &options.profile)));
+            let mut batches = Vec::new();
+            if !all.is_empty() {
+                batches.push(all);
+            }
+            batches.extend(restricted.into_iter().map(|package| vec![package]));
+            batches
+        };
+        for batch in batches {
+            plan.push(Check {
+                name: format!(
+                    "{}-{phase}",
+                    if batch.len() == 1 {
+                        batch[0].name.as_str()
+                    } else {
+                        "packages"
+                    }
+                ),
+                phase: phase.clone(),
+                packages: batch.iter().map(|package| package.name.clone()).collect(),
+                arguments: arguments(
+                    &batch,
+                    phase,
+                    &options.profile,
+                    toolchain,
+                    manifest,
+                    options.offline,
+                )?,
+            });
+        }
+    }
+    Ok(plan)
+}
+
+fn toolchain(options: &Options) -> Result<String> {
+    if let Some(toolchain) = &options.toolchain {
+        return identifier(toolchain)
+            .then(|| toolchain.clone())
+            .ok_or_else(|| "Invalid Rust toolchain.".into());
+    }
+    let pin: toml::Value = toml::from_str(
+        &fs::read_to_string(options.root.join("rust-toolchain.toml"))
+            .map_err(|error| error.to_string())?,
+    )
+    .map_err(|error| error.to_string())?;
+    let channel = pin
+        .get("toolchain")
+        .and_then(|value| value.get("channel"))
+        .and_then(toml::Value::as_str)
+        .filter(|channel| identifier(channel))
+        .ok_or("Missing pinned Rust toolchain.")?;
+    Ok(format!("{channel}-aarch64-pc-windows-msvc"))
+}
+
+fn suite_allowed(phases: &[String], actions: &str, reference: &str) -> Result<()> {
+    if phases.iter().any(|phase| phase == "test")
+        && (actions != "true" || reference != "refs/heads/main")
+    {
+        return Err("Complete Rust suites run only in GitHub Actions on main.".into());
+    }
+    Ok(())
+}
+
+fn select_lane(
+    packages: &[Package],
+    affected: &[String],
+    owned: &[String],
+    lane: &str,
+) -> Result<Vec<String>> {
+    if lane.is_empty()
+        || !lane.as_bytes()[0].is_ascii_lowercase()
+        || !lane
+            .bytes()
+            .all(|byte| byte.is_ascii_lowercase() || byte == b'-')
+    {
+        return Err("Invalid Rust lane name.".into());
+    }
+    select(packages, affected, "Broker")?;
+    select(packages, owned, "Broker")?;
+    Ok(packages
+        .iter()
+        .filter(|package| affected.contains(&package.name) && owned.contains(&package.name))
+        .map(|package| package.name.clone())
+        .collect())
+}
+
+pub(super) fn run(arguments: &[OsString]) -> Result<String> {
+    let options = parse(arguments)?;
+    if options.command == "rust-check" {
+        suite_allowed(
+            &options.phases,
+            &std::env::var("GITHUB_ACTIONS").unwrap_or_default(),
+            &std::env::var("GITHUB_REF").unwrap_or_default(),
+        )?;
+        if options.target.is_none() || options.evidence.is_none() {
+            return Err("rust-check requires --target and --evidence.".into());
+        }
+    }
+    let packages = registry(&options.root)?;
+    if options.command == "rust-select" {
+        let list = |name| -> Result<Vec<String>> {
+            serde_json::from_str(&std::env::var(name).map_err(|error| error.to_string())?)
+                .map_err(|error| error.to_string())
+        };
+        let selected = select_lane(
+            &packages,
+            &list("AFFECTED_PACKAGES")?,
+            &list("LANE_PACKAGES")?,
+            &std::env::var("RUST_LANE").map_err(|error| error.to_string())?,
+        )?;
+        let serialized = serde_json::to_string(&selected).map_err(|error| error.to_string())?;
+        super::append_environment_file(
+            "GITHUB_OUTPUT",
+            &format!("has-packages={}\n", !selected.is_empty()),
+        )?;
+        super::append_environment_file("GITHUB_ENV", &format!("BROKER_PACKAGES={serialized}\n"))?;
+        return Ok(serialized);
+    }
+    let selected = select(&packages, &options.packages, &options.group)?;
+    let toolchain = toolchain(&options)?;
+    let plan = plan(&options, &selected, &toolchain)?;
+    if options.command == "rust-plan" {
+        return serde_json::to_string(&plan).map_err(|error| error.to_string());
+    }
+    #[cfg(windows)]
+    {
+        execute::run(&options, &selected, &toolchain, &plan)
+    }
+    #[cfg(not(windows))]
+    {
+        Err("Rust check execution requires native Windows; planning is portable.".into())
+    }
+}

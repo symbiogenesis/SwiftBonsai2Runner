@@ -23,6 +23,8 @@ toml = { version = "=1.1.8", default-features = false, features = ["parse", "ser
 # Windows uses Schannel through Rust bindings, avoiding an additional C/assembly
 # compiler just to build the small CI command on native ARM64.
 [target.'cfg(windows)'.dependencies]
+bonsai-artifacts = { path = "../../src/artifacts" }
+bonsai-windows-process = { path = "../../src/windows-process" }
 ureq = { version = "=3.5.0", default-features = false, features = ["native-tls"] }
 
 [target.'cfg(not(windows))'.dependencies]

@@ -536,6 +536,8 @@ dependencies = [
 name = "bonsai-ci"
 version = "0.1.0"
 dependencies = [
+ "bonsai-artifacts",
+ "bonsai-windows-process",
  "serde",
  "serde_json",
  "toml",

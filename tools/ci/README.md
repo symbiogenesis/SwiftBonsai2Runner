@@ -1,9 +1,8 @@
 # Rust CI tooling
 
-`bonsai-ci` provides the workspace impact planner, regression tests and
-aggregate gate. It reads Cargo manifests directly and uses the routing
-policy in `.github/ci/impact.json`. It never builds inspected packages or runs
-Cargo metadata. Git is required for ancestor and diff queries; HTTPS baseline
+`bonsai-ci` provides workspace impact planning, Cargo check orchestration,
+regression tests and the aggregate gate. It reads Cargo manifests directly and uses the routing
+policy in `.github/ci/impact.json`. Impact planning never builds inspected packages or runs Cargo metadata. Git is required for ancestor and diff queries; HTTPS baseline
 lookup uses Rust with a 20-second timeout and the supplied `GITHUB_TOKEN`.
 
 ```powershell
@@ -43,3 +42,51 @@ formatting, compile portable CI/CPU-policy/broker targets and run six exact name
 routing, gate and request-policy regressions. Missing named cases fail the screen.
 This limited check uses read-only repository permissions and no models or physical
 devices; main-only Foundation and device acceptance remain separate requirements.
+
+## Native Rust checks
+
+`rust-select` validates `AFFECTED_PACKAGES` and `LANE_PACKAGES` JSON arrays
+against `config/rust-packages.json` and writes their intersection in registry
+order to `BROKER_PACKAGES` in `GITHUB_ENV`. It validates `RUST_LANE` and writes
+`has-packages` to `GITHUB_OUTPUT`. Empty intersections stay empty; unknown
+packages fail before checking anything.
+
+`rust-plan` prints the exact Cargo commands without executing them.
+`rust-check` executes the same plan on Windows using owned Jobs. Both accept
+`--root`, repeated `--package` or `--packages-json`, `--group All|Broker`,
+`--profile Foundation|Compatibility|Native`, repeated `--phase`, `--toolchain`,
+`--offline`, `--full-tests` and `--build`. The default phases are format, Clippy
+and rustdoc; the default compiler comes from the repository's pinned channel
+with its production Windows ARM64 host. Formatting shares one invocation;
+compile phases batch all-feature packages while isolating restricted features.
+Rustdoc emits JSON. Commands never widen an explicit package selection.
+
+```powershell
+bonsai-ci rust-plan --root $PWD --package bonsai-broker --phase clippy
+bonsai-ci rust-check --root $PWD --package bonsai-broker --phase clippy --target C:\Scratch\target --evidence C:\Scratch\new-evidence --timeout-seconds 120
+```
+
+Execution requires expanded absolute external `--target` and new `--evidence`
+directories that do not overlap. Logs and the schema-v2 `rust-checks.json`
+receipt retain command arguments, selected packages, source/lock/registry
+SHA-256 values, compiler identity, elapsed time and failures. Synthetic test
+temporary files remain in a separate retained system-temp directory and are not
+uploaded with evidence. Child environment overlays preserve inherited Windows
+and profile variables. A command timeout or output overflow kills its complete
+Job; stdout and stderr each have a 16 MiB bound. Nonzero checks are retained
+while later planned checks continue. Process/timeout errors stop the plan.
+
+Complete suites require `GITHUB_ACTIONS=true` and `GITHUB_REF=refs/heads/main`
+before creating outputs. Hosted checks retain per-command timeouts (1?3600
+seconds). Other executions share a 290-second maximum, reserving time within
+the owner's five-minute aggregate allowance for teardown; setup before this
+command still consumes that allowance. The caller must select a feasible
+smaller workload and timeout. This command never runs benchmarks.
+
+Foundation bootstraps this command on hosted Windows using the pinned compiler
+and a separate target/image so it can subsequently check and rebuild itself.
+A self-hosted cache miss does not compile the CI bootstrap. The deleted
+PowerShell registry, check module and check script have no compatibility
+wrappers; feature, batching, selection and suite-guard regressions are Rust
+tests. `Test-ToolBootstrap.ps1` retains only the still-required PowerShell
+maintenance bootstrap's own integrity and repair tests.

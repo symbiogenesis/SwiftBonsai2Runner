@@ -7,7 +7,7 @@ runs:
       shell: pwsh
       working-directory: ${{ runner.temp }}
       env:
-        TOOLS_SOURCE_ID: ${{ hashFiles('Cargo.toml', 'Cargo.lock', '**/Cargo.toml', 'tools/bonsai/**', 'src/artifacts/**', 'src/cpu-policy/**', 'src/windows-*/**', 'src/speech-asr/model.lock.json', 'src/speech-tts/model*.lock.json', '.cargo/**', 'rust-toolchain.toml', 'scripts/Bonsai.Rust.psm1', 'tests/Test-Rust.ps1', 'config/**', '.github/actions/bonsai-tools/action.yml') }}
+        TOOLS_SOURCE_ID: ${{ hashFiles('Cargo.toml', 'Cargo.lock', '**/Cargo.toml', 'tools/bonsai/**', 'src/artifacts/**', 'src/cpu-policy/**', 'src/windows-*/**', 'src/speech-asr/model.lock.json', 'src/speech-tts/model*.lock.json', '.cargo/**', 'rust-toolchain.toml', 'tools/ci/**', '.github/actions/ci-tool/**', 'config/**', '.github/actions/bonsai-tools/action.yml') }}
         RUNNER_ENVIRONMENT: ${{ runner.environment }}
       run: |
         Set-StrictMode -Version Latest
@@ -46,6 +46,8 @@ runs:
         key: bonsai-tools-v1-${{ runner.os }}-${{ runner.arch }}-${{ env.BONSAI_TOOLS_CACHE_HOST }}-nightly-2026-10-22-${{ hashFiles('Cargo.toml', 'Cargo.lock', 'tools/bonsai/**', 'src/cpu-policy/**', 'src/artifacts/**', 'src/windows-*/**', 'src/speech-asr/model.lock.json', 'src/speech-tts/model*.lock.json', 'config/**/*.json', 'rust-toolchain.toml') }}-content-v1
         restore-keys: |
           bonsai-tools-v1-${{ runner.os }}-${{ runner.arch }}-${{ env.BONSAI_TOOLS_CACHE_HOST }}-nightly-2026-10-22-
+    - uses: ./.github/actions/ci-tool
+      if: steps.executable-cache.outputs.cache-hit != 'true'
     - name: Build the packaged CLI after build inputs change
       if: steps.executable-cache.outputs.cache-hit != 'true'
       shell: pwsh
@@ -54,11 +56,12 @@ runs:
         # Restored sources get new timestamps; fingerprints must follow content.
         CARGO_UNSTABLE_CHECKSUM_FRESHNESS: 'true'
         CARGO_BUILD_FINGERPRINT: content
+        RUNNER_ENVIRONMENT: ${{ runner.environment }}
       run: |
         Set-StrictMode -Version Latest
         $ErrorActionPreference = 'Stop'
         $PSNativeCommandUseErrorActionPreference = $true
-        & (Join-Path $env:GITHUB_WORKSPACE 'tests/Test-Rust.ps1') -Package bonsai-tools -Phase build -TargetDirectory $env:BONSAI_TOOLS_TARGET -EvidenceDirectory $env:BONSAI_TOOLS_BUILD_EVIDENCE | ConvertTo-Json -Depth 8
+        & $env:BONSAI_CI_PATH rust-check --root $env:GITHUB_WORKSPACE --package bonsai-tools --phase build --target $env:BONSAI_TOOLS_TARGET --evidence $env:BONSAI_TOOLS_BUILD_EVIDENCE
         $builtTool = Join-Path $env:BONSAI_TOOLS_TARGET 'release/bonsai-tools.exe'
         if (-not [IO.File]::Exists($builtTool)) { throw 'Packaged maintenance CLI build output is missing.' }
         [void][IO.Directory]::CreateDirectory($env:BONSAI_TOOLS_PACKAGE)

@@ -3,7 +3,7 @@
     "Cargo.toml", "Cargo.lock", "rust-toolchain.toml", "rustfmt.toml", "clippy.toml", ".cargo/**",
     ".github/ci/**", "tools/ci/**", ".github/workflows/foundation.yml", ".github/workflows/premerge.yml", ".github/actions/rust-toolchain/**",
     ".github/actions/check-rust/**", ".github/actions/native-speech/**",
-    "config/rust-packages.psd1", "scripts/Bonsai.Rust.psm1", "tests/Test-Rust.ps1"
+    "config/rust-packages.json", "tools/ci/src/checks/**", ".github/actions/ci-tool/**"
   ],
   "ignored": ["*.md", "docs/**", ".gitignore"],
   "package_inputs": {
@@ -54,7 +54,7 @@
         "scripts/Invoke-HeadlessPublisherStartup.ps1", "tests/Test-HeadlessPublisherStartup.ps1",
         "docs/evidence/headless-publisher-startup.json", "docs/runtime-candidates/headless-ucrt-argv.json",
         "tests/Test-Pq2Census.ps1", "tests/Test-Ptq1Export.ps1", "tests/Test-DevelopmentKeys.ps1",
-        "tests/Test-RustTooling.ps1", "tests/*Support*", "tests/fixtures/**",
+        "tests/Test-ToolBootstrap.ps1", "tests/*Support*", "tests/fixtures/**",
         "config/prism-inference.lock.json", "config/model.metadata.json"
       ]
     },

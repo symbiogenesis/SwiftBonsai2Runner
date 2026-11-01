@@ -17,6 +17,7 @@ outputs:
 runs:
   using: composite
   steps:
+    - uses: ./.github/actions/ci-tool
     - name: Select this lane's affected registered crates
       id: packages
       shell: pwsh
@@ -28,17 +29,8 @@ runs:
       run: |
         Set-StrictMode -Version Latest
         $ErrorActionPreference = 'Stop'
-        if ($env:RUST_LANE -cnotmatch '^[a-z][a-z-]*$') { throw 'Invalid Rust lane name.' }
-        Import-Module (Join-Path $env:GITHUB_WORKSPACE 'scripts/Bonsai.Rust.psm1')
-        $registered = @(Get-BonsaiRustPackage -Group Broker)
-        $affected = @(ConvertFrom-Json -InputObject $env:AFFECTED_PACKAGES)
-        $owned = @(ConvertFrom-Json -InputObject $env:LANE_PACKAGES)
-        foreach ($name in @($affected + $owned)) {
-          if ($name -cnotin $registered.Name) { throw "Crate is missing from the Rust registry: $name" }
-        }
-        $packages = @($registered | Where-Object { $_.Name -cin $affected -and $_.Name -cin $owned } | ForEach-Object { $_.Name })
-        "has-packages=$($packages.Count -gt 0)".ToLowerInvariant() >> $env:GITHUB_OUTPUT
-        "BROKER_PACKAGES=$(ConvertTo-Json -InputObject $packages -Compress)" >> $env:GITHUB_ENV
+        $PSNativeCommandUseErrorActionPreference = $true
+        & $env:BONSAI_CI_PATH rust-select --root $env:GITHUB_WORKSPACE
     - name: Reuse the pinned native Rust compiler
       if: steps.packages.outputs.has-packages == 'true'
       uses: ./.github/actions/rust-toolchain
@@ -86,7 +78,7 @@ runs:
           ${{ env.CARGO_HOME }}/registry/cache
           ${{ env.CARGO_HOME }}/git/db
           ${{ env.CARGO_TARGET_DIR }}
-        key: broker-v5-${{ inputs.lane }}-${{ runner.os }}-${{ runner.arch }}-${{ env.BROKER_CACHE_HOST }}-nightly-2026-10-22-${{ hashFiles('Cargo.toml', 'Cargo.lock', '**/Cargo.toml', 'rust-toolchain.toml') }}-${{ hashFiles('config/**', 'tests/fixtures/**', 'scripts/Bonsai.Rust.psm1', 'tests/Test-Rust.ps1', '.github/actions/check-rust/**', '.github/actions/native-speech/**') }}-${{ inputs.lane == 'ui' && hashFiles('src/chat-ui/**', 'src/windows-*/**') || inputs.lane == 'core' && hashFiles('src/broker/**', 'src/speech-service/**', 'src/artifacts/**', 'src/cpu-policy/**', 'src/windows-*/**') || inputs.lane == 'asr' && hashFiles('src/speech-asr/**', 'src/speech-service/**', 'src/artifacts/**', 'src/windows-*/**') || inputs.lane == 'tts' && hashFiles('src/speech-tts/**', 'src/speech-service/**', 'src/artifacts/**', 'src/windows-*/**') || hashFiles('tools/bonsai/**', 'tools/ci/**', 'src/artifacts/**', 'src/cpu-policy/**', 'src/windows-*/**') }}-content-v1
+        key: broker-v5-${{ inputs.lane }}-${{ runner.os }}-${{ runner.arch }}-${{ env.BROKER_CACHE_HOST }}-nightly-2026-10-22-${{ hashFiles('Cargo.toml', 'Cargo.lock', '**/Cargo.toml', 'rust-toolchain.toml') }}-${{ hashFiles('config/**', 'tests/fixtures/**', 'tools/ci/**', '.github/actions/ci-tool/**', '.github/actions/check-rust/**', '.github/actions/native-speech/**') }}-${{ inputs.lane == 'ui' && hashFiles('src/chat-ui/**', 'src/windows-*/**') || inputs.lane == 'core' && hashFiles('src/broker/**', 'src/speech-service/**', 'src/artifacts/**', 'src/cpu-policy/**', 'src/windows-*/**') || inputs.lane == 'asr' && hashFiles('src/speech-asr/**', 'src/speech-service/**', 'src/artifacts/**', 'src/windows-*/**') || inputs.lane == 'tts' && hashFiles('src/speech-tts/**', 'src/speech-service/**', 'src/artifacts/**', 'src/windows-*/**') || hashFiles('tools/bonsai/**', 'tools/ci/**', 'src/artifacts/**', 'src/cpu-policy/**', 'src/windows-*/**') }}-content-v1
         restore-keys: |
           broker-v5-${{ inputs.lane }}-${{ runner.os }}-${{ runner.arch }}-${{ env.BROKER_CACHE_HOST }}-nightly-2026-10-22-${{ hashFiles('Cargo.toml', 'Cargo.lock', '**/Cargo.toml', 'rust-toolchain.toml') }}-
           broker-v5-${{ inputs.lane }}-${{ runner.os }}-${{ runner.arch }}-${{ env.BROKER_CACHE_HOST }}-nightly-2026-10-22-
@@ -96,6 +88,8 @@ runs:
       with:
         lane: ${{ inputs.lane }}
     - name: Format, analyze, document, test and build the selected crates
+      env:
+        RUNNER_ENVIRONMENT: ${{ runner.environment }}
       if: steps.packages.outputs.has-packages == 'true'
       shell: pwsh
       working-directory: ${{ runner.temp }}
@@ -104,9 +98,8 @@ runs:
         $ErrorActionPreference = 'Stop'
         $evidence = Join-Path $env:RUNNER_TEMP ('SwiftBonsai-BrokerChecks-' + [guid]::NewGuid().ToString('N'))
         "BROKER_CHECK_EVIDENCE=$evidence" >> $env:GITHUB_ENV
-        $packages = @(ConvertFrom-Json -InputObject $env:BROKER_PACKAGES)
-        if (-not $packages.Count) { throw 'A Rust check lane must select registered packages.' }
-        & (Join-Path $env:GITHUB_WORKSPACE 'tests/Test-Rust.ps1') -Group Broker -Package $packages -TargetDirectory $env:CARGO_TARGET_DIR -EvidenceDirectory $evidence -TimeoutSeconds 1800 -FullTests -Build | ConvertTo-Json -Depth 8
+        $PSNativeCommandUseErrorActionPreference = $true
+        & $env:BONSAI_CI_PATH rust-check --root $env:GITHUB_WORKSPACE --group Broker --packages-json $env:BROKER_PACKAGES --target $env:CARGO_TARGET_DIR --evidence $evidence --timeout-seconds 1800 --full-tests --build
     - name: Retain this lane's correctness and analyzer evidence
       if: always() && env.BROKER_CHECK_EVIDENCE != ''
       uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

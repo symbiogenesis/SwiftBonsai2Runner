@@ -1,0 +1,45 @@
+name: Bootstrap the native Rust CI command
+description: Build the source-bound check orchestrator in a separate hosted-only target directory.
+runs:
+  using: composite
+  steps:
+    - name: Require hosted compilation for the CI bootstrap
+      if: env.BONSAI_CI_PATH == ''
+      shell: pwsh
+      env:
+        RUNNER_ENVIRONMENT: ${{ runner.environment }}
+      run: |
+        if ($env:RUNNER_ENVIRONMENT -cne 'github-hosted') {
+          throw 'A missing CI command must be prepared on hosted CI; owner-device build setup cannot bypass the shared five-minute allowance.'
+        }
+    - uses: ./.github/actions/rust-toolchain
+      if: env.BONSAI_CI_PATH == ''
+      with:
+        toolchain: nightly-2026-10-22-aarch64-pc-windows-msvc
+    - name: Reuse the CI command build artifacts
+      if: env.BONSAI_CI_PATH == ''
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ${{ runner.temp }}/SwiftBonsai-CiBootstrap
+        key: native-ci-v1-${{ runner.os }}-${{ runner.arch }}-${{ env.ImageOS }}-${{ env.ImageVersion }}-nightly-2026-10-22-${{ hashFiles('Cargo.toml', 'Cargo.lock', 'tools/ci/**', 'src/artifacts/**', 'src/windows-*/**', '.cargo/**') }}
+        restore-keys: |
+          native-ci-v1-${{ runner.os }}-${{ runner.arch }}-${{ env.ImageOS }}-${{ env.ImageVersion }}-nightly-2026-10-22-
+    - name: Build and select the native CI executable
+      if: env.BONSAI_CI_PATH == ''
+      shell: pwsh
+      working-directory: ${{ runner.temp }}
+      env:
+        CARGO_UNSTABLE_CHECKSUM_FRESHNESS: 'true'
+        CARGO_BUILD_FINGERPRINT: content
+      run: |
+        Set-StrictMode -Version Latest
+        $ErrorActionPreference = 'Stop'
+        $PSNativeCommandUseErrorActionPreference = $true
+        $target = Join-Path $env:RUNNER_TEMP 'SwiftBonsai-CiBootstrap'
+        cargo +nightly-2026-10-22-aarch64-pc-windows-msvc build --locked --release --manifest-path (Join-Path $env:GITHUB_WORKSPACE 'Cargo.toml') --package bonsai-ci --bin bonsai-ci --target-dir $target
+        # A separate image permits the checks to rebuild bonsai-ci itself.
+        $directory = Join-Path $env:RUNNER_TEMP ('SwiftBonsai-CiCommand-' + [guid]::NewGuid().ToString('N'))
+        [void][IO.Directory]::CreateDirectory($directory)
+        $tool = Join-Path $directory 'bonsai-ci.exe'
+        Copy-Item -LiteralPath (Join-Path $target 'release/bonsai-ci.exe') -Destination $tool
+        "BONSAI_CI_PATH=$tool" >> $env:GITHUB_ENV

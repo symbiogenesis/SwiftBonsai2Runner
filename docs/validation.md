@@ -276,7 +276,7 @@ it qualifies neither native Windows behavior nor actual-model/device acceptance.
 dispatch, skipping root-Markdown/`docs/`-only pushes. Its [Rust planner](../tools/ci/README.md)
 reads [impact routing](../.github/ci/impact.json), selects changed packages plus
 transitive workspace consumers, and requires every selected lane/app group to
-pass. Only planned skips are accepted. The [package registry](../config/rust-packages.psd1)
+pass. Only planned skips are accepted. The [package registry](../config/rust-packages.json)
 contains application packages, not upstream runtime catalogs.
 
 | Group | Coverage |
@@ -408,7 +408,7 @@ compilation also exceeded its bounded allowance. [PLAN.md](../PLAN.md) retains
 the remaining hosted gates.
 
 Shared `doc` planning uses `cargo doc --no-deps -Z unstable-options --output-format json`
-for selected packages/features in Release, locally through `Test-Rust.ps1` and in
+for selected packages/features in Release, through `bonsai-ci rust-check` locally and in
 Foundation. Missing docs, intra-doc links, markup and Rust-block lints still fail.
 JSON emits no rustdoc HTML/JS, avoiding the generated `trait.Send.js` quarantine
 trigger; this does not determine whether Defender's detection was false.
@@ -433,12 +433,12 @@ Save-Module PSScriptAnalyzer -RequiredVersion 1.25.0 -Repository PSGallery -Path
 ./tests/Test-Standards.ps1 -AnalyzerModulePath (Join-Path $tooling 'PSScriptAnalyzer/1.25.0/PSScriptAnalyzer.psd1')
 
 $scratch = Join-Path ([IO.Path]::GetTempPath()) ('Runner-Checks-' + [guid]::NewGuid().ToString('N'))
-./tests/Test-Rust.ps1 -Package bonsai-broker -TargetDirectory (Join-Path $scratch 'target') -EvidenceDirectory (Join-Path $scratch 'evidence')
+bonsai-ci rust-check --root $PWD --package bonsai-broker --target (Join-Path $scratch 'target') --evidence (Join-Path $scratch 'evidence')
 ```
 
 Choose a relevant named regression, e.g. `./tests/Test-Foundation.ps1 -Case Download`
 or `./tests/Test-NativeProcess.ps1 -Case Capture`. Direct Cargo tests select one
-regression with external target/working directories. `-FullTests` is reserved
+regression with external target/working directories. `--full-tests` is reserved
 for main-branch GitHub Actions; benchmarks are always CI-only.
 
 `window::interaction_tests::` drives egui input/accessibility with inert channels:
