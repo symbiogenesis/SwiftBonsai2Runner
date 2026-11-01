@@ -449,14 +449,13 @@ rejected. Exact integers and booleans cannot be replaced with strings, floats or
 each other. Successful mapping never implies compute, and verified computation
 never implies session teardown, Swift qualification or profile admission.
 
-PowerShell retains OS signature observation, held file handles and owned worker
-lifecycles. Its policy adapters require `BONSAI_TOOLS_PATH` from the source-bound
-hosted build and never bootstrap Cargo on the owner device. Hexagon hosted
-controls run the native policy regressions and publish a revision/digest-bound
-maintenance artifact. Session/dispatch owner jobs verify that same-run artifact
-inside the existing aggregate setup clock. Rust tests replace the former
-PowerShell build/result/plan tests; `Test-HexagonCapture.ps1` keeps only the
-remaining PowerShell pipe-capture and progress-retention checks.
+Rust owns OS signature observation, immutable file guards and owned worker
+lifecycles through `hexagon-tools`. Hexagon hosted controls run native policy,
+package-boundary, pipe-capture and progress-retention regressions and publish a
+revision/digest-bound maintenance artifact. Session/dispatch owner jobs verify
+that same-run artifact inside the existing aggregate setup clock and never
+bootstrap Cargo on the owner device. The PowerShell implementation and its
+script-only tests have been removed.
 
 `speech-evaluation` also owns the complete hosted TTS comparison. A model-free
 `{"operation":"host-plan","repetitions":2}` request derives the bounded local
