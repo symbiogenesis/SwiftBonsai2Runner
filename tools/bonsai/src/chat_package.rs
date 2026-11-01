@@ -1,4 +1,4 @@
-//! Bounded, fixed-layout validation of installed native chat packages.
+//! Native package assembly, activation, rollback and verified application launch.
 
 use std::{
     collections::BTreeSet,
@@ -22,6 +22,17 @@ const FILES: &[&str] = &[
     "LICENSE",
     "NOTICE",
     "THIRD-PARTY-NOTICES.txt",
+];
+// Retained version-1 packages remain inspectable and eligible for explicit rollback.
+const LEGACY_FILES: &[&str] = &[
+    "bin/bonsai-chat.exe",
+    "bin/bonsai-broker.exe",
+    "bin/bonsai-asr.exe",
+    "bin/bonsai-tts.exe",
+    "bin/bonsai-tools.exe",
+    "LICENSE",
+    "NOTICE",
+    "THIRD-PARTY-NOTICES.txt",
     "scripts/Start-Chat.ps1",
     "scripts/Start-InstalledChat.ps1",
     "scripts/Install-ChatPackage.ps1",
@@ -34,11 +45,33 @@ const FILES: &[&str] = &[
     "scripts/New-DevelopmentKeys.ps1",
 ];
 
+mod management;
+
 #[derive(Deserialize)]
 #[serde(tag = "operation", rename_all = "kebab-case", deny_unknown_fields)]
 enum Request {
     #[serde(rename_all = "camelCase")]
+    Create(management::Create),
+    #[serde(rename_all = "camelCase")]
+    Inspect {
+        package_directory: PathBuf,
+        manifest_sha256: String,
+    },
+    #[serde(rename_all = "camelCase")]
+    Install {
+        installation_directory: PathBuf,
+        package_directory: PathBuf,
+        manifest_sha256: String,
+    },
+    #[serde(rename_all = "camelCase")]
+    Rollback { installation_directory: PathBuf },
+    #[serde(rename_all = "camelCase")]
     Installed { installation_directory: PathBuf },
+    #[serde(rename_all = "camelCase")]
+    Start {
+        installation_directory: PathBuf,
+        options: Value,
+    },
     #[serde(rename_all = "camelCase")]
     Launch {
         installation_directory: PathBuf,
@@ -49,7 +82,7 @@ enum Request {
     },
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct Selection {
     schema_version: u64,
@@ -67,7 +100,7 @@ where
     Option::<T>::deserialize(deserializer)
 }
 
-#[derive(Deserialize)]
+#[derive(Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct Selected {
     id: String,
@@ -189,14 +222,22 @@ fn verify_file(directory: &Path, entry: &PackageFile) -> crate::Result<()> {
     Ok(())
 }
 
-fn inventory(directory: &Path) -> crate::Result<()> {
+fn filenames(schema: u64) -> crate::Result<&'static [&'static str]> {
+    match schema {
+        1 => Ok(LEGACY_FILES),
+        2 => Ok(FILES),
+        _ => Err("Unsupported package schema.".into()),
+    }
+}
+
+fn inventory(directory: &Path, names: &[&str]) -> crate::Result<()> {
     let mut count = 0;
-    for container in [
-        directory.to_path_buf(),
-        directory.join("bin"),
-        directory.join("scripts"),
-    ] {
-        validate_external_path(&container).map_err(|error| error.to_string())?;
+    let mut containers = vec![directory.to_path_buf(), directory.join("bin")];
+    if names == LEGACY_FILES {
+        containers.push(directory.join("scripts"));
+    }
+    for container in &containers {
+        validate_external_path(container).map_err(|error| error.to_string())?;
         for entry in fs::read_dir(container).map_err(|error| error.to_string())? {
             let path = entry.map_err(|error| error.to_string())?.path();
             validate_external_path(&path).map_err(|error| error.to_string())?;
@@ -210,11 +251,11 @@ fn inventory(directory: &Path) -> crate::Result<()> {
                 return Err("Package links are unsupported.".into());
             }
             if metadata.is_dir() {
-                if !matches!(relative.as_str(), "bin" | "scripts") {
+                if !containers.contains(&path) {
                     return Err("Unexpected directory in chat package.".into());
                 }
             } else if metadata.is_file()
-                && (relative == "package.json" || FILES.contains(&relative.as_str()))
+                && (relative == "package.json" || names.contains(&relative.as_str()))
             {
                 count += 1;
             } else {
@@ -222,13 +263,13 @@ fn inventory(directory: &Path) -> crate::Result<()> {
             }
         }
     }
-    if count != FILES.len() + 1 {
+    if count != names.len() + 1 {
         return Err("Unexpected files in chat package.".into());
     }
     Ok(())
 }
 
-fn installed(root: &Path) -> crate::Result<Value> {
+fn selection(root: &Path) -> crate::Result<Selection> {
     validate_external_path(root).map_err(|error| error.to_string())?;
     let selection: Selection =
         serde_json::from_slice(json_bytes(&metadata(&root.join("active.json"))?))
@@ -236,46 +277,68 @@ fn installed(root: &Path) -> crate::Result<Value> {
     if selection.schema_version != 1 {
         return Err("Unsupported package selection.".into());
     }
-    let active = selection.active.ok_or("An active package is required.")?;
-    selected(&active)?;
+    selected(
+        selection
+            .active
+            .as_ref()
+            .ok_or("An active package is required.")?,
+    )?;
     if let Some(previous) = &selection.previous {
         selected(previous)?;
     }
-    let directory = root.join("versions").join(&active.id);
+    Ok(selection)
+}
+
+fn installed(root: &Path) -> crate::Result<Value> {
+    let active = selection(root)?
+        .active
+        .ok_or("An active package is required.")?;
+    let package = checked(
+        &root.join("versions").join(&active.id),
+        &active.manifest_sha256,
+    )?;
+    if package["Id"] != active.id {
+        return Err("Selected package identity disagrees with its manifest.".into());
+    }
+    Ok(package)
+}
+
+fn checked(directory: &Path, manifest_sha256: &str) -> crate::Result<Value> {
+    let manifest_sha256 = manifest_sha256.to_ascii_lowercase();
+    if !crate::identity::is_lower_hex(&manifest_sha256, 64) {
+        return Err("Invalid package manifest SHA-256.".into());
+    }
     let path = directory.join("package.json");
     // Hash and parse the same bounded bytes, including a BOM in the digest.
     let bytes = metadata(&path)?;
-    if crate::identity::sha256(&bytes) != active.manifest_sha256 {
+    if crate::identity::sha256(&bytes) != manifest_sha256 {
         return Err("Package manifest SHA-256 mismatch.".into());
     }
     let manifest: Manifest =
         serde_json::from_slice(json_bytes(&bytes)).map_err(|error| error.to_string())?;
-    if manifest.schema_version != 1
-        || manifest.kind != "bonsai-chat-package"
+    let names = filenames(manifest.schema_version)?;
+    if manifest.kind != "bonsai-chat-package"
         || manifest.target != "aarch64-pc-windows-msvc"
         || !version(&manifest.version)
         || !crate::identity::is_lower_hex(&manifest.source_revision, 40)
-        || manifest.files.len() != FILES.len()
+        || manifest.files.len() != names.len()
     {
         return Err("Unsupported chat package identity or inventory.".into());
     }
     let id = format!(
         "{}-{}-{}",
-        manifest.version, manifest.source_revision, active.manifest_sha256
+        manifest.version, manifest.source_revision, manifest_sha256
     );
-    if id != active.id {
-        return Err("Selected package identity disagrees with its manifest.".into());
-    }
     let mut seen = BTreeSet::new();
     for entry in &manifest.files {
-        if !FILES.contains(&entry.name.as_str()) || !seen.insert(&entry.name) {
+        if !names.contains(&entry.name.as_str()) || !seen.insert(&entry.name) {
             return Err("Invalid or repeated package filename.".into());
         }
-        verify_file(&directory, entry)?;
+        verify_file(directory, entry)?;
     }
-    inventory(&directory)?;
+    inventory(directory, names)?;
     Ok(json!({
-        "Directory": directory, "ManifestSha256": active.manifest_sha256,
+        "Directory": directory, "ManifestSha256": manifest_sha256,
         "Manifest": manifest, "Id": id,
     }))
 }
@@ -349,7 +412,7 @@ fn checked_launch(
     launch(launch_options(&package, options)?)
 }
 
-/// Verify an active package and optionally open its fixed native application.
+/// Assemble, inspect, install, roll back or launch a fixed native package.
 ///
 /// # Errors
 /// Rejects unsafe paths, malformed or oversized metadata, changed package bytes,
@@ -358,9 +421,32 @@ fn checked_launch(
 pub fn run(value: Value) -> crate::Result<Value> {
     let request: Request = serde_json::from_value(value).map_err(|error| error.to_string())?;
     match request {
+        Request::Create(request) => management::create(request),
+        Request::Inspect {
+            package_directory,
+            manifest_sha256,
+        } => checked(&package_directory, &manifest_sha256),
+        Request::Install {
+            installation_directory,
+            package_directory,
+            manifest_sha256,
+        } => management::activate(
+            &installation_directory,
+            Some((&package_directory, &manifest_sha256)),
+        ),
+        Request::Rollback {
+            installation_directory,
+        } => management::activate(&installation_directory, None),
         Request::Installed {
             installation_directory,
         } => installed(&installation_directory),
+        Request::Start {
+            installation_directory,
+            options,
+        } => {
+            let package = installed(&installation_directory)?;
+            crate::chat_launch::run(launch_options(&package, options)?)
+        }
         Request::Launch {
             installation_directory,
             expected_directory,
@@ -413,7 +499,7 @@ mod tests {
             });
         }
         let manifest = Manifest {
-            schema_version: 1,
+            schema_version: 2,
             kind: "bonsai-chat-package".into(),
             version: "0.1.0".into(),
             source_revision: "a".repeat(40),

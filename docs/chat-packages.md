@@ -1,110 +1,137 @@
 # Portable native chat packages
 
-The portable package path installs reviewed prebuilt Windows ARM64 application
-files in versioned directories, activates updates atomically and retains an
-explicit rollback choice. Launch needs native ARM64 PowerShell 7.6+ and the
-ordinary model/runtime installation, without a source checkout or Rust/C++
-compiler. Native speech also requires a compatible installed ARM64 Microsoft
-Visual C++ runtime: the TTS build uses the dynamic MSVC runtime. This package
-does not install runtime DLLs. The UI remains the same native Rust application.
+The native `bonsai-tools chat-package` command assembles reviewed Windows ARM64
+application files, installs versioned directories, activates updates atomically
+and retains an explicit rollback choice. Installation and launch need a trusted
+maintenance executable and the ordinary model/runtime installation. Neither a
+source checkout, PowerShell nor a Rust/C++ compiler is required. Native speech
+also requires the compatible ARM64 Microsoft Visual C++ runtime used by its
+dynamic MSVC build; this package does not install runtime DLLs.
 
 This checked-directory distribution path does not provide a signed installer,
-publisher authentication or automatic update discovery. Its synthetic packaging
-checks do not establish notice completeness, actual-model acceptance or daily
-service isolation. Remaining delivery work is tracked only in
+publisher authentication or automatic update discovery. SHA-256 detects changed
+bytes; review the manifest digest through a trusted channel before installation.
+Use an independently trusted `bonsai-tools.exe` for installation and subsequent
+launches. Executing an unverified received package's maintenance binary to verify
+itself does not establish trust. Same-user replacement remains outside this
+boundary. Remaining distribution and actual-model acceptance gates live in
 [PLAN.md](../PLAN.md#application-and-daily-service).
-SHA-256 detects changed bytes; review the manifest digest
-through a trusted channel before installation. Same-user replacement remains
-outside this boundary.
+
+## Native command
+
+Write one of the following JSON requests to an expanded absolute path outside
+Git, then invoke the trusted executable directly:
+
+```text
+bonsai-tools.exe chat-package --request C:\BonsaiRequests\package.json
+```
+
+Success returns a JSON receipt on stdout; errors return a nonzero exit code and
+diagnostic on stderr. Requests reject unknown fields. All filesystem paths must
+be expanded absolute paths without links, device namespaces or alternate data
+streams. Package output, artifacts and installation storage remain outside Git.
 
 ## Assemble a package
 
-Build and review the five executables from the intended settled `main` revision:
-`bonsai-chat.exe`, `bonsai-broker.exe`, `bonsai-asr.exe`, `bonsai-tts.exe` and
-`bonsai-tools.exe`. Use the pinned compiler and existing native speech build
-procedure. Package creation does not compile or execute these inputs. Version
-and source revision are supplied declarations, not proof of build provenance.
+Build and review the five executables from the intended settled `main` revision
+using the pinned compiler and native speech build procedure. Creation does not
+compile, sign, download or execute these inputs. Version and source revision are
+supplied declarations, not proof of build provenance.
 
-Prepare the applicable third-party notice text from the exact shipped
-dependencies; see [redistribution requirements](licensing.md#redistribution).
-The script includes project `LICENSE`/`NOTICE` and this supplied text. It does
-not generate or certify a complete license inventory. Models, adapters and the
-inference runtime remain separately provisioned artifacts with their own pins
-and terms.
-
-From the reviewed checkout, using expanded absolute external paths:
-
-```powershell
-$package = ./scripts/New-ChatPackage.ps1 `
-    -OutputDirectory $newPackageDirectory -Version 0.1.0 `
-    -SourceRevision $reviewedSourceRevision `
-    -ChatPath $chatExecutable -BrokerPath $brokerExecutable `
-    -AsrPath $asrExecutable -TtsPath $ttsExecutable -ToolPath $maintenanceExecutable `
-    -ThirdPartyNoticePath $reviewedNotices
-$package.ManifestSha256
+```json
+{
+  "operation": "create",
+  "outputDirectory": "C:\\BonsaiPackages\\0.1.0",
+  "version": "0.1.0",
+  "sourceRevision": "0000000000000000000000000000000000000000",
+  "chatPath": "C:\\ReviewedBuild\\bonsai-chat.exe",
+  "brokerPath": "C:\\ReviewedBuild\\bonsai-broker.exe",
+  "asrPath": "C:\\ReviewedBuild\\bonsai-asr.exe",
+  "ttsPath": "C:\\ReviewedBuild\\bonsai-tts.exe",
+  "toolPath": "C:\\ReviewedBuild\\bonsai-tools.exe",
+  "thirdPartyNoticePath": "C:\\ReviewedBuild\\THIRD-PARTY-NOTICES.txt"
+}
 ```
 
-The fixed layout contains the five ARM64 executables, required launch modules,
-notices and a bounded `package.json` with every file's exact size and SHA-256.
-Creation uses new staging and never replaces an existing output. Distribute
-this directory intact, with its reviewed manifest digest supplied independently.
-There is no archive extraction or package-provided install hook.
+Replace the example revision with the reviewed build identity. The command
+includes project `LICENSE` and `NOTICE` embedded in the trusted tool's source
+build, plus the supplied third-party notice text. Review these against the exact
+shipped dependencies under [redistribution requirements](licensing.md#redistribution).
+The tool does not certify notice completeness. Models, adapters and inference
+runtime files remain separately provisioned artifacts with their own terms.
+
+Schema-2 packages contain exactly five ARM64 executables under `bin/`, three
+notice files and bounded `package.json` metadata with each file's size and
+SHA-256. No scripts or install hooks are included. New staging is checked before
+publication; an existing output is never replaced. Distribute the directory
+intact and retain the returned `ManifestSha256` independently. `inspect` accepts
+`packageDirectory` and `manifestSha256` for the same complete offline validation.
 
 ## Install, update and roll back
 
-Run the installer from a trusted checkout/tooling copy:
-
-```powershell
-./scripts/Install-ChatPackage.ps1 -InstallationDirectory $installationDirectory `
-    -PackageDirectory $receivedPackageDirectory -ManifestSha256 $reviewedManifestSha256
+```json
+{
+  "operation": "install",
+  "installationDirectory": "C:\\BonsaiChat",
+  "packageDirectory": "C:\\BonsaiPackages\\0.1.0",
+  "manifestSha256": "REPLACE_WITH_THE_REVIEWED_64_HEX_DIGEST"
+}
 ```
 
 The installer validates the fixed inventory, native architecture, sizes, hashes
 and external paths before selecting a version. A single-writer lock serializes
-operations. It copies into unique staging, verifies again, publishes a new
+operations. Rust copies into private staging, verifies again, publishes a new
 version directory and atomically replaces `active.json`. Failed verification
-preserves the current selection. Existing versions are retained.
+preserves the current selection. Existing versions are retained. Digests supplied
+in uppercase are canonicalized before deriving the version directory identity.
 
-Install the next reviewed package with the same command and a new manifest
-digest. Rollback checks the retained previous package before switching:
+Install the next reviewed package with the same operation and its new digest.
+Rollback verifies the retained previous package before switching:
 
-```powershell
-./scripts/Install-ChatPackage.ps1 -InstallationDirectory $installationDirectory -Rollback
+```json
+{"operation":"rollback","installationDirectory":"C:\\BonsaiChat"}
 ```
 
 Rollback retains the displaced version, allowing an explicit switch back. An
-unchanged install preserves the rollback choice. Updating does not restart a
-running app; close it and launch again. Installation and rollback leave model
-files and conversation recovery data alone.
+unchanged install preserves the previous choice. Schema-1 packages retain their
+original fixed script inventory and remain eligible for checked installation,
+inspection and rollback; new packages use schema 2. Updating does not restart a
+running app. Installation and rollback leave model and recovery data alone.
 
 ## Launch without a checkout
 
-Use the installed version's `scripts/Start-InstalledChat.ps1` as the trusted
-entry point, passing the installation root rather than an executable path. A
-retained entry point resolves the current active version on each launch:
+Run the same trusted maintenance executable with this request. It resolves the
+current active version on every launch; retain the trusted tool separately from
+unverified incoming distributions.
 
-```powershell
-& $installedLauncher -InstallationDirectory $installationDirectory -DataDirectory $data
+```json
+{
+  "operation": "start",
+  "installationDirectory": "C:\\BonsaiChat",
+  "options": {"DataDirectory":"C:\\BonsaiData","NoSpeechModels":true}
+}
 ```
 
-PowerShell verifies the selected manifest, maintenance executable and loader
-inventory before executing package code. One Rust operation then verifies all
-package files, checks that the bootstrap selection is unchanged and launches
-the fixed packaged executables. It avoids a separate inspection process,
-version probe and source-launcher import. Pinned speech model provisioning and
-credential creation use the packaged maintenance executable. Native inference
-continues to use existing artifact checks, admission, Jobs and retry policies.
+One native operation checks the selected manifest and complete fixed inventory,
+then derives executable paths and starts the same native application. Options
+cannot supply executable paths or request source builds. The legacy `launch`
+operation also remains available for callers that bind `expectedDirectory`,
+`expectedId` and `expectedManifestSha256` before handoff.
 
 Provision Swift model/runtime and the optional adapter first using the
-[setup commands](development-guide.md#native-chat-app). `-NoSpeechModels` keeps
-the packaged launch text-only; `-NoTts` skips output speech. The existing
-`-NoAbliterateLora`, `-UseRepackedPtq1`, speech settings and port options remain
-explicit. No microphone activates at installation or launch.
+[setup commands](development-guide.md#native-chat-app). `NoSpeechModels: true`
+keeps launch text-only; `NoTts: true` skips output speech. `NoAbliterateLora`,
+`UseRepackedPtq1`, `NativeEngine`, `NativeRowWorkers`, `TtsQuantization`,
+`TtsThreads`, `FrontendPort`, `BackendPort`, `CanaryPort` and `TtsPort` remain
+explicit settings with the native launcher's existing validation. Native Rust
+owns the per-user launch guard, model provisioning, credentials, Jobs and retry
+policy. No microphone activates at installation or launch.
 
 ## Validation
 
-Foundation runs the complete package lifecycle, rejection and copied-launcher
-checks on `main`. A focused local check is
-`./tests/Test-ChatPackage.ps1 -Case Lifecycle`. The fixtures use synthetic ARM64
-images and mocked process operations; they establish packaging behavior and
-dependency closure, not actual-model or speech acceptance.
+Foundation's `bonsai-tools` Rust suite owns package creation, installation,
+updates, bidirectional rollback, legacy-package compatibility, write contention,
+tampering, fixed inventory, metadata and launch handoff checks. The former
+PowerShell package tests and wrappers are deleted. Inert ARM64 fixture headers
+and injected launch handoffs establish package behavior, not actual-model,
+speech, signing or daily-service acceptance. Complete suites remain CI-only.

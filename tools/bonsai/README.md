@@ -168,12 +168,17 @@ PowerShell rejects older launch tools before sending a request.
 `BootstrapProtocolVersion: 1` identifies native maintenance snapshot publication.
 These additive contracts leave the general JSON protocol at version 5.
 
-`chat-package` supports inspection through `operation: "installed"` and combined
-verification/launch through `operation: "launch"`. Launch binds the directory,
-package ID and manifest digest selected by the PowerShell trust bootstrap,
-verifies the full fixed inventory, then derives executable paths in Rust.
-Caller options cannot override those paths or request a source build. The same
-native launcher opens the pending UI before preparing backend and speech services.
+`chat-package` owns `create`, `inspect`, `install`, `rollback`, `installed` and
+`start` operations. The [package contract](../../docs/chat-packages.md) defines
+their JSON requests. New schema-2 packages contain only five native executables
+and three notices; the PowerShell packaging module, launch/install wrappers and
+their tests are retired. Rust retains schema-1 package inspection and rollback.
+Run the command using an independently trusted maintenance executable: package
+hashes cannot authenticate the program performing the checks. `start` verifies
+the active package and derives its fixed executable paths before native launch.
+The legacy `launch` operation still supports a caller-bound directory, ID and
+manifest digest. Caller options cannot override paths or request a source build.
+The native launcher opens the pending UI before preparing backend and speech.
 
 `inference-lock` reviews independently selected Prism release and source ZIPs.
 It retains read-only input handles, checks bounded inventories, file hashes,

@@ -455,31 +455,19 @@ fn runner_ci_q4_lock_rebuilds_the_embedded_planner_and_tts() -> TestResult {
 }
 
 #[test]
-fn runner_ci_chat_packages_select_lifecycle_checks_and_standards() -> TestResult {
+fn runner_ci_native_packages_and_embedded_notices_select_maintenance_checks() -> TestResult {
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     let config: Value = serde_json::from_slice(&fs::read(root.join(".github/ci/impact.json"))?)?;
     for path in [
-        "scripts/New-ChatPackage.ps1",
-        "scripts/Install-ChatPackage.ps1",
-        "scripts/Start-InstalledChat.ps1",
-        "scripts/Bonsai.ChatPackage.psm1",
-        "tests/Test-ChatPackage.ps1",
+        "tools/bonsai/src/chat_package.rs",
+        "tools/bonsai/src/chat_package/management.rs",
+        "LICENSE",
+        "NOTICE",
     ] {
         let plan = impact::select(&root, &[path.into()], false, &config, "chat packaging")?;
         assert!(!plan.full, "{path}");
-        assert!(plan.packages.is_empty(), "{path}");
-        for group in [
-            "foundation_scripts",
-            "scripts",
-            "standards",
-            "tools",
-            "maintenance",
-        ] {
-            assert!(plan.groups[group], "{path}: {group}");
-        }
-        for group in ["broker", "ui", "speech", "release", "native_scripts"] {
-            assert!(!plan.groups[group], "{path}: {group}");
-        }
+        assert!(plan.packages.contains(&"bonsai-tools".to_owned()), "{path}");
+        assert!(plan.groups["maintenance"] && plan.groups["tools"], "{path}");
     }
     Ok(())
 }

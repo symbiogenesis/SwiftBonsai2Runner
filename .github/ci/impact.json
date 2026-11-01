@@ -5,11 +5,11 @@
     ".github/actions/check-rust/**", ".github/actions/native-speech/**",
     "config/rust-packages.psd1", "scripts/Bonsai.Rust.psm1", "tests/Test-Rust.ps1"
   ],
-  "ignored": ["*.md", "docs/**", "LICENSE", "NOTICE", ".gitignore"],
+  "ignored": ["*.md", "docs/**", ".gitignore"],
   "package_inputs": {
     "bonsai-cpu-policy": ["config/runtime.lock.json", "config/swift-assessment.lock.json", "config/swift-lora.lock.json", "config/swift.ptq1-export.json", "config/profiles/reference-cpu.json"],
     "bonsai-broker": ["config/runtime.lock.json", "config/swift-assessment.lock.json", "config/swift.metadata.json", "config/profiles/reference-cpu.json", "config/prism-inference.lock.json"],
-    "bonsai-tools": ["config/swift-assessment.lock.json", "config/swift-lora.lock.json", "config/swift.ptq1-export.json", "config/swift-lora.qualification.json", "config/swift-lora.app-qualification.json", "config/swift.metadata.json", "tests/fixtures/lora-qualification-v1.json", "src/speech-asr/model.lock.json", "src/speech-tts/model*.lock.json", "config/native-speech.lock.json", "config/prism-inference.lock.json"]
+    "bonsai-tools": ["LICENSE", "NOTICE", "config/swift-assessment.lock.json", "config/swift-lora.lock.json", "config/swift.ptq1-export.json", "config/swift-lora.qualification.json", "config/swift-lora.app-qualification.json", "config/swift.metadata.json", "tests/fixtures/lora-qualification-v1.json", "src/speech-asr/model.lock.json", "src/speech-tts/model*.lock.json", "config/native-speech.lock.json", "config/prism-inference.lock.json"]
   },
   "groups": {
     "broker": {"packages": ["bonsai-broker", "bonsai-speech-service"]},
@@ -39,7 +39,6 @@
         "scripts/Bonsai.HexagonIdentity.psm1", "tests/Test-HexagonSession.ps1",
         "scripts/Read-Gguf.ps1", "scripts/Export-SwiftPtq1.ps1", "scripts/Bonsai.Gguf.psm1",
         "scripts/Get-Model.ps1", "scripts/Get-ServerPlan.ps1", "scripts/Start-Chat.ps1", "scripts/Bonsai.ServerPolicy.psm1",
-        "scripts/New-ChatPackage.ps1", "scripts/Install-ChatPackage.ps1", "scripts/Start-InstalledChat.ps1", "scripts/Bonsai.ChatPackage.psm1", "tests/Test-ChatPackage.ps1",
         "scripts/Get-SpeechModels.ps1", "scripts/Bonsai.SpeechModels.psm1", "tests/Test-SpeechModels.ps1",
         "scripts/Bonsai.NativeSpeech.psm1", "scripts/Get-NativeSpeechModels.ps1", "config/native-speech.lock.json",
         "scripts/Invoke-TtsEvaluation.ps1", ".github/workflows/tts-evaluation.yml",
