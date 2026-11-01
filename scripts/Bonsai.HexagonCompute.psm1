@@ -45,6 +45,18 @@ function Get-BonsaiHexagonComputeResult {
         ($record.computeExecuted -and (-not $record.computeSubmitted -or -not $record.numericValidated -or -not $record.responseValidated))) {
         throw 'Native computation claimed an unsupported independent gate.'
     }
+    if ($record.computeExecuted -and (($record.queueReadResult -isnot [int] -and $record.queueReadResult -isnot [long]) -or
+        $record.queueReadResult -ne 0 -or ($record.queueWriteResult -isnot [int] -and $record.queueWriteResult -isnot [long]))) {
+        throw 'A numerical observation requires a completed correlated read and a recorded write result.'
+    }
+    if ($record.computeSubmitted -and $null -ne $record.queueWriteResult -and $record.queueWriteResult -ne 0) {
+        if (-not $record.poisoned -or -not $record.ownerPinnedUntilExit -or $record.freeCompleted) {
+            throw 'A write error must retain every uncertain owner even after a valid reply.'
+        }
+        foreach ($name in @('queueStopResult','queueCloseResult','unmappingResult','moduleCloseResult')) {
+            if ($null -ne $record[$name]) { throw 'A write-error observation attempted unsupported normal cleanup.' }
+        }
+    }
     if ($record.passed) {
         foreach ($name in @('uriVerified','unsignedProcessRequested','handleObserved','responseValidated',
             'numericValidated','freeCompleted','ownerPinnedUntilExit','computeSubmitted','computeExecuted')) {

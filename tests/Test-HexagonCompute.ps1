@@ -87,5 +87,16 @@ if ($Case -ceq 'Plan') {
     $result = Get-BonsaiHexagonComputeResult -Json ($q2NoBlock | ConvertTo-Json -Compress) -ExitCode 0 -Case GuardedQ2NoBlock
     Assert $result.passed 'Explicit guarded Q2 nonblocking control was rejected.'
     Assert-Failure { Get-BonsaiHexagonComputeResult -Json ($q2NoBlock | ConvertTo-Json -Compress) -ExitCode 0 -Case GuardedQ2 } 'Nonblocking Q2 supplied the timed Q2 gate.'
+    $drained = $noBlock.Clone(); $drained.passed = $false; $drained.queueWriteResult = 14
+    $drained.poisoned = $true; $drained.freeCompleted = $false
+    foreach ($name in @('queueStopResult','queueCloseResult','unmappingResult','moduleCloseResult')) { $drained[$name] = $null }
+    $result = Get-BonsaiHexagonComputeResult -Json ($drained | ConvertTo-Json -Compress) -ExitCode 0 -Case F32NoBlock
+    Assert ($result.computeExecuted -and -not $result.passed -and $result.poisoned) 'A verified error-drain reply lost its independent numerical observation.'
+    foreach ($name in @('queueStopResult','queueCloseResult','unmappingResult','moduleCloseResult')) {
+        $changed = $drained.Clone(); $changed[$name] = 0
+        Assert-Failure { Get-BonsaiHexagonComputeResult -Json ($changed | ConvertTo-Json -Compress) -ExitCode 0 -Case F32NoBlock } 'An error-drain reply admitted normal cleanup.'
+    }
+    $changed = $drained.Clone(); $changed.queueReadResult = $null
+    Assert-Failure { Get-BonsaiHexagonComputeResult -Json ($changed | ConvertTo-Json -Compress) -ExitCode 0 -Case F32NoBlock } 'A numeric error-drain claim omitted its completed read.'
 }
 return 'Native queue compute evidence controls passed without opening a device.'
