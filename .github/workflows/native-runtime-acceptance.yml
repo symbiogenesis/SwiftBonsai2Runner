@@ -76,6 +76,7 @@ jobs:
               'native_ptq1_row4_lifecycle_is_explicit_and_preserves_the_required_workload',
               'native_adapter_scale_history_profile_requires_separate_explicit_selection',
               'native_adapter_scale_history_retains_partial_steps_without_qualifying_missing_work',
+              'native_adapter_scale_history_requires_reported_bounded_terminal_usage',
               'native_adapter_generated_history_requires_exact_bound_initial_output',
               'native_adapter_empty_initial_response_keeps_history_pending',
               'native_adapter_first_request_cancellation_retains_ready_phase_and_missing_work',

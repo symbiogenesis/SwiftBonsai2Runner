@@ -248,6 +248,13 @@ with `passed: false`; they do not qualify the missing phase or either optional
 workload. The bounded supplied-history and stalled-consumer device gates remain
 pending until successful owner-device evidence is retained within the shared budget.
 
+The adapter profiles additionally require positive reported completion usage within
+each stream's cap. A `length` termination must report exactly that cap. Missing,
+zero, excessive or inconsistent usage leaves the stream and required scale/history
+workload pending even when visible text arrived. The receipt preserves the text,
+reported usage and fixed failure reason before owned cleanup; events and bytes
+cannot replace worker token accounting.
+
 Optional supplied-history receipts persist context rejection and the completed
 history stream separately before same-owner reuse. Cancellation or failure of a
 later step leaves the workload pending while preserving those observations.
@@ -271,6 +278,7 @@ Model-free acceptance regressions:
 | `native_representation_profiles_leave_skipped_arms_pending_at_original_deadline` | Both worker policies retain partial observations and pending status when the original shared deadline reaches the 60-second startup/cleanup reserve; no missing owner starts or receives a new clock |
 | `native_adapter_scale_history_profile_requires_separate_explicit_selection` | Scale/history lifecycle is a distinct original-PQ2 row4 selection; the one-stream smoke and no-extra-workload restrictions remain |
 | `native_adapter_scale_history_retains_partial_steps_without_qualifying_missing_work` | Real model-free HTTP peers verify zero/rejected/changed-back scales and supplied history; cancelling after zero or rejection preserves completed receipts without qualifying later work; exhausted request reserve starts no HTTP work |
+| `native_adapter_scale_history_requires_reported_bounded_terminal_usage` | Model-free zero/history HTTP responses with missing, zero, excessive or inconsistent usage retain exact visible output and pending status for each explicit worker policy; valid earlier steps remain recorded |
 | `native_adapter_request_budget_drops_inflight_work_before_owned_cleanup` | Paused-time cancellation drops request-owned state before Stop and preserves the complete cleanup allowance; no request starts at or below the reserve and successful work retains the remaining budget |
 
 ### Foundation and routing

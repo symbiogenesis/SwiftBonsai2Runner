@@ -1385,12 +1385,24 @@ fn adapter_messages(profile: &AdapterProfile, supplied_history: bool) -> Value {
 
 fn adapter_summary(label: &str, scale: f64, cap: u32, summary: &StreamSummary) -> Value {
     assert!(["length", "stop"].contains(&summary.finish_reason.as_str()));
-    assert!(
-        summary
-            .completion_tokens
-            .is_none_or(|tokens| tokens <= u64::from(cap))
-    );
-    json!({"phase":label, "requestedScale":scale, "passed":summary.content_bytes > 0,
+    // Visible deltas cannot establish that the worker honored its token cap.
+    // Keep malformed/missing usage as a failed observation rather than panicking
+    // before the caller can save the response and complete owned teardown.
+    let pending_reason = if summary.content_bytes == 0 {
+        Some("stream-completed-without-visible-content")
+    } else {
+        match summary.completion_tokens {
+            None => Some("stream-completed-without-reported-token-usage"),
+            Some(0) => Some("visible-stream-reported-zero-completion-tokens"),
+            Some(tokens) if tokens > u64::from(cap) => Some("stream-reported-over-cap-token-usage"),
+            Some(tokens) if summary.finish_reason == "length" && tokens != u64::from(cap) => {
+                Some("length-termination-before-reported-token-cap")
+            }
+            Some(_) => None,
+        }
+    };
+    json!({"phase":label, "requestedScale":scale, "passed":pending_reason.is_none(),
+        "pendingReason":pending_reason,
         "requestedScaleF64Bits":format!("{:016x}", scale.to_bits()),
         "requestedCompletionCap":cap, "finishReason":summary.finish_reason,
         "visibleContentBytes":summary.content_bytes,
@@ -1546,11 +1558,11 @@ async fn required_adapter_scale_history(
                 report,
             )
             .await;
-            let visible = summary["passed"] == true;
+            let passed = summary["passed"] == true;
+            let pending_reason = summary["pendingReason"].clone();
             report["streams"].as_array_mut().unwrap().push(summary);
-            if !visible {
-                report["scaleHistoryWorkload"]["reason"] =
-                    json!("stream-completed-without-visible-content");
+            if !passed {
+                report["scaleHistoryWorkload"]["reason"] = pending_reason;
                 save_acceptance_report(evidence, report);
                 return false;
             }
@@ -1681,7 +1693,7 @@ async fn adapter_requests(
     report["streams"] = json!(streams);
     save_acceptance_report(evidence, report);
     if streams[0]["passed"] != true {
-        report["pendingReason"] = json!("initial-stream-completed-without-visible-content");
+        report["pendingReason"] = streams[0]["pendingReason"].clone();
         if profile.required_scale_history {
             report["scaleHistoryWorkload"]["reason"] = report["pendingReason"].clone();
         }
@@ -1709,7 +1721,7 @@ async fn adapter_requests(
         report["streams"] = json!(streams);
         save_acceptance_report(evidence, report);
         if streams.last().unwrap()["passed"] != true {
-            report["pendingReason"] = json!("optional-stream-completed-without-visible-content");
+            report["pendingReason"] = streams.last().unwrap()["pendingReason"].clone();
             save_acceptance_report(evidence, report);
             return false;
         }
@@ -1738,8 +1750,7 @@ async fn adapter_requests(
             report["sameOwnerAfterInvalidScalePassed"] = streams.last().unwrap()["passed"].clone();
             save_acceptance_report(evidence, report);
             if streams.last().unwrap()["passed"] != true {
-                report["pendingReason"] =
-                    json!("optional-stream-completed-without-visible-content");
+                report["pendingReason"] = streams.last().unwrap()["pendingReason"].clone();
                 save_acceptance_report(evidence, report);
                 return false;
             }
@@ -1791,8 +1802,8 @@ fn native_profile_selection_and_scale_receipts_preserve_bounded_scope() {
     assert_eq!(body["enable_thinking"], false);
     assert!(std::panic::catch_unwind(|| adapter_request(json!([]), f64::NAN, 4)).is_err());
     assert!(std::panic::catch_unwind(|| adapter_request(json!([]), 1.3, 4096)).is_err());
-    assert!(
-        std::panic::catch_unwind(|| adapter_summary(
+    assert_eq!(
+        adapter_summary(
             "synthetic",
             1.3,
             4,
@@ -1801,8 +1812,8 @@ fn native_profile_selection_and_scale_receipts_preserve_bounded_scope() {
                 content_bytes: 5,
                 completion_tokens: Some(5),
             }
-        ))
-        .is_err()
+        )["passed"],
+        false
     );
 }
 
@@ -1863,6 +1874,7 @@ async fn adapter_scale_history_fixture(
     listener: tokio::net::TcpListener,
     completed_steps: usize,
     reached: oneshot::Sender<()>,
+    final_usage: Option<Value>,
 ) {
     for step in 0..completed_steps {
         let (peer, _) = listener.accept().await.unwrap();
@@ -1903,11 +1915,20 @@ async fn adapter_scale_history_fixture(
             // Match the production ChatSchema transport disposition.
             String::new()
         } else {
-            let payload = concat!(
-                "data: {\"choices\":[{\"delta\":{\"content\":\"cedar\"},\"finish_reason\":null}]}\n\n",
-                "data: {\"choices\":[{\"delta\":{},\"finish_reason\":\"length\"}],\"usage\":{\"completion_tokens\":CAP}}\n\n",
-                "data: [DONE]\n\n"
-            ).replace("CAP", &cap.to_string());
+            let mut terminal = json!({"choices":[{"delta":{},"finish_reason":"length"}],
+                "usage":{"completion_tokens":cap}});
+            if step + 1 == completed_steps
+                && let Some(usage) = &final_usage
+            {
+                if usage.is_null() {
+                    terminal.as_object_mut().unwrap().remove("usage");
+                } else {
+                    terminal["usage"]["completion_tokens"] = usage.clone();
+                }
+            }
+            let payload = format!(
+                "data: {{\"choices\":[{{\"delta\":{{\"content\":\"cedar\"}},\"finish_reason\":null}}]}}\n\ndata: {terminal}\n\ndata: [DONE]\n\n"
+            );
             format!(
                 "HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nTransfer-Encoding: chunked\r\n\r\n{:X}\r\n{payload}\r\n0\r\n\r\n",
                 payload.len()
@@ -1916,7 +1937,7 @@ async fn adapter_scale_history_fixture(
         peer.get_mut().write_all(response.as_bytes()).await.unwrap();
         peer.get_mut().shutdown().await.unwrap();
     }
-    if completed_steps < 3 {
+    if completed_steps < 3 && final_usage.is_none() {
         let (_peer, _) = listener.accept().await.unwrap();
         reached.send(()).unwrap();
         pending::<()>().await;
@@ -2039,7 +2060,7 @@ fn native_adapter_empty_initial_response_keeps_history_pending() {
             assert_eq!(saved["streams"][0]["visibleContent"], "");
             assert_eq!(saved["streams"][0]["visibleContentSha256"], adapter_digest(b""));
             assert_eq!(saved["streams"][0]["reportedCompletionTokens"], 1);
-            assert_eq!(saved["pendingReason"], "initial-stream-completed-without-visible-content");
+            assert_eq!(saved["pendingReason"], "stream-completed-without-visible-content");
             assert_eq!(saved["scaleHistoryWorkload"]["status"], "pending");
             assert_eq!(saved["scaleHistoryWorkload"]["suppliedAssistantHistoryIsCapturedModelOutput"], false);
             assert_eq!(saved["allRequestedWorkloadsPassed"], false);
@@ -2201,6 +2222,7 @@ fn native_adapter_scale_history_retains_partial_steps_without_qualifying_missing
                     listener,
                     completed_steps,
                     reached,
+                    None,
                 ));
                 let mut report = json!({"passed":false, "allRequestedWorkloadsPassed":false,
                     "streams":[adapter_initial_fixture(profile)],
@@ -2262,6 +2284,96 @@ fn native_adapter_scale_history_retains_partial_steps_without_qualifying_missing
                 }
                 fs::remove_file(evidence.join("acceptance.json")).unwrap();
                 fs::remove_dir(evidence).unwrap();
+            }
+        })
+        .await
+        .unwrap();
+    });
+}
+
+#[test]
+fn native_adapter_scale_history_requires_reported_bounded_terminal_usage() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    runtime.block_on(async {
+        timeout(Duration::from_secs(10), async {
+            for profile in [
+                &PTQ1_ADAPTER_LIFECYCLE_PROFILE,
+                &PTQ1_ADAPTER_LIFECYCLE_ROW4_PROFILE,
+                &PQ2_ADAPTER_LIFECYCLE_PROFILE,
+            ] {
+                for completed_steps in [1, 3] {
+                    let cap =
+                        adapter_completion_caps(profile)[if completed_steps == 1 { 1 } else { 2 }];
+                    let mut cases = vec![
+                        (Value::Null, "stream-completed-without-reported-token-usage"),
+                        (json!(0), "visible-stream-reported-zero-completion-tokens"),
+                        (json!(cap + 1), "stream-reported-over-cap-token-usage"),
+                    ];
+                    if cap > 1 {
+                        cases.push((
+                            json!(cap - 1),
+                            "length-termination-before-reported-token-cap",
+                        ));
+                    }
+                    for (usage, reason) in cases {
+                        let evidence = env::temp_dir().join(format!(
+                            "Bonsai-Adapter-Usage-{}-{}",
+                            std::process::id(),
+                            std::time::SystemTime::now()
+                                .duration_since(std::time::UNIX_EPOCH)
+                                .unwrap()
+                                .as_nanos()
+                        ));
+                        fs::create_dir(&evidence).unwrap();
+                        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+                        let port = listener.local_addr().unwrap().port();
+                        let (reached, _waiting) = oneshot::channel();
+                        let fixture = tokio::spawn(adapter_scale_history_fixture(
+                            profile,
+                            listener,
+                            completed_steps,
+                            reached,
+                            Some(usage.clone()),
+                        ));
+                        let mut report = json!({"passed":false, "allRequestedWorkloadsPassed":false,
+                            "streams":[adapter_initial_fixture(profile)],
+                            "scaleHistoryWorkload":pending_adapter_scale_history()});
+                        assert!(
+                            !required_adapter_scale_history(
+                                profile,
+                                port,
+                                "model-free-fixture",
+                                &evidence,
+                                tokio::time::Instant::now() + CASE_BUDGET,
+                                &mut report,
+                            )
+                            .await
+                        );
+                        fixture.await.unwrap();
+                        let saved: Value = serde_json::from_slice(
+                            &fs::read(evidence.join("acceptance.json")).unwrap(),
+                        )
+                        .unwrap();
+                        let observed = &saved["scaleHistoryWorkload"];
+                        assert_eq!(observed["status"], "pending");
+                        assert_eq!(observed["reason"], reason);
+                        assert_eq!(observed["scaleZeroPassed"], completed_steps == 3);
+                        assert_eq!(observed["invalidScaleRejected"], completed_steps == 3);
+                        assert_eq!(observed["changeBackHistoryPassed"], false);
+                        let stream = saved["streams"].as_array().unwrap().last().unwrap();
+                        assert_eq!(stream["passed"], false);
+                        assert_eq!(stream["pendingReason"], reason);
+                        assert_eq!(stream["visibleContent"], "cedar");
+                        assert_eq!(stream["reportedCompletionTokens"], usage);
+                        assert_eq!(saved["passed"], false);
+                        assert_eq!(saved["allRequestedWorkloadsPassed"], false);
+                        fs::remove_file(evidence.join("acceptance.json")).unwrap();
+                        fs::remove_dir(evidence).unwrap();
+                    }
+                }
             }
         })
         .await
