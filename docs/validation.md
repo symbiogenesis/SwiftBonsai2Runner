@@ -73,11 +73,17 @@ completed observations with `passed: false`. This does not establish complete-st
 parity, adapter authoring basis, performance, output quality or default promotion.
 
 Explicit `profile: ptq1-adapter-lifecycle` requires the current pinned Rust
-service, exact current-weight PTQ1 and approved adapter with one row worker
-through the mandatory scale/history sequence below. It has the same three
-short streams, invalid-scale connection-close check, public assistant fixture,
-request deadlines, cleanup reserve and partial-evidence rules as
-`pq2-adapter-lifecycle-row4`. Its receipt binds the actual PTQ1 filename, byte
+service, exact current-weight PTQ1 and approved adapter with one row worker.
+It requires three one-token-cap streams: scale 1.3, scale zero, then scale 1.3
+with supplied user/assistant/user history after the invalid-scale connection-close
+check. Each message is the fixed public word `Hi`; the assistant history remains
+supplied text rather than captured model output. The earlier four/two/two-token
+trial reached verified readiness but exhausted its first request. This smaller
+workload preserves every required scale, rejection and history transition while
+reducing prompt and generation work; execution within the budget remains pending.
+It preserves the request deadlines, cleanup reserve and partial-evidence rules of
+`pq2-adapter-lifecycle-row4`, whose prompts and caps are unchanged. Its receipt
+binds the exact messages and completion caps, actual PTQ1 filename, byte
 count and digest plus the complete export receipt; it cannot inherit PQ2 or
 historical-release acceptance. Optional history/stalled-consumer dispatch inputs
 are rejected. Missing, skipped or cancelled required steps keep `passed: false`

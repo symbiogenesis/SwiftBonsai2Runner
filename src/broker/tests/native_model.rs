@@ -1256,11 +1256,43 @@ async fn start_adapter(profile: &AdapterProfile, data: &Path, evidence: &Path) -
 
 fn adapter_request(messages: Value, scale: f64, limit: u32) -> Value {
     assert!(scale.is_finite() && (0.0..=2.0).contains(&scale));
-    assert!([2, 4].contains(&limit));
+    assert!([1, 2, 4].contains(&limit));
     let mut body = request(messages, true, limit);
     body["enable_thinking"] = json!(false);
     body["abliteration_scale"] = json!(scale);
     body
+}
+
+fn adapter_completion_caps(profile: &AdapterProfile) -> [u32; 3] {
+    if profile.repacked && profile.required_scale_history {
+        // The current-release PTQ1 trial exhausted its first four-token request.
+        // Keep every required lifecycle transition with less generation work.
+        [1, 1, 1]
+    } else {
+        [4, 2, 2]
+    }
+}
+
+fn adapter_messages(profile: &AdapterProfile, supplied_history: bool) -> Value {
+    if profile.repacked && profile.required_scale_history {
+        if supplied_history {
+            json!([
+                {"role":"user","content":"Hi"},
+                {"role":"assistant","content":"Hi"},
+                {"role":"user","content":"Hi"}
+            ])
+        } else {
+            json!([{"role":"user","content":"Hi"}])
+        }
+    } else if supplied_history {
+        json!([
+            {"role":"user","content":"Name a tree."},
+            {"role":"assistant","content":"Oak."},
+            {"role":"user","content":"Name another tree."}
+        ])
+    } else {
+        json!([{"role":"user","content":"Name a tree."}])
+    }
 }
 
 fn adapter_summary(label: &str, scale: f64, cap: u32, summary: &StreamSummary) -> Value {
@@ -1286,8 +1318,15 @@ fn save_acceptance_report(evidence: &Path, report: &Value) {
     .unwrap();
 }
 
-async fn adapter_stream(port: u16, credential: &str, scale: f64, label: &str, cap: u32) -> Value {
-    let messages = json!([{"role":"user","content":"Name a tree."}]);
+async fn adapter_stream(
+    profile: &AdapterProfile,
+    port: u16,
+    credential: &str,
+    scale: f64,
+    label: &str,
+    cap: u32,
+) -> Value {
+    let messages = adapter_messages(profile, false);
     adapter_summary(
         label,
         scale,
@@ -1316,12 +1355,14 @@ async fn adapter_owned_stop(
 }
 
 async fn required_adapter_scale_history(
+    profile: &AdapterProfile,
     port: u16,
     credential: &str,
     evidence: &Path,
     deadline: tokio::time::Instant,
     report: &mut Value,
 ) -> bool {
+    let [_, zero_cap, history_cap] = adapter_completion_caps(profile);
     // Persist each completed observation before admitting another request.
     // A later budget expiry must not erase a successful zero or rejection step.
     for phase in [
@@ -1339,8 +1380,7 @@ async fn required_adapter_scale_history(
         }
         save_acceptance_report(evidence, report);
         if phase == "invalid-scale" {
-            let mut body =
-                adapter_request(json!([{"role":"user","content":"Name a tree."}]), 1.3, 2);
+            let mut body = adapter_request(adapter_messages(profile, false), 1.3, zero_cap);
             body["abliteration_scale"] = json!(2.000_000_01);
             // Generic schema failures close the authenticated connection;
             // framed HTTP 400 is reserved for model-control token rejection.
@@ -1350,24 +1390,17 @@ async fn required_adapter_scale_history(
                 json!("connection-closed-without-response");
             report["invalidScaleRejected"] = json!(true);
         } else {
-            let (scale, messages) = if phase == "scale-zero" {
-                (0.0, json!([{"role":"user","content":"Name a tree."}]))
+            let (scale, messages, cap) = if phase == "scale-zero" {
+                (0.0, adapter_messages(profile, false), zero_cap)
             } else {
-                (
-                    1.3,
-                    json!([
-                        {"role":"user","content":"Name a tree."},
-                        {"role":"assistant","content":"Oak."},
-                        {"role":"user","content":"Name another tree."}
-                    ]),
-                )
+                (1.3, adapter_messages(profile, true), history_cap)
             };
             let summary = adapter_summary(
                 phase,
                 scale,
-                2,
+                cap,
                 &streamed_response(
-                    &exchange(port, credential, &adapter_request(messages, scale, 2)).await,
+                    &exchange(port, credential, &adapter_request(messages, scale, cap)).await,
                 ),
             );
             report["streams"].as_array_mut().unwrap().push(summary);
@@ -1463,8 +1496,18 @@ async fn adapter_requests(
     deadline: tokio::time::Instant,
     report: &mut Value,
 ) -> bool {
-    let mut streams =
-        vec![adapter_stream(port, credential, 1.3, "required-scale-1.3-stream", 4).await];
+    let first_cap = adapter_completion_caps(profile)[0];
+    let mut streams = vec![
+        adapter_stream(
+            profile,
+            port,
+            credential,
+            1.3,
+            "required-scale-1.3-stream",
+            first_cap,
+        )
+        .await,
+    ];
     report["streams"] = json!(streams);
     save_acceptance_report(evidence, report);
     // Optional requests share this one aggregate budget; no matrix or restart
@@ -1474,7 +1517,8 @@ async fn adapter_requests(
     {
         report["phase"] = json!("optional-scale-zero");
         save_acceptance_report(evidence, report);
-        streams.push(adapter_stream(port, credential, 0.0, "optional-scale-zero", 2).await);
+        streams
+            .push(adapter_stream(profile, port, credential, 0.0, "optional-scale-zero", 2).await);
         report["streams"] = json!(streams);
         save_acceptance_report(evidence, report);
         if deadline.saturating_duration_since(tokio::time::Instant::now()) > OPTIONAL_RESERVE {
@@ -1488,7 +1532,15 @@ async fn adapter_requests(
             report["invalidScaleDisposition"] = json!("connection-closed-without-response");
             save_acceptance_report(evidence, report);
             streams.push(
-                adapter_stream(port, credential, 1.3, "same-owner-after-invalid-scale", 2).await,
+                adapter_stream(
+                    profile,
+                    port,
+                    credential,
+                    1.3,
+                    "same-owner-after-invalid-scale",
+                    2,
+                )
+                .await,
             );
             report["streams"] = json!(streams);
             report["sameOwnerAfterInvalidScalePassed"] = json!(true);
@@ -1498,7 +1550,7 @@ async fn adapter_requests(
     if profile.required_scale_history {
         report["phase"] = json!("required-scale-history-lifecycle");
         save_acceptance_report(evidence, report);
-        required_adapter_scale_history(port, credential, evidence, deadline, report).await
+        required_adapter_scale_history(profile, port, credential, evidence, deadline, report).await
     } else {
         true
     }
@@ -1609,6 +1661,7 @@ fn native_row4_profile_is_explicit_original_pq2_and_one_stream_only() {
 }
 
 async fn adapter_scale_history_fixture(
+    profile: &'static AdapterProfile,
     listener: tokio::net::TcpListener,
     completed_steps: usize,
     reached: oneshot::Sender<()>,
@@ -1629,7 +1682,8 @@ async fn adapter_scale_history_fixture(
         let mut body = vec![0; length.unwrap()];
         peer.read_exact(&mut body).await.unwrap();
         let body: Value = serde_json::from_slice(&body).unwrap();
-        assert_eq!(body["max_completion_tokens"], 2);
+        let cap = adapter_completion_caps(profile)[if step == 2 { 2 } else { 1 }];
+        assert_eq!(body["max_completion_tokens"], cap);
         assert_eq!(body["enable_thinking"], false);
         assert_eq!(body["stream"], true);
         let expected_scale: f64 = [0.0, 2.000_000_01, 1.3][step];
@@ -1637,24 +1691,16 @@ async fn adapter_scale_history_fixture(
             body["abliteration_scale"].as_f64().unwrap().to_bits(),
             expected_scale.to_bits()
         );
-        if step == 2 {
-            assert_eq!(body["messages"].as_array().unwrap().len(), 3);
-            assert_eq!(
-                body["messages"][1],
-                json!({"role":"assistant", "content":"Oak."})
-            );
-        } else {
-            assert_eq!(body["messages"].as_array().unwrap().len(), 1);
-        }
+        assert_eq!(body["messages"], adapter_messages(profile, step == 2));
         let response = if step == 1 {
             // Match the production ChatSchema transport disposition.
             String::new()
         } else {
             let payload = concat!(
                 "data: {\"choices\":[{\"delta\":{\"content\":\"cedar\"},\"finish_reason\":null}]}\n\n",
-                "data: {\"choices\":[{\"delta\":{},\"finish_reason\":\"length\"}],\"usage\":{\"completion_tokens\":2}}\n\n",
+                "data: {\"choices\":[{\"delta\":{},\"finish_reason\":\"length\"}],\"usage\":{\"completion_tokens\":CAP}}\n\n",
                 "data: [DONE]\n\n"
-            );
+            ).replace("CAP", &cap.to_string());
             format!(
                 "HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nTransfer-Encoding: chunked\r\n\r\n{:X}\r\n{payload}\r\n0\r\n\r\n",
                 payload.len()
@@ -1678,7 +1724,13 @@ fn native_adapter_scale_history_retains_partial_steps_without_qualifying_missing
         .unwrap();
     runtime.block_on(async {
         timeout(Duration::from_secs(10), async {
-            for completed_steps in 0..=3 {
+            for (profile, completed_steps) in [
+                &PTQ1_ADAPTER_LIFECYCLE_PROFILE,
+                &PQ2_ADAPTER_LIFECYCLE_PROFILE,
+            ]
+            .into_iter()
+            .flat_map(|profile| (0..=3).map(move |step| (profile, step)))
+            {
                 let evidence = env::temp_dir().join(format!(
                     "Bonsai-Adapter-Progress-{}-{}-{completed_steps}",
                     std::process::id(),
@@ -1692,6 +1744,7 @@ fn native_adapter_scale_history_retains_partial_steps_without_qualifying_missing
                 let port = listener.local_addr().unwrap().port();
                 let (reached, waiting) = oneshot::channel();
                 let fixture = tokio::spawn(adapter_scale_history_fixture(
+                    profile,
                     listener,
                     completed_steps,
                     reached,
@@ -1705,6 +1758,7 @@ fn native_adapter_scale_history_retains_partial_steps_without_qualifying_missing
                         CASE_BUDGET
                     };
                 let mut running = Box::pin(required_adapter_scale_history(
+                    profile,
                     port,
                     "model-free-fixture",
                     &evidence,
@@ -1811,6 +1865,41 @@ fn native_adapter_scale_history_profile_requires_separate_explicit_selection() {
             .unwrap()
             .required_scale_history
     );
+}
+
+#[test]
+fn native_ptq1_lifecycle_minimizes_tokens_without_changing_required_steps() {
+    let ptq1 = &PTQ1_ADAPTER_LIFECYCLE_PROFILE;
+    assert_eq!(adapter_completion_caps(ptq1), [1, 1, 1]);
+    assert_eq!(
+        adapter_messages(ptq1, false),
+        json!([{"role":"user","content":"Hi"}])
+    );
+    let history = adapter_messages(ptq1, true);
+    assert_eq!(history.as_array().unwrap().len(), 3);
+    for (index, role) in ["user", "assistant", "user"].into_iter().enumerate() {
+        assert_eq!(history[index], json!({"role":role, "content":"Hi"}));
+    }
+    assert!(ptq1.required_scale_history && !ptq1.optional_requests);
+    assert_eq!(ptq1.row_workers, 1);
+    for profile in [
+        &PTQ1_ADAPTER_PROFILE,
+        &PQ2_ADAPTER_ROW4_PROFILE,
+        &PQ2_ADAPTER_LIFECYCLE_PROFILE,
+    ] {
+        assert_eq!(adapter_completion_caps(profile), [4, 2, 2]);
+        assert_eq!(
+            adapter_messages(profile, false)[0]["content"],
+            "Name a tree."
+        );
+        assert_eq!(adapter_messages(profile, true)[1]["content"], "Oak.");
+    }
+    let body = adapter_request(adapter_messages(ptq1, false), 1.3, 1);
+    assert_eq!(body["max_completion_tokens"], 1);
+    assert_eq!(body["abliteration_scale"], 1.3);
+    assert_eq!(body["enable_thinking"], false);
+    assert_eq!(body["stream"], true);
+    assert!(std::panic::catch_unwind(|| adapter_request(json!([]), 1.3, 0)).is_err());
 }
 
 #[test]
@@ -2026,7 +2115,9 @@ fn adapter_scale_history_acceptance(profile: &AdapterProfile) {
         "aggregateModelCaseBudgetSeconds":budget.as_secs(), "maximumModelCaseBudgetSeconds":CASE_BUDGET.as_secs(),
         "wholeJobMaximumSeconds":300, "configuredNativeRowWorkers":profile.row_workers,
         "rowWorkerCountIndependentlyObserved":false, "requiredStreams":3,
-        "requestedAdapterScales":[1.3,0.0,1.3], "requestedCompletionCaps":[4,2,2],
+        "requestedAdapterScales":[1.3,0.0,1.3], "requestedCompletionCaps":adapter_completion_caps(profile),
+        "initialMessages":adapter_messages(profile, false),
+        "suppliedHistoryMessages":adapter_messages(profile, true),
         "weightRepresentation":representation,
         "runtimeLock":serde_json::from_str::<Value>(include_str!("../../../config/prism-inference.lock.json")).unwrap(),
         "modelIdentity":serde_json::from_str::<Value>(include_str!("../../../config/swift-assessment.lock.json")).unwrap()["model"],
