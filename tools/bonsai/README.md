@@ -31,6 +31,16 @@ local directory. The command creates fresh protected files and returns paths onl
 Speech provisioning/build requests go directly to `speech-build`; their former
 PowerShell wrappers have been removed. Planning never starts inference.
 
+`publisher-startup` consumes a request with `candidateDirectory`, a fresh external
+`outputDirectory`, and `workBudgetSeconds` (45–180, default 90). It pins the archived
+hosted publisher package, runs ten fixed model-free probes on X2, and retains atomic
+schema-2 startup receipts. Optional paired `modelSmoke: true` and `dataDirectory`
+select one four-token original-PQ2 smoke with the unchanged CPU resource policy.
+Supply both caller identity fields to tie work to an external caller. The command
+builds/downloads nothing; setup, verification, workers and teardown share the one
+allowance. A successful smoke does not qualify numerics, adapters or performance.
+See the [candidate examples](../../docs/runtime-candidates/README.md).
+
 These wrappers require `bonsai-tools` version 0.1.0, protocol 5. The version
 handshake advertises supported commands, so a selected binary must support the
 requested operation before its request is written. Runtime guards remain held

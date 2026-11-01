@@ -44,6 +44,7 @@ fn version_advertises_policy_commands_without_resolving_a_request_file()
         "host-gpu",
         "host-opencl",
         "cpu-evaluation",
+        "publisher-startup",
         "runtime-stage",
         "runtime-verify",
         "runtime-promotion",

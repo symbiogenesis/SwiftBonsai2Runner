@@ -40,6 +40,7 @@ pub const COMMANDS: &[&str] = &[
     "native-acceptance-budget",
     "startup-diagnostics",
     "hexagon-policy",
+    "publisher-startup",
 ];
 
 /// Returns the native maintenance protocol capabilities without reading a request.
@@ -138,6 +139,9 @@ pub mod startup_diagnostics;
 
 /// Offline Hexagon plans, source bindings and native evidence validation.
 pub mod hexagon_policy;
+
+/// Fixed archived publisher startup probes and bounded original-PQ2 smoke.
+pub mod publisher_startup;
 
 /// Retained caller identity for cancellation of native startup work.
 pub mod startup_cancel;

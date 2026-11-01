@@ -50,7 +50,6 @@
         "tests/Test-NativePtq1CaptureTools.ps1",
         ".github/workflows/ptq1-packing-qualification.yml",
         "tools/native-reference/**", ".github/workflows/native-ptq1-numerics.yml",
-        "scripts/Invoke-HeadlessPublisherStartup.ps1", "tests/Test-HeadlessPublisherStartup.ps1",
         "docs/evidence/headless-publisher-startup.json", "docs/runtime-candidates/headless-ucrt-argv.json",
         "tests/Test-ToolBootstrap.ps1", "tests/*Support*", "tests/fixtures/**",
         "config/prism-inference.lock.json", "config/model.metadata.json"

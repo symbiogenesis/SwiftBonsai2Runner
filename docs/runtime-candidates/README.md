@@ -250,9 +250,9 @@ review are retained in the digest-verified owner qualification archive. Model lo
 numerical/state/adapter qualification, release integration and production pin updates
 remain pending.
 
-[Invoke-HeadlessPublisherStartup.ps1](../../scripts/Invoke-HeadlessPublisherStartup.ps1)
+The Rust [`publisher-startup` command](../../tools/bonsai/README.md)
 checks an already extracted copy of that exact hosted candidate using a prebuilt
-maintenance tool. It accepts only the checked-in hosted package identities, rejects
+maintenance tool. Its compiled frozen receipt pins the archived hosted package identities, rejects
 extra/missing or redirected bundle entries, and supplies every pinned file to native
 verification with handles retained through worker teardown. It runs the same ten fixed
 version/help/argument probes through the ordinary required headless supervisor, without
@@ -260,10 +260,11 @@ model artifacts or runtime overrides. The owner X2 identity, supervisor digest, 
 hosted artifact, exact probes and bounded supervision receipts are retained separately.
 
 ```powershell
-./scripts/Invoke-HeadlessPublisherStartup.ps1 `
-  -CandidateDirectory 'C:/external/archived-candidate/candidate' `
-  -ToolPath 'C:/external/prebuilt/bonsai-tools.exe' `
-  -OutputDirectory 'C:/external/fresh-startup-evidence' -WorkBudgetSeconds 60
+$request = 'C:/external/startup-request.json'
+@{ candidateDirectory='C:/external/archived-candidate/candidate'
+   outputDirectory='C:/external/fresh-startup-evidence'; workBudgetSeconds=60 } |
+    ConvertTo-Json | Set-Content -LiteralPath $request -Encoding utf8NoBOM
+& 'C:/external/prebuilt/bonsai-tools.exe' publisher-startup --request $request
 ```
 
 The aggregate allowance includes setup, file verification, probes and owned teardown,
@@ -278,7 +279,7 @@ and the settled-main thread screen remain separate gates.
 
 ### Explicit X2 candidate model smoke
 
-The same script accepts `-ModelSmoke -DataDirectory C:/external/provisioned-data`
+The same command accepts `modelSmoke: true` with `dataDirectory`
 to replace the ten model-free probes with one original-PQ2 completion. This
 requires the exact reviewed hosted bundle and a prebuilt supervisor; it downloads
 and builds nothing. It retains the compiled Swift CPU control, 8K context,
@@ -287,11 +288,12 @@ Only the output cap (four tokens), a request to disable thinking and diagnostic 
 collection differ from that control. No adapter or alternative model is accepted.
 
 ```powershell
-./scripts/Invoke-HeadlessPublisherStartup.ps1 `
-  -CandidateDirectory 'C:/external/archived-candidate/candidate' `
-  -ToolPath 'C:/external/prebuilt/bonsai-tools.exe' `
-  -OutputDirectory 'C:/external/fresh-model-smoke' `
-  -ModelSmoke -DataDirectory 'C:/external/provisioned-data' -WorkBudgetSeconds 90
+$request = 'C:/external/model-smoke-request.json'
+@{ candidateDirectory='C:/external/archived-candidate/candidate'
+   outputDirectory='C:/external/fresh-model-smoke'; workBudgetSeconds=90
+   modelSmoke=$true; dataDirectory='C:/external/provisioned-data' } |
+    ConvertTo-Json | Set-Content -LiteralPath $request -Encoding utf8NoBOM
+& 'C:/external/prebuilt/bonsai-tools.exe' publisher-startup --request $request
 ```
 
 The allowance includes verification of every candidate file and the 7.2 GB model,

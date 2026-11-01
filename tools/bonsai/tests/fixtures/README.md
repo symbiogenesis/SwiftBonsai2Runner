@@ -9,3 +9,9 @@ The `hexagon-*-v1.json` records preserve the independent synthetic constants fro
 the former PowerShell session, dispatch and compute policy regressions. They are
 not device captures and grant no qualification. Rust tests mutate their types,
 source identities and completed/partial lifecycle relationships.
+
+`publisher-startup-v1.json` freezes the independently retained hosted candidate
+receipt from `docs/evidence/headless-publisher-startup.json`. It pins the exact
+archived package and ten Unicode/quoting/version probes; it does not qualify
+model inference or performance. Native startup compiles this fixed identity and
+tests its policy against the archived probe vectors.

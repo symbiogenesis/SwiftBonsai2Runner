@@ -278,11 +278,6 @@ jobs:
           foreach ($case in @('HostedGuard', 'BuildEvidence')) {
             ./tests/Test-NativePtq1CaptureTools.ps1 -Case $case
           }
-      - name: Exact headless candidate owner-startup planning
-        if: matrix.lane == 'foundation'
-        shell: pwsh
-        working-directory: ${{ runner.temp }}
-        run: '& (Join-Path $env:GITHUB_WORKSPACE "tests/Test-HeadlessPublisherStartup.ps1")'
       - name: Hexagon packed-layout and bounded inventory controls without devices
         if: matrix.lane == 'foundation'
         shell: pwsh
