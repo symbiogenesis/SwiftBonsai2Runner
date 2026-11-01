@@ -14,6 +14,23 @@ $repo = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $expectedPath = Join-Path $repo 'config/swift.ptq1-export.json'
 $expected = Get-Content -LiteralPath $expectedPath -Raw | ConvertFrom-Json -AsHashtable -DateKind String
 $digest = (Get-FileHash -LiteralPath $expectedPath -Algorithm SHA256).Hash.ToLowerInvariant()
+# Match the complete CLI receipt shape, rather than passing the curated pin as
+# an exporter result. At pinned Prism 749a5f5, tools/gguf/src/export.rs emits
+# schema/codec/extents/inventory and tools/gguf/src/lib.rs adds verified
+# SourceSha256, inspected TokenizerMetadataSha256 and OutputPath. Runner's
+# Export-SwiftPtq1.ps1 then adds SourceRevision. The curated pin's filename,
+# repository, saving and model-execution annotations are not exporter fields.
+$export = [ordered]@{
+    SchemaVersion = 1; CodecCommit = $expected.CodecCommit
+    SourceBytes = $expected.SourceBytes; OutputBytes = $expected.OutputBytes; OutputSha256 = $expected.OutputSha256
+    ConvertedTensorCount = $expected.ConvertedTensorCount; ConvertedBlocks = $expected.ConvertedBlocks
+    ExactPq2ReconstructionVerified = $true; NonPq2TensorBytesCopiedVerbatim = $true
+    MetadataChanges = $expected.MetadataChanges; WorkingBufferBytes = $expected.WorkingBufferBytes
+    Qualification = $expected.Qualification; SourceSha256 = $expected.SourceSha256
+    TokenizerMetadataSha256 = $expected.TokenizerMetadataSha256
+    OutputPath = Join-Path ([IO.Path]::GetTempPath()) $expected.OutputFilename
+    SourceRevision = $expected.SourceRevision
+}
 $packing = [ordered]@{
     schemaVersion = 1; kind = 'independent-current-weight-ptq1-packing'; status = 'matched'
     sourceBytes = $expected.SourceBytes; sourceSha256 = $expected.SourceSha256
@@ -22,18 +39,18 @@ $packing = [ordered]@{
     exportReceiptSha256 = $digest; headerBytesPreservedExceptDeclaredEdits = $true
     unchangedOtherTensorBytes = 57767936; workingPayloadBufferBytes = 131072
 }
-Assert-Ptq1PackingResult -Expected $expected -Export $expected -Packing $packing -ExportReceiptSha256 $digest
+Assert-Ptq1PackingResult -Expected $expected -Export $export -Packing $packing -ExportReceiptSha256 $digest
 foreach ($name in @($packing.Keys)) {
     $changed = $packing | ConvertTo-Json | ConvertFrom-Json -AsHashtable -DateKind String
     $changed[$name] = 'unbound'
-    Assert-Failure { Assert-Ptq1PackingResult -Expected $expected -Export $expected -Packing $changed -ExportReceiptSha256 $digest } "Changed independent packing field was accepted: $name."
+    Assert-Failure { Assert-Ptq1PackingResult -Expected $expected -Export $export -Packing $changed -ExportReceiptSha256 $digest } "Changed independent packing field was accepted: $name."
     [void]$changed.Remove($name)
-    Assert-Failure { Assert-Ptq1PackingResult -Expected $expected -Export $expected -Packing $changed -ExportReceiptSha256 $digest } "Missing independent packing field was accepted: $name."
+    Assert-Failure { Assert-Ptq1PackingResult -Expected $expected -Export $export -Packing $changed -ExportReceiptSha256 $digest } "Missing independent packing field was accepted: $name."
 }
 foreach ($name in @('SchemaVersion', 'CodecCommit', 'SourceBytes', 'OutputBytes', 'SourceSha256', 'OutputSha256',
     'SourceRevision', 'ConvertedTensorCount', 'ConvertedBlocks', 'ExactPq2ReconstructionVerified',
     'NonPq2TensorBytesCopiedVerbatim', 'TokenizerMetadataSha256')) {
-    $changed = $expected | ConvertTo-Json | ConvertFrom-Json -AsHashtable -DateKind String
+    $changed = $export | ConvertTo-Json | ConvertFrom-Json -AsHashtable -DateKind String
     $changed[$name] = 'unbound'
     Assert-Failure { Assert-Ptq1PackingResult -Expected $expected -Export $changed -Packing $packing -ExportReceiptSha256 $digest } "Changed export field was accepted: $name."
     [void]$changed.Remove($name)
@@ -41,8 +58,8 @@ foreach ($name in @('SchemaVersion', 'CodecCommit', 'SourceBytes', 'OutputBytes'
 }
 $falseBoolean = $packing | ConvertTo-Json | ConvertFrom-Json -AsHashtable -DateKind String
 $falseBoolean.headerBytesPreservedExceptDeclaredEdits = 'true'
-Assert-Failure { Assert-Ptq1PackingResult -Expected $expected -Export $expected -Packing $falseBoolean -ExportReceiptSha256 $digest } 'String-valued success bypassed independent packing checks.'
-Assert-Failure { Assert-Ptq1PackingResult -Expected $expected -Export $expected -Packing $packing -ExportReceiptSha256 'missing' }
+Assert-Failure { Assert-Ptq1PackingResult -Expected $expected -Export $export -Packing $falseBoolean -ExportReceiptSha256 $digest } 'String-valued success bypassed independent packing checks.'
+Assert-Failure { Assert-Ptq1PackingResult -Expected $expected -Export $export -Packing $packing -ExportReceiptSha256 'missing' }
 
 $baseline = [ordered]@{
     GITHUB_ACTIONS = 'true'; RUNNER_ENVIRONMENT = 'github-hosted'; GITHUB_REPOSITORY = 'symbiogenesis/SwiftBonsai2Runner'
