@@ -234,6 +234,7 @@ $lockPath = Join-Path $PWD 'config/swift-assessment.lock.json'
 $lock = Get-Content -Raw -LiteralPath $lockPath | ConvertFrom-Json -DateKind String
 ./scripts/Get-Model.ps1 -DataDirectory $data -LockPath $lockPath
 ./scripts/Get-Engine.ps1 -DataDirectory $data -LockPath $lockPath
+./scripts/Get-Inference.ps1 -DataDirectory $data
 $model = Join-Path $data -ChildPath 'models', $lock.model.revision, $lock.model.filename
 $request = Join-Path $data 'swift-census-request.json'
 @{ operation = 'inspect'; modelPath = $model; expectedBytes = $lock.model.bytes; expectedSha256 = $lock.model.sha256;
