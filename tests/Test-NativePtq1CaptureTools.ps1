@@ -52,11 +52,12 @@ if ($Case -ceq 'CapturePolicy') {
         }, $true)
         Assert ($null -ne $function) 'The original-deadline allowance check was not found.'
         . ([scriptblock]::Create($function.Extent.Text))
-        $WorkBudgetSeconds = 240
-        $WorkDeadlineTick = [Diagnostics.Stopwatch]::GetTimestamp() - 1
+        # Supply the extracted production helper's dynamic-scope inputs explicitly.
+        Set-Variable -Name WorkBudgetSeconds -Value 240 -Scope Local
+        Set-Variable -Name WorkDeadlineTick -Value ([Diagnostics.Stopwatch]::GetTimestamp() - 1) -Scope Local
         $clock = [Diagnostics.Stopwatch]::StartNew()
         Assert-Failure { Get-Ptq1WorkAllowance $clock }
-        $WorkDeadlineTick = [Diagnostics.Stopwatch]::GetTimestamp() + (10 * [Diagnostics.Stopwatch]::Frequency)
+        Set-Variable -Name WorkDeadlineTick -Value ([Diagnostics.Stopwatch]::GetTimestamp() + (10 * [Diagnostics.Stopwatch]::Frequency)) -Scope Local
         $remaining = Get-Ptq1WorkAllowance $clock
         Assert ($remaining -ge 1 -and $remaining -le 10) 'Child startup reset the original work deadline.'
     } finally {
