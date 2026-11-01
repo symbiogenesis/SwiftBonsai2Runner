@@ -120,9 +120,9 @@ pub(super) fn inventory(path: Option<&Path>) -> Result<Value> {
         let host =
             bonsai_windows_process::native_build_host().map_err(|error| error.to_string())?;
         let drivers=bonsai_windows_process::device_inventory("ComputeAccelerator").map_err(|error| error.to_string())?.into_iter().map(|driver| json!({"DeviceName":driver.name,"Manufacturer":driver.manufacturer,"DriverVersion":driver.driver_version,"DriverDate":null,"DriverDateObservation":driver.driver_date,"IsSigned":null,"InfName":driver.inf_name,"DeviceID":driver.device_id,"Source":"SetupAPI-present-device-and-driver-registry; signature-unknown"})).collect::<Vec<_>>();
-        return Ok(
+        Ok(
             json!({"OsArchitecture":if cfg!(target_arch="aarch64") {"Arm64"} else {"unknown"},"ProcessArchitecture":if cfg!(target_arch="aarch64") {"Arm64"} else {"unknown"},"Processors":[{"Name":host.processor_name,"Manufacturer":host.vendor_identifier,"Architecture":if cfg!(target_arch="aarch64") {12} else {-1}}],"Drivers":drivers,"Package":package(path)?}),
-        );
+        )
     }
     #[cfg(not(windows))]
     {
@@ -131,11 +131,11 @@ pub(super) fn inventory(path: Option<&Path>) -> Result<Value> {
     }
 }
 
-fn receipt(inventory: Option<Value>, status: &str, maximum: u32, elapsed: u128) -> Value {
+fn receipt(inventory: Option<&Value>, status: &str, maximum: u32, elapsed: u128) -> Value {
     let mut blockers = Vec::new();
-    match &inventory {
+    match inventory {
         None => {
-            blockers.push("Inventory unavailable; device and deployment identity remain unknown.")
+            blockers.push("Inventory unavailable; device and deployment identity remain unknown.");
         }
         Some(value) => {
             if value["OsArchitecture"] != "Arm64" || value["ProcessArchitecture"] != "Arm64" {
@@ -163,7 +163,7 @@ fn receipt(inventory: Option<Value>, status: &str, maximum: u32, elapsed: u128) 
 }
 
 pub(super) fn supervise(
-    package_path: Option<PathBuf>,
+    package_path: Option<&Path>,
     output_path: Option<PathBuf>,
     maximum: u32,
 ) -> Result<Value> {
@@ -173,7 +173,7 @@ pub(super) fn supervise(
             "Hexagon preflight requires Windows and a 5..300 second remaining allowance.".into(),
         );
     }
-    if let Some(path) = &package_path {
+    if let Some(path) = package_path {
         plain(path)?;
         if !path.is_dir() {
             return Err("Select an existing package directory.".into());
@@ -222,16 +222,21 @@ pub(super) fn supervise(
                     && result.stdout.len() <= 262_144
                     && result.stderr.is_empty() =>
             {
-                match crate::hexagon_policy::run(json!({"operation":"json","json":result.stdout})) {
-                    Ok(inventory) => (Some(inventory), "collected"),
-                    Err(_) => (None, "collection-failed"),
-                }
+                crate::hexagon_policy::run(json!({"operation":"json","json":result.stdout}))
+                    .map_or((None, "collection-failed"), |inventory| {
+                        (Some(inventory), "collected")
+                    })
             }
             Err(_) if clock.elapsed() >= allowance => (None, "deadline-expired"),
             _ => (None, "collection-failed"),
         }
     };
-    let report = receipt(inventory, status, maximum, clock.elapsed().as_millis());
+    let report = receipt(
+        inventory.as_ref(),
+        status,
+        maximum,
+        clock.elapsed().as_millis(),
+    );
     if let Some(path) = output_path {
         write_json(&path, &report)?;
     }
@@ -251,7 +256,7 @@ mod tests {
         assert_eq!(unknown["Execution"], "not-attempted");
         assert_eq!(unknown["Blockers"].as_array().map(Vec::len), Some(4));
         let facts = json!({"OsArchitecture":"Arm64","ProcessArchitecture":"Arm64","Drivers":[{"IsSigned":true}],"Package":{"Status":"inventoried","Files":[{"Name":"libggml-htp-v81.so","Signature":{"Status":"Valid"}}]}});
-        let observed = receipt(Some(facts), "collected", 5, 1);
+        let observed = receipt(Some(&facts), "collected", 5, 1);
         assert_eq!(observed["ProfileEligible"], false);
         assert_eq!(observed["Blockers"].as_array().map(Vec::len), Some(3));
     }

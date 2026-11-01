@@ -805,14 +805,14 @@ pub fn run(request: Value) -> Result<Value> {
             output_directory,
         } => sdk_inventory(Context::new(repository_directory, output_directory)?),
         #[cfg(windows)]
-        Request::Device { request } => device::supervise(request),
+        Request::Device { request } => device::supervise(&request),
         #[cfg(windows)]
-        Request::DeviceWorker { request } => device::worker(request),
+        Request::DeviceWorker { request } => device::worker(&request),
         Request::Preflight {
             package_path,
             output_path,
             maximum_seconds,
-        } => preflight::supervise(package_path, output_path, maximum_seconds),
+        } => preflight::supervise(package_path.as_deref(), output_path, maximum_seconds),
         Request::PreflightWorker { package_path } => preflight::inventory(package_path.as_deref()),
     }
 }

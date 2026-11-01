@@ -300,7 +300,7 @@ fn capture(
                                 report["LoadedDriverObservation"] = json!("observed-verified");
                             }
                             Err(_) => {
-                                report["LoadedDriverObservation"] = json!("observation-rejected")
+                                report["LoadedDriverObservation"] = json!("observation-rejected");
                             }
                         }
                         save(progress, report)?;
@@ -346,7 +346,7 @@ fn capture(
     result
 }
 
-fn parsed(text: String) -> Result<Value> {
+fn parsed(text: &str) -> Result<Value> {
     crate::hexagon_policy::run(json!({"operation":"json","json":text}))
 }
 
@@ -365,7 +365,7 @@ impl Inputs {
         file.read_to_string(&mut text)
             .map_err(|error| error.to_string())?;
         self.holds.push(file);
-        parsed(text)
+        parsed(&text)
     }
     fn pinned(&mut self, path: &Path, bytes: &Value, digest: &Value) -> Result<()> {
         let bytes = bytes
@@ -724,7 +724,7 @@ fn execute_worker(request: &Probe, report: &mut Value, progress: &Path) -> Resul
         false,
         &mut inputs.holds,
     )?;
-    let inspected = parsed(text)?;
+    let inspected = parsed(&text)?;
     if status != 0
         || inspected["schemaVersion"] != 1
         || inspected["kind"] != "native-fastrpc-inspection"
@@ -809,16 +809,16 @@ fn execute_worker(request: &Probe, report: &mut Value, progress: &Path) -> Resul
     Ok(())
 }
 
-pub(super) fn worker(request: Probe) -> Result<Value> {
-    validate(&request)?;
+pub(super) fn worker(request: &Probe) -> Result<Value> {
+    validate(request)?;
     if !request.output_directory.is_dir() {
         return Err("The device supervisor must create evidence storage first.".into());
     }
     let progress = request.output_directory.join("worker.json");
-    let mut report = worker_report(&request);
+    let mut report = worker_report(request);
     save(&progress, &report)?;
     #[cfg(windows)]
-    let result = execute_worker(&request, &mut report, &progress);
+    let result = execute_worker(request, &mut report, &progress);
     #[cfg(not(windows))]
     let result: Result<()> = Err("Hexagon execution requires Windows.".into());
     if result.is_err() {
@@ -832,7 +832,7 @@ pub(super) fn worker(request: Probe) -> Result<Value> {
     Ok(report)
 }
 
-fn worker_result(request: &Probe, text: String) -> Result<Value> {
+fn worker_result(request: &Probe, text: &str) -> Result<Value> {
     let operation = match request.kind.as_str() {
         "dispatch" => "dispatch-worker",
         "session" => "session-worker",
@@ -878,9 +878,9 @@ fn worker_result(request: &Probe, text: String) -> Result<Value> {
     Ok(worker)
 }
 
-pub(super) fn supervise(request: Probe) -> Result<Value> {
+pub(super) fn supervise(request: &Probe) -> Result<Value> {
     let clock = Instant::now();
-    validate(&request)?;
+    validate(request)?;
     fs::create_dir(&request.output_directory)
         .map_err(|_| "Hexagon output must be new external storage.".to_string())?;
     let mut report = json!({"SchemaVersion":1,"Kind":format!("runner-hexagon-{}",request.kind),"Outcome":"pending","Failure":null,"ExpectedRunnerRevision":request.expected_runner_revision,"MaximumSeconds":request.maximum_seconds,"CleanupReserveSeconds":75,"WorkerAllowanceSeconds":0,"ElapsedMilliseconds":0,"WorkerAttempted":false,"OwnedJobTeardown":"not-started","Worker":null,"ModelLoaded":false,"SwiftQualified":false,"ProfileEligible":false,"DriverInstalled":false,"TrustChanged":false});
@@ -932,7 +932,7 @@ pub(super) fn supervise(request: Probe) -> Result<Value> {
                     && output.stderr.len() <= 65_536 =>
             {
                 report["OwnedJobTeardown"] = json!("confirmed-empty");
-                if let Ok(worker) = worker_result(&request, output.stdout) {
+                if let Ok(worker) = worker_result(request, &output.stdout) {
                     for name in ["Outcome", "Failure", field] {
                         report[name] = worker[name].clone();
                     }
@@ -951,10 +951,9 @@ pub(super) fn supervise(request: Probe) -> Result<Value> {
                 report["Failure"] = json!(format!("owned-{}-incomplete", request.kind));
                 if let Ok(text) =
                     bounded_text(&request.output_directory.join("worker.json"), 65_536)
+                    && let Ok(worker) = worker_result(request, &text)
                 {
-                    if let Ok(worker) = worker_result(&request, text) {
-                        report["Worker"] = worker;
-                    }
+                    report["Worker"] = worker;
                 }
             }
         }
