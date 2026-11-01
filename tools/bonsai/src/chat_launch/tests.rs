@@ -241,6 +241,51 @@ fn native_window_handoff_precedes_backend_downloads_builds_and_keys() -> crate::
 }
 
 #[test]
+fn weight_selection_survives_deferred_json_and_emits_one_explicit_app_flag() -> crate::Result<()> {
+    for native in [false, true] {
+        for repacked in [false, true] {
+            let mut fixture = fixture("explicit-weights")?;
+            fixture.request["NativeEngine"] = json!(native);
+            fixture.request["UseRepackedPtq1"] = json!(repacked);
+            fixture.request["NoSpeechModels"] = json!(true);
+            let mut recorder = Recorder::new(fixture.root.clone());
+            launch_pending(
+                plan(fixture.request)?.request,
+                &mut recorder,
+                &fixture.working,
+                &fixture.root.join("maintenance.exe"),
+            )?;
+            let (_, arguments, _) = recorder.launch()?;
+            let request_path = PathBuf::from(value_after(arguments, "--startup-request")?);
+            let serialized: Value =
+                serde_json::from_slice(&fs::read(request_path).map_err(|error| error.to_string())?)
+                    .map_err(|error| error.to_string())?;
+            // A present false value is the original-PQ2 selection, rather than
+            // an omitted option that a later launcher default could reinterpret.
+            assert_eq!(serialized.get("UseRepackedPtq1"), Some(&json!(repacked)));
+            let prepared = prepare_backend(plan(serialized)?, &mut recorder, &fixture.working)?;
+            let args = prepared["Arguments"]
+                .as_array()
+                .ok_or("Missing arguments.")?;
+            assert_eq!(
+                args.iter()
+                    .filter(|arg| arg.as_str() == Some("--use-repacked-ptq1"))
+                    .count(),
+                usize::from(repacked)
+            );
+            assert_eq!(
+                args.iter()
+                    .filter(|arg| arg.as_str() == Some("--use-original-pq2"))
+                    .count(),
+                usize::from(!repacked)
+            );
+            assert!(!args.iter().any(|arg| arg == "--no-abliterate-lora"));
+        }
+    }
+    Ok(())
+}
+
+#[test]
 fn deferred_preparation_never_rebuilds_running_chat_and_keeps_backend_policy() -> crate::Result<()>
 {
     let mut fixture = fixture("deferred-broker")?;

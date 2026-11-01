@@ -309,9 +309,11 @@ fn runtime_arguments(config: &Config) -> Vec<&'static str> {
     if config.use_abliterate_lora {
         arguments.push("--use-abliterate-lora");
     }
-    if config.use_repacked_ptq1 {
-        arguments.push("--use-repacked-ptq1");
-    }
+    arguments.push(if config.use_repacked_ptq1 {
+        "--use-repacked-ptq1"
+    } else {
+        "--use-original-pq2"
+    });
     if config.native_engine {
         arguments.push("--native-engine");
     }
@@ -1224,13 +1226,17 @@ mod tests {
             canary: None,
             qwen_tts: None,
         };
-        assert_eq!(runtime_arguments(&config), ["--use-abliterate-lora"]);
+        assert_eq!(
+            runtime_arguments(&config),
+            ["--use-abliterate-lora", "--use-original-pq2"]
+        );
         config.native_engine = true;
         config.native_row_workers = 4;
         assert_eq!(
             runtime_arguments(&config),
             [
                 "--use-abliterate-lora",
+                "--use-original-pq2",
                 "--native-engine",
                 "--native-row-workers",
                 "4"
@@ -1251,6 +1257,11 @@ mod tests {
         assert_eq!(
             runtime_arguments(&config),
             ["--use-repacked-ptq1", "--native-engine"]
+        );
+        config.use_repacked_ptq1 = false;
+        assert_eq!(
+            runtime_arguments(&config),
+            ["--use-original-pq2", "--native-engine"]
         );
     }
 

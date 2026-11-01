@@ -399,9 +399,11 @@ fn launch_arguments(
     if request.no_abliterate_lora {
         arguments.push("--no-abliterate-lora".into());
     }
-    if request.use_repacked_ptq1 {
-        arguments.push("--use-repacked-ptq1".into());
-    }
+    arguments.push(if request.use_repacked_ptq1 {
+        "--use-repacked-ptq1".into()
+    } else {
+        "--use-original-pq2".into()
+    });
     if request.native_engine {
         arguments.push("--native-engine".into());
     }

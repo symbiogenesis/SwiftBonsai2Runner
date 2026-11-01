@@ -37,9 +37,10 @@ $bonsai = Join-Path $target 'release/bonsai-tools.exe'
 ```
 
 `chat` is the native launch entry point; optional `scripts/Start-Chat.ps1`
-forwards to it and offers `-NativeEngine`. It uses the nearest Runner checkout and
+forwards to it and offers `-NativeEngine`, `-UseRepackedPtq1` and `-UseOriginalPq2`.
+It uses the nearest Runner checkout and
 `%LOCALAPPDATA%/SwiftBonsai2` unless `--repository-root` or `--data-directory`
-is supplied. Boolean options are `--native-engine`, `--use-repacked-ptq1`,
+is supplied. Boolean options are `--native-engine`, `--use-repacked-ptq1`, `--use-original-pq2`,
 `--no-abliterate-lora`, `--no-tts`, `--no-speech-models`, `--speech-models-only`
 and `--force-build`. Value options are `--native-row-workers`, `--tts-quantization`,
 `--tts-threads`, `--frontend-port`, `--backend-port`, `--canary-port`, `--tts-port`,
@@ -49,6 +50,16 @@ cache, verification, cancellation and teardown policy remains in Rust. An
 unchanged direct launch needs no Cargo invocation. Rebuild the maintenance
 executable after updating its sources; `--force-build` rebuilds application
 companions, not the running maintenance image.
+
+The two weight options are mutually exclusive. `--use-original-pq2` explicitly
+selects the pinned original Swift artifact with either engine; the current default
+remains original PQ2. JSON and installed-package requests express the same choice
+with `UseRepackedPtq1: false`. That explicit false survives the deferred startup
+request, and each launcher/app handoff emits one concrete weight-selection flag.
+Missing or changed artifacts fail verification; no automatic format or engine
+fallback occurs. The standard adapter remains enabled at scale 1.3 unless explicitly
+changed. These controls prepare rollback selection; actual-device rollback
+qualification remains a separate gate.
 
 Credential requests contain only `parentDirectory`, an existing absolute external
 local directory. The command creates fresh protected files and returns paths only.

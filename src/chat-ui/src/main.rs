@@ -49,13 +49,18 @@ fn configuration(
     let mut tts_voice_model = None;
     let (mut tts_quantization, mut tts_threads) = (None, None);
     let mut no_abliterate_lora = false;
-    let mut use_repacked_ptq1 = false;
+    let mut use_repacked_ptq1 = None;
     let mut native_engine = false;
     let mut native_row_workers = None;
     while let Some(option) = args.next() {
         match option.to_str() {
             Some("--no-abliterate-lora") if !no_abliterate_lora => no_abliterate_lora = true,
-            Some("--use-repacked-ptq1") if !use_repacked_ptq1 => use_repacked_ptq1 = true,
+            Some("--use-repacked-ptq1") if use_repacked_ptq1.is_none() => {
+                use_repacked_ptq1 = Some(true);
+            }
+            Some("--use-original-pq2") if use_repacked_ptq1.is_none() => {
+                use_repacked_ptq1 = Some(false);
+            }
             Some("--native-engine") if !native_engine => native_engine = true,
             Some("--native-row-workers") if native_row_workers.is_none() => {
                 native_row_workers = Some(
@@ -165,7 +170,7 @@ fn configuration(
             }
             _ => {
                 return Err(
-                    "Usage: bonsai-chat --broker-path ABSOLUTE_EXE --data-directory ABSOLUTE_DIRECTORY --evidence-directory ABSOLUTE_DIRECTORY [--frontend-port 5173] [--backend-port 8081] [--no-abliterate-lora] [--use-repacked-ptq1] [--native-engine] [--native-row-workers 1|4] [--canary-key-file ABSOLUTE_FILE --canary-port 8766 [--canary-executable ABSOLUTE_EXE --canary-model ABSOLUTE_GGUF]] [--tts-key-file ABSOLUTE_FILE --tts-port 8767 [--tts-executable ABSOLUTE_EXE --tts-model ABSOLUTE_GGUF --tts-codec ABSOLUTE_GGUF --tts-voice-model ABSOLUTE_GGUF [--tts-quantization Q8_0|Q4_K_M] [--tts-threads 10]]]",
+                    "Usage: bonsai-chat --broker-path ABSOLUTE_EXE --data-directory ABSOLUTE_DIRECTORY --evidence-directory ABSOLUTE_DIRECTORY [--frontend-port 5173] [--backend-port 8081] [--no-abliterate-lora] [--use-repacked-ptq1|--use-original-pq2] [--native-engine] [--native-row-workers 1|4] [--canary-key-file ABSOLUTE_FILE --canary-port 8766 [--canary-executable ABSOLUTE_EXE --canary-model ABSOLUTE_GGUF]] [--tts-key-file ABSOLUTE_FILE --tts-port 8767 [--tts-executable ABSOLUTE_EXE --tts-model ABSOLUTE_GGUF --tts-codec ABSOLUTE_GGUF --tts-voice-model ABSOLUTE_GGUF [--tts-quantization Q8_0|Q4_K_M] [--tts-threads 10]]]",
                 );
             }
         }
@@ -220,7 +225,7 @@ fn configuration(
         frontend_port: frontend_port.unwrap_or(5173),
         backend_port: backend_port.unwrap_or(8081),
         use_abliterate_lora: !no_abliterate_lora,
-        use_repacked_ptq1,
+        use_repacked_ptq1: use_repacked_ptq1.unwrap_or(false),
         native_engine,
         native_row_workers,
         canary: canary_key_file.map(|key_file| canary::Config {
@@ -505,6 +510,48 @@ mod tests {
         ]);
         assert!(configuration(duplicated).is_err());
         fs::remove_file(key)?;
+        fs::remove_file(broker)?;
+        fs::remove_dir(directory)?;
+        Ok(())
+    }
+
+    #[test]
+    fn original_pq2_selection_rejects_conflicts_and_preserves_engine_and_adapter() -> io::Result<()>
+    {
+        let stamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map_err(io::Error::other)?
+            .as_nanos();
+        let directory = std::env::temp_dir().join(format!("Bonsai-pq2-config-{stamp}"));
+        fs::create_dir(&directory)?;
+        let broker = directory.join("broker.exe");
+        fs::write(&broker, b"")?;
+        let base = vec![
+            OsString::from("--broker-path"),
+            broker.clone().into_os_string(),
+            OsString::from("--data-directory"),
+            directory.clone().into_os_string(),
+            OsString::from("--evidence-directory"),
+            directory.clone().into_os_string(),
+        ];
+        for native in [false, true] {
+            let mut args = base.clone();
+            if native {
+                args.push("--native-engine".into());
+            }
+            args.push("--use-original-pq2".into());
+            let config = configuration(args).map_err(io::Error::other)?;
+            assert!(!config.use_repacked_ptq1);
+            assert!(config.use_abliterate_lora);
+            assert_eq!(config.native_engine, native);
+        }
+        for first in ["--use-original-pq2", "--use-repacked-ptq1"] {
+            for second in ["--use-original-pq2", "--use-repacked-ptq1"] {
+                let mut rejected = base.clone();
+                rejected.extend([first, second].map(OsString::from));
+                assert!(configuration(rejected).is_err());
+            }
+        }
         fs::remove_file(broker)?;
         fs::remove_dir(directory)?;
         Ok(())

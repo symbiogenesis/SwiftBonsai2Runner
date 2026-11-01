@@ -49,7 +49,7 @@ pub const LAUNCH_USAGE: &str = concat!(
     "  [--native-engine] (requires the pinned Prism inference release and swift-pq2-assessment)\n",
     "  [--native-row-workers 1|4] (4 requires --native-engine and reviewed pinned release 0.1.9, 0.1.10 or 0.1.11)\n",
     "  [--use-abliterate-lora] (pinned adapter; request scale 0..2, default 1.3; Swift CPU only)\n",
-    "  [--use-repacked-ptq1] (verified current-weight export; Swift CPU only)\n",
+    "  [--use-repacked-ptq1|--use-original-pq2] (mutually exclusive weight selections; Swift CPU only)\n",
     "  [--max-waiting <0..8>] [--check-only]\n",
     "Default: reference-cpu. Only compiled model/runtime pins and fixed CPU policies are accepted.\n",
     "Swift defaults to original PQ2 weights; PTQ1 requires explicit selection. Daily use remains unqualified.\n",
@@ -143,7 +143,7 @@ impl LaunchConfig {
         let mut native_engine = false;
         let mut native_row_workers = None;
         let mut use_abliterate_lora = false;
-        let mut use_repacked_ptq1 = false;
+        let mut use_repacked_ptq1 = None;
         let mut profile = None;
         let (mut data, mut evidence_parent) = (None, None);
         let (mut frontend_port, mut backend_port, mut max_waiting) = (None, None, None);
@@ -164,8 +164,11 @@ impl LaunchConfig {
                 Some("--use-abliterate-lora") if !use_abliterate_lora => {
                     use_abliterate_lora = true;
                 }
-                Some("--use-repacked-ptq1") if !use_repacked_ptq1 => {
-                    use_repacked_ptq1 = true;
+                Some("--use-repacked-ptq1") if use_repacked_ptq1.is_none() => {
+                    use_repacked_ptq1 = Some(true);
+                }
+                Some("--use-original-pq2") if use_repacked_ptq1.is_none() => {
+                    use_repacked_ptq1 = Some(false);
                 }
                 Some("--profile") if profile.is_none() => {
                     profile = Some(
@@ -207,7 +210,7 @@ impl LaunchConfig {
             || (native_engine && profile != LaunchProfile::SwiftPq2Assessment)
             || (native_row_workers == 4 && !native_engine)
             || (use_abliterate_lora && profile != LaunchProfile::SwiftPq2Assessment)
-            || (use_repacked_ptq1 && profile != LaunchProfile::SwiftPq2Assessment)
+            || (use_repacked_ptq1.is_some() && profile != LaunchProfile::SwiftPq2Assessment)
         {
             return Err(LaunchError::Arguments);
         }
@@ -227,7 +230,7 @@ impl LaunchConfig {
             native_engine,
             native_row_workers,
             use_abliterate_lora,
-            weight_representation: if use_repacked_ptq1 {
+            weight_representation: if use_repacked_ptq1.unwrap_or(false) {
                 WeightRepresentation::CurrentRepackedPtq1
             } else {
                 WeightRepresentation::Source
@@ -1103,6 +1106,42 @@ mod tests {
         );
         let mut reference = arguments();
         reference.push("--use-repacked-ptq1".into());
+        assert_eq!(
+            LaunchConfig::parse(reference).err(),
+            Some(LaunchError::Arguments)
+        );
+    }
+
+    #[test]
+    fn original_pq2_is_explicit_swift_only_and_rejects_every_duplicate_or_conflict() {
+        let mut swift = arguments();
+        swift.extend(
+            ["--profile", "swift-pq2-assessment", "--use-abliterate-lora"].map(OsString::from),
+        );
+        for native in [false, true] {
+            let mut selected = swift.clone();
+            if native {
+                selected.push("--native-engine".into());
+            }
+            selected.push("--use-original-pq2".into());
+            assert!(
+                LaunchConfig::parse(selected).is_ok_and(|config| !config.uses_repacked_ptq1()
+                    && config.use_abliterate_lora
+                    && config.native_engine == native)
+            );
+        }
+        for first in ["--use-original-pq2", "--use-repacked-ptq1"] {
+            for second in ["--use-original-pq2", "--use-repacked-ptq1"] {
+                let mut rejected = swift.clone();
+                rejected.extend([first, second].map(OsString::from));
+                assert_eq!(
+                    LaunchConfig::parse(rejected).err(),
+                    Some(LaunchError::Arguments)
+                );
+            }
+        }
+        let mut reference = arguments();
+        reference.push("--use-original-pq2".into());
         assert_eq!(
             LaunchConfig::parse(reference).err(),
             Some(LaunchError::Arguments)

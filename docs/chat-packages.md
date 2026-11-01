@@ -127,6 +127,10 @@ explicit settings with the native launcher's existing validation. Native Rust
 owns the per-user launch guard, model provisioning, credentials, Jobs and retry
 policy. No microphone activates at installation or launch.
 
+Set `UseRepackedPtq1: false` to select original PQ2 explicitly. The value is
+preserved through deferred startup and forwarded as `--use-original-pq2` to the
+native app and broker. No failed PTQ1 launch falls back automatically.
+
 ## Validation
 
 Foundation's `bonsai-tools` Rust suite owns package creation, installation,

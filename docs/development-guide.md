@@ -289,7 +289,7 @@ and installed-package launches retain native admission. Installed launches use [
 
 | Runtime/model | Source and installed launch options | Boundary |
 | --- | --- | --- |
-| Publisher Prism CPU, original Swift PQ2 | Default; pinned adapter enabled | Adapter scale follows response settings. Missing/altered adapters fail with provisioning guidance, without download or fallback. |
+| Publisher Prism CPU, original Swift PQ2 | Default, or explicit `--use-original-pq2`; pinned adapter enabled | Adapter scale follows response settings. Missing/altered adapters fail with provisioning guidance, without download or fallback. |
 | Publisher Prism CPU, current-weight PTQ1 export | `--use-repacked-ptq1` (app/broker `--use-repacked-ptq1`) | Same adapter opt-out/scale. Missing/changed bytes reject; no older publisher PTQ1 substitution or fallback. |
 | Experimental native Rust 0.1.10, original Swift PQ2 or exact current-weight PTQ1 | `--native-engine`, optionally `--use-repacked-ptq1` and `--no-abliterate-lora` (app/broker `--native-engine`) | Exact model, approved adapter and representation-aware readiness are verified; no engine switch after failure. Separate [PTQ1 qualification](swift-memory.md#current-weight-ptq1-option) is pending. |
 
@@ -306,6 +306,16 @@ runtime initialization. **Retry model** repeats the selected runtime; it does no
 switch to Rust. Close the window and relaunch with `--native-engine` after provisioning
 with Rust `provision` operation `inference`. Retain the same data directory, model and adapter options;
 `--native-engine` alone keeps original PQ2 and the approved adapter selected.
+
+Use `bonsai-tools chat --native-engine --use-original-pq2` to select the pinned
+original Swift weights explicitly. `--use-original-pq2` and `--use-repacked-ptq1`
+are mutually exclusive in the launcher, native app and broker. The thin
+`Start-Chat.ps1` facade forwards `-UseOriginalPq2` or `-UseRepackedPtq1` to the
+same Rust policy. Installed launches use `UseRepackedPtq1: false` for original
+PQ2. Explicit selection survives deferred startup and retry without relying on
+an omitted representation option; artifact failure never switches representation.
+The default and adapter scale 1.3 remain unchanged, and device rollback still
+requires qualification.
 
 `--native-engine -NativeRowWorkers 4` explicitly selects the reviewed 0.1.10
 four-worker implementation. The default remains one worker; publisher/reference

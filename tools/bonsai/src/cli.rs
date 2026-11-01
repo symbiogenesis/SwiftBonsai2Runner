@@ -107,6 +107,7 @@ fn chat_options(arguments: &[OsString]) -> crate::Result<Map<String, Value>> {
             "--tts-key-file" => ("TtsKeyFile", false, false),
             "--native-engine" => ("NativeEngine", true, false),
             "--use-repacked-ptq1" => ("UseRepackedPtq1", true, false),
+            "--use-original-pq2" => ("UseRepackedPtq1", true, false),
             "--no-abliterate-lora" => ("NoAbliterateLora", true, false),
             "--no-tts" => ("NoTts", true, false),
             "--no-speech-models" => ("NoSpeechModels", true, false),
@@ -115,7 +116,7 @@ fn chat_options(arguments: &[OsString]) -> crate::Result<Map<String, Value>> {
             _ => return Err(format!("Unknown chat option: {option}")),
         };
         let value = if boolean {
-            Value::Bool(true)
+            Value::Bool(option != "--use-original-pq2")
         } else {
             let text = values
                 .next()
@@ -131,7 +132,7 @@ fn chat_options(arguments: &[OsString]) -> crate::Result<Map<String, Value>> {
             }
         };
         if request.insert(key.into(), value).is_some() {
-            return Err(format!("Duplicate chat option: {option}"));
+            return Err(format!("Repeated or conflicting chat option: {option}"));
         }
     }
     Ok(request)
@@ -200,6 +201,25 @@ mod tests {
             assert!(
                 chat_options(&arguments.into_iter().map(Into::into).collect::<Vec<_>>()).is_err()
             );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn weight_options_preserve_explicit_false_and_reject_conflicting_selections()
+    -> crate::Result<()> {
+        assert_eq!(
+            chat_options(&["--use-original-pq2".into()])?["UseRepackedPtq1"],
+            false
+        );
+        assert_eq!(
+            chat_options(&["--use-repacked-ptq1".into()])?["UseRepackedPtq1"],
+            true
+        );
+        for first in ["--use-original-pq2", "--use-repacked-ptq1"] {
+            for second in ["--use-original-pq2", "--use-repacked-ptq1"] {
+                assert!(chat_options(&[first.into(), second.into()]).is_err());
+            }
         }
         Ok(())
     }

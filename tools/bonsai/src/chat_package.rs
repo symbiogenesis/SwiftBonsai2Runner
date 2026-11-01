@@ -604,6 +604,12 @@ mod tests {
         assert_eq!(native["NativeEngine"], true);
         assert_eq!(native["NativeRowWorkers"], 4);
         assert_eq!(native["NoAbliterateLora"], true);
+        let original = launch_options(
+            &package,
+            json!({"UseRepackedPtq1": false, "NativeEngine": true}),
+        )?;
+        assert_eq!(original.get("UseRepackedPtq1"), Some(&json!(false)));
+        assert_eq!(original["NativeEngine"], true);
         assert!(launch_options(&package, json!({"ChatPath": "outside.exe"})).is_err());
         assert!(launch_options(&package, json!({"ForceBuild": true})).is_err());
         for (expected_directory, expected_id, expected_digest) in [
