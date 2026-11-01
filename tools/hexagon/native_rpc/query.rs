@@ -251,8 +251,13 @@ fn queue_compute_json(path: &str, report: &hexagon_native_rpc::QueueComputeRepor
     } else {
         hexagon_native_rpc::COMPUTE_K
     };
+    let q2_geometry = if guarded_q2 {
+        ",\"columns\":256,\"rows\":32,\"batch\":2,\"outputValuesChecked\":64"
+    } else {
+        ""
+    };
     format!(
-        "{{\"schemaVersion\":1,\"kind\":{},\"driverDll\":{},\"passed\":{},\"stage\":{},\"metadataPrepared\":{},\"architectureRaw\":{},\"architecture\":{},\"sessionId\":0,\"domainResult\":{},\"effectiveDomain\":{},\"uriResult\":{},\"uriVerified\":{},\"processInitializationResult\":{},\"processInitializationDomainAfter\":{},\"processInitializationEnableAfter\":{},\"unsignedProcessRequested\":{},\"moduleOpenResult\":{},\"handleObserved\":{},\"allocationSucceeded\":{},\"mappingResult\":{},\"queueCreateResult\":{},\"queueExportResult\":{},\"queueStartResult\":{},\"queueWriteResult\":{},\"queueReadResult\":{},\"computeSubmitted\":{},\"responseValidated\":{},\"numericValidated\":{},\"computeExecuted\":{},\"queueStopResult\":{},\"queueCloseResult\":{},\"unmappingResult\":{},\"freeCompleted\":{},\"moduleCloseResult\":{},\"ownerPinnedUntilExit\":{},\"poisoned\":{},\"driverLoaded\":true,\"sessionTeardownVerified\":false,\"signedDeploymentVerified\":false,\"profileEligible\":false,\"k\":{},\"m\":32,\"n\":2,\"outputElements\":64,\"bytes\":16384,\"requestBytes\":24,\"responseBytes\":88,\"nHvx\":1,\"nHmx\":0,\"powerMode\":4,\"ggmlSource\":{}}}",
+        "{{\"schemaVersion\":1,\"kind\":{},\"driverDll\":{},\"passed\":{},\"stage\":{},\"metadataPrepared\":{},\"architectureRaw\":{},\"architecture\":{},\"sessionId\":0,\"domainResult\":{},\"effectiveDomain\":{},\"uriResult\":{},\"uriVerified\":{},\"processInitializationResult\":{},\"processInitializationDomainAfter\":{},\"processInitializationEnableAfter\":{},\"unsignedProcessRequested\":{},\"moduleOpenResult\":{},\"handleObserved\":{},\"allocationSucceeded\":{},\"mappingResult\":{},\"queueCreateResult\":{},\"queueExportResult\":{},\"queueStartResult\":{},\"queueWriteResult\":{},\"queueReadResult\":{},\"computeSubmitted\":{},\"responseValidated\":{},\"numericValidated\":{},\"computeExecuted\":{},\"queueStopResult\":{},\"queueCloseResult\":{},\"unmappingResult\":{},\"freeCompleted\":{},\"moduleCloseResult\":{},\"ownerPinnedUntilExit\":{},\"poisoned\":{},\"driverLoaded\":true,\"sessionTeardownVerified\":false,\"signedDeploymentVerified\":false,\"profileEligible\":false,\"k\":{},\"m\":32,\"n\":2,\"outputElements\":64,\"bytes\":16384,\"requestBytes\":24,\"responseBytes\":88,\"nHvx\":1,\"nHmx\":0,\"powerMode\":4,\"ggmlSource\":{}{}}}",
         quote(kind),
         quote(path),
         report.completed_cycle(),
@@ -290,6 +295,7 @@ fn queue_compute_json(path: &str, report: &hexagon_native_rpc::QueueComputeRepor
         report.poisoned,
         columns,
         quote(hexagon_native_rpc::COMPUTE_GGML_SOURCE),
+        q2_geometry,
     )
 }
 
