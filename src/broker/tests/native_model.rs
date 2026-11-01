@@ -1445,10 +1445,15 @@ async fn bounded_adapter_acceptance(
     }
     report["phase"] = json!("initial-owner-startup");
     save_acceptance_report(evidence, report);
+    let startup_started = tokio::time::Instant::now();
     let owner = start_adapter(profile, data, evidence).await;
+    report["startupMilliseconds"] = json!(startup_started.elapsed().as_secs_f64() * 1000.0);
     report["verifiedReadinessObserved"] = json!(true);
     report["adapterEnabled"] = json!(true);
     report["phase"] = json!("required-scale-1.3-stream");
+    if profile.required_scale_history {
+        report["scaleHistoryWorkload"]["phase"] = json!("required-scale-1.3-stream");
+    }
     save_acceptance_report(evidence, report);
     let port = owner.port();
     let credential = key(&owner);
