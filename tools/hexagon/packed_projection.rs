@@ -17,6 +17,10 @@ mod packed_tiles;
 pub use packed_tiles::{TileReceiver, TileSource, TileWireLedger};
 mod q2_integer;
 pub use q2_integer::{GuardedQ2Inputs, reduce_original_block};
+mod q2_projection;
+pub use q2_projection::{
+    GuardedQ2Ledger, GuardedQ2Operation, GuardedQ2Plan, guarded_q2_projection,
+};
 
 /// Fixed validation, allocation, cancellation or numerical rejection.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

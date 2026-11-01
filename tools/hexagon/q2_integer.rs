@@ -7,8 +7,27 @@
 
 use super::{Error, PQ2_BYTES, finite, half};
 
-const PADDED_K: usize = 256;
-const Q2_BLOCK_BYTES: usize = 18;
+pub(super) const PADDED_K: usize = 256;
+pub(super) const Q2_BLOCK_BYTES: usize = 18;
+
+/// Preserve one original block's symbols with scale-one guard/padding lanes.
+/// Kept separate from activation preparation so rows share the same two limbs.
+pub(super) fn guarded_weights(original_pq2: &[u8]) -> Result<[u8; 72], Error> {
+    let original_pq2: &[u8; PQ2_BYTES] = original_pq2.try_into().map_err(|_| Error::Extent)?;
+    half(original_pq2)?;
+    let mut weights = [0x55; 4 * Q2_BLOCK_BYTES];
+    for block in weights.chunks_exact_mut(Q2_BLOCK_BYTES) {
+        block[..2].copy_from_slice(&0x3c00_u16.to_le_bytes());
+    }
+    for lane in 0..128 {
+        let destination = lane / 31 * 32 + lane % 31;
+        let symbol = (original_pq2[2 + lane / 4] >> (lane % 4 * 2)) & 3;
+        let byte = destination / 64 * Q2_BLOCK_BYTES + 2 + destination % 64 / 4;
+        let shift = destination % 4 * 2;
+        weights[byte] = (weights[byte] & !(3 << shift)) | symbol << shift;
+    }
+    Ok(weights)
+}
 
 /// One original 128-symbol PQ2 block expressed as bounded integer work units.
 ///
@@ -28,24 +47,15 @@ impl GuardedQ2Inputs {
     /// CPU-prepared 128 codes. Original PQ2 scale bytes are validated but are not
     /// moved into the integer primitive; its four logical Q2 scales are one.
     pub fn new(original_pq2: &[u8], prepared_codes: &[i8]) -> Result<Self, Error> {
-        let original_pq2: &[u8; PQ2_BYTES] = original_pq2.try_into().map_err(|_| Error::Extent)?;
         if prepared_codes.len() != 128 {
             return Err(Error::Extent);
         }
-        half(original_pq2)?;
         let mut result = Self {
-            weights: [0x55; 4 * Q2_BLOCK_BYTES],
+            weights: guarded_weights(original_pq2)?,
             activation: [[0.0; PADDED_K]; 2],
         };
-        for block in result.weights.chunks_exact_mut(Q2_BLOCK_BYTES) {
-            block[..2].copy_from_slice(&0x3c00_u16.to_le_bytes());
-        }
         for (lane, &code) in prepared_codes.iter().enumerate() {
             let destination = lane / 31 * 32 + lane % 31;
-            let symbol = (original_pq2[2 + lane / 4] >> (lane % 4 * 2)) & 3;
-            let byte = destination / 64 * Q2_BLOCK_BYTES + 2 + destination % 64 / 4;
-            let shift = destination % 4 * 2;
-            result.weights[byte] = (result.weights[byte] & !(3 << shift)) | symbol << shift;
             let first = i16::from(code) / 2;
             result.activation[0][destination] = f32::from(first);
             result.activation[1][destination] = f32::from(i16::from(code) - first);
