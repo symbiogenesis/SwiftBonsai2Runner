@@ -1,8 +1,10 @@
 //! Bounded Authenticode signer and live-module observations for device supervisors.
 
+mod catalog;
+
 use std::fs::File;
 use std::io;
-use std::os::windows::ffi::OsStrExt as _;
+use std::os::windows::ffi::{OsStrExt as _, OsStringExt as _};
 use std::os::windows::io::AsRawHandle as _;
 use std::path::{Path, PathBuf};
 use std::ptr;
@@ -24,6 +26,15 @@ use windows_sys::Win32::System::Diagnostics::ToolHelp::{
 };
 
 pub(crate) fn verify(file: &File, path: &Path) -> io::Result<crate::AuthenticodeSigner> {
+    if !path.is_absolute() || path.as_os_str().encode_wide().any(|unit| unit == 0) {
+        return Err(super::invalid("Signature verification requires an absolute path."));
+    }
+    // Installed catalog membership takes precedence, matching Windows' signature
+    // observation boundary for driver files that have no embedded signature.
+    catalog::verify(file, path).or_else(|_| embedded(file, path))
+}
+
+fn embedded(file: &File, path: &Path) -> io::Result<crate::AuthenticodeSigner> {
     let mut wide: Vec<_> = path.as_os_str().encode_wide().collect();
     if !path.is_absolute() || wide.contains(&0) {
         return Err(super::invalid(
@@ -183,7 +194,6 @@ pub(crate) fn modules(id: u32, basename: &str) -> io::Result<Vec<PathBuf>> {
                 .iter()
                 .position(|unit| *unit == 0)
                 .ok_or_else(|| super::invalid("Unterminated module path."))?;
-            use std::os::windows::ffi::OsStringExt as _;
             paths.push(std::ffi::OsString::from_wide(&entry.szExePath[..path_end]).into());
         }
         // SAFETY: The same snapshot and initialized writable record remain live.
