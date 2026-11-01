@@ -154,7 +154,13 @@ impl Harness<'_> {
         }
         Ok(())
     }
-    fn bridge(&self, name: &str, bytes: &[u8], dialect: &str, census: bool) -> crate::Result<()> {
+    fn bridge(
+        &self,
+        name: &str,
+        bytes: &[u8],
+        dialect: &str,
+        census: bool,
+    ) -> crate::Result<Value> {
         let path = self.write(name, bytes)?;
         let output = self.directory.join(format!("{name}.json"));
         let mut request = json!({"operation":"inspect", "modelPath":path, "outputPath":output,
@@ -188,7 +194,8 @@ impl Harness<'_> {
         require(
             super::run(request).is_err(),
             "Incomplete artifact identity was accepted.",
-        )
+        )?;
+        Ok(saved)
     }
 }
 

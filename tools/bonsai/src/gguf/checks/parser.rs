@@ -445,5 +445,6 @@ pub(super) fn descriptors(harness: &Harness<'_>) -> crate::Result<()> {
 }
 
 pub(super) fn artifact(harness: &Harness<'_>) -> crate::Result<()> {
-    harness.bridge("artifact", &fixture()?.bytes, "Stock", false)
+    let saved = harness.bridge("artifact", &fixture()?.bytes, "Stock", false)?;
+    require(saved["TensorCount"] == 3, "Saved tensor inventory changed.")
 }

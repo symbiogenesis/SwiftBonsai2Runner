@@ -267,11 +267,16 @@ fn mutations(harness: &Harness<'_>, fixture: &Fixture) -> crate::Result<()> {
 
 pub(super) fn run(harness: &Harness<'_>) -> crate::Result<()> {
     let fixture = mixed()?;
-    mixed_census(harness, &fixture)?;
+    let report = mixed_census(harness, &fixture)?;
     all_codes(harness)?;
     scales(harness, &fixture)?;
     mutations(harness, &fixture)?;
-    harness.bridge("census-artifact", &fixture.bytes, PRISM, true)?;
+    let saved = harness.bridge("census-artifact", &fixture.bytes, PRISM, true)?;
+    require(
+        saved["TensorPayloadRead"] == true
+            && saved["Pq2Census"]["CodeZero"] == report["Pq2Census"]["CodeZero"],
+        "Verified census payload did not round-trip.",
+    )?;
     let path = harness.write("census-implicit-dialect", &fixture.bytes)?;
     require(super::super::run(serde_json::json!({"operation":"inspect","modelPath":path,"expectedBytes":fixture.bytes.len(),
         "expectedSha256":crate::identity::sha256(&fixture.bytes),"censusPq2":true,"ggufToolPath":harness.tool})).is_err(),
