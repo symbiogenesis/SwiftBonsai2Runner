@@ -122,7 +122,7 @@ jobs:
           $ErrorActionPreference = 'Stop'
           $PSNativeCommandUseErrorActionPreference = $true
           $output = Join-Path $env:RUNNER_TEMP 'SwiftBonsai-Hexagon-Prepared'
-          & (Join-Path $env:GITHUB_WORKSPACE 'scripts/Build-HexagonDispatch.ps1') -OutputDirectory $output | ConvertTo-Json -Depth 5
+          @{ operation = 'build-dispatch'; repositoryDirectory = $env:GITHUB_WORKSPACE; outputDirectory = $output } | ConvertTo-Json -Compress | & $env:BONSAI_TOOLS_PATH hexagon-tools --request -
       - name: Retain this run's exact two-file access fixture bundle
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
@@ -198,6 +198,7 @@ jobs:
       - uses: ./.github/actions/rust-toolchain
         with:
           toolchain: nightly-2026-10-22-aarch64-pc-windows-msvc
+      - uses: ./.github/actions/bonsai-tools
       - name: Check out the exact Rust GGUF reader for the narrow artifact binder
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -214,7 +215,7 @@ jobs:
           Set-StrictMode -Version Latest
           $ErrorActionPreference = 'Stop'
           $PSNativeCommandUseErrorActionPreference = $true
-          & (Join-Path $env:GITHUB_WORKSPACE 'scripts/Build-HexagonPackedArtifact.ps1') -GgufSourceDirectory (Join-Path $env:GITHUB_WORKSPACE '.hexagon-gguf-source') -OutputDirectory (Join-Path $env:RUNNER_TEMP 'SwiftBonsai-Hexagon-Artifact') | ConvertTo-Json -Depth 5
+          @{ operation = 'build-packed-artifact'; repositoryDirectory = $env:GITHUB_WORKSPACE; ggufSourceDirectory = (Join-Path $env:GITHUB_WORKSPACE '.hexagon-gguf-source'); outputDirectory = (Join-Path $env:RUNNER_TEMP 'SwiftBonsai-Hexagon-Artifact') } | ConvertTo-Json -Compress | & $env:BONSAI_TOOLS_PATH hexagon-tools --request -
       - name: Retain the source-bound artifact binder bundle
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:

@@ -158,7 +158,7 @@ certificate or boot-policy change occurred. X1/v73 qualification is separate.
 
 ### Supervision, hosted controls and retention
 
-[Build-HexagonDispatch](../scripts/Build-HexagonDispatch.ps1) prepares the Rust
+[Rust Hexagon preparation](../tools/bonsai/src/hexagon_tools.rs) prepares the Rust
 fixture/query and model-free tests, retaining a two-file access bundle separately
 from compiler evidence. Its `asInvoker` [manifest](../tools/hexagon/diagnostic.manifest)
 is source/build-bound. [Dispatch](../scripts/Invoke-HexagonDispatch.ps1) and
@@ -204,7 +204,7 @@ projection (23,674,880 bytes, SHA-256
 `a0f21e1d4492de2496309b6383b958cba53c54f05c9de710348facdd31706354`)
 and exact 5120 sign bytes (`5ab93190ef5cd4f8322d52c1006783b25a3e118453bda0d0f90b1bf301a67197`).
 Both output digests were independently checked; retained header charge was
-19,248,870 bytes against 128 MiB. The [binder build](../scripts/Build-HexagonPackedArtifact.ps1)
+19,248,870 bytes against 128 MiB. The [Rust binder build](../tools/bonsai/src/hexagon_tools.rs)
 uses a temporary Cargo example in the clean exact GGUF reader, without changing
 tracked dependency source. Cargo owns metadata/linking; the owned LLD tree must
 empty. Its receipt binds source/example, compiler/linker, dependencies, lock,
