@@ -661,6 +661,14 @@ fn packed_artifact(mut context: Context, gguf: &Path) -> Result<Value> {
     Ok(receipt)
 }
 
+fn hold_pinned(path: &Path, bytes: u64, expected: &str) -> Result<File> {
+    let (file, actual) = hold(path, bytes)?;
+    if file.metadata().map_err(|error| error.to_string())?.len() != bytes || actual != expected {
+        return Err("SDK input changed before acquiring its immutable file guard.".into());
+    }
+    Ok(file)
+}
+
 fn receive(context: &mut Context, pin: &Value, name: &str, seconds: u64) -> Result<PathBuf> {
     if name.is_empty()
         || name.len() > 128
@@ -691,7 +699,7 @@ fn receive(context: &mut Context, pin: &Value, name: &str, seconds: u64) -> Resu
         &context.output,
         Duration::from_secs(seconds),
     )?;
-    context.digest(&path, bytes)?;
+    context.holds.push(hold_pinned(&path, bytes, digest)?);
     Ok(path)
 }
 
@@ -829,6 +837,24 @@ mod tests {
             assert!(run(json!({"operation":operation,"repositoryDirectory":"relative","outputDirectory":"relative","ggufSourceDirectory":"relative"})).is_err());
         }
     }
+    #[test]
+    fn retained_sdk_inputs_recheck_exact_pins() -> Result<()> {
+        let directory = std::env::temp_dir().join(format!(
+            "bonsai-hexagon-sdk-guard-test-{}",
+            startup_process::unique()
+        ));
+        fs::create_dir(&directory).map_err(|error| error.to_string())?;
+        let path = directory.join("input.bin");
+        fs::write(&path, [1, 2, 3]).map_err(|error| error.to_string())?;
+        let expected = identity::sha256(&[1, 2, 3]);
+        drop(hold_pinned(&path, 3, &expected)?);
+        assert!(hold_pinned(&path, 4, &expected).is_err());
+        fs::write(&path, [3, 2, 1]).map_err(|error| error.to_string())?;
+        assert!(hold_pinned(&path, 3, &expected).is_err());
+        fs::remove_dir_all(&directory).map_err(|error| error.to_string())?;
+        Ok(())
+    }
+
     #[test]
     fn identities_reject_coercions_and_extra_fields() {
         assert!(!digits("123x", 32));
