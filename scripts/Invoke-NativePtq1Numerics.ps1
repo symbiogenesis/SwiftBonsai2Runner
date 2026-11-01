@@ -1,17 +1,17 @@
 #requires -Version 7.6
 <# .SYNOPSIS
-Runs one bounded native/Rust Auto PTQ1 correctness smoke on owner CI.
+Runs one bounded native/Rust PTQ1 correctness smoke on owner CI.
 .DESCRIPTION
-One supplied token and approved adapter scale 1.3 only. All preparation, loading
-and comparison share 240 seconds within the owning job's five-minute hard cap.
+One supplied token, one explicit Rust backend and approved adapter scale 1.3 only.
+All preparation, loading and comparison share 240 seconds within the owning job's five-minute hard cap.
 Requires hosted-prepared, source/hash-bound capture tools; never builds locally.
-No zero, scalar, explicit NEON, writer-basis, quality or performance gate passes.
+No zero, broader scalar/NEON trajectory, writer-basis, quality or performance gate passes.
 #>
 [CmdletBinding()]
 [OutputType([pscustomobject])]
 param([Parameter(Mandatory)][string]$DataDirectory, [switch]$PlanOnly,
       [string]$CaptureToolsDirectory, [string]$ToolPath, [int]$WorkBudgetSeconds,
-      [long]$WorkDeadlineTick)
+      [long]$WorkDeadlineTick, [ValidateSet('auto', 'scalar', 'neon', IgnoreCase = $false)][string]$RustBackend = 'auto')
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
@@ -26,7 +26,7 @@ $pending = @('no-adapter', 'loaded-zero-identity', 'nonzero-change', 'scalar', '
     'writer-authoring-basis', 'quality', 'performance', 'full-context', 'service')
 $plan = [pscustomobject]@{
     Status = 'plan-only'; ModelProcessStarted = $false; SuppliedTokens = @(248045)
-    Representation = 'current-repacked-PTQ1_0'; AdapterScale = 1.3; RustBackend = 'auto'
+    Representation = 'current-repacked-PTQ1_0'; AdapterScale = 1.3; RustBackend = $RustBackend
     NativeSamples = 1; RustSamples = 1; WorkBudgetSeconds = 240; WholeJobMinutes = 5
     EstimatedSnapshotBytes = 315971136; RequiredFreeDiskBytes = 1073741824
     ContextTokens = 8192; JobBytes = 12348030976; AdmissionBytes = 16642998272
@@ -150,12 +150,12 @@ try {
     $adapter = & (Join-Path $PSScriptRoot 'Get-Adapter.ps1') -DataDirectory $data -VerifyOnly
     $artifacts += @{ path = $admission.ModelPath; bytes = 5946648928; sha256 = 'e658f0f0736a03a4549535a439f9b07254ebf8ab88ae27cbe6e52d098ca5d1f5' }
     $artifacts += @{ path = $adapter.AdapterPath; bytes = 9682464; sha256 = 'f1669534803d340a496015f5c45125f3437b4d13ec764f40e34488ce83967f42' }
-    foreach ($backend in @('native', 'auto')) {
+    foreach ($backend in @('native', $RustBackend)) {
         $sampleLane = Join-Path $evidence $backend; [void][IO.Directory]::CreateDirectory($sampleLane)
         $executable = if ($backend -ceq 'native') { $collector } else { $qualifier }
         $arguments = if ($backend -ceq 'native') {
             @('capture', $runtime.Runtime.runtimeDirectory, $admission.ModelPath, $sampleLane, $adapter.AdapterPath, '1.3')
-        } else { @('--use-repacked-ptq1', '--rank-one-adapter', $adapter.AdapterPath, '1.3', 'forward', $admission.ModelPath, $sampleLane, 'auto', '248045') }
+        } else { @('--use-repacked-ptq1', '--rank-one-adapter', $adapter.AdapterPath, '1.3', 'forward', $admission.ModelPath, $sampleLane, $RustBackend, '248045') }
         $arguments | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $sampleLane 'arguments.json') -Encoding utf8
         $artifacts | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath (Join-Path $sampleLane 'artifacts.json') -Encoding utf8
         $remaining = Get-Ptq1WorkAllowance $workClock
@@ -176,7 +176,7 @@ try {
     $report.Status = 'comparing'; $report.Phase = 'logits-and-complete-state-comparison'; $report['ActiveBackend'] = $null
     Save-Ptq1NumericsReport -Report $report -Path $reportPath
     $compared = Invoke-BonsaiNativeProcess -Executable $python -WorkingDirectory $evidence -TimeoutSeconds (Get-Ptq1WorkAllowance $workClock) -LogPath (Join-Path $evidence 'comparison.txt') -ArgumentList @(
-        '-B', (Join-Path $repo 'tools/native-reference/compare.py'), '--native', (Join-Path $evidence 'native'), '--rust', (Join-Path $evidence 'auto'), '--backend', 'auto', '--output', $output)
+        '-B', (Join-Path $repo 'tools/native-reference/compare.py'), '--native', (Join-Path $evidence 'native'), '--rust', (Join-Path $evidence $RustBackend), '--backend', $RustBackend, '--output', $output)
     if ($compared.ExitCode -ne 0) { throw 'Native/Rust one-token smoke comparison failed.' }
     $report['Comparison'] = Get-Content -LiteralPath $output -Raw | ConvertFrom-Json -AsHashtable -DateKind String
     $report.Status = 'completed-one-token-smoke'; $report.Phase = 'completed'; $report['WorkElapsedSeconds'] = $workClock.Elapsed.TotalSeconds

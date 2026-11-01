@@ -26,6 +26,7 @@ class Layout:
 
 LAYOUT = Layout()
 TOKENS = (248045,)
+BACKENDS = ("auto", "scalar", "neon")
 
 
 def require(condition, message):
@@ -147,6 +148,7 @@ def compare_payload(reference, code, actual_path):
 
 
 def validate_rust_controls(rust, capture, backend):
+    require(backend in BACKENDS, "unsupported Rust comparison backend")
     records = [json.loads(line) for line in read_bounded(rust / "stdout.txt", 65536).splitlines() if line]
     weights = [r for r in records if r.get("event") == "weights-loaded"]
     steps = [r for r in records if r.get("event") == "forward-step"]
@@ -226,7 +228,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--native", required=True, type=Path)
     parser.add_argument("--rust", required=True, type=Path)
-    parser.add_argument("--backend", required=True, choices=("auto",))
+    parser.add_argument("--backend", required=True, choices=BACKENDS)
     parser.add_argument("--output", required=True, type=Path)
     arguments = parser.parse_args()
     report = compare(arguments.native, arguments.rust, arguments.backend)

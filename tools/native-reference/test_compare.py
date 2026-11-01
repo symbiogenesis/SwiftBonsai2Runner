@@ -39,6 +39,29 @@ def fixture(transposed):
 
 
 class NativeStateTests(unittest.TestCase):
+    def test_explicit_backend_controls_reject_substitution_and_unknown_backends(self):
+        records = [{"event": "weights-loaded", "model_sha256": MODULE.MODEL,
+                    "weight_representation": "current-repacked-PTQ1_0"},
+                   {"event": "rank-one-adapter-loaded", "model_sha256": MODULE.MODEL,
+                    "adapter_sha256": MODULE.ADAPTER, "target_pairs": 129, "scale_bits": "3fa66666"},
+                   {"event": "forward-step", "position": 0, "input_token": 248045,
+                    "backend_requested": "auto"}]
+        capture = {"adapterLoaded": True, "adapterScale": 1.3}
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory)
+            for observed in MODULE.BACKENDS:
+                records[-1]["backend_requested"] = observed
+                (path / "stdout.txt").write_text("\n".join(map(json.dumps, records)), encoding="utf-8")
+                self.assertEqual(len(MODULE.validate_rust_controls(path, capture, observed)), 1)
+                for requested in (*MODULE.BACKENDS, "unknown"):
+                    if requested != observed:
+                        with self.assertRaises(ValueError):
+                            MODULE.validate_rust_controls(path, capture, requested)
+            records[-1]["backend_requested"] = "unknown"
+            (path / "stdout.txt").write_text("\n".join(map(json.dumps, records)), encoding="utf-8")
+            with self.assertRaises(ValueError):
+                MODULE.validate_rust_controls(path, capture, "unknown")
+
     def test_control_binding_rejects_changed_adapter_scale_tokens_and_backend(self):
         records = [{"event": "weights-loaded", "model_sha256": MODULE.MODEL,
                     "weight_representation": "current-repacked-PTQ1_0"},

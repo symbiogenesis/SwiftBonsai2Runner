@@ -13,6 +13,13 @@ if ($Case -ceq 'CapturePolicy') {
     Import-Module (Join-Path $PSScriptRoot '../scripts/Bonsai.Ptq1.psm1')
     $repo = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
     $pins = Get-Ptq1CapturePin -RepositoryDirectory $repo
+    foreach ($backend in @('auto', 'scalar', 'neon')) {
+        $plan = & (Join-Path $repo 'scripts/Invoke-NativePtq1Numerics.ps1') -DataDirectory $repo -PlanOnly -RustBackend $backend
+        Assert ($plan.RustBackend -ceq $backend -and $plan.NativeSamples -eq 1 -and $plan.RustSamples -eq 1 -and
+            $plan.WorkBudgetSeconds -eq 240 -and $plan.WholeJobMinutes -eq 5 -and -not $plan.DefaultMayChange) 'Backend selection changed the bounded capture workload or promotion boundary.'
+    }
+    Assert-Failure { & (Join-Path $repo 'scripts/Invoke-NativePtq1Numerics.ps1') -DataDirectory $repo -PlanOnly -RustBackend 'invalid' }
+    Assert-Failure { & (Join-Path $repo 'scripts/Invoke-NativePtq1Numerics.ps1') -DataDirectory $repo -PlanOnly -RustBackend 'AUTO' }
     $tempRoot = [IO.Path]::GetFullPath([IO.Path]::GetTempPath())
     $fixture = [IO.Path]::GetFullPath((Join-Path $tempRoot ('Bonsai-Ptq1CapturePolicy-' + [guid]::NewGuid().ToString('N'))))
     [void][IO.Directory]::CreateDirectory((Join-Path $fixture 'tools/native-reference'))
