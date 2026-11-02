@@ -1,0 +1,144 @@
+{
+  "schemaVersion": 1,
+  "kind": "static-original-pq2-resident-host-payload-bounds",
+  "sourceIdentityEncoding": "UTF8-with-LF-newlines",
+  "sources": [
+    {
+      "path": "tools/hexagon/verify_resident_traffic.py",
+      "sha256": "9fd107f3abbaa9ca85ee77fb0ebf9a2cad4268194ccb22b416a4dea216120976"
+    },
+    {
+      "path": "tools/hexagon/verify_operation_traffic.py",
+      "sha256": "39c030a91b51fb23981911bf24f301b372ddb920e5ae3c2068559aefab48665a"
+    },
+    {
+      "path": "docs/evidence/hexagon-swift-operation-ledger.json",
+      "sha256": "53be628d45e7784394ba45a92804dd22363788264f94bd394fe7f1eb0d33019c"
+    },
+    {
+      "path": "docs/evidence/hexagon-swift-traffic-ledger.json",
+      "sha256": "a653d7a2a02111152d0a67520b5978f362e984929008e1eae9cc42607b5a4059"
+    }
+  ],
+  "assumptions": {
+    "maximumWeightRowsPerOperation": 17408,
+    "terminalOperationCap": 21760,
+    "maximumResidentArenaBytes": 67108864,
+    "residentRangeAlignmentBytes": 128,
+    "allocationAlignmentBytes": 4096,
+    "swiftServiceAllowanceBytes": 12348030976,
+    "fullAllocationQueueBufferFlags": "0x90",
+    "residentArena": "immutable packed weights in mapped host RAM; not DSP VTCM",
+    "allSelectedWeightsRetainedForEveryRepeatedToken": true,
+    "cacheEviction": false
+  },
+  "scenarios": [
+    {
+      "placement": "blk.0.ffn_up.weight",
+      "operationsPerToken": 40,
+      "originalSelectedWeightBytes": 23674880,
+      "minimumPackedResidentArenaBytes": 25067520,
+      "fitsMaximumResidentArena": true,
+      "minimumOriginalPlusResidentWeightBytes": 48742400,
+      "minimumWeightsFitServiceAllowance": true,
+      "baseNativeAllocationBytes": 1191936,
+      "nativeAllocationWithMinimumArenaBytes": 26259456,
+      "kernelLogicalPayloadPerTokenBytes": 47513600,
+      "kernelWeightPayloadPerTokenBytes": 25067520,
+      "activationPayloadPerTokenBytes": 163840,
+      "returnedPlanePayloadPerTokenBytes": 22282240,
+      "baselineDescriptorCoveredExtentPerTokenBytes": 47677440,
+      "residentDescriptorCoveredExtentPerTokenBytes": 1050378240,
+      "repeatedProjectionCases": [
+        {
+          "tokens": 1,
+          "operations": 40,
+          "fitsTerminalOperationCap": true,
+          "streamingCpuPackedWeightBytes": 25067520,
+          "residentCpuPackedWeightBytesLowerBound": 25067520,
+          "avoidedRepeatedCpuPackingBytesUpperBound": 0,
+          "kernelLogicalPayloadBytes": 47513600
+        },
+        {
+          "tokens": 8,
+          "operations": 320,
+          "fitsTerminalOperationCap": true,
+          "streamingCpuPackedWeightBytes": 200540160,
+          "residentCpuPackedWeightBytesLowerBound": 25067520,
+          "avoidedRepeatedCpuPackingBytesUpperBound": 175472640,
+          "kernelLogicalPayloadBytes": 380108800
+        },
+        {
+          "tokens": 128,
+          "operations": 5120,
+          "fitsTerminalOperationCap": true,
+          "streamingCpuPackedWeightBytes": 3208642560,
+          "residentCpuPackedWeightBytesLowerBound": 25067520,
+          "avoidedRepeatedCpuPackingBytesUpperBound": 3183575040,
+          "kernelLogicalPayloadBytes": 6081740800
+        }
+      ]
+    },
+    {
+      "placement": "all-eligible-original-PQ2-plus-logits-idealized",
+      "operationsPerToken": 23256,
+      "originalSelectedWeightBytes": 6799564800,
+      "minimumPackedResidentArenaBytes": 7199539200,
+      "fitsMaximumResidentArena": false,
+      "minimumOriginalPlusResidentWeightBytes": 13999104000,
+      "minimumWeightsFitServiceAllowance": false,
+      "baseNativeAllocationBytes": 1191936,
+      "nativeAllocationWithMinimumArenaBytes": null,
+      "kernelLogicalPayloadPerTokenBytes": 13694386176,
+      "kernelWeightPayloadPerTokenBytes": 7199539200,
+      "activationPayloadPerTokenBytes": 95256576,
+      "returnedPlanePayloadPerTokenBytes": 6399590400,
+      "baselineDescriptorCoveredExtentPerTokenBytes": 27719663616,
+      "residentDescriptorCoveredExtentPerTokenBytes": null,
+      "repeatedProjectionCases": [
+        {
+          "tokens": 1,
+          "operations": 23256,
+          "fitsTerminalOperationCap": false,
+          "streamingCpuPackedWeightBytes": 7199539200,
+          "residentCpuPackedWeightBytesLowerBound": 7199539200,
+          "avoidedRepeatedCpuPackingBytesUpperBound": 0,
+          "kernelLogicalPayloadBytes": 13694386176
+        },
+        {
+          "tokens": 8,
+          "operations": 186048,
+          "fitsTerminalOperationCap": false,
+          "streamingCpuPackedWeightBytes": 57596313600,
+          "residentCpuPackedWeightBytesLowerBound": 7199539200,
+          "avoidedRepeatedCpuPackingBytesUpperBound": 50396774400,
+          "kernelLogicalPayloadBytes": 109555089408
+        },
+        {
+          "tokens": 128,
+          "operations": 2976768,
+          "fitsTerminalOperationCap": false,
+          "streamingCpuPackedWeightBytes": 921541017600,
+          "residentCpuPackedWeightBytesLowerBound": 7199539200,
+          "avoidedRepeatedCpuPackingBytesUpperBound": 914341478400,
+          "kernelLogicalPayloadBytes": 1752881430528
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "Conditional byte arithmetic, not runtime admission, actual cache occupancy, measured bandwidth or inference speedup.",
+    "The first scenario assumes its complete weight payload is resident and reused; metadata, scales, temporary packing, allocator, CPU graph and DSP resources are additional.",
+    "The all-eligible scenario exceeds both the 64MiB arena and the unchanged terminal operation cap even for one token; it is not executable under this contract.",
+    "Resident mapped host weights remove repeated CPU packing/copy only when hits occur; they do not reduce the signed kernel's declared weight or returned-plane payloads.",
+    "The full expanded allocation remains covered by each queue descriptor with unchanged 0x90 flags; actual cache maintenance may grow and is unmeasured.",
+    "Descriptor-covered extent is not bytes transferred, cache-line work, DRAM traffic or simultaneous memory occupancy.",
+    "No DSP weight residency, fused kernel, multitoken HMX prefill, persistent service, PTQ1 qualification or production backend is established.",
+    "Repeated-token cases are arithmetic examples within operation bounds only, without a duration, numerical, model-state, resource or device acceptance claim."
+  ],
+  "newOwnerDeviceExecutionMilliseconds": 0,
+  "deviceOpened": false,
+  "modelLoaded": false,
+  "profileEligible": false,
+  "measuredInferenceSpeedup": null
+}

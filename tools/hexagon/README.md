@@ -74,3 +74,8 @@ Its [proposed tile wire contract](packed-projection.md#proposed-signed-kernel-ti
 serializes bounded original-PQ2/Q8_K work units and strictly replays them on CPU,
 including sequencing, corruption and cancellation controls. It is an application
 protocol for a future separately signed kernel, not an existing vendor operation.
+
+The [resident host accounting](resident-host.md) separately derives the optional
+Prism HMX arena's repeated CPU packing bounds, unchanged kernel payloads and
+expanded queue-descriptor coverage. Its static ledger establishes no device
+weight residency, cache-traffic reduction, full-model admission or speedup.
