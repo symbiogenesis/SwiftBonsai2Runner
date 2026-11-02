@@ -181,6 +181,9 @@ and makes no native writer-basis or promotion verdict. Dispatch it with
 `gh workflow run swift-lora-direction.yml --ref main`, then independently archive
 and review its evidence. The selected public raw vector is not a substitute for
 an authenticated record of the original authoring invocation.
+The value-free `attempt.json` retains the current stage, terminal status and native
+exit code when observed, including failed intake or comparison with no stdout report.
+A `running` receipt after forced interruption establishes no completed result.
 
 ## Memory and execution cost
 
