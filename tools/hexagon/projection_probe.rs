@@ -524,6 +524,9 @@ fn projection(request: Request, started: Instant) -> Result<Value> {
         output.clear();
         None
     };
+    if passed {
+        check_time(deadline)?;
+    }
     let receipt = json!({
         "schemaVersion": 1,
         "kind": "swift-original-pq2-guarded-q2-projection",
@@ -560,7 +563,7 @@ fn projection(request: Request, started: Instant) -> Result<Value> {
         "numericalFailure": numeric_failure,
         "result": result_identity,
         "maximumSeconds": request.maximum_seconds,
-        "elapsedMilliseconds": started.elapsed().as_millis(),
+        "elapsedMillisecondsBeforePublication": started.elapsed().as_millis(),
         "trustedSupervisorRequiredForDeviceExecution": true,
         "sameArtifactPayloadBound": true,
         "everyLimbBitwiseParity": passed,
@@ -580,6 +583,9 @@ fn projection(request: Request, started: Instant) -> Result<Value> {
     fs::rename(pending, pending_output.join("receipt.json"))
         .map_err(|_| "receipt-publication-failed")?;
     drop(_result_hold);
+    if passed {
+        check_time(deadline)?;
+    }
     fs::rename(&pending_output, &request.output_directory)
         .map_err(|_| "result-directory-publication-failed")?;
     Ok(receipt)
