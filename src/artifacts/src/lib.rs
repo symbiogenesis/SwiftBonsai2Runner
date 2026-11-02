@@ -359,7 +359,8 @@ fn digest_hex(digest: [u8; 32]) -> String {
 /// The caller supplies a reusable, nonempty read buffer and a cancellation
 /// checkpoint invoked before every read. The lowercase SHA-256 covers the exact
 /// bytes read, without text decoding or newline normalization. This function
-/// neither rewinds nor locks the reader.
+/// retries interrupted reads after checking cancellation again; it neither
+/// rewinds nor locks the reader.
 ///
 /// # Errors
 /// Rejects an empty buffer, unavailable native hashing, read or hash failures,
@@ -384,7 +385,11 @@ pub fn hash_reader(
     let mut total = 0_u64;
     loop {
         checkpoint()?;
-        let count = reader.read(buffer).map_err(|_| ArtifactError::Identity)?;
+        let count = match reader.read(buffer) {
+            Ok(count) => count,
+            Err(error) if error.kind() == std::io::ErrorKind::Interrupted => continue,
+            Err(_) => return Err(ArtifactError::Identity),
+        };
         if count == 0 {
             break;
         }
@@ -857,6 +862,49 @@ mod tests {
             hash_reader(&mut BrokenReader(false), 1, &mut [0; 64], &mut || Ok(())),
             Err(ArtifactError::Identity)
         );
+    }
+    #[test]
+    fn bounded_hash_retries_interruptions_without_skipping_cancellation() {
+        struct InterruptedReader {
+            inner: Cursor<&'static [u8]>,
+            interrupted: bool,
+        }
+        impl Read for InterruptedReader {
+            fn read(&mut self, buffer: &mut [u8]) -> std::io::Result<usize> {
+                self.interrupted = !self.interrupted;
+                if self.interrupted {
+                    Err(std::io::ErrorKind::Interrupted.into())
+                } else {
+                    self.inner.read(buffer)
+                }
+            }
+        }
+        let mut reader = InterruptedReader {
+            inner: Cursor::new(b"abc"),
+            interrupted: false,
+        };
+        assert_eq!(
+            hash_reader(&mut reader, 3, &mut [0; 1], &mut || Ok(())),
+            Ok("ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad".into())
+        );
+
+        let mut reader = InterruptedReader {
+            inner: Cursor::new(b"abc"),
+            interrupted: false,
+        };
+        let mut checkpoints = 0;
+        assert_eq!(
+            hash_reader(&mut reader, 3, &mut [0; 1], &mut || {
+                checkpoints += 1;
+                if checkpoints == 2 {
+                    Err(ArtifactError::Cancelled)
+                } else {
+                    Ok(())
+                }
+            }),
+            Err(ArtifactError::Cancelled)
+        );
+        assert_eq!(reader.inner.position(), 0);
     }
     #[test]
     fn zipped_installation_verifies_deflated_payload_and_rejects_drift()
