@@ -56,8 +56,8 @@
     "runnerNativeControlsAndArtifactBinder": "success",
     "runnerQueuedControlsAndPublicAbi": "success",
     "ownerDispatchInventoryAndSessionJobs": "skipped; no-owner-hardware-execution",
-    "correctedPrismFoundation": "in-progress; no-new-failure-at-review",
-    "runnerFoundation": "in-progress; no-failure-at-review",
+    "correctedPrismFoundation": "success",
+    "runnerFoundation": "success",
     "prismRuntimeConformance": "in-progress; final-conclusion-pending",
     "initialPrismSourcePackage": "success-on-Windows-ARM64-Windows-x64-and-Linux-ARM64"
   },
