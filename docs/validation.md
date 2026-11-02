@@ -463,6 +463,19 @@ unsafe operations stay small, documented and behind safe owners. Prefer scoped
 allowances still require their specific reason. Existing all-target Clippy,
 rustdoc and owning tests enforce the policy across supported feature profiles.
 
+The 2026-11-01 focused Windows ARM64 screen completed in 87.6 seconds on
+`rustc 1.101.0-nightly (1a2c4797e 2026-10-21)`. Both compiler regressions passed;
+disabling Polonius produced E0499 and disabling the global next solver produced
+E0369, confirming the gates distinguish the required analyses. Changed-source
+formatting, Release all-target Clippy for artifacts and CI tooling, the exact
+interrupted-read/cancellation regression and a production-source tokenizer Clippy
+check passed. The tokenizer check isolated native linkage; complete owning
+speech fixtures, native linking and the remaining workspace checks stay in
+hosted Foundation. This screen ran no model, benchmark or complete suite.
+The compiler and dependency pins subsequently advanced on `main`; this local
+result retains the compiler identity above, with the combined revision requiring
+its own hosted Foundation result.
+
 [Compiler probes](https://github.com/symbiogenesis/prism-inference/blob/main/tools/rust-trial/README.md)
 retain stable as an isolated control. Release overflow checks stay enabled and
 debug assertions disabled to preserve
