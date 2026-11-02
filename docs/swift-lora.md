@@ -171,6 +171,17 @@ input/correction captures, loaded-zero identity, nonzero application and the oth
 runtime/application gates above remain required. Repeated or invented reference
 vectors cannot establish authoring provenance merely by passing this comparator.
 
+The main-only [published direction workflow](../.github/workflows/swift-lora-direction.yml)
+performs the smaller B-factor consistency check on GitHub-hosted Windows ARM64.
+It uses the native bounded downloader for the exact approved adapter and the
+[immutable public raw direction](../config/swift-lora.direction.json), then runs
+`basis-direction` and retains the complete per-site report, native intake receipts,
+input locks and source/run/tool identities. It downloads no model or checkpoint
+and makes no native writer-basis or promotion verdict. Dispatch it with
+`gh workflow run swift-lora-direction.yml --ref main`, then independently archive
+and review its evidence. The selected public raw vector is not a substitute for
+an authenticated record of the original authoring invocation.
+
 ## Memory and execution cost
 
 The adapter contains **9,664,512 F32 payload bytes** (about 9.23 MiB on disk). Prism

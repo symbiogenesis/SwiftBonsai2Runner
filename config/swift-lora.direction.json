@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "direction": {
+    "repository": "Continuum-AI-Corp/OrcaBonsai-27B-Uncensored",
+    "revision": "703028bb7fba03496e796b144839b161cf0f5409",
+    "path": "directions/refusal_dir_fp32.bin",
+    "filename": "refusal_dir_fp32.bin",
+    "bytes": 20480,
+    "sha256": "06ab5afef2529d9302748507c85913d55dff53b7b739ccc98d8db7716ebd36b2",
+    "url": "https://raw.githubusercontent.com/Continuum-AI-Corp/OrcaBonsai-27B-Uncensored/703028bb7fba03496e796b144839b161cf0f5409/directions/refusal_dir_fp32.bin",
+    "license": "Apache-2.0",
+    "format": "5120 little-endian F32 values; selected published direction, without renormalization"
+  },
+  "comparison": {
+    "adapterLock": "config/swift-lora.lock.json",
+    "operation": "qualification/basis-direction",
+    "equation": "B[channel] = -direction[channel] at all 129 sites",
+    "authoringProvenanceQualified": false,
+    "writerBasisQualified": false,
+    "defaultMayChange": false,
+    "scope": "The selected public direction can be compared with the approved adapter's B factors. Its raw bytes are not independently authenticated as the exact original authoring input; checkpoint/conversion provenance, A reproduction, native SSM order and model behavior remain unqualified."
+  }
+}

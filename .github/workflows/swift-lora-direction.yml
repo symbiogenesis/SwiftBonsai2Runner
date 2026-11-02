@@ -1,0 +1,94 @@
+name: Swift LoRA published direction consistency
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: swift-lora-direction-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  direction:
+    if: github.ref == 'refs/heads/main'
+    runs-on: windows-11-arm
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/bonsai-tools
+      - name: Verify published direction against every approved B factor
+        timeout-minutes: 5
+        shell: pwsh
+        working-directory: ${{ runner.temp }}
+        env:
+          RUNNER_ENVIRONMENT: ${{ runner.environment }}
+        run: |
+          Set-StrictMode -Version Latest
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          if ($env:RUNNER_ENVIRONMENT -cne 'github-hosted') { throw 'Direction consistency runs only on hosted hardware.' }
+          $root = Join-Path $env:RUNNER_TEMP ('SwiftBonsai-Direction-' + [guid]::NewGuid().ToString('N'))
+          $evidence = Join-Path $root 'evidence'
+          $data = Join-Path $root 'data'
+          $working = Join-Path $root 'work'
+          foreach ($path in @($evidence, $data, $working)) { [void][IO.Directory]::CreateDirectory($path) }
+          "BONSAI_DIRECTION_EVIDENCE=$evidence" >> $env:GITHUB_ENV
+          $adapterLock = Join-Path $env:GITHUB_WORKSPACE 'config/swift-lora.lock.json'
+          $directionLock = Join-Path $env:GITHUB_WORKSPACE 'config/swift-lora.direction.json'
+          $adapter = (Get-Content -LiteralPath $adapterLock -Raw | ConvertFrom-Json).adapter
+          $direction = (Get-Content -LiteralPath $directionLock -Raw | ConvertFrom-Json).direction
+          Copy-Item -LiteralPath $adapterLock -Destination (Join-Path $evidence 'swift-lora.lock.json')
+          Copy-Item -LiteralPath $directionLock -Destination (Join-Path $evidence 'swift-lora.direction.json')
+          Copy-Item -LiteralPath (Join-Path $env:BONSAI_TOOLS_PACKAGE 'receipt.json') -Destination (Join-Path $evidence 'tools-receipt.json')
+          [ordered]@{
+            schemaVersion = 1
+            kind = 'hosted-adapter-direction-source-run'
+            repository = $env:GITHUB_REPOSITORY
+            revision = $env:GITHUB_SHA
+            workflowPath = '.github/workflows/swift-lora-direction.yml'
+            runId = $env:GITHUB_RUN_ID
+            runAttempt = $env:GITHUB_RUN_ATTEMPT
+            toolsSourceId = $env:BONSAI_TOOLS_SOURCE_ID
+            adapterSha256 = $adapter.sha256
+            directionSha256 = $direction.sha256
+            modelExecuted = $false
+            ownerDeviceExecuted = $false
+            scope = 'Exact public input consistency only; no authoring provenance, native writer basis, model quality or promotion verdict.'
+          } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $evidence 'source-run.json') -Encoding utf8NoBOM
+          foreach ($inputArtifact in @(@{ name='adapter'; pin=$adapter }, @{ name='direction'; pin=$direction })) {
+            $pin = $inputArtifact.pin
+            $request = Join-Path $working ($inputArtifact.name + '-receive.json')
+            @{
+              operation = 'receive'; uri = $pin.url; path = (Join-Path $data $pin.filename)
+              bytes = $pin.bytes; sha256 = $pin.sha256; workingDirectory = $working; timeoutSeconds = 120
+            } | ConvertTo-Json | Set-Content -LiteralPath $request -Encoding utf8NoBOM
+            & $env:BONSAI_TOOLS_PATH artifact --request $request |
+              Set-Content -LiteralPath (Join-Path $evidence ($inputArtifact.name + '-intake.json')) -Encoding utf8NoBOM
+            if ($LASTEXITCODE -ne 0) { throw 'Native bounded direction input verification failed.' }
+          }
+          $request = Join-Path $working 'direction-request.json'
+          @{
+            operation = 'basis-direction'
+            adapterPath = (Join-Path $data $adapter.filename)
+            directionPath = (Join-Path $data $direction.filename)
+            directionSha256 = $direction.sha256
+          } | ConvertTo-Json | Set-Content -LiteralPath $request -Encoding utf8NoBOM
+          $reportPath = Join-Path $evidence 'direction-comparison.json'
+          & $env:BONSAI_TOOLS_PATH qualification --request $request |
+            Set-Content -LiteralPath $reportPath -Encoding utf8NoBOM
+          if ($LASTEXITCODE -ne 0) { throw 'Native direction comparison failed; inspect retained input receipts.' }
+          $report = Get-Content -LiteralPath $reportPath -Raw | ConvertFrom-Json
+          if ($report.directionComparisonPassed -ne $true) { throw 'One or more B factors differ from the selected published direction; inspect the complete retained report.' }
+          @('All 129 B factors agree with the selected immutable published direction within the fixed native comparator bounds.',
+            'No model was loaded or executed and no owner-device budget was used.',
+            'Authoring provenance, A-factor reproduction, native SSM order, numerical/application/quality gates and default promotion remain pending.',
+            'Retain and independently review the input locks, native intake/comparison reports and exact source/run/tools identities before using this result.') |
+            Add-Content -LiteralPath $env:GITHUB_STEP_SUMMARY
+      - name: Retain complete direction consistency evidence including failures
+        if: always() && env.BONSAI_DIRECTION_EVIDENCE != ''
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: swift-lora-direction-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ env.BONSAI_DIRECTION_EVIDENCE }}/*.json
+          if-no-files-found: error
+          retention-days: 90
