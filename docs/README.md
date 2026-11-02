@@ -35,6 +35,7 @@ implemented behavior from actual-model, device, quality and isolation acceptance
 | --- | --- |
 | [Swift memory and PTQ1](swift-memory.md) | Artifacts, census, budgets, lossless packing/allocation, numerical evidence, decision screen and approximation boundaries |
 | [Swift LoRA](swift-lora.md) | Artifact, basis, cost, storage overlay and paired device/human qualification |
+| [Weight-space programming](weight-space-programming.md) | Swift applicability, compact PQ2/PTQ1 correction mechanism and evidence needed before a weight edit |
 | [Qwen reference](model-selection.md) | Selection rationale, compatibility/memory checks and stop/reopen conditions |
 | [Native Rust engine](native-rust-engine.md) | Supported graph/API, numerical/state ownership, runtime overhead and promotion evaluator |
 | [C++ retirement](cpp-retirement.md) | File-by-file inventories, independent replacement controls, dependency/build cleanup and remaining integration gates |

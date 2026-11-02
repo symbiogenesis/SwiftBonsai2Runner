@@ -464,6 +464,28 @@ not close pending hosted integration or full-model acceptance.
 
 ### Quality and speech
 
+- Evaluate the [weight-space programming lead](docs/weight-space-programming.md)
+  with an early stop: first establish a reproducible Swift failure in complete
+  reasoning/answer captures, using exact model, runtime, template, sampler,
+  thinking, adapter and termination identities. No Swift loop defect or beneficial
+  weight correction is established. Reuse existing captures and human review before
+  adding instrumentation; short prefixes and synthetic fixtures cannot justify an edit.
+  Budget one investigation session, then stop if there is no concentrated correctable
+  fault or feasible evaluation. If justified, allow one or two candidate sessions for
+  a Swift-specific FFN direction and small F32 correction, followed by separate hosted
+  validation; these are contingent effort estimates, not promised improvement.
+  Preserve the standard adapter when isolating the candidate effect: overlapping
+  corrections need explicit composition beyond the current single rank-one slot.
+  Bind the patch to original PQ2 and the current lossless PTQ1 repack independently,
+  preserve original-activation basis, and retain loaded-zero identity and rollback.
+  Require held-out complete-answer correctness, instruction following and creative
+  quality without material throughput/resource regression; measure useful-answer time
+  separately from tokens/second. Do not infer benefit from shorter output, copied
+  article layer IDs, a different adapter/sampler or smaller context/output limits.
+  A discovery/comparison matrix is not feasible under the retained startup evidence
+  and aggregate five-minute laptop ceiling; leave model work pending until a complete
+  workload fits or an appropriate hosted target is available. Do not split it across
+  owner sessions. This assessment does not qualify a runtime/default change.
 - Establish an independent writing and art-direction rubric: drafting, constrained
   revision, continuity, dialogue, voice and tone, composition, instruction following,
   coherence, repetition, unwanted refusals and useful completed answers. Qualify

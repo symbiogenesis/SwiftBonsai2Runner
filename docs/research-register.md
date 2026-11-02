@@ -3,6 +3,8 @@
 Research cutoff and last source review: **2026-10-29**.
 Signed constant floor-division addendum reviewed **2026-10-30**; the other source
 reviews retain their original cutoff.
+The [weight-space programming assessment](weight-space-programming.md) was reviewed
+**2026-11-02** separately; it establishes no Swift quality or performance gain.
 
 This index records mathematical results, algorithms, implementations and reports
 relevant to Swift Bonsai 2, with their assumptions and unresolved checks. Inclusion
