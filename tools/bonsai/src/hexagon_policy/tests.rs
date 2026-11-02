@@ -244,6 +244,8 @@ fn build_record(session: bool) -> Value {
                 "session_mapping_native.rs",
                 "compute.rs",
                 "compute_native.rs",
+                "projection.rs",
+                "projection_native.rs",
                 "query.rs",
                 "sources.json"
             ]
@@ -269,6 +271,8 @@ fn check_build(record: &Value, session: bool) -> Result<Value> {
             "session_mapping_native.rs",
             "compute.rs",
             "compute_native.rs",
+            "projection.rs",
+            "projection_native.rs",
             "query.rs",
             "sources.json",
         ]
@@ -327,7 +331,7 @@ fn hosted_build_requires_exact_source_set_types_and_executable_identity() -> Res
                 |value| check_build(value, true),
             );
             bad = record.clone();
-            bad["SourceFiles"] = vec![record["SourceFiles"][0].clone(); 11].into();
+            bad["SourceFiles"] = vec![record["SourceFiles"][0].clone(); 13].into();
             assert!(check_build(&bad, true).is_err());
         } else {
             rejects(&record, &["SourceSha256"], &json!("changed"), |value| {
