@@ -31,7 +31,7 @@ pub(super) struct Scratch {
 fn recycle_wire(wire: &mut Vec<u8>) {
     wire.clear();
     if wire.capacity() > RETAINED_WIRE_BYTES {
-        *wire = Vec::new();
+        drop(std::mem::take(wire));
     }
 }
 
@@ -40,7 +40,7 @@ impl Scratch {
         recycle_wire(&mut self.wire);
         self.samples.clear();
         if self.samples.capacity() > RETAINED_INPUT_SAMPLES {
-            self.samples = Vec::new();
+            drop(std::mem::take(&mut self.samples));
         }
     }
 }
