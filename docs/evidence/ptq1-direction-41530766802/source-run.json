@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "kind": "hosted-adapter-direction-source-run",
+  "repository": "symbiogenesis/SwiftBonsai2Runner",
+  "revision": "6c25a5d04cbd355926d2d8c1fc26268a20bdd7bf",
+  "workflowPath": ".github/workflows/swift-lora-direction.yml",
+  "runId": "41530766802",
+  "runAttempt": "1",
+  "toolsSourceId": "eeb374ac3bfb87cabe28329488c48cd495427f77a510eb27299a971609393e29",
+  "adapterSha256": "f1669534803d340a496015f5c45125f3437b4d13ec764f40e34488ce83967f42",
+  "directionSha256": "06ab5afef2529d9302748507c85913d55dff53b7b739ccc98d8db7716ebd36b2",
+  "modelExecuted": false,
+  "ownerDeviceExecuted": false,
+  "scope": "Exact public input consistency only; no authoring provenance, native writer basis, model quality or promotion verdict."
+}

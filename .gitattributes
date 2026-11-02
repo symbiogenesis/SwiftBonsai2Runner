@@ -43,6 +43,9 @@ docs/evidence/native-request-speed-20261031/*.json -text whitespace=cr-at-eol
 # Keep current-release PTQ1 failure and independent-review receipts byte-identical.
 docs/evidence/ptq1-0112-lifecycle-41379669484/*.json -text whitespace=cr-at-eol
 
+# Preserve exact hosted adapter-direction inputs, result and review receipt bytes.
+docs/evidence/ptq1-direction-41530766802/*.json -text whitespace=cr-at-eol
+
 # Keep hosted public queue ABI inputs and Rust/C control sources portable.
 tools/hexagon/windows_queue_abi.* text eol=lf
 tools/hexagon/windows-queue-abi.lock.json text eol=lf

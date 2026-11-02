@@ -171,6 +171,15 @@ input/correction captures, loaded-zero identity, nonzero application and the oth
 runtime/application gates above remain required. Repeated or invented reference
 vectors cannot establish authoring provenance merely by passing this comparator.
 
+The [independently reviewed hosted comparison](evidence/ptq1-direction-41530766802/independent-review.json)
+at Runner `6c25a5d` passed all 129 sites and 660,480 channels with zero numeric
+difference. Its [complete report](evidence/ptq1-direction-41530766802/direction-comparison.json)
+binds the approved adapter and selected public direction; the
+[file manifest](evidence/ptq1-direction-41530766802/file-manifest.json) retains the
+exact extracted receipt bytes. This resolves the selected direction's consistency
+with B, leaving checkpoint/conversion provenance, A reproduction, native SSM
+mapping and model behavior unqualified.
+
 The main-only [published direction workflow](../.github/workflows/swift-lora-direction.yml)
 performs the smaller B-factor consistency check on GitHub-hosted Windows ARM64.
 It uses the native bounded downloader for the exact approved adapter and the

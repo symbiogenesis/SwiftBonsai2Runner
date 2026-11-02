@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "kind": "hosted-adapter-direction-attempt",
+  "status": "completed",
+  "stage": "complete",
+  "failedStage": null,
+  "nativeExitCode": null,
+  "modelExecuted": false,
+  "ownerDeviceExecuted": false
+}
