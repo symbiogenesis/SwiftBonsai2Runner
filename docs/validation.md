@@ -262,10 +262,12 @@ successful strict readiness, bound to the compiled runtime lock and selected one
 policy. Startup receipts and legacy releases retain an unobserved/null result.
 This observes neither executing threads nor parallel operations or device benefit.
 
-Adapter startup also stops at the original request-work deadline, retaining the
-30-second owned-cleanup allowance even when readiness never arrives. Its pending
-receipt records `startup-budget-expired`; cancelling the startup future does not
-stand in for independently observed Job/listener cleanup or successful readiness.
+Adapter startup begins cancellation at the original request-work deadline before
+the 30-second cleanup reserve, even when readiness never arrives. Native teardown
+may consume part of that reserve; synchronous artifact verification is not
+preemptible by the async timeout. Its pending receipt records
+`startup-budget-expired`; future cancellation does not establish independently
+observed Job/listener cleanup or successful readiness.
 
 Optional supplied-history receipts persist context rejection and the completed
 history stream separately before same-owner reuse. Cancellation or failure of a
@@ -293,7 +295,7 @@ Model-free acceptance regressions:
 | `native_adapter_scale_history_requires_reported_bounded_terminal_usage` | Model-free zero/history HTTP responses with missing, zero, excessive or inconsistent usage retain exact visible output and pending status for each explicit worker policy; valid earlier steps remain recorded |
 | `native_worker_receipts_require_exact_release_and_verified_readiness` | Exact reviewed release admission and worker identities; no observed budget before readiness, for legacy/missing versions or invalid counts; mutable report fields cannot replace the compiled runtime identity |
 | `native_adapter_request_budget_drops_inflight_work_before_owned_cleanup` | Paused-time cancellation drops request-owned state before Stop and preserves the complete cleanup allowance; no request starts at or below the reserve and successful work retains the remaining budget |
-| `native_adapter_startup_budget_retains_pending_receipt_and_cleanup_reserve` | Paused-time startup cancellation retains its pending on-disk receipt and complete cleanup allowance; no startup starts inside the reserve, and future-drop ownership never becomes a readiness or independently observed cleanup pass |
+| `native_adapter_startup_budget_retains_pending_receipt_and_cleanup_reserve` | Paused-time startup cancellation retains its pending on-disk receipt at the async timeout boundary; no startup starts inside the reserve. This does not measure native teardown duration, preempt synchronous verification or establish readiness/cleanup |
 
 ### Foundation and routing
 

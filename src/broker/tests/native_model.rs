@@ -1764,9 +1764,10 @@ async fn adapter_start_before_cleanup<T>(
     report: &mut Value,
     startup: impl Future<Output = T>,
 ) -> Option<T> {
-    // Startup belongs to the same request-work deadline. Dropping LaunchConfig's
-    // startup future kills its owned Job; never spend the teardown allowance
-    // waiting for the separate readiness timeout or restart the case clock.
+    // Startup cancellation begins at the same request-work deadline. Dropping
+    // LaunchConfig's startup future performs bounded owned teardown, which may
+    // consume part of the reserve. Synchronous verification is not preemptible.
+    // Never wait for a fresh readiness timeout or restart the case clock.
     let started = tokio::time::Instant::now();
     let owner = adapter_work_before_cleanup(deadline, startup).await;
     report["startupMilliseconds"] = json!(started.elapsed().as_secs_f64() * 1000.0);
@@ -2688,6 +2689,8 @@ fn native_adapter_startup_budget_retains_pending_receipt_and_cleanup_reserve() {
             assert!(owner.is_none());
             assert_eq!(started.get(), allowance > STOP_WAIT);
             assert!(dropped.get());
+            // This model-free future has no native teardown or synchronous
+            // verification; only the async timeout boundary is established.
             assert_eq!(deadline - tokio::time::Instant::now(), STOP_WAIT);
             let saved: Value =
                 serde_json::from_slice(&fs::read(evidence.join("acceptance.json")).unwrap())
