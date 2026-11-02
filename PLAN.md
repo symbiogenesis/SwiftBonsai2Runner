@@ -740,7 +740,7 @@ Follow [Adreno contracts](docs/adreno.md); discovery alone changes no CPU profil
 
 Follow [Hexagon contracts](docs/hexagon.md).
 
-Qualify the [source-only Prism graph integration](https://github.com/symbiogenesis/prism-inference/tree/34a8bbfef86f5468ce43ab11b2826efd846a7137/tools/hexagon-runtime)
+Qualify the [source-only Prism graph integration](https://github.com/symbiogenesis/prism-inference/tree/736967c7685df423a21f26163ace97c45f7b869f/tools/hexagon-runtime)
 and bounded native HMX session on settled main. Exact PTQ1/odd-block PQ2 Q8_0
 composition and complete-request operation admission now have
 [focused model-free controls](docs/evidence/hexagon-ptq1-admission-preparation.json).

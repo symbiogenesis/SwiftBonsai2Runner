@@ -2,7 +2,9 @@
   "schemaVersion": 1,
   "kind": "exact-q8-zero-projection-and-whole-request-work-admission-preparation",
   "reviewDateLocal": "2026-11-02",
-  "prismSourceRevision": "34a8bbfef86f5468ce43ab11b2826efd846a7137",
+  "prismSourceRevision": "736967c7685df423a21f26163ace97c45f7b869f",
+  "prismImplementationRevision": "34a8bbfef86f5468ce43ab11b2826efd846a7137",
+  "runnerImplementationRevision": "0dc7a0004e13af06285759c0ad28600011537d41",
   "runnerImplementationCommits": ["5c752fe", "1b34d59", "d71326b", "941b3e1"],
   "productionInference": "CPU; released runtime pin and NPU admission unchanged",
   "implemented": [
@@ -31,19 +33,43 @@
     "independentQ8KAndPtq1FixtureVerifierPassed": true,
     "logicalTrafficLedgerVerifierPassed": true,
     "runnerFocusedValidationMilliseconds": 4578,
-    "rootFocusedBuildTestAndLintCommandsMilliseconds": 62740,
+    "rootFocusedBuildTestAndLintCommandsMilliseconds": 84806,
+    "unifiedPackageFeatureFocusedTestsAndLibraryLintPassedAfterCorrection": true,
     "workerFormattingApproximateMilliseconds": 9000,
-    "localValidationConservativeUpperBoundMilliseconds": 120000,
+    "localValidationConservativeUpperBoundMilliseconds": 180000,
     "ownerCeilingMilliseconds": 300000,
     "completeSuitesExecutedOnOwner": false,
     "scope": "synthetic-graph-state-adapter-rollback-and-CPU-mocked-submitters; retained-native-capture-replay; no-vendor-driver-or-actual-model"
   },
   "hostedChecks": {
     "statusAtPreparation": "queued-or-pending; inspect-linked-run-conclusions",
-    "prismNativeAndRuntime": "https://github.com/symbiogenesis/prism-inference/actions/runs/41499034270",
-    "prismFoundation": "https://github.com/symbiogenesis/prism-inference/actions/runs/41499034204",
+    "prismNativeAndRuntime": "https://github.com/symbiogenesis/prism-inference/actions/runs/41500261652",
+    "prismFoundation": "https://github.com/symbiogenesis/prism-inference/actions/runs/41500261622",
     "prismSourcePackage": "https://github.com/symbiogenesis/prism-inference/actions/runs/41499034207",
-    "prismRuntimeConformance": "https://github.com/symbiogenesis/prism-inference/actions/runs/41499034254"
+    "prismRuntimeConformance": "https://github.com/symbiogenesis/prism-inference/actions/runs/41500261697",
+    "runnerNativeControls": "https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41499233709",
+    "runnerQueuedControlsAndAbi": "https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41499233541",
+    "runnerFoundation": "https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41499233454"
+  },
+  "hostedConclusionsAtReview": {
+    "correctedPrismNativeAndRuntime": "success-on-Windows-ARM64-Windows-x64-and-cross-target-lint",
+    "runnerNativeControlsAndArtifactBinder": "success",
+    "runnerQueuedControlsAndPublicAbi": "success",
+    "ownerDispatchInventoryAndSessionJobs": "skipped; no-owner-hardware-execution",
+    "correctedPrismFoundation": "in-progress; no-new-failure-at-review",
+    "runnerFoundation": "in-progress; no-failure-at-review",
+    "prismRuntimeConformance": "in-progress; final-conclusion-pending",
+    "initialPrismSourcePackage": "success-on-Windows-ARM64-Windows-x64-and-Linux-ARM64"
+  },
+  "initialHostedObservation": {
+    "sourceRevision": "34a8bbfef86f5468ce43ab11b2826efd846a7137",
+    "nativeAndRuntime": "success-on-Windows-ARM64-Windows-x64-and-cross-target-lint",
+    "nativeAndRuntimeRun": "https://github.com/symbiogenesis/prism-inference/actions/runs/41499034270",
+    "sourcePackage": "success-on-Windows-ARM64-Windows-x64-and-Linux-ARM64",
+    "sourcePackageScope": "published-CPU-source-closure; unpublished-native-runtime-tests-excluded",
+    "foundationRun": "https://github.com/symbiogenesis/prism-inference/actions/runs/41499034204",
+    "foundationFailure": "untyped-empty-capture-test-assertion-E0282-under-unified-workspace-features",
+    "correction": "736967c-explicit-byte-string-comparison; focused-combined-package-test-and-library-lint-pass"
   },
   "implementationLimits": {
     "Q8HmxSubmissionsPerOriginal128BlockAndOriginalRowTile": 4,
