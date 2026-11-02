@@ -4,6 +4,7 @@
     reason = "Fixed JSON controls and integer-valued identities require exact equality."
 )]
 
+mod basis;
 mod capture;
 mod invocation;
 mod prepare;
@@ -376,6 +377,9 @@ pub fn run(request: Value) -> Result<Value> {
         return Err("Qualification request must be an object.".into());
     };
     let operation: String = take(&mut request, "operation")?;
+    if operation == "basis-intake" {
+        return basis::run(request);
+    }
     if matches!(operation.as_str(), "run" | "screen-run") {
         return prepare::run(request, operation == "screen-run");
     }

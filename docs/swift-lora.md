@@ -105,6 +105,45 @@ The missing checkpoint/conversion identity is external evidence; additional
 native/Rust agreement cannot reconstruct its provenance. The audit closes no
 model qualification gate.
 
+### Authoring evidence intake
+
+`bonsai-tools qualification` operation `basis-intake` accepts an external evidence
+directory, an external `manifestPath` and its independently selected raw-byte
+`manifestSha256`. It reads the approved 9.7 MB adapter and bounded evidence files;
+it never loads a checkpoint or starts inference. Keep collection and review within
+the owner's aggregate budget, or perform reproduction and intake on hosted CI.
+
+The schema-1 manifest contains `modelSha256` for the current PTQ1 export,
+`runtimeCommit` for the pinned release, `adapter`, `checkpointManifest`,
+`conversionManifest`, `toolchainManifest`, `direction`, a nonempty `normalization`
+description, `mapping`, `absoluteTolerance`, `relativeTolerance` and `ssmSites`.
+Every artifact reference is `{ "file": "NAME", "bytes": LENGTH, "sha256": "SHA256" }`;
+files must be individual ordinary files in `evidenceDirectory`. Raw-file sizes and
+SHA-256 digests are checked. The checkpoint/conversion/toolchain manifests must
+retain the immutable shard/tensor identities, exact invocation, tool versions and
+their binding to the approved adapter for independent review; intake hashes their
+bytes without authenticating those declarations.
+
+`mapping.nativeToAuthoring` is a permutation of all 6144 channel indices and
+`mapping.signs` contains 6144 values of either -1 or 1. Its explicit equation is
+`native[channel] = signs[channel] * authoring[nativeToAuthoring[channel]]`.
+This intake supports signed permutations only; other transforms need a separately
+reviewed comparator. `ssmSites` contains exactly the 48 SSM blocks (0 through 63,
+excluding 3, 7, ... 63), each `{ "block": N, "authoringA": ARTIFACT_REFERENCE }`.
+Each independently reproduced authoring-order A vector contains exactly 6144
+finite little-endian F32 values. Intake independently locates the named
+`blk.N.ssm_out.weight.lora_a` payload in the digest-verified adapter and compares
+every channel after the declared mapping. Both tolerances are bounded by 1e-5;
+the comparison is `abs(actual - expected) <= absoluteTolerance + relativeTolerance * abs(expected)`.
+Receipts retain each vector digest, mismatch count and maximum absolute difference.
+
+An `intake-complete` result records byte integrity and the declared all-site vector
+comparison. It always leaves `writerBasisQualified` and `defaultMayChange` false.
+Independent authoring-provenance authentication and reproduction, native writer
+input/correction captures, loaded-zero identity, nonzero application and the other
+runtime/application gates above remain required. Repeated or invented reference
+vectors cannot establish authoring provenance merely by passing this comparator.
+
 ## Memory and execution cost
 
 The adapter contains **9,664,512 F32 payload bytes** (about 9.23 MiB on disk). Prism
