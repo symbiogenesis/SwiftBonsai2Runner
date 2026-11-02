@@ -437,8 +437,32 @@ Native codec checks run the production Rust codec against the pinned DLL in a
 supervised probe, using independent base-3 bytes, frozen FP32 scale bits and
 captured C++ fixtures.
 
-The [pinned nightly](../rust-toolchain.toml) enables Polonius branch-sensitive
-broker lending; caller-owned reusable logits also work on stable.
+The [pinned nightly](../rust-toolchain.toml) enables Polonius Alpha and the
+next-generation trait solver by default. Keep the dated pin reproducible across
+local builds, hosted checks and source-build receipts. Do not override these
+defaults with `-Zpolonius=off` or `-Znext-solver=coherence`.
+See the Rust team's [Polonius Alpha announcement](https://blog.rust-lang.org/2026/08/04/enabling-polonius-alpha-on-nightly/)
+and [trait solver announcement](https://blog.rust-lang.org/2026/08/21/enabling-next-solver-on-nightly/).
+
+[Compiler regressions](../tools/ci/tests/compiler.rs) require branch-sensitive
+mutable lending and recursive return-position `impl Trait` inference to compile
+under the ordinary Cargo invocation, then check their behavior. Foundation
+compiles and runs these during hosted Linux CI bootstrap before impact selection;
+the native maintenance lane also checks and runs this registered package. These
+gates detect a compiler or flag change that removes the required semantics.
+Polonius already supports branch-sensitive broker lending; caller-owned reusable
+logits also work on stable. Both compiler components analyze code at compile time;
+their use alone establishes no application throughput or memory improvement.
+
+All workspace packages inherit edition, minimum Rust version and lint policy.
+Keep borrowing and disjoint-field mutation ahead of temporary copies or interior
+mutability used solely to satisfy the borrow checker. Retain fallible allocation,
+checked sizes, bounded I/O and cancellation at untrusted data boundaries. Native
+unsafe operations stay small, documented and behind safe owners. Prefer scoped
+`#[expect(..., reason = "...")]` for a known diagnostic; permanent boundary
+allowances still require their specific reason. Existing all-target Clippy,
+rustdoc and owning tests enforce the policy across supported feature profiles.
+
 [Compiler probes](https://github.com/symbiogenesis/prism-inference/blob/main/tools/rust-trial/README.md)
 retain stable as an isolated control. Release overflow checks stay enabled and
 debug assertions disabled to preserve
