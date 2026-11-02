@@ -144,6 +144,8 @@ fn reconstruct(dots: &[f32; PLANES * LANES], lane: usize) -> Result<i32, Error> 
 /// The synchronous submitter must overwrite all poisoned results and finish all
 /// access before returning. Any failure clears the caller's output. This does
 /// not establish asynchronous ownership or permit CPU replay after submission.
+/// Native submission uses 32 padded rows and 256 plane outputs; its adapter must
+/// extract `[bit * 32 + lane]` into this callback's compact `[bit * 4 + lane]`.
 pub fn hmx_ptq1_dot(
     weights: &[u8],
     prepared_q8: &[u8],

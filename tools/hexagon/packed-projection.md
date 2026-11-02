@@ -59,6 +59,9 @@ eight original lane positions and zeroes every other weight. One K128/N8
 operation returns 32 plane/lane dots; four operations cover one original PTQ1
 block. Plane dots lie in -8..8 and reconstructed lane sums in -1024..1024.
 The host stage contains two 576-byte source-native tiles, padded to 32 rows.
+Every padding row has unit scales and zero symbols. Native submission returns
+256 values for its 32 padded rows; an adapter must extract `[bit*32+lane]` into
+the control callback's compact 32-value `[bit*4+lane]` result.
 Neither padding nor bitplanes represent independent prefill tokens. The extra
 rows, operations, return traffic and persistent lane accumulators require their
 own whole-model resource/work ledger; the PQ2 ledger does not apply.
