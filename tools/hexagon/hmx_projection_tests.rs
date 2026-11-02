@@ -46,6 +46,42 @@ fn every_signed_i8_code_and_original_symbol_reconstructs_without_quantizer_chang
     Ok(())
 }
 
+#[test]
+fn retained_fma_golden_distinguishes_block_order_from_nonfused_sum() -> Result<(), Error> {
+    let mut first = [0xaa; 34];
+    first[..2].copy_from_slice(&0x3c01_u16.to_le_bytes());
+    let mut second = [0xaa; 34];
+    second[..2].copy_from_slice(&0x3787_u16.to_le_bytes());
+    let first_planes = HmxQ2Inputs::new(&first, &[3; 128])?.cpu_control_dots()?;
+    let second_planes = HmxQ2Inputs::new(&second, &[-13; 128])?.cpu_control_dots()?;
+    assert_eq!(first_planes, [128.0, 128.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]);
+    assert_eq!(
+        second_planes,
+        [128.0, 128.0, 0.0, 0.0, 128.0, 128.0, 128.0, 128.0]
+    );
+    let scale = f32::from_bits(0x3da0_0001);
+    let prior = reduce_hmx_original_block(&first, scale, 0.0, first_planes)?;
+    let result = reduce_hmx_original_block(&second, scale, prior, second_planes)?;
+    // Retained original-PQ2 golden: separately rounded products yield
+    // 0xc1f90b02, one ULP away from this required ordered FMA result.
+    assert_eq!(result.to_bits(), 0xc1f9_0b01);
+    assert_eq!(
+        reduce_hmx_original_block(&first, 1.0, -0.0, [-0.0; 8])?.to_bits(),
+        0.0_f32.to_bits()
+    );
+    for malformed in [&first[..0], &first[..33], &[0; 35][..]] {
+        assert_eq!(
+            HmxQ2Inputs::new(malformed, &[0; 128]).err(),
+            Some(Error::Extent)
+        );
+        assert_eq!(
+            reduce_hmx_original_block(malformed, 1.0, 0.0, [0.0; 8]),
+            Err(Error::Extent)
+        );
+    }
+    Ok(())
+}
+
 fn fixture(columns: usize, rows: usize) -> (Vec<u8>, Vec<f32>) {
     let mut weights = vec![0_u8; columns / 128 * rows * 34];
     for (block_index, block) in weights.chunks_exact_mut(34).enumerate() {
