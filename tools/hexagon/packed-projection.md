@@ -308,3 +308,83 @@ inputs; it did not execute this full projection schedule or measure a speedup.
 This lead may
 avoid a custom-kernel signing requirement for a narrow exact primitive if those
 gates pass; its extra work and traffic may also make it uncompetitive.
+
+## Artifact-bound signed projection diagnostic
+
+[`projection_probe.rs`](projection_probe.rs) connects the original artifact's
+verified extraction to the native Rust signed-Q2 submitter. It supports one
+selected prefix of `blk.0.ffn_up.weight`, K=5120 and M divisible by 32 up to
+17408. One full-M operation per original 128-column block needs 40 submissions;
+a 32-row schedule needs 21,760. The signed boundary keeps K=256/N=2 and admits
+only M divisible by 32. CPU-only awkward-tail controls remain separate.
+
+The request is a UTF-8 JSON file of at most 8192 bytes. Its complete schema is:
+
+```json
+{
+  "bindingDirectory": "C:\\external\\swift-projection",
+  "activationFile": "C:\\external\\activation.f32le",
+  "activationSha256": "EXACT_64_LOWERCASE_HEXADECIMAL_DIGITS",
+  "outputDirectory": "C:\\external\\new-projection-result",
+  "rows": 17408,
+  "tileRows": 17408,
+  "maximumSeconds": 120,
+  "execution": "device-guarded-q2",
+  "packageDirectory": "C:\\external\\verified-signed-package"
+}
+```
+
+The binding directory contains `binding.json`, `weights.pq2` and `signs.i8`
+from the [verified extraction](#actual-artifact-extraction-candidate). The
+complete 23,674,880-byte projection and 5120-byte sign vector must match the
+independent immutable pins retained in
+[the extraction evidence](../../docs/evidence/hexagon-swift-projection-binding.json).
+The diagnostic validates the manifest's original artifact, shape, representation
+and transform declarations; it never accepts replacement weight/sign digests
+from the caller. Files remain open against writes and deletion on Windows
+through result publication.
+
+The activation file contains exactly 5120 finite IEEE F32 values in little-endian
+order, in the input-last-dimension basis **before** the original Hadamard signs
+and rotation. The caller supplies its SHA-256. That digest identifies bytes;
+it does not authenticate their origin or qualify actual-model activations. The
+CPU applies the exact extracted signs/normalized 1024-wide transform, original
+Q8_K preparation and original ordered per-128-block FMA. Every returned limb is
+also checked against an independent CPU decode of the transmitted tiles, and
+the final selected projection must match the original PQ2 CPU oracle bitwise.
+
+The device path requires the trusted Runner supervisor's source-bound hosted
+bundle, seventeen runtime-file and five catalog-member checks, retained driver
+identity, exact child-only package search directory, aggregate process deadline
+and verified owned-process cleanup. Its native boundary keeps one session,
+queue and mapped allocation across the bounded synchronous operation stream.
+Only a complete correlated response permits reuse; uncertain submission,
+correlation, numerical, callback or deadline failure pins all uncertain owners
+until supervised process death. Native stop, queue close, unmap, module close
+and free must complete before the diagnostic publishes a projection result.
+The API requests the reviewed reference DSP process class; Windows package
+catalog checks remain mandatory and no OS trust settings change.
+
+`maximumSeconds` is an absolute allowance from diagnostic entry, including input
+verification and the CPU controls. Device requests permit 4 through 120 seconds;
+the outer supervisor still owns the single five-minute aggregate owner budget
+and cleanup reserve. Smaller prefix-row trials are explicit, and cannot be
+stitched together into full-model qualification. Full controls stay in hosted
+CI. Ordinary startup and chat never run this diagnostic.
+
+For `execution: "cpu-control"`, omit `packageDirectory`; the same request can
+replay the guarded schedule on CPU without opening the driver. This mode allows
+1 through 225 seconds and supplies no device evidence. `--self-test` performs
+small model-free parser/identity controls. `--inspect` emits the installed driver
+path without loading it, for the trusted supervisor's independent verification.
+
+A sibling `.pending` directory stages the complete output; its atomic rename
+publishes the new external result directory and `receipt.json` together. A
+passed attempt also contains `result.f32le`, bound by exact length and SHA-256
+in that receipt; a failed attempt publishes no projection result. The receipt
+separates source identities, externally supplied activation bytes, conservative
+payload/transfer bounds, submitted/completed/checked operation counts, numerical
+parity and explicit native cleanup. These diagnostic comparisons do not measure
+inference speed. Actual activation provenance, logits, complete state, adapters,
+selected DSP bytes, complete vendor teardown, performance and production
+admission remain independent gates; every receipt keeps `profileEligible:false`.
