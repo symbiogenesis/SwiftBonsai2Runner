@@ -766,9 +766,11 @@ Qualify the [source-only Prism graph integration](https://github.com/symbiogenes
 and bounded native HMX session on settled main. Exact PTQ1/odd-block PQ2 Q8_0
 composition and complete-request operation admission now have
 [focused model-free controls](docs/evidence/hexagon-ptq1-admission-preparation.json).
-The owning hosted Hexagon/Foundation checks pass; broader runtime conformance
-remains a separate pending gate, and these checks establish no signed-device
-acceptance. Runner still pins the CPU release. Close signed PQ2/PTQ1 arithmetic
+The previous integration's owning hosted Hexagon/Foundation checks passed.
+The [current residency/placement preparation](docs/evidence/hexagon-resident-preparation.json)
+retains its own hosted checks as pending until their final conclusions are reviewed;
+neither source validation establishes signed-device acceptance. Runner still pins
+the CPU release. Close signed PQ2/PTQ1 arithmetic
 and full-model parity, persistent serving,
 effective placement/resources and same-artifact performance before enabling NPU
 admission or calling this full acceleration.

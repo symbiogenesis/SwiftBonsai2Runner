@@ -39,7 +39,10 @@
     "statusAtPreparation": "queued-or-pending; final-conclusions-require-review",
     "prismNativeAndRuntime": "https://github.com/symbiogenesis/prism-inference/actions/runs/41529327799",
     "prismFoundation": "https://github.com/symbiogenesis/prism-inference/actions/runs/41529327648",
-    "prismRuntimeConformance": "https://github.com/symbiogenesis/prism-inference/actions/runs/41529327381"
+    "prismRuntimeConformance": "https://github.com/symbiogenesis/prism-inference/actions/runs/41529327381",
+    "runnerFoundation": "https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41529454854",
+    "runnerQueuedControlsAndAbi": "https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41529454729",
+    "runnerNativeControlsAndArtifactBinder": "https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41529454708"
   },
   "initialHostedObservation": {
     "sourceRevision": "d532d85f034e7d854a349bb8744f684434d0001d",
