@@ -127,6 +127,44 @@ defines host `AEE_ERPC` as `0x200` (512), a generic FastRPC implementation error
 A matching return value supplies no underlying permission, signature, descriptor
 or hardware diagnosis; retain the exact code and mode before investigating.
 
+## Bounded original-projection bridge
+
+`Driver::reference_q2_projection` supplies a separate experimental terminal
+boundary for the original-artifact projection harness. One guarded allocation,
+FD mapping, module and queue serve all synchronous operations. K=256/N=2, one
+HVX thread, the source-derived quant-row solver and 61,440-byte VTCM scratch
+remain fixed. M accepts multiples of 32 through 17,408, so the first Swift
+projection can preserve all forty original per-128 reductions with forty native
+operations rather than 21,760 32-row submissions. This scheduling arithmetic
+is not a measured speedup or a device solver qualification.
+
+The separately pinned solver and `matmul-ops.h` layout make quant-row scratch
+independent of weight M at N=2: no destination scratch is allocated. Full-M
+host mapping is bounded at 1,396,736 bytes; the start frame's mapping budget
+follows that exact single allocation. The native frame regenerates tensor
+offsets and NaN output poison after each validated completion because the DSP
+mutates its command descriptors. No borrowed host view spans device execution.
+
+`Q2ProjectionLimits` bounds rows, total writes and one absolute session clock
+including initialization, caller preparation and every operation. Its maximum
+is 120 seconds, including a three-second cleanup reserve. The external owned
+process deadline and the aggregate five-minute owner allowance still apply.
+Every operation uses a fresh monotonic sequence, exact descriptor/cache reply
+checks and complete finite/integer/bounded output validation before copying.
+The caller must also check exact signed dots against its independent oracle;
+integer-shaped incorrect outputs are insufficient. Output publication requires
+the complete caller projection and `Q2ProjectionReport::completed_cycle()`.
+
+Refused writes, stale replies, invalid outputs, expired bounds, callback errors
+and unwinding retain every uncertain consumer through supervised process exit.
+There is no queue retry, CPU replay or native release after failure. After
+complete caller acceptance the existing explicit stop, queue-close, host-unmap,
+module-close and free sequence applies. Model, full-state, selected DSP bytes,
+full-M solver behavior, complete vendor teardown and performance remain pending;
+production admission stays disabled. The source manifest retains all exact
+upstream source identities and distinguishes this candidate from the fixed
+signed arithmetic observation.
+
 ## Established-session mapping prerequisite
 
 `session.rs` and `session_native.rs` encode metadata preparation:

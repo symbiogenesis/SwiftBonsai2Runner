@@ -21,6 +21,16 @@ mod session_mapping_native;
 #[path = "session_native.rs"]
 mod session_native;
 
+pub(super) fn reference_q2_projection(
+    driver: Driver,
+    package: &Path,
+    limits: crate::Q2ProjectionLimits,
+    progress: impl FnMut(&crate::Q2ProjectionReport),
+    work: impl FnOnce(&mut dyn crate::GuardedQ2Submitter) -> Result<(), Error>,
+) -> Result<crate::Q2ProjectionReport, Error> {
+    compute_native::projection(driver, package, limits, progress, work)
+}
+
 type Handle = *mut c_void;
 type Control = unsafe extern "C" fn(u32, *mut c_void, u32) -> i32;
 
