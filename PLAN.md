@@ -740,6 +740,15 @@ Follow [Adreno contracts](docs/adreno.md); discovery alone changes no CPU profil
 
 Follow [Hexagon contracts](docs/hexagon.md).
 
+Qualify the [source-only Prism graph integration](https://github.com/symbiogenesis/prism-inference/tree/50de7794e8a7a2320e637ebf1d958c445488515e/tools/hexagon-runtime)
+and bounded native HMX session on settled main. The [focused model-free graph,
+adapter/state, arithmetic and failure checks](docs/evidence/hexagon-runtime-hmx-preparation.json)
+pass; hosted owning regressions
+remain separate from signed-device acceptance. Runner still pins the CPU release.
+Close the whole-model work-admission limit below, persistent serving, PTQ1,
+effective placement/resources and same-artifact performance before enabling NPU
+admission or calling this full acceleration.
+
 Use the [bounded native F32/Q2 evidence](docs/evidence/hexagon-x2-queue-compute.json)
 for the next original-projection milestone. Its fixed guarded-Q2 integer and explicit
 cleanup cycle do not qualify a complete projection, model, selected DSP bytes,

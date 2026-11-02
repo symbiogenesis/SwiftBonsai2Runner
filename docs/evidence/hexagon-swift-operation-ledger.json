@@ -43,18 +43,34 @@
     },
     {
       "repository": "symbiogenesis/prism-inference",
-      "commit": "5a72eee34312a74e99113244f825bba2c5888777",
+      "commit": "50de7794e8a7a2320e637ebf1d958c445488515e",
       "path": "tools/hexagon-native/src/projection.rs",
       "gitBlobSha1": "754730dd88241ad1d59f583ccd70f2868037f2ab",
       "sections": ["Q2_PROJECTION_MAX_ROWS", "Q2_PROJECTION_MAX_OPERATIONS", "Q2ProjectionLimits::new"]
     },
     {
       "repository": "symbiogenesis/prism-inference",
-      "commit": "5a72eee34312a74e99113244f825bba2c5888777",
+      "commit": "50de7794e8a7a2320e637ebf1d958c445488515e",
       "path": "tools/hexagon-native/src/hmx_projection.rs",
       "gitBlobSha1": "4105bca664f9b247cf3e85cb5c1b5ec0d2099ca9",
       "sections": ["HmxQ2ProjectionLimits::new"],
       "purpose": "HMX shares the terminal operation and row caps"
+    },
+    {
+      "repository": "symbiogenesis/prism-inference",
+      "commit": "50de7794e8a7a2320e637ebf1d958c445488515e",
+      "path": "tools/hexagon-runtime/src/hmx.rs",
+      "gitBlobSha1": "1f9a3534dfbf99272ec5056446e361915045d6a3",
+      "sections": ["HmxQ2Executor::project_inner"],
+      "purpose": "actual-graph-executor; all-positive-256-multiple-columns; one-operation-per-original128-block-and-row-tile"
+    },
+    {
+      "repository": "symbiogenesis/prism-inference",
+      "commit": "50de7794e8a7a2320e637ebf1d958c445488515e",
+      "path": "tools/hexagon-runtime/src/guarded.rs",
+      "gitBlobSha1": "f03f21306cfd98731b99af58ba2899103649edff",
+      "sections": ["GuardedQ2Executor::project_inner"],
+      "purpose": "same-full-width-block-preserving-work-schedule-for-the-guarded-HVX-bridge"
     }
   ],
   "assumptions": {

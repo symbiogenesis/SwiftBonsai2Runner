@@ -455,12 +455,19 @@ excluding allocator/stack overhead and device resources. Hosted preparation
 binds the implementation and independent controls to both packed-test and
 projection-build receipts through one closed source-input inventory.
 
-The native API cannot execute this candidate. It needs a separately reviewed
-HMX-enabled session (`n_hmx=1`), solver/chunk/VTCM fields, packet extents and
-ownership controls, followed by exact signed-device output, effective placement,
-teardown, actual-model parity and total-cost measurements. It provides no PTQ1
-arithmetic qualification or production eligibility. [PLAN](../PLAN.md#hexagon-npu)
-retains the ordering and aggregate owner-device budget.
+Runner's retained projection probe still uses its guarded-HVX native API.
+The separate [Prism source integration](https://github.com/symbiogenesis/prism-inference/tree/50de7794e8a7a2320e637ebf1d958c445488515e/tools/hexagon-runtime)
+implements the HMX-enabled session (`n_hmx=1`), source-derived solver/chunks and
+bounded packet/ownership controls, plus explicit HVX/HMX graph executors.
+Original CPU Q8_K preparation, transforms, adapter corrections and fused/nonfused
+reduction remain unchanged. A submitted failure permanently closes the scope;
+unsupported work selects CPU before submission. The native driver dependency
+stays in unpublished helper crates outside the published CPU runtime.
+Focused model-free graph/state/adapter, exact-arithmetic and native mock checks
+pass. Exact signed-device output, effective placement, teardown, actual-model
+parity and total-cost measurements remain pending. It provides no PTQ1 arithmetic
+qualification or production eligibility. [PLAN](../PLAN.md#hexagon-npu) retains
+the ordering and aggregate owner-device budget.
 
 ### Static whole-model operation limit
 

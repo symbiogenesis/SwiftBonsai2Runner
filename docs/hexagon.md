@@ -12,6 +12,16 @@ Swift prototype is one stateless FFN projection. CPU-only [layout](../tools/hexa
 [operation/wire controls](../tools/hexagon/packed-projection.md) qualify no signed device implementation,
 measured VTCM/traffic or inference.
 
+[Prism source `50de779`](https://github.com/symbiogenesis/prism-inference/tree/50de7794e8a7a2320e637ebf1d958c445488515e/tools/hexagon-runtime)
+now connects explicit guarded-HVX and HMX bitplane executors to the real Rust
+graph through a borrowed session. Original quantization, transforms, adapters
+and committed state remain CPU-owned. This unpublished integration is separate
+from Runner's pinned CPU release. [Focused model-free graph, arithmetic and
+failure checks](evidence/hexagon-runtime-hmx-preparation.json) pass; signed model
+execution, persistent serving and PTQ1 remain
+pending. The [static work ledger](evidence/hexagon-swift-operation-ledger.json)
+also prevents admitting all eligible projections under the terminal session cap.
+
 [Preflight](../tools/bonsai/src/hexagon_tools/preflight.rs) inventories drivers and an explicit optional package
 without loading/installing it. It uses a native Rust worker with an aggregate deadline and kill-on-close Job ownership.
 Present devices come from SetupAPI; unavailable driver signatures and dates remain unknown. [Hosted CI](../.github/workflows/hexagon-qualification.yml)
