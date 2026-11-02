@@ -45,6 +45,8 @@ fn dependencies(context: &mut Context, rustc: &Path, output: &Path) -> Result<Ve
             "--locked".into(),
             "--release".into(),
             "--lib".into(),
+            "--target".into(),
+            TARGET.into(),
             "--manifest-path".into(),
             context.repo.join("Cargo.toml").into_os_string(),
             "--target-dir".into(),
@@ -75,9 +77,10 @@ fn dependencies(context: &mut Context, rustc: &Path, output: &Path) -> Result<Ve
             if path.extension().is_none_or(|extension| extension != "rlib") {
                 continue;
             }
-            if !path.starts_with(&target)
-                || selected.insert(name.to_owned(), path.clone()).is_some()
-            {
+            if !target_artifact(&target, &path)? {
+                continue;
+            }
+            if selected.insert(name.to_owned(), path.clone()).is_some() {
                 return Err("Projection dependency is ambiguous or escaped owned storage.".into());
             }
             artifacts.push(
@@ -90,6 +93,8 @@ fn dependencies(context: &mut Context, rustc: &Path, output: &Path) -> Result<Ve
     }
     let mut arguments = Vec::new();
     let mut directories = std::collections::BTreeSet::new();
+    // Derive proc-macros are host artifacts even for an explicit native target.
+    directories.insert(target.join("release/deps"));
     for (name, path) in selected {
         arguments.extend([
             "--extern".into(),
@@ -112,6 +117,13 @@ fn dependencies(context: &mut Context, rustc: &Path, output: &Path) -> Result<Ve
         &json!({"CargoLockSha256":lock_digest,"Artifacts":artifacts}),
     )?;
     Ok(arguments)
+}
+
+fn target_artifact(target: &Path, path: &Path) -> Result<bool> {
+    if !path.starts_with(target) {
+        return Err("Projection dependency escaped owned target storage.".into());
+    }
+    Ok(path.parent() == Some(target.join(TARGET).join("release/deps").as_path()))
 }
 
 pub(super) fn build(
@@ -197,4 +209,32 @@ pub(super) fn build(
             "DeviceCodeLoaded":false,"ModelLoaded":false,"ProfileEligible":false,
         }),
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn projection_dependencies_keep_target_rlibs_separate_from_host_build_helpers() -> Result<()> {
+        let root = Path::new("owned-target");
+        assert!(!target_artifact(
+            root,
+            &root.join("release/deps/libsha2-host.rlib")
+        )?);
+        assert!(target_artifact(
+            root,
+            &root.join(TARGET).join("release/deps/libsha2-native.rlib")
+        )?);
+        assert!(target_artifact(
+            root,
+            &root.join(TARGET).join("release/deps/libserde-native.rlib")
+        )?);
+        assert!(!target_artifact(
+            root,
+            &root.join("other-target/release/deps/libsha2-other.rlib")
+        )?);
+        assert!(target_artifact(root, Path::new("outside/libsha2.rlib")).is_err());
+        Ok(())
+    }
 }
