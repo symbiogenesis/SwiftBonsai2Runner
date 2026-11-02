@@ -4,7 +4,7 @@
   "recordedDate": "2026-11-02",
   "reviewer": "Codex:/root/review",
   "status": "prepublication-data-reviewed-owning-checks-pending",
-  "observedAtUtc": "2026-11-02T22:17:02.656810+00:00",
+  "observedAtUtc": "2026-11-02T22:22:59.420347+00:00",
   "sourceRevision": "cae16fa6998dac58a947eba9ae4398ed6a9fb863",
   "version": "0.1.13",
   "intendedReleaseUrl": "https://github.com/symbiogenesis/prism-inference/releases/tag/v0.1.13",
@@ -26,11 +26,11 @@
       "event": "push",
       "branch": "main",
       "sourceRevision": "cae16fa6998dac58a947eba9ae4398ed6a9fb863",
-      "status": "in_progress",
-      "conclusion": null,
-      "jobs": 14,
-      "completedJobs": 13,
-      "everyJobSuccessful": false
+      "status": "completed",
+      "conclusion": "success",
+      "jobs": 15,
+      "completedJobs": 15,
+      "everyJobSuccessful": true
     },
     {
       "name": "Runtime conformance",
@@ -40,10 +40,10 @@
       "event": "push",
       "branch": "main",
       "sourceRevision": "cae16fa6998dac58a947eba9ae4398ed6a9fb863",
-      "status": "in_progress",
+      "status": "queued",
       "conclusion": null,
-      "jobs": 4,
-      "completedJobs": 2,
+      "jobs": 23,
+      "completedJobs": 9,
       "everyJobSuccessful": false
     },
     {
