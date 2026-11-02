@@ -162,18 +162,19 @@ impl Tokenizer {
 
     /// Register a nonempty spelling; the first registration of each spelling wins.
     pub(super) fn add_special(&mut self, bytes: &[u8], id: i32) -> io::Result<()> {
-        if self.specials.iter().any(|(spelling, _)| spelling == bytes) {
+        Self::insert_special(&mut self.specials, bytes, id)
+    }
+
+    fn insert_special(specials: &mut Vec<(Vec<u8>, i32)>, bytes: &[u8], id: i32) -> io::Result<()> {
+        if specials.iter().any(|(spelling, _)| spelling == bytes) {
             return Ok(());
         }
-        if bytes.is_empty()
-            || bytes.len() > MAX_SPELLING_BYTES
-            || self.specials.len() >= MAX_SPECIALS
-        {
+        if bytes.is_empty() || bytes.len() > MAX_SPELLING_BYTES || specials.len() >= MAX_SPECIALS {
             return Err(invalid("Qwen tokenizer special exceeds its bounds."));
         }
         let owned = copy_bytes(bytes)?;
-        self.specials.try_reserve(1).map_err(io::Error::other)?;
-        self.specials.push((owned, id));
+        specials.try_reserve(1).map_err(io::Error::other)?;
+        specials.push((owned, id));
         Ok(())
     }
 
@@ -188,8 +189,9 @@ impl Tokenizer {
         if spelling.is_empty() {
             return Ok(());
         }
-        let spelling = copy_bytes(spelling)?;
-        self.add_special(&spelling, id)
+        // Reverse slots and special registrations have independent owners, so
+        // borrow the source through the one fallible copy into final storage.
+        Self::insert_special(&mut self.specials, spelling, id)
     }
 
     fn encode_segment(
