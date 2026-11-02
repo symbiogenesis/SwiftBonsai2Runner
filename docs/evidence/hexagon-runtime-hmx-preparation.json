@@ -53,7 +53,7 @@
     "correctedPrismGraphTestsPassedPerWindowsTarget": 4,
     "correctedPrismNativeArm64": "native-and-runtime-graph-tests-Clippy-and-rustdoc-success",
     "correctedPrismNativeCrossTarget": "success",
-    "prismFoundationAtEvidenceReview": "matrix-in-progress-and-queued; final-conclusion-pending; inspect-linked-run-for-later-conclusion",
+    "prismFoundationAtEvidenceReview": "success; final-conclusion-verified-2026-11-02-for-d34902b",
     "initialPrismNativeRun": {
       "url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41495730019",
       "conclusion": "failure",

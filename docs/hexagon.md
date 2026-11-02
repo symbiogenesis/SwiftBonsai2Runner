@@ -12,15 +12,21 @@ Swift prototype is one stateless FFN projection. CPU-only [layout](../tools/hexa
 [operation/wire controls](../tools/hexagon/packed-projection.md) qualify no signed device implementation,
 measured VTCM/traffic or inference.
 
-[Prism source `d34902b`](https://github.com/symbiogenesis/prism-inference/tree/d34902b922535427efd6b6734833d9fbaba6cdc1/tools/hexagon-runtime)
+[Prism source `34a8bbf`](https://github.com/symbiogenesis/prism-inference/tree/34a8bbfef86f5468ce43ab11b2826efd846a7137/tools/hexagon-runtime)
 now connects explicit guarded-HVX and HMX bitplane executors to the real Rust
 graph through a borrowed session. Original quantization, transforms, adapters
 and committed state remain CPU-owned. This unpublished integration is separate
-from Runner's pinned CPU release. [Focused model-free graph, arithmetic and
-failure checks](evidence/hexagon-runtime-hmx-preparation.json) pass; signed model
-execution, persistent serving and PTQ1 remain
-pending. The [static work ledger](evidence/hexagon-swift-operation-ledger.json)
-also prevents admitting all eligible projections under the terminal session cap.
+from Runner's pinned CPU release. It now includes an explicit PTQ1/odd-block PQ2
+Q8_0 executor preserving native DOTPROD lanes and float order, with actual remaining
+native capacity and whole-request operation checks before new inference.
+[Focused model-free controls](evidence/hexagon-ptq1-admission-preparation.json)
+pass; signed PQ2/PTQ1 model execution, resource qualification and persistent
+serving remain pending. The [static work ledger](evidence/hexagon-swift-operation-ledger.json)
+prevents admitting all eligible projections under the terminal session cap.
+The [logical payload ledger](evidence/hexagon-swift-traffic-ledger.json) derives
+13.69 GB of submission/result payload per all-eligible original-PQ2 evaluation
+token, without persistent weight reuse. This is an arithmetic compatibility bridge;
+fused signed kernels and real prefill batching remain separate implementation work.
 
 [Preflight](../tools/bonsai/src/hexagon_tools/preflight.rs) inventories drivers and an explicit optional package
 without loading/installing it. It uses a native Rust worker with an aggregate deadline and kill-on-close Job ownership.
