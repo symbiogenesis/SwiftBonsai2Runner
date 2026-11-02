@@ -4,6 +4,7 @@
   "reviewDateLocal": "2026-11-02",
   "runnerImplementationRevision": "b080e39d6091c16c23de7925c49be6c2180a12f3",
   "prismImplementationRevision": "50de7794e8a7a2320e637ebf1d958c445488515e",
+  "prismRustdocCorrectionRevision": "d34902b922535427efd6b6734833d9fbaba6cdc1",
   "productionInference": "CPU; existing released runtime pin unchanged",
   "profileEligible": false,
   "implemented": [
@@ -35,9 +36,34 @@
     "runnerFoundation": "https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41494378164",
     "runnerHexagonPreparation": "https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41494378072",
     "runnerQueuedControls": "https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41494378306",
-    "prismNativeAndRuntime": "https://github.com/symbiogenesis/prism-inference/actions/runs/41495730019",
-    "prismFoundation": "https://github.com/symbiogenesis/prism-inference/actions/runs/41495730134",
+    "prismNativeAndRuntime": "https://github.com/symbiogenesis/prism-inference/actions/runs/41496214202",
+    "prismFoundation": "https://github.com/symbiogenesis/prism-inference/actions/runs/41496214185",
     "prismSourcePackage": "https://github.com/symbiogenesis/prism-inference/actions/runs/41495730034"
+  },
+  "hostedConclusions": {
+    "runnerFoundation": "success",
+    "runnerHexagonPreparation": "success",
+    "runnerQueuedControls": "success",
+    "prismScriptStandards": "success",
+    "prismSourcePackage": "success-on-Windows-ARM64-Windows-x64-and-Linux-ARM64",
+    "correctedPrismNativeAndRuntime": "success-on-Windows-ARM64-Windows-x64-and-Linux-cross-target-lint",
+    "correctedPrismNativeArm64TestsPassed": 25,
+    "correctedPrismNativeX64TestsPassed": 16,
+    "correctedPrismExecutorTestsPassedPerWindowsTarget": 7,
+    "correctedPrismGraphTestsPassedPerWindowsTarget": 4,
+    "correctedPrismNativeArm64": "native-and-runtime-graph-tests-Clippy-and-rustdoc-success",
+    "correctedPrismNativeCrossTarget": "success",
+    "prismFoundationAtEvidenceReview": "matrix-in-progress-and-queued; final-conclusion-pending; inspect-linked-run-for-later-conclusion",
+    "initialPrismNativeRun": {
+      "url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41495730019",
+      "conclusion": "failure",
+      "scope": "rustdoc-unescaped-layout-notation; native-ARM64-and-x64-tests-Clippy-and-doctests-passed-before-doc-failure",
+      "correctedBy": "d34902b922535427efd6b6734833d9fbaba6cdc1"
+    },
+    "supersededPrismFoundation": {
+      "url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41495730134",
+      "conclusion": "cancelled-by-followup-push; no-qualified-result-transferred"
+    }
   },
   "executionBoundaries": {
     "nativeSessionMaximumOperations": 21760,

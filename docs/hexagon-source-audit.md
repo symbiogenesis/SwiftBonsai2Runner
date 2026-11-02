@@ -1,6 +1,6 @@
 # Hexagon source, placement and evidence
 
-Source reviews: **2026-10-30 through 2026-11-01**. [Hexagon contracts](hexagon.md) govern execution;
+Source reviews: **2026-10-30 through 2026-11-02**. [Hexagon contracts](hexagon.md) govern execution;
 [PLAN.md](../PLAN.md#hexagon-npu) owns outstanding work. The
 [experiment lock](../config/hexagon-experiment.lock.json) and separate
 [Q2 candidate lock](../config/hexagon-signed-q2-candidate.lock.json) retain exact
@@ -456,7 +456,7 @@ binds the implementation and independent controls to both packed-test and
 projection-build receipts through one closed source-input inventory.
 
 Runner's retained projection probe still uses its guarded-HVX native API.
-The separate [Prism source integration](https://github.com/symbiogenesis/prism-inference/tree/50de7794e8a7a2320e637ebf1d958c445488515e/tools/hexagon-runtime)
+The separate [Prism source integration](https://github.com/symbiogenesis/prism-inference/tree/d34902b922535427efd6b6734833d9fbaba6cdc1/tools/hexagon-runtime)
 implements the HMX-enabled session (`n_hmx=1`), source-derived solver/chunks and
 bounded packet/ownership controls, plus explicit HVX/HMX graph executors.
 Original CPU Q8_K preparation, transforms, adapter corrections and fused/nonfused

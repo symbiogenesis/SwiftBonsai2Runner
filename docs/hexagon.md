@@ -12,7 +12,7 @@ Swift prototype is one stateless FFN projection. CPU-only [layout](../tools/hexa
 [operation/wire controls](../tools/hexagon/packed-projection.md) qualify no signed device implementation,
 measured VTCM/traffic or inference.
 
-[Prism source `50de779`](https://github.com/symbiogenesis/prism-inference/tree/50de7794e8a7a2320e637ebf1d958c445488515e/tools/hexagon-runtime)
+[Prism source `d34902b`](https://github.com/symbiogenesis/prism-inference/tree/d34902b922535427efd6b6734833d9fbaba6cdc1/tools/hexagon-runtime)
 now connects explicit guarded-HVX and HMX bitplane executors to the real Rust
 graph through a borrowed session. Original quantization, transforms, adapters
 and committed state remain CPU-owned. This unpublished integration is separate

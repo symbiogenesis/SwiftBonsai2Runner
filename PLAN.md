@@ -740,7 +740,7 @@ Follow [Adreno contracts](docs/adreno.md); discovery alone changes no CPU profil
 
 Follow [Hexagon contracts](docs/hexagon.md).
 
-Qualify the [source-only Prism graph integration](https://github.com/symbiogenesis/prism-inference/tree/50de7794e8a7a2320e637ebf1d958c445488515e/tools/hexagon-runtime)
+Qualify the [source-only Prism graph integration](https://github.com/symbiogenesis/prism-inference/tree/d34902b922535427efd6b6734833d9fbaba6cdc1/tools/hexagon-runtime)
 and bounded native HMX session on settled main. The [focused model-free graph,
 adapter/state, arithmetic and failure checks](docs/evidence/hexagon-runtime-hmx-preparation.json)
 pass; hosted owning regressions
@@ -748,6 +748,10 @@ remain separate from signed-device acceptance. Runner still pins the CPU release
 Close the whole-model work-admission limit below, persistent serving, PTQ1,
 effective placement/resources and same-artifact performance before enabling NPU
 admission or calling this full acceleration.
+Complete the [settled-source Prism Foundation run](https://github.com/symbiogenesis/prism-inference/actions/runs/41496214185)
+for `d34902b`; its broad hosted matrix is running/queued with no final conclusion
+at evidence review. The owning native/runtime and source-package workflows pass;
+neither closes signed-device or full-inference gates.
 
 Use the [bounded native F32/Q2 evidence](docs/evidence/hexagon-x2-queue-compute.json)
 for the next original-projection milestone. Its fixed guarded-Q2 integer and explicit
@@ -820,7 +824,7 @@ do not reset it. Further owner qualification remains pending for this investigat
   Qualify the bounded guarded-Q2 projection submitter, including its source-native
   576-byte host tile stride and separate 640-byte aligned VTCM destination stride.
   Full-M scheduling retains 40 original-block operations; it needs signed solver,
-  quantizer and total-cost evidence before model integration. Extend actual
+  quantizer and total-cost evidence before actual-model qualification. Extend actual
   placement/fallback/transfer accounting, including the guarded
   primitive's additional weights, activations, returned limb dots and CPU reduction.
   Effective VTCM, DMA descriptors, session/queue/mapping costs, all host scratch and
@@ -849,7 +853,7 @@ do not reset it. Further owner qualification remains pending for this investigat
   claiming a Swift defect.
   After the full-M baseline, qualify the [source-derived K=128/N=8 integer-bitplane
   HMX candidate](docs/hexagon-source-audit.md#hmx-integer-bitplane-source-lead).
-  Review a separate HMX-enabled native session/solver, exact plane reconstruction,
+  Qualify the implemented HMX-enabled native session/solver, exact plane reconstruction,
   padded activation/output resources and signed-device parity before timing.
   Its lower derived weight traffic and extra returned planes establish no TPS gain.
   Resolve the [static whole-model operation limit](docs/hexagon-source-audit.md#static-whole-model-operation-limit)
