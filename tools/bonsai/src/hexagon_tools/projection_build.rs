@@ -8,13 +8,19 @@ use std::ffi::OsString;
 use std::fs;
 use std::path::{Path, PathBuf};
 
+// Bind the library, its independent controls and the standalone consumer to the
+// same closed input set. The packed-only build deliberately retains the extra
+// consumer/verifier identities so a new module cannot escape either receipt.
 pub(super) const INPUTS: &[&str] = &[
     "projection_probe.rs",
     "packed_projection.rs",
     "packed_tiles.rs",
     "q2_integer.rs",
     "q2_projection.rs",
+    "hmx_projection.rs",
+    "hmx_projection_tests.rs",
     "packed-sources.json",
+    "verify_packed_fixture.py",
     "fixtures/swift-q8k-parity.bin",
     "fixtures/swift-q8k-parity.json",
 ];

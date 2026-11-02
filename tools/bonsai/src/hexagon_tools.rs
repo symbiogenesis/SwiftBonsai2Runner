@@ -425,16 +425,7 @@ fn dispatch(mut context: Context) -> Result<Value> {
     let packed_test = packed.join("packed-projection-contract.exe");
     let packed_inputs = context.input_set(
         &context.repo.join("tools/hexagon"),
-        &[
-            "packed_projection.rs",
-            "packed_tiles.rs",
-            "q2_integer.rs",
-            "q2_projection.rs",
-            "packed-sources.json",
-            "verify_packed_fixture.py",
-            "fixtures/swift-q8k-parity.bin",
-            "fixtures/swift-q8k-parity.json",
-        ],
+        projection_build::INPUTS,
     )?;
     let mut args: Vec<OsString> = [
         "--edition=2024",

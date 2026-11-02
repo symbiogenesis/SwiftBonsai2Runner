@@ -5,10 +5,52 @@ import json
 from pathlib import Path
 
 
+def verify_hmx_control(root, manifest):
+    """Keep arithmetic and source bounds distinct from native HMX eligibility."""
+    control = manifest["hmxIntegerBitplaneProjectionControl"]
+    source_names = ("hmx_projection.rs", "hmx_projection_tests.rs")
+    if (control["source"], control["independentControls"]) != source_names:
+        raise ValueError("HMX projection source inventory changed")
+    if any(not (root / name).is_file() for name in source_names):
+        raise ValueError("HMX projection or independent controls missing")
+    expected = {
+        "primitiveK": 128,
+        "primitiveN": 8,
+        "activationPlaneCoefficients": [1, 2, 4, 8, 16, 32, 64, -128],
+        "activationPlaneValues": [0, 1],
+        "minimumPlaneDot": -128,
+        "maximumPlaneDot": 256,
+        "weightRowsPerHostTile": 32,
+        "weightColumnsPerHostTile": 64,
+        "hostTileBytes": 576,
+        "hostTilesPer32WeightRows": 2,
+        "maximumColumns": 5120,
+        "maximumRows": 17408,
+        "fullMFirstProjectionOperations": 40,
+        "fullMFirstProjectionPeakRepackedStageBytes": 626688,
+        "fullMFirstProjectionPreparedQ8KBytes": 5840,
+        "fullMFirstProjectionPlaneActivationBytes": 4096,
+        "fullMFirstProjectionPeakPlaneOutputBytes": 557056,
+        "fullMFirstProjectionPrivateFinalOutputBytes": 69632,
+        "fullMFirstProjectionOwnedPayloadBytes": 1263312,
+        "fullMFirstProjectionRepackedWeightTransferBytes": 25067520,
+        "fullMFirstProjectionActivationTransferBytes": 163840,
+        "fullMFirstProjectionPlaneReturnBytes": 22282240,
+    }
+    if any(control.get(name) != value for name, value in expected.items()):
+        raise ValueError("HMX projection arithmetic or payload bounds changed")
+    for name in ("bitplaneRowsArePrefillTokens", "nativeHmxSessionImplemented",
+                 "effectiveHmxPlacementQualified", "PTQ1ArithmeticQualified",
+                 "profileEligible"):
+        if control.get(name) is not False:
+            raise ValueError("HMX CPU controls cannot qualify device or model admission")
+
+
 def verify():
     """Check exact retained independent bytes, rather than regenerating controls."""
     root = Path(__file__).resolve().parent
     manifest = json.loads((root / "packed-sources.json").read_text(encoding="utf-8"))
+    verify_hmx_control(root, manifest)
     capture = manifest["independentNativeCapture"]
     fixture = capture["preparationFixture"]
     # Hard pins prevent updating an expected field and its payload together from

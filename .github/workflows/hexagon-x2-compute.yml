@@ -59,7 +59,7 @@ jobs:
           path: ${{ runner.temp }}/SwiftBonsai-HexagonPolicy
           if-no-files-found: error
           retention-days: 90
-      - name: Build source-bound native fixture and run independent packed and queue contracts
+      - name: Build source-bound native fixture and run packed HVX HMX and queue contracts
         shell: pwsh
         working-directory: ${{ runner.temp }}
         env:

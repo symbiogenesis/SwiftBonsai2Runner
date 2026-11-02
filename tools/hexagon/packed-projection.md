@@ -388,3 +388,28 @@ parity and explicit native cleanup. These diagnostic comparisons do not measure
 inference speed. Actual activation provenance, logits, complete state, adapters,
 selected DSP bytes, complete vendor teardown, performance and production
 admission remain independent gates; every receipt keeps `profileEligible:false`.
+
+## HMX integer-bitplane preparation
+
+[`hmx_projection.rs`](hmx_projection.rs) provides a separate pure Rust packing
+and reduction control for source-eligible K=128/N=8 HMX operations. It preserves
+the original PQ2 symbols, prepares the pinned Q8_K codes once and splits each
+signed code into eight binary activation planes with coefficients
+`[1, 2, 4, 8, 16, 32, 64, -128]`. Two tightly packed 576-byte host weight tiles
+cover each 32-row operation tile. Every returned plane must be finite, integral
+and between -128 and 256 before reconstruction and the original per-128 CPU FMA.
+Failed submission, malformed output or cancellation leaves no partial projection.
+
+The full first-projection plan uses forty operations with 626,688 bytes of peak
+weight staging and 1,263,312 bytes of owned host payload. Without assumed reuse,
+its derived transfers are 25,067,520 weight bytes, 163,840 activation bytes and
+22,282,240 returned plane bytes. These exclude device FP16 expansion, N=8-to-32
+padding, VTCM, DMA, mappings, queue storage and allocator/stack overhead.
+
+The submitter is injected; no native HMX-enabled session or packet is supplied.
+The existing signed projection diagnostic continues to use its guarded HVX
+path. Independent model-free controls run in hosted packed-projection tests;
+both the HMX implementation and those controls are included in the immutable
+hosted source-input receipts. Signed integer parity, effective HMX placement,
+state, adapters, actual prefill, PTQ1 arithmetic and speed remain pending under
+the [HMX source lead](../../docs/hexagon-source-audit.md#hmx-integer-bitplane-source-lead).

@@ -405,8 +405,10 @@ future CPU/GPU/NPU choice remain subject to [PLAN](../PLAN.md#hexagon-npu) and t
 
 ### HMX integer-bitplane source lead
 
-The implemented projection bridge fixes K=256/N=2 and uses HVX. Source review
-identifies a separate HMX candidate after its full-M device gate. The pinned
+The signed projection bridge fixes K=256/N=2 and uses HVX. The separate
+[`hmx_projection.rs`](../tools/hexagon/hmx_projection.rs) CPU control implements
+packing, injected synchronous submission and reconstruction for the HMX
+candidate; signed-device qualification still follows the full-M HVX gate. The pinned
 [type/repacking predicate](https://github.com/ggml-org/llama.cpp/blob/19cce6919992fdffd92e0ac152caaf1e2b8f254e/ggml/src/ggml-hexagon/htp-repack.h#L10-L64)
 and [HMX shape solver](https://github.com/ggml-org/llama.cpp/blob/19cce6919992fdffd92e0ac152caaf1e2b8f254e/ggml/src/ggml-hexagon/htp-kparams.cpp#L596-L646)
 admit tiled Q2_0 with K=128, M=17408 and N=8. Q2 uses K=64 tiles;
@@ -432,7 +434,7 @@ ordered per-128 FMA. Transforms, original scales and adapters stay on CPU.
 
 Full first-projection payload bounds, assuming no device residency or reuse:
 
-| Derived traffic | Implemented HVX K=256/N=2 | Proposed HMX K=128/N=8 |
+| Derived traffic | Signed HVX bridge K=256/N=2 | CPU HMX control K=128/N=8 |
 | --- | ---: | ---: |
 | Repacked host weights | 50,135,040 bytes | 25,067,520 bytes |
 | F32 activations | 81,920 bytes | 163,840 bytes |
@@ -445,7 +447,15 @@ exclude internal FP16 expansion, N=8-to-32 padding, DMA, mappings, cache work,
 queue overhead and CPU reconstruction. They are not observed transfers, resource
 admission or evidence of a speedup.
 
-The current API cannot execute this candidate. It needs a separately reviewed
+The HMX control retains exact original Q8_K preparation and ordered per-128
+FMA, validates bounded integral plane results and commits only a complete
+projection. Its eight activation rows are bitplanes of one vector; they do not
+establish eight-token prefill. The full-M host payload bound is 1,263,312 bytes,
+excluding allocator/stack overhead and device resources. Hosted preparation
+binds the implementation and independent controls to both packed-test and
+projection-build receipts through one closed source-input inventory.
+
+The native API cannot execute this candidate. It needs a separately reviewed
 HMX-enabled session (`n_hmx=1`), solver/chunk/VTCM fields, packet extents and
 ownership controls, followed by exact signed-device output, effective placement,
 teardown, actual-model parity and total-cost measurements. It provides no PTQ1
