@@ -476,6 +476,17 @@ The compiler and dependency pins subsequently advanced on `main`; this local
 result retains the compiler identity above, with the combined revision requiring
 its own hosted Foundation result.
 
+The first combined [hosted run](https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41384479280)
+passed compiler behavioral gates on Linux and Windows and all selected test,
+documentation and executable-build phases, including native ASR/TTS fixtures
+and linking. New-nightly Clippy identified two additional updates: explicitly
+take/drop oversized speech scratch to preserve allocation release, and make the
+queue's `pending` accessor `const fn`. Both are corrected without weakening
+lints. A source-bound replay of the existing scratch-retention regression and
+new-nightly Clippy passed in a further two seconds. The corrected source is
+`d2a2962`; [PLAN.md](../PLAN.md#runtime-and-correctness) owns its pending combined
+hosted result. No model or performance qualification is transferred.
+
 [Compiler probes](https://github.com/symbiogenesis/prism-inference/blob/main/tools/rust-trial/README.md)
 retain stable as an isolated control. Release overflow checks stay enabled and
 debug assertions disabled to preserve

@@ -241,6 +241,15 @@ identity or nonzero application across conditions.
 
 ## Runtime and correctness
 
+Complete the [current-nightly Rust standards run](https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41386105716)
+for source `d2a2962`: all 12 registered crates' owning Release Clippy, rustdoc,
+tests and builds on `nightly-2026-11-02`. The preceding run passed its test,
+documentation and build phases, including native speech fixtures/linking, but
+failed Clippy on an oversized-buffer reset and a newly const-capable queue
+accessor. Both corrections are pushed; the final combined hosted result is
+pending. Polonius and trait-solver behavioral gates already passed on hosted
+Linux and Windows. Keep model/device and performance qualification separate.
+
 Use the [native Rust contract](docs/native-rust-engine.md). [Runtime
 promotion](docs/native-rust-engine.md#default-runtime-promotion) retains the standard
 adapter at scale 1.3, binds independent gates to exact source, release and app
