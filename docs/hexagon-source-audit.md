@@ -402,3 +402,52 @@ preserving original CPU Q8_K and per-128 FMA. These are derived work/storage bou
 not measured device performance. Qualification and any
 future CPU/GPU/NPU choice remain subject to [PLAN](../PLAN.md#hexagon-npu) and the
 [execution/resource/failure contracts](hexagon.md).
+
+### HMX integer-bitplane source lead
+
+The implemented projection bridge fixes K=256/N=2 and uses HVX. Source review
+identifies a separate HMX candidate after its full-M device gate. The pinned
+[type/repacking predicate](https://github.com/ggml-org/llama.cpp/blob/19cce6919992fdffd92e0ac152caaf1e2b8f254e/ggml/src/ggml-hexagon/htp-repack.h#L10-L64)
+and [HMX shape solver](https://github.com/ggml-org/llama.cpp/blob/19cce6919992fdffd92e0ac152caaf1e2b8f254e/ggml/src/ggml-hexagon/htp-kparams.cpp#L596-L646)
+admit tiled Q2_0 with K=128, M=17408 and N=8. Q2 uses K=64 tiles;
+the [short HMX core](https://github.com/ggml-org/llama.cpp/blob/19cce6919992fdffd92e0ac152caaf1e2b8f254e/ggml/src/ggml-hexagon/htp/hmx-mm-kernels-tiled.h#L966-L1000)
+accepts four K=32 dot tiles. Source eligibility proves no selected signed-binary
+execution or available resources.
+
+This path [dequantizes Q2 symbols to FP16](https://github.com/ggml-org/llama.cpp/blob/19cce6919992fdffd92e0ac152caaf1e2b8f254e/ggml/src/ggml-hexagon/htp/hmx-mm-kernels-tiled.h#L788-L821)
+and [converts F32 activations directly to FP16](https://github.com/ggml-org/llama.cpp/blob/19cce6919992fdffd92e0ac152caaf1e2b8f254e/ggml/src/ggml-hexagon/htp/matmul-ops.c#L2150-L2195).
+The [HMX executor](https://github.com/ggml-org/llama.cpp/blob/19cce6919992fdffd92e0ac152caaf1e2b8f254e/ggml/src/ggml-hexagon/htp/matmul-ops.c#L2630-L2711)
+uses FP16 intermediate output. It bypasses the HVX Q8_1 quantizer, so its 0/1
+activation planes need no guard lanes. Preserve CPU Q8_K preparation, then split
+each original i8 code into eight unsigned binary planes:
+
+`q = sum(2^b * p_b, b=0..6) - 128 * p_7`, with each `p_b` equal to zero or one.
+
+For each original 128-weight block, use the original two-bit symbols with Q2
+scales of one. Every plane dot lies between -128 and 256; all operands and
+partial integer sums are representable in FP16. This is an arithmetic argument,
+not a device oracle. Independently check the returned integral values, reconstruct
+the original integer dot on CPU, then retain the original scale product and
+ordered per-128 FMA. Transforms, original scales and adapters stay on CPU.
+
+Full first-projection payload bounds, assuming no device residency or reuse:
+
+| Derived traffic | Implemented HVX K=256/N=2 | Proposed HMX K=128/N=8 |
+| --- | ---: | ---: |
+| Repacked host weights | 50,135,040 bytes | 25,067,520 bytes |
+| F32 activations | 81,920 bytes | 163,840 bytes |
+| Returned integer planes | 5,570,560 bytes | 22,282,240 bytes |
+
+Both constructions retain forty original-block operations with full M. HMX uses
+two 576-byte host weight tiles per 32 rows, versus four for the guarded HVX
+construction. Its weight traffic is 36/34 of original PQ2 storage. These extents
+exclude internal FP16 expansion, N=8-to-32 padding, DMA, mappings, cache work,
+queue overhead and CPU reconstruction. They are not observed transfers, resource
+admission or evidence of a speedup.
+
+The current API cannot execute this candidate. It needs a separately reviewed
+HMX-enabled session (`n_hmx=1`), solver/chunk/VTCM fields, packet extents and
+ownership controls, followed by exact signed-device output, effective placement,
+teardown, actual-model parity and total-cost measurements. It provides no PTQ1
+arithmetic qualification or production eligibility. [PLAN](../PLAN.md#hexagon-npu)
+retains the ordering and aggregate owner-device budget.

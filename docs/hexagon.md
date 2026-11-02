@@ -138,6 +138,9 @@ operations. Every returned limb and the final ordered CPU FMA result must match
 the CPU control before the result directory is published. These are implemented
 bounds and comparison rules; full-M signed execution, actual model activations,
 logits/state, adapters, vendor teardown and speed remain unqualified.
+The [hosted preparation receipt](evidence/hexagon-original-projection-preparation.json)
+records the successful same-source builds, model-free checks, independently
+checked executable/source/lock identities and explicit remaining device gates.
 
 Hosted preparation publishes a source-bound `hexagon-projection-probe` bundle
 alongside its model-free controls. The native `hexagon-tools` device supervisor

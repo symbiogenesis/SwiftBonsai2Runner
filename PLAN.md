@@ -818,9 +818,10 @@ do not reset it. Further owner qualification remains pending for this investigat
   resources outside Job commit remain admission charges; the proposed 18,752-byte
   fused double-buffer reserve covers only its declared tiles.
   Qualify the prepared original-artifact projection probe and single-session
-  native Rust submitter through source-bound hosted controls, then the signed
+  native Rust submitter on the signed
   full-M shape and immutable externally supplied activation input within a feasible
-  remaining owner allowance. Enforce every-limb and final bitwise comparison,
+  remaining owner allowance. Retain the [source-bound hosted controls](docs/evidence/hexagon-original-projection-preparation.json).
+  Enforce every-limb and final bitwise comparison,
   correlated operation counts, complete explicit cleanup and atomic publication.
   External activation bytes are not qualified live-model activations; actual
   graph integration, state/logit/adapter parity and end-to-end benefit remain
@@ -830,6 +831,11 @@ do not reset it. Further owner qualification remains pending for this investigat
   partial tiles, double buffering, requested and effective VTCM, allocation refusal and
   transfer cancellation. Use the documented DMA-ring bug as a regression pattern without
   claiming a Swift defect.
+  After the full-M baseline, qualify the [source-derived K=128/N=8 integer-bitplane
+  HMX candidate](docs/hexagon-source-audit.md#hmx-integer-bitplane-source-lead).
+  Review a separate HMX-enabled native session/solver, exact plane reconstruction,
+  padded activation/output resources and signed-device parity before timing.
+  Its lower derived weight traffic and extra returned planes establish no TPS gain.
 - Qualify complete ownership and restore for fresh, reused and edited prefixes,
   cancellation, reset and failed continuation; qualify chunkwise scheduling separately.
   Account for host/device mappings and copies, RPC, state, caches, load overlap and
