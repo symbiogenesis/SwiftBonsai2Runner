@@ -20,6 +20,13 @@ pub(super) const INPUTS: &[&str] = &[
 ];
 
 fn dependencies(context: &mut Context, rustc: &Path, output: &Path) -> Result<Vec<OsString>> {
+    context.environment.extend(BTreeMap::from([
+        ("RUSTC".into(), rustc.to_string_lossy().into_owned()),
+        ("RUSTC_WRAPPER".into(), String::new()),
+        ("RUSTC_WORKSPACE_WRAPPER".into(), String::new()),
+        ("RUSTFLAGS".into(), String::new()),
+        ("CARGO_ENCODED_RUSTFLAGS".into(), String::new()),
+    ]));
     let cargo = rustc
         .parent()
         .ok_or("Missing compiler directory.")?
@@ -176,6 +183,7 @@ pub(super) fn build(
         &output.join("contract-tests.txt"),
     )?;
     let executable = context.executable(&executable, "hexagon-projection-probe.exe")?;
+    let dependency_receipt_digest = context.digest(&output.join("dependencies.json"), 65_536)?;
     write_json(
         &bundle.join("projection-build.json"),
         &json!({
@@ -185,6 +193,7 @@ pub(super) fn build(
             "CompilerIdentitySha256":compiler_digest,"SourceFiles":sources,
             "NativeSourceFiles":native_sources,"ManifestSha256":manifest_digest,
             "BuildEnvironment":context.environment,"Executable":executable,
+            "DependencyReceiptSha256":dependency_receipt_digest,
             "DeviceCodeLoaded":false,"ModelLoaded":false,"ProfileEligible":false,
         }),
     )
