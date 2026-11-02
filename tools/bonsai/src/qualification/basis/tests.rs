@@ -107,15 +107,13 @@ fn text(bytes: &mut Vec<u8>, value: &str) -> Result<()> {
 
 #[test]
 fn independent_gguf_reader_checks_named_a_payloads_and_overlap() -> Result<()> {
-    let ssm = (0..64)
-        .filter(|block| (block + 1) % 4 != 0)
-        .map(|block| {
-            (
-                format!("blk.{block}.ssm_out.weight.lora_a"),
-                6144_u64,
-                24_576_u64,
-            )
-        });
+    let ssm = (0..64).filter(|block| (block + 1) % 4 != 0).map(|block| {
+        (
+            format!("blk.{block}.ssm_out.weight.lora_a"),
+            6144_u64,
+            24_576_u64,
+        )
+    });
     let other = (48..258).map(|index| (format!("test.{index}"), 1_u64, 32_u64));
     let mut bytes = b"GGUF".to_vec();
     bytes.extend_from_slice(&3_u32.to_le_bytes());
