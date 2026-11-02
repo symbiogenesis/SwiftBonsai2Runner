@@ -1,0 +1,14 @@
+{
+  "SchemaVersion": 1,
+  "Kind": "bounded-runtime-only-provisioning",
+  "Status": "verified-runtime-only",
+  "ExpectedVersion": "0.1.12",
+  "ExpectedCommit": "c48687616f55eec9aff0de04860917de3e1047f2",
+  "MaximumProvisionSeconds": 20,
+  "IntakeMaximumSeconds": 30,
+  "ModelExecuted": false,
+  "StartedAggregateSeconds": 1.692436,
+  "FinishedAggregateSeconds": 3.8482285,
+  "Verified": true,
+  "ProvisionProcessExitCode": 0
+}

@@ -28,9 +28,11 @@ resource and installation gates below with reproducible evidence before promotio
 
 The PTQ1 critical path is:
 
-1. Obtain the approved adapter's immutable authoring inputs and independently
-   verify all 48 SSM writer mappings; successful loading or matching runtimes
-   cannot recover missing provenance.
+1. Obtain the approved adapter's immutable authoring inputs, check their bounded
+   manifests and all 48 supplied SSM A vectors through `qualification` operation
+   `basis-intake`, then independently verify their authenticity, reproduction and
+   native writer mappings. Successful intake, loading or matching runtimes cannot
+   recover missing provenance.
 2. Qualify the selected worker policy's complete generated-history lifecycle,
    scalar/explicit-NEON logits and live state, loaded-zero identity and nonzero
    application on the pinned released service.
@@ -141,8 +143,19 @@ adapter's immutable checkpoint, conversion and direction identities and
 independently verify all 48 SSM mappings; this remains an external provenance
 prerequisite that native/Rust agreement cannot supply.
 
-Qualify the pinned Prism 0.1.12 release and its required effective-row-worker
-readiness on the actual model before using it for promotion. Retain historical
+Diagnose the [current-release four-worker startup](docs/evidence/ptq1-delivery-0112-20261101.json)
+before planning another owner workload. This one 0.1.12 attempt reached exact
+PTQ1/adapter readiness and observed the effective four-worker graph budget, but
+startup consumed 100.557 seconds of the 164-second model case. Its first request
+expired after 33.445 seconds with no public headers or response bytes; all three
+required streams remain pending. Owned cleanup and independent receipt review
+finished within the original allowance, with no retry. Attribute broker startup
+phases before claiming a hashing, loading, worker-policy or kernel hotspot; missing
+public bytes do not establish zero backend tokens. Broader/full-context work still
+needs a feasible workload or a faster qualified runtime, rather than split trials.
+
+Qualify the pinned Prism 0.1.12 release beyond its bounded PTQ1/four-worker
+readiness observation before using it for promotion. Retain historical
 0.1.10 configured-worker observations separately. Retain the previously released
 copy-then-scale recurrent path until the fused source candidate has actual-model
 numerical, throughput and resource evidence. Exercise the selected numerical
