@@ -34,7 +34,7 @@ pub(super) fn install(context: &eframe::CreationContext<'_>) {
     // configured. Retain the actual reason before egui's later staging panic.
     // This changes no backend selection and never retries a failed frame/model.
     render.device.set_device_lost_callback(|reason, message| {
-        if reason != eframe::wgpu::DeviceLostReason::Destroyed {
+        if reason != wgpu::DeviceLostReason::Destroyed {
             emit(&json!({
                 "kind": "bonsai-chat-graphics", "stage": "device-lost",
                 "reason": format!("{reason:?}"), "message": bounded(&message),
