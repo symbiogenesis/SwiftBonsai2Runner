@@ -132,7 +132,8 @@ fn release(input: &str) -> Result<ReleasePin, LaunchError> {
 }
 
 fn row_workers_supported(version: &str, workers: u8) -> Result<(), LaunchError> {
-    if workers == 1 || (workers == 4 && matches!(version, "0.1.9" | "0.1.10" | "0.1.11" | "0.1.12"))
+    if workers == 1
+        || (workers == 4 && matches!(version, "0.1.9" | "0.1.10" | "0.1.11" | "0.1.12" | "0.1.13"))
     {
         Ok(())
     } else {
@@ -219,7 +220,7 @@ mod tests {
     #[test]
     fn four_row_workers_require_the_reviewed_parallel_release() {
         assert!(row_workers_supported("0.1.8", 1).is_ok());
-        for version in ["0.1.9", "0.1.10", "0.1.11", "0.1.12"] {
+        for version in ["0.1.9", "0.1.10", "0.1.11", "0.1.12", "0.1.13"] {
             assert!(row_workers_supported(version, 1).is_ok());
             assert!(row_workers_supported(version, 4).is_ok());
             for workers in [0, 2, 3, 5, 16, 255] {
@@ -231,7 +232,11 @@ mod tests {
         }
         for version in [
             "0.1.8",
-            "0.1.13",
+            "0.1.14",
+            "0.1.13-dev",
+            "v0.1.13",
+            "0.1.13.0",
+            "0.1.013",
             "0.1.9-dev",
             "0.1.10-dev",
             "0.1.11-dev",

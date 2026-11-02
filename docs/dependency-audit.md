@@ -278,8 +278,11 @@ at review. Rust, Clippy and rustfmt are available for every CI host target.
 `windows-future` 0.3.2 remains the newest compatible release: latest `windows`
 0.62.2 returns its asynchronous types and requires `windows-core` 0.62.2;
 `windows-future` 0.100.0 requires the incompatible `windows-core` 0.100 family.
-GitHub Actions, cargo-audit, LLVM, Hexagon SDK and the released Prism 0.1.12
-runtime were already current. Speech source pins match upstream heads.
+GitHub Actions, cargo-audit, LLVM, Hexagon SDK and the then-released Prism 0.1.12
+runtime were already current at that review. The later reviewed
+[Prism 0.1.13 CPU release](native-rust-engine.md#swift-cpu-supported-subset) is pinned
+separately; its startup validation change carries no measured device gain or
+inherited model qualification. Speech source pins match upstream heads.
 Model/adapter locks and source-bound qualification controls retain their exact
 identities; newer reference/candidate artifacts need separate
 [runtime review](development-guide.md#prepare-a-runtime-lock-update).

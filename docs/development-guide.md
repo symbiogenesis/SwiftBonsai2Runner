@@ -317,7 +317,7 @@ and installed-package launches retain native admission. Installed launches use [
 | --- | --- | --- |
 | Publisher Prism CPU, original Swift PQ2 | Default, or explicit `--use-original-pq2`; pinned adapter enabled | Adapter scale follows response settings. Missing/altered adapters fail with provisioning guidance, without download or fallback. |
 | Publisher Prism CPU, current-weight PTQ1 export | `--use-repacked-ptq1` (app/broker `--use-repacked-ptq1`) | Same adapter opt-out/scale. Missing/changed bytes reject; no older publisher PTQ1 substitution or fallback. |
-| Experimental native Rust 0.1.12, original Swift PQ2 or exact current-weight PTQ1 | `--native-engine`, optionally `--use-repacked-ptq1` and `--no-abliterate-lora` (app/broker `--native-engine`) | Exact model, approved adapter, representation and effective row-worker readiness are verified; no engine switch after failure. Separate [PTQ1 qualification](swift-memory.md#current-weight-ptq1-option) is pending. |
+| Experimental native Rust 0.1.13, original Swift PQ2 or exact current-weight PTQ1 | `--native-engine`, optionally `--use-repacked-ptq1` and `--no-abliterate-lora` (app/broker `--native-engine`) | Exact model, approved adapter, representation and effective row-worker readiness are verified; no engine switch after failure. Separate [PTQ1 qualification](swift-memory.md#current-weight-ptq1-option) is pending. |
 
 `--no-abliterate-lora` (direct app `--no-abliterate-lora`) omits the adapter and disables
 its control. Provision the native release before selecting it:
@@ -343,7 +343,7 @@ an omitted representation option; artifact failure never switches representation
 The default and adapter scale 1.3 remain unchanged, and device rollback still
 requires qualification.
 
-`--native-engine --native-row-workers 4` explicitly selects the reviewed 0.1.12
+`--native-engine --native-row-workers 4` explicitly selects the reviewed 0.1.13
 four-worker implementation. The default remains one worker; publisher/reference
 launches reject four, and no request can override this private launch setting.
 The [fixed-input comparison](evidence/row-parallel-smoke.json) preserves all logits

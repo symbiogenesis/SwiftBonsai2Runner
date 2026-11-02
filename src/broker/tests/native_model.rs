@@ -134,15 +134,19 @@ const PQ2_ADAPTER_LIFECYCLE_PROFILE: AdapterProfile = AdapterProfile {
 };
 
 fn native_four_worker_release(version: Option<&str>) -> bool {
-    matches!(version, Some("0.1.9" | "0.1.10" | "0.1.11" | "0.1.12"))
+    matches!(
+        version,
+        Some("0.1.9" | "0.1.10" | "0.1.11" | "0.1.12" | "0.1.13")
+    )
 }
 
 fn worker_readiness_receipt(version: Option<&str>, expected: u8, verified: bool) -> Value {
     // These reviewed owners require a matching field from the instantiated graph.
     // Historical versions may omit it, and later versions need another review.
     // A configured argument or a receipt written before start cannot supply it.
-    let observed =
-        matches!(version, Some("0.1.11" | "0.1.12")) && matches!(expected, 1 | 4) && verified;
+    let observed = matches!(version, Some("0.1.11" | "0.1.12" | "0.1.13"))
+        && matches!(expected, 1 | 4)
+        && verified;
     json!({"configuredNativeRowWorkers":expected, "verifiedReadinessObserved":verified,
         "rowWorkerReadinessVersion":version,
         "rowWorkerCountIndependentlyObserved":observed,
@@ -171,7 +175,12 @@ fn native_worker_receipts_require_exact_release_and_verified_readiness() {
         (Some("0.1.10"), true, false),
         (Some("0.1.11"), true, true),
         (Some("0.1.12"), true, true),
-        (Some("0.1.13"), false, false),
+        (Some("0.1.13"), true, true),
+        (Some("0.1.14"), false, false),
+        (Some("v0.1.13"), false, false),
+        (Some("0.1.13-dev"), false, false),
+        (Some("0.1.13.0"), false, false),
+        (Some("0.1.013"), false, false),
         (Some("v0.1.12"), false, false),
         (Some("0.1.12-dev"), false, false),
         (Some("0.1.12.0"), false, false),
@@ -209,7 +218,10 @@ fn native_worker_receipts_require_exact_release_and_verified_readiness() {
     record_worker_readiness(&mut report, 4, true);
     assert_eq!(
         report["rowWorkerCountIndependentlyObserved"],
-        matches!(runtime_lock["version"].as_str(), Some("0.1.11" | "0.1.12"))
+        matches!(
+            runtime_lock["version"].as_str(),
+            Some("0.1.11" | "0.1.12" | "0.1.13")
+        )
     );
 }
 
