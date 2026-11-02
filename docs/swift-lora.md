@@ -9,6 +9,19 @@ No optimal scale is established. The broker has an explicit development option;
 no local training is needed.
 [PLAN.md](../PLAN.md#creative-quality-adapters-and-memory) owns remaining work.
 
+The [current-release bounded lifecycle](evidence/ptq1-0113-lifecycle-41539984210/independent-review.json)
+passes on PTQ1 with Prism 0.1.13, Runner `74bef68`, and the explicitly selected
+four-worker policy. Three one-token-cap streams complete at scales 1.3, zero and
+1.3, with invalid-scale rejection and same-owner continuation. The final request
+supplies the actual first response as assistant history, bound by captured content
+and message digests. This verifies the bounded scale/history application sequence
+and owned cleanup. All three streams terminate at `length`; their short visible
+text does not prove complete-answer quality, loaded-zero/no-adapter logits identity,
+nonzero numerical application or correct native SSM basis. Serving still resets
+state per request; generated text supplied as history is not prefix-state reuse.
+This one attempt does not qualify other worker policies, full context/output,
+performance, isolation, installation or default promotion.
+
 ## Artifact and published evidence
 
 [swift-lora.lock.json](../config/swift-lora.lock.json) pins

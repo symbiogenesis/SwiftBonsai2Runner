@@ -54,6 +54,26 @@ request-and-cleanup threshold stops the required workload before invalid-scale r
 captured-history change-back. Overall acceptance fails, with owned cleanup and
 durable selected receipts verified; no additional model attempt follows.
 
+The [bounded 0.1.13 four-worker lifecycle](evidence/ptq1-0113-lifecycle-41539984210/independent-review.json)
+passes on the X2 Elite Extreme at Runner `74bef68c74417a56e38d90201b7f87ccc667a276`
+(run `41539984210`). Exact PTQ1/adapter readiness reports an effective graph budget
+of four workers. All three one-token-cap streams at scales 1.3, zero and 1.3 complete;
+invalid scale is rejected and the same owner accepts the change-back request.
+That request supplies the actual first response as assistant history, with retained
+content and message digests. Owned shutdown leaves an empty Job and released listener.
+This closes the selected bounded scale/history lifecycle only. Each stream reports
+one output token and `length` termination; supplied generated text does not establish
+prefix-state reuse, complete-answer quality, zero/no-adapter numerical identity or
+nonzero adapter effectiveness.
+
+The captured startup is 14.622 seconds; client-observed request durations are
+26.038, 25.753 and 55.558 seconds. These observations include the recorded broker
+and HTTP/SSE overhead and establish no decode TPS or controlled speedup over the
+historical 0.1.12 attempt. The single guarded attempt and completed file-only review,
+including the earlier diagnostic charge, fit within 268.464 seconds with no model
+retry. Full state/scalar/NEON parity, context/output, resources, quality, isolation,
+installation and default promotion remain unqualified.
+
 Version 0.1.8 uses the reviewed Windows read-consumer helper at Runner revision
 `abe04b4a8eff18388af96f0e75c8a8d180b81989`. Inside an actual AppContainer, it skips
 only the denied volume-root metadata check; the owner still validates ancestry,
@@ -361,9 +381,11 @@ and hash controls, the graph, full sampled logits/state, worker/server protocols
 strict analyzers and documentation without weights. These are candidate source
 checks; Runner pins 0.1.13 and does
 not expose the experimental reuse option. No load-time or generation-speed gain is
-established. The explicit adapter lifecycle workload in
-[validation](validation.md#actual-model-application-acceptance) also remains pending
-actual-device evidence. None of these candidates satisfies default promotion.
+established. The selected 0.1.13 four-worker adapter scale/history workload now has
+the bounded evidence above. The broader
+[application contract](validation.md#actual-model-application-acceptance), numerical
+parity and prefix-state reuse still require their own evidence. None of these
+candidates satisfies default promotion.
 
 The [initial Prism-owned service checker preparation](evidence/prism-service-checker-tools.json)
 retains a main-source/run-bound ARM64 checker and model-free controls. The
