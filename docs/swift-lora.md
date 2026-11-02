@@ -134,7 +134,8 @@ Each independently reproduced authoring-order A vector contains exactly 6144
 finite little-endian F32 values. Intake independently locates the named
 `blk.N.ssm_out.weight.lora_a` payload in the digest-verified adapter and compares
 every channel after the declared mapping. Both tolerances are bounded by 1e-5;
-the comparison is `abs(actual - expected) <= absoluteTolerance + relativeTolerance * abs(expected)`.
+the comparison is `abs(actual - expected) <= absoluteTolerance + relativeTolerance * abs(expected)`,
+with the right-hand bound computed using F64 fused multiply-add.
 Receipts retain each vector digest, mismatch count and maximum absolute difference.
 
 An `intake-complete` result records byte integrity and the declared all-site vector

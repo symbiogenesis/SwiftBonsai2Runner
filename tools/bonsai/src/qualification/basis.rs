@@ -48,7 +48,7 @@ struct Site {
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
-struct Manifest {
+struct Intake {
     schema_version: u32,
     model_sha256: String,
     runtime_commit: String,
@@ -111,7 +111,7 @@ fn artifact(directory: &Path, reference: &Artifact, limit: u64) -> Result<Vec<u8
     Ok(bytes)
 }
 
-fn validate(manifest: &Manifest) -> Result<()> {
+fn validate(manifest: &Intake) -> Result<()> {
     let runtime: Value =
         serde_json::from_str(include_str!("../../../../config/prism-inference.lock.json"))
             .map_err(|error| error.to_string())?;
@@ -160,12 +160,11 @@ fn vector(bytes: &[u8]) -> Result<Vec<f64>> {
         bytes.len() == CHANNELS * 4,
         "Basis A vectors must contain exactly 6144 little-endian F32 values.",
     )?;
-    bytes
-        .chunks_exact(4)
+    let (chunks, _) = bytes.as_chunks::<4>();
+    chunks
+        .iter()
         .map(|chunk| {
-            let value = f64::from(f32::from_le_bytes(
-                chunk.try_into().map_err(|_| "Invalid basis F32 value.")?,
-            ));
+            let value = f64::from(f32::from_le_bytes(*chunk));
             require(
                 value.is_finite(),
                 "Basis vectors must contain finite values.",
@@ -191,7 +190,7 @@ fn compare(
             f64::from(mapping.signs[channel]) * reference[mapping.native_to_authoring[channel]];
         let difference = (actual - expected).abs();
         maximum = maximum.max(difference);
-        if difference > absolute + relative * expected.abs() {
+        if difference > relative.mul_add(expected.abs(), absolute) {
             mismatches += 1;
         }
     }
@@ -209,7 +208,7 @@ pub(super) fn run(request: Map<String, Value>) -> Result<Value> {
         sha256(&bytes) == request.manifest_sha256,
         "Basis manifest differs from its selected raw-byte digest.",
     )?;
-    let manifest: Manifest = serde_json::from_slice(&bytes).map_err(|error| error.to_string())?;
+    let manifest: Intake = serde_json::from_slice(&bytes).map_err(|error| error.to_string())?;
     validate(&manifest)?;
     let mut inputs = BTreeMap::new();
     for (name, reference) in [

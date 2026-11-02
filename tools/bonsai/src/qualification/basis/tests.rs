@@ -1,6 +1,6 @@
 use serde_json::{Value, json};
 
-use super::{CHANNELS, Manifest, Mapping, artifact, compare, header, validate, vector};
+use super::{CHANNELS, Intake, Mapping, artifact, compare, header, validate, vector};
 use crate::Result;
 use crate::identity::sha256;
 
@@ -25,7 +25,7 @@ fn manifest() -> Result<Value> {
 fn intake_requires_all_sites_exact_identities_mapping_and_tight_bounds() -> Result<()> {
     let original = manifest()?;
     validate(
-        &serde_json::from_value::<Manifest>(original.clone()).map_err(|error| error.to_string())?,
+        &serde_json::from_value::<Intake>(original.clone()).map_err(|error| error.to_string())?,
     )?;
     for path in [
         "/ssmSites/1/block",
@@ -41,7 +41,7 @@ fn intake_requires_all_sites_exact_identities_mapping_and_tight_bounds() -> Resu
             "/runtimeCommit" | "/adapter/sha256" => json!("0".repeat(64)),
             _ => json!(0),
         };
-        let decoded: Manifest = serde_json::from_value(bad).map_err(|error| error.to_string())?;
+        let decoded: Intake = serde_json::from_value(bad).map_err(|error| error.to_string())?;
         assert!(
             validate(&decoded).is_err(),
             "Accepted malformed field {path}"
@@ -107,28 +107,31 @@ fn text(bytes: &mut Vec<u8>, value: &str) -> Result<()> {
 
 #[test]
 fn independent_gguf_reader_checks_named_a_payloads_and_overlap() -> Result<()> {
-    let blocks: Vec<_> = (0..64).filter(|block| (block + 1) % 4 != 0).collect();
+    let ssm = (0..64)
+        .filter(|block| (block + 1) % 4 != 0)
+        .map(|block| {
+            (
+                format!("blk.{block}.ssm_out.weight.lora_a"),
+                6144_u64,
+                24_576_u64,
+            )
+        });
+    let other = (48..258).map(|index| (format!("test.{index}"), 1_u64, 32_u64));
     let mut bytes = b"GGUF".to_vec();
     bytes.extend_from_slice(&3_u32.to_le_bytes());
     bytes.extend_from_slice(&258_u64.to_le_bytes());
     bytes.extend_from_slice(&0_u64.to_le_bytes());
     let mut offset = 0_u64;
     let mut offset_positions = Vec::new();
-    for index in 0..258 {
-        let is_ssm = index < 48;
-        let name = if is_ssm {
-            format!("blk.{}.ssm_out.weight.lora_a", blocks[index])
-        } else {
-            format!("test.{index}")
-        };
+    for (name, dimension, extent) in ssm.chain(other) {
         text(&mut bytes, &name)?;
         bytes.extend_from_slice(&2_u32.to_le_bytes());
-        bytes.extend_from_slice(&(if is_ssm { 6144_u64 } else { 1_u64 }).to_le_bytes());
+        bytes.extend_from_slice(&dimension.to_le_bytes());
         bytes.extend_from_slice(&1_u64.to_le_bytes());
         bytes.extend_from_slice(&0_u32.to_le_bytes());
         offset_positions.push(bytes.len());
         bytes.extend_from_slice(&offset.to_le_bytes());
-        offset += if is_ssm { 24_576 } else { 32 };
+        offset += extent;
     }
     let data = bytes.len().div_ceil(32) * 32;
     bytes.resize(
@@ -142,7 +145,7 @@ fn independent_gguf_reader_checks_named_a_payloads_and_overlap() -> Result<()> {
         parsed.get(&0).ok_or("Missing block zero.")?[..4],
         3.5_f32.to_le_bytes()
     );
-    assert!(header::ssm_vectors(&bytes[..data + 1]).is_err());
+    assert!(header::ssm_vectors(&bytes[..=data]).is_err());
     let mut overlap = bytes.clone();
     let second_offset = offset_positions[1];
     overlap[second_offset..second_offset + 8].copy_from_slice(&0_u64.to_le_bytes());
