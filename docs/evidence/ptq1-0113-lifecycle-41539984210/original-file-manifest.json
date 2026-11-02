@@ -1,0 +1,159 @@
+{
+  "schemaVersion": 1,
+  "repository": "symbiogenesis/SwiftBonsai2Runner",
+  "revision": "74bef68c74417a56e38d90201b7f87ccc667a276",
+  "runId": "41539984210",
+  "credentialFreeSelectionOnly": true,
+  "files": [
+    {
+      "file": "acceptance-artifact-metadata.json",
+      "bytes": 832,
+      "sha256": "ea3f3171b4a4291d09f2855c59d2ae00517485dac5d313f88af635a638934014"
+    },
+    {
+      "file": "acceptance.zip",
+      "bytes": 6650,
+      "sha256": "850109fa6f76de2c2f3fa993de03a15f04799458d858cb7ea26c57054e2e88e7"
+    },
+    {
+      "file": "aggregate-budget.json",
+      "bytes": 1079,
+      "sha256": "5f3e07f55f5862ef0358f5b3c73c35eee05adb189015b7b6cec90188432a1711"
+    },
+    {
+      "file": "hosted-checker.zip",
+      "bytes": 4149633,
+      "sha256": "0d81db6d30c442f006a6261b1ac04efd0a4e9340769a55c496c0d3ea7076a0af"
+    },
+    {
+      "file": "Invoke-TemporaryPtq1LifecycleOwner.ps1",
+      "bytes": 42596,
+      "sha256": "a833e158831864dc346976f286267e58ca34cb4f44f317b1e4b3327ba4012c1b"
+    },
+    {
+      "file": "preparation-review.json",
+      "bytes": 964,
+      "sha256": "90fb7336b630ec95f4fd951f4bc471990def336b9cf3b61be524fd7e2b3113b9"
+    },
+    {
+      "file": "session-owner-intake.ps1",
+      "bytes": 20360,
+      "sha256": "181c9ee77bf07d3351aa0b44d6cda2b8360eba4f8845dc8df0e62791ddd7aa86"
+    },
+    {
+      "file": "acceptance/acceptance.json",
+      "bytes": 18523,
+      "sha256": "3730fb0bdbae51ca213ec62147e9666155dfea83d18ea6cd1901ab5d97a49923"
+    },
+    {
+      "file": "acceptance/host.json",
+      "bytes": 1167,
+      "sha256": "d6db715ba66a0226a6304e661890a9b6061bbc0f39757e2ce31325b771c446ab"
+    },
+    {
+      "file": "acceptance/hosted-build.json",
+      "bytes": 906,
+      "sha256": "2b963705616eca311f9bf08fe117642444567a604c87c98ef87ae3837245eb2c"
+    },
+    {
+      "file": "owner/child-27412.json",
+      "bytes": 99,
+      "sha256": "1a518892d4918e4a53c473c512d2b8eb8d7c86fe3e4712506a61d45add28bb66"
+    },
+    {
+      "file": "owner/child-31336.json",
+      "bytes": 99,
+      "sha256": "9bf6ff025c618ddba7e4e8557055970e90b2a7ecfa325e9e9761fce998dd4f93"
+    },
+    {
+      "file": "owner/child-31408.json",
+      "bytes": 99,
+      "sha256": "fe68d16743f9a32137d77ca3023f1cca6b839c2a3106e19570d896a8c209ebcc"
+    },
+    {
+      "file": "owner/cleanup.json",
+      "bytes": 584,
+      "sha256": "e1195fc09bd6ce98af7302d1ddb370eb0a189bc80c9ec84432cfafc0ef7676d1"
+    },
+    {
+      "file": "owner/curl-version-24364-1793660525708980500-0.24364-1793660525709349900-0.stderr",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "owner/curl-version-24364-1793660525708980500-0.24364-1793660525709349900-0.stdout",
+      "bytes": 366,
+      "sha256": "8cdeaa7a7bcc730ac1e93abab6fd0c5255eb7538937c495937edfff5f284db3f"
+    },
+    {
+      "file": "owner/curl-version-24364-1793660525708980500-0.log",
+      "bytes": 366,
+      "sha256": "8cdeaa7a7bcc730ac1e93abab6fd0c5255eb7538937c495937edfff5f284db3f"
+    },
+    {
+      "file": "owner/download-24364-1793660525782418400-1.24364-1793660525783276300-1.stderr",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "owner/download-24364-1793660525782418400-1.24364-1793660525783276300-1.stdout",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "owner/download-24364-1793660525782418400-1.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "owner/owner-control.json",
+      "bytes": 2776,
+      "sha256": "51e83b55daae4edc5eb36773ed3c1bff991c7a584ca3cc4a14f0b7ebb3c2d925"
+    },
+    {
+      "file": "owner/owner-finished.json",
+      "bytes": 111,
+      "sha256": "9b3dea03c82561788ccffe721abf68c0cf104d79dd26ddaf1c7eed057f98f4a5"
+    },
+    {
+      "file": "owner/owner-lifetime.json",
+      "bytes": 2336,
+      "sha256": "7edd6a6e49e9624488b8954085ae568742d52e568cdca829bc973b4ad2384d81"
+    },
+    {
+      "file": "owner/preparation-proof.json",
+      "bytes": 1515,
+      "sha256": "4e14a67a9d31c7008df7d069d3d6195dd3ab183f9d2f1f0a0a080962a7213ca3"
+    },
+    {
+      "file": "owner/runtime-provision-request.json",
+      "bytes": 250,
+      "sha256": "01e084112c6b30ce6dcea156d9605f355d2441575a6163926ede32a452a891bc"
+    },
+    {
+      "file": "owner/runtime-provisioning.json",
+      "bytes": 268,
+      "sha256": "286564275771e47748738ab24768215f17e1e3db11b943c8644a53203ec9d15d"
+    },
+    {
+      "file": "owner/watchdog-ready.json",
+      "bytes": 173,
+      "sha256": "4f5624363f5c4a10c770b6b60b35e7a88968bdbb19d4898d9389a580ec2e9e69"
+    },
+    {
+      "file": "package/bonsai-tools.exe",
+      "bytes": 6150144,
+      "sha256": "4c28e68a614497f42059e8226cade07e246576fc99c47cfba773533bdae72ef7"
+    },
+    {
+      "file": "package/native-model-acceptance.exe",
+      "bytes": 3812864,
+      "sha256": "fe47ec39c99366e048a93c57c04d79acd4c68a9f051c2f2e809c4c36fa67eb79"
+    },
+    {
+      "file": "package/receipt.json",
+      "bytes": 906,
+      "sha256": "2b963705616eca311f9bf08fe117642444567a604c87c98ef87ae3837245eb2c"
+    }
+  ]
+}

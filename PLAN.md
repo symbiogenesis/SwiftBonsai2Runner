@@ -33,9 +33,10 @@ The PTQ1 critical path is:
    `basis-intake`, then independently verify their authenticity, reproduction and
    native writer mappings. Successful intake, loading or matching runtimes cannot
    recover missing provenance.
-2. Qualify the selected worker policy's complete generated-history lifecycle,
-   scalar/explicit-NEON logits and live state, loaded-zero identity and nonzero
-   application on the pinned released service.
+2. Qualify the selected worker policy's scalar/explicit-NEON logits and live state,
+   loaded-zero identity and nonzero application beyond the
+   [passed bounded four-worker scale/history sequence](docs/evidence/ptq1-0113-lifecycle-41539984210/independent-review.json).
+   Extended lifecycle and prefix-state reuse remain separate.
 3. Retain matched complete-answer benefit, per-prompt adapter throughput and
    independent human quality/comfort review, then close full context/output,
    resources, isolation, recovery, installation and original-PQ2 rollback.
@@ -102,22 +103,25 @@ to split a matrix across repeated owner-device runs. The [latest one-worker
 attempt](docs/evidence/ptq1-delivery-52f98b3.json) passed PTQ1/adapter readiness,
 one-token streams at scales 1.3 and zero, and invalid-scale rejection. Its
 generated-history change-back request expired after 72.29 seconds within the
-215-second model-case allowance; complete lifecycle acceptance remains pending.
-Qualify the complete three-stream sequence as one feasible workload, including a
-separately scoped `ptq1-adapter-lifecycle-row4` candidate and a matching numerical
-capture with `native_row_workers: 4` when selected;
-do not continue missing steps through additional owner jobs. Retain
+215-second model-case allowance; that one-worker sequence remains unqualified.
+The [Prism 0.1.13 four-worker sequence](docs/evidence/ptq1-0113-lifecycle-41539984210/interpretation.json)
+now passes all three cap-one streams, invalid-scale rejection, same-owner reuse
+after rejection and captured assistant-history binding within 268.464 charged
+seconds. It does not qualify numerical parity, nonzero effect size or prefix-state
+reuse. Obtain the matching numerical capture with `native_row_workers: 4` when
+selecting that policy; do not continue a partial matrix through additional owner jobs. Retain
 the [pre-model row4 no-go](docs/evidence/ptq1-delivery-20261101.json) separately:
 an existing user chat was observed, no owner runner or model was started, and the
 original clock was not restarted. Close the application before a future bounded
 owner session; do not stop an existing user session as qualification cleanup.
-Qualify the prepared scoped resource receipts on the actual model, distinguishing
+Extend the bounded resource observations toward full-context and sustained use, distinguishing
 OS lifetime Job commit, root working-set residency and sampled serving bounds; these
 do not replace full-context, paging or sustained-comfort acceptance. Retain
 exact generated source-response/message digests; empty or unbound output leaves
-generated history pending. Attribute the observed 35.46-second startup, roughly
-38–39-second one-token requests and incomplete history request before optimizing a
-measured hotspot. Retain bounded
+generated history pending. The current four-worker case observes 14.622-second
+startup and 26.038/25.753/55.558-second requests. Attribute backend work before
+optimizing a hotspot; these observations and older one-worker timings are not a
+controlled speedup comparison. Retain bounded
 live request/partial-prefix receipts; observed SSE delivery is not backend kernel
 timing or decode TPS, and completed-operation counts do not prove zero emitted tokens. Qualify the
 explicit `ptq1-pq2-complete-response` (one worker) or
@@ -153,20 +157,23 @@ Retain the [historical four-worker startup](docs/evidence/ptq1-delivery-0112-202
 when planning a current-release owner workload. This one 0.1.12 attempt reached exact
 PTQ1/adapter readiness and observed the effective four-worker graph budget, but
 startup consumed 100.557 seconds of the 164-second model case. Its first request
-expired after 33.445 seconds with no public headers or response bytes; all three
-required streams remain pending. Owned cleanup and independent receipt review
+expired after 33.445 seconds with no public headers or response bytes; none of its
+three required streams completed. Owned cleanup and independent receipt review
 finished within the original allowance, with no retry. Attribute broker startup
 phases before claiming a hashing, loading, worker-policy or kernel hotspot; missing
 public bytes do not establish zero backend tokens. Broader/full-context work still
 needs a feasible workload or a faster qualified runtime, rather than split trials.
 
-Qualify the startup change `0da7bcf` delivered in the
+Retain the startup change `0da7bcf` delivered in the
 [reviewed Prism 0.1.13 release](docs/evidence/prism-0113-release-review.json): graph construction retains
 one complete payload-validation pass and removes duplicate scans when binding
 projections, preserving malformed-payload rejection, including invalid unused-MTP
 tensors. Valid unused tensors remain allowed. Its exact-source
-Foundation, conformance and source-package checks passed. No actual-model startup
-gain is established by that source change or by repinning Runner. Qualify the opt-in
+Foundation, conformance and source-package checks passed. The bounded current
+case observes 14.622-second startup, including 8.135 seconds of broker model
+verification and 5.596 seconds awaiting authenticated readiness. These brackets
+do not isolate backend loading/graph/kernel work or prove a controlled gain.
+Qualify the opt-in
 `request-timing` source diagnostic through a reviewed native owned-process launcher
 with memory limits, parent ownership, an original absolute deadline and cleanup
 reserve before using it on the owner device. Its hosted package and cooperative
@@ -177,8 +184,8 @@ checks all 129 B factors and 660,480 channels with zero numeric difference.
 Obtain the missing checkpoint/conversion inputs and independently reproduce A
 factors and native SSM order; direction agreement does not close those gates.
 
-Qualify the pinned Prism 0.1.13 release on the actual model before using it for
-promotion. Retain the 0.1.12 bounded PTQ1/four-worker readiness and historical
+Qualify the pinned Prism 0.1.13 release beyond its bounded four-worker scale/history
+sequence before using it for promotion. Retain the 0.1.12 readiness and historical
 0.1.10 configured-worker observations at their original identities. Retain the previously released
 copy-then-scale recurrent path until the fused source candidate has actual-model
 numerical, throughput and resource evidence. Exercise the selected numerical

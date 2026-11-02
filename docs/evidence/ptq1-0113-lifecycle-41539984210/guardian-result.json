@@ -1,0 +1,17 @@
+{
+  "RunId": "41539984210",
+  "Revision": "74bef68c74417a56e38d90201b7f87ccc667a276",
+  "StartedTick": 924073771524,
+  "StartedAtUtc": "2026-11-02T23:01:56.5057947Z",
+  "EarlierDiagnosticsChargeSeconds": 40,
+  "MaximumSeconds": 260,
+  "ProcessCutoffSeconds": 258,
+  "ElapsedSeconds": 175.4758043,
+  "ForcedTermination": false,
+  "ChildExited": true,
+  "ChildExitCode": 0,
+  "Passed": true,
+  "Failure": null,
+  "AdditionalModelAttempts": 0,
+  "DefaultPromotionQualified": false
+}
