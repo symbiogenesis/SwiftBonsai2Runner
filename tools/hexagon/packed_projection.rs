@@ -21,6 +21,11 @@ mod q2_projection;
 pub use q2_projection::{
     GuardedQ2Ledger, GuardedQ2Operation, GuardedQ2Plan, guarded_q2_projection,
 };
+mod hmx_projection;
+pub use hmx_projection::{
+    HmxQ2Inputs, HmxQ2Ledger, HmxQ2Operation, HmxQ2Plan, hmx_q2_projection,
+    reduce_hmx_original_block,
+};
 
 /// Fixed validation, allocation, cancellation or numerical rejection.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
