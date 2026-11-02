@@ -74,6 +74,12 @@ owner-device budget; performance comparisons and complete checks remain in ownin
 CI. Complete separate registry delivery for the reviewed native-hash, GGUF 0.1.1
 and Prism 0.1.12 packages; hosted source-package checks do not publish them.
 
+Diagnose the owner's [native renderer staging failure](docs/evidence/native-renderer-staging-failure.json)
+through the retained graphics adapter/device-loss diagnostics. Its exit 101
+occurred before inference validation. Qualify an explicit supported Windows
+graphics backend and restored launch before claiming a startup or inference fix;
+the valid small upload failure alone identifies no driver or backend cause.
+
 Retain hosted regression coverage for Rust acceptance deadlines, startup receipt
 retention/redaction, host capability identities, PTQ1 collector admission, Find
 replacement/Unicode matching and speech-runner policy before owner-device trials.
@@ -811,6 +817,14 @@ do not reset it. Further owner qualification remains pending for this investigat
   Effective VTCM, DMA descriptors, session/queue/mapping costs, all host scratch and
   resources outside Job commit remain admission charges; the proposed 18,752-byte
   fused double-buffer reserve covers only its declared tiles.
+  Qualify the prepared original-artifact projection probe and single-session
+  native Rust submitter through source-bound hosted controls, then the signed
+  full-M shape and immutable externally supplied activation input within a feasible
+  remaining owner allowance. Enforce every-limb and final bitwise comparison,
+  correlated operation counts, complete explicit cleanup and atomic publication.
+  External activation bytes are not qualified live-model activations; actual
+  graph integration, state/logit/adapter parity and end-to-end benefit remain
+  separate gates. Keep production NPU admission disabled until they close.
 - Evaluate HVX packed work and HMX batched prefill with bounded VTCM, DMA and repacking
   scratch, exact fusion/recurrent basis and independent adapters. Cover ring saturation,
   partial tiles, double buffering, requested and effective VTCM, allocation refusal and

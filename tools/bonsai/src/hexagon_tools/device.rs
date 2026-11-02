@@ -13,6 +13,9 @@ use std::io::Read as _;
 use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant};
 
+#[path = "projection_device.rs"]
+mod projection;
+
 #[derive(Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub(super) struct Probe {
@@ -28,6 +31,8 @@ pub(super) struct Probe {
     reference_initialization: bool,
     #[serde(default = "default_case")]
     case: String,
+    #[serde(default)]
+    projection_request_file: Option<PathBuf>,
 }
 fn default_case() -> String {
     "F32".into()
@@ -40,17 +45,26 @@ fn validate(request: &Probe) -> Result<()> {
     let operation = match request.kind.as_str() {
         "dispatch" => "dispatch-plan",
         "session" => "session-plan",
-        "compute" => "compute-plan",
+        "compute" | "projection" => "compute-plan",
         _ => return Err("Select one fixed Hexagon device probe.".into()),
     };
     let mut plan = json!({"operation":operation,"maximumSeconds":request.maximum_seconds});
     if request.kind == "session" {
         plan["referenceInitialization"] = json!(request.reference_initialization);
     }
-    if request.kind == "compute" {
-        plan["case"] = json!(request.case);
+    if request.kind == "compute" || request.kind == "projection" {
+        plan["case"] = json!(if request.kind == "projection" {
+            "GuardedQ2NoBlock"
+        } else {
+            &request.case
+        });
     }
     crate::hexagon_policy::run(plan)?;
+    if request.kind == "projection" {
+        projection::validate_request(request)?;
+    } else if request.projection_request_file.is_some() {
+        return Err("Projection inputs apply only to the selected projection operation.".into());
+    }
     if request.reference_initialization && request.kind != "session" {
         return Err("Reference initialization applies only to a selected session probe.".into());
     }
@@ -129,6 +143,7 @@ fn marker<'a>(text: &'a str, kind: &str) -> Option<&'a str> {
             ],
         ),
         "compute" => ("hexagon-compute:stage=", &[]),
+        "projection" => ("hexagon-projection:stage=", &[]),
         _ => return None,
     };
     text.split_inclusive('\n')
@@ -423,7 +438,7 @@ fn runtime(
     lock: &Value,
     report: &mut Value,
 ) -> Result<Vec<String>> {
-    let compute = request.kind == "compute";
+    let compute = request.kind == "compute" || request.kind == "projection";
     let (files, members) = if compute {
         let path = request
             .repository_directory
@@ -550,6 +565,9 @@ fn verify_fixture(
     lock_digest: &str,
     manifest_digest: &str,
 ) -> Result<PathBuf> {
+    if request.kind == "projection" {
+        return projection::verify_fixture(inputs, request, report, manifest_digest);
+    }
     let dispatch = request.kind == "dispatch";
     let exe = if dispatch {
         "hexagon-dispatch-fixture.exe"
@@ -636,7 +654,7 @@ fn execute_worker(request: &Probe, report: &mut Value, progress: &Path) -> Resul
     {
         return Err("The fixed non-elevating diagnostic manifest changed.".into());
     }
-    if request.kind != "compute" {
+    if request.kind != "compute" && request.kind != "projection" {
         report["LockSha256"] = json!(lock_digest);
         report["ManifestSha256"] = json!(manifest_digest);
     }
@@ -740,6 +758,9 @@ fn execute_worker(request: &Probe, report: &mut Value, progress: &Path) -> Resul
             .ok_or("Native inspection omitted driver path.")?,
     );
     report["DriverIdentity"] = driver(&driver_path, &mut inputs.holds)?;
+    if request.kind == "projection" {
+        return projection::execute(&mut inputs, request, report, progress, &exe);
+    }
     let (mode, stage, operation) = if request.kind == "session" {
         report["DriverIdentityVerified"] = json!(true);
         if request.reference_initialization {
@@ -810,6 +831,7 @@ fn execute_worker(request: &Probe, report: &mut Value, progress: &Path) -> Resul
 }
 
 pub(super) fn worker(request: &Probe) -> Result<Value> {
+    let _projection_request_guard = projection::hold_request(request)?;
     validate(request)?;
     if !request.output_directory.is_dir() {
         return Err("The device supervisor must create evidence storage first.".into());
@@ -833,6 +855,9 @@ pub(super) fn worker(request: &Probe) -> Result<Value> {
 }
 
 fn worker_result(request: &Probe, text: &str) -> Result<Value> {
+    if request.kind == "projection" {
+        return projection::worker_result(request, text);
+    }
     let operation = match request.kind.as_str() {
         "dispatch" => "dispatch-worker",
         "session" => "session-worker",
@@ -880,6 +905,7 @@ fn worker_result(request: &Probe, text: &str) -> Result<Value> {
 
 pub(super) fn supervise(request: &Probe) -> Result<Value> {
     let clock = Instant::now();
+    let _projection_request_guard = projection::hold_request(request)?;
     validate(request)?;
     fs::create_dir(&request.output_directory)
         .map_err(|_| "Hexagon output must be new external storage.".to_string())?;

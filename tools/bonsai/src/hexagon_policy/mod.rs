@@ -22,6 +22,8 @@ const SOURCE_NAMES: &[&str] = &[
     "session_mapping_native.rs",
     "compute.rs",
     "compute_native.rs",
+    "projection.rs",
+    "projection_native.rs",
     "query.rs",
     "sources.json",
 ];

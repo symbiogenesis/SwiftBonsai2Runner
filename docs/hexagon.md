@@ -129,6 +129,27 @@ Swift inference and a performance comparison remain separate. Independent hosted
 pass before owner-device intake; the caller verifies trusted same-run provenance.
 Native diagnostics use absolute system-temp lanes with inherited Windows system/profile variables.
 
+The [original-artifact projection control](../tools/hexagon/projection_probe.rs)
+extends that fixed arithmetic control to independently hashed original Swift
+weights/signs and an explicitly supplied activation vector. Its native Rust
+submitter supports K=256/N=2 guarded limbs with up to 17,408 weight rows over
+one mapping and queue. A full first projection schedules 40 original-block
+operations. Every returned limb and the final ordered CPU FMA result must match
+the CPU control before the result directory is published. These are implemented
+bounds and comparison rules; full-M signed execution, actual model activations,
+logits/state, adapters, vendor teardown and speed remain unqualified.
+
+Hosted preparation publishes a source-bound `hexagon-projection-probe` bundle
+alongside its model-free controls. The native `hexagon-tools` device supervisor
+accepts `kind: projection` with an external `projectionRequestFile`; it retains
+the request against mutation, verifies every runtime/catalog member and the
+installed driver, clears inherited overrides, and owns the child through its
+outer deadline and 75-second cleanup reserve. Device requests allow at most
+120 seconds for input preparation, comparison and the native session, within
+the original aggregate owner allowance. No profile or application backend is
+enabled by a passing projection receipt. The [projection guide](../tools/hexagon/packed-projection.md)
+defines the external input contract and remaining qualification.
+
 ## 2026 research evidence
 
 The [mobile catalog E3–E8](research-register.md#2026-mobile-acceleration-and-speech) owns the **2026-10-29** review

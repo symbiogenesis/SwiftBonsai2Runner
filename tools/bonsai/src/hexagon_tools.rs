@@ -17,6 +17,7 @@ use crate::{Result, identity, startup_cache, startup_process};
 
 mod device;
 mod preflight;
+mod projection_build;
 
 const TOOLCHAIN: &str = "nightly-2026-11-02-aarch64-pc-windows-msvc";
 const TARGET: &str = "aarch64-pc-windows-msvc";
@@ -30,6 +31,8 @@ const NATIVE_INPUTS: &[&str] = &[
     "session_mapping_native.rs",
     "compute.rs",
     "compute_native.rs",
+    "projection.rs",
+    "projection_native.rs",
     "query.rs",
     "sources.json",
 ];
@@ -461,6 +464,7 @@ fn dispatch(mut context: Context) -> Result<Value> {
         &packed.join("build.json"),
         &json!({"SchemaVersion":1,"RunnerRevision":context.revision,"RunId":context.run,"BuildEnvironment":context.environment,"CompilerIdentitySha256":compiler_digest,"Target":TARGET,"SourceSha256":source_digest,"SourceFiles":packed_inputs,"ExecutableSha256":exe_identity["Sha256"],"ExecutionBackend":"CPU-control-only","DspCodeLoaded":false,"ProfileEligible":false}),
     )?;
+    projection_build::build(&mut context, &rustc, &manifest, &compiler_digest, &library)?;
     Ok(receipt)
 }
 
