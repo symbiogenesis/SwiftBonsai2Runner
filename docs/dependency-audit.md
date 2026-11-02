@@ -30,7 +30,7 @@ provide reproducibility, not continuing advisory notification.
 ## Dependency policy
 
 Hashing belongs in `bonsai-artifacts`; the broker has no direct `sha2` dependency.
-ZIP 9.1.3 disables defaults and enables only `deflate-flate2-zlib-rs`.
+ZIP 9.2.1 disables defaults and enables only `deflate-flate2-zlib-rs`.
 Upstream hardening includes [symlink extraction](https://github.com/zip-rs/zip2/pull/1116),
 [Unicode-path renaming](https://github.com/zip-rs/zip2/pull/1177) and
 [9.1.3 archive fixes](https://github.com/zip-rs/zip2/releases/tag/v9.1.3).
@@ -140,7 +140,7 @@ runtime source forbids unsafe code. See the
 | `serde`, `serde_json`, `tokio` | Retain: [JSON](#json-selection)/[runtime](#runtime-screening) screens did not qualify replacements. Tokio explicitly enables io-util/net/rt/signal/sync/time; test-util is dev-only, while MXC broadens features. |
 | `http`, `httparse` | Complementary typed policy and bounded wire parsing; no general web framework needed. |
 | `subtle` | Constant-time bearer comparison; preserve disabled release debug assertions. |
-| `sha2`, `zip` | Artifact verification and minimal deflate extraction at ZIP 9.1.3; custom extraction policy remains necessary. |
+| `sha2`, `zip` | Artifact verification and minimal deflate extraction at ZIP 9.2.1; custom extraction policy remains necessary. |
 | `socket2`, `windows-sys` | Pre-bind options/backlog/exclusive sockets and selected process/credential/audio/accessibility APIs. |
 | `windows`, `windows-future` | Compatible WinRT microphone permission/capture; distinct from windows-sys. Retain future 0.3.2 with windows 0.62.2; 0.100 is incompatible. |
 | `eframe`, `wgpu` | Native UI, accessibility, clipboard, fallback/system fonts and all three explicit Windows backends. |
@@ -256,11 +256,11 @@ All benchmarks run in CI only.
 
 ## Reviewed pins and tooling
 
-Selection reviewed **2026-10-29**; this date is not a claim of continuing freshness.
+Selection reviewed **2026-11-01**; this date is not a claim of continuing freshness.
 
 | Dependency/tool | Reviewed selection |
 | --- | --- |
-| `zip` | 9.1.3; minimal deflate features |
+| `zip` | 9.2.1; minimal deflate features |
 | Optional `simd-json` | crates.io 0.19.0 at `00a71f6`; qualification pending |
 | `openssl-probe` | 0.2.2 |
 | `rustix` | 1.1.6 |
@@ -269,10 +269,22 @@ Selection reviewed **2026-10-29**; this date is not a claim of continuing freshn
 | .NET SDK | Retired from Runner validation with the PowerShell/C# bootstrap |
 | cargo-audit / LLVM | 0.22.2 / 23.1.4; PSScriptAnalyzer retired with repository scripts |
 
-At review, `cargo update --dry-run --verbose` found no further compatible updates;
-Actions/tool pins were current and windows-future 0.3.2 was deliberate. Nightly,
-inference/speech sources/binaries and model locks require separate
+The maintenance update selects published nightly **2026-11-02** (rustc
+`3e92e1a2d`, 1.101.0-nightly), ZIP 9.2.1 and the newest compatible transitive
+packages. The official nightly manifest already advertised this dated channel
+at review. Rust, Clippy and rustfmt are available for every CI host target.
+`cargo update --dry-run --verbose` found no further compatible updates.
+
+`windows-future` 0.3.2 remains the newest compatible release: latest `windows`
+0.62.2 returns its asynchronous types and requires `windows-core` 0.62.2;
+`windows-future` 0.100.0 requires the incompatible `windows-core` 0.100 family.
+GitHub Actions, cargo-audit, LLVM, Hexagon SDK and the released Prism 0.1.12
+runtime were already current. Speech source pins match upstream heads.
+Model/adapter locks and source-bound qualification controls retain their exact
+identities; newer reference/candidate artifacts need separate
 [runtime review](development-guide.md#prepare-a-runtime-lock-update).
+Earlier validation and advisory snapshots below do not qualify this update;
+current hosted Foundation and dependency-audit results belong to its source revision.
 
 ## Validation and evidence
 
