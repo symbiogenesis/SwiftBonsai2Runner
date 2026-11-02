@@ -1708,9 +1708,16 @@ async fn bounded_adapter_acceptance(
     }
     report["phase"] = json!("initial-owner-startup");
     save_acceptance_report(evidence, report);
-    let startup_started = tokio::time::Instant::now();
-    let owner = start_adapter(profile, data, evidence).await;
-    report["startupMilliseconds"] = json!(startup_started.elapsed().as_secs_f64() * 1000.0);
+    let Some(owner) = adapter_start_before_cleanup(
+        deadline,
+        evidence,
+        report,
+        start_adapter(profile, data, evidence),
+    )
+    .await
+    else {
+        return;
+    };
     record_worker_readiness(report, profile.row_workers, true);
     report["adapterEnabled"] = json!(true);
     begin_adapter_requests(profile, evidence, report);
@@ -1749,6 +1756,30 @@ async fn adapter_work_before_cleanup<T>(
     tokio::time::timeout_at(deadline - STOP_WAIT, work)
         .await
         .ok()
+}
+
+async fn adapter_start_before_cleanup<T>(
+    deadline: tokio::time::Instant,
+    evidence: &Path,
+    report: &mut Value,
+    startup: impl Future<Output = T>,
+) -> Option<T> {
+    // Startup belongs to the same request-work deadline. Dropping LaunchConfig's
+    // startup future kills its owned Job; never spend the teardown allowance
+    // waiting for the separate readiness timeout or restart the case clock.
+    let started = tokio::time::Instant::now();
+    let owner = adapter_work_before_cleanup(deadline, startup).await;
+    report["startupMilliseconds"] = json!(started.elapsed().as_secs_f64() * 1000.0);
+    report["startupBudgetExpired"] = json!(owner.is_none());
+    if owner.is_none() {
+        report["phase"] = json!("startup-budget-expired");
+        report["pendingReason"] = json!("startup-budget-expired");
+        if report["scaleHistoryWorkload"].is_object() {
+            report["scaleHistoryWorkload"]["reason"] = json!("startup-budget-expired");
+        }
+    }
+    save_acceptance_report(evidence, report);
+    owner
 }
 
 async fn adapter_requests(
@@ -2615,6 +2646,78 @@ fn native_ptq1_lifecycle_minimizes_tokens_without_changing_required_steps() {
     assert_eq!(body["enable_thinking"], false);
     assert_eq!(body["stream"], true);
     assert!(std::panic::catch_unwind(|| adapter_request(json!([]), 1.3, 0)).is_err());
+}
+
+#[test]
+fn native_adapter_startup_budget_retains_pending_receipt_and_cleanup_reserve() {
+    struct InFlight(std::rc::Rc<std::cell::Cell<bool>>);
+    impl Drop for InFlight {
+        fn drop(&mut self) {
+            self.0.set(true);
+        }
+    }
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_time()
+        .start_paused(true)
+        .build()
+        .unwrap();
+    runtime.block_on(async {
+        let evidence = env::temp_dir().join(format!(
+            "Bonsai-Adapter-Startup-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        fs::create_dir(&evidence).unwrap();
+        for allowance in [STOP_WAIT, STOP_WAIT + Duration::from_secs(1)] {
+            let mut report = json!({"passed":false,"lifecyclePassed":false,
+                "allRequestedWorkloadsPassed":false,"verifiedReadinessObserved":false,
+                "scaleHistoryWorkload":pending_adapter_scale_history()});
+            let started = std::cell::Cell::new(false);
+            let dropped = std::rc::Rc::new(std::cell::Cell::new(false));
+            let in_flight = InFlight(dropped.clone());
+            let deadline = tokio::time::Instant::now() + allowance;
+            let owner = adapter_start_before_cleanup(deadline, &evidence, &mut report, async {
+                let _in_flight = in_flight;
+                started.set(true);
+                pending::<()>().await;
+            })
+            .await;
+            assert!(owner.is_none());
+            assert_eq!(started.get(), allowance > STOP_WAIT);
+            assert!(dropped.get());
+            assert_eq!(deadline - tokio::time::Instant::now(), STOP_WAIT);
+            let saved: Value =
+                serde_json::from_slice(&fs::read(evidence.join("acceptance.json")).unwrap())
+                    .unwrap();
+            assert_eq!(saved["phase"], "startup-budget-expired");
+            assert_eq!(saved["pendingReason"], "startup-budget-expired");
+            assert_eq!(
+                saved["scaleHistoryWorkload"]["reason"],
+                "startup-budget-expired"
+            );
+            assert_eq!(saved["startupBudgetExpired"], true);
+            assert_eq!(saved["verifiedReadinessObserved"], false);
+            assert_eq!(saved["passed"], false);
+            assert_eq!(saved["lifecyclePassed"], false);
+            assert_eq!(saved["allRequestedWorkloadsPassed"], false);
+            // Future-drop ownership is not an independently queried cleanup pass.
+            assert!(saved["initialCleanup"].is_null());
+        }
+        let mut report = json!({"passed":false});
+        let deadline = tokio::time::Instant::now() + CASE_BUDGET;
+        assert_eq!(
+            adapter_start_before_cleanup(deadline, &evidence, &mut report, async { 7 }).await,
+            Some(7)
+        );
+        assert_eq!(report["startupBudgetExpired"], false);
+        assert_eq!(deadline - tokio::time::Instant::now(), CASE_BUDGET);
+        assert!(report["pendingReason"].is_null());
+        fs::remove_file(evidence.join("acceptance.json")).unwrap();
+        fs::remove_dir(evidence).unwrap();
+    });
 }
 
 #[test]
