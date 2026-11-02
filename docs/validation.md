@@ -308,6 +308,7 @@ Model-free acceptance regressions:
 | `native_worker_receipts_require_exact_release_and_verified_readiness` | Exact reviewed release admission and worker identities; no observed budget before readiness, for legacy/missing versions or invalid counts; mutable report fields cannot replace the compiled runtime identity |
 | `native_adapter_request_budget_drops_inflight_work_before_owned_cleanup` | Paused-time cancellation drops request-owned state before Stop and preserves the complete cleanup allowance; no request starts at or below the reserve and successful work retains the remaining budget |
 | `native_adapter_startup_budget_retains_pending_receipt_and_cleanup_reserve` | Paused-time startup cancellation retains its pending on-disk receipt and unfinished fixed-phase observation at the async timeout boundary; no startup starts inside the reserve. This does not measure native teardown duration, preempt synchronous verification or establish readiness/cleanup |
+| `native_adapter_startup_error_retains_unfinished_phase_without_qualifying_cleanup` | A returned startup error retains the unfinished fixed phase and failure reason in the on-disk receipt without manufacturing deadline expiry, readiness or cleanup |
 
 ### Foundation and routing
 
