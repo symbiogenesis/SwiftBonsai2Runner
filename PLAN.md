@@ -29,8 +29,7 @@ resource and installation gates below with reproducible evidence before promotio
 The PTQ1 critical path is:
 
 1. Obtain the approved adapter's immutable authoring inputs, check their bounded
-   normalized direction against all 129 B factors through `qualification` operation
-   `basis-direction`, check their manifests and all 48 supplied SSM A vectors through operation
+   manifests and all 48 supplied SSM A vectors through `qualification` operation
    `basis-intake`, then independently verify their authenticity, reproduction and
    native writer mappings. Successful intake, loading or matching runtimes cannot
    recover missing provenance.
@@ -68,12 +67,12 @@ bounded owner-device gates and exact source/release identities below.
 Qualify source-launch time to the first native frame and authenticated model
 readiness after excluding worker checkouts from startup fingerprints and switching
 shared Windows artifact hashing to CNG. Retain cold-build versus unchanged-launch
-attribution and complete checksum/cancellation controls. Qualify the integrated
-Prism 0.1.10 CNG verifier through Runner's settled-main release integration and
+attribution and complete checksum/cancellation controls. Qualify the CNG verifier
+retained by Prism 0.1.13 through Runner's settled-main release integration and
 actual-model startup. End-to-end startup gains remain pending within the
 owner-device budget; performance comparisons and complete checks remain in owning
 CI. Complete separate registry delivery for the reviewed native-hash, GGUF 0.1.1
-and Prism 0.1.12 packages; hosted source-package checks do not publish them.
+and Prism 0.1.13 packages; hosted source-package checks do not publish them.
 
 Diagnose the owner's [native renderer staging failure](docs/evidence/native-renderer-staging-failure.json)
 through the retained graphics adapter/device-loss diagnostics. Its exit 101
@@ -139,7 +138,7 @@ the [default-readiness audit](docs/evidence/ptq1-default-readiness.json) separat
 historical passes from current-release qualification.
 The [frozen 0.1.10 PTQ1 promotion score](docs/evidence/ptq1-promotion-85fd2f1.json)
 passes five independently reviewed documentary/packing gates and leaves fourteen
-pending for its explicit four-worker candidate. The pinned 0.1.12 runtime and
+pending for its explicit four-worker candidate. The pinned 0.1.13 runtime and
 later application identities require their own evidence and applicability review.
 Close its actual-model, adapter provenance, paired benefit, quality, resource,
 isolation, recovery and installation gates before changing defaults or removing
@@ -150,8 +149,8 @@ adapter's immutable checkpoint, conversion and direction identities and
 independently verify all 48 SSM mappings; this remains an external provenance
 prerequisite that native/Rust agreement cannot supply.
 
-Diagnose the [current-release four-worker startup](docs/evidence/ptq1-delivery-0112-20261101.json)
-before planning another owner workload. This one 0.1.12 attempt reached exact
+Retain the [historical four-worker startup](docs/evidence/ptq1-delivery-0112-20261101.json)
+when planning a current-release owner workload. This one 0.1.12 attempt reached exact
 PTQ1/adapter readiness and observed the effective four-worker graph budget, but
 startup consumed 100.557 seconds of the 164-second model case. Its first request
 expired after 33.445 seconds with no public headers or response bytes; all three
@@ -161,9 +160,26 @@ phases before claiming a hashing, loading, worker-policy or kernel hotspot; miss
 public bytes do not establish zero backend tokens. Broader/full-context work still
 needs a feasible workload or a faster qualified runtime, rather than split trials.
 
-Qualify the pinned Prism 0.1.12 release beyond its bounded PTQ1/four-worker
-readiness observation before using it for promotion. Retain historical
-0.1.10 configured-worker observations separately. Retain the previously released
+Qualify the startup change `0da7bcf` delivered in the
+[reviewed Prism 0.1.13 release](docs/evidence/prism-0113-release-review.json): graph construction retains
+one complete payload-validation pass and removes duplicate scans when binding
+projections, preserving malformed-payload rejection, including invalid unused-MTP
+tensors. Valid unused tensors remain allowed. Its exact-source
+Foundation, conformance and source-package checks passed. No actual-model startup
+gain is established by that source change or by repinning Runner. Qualify the opt-in
+`request-timing` source diagnostic through a reviewed native owned-process launcher
+with memory limits, parent ownership, an original absolute deadline and cleanup
+reserve before using it on the owner device. Its hosted package and cooperative
+deadline do not supply that containment or qualify service throughput.
+The independently reviewed
+[published-direction result](docs/evidence/ptq1-direction-41530766802/independent-review.json)
+checks all 129 B factors and 660,480 channels with zero numeric difference.
+Obtain the missing checkpoint/conversion inputs and independently reproduce A
+factors and native SSM order; direction agreement does not close those gates.
+
+Qualify the pinned Prism 0.1.13 release on the actual model before using it for
+promotion. Retain the 0.1.12 bounded PTQ1/four-worker readiness and historical
+0.1.10 configured-worker observations at their original identities. Retain the previously released
 copy-then-scale recurrent path until the fused source candidate has actual-model
 numerical, throughput and resource evidence. Exercise the selected numerical
 adapter condition explicitly

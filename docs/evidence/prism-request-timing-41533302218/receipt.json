@@ -1,0 +1,87 @@
+{
+  "schemaVersion": 1,
+  "kind": "swift-request-timing-hosted-preparation",
+  "repository": "symbiogenesis/prism-inference",
+  "revision": "b0a028e95b71d6d6e7eaffd5d8a257ae08b09756",
+  "gitRef": "refs/heads/main",
+  "workflowPath": ".github/workflows/request-timing-preparation.yml",
+  "runId": "41533302218",
+  "runAttempt": 1,
+  "target": "aarch64-pc-windows-msvc",
+  "toolchain": "nightly-2026-10-22-aarch64-pc-windows-msvc",
+  "compilerIdentity": "rustc 1.101.0-nightly (1a2c4797e 2026-10-21)\nbinary: rustc\ncommit-hash: 1a2c4797ef2570bd76ca5dee34449169bc7dc457\ncommit-date: 2026-10-21\nhost: aarch64-pc-windows-msvc\nrelease: 1.101.0-nightly\nLLVM version: 23.1.4",
+  "features": [
+    "default",
+    "parallel-rows"
+  ],
+  "actualModelExecuted": false,
+  "ownerDeviceJobCreated": false,
+  "scope": "source-tool preparation only; no device, numerical, performance, service or promotion qualification",
+  "requiredRuntimeTests": [
+    "timing::timing_preserves_sampled_output_state_rng_and_reused_prefix",
+    "timing::timed_stop_draw_is_counted_without_decode_or_callback_work",
+    "timing::failed_callback_retains_provisional_work_and_rolls_back_state_and_rng",
+    "timing::timed_cancel_after_successful_callback_never_reports_committed_output",
+    "timing::failed_prefill_block_keeps_unknown_partial_work_distinct_from_zero"
+  ],
+  "requiredDiagnosticTests": [
+    "request_timing::tests::request_timing_requires_original_bounded_absolute_deadline",
+    "request_timing::tests::unentered_failure_record_has_no_inferred_token_counts_or_input_text",
+    "request_timing::tests::completed_session_stays_distinct_from_failed_aggregate_deadline",
+    "request_timing::tests::request_timing_retains_failure_receipt_and_never_overwrites_prior_capture"
+  ],
+  "sourceFiles": [
+    {
+      "path": "Cargo.toml",
+      "bytes": 6410,
+      "sha256": "c0397904439e90cf672cee2d4d414e9950fd0e85b4c0757cce4e2e45ef23d861"
+    },
+    {
+      "path": "Cargo.lock",
+      "bytes": 29924,
+      "sha256": "5c55656936f981ce151dd2977a3e2d95e8ae521590e343b2a5a7d3b0e43fb72f"
+    },
+    {
+      "path": "rust-toolchain.toml",
+      "bytes": 257,
+      "sha256": "a5dc1de7d95aed08582e7099210b424c9be08e6d5eb7b37ada88cc679dc20078"
+    },
+    {
+      "path": "src/runtime.rs",
+      "bytes": 47285,
+      "sha256": "2700a3dc8e7992be61639013db2bb452f286e518a56940170fc5756a7352adae"
+    },
+    {
+      "path": "src/runtime/timing.rs",
+      "bytes": 6836,
+      "sha256": "52f0c90cae0c64d102004b17863a8b6a347a351feffd8f1ada1ed86fcd7577b4"
+    },
+    {
+      "path": "src/swift_session.rs",
+      "bytes": 19565,
+      "sha256": "39cb8681458f037538eab91e612d4111cfd4f386faacb8e3e6418381feee75be"
+    },
+    {
+      "path": "examples/swift_model_check.rs",
+      "bytes": 26865,
+      "sha256": "9e5d0e0b7b7f7444d514dce6ad382282fe8c3c6e3cfa82015b64acaa24173eb1"
+    },
+    {
+      "path": "examples/swift_model_check/request_timing.rs",
+      "bytes": 19093,
+      "sha256": "4d361f3a3f703b9ac924e7fc2d91d29601a0ac88457868de92ea8fa24400e718"
+    },
+    {
+      "path": ".github/workflows/request-timing-preparation.yml",
+      "bytes": 9547,
+      "sha256": "b11d68c4757f467b0d2696ebe21ced97c3a8e99c07f637479ea300e508ee426f"
+    }
+  ],
+  "files": [
+    {
+      "name": "swift_model_check.exe",
+      "bytes": 1592832,
+      "sha256": "d91f6e1151910e93ddc46a61dc72255621610e0190d1ba2cedd943ac578d0935"
+    }
+  ]
+}
