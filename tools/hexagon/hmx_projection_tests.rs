@@ -184,16 +184,22 @@ fn original_layout_oracle_preserves_signed_planes_fourth_symbol_and_ordered_fma(
         )?;
         assert_eq!(sequence, columns / 128 * rows.div_ceil(tile_rows));
         assert_eq!(
-            result.iter().map(|value| value.to_bits()).collect::<Vec<_>>(),
-            expected.iter().map(|value| value.to_bits()).collect::<Vec<_>>()
+            result
+                .iter()
+                .map(|value| value.to_bits())
+                .collect::<Vec<_>>(),
+            expected
+                .iter()
+                .map(|value| value.to_bits())
+                .collect::<Vec<_>>()
         );
     }
     Ok(())
 }
 
 #[test]
-fn host_tiles_have_literal_576_byte_stride_and_scale_one_without_guard_lanes()
--> Result<(), Error> {
+fn host_tiles_have_literal_576_byte_stride_and_scale_one_without_guard_lanes() -> Result<(), Error>
+{
     let columns = 256;
     let rows = 33;
     let mut weights = vec![0; rows * 2 * 34];
@@ -224,9 +230,11 @@ fn host_tiles_have_literal_576_byte_stride_and_scale_one_without_guard_lanes()
             for start in [1152, 1728] {
                 for offset in [0, 128, 256, 384] {
                     assert_eq!(&wire[start + offset..start + offset + 4], &[0xe4; 4]);
-                    assert!(wire[start + offset + 4..start + offset + 128]
-                        .iter()
-                        .all(|&byte| byte == 0));
+                    assert!(
+                        wire[start + offset + 4..start + offset + 128]
+                            .iter()
+                            .all(|&byte| byte == 0)
+                    );
                 }
                 assert_eq!(&wire[start + 512..start + 514], &[0, 0x3c]);
                 assert!(wire[start + 514..start + 576].iter().all(|&byte| byte == 0));
@@ -243,7 +251,14 @@ fn host_tiles_have_literal_576_byte_stride_and_scale_one_without_guard_lanes()
 fn invalid_or_partial_plane_results_never_publish_a_projection() -> Result<(), Error> {
     let (weights, input) = fixture(256, 2);
     let plan = HmxQ2Plan::new(256, 2, 2, usize::MAX)?;
-    for invalid in [f32::NAN, f32::INFINITY, f32::NEG_INFINITY, 0.5, -129.0, 257.0] {
+    for invalid in [
+        f32::NAN,
+        f32::INFINITY,
+        f32::NEG_INFINITY,
+        0.5,
+        -129.0,
+        257.0,
+    ] {
         let mut output = vec![99.0];
         assert_eq!(
             hmx_q2_projection(

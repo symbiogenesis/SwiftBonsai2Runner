@@ -826,6 +826,13 @@ do not reset it. Further owner qualification remains pending for this investigat
   External activation bytes are not qualified live-model activations; actual
   graph integration, state/logit/adapter parity and end-to-end benefit remain
   separate gates. Keep production NPU admission disabled until they close.
+- Qualify the implemented HMX integer-bitplane packing/reconstruction control
+  against the matching signed K=128/N=8 path. Its eight rows represent activation
+  bits of one token, with original CPU Q8_K and per-128 FMA retained; they do not
+  establish batched prefill. Bind native HMX session/solver fields, effective
+  placement and resources, every returned plane, full-model state/adapter parity
+  and total request cost before admission. The bounded host control and independent
+  original-layout/FMA/cancellation checks establish no NPU speedup or PTQ1 support.
 - Evaluate HVX packed work and HMX batched prefill with bounded VTCM, DMA and repacking
   scratch, exact fusion/recurrent basis and independent adapters. Cover ring saturation,
   partial tiles, double buffering, requested and effective VTCM, allocation refusal and
