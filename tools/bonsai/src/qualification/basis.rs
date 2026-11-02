@@ -12,6 +12,7 @@ use super::{decode, hash, require, string};
 use crate::Result;
 use crate::identity::sha256;
 
+mod direction;
 mod header;
 #[cfg(test)]
 mod tests;
@@ -22,6 +23,8 @@ const MANIFEST_LIMIT: u64 = 1_048_576;
 const ADAPTER_BYTES: u64 = 9_682_464;
 const ADAPTER_SHA256: &str = "f1669534803d340a496015f5c45125f3437b4d13ec764f40e34488ce83967f42";
 const MODEL_SHA256: &str = "e658f0f0736a03a4549535a439f9b07254ebf8ab88ae27cbe6e52d098ca5d1f5";
+
+pub(super) use direction::run as check_direction;
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]

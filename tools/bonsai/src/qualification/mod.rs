@@ -380,6 +380,9 @@ pub fn run(request: Value) -> Result<Value> {
     if operation == "basis-intake" {
         return basis::run(request);
     }
+    if operation == "basis-direction" {
+        return basis::check_direction(request);
+    }
     if matches!(operation.as_str(), "run" | "screen-run") {
         return prepare::run(request, operation == "screen-run");
     }

@@ -105,6 +105,32 @@ The missing checkpoint/conversion identity is external evidence; additional
 native/Rust agreement cannot reconstruct its provenance. The audit closes no
 model qualification gate.
 
+### Direction consistency
+
+`bonsai-tools qualification` operation `basis-direction` independently checks all
+129 shipped B factors against the negative of a selected unit direction. This
+bounded check needs the approved adapter and the direction only; it can detect a
+wrong direction without inventing the missing authoring checkpoint or conversion
+record. The request contains absolute external `adapterPath` and `directionPath`
+values and an independently selected raw-file `directionSha256`.
+
+The direction must already contain exactly 5120 finite little-endian F32 values
+(20,480 bytes), with L2 norm within 1e-5 of one. Supply the raw normalized vector,
+not a safetensors container. The checker does not silently normalize it or claim
+that it matches the exporter's normalization procedure. It verifies the exact
+approved adapter length/hash, independently reads all 258 named F32 factors and
+their expected shapes, and rejects missing, extra, overlapping or misnamed factors.
+For every B channel it requires
+`abs(B + direction) <= 1e-6 + 1e-6 * abs(direction)`, with the bound computed using
+F64 fused multiply-add. The receipt retains the selected input digests, norm,
+per-site B digest, compared element count, mismatch count and maximum difference.
+
+`direction-consistent` establishes agreement with the selected direction only.
+It always leaves authoring provenance, native writer basis and default promotion
+unqualified. Authenticating the direction's source, reproducing A factors and
+verifying the native SSM order still require the evidence below. Run this on
+hosted CI or charge its intake and review to the same aggregate owner allowance.
+
 ### Authoring evidence intake
 
 `bonsai-tools qualification` operation `basis-intake` accepts an external evidence

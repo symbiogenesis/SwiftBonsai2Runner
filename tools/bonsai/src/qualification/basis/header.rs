@@ -16,6 +16,8 @@ struct Tensor {
     bytes: usize,
 }
 
+type Payloads<'a> = BTreeMap<String, (Vec<usize>, &'a [u8])>;
+
 impl Reader<'_> {
     fn take(&mut self, size: usize) -> Result<&[u8]> {
         let end = self
@@ -119,7 +121,7 @@ impl Reader<'_> {
     }
 }
 
-pub(super) fn ssm_vectors(bytes: &[u8]) -> Result<BTreeMap<u32, &[u8]>> {
+fn payloads(bytes: &[u8]) -> Result<Payloads<'_>> {
     let mut reader = Reader { bytes, position: 0 };
     require(
         reader.take(4)? == b"GGUF" && reader.u32()? == 3,
@@ -148,7 +150,7 @@ pub(super) fn ssm_vectors(bytes: &[u8]) -> Result<BTreeMap<u32, &[u8]>> {
         .checked_next_multiple_of(32)
         .ok_or("GGUF header overflow.")?;
     let mut extents = Vec::new();
-    let mut vectors = BTreeMap::new();
+    let mut payloads = BTreeMap::new();
     for tensor in descriptors {
         let begin = data
             .checked_add(tensor.offset)
@@ -160,14 +162,26 @@ pub(super) fn ssm_vectors(bytes: &[u8]) -> Result<BTreeMap<u32, &[u8]>> {
             .get(begin..end)
             .ok_or("GGUF adapter tensor extends beyond the file.")?;
         extents.push((begin, end));
-        if let Some(block) = tensor
-            .name
+        payloads.insert(tensor.name, (tensor.dimensions, payload));
+    }
+    extents.sort_unstable();
+    require(
+        extents.windows(2).all(|pair| pair[0].1 <= pair[1].0),
+        "GGUF adapter tensor payloads overlap.",
+    )?;
+    Ok(payloads)
+}
+
+pub(super) fn ssm_vectors(bytes: &[u8]) -> Result<BTreeMap<u32, &[u8]>> {
+    let mut vectors = BTreeMap::new();
+    for (name, (dimensions, payload)) in payloads(bytes)? {
+        if let Some(block) = name
             .strip_prefix("blk.")
             .and_then(|name| name.strip_suffix(".ssm_out.weight.lora_a"))
         {
             let block: u32 = block.parse().map_err(|_| "Invalid SSM block name.")?;
             require(
-                tensor.dimensions == [6144, 1],
+                dimensions == [6144, 1],
                 "SSM adapter A shape differs from [6144,1].",
             )?;
             require(
@@ -176,14 +190,42 @@ pub(super) fn ssm_vectors(bytes: &[u8]) -> Result<BTreeMap<u32, &[u8]>> {
             )?;
         }
     }
-    extents.sort_unstable();
-    require(
-        extents.windows(2).all(|pair| pair[0].1 <= pair[1].0),
-        "GGUF adapter tensor payloads overlap.",
-    )?;
     require(
         vectors.len() == 48,
         "GGUF adapter must expose all 48 SSM A vectors.",
+    )?;
+    Ok(vectors)
+}
+
+pub(super) fn direction_vectors(bytes: &[u8]) -> Result<BTreeMap<String, &[u8]>> {
+    let mut payloads = payloads(bytes)?;
+    let mut vectors = BTreeMap::new();
+    let mut sites = vec![("token_embd.weight".to_owned(), vec![1, 248_320])];
+    for block in 0..64 {
+        sites.push((format!("blk.{block}.ffn_down.weight"), vec![17_408, 1]));
+        let family = if (block + 1) % 4 == 0 {
+            "attn_output"
+        } else {
+            "ssm_out"
+        };
+        sites.push((format!("blk.{block}.{family}.weight"), vec![6144, 1]));
+    }
+    for (site, expected_a) in sites {
+        let (shape_a, _) = payloads
+            .remove(&format!("{site}.lora_a"))
+            .ok_or("Approved adapter lacks a required A factor.")?;
+        let (shape_b, vector) = payloads
+            .remove(&format!("{site}.lora_b"))
+            .ok_or("Approved adapter lacks a required B factor.")?;
+        require(
+            shape_a == expected_a && shape_b == [1, 5120],
+            "Approved adapter factor dimensions differ from the fixed writer inventory.",
+        )?;
+        vectors.insert(site, vector);
+    }
+    require(
+        payloads.is_empty(),
+        "Approved adapter contains unexpected factors.",
     )?;
     Ok(vectors)
 }
