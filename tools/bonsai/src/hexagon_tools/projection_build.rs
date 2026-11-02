@@ -3,7 +3,7 @@
 use super::{Context, TARGET, TOOLCHAIN, compile_arguments, plain, write_json};
 use crate::Result;
 use serde_json::{Value, json};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::ffi::OsString;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -60,24 +60,36 @@ fn dependencies(context: &mut Context, rustc: &Path, output: &Path) -> Result<Ve
     )?;
     let mut selected = BTreeMap::<String, PathBuf>::new();
     let mut artifacts = Vec::new();
+    let mut directories = BTreeSet::new();
     for line in build.stdout.lines().filter(|line| !line.is_empty()) {
         let message: Value = serde_json::from_str(line).map_err(|error| error.to_string())?;
         if message["reason"] != "compiler-artifact" {
             continue;
         }
         let name = message["target"]["name"].as_str().unwrap_or_default();
-        if !["serde", "serde_json", "sha2"].contains(&name) {
-            continue;
-        }
         let files = message["filenames"]
             .as_array()
             .ok_or("Missing dependency artifacts.")?;
         for filename in files {
             let path = PathBuf::from(filename.as_str().ok_or("Invalid dependency artifact.")?);
-            if path.extension().is_none_or(|extension| extension != "rlib") {
+            if path
+                .extension()
+                .is_none_or(|extension| extension != "rlib" && extension != "dll")
+            {
                 continue;
             }
-            if !target_artifact(&target, &path)? {
+            if !path.starts_with(&target) {
+                return Err("Projection dependency escaped owned target storage.".into());
+            }
+            directories.insert(
+                path.parent()
+                    .ok_or("Dependency directory missing.")?
+                    .to_owned(),
+            );
+            if !["serde", "serde_json", "sha2"].contains(&name)
+                || path.extension().is_none_or(|extension| extension != "rlib")
+                || !target_artifact(&target, &path)?
+            {
                 continue;
             }
             if selected.insert(name.to_owned(), path.clone()).is_some() {
@@ -91,20 +103,23 @@ fn dependencies(context: &mut Context, rustc: &Path, output: &Path) -> Result<Ve
     if selected.len() != 3 {
         return Err("Cargo omitted the exact projection dependencies.".into());
     }
+    write_json(
+        &output.join("dependencies.json"),
+        &json!({"CargoLockSha256":lock_digest,"Artifacts":artifacts,"SearchDirectories":directories}),
+    )?;
+    Ok(linking_arguments(selected, directories))
+}
+
+fn linking_arguments(
+    libraries: BTreeMap<String, PathBuf>,
+    directories: BTreeSet<PathBuf>,
+) -> Vec<OsString> {
     let mut arguments = Vec::new();
-    let mut directories = std::collections::BTreeSet::new();
-    // Derive proc-macros are host artifacts even for an explicit native target.
-    directories.insert(target.join("release/deps"));
-    for (name, path) in selected {
+    for (name, path) in libraries {
         arguments.extend([
             "--extern".into(),
             format!("{name}={}", path.display()).into(),
         ]);
-        directories.insert(
-            path.parent()
-                .ok_or("Dependency directory missing.")?
-                .to_owned(),
-        );
     }
     for directory in directories {
         arguments.extend([
@@ -112,18 +127,14 @@ fn dependencies(context: &mut Context, rustc: &Path, output: &Path) -> Result<Ve
             format!("dependency={}", directory.display()).into(),
         ]);
     }
-    write_json(
-        &output.join("dependencies.json"),
-        &json!({"CargoLockSha256":lock_digest,"Artifacts":artifacts}),
-    )?;
-    Ok(arguments)
+    arguments
 }
 
 fn target_artifact(target: &Path, path: &Path) -> Result<bool> {
     if !path.starts_with(target) {
         return Err("Projection dependency escaped owned target storage.".into());
     }
-    Ok(path.parent() == Some(target.join(TARGET).join("release/deps").as_path()))
+    Ok(path.starts_with(target.join(TARGET).join("release")))
 }
 
 pub(super) fn build(
@@ -229,6 +240,12 @@ mod tests {
         assert!(target_artifact(
             root,
             &root.join(TARGET).join("release/deps/libserde-native.rlib")
+        )?);
+        assert!(target_artifact(
+            root,
+            &root
+                .join(TARGET)
+                .join("release/build/serde/unit-hash/out/libserde-native.rlib")
         )?);
         assert!(!target_artifact(
             root,
