@@ -97,7 +97,8 @@ mod tests {
     use super::{StartupPhase, StartupTimer};
 
     #[test]
-    fn startup_observer_keeps_fixed_brackets_and_unfinished_phase() -> Result<(), serde_json::Error> {
+    fn startup_observer_keeps_fixed_brackets_and_unfinished_phase() -> Result<(), serde_json::Error>
+    {
         let mut observations = Vec::new();
         {
             let mut timer = StartupTimer::new(|observation| observations.push(observation));
@@ -134,7 +135,10 @@ mod tests {
         }
         assert_eq!(finished.len(), 2);
         assert!(finished[1].completed);
-        assert_eq!(serde_json::to_value(finished)?[1]["phase"], "frontend-binding");
+        assert_eq!(
+            serde_json::to_value(finished)?[1]["phase"],
+            "frontend-binding"
+        );
         Ok(())
     }
 }

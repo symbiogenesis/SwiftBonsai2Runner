@@ -1791,7 +1791,9 @@ async fn adapter_start_before_cleanup<T>(
     let result = adapter_work_before_cleanup(deadline, startup).await;
     report["startupMilliseconds"] = json!(started.elapsed().as_secs_f64() * 1000.0);
     report["startupProgress"] = json!(&*progress.borrow());
-    report["startupProgressScope"] = json!("broker operation brackets, including observer overhead; readiness combines unobserved backend verification/loading/graph work and polling; unfinished phases remain pending; synchronous verification is not preemptible");
+    report["startupProgressScope"] = json!(
+        "broker operation brackets, including observer overhead; readiness combines unobserved backend verification/loading/graph work and polling; unfinished phases remain pending; synchronous verification is not preemptible"
+    );
     report["startupBudgetExpired"] = json!(result.is_none());
     let (owner, pending_reason) = match result {
         Some(Ok(owner)) => (Some(owner), None),
@@ -2707,12 +2709,8 @@ fn native_adapter_startup_budget_retains_pending_receipt_and_cleanup_reserve() {
             let in_flight = InFlight(dropped.clone());
             let deadline = tokio::time::Instant::now() + allowance;
             let progress = RefCell::new(Vec::new());
-            let owner = adapter_start_before_cleanup(
-                deadline,
-                &evidence,
-                &mut report,
-                &progress,
-                async {
+            let owner =
+                adapter_start_before_cleanup(deadline, &evidence, &mut report, &progress, async {
                     let _in_flight = in_flight;
                     started.set(true);
                     progress.borrow_mut().push(StartupProgress {
@@ -2722,9 +2720,8 @@ fn native_adapter_startup_budget_retains_pending_receipt_and_cleanup_reserve() {
                         phase_milliseconds: None,
                     });
                     pending::<Result<(), LaunchError>>().await
-                },
-            )
-            .await;
+                })
+                .await;
             assert!(owner.is_none());
             assert_eq!(started.get(), allowance > STOP_WAIT);
             assert!(dropped.get());
