@@ -140,6 +140,25 @@ Start-Process -FilePath (Join-Path $previewTarget 'release/bonsai-chat.exe') -Ar
 Preview uses the same UI and sample content, without broker, credentials,
 microphone or speech services. It establishes neither real-model nor audio behavior.
 
+### Native renderer failures
+
+If chat exits with code 101 and `chat.log` records egui-wgpu's
+`Failed to create staging buffer for index data` (or vertex data), the native
+window's GPU upload failed. A sufficient destination-buffer capacity does not
+establish a working staging allocation or device. The error alone identifies
+neither the inference runtime nor the underlying driver failure. New launches
+record the selected graphics adapter/backend and any device-lost reason in the
+same retained stderr evidence.
+
+The native UI supports DX12, Vulkan and OpenGL/GLES through wgpu. For an explicit
+backend attempt, preserve your current `WGPU_BACKEND`, set
+`$env:WGPU_BACKEND = 'dx12'` (or `'vulkan'`), then rerun the same launch command.
+Restore the previous environment value after the attempt. This selects only the
+window renderer; it does not enable NPU inference or change model selection.
+There is no automatic relaunch or request replay. A model-free `--preview` checks
+the same renderer without loading a model; device diagnostics and their setup,
+comparison and cleanup still share the five-minute owner-device budget.
+
 ### Speech setup and operation
 
 The launcher provisions native ARM64 Canary Qwen 2.5B and Qwen3-TTS 1.7B

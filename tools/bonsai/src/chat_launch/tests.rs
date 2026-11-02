@@ -653,3 +653,22 @@ fn build_failure_and_nonzero_app_exit_remain_errors() -> crate::Result<()> {
     assert!(error.contains("exit code 7"));
     Ok(())
 }
+
+#[test]
+fn renderer_staging_failure_guidance_requires_the_recorded_panic() {
+    for stage in ["index", "vertex"] {
+        let log = format!(
+            "thread 'main' panicked at C:\\registry\\egui-wgpu-0.37.0\\src\\renderer.rs:1033:17:\nFailed to create staging buffer for {stage} data."
+        );
+        let guidance = graphics_failure_guidance(101, &log);
+        assert!(guidance.is_some_and(|value| value.contains("WGPU_BACKEND")));
+        assert!(graphics_failure_guidance(1, &log).is_none());
+    }
+    for log in [
+        "thread 'main' panicked at src/model.rs:10:1: unknown model error",
+        "Failed to create staging buffer for index data.",
+        "egui-wgpu-0.37.0 renderer.rs:1033 another error",
+    ] {
+        assert!(graphics_failure_guidance(101, log).is_none());
+    }
+}

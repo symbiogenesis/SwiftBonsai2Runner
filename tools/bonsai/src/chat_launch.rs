@@ -580,12 +580,37 @@ fn launch_pending(
     );
     let code = operations.launch(chat, &arguments, working)?;
     if code != 0 {
-        return Err(format!(
-            "Chat stopped with exit code {code}. Evidence is retained under {}.",
-            working.display()
-        ));
+        return Err(launch_failure(code, working));
     }
     Ok(json!({"Status": "chat-stopped", "ExitCode": code, "EvidenceDirectory": working}))
+}
+
+fn launch_failure(code: u32, working: &Path) -> String {
+    use std::io::Read as _;
+    let mut log = String::new();
+    if let Ok(file) = fs::File::open(working.join("chat.log")) {
+        let _read = file.take(32 * 1024).read_to_string(&mut log);
+    }
+    let guidance = graphics_failure_guidance(code, &log).unwrap_or("");
+    format!(
+        "Chat stopped with exit code {code}.{guidance} Evidence is retained under {}.",
+        working.display()
+    )
+}
+
+fn graphics_failure_guidance(code: u32, log: &str) -> Option<&'static str> {
+    (code == 101
+        && log.contains("egui-wgpu-")
+        && log.contains("renderer.rs:")
+        && [
+            "Failed to create staging buffer for index data.",
+            "Failed to create staging buffer for vertex data.",
+        ]
+        .iter()
+        .any(|marker| log.contains(marker)))
+    .then_some(
+        " The native window renderer failed to upload GUI geometry. The retained error does not diagnose inference. An explicit graphics backend can be selected with $env:WGPU_BACKEND='dx12' or 'vulkan' before rerunning the same command; restore your previous setting afterwards. See docs/development-guide.md#native-renderer-failures.",
+    )
 }
 
 fn working_directory(requested: Option<&Path>) -> crate::Result<PathBuf> {

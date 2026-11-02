@@ -17,6 +17,7 @@ use std::{
     time::{Duration, Instant},
 };
 
+mod graphics;
 #[cfg(test)]
 mod interaction_tests;
 #[cfg(test)]
@@ -1787,6 +1788,7 @@ pub(super) fn run(config: Config) -> io::Result<()> {
         "Swift Bonsai",
         native_options(),
         Box::new(move |cc| {
+            graphics::install(cc);
             configure(&cc.egui_ctx);
             let (commands, incoming) = mpsc::channel();
             let (events, incoming_events) = client::event_channel();
@@ -1813,6 +1815,7 @@ pub(super) fn run_startup(request: crate::startup::Request) -> io::Result<()> {
         "Swift Bonsai",
         native_options(),
         Box::new(move |cc| {
+            graphics::install(cc);
             configure(&cc.egui_ctx);
             let (commands, _incoming) = mpsc::channel();
             let (_events, incoming_events) = client::event_channel();
@@ -1832,6 +1835,7 @@ pub(super) fn run_startup(request: crate::startup::Request) -> io::Result<()> {
 /// Opens only a seeded interface; no backend, credential or audio operation runs.
 pub(super) fn run_preview() -> io::Result<()> {
     eframe::run_native("Swift Bonsai · Preview", native_options(), Box::new(|cc| {
+        graphics::install(cc);
         configure(&cc.egui_ctx);
         let (commands, _incoming) = mpsc::channel();
         let (_events, incoming_events) = client::event_channel();
