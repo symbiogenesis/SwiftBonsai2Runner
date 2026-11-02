@@ -41,6 +41,15 @@
     "brokerPathPrepared": false
   },
   "followup": {
+    "boundedEventReview": {
+      "logs": ["System", "Application"],
+      "centerUtc": "2026-11-02T04:38:10Z",
+      "radiusSeconds": 180,
+      "scope": "selected-graphics-and-application-error-providers",
+      "maximumRecords": 20,
+      "matchingRecords": 0,
+      "underlyingCauseEstablished": false
+    },
     "boundedAdapterAndDeviceLossDiagnosticsPrepared": true,
     "exactRendererPanicLauncherGuidancePrepared": true,
     "graphicsBackendDefaultChanged": false,
