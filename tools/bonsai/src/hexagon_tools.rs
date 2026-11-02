@@ -268,9 +268,12 @@ impl Context {
             .collect()
     }
     fn executable(&mut self, path: &Path, name: &str) -> Result<Value> {
+        self.image(path, name, 64 * 1024 * 1024)
+    }
+    fn image(&mut self, path: &Path, name: &str, maximum_bytes: u64) -> Result<Value> {
         startup_cache::assert_arm64(path)?;
         let bytes = fs::metadata(path).map_err(|error| error.to_string())?.len();
-        Ok(json!({"Name":name,"Bytes":bytes,"Sha256":self.digest(path,64*1024*1024)?}))
+        Ok(json!({"Name":name,"Bytes":bytes,"Sha256":self.digest(path,maximum_bytes)?}))
     }
 }
 
@@ -509,7 +512,7 @@ fn packed_artifact(mut context: Context, gguf: &Path) -> Result<Value> {
             .file_name()
             .and_then(OsStr::to_str)
             .ok_or("Invalid tool image name.")?;
-        images.push(context.executable(path, name)?);
+        images.push(context.image(path, name, 256 * 1024 * 1024)?);
     }
     let source = context.repo.join("tools/hexagon/packed_artifact.rs");
     let source_digest = context.digest(&source, 4 * 1024 * 1024)?;
