@@ -23,6 +23,34 @@ Swift numerics/state, resources and performance remain
 unqualified; X1 needs independent evidence. The sections below distinguish source
 eligibility, data verification, native access and hosted wire controls.
 
+### Whole-token bridge cost
+
+The [static operation ledger](evidence/hexagon-swift-operation-ledger.json) requires
+23,256 synchronous submissions for one original-PQ2 token with every eligible
+projection and the logits head selected. This already exceeds the terminal
+21,760-operation session cap. The [logical payload ledger](evidence/hexagon-swift-traffic-ledger.json),
+reproduced by `python -B tools/hexagon/verify_operation_traffic.py`, accounts for
+the existing block-preserving layouts across those same projections:
+
+| Per-token payload | HMX binary planes | Guarded HVX limbs |
+| --- | ---: | ---: |
+| Original packed weight payload | 6,799,564,800 bytes | 6,799,564,800 bytes |
+| Repacked weight submission payload | 7,199,539,200 bytes | 14,399,078,400 bytes |
+| Activation submission payload | 95,256,576 bytes | 47,628,288 bytes |
+| Intermediate result payload returned for CPU reduction | 6,399,590,400 bytes | 1,599,897,600 bytes |
+
+These are aggregate logical payloads derived from source, not observed memory-bus
+traffic, simultaneous residency or performance. They exclude extra host copies,
+scale scans, queue/mapping/cache overhead and CPU quantization/reduction. PTQ1 is
+outside this original-PQ2 derivation. Nominal NPU TOPS cannot establish a benefit
+for this schedule. An efficient route needs substantially fewer submissions and
+intermediate results, such as a fused packed Swift kernel preserving the required
+block arithmetic, plus verified weight reuse and true multi-token prefill where
+applicable. Such kernels still need supported signing/distribution and complete
+numerical, state, resource and same-artifact performance qualification. The signed
+primitive bridge provides a correctness control for that work; this ledger grants
+no full-model admission or speedup claim.
+
 ## Pinned packages and source decisions
 
 | Input | Exact identity and scoped decision |

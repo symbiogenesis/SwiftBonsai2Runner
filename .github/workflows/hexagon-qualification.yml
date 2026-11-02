@@ -14,6 +14,8 @@ on:
       - config/hexagon-experiment.lock.json
       - config/hexagon-signed-q2-candidate.lock.json
       - config/hexagon-dispatch.lock.json
+      - docs/evidence/hexagon-swift-operation-ledger.json
+      - docs/evidence/hexagon-swift-traffic-ledger.json
   workflow_dispatch:
     inputs:
       run_device:
@@ -98,6 +100,7 @@ jobs:
           python -B tools/hexagon/test_pq2_bridge.py
           python -B tools/hexagon/pq2_bridge.py
           python -B tools/hexagon/verify_packed_fixture.py
+          python -B tools/hexagon/verify_operation_traffic.py
       - name: Validate comparative CPU GPU NPU ranking without opening a device
         shell: pwsh
         working-directory: ${{ runner.temp }}
