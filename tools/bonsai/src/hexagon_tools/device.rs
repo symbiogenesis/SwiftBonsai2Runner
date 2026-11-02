@@ -566,7 +566,7 @@ fn verify_fixture(
     manifest_digest: &str,
 ) -> Result<PathBuf> {
     if request.kind == "projection" {
-        return projection::verify_fixture(inputs, request, report, manifest_digest);
+        return projection::verify_fixture(inputs, request, report, manifest_digest, lock_digest);
     }
     let dispatch = request.kind == "dispatch";
     let exe = if dispatch {

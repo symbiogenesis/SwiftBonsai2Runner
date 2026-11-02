@@ -111,6 +111,7 @@ pub(super) fn verify_fixture(
     probe: &Probe,
     report: &mut Value,
     manifest: &str,
+    dispatch_lock: &str,
 ) -> Result<PathBuf> {
     let exe = "hexagon-projection-probe.exe";
     exact_directory(
@@ -120,12 +121,20 @@ pub(super) fn verify_fixture(
     let path = probe.fixture_directory.join("projection-build.json");
     report["BuildReceiptSha256"] = json!(inputs.digest(&path, 65_536)?);
     let receipt = inputs.json(&path, 65_536)?;
+    let candidate_lock = inputs.digest(
+        &probe
+            .repository_directory
+            .join("config/hexagon-signed-q2-candidate.lock.json"),
+        1024 * 1024,
+    )?;
     if receipt["SchemaVersion"] != 1
         || receipt["Kind"] != "hexagon-original-projection-build"
         || receipt["RunnerRevision"] != probe.expected_runner_revision
         || receipt["RustToolchain"] != super::super::TOOLCHAIN
         || receipt["Target"] != super::super::TARGET
         || receipt["ManifestSha256"] != manifest
+        || receipt["DispatchLockSha256"] != dispatch_lock
+        || receipt["CandidateLockSha256"] != candidate_lock
         || receipt["HostedBuild"] != true
         || ["DeviceCodeLoaded", "ModelLoaded", "ProfileEligible"]
             .iter()

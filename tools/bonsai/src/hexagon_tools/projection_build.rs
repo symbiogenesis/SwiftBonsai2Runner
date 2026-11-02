@@ -163,6 +163,16 @@ pub(super) fn build(
     let sources = context.input_set(&root, INPUTS)?;
     let native_sources = context.input_set(&root.join("native_rpc"), super::NATIVE_INPUTS)?;
     let manifest_digest = context.digest(manifest, 65_536)?;
+    let dispatch_lock_digest = context.digest(
+        &context.repo.join("config/hexagon-dispatch.lock.json"),
+        1024 * 1024,
+    )?;
+    let candidate_lock_digest = context.digest(
+        &context
+            .repo
+            .join("config/hexagon-signed-q2-candidate.lock.json"),
+        1024 * 1024,
+    )?;
     let mut externs = dependencies(context, rustc, &output)?;
     let packed = output.join("libpacked_projection.rlib");
     let mut args = compile_arguments(manifest);
@@ -225,6 +235,7 @@ pub(super) fn build(
             "RustToolchain":TOOLCHAIN,"Target":TARGET,"HostedBuild":true,
             "CompilerIdentitySha256":compiler_digest,"SourceFiles":sources,
             "NativeSourceFiles":native_sources,"ManifestSha256":manifest_digest,
+            "DispatchLockSha256":dispatch_lock_digest,"CandidateLockSha256":candidate_lock_digest,
             "BuildEnvironment":context.environment,"Executable":executable,
             "DependencyReceiptSha256":dependency_receipt_digest,
             "DeviceCodeLoaded":false,"ModelLoaded":false,"ProfileEligible":false,
