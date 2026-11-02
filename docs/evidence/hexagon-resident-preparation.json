@@ -1,0 +1,90 @@
+{
+  "schemaVersion": 1,
+  "kind": "bounded-mapped-host-weight-reuse-and-explicit-graph-placement-preparation",
+  "reviewDateLocal": "2026-11-02",
+  "prismSourceRevision": "1e7ed92e7787b9d8b150f9bb3fb5a74fa92fb14b",
+  "prismImplementationCommits": ["e763733", "d532d85", "6a29203"],
+  "runnerAccountingCommit": "2375e87",
+  "productionInference": "CPU; released runtime pin and NPU admission unchanged",
+  "implemented": [
+    "opt-in-immutable-mapped-host-weight-arena-with-64-MiB-ceiling",
+    "opaque-session-owned-handles-with-foreign-session-rejection",
+    "resident-and-streaming-submissions-sharing-original-cap-deadline-correlation-and-cleanup",
+    "allocation-preparation-payload-and-resident-submission-counters",
+    "bounded-preallocated-host-cache-metadata-with-stable-resource-eligibility",
+    "retained-immutable-source-storage-and-geometry-cache-identity",
+    "complete-tensor-preparation-before-first-kernel-submission",
+    "whole-projection-streaming-on-capacity-miss-before-preparation",
+    "terminal-preparation-or-submission-failure-without-replay",
+    "explicit-source-bound-projection-selection-and-deterministic-placement-identity",
+    "selected-real-graph-work-in-original-complete-request-admission",
+    "reproducible-resident-host-resource-and-unchanged-kernel-payload-ledger"
+  ],
+  "focusedModelFreeValidation": {
+    "hmxTestsPassed": 9,
+    "placementTestsPassed": 6,
+    "realGraphSelectedWorkLogitsStateAndPreMutationRefusalPassed": true,
+    "runtimeAllTargetClippyPassed": true,
+    "formattingPassed": true,
+    "residentLedgerGenerationAndVerificationMilliseconds": 209,
+    "workerFocusedBuildTestAndLintMilliseconds": 12454,
+    "rootFocusedPlacementTestAndLintMilliseconds": 7485,
+    "localVerificationConservativeUpperBoundMilliseconds": 30000,
+    "completeSuitesExecutedOnOwner": false,
+    "actualModelLoaded": false,
+    "vendorDriverOpened": false,
+    "scope": "synthetic-real-Rust-graph-and-CPU-mocked-submitters; no-NPU-or-Swift-model-execution"
+  },
+  "hostedChecks": {
+    "statusAtPreparation": "queued-or-pending; final-conclusions-require-review",
+    "prismNativeAndRuntime": "https://github.com/symbiogenesis/prism-inference/actions/runs/41529327799",
+    "prismFoundation": "https://github.com/symbiogenesis/prism-inference/actions/runs/41529327648",
+    "prismRuntimeConformance": "https://github.com/symbiogenesis/prism-inference/actions/runs/41529327381"
+  },
+  "initialHostedObservation": {
+    "sourceRevision": "d532d85f034e7d854a349bb8744f684434d0001d",
+    "nativeAndRuntimeRun": "https://github.com/symbiogenesis/prism-inference/actions/runs/41528789760",
+    "nativeArm64TestsPassed": 28,
+    "nativeX64TestsPassed": 18,
+    "failure": "strict-missing-const-function-lint-before-runtime-check-step",
+    "correction": "const-limit-and-metadata-methods; Rust-2024-prelude-import-and-cast-free-empty-output-assertions"
+  },
+  "limits": {
+    "residentArenaMaximumBytes": 67108864,
+    "terminalMaximumOperations": 21760,
+    "terminalMaximumSeconds": 120,
+    "firstProjectionPackedResidentBytes": 25067520,
+    "firstProjectionOperationsPerToken": 40,
+    "firstProjectionExpandedNativeAllocationBytes": 26259456,
+    "allEligibleOriginalPq2EvaluateOperationsPerToken": 23256,
+    "allEligibleOriginalPq2KernelLogicalPayloadBytesPerToken": 13694386176,
+    "fullExpandedAllocationCacheDescriptorRetained": true,
+    "cacheMaintenanceCostMayIncrease": true,
+    "residentWeightsAreDspVtcm": false,
+    "signedKernelPayloadReduced": false,
+    "signedFusedSwiftKernelImplemented": false,
+    "trueMultitokenPrefillImplemented": false,
+    "dailyServiceLifetimeImplemented": false,
+    "capRaised": false
+  },
+  "remaining": [
+    "signed-resident-submissions-and-effective-selected-DSP-placement",
+    "actual-model-activation-logits-state-adapter-and-lifecycle-parity",
+    "actual-cache-maintenance-resource-and-repeated-token-total-cost-comparison",
+    "efficient-signed-fused-packed-Swift-kernels-and-supported-distribution",
+    "device-weight-reuse-fewer-intermediate-results-and-true-prefill-batching",
+    "persistent-serving-isolation-cancellation-recovery-and-verified-teardown",
+    "independent-X1-and-X2-end-to-end-speed-quality-memory-and-comfort-acceptance"
+  ],
+  "historicalDeviceInvestigation": {
+    "aggregateCeilingMilliseconds": 300000,
+    "previouslyChargedMilliseconds": 223797,
+    "clockRestarted": false,
+    "additionalDeviceExecutionMilliseconds": 0,
+    "anotherSupportedControlAndTeardownFitsRemainingAllowance": false
+  },
+  "profileEligible": false,
+  "automaticSelectionEnabled": false,
+  "measuredInferenceSpeedup": null,
+  "fullHexagonAccelerationComplete": false
+}

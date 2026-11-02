@@ -12,7 +12,7 @@ Swift prototype is one stateless FFN projection. CPU-only [layout](../tools/hexa
 [operation/wire controls](../tools/hexagon/packed-projection.md) qualify no signed device implementation,
 measured VTCM/traffic or inference.
 
-[Prism source `736967c`](https://github.com/symbiogenesis/prism-inference/tree/736967c7685df423a21f26163ace97c45f7b869f/tools/hexagon-runtime)
+[Prism source `1e7ed92`](https://github.com/symbiogenesis/prism-inference/tree/1e7ed92e7787b9d8b150f9bb3fb5a74fa92fb14b/tools/hexagon-runtime)
 now connects explicit guarded-HVX and HMX bitplane executors to the real Rust
 graph through a borrowed session. Original quantization, transforms, adapters
 and committed state remain CPU-owned. This unpublished integration is separate
@@ -24,9 +24,27 @@ pass; signed PQ2/PTQ1 model execution, resource qualification and persistent
 serving remain pending. The [static work ledger](evidence/hexagon-swift-operation-ledger.json)
 prevents admitting all eligible projections under the terminal session cap.
 The [logical payload ledger](evidence/hexagon-swift-traffic-ledger.json) derives
-13.69 GB of submission/result payload per all-eligible original-PQ2 evaluation
-token, without persistent weight reuse. This is an arithmetic compatibility bridge;
-fused signed kernels and real prefill batching remain separate implementation work.
+13.69 GB of signed-kernel input/result payload per all-eligible original-PQ2
+evaluation token. The opt-in [mapped host-weight arena and graph cache](../tools/hexagon/resident-host.md)
+reuse immutable packed tiles across tokens, with a 64 MiB native arena ceiling,
+separate host metadata accounting and unchanged terminal operation/deadline limits.
+The cache binds exact immutable source storage and geometry; complete capacity
+misses select the streaming path before preparation. Preparation or submission
+failure closes the scope without replay. This removes repeated CPU packing/copies
+when hits occur; the kernel payload stays unchanged, and every submission still
+covers the expanded allocation with the existing cache flags. Actual cache cost
+may increase. [Static bounds](evidence/hexagon-resident-host-ledger.json) establish
+no DSP residency, performance or production admission.
+
+Explicit immutable projection selection supports bounded partial-graph work,
+including the original first-projection milestone, while the other projections
+retain their CPU paths. Placement identity binds the model, executor, selected
+tensors and operation counts; whole-request admission still precedes inference.
+This remains an arithmetic compatibility bridge. Fused signed kernels, efficient
+device weight reuse, true prefill batching and daily serving remain separate work.
+The [residency preparation receipt](evidence/hexagon-resident-preparation.json)
+binds the source, focused checks and owning hosted validation without enabling a
+Runner profile or transferring qualification from the CPU release.
 
 [Preflight](../tools/bonsai/src/hexagon_tools/preflight.rs) inventories drivers and an explicit optional package
 without loading/installing it. It uses a native Rust worker with an aggregate deadline and kill-on-close Job ownership.

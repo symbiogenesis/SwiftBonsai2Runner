@@ -740,7 +740,7 @@ Follow [Adreno contracts](docs/adreno.md); discovery alone changes no CPU profil
 
 Follow [Hexagon contracts](docs/hexagon.md).
 
-Qualify the [source-only Prism graph integration](https://github.com/symbiogenesis/prism-inference/tree/736967c7685df423a21f26163ace97c45f7b869f/tools/hexagon-runtime)
+Qualify the [source-only Prism graph integration](https://github.com/symbiogenesis/prism-inference/tree/1e7ed92e7787b9d8b150f9bb3fb5a74fa92fb14b/tools/hexagon-runtime)
 and bounded native HMX session on settled main. Exact PTQ1/odd-block PQ2 Q8_0
 composition and complete-request operation admission now have
 [focused model-free controls](docs/evidence/hexagon-ptq1-admission-preparation.json).
@@ -754,11 +754,17 @@ admission or calling this full acceleration.
 The [reproducible traffic ledger](docs/evidence/hexagon-swift-traffic-ledger.json)
 derives 13.69 GB of logical HMX submission/result payload for one all-eligible
 original-PQ2 evaluation token, excluding source reads and further host copies.
-This is no measured traffic or speed verdict, but the compatibility bridge is not
-an optimized inference implementation. Develop signed fused packed kernels,
-resident weight reuse and true multitoken prefill scheduling before treating
+This is no measured traffic or speed verdict. Qualify the opt-in immutable mapped
+host-weight arena, bounded graph cache and explicit partial placement through
+signed execution, actual resources and same-artifact repeated-token comparison.
+The [resident-host bounds](docs/evidence/hexagon-resident-host-ledger.json) separate
+saved CPU packing from unchanged signed-kernel payload and potentially increased
+whole-allocation cache maintenance. The arena does not establish DSP residency,
+efficient full inference or a daily service session. Develop signed fused packed
+kernels, device weight reuse and true multitoken prefill scheduling before treating
 broader placement or a raised session cap as a performance solution. Retain the
-existing cap; operation admission now rejects infeasible complete requests.
+existing cap and complete-request admission; qualify selected real graph work,
+logits/state, cancellation and teardown before publishing experimental output.
 
 Use the [bounded native F32/Q2 evidence](docs/evidence/hexagon-x2-queue-compute.json)
 for the next original-projection milestone. Its fixed guarded-Q2 integer and explicit
