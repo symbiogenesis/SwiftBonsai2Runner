@@ -70,10 +70,12 @@ fn every_native_fractional_alias_and_signed_code_keeps_sparse_integer_lanes() ->
                     .sum();
                 assert_eq!(reconstruct(&dots, lane)?, expected);
             }
-            // Four active rows have unit scales; untouched padding rows zero.
+            // Every native row has unit scale; padding symbols decode to zero.
             for tile in inputs.repacked_weights().chunks_exact(576) {
-                assert_eq!(&tile[512..520], &[0, 0x3c, 0, 0x3c, 0, 0x3c, 0, 0x3c]);
-                assert!(tile[520..].iter().all(|&byte| byte == 0));
+                assert!(tile[512..].chunks_exact(2).all(|scale| scale == [0, 0x3c]));
+                for lane_chunk in tile[..512].chunks_exact(128) {
+                    assert!(lane_chunk[LANES * 4..].iter().all(|&byte| byte == 0x55));
+                }
             }
         }
     }

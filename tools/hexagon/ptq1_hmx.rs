@@ -48,7 +48,8 @@ impl Ptq1HmxInputs {
     ///
     /// Group 0..4 selects its 32 original columns. Row `lane` keeps positions
     /// `lane*4..lane*4+4` and `lane*4+16..lane*4+20` within that group;
-    /// every other weight is zero. All padding rows have zero scales.
+    /// every other weight is zero. Padding rows retain zero symbols and unit
+    /// scales, as required by the existing native submitter's input contract.
     pub fn new(original: &[u8], codes: &[i8], group: usize) -> Result<Self, Error> {
         let original: &[u8; PTQ_BYTES] = original.try_into().map_err(|_| Error::Extent)?;
         if codes.len() != K || group >= 4 {
@@ -72,6 +73,11 @@ impl Ptq1HmxInputs {
                 }
             }
             repack_row(&sparse, lane, &mut result.weights);
+        }
+        let mut neutral = [0x55; 34];
+        neutral[..2].copy_from_slice(&0x3c00_u16.to_le_bytes());
+        for padding_row in LANES..32 {
+            repack_row(&neutral, padding_row, &mut result.weights);
         }
         for (bit, plane) in result.activation.iter_mut().enumerate() {
             for (value, &code) in plane.iter_mut().zip(codes) {
