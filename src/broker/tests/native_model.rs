@@ -7,12 +7,13 @@
 )]
 
 use bonsai_broker::{
-    launcher::{LaunchConfig, LaunchedService},
+    launcher::{LaunchConfig, LaunchError, LaunchedService, StartupPhase, StartupProgress},
     runtime::{BackendResources, RunExit, RunReport},
 };
 use serde_json::{Value, json};
 use std::{
-    env, ffi::OsString, fs, future::pending, io, net::TcpListener, path::Path, time::Duration,
+    cell::RefCell, env, ffi::OsString, fs, future::pending, io, net::TcpListener, path::Path,
+    time::Duration,
 };
 use tokio::{
     io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader},
@@ -1413,12 +1414,23 @@ fn adapter_configuration(profile: &AdapterProfile, data: &Path, evidence: &Path)
 }
 
 async fn start_adapter(profile: &AdapterProfile, data: &Path, evidence: &Path) -> LaunchedService {
+    start_adapter_with_progress(profile, data, evidence, |_| {})
+        .await
+        .unwrap()
+}
+
+async fn start_adapter_with_progress(
+    profile: &AdapterProfile,
+    data: &Path,
+    evidence: &Path,
+    observe: impl FnMut(StartupProgress),
+) -> Result<LaunchedService, LaunchError> {
     timeout(
         WAIT,
-        adapter_configuration(profile, data, evidence).start(pending::<io::Result<()>>()),
+        adapter_configuration(profile, data, evidence)
+            .start_with_progress(pending::<io::Result<()>>(), observe),
     )
     .await
-    .unwrap()
     .unwrap()
 }
 
@@ -1708,11 +1720,17 @@ async fn bounded_adapter_acceptance(
     }
     report["phase"] = json!("initial-owner-startup");
     save_acceptance_report(evidence, report);
+    // The observer records only fixed values in memory; it never performs
+    // receipt I/O during credential creation or other startup operations.
+    let progress = RefCell::new(Vec::new());
     let Some(owner) = adapter_start_before_cleanup(
         deadline,
         evidence,
         report,
-        start_adapter(profile, data, evidence),
+        &progress,
+        start_adapter_with_progress(profile, data, evidence, |observation| {
+            progress.borrow_mut().push(observation);
+        }),
     )
     .await
     else {
@@ -1762,21 +1780,29 @@ async fn adapter_start_before_cleanup<T>(
     deadline: tokio::time::Instant,
     evidence: &Path,
     report: &mut Value,
-    startup: impl Future<Output = T>,
+    progress: &RefCell<Vec<StartupProgress>>,
+    startup: impl Future<Output = Result<T, LaunchError>>,
 ) -> Option<T> {
     // Startup cancellation begins at the same request-work deadline. Dropping
     // LaunchConfig's startup future performs bounded owned teardown, which may
     // consume part of the reserve. Synchronous verification is not preemptible.
     // Never wait for a fresh readiness timeout or restart the case clock.
     let started = tokio::time::Instant::now();
-    let owner = adapter_work_before_cleanup(deadline, startup).await;
+    let result = adapter_work_before_cleanup(deadline, startup).await;
     report["startupMilliseconds"] = json!(started.elapsed().as_secs_f64() * 1000.0);
-    report["startupBudgetExpired"] = json!(owner.is_none());
-    if owner.is_none() {
-        report["phase"] = json!("startup-budget-expired");
-        report["pendingReason"] = json!("startup-budget-expired");
+    report["startupProgress"] = json!(&*progress.borrow());
+    report["startupProgressScope"] = json!("broker operation brackets, including observer overhead; readiness combines unobserved backend verification/loading/graph work and polling; unfinished phases remain pending; synchronous verification is not preemptible");
+    report["startupBudgetExpired"] = json!(result.is_none());
+    let (owner, pending_reason) = match result {
+        Some(Ok(owner)) => (Some(owner), None),
+        Some(Err(_)) => (None, Some("startup-failed")),
+        None => (None, Some("startup-budget-expired")),
+    };
+    if let Some(reason) = pending_reason {
+        report["phase"] = json!(reason);
+        report["pendingReason"] = json!(reason);
         if report["scaleHistoryWorkload"].is_object() {
-            report["scaleHistoryWorkload"]["reason"] = json!("startup-budget-expired");
+            report["scaleHistoryWorkload"]["reason"] = json!(reason);
         }
     }
     save_acceptance_report(evidence, report);
@@ -2680,11 +2706,24 @@ fn native_adapter_startup_budget_retains_pending_receipt_and_cleanup_reserve() {
             let dropped = std::rc::Rc::new(std::cell::Cell::new(false));
             let in_flight = InFlight(dropped.clone());
             let deadline = tokio::time::Instant::now() + allowance;
-            let owner = adapter_start_before_cleanup(deadline, &evidence, &mut report, async {
-                let _in_flight = in_flight;
-                started.set(true);
-                pending::<()>().await;
-            })
+            let progress = RefCell::new(Vec::new());
+            let owner = adapter_start_before_cleanup(
+                deadline,
+                &evidence,
+                &mut report,
+                &progress,
+                async {
+                    let _in_flight = in_flight;
+                    started.set(true);
+                    progress.borrow_mut().push(StartupProgress {
+                        phase: StartupPhase::ModelVerification,
+                        completed: false,
+                        elapsed_milliseconds: 0.0,
+                        phase_milliseconds: None,
+                    });
+                    pending::<Result<(), LaunchError>>().await
+                },
+            )
             .await;
             assert!(owner.is_none());
             assert_eq!(started.get(), allowance > STOP_WAIT);
@@ -2706,18 +2745,50 @@ fn native_adapter_startup_budget_retains_pending_receipt_and_cleanup_reserve() {
             assert_eq!(saved["passed"], false);
             assert_eq!(saved["lifecyclePassed"], false);
             assert_eq!(saved["allRequestedWorkloadsPassed"], false);
+            assert_eq!(
+                saved["startupProgress"].as_array().unwrap().len(),
+                usize::from(started.get())
+            );
+            if started.get() {
+                assert_eq!(saved["startupProgress"][0]["phase"], "model-verification");
+                assert_eq!(saved["startupProgress"][0]["completed"], false);
+                assert!(saved["startupProgress"][0]["phaseMilliseconds"].is_null());
+            }
             // Future-drop ownership is not an independently queried cleanup pass.
             assert!(saved["initialCleanup"].is_null());
         }
         let mut report = json!({"passed":false});
         let deadline = tokio::time::Instant::now() + CASE_BUDGET;
+        let progress = RefCell::new(Vec::new());
         assert_eq!(
-            adapter_start_before_cleanup(deadline, &evidence, &mut report, async { 7 }).await,
+            adapter_start_before_cleanup(deadline, &evidence, &mut report, &progress, async {
+                Ok(7)
+            })
+            .await,
             Some(7)
         );
         assert_eq!(report["startupBudgetExpired"], false);
         assert_eq!(deadline - tokio::time::Instant::now(), CASE_BUDGET);
         assert!(report["pendingReason"].is_null());
+        let progress = RefCell::new(vec![StartupProgress {
+            phase: StartupPhase::ProcessCreation,
+            completed: false,
+            elapsed_milliseconds: 1.0,
+            phase_milliseconds: None,
+        }]);
+        assert_eq!(
+            adapter_start_before_cleanup(deadline, &evidence, &mut report, &progress, async {
+                Err::<(), _>(LaunchError::Process)
+            })
+            .await,
+            None
+        );
+        assert_eq!(report["pendingReason"], "startup-failed");
+        assert_eq!(report["startupBudgetExpired"], false);
+        assert_eq!(report["startupProgress"][0]["phase"], "process-creation");
+        assert_eq!(report["startupProgress"][0]["completed"], false);
+        assert_eq!(report["passed"], false);
+        assert!(report["initialCleanup"].is_null());
         fs::remove_file(evidence.join("acceptance.json")).unwrap();
         fs::remove_dir(evidence).unwrap();
     });

@@ -5,8 +5,12 @@
 //! selects the unisolated backend. Same-user interference remains unqualified.
 
 mod identity;
+mod startup;
 
 use identity::{WorkerReadiness, validate_native_identity};
+use startup::StartupTimer;
+
+pub use startup::{StartupPhase, StartupProgress};
 
 use crate::{
     artifacts::VerifiedArtifacts,
@@ -483,6 +487,26 @@ impl LaunchConfig {
         self,
         shutdown: impl Future<Output = io::Result<()>>,
     ) -> Result<LaunchedService, LaunchError> {
+        self.start_with_progress(shutdown, |_| {}).await
+    }
+
+    /// Start with fixed credential-free observations of broker startup brackets.
+    ///
+    /// The observer receives only fixed phases and elapsed times. It runs at
+    /// operation boundaries and should record in memory without blocking. A
+    /// started phase remains unfinished on cancellation or error. Readiness
+    /// includes unobserved backend verification/loading and health polling;
+    /// these observations cannot attribute backend kernel or loader timings.
+    /// Synchronous artifact verification remains unpreemptible by async timers.
+    ///
+    /// # Errors
+    /// Returns the same value-free failures and preserves the same ownership,
+    /// verification, cancellation and containment behavior as [`Self::start`].
+    pub async fn start_with_progress(
+        self,
+        shutdown: impl Future<Output = io::Result<()>>,
+        observe: impl FnMut(StartupProgress),
+    ) -> Result<LaunchedService, LaunchError> {
         // Register cancellation before synchronous policy/artifact work. The CLI
         // retains this same future across startup and serving, so a signal in
         // the readiness-to-serving handoff remains observable.
@@ -490,6 +514,8 @@ impl LaunchConfig {
         if poll_fn(|cx| Poll::Ready(shutdown.as_mut().poll(cx).is_ready())).await {
             return Err(LaunchError::Cancelled);
         }
+        let mut startup_timing = StartupTimer::new(observe);
+        startup_timing.phase(StartupPhase::PolicyAndAdmission);
         if self.check_only {
             return Err(LaunchError::Arguments);
         }
@@ -507,11 +533,14 @@ impl LaunchConfig {
         )
         .map_err(|_| LaunchError::Policy)?;
         admit(preliminary.required_available_bytes)?;
+        startup_timing.phase(StartupPhase::ModelVerification);
         let artifacts = self.verify_artifacts(&preliminary)?;
+        startup_timing.phase(StartupPhase::AdapterVerification);
         let adapter = Self::adapter_guard(&preliminary)?;
         if poll_fn(|cx| Poll::Ready(shutdown.as_mut().poll(cx).is_ready())).await {
             return Err(LaunchError::Cancelled);
         }
+        startup_timing.phase(StartupPhase::CredentialsAndRuntime);
         let credentials = PrivateCredentials::create(&self.evidence_parent)
             .map_err(|_| LaunchError::Credentials)?;
         let plan = LaunchPlan::for_profile_with_options(
@@ -531,8 +560,10 @@ impl LaunchConfig {
         let (specification, native_executable) = self.specification(plan, &credentials)?;
         validate_external_path(&specification.executable).map_err(|_| LaunchError::Path)?;
         drop(reservation);
+        startup_timing.phase(StartupPhase::ProcessCreation);
         let process =
             self.start_process(&specification, &artifacts, adapter.as_ref(), &credentials)?;
+        startup_timing.phase(StartupPhase::AuthenticatedReadiness);
         let startup = wait_ready(
             &process,
             self.backend_port,
@@ -546,8 +577,9 @@ impl LaunchConfig {
             process.stop(STOP_TIMEOUT).map_err(|_| LaunchError::Stop)?;
             return Err(error);
         }
-        if self.native_engine
-            && !native_identity(
+        if self.native_engine {
+            startup_timing.phase(StartupPhase::NativeIdentity);
+            if !native_identity(
                 self.backend_port,
                 credentials.backend_key(),
                 process.id(),
@@ -556,11 +588,13 @@ impl LaunchConfig {
                 self.native_row_workers,
             )
             .await
-        {
-            note_startup_failure(StartupStage::NativeIdentity, LaunchError::Backend, &process);
-            process.stop(STOP_TIMEOUT).map_err(|_| LaunchError::Stop)?;
-            return Err(LaunchError::Backend);
+            {
+                note_startup_failure(StartupStage::NativeIdentity, LaunchError::Backend, &process);
+                process.stop(STOP_TIMEOUT).map_err(|_| LaunchError::Stop)?;
+                return Err(LaunchError::Backend);
+            }
         }
+        startup_timing.phase(StartupPhase::FrontendBinding);
         let mut service = LocalChatService::bind(
             self.frontend_port,
             credentials.frontend_key(),
@@ -574,6 +608,7 @@ impl LaunchConfig {
         if adapter.is_some() {
             service.enable_pinned_abliteration();
         }
+        startup_timing.finish();
         Ok(LaunchedService {
             service,
             process,
