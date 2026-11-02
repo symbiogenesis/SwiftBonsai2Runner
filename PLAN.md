@@ -373,6 +373,55 @@ and retain the reset-every-request serving policy until reuse is qualified.
   and all promotion gates, retaining deterministic streams where applicable. Retire old
   build, overlay and FFI paths only after acceptance.
 
+### sglang-rs ideas for Prism integration
+
+Use the pinned [runtime scope](https://github.com/imReese/sglang-rs/blob/f9b5bade089e64032c07f5e751bd00a3af2b3847/README.md),
+[architecture](https://github.com/imReese/sglang-rs/blob/f9b5bade089e64032c07f5e751bd00a3af2b3847/docs/architecture.md)
+and [roadmap](https://github.com/imReese/sglang-rs/blob/f9b5bade089e64032c07f5e751bd00a3af2b3847/docs/runtime-roadmap.md)
+as references for the existing reuse, prefill and selected Hexagon milestones.
+Upstream architectural proposals are not implementation or performance evidence.
+Implement justified changes in Prism, then consume qualified pinned releases in Runner;
+audit immutable source files and licenses before code reuse. Preserve Swift's packed
+artifacts, adapter/numerical contracts, one active generation and native Rust UI/broker
+containment. Adopting the server, CUDA/native-kernel dependencies, NexusKV, broad API
+routes or distributed serving is outside this integration scope.
+
+- Extend the exact-prefix gate above with checked finite page geometry and token-to-slot
+  descriptors. Reuse immutable complete pages with private mutable tails; choose CPU
+  layout from attention-locality measurements rather than copying a CUDA layout.
+  Publish a reusable prefix only after its KV and exact recurrent/convolution checkpoint
+  are complete and committed. Retain simple lookup before radix trees and the total
+  snapshot/cache budget above. Allocation failure, aborted prefill and stale model,
+  adapter or execution identities must leave no reusable partial entry.
+- Feed uncached-token counts and validated prepared-batch metadata (tokens, positions,
+  lengths and cache slots) into the existing chunkwise-prefill work after packed
+  projections. Enforce context/output reservations, scratch bounds and cancellation
+  between bounded chunks. Qualify cold prompts and exact-prefix suffixes without
+  introducing concurrent requests or changing sampler progression.
+- For the chosen accelerator milestone, keep one logical cache owner and separate
+  scheduling/transfer decisions from device execution using typed batch, cache,
+  transfer and dependency plans inside the existing contained inference worker.
+  Bound command queues and completion waits; overlap only independent preparation
+  or transfers. Treat submitted, in-flight, completed and failed work explicitly:
+  consumption waits for valid contents, and publication waits for successful completion.
+  Cancellation revokes publication immediately; page/buffer reuse and release wait for
+  terminal device completion or verified worker teardown. An abort request is not a fence.
+- Where the qualified Hexagon/Adreno API requires registration or staging, compare
+  reusable device-visible pools with bounded staging instead of registering/allocating
+  on every operation. Charge cold initialization, persistent locked memory, extra copies,
+  synchronization and cleanup. Keep capability checks explicit for artifact, dtype,
+  operations and device; unsupported paths must follow the existing qualified fallback
+  or strict-rejection policy. Do not add CUDA registration machinery to the CPU path.
+- Extend existing phase receipts with cached/uncached token counts, unique live pages,
+  allocation/copy bytes, queue bounds and transfer/completion timing as applicable.
+  Add owning hosted fault/lifecycle coverage for invalid geometry/slots, exhaustion,
+  partial-page boundaries, failed or late completion, cancellation and stale publication.
+  Require fresh-recompute logits and complete-state parity plus measured whole-request
+  latency/resource benefit before changing serving defaults or selecting an accelerator
+  profile; cache hits or apparent overlap alone prove no gain. Keep owner-device setup,
+  loading, comparison and cleanup within the single five-minute aggregate allowance;
+  full suites and benchmarks stay CI-only.
+
 ## Complete C++ retirement
 
 Use the [retirement contract](docs/cpp-retirement.md) to track each file's behavior,
