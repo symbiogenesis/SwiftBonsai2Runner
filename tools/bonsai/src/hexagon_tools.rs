@@ -18,7 +18,7 @@ use crate::{Result, identity, startup_cache, startup_process};
 mod device;
 mod preflight;
 
-const TOOLCHAIN: &str = "nightly-2026-10-22-aarch64-pc-windows-msvc";
+const TOOLCHAIN: &str = "nightly-2026-11-02-aarch64-pc-windows-msvc";
 const TARGET: &str = "aarch64-pc-windows-msvc";
 const NATIVE_INPUTS: &[&str] = &[
     "lib.rs",

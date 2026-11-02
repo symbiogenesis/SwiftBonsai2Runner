@@ -157,7 +157,7 @@ fn receipt(
         || receipt["RunnerRevision"] != revision
         || receipt["CollectorLanguage"] != "rust"
         || receipt["CollectorSourcePath"] != COLLECTOR
-        || receipt["RustToolchain"] != "nightly-2026-10-22-aarch64-pc-windows-msvc"
+        || receipt["RustToolchain"] != "nightly-2026-11-02-aarch64-pc-windows-msvc"
         || receipt["Files"].as_array().map(Vec::len) != Some(2)
     {
         return Err(PIN_MISMATCH.into());
@@ -277,7 +277,7 @@ mod tests {
             let revision = "a".repeat(40);
             let original = json!({
                 "SchemaVersion":2, "RunnerRevision":revision, "CollectorLanguage":"rust", "CollectorSourcePath":super::COLLECTOR,
-                "RustToolchain":"nightly-2026-10-22-aarch64-pc-windows-msvc", "NativeSource":pins["nativeSource"], "RustSource":pins["rustSource"],
+                "RustToolchain":"nightly-2026-11-02-aarch64-pc-windows-msvc", "NativeSource":pins["nativeSource"], "RustSource":pins["rustSource"],
                 "CollectorSourceSha256":sha256(source), "AbiControlSha256":sha256(abi), "AbiProvenanceSha256":sha256(provenance), "Files":[{},{}]
             });
             let path = root.join("capture-tools.json");

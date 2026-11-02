@@ -533,7 +533,7 @@ mod tests {
         assert!(crate::identity::is_lower_hex(key, 64));
         let data = Path::new("C:/data");
         let repo = Path::new("C:/source");
-        let channel = "nightly-2026-10-22-aarch64-pc-windows-msvc";
+        let channel = "nightly-2026-11-02-aarch64-pc-windows-msvc";
         let directory = host_cache_directory(data, repo, channel, key);
         assert_eq!(
             directory

@@ -37,7 +37,7 @@ jobs:
       - uses: ./.github/actions/bonsai-tools
       - uses: ./.github/actions/rust-toolchain
         with:
-          toolchain: nightly-2026-10-22-aarch64-pc-windows-msvc
+          toolchain: nightly-2026-11-02-aarch64-pc-windows-msvc
       - name: Build exact acceptance binary without executing model tests
         shell: pwsh
         working-directory: ${{ runner.temp }}
@@ -51,7 +51,7 @@ jobs:
           $messages = Join-Path $env:RUNNER_TEMP 'native-acceptance-build.jsonl'
           "BONSAI_NATIVE_BUILD_EVIDENCE=$messages" >> $env:GITHUB_ENV
           $cargo = (Get-Command cargo -CommandType Application -ErrorAction Stop | Select-Object -First 1).Source
-          & $cargo +nightly-2026-10-22 test --locked --release --no-run --message-format=json --manifest-path (Join-Path $env:GITHUB_WORKSPACE 'Cargo.toml') --package bonsai-broker --test native_model | Set-Content -LiteralPath $messages -Encoding utf8NoBOM
+          & $cargo +nightly-2026-11-02 test --locked --release --no-run --message-format=json --manifest-path (Join-Path $env:GITHUB_WORKSPACE 'Cargo.toml') --package bonsai-broker --test native_model | Set-Content -LiteralPath $messages -Encoding utf8NoBOM
           if ($LASTEXITCODE -ne 0) { throw 'Hosted acceptance binary build failed.' }
           $artifacts = @(Get-Content -LiteralPath $messages | ForEach-Object { $_ | ConvertFrom-Json } | Where-Object { $_.reason -ceq 'compiler-artifact' -and $_.target.name -ceq 'native_model' -and $_.executable })
           if ($artifacts.Count -ne 1) { throw 'Exactly one native_model test binary is required.' }
@@ -111,7 +111,7 @@ jobs:
           }
           [ordered]@{
             SchemaVersion=1; Revision=$env:GITHUB_SHA; RunId=$env:GITHUB_RUN_ID; RunAttempt=$env:GITHUB_RUN_ATTEMPT
-            Toolchain='nightly-2026-10-22-aarch64-pc-windows-msvc'; CompilerIdentity=(& rustc +nightly-2026-10-22 -vV) -join "`n"
+            Toolchain='nightly-2026-11-02-aarch64-pc-windows-msvc'; CompilerIdentity=(& rustc +nightly-2026-11-02 -vV) -join "`n"
             ToolsSourceId=$env:BONSAI_TOOLS_SOURCE_ID; Files=@($files); ModelExecuted=$false
           } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $package 'receipt.json') -Encoding utf8NoBOM
           "BONSAI_ACCEPTANCE_PACKAGE=$package" >> $env:GITHUB_ENV
@@ -172,7 +172,7 @@ jobs:
           $receipt = Get-Content -LiteralPath $receiptPath -Raw | ConvertFrom-Json
           if ($receipt.SchemaVersion -ne 1 -or $receipt.Revision -cne $env:GITHUB_SHA -or
               $receipt.RunId -cne $env:GITHUB_RUN_ID -or $receipt.RunAttempt -cne $env:GITHUB_RUN_ATTEMPT -or
-              $receipt.Toolchain -cne 'nightly-2026-10-22-aarch64-pc-windows-msvc' -or
+              $receipt.Toolchain -cne 'nightly-2026-11-02-aarch64-pc-windows-msvc' -or
               $receipt.ModelExecuted -ne $false -or $receipt.ToolsSourceId -cnotmatch '^[a-f0-9]{64}$' -or
               [string]::IsNullOrWhiteSpace($receipt.CompilerIdentity) -or @($receipt.Files).Count -ne 2) { throw 'Hosted acceptance source/run identity mismatch.' }
           foreach ($name in @('native-model-acceptance.exe', 'bonsai-tools.exe')) {

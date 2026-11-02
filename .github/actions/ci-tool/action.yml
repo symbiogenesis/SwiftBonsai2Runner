@@ -15,15 +15,15 @@ runs:
     - uses: ./.github/actions/rust-toolchain
       if: env.BONSAI_CI_PATH == ''
       with:
-        toolchain: nightly-2026-10-22-aarch64-pc-windows-msvc
+        toolchain: nightly-2026-11-02-aarch64-pc-windows-msvc
     - name: Reuse the CI command build artifacts
       if: env.BONSAI_CI_PATH == ''
       uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: ${{ runner.temp }}/SwiftBonsai-CiBootstrap
-        key: native-ci-v1-${{ runner.os }}-${{ runner.arch }}-${{ env.ImageOS }}-${{ env.ImageVersion }}-nightly-2026-10-22-${{ hashFiles('Cargo.toml', 'Cargo.lock', 'tools/ci/**', 'src/artifacts/**', 'src/windows-*/**', '.cargo/**') }}
+        key: native-ci-v1-${{ runner.os }}-${{ runner.arch }}-${{ env.ImageOS }}-${{ env.ImageVersion }}-nightly-2026-11-02-${{ hashFiles('Cargo.toml', 'Cargo.lock', 'tools/ci/**', 'src/artifacts/**', 'src/windows-*/**', '.cargo/**') }}
         restore-keys: |
-          native-ci-v1-${{ runner.os }}-${{ runner.arch }}-${{ env.ImageOS }}-${{ env.ImageVersion }}-nightly-2026-10-22-
+          native-ci-v1-${{ runner.os }}-${{ runner.arch }}-${{ env.ImageOS }}-${{ env.ImageVersion }}-nightly-2026-11-02-
     - name: Build and select the native CI executable
       if: env.BONSAI_CI_PATH == ''
       shell: pwsh
@@ -36,7 +36,7 @@ runs:
         $ErrorActionPreference = 'Stop'
         $PSNativeCommandUseErrorActionPreference = $true
         $target = Join-Path $env:RUNNER_TEMP 'SwiftBonsai-CiBootstrap'
-        cargo +nightly-2026-10-22-aarch64-pc-windows-msvc build --locked --release --manifest-path (Join-Path $env:GITHUB_WORKSPACE 'Cargo.toml') --package bonsai-ci --bin bonsai-ci --target-dir $target
+        cargo +nightly-2026-11-02-aarch64-pc-windows-msvc build --locked --release --manifest-path (Join-Path $env:GITHUB_WORKSPACE 'Cargo.toml') --package bonsai-ci --bin bonsai-ci --target-dir $target
         # A separate image permits the checks to rebuild bonsai-ci itself.
         $directory = Join-Path $env:RUNNER_TEMP ('SwiftBonsai-CiCommand-' + [guid]::NewGuid().ToString('N'))
         [void][IO.Directory]::CreateDirectory($directory)

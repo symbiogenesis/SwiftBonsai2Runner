@@ -39,14 +39,14 @@ jobs:
       - uses: ./.github/actions/bonsai-tools
       - uses: ./.github/actions/rust-toolchain
         with:
-          toolchain: nightly-2026-10-22-aarch64-pc-windows-msvc
+          toolchain: nightly-2026-11-02-aarch64-pc-windows-msvc
       - name: Check native hosted build policy and bounded failure evidence
         shell: pwsh
         run: |
-          cargo +nightly-2026-10-22 test --locked --release --target-dir $env:BONSAI_TOOLS_TARGET -p bonsai-tools --lib build_tools::
+          cargo +nightly-2026-11-02 test --locked --release --target-dir $env:BONSAI_TOOLS_TARGET -p bonsai-tools --lib build_tools::
       - name: Check native source, receipt and original-deadline policy
         shell: pwsh
-        run: cargo +nightly-2026-10-22 test --locked --release --target-dir $env:BONSAI_TOOLS_TARGET -p bonsai-tools --lib native_qualification::tests
+        run: cargo +nightly-2026-11-02 test --locked --release --target-dir $env:BONSAI_TOOLS_TARGET -p bonsai-tools --lib native_qualification::tests
       - name: Validate fixed native-state decoding and control binding
         shell: pwsh
         run: >-

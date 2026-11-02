@@ -27,7 +27,7 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/rust-toolchain
         with:
-          toolchain: nightly-2026-10-22-aarch64-pc-windows-msvc
+          toolchain: nightly-2026-11-02-aarch64-pc-windows-msvc
       - name: Check model-free native integration before promotion review
         shell: pwsh
         working-directory: ${{ runner.temp }}
@@ -42,13 +42,13 @@ jobs:
           Start-Transcript -LiteralPath (Join-Path $evidence 'checks.log') | Out-Null
           try {
             $manifest = Join-Path $env:GITHUB_WORKSPACE 'Cargo.toml'
-            cargo +nightly-2026-10-22 fmt --manifest-path $manifest --all -- --check
-            cargo +nightly-2026-10-22 clippy --manifest-path $manifest --locked --release -p bonsai-tools -p bonsai-artifacts -p bonsai-broker --all-targets -- -D warnings
-            cargo +nightly-2026-10-22 test --manifest-path $manifest --locked --release -p bonsai-tools -p bonsai-artifacts -p bonsai-broker --lib
+            cargo +nightly-2026-11-02 fmt --manifest-path $manifest --all -- --check
+            cargo +nightly-2026-11-02 clippy --manifest-path $manifest --locked --release -p bonsai-tools -p bonsai-artifacts -p bonsai-broker --all-targets -- -D warnings
+            cargo +nightly-2026-11-02 test --manifest-path $manifest --locked --release -p bonsai-tools -p bonsai-artifacts -p bonsai-broker --lib
             # Actual-model cases are explicitly ignored and never enabled here.
-            cargo +nightly-2026-10-22 test --manifest-path $manifest --locked --release -p bonsai-broker --test native_model
-            cargo +nightly-2026-10-22 build --manifest-path $manifest --locked --release -p bonsai-tools --bin bonsai-tools
-            cargo +nightly-2026-10-22 test --manifest-path $manifest --locked --release -p bonsai-tools --test cli inline_and_stdin_json_preserve_native_promotion_roundtrip -- --exact
+            cargo +nightly-2026-11-02 test --manifest-path $manifest --locked --release -p bonsai-broker --test native_model
+            cargo +nightly-2026-11-02 build --manifest-path $manifest --locked --release -p bonsai-tools --bin bonsai-tools
+            cargo +nightly-2026-11-02 test --manifest-path $manifest --locked --release -p bonsai-tools --test cli inline_and_stdin_json_preserve_native_promotion_roundtrip -- --exact
           } finally { Stop-Transcript | Out-Null }
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always() && env.RUNTIME_PARITY_EVIDENCE != ''

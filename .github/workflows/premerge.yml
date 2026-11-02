@@ -26,19 +26,19 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/rust-toolchain
         with:
-          toolchain: nightly-2026-10-22-aarch64-unknown-linux-gnu
+          toolchain: nightly-2026-11-02-aarch64-unknown-linux-gnu
           components: rustfmt
       - name: Check workspace Rust formatting
         working-directory: ${{ runner.temp }}
         env:
           CARGO_TARGET_DIR: ${{ runner.temp }}/SwiftBonsai-Premerge
-        run: cargo +nightly-2026-10-22 fmt --manifest-path "$GITHUB_WORKSPACE/Cargo.toml" --all -- --check
+        run: cargo +nightly-2026-11-02 fmt --manifest-path "$GITHUB_WORKSPACE/Cargo.toml" --all -- --check
       - name: Compile portable policy, broker and CI targets
         working-directory: ${{ runner.temp }}
         env:
           CARGO_TARGET_DIR: ${{ runner.temp }}/SwiftBonsai-Premerge
         run: >-
-          cargo +nightly-2026-10-22 check --locked --release
+          cargo +nightly-2026-11-02 check --locked --release
           --manifest-path "$GITHUB_WORKSPACE/Cargo.toml"
           --package bonsai-ci --package bonsai-cpu-policy --package bonsai-broker
           --all-targets
@@ -54,12 +54,12 @@ jobs:
             # An accidentally renamed/removed case must not silently pass with
             # zero tests. Listing compiles the target without executing it.
             local listed
-            listed="$(cargo +nightly-2026-10-22 test --locked --release --manifest-path "$GITHUB_WORKSPACE/Cargo.toml" "$@" "$case_name" -- --exact --list)"
+            listed="$(cargo +nightly-2026-11-02 test --locked --release --manifest-path "$GITHUB_WORKSPACE/Cargo.toml" "$@" "$case_name" -- --exact --list)"
             if ! printf '%s\n' "$listed" | grep -Fx -- "$case_name: test"; then
               echo "Required focused regression is missing: $case_name" >&2
               return 1
             fi
-            cargo +nightly-2026-10-22 test --locked --release --manifest-path "$GITHUB_WORKSPACE/Cargo.toml" "$@" "$case_name" -- --exact
+            cargo +nightly-2026-11-02 test --locked --release --manifest-path "$GITHUB_WORKSPACE/Cargo.toml" "$@" "$case_name" -- --exact
           }
           exact_test leaf_change_selects_transitive_consumers_without_sibling --package bonsai-ci --test routing
           exact_test failed_planner_and_malformed_results_cannot_pass --package bonsai-ci --test routing

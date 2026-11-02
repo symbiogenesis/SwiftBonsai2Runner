@@ -133,7 +133,7 @@
     "id": "syb-0.7.4-cc7cdcfd9c4a632d5494d4b83b22e9186ad56e02dd5c4a8c0fa59a4021d3c9c9"
   },
   "rustWireControl": {
-    "toolchain": "nightly-2026-10-22-x86_64-unknown-linux-gnu",
+    "toolchain": "nightly-2026-11-02-x86_64-unknown-linux-gnu",
     "target": "x86_64-unknown-linux-gnu",
     "source": {
       "name": "public_idl_control.rs",
