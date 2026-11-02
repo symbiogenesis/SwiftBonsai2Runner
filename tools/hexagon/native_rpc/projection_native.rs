@@ -32,8 +32,13 @@ pub(super) fn run(
     mut progress: impl FnMut(&Q2ProjectionReport),
     work: impl FnOnce(&mut dyn GuardedQ2Submitter) -> Result<(), Error>,
 ) -> Result<Q2ProjectionReport, Error> {
-    let deadline = Instant::now() + limits.duration;
-    let work_deadline = deadline - Duration::from_secs(3);
+    let started = Instant::now();
+    let deadline = started + limits.duration;
+    let work_deadline = started
+        + limits
+            .duration
+            .checked_sub(Duration::from_secs(3))
+            .ok_or(Error::Contract)?;
     let mut report = Q2ProjectionReport::new(SessionPreparationReport::new(0));
     let (queue_report, opened) = open_module(
         driver,
@@ -54,11 +59,11 @@ pub(super) fn run(
         return Ok(report);
     }
     let allocation_bytes = limits.allocation_bytes();
-    let allocation_i32 = i32::try_from(allocation_bytes).map_err(|_| Error::Contract)?;
-    let allocation_u32 = u32::try_from(allocation_bytes).map_err(|_| Error::Contract)?;
+    let allocator_request = i32::try_from(allocation_bytes).map_err(|_| Error::Contract)?;
+    let descriptor_size = u32::try_from(allocation_bytes).map_err(|_| Error::Contract)?;
     entered(&mut report, "projection-allocation-entered", &mut progress);
     // SAFETY: one explicitly bounded cached system-heap allocation, under i32 limits.
-    let memory = unsafe { (calls.alloc)(25, 1, allocation_i32) };
+    let memory = unsafe { (calls.alloc)(25, 1, allocator_request) };
     if memory.is_null() || memory.addr() % 4096 != 0 {
         report.queue.stage = "projection-allocation-refused-pinned";
         return Ok(report);
@@ -120,7 +125,7 @@ pub(super) fn run(
         return Ok(report);
     }
     let mut start = compute::start_wire(queue_id);
-    start[32..40].copy_from_slice(&u64::from(allocation_u32).to_le_bytes());
+    start[32..40].copy_from_slice(&u64::from(descriptor_size).to_le_bytes());
     let mut argument = RemoteBuffer {
         pointer: start.as_mut_ptr().cast(),
         bytes: start.len(),
@@ -136,7 +141,7 @@ pub(super) fn run(
     }
     let expected = QueueBuffer {
         fd: fd_u32,
-        size: allocation_u32,
+        size: descriptor_size,
         offset: 0,
         flags: 0x90,
         pointer: memory,
@@ -338,7 +343,10 @@ impl<P: FnMut(&Q2ProjectionReport)> GuardedQ2Submitter for Session<'_, P> {
         // pointer and cache flags. No asynchronous consumer remains, and only
         // the checked active output subsection is borrowed until copying ends.
         let bytes = unsafe {
-            std::slice::from_raw_parts(self.memory.cast::<u8>().add(active.output), rows * 8)
+            std::slice::from_raw_parts(
+                self.memory.cast::<u8>().wrapping_add(active.output),
+                rows * 8,
+            )
         };
         if !projection::output_valid(bytes) {
             return Err(self.fail("projection-numeric-refused-pinned"));
@@ -364,7 +372,8 @@ mod tests {
     struct MockState {
         writes: u32,
         sequence: u64,
-        descriptor: [usize; 5],
+        descriptor: [u32; 4],
+        pointer: usize,
         write_error: bool,
         stale_reply: bool,
         bad_numeric: bool,
@@ -374,7 +383,8 @@ mod tests {
     static STATE: Mutex<MockState> = Mutex::new(MockState {
         writes: 0,
         sequence: 0,
-        descriptor: [0; 5],
+        descriptor: [0; 4],
+        pointer: 0,
         write_error: false,
         stale_reply: false,
         bad_numeric: false,
@@ -402,19 +412,19 @@ mod tests {
         };
         state.sequence = u64::from_le_bytes(sequence);
         state.descriptor = [
-            descriptor.fd as usize,
-            descriptor.size as usize,
-            descriptor.offset as usize,
-            descriptor.flags as usize,
-            descriptor.pointer.addr(),
+            descriptor.fd,
+            descriptor.size,
+            descriptor.offset,
+            descriptor.flags,
         ];
+        state.pointer = descriptor.pointer.expose_provenance();
+        let Ok(allocation_bytes) = usize::try_from(descriptor.size) else {
+            return -77;
+        };
         // SAFETY: the test's unique Vec owns this exact allocation; submit has
         // relinquished its mutable preparation slice before mock consumption.
         let memory = unsafe {
-            std::slice::from_raw_parts_mut(
-                descriptor.pointer.cast::<u8>(),
-                descriptor.size as usize,
-            )
+            std::slice::from_raw_parts_mut(descriptor.pointer.cast::<u8>(), allocation_bytes)
         };
         let Ok(offset) = memory[136..144].try_into() else {
             return -77;
@@ -425,7 +435,9 @@ mod tests {
         let Ok(rows) = memory[160..164].try_into() else {
             return -77;
         };
-        let rows = u32::from_le_bytes(rows) as usize;
+        let Ok(rows) = usize::try_from(u32::from_le_bytes(rows)) else {
+            return -77;
+        };
         let value = if state.bad_numeric { 7.5_f32 } else { 7.0_f32 };
         for slot in memory[offset..offset + rows * 8].as_chunks_mut::<4>().0 {
             *slot = value.to_le_bytes();
@@ -446,15 +458,7 @@ mod tests {
         let Ok(state) = STATE.lock() else {
             return -77;
         };
-        let [fd, size, offset, buffer_flags, pointer] = state.descriptor;
-        let (Ok(fd), Ok(size), Ok(offset), Ok(buffer_flags)) = (
-            u32::try_from(fd),
-            u32::try_from(size),
-            u32::try_from(offset),
-            u32::try_from(buffer_flags),
-        ) else {
-            return -77;
-        };
+        let [fd, size, offset, buffer_flags] = state.descriptor;
         let mut response = [0; 88];
         let sequence = if state.stale_reply {
             state.sequence - 1
@@ -469,15 +473,27 @@ mod tests {
         // the pointer was originally recorded from that test-owned allocation.
         unsafe {
             *flags = 3;
+        }
+        // SAFETY: safe session supplies one writable u32 count.
+        unsafe {
             *count = 1;
+        }
+        // SAFETY: safe session supplies one writable u32 byte extent.
+        unsafe {
             *bytes = 88;
+        }
+        // SAFETY: safe session supplies one writable complete descriptor.
+        unsafe {
             *descriptor = QueueBuffer {
                 fd,
                 size,
                 offset,
                 flags: buffer_flags,
-                pointer: std::ptr::with_exposed_provenance_mut(pointer),
+                pointer: std::ptr::with_exposed_provenance_mut(state.pointer),
             };
+        }
+        // SAFETY: safe session supplies a nonoverlapping writable 88-byte reply.
+        unsafe {
             std::ptr::copy_nonoverlapping(response.as_ptr(), reply, 88);
         }
         0

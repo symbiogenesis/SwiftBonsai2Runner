@@ -21,6 +21,10 @@ mod session_mapping_native;
 #[path = "session_native.rs"]
 mod session_native;
 
+#[allow(
+    clippy::redundant_pub_crate,
+    reason = "Only the safe crate root consumes the native driver"
+)]
 pub(super) fn reference_q2_projection(
     driver: Driver,
     package: &Path,

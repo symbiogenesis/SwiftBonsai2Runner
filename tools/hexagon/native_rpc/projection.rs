@@ -1,4 +1,8 @@
 //! Bounded signed-Q2 projection requests; no profile or model qualification.
+#![allow(
+    clippy::redundant_pub_crate,
+    reason = "Private packet helpers are shared only with the audited native sibling"
+)]
 #![cfg_attr(
     not(all(windows, target_arch = "aarch64")),
     allow(
@@ -200,7 +204,8 @@ pub(crate) fn validate_inputs(
                 }
                 sum += value;
             }
-            if group[31] != if sum >= 0.0 { -127.0 } else { 127.0 } {
+            let expected: f32 = if sum >= 0.0 { -127.0 } else { 127.0 };
+            if group[31].to_bits() != expected.to_bits() {
                 return Err(Error::Contract);
             }
         }
