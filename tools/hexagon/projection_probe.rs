@@ -6,6 +6,7 @@
 //! activation provenance, logits/state, performance, or serving admission.
 #![forbid(unsafe_code)]
 #![deny(warnings)]
+#![recursion_limit = "256"]
 
 use hexagon_native_rpc::{
     Driver, DriverLocation, GuardedQ2Submitter, Q2ProjectionLimits, Q2ProjectionReport,
