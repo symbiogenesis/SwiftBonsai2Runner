@@ -61,6 +61,13 @@ It accepts `-DataDirectory` and `-ToolPath`, otherwise selecting
 Omitting `-NativeEngine` preserves the publisher engine default. The script
 only forwards to Rust and propagates its exit code; it builds or provisions nothing.
 
+If the launcher reports a missing prebuilt executable, run the maintenance build
+command it prints from the repository root, then retry. Correct or remove any
+invalid `-ToolPath` or `BONSAI_TOOLS_PATH` override first. Older source launches used
+`build/tools/<fingerprint>/`; those caches are not selected automatically. Rebuild
+from the current checkout into `build/maintenance` to use the current compiler pin
+and maintenance commands.
+
 The native Rust `egui`/`eframe` app follows the [UI contract](ui-architecture.md).
 The window opens before broker/speech preparation finishes, so drafting remains
 available during setup. Setup errors stay visible; close and relaunch after

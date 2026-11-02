@@ -29,7 +29,18 @@ if (-not $ToolPath) {
     if ($command) { $ToolPath = $command.Source }
 }
 if (-not $ToolPath -or -not (Test-Path -LiteralPath $ToolPath -PathType Leaf)) {
-    throw 'Select a prebuilt bonsai-tools executable with -ToolPath or BONSAI_TOOLS_PATH. See docs/development-guide.md#native-chat-app for build instructions.'
+    $message = 'Select a prebuilt bonsai-tools executable with -ToolPath or BONSAI_TOOLS_PATH.'
+    if ($ToolPath) {
+        $message += ' Correct the selected path, or remove the override to use default discovery.'
+    }
+    if ($env:LOCALAPPDATA) {
+        $manifest = (Join-Path (Split-Path $PSScriptRoot -Parent) 'Cargo.toml').Replace("'", "''")
+        $target = (Join-Path $env:LOCALAPPDATA 'SwiftBonsai2/build/maintenance').Replace("'", "''")
+        $message += "`nTo prepare the default tool, run this command from the repository root:`n" +
+            "cargo build --locked --release --manifest-path '$manifest' --package bonsai-tools --bin bonsai-tools --target-dir '$target'"
+    }
+    $message += "`nSee docs/development-guide.md#native-chat-app for setup instructions."
+    throw $message
 }
 $ToolPath = (Resolve-Path -LiteralPath $ToolPath).ProviderPath
 
