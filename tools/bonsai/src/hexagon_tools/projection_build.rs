@@ -95,8 +95,16 @@ fn dependencies(context: &mut Context, rustc: &Path, output: &Path) -> Result<Ve
             if selected.insert(name.to_owned(), path.clone()).is_some() {
                 return Err("Projection dependency is ambiguous or escaped owned storage.".into());
             }
+            let metadata = path.with_extension("rmeta");
+            if !files.iter().any(|value| {
+                value
+                    .as_str()
+                    .is_some_and(|value| Path::new(value) == metadata)
+            }) {
+                return Err("Cargo omitted the projection dependency's companion metadata.".into());
+            }
             artifacts.push(
-                json!({"Crate":name,"Path":path,"Sha256":context.digest(&path,256*1024*1024)?}),
+                json!({"Crate":name,"Path":path,"Sha256":context.digest(&path,256*1024*1024)?,"MetadataPath":metadata,"MetadataSha256":context.digest(&metadata,256*1024*1024)?}),
             );
         }
     }
@@ -119,6 +127,8 @@ fn linking_arguments(
         arguments.extend([
             "--extern".into(),
             format!("{name}={}", path.display()).into(),
+            "--extern".into(),
+            format!("{name}={}", path.with_extension("rmeta").display()).into(),
         ]);
     }
     for directory in directories {
@@ -225,6 +235,24 @@ pub(super) fn build(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn projection_linker_receives_both_split_metadata_and_code() {
+        let library = PathBuf::from("target/release/build/serde/unit/out/libserde-unit.rlib");
+        let arguments = linking_arguments(
+            BTreeMap::from([("serde".into(), library.clone())]),
+            BTreeSet::new(),
+        );
+        assert_eq!(
+            arguments,
+            vec![
+                OsString::from("--extern"),
+                format!("serde={}", library.display()).into(),
+                OsString::from("--extern"),
+                format!("serde={}", library.with_extension("rmeta").display()).into()
+            ]
+        );
+    }
 
     #[test]
     fn projection_dependencies_keep_target_rlibs_separate_from_host_build_helpers() -> Result<()> {
