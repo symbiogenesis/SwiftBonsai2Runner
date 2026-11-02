@@ -32,10 +32,45 @@ The optional CPU transform takes exact explicit sign bytes, applies signs
 before each 1024-element normalized Sylvester Walsh-Hadamard block and keeps
 the input-last-dimension basis. Sign values/extent are checked; [verified extraction](../../docs/evidence/hexagon-swift-projection-binding.json)
 binds the original model's signs. Their consumption through this control remains
-pending; synthetic sign tests establish axis/order only. PTQ1/Q8_0, odd-128-group PQ2, grouped recurrent permutations,
+pending; synthetic sign tests establish axis/order only. PTQ1/Q8_0 has a separate
+[native-lane control](#ptq1q8_0-native-lane-control) below. Odd-128-group PQ2, grouped recurrent permutations,
 LoRA/rank-one corrections and batched HMX execution are outside this control.
 All adapters and committed graph state remain CPU-owned; no-LoRA and approved
 adapter forward paths still require separate qualification.
+
+## PTQ1/Q8_0 native-lane control
+
+[`ptq1_hmx.rs`](ptq1_hmx.rs) consumes original 28-byte/128-weight PTQ1 blocks
+and externally prepared 34-byte/32-code Q8_0 records. It preserves every native
+fractional trit byte, including aliases; canonical export validation remains a
+separate boundary. It does not quantize activations, load a driver or admit a
+model. The injectable synchronous submission boundary enables signed-device
+comparison after independent resource and lifetime qualification.
+
+Pinned PTQ1 retains four floating accumulators over the whole row. Within each
+Q8_0 group, lane `i` sums its four products at `i*4` and four at `i*4+16`.
+Each group applies the original weight/activation scale product with lane FMA;
+the final reduction is `(lane0+lane1)+(lane2+lane3)`. Combining these integers
+before scaling changes retained native results.
+
+The control creates four sparse unit-scale ordinary-Q2 rows for one Q8_0 group
+and shares eight binary activation planes across them. Each row preserves its
+eight original lane positions and zeroes every other weight. One K128/N8
+operation returns 32 plane/lane dots; four operations cover one original PTQ1
+block. Plane dots lie in -8..8 and reconstructed lane sums in -1024..1024.
+The host stage contains two 576-byte source-native tiles, padded to 32 rows.
+Neither padding nor bitplanes represent independent prefill tokens. The extra
+rows, operations, return traffic and persistent lane accumulators require their
+own whole-model resource/work ledger; the PQ2 ledger does not apply.
+
+The two immutable independent ARM64 native-dot records cover widths 128/256
+and distinguish native lane/FMA order from grouped scalar accumulation. Their
+508 bytes and original provenance are hash-checked by
+[`verify_packed_fixture.py`](verify_packed_fixture.py). Exhaustive byte controls
+exercise native aliases, sparse packed traversal and signed codes; failure and
+cancellation controls leave no published result. These CPU controls establish
+neither signed HMX arithmetic nor actual-model logits/state, adapter parity,
+asynchronous ownership or performance. Full validation stays in hosted CI.
 
 For `blk.0.ffn_up.weight`, K=5120/M=17408/N=1, 32-row tiles and four Q8_K groups
 per column tile, the derived ledger is:

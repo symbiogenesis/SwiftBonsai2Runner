@@ -291,7 +291,7 @@ impl HmxQ2Operation {
 
 // Source-native Q2 host layout, llama.cpp@19cce6919992fdffd92e0ac152caaf1e2b8f254e
 // ggml/src/ggml-hexagon/htp-repack.cpp::repack_q2_0_tiled (MIT).
-fn repack_row(original: &[u8], row: usize, output: &mut [u8]) {
+pub(super) fn repack_row(original: &[u8], row: usize, output: &mut [u8]) {
     for lane in 0..K {
         let symbol = (original[2 + lane / 4] >> (lane % 4 * 2)) & 3;
         let tile = (row / TILE_ROWS * BLOCK_TILES + lane / 64) * TILE_BYTES;

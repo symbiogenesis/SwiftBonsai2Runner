@@ -26,6 +26,8 @@ pub use hmx_projection::{
     HmxQ2Inputs, HmxQ2Ledger, HmxQ2Operation, HmxQ2Plan, hmx_q2_projection,
     reduce_hmx_original_block,
 };
+mod ptq1_hmx;
+pub use ptq1_hmx::{Ptq1HmxInputs, hmx_ptq1_dot};
 
 /// Fixed validation, allocation, cancellation or numerical rejection.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

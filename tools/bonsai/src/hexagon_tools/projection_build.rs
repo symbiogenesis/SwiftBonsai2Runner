@@ -19,10 +19,14 @@ pub(super) const INPUTS: &[&str] = &[
     "q2_projection.rs",
     "hmx_projection.rs",
     "hmx_projection_tests.rs",
+    "ptq1_hmx.rs",
+    "ptq1_hmx_tests.rs",
     "packed-sources.json",
     "verify_packed_fixture.py",
     "fixtures/swift-q8k-parity.bin",
     "fixtures/swift-q8k-parity.json",
+    "fixtures/swift-ptq1-dot-parity.bin",
+    "fixtures/swift-ptq1-dot-parity.json",
 ];
 
 fn dependencies(context: &mut Context, rustc: &Path, output: &Path) -> Result<Vec<OsString>> {

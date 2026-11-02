@@ -46,11 +46,61 @@ def verify_hmx_control(root, manifest):
             raise ValueError("HMX CPU controls cannot qualify device or model admission")
 
 
+def verify_ptq1_control(root, manifest):
+    """Bind the lane-preserving control to immutable independent native dots."""
+    control = manifest["ptq1HmxLaneControl"]
+    expected = {
+        "source": "ptq1_hmx.rs",
+        "independentControls": "ptq1_hmx_tests.rs",
+        "originalBlockWeights": 128,
+        "originalBlockBytes": 28,
+        "primitiveK": 128,
+        "primitiveN": 8,
+        "q8GroupsPerOriginalBlock": 4,
+        "sparseWeightRowsPerOriginalRow": 4,
+        "primitiveOperationsPerOriginalBlockAndRowTile": 4,
+        "integerProductsPerNativeLane": 8,
+        "planeDotMinimum": -8,
+        "planeDotMaximum": 8,
+        "nativeLaneMinimum": -1024,
+        "nativeLaneMaximum": 1024,
+        "laneAccumulatorCount": 4,
+        "paddedHostStageBytes": 1152,
+    }
+    if any(control.get(name) != value for name, value in expected.items()):
+        raise ValueError("PTQ1 native-lane arithmetic contract changed")
+    if any(not (root / control[name]).is_file() for name in ("source", "independentControls")):
+        raise ValueError("PTQ1 lane control source missing")
+    for name in ("deviceParityQualified", "actualModelParityQualified", "profileEligible"):
+        if control.get(name) is not False:
+            raise ValueError("PTQ1 CPU controls cannot qualify native/model admission")
+    fixture = control["nativeDotFixture"]
+    data = (root / fixture["path"]).read_bytes()
+    expected_digest = "781fa202c4d23e2a78cf362e3d84e008dd647c31606ba92b7869f5c2168d439c"
+    if (len(data) != 508 or fixture["bytes"] != 508
+            or hashlib.sha256(data).hexdigest() != expected_digest
+            or fixture["sha256"] != expected_digest):
+        raise ValueError("PTQ1 independent native dot bytes changed")
+    provenance = (root / fixture["provenancePath"]).read_bytes().replace(b"\r\n", b"\n")
+    expected_provenance = "21885745d1603934a59ba3ba2b491911f07eb07362003e76a69545140f5b09ba"
+    if (hashlib.sha256(provenance).hexdigest() != expected_provenance
+            or fixture["provenanceSha256"] != expected_provenance
+            or fixture["provenanceDigestEncoding"] != "UTF8-with-LF-newlines"):
+        raise ValueError("PTQ1 native dot provenance changed")
+    observation = json.loads(provenance)
+    if (observation["fixture_sha256"] != expected_digest
+            or observation["fixture_bytes"] != 508
+            or observation["runtime_commit"] != "73bfe6cc485554822f80c473a3c0c4f25e80f41b"
+            or observation["ggml_cpu_sha256"] != "701b354a38b25e5c6dc57a1559f71cd26b2d0f8d69c1576a0e77a59a4273d2ab"):
+        raise ValueError("PTQ1 native dot capture identities disagree")
+
+
 def verify():
     """Check exact retained independent bytes, rather than regenerating controls."""
     root = Path(__file__).resolve().parent
     manifest = json.loads((root / "packed-sources.json").read_text(encoding="utf-8"))
     verify_hmx_control(root, manifest)
+    verify_ptq1_control(root, manifest)
     capture = manifest["independentNativeCapture"]
     fixture = capture["preparationFixture"]
     # Hard pins prevent updating an expected field and its payload together from
@@ -80,7 +130,7 @@ def verify():
             raise ValueError("native case digest changed")
     if len(provenance["cases"]) != 2:
         raise ValueError("native case inventory changed")
-    print("Retained native Q8_K fixture identities verified; device/Swift gates remain pending.")
+    print("Retained native Q8_K/PTQ1 fixture identities verified; device/Swift gates remain pending.")
 
 
 if __name__ == "__main__":
