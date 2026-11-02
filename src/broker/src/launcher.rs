@@ -579,20 +579,7 @@ impl LaunchConfig {
         }
         if self.native_engine {
             startup_timing.phase(StartupPhase::NativeIdentity);
-            if !native_identity(
-                self.backend_port,
-                credentials.backend_key(),
-                process.id(),
-                self.uses_repacked_ptq1(),
-                self.use_abliterate_lora,
-                self.native_row_workers,
-            )
-            .await
-            {
-                note_startup_failure(StartupStage::NativeIdentity, LaunchError::Backend, &process);
-                process.stop(STOP_TIMEOUT).map_err(|_| LaunchError::Stop)?;
-                return Err(LaunchError::Backend);
-            }
+            self.confirm_native_identity(&process, &credentials).await?;
         }
         startup_timing.phase(StartupPhase::FrontendBinding);
         let mut service = LocalChatService::bind(
@@ -619,6 +606,28 @@ impl LaunchConfig {
             memory_limit_bytes: specification.memory_limit_bytes,
             backend_port: self.backend_port,
         })
+    }
+
+    async fn confirm_native_identity(
+        &self,
+        process: &OwnedProcess,
+        credentials: &PrivateCredentials,
+    ) -> Result<(), LaunchError> {
+        if !native_identity(
+            self.backend_port,
+            credentials.backend_key(),
+            process.id(),
+            self.uses_repacked_ptq1(),
+            self.use_abliterate_lora,
+            self.native_row_workers,
+        )
+        .await
+        {
+            note_startup_failure(StartupStage::NativeIdentity, LaunchError::Backend, process);
+            process.stop(STOP_TIMEOUT).map_err(|_| LaunchError::Stop)?;
+            return Err(LaunchError::Backend);
+        }
+        Ok(())
     }
 }
 
