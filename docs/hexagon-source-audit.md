@@ -461,3 +461,37 @@ ownership controls, followed by exact signed-device output, effective placement,
 teardown, actual-model parity and total-cost measurements. It provides no PTQ1
 arithmetic qualification or production eligibility. [PLAN](../PLAN.md#hexagon-npu)
 retains the ordering and aggregate owner-device budget.
+
+### Static whole-model operation limit
+
+The [original-PQ2 operation ledger](evidence/hexagon-swift-operation-ledger.json)
+derives a concrete limit from Prism's exact Swift inventory and the reviewed
+block-preserving bridge. With the maximum 17,408 weight rows per operation, each
+projection needs `(columns / 128) * ceil(weight_rows / 17408)` submissions. All
+listed widths are divisible by 256 and use PQ2/Q8_K; the separate PTQ1/Q8_0
+contract is excluded. The eight HMX rows represent one token's binary planes.
+
+| Original-PQ2 base projections | Derived operations per token |
+| --- | ---: |
+| FFN up, gate and down across 64 layers | 13,824 |
+| Q/K/V/output across 16 full-attention layers | 2,688 |
+| QKV, gate and SSM output across 48 recurrent layers | 6,144 |
+| Hidden token, without the final logits head | **22,656** |
+| Final `output.weight`, 248,320 rows in 15 row tiles | 600 |
+| Token including logits | **23,256** |
+
+The terminal HVX and HMX sessions admit at most **21,760 operations**. Selecting
+every eligible base projection therefore cannot complete even one hidden token
+within that cap; it exceeds the limit by 896 operations before the optional
+600-operation logits head. Smaller row tiles increase the count. Embedding row
+gather, floating/BF16 tensors, transforms and adapter corrections remain on CPU.
+
+This is a static bound, derived without loading a model or opening a device.
+It is neither measured RPC traffic nor an observed device refusal or speed
+result. A host payload cap or deliberate placement may keep additional
+projections on CPU before submission, so the count does not describe every
+mixed execution. Full-model use needs an explicit placement/work admission plan
+and separately qualified session lifetime or fused execution. The cap remains
+unchanged; neither partial work nor a native refusal authorizes CPU replay after
+submission. The ledger binds exact inventory and limit source commits and Git
+blobs, rather than inferring coverage from the first-projection control.

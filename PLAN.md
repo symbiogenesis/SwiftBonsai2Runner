@@ -843,6 +843,13 @@ do not reset it. Further owner qualification remains pending for this investigat
   Review a separate HMX-enabled native session/solver, exact plane reconstruction,
   padded activation/output resources and signed-device parity before timing.
   Its lower derived weight traffic and extra returned planes establish no TPS gain.
+  Resolve the [static whole-model operation limit](docs/hexagon-source-audit.md#static-whole-model-operation-limit)
+  before full-model admission: selecting every eligible original-PQ2 base
+  projection requires at least 22,656 operations per hidden token and 23,256
+  including logits, exceeding the unchanged 21,760-operation terminal cap.
+  Plan explicit qualified placement and total session work before generation;
+  smaller row tiles increase the count. Qualify a separately reviewed lifetime
+  or fused design rather than widening the diagnostic cap or replaying failures.
 - Qualify complete ownership and restore for fresh, reused and edited prefixes,
   cancellation, reset and failed continuation; qualify chunkwise scheduling separately.
   Account for host/device mappings and copies, RPC, state, caches, load overlap and

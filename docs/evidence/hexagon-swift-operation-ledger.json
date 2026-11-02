@@ -1,0 +1,106 @@
+{
+  "schemaVersion": 1,
+  "kind": "static-original-pq2-native-operation-ledger",
+  "reviewDateLocal": "2026-11-02",
+  "scope": "one-token-forward-with-every-eligible-original-PQ2-base-projection-selected",
+  "derivationOnly": true,
+  "modelLoaded": false,
+  "deviceOpened": false,
+  "newOwnerDeviceExecutionMilliseconds": 0,
+  "measuredRpcCount": null,
+  "profileEligible": false,
+  "artifact": {
+    "representation": "original-Swift-PQ2_0",
+    "tensorKind": 142,
+    "bytes": 7206168928,
+    "sha256": "5912bb739217cf25b4283a098c7b893d9baff36bdf2e72d3dbf4cb999d5633d5",
+    "artifactIdentitySource": "pinned-model-admission-constants; no-new-artifact-read",
+    "ptq1Covered": false
+  },
+  "sources": [
+    {
+      "repository": "symbiogenesis/prism-inference",
+      "commit": "f1a09c09639dbaad05104d0307122950a39dede5",
+      "path": "src/model/swift.rs",
+      "gitBlobSha1": "e02d300a80ee3955dea81a67f67c125beee74410",
+      "sections": ["MODEL_BYTES/MODEL_SHA256", "validate_metadata", "expected_tensors"]
+    },
+    {
+      "repository": "symbiogenesis/prism-inference",
+      "commit": "f1a09c09639dbaad05104d0307122950a39dede5",
+      "path": "src/graph.rs",
+      "gitBlobSha1": "0bf5badfc06adcdc916a8818d2d54a7add8b88a7",
+      "sections": ["Qwen35::evaluate_token_into", "Evaluation::full_attention", "Evaluation::recurrent_attention"],
+      "purpose": "each-base-projection-once-per-layer; embedding-row-gather; optional-final-logits-head"
+    },
+    {
+      "repository": "symbiogenesis/SwiftBonsai2Runner",
+      "commit": "b080e39d6091c16c23de7925c49be6c2180a12f3",
+      "path": "tools/hexagon/hmx_projection.rs",
+      "gitBlobSha1": "0f79969fc1a748b4eeb54fbc317acc6e32b785d1",
+      "sections": ["HmxQ2Plan::ledger", "hmx_q2_projection"],
+      "purpose": "one-original-128-column-block-per-operation; row-tile-multiplier"
+    },
+    {
+      "repository": "symbiogenesis/prism-inference",
+      "commit": "5a72eee34312a74e99113244f825bba2c5888777",
+      "path": "tools/hexagon-native/src/projection.rs",
+      "gitBlobSha1": "754730dd88241ad1d59f583ccd70f2868037f2ab",
+      "sections": ["Q2_PROJECTION_MAX_ROWS", "Q2_PROJECTION_MAX_OPERATIONS", "Q2ProjectionLimits::new"]
+    },
+    {
+      "repository": "symbiogenesis/prism-inference",
+      "commit": "5a72eee34312a74e99113244f825bba2c5888777",
+      "path": "tools/hexagon-native/src/hmx_projection.rs",
+      "gitBlobSha1": "4105bca664f9b247cf3e85cb5c1b5ec0d2099ca9",
+      "sections": ["HmxQ2ProjectionLimits::new"],
+      "purpose": "HMX shares the terminal operation and row caps"
+    }
+  ],
+  "assumptions": {
+    "originalBlockColumns": 128,
+    "tokenRows": 1,
+    "maximumWeightRowsPerOperation": 17408,
+    "fullProjectionFormula": "(columns / 128) * ceil(weightRows / 17408)",
+    "allListedColumnsAreMultiplesOf256": true,
+    "hostPayloadAdmissionAssumedSufficientForEveryListedProjection": true,
+    "smallerRowTilesCanOnlyIncreaseCounts": true,
+    "nativeActivationRows": { "guardedHvxLimbs": 2, "hmxBinaryPlanes": 8 },
+    "nativeActivationRowsAreIndependentPrefillTokens": false,
+    "tensorKindsOtherThan142UseCpu": true,
+    "adapterCorrectionsAndTransformsUseCpu": true,
+    "embeddingUsesCpuRowGather": true,
+    "actualPlacementCanSelectFewerProjectionsOnCpuBeforeSubmission": true
+  },
+  "projectionFamilies": [
+    { "tensor": "blk.*.ffn_up.weight", "layers": 64, "tensorKind": 142, "columns": 5120, "weightRows": 17408, "rowTiles": 1, "operationsPerProjection": 40, "operationsPerToken": 2560 },
+    { "tensor": "blk.*.ffn_gate.weight", "layers": 64, "tensorKind": 142, "columns": 5120, "weightRows": 17408, "rowTiles": 1, "operationsPerProjection": 40, "operationsPerToken": 2560 },
+    { "tensor": "blk.*.ffn_down.weight", "layers": 64, "tensorKind": 142, "columns": 17408, "weightRows": 5120, "rowTiles": 1, "operationsPerProjection": 136, "operationsPerToken": 8704 },
+    { "tensor": "blk.*.attn_q.weight", "layers": 16, "tensorKind": 142, "columns": 5120, "weightRows": 12288, "rowTiles": 1, "operationsPerProjection": 40, "operationsPerToken": 640 },
+    { "tensor": "blk.*.attn_k.weight", "layers": 16, "tensorKind": 142, "columns": 5120, "weightRows": 1024, "rowTiles": 1, "operationsPerProjection": 40, "operationsPerToken": 640 },
+    { "tensor": "blk.*.attn_v.weight", "layers": 16, "tensorKind": 142, "columns": 5120, "weightRows": 1024, "rowTiles": 1, "operationsPerProjection": 40, "operationsPerToken": 640 },
+    { "tensor": "blk.*.attn_output.weight", "layers": 16, "tensorKind": 142, "columns": 6144, "weightRows": 5120, "rowTiles": 1, "operationsPerProjection": 48, "operationsPerToken": 768 },
+    { "tensor": "blk.*.attn_qkv.weight", "layers": 48, "tensorKind": 142, "columns": 5120, "weightRows": 10240, "rowTiles": 1, "operationsPerProjection": 40, "operationsPerToken": 1920 },
+    { "tensor": "blk.*.attn_gate.weight", "layers": 48, "tensorKind": 142, "columns": 5120, "weightRows": 6144, "rowTiles": 1, "operationsPerProjection": 40, "operationsPerToken": 1920 },
+    { "tensor": "blk.*.ssm_out.weight", "layers": 48, "tensorKind": 142, "columns": 6144, "weightRows": 5120, "rowTiles": 1, "operationsPerProjection": 48, "operationsPerToken": 2304 },
+    { "tensor": "output.weight", "layers": 1, "tensorKind": 142, "columns": 5120, "weightRows": 248320, "rowTiles": 15, "lastRowTileRows": 4608, "operationsPerProjection": 600, "operationsPerToken": 600 }
+  ],
+  "totals": {
+    "ffnOperations": 13824,
+    "fullAttentionOperations": 2688,
+    "recurrentAttentionOperations": 6144,
+    "hiddenOperationsPerToken": 22656,
+    "finalLogitsHeadOperations": 600,
+    "evaluateOperationsPerToken": 23256,
+    "terminalSessionMaximumOperations": 21760,
+    "hiddenOperationsOverCap": 896,
+    "evaluateOperationsOverCap": 1496,
+    "completeAllEligibleHiddenTokenFitsTerminalCap": false,
+    "completeAllEligibleEvaluateTokenFitsTerminalCap": false
+  },
+  "conclusion": "The current terminal session cannot finish even one all-eligible original-PQ2 hidden token under this block-preserving bridge. This is a static scheduling refusal, not observed device failure or a performance verdict.",
+  "requiredFollowup": "Plan explicit qualified projection placement and total session work before generation; retain the current cap until a separately reviewed lifetime or fused execution design is qualified.",
+  "capWidened": false,
+  "deviceQualificationPerformed": false,
+  "fullHexagonInferenceQualified": false
+}
