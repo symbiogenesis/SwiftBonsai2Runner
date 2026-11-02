@@ -10,7 +10,7 @@
     },
     {
       "path": "tools/hexagon/packed_projection.rs",
-      "sha256": "7c2d758145a430460e7305dcf1914f897e07de04d40324a3091a43314fad8cdf"
+      "sha256": "9652d52609364fdebaa9a31ce6e4e6cd05706eeb9bb33aeff3e00f35542bc07e"
     },
     {
       "path": "tools/hexagon/q2_integer.rs",
@@ -22,11 +22,11 @@
     },
     {
       "path": "tools/hexagon/hmx_projection.rs",
-      "sha256": "a4a162125ed2ee9470c64be0032fcb72dfb715045c480212cbeb25dfc3eb8a54"
+      "sha256": "368040886d28ed59f7a375b4b308df84460535a55ee68ad8122e1a80b900af4b"
     },
     {
       "path": "tools/hexagon/packed-sources.json",
-      "sha256": "65271ffc44f0b551579b795f11a62ad49ee55ad09a6d81491e2fa966b5443ac5"
+      "sha256": "88d5c81952992356496b1d9214809282dc327ec355f18ca1e2d7486a169ddceb"
     }
   ],
   "factors": {
