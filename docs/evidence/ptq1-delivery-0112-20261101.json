@@ -22,7 +22,17 @@
     "startupPrepareConclusion": "success",
     "authoringIntakeFoundationRunId": "41380615570",
     "authoringIntakeFoundationConclusion": "failure",
-    "authoringIntakeInitialChecks": "Build, documentation, tests and formatting passed; seven Clippy findings require source correction and a new owning run."
+    "authoringIntakeInitialChecks": "Build, documentation, tests and formatting passed; seven Clippy findings were corrected without lint waivers.",
+    "combinedAttemptRunId": "41381502195",
+    "combinedAttemptConclusion": "cancelled-after-broker-core-failure",
+    "combinedAttemptSuccessfulJobs": ["changes", "broker / ui", "maintenance", "release-integration", "Native integration"],
+    "combinedAttemptCorrection": "Correct an imported qualification, preserve Send with brief harness-only Mutex guards, and split the startup-error regression while keeping every assertion and its mandatory hosted inventory entry. No lint waiver or model retry.",
+    "finalRunnerRevision": "96d5185f47841c79fec75e48020069ff14079278",
+    "finalFoundationRunId": "41382315083",
+    "finalFoundationConclusion": "success",
+    "finalFoundationRunUrl": "https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41382315083",
+    "finalFoundationSuccessfulJobs": ["changes", "broker / ui", "broker / core", "maintenance", "Native integration", "speech / tts", "release-integration", "speech / asr", "foundation"],
+    "finalValidationScope": "Hosted source/build/analyzer/integration checks only. The one actual-model trial remains bound to 0bec6af; no later source or phase capture inherits its observations automatically."
   },
   "trial": {
     "runId": "41379669484",
