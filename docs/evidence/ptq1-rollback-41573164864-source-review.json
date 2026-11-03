@@ -37,6 +37,20 @@
     ],
     "comparisonMethod": "Read both complete UTF-8 sources, apply only the listed literal replacements to each old source, and compare the resulting full string case-sensitively with each new source. Read-only SHA-256 and length checks identify the reviewed files."
   },
+  "outerGuardianReview": {
+    "name": "Invoke-GuardedRollbackSession.ps1",
+    "bytes": 4784,
+    "sha256": "227bcf37604b71a3e35dbd02e6c620fe2875f26652a8ada07e5fe81e2833fa53",
+    "status": "reviewed-no-blocking-source-issue",
+    "sourceControlsReviewed": [
+      "A previously persisted original-session-budget.json rejects another invocation; the new monotonic tick and UTC start are persisted before intake/source hashing.",
+      "The exact source/run/Foundation selection and both reviewed wrapper/intake hashes are checked before starting the sole intake child; the original tick and UTC value are passed unchanged.",
+      "Both output streams drain to Stream.Null. The child process cutoff is original second 258, followed by at most one second of owned process-tree termination before the original 260-second maximum.",
+      "Forced termination, child failure or an exceeded elapsed allowance leaves Passed false. No retry, clock restart or default-promotion claim is allowed."
+    ],
+    "receiptTimingBoundary": "Guardian ElapsedSeconds is captured immediately before final result serialization/write. Retained result and archival completion must also be attributed to the original monotonic clock when reviewing total charged time.",
+    "reviewerExecutedGuardian": false
+  },
   "unchangedBudget": {
     "aggregateMaximumSeconds": 260,
     "earlierDiagnosticsChargeSeconds": 40,
