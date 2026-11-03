@@ -43,7 +43,12 @@ without proving the machine otherwise idle. [PLAN.md](../PLAN.md) owns pending a
 ### Actual-model application acceptance
 
 Main-only, manually dispatched [native-runtime acceptance](../.github/workflows/native-runtime-acceptance.yml)
-runs an explicitly ignored case on the owner-managed Snapdragon X/X2 runner.
+defaults to `run_device: false`: hosted ARM64 prepares and retains the exact-source
+analyzer receipt and acceptance package without queuing a laptop job or occupying
+the shared device lane. Review that preparation before selecting `run_device: true`
+for one predeclared owner workload. The explicit device dispatch prepares and verifies
+its own same-run package; it does not reuse another run's package or reopen a closed
+trial. It runs an explicitly ignored case on the owner-managed Snapdragon X/X2 runner.
 The default case requires provisioned original PQ2, the pinned Rust release, native
 sandbox admission, unchanged limits and retained artifact handles. It tests supplied-history
 streaming, framed context rejection/reuse, shutdown, abandonment after content,

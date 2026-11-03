@@ -1,8 +1,12 @@
 name: Native Rust actual-model application acceptance
-run-name: Native Rust actual-model application acceptance (${{ inputs.profile }})
+run-name: Native Rust acceptance (${{ inputs.run_device && 'owner device' || 'hosted preparation' }}, ${{ inputs.profile }})
 on:
   workflow_dispatch:
     inputs:
+      run_device:
+        description: Run one bounded owner-device workload after hosted preparation; false prepares and retains tools only
+        type: boolean
+        default: false
       profile:
         description: Explicit bounded profile; setup/model work/cleanup shares one declared job budget
         type: choice
@@ -33,8 +37,9 @@ on:
 permissions:
   contents: read
 concurrency:
-  # Actual-model captures share the physical laptop and memory budget.
-  group: swift-lora-snapdragon
+  # Hosted-only preparation uses no physical device and must not occupy its lane.
+  # Explicit device captures share the physical laptop and memory budget.
+  group: ${{ inputs.run_device && 'swift-lora-snapdragon' || format('native-acceptance-hosted-{0}', github.run_id) }}
   cancel-in-progress: false
 jobs:
   prepare:
@@ -123,6 +128,7 @@ jobs:
               'service_integration::native_service_integration_prefix_rejects_terminal_events_already_received',
               'service_integration::native_service_integration_cancellation_failures_return_without_unwinding',
               'service_integration::native_service_integration_cleanup_preserves_failures_and_listener_observations',
+              'service_integration::native_service_integration_listener_release_requires_connection_refusal',
               'service_integration::native_service_integration_stuck_owner_is_dropped_inside_existing_stop_allowance',
               'service_integration::native_service_integration_rejects_natural_completion_and_missing_rejections',
               'service_integration::native_service_integration_fresh_owner_reserve_keeps_original_deadline',
@@ -203,9 +209,20 @@ jobs:
           if-no-files-found: error
           retention-days: 90
 
+      - name: Record hosted preparation scope
+        shell: pwsh
+        env:
+          RUN_DEVICE: ${{ inputs.run_device }}
+        run: |
+          if ($env:RUN_DEVICE -ceq 'true') {
+            'Hosted source-bound acceptance preparation completed. The explicitly selected owner workload still requires its own bounded acceptance and independent retained-data review.' >> $env:GITHUB_STEP_SUMMARY
+          } else {
+            'Hosted source-bound acceptance preparation completed. run_device=false schedules no owner-device job and closes no model or promotion gate. Review this exact-source package before explicitly selecting a future bounded device run; that run prepares and binds its own same-run package.' >> $env:GITHUB_STEP_SUMMARY
+          }
+
   acceptance:
     needs: prepare
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && inputs.run_device
     # Register one ephemeral Windows ARM64 owner runner with only this run label.
     # A run-specific label prevents another queued device workload from matching it.
     runs-on: ${{ format('native-acceptance-{0}', github.run_id) }}
