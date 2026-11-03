@@ -30,9 +30,12 @@ impl OwnerControl {
     pub(super) fn stop(&self, broker: &OwnedProcess, deadline: Instant) -> io::Result<()> {
         // The PSEC model may be brokered outside the UI's tool Job. Ask its
         // broker to run explicit model cleanup before terminating the outer Job.
-        let graceful = self
-            .request()
-            .and_then(|()| self.wait_for_confirmation(broker, deadline - OUTER_STOP_RESERVE));
+        let graceful = self.request().and_then(|()| {
+            let confirmation_deadline = deadline
+                .checked_sub(OUTER_STOP_RESERVE)
+                .ok_or_else(expired)?;
+            self.wait_for_confirmation(broker, confirmation_deadline)
+        });
         // Even on absent acknowledgment, stop the outer broker tree within the
         // original deadline. Unknown PSEC release remains terminal, never Retry.
         finish_shutdown(graceful, deadline, |remaining| broker.stop(remaining))

@@ -238,7 +238,7 @@ impl State {
     ) -> Self {
         let mut state = Self::create(commands, events, None, None);
         state.preview = false;
-        state.runtime_description = "Preparing runtime selection…".to_owned();
+        "Preparing runtime selection…".clone_into(&mut state.runtime_description);
         state.model = ModelLifecycle::Preparing;
         state.abliteration_enabled = false;
         state.startup_request = Some(request);

@@ -11,6 +11,7 @@ use serde::{Deserialize, Serialize};
 use std::{
     collections::BTreeMap,
     ffi::OsString,
+    fmt::Write as _,
     fs::File,
     io::{self, BufRead, BufReader, Read, Write},
     net::{Ipv4Addr, SocketAddr, SocketAddrV4, TcpStream},
@@ -290,7 +291,9 @@ fn native_runtime_guidance(data: &Path) -> String {
     for unit in raw.encode_utf16() {
         match u8::try_from(unit) {
             Ok(byte) if byte.is_ascii() => request.push(char::from(byte)),
-            _ => request.push_str(&format!("\\u{unit:04x}")),
+            _ => {
+                let _written = write!(request, "\\u{unit:04x}");
+            }
         }
     }
     let request = request.replace('\'', "''");
