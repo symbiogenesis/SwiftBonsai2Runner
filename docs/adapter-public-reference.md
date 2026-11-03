@@ -62,6 +62,31 @@ extents, all 48 independently produced little-endian F32 A files, shipped-factor
 hashes and complete metrics. A failure retains its stage and partial results.
 Archive and independently review the exact raw output before artifact expiration.
 
+`tools/native-reference/audit_public_reference.py` independently replays the
+retained comparisons with the Python standard library. It verifies the complete
+approved adapter and direction bytes, producer scripts, selected source/run,
+raw configuration/header, exact all-48 inventory and source tensor descriptors,
+every retained A file and all 129 B factors. Its separate GGUF reader and scalar
+comparison loop check every reported metric under the unchanged bounds. Valid
+losing results remain losing results. A missing complete result cannot pass.
+The hosted workflow retains this replay after a complete match or disagreement.
+
+An independent reviewer can repeat it without NumPy, a model download or another
+model workload, using raw producer-identical source scripts and pins, including
+their line endings. Matching a Git revision alone does not guarantee those raw
+bytes on checkouts with different line-ending settings:
+
+```text
+python -B tools/native-reference/audit_public_reference.py --evidence-directory ABSOLUTE_RETAINED_DIRECTORY --adapter VERIFIED_APPROVED_ADAPTER --direction VERIFIED_PUBLIC_DIRECTION --expected-source-revision FULL_REVISION --expected-run-id RUN_ID --expected-run-attempt ATTEMPT
+```
+
+Select the expected producer from separately authenticated artifact records;
+copying those fields from an untrusted report does not authenticate the producer.
+The replay does not reopen the public model pack or independently reproduce the
+matrix reconstruction. Input tensor and candidate-matrix digests remain
+declarations tied to that separately reviewed producer. Automatic scalar replay
+is evidence for the independent review and does not itself perform that review.
+
 A complete all 48 match would establish reproducibility of this public-input
 candidate at the fixed bound. It would leave authenticated original-run
 provenance, authoring-to-native writer mappings and residual captures,
