@@ -340,12 +340,15 @@ fn runtime_arguments(config: &Config) -> Vec<&'static str> {
     } else {
         "--use-original-pq2"
     });
-    if config.native_engine {
-        arguments.push("--native-engine");
-    }
-    if config.native_row_workers == 4 {
-        arguments.extend(["--native-row-workers", "4"]);
-    }
+    arguments.push(if config.native_engine {
+        "--native-engine"
+    } else {
+        "--publisher-engine"
+    });
+    arguments.extend([
+        "--native-row-workers",
+        if config.native_row_workers == 4 { "4" } else { "1" },
+    ]);
     arguments
 }
 
@@ -1249,7 +1252,7 @@ mod tests {
     };
 
     #[test]
-    fn explicit_native_row_workers_preserve_model_adapter_and_legacy_broker_arguments() {
+    fn explicit_runtime_and_row_workers_preserve_model_adapter_and_publisher_rollback() {
         let mut config = Config {
             broker: "broker.exe".into(),
             data: "data".into(),
@@ -1265,7 +1268,7 @@ mod tests {
         };
         assert_eq!(
             runtime_arguments(&config),
-            ["--use-abliterate-lora", "--use-original-pq2"]
+            ["--use-abliterate-lora", "--use-original-pq2", "--publisher-engine", "--native-row-workers", "1"]
         );
         config.native_engine = true;
         config.native_row_workers = 4;
@@ -1293,12 +1296,12 @@ mod tests {
         config.native_row_workers = 1;
         assert_eq!(
             runtime_arguments(&config),
-            ["--use-repacked-ptq1", "--native-engine"]
+            ["--use-repacked-ptq1", "--native-engine", "--native-row-workers", "1"]
         );
         config.use_repacked_ptq1 = false;
         assert_eq!(
             runtime_arguments(&config),
-            ["--use-original-pq2", "--native-engine"]
+            ["--use-original-pq2", "--native-engine", "--native-row-workers", "1"]
         );
     }
 

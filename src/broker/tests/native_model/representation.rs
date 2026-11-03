@@ -721,7 +721,7 @@ fn native_representation_row4_profile_is_explicit_and_preserves_pair() {
         assert_eq!(single.repacked, parallel.repacked);
         assert!(!parallel.optional_requests && !parallel.required_scale_history);
         let mut expected = adapter_arguments(single, "8081");
-        expected.extend(["--native-row-workers", "4"].map(OsString::from));
+        *expected.last_mut().unwrap() = "4".into();
         let mut actual = adapter_arguments(parallel, "8081");
         assert_eq!(actual, expected);
         assert_eq!(

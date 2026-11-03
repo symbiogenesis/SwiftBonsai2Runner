@@ -52,6 +52,27 @@ const MAX_DIAGNOSTICS: usize = 128;
 const MAX_DIAGNOSTIC_CHARS: usize = 4_096;
 const MAX_CONVERSATIONS: usize = 16;
 
+fn runtime_description(config: &Config) -> String {
+    let engine = if config.native_engine {
+        "Rust"
+    } else {
+        "Publisher"
+    };
+    let weights = if config.use_repacked_ptq1 {
+        "PTQ1"
+    } else {
+        "PQ2"
+    };
+    if config.native_engine {
+        format!(
+            "{engine} CPU · {weights} · {} row workers",
+            config.native_row_workers
+        )
+    } else {
+        format!("{engine} CPU · {weights}")
+    }
+}
+
 #[allow(
     clippy::struct_excessive_bools,
     reason = "Independent broker, audio and presentation state is explicit."
@@ -82,6 +103,7 @@ struct State {
     last_recovery_save: Instant,
     restore_history: bool,
     status: String,
+    runtime_description: String,
     warning: bool,
     diagnostics: VecDeque<String>,
     show_diagnostics: bool,
@@ -163,6 +185,8 @@ impl State {
             last_recovery_save: Instant::now(),
             restore_history: false,
             status: "Preparing your local model…".to_owned(),
+            runtime_description: config
+                .map_or_else(|| "Model-free preview".to_owned(), runtime_description),
             warning: false,
             diagnostics: VecDeque::new(),
             show_diagnostics: false,
@@ -214,6 +238,7 @@ impl State {
     ) -> Self {
         let mut state = Self::create(commands, events, None, None);
         state.preview = false;
+        state.runtime_description = "Preparing runtime selection…".to_owned();
         state.model = ModelLifecycle::Preparing;
         state.abliteration_enabled = false;
         state.startup_request = Some(request);
@@ -275,6 +300,7 @@ impl State {
         let (commands, incoming) = mpsc::channel();
         let (events, incoming_events) = client::event_channel();
         self.abliteration_enabled = config.use_abliterate_lora;
+        self.runtime_description = runtime_description(&config);
         self.canary_configured = config.canary.is_some();
         self.tts_configured = config.qwen_tts.is_some();
         self.speech = speech::start(config.canary.clone(), config.qwen_tts.clone()).ok();
@@ -1137,6 +1163,14 @@ impl State {
                     self.voice_profile.clone(),
                 );
                 self.recovery_controls(ui);
+                ui.heading("Runtime");
+                ui.label(&self.runtime_description);
+                ui.label(
+                    RichText::new("Development build. Full-context, sustained-performance and output-quality qualification remain pending.")
+                        .small()
+                        .weak(),
+                );
+                ui.add_space(16.0);
                 ui.heading("Response");
                 ui.add_enabled_ui(!self.model.busy(), |ui| {
                     self.thinking_controls(ui);

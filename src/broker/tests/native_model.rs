@@ -386,6 +386,8 @@ fn configuration(data: &Path, evidence: &Path) -> LaunchConfig {
         "--launch-development",
         "--require-native-sandbox",
         "--native-engine",
+        "--native-row-workers",
+        "1",
         "--profile",
         "swift-pq2-assessment",
         "--frontend-port",
@@ -1459,9 +1461,10 @@ fn adapter_arguments(profile: &AdapterProfile, port: &str) -> Vec<OsString> {
         // the application's representation default changes after qualification.
         args.push("--use-original-pq2".into());
     }
-    if profile.row_workers == 4 {
-        args.extend(["--native-row-workers", "4"].map(OsString::from));
-    }
+    args.extend([
+        "--native-row-workers".into(),
+        profile.row_workers.to_string().into(),
+    ]);
     args
 }
 
@@ -2156,7 +2159,7 @@ fn native_row4_profile_is_explicit_original_pq2_and_one_stream_only() {
             args.iter()
                 .filter(|arg| *arg == "--native-row-workers")
                 .count(),
-            usize::from(profile.row_workers == 4)
+            1
         );
         if profile.row_workers == 4 {
             assert!(
@@ -2788,7 +2791,7 @@ fn native_ptq1_row4_lifecycle_is_explicit_and_preserves_the_required_workload() 
         );
     }
     let mut expected = adapter_arguments(single, "8081");
-    expected.extend(["--native-row-workers", "4"].map(OsString::from));
+    *expected.last_mut().unwrap() = "4".into();
     let mut actual = adapter_arguments(parallel, "8081");
     assert_eq!(actual, expected);
     actual.extend(

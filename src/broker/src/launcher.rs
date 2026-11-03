@@ -50,13 +50,13 @@ pub const LAUNCH_USAGE: &str = concat!(
     "  --evidence-parent <existing-external-directory>\n",
     "  --frontend-port <0-or-1024..65535> --backend-port <1024..65535>\n",
     "  [--profile <reference-cpu|swift-pq2-assessment>]\n",
-    "  [--native-engine] (requires the pinned Prism inference release and swift-pq2-assessment)\n",
-    "  [--native-row-workers 1|4] (4 requires --native-engine and reviewed pinned release 0.1.9, 0.1.10, 0.1.11, 0.1.12, 0.1.13 or 0.1.14)\n",
+    "  [--native-engine|--publisher-engine] (Swift defaults to the pinned Rust runtime; publisher is explicit rollback)\n",
+    "  [--native-row-workers 1|4] (Rust defaults to 4; publisher supports only 1)\n",
     "  [--use-abliterate-lora] (pinned adapter; request scale 0..2, default 1.3; Swift CPU only)\n",
     "  [--use-repacked-ptq1|--use-original-pq2] (mutually exclusive weight selections; Swift CPU only)\n",
     "  [--max-waiting <0..8>] [--check-only]\n",
     "Default: reference-cpu. Only compiled model/runtime pins and fixed CPU policies are accepted.\n",
-    "Swift defaults to original PQ2 weights; PTQ1 requires explicit selection. Daily use remains unqualified.\n",
+    "Swift defaults to Rust with four workers and original PQ2 weights; PTQ1 requires explicit selection. Full daily-use qualification remains pending.\n",
     "Creates fresh protected credentials; prints paths, never key values.\n",
 );
 
@@ -146,7 +146,7 @@ impl LaunchConfig {
         let mut args = args.into_iter();
         let (mut launch, mut unisolated, mut require_native_sandbox) = (false, false, false);
         let mut check_only = false;
-        let mut native_engine = false;
+        let mut native_engine = None;
         let mut native_row_workers = None;
         let mut use_abliterate_lora = false;
         let mut use_repacked_ptq1 = None;
@@ -161,8 +161,11 @@ impl LaunchConfig {
                     require_native_sandbox = true;
                 }
                 Some("--check-only") if !check_only => check_only = true,
-                Some("--native-engine") if !native_engine => {
-                    native_engine = true;
+                Some("--native-engine") if native_engine.is_none() => {
+                    native_engine = Some(true);
+                }
+                Some("--publisher-engine") if native_engine.is_none() => {
+                    native_engine = Some(false);
                 }
                 Some("--native-row-workers") if native_row_workers.is_none() => {
                     native_row_workers = Some(row_workers(args.next().as_deref())?);
@@ -206,7 +209,8 @@ impl LaunchConfig {
         let backend_port = backend_port.ok_or(LaunchError::Arguments)?;
         let max_waiting = max_waiting.unwrap_or(2);
         let profile = profile.unwrap_or_default();
-        let native_row_workers = native_row_workers.unwrap_or(1);
+        let native_engine = native_engine.unwrap_or(profile == LaunchProfile::SwiftPq2Assessment);
+        let native_row_workers = native_row_workers.unwrap_or(if native_engine { 4 } else { 1 });
         if !launch
             || unisolated == require_native_sandbox
             || (frontend_port != 0 && frontend_port < 1024)
@@ -262,7 +266,7 @@ impl LaunchConfig {
         self.profile
     }
 
-    /// Whether the explicit native Swift child replaces the pinned Prism server.
+    /// Whether the selected Swift child uses the pinned native Rust runtime.
     #[must_use]
     pub const fn uses_native_engine(&self) -> bool {
         self.native_engine
@@ -1173,9 +1177,14 @@ mod tests {
         );
         for native in [false, true] {
             let mut selected = swift.clone();
-            if native {
-                selected.push("--native-engine".into());
-            }
+            selected.push(
+                if native {
+                    "--native-engine"
+                } else {
+                    "--publisher-engine"
+                }
+                .into(),
+            );
             selected.push("--use-original-pq2".into());
             assert!(
                 LaunchConfig::parse(selected).is_ok_and(|config| !config.uses_repacked_ptq1()
@@ -1317,7 +1326,7 @@ mod tests {
     -> Result<(), LaunchError> {
         let mut native = arguments();
         native.extend(["--profile", "swift-pq2-assessment", "--native-engine"].map(OsString::from));
-        assert_eq!(LaunchConfig::parse(native.clone())?.native_row_workers, 1);
+        assert_eq!(LaunchConfig::parse(native.clone())?.native_row_workers, 4);
         for invalid in ["0", "2", "3", "5", "16", "01", "+4", "4.0", " 4"] {
             let mut rejected = native.clone();
             rejected.extend(["--native-row-workers", invalid].map(OsString::from));
@@ -1344,7 +1353,7 @@ mod tests {
             if let Some(profile) = profile {
                 publisher.extend(["--profile", profile].map(OsString::from));
             }
-            publisher.extend(["--native-row-workers", "4"].map(OsString::from));
+            publisher.extend(["--publisher-engine", "--native-row-workers", "4"].map(OsString::from));
             assert_eq!(
                 LaunchConfig::parse(publisher).err(),
                 Some(LaunchError::Arguments)
@@ -1398,15 +1407,40 @@ mod tests {
     }
 
     #[test]
-    fn native_engine_is_explicit_and_swift_only() {
+    fn rust_is_swift_development_default_and_publisher_is_explicit_rollback() {
         let mut args = arguments();
         args.push(OsString::from("--native-engine"));
         assert_eq!(
             LaunchConfig::parse(args).err(),
             Some(LaunchError::Arguments)
         );
-        let mut args = arguments();
-        args.extend(["--profile", "swift-pq2-assessment", "--native-engine"].map(OsString::from));
+        let mut swift = arguments();
+        swift.extend(["--profile", "swift-pq2-assessment"].map(OsString::from));
+        assert!(LaunchConfig::parse(swift.clone()).is_ok_and(|config| {
+            config.uses_native_engine()
+                && config.native_row_workers == 4
+                && !config.uses_repacked_ptq1()
+        }));
+        assert!(LaunchConfig::parse(arguments()).is_ok_and(|config| {
+            !config.uses_native_engine() && config.native_row_workers == 1
+        }));
+        let mut publisher = swift.clone();
+        publisher.push("--publisher-engine".into());
+        assert!(LaunchConfig::parse(publisher).is_ok_and(|config| {
+            !config.uses_native_engine() && config.native_row_workers == 1
+        }));
+        for first in ["--native-engine", "--publisher-engine"] {
+            for second in ["--native-engine", "--publisher-engine"] {
+                let mut rejected = swift.clone();
+                rejected.extend([first, second].map(OsString::from));
+                assert_eq!(
+                    LaunchConfig::parse(rejected).err(),
+                    Some(LaunchError::Arguments)
+                );
+            }
+        }
+        let mut args = swift;
+        args.push("--native-engine".into());
         let config = LaunchConfig::parse(args).ok();
         assert!(config.is_some_and(|value| value.uses_native_engine()));
         let mut args = arguments();

@@ -50,7 +50,7 @@ fn configuration(
     let (mut tts_quantization, mut tts_threads) = (None, None);
     let mut no_abliterate_lora = false;
     let mut use_repacked_ptq1 = None;
-    let mut native_engine = false;
+    let mut native_engine = None;
     let mut native_row_workers = None;
     while let Some(option) = args.next() {
         match option.to_str() {
@@ -61,7 +61,8 @@ fn configuration(
             Some("--use-original-pq2") if use_repacked_ptq1.is_none() => {
                 use_repacked_ptq1 = Some(false);
             }
-            Some("--native-engine") if !native_engine => native_engine = true,
+            Some("--native-engine") if native_engine.is_none() => native_engine = Some(true),
+            Some("--publisher-engine") if native_engine.is_none() => native_engine = Some(false),
             Some("--native-row-workers") if native_row_workers.is_none() => {
                 native_row_workers = Some(
                     match args.next().as_deref().and_then(std::ffi::OsStr::to_str) {
@@ -170,12 +171,13 @@ fn configuration(
             }
             _ => {
                 return Err(
-                    "Usage: bonsai-chat --broker-path ABSOLUTE_EXE --data-directory ABSOLUTE_DIRECTORY --evidence-directory ABSOLUTE_DIRECTORY [--frontend-port 5173] [--backend-port 8081] [--no-abliterate-lora] [--use-repacked-ptq1|--use-original-pq2] [--native-engine] [--native-row-workers 1|4] [--canary-key-file ABSOLUTE_FILE --canary-port 8766 [--canary-executable ABSOLUTE_EXE --canary-model ABSOLUTE_GGUF]] [--tts-key-file ABSOLUTE_FILE --tts-port 8767 [--tts-executable ABSOLUTE_EXE --tts-model ABSOLUTE_GGUF --tts-codec ABSOLUTE_GGUF --tts-voice-model ABSOLUTE_GGUF [--tts-quantization Q8_0|Q4_K_M] [--tts-threads 10]]]",
+                    "Usage: bonsai-chat --broker-path ABSOLUTE_EXE --data-directory ABSOLUTE_DIRECTORY --evidence-directory ABSOLUTE_DIRECTORY [--frontend-port 5173] [--backend-port 8081] [--no-abliterate-lora] [--use-repacked-ptq1|--use-original-pq2] [--native-engine|--publisher-engine] [--native-row-workers 1|4] [--canary-key-file ABSOLUTE_FILE --canary-port 8766 [--canary-executable ABSOLUTE_EXE --canary-model ABSOLUTE_GGUF]] [--tts-key-file ABSOLUTE_FILE --tts-port 8767 [--tts-executable ABSOLUTE_EXE --tts-model ABSOLUTE_GGUF --tts-codec ABSOLUTE_GGUF --tts-voice-model ABSOLUTE_GGUF [--tts-quantization Q8_0|Q4_K_M] [--tts-threads 10]]]",
                 );
             }
         }
     }
-    let native_row_workers = native_row_workers.unwrap_or(1);
+    let native_engine = native_engine.unwrap_or(true);
+    let native_row_workers = native_row_workers.unwrap_or(if native_engine { 4 } else { 1 });
     if native_row_workers == 4 && !native_engine {
         return Err("Four native row workers require --native-engine.");
     }
@@ -536,9 +538,14 @@ mod tests {
         ];
         for native in [false, true] {
             let mut args = base.clone();
-            if native {
-                args.push("--native-engine".into());
-            }
+            args.push(
+                if native {
+                    "--native-engine"
+                } else {
+                    "--publisher-engine"
+                }
+                .into(),
+            );
             args.push("--use-original-pq2".into());
             let config = configuration(args).map_err(io::Error::other)?;
             assert!(!config.use_repacked_ptq1);
@@ -558,7 +565,8 @@ mod tests {
     }
 
     #[test]
-    fn model_packing_and_lora_defaults_require_explicit_opt_ins() -> io::Result<()> {
+    fn rust_development_defaults_preserve_explicit_runtime_weight_and_adapter_choices()
+    -> io::Result<()> {
         let stamp = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .map_err(io::Error::other)?
@@ -578,8 +586,22 @@ mod tests {
         let default = configuration(args.clone()).map_err(io::Error::other)?;
         assert!(default.use_abliterate_lora);
         assert!(!default.use_repacked_ptq1);
-        assert!(!default.native_engine);
-        assert_eq!(default.native_row_workers, 1);
+        assert!(default.native_engine);
+        assert_eq!(default.native_row_workers, 4);
+        let mut publisher = args.clone();
+        publisher.push("--publisher-engine".into());
+        let rollback = configuration(publisher).map_err(io::Error::other)?;
+        assert!(!rollback.native_engine);
+        assert_eq!(rollback.native_row_workers, 1);
+        assert!(!rollback.use_repacked_ptq1);
+        assert!(rollback.use_abliterate_lora);
+        for first in ["--native-engine", "--publisher-engine"] {
+            for second in ["--native-engine", "--publisher-engine"] {
+                let mut rejected = args.clone();
+                rejected.extend([first, second].map(OsString::from));
+                assert!(configuration(rejected).is_err());
+            }
+        }
         let mut repacked = args.clone();
         repacked.push("--use-repacked-ptq1".into());
         let alternate = configuration(repacked.clone()).map_err(io::Error::other)?;
@@ -605,7 +627,7 @@ mod tests {
             assert!(configuration(configured).is_err());
         }
         let mut publisher_rows = args.clone();
-        publisher_rows.extend(["--native-row-workers", "4"].map(OsString::from));
+        publisher_rows.extend(["--publisher-engine", "--native-row-workers", "4"].map(OsString::from));
         assert!(configuration(publisher_rows).is_err());
         let mut missing_rows = native.clone();
         missing_rows.push("--native-row-workers".into());
