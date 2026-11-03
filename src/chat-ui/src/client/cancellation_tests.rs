@@ -100,3 +100,36 @@ fn stopped_retry_notice_waits_for_explicit_retry_without_failure_events() {
     assert!(matches!(notifications.try_recv(), Ok(Event::Stopped)));
     assert!(notifications.try_recv().is_err());
 }
+
+#[test]
+fn owned_broker_teardown_requires_success_before_preserving_attempt_outcome() {
+    for outcome in [
+        Ok(()),
+        Err(Failure::Shutdown),
+        Err(Failure::Stopped),
+        Err(Failure::Memory),
+        Err(Failure::NativeRuntime),
+        Err(Failure::Message("Readiness or transport failed")),
+    ] {
+        let mut stopped = false;
+        assert_eq!(
+            finish_owned_attempt(outcome, || {
+                stopped = true;
+                Ok(())
+            }),
+            outcome
+        );
+        assert!(stopped);
+        for kind in [io::ErrorKind::TimedOut, io::ErrorKind::PermissionDenied] {
+            let mut stopped = false;
+            assert_eq!(
+                finish_owned_attempt(outcome, || {
+                    stopped = true;
+                    Err(io::Error::from(kind))
+                }),
+                Err(Failure::Teardown)
+            );
+            assert!(stopped);
+        }
+    }
+}

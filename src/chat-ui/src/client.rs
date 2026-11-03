@@ -6,15 +6,15 @@
     reason = "The window and worker share a deliberately crate-private command boundary"
 )]
 
+use bonsai_windows_process::{OwnedProcess, ToolProcessSpec};
 use serde::{Deserialize, Serialize};
-#[cfg(windows)]
-use std::os::windows::process::CommandExt;
 use std::{
-    fs::{File, OpenOptions},
+    collections::BTreeMap,
+    ffi::OsString,
+    fs::File,
     io::{self, BufRead, BufReader, Read, Write},
     net::{Ipv4Addr, SocketAddr, SocketAddrV4, TcpStream},
     path::{Path, PathBuf},
-    process::{Child, Command as ProcessCommand, Stdio},
     sync::{
         Arc,
         mpsc::{Receiver, RecvTimeoutError, TryRecvError},
@@ -37,6 +37,7 @@ use sse::Sse;
 const POLL: Duration = Duration::from_millis(100);
 const IO_POLL: Duration = Duration::from_millis(50);
 const DEADLINE: Duration = Duration::from_secs(600);
+const BROKER_STOP: Duration = Duration::from_secs(10);
 const MAX_HEAD: usize = 16 * 1024;
 const MAX_BODY: usize = 4 * 1024 * 1024;
 const MAX_REQUEST: usize = 1024 * 1024;
@@ -51,6 +52,7 @@ const CONTEXT_LIMIT_MESSAGE: &str = "This conversation and the selected output c
 const CONTROL_TOKEN_MESSAGE: &str = "This conversation contains reserved chat markers, such as <|im_start|> or <think>. Remove them or start a new conversation before sending again.";
 const RATE_LIMIT_MESSAGE: &str =
     "Too many messages were sent in a short time. Wait a moment, then send again.";
+const TEARDOWN_FAILURE_MESSAGE: &str = "The local model's owned processes could not be confirmed stopped. Copy any conversation or drafts you want to keep, then close this app before launching again.";
 pub(crate) const STOPPED_MESSAGE: &str = "Response stopped. Select Retry model to continue. Completed conversation turns are retained; the interrupted turn is not added to model history.";
 
 pub(crate) const DEFAULT_ABLITERATION_SCALE: f32 = 1.3;
@@ -133,22 +135,12 @@ enum Failure {
     Stopped,
     Memory,
     NativeRuntime,
+    Teardown,
     Rejected(&'static str),
     Message(&'static str),
 }
 
 type Result<T> = std::result::Result<T, Failure>;
-
-struct Broker(Child);
-
-impl Drop for Broker {
-    fn drop(&mut self) {
-        // The broker's kill-on-close Job owns the model process. Killing the
-        // broker closes that Job even when the window exits during generation.
-        let _kill = self.0.kill();
-        let _wait = self.0.wait();
-    }
-}
 
 #[derive(Clone, Serialize)]
 pub(crate) struct Message {
@@ -227,6 +219,10 @@ pub(crate) fn run(config: Config, commands: Receiver<Command>, events: EventSend
         }
         match worker(&attempt_config, &commands, &events, &mut history) {
             Ok(()) | Err(Failure::Shutdown) => return,
+            Err(Failure::Teardown) => {
+                let _notification = events.send(Event::Failed(TEARDOWN_FAILURE_MESSAGE.to_owned()));
+                return;
+            }
             Err(Failure::Memory) => {
                 if !wait_for_retry(
                     &commands,
@@ -238,7 +234,7 @@ pub(crate) fn run(config: Config, commands: Receiver<Command>, events: EventSend
                 }
             }
             Err(Failure::Stopped) => {
-                // The broker guard has finished teardown. A requested stop is
+                // The complete owned Job has confirmed teardown. A requested stop is
                 // an expected outcome, separate from failure/rejection notices.
                 if !wait_for_retry(&commands, &events, &mut history, &Event::Stopped) {
                     return;
@@ -248,10 +244,12 @@ pub(crate) fn run(config: Config, commands: Receiver<Command>, events: EventSend
                 let message = match failure {
                     Failure::Message(message) | Failure::Rejected(message) => message.to_owned(),
                     Failure::NativeRuntime => native_runtime_guidance(&config.data),
-                    Failure::Shutdown | Failure::Memory | Failure::Stopped => return,
+                    Failure::Shutdown | Failure::Memory | Failure::Stopped | Failure::Teardown => {
+                        return;
+                    }
                 };
-                // worker has returned and its Broker guard has stopped/waited
-                // for the owned process before Retry can be offered.
+                // worker has confirmed its complete Job empty before Retry
+                // can be offered, including on startup and transport failures.
                 if !wait_for_retry(&commands, &events, &mut history, &Event::Retryable(retry_guidance(&message))) {
                     return;
                 }
@@ -362,48 +360,73 @@ fn worker(
     events: &EventSender,
     history: &mut Vec<Message>,
 ) -> Result<()> {
-    let stdout_path = config.evidence.join("broker.stdout.log");
-    let stderr_path = config.evidence.join("broker.stderr.log");
-    let stdout = new_log(&stdout_path)?;
-    let stderr = new_log(&stderr_path)?;
-    let mut process = ProcessCommand::new(&config.broker);
-    process.args(runtime_arguments(config));
-    process
-        .args([
-            "--launch-development",
-            "--require-native-sandbox",
-            "--profile",
-            "swift-pq2-assessment",
-            "--data-directory",
-        ])
-        .arg(&config.data)
-        .arg("--evidence-parent")
-        .arg(&config.evidence)
-        .arg("--frontend-port")
-        .arg(config.frontend_port.to_string())
-        .arg("--backend-port")
-        .arg(config.backend_port.to_string())
-        .arg("--max-waiting")
-        .arg("0")
-        .current_dir(&config.evidence)
-        .stdin(Stdio::null())
-        .stdout(Stdio::from(stdout))
-        .stderr(Stdio::from(stderr));
-    #[cfg(windows)]
-    process.creation_flags(0x0800_0000);
-    let mut broker = Broker(process.spawn().map_err(|_| {
+    let spec = broker_spec(config);
+    // Own the broker before its first instruction, including any descendants
+    // created before the broker establishes its separate model sandbox/Job.
+    // OwnedProcess keeps a kill-on-close guard on every early-return path.
+    let broker = OwnedProcess::start_tool(&spec).map_err(|_| {
         Failure::Message("Could not start the broker. Build the app and check its executable path.")
-    })?);
-    let key = wait_ready(&mut broker, config, commands, &stdout_path, &stderr_path)?;
+    })?;
+    let outcome = serve_broker(&broker, config, commands, events, history, &spec);
+    finish_owned_attempt(outcome, || broker.stop(BROKER_STOP))
+}
+
+fn broker_spec(config: &Config) -> ToolProcessSpec {
+    let mut arguments: Vec<OsString> = runtime_arguments(config)
+        .into_iter()
+        .map(OsString::from)
+        .collect();
+    arguments.extend([
+        "--launch-development".into(),
+        "--require-native-sandbox".into(),
+        "--profile".into(),
+        "swift-pq2-assessment".into(),
+        "--data-directory".into(),
+        config.data.as_os_str().to_owned(),
+        "--evidence-parent".into(),
+        config.evidence.as_os_str().to_owned(),
+        "--frontend-port".into(),
+        config.frontend_port.to_string().into(),
+        "--backend-port".into(),
+        config.backend_port.to_string().into(),
+        "--max-waiting".into(),
+        "0".into(),
+    ]);
+    ToolProcessSpec {
+        executable: config.broker.clone(),
+        arguments,
+        working_directory: config.evidence.clone(),
+        stdout: config.evidence.join("broker.stdout.log"),
+        stderr: config.evidence.join("broker.stderr.log"),
+        environment: BTreeMap::new(),
+    }
+}
+
+fn finish_owned_attempt(outcome: Result<()>, stop: impl FnOnce() -> io::Result<()>) -> Result<()> {
+    // A failed or timed-out native stop leaves whole-tree release unknown.
+    // Closing the Job remains the final guard, but only a successful explicit
+    // stop may reach a teardown notice and admit another model attempt.
+    stop().map_err(|_| Failure::Teardown)?;
+    outcome
+}
+
+fn serve_broker(
+    broker: &OwnedProcess,
+    config: &Config,
+    commands: &Receiver<Command>,
+    events: &EventSender,
+    history: &mut Vec<Message>,
+    spec: &ToolProcessSpec,
+) -> Result<()> {
+    let key = wait_ready(broker, config, commands, &spec.stdout, &spec.stderr)?;
     notify(events, Event::Ready)?;
     loop {
         if broker
-            .0
             .try_wait()
             .map_err(|_| Failure::Message("Could not inspect the owned broker."))?
             .is_some()
         {
-            let diagnostic = read_bounded_file(&stderr_path, MAX_HEAD).unwrap_or_default();
+            let diagnostic = read_bounded_file(&spec.stderr, MAX_HEAD).unwrap_or_default();
             return Err(runtime_failure(&diagnostic));
         }
         match commands.recv_timeout(POLL) {
@@ -458,20 +481,8 @@ fn worker(
     }
 }
 
-fn new_log(path: &Path) -> Result<File> {
-    OpenOptions::new()
-        .write(true)
-        .create_new(true)
-        .open(path)
-        .map_err(|_| {
-            Failure::Message(
-                "Could not create fresh diagnostic logs in the app evidence directory.",
-            )
-        })
-}
-
 fn wait_ready(
-    broker: &mut Broker,
+    broker: &OwnedProcess,
     config: &Config,
     commands: &Receiver<Command>,
     stdout_path: &Path,
@@ -508,7 +519,6 @@ fn wait_ready(
             });
         }
         if broker
-            .0
             .try_wait()
             .map_err(|_| Failure::Message("Could not inspect broker startup."))?
             .is_some()
@@ -655,7 +665,10 @@ fn finish_turn(
         Err(failure) => {
             let message = match failure {
                 Failure::Rejected(message) => message,
-                Failure::Message(_) | Failure::Memory | Failure::NativeRuntime => {
+                Failure::Message(_)
+                | Failure::Memory
+                | Failure::NativeRuntime
+                | Failure::Teardown => {
                     "The response did not complete. Your message is restored for review; partial output has not been added to model history."
                 }
                 Failure::Shutdown | Failure::Stopped => return Err(failure),
@@ -666,7 +679,7 @@ fn finish_turn(
                     message: message.to_owned(),
                     text: text.to_owned(),
                     // The UI must not enable Send during owned-process
-                    // teardown; Retryable is sent only after Broker::drop.
+                    // teardown; Retryable requires a confirmed whole-tree stop.
                     retry_required: !matches!(failure, Failure::Rejected(_)),
                 },
             )?;
@@ -1323,6 +1336,54 @@ mod tests {
                 "1"
             ]
         );
+    }
+
+    #[test]
+    fn owned_broker_spec_preserves_explicit_profile_paths_ports_and_evidence() {
+        let mut config = Config {
+            broker: r"C:\native app\broker.exe".into(),
+            data: "C:\\model data\\\u{96e8}".into(),
+            evidence: r"C:\private evidence\attempt-3".into(),
+            frontend_port: 5174,
+            backend_port: 8082,
+            use_abliterate_lora: true,
+            use_repacked_ptq1: false,
+            native_engine: true,
+            native_row_workers: 4,
+            canary: None,
+            qwen_tts: None,
+        };
+        for publisher in [false, true] {
+            config.native_engine = !publisher;
+            config.native_row_workers = if publisher { 1 } else { 4 };
+            let spec = super::broker_spec(&config);
+            let expected: Vec<std::ffi::OsString> = runtime_arguments(&config)
+                .into_iter()
+                .map(Into::into)
+                .chain([
+                    "--launch-development".into(),
+                    "--require-native-sandbox".into(),
+                    "--profile".into(),
+                    "swift-pq2-assessment".into(),
+                    "--data-directory".into(),
+                    config.data.as_os_str().to_owned(),
+                    "--evidence-parent".into(),
+                    config.evidence.as_os_str().to_owned(),
+                    "--frontend-port".into(),
+                    "5174".into(),
+                    "--backend-port".into(),
+                    "8082".into(),
+                    "--max-waiting".into(),
+                    "0".into(),
+                ])
+                .collect();
+            assert_eq!(spec.executable, config.broker);
+            assert_eq!(spec.arguments, expected);
+            assert_eq!(spec.working_directory, config.evidence);
+            assert_eq!(spec.stdout, config.evidence.join("broker.stdout.log"));
+            assert_eq!(spec.stderr, config.evidence.join("broker.stderr.log"));
+            assert!(spec.environment.is_empty());
+        }
     }
 
     #[test]
