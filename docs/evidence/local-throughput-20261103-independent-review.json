@@ -1,0 +1,112 @@
+{
+  "schemaVersion": 1,
+  "kind": "independent-local-short-request-observation-review",
+  "recordedDate": "2026-11-03",
+  "reviewerId": "Codex:/root/performance_receipt_review",
+  "status": "two-raw-request-rates-verified-graceful-cleanup-failed",
+  "scope": "Read-only source, documentation diff and retained-receipt review in a separate Git worktree. This review ran no model, benchmark, build, diagnostic, power/process probe, network request or CI action. Static JSON parsing, arithmetic and retained-file hashing supplied the checks below; no historical trial clock was reopened.",
+  "reviewedInputs": [
+    {"path": "local-throughput-20261103/session.json", "sha256": "84d45788a781eb64f8c08da35538b11770ba1ea7eea56f0b9775c1a090452c20"},
+    {"path": "local-throughput-20261103/retention.json", "sha256": "18bcaddf8937b85e8cc5e4bd7328216027e97171e8669bc55b4a20b2fab7354c"},
+    {"path": "local-throughput-20261103/summary.json", "sha256": "f03c859c21a4d4e53593194384b68728d0358f73bbe5b205847e840bdd239a64"},
+    {"path": "local-throughput-20261103/intake.py", "sha256": "f8b09708d46a051dd7eaf539a03556731b4f9b70143b21f70a9b296775466999"},
+    {"path": "local-throughput-20261103/run.py", "sha256": "612843efa68177985fe589cb33c76ee36ce74f50116b00c91cca794138982f0f"}
+  ],
+  "documentationReview": {
+    "readmeAndPlanDiffReviewed": true,
+    "performanceExpectationsCurrentEvidenceReviewed": true,
+    "requestMetricExplicit": true,
+    "separateTimeToFirstTokenAndGenerationRateColumnsUnmeasured": true,
+    "eightTokenTruncationExplicit": true,
+    "historicalRuntimeRowsKeptSeparate": true,
+    "gracefulCleanupFailureAndIntermediateBackendExplicit": true,
+    "laterFinalObservationDistinctFromGracefulCleanup": true,
+    "unmeasuredPublisherAndQwenOptionsExplicit": true,
+    "pendingSourceBoundShutdownDeliveryRetainedInPlan": true,
+    "materialContentDiscrepancies": []
+  },
+  "arithmetic": {
+    "formula": "reportedCompletionTokens / requestSeconds",
+    "observations": [
+      {"id": "rust-pq2", "reportedCompletionTokens": 8, "requestSeconds": 28.435071699990658, "recomputedRequestTokensPerSecond": 0.28134270538880435, "readmeRoundedRate": "0.281"},
+      {"id": "rust-ptq1", "reportedCompletionTokens": 8, "requestSeconds": 58.22373460000381, "recomputedRequestTokensPerSecond": 0.13740101103029342, "readmeRoundedRate": "0.137"}
+    ],
+    "sameReportedPromptTokens": 22,
+    "sameVisibleContent": "1, 2, 3,",
+    "sameFinishReason": "length",
+    "sameConfiguredRequest": true,
+    "startupExcluded": true,
+    "includesPrefillGenerationTransportAndClientFraming": true,
+    "timeToFirstTokenMilliseconds": null,
+    "generationTokensPerSecond": null,
+    "decodeTokensPerSecond": null,
+    "scope": "The script reads the complete response before interpreting events; it retains no first/last token arrival timestamps or isolated runtime generation interval. The request rate cannot establish time to first token, generation TPS or device decode TPS. The script validates a terminal DONE record, terminal finish reason and positive bounded completion usage before publishing a numeric observation. Retained events and usage agree with the receipt. Original HTTP response bytes were not retained for independent wire-framing replay; the response hashes alone cannot supply that replay. SSE event counts were not used as token counts."
+  },
+  "powerReview": {
+    "pq2RecordedSnapshotCount": 49,
+    "ptq1RecordedSnapshotCount": 82,
+    "recordedAcOrSaverMismatches": 0,
+    "allRecordedArmAcConnected": true,
+    "allRecordedArmBatterySaverOff": true,
+    "pq2ChargeBeforeAfter": [22, 22],
+    "ptq1ChargeBeforeAfter": [22, 23],
+    "aggregateChargeBeforeSetupAfterFinalRetention": [20, 24],
+    "aggregateAcBeforeSetupAfterFinalRetention": [true, true],
+    "aggregateSaverBeforeSetupAfterFinalRetention": [false, false],
+    "continuousStabilityProven": false,
+    "scope": "Verified retained observations only; no new power query and no inference about historical runs. Matching endpoints and one-second samples do not prove uninterrupted conditions."
+  },
+  "identityReview": {
+    "runtimeVersion": "0.1.14",
+    "runtimeSourceRevision": "9e8ea3e2c042ab0c3f1a8e9596ff155e202c3c57",
+    "retainedRuntimeFileObservations": 9,
+    "retainedRuntimeByteOrSha256DifferencesFromLock": 0,
+    "runtimePayloadsIndependentlyReopened": false,
+    "modelPayloadsIndependentlyRehashed": false,
+    "configuredNativeRowWorkers": 4,
+    "workersIndependentlyObservedInRetainedLogs": false,
+    "brokerSha256": "82d4418f24ef346032845e0a4aba9986703a83cb1eeebbe63c1a9d618bbf0644",
+    "brokerScope": "Previously installed broker selected its pinned model/runtime and required native sandbox. This is not a build or acceptance verdict for current Runner main. Empty retained backend logs supply no independent private-readiness identity."
+  },
+  "cleanupAndBudget": {
+    "bothRequestsCompletedBeforeForcedBrokerTermination": true,
+    "bothGracefulCleanupAttemptsFailed": true,
+    "bothBrokerExitCodes": [1, 1],
+    "bothArmListenerChecksReportedReleased": true,
+    "pq2PostArmModelScanEmpty": true,
+    "ptq1PostArmRecordedRemainingBackendPid": 22376,
+    "furtherModelArmsStopped": true,
+    "laterFinalModelProcessScanEmpty": true,
+    "laterRemainingTrialCredentialFiles": 0,
+    "independentJobAccountingPerformed": false,
+    "originalMaximumAggregateSeconds": 720,
+    "originalConservativeEstimateSeconds": 690,
+    "elapsedSecondsThroughFinalRetention": 288.0867726999859,
+    "withinOriginalAllowance": true,
+    "modelAttemptsRepeated": 0,
+    "guardianInterventions": 0,
+    "scope": "The later final scan and credential cleanup do not convert the failed graceful shutdown into an acceptance pass. Guardians recorded no intervention; these completed request timings do not depend on their deadline-enforcement behavior."
+  },
+  "unmeasured": {
+    "publisherPq2": "Not started after the cleanup fault.",
+    "publisherPtq1": "Not started after the cleanup fault.",
+    "qwen": "Pinned model/runtime absent from the selected installed inventory; no download or model attempt."
+  },
+  "retainedFileChecks": {
+    "summarySessionAndRetentionHashesMatch": true,
+    "fourSelectedBackendLogsMatchRecordedLengthsAndHashes": true,
+    "selectedBackendLogsAllEmpty": true,
+    "historicalRust013AcceptanceHostAndBuildReceiptHashesMatchRetainedReview": true,
+    "historicalRust013Pq2RequestRate": 0.05440594494195628,
+    "historicalRust013Ptq1RequestRate": 0.02798812823086731,
+    "historicalRust013PowerUnknown": true
+  },
+  "qualification": {
+    "rawShortRequestObservationsSupported": true,
+    "applicationAcceptancePassed": false,
+    "gracefulCleanupPassed": false,
+    "performanceComparisonQualified": false,
+    "sustainedPerformanceQualified": false,
+    "defaultPromotionQualified": false
+  }
+}
