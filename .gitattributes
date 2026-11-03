@@ -1,5 +1,6 @@
 # Keep retained observation selection bytes stable for their recorded SHA-256.
 docs/evidence/ptq1-local-validation-20261103/** -text -whitespace
+docs/evidence/inference-efficiency-local-20261103/** -text -whitespace
 docs/evidence/hexagon-advance-controls.json text eol=lf
 docs/evidence/hexagon-x2-dispatch.json text eol=lf
 docs/evidence/hexagon-x2-session-metadata.json text eol=lf
