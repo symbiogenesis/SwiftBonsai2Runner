@@ -218,6 +218,7 @@ fn development_default_and_explicit_rollback_survive_deferred_preparation() -> c
             object.insert("NoSpeechModels".into(), json!(true));
             let selected_native = native.unwrap_or(true);
             let selected_workers = workers.unwrap_or(if selected_native { 4 } else { 1 });
+            let worker_argument = selected_workers.to_string();
             let mut recorder = Recorder::new(fixture.root.clone());
             launch_pending(
                 plan(fixture.request)?.request,
@@ -255,7 +256,7 @@ fn development_default_and_explicit_rollback_survive_deferred_preparation() -> c
             assert!(
                 arguments
                     .windows(2)
-                    .any(|args| args[0] == "--native-row-workers" && args[1] == selected_workers)
+                    .any(|args| args[0] == "--native-row-workers" && args[1] == worker_argument)
             );
             assert!(arguments.iter().any(|arg| arg == "--use-original-pq2"));
             assert_eq!(
