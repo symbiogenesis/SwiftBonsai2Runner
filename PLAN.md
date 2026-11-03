@@ -1234,7 +1234,7 @@ do not reset it. Further owner qualification remains pending for this investigat
   replay or partial CPU continuation.
 - Publish scoped profiles/no-go results from paired repeated CI: short and near-limit
   prompts, full output reserve, fixed and natural completions, edited and reused state,
-  AC/battery, pressure and 15Ã¢â‚¬â€œ30-minute sustained use. Retain raw evidence, uncertainty,
+  AC/battery, pressure and 15–30-minute sustained use. Retain raw evidence, uncertainty,
   LoRA parity, CPU rollback and [upgrade gates](docs/hexagon.md#qualification-evidence).
   Qualify Rust NPU coverage and device safety after Rust CPU parity, preserving signed
   deployment and full state.
