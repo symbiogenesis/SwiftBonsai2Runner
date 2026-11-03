@@ -1,0 +1,86 @@
+{
+  "schemaVersion": 1,
+  "kind": "independent-ptq1-primetime-adapter-admission-decision",
+  "recordedDate": "2026-11-03",
+  "reviewerId": "Codex:/root/primetime_basis",
+  "reviewedRunnerRevision": "50f381f0d2833a308c39286df71e9be0b355733d",
+  "decision": "no-go-for-current-standard-adapter-release-promotion",
+  "scope": "Read-only source and retained repository evidence review. This is a release-admission decision for the intended current-weight PTQ1/adapter profile, not a compiled promotion score, a new producer authentication, or an intrinsic PTQ1 format verdict. PLAN.md remains the sole backlog.",
+  "candidate": {
+    "runtimeVersion": "0.1.14",
+    "runtimeRevision": "9e8ea3e2c042ab0c3f1a8e9596ff155e202c3c57",
+    "representation": "current-repacked-PTQ1_0",
+    "modelBytes": 5946648928,
+    "modelSha256": "e658f0f0736a03a4549535a439f9b07254ebf8ab88ae27cbe6e52d098ca5d1f5",
+    "adapterBytes": 9682464,
+    "adapterSha256": "f1669534803d340a496015f5c45125f3437b4d13ec764f40e34488ce83967f42",
+    "directionSha256": "06ab5afef2529d9302748507c85913d55dff53b7b739ccc98d8db7716ebd36b2",
+    "adapterScale": 1.3,
+    "nativeRowWorkers": 4,
+    "servingStatePolicy": "reset-every-request"
+  },
+  "retainedPositiveEvidence": {
+    "directionConsistency": "The independently reviewed historical hosted result compares all 129 B factors / 660480 channels to the selected public direction with zero numeric difference. It establishes B-direction consistency, not checkpoint provenance, independent A reconstruction, native writer mapping or current-runtime behavior.",
+    "referencePreparation": "The declared public producer, separate standard-library retained-data auditor and six historical small replay controls exist. Source preparation and fixture success are not a result from the complete public pack."
+  },
+  "blockingConditions": [
+    {
+      "condition": "Complete independent public A reconstruction",
+      "classification": "required-retained-evidence-absent",
+      "observation": "The reviewed docs/evidence inventory contains no report of kind independent-public-pack-A-reference and no ssm-*.f32le result files. The retained 0.1.14 readiness audit likewise reports no complete all-48 payload result. No numerical mismatch from the actual full reconstruction is asserted.",
+      "requiredEvidence": "The one declared hosted recipe public-mlx-f16-inverse1024-f16-f32-dot-v1, all 48 A-vector files, complete fixed-bound metrics, separately authenticated producer identities and independent scalar replay/review. The existing 1e-5 + 1e-5 * abs(reference) bound is unchanged."
+    },
+    {
+      "condition": "Authenticated original authoring provenance",
+      "classification": "required-authentication-absent-in-reviewed-evidence",
+      "observation": "The retained public-input audit identifies no original unfolded-checkpoint identities or approved-adapter-bound conversion invocation/toolchain record. That historical public observation is not a claim about today's network state or all possible private inputs. No new public-source query was made.",
+      "requiredEvidence": "Authenticate the original checkpoint/index/shard identities, exact exporter and invocation/preprocessing, direction/normalization, toolchain/matrix implementation, and output binding to the selected adapter. A public reconstruction match cannot authenticate which original inputs or invocation the author used."
+    },
+    {
+      "condition": "Independent all-site native writer basis and application",
+      "classification": "required-validation-absent-in-reviewed-evidence",
+      "observation": "No independently qualified all-48 authoring-to-native signed mapping and writer-input/residual-correction record is established. Historical matching logits against the same native implementation, loading, output text or zero-scale streams do not establish that basis.",
+      "requiredEvidence": "Independently verify the declared 6144-channel signed permutation at all 48 SSM sites and native writer inputs/corrections; retain released-runtime no-adapter/loaded-zero logits/state identity and nonzero application. The scalar/explicit-NEON and broader promotion gates remain separate."
+    }
+  ],
+  "intakeCannotSupplyMissingAuthentication": {
+    "schemaVersion": 2,
+    "source": "tools/bonsai/src/qualification/basis.rs",
+    "reviewedBehavior": "Requires current locked runtime/model/adapter identities, a complete signed permutation, exact all-48 inventory, bounded manifests and raw-byte hashes. It compares declared A vectors but always leaves authoringProvenanceQualified, aFactorReproductionQualified, writerBasisQualified and defaultMayChange false. The provenance validator checks declared index/conversion/toolchain consistency without reading checkpoint shard payloads or authenticating the original declarations.",
+    "retainedActualBasisIntakeResultFound": false,
+    "syntheticOrCopiedAdapterVectorsMaySubstitute": false
+  },
+  "admissionRationale": "The intended standard-adapter profile cannot satisfy its existing basis/provenance contract using the retained evidence. These missing independent inputs and validations are sufficient for a definite current release no-go even if local implementation checks pass. Dropping the adapter, widening tolerances, trusting self-declared manifests or transferring the older 0.1.13 numerical pass would change the candidate or weaken qualification rather than close this blocker.",
+  "reconsiderationBoundary": "Reconsider this adapter admission decision only after the existing PLAN critical-path evidence is retained and independently reviewed against settled source/runtime/model/adapter identities. A future public all-48 match closes only its declared numerical reconstruction scope; provenance, native mapping, application and the remaining release gates still require their own evidence.",
+  "reviewedFiles": [
+    { "path": "config/prism-inference.lock.json", "bytes": 2433, "sha256": "8d2cf2f7cacf7795dc3283d8cd931cd50e077e6f9aac052b5c3fbc8327cd150a" },
+    { "path": "config/swift-lora.lock.json", "bytes": 2826, "sha256": "84bf87bd873a372ebd943dae81d3300d74ec09055d6c5fe0628873d3863ae74a" },
+    { "path": "config/swift.ptq1-export.json", "bytes": 1165, "sha256": "c184dea2089127201a15595af86e61005ec5b3f9c14e8089fee5c8f630a762d5" },
+    { "path": "docs/adapter-public-reference.md", "bytes": 7511, "sha256": "70e031e5645070161d171dc1d8a4bde4ce57cb82b3d6f71301e884ea19c38680" },
+    { "path": "docs/evidence/ptq1-authoring-inputs-20261102.json", "bytes": 6778, "sha256": "5d770a96f7561bd074f5b54aa6754a6d63305d50281c922bef9f5efb0b14bf01" },
+    { "path": "docs/evidence/ptq1-direction-41530766802/independent-review.json", "bytes": 4469, "sha256": "2eabd19daa50eb5c2eec99480c13823625f43d95066c19dfdb9103588f2f805b" },
+    { "path": "docs/evidence/prism-0114-readiness-20261103.json", "bytes": 21280, "sha256": "b3909561b7431a5fc8c0ad96caf10d0d494b8a85657fab9661ed672761abbbdc" },
+    { "path": "tools/bonsai/src/qualification/basis.rs", "bytes": 10329, "sha256": "68287fd7bbeaee7be94c7597ff282d75a723f64561a88fa0fe323f19a768f761" },
+    { "path": "tools/bonsai/src/qualification/basis/provenance.rs", "bytes": 11487, "sha256": "cef954b51cab3594a2cb1bb1e2cb7ba1637f1674dcb4362c6b89f9e8b56152a7" },
+    { "path": "tools/native-reference/public_pack_reference.py", "bytes": 20017, "sha256": "fcd61ff1cbd6f57893ef3328a61999ccd7b0aad059ccdadae52949d70472fe31" },
+    { "path": "tools/native-reference/audit_public_reference.py", "bytes": 18681, "sha256": "9368126dc27ddda096faa7e659d526cd9cc8d7b169fe4d891d472beafeeea3d2" },
+    { "path": "tools/native-reference/public-authoring-pins.json", "bytes": 3237, "sha256": "2df6cce391b10cfe73adf64d44b234e9360976b1c4d0a3fc3ec4399327ca0142" },
+    { "path": ".github/workflows/ptq1-public-authoring-reference.yml", "bytes": 6403, "sha256": "57cea5d9438df18e40590e2946c867224b0425f5b0699b2189367f04143b391c" }
+  ],
+  "reviewMethod": "Read retained documents and source, search the scoped repository evidence inventory, and hash the listed small files. Absence findings apply only to the reviewed repository snapshot; they do not prove that no external or private evidence exists. This review did not execute a diagnostic or qualification workload.",
+  "newBuildsOrTests": 0,
+  "newDeviceQueries": 0,
+  "newModelExecutions": 0,
+  "newPayloadDownloads": 0,
+  "newNetworkQueries": 0,
+  "newCiActions": 0,
+  "newPromotionGatesPassed": [],
+  "all48PublicAComparisonPassed": false,
+  "authorOriginalProvenanceQualified": false,
+  "nativeWriterBasisQualified": false,
+  "defaultPromotionQualified": false,
+  "formatIntrinsicallyRejected": false,
+  "experimentalLabelMayBeRemoved": false,
+  "defaultsChanged": false,
+  "requirementsOrTolerancesWeakened": false
+}
