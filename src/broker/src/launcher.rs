@@ -161,11 +161,8 @@ impl LaunchConfig {
                     require_native_sandbox = true;
                 }
                 Some("--check-only") if !check_only => check_only = true,
-                Some("--native-engine") if native_engine.is_none() => {
-                    native_engine = Some(true);
-                }
-                Some("--publisher-engine") if native_engine.is_none() => {
-                    native_engine = Some(false);
+                Some("--native-engine" | "--publisher-engine") if native_engine.is_none() => {
+                    native_engine = Some(argument == "--native-engine");
                 }
                 Some("--native-row-workers") if native_row_workers.is_none() => {
                     native_row_workers = Some(row_workers(args.next().as_deref())?);

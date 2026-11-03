@@ -255,8 +255,7 @@ fn development_default_and_explicit_rollback_survive_deferred_preparation() -> c
             assert!(
                 arguments
                     .windows(2)
-                    .any(|args| args[0] == "--native-row-workers"
-                        && args[1] == selected_workers.to_string())
+                    .any(|args| args[0] == "--native-row-workers" && args[1] == selected_workers)
             );
             assert!(arguments.iter().any(|arg| arg == "--use-original-pq2"));
             assert_eq!(

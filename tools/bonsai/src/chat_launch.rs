@@ -413,6 +413,27 @@ fn argument(arguments: &mut Vec<OsString>, name: &str, value: impl Into<OsString
     arguments.push(value.into());
 }
 
+fn runtime_arguments(request: &Request, arguments: &mut Vec<OsString>) {
+    if request.no_abliterate_lora {
+        arguments.push("--no-abliterate-lora".into());
+    }
+    arguments.push(if request.use_repacked_ptq1 {
+        "--use-repacked-ptq1".into()
+    } else {
+        "--use-original-pq2".into()
+    });
+    arguments.push(if request.native_engine {
+        "--native-engine".into()
+    } else {
+        "--publisher-engine".into()
+    });
+    argument(
+        arguments,
+        "--native-row-workers",
+        request.native_row_workers().to_string(),
+    );
+}
+
 fn launch_arguments(
     request: &Request,
     models: Option<&Value>,
@@ -438,24 +459,7 @@ fn launch_arguments(
         "--backend-port",
         request.backend_port.to_string(),
     );
-    if request.no_abliterate_lora {
-        arguments.push("--no-abliterate-lora".into());
-    }
-    arguments.push(if request.use_repacked_ptq1 {
-        "--use-repacked-ptq1".into()
-    } else {
-        "--use-original-pq2".into()
-    });
-    arguments.push(if request.native_engine {
-        "--native-engine".into()
-    } else {
-        "--publisher-engine".into()
-    });
-    argument(
-        &mut arguments,
-        "--native-row-workers",
-        request.native_row_workers().to_string(),
-    );
+    runtime_arguments(request, &mut arguments);
     if let Some(key) = &request.canary_key_file {
         argument(&mut arguments, "--canary-key-file", key);
         argument(
