@@ -1,0 +1,282 @@
+{
+  "schemaVersion": 1,
+  "status": "byte-preserved-historical-inputs-copied",
+  "sourceBundle": "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\docs\\evidence\\ptq1-promotion-bb020f4",
+  "candidateRevision": "bb020f45169b0698678ca5f789aef7af8cdc12b2",
+  "serviceHarnessRevision": "90a62b954f56aa5b1da3ab167ee3f87255477b73",
+  "files": [
+    {
+      "file": "ci/jobs-41535008203.json",
+      "bytes": 167866,
+      "sha256": "d0f593d2b89cabc6777681f10dbbcf58041a29a680e4a77356f5047fb973f20d"
+    },
+    {
+      "file": "ci/jobs-41535008224.json",
+      "bytes": 64191,
+      "sha256": "80b3c7df856650cf029fd52565706314e1910886c263338392d0bc51d45750ef"
+    },
+    {
+      "file": "ci/jobs-41535008364.json",
+      "bytes": 8862,
+      "sha256": "45c0d8cdc81cf3f5eaafe10cb9ed48001190b0f9aa5a4ffbfa493126699580ea"
+    },
+    {
+      "file": "ci/jobs-41572249082.json",
+      "bytes": 21326,
+      "sha256": "be74dc665f4e91d9d5817fc2bb0148a8431a897a93a15042296dad5265bf14bc"
+    },
+    {
+      "file": "ci/jobs-41573364524.json",
+      "bytes": 2478,
+      "sha256": "9415e119e717c2831a3d8c21dfaecba667a6face5d4fcf9af59c0dac17876b20"
+    },
+    {
+      "file": "ci/release-tag-v0.1.13.json",
+      "bytes": 363,
+      "sha256": "c8fc2bae54b2e0fa7aee7cdda75d8b06cd89f18be9d7a455b12bdbcb46238f40"
+    },
+    {
+      "file": "ci/release-v0.1.13.json",
+      "bytes": 9941,
+      "sha256": "6545cb9b35678574fc692b2ccf631e827f1288e284f3cf45e0dba797ee5a2bdc"
+    },
+    {
+      "file": "ci/run-41535008203.json",
+      "bytes": 13331,
+      "sha256": "6ba9caec643360fa28ce92126e39608c79f6320f0473e63ab28312113a65c7f7"
+    },
+    {
+      "file": "ci/run-41535008224.json",
+      "bytes": 13313,
+      "sha256": "51b1668cbeec988ec4efa91de95e2c1d849345a2587db9ef49cac8d01933d6f4"
+    },
+    {
+      "file": "ci/run-41535008364.json",
+      "bytes": 13321,
+      "sha256": "bbd7989de3e299127cd1dcc27ef2df35e883c912a34af0cc6e0c692e51df2c65"
+    },
+    {
+      "file": "ci/run-41572249082.json",
+      "bytes": 13567,
+      "sha256": "069d24ab4e8d863c07a01d8fd09ec5551b2cc2d3a4b114d4d4964295ed1ecfc8"
+    },
+    {
+      "file": "ci/run-41573364524.json",
+      "bytes": 13606,
+      "sha256": "41268fab6241c9bd836095de895ced9b02db9b6d41369e9c923075cbd2a1926c"
+    },
+    {
+      "file": "packing/artifact-metadata.json",
+      "bytes": 727,
+      "sha256": "5fcaefc5fffc3e468c7ff0543cc9402f714b3f73aab8e2436d6312789f3c6cea"
+    },
+    {
+      "file": "packing/artifacts-list.json",
+      "bytes": 1514,
+      "sha256": "92e3ed89c84a83f34efeb78d911b5dd8933d4316545dcfc2cedfc934f7acf583"
+    },
+    {
+      "file": "packing/expected-export.json",
+      "bytes": 1165,
+      "sha256": "c184dea2089127201a15595af86e61005ec5b3f9c14e8089fee5c8f630a762d5"
+    },
+    {
+      "file": "packing/hosted-packing.zip",
+      "bytes": 4101,
+      "sha256": "0ab5a6369267a3d33dcc459b999b5ac065c6a78cc2092f0e92a45502a8540a6f"
+    },
+    {
+      "file": "packing/independent-packing.json",
+      "bytes": 862,
+      "sha256": "1e7522d09619ef356674abb0b0b999e05c53d54629c4936f288d48a89033f6af"
+    },
+    {
+      "file": "packing/independent-review.json",
+      "bytes": 2770,
+      "sha256": "9525d9d011cc724f47b50d578aed5c6d83aa2557f475172e10e0dc358d453a01"
+    },
+    {
+      "file": "packing/manifest.json",
+      "bytes": 748,
+      "sha256": "babf61ec3deb1cca888fe5eaf6f66228e6296b0e302d043e6d5b4c08fe8ffc79"
+    },
+    {
+      "file": "packing/qualification.json",
+      "bytes": 2575,
+      "sha256": "1c19bc0ad2181733ef53f8b79f2ad8a92b3525b4aa59aac93638e9dad15ad3e1"
+    },
+    {
+      "file": "packing/reproduced-export.json",
+      "bytes": 1052,
+      "sha256": "9b6938bd53bafcfc3c5eaddda10ea42457d2adec3e9e16f906f4dee16596da4c"
+    },
+    {
+      "file": "ptq1-rollback-41573164864-source-review.json",
+      "bytes": 6788,
+      "sha256": "b4bf960c66b0791639274752c4bed818682cf5fda69fd915c334df32b8d81459"
+    },
+    {
+      "file": "reports/bounded-neon-row4-comparison.json",
+      "bytes": 36328,
+      "sha256": "81b84989e43cf6433c2d548bc0c80e7ff926a16bcf5753f5bc9b63ed7b98a23e"
+    },
+    {
+      "file": "reports/bounded-neon-row4-numerics.json",
+      "bytes": 64026,
+      "sha256": "9d5a1024782e0846449ebd780d1003d9281bbf254fa86f2ec172bdaef58a58c8"
+    },
+    {
+      "file": "reports/closed-owner-session.json",
+      "bytes": 416,
+      "sha256": "8c746ecb63b3b00f94e7db03b6338db5db89b3e590698aa3b17534d77f34fca5"
+    },
+    {
+      "file": "reports/documentary-applicability-review.json",
+      "bytes": 6713,
+      "sha256": "84f3fbc9fc11189a8743ed6aeec51b93fad22d3ea9f864eeaf46e3edb57730d1"
+    },
+    {
+      "file": "reports/evaluator-package-intake-review.json",
+      "bytes": 964,
+      "sha256": "8ab42509180e3ae89a1eebd0afc7c80e260142446e512a21c9d3a67fc206acd2"
+    },
+    {
+      "file": "reports/evaluator-package-receipt.json",
+      "bytes": 906,
+      "sha256": "9d8157c15e3ebcaa035ffbdfe8eb138ea13b2d223a4efd98b1c619daa239b278"
+    },
+    {
+      "file": "reports/later-f0a6a3b-applicability.json",
+      "bytes": 3737,
+      "sha256": "934b5b5a10b31f792f1db0bc4cfc57e832be79cd3f5e02ccd46208e9f77b42aa"
+    },
+    {
+      "file": "reports/prism-0113-release-review.json",
+      "bytes": 18801,
+      "sha256": "bb9ef39a1ff18e1583a826e5517387dc234cbe74b662ef6859cfbaf1d4acab56"
+    },
+    {
+      "file": "reports/ptq1-0113-lifecycle-independent-review.json",
+      "bytes": 6994,
+      "sha256": "69916b6723a318e38d217b104f581b2275dcbb94fee9f40a3064cc8c7a7aba71"
+    },
+    {
+      "file": "reports/ptq1-authoring-inputs-20261102.json",
+      "bytes": 6778,
+      "sha256": "5d770a96f7561bd074f5b54aa6754a6d63305d50281c922bef9f5efb0b14bf01"
+    },
+    {
+      "file": "reports/published-direction-independent-review.json",
+      "bytes": 4469,
+      "sha256": "2eabd19daa50eb5c2eec99480c13823625f43d95066c19dfdb9103588f2f805b"
+    },
+    {
+      "file": "reports/runner-source-changes.json",
+      "bytes": 4719,
+      "sha256": "2a299a497ab3660d15b54b14f52f17d1fea77ba015b32d48c1ee3fb19d762661"
+    },
+    {
+      "file": "rollback/acceptance/acceptance.json",
+      "bytes": 17413,
+      "sha256": "5b68bb1e4dda961a9b376dc2222fb39a2ae62161c979b06f96b71430626a404f"
+    },
+    {
+      "file": "rollback/acceptance/host.json",
+      "bytes": 1171,
+      "sha256": "ad02a005008d8b1920d075fa043857f563b6f758cfed8fce1a01e27803396c59"
+    },
+    {
+      "file": "rollback/acceptance/hosted-build.json",
+      "bytes": 906,
+      "sha256": "9d8157c15e3ebcaa035ffbdfe8eb138ea13b2d223a4efd98b1c619daa239b278"
+    },
+    {
+      "file": "rollback/acceptance-artifact-metadata.json",
+      "bytes": 832,
+      "sha256": "353fa1f1cb509d34f4d40cdf796edc04b3b37d23bce4f5975e4c5179d8c47d35"
+    },
+    {
+      "file": "rollback/acceptance.zip",
+      "bytes": 6731,
+      "sha256": "4e859e83128c994a592e10e0231830a2597c140af3c6f4878179e02c9f52aa11"
+    },
+    {
+      "file": "rollback/aggregate-budget.json",
+      "bytes": 1081,
+      "sha256": "7260515f5100507686b7f1154effcc372ebced71f9b60e247069953e83bcfa23"
+    },
+    {
+      "file": "rollback/file-manifest.json",
+      "bytes": 3310,
+      "sha256": "3d789236a2072b9026f46173e114be74383d8c5caec34fd28b8c4de5b59ac371"
+    },
+    {
+      "file": "rollback/gate-record.json",
+      "bytes": 1728,
+      "sha256": "5034690bba22c22c612de2b9aa414aaee5cdefe5cea819f1faf7b8858fc80bc1"
+    },
+    {
+      "file": "rollback/guardian-result.json",
+      "bytes": 546,
+      "sha256": "66b677324d8b720fc7bae5228a86e5a4e7d2bb3f26e8bf80217b64024d2e45b0"
+    },
+    {
+      "file": "rollback/independent-review.json",
+      "bytes": 11908,
+      "sha256": "7a618b690ad868deccf31a0721885e33d97715f72cf84f1d34d4e0dc0ad99641"
+    },
+    {
+      "file": "rollback/original-pq2-retention.json",
+      "bytes": 482,
+      "sha256": "00b28f27ae91808966ef38b53edd339f92e89b94ae7c0d49a1814098c94a8493"
+    },
+    {
+      "file": "rollback/original-session-budget.json",
+      "bytes": 288,
+      "sha256": "af4b490ee824e80ec4152257850a6b2013dc03920e56c516535c0a0f567bbdb2"
+    },
+    {
+      "file": "rollback/owner/cleanup.json",
+      "bytes": 584,
+      "sha256": "cd15a92f6f17534e1889e9b67af7932065d7f73960db7fd07fafec9873527009"
+    },
+    {
+      "file": "rollback/owner/owner-lifetime.json",
+      "bytes": 2342,
+      "sha256": "a8be684a0f54901b2e8ab9841e8b3930cf104f72448d127521278e9fdff9d77d"
+    },
+    {
+      "file": "rollback/owner/preparation-proof.json",
+      "bytes": 1518,
+      "sha256": "246a24251f773ff3741497dc4eab1ecba3780d3e6be908aecf5e8c5f752fc64a"
+    },
+    {
+      "file": "rollback/owner/runtime-provisioning.json",
+      "bytes": 267,
+      "sha256": "5b3d5d298738e28d54da1436a47e4506b106b6f31d4ebac8ba5d5d8a6b6f0402"
+    },
+    {
+      "file": "rollback/prelaunch-correction.json",
+      "bytes": 387,
+      "sha256": "ba2c66d7b96b52392b8dc3f6add6014bd6ee5bd5a1d5678535f11ffdc0de47f9"
+    },
+    {
+      "file": "rollback/preparation-review.json",
+      "bytes": 964,
+      "sha256": "8ab42509180e3ae89a1eebd0afc7c80e260142446e512a21c9d3a67fc206acd2"
+    },
+    {
+      "file": "rollback/session-archival-finish.json",
+      "bytes": 416,
+      "sha256": "8c746ecb63b3b00f94e7db03b6338db5db89b3e590698aa3b17534d77f34fca5"
+    },
+    {
+      "file": "rollback/trusted-selection.json",
+      "bytes": 440,
+      "sha256": "d318153a88612effeda23d2a3dd4b92c53b4dfa920df3d92aad23d33f4e92df5"
+    }
+  ],
+  "compiledEvaluatorInvocations": 0,
+  "ownerTrials": 0,
+  "scope": "Data preparation only. Fresh applicability and service review are still required; no gate pass is preasserted."
+}

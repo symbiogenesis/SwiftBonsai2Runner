@@ -1,0 +1,62 @@
+{
+  "Repository": "symbiogenesis/SwiftBonsai2Runner",
+  "RunId": "41577882160",
+  "Revision": "90a62b954f56aa5b1da3ab167ee3f87255477b73",
+  "RunAttempt": 1,
+  "FoundationRunId": "41577880480",
+  "StartedAtUtc": "2026-11-03T04:33:30.8741041Z",
+  "FinishedAtUtc": "2026-11-03T04:35:20.3973833Z",
+  "TotalSeconds": 109.5234178,
+  "IntakeSeconds": 1.8542017,
+  "ExitCode": 1,
+  "OuterTimedOut": false,
+  "MaximumSeconds": 290,
+  "OriginalAggregateStartedTick": 1123017454694,
+  "EarlierDiagnosticsChargeSeconds": 10,
+  "OwnerProcessMaximumSeconds": 280,
+  "OwnerWorkMaximumSeconds": 270,
+  "OwnerCleanupReserveSeconds": 10,
+  "AggregateRetentionReserveSeconds": 10,
+  "OwnerClockIncludesIntake": true,
+  "OwnerAttempted": true,
+  "AdditionalModelAttempts": 0,
+  "OptionalPackingVerification": "not-selected-hosted-packing-is-separate",
+  "PowerBefore": {
+    "Boundary": "before",
+    "ObservedAtUtc": "2026-11-03T04:33:32.7364723Z",
+    "OriginalElapsedSeconds": 1.8633647,
+    "Power": {
+      "ac_online": true,
+      "battery_percent": 77,
+      "battery_saver": false,
+      "source": "GetSystemPowerStatus",
+      "status": "observed"
+    },
+    "Status": "observed",
+    "Failure": null,
+    "QuerySeconds": 0.9158326,
+    "ContinuousPowerStabilityProven": false
+  },
+  "PowerAfter": {
+    "Boundary": "after",
+    "ObservedAtUtc": "2026-11-03T04:35:19.4331798Z",
+    "OriginalElapsedSeconds": 108.559166,
+    "Power": {
+      "ac_online": true,
+      "battery_percent": 78,
+      "battery_saver": false,
+      "source": "GetSystemPowerStatus",
+      "status": "observed"
+    },
+    "Status": "observed",
+    "Failure": null,
+    "QuerySeconds": 0.0411781,
+    "ContinuousPowerStabilityProven": false
+  },
+  "PowerObservationsScope": "read-only native endpoints around owner workload; unknown remains unknown; no performance or continuous-stability qualification",
+  "CleanupVerified": true,
+  "Status": "failed",
+  "LastStage": "credential-free-retention",
+  "AcceptanceArtifactRetention": "retained-exact-credential-free-artifact",
+  "DefaultPromotionQualified": false
+}

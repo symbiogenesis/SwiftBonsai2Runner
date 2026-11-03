@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "kind": "independent-closed-ptq1-service-partial-observations",
+  "reviewerId": "Codex:/root/review",
+  "runId": "41577882160",
+  "revision": "90a62b954f56aa5b1da3ab167ee3f87255477b73",
+  "checks": {
+    "source-run-and-profile": true,
+    "selected-release-adapter-and-row4": true,
+    "terminal-stream-1": true,
+    "terminal-stream-2": true,
+    "terminal-stream-3": true,
+    "only-three-streams-and-invalid-rejection": true,
+    "failure-not-budget-expiry": true,
+    "owned-parent-cleanup": true,
+    "one-original-closed-clock": true,
+    "child-after-remains-unknown": true,
+    "separate-parent-power-endpoints": true,
+    "broader-gates-stay-unqualified": true
+  },
+  "allReceiptInterpretationChecksPassed": true,
+  "streams": [
+    {
+      "phase": "required-scale-1.3-stream",
+      "scaleBits": "3ff4cccccccccccd",
+      "requestSha256": "06b5390575a46ec2203a6b614f414e1168c25a959ec9db7469430616133315c0",
+      "promptTokens": 13,
+      "completionTokens": 1,
+      "content": "Hello",
+      "contentSha256": "185f8db32271fe25f561a6fc938b2e264306ec304eda518007d1764826381969",
+      "passed": true
+    },
+    {
+      "phase": "scale-negative-zero",
+      "scaleBits": "8000000000000000",
+      "requestSha256": "96ac715961c6c0f7839fe8f82f8a8dfcb7b2f371c2c64a8c6cbdac45a06c7a46",
+      "promptTokens": 13,
+      "completionTokens": 1,
+      "content": "Hello",
+      "contentSha256": "185f8db32271fe25f561a6fc938b2e264306ec304eda518007d1764826381969",
+      "passed": true
+    },
+    {
+      "phase": "scale-two",
+      "scaleBits": "4000000000000000",
+      "requestSha256": "b26882b4b85be4718db7509fd41ddf993f2f2090913394b3e4adbcaadf6ad0fd",
+      "promptTokens": 13,
+      "completionTokens": 1,
+      "content": "Hi",
+      "contentSha256": "3639efcd08abb273b1619e82e78c29a7df02c1051b1820e99fc395dcaa3326b8",
+      "passed": true
+    }
+  ],
+  "guardianElapsedSeconds": 109.7370729,
+  "totalChargedSeconds": 119.7370729,
+  "scope": "Retained-data-only JSON, exact request/output digest reconstruction and receipt interpretation. No device or model execution."
+}

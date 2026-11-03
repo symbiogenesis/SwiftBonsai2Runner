@@ -1,0 +1,32 @@
+{
+  "runId": "41577882160",
+  "head_sha": "90a62b954f56aa5b1da3ab167ee3f87255477b73",
+  "head_branch": "main",
+  "event": "workflow_dispatch",
+  "path": ".github/workflows/native-runtime-acceptance.yml",
+  "status": "completed",
+  "conclusion": "failure",
+  "run_attempt": 1,
+  "jobs": [
+    {
+      "id": "125725621887",
+      "name": "prepare",
+      "status": "completed",
+      "conclusion": "success",
+      "runner_id": 1000021369,
+      "runner_name": "GitHub Actions 1000021369",
+      "started_at": "2026-11-03T04:24:33Z",
+      "completed_at": "2026-11-03T04:29:21Z"
+    },
+    {
+      "id": "125727244557",
+      "name": "acceptance",
+      "status": "completed",
+      "conclusion": "failure",
+      "runner_id": 41,
+      "runner_name": "codex-bonsai-ptq1-service-41577882160-fc02b02f",
+      "started_at": "2026-11-03T04:33:45Z",
+      "completed_at": "2026-11-03T04:35:07Z"
+    }
+  ]
+}

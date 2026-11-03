@@ -1,0 +1,26 @@
+{
+  "Revision": "90a62b954f56aa5b1da3ab167ee3f87255477b73",
+  "RunId": "41577882160",
+  "ArtifactId": "13203907922",
+  "ArtifactBytes": 4434116,
+  "ArtifactSha256": "8b1703c399e9e607485148219eb8ee78f8a6b7a5dac223ba92031a85c53fc3b8",
+  "ReceiptBytes": 906,
+  "ReceiptSha256": "3ecc5b7dd938f6467b2e77157a5deeb7b7756a79adac734fd9a9119767aba24a",
+  "ToolsSourceId": "89298f18344fd4fe480cbc0414fcfb68e6774f2a756cceed9aaa1039e3c04b73",
+  "Files": [
+    {
+      "Name": "native-model-acceptance.exe",
+      "Bytes": 4506112,
+      "Sha256": "fd07c2852ffc957c9560f84bf88a906c6e94b60ab1a99d6447e8f4debc74e746"
+    },
+    {
+      "Name": "bonsai-tools.exe",
+      "Bytes": 6289920,
+      "Sha256": "05370435a324f9eb927c2cddd4e5a6efb8ece30c74ec29e1bb4bc564f0e05a01"
+    }
+  ],
+  "AllArchiveMembersAndArm64TargetsVerified": true,
+  "ModelExecuted": false,
+  "IntakeStartedAtUtc": "2026-11-03T04:33:30.8741041Z",
+  "IntakeElapsedSeconds": 1.8324609
+}

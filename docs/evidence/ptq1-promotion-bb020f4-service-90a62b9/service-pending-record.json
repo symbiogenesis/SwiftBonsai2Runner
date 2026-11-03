@@ -1,0 +1,5 @@
+{
+  "id": "released-adapter-service-integration",
+  "status": "pending",
+  "note": "Exact Runner harness 90a62b9 / CI 41577882160 verifies current PTQ1, pinned Prism 0.1.13, approved adapter and effective four-worker readiness; three bound cap-one streams at 1.3, negative zero and 2.0 pass with identical positive prompt counts. Invalid scale rejects. The context-control exchange did not yield a complete HTTP header; the harness panicked before interruption and fresh-owner work. Independent retained-data review verifies parent owned cleanup and separate power endpoints; child after-power and cleanup fields remain unknown. Source-only context propagation and harness fixes do not complete the missing device work. Broad service integration remains pending; no historical rollback execution is relabelled."
+}

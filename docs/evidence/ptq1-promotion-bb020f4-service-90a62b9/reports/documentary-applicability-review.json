@@ -1,0 +1,158 @@
+{
+  "schemaVersion": 1,
+  "kind": "fresh-frozen-bb020f4-ptq1-row4-documentary-applicability-review",
+  "recordedDate": "2026-11-02",
+  "observedAtUtc": "2026-11-03T03:51:57.807991+00:00",
+  "reviewerId": "Codex:/root/rollback_gate",
+  "candidateIdentities": {
+    "adapterLockSha256": "84bf87bd873a372ebd943dae81d3300d74ec09055d6c5fe0628873d3863ae74a",
+    "adapterScale": 1.3,
+    "adapterSha256": "f1669534803d340a496015f5c45125f3437b4d13ec764f40e34488ce83967f42",
+    "admissionBytes": 16642998272,
+    "assessmentLockSha256": "a378f4a4551170a27f9d0f3649114c954011cc149c0ebd16fb4413ac1094a86b",
+    "contextTokens": 8192,
+    "jobCommitLimitBytes": 12348030976,
+    "maxCompletionTokens": 4096,
+    "modelBytes": 5946648928,
+    "modelFilename": "Swift-Bonsai-2-current-repacked-PTQ1_0.gguf",
+    "modelSha256": "e658f0f0736a03a4549535a439f9b07254ebf8ab88ae27cbe6e52d098ca5d1f5",
+    "nativeRowWorkers": 4,
+    "physicalReserveBytes": 4294967296,
+    "ptq1ExportReceiptSha256": "c184dea2089127201a15595af86e61005ec5b3f9c14e8089fee5c8f630a762d5",
+    "referenceRuntimeRevision": "73bfe6cc485554822f80c473a3c0c4f25e80f41b",
+    "rollback": {
+      "adapterScale": 1.3,
+      "adapterSha256": "f1669534803d340a496015f5c45125f3437b4d13ec764f40e34488ce83967f42",
+      "modelBytes": 7206168928,
+      "modelFilename": "Swift-Bonsai-2-PQ2_0.gguf",
+      "modelSha256": "5912bb739217cf25b4283a098c7b893d9baff36bdf2e72d3dbf4cb999d5633d5",
+      "nativeRowWorkers": 4,
+      "runtimeLockSha256": "bb226f3d2847d3914611d2c4fdcfbce4e7a382c5707279bd658834f8e73c302b",
+      "servingStatePolicy": "reset-every-request",
+      "weightRepresentation": "original-PQ2_0"
+    },
+    "runnerRevision": "bb020f45169b0698678ca5f789aef7af8cdc12b2",
+    "runtimeArchiveSha256": "3b1f310cbfafd592375756600c261bdafcfc94ab1bac8f34c69ef7038167096a",
+    "runtimeLockSha256": "bb226f3d2847d3914611d2c4fdcfbce4e7a382c5707279bd658834f8e73c302b",
+    "runtimeRevision": "cae16fa6998dac58a947eba9ae4398ed6a9fb863",
+    "runtimeVersion": "0.1.13",
+    "serverSha256": "62bdf31962864b11e530aaae50da2c0a6b36cb651110080e5bf3f08f8d2713f4",
+    "serviceHarnessRevision": "cae16fa6998dac58a947eba9ae4398ed6a9fb863",
+    "servingStatePolicy": "reset-every-request",
+    "target": "aarch64-pc-windows-msvc",
+    "templateSha256": "c3cf9e34abf4f9e36c2d72165aa9c132d3e2a725b6c2586aaa3a8af9d7a81041",
+    "weightRepresentation": "current-repacked-PTQ1_0",
+    "workerSha256": "9fcc8c2666ec024cb8bb28c42b604b33388c261f39f2fd3c05d2a8613ac2300d"
+  },
+  "policySha256": "5734ec87f4781d20b6dffc1f8e1d6a13e0bd095120ca90746a5a0d2c4380e629",
+  "newReviewPerformed": true,
+  "historicalPromotionVerdictsCopied": false,
+  "priorReleaseReviewReusedAsReviewedData": true,
+  "releaseReview": {
+    "file": "reports/prism-0113-release-review.json",
+    "bytes": 18801,
+    "sha256": "bb9ef39a1ff18e1583a826e5517387dc234cbe74b662ef6859cfbaf1d4acab56"
+  },
+  "releaseLockSourceArchiveAndAllNineFilesMatchPriorVerifiedRawData": true,
+  "currentPublishedTagAndImmutableArm64AssetApiMatch": true,
+  "authenticatedOwningCiChecks": [
+    {
+      "runId": "41535008224",
+      "revision": "cae16fa6998dac58a947eba9ae4398ed6a9fb863",
+      "workflow": ".github/workflows/foundation.yml",
+      "allJobsPassed": 15,
+      "skippedJobs": 0
+    },
+    {
+      "runId": "41535008203",
+      "revision": "cae16fa6998dac58a947eba9ae4398ed6a9fb863",
+      "workflow": ".github/workflows/runtime-conformance.yml",
+      "allJobsPassed": 58,
+      "skippedJobs": 0
+    },
+    {
+      "runId": "41535008364",
+      "revision": "cae16fa6998dac58a947eba9ae4398ed6a9fb863",
+      "workflow": ".github/workflows/source-package.yml",
+      "allJobsPassed": 3,
+      "skippedJobs": 0
+    },
+    {
+      "runId": "41572249082",
+      "revision": "bb020f45169b0698678ca5f789aef7af8cdc12b2",
+      "workflow": ".github/workflows/foundation.yml",
+      "allJobsPassed": 9,
+      "skippedJobs": 0
+    }
+  ],
+  "authenticatedCiMetadata": [
+    {
+      "file": "ci/jobs-41535008203.json",
+      "bytes": 167866,
+      "sha256": "d0f593d2b89cabc6777681f10dbbcf58041a29a680e4a77356f5047fb973f20d"
+    },
+    {
+      "file": "ci/jobs-41535008224.json",
+      "bytes": 64191,
+      "sha256": "80b3c7df856650cf029fd52565706314e1910886c263338392d0bc51d45750ef"
+    },
+    {
+      "file": "ci/jobs-41535008364.json",
+      "bytes": 8862,
+      "sha256": "45c0d8cdc81cf3f5eaafe10cb9ed48001190b0f9aa5a4ffbfa493126699580ea"
+    },
+    {
+      "file": "ci/jobs-41572249082.json",
+      "bytes": 21326,
+      "sha256": "be74dc665f4e91d9d5817fc2bb0148a8431a897a93a15042296dad5265bf14bc"
+    },
+    {
+      "file": "ci/release-tag-v0.1.13.json",
+      "bytes": 363,
+      "sha256": "c8fc2bae54b2e0fa7aee7cdda75d8b06cd89f18be9d7a455b12bdbcb46238f40"
+    },
+    {
+      "file": "ci/release-v0.1.13.json",
+      "bytes": 9941,
+      "sha256": "6545cb9b35678574fc692b2ccf631e827f1288e284f3cf45e0dba797ee5a2bdc"
+    },
+    {
+      "file": "ci/run-41535008203.json",
+      "bytes": 13331,
+      "sha256": "6ba9caec643360fa28ce92126e39608c79f6320f0473e63ab28312113a65c7f7"
+    },
+    {
+      "file": "ci/run-41535008224.json",
+      "bytes": 13313,
+      "sha256": "51b1668cbeec988ec4efa91de95e2c1d849345a2587db9ef49cac8d01933d6f4"
+    },
+    {
+      "file": "ci/run-41535008364.json",
+      "bytes": 13321,
+      "sha256": "bbd7989de3e299127cd1dcc27ef2df35e883c912a34af0cc6e0c692e51df2c65"
+    },
+    {
+      "file": "ci/run-41572249082.json",
+      "bytes": 13567,
+      "sha256": "069d24ab4e8d863c07a01d8fd09ec5551b2cc2d3a4b114d4d4964295ed1ecfc8"
+    }
+  ],
+  "runnerApplicability": {
+    "currentFoundationRunId": "41572249082",
+    "currentSourceRevision": "bb020f45169b0698678ca5f789aef7af8cdc12b2",
+    "allNineCurrentJobsPassed": true,
+    "currentSkippedJobs": [],
+    "sourceComparisonBase": "469f57b233898fd10b97d5ebc10aaef78b940e30",
+    "sourceChanges": {
+      "file": "reports/runner-source-changes.json",
+      "bytes": 4719,
+      "sha256": "2a299a497ab3660d15b54b14f52f17d1fea77ba015b32d48c1ee3fb19d762661"
+    },
+    "compiledServingUiSpeechLocksAndCompleteResponseHarnessUnchanged": true,
+    "promotionEvaluatorAndFoundationPackingAcceptanceWorkflowsUnchanged": true,
+    "otherChanges": "Numerical/request-timing and retained-data-audit tooling, workflows, documentation and evidence; no serving/UI/locks/default/admission change."
+  },
+  "evaluatorScope": "Document integrity only after the original owner session closed; no model, device diagnostic, benchmark, build or test.",
+  "deviceGatePassesClaimed": 0,
+  "defaultMayChange": false
+}

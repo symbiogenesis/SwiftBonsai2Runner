@@ -1,0 +1,8 @@
+{
+  "operation": "file-score",
+  "runnerRevision": "bb020f45169b0698678ca5f789aef7af8cdc12b2",
+  "serviceHarnessRevision": "90a62b954f56aa5b1da3ab167ee3f87255477b73",
+  "nativeRowWorkers": 4,
+  "weightRepresentation": "current-repacked-PTQ1_0",
+  "evidencePath": "C:\\tmp\\Bonsai-Ptq1Service-20261102\\promotion-score\\evidence.json"
+}

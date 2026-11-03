@@ -1,0 +1,35 @@
+{
+  "SchemaVersion": 1,
+  "Scope": "bounded-credential-checked-native-startup-diagnostics",
+  "AcceptanceProcessExitCode": 101,
+  "AggregateBudgetExpired": false,
+  "MaximumLogBytes": 65536,
+  "MaximumSessions": 8,
+  "Classification": "bounded-sanitized-logs-retained",
+  "Sources": [
+    {
+      "Session": 1,
+      "Name": "backend.stdout",
+      "Classification": "sanitized",
+      "Published": true
+    },
+    {
+      "Session": 1,
+      "Name": "backend.stderr",
+      "Classification": "sanitized",
+      "Published": true
+    }
+  ],
+  "PublishedFiles": [
+    {
+      "Name": "startup-backend.stdout.txt",
+      "Bytes": 26,
+      "Sha256": "3fd3f5e62afac60156fe648a5cac1b58c8be90f7fd7fb828dc2f3096b891e883"
+    },
+    {
+      "Name": "startup-backend.stderr.txt",
+      "Bytes": 26,
+      "Sha256": "3fd3f5e62afac60156fe648a5cac1b58c8be90f7fd7fb828dc2f3096b891e883"
+    }
+  ]
+}

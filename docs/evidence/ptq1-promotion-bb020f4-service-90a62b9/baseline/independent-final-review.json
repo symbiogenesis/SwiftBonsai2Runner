@@ -1,0 +1,183 @@
+{
+  "schemaVersion": 1,
+  "kind": "independent-final-frozen-bb020f4-ptq1-row4-promotion-score-review",
+  "recordedDate": "2026-11-02",
+  "reviewerId": "Codex:/root/gate_audit",
+  "producerId": "Codex:/root/rollback_gate",
+  "producerCommit": "cc859fe25a8350bcae6ec5b487cac35a17361059",
+  "status": "reviewed-six-passed-thirteen-pending",
+  "candidateRevision": "bb020f45169b0698678ca5f789aef7af8cdc12b2",
+  "runtimeVersion": "0.1.13",
+  "runtimeRevision": "cae16fa6998dac58a947eba9ae4398ed6a9fb863",
+  "weightRepresentation": "current-repacked-PTQ1_0",
+  "nativeRowWorkers": 4,
+  "adapterScale": 1.3,
+  "servingStatePolicy": "reset-every-request",
+  "policySha256": "5734ec87f4781d20b6dffc1f8e1d6a13e0bd095120ca90746a5a0d2c4380e629",
+  "gateCounts": {
+    "passed": 6,
+    "pending": 13,
+    "rejected": 0
+  },
+  "promotionReady": false,
+  "passedGateIds": [
+    "released-binary-provenance",
+    "runtime-foundation",
+    "runtime-conformance",
+    "runner-foundation",
+    "current-weight-ptq1-packing",
+    "original-pq2-rollback"
+  ],
+  "newlyClosedGateIds": [
+    "original-pq2-rollback"
+  ],
+  "unchangedRequiredGateCount": 19,
+  "pendingGateIds": [
+    "full-context-numerical-parity",
+    "prompt-sampler-termination",
+    "full-output-lifecycle-recovery",
+    "full-model-resources",
+    "adapter-basis-and-logits",
+    "adapter-standard-scale-throughput",
+    "adapter-standard-scale-quality",
+    "sandbox-and-transport",
+    "speech-offline-and-recovery",
+    "sustained-device-and-creative-acceptance",
+    "installation-and-rollback",
+    "paired-target-device-benefit",
+    "released-adapter-service-integration"
+  ],
+  "checkedRawArtifacts": [
+    {
+      "file": "file-manifest.json",
+      "bytes": 11051,
+      "sha256": "80f798d751c80a29654279456d6db1249648b8f2e1bff136ab538de95ccc6193"
+    },
+    {
+      "file": "evidence.json",
+      "bytes": 15495,
+      "sha256": "6b46ae0cdaa674c8bb182e329429d59bd4f4176e2a40439c90ca70a7e96f648a"
+    },
+    {
+      "file": "plan-stdout.json",
+      "bytes": 13865,
+      "sha256": "e8f812dea245c9301ecdcebd1c9f43c35f4d2253c8eb8351bd013fa5a62fcab7"
+    },
+    {
+      "file": "file-score-stdout.json",
+      "bytes": 22760,
+      "sha256": "567b9c292729798e49100fce5087d5fcbdddfa9cfafaa376d6d5fe4263cadb93"
+    },
+    {
+      "file": "plan-execution.json",
+      "bytes": 858,
+      "sha256": "bb8247ce2ab7b1265218beccdf14570f21f0ca94044b228d1d0b5765642ed348"
+    },
+    {
+      "file": "file-score-execution.json",
+      "bytes": 864,
+      "sha256": "5ec2e75e13b460d0d2b733b0419da48d778541618d360bd390f490ea1a04d2a5"
+    },
+    {
+      "file": "packing/independent-review.json",
+      "bytes": 2770,
+      "sha256": "9525d9d011cc724f47b50d578aed5c6d83aa2557f475172e10e0dc358d453a01"
+    },
+    {
+      "file": "packing/hosted-packing.zip",
+      "bytes": 4101,
+      "sha256": "0ab5a6369267a3d33dcc459b999b5ac065c6a78cc2092f0e92a45502a8540a6f"
+    },
+    {
+      "file": "rollback/independent-review.json",
+      "bytes": 11908,
+      "sha256": "7a618b690ad868deccf31a0721885e33d97715f72cf84f1d34d4e0dc0ad99641"
+    },
+    {
+      "file": "reports/documentary-applicability-review.json",
+      "bytes": 6713,
+      "sha256": "84f3fbc9fc11189a8743ed6aeec51b93fad22d3ea9f864eeaf46e3edb57730d1"
+    },
+    {
+      "file": "document-input-index.json",
+      "bytes": 2333,
+      "sha256": "8fa78820edf0eb7b81032363e2e861b3dfffb121c469350fe310159a93de0a70"
+    },
+    {
+      "file": "ptq1-promotion-bb020f4.json",
+      "bytes": 26294,
+      "sha256": "a099abf7bb3f320cd9b150c51f09424c195150a8c4601178af93f2bc3868e329"
+    },
+    {
+      "file": "ptq1-promotion-bb020f4-review.json",
+      "bytes": 8179,
+      "sha256": "ef3b945fe676a8b5b647131f266bddcae874a006ddc327eb792e3f9544b9a89c"
+    }
+  ],
+  "integrityChecks": {
+    "allProducerManifestEntriesVerified": 63,
+    "allReferencedPassedReportsAndExecutionRevisionsVerified": true,
+    "planEvidenceAndScoreIdentitiesEqual": true,
+    "compiledPolicyCanonicalHashVerified": true,
+    "prettyScoreEqualsRawCompiledScore": true,
+    "previousPolicyDiffIsRunnerRevisionOnly": true,
+    "allNineteenGateRequirementsUnchanged": true,
+    "onlyOriginalPq2RollbackVerdictChanged": true,
+    "exactPackingArchiveFiveMembersAndRawReportManifestVerified": true,
+    "exactCurrentCompiledRuntimeAdapterAndAdmissionIdentitiesRetained": true,
+    "amendedPowerUnknownRollbackReviewIsByteIdenticalToIndependentSource": true,
+    "postOwnerOriginalArtifactRetentionAndOwnedCleanupAlreadyIndependentlyReviewed": true,
+    "offlineEvaluatorReceiptsAfterClosedOwnerArchive": true,
+    "evaluatorReexecutedByFinalReviewer": false,
+    "producerLiveToolHandleObservedByReviewer": false,
+    "producerWriteDeleteDenyingHandleLifetimeAttestationRetained": true
+  },
+  "independentAuthenticatedCiChecks": {
+    "prismFoundation": {
+      "runId": "41535008224",
+      "successfulJobs": 15
+    },
+    "prismConformance": {
+      "runId": "41535008203",
+      "successfulJobs": 58
+    },
+    "prismSourcePackage": {
+      "runId": "41535008364",
+      "successfulJobs": 3
+    },
+    "runnerFoundation": {
+      "runId": "41572249082",
+      "successfulJobs": 9
+    },
+    "exactFrozenCandidatePacking": {
+      "runId": "41573364524",
+      "successfulJobs": 1,
+      "artifactId": "13203345815",
+      "artifactSha256": "0ab5a6369267a3d33dcc459b999b5ac065c6a78cc2092f0e92a45502a8540a6f"
+    },
+    "ownerRollbackRun": "41573164864",
+    "scope": "Final reviewer independently queried authenticated exact source/run/job metadata for Prism and packing, and independently queried exact Runner Foundation/rollback/jobs/artifacts during the separate rollback review. Retained metadata was also matched to each complete manifest and expected job inventory."
+  },
+  "powerAndPerformanceScope": {
+    "historicalPowerSource": "unknown-not-recorded",
+    "performanceComparisonEligible": false,
+    "livePowerReadAfterClosedClock": false,
+    "slowerPtq1RequestObservationRetained": true,
+    "observedPtq1OverPq2RequestLatency": 1.9438936570954222,
+    "pairedTargetDeviceBenefitGateStillPending": true,
+    "fullResourceGateStillPending": true,
+    "scope": "One uncontrolled fixed-order complete tree-name pair supports rollback correctness. Unknown AC/battery conditions, one request, lower sampled resources and matched Oak output cannot qualify latency, energy, capacity, throughput, human quality or full-context resources."
+  },
+  "laterSourceApplicability": {
+    "reviewedDeliveryRevision": "f0a6a3bae67dc5652b2cfa7921aa5e79ee253ec5",
+    "productionServingUiPolicyAndLocksUnchanged": true,
+    "changedHarnessQualificationSeparate": true,
+    "frozenExecutionOrScoreRelabelledAsLaterRevision": false,
+    "report": "../ptq1-rollback-f0a6a3b-applicability.json"
+  },
+  "scope": "Independent source, authenticated CI and bounded retained-document/ZIP integrity review only. No executable, evaluator, comparator, model, device probe, benchmark, build, test or numerical tensor payload operation was performed. Documentary review is separate from the closed original owner clock.",
+  "additionalOwnerTrials": 0,
+  "requirementsOrToleranceWeakened": false,
+  "defaultPromotionQualified": false,
+  "experimentalLabelRemovalQualified": false
+}

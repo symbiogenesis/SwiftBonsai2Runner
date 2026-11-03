@@ -1,0 +1,232 @@
+{
+  "gates": [
+    {
+      "id": "released-binary-provenance",
+      "note": "Fresh bb020f4 documentary applicability independently verifies the unchanged pinned release/source/all nine files and authenticated exact-source owning CI. Current Runner Foundation passes all nine jobs, including UI/core/speech/maintenance/native/released-runtime integration. Historical reviews are retained as reviewed data; no device gate or skipped execution is inferred.",
+      "status": "passed",
+      "reviewerId": "Codex:/root/rollback_gate",
+      "report": {
+        "file": "reports/documentary-applicability-review.json",
+        "sha256": "84f3fbc9fc11189a8743ed6aeec51b93fad22d3ea9f864eeaf46e3edb57730d1"
+      },
+      "execution": {
+        "repository": "symbiogenesis/prism-inference",
+        "revision": "cae16fa6998dac58a947eba9ae4398ed6a9fb863",
+        "gitRef": "refs/heads/main",
+        "runId": "41535008224",
+        "runAttempt": 1,
+        "architecture": "ARM64",
+        "deviceModel": "GitHub-hosted CI; documentary review only",
+        "selfHosted": false
+      }
+    },
+    {
+      "id": "runtime-foundation",
+      "note": "Fresh bb020f4 documentary applicability independently verifies the unchanged pinned release/source/all nine files and authenticated exact-source owning CI. Current Runner Foundation passes all nine jobs, including UI/core/speech/maintenance/native/released-runtime integration. Historical reviews are retained as reviewed data; no device gate or skipped execution is inferred.",
+      "status": "passed",
+      "reviewerId": "Codex:/root/rollback_gate",
+      "report": {
+        "file": "reports/documentary-applicability-review.json",
+        "sha256": "84f3fbc9fc11189a8743ed6aeec51b93fad22d3ea9f864eeaf46e3edb57730d1"
+      },
+      "execution": {
+        "repository": "symbiogenesis/prism-inference",
+        "revision": "cae16fa6998dac58a947eba9ae4398ed6a9fb863",
+        "gitRef": "refs/heads/main",
+        "runId": "41535008224",
+        "runAttempt": 1,
+        "architecture": "ARM64",
+        "deviceModel": "GitHub-hosted CI; documentary review only",
+        "selfHosted": false
+      }
+    },
+    {
+      "id": "runtime-conformance",
+      "note": "Fresh bb020f4 documentary applicability independently verifies the unchanged pinned release/source/all nine files and authenticated exact-source owning CI. Current Runner Foundation passes all nine jobs, including UI/core/speech/maintenance/native/released-runtime integration. Historical reviews are retained as reviewed data; no device gate or skipped execution is inferred.",
+      "status": "passed",
+      "reviewerId": "Codex:/root/rollback_gate",
+      "report": {
+        "file": "reports/documentary-applicability-review.json",
+        "sha256": "84f3fbc9fc11189a8743ed6aeec51b93fad22d3ea9f864eeaf46e3edb57730d1"
+      },
+      "execution": {
+        "repository": "symbiogenesis/prism-inference",
+        "revision": "cae16fa6998dac58a947eba9ae4398ed6a9fb863",
+        "gitRef": "refs/heads/main",
+        "runId": "41535008203",
+        "runAttempt": 1,
+        "architecture": "ARM64",
+        "deviceModel": "GitHub-hosted CI; documentary review only",
+        "selfHosted": false
+      }
+    },
+    {
+      "id": "runner-foundation",
+      "note": "Fresh bb020f4 documentary applicability independently verifies the unchanged pinned release/source/all nine files and authenticated exact-source owning CI. Current Runner Foundation passes all nine jobs, including UI/core/speech/maintenance/native/released-runtime integration. Historical reviews are retained as reviewed data; no device gate or skipped execution is inferred.",
+      "status": "passed",
+      "reviewerId": "Codex:/root/rollback_gate",
+      "report": {
+        "file": "reports/documentary-applicability-review.json",
+        "sha256": "84f3fbc9fc11189a8743ed6aeec51b93fad22d3ea9f864eeaf46e3edb57730d1"
+      },
+      "execution": {
+        "repository": "symbiogenesis/SwiftBonsai2Runner",
+        "revision": "bb020f45169b0698678ca5f789aef7af8cdc12b2",
+        "gitRef": "refs/heads/main",
+        "runId": "41572249082",
+        "runAttempt": 1,
+        "architecture": "ARM64",
+        "deviceModel": "GitHub-hosted CI; documentary review only",
+        "selfHosted": false
+      }
+    },
+    {
+      "id": "full-context-numerical-parity",
+      "note": "Current 0.1.13 selected NEON/four-worker/standard-1.3 native/Rust capture in CI 41568281287 passes one supplied token, all 129 files / 39,504,384 logits/live-state values byte exact. Retained reports/bounded-neon-row4-comparison.json is genuine new partial evidence. Full 8192-token scalar AND explicit-NEON trajectories remain unqualified; do not transfer a one-token or other-worker pass.",
+      "status": "pending"
+    },
+    {
+      "id": "prompt-sampler-termination",
+      "note": "The reviewed source controls and row4 service cap-one streams support the current implementation, but no current full-model capture establishes exact native template tokens, supplied reasoning history, MT19937 draw order, seeded replay and complete native stop/output-limit equivalence. The latest numerical run supplies token 248045 directly and cannot close this gate.",
+      "status": "pending"
+    },
+    {
+      "id": "full-output-lifecycle-recovery",
+      "note": "Exact 0.1.13 service CI 41539984210 passes the bounded row4 three-stream scale/rejection/captured-history sequence. It does not exercise 4096 output tokens at the 8192 context bound, long conversations, active graph Stop/abandonment, backend loss and fresh retry. Missing broader lifecycle work stays pending.",
+      "status": "pending"
+    },
+    {
+      "id": "full-model-resources",
+      "note": "The exact bb020f4 short complete-answer pair retains OS lifetime Job peaks of 7727341568 bytes PQ2 and 6465744896 bytes PTQ1 plus distinct root resident and sampled-serving observations. These non-additive bounded domains do not establish full-context peaks, sustained paging/comfort, pressure shutdown or accepted capacity/energy benefit. AC/battery power source was not captured and remains unknown; no qualified resource/performance comparison follows.",
+      "status": "pending"
+    },
+    {
+      "id": "adapter-basis-and-logits",
+      "note": "Published-direction CI 41530766802 independently matches all 129 B factors / 660,480 channels. Exact 0.1.13 NEON/row4 standard-1.3 logits/state now match native for one token. Neither result recovers the external immutable authoring checkpoint/conversion/A-factor provenance or verifies all 48 native SSM writer mappings. Loaded-zero/no-adapter identity and cross-condition nonzero application remain separate and unqualified.",
+      "status": "pending"
+    },
+    {
+      "id": "adapter-standard-scale-throughput",
+      "note": "No paired current-release same-engine per-prompt standard-scale decode-TPS evidence or bounded adapter memory premium is retained. One-token forward duration and public SSE request time are not decode throughput. The prepared complete-response capture and source timing mode do not provide executed performance evidence.",
+      "status": "pending"
+    },
+    {
+      "id": "adapter-standard-scale-quality",
+      "note": "No independently human-reviewed paired complete-answer corpus qualifies each creative/instruction/refusal dimension for this exact current PTQ1/runtime/adapter-1.3/row4 profile. Short streams, changed text and automated reviews cannot close this human gate.",
+      "status": "pending"
+    },
+    {
+      "id": "sandbox-and-transport",
+      "note": "Bounded required-container row4 service startup/streams and native numerical parent/Job cleanup are partial evidence. No current actual-model negative qualification proves denial of unrelated files/credentials/egress and same-user bypass, broker-only communication and all bounded transport controls. Numerical developer ownership alone does not establish daily-use isolation.",
+      "status": "pending"
+    },
+    {
+      "id": "speech-offline-and-recovery",
+      "note": "No current exact-profile native-app speech/chat overlap, encrypted conversation recovery, offline restart, explicit retry and stalled-consumer descendant cleanup acceptance is retained. Model-free speech/source checks and isolated text streaming remain separate.",
+      "status": "pending"
+    },
+    {
+      "id": "sustained-device-and-creative-acceptance",
+      "note": "No direct owner/human sustained responsiveness, heat/fan, comfort and complete creative-usefulness review qualifies this exact profile. The one aggregate bounded owner capture supplies no sustained-use or independent human verdict.",
+      "status": "pending"
+    },
+    {
+      "id": "installation-and-rollback",
+      "note": "No clean-machine ARM64 installation/notices/prerequisites, offline launch, upgrade/recovery and explicit pinned fallback acceptance has been independently retained for this profile. Successful provisioning and hosted package checks do not replace installation acceptance.",
+      "status": "pending"
+    },
+    {
+      "id": "paired-target-device-benefit",
+      "note": "Exact bb020f4/current-release/adapter1.3/row4 fixed-order original-PQ2 then PTQ1 pair completed the same Oak response and reported one completion token each. Raw request observations are 18380.3443 ms PQ2 and 35729.4347 ms PTQ1 (ratio 1.9438936570954222, a losing PTQ1 observation). AC/battery power source was not captured and is unknown, so performanceComparisonEligible is false; the raw ratio is retained without qualifying a performance comparison. Stable conditions, repeated interleaving, per-prompt decode TPS, accepted quality and reviewed capacity/energy benefit remain pending. Lower bounded Job commit is not full resource qualification.",
+      "status": "pending"
+    },
+    {
+      "id": "released-adapter-service-integration",
+      "status": "pending",
+      "note": "Exact Runner harness 90a62b9 / CI 41577882160 verifies current PTQ1, pinned Prism 0.1.13, approved adapter and effective four-worker readiness; three bound cap-one streams at 1.3, negative zero and 2.0 pass with identical positive prompt counts. Invalid scale rejects. The context-control exchange did not yield a complete HTTP header; the harness panicked before interruption and fresh-owner work. Independent retained-data review verifies parent owned cleanup and separate power endpoints; child after-power and cleanup fields remain unknown. Source-only context propagation and harness fixes do not complete the missing device work. Broad service integration remains pending; no historical rollback execution is relabelled."
+    },
+    {
+      "id": "current-weight-ptq1-packing",
+      "note": "Fresh exact bb020f4 hosted complete packing run 41573364524 reproduces the pinned export and independently checks all 402 converted tensors and 209,920,000 blocks, raw scales, preserved header and other tensor bytes. Authenticated source/run/job/artifact and every raw report digest were independently verified; no inference or benefit gate follows.",
+      "status": "passed",
+      "report": {
+        "file": "packing/independent-review.json",
+        "sha256": "9525d9d011cc724f47b50d578aed5c6d83aa2557f475172e10e0dc358d453a01"
+      },
+      "execution": {
+        "architecture": "ARM64",
+        "deviceModel": "GitHub-hosted Windows ARM64",
+        "gitRef": "refs/heads/main",
+        "repository": "symbiogenesis/SwiftBonsai2Runner",
+        "revision": "bb020f45169b0698678ca5f789aef7af8cdc12b2",
+        "runAttempt": 1,
+        "runId": "41573364524",
+        "selfHosted": false
+      },
+      "reviewerId": "Codex:/root/rollback_gate"
+    },
+    {
+      "id": "original-pq2-rollback",
+      "status": "passed",
+      "note": "Independent exact-bb020f4 current-release row4 device review verifies explicit retained original PQ2 readiness, approved adapter 1.3, naturally stopped complete Oak response with reported usage, unchanged required sandbox/admission policy and owned Job/listener cleanup. The exact original artifact was rehashed after cleanup. All setup, pair work, comparison, retention verification and archival plus the earlier charge finished within 192.4873582 seconds; no clock restart or continuation. This closes only original-PQ2 rollback, with the slower PTQ1 paired request retained and all broader gates unchanged. AC/battery power source was not captured and is unknown; performance comparisons are ineligible. This does not invalidate the scoped correctness/retention/cleanup observations.",
+      "reviewerId": "Codex:/root/gate_audit",
+      "report": {
+        "file": "rollback/independent-review.json",
+        "sha256": "7a618b690ad868deccf31a0721885e33d97715f72cf84f1d34d4e0dc0ad99641"
+      },
+      "execution": {
+        "repository": "symbiogenesis/SwiftBonsai2Runner",
+        "revision": "bb020f45169b0698678ca5f789aef7af8cdc12b2",
+        "gitRef": "refs/heads/main",
+        "runId": "41573164864",
+        "runAttempt": 1,
+        "architecture": "ARM64",
+        "deviceModel": "Snapdragon X2 Elite Extreme",
+        "processorName": "Snapdragon(R) X2 Elite Extreme - X2E94100 - Qualcomm Oryon(TM) CPU",
+        "selfHosted": true
+      }
+    }
+  ],
+  "identities": {
+    "adapterLockSha256": "84bf87bd873a372ebd943dae81d3300d74ec09055d6c5fe0628873d3863ae74a",
+    "adapterScale": 1.3,
+    "adapterSha256": "f1669534803d340a496015f5c45125f3437b4d13ec764f40e34488ce83967f42",
+    "admissionBytes": 16642998272,
+    "assessmentLockSha256": "a378f4a4551170a27f9d0f3649114c954011cc149c0ebd16fb4413ac1094a86b",
+    "contextTokens": 8192,
+    "jobCommitLimitBytes": 12348030976,
+    "maxCompletionTokens": 4096,
+    "modelBytes": 5946648928,
+    "modelFilename": "Swift-Bonsai-2-current-repacked-PTQ1_0.gguf",
+    "modelSha256": "e658f0f0736a03a4549535a439f9b07254ebf8ab88ae27cbe6e52d098ca5d1f5",
+    "nativeRowWorkers": 4,
+    "physicalReserveBytes": 4294967296,
+    "ptq1ExportReceiptSha256": "c184dea2089127201a15595af86e61005ec5b3f9c14e8089fee5c8f630a762d5",
+    "referenceRuntimeRevision": "73bfe6cc485554822f80c473a3c0c4f25e80f41b",
+    "rollback": {
+      "adapterScale": 1.3,
+      "adapterSha256": "f1669534803d340a496015f5c45125f3437b4d13ec764f40e34488ce83967f42",
+      "modelBytes": 7206168928,
+      "modelFilename": "Swift-Bonsai-2-PQ2_0.gguf",
+      "modelSha256": "5912bb739217cf25b4283a098c7b893d9baff36bdf2e72d3dbf4cb999d5633d5",
+      "nativeRowWorkers": 4,
+      "runtimeLockSha256": "bb226f3d2847d3914611d2c4fdcfbce4e7a382c5707279bd658834f8e73c302b",
+      "servingStatePolicy": "reset-every-request",
+      "weightRepresentation": "original-PQ2_0"
+    },
+    "runnerRevision": "bb020f45169b0698678ca5f789aef7af8cdc12b2",
+    "runtimeArchiveSha256": "3b1f310cbfafd592375756600c261bdafcfc94ab1bac8f34c69ef7038167096a",
+    "runtimeLockSha256": "bb226f3d2847d3914611d2c4fdcfbce4e7a382c5707279bd658834f8e73c302b",
+    "runtimeRevision": "cae16fa6998dac58a947eba9ae4398ed6a9fb863",
+    "runtimeVersion": "0.1.13",
+    "serverSha256": "62bdf31962864b11e530aaae50da2c0a6b36cb651110080e5bf3f08f8d2713f4",
+    "serviceHarnessRevision": "90a62b954f56aa5b1da3ab167ee3f87255477b73",
+    "servingStatePolicy": "reset-every-request",
+    "target": "aarch64-pc-windows-msvc",
+    "templateSha256": "c3cf9e34abf4f9e36c2d72165aa9c132d3e2a725b6c2586aaa3a8af9d7a81041",
+    "weightRepresentation": "current-repacked-PTQ1_0",
+    "workerSha256": "9fcc8c2666ec024cb8bb28c42b604b33388c261f39f2fd3c05d2a8613ac2300d"
+  },
+  "policySha256": "4c51aacef2572783df2747418bad6578a87779fd1e4c6f91bdb38be0d6ffd8ca",
+  "schemaVersion": 2
+}
