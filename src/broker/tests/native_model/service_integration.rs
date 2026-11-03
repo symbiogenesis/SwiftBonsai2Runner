@@ -19,6 +19,93 @@ pub(super) const ADAPTER_PROFILE: AdapterProfile = AdapterProfile {
 };
 
 const NEXT_OWNER_RESERVE: Duration = Duration::from_secs(60);
+// NativeProcess::drop may wait up to ten seconds for contained descendants.
+// A timed-out task must be cancelled and observed inside the existing Stop
+// allowance instead of being detached by dropping its JoinHandle.
+const OWNER_DROP_RESERVE: Duration = Duration::from_secs(10);
+
+pub(super) fn cleanup_passed(cleanup: &Value) -> bool {
+    cleanup["status"] == "confirmed"
+        && cleanup["ownedJobEmpty"] == true
+        && cleanup["listenerReleased"] == true
+}
+
+pub(super) async fn stop_owner(
+    stop: oneshot::Sender<()>,
+    mut running: tokio::task::JoinHandle<Result<RunReport, LaunchError>>,
+    port: u16,
+    allow_closed_admission: bool,
+) -> (Value, Option<RunReport>) {
+    let deadline = tokio::time::Instant::now() + STOP_WAIT;
+    let sent = stop.send(()).is_ok();
+    let result = tokio::time::timeout_at(deadline - OWNER_DROP_RESERVE, &mut running).await;
+    let mut observed = json!({"status":"pending","stopSignalDelivered":sent,
+        "ownedJobEmpty":null,"listenerReleased":null,"exit":null,
+        "completedOperations":null,"failedOperations":null,"peakInFlight":null,
+        "backendResources":null,"ownerTaskAborted":false,"ownerTaskReleaseObserved":true,
+        "pendingReason":null});
+    let report = match result {
+        Ok(Ok(Ok(report))) => Some(report),
+        Ok(Ok(Err(_))) => {
+            observed["pendingReason"] = json!("owned-run-failed");
+            None
+        }
+        Ok(Err(_)) => {
+            observed["pendingReason"] = json!("owned-task-failed");
+            None
+        }
+        Err(_) => {
+            running.abort();
+            observed["ownerTaskAborted"] = json!(true);
+            // Await cancellation so the task releases its owner before callers
+            // retain power-after or consider any later owner. Native Drop has
+            // the ten-second bound reserved above; its synchronous OS teardown
+            // cannot be preempted by another Tokio timeout.
+            let _ = running.await;
+            observed["pendingReason"] = json!("owned-stop-confirmation-timed-out");
+            None
+        }
+    };
+    if let Some(report) = report {
+        // A successful LaunchedService::run confirms the complete owned Job
+        // empty even if its service exit is unsuitable for this workload.
+        observed["ownedJobEmpty"] = json!(true);
+        observed["completedOperations"] = json!(report.completed);
+        observed["failedOperations"] = json!(report.failed);
+        observed["peakInFlight"] = json!(report.peak_in_flight);
+        observed["backendResources"] = backend_resource_observation(report.backend_resources);
+        observed["exit"] = json!(match report.exit {
+            RunExit::Shutdown => "shutdown",
+            RunExit::ShutdownFailure => "shutdown-failure",
+            RunExit::AdmissionClosed => "admission-closed",
+            RunExit::AcceptFailure => "accept-failure",
+        });
+        if !sent && !allow_closed_admission {
+            observed["pendingReason"] = json!("owned-stop-signal-not-delivered");
+        } else if report.exit != RunExit::Shutdown
+            && !(allow_closed_admission && report.exit == RunExit::AdmissionClosed)
+        {
+            observed["pendingReason"] = json!("unexpected-owned-run-exit");
+        }
+    }
+    observed["listenerReleased"] = json!(
+        tokio::time::timeout_at(deadline, TcpStream::connect(("127.0.0.1", port)))
+            .await
+            .ok()
+            .map(|result| result.is_err())
+    );
+    observed["finishedBeforeStopDeadline"] = json!(tokio::time::Instant::now() < deadline);
+    if observed["pendingReason"].is_null() && observed["finishedBeforeStopDeadline"] != true {
+        observed["pendingReason"] = json!("owned-cleanup-deadline-expired");
+    }
+    if observed["pendingReason"].is_null() && observed["listenerReleased"] != true {
+        observed["pendingReason"] = json!("frontend-listener-release-unconfirmed");
+    }
+    if observed["ownedJobEmpty"] == true && observed["pendingReason"].is_null() {
+        observed["status"] = json!("confirmed");
+    }
+    (observed, report)
+}
 
 pub(super) fn body(cap: u32) -> Value {
     let mut body = request(adapter_messages(&ADAPTER_PROFILE, false), true, cap);
@@ -327,28 +414,25 @@ async fn initial_owner(
     }
     report["phase"] = json!("initial-owner-owned-stop");
     save_acceptance_report(evidence, report);
-    let sent = stop.send(());
-    assert!(sent.is_ok() || prefix.is_none());
-    let stopped_report = timeout(STOP_WAIT, running).await.unwrap().unwrap().unwrap();
-    assert!(
-        stopped_report.exit == RunExit::Shutdown
-            || (prefix.is_none() && stopped_report.exit == RunExit::AdmissionClosed)
-    );
-    assert!(TcpStream::connect(("127.0.0.1", port)).await.is_err());
-    report["initialCleanup"] = cleanup_observation(&stopped_report, stopped_report.exit);
-    report["serviceIntegrationWorkload"]["initialOwnerCleanupPassed"] = json!(true);
+    let (cleanup, stopped_report) = stop_owner(stop, running, port, prefix.is_none()).await;
+    let cleaned = cleanup_passed(&cleanup);
+    report["initialCleanup"] = cleanup;
+    report["serviceIntegrationWorkload"]["initialOwnerCleanupPassed"] = json!(cleaned);
     report["initialOwnerPowerAfter"] = power::snapshot();
     save_acceptance_report(evidence, report);
     if let Some((client, text)) = prefix {
         // Three completed scale streams and two failed rejection controls must
         // precede exactly one failed interrupted operation. Natural completion
         // increments completed instead and fails these independent counters.
-        let interrupted = cancellation_counters_match(&stopped_report)
+        let interrupted = stopped_report
+            .as_ref()
+            .is_some_and(cancellation_counters_match)
             && text.is_some_and(|text| !text.is_empty());
         drop(client);
         report["serviceIntegrationWorkload"]["brokerOperationInterrupted"] = json!(interrupted);
     }
-    let passed = boundaries
+    let passed = cleaned
+        && boundaries
         && prompt_counts_match(&report["streams"], None)
         && report["serviceIntegrationWorkload"]["cancellationRequestBoundToBaseline"] == true
         && report["serviceIntegrationWorkload"]["brokerOperationInterrupted"] == true;
@@ -381,7 +465,6 @@ async fn fresh_owner(
     let port = owner.port();
     let credential = key(&owner);
     let fresh_credentials_differ = credential != previous_credential;
-    assert!(fresh_credentials_differ);
     report["serviceIntegrationWorkload"]["freshCredentialsDiffer"] =
         json!(fresh_credentials_differ);
     let (stop, stopped) = oneshot::channel();
@@ -409,11 +492,15 @@ async fn fresh_owner(
     report["serviceIntegrationWorkload"]["freshOwnerReplayMatched"] = json!(matched);
     report["serviceIntegrationWorkload"]["matchingReportedPromptCounts"] = json!(matched);
     save_acceptance_report(evidence, report);
-    report["freshOwnerCleanup"] = adapter_owned_stop(stop, running, port, !matched).await;
-    report["serviceIntegrationWorkload"]["freshOwnerCleanupPassed"] = json!(true);
+    let (cleanup, _) = stop_owner(stop, running, port, !matched).await;
+    let cleaned = cleanup_passed(&cleanup);
+    report["freshOwnerCleanup"] = cleanup;
+    report["serviceIntegrationWorkload"]["freshOwnerCleanupPassed"] = json!(cleaned);
     report["freshOwnerPowerAfter"] = power::snapshot();
     save_acceptance_report(evidence, report);
     matched
+        && fresh_credentials_differ
+        && cleaned
         && report["freshOwnerCleanup"]["completedOperations"] == 1
         && report["freshOwnerCleanup"]["failedOperations"] == 0
 }
@@ -447,6 +534,120 @@ pub(super) async fn sequence(
     report["serviceIntegrationWorkload"]["phase"] = report["phase"].clone();
     save_acceptance_report(evidence, report);
     passed
+}
+
+#[test]
+fn native_service_integration_cleanup_preserves_failures_and_listener_observations() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    runtime.block_on(LocalSet::new().run_until(async {
+        for (exit, allow_closed, delivered, confirmed) in [
+            (RunExit::Shutdown, false, true, true),
+            (RunExit::AdmissionClosed, true, false, true),
+            (RunExit::AdmissionClosed, false, true, false),
+            (RunExit::AcceptFailure, true, true, false),
+            (RunExit::Shutdown, false, false, false),
+        ] {
+            let (stop, stopped) = oneshot::channel();
+            let report = RunReport {
+                exit,
+                completed: 1,
+                failed: 0,
+                peak_in_flight: 1,
+                backend_resources: None,
+            };
+            let running = if delivered {
+                spawn_local(async move {
+                    let _ = stopped.await;
+                    Ok(report)
+                })
+            } else {
+                drop(stopped);
+                spawn_local(async move { Ok(report) })
+            };
+            let (cleanup, observed) = stop_owner(stop, running, 0, allow_closed).await;
+            assert_eq!(cleanup_passed(&cleanup), confirmed);
+            assert_eq!(cleanup["stopSignalDelivered"], delivered);
+            assert_eq!(cleanup["ownedJobEmpty"], true);
+            assert_eq!(cleanup["listenerReleased"], true);
+            assert_eq!(observed, Some(report));
+        }
+        let (stop, stopped) = oneshot::channel();
+        let running = spawn_local(async move {
+            let _ = stopped.await;
+            Err(LaunchError::Stop)
+        });
+        let (cleanup, observed) = stop_owner(stop, running, 0, true).await;
+        assert!(observed.is_none());
+        assert!(!cleanup_passed(&cleanup));
+        assert!(cleanup["ownedJobEmpty"].is_null());
+        assert_eq!(cleanup["pendingReason"], "owned-run-failed");
+        assert_eq!(cleanup["listenerReleased"], true);
+
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let port = listener.local_addr().unwrap().port();
+        let (stop, stopped) = oneshot::channel();
+        let running = spawn_local(async move {
+            let _ = stopped.await;
+            Ok(RunReport {
+                exit: RunExit::Shutdown,
+                completed: 1,
+                failed: 0,
+                peak_in_flight: 1,
+                backend_resources: None,
+            })
+        });
+        let (cleanup, _) = stop_owner(stop, running, port, false).await;
+        assert!(!cleanup_passed(&cleanup));
+        assert_eq!(cleanup["ownedJobEmpty"], true);
+        assert_eq!(cleanup["listenerReleased"], false);
+        assert_eq!(
+            cleanup["pendingReason"],
+            "frontend-listener-release-unconfirmed"
+        );
+    }));
+}
+
+#[test]
+fn native_service_integration_stuck_owner_is_dropped_inside_existing_stop_allowance() {
+    struct DropMarker(std::rc::Rc<std::cell::Cell<bool>>);
+    impl Drop for DropMarker {
+        fn drop(&mut self) {
+            self.0.set(true);
+        }
+    }
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .start_paused(true)
+        .build()
+        .unwrap();
+    runtime.block_on(LocalSet::new().run_until(async {
+        let dropped = std::rc::Rc::new(std::cell::Cell::new(false));
+        let marker = DropMarker(dropped.clone());
+        let (stop, _stopped) = oneshot::channel();
+        let running = spawn_local(async move {
+            let _marker = marker;
+            pending::<Result<RunReport, LaunchError>>().await
+        });
+        let started = tokio::time::Instant::now();
+        let (cleanup, observed) = stop_owner(stop, running, 0, false).await;
+        assert!(
+            dropped.get(),
+            "Timed-out ownership must not remain detached."
+        );
+        assert!(started.elapsed() <= STOP_WAIT);
+        assert_eq!(cleanup["ownerTaskAborted"], true);
+        assert_eq!(cleanup["ownerTaskReleaseObserved"], true);
+        assert_eq!(
+            cleanup["pendingReason"],
+            "owned-stop-confirmation-timed-out"
+        );
+        assert!(cleanup["ownedJobEmpty"].is_null());
+        assert!(!cleanup_passed(&cleanup));
+        assert!(observed.is_none());
+    }));
 }
 
 #[test]

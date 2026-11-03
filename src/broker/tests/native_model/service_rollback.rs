@@ -46,6 +46,7 @@ fn rollback_verified(rollback: &Value) -> bool {
     representation::original_pq2_rollback_observation(std::slice::from_ref(&rollback["sample"]), 4)
         ["status"]
         == "captured-original-pq2-arm"
+        && service_integration::cleanup_passed(&rollback["sample"]["cleanup"])
         && rollback["sample"]["cleanup"]["completedOperations"] == 1
         && rollback["sample"]["cleanup"]["failedOperations"] == 0
         && rollback["sample"]["cleanup"]["exit"] == "shutdown"
@@ -175,11 +176,12 @@ async fn rollback_owner(
     report["phase"] = json!("original-pq2-rollback-owned-cleanup");
     report["originalPq2Rollback"]["phase"] = report["phase"].clone();
     save_acceptance_report(evidence, report);
-    report["originalPq2Rollback"]["sample"]["cleanup"] =
-        // A failed transport may already have closed broker admission. Retain
-        // that cleanup without panic; successful rollback still requires a
-        // clean shutdown, one completed operation and no failed operations.
-        adapter_owned_stop(stop, running, port, true).await;
+    // A failed transport or owner may already have closed broker admission.
+    // Preserve failed cleanup and power endpoints without permitting another
+    // owner or converting unknown Job emptiness into a successful observation.
+    let (cleanup, _) = service_integration::stop_owner(stop, running, port, true).await;
+    let cleaned = service_integration::cleanup_passed(&cleanup);
+    report["originalPq2Rollback"]["sample"]["cleanup"] = cleanup;
     save_acceptance_report(evidence, report);
     if let Some(bytes) = response {
         report["originalPq2Rollback"]["responseBytes"] = json!(bytes.len());
@@ -198,7 +200,9 @@ async fn rollback_owner(
     save_acceptance_report(evidence, report);
     // Retain post-cleanup identity even when an available response was truncated;
     // that identity cannot turn an incomplete response into a rollback pass.
-    let guard = verify_original_retention(data, evidence, deadline, report);
+    let guard = cleaned
+        .then(|| verify_original_retention(data, evidence, deadline, report))
+        .flatten();
     report["originalPq2Rollback"]["powerAfter"] = power::snapshot();
     let passed = rollback_verified(&report["originalPq2Rollback"]);
     report["originalPq2Rollback"]["status"] = json!(if passed {
@@ -275,6 +279,7 @@ fn native_service_rollback_requires_complete_original_response_and_post_cleanup_
     rollback["sample"]["cleanup"]["completedOperations"] = json!(1);
     rollback["sample"]["cleanup"]["failedOperations"] = json!(0);
     rollback["sample"]["cleanup"]["exit"] = json!("shutdown");
+    rollback["sample"]["cleanup"]["status"] = json!("confirmed");
     let model = representation::model_identity(false);
     rollback["retention"] = json!({"status":"verified-complete-original-file","bytes":model["bytes"],
         "sha256":model["sha256"],"afterOwnedCleanup":true,"completeFileThroughEof":true,"finishedBeforeOriginalDeadline":true,
@@ -286,6 +291,7 @@ fn native_service_rollback_requires_complete_original_response_and_post_cleanup_
         ("/sample/stream/finishReason", json!("length")),
         ("/sample/stream/reportedCompletionTokens", Value::Null),
         ("/sample/cleanup/ownedJobEmpty", json!(false)),
+        ("/sample/cleanup/status", json!("pending")),
         ("/sample/cleanup/listenerReleased", json!(false)),
         ("/sample/cleanup/completedOperations", json!(2)),
         ("/sample/cleanup/failedOperations", json!(1)),
