@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "kind": "independent-native-trial-power-condition-source-review",
+  "recordedDate": "2026-11-02",
+  "reviewerId": "Codex:/root/rollback_gate",
+  "sourceRevision": "c65e7eb829b2682800be0e2096e284d60b38dcbb",
+  "status": "source-reviewed-owning-hosted-checks-required",
+  "reviewMethod": "Read-only exact-commit diff and affected caller, schema, Windows power decoder, fixture and strict-lint configuration review. No executable, probe, build, test, benchmark or model trial ran.",
+  "findings": [],
+  "reviewedProperties": {
+    "powerSourceUnknownsPreserved": true,
+    "queryFailureRemainsUnknownWithoutFailingCapturedCorrectness": true,
+    "knownMatchingAcAndBatterySaverRequiredWithinAndBetweenComparedArms": true,
+    "matchingBatteryOperationPermittedWithoutAssumingAc": true,
+    "batteryPercentageRetainedAsContextWithoutInferringAc": true,
+    "equalEndpointsDoNotClaimContinuousStabilityOrEnergyQualification": true,
+    "allAcceptanceProfileEntryPointsTraced": true,
+    "adapterBoundaryProfileCoveredThroughBoundedAdapterAcceptance": true,
+    "representationAndWorkerPairsRetainPerArmPowerReceipts": true,
+    "numericalRowAndRequestTimingSamplesRetainBeforeAndAfterReceipts": true,
+    "beforeReceiptPersistedBeforeNumericalSupervision": true,
+    "originalDeadlineAndCleanupReservesPreserved": true,
+    "powerQueriesChargedInsideExistingWorkDeadline": true,
+    "unknownOrChangedPowerSuppressesQualifiedLatencyAndThroughputRatios": true,
+    "separatelyNamedRawUnqualifiedRatiosRemainAvailable": true,
+    "capturedAnswersAndOriginalPq2RollbackRemainIndependent": true,
+    "completePositiveComparisonFixturesNowDeclareKnownPower": true,
+    "existingPartialAndCancelledFixturesStillExpectPending": true,
+    "existingHostCpuPowerSnapshotKeysAndSentinelsPreserved": true,
+    "newOwnerReceiptFieldsDoNotAlterNativeCheckerOrBinaryStateSchemas": true,
+    "noDefiniteStrictLintOrCompilationFailureIdentifiedByReading": true
+  },
+  "nonBlockingObservation": "The resources subobject could repeat the parent comparison's power eligibility for standalone consumers. The current parent already marks an unknown-power comparison ineligible, while resourceBenefitQualified, fullResourceGateQualified, pagingQualified and sustainedComfortQualified remain false; its bounded resource ratios remain observations rather than promotion claims.",
+  "reviewCorrection": "An initial message questioned whether the separate adapter-boundary entry point was covered. Tracing its final call to bounded_adapter_acceptance established coverage; the concern was explicitly withdrawn before this verdict. Duplicate power reads are not required.",
+  "qualificationBoundaries": {
+    "compiledOrTestedByReviewer": false,
+    "hostedChecksClaimedPassedForThisRevision": false,
+    "newOwnerTrials": 0,
+    "historicalMissingPowerConditionsRecovered": false,
+    "performanceOrResourceBenefitQualified": false,
+    "defaultPromotionQualified": false
+  }
+}
