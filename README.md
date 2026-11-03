@@ -104,8 +104,8 @@ unmeasured; the packing saving alone does not qualify resources or performance.
 > retains **6 of 19 gates passed**, with 13 pending for frozen candidate `bb020f4`
 > and separately reviewed service harness `90a62b9`.
 >
-> The [original-PQ2 rollback gate](docs/evidence/ptq1-rollback-41573164864/independent-review.json)
-> now passes with the released runtime, standard adapter, four-worker readiness,
+> The [0.1.13 original-PQ2 rollback gate](docs/evidence/ptq1-rollback-41573164864/independent-review.json)
+> passed with that released runtime, standard adapter, four-worker readiness,
 > complete response, owned cleanup and verification of the retained original file.
 > Both models returned `Oak` in the fixed-order comparison. Request times were
 > **18.38 s for PQ2 and 35.73 s for PTQ1**; peak Job commit was **7.20 GiB and
@@ -120,13 +120,21 @@ unmeasured; the packing saving alone does not qualify resources or performance.
 > parent endpoints; the missing child after-power observation stays unknown.
 > These partial checks do not qualify the full service gate, quality or throughput.
 >
+> The [0.1.14 delivery preparation](docs/evidence/prism-0114-pin-preparation.json)
+> binds the typed context-error fix to exact source and archive identities;
+> verified publication and Runner integration remain separate requirements.
+> The [combined service and original-PQ2 rollback profile](docs/validation.md#actual-model-application-acceptance)
+> is prepared for one bounded allowance with adapter 1.3 and four workers.
+> Actual 0.1.14 model/service/rollback acceptance remains pending. The earlier
+> 0.1.13 measurements and gate passes retain their original identities.
+>
 > The [fresh hosted packing check](docs/evidence/ptq1-hosted-packing-b833d6b.json)
 > independently matched all **209,920,000 blocks**, their original symbols and
 > scales, and the preserved metadata and other tensor bytes. It reproduced the exact
 > export with the pinned 0.1.13 exporter. Packing parity alone does not establish
 > runtime numerical parity, memory use or speed.
 >
-> The [current 0.1.13 source diagnostic](docs/evidence/ptq1-numerics-41568281287.json)
+> The [retained 0.1.13 source diagnostic](docs/evidence/ptq1-numerics-41568281287.json)
 > matched all **39,504,384 logits and live-state values** byte for byte for one
 > supplied token on X2 Elite Extreme, with explicit NEON, four row workers and
 > adapter scale 1.3. Its **5.85 GiB peak Job commit** is specific to the correctness

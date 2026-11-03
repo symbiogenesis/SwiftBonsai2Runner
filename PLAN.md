@@ -72,11 +72,12 @@ Qualify source-launch time to the first native frame and authenticated model
 readiness after excluding worker checkouts from startup fingerprints and switching
 shared Windows artifact hashing to CNG. Retain cold-build versus unchanged-launch
 attribution and complete checksum/cancellation controls. Qualify the CNG verifier
-retained by Prism 0.1.13 through Runner's settled-main release integration and
+retained from Prism 0.1.13 in the prepared 0.1.14 delivery through Runner's
+settled-main release integration and
 actual-model startup. End-to-end startup gains remain pending within the
 owner-device budget; performance comparisons and complete checks remain in owning
 CI. Complete separate registry delivery for the reviewed native-hash, GGUF 0.1.1
-and Prism 0.1.13 packages; hosted source-package checks do not publish them.
+and Prism 0.1.14 packages; hosted source-package checks do not publish them.
 
 Diagnose the owner's [native renderer staging failure](docs/evidence/native-renderer-staging-failure.json)
 through the retained graphics adapter/device-loss diagnostics. Its exit 101
@@ -99,7 +100,7 @@ ARM64 MSVC exceptional-float behavior when qualifying other compiler versions.
 Measure adaptive broker forwarding and retained idle speech scratch before
 claiming a latency, throughput or process-memory gain.
 
-Extend current-release numerical qualification beyond the
+Extend numerical qualification beyond the historical
 [passed one-token explicit-NEON capture](docs/evidence/ptq1-numerics-41568281287.json):
 all 129 files / 39,504,384 logits and complete live-state values match byte for
 byte on X2 Elite Extreme with four row workers and the standard adapter at 1.3.
@@ -162,12 +163,24 @@ close actual-model logits/state, writer-basis or promotion gates. Keep intake,
 verification, model work and cleanup inside one aggregate five-minute owner allowance;
 the [default-readiness audit](docs/evidence/ptq1-default-readiness.json) separates
 historical passes from current-release qualification.
-Complete `ptq1-adapter-service-row4` beyond the
+Qualify the [prepared Prism 0.1.14 delivery](docs/evidence/prism-0114-pin-preparation.json)
+from exact source `9e8ea3e2c042ab0c3f1a8e9596ff155e202c3c57` after verified
+publication and Runner's owning integration checks. Its typed token-capacity
+error preserves the private context-rejection contract; unknown counter failures
+remain failures. Hosted source checks do not establish actual-model behavior.
+Retain `ptq1-adapter-service-row4` and the
 [reviewed three scale-boundary streams and invalid-scale rejection](docs/evidence/ptq1-service-41577882160/independent-review.json).
-Qualify the typed private-context error through the released runtime and Runner,
-then complete context rejection, active interruption, owned cleanup and fresh-owner
-seeded replay within one feasible original allowance. The earlier session is
-permanently closed; do not continue its missing steps through another owner job.
+The separately prepared `ptq1-adapter-service-rollback-row4`
+[workload](docs/validation.md#actual-model-application-acceptance) combines the full
+five-request PTQ1 service sequence with fresh original-PQ2 rollback on the same
+0.1.14 runtime, adapter 1.3 and four workers. It requires context rejection,
+active interruption, both PTQ1 owners reaped, seeded fresh-owner replay, a complete
+original-PQ2 answer and post-cleanup full-file CNG verification. Its third-owner
+floor is 75 seconds, retaining 30 seconds for cleanup and 15 for file verification
+within the same absolute deadline. Every 0.1.14 model, service and rollback
+qualification remains pending; missing work cannot qualify the combined case.
+The earlier session is permanently closed; do not continue its missing steps
+through another owner job.
 Preserve per-owner power observations and distinguish missing child endpoints from
 the retained parent endpoints. Visible output and matching prompt counts do not
 establish numerical adapter effect, full-state parity or full promotion.
