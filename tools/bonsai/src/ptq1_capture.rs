@@ -14,6 +14,15 @@ const LIMIT: u64 = 65_536;
 const COLLECTOR: &str = "tools/native-reference/swift_ptq1_reference.rs";
 const FIXTURES: &str = "tools/native-reference/fixtures";
 const PIN_MISMATCH: &str = "Hosted capture tools differ from reviewed source/revision pins.";
+const BINARY_NAMES: [&str; 2] = ["swift-ptq1-reference.exe", "swift_model_check.exe"];
+const BINARY_LIMIT: u64 = 134_217_728;
+const COMPILER_VERSION: &str = "rustc 1.101.0-nightly (3e92e1a2d 2026-11-01)\n\
+binary: rustc\n\
+commit-hash: 3e92e1a2d20b991ef23a6c6064c34d57ee8c98d3\n\
+commit-date: 2026-11-01\n\
+host: aarch64-pc-windows-msvc\n\
+release: 1.101.0-nightly\n\
+LLVM version: 23.1.5";
 
 #[derive(Deserialize)]
 #[serde(tag = "operation", rename_all = "kebab-case", deny_unknown_fields)]
@@ -52,7 +61,7 @@ fn read_bounded(path: &Path, maximum: u64) -> crate::Result<Vec<u8>> {
     }
     let file: File = options.open(path).map_err(|error| error.to_string())?;
     let metadata = file.metadata().map_err(|error| error.to_string())?;
-    if !metadata.is_file() || metadata.len() > maximum {
+    if !metadata.is_file() || bonsai_artifacts::is_redirect(&metadata) || metadata.len() > maximum {
         return Err("Capture input exceeds its fixed pre-read byte bound.".into());
     }
     let mut bytes = Vec::new();
@@ -133,6 +142,7 @@ fn validate_checker_capability(receipt: &Value, row_workers: u8) -> crate::Resul
         }
         Some(3) => {
             matches!(row_workers, 1 | 4)
+                && receipt["BuildFeatures"] == json!(["parallel-rows"])
                 && receipt["CheckerFeatures"] == json!(["parallel-rows"])
                 && receipt["SupportedRowWorkers"] == json!([1, 4])
         }
@@ -140,6 +150,48 @@ fn validate_checker_capability(receipt: &Value, row_workers: u8) -> crate::Resul
     };
     if !accepted {
         return Err(PIN_MISMATCH.into());
+    }
+    Ok(())
+}
+
+fn validate_binary_inventory(receipt: &Value) -> crate::Result<()> {
+    let files = receipt["Files"]
+        .as_array()
+        .ok_or("Capture receipt requires its exact binary inventory.")?;
+    // Exact membership is independent of locale and the producer's ordering.
+    // Requiring one record per expected name also rejects duplicate records.
+    if files.len() != BINARY_NAMES.len()
+        || BINARY_NAMES
+            .iter()
+            .any(|name| files.iter().filter(|entry| entry["Name"] == *name).count() != 1)
+        || files.iter().any(|entry| {
+            !entry["Bytes"]
+                .as_u64()
+                .is_some_and(|bytes| (1..=BINARY_LIMIT).contains(&bytes))
+                || !entry["Sha256"]
+                    .as_str()
+                    .is_some_and(|digest| is_lower_hex(digest, 64))
+        })
+    {
+        return Err("Capture receipt binary names, lengths or SHA-256 identities differ.".into());
+    }
+    Ok(())
+}
+
+fn validate_compiler(receipt: &Value) -> crate::Result<()> {
+    let compiler = &receipt["Compiler"];
+    if !compiler["RustcVerbose"]
+        .as_str()
+        .is_some_and(|version| version.replace("\r\n", "\n").trim() == COMPILER_VERSION)
+        || ["Sha256", "LinkerSha256"].iter().any(|&field| {
+            !compiler[field]
+                .as_str()
+                .is_some_and(|digest| is_lower_hex(digest, 64))
+        })
+    {
+        return Err(
+            "Capture compiler identity differs from the pinned native ARM64 toolchain.".into(),
+        );
     }
     Ok(())
 }
@@ -158,11 +210,12 @@ fn receipt(
         || receipt["CollectorLanguage"] != "rust"
         || receipt["CollectorSourcePath"] != COLLECTOR
         || receipt["RustToolchain"] != "nightly-2026-11-02-aarch64-pc-windows-msvc"
-        || receipt["Files"].as_array().map(Vec::len) != Some(2)
     {
         return Err(PIN_MISMATCH.into());
     }
     validate_checker_capability(&receipt, row_workers)?;
+    validate_binary_inventory(&receipt)?;
+    validate_compiler(&receipt)?;
     for (receipt_key, pin_key, fields) in [
         (
             "NativeSource",
@@ -239,7 +292,10 @@ pub fn run(request: Value) -> crate::Result<Value> {
 
 #[cfg(test)]
 mod tests {
-    use super::{compare, observations, read_bounded, receipt, validate_checker_capability};
+    use super::{
+        compare, observations, read_bounded, receipt, validate_binary_inventory,
+        validate_checker_capability, validate_compiler,
+    };
     use crate::identity::sha256;
     use serde_json::{Value, json};
 
@@ -276,9 +332,12 @@ mod tests {
             });
             let revision = "a".repeat(40);
             let original = json!({
-                "SchemaVersion":2, "RunnerRevision":revision, "CollectorLanguage":"rust", "CollectorSourcePath":super::COLLECTOR,
+                "SchemaVersion":3, "RunnerRevision":revision, "CollectorLanguage":"rust", "CollectorSourcePath":super::COLLECTOR,
+                "BuildFeatures":["parallel-rows"], "CheckerFeatures":["parallel-rows"], "SupportedRowWorkers":[1,4],
                 "RustToolchain":"nightly-2026-11-02-aarch64-pc-windows-msvc", "NativeSource":pins["nativeSource"], "RustSource":pins["rustSource"],
-                "CollectorSourceSha256":sha256(source), "AbiControlSha256":sha256(abi), "AbiProvenanceSha256":sha256(provenance), "Files":[{},{}]
+                "CollectorSourceSha256":sha256(source), "AbiControlSha256":sha256(abi), "AbiProvenanceSha256":sha256(provenance),
+                "Files":binary_inventory(),
+                "Compiler":{"RustcVerbose":super::COMPILER_VERSION,"Sha256":"b".repeat(64),"LinkerSha256":"c".repeat(64)}
             });
             let path = root.join("capture-tools.json");
             for field in [
@@ -287,6 +346,9 @@ mod tests {
                 Some("CollectorSourceSha256"),
                 Some("AbiControlSha256"),
                 Some("AbiProvenanceSha256"),
+                Some("Files"),
+                Some("Compiler"),
+                Some("BuildFeatures"),
             ] {
                 let mut value = original.clone();
                 if let Some(field) = field {
@@ -313,13 +375,123 @@ mod tests {
         result
     }
 
+    fn binary_inventory() -> Value {
+        json!([
+            {"Name":"swift-ptq1-reference.exe", "Bytes":1,"Sha256":"a".repeat(64)},
+            {"Name":"swift_model_check.exe", "Bytes":super::BINARY_LIMIT,"Sha256":"b".repeat(64)}
+        ])
+    }
+
+    #[test]
+    fn collector_inventory_accepts_either_exact_order_without_sorting() -> crate::Result<()> {
+        let mut receipt = json!({"Files":binary_inventory()});
+        validate_binary_inventory(&receipt)?;
+        receipt["Files"]
+            .as_array_mut()
+            .ok_or("Expected binary array.")?
+            .reverse();
+        validate_binary_inventory(&receipt)
+    }
+
+    #[test]
+    fn collector_inventory_rejects_missing_duplicate_and_inexact_binary_names() {
+        let files = binary_inventory();
+        for changed in [
+            Value::Null,
+            json!({}),
+            json!([]),
+            json!([files[0]]),
+            json!([files[1]]),
+            json!([files[0], files[0]]),
+            json!([files[1], files[1]]),
+            json!([files[0], files[1], files[0]]),
+        ] {
+            assert!(validate_binary_inventory(&json!({"Files":changed})).is_err());
+        }
+        for name in [
+            Value::Null,
+            json!(true),
+            json!("SWIFT-PTQ1-reference.exe"),
+            json!("swift-ptq1-reference.EXE"),
+            json!("swift-ptq1-reference.exe "),
+            json!("../swift-ptq1-reference.exe"),
+            json!("swift_model_check.exe"),
+            json!("unexpected.exe"),
+        ] {
+            let mut receipt = json!({"Files":files});
+            receipt["Files"][0]["Name"] = name;
+            assert!(validate_binary_inventory(&receipt).is_err());
+        }
+    }
+
+    #[test]
+    fn collector_inventory_rejects_unbounded_lengths_and_invalid_digests() {
+        for (field, changed) in [
+            ("Bytes", Value::Null),
+            ("Bytes", json!(0)),
+            ("Bytes", json!(-1)),
+            ("Bytes", json!("1")),
+            ("Bytes", json!(1.5)),
+            ("Bytes", json!(super::BINARY_LIMIT + 1)),
+            ("Bytes", json!(u64::MAX)),
+            ("Sha256", Value::Null),
+            ("Sha256", json!("a".repeat(63))),
+            ("Sha256", json!("a".repeat(65))),
+            ("Sha256", json!("A".repeat(64))),
+            ("Sha256", json!("g".repeat(64))),
+        ] {
+            let mut receipt = json!({"Files":binary_inventory()});
+            receipt["Files"][0][field] = changed;
+            assert!(validate_binary_inventory(&receipt).is_err(), "{field}");
+        }
+    }
+
+    #[test]
+    fn collector_compiler_requires_the_exact_pinned_version_and_hash_metadata() -> crate::Result<()>
+    {
+        let original = json!({"Compiler":{
+            "RustcVerbose":super::COMPILER_VERSION,"Sha256":"a".repeat(64),"LinkerSha256":"b".repeat(64)
+        }});
+        validate_compiler(&original)?;
+        let mut windows_lines = original.clone();
+        windows_lines["Compiler"]["RustcVerbose"] = json!(format!(
+            "{}\r\n",
+            super::COMPILER_VERSION.replace('\n', "\r\n")
+        ));
+        validate_compiler(&windows_lines)?;
+        for (field, changed) in [
+            ("RustcVerbose", Value::Null),
+            (
+                "RustcVerbose",
+                json!(super::COMPILER_VERSION.replace("aarch64", "x86_64")),
+            ),
+            (
+                "RustcVerbose",
+                json!(super::COMPILER_VERSION.replace("3e92e1a2d", "000000000")),
+            ),
+            (
+                "RustcVerbose",
+                json!(format!("{}\nextra", super::COMPILER_VERSION)),
+            ),
+            ("Sha256", Value::Null),
+            ("Sha256", json!("A".repeat(64))),
+            ("LinkerSha256", Value::Null),
+            ("LinkerSha256", json!("a".repeat(63))),
+        ] {
+            let mut receipt = original.clone();
+            receipt["Compiler"][field] = changed;
+            assert!(validate_compiler(&receipt).is_err(), "{field}");
+        }
+        Ok(())
+    }
+
     #[test]
     fn collector_receipt_rejects_unbound_parallel_capability() -> crate::Result<()> {
         let old = json!({"SchemaVersion": 2});
         validate_checker_capability(&old, 1)?;
         assert!(validate_checker_capability(&old, 4).is_err());
         let current = json!({
-            "SchemaVersion": 3, "CheckerFeatures": ["parallel-rows"],
+            "SchemaVersion": 3, "BuildFeatures": ["parallel-rows"], "CheckerFeatures": ["parallel-rows"],
             "SupportedRowWorkers": [1, 4]
         });
         for workers in [1, 4] {
@@ -330,6 +502,9 @@ mod tests {
         }
         for (field, changed) in [
             ("SchemaVersion", json!(2)),
+            ("BuildFeatures", Value::Null),
+            ("BuildFeatures", json!([])),
+            ("BuildFeatures", json!(["parallel-rows", "unreviewed"])),
             ("CheckerFeatures", Value::Null),
             ("CheckerFeatures", json!([])),
             ("CheckerFeatures", json!(["parallel-rows", "unreviewed"])),

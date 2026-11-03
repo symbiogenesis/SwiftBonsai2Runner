@@ -136,8 +136,15 @@ and `budgetExpired`. It reads only the fixed bounded worker logs, validates all
 session keys before publication, sanitizes across sessions, and returns only
 `Ready`/`Classification`. Unsafe paths or incomplete collection suppress uploads.
 `ptq1-capture` supports `receipt` with bundle/repository directories, revision and
-reviewed pins, and `compare-abi` with actual/expected paths and the source-bound
-expected SHA-256. Neither command loads a model or qualifies numerical parity.
+reviewed pins. Receipt validation binds the collector source and ABI controls,
+the pinned native ARM64 compiler version and compiler/linker digest metadata,
+and exactly one record each for `swift-ptq1-reference.exe` and
+`swift_model_check.exe`, with bounded positive lengths and lowercase SHA-256.
+Binary record ordering is irrelevant; names are case-sensitive and duplicates
+reject. This validates metadata only: owner intake still verifies the complete
+archive, binary bytes and ARM64 images before execution.
+`compare-abi` receives actual/expected paths and the source-bound expected SHA-256.
+Neither command loads a model or qualifies numerical parity.
 
 `cpu-evaluation` additionally owns `observed-plan` and `capture` operations for
 the fixed four-trial X2 thread screen. Supply `dataDirectory` and `cimProcessors`
