@@ -52,6 +52,7 @@ pub const LAUNCH_USAGE: &str = concat!(
     "  [--profile <reference-cpu|swift-pq2-assessment>]\n",
     "  [--native-engine|--publisher-engine] (Swift defaults to the pinned Rust runtime; publisher is explicit rollback)\n",
     "  [--native-row-workers 1|4] (Rust defaults to 4; publisher supports only 1)\n",
+    "  [--prompt-reuse disabled|latest] (experimental exact latest-state reuse; Rust only)\n",
     "  [--use-abliterate-lora] (pinned adapter; request scale 0..2, default 1.3; Swift CPU only)\n",
     "  [--use-repacked-ptq1|--use-original-pq2] (mutually exclusive weight selections; Swift CPU only)\n",
     "  [--max-waiting <0..8>] [--check-only]\n",
@@ -115,6 +116,10 @@ enum BackendContainment {
 }
 
 /// Parsed explicit development launch; paths and credentials have no Debug output.
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "Explicit check, runtime, adapter and reuse policies are independent."
+)]
 pub struct LaunchConfig {
     data: PathBuf,
     evidence_parent: PathBuf,
@@ -126,6 +131,7 @@ pub struct LaunchConfig {
     profile: LaunchProfile,
     native_engine: bool,
     native_row_workers: u8,
+    latest_prompt_reuse: bool,
     use_abliterate_lora: bool,
     weight_representation: WeightRepresentation,
 }
@@ -148,6 +154,7 @@ impl LaunchConfig {
         let mut check_only = false;
         let mut native_engine = None;
         let mut native_row_workers = None;
+        let mut latest_prompt_reuse = None;
         let mut use_abliterate_lora = false;
         let mut use_repacked_ptq1 = None;
         let mut profile = None;
@@ -166,6 +173,15 @@ impl LaunchConfig {
                 }
                 Some("--native-row-workers") if native_row_workers.is_none() => {
                     native_row_workers = Some(row_workers(args.next().as_deref())?);
+                }
+                Some("--prompt-reuse") if latest_prompt_reuse.is_none() => {
+                    latest_prompt_reuse = Some(
+                        match args.next().as_deref().and_then(std::ffi::OsStr::to_str) {
+                            Some("disabled") => false,
+                            Some("latest") => true,
+                            _ => return Err(LaunchError::Arguments),
+                        },
+                    );
                 }
                 Some("--use-abliterate-lora") if !use_abliterate_lora => {
                     use_abliterate_lora = true;
@@ -208,6 +224,7 @@ impl LaunchConfig {
         let profile = profile.unwrap_or_default();
         let native_engine = native_engine.unwrap_or(profile == LaunchProfile::SwiftPq2Assessment);
         let native_row_workers = native_row_workers.unwrap_or(if native_engine { 4 } else { 1 });
+        let latest_prompt_reuse = latest_prompt_reuse.unwrap_or(false);
         if !launch
             || unisolated == require_native_sandbox
             || (frontend_port != 0 && frontend_port < 1024)
@@ -216,6 +233,7 @@ impl LaunchConfig {
             || max_waiting > MAX_WAITING
             || (native_engine && profile != LaunchProfile::SwiftPq2Assessment)
             || (native_row_workers == 4 && !native_engine)
+            || (latest_prompt_reuse && !native_engine)
             || (use_abliterate_lora && profile != LaunchProfile::SwiftPq2Assessment)
             || (use_repacked_ptq1.is_some() && profile != LaunchProfile::SwiftPq2Assessment)
         {
@@ -236,6 +254,7 @@ impl LaunchConfig {
             profile,
             native_engine,
             native_row_workers,
+            latest_prompt_reuse,
             use_abliterate_lora,
             weight_representation: if use_repacked_ptq1.unwrap_or(false) {
                 WeightRepresentation::CurrentRepackedPtq1
@@ -379,9 +398,13 @@ impl LaunchConfig {
         &self,
     ) -> Result<Option<(PathBuf, bonsai_artifacts::VerifiedFile)>, LaunchError> {
         if self.native_engine {
-            crate::inference::verify(&self.data, self.native_row_workers)
-                .map(Some)
-                .map_err(|_| LaunchError::NativeRuntime)
+            crate::inference::verify(
+                &self.data,
+                self.native_row_workers,
+                self.latest_prompt_reuse,
+            )
+            .map(Some)
+            .map_err(|_| LaunchError::NativeRuntime)
         } else {
             Ok(None)
         }
@@ -401,6 +424,9 @@ impl LaunchConfig {
         ];
         if self.native_row_workers == 4 {
             arguments.extend([OsString::from("--row-workers"), OsString::from("4")]);
+        }
+        if self.latest_prompt_reuse {
+            arguments.extend([OsString::from("--prompt-reuse"), OsString::from("latest")]);
         }
         if self.uses_repacked_ptq1() {
             arguments.push("--use-repacked-ptq1".into());
@@ -636,6 +662,7 @@ impl LaunchConfig {
             self.uses_repacked_ptq1(),
             self.use_abliterate_lora,
             self.native_row_workers,
+            self.latest_prompt_reuse,
         )
         .await
         {
@@ -900,6 +927,7 @@ async fn native_identity(
     repacked: bool,
     adapter: bool,
     row_workers: u8,
+    latest_prompt_reuse: bool,
 ) -> bool {
     timeout(Duration::from_secs(2), async {
         let version = crate::inference::pinned_version()
@@ -908,7 +936,8 @@ async fn native_identity(
             &exchange(port, "/v1/models", Some(key), process_id).await?,
             repacked,
             adapter,
-            WorkerReadiness::for_version(&version, row_workers),
+            WorkerReadiness::for_version(&version, row_workers)
+                .with_prompt_reuse(latest_prompt_reuse),
         )
     })
     .await
@@ -1407,6 +1436,58 @@ mod tests {
                 );
             }
         }
+        Ok(())
+    }
+
+    #[test]
+    fn prompt_reuse_is_explicit_native_only_and_reaches_the_owned_child() -> Result<(), LaunchError>
+    {
+        let mut native = arguments();
+        native.extend(["--profile", "swift-pq2-assessment"].map(OsString::from));
+        assert!(!LaunchConfig::parse(native.clone())?.latest_prompt_reuse);
+        let data = std::env::temp_dir().join("Bonsai-prefix-routing");
+        let key = data.join("backend.key");
+        let plan = super::LaunchPlan::for_profile_with_options(
+            &data,
+            8081,
+            &key,
+            LaunchProfile::SwiftPq2Assessment,
+            true,
+            false,
+        )
+        .map_err(|_| LaunchError::Policy)?;
+        for (name, latest) in [("disabled", false), ("latest", true)] {
+            let mut selected = native.clone();
+            selected.extend(["--prompt-reuse", name].map(OsString::from));
+            let config = LaunchConfig::parse(selected.clone())?;
+            assert_eq!(config.latest_prompt_reuse, latest);
+            let child = config.native_arguments(&plan, &key);
+            assert_eq!(
+                child
+                    .windows(2)
+                    .filter(|args| args[0] == "--prompt-reuse" && args[1] == "latest")
+                    .count(),
+                usize::from(latest)
+            );
+            selected.extend(["--prompt-reuse", name].map(OsString::from));
+            assert_eq!(
+                LaunchConfig::parse(selected).err(),
+                Some(LaunchError::Arguments)
+            );
+        }
+        for value in ["Latest", "true", "", "snapshot", "approximate"] {
+            let mut invalid = native.clone();
+            invalid.extend(["--prompt-reuse", value].map(OsString::from));
+            assert_eq!(
+                LaunchConfig::parse(invalid).err(),
+                Some(LaunchError::Arguments)
+            );
+        }
+        native.extend(["--publisher-engine", "--prompt-reuse", "latest"].map(OsString::from));
+        assert_eq!(
+            LaunchConfig::parse(native).err(),
+            Some(LaunchError::Arguments)
+        );
         Ok(())
     }
 

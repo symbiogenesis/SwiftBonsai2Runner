@@ -70,6 +70,10 @@ pub(crate) fn valid_abliteration_scale(scale: f32) -> bool {
 
 /// Fixed development launch inputs; paths and keys have no debug representation.
 #[derive(Clone)]
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "Independent explicit runtime, adapter, weight and reuse choices survive retry."
+)]
 pub(crate) struct Config {
     pub(crate) broker: PathBuf,
     pub(crate) data: PathBuf,
@@ -80,6 +84,7 @@ pub(crate) struct Config {
     pub(crate) use_repacked_ptq1: bool,
     pub(crate) native_engine: bool,
     pub(crate) native_row_workers: u8,
+    pub(crate) latest_prompt_reuse: bool,
     pub(crate) canary: Option<crate::canary::Config>,
     pub(crate) qwen_tts: Option<crate::tts::Config>,
 }
@@ -354,6 +359,9 @@ fn runtime_arguments(config: &Config) -> Vec<&'static str> {
             "1"
         },
     ]);
+    if config.latest_prompt_reuse {
+        arguments.extend(["--prompt-reuse", "latest"]);
+    }
     arguments
 }
 
@@ -1289,6 +1297,7 @@ mod tests {
             use_repacked_ptq1: false,
             native_engine: false,
             native_row_workers: 1,
+            latest_prompt_reuse: false,
             canary: None,
             qwen_tts: None,
         };
@@ -1345,6 +1354,18 @@ mod tests {
                 "1"
             ]
         );
+        config.latest_prompt_reuse = true;
+        let selected = runtime_arguments(&config);
+        assert!(
+            selected
+                .windows(2)
+                .any(|args| args == ["--prompt-reuse", "latest"])
+        );
+        let retry = Config {
+            evidence: "retry-evidence".into(),
+            ..config.clone()
+        };
+        assert_eq!(runtime_arguments(&retry), selected);
     }
 
     #[test]
@@ -1359,6 +1380,7 @@ mod tests {
             use_repacked_ptq1: false,
             native_engine: true,
             native_row_workers: 4,
+            latest_prompt_reuse: false,
             canary: None,
             qwen_tts: None,
         };

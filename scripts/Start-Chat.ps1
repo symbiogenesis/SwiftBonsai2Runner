@@ -18,6 +18,8 @@ param(
     [switch]$PublisherEngine,
     [ValidateSet(1, 4)]
     [int]$NativeRowWorkers = 4,
+    [ValidateSet('disabled', 'latest')]
+    [string]$PromptReuse,
     [switch]$UseRepackedPtq1,
     [switch]$UseOriginalPq2,
     [ValidateSet('dx12', 'vulkan', 'gl')]
@@ -31,6 +33,9 @@ $PSNativeCommandUseErrorActionPreference = $false
 
 if ($NativeEngine -and $PublisherEngine) {
     throw 'NativeEngine and PublisherEngine are mutually exclusive.'
+}
+if ($PublisherEngine -and $PromptReuse -eq 'latest') {
+    throw 'Latest prompt reuse requires the Rust engine.'
 }
 if ($PublisherEngine -and $PSBoundParameters.ContainsKey('NativeRowWorkers') -and $NativeRowWorkers -ne 1) {
     throw 'Four native row workers require the Rust engine.'
@@ -70,5 +75,6 @@ if ($PublisherEngine) {
 if ($UseRepackedPtq1) { $launchArguments += '--use-repacked-ptq1' }
 if ($UseOriginalPq2) { $launchArguments += '--use-original-pq2' }
 if ($GraphicsBackend) { $launchArguments += @('--graphics-backend', $GraphicsBackend.ToLowerInvariant()) }
+if ($PromptReuse) { $launchArguments += @('--prompt-reuse', $PromptReuse.ToLowerInvariant()) }
 & $ToolPath @launchArguments
 exit $LASTEXITCODE

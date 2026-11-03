@@ -20,6 +20,14 @@ enum GraphicsBackend {
     Gl,
 }
 
+#[derive(Clone, Copy, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "lowercase")]
+enum PromptReuse {
+    #[default]
+    Disabled,
+    Latest,
+}
+
 fn graphics_environment(backend: Option<GraphicsBackend>) -> BTreeMap<String, String> {
     let mut environment = BTreeMap::new();
     if let Some(backend) = backend {
@@ -64,6 +72,8 @@ struct Request {
     native_engine: bool,
     #[serde(default, deserialize_with = "requested_native_row_workers")]
     native_row_workers: Option<u8>,
+    #[serde(default)]
+    prompt_reuse: PromptReuse,
     #[serde(default)]
     graphics_backend: Option<GraphicsBackend>,
     #[serde(default = "default_frontend_port")]
@@ -230,6 +240,9 @@ fn prepare(mut request: Request, native_host: bool) -> crate::Result<Plan> {
         return Err("NativeRowWorkers must be 1 or 4; four requires NativeEngine.".into());
     }
     request.native_row_workers = Some(native_row_workers);
+    if request.prompt_reuse == PromptReuse::Latest && !request.native_engine {
+        return Err("Latest prompt reuse requires NativeEngine.".into());
+    }
     if !request.speech_models_only && !native_host {
         return Err("Run chat in the native ARM64 executable on Windows ARM64.".into());
     }
@@ -457,6 +470,9 @@ fn runtime_arguments(request: &Request, arguments: &mut Vec<OsString>) {
         "--native-row-workers",
         request.native_row_workers().to_string(),
     );
+    if request.prompt_reuse == PromptReuse::Latest {
+        argument(arguments, "--prompt-reuse", "latest");
+    }
 }
 
 fn launch_arguments(

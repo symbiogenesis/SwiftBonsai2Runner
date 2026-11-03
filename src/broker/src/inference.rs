@@ -149,9 +149,27 @@ pub(super) fn pinned_version() -> Result<String, LaunchError> {
     release(LOCK).map(|release| release.version)
 }
 
-pub(super) fn verify(data: &Path, row_workers: u8) -> Result<(PathBuf, VerifiedFile), LaunchError> {
+fn prompt_reuse_supported(release: &ReleasePin, latest: bool) -> Result<(), LaunchError> {
+    // Capability is bound to reviewed source and immutable released bytes. A
+    // later version must be reviewed explicitly, even if its CLI looks similar.
+    if !latest
+        || (release.version == "0.1.14"
+            && release.commit == "9e8ea3e2c042ab0c3f1a8e9596ff155e202c3c57")
+    {
+        Ok(())
+    } else {
+        Err(LaunchError::Artifacts)
+    }
+}
+
+pub(super) fn verify(
+    data: &Path,
+    row_workers: u8,
+    latest_prompt_reuse: bool,
+) -> Result<(PathBuf, VerifiedFile), LaunchError> {
     let release = release(LOCK)?;
     row_workers_supported(&release.version, row_workers)?;
+    prompt_reuse_supported(&release, latest_prompt_reuse)?;
     let file = release
         .files
         .iter()
@@ -170,6 +188,28 @@ pub(super) fn verify(data: &Path, row_workers: u8) -> Result<(PathBuf, VerifiedF
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn latest_prompt_reuse_requires_exact_reviewed_release_source() -> Result<(), LaunchError> {
+        let mut pin = release(LOCK)?;
+        assert!(prompt_reuse_supported(&pin, true).is_ok());
+        pin.commit = "0".repeat(40);
+        assert_eq!(
+            prompt_reuse_supported(&pin, true),
+            Err(LaunchError::Artifacts)
+        );
+        assert!(prompt_reuse_supported(&pin, false).is_ok());
+        pin.commit = "9e8ea3e2c042ab0c3f1a8e9596ff155e202c3c57".into();
+        for version in ["0.1.13", "0.1.15", "0.1.14-dev", "v0.1.14", "0.1.014"] {
+            pin.version = version.into();
+            assert_eq!(
+                prompt_reuse_supported(&pin, true),
+                Err(LaunchError::Artifacts)
+            );
+            assert!(prompt_reuse_supported(&pin, false).is_ok());
+        }
+        Ok(())
+    }
 
     #[test]
     fn compiled_server_release_is_pinned_and_rejects_path_or_identity_drift()

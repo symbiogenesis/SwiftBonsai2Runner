@@ -1970,6 +1970,7 @@ mod startup_tests {
             use_repacked_ptq1: false,
             native_engine: false,
             native_row_workers: 1,
+            latest_prompt_reuse: false,
             canary: None,
             qwen_tts: None,
         };

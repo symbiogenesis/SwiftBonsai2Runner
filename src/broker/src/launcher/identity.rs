@@ -8,6 +8,7 @@ use std::io;
 pub(super) struct WorkerReadiness {
     expected: u8,
     legacy_missing_allowed: bool,
+    latest_prompt_reuse: bool,
 }
 
 impl WorkerReadiness {
@@ -17,7 +18,13 @@ impl WorkerReadiness {
             // Only these reviewed historical releases omit this identity. A
             // later pin must report its graph's effective worker budget.
             legacy_missing_allowed: matches!(version, "0.1.8" | "0.1.9" | "0.1.10"),
+            latest_prompt_reuse: false,
         }
+    }
+
+    pub(super) const fn with_prompt_reuse(mut self, latest: bool) -> Self {
+        self.latest_prompt_reuse = latest;
+        self
     }
 
     fn accepts(self, observed: Option<u8>) -> bool {
@@ -73,6 +80,8 @@ struct NativeModel {
     supports_abliteration_scale: Option<bool>,
     #[serde(default, deserialize_with = "present")]
     abliteration_scale_range: Option<[u8; 2]>,
+    #[serde(default, deserialize_with = "present")]
+    prompt_reuse: Option<String>,
 }
 
 pub(super) fn validate_native_identity(
@@ -120,6 +129,7 @@ pub(super) fn validate_native_identity(
         || model.context_tokens != crate::CONTEXT_TOKENS
         || model.seed != 42
         || !workers.accepts(model.row_workers)
+        || model.prompt_reuse.as_deref() != workers.latest_prompt_reuse.then_some("latest")
         || !extensions_match
     {
         return Err(io::Error::other("native model readiness identity mismatch"));
@@ -187,6 +197,33 @@ mod tests {
                     validate_native_identity(&response(Some(other)), false, false, policy).is_err()
                 );
             }
+        }
+    }
+
+    #[test]
+    fn prompt_reuse_readiness_must_match_the_explicit_request_exactly() {
+        let reset = WorkerReadiness::for_version("0.1.14", 4);
+        let latest = reset.with_prompt_reuse(true);
+        assert!(validate_native_identity(&response(Some("4")), false, false, reset).is_ok());
+        assert!(validate_native_identity(&response(Some("4")), false, false, latest).is_err());
+        for extension in [
+            "\"latest\"",
+            "\"disabled\"",
+            "\"Latest\"",
+            "null",
+            "true",
+            "0",
+            "{}",
+            "[]",
+            "\"latest\",\"prompt_reuse\":\"latest\"",
+        ] {
+            let bytes = response(Some(&format!("4,\"prompt_reuse\":{extension}")));
+            assert!(validate_native_identity(&bytes, false, false, reset).is_err());
+            assert_eq!(
+                validate_native_identity(&bytes, false, false, latest).is_ok(),
+                extension == "\"latest\"",
+                "{extension}"
+            );
         }
     }
 

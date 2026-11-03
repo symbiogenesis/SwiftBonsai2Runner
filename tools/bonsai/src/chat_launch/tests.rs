@@ -197,6 +197,45 @@ fn plan(value: Value) -> crate::Result<Plan> {
     )
 }
 
+#[test]
+fn prompt_reuse_survives_deferred_preparation_and_rejects_unsupported_selection()
+-> crate::Result<()> {
+    let mut fixture = fixture("prompt-reuse")?;
+    fixture.request["NativeEngine"] = json!(true);
+    for (value, latest) in [("disabled", false), ("latest", true)] {
+        fixture.request["PromptReuse"] = json!(value);
+        let prepared = plan(fixture.request.clone())?;
+        let serialized =
+            serde_json::to_vec(&prepared.request).map_err(|error| error.to_string())?;
+        let restored: Request =
+            serde_json::from_slice(&serialized).map_err(|error| error.to_string())?;
+        let mut recorder = Recorder::new(fixture.root.clone());
+        let result = prepare_backend(prepare(restored, true)?, &mut recorder, &fixture.working)?;
+        let arguments = result["Arguments"].as_array().ok_or("Missing arguments.")?;
+        assert_eq!(
+            arguments
+                .windows(2)
+                .filter(|args| args[0] == "--prompt-reuse" && args[1] == "latest")
+                .count(),
+            usize::from(latest)
+        );
+    }
+    for invalid in [
+        json!("Latest"),
+        json!("approximate"),
+        json!(null),
+        json!(true),
+        json!(0),
+    ] {
+        fixture.request["PromptReuse"] = invalid;
+        assert!(plan(fixture.request.clone()).is_err());
+    }
+    fixture.request["PromptReuse"] = json!("latest");
+    fixture.request["NativeEngine"] = json!(false);
+    assert!(plan(fixture.request.clone()).is_err());
+    Ok(())
+}
+
 fn value_after(arguments: &[OsString], option: &str) -> crate::Result<OsString> {
     arguments
         .windows(2)

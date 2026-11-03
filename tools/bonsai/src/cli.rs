@@ -99,6 +99,7 @@ fn chat_options(arguments: &[OsString]) -> crate::Result<Map<String, Value>> {
             "--tts-quantization" => ("TtsQuantization", false, false),
             "--tts-threads" => ("TtsThreads", false, true),
             "--native-row-workers" => ("NativeRowWorkers", false, true),
+            "--prompt-reuse" => ("PromptReuse", false, false),
             "--graphics-backend" => ("GraphicsBackend", false, false),
             "--frontend-port" => ("FrontendPort", false, true),
             "--backend-port" => ("BackendPort", false, true),

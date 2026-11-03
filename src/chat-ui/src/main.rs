@@ -52,6 +52,7 @@ fn configuration(
     let mut use_repacked_ptq1 = None;
     let mut native_engine = None;
     let mut native_row_workers = None;
+    let mut latest_prompt_reuse = None;
     while let Some(option) = args.next() {
         match option.to_str() {
             Some("--no-abliterate-lora") if !no_abliterate_lora => no_abliterate_lora = true,
@@ -69,6 +70,15 @@ fn configuration(
                         Some("1") => 1,
                         Some("4") => 4,
                         _ => return Err("Native row workers must be 1 or 4."),
+                    },
+                );
+            }
+            Some("--prompt-reuse") if latest_prompt_reuse.is_none() => {
+                latest_prompt_reuse = Some(
+                    match args.next().as_deref().and_then(std::ffi::OsStr::to_str) {
+                        Some("disabled") => false,
+                        Some("latest") => true,
+                        _ => return Err("Prompt reuse must be disabled or latest."),
                     },
                 );
             }
@@ -171,13 +181,17 @@ fn configuration(
             }
             _ => {
                 return Err(
-                    "Usage: bonsai-chat --broker-path ABSOLUTE_EXE --data-directory ABSOLUTE_DIRECTORY --evidence-directory ABSOLUTE_DIRECTORY [--frontend-port 5173] [--backend-port 8081] [--no-abliterate-lora] [--use-repacked-ptq1|--use-original-pq2] [--native-engine|--publisher-engine] [--native-row-workers 1|4] [--canary-key-file ABSOLUTE_FILE --canary-port 8766 [--canary-executable ABSOLUTE_EXE --canary-model ABSOLUTE_GGUF]] [--tts-key-file ABSOLUTE_FILE --tts-port 8767 [--tts-executable ABSOLUTE_EXE --tts-model ABSOLUTE_GGUF --tts-codec ABSOLUTE_GGUF --tts-voice-model ABSOLUTE_GGUF [--tts-quantization Q8_0|Q4_K_M] [--tts-threads 10]]]",
+                    "Usage: bonsai-chat --broker-path ABSOLUTE_EXE --data-directory ABSOLUTE_DIRECTORY --evidence-directory ABSOLUTE_DIRECTORY [--frontend-port 5173] [--backend-port 8081] [--no-abliterate-lora] [--use-repacked-ptq1|--use-original-pq2] [--native-engine|--publisher-engine] [--native-row-workers 1|4] [--prompt-reuse disabled|latest] [--canary-key-file ABSOLUTE_FILE --canary-port 8766 [--canary-executable ABSOLUTE_EXE --canary-model ABSOLUTE_GGUF]] [--tts-key-file ABSOLUTE_FILE --tts-port 8767 [--tts-executable ABSOLUTE_EXE --tts-model ABSOLUTE_GGUF --tts-codec ABSOLUTE_GGUF --tts-voice-model ABSOLUTE_GGUF [--tts-quantization Q8_0|Q4_K_M] [--tts-threads 10]]]",
                 );
             }
         }
     }
     let native_engine = native_engine.unwrap_or(true);
     let native_row_workers = native_row_workers.unwrap_or(if native_engine { 4 } else { 1 });
+    let latest_prompt_reuse = latest_prompt_reuse.unwrap_or(false);
+    if latest_prompt_reuse && !native_engine {
+        return Err("Latest prompt reuse requires --native-engine.");
+    }
     if native_row_workers == 4 && !native_engine {
         return Err("Four native row workers require --native-engine.");
     }
@@ -230,6 +244,7 @@ fn configuration(
         use_repacked_ptq1: use_repacked_ptq1.unwrap_or(false),
         native_engine,
         native_row_workers,
+        latest_prompt_reuse,
         canary: canary_key_file.map(|key_file| canary::Config {
             port: canary_port.unwrap_or(8766),
             key_file,
@@ -570,6 +585,24 @@ mod tests {
         assert!(!default.use_repacked_ptq1);
         assert!(default.native_engine);
         assert_eq!(default.native_row_workers, 4);
+        assert!(!default.latest_prompt_reuse);
+        for (value, latest) in [("disabled", false), ("latest", true)] {
+            let mut selected = args.to_vec();
+            selected.extend(["--prompt-reuse", value].map(OsString::from));
+            assert_eq!(
+                configuration(selected.clone())
+                    .map_err(io::Error::other)?
+                    .latest_prompt_reuse,
+                latest
+            );
+            selected.extend(["--prompt-reuse", value].map(OsString::from));
+            assert!(configuration(selected).is_err());
+        }
+        for value in ["Latest", "true", "", "approximate"] {
+            let mut rejected = args.to_vec();
+            rejected.extend(["--prompt-reuse", value].map(OsString::from));
+            assert!(configuration(rejected).is_err());
+        }
         let mut publisher = args.to_vec();
         publisher.push("--publisher-engine".into());
         let rollback = configuration(publisher).map_err(io::Error::other)?;
@@ -577,6 +610,9 @@ mod tests {
         assert_eq!(rollback.native_row_workers, 1);
         assert!(!rollback.use_repacked_ptq1);
         assert!(rollback.use_abliterate_lora);
+        publisher = args.to_vec();
+        publisher.extend(["--publisher-engine", "--prompt-reuse", "latest"].map(OsString::from));
+        assert!(configuration(publisher).is_err());
         for first in ["--native-engine", "--publisher-engine"] {
             for second in ["--native-engine", "--publisher-engine"] {
                 let mut rejected = args.to_vec();
