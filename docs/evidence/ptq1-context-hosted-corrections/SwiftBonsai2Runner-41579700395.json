@@ -1,0 +1,46 @@
+{
+  "repository": "SwiftBonsai2Runner",
+  "runId": "41579700395",
+  "head_sha": "c8bd3646309daef39291b924706afabba862b677",
+  "path": ".github/workflows/foundation.yml",
+  "status": "completed",
+  "conclusion": "cancelled",
+  "run_attempt": 1,
+  "failedJobs": [
+    {
+      "id": "125731479678",
+      "name": "broker / core",
+      "conclusion": "failure",
+      "steps": [
+        {
+          "name": "Run ./.github/actions/check-rust",
+          "number": 3
+        }
+      ]
+    },
+    {
+      "id": "125733187292",
+      "name": "foundation",
+      "conclusion": "failure",
+      "steps": [
+        {
+          "name": "Require every selected Foundation test group",
+          "number": 4
+        }
+      ]
+    }
+  ],
+  "selectedArtifact": {
+    "id": "13204864672",
+    "name": "broker-checks-core-41579700395",
+    "size_in_bytes": 6623,
+    "digest": "sha256:c971a13069e3fd0bfbc0ee7a79d943f1e61c1768919d4ee250cefcd0be709e23",
+    "workflow_run": {
+      "id": 41579700395,
+      "repository_id": 1430577508,
+      "head_repository_id": 1430577508,
+      "head_branch": "main",
+      "head_sha": "c8bd3646309daef39291b924706afabba862b677"
+    }
+  }
+}

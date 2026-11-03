@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "kind": "independent-ptq1-context-hosted-correction-history",
+  "recordedDate": "2026-11-02",
+  "reviewerId": "Codex:/root/review",
+  "status": "exact-failures-retained-narrow-corrections-reviewed-later-owning-ci-required",
+  "corrections": [
+    {
+      "repository": "symbiogenesis/SwiftBonsai2Runner",
+      "runId": "41579700395",
+      "sourceRevision": "c8bd3646309daef39291b924706afabba862b677",
+      "failure": "E0061 in backend/memory_tests.rs:128: direct read_head call omitted the newly explicit counting bool. Clippy and test compilation fail; formatting, documentation and release build passed.",
+      "artifactId": "13204864672",
+      "artifactBytes": 6623,
+      "artifactSha256": "c971a13069e3fd0bfbc0ee7a79d943f1e61c1768919d4ee250cefcd0be709e23",
+      "reviewedCorrection": "9c43059366520f297ba9e702ef4bb769a1f8e5ad",
+      "scope": "Supply false to retain the existing non-counting fixture route. Fragment capacities, coalesced payload assertions and deadline remain unchanged."
+    },
+    {
+      "repository": "symbiogenesis/SwiftBonsai2Runner",
+      "runId": "41580181112",
+      "sourceRevision": "9c43059366520f297ba9e702ef4bb769a1f8e5ad",
+      "failure": "Strict Clippy assert_is_empty in supervisor.rs:426. Full hosted tests, formatting, documentation and release build passed; required aggregate acceptance did not pass.",
+      "reviewedCorrection": "025de7ea7ce56f6d6b9310a3f271cb42dcfc870b",
+      "scope": "Use assert_eq!(bytes.as_slice(), b\"\") for the existing unknown-counter-error negative case. This is the same exact zero-public-bytes requirement with a typed empty byte slice; no lint waiver or assertion removal. The fixture uses static synthetic keys."
+    },
+    {
+      "repository": "symbiogenesis/prism-inference",
+      "runId": "41579752996",
+      "sourceRevision": "6e442a3e3600a45c28a7f8e132ee99fbe9843178",
+      "failure": "Both ARM64 and x64 correctness-0 shards report Kind(BrokenPipe) in private_typed_context_rejection_clears_count_seal_without_faulting_owner. The server lib result was 21 passed and one failed; the owning Foundation run failed and this source was not released.",
+      "arm64JobId": "125731612155",
+      "x64JobId": "125731612210",
+      "arm64ArtifactId": "13205505488",
+      "arm64ArtifactBytes": 2038,
+      "arm64ArtifactSha256": "5c451659efc3e63e16e0be1e07756a0294c8febac8c73f1b2f3deda2dadb9ccd",
+      "reviewedCorrection": "9e8ea3e2c042ab0c3f1a8e9596ff155e202c3c57",
+      "sourceCause": "The negative unauthenticated Count fixture wrote the entire canonical body before reading through the existing tiny duplex. Production authentication rejects before consuming that body. The denied body and error response can consequently block each other in the fixture; ordinary authenticated canonical exchanges do not have this ordering.",
+      "scope": "Use a header-only unauthorized Count control. Exact Unauthorized and unchanged preparation-count assertions remain. Full canonical authenticated requests, stale-count rejection, same-owner recovery, production early-auth rejection, tiny duplex capacity and timeouts remain unchanged. No deadline widening or tolerated valid-write failure."
+    }
+  ],
+  "explicit014ActivationReview": {
+    "revision": "13f7c965079e42866217f63e97328bf356772d3a",
+    "scope": "Adds only exact 0.1.14 to reviewed four-worker support and harness receipt versions. Native readiness must still match the instantiated graph budget, model, adapter and template. Legacy missing-worker exceptions remain limited to 0.1.8/0.1.9/0.1.10. Alternate spellings, prereleases, extra components, leading-zero variants and later versions do not gain four-worker admission. This is source activation, not a runtime repin or model qualification."
+  },
+  "releaseMetadataReview": {
+    "revision": "6e442a3e3600a45c28a7f8e132ee99fbe9843178",
+    "scope": "Runtime/server manifest and lock versions, exact path dependency and Foundation PRISM_VERSION agree on 0.1.14. Dependencies, notices and defaults are unchanged. Source-install documentation correctly uses Prism's own nightly-2026-10-22 pin, distinct from Runner's pin. Publication still requires all exact-source owning workflows to pass after the test-only correction."
+  },
+  "scope": "Authenticated hosted metadata, small retained source/test failure excerpts and source review only. These corrections preserve required assertions, tolerances and ownership. A green individual phase never substitutes for the owning aggregate. Later successful runs must retain their own exact source identities and cannot rewrite these failed or cancelled results.",
+  "newReviewerDeviceDiagnostics": 0,
+  "newReviewerModelExecutions": 0,
+  "newReviewerLocalBuildsOrTests": 0,
+  "originalOwnerClockRestarted": false,
+  "releasedServiceGateQualified": false,
+  "defaultPromotionQualified": false
+}
