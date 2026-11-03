@@ -90,6 +90,15 @@ all three packages and matching revision, toolchain and compiler identities befo
 model use; failed hosted analyzer logs remain independently retained. This is a
 source prerequisite, and closes no device or promotion gate.
 
+Hosted preparation also requires nonempty model-free `owner_shutdown_` broker
+and `owned_broker_` UI controls. The UI's private shutdown request requires a
+fresh model-cleanup acknowledgment from the broker, broker exit and confirmed
+outer Job cleanup before Retry. PSEC-created models can bypass outer Job
+inheritance, so outer Job accounting alone cannot satisfy this contract.
+These controls exercise marker validation and failure gates without loading a
+model. Owner-observed native UI Stop/Retry must separately qualify the complete
+private handshake with the selected runtime and sandbox.
+
 An inherited owner may predeclare a canonical work allowance up to thirty seconds
 less than that same declared whole-job total (270 by default, at most 870).
 The budget tool subtracts all elapsed time from its original monotonic start and
