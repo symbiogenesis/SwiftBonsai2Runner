@@ -59,3 +59,6 @@ docs/evidence/ptq1-packing-41567729492/*.json -text whitespace=cr-at-eol
 # Keep hosted public queue ABI inputs and Rust/C control sources portable.
 tools/hexagon/windows_queue_abi.* text eol=lf
 tools/hexagon/windows-queue-abi.lock.json text eol=lf
+
+# Preserve original bounded numerical capture report bytes.
+docs/evidence/ptq1-numerics-41568281287/*.json -text whitespace=cr-at-eol

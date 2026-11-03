@@ -96,25 +96,30 @@ ARM64 MSVC exceptional-float behavior when qualifying other compiler versions.
 Measure adaptive broker forwarding and retained idle speech scratch before
 claiming a latency, throughput or process-memory gain.
 
-Qualify the Rust PTQ1 DLL collector against the current locked Prism source through
-the main-only numerical workflow, explicitly selecting the intended Auto, scalar or
-NEON backend. Selection prepares one bounded comparison, not a matrix or permission
-to split a matrix across repeated owner-device runs. The [latest one-worker
-attempt](docs/evidence/ptq1-delivery-52f98b3.json) passed PTQ1/adapter readiness,
-one-token streams at scales 1.3 and zero, and invalid-scale rejection. Its
-generated-history change-back request expired after 72.29 seconds within the
-215-second model-case allowance; that one-worker sequence remains unqualified.
-The [current-release numerical preparation and pre-registration no-go](docs/evidence/ptq1-numerics-41565247997.json)
-retain successful exact-source hosted tools and Foundation at `3d91f11`, with
-explicit NEON, four workers and the standard adapter selected. The temporary
-owner helper failed before registration; no numerical job step or model ran.
-Preserve the original clock and unknown failure classification: discarded raw
-stderr does not identify its cause. The [source-only reproduction](docs/evidence/ptq1-numerics-package-inventory-41565247997.json)
-finds a culture-sensitive filename sort that rejects the retained valid package;
-an exact-membership correction passes both package validators and eleven controls.
-Review a future owner with that correction, explicit UTC decoding and a bounded
-rejection reason; do not retry this closed attempt or transfer source-only
-validation to actual-model qualification.
+Extend current-release numerical qualification beyond the
+[passed one-token explicit-NEON capture](docs/evidence/ptq1-numerics-41568281287.json):
+all 129 files / 39,504,384 logits and complete live-state values match byte for
+byte on X2 Elite Extreme with four row workers and the standard adapter at 1.3.
+The source-built checker uses pinned Prism 0.1.13; this does not exercise the
+released private HTTP service or qualify full 8192-token occupancy, broader
+trajectories, scalar, loaded-zero/no-adapter identity or nonzero effect size.
+Retain the separate source-built/checker and released-service identities and
+select one independently useful workload within the shared owner budget;
+do not continue a partial matrix through further owner runs.
+
+Preserve the [closed pre-registration no-go](docs/evidence/ptq1-numerics-41565247997.json)
+and its unknown original failure classification. The later exact-name inventory
+correction and strict Rust receipt checks address a reproduced source defect;
+they do not identify the discarded original exception. The successful new session
+preserves its own original clock through a Python executable-lookup correction
+before any child started, then one package intake and one native/Rust model pair.
+Its owner cleanup finishes at second 108.553 and hash-verified archival at second
+131.506, plus a conservative 40-second prior charge. The original independent
+payload review remained incomplete after review-only path errors; the separate
+[passed hosted retained-data audit](docs/evidence/ptq1-retained-audit-41571150128/independent-review.json)
+checks all 155 captured files and replays the original comparator without another
+model trial.
+Keep execution, retained-data review and full promotion verdicts distinct.
 The [Prism 0.1.13 four-worker sequence](docs/evidence/ptq1-0113-lifecycle-41539984210/interpretation.json)
 now passes all three cap-one streams, invalid-scale rejection, same-owner reuse
 after rejection and captured assistant-history binding within 268.464 charged
@@ -189,11 +194,15 @@ Foundation, conformance and source-package checks passed. The bounded current
 case observes 14.622-second startup, including 8.135 seconds of broker model
 verification and 5.596 seconds awaiting authenticated readiness. These brackets
 do not isolate backend loading/graph/kernel work or prove a controlled gain.
-Qualify the opt-in
-`request-timing` source diagnostic through a reviewed native owned-process launcher
-with memory limits, parent ownership, an original absolute deadline and cleanup
-reserve before using it on the owner device. Its hosted package and cooperative
-deadline do not supply that containment or qualify service throughput.
+Qualify the explicit `capture_mode: request-timing` source diagnostic on the
+owner device only after its owning hosted checks pass. Its native Rust launcher
+now binds the exact checker and public input, parent ownership, Job/admission
+limits, original monotonic deadline and 32-second verification/cleanup reserve.
+It runs one standard-adapter PTQ1 source-session request with one reserved output
+token, separately from the numerical pair. Validate actual operation attribution
+before optimizing a hotspot; source timing does not qualify HTTP/decode throughput,
+isolated kernels, complete answers or a default. Missing final receipts leave
+work unknown, and no timing trial may extend the closed numerical session.
 The independently reviewed
 [published-direction result](docs/evidence/ptq1-direction-41530766802/independent-review.json)
 checks all 129 B factors and 660,480 channels with zero numeric difference.
@@ -576,7 +585,7 @@ not close pending hosted integration or full-model acceptance.
   scale and load-without-apply under [allocation
   rules](docs/swift-lora.md#allocation-semantics).
 - Complete [PTQ1 release qualification](docs/swift-memory.md#release-decision) beyond
-  the bounded Auto numerical and native-service smokes. Qualify full-model
+  the bounded Auto/explicit-NEON numerical and native-service smokes. Qualify full-model
   scalar/explicit-NEON logits and live state, no-LoRA/loaded-zero identity and nonzero
   application, immutable adapter writer-basis provenance, then stable-condition
   paired complete responses at app scale 1.3, context/output and recovery, quality
@@ -968,7 +977,7 @@ do not reset it. Further owner qualification remains pending for this investigat
   replay or partial CPU continuation.
 - Publish scoped profiles/no-go results from paired repeated CI: short and near-limit
   prompts, full output reserve, fixed and natural completions, edited and reused state,
-  AC/battery, pressure and 15–30-minute sustained use. Retain raw evidence, uncertainty,
+  AC/battery, pressure and 15â€“30-minute sustained use. Retain raw evidence, uncertainty,
   LoRA parity, CPU rollback and [upgrade gates](docs/hexagon.md#qualification-evidence).
   Qualify Rust NPU coverage and device safety after Rust CPU parity, preserving signed
   deployment and full state.

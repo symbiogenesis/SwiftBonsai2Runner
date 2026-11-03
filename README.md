@@ -91,7 +91,7 @@ reached the shared soft deadline; its rate and the paired speedup remain pending
 Sustained decode TPS and PTQ1 speed remain unmeasured.
 
 The [verified PTQ1 export](config/swift.ptq1-export.json) saves **1,259,520,000 bytes
-(1.173 GiB)** on disk. Current-release PTQ1 peak memory and device benefit remain
+(1.173 GiB)** on disk. The released service's full-context peak memory and paired benefit remain
 unmeasured; the packing saving alone does not qualify resources or performance.
 
 > [!NOTE]
@@ -99,34 +99,31 @@ unmeasured; the packing saving alone does not qualify resources or performance.
 > Select the verified current-weight export with
 > `bonsai-tools chat --native-engine --use-repacked-ptq1` after
 > [provisioning it](docs/development-guide.md#runtime-selection).
-> The bold row names the pinned Rust 0.1.13 profile; historical measurements do not
-> transfer to it. The [0.1.7 source diagnostic](docs/evidence/ptq1-rust-smoke.json)
-> measured **5.85 GiB peak Job commit** for one supplied token at adapter scale 1.3:
-> all **129 files / 39,504,384 logits and live-state values** matched the native
-> reference byte for byte with Auto requested. The separate [0.1.8 sandboxed service
-> smoke](docs/evidence/ptq1-native-service.json) passed startup, one short scale-1.3
-> stream and cleanup, without a memory peak. Broader PTQ1 service acceptance,
-> scalar/explicit NEON and zero-scale controls, full-context/4K-output, adapter basis,
-> quality and benefit remain unqualified. PQ2 remains the app default; the
-> [release decision](docs/swift-memory.md#release-decision) retains earlier failures.
 >
-> The [current 0.1.10 PTQ1 attempt](docs/evidence/ptq1-0110-service-attempt.json)
-> reached verified readiness, but its initial scale-1.3 request did not complete
-> within the request allowance. Intake, cleanup and receipt retention took
-> **168.70 s**; that duration is not a request-speed measurement. Partial response
-> progress is unknown, and zero-scale/rejection/history checks remain pending.
+> The pinned Rust 0.1.13 release now passes a [bounded four-worker service
+> sequence](docs/evidence/ptq1-0113-lifecycle-41539984210/interpretation.json):
+> three one-token-cap streams at adapter scales 1.3, zero and 1.3, invalid-scale
+> rejection, captured assistant history and owned cleanup. This does not measure
+> complete-answer quality or decode throughput.
 >
-> The later [0.1.10 PQ2 lifecycle check](docs/evidence/prism-0110-lifecycle-service.json)
-> passed readiness, scales 1.3/zero/1.3, invalid-scale rejection, static supplied
-> history and owned cleanup in **124.781 s** from artifact intake through cleanup.
-> Its three streams reported **one, one and two output tokens** with four configured
-> workers. This bounded lifecycle pass does not qualify PTQ1, the separate one-worker
-> policy, active graph cancellation, memory peaks or performance.
+> The [fresh hosted packing check](docs/evidence/ptq1-hosted-packing-b833d6b.json)
+> independently matched all **209,920,000 blocks**, their original symbols and
+> scales, and the preserved metadata and other tensor bytes. It reproduced the exact
+> export with the pinned 0.1.13 exporter. Packing parity alone does not establish
+> runtime numerical parity, memory use or speed.
 >
-> The [original-PQ2 row-worker diagnostic](docs/evidence/row-parallel-smoke.json)
-> matches all 39,504,384 logits/state values byte for byte. One fixed forward
-> evaluation took 1.55 s with one worker and 0.58 s with four; loading and capture
-> I/O are excluded. This is not application TPS or full performance qualification.
+> The [current 0.1.13 source diagnostic](docs/evidence/ptq1-numerics-41568281287.json)
+> matched all **39,504,384 logits and live-state values** byte for byte for one
+> supplied token on X2 Elite Extreme, with explicit NEON, four row workers and
+> adapter scale 1.3. Its **5.85 GiB peak Job commit** is specific to the correctness
+> checker; it does not measure the released service's memory or throughput.
+>
+> Full-context/4K-output acceptance, scalar/explicit-NEON trajectories,
+> loaded-zero identity, adapter authoring basis, paired complete-answer benefit,
+> independent quality review and daily-service acceptance remain pending in
+> [the plan](PLAN.md#actual-model-acceptance). PQ2 remains the app default and
+> explicit rollback; the [release decision](docs/swift-memory.md#release-decision)
+> retains the historical results and failures.
 >
 > Admission values are configured budgets including a 4 GiB physical reserve.
 > The restore-copy figure describes a transient allocation lifetime. Mapped weight
