@@ -1,0 +1,60 @@
+   Compiling prism-inference v0.1.14 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\speed4-efficiency)
+    Finished `release` profile [optimized] target(s) in 21.51s
+     Running unittests src\lib.rs (C:\Users\symbi\AppData\Local\Temp\inference-efficiency-local-20261103\target\release\build\prism-inference/54af78ea4746aafd\out\bonsai_prism_runtime-54af78ea4746aafd.exe)
+
+running 20 tests
+test graph::prefill::gdn::tests::chunkwise_gdn_rejects_invalid_shapes_and_gates ... ok
+test graph::tests::decayed_heads_preserve_bits_and_independent_state_across_scratch_reuse ... ok
+test graph::prefill::gdn::tests::chunkwise_gdn_triangular_solve_matches_sequential_signed_and_zero_decay ... ok
+test kernels::packed_pq2::tests::packed_consumption_failures_clear_output_and_leave_scalar_storage_unprepared ... ok
+test kernels::packed_pq2::native_tests::packed_consumption_preserves_independent_pinned_fma_rounding_control ... ok
+test kernels::packed_pq2::tests::packed_consumption_preparation_preserves_each_lane_scale_and_source ... ok
+test kernels::packed_pq2::tests::packed_consumption_preparation_replaces_previous_data_and_clears_failures ... ok
+test kernels::neon::tests::simd_neon_packed_consumption_exhaustive_bytes_and_extreme_lanes ... ok
+test kernels::packed_pq2::tests::packed_consumption_dispatch_matches_scalar_and_reuses_only_the_current_scope ... ok
+test kernels::pinned_attention::padding_tests::pruned_dot_padding_matches_full_physical_rows_bitwise ... ok
+test kernels::tests::scalar_column_projection_rejects_nonfinite_and_recovers_output ... ok
+test kernels::tests::scalar_column_projection_matches_decoded_rows_without_row_storage ... ok
+test kernels::prefill::tests::tiled_projection_clears_all_outputs_on_late_rejection ... ok
+test kernels::packed_pq2::tests::packed_consumption_parallel_rows_match_scalar_for_partial_worker_tiles ... ok
+test kernels::prefill::tests::tiled_packed_projection_reuses_blocks_and_preserves_independent_rows ... ok
+test kernels::pinned_attention::padding_tests::pruned_softmax_padding_matches_full_physical_groups_bitwise ... ok
+test kernels::pinned_attention::padding_tests::pruned_value_padding_matches_full_rows_at_every_lane_boundary ... ok
+test sampling::swift::tests::candidate_storage_reuses_top_k_backing_across_filters_rejection_and_reset ... ok
+test sampling::swift::tests::selection_rejects_nonfinite_discarded_logits_without_losing_rng_or_storage ... ok
+test sampling::swift::tests::bounded_top_k_matches_full_candidate_filter_bit_for_bit ... ok
+
+test result: ok. 20 passed; 0 failed; 0 ignored; 0 measured; 89 filtered out; finished in 0.04s
+
+     Running tests\graph.rs (C:\Users\symbi\AppData\Local\Temp\inference-efficiency-local-20261103\target\release\build\prism-inference/552d012446592d8a\out\graph-552d012446592d8a.exe)
+
+running 18 tests
+test rank_one_checkpoint_and_failed_generation_preserve_complete_state ... ok
+test empty_checkpoint_rejects_foreign_and_stale_adapter_provenance ... ok
+test rank_one_zero_scale_preserves_full_and_recurrent_logits_and_state_bits ... ok
+test empty_checkpoint_restores_hybrid_pages_and_preserves_nonempty_snapshot ... ok
+test prefill::tiled_prefill_rejects_unadmitted_geometry_and_preserves_state ... ok
+test prefill::tiled_prefill_adapter_scale_reset_preserves_execution_identity_and_provenance ... ok
+test empty_reset_preserves_hybrid_state_after_late_failure_and_checkpoint_restore ... ok
+test rank_one_grouped_ssm_branch_retains_original_untiled_input_order ... ok
+test prefill::tiled_prefill_failure_restores_request_and_explicit_reset_clears_first_tile ... ok
+test empty_checkpoint_omits_recurrent_payload_after_construction_and_reset ... ok
+test prefill::chunkwise_gdn_prefill_continuation_restore_and_identity_are_separate ... ok
+test profile_reuse_preserves_only_exact_scale_bits_and_explicit_reset_boundary ... ok
+test empty_checkpoint_request_rollback_replays_fresh_after_delivery_failure ... ok
+test prefill::tiled_prefill_runtime_failure_restores_all_layer_state_before_replay ... ok
+test profile_reuse_matches_fresh_state_and_sampled_failure_replay ... ok
+test profile_reuse_preserves_mixed_state_and_stop_draws_across_kv_page_seals ... ok
+test prefill::tiled_prefill_packed_ffn_and_adapter_preserve_original_basis_bits ... ok
+test prefill::tiled_prefill_exact_hybrid_state_and_logits_cross_pages ... ok
+
+test result: ok. 18 passed; 0 failed; 0 ignored; 0 measured; 59 filtered out; finished in 0.01s
+
+     Running tests\swift_sampling.rs (C:\Users\symbi\AppData\Local\Temp\inference-efficiency-local-20261103\target\release\build\prism-inference/8e88567a737a89dd\out\swift_sampling-8e88567a737a89dd.exe)
+
+running 2 tests
+test swift_rejects_invalid_full_vocabulary_without_consuming_draws_and_resets_seed ... ok
+test swift_rng_rolls_back_after_cancelled_or_abandoned_stream_then_retries ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 1 filtered out; finished in 0.02s
+

@@ -1,0 +1,266 @@
+{
+    "reason":  "All40 Rust controls ran and passed, but exact receipt expectations named the graph test module prefill while the source named it tiled_prefill. Align the stable test namespace with the declared exact controls. Preserve original observations. Also fix the observed kernel/broker/test analyzer findings in source. The installed chat cache refused a sandbox write before compiler startup; use fresh task-owned temporary compiler storage for the planned UI check. All work retains the original aggregate clock.",
+    "failedStep":  "prism-focused-source-controls",
+    "checks":  [
+                   {
+                       "environment":  {
+                                           "CARGO_TARGET_DIR":  "C:\\Users\\symbi\\AppData\\Local\\Temp\\inference-efficiency-local-20261103\\target"
+                                       },
+                       "cwd":  "C:\\Users\\symbi\\AppData\\Local\\Temp\\speed-four-source-20261103",
+                       "root":  "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\speed4-efficiency",
+                       "requiredPassedTests":  [
+                                                   "sampling::swift::tests::selection_rejects_nonfinite_discarded_logits_without_losing_rng_or_storage",
+                                                   "prefill::tiled_prefill_exact_hybrid_state_and_logits_cross_pages",
+                                                   "prefill::chunkwise_gdn_prefill_continuation_restore_and_identity_are_separate",
+                                                   "prefill::tiled_prefill_adapter_scale_reset_preserves_execution_identity_and_provenance"
+                                               ],
+                       "name":  "prism-focused-source-controls",
+                       "arguments":  [
+                                         "C:\\Users\\symbi\\.rustup\\toolchains\\nightly-2026-10-22-aarch64-pc-windows-msvc\\bin\\cargo.exe",
+                                         "test",
+                                         "--manifest-path",
+                                         "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\speed4-efficiency\\Cargo.toml",
+                                         "--release",
+                                         "--locked",
+                                         "--offline",
+                                         "-p",
+                                         "prism-inference",
+                                         "--features",
+                                         "parallel-rows",
+                                         "--lib",
+                                         "--test",
+                                         "graph",
+                                         "--test",
+                                         "swift_sampling",
+                                         "--",
+                                         "kernels::packed_pq2::",
+                                         "kernels::neon::tests::simd_neon_packed_consumption_",
+                                         "sampling::swift::tests::",
+                                         "kernels::tests::scalar_column_",
+                                         "kernels::pinned_attention::padding_tests::",
+                                         "graph::tests::decayed_heads_",
+                                         "tiled_",
+                                         "chunkwise_gdn_",
+                                         "profile_reuse_",
+                                         "empty_",
+                                         "rank_one_checkpoint_and_failed_generation",
+                                         "rank_one_zero_scale",
+                                         "swift_rng_rolls_back",
+                                         "swift_rejects_invalid"
+                                     ],
+                       "maximumSeconds":  220,
+                       "compiler":  "C:\\Users\\symbi\\.rustup\\toolchains\\nightly-2026-10-22-aarch64-pc-windows-msvc\\bin",
+                       "sources":  [
+                                       "src/**/*.rs",
+                                       "src/*.rs",
+                                       "tests/graph/**/*.rs",
+                                       "tests/graph.rs",
+                                       "tests/swift_sampling.rs",
+                                       "Cargo.toml",
+                                       "Cargo.lock"
+                                   ]
+                   },
+                   {
+                       "maximumSeconds":  100,
+                       "compiler":  "C:\\Users\\symbi\\.rustup\\toolchains\\nightly-2026-10-22-aarch64-pc-windows-msvc\\bin",
+                       "arguments":  [
+                                         "C:\\Users\\symbi\\.rustup\\toolchains\\nightly-2026-10-22-aarch64-pc-windows-msvc\\bin\\cargo.exe",
+                                         "clippy",
+                                         "--manifest-path",
+                                         "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\speed4-efficiency\\Cargo.toml",
+                                         "--release",
+                                         "--locked",
+                                         "--offline",
+                                         "-p",
+                                         "prism-inference",
+                                         "-p",
+                                         "prism-inference-server",
+                                         "--lib",
+                                         "--test",
+                                         "graph",
+                                         "--test",
+                                         "swift_sampling",
+                                         "--features",
+                                         "prism-inference/parallel-rows,prism-inference-server/parallel-rows",
+                                         "--",
+                                         "-D",
+                                         "warnings"
+                                     ],
+                       "name":  "prism-release-clippy",
+                       "cwd":  "C:\\Users\\symbi\\AppData\\Local\\Temp\\speed-four-source-20261103",
+                       "environment":  {
+                                           "CARGO_TARGET_DIR":  "C:\\Users\\symbi\\AppData\\Local\\Temp\\inference-efficiency-local-20261103\\target"
+                                       },
+                       "sources":  [
+                                       "src/**/*.rs",
+                                       "src/*.rs",
+                                       "server/src/**/*.rs",
+                                       "server/src/*.rs",
+                                       "tests/graph/**/*.rs",
+                                       "tests/graph.rs",
+                                       "Cargo.toml",
+                                       "Cargo.lock"
+                                   ],
+                       "root":  "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\speed4-efficiency"
+                   },
+                   {
+                       "maximumSeconds":  100,
+                       "compiler":  "C:\\Users\\symbi\\.rustup\\toolchains\\nightly-2026-11-02-aarch64-pc-windows-msvc\\bin",
+                       "arguments":  [
+                                         "C:\\Users\\symbi\\.rustup\\toolchains\\nightly-2026-11-02-aarch64-pc-windows-msvc\\bin\\cargo.exe",
+                                         "clippy",
+                                         "--manifest-path",
+                                         "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\speed4-integration\\Cargo.toml",
+                                         "--release",
+                                         "--locked",
+                                         "--offline",
+                                         "-p",
+                                         "bonsai-broker",
+                                         "-p",
+                                         "bonsai-tools",
+                                         "--all-targets",
+                                         "--",
+                                         "-D",
+                                         "warnings"
+                                     ],
+                       "name":  "runner-release-clippy",
+                       "cwd":  "C:\\Users\\symbi\\AppData\\Local\\Temp\\speed-four-source-20261103",
+                       "environment":  {
+                                           "CARGO_TARGET_DIR":  "C:\\Users\\symbi\\AppData\\Local\\Temp\\ptq1-local-validation-20261103\\target"
+                                       },
+                       "sources":  [
+                                       "src/broker/src/**/*.rs",
+                                       "src/broker/src/*.rs",
+                                       "tools/bonsai/src/**/*.rs",
+                                       "tools/bonsai/src/*.rs",
+                                       "Cargo.toml",
+                                       "Cargo.lock"
+                                   ],
+                       "root":  "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\speed4-integration"
+                   },
+                   {
+                       "maximumSeconds":  200,
+                       "compiler":  "C:\\Users\\symbi\\.rustup\\toolchains\\nightly-2026-11-02-aarch64-pc-windows-msvc\\bin",
+                       "arguments":  [
+                                         "C:\\Users\\symbi\\.rustup\\toolchains\\nightly-2026-11-02-aarch64-pc-windows-msvc\\bin\\cargo.exe",
+                                         "test",
+                                         "--manifest-path",
+                                         "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\speed4-integration\\Cargo.toml",
+                                         "--release",
+                                         "--locked",
+                                         "--offline",
+                                         "-p",
+                                         "bonsai-chat",
+                                         "--bin",
+                                         "bonsai-chat",
+                                         "--",
+                                         "explicit_runtime_and_row_workers",
+                                         "rust_development_defaults_preserve_explicit_runtime_weight_and_adapter_choices"
+                                     ],
+                       "name":  "runner-ui-prefix",
+                       "cwd":  "C:\\Users\\symbi\\AppData\\Local\\Temp\\speed-four-source-20261103",
+                       "environment":  {
+                                           "CARGO_TARGET_DIR":  "C:\\Users\\symbi\\AppData\\Local\\Temp\\speed-four-source-20261103\\chat-target"
+                                       },
+                       "sources":  [
+                                       "src/chat-ui/src/**/*.rs",
+                                       "src/chat-ui/src/*.rs",
+                                       "Cargo.toml",
+                                       "Cargo.lock"
+                                   ],
+                       "root":  "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\speed4-integration"
+                   },
+                   {
+                       "maximumSeconds":  200,
+                       "compiler":  "C:\\Users\\symbi\\.rustup\\toolchains\\nightly-2026-11-02-aarch64-pc-windows-msvc\\bin",
+                       "arguments":  [
+                                         "C:\\Users\\symbi\\.rustup\\toolchains\\nightly-2026-11-02-aarch64-pc-windows-msvc\\bin\\cargo.exe",
+                                         "clippy",
+                                         "--manifest-path",
+                                         "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\speed4-integration\\Cargo.toml",
+                                         "--release",
+                                         "--locked",
+                                         "--offline",
+                                         "-p",
+                                         "bonsai-chat",
+                                         "--all-targets",
+                                         "--",
+                                         "-D",
+                                         "warnings"
+                                     ],
+                       "name":  "runner-chat-release-clippy",
+                       "cwd":  "C:\\Users\\symbi\\AppData\\Local\\Temp\\speed-four-source-20261103",
+                       "environment":  {
+                                           "CARGO_TARGET_DIR":  "C:\\Users\\symbi\\AppData\\Local\\Temp\\speed-four-source-20261103\\chat-target"
+                                       },
+                       "sources":  [
+                                       "src/chat-ui/src/**/*.rs",
+                                       "src/chat-ui/src/*.rs",
+                                       "Cargo.toml",
+                                       "Cargo.lock"
+                                   ],
+                       "root":  "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\speed4-integration"
+                   },
+                   {
+                       "name":  "receipt-parser-controls",
+                       "sources":  [
+                                       ".github/ci/*inference_efficiency*.py",
+                                       ".github/workflows/inference-efficiency.yml"
+                                   ],
+                       "root":  "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\speed4-efficiency",
+                       "arguments":  [
+                                         "C:\\Users\\symbi\\AppData\\Local\\Programs\\Python\\Python314-arm64\\python.exe",
+                                         "-B",
+                                         "-m",
+                                         "unittest",
+                                         "discover",
+                                         "-s",
+                                         "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\speed4-efficiency\\.github\\ci",
+                                         "-p",
+                                         "test_inference_efficiency.py"
+                                     ],
+                       "maximumSeconds":  15,
+                       "cwd":  "C:\\Users\\symbi\\AppData\\Local\\Temp\\speed-four-source-20261103"
+                   },
+                   {
+                       "sources":  [
+                                       "src/**/*.rs",
+                                       "src/*.rs",
+                                       "tests/graph/**/*.rs",
+                                       "tests/graph.rs"
+                                   ],
+                       "root":  "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\speed4-efficiency",
+                       "arguments":  [
+                                         "C:\\Users\\symbi\\.rustup\\toolchains\\nightly-2026-10-22-aarch64-pc-windows-msvc\\bin\\rustfmt.exe",
+                                         "--check",
+                                         "--edition",
+                                         "2024",
+                                         "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\speed4-efficiency\\src\\graph.rs",
+                                         "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\speed4-efficiency\\src\\kernels.rs",
+                                         "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\speed4-efficiency\\src\\sampling\\swift.rs",
+                                         "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\speed4-efficiency\\src\\sampling\\upstream.rs",
+                                         "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\speed4-efficiency\\tests\\graph.rs"
+                                     ],
+                       "name":  "prism-source-format",
+                       "maximumSeconds":  10
+                   },
+                   {
+                       "sources":  [
+                                       "scripts/Start-Chat.ps1"
+                                   ],
+                       "root":  "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\speed4-integration",
+                       "arguments":  [
+                                         "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+                                         "-NoProfile",
+                                         "-ExecutionPolicy",
+                                         "Bypass",
+                                         "-File",
+                                         "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\speed4-integration\\docs\\evidence\\speed-four-source-20261103\\parse-launcher.ps1",
+                                         "-LauncherPath",
+                                         "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\speed4-integration\\scripts\\Start-Chat.ps1"
+                                     ],
+                       "name":  "launcher-parser",
+                       "maximumSeconds":  10
+                   }
+               ]
+}

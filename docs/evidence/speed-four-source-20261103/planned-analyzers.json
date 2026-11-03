@@ -1,0 +1,20 @@
+[
+  {
+    "name": "runner-chat-release-clippy",
+    "powerBefore": {
+      "observedAtUtc": "2026-11-03T10:59:21.359311+00:00",
+      "acConnected": true,
+      "batterySaver": false,
+      "chargePercent": 64
+    },
+    "originalSessionElapsedBefore": 264.617317,
+    "exitCode": 101,
+    "powerAfter": {
+      "observedAtUtc": "2026-11-03T11:00:26.770890+00:00",
+      "acConnected": true,
+      "batterySaver": false,
+      "chargePercent": 65
+    },
+    "seconds": 65.41159810000681
+  }
+]

@@ -73,6 +73,18 @@ accounting for layouts, repacking, retained copies and scratch; published platfo
 
 ## Chunkwise Gated DeltaNet prefill
 
+The local Prism source now has explicit 8/16/32-token FFN projection tiles and a
+separate `gdn-wy-f32-v1` triangular GDN mode, consumed by `Qwen35::ingest_block`.
+Exact tiles retain sequential recurrent arithmetic. The GDN mode batches recurrent
+input projections, preserves causal convolution and uses interval decay products
+without cumulative-product division, then reconstructs outputs and final FP32
+state. Its declared `1e-3 + 1e-3 * abs(reference)` qualification tolerance differs
+from bit identity. Both paths require explicit empty-graph selection, extra scratch
+reservation and whole-request rollback; defaults and Runner's released pin remain
+unchanged. Source controls and work counts establish no actual-model parity or
+prompt-time gain. The plan retains full-model, long-prefix, adapter and resource
+qualification before service selection or repinning.
+
 [Gated Delta Networks](https://arxiv.org/html/2412.06464v3) derives chunkwise computation with
 compact WY/UT structure; the [official FLA
 implementation](https://github.com/fla-org/flash-linear-attention/blob/main/fla/ops/gated_delta_rule/chunk.py)

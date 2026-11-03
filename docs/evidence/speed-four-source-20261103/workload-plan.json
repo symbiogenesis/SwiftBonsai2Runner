@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "kind": "four-lane-model-free-source-integration",
+  "maximumTotalSeconds": 720,
+  "workCutoffSeconds": 675,
+  "conservativeEstimateSeconds": 660,
+  "reason": "One fixed integration check covers new packed SIMD, prefix lifecycle, tiled/chunkwise prefill and CPU efficiency source in two repositories with two pinned compilers. Native UI test linking plus strict Release analyzers may exceed five minutes; twelve minutes is the smallest supported conservative allowance including final retention. Reuse existing offline compiler storage. No old clock is reopened.",
+  "fixedWork": [
+    "Capture aggregate and per-check AC, battery saver and charge observations; bind exact source hashes",
+    "Check changed-source formatting, parse the launcher, and run the three exact Python receipt-parser regressions",
+    "Compile and execute focused new Prism packed/tiled/chunkwise/prefix/efficiency regressions, including independent numerical and rollback controls",
+    "Compile and execute focused Runner prefix selection, readiness, deferred preparation and Retry controls",
+    "Run strict Release analyzers for touched Prism runtime/server and Runner broker/chat/tools targets, subject to the original remaining allowance",
+    "Permit at most one source-correction pass inside this same still-open development session; retain all original failures and rerun affected checks only when their source hash changed",
+    "Stop immediately after selected work completes, an infeasible failure, or the original cutoff; retain raw logs and final power observations"
+  ],
+  "failurePolicy": "No restarted clock, repeated model arm, closed-trial retry, full suite, benchmark, model launch, push or CI operation. A correction consumes the original time and cannot turn an earlier source's failure into a pass. Unexecuted or uncompiled final-source checks remain pending.",
+  "powerScope": "Endpoint observations do not establish continuous power stability. This is source validation, not a performance comparison.",
+  "modelExecutions": 0,
+  "benchmarks": 0,
+  "fullSuites": 0,
+  "ciActions": 0,
+  "pushes": 0
+}

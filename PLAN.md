@@ -515,6 +515,20 @@ identity or nonzero application across conditions.
 
 ## Runtime and correctness
 
+Qualify the [four-lane speed source integration](docs/evidence/speed-four-source-20261103/summary.json)
+on final settled source. It implements scoped packed PQ2 activation consumption,
+explicit Runner latest-prefix selection, real packed FFN tiles and separately
+identified triangular GDN chunks, plus combined CPU efficiency controls. Forty
+focused Prism tests and selected strict Release runtime/server analyzers passed.
+The one 376.962-second local source session closed after Runner all-target analysis
+reported twenty-one preexisting thread-confined acceptance-future findings and two
+unchecked duration subtractions. Their narrow test-only source corrections, and
+three UI analyzer corrections, remain uncompiled; do not retry or extend that
+closed session. Source-bound owning checks, native application linking, explicit
+reuse lifecycle, full-model prefill/adapter/state acceptance, matched performance
+and a qualified Prism release/Runner repin remain pending. No installed runtime,
+default reset policy, numerical qualification or speed verdict changes here.
+
 Complete the [current-nightly Rust standards run](https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41386105716)
 for source `d2a2962`: all 12 registered crates' owning Release Clippy, rustdoc,
 tests and builds on `nightly-2026-11-02`. The preceding run passed its test,
@@ -598,12 +612,19 @@ and retain the reset-every-request serving policy until reuse is qualified.
   owning hosted checks and matched actual-model correctness/resource/request-time
   evidence before releasing or repinning; source-level work/storage reductions do
   not establish measured throughput, process RAM or lower admission limits.
-- After [packed projections](#cpu-kernels), implement bounded CPU chunkwise GDN prefill
-  with a small chunk-size set, declared long-prefix and restore tolerances, causal
-  scheduling, bounded scratch, cancellation and whole-request rollback. Preserve
-  transforms, normalization, convolution and FP32 state under the [prefill
-  contract](docs/inference-algorithms.md#chunkwise-gated-deltanet-prefill); sequential
-  blocks alone do not reuse matrices.
+  The four-lane source integration also fuses finite-logit validation into bounded
+  selection and prepares an exact named hosted efficiency gate; require its final
+  source/compiler-bound result, strict analyzers and production linking. Production
+  fused recurrent copy/decay remains excluded pending its separate actual-model gate.
+- Qualify the explicit Prism CPU tiled FFN and triangular GDN prefill source paths
+  with 8/16/32-token tiles, separately identified numerical contracts, conservative
+  extra scratch, cancellation and whole-request rollback. The exact tile mode keeps
+  sequential GDN; the distinct `gdn-wy-f32-v1` mode batches recurrent projections and
+  uses bounded decay-product triangular algebra. Require full-model/long-prefix
+  state, logits, nonzero GDN adapter, continuation and restore evidence under the
+  [prefill contract](docs/inference-algorithms.md#chunkwise-gated-deltanet-prefill),
+  then matched whole-prompt benefit against qualified NEON/worker execution.
+  Source work reuse and the scalar tiled kernel establish no speedup or release gate.
 - If attention is material, compare grouped-head KV reuse and bounded score/value tiles,
   retaining versus recomputing scores. Preserve globally normalized FP16 probabilities
   before V; online-softmax/Flash changes require separate numerical and continuation
@@ -623,9 +644,11 @@ and retain the reset-every-request serving policy until reuse is qualified.
   audit](docs/native-rust-engine.md#bounded-parallel-row-qualification). Require
   fresh-recompute parity, switched/edited histories, cancellation/rollback,
   scale-change/change-back and fault/explicit-reset recovery before changing that
-  serving contract. The explicit `--prompt-reuse latest` source candidate needs
-  settled-main owning checks and actual-model private-service checks after the
-  passed hosted candidate complete-logits/state replay;
+  serving contract. Runner now forwards explicit
+  [`--prompt-reuse latest`](docs/prefix-reuse.md) through deferred native startup,
+  the UI and contained broker, checking exact pinned-source capability and matching
+  service readiness. Qualify final settled source and actual-model private-service
+  reuse after the passed hosted candidate complete-logits/state replay;
   no extra retained prefix snapshots or application selection are qualified.
   Start with immutable KV pages, exact suffix replay
   and simple lookup and eviction before radix trees or sparse placement. Resolve total
@@ -955,9 +978,16 @@ bandwidth, packing and dispatch evidence.
   into consumption order without VNNI. Compare at most two exact TL1_1/TL2_1-style LUTs
   with ternary eligibility and generic PQ2 fallback; charge preparation, overlapping
   source and repacked storage, tables, cache and startup.
-- Implement one tiled projection-prefill family, initially valid token tiles 8/16/32,
-  shared activation preparation and bounded LUT/weight tiles without persistent
-  INT8/FP16 expansion; stop if construction or scratch erases gains.
+  Qualify the implemented scoped PQ2 NEON digit-plane activation preparation:
+  original Q8_K and packed weights stay intact, while rows and compatible siblings
+  share reordered activation bytes. Charge the additional 5,280 logical scratch
+  bytes at 5,120 columns and require full-model parity plus matched total request
+  benefit before release integration; no local throughput gain is established.
+- Qualify the source tiled projection-prefill family for valid token tiles 8/16/32,
+  with shared prepared activations and each packed block decoded once across token
+  dots, without persistent INT8/FP16 expansion. The real graph consumer currently
+  uses scalar tiled integer reductions. Compare it with existing NEON/workers and
+  stop if construction, lost SIMD/parallelism or scratch erases complete-prompt gains.
 - Establish installed Windows CPU/OS NEON/dotprod/I8MM eligibility before dispatch.
   Inspect Release code generation and forbidden-ISA leakage and require detection,
   parity and benefit under the [dispatch

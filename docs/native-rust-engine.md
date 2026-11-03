@@ -431,6 +431,17 @@ actual-model numerical, lifecycle and performance qualification remain pending.
 These local Prism changes require a qualified release and Runner repin before
 application use; they do not change admission or runtime defaults.
 
+The speed-work integration adds finite-logit validation to the bounded top-20
+selection traversal, removing the separate complete-vocabulary validation pass.
+Nonfinite logits anywhere, including discarded tail candidates, reject before
+RNG use while preserving reusable storage. The owner-operated Prism
+`inference-efficiency.yml` workflow prepares exact named model-free controls,
+source/compiler/executable-bound receipts, strict Release analyzers and native
+linking on hosted ARM64/x64 targets. A renamed, missing or ignored test rejects
+the receipt. Its source preparation does not establish a successful hosted run,
+actual-model qualification, a speedup or a new released pin. Production fused
+recurrent copy/decay remains excluded under its separate model gate.
+
 ## Default-runtime promotion
 
 The Rust `runtime-promotion` command reports the reviewed requirements for full
@@ -466,8 +477,10 @@ work. The subsequent [hosted candidate run](https://github.com/symbiogenesis/pri
 passes on Windows ARM64, Windows x64 and Linux ARM64, exercising GGUF/default-report
 and hash controls, the graph, full sampled logits/state, worker/server protocols,
 strict analyzers and documentation without weights. These are candidate source
-checks; Runner pins 0.1.14 and does
-not expose the experimental reuse option. No load-time or generation-speed gain is
+checks; Runner pins 0.1.14 and now exposes experimental
+[`--prompt-reuse latest`](prefix-reuse.md) through the native launch path.
+The broker requires the exact reviewed release source and matching authenticated
+readiness; omission retains reset-every-request. No load-time or generation-speed gain is
 established. The selected 0.1.13 four-worker adapter scale/history workload now has
 the bounded evidence above. The broader
 [application contract](validation.md#actual-model-application-acceptance), numerical

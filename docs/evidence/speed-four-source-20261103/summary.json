@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "kind": "four-lane-speed-source-integration",
+  "recordedDate": "2026-11-03",
+  "status": "source-implemented-local-integration-owner-acceptance-pending",
+  "authorization": "Owner requested agents to fully address packed CPU projections, exact prefix reuse and tiled/chunkwise prefill, with the integration lane addressing prepared CPU efficiency changes.",
+  "source": {
+    "runnerBaseRevision": "725141d2",
+    "prismBaseRevision": "1758ec7",
+    "prismIntegratedRevision": "1f55ea74c4f52a234ed489f1aaefe2338dde8733",
+    "runnerFinalCodeRevision": "ed1ebee3eecebd2202632e2f91562b9845087d77",
+    "delivery": "Individual logical commits in separate worktrees, reviewed and integrated into each local main. No pushes or pull requests.",
+    "sourceOnlyCorrectionsAfterValidation": [
+      "Runner fbb3b5d5: checked UI shutdown reserve, in-place request formatting and retained description assignment",
+      "Runner ed1ebee3: Windows-only acceptance-target expectation documents intentional thread-confined futures; reserved durations use checked subtraction"
+    ],
+    "postWorkloadIntegrationScope": "Documentation, review and local Git integration after the failed workload's closed clock do not continue that workload or supply another compiled verdict. Raw trial evidence retains its original clock and source hashes."
+  },
+  "implemented": {
+    "packedCpu": "Prepare original PQ2 Q8_K activations in NEON consumption order once per scoped input, share across rows/sibling projections, preserve +2 symbol, signed lanes, scalar fallback and per-128 float order; 5280 additional logical bytes at 5120 columns.",
+    "exactPrefixReuse": "Explicit --prompt-reuse disabled|latest through PowerShell, maintenance/deferred preparation, native chat and broker. Exact reviewed 0.1.14 source capability and authenticated readiness must agree; Retry preserves selection and omission retains reset.",
+    "tiledPrefill": "Real bounded 8/16/32-token packed FFN graph tiles, separate opt-in triangular FP32 GDN chunks with causal convolution, interval decay products, charged scratch, full-request rollback and distinct numerical identity preserved across adapter resets.",
+    "cpuEfficiency": "Retain prepared compact checkpoints, bounded native-order sampling, direct adapter projections, redundant-reset elimination and masked-attention pruning. Fuse finite-logit validation into top-20 selection, preserving rejection/RNG/storage. Add exact hosted model-free gate with source/compiler/executable-bound receipts. Production fused recurrent copy/decay stays excluded."
+  },
+  "localValidation": {
+    "plan": "workload-plan.json",
+    "rawReceipt": "receipt.json",
+    "rawArchive": "archive.json",
+    "maximumTotalSeconds": 720,
+    "workCutoffSeconds": 675,
+    "elapsedSecondsThroughRetention": 376.9615288999921,
+    "withinDeclaredAllowance": true,
+    "clockClosed": true,
+    "clockRestarted": false,
+    "initialFailuresRetained": true,
+    "pythonReceiptParserControls": "Three passed before correction; no zero-match or ignored exact control can satisfy hosted admission.",
+    "prismFocusedControls": "Forty passed on corrected source: twenty library controls, eighteen graph controls and two sampling/runtime rollback controls.",
+    "initialPrismReceiptFailure": "All forty Rust tests passed, but the receipt expected prefill:: while the test module was tiled_prefill::. The stable namespace was aligned with the declared exact gate and the affected source controls passed within the original session.",
+    "prismStrictReleaseAnalysis": "Passed selected runtime/server libraries and graph/sampling integration targets with parallel-rows; not an all-target or complete hosted verdict.",
+    "runnerStrictReleaseAllTargets": "Stopped on twenty-one preexisting future_not_send findings in the thread-confined actual-model acceptance harness and two unchecked Duration subtractions. Those final test-only source corrections remain uncompiled.",
+    "uiAnalysis": "An installed-cache write was denied before compilation. A task-owned temporary target then compiled the UI analyzer and reported three findings; their source corrections remain uncompiled.",
+    "helperPreparationFailure": "A supplemental analyzer helper had an indentation error before compiler launch; its failed source is retained as planned-analyzers-parse-failure.py. It was corrected inside the original aggregate session; no clock was restarted.",
+    "notReached": [
+      "Prism private-service selected-prefix execution",
+      "Runner focused broker/tools/UI prefix controls",
+      "Final source formatting check and launcher parsing",
+      "Final strict Release all-target native chat/broker/tools analysis and production application linking"
+    ],
+    "power": {
+      "before": {"acConnected": true, "batterySaver": false, "chargePercent": 61},
+      "after": {"acConnected": true, "batterySaver": false, "chargePercent": 65},
+      "rawAggregateAndPerCheckEndpoints": "receipt.json and initial/planned analyzer receipts",
+      "continuousPowerStabilityEstablished": false,
+      "pastPowerConditionsInferred": false,
+      "performanceComparisonQualified": false
+    }
+  },
+  "qualification": {
+    "allRequestedLocalChecksPassed": false,
+    "owningHostedChecksPassed": false,
+    "actualModelAcceptanceQualified": false,
+    "performanceImprovementQualified": false,
+    "installedRuntimeChanged": false,
+    "runnerReleasedPinChanged": false,
+    "defaultResetPolicyChanged": false,
+    "admissionReduced": false,
+    "fullPromotionQualified": false
+  },
+  "remainingAcceptance": [
+    "Owner-managed exact-source hosted focused controls, strict analyzers, native application linking and source-package checks.",
+    "Exact latest-prefix actual-model service lifecycle and matched first-token/resource benefit, including edits, scale boundaries, cancellation, reset and rollback.",
+    "Tiled/chunkwise full-model logits/state, long-prefix continuation, adapter composition, resources and matched whole-prompt comparison with existing NEON/workers.",
+    "Complete-model CPU efficiency and packed projection benefit, independently scoped PQ2/PTQ1/adapter acceptance, qualified immutable Prism release and verified Runner repin.",
+    "Production recurrent fusion remains separately pending and is not enabled by this source integration."
+  ],
+  "modelExecutions": 0,
+  "benchmarks": 0,
+  "fullSuites": 0,
+  "ciActions": 0,
+  "pushes": 0
+}

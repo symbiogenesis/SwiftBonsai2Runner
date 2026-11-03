@@ -1,0 +1,20 @@
+[
+  {
+    "name": "prism-release-clippy",
+    "powerBefore": {
+      "observedAtUtc": "2026-11-03T10:59:49.228844+00:00",
+      "acConnected": true,
+      "batterySaver": false,
+      "chargePercent": 65
+    },
+    "originalSessionElapsedBefore": 292.48677,
+    "exitCode": 101,
+    "powerAfter": {
+      "observedAtUtc": "2026-11-03T10:59:54.343743+00:00",
+      "acConnected": true,
+      "batterySaver": false,
+      "chargePercent": 65
+    },
+    "seconds": 5.114875400002347
+  }
+]

@@ -1,0 +1,85 @@
+    Checking bonsai-windows-process v0.1.0 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\speed4-integration\src\windows-process)
+    Checking bonsai-broker v0.1.0 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\speed4-integration\src\broker)
+    Checking bonsai-tools v0.1.0 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\speed4-integration\tools\bonsai)
+error: this function has too many lines (106/100)
+   --> src\broker\src\launcher.rs:527:5
+    |
+527 | /     pub async fn start_with_progress(
+528 | |         self,
+529 | |         shutdown: impl Future<Output = io::Result<()>>,
+530 | |         observe: impl FnMut(StartupProgress),
+531 | |     ) -> Result<LaunchedService, LaunchError> {
+    | |_____________________________________________^
+    |
+    = help: for further information visit https://clippy.rust-lang.org/main/index.html#too_many_lines
+    = note: `-D clippy::too-many-lines` implied by `-D clippy::pedantic`
+    = help: to override `-D clippy::pedantic` add `#[allow(clippy::too_many_lines)]`
+
+error: this could be rewritten as `let...else`
+   --> src\broker\src\launcher.rs:620:9
+    |
+620 | /         let mut service = match frontend {
+621 | |             Ok(service) => service,
+622 | |             Err(_) => {
+623 | |                 process.stop(STOP_TIMEOUT).map_err(|_| LaunchError::Stop)?;
+...   |
+626 | |         };
+    | |__________^
+    |
+    = help: for further information visit https://clippy.rust-lang.org/main/index.html#manual_let_else
+    = note: `-D clippy::manual-let-else` implied by `-D clippy::pedantic`
+    = help: to override `-D clippy::pedantic` add `#[allow(clippy::manual_let_else)]`
+help: consider writing
+    |
+620 ~         let Ok(mut service) = frontend else {
+621 +                 process.stop(STOP_TIMEOUT).map_err(|_| LaunchError::Stop)?;
+622 +                 return Err(LaunchError::Service);
+623 +             };
+    |
+
+error: you seem to be trying to use `match` for destructuring a single pattern. Consider using `if let`
+   --> src\broker\src\launcher.rs:620:27
+    |
+620 |           let mut service = match frontend {
+    |  ___________________________^
+621 | |             Ok(service) => service,
+622 | |             Err(_) => {
+623 | |                 process.stop(STOP_TIMEOUT).map_err(|_| LaunchError::Stop)?;
+...   |
+626 | |         };
+    | |_________^
+    |
+    = help: for further information visit https://clippy.rust-lang.org/main/index.html#single_match_else
+    = note: `-D clippy::single-match-else` implied by `-D clippy::pedantic`
+    = help: to override `-D clippy::pedantic` add `#[allow(clippy::single_match_else)]`
+help: try
+    |
+620 ~         let mut service = if let Ok(service) = frontend { service } else {
+621 +             process.stop(STOP_TIMEOUT).map_err(|_| LaunchError::Stop)?;
+622 +             return Err(LaunchError::Service);
+623 ~         };
+    |
+
+error: this could be a `const fn`
+   --> src\broker\src\launcher.rs:822:1
+    |
+822 | / fn containment(
+823 | |     launch: bool,
+824 | |     unisolated: bool,
+825 | |     sandboxed: bool,
+...   |
+834 | |     })
+835 | | }
+    | |_^
+    |
+    = help: for further information visit https://clippy.rust-lang.org/main/index.html#missing_const_for_fn
+    = note: `-D clippy::missing-const-for-fn` implied by `-D clippy::nursery`
+    = help: to override `-D clippy::nursery` add `#[allow(clippy::missing_const_for_fn)]`
+help: make the function `const`
+    |
+822 | const fn containment(
+    | +++++
+
+error: could not compile `bonsai-broker` (lib) due to 4 previous errors
+warning: build failed, waiting for other jobs to finish...
+error: could not compile `bonsai-broker` (lib test) due to 4 previous errors

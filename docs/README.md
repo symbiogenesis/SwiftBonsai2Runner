@@ -38,6 +38,7 @@ implemented behavior from actual-model, device, quality and isolation acceptance
 | [Weight-space programming](weight-space-programming.md) | Swift applicability, compact PQ2/PTQ1 correction mechanism and evidence needed before a weight edit |
 | [Qwen reference](model-selection.md) | Selection rationale, compatibility/memory checks and stop/reopen conditions |
 | [Native Rust engine](native-rust-engine.md) | Supported graph/API, numerical/state ownership, runtime overhead and promotion evaluator |
+| [Experimental prefix reuse](prefix-reuse.md) | Explicit latest-state launch, exact runtime capability/readiness and lifecycle qualification |
 | [C++ retirement](cpp-retirement.md) | File-by-file inventories, independent replacement controls, dependency/build cleanup and remaining integration gates |
 | [Prism conformance](prism-upstream-tests.md) | Source fidelity, broader upstream acceptance and pinned source-reuse review |
 | [OxiBonsai review](oxibonsai-reuse.md) | Pinned source/license, reusable regressions, arithmetic/security transfer limits |

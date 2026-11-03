@@ -1,0 +1,56 @@
+[
+  {
+    "name": "prism-release-clippy",
+    "powerBefore": {
+      "observedAtUtc": "2026-11-03T10:56:54.055589+00:00",
+      "acConnected": true,
+      "batterySaver": false,
+      "chargePercent": 63
+    },
+    "originalSessionElapsedBefore": 117.313598,
+    "exitCode": 101,
+    "powerAfter": {
+      "observedAtUtc": "2026-11-03T10:57:04.952311+00:00",
+      "acConnected": true,
+      "batterySaver": false,
+      "chargePercent": 63
+    },
+    "seconds": 10.89674009999726
+  },
+  {
+    "name": "runner-release-clippy",
+    "powerBefore": {
+      "observedAtUtc": "2026-11-03T10:57:04.953246+00:00",
+      "acConnected": true,
+      "batterySaver": false,
+      "chargePercent": 63
+    },
+    "originalSessionElapsedBefore": 128.211194,
+    "exitCode": 101,
+    "powerAfter": {
+      "observedAtUtc": "2026-11-03T10:57:19.611263+00:00",
+      "acConnected": true,
+      "batterySaver": false,
+      "chargePercent": 63
+    },
+    "seconds": 14.658038699999452
+  },
+  {
+    "name": "runner-chat-release-clippy",
+    "powerBefore": {
+      "observedAtUtc": "2026-11-03T10:57:19.611989+00:00",
+      "acConnected": true,
+      "batterySaver": false,
+      "chargePercent": 63
+    },
+    "originalSessionElapsedBefore": 142.869957,
+    "exitCode": 101,
+    "powerAfter": {
+      "observedAtUtc": "2026-11-03T10:57:19.895109+00:00",
+      "acConnected": true,
+      "batterySaver": false,
+      "chargePercent": 63
+    },
+    "seconds": 0.28314980000141077
+  }
+]
