@@ -1,0 +1,7 @@
+{
+  "activeProcesses": 0,
+  "elapsedSeconds": 3.9890316,
+  "ownedJobStopped": true,
+  "peakJobMemoryBytes": 3698688,
+  "reason": "backend-exited"
+}

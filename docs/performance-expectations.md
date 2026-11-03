@@ -30,26 +30,28 @@ The publisher reports uneven instruction following, tool use and open-ended codi
 
 The [memory guide](swift-memory.md) records 16-token Prism CPU decode and PTQ1 results;
 the [Rust runtime contract](native-rust-engine.md) owns NEON/hybrid-graph evidence.
-Neither establishes complete-answer performance. A [bounded original-PQ2 Rust
-0.1.10 attempt](evidence/native-request-speed.json) with adapter 1.3 records one
-eight-token request in 76.2149 s with one worker: **0.104966 request tokens/s**,
-including prefill and HTTP/connection closure, excluding startup. Four-worker
-readiness passed, but its request reached the shared soft deadline; no candidate
-rate or speedup exists. The full attempt took 168.84 s with both owned Jobs and
-listeners cleaned up, no retry and retained receipts. Decode TPS, sustained comfort,
-creative quality, GPU/NPU profiles, isolation and actual-model app acceptance remain
-unqualified. [PLAN.md](../PLAN.md) owns delivery; [validation](validation.md) and
-independent [LoRA gates](swift-lora.md#standard-profile-qualification) govern acceptance.
+Neither establishes complete-answer performance. The
+[2026-11-03 separated timing capture](evidence/token-timing-20261103/summary.json)
+measured all seven installed Rust profiles; the [README table](../README.md#performance)
+records the exact versions. Current Rust 0.1.14/four-worker/adapter-1.3 PQ2
+measured **16.64 s TTFT and 1.34 generation tokens/s**; PTQ1 measured
+**29.50 s and 0.75 tokens/s**. Each response truncated at eight reported tokens.
 
-The [2026-11-03 local capture](evidence/local-throughput-20261103/summary.json)
-adds Rust 0.1.14/four-worker/adapter-1.3 observations: eight-token request rates
-of **0.281 tokens/s for PQ2** and **0.137 tokens/s for PTQ1**. Both truncated at
-the cap. These include prefill and TTFT; the whole-response capture did not record
-the token arrival times needed to separate TTFT and generation throughput. AC
-and battery saver matched at every recorded power sample, but both brokers
-required forced termination. The workload stopped before the publisher arms;
-final retention found no model processes or trial credentials. These raw request
-rates qualify neither sustained decode speed nor application acceptance.
+TTFT includes the required exact count/admission, prefill and direct backend HTTP
+delivery, excluding startup. Generation speed uses the seven intervals after the
+first token. Incremental receive timestamps and the source-bound ASCII counting
+contract support this client-observed window; these are not sustained rates or
+isolated kernel decode TPS. All recorded power samples had AC connected and
+battery saver off. All nine started measurement owners confirmed empty Jobs;
+the installed application's broker shutdown and daily-use gates remain separate.
+
+Both publisher backends exited before HTTP readiness, with cause unknown; the
+pinned Qwen reference was absent. Their timing cells remain unavailable. The
+[earlier whole-request observations](evidence/local-throughput-20261103/summary.json)
+and [historical one-worker attempt](evidence/native-request-speed.json) keep their
+original intervals and closed clocks; their request rates cannot supply TTFT or
+generation speed. [PLAN.md](../PLAN.md) owns pending acceptance under
+[validation](validation.md) and the independent [LoRA gates](swift-lora.md#standard-profile-qualification).
 
 ## X1/X2 configuration evidence
 

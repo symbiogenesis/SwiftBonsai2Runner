@@ -1,0 +1,510 @@
+{
+    "schemaVersion":  1,
+    "kind":  "local-separated-ttft-and-generation-observations",
+    "recordedDate":  "2026-11-03",
+    "authorization":  "Owner explicitly requested new local measurements for both timing columns and all table rows; prior failed whole-request clock remains closed.",
+    "status":  "seven-rust-rows-measured-two-publisher-startup-failures-one-reference-not-installed",
+    "device":  {
+                   "description":  "Owner Snapdragon X2 Elite Extreme laptop",
+                   "architecture":  "ARM64 enforced by native measurement owner"
+               },
+    "workload":  {
+                     "prompt":  "Count from 1 to 100.",
+                     "completionCap":  8,
+                     "thinking":  false,
+                     "seed":  42,
+                     "standardSwiftAdapterScale":  1.3,
+                     "allMeasuredOutput":  "1, 2, 3,",
+                     "allMeasuredFinishReasons":  "length",
+                     "fixedOrder":  [
+                                        "rust-014-pq2-row4",
+                                        "rust-014-ptq1-row4",
+                                        "publisher-pq2",
+                                        "publisher-ptq1",
+                                        "rust-013-ptq1-row4",
+                                        "rust-013-pq2-row4",
+                                        "rust-010-pq2-row1",
+                                        "rust-010-pq2-row4",
+                                        "rust-009-pq2-row4",
+                                        "qwen-reference"
+                                    ],
+                     "maximumAggregateSeconds":  840,
+                     "modelLoopAndInitialRetentionSeconds":  406.6913146000006,
+                     "elapsedSecondsThroughFinalRetention":  473.89036280001164,
+                     "newModelAttempts":  9,
+                     "measuredModels":  7,
+                     "publisherStartupFailures":  2,
+                     "referenceModelsMissing":  1,
+                     "retries":  0,
+                     "downloads":  0,
+                     "ciActions":  0,
+                     "sourceFormatterExitCode":  0,
+                     "offlineReleaseBuildExitCode":  0,
+                     "buildSeconds":  58.5,
+                     "streamingParserControl":  "Passed synthetic split-record/role/usage checks and a delayed HTTP stream before compilation/model work"
+                 },
+    "metrics":  {
+                    "timeToFirstToken":  "Monotonic client request-start before required exact input-token count/admission through receipt of first nonempty output-token content event. Includes count, template, prefill and HTTP delivery; excludes model verification/loading/startup.",
+                    "generationTokensPerSecond":  "(reported completion usage - 1) / (last token delivery seconds - first token delivery seconds). All successful arms reported8tokens and satisfy reviewed one-delta-per-token ASCII counting conditions.",
+                    "scope":  "Direct authenticated native-sandbox backend HTTP, client-observed short generation window; excludes broker forwarding and UI. Not isolated kernel decode TPS or sustained throughput.",
+                    "receiveBoundary":  "Each received body chunk has an observed monotonic timestamp; events sharing a receive chunk share its timestamp. No interpolated per-token times.",
+                    "comparisonQualification":  "Single fixed-order synthetic prompt and seven post-first-token intervals per arm; no repeated-trial speedup, quality, comfort or default promotion verdict."
+                },
+    "observations":  [
+                         {
+                             "id":  "rust-014-pq2-row4",
+                             "status":  "measured",
+                             "powerBefore":  {
+                                                 "utc":  "2026-11-03T10:24:48.704954+00:00",
+                                                 "acConnected":  true,
+                                                 "batterySaver":  false,
+                                                 "chargePercent":  43
+                                             },
+                             "powerAfter":  {
+                                                "utc":  "2026-11-03T10:25:23.130473+00:00",
+                                                "acConnected":  true,
+                                                "batterySaver":  false,
+                                                "chargePercent":  43
+                                            },
+                             "recordedPowerSamples":  36,
+                             "allRecordedAcAndSaverMatch":  true,
+                             "measurement":  {
+                                                 "timeToFirstTokenSeconds":  16.6435624,
+                                                 "generationTokensPerSecond":  1.3392032012619428,
+                                                 "generationIntervalSeconds":  5.2269887,
+                                                 "generationIntervalTokens":  7,
+                                                 "completionUsage":  8,
+                                                 "usage":  {
+                                                               "completion_tokens":  8,
+                                                               "prompt_tokens":  22,
+                                                               "total_tokens":  30
+                                                           },
+                                                 "visibleContent":  "1, 2, 3,",
+                                                 "finishReason":  "length",
+                                                 "firstContentNanoseconds":  16643562400,
+                                                 "lastContentNanoseconds":  21870551100,
+                                                 "countAdmissionSeconds":  0.0014237
+                                             },
+                             "cleanup":  {
+                                             "activeProcesses":  0,
+                                             "elapsedSeconds":  33.5970824,
+                                             "ownedJobStopped":  true,
+                                             "peakJobMemoryBytes":  7727276032,
+                                             "reason":  "cancelled-parent-or-deadline"
+                                         }
+                         },
+                         {
+                             "id":  "rust-014-ptq1-row4",
+                             "status":  "measured",
+                             "powerBefore":  {
+                                                 "utc":  "2026-11-03T10:25:25.329811+00:00",
+                                                 "acConnected":  true,
+                                                 "batterySaver":  false,
+                                                 "chargePercent":  43
+                                             },
+                             "powerAfter":  {
+                                                "utc":  "2026-11-03T10:26:14.966941+00:00",
+                                                "acConnected":  true,
+                                                "batterySaver":  false,
+                                                "chargePercent":  44
+                                            },
+                             "recordedPowerSamples":  51,
+                             "allRecordedAcAndSaverMatch":  true,
+                             "measurement":  {
+                                                 "timeToFirstTokenSeconds":  29.4986992,
+                                                 "generationTokensPerSecond":  0.751216313112969,
+                                                 "generationIntervalSeconds":  9.3182215,
+                                                 "generationIntervalTokens":  7,
+                                                 "completionUsage":  8,
+                                                 "usage":  {
+                                                               "completion_tokens":  8,
+                                                               "prompt_tokens":  22,
+                                                               "total_tokens":  30
+                                                           },
+                                                 "visibleContent":  "1, 2, 3,",
+                                                 "finishReason":  "length",
+                                                 "firstContentNanoseconds":  29498699200,
+                                                 "lastContentNanoseconds":  38816920700,
+                                                 "countAdmissionSeconds":  0.0126367
+                                             },
+                             "cleanup":  {
+                                             "activeProcesses":  0,
+                                             "elapsedSeconds":  49.3710292,
+                                             "ownedJobStopped":  true,
+                                             "peakJobMemoryBytes":  6465744896,
+                                             "reason":  "cancelled-parent-or-deadline"
+                                         }
+                         },
+                         {
+                             "id":  "publisher-pq2",
+                             "status":  "failed",
+                             "powerBefore":  {
+                                                 "utc":  "2026-11-03T10:26:17.182179+00:00",
+                                                 "acConnected":  true,
+                                                 "batterySaver":  false,
+                                                 "chargePercent":  44
+                                             },
+                             "powerAfter":  {
+                                                "utc":  "2026-11-03T10:26:23.215249+00:00",
+                                                "acConnected":  true,
+                                                "batterySaver":  false,
+                                                "chargePercent":  44
+                                            },
+                             "recordedPowerSamples":  7,
+                             "allRecordedAcAndSaverMatch":  true,
+                             "cleanup":  {
+                                             "activeProcesses":  0,
+                                             "elapsedSeconds":  5.2635206,
+                                             "ownedJobStopped":  true,
+                                             "peakJobMemoryBytes":  3694592,
+                                             "reason":  "backend-exited"
+                                         },
+                             "failure":  "Native owner exited before readiness; see retained technical logs",
+                             "startupFailureCause":  "unknown; backend exited before HTTP readiness; backend logs empty and exit code not retained"
+                         },
+                         {
+                             "id":  "publisher-ptq1",
+                             "status":  "failed",
+                             "powerBefore":  {
+                                                 "utc":  "2026-11-03T10:26:25.424183+00:00",
+                                                 "acConnected":  true,
+                                                 "batterySaver":  false,
+                                                 "chargePercent":  44
+                                             },
+                             "powerAfter":  {
+                                                "utc":  "2026-11-03T10:26:30.299056+00:00",
+                                                "acConnected":  true,
+                                                "batterySaver":  false,
+                                                "chargePercent":  44
+                                            },
+                             "recordedPowerSamples":  6,
+                             "allRecordedAcAndSaverMatch":  true,
+                             "cleanup":  {
+                                             "activeProcesses":  0,
+                                             "elapsedSeconds":  3.9890316,
+                                             "ownedJobStopped":  true,
+                                             "peakJobMemoryBytes":  3698688,
+                                             "reason":  "backend-exited"
+                                         },
+                             "failure":  "Native owner exited before readiness; see retained technical logs",
+                             "startupFailureCause":  "unknown; backend exited before HTTP readiness; backend logs empty and exit code not retained"
+                         },
+                         {
+                             "id":  "rust-013-ptq1-row4",
+                             "status":  "measured",
+                             "powerBefore":  {
+                                                 "utc":  "2026-11-03T10:26:32.505408+00:00",
+                                                 "acConnected":  true,
+                                                 "batterySaver":  false,
+                                                 "chargePercent":  44
+                                             },
+                             "powerAfter":  {
+                                                "utc":  "2026-11-03T10:27:19.849694+00:00",
+                                                "acConnected":  true,
+                                                "batterySaver":  false,
+                                                "chargePercent":  45
+                                            },
+                             "recordedPowerSamples":  48,
+                             "allRecordedAcAndSaverMatch":  true,
+                             "measurement":  {
+                                                 "timeToFirstTokenSeconds":  28.6924181,
+                                                 "generationTokensPerSecond":  0.7503687580065685,
+                                                 "generationIntervalSeconds":  9.3287466,
+                                                 "generationIntervalTokens":  7,
+                                                 "completionUsage":  8,
+                                                 "usage":  {
+                                                               "completion_tokens":  8,
+                                                               "prompt_tokens":  22,
+                                                               "total_tokens":  30
+                                                           },
+                                                 "visibleContent":  "1, 2, 3,",
+                                                 "finishReason":  "length",
+                                                 "firstContentNanoseconds":  28692418100,
+                                                 "lastContentNanoseconds":  38021164700,
+                                                 "countAdmissionSeconds":  0.016088
+                                             },
+                             "cleanup":  {
+                                             "activeProcesses":  0,
+                                             "elapsedSeconds":  47.075253,
+                                             "ownedJobStopped":  true,
+                                             "peakJobMemoryBytes":  6465683456,
+                                             "reason":  "cancelled-parent-or-deadline"
+                                         }
+                         },
+                         {
+                             "id":  "rust-013-pq2-row4",
+                             "status":  "measured",
+                             "powerBefore":  {
+                                                 "utc":  "2026-11-03T10:27:22.050218+00:00",
+                                                 "acConnected":  true,
+                                                 "batterySaver":  false,
+                                                 "chargePercent":  45
+                                             },
+                             "powerAfter":  {
+                                                "utc":  "2026-11-03T10:27:55.806809+00:00",
+                                                "acConnected":  true,
+                                                "batterySaver":  false,
+                                                "chargePercent":  45
+                                            },
+                             "recordedPowerSamples":  35,
+                             "allRecordedAcAndSaverMatch":  true,
+                             "measurement":  {
+                                                 "timeToFirstTokenSeconds":  16.4502658,
+                                                 "generationTokensPerSecond":  1.3197458584253943,
+                                                 "generationIntervalSeconds":  5.3040515,
+                                                 "generationIntervalTokens":  7,
+                                                 "completionUsage":  8,
+                                                 "usage":  {
+                                                               "completion_tokens":  8,
+                                                               "prompt_tokens":  22,
+                                                               "total_tokens":  30
+                                                           },
+                                                 "visibleContent":  "1, 2, 3,",
+                                                 "finishReason":  "length",
+                                                 "firstContentNanoseconds":  16450265800,
+                                                 "lastContentNanoseconds":  21754317300,
+                                                 "countAdmissionSeconds":  0.0142918
+                                             },
+                             "cleanup":  {
+                                             "activeProcesses":  0,
+                                             "elapsedSeconds":  33.4354785,
+                                             "ownedJobStopped":  true,
+                                             "peakJobMemoryBytes":  7727259648,
+                                             "reason":  "cancelled-parent-or-deadline"
+                                         }
+                         },
+                         {
+                             "id":  "rust-010-pq2-row1",
+                             "status":  "measured",
+                             "powerBefore":  {
+                                                 "utc":  "2026-11-03T10:27:58.061372+00:00",
+                                                 "acConnected":  true,
+                                                 "batterySaver":  false,
+                                                 "chargePercent":  45
+                                             },
+                             "powerAfter":  {
+                                                "utc":  "2026-11-03T10:28:56.648416+00:00",
+                                                "acConnected":  true,
+                                                "batterySaver":  false,
+                                                "chargePercent":  45
+                                            },
+                             "recordedPowerSamples":  59,
+                             "allRecordedAcAndSaverMatch":  true,
+                             "measurement":  {
+                                                 "timeToFirstTokenSeconds":  35.5893968,
+                                                 "generationTokensPerSecond":  0.640102129574978,
+                                                 "generationIntervalSeconds":  10.9357549,
+                                                 "generationIntervalTokens":  7,
+                                                 "completionUsage":  8,
+                                                 "usage":  {
+                                                               "completion_tokens":  8,
+                                                               "prompt_tokens":  22,
+                                                               "total_tokens":  30
+                                                           },
+                                                 "visibleContent":  "1, 2, 3,",
+                                                 "finishReason":  "length",
+                                                 "firstContentNanoseconds":  35589396800,
+                                                 "lastContentNanoseconds":  46525151700,
+                                                 "countAdmissionSeconds":  0.000842
+                                             },
+                             "cleanup":  {
+                                             "activeProcesses":  0,
+                                             "elapsedSeconds":  58.2897046,
+                                             "ownedJobStopped":  true,
+                                             "peakJobMemoryBytes":  7726923776,
+                                             "reason":  "cancelled-parent-or-deadline"
+                                         }
+                         },
+                         {
+                             "id":  "rust-010-pq2-row4",
+                             "status":  "measured",
+                             "powerBefore":  {
+                                                 "utc":  "2026-11-03T10:28:58.858848+00:00",
+                                                 "acConnected":  true,
+                                                 "batterySaver":  false,
+                                                 "chargePercent":  45
+                                             },
+                             "powerAfter":  {
+                                                "utc":  "2026-11-03T10:29:36.267223+00:00",
+                                                "acConnected":  true,
+                                                "batterySaver":  false,
+                                                "chargePercent":  45
+                                            },
+                             "recordedPowerSamples":  38,
+                             "allRecordedAcAndSaverMatch":  true,
+                             "measurement":  {
+                                                 "timeToFirstTokenSeconds":  16.975274,
+                                                 "generationTokensPerSecond":  1.3370625919111152,
+                                                 "generationIntervalSeconds":  5.235357,
+                                                 "generationIntervalTokens":  7,
+                                                 "completionUsage":  8,
+                                                 "usage":  {
+                                                               "completion_tokens":  8,
+                                                               "prompt_tokens":  22,
+                                                               "total_tokens":  30
+                                                           },
+                                                 "visibleContent":  "1, 2, 3,",
+                                                 "finishReason":  "length",
+                                                 "firstContentNanoseconds":  16975274000,
+                                                 "lastContentNanoseconds":  22210631000,
+                                                 "countAdmissionSeconds":  0.0150373
+                                             },
+                             "cleanup":  {
+                                             "activeProcesses":  0,
+                                             "elapsedSeconds":  36.6893499,
+                                             "ownedJobStopped":  true,
+                                             "peakJobMemoryBytes":  7727230976,
+                                             "reason":  "cancelled-parent-or-deadline"
+                                         }
+                         },
+                         {
+                             "id":  "rust-009-pq2-row4",
+                             "status":  "measured",
+                             "powerBefore":  {
+                                                 "utc":  "2026-11-03T10:29:38.477789+00:00",
+                                                 "acConnected":  true,
+                                                 "batterySaver":  false,
+                                                 "chargePercent":  45
+                                             },
+                             "powerAfter":  {
+                                                "utc":  "2026-11-03T10:30:33.177808+00:00",
+                                                "acConnected":  true,
+                                                "batterySaver":  false,
+                                                "chargePercent":  46
+                                            },
+                             "recordedPowerSamples":  56,
+                             "allRecordedAcAndSaverMatch":  true,
+                             "measurement":  {
+                                                 "timeToFirstTokenSeconds":  22.9955426,
+                                                 "generationTokensPerSecond":  1.3206636659427293,
+                                                 "generationIntervalSeconds":  5.3003654,
+                                                 "generationIntervalTokens":  7,
+                                                 "completionUsage":  8,
+                                                 "usage":  {
+                                                               "completion_tokens":  8,
+                                                               "prompt_tokens":  22,
+                                                               "total_tokens":  30
+                                                           },
+                                                 "visibleContent":  "1, 2, 3,",
+                                                 "finishReason":  "length",
+                                                 "firstContentNanoseconds":  22995542600,
+                                                 "lastContentNanoseconds":  28295908000,
+                                                 "countAdmissionSeconds":  0.0141813
+                                             },
+                             "cleanup":  {
+                                             "activeProcesses":  0,
+                                             "elapsedSeconds":  54.4411569,
+                                             "ownedJobStopped":  true,
+                                             "peakJobMemoryBytes":  7726850048,
+                                             "reason":  "cancelled-parent-or-deadline"
+                                         }
+                         },
+                         {
+                             "id":  "qwen-reference",
+                             "status":  "not-installed",
+                             "powerBefore":  {
+                                                 "utc":  "2026-11-03T10:30:35.377196+00:00",
+                                                 "acConnected":  true,
+                                                 "batterySaver":  false,
+                                                 "chargePercent":  46
+                                             },
+                             "powerAfter":  {
+                                                "utc":  "2026-11-03T10:30:35.378484+00:00",
+                                                "acConnected":  true,
+                                                "batterySaver":  false,
+                                                "chargePercent":  46
+                                            },
+                             "recordedPowerSamples":  0,
+                             "allRecordedAcAndSaverMatch":  null,
+                             "reason":  "Pinned Qwen model absent; no download within this fixed workload"
+                         }
+                     ],
+    "power":  {
+                  "beforeSetup":  {
+                                      "utc":  "2026-11-03T10:23:48.688381+00:00",
+                                      "acConnected":  true,
+                                      "batterySaver":  false,
+                                      "chargePercent":  43
+                                  },
+                  "afterModelLoopAndInitialRetention":  {
+                                                            "utc":  "2026-11-03T10:30:35.379388+00:00",
+                                                            "acConnected":  true,
+                                                            "batterySaver":  false,
+                                                            "chargePercent":  46
+                                                        },
+                  "afterFinalRetention":  {
+                                              "utc":  "2026-11-03T10:31:42.578423+00:00",
+                                              "acConnected":  true,
+                                              "batterySaver":  false,
+                                              "chargePercent":  46
+                                          },
+                  "perArmSnapshotCount":  336,
+                  "scope":  "All recorded per-arm snapshots had AC connected and battery saver off. Aggregate charge43to46percent. Endpoint/one-second observations do not prove uninterrupted stability; no past power condition inferred."
+              },
+    "ownership":  {
+                      "nativeSandboxRequired":  true,
+                      "allNineStartedOwnersReportedEmptyJobs":  true,
+                      "allNineOwnerExitCodesZero":  true,
+                      "allNineListenersReleased":  true,
+                      "finalModelProcessScan":  [
+
+                                                ],
+                      "remainingTrialCredentialFiles":  0,
+                      "scope":  "Explicit OwnedProcess.stop and Job accounting replace the failed console-control path only for this measurement owner. Installed app broker/GUI graceful shutdown acceptance remains pending."
+                  },
+    "identities":  {
+                       "compiledOwnerSha256":  "bc67cc7ed3cfed7969765100103dc810f788106dba2098586769a23dbd677197",
+                       "compiledOwnerSourceSha256":  "4382fc4a425316ca0b9c195f74b20a5febcc9e99bb0bb7f16de53c3d94e1eca8",
+                       "compiledOwnerSource":  "compiled-owner-source.rs",
+                       "nativeReleasePins":  "native-pins.json",
+                       "nativeRuntimeVerification":  "Retained native archive and all9release files per arm verified against reviewed pins; exact model and adapter verified through retained guards. Publisher whole-runtime archive/install checked against compiled pins.",
+                       "publisherPin":  "config/swift-assessment.lock.json",
+                       "referencePin":  "config/runtime.lock.json",
+                       "retainedOwner":  {
+                                             "path":  "C:\\Users\\symbi\\AppData\\Local\\SwiftBonsai2\\qualification\\token-timing-20261103\\bc67cc7ed3cfed7969765100103dc810f788106dba2098586769a23dbd677197.exe",
+                                             "bytes":  1020928,
+                                             "sha256":  "bc67cc7ed3cfed7969765100103dc810f788106dba2098586769a23dbd677197"
+                                         },
+                       "sourceLifecycle":  "The task-specific Cargo example was temporary and removed from ordinary application targets after capture. Exact compiled source remains in compiled-owner-source.rs and its executable is retained at the immutable archive path. Restore that source to src/broker/examples/token_timing_owner.rs at the captured source baseline to reproduce the recorded offline build; no production UI or broker transport was modified."
+                   },
+    "qualification":  {
+                          "allTenTimingRowsMeasured":  false,
+                          "isolatedKernelDecodeQualified":  false,
+                          "sustainedPerformanceQualified":  false,
+                          "applicationAcceptanceQualified":  false,
+                          "publisherFailureCauseQualified":  false,
+                          "defaultPromotionQualified":  false
+                      },
+    "retainedReceipts":  [
+                             {
+                                 "path":  "session.json",
+                                 "bytes":  171253,
+                                 "sha256":  "3c48503e4e62995cdf2e0b013f3a09977e41bcb874300e957edeae5d4cacf78f"
+                             },
+                             {
+                                 "path":  "retention.json",
+                                 "bytes":  11733,
+                                 "sha256":  "0aac1e13ceac3d8dfab5c5c49596a3763ae59d7dc957bc76ff9843555ec804b7"
+                             },
+                             {
+                                 "path":  "capture.py",
+                                 "bytes":  25660,
+                                 "sha256":  "3e607bb6458c5625a337eda825805f397e968696a03a73b92e710d7df8392d6c"
+                             },
+                             {
+                                 "path":  "workload-plan.json",
+                                 "bytes":  2910,
+                                 "sha256":  "920e1b7a3a262687d4b2e2df3f4502b6c0fa221ac6eca8e0d5d9e12100fc9a2e"
+                             },
+                             {
+                                 "path":  "native-pins.json",
+                                 "bytes":  17477,
+                                 "sha256":  "7442676e44f5a52ac945f24c82454039c853f73b151835730f1917625a0cbfc0"
+                             },
+                             {
+                                 "path":  "compiled-owner-source.rs",
+                                 "bytes":  15457,
+                                 "sha256":  "4382fc4a425316ca0b9c195f74b20a5febcc9e99bb0bb7f16de53c3d94e1eca8"
+                             }
+                         ]
+}

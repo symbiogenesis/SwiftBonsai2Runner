@@ -1,0 +1,10 @@
+{
+  "credentialDirectory": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-Token-Timing-20261103-he2yvx48\\rust-014-pq2-row4\\SwiftBonsai-Keys-5f02d1ff75a2010a8e4a601573d16810",
+  "modelPath": "C:\\Users\\symbi\\AppData\\Local\\SwiftBonsai2\\models\\a3bdac086bbb6b04d87d0108d18943b5f63868f7\\Swift-Bonsai-2-PQ2_0.gguf",
+  "nativeSandbox": true,
+  "port": 58288,
+  "processId": 43404,
+  "rowWorkersConfigured": 4,
+  "runtimeVersion": "0.1.14",
+  "status": "started"
+}

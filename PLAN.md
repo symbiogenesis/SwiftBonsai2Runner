@@ -114,23 +114,24 @@ pending gates. Full suites, benchmarks and performance captures stay in owning C
 
 ### Actual-model acceptance
 
-Resolve the installed broker's failed graceful shutdown before another local
-throughput capture. The owner-authorized
-[2026-11-03 local observations](docs/evidence/local-throughput-20261103/summary.json)
-retained Rust 0.1.14/four-worker/adapter-1.3 PQ2 and PTQ1 eight-token request rates,
-with aggregate and per-arm AC/saver/charge observations. Both owners required
-forced termination; an intermediate remaining backend stopped the workload before
-the publisher arms. Final retention found no model processes or trial credentials
-within 288.087 seconds of the original twelve-minute allowance. Keep that clock
-closed: no retry, benchmark qualification, graceful-cleanup acceptance or sustained
-decode verdict is supplied. The whole-response read did not capture first/last
-token arrival times; retain separate TTFT and generation-throughput measurements
-in a future admitted workload rather than deriving them from these request rates.
-Publisher request rates and Qwen (absent from the
-selected installed data) remain pending. Qualify delivery of the existing private
-owner-shutdown controls through the required source-bound checks before selecting
-another device workload; this capture used an older installed broker, not settled
-main's uncompiled shutdown changes.
+Resolve the installed broker's earlier graceful-shutdown failure through the
+required source-bound private owner-shutdown controls and actual application
+acceptance. The separate task-specific owner used for the
+[separated token timings](docs/evidence/token-timing-20261103/summary.json) stopped
+all nine started Jobs explicitly, but does not qualify the installed broker or
+GUI Stop/Retry. Preserve the [earlier failed capture](docs/evidence/local-throughput-20261103/summary.json)
+and both original closed clocks; do not transfer the new owner's cleanup pass.
+
+Diagnose the publisher PQ2/PTQ1 startup failures before selecting further
+publisher timing work. Both pinned backends exited before HTTP readiness; the
+empty logs and omitted backend exit codes leave the cause unknown. Retain those
+failures without retrying the capture. The pinned Qwen reference model is absent
+from the selected installed data and remains unmeasured. All seven installed
+Rust profiles now have short-window, client-observed TTFT and generation rates;
+they do not close sustained kernel throughput, repeated-trial benefit, quality,
+full resources or application acceptance. The user-requested matrix, one offline
+Release owner build, power observations, cleanup and final archival consumed
+473.890 seconds of one predeclared fourteen-minute allowance, with no repeated arm.
 
 Qualify the [shared startup-timeout receipt fix](docs/evidence/ptq1-startup-timeout-20261103/summary.json)
 through owner-managed exact-source hosted preparation. An admitted extended case

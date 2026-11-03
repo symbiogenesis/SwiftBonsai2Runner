@@ -1,0 +1,4924 @@
+{
+  "schemaVersion": 1,
+  "startedUtc": "2026-11-03T10:23:48.688331+00:00",
+  "startedMonotonic": 133319.5597364,
+  "originalStartedTicks": 1333195597303,
+  "tickFrequency": 10000000,
+  "maximumSeconds": 840,
+  "powerBeforeSetup": {
+    "utc": "2026-11-03T10:23:48.688381+00:00",
+    "acConnected": true,
+    "batterySaver": false,
+    "chargePercent": 43
+  },
+  "samples": [
+    {
+      "id": "rust-014-pq2-row4",
+      "status": "measured",
+      "powerBefore": {
+        "utc": "2026-11-03T10:24:48.704954+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 43
+      },
+      "activeModelProcessesBefore": [],
+      "ownerRequest": {
+        "dataDirectory": "C:\\Users\\symbi\\AppData\\Local\\SwiftBonsai2",
+        "evidenceDirectory": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-Token-Timing-20261103-he2yvx48\\rust-014-pq2-row4",
+        "shutdownDirectory": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-Token-Timing-20261103-he2yvx48\\rust-014-pq2-row4-control",
+        "mode": "native",
+        "nativeVersion": "0.1.14",
+        "rowWorkers": 4,
+        "useRepackedPtq1": false,
+        "port": 58288,
+        "maximumSeconds": 100,
+        "deadlineTicks": 1341595597303,
+        "parentProcessId": 30936,
+        "parentCreationTimeFileTime": 134381750285842927,
+        "runtime": {
+          "archivePath": "C:\\Users\\symbi\\AppData\\Local\\SwiftBonsai2\\downloads\\prism-inference-0.1.14-aarch64-pc-windows-msvc.zip",
+          "runtimeDirectory": "C:\\Users\\symbi\\AppData\\Local\\SwiftBonsai2\\inference\\9e8ea3e2c042ab0c3f1a8e9596ff155e202c3c57\\aarch64-pc-windows-msvc",
+          "archiveBytes": 3219185,
+          "archiveSha256": "9a2cd183c048c49120a8d8cf1360b24ee08695a1b92fded7dbd918dd9f576759"
+        },
+        "nativeRuntimeFiles": [
+          {
+            "bytes": 441856,
+            "name": "bonsai-gguf.exe",
+            "sha256": "2be1349cdb56959dbbc41f9afbe03180601d1ea67b68f2dafa442df4451734bf"
+          },
+          {
+            "bytes": 1541632,
+            "name": "bonsai-swift-worker.exe",
+            "sha256": "83e26b87e95657f64cd98d036c01279f942f30e50cdd1eca417be627a7fdc717"
+          },
+          {
+            "bytes": 507904,
+            "name": "bonsai-token-worker.exe",
+            "sha256": "f6bd6e942fe66b4dd145a0b7983e51e64eb90bf80ef82e5a6520cb189b0bf023"
+          },
+          {
+            "bytes": 1087,
+            "name": "CAMELID-LICENSE.txt",
+            "sha256": "cfd0bfa3c3f54585039a58a2dd86a0541b15c29e9f825d244c6f3f0d7c771015"
+          },
+          {
+            "bytes": 11560,
+            "name": "LICENSE",
+            "sha256": "3ddf9be5c28fe27dad143a5dc76eea25222ad1dd68934a047064e56ed2fa40c5"
+          },
+          {
+            "bytes": 2369,
+            "name": "NOTICE",
+            "sha256": "e3b6278bbba57b0bb62cb830facd20c2ca347fdbd655be87b83a78b2a4d42a6b"
+          },
+          {
+            "bytes": 2068992,
+            "name": "prism-inference-server.exe",
+            "sha256": "223b5e7c7c7715862b75ab87c38babd671b3b3374cab34d3d09373c2c5bf0658"
+          },
+          {
+            "bytes": 998912,
+            "name": "prism-inference.exe",
+            "sha256": "7de437e779ed4df5c36a07a28a3815b9c1c64e64456585defbebbe43883c5abc"
+          },
+          {
+            "bytes": 1099,
+            "name": "PRISM-LICENSE.txt",
+            "sha256": "bcd8ec749126d45cb06737d0690295d73df4b6e7e194205bcf91190368f27285"
+          }
+        ]
+      },
+      "ownerPid": 44608,
+      "owner": {
+        "credentialDirectory": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-Token-Timing-20261103-he2yvx48\\rust-014-pq2-row4\\SwiftBonsai-Keys-5f02d1ff75a2010a8e4a601573d16810",
+        "modelPath": "C:\\Users\\symbi\\AppData\\Local\\SwiftBonsai2\\models\\a3bdac086bbb6b04d87d0108d18943b5f63868f7\\Swift-Bonsai-2-PQ2_0.gguf",
+        "nativeSandbox": true,
+        "port": 58288,
+        "processId": 43404,
+        "rowWorkersConfigured": 4,
+        "runtimeVersion": "0.1.14",
+        "status": "started"
+      },
+      "startupSeconds": 11.974009600002319,
+      "measurement": {
+        "timeToFirstTokenSeconds": 16.6435624,
+        "generationTokensPerSecond": 1.3392032012619428,
+        "generationIntervalSeconds": 5.2269887,
+        "generationIntervalTokens": 7,
+        "firstContentNanoseconds": 16643562400,
+        "lastContentNanoseconds": 21870551100,
+        "completionUsage": 8,
+        "usage": {
+          "completion_tokens": 8,
+          "prompt_tokens": 22,
+          "total_tokens": 30
+        },
+        "visibleContent": "1, 2, 3,",
+        "finishReason": "length",
+        "contentDeltaCount": 8,
+        "generationBoundaryEligible": true,
+        "generationMetric": "client-observed subsequent tokens / first-to-last token delivery interval",
+        "generationEligibility": "Reported cap8 and8nonemptyASCII token deltas, output<1024bytes, thinking off, length termination, positive interval; fixed-runtime source establishes one delta per displayed token.",
+        "requestSeconds": 21.8712679,
+        "isolatedKernelDecodeTokensPerSecond": null,
+        "events": [
+          {
+            "elapsedNanoseconds": 16643502300,
+            "event": {
+              "choices": [
+                {
+                  "delta": {
+                    "role": "assistant"
+                  },
+                  "finish_reason": null,
+                  "index": 0
+                }
+              ],
+              "id": "chatcmpl-swift",
+              "model": "Swift-Bonsai-2-PQ2_0",
+              "object": "chat.completion.chunk"
+            }
+          },
+          {
+            "elapsedNanoseconds": 16643562400,
+            "event": {
+              "choices": [
+                {
+                  "delta": {
+                    "content": "1"
+                  },
+                  "finish_reason": null,
+                  "index": 0
+                }
+              ],
+              "id": "chatcmpl-swift",
+              "model": "Swift-Bonsai-2-PQ2_0",
+              "object": "chat.completion.chunk"
+            }
+          },
+          {
+            "elapsedNanoseconds": 17372795000,
+            "event": {
+              "choices": [
+                {
+                  "delta": {
+                    "content": ","
+                  },
+                  "finish_reason": null,
+                  "index": 0
+                }
+              ],
+              "id": "chatcmpl-swift",
+              "model": "Swift-Bonsai-2-PQ2_0",
+              "object": "chat.completion.chunk"
+            }
+          },
+          {
+            "elapsedNanoseconds": 18115523100,
+            "event": {
+              "choices": [
+                {
+                  "delta": {
+                    "content": " "
+                  },
+                  "finish_reason": null,
+                  "index": 0
+                }
+              ],
+              "id": "chatcmpl-swift",
+              "model": "Swift-Bonsai-2-PQ2_0",
+              "object": "chat.completion.chunk"
+            }
+          },
+          {
+            "elapsedNanoseconds": 18869423800,
+            "event": {
+              "choices": [
+                {
+                  "delta": {
+                    "content": "2"
+                  },
+                  "finish_reason": null,
+                  "index": 0
+                }
+              ],
+              "id": "chatcmpl-swift",
+              "model": "Swift-Bonsai-2-PQ2_0",
+              "object": "chat.completion.chunk"
+            }
+          },
+          {
+            "elapsedNanoseconds": 19593032700,
+            "event": {
+              "choices": [
+                {
+                  "delta": {
+                    "content": ","
+                  },
+                  "finish_reason": null,
+                  "index": 0
+                }
+              ],
+              "id": "chatcmpl-swift",
+              "model": "Swift-Bonsai-2-PQ2_0",
+              "object": "chat.completion.chunk"
+            }
+          },
+          {
+            "elapsedNanoseconds": 20334061100,
+            "event": {
+              "choices": [
+                {
+                  "delta": {
+                    "content": " "
+                  },
+                  "finish_reason": null,
+                  "index": 0
+                }
+              ],
+              "id": "chatcmpl-swift",
+              "model": "Swift-Bonsai-2-PQ2_0",
+              "object": "chat.completion.chunk"
+            }
+          },
+          {
+            "elapsedNanoseconds": 21082488200,
+            "event": {
+              "choices": [
+                {
+                  "delta": {
+                    "content": "3"
+                  },
+                  "finish_reason": null,
+                  "index": 0
+                }
+              ],
+              "id": "chatcmpl-swift",
+              "model": "Swift-Bonsai-2-PQ2_0",
+              "object": "chat.completion.chunk"
+            }
+          },
+          {
+            "elapsedNanoseconds": 21870551100,
+            "event": {
+              "choices": [
+                {
+                  "delta": {
+                    "content": ","
+                  },
+                  "finish_reason": null,
+                  "index": 0
+                }
+              ],
+              "id": "chatcmpl-swift",
+              "model": "Swift-Bonsai-2-PQ2_0",
+              "object": "chat.completion.chunk"
+            }
+          },
+          {
+            "elapsedNanoseconds": 21870988600,
+            "event": {
+              "choices": [
+                {
+                  "delta": {},
+                  "finish_reason": "length",
+                  "index": 0
+                }
+              ],
+              "id": "chatcmpl-swift",
+              "model": "Swift-Bonsai-2-PQ2_0",
+              "object": "chat.completion.chunk",
+              "usage": {
+                "completion_tokens": 8,
+                "prompt_tokens": 22,
+                "total_tokens": 30
+              }
+            }
+          }
+        ],
+        "receivedBodyChunks": [
+          {
+            "elapsedNanoseconds": 16643502300,
+            "base64": "ZGF0YTogeyJjaG9pY2VzIjpbeyJkZWx0YSI6eyJyb2xlIjoiYXNzaXN0YW50In0sImZpbmlzaF9yZWFzb24iOm51bGwsImluZGV4IjowfV0sImlkIjoiY2hhdGNtcGwtc3dpZnQiLCJtb2RlbCI6IlN3aWZ0LUJvbnNhaS0yLVBRMl8wIiwib2JqZWN0IjoiY2hhdC5jb21wbGV0aW9uLmNodW5rIn0KCg=="
+          },
+          {
+            "elapsedNanoseconds": 16643562400,
+            "base64": "ZGF0YTogeyJjaG9pY2VzIjpbeyJkZWx0YSI6eyJjb250ZW50IjoiMSJ9LCJmaW5pc2hfcmVhc29uIjpudWxsLCJpbmRleCI6MH1dLCJpZCI6ImNoYXRjbXBsLXN3aWZ0IiwibW9kZWwiOiJTd2lmdC1Cb25zYWktMi1QUTJfMCIsIm9iamVjdCI6ImNoYXQuY29tcGxldGlvbi5jaHVuayJ9Cgo="
+          },
+          {
+            "elapsedNanoseconds": 17372795000,
+            "base64": "ZGF0YTogeyJjaG9pY2VzIjpbeyJkZWx0YSI6eyJjb250ZW50IjoiLCJ9LCJmaW5pc2hfcmVhc29uIjpudWxsLCJpbmRleCI6MH1dLCJpZCI6ImNoYXRjbXBsLXN3aWZ0IiwibW9kZWwiOiJTd2lmdC1Cb25zYWktMi1QUTJfMCIsIm9iamVjdCI6ImNoYXQuY29tcGxldGlvbi5jaHVuayJ9Cgo="
+          },
+          {
+            "elapsedNanoseconds": 18115523100,
+            "base64": "ZGF0YTogeyJjaG9pY2VzIjpbeyJkZWx0YSI6eyJjb250ZW50IjoiICJ9LCJmaW5pc2hfcmVhc29uIjpudWxsLCJpbmRleCI6MH1dLCJpZCI6ImNoYXRjbXBsLXN3aWZ0IiwibW9kZWwiOiJTd2lmdC1Cb25zYWktMi1QUTJfMCIsIm9iamVjdCI6ImNoYXQuY29tcGxldGlvbi5jaHVuayJ9Cgo="
+          },
+          {
+            "elapsedNanoseconds": 18869423800,
+            "base64": "ZGF0YTogeyJjaG9pY2VzIjpbeyJkZWx0YSI6eyJjb250ZW50IjoiMiJ9LCJmaW5pc2hfcmVhc29uIjpudWxsLCJpbmRleCI6MH1dLCJpZCI6ImNoYXRjbXBsLXN3aWZ0IiwibW9kZWwiOiJTd2lmdC1Cb25zYWktMi1QUTJfMCIsIm9iamVjdCI6ImNoYXQuY29tcGxldGlvbi5jaHVuayJ9Cgo="
+          },
+          {
+            "elapsedNanoseconds": 19593032700,
+            "base64": "ZGF0YTogeyJjaG9pY2VzIjpbeyJkZWx0YSI6eyJjb250ZW50IjoiLCJ9LCJmaW5pc2hfcmVhc29uIjpudWxsLCJpbmRleCI6MH1dLCJpZCI6ImNoYXRjbXBsLXN3aWZ0IiwibW9kZWwiOiJTd2lmdC1Cb25zYWktMi1QUTJfMCIsIm9iamVjdCI6ImNoYXQuY29tcGxldGlvbi5jaHVuayJ9Cgo="
+          },
+          {
+            "elapsedNanoseconds": 20334061100,
+            "base64": "ZGF0YTogeyJjaG9pY2VzIjpbeyJkZWx0YSI6eyJjb250ZW50IjoiICJ9LCJmaW5pc2hfcmVhc29uIjpudWxsLCJpbmRleCI6MH1dLCJpZCI6ImNoYXRjbXBsLXN3aWZ0IiwibW9kZWwiOiJTd2lmdC1Cb25zYWktMi1QUTJfMCIsIm9iamVjdCI6ImNoYXQuY29tcGxldGlvbi5jaHVuayJ9Cgo="
+          },
+          {
+            "elapsedNanoseconds": 21082488200,
+            "base64": "ZGF0YTogeyJjaG9pY2VzIjpbeyJkZWx0YSI6eyJjb250ZW50IjoiMyJ9LCJmaW5pc2hfcmVhc29uIjpudWxsLCJpbmRleCI6MH1dLCJpZCI6ImNoYXRjbXBsLXN3aWZ0IiwibW9kZWwiOiJTd2lmdC1Cb25zYWktMi1QUTJfMCIsIm9iamVjdCI6ImNoYXQuY29tcGxldGlvbi5jaHVuayJ9Cgo="
+          },
+          {
+            "elapsedNanoseconds": 21870551100,
+            "base64": "ZGF0YTogeyJjaG9pY2VzIjpbeyJkZWx0YSI6eyJjb250ZW50IjoiLCJ9LCJmaW5pc2hfcmVhc29uIjpudWxsLCJpbmRleCI6MH1dLCJpZCI6ImNoYXRjbXBsLXN3aWZ0IiwibW9kZWwiOiJTd2lmdC1Cb25zYWktMi1QUTJfMCIsIm9iamVjdCI6ImNoYXQuY29tcGxldGlvbi5jaHVuayJ9Cgo="
+          },
+          {
+            "elapsedNanoseconds": 21870988600,
+            "base64": "ZGF0YTogeyJjaG9pY2VzIjpbeyJkZWx0YSI6e30sImZpbmlzaF9yZWFzb24iOiJsZW5ndGgiLCJpbmRleCI6MH1dLCJpZCI6ImNoYXRjbXBsLXN3aWZ0IiwibW9kZWwiOiJTd2lmdC1Cb25zYWktMi1QUTJfMCIsIm9iamVjdCI6ImNoYXQuY29tcGxldGlvbi5jaHVuayIsInVzYWdlIjp7ImNvbXBsZXRpb25fdG9rZW5zIjo4LCJwcm9tcHRfdG9rZW5zIjoyMiwidG90YWxfdG9rZW5zIjozMH19Cgo="
+          },
+          {
+            "elapsedNanoseconds": 21871017100,
+            "base64": "ZGF0YTogW0RPTkVdCgo="
+          }
+        ],
+        "requestBody": {
+          "messages": [
+            {
+              "role": "user",
+              "content": "Count from 1 to 100."
+            }
+          ],
+          "stream": true,
+          "max_completion_tokens": 8,
+          "n": 1,
+          "cache_prompt": false,
+          "n_cache_reuse": 0,
+          "ignore_eos": false,
+          "temperature": 1.0,
+          "top_p": 0.95,
+          "top_k": 20,
+          "min_p": 0.0,
+          "presence_penalty": 0.0,
+          "frequency_penalty": 0.0,
+          "repeat_penalty": 1.0,
+          "chat_template_kwargs": {
+            "enable_thinking": false,
+            "reasoning_effort": "xhigh",
+            "preserve_thinking": true
+          },
+          "lora": [
+            {
+              "id": 0,
+              "scale": 1.3
+            }
+          ]
+        },
+        "countReceipt": {
+          "input_tokens": 22,
+          "object": "response.input_tokens"
+        },
+        "countAdmissionSeconds": 0.0014237,
+        "timeToFirstTokenScope": "Client request start before required exact count/admission through receipt of first token; includes count, template, prefill and HTTP delivery, excludes model startup."
+      },
+      "ownerExitCode": 0,
+      "powerAfter": {
+        "utc": "2026-11-03T10:25:23.130473+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 43
+      },
+      "powerSamples": [
+        {
+          "utc": "2026-11-03T10:24:48.704954+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 43
+        },
+        {
+          "utc": "2026-11-03T10:24:49.898013+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 43
+        },
+        {
+          "utc": "2026-11-03T10:24:50.913685+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 43
+        },
+        {
+          "utc": "2026-11-03T10:24:51.914461+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 43
+        },
+        {
+          "utc": "2026-11-03T10:24:52.917190+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 43
+        },
+        {
+          "utc": "2026-11-03T10:24:53.922776+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 43
+        },
+        {
+          "utc": "2026-11-03T10:24:54.923352+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 43
+        },
+        {
+          "utc": "2026-11-03T10:24:55.931074+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 43
+        },
+        {
+          "utc": "2026-11-03T10:24:56.930946+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 43
+        },
+        {
+          "utc": "2026-11-03T10:24:57.932363+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 43
+        },
+        {
+          "utc": "2026-11-03T10:24:58.939529+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 43
+        },
+        {
+          "utc": "2026-11-03T10:24:59.946668+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 43
+        },
+        {
+          "utc": "2026-11-03T10:25:00.947696+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 43
+        },
+        {
+          "utc": "2026-11-03T10:25:01.947734+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 43
+        },
+        {
+          "utc": "2026-11-03T10:25:02.956782+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 43
+        },
+        {
+          "utc": "2026-11-03T10:25:03.964890+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 43
+        },
+        {
+          "utc": "2026-11-03T10:25:04.972565+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 43
+        },
+        {
+          "utc": "2026-11-03T10:25:05.972708+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 43
+        },
+        {
+          "utc": "2026-11-03T10:25:06.972960+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 43
+        },
+        {
+          "utc": "2026-11-03T10:25:07.973533+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 43
+        },
+        {
+          "utc": "2026-11-03T10:25:08.981006+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 43
+        },
+        {
+          "utc": "2026-11-03T10:25:09.981905+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 43
+        },
+        {
+          "utc": "2026-11-03T10:25:10.982687+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 43
+        },
+        {
+          "utc": "2026-11-03T10:25:11.990693+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 43
+        },
+        {
+          "utc": "2026-11-03T10:25:12.996425+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 43
+        },
+        {
+          "utc": "2026-11-03T10:25:13.997587+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 43
+        },
+        {
+          "utc": "2026-11-03T10:25:14.998531+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 43
+        },
+        {
+          "utc": "2026-11-03T10:25:16.005950+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 43
+        },
+        {
+          "utc": "2026-11-03T10:25:17.006072+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 43
+        },
+        {
+          "utc": "2026-11-03T10:25:18.006837+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 43
+        },
+        {
+          "utc": "2026-11-03T10:25:19.014437+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 43
+        },
+        {
+          "utc": "2026-11-03T10:25:20.014248+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 43
+        },
+        {
+          "utc": "2026-11-03T10:25:21.014466+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 43
+        },
+        {
+          "utc": "2026-11-03T10:25:22.014321+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 43
+        },
+        {
+          "utc": "2026-11-03T10:25:23.022784+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 43
+        },
+        {
+          "utc": "2026-11-03T10:25:23.130473+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 43
+        }
+      ],
+      "cleanup": {
+        "activeProcesses": 0,
+        "elapsedSeconds": 33.5970824,
+        "ownedJobStopped": true,
+        "peakJobMemoryBytes": 7727276032,
+        "reason": "cancelled-parent-or-deadline"
+      },
+      "activeModelProcessesAfter": [],
+      "listenerReleased": true,
+      "elapsedSeconds": 36.43253479999839,
+      "remainingCredentialFiles": 0
+    },
+    {
+      "id": "rust-014-ptq1-row4",
+      "status": "measured",
+      "powerBefore": {
+        "utc": "2026-11-03T10:25:25.329811+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 43
+      },
+      "activeModelProcessesBefore": [],
+      "ownerRequest": {
+        "dataDirectory": "C:\\Users\\symbi\\AppData\\Local\\SwiftBonsai2",
+        "evidenceDirectory": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-Token-Timing-20261103-he2yvx48\\rust-014-ptq1-row4",
+        "shutdownDirectory": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-Token-Timing-20261103-he2yvx48\\rust-014-ptq1-row4-control",
+        "mode": "native",
+        "nativeVersion": "0.1.14",
+        "rowWorkers": 4,
+        "useRepackedPtq1": true,
+        "port": 63746,
+        "maximumSeconds": 120,
+        "deadlineTicks": 1341595597303,
+        "parentProcessId": 30936,
+        "parentCreationTimeFileTime": 134381750285842927,
+        "runtime": {
+          "archivePath": "C:\\Users\\symbi\\AppData\\Local\\SwiftBonsai2\\downloads\\prism-inference-0.1.14-aarch64-pc-windows-msvc.zip",
+          "runtimeDirectory": "C:\\Users\\symbi\\AppData\\Local\\SwiftBonsai2\\inference\\9e8ea3e2c042ab0c3f1a8e9596ff155e202c3c57\\aarch64-pc-windows-msvc",
+          "archiveBytes": 3219185,
+          "archiveSha256": "9a2cd183c048c49120a8d8cf1360b24ee08695a1b92fded7dbd918dd9f576759"
+        },
+        "nativeRuntimeFiles": [
+          {
+            "bytes": 441856,
+            "name": "bonsai-gguf.exe",
+            "sha256": "2be1349cdb56959dbbc41f9afbe03180601d1ea67b68f2dafa442df4451734bf"
+          },
+          {
+            "bytes": 1541632,
+            "name": "bonsai-swift-worker.exe",
+            "sha256": "83e26b87e95657f64cd98d036c01279f942f30e50cdd1eca417be627a7fdc717"
+          },
+          {
+            "bytes": 507904,
+            "name": "bonsai-token-worker.exe",
+            "sha256": "f6bd6e942fe66b4dd145a0b7983e51e64eb90bf80ef82e5a6520cb189b0bf023"
+          },
+          {
+            "bytes": 1087,
+            "name": "CAMELID-LICENSE.txt",
+            "sha256": "cfd0bfa3c3f54585039a58a2dd86a0541b15c29e9f825d244c6f3f0d7c771015"
+          },
+          {
+            "bytes": 11560,
+            "name": "LICENSE",
+            "sha256": "3ddf9be5c28fe27dad143a5dc76eea25222ad1dd68934a047064e56ed2fa40c5"
+          },
+          {
+            "bytes": 2369,
+            "name": "NOTICE",
+            "sha256": "e3b6278bbba57b0bb62cb830facd20c2ca347fdbd655be87b83a78b2a4d42a6b"
+          },
+          {
+            "bytes": 2068992,
+            "name": "prism-inference-server.exe",
+            "sha256": "223b5e7c7c7715862b75ab87c38babd671b3b3374cab34d3d09373c2c5bf0658"
+          },
+          {
+            "bytes": 998912,
+            "name": "prism-inference.exe",
+            "sha256": "7de437e779ed4df5c36a07a28a3815b9c1c64e64456585defbebbe43883c5abc"
+          },
+          {
+            "bytes": 1099,
+            "name": "PRISM-LICENSE.txt",
+            "sha256": "bcd8ec749126d45cb06737d0690295d73df4b6e7e194205bcf91190368f27285"
+          }
+        ]
+      },
+      "ownerPid": 42788,
+      "owner": {
+        "credentialDirectory": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-Token-Timing-20261103-he2yvx48\\rust-014-ptq1-row4\\SwiftBonsai-Keys-f467fffdb9a633be83f318439d9ee2a2",
+        "modelPath": "C:\\Users\\symbi\\AppData\\Local\\SwiftBonsai2\\models\\a3bdac086bbb6b04d87d0108d18943b5f63868f7\\Swift-Bonsai-2-current-repacked-PTQ1_0.gguf",
+        "nativeSandbox": true,
+        "port": 63746,
+        "processId": 39552,
+        "rowWorkersConfigured": 4,
+        "runtimeVersion": "0.1.14",
+        "status": "started"
+      },
+      "startupSeconds": 10.288318400009302,
+      "measurement": {
+        "timeToFirstTokenSeconds": 29.4986992,
+        "generationTokensPerSecond": 0.751216313112969,
+        "generationIntervalSeconds": 9.3182215,
+        "generationIntervalTokens": 7,
+        "firstContentNanoseconds": 29498699200,
+        "lastContentNanoseconds": 38816920700,
+        "completionUsage": 8,
+        "usage": {
+          "completion_tokens": 8,
+          "prompt_tokens": 22,
+          "total_tokens": 30
+        },
+        "visibleContent": "1, 2, 3,",
+        "finishReason": "length",
+        "contentDeltaCount": 8,
+        "generationBoundaryEligible": true,
+        "generationMetric": "client-observed subsequent tokens / first-to-last token delivery interval",
+        "generationEligibility": "Reported cap8 and8nonemptyASCII token deltas, output<1024bytes, thinking off, length termination, positive interval; fixed-runtime source establishes one delta per displayed token.",
+        "requestSeconds": 38.8171755,
+        "isolatedKernelDecodeTokensPerSecond": null,
+        "events": [
+          {
+            "elapsedNanoseconds": 29498669400,
+            "event": {
+              "choices": [
+                {
+                  "delta": {
+                    "role": "assistant"
+                  },
+                  "finish_reason": null,
+                  "index": 0
+                }
+              ],
+              "id": "chatcmpl-swift",
+              "model": "Swift-Bonsai-2-PQ2_0",
+              "object": "chat.completion.chunk"
+            }
+          },
+          {
+            "elapsedNanoseconds": 29498699200,
+            "event": {
+              "choices": [
+                {
+                  "delta": {
+                    "content": "1"
+                  },
+                  "finish_reason": null,
+                  "index": 0
+                }
+              ],
+              "id": "chatcmpl-swift",
+              "model": "Swift-Bonsai-2-PQ2_0",
+              "object": "chat.completion.chunk"
+            }
+          },
+          {
+            "elapsedNanoseconds": 30777203800,
+            "event": {
+              "choices": [
+                {
+                  "delta": {
+                    "content": ","
+                  },
+                  "finish_reason": null,
+                  "index": 0
+                }
+              ],
+              "id": "chatcmpl-swift",
+              "model": "Swift-Bonsai-2-PQ2_0",
+              "object": "chat.completion.chunk"
+            }
+          },
+          {
+            "elapsedNanoseconds": 32131638100,
+            "event": {
+              "choices": [
+                {
+                  "delta": {
+                    "content": " "
+                  },
+                  "finish_reason": null,
+                  "index": 0
+                }
+              ],
+              "id": "chatcmpl-swift",
+              "model": "Swift-Bonsai-2-PQ2_0",
+              "object": "chat.completion.chunk"
+            }
+          },
+          {
+            "elapsedNanoseconds": 33494641800,
+            "event": {
+              "choices": [
+                {
+                  "delta": {
+                    "content": "2"
+                  },
+                  "finish_reason": null,
+                  "index": 0
+                }
+              ],
+              "id": "chatcmpl-swift",
+              "model": "Swift-Bonsai-2-PQ2_0",
+              "object": "chat.completion.chunk"
+            }
+          },
+          {
+            "elapsedNanoseconds": 34740077500,
+            "event": {
+              "choices": [
+                {
+                  "delta": {
+                    "content": ","
+                  },
+                  "finish_reason": null,
+                  "index": 0
+                }
+              ],
+              "id": "chatcmpl-swift",
+              "model": "Swift-Bonsai-2-PQ2_0",
+              "object": "chat.completion.chunk"
+            }
+          },
+          {
+            "elapsedNanoseconds": 36032038900,
+            "event": {
+              "choices": [
+                {
+                  "delta": {
+                    "content": " "
+                  },
+                  "finish_reason": null,
+                  "index": 0
+                }
+              ],
+              "id": "chatcmpl-swift",
+              "model": "Swift-Bonsai-2-PQ2_0",
+              "object": "chat.completion.chunk"
+            }
+          },
+          {
+            "elapsedNanoseconds": 37431669800,
+            "event": {
+              "choices": [
+                {
+                  "delta": {
+                    "content": "3"
+                  },
+                  "finish_reason": null,
+                  "index": 0
+                }
+              ],
+              "id": "chatcmpl-swift",
+              "model": "Swift-Bonsai-2-PQ2_0",
+              "object": "chat.completion.chunk"
+            }
+          },
+          {
+            "elapsedNanoseconds": 38816920700,
+            "event": {
+              "choices": [
+                {
+                  "delta": {
+                    "content": ","
+                  },
+                  "finish_reason": null,
+                  "index": 0
+                }
+              ],
+              "id": "chatcmpl-swift",
+              "model": "Swift-Bonsai-2-PQ2_0",
+              "object": "chat.completion.chunk"
+            }
+          },
+          {
+            "elapsedNanoseconds": 38817097300,
+            "event": {
+              "choices": [
+                {
+                  "delta": {},
+                  "finish_reason": "length",
+                  "index": 0
+                }
+              ],
+              "id": "chatcmpl-swift",
+              "model": "Swift-Bonsai-2-PQ2_0",
+              "object": "chat.completion.chunk",
+              "usage": {
+                "completion_tokens": 8,
+                "prompt_tokens": 22,
+                "total_tokens": 30
+              }
+            }
+          }
+        ],
+        "receivedBodyChunks": [
+          {
+            "elapsedNanoseconds": 29498669400,
+            "base64": "ZGF0YTogeyJjaG9pY2VzIjpbeyJkZWx0YSI6eyJyb2xlIjoiYXNzaXN0YW50In0sImZpbmlzaF9yZWFzb24iOm51bGwsImluZGV4IjowfV0sImlkIjoiY2hhdGNtcGwtc3dpZnQiLCJtb2RlbCI6IlN3aWZ0LUJvbnNhaS0yLVBRMl8wIiwib2JqZWN0IjoiY2hhdC5jb21wbGV0aW9uLmNodW5rIn0KCg=="
+          },
+          {
+            "elapsedNanoseconds": 29498699200,
+            "base64": "ZGF0YTogeyJjaG9pY2VzIjpbeyJkZWx0YSI6eyJjb250ZW50IjoiMSJ9LCJmaW5pc2hfcmVhc29uIjpudWxsLCJpbmRleCI6MH1dLCJpZCI6ImNoYXRjbXBsLXN3aWZ0IiwibW9kZWwiOiJTd2lmdC1Cb25zYWktMi1QUTJfMCIsIm9iamVjdCI6ImNoYXQuY29tcGxldGlvbi5jaHVuayJ9Cgo="
+          },
+          {
+            "elapsedNanoseconds": 30777203800,
+            "base64": "ZGF0YTogeyJjaG9pY2VzIjpbeyJkZWx0YSI6eyJjb250ZW50IjoiLCJ9LCJmaW5pc2hfcmVhc29uIjpudWxsLCJpbmRleCI6MH1dLCJpZCI6ImNoYXRjbXBsLXN3aWZ0IiwibW9kZWwiOiJTd2lmdC1Cb25zYWktMi1QUTJfMCIsIm9iamVjdCI6ImNoYXQuY29tcGxldGlvbi5jaHVuayJ9Cgo="
+          },
+          {
+            "elapsedNanoseconds": 32131638100,
+            "base64": "ZGF0YTogeyJjaG9pY2VzIjpbeyJkZWx0YSI6eyJjb250ZW50IjoiICJ9LCJmaW5pc2hfcmVhc29uIjpudWxsLCJpbmRleCI6MH1dLCJpZCI6ImNoYXRjbXBsLXN3aWZ0IiwibW9kZWwiOiJTd2lmdC1Cb25zYWktMi1QUTJfMCIsIm9iamVjdCI6ImNoYXQuY29tcGxldGlvbi5jaHVuayJ9Cgo="
+          },
+          {
+            "elapsedNanoseconds": 33494641800,
+            "base64": "ZGF0YTogeyJjaG9pY2VzIjpbeyJkZWx0YSI6eyJjb250ZW50IjoiMiJ9LCJmaW5pc2hfcmVhc29uIjpudWxsLCJpbmRleCI6MH1dLCJpZCI6ImNoYXRjbXBsLXN3aWZ0IiwibW9kZWwiOiJTd2lmdC1Cb25zYWktMi1QUTJfMCIsIm9iamVjdCI6ImNoYXQuY29tcGxldGlvbi5jaHVuayJ9Cgo="
+          },
+          {
+            "elapsedNanoseconds": 34740077500,
+            "base64": "ZGF0YTogeyJjaG9pY2VzIjpbeyJkZWx0YSI6eyJjb250ZW50IjoiLCJ9LCJmaW5pc2hfcmVhc29uIjpudWxsLCJpbmRleCI6MH1dLCJpZCI6ImNoYXRjbXBsLXN3aWZ0IiwibW9kZWwiOiJTd2lmdC1Cb25zYWktMi1QUTJfMCIsIm9iamVjdCI6ImNoYXQuY29tcGxldGlvbi5jaHVuayJ9Cgo="
+          },
+          {
+            "elapsedNanoseconds": 36032038900,
+            "base64": "ZGF0YTogeyJjaG9pY2VzIjpbeyJkZWx0YSI6eyJjb250ZW50IjoiICJ9LCJmaW5pc2hfcmVhc29uIjpudWxsLCJpbmRleCI6MH1dLCJpZCI6ImNoYXRjbXBsLXN3aWZ0IiwibW9kZWwiOiJTd2lmdC1Cb25zYWktMi1QUTJfMCIsIm9iamVjdCI6ImNoYXQuY29tcGxldGlvbi5jaHVuayJ9Cgo="
+          },
+          {
+            "elapsedNanoseconds": 37431669800,
+            "base64": "ZGF0YTogeyJjaG9pY2VzIjpbeyJkZWx0YSI6eyJjb250ZW50IjoiMyJ9LCJmaW5pc2hfcmVhc29uIjpudWxsLCJpbmRleCI6MH1dLCJpZCI6ImNoYXRjbXBsLXN3aWZ0IiwibW9kZWwiOiJTd2lmdC1Cb25zYWktMi1QUTJfMCIsIm9iamVjdCI6ImNoYXQuY29tcGxldGlvbi5jaHVuayJ9Cgo="
+          },
+          {
+            "elapsedNanoseconds": 38816920700,
+            "base64": "ZGF0YTogeyJjaG9pY2VzIjpbeyJkZWx0YSI6eyJjb250ZW50IjoiLCJ9LCJmaW5pc2hfcmVhc29uIjpudWxsLCJpbmRleCI6MH1dLCJpZCI6ImNoYXRjbXBsLXN3aWZ0IiwibW9kZWwiOiJTd2lmdC1Cb25zYWktMi1QUTJfMCIsIm9iamVjdCI6ImNoYXQuY29tcGxldGlvbi5jaHVuayJ9Cgo="
+          },
+          {
+            "elapsedNanoseconds": 38817097300,
+            "base64": "ZGF0YTogeyJjaG9pY2VzIjpbeyJkZWx0YSI6e30sImZpbmlzaF9yZWFzb24iOiJsZW5ndGgiLCJpbmRleCI6MH1dLCJpZCI6ImNoYXRjbXBsLXN3aWZ0IiwibW9kZWwiOiJTd2lmdC1Cb25zYWktMi1QUTJfMCIsIm9iamVjdCI6ImNoYXQuY29tcGxldGlvbi5jaHVuayIsInVzYWdlIjp7ImNvbXBsZXRpb25fdG9rZW5zIjo4LCJwcm9tcHRfdG9rZW5zIjoyMiwidG90YWxfdG9rZW5zIjozMH19Cgo="
+          },
+          {
+            "elapsedNanoseconds": 38817119200,
+            "base64": "ZGF0YTogW0RPTkVdCgo="
+          }
+        ],
+        "requestBody": {
+          "messages": [
+            {
+              "role": "user",
+              "content": "Count from 1 to 100."
+            }
+          ],
+          "stream": true,
+          "max_completion_tokens": 8,
+          "n": 1,
+          "cache_prompt": false,
+          "n_cache_reuse": 0,
+          "ignore_eos": false,
+          "temperature": 1.0,
+          "top_p": 0.95,
+          "top_k": 20,
+          "min_p": 0.0,
+          "presence_penalty": 0.0,
+          "frequency_penalty": 0.0,
+          "repeat_penalty": 1.0,
+          "chat_template_kwargs": {
+            "enable_thinking": false,
+            "reasoning_effort": "xhigh",
+            "preserve_thinking": true
+          },
+          "lora": [
+            {
+              "id": 0,
+              "scale": 1.3
+            }
+          ]
+        },
+        "countReceipt": {
+          "input_tokens": 22,
+          "object": "response.input_tokens"
+        },
+        "countAdmissionSeconds": 0.0126367,
+        "timeToFirstTokenScope": "Client request start before required exact count/admission through receipt of first token; includes count, template, prefill and HTTP delivery, excludes model startup."
+      },
+      "ownerExitCode": 0,
+      "powerAfter": {
+        "utc": "2026-11-03T10:26:14.966941+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 44
+      },
+      "powerSamples": [
+        {
+          "utc": "2026-11-03T10:25:25.329811+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 43
+        },
+        {
+          "utc": "2026-11-03T10:25:26.506080+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 43
+        },
+        {
+          "utc": "2026-11-03T10:25:27.514320+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 43
+        },
+        {
+          "utc": "2026-11-03T10:25:28.514655+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 43
+        },
+        {
+          "utc": "2026-11-03T10:25:29.522808+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 43
+        },
+        {
+          "utc": "2026-11-03T10:25:30.531016+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 43
+        },
+        {
+          "utc": "2026-11-03T10:25:31.530954+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:25:32.531154+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:25:33.531344+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:25:34.539866+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:25:35.547605+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:25:36.547550+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:25:37.550261+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:25:38.556338+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:25:39.564250+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:25:40.564509+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:25:41.564270+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:25:42.570095+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:25:43.572606+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:25:44.572581+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:25:45.581099+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:25:46.581103+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:25:47.589319+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:25:48.589432+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:25:49.589457+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:25:50.590061+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:25:51.596200+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:25:52.604317+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:25:53.606000+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:25:54.614466+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:25:55.614389+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:25:56.622891+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:25:57.630947+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:25:58.631136+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:25:59.639308+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:26:00.647665+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:26:01.656216+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:26:02.657064+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:26:03.664273+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:26:04.665763+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:26:05.668416+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:26:06.670338+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:26:07.672682+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:26:08.688147+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:26:09.689769+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:26:10.689769+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:26:11.689949+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:26:12.690357+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:26:13.692303+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:26:14.697937+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:26:14.966941+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        }
+      ],
+      "cleanup": {
+        "activeProcesses": 0,
+        "elapsedSeconds": 49.3710292,
+        "ownedJobStopped": true,
+        "peakJobMemoryBytes": 6465744896,
+        "reason": "cancelled-parent-or-deadline"
+      },
+      "activeModelProcessesAfter": [],
+      "listenerReleased": true,
+      "elapsedSeconds": 51.66836350000813,
+      "remainingCredentialFiles": 0
+    },
+    {
+      "id": "publisher-pq2",
+      "status": "failed",
+      "powerBefore": {
+        "utc": "2026-11-03T10:26:17.182179+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 44
+      },
+      "activeModelProcessesBefore": [],
+      "ownerRequest": {
+        "dataDirectory": "C:\\Users\\symbi\\AppData\\Local\\SwiftBonsai2",
+        "evidenceDirectory": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-Token-Timing-20261103-he2yvx48\\publisher-pq2",
+        "shutdownDirectory": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-Token-Timing-20261103-he2yvx48\\publisher-pq2-control",
+        "mode": "publisher",
+        "nativeVersion": null,
+        "rowWorkers": 1,
+        "useRepackedPtq1": false,
+        "port": 55610,
+        "maximumSeconds": 75,
+        "deadlineTicks": 1341595597303,
+        "parentProcessId": 30936,
+        "parentCreationTimeFileTime": 134381750285842927,
+        "runtime": null,
+        "nativeRuntimeFiles": []
+      },
+      "ownerPid": 33004,
+      "failure": "Native owner exited before readiness; see retained technical logs",
+      "ownerExitCode": 0,
+      "powerAfter": {
+        "utc": "2026-11-03T10:26:23.215249+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 44
+      },
+      "powerSamples": [
+        {
+          "utc": "2026-11-03T10:26:17.182179+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:26:18.381578+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:26:19.389310+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:26:20.389506+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:26:21.389783+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:26:22.398445+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:26:23.215249+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        }
+      ],
+      "cleanup": {
+        "activeProcesses": 0,
+        "elapsedSeconds": 5.2635206,
+        "ownedJobStopped": true,
+        "peakJobMemoryBytes": 3694592,
+        "reason": "backend-exited"
+      },
+      "activeModelProcessesAfter": [],
+      "listenerReleased": true,
+      "elapsedSeconds": 8.031151300005149,
+      "remainingCredentialFiles": 0,
+      "additionalAttemptOfSameArm": false
+    },
+    {
+      "id": "publisher-ptq1",
+      "status": "failed",
+      "powerBefore": {
+        "utc": "2026-11-03T10:26:25.424183+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 44
+      },
+      "activeModelProcessesBefore": [],
+      "ownerRequest": {
+        "dataDirectory": "C:\\Users\\symbi\\AppData\\Local\\SwiftBonsai2",
+        "evidenceDirectory": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-Token-Timing-20261103-he2yvx48\\publisher-ptq1",
+        "shutdownDirectory": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-Token-Timing-20261103-he2yvx48\\publisher-ptq1-control",
+        "mode": "publisher",
+        "nativeVersion": null,
+        "rowWorkers": 1,
+        "useRepackedPtq1": true,
+        "port": 57671,
+        "maximumSeconds": 75,
+        "deadlineTicks": 1341595597303,
+        "parentProcessId": 30936,
+        "parentCreationTimeFileTime": 134381750285842927,
+        "runtime": null,
+        "nativeRuntimeFiles": []
+      },
+      "ownerPid": 39788,
+      "failure": "Native owner exited before readiness; see retained technical logs",
+      "ownerExitCode": 0,
+      "powerAfter": {
+        "utc": "2026-11-03T10:26:30.299056+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 44
+      },
+      "powerSamples": [
+        {
+          "utc": "2026-11-03T10:26:25.424183+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:26:26.639527+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:26:27.647656+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:26:28.648012+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:26:29.656268+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:26:30.299056+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        }
+      ],
+      "cleanup": {
+        "activeProcesses": 0,
+        "elapsedSeconds": 3.9890316,
+        "ownedJobStopped": true,
+        "peakJobMemoryBytes": 3698688,
+        "reason": "backend-exited"
+      },
+      "activeModelProcessesAfter": [],
+      "listenerReleased": true,
+      "elapsedSeconds": 6.8620714000135195,
+      "remainingCredentialFiles": 0,
+      "additionalAttemptOfSameArm": false
+    },
+    {
+      "id": "rust-013-ptq1-row4",
+      "status": "measured",
+      "powerBefore": {
+        "utc": "2026-11-03T10:26:32.505408+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 44
+      },
+      "activeModelProcessesBefore": [],
+      "ownerRequest": {
+        "dataDirectory": "C:\\Users\\symbi\\AppData\\Local\\SwiftBonsai2",
+        "evidenceDirectory": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-Token-Timing-20261103-he2yvx48\\rust-013-ptq1-row4",
+        "shutdownDirectory": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-Token-Timing-20261103-he2yvx48\\rust-013-ptq1-row4-control",
+        "mode": "native",
+        "nativeVersion": "0.1.13",
+        "rowWorkers": 4,
+        "useRepackedPtq1": true,
+        "port": 57679,
+        "maximumSeconds": 120,
+        "deadlineTicks": 1341595597303,
+        "parentProcessId": 30936,
+        "parentCreationTimeFileTime": 134381750285842927,
+        "runtime": {
+          "archivePath": "C:\\Users\\symbi\\AppData\\Local\\SwiftBonsai2\\downloads\\prism-inference-0.1.13-aarch64-pc-windows-msvc.zip",
+          "runtimeDirectory": "C:\\Users\\symbi\\AppData\\Local\\SwiftBonsai2\\inference\\cae16fa6998dac58a947eba9ae4398ed6a9fb863\\aarch64-pc-windows-msvc",
+          "archiveBytes": 3217665,
+          "archiveSha256": "3b1f310cbfafd592375756600c261bdafcfc94ab1bac8f34c69ef7038167096a"
+        },
+        "nativeRuntimeFiles": [
+          {
+            "bytes": 441856,
+            "name": "bonsai-gguf.exe",
+            "sha256": "2be1349cdb56959dbbc41f9afbe03180601d1ea67b68f2dafa442df4451734bf"
+          },
+          {
+            "bytes": 1541632,
+            "name": "bonsai-swift-worker.exe",
+            "sha256": "9fcc8c2666ec024cb8bb28c42b604b33388c261f39f2fd3c05d2a8613ac2300d"
+          },
+          {
+            "bytes": 507904,
+            "name": "bonsai-token-worker.exe",
+            "sha256": "66b2800684fecac6680182a4735fe6f6927640f3dfdff903f325f0542dca80ab"
+          },
+          {
+            "bytes": 1087,
+            "name": "CAMELID-LICENSE.txt",
+            "sha256": "cfd0bfa3c3f54585039a58a2dd86a0541b15c29e9f825d244c6f3f0d7c771015"
+          },
+          {
+            "bytes": 11560,
+            "name": "LICENSE",
+            "sha256": "3ddf9be5c28fe27dad143a5dc76eea25222ad1dd68934a047064e56ed2fa40c5"
+          },
+          {
+            "bytes": 2369,
+            "name": "NOTICE",
+            "sha256": "e3b6278bbba57b0bb62cb830facd20c2ca347fdbd655be87b83a78b2a4d42a6b"
+          },
+          {
+            "bytes": 2066944,
+            "name": "prism-inference-server.exe",
+            "sha256": "62bdf31962864b11e530aaae50da2c0a6b36cb651110080e5bf3f08f8d2713f4"
+          },
+          {
+            "bytes": 998912,
+            "name": "prism-inference.exe",
+            "sha256": "9064615b6382eaa0975e9840962cbaeb6e6bdf23a2e4f5d5be9cd3f9dead1531"
+          },
+          {
+            "bytes": 1099,
+            "name": "PRISM-LICENSE.txt",
+            "sha256": "bcd8ec749126d45cb06737d0690295d73df4b6e7e194205bcf91190368f27285"
+          }
+        ]
+      },
+      "ownerPid": 38924,
+      "owner": {
+        "credentialDirectory": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-Token-Timing-20261103-he2yvx48\\rust-013-ptq1-row4\\SwiftBonsai-Keys-e106ab09b3810ef837c29a87431e0213",
+        "modelPath": "C:\\Users\\symbi\\AppData\\Local\\SwiftBonsai2\\models\\a3bdac086bbb6b04d87d0108d18943b5f63868f7\\Swift-Bonsai-2-current-repacked-PTQ1_0.gguf",
+        "nativeSandbox": true,
+        "port": 57679,
+        "processId": 36444,
+        "rowWorkersConfigured": 4,
+        "runtimeVersion": "0.1.13",
+        "status": "started"
+      },
+      "startupSeconds": 8.799180500005605,
+      "measurement": {
+        "timeToFirstTokenSeconds": 28.6924181,
+        "generationTokensPerSecond": 0.7503687580065685,
+        "generationIntervalSeconds": 9.3287466,
+        "generationIntervalTokens": 7,
+        "firstContentNanoseconds": 28692418100,
+        "lastContentNanoseconds": 38021164700,
+        "completionUsage": 8,
+        "usage": {
+          "completion_tokens": 8,
+          "prompt_tokens": 22,
+          "total_tokens": 30
+        },
+        "visibleContent": "1, 2, 3,",
+        "finishReason": "length",
+        "contentDeltaCount": 8,
+        "generationBoundaryEligible": true,
+        "generationMetric": "client-observed subsequent tokens / first-to-last token delivery interval",
+        "generationEligibility": "Reported cap8 and8nonemptyASCII token deltas, output<1024bytes, thinking off, length termination, positive interval; fixed-runtime source establishes one delta per displayed token.",
+        "requestSeconds": 38.0213876,
+        "isolatedKernelDecodeTokensPerSecond": null,
+        "events": [
+          {
+            "elapsedNanoseconds": 28692390300,
+            "event": {
+              "choices": [
+                {
+                  "delta": {
+                    "role": "assistant"
+                  },
+                  "finish_reason": null,
+                  "index": 0
+                }
+              ],
+              "id": "chatcmpl-swift",
+              "model": "Swift-Bonsai-2-PQ2_0",
+              "object": "chat.completion.chunk"
+            }
+          },
+          {
+            "elapsedNanoseconds": 28692418100,
+            "event": {
+              "choices": [
+                {
+                  "delta": {
+                    "content": "1"
+                  },
+                  "finish_reason": null,
+                  "index": 0
+                }
+              ],
+              "id": "chatcmpl-swift",
+              "model": "Swift-Bonsai-2-PQ2_0",
+              "object": "chat.completion.chunk"
+            }
+          },
+          {
+            "elapsedNanoseconds": 29880158000,
+            "event": {
+              "choices": [
+                {
+                  "delta": {
+                    "content": ","
+                  },
+                  "finish_reason": null,
+                  "index": 0
+                }
+              ],
+              "id": "chatcmpl-swift",
+              "model": "Swift-Bonsai-2-PQ2_0",
+              "object": "chat.completion.chunk"
+            }
+          },
+          {
+            "elapsedNanoseconds": 31308286500,
+            "event": {
+              "choices": [
+                {
+                  "delta": {
+                    "content": " "
+                  },
+                  "finish_reason": null,
+                  "index": 0
+                }
+              ],
+              "id": "chatcmpl-swift",
+              "model": "Swift-Bonsai-2-PQ2_0",
+              "object": "chat.completion.chunk"
+            }
+          },
+          {
+            "elapsedNanoseconds": 32539414900,
+            "event": {
+              "choices": [
+                {
+                  "delta": {
+                    "content": "2"
+                  },
+                  "finish_reason": null,
+                  "index": 0
+                }
+              ],
+              "id": "chatcmpl-swift",
+              "model": "Swift-Bonsai-2-PQ2_0",
+              "object": "chat.completion.chunk"
+            }
+          },
+          {
+            "elapsedNanoseconds": 33868268600,
+            "event": {
+              "choices": [
+                {
+                  "delta": {
+                    "content": ","
+                  },
+                  "finish_reason": null,
+                  "index": 0
+                }
+              ],
+              "id": "chatcmpl-swift",
+              "model": "Swift-Bonsai-2-PQ2_0",
+              "object": "chat.completion.chunk"
+            }
+          },
+          {
+            "elapsedNanoseconds": 35262912400,
+            "event": {
+              "choices": [
+                {
+                  "delta": {
+                    "content": " "
+                  },
+                  "finish_reason": null,
+                  "index": 0
+                }
+              ],
+              "id": "chatcmpl-swift",
+              "model": "Swift-Bonsai-2-PQ2_0",
+              "object": "chat.completion.chunk"
+            }
+          },
+          {
+            "elapsedNanoseconds": 36680268100,
+            "event": {
+              "choices": [
+                {
+                  "delta": {
+                    "content": "3"
+                  },
+                  "finish_reason": null,
+                  "index": 0
+                }
+              ],
+              "id": "chatcmpl-swift",
+              "model": "Swift-Bonsai-2-PQ2_0",
+              "object": "chat.completion.chunk"
+            }
+          },
+          {
+            "elapsedNanoseconds": 38021164700,
+            "event": {
+              "choices": [
+                {
+                  "delta": {
+                    "content": ","
+                  },
+                  "finish_reason": null,
+                  "index": 0
+                }
+              ],
+              "id": "chatcmpl-swift",
+              "model": "Swift-Bonsai-2-PQ2_0",
+              "object": "chat.completion.chunk"
+            }
+          },
+          {
+            "elapsedNanoseconds": 38021252100,
+            "event": {
+              "choices": [
+                {
+                  "delta": {},
+                  "finish_reason": "length",
+                  "index": 0
+                }
+              ],
+              "id": "chatcmpl-swift",
+              "model": "Swift-Bonsai-2-PQ2_0",
+              "object": "chat.completion.chunk",
+              "usage": {
+                "completion_tokens": 8,
+                "prompt_tokens": 22,
+                "total_tokens": 30
+              }
+            }
+          }
+        ],
+        "receivedBodyChunks": [
+          {
+            "elapsedNanoseconds": 28692390300,
+            "base64": "ZGF0YTogeyJjaG9pY2VzIjpbeyJkZWx0YSI6eyJyb2xlIjoiYXNzaXN0YW50In0sImZpbmlzaF9yZWFzb24iOm51bGwsImluZGV4IjowfV0sImlkIjoiY2hhdGNtcGwtc3dpZnQiLCJtb2RlbCI6IlN3aWZ0LUJvbnNhaS0yLVBRMl8wIiwib2JqZWN0IjoiY2hhdC5jb21wbGV0aW9uLmNodW5rIn0KCg=="
+          },
+          {
+            "elapsedNanoseconds": 28692418100,
+            "base64": "ZGF0YTogeyJjaG9pY2VzIjpbeyJkZWx0YSI6eyJjb250ZW50IjoiMSJ9LCJmaW5pc2hfcmVhc29uIjpudWxsLCJpbmRleCI6MH1dLCJpZCI6ImNoYXRjbXBsLXN3aWZ0IiwibW9kZWwiOiJTd2lmdC1Cb25zYWktMi1QUTJfMCIsIm9iamVjdCI6ImNoYXQuY29tcGxldGlvbi5jaHVuayJ9Cgo="
+          },
+          {
+            "elapsedNanoseconds": 29880158000,
+            "base64": "ZGF0YTogeyJjaG9pY2VzIjpbeyJkZWx0YSI6eyJjb250ZW50IjoiLCJ9LCJmaW5pc2hfcmVhc29uIjpudWxsLCJpbmRleCI6MH1dLCJpZCI6ImNoYXRjbXBsLXN3aWZ0IiwibW9kZWwiOiJTd2lmdC1Cb25zYWktMi1QUTJfMCIsIm9iamVjdCI6ImNoYXQuY29tcGxldGlvbi5jaHVuayJ9Cgo="
+          },
+          {
+            "elapsedNanoseconds": 31308286500,
+            "base64": "ZGF0YTogeyJjaG9pY2VzIjpbeyJkZWx0YSI6eyJjb250ZW50IjoiICJ9LCJmaW5pc2hfcmVhc29uIjpudWxsLCJpbmRleCI6MH1dLCJpZCI6ImNoYXRjbXBsLXN3aWZ0IiwibW9kZWwiOiJTd2lmdC1Cb25zYWktMi1QUTJfMCIsIm9iamVjdCI6ImNoYXQuY29tcGxldGlvbi5jaHVuayJ9Cgo="
+          },
+          {
+            "elapsedNanoseconds": 32539414900,
+            "base64": "ZGF0YTogeyJjaG9pY2VzIjpbeyJkZWx0YSI6eyJjb250ZW50IjoiMiJ9LCJmaW5pc2hfcmVhc29uIjpudWxsLCJpbmRleCI6MH1dLCJpZCI6ImNoYXRjbXBsLXN3aWZ0IiwibW9kZWwiOiJTd2lmdC1Cb25zYWktMi1QUTJfMCIsIm9iamVjdCI6ImNoYXQuY29tcGxldGlvbi5jaHVuayJ9Cgo="
+          },
+          {
+            "elapsedNanoseconds": 33868268600,
+            "base64": "ZGF0YTogeyJjaG9pY2VzIjpbeyJkZWx0YSI6eyJjb250ZW50IjoiLCJ9LCJmaW5pc2hfcmVhc29uIjpudWxsLCJpbmRleCI6MH1dLCJpZCI6ImNoYXRjbXBsLXN3aWZ0IiwibW9kZWwiOiJTd2lmdC1Cb25zYWktMi1QUTJfMCIsIm9iamVjdCI6ImNoYXQuY29tcGxldGlvbi5jaHVuayJ9Cgo="
+          },
+          {
+            "elapsedNanoseconds": 35262912400,
+            "base64": "ZGF0YTogeyJjaG9pY2VzIjpbeyJkZWx0YSI6eyJjb250ZW50IjoiICJ9LCJmaW5pc2hfcmVhc29uIjpudWxsLCJpbmRleCI6MH1dLCJpZCI6ImNoYXRjbXBsLXN3aWZ0IiwibW9kZWwiOiJTd2lmdC1Cb25zYWktMi1QUTJfMCIsIm9iamVjdCI6ImNoYXQuY29tcGxldGlvbi5jaHVuayJ9Cgo="
+          },
+          {
+            "elapsedNanoseconds": 36680268100,
+            "base64": "ZGF0YTogeyJjaG9pY2VzIjpbeyJkZWx0YSI6eyJjb250ZW50IjoiMyJ9LCJmaW5pc2hfcmVhc29uIjpudWxsLCJpbmRleCI6MH1dLCJpZCI6ImNoYXRjbXBsLXN3aWZ0IiwibW9kZWwiOiJTd2lmdC1Cb25zYWktMi1QUTJfMCIsIm9iamVjdCI6ImNoYXQuY29tcGxldGlvbi5jaHVuayJ9Cgo="
+          },
+          {
+            "elapsedNanoseconds": 38021164700,
+            "base64": "ZGF0YTogeyJjaG9pY2VzIjpbeyJkZWx0YSI6eyJjb250ZW50IjoiLCJ9LCJmaW5pc2hfcmVhc29uIjpudWxsLCJpbmRleCI6MH1dLCJpZCI6ImNoYXRjbXBsLXN3aWZ0IiwibW9kZWwiOiJTd2lmdC1Cb25zYWktMi1QUTJfMCIsIm9iamVjdCI6ImNoYXQuY29tcGxldGlvbi5jaHVuayJ9Cgo="
+          },
+          {
+            "elapsedNanoseconds": 38021252100,
+            "base64": "ZGF0YTogeyJjaG9pY2VzIjpbeyJkZWx0YSI6e30sImZpbmlzaF9yZWFzb24iOiJsZW5ndGgiLCJpbmRleCI6MH1dLCJpZCI6ImNoYXRjbXBsLXN3aWZ0IiwibW9kZWwiOiJTd2lmdC1Cb25zYWktMi1QUTJfMCIsIm9iamVjdCI6ImNoYXQuY29tcGxldGlvbi5jaHVuayIsInVzYWdlIjp7ImNvbXBsZXRpb25fdG9rZW5zIjo4LCJwcm9tcHRfdG9rZW5zIjoyMiwidG90YWxfdG9rZW5zIjozMH19Cgo="
+          },
+          {
+            "elapsedNanoseconds": 38021264800,
+            "base64": "ZGF0YTogW0RPTkVdCgo="
+          }
+        ],
+        "requestBody": {
+          "messages": [
+            {
+              "role": "user",
+              "content": "Count from 1 to 100."
+            }
+          ],
+          "stream": true,
+          "max_completion_tokens": 8,
+          "n": 1,
+          "cache_prompt": false,
+          "n_cache_reuse": 0,
+          "ignore_eos": false,
+          "temperature": 1.0,
+          "top_p": 0.95,
+          "top_k": 20,
+          "min_p": 0.0,
+          "presence_penalty": 0.0,
+          "frequency_penalty": 0.0,
+          "repeat_penalty": 1.0,
+          "chat_template_kwargs": {
+            "enable_thinking": false,
+            "reasoning_effort": "xhigh",
+            "preserve_thinking": true
+          },
+          "lora": [
+            {
+              "id": 0,
+              "scale": 1.3
+            }
+          ]
+        },
+        "countReceipt": {
+          "input_tokens": 22,
+          "object": "response.input_tokens"
+        },
+        "countAdmissionSeconds": 0.016088,
+        "timeToFirstTokenScope": "Client request start before required exact count/admission through receipt of first token; includes count, template, prefill and HTTP delivery, excludes model startup."
+      },
+      "ownerExitCode": 0,
+      "powerAfter": {
+        "utc": "2026-11-03T10:27:19.849694+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 45
+      },
+      "powerSamples": [
+        {
+          "utc": "2026-11-03T10:26:32.505408+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:26:33.714228+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:26:34.714923+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:26:35.722739+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:26:36.723761+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:26:37.730963+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:26:38.739270+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:26:39.739540+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:26:40.739721+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:26:41.747677+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:26:42.756142+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:26:43.757517+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:26:44.764325+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:26:45.772633+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:26:46.772724+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:26:47.774090+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:26:48.780989+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:26:49.781031+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:26:50.789395+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:26:51.797666+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:26:52.806088+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:26:53.814367+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:26:54.822891+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:26:55.823870+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:26:56.831050+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:26:57.830974+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 44
+        },
+        {
+          "utc": "2026-11-03T10:26:58.839380+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:26:59.840100+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:27:00.847647+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:27:01.856065+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:27:02.856096+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:27:03.859153+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:27:04.864234+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:27:05.864283+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:27:06.872583+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:27:07.872725+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:27:08.872702+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:27:09.889321+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:27:10.890022+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:27:11.890173+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:27:12.890518+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:27:13.897639+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:27:14.897723+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:27:15.900741+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:27:16.906012+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:27:17.906139+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:27:18.905990+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:27:19.849694+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        }
+      ],
+      "cleanup": {
+        "activeProcesses": 0,
+        "elapsedSeconds": 47.075253,
+        "ownedJobStopped": true,
+        "peakJobMemoryBytes": 6465683456,
+        "reason": "cancelled-parent-or-deadline"
+      },
+      "activeModelProcessesAfter": [],
+      "listenerReleased": true,
+      "elapsedSeconds": 49.32406980000087,
+      "remainingCredentialFiles": 0
+    },
+    {
+      "id": "rust-013-pq2-row4",
+      "status": "measured",
+      "powerBefore": {
+        "utc": "2026-11-03T10:27:22.050218+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 45
+      },
+      "activeModelProcessesBefore": [],
+      "ownerRequest": {
+        "dataDirectory": "C:\\Users\\symbi\\AppData\\Local\\SwiftBonsai2",
+        "evidenceDirectory": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-Token-Timing-20261103-he2yvx48\\rust-013-pq2-row4",
+        "shutdownDirectory": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-Token-Timing-20261103-he2yvx48\\rust-013-pq2-row4-control",
+        "mode": "native",
+        "nativeVersion": "0.1.13",
+        "rowWorkers": 4,
+        "useRepackedPtq1": false,
+        "port": 65199,
+        "maximumSeconds": 100,
+        "deadlineTicks": 1341595597303,
+        "parentProcessId": 30936,
+        "parentCreationTimeFileTime": 134381750285842927,
+        "runtime": {
+          "archivePath": "C:\\Users\\symbi\\AppData\\Local\\SwiftBonsai2\\downloads\\prism-inference-0.1.13-aarch64-pc-windows-msvc.zip",
+          "runtimeDirectory": "C:\\Users\\symbi\\AppData\\Local\\SwiftBonsai2\\inference\\cae16fa6998dac58a947eba9ae4398ed6a9fb863\\aarch64-pc-windows-msvc",
+          "archiveBytes": 3217665,
+          "archiveSha256": "3b1f310cbfafd592375756600c261bdafcfc94ab1bac8f34c69ef7038167096a"
+        },
+        "nativeRuntimeFiles": [
+          {
+            "bytes": 441856,
+            "name": "bonsai-gguf.exe",
+            "sha256": "2be1349cdb56959dbbc41f9afbe03180601d1ea67b68f2dafa442df4451734bf"
+          },
+          {
+            "bytes": 1541632,
+            "name": "bonsai-swift-worker.exe",
+            "sha256": "9fcc8c2666ec024cb8bb28c42b604b33388c261f39f2fd3c05d2a8613ac2300d"
+          },
+          {
+            "bytes": 507904,
+            "name": "bonsai-token-worker.exe",
+            "sha256": "66b2800684fecac6680182a4735fe6f6927640f3dfdff903f325f0542dca80ab"
+          },
+          {
+            "bytes": 1087,
+            "name": "CAMELID-LICENSE.txt",
+            "sha256": "cfd0bfa3c3f54585039a58a2dd86a0541b15c29e9f825d244c6f3f0d7c771015"
+          },
+          {
+            "bytes": 11560,
+            "name": "LICENSE",
+            "sha256": "3ddf9be5c28fe27dad143a5dc76eea25222ad1dd68934a047064e56ed2fa40c5"
+          },
+          {
+            "bytes": 2369,
+            "name": "NOTICE",
+            "sha256": "e3b6278bbba57b0bb62cb830facd20c2ca347fdbd655be87b83a78b2a4d42a6b"
+          },
+          {
+            "bytes": 2066944,
+            "name": "prism-inference-server.exe",
+            "sha256": "62bdf31962864b11e530aaae50da2c0a6b36cb651110080e5bf3f08f8d2713f4"
+          },
+          {
+            "bytes": 998912,
+            "name": "prism-inference.exe",
+            "sha256": "9064615b6382eaa0975e9840962cbaeb6e6bdf23a2e4f5d5be9cd3f9dead1531"
+          },
+          {
+            "bytes": 1099,
+            "name": "PRISM-LICENSE.txt",
+            "sha256": "bcd8ec749126d45cb06737d0690295d73df4b6e7e194205bcf91190368f27285"
+          }
+        ]
+      },
+      "ownerPid": 32132,
+      "owner": {
+        "credentialDirectory": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-Token-Timing-20261103-he2yvx48\\rust-013-pq2-row4\\SwiftBonsai-Keys-dbb767eaeb5d62432db09d87066dcd31",
+        "modelPath": "C:\\Users\\symbi\\AppData\\Local\\SwiftBonsai2\\models\\a3bdac086bbb6b04d87d0108d18943b5f63868f7\\Swift-Bonsai-2-PQ2_0.gguf",
+        "nativeSandbox": true,
+        "port": 65199,
+        "processId": 41088,
+        "rowWorkersConfigured": 4,
+        "runtimeVersion": "0.1.13",
+        "status": "started"
+      },
+      "startupSeconds": 11.421534199995222,
+      "measurement": {
+        "timeToFirstTokenSeconds": 16.4502658,
+        "generationTokensPerSecond": 1.3197458584253943,
+        "generationIntervalSeconds": 5.3040515,
+        "generationIntervalTokens": 7,
+        "firstContentNanoseconds": 16450265800,
+        "lastContentNanoseconds": 21754317300,
+        "completionUsage": 8,
+        "usage": {
+          "completion_tokens": 8,
+          "prompt_tokens": 22,
+          "total_tokens": 30
+        },
+        "visibleContent": "1, 2, 3,",
+        "finishReason": "length",
+        "contentDeltaCount": 8,
+        "generationBoundaryEligible": true,
+        "generationMetric": "client-observed subsequent tokens / first-to-last token delivery interval",
+        "generationEligibility": "Reported cap8 and8nonemptyASCII token deltas, output<1024bytes, thinking off, length termination, positive interval; fixed-runtime source establishes one delta per displayed token.",
+        "requestSeconds": 21.7552246,
+        "isolatedKernelDecodeTokensPerSecond": null,
+        "events": [
+          {
+            "elapsedNanoseconds": 16450211000,
+            "event": {
+              "choices": [
+                {
+                  "delta": {
+                    "role": "assistant"
+                  },
+                  "finish_reason": null,
+                  "index": 0
+                }
+              ],
+              "id": "chatcmpl-swift",
+              "model": "Swift-Bonsai-2-PQ2_0",
+              "object": "chat.completion.chunk"
+            }
+          },
+          {
+            "elapsedNanoseconds": 16450265800,
+            "event": {
+              "choices": [
+                {
+                  "delta": {
+                    "content": "1"
+                  },
+                  "finish_reason": null,
+                  "index": 0
+                }
+              ],
+              "id": "chatcmpl-swift",
+              "model": "Swift-Bonsai-2-PQ2_0",
+              "object": "chat.completion.chunk"
+            }
+          },
+          {
+            "elapsedNanoseconds": 17209564100,
+            "event": {
+              "choices": [
+                {
+                  "delta": {
+                    "content": ","
+                  },
+                  "finish_reason": null,
+                  "index": 0
+                }
+              ],
+              "id": "chatcmpl-swift",
+              "model": "Swift-Bonsai-2-PQ2_0",
+              "object": "chat.completion.chunk"
+            }
+          },
+          {
+            "elapsedNanoseconds": 17969195700,
+            "event": {
+              "choices": [
+                {
+                  "delta": {
+                    "content": " "
+                  },
+                  "finish_reason": null,
+                  "index": 0
+                }
+              ],
+              "id": "chatcmpl-swift",
+              "model": "Swift-Bonsai-2-PQ2_0",
+              "object": "chat.completion.chunk"
+            }
+          },
+          {
+            "elapsedNanoseconds": 18732137600,
+            "event": {
+              "choices": [
+                {
+                  "delta": {
+                    "content": "2"
+                  },
+                  "finish_reason": null,
+                  "index": 0
+                }
+              ],
+              "id": "chatcmpl-swift",
+              "model": "Swift-Bonsai-2-PQ2_0",
+              "object": "chat.completion.chunk"
+            }
+          },
+          {
+            "elapsedNanoseconds": 19488853500,
+            "event": {
+              "choices": [
+                {
+                  "delta": {
+                    "content": ","
+                  },
+                  "finish_reason": null,
+                  "index": 0
+                }
+              ],
+              "id": "chatcmpl-swift",
+              "model": "Swift-Bonsai-2-PQ2_0",
+              "object": "chat.completion.chunk"
+            }
+          },
+          {
+            "elapsedNanoseconds": 20240745700,
+            "event": {
+              "choices": [
+                {
+                  "delta": {
+                    "content": " "
+                  },
+                  "finish_reason": null,
+                  "index": 0
+                }
+              ],
+              "id": "chatcmpl-swift",
+              "model": "Swift-Bonsai-2-PQ2_0",
+              "object": "chat.completion.chunk"
+            }
+          },
+          {
+            "elapsedNanoseconds": 20997846900,
+            "event": {
+              "choices": [
+                {
+                  "delta": {
+                    "content": "3"
+                  },
+                  "finish_reason": null,
+                  "index": 0
+                }
+              ],
+              "id": "chatcmpl-swift",
+              "model": "Swift-Bonsai-2-PQ2_0",
+              "object": "chat.completion.chunk"
+            }
+          },
+          {
+            "elapsedNanoseconds": 21754317300,
+            "event": {
+              "choices": [
+                {
+                  "delta": {
+                    "content": ","
+                  },
+                  "finish_reason": null,
+                  "index": 0
+                }
+              ],
+              "id": "chatcmpl-swift",
+              "model": "Swift-Bonsai-2-PQ2_0",
+              "object": "chat.completion.chunk"
+            }
+          },
+          {
+            "elapsedNanoseconds": 21755016000,
+            "event": {
+              "choices": [
+                {
+                  "delta": {},
+                  "finish_reason": "length",
+                  "index": 0
+                }
+              ],
+              "id": "chatcmpl-swift",
+              "model": "Swift-Bonsai-2-PQ2_0",
+              "object": "chat.completion.chunk",
+              "usage": {
+                "completion_tokens": 8,
+                "prompt_tokens": 22,
+                "total_tokens": 30
+              }
+            }
+          }
+        ],
+        "receivedBodyChunks": [
+          {
+            "elapsedNanoseconds": 16450211000,
+            "base64": "ZGF0YTogeyJjaG9pY2VzIjpbeyJkZWx0YSI6eyJyb2xlIjoiYXNzaXN0YW50In0sImZpbmlzaF9yZWFzb24iOm51bGwsImluZGV4IjowfV0sImlkIjoiY2hhdGNtcGwtc3dpZnQiLCJtb2RlbCI6IlN3aWZ0LUJvbnNhaS0yLVBRMl8wIiwib2JqZWN0IjoiY2hhdC5jb21wbGV0aW9uLmNodW5rIn0KCg=="
+          },
+          {
+            "elapsedNanoseconds": 16450265800,
+            "base64": "ZGF0YTogeyJjaG9pY2VzIjpbeyJkZWx0YSI6eyJjb250ZW50IjoiMSJ9LCJmaW5pc2hfcmVhc29uIjpudWxsLCJpbmRleCI6MH1dLCJpZCI6ImNoYXRjbXBsLXN3aWZ0IiwibW9kZWwiOiJTd2lmdC1Cb25zYWktMi1QUTJfMCIsIm9iamVjdCI6ImNoYXQuY29tcGxldGlvbi5jaHVuayJ9Cgo="
+          },
+          {
+            "elapsedNanoseconds": 17209564100,
+            "base64": "ZGF0YTogeyJjaG9pY2VzIjpbeyJkZWx0YSI6eyJjb250ZW50IjoiLCJ9LCJmaW5pc2hfcmVhc29uIjpudWxsLCJpbmRleCI6MH1dLCJpZCI6ImNoYXRjbXBsLXN3aWZ0IiwibW9kZWwiOiJTd2lmdC1Cb25zYWktMi1QUTJfMCIsIm9iamVjdCI6ImNoYXQuY29tcGxldGlvbi5jaHVuayJ9Cgo="
+          },
+          {
+            "elapsedNanoseconds": 17969195700,
+            "base64": "ZGF0YTogeyJjaG9pY2VzIjpbeyJkZWx0YSI6eyJjb250ZW50IjoiICJ9LCJmaW5pc2hfcmVhc29uIjpudWxsLCJpbmRleCI6MH1dLCJpZCI6ImNoYXRjbXBsLXN3aWZ0IiwibW9kZWwiOiJTd2lmdC1Cb25zYWktMi1QUTJfMCIsIm9iamVjdCI6ImNoYXQuY29tcGxldGlvbi5jaHVuayJ9Cgo="
+          },
+          {
+            "elapsedNanoseconds": 18732137600,
+            "base64": "ZGF0YTogeyJjaG9pY2VzIjpbeyJkZWx0YSI6eyJjb250ZW50IjoiMiJ9LCJmaW5pc2hfcmVhc29uIjpudWxsLCJpbmRleCI6MH1dLCJpZCI6ImNoYXRjbXBsLXN3aWZ0IiwibW9kZWwiOiJTd2lmdC1Cb25zYWktMi1QUTJfMCIsIm9iamVjdCI6ImNoYXQuY29tcGxldGlvbi5jaHVuayJ9Cgo="
+          },
+          {
+            "elapsedNanoseconds": 19488853500,
+            "base64": "ZGF0YTogeyJjaG9pY2VzIjpbeyJkZWx0YSI6eyJjb250ZW50IjoiLCJ9LCJmaW5pc2hfcmVhc29uIjpudWxsLCJpbmRleCI6MH1dLCJpZCI6ImNoYXRjbXBsLXN3aWZ0IiwibW9kZWwiOiJTd2lmdC1Cb25zYWktMi1QUTJfMCIsIm9iamVjdCI6ImNoYXQuY29tcGxldGlvbi5jaHVuayJ9Cgo="
+          },
+          {
+            "elapsedNanoseconds": 20240745700,
+            "base64": "ZGF0YTogeyJjaG9pY2VzIjpbeyJkZWx0YSI6eyJjb250ZW50IjoiICJ9LCJmaW5pc2hfcmVhc29uIjpudWxsLCJpbmRleCI6MH1dLCJpZCI6ImNoYXRjbXBsLXN3aWZ0IiwibW9kZWwiOiJTd2lmdC1Cb25zYWktMi1QUTJfMCIsIm9iamVjdCI6ImNoYXQuY29tcGxldGlvbi5jaHVuayJ9Cgo="
+          },
+          {
+            "elapsedNanoseconds": 20997846900,
+            "base64": "ZGF0YTogeyJjaG9pY2VzIjpbeyJkZWx0YSI6eyJjb250ZW50IjoiMyJ9LCJmaW5pc2hfcmVhc29uIjpudWxsLCJpbmRleCI6MH1dLCJpZCI6ImNoYXRjbXBsLXN3aWZ0IiwibW9kZWwiOiJTd2lmdC1Cb25zYWktMi1QUTJfMCIsIm9iamVjdCI6ImNoYXQuY29tcGxldGlvbi5jaHVuayJ9Cgo="
+          },
+          {
+            "elapsedNanoseconds": 21754317300,
+            "base64": "ZGF0YTogeyJjaG9pY2VzIjpbeyJkZWx0YSI6eyJjb250ZW50IjoiLCJ9LCJmaW5pc2hfcmVhc29uIjpudWxsLCJpbmRleCI6MH1dLCJpZCI6ImNoYXRjbXBsLXN3aWZ0IiwibW9kZWwiOiJTd2lmdC1Cb25zYWktMi1QUTJfMCIsIm9iamVjdCI6ImNoYXQuY29tcGxldGlvbi5jaHVuayJ9Cgo="
+          },
+          {
+            "elapsedNanoseconds": 21755016000,
+            "base64": "ZGF0YTogeyJjaG9pY2VzIjpbeyJkZWx0YSI6e30sImZpbmlzaF9yZWFzb24iOiJsZW5ndGgiLCJpbmRleCI6MH1dLCJpZCI6ImNoYXRjbXBsLXN3aWZ0IiwibW9kZWwiOiJTd2lmdC1Cb25zYWktMi1QUTJfMCIsIm9iamVjdCI6ImNoYXQuY29tcGxldGlvbi5jaHVuayIsInVzYWdlIjp7ImNvbXBsZXRpb25fdG9rZW5zIjo4LCJwcm9tcHRfdG9rZW5zIjoyMiwidG90YWxfdG9rZW5zIjozMH19Cgo="
+          },
+          {
+            "elapsedNanoseconds": 21755060600,
+            "base64": "ZGF0YTogW0RPTkVdCgo="
+          }
+        ],
+        "requestBody": {
+          "messages": [
+            {
+              "role": "user",
+              "content": "Count from 1 to 100."
+            }
+          ],
+          "stream": true,
+          "max_completion_tokens": 8,
+          "n": 1,
+          "cache_prompt": false,
+          "n_cache_reuse": 0,
+          "ignore_eos": false,
+          "temperature": 1.0,
+          "top_p": 0.95,
+          "top_k": 20,
+          "min_p": 0.0,
+          "presence_penalty": 0.0,
+          "frequency_penalty": 0.0,
+          "repeat_penalty": 1.0,
+          "chat_template_kwargs": {
+            "enable_thinking": false,
+            "reasoning_effort": "xhigh",
+            "preserve_thinking": true
+          },
+          "lora": [
+            {
+              "id": 0,
+              "scale": 1.3
+            }
+          ]
+        },
+        "countReceipt": {
+          "input_tokens": 22,
+          "object": "response.input_tokens"
+        },
+        "countAdmissionSeconds": 0.0142918,
+        "timeToFirstTokenScope": "Client request start before required exact count/admission through receipt of first token; includes count, template, prefill and HTTP delivery, excludes model startup."
+      },
+      "ownerExitCode": 0,
+      "powerAfter": {
+        "utc": "2026-11-03T10:27:55.806809+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 45
+      },
+      "powerSamples": [
+        {
+          "utc": "2026-11-03T10:27:22.050218+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:27:23.291352+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:27:24.305905+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:27:25.322680+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:27:26.322811+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:27:27.324880+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:27:28.339087+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:27:29.339490+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:27:30.339721+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:27:31.347361+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:27:32.347722+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:27:33.348120+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:27:34.351201+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:27:35.355811+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:27:36.356075+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:27:37.357321+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:27:38.364126+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:27:39.372378+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:27:40.380684+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:27:41.380750+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:27:42.389200+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:27:43.389521+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:27:44.397377+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:27:45.405819+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:27:46.406384+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:27:47.421367+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:27:48.422474+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:27:49.422473+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:27:50.423917+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:27:51.430774+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:27:52.439167+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:27:53.447506+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:27:54.449101+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:27:55.457462+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:27:55.806809+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        }
+      ],
+      "cleanup": {
+        "activeProcesses": 0,
+        "elapsedSeconds": 33.4354785,
+        "ownedJobStopped": true,
+        "peakJobMemoryBytes": 7727259648,
+        "reason": "cancelled-parent-or-deadline"
+      },
+      "activeModelProcessesAfter": [],
+      "listenerReleased": true,
+      "elapsedSeconds": 35.7634962000011,
+      "remainingCredentialFiles": 0
+    },
+    {
+      "id": "rust-010-pq2-row1",
+      "status": "measured",
+      "powerBefore": {
+        "utc": "2026-11-03T10:27:58.061372+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 45
+      },
+      "activeModelProcessesBefore": [],
+      "ownerRequest": {
+        "dataDirectory": "C:\\Users\\symbi\\AppData\\Local\\SwiftBonsai2",
+        "evidenceDirectory": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-Token-Timing-20261103-he2yvx48\\rust-010-pq2-row1",
+        "shutdownDirectory": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-Token-Timing-20261103-he2yvx48\\rust-010-pq2-row1-control",
+        "mode": "native",
+        "nativeVersion": "0.1.10",
+        "rowWorkers": 1,
+        "useRepackedPtq1": false,
+        "port": 65274,
+        "maximumSeconds": 125,
+        "deadlineTicks": 1341595597303,
+        "parentProcessId": 30936,
+        "parentCreationTimeFileTime": 134381750285842927,
+        "runtime": {
+          "archivePath": "C:\\Users\\symbi\\AppData\\Local\\SwiftBonsai2\\downloads\\prism-inference-0.1.10-aarch64-pc-windows-msvc.zip",
+          "runtimeDirectory": "C:\\Users\\symbi\\AppData\\Local\\SwiftBonsai2\\inference\\749a5f5b43bf77764a29682557ec91a8de8dcdef\\aarch64-pc-windows-msvc",
+          "archiveBytes": 3197517,
+          "archiveSha256": "72aa9856cf9ad6b37b8815cc43c0da5168a74c5b2dbdc1f0ffc828dd75a30769"
+        },
+        "nativeRuntimeFiles": [
+          {
+            "bytes": 441856,
+            "name": "bonsai-gguf.exe",
+            "sha256": "d0d7ecae014c2db6f7b1d83059d355c47c66444786baef43e81bb99dc2e1fb0f"
+          },
+          {
+            "bytes": 1528832,
+            "name": "bonsai-swift-worker.exe",
+            "sha256": "6854196e29fed34c6989667d85e84448d96f95ad36dec1b18209095db69e0ec4"
+          },
+          {
+            "bytes": 506880,
+            "name": "bonsai-token-worker.exe",
+            "sha256": "2ab7a7e0bb6178f29bf6efb00d7d388bf57ffb0fb22183d659506f88741eee91"
+          },
+          {
+            "bytes": 1087,
+            "name": "CAMELID-LICENSE.txt",
+            "sha256": "cfd0bfa3c3f54585039a58a2dd86a0541b15c29e9f825d244c6f3f0d7c771015"
+          },
+          {
+            "bytes": 11560,
+            "name": "LICENSE",
+            "sha256": "3ddf9be5c28fe27dad143a5dc76eea25222ad1dd68934a047064e56ed2fa40c5"
+          },
+          {
+            "bytes": 2369,
+            "name": "NOTICE",
+            "sha256": "e3b6278bbba57b0bb62cb830facd20c2ca347fdbd655be87b83a78b2a4d42a6b"
+          },
+          {
+            "bytes": 2056192,
+            "name": "prism-inference-server.exe",
+            "sha256": "58e61f153853a04f811ea26656fad9d76fb4655fb69197854fd556e901d863a7"
+          },
+          {
+            "bytes": 981504,
+            "name": "prism-inference.exe",
+            "sha256": "e890f53c280b986b82c7cad7d97f1fc2c80390fa100bded8845641f740a35ee2"
+          },
+          {
+            "bytes": 1099,
+            "name": "PRISM-LICENSE.txt",
+            "sha256": "bcd8ec749126d45cb06737d0690295d73df4b6e7e194205bcf91190368f27285"
+          }
+        ]
+      },
+      "ownerPid": 16236,
+      "owner": {
+        "credentialDirectory": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-Token-Timing-20261103-he2yvx48\\rust-010-pq2-row1\\SwiftBonsai-Keys-c9866342c68c0f1a67613b6bc3b1d39d",
+        "modelPath": "C:\\Users\\symbi\\AppData\\Local\\SwiftBonsai2\\models\\a3bdac086bbb6b04d87d0108d18943b5f63868f7\\Swift-Bonsai-2-PQ2_0.gguf",
+        "nativeSandbox": true,
+        "port": 65274,
+        "processId": 31600,
+        "rowWorkersConfigured": 1,
+        "runtimeVersion": "0.1.10",
+        "status": "started"
+      },
+      "startupSeconds": 11.512667300004978,
+      "measurement": {
+        "timeToFirstTokenSeconds": 35.5893968,
+        "generationTokensPerSecond": 0.640102129574978,
+        "generationIntervalSeconds": 10.9357549,
+        "generationIntervalTokens": 7,
+        "firstContentNanoseconds": 35589396800,
+        "lastContentNanoseconds": 46525151700,
+        "completionUsage": 8,
+        "usage": {
+          "completion_tokens": 8,
+          "prompt_tokens": 22,
+          "total_tokens": 30
+        },
+        "visibleContent": "1, 2, 3,",
+        "finishReason": "length",
+        "contentDeltaCount": 8,
+        "generationBoundaryEligible": true,
+        "generationMetric": "client-observed subsequent tokens / first-to-last token delivery interval",
+        "generationEligibility": "Reported cap8 and8nonemptyASCII token deltas, output<1024bytes, thinking off, length termination, positive interval; fixed-runtime source establishes one delta per displayed token.",
+        "requestSeconds": 46.525938,
+        "isolatedKernelDecodeTokensPerSecond": null,
+        "events": [
+          {
+            "elapsedNanoseconds": 35589356600,
+            "event": {
+              "choices": [
+                {
+                  "delta": {
+                    "role": "assistant"
+                  },
+                  "finish_reason": null,
+                  "index": 0
+                }
+              ],
+              "id": "chatcmpl-swift",
+              "model": "Swift-Bonsai-2-PQ2_0",
+              "object": "chat.completion.chunk"
+            }
+          },
+          {
+            "elapsedNanoseconds": 35589396800,
+            "event": {
+              "choices": [
+                {
+                  "delta": {
+                    "content": "1"
+                  },
+                  "finish_reason": null,
+                  "index": 0
+                }
+              ],
+              "id": "chatcmpl-swift",
+              "model": "Swift-Bonsai-2-PQ2_0",
+              "object": "chat.completion.chunk"
+            }
+          },
+          {
+            "elapsedNanoseconds": 37383205300,
+            "event": {
+              "choices": [
+                {
+                  "delta": {
+                    "content": ","
+                  },
+                  "finish_reason": null,
+                  "index": 0
+                }
+              ],
+              "id": "chatcmpl-swift",
+              "model": "Swift-Bonsai-2-PQ2_0",
+              "object": "chat.completion.chunk"
+            }
+          },
+          {
+            "elapsedNanoseconds": 39037439800,
+            "event": {
+              "choices": [
+                {
+                  "delta": {
+                    "content": " "
+                  },
+                  "finish_reason": null,
+                  "index": 0
+                }
+              ],
+              "id": "chatcmpl-swift",
+              "model": "Swift-Bonsai-2-PQ2_0",
+              "object": "chat.completion.chunk"
+            }
+          },
+          {
+            "elapsedNanoseconds": 40749744700,
+            "event": {
+              "choices": [
+                {
+                  "delta": {
+                    "content": "2"
+                  },
+                  "finish_reason": null,
+                  "index": 0
+                }
+              ],
+              "id": "chatcmpl-swift",
+              "model": "Swift-Bonsai-2-PQ2_0",
+              "object": "chat.completion.chunk"
+            }
+          },
+          {
+            "elapsedNanoseconds": 42162611300,
+            "event": {
+              "choices": [
+                {
+                  "delta": {
+                    "content": ","
+                  },
+                  "finish_reason": null,
+                  "index": 0
+                }
+              ],
+              "id": "chatcmpl-swift",
+              "model": "Swift-Bonsai-2-PQ2_0",
+              "object": "chat.completion.chunk"
+            }
+          },
+          {
+            "elapsedNanoseconds": 43659619800,
+            "event": {
+              "choices": [
+                {
+                  "delta": {
+                    "content": " "
+                  },
+                  "finish_reason": null,
+                  "index": 0
+                }
+              ],
+              "id": "chatcmpl-swift",
+              "model": "Swift-Bonsai-2-PQ2_0",
+              "object": "chat.completion.chunk"
+            }
+          },
+          {
+            "elapsedNanoseconds": 45078905600,
+            "event": {
+              "choices": [
+                {
+                  "delta": {
+                    "content": "3"
+                  },
+                  "finish_reason": null,
+                  "index": 0
+                }
+              ],
+              "id": "chatcmpl-swift",
+              "model": "Swift-Bonsai-2-PQ2_0",
+              "object": "chat.completion.chunk"
+            }
+          },
+          {
+            "elapsedNanoseconds": 46525151700,
+            "event": {
+              "choices": [
+                {
+                  "delta": {
+                    "content": ","
+                  },
+                  "finish_reason": null,
+                  "index": 0
+                }
+              ],
+              "id": "chatcmpl-swift",
+              "model": "Swift-Bonsai-2-PQ2_0",
+              "object": "chat.completion.chunk"
+            }
+          },
+          {
+            "elapsedNanoseconds": 46525778700,
+            "event": {
+              "choices": [
+                {
+                  "delta": {},
+                  "finish_reason": "length",
+                  "index": 0
+                }
+              ],
+              "id": "chatcmpl-swift",
+              "model": "Swift-Bonsai-2-PQ2_0",
+              "object": "chat.completion.chunk",
+              "usage": {
+                "completion_tokens": 8,
+                "prompt_tokens": 22,
+                "total_tokens": 30
+              }
+            }
+          }
+        ],
+        "receivedBodyChunks": [
+          {
+            "elapsedNanoseconds": 35589356600,
+            "base64": "ZGF0YTogeyJjaG9pY2VzIjpbeyJkZWx0YSI6eyJyb2xlIjoiYXNzaXN0YW50In0sImZpbmlzaF9yZWFzb24iOm51bGwsImluZGV4IjowfV0sImlkIjoiY2hhdGNtcGwtc3dpZnQiLCJtb2RlbCI6IlN3aWZ0LUJvbnNhaS0yLVBRMl8wIiwib2JqZWN0IjoiY2hhdC5jb21wbGV0aW9uLmNodW5rIn0KCg=="
+          },
+          {
+            "elapsedNanoseconds": 35589396800,
+            "base64": "ZGF0YTogeyJjaG9pY2VzIjpbeyJkZWx0YSI6eyJjb250ZW50IjoiMSJ9LCJmaW5pc2hfcmVhc29uIjpudWxsLCJpbmRleCI6MH1dLCJpZCI6ImNoYXRjbXBsLXN3aWZ0IiwibW9kZWwiOiJTd2lmdC1Cb25zYWktMi1QUTJfMCIsIm9iamVjdCI6ImNoYXQuY29tcGxldGlvbi5jaHVuayJ9Cgo="
+          },
+          {
+            "elapsedNanoseconds": 37383205300,
+            "base64": "ZGF0YTogeyJjaG9pY2VzIjpbeyJkZWx0YSI6eyJjb250ZW50IjoiLCJ9LCJmaW5pc2hfcmVhc29uIjpudWxsLCJpbmRleCI6MH1dLCJpZCI6ImNoYXRjbXBsLXN3aWZ0IiwibW9kZWwiOiJTd2lmdC1Cb25zYWktMi1QUTJfMCIsIm9iamVjdCI6ImNoYXQuY29tcGxldGlvbi5jaHVuayJ9Cgo="
+          },
+          {
+            "elapsedNanoseconds": 39037439800,
+            "base64": "ZGF0YTogeyJjaG9pY2VzIjpbeyJkZWx0YSI6eyJjb250ZW50IjoiICJ9LCJmaW5pc2hfcmVhc29uIjpudWxsLCJpbmRleCI6MH1dLCJpZCI6ImNoYXRjbXBsLXN3aWZ0IiwibW9kZWwiOiJTd2lmdC1Cb25zYWktMi1QUTJfMCIsIm9iamVjdCI6ImNoYXQuY29tcGxldGlvbi5jaHVuayJ9Cgo="
+          },
+          {
+            "elapsedNanoseconds": 40749744700,
+            "base64": "ZGF0YTogeyJjaG9pY2VzIjpbeyJkZWx0YSI6eyJjb250ZW50IjoiMiJ9LCJmaW5pc2hfcmVhc29uIjpudWxsLCJpbmRleCI6MH1dLCJpZCI6ImNoYXRjbXBsLXN3aWZ0IiwibW9kZWwiOiJTd2lmdC1Cb25zYWktMi1QUTJfMCIsIm9iamVjdCI6ImNoYXQuY29tcGxldGlvbi5jaHVuayJ9Cgo="
+          },
+          {
+            "elapsedNanoseconds": 42162611300,
+            "base64": "ZGF0YTogeyJjaG9pY2VzIjpbeyJkZWx0YSI6eyJjb250ZW50IjoiLCJ9LCJmaW5pc2hfcmVhc29uIjpudWxsLCJpbmRleCI6MH1dLCJpZCI6ImNoYXRjbXBsLXN3aWZ0IiwibW9kZWwiOiJTd2lmdC1Cb25zYWktMi1QUTJfMCIsIm9iamVjdCI6ImNoYXQuY29tcGxldGlvbi5jaHVuayJ9Cgo="
+          },
+          {
+            "elapsedNanoseconds": 43659619800,
+            "base64": "ZGF0YTogeyJjaG9pY2VzIjpbeyJkZWx0YSI6eyJjb250ZW50IjoiICJ9LCJmaW5pc2hfcmVhc29uIjpudWxsLCJpbmRleCI6MH1dLCJpZCI6ImNoYXRjbXBsLXN3aWZ0IiwibW9kZWwiOiJTd2lmdC1Cb25zYWktMi1QUTJfMCIsIm9iamVjdCI6ImNoYXQuY29tcGxldGlvbi5jaHVuayJ9Cgo="
+          },
+          {
+            "elapsedNanoseconds": 45078905600,
+            "base64": "ZGF0YTogeyJjaG9pY2VzIjpbeyJkZWx0YSI6eyJjb250ZW50IjoiMyJ9LCJmaW5pc2hfcmVhc29uIjpudWxsLCJpbmRleCI6MH1dLCJpZCI6ImNoYXRjbXBsLXN3aWZ0IiwibW9kZWwiOiJTd2lmdC1Cb25zYWktMi1QUTJfMCIsIm9iamVjdCI6ImNoYXQuY29tcGxldGlvbi5jaHVuayJ9Cgo="
+          },
+          {
+            "elapsedNanoseconds": 46525151700,
+            "base64": "ZGF0YTogeyJjaG9pY2VzIjpbeyJkZWx0YSI6eyJjb250ZW50IjoiLCJ9LCJmaW5pc2hfcmVhc29uIjpudWxsLCJpbmRleCI6MH1dLCJpZCI6ImNoYXRjbXBsLXN3aWZ0IiwibW9kZWwiOiJTd2lmdC1Cb25zYWktMi1QUTJfMCIsIm9iamVjdCI6ImNoYXQuY29tcGxldGlvbi5jaHVuayJ9Cgo="
+          },
+          {
+            "elapsedNanoseconds": 46525778700,
+            "base64": "ZGF0YTogeyJjaG9pY2VzIjpbeyJkZWx0YSI6e30sImZpbmlzaF9yZWFzb24iOiJsZW5ndGgiLCJpbmRleCI6MH1dLCJpZCI6ImNoYXRjbXBsLXN3aWZ0IiwibW9kZWwiOiJTd2lmdC1Cb25zYWktMi1QUTJfMCIsIm9iamVjdCI6ImNoYXQuY29tcGxldGlvbi5jaHVuayIsInVzYWdlIjp7ImNvbXBsZXRpb25fdG9rZW5zIjo4LCJwcm9tcHRfdG9rZW5zIjoyMiwidG90YWxfdG9rZW5zIjozMH19Cgo="
+          },
+          {
+            "elapsedNanoseconds": 46525803800,
+            "base64": "ZGF0YTogW0RPTkVdCgo="
+          }
+        ],
+        "requestBody": {
+          "messages": [
+            {
+              "role": "user",
+              "content": "Count from 1 to 100."
+            }
+          ],
+          "stream": true,
+          "max_completion_tokens": 8,
+          "n": 1,
+          "cache_prompt": false,
+          "n_cache_reuse": 0,
+          "ignore_eos": false,
+          "temperature": 1.0,
+          "top_p": 0.95,
+          "top_k": 20,
+          "min_p": 0.0,
+          "presence_penalty": 0.0,
+          "frequency_penalty": 0.0,
+          "repeat_penalty": 1.0,
+          "chat_template_kwargs": {
+            "enable_thinking": false,
+            "reasoning_effort": "xhigh",
+            "preserve_thinking": true
+          },
+          "lora": [
+            {
+              "id": 0,
+              "scale": 1.3
+            }
+          ]
+        },
+        "countReceipt": {
+          "input_tokens": 22,
+          "object": "response.input_tokens"
+        },
+        "countAdmissionSeconds": 0.000842,
+        "timeToFirstTokenScope": "Client request start before required exact count/admission through receipt of first token; includes count, template, prefill and HTTP delivery, excludes model startup."
+      },
+      "ownerExitCode": 0,
+      "powerAfter": {
+        "utc": "2026-11-03T10:28:56.648416+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 45
+      },
+      "powerSamples": [
+        {
+          "utc": "2026-11-03T10:27:58.061372+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:27:59.257607+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:28:00.257275+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:28:01.257444+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:28:02.264091+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:28:03.264102+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:28:04.272569+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:28:05.272908+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:28:06.280771+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:28:07.280767+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:28:08.296795+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:28:09.298646+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:28:10.313600+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:28:11.315489+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:28:12.322748+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:28:13.329693+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:28:14.330902+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:28:15.349584+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:28:16.350567+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:28:17.355910+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:28:18.355972+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:28:19.357009+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:28:20.364075+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:28:21.374387+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:28:22.396766+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:28:23.403633+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:28:24.428300+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:28:25.430837+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:28:26.430878+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:28:27.431326+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:28:28.439218+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:28:29.439173+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:28:30.439128+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:28:31.447866+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:28:32.469248+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:28:33.472543+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:28:34.491809+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:28:35.506399+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:28:36.514201+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:28:37.523465+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:28:38.523895+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:28:39.546727+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:28:40.547391+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:28:41.547494+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:28:42.548354+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:28:43.556567+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:28:44.571941+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:28:45.595637+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:28:46.597486+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:28:47.626005+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:28:48.630911+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:28:49.646117+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:28:50.647442+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:28:51.655668+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:28:52.655841+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:28:53.658296+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:28:54.664178+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:28:55.672539+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:28:56.648416+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        }
+      ],
+      "cleanup": {
+        "activeProcesses": 0,
+        "elapsedSeconds": 58.2897046,
+        "ownedJobStopped": true,
+        "peakJobMemoryBytes": 7726923776,
+        "reason": "cancelled-parent-or-deadline"
+      },
+      "activeModelProcessesAfter": [],
+      "listenerReleased": true,
+      "elapsedSeconds": 60.600073799985694,
+      "remainingCredentialFiles": 0
+    },
+    {
+      "id": "rust-010-pq2-row4",
+      "status": "measured",
+      "powerBefore": {
+        "utc": "2026-11-03T10:28:58.858848+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 45
+      },
+      "activeModelProcessesBefore": [],
+      "ownerRequest": {
+        "dataDirectory": "C:\\Users\\symbi\\AppData\\Local\\SwiftBonsai2",
+        "evidenceDirectory": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-Token-Timing-20261103-he2yvx48\\rust-010-pq2-row4",
+        "shutdownDirectory": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-Token-Timing-20261103-he2yvx48\\rust-010-pq2-row4-control",
+        "mode": "native",
+        "nativeVersion": "0.1.10",
+        "rowWorkers": 4,
+        "useRepackedPtq1": false,
+        "port": 58546,
+        "maximumSeconds": 100,
+        "deadlineTicks": 1341595597303,
+        "parentProcessId": 30936,
+        "parentCreationTimeFileTime": 134381750285842927,
+        "runtime": {
+          "archivePath": "C:\\Users\\symbi\\AppData\\Local\\SwiftBonsai2\\downloads\\prism-inference-0.1.10-aarch64-pc-windows-msvc.zip",
+          "runtimeDirectory": "C:\\Users\\symbi\\AppData\\Local\\SwiftBonsai2\\inference\\749a5f5b43bf77764a29682557ec91a8de8dcdef\\aarch64-pc-windows-msvc",
+          "archiveBytes": 3197517,
+          "archiveSha256": "72aa9856cf9ad6b37b8815cc43c0da5168a74c5b2dbdc1f0ffc828dd75a30769"
+        },
+        "nativeRuntimeFiles": [
+          {
+            "bytes": 441856,
+            "name": "bonsai-gguf.exe",
+            "sha256": "d0d7ecae014c2db6f7b1d83059d355c47c66444786baef43e81bb99dc2e1fb0f"
+          },
+          {
+            "bytes": 1528832,
+            "name": "bonsai-swift-worker.exe",
+            "sha256": "6854196e29fed34c6989667d85e84448d96f95ad36dec1b18209095db69e0ec4"
+          },
+          {
+            "bytes": 506880,
+            "name": "bonsai-token-worker.exe",
+            "sha256": "2ab7a7e0bb6178f29bf6efb00d7d388bf57ffb0fb22183d659506f88741eee91"
+          },
+          {
+            "bytes": 1087,
+            "name": "CAMELID-LICENSE.txt",
+            "sha256": "cfd0bfa3c3f54585039a58a2dd86a0541b15c29e9f825d244c6f3f0d7c771015"
+          },
+          {
+            "bytes": 11560,
+            "name": "LICENSE",
+            "sha256": "3ddf9be5c28fe27dad143a5dc76eea25222ad1dd68934a047064e56ed2fa40c5"
+          },
+          {
+            "bytes": 2369,
+            "name": "NOTICE",
+            "sha256": "e3b6278bbba57b0bb62cb830facd20c2ca347fdbd655be87b83a78b2a4d42a6b"
+          },
+          {
+            "bytes": 2056192,
+            "name": "prism-inference-server.exe",
+            "sha256": "58e61f153853a04f811ea26656fad9d76fb4655fb69197854fd556e901d863a7"
+          },
+          {
+            "bytes": 981504,
+            "name": "prism-inference.exe",
+            "sha256": "e890f53c280b986b82c7cad7d97f1fc2c80390fa100bded8845641f740a35ee2"
+          },
+          {
+            "bytes": 1099,
+            "name": "PRISM-LICENSE.txt",
+            "sha256": "bcd8ec749126d45cb06737d0690295d73df4b6e7e194205bcf91190368f27285"
+          }
+        ]
+      },
+      "ownerPid": 12496,
+      "owner": {
+        "credentialDirectory": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-Token-Timing-20261103-he2yvx48\\rust-010-pq2-row4\\SwiftBonsai-Keys-bd22f28e7fb7f08f453af24dddc5345a",
+        "modelPath": "C:\\Users\\symbi\\AppData\\Local\\SwiftBonsai2\\models\\a3bdac086bbb6b04d87d0108d18943b5f63868f7\\Swift-Bonsai-2-PQ2_0.gguf",
+        "nativeSandbox": true,
+        "port": 58546,
+        "processId": 28212,
+        "rowWorkersConfigured": 4,
+        "runtimeVersion": "0.1.10",
+        "status": "started"
+      },
+      "startupSeconds": 14.424459400004707,
+      "measurement": {
+        "timeToFirstTokenSeconds": 16.975274,
+        "generationTokensPerSecond": 1.3370625919111152,
+        "generationIntervalSeconds": 5.235357,
+        "generationIntervalTokens": 7,
+        "firstContentNanoseconds": 16975274000,
+        "lastContentNanoseconds": 22210631000,
+        "completionUsage": 8,
+        "usage": {
+          "completion_tokens": 8,
+          "prompt_tokens": 22,
+          "total_tokens": 30
+        },
+        "visibleContent": "1, 2, 3,",
+        "finishReason": "length",
+        "contentDeltaCount": 8,
+        "generationBoundaryEligible": true,
+        "generationMetric": "client-observed subsequent tokens / first-to-last token delivery interval",
+        "generationEligibility": "Reported cap8 and8nonemptyASCII token deltas, output<1024bytes, thinking off, length termination, positive interval; fixed-runtime source establishes one delta per displayed token.",
+        "requestSeconds": 22.2112806,
+        "isolatedKernelDecodeTokensPerSecond": null,
+        "events": [
+          {
+            "elapsedNanoseconds": 16975236700,
+            "event": {
+              "choices": [
+                {
+                  "delta": {
+                    "role": "assistant"
+                  },
+                  "finish_reason": null,
+                  "index": 0
+                }
+              ],
+              "id": "chatcmpl-swift",
+              "model": "Swift-Bonsai-2-PQ2_0",
+              "object": "chat.completion.chunk"
+            }
+          },
+          {
+            "elapsedNanoseconds": 16975274000,
+            "event": {
+              "choices": [
+                {
+                  "delta": {
+                    "content": "1"
+                  },
+                  "finish_reason": null,
+                  "index": 0
+                }
+              ],
+              "id": "chatcmpl-swift",
+              "model": "Swift-Bonsai-2-PQ2_0",
+              "object": "chat.completion.chunk"
+            }
+          },
+          {
+            "elapsedNanoseconds": 17737170200,
+            "event": {
+              "choices": [
+                {
+                  "delta": {
+                    "content": ","
+                  },
+                  "finish_reason": null,
+                  "index": 0
+                }
+              ],
+              "id": "chatcmpl-swift",
+              "model": "Swift-Bonsai-2-PQ2_0",
+              "object": "chat.completion.chunk"
+            }
+          },
+          {
+            "elapsedNanoseconds": 18502699400,
+            "event": {
+              "choices": [
+                {
+                  "delta": {
+                    "content": " "
+                  },
+                  "finish_reason": null,
+                  "index": 0
+                }
+              ],
+              "id": "chatcmpl-swift",
+              "model": "Swift-Bonsai-2-PQ2_0",
+              "object": "chat.completion.chunk"
+            }
+          },
+          {
+            "elapsedNanoseconds": 19250665900,
+            "event": {
+              "choices": [
+                {
+                  "delta": {
+                    "content": "2"
+                  },
+                  "finish_reason": null,
+                  "index": 0
+                }
+              ],
+              "id": "chatcmpl-swift",
+              "model": "Swift-Bonsai-2-PQ2_0",
+              "object": "chat.completion.chunk"
+            }
+          },
+          {
+            "elapsedNanoseconds": 20008933400,
+            "event": {
+              "choices": [
+                {
+                  "delta": {
+                    "content": ","
+                  },
+                  "finish_reason": null,
+                  "index": 0
+                }
+              ],
+              "id": "chatcmpl-swift",
+              "model": "Swift-Bonsai-2-PQ2_0",
+              "object": "chat.completion.chunk"
+            }
+          },
+          {
+            "elapsedNanoseconds": 20768725900,
+            "event": {
+              "choices": [
+                {
+                  "delta": {
+                    "content": " "
+                  },
+                  "finish_reason": null,
+                  "index": 0
+                }
+              ],
+              "id": "chatcmpl-swift",
+              "model": "Swift-Bonsai-2-PQ2_0",
+              "object": "chat.completion.chunk"
+            }
+          },
+          {
+            "elapsedNanoseconds": 21486552300,
+            "event": {
+              "choices": [
+                {
+                  "delta": {
+                    "content": "3"
+                  },
+                  "finish_reason": null,
+                  "index": 0
+                }
+              ],
+              "id": "chatcmpl-swift",
+              "model": "Swift-Bonsai-2-PQ2_0",
+              "object": "chat.completion.chunk"
+            }
+          },
+          {
+            "elapsedNanoseconds": 22210631000,
+            "event": {
+              "choices": [
+                {
+                  "delta": {
+                    "content": ","
+                  },
+                  "finish_reason": null,
+                  "index": 0
+                }
+              ],
+              "id": "chatcmpl-swift",
+              "model": "Swift-Bonsai-2-PQ2_0",
+              "object": "chat.completion.chunk"
+            }
+          },
+          {
+            "elapsedNanoseconds": 22211028100,
+            "event": {
+              "choices": [
+                {
+                  "delta": {},
+                  "finish_reason": "length",
+                  "index": 0
+                }
+              ],
+              "id": "chatcmpl-swift",
+              "model": "Swift-Bonsai-2-PQ2_0",
+              "object": "chat.completion.chunk",
+              "usage": {
+                "completion_tokens": 8,
+                "prompt_tokens": 22,
+                "total_tokens": 30
+              }
+            }
+          }
+        ],
+        "receivedBodyChunks": [
+          {
+            "elapsedNanoseconds": 16975236700,
+            "base64": "ZGF0YTogeyJjaG9pY2VzIjpbeyJkZWx0YSI6eyJyb2xlIjoiYXNzaXN0YW50In0sImZpbmlzaF9yZWFzb24iOm51bGwsImluZGV4IjowfV0sImlkIjoiY2hhdGNtcGwtc3dpZnQiLCJtb2RlbCI6IlN3aWZ0LUJvbnNhaS0yLVBRMl8wIiwib2JqZWN0IjoiY2hhdC5jb21wbGV0aW9uLmNodW5rIn0KCg=="
+          },
+          {
+            "elapsedNanoseconds": 16975274000,
+            "base64": "ZGF0YTogeyJjaG9pY2VzIjpbeyJkZWx0YSI6eyJjb250ZW50IjoiMSJ9LCJmaW5pc2hfcmVhc29uIjpudWxsLCJpbmRleCI6MH1dLCJpZCI6ImNoYXRjbXBsLXN3aWZ0IiwibW9kZWwiOiJTd2lmdC1Cb25zYWktMi1QUTJfMCIsIm9iamVjdCI6ImNoYXQuY29tcGxldGlvbi5jaHVuayJ9Cgo="
+          },
+          {
+            "elapsedNanoseconds": 17737170200,
+            "base64": "ZGF0YTogeyJjaG9pY2VzIjpbeyJkZWx0YSI6eyJjb250ZW50IjoiLCJ9LCJmaW5pc2hfcmVhc29uIjpudWxsLCJpbmRleCI6MH1dLCJpZCI6ImNoYXRjbXBsLXN3aWZ0IiwibW9kZWwiOiJTd2lmdC1Cb25zYWktMi1QUTJfMCIsIm9iamVjdCI6ImNoYXQuY29tcGxldGlvbi5jaHVuayJ9Cgo="
+          },
+          {
+            "elapsedNanoseconds": 18502699400,
+            "base64": "ZGF0YTogeyJjaG9pY2VzIjpbeyJkZWx0YSI6eyJjb250ZW50IjoiICJ9LCJmaW5pc2hfcmVhc29uIjpudWxsLCJpbmRleCI6MH1dLCJpZCI6ImNoYXRjbXBsLXN3aWZ0IiwibW9kZWwiOiJTd2lmdC1Cb25zYWktMi1QUTJfMCIsIm9iamVjdCI6ImNoYXQuY29tcGxldGlvbi5jaHVuayJ9Cgo="
+          },
+          {
+            "elapsedNanoseconds": 19250665900,
+            "base64": "ZGF0YTogeyJjaG9pY2VzIjpbeyJkZWx0YSI6eyJjb250ZW50IjoiMiJ9LCJmaW5pc2hfcmVhc29uIjpudWxsLCJpbmRleCI6MH1dLCJpZCI6ImNoYXRjbXBsLXN3aWZ0IiwibW9kZWwiOiJTd2lmdC1Cb25zYWktMi1QUTJfMCIsIm9iamVjdCI6ImNoYXQuY29tcGxldGlvbi5jaHVuayJ9Cgo="
+          },
+          {
+            "elapsedNanoseconds": 20008933400,
+            "base64": "ZGF0YTogeyJjaG9pY2VzIjpbeyJkZWx0YSI6eyJjb250ZW50IjoiLCJ9LCJmaW5pc2hfcmVhc29uIjpudWxsLCJpbmRleCI6MH1dLCJpZCI6ImNoYXRjbXBsLXN3aWZ0IiwibW9kZWwiOiJTd2lmdC1Cb25zYWktMi1QUTJfMCIsIm9iamVjdCI6ImNoYXQuY29tcGxldGlvbi5jaHVuayJ9Cgo="
+          },
+          {
+            "elapsedNanoseconds": 20768725900,
+            "base64": "ZGF0YTogeyJjaG9pY2VzIjpbeyJkZWx0YSI6eyJjb250ZW50IjoiICJ9LCJmaW5pc2hfcmVhc29uIjpudWxsLCJpbmRleCI6MH1dLCJpZCI6ImNoYXRjbXBsLXN3aWZ0IiwibW9kZWwiOiJTd2lmdC1Cb25zYWktMi1QUTJfMCIsIm9iamVjdCI6ImNoYXQuY29tcGxldGlvbi5jaHVuayJ9Cgo="
+          },
+          {
+            "elapsedNanoseconds": 21486552300,
+            "base64": "ZGF0YTogeyJjaG9pY2VzIjpbeyJkZWx0YSI6eyJjb250ZW50IjoiMyJ9LCJmaW5pc2hfcmVhc29uIjpudWxsLCJpbmRleCI6MH1dLCJpZCI6ImNoYXRjbXBsLXN3aWZ0IiwibW9kZWwiOiJTd2lmdC1Cb25zYWktMi1QUTJfMCIsIm9iamVjdCI6ImNoYXQuY29tcGxldGlvbi5jaHVuayJ9Cgo="
+          },
+          {
+            "elapsedNanoseconds": 22210631000,
+            "base64": "ZGF0YTogeyJjaG9pY2VzIjpbeyJkZWx0YSI6eyJjb250ZW50IjoiLCJ9LCJmaW5pc2hfcmVhc29uIjpudWxsLCJpbmRleCI6MH1dLCJpZCI6ImNoYXRjbXBsLXN3aWZ0IiwibW9kZWwiOiJTd2lmdC1Cb25zYWktMi1QUTJfMCIsIm9iamVjdCI6ImNoYXQuY29tcGxldGlvbi5jaHVuayJ9Cgo="
+          },
+          {
+            "elapsedNanoseconds": 22211028100,
+            "base64": "ZGF0YTogeyJjaG9pY2VzIjpbeyJkZWx0YSI6e30sImZpbmlzaF9yZWFzb24iOiJsZW5ndGgiLCJpbmRleCI6MH1dLCJpZCI6ImNoYXRjbXBsLXN3aWZ0IiwibW9kZWwiOiJTd2lmdC1Cb25zYWktMi1QUTJfMCIsIm9iamVjdCI6ImNoYXQuY29tcGxldGlvbi5jaHVuayIsInVzYWdlIjp7ImNvbXBsZXRpb25fdG9rZW5zIjo4LCJwcm9tcHRfdG9rZW5zIjoyMiwidG90YWxfdG9rZW5zIjozMH19Cgo="
+          },
+          {
+            "elapsedNanoseconds": 22211049700,
+            "base64": "ZGF0YTogW0RPTkVdCgo="
+          }
+        ],
+        "requestBody": {
+          "messages": [
+            {
+              "role": "user",
+              "content": "Count from 1 to 100."
+            }
+          ],
+          "stream": true,
+          "max_completion_tokens": 8,
+          "n": 1,
+          "cache_prompt": false,
+          "n_cache_reuse": 0,
+          "ignore_eos": false,
+          "temperature": 1.0,
+          "top_p": 0.95,
+          "top_k": 20,
+          "min_p": 0.0,
+          "presence_penalty": 0.0,
+          "frequency_penalty": 0.0,
+          "repeat_penalty": 1.0,
+          "chat_template_kwargs": {
+            "enable_thinking": false,
+            "reasoning_effort": "xhigh",
+            "preserve_thinking": true
+          },
+          "lora": [
+            {
+              "id": 0,
+              "scale": 1.3
+            }
+          ]
+        },
+        "countReceipt": {
+          "input_tokens": 22,
+          "object": "response.input_tokens"
+        },
+        "countAdmissionSeconds": 0.0150373,
+        "timeToFirstTokenScope": "Client request start before required exact count/admission through receipt of first token; includes count, template, prefill and HTTP delivery, excludes model startup."
+      },
+      "ownerExitCode": 0,
+      "powerAfter": {
+        "utc": "2026-11-03T10:29:36.267223+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 45
+      },
+      "powerSamples": [
+        {
+          "utc": "2026-11-03T10:28:58.858848+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:29:00.337058+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:29:01.339280+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:29:02.355804+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:29:03.355804+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:29:04.356584+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:29:05.361017+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:29:06.371562+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:29:07.382453+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:29:08.393496+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:29:09.397427+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:29:10.398836+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:29:11.405769+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:29:12.405880+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:29:13.406089+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:29:14.414099+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:29:15.414275+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:29:16.414401+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:29:17.415311+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:29:18.416097+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:29:19.416313+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:29:20.423086+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:29:21.423312+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:29:22.423678+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:29:23.423914+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:29:24.423936+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:29:25.430753+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:29:26.439322+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:29:27.439447+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:29:28.439758+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:29:29.447705+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:29:30.447893+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:29:31.455999+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:29:32.463800+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:29:33.464079+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:29:34.464422+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:29:35.472319+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:29:36.267223+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        }
+      ],
+      "cleanup": {
+        "activeProcesses": 0,
+        "elapsedSeconds": 36.6893499,
+        "ownedJobStopped": true,
+        "peakJobMemoryBytes": 7727230976,
+        "reason": "cancelled-parent-or-deadline"
+      },
+      "activeModelProcessesAfter": [],
+      "listenerReleased": true,
+      "elapsedSeconds": 39.16565939999418,
+      "remainingCredentialFiles": 0
+    },
+    {
+      "id": "rust-009-pq2-row4",
+      "status": "measured",
+      "powerBefore": {
+        "utc": "2026-11-03T10:29:38.477789+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 45
+      },
+      "activeModelProcessesBefore": [],
+      "ownerRequest": {
+        "dataDirectory": "C:\\Users\\symbi\\AppData\\Local\\SwiftBonsai2",
+        "evidenceDirectory": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-Token-Timing-20261103-he2yvx48\\rust-009-pq2-row4",
+        "shutdownDirectory": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-Token-Timing-20261103-he2yvx48\\rust-009-pq2-row4-control",
+        "mode": "native",
+        "nativeVersion": "0.1.9",
+        "rowWorkers": 4,
+        "useRepackedPtq1": false,
+        "port": 63338,
+        "maximumSeconds": 100,
+        "deadlineTicks": 1341595597303,
+        "parentProcessId": 30936,
+        "parentCreationTimeFileTime": 134381750285842927,
+        "runtime": {
+          "archivePath": "C:\\Users\\symbi\\AppData\\Local\\SwiftBonsai2\\downloads\\prism-inference-0.1.9-aarch64-pc-windows-msvc.zip",
+          "runtimeDirectory": "C:\\Users\\symbi\\AppData\\Local\\SwiftBonsai2\\inference\\7aca2251f09acb345d4afb53d5ce411f81017745\\aarch64-pc-windows-msvc",
+          "archiveBytes": 3190688,
+          "archiveSha256": "a776891d7a07ffa76bf6a733e57dd8c659249572026c7429ff1980af8cc2d56f"
+        },
+        "nativeRuntimeFiles": [
+          {
+            "bytes": 439808,
+            "name": "bonsai-gguf.exe",
+            "sha256": "d98d19fa6d2381912f04656a96b0c95153d2c8e5132d437a16706ff36992fc1c"
+          },
+          {
+            "bytes": 1526784,
+            "name": "bonsai-swift-worker.exe",
+            "sha256": "cd593d34cdeafd4177b139ab3fed915d6afe894bc2d6476ccc35e1cc39787cab"
+          },
+          {
+            "bytes": 506368,
+            "name": "bonsai-token-worker.exe",
+            "sha256": "9a735c3504702cb1ee8dfe22e59dddb2dcae8fa8e853987830f050b7460c3695"
+          },
+          {
+            "bytes": 1087,
+            "name": "CAMELID-LICENSE.txt",
+            "sha256": "cfd0bfa3c3f54585039a58a2dd86a0541b15c29e9f825d244c6f3f0d7c771015"
+          },
+          {
+            "bytes": 11560,
+            "name": "LICENSE",
+            "sha256": "3ddf9be5c28fe27dad143a5dc76eea25222ad1dd68934a047064e56ed2fa40c5"
+          },
+          {
+            "bytes": 2369,
+            "name": "NOTICE",
+            "sha256": "e3b6278bbba57b0bb62cb830facd20c2ca347fdbd655be87b83a78b2a4d42a6b"
+          },
+          {
+            "bytes": 2052608,
+            "name": "prism-inference-server.exe",
+            "sha256": "b9f5e83b1ef3b57adc259b7d248cabc24c588d394190ced6261c8b34a8d35e97"
+          },
+          {
+            "bytes": 979456,
+            "name": "prism-inference.exe",
+            "sha256": "d0893cc271d9f131a114c1807b8b8faceac35aff5b56731097545e93f9b72877"
+          },
+          {
+            "bytes": 1099,
+            "name": "PRISM-LICENSE.txt",
+            "sha256": "bcd8ec749126d45cb06737d0690295d73df4b6e7e194205bcf91190368f27285"
+          }
+        ]
+      },
+      "ownerPid": 44104,
+      "owner": {
+        "credentialDirectory": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-Token-Timing-20261103-he2yvx48\\rust-009-pq2-row4\\SwiftBonsai-Keys-4765fb42ddba7b7053a39eeee7ff2484",
+        "modelPath": "C:\\Users\\symbi\\AppData\\Local\\SwiftBonsai2\\models\\a3bdac086bbb6b04d87d0108d18943b5f63868f7\\Swift-Bonsai-2-PQ2_0.gguf",
+        "nativeSandbox": true,
+        "port": 63338,
+        "processId": 33592,
+        "rowWorkersConfigured": 4,
+        "runtimeVersion": "0.1.9",
+        "status": "started"
+      },
+      "startupSeconds": 25.929725800000597,
+      "measurement": {
+        "timeToFirstTokenSeconds": 22.9955426,
+        "generationTokensPerSecond": 1.3206636659427293,
+        "generationIntervalSeconds": 5.3003654,
+        "generationIntervalTokens": 7,
+        "firstContentNanoseconds": 22995542600,
+        "lastContentNanoseconds": 28295908000,
+        "completionUsage": 8,
+        "usage": {
+          "completion_tokens": 8,
+          "prompt_tokens": 22,
+          "total_tokens": 30
+        },
+        "visibleContent": "1, 2, 3,",
+        "finishReason": "length",
+        "contentDeltaCount": 8,
+        "generationBoundaryEligible": true,
+        "generationMetric": "client-observed subsequent tokens / first-to-last token delivery interval",
+        "generationEligibility": "Reported cap8 and8nonemptyASCII token deltas, output<1024bytes, thinking off, length termination, positive interval; fixed-runtime source establishes one delta per displayed token.",
+        "requestSeconds": 28.2965664,
+        "isolatedKernelDecodeTokensPerSecond": null,
+        "events": [
+          {
+            "elapsedNanoseconds": 22995501600,
+            "event": {
+              "choices": [
+                {
+                  "delta": {
+                    "role": "assistant"
+                  },
+                  "finish_reason": null,
+                  "index": 0
+                }
+              ],
+              "id": "chatcmpl-swift",
+              "model": "Swift-Bonsai-2-PQ2_0",
+              "object": "chat.completion.chunk"
+            }
+          },
+          {
+            "elapsedNanoseconds": 22995542600,
+            "event": {
+              "choices": [
+                {
+                  "delta": {
+                    "content": "1"
+                  },
+                  "finish_reason": null,
+                  "index": 0
+                }
+              ],
+              "id": "chatcmpl-swift",
+              "model": "Swift-Bonsai-2-PQ2_0",
+              "object": "chat.completion.chunk"
+            }
+          },
+          {
+            "elapsedNanoseconds": 23788221800,
+            "event": {
+              "choices": [
+                {
+                  "delta": {
+                    "content": ","
+                  },
+                  "finish_reason": null,
+                  "index": 0
+                }
+              ],
+              "id": "chatcmpl-swift",
+              "model": "Swift-Bonsai-2-PQ2_0",
+              "object": "chat.completion.chunk"
+            }
+          },
+          {
+            "elapsedNanoseconds": 24553114100,
+            "event": {
+              "choices": [
+                {
+                  "delta": {
+                    "content": " "
+                  },
+                  "finish_reason": null,
+                  "index": 0
+                }
+              ],
+              "id": "chatcmpl-swift",
+              "model": "Swift-Bonsai-2-PQ2_0",
+              "object": "chat.completion.chunk"
+            }
+          },
+          {
+            "elapsedNanoseconds": 25305075700,
+            "event": {
+              "choices": [
+                {
+                  "delta": {
+                    "content": "2"
+                  },
+                  "finish_reason": null,
+                  "index": 0
+                }
+              ],
+              "id": "chatcmpl-swift",
+              "model": "Swift-Bonsai-2-PQ2_0",
+              "object": "chat.completion.chunk"
+            }
+          },
+          {
+            "elapsedNanoseconds": 26059790000,
+            "event": {
+              "choices": [
+                {
+                  "delta": {
+                    "content": ","
+                  },
+                  "finish_reason": null,
+                  "index": 0
+                }
+              ],
+              "id": "chatcmpl-swift",
+              "model": "Swift-Bonsai-2-PQ2_0",
+              "object": "chat.completion.chunk"
+            }
+          },
+          {
+            "elapsedNanoseconds": 26804829200,
+            "event": {
+              "choices": [
+                {
+                  "delta": {
+                    "content": " "
+                  },
+                  "finish_reason": null,
+                  "index": 0
+                }
+              ],
+              "id": "chatcmpl-swift",
+              "model": "Swift-Bonsai-2-PQ2_0",
+              "object": "chat.completion.chunk"
+            }
+          },
+          {
+            "elapsedNanoseconds": 27555910400,
+            "event": {
+              "choices": [
+                {
+                  "delta": {
+                    "content": "3"
+                  },
+                  "finish_reason": null,
+                  "index": 0
+                }
+              ],
+              "id": "chatcmpl-swift",
+              "model": "Swift-Bonsai-2-PQ2_0",
+              "object": "chat.completion.chunk"
+            }
+          },
+          {
+            "elapsedNanoseconds": 28295908000,
+            "event": {
+              "choices": [
+                {
+                  "delta": {
+                    "content": ","
+                  },
+                  "finish_reason": null,
+                  "index": 0
+                }
+              ],
+              "id": "chatcmpl-swift",
+              "model": "Swift-Bonsai-2-PQ2_0",
+              "object": "chat.completion.chunk"
+            }
+          },
+          {
+            "elapsedNanoseconds": 28296398500,
+            "event": {
+              "choices": [
+                {
+                  "delta": {},
+                  "finish_reason": "length",
+                  "index": 0
+                }
+              ],
+              "id": "chatcmpl-swift",
+              "model": "Swift-Bonsai-2-PQ2_0",
+              "object": "chat.completion.chunk",
+              "usage": {
+                "completion_tokens": 8,
+                "prompt_tokens": 22,
+                "total_tokens": 30
+              }
+            }
+          }
+        ],
+        "receivedBodyChunks": [
+          {
+            "elapsedNanoseconds": 22995501600,
+            "base64": "ZGF0YTogeyJjaG9pY2VzIjpbeyJkZWx0YSI6eyJyb2xlIjoiYXNzaXN0YW50In0sImZpbmlzaF9yZWFzb24iOm51bGwsImluZGV4IjowfV0sImlkIjoiY2hhdGNtcGwtc3dpZnQiLCJtb2RlbCI6IlN3aWZ0LUJvbnNhaS0yLVBRMl8wIiwib2JqZWN0IjoiY2hhdC5jb21wbGV0aW9uLmNodW5rIn0KCg=="
+          },
+          {
+            "elapsedNanoseconds": 22995542600,
+            "base64": "ZGF0YTogeyJjaG9pY2VzIjpbeyJkZWx0YSI6eyJjb250ZW50IjoiMSJ9LCJmaW5pc2hfcmVhc29uIjpudWxsLCJpbmRleCI6MH1dLCJpZCI6ImNoYXRjbXBsLXN3aWZ0IiwibW9kZWwiOiJTd2lmdC1Cb25zYWktMi1QUTJfMCIsIm9iamVjdCI6ImNoYXQuY29tcGxldGlvbi5jaHVuayJ9Cgo="
+          },
+          {
+            "elapsedNanoseconds": 23788221800,
+            "base64": "ZGF0YTogeyJjaG9pY2VzIjpbeyJkZWx0YSI6eyJjb250ZW50IjoiLCJ9LCJmaW5pc2hfcmVhc29uIjpudWxsLCJpbmRleCI6MH1dLCJpZCI6ImNoYXRjbXBsLXN3aWZ0IiwibW9kZWwiOiJTd2lmdC1Cb25zYWktMi1QUTJfMCIsIm9iamVjdCI6ImNoYXQuY29tcGxldGlvbi5jaHVuayJ9Cgo="
+          },
+          {
+            "elapsedNanoseconds": 24553114100,
+            "base64": "ZGF0YTogeyJjaG9pY2VzIjpbeyJkZWx0YSI6eyJjb250ZW50IjoiICJ9LCJmaW5pc2hfcmVhc29uIjpudWxsLCJpbmRleCI6MH1dLCJpZCI6ImNoYXRjbXBsLXN3aWZ0IiwibW9kZWwiOiJTd2lmdC1Cb25zYWktMi1QUTJfMCIsIm9iamVjdCI6ImNoYXQuY29tcGxldGlvbi5jaHVuayJ9Cgo="
+          },
+          {
+            "elapsedNanoseconds": 25305075700,
+            "base64": "ZGF0YTogeyJjaG9pY2VzIjpbeyJkZWx0YSI6eyJjb250ZW50IjoiMiJ9LCJmaW5pc2hfcmVhc29uIjpudWxsLCJpbmRleCI6MH1dLCJpZCI6ImNoYXRjbXBsLXN3aWZ0IiwibW9kZWwiOiJTd2lmdC1Cb25zYWktMi1QUTJfMCIsIm9iamVjdCI6ImNoYXQuY29tcGxldGlvbi5jaHVuayJ9Cgo="
+          },
+          {
+            "elapsedNanoseconds": 26059790000,
+            "base64": "ZGF0YTogeyJjaG9pY2VzIjpbeyJkZWx0YSI6eyJjb250ZW50IjoiLCJ9LCJmaW5pc2hfcmVhc29uIjpudWxsLCJpbmRleCI6MH1dLCJpZCI6ImNoYXRjbXBsLXN3aWZ0IiwibW9kZWwiOiJTd2lmdC1Cb25zYWktMi1QUTJfMCIsIm9iamVjdCI6ImNoYXQuY29tcGxldGlvbi5jaHVuayJ9Cgo="
+          },
+          {
+            "elapsedNanoseconds": 26804829200,
+            "base64": "ZGF0YTogeyJjaG9pY2VzIjpbeyJkZWx0YSI6eyJjb250ZW50IjoiICJ9LCJmaW5pc2hfcmVhc29uIjpudWxsLCJpbmRleCI6MH1dLCJpZCI6ImNoYXRjbXBsLXN3aWZ0IiwibW9kZWwiOiJTd2lmdC1Cb25zYWktMi1QUTJfMCIsIm9iamVjdCI6ImNoYXQuY29tcGxldGlvbi5jaHVuayJ9Cgo="
+          },
+          {
+            "elapsedNanoseconds": 27555910400,
+            "base64": "ZGF0YTogeyJjaG9pY2VzIjpbeyJkZWx0YSI6eyJjb250ZW50IjoiMyJ9LCJmaW5pc2hfcmVhc29uIjpudWxsLCJpbmRleCI6MH1dLCJpZCI6ImNoYXRjbXBsLXN3aWZ0IiwibW9kZWwiOiJTd2lmdC1Cb25zYWktMi1QUTJfMCIsIm9iamVjdCI6ImNoYXQuY29tcGxldGlvbi5jaHVuayJ9Cgo="
+          },
+          {
+            "elapsedNanoseconds": 28295908000,
+            "base64": "ZGF0YTogeyJjaG9pY2VzIjpbeyJkZWx0YSI6eyJjb250ZW50IjoiLCJ9LCJmaW5pc2hfcmVhc29uIjpudWxsLCJpbmRleCI6MH1dLCJpZCI6ImNoYXRjbXBsLXN3aWZ0IiwibW9kZWwiOiJTd2lmdC1Cb25zYWktMi1QUTJfMCIsIm9iamVjdCI6ImNoYXQuY29tcGxldGlvbi5jaHVuayJ9Cgo="
+          },
+          {
+            "elapsedNanoseconds": 28296398500,
+            "base64": "ZGF0YTogeyJjaG9pY2VzIjpbeyJkZWx0YSI6e30sImZpbmlzaF9yZWFzb24iOiJsZW5ndGgiLCJpbmRleCI6MH1dLCJpZCI6ImNoYXRjbXBsLXN3aWZ0IiwibW9kZWwiOiJTd2lmdC1Cb25zYWktMi1QUTJfMCIsIm9iamVjdCI6ImNoYXQuY29tcGxldGlvbi5jaHVuayIsInVzYWdlIjp7ImNvbXBsZXRpb25fdG9rZW5zIjo4LCJwcm9tcHRfdG9rZW5zIjoyMiwidG90YWxfdG9rZW5zIjozMH19Cgo="
+          },
+          {
+            "elapsedNanoseconds": 28296456900,
+            "base64": "ZGF0YTogW0RPTkVdCgo="
+          }
+        ],
+        "requestBody": {
+          "messages": [
+            {
+              "role": "user",
+              "content": "Count from 1 to 100."
+            }
+          ],
+          "stream": true,
+          "max_completion_tokens": 8,
+          "n": 1,
+          "cache_prompt": false,
+          "n_cache_reuse": 0,
+          "ignore_eos": false,
+          "temperature": 1.0,
+          "top_p": 0.95,
+          "top_k": 20,
+          "min_p": 0.0,
+          "presence_penalty": 0.0,
+          "frequency_penalty": 0.0,
+          "repeat_penalty": 1.0,
+          "chat_template_kwargs": {
+            "enable_thinking": false,
+            "reasoning_effort": "xhigh",
+            "preserve_thinking": true
+          },
+          "lora": [
+            {
+              "id": 0,
+              "scale": 1.3
+            }
+          ]
+        },
+        "countReceipt": {
+          "input_tokens": 22,
+          "object": "response.input_tokens"
+        },
+        "countAdmissionSeconds": 0.0141813,
+        "timeToFirstTokenScope": "Client request start before required exact count/admission through receipt of first token; includes count, template, prefill and HTTP delivery, excludes model startup."
+      },
+      "ownerExitCode": 0,
+      "powerAfter": {
+        "utc": "2026-11-03T10:30:33.177808+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 46
+      },
+      "powerSamples": [
+        {
+          "utc": "2026-11-03T10:29:38.477789+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:29:39.672523+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:29:40.680953+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:29:41.681255+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:29:42.688210+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:29:43.689234+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:29:44.689293+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:29:45.689842+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:29:46.697471+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:29:47.697595+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:29:48.705826+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:29:49.707161+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:29:50.708763+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:29:51.714166+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:29:52.714807+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:29:53.722465+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:29:54.722541+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:29:55.731912+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:29:56.739050+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:29:57.753028+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:29:58.755925+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:29:59.755890+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:30:00.764226+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 45
+        },
+        {
+          "utc": "2026-11-03T10:30:01.779207+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 46
+        },
+        {
+          "utc": "2026-11-03T10:30:02.780825+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 46
+        },
+        {
+          "utc": "2026-11-03T10:30:03.795850+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 46
+        },
+        {
+          "utc": "2026-11-03T10:30:04.797521+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 46
+        },
+        {
+          "utc": "2026-11-03T10:30:05.797441+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 46
+        },
+        {
+          "utc": "2026-11-03T10:30:06.805748+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 46
+        },
+        {
+          "utc": "2026-11-03T10:30:07.805861+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 46
+        },
+        {
+          "utc": "2026-11-03T10:30:08.814242+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 46
+        },
+        {
+          "utc": "2026-11-03T10:30:09.815503+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 46
+        },
+        {
+          "utc": "2026-11-03T10:30:10.816317+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 46
+        },
+        {
+          "utc": "2026-11-03T10:30:11.822620+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 46
+        },
+        {
+          "utc": "2026-11-03T10:30:12.824136+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 46
+        },
+        {
+          "utc": "2026-11-03T10:30:13.830843+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 46
+        },
+        {
+          "utc": "2026-11-03T10:30:14.830989+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 46
+        },
+        {
+          "utc": "2026-11-03T10:30:15.846414+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 46
+        },
+        {
+          "utc": "2026-11-03T10:30:16.847473+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 46
+        },
+        {
+          "utc": "2026-11-03T10:30:17.847482+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 46
+        },
+        {
+          "utc": "2026-11-03T10:30:18.849021+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 46
+        },
+        {
+          "utc": "2026-11-03T10:30:19.855796+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 46
+        },
+        {
+          "utc": "2026-11-03T10:30:20.856451+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 46
+        },
+        {
+          "utc": "2026-11-03T10:30:21.864096+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 46
+        },
+        {
+          "utc": "2026-11-03T10:30:22.872384+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 46
+        },
+        {
+          "utc": "2026-11-03T10:30:23.872444+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 46
+        },
+        {
+          "utc": "2026-11-03T10:30:24.872420+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 46
+        },
+        {
+          "utc": "2026-11-03T10:30:25.872540+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 46
+        },
+        {
+          "utc": "2026-11-03T10:30:26.880868+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 46
+        },
+        {
+          "utc": "2026-11-03T10:30:27.880931+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 46
+        },
+        {
+          "utc": "2026-11-03T10:30:28.882866+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 46
+        },
+        {
+          "utc": "2026-11-03T10:30:29.889206+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 46
+        },
+        {
+          "utc": "2026-11-03T10:30:30.889120+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 46
+        },
+        {
+          "utc": "2026-11-03T10:30:31.889996+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 46
+        },
+        {
+          "utc": "2026-11-03T10:30:32.890082+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 46
+        },
+        {
+          "utc": "2026-11-03T10:30:33.177808+00:00",
+          "acConnected": true,
+          "batterySaver": false,
+          "chargePercent": 46
+        }
+      ],
+      "cleanup": {
+        "activeProcesses": 0,
+        "elapsedSeconds": 54.4411569,
+        "ownedJobStopped": true,
+        "peakJobMemoryBytes": 7726850048,
+        "reason": "cancelled-parent-or-deadline"
+      },
+      "activeModelProcessesAfter": [],
+      "listenerReleased": true,
+      "elapsedSeconds": 56.70432649998111,
+      "remainingCredentialFiles": 0
+    },
+    {
+      "id": "qwen-reference",
+      "status": "not-installed",
+      "powerBefore": {
+        "utc": "2026-11-03T10:30:35.377196+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 46
+      },
+      "reason": "Pinned Qwen model absent; no download within this fixed workload",
+      "powerAfter": {
+        "utc": "2026-11-03T10:30:35.378484+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 46
+      }
+    }
+  ],
+  "status": "completed",
+  "newUserRequestedWorkload": true,
+  "oldTrialClockReopened": false,
+  "scratchDirectory": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-Token-Timing-20261103-he2yvx48",
+  "activeModelProcessesBeforeSetup": [],
+  "formatterExitCode": 0,
+  "helperSourceSha256": "4382fc4a425316ca0b9c195f74b20a5febcc9e99bb0bb7f16de53c3d94e1eca8",
+  "build": {
+    "arguments": [
+      "C:\\Users\\symbi\\.cargo\\bin\\cargo.exe",
+      "+nightly-2026-11-02-aarch64-pc-windows-msvc",
+      "build",
+      "--offline",
+      "--locked",
+      "--release",
+      "--manifest-path",
+      "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\token-timing-20261103\\Cargo.toml",
+      "--package",
+      "bonsai-broker",
+      "--example",
+      "token_timing_owner",
+      "--target",
+      "aarch64-pc-windows-msvc",
+      "--target-dir",
+      "C:\\Users\\symbi\\AppData\\Local\\SwiftBonsai2\\build\\chat\\cd31d71ca8da53bd5d98bc6d"
+    ],
+    "exitCode": 0
+  },
+  "helperSha256": "bc67cc7ed3cfed7969765100103dc810f788106dba2098586769a23dbd677197",
+  "powerAfterFinalRetention": {
+    "utc": "2026-11-03T10:30:35.379388+00:00",
+    "acConnected": true,
+    "batterySaver": false,
+    "chargePercent": 46
+  },
+  "elapsedSecondsThroughRetention": 406.6913146000006,
+  "withinDeclaredBudget": true,
+  "closedUtc": "2026-11-03T10:30:35.379395+00:00"
+}

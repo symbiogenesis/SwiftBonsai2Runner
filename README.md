@@ -84,55 +84,49 @@ and [local API contract](docs/broker-policy.md#public-request-contract).
 
 | Model | Runtime | Time to first token (s) | Generation tokens/second | Model file | Job commit cap / measured peak | Available RAM admission | Restore copy saved vs. Rust 0.1.4 |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| **Swift Bonsai 2 `PQ2_0` (development default)** | **Rust 0.1.14 release, four workers + LoRA 1.3** | Not measured | Not measured | **6.71 GiB** | **11.5 GiB / not measured** | **15.5 GiB** | **149.625 MiB** |
-| **Swift Bonsai 2 `PTQ1_0` (experimental opt-in)** | **Rust 0.1.14 release, four workers + LoRA 1.3** | Not measured | Not measured | **5.54 GiB** | **11.5 GiB / not measured** | **15.5 GiB** | **149.625 MiB** |
-| Swift Bonsai 2 `PTQ1_0` (historical release) | Rust 0.1.13 release, four workers + LoRA 1.3 | Not measured | Not measured | 5.54 GiB | 11.5 GiB / 6.02 GiB (short request) | 15.5 GiB | 149.625 MiB |
-| Swift Bonsai 2 `PQ2_0` (verified Rust rollback) | Rust 0.1.13 release, four workers + LoRA 1.3 | Not measured | Not measured | 6.71 GiB | 11.5 GiB / 7.20 GiB (short request) | 15.5 GiB | 149.625 MiB |
-| Swift Bonsai 2 `PQ2_0` (experimental Rust) | Rust 0.1.10 prerelease, one worker + LoRA 1.3 | Not measured | Not measured | 6.71 GiB | 11.5 GiB / not recorded | 15.5 GiB | 149.625 MiB |
-| Swift Bonsai 2 `PQ2_0` (experimental Rust) | Rust 0.1.10 prerelease, four workers + LoRA 1.3 | Not measured | Not measured | 6.71 GiB | 11.5 GiB / not recorded | 15.5 GiB | 149.625 MiB |
-| Swift Bonsai 2 `PQ2_0` (captured source diagnostic) | Rust 0.1.9, four workers + LoRA 1.3 | Not measured | Not measured | 6.71 GiB | 11.5 GiB / 7.04 GiB | 15.5 GiB | 149.625 MiB |
-| Swift Bonsai 2 `PTQ1_0` | PrismML C++ CPU | Not measured | Not measured | 5.54 GiB | 11.5 GiB / â€” | 15.5 GiB | â€” |
-| Swift Bonsai 2 `PQ2_0` (explicit publisher rollback) | PrismML C++ CPU | Not measured | Not measured | 6.71 GiB | 11.5 GiB / â€” | 15.5 GiB | â€” |
-| Qwen3.8-27B `UD-Q3_K_XL` | llama.cpp reference | Not measured | Not measured | 12.24 GiB | 18 GiB / â€” | 22 GiB | â€” |
+| **Swift Bonsai 2 `PQ2_0` (development default)** | **Rust 0.1.14 release, four workers + LoRA 1.3** | **16.64** | **1.34** | **6.71 GiB** | **11.5 GiB / not measured** | **15.5 GiB** | **149.625 MiB** |
+| **Swift Bonsai 2 `PTQ1_0` (experimental opt-in)** | **Rust 0.1.14 release, four workers + LoRA 1.3** | **29.50** | **0.75** | **5.54 GiB** | **11.5 GiB / not measured** | **15.5 GiB** | **149.625 MiB** |
+| Swift Bonsai 2 `PTQ1_0` (historical release) | Rust 0.1.13 release, four workers + LoRA 1.3 | 28.69 | 0.75 | 5.54 GiB | 11.5 GiB / 6.02 GiB (short request) | 15.5 GiB | 149.625 MiB |
+| Swift Bonsai 2 `PQ2_0` (verified Rust rollback) | Rust 0.1.13 release, four workers + LoRA 1.3 | 16.45 | 1.32 | 6.71 GiB | 11.5 GiB / 7.20 GiB (short request) | 15.5 GiB | 149.625 MiB |
+| Swift Bonsai 2 `PQ2_0` (experimental Rust) | Rust 0.1.10 prerelease, one worker + LoRA 1.3 | 35.59 | 0.64 | 6.71 GiB | 11.5 GiB / not recorded | 15.5 GiB | 149.625 MiB |
+| Swift Bonsai 2 `PQ2_0` (experimental Rust) | Rust 0.1.10 prerelease, four workers + LoRA 1.3 | 16.98 | 1.34 | 6.71 GiB | 11.5 GiB / not recorded | 15.5 GiB | 149.625 MiB |
+| Swift Bonsai 2 `PQ2_0` (historical Rust release) | Rust 0.1.9 prerelease, four workers + LoRA 1.3 | 23.00 | 1.32 | 6.71 GiB | 11.5 GiB / 7.04 GiB (older source diagnostic) | 15.5 GiB | 149.625 MiB |
+| Swift Bonsai 2 `PTQ1_0` | PrismML C++ CPU | Startup failed | Startup failed | 5.54 GiB | 11.5 GiB / â€” | 15.5 GiB | â€” |
+| Swift Bonsai 2 `PQ2_0` (explicit publisher rollback) | PrismML C++ CPU | Startup failed | Startup failed | 6.71 GiB | 11.5 GiB / â€” | 15.5 GiB | â€” |
+| Qwen3.8-27B `UD-Q3_K_XL` | llama.cpp reference | Not installed | Not installed | 12.24 GiB | 18 GiB / â€” | 22 GiB | â€” |
 
-The [2026-11-03 local capture](docs/evidence/local-throughput-20261103/summary.json)
-on **Snapdragon X2 Elite Extreme** measured eight reported completion tokens in
-**28.435 s (PQ2; 0.281 request tokens/s)** and
-**58.224 s (PTQ1; 0.137 request tokens/s)** with Rust 0.1.14, four configured
-row workers, adapter scale 1.3 and thinking off. Both returned `1, 2, 3,` and hit the
-eight-token cap. Rates include prefill, generation, transport and client framing;
-startup is excluded. **These are short-request observations, not generation speed
-or sustained decode TPS.** The capture read each response as a whole and did not
-timestamp its first and last generated tokens, so **TTFT and generation tokens/s
-remain unmeasured**. Measure TTFT from request start to the first generated token;
-measure generation speed separately over the subsequent timed tokens, excluding
-TTFT. Buffered SSE event counts alone do not establish token timing.
+The [2026-11-03 separated timing capture](docs/evidence/token-timing-20261103/summary.json)
+measured every installed Rust profile above on the Snapdragon X2 Elite Extreme.
+Each fresh owner used the fixed prompt `Count from 1 to 100.`, thinking off,
+seed 42 and the standard Swift adapter at scale 1.3. All seven measured responses
+reported eight completion tokens and returned `1, 2, 3,` before hitting the cap.
 
-AC was connected and battery saver off at all recorded power
-samples; battery charge rose from 20% before setup to 24% after retention.
-Sampled observations do not prove uninterrupted conditions.
+**TTFT** runs from client request start through the first output token, including
+required exact token-count admission, template processing, prefill and HTTP
+transport; model verification/loading/startup is excluded. **Generation tokens/s**
+is `(N - 1) / (last token time - first token time)`, using reported completion
+usage `N`, so it excludes TTFT. Incremental receive timestamps and source-verified
+ASCII token boundaries support these seven-token intervals; SSE event counts
+alone are not token counts. These are **client-observed short-window rates** over
+direct authenticated sandboxed backend HTTP, not isolated kernel decode TPS,
+sustained generation or a qualified speedup comparison.
 
-Both requests completed before shutdown, but graceful broker cleanup failed and
-required forced termination. A remaining backend was observed after PTQ1, so the
-workload stopped before either publisher option; a later final scan found no
-model processes or trial credentials. Qwen was not installed in the selected data
-directory. These raw rates do not qualify application acceptance or a performance
-comparison. The single clock, including final cleanup and retention, closed at
-**288.087 s** within its predeclared twelve-minute ceiling; no model was retried.
+Both publisher options exited before HTTP readiness, leaving their timings
+unavailable; the cause remains unknown. The pinned Qwen model was absent from
+the selected installed data, so no download or model attempt was made. Every
+started owner confirmed an empty Job, released its listener and left no model
+processes or trial credentials. This validates the measurement owner's cleanup;
+the installed application broker's earlier graceful-shutdown failure remains open.
 
-The historical Rust 0.1.13 figures divide the
-[retained one-token `Oak` responses](docs/evidence/ptq1-rollback-41573164864/independent-review.json)
-by request time: 18.380 s for PQ2 and 35.729 s for PTQ1. Power conditions were
-unknown; those observations do not establish a qualified comparison or describe
-the current runtime.
-
-The [earlier bounded X2 Elite Extreme attempt](docs/evidence/native-request-speed.json)
-measured eight reported output tokens in 76.21 s: **0.105 request tokens/second**,
-including prefill and HTTP delivery through connection closure, excluding startup.
-The eight-token cap truncated the answer (`finish_reason: length`); this measures
-a short request, not decode TPS or a complete answer. The four-worker request
-reached the shared soft deadline; its rate and the paired speedup remain pending.
-Sustained decode TPS remains unmeasured for every option.
+AC was connected and battery saver off at all **336 per-arm power samples** and
+the aggregate endpoints; charge rose from **43% to 46%**. Sampling does not prove
+uninterrupted stability. Setup, the streaming check, one offline Release build,
+all nine started arms, cleanup and final evidence retention shared one
+predeclared fourteen-minute ceiling and finished in **473.890 s**. No arm was
+retried. The [earlier whole-request capture](docs/evidence/local-throughput-20261103/summary.json)
+and [historical one-worker attempt](docs/evidence/native-request-speed.json) retain
+their original clocks and broader timing intervals; their request rates are not
+generation rates.
 
 The [verified PTQ1 export](config/swift.ptq1-export.json) saves **1,259,520,000 bytes
 (1.173 GiB)** on disk. The released service's full-context peak memory and paired benefit remain
