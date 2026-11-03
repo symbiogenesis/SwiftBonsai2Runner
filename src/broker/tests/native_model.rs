@@ -1406,6 +1406,10 @@ fn adapter_arguments(profile: &AdapterProfile, port: &str) -> Vec<OsString> {
     .collect();
     if profile.repacked {
         args.push("--use-repacked-ptq1".into());
+    } else {
+        // Rollback must keep selecting the retained original artifact even if
+        // the application's representation default changes after qualification.
+        args.push("--use-original-pq2".into());
     }
     if profile.row_workers == 4 {
         args.extend(["--native-row-workers", "4"].map(OsString::from));

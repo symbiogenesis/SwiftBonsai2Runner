@@ -117,6 +117,63 @@ async fn record_response(
     completed
 }
 
+fn sample_pending_reason(sample: &Value, repacked: bool, row_workers: u8) -> Option<&'static str> {
+    if !matches!(row_workers, 1 | 4) {
+        return Some("unsupported-worker-policy");
+    }
+    let runtime_lock: Value =
+        serde_json::from_str(include_str!("../../../../config/prism-inference.lock.json")).unwrap();
+    let worker_identity =
+        worker_readiness_receipt(runtime_lock["version"].as_str(), row_workers, true);
+    let stream = &sample["stream"];
+    let content = stream["visibleContent"].as_str().unwrap_or("");
+    if [
+        "rowWorkerReadinessVersion",
+        "rowWorkerCountIndependentlyObserved",
+        "observedNativeRowWorkers",
+    ]
+    .iter()
+    .any(|field| sample[field] != worker_identity[field])
+    {
+        return Some("missing-or-mismatched-worker-readiness-identity");
+    }
+    if sample["modelIdentity"] != model_identity(repacked)
+        || sample["configuredNativeRowWorkers"] != row_workers
+        || sample["verifiedReadinessObserved"] != true
+        || stream["finishReason"] != "stop"
+        || stream["naturallyStopped"] != true
+        || stream["reportedCompletionTokens"]
+            .as_u64()
+            .is_none_or(|n| !(1..=u64::from(CAP)).contains(&n))
+        || content.trim().is_empty()
+        || stream["visibleContentSha256"] != digest(content.as_bytes())
+        || stream["requestMilliseconds"]
+            .as_f64()
+            .is_none_or(|ms| !ms.is_finite() || ms <= 0.0)
+        || sample["cleanup"]["ownedJobEmpty"] != true
+        || sample["cleanup"]["listenerReleased"] != true
+    {
+        return Some("missing-complete-response-identity-timing-or-cleanup");
+    }
+    None
+}
+
+fn original_pq2_rollback_observation(samples: &[Value], row_workers: u8) -> Value {
+    // This observation concerns only the original-artifact arm. A later PTQ1
+    // failure cannot erase it or turn it into complete-pair/performance evidence.
+    let reason = samples
+        .first()
+        .map_or(Some("original-pq2-arm-not-started"), |sample| {
+            sample_pending_reason(sample, false, row_workers)
+        });
+    json!({"status":if reason.is_none() {"captured-original-pq2-arm"} else {"pending"},
+        "reason":reason, "sampleIndex":0, "configuredNativeRowWorkers":row_workers,
+        "explicitRepresentationArgument":"--use-original-pq2",
+        "gateId":"original-pq2-rollback", "independentGateReview":"pending",
+        "scope":"Original PQ2 readiness, complete response and owned cleanup under the compiled release/adapter/admission policy; exact artifact retention and CI identities require independent review",
+        "defaultMayChange":false})
+}
+
 fn comparison(samples: &[Value], row_workers: u8) -> Value {
     let pending = |reason| {
         json!({"status":"pending", "reason":reason,
@@ -125,41 +182,9 @@ fn comparison(samples: &[Value], row_workers: u8) -> Value {
     if !matches!(row_workers, 1 | 4) || samples.len() != 2 {
         return pending("incomplete-pair");
     }
-    let runtime_lock: Value =
-        serde_json::from_str(include_str!("../../../../config/prism-inference.lock.json")).unwrap();
-    let worker_identity =
-        worker_readiness_receipt(runtime_lock["version"].as_str(), row_workers, true);
     for (index, sample) in samples.iter().enumerate() {
-        let stream = &sample["stream"];
-        let expected = model_identity(index == 1);
-        let content = stream["visibleContent"].as_str().unwrap_or("");
-        if [
-            "rowWorkerReadinessVersion",
-            "rowWorkerCountIndependentlyObserved",
-            "observedNativeRowWorkers",
-        ]
-        .iter()
-        .any(|field| sample[field] != worker_identity[field])
-        {
-            return pending("missing-or-mismatched-worker-readiness-identity");
-        }
-        if sample["modelIdentity"] != expected
-            || sample["configuredNativeRowWorkers"] != row_workers
-            || sample["verifiedReadinessObserved"] != true
-            || stream["finishReason"] != "stop"
-            || stream["naturallyStopped"] != true
-            || stream["reportedCompletionTokens"]
-                .as_u64()
-                .is_none_or(|n| !(1..=u64::from(CAP)).contains(&n))
-            || content.trim().is_empty()
-            || stream["visibleContentSha256"] != digest(content.as_bytes())
-            || stream["requestMilliseconds"]
-                .as_f64()
-                .is_none_or(|ms| !ms.is_finite() || ms <= 0.0)
-            || sample["cleanup"]["ownedJobEmpty"] != true
-            || sample["cleanup"]["listenerReleased"] != true
-        {
-            return pending("missing-complete-response-identity-timing-or-cleanup");
+        if let Some(reason) = sample_pending_reason(sample, index == 1, row_workers) {
+            return pending(reason);
         }
     }
     // Different complete responses remain available for independent review.
@@ -297,12 +322,16 @@ async fn paired_responses(
         save_acceptance_report(evidence, report);
         report["samples"][index]["cleanup"] =
             adapter_owned_stop(stop, running, port, expired).await;
+        report["originalPq2Rollback"] =
+            original_pq2_rollback_observation(report["samples"].as_array().unwrap(), row_workers);
         save_acceptance_report(evidence, report);
         if expired {
             break;
         }
     }
     report["comparison"] = comparison(report["samples"].as_array().unwrap(), row_workers);
+    report["originalPq2Rollback"] =
+        original_pq2_rollback_observation(report["samples"].as_array().unwrap(), row_workers);
     report["passed"] = json!(report["comparison"]["status"] == "captured-complete-pair");
     report["phase"] = json!("completed");
     save_acceptance_report(evidence, report);
@@ -381,6 +410,53 @@ fn complete_sample(repacked: bool, row_workers: u8) -> Value {
     }));
     record_worker_readiness(&mut sample, row_workers, true);
     sample
+}
+
+#[test]
+fn native_representation_rollback_observation_survives_pending_ptq1_arm() {
+    for row_workers in [1, 4] {
+        assert_eq!(
+            original_pq2_rollback_observation(&[], row_workers)["reason"],
+            "original-pq2-arm-not-started"
+        );
+        let original = complete_sample(false, row_workers);
+        let observed = original_pq2_rollback_observation(std::slice::from_ref(&original), row_workers);
+        assert_eq!(observed["status"], "captured-original-pq2-arm");
+        assert_eq!(observed["independentGateReview"], "pending");
+        assert_eq!(observed["defaultMayChange"], false);
+        let pending_pair = [original.clone(), Value::Null];
+        assert_eq!(
+            original_pq2_rollback_observation(&pending_pair, row_workers),
+            observed
+        );
+        assert_eq!(comparison(&pending_pair, row_workers)["status"], "pending");
+        for (path, value) in [
+            ("/modelIdentity/sha256", json!("0".repeat(64))),
+            ("/verifiedReadinessObserved", json!(false)),
+            ("/observedNativeRowWorkers", Value::Null),
+            ("/stream/finishReason", json!("length")),
+            ("/stream/reportedCompletionTokens", json!(0)),
+            ("/stream/visibleContentSha256", json!("0".repeat(64))),
+            ("/cleanup/ownedJobEmpty", json!(false)),
+            ("/cleanup/listenerReleased", json!(false)),
+        ] {
+            let mut changed = original.clone();
+            *changed.pointer_mut(path).unwrap() = value;
+            assert_eq!(
+                original_pq2_rollback_observation(&[changed], row_workers)["status"],
+                "pending",
+                "{path}"
+            );
+        }
+        assert_eq!(
+            original_pq2_rollback_observation(&[complete_sample(true, row_workers)], row_workers)["status"],
+            "pending"
+        );
+        assert_eq!(
+            original_pq2_rollback_observation(&[original], if row_workers == 1 { 4 } else { 1 })["status"],
+            "pending"
+        );
+    }
 }
 
 #[test]
@@ -578,6 +654,14 @@ fn native_representation_row4_profile_is_explicit_and_preserves_pair() {
         expected.extend(["--native-row-workers", "4"].map(OsString::from));
         let mut actual = adapter_arguments(parallel, "8081");
         assert_eq!(actual, expected);
+        assert_eq!(
+            actual.iter().any(|arg| arg == "--use-original-pq2"),
+            !parallel.repacked
+        );
+        assert_eq!(
+            actual.iter().any(|arg| arg == "--use-repacked-ptq1"),
+            parallel.repacked
+        );
         actual.extend(
             [
                 "--data-directory",
@@ -763,6 +847,7 @@ fn capture_complete_responses(row_workers: u8) {
         "decodeTokensPerSecond":null,"performanceQualified":false,"qualityQualified":false,
         "authoringBasisQualified":false,"completeStateParityQualified":false,"defaultMayChange":false,
         "defaultRuntimeQualified":false,"matrixContinuationPermitted":false});
+    report["originalPq2Rollback"] = original_pq2_rollback_observation(&[], row_workers);
     save_acceptance_report(evidence, &report);
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()

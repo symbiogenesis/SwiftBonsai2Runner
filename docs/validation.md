@@ -216,6 +216,15 @@ or mismatched observations leave the pair pending. This does not measure executi
 threads or parallel work, and qualification does not transfer between counts.
 Neither profile admits extra history or stalled-consumer workloads.
 
+The original-PQ2 arm now selects `--use-original-pq2` explicitly, so a later
+application-default change cannot change the rollback artifact. Its
+`originalPq2Rollback` observation is saved immediately after owned cleanup and
+survives a pending PTQ1 arm. Capture requires the exact original model identity,
+matching released worker-readiness observation, a complete nonempty response and
+released Job/listener. Independent review still binds CI, runtime/adapter policy
+and preservation of the original artifact on disk before scoring the rollback
+gate; this observation cannot qualify the pair, benefit or default.
+
 The existing aggregate deadline includes both loads and cleanup. Each startup
 requires more than 60 seconds remaining, each request reserves 30 seconds for
 owned cleanup, and completed observations are saved before the next operation.
@@ -318,6 +327,7 @@ Model-free acceptance regressions:
 | `native_case_budget_rejects_missing_unbounded_and_malformed_allowances` | Reject missing, zero, malformed, overflowing and over-240-second allowances; optional workloads use the reduced allowance and retain the 120-second recovery reserve |
 | `native_representation_row4_profile_is_explicit_and_preserves_pair` | Separate complete-response selection configures both fixed-order owners with four workers while retaining the one-worker profile and identical approved model, adapter, request and containment policies |
 | `native_representation_comparison_requires_released_worker_observation` | Both representation samples must retain the compiled release's matching worker-readiness version, observation flag and graph budget; missing or mismatched observations cannot produce a latency ratio |
+| `native_representation_rollback_observation_survives_pending_ptq1_arm` | A complete original-PQ2 arm retains a separate observation when PTQ1 is missing; wrong identities, worker counts, truncated output and incomplete cleanup leave rollback pending, and independent gate review remains required |
 | `native_representation_resources_compare_matching_domains_only` | Matched complete responses and usage permit separate Job-commit, root-residency and sampled-serving ratios without summing domains or claiming full resource qualification |
 | `native_representation_resources_reject_missing_or_inconsistent_observations` | Missing, nonpositive or inconsistent native resource telemetry leaves the resource comparison pending while preserving complete-answer captures |
 | `native_representation_profiles_leave_skipped_arms_pending_at_original_deadline` | Both worker policies retain partial observations and pending status when the original shared deadline reaches the 60-second startup/cleanup reserve; no missing owner starts or receives a new clock |
