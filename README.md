@@ -82,23 +82,24 @@ and [local API contract](docs/broker-policy.md#public-request-contract).
 
 ## Performance
 
-| Model | Runtime | TTFT (s) | Generation tokens/second | Request tokens/second | Model file | Job commit cap / measured peak | Available RAM admission | Restore copy saved vs. Rust 0.1.4 |
-| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| **Swift Bonsai 2 `PQ2_0` (development default)** | **Rust 0.1.14 release, four workers + LoRA 1.3** | Not measured | Not measured | **0.281 (8-token request; cleanup failed)** | **6.71 GiB** | **11.5 GiB / not measured** | **15.5 GiB** | **149.625 MiB** |
-| **Swift Bonsai 2 `PTQ1_0` (experimental opt-in)** | **Rust 0.1.14 release, four workers + LoRA 1.3** | Not measured | Not measured | **0.137 (8-token request; cleanup failed)** | **5.54 GiB** | **11.5 GiB / not measured** | **15.5 GiB** | **149.625 MiB** |
-| Swift Bonsai 2 `PTQ1_0` (historical release) | Rust 0.1.13 release, four workers + LoRA 1.3 | Not measured | Not measured | 0.0280 (1-token request; power unknown) | 5.54 GiB | 11.5 GiB / 6.02 GiB (short request) | 15.5 GiB | 149.625 MiB |
-| Swift Bonsai 2 `PQ2_0` (verified Rust rollback) | Rust 0.1.13 release, four workers + LoRA 1.3 | Not measured | Not measured | 0.0544 (1-token request; power unknown) | 6.71 GiB | 11.5 GiB / 7.20 GiB (short request) | 15.5 GiB | 149.625 MiB |
-| Swift Bonsai 2 `PQ2_0` (experimental Rust) | Rust 0.1.10 prerelease, one worker + LoRA 1.3 | Not measured | Not measured | 0.105 (truncated request) | 6.71 GiB | 11.5 GiB / not recorded | 15.5 GiB | 149.625 MiB |
-| Swift Bonsai 2 `PQ2_0` (experimental Rust) | Rust 0.1.10 prerelease, four workers + LoRA 1.3 | Not measured | Not measured | Pending (deadline) | 6.71 GiB | 11.5 GiB / not recorded | 15.5 GiB | 149.625 MiB |
-| Swift Bonsai 2 `PQ2_0` (captured source diagnostic) | Rust 0.1.9, four workers + LoRA 1.3 | Not measured | Not measured | Not measured | 6.71 GiB | 11.5 GiB / 7.04 GiB | 15.5 GiB | 149.625 MiB |
-| Swift Bonsai 2 `PTQ1_0` | PrismML C++ CPU | Not measured | Not measured | Not measured | 5.54 GiB | 11.5 GiB / â€” | 15.5 GiB | â€” |
-| Swift Bonsai 2 `PQ2_0` (explicit publisher rollback) | PrismML C++ CPU | Not measured | Not measured | Not measured | 6.71 GiB | 11.5 GiB / â€” | 15.5 GiB | â€” |
-| Qwen3.8-27B `UD-Q3_K_XL` | llama.cpp reference | Not measured | Not measured | Not measured | 12.24 GiB | 18 GiB / â€” | 22 GiB | â€” |
+| Model | Runtime | Time to first token (s) | Generation tokens/second | Model file | Job commit cap / measured peak | Available RAM admission | Restore copy saved vs. Rust 0.1.4 |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| **Swift Bonsai 2 `PQ2_0` (development default)** | **Rust 0.1.14 release, four workers + LoRA 1.3** | Not measured | Not measured | **6.71 GiB** | **11.5 GiB / not measured** | **15.5 GiB** | **149.625 MiB** |
+| **Swift Bonsai 2 `PTQ1_0` (experimental opt-in)** | **Rust 0.1.14 release, four workers + LoRA 1.3** | Not measured | Not measured | **5.54 GiB** | **11.5 GiB / not measured** | **15.5 GiB** | **149.625 MiB** |
+| Swift Bonsai 2 `PTQ1_0` (historical release) | Rust 0.1.13 release, four workers + LoRA 1.3 | Not measured | Not measured | 5.54 GiB | 11.5 GiB / 6.02 GiB (short request) | 15.5 GiB | 149.625 MiB |
+| Swift Bonsai 2 `PQ2_0` (verified Rust rollback) | Rust 0.1.13 release, four workers + LoRA 1.3 | Not measured | Not measured | 6.71 GiB | 11.5 GiB / 7.20 GiB (short request) | 15.5 GiB | 149.625 MiB |
+| Swift Bonsai 2 `PQ2_0` (experimental Rust) | Rust 0.1.10 prerelease, one worker + LoRA 1.3 | Not measured | Not measured | 6.71 GiB | 11.5 GiB / not recorded | 15.5 GiB | 149.625 MiB |
+| Swift Bonsai 2 `PQ2_0` (experimental Rust) | Rust 0.1.10 prerelease, four workers + LoRA 1.3 | Not measured | Not measured | 6.71 GiB | 11.5 GiB / not recorded | 15.5 GiB | 149.625 MiB |
+| Swift Bonsai 2 `PQ2_0` (captured source diagnostic) | Rust 0.1.9, four workers + LoRA 1.3 | Not measured | Not measured | 6.71 GiB | 11.5 GiB / 7.04 GiB | 15.5 GiB | 149.625 MiB |
+| Swift Bonsai 2 `PTQ1_0` | PrismML C++ CPU | Not measured | Not measured | 5.54 GiB | 11.5 GiB / â€” | 15.5 GiB | â€” |
+| Swift Bonsai 2 `PQ2_0` (explicit publisher rollback) | PrismML C++ CPU | Not measured | Not measured | 6.71 GiB | 11.5 GiB / â€” | 15.5 GiB | â€” |
+| Qwen3.8-27B `UD-Q3_K_XL` | llama.cpp reference | Not measured | Not measured | 12.24 GiB | 18 GiB / â€” | 22 GiB | â€” |
 
 The [2026-11-03 local capture](docs/evidence/local-throughput-20261103/summary.json)
 on **Snapdragon X2 Elite Extreme** measured eight reported completion tokens in
-**28.435 s (PQ2)** and **58.224 s (PTQ1)** with Rust 0.1.14, four configured row
-workers, adapter scale 1.3 and thinking off. Both returned `1, 2, 3,` and hit the
+**28.435 s (PQ2; 0.281 request tokens/s)** and
+**58.224 s (PTQ1; 0.137 request tokens/s)** with Rust 0.1.14, four configured
+row workers, adapter scale 1.3 and thinking off. Both returned `1, 2, 3,` and hit the
 eight-token cap. Rates include prefill, generation, transport and client framing;
 startup is excluded. **These are short-request observations, not generation speed
 or sustained decode TPS.** The capture read each response as a whole and did not
