@@ -418,6 +418,13 @@ and retain the reset-every-request serving policy until reuse is qualified.
   independent snapshots. Qualify long-context tiled attention-value traversal under the
   [overhead
   review](docs/native-rust-engine.md#2026-literature-runtime-overhead-and-work-placement).
+- Qualify the local [inference efficiency candidates](docs/native-rust-engine.md#local-inference-efficiency-candidates):
+  compact reset-state rollback checkpoints, bounded Swift top-20 sampler storage and
+  direct one-column F32 adapter projections. Preserve exact state restoration,
+  native tie/RNG behavior, floating-point bits and rejection semantics. Complete
+  owning hosted checks and matched actual-model correctness/resource/request-time
+  evidence before releasing or repinning; source-level work/storage reductions do
+  not establish measured throughput, process RAM or lower admission limits.
 - After [packed projections](#cpu-kernels), implement bounded CPU chunkwise GDN prefill
   with a small chunk-size set, declared long-prefix and restore tolerances, causal
   scheduling, bounded scratch, cancellation and whole-request rollback. Preserve

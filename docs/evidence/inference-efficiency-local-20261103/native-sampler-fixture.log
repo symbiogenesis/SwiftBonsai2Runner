@@ -1,0 +1,9 @@
+   Compiling prism-inference v0.1.14 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\speed-integration)
+    Finished `release` profile [optimized] target(s) in 0.83s
+     Running tests\upstream_sampling.rs (C:\Users\symbi\AppData\Local\Temp\inference-efficiency-local-20261103\target\release\build\prism-inference/a0424c215b709e0b\out\upstream_sampling-a0424c215b709e0b.exe)
+
+running 1 test
+test swift_chain_matches_verified_pinned_arm64_candidates_and_seeded_draws ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 4 filtered out; finished in 0.39s
+

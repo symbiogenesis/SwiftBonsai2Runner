@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-03",
+  "repository": "prism-inference",
+  "baselineRevision": "f02c069",
+  "integratedLocalMain": "11f60cea531d8ebdc0a184dcff489fb569707ff7",
+  "changes": [
+    {
+      "revision": "095976ca4befda226ad06a0a4be252af1f7ffd8e",
+      "change": "Stream one-column F32 projections using the existing float_dot arithmetic",
+      "sourceBenefit": "Avoid 660480 general row preparations per evaluated Swift token with the standard rank-one adapter"
+    },
+    {
+      "revision": "80fa0713b12aafec7f545cdc1efbc3ae9c48687c",
+      "change": "Represent canonical zero-position checkpoints without numerical payload",
+      "sourceBenefit": "Avoid copying and retaining 156893184 bytes of recurrent/convolution payload per reset-started Swift rollback checkpoint"
+    },
+    {
+      "revision": "11f60cea531d8ebdc0a184dcff489fb569707ff7",
+      "change": "Stream the full Swift logits row through the existing native-order top-20 heap",
+      "sourceBenefit": "Reduce retained Candidate payload from 2979840 to 240 bytes and avoid full-candidate initialization per token"
+    }
+  ],
+  "review": {
+    "isolatedWorktrees": true,
+    "oneCommitPerLogicalChange": true,
+    "independentSourceReview": "Projection worker reviewed canonical empty checkpoint invariants and native heap equivalence; state worker reviewed projection arithmetic, bounds, errors and diagnostics. Root reviewed all three before integration.",
+    "exactFinalSourceHashesMatchLastAnalyzerReceipt": true,
+    "sourceBindingFiles": [
+      "src/kernels.rs",
+      "src/graph.rs",
+      "src/sampling/swift.rs",
+      "src/sampling/upstream.rs",
+      "tests/graph.rs",
+      "Cargo.toml",
+      "Cargo.lock"
+    ],
+    "validationCorrections": "Only documentation paragraph spacing and equivalent typed empty-value assertions changed after the 14 passing correctness controls; final strict analyzer compiled the corrected library and test targets. Original diagnostic failures remain in receipt.json and logs."
+  },
+  "delivery": {
+    "localOnly": true,
+    "pushed": false,
+    "ciDispatchedOrMonitored": false,
+    "runnerRuntimePinChanged": false,
+    "admissionChanged": false,
+    "precisionChanged": false,
+    "measuredSpeedupClaimed": false,
+    "measuredProcessMemoryGainClaimed": false
+  },
+  "validation": "archive.json",
+  "outstandingWork": "../../../PLAN.md"
+}

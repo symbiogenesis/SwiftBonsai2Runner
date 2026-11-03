@@ -353,6 +353,41 @@ candidate is retained in source history and model-free controls until actual-mod
 numerical, throughput and resource qualification permit release integration.
 The removed copy alone establishes no speed or memory benefit.
 
+## Local inference efficiency candidates
+
+The November 3, 2026 source review selected three small Prism changes with direct
+work or storage reductions. They apply to the existing CPU inference path without
+new weights, altered precision, accelerator setup or prefix-reuse policy.
+
+| Priority | Source change | Expected benefit and scope |
+| --- | --- | --- |
+| 1 | Represent a reset-state rollback checkpoint without copying zero recurrent/convolution buffers | Avoids 156,893,184 bytes (149.625 MiB) of Swift checkpoint payload and its copy at the start of a reset request. Live state and nonempty independent snapshots remain complete. This is an allocation reduction, not a measured process-memory peak. |
+| 2 | Stream Swift logits through the existing native-order top-20 heap | Retains 20 candidate records (240 bytes) instead of 248,320 (2,979,840 bytes), avoiding 2,979,600 bytes of candidate payload and most per-token candidate writes. The full logits row is still checked; tie order, softmax and RNG progression must match. |
+| 3 | Stream one-column F32 projection weights directly | Removes per-row dimension checks, decoding dispatch and one-element scratch management for rank-one adapter B factors: 660,480 output channels across the standard adapter's 129 factors. The original single-product accumulation and finite-result checks remain required. |
+
+These are local source candidates in the sibling `prism-inference` repository.
+The reviewed commits on local Prism `main` are `095976c` (one-column projections),
+`80fa071` (empty checkpoints) and `11f60ce` (bounded sampler). The
+[retained local checks](evidence/inference-efficiency-local-20261103/archive.json)
+include 14 focused passing correctness tests and strict Release Clippy with
+`parallel-rows` enabled. Exact final source hashes match the analyzer input.
+The original 247.630-second allowance includes build, corrections and archival;
+initial lint and harness-encoding failures remain retained. All captured workload
+endpoints report battery operation with saver off; charge changed from 93% to 92%.
+No model, benchmark or CI ran, and endpoint snapshots do not establish continuous
+power stability or measured performance.
+
+Runner continues to consume its pinned release; publishing and qualified repinning
+are separate. No end-to-end speedup is claimed. Owning CI and actual-model
+logits/state, rollback, seeded output and resource/request-time qualification
+remain pending in [PLAN.md](../PLAN.md). Keep the existing admission limits and
+PQ2 rollback.
+
+Larger potential gains remain exact latest-prefix reuse, packed projection and
+tiled prefill work. They need broader lifecycle or numerical qualification and
+are tracked above and in the plan; they are not prerequisites for these bounded
+reductions.
+
 ## Default-runtime promotion
 
 The Rust `runtime-promotion` command reports the reviewed requirements for replacing the current

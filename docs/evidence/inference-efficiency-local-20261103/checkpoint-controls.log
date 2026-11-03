@@ -1,0 +1,14 @@
+   Compiling prism-inference v0.1.14 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\speed-integration)
+    Finished `release` profile [optimized] target(s) in 16.85s
+     Running tests\graph.rs (C:\Users\symbi\AppData\Local\Temp\inference-efficiency-local-20261103\target\release\build\prism-inference/552d012446592d8a\out\graph-552d012446592d8a.exe)
+
+running 6 tests
+test empty_checkpoint_omits_recurrent_payload_after_construction_and_reset ... ok
+test empty_checkpoint_rejects_foreign_and_stale_adapter_provenance ... ok
+test hybrid_state_checkpoint_restores_exact_recurrent_prefix ... ok
+test empty_checkpoint_request_rollback_replays_fresh_after_delivery_failure ... ok
+test rank_one_checkpoint_and_failed_generation_preserve_complete_state ... ok
+test empty_checkpoint_restores_hybrid_pages_and_preserves_nonempty_snapshot ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 63 filtered out; finished in 0.00s
+
