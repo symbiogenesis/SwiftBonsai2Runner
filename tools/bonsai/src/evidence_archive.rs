@@ -112,10 +112,10 @@ fn validate(manifest: &Manifest) -> crate::Result<u64> {
     if manifest.schema_version != 1
         || manifest.kind != "bonsai-qualification-evidence"
         || !manifest.credential_free_selection_reviewed
-        || !manifest
+        || manifest
             .identities
             .as_object()
-            .is_some_and(|object| !object.is_empty())
+            .is_none_or(serde_json::Map::is_empty)
         || manifest.files.is_empty()
         || manifest.files.len() > ENTRY_LIMIT
     {
