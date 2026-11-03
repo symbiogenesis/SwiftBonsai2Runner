@@ -13,6 +13,13 @@ Shrink the workload or retain an unqualified gate when it cannot fit. Do not spl
 a long matrix into repeated runs to work around this limit. Hosted cloud CI keeps
 its existing limits.
 
+Every laptop trial must retain AC/battery observations before and after its
+workload, separately for each comparison arm, within that same allowance.
+Record battery saver and charge when available; unknown status stays unknown.
+Missing, changed or mismatched power conditions leave performance comparison
+ineligible. Equal endpoint observations alone do not prove continuous stability,
+and a later power query cannot establish conditions for a completed trial.
+
 Physical Snapdragon capture/qualification workflows, including speech/sandbox,
 share the non-cancelling `swift-lora-snapdragon` concurrency group. Hosted targets
 have independent groups. Serialization prevents overlapping laptop CI jobs,

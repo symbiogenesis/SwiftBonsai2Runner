@@ -11,6 +11,15 @@ or leave the gate pending when it cannot fit; do not divide a long matrix into
 repeated runs to work around the limit. Complete suites and benchmarks remain
 CI-only; hosted cloud CI has its own workflow limits.
 
+For every trial on this laptop, record whether AC power is connected before and
+after the workload, and separately for each arm of a comparison. Retain battery
+saver and charge observations when available. Keep unavailable power status
+explicitly unknown; never infer a past trial's power source from a later query.
+Factor AC versus battery operation and observed changes into interpretation, and
+do not qualify performance comparisons with missing or mismatched power
+conditions. Equal endpoint snapshots alone do not prove uninterrupted stability.
+Power observations share the same five-minute aggregate trial allowance.
+
 # Parallel work and commits
 
 Each worker in a parallel fan-out must use its own individual Git worktree.
