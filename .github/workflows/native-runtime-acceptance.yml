@@ -122,6 +122,8 @@ jobs:
               'service_integration::native_service_integration_binds_prefix_and_reported_prompt_counts',
               'service_integration::native_service_integration_prefix_rejects_terminal_events_already_received',
               'service_integration::native_service_integration_cancellation_failures_return_without_unwinding',
+              'service_integration::native_service_integration_cleanup_preserves_failures_and_listener_observations',
+              'service_integration::native_service_integration_stuck_owner_is_dropped_inside_existing_stop_allowance',
               'service_integration::native_service_integration_rejects_natural_completion_and_missing_rejections',
               'service_integration::native_service_integration_fresh_owner_reserve_keeps_original_deadline',
               'service_rollback::native_service_rollback_profile_is_separate_and_keeps_explicit_original_selection',
@@ -433,11 +435,15 @@ jobs:
             }
             # Charge tool resolution, handshake and JSON execution after the
             # supplied clocks. IPC must never extend either original deadline.
+            $budgetBridgeTick = [Diagnostics.Stopwatch]::GetTimestamp()
             $budgetBridgeElapsed = $budgetClock.Elapsed.TotalSeconds
             $budgetBridgeCharge = [int][Math]::Ceiling($budgetBridgeElapsed)
             $setupElapsed = $limits.PreparationElapsedSeconds + $budgetBridgeElapsed
             $hardLimitSeconds = $limits.HardLimitSeconds - $budgetBridgeCharge
             $caseBudgetSeconds = $limits.CaseBudgetSeconds - $budgetBridgeCharge
+            # Receipt/environment preparation and process creation consume this
+            # absolute limit rather than starting another relative wait.
+            $processDeadlineTick = $budgetBridgeTick + ([long]$hardLimitSeconds * [Diagnostics.Stopwatch]::Frequency)
             if ($caseBudgetSeconds -lt 1) {
               $hostReport.AggregateBudgetExpired = $true
               throw 'Preparation exhausted the acceptance allowance; qualification remains pending.'
@@ -462,7 +468,8 @@ jobs:
             try {
               $stdout = $child.StandardOutput.ReadToEndAsync()
               $stderr = $child.StandardError.ReadToEndAsync()
-              if (-not $child.WaitForExit($hardLimitSeconds * 1000)) {
+              $remainingMilliseconds = [int][Math]::Floor(($processDeadlineTick - [Diagnostics.Stopwatch]::GetTimestamp()) * 1000.0 / [Diagnostics.Stopwatch]::Frequency)
+              if ($remainingMilliseconds -lt 1 -or -not $child.WaitForExit($remainingMilliseconds)) {
                 $hostReport.AggregateBudgetExpired = $true
                 throw 'The acceptance process exceeded its remaining owner-job budget.'
               }

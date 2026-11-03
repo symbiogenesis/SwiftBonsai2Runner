@@ -90,10 +90,10 @@ fn declared_limits(seconds: u16) -> crate::Result<(u16, u16)> {
 }
 
 struct Preparation {
-    charged_seconds: u64,
-    elapsed_seconds: f64,
-    wall_elapsed_seconds: f64,
-    monotonic_elapsed_seconds: Option<f64>,
+    charged: u64,
+    elapsed: f64,
+    wall_elapsed: f64,
+    monotonic_elapsed: Option<f64>,
 }
 
 fn preparation(request: &Request, now_tick: u64, frequency: u64) -> crate::Result<Preparation> {
@@ -117,12 +117,12 @@ fn preparation(request: &Request, now_tick: u64, frequency: u64) -> crate::Resul
         .transpose()?;
     Ok(Preparation {
         // Compare integer ceilings rather than rounded floating-point seconds.
-        charged_seconds: wall_ticks
+        charged: wall_ticks
             .div_ceil(TICKS_PER_SECOND)
             .max(monotonic_ticks.map_or(0, |ticks| ticks.div_ceil(frequency))),
-        elapsed_seconds: wall_elapsed_seconds.max(monotonic_elapsed_seconds.unwrap_or(0.0)),
-        wall_elapsed_seconds,
-        monotonic_elapsed_seconds,
+        elapsed: wall_elapsed_seconds.max(monotonic_elapsed_seconds.unwrap_or_default()),
+        wall_elapsed: wall_elapsed_seconds,
+        monotonic_elapsed: monotonic_elapsed_seconds,
     })
 }
 
@@ -148,7 +148,7 @@ fn calculate(request: &Request) -> crate::Result<Budget> {
     // Subtract the ceiling of elapsed time, preserving fractional setup costs
     // without allowing floating-point rounding to extend either deadline.
     let mut hard_limit = i128::from(maximum_case + 10)
-        .min(i128::from(maximum_work) - i128::from(setup.charged_seconds));
+        .min(i128::from(maximum_work) - i128::from(setup.charged));
     let owner = request
         .owner_deadline
         .as_object()
@@ -219,9 +219,9 @@ fn calculate(request: &Request) -> crate::Result<Budget> {
     Ok(Budget {
         whole_job_maximum_seconds: request.whole_job_maximum_seconds,
         maximum_case_budget_seconds: maximum_case,
-        preparation_elapsed_seconds: setup.elapsed_seconds,
-        preparation_wall_elapsed_seconds: setup.wall_elapsed_seconds,
-        preparation_monotonic_elapsed_seconds: setup.monotonic_elapsed_seconds,
+        preparation_elapsed_seconds: setup.elapsed,
+        preparation_wall_elapsed_seconds: setup.wall_elapsed,
+        preparation_monotonic_elapsed_seconds: setup.monotonic_elapsed,
         hard_limit_seconds: u16::try_from(hard_limit).map_err(|error| error.to_string())?,
         case_budget_seconds: u16::try_from(case_budget).map_err(|error| error.to_string())?,
         owner_deadline_applied: supplied == OWNER_FIELDS.len(),
