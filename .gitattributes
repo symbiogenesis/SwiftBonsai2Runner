@@ -100,3 +100,6 @@ docs/evidence/ptq1-context-hosted-corrections/** -text -whitespace
 
 # Preserve received release receipts, metadata and independent data-review bytes.
 docs/evidence/ptq1-context-release-014/** -text -whitespace
+
+# Retain exact terminal owning-CI and main-ancestor metadata for release 0.1.14.
+docs/evidence/ptq1-context-owning-ci-9e/** -text -whitespace
