@@ -1,0 +1,74 @@
+{
+    "schemaVersion":  1,
+    "kind":  "prism-0.1.14-runner-pin-preparation-producer-record",
+    "recordedDate":  "2026-11-02",
+    "producerId":  "Codex:/root/contract",
+    "status":  "prepared-checked-not-published",
+    "sourceRevision":  "9e8ea3e2c042ab0c3f1a8e9596ff155e202c3c57",
+    "version":  "0.1.14",
+    "target":  "aarch64-pc-windows-msvc",
+    "runnerPreparationBase":  "645996eacd1eb6d763aaf30041e3118f85baf7e7",
+    "sourceArchive":  {
+                          "url":  "https://github.com/symbiogenesis/prism-inference/archive/9e8ea3e2c042ab0c3f1a8e9596ff155e202c3c57.zip",
+                          "bytes":  4431974,
+                          "sha256":  "4f92deb95eb4905b2c9c5558a4607843ae4db61c2d686ec95ad667470d03896e",
+                          "entries":  775,
+                          "files":  693,
+                          "safeEntryNamesAndExactCommitPrefixVerified":  true,
+                          "rootServerCargoLockAndFoundationVersion":  "0.1.14"
+                      },
+    "arm64Archive":  {
+                         "filename":  "prism-inference-0.1.14-aarch64-pc-windows-msvc.zip",
+                         "bytes":  3219185,
+                         "sha256":  "9a2cd183c048c49120a8d8cf1360b24ee08695a1b92fded7dbd918dd9f576759",
+                         "producerRunId":  "41580496421",
+                         "producerRunAttempt":  1,
+                         "exactReceiptAndArchiveMembersMatched":  9,
+                         "lockedMembersMatched":  9,
+                         "executablesRun":  0
+                     },
+    "githubHostedArtifact":  {
+                                 "artifactId":  "13206461411",
+                                 "bytes":  3184773,
+                                 "sha256":  "bfa0d94aaa6c45d21217581b6c2b5d683839957a01164512292c3a471640dac7",
+                                 "scope":  "Outer hosted artifact identity retained separately from its inner release ZIP. Publication and owning CI provenance require independent review."
+                             },
+    "proposedPublishedAssetUrl":  "https://github.com/symbiogenesis/prism-inference/releases/download/v0.1.14/prism-inference-0.1.14-aarch64-pc-windows-msvc.zip",
+    "pinFile":  "config/prism-inference.lock.json",
+    "pinSha256":  "8d2cf2f7cacf7795dc3283d8cd931cd50e077e6f9aac052b5c3fbc8327cd150a",
+    "dataManifest":  {
+                         "file":  "prism-0114-pin-preparation/file-manifest.json",
+                         "bytes":  944,
+                         "sha256":  "095e08acf31d09d393d9ed71004e9e53b9d66167213238875f40379a6f00c10b"
+                     },
+    "publication":  {
+                        "publishedReleaseVerified":  false,
+                        "publishedAssetVerified":  false,
+                        "fullConformanceCompletionAttestedHere":  false,
+                        "independentFinalReleaseReviewPreasserted":  false,
+                        "runnerReleaseIntegrationExecuted":  false,
+                        "scope":  "Prepared pin remains isolated and unpushed pending publication, complete owning checks and independent review. The intended release URL is not a claim that the asset is published."
+                    },
+    "deliveryScope":  "Selects the exact source and nine-file ARM64 package for the typed context-rejection protocol fix. No engine/representation default, model/adapter setting, admission limit or reserve changes.",
+    "historicalQualification":  {
+                                    "frozenScore":  "docs/evidence/ptq1-promotion-bb020f4-service-90a62b9-review.json",
+                                    "runtimeVersion":  "0.1.13",
+                                    "frozenServingRunnerRevision":  "bb020f45169b0698678ca5f789aef7af8cdc12b2",
+                                    "serviceHarnessRevision":  "90a62b954f56aa5b1da3ab167ee3f87255477b73",
+                                    "passed":  6,
+                                    "pending":  13,
+                                    "relabelledAsRuntime14":  false,
+                                    "scope":  "All original 0.1.13 model observations and the original-PQ2 rollback remain historical under their exact release/source identities; they do not qualify this 0.1.14 pin."
+                                },
+    "originalPq2ExplicitRollbackPreserved":  true,
+    "runtime14RollbackDeviceQualification":  "pending",
+    "defaultsChanged":  false,
+    "admissionOrReservesChanged":  false,
+    "actualRuntime14ModelExecutions":  0,
+    "builds":  0,
+    "tests":  0,
+    "ownerDeviceTrials":  0,
+    "originalOwnerClockReopened":  false,
+    "defaultPromotionQualified":  false,
+    "experimentalLabelMayBeRemoved":  false
+}

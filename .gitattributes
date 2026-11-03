@@ -71,6 +71,10 @@ docs/evidence/ptq1-promotion-bb020f4-service-90a62b9/** -text whitespace=cr-at-e
 docs/evidence/ptq1-promotion-bb020f4-service-90a62b9/**/*.txt -text -whitespace
 docs/evidence/ptq1-promotion-bb020f4-service-90a62b9-review.json -text whitespace=cr-at-eol
 
+# Preserve the checked source/release receipt bytes for the prepared 0.1.14 pin.
+docs/evidence/prism-0114-pin-preparation.json -text whitespace=cr-at-eol
+docs/evidence/prism-0114-pin-preparation/** -text whitespace=cr-at-eol
+
 # Keep hosted public queue ABI inputs and Rust/C control sources portable.
 tools/hexagon/windows_queue_abi.* text eol=lf
 tools/hexagon/windows-queue-abi.lock.json text eol=lf
