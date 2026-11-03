@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 1,
+  "kind": "ptq1-local-implementation-and-bounded-validation",
+  "recordedDate": "2026-11-03",
+  "startingRunnerRevision": "e52f70b453a0fdb43fbda588d79e367f0c7e0aa6",
+  "runtimeVersion": "0.1.14",
+  "runtimeRevision": "9e8ea3e2c042ab0c3f1a8e9596ff155e202c3c57",
+  "sourceChanges": [
+    {
+      "commit": "fb705e6",
+      "independentWorkerCommit": "ae1c02e4cff0c5aa77a40f1a5899f294a8529330",
+      "result": "Failed or malformed service responses return pending observations and reach normal owned teardown and power-after capture instead of unwinding past them. Required scale, rejection, cancellation and replay steps are preserved."
+    },
+    {
+      "commit": "b615309",
+      "independentWorkerCommit": "f4e022f4d5c43b5bac9ac0476966f1cedcc89892",
+      "result": "Independent standard-library-only replay verifies retained all-48 A and all-129 B output, identities, inventories and original tolerance metrics. Complete numerical disagreement stays a losing result. Hosted workflow retains the independent replay without requiring another model reconstruction."
+    },
+    {
+      "commit": "a3c5e014bae584ea9a52fe7c9c89bb3799580a7c",
+      "result": "Native evidence-archive seals an explicit reviewed file/length/hash selection, verifies a separately anchored manifest and exact inventory, and restores exact failed/successful evidence without the original runner. Fresh destinations, bounded copies and strong trusted-owner directory handles prevent overwrites and directory replacement."
+    },
+    {
+      "commit": "7f057b2",
+      "independentWorkerCommit": "6b7f2d7ca4c9a832eee7de578dfa949559c96ddc",
+      "result": "Shared artifact verification requests LIST_DIRECTORY plus metadata rights in the trusted host so sharing denies ancestor rename. AppContainer metadata rights and root exclusion remain unchanged. A nested VerifiedFile rename/DELETE regression awaits owning native checks."
+    }
+  ],
+  "validation": {
+    "rawReceipt": "ptq1-local-validation-20261103/receipt.json",
+    "rawReceiptSha256": "5b6659758a1d008f603dcc6b1e2bfc61b865d2f237919f50887c5452c454a676",
+    "dataManifest": "ptq1-local-validation-20261103/file-manifest.json",
+    "chargedSecondsIncludingEarlierChargeAndConservativeClockCorrection": 272.5070052000083,
+    "maximumAggregateSeconds": 300,
+    "executedModelProcesses": 0,
+    "ciActions": 0,
+    "fullSuites": 0,
+    "passedFocusedChecks": {
+      "publicRetainedReplay": 6,
+      "archiveAfterDirectorySharingCorrection": 5,
+      "serviceFailureAndFraming": 4
+    },
+    "brokerReleaseClippy": "passed-on-captured-source-before-later-shared-host-guard-change",
+    "archiveReleaseClippy": "pending-timeout-after-35-seconds",
+    "initialFailuresRetained": [
+      "Metadata-only directory handles allowed rename: the initial archive run passed four controls and failed its fifth real directory-replacement control. LIST_DIRECTORY plus READ_ATTRIBUTES, still SHARE_READ-only, then passed all five controls.",
+      "The initial diagnostic driver used the former Cargo deps executable location after the first service test passed. The correction read the actual executable from retained Cargo output. It preserved the earliest original absolute deadline with two conservative extra seconds and included intervening time; no new device allowance or model matrix was started."
+    ],
+    "finalSourceLimitations": [
+      "Final manifest-before-read directory pinning and moving the copy buffer to bounded heap storage were independently source-reviewed after the five archive controls, without another rebuild or retest.",
+      "The separate trusted-host artifact-ancestor correction and its native regression are source-reviewed but not locally executed. AppContainer integration and complete final-source checks remain with owning CI.",
+      "The CLI dispatch addition has not been exercised as a built maintenance executable in this local session."
+    ],
+    "power": {
+      "wholeWorkloadAndPerCheckEndpointsRetained": true,
+      "allCapturedAcConnected": true,
+      "allCapturedBatterySaver": false,
+      "observedChargePercentRange": [97, 98],
+      "uninterruptedStabilityEstablished": false,
+      "performanceComparisonQualified": false
+    }
+  },
+  "localImplementationSubgatesSolved": [
+    "Independent retained public-reference comparison replay and corruption controls.",
+    "Explicit credential-free selection sealing, anchored integrity and exact retrieval mechanics, with local losing-result rehearsal.",
+    "Service transport/framing failure paths preserve pending evidence, cleanup and power observations."
+  ],
+  "remainingAcceptance": [
+    "Owner-managed final-source Foundation and released-runtime integration; no CI was dispatched, queried, monitored or awaited.",
+    "One declared hosted all-48 public reconstruction with independent replay; authenticated original authoring inputs, native writer mappings and zero/nonzero full-model controls remain separate.",
+    "Exact 0.1.14 released private-service transitions and original-PQ2 rollback with the source-bound acceptance package in one feasible owner allowance.",
+    "Full context/output, sampler/recovery, resources, restricted identity/broker-only transport, speech/offline recovery and clean-machine installation.",
+    "Matched complete-answer and per-prompt throughput benefit, independent human quality and owner comfort acceptance.",
+    "Deployment to durable owner-managed backup storage and before-expiry acquisition automation; a local replay or temporary directory alone is insufficient."
+  ],
+  "historicalScoreScope": "Six passed and thirteen pending applies only to the frozen independently reviewed 0.1.13 candidate. This record does not rescore or transfer it to 0.1.14.",
+  "newBroadPromotionGatesPassed": 0,
+  "defaultPromotionQualified": false,
+  "experimentalLabelMayBeRemoved": false,
+  "defaultsChanged": false,
+  "admissionOrReservesChanged": false,
+  "pushAuthorization": "The user subsequently explicitly authorized a remote Git push when ready; this overrides the repository no-push rule for this delivery. CI dispatch, monitoring and verdicts remain owner-managed."
+}

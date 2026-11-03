@@ -1,0 +1,354 @@
+{
+  "schemaVersion": 1,
+  "kind": "bounded-model-free-ptq1-local-validation",
+  "startedAtUtc": "2026-11-03T06:10:16.821172+00:00",
+  "earlierChargeSeconds": 10,
+  "maximumTotalSeconds": 300,
+  "workCutoffSeconds": 270,
+  "powerBefore": {
+    "observedAtUtc": "2026-11-03T06:10:16.821186+00:00",
+    "acConnected": true,
+    "batterySaver": false,
+    "chargePercent": 98,
+    "rawAcLineStatus": 1,
+    "rawBatteryFlag": 9
+  },
+  "checks": [
+    {
+      "name": "public-reference-replay",
+      "arguments": [
+        "C:\\Users\\symbi\\AppData\\Local\\Programs\\Python\\Python314-arm64\\python.exe",
+        "-B",
+        "tools/native-reference/test_audit_public_reference.py"
+      ],
+      "powerBefore": {
+        "observedAtUtc": "2026-11-03T06:10:16.821301+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 98,
+        "rawAcLineStatus": 1,
+        "rawBatteryFlag": 9
+      },
+      "exitCode": 0,
+      "status": "passed",
+      "elapsedSeconds": 3.0040033999976004,
+      "powerAfter": {
+        "observedAtUtc": "2026-11-03T06:10:19.825316+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 98,
+        "rawAcLineStatus": 1,
+        "rawBatteryFlag": 9
+      }
+    },
+    {
+      "name": "format",
+      "arguments": [
+        "C:\\Users\\symbi\\.rustup\\toolchains\\nightly-2026-11-02-aarch64-pc-windows-msvc\\bin\\rustfmt.exe",
+        "--check",
+        "--edition",
+        "2024",
+        "tools/bonsai/src/evidence_archive.rs",
+        "src/broker/tests/native_model.rs",
+        "src/broker/tests/native_model/adapter_boundaries.rs",
+        "src/broker/tests/native_model/service_integration.rs"
+      ],
+      "powerBefore": {
+        "observedAtUtc": "2026-11-03T06:10:19.825963+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 98,
+        "rawAcLineStatus": 1,
+        "rawBatteryFlag": 9
+      },
+      "exitCode": 0,
+      "status": "passed",
+      "elapsedSeconds": 0.21478240001306403,
+      "powerAfter": {
+        "observedAtUtc": "2026-11-03T06:10:20.040765+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 98,
+        "rawAcLineStatus": 1,
+        "rawBatteryFlag": 9
+      }
+    },
+    {
+      "name": "archive-controls",
+      "arguments": [
+        "C:\\Users\\symbi\\.rustup\\toolchains\\nightly-2026-11-02-aarch64-pc-windows-msvc\\bin\\cargo.exe",
+        "test",
+        "--locked",
+        "--offline",
+        "--release",
+        "-p",
+        "bonsai-tools",
+        "--lib",
+        "evidence_archive::tests::",
+        "--",
+        "--test-threads=1"
+      ],
+      "powerBefore": {
+        "observedAtUtc": "2026-11-03T06:10:20.041453+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 98,
+        "rawAcLineStatus": 1,
+        "rawBatteryFlag": 9
+      },
+      "exitCode": 101,
+      "status": "failed",
+      "elapsedSeconds": 101.86212600000727,
+      "powerAfter": {
+        "observedAtUtc": "2026-11-03T06:12:01.903596+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 98,
+        "rawAcLineStatus": 1,
+        "rawBatteryFlag": 9
+      }
+    },
+    {
+      "name": "service-stream-failure",
+      "arguments": [
+        "C:\\Users\\symbi\\.rustup\\toolchains\\nightly-2026-11-02-aarch64-pc-windows-msvc\\bin\\cargo.exe",
+        "test",
+        "--locked",
+        "--offline",
+        "--release",
+        "-p",
+        "bonsai-broker",
+        "--test",
+        "native_model",
+        "native_adapter_stream_failures_retain_bound_requests_and_pending_response",
+        "--",
+        "--exact"
+      ],
+      "powerBefore": {
+        "observedAtUtc": "2026-11-03T06:12:01.904323+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 98,
+        "rawAcLineStatus": 1,
+        "rawBatteryFlag": 9
+      },
+      "exitCode": 0,
+      "status": "passed",
+      "elapsedSeconds": 34.59069989999989,
+      "powerAfter": {
+        "observedAtUtc": "2026-11-03T06:12:36.495049+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 97,
+        "rawAcLineStatus": 1,
+        "rawBatteryFlag": 9
+      }
+    },
+    {
+      "name": "archive-controls-directory-sharing-fix",
+      "arguments": [
+        "C:\\Users\\symbi\\.rustup\\toolchains\\nightly-2026-11-02-aarch64-pc-windows-msvc\\bin\\cargo.exe",
+        "test",
+        "--locked",
+        "--offline",
+        "--release",
+        "-p",
+        "bonsai-tools",
+        "--lib",
+        "evidence_archive::tests::",
+        "--",
+        "--test-threads=1"
+      ],
+      "powerBefore": {
+        "observedAtUtc": "2026-11-03T06:13:18.352502+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 97,
+        "rawAcLineStatus": 1,
+        "rawBatteryFlag": 9
+      },
+      "exitCode": 0,
+      "status": "passed",
+      "elapsedSeconds": 24.576425199993537,
+      "powerAfter": {
+        "observedAtUtc": "2026-11-03T06:13:42.928943+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 97,
+        "rawAcLineStatus": 1,
+        "rawBatteryFlag": 9
+      }
+    },
+    {
+      "name": "service-boundary-failure",
+      "arguments": [
+        "C:\\Users\\symbi\\AppData\\Local\\Temp\\ptq1-local-validation-20261103\\target\\release\\build\\bonsai-broker/09399f09e9c080d0\\out\\native_model-09399f09e9c080d0.exe",
+        "adapter_boundaries::native_adapter_boundary_wire_sequence_preserves_rejections_and_failed_replay",
+        "--exact"
+      ],
+      "powerBefore": {
+        "observedAtUtc": "2026-11-03T06:13:42.938400+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 97,
+        "rawAcLineStatus": 1,
+        "rawBatteryFlag": 9
+      },
+      "exitCode": 0,
+      "status": "passed",
+      "elapsedSeconds": 0.1312067999970168,
+      "powerAfter": {
+        "observedAtUtc": "2026-11-03T06:13:43.069640+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 97,
+        "rawAcLineStatus": 1,
+        "rawBatteryFlag": 9
+      }
+    },
+    {
+      "name": "service-prefix-terminal",
+      "arguments": [
+        "C:\\Users\\symbi\\AppData\\Local\\Temp\\ptq1-local-validation-20261103\\target\\release\\build\\bonsai-broker/09399f09e9c080d0\\out\\native_model-09399f09e9c080d0.exe",
+        "service_integration::native_service_integration_prefix_rejects_terminal_events_already_received",
+        "--exact"
+      ],
+      "powerBefore": {
+        "observedAtUtc": "2026-11-03T06:13:43.070189+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 97,
+        "rawAcLineStatus": 1,
+        "rawBatteryFlag": 9
+      },
+      "exitCode": 0,
+      "status": "passed",
+      "elapsedSeconds": 0.07982730001094751,
+      "powerAfter": {
+        "observedAtUtc": "2026-11-03T06:13:43.150055+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 97,
+        "rawAcLineStatus": 1,
+        "rawBatteryFlag": 9
+      }
+    },
+    {
+      "name": "service-cancellation-failure",
+      "arguments": [
+        "C:\\Users\\symbi\\AppData\\Local\\Temp\\ptq1-local-validation-20261103\\target\\release\\build\\bonsai-broker/09399f09e9c080d0\\out\\native_model-09399f09e9c080d0.exe",
+        "service_integration::native_service_integration_cancellation_failures_return_without_unwinding",
+        "--exact"
+      ],
+      "powerBefore": {
+        "observedAtUtc": "2026-11-03T06:13:43.150583+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 97,
+        "rawAcLineStatus": 1,
+        "rawBatteryFlag": 9
+      },
+      "exitCode": 0,
+      "status": "passed",
+      "elapsedSeconds": 0.027144500010763295,
+      "powerAfter": {
+        "observedAtUtc": "2026-11-03T06:13:43.177745+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 97,
+        "rawAcLineStatus": 1,
+        "rawBatteryFlag": 9
+      }
+    },
+    {
+      "name": "archive-release-clippy-fixed",
+      "arguments": [
+        "C:\\Users\\symbi\\.rustup\\toolchains\\nightly-2026-11-02-aarch64-pc-windows-msvc\\bin\\cargo.exe",
+        "clippy",
+        "--locked",
+        "--offline",
+        "--release",
+        "-p",
+        "bonsai-tools",
+        "--lib",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "powerBefore": {
+        "observedAtUtc": "2026-11-03T06:13:43.178219+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 97,
+        "rawAcLineStatus": 1,
+        "rawBatteryFlag": 9
+      },
+      "status": "pending-timeout",
+      "elapsedSeconds": 35.19761540000036,
+      "powerAfter": {
+        "observedAtUtc": "2026-11-03T06:14:18.375847+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 98,
+        "rawAcLineStatus": 1,
+        "rawBatteryFlag": 9
+      }
+    },
+    {
+      "name": "service-release-clippy",
+      "arguments": [
+        "C:\\Users\\symbi\\.rustup\\toolchains\\nightly-2026-11-02-aarch64-pc-windows-msvc\\bin\\cargo.exe",
+        "clippy",
+        "--locked",
+        "--offline",
+        "--release",
+        "-p",
+        "bonsai-broker",
+        "--test",
+        "native_model",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "powerBefore": {
+        "observedAtUtc": "2026-11-03T06:14:18.376443+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 98,
+        "rawAcLineStatus": 1,
+        "rawBatteryFlag": 9
+      },
+      "exitCode": 0,
+      "status": "passed",
+      "elapsedSeconds": 18.98699900000065,
+      "powerAfter": {
+        "observedAtUtc": "2026-11-03T06:14:37.363458+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 98,
+        "rawAcLineStatus": 1,
+        "rawBatteryFlag": 9
+      }
+    }
+  ],
+  "modelExecutions": 0,
+  "ciActions": 0,
+  "fullSuites": 0,
+  "defaultPromotionQualified": false,
+  "elapsedSeconds": 262.5070052000083,
+  "chargedSeconds": 272.5070052000083,
+  "powerAfter": {
+    "observedAtUtc": "2026-11-03T06:14:37.363985+00:00",
+    "acConnected": true,
+    "batterySaver": false,
+    "chargePercent": 98,
+    "rawAcLineStatus": 1,
+    "rawBatteryFlag": 9
+  },
+  "allRequestedChecksPassed": false,
+  "performanceComparisonQualified": false,
+  "powerScope": "Endpoint observations only; no uninterrupted-stability or performance claim.",
+  "diagnosticCorrection": "The first driver used the old deps binary location; current Cargo put the test executable under build/<package>/<hash>/out. Follow-up preserves the earliest original UTC deadline with two additional conservative seconds, including intervening time. No model or matrix was run.",
+  "originalDiagnosticFailurePreserved": true,
+  "originalAbsoluteDeadlineExtended": false
+}

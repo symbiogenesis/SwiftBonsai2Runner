@@ -1,0 +1,7 @@
+    Checking tokio v1.54.1
+    Checking http v1.5.0
+    Checking subtle v2.6.1
+    Checking mxc-sdk v1.0.1
+    Checking bonsai-windows-process v0.1.0 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\ptq1-archive-20261103\src\windows-process)
+    Checking bonsai-broker v0.1.0 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\ptq1-archive-20261103\src\broker)
+    Finished `release` profile [optimized] target(s) in 18.89s

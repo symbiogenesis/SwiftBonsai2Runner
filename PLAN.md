@@ -28,8 +28,9 @@ resource and installation gates below with reproducible evidence before promotio
 
 The PTQ1 critical path is:
 
-1. Run and independently review the [one declared public-pack reconstruction](docs/adapter-public-reference.md)
-   of all 48 approved SSM A vectors on hosted CI. Public source describes an FP16
+1. Run the [one declared public-pack reconstruction](docs/adapter-public-reference.md)
+   of all 48 approved SSM A vectors on hosted CI, then independently replay its
+   retained comparisons with the offline scalar auditor. Public source describes an FP16
    expansion of the immutable ternary pack, so reconstruction has a concrete route;
    no successful payload result is claimed. Separately obtain/authenticate the
    original authoring inputs through the bounded schema-2 `basis-intake` contract
@@ -297,6 +298,11 @@ identity or nonzero application across conditions.
   native loading, private storage and broker-only communication without broader host
   loopback authority. Preserve atomic Job limits, exact worker identity and [native
   integration](docs/sandboxing.md#native-integration-contract), with no weaker fallback.
+- Qualify the trusted-host artifact ancestor sharing correction and its nested
+  rename/DELETE regression through owning native/AppContainer checks. Preserve
+  the contained reader's narrower metadata rights and root exclusion; trusted
+  host guards must outlive every contained reader. Final-source integration is
+  pending under the [local implementation review](docs/evidence/ptq1-local-implementation-20261103.json).
 - Bound worker scratch, PSEC-private temporary storage and stdout/stderr disk usage;
   define retention for diagnostics and credentials across retries. Qualify storage
   exhaustion and owner-loss cleanup while preserving evidence needed for review.
@@ -326,12 +332,14 @@ identity or nonzero application across conditions.
 
 ### Durable qualification evidence
 
-- Establish durable owner-managed archival for the credential-free qualification
-  selections under [evidence retention](docs/validation.md#evidence-retention). Bind
+- Deploy the native `evidence-archive` selection/seal/restore operations to durable
+  owner-managed storage under [evidence retention](docs/validation.md#evidence-retention).
+  Complete final-source maintenance CLI/analyzer and native guard acceptance. Bind
   exact files and SHA-256 digests to source/build/device identities, run and artifact
   references and independent reviews, retaining losing/no-go results. Automate capture
-  before temporary Actions artifacts expire and rehearse digest-verified retrieval
-  without the original runner. Missing archived evidence keeps promotion pending.
+  before temporary Actions artifacts expire and rehearse the actual durable backup's
+  digest-verified retrieval without the original runner. Local fixture retrieval does
+  not establish durable deployment. Missing archived evidence keeps promotion pending.
 
 ## Runtime and correctness
 

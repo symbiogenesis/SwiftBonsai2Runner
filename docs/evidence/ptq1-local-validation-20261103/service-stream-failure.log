@@ -1,0 +1,14 @@
+   Compiling tokio v1.54.1
+   Compiling http v1.5.0
+   Compiling subtle v2.6.1
+   Compiling mxc-sdk v1.0.1
+   Compiling bonsai-windows-process v0.1.0 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\ptq1-archive-20261103\src\windows-process)
+   Compiling bonsai-broker v0.1.0 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\ptq1-archive-20261103\src\broker)
+    Finished `release` profile [optimized] target(s) in 33.60s
+     Running tests\native_model.rs (C:\Users\symbi\AppData\Local\Temp\ptq1-local-validation-20261103\target\release\build\bonsai-broker/09399f09e9c080d0\out\native_model-09399f09e9c080d0.exe)
+
+running 1 test
+test native_adapter_stream_failures_retain_bound_requests_and_pending_response ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 71 filtered out; finished in 0.00s
+
