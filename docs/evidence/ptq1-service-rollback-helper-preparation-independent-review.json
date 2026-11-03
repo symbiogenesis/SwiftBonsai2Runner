@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "kind": "independent-source-only-future-owner-helper-preparation-review",
+  "reviewerId": "Codex:/root/review",
+  "status": "source-preparation-reviewed-not-authorized-not-executed",
+  "preparedDirectory": "C:\\tmp\\Bonsai-Ptq1ServiceRollback-0114-20261102",
+  "preparationManifestSha256": "d07e6d9340fdd09d5883d7b3a034be6258c85903e7232a4f583ed81693cdda20",
+  "profile": "ptq1-adapter-service-rollback-row4",
+  "runtimeVersion": "0.1.14",
+  "runtimeRevision": "9e8ea3e2c042ab0c3f1a8e9596ff155e202c3c57",
+  "runtimeArchiveBytes": 3219185,
+  "runtimeArchiveSha256": "9a2cd183c048c49120a8d8cf1360b24ee08695a1b92fded7dbd918dd9f576759",
+  "sourceHashes": [
+    {
+      "file": "Invoke-GuardedServiceRollback0114Session.ps1",
+      "bytes": 8234,
+      "sha256": "29549d7e359a37a1e0d7ca74fb1cdc2e637745052a5d9855658608c006dcf072"
+    },
+    {
+      "file": "Invoke-TemporaryPtq1ServiceRollback0114Owner.ps1",
+      "bytes": 42663,
+      "sha256": "ce5afdf5805b7298022090f4f1bd59ad7914936e245eae449949e8faa678de11"
+    },
+    {
+      "file": "session-owner-intake.ps1",
+      "bytes": 24525,
+      "sha256": "31a59c3e5d5c2585698e4e7e1e7b76f9739ebc16b562119296e5336684a8fa14"
+    }
+  ],
+  "independentChecks": {
+    "preparedFileLengthAndHashRecordsMatched": 8,
+    "preservedOriginalBaselineLengthAndHashRecordsMatched": 3,
+    "completeAdaptationDiffsReviewed": 3,
+    "allThreeFull40HexRevisionPatternsPreserved": true,
+    "shortened10HexRevisionPatternAbsent": true,
+    "oldClockOrResultCopiedOrTouchedByReviewer": false,
+    "newHelperInvokedByReviewer": false,
+    "newClockCreatedByReviewer": false
+  },
+  "preparedAllocation": {
+    "originalSeconds": 290,
+    "conservativeEarlierChargeSeconds": 10,
+    "ownerWorkSeconds": 270,
+    "ownerTotalSeconds": 280,
+    "outerProcessCutoffSeconds": 288,
+    "ownerCleanupReserveSeconds": 10,
+    "archiveReserveSeconds": 10,
+    "testProcessExitReserveSeconds": 15,
+    "nativeOwnedCleanupReserveSeconds": 30,
+    "casePostCleanupHashReserveSeconds": 15,
+    "deadlineExtensionAllowed": false,
+    "repeatModelAttemptsAllowed": false,
+    "scope": "Source allocation only. These values neither authorize another workload nor prove that the combined workload fits. Original existing helpers' bounds and bounded parent power observations are preserved."
+  },
+  "guardReview": "The new guardian requires the reviewed approval-file SHA and reviewed selection SHA. It checks fresh-user and post-CI parent approval flags, exact new directory/profile/selection binding, an approval-message reference, unchanged allocation and a single attempt before any new clock can be created. It refuses an existing clock. Selection additionally binds exact runtime, source, archive and hash-verified intake/owner helpers. This is a mechanical binding; authentic user authorization and independent parent review remain prerequisites.",
+  "currentUnreadyState": "ReadyForExecution=false; Runner revision, workflow/preparation/Foundation/artifact/compiler/listener identities are null; fresh-session/user/parent approval flags are false and the approval reference and bound selection digest are null. This reviewed preparation must not execute in its current state.",
+  "requiredFinalFreeze": "After release publication, exact Runner source and complete owning hosted checks, prepare the concrete source-bound native acceptance package and fill all identities. Recompute and independently review helper, selection and approval hashes. Only an authentic new user authorization that addresses the owner-device aggregate limit can authorize any future session. This report grants no permission and records no human approval.",
+  "originalSessionDisposition": "The original service session is permanently closed at 119.7370729 charged seconds. No file copy, new profile, new directory, CI preparation, or approval placeholder reopens or extends that session.",
+  "newReviewerDeviceDiagnostics": 0,
+  "newReviewerModelExecutions": 0,
+  "newReviewerLocalBuildsOrTests": 0,
+  "actualNewReleaseRollbackQualified": false,
+  "releasedServiceGateQualified": false,
+  "defaultPromotionQualified": false
+}
