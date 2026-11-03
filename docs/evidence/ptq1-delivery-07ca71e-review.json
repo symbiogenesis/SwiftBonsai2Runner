@@ -1,0 +1,353 @@
+{
+  "schemaVersion": 1,
+  "kind": "independent-final-delivery-ptq1-applicability-and-power-review",
+  "recordedDate": "2026-11-02",
+  "reviewerId": "Codex:/root/gate_audit",
+  "deliveryRevision": "07ca71e2fa32c0f8391f99f5ba536c4b6ddf244e",
+  "frozenDeviceAndPromotionRevision": "bb020f45169b0698678ca5f789aef7af8cdc12b2",
+  "status": "reviewed-source-and-required-hosted-checks-passed",
+  "sourceFindings": [],
+  "sourceApplicability": {
+    "productionBrokerUiTransportAndWindowsOwnershipSourceUnchanged": true,
+    "allModelRuntimeAdapterTemplateAndExportLocksUnchanged": true,
+    "cargoManifestsAndLockUnchanged": true,
+    "promotionEvaluatorAndAllNineteenGateRequirementsUnchanged": true,
+    "cpuPolicyLibraryChange": "An additive pure power-observation formatter/comparator module and module export. Existing profile/admission/reserve and runtime-selection functions are unchanged. Do not describe the whole CPU-policy source as unchanged.",
+    "diagnosticAndHarnessChanges": "Explicit original-PQ2 rollback selection and independent-arm retention; new bounded row4 scale-boundary/reset lane; power receipts and comparison eligibility for application/numerical/request-timing captures; fixture JSON-roundtrip/format correction. No serving default or native UI architecture change.",
+    "newHarnessDeviceExecutionClaimed": false,
+    "frozenDeviceExecutionRelabelledAsDelivery": false
+  },
+  "reviewedSourceFiles": [
+    {
+      "file": "AGENTS.md",
+      "bytes": 2785,
+      "sha256": "f2bc9e611a424b9d8193405b1d47176d19c11f7a6c72670b417fa726fa2804c1"
+    },
+    {
+      "file": ".github/workflows/native-runtime-acceptance.yml",
+      "bytes": 37007,
+      "sha256": "c84ba43394515982b07812ae06b058bb183cf3a923ea702f2b043ea33ebfb035"
+    },
+    {
+      "file": "src/broker/tests/native_model.rs",
+      "bytes": 131703,
+      "sha256": "61c0aada32a344937cc6e2e6020153f1b30f68f4040e6c9528b7e96e14f30b1d"
+    },
+    {
+      "file": "src/broker/tests/native_model/adapter_boundaries.rs",
+      "bytes": 20098,
+      "sha256": "ff7b23d24ac726ced944a11d3489fe6ace933ded279022c162473be1073f364d"
+    },
+    {
+      "file": "src/broker/tests/native_model/power.rs",
+      "bytes": 1082,
+      "sha256": "511bd35c036a91144f2ad66f9f6b3a6f119c9cad874afea189bbaf8a01895009"
+    },
+    {
+      "file": "src/broker/tests/native_model/representation.rs",
+      "bytes": 41073,
+      "sha256": "baeeb83fa372d07675d7b6a3b683e29adb3fc056bc924808ea21a8dd9bbfbf02"
+    },
+    {
+      "file": "src/broker/tests/native_model/speed.rs",
+      "bytes": 21171,
+      "sha256": "3833690fa8d223c53fa6427661f040970ef7574c713b5f4c36800793db8d9e1f"
+    },
+    {
+      "file": "src/cpu-policy/src/lib.rs",
+      "bytes": 24944,
+      "sha256": "969e29287e24e4fba9e187379c3cfc647378a048338522e112f8ddf0d90a6380"
+    },
+    {
+      "file": "src/cpu-policy/src/power.rs",
+      "bytes": 6302,
+      "sha256": "aee8e9d0905a9ca255381a8a945b3f5ced4eea97739684f176b3cb243a8c01b3"
+    },
+    {
+      "file": "tools/bonsai/src/host_cpu.rs",
+      "bytes": 8868,
+      "sha256": "695f146711d66cc6b5de64313365ce4719a78e3f9c5e849bab1041770636ab6b"
+    },
+    {
+      "file": "tools/bonsai/src/native_qualification/windows.rs",
+      "bytes": 35145,
+      "sha256": "4cf553a0aa9a594f9378511f1b3996bdda03f02af487d203cc8e95ee71ce9df9"
+    }
+  ],
+  "powerCoverage": {
+    "readOnlyWindowsApi": "Existing bonsai_windows_process::power_status / GetSystemPowerStatus. No power setting or process policy is changed.",
+    "pureSharedSchema": "Observed AC and battery-saver values must be valid; Windows unknown AC/charge sentinels and query failure remain explicit unknowns. Charge level is context and never supplies AC state.",
+    "overallApplicationAcceptanceBeforeAfter": true,
+    "boundedAdapterAndBoundaryAcceptanceBeforeAfter": true,
+    "representationComparisonEachArmBeforeAfter": true,
+    "workerComparisonEachArmBeforeAfter": true,
+    "nativeNumericalEachModelSampleBeforeAfter": true,
+    "sourceRequestTimingSampleBeforeAfter": true,
+    "beforeReceiptPersistedBeforeModelSupervision": true,
+    "unknownOrChangedAcAndSaverSuppressQualifiedRatios": true,
+    "withinArmAndBetweenArmConditionsBothRequired": true,
+    "matchingBatteryConditionsAllowedWithoutAssumingAc": true,
+    "rawUnqualifiedObservationsAndAnswersPreserved": true,
+    "originalPq2RollbackCorrectnessIndependent": true,
+    "equalEndpointsClaimContinuousStability": false,
+    "originalDeadlineAndCleanupReservesUnchanged": true,
+    "newQueriesShareExistingAggregateAllowance": true,
+    "coverageBoundary": "These wired native acceptance, numerical/row and source request-timing entry points are reviewed. The durable AGENTS policy governs other future laptop trials; this review does not assert that every possible standalone trial tool automatically enforces it."
+  },
+  "fixtureCorrection": {
+    "previousFailureRun": "41574336487",
+    "failureScope": "One formatting wrap plus equality of deserialized JSON with nondeterministic in-memory f64 timing; previous clippy/doc/build passed.",
+    "correction": "Compare the complete persisted structure after the same JSON serialization/parse and separately require exactly three streamed progress entries with finite positive timing in both copies. Existing wire, identity, signed-zero, cap, digest, usage, rejection and successful/failed replay assertions remain.",
+    "protocolOrGateRequirementsRelaxed": false,
+    "additionalReadOnlyReviewer": "Codex:/root/rollback_gate",
+    "additionalReview": "Targeted c65e7eb to 07ca71e review found no remaining bug; only Rust delta from previously reviewed power source is the fixture persistence assertion correction. No additional probe, build or test ran."
+  },
+  "frozenEvidenceIntegrity": {
+    "producerManifestFilesVerifiedAtDelivery": 63,
+    "producerManifestSha256": "80f798d751c80a29654279456d6db1249648b8f2e1bff136ab538de95ccc6193",
+    "rawEvidenceAndScoreUnchanged": true,
+    "gateCounts": {
+      "passed": 6,
+      "pending": 13,
+      "rejected": 0
+    },
+    "promotionReady": false,
+    "closedOriginalPq2RollbackGatePreserved": true,
+    "historicalAcOrBattery": "unknown-not-recorded",
+    "historicalPerformanceComparisonEligible": false,
+    "historicalRawLatencyRatioUncontrolled": 1.9438936570954222,
+    "retainedOriginalClockChargedSeconds": 192.4873582,
+    "additionalOwnerTrials": 0
+  },
+  "hostedChecks": {
+    "foundation": {
+      "id": 41575310068,
+      "head_sha": "07ca71e2fa32c0f8391f99f5ba536c4b6ddf244e",
+      "head_branch": "main",
+      "event": "push",
+      "path": ".github/workflows/foundation.yml",
+      "run_attempt": 1,
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41575310068",
+      "updated_at": "2026-11-03T04:08:14Z",
+      "jobs": [
+        {
+          "id": 125717313527,
+          "name": "changes",
+          "status": "completed",
+          "conclusion": "success",
+          "labels": [
+            "ubuntu-24.04-arm"
+          ],
+          "runner_name": "GitHub Actions 1000021311"
+        },
+        {
+          "id": 125717704251,
+          "name": "broker / ui",
+          "status": "completed",
+          "conclusion": "success",
+          "labels": [
+            "windows-11-arm"
+          ],
+          "runner_name": "GitHub Actions 1000021314"
+        },
+        {
+          "id": 125717704310,
+          "name": "maintenance",
+          "status": "completed",
+          "conclusion": "success",
+          "labels": [
+            "windows-11-arm"
+          ],
+          "runner_name": "GitHub Actions 1000021316"
+        },
+        {
+          "id": 125717704345,
+          "name": "broker / core",
+          "status": "completed",
+          "conclusion": "success",
+          "labels": [
+            "windows-11-arm"
+          ],
+          "runner_name": "GitHub Actions 1000021315"
+        },
+        {
+          "id": 125719192358,
+          "name": "speech / asr",
+          "status": "completed",
+          "conclusion": "success",
+          "labels": [
+            "windows-11-arm"
+          ],
+          "runner_name": "GitHub Actions 1000021318"
+        },
+        {
+          "id": 125719192359,
+          "name": "Native integration",
+          "status": "completed",
+          "conclusion": "success",
+          "labels": [
+            "windows-11-arm"
+          ],
+          "runner_name": "GitHub Actions 1000021321"
+        },
+        {
+          "id": 125719192392,
+          "name": "speech / tts",
+          "status": "completed",
+          "conclusion": "success",
+          "labels": [
+            "windows-11-arm"
+          ],
+          "runner_name": "GitHub Actions 1000021319"
+        },
+        {
+          "id": 125719192407,
+          "name": "release-integration",
+          "status": "completed",
+          "conclusion": "success",
+          "labels": [
+            "windows-11-arm"
+          ],
+          "runner_name": "GitHub Actions 1000021320"
+        },
+        {
+          "id": 125720463930,
+          "name": "foundation",
+          "status": "completed",
+          "conclusion": "success",
+          "labels": [
+            "ubuntu-24.04-arm"
+          ],
+          "runner_name": "GitHub Actions 1000021324"
+        }
+      ]
+    },
+    "boundaryPreparation": {
+      "runId": "41575310079",
+      "revision": "07ca71e2fa32c0f8391f99f5ba536c4b6ddf244e",
+      "workflowPath": ".github/workflows/native-runtime-acceptance.yml",
+      "prepareJobId": "125717318548",
+      "prepareStatus": "completed",
+      "prepareConclusion": "success",
+      "ownerExecutionPermittedByThisReview": false,
+      "branch": "main",
+      "event": "workflow_dispatch",
+      "runAttempt": 1,
+      "status": "completed",
+      "conclusion": "cancelled",
+      "prepareRunnerName": "GitHub Actions 1000021313",
+      "prepareLabels": [
+        "windows-11-arm"
+      ],
+      "ownerJobId": "125719427186",
+      "ownerStatus": "completed",
+      "ownerConclusion": "cancelled",
+      "ownerRunnerName": "",
+      "ownerLabels": [
+        "native-acceptance-41575310079"
+      ],
+      "ownerAssigned": false,
+      "scope": "Hosted exact-source preparation passed. Root deliberately cancelled the queued unassigned owner job; empty runner_name confirms no runner assignment. The workflow cancellation is not a failed model trial or another owner qualification."
+    },
+    "scope": "Final reviewer independently read authenticated exact07/main/attempt1 run and complete job metadata after completion. All nine Foundation jobs passed. Successful Hexagon source controls/artifact binding are distinct from skipped owner inventory/session-probe/dispatch. Hosted boundary preparation passed; its deliberately cancelled unassigned owner job supplies no model qualification.",
+    "hexagonHostedControls": {
+      "id": 41575310158,
+      "head_sha": "07ca71e2fa32c0f8391f99f5ba536c4b6ddf244e",
+      "head_branch": "main",
+      "event": "push",
+      "path": ".github/workflows/hexagon-qualification.yml",
+      "run_attempt": 1,
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41575310158",
+      "updated_at": "2026-11-03T04:07:53Z",
+      "jobs": [
+        {
+          "id": 125717313633,
+          "name": "controls",
+          "status": "completed",
+          "conclusion": "success",
+          "labels": [
+            "windows-11-arm"
+          ],
+          "runner_name": "GitHub Actions 1000021309"
+        },
+        {
+          "id": 125717314174,
+          "name": "artifact-binder",
+          "status": "completed",
+          "conclusion": "success",
+          "labels": [
+            "windows-11-arm"
+          ],
+          "runner_name": "GitHub Actions 1000021312"
+        },
+        {
+          "id": 125720412030,
+          "name": "inventory",
+          "status": "completed",
+          "conclusion": "skipped",
+          "labels": [
+            "self-hosted",
+            "Windows",
+            "ARM64",
+            "swift-bonsai-snapdragon"
+          ],
+          "runner_name": null
+        },
+        {
+          "id": 125720412162,
+          "name": "session-probe",
+          "status": "completed",
+          "conclusion": "skipped",
+          "labels": [
+            "self-hosted",
+            "Windows",
+            "ARM64",
+            "swift-bonsai-snapdragon"
+          ],
+          "runner_name": null
+        },
+        {
+          "id": 125720413024,
+          "name": "dispatch",
+          "status": "completed",
+          "conclusion": "skipped",
+          "labels": [
+            "self-hosted",
+            "Windows",
+            "ARM64",
+            "swift-bonsai-snapdragon"
+          ],
+          "runner_name": null
+        }
+      ]
+    }
+  },
+  "deliveryClaims": {
+    "defaultChanged": false,
+    "experimentalLabelRemoved": false,
+    "readmeReportsSixPassedThirteenPendingFrozenGates": true,
+    "futurePowerRuleRetainedInAgents": true,
+    "remainingExternalProvenanceHumanFullContextResourceIsolationAndInstallGatesWaived": false
+  },
+  "reviewerExecutions": {
+    "modelTrials": 0,
+    "deviceProbes": 0,
+    "localBuilds": 0,
+    "localTests": 0,
+    "evaluatorsOrComparators": 0
+  },
+  "scope": "Independent exact-commit source review, static source continuity, bounded retained-document integrity and authenticated remote CI metadata only. This report is separate from the frozen promotion bundle and changes none of its bytes or historical identities.",
+  "laterDocumentationOnlyContinuity": {
+    "revision": "980257f0f7ced5225538181f6d73beb24302d19e",
+    "changedPaths": [
+      "docs/swift-memory.md"
+    ],
+    "sourceAndPolicyUnchanged": true,
+    "review": "The memory documentation now reflects six frozen passed gates and thirteen pending, bounded complete-answer/rollback evidence, unknown historical power and the slower uncontrolled PTQ1 observation. It introduces no new qualification claim."
+  },
+  "reviewConclusion": "No unresolved source-review finding remains. The exact delivered source passes required hosted Foundation and bounded source controls. Frozen original-PQ2 rollback remains the only newly closed device gate; the six-passed/thirteen-pending promotion score, unknown historical power and default qualification limits remain unchanged."
+}
