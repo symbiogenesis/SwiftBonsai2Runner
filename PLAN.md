@@ -109,6 +109,17 @@ pending gates. Full suites, benchmarks and performance captures stay in owning C
 
 ### Actual-model acceptance
 
+Validate the [Rust development-default integration](docs/evidence/rust-development-default-20261103/summary.json)
+on settled main in owner-managed checks. Its one model-free local run passed thirty
+focused selection, handoff and qualification-profile controls plus the maintenance
+Release build, then stopped on three strict analyzer findings. The small source
+corrections are applied but uncompiled; final all-target analyzers remain pending,
+including chat, which was not reached. Preserve that closed 73.123-second clock and
+its original power observations. The development selection does not close actual-model
+acceptance, and no existing maintenance installation was replaced by that failed run.
+Keep the separately recorded local delivery's tested executable identity distinct
+from the later source-only analyzer corrections; it supplies no additional test verdict.
+
 Qualify the [owner-packet controls](docs/evidence/native-owner-packet-controls-20261103/summary.json)
 on settled main through owner-managed hosted preparation: explicit connection
 refusal must confirm listener release, and the PTQ1 sequence must preserve the

@@ -1,0 +1,157 @@
+import ctypes
+import hashlib
+import json
+import os
+from pathlib import Path
+import re
+import shutil
+import subprocess
+import time
+
+ROOT = Path(__file__).parent
+REPO = Path(r'C:\Users\symbi\source\repos\SwiftBonsai2Runner')
+COMPILER = Path(r'C:\Users\symbi\.rustup\toolchains\nightly-2026-11-02-aarch64-pc-windows-msvc\bin')
+TOOLS_TARGET = Path(r'C:\Users\symbi\AppData\Local\Temp\ptq1-local-validation-20261103\target')
+CHAT_TARGET = Path(r'C:\Users\symbi\AppData\Local\SwiftBonsai2\build\chat\cd31d71ca8da53bd5d98bc6d')
+ARCHIVE = REPO / 'docs/evidence/rust-development-default-20261103'
+SOURCES = [
+    'src/broker/src/launcher.rs', 'src/broker/tests/native_model.rs',
+    'src/broker/tests/native_model/representation.rs', 'src/chat-ui/src/client.rs',
+    'src/chat-ui/src/main.rs', 'src/chat-ui/src/window.rs',
+    'tools/bonsai/src/chat_launch.rs', 'tools/bonsai/src/chat_launch/tests.rs',
+    'tools/bonsai/src/cli.rs', 'tools/bonsai/src/main.rs',
+]
+PLAN = dict(schemaVersion=1, kind='fixed-rust-development-default-source-validation',
+    maximumTotalSeconds=600, workCutoffSeconds=540, conservativeEstimateSeconds=480,
+    reason='One dedicated model-free integration check of the new engine default and manual rollback. Native UI test linking plus strict Release analyzers across three application packages may exceed five minutes. Reuse existing Cargo artifacts; retain sixty seconds for process cleanup and evidence. No earlier clock is reopened.',
+    fixedWork=['Format changed Rust files; parse the convenience launcher',
+        'Focused tools CLI and deferred-startup controls',
+        'Two broker launcher selection/worker controls and three model-free qualification-profile controls',
+        'Build maintenance executable; two UI default/forwarding controls',
+        'Strict Release all-target tools/broker/chat Clippy',
+        'Install checked maintenance executable only if all requested checks pass; retain raw logs, source hashes and power endpoints'],
+    failurePolicy='Stop at first failure or original work cutoff, without retries or a new clock. Unexecuted checks remain pending.',
+    powerScope='Aggregate and per-check Windows GetSystemPowerStatus endpoints. No timing comparison or continuous-stability claim.',
+    modelExecutions=0, benchmarks=0, fullSuites=0, ciActions=0, pushes=0)
+ROOT.mkdir(parents=True, exist_ok=True)
+(ROOT / 'plan.json').write_text(json.dumps(PLAN, indent=2) + '\n', encoding='utf-8')
+
+class Power(ctypes.Structure):
+    _fields_ = [('ac', ctypes.c_ubyte), ('flags', ctypes.c_ubyte),
+        ('percent', ctypes.c_ubyte), ('saver', ctypes.c_ubyte),
+        ('life', ctypes.c_uint32), ('full_life', ctypes.c_uint32)]
+
+def power():
+    status = Power()
+    result = dict(observedAtUtc=time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
+        source='GetSystemPowerStatus', acConnected=None, batterySaver=None, chargePercent=None)
+    if ctypes.windll.kernel32.GetSystemPowerStatus(ctypes.byref(status)):
+        result.update(acConnected={0: False, 1: True}.get(status.ac),
+            batterySaver={0: False, 1: True}.get(status.saver),
+            chargePercent=status.percent if status.percent <= 100 else None,
+            batteryFlags=int(status.flags))
+    return result
+
+started = time.monotonic()
+receipt = dict(schemaVersion=1, kind=PLAN['kind'], startedAtUtc=time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
+    maximumTotalSeconds=600, workCutoffSeconds=540, sourceBaseRevision=(REPO / '.git/refs/heads/main').read_text().strip(),
+    checks=[], powerBefore=power(), modelExecutions=0, benchmarks=0, fullSuites=0, ciActions=0,
+    performanceComparisonQualified=False, fullyQualifiedRuntimePromotion=False)
+env = os.environ.copy()
+env.update(PATH=str(COMPILER) + os.pathsep + env['PATH'], RUSTC=str(COMPILER / 'rustc.exe'),
+    RUSTDOC=str(COMPILER / 'rustdoc.exe'), CARGO_UNSTABLE_CHECKSUM_FRESHNESS='true', CARGO_BUILD_FINGERPRINT='content')
+
+def elapsed():
+    return time.monotonic() - started
+
+def save():
+    receipt['elapsedSeconds'] = elapsed()
+    (ROOT / 'receipt.json').write_text(json.dumps(receipt, indent=2) + '\n', encoding='utf-8')
+
+def run(name, command, target=None, tests=False):
+    remaining = 540 - elapsed()
+    if remaining < 5:
+        raise RuntimeError('Original work cutoff reached; remaining checks stay pending.')
+    check = dict(name=name, command=[str(arg) for arg in command], startedSeconds=elapsed(), powerBefore=power(), passed=False)
+    receipt['checks'].append(check)
+    save()
+    print('Running ' + name, flush=True)
+    jobenv = env.copy()
+    if target:
+        jobenv['CARGO_TARGET_DIR'] = str(target)
+    with (ROOT / (name + '.stdout.log')).open('wb') as out, (ROOT / (name + '.stderr.log')).open('wb') as err:
+        child = subprocess.Popen(command, cwd=REPO, env=jobenv, stdout=out, stderr=err, creationflags=subprocess.CREATE_NO_WINDOW)
+        try:
+            check['exitCode'] = child.wait(timeout=max(1, 540 - elapsed()))
+            check['passed'] = check['exitCode'] == 0
+        except subprocess.TimeoutExpired:
+            check['failure'] = 'original-work-cutoff'
+            subprocess.run(['C:/Windows/System32/taskkill.exe', '/PID', str(child.pid), '/T', '/F'],
+                stdout=out, stderr=err, timeout=10, check=False)
+            child.wait(timeout=5)
+        finally:
+            check.update(finishedSeconds=elapsed(), powerAfter=power())
+    if tests and check['passed']:
+        output = (ROOT / (name + '.stdout.log')).read_text(encoding='utf-8', errors='replace')
+        matches = re.findall(r'test result: ok\. (\d+) passed;', output)
+        check['testsPassed'] = sum(map(int, matches))
+        check['passed'] = check['testsPassed'] > 0
+    save()
+    if not check['passed']:
+        print((ROOT / (name + '.stderr.log')).read_text(encoding='utf-8', errors='replace')[-7000:], flush=True)
+        print((ROOT / (name + '.stdout.log')).read_text(encoding='utf-8', errors='replace')[-5000:], flush=True)
+        raise RuntimeError('Check failed: ' + name)
+    print(name + ' passed' + (': ' + str(check['testsPassed']) + ' tests' if tests else ''), flush=True)
+
+def cargo(name, args, target=TOOLS_TARGET, tests=False):
+    run(name, [str(COMPILER / 'cargo.exe'), args[0], '--locked', '--offline', '--release', '--manifest-path', str(REPO / 'Cargo.toml')] + args[1:], target, tests)
+
+try:
+    run('changed-rust-format', [str(COMPILER / 'rustfmt.exe'), '--edition', '2024', '--config', 'skip_children=true'] + [str(REPO / path) for path in SOURCES])
+    parser = "$parseTokens=$null; $parseErrors=$null; [Management.Automation.Language.Parser]::ParseFile('" + str(REPO / 'scripts/Start-Chat.ps1') + "',[ref]$parseTokens,[ref]$parseErrors) | Out-Null; if ($parseErrors.Count) { $parseErrors | ForEach-Object Message; exit 1 }"
+    run('launcher-powershell-parse', ['powershell.exe', '-NoProfile', '-NonInteractive', '-Command', parser])
+    cargo('tools-cli-selection', ['test', '-p', 'bonsai-tools', '--lib', 'cli::tests::'], tests=True)
+    cargo('tools-deferred-launch', ['test', '-p', 'bonsai-tools', '--lib', 'chat_launch::tests::', '--', '--test-threads=1'], tests=True)
+    for name in ['rust_is_swift_development_default_and_publisher_is_explicit_rollback',
+                 'native_row_workers_are_explicit_bounded_and_reach_only_the_native_child']:
+        cargo(name, ['test', '-p', 'bonsai-broker', '--lib', name], tests=True)
+    for name in ['native_row4_profile_is_explicit_original_pq2_and_one_stream_only',
+                 'native_ptq1_row4_lifecycle_is_explicit_and_preserves_the_required_workload',
+                 'native_representation_row4_profile_is_explicit_and_preserves_pair']:
+        cargo(name, ['test', '-p', 'bonsai-broker', '--test', 'native_model', name], tests=True)
+    cargo('maintenance-release-build', ['build', '-p', 'bonsai-tools', '--bin', 'bonsai-tools'])
+    for name in ['rust_development_defaults_preserve_explicit_runtime_weight_and_adapter_choices',
+                 'explicit_runtime_and_row_workers_preserve_model_adapter_and_publisher_rollback']:
+        cargo(name, ['test', '--target', 'aarch64-pc-windows-msvc', '-p', 'bonsai-chat', '--bin', 'bonsai-chat', name], CHAT_TARGET, tests=True)
+    cargo('tools-broker-strict-release-clippy', ['clippy', '-p', 'bonsai-tools', '-p', 'bonsai-broker', '--all-targets', '--', '-D', 'warnings'])
+    cargo('chat-strict-release-clippy', ['clippy', '--target', 'aarch64-pc-windows-msvc', '-p', 'bonsai-chat', '--all-targets', '--', '-D', 'warnings'], CHAT_TARGET)
+    if elapsed() > 535:
+        raise RuntimeError('Insufficient original allowance to install maintenance executable.')
+    built = TOOLS_TARGET / 'release/bonsai-tools.exe'
+    installed = Path(os.environ['LOCALAPPDATA']) / 'SwiftBonsai2/build/maintenance/release/bonsai-tools.exe'
+    backup = ROOT / 'previous-bonsai-tools.exe'
+    if installed.exists():
+        shutil.copy2(installed, backup)
+    installed.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(built, installed)
+    receipt['maintenanceInstallation'] = dict(path=str(installed), sha256=hashlib.sha256(installed.read_bytes()).hexdigest(), previousExecutableRetained=str(backup))
+    receipt['allRequestedChecksPassed'] = True
+except Exception as error:
+    receipt['allRequestedChecksPassed'] = False
+    receipt['failure'] = str(error)
+    print(str(error), flush=True)
+finally:
+    receipt['sourceFiles'] = {path: hashlib.sha256((REPO / path).read_bytes()).hexdigest() for path in SOURCES}
+    receipt['powerAfterWork'] = power()
+    save()
+    ARCHIVE.mkdir(parents=True, exist_ok=True)
+    for path in ROOT.iterdir():
+        if path.suffix in ('.json', '.log', '.py'):
+            shutil.copy2(path, ARCHIVE / path.name)
+    receipt['powerAfterRetention'] = power()
+    receipt['clockClosed'] = True
+    receipt['chargedSecondsThroughRetention'] = elapsed()
+    receipt['retainedWithinDeclaredTotal'] = elapsed() <= 600
+    save()
+    shutil.copy2(ROOT / 'receipt.json', ARCHIVE / 'receipt.json')
+    print(json.dumps({key: receipt.get(key) for key in ['allRequestedChecksPassed', 'failure', 'chargedSecondsThroughRetention', 'retainedWithinDeclaredTotal']}), flush=True)

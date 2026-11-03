@@ -1,0 +1,4 @@
+   Compiling bonsai-windows-process v0.1.0 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\src\windows-process)
+   Compiling bonsai-tools v0.1.0 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\tools\bonsai)
+    Finished `release` profile [optimized] target(s) in 16.32s
+     Running unittests src\lib.rs (C:\Users\symbi\AppData\Local\Temp\ptq1-local-validation-20261103\target\release\build\bonsai-tools/9ea432ffc44f85a8\out\bonsai_tools-9ea432ffc44f85a8.exe)

@@ -1,0 +1,24 @@
+
+running 19 tests
+test chat_launch::tests::build_failure_and_nonzero_app_exit_remain_errors ... ok
+test chat_launch::tests::deferred_preparation_never_rebuilds_running_chat_and_keeps_backend_policy ... ok
+test chat_launch::tests::development_default_and_explicit_rollback_survive_deferred_preparation ... ok
+test chat_launch::tests::early_window_failure_retains_nonzero_exit_and_skips_backend_work ... ok
+test chat_launch::tests::explicit_rust_runtime_survives_early_window_and_backend_preparation ... ok
+test chat_launch::tests::explicit_speech_files_and_text_only_never_build_or_download_speech ... ok
+test chat_launch::tests::failed_native_runtime_preparation_stops_before_downloads_builds_and_keys ... ok
+test chat_launch::tests::invalid_options_reject_before_provisioning ... ok
+test chat_launch::tests::missing_app_selection_and_force_build_reach_build_owners ... ok
+test chat_launch::tests::native_alternate_profiles_keep_verified_launch_options ... ok
+test chat_launch::tests::native_runtime_preparation_uses_matching_lock_before_backend_work ... ok
+test chat_launch::tests::native_window_handoff_precedes_backend_downloads_builds_and_keys ... ok
+test chat_launch::tests::one_owned_service_does_not_prepare_the_other_engine ... ok
+test chat_launch::tests::ordinary_startup_only_prepares_owned_services_and_creates_independent_keys ... ok
+test chat_launch::tests::prebuilt_paths_skip_builds_and_all_profile_choices_are_forwarded ... ok
+test chat_launch::tests::renderer_guidance_uses_only_the_selected_adapter_record ... ok
+test chat_launch::tests::renderer_staging_failure_guidance_requires_the_recorded_panic ... ok
+test chat_launch::tests::speech_models_only_fully_verifies_without_app_builds_keys_or_launch ... ok
+test chat_launch::tests::weight_selection_survives_deferred_json_and_emits_one_explicit_app_flag ... ok
+
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 286 filtered out; finished in 0.23s
+

@@ -1,0 +1,46 @@
+    Checking tokio v1.54.1
+    Checking mxc-sdk v1.0.1
+    Checking bonsai-windows-process v0.1.0 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\src\windows-process)
+    Checking bonsai-broker v0.1.0 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\src\broker)
+    Checking bonsai-tools v0.1.0 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\tools\bonsai)
+error: this function has too many lines (103/100)
+   --> src\broker\src\launcher.rs:145:5
+    |
+145 |     pub fn parse(args: impl IntoIterator<Item = OsString>) -> Result<Self, LaunchError> {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://clippy.rust-lang.org/main/index.html#too_many_lines
+    = note: `-D clippy::too-many-lines` implied by `-D clippy::pedantic`
+    = help: to override `-D clippy::pedantic` add `#[allow(clippy::too_many_lines)]`
+
+error: could not compile `bonsai-broker` (lib) due to 1 previous error
+warning: build failed, waiting for other jobs to finish...
+error: could not compile `bonsai-broker` (lib test) due to 1 previous error
+error: this function has too many lines (101/100)
+   --> tools\bonsai\src\chat_launch.rs:416:1
+    |
+416 | / fn launch_arguments(
+417 | |     request: &Request,
+418 | |     models: Option<&Value>,
+419 | |     own_canary: bool,
+420 | |     own_tts: bool,
+421 | |     working: &Path,
+422 | | ) -> crate::Result<Vec<OsString>> {
+    | |_________________________________^
+    |
+    = help: for further information visit https://clippy.rust-lang.org/main/index.html#too_many_lines
+    = note: `-D clippy::too-many-lines` implied by `-D clippy::pedantic`
+    = help: to override `-D clippy::pedantic` add `#[allow(clippy::too_many_lines)]`
+
+error: could not compile `bonsai-tools` (lib) due to 1 previous error
+error: this creates an owned instance just for comparison
+   --> tools\bonsai\src\chat_launch\tests.rs:259:39
+    |
+259 |                         && args[1] == selected_workers.to_string())
+    |                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: try: `selected_workers`
+    |
+    = help: for further information visit https://clippy.rust-lang.org/main/index.html#cmp_owned
+    = note: `-D clippy::cmp-owned` implied by `-D clippy::all`
+    = help: to override `-D clippy::all` add `#[allow(clippy::cmp_owned)]`
+
+error: could not compile `bonsai-tools` (lib test) due to 2 previous errors

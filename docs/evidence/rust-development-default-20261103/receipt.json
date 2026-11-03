@@ -1,0 +1,548 @@
+{
+  "schemaVersion": 1,
+  "kind": "fixed-rust-development-default-source-validation",
+  "startedAtUtc": "2026-11-03T08:15:34Z",
+  "maximumTotalSeconds": 600,
+  "workCutoffSeconds": 540,
+  "sourceBaseRevision": "35d75becd6159c67489b54b5978848bbf9abd241",
+  "checks": [
+    {
+      "name": "changed-rust-format",
+      "command": [
+        "C:\\Users\\symbi\\.rustup\\toolchains\\nightly-2026-11-02-aarch64-pc-windows-msvc\\bin\\rustfmt.exe",
+        "--edition",
+        "2024",
+        "--config",
+        "skip_children=true",
+        "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\src\\broker\\src\\launcher.rs",
+        "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\src\\broker\\tests\\native_model.rs",
+        "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\src\\broker\\tests\\native_model\\representation.rs",
+        "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\src\\chat-ui\\src\\client.rs",
+        "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\src\\chat-ui\\src\\main.rs",
+        "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\src\\chat-ui\\src\\window.rs",
+        "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\tools\\bonsai\\src\\chat_launch.rs",
+        "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\tools\\bonsai\\src\\chat_launch\\tests.rs",
+        "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\tools\\bonsai\\src\\cli.rs",
+        "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\tools\\bonsai\\src\\main.rs"
+      ],
+      "startedSeconds": 0.00016510000568814576,
+      "powerBefore": {
+        "observedAtUtc": "2026-11-03T08:15:34Z",
+        "source": "GetSystemPowerStatus",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 34,
+        "batteryFlags": 0
+      },
+      "passed": true,
+      "exitCode": 0,
+      "finishedSeconds": 0.14299810001102742,
+      "powerAfter": {
+        "observedAtUtc": "2026-11-03T08:15:34Z",
+        "source": "GetSystemPowerStatus",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 34,
+        "batteryFlags": 0
+      }
+    },
+    {
+      "name": "launcher-powershell-parse",
+      "command": [
+        "powershell.exe",
+        "-NoProfile",
+        "-NonInteractive",
+        "-Command",
+        "$parseTokens=$null; $parseErrors=$null; [Management.Automation.Language.Parser]::ParseFile('C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\scripts\\Start-Chat.ps1',[ref]$parseTokens,[ref]$parseErrors) | Out-Null; if ($parseErrors.Count) { $parseErrors | ForEach-Object Message; exit 1 }"
+      ],
+      "startedSeconds": 0.1435028000123566,
+      "powerBefore": {
+        "observedAtUtc": "2026-11-03T08:15:34Z",
+        "source": "GetSystemPowerStatus",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 34,
+        "batteryFlags": 0
+      },
+      "passed": true,
+      "exitCode": 0,
+      "finishedSeconds": 0.31966010000905953,
+      "powerAfter": {
+        "observedAtUtc": "2026-11-03T08:15:34Z",
+        "source": "GetSystemPowerStatus",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 34,
+        "batteryFlags": 0
+      }
+    },
+    {
+      "name": "tools-cli-selection",
+      "command": [
+        "C:\\Users\\symbi\\.rustup\\toolchains\\nightly-2026-11-02-aarch64-pc-windows-msvc\\bin\\cargo.exe",
+        "test",
+        "--locked",
+        "--offline",
+        "--release",
+        "--manifest-path",
+        "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\Cargo.toml",
+        "-p",
+        "bonsai-tools",
+        "--lib",
+        "cli::tests::"
+      ],
+      "startedSeconds": 0.32022190000861883,
+      "powerBefore": {
+        "observedAtUtc": "2026-11-03T08:15:34Z",
+        "source": "GetSystemPowerStatus",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 34,
+        "batteryFlags": 0
+      },
+      "passed": true,
+      "exitCode": 0,
+      "finishedSeconds": 17.846653700005845,
+      "powerAfter": {
+        "observedAtUtc": "2026-11-03T08:15:52Z",
+        "source": "GetSystemPowerStatus",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 34,
+        "batteryFlags": 0
+      },
+      "testsPassed": 4
+    },
+    {
+      "name": "tools-deferred-launch",
+      "command": [
+        "C:\\Users\\symbi\\.rustup\\toolchains\\nightly-2026-11-02-aarch64-pc-windows-msvc\\bin\\cargo.exe",
+        "test",
+        "--locked",
+        "--offline",
+        "--release",
+        "--manifest-path",
+        "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\Cargo.toml",
+        "-p",
+        "bonsai-tools",
+        "--lib",
+        "chat_launch::tests::",
+        "--",
+        "--test-threads=1"
+      ],
+      "startedSeconds": 17.853277800008073,
+      "powerBefore": {
+        "observedAtUtc": "2026-11-03T08:15:52Z",
+        "source": "GetSystemPowerStatus",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 34,
+        "batteryFlags": 0
+      },
+      "passed": true,
+      "exitCode": 0,
+      "finishedSeconds": 18.437881100006052,
+      "powerAfter": {
+        "observedAtUtc": "2026-11-03T08:15:52Z",
+        "source": "GetSystemPowerStatus",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 34,
+        "batteryFlags": 0
+      },
+      "testsPassed": 19
+    },
+    {
+      "name": "rust_is_swift_development_default_and_publisher_is_explicit_rollback",
+      "command": [
+        "C:\\Users\\symbi\\.rustup\\toolchains\\nightly-2026-11-02-aarch64-pc-windows-msvc\\bin\\cargo.exe",
+        "test",
+        "--locked",
+        "--offline",
+        "--release",
+        "--manifest-path",
+        "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\Cargo.toml",
+        "-p",
+        "bonsai-broker",
+        "--lib",
+        "rust_is_swift_development_default_and_publisher_is_explicit_rollback"
+      ],
+      "startedSeconds": 18.444633700011764,
+      "powerBefore": {
+        "observedAtUtc": "2026-11-03T08:15:52Z",
+        "source": "GetSystemPowerStatus",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 34,
+        "batteryFlags": 0
+      },
+      "passed": true,
+      "exitCode": 0,
+      "finishedSeconds": 24.012643400012166,
+      "powerAfter": {
+        "observedAtUtc": "2026-11-03T08:15:58Z",
+        "source": "GetSystemPowerStatus",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 34,
+        "batteryFlags": 0
+      },
+      "testsPassed": 1
+    },
+    {
+      "name": "native_row_workers_are_explicit_bounded_and_reach_only_the_native_child",
+      "command": [
+        "C:\\Users\\symbi\\.rustup\\toolchains\\nightly-2026-11-02-aarch64-pc-windows-msvc\\bin\\cargo.exe",
+        "test",
+        "--locked",
+        "--offline",
+        "--release",
+        "--manifest-path",
+        "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\Cargo.toml",
+        "-p",
+        "bonsai-broker",
+        "--lib",
+        "native_row_workers_are_explicit_bounded_and_reach_only_the_native_child"
+      ],
+      "startedSeconds": 24.019736300004297,
+      "powerBefore": {
+        "observedAtUtc": "2026-11-03T08:15:58Z",
+        "source": "GetSystemPowerStatus",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 34,
+        "batteryFlags": 0
+      },
+      "passed": true,
+      "exitCode": 0,
+      "finishedSeconds": 24.310768500014092,
+      "powerAfter": {
+        "observedAtUtc": "2026-11-03T08:15:58Z",
+        "source": "GetSystemPowerStatus",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 34,
+        "batteryFlags": 0
+      },
+      "testsPassed": 1
+    },
+    {
+      "name": "native_row4_profile_is_explicit_original_pq2_and_one_stream_only",
+      "command": [
+        "C:\\Users\\symbi\\.rustup\\toolchains\\nightly-2026-11-02-aarch64-pc-windows-msvc\\bin\\cargo.exe",
+        "test",
+        "--locked",
+        "--offline",
+        "--release",
+        "--manifest-path",
+        "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\Cargo.toml",
+        "-p",
+        "bonsai-broker",
+        "--test",
+        "native_model",
+        "native_row4_profile_is_explicit_original_pq2_and_one_stream_only"
+      ],
+      "startedSeconds": 24.317725100001553,
+      "powerBefore": {
+        "observedAtUtc": "2026-11-03T08:15:58Z",
+        "source": "GetSystemPowerStatus",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 34,
+        "batteryFlags": 0
+      },
+      "passed": true,
+      "exitCode": 0,
+      "finishedSeconds": 32.129679600009695,
+      "powerAfter": {
+        "observedAtUtc": "2026-11-03T08:16:06Z",
+        "source": "GetSystemPowerStatus",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 34,
+        "batteryFlags": 0
+      },
+      "testsPassed": 1
+    },
+    {
+      "name": "native_ptq1_row4_lifecycle_is_explicit_and_preserves_the_required_workload",
+      "command": [
+        "C:\\Users\\symbi\\.rustup\\toolchains\\nightly-2026-11-02-aarch64-pc-windows-msvc\\bin\\cargo.exe",
+        "test",
+        "--locked",
+        "--offline",
+        "--release",
+        "--manifest-path",
+        "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\Cargo.toml",
+        "-p",
+        "bonsai-broker",
+        "--test",
+        "native_model",
+        "native_ptq1_row4_lifecycle_is_explicit_and_preserves_the_required_workload"
+      ],
+      "startedSeconds": 32.139890700011165,
+      "powerBefore": {
+        "observedAtUtc": "2026-11-03T08:16:06Z",
+        "source": "GetSystemPowerStatus",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 34,
+        "batteryFlags": 0
+      },
+      "passed": true,
+      "exitCode": 0,
+      "finishedSeconds": 32.40041800000472,
+      "powerAfter": {
+        "observedAtUtc": "2026-11-03T08:16:06Z",
+        "source": "GetSystemPowerStatus",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 34,
+        "batteryFlags": 0
+      },
+      "testsPassed": 1
+    },
+    {
+      "name": "native_representation_row4_profile_is_explicit_and_preserves_pair",
+      "command": [
+        "C:\\Users\\symbi\\.rustup\\toolchains\\nightly-2026-11-02-aarch64-pc-windows-msvc\\bin\\cargo.exe",
+        "test",
+        "--locked",
+        "--offline",
+        "--release",
+        "--manifest-path",
+        "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\Cargo.toml",
+        "-p",
+        "bonsai-broker",
+        "--test",
+        "native_model",
+        "native_representation_row4_profile_is_explicit_and_preserves_pair"
+      ],
+      "startedSeconds": 32.411229100005585,
+      "powerBefore": {
+        "observedAtUtc": "2026-11-03T08:16:06Z",
+        "source": "GetSystemPowerStatus",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 34,
+        "batteryFlags": 0
+      },
+      "passed": true,
+      "exitCode": 0,
+      "finishedSeconds": 32.7629455000133,
+      "powerAfter": {
+        "observedAtUtc": "2026-11-03T08:16:06Z",
+        "source": "GetSystemPowerStatus",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 34,
+        "batteryFlags": 0
+      },
+      "testsPassed": 1
+    },
+    {
+      "name": "maintenance-release-build",
+      "command": [
+        "C:\\Users\\symbi\\.rustup\\toolchains\\nightly-2026-11-02-aarch64-pc-windows-msvc\\bin\\cargo.exe",
+        "build",
+        "--locked",
+        "--offline",
+        "--release",
+        "--manifest-path",
+        "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\Cargo.toml",
+        "-p",
+        "bonsai-tools",
+        "--bin",
+        "bonsai-tools"
+      ],
+      "startedSeconds": 32.77073770000425,
+      "powerBefore": {
+        "observedAtUtc": "2026-11-03T08:16:07Z",
+        "source": "GetSystemPowerStatus",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 34,
+        "batteryFlags": 0
+      },
+      "passed": true,
+      "exitCode": 0,
+      "finishedSeconds": 44.80282710000756,
+      "powerAfter": {
+        "observedAtUtc": "2026-11-03T08:16:19Z",
+        "source": "GetSystemPowerStatus",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 34,
+        "batteryFlags": 0
+      }
+    },
+    {
+      "name": "rust_development_defaults_preserve_explicit_runtime_weight_and_adapter_choices",
+      "command": [
+        "C:\\Users\\symbi\\.rustup\\toolchains\\nightly-2026-11-02-aarch64-pc-windows-msvc\\bin\\cargo.exe",
+        "test",
+        "--locked",
+        "--offline",
+        "--release",
+        "--manifest-path",
+        "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\Cargo.toml",
+        "--target",
+        "aarch64-pc-windows-msvc",
+        "-p",
+        "bonsai-chat",
+        "--bin",
+        "bonsai-chat",
+        "rust_development_defaults_preserve_explicit_runtime_weight_and_adapter_choices"
+      ],
+      "startedSeconds": 44.80365560000064,
+      "powerBefore": {
+        "observedAtUtc": "2026-11-03T08:16:19Z",
+        "source": "GetSystemPowerStatus",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 34,
+        "batteryFlags": 0
+      },
+      "passed": true,
+      "exitCode": 0,
+      "finishedSeconds": 56.61548020000919,
+      "powerAfter": {
+        "observedAtUtc": "2026-11-03T08:16:30Z",
+        "source": "GetSystemPowerStatus",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 34,
+        "batteryFlags": 0
+      },
+      "testsPassed": 1
+    },
+    {
+      "name": "explicit_runtime_and_row_workers_preserve_model_adapter_and_publisher_rollback",
+      "command": [
+        "C:\\Users\\symbi\\.rustup\\toolchains\\nightly-2026-11-02-aarch64-pc-windows-msvc\\bin\\cargo.exe",
+        "test",
+        "--locked",
+        "--offline",
+        "--release",
+        "--manifest-path",
+        "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\Cargo.toml",
+        "--target",
+        "aarch64-pc-windows-msvc",
+        "-p",
+        "bonsai-chat",
+        "--bin",
+        "bonsai-chat",
+        "explicit_runtime_and_row_workers_preserve_model_adapter_and_publisher_rollback"
+      ],
+      "startedSeconds": 56.6325596000097,
+      "powerBefore": {
+        "observedAtUtc": "2026-11-03T08:16:30Z",
+        "source": "GetSystemPowerStatus",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 34,
+        "batteryFlags": 0
+      },
+      "passed": true,
+      "exitCode": 0,
+      "finishedSeconds": 57.10099630001059,
+      "powerAfter": {
+        "observedAtUtc": "2026-11-03T08:16:31Z",
+        "source": "GetSystemPowerStatus",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 34,
+        "batteryFlags": 0
+      },
+      "testsPassed": 1
+    },
+    {
+      "name": "tools-broker-strict-release-clippy",
+      "command": [
+        "C:\\Users\\symbi\\.rustup\\toolchains\\nightly-2026-11-02-aarch64-pc-windows-msvc\\bin\\cargo.exe",
+        "clippy",
+        "--locked",
+        "--offline",
+        "--release",
+        "--manifest-path",
+        "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\Cargo.toml",
+        "-p",
+        "bonsai-tools",
+        "-p",
+        "bonsai-broker",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "startedSeconds": 57.11062760000641,
+      "powerBefore": {
+        "observedAtUtc": "2026-11-03T08:16:31Z",
+        "source": "GetSystemPowerStatus",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 34,
+        "batteryFlags": 0
+      },
+      "passed": false,
+      "exitCode": 101,
+      "finishedSeconds": 73.09137910000572,
+      "powerAfter": {
+        "observedAtUtc": "2026-11-03T08:16:47Z",
+        "source": "GetSystemPowerStatus",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 34,
+        "batteryFlags": 0
+      }
+    }
+  ],
+  "powerBefore": {
+    "observedAtUtc": "2026-11-03T08:15:34Z",
+    "source": "GetSystemPowerStatus",
+    "acConnected": false,
+    "batterySaver": false,
+    "chargePercent": 34,
+    "batteryFlags": 0
+  },
+  "modelExecutions": 0,
+  "benchmarks": 0,
+  "fullSuites": 0,
+  "ciActions": 0,
+  "performanceComparisonQualified": false,
+  "fullyQualifiedRuntimePromotion": false,
+  "elapsedSeconds": 73.12234840000747,
+  "allRequestedChecksPassed": false,
+  "failure": "Check failed: tools-broker-strict-release-clippy",
+  "sourceFiles": {
+    "src/broker/src/launcher.rs": "a0c79c8c6e3cab2c5588cab9f9d14d637eac4545b9281de9e9362cdc24f3a30a",
+    "src/broker/tests/native_model.rs": "d2c87aa5c357eb4894ddd58db2215041825aaea52b260b141bdb15c6b7345e81",
+    "src/broker/tests/native_model/representation.rs": "388ba667dbeb4e62dcf0dc747b6756a3cb0b0a6325e5ca6b5a1e5de495d85288",
+    "src/chat-ui/src/client.rs": "ee3a29266c0e63f0fd63718d8fb9a287ed6c86389fc17cc989e11462caeb10cf",
+    "src/chat-ui/src/main.rs": "376812bc236b4cb667e45f9699d25f1b71702037afe4b3a11b35170550e91032",
+    "src/chat-ui/src/window.rs": "b3ba1b63a4e103a1f3915f64fb03720b26ab10754952f33ba54fa59eb0c81e02",
+    "tools/bonsai/src/chat_launch.rs": "f22001a822b7343c9a9826ce3a27683485c39ad1c8f0d9bdb9c76c732a73450d",
+    "tools/bonsai/src/chat_launch/tests.rs": "a77ddbc1dbe46a63a54d932a9e92feeaaa248f0a074454df09112d8f32808b7c",
+    "tools/bonsai/src/cli.rs": "69e04e880bbdc9de8c1e5b7ec6de8a302fdf1e983ceef8f3ec4d6b9f392145ac",
+    "tools/bonsai/src/main.rs": "ba99d487e685e8dfcd05567bcbcdfe1baa6ce9b8578461b118d3813ffe096a07"
+  },
+  "powerAfterWork": {
+    "observedAtUtc": "2026-11-03T08:16:47Z",
+    "source": "GetSystemPowerStatus",
+    "acConnected": false,
+    "batterySaver": false,
+    "chargePercent": 34,
+    "batteryFlags": 0
+  },
+  "powerAfterRetention": {
+    "observedAtUtc": "2026-11-03T08:16:47Z",
+    "source": "GetSystemPowerStatus",
+    "acConnected": false,
+    "batterySaver": false,
+    "chargePercent": 34,
+    "batteryFlags": 0
+  },
+  "clockClosed": true,
+  "chargedSecondsThroughRetention": 73.12234410000383,
+  "retainedWithinDeclaredTotal": true
+}
