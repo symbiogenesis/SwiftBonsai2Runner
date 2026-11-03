@@ -289,6 +289,8 @@ def audit(evidence, adapter_path, direction_path, revision, run_id, run_attempt)
 
     pins_raw = source_raw("tools/native-reference/public-authoring-pins.json", 65536)
     pins = strict_json(pins_raw)
+    approved_pins = json_file(repository / "tools/native-reference/public-authoring-pins.json", 65536)
+    require(pins == approved_pins, "reviewer pins differ from independently selected recipe")
     for filename, field in (("swift-lora.lock.json", "adapter"), ("swift-lora.direction.json", "direction")):
         locked = strict_json(source_raw("config/" + filename))[field]
         approved = json_file(repository / "config" / filename)[field]

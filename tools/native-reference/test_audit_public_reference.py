@@ -297,6 +297,29 @@ class PublicReplayTests(unittest.TestCase):
             self.assertFalse(result["all48PublicAComparisonPassed"])
             self.assertEqual(result["status"], "retained-result-verified")
 
+    def test_sealed_source_rejects_recipe_substitution_despite_consistent_report_and_manifest(self):
+        for mode in ("model", "config"):
+            with self.subTest(mode=mode), self.sealed_fixture() as (bundle, manifest, bind):
+                pins = copy.deepcopy(self.pins)
+                if mode == "model":
+                    pins["model"]["sha256"] = "c" * 64
+                else:
+                    raw = b'{"substituted":true}\n'
+                    pins["config"].update(bytes=len(raw), sha256=audit.digest(raw))
+                    (self.evidence / "config.json").write_bytes(raw)
+                pins_raw = encoded(pins)
+                relative = "tools/native-reference/public-authoring-pins.json"
+                (bundle / relative).write_bytes(pins_raw)
+                for item in manifest["files"]:
+                    if item["path"] == relative:
+                        item.update(bytes=len(pins_raw), sha256=audit.digest(pins_raw))
+                (bundle / "source-manifest.json").write_bytes(encoded(manifest))
+                def mutate(report):
+                    bind(report)
+                    report.update(inputPins=pins, referencePinsSha256=audit.digest(pins_raw))
+                with self.assertRaisesRegex(audit.Rejected, "independently selected recipe"):
+                    self.replay(mutate)
+
     def test_missing_or_extra_vector_files_reject(self):
         extra = self.evidence / "ssm-03.f32le"
         extra.write_bytes(b"\0" * 24576)
