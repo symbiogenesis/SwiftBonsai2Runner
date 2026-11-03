@@ -125,10 +125,24 @@ fn comparison(samples: &[Value], row_workers: u8) -> Value {
     if !matches!(row_workers, 1 | 4) || samples.len() != 2 {
         return pending("incomplete-pair");
     }
+    let runtime_lock: Value =
+        serde_json::from_str(include_str!("../../../../config/prism-inference.lock.json")).unwrap();
+    let worker_identity =
+        worker_readiness_receipt(runtime_lock["version"].as_str(), row_workers, true);
     for (index, sample) in samples.iter().enumerate() {
         let stream = &sample["stream"];
         let expected = model_identity(index == 1);
         let content = stream["visibleContent"].as_str().unwrap_or("");
+        if [
+            "rowWorkerReadinessVersion",
+            "rowWorkerCountIndependentlyObserved",
+            "observedNativeRowWorkers",
+        ]
+        .iter()
+        .any(|field| sample[field] != worker_identity[field])
+        {
+            return pending("missing-or-mismatched-worker-readiness-identity");
+        }
         if sample["modelIdentity"] != expected
             || sample["configuredNativeRowWorkers"] != row_workers
             || sample["verifiedReadinessObserved"] != true
@@ -271,11 +285,53 @@ fn native_representation_pair_requires_completion_identity_and_cleanup() {
 }
 
 fn complete_sample(repacked: bool, row_workers: u8) -> Value {
-    json!({"modelIdentity":model_identity(repacked),
+    let mut sample = json!({"modelIdentity":model_identity(repacked),
         "configuredNativeRowWorkers":row_workers,"verifiedReadinessObserved":true,
         "stream":{"finishReason":"stop","naturallyStopped":true,"reportedCompletionTokens":3,
             "visibleContent":"Oak","visibleContentSha256":digest(b"Oak"),"requestMilliseconds":1000},
-        "cleanup":{"ownedJobEmpty":true,"listenerReleased":true}})
+        "cleanup":{"ownedJobEmpty":true,"listenerReleased":true}});
+    record_worker_readiness(&mut sample, row_workers, true);
+    sample
+}
+
+#[test]
+fn native_representation_comparison_requires_released_worker_observation() {
+    for row_workers in [1, 4] {
+        let pair = vec![
+            complete_sample(false, row_workers),
+            complete_sample(true, row_workers),
+        ];
+        for (field, mismatched) in [
+            ("rowWorkerReadinessVersion", json!("unreviewed-release")),
+            (
+                "rowWorkerCountIndependentlyObserved",
+                json!(
+                    !pair[0]["rowWorkerCountIndependentlyObserved"]
+                        .as_bool()
+                        .unwrap()
+                ),
+            ),
+            (
+                "observedNativeRowWorkers",
+                json!(if row_workers == 1 { 4 } else { 1 }),
+            ),
+        ] {
+            for index in 0..2 {
+                for value in [Value::Null, mismatched.clone()] {
+                    let mut changed = pair.clone();
+                    changed[index][field] = value;
+                    assert_eq!(
+                        comparison(&changed, row_workers)["reason"],
+                        "missing-or-mismatched-worker-readiness-identity",
+                        "{field}, sample {index}"
+                    );
+                    assert!(
+                        comparison(&changed, row_workers)["ptq1OverPq2RequestLatency"].is_null()
+                    );
+                }
+            }
+        }
+    }
 }
 
 #[test]

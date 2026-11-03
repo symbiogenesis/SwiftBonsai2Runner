@@ -67,6 +67,7 @@ jobs:
               'speed::native_speed_partial_pair_survives_cancelled_second_request',
               'speed::native_speed_profile_shares_deadline_and_rejects_extra_workloads',
               'representation::native_representation_pair_requires_completion_identity_and_cleanup',
+              'representation::native_representation_comparison_requires_released_worker_observation',
               'representation::native_representation_profile_is_explicit_and_keeps_original_deadline',
               'representation::native_representation_row4_profile_is_explicit_and_preserves_pair',
               'representation::native_representation_profiles_leave_skipped_arms_pending_at_original_deadline',
