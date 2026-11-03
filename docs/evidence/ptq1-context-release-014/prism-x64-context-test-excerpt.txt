@@ -1,0 +1,4 @@
+2026-11-03T04:53:57.3338662Z test result: ok. 22 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+2026-11-03T04:54:04.3287035Z test native_backend::tests::private_typed_context_rejection_clears_count_seal_without_faulting_owner ... ok
+2026-11-03T04:54:04.3693075Z test native_swift::tests::native_swift_context_classification_requires_concrete_token_limit_error ... ok
+2026-11-03T04:54:06.3329543Z test result: ok. 22 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.01s

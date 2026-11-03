@@ -94,3 +94,9 @@ docs/evidence/ptq1-service-41577882160/exact-owner-panic.txt -whitespace
 docs/evidence/ptq1-service-41577882160/sanitized-diagnostics/startup-backend.*.txt -whitespace
 docs/evidence/ptq1-service-ci-1f6a697/** -text whitespace=cr-at-eol
 docs/evidence/ptq1-service-ci-90a62b9/** -text whitespace=cr-at-eol
+
+# Preserve exact hosted compiler and negative-fixture failure excerpts.
+docs/evidence/ptq1-context-hosted-corrections/** -text -whitespace
+
+# Preserve received release receipts, metadata and independent data-review bytes.
+docs/evidence/ptq1-context-release-014/** -text -whitespace
