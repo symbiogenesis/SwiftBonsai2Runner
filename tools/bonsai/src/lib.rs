@@ -28,6 +28,7 @@ pub const COMMANDS: &[&str] = &[
     "completion",
     "qualification",
     "runtime-promotion",
+    "evidence-archive",
     "speech-models",
     "inference-lock",
     "inference-capabilities",
@@ -85,6 +86,9 @@ pub mod qualification;
 
 /// Exact standard-profile promotion policy and offline evidence completeness review.
 pub mod runtime_promotion;
+
+/// Offline preservation and digest-anchored retrieval of reviewed evidence.
+pub mod evidence_archive;
 
 /// Pure server preflight policy shared with the development broker.
 pub mod server;

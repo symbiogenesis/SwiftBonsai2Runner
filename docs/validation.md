@@ -759,6 +759,15 @@ Do not expand upload selections to include credentials, private conversations,
 model weights or adapters. Run URLs and expired artifacts alone cannot reproduce
 evidence; unavailable evidence leaves the associated gate pending.
 
+The native [`evidence-archive` command](../tools/bonsai/README.md#command-boundary)
+seals an explicit reviewed file/length/SHA-256 selection with its exact identity
+records, then verifies or restores it using a separately retained manifest digest.
+It rejects missing, changed, additional or redirected entries and never overwrites
+an archive. This supplies local byte-preserving archive/retrieval mechanics;
+deployment to durable owner-managed storage and capture before artifact expiry
+remain independent requirements. Integrity is separate from execution, provenance,
+independent review and promotion.
+
 ## Promotion criteria
 
 Every promoted runtime/profile must:

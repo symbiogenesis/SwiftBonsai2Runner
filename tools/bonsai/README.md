@@ -83,6 +83,38 @@ rejected before an operation can start.
 
 ## Command boundary
 
+`evidence-archive` preserves an explicitly reviewed credential-free upload
+selection outside Git. It performs no download, CI query, model work or gate
+scoring. A `seal` request supplies existing `sourceDirectory`, fresh
+`outputDirectory` (its parent must exist), `credentialFreeSelectionReviewed: true`,
+an `identities` object containing the exact source/build/device/run/artifact and
+review references, and `files`: explicit `{path, bytes, sha256}` records from the
+reviewed capture selection. Relative paths use `/`; no recursive source discovery
+occurs. Keep failed/no-go receipts in the selection. Model/adapters, credentials,
+conversations and executable payloads are excluded; the caller still reviews file
+contents, because filename checks cannot establish that arbitrary text is public.
+
+The command copies exact selected bytes and writes `evidence-manifest.json` last.
+It bounds each file to 64 MiB, the selection to 4096 files / 256 MiB and the
+manifest to 1 MiB. Existing destinations, path aliases, redirects, Git storage and
+overlapping source/destination trees reject. Failed writes leave a new incomplete
+directory for diagnosis and never replace a backup. Preserve the returned
+`manifestSha256` **separately from the archive**, in owner-managed durable storage.
+An archive with a self-supplied replacement digest is not authenticated evidence.
+
+```powershell
+bonsai-tools evidence-archive --request C:\Evidence\reviewed-seal-request.json
+bonsai-tools evidence-archive --json '{"operation":"verify","directory":"C:/Evidence/retained","manifestSha256":"SEPARATELY_RETAINED_64_HEX_DIGEST"}'
+bonsai-tools evidence-archive --json '{"operation":"restore","directory":"C:/Evidence/retained","manifestSha256":"SEPARATELY_RETAINED_64_HEX_DIGEST","outputDirectory":"C:/Evidence/retrieved"}'
+```
+
+`verify` and `restore` reject missing, changed or extra archive entries, including
+an altered manifest, and retain read-only file/ancestor guards while checking.
+Restore preserves manifest bytes, relative paths and identities without the
+original runner. Integrity success grants no qualification or default promotion.
+The owner chooses durable storage and retention/backup automation; a local or
+Actions-temporary copy alone does not establish durable retention.
+
 ```text
 bonsai-tools --version
 bonsai-tools credentials --request ABSOLUTE_JSON_PATH
