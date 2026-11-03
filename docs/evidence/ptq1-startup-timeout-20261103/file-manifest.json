@@ -1,0 +1,59 @@
+{
+  "files": [
+    {
+      "file": "changed-rust-format.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "changed-rust-format.stdout.log",
+      "bytes": 661,
+      "sha256": "3f32c58ab63496943e278956da92ab0b20265d966b296ecf82942a3e405e0fdd"
+    },
+    {
+      "file": "driver-source.txt",
+      "bytes": 10955,
+      "sha256": "f3f0c67257de79cc3ad1c81ca5cb462d1b6f248754b8e585eed1d1890574f9f0"
+    },
+    {
+      "file": "plan.json",
+      "bytes": 2379,
+      "sha256": "170110b575dc015cf6997cf183b6f883d0c4f177e335ff103e06335dac9f65c7"
+    },
+    {
+      "file": "receipt.json",
+      "bytes": 5683,
+      "sha256": "bcedeab835d5201aacf3cf8866f1d784d8ba8371563085291429b3bef1f7947d"
+    },
+    {
+      "file": "source-revision.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "source-revision.stdout.log",
+      "bytes": 41,
+      "sha256": "023c2a503f0fd8f768bcc63c091f4d6540735e0768ae330c436f7c6b4ccf21d3"
+    },
+    {
+      "file": "source-unchanged.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "source-unchanged.stdout.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "source-whitespace.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "source-whitespace.stdout.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ]
+}

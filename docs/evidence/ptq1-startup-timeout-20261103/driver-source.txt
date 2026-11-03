@@ -1,0 +1,189 @@
+"""One fixed model-free source-change check; historical clocks stay closed."""
+import base64
+import ctypes
+import hashlib
+import json
+import os
+from pathlib import Path
+import re
+import subprocess
+import sys
+import time
+
+START = time.monotonic()
+REPO = Path(__file__).resolve().parents[3]
+DESTINATION = Path(__file__).resolve().parent
+LANE = Path(os.environ["TEMP"]) / ("Runner-PTQ1-Startup-Timeout-" + str(time.time_ns()))
+COMPILER = Path(r"C:\Users\symbi\.rustup\toolchains\nightly-2026-11-02-aarch64-pc-windows-msvc\bin")
+GIT = Path(r"C:\Users\symbi\AppData\Local\Microsoft\WinGet\Packages\Git.MinGit_Microsoft.Winget.Source_8wekyb3d8bbwe\cmd\git.exe")
+POWERSHELL = Path(os.environ["SystemRoot"]) / "System32/WindowsPowerShell/v1.0/powershell.exe"
+PLAN = json.loads((DESTINATION / "plan.json").read_text(encoding="utf-8"))
+
+
+class Power(ctypes.Structure):
+    _fields_ = [("ac", ctypes.c_ubyte), ("flags", ctypes.c_ubyte),
+                ("percent", ctypes.c_ubyte), ("saver", ctypes.c_ubyte),
+                ("life", ctypes.c_uint32), ("full_life", ctypes.c_uint32)]
+
+
+def power():
+    result = dict(observedAtUtc=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                  source="GetSystemPowerStatus", acConnected=None,
+                  batterySaver=None, chargePercent=None)
+    status = Power()
+    if ctypes.windll.kernel32.GetSystemPowerStatus(ctypes.byref(status)):
+        result.update(acConnected={0: False, 1: True}.get(status.ac),
+                      batterySaver={0: False, 1: True}.get(status.saver),
+                      chargePercent=status.percent if status.percent <= 100 else None)
+    return result
+
+
+def elapsed():
+    return time.monotonic() - START
+
+
+receipt = dict(schemaVersion=1, kind=PLAN["kind"], maximumTotalSeconds=300,
+               workCutoffSeconds=240, powerBefore=power(), checks=[], modelExecutions=0,
+               benchmarks=0, fullSuites=0, ciActions=0, pushes=0,
+               allRequestedChecksPassed=False, performanceComparisonQualified=False,
+               uninterruptedPowerStabilityEstablished=False,
+               actualModelAcceptancePassed=False, defaultPromotionQualified=False)
+environment = os.environ.copy()
+environment.update(PATH=str(COMPILER) + os.pathsep + environment["PATH"],
+                   RUSTC=str(COMPILER / "rustc.exe"), RUSTDOC=str(COMPILER / "rustdoc.exe"),
+                   CARGO_TARGET_DIR=str(LANE / "target"),
+                   CARGO_UNSTABLE_CHECKSUM_FRESHNESS="true", CARGO_BUILD_FINGERPRINT="content")
+
+
+def save():
+    receipt["elapsedSeconds"] = elapsed()
+    (DESTINATION / "receipt.json").write_text(json.dumps(receipt, indent=2) + "\n", encoding="utf-8")
+
+
+def run(name, arguments, maximum, minimum_remaining=5, exact_test=False):
+    allowance = min(maximum, 240 - elapsed())
+    if allowance < minimum_remaining:
+        raise RuntimeError("Required next check cannot fit original cutoff: " + name)
+    record = dict(name=name, command=[str(v) for v in arguments], startedSeconds=elapsed(),
+                  powerBefore=power(), passed=False)
+    receipt["checks"].append(record)
+    output_path = DESTINATION / (name + ".stdout.log")
+    error_path = DESTINATION / (name + ".stderr.log")
+    with output_path.open("wb") as output, error_path.open("wb") as errors:
+        child = None
+        try:
+            child = subprocess.Popen(record["command"], cwd=LANE, env=environment,
+                                     stdout=output, stderr=errors, creationflags=subprocess.CREATE_NO_WINDOW)
+            record["processStarted"] = True
+            deadline = time.monotonic() + allowance
+            while child.poll() is None:
+                if time.monotonic() >= deadline or max(output_path.stat().st_size, error_path.stat().st_size) > 4 * 1024 * 1024:
+                    record["treeCleanupConfirmed"] = False
+                    try:
+                        killed = subprocess.run([str(Path(os.environ["SystemRoot"]) / "System32/taskkill.exe"),
+                                                 "/PID", str(child.pid), "/T", "/F"],
+                                                stdout=output, stderr=errors, timeout=10,
+                                                creationflags=subprocess.CREATE_NO_WINDOW, check=False)
+                        record["treeKillExitCode"] = killed.returncode
+                        record["treeCleanupConfirmed"] = killed.returncode == 0
+                    except (OSError, subprocess.TimeoutExpired) as error:
+                        record["treeKillFailureClass"] = type(error).__name__
+                    finally:
+                        if child.poll() is None:
+                            child.kill()
+                        try:
+                            child.wait(timeout=5)
+                        finally:
+                            record["rootReaped"] = child.poll() is not None
+                    raise RuntimeError("Original check/work cutoff or output bound exceeded: " + name)
+                time.sleep(0.05)
+            record["exitCode"] = child.returncode
+            if child.returncode != 0:
+                raise RuntimeError("Selected check failed: " + name)
+            if exact_test:
+                summaries = re.findall(r"^test result: ok\. (\d+) passed; 0 failed; 0 ignored;",
+                                       output_path.read_text(encoding="utf-8-sig"), re.MULTILINE)
+                if summaries != ["1"]:
+                    raise RuntimeError("Exactly one focused test must pass: " + name)
+                record["focusedTestsPassed"] = 1
+            record["passed"] = True
+        finally:
+            if child is None:
+                record["processStarted"] = False
+            record.update(finishedSeconds=elapsed(), powerAfter=power())
+            save()
+    return output_path.read_text(encoding="utf-8-sig")
+
+
+try:
+    LANE.mkdir()
+    receipt["externalBuildDirectory"] = str(LANE)
+    revision = run("source-revision", [GIT, "-C", REPO, "rev-parse", "HEAD"], 10).strip()
+    if revision != PLAN["checkedImplementationRevision"]:
+        raise RuntimeError("Source revision changed after workload declaration.")
+    receipt["checkedSourceRevision"] = revision
+    paths = ["src/broker/tests/native_model.rs", ".github/workflows/native-runtime-acceptance.yml"]
+    receipt["sourceFiles"] = [dict(file=name, bytes=(REPO / name).stat().st_size,
+                                 sha256=hashlib.sha256((REPO / name).read_bytes()).hexdigest()) for name in paths]
+    run("source-whitespace", [GIT, "-C", REPO, "diff", "--check"], 10)
+    run("source-unchanged", [GIT, "-C", REPO, "diff", "--exit-code", "HEAD", "--", *paths], 10)
+    run("changed-rust-format", [COMPILER / "rustfmt.exe", "--check", "--edition", "2024",
+                               REPO / paths[0]], 15)
+    script = r"""
+$ErrorActionPreference='Stop'
+$repo='REPO_LITERAL'
+$lines=[IO.File]::ReadAllLines((Join-Path $repo '.github/workflows/native-runtime-acceptance.yml'))
+$blocks=0
+for ($index=0; $index -lt $lines.Length; $index++) {
+  if ($lines[$index] -notmatch '^(?<indent> +)run:\s*\|\s*$') { continue }
+  $indent=$Matches.indent.Length+2
+  $body=[Collections.Generic.List[string]]::new()
+  for ($next=$index+1; $next -lt $lines.Length; $next++) {
+    $line=$lines[$next]
+    if ($line.Trim().Length -gt 0 -and ($line.Length -lt $indent -or $line.Substring(0,$indent).Trim().Length -gt 0)) { break }
+    $body.Add($(if ($line.Length -ge $indent) { $line.Substring($indent) } else { '' }))
+  }
+  $tokens=$null; $errors=$null
+  [Management.Automation.Language.Parser]::ParseInput(($body -join [char]10),[ref]$tokens,[ref]$errors) | Out-Null
+  if ($errors.Count -ne 0) { throw 'Native workflow PowerShell block failed parsing.' }
+  $blocks++
+}
+if ($blocks -ne 9) { throw 'Native workflow block count differs.' }
+$tokens=$null; $errors=$null
+[Management.Automation.Language.Parser]::ParseFile((Join-Path $repo 'scripts/Start-Chat.ps1'),[ref]$tokens,[ref]$errors) | Out-Null
+if ($errors.Count -ne 0) { throw 'Launcher failed parsing.' }
+[ordered]@{ ParsedWorkflowBlocks=$blocks; ParsedLauncher=$true; WorkflowCommandsExecuted=$false } | ConvertTo-Json -Compress
+""".replace("REPO_LITERAL", str(REPO).replace("'", "''"))
+    (DESTINATION / "parser-source.txt").write_text(script, encoding="utf-8")
+    receipt["workflowParsing"] = json.loads(run("workflow-parser", [POWERSHELL, "-NoProfile", "-NonInteractive",
+        "-EncodedCommand", base64.b64encode(script.encode("utf-16le")).decode()], 10))
+    for index, test in enumerate(PLAN["focusedTests"]):
+        run("startup-control-" + str(index + 1), [COMPILER / "cargo.exe", "test", "--locked", "--offline",
+            "--release", "--manifest-path", REPO / "Cargo.toml", "-p", "bonsai-broker", "--test", "native_model",
+            test, "--", "--exact"], 170 if index == 0 else 15, 20, exact_test=True)
+    run("changed-target-release-clippy", [COMPILER / "cargo.exe", "clippy", "--locked", "--offline", "--release",
+        "--manifest-path", REPO / "Cargo.toml", "-p", "bonsai-broker", "--test", "native_model", "--", "-D", "warnings"],
+        60, 20)
+    receipt["allRequestedChecksPassed"] = True
+except Exception as error:
+    receipt.update(failureClass=type(error).__name__, failure=str(error)[:512])
+finally:
+    receipt.update(powerAfterWork=power(), clockClosed=True, clockRestarted=False)
+    save()
+    files = []
+    for path in sorted(DESTINATION.iterdir()):
+        if path.is_file() and path.name not in ("file-manifest.json", "retention.json"):
+            raw = path.read_bytes()
+            files.append(dict(file=path.name, bytes=len(raw), sha256=hashlib.sha256(raw).hexdigest()))
+    (DESTINATION / "file-manifest.json").write_text(json.dumps(dict(files=files), indent=2) + "\n", encoding="utf-8")
+    retention = dict(chargedSecondsThroughRetention=elapsed(), maximumTotalSeconds=300,
+                     retainedWithinDeclaredTotal=elapsed() <= 300, powerAfterRetention=power(),
+                     durationSampleScope="After raw evidence and manifest, before this final small retention metadata write.",
+                     finalRetentionMetadataWriteIncludedInSample=False, originalClockRestarted=False,
+                     rawReceiptSha256=hashlib.sha256((DESTINATION / "receipt.json").read_bytes()).hexdigest(),
+                     rawManifestSha256=hashlib.sha256((DESTINATION / "file-manifest.json").read_bytes()).hexdigest())
+    (DESTINATION / "retention.json").write_text(json.dumps(retention, indent=2) + "\n", encoding="utf-8")
+    print(json.dumps(dict(allRequestedChecksPassed=receipt["allRequestedChecksPassed"], failure=receipt.get("failure"),
+                         checks=len(receipt["checks"]), chargedSecondsThroughRetention=retention["chargedSecondsThroughRetention"],
+                         evidenceDirectory=str(DESTINATION), modelExecutions=0, ciActions=0)))
+sys.exit(0 if receipt["allRequestedChecksPassed"] and retention["retainedWithinDeclaredTotal"] else 1)

@@ -1,0 +1,171 @@
+{
+  "schemaVersion": 1,
+  "kind": "ptq1-startup-timeout-focused-local-validation",
+  "maximumTotalSeconds": 300,
+  "workCutoffSeconds": 240,
+  "powerBefore": {
+    "observedAtUtc": "2026-11-03T09:45:38Z",
+    "source": "GetSystemPowerStatus",
+    "acConnected": true,
+    "batterySaver": false,
+    "chargePercent": 12
+  },
+  "checks": [
+    {
+      "name": "source-revision",
+      "command": [
+        "C:\\Users\\symbi\\AppData\\Local\\Microsoft\\WinGet\\Packages\\Git.MinGit_Microsoft.Winget.Source_8wekyb3d8bbwe\\cmd\\git.exe",
+        "-C",
+        "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\ptq1-ready-integration",
+        "rev-parse",
+        "HEAD"
+      ],
+      "startedSeconds": 0.0008996999968076125,
+      "powerBefore": {
+        "observedAtUtc": "2026-11-03T09:45:38Z",
+        "source": "GetSystemPowerStatus",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 12
+      },
+      "passed": true,
+      "processStarted": true,
+      "exitCode": 0,
+      "finishedSeconds": 0.06770609998784494,
+      "powerAfter": {
+        "observedAtUtc": "2026-11-03T09:45:38Z",
+        "source": "GetSystemPowerStatus",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 12
+      }
+    },
+    {
+      "name": "source-whitespace",
+      "command": [
+        "C:\\Users\\symbi\\AppData\\Local\\Microsoft\\WinGet\\Packages\\Git.MinGit_Microsoft.Winget.Source_8wekyb3d8bbwe\\cmd\\git.exe",
+        "-C",
+        "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\ptq1-ready-integration",
+        "diff",
+        "--check"
+      ],
+      "startedSeconds": 0.1006238999980269,
+      "powerBefore": {
+        "observedAtUtc": "2026-11-03T09:45:38Z",
+        "source": "GetSystemPowerStatus",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 12
+      },
+      "passed": true,
+      "processStarted": true,
+      "exitCode": 0,
+      "finishedSeconds": 0.21380909999425057,
+      "powerAfter": {
+        "observedAtUtc": "2026-11-03T09:45:38Z",
+        "source": "GetSystemPowerStatus",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 12
+      }
+    },
+    {
+      "name": "source-unchanged",
+      "command": [
+        "C:\\Users\\symbi\\AppData\\Local\\Microsoft\\WinGet\\Packages\\Git.MinGit_Microsoft.Winget.Source_8wekyb3d8bbwe\\cmd\\git.exe",
+        "-C",
+        "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\ptq1-ready-integration",
+        "diff",
+        "--exit-code",
+        "HEAD",
+        "--",
+        "src/broker/tests/native_model.rs",
+        ".github/workflows/native-runtime-acceptance.yml"
+      ],
+      "startedSeconds": 0.21484239998972043,
+      "powerBefore": {
+        "observedAtUtc": "2026-11-03T09:45:38Z",
+        "source": "GetSystemPowerStatus",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 12
+      },
+      "passed": true,
+      "processStarted": true,
+      "exitCode": 0,
+      "finishedSeconds": 0.32797269998991396,
+      "powerAfter": {
+        "observedAtUtc": "2026-11-03T09:45:38Z",
+        "source": "GetSystemPowerStatus",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 12
+      }
+    },
+    {
+      "name": "changed-rust-format",
+      "command": [
+        "C:\\Users\\symbi\\.rustup\\toolchains\\nightly-2026-11-02-aarch64-pc-windows-msvc\\bin\\rustfmt.exe",
+        "--check",
+        "--edition",
+        "2024",
+        "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\ptq1-ready-integration\\src\\broker\\tests\\native_model.rs"
+      ],
+      "startedSeconds": 0.3285596999921836,
+      "powerBefore": {
+        "observedAtUtc": "2026-11-03T09:45:38Z",
+        "source": "GetSystemPowerStatus",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 12
+      },
+      "passed": false,
+      "processStarted": true,
+      "exitCode": 1,
+      "finishedSeconds": 0.691311599992332,
+      "powerAfter": {
+        "observedAtUtc": "2026-11-03T09:45:38Z",
+        "source": "GetSystemPowerStatus",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 13
+      }
+    }
+  ],
+  "modelExecutions": 0,
+  "benchmarks": 0,
+  "fullSuites": 0,
+  "ciActions": 0,
+  "pushes": 0,
+  "allRequestedChecksPassed": false,
+  "performanceComparisonQualified": false,
+  "uninterruptedPowerStabilityEstablished": false,
+  "actualModelAcceptancePassed": false,
+  "defaultPromotionQualified": false,
+  "externalBuildDirectory": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Runner-PTQ1-Startup-Timeout-1793699138185724500",
+  "elapsedSeconds": 0.6923007999866968,
+  "checkedSourceRevision": "cde2bc527f7b6baf8674afabab9ccc36d2092187",
+  "sourceFiles": [
+    {
+      "file": "src/broker/tests/native_model.rs",
+      "bytes": 145455,
+      "sha256": "52c4c13ea40c1e5eabf3383de8afe71005b0ff01cecb4ef171d1fad7acf55984"
+    },
+    {
+      "file": ".github/workflows/native-runtime-acceptance.yml",
+      "bytes": 63577,
+      "sha256": "20504ad486bb6ce356b971d6d816217a344158cb8f44107f49c7b3a47086edb6"
+    }
+  ],
+  "failureClass": "RuntimeError",
+  "failure": "Selected check failed: changed-rust-format",
+  "powerAfterWork": {
+    "observedAtUtc": "2026-11-03T09:45:38Z",
+    "source": "GetSystemPowerStatus",
+    "acConnected": true,
+    "batterySaver": false,
+    "chargePercent": 13
+  },
+  "clockClosed": true,
+  "clockRestarted": false
+}

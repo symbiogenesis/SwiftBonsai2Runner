@@ -114,6 +114,16 @@ pending gates. Full suites, benchmarks and performance captures stay in owning C
 
 ### Actual-model acceptance
 
+Qualify the [shared startup-timeout receipt fix](docs/evidence/ptq1-startup-timeout-20261103/summary.json)
+through owner-managed exact-source hosted preparation. An admitted extended case
+whose deadline outlasts the unchanged 600-second startup cap now retains an ordinary
+startup failure instead of unwinding before terminal evidence. Package preparation
+requires the new paused-time regression. The one new local check stopped on a
+multiline formatting difference before parsing or Cargo execution; the reported
+correction is applied but uncompiled. Preserve its failed 0.706-second receipt,
+closed clock and original AC/saver/charge observations without retrying it.
+No model, public reconstruction, provenance, benefit or human gate closes here.
+
 Qualify the [PTQ1 blocker fixes](docs/evidence/ptq1-unblock-20261103/summary.json)
 on settled main through owner-managed hosted preparation. Require the new shared
 typed admission guard and source-bound workflow-contract receipt before publishing

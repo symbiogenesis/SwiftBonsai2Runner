@@ -1,0 +1,17 @@
+{
+  "chargedSecondsThroughRetention": 0.7057407999964198,
+  "maximumTotalSeconds": 300,
+  "retainedWithinDeclaredTotal": true,
+  "powerAfterRetention": {
+    "observedAtUtc": "2026-11-03T09:45:38Z",
+    "source": "GetSystemPowerStatus",
+    "acConnected": true,
+    "batterySaver": false,
+    "chargePercent": 13
+  },
+  "durationSampleScope": "After raw evidence and manifest, before this final small retention metadata write.",
+  "finalRetentionMetadataWriteIncludedInSample": false,
+  "originalClockRestarted": false,
+  "rawReceiptSha256": "bcedeab835d5201aacf3cf8866f1d784d8ba8371563085291429b3bef1f7947d",
+  "rawManifestSha256": "6673e0ad6539f8ee73ed2a816fc32b453bdca162262a8b92440b5b8b93cfa870"
+}
