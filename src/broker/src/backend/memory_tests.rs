@@ -124,10 +124,14 @@ fn header_fast_path_and_fragmented_fallback_preserve_coalesced_payload() -> io::
         for capacity in [1, 2, 3, 7, HEAD.len() - 1, HEAD.len(), 8192] {
             let wire = [HEAD, PAYLOAD].concat();
             let mut reader = BufReader::with_capacity(capacity, io::Cursor::new(wire));
-            let (metadata, framing) =
-                read_head(&mut reader, false, Instant::now() + Duration::from_secs(60))
-                    .await
-                    .map_err(|_| io::Error::other("Fixture head was rejected."))?;
+            let (metadata, framing) = read_head(
+                &mut reader,
+                false,
+                false,
+                Instant::now() + Duration::from_secs(60),
+            )
+            .await
+            .map_err(|_| io::Error::other("Fixture head was rejected."))?;
             assert_eq!(metadata.status(), 200);
             assert!(matches!(framing, Framing::Length(2)));
             let mut payload = Vec::new();
