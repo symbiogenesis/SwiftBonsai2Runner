@@ -62,6 +62,13 @@ extents, all 48 independently produced little-endian F32 A files, shipped-factor
 hashes and complete metrics. A failure retains its stage and partial results.
 Archive and independently review the exact raw output before artifact expiration.
 
+The producer also retains `replay-source/source-manifest.json` and six selected
+raw source files: the producer, format reader, independent auditor, recipe pins
+and approved adapter/direction locks. Its terminal report binds the manifest's
+SHA-256. The upload includes that finite source subtree, so later checkout line
+endings do not destroy replayability. Validation failures retain a bounded fixed
+reason; arbitrary HTTP, OS and library exception text is excluded.
+
 `tools/native-reference/audit_public_reference.py` independently replays the
 retained comparisons with the Python standard library. It verifies the complete
 approved adapter and direction bytes, producer scripts, selected source/run,
@@ -72,9 +79,13 @@ losing results remain losing results. A missing complete result cannot pass.
 The hosted workflow retains this replay after a complete match or disagreement.
 
 An independent reviewer can repeat it without NumPy, a model download or another
-model workload, using raw producer-identical source scripts and pins, including
-their line endings. Matching a Git revision alone does not guarantee those raw
-bytes on checkouts with different line-ending settings:
+model workload. The current trusted auditor automatically checks the retained
+source bundle as data, including its exact finite inventory, types, lengths and
+digests; it executes none of the archived producer code. Parsed retained recipe
+pins must equal the reviewer's independently selected recipe, and adapter/direction
+locks and payload identities still need to match. Legacy reports without a bundle
+require their original producer-identical source scripts and pins, including line
+endings. Matching a Git revision alone does not guarantee those raw bytes:
 
 ```text
 python -B tools/native-reference/audit_public_reference.py --evidence-directory ABSOLUTE_RETAINED_DIRECTORY --adapter VERIFIED_APPROVED_ADAPTER --direction VERIFIED_PUBLIC_DIRECTION --expected-source-revision FULL_REVISION --expected-run-id RUN_ID --expected-run-attempt ATTEMPT

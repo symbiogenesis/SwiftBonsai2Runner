@@ -85,13 +85,24 @@ with no Cargo build on the laptop.
 Hosted preparation must first pass strict Release all-target Clippy for
 `bonsai-chat`, `bonsai-broker` and `bonsai-tools`, then link their production native
 executables with a Release build on that exact source and compiler. Clippy alone
-does not establish native linking. Its `strict-release-analyzers.json` is the third
-digest-bound package file, alongside the test and maintenance executables. Package
-publication and owner intake require exactly one successful `clippy` and one
+does not establish native linking. Schema-2 packages contain five digest-bound
+files: `native-model-acceptance.exe`, `bonsai-tools.exe`, `bonsai-ci.exe`,
+`strict-release-analyzers.json` and `workflow-contract.json`, plus `receipt.json`.
+The shared native `bonsai-ci native-acceptance-guard` validates both publication
+and owner intake. It requires exactly one successful `clippy` and one
 successful `build` check, each covering all three packages, with matching revision,
 toolchain and compiler identities before model use; failed hosted analyzer/build
 logs remain independently retained. This is a source prerequisite, and closes no
 device or promotion gate.
+
+Before those production checks, hosted preparation parses all nine actual
+PowerShell workflow blocks and the launcher with the native parser, exercises
+typed receipt/output negative fixtures and executes two exact Rust guard controls.
+The workflow-contract receipt binds those results to the revision and normalized
+source-file hashes. Publication and owner intake both require that complete
+receipt, the exact package inventory and verified guard executable. Older schema-1
+packages and prepared external helpers require new source-bound preparation;
+their previous selection does not authorize this package or a model workload.
 
 Hosted preparation also executes four exact model-free controls for renderer
 selection, deferred native defaults and explicit publisher rollback, requiring one
