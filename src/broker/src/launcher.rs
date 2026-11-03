@@ -1353,7 +1353,8 @@ mod tests {
             if let Some(profile) = profile {
                 publisher.extend(["--profile", profile].map(OsString::from));
             }
-            publisher.extend(["--publisher-engine", "--native-row-workers", "4"].map(OsString::from));
+            publisher
+                .extend(["--publisher-engine", "--native-row-workers", "4"].map(OsString::from));
             assert_eq!(
                 LaunchConfig::parse(publisher).err(),
                 Some(LaunchError::Arguments)

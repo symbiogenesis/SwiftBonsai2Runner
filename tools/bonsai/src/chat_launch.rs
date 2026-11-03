@@ -203,9 +203,7 @@ fn validate_paths(request: &Request) -> crate::Result<()> {
 
 fn prepare(mut request: Request, native_host: bool) -> crate::Result<Plan> {
     let native_row_workers = request.native_row_workers();
-    if !matches!(native_row_workers, 1 | 4)
-        || (native_row_workers == 4 && !request.native_engine)
-    {
+    if !matches!(native_row_workers, 1 | 4) || (native_row_workers == 4 && !request.native_engine) {
         return Err("NativeRowWorkers must be 1 or 4; four requires NativeEngine.".into());
     }
     request.native_row_workers = Some(native_row_workers);

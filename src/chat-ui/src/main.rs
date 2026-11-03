@@ -632,7 +632,8 @@ mod tests {
             assert!(configuration(configured).is_err());
         }
         let mut publisher_rows = args.clone();
-        publisher_rows.extend(["--publisher-engine", "--native-row-workers", "4"].map(OsString::from));
+        publisher_rows
+            .extend(["--publisher-engine", "--native-row-workers", "4"].map(OsString::from));
         assert!(configuration(publisher_rows).is_err());
         let mut missing_rows = native.clone();
         missing_rows.push("--native-row-workers".into());

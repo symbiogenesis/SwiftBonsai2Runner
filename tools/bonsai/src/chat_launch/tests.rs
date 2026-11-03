@@ -203,8 +203,7 @@ fn value_after(arguments: &[OsString], option: &str) -> crate::Result<OsString> 
 }
 
 #[test]
-fn development_default_and_explicit_rollback_survive_deferred_preparation() -> crate::Result<()>
-{
+fn development_default_and_explicit_rollback_survive_deferred_preparation() -> crate::Result<()> {
     for native in [None, Some(true), Some(false)] {
         for workers in [None, Some(1)] {
             let mut fixture = fixture("development-default")?;
@@ -253,8 +252,12 @@ fn development_default_and_explicit_rollback_survive_deferred_preparation() -> c
                     .count(),
                 usize::from(!selected_native)
             );
-            assert!(arguments.windows(2).any(|args| args[0] == "--native-row-workers"
-                && args[1] == selected_workers.to_string()));
+            assert!(
+                arguments
+                    .windows(2)
+                    .any(|args| args[0] == "--native-row-workers"
+                        && args[1] == selected_workers.to_string())
+            );
             assert!(arguments.iter().any(|arg| arg == "--use-original-pq2"));
             assert_eq!(
                 recorder

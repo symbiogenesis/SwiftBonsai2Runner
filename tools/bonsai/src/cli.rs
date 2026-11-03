@@ -115,7 +115,10 @@ fn chat_options(arguments: &[OsString]) -> crate::Result<Map<String, Value>> {
             _ => return Err(format!("Unknown chat option: {option}")),
         };
         let value = if boolean {
-            Value::Bool(!matches!(option, "--use-original-pq2" | "--publisher-engine"))
+            Value::Bool(!matches!(
+                option,
+                "--use-original-pq2" | "--publisher-engine"
+            ))
         } else {
             let text = values
                 .next()
@@ -231,7 +234,10 @@ mod tests {
             chat_options(&["--publisher-engine".into()])?["NativeEngine"],
             false
         );
-        assert_eq!(chat_options(&["--native-engine".into()])?["NativeEngine"], true);
+        assert_eq!(
+            chat_options(&["--native-engine".into()])?["NativeEngine"],
+            true
+        );
         for first in ["--native-engine", "--publisher-engine"] {
             for second in ["--native-engine", "--publisher-engine"] {
                 assert!(chat_options(&[first.into(), second.into()]).is_err());

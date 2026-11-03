@@ -347,7 +347,11 @@ fn runtime_arguments(config: &Config) -> Vec<&'static str> {
     });
     arguments.extend([
         "--native-row-workers",
-        if config.native_row_workers == 4 { "4" } else { "1" },
+        if config.native_row_workers == 4 {
+            "4"
+        } else {
+            "1"
+        },
     ]);
     arguments
 }
@@ -1268,7 +1272,13 @@ mod tests {
         };
         assert_eq!(
             runtime_arguments(&config),
-            ["--use-abliterate-lora", "--use-original-pq2", "--publisher-engine", "--native-row-workers", "1"]
+            [
+                "--use-abliterate-lora",
+                "--use-original-pq2",
+                "--publisher-engine",
+                "--native-row-workers",
+                "1"
+            ]
         );
         config.native_engine = true;
         config.native_row_workers = 4;
@@ -1296,12 +1306,22 @@ mod tests {
         config.native_row_workers = 1;
         assert_eq!(
             runtime_arguments(&config),
-            ["--use-repacked-ptq1", "--native-engine", "--native-row-workers", "1"]
+            [
+                "--use-repacked-ptq1",
+                "--native-engine",
+                "--native-row-workers",
+                "1"
+            ]
         );
         config.use_repacked_ptq1 = false;
         assert_eq!(
             runtime_arguments(&config),
-            ["--use-original-pq2", "--native-engine", "--native-row-workers", "1"]
+            [
+                "--use-original-pq2",
+                "--native-engine",
+                "--native-row-workers",
+                "1"
+            ]
         );
     }
 

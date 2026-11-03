@@ -418,8 +418,9 @@ uses the same setting across engines; native quality, throughput and daily-servi
 qualification remain pending. Native HTTP remains numeric loopback
 with the [broker's strict public subset](broker-policy.md).
 
-`-FrontendPort`/`-BackendPort` select distinct local ports. Swift/runtime provisioning
-is explicit; only speech downloads at launch. Keep credentials and complete
+`--frontend-port`/`--backend-port` select distinct local ports. Swift model and
+adapter provisioning remain explicit. Launch may download a missing pinned Rust
+runtime and the selected owned speech models. Keep credentials and complete
 evidence directories private.
 
 ## X1/X2 configuration boundary
