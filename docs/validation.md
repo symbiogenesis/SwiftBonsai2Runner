@@ -83,16 +83,21 @@ verifies their run/revision, SHA-256 and native architecture before direct execu
 with no Cargo build on the laptop.
 
 Hosted preparation must first pass strict Release all-target Clippy for
-`bonsai-chat`, `bonsai-broker` and `bonsai-tools` on that exact source and compiler.
-Its `strict-release-analyzers.json` is the third digest-bound package file, alongside
-the test and maintenance executables. Owner intake requires successful coverage of
-all three packages and matching revision, toolchain and compiler identities before
-model use; failed hosted analyzer logs remain independently retained. This is a
-source prerequisite, and closes no device or promotion gate.
+`bonsai-chat`, `bonsai-broker` and `bonsai-tools`, then link their production native
+executables with a Release build on that exact source and compiler. Clippy alone
+does not establish native linking. Its `strict-release-analyzers.json` is the third
+digest-bound package file, alongside the test and maintenance executables. Package
+publication and owner intake require exactly one successful `clippy` and one
+successful `build` check, each covering all three packages, with matching revision,
+toolchain and compiler identities before model use; failed hosted analyzer/build
+logs remain independently retained. This is a source prerequisite, and closes no
+device or promotion gate.
 
-Hosted preparation also requires nonempty model-free `owner_shutdown_` broker
-and `owned_broker_` UI controls. The UI's private shutdown request requires a
-fresh model-cleanup acknowledgment from the broker, broker exit and confirmed
+Hosted preparation also executes four exact model-free controls for renderer
+selection, deferred native defaults and explicit publisher rollback, requiring one
+passed test for each name, plus nonempty `owner_shutdown_` broker and `owned_broker_`
+UI controls. The UI's private shutdown request requires a fresh model-cleanup
+acknowledgment from the broker, broker exit and confirmed
 outer Job cleanup before Retry. PSEC-created models can bypass outer Job
 inheritance, so outer Job accounting alone cannot satisfy this contract.
 These controls exercise marker validation and failure gates without loading a
