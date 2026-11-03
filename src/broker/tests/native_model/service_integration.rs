@@ -30,6 +30,21 @@ pub(super) fn cleanup_passed(cleanup: &Value) -> bool {
         && cleanup["listenerReleased"] == true
 }
 
+fn listener_release_observation(probe: Option<Result<(), io::ErrorKind>>) -> Value {
+    // Only an explicit refusal establishes that this frontend no longer listens.
+    // Access, resource and network failures can also prevent a connection to a
+    // live listener; preserve those observations as unknown instead of allowing
+    // another owner or the post-cleanup artifact check.
+    let (released, outcome) = match probe {
+        Some(Ok(())) => (Some(false), "listener-accepted-connection"),
+        Some(Err(io::ErrorKind::ConnectionRefused)) => (Some(true), "connection-refused"),
+        Some(Err(_)) => (None, "probe-failed"),
+        None => (None, "probe-deadline-expired"),
+    };
+    json!({"listenerReleased":released,"listenerProbeOutcome":outcome,
+        "listenerProbeErrorKind":probe.and_then(Result::err).map(|kind|format!("{kind:?}"))})
+}
+
 pub(super) async fn stop_owner(
     stop: oneshot::Sender<()>,
     mut running: tokio::task::JoinHandle<Result<RunReport, LaunchError>>,
@@ -89,12 +104,14 @@ pub(super) async fn stop_owner(
             observed["pendingReason"] = json!("unexpected-owned-run-exit");
         }
     }
-    observed["listenerReleased"] = json!(
-        tokio::time::timeout_at(deadline, TcpStream::connect(("127.0.0.1", port)))
-            .await
-            .ok()
-            .map(|result| result.is_err())
-    );
+    let probe = tokio::time::timeout_at(deadline, TcpStream::connect(("127.0.0.1", port)))
+        .await
+        .ok()
+        .map(|result| result.map(|_| ()).map_err(|error| error.kind()));
+    observed
+        .as_object_mut()
+        .unwrap()
+        .extend(listener_release_observation(probe).as_object().unwrap().clone());
     observed["finishedBeforeStopDeadline"] = json!(tokio::time::Instant::now() < deadline);
     if observed["pendingReason"].is_null() && observed["finishedBeforeStopDeadline"] != true {
         observed["pendingReason"] = json!("owned-cleanup-deadline-expired");
@@ -543,6 +560,40 @@ pub(super) async fn sequence(
 }
 
 #[test]
+fn native_service_integration_listener_release_requires_connection_refusal() {
+    for (probe, released, outcome) in [
+        (Some(Ok(())), Some(false), "listener-accepted-connection"),
+        (
+            Some(Err(io::ErrorKind::ConnectionRefused)),
+            Some(true),
+            "connection-refused",
+        ),
+        (None, None, "probe-deadline-expired"),
+        (Some(Err(io::ErrorKind::PermissionDenied)), None, "probe-failed"),
+        (Some(Err(io::ErrorKind::AddrNotAvailable)), None, "probe-failed"),
+        (Some(Err(io::ErrorKind::TimedOut)), None, "probe-failed"),
+        (Some(Err(io::ErrorKind::Interrupted)), None, "probe-failed"),
+        (Some(Err(io::ErrorKind::Other)), None, "probe-failed"),
+    ] {
+        let observation = listener_release_observation(probe);
+        assert_eq!(observation["listenerReleased"], json!(released));
+        assert_eq!(observation["listenerProbeOutcome"], outcome);
+        assert_eq!(
+            observation["listenerProbeErrorKind"],
+            json!(probe.and_then(Result::err).map(|kind| format!("{kind:?}")))
+        );
+        let cleanup = json!({"status":"confirmed","ownedJobEmpty":true,
+            "listenerReleased":observation["listenerReleased"]});
+        assert_eq!(cleanup_passed(&cleanup), released == Some(true));
+    }
+}
+
+fn released_loopback_port() -> u16 {
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    listener.local_addr().unwrap().port()
+}
+
+#[test]
 fn native_service_integration_cleanup_preserves_failures_and_listener_observations() {
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
@@ -574,11 +625,13 @@ fn native_service_integration_cleanup_preserves_failures_and_listener_observatio
                 spawn_local(async move { Ok(report) })
             };
             let deadline = tokio::time::Instant::now() + STOP_WAIT;
-            let (cleanup, observed) = stop_owner(stop, running, 0, allow_closed, deadline).await;
+            let (cleanup, observed) =
+                stop_owner(stop, running, released_loopback_port(), allow_closed, deadline).await;
             assert_eq!(cleanup_passed(&cleanup), confirmed);
             assert_eq!(cleanup["stopSignalDelivered"], delivered);
             assert_eq!(cleanup["ownedJobEmpty"], true);
             assert_eq!(cleanup["listenerReleased"], true);
+            assert_eq!(cleanup["listenerProbeOutcome"], "connection-refused");
             assert_eq!(observed, Some(report));
         }
         let (stop, stopped) = oneshot::channel();
@@ -587,7 +640,8 @@ fn native_service_integration_cleanup_preserves_failures_and_listener_observatio
             Err(LaunchError::Stop)
         });
         let deadline = tokio::time::Instant::now() + STOP_WAIT;
-        let (cleanup, observed) = stop_owner(stop, running, 0, true, deadline).await;
+        let (cleanup, observed) =
+            stop_owner(stop, running, released_loopback_port(), true, deadline).await;
         assert!(observed.is_none());
         assert!(!cleanup_passed(&cleanup));
         assert!(cleanup["ownedJobEmpty"].is_null());
@@ -612,6 +666,7 @@ fn native_service_integration_cleanup_preserves_failures_and_listener_observatio
         assert!(!cleanup_passed(&cleanup));
         assert_eq!(cleanup["ownedJobEmpty"], true);
         assert_eq!(cleanup["listenerReleased"], false);
+        assert_eq!(cleanup["listenerProbeOutcome"], "listener-accepted-connection");
         assert_eq!(
             cleanup["pendingReason"],
             "frontend-listener-release-unconfirmed"
@@ -643,7 +698,7 @@ fn native_service_integration_stuck_owner_is_dropped_inside_existing_stop_allowa
             });
             let started = tokio::time::Instant::now();
             let (cleanup, observed) =
-                stop_owner(stop, running, 0, false, started + allowance).await;
+                stop_owner(stop, running, released_loopback_port(), false, started + allowance).await;
             assert!(
                 dropped.get(),
                 "Timed-out ownership must not remain detached."
