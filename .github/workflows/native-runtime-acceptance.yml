@@ -87,6 +87,7 @@ jobs:
               'adapter_boundaries::native_adapter_boundary_replay_requires_bound_output_usage_and_settings',
               'adapter_boundaries::native_adapter_boundary_deadline_retains_pending_work_without_model_start',
               'adapter_boundaries::native_adapter_boundary_wire_sequence_preserves_rejections_and_failed_replay',
+              'adapter_boundaries::native_adapter_context_rejection_retains_unframed_and_malformed_observations',
               'service_integration::native_service_integration_profile_preserves_bounds_and_pending_verdicts',
               'service_integration::native_service_integration_binds_prefix_and_reported_prompt_counts',
               'service_integration::native_service_integration_prefix_rejects_terminal_events_already_received',

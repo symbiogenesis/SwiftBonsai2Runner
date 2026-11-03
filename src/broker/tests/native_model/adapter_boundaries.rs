@@ -22,6 +22,29 @@ fn body(scale: f64) -> Value {
     adapter_request(adapter_messages(&ADAPTER_PROFILE, false), scale, 1)
 }
 
+fn context_observation(bytes: &[u8]) -> Value {
+    let parsed = bytes
+        .windows(4)
+        .position(|part| part == b"\r\n\r\n")
+        .and_then(|end| {
+            let head = std::str::from_utf8(&bytes[..end]).ok()?;
+            let body = &bytes[end + 4..];
+            let length = head
+                .lines()
+                .find_map(|line| line.strip_prefix("Content-Length: "))?
+                .parse::<usize>()
+                .ok()?;
+            Some(
+                head.lines().next() == Some("HTTP/1.1 413 Content Too Large")
+                    && length == body.len()
+                    && body == br#"{"error":{"code":"context_length_exceeded"}}"#,
+            )
+        });
+    json!({"responseBytes":bytes.len(),"responseSha256":adapter_digest(bytes),
+        "completeHeaderObserved":parsed.is_some(),"expectedContextRejectionObserved":parsed == Some(true),
+        "scope":"Exact response byte count and digest plus fixed context-error validation; arbitrary response bytes are not copied into public receipts."})
+}
+
 fn replay_matches(first: &Value, replay: &Value) -> bool {
     replay_matches_phase(first, replay, "scale-1.3-reset-replay")
 }
@@ -134,8 +157,9 @@ async fn boundary_requests(
             rejected
         } else if phase == "context-rejection" {
             let bytes = exchange(port, credential, &request).await;
-            let rejected = json_response(&bytes, "HTTP/1.1 413 Content Too Large")["error"]["code"]
-                == "context_length_exceeded";
+            let observed = context_observation(&bytes);
+            let rejected = observed["expectedContextRejectionObserved"] == true;
+            report["scaleBoundaryWorkload"]["contextResponse"] = observed;
             report["scaleBoundaryWorkload"]["contextRejected"] = json!(rejected);
             rejected
         } else {
@@ -173,6 +197,33 @@ async fn boundary_requests(
     });
     save_acceptance_report(evidence, report);
     true
+}
+
+#[test]
+fn native_adapter_context_rejection_retains_unframed_and_malformed_observations() {
+    let body = br#"{"error":{"code":"context_length_exceeded"}}"#;
+    let good = format!(
+        "HTTP/1.1 413 Content Too Large\r\nContent-Length: {}\r\n\r\n{}",
+        body.len(),
+        std::str::from_utf8(body).unwrap()
+    );
+    assert_eq!(
+        context_observation(good.as_bytes())["expectedContextRejectionObserved"],
+        true
+    );
+    for bytes in [
+        b"".as_slice(),
+        b"HTTP/1.1 413 Content Too Large\r\n",
+        good.as_bytes().split_last().unwrap().1,
+        b"HTTP/1.1 413 Content Too Large\r\nContent-Length: 0\r\n\r\n",
+        b"HTTP/1.1 400 Bad Request\r\nContent-Length: 0\r\n\r\n",
+    ] {
+        let observed = context_observation(bytes);
+        assert_eq!(observed["responseBytes"], bytes.len());
+        assert_eq!(observed["responseSha256"], adapter_digest(bytes));
+        assert_eq!(observed["expectedContextRejectionObserved"], false);
+    }
+    assert_eq!(context_observation(b"")["completeHeaderObserved"], false);
 }
 
 pub(super) fn pending_workload() -> Value {
