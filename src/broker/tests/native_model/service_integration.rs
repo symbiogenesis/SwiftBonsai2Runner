@@ -18,7 +18,7 @@ pub(super) const ADAPTER_PROFILE: AdapterProfile = AdapterProfile {
     required_scale_history: false,
 };
 
-const NEXT_OWNER_RESERVE: Duration = Duration::from_secs(60);
+pub(super) const NEXT_OWNER_RESERVE: Duration = Duration::from_secs(60);
 // NativeProcess::drop may wait up to ten seconds for contained descendants.
 // A timed-out task must be cancelled and observed inside the existing Stop
 // allowance instead of being detached by dropping its JoinHandle.

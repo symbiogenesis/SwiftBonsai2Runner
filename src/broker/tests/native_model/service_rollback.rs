@@ -27,6 +27,7 @@ fn pending_rollback() -> Value {
         "request":representation::body(),
         "requestSha256":adapter_digest(&serde_json::to_vec(&representation::body()).unwrap()),
         "minimumRemainingBeforeOwnerSeconds":NEXT_OWNER_RESERVE.as_secs(),
+        "tailReserveWithheldFromPtq1Seconds":NEXT_OWNER_RESERVE.as_secs(),
         "ownedCleanupReserveSeconds":STOP_WAIT.as_secs(),"postCleanupHashReserveSeconds":HASH_RESERVE.as_secs(),
         "sample":null,"responseCapture":null,"retention":null,
         "powerBefore":null,"powerAfter":null,"performanceComparisonQualified":false})
@@ -62,6 +63,33 @@ fn rollback_verified(rollback: &Value) -> bool {
 fn can_start_rollback(deadline: tokio::time::Instant, report: &Value) -> bool {
     ptq1_owners_reaped(report)
         && deadline.saturating_duration_since(tokio::time::Instant::now()) > NEXT_OWNER_RESERVE
+}
+
+fn ptq1_service_deadline(deadline: tokio::time::Instant) -> Option<tokio::time::Instant> {
+    let remaining = deadline.saturating_duration_since(tokio::time::Instant::now());
+    // A successful PTQ1 sequence must still admit its required fresh owner.
+    // Reject before loading any model if even that existing floor cannot fit
+    // after withholding the original-PQ2 startup/request/cleanup/hash tail.
+    (remaining > NEXT_OWNER_RESERVE + service_integration::NEXT_OWNER_RESERVE)
+        .then(|| deadline - NEXT_OWNER_RESERVE)
+}
+
+async fn service_before_rollback(
+    data: &Path,
+    evidence: &Path,
+    deadline: tokio::time::Instant,
+    report: &mut Value,
+) -> bool {
+    let Some(service_deadline) = ptq1_service_deadline(deadline) else {
+        report["serviceIntegrationWorkload"]["pendingReason"] =
+            json!("insufficient-ptq1-service-and-original-pq2-tail-reserve");
+        save_acceptance_report(evidence, report);
+        return false;
+    };
+    // All PTQ1 work and both owned teardowns use this earlier absolute deadline.
+    // The third owner retains the original case deadline and its separate
+    // thirty-second Stop and fifteen-second complete-file verification reserves.
+    service_integration::sequence(data, evidence, service_deadline, report).await
 }
 
 fn verify_original_retention(
@@ -222,7 +250,7 @@ async fn acceptance(
     report: &mut Value,
 ) {
     power::begin(report);
-    let service = service_integration::sequence(data, evidence, deadline, report).await;
+    let service = service_before_rollback(data, evidence, deadline, report).await;
     report["serviceIntegration"] = report["serviceIntegrationWorkload"].clone();
     save_acceptance_report(evidence, report);
     let (rollback, guard) = if service {
@@ -425,6 +453,68 @@ fn native_service_rollback_deadline_and_missing_ptq1_cleanup_never_start_an_owne
         assert!(!can_start_rollback(deadline+Duration::from_secs(60),&pending_service));
         assert_eq!(deadline-tokio::time::Instant::now(),NEXT_OWNER_RESERVE);
         assert_eq!(report["passed"],false);
+        fs::remove_file(evidence.join("acceptance.json")).unwrap();
+        fs::remove_dir(evidence).unwrap();
+    });
+}
+
+#[test]
+fn native_service_rollback_reserves_tail_before_ptq1_owner() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_time()
+        .start_paused(true)
+        .build()
+        .unwrap();
+    runtime.block_on(async {
+        let started = tokio::time::Instant::now();
+        let minimum = NEXT_OWNER_RESERVE + service_integration::NEXT_OWNER_RESERVE;
+        for allowance in [Duration::ZERO, NEXT_OWNER_RESERVE, minimum] {
+            assert!(ptq1_service_deadline(started + allowance).is_none());
+        }
+        let deadline = started + minimum + Duration::from_secs(2);
+        let service_deadline = ptq1_service_deadline(deadline).unwrap();
+        assert_eq!(deadline - service_deadline, NEXT_OWNER_RESERVE);
+        assert!(
+            adapter_work_before_cleanup(service_deadline, pending::<()>())
+                .await
+                .is_none()
+        );
+        assert_eq!(
+            deadline - tokio::time::Instant::now(),
+            NEXT_OWNER_RESERVE + STOP_WAIT
+        );
+
+        let evidence = env::temp_dir().join(format!(
+            "Bonsai-Service-Rollback-Tail-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        fs::create_dir(&evidence).unwrap();
+        let mut report = json!({"passed":false,"originalPq2Rollback":pending_rollback(),
+            "serviceIntegrationWorkload":service_integration::pending_workload()});
+        assert!(
+            !service_before_rollback(
+                Path::new("unused-no-model-start"),
+                &evidence,
+                tokio::time::Instant::now() + minimum,
+                &mut report,
+            )
+            .await
+        );
+        assert_eq!(report["serviceIntegrationWorkload"]["status"], "pending");
+        assert_eq!(
+            report["serviceIntegrationWorkload"]["pendingReason"],
+            "insufficient-ptq1-service-and-original-pq2-tail-reserve"
+        );
+        assert!(report["startupProgress"].is_null());
+        assert!(report["originalPq2Rollback"]["sample"].is_null());
+        assert_eq!(report["passed"], false);
+        let saved: Value =
+            serde_json::from_slice(&fs::read(evidence.join("acceptance.json")).unwrap()).unwrap();
+        assert_eq!(saved, report);
         fs::remove_file(evidence.join("acceptance.json")).unwrap();
         fs::remove_dir(evidence).unwrap();
     });
