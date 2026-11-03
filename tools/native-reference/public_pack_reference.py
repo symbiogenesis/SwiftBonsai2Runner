@@ -299,8 +299,10 @@ def audit(data: Path, evidence: Path) -> bool:
         report["stage"] = "model-full-rehash-and-header"
         write_json(attempt, report)
         with verified_mapping(paths["model"], pins["model"]) as (mapping, tensors, header):
+            (evidence / "model-header.json").write_bytes(header)
             report["modelHeaderSha256"] = sha256(header)
             report["modelHeaderBytes"] = len(header)
+            report["modelHeaderFile"] = "model-header.json"
             report["modelTensorCount"] = len(tensors)
             for block, site in zip(BLOCKS, sites, strict=True):
                 remaining()
@@ -322,6 +324,10 @@ def audit(data: Path, evidence: Path) -> bool:
                     "candidateF16MatrixSha256": stored_digest, "authoringAFile": output_name,
                     "authoringASha256": sha256(output), "authoringABytes": len(output),
                     "shippedASha256": sha256(factors[f"blk.{block}.ssm_out.weight.lora_a"].astype("<f4").tobytes()),
+                    "inputTensorDescriptors": {suffix: {
+                        "dtype": descriptor.dtype, "shape": list(descriptor.shape),
+                        "absoluteByteBegin": descriptor.begin, "absoluteByteEnd": descriptor.end,
+                    } for suffix, descriptor in wanted.items()},
                     "inputTensorSha256": {suffix: sha256(array.tobytes(order="C")) for suffix, array in
                         (("weight", weight), ("scales", scales), ("biases", biases), ("signs", signs))}, **result})
                 write_json(attempt, report)

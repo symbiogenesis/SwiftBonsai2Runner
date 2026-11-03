@@ -57,7 +57,8 @@ Weights stay in external runner-temp storage and are excluded from uploads.
 
 Retained evidence includes exact source/input identities, wheel installation
 metadata, Python/NumPy/BLAS configuration, per-site input and candidate-F16 matrix
-hashes, all 48 independently produced little-endian F32 A files, shipped-factor
+hashes, the bounded raw model header, actual per-site dtype/shape/absolute byte
+extents, all 48 independently produced little-endian F32 A files, shipped-factor
 hashes and complete metrics. A failure retains its stage and partial results.
 Archive and independently review the exact raw output before artifact expiration.
 
