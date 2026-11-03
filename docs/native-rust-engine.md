@@ -388,6 +388,32 @@ tiled prefill work. They need broader lifecycle or numerical qualification and
 are tracked above and in the plan; they are not prerequisites for these bounded
 reductions.
 
+A follow-up source review selected two additional small changes on November 3:
+
+| Source change | Work removed and correctness boundary |
+| --- | --- |
+| Skip `Qwen35::reset` when committed position is already zero | Avoids a redundant 149.625 MiB recurrent/convolution zero fill at runtime initialization and when default request reset is followed by empty-prefix preparation. Failed evaluations modify private scratch only; nonempty reset still clears all committed state, and adapter changes still renew provenance. Retained memory is unchanged. |
+| Prune repeated masked attention arithmetic | Keeps the first masked zero FMA for every affected accumulator lane, then omits identical repetitions. At one logical token, padding falls from 255 to 16 FMA steps per channel and softmax from 64 to one four-score group. Partial groups, signed-zero behavior, reduction order and rejection remain unchanged. These are source work counts, not latency measurements. |
+
+Independent source review checked the canonical-empty-state invariant and padding
+arithmetic. Frozen full-padding controls cover bitwise results at lane, 256-token
+and context boundaries; hybrid graph controls cover late first-token failure,
+independent snapshots and continuation. The
+[bounded follow-up record](evidence/inference-efficiency-followup-20261103/archive.json)
+retains the exact source and local validation scope. Local Prism `main` contains
+`94200c8` (empty resets), `03fe862` (attention padding) and `5056810` (test assertion
+correction). All 18 focused correctness tests passed, followed by a passing rerun
+of the corrected reset regression and strict Release Clippy for the library and
+graph integration target with `parallel-rows`. Initial assertion-lint and cast
+failures remain retained. The single allowance closed at 101.483 seconds through
+archival; recorded endpoints show battery operation, saver off and charge changing
+from 85% to 84%.
+These snapshots do not establish continuous power stability or performance.
+Owning CI and matched
+actual-model numerical, lifecycle and performance qualification remain pending.
+These local Prism changes require a qualified release and Runner repin before
+application use; they do not change admission or runtime defaults.
+
 ## Default-runtime promotion
 
 The Rust `runtime-promotion` command reports the reviewed requirements for replacing the current

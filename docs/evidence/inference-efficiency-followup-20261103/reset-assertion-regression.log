@@ -1,0 +1,11 @@
+   Compiling prism-inference v0.1.14 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\efficiency2-integration)
+error: trivial cast: `[f32; 0]` as `[f32; 0]`
+    --> tests\graph.rs:1510:24
+     |
+1510 |     assert_eq!(logits, [] as [f32; 0]);
+     |                        ^^^^^^^^^^^^^^
+     |
+     = help: cast can be replaced by coercion; this might require a temporary variable
+     = note: requested on the command line with `-D trivial-casts`
+
+error: could not compile `prism-inference` (test "graph") due to 1 previous error

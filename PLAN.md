@@ -420,7 +420,8 @@ and retain the reset-every-request serving policy until reuse is qualified.
   review](docs/native-rust-engine.md#2026-literature-runtime-overhead-and-work-placement).
 - Qualify the local [inference efficiency candidates](docs/native-rust-engine.md#local-inference-efficiency-candidates):
   compact reset-state rollback checkpoints, bounded Swift top-20 sampler storage and
-  direct one-column F32 adapter projections. Preserve exact state restoration,
+  direct one-column F32 adapter projections, followed by redundant empty-reset
+  elimination and exact masked-attention padding pruning. Preserve exact state restoration,
   native tie/RNG behavior, floating-point bits and rejection semantics. Complete
   owning hosted checks and matched actual-model correctness/resource/request-time
   evidence before releasing or repinning; source-level work/storage reductions do

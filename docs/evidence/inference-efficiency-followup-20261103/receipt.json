@@ -1,0 +1,472 @@
+{
+  "schemaVersion": 1,
+  "kind": "bounded-offline-inference-source-validation",
+  "startedAtUtc": "2026-11-03T06:51:44.845447+00:00",
+  "earlierChargeSeconds": 5,
+  "maximumTotalSeconds": 300,
+  "workCutoffSeconds": 260,
+  "powerBefore": {
+    "observedAtUtc": "2026-11-03T06:51:44.845455+00:00",
+    "acConnected": false,
+    "batterySaver": false,
+    "chargePercent": 85,
+    "rawAcLineStatus": 0,
+    "rawBatteryFlag": 1
+  },
+  "checks": [
+    {
+      "name": "format",
+      "arguments": [
+        "C:\\Users\\symbi\\.rustup\\toolchains\\nightly-2026-10-22-aarch64-pc-windows-msvc\\bin\\rustfmt.exe",
+        "--check",
+        "--edition",
+        "2024",
+        "src/graph.rs",
+        "tests/graph.rs",
+        "src/kernels/pinned_attention.rs",
+        "src/kernels/pinned_attention_padding_tests.rs"
+      ],
+      "powerBefore": {
+        "observedAtUtc": "2026-11-03T06:51:44.854608+00:00",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 85,
+        "rawAcLineStatus": 0,
+        "rawBatteryFlag": 1
+      },
+      "sourceSha256": {
+        "src/graph.rs": "4466f272dc06ca1702131a9e588df6a5d4300c2087bff46a3bfb76e18c05d933",
+        "tests/graph.rs": "5c0ecad4cbfe950d23c45f183263031c1448f32128537f0e2f9e296f373e3eff",
+        "src/kernels/pinned_attention.rs": "e8cb59a539e5fae24c1417ce0f2eebd6ce7e016e008fe079d9b937d29c204674",
+        "src/kernels/pinned_attention_padding_tests.rs": "3175a21028eb5345413f4d49f9263ccfb78cc0e8bd8f5103e44d3ec22027e613",
+        "Cargo.toml": "5d406bbe0902c416e1ec7057d8a2f6fca1dca560a56bc4074eef2fdcbeec4211",
+        "Cargo.lock": "ddfec495c71307c142f70428ef4eca3a248246b9d3d7485e1120e74f6f19b661"
+      },
+      "exitCode": 0,
+      "status": "passed",
+      "elapsedSeconds": 0.1250716999929864,
+      "powerAfter": {
+        "observedAtUtc": "2026-11-03T06:51:44.993149+00:00",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 85,
+        "rawAcLineStatus": 0,
+        "rawBatteryFlag": 1
+      }
+    },
+    {
+      "name": "attention-controls",
+      "arguments": [
+        "C:\\Users\\symbi\\.rustup\\toolchains\\nightly-2026-10-22-aarch64-pc-windows-msvc\\bin\\cargo.exe",
+        "test",
+        "--locked",
+        "--offline",
+        "--release",
+        "-p",
+        "prism-inference",
+        "--features",
+        "parallel-rows",
+        "--lib",
+        "kernels::pinned_attention"
+      ],
+      "powerBefore": {
+        "observedAtUtc": "2026-11-03T06:51:45.032842+00:00",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 85,
+        "rawAcLineStatus": 0,
+        "rawBatteryFlag": 1
+      },
+      "sourceSha256": {
+        "src/graph.rs": "4466f272dc06ca1702131a9e588df6a5d4300c2087bff46a3bfb76e18c05d933",
+        "tests/graph.rs": "5c0ecad4cbfe950d23c45f183263031c1448f32128537f0e2f9e296f373e3eff",
+        "src/kernels/pinned_attention.rs": "e8cb59a539e5fae24c1417ce0f2eebd6ce7e016e008fe079d9b937d29c204674",
+        "src/kernels/pinned_attention_padding_tests.rs": "3175a21028eb5345413f4d49f9263ccfb78cc0e8bd8f5103e44d3ec22027e613",
+        "Cargo.toml": "5d406bbe0902c416e1ec7057d8a2f6fca1dca560a56bc4074eef2fdcbeec4211",
+        "Cargo.lock": "ddfec495c71307c142f70428ef4eca3a248246b9d3d7485e1120e74f6f19b661"
+      },
+      "exitCode": 0,
+      "status": "passed",
+      "elapsedSeconds": 15.259162499991362,
+      "powerAfter": {
+        "observedAtUtc": "2026-11-03T06:52:00.294546+00:00",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 85,
+        "rawAcLineStatus": 0,
+        "rawBatteryFlag": 1
+      }
+    },
+    {
+      "name": "reset-controls",
+      "arguments": [
+        "C:\\Users\\symbi\\.rustup\\toolchains\\nightly-2026-10-22-aarch64-pc-windows-msvc\\bin\\cargo.exe",
+        "test",
+        "--locked",
+        "--offline",
+        "--release",
+        "-p",
+        "prism-inference",
+        "--features",
+        "parallel-rows",
+        "--test",
+        "graph",
+        "--",
+        "reset_",
+        "empty_checkpoint_",
+        "hybrid_state_checkpoint_restores_exact_recurrent_prefix",
+        "rank_one_checkpoint_and_failed_generation_preserve_complete_state"
+      ],
+      "powerBefore": {
+        "observedAtUtc": "2026-11-03T06:52:00.295478+00:00",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 85,
+        "rawAcLineStatus": 0,
+        "rawBatteryFlag": 1
+      },
+      "sourceSha256": {
+        "src/graph.rs": "4466f272dc06ca1702131a9e588df6a5d4300c2087bff46a3bfb76e18c05d933",
+        "tests/graph.rs": "5c0ecad4cbfe950d23c45f183263031c1448f32128537f0e2f9e296f373e3eff",
+        "src/kernels/pinned_attention.rs": "e8cb59a539e5fae24c1417ce0f2eebd6ce7e016e008fe079d9b937d29c204674",
+        "src/kernels/pinned_attention_padding_tests.rs": "3175a21028eb5345413f4d49f9263ccfb78cc0e8bd8f5103e44d3ec22027e613",
+        "Cargo.toml": "5d406bbe0902c416e1ec7057d8a2f6fca1dca560a56bc4074eef2fdcbeec4211",
+        "Cargo.lock": "ddfec495c71307c142f70428ef4eca3a248246b9d3d7485e1120e74f6f19b661"
+      },
+      "exitCode": 0,
+      "status": "passed",
+      "elapsedSeconds": 17.074385300002177,
+      "powerAfter": {
+        "observedAtUtc": "2026-11-03T06:52:17.371801+00:00",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 85,
+        "rawAcLineStatus": 0,
+        "rawBatteryFlag": 1
+      }
+    },
+    {
+      "name": "strict-release-clippy",
+      "arguments": [
+        "C:\\Users\\symbi\\.rustup\\toolchains\\nightly-2026-10-22-aarch64-pc-windows-msvc\\bin\\cargo.exe",
+        "clippy",
+        "--locked",
+        "--offline",
+        "--release",
+        "-p",
+        "prism-inference",
+        "--features",
+        "parallel-rows",
+        "--lib",
+        "--test",
+        "graph",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "powerBefore": {
+        "observedAtUtc": "2026-11-03T06:52:17.372298+00:00",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 85,
+        "rawAcLineStatus": 0,
+        "rawBatteryFlag": 1
+      },
+      "sourceSha256": {
+        "src/graph.rs": "4466f272dc06ca1702131a9e588df6a5d4300c2087bff46a3bfb76e18c05d933",
+        "tests/graph.rs": "5c0ecad4cbfe950d23c45f183263031c1448f32128537f0e2f9e296f373e3eff",
+        "src/kernels/pinned_attention.rs": "e8cb59a539e5fae24c1417ce0f2eebd6ce7e016e008fe079d9b937d29c204674",
+        "src/kernels/pinned_attention_padding_tests.rs": "3175a21028eb5345413f4d49f9263ccfb78cc0e8bd8f5103e44d3ec22027e613",
+        "Cargo.toml": "5d406bbe0902c416e1ec7057d8a2f6fca1dca560a56bc4074eef2fdcbeec4211",
+        "Cargo.lock": "ddfec495c71307c142f70428ef4eca3a248246b9d3d7485e1120e74f6f19b661"
+      },
+      "exitCode": 101,
+      "status": "failed",
+      "elapsedSeconds": 6.048480600002222,
+      "powerAfter": {
+        "observedAtUtc": "2026-11-03T06:52:23.422342+00:00",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 85,
+        "rawAcLineStatus": 0,
+        "rawBatteryFlag": 1
+      }
+    },
+    {
+      "name": "reset-assertion-format",
+      "arguments": [
+        "C:\\Users\\symbi\\.rustup\\toolchains\\nightly-2026-10-22-aarch64-pc-windows-msvc\\bin\\rustfmt.exe",
+        "--check",
+        "--edition",
+        "2024",
+        "tests/graph.rs"
+      ],
+      "powerBefore": {
+        "observedAtUtc": "2026-11-03T06:52:36.357692+00:00",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 85,
+        "rawAcLineStatus": 0,
+        "rawBatteryFlag": 1
+      },
+      "sourceSha256": {
+        "src/graph.rs": "4466f272dc06ca1702131a9e588df6a5d4300c2087bff46a3bfb76e18c05d933",
+        "tests/graph.rs": "b32967c2cefcd576b1e82160e7e4e3dffc9ccec707f5eb585d6aa184e01cdd2a",
+        "src/kernels/pinned_attention.rs": "e8cb59a539e5fae24c1417ce0f2eebd6ce7e016e008fe079d9b937d29c204674",
+        "src/kernels/pinned_attention_padding_tests.rs": "3175a21028eb5345413f4d49f9263ccfb78cc0e8bd8f5103e44d3ec22027e613",
+        "Cargo.toml": "5d406bbe0902c416e1ec7057d8a2f6fca1dca560a56bc4074eef2fdcbeec4211",
+        "Cargo.lock": "ddfec495c71307c142f70428ef4eca3a248246b9d3d7485e1120e74f6f19b661"
+      },
+      "exitCode": 0,
+      "status": "passed",
+      "elapsedSeconds": 0.05697749998944346,
+      "powerAfter": {
+        "observedAtUtc": "2026-11-03T06:52:36.416043+00:00",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 85,
+        "rawAcLineStatus": 0,
+        "rawBatteryFlag": 1
+      }
+    },
+    {
+      "name": "reset-assertion-regression",
+      "arguments": [
+        "C:\\Users\\symbi\\.rustup\\toolchains\\nightly-2026-10-22-aarch64-pc-windows-msvc\\bin\\cargo.exe",
+        "test",
+        "--locked",
+        "--offline",
+        "--release",
+        "-p",
+        "prism-inference",
+        "--features",
+        "parallel-rows",
+        "--test",
+        "graph",
+        "empty_reset_preserves_hybrid_state_after_late_failure_and_checkpoint_restore",
+        "--",
+        "--exact"
+      ],
+      "powerBefore": {
+        "observedAtUtc": "2026-11-03T06:52:36.416598+00:00",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 85,
+        "rawAcLineStatus": 0,
+        "rawBatteryFlag": 1
+      },
+      "sourceSha256": {
+        "src/graph.rs": "4466f272dc06ca1702131a9e588df6a5d4300c2087bff46a3bfb76e18c05d933",
+        "tests/graph.rs": "b32967c2cefcd576b1e82160e7e4e3dffc9ccec707f5eb585d6aa184e01cdd2a",
+        "src/kernels/pinned_attention.rs": "e8cb59a539e5fae24c1417ce0f2eebd6ce7e016e008fe079d9b937d29c204674",
+        "src/kernels/pinned_attention_padding_tests.rs": "3175a21028eb5345413f4d49f9263ccfb78cc0e8bd8f5103e44d3ec22027e613",
+        "Cargo.toml": "5d406bbe0902c416e1ec7057d8a2f6fca1dca560a56bc4074eef2fdcbeec4211",
+        "Cargo.lock": "ddfec495c71307c142f70428ef4eca3a248246b9d3d7485e1120e74f6f19b661"
+      },
+      "exitCode": 101,
+      "status": "failed",
+      "elapsedSeconds": 0.7259409000107553,
+      "powerAfter": {
+        "observedAtUtc": "2026-11-03T06:52:37.143674+00:00",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 85,
+        "rawAcLineStatus": 0,
+        "rawBatteryFlag": 1
+      }
+    },
+    {
+      "name": "strict-release-clippy-final",
+      "arguments": [
+        "C:\\Users\\symbi\\.rustup\\toolchains\\nightly-2026-10-22-aarch64-pc-windows-msvc\\bin\\cargo.exe",
+        "clippy",
+        "--locked",
+        "--offline",
+        "--release",
+        "-p",
+        "prism-inference",
+        "--features",
+        "parallel-rows",
+        "--lib",
+        "--test",
+        "graph",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "powerBefore": {
+        "observedAtUtc": "2026-11-03T06:52:37.144459+00:00",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 85,
+        "rawAcLineStatus": 0,
+        "rawBatteryFlag": 1
+      },
+      "sourceSha256": {
+        "src/graph.rs": "4466f272dc06ca1702131a9e588df6a5d4300c2087bff46a3bfb76e18c05d933",
+        "tests/graph.rs": "b32967c2cefcd576b1e82160e7e4e3dffc9ccec707f5eb585d6aa184e01cdd2a",
+        "src/kernels/pinned_attention.rs": "e8cb59a539e5fae24c1417ce0f2eebd6ce7e016e008fe079d9b937d29c204674",
+        "src/kernels/pinned_attention_padding_tests.rs": "3175a21028eb5345413f4d49f9263ccfb78cc0e8bd8f5103e44d3ec22027e613",
+        "Cargo.toml": "5d406bbe0902c416e1ec7057d8a2f6fca1dca560a56bc4074eef2fdcbeec4211",
+        "Cargo.lock": "ddfec495c71307c142f70428ef4eca3a248246b9d3d7485e1120e74f6f19b661"
+      },
+      "exitCode": 101,
+      "status": "failed",
+      "elapsedSeconds": 0.9392481999966549,
+      "powerAfter": {
+        "observedAtUtc": "2026-11-03T06:52:38.085494+00:00",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 85,
+        "rawAcLineStatus": 0,
+        "rawBatteryFlag": 1
+      }
+    },
+    {
+      "name": "typed-reset-format",
+      "arguments": [
+        "C:\\Users\\symbi\\.rustup\\toolchains\\nightly-2026-10-22-aarch64-pc-windows-msvc\\bin\\rustfmt.exe",
+        "--check",
+        "--edition",
+        "2024",
+        "tests/graph.rs"
+      ],
+      "powerBefore": {
+        "observedAtUtc": "2026-11-03T06:53:01.221507+00:00",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 84,
+        "rawAcLineStatus": 0,
+        "rawBatteryFlag": 1
+      },
+      "sourceSha256": {
+        "src/graph.rs": "4466f272dc06ca1702131a9e588df6a5d4300c2087bff46a3bfb76e18c05d933",
+        "tests/graph.rs": "1e65e12f2b6d3b83c90b1aa8ba55376d6d75a62ed464fa5f1ee575222cea5d2f",
+        "src/kernels/pinned_attention.rs": "e8cb59a539e5fae24c1417ce0f2eebd6ce7e016e008fe079d9b937d29c204674",
+        "src/kernels/pinned_attention_padding_tests.rs": "3175a21028eb5345413f4d49f9263ccfb78cc0e8bd8f5103e44d3ec22027e613",
+        "Cargo.toml": "5d406bbe0902c416e1ec7057d8a2f6fca1dca560a56bc4074eef2fdcbeec4211",
+        "Cargo.lock": "ddfec495c71307c142f70428ef4eca3a248246b9d3d7485e1120e74f6f19b661"
+      },
+      "exitCode": 0,
+      "status": "passed",
+      "elapsedSeconds": 0.10375959999510087,
+      "powerAfter": {
+        "observedAtUtc": "2026-11-03T06:53:01.328510+00:00",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 84,
+        "rawAcLineStatus": 0,
+        "rawBatteryFlag": 1
+      }
+    },
+    {
+      "name": "typed-reset-regression",
+      "arguments": [
+        "C:\\Users\\symbi\\.rustup\\toolchains\\nightly-2026-10-22-aarch64-pc-windows-msvc\\bin\\cargo.exe",
+        "test",
+        "--locked",
+        "--offline",
+        "--release",
+        "-p",
+        "prism-inference",
+        "--features",
+        "parallel-rows",
+        "--test",
+        "graph",
+        "empty_reset_preserves_hybrid_state_after_late_failure_and_checkpoint_restore",
+        "--",
+        "--exact"
+      ],
+      "powerBefore": {
+        "observedAtUtc": "2026-11-03T06:53:01.329161+00:00",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 84,
+        "rawAcLineStatus": 0,
+        "rawBatteryFlag": 1
+      },
+      "sourceSha256": {
+        "src/graph.rs": "4466f272dc06ca1702131a9e588df6a5d4300c2087bff46a3bfb76e18c05d933",
+        "tests/graph.rs": "1e65e12f2b6d3b83c90b1aa8ba55376d6d75a62ed464fa5f1ee575222cea5d2f",
+        "src/kernels/pinned_attention.rs": "e8cb59a539e5fae24c1417ce0f2eebd6ce7e016e008fe079d9b937d29c204674",
+        "src/kernels/pinned_attention_padding_tests.rs": "3175a21028eb5345413f4d49f9263ccfb78cc0e8bd8f5103e44d3ec22027e613",
+        "Cargo.toml": "5d406bbe0902c416e1ec7057d8a2f6fca1dca560a56bc4074eef2fdcbeec4211",
+        "Cargo.lock": "ddfec495c71307c142f70428ef4eca3a248246b9d3d7485e1120e74f6f19b661"
+      },
+      "exitCode": 0,
+      "status": "passed",
+      "elapsedSeconds": 4.597807700003614,
+      "powerAfter": {
+        "observedAtUtc": "2026-11-03T06:53:05.928125+00:00",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 84,
+        "rawAcLineStatus": 0,
+        "rawBatteryFlag": 1
+      }
+    },
+    {
+      "name": "strict-release-clippy-typed-final",
+      "arguments": [
+        "C:\\Users\\symbi\\.rustup\\toolchains\\nightly-2026-10-22-aarch64-pc-windows-msvc\\bin\\cargo.exe",
+        "clippy",
+        "--locked",
+        "--offline",
+        "--release",
+        "-p",
+        "prism-inference",
+        "--features",
+        "parallel-rows",
+        "--lib",
+        "--test",
+        "graph",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "powerBefore": {
+        "observedAtUtc": "2026-11-03T06:53:05.928690+00:00",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 84,
+        "rawAcLineStatus": 0,
+        "rawBatteryFlag": 1
+      },
+      "sourceSha256": {
+        "src/graph.rs": "4466f272dc06ca1702131a9e588df6a5d4300c2087bff46a3bfb76e18c05d933",
+        "tests/graph.rs": "1e65e12f2b6d3b83c90b1aa8ba55376d6d75a62ed464fa5f1ee575222cea5d2f",
+        "src/kernels/pinned_attention.rs": "e8cb59a539e5fae24c1417ce0f2eebd6ce7e016e008fe079d9b937d29c204674",
+        "src/kernels/pinned_attention_padding_tests.rs": "3175a21028eb5345413f4d49f9263ccfb78cc0e8bd8f5103e44d3ec22027e613",
+        "Cargo.toml": "5d406bbe0902c416e1ec7057d8a2f6fca1dca560a56bc4074eef2fdcbeec4211",
+        "Cargo.lock": "ddfec495c71307c142f70428ef4eca3a248246b9d3d7485e1120e74f6f19b661"
+      },
+      "exitCode": 0,
+      "status": "passed",
+      "elapsedSeconds": 0.9402191000117455,
+      "powerAfter": {
+        "observedAtUtc": "2026-11-03T06:53:06.870140+00:00",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 84,
+        "rawAcLineStatus": 0,
+        "rawBatteryFlag": 1
+      }
+    }
+  ],
+  "sourceRevisionBeforeChecks": "03fe8621df889f9e45029d9f26a65615ca8991ff",
+  "modelExecutions": 0,
+  "ciActions": 0,
+  "fullSuites": 0,
+  "benchmarks": 0,
+  "performanceComparisonQualified": false,
+  "powerScope": "Endpoint observations only; no uninterrupted-stability claim.",
+  "chargedSeconds": 101.37020570000459,
+  "powerAfter": {
+    "observedAtUtc": "2026-11-03T06:53:21.215131+00:00",
+    "acConnected": false,
+    "batterySaver": false,
+    "chargePercent": 84,
+    "rawAcLineStatus": 0,
+    "rawBatteryFlag": 1
+  }
+}
