@@ -30,6 +30,7 @@ fn execute(plan: Plan, operations: &mut impl Operations, working: &Path) -> crat
 
 #[derive(Debug, Eq, PartialEq)]
 enum Event {
+    Inference(Value),
     Models(String, bool),
     Apps(Vec<String>, bool),
     Native(String, bool),
@@ -42,6 +43,7 @@ struct Recorder {
     events: Vec<Event>,
     exit_code: u32,
     fail_native: bool,
+    fail_inference: bool,
 }
 
 impl Recorder {
@@ -51,6 +53,7 @@ impl Recorder {
             events: Vec::new(),
             exit_code: 0,
             fail_native: false,
+            fail_inference: false,
         }
     }
 
@@ -68,6 +71,15 @@ impl Recorder {
 }
 
 impl Operations for Recorder {
+    fn inference(&mut self, request: &Request, working: &Path) -> crate::Result<()> {
+        self.events
+            .push(Event::Inference(inference_request(request, working)));
+        if self.fail_inference {
+            return Err("Deliberate inference preparation failure.".into());
+        }
+        Ok(())
+    }
+
     fn models(&mut self, request: &Request, model: &str, _working: &Path) -> crate::Result<Value> {
         self.events
             .push(Event::Models(model.into(), request.speech_models_only));
@@ -191,6 +203,53 @@ fn value_after(arguments: &[OsString], option: &str) -> crate::Result<OsString> 
 }
 
 #[test]
+fn native_runtime_preparation_uses_matching_lock_before_backend_work() -> crate::Result<()> {
+    for source_broker in [false, true] {
+        let mut fixture = fixture("runtime-preparation")?;
+        fixture.request["NativeEngine"] = json!(true);
+        if source_broker {
+            fixture
+                .request
+                .as_object_mut()
+                .ok_or("Expected request.")?
+                .remove("BrokerPath");
+        }
+        let mut recorder = Recorder::new(fixture.root.clone());
+        prepare_backend(plan(fixture.request)?, &mut recorder, &fixture.working)?;
+        let Some(Event::Inference(request)) = recorder.events.first() else {
+            return Err("Runtime preparation must precede speech, builds and credentials.".into());
+        };
+        assert_eq!(request["operation"], "inference");
+        assert_eq!(request["dataDirectory"], json!(fixture.root.join("data")));
+        assert_eq!(request["workingDirectory"], json!(fixture.working));
+        assert_eq!(
+            request.get("lockPath"),
+            source_broker
+                .then(|| json!(
+                    fixture
+                        .root
+                        .join("repository/config/prism-inference.lock.json")
+                ))
+                .as_ref()
+        );
+        assert!(request.get("verifyOnly").is_none());
+    }
+    Ok(())
+}
+
+#[test]
+fn failed_native_runtime_preparation_stops_before_downloads_builds_and_keys() -> crate::Result<()> {
+    let mut fixture = fixture("runtime-failure")?;
+    fixture.request["NativeEngine"] = json!(true);
+    let mut recorder = Recorder::new(fixture.root);
+    recorder.fail_inference = true;
+    assert!(prepare_backend(plan(fixture.request)?, &mut recorder, &fixture.working).is_err());
+    assert_eq!(recorder.events.len(), 1);
+    assert!(matches!(recorder.events[0], Event::Inference(_)));
+    Ok(())
+}
+
+#[test]
 fn native_window_handoff_precedes_backend_downloads_builds_and_keys() -> crate::Result<()> {
     for prebuilt_chat in [false, true] {
         let mut fixture = fixture(if prebuilt_chat {
@@ -206,6 +265,7 @@ fn native_window_handoff_precedes_backend_downloads_builds_and_keys() -> crate::
                 .remove("ChatPath");
         }
         fixture.request["ForceBuild"] = json!(true);
+        fixture.request["NativeEngine"] = json!(true);
         let plan = plan(fixture.request)?;
         let mut recorder = Recorder::new(fixture.root.clone());
         let tool = fixture.root.join("maintenance.exe");

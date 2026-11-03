@@ -277,6 +277,7 @@ fn prepare(mut request: Request, native_host: bool) -> crate::Result<Plan> {
 }
 
 trait Operations {
+    fn inference(&mut self, request: &Request, working: &Path) -> crate::Result<()>;
     fn models(&mut self, request: &Request, model: &str, working: &Path) -> crate::Result<Value>;
     fn apps(
         &mut self,
@@ -307,6 +308,12 @@ fn path_field(value: &Value, key: &str) -> crate::Result<PathBuf> {
 }
 
 impl Operations for Native {
+    fn inference(&mut self, request: &Request, working: &Path) -> crate::Result<()> {
+        crate::provision::run(inference_request(request, working))
+            .map(|_| ())
+            .map_err(|error| format!("The selected Rust runtime could not be prepared: {error}"))
+    }
+
     fn models(&mut self, request: &Request, model: &str, working: &Path) -> crate::Result<Value> {
         crate::native_startup::models(
             &request.data_directory,
@@ -364,6 +371,23 @@ impl Operations for Native {
         )?;
         Ok(result.code)
     }
+}
+
+fn inference_request(request: &Request, working: &Path) -> Value {
+    let mut provision = json!({
+        "operation": "inference", "dataDirectory": request.data_directory,
+        "workingDirectory": working,
+    });
+    // A source-built broker embeds this checkout's lock. Explicit prebuilt
+    // brokers retain the maintenance executable's compiled package lock instead.
+    if request.broker_path.is_none() {
+        provision["lockPath"] = json!(
+            request
+                .repository_root
+                .join("config/prism-inference.lock.json")
+        );
+    }
+    provision
 }
 
 fn argument(arguments: &mut Vec<OsString>, name: &str, value: impl Into<OsString>) {
@@ -492,6 +516,12 @@ fn prepare_backend(
     } = plan;
     if request.speech_models_only {
         fs::create_dir_all(&request.data_directory).map_err(|error| error.to_string())?;
+    }
+    if request.native_engine && !request.speech_models_only {
+        // Run only in the owned preparation worker after the first UI frame.
+        // Provisioning checks the exact release inventory and hashes, downloads
+        // only a missing runtime, and rejects altered existing installations.
+        operations.inference(&request, working)?;
     }
     let models = if let Some(model) = model_selection {
         Some(operations.models(&request, model, working)?)

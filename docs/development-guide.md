@@ -61,6 +61,13 @@ It accepts `-DataDirectory` and `-ToolPath`, otherwise selecting
 Omitting `-NativeEngine` preserves the publisher engine default. The script
 only forwards to Rust and propagates its exit code; it builds or provisions nothing.
 
+When native Rust inference is selected, the Rust preparation worker verifies the
+pinned runtime after the first native frame and installs it if missing. Source-built
+brokers use the checkout's exact release lock; explicit prebuilt brokers use the
+maintenance executable's compiled release lock. A changed existing installation
+fails verification and is retained. This step downloads only the small runtime;
+Swift weights and the adapter still require explicit provisioning.
+
 If the launcher reports a missing prebuilt executable, run the maintenance build
 command it prints from the repository root, then retry. Correct or remove any
 invalid `-ToolPath` or `BONSAI_TOOLS_PATH` override first. Older source launches used
@@ -320,7 +327,8 @@ and installed-package launches retain native admission. Installed launches use [
 | Experimental native Rust 0.1.13, original Swift PQ2 or exact current-weight PTQ1 | `--native-engine`, optionally `--use-repacked-ptq1` and `--no-abliterate-lora` (app/broker `--native-engine`) | Exact model, approved adapter, representation and effective row-worker readiness are verified; no engine switch after failure. Separate [PTQ1 qualification](swift-memory.md#current-weight-ptq1-option) is pending. |
 
 `--no-abliterate-lora` (direct app `--no-abliterate-lora`) omits the adapter and disables
-its control. Provision the native release before selecting it:
+its control. Source launch prepares the native release automatically; it can also
+be provisioned explicitly:
 
 ```powershell
 bonsai-tools provision --json (@{ operation = 'inference'; dataDirectory = $data } | ConvertTo-Json -Compress)
