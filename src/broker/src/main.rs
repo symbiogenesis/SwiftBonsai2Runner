@@ -62,7 +62,11 @@ fn main() -> ExitCode {
 #[cfg(windows)]
 fn launched(args: Vec<OsString>) -> ExitCode {
     use bonsai_broker::launcher::{LAUNCH_USAGE, LaunchConfig};
+    use bonsai_broker::owner_shutdown::{self, OwnerShutdown};
 
+    let Ok((args, owner_control)) = OwnerShutdown::take_arguments(args) else {
+        return failure(b"Private owner shutdown control rejected.\n");
+    };
     let Ok(configuration) = LaunchConfig::parse(args) else {
         return failure(LAUNCH_USAGE.as_bytes());
     };
@@ -99,27 +103,59 @@ fn launched(args: Vec<OsString>) -> ExitCode {
         return failure(b"Development launch runtime initialization failed.\n");
     };
     runtime.block_on(async {
-        let mut shutdown = std::pin::pin!(tokio::signal::ctrl_c());
+        let mut shutdown = std::pin::pin!(owner_shutdown::shutdown(owner_control.as_ref()));
         let owner = match configuration.start(shutdown.as_mut()).await {
             Ok(owner) => owner,
-            Err(error) => return launch_failure(error),
+            Err(error) => {
+                if owner_shutdown::startup_cleanup_confirmed(error) {
+                    let _confirmed = confirm_owner_cleanup(owner_control.as_ref());
+                }
+                return launch_failure(error);
+            }
         };
         let notice = format!(
             "DEVELOPMENT ONLY: owned {profile_name} backend ready; listening on http://127.0.0.1:{}.\nProtected credentials and technical evidence: {}\n{containment} Ctrl-C stops the complete owned Job.\n",
             owner.port(), owner.evidence_directory().display()
         );
-        if std::io::stdout().write_all(notice.as_bytes()).is_err() {
-            return ExitCode::FAILURE;
-        }
-        match owner.run(shutdown.as_mut()).await {
-            Ok(report) if report.exit == RunExit::Shutdown => ExitCode::SUCCESS,
-            Ok(_) => failure(b"Admission closed; the owned backend has been stopped.\n"),
-            Err(error) => {
-                let message = format!("Owned backend stopped after launcher failure: {error:?}.\n");
-                failure(message.as_bytes())
-            }
-        }
+        let notified = std::io::stdout().write_all(notice.as_bytes()).is_ok();
+        let result = if notified {
+            owner.run(shutdown.as_mut()).await
+        } else {
+            // Even a failed readiness notice must run explicit model cleanup;
+            // neither the outer tool Job nor PSEC Drop is an acknowledgment.
+            owner.run(async { Ok(()) }).await
+        };
+        owned_result(result, notified, owner_control.as_ref())
     })
+}
+
+#[cfg(windows)]
+fn owned_result(
+    result: Result<bonsai_broker::runtime::RunReport, bonsai_broker::launcher::LaunchError>,
+    notified: bool,
+    control: Option<&bonsai_broker::owner_shutdown::OwnerShutdown>,
+) -> ExitCode {
+    if !matches!(result, Err(bonsai_broker::launcher::LaunchError::Stop))
+        && !confirm_owner_cleanup(control)
+    {
+        return failure(b"Private model cleanup acknowledgment failed.\n");
+    }
+    if !notified {
+        return ExitCode::FAILURE;
+    }
+    match result {
+        Ok(report) if report.exit == RunExit::Shutdown => ExitCode::SUCCESS,
+        Ok(_) => failure(b"Admission closed; the owned backend has been stopped.\n"),
+        Err(error) => {
+            let message = format!("Owned backend stopped after launcher failure: {error:?}.\n");
+            failure(message.as_bytes())
+        }
+    }
+}
+
+#[cfg(windows)]
+fn confirm_owner_cleanup(control: Option<&bonsai_broker::owner_shutdown::OwnerShutdown>) -> bool {
+    control.is_none_or(|control| control.confirm_cleanup().is_ok())
 }
 
 #[cfg(windows)]

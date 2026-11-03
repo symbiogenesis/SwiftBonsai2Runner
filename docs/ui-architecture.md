@@ -55,12 +55,16 @@ Owned inference and speech require [native containment](sandboxing.md), with no
 uncontained fallback. Microphone consent is a separate UI capability check.
 
 The client atomically places its broker in a separate kill-on-close Job before
-the broker starts. Every attempt, including readiness failure and Stop, explicitly
-terminates and confirms that complete outer Job empty using a ten-second native
-stop allowance before offering Retry. Synchronous OS calls remain nonpreemptible.
-Failed or timed-out teardown leaves the model unavailable and
-requires closing the app. The broker still applies its independent model sandbox
-and resource admission; the outer Job adds lifecycle ownership only.
+the broker starts. Each attempt also has fresh ACL-protected private shutdown
+storage. Stop and startup cancellation ask the broker to stop its independent
+model Job and publish a fixed empty cleanup acknowledgment. The UI requires that
+acknowledgment, broker exit and confirmed outer-Job cleanup before offering Retry;
+a brokered PSEC model can lie outside the outer Job. All UI cleanup phases share
+one fifteen-second absolute allowance, including the broker's ten-second model
+stop and three seconds reserved for outer cleanup. Synchronous OS calls remain
+nonpreemptible. Failed or timed-out teardown, or unknown model creation cleanup,
+leaves the model unavailable and requires closing the app. This private file
+control adds no HTTP endpoint and changes no model sandbox or resource admission.
 
 The UI cannot load weights, choose arbitrary runtime arguments or bypass broker
 artifact, model, memory, context or sampler policy. Explicit

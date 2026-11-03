@@ -29,6 +29,7 @@ mod effort;
 mod event_queue;
 #[cfg(test)]
 mod memory_tests;
+mod owner_control;
 mod sse;
 
 pub(crate) use event_queue::{EventReceiver, EventSender, channel as event_channel};
@@ -37,7 +38,9 @@ use sse::Sse;
 const POLL: Duration = Duration::from_millis(100);
 const IO_POLL: Duration = Duration::from_millis(50);
 const DEADLINE: Duration = Duration::from_secs(600);
-const BROKER_STOP: Duration = Duration::from_secs(10);
+// Ten seconds for the broker's explicit model stop, then bounded exit polling
+// and outer-Job cleanup. All phases share this one absolute deadline.
+const BROKER_STOP: Duration = Duration::from_secs(15);
 const MAX_HEAD: usize = 16 * 1024;
 const MAX_BODY: usize = 4 * 1024 * 1024;
 const MAX_REQUEST: usize = 1024 * 1024;
@@ -360,18 +363,21 @@ fn worker(
     events: &EventSender,
     history: &mut Vec<Message>,
 ) -> Result<()> {
-    let spec = broker_spec(config);
+    let control = owner_control::OwnerControl::create(&config.evidence)
+        .map_err(|_| Failure::Message("Could not create private model shutdown storage."))?;
+    let spec = broker_spec(config, control.path());
     // Own the broker before its first instruction, including any descendants
     // created before the broker establishes its separate model sandbox/Job.
     // OwnedProcess keeps a kill-on-close guard on every early-return path.
-    let broker = OwnedProcess::start_tool(&spec).map_err(|_| {
-        Failure::Message("Could not start the broker. Build the app and check its executable path.")
-    })?;
+    // A failed native creation can leave release unconfirmed. It cannot admit
+    // another broker attempt merely because no process owner was returned.
+    let broker = OwnedProcess::start_tool(&spec).map_err(|_| Failure::Teardown)?;
     let outcome = serve_broker(&broker, config, commands, events, history, &spec);
-    finish_owned_attempt(outcome, || broker.stop(BROKER_STOP))
+    let deadline = Instant::now() + BROKER_STOP;
+    finish_owned_attempt(outcome, || control.stop(&broker, deadline))
 }
 
-fn broker_spec(config: &Config) -> ToolProcessSpec {
+fn broker_spec(config: &Config, shutdown_directory: &Path) -> ToolProcessSpec {
     let mut arguments: Vec<OsString> = runtime_arguments(config)
         .into_iter()
         .map(OsString::from)
@@ -391,6 +397,8 @@ fn broker_spec(config: &Config) -> ToolProcessSpec {
         config.backend_port.to_string().into(),
         "--max-waiting".into(),
         "0".into(),
+        "--owner-shutdown-directory".into(),
+        shutdown_directory.as_os_str().to_owned(),
     ]);
     ToolProcessSpec {
         executable: config.broker.clone(),
@@ -404,8 +412,9 @@ fn broker_spec(config: &Config) -> ToolProcessSpec {
 
 fn finish_owned_attempt(outcome: Result<()>, stop: impl FnOnce() -> io::Result<()>) -> Result<()> {
     // A failed or timed-out native stop leaves whole-tree release unknown.
-    // Closing the Job remains the final guard, but only a successful explicit
-    // stop may reach a teardown notice and admit another model attempt.
+    // Closing the outer Job remains a broker-tree guard. Only a broker model-
+    // cleanup acknowledgment, root exit and successful outer stop may admit
+    // another model attempt; PSEC may broker its model outside the outer Job.
     stop().map_err(|_| Failure::Teardown)?;
     outcome
 }
@@ -1356,7 +1365,8 @@ mod tests {
         for publisher in [false, true] {
             config.native_engine = !publisher;
             config.native_row_workers = if publisher { 1 } else { 4 };
-            let spec = super::broker_spec(&config);
+            let control = config.evidence.join("private-owner");
+            let spec = super::broker_spec(&config, &control);
             let expected: Vec<std::ffi::OsString> = runtime_arguments(&config)
                 .into_iter()
                 .map(Into::into)
@@ -1375,6 +1385,8 @@ mod tests {
                     "8082".into(),
                     "--max-waiting".into(),
                     "0".into(),
+                    "--owner-shutdown-directory".into(),
+                    control.into_os_string(),
                 ])
                 .collect();
             assert_eq!(spec.executable, config.broker);

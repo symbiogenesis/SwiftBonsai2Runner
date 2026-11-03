@@ -21,6 +21,8 @@ mod inference;
 pub mod launch_policy;
 #[cfg(windows)]
 pub mod launcher;
+#[cfg(windows)]
+pub mod owner_shutdown;
 pub mod reception;
 mod request_buffer;
 pub mod response;
