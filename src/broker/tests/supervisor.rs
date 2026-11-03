@@ -381,6 +381,57 @@ fn rejected_count_never_connects_generation() {
 }
 
 #[test]
+fn typed_private_context_rejection_sends_only_sanitized_public_admission_error() {
+    run(async {
+        for streaming in [false, true] {
+            for recognized in [false, true] {
+                let body = if recognized {
+                    r#"{"error":{"code":"context_length_exceeded"}}"#
+                } else {
+                    r#"{"error":{"code":"unknown_failure"}}"#
+                };
+                let bytes = format!(
+                    "HTTP/1.1 413 Content Too Large\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\nCache-Control: no-store\r\nX-Content-Type-Options: nosniff\r\nSet-Cookie: private-data\r\n\r\n{body}",body.len()
+                ).into_bytes();
+                let counter = BackendStream::new(bytes);
+                let state = counter.state.clone();
+                let backend = Connector::new([counter]);
+                let (client, mut peer, dropped) = clients();
+                let policy = policy();
+                let (result, bytes) =
+                    both(serve_chat(client, &policy, &backend, deadline()), async {
+                        peer.write_all(&request(streaming)).await.unwrap();
+                        let mut bytes = Vec::new();
+                        peer.read_to_end(&mut bytes).await.unwrap();
+                        bytes
+                    })
+                    .await;
+                assert_eq!(backend.calls.get(), 1);
+                if recognized {
+                    assert_eq!(
+                        result,
+                        Err(ServeError::Backend(BackendError::Admission(
+                            Rejection::ContextLimit
+                        )))
+                    );
+                    let wire = String::from_utf8(bytes).unwrap();
+                    let (head, body) = wire.split_once("\r\n\r\n").unwrap();
+                    assert!(head.starts_with("HTTP/1.1 413 Content Too Large\r\n"));
+                    assert!(head.contains("\r\nCache-Control: no-store\r\n"));
+                    assert_eq!(body, r#"{"error":{"code":"context_length_exceeded"}}"#);
+                    assert!(!wire.contains("private-data") && !wire.contains("Set-Cookie"));
+                    assert!(!wire.contains(CLIENT_KEY) && !wire.contains(BACKEND_KEY));
+                } else {
+                    assert_eq!(result, Err(ServeError::Backend(BackendError::CountSchema)));
+                    assert!(bytes.is_empty());
+                }
+                assert!(state.borrow().dropped && dropped.get());
+            }
+        }
+    });
+}
+
+#[test]
 fn truncated_generation_does_not_append_an_admission_error() {
     run(async {
         let counter = BackendStream::new(response(COUNT, false));

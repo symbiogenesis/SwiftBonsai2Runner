@@ -152,6 +152,17 @@ The reserve is conservative policy, not a measured tokenizer-error allowance.
 Bytes/characters are never treated as tokens. Counter errors or identity drift
 must reject admission.
 
+The private count route can also return the exact typed context rejection:
+HTTP 413 with `{"error":{"code":"context_length_exceeded"}}`. The broker accepts
+this classification only from its supplied owned counter stream, with strict
+HTTP/1.1 framing, one JSON Content-Type, no Content-Encoding, and singleton
+`Connection: close`, `Cache-Control: no-store` and `X-Content-Type-Options: nosniff`.
+The complete body shares the count route's 4096-byte cap and original deadline;
+duplicate/unknown JSON fields, unknown codes, malformed/truncated framing and
+all other statuses remain failures. HTTP status alone never identifies context
+exhaustion. Generation still requires HTTP 200 and cannot take this recovery path.
+An older runtime's untyped HTTP 400 or disconnect is not reclassified.
+
 An exact `ContextLimit` rejection returns HTTP 413 before generation:
 `{"error":{"code":"context_length_exceeded"}}`, `Content-Type: application/json`,
 computed `Content-Length`, `Connection: close`, `Cache-Control: no-store` and

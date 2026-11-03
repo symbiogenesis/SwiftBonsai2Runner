@@ -6,10 +6,10 @@
 
 use crate::{
     AdmittedChat, MAX_HEADER_BYTES, MAX_HEADERS, Object, PendingChat, Rejection, configuration,
-    response::{MAX_RESPONSE_BYTES, validate_metadata},
+    response::{MAX_RESPONSE_BYTES, validate_content_metadata, validate_metadata},
     singleton, wire,
 };
-use http::{Response, Version};
+use http::{Response, StatusCode, Version};
 use serde::Deserialize;
 use std::{
     borrow::Cow,
@@ -34,6 +34,7 @@ pub const MAX_COUNT_BYTES: usize = 4096;
 pub const MAX_CHUNK_LINE_BYTES: usize = 32;
 /// Largest accumulated chunk framing metadata in bytes for one response.
 pub const MAX_CHUNK_METADATA_BYTES: usize = 64 * 1024;
+const COUNT_ROUTE: &str = "/v1/chat/completions/input_tokens";
 
 /// Contains no private header, body, credential or native I/O diagnostic.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -56,7 +57,7 @@ pub enum BackendError {
     Body,
     /// The token-counter response does not match the bounded strict schema.
     CountSchema,
-    /// The existing request policy rejected the counted prompt.
+    /// The counted prompt or a recognized private counter context rejection failed admission.
     Admission(Rejection),
 }
 
@@ -86,6 +87,8 @@ impl BackendPolicy {
 /// Count the exact canonical body, then apply the existing context admission.
 ///
 /// Ownership closes the supplied connection on failure, completion or cancellation.
+/// Only the strict framed private counter context error is recoverable; an HTTP
+/// status alone, an unknown error code or an untyped failure cannot classify it.
 ///
 /// # Errors
 /// Returns [`BackendError`] for an expired deadline, stream failure, invalid
@@ -99,15 +102,8 @@ pub async fn count_and_admit<S>(
 where
     S: AsyncRead + AsyncWrite + Unpin + 'static,
 {
-    let response = exchange(
-        stream,
-        &pending.body,
-        false,
-        "/v1/chat/completions/input_tokens",
-        policy,
-        deadline,
-    )
-    .await?;
+    let response = exchange(stream, &pending.body, false, COUNT_ROUTE, policy, deadline).await?;
+    let context_rejected = response.status() == StatusCode::PAYLOAD_TOO_LARGE;
     // Read directly into the final allocation, keeping one byte for the
     // oversized-body probe without allowing unbounded read_to_end growth.
     let limit = u64::try_from(MAX_COUNT_BYTES + 1).map_err(|_| BackendError::CountSchema)?;
@@ -122,6 +118,16 @@ where
     })?;
     if bytes.len() > MAX_COUNT_BYTES {
         return Err(BackendError::CountSchema);
+    }
+    if context_rejected {
+        let Object(rejection): Object<CountRejection<'_>> =
+            serde_json::from_slice(&bytes).map_err(|_| BackendError::CountSchema)?;
+        ensure_time(deadline)?;
+        return if rejection.error.0.code == "context_length_exceeded" {
+            Err(BackendError::Admission(Rejection::ContextLimit))
+        } else {
+            Err(BackendError::CountSchema)
+        };
     }
     let Object(count): Object<Count<'_>> =
         serde_json::from_slice(&bytes).map_err(|_| BackendError::CountSchema)?;
@@ -143,6 +149,20 @@ struct Count<'a> {
     input_tokens: usize,
     #[serde(borrow)]
     object: Cow<'a, str>,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct CountRejection<'a> {
+    #[serde(borrow)]
+    error: Object<CountRejectionCode<'a>>,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct CountRejectionCode<'a> {
+    #[serde(borrow)]
+    code: Cow<'a, str>,
 }
 
 /// Send the admitted bytes unchanged to the sole generation route.
@@ -228,7 +248,8 @@ where
     drop(body);
 
     let mut reader = BufReader::with_capacity(8192, stream);
-    let (metadata, framing) = read_head(&mut reader, streaming, deadline).await?;
+    let (metadata, framing) =
+        read_head(&mut reader, streaming, route == COUNT_ROUTE, deadline).await?;
     ensure_time(deadline)?;
     Ok(metadata.map(|()| BackendBody {
         reader: Some(reader),
@@ -243,6 +264,7 @@ where
 async fn read_head<S: AsyncRead + Unpin>(
     reader: &mut BufReader<S>,
     streaming: bool,
+    counting: bool,
     deadline: Instant,
 ) -> Result<(Response<()>, Framing), BackendError> {
     ensure_time(deadline)?;
@@ -258,7 +280,7 @@ async fn read_head<S: AsyncRead + Unpin>(
     if let Some(end) = wire::head_end(available, 0) {
         // Complete ordinary heads borrow the reader allocation. Only fragmented
         // heads need a second buffer; coalesced body bytes stay in the reader.
-        let parsed = parse_head(&available[..end], streaming)?;
+        let parsed = parse_head(&available[..end], streaming, counting)?;
         reader.consume(end);
         return Ok(parsed);
     }
@@ -290,10 +312,14 @@ async fn read_head<S: AsyncRead + Unpin>(
         }
         reader.consume(count);
     }
-    parse_head(&raw, streaming)
+    parse_head(&raw, streaming, counting)
 }
 
-fn parse_head(raw: &[u8], streaming: bool) -> Result<(Response<()>, Framing), BackendError> {
+fn parse_head(
+    raw: &[u8],
+    streaming: bool,
+    counting: bool,
+) -> Result<(Response<()>, Framing), BackendError> {
     if !raw.starts_with(b"HTTP/1.1 ") || !wire::valid_line_endings(raw) {
         return Err(BackendError::WireSyntax);
     }
@@ -304,17 +330,26 @@ fn parse_head(raw: &[u8], streaming: bool) -> Result<(Response<()>, Framing), Ba
         Err(httparse::Error::TooManyHeaders) => return Err(BackendError::HeadLimit),
         _ => return Err(BackendError::WireSyntax),
     }
-    if parsed.version != Some(1) || parsed.code != Some(200) {
+    let status = match parsed.code {
+        Some(200) => StatusCode::OK,
+        Some(413) if counting => StatusCode::PAYLOAD_TOO_LARGE,
+        _ => return Err(BackendError::Metadata),
+    };
+    if parsed.version != Some(1) {
         return Err(BackendError::Metadata);
     }
     let mut response = Response::builder()
         .version(Version::HTTP_11)
-        .status(200)
+        .status(status)
         .body(())
         .map_err(|_| BackendError::Metadata)?;
     wire::append_headers(response.headers_mut(), parsed.headers)
         .map_err(|()| BackendError::WireSyntax)?;
-    validate_metadata(&response, streaming).map_err(|_| BackendError::Metadata)?;
+    if status == StatusCode::PAYLOAD_TOO_LARGE {
+        validate_count_rejection_metadata(&response)?;
+    } else {
+        validate_metadata(&response, streaming).map_err(|_| BackendError::Metadata)?;
+    }
     let headers = response.headers();
     if headers.contains_key("trailer") || headers.contains_key("upgrade") {
         return Err(BackendError::Framing);
@@ -343,6 +378,23 @@ fn parse_head(raw: &[u8], streaming: bool) -> Result<(Response<()>, Framing), Ba
         _ => return Err(BackendError::Framing),
     };
     Ok((response, framing))
+}
+
+fn validate_count_rejection_metadata(response: &Response<()>) -> Result<(), BackendError> {
+    validate_content_metadata(response, false).map_err(|_| BackendError::Metadata)?;
+    for (name, expected) in [
+        ("connection", b"close".as_slice()),
+        ("cache-control", b"no-store"),
+        ("x-content-type-options", b"nosniff"),
+    ] {
+        if !singleton(response.headers(), name)
+            .map_err(|_| BackendError::Metadata)?
+            .is_some_and(|value| value.eq_ignore_ascii_case(expected))
+        {
+            return Err(BackendError::Metadata);
+        }
+    }
+    Ok(())
 }
 
 enum Framing {

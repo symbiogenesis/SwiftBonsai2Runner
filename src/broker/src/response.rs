@@ -420,7 +420,17 @@ pub(crate) fn validate_metadata<R>(
     backend: &Response<R>,
     streaming: bool,
 ) -> Result<(), ResponseError> {
-    if backend.status() != StatusCode::OK || backend.headers().contains_key("content-encoding") {
+    if backend.status() != StatusCode::OK {
+        return Err(ResponseError::BackendMetadata);
+    }
+    validate_content_metadata(backend, streaming)
+}
+
+pub(crate) fn validate_content_metadata<R>(
+    backend: &Response<R>,
+    streaming: bool,
+) -> Result<(), ResponseError> {
+    if backend.headers().contains_key("content-encoding") {
         return Err(ResponseError::BackendMetadata);
     }
     let content_type = singleton(backend.headers(), "content-type")

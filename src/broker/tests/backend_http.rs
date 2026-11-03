@@ -29,6 +29,7 @@ use tokio::{
 const CLIENT_KEY: &str = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
 const BACKEND_KEY: &str = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 const COUNT: &[u8] = br#"{"input_tokens":100,"object":"response.input_tokens"}"#;
+const CONTEXT_ERROR: &[u8] = br#"{"error":{"code":"context_length_exceeded"}}"#;
 
 fn run(test: impl Future<Output = ()>) {
     tokio::runtime::Builder::new_current_thread()
@@ -107,6 +108,25 @@ fn chunked_head(stream: bool) -> Vec<u8> {
         }
     )
     .into_bytes()
+}
+
+fn context_response(body: &[u8], chunked: bool) -> Vec<u8> {
+    let framing = if chunked {
+        "Transfer-Encoding: chunked\r\n".to_owned()
+    } else {
+        format!("Content-Length: {}\r\n", body.len())
+    };
+    let mut bytes = format!(
+        "HTTP/1.1 413 Content Too Large\r\nContent-Type: application/json\r\nConnection: close\r\nCache-Control: no-store\r\nX-Content-Type-Options: nosniff\r\n{framing}\r\n"
+    ).into_bytes();
+    if chunked {
+        bytes.extend_from_slice(format!("{:x}\r\n", body.len()).as_bytes());
+        bytes.extend_from_slice(body);
+        bytes.extend_from_slice(b"\r\n0\r\n\r\n");
+    } else {
+        bytes.extend_from_slice(body);
+    }
+    bytes
 }
 
 #[derive(Default)]
@@ -785,6 +805,164 @@ fn exact_count_schema_rejects_missing_duplicate_unknown_or_noninteger_fields() {
             let state = backend.state.clone();
             assert!(matches!(count_and_admit(backend, pending(false), &policy(), deadline()).await, Err(BackendError::CountSchema)));
             assert!(state.borrow().dropped);
+        }
+    });
+}
+
+#[test]
+fn typed_private_context_rejection_is_framed_bounded_and_count_route_only() {
+    run(async {
+        for chunked in [false, true] {
+            for fragment in [1, 3, usize::MAX] {
+                for streaming in [false, true] {
+                    let mut backend =
+                        Stream::new(context_response(CONTEXT_ERROR, chunked), fragment);
+                    backend.stall_after_input = true;
+                    let state = backend.state.clone();
+                    assert!(matches!(
+                        count_and_admit(backend, pending(streaming), &policy(), deadline()).await,
+                        Err(BackendError::Admission(Rejection::ContextLimit))
+                    ));
+                    assert!(state.borrow().dropped);
+                    assert!(
+                        state
+                            .borrow()
+                            .written
+                            .starts_with(b"POST /v1/chat/completions/input_tokens HTTP/1.1\r\n")
+                    );
+                }
+            }
+            let backend = Stream::new(context_response(CONTEXT_ERROR, chunked), 1);
+            let state = backend.state.clone();
+            assert!(matches!(
+                request_chat(backend, &admitted(false), &policy(), deadline()).await,
+                Err(BackendError::Metadata)
+            ));
+            assert!(state.borrow().dropped);
+        }
+    });
+}
+
+#[test]
+fn typed_private_context_rejection_requires_exact_object_schema_and_code() {
+    run(async {
+        for body in [
+            b"".as_slice(),b"[]",b"null",b"{}",br#"{"error":[]}"#,
+            br#"{"error":{"code":"other"}}"#, br#"{"error":{"code":413}}"#,
+            br#"{"error":{"code":"context_length_exceeded","message":"private input"}}"#,
+            br#"{"error":{"code":"context_length_exceeded"},"input_tokens":9000}"#,
+            br#"{"error":{"code":"context_length_exceeded","code":"context_length_exceeded"}}"#,
+            br#"{"error":{"code":"context_length_exceeded"},"error":{"code":"context_length_exceeded"}}"#,
+            br#"{"error":{"code":"context_length_exceeded"}}{}"#,
+        ] {
+            let backend = Stream::new(context_response(body,false),3);
+            let state = backend.state.clone();
+            assert!(matches!(count_and_admit(backend,pending(false),&policy(),deadline()).await,Err(BackendError::CountSchema)));
+            assert!(state.borrow().dropped);
+        }
+        assert!(matches!(
+            count_and_admit(
+                Stream::new(length_response(CONTEXT_ERROR, false), 1),
+                pending(false),
+                &policy(),
+                deadline()
+            )
+            .await,
+            Err(BackendError::CountSchema)
+        ));
+    });
+}
+
+#[test]
+fn typed_private_context_rejection_rejects_wrong_status_metadata_and_ambiguous_framing() {
+    run(async {
+        let original = String::from_utf8(context_response(CONTEXT_ERROR, false)).unwrap();
+        for (from, to) in [
+            ("413 Content Too Large", "400 Bad Request"),
+            ("413 Content Too Large", "401 Unauthorized"),
+            ("413 Content Too Large", "429 Too Many Requests"),
+            ("413 Content Too Large", "500 Internal Server Error"),
+            (
+                "Content-Type: application/json",
+                "Content-Type: text/event-stream",
+            ),
+            (
+                "Content-Type: application/json",
+                "Content-Type: application/json\r\nContent-Encoding: identity",
+            ),
+            ("Connection: close\r\n", ""),
+            ("Connection: close", "Connection: keep-alive"),
+            ("Cache-Control: no-store\r\n", ""),
+            ("Cache-Control: no-store", "Cache-Control: public"),
+            (
+                "Cache-Control: no-store",
+                "Cache-Control: no-store\r\nCache-Control: no-store",
+            ),
+            ("X-Content-Type-Options: nosniff\r\n", ""),
+            (
+                "X-Content-Type-Options: nosniff",
+                "X-Content-Type-Options: nosniff\r\nX-Content-Type-Options: nosniff",
+            ),
+            (
+                "Content-Length:",
+                "Transfer-Encoding: chunked\r\nContent-Length:",
+            ),
+        ] {
+            let backend = Stream::new(original.replace(from, to).into_bytes(), 1);
+            let state = backend.state.clone();
+            let result = count_and_admit(backend, pending(false), &policy(), deadline()).await;
+            assert!(result.is_err() && !matches!(result, Err(BackendError::Admission(_))));
+            assert!(state.borrow().dropped);
+        }
+    });
+}
+
+#[test]
+fn typed_private_context_rejection_requires_complete_body_within_original_deadline() {
+    run(async {
+        for chunked in [false, true] {
+            let mut truncated = context_response(CONTEXT_ERROR, chunked);
+            let _ = truncated.pop();
+            let backend = Stream::new(truncated.clone(), 3);
+            let state = backend.state.clone();
+            assert!(matches!(
+                count_and_admit(backend, pending(false), &policy(), deadline()).await,
+                Err(BackendError::Body)
+            ));
+            assert!(state.borrow().dropped);
+            let mut stalled = Stream::new(truncated, 3);
+            stalled.stall_after_input = true;
+            let state = stalled.state.clone();
+            assert!(matches!(
+                count_and_admit(
+                    stalled,
+                    pending(false),
+                    &policy(),
+                    Instant::now() + Duration::from_secs(1)
+                )
+                .await,
+                Err(BackendError::Deadline)
+            ));
+            assert!(state.borrow().dropped);
+            for length in [4096, 4097] {
+                let mut body = CONTEXT_ERROR.to_vec();
+                body.resize(length, b' ');
+                let result = count_and_admit(
+                    Stream::new(context_response(&body, chunked), usize::MAX),
+                    pending(false),
+                    &policy(),
+                    deadline(),
+                )
+                .await;
+                if length == 4096 {
+                    assert!(matches!(
+                        result,
+                        Err(BackendError::Admission(Rejection::ContextLimit))
+                    ));
+                } else {
+                    assert!(matches!(result, Err(BackendError::CountSchema)));
+                }
+            }
         }
     });
 }
