@@ -158,6 +158,12 @@ canonical ordering and digest bytes. See [host inventory](../../docs/hardware-ca
 
 `native-acceptance-budget` receives canonical seven-fraction UTC timestamps,
 monotonic ticks/frequency, run/revision and the optional complete owner binding.
+The workflows capture `jobStartedTick` before checkout and charge the larger of
+wall and monotonic setup time using integer ceilings. The receipt keeps
+`PreparationWallElapsedSeconds` and `PreparationMonotonicElapsedSeconds` separate;
+`PreparationElapsedSeconds` is their maximum. A supplied invalid, null or future
+job tick rejects. Legacy callers may omit it, leaving monotonic setup explicitly
+unknown; they retain the earlier wall-only calculation.
 Optional `wholeJobMaximumSeconds` defaults to 300 and accepts 300..900, explicitly
 declared before starting the workload. The native-runtime acceptance workflow
 offers 5/10/15 minutes, retaining a workload estimate/reason for either extension.

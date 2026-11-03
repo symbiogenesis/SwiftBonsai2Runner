@@ -55,6 +55,11 @@ The workflow defaults to **five minutes total**. Its explicit `owner_budget_minu
 input selects 5, 10 or 15 minutes; 10/15 requires `budget_reason` to retain the fixed
 workload estimate and why five minutes cannot fit. The job timeout uses that same
 declared total. Its clock starts before checkout and hosted-binary intake. Each
+job captures its UTC and monotonic starts there. Budget admission charges the
+larger elapsed value, rounded up with integer arithmetic, so clock corrections
+cannot increase the remaining allowance. Both observations remain in receipts;
+the inherited owner's monotonic limit can independently shorten admission.
+Each
 actual-model case receives a validated aggregate soft allowance, at most **240,
 540 or 840 seconds** respectively, reduced by preceding setup, verification and
 case inventory. Startup and cleanup share this allowance. Missing, malformed or

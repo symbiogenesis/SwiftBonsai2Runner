@@ -22,6 +22,8 @@ const OWNER_FIELDS: [&str; 5] = [
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct Request {
     job_started_utc: String,
+    #[serde(default, deserialize_with = "optional_tick")]
+    job_started_tick: Option<i64>,
     now_utc: String,
     now_tick: i64,
     tick_frequency: i64,
@@ -31,6 +33,12 @@ struct Request {
     whole_job_maximum_seconds: u16,
     #[serde(default = "empty_owner")]
     owner_deadline: Value,
+}
+
+fn optional_tick<'de, D: serde::Deserializer<'de>>(
+    deserializer: D,
+) -> Result<Option<i64>, D::Error> {
+    i64::deserialize(deserializer).map(Some)
 }
 
 fn empty_owner() -> Value {
@@ -47,6 +55,8 @@ struct Budget {
     whole_job_maximum_seconds: u16,
     maximum_case_budget_seconds: u16,
     preparation_elapsed_seconds: f64,
+    preparation_wall_elapsed_seconds: f64,
+    preparation_monotonic_elapsed_seconds: Option<f64>,
     hard_limit_seconds: u16,
     case_budget_seconds: u16,
     owner_deadline_applied: bool,
@@ -60,6 +70,9 @@ struct Budget {
 /// Callers supply canonical seven-fraction UTC timestamps and the same monotonic
 /// clock/frequency used by the inherited owner. The owner binding can only
 /// shorten the independent job allowance; malformed or exhausted input rejects.
+/// Supplying the original `jobStartedTick` also charges monotonic preparation
+/// time, taking the larger of the wall and monotonic elapsed costs. Omitting it
+/// preserves legacy wall-only inputs; a supplied invalid or null tick rejects.
 ///
 /// # Errors
 /// Returns a diagnostic for invalid clock/binding fields or an exhausted budget.
@@ -76,6 +89,43 @@ fn declared_limits(seconds: u16) -> crate::Result<(u16, u16)> {
     Ok((seconds - POSTPROCESS_RESERVE_SECONDS, seconds - 60))
 }
 
+struct Preparation {
+    charged_seconds: u64,
+    elapsed_seconds: f64,
+    wall_elapsed_seconds: f64,
+    monotonic_elapsed_seconds: Option<f64>,
+}
+
+fn preparation(request: &Request, now_tick: u64, frequency: u64) -> crate::Result<Preparation> {
+    let wall_ticks = utc_ticks(&request.now_utc)?
+        .checked_sub(utc_ticks(&request.job_started_utc)?)
+        .ok_or("Acceptance setup time cannot be negative.")?;
+    let monotonic_ticks = request
+        .job_started_tick
+        .map(|tick| -> crate::Result<u64> {
+            u64::try_from(tick)
+                .ok()
+                .and_then(|start| now_tick.checked_sub(start))
+                .ok_or_else(|| {
+                    "The original job monotonic start is invalid or in the future.".into()
+                })
+        })
+        .transpose()?;
+    let wall_elapsed_seconds = seconds(wall_ticks, TICKS_PER_SECOND)?;
+    let monotonic_elapsed_seconds = monotonic_ticks
+        .map(|ticks| seconds(ticks, frequency))
+        .transpose()?;
+    Ok(Preparation {
+        // Compare integer ceilings rather than rounded floating-point seconds.
+        charged_seconds: wall_ticks
+            .div_ceil(TICKS_PER_SECOND)
+            .max(monotonic_ticks.map_or(0, |ticks| ticks.div_ceil(frequency))),
+        elapsed_seconds: wall_elapsed_seconds.max(monotonic_elapsed_seconds.unwrap_or(0.0)),
+        wall_elapsed_seconds,
+        monotonic_elapsed_seconds,
+    })
+}
+
 fn calculate(request: &Request) -> crate::Result<Budget> {
     let (maximum_work, maximum_case) = declared_limits(request.whole_job_maximum_seconds)?;
     if !canonical_decimal(&request.run_id, 20)
@@ -87,21 +137,18 @@ fn calculate(request: &Request) -> crate::Result<Budget> {
     {
         return Err("Acceptance requires a canonical run ID and source revision.".into());
     }
-    let job_started = utc_ticks(&request.job_started_utc)?;
     let now = utc_ticks(&request.now_utc)?;
-    let setup_ticks = now
-        .checked_sub(job_started)
-        .ok_or("Acceptance setup time cannot be negative.")?;
     let now_tick = u64::try_from(request.now_tick)
         .map_err(|_| "Acceptance monotonic clocks must be nonnegative.")?;
     let frequency = u64::try_from(request.tick_frequency)
         .ok()
         .filter(|frequency| *frequency != 0)
         .ok_or("Acceptance monotonic clock frequency must be positive.")?;
+    let setup = preparation(request, now_tick, frequency)?;
     // Subtract the ceiling of elapsed time, preserving fractional setup costs
     // without allowing floating-point rounding to extend either deadline.
     let mut hard_limit = i128::from(maximum_case + 10)
-        .min(i128::from(maximum_work) - i128::from(setup_ticks.div_ceil(TICKS_PER_SECOND)));
+        .min(i128::from(maximum_work) - i128::from(setup.charged_seconds));
     let owner = request
         .owner_deadline
         .as_object()
@@ -172,7 +219,9 @@ fn calculate(request: &Request) -> crate::Result<Budget> {
     Ok(Budget {
         whole_job_maximum_seconds: request.whole_job_maximum_seconds,
         maximum_case_budget_seconds: maximum_case,
-        preparation_elapsed_seconds: seconds(setup_ticks, TICKS_PER_SECOND)?,
+        preparation_elapsed_seconds: setup.elapsed_seconds,
+        preparation_wall_elapsed_seconds: setup.wall_elapsed_seconds,
+        preparation_monotonic_elapsed_seconds: setup.monotonic_elapsed_seconds,
         hard_limit_seconds: u16::try_from(hard_limit).map_err(|error| error.to_string())?,
         case_budget_seconds: u16::try_from(case_budget).map_err(|error| error.to_string())?,
         owner_deadline_applied: supplied == OWNER_FIELDS.len(),
@@ -315,6 +364,8 @@ mod tests {
             assert_eq!(report["HardLimitSeconds"], 250);
             assert_eq!(report["CaseBudgetSeconds"], 240);
             assert_eq!(report["PreparationElapsedSeconds"].as_f64(), Some(20.0));
+            assert_eq!(report["PreparationWallElapsedSeconds"].as_f64(), Some(20.0));
+            assert!(report["PreparationMonotonicElapsedSeconds"].is_null());
             assert_eq!(report["OwnerDeadlineApplied"], false);
             assert!(report["OwnerElapsedSeconds"].is_null());
             assert!(report["OwnerWorkSeconds"].is_null());
@@ -324,6 +375,69 @@ mod tests {
         let report = run(input)?;
         assert_eq!(report["HardLimitSeconds"], 20);
         assert_eq!(report["CaseBudgetSeconds"], 10);
+        Ok(())
+    }
+
+    #[test]
+    fn job_clocks_charge_the_larger_elapsed_cost_without_extending_owner_limits()
+    -> crate::Result<()> {
+        let mut input = request();
+        // UTC advanced only twenty seconds while the monotonic clock advanced 120.
+        input["jobStartedTick"] = json!(380_000);
+        let report = run(input.clone())?;
+        assert_eq!(report["HardLimitSeconds"], 150);
+        assert_eq!(report["CaseBudgetSeconds"], 140);
+        assert_eq!(report["PreparationElapsedSeconds"].as_f64(), Some(120.0));
+        assert_eq!(report["PreparationWallElapsedSeconds"].as_f64(), Some(20.0));
+        assert_eq!(
+            report["PreparationMonotonicElapsedSeconds"].as_f64(),
+            Some(120.0)
+        );
+        input["ownerDeadline"] = owner();
+        assert_eq!(run(input.clone())?["CaseBudgetSeconds"], 135);
+        // A forward UTC adjustment must still shorten the available time.
+        input["jobStartedTick"] = json!(480_000);
+        input["jobStartedUtc"] = json!("2026-10-30T23:58:50.0000000Z");
+        let report = run(input.clone())?;
+        assert_eq!(report["HardLimitSeconds"], 145);
+        assert_eq!(report["CaseBudgetSeconds"], 135);
+        input["ownerDeadline"] = json!({});
+        let report = run(input)?;
+        assert_eq!(report["HardLimitSeconds"], 150);
+        assert_eq!(report["CaseBudgetSeconds"], 140);
+        assert_eq!(
+            report["PreparationMonotonicElapsedSeconds"].as_f64(),
+            Some(20.0)
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn job_monotonic_fractional_expiry_and_invalid_bindings_reject() -> crate::Result<()> {
+        let mut input = request();
+        input["tickFrequency"] = json!(10_000_000);
+        input["nowTick"] = json!(5_000_000_000_i64);
+        input["jobStartedTick"] = json!(2_410_000_000_i64);
+        assert_eq!(run(input.clone())?["CaseBudgetSeconds"], 1);
+        input["jobStartedTick"] = json!(2_409_999_999_i64);
+        assert!(run(input).is_err());
+        for tick in [
+            json!(-1),
+            json!(500_001),
+            json!(1.5),
+            json!("480000"),
+            Value::Null,
+        ] {
+            let mut input = request();
+            input["jobStartedTick"] = tick;
+            assert!(run(input).is_err());
+        }
+        // Non-integral seconds are rounded up even at an unusual tick frequency.
+        let mut input = request();
+        input["tickFrequency"] = json!(3);
+        input["nowTick"] = json!(1000);
+        input["jobStartedTick"] = json!(638);
+        assert_eq!(run(input)?["CaseBudgetSeconds"], 139);
         Ok(())
     }
 

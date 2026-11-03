@@ -85,7 +85,9 @@ jobs:
     steps:
       - name: Start the aggregate owner clock before checkout and intake
         shell: pwsh
-        run: '"BONSAI_ROW_JOB_STARTED_UTC=$([DateTime]::UtcNow.ToString(''o''))" >> $env:GITHUB_ENV'
+        run: |
+          "BONSAI_ROW_JOB_STARTED_TICK=$([Diagnostics.Stopwatch]::GetTimestamp())" >> $env:GITHUB_ENV
+          "BONSAI_ROW_JOB_STARTED_UTC=$([DateTime]::UtcNow.ToString('o'))" >> $env:GITHUB_ENV
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
@@ -104,15 +106,32 @@ jobs:
           Set-StrictMode -Version Latest
           $ErrorActionPreference = 'Stop'
           $PSNativeCommandUseErrorActionPreference = $true
-          $budgetTick = [Diagnostics.Stopwatch]::GetTimestamp()
-          $frequency = [Diagnostics.Stopwatch]::Frequency
-          $limits = & $env:BONSAI_TOOLS_PATH native-acceptance-budget --json (@{
-            jobStartedUtc=$env:BONSAI_ROW_JOB_STARTED_UTC; nowUtc=[DateTime]::UtcNow.ToString('o')
-            nowTick=$budgetTick; tickFrequency=$frequency; runId=$env:GITHUB_RUN_ID; revision=$env:GITHUB_SHA
-            ownerDeadline=@{ RunId=$env:BONSAI_NATIVE_OWNER_RUN_ID; Revision=$env:BONSAI_NATIVE_OWNER_REVISION
-              StartedTick=$env:BONSAI_NATIVE_OWNER_STARTED_TICK; StartedUtc=$env:BONSAI_NATIVE_OWNER_STARTED_UTC
-              WorkSeconds=$env:BONSAI_NATIVE_OWNER_WORK_SECONDS }
-          } | ConvertTo-Json -Depth 64 -Compress) | ConvertFrom-Json -AsHashtable
+          $budgetPath = Join-Path $env:RUNNER_TEMP 'row-owner-budget.json'
+          $budgetReport = [ordered]@{
+            Revision=$env:GITHUB_SHA; RunId=$env:GITHUB_RUN_ID; RunAttempt=$env:GITHUB_RUN_ATTEMPT
+            Status='preparing'; WholeJobMaximumSeconds=300; DefaultMayChange=$false
+          }
+          "BONSAI_ROW_OWNER_BUDGET=$budgetPath" >> $env:GITHUB_ENV
+          try {
+            if ([string]::IsNullOrWhiteSpace($env:BONSAI_ROW_JOB_STARTED_TICK)) { throw 'The original monotonic job start is required.' }
+            $budgetTick = [Diagnostics.Stopwatch]::GetTimestamp()
+            $frequency = [Diagnostics.Stopwatch]::Frequency
+            $limits = & $env:BONSAI_TOOLS_PATH native-acceptance-budget --json (@{
+              jobStartedUtc=$env:BONSAI_ROW_JOB_STARTED_UTC; nowUtc=[DateTime]::UtcNow.ToString('o')
+              jobStartedTick=[long]$env:BONSAI_ROW_JOB_STARTED_TICK
+              nowTick=$budgetTick; tickFrequency=$frequency; runId=$env:GITHUB_RUN_ID; revision=$env:GITHUB_SHA
+              ownerDeadline=@{ RunId=$env:BONSAI_NATIVE_OWNER_RUN_ID; Revision=$env:BONSAI_NATIVE_OWNER_REVISION
+                StartedTick=$env:BONSAI_NATIVE_OWNER_STARTED_TICK; StartedUtc=$env:BONSAI_NATIVE_OWNER_STARTED_UTC
+                WorkSeconds=$env:BONSAI_NATIVE_OWNER_WORK_SECONDS }
+            } | ConvertTo-Json -Depth 64 -Compress) | ConvertFrom-Json -AsHashtable
+            $budgetReport.Status = 'budget-established'
+            $budgetReport['Limits'] = $limits
+          } catch {
+            $budgetReport.Status = 'budget-rejected'
+            throw
+          } finally {
+            $budgetReport | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $budgetPath -Encoding utf8NoBOM
+          }
           $workDeadline = $budgetTick + ([long]$limits.CaseBudgetSeconds * $frequency)
           $hardDeadline = $budgetTick + ([long]$limits.HardLimitSeconds * $frequency)
           $requestPath = Join-Path $env:RUNNER_TEMP 'native-row-request.json'
@@ -160,6 +179,14 @@ jobs:
             'Evaluation durations exclude loading and dump I/O; one observation is not application TPS or statistical benefit.',
             'All setup, capture and comparison share one 240-second process budget inside this five-minute owner job.',
             'No engine, worker, model or admission default may change from this result alone.') | Add-Content -LiteralPath $env:GITHUB_STEP_SUMMARY
+      - name: Retain aggregate deadline observations even when admission rejects
+        if: always() && env.BONSAI_ROW_OWNER_BUDGET != ''
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: native-row-owner-budget-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ env.BONSAI_ROW_OWNER_BUDGET }}
+          if-no-files-found: error
+          retention-days: 90
       - name: Retain credential-free fixed-input captures and failures
         if: always() && env.BONSAI_ROW_QUALIFICATION_EVIDENCE != ''
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9

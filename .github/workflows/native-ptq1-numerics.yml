@@ -137,6 +137,7 @@ jobs:
       - name: Start the complete owner-job budget before checkout and tool intake
         shell: pwsh
         run: |
+          "BONSAI_PTQ1_JOB_STARTED_TICK=$([Diagnostics.Stopwatch]::GetTimestamp())" >> $env:GITHUB_ENV
           "BONSAI_PTQ1_JOB_STARTED_UTC=$([DateTime]::UtcNow.ToString('o'))" >> $env:GITHUB_ENV
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -172,10 +173,12 @@ jobs:
           $budgetReport | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $budgetPath -Encoding utf8NoBOM
           "BONSAI_PTQ1_OWNER_BUDGET=$budgetPath" >> $env:GITHUB_ENV
           try {
+            if ([string]::IsNullOrWhiteSpace($env:BONSAI_PTQ1_JOB_STARTED_TICK)) { throw 'The original monotonic job start is required.' }
             $budgetTick = [Diagnostics.Stopwatch]::GetTimestamp()
             $frequency = [Diagnostics.Stopwatch]::Frequency
             $limits = & $env:BONSAI_TOOLS_PATH native-acceptance-budget --json (@{
               jobStartedUtc=$env:BONSAI_PTQ1_JOB_STARTED_UTC; nowUtc=[DateTime]::UtcNow.ToString('o')
+              jobStartedTick=[long]$env:BONSAI_PTQ1_JOB_STARTED_TICK
               nowTick=$budgetTick; tickFrequency=$frequency
               runId=$env:GITHUB_RUN_ID; revision=$env:GITHUB_SHA
               ownerDeadline=@{
