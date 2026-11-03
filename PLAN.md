@@ -87,6 +87,13 @@ benchmarks and performance captures stay in owning CI.
 
 ### Actual-model acceptance
 
+Complete the strict Release UI analyzer left pending by the
+[bounded local readiness validation](docs/evidence/prism-0114-primetime-validation-20261103/retention.json)
+in owning hosted checks. Preserve its original 570-second work cutoff and failed
+600-second retention budget; do not reopen that source-validation session to finish
+the analyzer. The local checks and verified artifact repair do not close actual-model
+acceptance or replace a source-bound hosted package for the next owner workload.
+
 Qualify the Rust-only maintenance migration through settled-main hosted ARM64
 Foundation, released-runtime provisioning, source-bound collector/candidate builds,
 speech static-cache preparation and signed Hexagon worker integration. Focused

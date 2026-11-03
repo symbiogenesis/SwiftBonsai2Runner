@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "kind": "tested-maintenance-tool-installation",
+  "status": "installed",
+  "testedSha256": "de72ea4846360101a336dfd04f0d844836ea93f912058bc97827bf3de9dac617",
+  "source": "C:\\Users\\symbi\\AppData\\Local\\Temp\\ptq1-local-validation-20261103\\target\\release\\bonsai-tools.exe",
+  "destination": "C:\\Users\\symbi\\AppData\\Local\\SwiftBonsai2\\build\\maintenance\\release\\bonsai-tools.exe",
+  "staged": "C:\\Users\\symbi\\AppData\\Local\\SwiftBonsai2\\build\\maintenance\\release\\bonsai-tools-update-b5c0a6f552f54dd09b7c495f51301371.exe",
+  "previousExecutable": "C:\\Users\\symbi\\AppData\\Local\\SwiftBonsai2\\build\\maintenance\\release\\bonsai-tools-previous-713d7d74189745f889f69a3dcd5945dd.exe",
+  "modelsStarted": 0,
+  "processesStopped": 0
+}

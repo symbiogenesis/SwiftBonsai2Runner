@@ -35,8 +35,10 @@ owns source-launch receipts/cache rules; the [package contract](chat-packages.md
 owns verified installed launches.
 
 The launcher checks/builds presentation first. After the first UI tick, an owned
-preparation worker builds/verifies the broker and speech companions and creates
-fresh credentials. Drafts and recovered conversations survive preparation;
+preparation worker verifies/provisions the selected pinned Rust runtime,
+builds/verifies the broker and speech companions and creates fresh credentials.
+Runtime preparation downloads only a missing locked runtime; model and adapter
+provisioning remain explicit. Drafts and recovered conversations survive preparation;
 failures leave the window available. Closing cancels preparation and waits for
 owned descendants. Artifact verification and memory admission precede model use.
 Owned inference and speech require [native containment](sandboxing.md), with no
