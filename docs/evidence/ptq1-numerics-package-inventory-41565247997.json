@@ -1,0 +1,144 @@
+{
+  "SchemaVersion": 1,
+  "Kind": "source-only-numerical-owner-package-inventory-review",
+  "RunId": "41565247997",
+  "Revision": "3d91f113061bf55cde74d53dfbb8eea0d671b2e8",
+  "ReviewerId": "Codex:/root/qualification_harness",
+  "Status": "deterministic-source-defect-reproduced-and-corrected-pure-validation-passed",
+  "OriginalHelperSha256": "b60ca422311aead3510cc1a729f933c3376243941d744a37748af1b821debdf2",
+  "CorrectedHelperPath": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-Ptq1-Numerics-41565247997\\Invoke-TemporaryPtq1NumericsOwner-Membership.ps1",
+  "CorrectedHelperSha256": "47a8650c03e69944b85a1a0dfa5031f11910949fc20934ababad73a09b6df2b3",
+  "OriginalHelperUnchanged": true,
+  "Scope": "Only AST-extracted file/package validators ran with archived artifact-API JSON stubs, plus the extracted exact-name predicate. No top-level helper, owner preflight, registration, runner, hardware diagnostics, model or benchmark executed.",
+  "Finding": {
+    "OriginalSourceLine": 241,
+    "CorrectedValidatorVerifiedArtifacts": 2,
+    "OriginalValidatorRejectedRetainedValidPackages": true,
+    "Correction": "Require exactly two names and case-sensitive membership of swift-ptq1-reference.exe and swift_model_check.exe; no sorting dependency.",
+    "Interpretation": "The deterministic defect reproduces a pre-registration failure on the retained inputs. Original owner stderr was discarded, so this does not establish the exact original exception or exclude an earlier failure.",
+    "OriginalPredicate": "Culture-sensitive Sort-Object then comparison to one fixed filename ordering.",
+    "ActualOwnerExceptionProven": false,
+    "ReproducedMessage": "Capture binary names differ.",
+    "CultureSortedNames": "swift_model_check.exe,swift-ptq1-reference.exe"
+  },
+  "Controls": [
+    {
+      "Passed": true,
+      "ObservedAccepted": true,
+      "ExpectedAccepted": true,
+      "Name": "expected-order"
+    },
+    {
+      "Passed": true,
+      "ObservedAccepted": true,
+      "ExpectedAccepted": true,
+      "Name": "reversed-order"
+    },
+    {
+      "Passed": true,
+      "ObservedAccepted": false,
+      "ExpectedAccepted": false,
+      "Name": "missing-reference"
+    },
+    {
+      "Passed": true,
+      "ObservedAccepted": false,
+      "ExpectedAccepted": false,
+      "Name": "missing-checker"
+    },
+    {
+      "Passed": true,
+      "ObservedAccepted": false,
+      "ExpectedAccepted": false,
+      "Name": "duplicate-reference"
+    },
+    {
+      "Passed": true,
+      "ObservedAccepted": false,
+      "ExpectedAccepted": false,
+      "Name": "duplicate-checker"
+    },
+    {
+      "Passed": true,
+      "ObservedAccepted": false,
+      "ExpectedAccepted": false,
+      "Name": "mis-cased-reference"
+    },
+    {
+      "Passed": true,
+      "ObservedAccepted": false,
+      "ExpectedAccepted": false,
+      "Name": "mis-cased-checker"
+    },
+    {
+      "Passed": true,
+      "ObservedAccepted": false,
+      "ExpectedAccepted": false,
+      "Name": "unexpected-replacement"
+    },
+    {
+      "Passed": true,
+      "ObservedAccepted": false,
+      "ExpectedAccepted": false,
+      "Name": "unexpected-extra"
+    },
+    {
+      "Passed": true,
+      "ObservedAccepted": false,
+      "ExpectedAccepted": false,
+      "Name": "empty"
+    }
+  ],
+  "Files": [
+    {
+      "Path": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-Ptq1-Numerics-41565247997\\Invoke-TemporaryPtq1NumericsOwner.ps1",
+      "Sha256": "b60ca422311aead3510cc1a729f933c3376243941d744a37748af1b821debdf2",
+      "Bytes": 44258
+    },
+    {
+      "Path": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-Ptq1-Numerics-41565247997\\Invoke-TemporaryPtq1NumericsOwner-Membership.ps1",
+      "Sha256": "47a8650c03e69944b85a1a0dfa5031f11910949fc20934ababad73a09b6df2b3",
+      "Bytes": 44581
+    },
+    {
+      "Path": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-Ptq1-Numerics-41565247997\\trusted-selection.json",
+      "Sha256": "35bc8906238669533dddec3a5464308cca075e9e3e2d7dc8174dccca424a364f",
+      "Bytes": 1534
+    },
+    {
+      "Path": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-Numerics-PackageInventory-SourceReview-41565247997.ps1",
+      "Sha256": "52fbe1e6be679b829f613e1502482f568f7f17dbc905a4ba6a51441df61c999d",
+      "Bytes": 7414
+    },
+    {
+      "Path": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-Ptq1-Numerics-41565247997\\package-review\\maintenance-api.json",
+      "Sha256": "7851e25c32e4dea1491e22a8da153679bb1fa16be2b400273eb5991097c3daa7",
+      "Bytes": 863
+    },
+    {
+      "Path": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-Ptq1-Numerics-41565247997\\package-review\\capture-api.json",
+      "Sha256": "f7cf69c146a9c7608f01a7169fc9be7aafe8ba8d4f5ce2f3ce867deef43c5e28",
+      "Bytes": 827
+    },
+    {
+      "Path": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-Ptq1-Numerics-41565247997\\package-review\\maintenance\\receipt.json",
+      "Sha256": "f481e79914896eb8112c85ef1d33c304cc08c397870d28b2fbcb9430be9c1bda",
+      "Bytes": 254
+    },
+    {
+      "Path": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-Ptq1-Numerics-41565247997\\package-review\\capture\\capture-tools.json",
+      "Sha256": "f4a79658a93cc6376a4953190e4d4015ebd1db7d0a6ad1850abb30529173b07c",
+      "Bytes": 2956
+    }
+  ],
+  "OriginalRetainedHelperOrReceiptsModified": false,
+  "OwnerDeviceExecutions": 0,
+  "ModelExecutions": 0,
+  "RegistrationAttempts": 0,
+  "HardwareDiagnostics": 0,
+  "Benchmarks": 0,
+  "OriginalSessionReopened": false,
+  "RetryAuthorized": false,
+  "SourceCorrectionQualifiesFutureOwnerExecution": false,
+  "DefaultPromotionQualified": false
+}
