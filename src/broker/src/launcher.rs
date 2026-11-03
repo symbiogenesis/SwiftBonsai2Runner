@@ -609,25 +609,9 @@ impl LaunchConfig {
             self.confirm_native_identity(&process, &credentials).await?;
         }
         startup_timing.phase(StartupPhase::FrontendBinding);
-        let frontend = LocalChatService::bind(
-            self.frontend_port,
-            credentials.frontend_key(),
-            self.backend_port,
-            credentials.backend_key(),
-            self.max_waiting,
-        )
-        .await;
-        let mut service = match frontend {
-            Ok(service) => service,
-            Err(_) => {
-                process.stop(STOP_TIMEOUT).map_err(|_| LaunchError::Stop)?;
-                return Err(LaunchError::Service);
-            }
-        };
-        service.require_backend_process(process.id());
-        if adapter.is_some() {
-            service.enable_pinned_abliteration();
-        }
+        let service = self
+            .bind_frontend(&process, &credentials, adapter.is_some())
+            .await?;
         startup_timing.finish();
         Ok(LaunchedService {
             service,
@@ -639,6 +623,31 @@ impl LaunchConfig {
             memory_limit_bytes: specification.memory_limit_bytes,
             backend_port: self.backend_port,
         })
+    }
+
+    async fn bind_frontend(
+        &self,
+        process: &OwnedProcess,
+        credentials: &PrivateCredentials,
+        adapter: bool,
+    ) -> Result<LocalChatService, LaunchError> {
+        let Ok(mut service) = LocalChatService::bind(
+            self.frontend_port,
+            credentials.frontend_key(),
+            self.backend_port,
+            credentials.backend_key(),
+            self.max_waiting,
+        )
+        .await
+        else {
+            process.stop(STOP_TIMEOUT).map_err(|_| LaunchError::Stop)?;
+            return Err(LaunchError::Service);
+        };
+        service.require_backend_process(process.id());
+        if adapter {
+            service.enable_pinned_abliteration();
+        }
+        Ok(service)
     }
 
     async fn confirm_native_identity(
@@ -819,7 +828,7 @@ fn launch_profile(value: Option<&std::ffi::OsStr>) -> Result<LaunchProfile, Laun
         .ok_or(LaunchError::Arguments)
 }
 
-fn containment(
+const fn containment(
     launch: bool,
     unisolated: bool,
     sandboxed: bool,
