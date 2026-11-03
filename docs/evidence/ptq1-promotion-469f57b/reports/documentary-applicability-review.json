@@ -1,0 +1,113 @@
+{
+  "schemaVersion": 1,
+  "kind": "fresh-frozen-469-ptq1-row4-documentary-applicability-review",
+  "recordedDate": "2026-11-02",
+  "observedAtUtc": "2026-11-03T03:18:44.752158+00:00",
+  "reviewerId": "Codex:/root/service_readiness",
+  "candidateIdentities": {
+    "adapterLockSha256": "84bf87bd873a372ebd943dae81d3300d74ec09055d6c5fe0628873d3863ae74a",
+    "adapterScale": 1.3,
+    "adapterSha256": "f1669534803d340a496015f5c45125f3437b4d13ec764f40e34488ce83967f42",
+    "admissionBytes": 16642998272,
+    "assessmentLockSha256": "a378f4a4551170a27f9d0f3649114c954011cc149c0ebd16fb4413ac1094a86b",
+    "contextTokens": 8192,
+    "jobCommitLimitBytes": 12348030976,
+    "maxCompletionTokens": 4096,
+    "modelBytes": 5946648928,
+    "modelFilename": "Swift-Bonsai-2-current-repacked-PTQ1_0.gguf",
+    "modelSha256": "e658f0f0736a03a4549535a439f9b07254ebf8ab88ae27cbe6e52d098ca5d1f5",
+    "nativeRowWorkers": 4,
+    "physicalReserveBytes": 4294967296,
+    "ptq1ExportReceiptSha256": "c184dea2089127201a15595af86e61005ec5b3f9c14e8089fee5c8f630a762d5",
+    "referenceRuntimeRevision": "73bfe6cc485554822f80c473a3c0c4f25e80f41b",
+    "rollback": {
+      "adapterScale": 1.3,
+      "adapterSha256": "f1669534803d340a496015f5c45125f3437b4d13ec764f40e34488ce83967f42",
+      "modelBytes": 7206168928,
+      "modelFilename": "Swift-Bonsai-2-PQ2_0.gguf",
+      "modelSha256": "5912bb739217cf25b4283a098c7b893d9baff36bdf2e72d3dbf4cb999d5633d5",
+      "nativeRowWorkers": 4,
+      "runtimeLockSha256": "bb226f3d2847d3914611d2c4fdcfbce4e7a382c5707279bd658834f8e73c302b",
+      "servingStatePolicy": "reset-every-request",
+      "weightRepresentation": "original-PQ2_0"
+    },
+    "runnerRevision": "469f57b233898fd10b97d5ebc10aaef78b940e30",
+    "runtimeArchiveSha256": "3b1f310cbfafd592375756600c261bdafcfc94ab1bac8f34c69ef7038167096a",
+    "runtimeLockSha256": "bb226f3d2847d3914611d2c4fdcfbce4e7a382c5707279bd658834f8e73c302b",
+    "runtimeRevision": "cae16fa6998dac58a947eba9ae4398ed6a9fb863",
+    "runtimeVersion": "0.1.13",
+    "serverSha256": "62bdf31962864b11e530aaae50da2c0a6b36cb651110080e5bf3f08f8d2713f4",
+    "serviceHarnessRevision": "cae16fa6998dac58a947eba9ae4398ed6a9fb863",
+    "servingStatePolicy": "reset-every-request",
+    "target": "aarch64-pc-windows-msvc",
+    "templateSha256": "c3cf9e34abf4f9e36c2d72165aa9c132d3e2a725b6c2586aaa3a8af9d7a81041",
+    "weightRepresentation": "current-repacked-PTQ1_0",
+    "workerSha256": "9fcc8c2666ec024cb8bb28c42b604b33388c261f39f2fd3c05d2a8613ac2300d"
+  },
+  "policySha256": "e3bd40d646e7e96e54fb61affe042a4deddbc35bf5052f126d2aaa7cb2c05527",
+  "newReviewPerformed": true,
+  "historicalPromotionVerdictsCopied": false,
+  "priorReleaseReviewReusedAsReviewedData": true,
+  "releaseReview": {
+    "file": "reports/prism-0113-release-review.json",
+    "bytes": 18801,
+    "sha256": "bb9ef39a1ff18e1583a826e5517387dc234cbe74b662ef6859cfbaf1d4acab56"
+  },
+  "authenticatedCiMetadata": [
+    {
+      "file": "ci/run-41535008224.json",
+      "bytes": 7138,
+      "sha256": "c48431f1e2d731196ebd44f733c429a6a561ec65abb007eb21fe35d9c4263ea1"
+    },
+    {
+      "file": "ci/run-41535008203.json",
+      "bytes": 24895,
+      "sha256": "1457ea690a5cd95e9d18e0d34dca8cb7880aebee90bb52fbda115cb843ade72b"
+    },
+    {
+      "file": "ci/run-41535008364.json",
+      "bytes": 1876,
+      "sha256": "c8f549c165f227f2599f5f34ffc4e14851172b3b496952a5fb292dd51aa3e421"
+    },
+    {
+      "file": "ci/run-41568280451.json",
+      "bytes": 3473,
+      "sha256": "3dd475d3fdf880d7e98e8adcc5573ae80d48e708fcec0ff63231447c77dc7cc0"
+    },
+    {
+      "file": "ci/run-41539965109.json",
+      "bytes": 4306,
+      "sha256": "229a6e61866b391a8ae880fbfc46ce39aa13ed06e96fce67c4bdaf1c27ea370e"
+    }
+  ],
+  "runnerApplicability": {
+    "currentFoundationRunId": "41568280451",
+    "currentSourceRevision": "469f57b233898fd10b97d5ebc10aaef78b940e30",
+    "allSelectedOwningObligationsPassed": true,
+    "currentPassedJobs": [
+      "changes",
+      "broker / core",
+      "maintenance",
+      "Native integration",
+      "release-integration",
+      "foundation"
+    ],
+    "currentSkippedJobs": [
+      "speech / ${{ matrix.lane }}"
+    ],
+    "compiledApplicationBaselineRevision": "74bef68c74417a56e38d90201b7f87ccc667a276",
+    "baselineFoundationRunId": "41539965109",
+    "sourceChanges": {
+      "file": "reports/runner-source-changes.json",
+      "bytes": 1953,
+      "sha256": "0839af164baa36bb7df4733fffdae5cf056f3692fd370ffa9b596f8660f7fa98"
+    },
+    "compiledUiSpeechBrokerServingAndPolicySourcesUnchanged": true,
+    "skippedCurrentUiOrSpeechLanesClaimedExecuted": false,
+    "scope": "Fresh exact-candidate Foundation passed the selected broker/core, maintenance, native and released-runtime obligations. Serving/UI/speech source continuity is reviewed against the retained successful baseline; skipped lanes are not relabelled as executed. No actual-model gate is inferred."
+  },
+  "compiledPolicyInputsUnchangedFromFrozenCandidate": true,
+  "evaluatorScope": "Only the frozen source-bound tool's runtime-promotion plan and file-score operations. Document integrity operations are separate from the closed owner-device clock; no model, hardware, admission, build or test operation.",
+  "defaultMayChange": false,
+  "deviceGatePassesClaimed": 0
+}

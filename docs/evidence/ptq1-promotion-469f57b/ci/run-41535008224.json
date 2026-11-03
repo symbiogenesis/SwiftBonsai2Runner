@@ -1,0 +1,171 @@
+{
+  "repository": "symbiogenesis/prism-inference",
+  "run": {
+    "conclusion": "success",
+    "created_at": "2026-11-02T22:10:54Z",
+    "event": "push",
+    "head_branch": "main",
+    "head_sha": "cae16fa6998dac58a947eba9ae4398ed6a9fb863",
+    "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008224",
+    "id": 41535008224,
+    "path": ".github/workflows/foundation.yml",
+    "run_attempt": 1,
+    "status": "completed",
+    "updated_at": "2026-11-02T22:17:59Z"
+  },
+  "jobs": {
+    "jobs": [
+      {
+        "completed_at": "2026-11-02T22:11:07Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008224/job/125584504990",
+        "id": 125584504990,
+        "name": "changes",
+        "runner_name": "GitHub Actions 1000020970",
+        "started_at": "2026-11-02T22:11:00Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:12:10Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008224/job/125584605225",
+        "id": 125584605225,
+        "name": "native-overlay",
+        "runner_name": "GitHub Actions 1000020971",
+        "started_at": "2026-11-02T22:11:22Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:15:57Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008224/job/125584605467",
+        "id": 125584605467,
+        "name": "windows / x86_64-pc-windows-msvc / correctness-0",
+        "runner_name": "GitHub Actions 1000020976",
+        "started_at": "2026-11-02T22:11:10Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:13:36Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008224/job/125584605484",
+        "id": 125584605484,
+        "name": "windows / x86_64-pc-windows-msvc / correctness-2",
+        "runner_name": "GitHub Actions 1000020977",
+        "started_at": "2026-11-02T22:11:11Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:13:59Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008224/job/125584605504",
+        "id": 125584605504,
+        "name": "windows / aarch64-pc-windows-msvc / checks",
+        "runner_name": "GitHub Actions 1000020972",
+        "started_at": "2026-11-02T22:11:20Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:16:43Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008224/job/125584605526",
+        "id": 125584605526,
+        "name": "windows / x86_64-pc-windows-msvc / variants",
+        "runner_name": "GitHub Actions 1000020975",
+        "started_at": "2026-11-02T22:11:10Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:14:00Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008224/job/125584605532",
+        "id": 125584605532,
+        "name": "windows / aarch64-pc-windows-msvc / correctness-1",
+        "runner_name": "GitHub Actions 1000020974",
+        "started_at": "2026-11-02T22:11:10Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:16:43Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008224/job/125584605577",
+        "id": 125584605577,
+        "name": "windows / aarch64-pc-windows-msvc / variants",
+        "runner_name": "GitHub Actions 1000020973",
+        "started_at": "2026-11-02T22:11:20Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:12:56Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008224/job/125584605596",
+        "id": 125584605596,
+        "name": "windows / x86_64-pc-windows-msvc / correctness-1",
+        "runner_name": "GitHub Actions 1000020979",
+        "started_at": "2026-11-02T22:11:10Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:14:33Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008224/job/125584605640",
+        "id": 125584605640,
+        "name": "windows / aarch64-pc-windows-msvc / correctness-2",
+        "runner_name": "GitHub Actions 1000020983",
+        "started_at": "2026-11-02T22:11:32Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:13:20Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008224/job/125584605649",
+        "id": 125584605649,
+        "name": "windows / x86_64-pc-windows-msvc / checks",
+        "runner_name": "GitHub Actions 1000020978",
+        "started_at": "2026-11-02T22:11:10Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:17:48Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008224/job/125584605650",
+        "id": 125584605650,
+        "name": "windows / aarch64-pc-windows-msvc / correctness-0",
+        "runner_name": "GitHub Actions 1000020982",
+        "started_at": "2026-11-02T22:11:19Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:13:56Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008224/job/125584605654",
+        "id": 125584605654,
+        "name": "windows / aarch64-pc-windows-msvc / correctness-3",
+        "runner_name": "GitHub Actions 1000020981",
+        "started_at": "2026-11-02T22:11:10Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:13:19Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008224/job/125584605812",
+        "id": 125584605812,
+        "name": "windows / x86_64-pc-windows-msvc / correctness-3",
+        "runner_name": "GitHub Actions 1000020980",
+        "started_at": "2026-11-02T22:11:16Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:17:58Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008224/job/125587952659",
+        "id": 125587952659,
+        "name": "foundation",
+        "runner_name": "GitHub Actions 1000021002",
+        "started_at": "2026-11-02T22:17:54Z",
+        "status": "completed"
+      }
+    ],
+    "total_count": 15
+  }
+}

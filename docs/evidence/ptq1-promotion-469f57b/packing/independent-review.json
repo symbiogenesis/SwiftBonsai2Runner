@@ -1,0 +1,64 @@
+{
+    "schemaVersion":  1,
+    "kind":  "independent-exact469-current-weight-ptq1-packing-review",
+    "reviewerId":  "Codex:/root/promotion_review",
+    "status":  "passed-complete-weight-packing-only",
+    "revision":  "469f57b233898fd10b97d5ebc10aaef78b940e30",
+    "runtimeRevision":  "cae16fa6998dac58a947eba9ae4398ed6a9fb863",
+    "runId":  "41570785055",
+    "workflowPath":  ".github/workflows/ptq1-packing-qualification.yml",
+    "runUrl":  "https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41570785055/attempts/1",
+    "authenticatedRunAndJob":  {
+                                   "jobId":  "125702915501",
+                                   "conclusion":  "success",
+                                   "hostedLabel":  "windows-11-arm",
+                                   "jobName":  "packing",
+                                   "exactMainSourceVerified":  true
+                               },
+    "artifact":  {
+                     "reports":  [
+                                     {
+                                         "sha256":  "c184dea2089127201a15595af86e61005ec5b3f9c14e8089fee5c8f630a762d5",
+                                         "file":  "expected-export.json",
+                                         "bytes":  1165
+                                     },
+                                     {
+                                         "sha256":  "a74adc20e201159aaa4b972c84696ad70197b6f9cf379f885f83410985d5f0b5",
+                                         "file":  "independent-packing.json",
+                                         "bytes":  862
+                                     },
+                                     {
+                                         "sha256":  "ea08ee9c0d545b7ad82457a1e7dbb73fc234c2aafea771fa79e9af1f58922290",
+                                         "file":  "qualification.json",
+                                         "bytes":  2571
+                                     },
+                                     {
+                                         "sha256":  "5730dcf2b5b0365cbf411f989f8f74b3ec9f596b15a7e071154b29a31cc8eb75",
+                                         "file":  "reproduced-export.json",
+                                         "bytes":  1052
+                                     }
+                                 ],
+                     "id":  "13201745879",
+                     "manifestSha256":  "1effa2df1ef6c000c44202ab2da80c143f6215ff0ad09b986bdf6c66ea6517d8",
+                     "fiveUniqueBoundedMembersVerified":  true,
+                     "allRawMemberBytesAndManifestHashesVerified":  true,
+                     "name":  "ptq1-complete-packing-41570785055-1",
+                     "authenticatedApiAndDownloadedArchiveMatched":  true,
+                     "bytes":  4099,
+                     "sha256":  "e82675432f7e24bd52a2ad8f760448b622d2da601586862fecacddcd2ad564ab"
+                 },
+    "packing":  {
+                    "sourceBytes":  7206168928,
+                    "convertedTensors":  402,
+                    "sourceSha256":  "5912bb739217cf25b4283a098c7b893d9baff36bdf2e72d3dbf4cb999d5633d5",
+                    "outputBytes":  5946648928,
+                    "exactPolicyIdentitiesMatched":  true,
+                    "outputSha256":  "e658f0f0736a03a4549535a439f9b07254ebf8ab88ae27cbe6e52d098ca5d1f5",
+                    "savingBytes":  1259520000,
+                    "nonPqTensorBytesUnchanged":  57767936,
+                    "reconstructedBlocks":  209920000
+                },
+    "scope":  "Read-only small hosted evidence, exact raw archive/report verification and CI metadata review. No model/checker/inference, numerical payload access or device diagnostic. Independent all-block scanner ran only on hosted CI.",
+    "defaultPromotionQualified":  false,
+    "deviceGatePassesClaimed":  0
+}

@@ -1,0 +1,601 @@
+{
+  "repository": "symbiogenesis/prism-inference",
+  "run": {
+    "conclusion": "success",
+    "created_at": "2026-11-02T22:10:54Z",
+    "event": "push",
+    "head_branch": "main",
+    "head_sha": "cae16fa6998dac58a947eba9ae4398ed6a9fb863",
+    "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008203",
+    "id": 41535008203,
+    "path": ".github/workflows/runtime-conformance.yml",
+    "run_attempt": 1,
+    "status": "completed",
+    "updated_at": "2026-11-02T22:42:47Z"
+  },
+  "jobs": {
+    "jobs": [
+      {
+        "completed_at": "2026-11-02T22:14:29Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008203/job/125586107875",
+        "id": 125586107875,
+        "name": "changes",
+        "runner_name": "GitHub Actions 1000020997",
+        "started_at": "2026-11-02T22:14:23Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:15:29Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008203/job/125586281825",
+        "id": 125586281825,
+        "name": "codec-native",
+        "runner_name": "GitHub Actions 1000020998",
+        "started_at": "2026-11-02T22:14:31Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:20:09Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008203/job/125586282016",
+        "id": 125586282016,
+        "name": "prism-upstream / 2",
+        "runner_name": "GitHub Actions 1000021000",
+        "started_at": "2026-11-02T22:14:35Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:19:48Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008203/job/125586282022",
+        "id": 125586282022,
+        "name": "prism-backend-tools",
+        "runner_name": "GitHub Actions 1000020999",
+        "started_at": "2026-11-02T22:14:32Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:33:34Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008203/job/125588945255",
+        "id": 125588945255,
+        "name": "prism-upstream / 3",
+        "runner_name": "GitHub Actions 1000021023",
+        "started_at": "2026-11-02T22:20:48Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:31:24Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008203/job/125588945320",
+        "id": 125588945320,
+        "name": "prism-upstream / 1",
+        "runner_name": "GitHub Actions 1000021026",
+        "started_at": "2026-11-02T22:21:21Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:21:48Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008203/job/125588945459",
+        "id": 125588945459,
+        "name": "prism-backend-plan (4)",
+        "runner_name": "GitHub Actions 1000021021",
+        "started_at": "2026-11-02T22:19:51Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:32:46Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008203/job/125588945490",
+        "id": 125588945490,
+        "name": "prism-upstream / 0",
+        "runner_name": "GitHub Actions 1000021035",
+        "started_at": "2026-11-02T22:22:41Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:22:19Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008203/job/125588945530",
+        "id": 125588945530,
+        "name": "prism-backend-plan (11)",
+        "runner_name": "GitHub Actions 1000021022",
+        "started_at": "2026-11-02T22:20:11Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:22:45Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008203/job/125588945534",
+        "id": 125588945534,
+        "name": "prism-backend-plan (14)",
+        "runner_name": "GitHub Actions 1000021025",
+        "started_at": "2026-11-02T22:21:20Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:22:56Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008203/job/125588945540",
+        "id": 125588945540,
+        "name": "prism-backend-plan (1)",
+        "runner_name": "GitHub Actions 1000021029",
+        "started_at": "2026-11-02T22:21:35Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:24:19Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008203/job/125588945541",
+        "id": 125588945541,
+        "name": "prism-backend-plan (0)",
+        "runner_name": "GitHub Actions 1000021037",
+        "started_at": "2026-11-02T22:22:47Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:22:22Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008203/job/125588945555",
+        "id": 125588945555,
+        "name": "prism-backend-plan (12)",
+        "runner_name": "GitHub Actions 1000021024",
+        "started_at": "2026-11-02T22:20:51Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:23:20Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008203/job/125588945561",
+        "id": 125588945561,
+        "name": "prism-backend-plan (8)",
+        "runner_name": "GitHub Actions 1000021027",
+        "started_at": "2026-11-02T22:21:28Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:25:14Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008203/job/125588945571",
+        "id": 125588945571,
+        "name": "prism-backend-plan (5)",
+        "runner_name": "GitHub Actions 1000021038",
+        "started_at": "2026-11-02T22:22:59Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:23:25Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008203/job/125588945593",
+        "id": 125588945593,
+        "name": "prism-backend-plan (9)",
+        "runner_name": "GitHub Actions 1000021030",
+        "started_at": "2026-11-02T22:21:51Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:24:18Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008203/job/125588945639",
+        "id": 125588945639,
+        "name": "prism-backend-plan (2)",
+        "runner_name": "GitHub Actions 1000021034",
+        "started_at": "2026-11-02T22:22:33Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:24:25Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008203/job/125588945646",
+        "id": 125588945646,
+        "name": "prism-backend-plan (7)",
+        "runner_name": "GitHub Actions 1000021031",
+        "started_at": "2026-11-02T22:22:13Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:24:08Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008203/job/125588945652",
+        "id": 125588945652,
+        "name": "prism-backend-plan (3)",
+        "runner_name": "GitHub Actions 1000021032",
+        "started_at": "2026-11-02T22:22:21Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:24:27Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008203/job/125588945664",
+        "id": 125588945664,
+        "name": "prism-backend-plan (6)",
+        "runner_name": "GitHub Actions 1000021033",
+        "started_at": "2026-11-02T22:22:24Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:24:48Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008203/job/125588945698",
+        "id": 125588945698,
+        "name": "prism-backend-plan (10)",
+        "runner_name": "GitHub Actions 1000021039",
+        "started_at": "2026-11-02T22:23:04Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:23:11Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008203/job/125588945711",
+        "id": 125588945711,
+        "name": "prism-backend-plan (13)",
+        "runner_name": "GitHub Actions 1000021028",
+        "started_at": "2026-11-02T22:21:33Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:24:33Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008203/job/125588945824",
+        "id": 125588945824,
+        "name": "prism-backend-plan (15)",
+        "runner_name": "GitHub Actions 1000021036",
+        "started_at": "2026-11-02T22:22:43Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:26:09Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008203/job/125591630068",
+        "id": 125591630068,
+        "name": "prism-backend-join-plan",
+        "runner_name": "GitHub Actions 1000021041",
+        "started_at": "2026-11-02T22:25:18Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:32:39Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008203/job/125592078258",
+        "id": 125592078258,
+        "name": "prism-backend-run (10)",
+        "runner_name": "GitHub Actions 1000021045",
+        "started_at": "2026-11-02T22:26:12Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:34:22Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008203/job/125592078260",
+        "id": 125592078260,
+        "name": "prism-backend-run (20)",
+        "runner_name": "GitHub Actions 1000021055",
+        "started_at": "2026-11-02T22:26:13Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:33:16Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008203/job/125592078265",
+        "id": 125592078265,
+        "name": "prism-backend-run (11)",
+        "runner_name": "GitHub Actions 1000021043",
+        "started_at": "2026-11-02T22:26:13Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:35:49Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008203/job/125592078269",
+        "id": 125592078269,
+        "name": "prism-backend-run (17)",
+        "runner_name": "GitHub Actions 1000021047",
+        "started_at": "2026-11-02T22:26:13Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:32:03Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008203/job/125592078289",
+        "id": 125592078289,
+        "name": "prism-backend-run (9)",
+        "runner_name": "GitHub Actions 1000021050",
+        "started_at": "2026-11-02T22:26:13Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:38:01Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008203/job/125592078290",
+        "id": 125592078290,
+        "name": "prism-backend-run (30)",
+        "runner_name": "GitHub Actions 1000021061",
+        "started_at": "2026-11-02T22:30:03Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:31:25Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008203/job/125592078296",
+        "id": 125592078296,
+        "name": "prism-backend-run (25)",
+        "runner_name": "GitHub Actions 1000021049",
+        "started_at": "2026-11-02T22:26:13Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:36:33Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008203/job/125592078306",
+        "id": 125592078306,
+        "name": "prism-backend-run (19)",
+        "runner_name": "GitHub Actions 1000021063",
+        "started_at": "2026-11-02T22:30:07Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:31:28Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008203/job/125592078309",
+        "id": 125592078309,
+        "name": "prism-backend-run (12)",
+        "runner_name": "GitHub Actions 1000021044",
+        "started_at": "2026-11-02T22:26:13Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:30:15Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008203/job/125592078341",
+        "id": 125592078341,
+        "name": "prism-backend-run (31)",
+        "runner_name": "GitHub Actions 1000021046",
+        "started_at": "2026-11-02T22:26:13Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:31:17Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008203/job/125592078342",
+        "id": 125592078342,
+        "name": "prism-backend-run (3)",
+        "runner_name": "GitHub Actions 1000021048",
+        "started_at": "2026-11-02T22:26:13Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:30:01Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008203/job/125592078366",
+        "id": 125592078366,
+        "name": "prism-backend-run (6)",
+        "runner_name": "GitHub Actions 1000021057",
+        "started_at": "2026-11-02T22:26:13Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:31:21Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008203/job/125592078371",
+        "id": 125592078371,
+        "name": "prism-backend-run (23)",
+        "runner_name": "GitHub Actions 1000021058",
+        "started_at": "2026-11-02T22:26:13Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:38:45Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008203/job/125592078389",
+        "id": 125592078389,
+        "name": "prism-backend-run (15)",
+        "runner_name": "GitHub Actions 1000021067",
+        "started_at": "2026-11-02T22:31:20Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:30:32Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008203/job/125592078397",
+        "id": 125592078397,
+        "name": "prism-backend-run (22)",
+        "runner_name": "GitHub Actions 1000021051",
+        "started_at": "2026-11-02T22:26:12Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:33:43Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008203/job/125592078399",
+        "id": 125592078399,
+        "name": "prism-backend-run (7)",
+        "runner_name": "GitHub Actions 1000021060",
+        "started_at": "2026-11-02T22:29:46Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:30:04Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008203/job/125592078405",
+        "id": 125592078405,
+        "name": "prism-backend-run (1)",
+        "runner_name": "GitHub Actions 1000021053",
+        "started_at": "2026-11-02T22:26:13Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:30:00Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008203/job/125592078407",
+        "id": 125592078407,
+        "name": "prism-backend-run (24)",
+        "runner_name": "GitHub Actions 1000021056",
+        "started_at": "2026-11-02T22:26:13Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:38:04Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008203/job/125592078409",
+        "id": 125592078409,
+        "name": "prism-backend-run (16)",
+        "runner_name": "GitHub Actions 1000021073",
+        "started_at": "2026-11-02T22:32:05Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:31:49Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008203/job/125592078414",
+        "id": 125592078414,
+        "name": "prism-backend-run (26)",
+        "runner_name": "GitHub Actions 1000021054",
+        "started_at": "2026-11-02T22:26:13Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:29:43Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008203/job/125592078416",
+        "id": 125592078416,
+        "name": "prism-backend-run (2)",
+        "runner_name": "GitHub Actions 1000021052",
+        "started_at": "2026-11-02T22:26:13Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:30:46Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008203/job/125592078427",
+        "id": 125592078427,
+        "name": "prism-backend-run (21)",
+        "runner_name": "GitHub Actions 1000021059",
+        "started_at": "2026-11-02T22:26:13Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:35:56Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008203/job/125592078436",
+        "id": 125592078436,
+        "name": "prism-backend-run (4)",
+        "runner_name": "GitHub Actions 1000021066",
+        "started_at": "2026-11-02T22:30:48Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:36:35Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008203/job/125592078481",
+        "id": 125592078481,
+        "name": "prism-backend-run (27)",
+        "runner_name": "GitHub Actions 1000021069",
+        "started_at": "2026-11-02T22:31:26Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:41:06Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008203/job/125592078499",
+        "id": 125592078499,
+        "name": "prism-backend-run (18)",
+        "runner_name": "GitHub Actions 1000021068",
+        "started_at": "2026-11-02T22:31:24Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:36:23Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008203/job/125592078513",
+        "id": 125592078513,
+        "name": "prism-backend-run (5)",
+        "runner_name": "GitHub Actions 1000021074",
+        "started_at": "2026-11-02T22:32:41Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:34:00Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008203/job/125592078547",
+        "id": 125592078547,
+        "name": "prism-backend-run (29)",
+        "runner_name": "GitHub Actions 1000021064",
+        "started_at": "2026-11-02T22:30:18Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:36:10Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008203/job/125592078570",
+        "id": 125592078570,
+        "name": "prism-backend-run (13)",
+        "runner_name": "GitHub Actions 1000021072",
+        "started_at": "2026-11-02T22:31:51Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:36:21Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008203/job/125592078572",
+        "id": 125592078572,
+        "name": "prism-backend-run (8)",
+        "runner_name": "GitHub Actions 1000021065",
+        "started_at": "2026-11-02T22:30:36Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:35:39Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008203/job/125592078604",
+        "id": 125592078604,
+        "name": "prism-backend-run (28)",
+        "runner_name": "GitHub Actions 1000021062",
+        "started_at": "2026-11-02T22:30:04Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:36:02Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008203/job/125592078605",
+        "id": 125592078605,
+        "name": "prism-backend-run (14)",
+        "runner_name": "GitHub Actions 1000021070",
+        "started_at": "2026-11-02T22:31:27Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:35:58Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008203/job/125592078757",
+        "id": 125592078757,
+        "name": "prism-backend-run (0)",
+        "runner_name": "GitHub Actions 1000021071",
+        "started_at": "2026-11-02T22:31:31Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:42:36Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008203/job/125599153505",
+        "id": 125599153505,
+        "name": "prism-upstream-gate",
+        "runner_name": "GitHub Actions 1000021075",
+        "started_at": "2026-11-02T22:41:09Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:42:46Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008203/job/125599842286",
+        "id": 125599842286,
+        "name": "runtime-conformance",
+        "runner_name": "GitHub Actions 1000021076",
+        "started_at": "2026-11-02T22:42:41Z",
+        "status": "completed"
+      }
+    ],
+    "total_count": 58
+  }
+}

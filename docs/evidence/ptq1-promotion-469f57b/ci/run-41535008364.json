@@ -1,0 +1,51 @@
+{
+  "repository": "symbiogenesis/prism-inference",
+  "run": {
+    "conclusion": "success",
+    "created_at": "2026-11-02T22:10:54Z",
+    "event": "push",
+    "head_branch": "main",
+    "head_sha": "cae16fa6998dac58a947eba9ae4398ed6a9fb863",
+    "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008364",
+    "id": 41535008364,
+    "path": ".github/workflows/source-package.yml",
+    "run_attempt": 1,
+    "status": "completed",
+    "updated_at": "2026-11-02T22:14:41Z"
+  },
+  "jobs": {
+    "jobs": [
+      {
+        "completed_at": "2026-11-02T22:14:24Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008364/job/125584503146",
+        "id": 125584503146,
+        "name": "package / aarch64-pc-windows-msvc",
+        "runner_name": "GitHub Actions 1000020964",
+        "started_at": "2026-11-02T22:10:57Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:12:43Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008364/job/125584503543",
+        "id": 125584503543,
+        "name": "package / aarch64-unknown-linux-gnu",
+        "runner_name": "GitHub Actions 1000020965",
+        "started_at": "2026-11-02T22:10:59Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:14:40Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008364/job/125584503786",
+        "id": 125584503786,
+        "name": "package / x86_64-pc-windows-msvc",
+        "runner_name": "GitHub Actions 1000020969",
+        "started_at": "2026-11-02T22:10:58Z",
+        "status": "completed"
+      }
+    ],
+    "total_count": 3
+  }
+}

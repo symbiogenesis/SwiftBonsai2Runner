@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "scope": "Small JSON documents only; no numerical tensor payload read or hash.",
+  "files": [
+    {
+      "file": "reports/bounded-neon-row4-comparison.json",
+      "bytes": 36328,
+      "sha256": "81b84989e43cf6433c2d548bc0c80e7ff926a16bcf5753f5bc9b63ed7b98a23e"
+    },
+    {
+      "file": "reports/bounded-neon-row4-numerics.json",
+      "bytes": 64026,
+      "sha256": "9d5a1024782e0846449ebd780d1003d9281bbf254fa86f2ec172bdaef58a58c8"
+    },
+    {
+      "file": "reports/documentary-applicability-review.json",
+      "bytes": 5395,
+      "sha256": "846f2c50068804e0f4ea03d5120109b3eb8978cb42643d976fb7eabfdb2e7f9c"
+    },
+    {
+      "file": "reports/prism-0113-release-review.json",
+      "bytes": 18801,
+      "sha256": "bb9ef39a1ff18e1583a826e5517387dc234cbe74b662ef6859cfbaf1d4acab56"
+    },
+    {
+      "file": "reports/ptq1-0113-lifecycle-independent-review.json",
+      "bytes": 6994,
+      "sha256": "69916b6723a318e38d217b104f581b2275dcbb94fee9f40a3064cc8c7a7aba71"
+    },
+    {
+      "file": "reports/ptq1-authoring-inputs-20261102.json",
+      "bytes": 6778,
+      "sha256": "5d770a96f7561bd074f5b54aa6754a6d63305d50281c922bef9f5efb0b14bf01"
+    },
+    {
+      "file": "reports/published-direction-independent-review.json",
+      "bytes": 4469,
+      "sha256": "2eabd19daa50eb5c2eec99480c13823625f43d95066c19dfdb9103588f2f805b"
+    },
+    {
+      "file": "reports/runner-source-changes.json",
+      "bytes": 1953,
+      "sha256": "0839af164baa36bb7df4733fffdae5cf056f3692fd370ffa9b596f8660f7fa98"
+    }
+  ]
+}

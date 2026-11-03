@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "kind": "document-only-compiled-evaluator-operation",
+  "operation": "runtime-promotion file-score",
+  "sourceRevision": "469f57b233898fd10b97d5ebc10aaef78b940e30",
+  "toolSha256": "0416525182ff846453fce227ed5bad0b4936c2fca2b844a716e477cc268e17e9",
+  "toolBytes": 6152704,
+  "sourcePackageRunId": "41568281287",
+  "writeDeleteDenyingToolHandleRetained": true,
+  "startedAtUtc": "2026-11-03T03:21:50.8621981Z",
+  "finishedAtUtc": "2026-11-03T03:21:50.9340238Z",
+  "exitCode": 0,
+  "hardwareCommands": 0,
+  "modelCommands": 0,
+  "diagnostics": 0,
+  "ownerTrials": 0,
+  "separateFromClosedOwnerClock": true,
+  "ownerClockRestarted": false,
+  "scope": "Offline policy/document integrity only; no build, test, model, hardware or admission operation. Duration is not charged to or claimed within the closed device session."
+}

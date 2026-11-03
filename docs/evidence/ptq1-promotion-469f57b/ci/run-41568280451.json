@@ -1,0 +1,91 @@
+{
+  "repository": "symbiogenesis/SwiftBonsai2Runner",
+  "run": {
+    "conclusion": "success",
+    "created_at": "2026-11-03T02:47:36Z",
+    "event": "push",
+    "head_branch": "main",
+    "head_sha": "469f57b233898fd10b97d5ebc10aaef78b940e30",
+    "html_url": "https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41568280451",
+    "id": 41568280451,
+    "path": ".github/workflows/foundation.yml",
+    "run_attempt": 1,
+    "status": "completed",
+    "updated_at": "2026-11-03T03:01:22Z"
+  },
+  "jobs": {
+    "jobs": [
+      {
+        "completed_at": "2026-11-03T02:48:00Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41568280451/job/125694945039",
+        "id": 125694945039,
+        "name": "changes",
+        "runner_name": "GitHub Actions 1000021131",
+        "started_at": "2026-11-03T02:47:42Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-03T02:49:53Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41568280451/job/125695071444",
+        "id": 125695071444,
+        "name": "broker / core",
+        "runner_name": "GitHub Actions 1000021132",
+        "started_at": "2026-11-03T02:48:03Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-03T02:52:30Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41568280451/job/125695071535",
+        "id": 125695071535,
+        "name": "maintenance",
+        "runner_name": "GitHub Actions 1000021133",
+        "started_at": "2026-11-03T02:48:03Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-03T02:57:17Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41568280451/job/125696542057",
+        "id": 125696542057,
+        "name": "Native integration",
+        "runner_name": "GitHub Actions 1000021165",
+        "started_at": "2026-11-03T02:56:40Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-03T02:58:17Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41568280451/job/125696542109",
+        "id": 125696542109,
+        "name": "release-integration",
+        "runner_name": "GitHub Actions 1000021168",
+        "started_at": "2026-11-03T02:57:44Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-03T02:52:31Z",
+        "conclusion": "skipped",
+        "html_url": "https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41568280451/job/125696544298",
+        "id": 125696544298,
+        "name": "speech / ${{ matrix.lane }}",
+        "runner_name": null,
+        "started_at": "2026-11-03T02:52:31Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-03T03:01:21Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41568280451/job/125698337789",
+        "id": 125698337789,
+        "name": "foundation",
+        "runner_name": "GitHub Actions 1000021182",
+        "started_at": "2026-11-03T03:01:14Z",
+        "status": "completed"
+      }
+    ],
+    "total_count": 7
+  }
+}

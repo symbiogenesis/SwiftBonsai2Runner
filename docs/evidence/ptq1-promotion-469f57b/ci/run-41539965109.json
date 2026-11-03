@@ -1,0 +1,111 @@
+{
+  "repository": "symbiogenesis/SwiftBonsai2Runner",
+  "run": {
+    "conclusion": "success",
+    "created_at": "2026-11-02T22:45:45Z",
+    "event": "push",
+    "head_branch": "main",
+    "head_sha": "74bef68c74417a56e38d90201b7f87ccc667a276",
+    "html_url": "https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41539965109",
+    "id": 41539965109,
+    "path": ".github/workflows/foundation.yml",
+    "run_attempt": 1,
+    "status": "completed",
+    "updated_at": "2026-11-02T22:56:17Z"
+  },
+  "jobs": {
+    "jobs": [
+      {
+        "completed_at": "2026-11-02T22:46:56Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41539965109/job/125601304742",
+        "id": 125601304742,
+        "name": "changes",
+        "runner_name": "GitHub Actions 1000021077",
+        "started_at": "2026-11-02T22:45:52Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:49:18Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41539965109/job/125601856787",
+        "id": 125601856787,
+        "name": "broker / ui",
+        "runner_name": "GitHub Actions 1000021079",
+        "started_at": "2026-11-02T22:46:59Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:50:52Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41539965109/job/125601856913",
+        "id": 125601856913,
+        "name": "broker / core",
+        "runner_name": "GitHub Actions 1000021080",
+        "started_at": "2026-11-02T22:46:59Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:51:16Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41539965109/job/125601856966",
+        "id": 125601856966,
+        "name": "maintenance",
+        "runner_name": "GitHub Actions 1000021081",
+        "started_at": "2026-11-02T22:46:59Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:56:05Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41539965109/job/125603854356",
+        "id": 125603854356,
+        "name": "speech / tts",
+        "runner_name": "GitHub Actions 1000021082",
+        "started_at": "2026-11-02T22:51:19Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:55:11Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41539965109/job/125603854409",
+        "id": 125603854409,
+        "name": "speech / asr",
+        "runner_name": "GitHub Actions 1000021083",
+        "started_at": "2026-11-02T22:51:19Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:52:24Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41539965109/job/125603854491",
+        "id": 125603854491,
+        "name": "Native integration",
+        "runner_name": "GitHub Actions 1000021085",
+        "started_at": "2026-11-02T22:51:19Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:51:50Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41539965109/job/125603854525",
+        "id": 125603854525,
+        "name": "release-integration",
+        "runner_name": "GitHub Actions 1000021084",
+        "started_at": "2026-11-02T22:51:20Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-11-02T22:56:16Z",
+        "conclusion": "success",
+        "html_url": "https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41539965109/job/125606068094",
+        "id": 125606068094,
+        "name": "foundation",
+        "runner_name": "GitHub Actions 1000021086",
+        "started_at": "2026-11-02T22:56:10Z",
+        "status": "completed"
+      }
+    ],
+    "total_count": 9
+  }
+}
