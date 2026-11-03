@@ -1,0 +1,27 @@
+{
+    "schemaVersion":  1,
+    "kind":  "independent-startup-windows-path-fixture-correction-review",
+    "recordedDate":  "2026-11-03",
+    "reviewerId":  "Codex:/root/primetime_evidence",
+    "status":  "passed-scoped-source-review",
+    "reviewedRunnerSnapshot":  "a35e17939950096a6cd1a981d6064f86b8b0b086",
+    "priorSourceReview":  "independent-review.json",
+    "priorReviewedRunnerSnapshot":  "dfab5c40a7c8e7256054e994613b1fe53519f264",
+    "changedFile":  "tools/bonsai/src/chat_launch/tests.rs",
+    "correctedGitBlobSha1":  "809c973937da93347f58bbf99d91aecc577e7371",
+    "trigger":  "The parent reported that the combined focused startup checks exposed different slash serialization in the source-lock fixture on Windows. This reviewer inspected the exact source correction without running the test or attesting the parent\u0027s test output.",
+    "findings":  [
+                     "Only the regression fixture changes; production runtime provisioning, identity verification, error classification, process ownership and defaults are unchanged.",
+                     "The source-lock expectation now builds the repository/config/filename using separate platform-native Path joins and compares the resulting Path rather than serialized JSON separator spelling. It still requires a string lockPath that identifies the selected repository lock.",
+                     "The explicit prebuilt-broker branch still requires lockPath to be absent. Operation, selected data and working directories, ordering before backend work, and absence of verifyOnly remain asserted.",
+                     "The original source review remains bound to dfab5c4. This follow-up binds only the subsequent test-fixture correction; final combined focused results must be retained and reviewed separately."
+                 ],
+    "sourceOnly":  true,
+    "parentFinalTestResultsAttested":  false,
+    "newReviewerBuildsOrTests":  0,
+    "newReviewerDeviceQueries":  0,
+    "newReviewerModelExecutions":  0,
+    "newReviewerCiActions":  0,
+    "defaultPromotionQualified":  false,
+    "experimentalLabelMayBeRemoved":  false
+}
