@@ -20,6 +20,15 @@ Missing, changed or mismatched power conditions leave performance comparison
 ineligible. Equal endpoint observations alone do not prove continuous stability,
 and a later power query cannot establish conditions for a completed trial.
 
+Native application acceptance records `powerBefore`, `powerAfter` and
+`powerConditions`, with separate observations for each representation or worker
+comparison arm. Native numerical and request-timing captures retain the same
+observations for each model sample and the overall capture. Queries use the
+existing read-only Windows power API. Unknown or mismatched AC/battery-saver
+conditions set `performanceComparisonEligible: false` and leave eligible timing
+ratios null; explicitly unqualified ratios and raw observations remain available.
+Completed answers and original-PQ2 rollback correctness are evaluated separately.
+
 Physical Snapdragon capture/qualification workflows, including speech/sandbox,
 share the non-cancelling `swift-lora-snapdragon` concurrency group. Hosted targets
 have independent groups. Serialization prevents overlapping laptop CI jobs,
