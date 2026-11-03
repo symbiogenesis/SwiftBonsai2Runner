@@ -217,6 +217,7 @@ jobs:
       - name: Start the complete owner-job budget before checkout and tool intake
         shell: pwsh
         run: |
+          "BONSAI_NATIVE_JOB_STARTED_TICK=$([Diagnostics.Stopwatch]::GetTimestamp())" >> $env:GITHUB_ENV
           "BONSAI_NATIVE_JOB_STARTED_UTC=$([DateTime]::UtcNow.ToString('o'))" >> $env:GITHUB_ENV
           if ($env:BONSAI_NATIVE_BUDGET_MINUTES -cnotin @('5', '10', '15')) { throw 'Select a predeclared 5, 10 or 15 minute owner budget.' }
           if ($env:BONSAI_NATIVE_BUDGET_MINUTES -cne '5' -and [string]::IsNullOrWhiteSpace($env:BONSAI_NATIVE_BUDGET_REASON)) { throw 'An extended budget requires a fixed workload estimate and reason before setup.' }
@@ -303,10 +304,12 @@ jobs:
             BoundedHistoryRequested=($env:BONSAI_NATIVE_EXTENDED -eq 'true')
             StalledConsumerRequested=($env:BONSAI_NATIVE_STALLED_CONSUMER -eq 'true')
             AcceptanceProcessExitCode=$null; AggregateBudgetExpired=$false
+            OwnerJobStartedTick=$env:BONSAI_NATIVE_JOB_STARTED_TICK
             OwnerJobStartedUtc=$env:BONSAI_NATIVE_JOB_STARTED_UTC
             WholeJobMaximumSeconds=[int]$env:BONSAI_NATIVE_WHOLE_JOB_SECONDS; PostProcessReserveSeconds=30
             BudgetReason=$env:BONSAI_NATIVE_BUDGET_REASON
             PreparationElapsedMilliseconds=$null; ModelCaseBudgetSeconds=$null
+            PreparationWallElapsedMilliseconds=$null; PreparationMonotonicElapsedMilliseconds=$null
             TestProcessHardLimitSeconds=$null
             OwnerDeadlineApplied=$false; OwnerElapsedMilliseconds=$null
             OwnerWorkSeconds=$null; OwnerProcessExitReserveSeconds=$null
@@ -415,9 +418,11 @@ jobs:
             }
             try {
               if (-not $env:BONSAI_TOOLS_PATH) { throw 'The source-bound hosted maintenance tool is required.' }
+              if (-not $env:BONSAI_NATIVE_JOB_STARTED_TICK) { throw 'The original whole-job monotonic start is required.' }
               $budgetClock = [Diagnostics.Stopwatch]::StartNew()
               $limits = & $env:BONSAI_TOOLS_PATH native-acceptance-budget --json (@{
                 jobStartedUtc=$jobStarted.ToString('o'); nowUtc=[DateTime]::UtcNow.ToString('o')
+                jobStartedTick=[long]$env:BONSAI_NATIVE_JOB_STARTED_TICK
                 nowTick=[Diagnostics.Stopwatch]::GetTimestamp(); tickFrequency=[Diagnostics.Stopwatch]::Frequency
                 runId=$env:GITHUB_RUN_ID; revision=$env:GITHUB_SHA; ownerDeadline=$ownerDeadline
                 wholeJobMaximumSeconds=[int]$env:BONSAI_NATIVE_WHOLE_JOB_SECONDS
@@ -444,6 +449,8 @@ jobs:
               $hostReport.OwnerProcessExitReserveSeconds = $limits.OwnerProcessExitReserveSeconds
             }
             $hostReport.PreparationElapsedMilliseconds = [Math]::Ceiling($setupElapsed * 1000)
+            $hostReport.PreparationWallElapsedMilliseconds = [Math]::Ceiling(($limits.PreparationWallElapsedSeconds + $budgetBridgeElapsed) * 1000)
+            $hostReport.PreparationMonotonicElapsedMilliseconds = [Math]::Ceiling(($limits.PreparationMonotonicElapsedSeconds + $budgetBridgeElapsed) * 1000)
             $hostReport.ModelCaseBudgetSeconds = $caseBudgetSeconds
             $hostReport.TestProcessHardLimitSeconds = $hardLimitSeconds
             $start.Environment['BONSAI_NATIVE_CASE_BUDGET_SECONDS'] = [string]$caseBudgetSeconds
