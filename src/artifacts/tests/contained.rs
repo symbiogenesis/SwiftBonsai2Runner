@@ -35,6 +35,43 @@ fn host_verification_keeps_git_ancestry_rejection_and_retained_handles() -> io::
 }
 
 #[test]
+fn host_verification_denies_nested_ancestor_rename_and_delete_until_drop() -> io::Result<()> {
+    use std::os::windows::fs::OpenOptionsExt;
+
+    assert!(!is_app_container()?, "Run the owner outside containment");
+    let directory = PrivateDirectory::create(&std::env::temp_dir())?;
+    let models = directory.path().join("models");
+    let revision = models.join("revision");
+    fs::create_dir_all(&revision)?;
+    let model = revision.join("model.bin");
+    fs::write(&model, MODEL)?;
+    let guard = VerifiedFile::verify(&model, 3, MODEL_HASH).map_err(io::Error::other)?;
+    let delete_access = |path: &std::path::Path| {
+        // Request DELETE without deleting a nonempty directory. This checks
+        // sharing denial rather than an unrelated directory-not-empty error.
+        fs::OpenOptions::new()
+            .read(true)
+            .access_mode(0x0001_0000)
+            .share_mode(7)
+            .custom_flags(0x0200_0000)
+            .open(path)
+    };
+    for ancestor in [&models, &revision] {
+        assert!(fs::rename(ancestor, ancestor.with_extension("moved")).is_err());
+        assert!(delete_access(ancestor).is_err());
+    }
+    assert!(fs::remove_file(&model).is_err());
+    drop(guard);
+    for ancestor in [&models, &revision] {
+        drop(delete_access(ancestor)?);
+        let moved = ancestor.with_extension("moved");
+        fs::rename(ancestor, &moved)?;
+        fs::rename(&moved, ancestor)?;
+    }
+    fs::remove_file(model)
+}
+
+#[test]
 #[ignore = "Requires a supported native PSEC host; invoke explicitly with --ignored and --exact."]
 fn contained_verification_retains_exact_artifact_and_credential() -> io::Result<()> {
     assert!(!is_app_container()?, "Run the owner outside containment");

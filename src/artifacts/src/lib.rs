@@ -197,6 +197,9 @@ impl VerifiedRuntime {
 
 /// A whole locked file and read handles that keep it and its ancestors stable.
 /// Retain this guard until every child reading the file has exited.
+/// A contained reader retains metadata-only ancestor handles within its existing
+/// authority; it requires the host owner's guards and ACL policy to remain in
+/// force for its complete lifetime, including the volume root.
 pub struct VerifiedFile {
     path: PathBuf,
     _handles: Vec<File>,
@@ -254,7 +257,8 @@ fn classify_hash_error(error: ArtifactError, fallback: ArtifactError) -> Artifac
 ///
 /// On Windows the returned handle permits only other readers, preventing writes
 /// and deletion of the opened file. This does not retain ancestor directory
-/// handles; use [`VerifiedFile`] when the complete path must remain stable.
+/// handles; retain a host-owner [`VerifiedFile`] when the complete path must
+/// remain stable, including throughout the lifetime of a contained reader.
 ///
 /// # Errors
 /// Rejects unsafe external paths, redirects, non-files and failed opens.
@@ -292,14 +296,17 @@ fn hold_ancestors(
             checkpoint()?;
             // The host owner retains its root guard. A contained reader lacks
             // root metadata rights; granting the volume root would broaden its
-            // file authority. Retain every nonroot ancestor without changing
-            // the ordinary host path/installation policy.
+            // file authority. Its metadata-only handles rely on the host owner's
+            // guards and ACL policy for path stability. Host guards additionally
+            // request FILE_LIST_DIRECTORY: FILE_READ_ATTRIBUTES alone does not
+            // make Windows enforce denied-delete sharing for ancestor renames.
+            // No contained listing or volume-root authority is added.
             if contained && ancestor.parent().is_none() {
                 continue;
             }
             let directory = OpenOptions::new()
                 .read(true)
-                .access_mode(0x80)
+                .access_mode(if contained { 0x80 } else { 0x81 })
                 .share_mode(1)
                 .custom_flags(0x0220_0000)
                 .open(ancestor)
