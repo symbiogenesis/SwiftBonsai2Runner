@@ -177,7 +177,7 @@ fn original_pq2_rollback_observation(samples: &[Value], row_workers: u8) -> Valu
 fn comparison(samples: &[Value], row_workers: u8) -> Value {
     let pending = |reason| {
         json!({"status":"pending", "reason":reason,
-        "ptq1OverPq2RequestLatency":null})
+        "ptq1OverPq2RequestLatency":null,"performanceComparisonEligible":false})
     };
     if !matches!(row_workers, 1 | 4) || samples.len() != 2 {
         return pending("incomplete-pair");
@@ -192,9 +192,20 @@ fn comparison(samples: &[Value], row_workers: u8) -> Value {
     let matched = samples[0]["stream"]["visibleContent"] == samples[1]["stream"]["visibleContent"]
         && samples[0]["stream"]["reportedCompletionTokens"]
             == samples[1]["stream"]["reportedCompletionTokens"];
+    let power_conditions = bonsai_cpu_policy::power::compare_samples(samples);
+    let eligible = matched && power_conditions["performanceComparisonEligible"] == true;
+    let observed_ratio = matched.then(|| {
+        samples[1]["stream"]["requestMilliseconds"]
+            .as_f64()
+            .unwrap()
+            / samples[0]["stream"]["requestMilliseconds"]
+                .as_f64()
+                .unwrap()
+    });
     json!({"status":"captured-complete-pair", "matchedOutputAndUsage":matched,
-        "ptq1OverPq2RequestLatency":matched.then(|| samples[1]["stream"]["requestMilliseconds"].as_f64().unwrap()
-            / samples[0]["stream"]["requestMilliseconds"].as_f64().unwrap()),
+        "ptq1OverPq2RequestLatency":eligible.then_some(observed_ratio).flatten(),
+        "observedUnqualifiedRequestLatencyRatio":observed_ratio,
+        "performanceComparisonEligible":eligible,"powerConditions":power_conditions,
         "resources":resource_comparison(samples, matched),
         "fixedOrder":true, "qualityReview":"pending", "repeatedTrialBenefitQualified":false})
 }
@@ -286,6 +297,7 @@ async fn paired_responses(
     row_workers: u8,
     report: &mut Value,
 ) {
+    power::begin(report);
     for profile in &profiles(row_workers) {
         // Decide before each startup, charging the first owner and all prior
         // setup against the same deadline. Missing arms may not become jobs.
@@ -299,6 +311,7 @@ async fn paired_responses(
             "rowWorkerCountIndependentlyObserved":false, "verifiedReadinessObserved":false,
             "startupMilliseconds":null, "stream":null, "cleanup":null}));
         record_worker_readiness(&mut report["samples"][index], profile.row_workers, false);
+        power::begin(&mut report["samples"][index]);
         report["phase"] = json!(format!("arm-{index}-startup"));
         save_acceptance_report(evidence, report);
         let started = tokio::time::Instant::now();
@@ -306,6 +319,7 @@ async fn paired_responses(
             adapter_work_before_cleanup(deadline, start_adapter(profile, data, evidence)).await
         else {
             report["pendingReason"] = json!("startup-budget-expired");
+            power::finish(&mut report["samples"][index]);
             break;
         };
         report["samples"][index]["startupMilliseconds"] =
@@ -322,6 +336,7 @@ async fn paired_responses(
         save_acceptance_report(evidence, report);
         report["samples"][index]["cleanup"] =
             adapter_owned_stop(stop, running, port, expired).await;
+        power::finish(&mut report["samples"][index]);
         report["originalPq2Rollback"] =
             original_pq2_rollback_observation(report["samples"].as_array().unwrap(), row_workers);
         save_acceptance_report(evidence, report);
@@ -334,6 +349,7 @@ async fn paired_responses(
         original_pq2_rollback_observation(report["samples"].as_array().unwrap(), row_workers);
     report["passed"] = json!(report["comparison"]["status"] == "captured-complete-pair");
     report["phase"] = json!("completed");
+    power::finish(report);
     save_acceptance_report(evidence, report);
 }
 
@@ -395,7 +411,9 @@ fn native_representation_pair_requires_completion_identity_and_cleanup() {
 }
 
 fn complete_sample(repacked: bool, row_workers: u8) -> Value {
+    let power = bonsai_cpu_policy::power::observed_snapshot(Some(true), false, Some(80));
     let mut sample = json!({"modelIdentity":model_identity(repacked),
+        "powerBefore":power,"powerAfter":power,
         "configuredNativeRowWorkers":row_workers,"verifiedReadinessObserved":true,
         "stream":{"finishReason":"stop","naturallyStopped":true,"reportedCompletionTokens":3,
             "visibleContent":"Oak","visibleContentSha256":digest(b"Oak"),"requestMilliseconds":1000},
@@ -413,6 +431,53 @@ fn complete_sample(repacked: bool, row_workers: u8) -> Value {
 }
 
 #[test]
+fn native_representation_power_gates_timing_without_erasing_answers_or_rollback() {
+    let pair = vec![complete_sample(false, 4), complete_sample(true, 4)];
+    let rollback = original_pq2_rollback_observation(&pair, 4);
+    assert_eq!(comparison(&pair, 4)["performanceComparisonEligible"], true);
+    for (sample, endpoint, observation) in [
+        (0, "powerBefore", Value::Null),
+        (
+            1,
+            "powerAfter",
+            bonsai_cpu_policy::power::unknown_snapshot(),
+        ),
+        (
+            0,
+            "powerAfter",
+            bonsai_cpu_policy::power::observed_snapshot(None, false, Some(80)),
+        ),
+        (
+            1,
+            "powerBefore",
+            bonsai_cpu_policy::power::observed_snapshot(Some(false), false, Some(80)),
+        ),
+        (
+            1,
+            "powerAfter",
+            bonsai_cpu_policy::power::observed_snapshot(Some(true), true, Some(80)),
+        ),
+    ] {
+        let mut changed = pair.clone();
+        changed[sample][endpoint] = observation;
+        let compared = comparison(&changed, 4);
+        assert_eq!(compared["status"], "captured-complete-pair");
+        assert_eq!(compared["performanceComparisonEligible"], false);
+        assert!(compared["ptq1OverPq2RequestLatency"].is_null());
+        assert_eq!(compared["observedUnqualifiedRequestLatencyRatio"], 1.0);
+        assert_eq!(original_pq2_rollback_observation(&changed, 4), rollback);
+    }
+    let mut other_source = pair;
+    let battery = bonsai_cpu_policy::power::observed_snapshot(Some(false), false, Some(79));
+    other_source[1]["powerBefore"] = battery.clone();
+    other_source[1]["powerAfter"] = battery;
+    assert_eq!(
+        comparison(&other_source, 4)["performanceComparisonEligible"],
+        false
+    );
+}
+
+#[test]
 fn native_representation_rollback_observation_survives_pending_ptq1_arm() {
     for row_workers in [1, 4] {
         assert_eq!(
@@ -420,7 +485,8 @@ fn native_representation_rollback_observation_survives_pending_ptq1_arm() {
             "original-pq2-arm-not-started"
         );
         let original = complete_sample(false, row_workers);
-        let observed = original_pq2_rollback_observation(std::slice::from_ref(&original), row_workers);
+        let observed =
+            original_pq2_rollback_observation(std::slice::from_ref(&original), row_workers);
         assert_eq!(observed["status"], "captured-original-pq2-arm");
         assert_eq!(observed["independentGateReview"], "pending");
         assert_eq!(observed["defaultMayChange"], false);

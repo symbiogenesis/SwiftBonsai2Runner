@@ -94,7 +94,7 @@ async fn record_measured_request(
 fn comparison(samples: &[Value]) -> Value {
     let pending = |reason| {
         json!({"status":"pending", "reason":reason,
-        "row4OverRow1RequestThroughput":null})
+        "row4OverRow1RequestThroughput":null,"performanceComparisonEligible":false})
     };
     if samples.len() != 2 {
         return pending("incomplete-pair");
@@ -122,9 +122,18 @@ fn comparison(samples: &[Value]) -> Value {
     if samples[0]["stream"]["visibleContent"] != samples[1]["stream"]["visibleContent"] {
         return pending("different-generated-content");
     }
+    let power_conditions = bonsai_cpu_policy::power::compare_samples(samples);
+    let eligible = power_conditions["performanceComparisonEligible"] == true;
+    let observed_ratio = samples[1]["stream"]["requestTokensPerSecond"]
+        .as_f64()
+        .unwrap()
+        / samples[0]["stream"]["requestTokensPerSecond"]
+            .as_f64()
+            .unwrap();
     json!({"status":"measured-single-pair",
-        "row4OverRow1RequestThroughput":samples[1]["stream"]["requestTokensPerSecond"].as_f64().unwrap()
-            / samples[0]["stream"]["requestTokensPerSecond"].as_f64().unwrap(),
+        "row4OverRow1RequestThroughput":eligible.then_some(observed_ratio),
+        "observedUnqualifiedRequestThroughputRatio":observed_ratio,
+        "performanceComparisonEligible":eligible,"powerConditions":power_conditions,
         "fixedOrder":true, "repeatedTrialBenefitQualified":false,
         "completeStateParityQualified":false})
 }
@@ -135,12 +144,20 @@ async fn paired_requests(
     deadline: tokio::time::Instant,
     report: &mut Value,
 ) {
+    power::begin(report);
     for profile in [&SERIAL, &PQ2_ADAPTER_ROW4_PROFILE] {
         if deadline.saturating_duration_since(tokio::time::Instant::now()) <= NEXT_OWNER_RESERVE {
             report["pendingReason"] = json!("insufficient-next-owner-and-cleanup-reserve");
             save_acceptance_report(evidence, report);
             break;
         }
+        let index = report["samples"].as_array().unwrap().len();
+        report["samples"].as_array_mut().unwrap().push(json!({
+            "configuredNativeRowWorkers":profile.row_workers,
+            "rowWorkerCountIndependentlyObserved":false,
+            "verifiedReadinessObserved":false, "startupMilliseconds":null,
+            "stream":null, "cleanup":null}));
+        power::begin(&mut report["samples"][index]);
         report["phase"] = json!(format!("row{}-startup", profile.row_workers));
         save_acceptance_report(evidence, report);
         let started = tokio::time::Instant::now();
@@ -148,6 +165,7 @@ async fn paired_requests(
             adapter_work_before_cleanup(deadline, start_adapter(profile, data, evidence)).await
         else {
             report["pendingReason"] = json!("startup-budget-expired");
+            power::finish(&mut report["samples"][index]);
             save_acceptance_report(evidence, report);
             break;
         };
@@ -156,12 +174,7 @@ async fn paired_requests(
         let credential = key(&owner);
         let (stop, stopped) = oneshot::channel();
         let running = spawn_local(owner.run(async { stopped.await.map_err(io::Error::other) }));
-        let index = report["samples"].as_array().unwrap().len();
-        report["samples"].as_array_mut().unwrap().push(json!({
-            "configuredNativeRowWorkers":profile.row_workers,
-            "rowWorkerCountIndependentlyObserved":false,
-            "verifiedReadinessObserved":true, "startupMilliseconds":startup_ms,
-            "stream":null, "cleanup":null}));
+        report["samples"][index]["startupMilliseconds"] = json!(startup_ms);
         record_worker_readiness(&mut report["samples"][index], profile.row_workers, true);
         report["phase"] = json!(format!("row{}-request", profile.row_workers));
         save_acceptance_report(evidence, report);
@@ -171,6 +184,7 @@ async fn paired_requests(
         save_acceptance_report(evidence, report);
         report["samples"][index]["cleanup"] =
             adapter_owned_stop(stop, running, port, expired).await;
+        power::finish(&mut report["samples"][index]);
         save_acceptance_report(evidence, report);
         if expired {
             break;
@@ -179,6 +193,7 @@ async fn paired_requests(
     report["comparison"] = comparison(report["samples"].as_array().unwrap());
     report["passed"] = json!(report["comparison"]["status"] == "measured-single-pair");
     report["phase"] = json!("completed");
+    power::finish(report);
     save_acceptance_report(evidence, report);
 }
 
@@ -203,7 +218,9 @@ fn native_speed_metric_uses_reported_tokens_and_complete_request_time() {
 #[test]
 fn native_speed_comparison_requires_matched_output_usage_and_cleanup() {
     let sample = |workers| {
+        let power = bonsai_cpu_policy::power::observed_snapshot(Some(true), false, Some(80));
         json!({"configuredNativeRowWorkers":workers,
+        "powerBefore":power,"powerAfter":power,
         "stream":{"reportedCompletionTokens":8,"finishReason":"length",
             "requestTokensPerSecond":2.0,"visibleContent":"1 2 3 4"},
         "cleanup":{"ownedJobEmpty":true,"listenerReleased":true}})
@@ -211,6 +228,19 @@ fn native_speed_comparison_requires_matched_output_usage_and_cleanup() {
     let mut pair = vec![sample(1), sample(4)];
     pair[1]["stream"]["requestTokensPerSecond"] = json!(4.0);
     assert_eq!(comparison(&pair)["row4OverRow1RequestThroughput"], 2.0);
+    for observation in [
+        Value::Null,
+        bonsai_cpu_policy::power::unknown_snapshot(),
+        bonsai_cpu_policy::power::observed_snapshot(Some(false), false, Some(79)),
+    ] {
+        let mut changed = pair.clone();
+        changed[1]["powerAfter"] = observation;
+        let compared = comparison(&changed);
+        assert_eq!(compared["status"], "measured-single-pair");
+        assert_eq!(compared["performanceComparisonEligible"], false);
+        assert!(compared["row4OverRow1RequestThroughput"].is_null());
+        assert_eq!(compared["observedUnqualifiedRequestThroughputRatio"], 2.0);
+    }
     for (field, value) in [
         ("reportedCompletionTokens", json!(1)),
         ("finishReason", json!("stop")),

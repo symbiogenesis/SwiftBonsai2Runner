@@ -176,6 +176,42 @@ impl Context<'_> {
         save_report(&self.report_path, &self.report)
     }
 
+    fn model_sample(
+        &mut self,
+        executable: &Path,
+        arguments: &Value,
+        lane: &Path,
+        mut sample: Value,
+    ) -> crate::Result<()> {
+        sample["powerBefore"] = crate::host_cpu::power_snapshot();
+        sample["powerAfter"] = Value::Null;
+        sample["Supervision"] = Value::Null;
+        let samples = self.report["Samples"]
+            .as_array_mut()
+            .ok_or("Missing sample receipts.")?;
+        let index = samples.len();
+        samples.push(sample);
+        // Persist the before observation even when process intake or capture fails.
+        save_report(&self.report_path, &self.report)?;
+        let result = self.completion(executable, arguments, lane, true);
+        let sample = &mut self.report["Samples"][index];
+        sample["powerAfter"] = crate::host_cpu::power_snapshot();
+        sample["powerConditions"] = bonsai_cpu_policy::power::compare_endpoints(
+            &sample["powerBefore"],
+            &sample["powerAfter"],
+        );
+        if let Ok(supervision) = &result {
+            sample["Supervision"] = supervision.clone();
+        }
+        self.report["powerSampleConditions"] = bonsai_cpu_policy::power::compare_samples(
+            self.report["Samples"]
+                .as_array()
+                .ok_or("Missing sample receipts.")?,
+        );
+        save_report(&self.report_path, &self.report)?;
+        result.map(|_| ())
+    }
+
     fn hash_file(&self, path: &Path, maximum: u64) -> crate::Result<Value> {
         let mut file =
             bonsai_artifacts::open_locked_file(path).map_err(|error| error.to_string())?;
@@ -578,17 +614,12 @@ fn model_samples(
             "ActiveCondition"
         }] = json!(name);
         context.phase("model-capture")?;
-        let supervision = context.completion(&executable, &arguments, &lane, true)?;
         let sample = if context.request.kind == Kind::Ptq1 {
-            json!({"Backend": name, "RustRowWorkers": if native { Value::Null } else { json!(workers) }, "Supervision": supervision})
+            json!({"Backend": name, "RustRowWorkers": if native { Value::Null } else { json!(workers) }})
         } else {
-            json!({"Condition": name, "RowWorkers": workers, "Supervision": supervision})
+            json!({"Condition": name, "RowWorkers": workers})
         };
-        context.report["Samples"]
-            .as_array_mut()
-            .ok_or("Missing sample receipts.")?
-            .push(sample);
-        save_report(&context.report_path, &context.report)?;
+        context.model_sample(&executable, &arguments, &lane, sample)?;
     }
     Ok(())
 }
@@ -677,14 +708,12 @@ fn timing_sample(context: &mut Context<'_>, checked: &Value, tools: &Value) -> c
     context.report["TimingReceiptStatus"] = json!("pending-unverified");
     context.report["ExpectedTimingIdentity"] = expected.clone();
     context.phase("source-session-request-timing")?;
-    let supervision = context.completion(
+    context.model_sample(
         &context.bundle.join("swift_model_check.exe"),
         &arguments,
         &lane,
-        true,
+        json!({"Backend":context.request.rust_backend,"RustRowWorkers":context.request.row_workers}),
     )?;
-    context.report["Samples"] = json!([{"Backend":context.request.rust_backend,
-        "RustRowWorkers":context.request.row_workers,"Supervision":supervision}]);
     context.phase("request-timing-receipt-verification")?;
     let mut artifacts = Vec::new();
     for name in ["request-timing-started.json", "request-timing.json"] {
@@ -753,6 +782,8 @@ pub(super) fn capture(request: &Request, pins: &Value) -> crate::Result<Value> {
         "RunUrl": format!("https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/{}", std::env::var("GITHUB_RUN_ID").unwrap_or_default()),
         "RunAttempt": std::env::var("GITHUB_RUN_ATTEMPT").ok(), "ProcessorName": null, "WorkDeadlineTick": deadline,
         "ModelTrialsRequested": false, "WriterBasisQualified": false, "AppTpsQualified": false, "DefaultMayChange": false, "Samples": [] });
+    report["powerBefore"] = crate::host_cpu::power_snapshot();
+    report["powerAfter"] = Value::Null;
     if request.kind == Kind::Ptq1 {
         report["PendingControls"] = json!(PENDING);
     }
@@ -791,6 +822,11 @@ pub(super) fn capture(request: &Request, pins: &Value) -> crate::Result<Value> {
 }
 
 fn finish(context: &mut Context<'_>, result: crate::Result<()>) -> crate::Result<Value> {
+    context.report["powerAfter"] = crate::host_cpu::power_snapshot();
+    context.report["powerConditions"] = bonsai_cpu_policy::power::compare_endpoints(
+        &context.report["powerBefore"],
+        &context.report["powerAfter"],
+    );
     context.report["WorkElapsedSeconds"] = json!(context.started.elapsed().as_secs_f64());
     match &result {
         Ok(()) => {

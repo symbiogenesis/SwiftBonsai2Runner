@@ -73,6 +73,7 @@ jobs:
               'representation::native_representation_profile_is_explicit_and_keeps_original_deadline',
               'representation::native_representation_row4_profile_is_explicit_and_preserves_pair',
               'representation::native_representation_rollback_observation_survives_pending_ptq1_arm',
+              'representation::native_representation_power_gates_timing_without_erasing_answers_or_rollback',
               'representation::native_representation_profiles_leave_skipped_arms_pending_at_original_deadline',
               'representation::native_representation_complete_bytes_survive_expired_second_request',
               'progress::native_progress_decodes_fragmented_chunks_without_counting_events_as_tokens',

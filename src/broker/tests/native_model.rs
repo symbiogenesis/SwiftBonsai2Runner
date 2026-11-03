@@ -25,6 +25,8 @@ use tokio::{
 
 #[path = "native_model/adapter_boundaries.rs"]
 mod adapter_boundaries;
+#[path = "native_model/power.rs"]
+mod power;
 #[path = "native_model/progress.rs"]
 mod progress;
 #[path = "native_model/representation.rs"]
@@ -783,6 +785,7 @@ async fn acceptance(
     report: &mut Value,
 ) {
     let deadline = tokio::time::Instant::now() + budget;
+    power::begin(report);
     report["phase"] = json!("initial-owner-startup");
     save_acceptance_report(evidence, report);
     let owner = start(data, evidence).await;
@@ -854,6 +857,7 @@ async fn acceptance(
             && (!workloads.stalled_consumer || stalled_enabled)
     );
     report["passed"] = report["allRequestedWorkloadsPassed"].clone();
+    power::finish(report);
     save_acceptance_report(evidence, report);
 }
 
@@ -1737,6 +1741,7 @@ async fn bounded_adapter_acceptance(
     report: &mut Value,
 ) {
     let deadline = tokio::time::Instant::now() + budget;
+    power::begin(report);
     record_worker_readiness(report, profile.row_workers, false);
     if profile.required_scale_history {
         report["scaleHistoryWorkload"] = pending_adapter_scale_history();
@@ -1757,6 +1762,8 @@ async fn bounded_adapter_acceptance(
     )
     .await
     else {
+        power::finish(report);
+        save_acceptance_report(evidence, report);
         return;
     };
     record_worker_readiness(report, profile.row_workers, true);
@@ -1784,6 +1791,7 @@ async fn bounded_adapter_acceptance(
     report["lifecyclePassed"] = json!(true);
     report["allRequestedWorkloadsPassed"] = json!(required_passed);
     report["passed"] = json!(required_passed);
+    power::finish(report);
     save_acceptance_report(evidence, report);
 }
 

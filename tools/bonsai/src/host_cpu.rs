@@ -37,15 +37,16 @@ fn isa_snapshot() -> Value {
         "negative_result": "unsupported-or-not-detected", "dispatch_qualified": false})
 }
 
-fn power_snapshot() -> Value {
+pub(super) fn power_snapshot() -> Value {
     #[cfg(windows)]
     if let Ok(power) = bonsai_windows_process::power_status() {
-        return json!({"status": "observed", "source": "GetSystemPowerStatus",
-            "ac_online": power.ac_online, "battery_saver": power.battery_saver,
-            "battery_percent": power.battery_percent});
+        return bonsai_cpu_policy::power::observed_snapshot(
+            power.ac_online,
+            power.battery_saver,
+            power.battery_percent,
+        );
     }
-    json!({"status": "unknown", "source": "GetSystemPowerStatus",
-        "ac_online": null, "battery_saver": null, "battery_percent": null})
+    bonsai_cpu_policy::power::unknown_snapshot()
 }
 
 fn power_policy_snapshot() -> Value {
