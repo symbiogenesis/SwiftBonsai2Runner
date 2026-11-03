@@ -187,6 +187,32 @@ gate to independent source/retained-data review and establishes no numerical
 adapter effect, full-state parity, 4096 generated tokens, performance, quality,
 full promotion or continuation of an earlier trial.
 
+Explicit `profile: ptq1-adapter-service-rollback-row4` adds an original-PQ2 rollback
+to the complete five-request PTQ1 service sequence above in the same allowance.
+The existing service-only profile remains unchanged. After both PTQ1 owners
+have verified empty Jobs and released listeners, a third fresh owner selects
+`--use-original-pq2` with pinned Prism 0.1.14, adapter 1.3 and four workers.
+It must naturally complete the existing fixed tree-name request within its
+32-token cap and release its Job/listener with one completed operation and no
+failures. A complete post-cleanup CNG length/SHA-256 verification then binds
+the retained original model file, with file/ancestor guards through the final
+combined receipt. Transport errors and malformed/truncated rollback responses
+remain pending; response parsing follows owned cleanup so those failures retain
+the cleanup and power observations.
+
+This profile keeps one absolute deadline and the existing thirty-second cleanup
+reserve. The third startup requires more than seventy-five seconds remaining;
+startup/request work stops forty-five seconds before that deadline, retaining
+fifteen seconds after owned cleanup for complete-file verification. Hashing checks
+cancellation before each bounded read; blocking OS work still requires the outer
+owner deadline. Power endpoints cover each owner and the whole workload.
+`serviceIntegration` and `originalPq2Rollback` keep their distinct partial verdicts;
+the complete case requires both plus post-cleanup file verification. Missing or
+expired work remains pending, without a continuation job. Hosted preparation
+does not authorize another owner trial or reopen an earlier closed allowance.
+Performance/resource benefit, full-context numerics, provenance, human quality,
+comfort, isolation and default promotion remain independent.
+
 Explicit `profile: pq2-adapter-row4` selects original PQ2, the approved adapter at
 scale 1.3 and pinned Prism 0.1.10 with `--native-row-workers 4`. It requires exactly
 one four-token-cap stream, verified model/adapter readiness and owned Job/listener

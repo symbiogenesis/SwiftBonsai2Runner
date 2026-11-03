@@ -31,7 +31,7 @@ fn profiles(row_workers: u8) -> [AdapterProfile; 2] {
     })
 }
 
-fn body() -> Value {
+pub(super) fn body() -> Value {
     let mut body = request(json!([{"role":"user","content":PROMPT}]), true, CAP);
     body["enable_thinking"] = json!(false);
     body["abliteration_scale"] = json!(1.3);
@@ -48,7 +48,7 @@ fn digest(bytes: &[u8]) -> String {
     .unwrap()
 }
 
-fn model_identity(repacked: bool) -> Value {
+pub(super) fn model_identity(repacked: bool) -> Value {
     if repacked {
         let export: Value =
             serde_json::from_str(include_str!("../../../../config/swift.ptq1-export.json"))
@@ -85,9 +85,13 @@ async fn measured_response(
     )
     .await;
     let elapsed = started.elapsed();
-    let summary = streamed_response(&bytes);
+    response_observation(&bytes, elapsed)
+}
+
+pub(super) fn response_observation(bytes: &[u8], elapsed: Duration) -> Value {
+    let summary = streamed_response(bytes);
     let mut observed = stream_observation(&summary, CAP);
-    let content = speed::visible_output(&bytes);
+    let content = speed::visible_output(bytes);
     observed["requestMilliseconds"] = json!(elapsed.as_secs_f64() * 1000.0);
     observed["visibleContentSha256"] = json!(digest(content.as_bytes()));
     observed["visibleContent"] = json!(content);
@@ -158,7 +162,7 @@ fn sample_pending_reason(sample: &Value, repacked: bool, row_workers: u8) -> Opt
     None
 }
 
-fn original_pq2_rollback_observation(samples: &[Value], row_workers: u8) -> Value {
+pub(super) fn original_pq2_rollback_observation(samples: &[Value], row_workers: u8) -> Value {
     // This observation concerns only the original-artifact arm. A later PTQ1
     // failure cannot erase it or turn it into complete-pair/performance evidence.
     let reason = samples
@@ -410,7 +414,7 @@ fn native_representation_pair_requires_completion_identity_and_cleanup() {
     }
 }
 
-fn complete_sample(repacked: bool, row_workers: u8) -> Value {
+pub(super) fn complete_sample(repacked: bool, row_workers: u8) -> Value {
     let power = bonsai_cpu_policy::power::observed_snapshot(Some(true), false, Some(80));
     let mut sample = json!({"modelIdentity":model_identity(repacked),
         "powerBefore":power,"powerAfter":power,

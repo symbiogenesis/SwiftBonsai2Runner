@@ -20,14 +20,14 @@ pub(super) const ADAPTER_PROFILE: AdapterProfile = AdapterProfile {
 
 const NEXT_OWNER_RESERVE: Duration = Duration::from_secs(60);
 
-fn body(cap: u32) -> Value {
+pub(super) fn body(cap: u32) -> Value {
     let mut body = request(adapter_messages(&ADAPTER_PROFILE, false), true, cap);
     body["enable_thinking"] = json!(false);
     body["abliteration_scale"] = json!(1.3);
     body
 }
 
-fn pending_workload() -> Value {
+pub(super) fn pending_workload() -> Value {
     json!({"status":"pending","phase":"initial-owner-startup",
         "cancellationRequest":body(EXTENDED_COMPLETION_CAP),
         "cancellationRequestSha256":adapter_digest(&serde_json::to_vec(&body(EXTENDED_COMPLETION_CAP)).unwrap()),
@@ -384,6 +384,20 @@ async fn fresh_owner(
 async fn acceptance(data: &Path, evidence: &Path, budget: Duration, report: &mut Value) {
     let deadline = tokio::time::Instant::now() + budget;
     power::begin(report);
+    let passed = sequence(data, evidence, deadline, report).await;
+    report["lifecyclePassed"] = json!(passed);
+    report["allRequestedWorkloadsPassed"] = json!(passed);
+    report["passed"] = json!(passed);
+    power::finish(report);
+    save_acceptance_report(evidence, report);
+}
+
+pub(super) async fn sequence(
+    data: &Path,
+    evidence: &Path,
+    deadline: tokio::time::Instant,
+    report: &mut Value,
+) -> bool {
     let initial = initial_owner(data, evidence, deadline, report).await;
     let passed = if let Some(credential) = initial {
         fresh_owner(data, evidence, deadline, &credential, report).await
@@ -394,11 +408,8 @@ async fn acceptance(data: &Path, evidence: &Path, budget: Duration, report: &mut
     report["serviceIntegrationWorkload"]["status"] =
         json!(if passed { "passed" } else { "pending" });
     report["serviceIntegrationWorkload"]["phase"] = report["phase"].clone();
-    report["lifecyclePassed"] = json!(passed);
-    report["allRequestedWorkloadsPassed"] = json!(passed);
-    report["passed"] = json!(passed);
-    power::finish(report);
     save_acceptance_report(evidence, report);
+    passed
 }
 
 #[test]

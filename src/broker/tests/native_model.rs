@@ -33,6 +33,8 @@ mod progress;
 mod representation;
 #[path = "native_model/service_integration.rs"]
 mod service_integration;
+#[path = "native_model/service_rollback.rs"]
+mod service_rollback;
 #[path = "native_model/speed.rs"]
 mod speed;
 
@@ -404,15 +406,19 @@ fn short_request(messages: Value, streaming: bool) -> Value {
 }
 
 async fn connect(port: u16, key: &str, body: &Value) -> TcpStream {
+    try_connect(port, key, body).await.unwrap()
+}
+
+async fn try_connect(port: u16, key: &str, body: &Value) -> io::Result<TcpStream> {
     let bytes = serde_json::to_vec(body).unwrap();
-    let mut stream = TcpStream::connect(("127.0.0.1", port)).await.unwrap();
+    let mut stream = TcpStream::connect(("127.0.0.1", port)).await?;
     let head = format!(
         "POST /v1/chat/completions HTTP/1.1\r\nHost: 127.0.0.1:{port}\r\nAuthorization: Bearer {key}\r\nContent-Type: application/json\r\nContent-Length: {}\r\n\r\n",
         bytes.len()
     );
-    stream.write_all(head.as_bytes()).await.unwrap();
-    stream.write_all(&bytes).await.unwrap();
-    stream
+    stream.write_all(head.as_bytes()).await?;
+    stream.write_all(&bytes).await?;
+    Ok(stream)
 }
 
 async fn exchange(port: u16, key: &str, body: &Value) -> Vec<u8> {
@@ -1386,6 +1392,7 @@ fn profile_case(profile: &str, extended: bool, stalled: bool) -> Option<&'static
         PQ2_ADAPTER_SPEED_PROFILE => Some(PQ2_ADAPTER_SPEED_CASE),
         representation::PROFILE => Some(representation::CASE),
         representation::ROW4_PROFILE => Some(representation::ROW4_CASE),
+        service_rollback::PROFILE => Some(service_rollback::CASE),
         name => adapter_profile(name).map(|selected| selected.case),
     }
 }
