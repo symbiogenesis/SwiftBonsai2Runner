@@ -1,0 +1,103 @@
+name: Hosted PTQ1 public authoring reference
+on:
+  push:
+    branches: [main]
+    paths:
+      - tools/native-reference/public_pack_formats.py
+      - tools/native-reference/public_pack_reference.py
+      - tools/native-reference/test_public_pack_reference.py
+      - tools/native-reference/public-authoring-pins.json
+      - tools/native-reference/public-authoring-requirements.txt
+      - .github/workflows/ptq1-public-authoring-reference.yml
+  workflow_dispatch:
+    inputs:
+      run_reconstruction:
+        description: Download the pinned 8.6 GB pack and run the one declared all-48 reference
+        required: true
+        type: boolean
+        default: false
+permissions:
+  contents: read
+concurrency:
+  group: ptq1-public-authoring-reference-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  reference:
+    if: github.ref == 'refs/heads/main'
+    runs-on: windows-11-arm
+    timeout-minutes: 60
+    env:
+      RUNNER_ENVIRONMENT: ${{ runner.environment }}
+      OPENBLAS_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      BLIS_NUM_THREADS: '1'
+      PYTHONHASHSEED: '0'
+    steps:
+      - name: Require the GitHub-hosted ARM64 lane before source or dependency work
+        shell: pwsh
+        run: |
+          if ($env:RUNNER_ENVIRONMENT -ne 'github-hosted' -or $env:RUNNER_OS -ne 'Windows' -or $env:RUNNER_ARCH -ne 'ARM64') {
+            throw 'This reference belongs only to GitHub-hosted Windows ARM64.'
+          }
+          New-Item -ItemType Directory -Path "$env:RUNNER_TEMP/public-authoring-evidence" -ErrorAction Stop | Out-Null
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        id: source
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.14.0'
+          architecture: arm64
+      - name: Install only the hashed ARM64 reference wheel
+        shell: pwsh
+        run: |
+          python -B -m pip install --only-binary=:all: --require-hashes --requirement tools/native-reference/public-authoring-requirements.txt --report "$env:RUNNER_TEMP/public-authoring-evidence/numpy-pip-report.json"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Check independent small math and malformed-input controls
+        id: controls
+        shell: pwsh
+        run: |
+          python -B tools/native-reference/test_public_pack_reference.py *> "$env:RUNNER_TEMP/public-authoring-evidence/synthetic-tests.log"
+          $testExit = $LASTEXITCODE
+          Get-Content -LiteralPath "$env:RUNNER_TEMP/public-authoring-evidence/synthetic-tests.log" -Tail 80
+          exit $testExit
+      - name: Record preparation scope separately from actual reconstruction
+        if: always() && steps.source.outcome == 'success'
+        shell: pwsh
+        env:
+          CONTROLS_OUTCOME: ${{ steps.controls.outcome }}
+          REQUESTED_RECONSTRUCTION: ${{ inputs.run_reconstruction == true }}
+        run: |
+          $preparation = [ordered]@{
+            schemaVersion = 1
+            kind = 'hosted-public-reference-source-preparation'
+            sourceRevision = $env:GITHUB_SHA
+            runId = $env:GITHUB_RUN_ID
+            runAttempt = $env:GITHUB_RUN_ATTEMPT
+            workflowPath = '.github/workflows/ptq1-public-authoring-reference.yml'
+            controlsOutcome = $env:CONTROLS_OUTCOME
+            requestedReconstruction = ($env:REQUESTED_RECONSTRUCTION -eq 'true')
+            ownerDeviceTrials = 0
+            authorOriginalProvenanceQualified = $false
+            nativeWriterBasisQualified = $false
+            defaultMayChange = $false
+          }
+          $preparation | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath "$env:RUNNER_TEMP/public-authoring-evidence/preparation.json" -Encoding utf8NoBOM
+      - name: Reconstruct the single predeclared public-input candidate
+        if: github.event_name == 'workflow_dispatch' && inputs.run_reconstruction
+        shell: pwsh
+        run: |
+          python -B tools/native-reference/public_pack_reference.py --data-directory "$env:RUNNER_TEMP/public-authoring-input" --evidence-directory "$env:RUNNER_TEMP/public-authoring-evidence"
+          exit $LASTEXITCODE
+      - name: Retain reference data, toolchain identities and failed attempts
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: ptq1-public-authoring-reference-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/public-authoring-evidence/*.json
+            ${{ runner.temp }}/public-authoring-evidence/*.log
+            ${{ runner.temp }}/public-authoring-evidence/ssm-*.f32le
+          if-no-files-found: error
+          retention-days: 30

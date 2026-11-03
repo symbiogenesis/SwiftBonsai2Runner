@@ -103,3 +103,5 @@ docs/evidence/ptq1-context-release-014/** -text -whitespace
 
 # Retain exact terminal owning-CI and main-ancestor metadata for release 0.1.14.
 docs/evidence/ptq1-context-owning-ci-9e/** -text -whitespace
+# Preserve the source-only public reconstruction route producer record bytes.
+docs/evidence/ptq1-public-authoring-route.json -text whitespace=cr-at-eol
