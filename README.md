@@ -27,7 +27,9 @@ planned.
 
 The native Rust engine lives in [Prism Inference](https://github.com/symbiogenesis/prism-inference).
 This project consumes a pinned prebuilt server; ordinary builds do not compile
-the inference engine. Provision it with `bonsai-tools provision --json` using operation `inference` and an absolute `dataDirectory`; see the [setup commands](docs/development-guide.md#native-chat-app).
+the inference engine. Native source launch prepares a missing pinned runtime after
+the window opens. Explicit provisioning uses `bonsai-tools provision` with operation
+`inference` and an absolute `dataDirectory`; see the [setup commands](docs/development-guide.md#native-chat-app).
 
 Once you've [set up the model and runtime](docs/development-guide.md#native-chat-app),
 run `bonsai-tools chat --native-engine` to select the Rust engine, or

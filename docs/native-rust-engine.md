@@ -12,13 +12,19 @@ feature parity does not qualify inference.
 ## Swift CPU supported subset
 
 The target is native Windows ARM64, initially the 32 GB Snapdragon X Elite. Runner
-pins [**0.1.13 release**](https://github.com/symbiogenesis/prism-inference/releases/tag/v0.1.13),
-main revision `cae16fa6998dac58a947eba9ae4398ed6a9fb863`. Its required owning checks are
-[Foundation](https://github.com/symbiogenesis/prism-inference/actions/runs/41535008224),
-[conformance](https://github.com/symbiogenesis/prism-inference/actions/runs/41535008203)
-and [source-package](https://github.com/symbiogenesis/prism-inference/actions/runs/41535008364).
-The [release review](evidence/prism-0113-release-review.json) retains the exact source,
-archive and executable/license identities. This scoped CPU update retains one complete
+pins [**0.1.14 release**](https://github.com/symbiogenesis/prism-inference/releases/tag/v0.1.14),
+main revision `9e8ea3e2c042ab0c3f1a8e9596ff155e202c3c57`. The retained exact-source
+[owning-check review](evidence/ptq1-context-owning-ci-9e/independent-review.json)
+binds Foundation, full conformance and source-package results. The later
+[publication review](evidence/ptq1-context-publication-014/independent-review.json)
+binds the published tag, archives, executable and license identities. Its typed
+pre-generation context-capacity rejection preserves same-owner recovery and
+invalidates stale count requests; it also retains the reviewed CNG artifact verifier.
+Runner integration and actual-model acceptance remain separate pending gates.
+The [current readiness audit](evidence/prism-0114-readiness-20261103.json) keeps
+historical 0.1.13 results at their original identities.
+
+The runtime inherits the 0.1.13 startup change: one complete
 immutable-payload validation pass before graph publication, including allowed unused
 tensors, while removing repeated payload scans during shape binding. PTQ1 validation
 retains extent and finite-scale checks without decoding and discarding valid trits.
@@ -122,14 +128,14 @@ changes preserve sampler draw progression; explicit session reset reseeds it. Th
 readiness shape remains supported. There is no inference-library dependency or
 engine switch after failure.
 
-Private readiness in 0.1.11, 0.1.12 and 0.1.13 must report integer `row_workers`, matching the
+Private readiness in 0.1.11, 0.1.12, 0.1.13 and 0.1.14 must report integer `row_workers`, matching the
 selected one- or four-worker policy and derived from the instantiated graph.
 Only the reviewed 0.1.8, 0.1.9 and 0.1.10 pins may omit the field. Null, coerced,
 duplicate, unsupported and mismatched values reject readiness.
 This identifies the installed projection-worker budget, without proving executed
 parallel operations, active utilization or device benefit. Historical 0.1.10
 receipts remain configured-worker observations. Updating the pin does not transfer
-their model qualification to 0.1.13, change defaults or admission, or expose a
+their model qualification to 0.1.14, change defaults or admission, or expose a
 public request override.
 
 This service implementation does not qualify PTQ1 or adapters for release. Cache
@@ -339,7 +345,9 @@ established by this source audit or the single fixed-step timing.
 
 The 4,096-token output gate alone
 would require more than 17 tokens/s to fit a 240-second case before any prefill;
-optimize and estimate first rather than scheduling a trial that cannot fit.
+even the explicitly extended 840-second case needs more than 4.88 tokens/s before
+prefill and cleanup. A longer ceiling alone does not establish feasibility.
+Estimate from measured operation costs before scheduling this workload.
 
 Prism source [`f1b49cd`](https://github.com/symbiogenesis/prism-inference/commit/f1b49cd5ae1335e9b42a0f35745f0c72775f6f6f)
 also fuses the recurrent-state copy with per-head decay, removing a separate
@@ -348,7 +356,7 @@ subsequent dot/update order remain unchanged, with provisional state kept separa
 from committed state. Its [owning Foundation](https://github.com/symbiogenesis/prism-inference/actions/runs/41259682083)
 and [conformance](https://github.com/symbiogenesis/prism-inference/actions/runs/41259682092)
 pass, including bitwise, independent native-reference and graph recovery controls.
-The pinned 0.1.13 binary keeps the previously released copy-then-scale path; the fused
+The pinned 0.1.14 binary keeps the previously released copy-then-scale path; the fused
 candidate is retained in source history and model-free controls until actual-model
 numerical, throughput and resource qualification permit release integration.
 The removed copy alone establishes no speed or memory benefit.
@@ -446,7 +454,7 @@ work. The subsequent [hosted candidate run](https://github.com/symbiogenesis/pri
 passes on Windows ARM64, Windows x64 and Linux ARM64, exercising GGUF/default-report
 and hash controls, the graph, full sampled logits/state, worker/server protocols,
 strict analyzers and documentation without weights. These are candidate source
-checks; Runner pins 0.1.13 and does
+checks; Runner pins 0.1.14 and does
 not expose the experimental reuse option. No load-time or generation-speed gain is
 established. The selected 0.1.13 four-worker adapter scale/history workload now has
 the bounded evidence above. The broader
