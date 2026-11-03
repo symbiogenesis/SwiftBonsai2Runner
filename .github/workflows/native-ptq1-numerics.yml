@@ -51,7 +51,8 @@ jobs:
           cargo +nightly-2026-11-02 test --locked --release --target-dir $env:BONSAI_TOOLS_TARGET -p bonsai-tools --lib build_tools::
       - name: Check native source, receipt and original-deadline policy
         shell: pwsh
-        run: cargo +nightly-2026-11-02 test --locked --release --target-dir $env:BONSAI_TOOLS_TARGET -p bonsai-tools --lib native_qualification::
+        run: >-
+          cargo +nightly-2026-11-02 test --locked --release --target-dir $env:BONSAI_TOOLS_TARGET -p bonsai-tools --lib native_qualification::
       - name: Bind the selected capture mode before owner preparation
         shell: pwsh
         env:
