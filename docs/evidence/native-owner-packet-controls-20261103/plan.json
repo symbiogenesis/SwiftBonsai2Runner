@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "kind": "fixed-new-owner-packet-controls-source-verification-plan",
+  "recordedDate": "2026-11-03",
+  "maximumTotalSeconds": 300,
+  "workCutoffSeconds": 240,
+  "conservativeEstimateSeconds": 180,
+  "reason": "One model-free verification of new listener-refusal admission and combined PTQ1/PQ2 tail reservation, using cached Release build artifacts. Canonically format the two changed Rust sources, parse the changed workflow, run four exact controls and targeted acceptance-test Release Clippy; reserve sixty seconds for teardown and evidence sealing. This is new-source verification, not a continuation of either closed readiness session or its pending UI analyzer.",
+  "fixedWork": [
+    "Apply rustfmt to service_integration.rs and service_rollback.rs as source editing",
+    "Parse literal PowerShell blocks in native-runtime-acceptance.yml",
+    "Release exact native_service_integration_listener_release_requires_connection_refusal",
+    "Release exact native_service_integration_cleanup_preserves_failures_and_listener_observations",
+    "Release exact native_service_integration_stuck_owner_is_dropped_inside_existing_stop_allowance",
+    "Release exact native_service_rollback_reserves_tail_before_ptq1_owner",
+    "Strict Release Clippy for bonsai-broker native_model test target only"
+  ],
+  "power": "Retain whole verification and per-check endpoints through Windows PowerStatus; saver stays explicitly unknown. No comparison or performance qualification.",
+  "failurePolicy": "Stop immediately on failed check or original work cutoff. No retries or clock restarts. No models, benchmarks, complete suites, CI actions or pushes."
+}
