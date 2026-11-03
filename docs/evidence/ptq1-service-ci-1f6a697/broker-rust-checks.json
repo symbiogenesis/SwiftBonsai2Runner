@@ -1,0 +1,146 @@
+{
+  "CheckProfile": "Foundation",
+  "Checks": [
+    {
+      "Arguments": [
+        "+nightly-2026-11-02-aarch64-pc-windows-msvc",
+        "fmt",
+        "--manifest-path",
+        "C:\\a\\SwiftBonsai2Runner\\SwiftBonsai2Runner\\Cargo.toml",
+        "--package",
+        "bonsai-broker",
+        "--check"
+      ],
+      "ElapsedMilliseconds": 1007,
+      "Executable": "C:\\Users\\runneradmin\\.cargo\\bin\\cargo.exe",
+      "ExitCode": 0,
+      "Log": "C:\\a\\_temp\\SwiftBonsai-BrokerChecks-b6c0c3da3419429b9e1d7486aada3c3a\\bonsai-broker-fmt.log",
+      "Name": "bonsai-broker-fmt",
+      "Packages": [
+        "bonsai-broker"
+      ],
+      "Passed": true,
+      "Phase": "fmt"
+    },
+    {
+      "Arguments": [
+        "+nightly-2026-11-02-aarch64-pc-windows-msvc",
+        "clippy",
+        "--manifest-path",
+        "C:\\a\\SwiftBonsai2Runner\\SwiftBonsai2Runner\\Cargo.toml",
+        "--package",
+        "bonsai-broker",
+        "--locked",
+        "--release",
+        "--all-features",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "ElapsedMilliseconds": 26730,
+      "Executable": "C:\\Users\\runneradmin\\.cargo\\bin\\cargo.exe",
+      "ExitCode": 101,
+      "Log": "C:\\a\\_temp\\SwiftBonsai-BrokerChecks-b6c0c3da3419429b9e1d7486aada3c3a\\bonsai-broker-clippy.log",
+      "Name": "bonsai-broker-clippy",
+      "Packages": [
+        "bonsai-broker"
+      ],
+      "Passed": false,
+      "Phase": "clippy"
+    },
+    {
+      "Arguments": [
+        "+nightly-2026-11-02-aarch64-pc-windows-msvc",
+        "doc",
+        "--manifest-path",
+        "C:\\a\\SwiftBonsai2Runner\\SwiftBonsai2Runner\\Cargo.toml",
+        "--package",
+        "bonsai-broker",
+        "--locked",
+        "--release",
+        "--all-features",
+        "--no-deps",
+        "-Z",
+        "unstable-options",
+        "--output-format",
+        "json"
+      ],
+      "ElapsedMilliseconds": 1694,
+      "Executable": "C:\\Users\\runneradmin\\.cargo\\bin\\cargo.exe",
+      "ExitCode": 0,
+      "Log": "C:\\a\\_temp\\SwiftBonsai-BrokerChecks-b6c0c3da3419429b9e1d7486aada3c3a\\bonsai-broker-doc.log",
+      "Name": "bonsai-broker-doc",
+      "Packages": [
+        "bonsai-broker"
+      ],
+      "Passed": true,
+      "Phase": "doc"
+    },
+    {
+      "Arguments": [
+        "+nightly-2026-11-02-aarch64-pc-windows-msvc",
+        "test",
+        "--manifest-path",
+        "C:\\a\\SwiftBonsai2Runner\\SwiftBonsai2Runner\\Cargo.toml",
+        "--package",
+        "bonsai-broker",
+        "--locked",
+        "--release",
+        "--all-features",
+        "--no-fail-fast"
+      ],
+      "ElapsedMilliseconds": 21910,
+      "Executable": "C:\\Users\\runneradmin\\.cargo\\bin\\cargo.exe",
+      "ExitCode": 0,
+      "Log": "C:\\a\\_temp\\SwiftBonsai-BrokerChecks-b6c0c3da3419429b9e1d7486aada3c3a\\bonsai-broker-test.log",
+      "Name": "bonsai-broker-test",
+      "Packages": [
+        "bonsai-broker"
+      ],
+      "Passed": true,
+      "Phase": "test"
+    },
+    {
+      "Arguments": [
+        "+nightly-2026-11-02-aarch64-pc-windows-msvc",
+        "build",
+        "--manifest-path",
+        "C:\\a\\SwiftBonsai2Runner\\SwiftBonsai2Runner\\Cargo.toml",
+        "--package",
+        "bonsai-broker",
+        "--locked",
+        "--release",
+        "--all-features"
+      ],
+      "ElapsedMilliseconds": 418,
+      "Executable": "C:\\Users\\runneradmin\\.cargo\\bin\\cargo.exe",
+      "ExitCode": 0,
+      "Log": "C:\\a\\_temp\\SwiftBonsai-BrokerChecks-b6c0c3da3419429b9e1d7486aada3c3a\\bonsai-broker-build.log",
+      "Name": "bonsai-broker-build",
+      "Packages": [
+        "bonsai-broker"
+      ],
+      "Passed": true,
+      "Phase": "build"
+    }
+  ],
+  "CompilerIdentity": "rustc 1.101.0-nightly (3e92e1a2d 2026-11-01)\nbinary: rustc\ncommit-hash: 3e92e1a2d20b991ef23a6c6064c34d57ee8c98d3\ncommit-date: 2026-11-01\nhost: aarch64-pc-windows-msvc\nrelease: 1.101.0-nightly\nLLVM version: 23.1.5",
+  "Error": "Rust checks failed; inspect the retained command logs.",
+  "FingerprintMode": "content",
+  "LockSha256": "8187b91ea1d9dc53758750626475bc294c5f2e940e1bd181adc570ffa4544fd3",
+  "Packages": [
+    "bonsai-broker"
+  ],
+  "PerformanceMeasured": false,
+  "PlannedCargoInvocations": 5,
+  "RegistrySha256": "b5efe1ecf8cec95674a7cc5d99cd5768b81e59b19b96ed971bc6bcbf27ae6ab3",
+  "Revision": "1f6a697d70b4da1812852edd5c4b5df804742381",
+  "SchemaVersion": 2,
+  "Success": false,
+  "TargetDirectory": "C:\\a\\_temp\\SwiftBonsai-Broker",
+  "Toolchain": "nightly-2026-11-02-aarch64-pc-windows-msvc",
+  "UnbatchedCargoInvocations": 5,
+  "WorkingDirectory": "C:\\Users\\RUNNER~1\\AppData\\Local\\Temp\\SwiftBonsai-RustCheck-6604-1793679667667248000",
+  "WorkspaceSha256": "039480aa7e4adcbaeccacfdeb652fd4976f764bd4b0bc1e481ec8a24907070ea"
+}

@@ -1,0 +1,297 @@
+{
+  "runId": "41577409072",
+  "total_count": 7,
+  "jobs": [
+    {
+      "id": "125724032322",
+      "name": "changes",
+      "status": "completed",
+      "conclusion": "success",
+      "head_sha": "1f6a697d70b4da1812852edd5c4b5df804742381",
+      "run_attempt": 1,
+      "runner_id": 1000021356,
+      "runner_name": "GitHub Actions 1000021356",
+      "labels": [
+        "ubuntu-24.04-arm"
+      ],
+      "started_at": "2026-11-03T04:19:12Z",
+      "completed_at": "2026-11-03T04:19:25Z",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Select the exact Linux CI compiler and external paths",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Reuse the exact CI compiler",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install the CI compiler on a cache miss",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Verify the exact native CI compiler",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Reuse compiled CI tooling",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Check CI selection and gate regressions",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Select affected crates and app groups",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Share the checked CI gate executable",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Reuse compiled CI tooling",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Reuse the exact CI compiler",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": "125724125387",
+      "name": "maintenance",
+      "status": "completed",
+      "conclusion": "success",
+      "head_sha": "1f6a697d70b4da1812852edd5c4b5df804742381",
+      "run_attempt": 1,
+      "runner_id": 1000021359,
+      "runner_name": "GitHub Actions 1000021359",
+      "labels": [
+        "windows-11-arm"
+      ],
+      "started_at": "2026-11-03T04:19:28Z",
+      "completed_at": "2026-11-03T04:23:39Z",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Check the affected maintenance crates",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Reuse a packaged CLI when only its consumers changed",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Stage the checked maintenance CLI and revision receipt",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Share the checked native Windows ARM64 maintenance CLI",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Check the affected maintenance crates",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": "125724125507",
+      "name": "broker / core",
+      "status": "completed",
+      "conclusion": "failure",
+      "head_sha": "1f6a697d70b4da1812852edd5c4b5df804742381",
+      "run_attempt": 1,
+      "runner_id": 1000021360,
+      "runner_name": "GitHub Actions 1000021360",
+      "labels": [
+        "windows-11-arm"
+      ],
+      "started_at": "2026-11-03T04:19:33Z",
+      "completed_at": "2026-11-03T04:22:12Z",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run ./.github/actions/check-rust",
+          "status": "completed",
+          "conclusion": "failure"
+        },
+        {
+          "name": "Post Run ./.github/actions/check-rust",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": "125725464944",
+      "name": "release-integration",
+      "status": "completed",
+      "conclusion": "cancelled",
+      "head_sha": "1f6a697d70b4da1812852edd5c4b5df804742381",
+      "run_attempt": 1,
+      "runner_id": 0,
+      "runner_name": "",
+      "labels": [
+        "windows-11-arm"
+      ],
+      "started_at": "2026-11-03T04:23:39Z",
+      "completed_at": "2026-11-03T04:23:51Z",
+      "steps": []
+    },
+    {
+      "id": "125725465013",
+      "name": "Native integration",
+      "status": "completed",
+      "conclusion": "cancelled",
+      "head_sha": "1f6a697d70b4da1812852edd5c4b5df804742381",
+      "run_attempt": 1,
+      "runner_id": 0,
+      "runner_name": "",
+      "labels": [
+        "windows-11-arm"
+      ],
+      "started_at": "2026-11-03T04:23:39Z",
+      "completed_at": "2026-11-03T04:23:51Z",
+      "steps": []
+    },
+    {
+      "id": "125725466706",
+      "name": "speech / ${{ matrix.lane }}",
+      "status": "completed",
+      "conclusion": "skipped",
+      "head_sha": "1f6a697d70b4da1812852edd5c4b5df804742381",
+      "run_attempt": 1,
+      "runner_id": null,
+      "runner_name": null,
+      "labels": [
+        "windows-11-arm"
+      ],
+      "started_at": "2026-11-03T04:23:40Z",
+      "completed_at": "2026-11-03T04:23:39Z",
+      "steps": []
+    },
+    {
+      "id": "125725525252",
+      "name": "foundation",
+      "status": "completed",
+      "conclusion": "failure",
+      "head_sha": "1f6a697d70b4da1812852edd5c4b5df804742381",
+      "run_attempt": 1,
+      "runner_id": 1000021366,
+      "runner_name": "GitHub Actions 1000021366",
+      "labels": [
+        "ubuntu-24.04-arm"
+      ],
+      "started_at": "2026-11-03T04:23:57Z",
+      "completed_at": "2026-11-03T04:24:05Z",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Download the CI executable checked by the planner job",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Require every selected Foundation test group",
+          "status": "completed",
+          "conclusion": "failure"
+        },
+        {
+          "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success"
+        }
+      ]
+    }
+  ]
+}

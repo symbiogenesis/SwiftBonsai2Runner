@@ -1,0 +1,14 @@
+{
+  "id": "41577882160",
+  "html_url": "https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41577882160",
+  "head_sha": "90a62b954f56aa5b1da3ab167ee3f87255477b73",
+  "head_branch": "main",
+  "event": "workflow_dispatch",
+  "path": ".github/workflows/native-runtime-acceptance.yml",
+  "status": "queued",
+  "conclusion": null,
+  "run_attempt": 1,
+  "created_at": "2026-11-03T04:23:51Z",
+  "updated_at": "2026-11-03T04:29:22Z",
+  "display_title": "Native Rust actual-model application acceptance (ptq1-adapter-service-row4)"
+}

@@ -1,0 +1,88 @@
+{
+  "runId": "41577409105",
+  "total_count": 2,
+  "jobs": [
+    {
+      "id": "125724036034",
+      "name": "prepare",
+      "status": "completed",
+      "conclusion": "cancelled",
+      "head_sha": "1f6a697d70b4da1812852edd5c4b5df804742381",
+      "runner_id": 1000021357,
+      "runner_name": "GitHub Actions 1000021357",
+      "labels": [
+        "windows-11-arm"
+      ],
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run ./.github/actions/bonsai-tools",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run ./.github/actions/rust-toolchain",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Build exact acceptance binary without executing model tests",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Retain hosted compiler diagnostics even when preparation fails",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Retain public-source binaries and source/digest receipt",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run ./.github/actions/rust-toolchain",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run ./.github/actions/bonsai-tools",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": "125725621637",
+      "name": "acceptance",
+      "status": "completed",
+      "conclusion": "cancelled",
+      "head_sha": "1f6a697d70b4da1812852edd5c4b5df804742381",
+      "runner_id": null,
+      "runner_name": null,
+      "labels": [
+        "native-acceptance-41577409105"
+      ],
+      "steps": []
+    }
+  ]
+}

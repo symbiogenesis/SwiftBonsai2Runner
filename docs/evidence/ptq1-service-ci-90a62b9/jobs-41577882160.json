@@ -1,0 +1,94 @@
+{
+  "runId": "41577882160",
+  "total_count": 2,
+  "jobs": [
+    {
+      "id": "125725621887",
+      "name": "prepare",
+      "status": "completed",
+      "conclusion": "success",
+      "head_sha": "90a62b954f56aa5b1da3ab167ee3f87255477b73",
+      "run_attempt": 1,
+      "runner_id": 1000021369,
+      "runner_name": "GitHub Actions 1000021369",
+      "labels": [
+        "windows-11-arm"
+      ],
+      "started_at": "2026-11-03T04:24:33Z",
+      "completed_at": "2026-11-03T04:29:21Z",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run ./.github/actions/bonsai-tools",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run ./.github/actions/rust-toolchain",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Build exact acceptance binary without executing model tests",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Retain hosted compiler diagnostics even when preparation fails",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Retain public-source binaries and source/digest receipt",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run ./.github/actions/rust-toolchain",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run ./.github/actions/bonsai-tools",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": "125727244557",
+      "name": "acceptance",
+      "status": "in_progress",
+      "conclusion": null,
+      "head_sha": "90a62b954f56aa5b1da3ab167ee3f87255477b73",
+      "run_attempt": 1,
+      "runner_id": 41,
+      "runner_name": "codex-bonsai-ptq1-service-41577882160-fc02b02f",
+      "labels": [
+        "native-acceptance-41577882160"
+      ],
+      "started_at": "2026-11-03T04:33:45Z",
+      "completed_at": null,
+      "steps": []
+    }
+  ]
+}
