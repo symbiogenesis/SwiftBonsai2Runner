@@ -164,9 +164,10 @@ verification, model work and cleanup inside one aggregate five-minute owner allo
 the [default-readiness audit](docs/evidence/ptq1-default-readiness.json) separates
 historical passes from current-release qualification.
 Qualify the [published Prism 0.1.14 release](https://github.com/symbiogenesis/prism-inference/releases/tag/v0.1.14)
-from exact source `9e8ea3e2c042ab0c3f1a8e9596ff155e202c3c57`. Complete independent
-publication review and Runner's owning integration checks against the
-[prepared pin identities](docs/evidence/prism-0114-pin-preparation.json). Its typed token-capacity
+from exact source `9e8ea3e2c042ab0c3f1a8e9596ff155e202c3c57`. The
+[publication review](docs/evidence/ptq1-context-publication-014/independent-review.json)
+verifies the tag and all four uploaded assets against owning CI. Complete Runner's
+owning integration checks against the [prepared pin identities](docs/evidence/prism-0114-pin-preparation.json). Its typed token-capacity
 error preserves the private context-rejection contract; unknown counter failures
 remain failures. Hosted source checks do not establish actual-model behavior.
 Retain `ptq1-adapter-service-row4` and the

@@ -122,7 +122,8 @@ unmeasured; the packing saving alone does not qualify resources or performance.
 >
 > The [published Prism 0.1.14 release](https://github.com/symbiogenesis/prism-inference/releases/tag/v0.1.14)
 > includes the typed context-error fix. The [Runner pin preparation](docs/evidence/prism-0114-pin-preparation.json)
-> binds its exact source and archive identities; owning Runner integration checks
+> and [publication review](docs/evidence/ptq1-context-publication-014/independent-review.json)
+> bind its exact source and archive identities; owning Runner integration checks
 > remain pending.
 > The [combined service and original-PQ2 rollback profile](docs/validation.md#actual-model-application-acceptance)
 > is prepared for one bounded allowance with adapter 1.3 and four workers.
