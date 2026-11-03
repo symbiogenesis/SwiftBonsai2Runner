@@ -36,7 +36,12 @@ enum Event {
     Apps(Vec<String>, bool),
     Native(String, bool),
     Keys(PathBuf),
-    Launch(PathBuf, Vec<OsString>, PathBuf, BTreeMap<OsString, OsString>),
+    Launch(
+        PathBuf,
+        Vec<OsString>,
+        PathBuf,
+        BTreeMap<OsString, OsString>,
+    ),
 }
 
 struct Recorder {

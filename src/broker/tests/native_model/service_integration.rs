@@ -44,14 +44,16 @@ const fn weight_representation(profile: &AdapterProfile) -> &'static str {
 fn record_model_identity(profile: &AdapterProfile, report: &mut Value) {
     report["weightRepresentation"] = json!(weight_representation(profile));
     if profile.repacked {
-        report["modelExportReceipt"] =
-            serde_json::from_str::<Value>(include_str!("../../../../config/swift.ptq1-export.json"))
-                .unwrap();
+        report["modelExportReceipt"] = serde_json::from_str::<Value>(include_str!(
+            "../../../../config/swift.ptq1-export.json"
+        ))
+        .unwrap();
     } else {
-        report["modelIdentity"] =
-            serde_json::from_str::<Value>(include_str!("../../../../config/swift-assessment.lock.json"))
-                .unwrap()["model"]
-                .clone();
+        report["modelIdentity"] = serde_json::from_str::<Value>(include_str!(
+            "../../../../config/swift-assessment.lock.json"
+        ))
+        .unwrap()["model"]
+            .clone();
     }
 }
 
@@ -437,8 +439,15 @@ async fn initial_owner(
 ) -> Option<String> {
     report["initialOwnerPowerBefore"] = report["powerBefore"].clone();
     report["initialOwnerPowerAfter"] = Value::Null;
-    let Some(owner) =
-        start_before_deadline(profile, data, evidence, deadline, report, "initialOwnerReadiness").await
+    let Some(owner) = start_before_deadline(
+        profile,
+        data,
+        evidence,
+        deadline,
+        report,
+        "initialOwnerReadiness",
+    )
+    .await
     else {
         report["initialOwnerPowerAfter"] = power::snapshot();
         return None;
@@ -451,14 +460,7 @@ async fn initial_owner(
     let running = spawn_local(owner.run(async { stopped.await.map_err(io::Error::other) }));
     let boundaries = adapter_work_before_cleanup(
         deadline,
-        adapter_requests(
-            profile,
-            port,
-            &credential,
-            evidence,
-            deadline,
-            report,
-        ),
+        adapter_requests(profile, port, &credential, evidence, deadline, report),
     )
     .await
     .unwrap_or_else(|| {
@@ -533,8 +535,15 @@ async fn fresh_owner(
     }
     report["freshOwnerPowerBefore"] = power::snapshot();
     report["freshOwnerPowerAfter"] = Value::Null;
-    let Some(owner) =
-        start_before_deadline(profile, data, evidence, deadline, report, "freshOwnerReadiness").await
+    let Some(owner) = start_before_deadline(
+        profile,
+        data,
+        evidence,
+        deadline,
+        report,
+        "freshOwnerReadiness",
+    )
+    .await
     else {
         report["freshOwnerPowerAfter"] = power::snapshot();
         return false;
@@ -868,16 +877,36 @@ fn native_pq2_service_integration_profile_preserves_original_default_and_bounds(
         "--use-abliterate-lora",
         "--use-original-pq2",
     ] {
-        assert_eq!(arguments.iter().filter(|argument| *argument == required).count(), 1);
+        assert_eq!(
+            arguments
+                .iter()
+                .filter(|argument| *argument == required)
+                .count(),
+            1
+        );
     }
-    assert!(!arguments.iter().any(|argument| argument == "--use-repacked-ptq1"));
-    assert!(arguments.windows(2).any(|pair| pair[0] == "--native-row-workers" && pair[1] == "4"));
+    assert!(
+        !arguments
+            .iter()
+            .any(|argument| argument == "--use-repacked-ptq1")
+    );
+    assert!(
+        arguments
+            .windows(2)
+            .any(|pair| pair[0] == "--native-row-workers" && pair[1] == "4")
+    );
     assert_eq!(adapter_messages(selected, false), body(1)["messages"]);
-    assert_eq!(adapter_initial_fixture(selected)["requestedCompletionCap"], 1);
+    assert_eq!(
+        adapter_initial_fixture(selected)["requestedCompletionCap"],
+        1
+    );
     let mut report = json!({"verifiedReadinessObserved":false,"observedNativeRowWorkers":null});
     record_model_identity(selected, &mut report);
     assert_eq!(report["weightRepresentation"], "PQ2_0");
-    assert_eq!(report["modelIdentity"]["sha256"], representation::model_identity(false)["sha256"]);
+    assert_eq!(
+        report["modelIdentity"]["sha256"],
+        representation::model_identity(false)["sha256"]
+    );
     assert!(report.get("modelExportReceipt").is_none());
     let readiness = readiness_observation(selected, &report);
     assert_eq!(readiness["expectedWeightRepresentation"], "PQ2_0");
@@ -893,11 +922,16 @@ fn native_pq2_service_integration_profile_preserves_original_default_and_bounds(
     let mut first = adapter_initial_fixture(selected);
     first["requestSha256"] = json!(adapter_digest(&serde_json::to_vec(&body(1)).unwrap()));
     assert!(cancellation_request_matches_baseline(&first));
-    assert!(prefix_matches(&first, first["visibleContent"].as_str().unwrap()));
+    assert!(prefix_matches(
+        &first,
+        first["visibleContent"].as_str().unwrap()
+    ));
     let mut replay = first.clone();
     replay["phase"] = json!("fresh-owner-scale-1.3-replay");
     assert!(adapter_boundaries::replay_matches_phase(
-        &first, &replay, "fresh-owner-scale-1.3-replay"
+        &first,
+        &replay,
+        "fresh-owner-scale-1.3-replay"
     ));
 }
 

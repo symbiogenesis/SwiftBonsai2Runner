@@ -16,7 +16,8 @@ fn arguments(directory: &PrivateDirectory) -> Vec<OsString> {
 }
 
 #[test]
-fn owner_shutdown_arguments_preserve_launch_selection_and_reject_ambiguous_storage() -> io::Result<()> {
+fn owner_shutdown_arguments_preserve_launch_selection_and_reject_ambiguous_storage()
+-> io::Result<()> {
     let original = vec![OsString::from("--native-engine")];
     let (remaining, control) = OwnerShutdown::take_arguments(original.clone())?;
     assert_eq!(remaining, original);
@@ -108,7 +109,11 @@ fn owner_shutdown_confirmation_is_fresh_atomic_and_never_reused_by_another_attem
 
 #[test]
 fn owner_shutdown_creation_and_stop_failures_cannot_confirm_model_release() {
-    for error in [LaunchError::Process, LaunchError::Sandbox, LaunchError::Stop] {
+    for error in [
+        LaunchError::Process,
+        LaunchError::Sandbox,
+        LaunchError::Stop,
+    ] {
         assert!(!startup_cleanup_confirmed(error));
     }
     for error in [

@@ -30,9 +30,9 @@ impl OwnerControl {
     pub(super) fn stop(&self, broker: &OwnedProcess, deadline: Instant) -> io::Result<()> {
         // The PSEC model may be brokered outside the UI's tool Job. Ask its
         // broker to run explicit model cleanup before terminating the outer Job.
-        let graceful = self.request().and_then(|()| {
-            self.wait_for_confirmation(broker, deadline - OUTER_STOP_RESERVE)
-        });
+        let graceful = self
+            .request()
+            .and_then(|()| self.wait_for_confirmation(broker, deadline - OUTER_STOP_RESERVE));
         // Even on absent acknowledgment, stop the outer broker tree within the
         // original deadline. Unknown PSEC release remains terminal, never Retry.
         finish_shutdown(graceful, deadline, |remaining| broker.stop(remaining))
@@ -90,7 +90,10 @@ fn finish_shutdown(
 }
 
 fn expired() -> io::Error {
-    io::Error::new(io::ErrorKind::TimedOut, "Owned model cleanup was not confirmed.")
+    io::Error::new(
+        io::ErrorKind::TimedOut,
+        "Owned model cleanup was not confirmed.",
+    )
 }
 
 #[cfg(test)]
@@ -136,7 +139,10 @@ mod tests {
             stopped = true;
             Ok(())
         });
-        assert_eq!(result.err().map(|error| error.kind()), Some(io::ErrorKind::TimedOut));
+        assert_eq!(
+            result.err().map(|error| error.kind()),
+            Some(io::ErrorKind::TimedOut)
+        );
         assert!(!stopped);
     }
 }

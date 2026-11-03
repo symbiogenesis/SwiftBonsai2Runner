@@ -155,7 +155,10 @@ fn empty_signal(path: &Path) -> io::Result<bool> {
 }
 
 fn invalid() -> io::Error {
-    io::Error::new(io::ErrorKind::InvalidInput, "Invalid private owner control.")
+    io::Error::new(
+        io::ErrorKind::InvalidInput,
+        "Invalid private owner control.",
+    )
 }
 
 #[cfg(test)]
