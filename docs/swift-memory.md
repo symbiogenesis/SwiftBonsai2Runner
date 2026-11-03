@@ -70,6 +70,13 @@ reviewed Runner source and evidence. Required acceptance is missing, so release
 approval is withheld. The format remains experimental; this decision does not
 establish an intrinsic arithmetic, quality or performance failure.
 
+The later [blocker implementation follow-up](evidence/ptq1-unblock-20261103/summary.json)
+passes focused local controls for exact retained-source replay, shared typed hosted
+admission and failed/cancelled response identities. It improves the next evidence
+capture and leaves full hosted, model, provenance, benefit and human qualification
+pending. The frozen no-go review and historical trial results retain their own
+source identities.
+
 | Required condition | Current decision basis |
 | --- | --- |
 | Exact-source application acceptance | No accepted source-bound hosted package is retained for the reviewed Runner revision. Current production linking, strict analyzers and actual-model service/UI acceptance remain unqualified. Historical failed validation clocks stay closed. |

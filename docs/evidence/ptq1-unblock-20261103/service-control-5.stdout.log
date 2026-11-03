@@ -1,0 +1,6 @@
+
+running 1 test
+test service_integration::native_service_integration_cancellation_failure_retains_response_identity ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 84 filtered out; finished in 0.02s
+

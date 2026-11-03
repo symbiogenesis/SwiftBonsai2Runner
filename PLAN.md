@@ -114,6 +114,18 @@ pending gates. Full suites, benchmarks and performance captures stay in owning C
 
 ### Actual-model acceptance
 
+Qualify the [PTQ1 blocker fixes](docs/evidence/ptq1-unblock-20261103/summary.json)
+on settled main through owner-managed hosted preparation. Require the new shared
+typed admission guard and source-bound workflow-contract receipt before publishing
+or admitting a schema-2 acceptance package; older prepared helper selections remain
+stale. Run the one declared public reconstruction with its exact retained replay
+source, and qualify response identities through failed/cancelled service reads.
+The new source's thirteen focused local regressions, workflow parsing, guard build,
+self-check and guard-library analyzer passed within one closed owner allowance;
+full application analyzers/linking, the NumPy producer control, hosted execution,
+actual models, original provenance and human acceptance remain separate pending
+gates. Earlier failed trials retain their original results and closed clocks.
+
 Qualify the [hosted native-link and renderer gates](docs/evidence/native-hosted-readiness-20261103/summary.json)
 on settled main through owner-managed hosted preparation with `run_device: false`.
 Publication and owner intake now require successful exact-source Release `clippy`

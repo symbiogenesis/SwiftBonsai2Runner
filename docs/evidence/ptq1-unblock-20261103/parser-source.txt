@@ -1,0 +1,29 @@
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference='Stop'
+$repo='C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\ptq1-unblock-integration'
+$counts=@()
+foreach ($name in @('.github/workflows/native-runtime-acceptance.yml','.github/workflows/ptq1-public-authoring-reference.yml')) {
+  $lines=[IO.File]::ReadAllLines((Join-Path $repo $name))
+  $blocks=0
+  for ($index=0; $index -lt $lines.Length; $index++) {
+    if ($lines[$index] -notmatch '^(?<indent> +)run:\s*\|\s*$') { continue }
+    $indent=$Matches.indent.Length+2
+    $body=[Collections.Generic.List[string]]::new()
+    for ($next=$index+1; $next -lt $lines.Length; $next++) {
+      $line=$lines[$next]
+      if ($line.Trim().Length -gt 0 -and ($line.Length -lt $indent -or $line.Substring(0,$indent).Trim().Length -gt 0)) { break }
+      $body.Add($(if ($line.Length -ge $indent) { $line.Substring($indent) } else { '' }))
+    }
+    $tokens=$null; $parseErrors=$null
+    [Management.Automation.Language.Parser]::ParseInput(($body -join [char]10),[ref]$tokens,[ref]$parseErrors) | Out-Null
+    if ($parseErrors.Count -ne 0) { throw ('Workflow parse failed: '+$name) }
+    $blocks++
+  }
+  $counts += [ordered]@{ File=$name; ParsedBlocks=$blocks }
+}
+if ($counts[0].ParsedBlocks -ne 9) { throw 'Native workflow block inventory differs.' }
+$tokens=$null; $parseErrors=$null
+[Management.Automation.Language.Parser]::ParseFile((Join-Path $repo 'scripts/Start-Chat.ps1'),[ref]$tokens,[ref]$parseErrors) | Out-Null
+if ($parseErrors.Count -ne 0) { throw 'Launcher parse failed.' }
+[ordered]@{ Workflows=$counts; LauncherParsed=$true; WorkflowCommandsExecuted=$false } | ConvertTo-Json -Depth 5 -Compress

@@ -1,0 +1,22 @@
+{
+    "schemaVersion":  1,
+    "kind":  "fixed-ptq1-blocker-implementation-validation",
+    "recordedDate":  "2026-11-03",
+    "sourceRevision":  "518a21f",
+    "maximumTotalSeconds":  300,
+    "workCutoffSeconds":  255,
+    "conservativeEstimateSeconds":  275,
+    "reason":  "One new-source model-free check of exact retained-source replay, transport failure receipts and typed hosted admission. Reuse existing Cargo dependencies; complete suites, UI builds, models, benchmarks and CI are excluded. Earlier closed trials remain closed.",
+    "fixedWork":  [
+                      "Bind source revision and selected source hashes; retain original aggregate/per-check power snapshots",
+                      "Parse both changed workflows literal PowerShell run blocks and launcher using native Parser without executing workflow commands",
+                      "Run five new retained-source replay controls and one focused legacy qualification-boundary control",
+                      "Compile and execute two exact new bonsai-ci admission guard controls in Release/offline mode",
+                      "Compile and execute five exact new broker native_model transport-observation controls in Release/offline mode",
+                      "Build the native bonsai-ci guard and execute its36-case self-check against the frozen source revision",
+                      "Run Release library Clippy for bonsai-ci only; retain unexecuted or failed obligations honestly",
+                      "Retain exact stdout/stderr, plan, driver, source bindings, result receipt and byte manifest within the same allowance"
+                  ],
+    "failurePolicy":  "Stop at first failure or original work cutoff. No retry, clock restart, full suite, model or CI action. Stop before later work if its conservative remaining estimate cannot fit. Reserve45seconds for forced cleanup and retention.",
+    "powerScope":  "GetSystemPowerStatus before setup, around each selected check and after retention. Unknown stays null. Endpoint equality establishes no uninterrupted stability or qualified performance comparison."
+}

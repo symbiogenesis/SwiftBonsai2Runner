@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "kind": "owner-managed-ptq1-hosted-evidence-handoff",
+  "recordedDate": "2026-11-03",
+  "status": "local-source-prepared-awaiting-owner-publication-and-owning-checks",
+  "checkedLocalSourceRevision": "518a21ffb7e94624463d5150afa391fffd816220",
+  "ownerOnly": true,
+  "executeAutomatically": false,
+  "pushesPerformed": 0,
+  "ciActionsPerformed": 0,
+  "constraints": [
+    "The owner handles all pushes and CI dispatch, monitoring and verdicts. Commands below are prepared text and were not executed.",
+    "Publish the reviewed local main changes first. A run of an older remote revision cannot accept this source. Freeze the actual published source/runtime/harness and artifact identities.",
+    "Keep hosted preparation run_device=false. Do not register or queue a laptop workload merely to produce hosted tools.",
+    "The one public reconstruction is the existing fixed recipe, not a parameter search or repeated matrix. Retain complete losing/partial output and its exact replay-source bundle.",
+    "No schema-1 package or stale external helper selection can authorize the new schema-2 five-file package. Review the actual new package before any explicit owner-device selection."
+  ],
+  "hostedActions": [
+    {
+      "workflow": ".github/workflows/native-runtime-acceptance.yml",
+      "command": "gh workflow run native-runtime-acceptance.yml --ref main -f run_device=false -f profile=ptq1-adapter-service-rollback-row4",
+      "deviceJobRequested": false,
+      "requiredEvidence": [
+        "Exact-source Foundation acceptance through its owning workflow.",
+        "Successful all-target application Clippy and production linking, syntax/control and analyzer receipts.",
+        "Schema-2 exact five-file acceptance package plus receipt.json, exact revision/run/attempt/compiler and file hashes.",
+        "Independent artifact/source applicability review."
+      ]
+    },
+    {
+      "workflow": ".github/workflows/ptq1-public-authoring-reference.yml",
+      "command": "gh workflow run ptq1-public-authoring-reference.yml --ref main -f run_reconstruction=true",
+      "lane": "GitHub-hosted Windows ARM64 only",
+      "deviceJobRequested": false,
+      "requiredEvidence": [
+        "Complete all48 A comparison and all129 B comparison, retaining numeric disagreements.",
+        "Raw source bundle/manifest, inputs/source/toolchain/run identities and all scalar replay results.",
+        "Failure attempt stage plus bounded fixed validation reason if the one reconstruction cannot complete.",
+        "Durable retention and independent review before temporary artifacts expire."
+      ]
+    }
+  ],
+  "deviceStage": {
+    "ready": false,
+    "commandProvided": false,
+    "reason": "Requires independent review of actual hosted artifacts, explicit owner device selection, a feasible predeclared whole-job allowance, original aggregate/per-owner power snapshots and new exact source-bound helper selection. The prepared450-second service/rollback workload requires its smallest supported ten-minute allowance and cannot close every broad gate."
+  },
+  "externalAndHumanInputs": [
+    "Authenticated original adapter authoring checkpoint/invocation/toolchain, separate from public reconstruction.",
+    "Independent native writer mapping and complete zero/nonzero/full-state/model evidence.",
+    "Direct human quality/comfort acceptance, eligible matched benefit and clean-machine installation."
+  ],
+  "defaultPromotionQualified": false,
+  "experimentalLabelMayBeRemoved": false
+}
