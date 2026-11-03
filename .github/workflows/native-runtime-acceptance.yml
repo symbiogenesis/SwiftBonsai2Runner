@@ -55,6 +55,62 @@ jobs:
         with:
           toolchain: nightly-2026-11-02-aarch64-pc-windows-msvc
       - uses: ./.github/actions/ci-tool
+      - name: Check actual PowerShell syntax and typed receipt rejection controls
+        shell: pwsh
+        working-directory: ${{ runner.temp }}
+        run: |
+          Set-StrictMode -Version Latest
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          $workflow = Join-Path $env:GITHUB_WORKSPACE '.github/workflows/native-runtime-acceptance.yml'
+          $lines = [IO.File]::ReadAllLines($workflow)
+          $blocks = 0
+          for ($index = 0; $index -lt $lines.Length; $index++) {
+            if ($lines[$index] -notmatch '^(?<indent> +)run:\s*\|\s*$') { continue }
+            $indent = $Matches.indent.Length + 2
+            $body = [Collections.Generic.List[string]]::new()
+            for ($next = $index + 1; $next -lt $lines.Length; $next++) {
+              $line = $lines[$next]
+              if ($line.Trim().Length -gt 0 -and ($line.Length -lt $indent -or $line.Substring(0, $indent).Trim().Length -gt 0)) { break }
+              $body.Add($(if ($line.Length -ge $indent) { $line.Substring($indent) } else { '' }))
+            }
+            $tokens = $null; $parseErrors = $null
+            [Management.Automation.Language.Parser]::ParseInput(($body -join "`n"), [ref]$tokens, [ref]$parseErrors) | Out-Null
+            if ($parseErrors.Count -ne 0) { throw 'A native acceptance workflow PowerShell block does not parse.' }
+            $blocks++
+          }
+          $tokens = $null; $parseErrors = $null
+          [Management.Automation.Language.Parser]::ParseFile((Join-Path $env:GITHUB_WORKSPACE 'scripts/Start-Chat.ps1'), [ref]$tokens, [ref]$parseErrors) | Out-Null
+          if ($parseErrors.Count -ne 0) { throw 'The native launcher PowerShell source does not parse.' }
+          $fixtures = & $env:BONSAI_CI_PATH native-acceptance-guard --json (@{ operation='self-check'; revision=$env:GITHUB_SHA } | ConvertTo-Json -Compress) | ConvertFrom-Json
+          if ($LASTEXITCODE -ne 0) { throw 'Typed analyzer/test-output negative controls failed.' }
+          $env:CARGO_TARGET_DIR = Join-Path $env:RUNNER_TEMP 'SwiftBonsai-CiBootstrap'
+          $controls = @('command::native_acceptance_guard::tests::negative_fixtures_cover_receipts_and_test_output',
+            'command::native_acceptance_guard::tests::workflow_receipt_requires_source_bound_complete_controls')
+          foreach ($case in $controls) {
+            $output = @(& cargo +nightly-2026-11-02 test --locked --release --manifest-path (Join-Path $env:GITHUB_WORKSPACE 'Cargo.toml') --package bonsai-ci --lib $case -- --exact)
+            $code = $LASTEXITCODE
+            $output | Write-Output
+            & $env:BONSAI_CI_PATH native-acceptance-guard --json (@{ operation='test-output'; output=$output; exitCode=$code; expectedPassed=1 } | ConvertTo-Json -Depth 4 -Compress)
+            if ($LASTEXITCODE -ne 0) { throw 'The exact typed admission regression was not executed successfully.' }
+          }
+          $sources = @('.github/workflows/native-runtime-acceptance.yml', 'scripts/Start-Chat.ps1', 'tools/ci/Cargo.toml', 'tools/ci/src/command.rs', 'tools/ci/src/native_acceptance_guard.rs') | ForEach-Object {
+            $bytes = [Text.UTF8Encoding]::new($false).GetBytes([IO.File]::ReadAllText((Join-Path $env:GITHUB_WORKSPACE $_)).Replace("`r`n", "`n"))
+            $sha = [Security.Cryptography.SHA256]::Create()
+            try { $hash = [BitConverter]::ToString($sha.ComputeHash($bytes)).Replace('-', '').ToLowerInvariant() } finally { $sha.Dispose() }
+            [ordered]@{ Path=$_; Bytes=$bytes.Length; Sha256=$hash }
+          }
+          $contract = [ordered]@{
+            SchemaVersion=1; Kind='native-acceptance-workflow-contract'; Revision=$env:GITHUB_SHA; Success=$true
+            ReceiptFixtures=$fixtures.ReceiptFixtures; OutputFixtures=$fixtures.OutputFixtures
+            ParsedPowerShellBlocks=$blocks; ParsedLauncher=$true; ExactRustControls=$controls
+            SourceDigestScope='utf8-no-bom-lf'; Sources=@($sources)
+          }
+          & $env:BONSAI_CI_PATH native-acceptance-guard --json (@{ operation='workflow-receipt'; receipt=$contract; revision=$env:GITHUB_SHA; sources=@($sources) } | ConvertTo-Json -Depth 8 -Compress)
+          if ($LASTEXITCODE -ne 0) { throw 'Workflow syntax/control receipt is incomplete.' }
+          $contractPath = Join-Path $env:RUNNER_TEMP 'native-acceptance-workflow-contract.json'
+          $contract | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $contractPath -Encoding utf8NoBOM
+          "BONSAI_NATIVE_CONTRACT_RECEIPT=$contractPath" >> $env:GITHUB_ENV
       - name: Require strict Release analyzers and native executable linking for the exact source
         shell: pwsh
         working-directory: ${{ runner.temp }}
@@ -85,15 +141,21 @@ jobs:
               'cli::tests::graphics_backend_option_preserves_explicit_selection_and_rejects_duplicates',
               'chat_launch::tests::development_default_and_explicit_rollback_survive_deferred_preparation')) {
             $output = @(& cargo +nightly-2026-11-02 test --locked --release --manifest-path (Join-Path $env:GITHUB_WORKSPACE 'Cargo.toml') --package bonsai-tools --lib $case -- --exact)
+            $code = $LASTEXITCODE
             $output | Write-Output
-            if ($LASTEXITCODE -ne 0 -or -not ($output -cmatch '^test result: ok\. 1 passed; 0 failed; 0 ignored;')) { throw 'Exact renderer/default-selection control failed or was not executed.' }
+            & $env:BONSAI_CI_PATH native-acceptance-guard --json (@{ operation='test-output'; output=$output; exitCode=$code; expectedPassed=1 } | ConvertTo-Json -Depth 4 -Compress)
+            if ($LASTEXITCODE -ne 0) { throw 'Exact renderer/default-selection control failed or was not executed.' }
           }
           $output = @(& cargo +nightly-2026-11-02 test --locked --release --manifest-path (Join-Path $env:GITHUB_WORKSPACE 'Cargo.toml') --package bonsai-broker --lib owner_shutdown_)
+          $code = $LASTEXITCODE
           $output | Write-Output
-          if ($LASTEXITCODE -ne 0 -or -not ($output -cmatch '^test result: ok\. [1-9][0-9]* passed;')) { throw 'Private owner shutdown controls failed or none were executed.' }
+          & $env:BONSAI_CI_PATH native-acceptance-guard --json (@{ operation='test-output'; output=$output; exitCode=$code; expectedPassed=$null } | ConvertTo-Json -Depth 4 -Compress)
+          if ($LASTEXITCODE -ne 0) { throw 'Private owner shutdown controls failed or none were executed.' }
           $output = @(& cargo +nightly-2026-11-02 test --locked --release --manifest-path (Join-Path $env:GITHUB_WORKSPACE 'Cargo.toml') --package bonsai-chat --bin bonsai-chat owned_broker_)
+          $code = $LASTEXITCODE
           $output | Write-Output
-          if ($LASTEXITCODE -ne 0 -or -not ($output -cmatch '^test result: ok\. [1-9][0-9]* passed;')) { throw 'Native UI owner shutdown controls failed or none were executed.' }
+          & $env:BONSAI_CI_PATH native-acceptance-guard --json (@{ operation='test-output'; output=$output; exitCode=$code; expectedPassed=$null } | ConvertTo-Json -Depth 4 -Compress)
+          if ($LASTEXITCODE -ne 0) { throw 'Native UI owner shutdown controls failed or none were executed.' }
       - name: Build exact acceptance binary without executing model tests
         shell: pwsh
         working-directory: ${{ runner.temp }}
@@ -102,6 +164,7 @@ jobs:
           $ErrorActionPreference = 'Stop'
           $PSNativeCommandUseErrorActionPreference = $true
           $package = Join-Path $env:RUNNER_TEMP 'Native-Acceptance-Package'
+          if (Test-Path -LiteralPath $package) { throw 'Hosted acceptance packaging requires a fresh directory.' }
           [void][IO.Directory]::CreateDirectory($package)
           $env:CARGO_TARGET_DIR = Join-Path $env:RUNNER_TEMP 'Native-Acceptance-Build'
           $messages = Join-Path $env:RUNNER_TEMP 'native-acceptance-build.jsonl'
@@ -180,8 +243,11 @@ jobs:
               'native_case_budget_extension_requires_a_valid_predeclared_total',
               'native_case_budget_cancels_owned_tasks_before_followup')) {
             if ($modelFreeCases -cnotcontains ($case + ': test')) { throw 'Required hosted acceptance regression was not found.' }
-            & (Join-Path $package 'native-model-acceptance.exe') $case --exact
-            if ($LASTEXITCODE -ne 0) { throw 'Hosted acceptance profile/argument checks failed.' }
+            $output = @(& (Join-Path $package 'native-model-acceptance.exe') $case --exact)
+            $code = $LASTEXITCODE
+            $output | Write-Output
+            & $env:BONSAI_CI_PATH native-acceptance-guard --json (@{ operation='test-output'; output=$output; exitCode=$code; expectedPassed=1 } | ConvertTo-Json -Depth 4 -Compress)
+            if ($LASTEXITCODE -ne 0) { throw 'Hosted acceptance profile/argument check failed, was ignored or was not executed.' }
           }
           foreach ($case in @('pinned_native_ptq1_adapter_checks_scale_change_rejection_and_history',
               'pinned_native_ptq1_adapter_row4_checks_scale_change_rejection_and_history',
@@ -196,27 +262,29 @@ jobs:
             if ($modelFreeCases -cnotcontains ($case + ': test')) { throw 'Required bounded lifecycle case was not found.' }
           }
           Copy-Item -LiteralPath $env:BONSAI_TOOLS_PATH -Destination (Join-Path $package 'bonsai-tools.exe')
+          Copy-Item -LiteralPath $env:BONSAI_CI_PATH -Destination (Join-Path $package 'bonsai-ci.exe')
           $analyzerReceipt = Join-Path $env:BONSAI_NATIVE_ANALYZER_EVIDENCE 'rust-checks.json'
           $analyzers = Get-Content -LiteralPath $analyzerReceipt -Raw | ConvertFrom-Json
           $compilerIdentity = (& rustc +nightly-2026-11-02 -vV) -join "`n"
-          if ($analyzers.SchemaVersion -ne 2 -or $analyzers.Success -ne $true -or
-              $analyzers.Revision -cne $env:GITHUB_SHA -or
-              $analyzers.Toolchain -cne 'nightly-2026-11-02-aarch64-pc-windows-msvc' -or
-              [string]::IsNullOrWhiteSpace($compilerIdentity) -or $analyzers.CompilerIdentity -cne $compilerIdentity -or
-              (@($analyzers.Packages | Sort-Object) -join ',') -cne 'bonsai-broker,bonsai-chat,bonsai-tools' -or
-              @($analyzers.Checks).Count -ne 2) { throw 'Hosted strict Release analyzer/link receipt is not bound to this source and compiler.' }
-          foreach ($phase in @('clippy', 'build')) {
-            $checks = @($analyzers.Checks | Where-Object Phase -CEQ $phase)
-            if ($checks.Count -ne 1 -or $checks[0].Passed -ne $true -or $checks[0].ExitCode -ne 0 -or
-                (@($checks[0].Packages | Sort-Object) -join ',') -cne 'bonsai-broker,bonsai-chat,bonsai-tools') { throw 'Hosted strict Release analyzer/link package coverage differs.' }
+          & $env:BONSAI_CI_PATH native-acceptance-guard --json (@{ operation='analyzer'; receipt=$analyzers; revision=$env:GITHUB_SHA; compilerIdentity=$compilerIdentity } | ConvertTo-Json -Depth 12 -Compress)
+          if ($LASTEXITCODE -ne 0) { throw 'Hosted analyzer/link receipt was rejected.' }
+          $contract = Get-Content -LiteralPath $env:BONSAI_NATIVE_CONTRACT_RECEIPT -Raw | ConvertFrom-Json
+          $sources = @('.github/workflows/native-runtime-acceptance.yml', 'scripts/Start-Chat.ps1', 'tools/ci/Cargo.toml', 'tools/ci/src/command.rs', 'tools/ci/src/native_acceptance_guard.rs') | ForEach-Object {
+            $bytes = [Text.UTF8Encoding]::new($false).GetBytes([IO.File]::ReadAllText((Join-Path $env:GITHUB_WORKSPACE $_)).Replace("`r`n", "`n"))
+            $sha = [Security.Cryptography.SHA256]::Create()
+            try { $hash = [BitConverter]::ToString($sha.ComputeHash($bytes)).Replace('-', '').ToLowerInvariant() } finally { $sha.Dispose() }
+            [ordered]@{ Path=$_; Bytes=$bytes.Length; Sha256=$hash }
           }
+          & $env:BONSAI_CI_PATH native-acceptance-guard --json (@{ operation='workflow-receipt'; receipt=$contract; revision=$env:GITHUB_SHA; sources=@($sources) } | ConvertTo-Json -Depth 8 -Compress)
+          if ($LASTEXITCODE -ne 0) { throw 'Source-bound workflow syntax/control receipt was rejected.' }
           Copy-Item -LiteralPath $analyzerReceipt -Destination (Join-Path $package 'strict-release-analyzers.json')
-          $files = @('native-model-acceptance.exe', 'bonsai-tools.exe', 'strict-release-analyzers.json') | ForEach-Object {
+          Copy-Item -LiteralPath $env:BONSAI_NATIVE_CONTRACT_RECEIPT -Destination (Join-Path $package 'workflow-contract.json')
+          $files = @('native-model-acceptance.exe', 'bonsai-tools.exe', 'bonsai-ci.exe', 'strict-release-analyzers.json', 'workflow-contract.json') | ForEach-Object {
             $path = Join-Path $package $_
             [ordered]@{ Name=$_; Bytes=(Get-Item -LiteralPath $path).Length; Sha256=(Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash.ToLowerInvariant() }
           }
           [ordered]@{
-            SchemaVersion=1; Revision=$env:GITHUB_SHA; RunId=$env:GITHUB_RUN_ID; RunAttempt=$env:GITHUB_RUN_ATTEMPT
+            SchemaVersion=2; Revision=$env:GITHUB_SHA; RunId=$env:GITHUB_RUN_ID; RunAttempt=$env:GITHUB_RUN_ATTEMPT
             Toolchain='nightly-2026-11-02-aarch64-pc-windows-msvc'; CompilerIdentity=$compilerIdentity
             ToolsSourceId=$env:BONSAI_TOOLS_SOURCE_ID; Files=@($files); ModelExecuted=$false
           } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $package 'receipt.json') -Encoding utf8NoBOM
@@ -302,12 +370,14 @@ jobs:
           $package = Join-Path $env:RUNNER_TEMP 'Native-Acceptance-Package'
           $receiptPath = Join-Path $package 'receipt.json'
           $receipt = Get-Content -LiteralPath $receiptPath -Raw | ConvertFrom-Json
-          if ($receipt.SchemaVersion -ne 1 -or $receipt.Revision -cne $env:GITHUB_SHA -or
+          $members = @(Get-ChildItem -LiteralPath $package -Force | ForEach-Object Name | Sort-Object)
+          if (($members -join ',') -cne 'bonsai-ci.exe,bonsai-tools.exe,native-model-acceptance.exe,receipt.json,strict-release-analyzers.json,workflow-contract.json') { throw 'Hosted acceptance package inventory differs.' }
+          if ($receipt.SchemaVersion -ne 2 -or $receipt.Revision -cne $env:GITHUB_SHA -or
               $receipt.RunId -cne $env:GITHUB_RUN_ID -or $receipt.RunAttempt -cne $env:GITHUB_RUN_ATTEMPT -or
               $receipt.Toolchain -cne 'nightly-2026-11-02-aarch64-pc-windows-msvc' -or
               $receipt.ModelExecuted -ne $false -or $receipt.ToolsSourceId -cnotmatch '^[a-f0-9]{64}$' -or
-              [string]::IsNullOrWhiteSpace($receipt.CompilerIdentity) -or @($receipt.Files).Count -ne 3) { throw 'Hosted acceptance source/run identity mismatch.' }
-          foreach ($name in @('native-model-acceptance.exe', 'bonsai-tools.exe', 'strict-release-analyzers.json')) {
+              [string]::IsNullOrWhiteSpace($receipt.CompilerIdentity) -or @($receipt.Files).Count -ne 5) { throw 'Hosted acceptance source/run identity mismatch.' }
+          foreach ($name in @('native-model-acceptance.exe', 'bonsai-tools.exe', 'bonsai-ci.exe', 'strict-release-analyzers.json', 'workflow-contract.json')) {
             $matching = @($receipt.Files | Where-Object Name -CEQ $name)
             $path = Join-Path $package $name
             if ($matching.Count -ne 1 -or (Get-Item -LiteralPath $path).Length -ne $matching[0].Bytes -or
@@ -315,21 +385,25 @@ jobs:
           }
           $analyzerReceiptPath = Join-Path $package 'strict-release-analyzers.json'
           $analyzers = Get-Content -LiteralPath $analyzerReceiptPath -Raw | ConvertFrom-Json
-          if ($analyzers.SchemaVersion -ne 2 -or $analyzers.Success -ne $true -or
-              $analyzers.Revision -cne $env:GITHUB_SHA -or $analyzers.Toolchain -cne $receipt.Toolchain -or
-              $analyzers.CompilerIdentity -cne $receipt.CompilerIdentity -or
-              (@($analyzers.Packages | Sort-Object) -join ',') -cne 'bonsai-broker,bonsai-chat,bonsai-tools' -or
-              @($analyzers.Checks).Count -ne 2) { throw 'Hosted strict Release analyzer/link coverage or source binding differs.' }
-          foreach ($phase in @('clippy', 'build')) {
-            $checks = @($analyzers.Checks | Where-Object Phase -CEQ $phase)
-            if ($checks.Count -ne 1 -or $checks[0].Passed -ne $true -or $checks[0].ExitCode -ne 0 -or
-                (@($checks[0].Packages | Sort-Object) -join ',') -cne 'bonsai-broker,bonsai-chat,bonsai-tools') { throw 'Hosted strict Release analyzer/link package coverage differs.' }
-          }
-          foreach ($name in @('native-model-acceptance.exe', 'bonsai-tools.exe')) {
+          foreach ($name in @('native-model-acceptance.exe', 'bonsai-tools.exe', 'bonsai-ci.exe')) {
             & (Join-Path $package 'bonsai-tools.exe') artifact --json (@{ operation = 'arm64'; path = (Join-Path $package $name) } | ConvertTo-Json -Compress) | Out-Null
           }
+          $guard = Join-Path $package 'bonsai-ci.exe'
+          & $guard native-acceptance-guard --json (@{ operation='analyzer'; receipt=$analyzers; revision=$env:GITHUB_SHA; compilerIdentity=$receipt.CompilerIdentity } | ConvertTo-Json -Depth 12 -Compress)
+          if ($LASTEXITCODE -ne 0) { throw 'Hosted analyzer/link receipt was rejected before owner admission.' }
+          $contractPath = Join-Path $package 'workflow-contract.json'
+          $contract = Get-Content -LiteralPath $contractPath -Raw | ConvertFrom-Json
+          $sources = @('.github/workflows/native-runtime-acceptance.yml', 'scripts/Start-Chat.ps1', 'tools/ci/Cargo.toml', 'tools/ci/src/command.rs', 'tools/ci/src/native_acceptance_guard.rs') | ForEach-Object {
+            $bytes = [Text.UTF8Encoding]::new($false).GetBytes([IO.File]::ReadAllText((Join-Path $env:GITHUB_WORKSPACE $_)).Replace("`r`n", "`n"))
+            $sha = [Security.Cryptography.SHA256]::Create()
+            try { $hash = [BitConverter]::ToString($sha.ComputeHash($bytes)).Replace('-', '').ToLowerInvariant() } finally { $sha.Dispose() }
+            [ordered]@{ Path=$_; Bytes=$bytes.Length; Sha256=$hash }
+          }
+          & $guard native-acceptance-guard --json (@{ operation='workflow-receipt'; receipt=$contract; revision=$env:GITHUB_SHA; sources=@($sources) } | ConvertTo-Json -Depth 8 -Compress)
+          if ($LASTEXITCODE -ne 0) { throw 'Hosted workflow syntax/control receipt was rejected before owner admission.' }
           Copy-Item -LiteralPath $receiptPath -Destination (Join-Path $root 'evidence/hosted-build.json')
           Copy-Item -LiteralPath $analyzerReceiptPath -Destination (Join-Path $root 'evidence/strict-release-analyzers.json')
+          Copy-Item -LiteralPath $contractPath -Destination (Join-Path $root 'evidence/workflow-contract.json')
           "BONSAI_NATIVE_TEST=$(Join-Path $package 'native-model-acceptance.exe')" >> $env:GITHUB_ENV
           "BONSAI_TOOLS_PATH=$(Join-Path $package 'bonsai-tools.exe')" >> $env:GITHUB_ENV
       - name: Verify already provisioned pinned release without downloading weights
@@ -633,6 +707,7 @@ jobs:
             ${{ env.BONSAI_NATIVE_EVIDENCE }}/host.json
             ${{ env.BONSAI_NATIVE_EVIDENCE }}/hosted-build.json
             ${{ env.BONSAI_NATIVE_EVIDENCE }}/strict-release-analyzers.json
+            ${{ env.BONSAI_NATIVE_EVIDENCE }}/workflow-contract.json
           if-no-files-found: error
           retention-days: 90
       - name: Retain only verified regular sanitized diagnostic files

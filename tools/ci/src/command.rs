@@ -15,6 +15,9 @@ mod planning;
 #[path = "checks/mod.rs"]
 mod checks;
 
+#[path = "native_acceptance_guard.rs"]
+mod native_acceptance_guard;
+
 const USAGE: &str = "Usage: bonsai-ci impact [--root PATH] [--config PATH] [--workflow FILE] [--before REV] [--after REV] [--full]\n       bonsai-ci gate [--root PATH] [--config PATH] --workflow NAME\n       bonsai-ci rust-select --root PATH\n       bonsai-ci rust-plan --root PATH [--package NAME] [--phase PHASE]\n       bonsai-ci rust-check --root PATH --target PATH --evidence PATH [--package NAME] [--phase PHASE]";
 
 #[derive(Default)]
@@ -120,12 +123,18 @@ fn action_outputs(plan: &impact::Plan, config: &Value, serialized: &str) -> Resu
     Ok(output)
 }
 
-/// Execute `impact` or `gate`, returning the command's standard output.
+/// Execute a CI planning, check or native-admission operation.
 ///
 /// # Errors
 /// Rejects invalid arguments/configuration, failed output writes and incomplete
 /// or unsuccessful selected gates. Baseline failures select full coverage.
 pub fn run(arguments: &[OsString]) -> Result<String> {
+    if arguments
+        .first()
+        .is_some_and(|command| command == "native-acceptance-guard")
+    {
+        return native_acceptance_guard::run(arguments);
+    }
     if arguments
         .first()
         .and_then(|value| value.to_str())
@@ -135,7 +144,7 @@ pub fn run(arguments: &[OsString]) -> Result<String> {
     }
     if arguments.len() == 1 && arguments[0] == "--help" {
         return Ok(format!(
-            "{USAGE}\n       bonsai-ci rust-select|rust-plan|rust-check (see tools/ci/README.md)"
+            "{USAGE}\n       bonsai-ci rust-select|rust-plan|rust-check (see tools/ci/README.md)\n       bonsai-ci native-acceptance-guard --json REQUEST"
         ));
     }
     let arguments = parse(arguments)?;

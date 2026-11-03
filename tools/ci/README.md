@@ -36,6 +36,35 @@ The routing, baseline, output and gate regressions are Rust tests. Use named
 focused selections locally with external targets/working directories; complete
 suites remain CI-only under [the validation policy](../../docs/validation.md).
 
+## Native acceptance admission
+
+`native-acceptance-guard --json REQUEST` is the shared typed validator used by
+both publication and owner intake in the native-runtime acceptance workflow.
+The `analyzer` operation requires the exact revision/compiler, pinned toolchain,
+all three production packages and one successful zero-exit check for each of
+Clippy and linking. String booleans, null exits, duplicate phases and incomplete
+per-phase package coverage fail.
+
+`test-output` requires a successful process and exactly one complete libtest
+summary with positive passes, zero failures and zero ignored tests. Supply
+`expectedPassed: 1` for an exact named control, or `null` for a nonempty grouped
+selection. Duplicate summaries and malformed trailing content fail. `self-check`
+runs 23 receipt and 13 output fixtures without compiling or loading a model.
+
+The owning hosted workflow parses every actual PowerShell run block and the
+launcher with the native PowerShell parser, executes both exact Rust guard
+regressions, and retains a `workflow-contract.json` bound to the revision and
+five normalized LF source identities. `workflow-receipt` validates that proof
+before publishing or admitting an owner. These operations change no execution
+policy and do not execute the parsed launcher or owner workload.
+
+The hosted package schema is now version 2, with exactly five digest-bound files:
+the acceptance executable, maintenance executable, this CI executable, strict
+analyzer/link receipt and workflow-contract receipt. The package's own
+`receipt.json` is a sixth member. Old three-file/schema-1 selections and helpers
+remain stale and cannot qualify the new source. A successful contract check
+closes no actual-model, performance, quality or promotion gate.
+
 [Premerge portable checks](../../.github/workflows/premerge.yml) run on hosted
 Linux ARM64 for pull requests to `main` and manual dispatch. They check workspace
 formatting, compile portable CI/CPU-policy/broker targets and run six exact named
