@@ -36,6 +36,8 @@
     "proposedPublishedAssetUrl":  "https://github.com/symbiogenesis/prism-inference/releases/download/v0.1.14/prism-inference-0.1.14-aarch64-pc-windows-msvc.zip",
     "pinFile":  "config/prism-inference.lock.json",
     "pinSha256":  "8d2cf2f7cacf7795dc3283d8cd931cd50e077e6f9aac052b5c3fbc8327cd150a",
+    "pinSha256Scope":  "Prepared Windows working-tree raw bytes (2433 bytes, CRLF), not the raw Git object or an assumed cross-checkout byte identity.",
+    "committedPinGitBlobSha1":  "c949ef46764615ddddeb07a454fd5471c22a2d7b",
     "dataManifest":  {
                          "file":  "prism-0114-pin-preparation/file-manifest.json",
                          "bytes":  944,
