@@ -1,0 +1,57 @@
+{
+  "repository": "prism-inference",
+  "runId": "41579752996",
+  "head_sha": "6e442a3e3600a45c28a7f8e132ee99fbe9843178",
+  "path": ".github/workflows/foundation.yml",
+  "status": "completed",
+  "conclusion": "failure",
+  "run_attempt": 1,
+  "failedJobs": [
+    {
+      "id": "125731612155",
+      "name": "windows / aarch64-pc-windows-msvc / correctness-0",
+      "conclusion": "failure",
+      "steps": [
+        {
+          "name": "Run this shard's complete Cargo correctness targets",
+          "number": 10
+        }
+      ]
+    },
+    {
+      "id": "125731612210",
+      "name": "windows / x86_64-pc-windows-msvc / correctness-0",
+      "conclusion": "failure",
+      "steps": [
+        {
+          "name": "Run this shard's complete Cargo correctness targets",
+          "number": 10
+        }
+      ]
+    },
+    {
+      "id": "125733582877",
+      "name": "foundation",
+      "conclusion": "failure",
+      "steps": [
+        {
+          "name": "Require every selected validation group",
+          "number": 3
+        }
+      ]
+    }
+  ],
+  "selectedArtifact": {
+    "id": "13205505488",
+    "name": "prism-checks-aarch64-pc-windows-msvc-correctness-0-41579752996",
+    "size_in_bytes": 2038,
+    "digest": "sha256:5c451659efc3e63e16e0be1e07756a0294c8febac8c73f1b2f3deda2dadb9ccd",
+    "workflow_run": {
+      "id": 41579752996,
+      "repository_id": 1432922383,
+      "head_repository_id": 1432922383,
+      "head_branch": "main",
+      "head_sha": "6e442a3e3600a45c28a7f8e132ee99fbe9843178"
+    }
+  }
+}

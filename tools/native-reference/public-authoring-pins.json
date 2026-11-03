@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "arithmeticId": "public-mlx-f16-inverse1024-f16-f32-dot-v1",
+  "absoluteTolerance": 0.00001,
+  "relativeTolerance": 0.00001,
+  "python": "3.14.0",
+  "numpy": "2.5.3",
+  "model": {
+    "filename": "model.safetensors",
+    "bytes": 8595477990,
+    "sha256": "130de5925082c168b7866b2e91b52e44abbafc99017e3ca352b77b5b55a269ed",
+    "url": "https://huggingface.co/prism-ml/Ternary-Bonsai-2-27B-mlx-2bit/resolve/fcba37d2117a7077eac6b613b2668d14d9779edd/model.safetensors"
+  },
+  "config": {
+    "filename": "config.json",
+    "bytes": 58145,
+    "sha256": "238de7c512cc56a733421e3fd011d88f8260739e3d00e32c5d65b7943cc9f837",
+    "url": "https://huggingface.co/prism-ml/Ternary-Bonsai-2-27B-mlx-2bit/resolve/fcba37d2117a7077eac6b613b2668d14d9779edd/config.json"
+  },
+  "adapter": {
+    "filename": "bonsai-abliterate-lora.gguf",
+    "bytes": 9682464,
+    "sha256": "f1669534803d340a496015f5c45125f3437b4d13ec764f40e34488ce83967f42",
+    "url": "https://raw.githubusercontent.com/Continuum-AI-Corp/OrcaBonsai-27B-Uncensored/703028bb7fba03496e796b144839b161cf0f5409/gguf/bonsai-abliterate-lora.gguf"
+  },
+  "direction": {
+    "filename": "refusal_dir_fp32.bin",
+    "bytes": 20480,
+    "sha256": "06ab5afef2529d9302748507c85913d55dff53b7b739ccc98d8db7716ebd36b2",
+    "url": "https://raw.githubusercontent.com/Continuum-AI-Corp/OrcaBonsai-27B-Uncensored/703028bb7fba03496e796b144839b161cf0f5409/directions/refusal_dir_fp32.bin"
+  },
+  "arithmeticSources": [
+    {
+      "repository": "ml-explore/mlx",
+      "revision": "7a1d4f5c12ac82f4b4d0a6e71538d89ca0605247",
+      "path": "mlx/ops.cpp",
+      "bytes": 196794,
+      "sha256": "725dd3f5021a2f3d5ccf32d91f860a651c036785c77dba9022c8631e165d0a92"
+    },
+    {
+      "repository": "ml-explore/mlx",
+      "revision": "7a1d4f5c12ac82f4b4d0a6e71538d89ca0605247",
+      "path": "mlx/backend/metal/kernels/quantized.h",
+      "bytes": 85616,
+      "sha256": "4da52bf4ee688165a65b84c52a5f4e82efcae7f69e8c74d9ee3e00bef463c99f"
+    },
+    {
+      "repository": "ml-explore/mlx",
+      "revision": "7a1d4f5c12ac82f4b4d0a6e71538d89ca0605247",
+      "path": "mlx/backend/cpu/hadamard.cpp",
+      "bytes": 3211,
+      "sha256": "93d940f7f66b6492a943c30e1ec44995fcb5aa5ac3ed1840ce4e8d783fef4779"
+    },
+    {
+      "repository": "prism-ml/Ternary-Bonsai-2-27B-mlx-2bit",
+      "revision": "fcba37d2117a7077eac6b613b2668d14d9779edd",
+      "path": "runtime/runtime.py",
+      "bytes": 10674,
+      "sha256": "30ad3905775040a8167360a009168b9ede1436cb02dc43e9e743432482eafbbf"
+    },
+    {
+      "repository": "Continuum-AI-Corp/OrcaBonsai-27B-Uncensored",
+      "revision": "703028bb7fba03496e796b144839b161cf0f5409",
+      "path": "scripts/export_gguf_lora.py",
+      "bytes": 13013,
+      "sha256": "7b0f11f3e550c82dda909d37833f90e65fa85d588ae8304cdf180126addab74e"
+    }
+  ],
+  "scope": "One independently reconstructed public-input candidate. Final F16 checkpoint-storage rounding and transform/reduction order are declared assumptions; this is not authentication of the author's original checkpoint or invocation. No arithmetic, channel-permutation or tolerance variants are selected after seeing results."
+}

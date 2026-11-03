@@ -1,0 +1,6 @@
+2026-11-03T04:48:32.4785863Z ---- native_backend::tests::private_typed_context_rejection_clears_count_seal_without_faulting_owner stdout ----
+2026-11-03T04:48:32.4786360Z Error: Kind(BrokenPipe)
+2026-11-03T04:48:32.4786489Z 
+2026-11-03T04:48:32.4786504Z 
+2026-11-03T04:48:32.4786574Z failures:
+2026-11-03T04:48:32.4786977Z     native_backend::tests::private_typed_context_rejection_clears_count_seal_without_faulting_owner

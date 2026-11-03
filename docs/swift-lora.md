@@ -92,11 +92,15 @@ The exporter's optional `--check` does not resolve this gate. It checks only lay
 0, compares inverse-Hadamard stored columns without the native SSM input
 permutation, and imposes no absolute SSM-error ceiling. An identity mapping that
 scores best in that comparison is not proof of the native writer's input basis.
-The producer [does not ship the checkpoint](https://github.com/Continuum-AI-Corp/OrcaBonsai-27B-Uncensored/blob/703028bb7fba03496e796b144839b161cf0f5409/README.md#gguf--llamacpp).
-Resolving this needs an immutable checkpoint/conversion identity bound to the
-approved adapter hash, an explicit channel mapping and independent verification
-of all 48 shipped SSM A vectors under that mapping. Reproduction can run on
-hosted infrastructure; matching native inference alone cannot replace it.
+The producer [does not ship the checkpoint](https://github.com/Continuum-AI-Corp/OrcaBonsai-27B-Uncensored/blob/703028bb7fba03496e796b144839b161cf0f5409/README.md#L680-L683),
+but describes it as an [FP16 expansion of the packed ternary representation](https://github.com/Continuum-AI-Corp/OrcaBonsai-27B-Uncensored/blob/703028bb7fba03496e796b144839b161cf0f5409/README.md#L237-L241).
+That supplies a concrete independent public reconstruction route. The
+[single-recipe hosted reference auditor](adapter-public-reference.md) attempts all
+48 shipped SSM A vectors at the existing tight bounds, with no native permutation
+or precision search. It has no successful payload result yet. Original-run
+authentication still needs immutable checkpoint/conversion identities bound to
+the approved adapter hash; native writer qualification needs explicit channel
+mapping and independent residual evidence.
 
 Native residual-writer evidence must establish the correction's basis on Swift;
 loading or changed text cannot. Even correct input order does not establish that an
@@ -114,9 +118,10 @@ this gate requires the following evidence together:
   application and scalar/explicit-NEON qualification on the intended release.
 - Retained evidence digests and independent review in the durable promotion archive.
 
-The missing checkpoint/conversion identity is external evidence; additional
-native/Rust agreement cannot reconstruct its provenance. The audit closes no
-model qualification gate.
+The missing original checkpoint/conversion identity is external authentication
+evidence. Public reconstruction can establish a candidate's numerical agreement;
+additional native/Rust agreement cannot reconstruct original-run provenance.
+The audit closes no model qualification gate.
 
 The [2026-11-02 public-source recheck](evidence/ptq1-authoring-inputs-20261102.json)
 finds the same publisher revision and no new authoring material in the inspected
@@ -124,7 +129,12 @@ repository, releases or referenced model metadata. It records the exact required
 producer handoff: checkpoint shard/tensor identities, the original conversion and
 toolchain records bound to the approved adapter, and all-48 reproduction/mapping
 inputs for the existing intake. The selected direction's later B-factor agreement
-does not supply those missing inputs.
+does not supply those missing inputs. The subsequent
+[source-only reassessment](evidence/ptq1-public-authoring-route.json) narrows the
+earlier external-only interpretation: independent A reconstruction has a public
+route even though authenticating the original authoring run remains unresolved.
+The hosted reference report keeps original provenance, native writer, logits/state
+and promotion flags false, including after a complete numerical match.
 
 ### Direction consistency
 

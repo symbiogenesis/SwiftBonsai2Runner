@@ -28,12 +28,13 @@ resource and installation gates below with reproducible evidence before promotio
 
 The PTQ1 critical path is:
 
-1. Obtain the approved adapter's immutable authoring inputs, check their bounded
-   schema-2 envelope, original safetensors index and structured authoring
-   manifests plus all 48 supplied SSM A vectors through `qualification` operation
-   `basis-intake`, then independently verify their authenticity, reproduction and
-   native writer mappings. Successful intake, loading or matching runtimes cannot
-   recover missing provenance.
+1. Run and independently review the [one declared public-pack reconstruction](docs/adapter-public-reference.md)
+   of all 48 approved SSM A vectors on hosted CI. Public source describes an FP16
+   expansion of the immutable ternary pack, so reconstruction has a concrete route;
+   no successful payload result is claimed. Separately obtain/authenticate the
+   original authoring inputs through the bounded schema-2 `basis-intake` contract
+   and verify native writer mappings. Independent reconstruction cannot establish
+   the author's original checkpoint, invocation or toolchain provenance.
 2. Qualify the selected worker policy's scalar/explicit-NEON logits and live state,
    loaded-zero identity and nonzero application beyond the
    [passed bounded four-worker scale/history sequence](docs/evidence/ptq1-0113-lifecycle-41539984210/independent-review.json).
@@ -71,11 +72,12 @@ Qualify source-launch time to the first native frame and authenticated model
 readiness after excluding worker checkouts from startup fingerprints and switching
 shared Windows artifact hashing to CNG. Retain cold-build versus unchanged-launch
 attribution and complete checksum/cancellation controls. Qualify the CNG verifier
-retained by Prism 0.1.13 through Runner's settled-main release integration and
+retained from Prism 0.1.13 in the published 0.1.14 release through Runner's
+settled-main release integration and
 actual-model startup. End-to-end startup gains remain pending within the
 owner-device budget; performance comparisons and complete checks remain in owning
 CI. Complete separate registry delivery for the reviewed native-hash, GGUF 0.1.1
-and Prism 0.1.13 packages; hosted source-package checks do not publish them.
+and Prism 0.1.14 packages; hosted source-package checks do not publish them.
 
 Diagnose the owner's [native renderer staging failure](docs/evidence/native-renderer-staging-failure.json)
 through the retained graphics adapter/device-loss diagnostics. Its exit 101
@@ -98,7 +100,7 @@ ARM64 MSVC exceptional-float behavior when qualifying other compiler versions.
 Measure adaptive broker forwarding and retained idle speech scratch before
 claiming a latency, throughput or process-memory gain.
 
-Extend current-release numerical qualification beyond the
+Extend numerical qualification beyond the historical
 [passed one-token explicit-NEON capture](docs/evidence/ptq1-numerics-41568281287.json):
 all 129 files / 39,504,384 logits and complete live-state values match byte for
 byte on X2 Elite Extreme with four row workers and the standard adapter at 1.3.
@@ -161,12 +163,26 @@ close actual-model logits/state, writer-basis or promotion gates. Keep intake,
 verification, model work and cleanup inside one aggregate five-minute owner allowance;
 the [default-readiness audit](docs/evidence/ptq1-default-readiness.json) separates
 historical passes from current-release qualification.
-Complete `ptq1-adapter-service-row4` beyond the
+Qualify the [published Prism 0.1.14 release](https://github.com/symbiogenesis/prism-inference/releases/tag/v0.1.14)
+from exact source `9e8ea3e2c042ab0c3f1a8e9596ff155e202c3c57`. The
+[publication review](docs/evidence/ptq1-context-publication-014/independent-review.json)
+verifies the tag and all four uploaded assets against owning CI. Complete Runner's
+owning integration checks against the [prepared pin identities](docs/evidence/prism-0114-pin-preparation.json). Its typed token-capacity
+error preserves the private context-rejection contract; unknown counter failures
+remain failures. Hosted source checks do not establish actual-model behavior.
+Retain `ptq1-adapter-service-row4` and the
 [reviewed three scale-boundary streams and invalid-scale rejection](docs/evidence/ptq1-service-41577882160/independent-review.json).
-Qualify the typed private-context error through the released runtime and Runner,
-then complete context rejection, active interruption, owned cleanup and fresh-owner
-seeded replay within one feasible original allowance. The earlier session is
-permanently closed; do not continue its missing steps through another owner job.
+The separately prepared `ptq1-adapter-service-rollback-row4`
+[workload](docs/validation.md#actual-model-application-acceptance) combines the full
+five-request PTQ1 service sequence with fresh original-PQ2 rollback on the same
+0.1.14 runtime, adapter 1.3 and four workers. It requires context rejection,
+active interruption, both PTQ1 owners reaped, seeded fresh-owner replay, a complete
+original-PQ2 answer and post-cleanup full-file CNG verification. Its third-owner
+floor is 75 seconds, retaining 30 seconds for cleanup and 15 for file verification
+within the same absolute deadline. Every 0.1.14 model, service and rollback
+qualification remains pending; missing work cannot qualify the combined case.
+The earlier session is permanently closed; do not continue its missing steps
+through another owner job.
 Preserve per-owner power observations and distinguish missing child endpoints from
 the retained parent endpoints. Visible output and matching prompt counts do not
 establish numerical adapter effect, full-state parity or full promotion.
@@ -180,16 +196,21 @@ remains historical; later application identities need their own applicability re
 Close the thirteen required gates using actual device, independent human and
 clean-machine acceptance rather than counting narrow numerical/lifecycle checks
 as complete broad gates. The [fresh authoring-input check](docs/evidence/ptq1-authoring-inputs-20261102.json)
-still finds no published original checkpoint or adapter-bound conversion records;
-matching published B factors cannot reproduce the missing A-factor provenance.
+still finds no published original checkpoint or adapter-bound conversion records.
+The later [source reassessment](docs/evidence/ptq1-public-authoring-route.json)
+identifies an independent reconstruction route from the immutable public pack;
+its [single-recipe hosted auditor](docs/adapter-public-reference.md) still needs
+actual all-48 output and independent review. Matching public A or B factors cannot
+authenticate the missing original invocation.
 Close its actual-model, adapter provenance, paired benefit, quality, resource,
 isolation, recovery and installation gates before changing defaults or removing
 the README's adapter qualification. Later application identities need their own review.
 Preserve the 300-second aggregate owner ceiling, original clocks and model cleanup
 reserves; never restart a clock or continue a partial matrix. Obtain the approved
-adapter's immutable checkpoint, conversion and direction identities and
-independently verify all 48 SSM mappings; this remains an external provenance
-prerequisite that native/Rust agreement cannot supply.
+adapter's immutable original checkpoint, conversion and direction identities and
+independently verify all 48 SSM mappings. Original-run authentication remains an
+external provenance prerequisite; public reconstruction and native/Rust agreement
+must retain their separate scopes.
 
 Retain the [historical four-worker startup](docs/evidence/ptq1-delivery-0112-20261101.json)
 when planning a current-release owner workload. This one 0.1.12 attempt reached exact
@@ -223,8 +244,9 @@ work unknown, and no timing trial may extend the closed numerical session.
 The independently reviewed
 [published-direction result](docs/evidence/ptq1-direction-41530766802/independent-review.json)
 checks all 129 B factors and 660,480 channels with zero numeric difference.
-Obtain the missing checkpoint/conversion inputs and independently reproduce A
-factors and native SSM order; direction agreement does not close those gates.
+Independently reconstruct all 48 A factors through the predeclared public-pack
+route, authenticate original checkpoint/conversion records separately, and verify
+native SSM order; direction agreement does not close those gates.
 
 Qualify the pinned Prism 0.1.13 release beyond its bounded four-worker scale/history
 sequence before using it for promotion. Retain the 0.1.12 readiness and historical

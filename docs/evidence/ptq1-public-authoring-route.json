@@ -1,0 +1,237 @@
+{
+  "schemaVersion": 1,
+  "kind": "bounded-source-only-adapter-public-reconstruction-route-reassessment",
+  "recordedDate": "2026-11-02",
+  "producerId": "Codex:/root/contract",
+  "status": "material-public-reconstruction-route-identified-not-executed",
+  "publisherRevision": "703028bb7fba03496e796b144839b161cf0f5409",
+  "publicMlxRevision": "fcba37d2117a7077eac6b613b2668d14d9779edd",
+  "conclusion": "The cited unfolded FP16 checkpoint is plausibly a storage expansion of the published packed ternary values, rather than an unavailable pre-quantization training checkpoint. Public code and immutable metadata provide a concrete independent reconstruction candidate. They do not authenticate the exact original authoring checkpoint, conversion invocation or all-48 result.",
+  "primaryPointers": [
+    {
+      "url": "https://github.com/Continuum-AI-Corp/OrcaBonsai-27B-Uncensored/blob/703028bb7fba03496e796b144839b161cf0f5409/README.md#L237-L241",
+      "observation": "Evaluation is described as using an unfolded FP16 expansion of the pack, preserving its ternary representation; this is stronger than merely stating that the checkpoint is not shipped."
+    },
+    {
+      "url": "https://github.com/Continuum-AI-Corp/OrcaBonsai-27B-Uncensored/blob/703028bb7fba03496e796b144839b161cf0f5409/README.md#L680-L683",
+      "observation": "Reproduction requires an unfolded FP16 checkpoint that this repository does not ship. This does not by itself establish that its values cannot be reconstructed from public packed inputs."
+    },
+    {
+      "url": "https://github.com/Continuum-AI-Corp/OrcaBonsai-27B-Uncensored/blob/703028bb7fba03496e796b144839b161cf0f5409/scripts/export_gguf_lora.py#L121-L150",
+      "observation": "The exporter loads and F32-normalizes the selected direction; named checkpoint tensors are individually read from a safetensors index and cast to F32."
+    },
+    {
+      "url": "https://github.com/Continuum-AI-Corp/OrcaBonsai-27B-Uncensored/blob/703028bb7fba03496e796b144839b161cf0f5409/scripts/export_gguf_lora.py#L178-L218",
+      "observation": "Optional block-zero checking reconstructs weights by codec transcode, affine dequantization, explicit F32 cast and inverse FWHT, then compares checkpoint identity and two candidate V-head permutations. It does not independently verify all48."
+    },
+    {
+      "url": "https://github.com/Continuum-AI-Corp/OrcaBonsai-27B-Uncensored/blob/703028bb7fba03496e796b144839b161cf0f5409/scripts/export_gguf_lora.py#L254-L269",
+      "observation": "Each nonembedding A factor is the F32 normalized direction left-multiplied by the supplied output-by-input matrix; B is the negated direction."
+    },
+    {
+      "url": "https://huggingface.co/prism-ml/Ternary-Bonsai-2-27B-mlx-2bit/blob/fcba37d2117a7077eac6b613b2668d14d9779edd/runtime/runtime.py#L16-L28",
+      "observation": "The public transform casts to F32, applies normalized blockwise Hadamard, applies signs after the transform for inverse mode, then casts back to the incoming dtype."
+    },
+    {
+      "url": "https://huggingface.co/prism-ml/Ternary-Bonsai-2-27B-mlx-2bit/blob/fcba37d2117a7077eac6b613b2668d14d9779edd/runtime/vision_artifact.py#L36-L57",
+      "observation": "Packed modules are tied to their language_model-prefixed weight/scales/biases/signs arrays and declared block size; signs must be present and binary signs for transformed modules."
+    },
+    {
+      "url": "https://huggingface.co/prism-ml/Ternary-Bonsai-2-27B-mlx-2bit/blob/fcba37d2117a7077eac6b613b2668d14d9779edd/config.json",
+      "observation": "Immutable metadata names all48 canonical SSM out_proj modules, block1024/F16 and grouped GDN activation layout."
+    },
+    {
+      "url": "https://huggingface.co/prism-ml/Ternary-Bonsai-2-27B-mlx-2bit/blob/fcba37d2117a7077eac6b613b2668d14d9779edd/files.json",
+      "observation": "The immutable file manifest and repository LFS metadata agree on the model.safetensors raw identity; downloaded small source files independently match this manifest."
+    }
+  ],
+  "publicPackedInput": {
+    "repository": "prism-ml/Ternary-Bonsai-2-27B-mlx-2bit",
+    "revision": "fcba37d2117a7077eac6b613b2668d14d9779edd",
+    "file": "model.safetensors",
+    "bytes": 8595477990,
+    "sha256": "130de5925082c168b7866b2e91b52e44abbafc99017e3ca352b77b5b55a269ed",
+    "payloadDownloaded": false
+  },
+  "declaredSsmMetadata": {
+    "sites": 48,
+    "blocks": [
+      0,
+      1,
+      2,
+      4,
+      5,
+      6,
+      8,
+      9,
+      10,
+      12,
+      13,
+      14,
+      16,
+      17,
+      18,
+      20,
+      21,
+      22,
+      24,
+      25,
+      26,
+      28,
+      29,
+      30,
+      32,
+      33,
+      34,
+      36,
+      37,
+      38,
+      40,
+      41,
+      42,
+      44,
+      45,
+      46,
+      48,
+      49,
+      50,
+      52,
+      53,
+      54,
+      56,
+      57,
+      58,
+      60,
+      61,
+      62
+    ],
+    "matrixShapeCandidate": [
+      5120,
+      6144
+    ],
+    "block": 1024,
+    "groupSize": 128,
+    "bits": 2,
+    "mode": "affine",
+    "dtype": "float16",
+    "tensorNamespace": "mlx-vlm-qwen3_5",
+    "gdnActivationLayout": "grouped",
+    "hiddenSize": 5120,
+    "valueHeads": 48,
+    "valueHeadDim": 128,
+    "actualTensorHeadersRead": false
+  },
+  "candidateIndependentConstruction": [
+    "Bind the full immutable public packed input and its actual tensor-header/transform identities on hosted infrastructure before claiming payload verification.",
+    "For each declared SSM matrix, independently decode affine 2-bit values and preserve its explicit grouped channel layout.",
+    "Apply the published F32 inverse normalized block1024 Hadamard and corresponding sign vector; explicitly declare and retain the candidate final F16 storage rounding.",
+    "Convert the reconstructed F16 matrix back to F32 as the exporter does, normalize the actual selected direction with the declared F32 algorithm, and independently reproduce r @ W.",
+    "Compare every candidate A channel at all48 sites against the exact approved adapter under the existing declared tight bounds, retaining all failures and arithmetic/toolchain identities.",
+    "Describe results as independently reconstructed public-input references; do not label them the authenticated author-original checkpoint unless separate evidence establishes that identity."
+  ],
+  "missingFacts": [
+    "No immutable record binds the approved adapter to an exact author-original checkpoint index/shard/tensor identity or original expansion invocation.",
+    "The inspected public source does not retain the exact full FP16 expansion/serialization implementation and rounding record used for the adapter authoring run; the proposed final-F16 pipeline is an inference to test.",
+    "The published requirements pin MLX0.32.0/MLX-LM0.31.3/MLX-VLM0.6.3, but NumPy is only >=2.0 and the author-specific Python, safetensors, GGUF writer and BLAS builds/invocation are not authenticated.",
+    "No tensor, sign-vector or direction payload was downloaded in this reassessment; there are no actual all48 A comparisons.",
+    "A successful public reconstruction would not alone prove native writer-input mapping, loaded-zero/no-adapter identity, nonzero logits/live-state effect or human quality/performance acceptance."
+  ],
+  "priorInterpretationCorrection": "Retain older audits as historical observations, but narrow any claim that a private pre-quantization FP16 source is necessarily required. The external original-run authenticity question and independently testable public reconstruction route are different facts.",
+  "publisherTreeBlobCount": 22,
+  "publisherTreeTruncated": false,
+  "matchingMlxSmallFilesVerifiedAgainstPublishedManifest": 8,
+  "retainedSmallSourceFiles": [
+    {
+      "file": "mlx-config.json",
+      "bytes": 58145,
+      "sha256": "238de7c512cc56a733421e3fd011d88f8260739e3d00e32c5d65b7943cc9f837"
+    },
+    {
+      "file": "mlx-files.json",
+      "bytes": 3122,
+      "sha256": "f0d3b0108d8e52685b81da7916e9943ff9cf2f470fbcc6b24f66a3d562492f1c"
+    },
+    {
+      "file": "mlx-PACK-RUNTIME.md",
+      "bytes": 969,
+      "sha256": "486bf73b40dab072792cb2e48961a3698d4ca599f1355f3e628e4c64d8aa4cce"
+    },
+    {
+      "file": "mlx-README.md",
+      "bytes": 23151,
+      "sha256": "c2d9602f21e10b855987c25d3f7bb0198874af8a612707c1b9e85c3c6ac167cc"
+    },
+    {
+      "file": "mlx-runtime-artifact.py",
+      "bytes": 5621,
+      "sha256": "5279718d7671bd799e866f53099e82b0260117fec811f83011ba47a0abc7943e"
+    },
+    {
+      "file": "mlx-runtime-codec.py",
+      "bytes": 2572,
+      "sha256": "7f7fd67637a7d9363eab8ebf7db59771830b690330ffef772379a0169ddb9608"
+    },
+    {
+      "file": "mlx-runtime-requirements.txt",
+      "bytes": 115,
+      "sha256": "358bc104a02ea598f1e6cde8e7eeed169b9ec34f69f3543b47b390706446a1e0"
+    },
+    {
+      "file": "mlx-runtime-runtime.py",
+      "bytes": 10674,
+      "sha256": "30ad3905775040a8167360a009168b9ede1436cb02dc43e9e743432482eafbbf"
+    },
+    {
+      "file": "mlx-runtime-vision_artifact.py",
+      "bytes": 5285,
+      "sha256": "b3d9645300d913cc09abff04bf25f31621daac4d507e7e1a8b00a64442a05a3e"
+    },
+    {
+      "file": "mlx-tree.json",
+      "bytes": 3194,
+      "sha256": "30b3ed3dac1dbd196ebf090824abe89cc7205d4a24f6bb9631571552c8a0bd56"
+    },
+    {
+      "file": "publisher-bonsai_abliterate-pack.py",
+      "bytes": 5393,
+      "sha256": "bb8c99977546a4e25777558f8ffe602c19c633c33fc107532b57b7a35e242e49"
+    },
+    {
+      "file": "publisher-README.md",
+      "bytes": 27704,
+      "sha256": "bc35a57d2405b78ecddca08bc0742a4b537e857b6e045b9203483d81e58d0ab8"
+    },
+    {
+      "file": "publisher-requirements.txt",
+      "bytes": 369,
+      "sha256": "d8e427c6d0ca251bf6ca6e54f3a08034978aa7f79184710cc6d2d041888836e7"
+    },
+    {
+      "file": "publisher-scripts-export_gguf_lora.py",
+      "bytes": 13013,
+      "sha256": "7b0f11f3e550c82dda909d37833f90e65fa85d588ae8304cdf180126addab74e"
+    },
+    {
+      "file": "publisher-tree.json",
+      "bytes": 8827,
+      "sha256": "e61ea0ded4f5dd87be34c5c591c3d8332a48f5343df461ce06164cdeec9f8c34"
+    }
+  ],
+  "tensorPayloadDownloads": 0,
+  "signVectorPayloadDownloads": 0,
+  "modelPayloadDownloads": 0,
+  "checkpointPayloadDownloads": 0,
+  "directionPayloadDownloads": 0,
+  "downloadedCodeExecuted": 0,
+  "tests": 0,
+  "builds": 0,
+  "modelExecutions": 0,
+  "ownerDeviceTrials": 0,
+  "publisherContacts": 0,
+  "originalOwnerClockReopened": false,
+  "authorOriginalProvenanceQualified": false,
+  "all48AReproductionQualified": false,
+  "nativeWriterBasisQualified": false,
+  "defaultPromotionQualified": false,
+  "defaultsChanged": false
+}

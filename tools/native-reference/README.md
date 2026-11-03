@@ -155,3 +155,11 @@ A successful cloud audit preserves the original runtime/source execution;
 it supplies no new device trial, renewed owner allowance, full-context, adapter
 provenance, quality or default-promotion qualification. Adding the workflow
 alone establishes no successful integrity audit.
+
+The separate [public authoring reference](../../docs/adapter-public-reference.md)
+has one predeclared all 48 A-vector reconstruction from the immutable public MLX
+pack. Its main-only GitHub-hosted Windows ARM64 workflow defaults to small
+independent synthetic controls; actual 8.6 GB intake requires explicit dispatch.
+It retains complete A files, metrics and toolchain identities, without inference
+or a full checkpoint write. A numeric match cannot authenticate the author's
+original inputs or qualify native writer mappings, logits/state or promotion.

@@ -1,0 +1,23 @@
+    Checking bonsai-broker v0.1.0 (C:\a\SwiftBonsai2Runner\SwiftBonsai2Runner\src\broker)
+error[E0061]: this function takes 4 arguments but 3 arguments were supplied
+   --> src\broker\src\backend\memory_tests.rs:128:17
+    |
+128 |                 read_head(&mut reader, false, Instant::now() + Duration::from_secs(60))
+    |                 ^^^^^^^^^                     ---------------------------------------- argument #3 of type `bool` is missing
+    |
+note: function defined here
+   --> src\broker\src\backend.rs:264:10
+    |
+264 | async fn read_head<S: AsyncRead + Unpin>(
+    |          ^^^^^^^^^
+...
+267 |     counting: bool,
+    |     --------------
+help: provide the argument
+    |
+128 |                 read_head(&mut reader, false, /* bool */, Instant::now() + Duration::from_secs(60))
+    |                                               +++++++++++
+
+For more information about this error, try `rustc --explain E0061`.
+error: could not compile `bonsai-broker` (lib test) due to 1 previous error
+warning: build failed, waiting for other jobs to finish...

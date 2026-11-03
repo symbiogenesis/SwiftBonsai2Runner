@@ -1,0 +1,396 @@
+
+running 71 tests
+test abliteration_tests::pinned_abliteration_scale_is_unavailable_without_verified_launch ... ok
+test abliteration_tests::pinned_abliteration_rejects_invalid_scales_and_arbitrary_adapters ... ok
+test abliteration_tests::pinned_abliteration_scale_is_identical_for_counting_and_generation ... ok
+test abliteration_tests::pinned_abliteration_defaults_to_1_3_without_changing_other_policy ... ok
+test artifacts::tests::native_profile_checks_model_without_requiring_upstream_runtime ... ok
+test backend::memory_tests::borrowed_payloads_exclude_framing_and_interoperate_with_direct_reads ... ok
+test backend::memory_tests::header_fast_path_and_fragmented_fallback_preserve_coalesced_payload ... ok
+test backend::memory_tests::owned_request_drops_prompt_before_any_response_read_and_preserves_wire_bytes ... ok
+test backend::payload_tests::payload_direct_reads_preserve_a_prefilled_destination ... ok
+test backend::payload_tests::payload_direct_reads_reject_truncation_and_io_failure_stickily ... ok
+test backend::payload_tests::payload_empty_reads_leave_framing_and_source_untouched ... ok
+test backend::payload_tests::payload_pending_direct_reads_keep_the_absolute_deadline ... ok
+test artifacts::tests::ptq1_verification_rejects_missing_or_altered_selected_file_without_pq2_fallback ... ok
+test backend::payload_tests::payload_reads_retain_coalesced_prefixes_and_small_next_chunks ... ok
+test chat_controls::tests::inventory_matches_locked_model_and_tokenizer_identity ... ok
+test inference::tests::compiled_server_release_is_pinned_and_rejects_path_or_identity_drift ... ok
+test inference::tests::four_row_workers_require_the_reviewed_parallel_release ... ok
+test json_candidate::ci_comparison ... ignored, benchmark execution requires the main-only JSON candidate workflow
+test artifacts::tests::profile_verification_opens_only_its_locked_archive ... ok
+test abliteration_tests::transport::invalid_scale_closes_schema_connection_before_backend_and_preserves_service ... ok
+test json_candidate::fixed_candidate_preserves_serde_scale_lexemes ... ok
+test json_candidate::fixed_candidate_preserves_unicode_and_rejections ... ok
+test json_candidate_parser::tests::reuse_preserves_decimal_fallback_and_retains_allocations ... ok
+test launch_policy::tests::compiled_configuration_is_reviewed ... ok
+test launch_policy::tests::lock_drift_and_shapes_fail_closed ... ok
+test launch_policy::tests::profile_drift_and_coercions_fail_closed ... ok
+test launch_policy::tests::repacked_identity_is_the_exact_current_weight_export_not_the_older_checkpoint ... ok
+test launch_policy::tests::swift_lock_drift_and_shapes_fail_closed ... ok
+test json_candidate_parser::tests::reuse_preserves_parity_through_failures_and_size_changes ... ok
+test launcher::identity::tests::worker_readiness_missing_field_is_limited_to_exact_legacy_pins ... ok
+test backend::payload_tests::payload_reads_bypass_staging_only_within_the_current_frame ... ok
+test launcher::identity::tests::current_release_requires_workers_for_every_adapter_and_representation_profile ... ok
+test launcher::identity::tests::worker_readiness_rejects_coercion_unbounded_counts_and_duplicate_fields ... ok
+test launcher::lifecycle_tests::resource_observations_keep_sampled_and_lifetime_counters_distinct ... ok
+test launcher::lifecycle_tests::synthetic_backend_probe ... ignored, subprocess entry point; invoked only with a protected fixture cwd
+test launcher::startup::tests::startup_observer_keeps_fixed_brackets_and_unfinished_phase ... ok
+test launcher::tests::launch_requires_explicit_opt_ins_and_rejects_overrides ... ok
+test json_candidate::fixed_candidate_preserves_schema_history_and_bounds ... ok
+test launcher::tests::lora_launch_is_explicit_swift_prism_only ... ok
+test launcher::tests::native_engine_is_explicit_and_swift_only ... ok
+test launcher::tests::native_readiness_binds_explicit_packing_and_adapter_scale_capability ... ok
+test launcher::tests::native_readiness_requires_exact_model_template_runtime_context_and_seed ... ok
+test launcher::tests::native_row_workers_are_explicit_bounded_and_reach_only_the_native_child ... ok
+test launcher::tests::native_sandbox_requires_an_exclusive_explicit_launch_selection ... ok
+test launcher::tests::original_pq2_is_explicit_swift_only_and_rejects_every_duplicate_or_conflict ... ok
+test launcher::tests::profiles_are_explicit_exact_unique_and_default_to_reference ... ok
+test launcher::tests::readiness_requires_bounded_complete_unambiguous_json ... ok
+test launcher::tests::repacked_ptq1_is_explicit_swift_prism_only_and_keeps_lora_available ... ok
+test launcher::tests::sandbox_failure_evidence_preserves_validation_and_windows_causes ... ok
+test launcher::tests::sandbox_preflight_distinguishes_parent_credentials_from_native_support ... ok
+test launcher::tests::startup_failure_evidence_contains_only_fixed_stage_error_and_exit_fields ... ok
+test reception::memory_tests::authorized_body_storage_reuses_header_capacity_and_keeps_only_received_payload ... ok
+test reception::memory_tests::large_request_reads_final_spare_capacity_without_initializing_or_overreading ... ok
+test reception::memory_tests::large_request_storage_requires_complete_body_and_releases_on_cancel ... ok
+test request_buffer::tests::canonical_buffer_caps_growth_and_rejects_without_retaining_excess ... ok
+test request_buffer::tests::canonical_buffer_preserves_json_bytes_and_exact_limit ... ok
+test response::memory_tests::borrowed_sse_does_not_complete_after_read_or_vectored_write_failure ... ok
+test response::memory_tests::borrowed_sse_preserves_exact_cap_probe_and_deadline_failure ... ok
+test response::memory_tests::borrowed_sse_spans_use_original_storage_and_finish_partial_vectored_writes ... ok
+test response::memory_tests::json_final_storage_requires_complete_framing_and_obeys_cancellation ... ok
+test response::memory_tests::json_partial_reads_fill_final_storage_without_initializing_the_tail ... ok
+test launcher::tests::lora_guard_rejects_missing_and_altered_adapter_and_opt_out_needs_no_file ... ok
+test service::burst::tests::burst_budget_preserves_fractional_credit_during_sustained_denials ... ok
+test service::burst::tests::burst_budget_rejected_body_drain_retains_absolute_deadline ... ok
+test service::burst::tests::burst_budget_shares_one_hard_budget_across_concurrent_callers ... ok
+test tests::every_short_role_history_matches_the_accepted_language ... ok
+test tests::message_content_borrows_plain_text_and_decodes_escapes ... ok
+test tests::message_reasoning_borrows_plain_text_and_decodes_escapes ... ok
+test response::memory_tests::json_storage_growth_preserves_bytes_and_probes_the_exact_limit_once ... ok
+test launcher::lifecycle_tests::readiness_rejects_another_listener_and_cancellation ... ok
+test launcher::lifecycle_tests::owned_ready_backend_stops_with_service ... ok
+
+test result: ok. 69 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 0.22s
+
+
+running 23 tests
+test configuration_rejects_invalid_private_backend_authority_or_key ... ok
+test content_length_does_not_consume_a_later_response_or_wait_for_close ... ok
+test body_read_errors_close_the_stream_immediately_and_remain_sticky ... ok
+test cancelling_request_or_body_collection_drops_the_owned_connection ... ok
+test exact_count_accepts_an_escaped_object_tag ... ok
+test exact_count_and_generation_use_identical_canonical_bytes_and_private_headers ... ok
+test ambiguous_or_unsupported_response_metadata_and_framing_fail_closed ... ok
+test exact_count_applies_checked_context_admission_and_bounded_collection ... ok
+test expiry_rejects_ready_input_and_operations_becoming_ready_at_the_deadline ... ok
+test exact_count_schema_rejects_missing_duplicate_unknown_or_noninteger_fields ... ok
+test fragmented_framed_bodies_finish_without_waiting_for_peer_eof ... ok
+test request_write_errors_and_flush_failure_drop_the_owned_stream ... ok
+test raw_response_head_syntax_and_bounds_are_enforced ... ok
+test request_writes_and_flush_share_one_absolute_five_second_budget ... ok
+test malformed_or_truncated_chunks_never_become_clean_eof ... ok
+test supervisor_deadline_bounds_slow_head_and_body_without_reset_on_progress ... ok
+test truncated_content_length_is_a_sticky_error_instead_of_clean_eof ... ok
+test typed_private_context_rejection_is_framed_bounded_and_count_route_only ... ok
+test typed_private_context_rejection_requires_complete_body_within_original_deadline ... ok
+test typed_private_context_rejection_rejects_wrong_status_metadata_and_ambiguous_framing ... ok
+test zero_length_and_zero_chunk_bodies_have_immediate_clean_eof ... ok
+test typed_private_context_rejection_requires_exact_object_schema_and_code ... ok
+test decoded_body_and_chunk_metadata_have_separate_finite_limits ... ok
+
+test result: ok. 23 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+
+running 3 tests
+test chat_controls_preserve_noncontrol_literals_for_count_and_generation ... ok
+test chat_controls_reject_escaped_split_and_nested_boundary_attacks ... ok
+test chat_controls_reject_every_pinned_special_in_every_text_position ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 6 tests
+test abandonment_wins_when_generation_bytes_and_disconnect_become_ready_together ... ok
+test cooperative_one_byte_reads_and_writes_preserve_utf8_and_terminal_framing ... ok
+test every_truncated_count_prefix_prevents_generation_and_client_output ... ok
+test every_truncated_json_reply_is_rejected_before_any_downstream_write ... ok
+test every_truncated_sse_reply_omits_successful_downstream_terminal_framing ... ok
+test every_single_wire_split_preserves_the_complete_count_and_generation_pipeline ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.11s
+
+
+running 14 tests
+test cancelling_reception_drops_the_owned_connection ... ok
+test complete_body_does_not_wait_for_peer_eof ... ok
+test body_buffer_boundary_preserves_framing_with_fragmented_reads ... ok
+test expired_supervisor_deadline_rejects_even_immediately_ready_input ... ok
+test incomplete_and_surplus_bodies_close_the_stream ... ok
+test fragmented_request_preserves_text_and_still_requires_token_admission ... ok
+test raw_syntax_rejects_liberal_line_endings_and_folded_headers ... ok
+test raw_routes_are_checked_before_uri_normalization ... ok
+test raw_head_limits_include_line_whitespace_and_every_header ... ok
+test rejected_head_never_requests_the_body ... ok
+test slow_drip_does_not_reset_the_header_deadline ... ok
+test stalled_reads_obey_header_intake_and_supervisor_deadlines ... ok
+test wire_duplicates_and_framing_cannot_be_normalized_away ... ok
+test body_limit_and_schema_are_enforced_after_fragmented_reception ... ok
+
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 20 tests
+test backend_reads_use_one_absolute_supervisor_deadline ... ok
+test cancellation_during_backend_read_or_client_flush_drops_owned_streams ... ok
+test backend_status_media_type_and_compression_fail_before_any_io ... ok
+test a_backend_read_becoming_ready_at_expiry_still_fails_closed ... ok
+test decoded_backend_truncation_is_an_error_even_after_valid_payload ... ok
+test expired_deadline_rejects_immediately_ready_input_before_any_io ... ok
+test json_is_validated_then_sent_unchanged_with_fresh_headers_and_partial_writes ... ok
+test fragmented_sse_is_flushed_in_bounded_chunks_without_inventing_events ... ok
+test json_requires_one_complete_object_and_never_sends_invalid_bytes ... ok
+test partial_chunk_writes_share_one_deadline_instead_of_resetting_it ... ok
+test ready_sse_fragments_share_bounded_wire_chunks_and_fewer_writes ... ok
+test sse_coalescing_does_not_extend_the_absolute_backend_deadline ... ok
+test sse_coalescing_finishes_after_the_first_framed_eof ... ok
+test sse_ready_prefix_is_flushed_before_a_later_read_becomes_pending ... ok
+test stalled_header_flush_uses_client_or_supervisor_deadline ... ok
+test stalled_shutdown_is_bounded_and_releases_both_streams ... ok
+test validated_media_types_accept_case_and_optional_utf8_charset ... ok
+test zero_writes_write_errors_and_flush_errors_drop_both_streams ... ok
+test cap_plus_one_probe_rejects_json_and_sse_without_forwarding_excess ... ok
+test exact_four_mib_json_and_sse_bodies_succeed ... ok
+
+test result: ok. 20 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+
+running 5 tests
+test inherited_overrides_are_case_insensitive_and_value_free ... ok
+test swift_plan_selects_only_pinned_pq2_runtime_and_assessment_limits ... ok
+test pinned_plan_uses_independent_tokens_and_fixed_memory_budget ... ok
+test lora_plan_uses_only_pinned_adapter_without_changing_cpu_limits ... ok
+test repacked_ptq1_selects_current_weight_identity_with_same_runtime_limits_and_adapter ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+
+running 13 tests
+test accepted_capacity_is_reserved_before_a_second_socket_or_body ... ok
+test caller_cancellation_during_generation_latches_service ... ok
+test disconnect_during_generation_closes_backend_and_latches_service ... ok
+test frontend_retains_exclusive_loopback_address_ownership ... ok
+test invalid_configuration_does_not_open_a_listener ... ok
+test expired_connector_deadline_never_connects ... ok
+test queued_socket_expires_without_reading_a_request_or_connecting_backend ... ok
+test control_token_rejection_never_contacts_backend_and_keeps_service_ready ... ok
+test real_loopback_count_and_generation_preserve_body_and_private_headers ... ok
+test shutdown_wakes_pending_accept ... ok
+test shutdown_during_generation_drops_both_sockets ... ok
+test rejected_context_preserves_admission_for_a_subsequent_multiturn_request ... ok
+test burst_limit_rejects_authenticated_headers_before_body_or_backend_and_refills ... ok
+
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.05s
+
+
+running 63 tests
+test adapter_boundaries::native_adapter_boundary_replay_requires_bound_output_usage_and_settings ... ok
+test adapter_boundaries::native_adapter_boundary_profile_preserves_scope_and_signed_zero ... ok
+test adapter_boundaries::pinned_native_ptq1_adapter_row4_checks_scale_boundaries_and_reset ... ignored, Actual-model row4 scale-boundary/reset control; one bounded main-only owner CI job.
+test adapter_boundaries::native_adapter_context_rejection_retains_unframed_and_malformed_observations ... ok
+test adapter_boundaries::native_adapter_boundary_deadline_retains_pending_work_without_model_start ... ok
+test native_acceptance_requires_framed_terminal_generation ... ok
+test native_adapter_generated_history_requires_exact_bound_initial_output ... ok
+test native_adapter_request_budget_drops_inflight_work_before_owned_cleanup ... ok
+test native_adapter_scale_history_profile_requires_separate_explicit_selection ... ok
+test native_adapter_empty_initial_response_keeps_history_pending ... ok
+test native_adapter_first_request_cancellation_retains_ready_phase_and_missing_work ... ok
+test native_adapter_startup_budget_retains_pending_receipt_and_cleanup_reserve ... ok
+test native_adapter_startup_error_retains_unfinished_phase_without_qualifying_cleanup ... ok
+test native_bounded_history_and_stall_requests_preserve_distinct_output_limits ... ok
+test native_bounded_history_retains_completed_steps_when_followup_is_cancelled ... ok
+test native_case_budget_cancels_owned_tasks_before_followup ... ok
+test native_case_budget_rejects_missing_unbounded_and_malformed_allowances ... ok
+test native_extended_acceptance_distinguishes_output_usage_from_delta_count ... ok
+test native_lifecycle_observations_separate_generation_usage_and_owned_cleanup ... ok
+test native_owned_resource_receipt_preserves_scopes_and_missing_queries ... ok
+test native_profile_selection_and_scale_receipts_preserve_bounded_scope ... ok
+test native_ptq1_lifecycle_minimizes_tokens_without_changing_required_steps ... ok
+test native_ptq1_row4_lifecycle_is_explicit_and_preserves_the_required_workload ... ok
+test native_row4_profile_is_explicit_original_pq2_and_one_stream_only ... ok
+test native_stalled_consumer_never_qualifies_natural_completion_as_interruption ... ok
+test native_stalled_consumer_rejects_error_or_unframed_stream_headers ... ok
+test native_stalled_consumer_retains_fragmented_prefix_connection_until_dropped ... ok
+test native_worker_receipts_require_exact_release_and_verified_readiness ... ok
+test pinned_native_model_streams_recovers_and_restarts_in_required_sandbox ... ignored, Actual pinned model; explicitly dispatched main-only device CI, never ordinary suites.
+test pinned_native_pq2_adapter_row4_checks_scale_change_rejection_and_history ... ignored, Actual PQ2 adapter scale/history lifecycle; explicit bounded main-only device CI.
+test pinned_native_pq2_adapter_row4_starts_and_streams_within_device_budget ... ignored, Actual original PQ2 and approved adapter with four row workers; explicit bounded main-only device CI.
+test pinned_native_ptq1_adapter_checks_scale_change_rejection_and_history ... ignored, Actual PTQ1 adapter scale/history lifecycle; explicit bounded main-only device CI.
+test pinned_native_ptq1_adapter_row4_checks_scale_change_rejection_and_history ... ignored, Actual PTQ1 adapter scale/history with four row workers; explicit bounded main-only device CI.
+test pinned_native_ptq1_adapter_starts_and_streams_within_device_budget ... ignored, Actual PTQ1 and approved adapter; explicit bounded main-only device CI, never ordinary suites.
+test progress::native_progress_decodes_fragmented_chunks_without_counting_events_as_tokens ... ok
+test adapter_boundaries::native_adapter_boundary_wire_sequence_preserves_rejections_and_failed_replay ... ok
+test progress::native_progress_drop_retains_partial_content_without_qualifying_completion ... ok
+test representation::native_representation_comparison_requires_released_worker_observation ... ok
+test representation::native_representation_pair_requires_completion_identity_and_cleanup ... ok
+test representation::native_representation_power_gates_timing_without_erasing_answers_or_rollback ... ok
+test representation::native_representation_profile_is_explicit_and_keeps_original_deadline ... ok
+test representation::native_representation_profiles_leave_skipped_arms_pending_at_original_deadline ... ok
+test representation::native_representation_resources_compare_matching_domains_only ... ok
+test representation::native_representation_resources_reject_missing_or_inconsistent_observations ... ok
+test representation::native_representation_rollback_observation_survives_pending_ptq1_arm ... ok
+test representation::native_representation_row4_profile_is_explicit_and_preserves_pair ... ok
+test representation::pinned_native_ptq1_pq2_capture_complete_responses ... ignored, Actual-model complete-response PQ2/PTQ1 feasibility pair; one bounded main-only device CI job.
+test representation::pinned_native_ptq1_pq2_row4_capture_complete_responses ... ignored, Actual-model complete-response four-worker PQ2/PTQ1 feasibility pair; one bounded main-only device CI job.
+test service_integration::native_service_integration_binds_prefix_and_reported_prompt_counts ... ok
+test service_integration::native_service_integration_fresh_owner_reserve_keeps_original_deadline ... ok
+test service_integration::native_service_integration_prefix_rejects_terminal_events_already_received ... ok
+test service_integration::native_service_integration_profile_preserves_bounds_and_pending_verdicts ... ok
+test service_integration::native_service_integration_rejects_natural_completion_and_missing_rejections ... ok
+test service_integration::pinned_native_ptq1_adapter_row4_checks_released_service_integration ... ignored, Actual released PTQ1 service integration; one bounded main-only owner CI job.
+test speed::native_speed_comparison_requires_matched_output_usage_and_cleanup ... ok
+test speed::native_speed_metric_uses_reported_tokens_and_complete_request_time ... ok
+test native_adapter_scale_history_retains_partial_steps_without_qualifying_missing_work ... ok
+test speed::native_speed_profile_shares_deadline_and_rejects_extra_workloads ... ok
+test speed::native_speed_stream_waits_for_complete_framing_and_uses_usage_not_events ... ok
+test speed::pinned_native_pq2_adapter_compares_request_throughput ... ignored, Actual original PQ2 paired row1/row4 request timing; one bounded main-only device CI job.
+test native_adapter_scale_history_requires_reported_bounded_terminal_usage ... ok
+test representation::native_representation_complete_bytes_survive_expired_second_request ... ok
+test speed::native_speed_partial_pair_survives_cancelled_second_request ... ok
+
+test result: ok. 52 passed; 0 failed; 11 ignored; 0 measured; 0 filtered out; finished in 2.07s
+
+
+running 6 tests
+test every_credential_position_is_checked_including_the_last_byte ... ok
+test escaped_duplicate_field_names_cannot_bypass_the_schema ... ok
+test equivalent_json_encodings_produce_identical_count_and_generation_bytes ... ok
+test context_boundary_tracks_the_requested_completion_budget ... ok
+test header_bytes_include_delimiters_at_the_exact_limit ... ok
+test header_count_accepts_the_exact_limit_and_rejects_one_more ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 26 tests
+test bounds_both_advertised_and_actual_body_bytes ... ok
+test assistant_reasoning_is_preserved_in_exact_count_and_generation ... ok
+test compatibility_model_alias_never_selects_or_reaches_the_backend ... ok
+test compatibility_text_parts_preserve_exact_canonical_text_and_reasoning ... ok
+test completion_limit_is_positive_and_bounded ... ok
+test configuration_requires_private_key_format_and_nonprivileged_port ... ok
+test content_length_preserves_syntax_precedence_and_leading_zeroes ... ok
+test context_admission_fails_closed_at_boundary_and_overflow ... ok
+test duplicate_keys_and_wrong_types_cannot_erase_limits ... ok
+test escaped_role_strings_preserve_the_canonical_history ... ok
+test exact_count_sees_identical_canonical_body_and_preserved_text ... ok
+test compatibility_text_parts_reject_media_ambiguous_shapes_and_excess_parts ... ok
+test json_media_type_is_required ... ok
+test native_clients_still_require_authentication ... ok
+test only_exact_chat_route_is_public ... ok
+test reasoning_history_rejects_null_types_duplicates_and_nonassistant_roles ... ok
+test rejects_alternate_hosts_and_browser_origins ... ok
+test rejects_ambiguous_headers ... ok
+test rejects_invalid_history_and_assistant_prefill ... ok
+test rejects_unreviewed_framing_and_compression ... ok
+test strict_json_shapes_reject_positional_structs_and_tagged_roles ... ok
+test thinking_defaults_off_and_explicit_selection_reaches_counting_and_generation ... ok
+test message_limit_preserves_maximum_valid_histories ... ok
+test thinking_rejects_null_nonboolean_values_and_duplicate_keys ... ok
+test typed_schema_rejects_aliases_controls_tools_and_media ... ok
+test canonical_backend_body_respects_the_exact_private_request_byte_limit ... ok
+
+test result: ok. 26 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+
+running 5 tests
+test dropping_the_runner_closes_admission_and_every_owned_socket ... ok
+test shutdown_drains_active_and_waiting_requests_at_the_exact_capacity ... ok
+test generation_failure_exits_the_runner_with_a_distinct_admission_latch ... ok
+test successful_delivery_and_notification_failure_both_drain_without_detached_work ... ok
+test development_configuration_requires_opt_in_and_bounded_distinct_file_keys ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+
+running 6 tests
+test entries_are_fifo_and_only_one_request_is_active ... ok
+test cancellation_releases_unpolled_queued_and_active_slots ... ok
+test queued_deadline_does_not_reset_and_releases_its_reservation ... ok
+test expired_deadlines_reject_ready_entry_and_release_capacity ... ok
+test shutdown_rejects_waiters_reservations_and_active_checks ... ok
+test waiting_limit_rejects_invalid_configuration ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 2 tests
+test reordered_polling_cancellation_and_deadline_edges_match_reference_model ... ok
+test seeded_admission_histories_match_reference_model ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+
+running 8 tests
+test expired_deadline_never_connects_or_reads_request ... ok
+test disconnect_during_count_drops_backend_and_client ... ok
+test disconnect_or_surplus_during_generation_drops_backend ... ok
+test canonical_count_and_generation_share_body_and_drop_streams ... ok
+test rejected_count_never_connects_generation ... ok
+test supplied_deadline_and_default_cap_cancel_connection ... ok
+test truncated_generation_does_not_append_an_admission_error ... ok
+test typed_private_context_rejection_sends_only_sanitized_public_admission_error ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 35 tests
+test http::intake_tests::intake_scratch_reuses_small_requests_and_releases_large_uploads ... ok
+test http::intake_tests::fragmented_headers_scan_each_window_once_and_preserve_coalesced_audio ... ok
+test http::intake_tests::fragmented_request_headers_keep_exact_limit_framing_and_coalesced_audio ... ok
+test http::intake_tests::memory_body_intake_reuses_headers_and_preserves_coalesced_audio ... ok
+test http::pcm_tests::complete_waveform_borrows_original_storage_and_releases_on_validation_or_write_failure ... ok
+test http::pcm_tests::streaming_pcm_reuses_one_frame_across_hex_boundaries_and_shorter_tails ... ok
+test http::pcm_tests::complete_pcm_reuses_one_bounded_buffer_and_stops_on_write_failure ... ok
+test launch::tests::native_cli_rejects_model_reparse_files ... ok
+test launch::tests::native_cli_requires_fixed_complete_paths_and_rejects_duplicate_overrides ... ok
+test request::tests::failed_multipart_clears_previous_recognition_samples ... ok
+test request::tests::memory_multipart_field_overflow_is_rejected_before_field_decoding ... ok
+test request::tests::memory_multipart_parts_borrow_a_fixed_number_of_fields ... ok
+test launch::tests::compiled_artifact_guards_reject_changed_bytes_and_wrong_model_identity ... ok
+test launch::tests::tts_cli_bounds_thread_counts_and_pinned_quantization ... ok
+test request::tests::synthesis_fields_borrow_plain_json_and_own_escaped_unicode ... ok
+test tests::completed_response_child ... ignored, Only spawned by the completed-response regression as a disposable companion.
+test tests::escaped_transcripts_cannot_exceed_the_clients_serialized_response_limit ... ok
+test tests::malformed_framing_and_browser_headers_never_reach_the_engine ... ok
+test tests::memory_body_intake_preserves_the_maximum_declared_speech_payload ... ok
+test tests::native_multipart_transcription_maps_pcm_without_disk_files ... ok
+test tests::native_http_preserves_exact_health_and_voice_design_audio ... ok
+test tests::native_voice_design_rejects_language_overrides_before_inference ... ok
+test tests::native_owned_and_vector_waveforms_emit_identical_complete_http_responses ... ok
+test launch::tests::tts_guards_verify_and_retain_the_base_voice_model ... ok
+test tests::strict_json_and_wave_validation_rejects_untrusted_payloads ... ok
+test tests::watchdog_child ... ignored, Only spawned by the watchdog regression as an isolated disposable companion.
+test tests::protected_credential_keeps_a_read_handle_that_denies_writes ... ok
+test tests::wave_response_validates_before_headers_and_preserves_pcm_bytes ... ok
+test watchdog::tests::completed_inference_stop_wins_over_eof_from_a_pending_peek ... ok
+test wave::tests::pcm_bytes_preserve_clipping_rounding_and_signed_zero ... ok
+test wave::tests::recognition_decoding_reuses_storage_and_clears_failed_clips ... ok
+test wave::tests::wave_header_validates_the_complete_clip_and_keeps_exact_lengths ... ok
+test tests::streaming_pcm_frames_complete_output_and_leaves_failures_incomplete ... ok
+test tests::completed_pcm_and_wave_clients_can_close_before_the_next_request ... ok
+test tests::watchdog_terminates_only_its_companion_on_disconnect_extra_data_and_deadline ... ok
+
+test result: ok. 33 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 0.26s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

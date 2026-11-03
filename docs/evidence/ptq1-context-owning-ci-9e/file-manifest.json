@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "kind": "terminal-owning-ci-review-file-manifest",
+  "files": [
+    {
+      "file": "independent-review.json",
+      "bytes": 4610,
+      "sha256": "b3ceb7acad069065af35d8e0e68678b19369df0d96cfd308d1154a83bd90c880"
+    },
+    {
+      "file": "main-ancestor.json",
+      "bytes": 661,
+      "sha256": "7763398dd892edd1289c3cf410c1b7f7301003f3e9b1c7c6ad39640a92d85408"
+    },
+    {
+      "file": "runtime-conformance.json",
+      "bytes": 12022,
+      "sha256": "237d01640974dfc33c850a81aeba541327ebfb929e2a61735697ba3cd660cb2e"
+    }
+  ]
+}

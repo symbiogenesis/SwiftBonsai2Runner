@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "kind": "independent-prism-0.1.14-data-and-prepared-runner-pin-review",
+  "reviewerId": "Codex:/root/review",
+  "status": "data-and-source-passed-owning-runtime-conformance-and-publication-pending",
+  "sourceRevision": "9e8ea3e2c042ab0c3f1a8e9596ff155e202c3c57",
+  "preparedRunnerPinRevision": "945b2cb21eb4fc5afd80fc3b88d48f98d913bb3a",
+  "preparedRunnerPinSha256": "8d2cf2f7cacf7795dc3283d8cd931cd50e077e6f9aac052b5c3fbc8327cd150a",
+  "preparedRunnerPinByteScope": "The SHA-256 covers the exact 2433-byte CRLF prepared working-tree config. Git stores the same parsed JSON as a 2364-byte LF blob c949ef46764615ddddeb07a454fd5471c22a2d7b at the reviewed revision. Raw byte equality across Git's text normalization is not asserted.",
+  "retainedFiles": {"manifest":"file-manifest.json","manifestEntries":19,"manifestSha256":"6eed045e680164fcc42b855bef241ba47d41290f23b721f241330203afd9f222","all21ReviewDirectoryFilesIndependentlyMatchedRawStagedGitBlobBytes":true,"scope":"Manifest excludes itself and this review. Raw preservation attributes cover every retained file, including the independent data-inspection scripts and original hosted stdout."},
+  "dataChecks": {
+    "authenticatedGithubArtifactMetadataMatched": 2,
+    "outerArtifactRawHashesIndependentlyMatched": 2,
+    "embeddedReceiptsAndReleaseZipsEqualRetainedDiskBytes": true,
+    "releaseArchitectures": ["aarch64-pc-windows-msvc", "x86_64-pc-windows-msvc"],
+    "releaseMembersMatchedPerArchitecture": 9,
+    "targetPe32PlusHeadersIndependentlyMatchedPerArchitecture": 5,
+    "sourceLicenseGitBlobsIndependentlyMatchedPerArchitecture": 4,
+    "sourceArchiveEntries": 775,
+    "sourceArchiveFilesComparedToExactGitBlobs": 693,
+    "sourceArchiveFilesMatchedToExactGitBlobs": 693,
+    "preparedLockMembersEqualReviewedArm64Receipt": 9,
+    "scope": "Independent bounded data inspection, without extracting or executing archive members. Raw ZIP, receipt and member hashes always cover received bytes. Four license comparisons separately require strict whole-file Windows CRLF-to-source-LF conversion and match the exact source Git blob IDs; raw archive bytes are not relabeled as source bytes. All source ZIP files match the exact source Git tree with no text conversion."
+  },
+  "producerVerifierSourceReview": {
+    "externalPath": "C:\\tmp\\Prism-0114-Release-20261102\\verify_release.py",
+    "sha256": "85c526701648bfe22ad8a1b1dd2f8e503076f3d85aa1c7f3eea82d9193a077d5",
+    "scope": "Reviewed bounded receipt schema, duplicate handling, flat nine-member ZIP inventory, exact hashes, PE target/image checks and strict declared source-license conversion. This reviewer used separate data-inspection scripts retained here rather than importing the producer verifier. Neither script establishes source-to-binary correspondence by itself."
+  },
+  "owningCiAtDataReview": {
+    "prismFoundation": {"runId":"41580496421","sourceRevision":"9e8ea3e2c042ab0c3f1a8e9596ff155e202c3c57","status":"completed","conclusion":"success","jobsPassed":15},
+    "prismSourcePackage": {"runId":"41580658543","sourceRevision":"9e8ea3e2c042ab0c3f1a8e9596ff155e202c3c57","status":"completed","conclusion":"success","jobsPassed":3},
+    "runnerFoundationBeforePin": {"runId":"41580776157","sourceRevision":"645996eacd1eb6d763aaf30041e3118f85baf7e7","status":"completed","conclusion":"success","jobsPassed":9},
+    "prismRuntimeConformance": {"runId":"41580660471","sourceRevision":"9e8ea3e2c042ab0c3f1a8e9596ff155e202c3c57","status":"pending-at-this-data-review","terminalSuccessPreasserted":false},
+    "scope": "Authenticated exact-source owning metadata is retained for completed checks. The complete runtime-conformance aggregate, release publication/asset verification and later Runner integration after repinning remain separate required steps. Earlier failed/cancelled runs are not rewritten."
+  },
+  "hostedRegressionEvidence": {
+    "prism": "Both exact-source Windows correctness-0 logs explicitly show the private typed-context/stale-count/same-owner-recovery regression and concrete-token-limit-only classifier passing; the server library result was 22 passed and zero failed on each architecture. Selected authenticated job-log lines are retained.",
+    "runner": "Authenticated core artifact 13206257054 from exact-source run41580776157 contains all four strict count-route-only typed413 backend regressions, the sanitized public admission/no-generation regression, and malformed/unframed context-observation regression passing. Raw packages-test.stdout and rust-checks.json are retained; their raw hashes appear in the file manifest. The GitHub-declared outer artifact digest is metadata; no independent raw outer-ZIP verification is claimed for this downloaded log selection.",
+    "scope": "Hosted synthetic/source protocol evidence. The exact underlying response bytes/backend exception from the original model trial were not retained; this proves regression coverage for an independently identified protocol defect, not the exact unobserved cause or successful model replay."
+  },
+  "preparedPinDiffReview": "Only exact source/asset/member/release/version identities and scoped evidence change. Both source and released-asset URLs bind the reviewed revision/version and ARM64 receipt. Engine/representation defaults, model/adapter settings, admission limits and cleanup reserves do not change. The proposed published URL is not a claim that publication has occurred.",
+  "qualificationScope": "All actual 0.1.13 observations, original-PQ2 rollback and six-pass/thirteen-pending frozen score retain their original runtime/Runner/harness identities. None transfer to 0.1.14. No new actual-model, service-gate, rollback, performance, provenance, quality, state-parity or default-promotion pass is asserted.",
+  "originalOwnerSession": "Permanently closed at 119.7370729 charged seconds. Data inspection, hosted CI and source preparation do not reopen or extend it.",
+  "newReviewerDeviceQueries": 0,
+  "newReviewerModelExecutions": 0,
+  "newReviewerReleaseBinaryExecutions": 0,
+  "newReviewerLocalBuildsOrTests": 0,
+  "publicationVerified": false,
+  "laterRunnerPinIntegrationVerified": false,
+  "defaultPromotionQualified": false,
+  "experimentalLabelRemovalQualified": false
+}

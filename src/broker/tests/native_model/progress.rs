@@ -239,6 +239,23 @@ pub(super) async fn exchange(
     report: &mut Value,
     label: &str,
 ) -> Vec<u8> {
+    try_exchange(port, credential, body, evidence, report, label)
+        .await
+        .unwrap()
+}
+
+#[expect(
+    clippy::redundant_pub_crate,
+    reason = "Sibling acceptance code retains transport failure before performing owned cleanup."
+)]
+pub(super) async fn try_exchange(
+    port: u16,
+    credential: &str,
+    body: &Value,
+    evidence: &Path,
+    report: &mut Value,
+    label: &str,
+) -> Option<Vec<u8>> {
     if report["requestProgress"].is_null() {
         report["requestProgress"] = json!([]);
     }
@@ -255,18 +272,27 @@ pub(super) async fn exchange(
         index,
     };
     receipt.save();
-    let mut stream = connect(port, credential, body).await;
+    let Ok(mut stream) = try_connect(port, credential, body).await else {
+        receipt.progress.fields["transportErrorObserved"] = json!(true);
+        return None;
+    };
     let mut bytes = Vec::new();
     // Keep the fixed read scratch out of every enclosing future's inline state.
     // This observer nests inside acceptance deadlines and rollback fixtures.
     let mut buffer = vec![0; 8192];
     loop {
-        let count = stream.read(&mut buffer).await.unwrap();
+        let Ok(count) = stream.read(&mut buffer).await else {
+            receipt.progress.fields["transportErrorObserved"] = json!(true);
+            return None;
+        };
         if count == 0 {
             receipt.progress.fields["connectionClosed"] = json!(true);
-            return bytes;
+            return Some(bytes);
         }
-        assert!(bytes.len() + count <= RESPONSE_LIMIT);
+        if bytes.len() + count > RESPONSE_LIMIT {
+            receipt.progress.fields["responseLimitExceeded"] = json!(true);
+            return None;
+        }
         bytes.extend_from_slice(&buffer[..count]);
         receipt
             .progress

@@ -1,0 +1,18 @@
+    Checking bonsai-broker v0.1.0 (C:\a\SwiftBonsai2Runner\SwiftBonsai2Runner\src\broker)
+error: used `assert!` to check that a value is empty
+   --> src\broker\tests\supervisor.rs:426:21
+    |
+426 |                     assert!(bytes.is_empty());
+    |                     ^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://clippy.rust-lang.org/main/index.html#assert_is_empty
+    = note: `-D clippy::assert-is-empty` implied by `-D clippy::pedantic`
+    = help: to override `-D clippy::pedantic` add `#[allow(clippy::assert_is_empty)]`
+help: use `assert_eq!` to show the value on failure
+    |
+426 -                     assert!(bytes.is_empty());
+426 +                     assert_eq!(bytes, [] as [u8; 0]);
+    |
+
+error: could not compile `bonsai-broker` (test "supervisor") due to 1 previous error
+warning: build failed, waiting for other jobs to finish...
