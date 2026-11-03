@@ -20,7 +20,7 @@ enum GraphicsBackend {
     Gl,
 }
 
-fn graphics_environment(backend: Option<GraphicsBackend>) -> BTreeMap<OsString, OsString> {
+fn graphics_environment(backend: Option<GraphicsBackend>) -> BTreeMap<String, String> {
     let mut environment = BTreeMap::new();
     if let Some(backend) = backend {
         let value = match backend {
@@ -333,7 +333,7 @@ trait Operations {
         executable: &Path,
         arguments: &[OsString],
         working: &Path,
-        environment: &BTreeMap<OsString, OsString>,
+        environment: &BTreeMap<String, String>,
     ) -> crate::Result<u32>;
 }
 
@@ -402,7 +402,7 @@ impl Operations for Native {
         executable: &Path,
         arguments: &[OsString],
         working: &Path,
-        environment: &BTreeMap<OsString, OsString>,
+        environment: &BTreeMap<String, String>,
     ) -> crate::Result<u32> {
         let result = crate::startup_process::run(
             executable.as_os_str(),

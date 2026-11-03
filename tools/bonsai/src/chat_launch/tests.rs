@@ -36,12 +36,7 @@ enum Event {
     Apps(Vec<String>, bool),
     Native(String, bool),
     Keys(PathBuf),
-    Launch(
-        PathBuf,
-        Vec<OsString>,
-        PathBuf,
-        BTreeMap<OsString, OsString>,
-    ),
+    Launch(PathBuf, Vec<OsString>, PathBuf, BTreeMap<String, String>),
 }
 
 struct Recorder {
@@ -136,7 +131,7 @@ impl Operations for Recorder {
         executable: &Path,
         arguments: &[OsString],
         working: &Path,
-        environment: &BTreeMap<OsString, OsString>,
+        environment: &BTreeMap<String, String>,
     ) -> crate::Result<u32> {
         self.events.push(Event::Launch(
             executable.into(),
@@ -820,8 +815,8 @@ fn graphics_backend_selection_is_explicit_and_scoped_to_the_chat_child() -> crat
                     .map_err(|error| error.to_string())?;
             assert_eq!(serialized["GraphicsBackend"], json!(backend));
             assert_eq!(serialized["NativeEngine"], native);
-            let expected: BTreeMap<OsString, OsString> = backend
-                .map(|value| (OsString::from("WGPU_BACKEND"), OsString::from(value)))
+            let expected: BTreeMap<String, String> = backend
+                .map(|value| (String::from("WGPU_BACKEND"), String::from(value)))
                 .into_iter()
                 .collect();
             assert!(recorder.events.iter().any(|event| {
