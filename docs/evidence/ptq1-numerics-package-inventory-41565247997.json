@@ -8,6 +8,9 @@
   "OriginalHelperSha256": "b60ca422311aead3510cc1a729f933c3376243941d744a37748af1b821debdf2",
   "CorrectedHelperPath": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-Ptq1-Numerics-41565247997\\Invoke-TemporaryPtq1NumericsOwner-Membership.ps1",
   "CorrectedHelperSha256": "47a8650c03e69944b85a1a0dfa5031f11910949fc20934ababad73a09b6df2b3",
+  "CorrectedHelperArchivedRelativeToLocalAppData": "SwiftBonsai2/qualification/ptq1-numerics-41565247997/source-follow-up/Invoke-TemporaryPtq1NumericsOwner-Membership.ps1",
+  "PureReproducerArchivedRelativeToLocalAppData": "SwiftBonsai2/qualification/ptq1-numerics-41565247997/source-follow-up/Bonsai-Numerics-PackageInventory-SourceReview-41565247997.ps1",
+  "ArchiveScope": "Exact reviewed source copies retained after the closed owner session; original receipts and clock unchanged, no helper execution or new device work.",
   "OriginalHelperUnchanged": true,
   "Scope": "Only AST-extracted file/package validators ran with archived artifact-API JSON stubs, plus the extracted exact-name predicate. No top-level helper, owner preflight, registration, runner, hardware diagnostics, model or benchmark executed.",
   "Finding": {
