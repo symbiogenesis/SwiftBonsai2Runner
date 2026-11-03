@@ -158,7 +158,15 @@ canonical ordering and digest bytes. See [host inventory](../../docs/hardware-ca
 
 `native-acceptance-budget` receives canonical seven-fraction UTC timestamps,
 monotonic ticks/frequency, run/revision and the optional complete owner binding.
-It can only shorten the original job allowance. The owning workflow charges
+Optional `wholeJobMaximumSeconds` defaults to 300 and accepts 300..900, explicitly
+declared before starting the workload. The native-runtime acceptance workflow
+offers 5/10/15 minutes, retaining a workload estimate/reason for either extension.
+The case maximum is the declared total minus sixty seconds (240 by default,
+840 at the ceiling). Setup and the inherited original owner clock can only
+shorten it; a 270-second owner remains bounded even with a 900-second job.
+Thirty seconds for postprocessing, ten seconds between case/process limits and
+fifteen seconds before inherited owner work expiry remain reserved. Other capture
+lanes retain their narrower limits. The owning workflow charges
 tool-resolution/IPC time before starting the acceptance process. Both this call
 and `startup-diagnostics` require the source-bound hosted maintenance tool on
 the owner device; no source build can start inside their allowance.

@@ -6,7 +6,9 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 const TICKS_PER_SECOND: u64 = 10_000_000;
-const MAXIMUM_OWNER_WORK_SECONDS: u16 = 270;
+const DEFAULT_WHOLE_JOB_SECONDS: u16 = 300;
+const MAXIMUM_WHOLE_JOB_SECONDS: u16 = 900;
+const POSTPROCESS_RESERVE_SECONDS: u16 = 30;
 const OWNER_PROCESS_EXIT_RESERVE_SECONDS: u16 = 15;
 const OWNER_FIELDS: [&str; 5] = [
     "RunId",
@@ -25,6 +27,8 @@ struct Request {
     tick_frequency: i64,
     run_id: String,
     revision: String,
+    #[serde(default = "default_whole_job_seconds")]
+    whole_job_maximum_seconds: u16,
     #[serde(default = "empty_owner")]
     owner_deadline: Value,
 }
@@ -33,9 +37,15 @@ fn empty_owner() -> Value {
     serde_json::json!({})
 }
 
+const fn default_whole_job_seconds() -> u16 {
+    DEFAULT_WHOLE_JOB_SECONDS
+}
+
 #[derive(Serialize)]
 #[serde(rename_all = "PascalCase")]
 struct Budget {
+    whole_job_maximum_seconds: u16,
+    maximum_case_budget_seconds: u16,
     preparation_elapsed_seconds: f64,
     hard_limit_seconds: u16,
     case_budget_seconds: u16,
@@ -60,6 +70,11 @@ pub fn run(request: Value) -> crate::Result<Value> {
 }
 
 fn calculate(request: &Request) -> crate::Result<Budget> {
+    if !(DEFAULT_WHOLE_JOB_SECONDS..=MAXIMUM_WHOLE_JOB_SECONDS)
+        .contains(&request.whole_job_maximum_seconds)
+    {
+        return Err("The predeclared whole-job maximum must be 300..900 seconds.".into());
+    }
     if !canonical_decimal(&request.run_id, 20)
         || request.revision.len() != 40
         || !request
@@ -82,7 +97,10 @@ fn calculate(request: &Request) -> crate::Result<Budget> {
         .ok_or("Acceptance monotonic clock frequency must be positive.")?;
     // Subtract the ceiling of elapsed time, preserving fractional setup costs
     // without allowing floating-point rounding to extend either deadline.
-    let mut hard_limit = 250_i128.min(270 - i128::from(setup_ticks.div_ceil(TICKS_PER_SECOND)));
+    let maximum_work = request.whole_job_maximum_seconds - POSTPROCESS_RESERVE_SECONDS;
+    let maximum_case = request.whole_job_maximum_seconds - 60;
+    let mut hard_limit = i128::from(maximum_case + 10)
+        .min(i128::from(maximum_work) - i128::from(setup_ticks.div_ceil(TICKS_PER_SECOND)));
     let owner = request
         .owner_deadline
         .as_object()
@@ -115,7 +133,7 @@ fn calculate(request: &Request) -> crate::Result<Budget> {
         if field("RunId")? != request.run_id || field("Revision")? != request.revision {
             return Err("The owner deadline run or revision differs.".into());
         }
-        let work_seconds = owner_work_allowance(field("WorkSeconds")?)?;
+        let work_seconds = owner_work_allowance(field("WorkSeconds")?, maximum_work)?;
         owner_work_seconds = Some(work_seconds);
         let started_tick = field("StartedTick")?;
         if !canonical_decimal(started_tick, 19) {
@@ -144,13 +162,15 @@ fn calculate(request: &Request) -> crate::Result<Budget> {
     } else {
         None
     };
-    let case_budget = 240_i128.min(hard_limit - 10);
+    let case_budget = i128::from(maximum_case).min(hard_limit - 10);
     if case_budget < 1 {
         return Err(
             "Preparation exhausted the acceptance allowance; qualification remains pending.".into(),
         );
     }
     Ok(Budget {
+        whole_job_maximum_seconds: request.whole_job_maximum_seconds,
+        maximum_case_budget_seconds: maximum_case,
         preparation_elapsed_seconds: seconds(setup_ticks, TICKS_PER_SECOND)?,
         hard_limit_seconds: u16::try_from(hard_limit).map_err(|error| error.to_string())?,
         case_budget_seconds: u16::try_from(case_budget).map_err(|error| error.to_string())?,
@@ -162,16 +182,17 @@ fn calculate(request: &Request) -> crate::Result<Budget> {
     })
 }
 
-fn owner_work_allowance(value: &str) -> crate::Result<u16> {
+fn owner_work_allowance(value: &str, maximum_work: u16) -> crate::Result<u16> {
     // The owner may predeclare a smaller allowance, including the original
     // 210 seconds, but cannot consume the final thirty seconds of its
-    // absolute five-minute lifetime. Every cost uses the original start.
+    // predeclared lifetime. Every cost uses the original start. Selecting a
+    // longer job does not enlarge a shorter inherited owner allowance.
     canonical_decimal(value, 3)
         .then(|| value.parse::<u16>().ok())
         .flatten()
-        .filter(|seconds| *seconds <= MAXIMUM_OWNER_WORK_SECONDS)
+        .filter(|seconds| *seconds <= maximum_work)
         .ok_or_else(|| {
-            "The original owner work allowance must be canonical and at most 270 seconds.".into()
+            "The original owner work allowance must be canonical and leave thirty seconds within the predeclared whole-job maximum.".into()
         })
 }
 
@@ -326,6 +347,62 @@ mod tests {
         assert_eq!(report["HardLimitSeconds"], 20);
         assert_eq!(report["CaseBudgetSeconds"], 10);
         Ok(())
+    }
+
+    #[test]
+    fn extended_job_is_explicit_and_preserves_original_owner_and_setup_costs() -> crate::Result<()>
+    {
+        let mut input = request();
+        assert_eq!(run(input.clone())?["MaximumCaseBudgetSeconds"], 240);
+        input["wholeJobMaximumSeconds"] = json!(900);
+        let extended = run(input.clone())?;
+        assert_eq!(extended["WholeJobMaximumSeconds"], 900);
+        assert_eq!(extended["MaximumCaseBudgetSeconds"], 840);
+        assert_eq!(extended["HardLimitSeconds"], 850);
+        assert_eq!(extended["CaseBudgetSeconds"], 840);
+        input["ownerDeadline"] = owner();
+        input["ownerDeadline"]["WorkSeconds"] = json!("270");
+        // Fifty seconds have already elapsed on the original owner clock.
+        let inherited = run(input.clone())?;
+        assert_eq!(inherited["HardLimitSeconds"], 205);
+        assert_eq!(inherited["CaseBudgetSeconds"], 195);
+        input["ownerDeadline"]["WorkSeconds"] = json!("870");
+        let longer_owner = run(input.clone())?;
+        assert_eq!(longer_owner["HardLimitSeconds"], 805);
+        assert_eq!(longer_owner["CaseBudgetSeconds"], 795);
+        // Job setup also consumes the longer allowance; it never gets a new clock.
+        input["jobStartedUtc"] = json!("2026-10-30T23:47:20.0000000Z");
+        let setup_charged = run(input.clone())?;
+        assert_eq!(setup_charged["HardLimitSeconds"], 60);
+        assert_eq!(setup_charged["CaseBudgetSeconds"], 50);
+        input["jobStartedUtc"] = json!("2026-10-30T23:46:29.9999999Z");
+        assert!(run(input).is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn extended_job_rejects_invalid_totals_and_excessive_owner_allowances() {
+        for total in [
+            json!(0),
+            json!(299),
+            json!(901),
+            json!(65536),
+            json!(-1),
+            json!(900.5),
+            json!("900"),
+            Value::Null,
+        ] {
+            let mut input = request();
+            input["wholeJobMaximumSeconds"] = total;
+            assert!(run(input).is_err());
+        }
+        for (total, work) in [(300, "870"), (600, "571"), (900, "871")] {
+            let mut input = request();
+            input["wholeJobMaximumSeconds"] = json!(total);
+            input["ownerDeadline"] = owner();
+            input["ownerDeadline"]["WorkSeconds"] = json!(work);
+            assert!(run(input).is_err());
+        }
     }
 
     #[test]

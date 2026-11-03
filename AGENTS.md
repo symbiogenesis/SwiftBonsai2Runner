@@ -5,11 +5,16 @@ Use [PLAN.md](PLAN.md) as the source of truth for all outstanding project work.
 # Owner-device execution budgets
 
 Diagnostics, model qualification trials and benchmarks on the owner's laptop
-must fit within five minutes total, preferably less. This includes self-hosted
-CI on that laptop and setup, loading, comparison and cleanup. Shrink the trial
-or leave the gate pending when it cannot fit; do not divide a long matrix into
-repeated runs to work around the limit. Complete suites and benchmarks remain
-CI-only; hosted cloud CI has its own workflow limits.
+default to five minutes total, preferably less. A dedicated, predeclared workload
+may use the smallest justified longer allowance, up to fifteen minutes total.
+Record its fixed work, conservative time estimate and reason before starting;
+fifteen minutes is a ceiling, not a target. This includes self-hosted CI on that
+laptop and setup, intake, loading, every comparison arm, cleanup and evidence
+retention. Existing narrower tool/workflow limits remain effective unless
+explicitly extended. Stop early once the selected work finishes or cannot fit.
+Do not restart clocks, retry a failed trial or divide a long matrix into repeated
+runs to work around the allowance. Complete suites and benchmarks remain CI-only;
+hosted cloud CI has its own workflow limits. Historical trial deadlines stay closed.
 
 For every trial on this laptop, record whether AC power is connected before and
 after the workload, and separately for each arm of a comparison. Retain battery
@@ -18,7 +23,7 @@ explicitly unknown; never infer a past trial's power source from a later query.
 Factor AC versus battery operation and observed changes into interpretation, and
 do not qualify performance comparisons with missing or mismatched power
 conditions. Equal endpoint snapshots alone do not prove uninterrupted stability.
-Power observations share the same five-minute aggregate trial allowance.
+Power observations share the same predeclared aggregate trial allowance.
 
 # Parallel work and commits
 

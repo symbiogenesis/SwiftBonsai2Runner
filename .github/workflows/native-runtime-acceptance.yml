@@ -4,10 +4,21 @@ on:
   workflow_dispatch:
     inputs:
       profile:
-        description: Explicit bounded profile; all setup/model work/cleanup shares one five-minute job
+        description: Explicit bounded profile; setup/model work/cleanup shares one declared job budget
         type: choice
         options: [pq2-no-adapter, ptq1-adapter, ptq1-adapter-lifecycle, ptq1-adapter-lifecycle-row4, ptq1-adapter-boundaries-row4, ptq1-adapter-service-row4, ptq1-adapter-service-rollback-row4, pq2-adapter-row4, pq2-adapter-lifecycle-row4, pq2-adapter-speed, ptq1-pq2-complete-response, ptq1-pq2-complete-response-row4]
         default: pq2-no-adapter
+        required: false
+      owner_budget_minutes:
+        description: Five preferred; choose the smallest estimated whole-job bound, including setup and cleanup
+        type: choice
+        options: ['5', '10', '15']
+        default: '5'
+        required: false
+      budget_reason:
+        description: For 10/15 minutes, record the fixed workload time estimate and why it cannot fit five
+        type: string
+        default: ''
         required: false
       bounded_history:
         description: PQ2 no-adapter only; 128 history repetitions, four-token stream and same-owner reuse within the same budget
@@ -115,6 +126,7 @@ jobs:
               'native_stalled_consumer_never_qualifies_natural_completion_as_interruption',
               'native_stalled_consumer_rejects_error_or_unframed_stream_headers',
               'native_case_budget_rejects_missing_unbounded_and_malformed_allowances',
+              'native_case_budget_extension_requires_a_valid_predeclared_total',
               'native_case_budget_cancels_owned_tasks_before_followup')) {
             if ($modelFreeCases -cnotcontains ($case + ': test')) { throw 'Required hosted acceptance regression was not found.' }
             & (Join-Path $package 'native-model-acceptance.exe') $case --exact
@@ -163,14 +175,20 @@ jobs:
     # Register one ephemeral Windows ARM64 owner runner with only this run label.
     # A run-specific label prevents another queued device workload from matching it.
     runs-on: ${{ format('native-acceptance-{0}', github.run_id) }}
-    timeout-minutes: 5
+    timeout-minutes: ${{ inputs.owner_budget_minutes == '15' && 15 || inputs.owner_budget_minutes == '10' && 10 || 5 }}
     env:
       BONSAI_NATIVE_DIAGNOSTICS_READY: 'false'
+      BONSAI_NATIVE_BUDGET_MINUTES: ${{ inputs.owner_budget_minutes || '5' }}
+      BONSAI_NATIVE_BUDGET_REASON: ${{ inputs.budget_reason }}
+      BONSAI_NATIVE_WHOLE_JOB_SECONDS: ${{ inputs.owner_budget_minutes == '15' && 900 || inputs.owner_budget_minutes == '10' && 600 || 300 }}
     steps:
       - name: Start the complete owner-job budget before checkout and tool intake
         shell: pwsh
         run: |
           "BONSAI_NATIVE_JOB_STARTED_UTC=$([DateTime]::UtcNow.ToString('o'))" >> $env:GITHUB_ENV
+          if ($env:BONSAI_NATIVE_BUDGET_MINUTES -cnotin @('5', '10', '15')) { throw 'Select a predeclared 5, 10 or 15 minute owner budget.' }
+          if ($env:BONSAI_NATIVE_BUDGET_MINUTES -cne '5' -and [string]::IsNullOrWhiteSpace($env:BONSAI_NATIVE_BUDGET_REASON)) { throw 'An extended budget requires a fixed workload estimate and reason before setup.' }
+          if (([string]$env:BONSAI_NATIVE_BUDGET_REASON).Length -gt 512 -or $env:BONSAI_NATIVE_BUDGET_REASON -match '[\x00-\x1f\x7f]') { throw 'The budget reason must be at most 512 plain-text characters.' }
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
@@ -245,7 +263,8 @@ jobs:
             StalledConsumerRequested=($env:BONSAI_NATIVE_STALLED_CONSUMER -eq 'true')
             AcceptanceProcessExitCode=$null; AggregateBudgetExpired=$false
             OwnerJobStartedUtc=$env:BONSAI_NATIVE_JOB_STARTED_UTC
-            WholeJobMaximumSeconds=300; PostProcessReserveSeconds=30
+            WholeJobMaximumSeconds=[int]$env:BONSAI_NATIVE_WHOLE_JOB_SECONDS; PostProcessReserveSeconds=30
+            BudgetReason=$env:BONSAI_NATIVE_BUDGET_REASON
             PreparationElapsedMilliseconds=$null; ModelCaseBudgetSeconds=$null
             TestProcessHardLimitSeconds=$null
             OwnerDeadlineApplied=$false; OwnerElapsedMilliseconds=$null
@@ -360,6 +379,7 @@ jobs:
                 jobStartedUtc=$jobStarted.ToString('o'); nowUtc=[DateTime]::UtcNow.ToString('o')
                 nowTick=[Diagnostics.Stopwatch]::GetTimestamp(); tickFrequency=[Diagnostics.Stopwatch]::Frequency
                 runId=$env:GITHUB_RUN_ID; revision=$env:GITHUB_SHA; ownerDeadline=$ownerDeadline
+                wholeJobMaximumSeconds=[int]$env:BONSAI_NATIVE_WHOLE_JOB_SECONDS
               } | ConvertTo-Json -Depth 64 -Compress) | ConvertFrom-Json -AsHashtable
             } catch {
               $hostReport.AggregateBudgetExpired = $true
@@ -386,6 +406,7 @@ jobs:
             $hostReport.ModelCaseBudgetSeconds = $caseBudgetSeconds
             $hostReport.TestProcessHardLimitSeconds = $hardLimitSeconds
             $start.Environment['BONSAI_NATIVE_CASE_BUDGET_SECONDS'] = [string]$caseBudgetSeconds
+            $start.Environment['BONSAI_NATIVE_WHOLE_JOB_SECONDS'] = [string]$limits.WholeJobMaximumSeconds
             foreach ($name in @('ACTIONS_RUNTIME_TOKEN', 'ACTIONS_ID_TOKEN_REQUEST_TOKEN', 'GITHUB_TOKEN', 'GH_TOKEN', 'ACTIONS_RUNNER_INPUT_TOKEN')) {
               [void]$start.Environment.Remove($name)
             }
@@ -474,7 +495,7 @@ jobs:
           }
           @('Bounded actual-model Rust application lifecycle passed under required native containment.',
             ('Explicit acceptance profile: ' + $env:BONSAI_NATIVE_PROFILE),
-            'All setup, model loading, execution and cleanup share one five-minute job. Actual-model cases receive at most 240 seconds, reduced by checkout, intake and verification time, with separate process teardown and evidence reserves. Do not split a matrix into repeated jobs.',
+            "All setup, model loading, execution and cleanup share one predeclared $env:BONSAI_NATIVE_BUDGET_MINUTES-minute job (five preferred, fifteen maximum). Actual-model cases reserve sixty seconds from that total and are further reduced by checkout, intake and verification time. Inherited shorter owner clocks and separate teardown/evidence reserves still apply. Do not split a matrix into repeated jobs.",
             ('Bounded supplied history (128 repetitions, four-token cap) requested: ' + $env:BONSAI_NATIVE_EXTENDED),
             ('Explicit Stop with a nonreading connected client requested: ' + $env:BONSAI_NATIVE_STALLED_CONSUMER),
             'The stalled-client workload requires an interrupted broker operation, bounded owned shutdown and fresh-owner recovery; it does not prove socket-buffer saturation or that the backend was still generating at Stop.',

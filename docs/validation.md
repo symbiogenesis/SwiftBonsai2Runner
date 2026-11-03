@@ -6,12 +6,16 @@ belong to [Prism](https://github.com/symbiogenesis/prism-inference/blob/main/doc
 **Local builds, Release analyzers and focused named tests are allowed. Complete
 suites and every benchmark run only in CI; do not recreate a full suite with local filters.**
 
-Owner-laptop diagnostics, model qualification and benchmarks have a five-minute
-total maximum, preferably less, including preparation, loading, comparison and
-cleanup. The same limit applies to self-hosted CI; its job timeout is five minutes.
-Shrink the workload or retain an unqualified gate when it cannot fit. Do not split
-a long matrix into repeated runs to work around this limit. Hosted cloud CI keeps
-its existing limits.
+Owner-laptop diagnostics, model qualification and benchmarks default to five minutes
+total, preferably less. A dedicated, predeclared workload may use the smallest
+justified longer allowance, up to fifteen minutes, including preparation, intake,
+loading, all comparison arms, cleanup and evidence retention. Record the fixed work,
+conservative time estimate and reason before starting; stop early on completion or
+a known no-go. Self-hosted CI has the same policy, while narrower workflow/tool
+limits remain effective until explicitly extended. Shrink the workload or retain an
+unqualified gate when it cannot fit. Do not restart clocks, retry a failed trial or
+split a long matrix into repeated runs. Historical sessions retain their original
+closed clocks. Hosted cloud CI keeps its existing limits.
 
 Every laptop trial must retain AC/battery observations before and after its
 workload, separately for each comparison arm, within that same allowance.
@@ -47,29 +51,32 @@ and fresh restart. Uploads contain credential-free receipts and bounded sanitize
 worker logs; protected key directories are excluded. Failure rejects without an unrestricted retry.
 Ordinary Foundation/local runs never execute the ignored case.
 
-All owner-laptop diagnostics share a **five-minute total ceiling**, including
-setup, model loading, execution and cleanup. The workflow's owner job stops at
-five minutes. Its clock starts before checkout and hosted-binary intake. Each
-actual-model case receives a validated **1–240-second aggregate soft allowance**,
-reduced by all preceding setup, verification and case inventory, including startup
-and cleanup. Missing, malformed or excessive allowances reject before model use.
-The process hard limit leaves ten seconds after the Rust allowance for owned-task
-teardown, and stops by owner-job second 270, reserving thirty seconds for forced
-cleanup, sanitized diagnostics and evidence uploads. The host receipt records the
-preparation cost and both limits; the model receipt records its actual allowance
-and 240-second maximum. Per-request deadlines cannot extend it. Do not
+The workflow defaults to **five minutes total**. Its explicit `owner_budget_minutes`
+input selects 5, 10 or 15 minutes; 10/15 requires `budget_reason` to retain the fixed
+workload estimate and why five minutes cannot fit. The job timeout uses that same
+declared total. Its clock starts before checkout and hosted-binary intake. Each
+actual-model case receives a validated aggregate soft allowance, at most **240,
+540 or 840 seconds** respectively, reduced by preceding setup, verification and
+case inventory. Startup and cleanup share this allowance. Missing, malformed or
+excessive limits reject before model use. The process hard limit leaves ten seconds
+after the Rust allowance for owned-task teardown, and stops at least thirty seconds
+before the original whole-job deadline for forced cleanup, sanitized diagnostics
+and evidence uploads. Host and model receipts retain the declared total, preparation
+cost and actual/maximum case allowance. Per-request deadlines cannot extend it. Do not
 split a long matrix across repeated owner jobs. Hosted ARM64 prepares exact
 source-bound test and maintenance binaries without loading models; the owner job
 verifies their run/revision, SHA-256 and native architecture before direct execution,
 with no Cargo build on the laptop.
 
-An inherited owner may predeclare a canonical work allowance of 1–270 seconds.
+An inherited owner may predeclare a canonical work allowance up to thirty seconds
+less than that same declared whole-job total (270 by default, at most 870).
 The budget tool subtracts all elapsed time from its original monotonic start and
 retains fifteen seconds for owner process exit plus the ten-second case/process
-gap. The independent five-minute job limit, thirty-second postprocess reserve and
-240-second case maximum still apply. The original 210-second declaration retains
-its earlier limits; a larger declaration neither resets the clock nor authorizes
-another attempt. Receipts record the declared work and exit reserve separately.
+gap. The independent declared job limit, thirty-second postprocess reserve and
+case maximum still apply. Selecting a longer job never enlarges a shorter inherited
+owner allowance: original 210/270-second declarations retain their earlier limits.
+A larger declaration neither resets the original clock nor authorizes another
+attempt. Receipts record the declared work and exit reserve separately.
 
 The workflow defaults to `profile: pq2-no-adapter`, preserving the original case
 within that aggregate bound. Explicit `bounded_history` and `stalled_consumer`
@@ -239,7 +246,7 @@ This is application scale-change/rejection/supplied-history coverage; it does no
 establish zero/no-adapter numerical identity, adapter writer basis, exact live
 prefix reuse, edited/generated-history parity, full context/output, quality or
 performance. Its actual-model gate remains pending until retained device CI
-evidence within the shared five-minute total budget; do not partition a longer
+evidence within the shared predeclared total budget; do not partition a longer
 matrix across repeated profiles/jobs.
 
 All adapter-profile HTTP work, including the first required stream and optional
@@ -254,7 +261,7 @@ comparison with original PQ2, adapter scale 1.3, seed 42 and one then four row
 workers, each in a fresh required-sandbox owner. Both use the same short public
 counting prompt, thinking disabled and an eight-token output cap. Setup, both
 model loads, requests, comparison and cleanup share the existing aggregate
-five-minute owner deadline; no retry or continuation job is permitted. A new
+predeclared owner deadline; no retry or continuation job is permitted. A new
 owner needs more than 60 seconds remaining and each request ends at least 30
 seconds before the deadline for owned cleanup. Completed observations are saved
 before the second startup; a skipped or expired half remains pending.
@@ -415,7 +422,8 @@ Model-free acceptance regressions:
 | `native_stalled_consumer_retains_fragmented_prefix_connection_until_dropped` | Fragmented UTF-8/SSE intake and retained connection |
 | `native_stalled_consumer_never_qualifies_natural_completion_as_interruption` | Operation-counter interruption guard |
 | `native_stalled_consumer_rejects_error_or_unframed_stream_headers` | HTTP 200 and chunked event-stream framing before accepting content |
-| `native_case_budget_rejects_missing_unbounded_and_malformed_allowances` | Reject missing, zero, malformed, overflowing and over-240-second allowances; optional workloads use the reduced allowance and retain the 120-second recovery reserve |
+| `native_case_budget_rejects_missing_unbounded_and_malformed_allowances` | Reject missing, zero, malformed, overflowing and over-240-second default allowances; optional workloads use the reduced allowance and retain the 120-second recovery reserve |
+| `native_case_budget_extension_requires_a_valid_predeclared_total` | Five-minute default remains 240 case seconds; explicit 10/15-minute totals permit at most 540/840, rejecting malformed totals or excessive/missing case limits |
 | `native_representation_row4_profile_is_explicit_and_preserves_pair` | Separate complete-response selection configures both fixed-order owners with four workers while retaining the one-worker profile and identical approved model, adapter, request and containment policies |
 | `native_representation_comparison_requires_released_worker_observation` | Both representation samples must retain the compiled release's matching worker-readiness version, observation flag and graph budget; missing or mismatched observations cannot produce a latency ratio |
 | `native_representation_rollback_observation_survives_pending_ptq1_arm` | A complete original-PQ2 arm retains a separate observation when PTQ1 is missing; wrong identities, worker counts, truncated output and incomplete cleanup leave rollback pending, and independent gate review remains required |

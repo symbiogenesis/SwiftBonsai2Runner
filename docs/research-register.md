@@ -51,15 +51,29 @@ layerwise transforms and tiny auxiliary fits need a native implementation and
 measured laptop time/RAM estimate; “training-free” does not establish feasibility.
 
 Predeclare candidate count, shapes, prompt/token sample, peak RAM and deadline.
-Every diagnostic, model qualification or benchmark run on the owner's laptop has
-a **five-minute total maximum, preferably less**, including setup, model loading,
-comparison and cleanup. Self-hosted CI on that laptop has the same limit. Reduce
-the trial or leave qualification pending if it cannot fit; do not divide a long
-matrix into repeated runs to bypass the budget. Hosted cloud CI retains its own
-workflow limits. Process one candidate or layer at a time, without whole-model
-expansion or open-ended sweeps. Preserve
+Every diagnostic, model qualification or benchmark run on the owner's laptop
+**defaults to five minutes total, preferably less**. A dedicated, predeclared
+workload may use the smallest justified longer allowance, with an absolute
+**fifteen-minute maximum**. Record its fixed work, conservative time estimate and
+reason before starting; this ceiling does not grant an automatic fifteen minutes.
+Charge setup, intake, model loading, every comparison arm, power observations,
+cleanup and evidence retention to one original clock. Self-hosted CI has the same
+policy; existing narrower tool/workflow limits remain effective until explicitly
+extended. Stop early on completion or a known no-go. Reduce the trial or leave
+qualification pending if it cannot fit; do not restart clocks, retry failures or
+divide a long matrix into repeated runs. Historical trials retain their original
+closed deadlines. Hosted cloud CI retains its own workflow limits. Process one
+candidate or layer at a time, without whole-model expansion or open-ended sweeps. Preserve
 admission, physical reserves, context/output reservations and quality gates.
 These exploration budgets do not replace qualification.
+
+Minimize device time by reviewing retained captures offline, preparing source-bound
+tools on hosted CI, reusing verified immutable downloads, and choosing the shortest
+prompt/output that exercises each required behavior. One prepared service sequence
+may cover several lifecycle controls within its declared state contract; retain
+fresh owners where isolation, replay or rollback requires them. Estimate full-context
+and long-output work from measured prefill/decode costs before scheduling it.
+Smaller smoke checks do not replace full-length, numerical or human-quality gates.
 
 Follow the [experiment checklist](#turning-a-lead-into-an-experiment) and
 [validation policy](validation.md): full suites, benchmarks and performance

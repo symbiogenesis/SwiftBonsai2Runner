@@ -64,24 +64,50 @@ const EMPTY_RESPONSE: [u8; 0] = [];
 // teardown and require at least fifteen seconds before each further request.
 const ADAPTER_LIFECYCLE_RESERVE: Duration = Duration::from_secs(45);
 
-fn case_budget_setting(setting: Option<&str>) -> Option<Duration> {
+fn whole_job_budget_setting(setting: Option<&str>) -> Option<Duration> {
+    let Some(setting) = setting else {
+        return Some(Duration::from_secs(300));
+    };
+    if setting.is_empty()
+        || setting.starts_with('0')
+        || !setting.bytes().all(|byte| byte.is_ascii_digit())
+    {
+        return None;
+    }
+    let seconds = setting.parse::<u64>().ok()?;
+    (300..=900)
+        .contains(&seconds)
+        .then_some(Duration::from_secs(seconds))
+}
+
+fn whole_job_budget() -> Duration {
+    whole_job_budget_setting(env::var("BONSAI_NATIVE_WHOLE_JOB_SECONDS").ok().as_deref()).unwrap()
+}
+
+fn maximum_case_budget() -> Duration {
+    whole_job_budget() - Duration::from_secs(60)
+}
+
+fn case_budget_setting(setting: Option<&str>, whole_job: Option<&str>) -> Option<Duration> {
+    let maximum = whole_job_budget_setting(whole_job)? - Duration::from_secs(60);
     let setting = setting?;
     if setting.is_empty() || !setting.bytes().all(|byte| byte.is_ascii_digit()) {
         return None;
     }
     let seconds = setting.parse::<u64>().ok()?;
-    (1..=CASE_BUDGET.as_secs())
+    (1..=maximum.as_secs())
         .contains(&seconds)
         .then_some(Duration::from_secs(seconds))
 }
 
 fn case_budget() -> Duration {
     // Hosted preparation passes only the allowance left after owner-job setup.
-    // Missing/malformed limits must never silently restore a fresh 240 seconds.
+    // Missing/malformed limits must never silently restore a fresh allowance.
     case_budget_setting(
         env::var("BONSAI_NATIVE_CASE_BUDGET_SECONDS")
             .ok()
             .as_deref(),
+        env::var("BONSAI_NATIVE_WHOLE_JOB_SECONDS").ok().as_deref(),
     )
     .unwrap()
 }
@@ -1355,8 +1381,8 @@ fn pinned_native_model_streams_recovers_and_restarts_in_required_sandbox() {
         "runId":env::var("GITHUB_RUN_ID").unwrap(), "runAttempt":env::var("GITHUB_RUN_ATTEMPT").unwrap(),
         "scope":"bounded-actual-model-runner-lifecycle", "passed":false,
         "lifecyclePassed":false, "allRequestedWorkloadsPassed":false,
-        "aggregateModelCaseBudgetSeconds":budget.as_secs(), "maximumModelCaseBudgetSeconds":CASE_BUDGET.as_secs(),
-        "wholeJobMaximumSeconds":300,
+        "aggregateModelCaseBudgetSeconds":budget.as_secs(), "maximumModelCaseBudgetSeconds":maximum_case_budget().as_secs(),
+        "wholeJobMaximumSeconds":whole_job_budget().as_secs(),
         "boundedHistoryRequested":workloads.extended_history,
         "stalledConsumerRequested":workloads.stalled_consumer,
         "runtimeLock":serde_json::from_str::<Value>(include_str!("../../../config/prism-inference.lock.json")).unwrap(),
@@ -3031,8 +3057,8 @@ fn pinned_native_ptq1_adapter_starts_and_streams_within_device_budget() {
         "revision":env::var("GITHUB_SHA").unwrap(), "runId":env::var("GITHUB_RUN_ID").unwrap(),
         "runAttempt":env::var("GITHUB_RUN_ATTEMPT").unwrap(), "scope":"bounded-actual-model-ptq1-adapter-lifecycle",
         "profile":"ptq1-adapter", "passed":false, "requiredNativeSandbox":true,
-        "aggregateModelCaseBudgetSeconds":budget.as_secs(), "maximumModelCaseBudgetSeconds":CASE_BUDGET.as_secs(),
-        "wholeJobMaximumSeconds":300,
+        "aggregateModelCaseBudgetSeconds":budget.as_secs(), "maximumModelCaseBudgetSeconds":maximum_case_budget().as_secs(),
+        "wholeJobMaximumSeconds":whole_job_budget().as_secs(),
         "sameOwnerAfterInvalidScalePassed":false, "invalidScaleRejected":false,
         "unrunIndependentGates":["signed-zero-and-scale-2", "context-rejection-and-reuse", "fresh-owner-restart",
             "supplied-history", "extended-history", "stalled-consumer", "full-context-and-output"],
@@ -3090,8 +3116,8 @@ fn pinned_native_pq2_adapter_row4_starts_and_streams_within_device_budget() {
         "revision":env::var("GITHUB_SHA").unwrap(), "runId":env::var("GITHUB_RUN_ID").unwrap(),
         "runAttempt":env::var("GITHUB_RUN_ATTEMPT").unwrap(), "scope":"bounded-actual-model-pq2-adapter-row4-lifecycle",
         "profile":PQ2_ADAPTER_ROW4_PROFILE.name, "passed":false, "requiredNativeSandbox":true,
-        "aggregateModelCaseBudgetSeconds":budget.as_secs(), "maximumModelCaseBudgetSeconds":CASE_BUDGET.as_secs(),
-        "wholeJobMaximumSeconds":300,
+        "aggregateModelCaseBudgetSeconds":budget.as_secs(), "maximumModelCaseBudgetSeconds":maximum_case_budget().as_secs(),
+        "wholeJobMaximumSeconds":whole_job_budget().as_secs(),
         "configuredNativeRowWorkers":4, "rowWorkerCountIndependentlyObserved":false,
         "requiredStreams":1, "requestedAdapterScale":1.3, "requestedCompletionCap":4,
         "weightRepresentation":"PQ2_0", "runtimeLock":runtime_lock,
@@ -3178,8 +3204,8 @@ fn adapter_scale_history_acceptance(profile: &AdapterProfile) {
         "scope":scope,
         "profile":profile.name, "passed":false, "lifecyclePassed":false,
         "allRequestedWorkloadsPassed":false, "requiredNativeSandbox":true,
-        "aggregateModelCaseBudgetSeconds":budget.as_secs(), "maximumModelCaseBudgetSeconds":CASE_BUDGET.as_secs(),
-        "wholeJobMaximumSeconds":300, "configuredNativeRowWorkers":profile.row_workers,
+        "aggregateModelCaseBudgetSeconds":budget.as_secs(), "maximumModelCaseBudgetSeconds":maximum_case_budget().as_secs(),
+        "wholeJobMaximumSeconds":whole_job_budget().as_secs(), "configuredNativeRowWorkers":profile.row_workers,
         "rowWorkerCountIndependentlyObserved":false, "requiredStreams":3,
         "requestedAdapterScales":[1.3,0.0,1.3], "requestedCompletionCaps":adapter_completion_caps(profile),
         "initialMessages":adapter_messages(profile, false),
@@ -3244,15 +3270,51 @@ fn native_case_budget_rejects_missing_unbounded_and_malformed_allowances() {
         Some("120\n"),
         Some("18446744073709551616"),
     ] {
-        assert_eq!(case_budget_setting(invalid), None);
+        assert_eq!(case_budget_setting(invalid, None), None);
     }
     for seconds in [1, 30, 120, 121, 239, 240] {
-        let budget = case_budget_setting(Some(&seconds.to_string())).unwrap();
+        let budget = case_budget_setting(Some(&seconds.to_string()), None).unwrap();
         assert_eq!(budget, Duration::from_secs(seconds));
         // Setup can reduce the allowance below the optional-workload reserve;
         // neither workload may use the original maximum to reopen admission.
         assert_eq!(optional_workload_enabled(true, budget), seconds > 120);
     }
+}
+
+#[test]
+fn native_case_budget_extension_requires_a_valid_predeclared_total() {
+    assert_eq!(
+        whole_job_budget_setting(None),
+        Some(Duration::from_secs(300))
+    );
+    assert_eq!(case_budget_setting(Some("241"), None), None);
+    for (whole, maximum) in [("300", 240), ("600", 540), ("900", 840)] {
+        assert_eq!(
+            case_budget_setting(Some(&maximum.to_string()), Some(whole)),
+            Some(Duration::from_secs(maximum))
+        );
+        assert_eq!(
+            case_budget_setting(Some(&(maximum + 1).to_string()), Some(whole)),
+            None
+        );
+    }
+    for invalid in [
+        "",
+        "0",
+        "299",
+        "901",
+        "0900",
+        "-1",
+        "+900",
+        "900.0",
+        " 900",
+        "900\n",
+        "18446744073709551616",
+    ] {
+        assert_eq!(whole_job_budget_setting(Some(invalid)), None);
+        assert_eq!(case_budget_setting(Some("1"), Some(invalid)), None);
+    }
+    assert_eq!(case_budget_setting(None, Some("900")), None);
 }
 
 #[test]
