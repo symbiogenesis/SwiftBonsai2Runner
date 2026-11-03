@@ -1,0 +1,103 @@
+$ErrorActionPreference = 'Stop'
+$taskRoot = $PSScriptRoot
+$taskPlan = Get-Content -LiteralPath (Join-Path $taskRoot 'plan.json') -Raw | ConvertFrom-Json
+$taskReceiptPath = Join-Path $taskRoot 'receipt.json'
+Add-Type -AssemblyName System.Windows.Forms
+function Get-TaskPower {
+    $taskPower = [Windows.Forms.SystemInformation]::PowerStatus
+    return @{ observed_at_utc=[DateTime]::UtcNow.ToString('o'); ac=$taskPower.PowerLineStatus.ToString(); battery_percent=100*$taskPower.BatteryLifePercent; battery_flags=$taskPower.BatteryChargeStatus.ToString(); battery_saver='unknown' }
+}
+if (Test-Path -LiteralPath $taskReceiptPath) {
+    $taskPrior=Get-Content -LiteralPath $taskReceiptPath -Raw | ConvertFrom-Json
+    $taskReceipt=[ordered]@{}
+    foreach ($taskProperty in $taskPrior.PSObject.Properties) { $taskReceipt[$taskProperty.Name]=$taskProperty.Value }
+    $taskReceipt.resumedWithoutRestartingClock=$true
+    $taskReceipt.initialFailuresRetained=$true
+} else {
+$taskReceipt = [ordered]@{
+    schemaVersion=1; kind='bounded-focused-primetime-source-validation'; startedAtUtc=[DateTime]::UtcNow.ToString('o')
+    startedTick=[Diagnostics.Stopwatch]::GetTimestamp(); tickFrequency=[Diagnostics.Stopwatch]::Frequency
+    maximumTotalSeconds=$taskPlan.maximumTotalSeconds; cleanupReserveSeconds=$taskPlan.cleanupReserveSeconds
+    reason=$taskPlan.reason; powerBefore=(Get-TaskPower); checks=@(); modelExecutions=0; benchmarks=0; ciActions=0; fullSuites=0
+    performanceComparisonQualified=$false; defaultPromotionQualified=$false
+}
+}
+$taskCompilerBin = 'C:\Users\symbi\.rustup\toolchains\nightly-2026-11-02-aarch64-pc-windows-msvc\bin'
+$taskCargo = Join-Path $taskCompilerBin 'cargo.exe'
+$env:PATH = $taskCompilerBin + [IO.Path]::PathSeparator + $env:PATH
+$env:RUSTC = Join-Path $taskCompilerBin 'rustc.exe'
+$env:RUSTDOC = Join-Path $taskCompilerBin 'rustdoc.exe'
+$env:CARGO_UNSTABLE_CHECKSUM_FRESHNESS = 'true'
+$env:CARGO_BUILD_FINGERPRINT = 'content'
+$taskManifest = Join-Path $taskPlan.repository 'Cargo.toml'
+$taskCommon = @('--locked','--offline','--release','--manifest-path',$taskManifest)
+$taskJobs = @(
+    @{name='startup-controls-path-fixed'; target=$taskPlan.toolsTarget; arguments=@('test')+$taskCommon+@('-p','bonsai-tools','--lib','chat_launch::tests::','--','--test-threads=1')},
+    @{name='budget-controls-declared-limits-factored'; target=$taskPlan.toolsTarget; arguments=@('test')+$taskCommon+@('-p','bonsai-tools','--lib','native_acceptance_budget::tests::')},
+    @{name='archive-admission-control'; target=$taskPlan.toolsTarget; arguments=@('test')+$taskCommon+@('-p','bonsai-tools','--lib','evidence_selection_rejects_aliases_credentials_and_conflicts')},
+    @{name='compiled-pin-controls'; target=$taskPlan.toolsTarget; arguments=@('test')+$taskCommon+@('-p','bonsai-tools','--test','cli','compiled_inference')},
+    @{name='native-runtime-classification-qualifications-fixed'; target=$taskPlan.toolsTarget; arguments=@('test')+$taskCommon+@('-p','bonsai-broker','--lib','missing_native_runtime_is_distinct_from_missing_model_artifacts')},
+    @{name='child-budget-controls'; target=$taskPlan.toolsTarget; arguments=@('test')+$taskCommon+@('-p','bonsai-broker','--test','native_model','native_case_budget_')},
+    @{name='ui-runtime-guidance-qualification-fixed'; target=$taskPlan.chatTarget; arguments=@('test')+$taskCommon+@('--target','aarch64-pc-windows-msvc','-p','bonsai-chat','--bin','bonsai-chat','native_runtime_')},
+    @{name='tools-release-clippy-method-reference'; target=$taskPlan.toolsTarget; arguments=@('clippy')+$taskCommon+@('-p','bonsai-tools','--lib','--','-D','warnings')},
+    @{name='maintenance-release-build'; target=$taskPlan.toolsTarget; arguments=@('build')+$taskCommon+@('-p','bonsai-tools','--bin','bonsai-tools')},
+    @{name='broker-release-clippy'; target=$taskPlan.toolsTarget; arguments=@('clippy')+$taskCommon+@('-p','bonsai-broker','--lib','--','-D','warnings')},
+    @{name='chat-release-clippy'; target=$taskPlan.chatTarget; arguments=@('clippy')+$taskCommon+@('--target','aarch64-pc-windows-msvc','-p','bonsai-chat','--bin','bonsai-chat','--','-D','warnings')}
+)
+function Get-TaskElapsed { return ([Diagnostics.Stopwatch]::GetTimestamp()-$taskReceipt.startedTick)/[double]$taskReceipt.tickFrequency }
+function Save-TaskReceipt {
+    $taskReceipt.elapsedSeconds=Get-TaskElapsed
+    [IO.File]::WriteAllText($taskReceiptPath, ($taskReceipt | ConvertTo-Json -Depth 12), (New-Object Text.UTF8Encoding($false)))
+}
+Save-TaskReceipt
+try {
+    foreach ($taskJob in $taskJobs) {
+        if (@($taskReceipt.checks | Where-Object { $_.name -eq $taskJob.name -and $_.passed }).Count -gt 0) { continue }
+        $taskRemaining=$taskPlan.maximumTotalSeconds-$taskPlan.cleanupReserveSeconds-(Get-TaskElapsed)
+        if ($taskRemaining -lt 2) { throw 'Original source-validation work deadline reached; remaining checks stay pending.' }
+        $env:CARGO_TARGET_DIR=$taskJob.target
+        $taskOut=Join-Path $taskRoot ($taskJob.name+'.stdout.log')
+        $taskErr=Join-Path $taskRoot ($taskJob.name+'.stderr.log')
+        $taskCheck=[ordered]@{name=$taskJob.name; arguments=$taskJob.arguments; targetDirectory=$taskJob.target; startedSeconds=(Get-TaskElapsed); powerBefore=(Get-TaskPower); stdout=$taskOut; stderr=$taskErr; passed=$false}
+        $taskReceipt.checks+=@($taskCheck)
+        Save-TaskReceipt
+        Write-Output ('Running '+$taskJob.name)
+        $taskChild=$null
+        try {
+            $taskChild=Start-Process -FilePath $taskCargo -ArgumentList $taskJob.arguments -WorkingDirectory $taskPlan.repository -WindowStyle Hidden -PassThru -RedirectStandardOutput $taskOut -RedirectStandardError $taskErr
+            if (-not $taskChild.WaitForExit([int]($taskRemaining*1000))) { throw 'Check exceeded the remaining original validation allowance.' }
+            $taskChild.Refresh()
+            $taskCheck.exitCode=$taskChild.ExitCode
+            $taskCheck.passed=$taskChild.ExitCode -eq 0
+            if ($taskCheck.passed -and $taskJob.arguments[0] -eq 'test') {
+                $taskOutput=Get-Content -LiteralPath $taskOut -Raw
+                $taskMatch=[regex]::Match($taskOutput, 'test result: ok\. ([1-9][0-9]*) passed;')
+                $taskCheck.passed=$taskMatch.Success
+                if ($taskMatch.Success) { $taskCheck.testsPassed=[int]$taskMatch.Groups[1].Value }
+            }
+        } finally {
+            if ($taskChild -and -not $taskChild.HasExited) {
+                & 'C:\Windows\System32\taskkill.exe' /PID $taskChild.Id /T /F | Out-Null
+                $taskChild.WaitForExit(10000) | Out-Null
+            }
+            $taskCheck.powerAfter=Get-TaskPower
+            $taskCheck.finishedSeconds=Get-TaskElapsed
+            Save-TaskReceipt
+        }
+        Get-Content -LiteralPath $taskOut | Select-Object -Last 3
+        if (-not $taskCheck.passed) { Get-Content -LiteralPath $taskErr | Select-Object -Last 30; throw ('Focused check failed: '+$taskJob.name) }
+        Write-Output ($taskJob.name+' passed')
+    }
+    $taskReceipt.finalSourceChecksPassed=$true
+    $taskReceipt.allRequestedChecksPassed=@($taskReceipt.checks | Where-Object { -not $_.passed }).Count -eq 0
+} catch {
+    $taskReceipt.allRequestedChecksPassed=$false
+    $taskReceipt.failure=$_.Exception.Message
+    Write-Output $taskReceipt.failure
+} finally {
+    $taskReceipt.powerAfter=Get-TaskPower
+    $taskReceipt.powerScope='Endpoint observations only; saver unavailable. No claim of continuous power stability or performance.'
+    Save-TaskReceipt
+    Write-Output ('Receipt: '+$taskReceiptPath)
+    Write-Output ('Charged seconds: '+$taskReceipt.elapsedSeconds)
+}

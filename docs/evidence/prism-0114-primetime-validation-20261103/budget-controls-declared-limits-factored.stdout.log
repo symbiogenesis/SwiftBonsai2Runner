@@ -1,0 +1,14 @@
+
+running 9 tests
+test native_acceptance_budget::tests::canonical_utc_parser_preserves_dotnet_calendar_and_tick_boundaries ... ok
+test native_acceptance_budget::tests::extended_job_is_explicit_and_preserves_original_owner_and_setup_costs ... ok
+test native_acceptance_budget::tests::fractional_setup_and_owner_costs_never_round_up_available_time ... ok
+test native_acceptance_budget::tests::original_owner_binding_only_shortens_both_deadlines ... ok
+test native_acceptance_budget::tests::invalid_job_clocks_identity_and_exhausted_limits_reject ... ok
+test native_acceptance_budget::tests::extended_job_rejects_invalid_totals_and_excessive_owner_allowances ... ok
+test native_acceptance_budget::tests::incomplete_mismatched_and_malformed_owner_bindings_reject ... ok
+test native_acceptance_budget::tests::absent_owner_preserves_independent_job_allowance ... ok
+test native_acceptance_budget::tests::predeclared_owner_allowance_uses_residual_time_without_extending_any_deadline ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 291 filtered out; finished in 0.01s
+

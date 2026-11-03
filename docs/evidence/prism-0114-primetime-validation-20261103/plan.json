@@ -1,0 +1,8 @@
+{
+    "repository":  "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\primetime-integration",
+    "maximumTotalSeconds":  600,
+    "cleanupReserveSeconds":  30,
+    "reason":  "One focused source-validation session using warm caches: startup, acceptance budgets, native runtime classification, UI guidance, strict Release analyzers and the maintenance executable build. Conservative six-minute estimate plus cleanup; no models or benchmarks.",
+    "toolsTarget":  "C:\\Users\\symbi\\AppData\\Local\\Temp\\ptq1-local-validation-20261103\\target",
+    "chatTarget":  "C:\\Users\\symbi\\AppData\\Local\\SwiftBonsai2\\build\\chat\\cd31d71ca8da53bd5d98bc6d"
+}

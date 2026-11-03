@@ -1,0 +1,720 @@
+{
+  "schemaVersion": 1,
+  "kind": "bounded-focused-primetime-source-validation",
+  "startedAtUtc": "2026-11-03T07:06:46.6881662Z",
+  "startedTick": 1214975610732,
+  "tickFrequency": 10000000,
+  "maximumTotalSeconds": 600,
+  "cleanupReserveSeconds": 30,
+  "reason": "One focused source-validation session using warm caches: startup, acceptance budgets, native runtime classification, UI guidance, strict Release analyzers and the maintenance executable build. Conservative six-minute estimate plus cleanup; no models or benchmarks.",
+  "powerBefore": {
+    "ac": "Offline",
+    "battery_percent": 77.99999713897705,
+    "observed_at_utc": "2026-11-03T07:06:46.6922324Z",
+    "battery_flags": "High",
+    "battery_saver": "unknown"
+  },
+  "checks": [
+    {
+      "name": "startup-controls",
+      "arguments": [
+        "test",
+        "--locked",
+        "--offline",
+        "--release",
+        "--manifest-path",
+        "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\primetime-integration\\Cargo.toml",
+        "-p",
+        "bonsai-tools",
+        "--lib",
+        "chat_launch::tests::",
+        "--",
+        "--test-threads=1"
+      ],
+      "targetDirectory": "C:\\Users\\symbi\\AppData\\Local\\Temp\\ptq1-local-validation-20261103\\target",
+      "startedSeconds": 0.0317431,
+      "powerBefore": {
+        "ac": "Offline",
+        "battery_percent": 77.99999713897705,
+        "observed_at_utc": "2026-11-03T07:06:46.721451Z",
+        "battery_flags": "High",
+        "battery_saver": "unknown"
+      },
+      "stdout": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-primetime-validation-20261103\\startup-controls.stdout.log",
+      "stderr": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-primetime-validation-20261103\\startup-controls.stderr.log",
+      "passed": false,
+      "exitCode": 101,
+      "powerAfter": {
+        "ac": "Offline",
+        "battery_percent": 76.99999809265137,
+        "observed_at_utc": "2026-11-03T07:07:59.3777601Z",
+        "battery_flags": "High",
+        "battery_saver": "unknown"
+      },
+      "finishedSeconds": 72.6883871
+    },
+    {
+      "name": "startup-controls-path-fixed",
+      "arguments": [
+        "test",
+        "--locked",
+        "--offline",
+        "--release",
+        "--manifest-path",
+        "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\primetime-integration\\Cargo.toml",
+        "-p",
+        "bonsai-tools",
+        "--lib",
+        "chat_launch::tests::",
+        "--",
+        "--test-threads=1"
+      ],
+      "targetDirectory": "C:\\Users\\symbi\\AppData\\Local\\Temp\\ptq1-local-validation-20261103\\target",
+      "startedSeconds": 136.6953131,
+      "powerBefore": {
+        "battery_saver": "unknown",
+        "observed_at_utc": "2026-11-03T07:09:03.3859719Z",
+        "ac": "Offline",
+        "battery_flags": "High",
+        "battery_percent": 75.99999904632568
+      },
+      "stdout": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-primetime-validation-20261103\\startup-controls-path-fixed.stdout.log",
+      "stderr": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-primetime-validation-20261103\\startup-controls-path-fixed.stderr.log",
+      "passed": true,
+      "exitCode": 0,
+      "testsPassed": 17,
+      "powerAfter": {
+        "battery_saver": "unknown",
+        "observed_at_utc": "2026-11-03T07:09:27.936596Z",
+        "ac": "Offline",
+        "battery_flags": "High",
+        "battery_percent": 75.99999904632568
+      },
+      "finishedSeconds": 161.2475204
+    },
+    {
+      "name": "budget-controls",
+      "arguments": [
+        "test",
+        "--locked",
+        "--offline",
+        "--release",
+        "--manifest-path",
+        "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\primetime-integration\\Cargo.toml",
+        "-p",
+        "bonsai-tools",
+        "--lib",
+        "native_acceptance_budget::tests::"
+      ],
+      "targetDirectory": "C:\\Users\\symbi\\AppData\\Local\\Temp\\ptq1-local-validation-20261103\\target",
+      "startedSeconds": 161.2550688,
+      "powerBefore": {
+        "battery_saver": "unknown",
+        "observed_at_utc": "2026-11-03T07:09:27.9448114Z",
+        "ac": "Offline",
+        "battery_flags": "High",
+        "battery_percent": 75.99999904632568
+      },
+      "stdout": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-primetime-validation-20261103\\budget-controls.stdout.log",
+      "stderr": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-primetime-validation-20261103\\budget-controls.stderr.log",
+      "passed": true,
+      "exitCode": 0,
+      "testsPassed": 9,
+      "powerAfter": {
+        "battery_saver": "unknown",
+        "observed_at_utc": "2026-11-03T07:09:28.3106803Z",
+        "ac": "Offline",
+        "battery_flags": "High",
+        "battery_percent": 75.99999904632568
+      },
+      "finishedSeconds": 161.6212608
+    },
+    {
+      "name": "compiled-pin-controls",
+      "arguments": [
+        "test",
+        "--locked",
+        "--offline",
+        "--release",
+        "--manifest-path",
+        "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\primetime-integration\\Cargo.toml",
+        "-p",
+        "bonsai-tools",
+        "--test",
+        "cli",
+        "compiled_inference"
+      ],
+      "targetDirectory": "C:\\Users\\symbi\\AppData\\Local\\Temp\\ptq1-local-validation-20261103\\target",
+      "startedSeconds": 161.6277639,
+      "powerBefore": {
+        "battery_saver": "unknown",
+        "observed_at_utc": "2026-11-03T07:09:28.3177767Z",
+        "ac": "Offline",
+        "battery_flags": "High",
+        "battery_percent": 75.99999904632568
+      },
+      "stdout": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-primetime-validation-20261103\\compiled-pin-controls.stdout.log",
+      "stderr": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-primetime-validation-20261103\\compiled-pin-controls.stderr.log",
+      "passed": true,
+      "exitCode": 0,
+      "testsPassed": 1,
+      "powerAfter": {
+        "battery_saver": "unknown",
+        "observed_at_utc": "2026-11-03T07:09:52.0352708Z",
+        "ac": "Offline",
+        "battery_flags": "High",
+        "battery_percent": 75.99999904632568
+      },
+      "finishedSeconds": 185.3458439
+    },
+    {
+      "name": "native-runtime-classification",
+      "arguments": [
+        "test",
+        "--locked",
+        "--offline",
+        "--release",
+        "--manifest-path",
+        "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\primetime-integration\\Cargo.toml",
+        "-p",
+        "bonsai-broker",
+        "--lib",
+        "missing_native_runtime_is_distinct_from_missing_model_artifacts"
+      ],
+      "targetDirectory": "C:\\Users\\symbi\\AppData\\Local\\Temp\\ptq1-local-validation-20261103\\target",
+      "startedSeconds": 185.3506912,
+      "powerBefore": {
+        "battery_saver": "unknown",
+        "observed_at_utc": "2026-11-03T07:09:52.0404748Z",
+        "ac": "Offline",
+        "battery_flags": "High",
+        "battery_percent": 75.99999904632568
+      },
+      "stdout": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-primetime-validation-20261103\\native-runtime-classification.stdout.log",
+      "stderr": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-primetime-validation-20261103\\native-runtime-classification.stderr.log",
+      "passed": false,
+      "exitCode": 101,
+      "powerAfter": {
+        "battery_saver": "unknown",
+        "observed_at_utc": "2026-11-03T07:10:40.1129325Z",
+        "ac": "Offline",
+        "battery_flags": "High",
+        "battery_percent": 75.99999904632568
+      },
+      "finishedSeconds": 233.4234638
+    },
+    {
+      "name": "native-runtime-classification-qualifications-fixed",
+      "arguments": [
+        "test",
+        "--locked",
+        "--offline",
+        "--release",
+        "--manifest-path",
+        "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\primetime-integration\\Cargo.toml",
+        "-p",
+        "bonsai-broker",
+        "--lib",
+        "missing_native_runtime_is_distinct_from_missing_model_artifacts"
+      ],
+      "targetDirectory": "C:\\Users\\symbi\\AppData\\Local\\Temp\\ptq1-local-validation-20261103\\target",
+      "startedSeconds": 269.4022805,
+      "powerBefore": {
+        "ac": "Offline",
+        "observed_at_utc": "2026-11-03T07:11:16.0931748Z",
+        "battery_saver": "unknown",
+        "battery_percent": 75.0,
+        "battery_flags": "High"
+      },
+      "stdout": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-primetime-validation-20261103\\native-runtime-classification-qualifications-fixed.stdout.log",
+      "stderr": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-primetime-validation-20261103\\native-runtime-classification-qualifications-fixed.stderr.log",
+      "passed": true,
+      "exitCode": 0,
+      "testsPassed": 1,
+      "powerAfter": {
+        "ac": "Offline",
+        "observed_at_utc": "2026-11-03T07:11:21.1886981Z",
+        "battery_saver": "unknown",
+        "battery_percent": 75.0,
+        "battery_flags": "High"
+      },
+      "finishedSeconds": 274.4992928
+    },
+    {
+      "name": "child-budget-controls",
+      "arguments": [
+        "test",
+        "--locked",
+        "--offline",
+        "--release",
+        "--manifest-path",
+        "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\primetime-integration\\Cargo.toml",
+        "-p",
+        "bonsai-broker",
+        "--test",
+        "native_model",
+        "native_case_budget_"
+      ],
+      "targetDirectory": "C:\\Users\\symbi\\AppData\\Local\\Temp\\ptq1-local-validation-20261103\\target",
+      "startedSeconds": 274.5042319,
+      "powerBefore": {
+        "ac": "Offline",
+        "observed_at_utc": "2026-11-03T07:11:21.1939404Z",
+        "battery_saver": "unknown",
+        "battery_percent": 75.0,
+        "battery_flags": "High"
+      },
+      "stdout": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-primetime-validation-20261103\\child-budget-controls.stdout.log",
+      "stderr": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-primetime-validation-20261103\\child-budget-controls.stderr.log",
+      "passed": true,
+      "exitCode": 0,
+      "testsPassed": 3,
+      "powerAfter": {
+        "ac": "Offline",
+        "observed_at_utc": "2026-11-03T07:11:29.3839496Z",
+        "battery_saver": "unknown",
+        "battery_percent": 75.0,
+        "battery_flags": "High"
+      },
+      "finishedSeconds": 282.6946185
+    },
+    {
+      "name": "ui-runtime-guidance",
+      "arguments": [
+        "test",
+        "--locked",
+        "--offline",
+        "--release",
+        "--manifest-path",
+        "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\primetime-integration\\Cargo.toml",
+        "--target",
+        "aarch64-pc-windows-msvc",
+        "-p",
+        "bonsai-chat",
+        "--bin",
+        "bonsai-chat",
+        "native_runtime_"
+      ],
+      "targetDirectory": "C:\\Users\\symbi\\AppData\\Local\\SwiftBonsai2\\build\\chat\\cd31d71ca8da53bd5d98bc6d",
+      "startedSeconds": 282.7045211,
+      "powerBefore": {
+        "ac": "Offline",
+        "observed_at_utc": "2026-11-03T07:11:29.3943085Z",
+        "battery_saver": "unknown",
+        "battery_percent": 75.0,
+        "battery_flags": "High"
+      },
+      "stdout": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-primetime-validation-20261103\\ui-runtime-guidance.stdout.log",
+      "stderr": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-primetime-validation-20261103\\ui-runtime-guidance.stderr.log",
+      "passed": false,
+      "exitCode": 101,
+      "powerAfter": {
+        "ac": "Offline",
+        "observed_at_utc": "2026-11-03T07:11:44.9794608Z",
+        "battery_saver": "unknown",
+        "battery_percent": 75.0,
+        "battery_flags": "High"
+      },
+      "finishedSeconds": 298.2899022
+    },
+    {
+      "name": "ui-runtime-guidance-qualification-fixed",
+      "arguments": [
+        "test",
+        "--locked",
+        "--offline",
+        "--release",
+        "--manifest-path",
+        "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\primetime-integration\\Cargo.toml",
+        "--target",
+        "aarch64-pc-windows-msvc",
+        "-p",
+        "bonsai-chat",
+        "--bin",
+        "bonsai-chat",
+        "native_runtime_"
+      ],
+      "targetDirectory": "C:\\Users\\symbi\\AppData\\Local\\SwiftBonsai2\\build\\chat\\cd31d71ca8da53bd5d98bc6d",
+      "startedSeconds": 337.4360265,
+      "powerBefore": {
+        "battery_percent": 75.0,
+        "observed_at_utc": "2026-11-03T07:12:24.1267648Z",
+        "battery_saver": "unknown",
+        "ac": "Offline",
+        "battery_flags": "High"
+      },
+      "stdout": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-primetime-validation-20261103\\ui-runtime-guidance-qualification-fixed.stdout.log",
+      "stderr": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-primetime-validation-20261103\\ui-runtime-guidance-qualification-fixed.stderr.log",
+      "passed": true,
+      "exitCode": 0,
+      "testsPassed": 2,
+      "powerAfter": {
+        "battery_percent": 75.0,
+        "observed_at_utc": "2026-11-03T07:12:32.1548165Z",
+        "battery_saver": "unknown",
+        "ac": "Offline",
+        "battery_flags": "High"
+      },
+      "finishedSeconds": 345.4656269
+    },
+    {
+      "name": "tools-release-clippy",
+      "arguments": [
+        "clippy",
+        "--locked",
+        "--offline",
+        "--release",
+        "--manifest-path",
+        "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\primetime-integration\\Cargo.toml",
+        "-p",
+        "bonsai-tools",
+        "--lib",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "targetDirectory": "C:\\Users\\symbi\\AppData\\Local\\Temp\\ptq1-local-validation-20261103\\target",
+      "startedSeconds": 345.4760111,
+      "powerBefore": {
+        "battery_percent": 75.0,
+        "observed_at_utc": "2026-11-03T07:12:32.1657693Z",
+        "battery_saver": "unknown",
+        "ac": "Offline",
+        "battery_flags": "High"
+      },
+      "stdout": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-primetime-validation-20261103\\tools-release-clippy.stdout.log",
+      "stderr": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-primetime-validation-20261103\\tools-release-clippy.stderr.log",
+      "passed": false,
+      "exitCode": 101,
+      "powerAfter": {
+        "battery_percent": 75.0,
+        "observed_at_utc": "2026-11-03T07:12:48.4469708Z",
+        "battery_saver": "unknown",
+        "ac": "Offline",
+        "battery_flags": "High"
+      },
+      "finishedSeconds": 361.7574948
+    },
+    {
+      "name": "tools-release-clippy-artifact-doc-fixed",
+      "arguments": [
+        "clippy",
+        "--locked",
+        "--offline",
+        "--release",
+        "--manifest-path",
+        "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\primetime-integration\\Cargo.toml",
+        "-p",
+        "bonsai-tools",
+        "--lib",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "targetDirectory": "C:\\Users\\symbi\\AppData\\Local\\Temp\\ptq1-local-validation-20261103\\target",
+      "startedSeconds": 379.1113977,
+      "powerBefore": {
+        "battery_flags": "High",
+        "ac": "Offline",
+        "battery_saver": "unknown",
+        "battery_percent": 73.00000190734863,
+        "observed_at_utc": "2026-11-03T07:13:05.8022781Z"
+      },
+      "stdout": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-primetime-validation-20261103\\tools-release-clippy-artifact-doc-fixed.stdout.log",
+      "stderr": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-primetime-validation-20261103\\tools-release-clippy-artifact-doc-fixed.stderr.log",
+      "passed": false,
+      "exitCode": 101,
+      "powerAfter": {
+        "battery_flags": "High",
+        "ac": "Offline",
+        "battery_saver": "unknown",
+        "battery_percent": 73.00000190734863,
+        "observed_at_utc": "2026-11-03T07:13:17.0815619Z"
+      },
+      "finishedSeconds": 390.3921639
+    },
+    {
+      "name": "budget-controls-declared-limits-factored",
+      "arguments": [
+        "test",
+        "--locked",
+        "--offline",
+        "--release",
+        "--manifest-path",
+        "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\primetime-integration\\Cargo.toml",
+        "-p",
+        "bonsai-tools",
+        "--lib",
+        "native_acceptance_budget::tests::"
+      ],
+      "targetDirectory": "C:\\Users\\symbi\\AppData\\Local\\Temp\\ptq1-local-validation-20261103\\target",
+      "startedSeconds": 455.5721883,
+      "powerBefore": {
+        "battery_saver": "unknown",
+        "observed_at_utc": "2026-11-03T07:14:22.2629875Z",
+        "battery_percent": 73.00000190734863,
+        "battery_flags": "High",
+        "ac": "Offline"
+      },
+      "stdout": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-primetime-validation-20261103\\budget-controls-declared-limits-factored.stdout.log",
+      "stderr": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-primetime-validation-20261103\\budget-controls-declared-limits-factored.stderr.log",
+      "passed": true,
+      "exitCode": 0,
+      "testsPassed": 9,
+      "powerAfter": {
+        "battery_saver": "unknown",
+        "observed_at_utc": "2026-11-03T07:14:39.8172679Z",
+        "battery_percent": 73.00000190734863,
+        "battery_flags": "High",
+        "ac": "Offline"
+      },
+      "finishedSeconds": 473.1278642
+    },
+    {
+      "name": "archive-admission-control",
+      "arguments": [
+        "test",
+        "--locked",
+        "--offline",
+        "--release",
+        "--manifest-path",
+        "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\primetime-integration\\Cargo.toml",
+        "-p",
+        "bonsai-tools",
+        "--lib",
+        "evidence_selection_rejects_aliases_credentials_and_conflicts"
+      ],
+      "targetDirectory": "C:\\Users\\symbi\\AppData\\Local\\Temp\\ptq1-local-validation-20261103\\target",
+      "startedSeconds": 473.1333606,
+      "powerBefore": {
+        "battery_saver": "unknown",
+        "observed_at_utc": "2026-11-03T07:14:39.8230781Z",
+        "battery_percent": 73.00000190734863,
+        "battery_flags": "High",
+        "ac": "Offline"
+      },
+      "stdout": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-primetime-validation-20261103\\archive-admission-control.stdout.log",
+      "stderr": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-primetime-validation-20261103\\archive-admission-control.stderr.log",
+      "passed": true,
+      "exitCode": 0,
+      "testsPassed": 1,
+      "powerAfter": {
+        "battery_saver": "unknown",
+        "observed_at_utc": "2026-11-03T07:14:40.1551599Z",
+        "battery_percent": 73.00000190734863,
+        "battery_flags": "High",
+        "ac": "Offline"
+      },
+      "finishedSeconds": 473.4656011
+    },
+    {
+      "name": "tools-release-clippy-admission-fixed",
+      "arguments": [
+        "clippy",
+        "--locked",
+        "--offline",
+        "--release",
+        "--manifest-path",
+        "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\primetime-integration\\Cargo.toml",
+        "-p",
+        "bonsai-tools",
+        "--lib",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "targetDirectory": "C:\\Users\\symbi\\AppData\\Local\\Temp\\ptq1-local-validation-20261103\\target",
+      "startedSeconds": 473.4699528,
+      "powerBefore": {
+        "battery_saver": "unknown",
+        "observed_at_utc": "2026-11-03T07:14:40.1596549Z",
+        "battery_percent": 73.00000190734863,
+        "battery_flags": "High",
+        "ac": "Offline"
+      },
+      "stdout": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-primetime-validation-20261103\\tools-release-clippy-admission-fixed.stdout.log",
+      "stderr": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-primetime-validation-20261103\\tools-release-clippy-admission-fixed.stderr.log",
+      "passed": false,
+      "exitCode": 101,
+      "powerAfter": {
+        "battery_saver": "unknown",
+        "observed_at_utc": "2026-11-03T07:14:45.4269671Z",
+        "battery_percent": 73.00000190734863,
+        "battery_flags": "High",
+        "ac": "Offline"
+      },
+      "finishedSeconds": 478.7374497
+    },
+    {
+      "name": "tools-release-clippy-method-reference",
+      "arguments": [
+        "clippy",
+        "--locked",
+        "--offline",
+        "--release",
+        "--manifest-path",
+        "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\primetime-integration\\Cargo.toml",
+        "-p",
+        "bonsai-tools",
+        "--lib",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "targetDirectory": "C:\\Users\\symbi\\AppData\\Local\\Temp\\ptq1-local-validation-20261103\\target",
+      "startedSeconds": 520.6241521,
+      "powerBefore": {
+        "battery_saver": "unknown",
+        "battery_percent": 72.00000286102295,
+        "observed_at_utc": "2026-11-03T07:15:27.3149978Z",
+        "battery_flags": "High",
+        "ac": "Offline"
+      },
+      "stdout": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-primetime-validation-20261103\\tools-release-clippy-method-reference.stdout.log",
+      "stderr": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-primetime-validation-20261103\\tools-release-clippy-method-reference.stderr.log",
+      "passed": true,
+      "exitCode": 0,
+      "powerAfter": {
+        "battery_saver": "unknown",
+        "battery_percent": 72.00000286102295,
+        "observed_at_utc": "2026-11-03T07:15:32.4985717Z",
+        "battery_flags": "High",
+        "ac": "Offline"
+      },
+      "finishedSeconds": 525.8092061
+    },
+    {
+      "name": "maintenance-release-build",
+      "arguments": [
+        "build",
+        "--locked",
+        "--offline",
+        "--release",
+        "--manifest-path",
+        "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\primetime-integration\\Cargo.toml",
+        "-p",
+        "bonsai-tools",
+        "--bin",
+        "bonsai-tools"
+      ],
+      "targetDirectory": "C:\\Users\\symbi\\AppData\\Local\\Temp\\ptq1-local-validation-20261103\\target",
+      "startedSeconds": 525.8138554,
+      "powerBefore": {
+        "battery_saver": "unknown",
+        "battery_percent": 72.00000286102295,
+        "observed_at_utc": "2026-11-03T07:15:32.5035567Z",
+        "battery_flags": "High",
+        "ac": "Offline"
+      },
+      "stdout": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-primetime-validation-20261103\\maintenance-release-build.stdout.log",
+      "stderr": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-primetime-validation-20261103\\maintenance-release-build.stderr.log",
+      "passed": true,
+      "exitCode": 0,
+      "powerAfter": {
+        "battery_saver": "unknown",
+        "battery_percent": 72.00000286102295,
+        "observed_at_utc": "2026-11-03T07:15:46.7101604Z",
+        "battery_flags": "High",
+        "ac": "Offline"
+      },
+      "finishedSeconds": 540.02059
+    },
+    {
+      "name": "broker-release-clippy",
+      "arguments": [
+        "clippy",
+        "--locked",
+        "--offline",
+        "--release",
+        "--manifest-path",
+        "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\primetime-integration\\Cargo.toml",
+        "-p",
+        "bonsai-broker",
+        "--lib",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "targetDirectory": "C:\\Users\\symbi\\AppData\\Local\\Temp\\ptq1-local-validation-20261103\\target",
+      "startedSeconds": 540.0231163,
+      "powerBefore": {
+        "battery_saver": "unknown",
+        "battery_percent": 72.00000286102295,
+        "observed_at_utc": "2026-11-03T07:15:46.7128041Z",
+        "battery_flags": "High",
+        "ac": "Offline"
+      },
+      "stdout": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-primetime-validation-20261103\\broker-release-clippy.stdout.log",
+      "stderr": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-primetime-validation-20261103\\broker-release-clippy.stderr.log",
+      "passed": true,
+      "exitCode": 0,
+      "powerAfter": {
+        "battery_saver": "unknown",
+        "battery_percent": 72.00000286102295,
+        "observed_at_utc": "2026-11-03T07:15:49.1117609Z",
+        "battery_flags": "High",
+        "ac": "Offline"
+      },
+      "finishedSeconds": 542.4221949
+    },
+    {
+      "name": "chat-release-clippy",
+      "arguments": [
+        "clippy",
+        "--locked",
+        "--offline",
+        "--release",
+        "--manifest-path",
+        "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\primetime-integration\\Cargo.toml",
+        "--target",
+        "aarch64-pc-windows-msvc",
+        "-p",
+        "bonsai-chat",
+        "--bin",
+        "bonsai-chat",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "targetDirectory": "C:\\Users\\symbi\\AppData\\Local\\SwiftBonsai2\\build\\chat\\cd31d71ca8da53bd5d98bc6d",
+      "startedSeconds": 542.4250571,
+      "powerBefore": {
+        "battery_saver": "unknown",
+        "battery_percent": 72.00000286102295,
+        "observed_at_utc": "2026-11-03T07:15:49.1147662Z",
+        "battery_flags": "High",
+        "ac": "Offline"
+      },
+      "stdout": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-primetime-validation-20261103\\chat-release-clippy.stdout.log",
+      "stderr": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-primetime-validation-20261103\\chat-release-clippy.stderr.log",
+      "passed": false,
+      "powerAfter": {
+        "battery_saver": "unknown",
+        "battery_percent": 72.00000286102295,
+        "observed_at_utc": "2026-11-03T07:16:16.9107346Z",
+        "battery_flags": "High",
+        "ac": "Offline"
+      },
+      "finishedSeconds": 570.2211685
+    }
+  ],
+  "modelExecutions": 0,
+  "benchmarks": 0,
+  "ciActions": 0,
+  "fullSuites": 0,
+  "performanceComparisonQualified": false,
+  "defaultPromotionQualified": false,
+  "elapsedSeconds": 570.2309018,
+  "allRequestedChecksPassed": false,
+  "failure": "Check exceeded the remaining original validation allowance.",
+  "powerAfter": {
+    "battery_saver": "unknown",
+    "battery_percent": 72.00000286102295,
+    "observed_at_utc": "2026-11-03T07:16:16.9202328Z",
+    "battery_flags": "High",
+    "ac": "Offline"
+  },
+  "powerScope": "Endpoint observations only; saver unavailable. No claim of continuous power stability or performance.",
+  "resumedWithoutRestartingClock": true,
+  "initialFailuresRetained": true
+}

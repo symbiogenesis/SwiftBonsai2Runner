@@ -1,0 +1,12 @@
+    Checking bonsai-tools v0.1.0 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\primetime-integration\tools\bonsai)
+error: redundant closure
+   --> tools\bonsai\src\evidence_archive.rs:118:25
+    |
+118 |             .is_none_or(|object| object.is_empty())
+    |                         ^^^^^^^^^^^^^^^^^^^^^^^^^^ help: replace the closure with the method itself: `serde_json::Map::is_empty`
+    |
+    = help: for further information visit https://clippy.rust-lang.org/main/index.html#redundant_closure_for_method_calls
+    = note: `-D clippy::redundant-closure-for-method-calls` implied by `-D clippy::pedantic`
+    = help: to override `-D clippy::pedantic` add `#[allow(clippy::redundant_closure_for_method_calls)]`
+
+error: could not compile `bonsai-tools` (lib) due to 1 previous error

@@ -1,0 +1,27 @@
+   Compiling wgpu-core v30.0.1
+   Compiling wgpu v30.0.1
+   Compiling winnow v1.0.4
+   Compiling serde_spanned v1.1.2
+   Compiling toml_datetime v1.1.2+spec-1.1.0
+   Compiling kittest v0.5.0
+   Compiling bonsai-windows-process v0.1.0 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\primetime-integration\src\windows-process)
+   Compiling toml_parser v1.1.5+spec-1.1.0
+   Compiling toml v1.1.8+spec-1.1.0
+   Compiling egui-wgpu v0.37.0
+   Compiling eframe v0.37.0
+   Compiling egui_kittest v0.37.0
+   Compiling bonsai-chat v0.1.0 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\primetime-integration\src\chat-ui)
+error: unnecessary qualification
+    --> src\chat-ui\src\client.rs:2110:8
+     |
+2110 |     -> std::result::Result<(), String> {
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+     = note: requested on the command line with `-D unused-qualifications`
+help: remove the unnecessary path segments
+     |
+2110 -     -> std::result::Result<(), String> {
+2110 +     -> Result<(), String> {
+     |
+
+error: could not compile `bonsai-chat` (bin "bonsai-chat" test) due to 1 previous error
