@@ -1,0 +1,127 @@
+{
+  "schemaVersion": 1,
+  "kind": "independent-ptq1-local-implementation-and-remaining-gates-review",
+  "recordedDate": "2026-11-03",
+  "reviewerId": "Codex:/root/gate_audit",
+  "runnerStartingRevision": "e52f70b453a0fdb43fbda588d79e367f0c7e0aa6",
+  "selectedRuntimeVersion": "0.1.14",
+  "reviewedCombinedImplementationRevision": "a3c5e014bae584ea9a52fe7c9c89bb3799580a7c",
+  "status": "independent-source-review-complete-focused-checks-retained-final-source-ci-pending",
+  "scope": "Independent source and retained-document review. Implementation subgates remain separate from actual-model promotion gates, owning CI acceptance, authenticated original provenance and human decisions.",
+  "historicalPromotionScore": {
+    "reference": "ptq1-promotion-bb020f4-service-90a62b9-final-review.json",
+    "runtimeVersion": "0.1.13",
+    "frozenServingRunnerRevision": "bb020f45169b0698678ca5f789aef7af8cdc12b2",
+    "serviceHarnessRevision": "90a62b954f56aa5b1da3ab167ee3f87255477b73",
+    "passed": 6,
+    "pending": 13,
+    "transferredToRuntime14": false,
+    "newRuntime14CompiledPromotionScoreClaimed": false
+  },
+  "localImplementationReviews": {
+    "retainedPublicReferenceReplay": {
+      "revision": "f4e022f4d5c43b5bac9ac0476966f1cedcc89892",
+      "status": "source-review-and-six-focused-local-controls-passed",
+      "findings": [
+        "Independent standard-library GGUF parser and scalar comparison preserve all 48 A sites, all 129 B factors, unchanged binary64/FMA tolerance decisions and every reported metric.",
+        "Complete locked adapter/direction identities and producer-identical scripts/pins are checked; declared producer selection requires separate authentication.",
+        "A valid losing reconstruction remains a verified losing result. Partial or missing output cannot pass. No model pack is opened and no reconstruction, original-run provenance, writer-basis or promotion pass is claimed."
+      ]
+    },
+    "releasedServiceFailureReceipts": {
+      "revision": "ae1c02e4cff0c5aa77a40f1a5899f294a8529330",
+      "status": "source-review-four-focused-local-controls-and-release-clippy-passed",
+      "findings": [
+        "Transport failures and malformed strict stream parsing return pending observations with request/response identities instead of unwinding past owned Stop and power observations.",
+        "Confirmed empty invalid-scale rejection remains distinct from failed transport. Cancellation framing failure remains pending and cannot qualify interruption.",
+        "Existing response/header/prefix bounds, scale/worker policy, original deadlines and cleanup reserves are preserved. This does not establish actual device cleanup, power continuity, numerical parity or a released-service gate pass."
+      ]
+    },
+    "evidenceArchivalAndRetrieval": {
+      "status": "five-focused-local-controls-passed-final-source-refinements-and-release-clippy-pending",
+      "correctionsIndependentlyReviewed": [
+        "Source and held output-parent paths are canonicalized before normalized case-insensitive component comparison, resolving existing filesystem aliases and trailing/repeated separators.",
+        "Output ancestor/root/subdirectory handles are retained during writes, opened from the root down; each new directory level is held before creating descendants.",
+        "Actual host testing rejected FILE_READ_ATTRIBUTES-only directory guards. The archival command now uses LIST_DIRECTORY plus READ_ATTRIBUTES (0x81) and separately retains strengthened source/selected-parent guards.",
+        "The final manifest reader acquires strengthened directory guards before opening the manifest and retains them through the operation; its copy buffer uses heap storage. These final two refinements were independently source-reviewed after the five passing archive controls and were not rebuilt or retested locally."
+      ],
+      "reviewedProperties": [
+        "Only explicitly reviewed files with exact expected lengths and hashes are selected; no source directory crawl or upload selection expansion.",
+        "Verify and restore require an independently retained manifest digest and exact inventory, preserving losing/no-go bytes and rejecting tampering, missing or added entries.",
+        "Fresh destinations preserve existing archives; partial writes remain unsealed. The tool does not itself arrange a durable owner-managed storage location or retention automation."
+      ]
+    }
+  },
+  "retainedLocalValidation": {
+    "receipt": "ptq1-local-validation-20261103/receipt.json",
+    "receiptSha256": "5b6659758a1d008f603dcc6b1e2bfc61b865d2f237919f50887c5452c454a676",
+    "receiptDigestScope": "Exact completed temporary receipt bytes independently hashed before the producer's byte-preserved permanent copy; compare the retained copy against this digest.",
+    "chargedSeconds": 272.5070052000083,
+    "maximumTotalSeconds": 300,
+    "earlierChargeSeconds": 10,
+    "followupConservativeAdditionalSeconds": 2,
+    "originalAbsoluteDeadlineExtended": false,
+    "passedControls": {
+      "publicReferenceScalarReplay": 6,
+      "archiveAfterDirectorySharingCorrection": 5,
+      "serviceTargetedRegressions": 4,
+      "brokerNativeModelReleaseClippy": true
+    },
+    "failedAndPendingResultsPreserved": [
+      "Initial archive run: four controls passed; the directory-replacement denial assertion failed because a metadata-only directory handle did not prevent rename on this host. The assertion was preserved and passed after the 0x81 access-mask correction.",
+      "The initial driver could not locate a test executable in the old deps layout. Follow-up used Cargo's actual build/package/hash/out location under the same earliest absolute deadline, including all intervening time and a conservative two-second addition.",
+      "Archive Release Clippy exceeded its 35-second allowance and was terminated; it remains pending. No later diagnostic run was started after closing the aggregate allowance.",
+      "The final manifest-directory guard and heap-buffer refinements have source review only; their final build, focused tests and Release Clippy remain owning-CI obligations."
+    ],
+    "power": {
+      "wholeAndPerCheckBeforeAfterEndpointsRetained": true,
+      "allObservedAcConnected": true,
+      "allObservedBatterySaver": false,
+      "observedChargePercentRange": [97, 98],
+      "continuousPowerStabilityProven": false,
+      "performanceComparisonQualified": false
+    },
+    "allRequestedChecksPassed": false,
+    "modelExecutions": 0,
+    "ciActions": 0,
+    "fullSuites": 0,
+    "reviewerExecutionScope": "Reviewer read the completed raw receipt and logs; the parent executed the focused checks. This reviewer started no build, test, model or device query."
+  },
+  "newSharedArtifactGuardFollowup": {
+    "reviewedWorkerRevision": "6b7f2d7ca4c9a832eee7de578dfa949559c96ddc",
+    "status": "host-source-corrected-new-regression-and-native-acceptance-pending",
+    "source": "src/artifacts/src/lib.rs:hold_ancestors",
+    "observation": "The same FILE_READ_ATTRIBUTES-only access mask previously used by the shared artifact ancestry helper did not deny directory rename in the new focused archival host regression. Leaf file read locks and exact content hashes are distinct controls.",
+    "reviewedCorrection": "The shared helper now requests 0x81 only for host owners, retaining contained readers' existing 0x80 access and volume-root skip. API documentation requires host ownership/ACL protection throughout a contained reader's lifetime. The new nested-artifact VerifiedFile regression requires both parent rename and DELETE-rights opens to fail until guard drop, then succeed; this tests sharing rather than nonempty-directory refusal.",
+    "scope": "The archival command's separate 0x81 directory guard passed its local control. The later shared-helper change and its new regression have independent source review only and were not locally built or executed. Host ACL compatibility, contained loading and actual-model path/isolation acceptance remain pending; no contained listing or volume-root authority is added."
+  },
+  "remainingBroadGateIdsAtHistoricalScore": [
+    "full-context-numerical-parity",
+    "prompt-sampler-termination",
+    "full-output-lifecycle-recovery",
+    "full-model-resources",
+    "adapter-basis-and-logits",
+    "adapter-standard-scale-throughput",
+    "adapter-standard-scale-quality",
+    "sandbox-and-transport",
+    "speech-offline-and-recovery",
+    "sustained-device-and-creative-acceptance",
+    "installation-and-rollback",
+    "paired-target-device-benefit",
+    "released-adapter-service-integration"
+  ],
+  "remainingEvidence": {
+    "device": "All thirteen pending broad gates explicitly require actual-model device evidence. Model-free controls and historical narrow captures cannot substitute for complete required workloads on settled source/release identities.",
+    "human": "Standard-scale answer quality and sustained creative/device acceptance require direct independent human review; automated or agent source review cannot supply it.",
+    "provenance": "Independent public reconstruction and native/Rust numerical agreement cannot authenticate the missing original checkpoint/conversion invocation or independently establish the author's writer mapping.",
+    "performance": "Historical power observations are incomplete for the PQ2/PTQ1 pair; preserve losing timings without qualifying benefit. Future comparisons need matching per-arm observations and cannot infer uninterrupted stability from endpoint equality.",
+    "ci": "Owner-managed CI dispatch, monitoring and verdicts remain separate. No CI operation or current-source green result is asserted by this review."
+  },
+  "reviewerExecutedBuildsOrTests": 0,
+  "reviewerDeviceQueries": 0,
+  "reviewerModelExecutions": 0,
+  "broadPromotionGatesNewlyClosed": [],
+  "requirementsOrTolerancesWeakened": false,
+  "defaultPromotionQualified": false,
+  "experimentalLabelMayBeRemoved": false
+}
