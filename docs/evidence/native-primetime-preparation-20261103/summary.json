@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "kind": "native-primetime-source-preparation-review",
+  "recordedDate": "2026-11-03",
+  "startingRunnerRevision": "66c6482b577a97b2704549a0bf9bf2f3aabdb69c",
+  "checkedRunnerRevision": "5a493897e2b691532bfae6fa46660e4d33bfc6c5",
+  "formattingCorrectedSourceRevision": "eeac4a9f7e949fe4f1dd70e7966387dccee846c1",
+  "independentReview": "independent-review.json",
+  "runtimeVersion": "0.1.14",
+  "runtimeRevision": "9e8ea3e2c042ab0c3f1a8e9596ff155e202c3c57",
+  "status": "source-reviewed-hosted-and-device-acceptance-pending",
+  "changes": [
+    "Hosted acceptance preparation requires strict Release all-target Clippy for native chat, broker and maintenance tools. Owner intake validates a third digest-bound analyzer report against the exact source, compiler, toolchain and three-package coverage.",
+    "The pure budget calculator charges the greater of integer-ceiled wall and monotonic setup elapsed time. All three callers capture the original tick before checkout; row qualification now retains its budget report even when admission rejects.",
+    "Service and combined rollback cleanup retain fixed pending observations for Stop delivery, owner/task failures, unexpected exits and occupied or unknown listeners. A timed-out task is aborted and awaited; unknown Job state cannot admit another owner or post-cleanup hash verification.",
+    "Service helpers and outer case timeouts share one absolute deadline. Existing thirty-second cleanup and fifteen-second PQ2 hash reserves remain effective. The workflow's process wait also charges receipt, environment and process-start overhead against a fixed absolute deadline.",
+    "Focused regression sources cover clock disagreement, fractional expiry, invalid supplied starts, shorter inherited owners, failed cleanup, occupied listeners and task ownership release within thirty-second and shorter inherited Stop allowances. Hosted acceptance explicitly selects the new cleanup controls."
+  ],
+  "localVerification": {
+    "plan": "plan.json",
+    "rawReceipt": "receipt.json",
+    "rawManifest": "file-manifest.json",
+    "maximumTotalSeconds": 300,
+    "workCutoffSeconds": 240,
+    "chargedSecondsThroughRetention": 0.311159,
+    "retainedWithinDeclaredTotal": true,
+    "workflowPowerShellBlocksParsed": 15,
+    "rustFormatting": "failed-one-line-wrap",
+    "sourceCorrection": "Applied exactly the line-wrap correction printed by rustfmt after retaining the failed check. No repeat check, new clock or continuation was run.",
+    "cargoInvocations": 0,
+    "testsExecuted": 0,
+    "analyzersExecuted": 0,
+    "allRequestedChecksPassed": false,
+    "clockClosed": true,
+    "powerBeforeAndAfter": {
+      "acConnected": false,
+      "chargePercentApproximately": 60,
+      "batterySaver": "unknown",
+      "uninterruptedStabilityEstablished": false,
+      "performanceComparisonQualified": false
+    }
+  },
+  "remainingAcceptance": [
+    "Owner-managed settled-main Foundation checks and exact-source hosted acceptance package, including strict Release UI/broker/tools analyzers and the new focused controls. The formatting-corrected source has not been compiled or tested locally.",
+    "One feasible predeclared ptq1-adapter-service-rollback-row4 workload using the hosted package, with all required owners, power endpoints, cleanup, complete original-PQ2 response and retained full-file verification. No earlier closed session may be continued.",
+    "One hosted all-48 public-pack reconstruction with independent retained-data replay; original authoring inputs and native writer provenance remain separate prerequisites.",
+    "Independent current-release promotion review, full context/output and state parity, quality/comfort, matched benefit, resources, isolation, speech/recovery and installation acceptance."
+  ],
+  "modelExecutions": 0,
+  "benchmarks": 0,
+  "ciActions": 0,
+  "pushes": 0,
+  "newPromotionGatesPassed": 0,
+  "defaultPromotionQualified": false,
+  "defaultsChanged": false
+}

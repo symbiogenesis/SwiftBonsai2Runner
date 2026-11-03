@@ -1,0 +1,11 @@
+Diff in \\?\C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\primetime-packet\tools\bonsai\src\native_acceptance_budget.rs:147:
+     let setup = preparation(request, now_tick, frequency)?;
+     // Subtract the ceiling of elapsed time, preserving fractional setup costs
+     // without allowing floating-point rounding to extend either deadline.
+-    let mut hard_limit = i128::from(maximum_case + 10)
+-        .min(i128::from(maximum_work) - i128::from(setup.charged));
++    let mut hard_limit =
++        i128::from(maximum_case + 10).min(i128::from(maximum_work) - i128::from(setup.charged));
+     let owner = request
+         .owner_deadline
+         .as_object()

@@ -1,0 +1,119 @@
+{
+  "schemaVersion": 1,
+  "kind": "focused-native-primetime-preparation",
+  "startedAtUtc": "2026-11-03T07:32:20.7146529Z",
+  "startedTick": 1230315858432,
+  "tickFrequency": 10000000,
+  "repository": "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\primetime-packet",
+  "maximumTotalSeconds": 300,
+  "workCutoffSeconds": 240,
+  "powerBefore": {
+    "chargePercent": 60.00000238418579,
+    "batteryFlags": "0",
+    "batterySaver": "unknown",
+    "acConnected": false,
+    "observedAtUtc": "2026-11-03T07:32:20.7287963Z"
+  },
+  "checks": [
+    {
+      "name": "workflow-powershell-parse",
+      "powerBefore": {
+        "chargePercent": 60.00000238418579,
+        "batteryFlags": "0",
+        "batterySaver": "unknown",
+        "acConnected": false,
+        "observedAtUtc": "2026-11-03T07:32:20.8522391Z"
+      },
+      "startedSeconds": 0.1378682,
+      "blocks": 15,
+      "passed": true,
+      "powerAfter": {
+        "chargePercent": 60.00000238418579,
+        "batteryFlags": "0",
+        "batterySaver": "unknown",
+        "acConnected": false,
+        "observedAtUtc": "2026-11-03T07:32:20.8705150Z"
+      },
+      "finishedSeconds": 0.1563315
+    },
+    {
+      "name": "changed-rust-format",
+      "arguments": [
+        "--check",
+        "--edition",
+        "2024",
+        "tools/bonsai/src/native_acceptance_budget.rs",
+        "src/broker/tests/native_model/service_integration.rs",
+        "src/broker/tests/native_model/service_rollback.rs"
+      ],
+      "startedSeconds": 0.1612979,
+      "powerBefore": {
+        "chargePercent": 60.00000238418579,
+        "batteryFlags": "0",
+        "batterySaver": "unknown",
+        "acConnected": false,
+        "observedAtUtc": "2026-11-03T07:32:20.8758187Z"
+      },
+      "passed": false,
+      "exitCode": 1,
+      "powerAfter": {
+        "chargePercent": 60.00000238418579,
+        "batteryFlags": "0",
+        "batterySaver": "unknown",
+        "acConnected": false,
+        "observedAtUtc": "2026-11-03T07:32:20.9789544Z"
+      },
+      "finishedSeconds": 0.2645951
+    }
+  ],
+  "modelExecutions": 0,
+  "benchmarks": 0,
+  "fullSuites": 0,
+  "ciActions": 0,
+  "performanceComparisonQualified": false,
+  "defaultPromotionQualified": false,
+  "allRequestedChecksPassed": false,
+  "elapsedSeconds": 0.2742074,
+  "sourceRevision": "5a493897e2b691532bfae6fa46660e4d33bfc6c5",
+  "sourceFiles": [
+    {
+      "sha256": "1585fa00c3217d2f6eeed65bf6416ca44ec5d3e28900c5d184bd5336a610b26e",
+      "file": "tools/bonsai/src/native_acceptance_budget.rs",
+      "bytes": 28197
+    },
+    {
+      "sha256": "c5cf9391df0857b063f462cc76a603d50dc181aa11ad0c6e14865c677947ec24",
+      "file": "src/broker/tests/native_model/service_integration.rs",
+      "bytes": 41674
+    },
+    {
+      "sha256": "acb083a711c6867f2d5ff29d95f7687b187737b4a55a9393a716c88a793f0a0b",
+      "file": "src/broker/tests/native_model/service_rollback.rs",
+      "bytes": 24260
+    },
+    {
+      "sha256": "8eb18ed93b9ec91131d5114ac73a3dd6fbeca137eb153c6684b127bac507f78a",
+      "file": ".github/workflows/native-runtime-acceptance.yml",
+      "bytes": 49667
+    },
+    {
+      "sha256": "6e38939d18625f9d2d5fad04a7ad8c7a504a42dae1120d363fbf3dbe303e69b8",
+      "file": ".github/workflows/native-ptq1-numerics.yml",
+      "bytes": 21714
+    },
+    {
+      "sha256": "0606a3a58b881d1afb1c09d31af6ba658459adcfd0a4646452f2b10d62fdc84f",
+      "file": ".github/workflows/native-row-qualification.yml",
+      "bytes": 12589
+    }
+  ],
+  "failure": "Focused check failed: changed-rust-format",
+  "powerAfter": {
+    "chargePercent": 60.00000238418579,
+    "batteryFlags": "0",
+    "batterySaver": "unknown",
+    "acConnected": false,
+    "observedAtUtc": "2026-11-03T07:32:20.9881073Z"
+  },
+  "uninterruptedPowerStabilityEstablished": false
+}

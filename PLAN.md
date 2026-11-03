@@ -87,6 +87,16 @@ benchmarks and performance captures stay in owning CI.
 
 ### Actual-model acceptance
 
+Qualify the [source-bound acceptance preparation](docs/evidence/native-primetime-preparation-20261103/summary.json)
+on settled main. Hosted preparation now requires exact-revision strict Release
+all-target Clippy for native chat, broker and maintenance tools, retaining a
+digest-bound analyzer receipt before owner-device admission. Exercise the new
+failed-cleanup receipts and shared absolute deadlines through the prepared
+service/rollback controls. The new local model-free check stopped on a formatting
+difference before any Cargo invocation; the reported correction is applied, but
+compiled tests/analyzers remain pending. Its failed result and original closed
+clock are retained; do not restart it or transfer earlier validation passes.
+
 Complete the strict Release UI analyzer left pending by the
 [bounded local readiness validation](docs/evidence/prism-0114-primetime-validation-20261103/retention.json)
 in owning hosted checks. Preserve its original 570-second work cutoff and failed

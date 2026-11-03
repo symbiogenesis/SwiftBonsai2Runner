@@ -59,8 +59,7 @@ job captures its UTC and monotonic starts there. Budget admission charges the
 larger elapsed value, rounded up with integer arithmetic, so clock corrections
 cannot increase the remaining allowance. Both observations remain in receipts;
 the inherited owner's monotonic limit can independently shorten admission.
-Each
-actual-model case receives a validated aggregate soft allowance, at most **240,
+Each actual-model case receives a validated aggregate soft allowance, at most **240,
 540 or 840 seconds** respectively, reduced by preceding setup, verification and
 case inventory. Startup and cleanup share this allowance. Missing, malformed or
 excessive limits reject before model use. The process hard limit leaves ten seconds
@@ -72,6 +71,14 @@ split a long matrix across repeated owner jobs. Hosted ARM64 prepares exact
 source-bound test and maintenance binaries without loading models; the owner job
 verifies their run/revision, SHA-256 and native architecture before direct execution,
 with no Cargo build on the laptop.
+
+Hosted preparation must first pass strict Release all-target Clippy for
+`bonsai-chat`, `bonsai-broker` and `bonsai-tools` on that exact source and compiler.
+Its `strict-release-analyzers.json` is the third digest-bound package file, alongside
+the test and maintenance executables. Owner intake requires successful coverage of
+all three packages and matching revision, toolchain and compiler identities before
+model use; failed hosted analyzer logs remain independently retained. This is a
+source prerequisite, and closes no device or promotion gate.
 
 An inherited owner may predeclare a canonical work allowance up to thirty seconds
 less than that same declared whole-job total (270 by default, at most 870).
@@ -201,10 +208,20 @@ full promotion or continuation of an earlier trial.
 
 Explicit `profile: ptq1-adapter-service-rollback-row4` adds an original-PQ2 rollback
 to the complete five-request PTQ1 service sequence above in the same allowance.
-The existing service-only profile remains unchanged. After both PTQ1 owners
+The existing service-only profile retains its workload. After both PTQ1 owners
 have verified empty Jobs and released listeners, a third fresh owner selects
 `--use-original-pq2` with pinned Prism 0.1.14, adapter 1.3 and four workers.
-It must naturally complete the existing fixed tree-name request within its
+
+Both service cases share one absolute case deadline with their outer timeout.
+Their Stop path caps its existing thirty-second allowance at that same deadline,
+reserving ten seconds to abort and await a stuck owner task so ownership is not
+detached. Fixed pending reasons preserve failed Stop delivery, task/run failures,
+unexpected exits and unconfirmed listener release before retaining power-after.
+A task error leaves Job emptiness unknown. Confirmed cleanup is required before
+another owner or the post-cleanup PQ2 hash check; synchronous native teardown
+remains non-preemptible. These source controls require hosted and device acceptance.
+
+The original-PQ2 owner must naturally complete the existing fixed tree-name request within its
 32-token cap and release its Job/listener with one completed operation and no
 failures. A complete post-cleanup CNG length/SHA-256 verification then binds
 the retained original model file, with file/ancestor guards through the final
