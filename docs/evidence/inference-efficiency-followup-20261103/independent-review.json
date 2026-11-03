@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 1,
+  "reviewDate": "2026-11-03",
+  "status": "passed-scoped-source-and-retained-evidence-review",
+  "scope": "Independent read-only source review and retained-file verification; no additional build, test, model, benchmark or CI execution.",
+  "prismMainRevision": "5056810ae7fba0f5a95dd1d4b9117bb2522a5f7e",
+  "reviewedCommits": ["94200c8", "03fe862", "5056810"],
+  "runnerEvidenceRevision": "01d4d565b4ad202c438f7cfb6180c96ceaa2c3fb",
+  "prismMainClean": true,
+  "patchWhitespaceCheckPassed": true,
+  "archiveSha256": "55149db08e57afc9aa1b7f5a5e5cc51fff52a246faa33fe435e47e840c689526",
+  "receiptSha256": "bc11673b0ace1fd2ffd19f81150576a17674d828827150472534bc97e8195ed9",
+  "archiveVerification": {
+    "artifactsChecked": 13,
+    "allLengthsAndSha256Match": true,
+    "primaryRunnerCheckoutRetainsAll13PayloadsByteForByte": true,
+    "finalRecordedSourceHashesMatchLocalMain": true
+  },
+  "sourceSha256": {
+    "src/graph.rs": "4466f272dc06ca1702131a9e588df6a5d4300c2087bff46a3bfb76e18c05d933",
+    "tests/graph.rs": "1e65e12f2b6d3b83c90b1aa8ba55376d6d75a62ed464fa5f1ee575222cea5d2f",
+    "src/kernels/pinned_attention.rs": "e8cb59a539e5fae24c1417ce0f2eebd6ce7e016e008fe079d9b937d29c204674",
+    "src/kernels/pinned_attention_padding_tests.rs": "3175a21028eb5345413f4d49f9263ccfb78cc0e8bd8f5103e44d3ec22027e613",
+    "Cargo.toml": "5d406bbe0902c416e1ec7057d8a2f6fca1dca560a56bc4074eef2fdcbeec4211",
+    "Cargo.lock": "ddfec495c71307c142f70428ef4eca3a248246b9d3d7485e1120e74f6f19b661"
+  },
+  "sourceFindings": [
+    "Position-zero reset skips only already canonical committed state. Construction, transactional evaluation and staged restoration preserve that invariant; nonempty reset and adapter provenance renewal remain intact.",
+    "Attention preserves each affected lane's first masked zero FMA, the original reduction tree and final partial softmax group. Omitted repeated zero operations are idempotent for accepted finite results; nonfinite results still reject.",
+    "The final correction changes only the new regression's empty-logits assertion to an explicitly typed empty vector. Production sources and attention controls match their earlier passing test inputs."
+  ],
+  "retainedChecks": {
+    "toolchain": "nightly-2026-10-22-aarch64-pc-windows-msvc",
+    "matchesPrismToolchainPin": true,
+    "configuration": "Offline locked Release prism-inference with parallel-rows enabled",
+    "attentionTestsPassed": 7,
+    "graphTestsPassed": 11,
+    "finalCorrectedGraphRegressionPassed": 1,
+    "finalGraphRegressionIsRepeatOfOneEarlierTest": true,
+    "finalStrictClippyPassed": true,
+    "strictClippyScope": "--lib --test graph -- -D warnings",
+    "formatChecksPassed": true,
+    "initialFailuresRetained": [
+      "Clippy rejected assert!(logits.is_empty()).",
+      "The suggested empty-array cast was rejected by trivial_casts in the regression build and Clippy."
+    ],
+    "coverage": "Frozen full-padding and native-capture attention controls, lane/page/context boundaries, signed zero and subnormals, malformed inputs, late first-token failure, hybrid state, independent checkpoints, adapter provenance and rollback."
+  },
+  "ownerAllowance": {
+    "chargedSecondsThroughArchival": 101.4825198000035,
+    "includesEarlierChargeSeconds": 5,
+    "withinFiveMinuteAllowance": true,
+    "originalClockPreserved": true,
+    "sessionClosed": true,
+    "reviewDidNotReopenWorkload": true
+  },
+  "power": {
+    "allRecordedEndpointsAcConnected": false,
+    "allRecordedEndpointsBatterySaver": false,
+    "initialChargePercent": 85,
+    "finalChargePercent": 84,
+    "perCheckBeforeAndAfterRecorded": true,
+    "interpretation": "All captured endpoints show battery operation with saver off. Endpoint observations do not prove uninterrupted power stability. There was no performance comparison."
+  },
+  "modelExecutions": 0,
+  "benchmarks": 0,
+  "ciActions": 0,
+  "performanceComparisonQualified": false,
+  "pending": [
+    "Owner-managed owning CI and complete regression acceptance on the settled source.",
+    "Actual-model logits, complete state, lifecycle and seeded-output qualification.",
+    "Matched-power request-time, throughput and resource measurements; no measured speedup or process-memory reduction is established.",
+    "Release, publication and qualified Runner repinning; current default, release pin and admission limits remain unchanged."
+  ]
+}
