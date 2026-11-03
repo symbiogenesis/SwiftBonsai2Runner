@@ -6,7 +6,7 @@ on:
       profile:
         description: Explicit bounded profile; all setup/model work/cleanup shares one five-minute job
         type: choice
-        options: [pq2-no-adapter, ptq1-adapter, ptq1-adapter-lifecycle, ptq1-adapter-lifecycle-row4, pq2-adapter-row4, pq2-adapter-lifecycle-row4, pq2-adapter-speed, ptq1-pq2-complete-response, ptq1-pq2-complete-response-row4]
+        options: [pq2-no-adapter, ptq1-adapter, ptq1-adapter-lifecycle, ptq1-adapter-lifecycle-row4, ptq1-adapter-boundaries-row4, pq2-adapter-row4, pq2-adapter-lifecycle-row4, pq2-adapter-speed, ptq1-pq2-complete-response, ptq1-pq2-complete-response-row4]
         default: pq2-no-adapter
         required: false
       bounded_history:
@@ -82,6 +82,10 @@ jobs:
               'native_adapter_scale_history_profile_requires_separate_explicit_selection',
               'native_adapter_scale_history_retains_partial_steps_without_qualifying_missing_work',
               'native_adapter_scale_history_requires_reported_bounded_terminal_usage',
+              'adapter_boundaries::native_adapter_boundary_profile_preserves_scope_and_signed_zero',
+              'adapter_boundaries::native_adapter_boundary_replay_requires_bound_output_usage_and_settings',
+              'adapter_boundaries::native_adapter_boundary_deadline_retains_pending_work_without_model_start',
+              'adapter_boundaries::native_adapter_boundary_wire_sequence_preserves_rejections_and_failed_replay',
               'native_adapter_generated_history_requires_exact_bound_initial_output',
               'native_adapter_empty_initial_response_keeps_history_pending',
               'native_adapter_first_request_cancellation_retains_ready_phase_and_missing_work',
@@ -103,6 +107,7 @@ jobs:
           }
           foreach ($case in @('pinned_native_ptq1_adapter_checks_scale_change_rejection_and_history',
               'pinned_native_ptq1_adapter_row4_checks_scale_change_rejection_and_history',
+              'adapter_boundaries::pinned_native_ptq1_adapter_row4_checks_scale_boundaries_and_reset',
               'pinned_native_pq2_adapter_row4_checks_scale_change_rejection_and_history',
               'representation::pinned_native_ptq1_pq2_capture_complete_responses',
               'representation::pinned_native_ptq1_pq2_row4_capture_complete_responses')) {
@@ -255,6 +260,12 @@ jobs:
                 }
                 'pinned_native_ptq1_adapter_row4_checks_scale_change_rejection_and_history'
               }
+              'ptq1-adapter-boundaries-row4' {
+                if ($env:BONSAI_NATIVE_EXTENDED -ceq 'true' -or $env:BONSAI_NATIVE_STALLED_CONSUMER -ceq 'true') {
+                  throw 'The bounded four-row PTQ1 scale-boundary/reset profile does not admit extended_history or stalled_consumer.'
+                }
+                'adapter_boundaries::pinned_native_ptq1_adapter_row4_checks_scale_boundaries_and_reset'
+              }
               'pq2-adapter-row4' {
                 if ($env:BONSAI_NATIVE_EXTENDED -ceq 'true' -or $env:BONSAI_NATIVE_STALLED_CONSUMER -ceq 'true') {
                   throw 'The bounded PQ2 four-row adapter profile does not admit extended_history or stalled_consumer.'
@@ -392,7 +403,7 @@ jobs:
               # exits 101 after retaining partial progress and owned cleanup.
               # Missing/malformed receipts remain unknown; this never changes
               # Passed or the original failing process disposition.
-              if ($env:BONSAI_NATIVE_PROFILE -cin @('pq2-no-adapter', 'pq2-adapter-lifecycle-row4', 'ptq1-adapter-lifecycle', 'ptq1-adapter-lifecycle-row4') -and
+              if ($env:BONSAI_NATIVE_PROFILE -cin @('pq2-no-adapter', 'pq2-adapter-lifecycle-row4', 'ptq1-adapter-lifecycle', 'ptq1-adapter-lifecycle-row4', 'ptq1-adapter-boundaries-row4') -and
                   $diagnostics.AllRequestedWorkloadsPassed -is [bool]) {
                 $hostReport.AllRequestedWorkloadsPassed = $diagnostics.AllRequestedWorkloadsPassed
               }

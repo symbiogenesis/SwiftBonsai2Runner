@@ -23,6 +23,8 @@ use tokio::{
     time::timeout,
 };
 
+#[path = "native_model/adapter_boundaries.rs"]
+mod adapter_boundaries;
 #[path = "native_model/progress.rs"]
 mod progress;
 #[path = "native_model/representation.rs"]
@@ -1384,6 +1386,7 @@ fn adapter_profile(name: &str) -> Option<&'static AdapterProfile> {
         "ptq1-adapter-lifecycle-row4" => Some(&PTQ1_ADAPTER_LIFECYCLE_ROW4_PROFILE),
         "pq2-adapter-row4" => Some(&PQ2_ADAPTER_ROW4_PROFILE),
         "pq2-adapter-lifecycle-row4" => Some(&PQ2_ADAPTER_LIFECYCLE_PROFILE),
+        adapter_boundaries::PROFILE => Some(&adapter_boundaries::ADAPTER_PROFILE),
         _ => None,
     }
 }
@@ -1459,8 +1462,10 @@ fn adapter_request(messages: Value, scale: f64, limit: u32) -> Value {
     body
 }
 
-const fn adapter_completion_caps(profile: &AdapterProfile) -> [u32; 3] {
-    if profile.repacked && profile.required_scale_history {
+fn adapter_completion_caps(profile: &AdapterProfile) -> [u32; 3] {
+    if profile.repacked
+        && (profile.required_scale_history || profile.name == adapter_boundaries::PROFILE)
+    {
         // The current-release PTQ1 trial exhausted its first four-token request.
         // Keep every required lifecycle transition with less generation work.
         [1, 1, 1]
@@ -1470,7 +1475,9 @@ const fn adapter_completion_caps(profile: &AdapterProfile) -> [u32; 3] {
 }
 
 fn adapter_messages(profile: &AdapterProfile, supplied_history: bool) -> Value {
-    if profile.repacked && profile.required_scale_history {
+    if profile.repacked
+        && (profile.required_scale_history || profile.name == adapter_boundaries::PROFILE)
+    {
         if supplied_history {
             json!([
                 {"role":"user","content":"Hi"},
@@ -1858,6 +1865,9 @@ async fn adapter_requests(
         }
         save_acceptance_report(evidence, report);
         return false;
+    }
+    if profile.name == adapter_boundaries::PROFILE {
+        return adapter_boundaries::requests(port, credential, evidence, deadline, report).await;
     }
     // Optional requests share this one aggregate budget; no matrix or restart
     // can continue in another job. Preserve a conservative teardown reserve.

@@ -122,6 +122,27 @@ partial-progress controls prepare the lane; actual-device acceptance remains
 pending. A later bounded trial requires its own complete allowance and cannot
 continue the missing steps of an earlier workload.
 
+Explicit `profile: ptq1-adapter-boundaries-row4` prepares a separate bounded
+released-service scale-boundary/reset control with four workers. Four one-token
+streams use the same `Hi` prompt at scale 1.3, negative zero, 2.0, then 1.3;
+invalid-scale connection close and oversized-context rejection precede the final
+stream. The final stream must reproduce the initial visible UTF-8 bytes, digest,
+finish reason and reported one-token usage. Each selected request is bound by its
+exact JSON digest and scale bits, preserving negative zero through serialization.
+These request identities do not establish a server acknowledgement of each scale,
+numerical adapter effect, complete live-state identity or absence of all stale state.
+The released worker/adapter readiness remains independently verified by the broker.
+
+The profile shares the original case deadline, thirty-second cleanup reserve and
+forty-five-second minimum before each further request. Missing, expired or mismatched
+observations stay pending and fail only after owned cleanup. It admits neither
+extra history nor stalled consumers, and does not continue any earlier trial.
+Actual-device execution remains pending; cancellation, fresh-owner restart,
+numerical state, throughput, quality and the complete service-promotion gate still
+require their own evidence. Its four minimal streams avoid the earlier history
+lane's longer supplied-history prefill; this source choice establishes no device
+timing or proof that every preparation can fit the owner allowance.
+
 Explicit `profile: pq2-adapter-row4` selects original PQ2, the approved adapter at
 scale 1.3 and pinned Prism 0.1.10 with `--native-row-workers 4`. It requires exactly
 one four-token-cap stream, verified model/adapter readiness and owned Job/listener
