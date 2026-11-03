@@ -53,6 +53,9 @@ docs/evidence/prism-request-timing-41535596245/*.json -text whitespace=cr-at-eol
 # Preserve any exact receipts from the bounded 0.1.13 lifecycle attempt.
 docs/evidence/ptq1-0113-lifecycle-*/*.json -text whitespace=cr-at-eol
 
+# Preserve the original hosted complete packing report bytes and manifest hashes.
+docs/evidence/ptq1-packing-41567729492/*.json -text whitespace=cr-at-eol
+
 # Keep hosted public queue ABI inputs and Rust/C control sources portable.
 tools/hexagon/windows_queue_abi.* text eol=lf
 tools/hexagon/windows-queue-abi.lock.json text eol=lf
