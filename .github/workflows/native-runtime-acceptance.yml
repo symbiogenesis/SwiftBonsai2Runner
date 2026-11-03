@@ -133,6 +133,7 @@ jobs:
               'service_integration::native_service_integration_rejects_natural_completion_and_missing_rejections',
               'service_integration::native_service_integration_fresh_owner_reserve_keeps_original_deadline',
               'service_rollback::native_service_rollback_profile_is_separate_and_keeps_explicit_original_selection',
+              'service_rollback::native_service_rollback_reserves_tail_before_ptq1_owner',
               'service_rollback::native_service_rollback_requires_complete_original_response_and_post_cleanup_identity',
               'service_rollback::native_service_rollback_deadline_and_missing_ptq1_cleanup_never_start_an_owner',
               'service_rollback::native_service_rollback_keeps_original_stop_and_hash_reserves',
