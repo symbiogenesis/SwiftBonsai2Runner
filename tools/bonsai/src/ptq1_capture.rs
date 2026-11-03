@@ -180,9 +180,9 @@ fn validate_binary_inventory(receipt: &Value) -> crate::Result<()> {
 
 fn validate_compiler(receipt: &Value) -> crate::Result<()> {
     let compiler = &receipt["Compiler"];
-    if !compiler["RustcVerbose"]
+    if compiler["RustcVerbose"]
         .as_str()
-        .is_some_and(|version| version.replace("\r\n", "\n").trim() == COMPILER_VERSION)
+        .is_none_or(|version| version.replace("\r\n", "\n").trim() != COMPILER_VERSION)
         || ["Sha256", "LinkerSha256"].iter().any(|&field| {
             !compiler[field]
                 .as_str()
