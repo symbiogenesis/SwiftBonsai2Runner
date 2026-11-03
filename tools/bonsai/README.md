@@ -38,7 +38,7 @@ $bonsai = Join-Path $target 'release/bonsai-tools.exe'
 
 `chat` is the native launch entry point; optional `scripts/Start-Chat.ps1`
 forwards to it and offers `-NativeEngine`, `-PublisherEngine`, `-NativeRowWorkers`,
-`-UseRepackedPtq1` and `-UseOriginalPq2`. The development default is Rust Prism
+`-UseRepackedPtq1`, `-UseOriginalPq2` and `-GraphicsBackend`. The development default is Rust Prism
 0.1.14, original PQ2, four CPU row workers and the standard adapter at scale 1.3.
 `--publisher-engine` selects manual publisher rollback; its worker default is one.
 Use `--native-row-workers 1` for explicit single-worker Rust. Both engine flags
@@ -48,7 +48,7 @@ It uses the nearest Runner checkout and
 is supplied. Boolean options are `--native-engine`, `--publisher-engine`,
 `--use-repacked-ptq1`, `--use-original-pq2`,
 `--no-abliterate-lora`, `--no-tts`, `--no-speech-models`, `--speech-models-only`
-and `--force-build`. Value options are `--native-row-workers`, `--tts-quantization`,
+and `--force-build`. Value options are `--native-row-workers`, `--graphics-backend`, `--tts-quantization`,
 `--tts-threads`, `--frontend-port`, `--backend-port`, `--canary-port`, `--tts-port`,
 `--chat-path`, `--broker-path`, `--asr-path`, `--tts-path`, `--canary-key-file`,
 `--tts-key-file` and `--working-directory`. All existing launch admission,
@@ -56,6 +56,13 @@ cache, verification, cancellation and teardown policy remains in Rust. An
 unchanged direct launch needs no Cargo invocation. Rebuild the maintenance
 executable after updating its sources; `--force-build` rebuilds application
 companions, not the running maintenance image.
+
+`--graphics-backend dx12|vulkan|gl` (JSON `GraphicsBackend`) explicitly selects
+the native window renderer by overriding `WGPU_BACKEND` in the chat child only.
+Omission preserves the inherited setting and upstream adapter selection. The
+selected adapter/backend remains recorded in `chat.log`; the requested option
+is retained in the deferred startup request. This does not change inference,
+automatically retry a failed renderer or establish device qualification.
 
 Rebuild the maintenance executable to use the new direct CLI default and
 `--publisher-engine` option. The current PowerShell facade forwards explicit

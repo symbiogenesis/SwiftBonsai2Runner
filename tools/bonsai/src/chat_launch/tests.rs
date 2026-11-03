@@ -5,6 +5,7 @@ use super::*;
 fn execute(plan: Plan, operations: &mut impl Operations, working: &Path) -> crate::Result<Value> {
     let chat = plan.request.chat_path.clone();
     let models_only = plan.request.speech_models_only;
+    let environment = graphics_environment(plan.request.graphics_backend);
     let prepared = prepare_backend(plan, operations, working)?;
     if models_only {
         return Ok(prepared);
@@ -21,7 +22,7 @@ fn execute(plan: Plan, operations: &mut impl Operations, working: &Path) -> crat
         })
         .collect::<crate::Result<Vec<_>>>()?;
     let chat = chat.unwrap_or_else(|| working.parent().unwrap_or(working).join("built-chat.exe"));
-    let code = operations.launch(&chat, &arguments, working)?;
+    let code = operations.launch(&chat, &arguments, working, &environment)?;
     if code != 0 {
         return Err(format!("Chat stopped with exit code {code}."));
     }
@@ -35,7 +36,7 @@ enum Event {
     Apps(Vec<String>, bool),
     Native(String, bool),
     Keys(PathBuf),
-    Launch(PathBuf, Vec<OsString>, PathBuf),
+    Launch(PathBuf, Vec<OsString>, PathBuf, BTreeMap<OsString, OsString>),
 }
 
 struct Recorder {
@@ -61,7 +62,7 @@ impl Recorder {
         self.events
             .iter()
             .find_map(|event| match event {
-                Event::Launch(path, arguments, working) => {
+                Event::Launch(path, arguments, working, _) => {
                     Some((path.as_path(), arguments.as_slice(), working.as_path()))
                 }
                 _ => None,
@@ -130,11 +131,13 @@ impl Operations for Recorder {
         executable: &Path,
         arguments: &[OsString],
         working: &Path,
+        environment: &BTreeMap<OsString, OsString>,
     ) -> crate::Result<u32> {
         self.events.push(Event::Launch(
             executable.into(),
             arguments.to_vec(),
             working.into(),
+            environment.clone(),
         ));
         Ok(self.exit_code)
     }
@@ -784,6 +787,61 @@ fn build_failure_and_nonzero_app_exit_remain_errors() -> crate::Result<()> {
         .err()
         .ok_or("Expected app exit failure.")?;
     assert!(error.contains("exit code 7"));
+    Ok(())
+}
+
+#[test]
+fn graphics_backend_selection_is_explicit_and_scoped_to_the_chat_child() -> crate::Result<()> {
+    let fixture = fixture("graphics-backend")?;
+    for backend in [None, Some("dx12"), Some("vulkan"), Some("gl")] {
+        for native in [true, false] {
+            let mut request = fixture.request.clone();
+            request["NativeEngine"] = json!(native);
+            if let Some(backend) = backend {
+                request["GraphicsBackend"] = json!(backend);
+            }
+            let plan = plan(request)?;
+            let mut recorder = Recorder::new(fixture.root.clone());
+            launch_pending(
+                plan.request,
+                &mut recorder,
+                &fixture.working,
+                &fixture.root.join("tools.exe"),
+            )?;
+            let (_, arguments, _) = recorder.launch()?;
+            let startup = PathBuf::from(value_after(arguments, "--startup-request")?);
+            let serialized: Value =
+                serde_json::from_slice(&fs::read(startup).map_err(|error| error.to_string())?)
+                    .map_err(|error| error.to_string())?;
+            assert_eq!(serialized["GraphicsBackend"], json!(backend));
+            assert_eq!(serialized["NativeEngine"], native);
+            let expected: BTreeMap<OsString, OsString> = backend
+                .map(|value| (OsString::from("WGPU_BACKEND"), OsString::from(value)))
+                .into_iter()
+                .collect();
+            assert!(recorder.events.iter().any(|event| {
+                matches!(event, Event::Launch(_, _, _, environment) if environment == &expected)
+            }));
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn graphics_backend_selection_rejects_unsupported_values_before_startup() -> crate::Result<()> {
+    let fixture = fixture("invalid-graphics-backend")?;
+    for backend in [
+        json!(""),
+        json!("metal"),
+        json!("dx12,vulkan"),
+        json!("DX12"),
+        json!(false),
+        json!(1),
+    ] {
+        let mut request = fixture.request.clone();
+        request["GraphicsBackend"] = backend;
+        assert!(plan(request).is_err());
+    }
     Ok(())
 }
 

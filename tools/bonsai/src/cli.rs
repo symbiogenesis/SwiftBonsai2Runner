@@ -99,6 +99,7 @@ fn chat_options(arguments: &[OsString]) -> crate::Result<Map<String, Value>> {
             "--tts-quantization" => ("TtsQuantization", false, false),
             "--tts-threads" => ("TtsThreads", false, true),
             "--native-row-workers" => ("NativeRowWorkers", false, true),
+            "--graphics-backend" => ("GraphicsBackend", false, false),
             "--frontend-port" => ("FrontendPort", false, true),
             "--backend-port" => ("BackendPort", false, true),
             "--canary-port" => ("CanaryPort", false, true),
@@ -222,6 +223,27 @@ mod tests {
             for second in ["--use-original-pq2", "--use-repacked-ptq1"] {
                 assert!(chat_options(&[first.into(), second.into()]).is_err());
             }
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn graphics_backend_option_preserves_explicit_selection_and_rejects_duplicates()
+    -> crate::Result<()> {
+        assert!(chat_options(&[])?.get("GraphicsBackend").is_none());
+        for backend in ["dx12", "vulkan", "gl"] {
+            assert_eq!(
+                chat_options(&["--graphics-backend".into(), backend.into()])?["GraphicsBackend"],
+                backend
+            );
+        }
+        for arguments in [
+            vec!["--graphics-backend"],
+            vec!["--graphics-backend", "dx12", "--graphics-backend", "vulkan"],
+        ] {
+            assert!(
+                chat_options(&arguments.into_iter().map(Into::into).collect::<Vec<_>>()).is_err()
+            );
         }
         Ok(())
     }

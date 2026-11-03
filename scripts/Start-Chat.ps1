@@ -8,6 +8,8 @@ Uses a prebuilt bonsai-tools executable. Rust owns startup and application polic
 ./scripts/Start-Chat.ps1
 .EXAMPLE
 ./scripts/Start-Chat.ps1 -PublisherEngine
+.EXAMPLE
+./scripts/Start-Chat.ps1 -GraphicsBackend dx12
 #>
 [CmdletBinding()]
 [OutputType([string])]
@@ -18,6 +20,8 @@ param(
     [int]$NativeRowWorkers = 4,
     [switch]$UseRepackedPtq1,
     [switch]$UseOriginalPq2,
+    [ValidateSet('dx12', 'vulkan', 'gl')]
+    [string]$GraphicsBackend,
     [string]$DataDirectory,
     [string]$ToolPath = $env:BONSAI_TOOLS_PATH
 )
@@ -65,5 +69,6 @@ if ($PublisherEngine) {
 }
 if ($UseRepackedPtq1) { $launchArguments += '--use-repacked-ptq1' }
 if ($UseOriginalPq2) { $launchArguments += '--use-original-pq2' }
+if ($GraphicsBackend) { $launchArguments += @('--graphics-backend', $GraphicsBackend.ToLowerInvariant()) }
 & $ToolPath @launchArguments
 exit $LASTEXITCODE

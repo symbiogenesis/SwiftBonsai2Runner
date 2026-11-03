@@ -184,12 +184,18 @@ upload panic. In that case, select DX12 for the next explicit attempt. Repeating
 Vulkan does not test an alternative backend. DX12 startup remains unqualified by
 that failed launch; renderer selection does not change the inference engine.
 
-The native UI supports DX12, Vulkan and OpenGL/GLES through wgpu. For an explicit
-backend attempt, preserve your current `WGPU_BACKEND`, set
-`$env:WGPU_BACKEND = 'dx12'` (or `'vulkan'`), then rerun the same launch command.
-Restore the previous environment value after the attempt. This selects only the
-window renderer; it does not enable NPU inference or change model selection.
-For example, preserve and restore the setting even when launch fails:
+The native UI supports DX12, Vulkan and OpenGL/GLES through wgpu. After rebuilding
+the maintenance executable, select one explicitly with
+`bonsai-tools chat --graphics-backend dx12` or
+`./scripts/Start-Chat.ps1 -GraphicsBackend dx12`. Accepted values are `dx12`,
+`vulkan` and `gl`. The option overrides `WGPU_BACKEND` only for the chat child;
+omitting it preserves the inherited setting and upstream adapter selection.
+The deferred request retains the requested option, while `chat.log` records
+the actual selected adapter/backend. This selects only the window renderer;
+it does not enable NPU inference or change model selection.
+
+When using an older maintenance executable without this option, preserve your
+current `WGPU_BACKEND`, set it for the attempt and restore it even when launch fails:
 
 ```powershell
 $previousBackend = $env:WGPU_BACKEND

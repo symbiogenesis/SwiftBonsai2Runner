@@ -15,7 +15,9 @@ the HTTP API boundary.
 `eframe`, a native window and `wgpu`. State, widgets and HTTP clients are Rust.
 The production manifest selects DX12, Vulkan and OpenGL/GLES through eframe's
 `wgpu_no_default_features`, retaining upstream adapter selection and
-`WGPU_BACKEND`. Browser/Metal backends are not requested; upstream test features
+`WGPU_BACKEND`. Source launches can explicitly override that variable for the chat
+child with `--graphics-backend dx12|vulkan|gl`; omission preserves inheritance and
+upstream selection. Browser/Metal backends are not requested; upstream test features
 and installed drivers can affect backend availability. Toolkit portability does
 not make Runner cross-platform: process ownership, credentials and speech remain
 Windows-specific.

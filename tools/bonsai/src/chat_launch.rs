@@ -12,6 +12,27 @@ use bonsai_artifacts::validate_external_path;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "lowercase")]
+enum GraphicsBackend {
+    Dx12,
+    Vulkan,
+    Gl,
+}
+
+fn graphics_environment(backend: Option<GraphicsBackend>) -> BTreeMap<OsString, OsString> {
+    let mut environment = BTreeMap::new();
+    if let Some(backend) = backend {
+        let value = match backend {
+            GraphicsBackend::Dx12 => "dx12",
+            GraphicsBackend::Vulkan => "vulkan",
+            GraphicsBackend::Gl => "gl",
+        };
+        environment.insert("WGPU_BACKEND".into(), value.into());
+    }
+    environment
+}
+
 #[derive(Deserialize, Serialize)]
 #[serde(rename_all = "PascalCase", deny_unknown_fields)]
 #[expect(
@@ -43,6 +64,8 @@ struct Request {
     native_engine: bool,
     #[serde(default, deserialize_with = "requested_native_row_workers")]
     native_row_workers: Option<u8>,
+    #[serde(default)]
+    graphics_backend: Option<GraphicsBackend>,
     #[serde(default = "default_frontend_port")]
     frontend_port: u16,
     #[serde(default = "default_backend_port")]
@@ -310,6 +333,7 @@ trait Operations {
         executable: &Path,
         arguments: &[OsString],
         working: &Path,
+        environment: &BTreeMap<OsString, OsString>,
     ) -> crate::Result<u32>;
 }
 
@@ -378,12 +402,13 @@ impl Operations for Native {
         executable: &Path,
         arguments: &[OsString],
         working: &Path,
+        environment: &BTreeMap<OsString, OsString>,
     ) -> crate::Result<u32> {
         let result = crate::startup_process::run(
             executable.as_os_str(),
             arguments,
             working,
-            &BTreeMap::new(),
+            environment,
             Duration::ZERO,
             &working.join("chat.log"),
         )?;
@@ -634,7 +659,8 @@ fn launch_pending(
         "--startup-data-directory",
         &request.data_directory,
     );
-    let code = operations.launch(chat, &arguments, working)?;
+    let environment = graphics_environment(request.graphics_backend);
+    let code = operations.launch(chat, &arguments, working, &environment)?;
     if code != 0 {
         return Err(launch_failure(code, working));
     }
