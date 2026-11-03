@@ -47,13 +47,38 @@ The PTQ1 critical path is:
 4. Independently score every gate against settled source/release/app identities
    before changing the engine/representation defaults or README qualification.
 
+The next delivery packet freezes the published Prism 0.1.14 CPU runtime and one
+settled Runner revision. Complete hosted Runner integration and source-bound
+acceptance preparation, then have the owner run the combined
+`ptq1-adapter-service-rollback-row4` workload once. Keep the five-minute default
+when its conservative estimate fits; otherwise predeclare the smallest supported
+extended allowance. Reuse one PTQ1 owner for scale/count/context controls and
+retain the required fresh owners for interruption replay and original-PQ2
+rollback. Do not remove those independent-owner checks to save startup time.
+Archive the complete raw receipts and independently review them before another
+model workload. The old 0.1.13 six-pass score cannot qualify this candidate.
+
+Keep expensive work off the laptop where possible: prepare exact tools on hosted
+ARM64, reuse verified immutable downloads, replay retained numerical data offline,
+and run the one declared public-pack reconstruction before considering any new
+authoring-basis recipe. Combine evidence collection within the selected lifecycle
+workload, but leave complete-state parity, full context/output, paired benefit,
+human quality/comfort and clean-machine acceptance independently pending. Missing
+original adapter authoring inputs remain an external prerequisite.
+
 ## Research scope and practical budgets
 
 Follow the [research scope, budgets and experiment
 checklist](docs/research-register.md#experiment-scope-and-budgets): existing native
 Windows ARM64 X Elite/X2 Elite hardware, independent family qualification and a
-five-minute total ceiling for owner-device diagnostics, model trials and benchmarks,
-including self-hosted CI. Prefer smaller trials; longer qualification remains pending.
+five-minute preferred/default budget for owner-device diagnostics, model trials and
+benchmarks, including self-hosted CI. A predeclared dedicated workload may use up
+to fifteen minutes total only when its supported harness and conservative estimate
+require it; select the smallest allowance and stop as soon as its required work
+finishes. Preparation, every arm, power observations, cleanup and archival share
+one clock. Preserve historical trial limits and the smaller limits in harnesses
+that have not implemented an explicit extension. Never restart a clock or divide
+a long matrix across repeated runs. Longer or infeasible qualification stays pending.
 Apply the [promotion
 criteria](#promotion-criteria) before changing defaults or admission. Full suites,
 benchmarks and performance captures stay in owning CI.
