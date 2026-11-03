@@ -109,6 +109,19 @@ pending gates. Full suites, benchmarks and performance captures stay in owning C
 
 ### Actual-model acceptance
 
+Qualify the [hosted native-link and renderer gates](docs/evidence/native-hosted-readiness-20261103/summary.json)
+on settled main through owner-managed hosted preparation with `run_device: false`.
+Publication and owner intake now require successful exact-source Release `clippy`
+and production `build` receipts covering chat, broker and maintenance tools, plus
+four exact renderer/default/deferred-rollback controls before package creation.
+Independent source review confirms the CI batching and receipt schema; it supplies
+no compiled verdict. The one local workflow-contract check stopped before any
+parser or fixture executed because PowerShell blocked its generated `-File`
+script under the machine execution policy. Retain that failed 0.848-second clock,
+raw script/fixtures and original battery/saver observations without retrying it.
+Parser, receipt-fixture, compiled regression, native-link and strict-analyzer
+acceptance remain pending; the existing installed executable is unchanged.
+
 Qualify the [daily-readiness source changes](docs/evidence/native-daily-readiness-20261103/summary.json)
 on settled main through owner-managed hosted checks. Explicit
 `--graphics-backend dx12` / `-GraphicsBackend dx12` now selects only the native
