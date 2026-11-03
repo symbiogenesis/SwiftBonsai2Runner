@@ -3,7 +3,7 @@
   "kind": "independent-rollback-trial-to-delivered-source-applicability-review",
   "recordedDate": "2026-11-02",
   "reviewerId": "Codex:/root/gate_audit",
-  "status": "production-source-continuity-reviewed-hosted-checks-pending",
+  "status": "production-source-continuity-reviewed-new-harness-foundation-failed",
   "frozenExecutedCandidateRevision": "bb020f45169b0698678ca5f789aef7af8cdc12b2",
   "deliveredSourceRevision": "f0a6a3bae67dc5652b2cfa7921aa5e79ee253ec5",
   "executedRunId": "41573164864",
@@ -38,18 +38,56 @@
       "branch": "main",
       "event": "push",
       "workflowPath": ".github/workflows/foundation.yml",
-      "status": "queued",
-      "conclusion": null
+      "status": "completed",
+      "conclusion": "failure",
+      "passedJobs": [
+        "changes",
+        "maintenance",
+        "Native integration"
+      ],
+      "failedJobs": [
+        "broker / core",
+        "foundation"
+      ],
+      "skippedJobs": [
+        "release-integration",
+        "speech / ${{ matrix.lane }}"
+      ],
+      "brokerDiagnosticArtifact": {
+        "id": "13203341383",
+        "name": "broker-checks-core-41574336487",
+        "bytes": 24960,
+        "sha256": "a92c031209fe8f84f167a1e0df1cfde3291192718ac617731ee44cdb95842c28",
+        "archiveBytesIndependentlyVerified": true,
+        "failures": [
+          "rustfmt requires wrapping the original_pq2_rollback_observation call in representation.rs420.",
+          "The new wire fixture compares its entire in-memory report to deserialized JSON; measured requestMilliseconds differs at the final floating point bit after JSON roundtrip. Native model-free suite:44passed,1failed,10ignored."
+        ],
+        "passedPhases": [
+          "clippy",
+          "doc",
+          "build"
+        ],
+        "scope": "Hosted analyzer/model-free fixture failure; no actual-model or production runtime verdict. The frozen bb020 rollback and six-gate score have separate successful exact-source owning checks."
+      }
     },
     "boundaryPreparation": {
       "runId": "41574336467",
       "revision": "f0a6a3bae67dc5652b2cfa7921aa5e79ee253ec5",
       "prepareJobId": "125714249376",
-      "prepareStatus": "in_progress",
-      "prepareConclusion": null,
-      "ownerDeviceExecutionClaimed": false
+      "prepareStatus": "completed",
+      "prepareConclusion": "success",
+      "ownerDeviceExecutionClaimed": false,
+      "overallRunStatus": "completed",
+      "overallRunConclusion": "cancelled",
+      "ownerJobId": "125715822287",
+      "ownerStatus": "completed",
+      "ownerConclusion": "cancelled",
+      "ownerRunnerName": "",
+      "ownerAssigned": false,
+      "scope": "The hosted prepare passed. The unassigned device job was deliberately cancelled without an owner registration or device execution; cancellation is not a failed model trial."
     },
-    "scope": "Authenticated metadata observation during this source review. Later conclusions require their own review; pending jobs are not claimed passed."
+    "scope": "Authenticated exact-f0 metadata observed after completion, with independently downloaded and hash-verified small hosted broker diagnostic ZIP. No local test, executable or owner-device operation."
   },
   "historicalPowerConditions": {
     "executedTrialAcOrBattery": "unknown-not-recorded",
