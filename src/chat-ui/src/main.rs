@@ -564,6 +564,29 @@ mod tests {
         Ok(())
     }
 
+    fn assert_runtime_defaults_and_rollback(args: &[OsString]) -> io::Result<()> {
+        let default = configuration(args.to_vec()).map_err(io::Error::other)?;
+        assert!(default.use_abliterate_lora);
+        assert!(!default.use_repacked_ptq1);
+        assert!(default.native_engine);
+        assert_eq!(default.native_row_workers, 4);
+        let mut publisher = args.to_vec();
+        publisher.push("--publisher-engine".into());
+        let rollback = configuration(publisher).map_err(io::Error::other)?;
+        assert!(!rollback.native_engine);
+        assert_eq!(rollback.native_row_workers, 1);
+        assert!(!rollback.use_repacked_ptq1);
+        assert!(rollback.use_abliterate_lora);
+        for first in ["--native-engine", "--publisher-engine"] {
+            for second in ["--native-engine", "--publisher-engine"] {
+                let mut rejected = args.to_vec();
+                rejected.extend([first, second].map(OsString::from));
+                assert!(configuration(rejected).is_err());
+            }
+        }
+        Ok(())
+    }
+
     #[test]
     fn rust_development_defaults_preserve_explicit_runtime_weight_and_adapter_choices()
     -> io::Result<()> {
@@ -583,25 +606,7 @@ mod tests {
             OsString::from("--evidence-directory"),
             directory.clone().into_os_string(),
         ];
-        let default = configuration(args.clone()).map_err(io::Error::other)?;
-        assert!(default.use_abliterate_lora);
-        assert!(!default.use_repacked_ptq1);
-        assert!(default.native_engine);
-        assert_eq!(default.native_row_workers, 4);
-        let mut publisher = args.clone();
-        publisher.push("--publisher-engine".into());
-        let rollback = configuration(publisher).map_err(io::Error::other)?;
-        assert!(!rollback.native_engine);
-        assert_eq!(rollback.native_row_workers, 1);
-        assert!(!rollback.use_repacked_ptq1);
-        assert!(rollback.use_abliterate_lora);
-        for first in ["--native-engine", "--publisher-engine"] {
-            for second in ["--native-engine", "--publisher-engine"] {
-                let mut rejected = args.clone();
-                rejected.extend([first, second].map(OsString::from));
-                assert!(configuration(rejected).is_err());
-            }
-        }
+        assert_runtime_defaults_and_rollback(&args)?;
         let mut repacked = args.clone();
         repacked.push("--use-repacked-ptq1".into());
         let alternate = configuration(repacked.clone()).map_err(io::Error::other)?;

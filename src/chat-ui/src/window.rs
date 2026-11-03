@@ -1142,6 +1142,17 @@ impl State {
         ui.add_space(8.0);
     }
 
+    fn runtime_controls(&self, ui: &mut egui::Ui) {
+        ui.heading("Runtime");
+        ui.label(&self.runtime_description);
+        ui.label(
+            RichText::new("Development build. Full-context, sustained-performance and output-quality qualification remain pending.")
+                .small()
+                .weak(),
+        );
+        ui.add_space(16.0);
+    }
+
     fn settings(&mut self, ctx: &egui::Context) {
         if !self.show_settings {
             return;
@@ -1163,14 +1174,7 @@ impl State {
                     self.voice_profile.clone(),
                 );
                 self.recovery_controls(ui);
-                ui.heading("Runtime");
-                ui.label(&self.runtime_description);
-                ui.label(
-                    RichText::new("Development build. Full-context, sustained-performance and output-quality qualification remain pending.")
-                        .small()
-                        .weak(),
-                );
-                ui.add_space(16.0);
+                self.runtime_controls(ui);
                 ui.heading("Response");
                 ui.add_enabled_ui(!self.model.busy(), |ui| {
                     self.thinking_controls(ui);
