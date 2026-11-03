@@ -23,25 +23,24 @@ fn body(scale: f64) -> Value {
 }
 
 fn context_observation(bytes: &[u8]) -> Value {
-    let parsed = bytes
-        .windows(4)
-        .position(|part| part == b"\r\n\r\n")
-        .and_then(|end| {
-            let head = std::str::from_utf8(&bytes[..end]).ok()?;
-            let body = &bytes[end + 4..];
-            let length = head
-                .lines()
-                .find_map(|line| line.strip_prefix("Content-Length: "))?
-                .parse::<usize>()
-                .ok()?;
-            Some(
-                head.lines().next() == Some("HTTP/1.1 413 Content Too Large")
-                    && length == body.len()
-                    && body == br#"{"error":{"code":"context_length_exceeded"}}"#,
-            )
-        });
+    let header_end = bytes.windows(4).position(|part| part == b"\r\n\r\n");
+    let parsed = header_end.and_then(|end| {
+        let head = std::str::from_utf8(&bytes[..end]).ok()?;
+        let body = &bytes[end + 4..];
+        let length = head
+            .lines()
+            .find_map(|line| line.strip_prefix("Content-Length: "))?
+            .parse::<usize>()
+            .ok()?;
+        Some(
+            head.lines().next() == Some("HTTP/1.1 413 Content Too Large")
+                && length == body.len()
+                && body == br#"{"error":{"code":"context_length_exceeded"}}"#,
+        )
+    });
     json!({"responseBytes":bytes.len(),"responseSha256":adapter_digest(bytes),
-        "completeHeaderObserved":parsed.is_some(),"expectedContextRejectionObserved":parsed == Some(true),
+        "completeHeaderObserved":header_end.is_some(),"contextResponseShapeParsed":parsed.is_some(),
+        "expectedContextRejectionObserved":parsed == Some(true),
         "scope":"Exact response byte count and digest plus fixed context-error validation; arbitrary response bytes are not copied into public receipts."})
 }
 
