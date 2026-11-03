@@ -84,15 +84,15 @@ and [local API contract](docs/broker-policy.md#public-request-contract).
 
 | Model | Runtime | Time to first token (s) | Generation tokens/second | Model file | Job commit cap / measured peak | Available RAM admission | Restore copy saved vs. Rust 0.1.4 |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| **Swift Bonsai 2 `PQ2_0` (development default)** | **Rust 0.1.14 release, four workers + LoRA 1.3** | **16.64** | **1.34** | **6.71 GiB** | **11.5 GiB / not measured** | **15.5 GiB** | **149.625 MiB** |
-| **Swift Bonsai 2 `PTQ1_0` (experimental opt-in)** | **Rust 0.1.14 release, four workers + LoRA 1.3** | **29.50** | **0.75** | **5.54 GiB** | **11.5 GiB / not measured** | **15.5 GiB** | **149.625 MiB** |
+| **Swift Bonsai 2 `PQ2_0` (development default)** | **Rust 0.1.14 release + LoRA 1.3** | **16.64** | **1.34** | **6.71 GiB** | **11.5 GiB / not measured** | **15.5 GiB** | **149.625 MiB** |
+| **Swift Bonsai 2 `PTQ1_0` (experimental opt-in)** | **Rust 0.1.14 release + LoRA 1.3** | **29.50** | **0.75** | **5.54 GiB** | **11.5 GiB / not measured** | **15.5 GiB** | **149.625 MiB** |
 | Swift Bonsai 2 `PTQ1_0` | PrismML C++ CPU | Startup failed | Startup failed | 5.54 GiB | 11.5 GiB / — | 15.5 GiB | — |
 | Swift Bonsai 2 `PQ2_0` (explicit publisher rollback) | PrismML C++ CPU | Startup failed | Startup failed | 6.71 GiB | 11.5 GiB / — | 15.5 GiB | — |
 | Qwen3.8-27B `UD-Q3_K_XL` | llama.cpp reference | Not installed | Not installed | 12.24 GiB | 18 GiB / — | 22 GiB | — |
 
 The [2026-11-03 separated timing capture](docs/evidence/token-timing-20261103/summary.json)
 measured seven installed Rust profiles on the Snapdragon X2 Elite Extreme.
-The current release profiles are shown above.
+The current release profiles shown above use the default four CPU row workers.
 Each fresh owner used the fixed prompt `Count from 1 to 100.`, thinking off,
 seed 42 and the standard Swift adapter at scale 1.3. All seven measured responses
 reported eight completion tokens and returned `1, 2, 3,` before hitting the cap.
