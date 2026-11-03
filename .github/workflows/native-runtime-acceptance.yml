@@ -49,6 +49,24 @@ jobs:
       - uses: ./.github/actions/rust-toolchain
         with:
           toolchain: nightly-2026-11-02-aarch64-pc-windows-msvc
+      - uses: ./.github/actions/ci-tool
+      - name: Require strict Release analyzers for the exact app and acceptance source
+        shell: pwsh
+        working-directory: ${{ runner.temp }}
+        env:
+          RUNNER_ENVIRONMENT: ${{ runner.environment }}
+          CARGO_UNSTABLE_CHECKSUM_FRESHNESS: 'true'
+          CARGO_BUILD_FINGERPRINT: content
+        run: |
+          Set-StrictMode -Version Latest
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          $evidence = Join-Path $env:RUNNER_TEMP ('Native-Acceptance-Analyzers-' + [guid]::NewGuid().ToString('N'))
+          "BONSAI_NATIVE_ANALYZER_EVIDENCE=$evidence" >> $env:GITHUB_ENV
+          # This hosted prerequisite closes no model/device gate. In particular,
+          # it cannot extend the closed local UI-analyzer validation session.
+          & $env:BONSAI_CI_PATH rust-check --root $env:GITHUB_WORKSPACE --package bonsai-chat --package bonsai-broker --package bonsai-tools --phase clippy --toolchain nightly-2026-11-02-aarch64-pc-windows-msvc --target (Join-Path $env:RUNNER_TEMP 'Native-Acceptance-Build') --evidence $evidence --timeout-seconds 1200
+          if ($LASTEXITCODE -ne 0) { throw 'Hosted strict Release analyzers failed; no owner-device acceptance package is admitted.' }
       - name: Build exact acceptance binary without executing model tests
         shell: pwsh
         working-directory: ${{ runner.temp }}
@@ -143,7 +161,13 @@ jobs:
             if ($modelFreeCases -cnotcontains ($case + ': test')) { throw 'Required bounded lifecycle case was not found.' }
           }
           Copy-Item -LiteralPath $env:BONSAI_TOOLS_PATH -Destination (Join-Path $package 'bonsai-tools.exe')
-          $files = @('native-model-acceptance.exe', 'bonsai-tools.exe') | ForEach-Object {
+          $analyzerReceipt = Join-Path $env:BONSAI_NATIVE_ANALYZER_EVIDENCE 'rust-checks.json'
+          $analyzers = Get-Content -LiteralPath $analyzerReceipt -Raw | ConvertFrom-Json
+          if ($analyzers.SchemaVersion -ne 2 -or $analyzers.Success -ne $true -or
+              $analyzers.Revision -cne $env:GITHUB_SHA -or
+              $analyzers.Toolchain -cne 'nightly-2026-11-02-aarch64-pc-windows-msvc') { throw 'Hosted strict Release analyzer receipt is not bound to this source and compiler.' }
+          Copy-Item -LiteralPath $analyzerReceipt -Destination (Join-Path $package 'strict-release-analyzers.json')
+          $files = @('native-model-acceptance.exe', 'bonsai-tools.exe', 'strict-release-analyzers.json') | ForEach-Object {
             $path = Join-Path $package $_
             [ordered]@{ Name=$_; Bytes=(Get-Item -LiteralPath $path).Length; Sha256=(Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash.ToLowerInvariant() }
           }
@@ -153,6 +177,14 @@ jobs:
             ToolsSourceId=$env:BONSAI_TOOLS_SOURCE_ID; Files=@($files); ModelExecuted=$false
           } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $package 'receipt.json') -Encoding utf8NoBOM
           "BONSAI_ACCEPTANCE_PACKAGE=$package" >> $env:GITHUB_ENV
+      - name: Retain strict Release analyzer diagnostics even when preparation fails
+        if: always() && env.BONSAI_NATIVE_ANALYZER_EVIDENCE != ''
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: native-acceptance-analyzers-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ env.BONSAI_NATIVE_ANALYZER_EVIDENCE }}
+          if-no-files-found: error
+          retention-days: 90
       - name: Retain hosted compiler diagnostics even when preparation fails
         if: always() && env.BONSAI_NATIVE_BUILD_EVIDENCE != ''
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
@@ -218,17 +250,26 @@ jobs:
               $receipt.RunId -cne $env:GITHUB_RUN_ID -or $receipt.RunAttempt -cne $env:GITHUB_RUN_ATTEMPT -or
               $receipt.Toolchain -cne 'nightly-2026-11-02-aarch64-pc-windows-msvc' -or
               $receipt.ModelExecuted -ne $false -or $receipt.ToolsSourceId -cnotmatch '^[a-f0-9]{64}$' -or
-              [string]::IsNullOrWhiteSpace($receipt.CompilerIdentity) -or @($receipt.Files).Count -ne 2) { throw 'Hosted acceptance source/run identity mismatch.' }
-          foreach ($name in @('native-model-acceptance.exe', 'bonsai-tools.exe')) {
+              [string]::IsNullOrWhiteSpace($receipt.CompilerIdentity) -or @($receipt.Files).Count -ne 3) { throw 'Hosted acceptance source/run identity mismatch.' }
+          foreach ($name in @('native-model-acceptance.exe', 'bonsai-tools.exe', 'strict-release-analyzers.json')) {
             $matching = @($receipt.Files | Where-Object Name -CEQ $name)
             $path = Join-Path $package $name
             if ($matching.Count -ne 1 -or (Get-Item -LiteralPath $path).Length -ne $matching[0].Bytes -or
                 (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash.ToLowerInvariant() -cne $matching[0].Sha256) { throw 'Hosted acceptance binary digest mismatch.' }
           }
+          $analyzerReceiptPath = Join-Path $package 'strict-release-analyzers.json'
+          $analyzers = Get-Content -LiteralPath $analyzerReceiptPath -Raw | ConvertFrom-Json
+          if ($analyzers.SchemaVersion -ne 2 -or $analyzers.Success -ne $true -or
+              $analyzers.Revision -cne $env:GITHUB_SHA -or $analyzers.Toolchain -cne $receipt.Toolchain -or
+              $analyzers.CompilerIdentity -cne $receipt.CompilerIdentity -or
+              (@($analyzers.Packages | Sort-Object) -join ',') -cne 'bonsai-broker,bonsai-chat,bonsai-tools' -or
+              @($analyzers.Checks).Count -ne 1 -or $analyzers.Checks[0].Phase -cne 'clippy' -or
+              $analyzers.Checks[0].Passed -ne $true -or $analyzers.Checks[0].ExitCode -ne 0) { throw 'Hosted strict Release analyzer coverage or source binding differs.' }
           foreach ($name in @('native-model-acceptance.exe', 'bonsai-tools.exe')) {
             & (Join-Path $package 'bonsai-tools.exe') artifact --json (@{ operation = 'arm64'; path = (Join-Path $package $name) } | ConvertTo-Json -Compress) | Out-Null
           }
           Copy-Item -LiteralPath $receiptPath -Destination (Join-Path $root 'evidence/hosted-build.json')
+          Copy-Item -LiteralPath $analyzerReceiptPath -Destination (Join-Path $root 'evidence/strict-release-analyzers.json')
           "BONSAI_NATIVE_TEST=$(Join-Path $package 'native-model-acceptance.exe')" >> $env:GITHUB_ENV
           "BONSAI_TOOLS_PATH=$(Join-Path $package 'bonsai-tools.exe')" >> $env:GITHUB_ENV
       - name: Verify already provisioned pinned release without downloading weights
@@ -513,6 +554,7 @@ jobs:
             ${{ env.BONSAI_NATIVE_EVIDENCE }}/acceptance.json
             ${{ env.BONSAI_NATIVE_EVIDENCE }}/host.json
             ${{ env.BONSAI_NATIVE_EVIDENCE }}/hosted-build.json
+            ${{ env.BONSAI_NATIVE_EVIDENCE }}/strict-release-analyzers.json
           if-no-files-found: error
           retention-days: 90
       - name: Retain only verified regular sanitized diagnostic files
