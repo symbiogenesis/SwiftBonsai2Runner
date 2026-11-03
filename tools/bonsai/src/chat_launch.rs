@@ -122,6 +122,18 @@ impl Request {
             None => 1,
         }
     }
+
+    fn validate_native_runtime(&mut self) -> crate::Result<()> {
+        let workers = self.native_row_workers();
+        if !matches!(workers, 1 | 4) || (workers == 4 && !self.native_engine) {
+            return Err("NativeRowWorkers must be 1 or 4; four requires NativeEngine.".into());
+        }
+        if self.prompt_reuse == PromptReuse::Latest && !self.native_engine {
+            return Err("Latest prompt reuse requires NativeEngine.".into());
+        }
+        self.native_row_workers = Some(workers);
+        Ok(())
+    }
 }
 
 const fn default_frontend_port() -> u16 {
@@ -235,14 +247,7 @@ fn validate_paths(request: &Request) -> crate::Result<()> {
 }
 
 fn prepare(mut request: Request, native_host: bool) -> crate::Result<Plan> {
-    let native_row_workers = request.native_row_workers();
-    if !matches!(native_row_workers, 1 | 4) || (native_row_workers == 4 && !request.native_engine) {
-        return Err("NativeRowWorkers must be 1 or 4; four requires NativeEngine.".into());
-    }
-    request.native_row_workers = Some(native_row_workers);
-    if request.prompt_reuse == PromptReuse::Latest && !request.native_engine {
-        return Err("Latest prompt reuse requires NativeEngine.".into());
-    }
+    request.validate_native_runtime()?;
     if !request.speech_models_only && !native_host {
         return Err("Run chat in the native ARM64 executable on Windows ARM64.".into());
     }

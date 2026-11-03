@@ -175,13 +175,7 @@ impl LaunchConfig {
                     native_row_workers = Some(row_workers(args.next().as_deref())?);
                 }
                 Some("--prompt-reuse") if latest_prompt_reuse.is_none() => {
-                    latest_prompt_reuse = Some(
-                        match args.next().as_deref().and_then(std::ffi::OsStr::to_str) {
-                            Some("disabled") => false,
-                            Some("latest") => true,
-                            _ => return Err(LaunchError::Arguments),
-                        },
-                    );
+                    latest_prompt_reuse = Some(prompt_reuse(args.next().as_deref())?);
                 }
                 Some("--use-abliterate-lora") if !use_abliterate_lora => {
                     use_abliterate_lora = true;
@@ -193,11 +187,7 @@ impl LaunchConfig {
                     use_repacked_ptq1 = Some(false);
                 }
                 Some("--profile") if profile.is_none() => {
-                    profile = Some(
-                        args.next()
-                            .and_then(|value| value.to_str().and_then(|name| name.parse().ok()))
-                            .ok_or(LaunchError::Arguments)?,
-                    );
+                    profile = Some(launch_profile(args.next().as_deref())?);
                 }
                 Some("--data-directory") if data.is_none() => {
                     data = Some(PathBuf::from(args.next().ok_or(LaunchError::Arguments)?));
@@ -225,32 +215,14 @@ impl LaunchConfig {
         let native_engine = native_engine.unwrap_or(profile == LaunchProfile::SwiftPq2Assessment);
         let native_row_workers = native_row_workers.unwrap_or(if native_engine { 4 } else { 1 });
         let latest_prompt_reuse = latest_prompt_reuse.unwrap_or(false);
-        if !launch
-            || unisolated == require_native_sandbox
-            || (frontend_port != 0 && frontend_port < 1024)
-            || backend_port < 1024
-            || backend_port == frontend_port
-            || max_waiting > MAX_WAITING
-            || (native_engine && profile != LaunchProfile::SwiftPq2Assessment)
-            || (native_row_workers == 4 && !native_engine)
-            || (latest_prompt_reuse && !native_engine)
-            || (use_abliterate_lora && profile != LaunchProfile::SwiftPq2Assessment)
-            || (use_repacked_ptq1.is_some() && profile != LaunchProfile::SwiftPq2Assessment)
-        {
-            return Err(LaunchError::Arguments);
-        }
-        Ok(Self {
+        let configuration = Self {
             data: data.ok_or(LaunchError::Arguments)?,
             evidence_parent: evidence_parent.ok_or(LaunchError::Arguments)?,
             frontend_port,
             backend_port,
             max_waiting,
             check_only,
-            containment: if require_native_sandbox {
-                BackendContainment::NativeSandbox
-            } else {
-                BackendContainment::ExplicitUnisolated
-            },
+            containment: containment(launch, unisolated, require_native_sandbox)?,
             profile,
             native_engine,
             native_row_workers,
@@ -261,7 +233,26 @@ impl LaunchConfig {
             } else {
                 WeightRepresentation::Source
             },
-        })
+        };
+        configuration.validate_selection(use_repacked_ptq1.is_some())?;
+        Ok(configuration)
+    }
+
+    fn validate_selection(&self, explicit_weight: bool) -> Result<(), LaunchError> {
+        let swift = self.profile == LaunchProfile::SwiftPq2Assessment;
+        if (self.frontend_port != 0 && self.frontend_port < 1024)
+            || self.backend_port < 1024
+            || self.backend_port == self.frontend_port
+            || self.max_waiting > MAX_WAITING
+            || (self.native_engine && !swift)
+            || (self.native_row_workers == 4 && !self.native_engine)
+            || (self.latest_prompt_reuse && !self.native_engine)
+            || (self.use_abliterate_lora && !swift)
+            || (explicit_weight && !swift)
+        {
+            return Err(LaunchError::Arguments);
+        }
+        Ok(())
     }
 
     /// Whether the command requests offline checks without credential creation or launch.
@@ -811,6 +802,36 @@ fn row_workers(value: Option<&std::ffi::OsStr>) -> Result<u8, LaunchError> {
         Some("4") => Ok(4),
         _ => Err(LaunchError::Arguments),
     }
+}
+
+fn prompt_reuse(value: Option<&std::ffi::OsStr>) -> Result<bool, LaunchError> {
+    match value.and_then(std::ffi::OsStr::to_str) {
+        Some("disabled") => Ok(false),
+        Some("latest") => Ok(true),
+        _ => Err(LaunchError::Arguments),
+    }
+}
+
+fn launch_profile(value: Option<&std::ffi::OsStr>) -> Result<LaunchProfile, LaunchError> {
+    value
+        .and_then(std::ffi::OsStr::to_str)
+        .and_then(|name| name.parse().ok())
+        .ok_or(LaunchError::Arguments)
+}
+
+fn containment(
+    launch: bool,
+    unisolated: bool,
+    sandboxed: bool,
+) -> Result<BackendContainment, LaunchError> {
+    if !launch || unisolated == sandboxed {
+        return Err(LaunchError::Arguments);
+    }
+    Ok(if sandboxed {
+        BackendContainment::NativeSandbox
+    } else {
+        BackendContainment::ExplicitUnisolated
+    })
 }
 
 fn number(value: Option<OsString>) -> Result<u16, LaunchError> {
