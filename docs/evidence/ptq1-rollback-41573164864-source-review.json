@@ -39,15 +39,30 @@
   },
   "outerGuardianReview": {
     "name": "Invoke-GuardedRollbackSession.ps1",
-    "bytes": 4784,
-    "sha256": "227bcf37604b71a3e35dbd02e6c620fe2875f26652a8ada07e5fe81e2833fa53",
+    "bytes": 9364,
+    "sha256": "a7abca7e06c0be95eb835ec7d7690efd1264a9f8a28a11a4efea31c4b6b7d41b",
     "status": "reviewed-no-blocking-source-issue",
+    "previousUnexecutedSourceReviews": [
+      {
+        "bytes": 4784,
+        "sha256": "227bcf37604b71a3e35dbd02e6c620fe2875f26652a8ada07e5fe81e2833fa53",
+        "scope": "Original-clock guardian before adding explicit post-owner original-artifact retention verification."
+      },
+      {
+        "bytes": 7589,
+        "sha256": "5483dbb98035cc0a3c12ce0aecdea87097612da6b4df5f3017591bcef907b269",
+        "scope": "Retention extension required correction before execution: it could invoke a package verifier after incomplete intake and unconditionally labelled verification as after cleanup. The final reviewed version gates execution and records observed cleanup."
+      }
+    ],
     "sourceControlsReviewed": [
       "A previously persisted original-session-budget.json rejects another invocation; the new monotonic tick and UTC start are persisted before intake/source hashing.",
       "The exact source/run/Foundation selection and both reviewed wrapper/intake hashes are checked before starting the sole intake child; the original tick and UTC value are passed unchanged.",
       "Both output streams drain to Stream.Null. The child process cutoff is original second 258, followed by at most one second of owned process-tree termination before the original 260-second maximum.",
-      "Forced termination, child failure or an exceeded elapsed allowance leaves Passed false. No retry, clock restart or default-promotion claim is allowed."
+      "Forced termination, child failure or an exceeded elapsed allowance leaves Passed false. No retry, clock restart or default-promotion claim is allowed.",
+      "Original-artifact verification is admitted only after exact run/revision CleanupComplete and bounded source-bound preparation evidence; the verifier's exact byte length and SHA-256 are checked while a write/delete-denying handle remains open through process exit.",
+      "The post-owner native verifier checks the original PQ2 byte length and complete SHA-256 under the same original clock, with a fifteen-second operation bound and original second-258 cutoff. Its VerificationAfterOwnerCleanup flag derives from the actual receipt check."
     ],
+    "separateVerdictsRequired": "Guardian Passed describes the workload/session exit. Original PQ2 retention requires its own Verified receipt plus independently reviewed detailed cleanup and package identity evidence; neither field alone is a rollback gate verdict.",
     "receiptTimingBoundary": "Guardian ElapsedSeconds is captured immediately before final result serialization/write. Retained result and archival completion must also be attributed to the original monotonic clock when reviewing total charged time.",
     "reviewerExecutedGuardian": false
   },
