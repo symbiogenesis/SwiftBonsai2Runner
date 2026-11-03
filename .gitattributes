@@ -70,3 +70,6 @@ docs/evidence/ptq1-numerics-41568281287/*.json -text whitespace=cr-at-eol
 
 # Preserve original hosted retained-capture audit report bytes.
 docs/evidence/ptq1-retained-audit-*/*.json -text whitespace=cr-at-eol
+
+# Preserve selected rollback owner/build/acceptance and independent review bytes.
+docs/evidence/ptq1-rollback-41573164864/** -text whitespace=cr-at-eol

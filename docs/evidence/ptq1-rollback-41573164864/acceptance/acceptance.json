@@ -1,0 +1,411 @@
+{
+  "adapterLock": {
+    "adapter": {
+      "bytes": 9682464,
+      "digestSource": "https://github.com/Continuum-AI-Corp/OrcaBonsai-27B-Uncensored/blob/703028bb7fba03496e796b144839b161cf0f5409/README.md#gguf--llamacpp",
+      "filename": "bonsai-abliterate-lora.gguf",
+      "gitBlobSha1": "9787395dbf5a21d25461611d2db75514ce90cbbd",
+      "license": "Apache-2.0",
+      "path": "gguf/bonsai-abliterate-lora.gguf",
+      "repository": "Continuum-AI-Corp/OrcaBonsai-27B-Uncensored",
+      "revision": "703028bb7fba03496e796b144839b161cf0f5409",
+      "sha256": "f1669534803d340a496015f5c45125f3437b4d13ec764f40e34488ce83967f42",
+      "url": "https://raw.githubusercontent.com/Continuum-AI-Corp/OrcaBonsai-27B-Uncensored/703028bb7fba03496e796b144839b161cf0f5409/gguf/bonsai-abliterate-lora.gguf"
+    },
+    "compatibility": {
+      "architecture": "qwen35",
+      "authoringBasis": "unfolded; native graph applies the adapter to unrotated activations",
+      "boundedNativeCheck": {
+        "baseWindowsReportedPeakJobMemoryBytes": 1487458304,
+        "completionTokenLimit": 16,
+        "exitCode": 0,
+        "qualification": "root-reported fixed trusted-input native ARM64 check; Job commit diagnostic, not total RAM, a performance benchmark, or behavioral acceptance",
+        "recordedDate": "2026-10-23",
+        "status": "bounded-load-and-decode-completed",
+        "windowsReportedPeakJobMemoryBytes": 2074329088
+      },
+      "descriptorAudit": {
+        "adapterTensorCount": 258,
+        "allAdapterTensorsF32": true,
+        "allTargetNamesAndRank1ShapesMatch": true,
+        "matchedTargetPairs": 129,
+        "modelTensorCount": 851,
+        "qualification": "read-only GGUF metadata and descriptor audit; no inference",
+        "recordedDate": "2026-10-23"
+      },
+      "groupedSsmInputBasis": "unresolved publisher disagreement; requires independent native writer-level validation before behavioral qualification",
+      "loraAlpha": 1.0,
+      "modelRepository": "ukisai/Swift-Bonsai-2-GGUF",
+      "modelRevision": "a3bdac086bbb6b04d87d0108d18943b5f63868f7",
+      "profileEnabled": false,
+      "publishedInferenceEvidence": "original Ternary Bonsai PTQ1 only; not Swift or PQ2",
+      "rank": 1,
+      "runtimeCommit": "73bfe6cc485554822f80c473a3c0c4f25e80f41b",
+      "sharedBPayloadAudit": {
+        "allPayloadsByteIdentical": true,
+        "bytesPerTensor": 20480,
+        "duplicatePayloadBytes": 2621440,
+        "payloadSha256": "1cdf553ae2623501140ec2e52c3dfa6a80d33fcfe6f91a6d3c4dcd5f887eeca0",
+        "qualification": "read-only payload audit; shared-buffer optimization is proposed, not implemented",
+        "recordedDate": "2026-10-23",
+        "tensorCount": 129
+      },
+      "status": "unqualified-on-pinned-Swift-native-ARM64",
+      "tensorPairs": 129,
+      "trainingRequired": false
+    },
+    "decision": "docs/swift-lora.md",
+    "schemaVersion": 1
+  },
+  "aggregateModelCaseBudgetSeconds": 173,
+  "authoringBasisQualified": false,
+  "case": "representation::pinned_native_ptq1_pq2_row4_capture_complete_responses",
+  "comparison": {
+    "fixedOrder": true,
+    "matchedOutputAndUsage": true,
+    "ptq1OverPq2RequestLatency": 1.9438936570954222,
+    "qualityReview": "pending",
+    "repeatedTrialBenefitQualified": false,
+    "resources": {
+      "fullResourceGateQualified": false,
+      "metrics": [
+        {
+          "field": "osLifetimePeakJobCommitBytes",
+          "pq2Bytes": 7727341568,
+          "ptq1Bytes": 6465744896,
+          "ptq1OverPq2": 0.8367360028157099,
+          "scope": "OS lifetime peak commitment for the complete owned Job, including descendants and startup"
+        },
+        {
+          "field": "osLifetimePeakRootWorkingSetBytes",
+          "pq2Bytes": 7714267136,
+          "ptq1Bytes": 6455099392,
+          "ptq1OverPq2": 0.8367741586075145,
+          "scope": "OS lifetime peak root-process residency, including mapped pages and startup, excluding descendants"
+        },
+        {
+          "field": "sampledPeakRootPrivateBytes",
+          "pq2Bytes": 7725969408,
+          "ptq1Bytes": 6464376832,
+          "ptq1OverPq2": 0.8367075367016519,
+          "scope": "maximum root-process private commitment observed by serving guard samples; startup is excluded"
+        },
+        {
+          "field": "sampledPeakRootWorkingSetBytes",
+          "pq2Bytes": 7714246656,
+          "ptq1Bytes": 6455074816,
+          "ptq1OverPq2": 0.8367731943052872,
+          "scope": "maximum root-process residency observed by serving guard samples; startup and descendants are excluded"
+        }
+      ],
+      "pagingQualified": false,
+      "resourceBenefitQualified": false,
+      "scope": "One fixed-order matched complete-answer pair; commitment and residency are non-additive; sampled bounds are not lifetime peaks; system available memory is context, not attributed model consumption; no full-context, paging or sustained-use evidence",
+      "servingObservationsInRepresentationOrder": [
+        {
+          "guardIntervalMilliseconds": 250,
+          "sampledMinimumSystemAvailablePhysicalBytes": 13623799808,
+          "successfulGuardSamples": 74
+        },
+        {
+          "guardIntervalMilliseconds": 250,
+          "sampledMinimumSystemAvailablePhysicalBytes": 16908107776,
+          "successfulGuardSamples": 143
+        }
+      ],
+      "status": "observed-bounded-pair",
+      "sustainedComfortQualified": false
+    },
+    "status": "captured-complete-pair"
+  },
+  "completeStateParityQualified": false,
+  "configuredNativeRowWorkers": 4,
+  "configuredSeed": 42,
+  "decodeTokensPerSecond": null,
+  "defaultMayChange": false,
+  "defaultRuntimeQualified": false,
+  "matrixContinuationPermitted": false,
+  "maximumModelCaseBudgetSeconds": 240,
+  "metricDefinition": "complete framed request milliseconds including prefill, generation, transport and incremental observer/receipt I/O; startup recorded separately; no decode timing",
+  "passed": true,
+  "performanceQualified": false,
+  "phase": "completed",
+  "profile": "ptq1-pq2-complete-response-row4",
+  "ptq1ExportReceipt": {
+    "CodecCommit": "73bfe6cc485554822f80c473a3c0c4f25e80f41b",
+    "ConvertedBlocks": 209920000,
+    "ConvertedTensorCount": 402,
+    "ExactPq2ReconstructionVerified": true,
+    "MetadataChanges": "general.file_type UINT32 -> 143; PQ2 tensor type/offset fields; alignment padding normalized",
+    "ModelProcessStarted": false,
+    "NonPq2TensorBytesCopiedVerbatim": true,
+    "OutputBytes": 5946648928,
+    "OutputFilename": "Swift-Bonsai-2-current-repacked-PTQ1_0.gguf",
+    "OutputSha256": "e658f0f0736a03a4549535a439f9b07254ebf8ab88ae27cbe6e52d098ca5d1f5",
+    "Qualification": "weight-symbol-and-scale parity only; PTQ1 native activation quantization, logits, quality and performance unqualified",
+    "SavingBytes": 1259520000,
+    "SchemaVersion": 1,
+    "SourceBytes": 7206168928,
+    "SourceFilename": "Swift-Bonsai-2-PQ2_0.gguf",
+    "SourceRepository": "ukisai/Swift-Bonsai-2-GGUF",
+    "SourceRevision": "a3bdac086bbb6b04d87d0108d18943b5f63868f7",
+    "SourceSha256": "5912bb739217cf25b4283a098c7b893d9baff36bdf2e72d3dbf4cb999d5633d5",
+    "TokenizerMetadataSha256": "4ac520292c253d0f559aa3a22de4784dee3eefec14cc0d62e2507c47063c1fe5",
+    "WorkingBufferBytes": 258720
+  },
+  "qualityQualified": false,
+  "representationOrder": [
+    "PQ2_0",
+    "current-repacked-PTQ1_0"
+  ],
+  "request": {
+    "abliteration_scale": 1.3,
+    "enable_thinking": false,
+    "max_completion_tokens": 32,
+    "messages": [
+      {
+        "content": "Name one tree. Answer with only its name.",
+        "role": "user"
+      }
+    ],
+    "stream": true
+  },
+  "requestProgress": [
+    {
+      "cancelledBeforeConnectionClose": false,
+      "completeSseRecords": 4,
+      "connectionClosed": true,
+      "decodeTokensPerSecond": null,
+      "decodedPayloadBytes": 571,
+      "doneMarkerObserved": true,
+      "emittedTokenCountKnown": false,
+      "finalChunkObserved": true,
+      "firstResponseMilliseconds": 18378.4293,
+      "firstVisibleContentMilliseconds": 18378.4293,
+      "framingRejected": false,
+      "headersComplete": true,
+      "headersMilliseconds": 18378.4293,
+      "lastVisibleContentMilliseconds": 18378.4293,
+      "phase": "representation-complete-response",
+      "reportedCompletionTokens": 1,
+      "requestMilliseconds": 18380.217399999998,
+      "responseBytes": 751,
+      "scope": "client-observed public HTTP/SSE progress; event and byte counts are not generated-token counts; request/read timestamps include buffering, transport, observer parsing and synchronous receipt I/O",
+      "terminalReasonObserved": "stop",
+      "visibleContentBytes": 3,
+      "visibleContentEvents": 1
+    },
+    {
+      "cancelledBeforeConnectionClose": false,
+      "completeSseRecords": 4,
+      "connectionClosed": true,
+      "decodeTokensPerSecond": null,
+      "decodedPayloadBytes": 571,
+      "doneMarkerObserved": true,
+      "emittedTokenCountKnown": false,
+      "finalChunkObserved": true,
+      "firstResponseMilliseconds": 35727.988600000004,
+      "firstVisibleContentMilliseconds": 35727.988600000004,
+      "framingRejected": false,
+      "headersComplete": true,
+      "headersMilliseconds": 35727.988600000004,
+      "lastVisibleContentMilliseconds": 35727.988600000004,
+      "phase": "representation-complete-response",
+      "reportedCompletionTokens": 1,
+      "requestMilliseconds": 35729.247299999995,
+      "responseBytes": 746,
+      "scope": "client-observed public HTTP/SSE progress; event and byte counts are not generated-token counts; request/read timestamps include buffering, transport, observer parsing and synchronous receipt I/O",
+      "terminalReasonObserved": "stop",
+      "visibleContentBytes": 3,
+      "visibleContentEvents": 1
+    }
+  ],
+  "requestSha256": "1f187ff5147c58601c162711097db2f9e6ecc498f75e78982af89ccf7521afb3",
+  "requestedAdapterScale": 1.3,
+  "requiredNativeSandbox": true,
+  "revision": "bb020f45169b0698678ca5f789aef7af8cdc12b2",
+  "runAttempt": "1",
+  "runId": "41573164864",
+  "runtimeLock": {
+    "Source": {
+      "Bytes": 4427219,
+      "Commit": "cae16fa6998dac58a947eba9ae4398ed6a9fb863",
+      "Repository": "https://github.com/symbiogenesis/prism-inference",
+      "Sha256": "3e87cec0245784a586565612c8122d3aba5f207a53532ddcc5de2797a2643a21",
+      "Url": "https://github.com/symbiogenesis/prism-inference/archive/cae16fa6998dac58a947eba9ae4398ed6a9fb863.zip"
+    },
+    "asset": {
+      "bytes": 3217665,
+      "filename": "prism-inference-0.1.13-aarch64-pc-windows-msvc.zip",
+      "sha256": "3b1f310cbfafd592375756600c261bdafcfc94ab1bac8f34c69ef7038167096a",
+      "url": "https://github.com/symbiogenesis/prism-inference/releases/download/v0.1.13/prism-inference-0.1.13-aarch64-pc-windows-msvc.zip"
+    },
+    "commit": "cae16fa6998dac58a947eba9ae4398ed6a9fb863",
+    "files": [
+      {
+        "bytes": 441856,
+        "name": "bonsai-gguf.exe",
+        "sha256": "2be1349cdb56959dbbc41f9afbe03180601d1ea67b68f2dafa442df4451734bf"
+      },
+      {
+        "bytes": 1541632,
+        "name": "bonsai-swift-worker.exe",
+        "sha256": "9fcc8c2666ec024cb8bb28c42b604b33388c261f39f2fd3c05d2a8613ac2300d"
+      },
+      {
+        "bytes": 507904,
+        "name": "bonsai-token-worker.exe",
+        "sha256": "66b2800684fecac6680182a4735fe6f6927640f3dfdff903f325f0542dca80ab"
+      },
+      {
+        "bytes": 1087,
+        "name": "CAMELID-LICENSE.txt",
+        "sha256": "cfd0bfa3c3f54585039a58a2dd86a0541b15c29e9f825d244c6f3f0d7c771015"
+      },
+      {
+        "bytes": 11560,
+        "name": "LICENSE",
+        "sha256": "3ddf9be5c28fe27dad143a5dc76eea25222ad1dd68934a047064e56ed2fa40c5"
+      },
+      {
+        "bytes": 2369,
+        "name": "NOTICE",
+        "sha256": "e3b6278bbba57b0bb62cb830facd20c2ca347fdbd655be87b83a78b2a4d42a6b"
+      },
+      {
+        "bytes": 2066944,
+        "name": "prism-inference-server.exe",
+        "sha256": "62bdf31962864b11e530aaae50da2c0a6b36cb651110080e5bf3f08f8d2713f4"
+      },
+      {
+        "bytes": 998912,
+        "name": "prism-inference.exe",
+        "sha256": "9064615b6382eaa0975e9840962cbaeb6e6bdf23a2e4f5d5be9cd3f9dead1531"
+      },
+      {
+        "bytes": 1099,
+        "name": "PRISM-LICENSE.txt",
+        "sha256": "bcd8ec749126d45cb06737d0690295d73df4b6e7e194205bcf91190368f27285"
+      }
+    ],
+    "package": "prism-inference",
+    "release": "v0.1.13",
+    "repository": "https://github.com/symbiogenesis/prism-inference",
+    "schemaVersion": 1,
+    "target": "aarch64-pc-windows-msvc",
+    "version": "0.1.13"
+  },
+  "sampler": {
+    "frequencyPenalty": 0,
+    "minP": 0,
+    "presencePenalty": 0,
+    "repeatPenalty": 1,
+    "temperature": 1,
+    "topK": 20,
+    "topP": 0.95
+  },
+  "samples": [
+    {
+      "cleanup": {
+        "backendResources": {
+          "fullResourceGateQualified": false,
+          "guardIntervalMilliseconds": 250,
+          "osLifetimePeakJobCommitBytes": 7727341568,
+          "osLifetimePeakRootWorkingSetBytes": 7714267136,
+          "pagingQualified": false,
+          "sampledMinimumSystemAvailablePhysicalBytes": 13623799808,
+          "sampledPeakRootPrivateBytes": 7725969408,
+          "sampledPeakRootWorkingSetBytes": 7714246656,
+          "scope": "Job commitment includes descendants and startup; root working sets include mapped residency and exclude descendants; sampled bounds cover serving guard observations only; residency and commitment are non-additive",
+          "successfulGuardSamples": 74,
+          "sustainedComfortQualified": false
+        },
+        "completedOperations": 1,
+        "exit": "shutdown",
+        "failedOperations": 0,
+        "listenerReleased": true,
+        "ownedJobEmpty": true,
+        "peakInFlight": 1
+      },
+      "configuredNativeRowWorkers": 4,
+      "modelIdentity": {
+        "architecture": "qwen35",
+        "bytes": 7206168928,
+        "digestSource": "https://huggingface.co/api/models/ukisai/Swift-Bonsai-2-GGUF/revision/a3bdac086bbb6b04d87d0108d18943b5f63868f7?blobs=true",
+        "filename": "Swift-Bonsai-2-PQ2_0.gguf",
+        "license": "Apache-2.0",
+        "repository": "ukisai/Swift-Bonsai-2-GGUF",
+        "revision": "a3bdac086bbb6b04d87d0108d18943b5f63868f7",
+        "sha256": "5912bb739217cf25b4283a098c7b893d9baff36bdf2e72d3dbf4cb999d5633d5",
+        "weightRepresentation": "PQ2_0"
+      },
+      "observedNativeRowWorkers": 4,
+      "rowWorkerCountIndependentlyObserved": true,
+      "rowWorkerObservationScope": "effective configured graph budget verified by private readiness; no executing-thread, parallel-operation or benefit evidence",
+      "rowWorkerReadinessVersion": "0.1.13",
+      "startupMilliseconds": 15279.5105,
+      "stream": {
+        "finishReason": "stop",
+        "naturallyStopped": true,
+        "reportedCompletionTokens": 1,
+        "requestMilliseconds": 18380.3443,
+        "requestedCompletionCap": 32,
+        "visibleContent": "Oak",
+        "visibleContentBytes": 3,
+        "visibleContentSha256": "cfed998f07b32c43aedad0dfb8126bb531d940875e6634c94cc7b3941747d755"
+      },
+      "verifiedReadinessObserved": true
+    },
+    {
+      "cleanup": {
+        "backendResources": {
+          "fullResourceGateQualified": false,
+          "guardIntervalMilliseconds": 250,
+          "osLifetimePeakJobCommitBytes": 6465744896,
+          "osLifetimePeakRootWorkingSetBytes": 6455099392,
+          "pagingQualified": false,
+          "sampledMinimumSystemAvailablePhysicalBytes": 16908107776,
+          "sampledPeakRootPrivateBytes": 6464376832,
+          "sampledPeakRootWorkingSetBytes": 6455074816,
+          "scope": "Job commitment includes descendants and startup; root working sets include mapped residency and exclude descendants; sampled bounds cover serving guard observations only; residency and commitment are non-additive",
+          "successfulGuardSamples": 143,
+          "sustainedComfortQualified": false
+        },
+        "completedOperations": 1,
+        "exit": "shutdown",
+        "failedOperations": 0,
+        "listenerReleased": true,
+        "ownedJobEmpty": true,
+        "peakInFlight": 1
+      },
+      "configuredNativeRowWorkers": 4,
+      "modelIdentity": {
+        "bytes": 5946648928,
+        "filename": "Swift-Bonsai-2-current-repacked-PTQ1_0.gguf",
+        "sha256": "e658f0f0736a03a4549535a439f9b07254ebf8ab88ae27cbe6e52d098ca5d1f5",
+        "weightRepresentation": "current-repacked-PTQ1_0"
+      },
+      "observedNativeRowWorkers": 4,
+      "rowWorkerCountIndependentlyObserved": true,
+      "rowWorkerObservationScope": "effective configured graph budget verified by private readiness; no executing-thread, parallel-operation or benefit evidence",
+      "rowWorkerReadinessVersion": "0.1.13",
+      "startupMilliseconds": 14379.7239,
+      "stream": {
+        "finishReason": "stop",
+        "naturallyStopped": true,
+        "reportedCompletionTokens": 1,
+        "requestMilliseconds": 35729.4347,
+        "requestedCompletionCap": 32,
+        "visibleContent": "Oak",
+        "visibleContentBytes": 3,
+        "visibleContentSha256": "cfed998f07b32c43aedad0dfb8126bb531d940875e6634c94cc7b3941747d755"
+      },
+      "verifiedReadinessObserved": true
+    }
+  ],
+  "schemaVersion": 1,
+  "scope": "bounded-single-pair-complete-response-feasibility",
+  "servingStatePolicy": "reset-every-request",
+  "templateSha256": "c3cf9e34abf4f9e36c2d72165aa9c132d3e2a725b6c2586aaa3a8af9d7a81041",
+  "wholeJobMaximumSeconds": 300
+}
