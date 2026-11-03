@@ -31,6 +31,9 @@ fn pending_workload() -> Value {
     json!({"status":"pending","phase":"initial-owner-startup",
         "cancellationRequest":body(EXTENDED_COMPLETION_CAP),
         "cancellationRequestSha256":adapter_digest(&serde_json::to_vec(&body(EXTENDED_COMPLETION_CAP)).unwrap()),
+        "cancellationRequestMessagesSha256":adapter_digest(&serde_json::to_vec(&body(EXTENDED_COMPLETION_CAP)["messages"]).unwrap()),
+        "cancellationRequestedScaleF64Bits":format!("{:016x}",1.3_f64.to_bits()),
+        "cancellationRequestBoundToBaseline":false,
         "cancellationPrefixMatchedBaseline":false,"terminalObservedBeforeStop":false,
         "brokerOperationInterrupted":false,"initialOwnerCleanupPassed":false,
         "freshOwnerReadinessPassed":false,"freshCredentialsDiffer":false,
@@ -57,6 +60,17 @@ fn prefix_matches(first: &Value, text: &str) -> bool {
         && first["reportedCompletionTokens"] == 1
         && first["requestMessagesSha256"]
             == adapter_digest(&serde_json::to_vec(&body(1)["messages"]).unwrap())
+}
+
+fn cancellation_request_matches_baseline(first: &Value) -> bool {
+    first["passed"] == true
+        && first["requestSha256"] == adapter_digest(&serde_json::to_vec(&body(1)).unwrap())
+        && first["requestMessagesSha256"]
+            == adapter_digest(
+                &serde_json::to_vec(&body(EXTENDED_COMPLETION_CAP)["messages"]).unwrap(),
+            )
+        && first["requestedScaleF64Bits"] == format!("{:016x}", 1.3_f64.to_bits())
+        && first["requestedCompletionCap"] == 1
 }
 
 pub(super) fn reported_prompt_tokens(bytes: &[u8]) -> Option<u64> {
@@ -96,6 +110,43 @@ fn cancellation_counters_match(report: &RunReport) -> bool {
     report.exit == RunExit::Shutdown && report.completed == 3 && report.failed == 3
 }
 
+fn complete_prefix(payload: &[u8]) -> (Option<String>, bool) {
+    let mut record = Vec::new();
+    let mut content = None;
+    let mut terminal = false;
+    for byte in payload {
+        record.push(*byte);
+        if !record.ends_with(b"\n\n") && !record.ends_with(b"\r\n\r\n") {
+            continue;
+        }
+        let text = std::str::from_utf8(&record).unwrap();
+        let mut data_lines = text.lines().filter_map(|line| line.strip_prefix("data: "));
+        if let Some(data) = data_lines.next() {
+            assert!(data_lines.next().is_none());
+            if data == "[DONE]" {
+                terminal = true;
+            } else {
+                let event: Value = serde_json::from_str(data).unwrap();
+                assert!(event.get("error").is_none());
+                if let Some(choices) = event["choices"].as_array() {
+                    for choice in choices {
+                        terminal |= !choice["finish_reason"].is_null();
+                        if content.is_none()
+                            && let Some(text) = choice["delta"]["content"]
+                                .as_str()
+                                .filter(|text| !text.is_empty())
+                        {
+                            content = Some(text.to_owned());
+                        }
+                    }
+                }
+            }
+        }
+        record.clear();
+    }
+    (content, terminal)
+}
+
 async fn cancellation_prefix(client: TcpStream) -> (BufReader<TcpStream>, Option<String>) {
     let mut reader = BufReader::new(client);
     let mut header = String::new();
@@ -124,38 +175,12 @@ async fn cancellation_prefix(client: TcpStream) -> (BufReader<TcpStream>, Option
         let mut ending = [0; 2];
         reader.read_exact(&mut ending).await.unwrap();
         assert_eq!(&ending, b"\r\n");
-        let mut content = None;
-        // Inspect every complete line already received, including lines after
+        // Inspect every complete SSE record already received, including records after
         // the first visible delta. A terminal event in this chunk cannot pass
         // merely because its visible content preceded that terminal event.
-        for bytes in payload.split_inclusive(|byte| *byte == b'\n') {
-            if bytes.last() != Some(&b'\n') {
-                continue;
-            }
-            let Ok(line) = std::str::from_utf8(bytes) else {
-                continue;
-            };
-            let Some(data) = line.trim_end().strip_prefix("data: ") else {
-                continue;
-            };
-            if data == "[DONE]" {
-                return (reader, None);
-            }
-            let event: Value = serde_json::from_str(data).unwrap();
-            if let Some(choices) = event["choices"].as_array() {
-                for choice in choices {
-                    if !choice["finish_reason"].is_null() {
-                        return (reader, None);
-                    }
-                    if content.is_none()
-                        && let Some(text) = choice["delta"]["content"]
-                            .as_str()
-                            .filter(|text| !text.is_empty())
-                    {
-                        content = Some(text.to_owned());
-                    }
-                }
-            }
+        let (content, terminal) = complete_prefix(&payload);
+        if terminal {
+            return (reader, None);
         }
         if let Some(content) = content {
             return (reader, Some(content));
@@ -256,6 +281,11 @@ async fn initial_owner(
             json!(adapter_digest(text.as_bytes()));
         report["serviceIntegrationWorkload"]["cancellationPrefixMatchedBaseline"] =
             json!(prefix_matches(&report["streams"][0], text));
+        // The same owner retains MT19937 draw order across requests. Prefix
+        // equality is informational; exact output equality is required only
+        // after fresh ownership resets the seed for the baseline replay.
+        report["serviceIntegrationWorkload"]["cancellationRequestBoundToBaseline"] =
+            json!(!text.is_empty() && cancellation_request_matches_baseline(&report["streams"][0]));
         save_acceptance_report(evidence, report);
     }
     report["phase"] = json!("initial-owner-owned-stop");
@@ -283,7 +313,7 @@ async fn initial_owner(
     }
     let passed = boundaries
         && prompt_counts_match(&report["streams"], None)
-        && report["serviceIntegrationWorkload"]["cancellationPrefixMatchedBaseline"] == true
+        && report["serviceIntegrationWorkload"]["cancellationRequestBoundToBaseline"] == true
         && report["serviceIntegrationWorkload"]["brokerOperationInterrupted"] == true;
     save_acceptance_report(evidence, report);
     passed.then_some(credential)
@@ -393,6 +423,7 @@ fn native_service_integration_profile_preserves_bounds_and_pending_verdicts() {
     let pending = pending_workload();
     for field in [
         "cancellationPrefixMatchedBaseline",
+        "cancellationRequestBoundToBaseline",
         "brokerOperationInterrupted",
         "initialOwnerCleanupPassed",
         "freshOwnerReadinessPassed",
@@ -410,7 +441,9 @@ fn native_service_integration_profile_preserves_bounds_and_pending_verdicts() {
 
 #[test]
 fn native_service_integration_binds_prefix_and_reported_prompt_counts() {
-    let first = adapter_initial_fixture(&ADAPTER_PROFILE);
+    let mut first = adapter_initial_fixture(&ADAPTER_PROFILE);
+    first["requestSha256"] = json!(adapter_digest(&serde_json::to_vec(&body(1)).unwrap()));
+    assert!(cancellation_request_matches_baseline(&first));
     let text = first["visibleContent"].as_str().unwrap();
     assert!(prefix_matches(&first, text));
     for (field, value) in [
@@ -431,6 +464,15 @@ fn native_service_integration_binds_prefix_and_reported_prompt_counts() {
     }
     assert!(!prefix_matches(&first, ""));
     assert!(!prefix_matches(&first, "different"));
+    for field in [
+        "requestSha256",
+        "requestMessagesSha256",
+        "requestedScaleF64Bits",
+    ] {
+        let mut changed = first.clone();
+        changed[field] = json!("0".repeat(64));
+        assert!(!cancellation_request_matches_baseline(&changed));
+    }
     let mut streams = json!([first.clone(), first.clone(), first]);
     assert!(!prompt_counts_match(&streams, None));
     for stream in streams.as_array_mut().unwrap() {
@@ -453,6 +495,12 @@ fn native_service_integration_binds_prefix_and_reported_prompt_counts() {
 
 #[test]
 fn native_service_integration_prefix_rejects_terminal_events_already_received() {
+    let complete =
+        b"data: {\"choices\":[{\"delta\":{\"content\":\"Hello\"},\"finish_reason\":null}]}\n\n";
+    for length in 0..complete.len() {
+        assert_eq!(complete_prefix(&complete[..length]), (None, false));
+    }
+    assert_eq!(complete_prefix(complete), (Some("Hello".into()), false));
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()

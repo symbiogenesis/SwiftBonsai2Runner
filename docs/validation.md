@@ -164,8 +164,12 @@ released-service transitions in one original allowance. Three cap-one streams
 use the same `Hi` prompt at 1.3, negative zero and 2.0, followed by invalid-scale
 and oversized-context rejections. A fourth request keeps that prompt and scale
 1.3 with a 4096-token reservation. Stop follows its first visible prefix, which
-must match the initial cap-one output; a terminal event already received cannot
-qualify interruption. Three completed and three failed broker operations bind
+is retained with its exact text/digest and bound request; a terminal SSE record
+already received cannot qualify interruption. The prefix parser waits for a
+complete SSE record, including its blank-line delimiter. Same-owner prefix
+equality is informational because sampler draws advance between requests;
+the fresh owner below resets the seed for exact baseline replay.
+Three completed and three failed broker operations bind
 the two rejections and interrupted operation, with verified empty Job/listener.
 A fresh owner must independently verify readiness, replace credentials, then
 reproduce the exact initial cap-one response and report one completed operation
