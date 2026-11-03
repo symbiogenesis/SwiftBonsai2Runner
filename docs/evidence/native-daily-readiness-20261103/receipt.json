@@ -1,0 +1,437 @@
+{
+  "schemaVersion": 1,
+  "kind": "fixed-native-daily-readiness-source-validation",
+  "maximumTotalSeconds": 300,
+  "workCutoffSeconds": 240,
+  "startingRunnerRevision": "2e76d3bbe3775265e07d76e5986aac24b7de3e7b",
+  "startedAtUtc": "2026-11-03T08:37:50Z",
+  "powerBefore": {
+    "observedAtUtc": "2026-11-03T08:37:50Z",
+    "source": "GetSystemPowerStatus",
+    "acConnected": false,
+    "batterySaver": false,
+    "chargePercent": 24,
+    "batteryFlags": 2
+  },
+  "checks": [
+    {
+      "name": "primary-branch",
+      "command": [
+        "C:\\Users\\symbi\\AppData\\Local\\Microsoft\\WinGet\\Packages\\Git.MinGit_Microsoft.Winget.Source_8wekyb3d8bbwe\\cmd\\git.exe",
+        "symbolic-ref",
+        "--quiet",
+        "HEAD"
+      ],
+      "startedSeconds": 0.0015201000060187653,
+      "powerBefore": {
+        "observedAtUtc": "2026-11-03T08:37:50Z",
+        "source": "GetSystemPowerStatus",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 24,
+        "batteryFlags": 2
+      },
+      "passed": true,
+      "exitCode": 0,
+      "finishedSeconds": 0.1273152000067057,
+      "powerAfter": {
+        "observedAtUtc": "2026-11-03T08:37:50Z",
+        "source": "GetSystemPowerStatus",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 24,
+        "batteryFlags": 2
+      }
+    },
+    {
+      "name": "primary-tracked-state",
+      "command": [
+        "C:\\Users\\symbi\\AppData\\Local\\Microsoft\\WinGet\\Packages\\Git.MinGit_Microsoft.Winget.Source_8wekyb3d8bbwe\\cmd\\git.exe",
+        "status",
+        "--porcelain",
+        "--untracked-files=no"
+      ],
+      "startedSeconds": 0.13361580000491813,
+      "powerBefore": {
+        "observedAtUtc": "2026-11-03T08:37:50Z",
+        "source": "GetSystemPowerStatus",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 24,
+        "batteryFlags": 2
+      },
+      "passed": true,
+      "exitCode": 0,
+      "finishedSeconds": 0.2603231999964919,
+      "powerAfter": {
+        "observedAtUtc": "2026-11-03T08:37:50Z",
+        "source": "GetSystemPowerStatus",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 24,
+        "batteryFlags": 2
+      }
+    },
+    {
+      "name": "integration-tracked-state",
+      "command": [
+        "C:\\Users\\symbi\\AppData\\Local\\Microsoft\\WinGet\\Packages\\Git.MinGit_Microsoft.Winget.Source_8wekyb3d8bbwe\\cmd\\git.exe",
+        "status",
+        "--porcelain",
+        "--untracked-files=no"
+      ],
+      "startedSeconds": 0.2612402000086149,
+      "powerBefore": {
+        "observedAtUtc": "2026-11-03T08:37:50Z",
+        "source": "GetSystemPowerStatus",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 24,
+        "batteryFlags": 2
+      },
+      "passed": true,
+      "exitCode": 0,
+      "finishedSeconds": 0.38416280000819825,
+      "powerAfter": {
+        "observedAtUtc": "2026-11-03T08:37:50Z",
+        "source": "GetSystemPowerStatus",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 24,
+        "batteryFlags": 2
+      }
+    },
+    {
+      "name": "changed-source-inventory",
+      "command": [
+        "C:\\Users\\symbi\\AppData\\Local\\Microsoft\\WinGet\\Packages\\Git.MinGit_Microsoft.Winget.Source_8wekyb3d8bbwe\\cmd\\git.exe",
+        "diff",
+        "--name-only",
+        "2e76d3bbe3775265e07d76e5986aac24b7de3e7b",
+        "HEAD"
+      ],
+      "startedSeconds": 0.3850421999959508,
+      "powerBefore": {
+        "observedAtUtc": "2026-11-03T08:37:50Z",
+        "source": "GetSystemPowerStatus",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 24,
+        "batteryFlags": 2
+      },
+      "passed": true,
+      "exitCode": 0,
+      "finishedSeconds": 0.4683878000068944,
+      "powerAfter": {
+        "observedAtUtc": "2026-11-03T08:37:50Z",
+        "source": "GetSystemPowerStatus",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 24,
+        "batteryFlags": 2
+      }
+    },
+    {
+      "name": "canonical-rust-format",
+      "command": [
+        "C:\\Users\\symbi\\.rustup\\toolchains\\nightly-2026-11-02-aarch64-pc-windows-msvc\\bin\\rustfmt.exe",
+        "--edition",
+        "2024",
+        "--config",
+        "skip_children=true",
+        "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\primetime-daily-integration\\src\\broker\\src\\launcher.rs",
+        "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\primetime-daily-integration\\src\\broker\\src\\lib.rs",
+        "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\primetime-daily-integration\\src\\broker\\src\\main.rs",
+        "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\primetime-daily-integration\\src\\broker\\src\\owner_shutdown.rs",
+        "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\primetime-daily-integration\\src\\broker\\src\\owner_shutdown\\tests.rs",
+        "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\primetime-daily-integration\\src\\broker\\tests\\native_model.rs",
+        "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\primetime-daily-integration\\src\\broker\\tests\\native_model\\service_integration.rs",
+        "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\primetime-daily-integration\\src\\chat-ui\\src\\client.rs",
+        "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\primetime-daily-integration\\src\\chat-ui\\src\\client\\cancellation_tests.rs",
+        "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\primetime-daily-integration\\src\\chat-ui\\src\\client\\owner_control.rs",
+        "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\primetime-daily-integration\\tools\\bonsai\\src\\chat_launch.rs",
+        "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\primetime-daily-integration\\tools\\bonsai\\src\\chat_launch\\tests.rs",
+        "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\primetime-daily-integration\\tools\\bonsai\\src\\cli.rs"
+      ],
+      "startedSeconds": 0.4752208999998402,
+      "powerBefore": {
+        "observedAtUtc": "2026-11-03T08:37:50Z",
+        "source": "GetSystemPowerStatus",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 24,
+        "batteryFlags": 2
+      },
+      "passed": true,
+      "exitCode": 0,
+      "finishedSeconds": 0.6863336000096751,
+      "powerAfter": {
+        "observedAtUtc": "2026-11-03T08:37:50Z",
+        "source": "GetSystemPowerStatus",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 24,
+        "batteryFlags": 2
+      }
+    },
+    {
+      "name": "formatted-source-inventory",
+      "command": [
+        "C:\\Users\\symbi\\AppData\\Local\\Microsoft\\WinGet\\Packages\\Git.MinGit_Microsoft.Winget.Source_8wekyb3d8bbwe\\cmd\\git.exe",
+        "diff",
+        "--name-only"
+      ],
+      "startedSeconds": 0.6873466999968514,
+      "powerBefore": {
+        "observedAtUtc": "2026-11-03T08:37:50Z",
+        "source": "GetSystemPowerStatus",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 24,
+        "batteryFlags": 2
+      },
+      "passed": true,
+      "exitCode": 0,
+      "finishedSeconds": 0.9122077000065474,
+      "powerAfter": {
+        "observedAtUtc": "2026-11-03T08:37:51Z",
+        "source": "GetSystemPowerStatus",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 24,
+        "batteryFlags": 2
+      }
+    },
+    {
+      "name": "stage-canonical-format",
+      "command": [
+        "C:\\Users\\symbi\\AppData\\Local\\Microsoft\\WinGet\\Packages\\Git.MinGit_Microsoft.Winget.Source_8wekyb3d8bbwe\\cmd\\git.exe",
+        "add",
+        "--",
+        "src/broker/src/owner_shutdown.rs",
+        "src/broker/src/owner_shutdown/tests.rs",
+        "src/broker/tests/native_model/service_integration.rs",
+        "src/chat-ui/src/client/owner_control.rs",
+        "tools/bonsai/src/chat_launch/tests.rs"
+      ],
+      "startedSeconds": 0.9217000000062399,
+      "powerBefore": {
+        "observedAtUtc": "2026-11-03T08:37:51Z",
+        "source": "GetSystemPowerStatus",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 24,
+        "batteryFlags": 2
+      },
+      "passed": true,
+      "exitCode": 0,
+      "finishedSeconds": 1.0825613000051817,
+      "powerAfter": {
+        "observedAtUtc": "2026-11-03T08:37:51Z",
+        "source": "GetSystemPowerStatus",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 24,
+        "batteryFlags": 2
+      }
+    },
+    {
+      "name": "commit-canonical-format",
+      "command": [
+        "C:\\Users\\symbi\\AppData\\Local\\Microsoft\\WinGet\\Packages\\Git.MinGit_Microsoft.Winget.Source_8wekyb3d8bbwe\\cmd\\git.exe",
+        "commit",
+        "-m",
+        "Apply canonical formatting to native daily-readiness changes"
+      ],
+      "startedSeconds": 1.08377979999932,
+      "powerBefore": {
+        "observedAtUtc": "2026-11-03T08:37:51Z",
+        "source": "GetSystemPowerStatus",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 24,
+        "batteryFlags": 2
+      },
+      "passed": true,
+      "exitCode": 0,
+      "finishedSeconds": 1.706223900007899,
+      "powerAfter": {
+        "observedAtUtc": "2026-11-03T08:37:51Z",
+        "source": "GetSystemPowerStatus",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 24,
+        "batteryFlags": 2
+      }
+    },
+    {
+      "name": "integrate-reviewed-source",
+      "command": [
+        "C:\\Users\\symbi\\AppData\\Local\\Microsoft\\WinGet\\Packages\\Git.MinGit_Microsoft.Winget.Source_8wekyb3d8bbwe\\cmd\\git.exe",
+        "merge",
+        "--ff-only",
+        "work/primetime-daily-integration"
+      ],
+      "startedSeconds": 1.717982200003462,
+      "powerBefore": {
+        "observedAtUtc": "2026-11-03T08:37:51Z",
+        "source": "GetSystemPowerStatus",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 24,
+        "batteryFlags": 2
+      },
+      "passed": true,
+      "exitCode": 0,
+      "finishedSeconds": 2.1112445000035223,
+      "powerAfter": {
+        "observedAtUtc": "2026-11-03T08:37:52Z",
+        "source": "GetSystemPowerStatus",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 24,
+        "batteryFlags": 2
+      }
+    },
+    {
+      "name": "checked-source-revision",
+      "command": [
+        "C:\\Users\\symbi\\AppData\\Local\\Microsoft\\WinGet\\Packages\\Git.MinGit_Microsoft.Winget.Source_8wekyb3d8bbwe\\cmd\\git.exe",
+        "rev-parse",
+        "HEAD"
+      ],
+      "startedSeconds": 2.1253479000006337,
+      "powerBefore": {
+        "observedAtUtc": "2026-11-03T08:37:52Z",
+        "source": "GetSystemPowerStatus",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 24,
+        "batteryFlags": 2
+      },
+      "passed": true,
+      "exitCode": 0,
+      "finishedSeconds": 2.2383559000008972,
+      "powerAfter": {
+        "observedAtUtc": "2026-11-03T08:37:52Z",
+        "source": "GetSystemPowerStatus",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 24,
+        "batteryFlags": 2
+      }
+    },
+    {
+      "name": "powershell-source-parse",
+      "command": [
+        "powershell.exe",
+        "-NoProfile",
+        "-NonInteractive",
+        "-Command",
+        "\n$ErrorActionPreference = 'Stop'\n$repo = 'C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner'\n$tokens = $null; $errors = $null\n[Management.Automation.Language.Parser]::ParseFile((Join-Path $repo 'scripts/Start-Chat.ps1'),[ref]$tokens,[ref]$errors) | Out-Null\nif ($errors.Count) { throw 'Launcher PowerShell syntax failed.' }\n$workflow = [IO.File]::ReadAllLines((Join-Path $repo '.github/workflows/native-runtime-acceptance.yml'))\n$blocks = 0\nfor ($index=0; $index -lt $workflow.Length; $index++) {\n    if ($workflow[$index] -match '^(\\s+)run:\\s*\\|\\s*$') {\n        $indent = $Matches[1].Length + 2\n        $lines = [Collections.Generic.List[string]]::new()\n        for ($next=$index+1; $next -lt $workflow.Length; $next++) {\n            $line = $workflow[$next]\n            if ($line.Trim().Length -and ($line.Length -lt $indent -or $line.Substring(0,$indent).Trim().Length)) { break }\n            $lines.Add($(if ($line.Length -ge $indent) { $line.Substring($indent) } else { '' }))\n        }\n        $tokens=$null; $errors=$null\n        [Management.Automation.Language.Parser]::ParseInput(($lines -join \"`n\"),[ref]$tokens,[ref]$errors) | Out-Null\n        if ($errors.Count) { throw 'Workflow PowerShell syntax failed.' }\n        $blocks++\n    }\n}\nif ($blocks -lt 7) { throw 'Workflow run-block inventory incomplete.' }\nWrite-Output \"Parsed launcher and $blocks workflow blocks.\"\n"
+      ],
+      "startedSeconds": 2.668433400001959,
+      "powerBefore": {
+        "observedAtUtc": "2026-11-03T08:37:52Z",
+        "source": "GetSystemPowerStatus",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 24,
+        "batteryFlags": 2
+      },
+      "passed": true,
+      "exitCode": 0,
+      "finishedSeconds": 3.0777150000067195,
+      "powerAfter": {
+        "observedAtUtc": "2026-11-03T08:37:53Z",
+        "source": "GetSystemPowerStatus",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 24,
+        "batteryFlags": 2
+      }
+    },
+    {
+      "name": "graphics_backend_selection_is_explicit_and_scoped_to_the_chat_child",
+      "command": [
+        "C:\\Users\\symbi\\.rustup\\toolchains\\nightly-2026-11-02-aarch64-pc-windows-msvc\\bin\\cargo.exe",
+        "test",
+        "--locked",
+        "--offline",
+        "--release",
+        "--manifest-path",
+        "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\Cargo.toml",
+        "-p",
+        "bonsai-tools",
+        "--lib",
+        "chat_launch::tests::graphics_backend_selection_is_explicit_and_scoped_to_the_chat_child",
+        "--",
+        "--exact"
+      ],
+      "startedSeconds": 3.085121199997957,
+      "powerBefore": {
+        "observedAtUtc": "2026-11-03T08:37:53Z",
+        "source": "GetSystemPowerStatus",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 24,
+        "batteryFlags": 2
+      },
+      "passed": false,
+      "exitCode": 101,
+      "finishedSeconds": 15.361719599997741,
+      "powerAfter": {
+        "observedAtUtc": "2026-11-03T08:38:05Z",
+        "source": "GetSystemPowerStatus",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 24,
+        "batteryFlags": 2
+      }
+    }
+  ],
+  "modelExecutions": 0,
+  "benchmarks": 0,
+  "fullSuites": 0,
+  "ciActions": 0,
+  "pushes": 0,
+  "performanceComparisonQualified": false,
+  "uninterruptedPowerStabilityEstablished": false,
+  "actualModelAcceptancePassed": false,
+  "elapsedSecondsThroughLastSave": 15.37119160000293,
+  "checkedRunnerRevision": "8150ccbe57242b1b72a7e29d4d747e13e377ac02",
+  "sourceFiles": {
+    ".github/workflows/native-runtime-acceptance.yml": "ff84ddbdea63176168f9fd950c3f6ccfbb69af4595556e459aa2e3fe4c4d8dcd",
+    "docs/development-guide.md": "13ddd39733d4aadfdd8f39a08ea9a57fc02965ebb53f41f438c5ded1f390b703",
+    "docs/evidence/native-daily-readiness-20261103/driver-source.txt": "c31da7ccfca079e32881ef4aafcbf763e078b759662659fdb7c3a32cd742897e",
+    "docs/evidence/native-daily-readiness-20261103/plan.json": "e4de0aefa775f054ac9bb4da2458c828fb46c2ae86aa94dc34444695181b10a4",
+    "docs/ui-architecture.md": "3542d45836af98d0a39b0b98beefba886e21e531e7960dfd9db034dc7547c2c9",
+    "docs/validation.md": "a4366b33510b330ec9fe5e879c97377d8c1114cf777d7bf2daa49572124917cb",
+    "scripts/Start-Chat.ps1": "d00e61f3c6ca8723a80f3e2d034062d77e27c8c846cd7c8fd8c438445c1a37ec",
+    "src/broker/src/launcher.rs": "129fc9ed98efe64cc345035398f1f5e50b3f7860a1154127ea1daaf2a38a78a1",
+    "src/broker/src/lib.rs": "b7f3a143b332181ecdd714b1060179397c88a9d26dc1814b1c5a5bff058ebbab",
+    "src/broker/src/main.rs": "6ecf8d3114da34d52eb15152e2a674d5af73b86304924d60f1a4af1f40f3259a",
+    "src/broker/src/owner_shutdown.rs": "261a05f95a28780675d546eebcea62980ee7b6afda1114dcfcdd9ed9164d2e72",
+    "src/broker/src/owner_shutdown/tests.rs": "226d4a5ebe68dbe3ea94ef7da37b99fc35ab4c4c3884232c5745a7c2eb85791c",
+    "src/broker/tests/native_model.rs": "7df3bb667836d873a6df92b5a173ca2f03dfc595ffe22985a8f89499058b3a47",
+    "src/broker/tests/native_model/service_integration.rs": "c2e9501e6f9b7b8710654239586196ae09f05538d911f914bdfcec384156a707",
+    "src/chat-ui/src/client.rs": "5e41d9475212aa841cb558dec76c4d7e415200213bf031d99f3d339d0dea1908",
+    "src/chat-ui/src/client/cancellation_tests.rs": "edbce776b1c3900bb9b93b0975f86e6bd5f78da1bfc75685151025b65cf01f1b",
+    "src/chat-ui/src/client/owner_control.rs": "e6997de6bae9eeb2a0c3a6928017c133a08cbb4e82e6ebbe015ef86794c695d5",
+    "tools/bonsai/README.md": "2059a44302a6d2398366a7fb55009775a679ce44f54b27618e983f90fb225569",
+    "tools/bonsai/src/chat_launch.rs": "1a714e79264ec6a16e1268f049fff30ff5a0318bd31c6e9dc41cedb67ef97024",
+    "tools/bonsai/src/chat_launch/tests.rs": "d4abae28ac0d42a004ffc4aec8f0d63bfc074122091c527292ef4fb9440258cf",
+    "tools/bonsai/src/cli.rs": "539090cb534deb29ba56c6f51f18dad2f829ab37a1b2f5789d3def0a958a925d"
+  },
+  "allRequestedChecksPassed": false,
+  "failure": "Check failed: graphics_backend_selection_is_explicit_and_scoped_to_the_chat_child",
+  "powerAfterWork": {
+    "observedAtUtc": "2026-11-03T08:38:05Z",
+    "source": "GetSystemPowerStatus",
+    "acConnected": false,
+    "batterySaver": false,
+    "chargePercent": 24,
+    "batteryFlags": 2
+  },
+  "clockClosed": true
+}

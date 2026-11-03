@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "maximumTotalSeconds": 300,
+  "powerAfterRetention": {
+    "observedAtUtc": "2026-11-03T08:38:05Z",
+    "source": "GetSystemPowerStatus",
+    "acConnected": false,
+    "batterySaver": false,
+    "chargePercent": 24,
+    "batteryFlags": 2
+  },
+  "chargedSecondsThroughRetention": 15.410510300003807,
+  "powerEndpointScope": "After raw payload and manifest retention, before this final retention metadata write.",
+  "retainedWithinDeclaredTotal": true,
+  "clockClosed": true,
+  "noRetryOrClockRestart": true,
+  "allRequestedChecksPassed": false,
+  "modelExecutions": 0,
+  "benchmarks": 0,
+  "fullSuites": 0,
+  "ciActions": 0,
+  "pushes": 0
+}

@@ -1,0 +1,5 @@
+warning: in the working copy of 'src/broker/src/owner_shutdown.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/broker/src/owner_shutdown/tests.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/broker/tests/native_model/service_integration.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/chat-ui/src/client/owner_control.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tools/bonsai/src/chat_launch/tests.rs', LF will be replaced by CRLF the next time Git touches it

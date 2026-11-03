@@ -109,6 +109,28 @@ pending gates. Full suites, benchmarks and performance captures stay in owning C
 
 ### Actual-model acceptance
 
+Qualify the [daily-readiness source changes](docs/evidence/native-daily-readiness-20261103/summary.json)
+on settled main through owner-managed hosted checks. Explicit
+`--graphics-backend dx12` / `-GraphicsBackend dx12` now selects only the native
+window's renderer; omission preserves inherited selection. The separate
+`pq2-adapter-service-row4` profile prepares original-PQ2/four-worker Stop and
+fresh-owner replay without PTQ1 metadata. The UI's private broker shutdown
+handshake requires a model-cleanup acknowledgment, broker exit and outer-Job
+cleanup before Retry; PSEC models can bypass outer Job inheritance. Qualify this
+actual UI path separately from the direct broker acceptance harness.
+
+The one new local model-free check applied canonical formatting and parsed the
+launcher plus eight workflow PowerShell blocks, then stopped on a renderer
+environment-map type mismatch before any test executed. The source correction
+matches the existing String-map process contract but remains uncompiled. Keep
+the failed 15.411-second clock closed, its original battery/power observations
+and independently verified raw evidence intact. Focused controls, strict Release
+all-target analyzers, native linking and maintenance delivery remain pending;
+no installed executable changed. After exact-source hosted acceptance, retain
+one feasible owner-observed DX12 launch, model readiness, Stop/Retry and manual
+publisher rollback workload under the existing aggregate budget. No previous
+failed clock or validation pass may qualify these new changes.
+
 Validate the [Rust development-default integration](docs/evidence/rust-development-default-20261103/summary.json)
 on settled main in owner-managed checks. Its one model-free local run passed thirty
 focused selection, handoff and qualification-profile controls plus the maintenance

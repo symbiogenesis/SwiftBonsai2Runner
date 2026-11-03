@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 1,
+  "kind": "native-daily-readiness-source-preparation",
+  "recordedDate": "2026-11-03",
+  "status": "source-reviewed-local-compilation-stopped-correction-uncompiled",
+  "startingRunnerRevision": "2e76d3bbe3775265e07d76e5986aac24b7de3e7b",
+  "checkedRunnerRevision": "8150ccbe57242b1b72a7e29d4d747e13e377ac02",
+  "sourceCorrectionRevision": "d6bb155b467a7016b6e73fad5c9ac93a85a9df58",
+  "runtimeVersion": "0.1.14",
+  "runtimeRevision": "9e8ea3e2c042ab0c3f1a8e9596ff155e202c3c57",
+  "changes": [
+    "Explicit --graphics-backend dx12|vulkan|gl and the -GraphicsBackend convenience parameter scope WGPU_BACKEND to the chat child. Omission preserves inheritance. Renderer selection does not change inference or select a fallback automatically.",
+    "Original-PQ2/four-worker/standard-adapter service acceptance now has its own pq2-adapter-service-row4 profile. It retains fixed cap-one scale controls, rejections, explicit Stop and fresh-owner seeded replay, exact representation receipts, two owner cleanups and original absolute reserves. PTQ1 combined rollback keeps its existing wrapper and tail/hash reserves.",
+    "The native UI owns its broker before the first instruction and uses a fresh private shutdown request/acknowledgment directory per attempt. Retry requires explicit model-cleanup proof from the broker, broker exit and confirmed outer Job cleanup. Process-creation or cleanup uncertainty leaves the model unavailable; an outer Job alone cannot prove a PSEC-created model stopped.",
+    "Broker frontend binding failure explicitly stops the already-created model. The same private cancellation future spans startup and serving, without a new HTTP endpoint. UI cleanup shares one fifteen-second absolute allowance with its ten-second model-stop bound and three-second outer cleanup reserve.",
+    "Hosted preparation requires nonempty broker and UI private-shutdown controls and inventories both representation service cases plus the original-PQ2 smoke case before packaging. No workflow was dispatched or monitored."
+  ],
+  "sourceReview": {
+    "separateWorkersAndCommits": true,
+    "independentReview": "independent-review.json",
+    "reviewFindingResolvedInSource": "Independent review rejected treating outer broker Job cleanup as proof for PSEC model cleanup. The subsequent private broker acknowledgment closes that source gap; actual-device behavior remains pending.",
+    "laterCompileCorrection": "Every new renderer environment producer, Operations trait/implementation, Recorder payload and expectation now uses BTreeMap<String, String>, matching startup_process::run. A formatting-only cherry-pick conflict retained the shorter String-map recorder variant. No formatter/compiler/test rerun followed."
+  },
+  "localVerification": {
+    "plan": "plan.json",
+    "driver": "driver-source.txt",
+    "rawReceipt": "receipt.json",
+    "retention": "retention.json",
+    "rawManifest": "file-manifest.json",
+    "maximumTotalSeconds": 300,
+    "workCutoffSeconds": 240,
+    "chargedSecondsThroughRetention": 15.410510300003807,
+    "retainedWithinDeclaredTotal": true,
+    "rustFormatting": "one canonical formatter application returned zero; its edits were committed before compilation",
+    "launcherAndWorkflowPowerShellParsing": "passed-launcher-and-eight-literal-run-blocks",
+    "firstCargoInvocation": "failed-E0308-before-test-execution",
+    "failure": "Renderer environment maps used OsString keys/values while startup_process::run requires String keys/values.",
+    "cargoInvocations": 1,
+    "testsExecuted": 0,
+    "analyzersExecuted": 0,
+    "maintenanceBuildExecuted": false,
+    "maintenanceActivationExecuted": false,
+    "allRequestedChecksPassed": false,
+    "clockClosed": true,
+    "noRetryOrClockRestart": true,
+    "sourceCorrectionCompiledOrRetested": false,
+    "originalPowerEndpoints": {
+      "acConnected": false,
+      "batterySaver": false,
+      "chargePercent": 24,
+      "retentionEndpointScope": "After raw payload and manifest retention, before the final retention metadata write.",
+      "uninterruptedStabilityEstablished": false,
+      "performanceComparisonQualified": false
+    },
+    "retainedByteIdentities": "The independent review verifies all 27 original manifest entries. Receipt sourceFiles bind primary-checkout bytes; retained plan/driver copies preserve their distinct integration-worktree newline bytes. No raw record was rewritten to reconcile those identities."
+  },
+  "remainingAcceptance": [
+    "Owner-managed exact-source hosted compilation, focused new and shared controls, native linking and strict Release all-target/all-feature chat, broker and tools analyzers, including the final String-map correction.",
+    "Updated maintenance delivery only after successful compiled checks. The existing installed executable was not replaced by this failed source check.",
+    "Source-bound actual-model original-PQ2 service acceptance plus owner-observed explicit DX12 native startup, authenticated model readiness, complete private Stop/Retry handshake and manual publisher rollback, using one feasible predeclared allowance and aggregate/per-owner power observations.",
+    "Separate PTQ1 provenance/reconstruction, complete-state/context/output, quality, matched benefit, sustained comfort/resources, isolation, speech/recovery and clean-machine installation gates remain pending."
+  ],
+  "modelExecutions": 0,
+  "benchmarks": 0,
+  "fullSuites": 0,
+  "ciActions": 0,
+  "pushes": 0,
+  "newPromotionGatesPassed": 0,
+  "actualModelAcceptancePassed": false,
+  "defaultPromotionQualified": false,
+  "defaultsChanged": false,
+  "admissionOrResourceReservesReduced": false
+}

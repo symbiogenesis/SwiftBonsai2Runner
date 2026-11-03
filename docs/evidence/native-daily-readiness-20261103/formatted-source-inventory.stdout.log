@@ -1,0 +1,5 @@
+src/broker/src/owner_shutdown.rs
+src/broker/src/owner_shutdown/tests.rs
+src/broker/tests/native_model/service_integration.rs
+src/chat-ui/src/client/owner_control.rs
+tools/bonsai/src/chat_launch/tests.rs
