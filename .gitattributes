@@ -105,3 +105,6 @@ docs/evidence/ptq1-context-release-014/** -text -whitespace
 docs/evidence/ptq1-context-owning-ci-9e/** -text -whitespace
 # Preserve the source-only public reconstruction route producer record bytes.
 docs/evidence/ptq1-public-authoring-route.json -text whitespace=cr-at-eol
+
+# Preserve exact independently observed 0.1.14 publication metadata.
+docs/evidence/ptq1-context-publication-014/** -text -whitespace
