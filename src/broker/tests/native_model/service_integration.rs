@@ -147,43 +147,75 @@ fn complete_prefix(payload: &[u8]) -> (Option<String>, bool) {
     (content, terminal)
 }
 
-async fn cancellation_prefix(client: TcpStream) -> (BufReader<TcpStream>, Option<String>) {
+async fn cancellation_line(reader: &mut BufReader<TcpStream>, limit: usize) -> io::Result<String> {
+    let mut line = String::new();
+    let count = reader
+        .take(u64::try_from(limit + 1).unwrap())
+        .read_line(&mut line)
+        .await?;
+    if count == 0 || count > limit || !line.ends_with("\r\n") {
+        return Err(io::Error::other(
+            "Invalid bounded cancellation response line.",
+        ));
+    }
+    Ok(line)
+}
+
+async fn cancellation_prefix(
+    client: TcpStream,
+) -> io::Result<(BufReader<TcpStream>, Option<String>)> {
     let mut reader = BufReader::new(client);
     let mut header = String::new();
     loop {
-        let line = prefix_line(&mut reader, 16 * 1024 - header.len()).await;
+        let line = cancellation_line(&mut reader, 16 * 1024 - header.len()).await?;
         header.push_str(&line);
         if line == "\r\n" {
             break;
         }
     }
-    let (head, _) = response(header.as_bytes(), "HTTP/1.1 200 OK");
-    for required in [
-        "Content-Type: text/event-stream",
-        "Transfer-Encoding: chunked",
-    ] {
-        assert!(head.lines().any(|line| line.eq_ignore_ascii_case(required)));
+    if header.lines().next() != Some("HTTP/1.1 200 OK")
+        || [
+            "Content-Type: text/event-stream",
+            "Transfer-Encoding: chunked",
+        ]
+        .iter()
+        .any(|required| {
+            !header
+                .lines()
+                .any(|line| line.eq_ignore_ascii_case(required))
+        })
+    {
+        return Err(io::Error::other("Invalid cancellation response headers."));
     }
     let mut payload = Vec::new();
     loop {
-        let line = prefix_line(&mut reader, 32).await;
-        let length = usize::from_str_radix(line.trim_end(), 16).unwrap();
-        assert!(length > 0 && payload.len() + length <= 64 * 1024);
+        let line = cancellation_line(&mut reader, 32).await?;
+        let length = usize::from_str_radix(line.trim_end(), 16).map_err(io::Error::other)?;
+        if length == 0 || length > 64 * 1024 - payload.len() {
+            return Err(io::Error::other(
+                "Invalid bounded cancellation response chunk.",
+            ));
+        }
         let first = payload.len();
         payload.resize(first + length, 0);
-        reader.read_exact(&mut payload[first..]).await.unwrap();
+        reader.read_exact(&mut payload[first..]).await?;
         let mut ending = [0; 2];
-        reader.read_exact(&mut ending).await.unwrap();
-        assert_eq!(&ending, b"\r\n");
+        reader.read_exact(&mut ending).await?;
+        if &ending != b"\r\n" {
+            return Err(io::Error::other(
+                "Invalid cancellation response chunk ending.",
+            ));
+        }
         // Inspect every complete SSE record already received, including records after
         // the first visible delta. A terminal event in this chunk cannot pass
         // merely because its visible content preceded that terminal event.
-        let (content, terminal) = complete_prefix(&payload);
+        let (content, terminal) = std::panic::catch_unwind(|| complete_prefix(&payload))
+            .map_err(|_| io::Error::other("Invalid cancellation SSE record."))?;
         if terminal {
-            return (reader, None);
+            return Ok((reader, None));
         }
         if let Some(content) = content {
-            return (reader, Some(content));
+            return Ok((reader, Some(content)));
         }
     }
 }
@@ -264,11 +296,16 @@ async fn initial_owner(
         report["phase"] = json!("scale-1.3-first-prefix-and-explicit-stop");
         report["serviceIntegrationWorkload"]["phase"] = report["phase"].clone();
         save_acceptance_report(evidence, report);
-        adapter_work_before_cleanup(deadline, async {
-            let client = connect(port, &credential, &body(EXTENDED_COMPLETION_CAP)).await;
+        let captured = adapter_work_before_cleanup(deadline, async {
+            let client = try_connect(port, &credential, &body(EXTENDED_COMPLETION_CAP)).await?;
             cancellation_prefix(client).await
         })
-        .await
+        .await;
+        if captured.as_ref().is_some_and(Result::is_err) {
+            report["serviceIntegrationWorkload"]["pendingReason"] =
+                json!("cancellation-response-transport-or-framing-failed");
+        }
+        captured.and_then(Result::ok)
     } else {
         None
     };
@@ -539,7 +576,45 @@ fn native_service_integration_prefix_rejects_terminal_events_already_received() 
             let client = TcpStream::connect(("127.0.0.1", port)).await.unwrap();
             let reading = tokio::spawn(cancellation_prefix(client));
             let observed = timeout(Duration::from_secs(5), reading).await.unwrap();
-            assert_eq!(observed.unwrap().1.as_deref(), terminal.is_none().then_some("Hello"));
+            assert_eq!(observed.unwrap().unwrap().1.as_deref(), terminal.is_none().then_some("Hello"));
+            fixture.await.unwrap();
+        }
+    });
+}
+
+#[test]
+fn native_service_integration_cancellation_failures_return_without_unwinding() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    runtime.block_on(async {
+        let head = "HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nTransfer-Encoding: chunked\r\n\r\n";
+        let malformed = "data: invalid-json\n\n";
+        let responses = [
+            Vec::new(),
+            b"HTTP/1.1 200 OK\r\n".to_vec(),
+            b"HTTP/1.1 503 Service Unavailable\r\n\r\n".to_vec(),
+            format!("{head}FFFFFFFFFFFFFFFF\r\n").into_bytes(),
+            format!("{head}4\r\nx").into_bytes(),
+            format!("{head}{:X}\r\n{malformed}\r\n", malformed.len()).into_bytes(),
+            format!("{head}0\r\n\r\n").into_bytes(),
+            vec![b'x'; 16 * 1024 + 1],
+        ];
+        for response in responses {
+            let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+            let port = listener.local_addr().unwrap().port();
+            let fixture = tokio::spawn(async move {
+                let (mut peer, _) = listener.accept().await.unwrap();
+                peer.write_all(&response).await.unwrap();
+                peer.shutdown().await.unwrap();
+            });
+            let client = TcpStream::connect(("127.0.0.1", port)).await.unwrap();
+            let reading = tokio::spawn(cancellation_prefix(client));
+            // A failed JoinHandle would signal an unwind through the live-owner
+            // caller. An ordinary Err leaves its Stop and final power code live.
+            let observed = timeout(Duration::from_secs(5), reading).await.unwrap().unwrap();
+            assert!(observed.is_err());
             fixture.await.unwrap();
         }
     });

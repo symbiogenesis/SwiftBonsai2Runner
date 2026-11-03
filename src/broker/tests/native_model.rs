@@ -1567,21 +1567,45 @@ async fn adapter_stream(
     evidence: &Path,
     report: &mut Value,
 ) -> Value {
-    let bytes = progress::exchange(port, credential, body, evidence, report, label).await;
-    let mut observed = adapter_summary(
-        label,
-        body["abliteration_scale"].as_f64().unwrap(),
-        u32::try_from(body["max_completion_tokens"].as_u64().unwrap()).unwrap(),
-        &framed_stream_response(&bytes),
-    );
-    let content = speed::visible_output(&bytes);
-    observed["visibleContentSha256"] = json!(adapter_digest(content.as_bytes()));
-    observed["visibleContent"] = json!(content);
+    let bytes = progress::try_exchange(port, credential, body, evidence, report, label).await;
+    adapter_stream_observation(bytes.as_deref(), body, label)
+}
+
+fn adapter_stream_observation(bytes: Option<&[u8]>, body: &Value, label: &str) -> Value {
+    let scale = body["abliteration_scale"].as_f64().unwrap();
+    let cap = u32::try_from(body["max_completion_tokens"].as_u64().unwrap()).unwrap();
+    // These strict reference parsers intentionally assert malformed framing.
+    // Contain only their synchronous parsing failure, so a disconnected or
+    // malformed service cannot unwind past the caller's owned Stop and power
+    // observations. Failed captures never become successful stream evidence.
+    let parsed = bytes.and_then(|bytes| {
+        std::panic::catch_unwind(|| {
+            let mut observed = adapter_summary(label, scale, cap, &framed_stream_response(bytes));
+            let content = speed::visible_output(bytes);
+            observed["visibleContentSha256"] = json!(adapter_digest(content.as_bytes()));
+            observed["visibleContent"] = json!(content);
+            observed["reportedPromptTokens"] =
+                json!(service_integration::reported_prompt_tokens(bytes));
+            observed
+        })
+        .ok()
+    });
+    let parsed_response = parsed.is_some();
+    let mut observed = parsed.unwrap_or_else(|| {
+        json!({"phase":label,"requestedScale":scale,"requestedCompletionCap":cap,
+            "requestedScaleF64Bits":format!("{:016x}",scale.to_bits()),"passed":false,
+            "pendingReason":if bytes.is_some() {"malformed-or-incomplete-stream-response"}
+                else {"stream-transport-failed"},
+            "visibleContent":null,"visibleContentBytes":0,"visibleContentSha256":null,
+            "reportedPromptTokens":null,"reportedCompletionTokens":null,"finishReason":null})
+    });
+    observed["responseParsePassed"] = json!(parsed_response);
+    observed["responseBytes"] = json!(bytes.map(<[u8]>::len));
+    observed["responseSha256"] = json!(bytes.map(adapter_digest));
     observed["requestMessagesSha256"] = json!(adapter_digest(
         &serde_json::to_vec(&body["messages"]).unwrap()
     ));
     observed["requestSha256"] = json!(adapter_digest(&serde_json::to_vec(body).unwrap()));
-    observed["reportedPromptTokens"] = json!(service_integration::reported_prompt_tokens(&bytes));
     observed
 }
 
@@ -1593,6 +1617,57 @@ fn adapter_digest(bytes: &[u8]) -> String {
         &mut || Ok(()),
     )
     .unwrap()
+}
+
+#[test]
+fn native_adapter_stream_failures_retain_bound_requests_and_pending_response() {
+    let body = service_integration::body(1);
+    for bytes in [
+        None,
+        Some(b"".as_slice()),
+        Some(b"HTTP/1.1 200 OK\r\n"),
+        Some(b"\xff"),
+    ] {
+        let observed = adapter_stream_observation(bytes, &body, "failed-stream");
+        assert_eq!(observed["passed"], false);
+        assert_eq!(observed["responseParsePassed"], false);
+        assert_eq!(observed["requestedCompletionCap"], 1);
+        assert_eq!(
+            observed["requestedScaleF64Bits"],
+            format!("{:016x}", 1.3_f64.to_bits())
+        );
+        assert_eq!(
+            observed["requestSha256"],
+            adapter_digest(&serde_json::to_vec(&body).unwrap())
+        );
+        assert_eq!(observed["responseBytes"], json!(bytes.map(<[u8]>::len)));
+        assert_eq!(observed["responseSha256"], json!(bytes.map(adapter_digest)));
+        assert!(observed["visibleContent"].is_null());
+        assert!(observed["reportedCompletionTokens"].is_null());
+        assert_eq!(
+            observed["pendingReason"],
+            if bytes.is_some() {
+                "malformed-or-incomplete-stream-response"
+            } else {
+                "stream-transport-failed"
+            }
+        );
+    }
+    let payload = concat!(
+        "data: {\"choices\":[{\"delta\":{\"content\":\"Hello\"},\"finish_reason\":null}]}\n\n",
+        "data: {\"choices\":[{\"delta\":{},\"finish_reason\":\"length\"}],\"usage\":{\"prompt_tokens\":11,\"completion_tokens\":1}}\n\n",
+        "data: [DONE]\n\n"
+    );
+    let response = format!(
+        "HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nTransfer-Encoding: chunked\r\n\r\n{:X}\r\n{payload}\r\n0\r\n\r\n",
+        payload.len()
+    );
+    let observed = adapter_stream_observation(Some(response.as_bytes()), &body, "complete-stream");
+    assert_eq!(observed["passed"], true);
+    assert_eq!(observed["responseParsePassed"], true);
+    assert_eq!(observed["visibleContent"], "Hello");
+    assert_eq!(observed["reportedPromptTokens"], 11);
+    assert_eq!(observed["reportedCompletionTokens"], 1);
 }
 
 fn generated_adapter_history(profile: &AdapterProfile, report: &Value) -> Option<Value> {

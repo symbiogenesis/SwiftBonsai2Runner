@@ -171,12 +171,18 @@ async fn boundary_requests(
                 "requestedCompletionCap":request["max_completion_tokens"]}));
         save_acceptance_report(evidence, report);
         let passed = if phase == "invalid-scale" {
-            let rejected = exchange(port, credential, &request).await == EMPTY_RESPONSE;
+            let response =
+                progress::try_exchange(port, credential, &request, evidence, report, phase).await;
+            let rejected = response.as_deref() == Some(EMPTY_RESPONSE.as_slice());
             report["scaleBoundaryWorkload"]["invalidScaleRejected"] = json!(rejected);
             rejected
         } else if phase == "context-rejection" {
-            let bytes = exchange(port, credential, &request).await;
-            let observed = context_observation(&bytes);
+            let bytes =
+                progress::try_exchange(port, credential, &request, evidence, report, phase).await;
+            let observed = bytes.as_deref().map_or_else(
+                || json!({"expectedContextRejectionObserved":false,"transportErrorObserved":true}),
+                context_observation,
+            );
             let rejected = observed["expectedContextRejectionObserved"] == true;
             report["scaleBoundaryWorkload"]["contextResponse"] = observed;
             report["scaleBoundaryWorkload"]["contextRejected"] = json!(rejected);
@@ -452,7 +458,7 @@ fn native_adapter_boundary_wire_sequence_preserves_rejections_and_failed_replay(
                 assert_eq!(saved,serialized);
                 for receipt in [&report,&saved] {
                     let progress = receipt["requestProgress"].as_array().unwrap();
-                    assert_eq!(progress.len(),3);
+                    assert_eq!(progress.len(),5);
                     assert!(progress.iter().all(|sample| sample["requestMilliseconds"]
                         .as_f64().is_some_and(|milliseconds| milliseconds.is_finite() && milliseconds>0.0)));
                 }
