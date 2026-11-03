@@ -222,16 +222,22 @@ fn native_runtime_preparation_uses_matching_lock_before_backend_work() -> crate:
         assert_eq!(request["operation"], "inference");
         assert_eq!(request["dataDirectory"], json!(fixture.root.join("data")));
         assert_eq!(request["workingDirectory"], json!(fixture.working));
-        assert_eq!(
-            request.get("lockPath"),
-            source_broker
-                .then(|| json!(
-                    fixture
-                        .root
-                        .join("repository/config/prism-inference.lock.json")
-                ))
-                .as_ref()
-        );
+        if source_broker {
+            let expected = fixture
+                .root
+                .join("repository")
+                .join("config")
+                .join("prism-inference.lock.json");
+            assert_eq!(
+                request
+                    .get("lockPath")
+                    .and_then(Value::as_str)
+                    .map(Path::new),
+                Some(expected.as_path())
+            );
+        } else {
+            assert!(request.get("lockPath").is_none());
+        }
         assert!(request.get("verifyOnly").is_none());
     }
     Ok(())
