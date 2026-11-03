@@ -3003,7 +3003,10 @@ fn native_adapter_startup_timeout_retains_failure_before_original_deadline() {
         );
         assert_eq!(report["pendingReason"], "startup-failed");
         assert_eq!(report["startupBudgetExpired"], false);
-        assert_eq!(report["startupProgress"][0]["phase"], "authenticated-readiness");
+        assert_eq!(
+            report["startupProgress"][0]["phase"],
+            "authenticated-readiness"
+        );
         assert_eq!(report["startupProgress"][0]["completed"], false);
         assert_eq!(report["verifiedReadinessObserved"], false);
         assert_eq!(report["passed"], false);
