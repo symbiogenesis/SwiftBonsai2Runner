@@ -25,16 +25,36 @@ fn body(scale: f64) -> Value {
 fn context_observation(bytes: &[u8]) -> Value {
     let header_end = bytes.windows(4).position(|part| part == b"\r\n\r\n");
     let parsed = header_end.and_then(|end| {
+        if end > 16 * 1024 {
+            return None;
+        }
         let head = std::str::from_utf8(&bytes[..end]).ok()?;
         let body = &bytes[end + 4..];
-        let length = head
-            .lines()
-            .find_map(|line| line.strip_prefix("Content-Length: "))?
-            .parse::<usize>()
-            .ok()?;
+        let mut lines = head.split("\r\n");
+        let status = lines.next()?;
+        let mut length = None;
+        for line in lines {
+            if line.contains(['\r', '\n']) {
+                return None;
+            }
+            let (name, value) = line.split_once(':')?;
+            if name.eq_ignore_ascii_case("transfer-encoding") {
+                return None;
+            }
+            if name.eq_ignore_ascii_case("content-length") {
+                let value = value.trim();
+                if length.is_some()
+                    || value.is_empty()
+                    || !value.bytes().all(|byte| byte.is_ascii_digit())
+                {
+                    return None;
+                }
+                length = Some(value.parse::<usize>().ok()?);
+            }
+        }
         Some(
-            head.lines().next() == Some("HTTP/1.1 413 Content Too Large")
-                && length == body.len()
+            status == "HTTP/1.1 413 Content Too Large"
+                && length == Some(body.len())
                 && body == br#"{"error":{"code":"context_length_exceeded"}}"#,
         )
     });
@@ -223,6 +243,17 @@ fn native_adapter_context_rejection_retains_unframed_and_malformed_observations(
         assert_eq!(observed["expectedContextRejectionObserved"], false);
     }
     assert_eq!(context_observation(b"")["completeHeaderObserved"], false);
+    for extra in [
+        "Content-Length: 0",
+        "content-length: 44",
+        "Transfer-Encoding: chunked",
+    ] {
+        let ambiguous = good.replace("\r\n\r\n", &format!("\r\n{extra}\r\n\r\n"));
+        assert_eq!(
+            context_observation(ambiguous.as_bytes())["expectedContextRejectionObserved"],
+            false
+        );
+    }
 }
 
 pub(super) fn pending_workload() -> Value {
