@@ -35,8 +35,9 @@ pub(super) async fn stop_owner(
     mut running: tokio::task::JoinHandle<Result<RunReport, LaunchError>>,
     port: u16,
     allow_closed_admission: bool,
+    original_deadline: tokio::time::Instant,
 ) -> (Value, Option<RunReport>) {
-    let deadline = tokio::time::Instant::now() + STOP_WAIT;
+    let deadline = original_deadline.min(tokio::time::Instant::now() + STOP_WAIT);
     let sent = stop.send(()).is_ok();
     let result = tokio::time::timeout_at(deadline - OWNER_DROP_RESERVE, &mut running).await;
     let mut observed = json!({"status":"pending","stopSignalDelivered":sent,
@@ -414,7 +415,8 @@ async fn initial_owner(
     }
     report["phase"] = json!("initial-owner-owned-stop");
     save_acceptance_report(evidence, report);
-    let (cleanup, stopped_report) = stop_owner(stop, running, port, prefix.is_none()).await;
+    let (cleanup, stopped_report) =
+        stop_owner(stop, running, port, prefix.is_none(), deadline).await;
     let cleaned = cleanup_passed(&cleanup);
     report["initialCleanup"] = cleanup;
     report["serviceIntegrationWorkload"]["initialOwnerCleanupPassed"] = json!(cleaned);
@@ -492,7 +494,7 @@ async fn fresh_owner(
     report["serviceIntegrationWorkload"]["freshOwnerReplayMatched"] = json!(matched);
     report["serviceIntegrationWorkload"]["matchingReportedPromptCounts"] = json!(matched);
     save_acceptance_report(evidence, report);
-    let (cleanup, _) = stop_owner(stop, running, port, !matched).await;
+    let (cleanup, _) = stop_owner(stop, running, port, !matched, deadline).await;
     let cleaned = cleanup_passed(&cleanup);
     report["freshOwnerCleanup"] = cleanup;
     report["serviceIntegrationWorkload"]["freshOwnerCleanupPassed"] = json!(cleaned);
@@ -567,7 +569,8 @@ fn native_service_integration_cleanup_preserves_failures_and_listener_observatio
                 drop(stopped);
                 spawn_local(async move { Ok(report) })
             };
-            let (cleanup, observed) = stop_owner(stop, running, 0, allow_closed).await;
+            let deadline = tokio::time::Instant::now() + STOP_WAIT;
+            let (cleanup, observed) = stop_owner(stop, running, 0, allow_closed, deadline).await;
             assert_eq!(cleanup_passed(&cleanup), confirmed);
             assert_eq!(cleanup["stopSignalDelivered"], delivered);
             assert_eq!(cleanup["ownedJobEmpty"], true);
@@ -579,7 +582,8 @@ fn native_service_integration_cleanup_preserves_failures_and_listener_observatio
             let _ = stopped.await;
             Err(LaunchError::Stop)
         });
-        let (cleanup, observed) = stop_owner(stop, running, 0, true).await;
+        let deadline = tokio::time::Instant::now() + STOP_WAIT;
+        let (cleanup, observed) = stop_owner(stop, running, 0, true, deadline).await;
         assert!(observed.is_none());
         assert!(!cleanup_passed(&cleanup));
         assert!(cleanup["ownedJobEmpty"].is_null());
@@ -599,7 +603,8 @@ fn native_service_integration_cleanup_preserves_failures_and_listener_observatio
                 backend_resources: None,
             })
         });
-        let (cleanup, _) = stop_owner(stop, running, port, false).await;
+        let deadline = tokio::time::Instant::now() + STOP_WAIT;
+        let (cleanup, _) = stop_owner(stop, running, port, false, deadline).await;
         assert!(!cleanup_passed(&cleanup));
         assert_eq!(cleanup["ownedJobEmpty"], true);
         assert_eq!(cleanup["listenerReleased"], false);
@@ -624,29 +629,32 @@ fn native_service_integration_stuck_owner_is_dropped_inside_existing_stop_allowa
         .build()
         .unwrap();
     runtime.block_on(LocalSet::new().run_until(async {
-        let dropped = std::rc::Rc::new(std::cell::Cell::new(false));
-        let marker = DropMarker(dropped.clone());
-        let (stop, _stopped) = oneshot::channel();
-        let running = spawn_local(async move {
-            let _marker = marker;
-            pending::<Result<RunReport, LaunchError>>().await
-        });
-        let started = tokio::time::Instant::now();
-        let (cleanup, observed) = stop_owner(stop, running, 0, false).await;
-        assert!(
-            dropped.get(),
-            "Timed-out ownership must not remain detached."
-        );
-        assert!(started.elapsed() <= STOP_WAIT);
-        assert_eq!(cleanup["ownerTaskAborted"], true);
-        assert_eq!(cleanup["ownerTaskReleaseObserved"], true);
-        assert_eq!(
-            cleanup["pendingReason"],
-            "owned-stop-confirmation-timed-out"
-        );
-        assert!(cleanup["ownedJobEmpty"].is_null());
-        assert!(!cleanup_passed(&cleanup));
-        assert!(observed.is_none());
+        for allowance in [STOP_WAIT, Duration::from_secs(15)] {
+            let dropped = std::rc::Rc::new(std::cell::Cell::new(false));
+            let marker = DropMarker(dropped.clone());
+            let (stop, _stopped) = oneshot::channel();
+            let running = spawn_local(async move {
+                let _marker = marker;
+                pending::<Result<RunReport, LaunchError>>().await
+            });
+            let started = tokio::time::Instant::now();
+            let (cleanup, observed) =
+                stop_owner(stop, running, 0, false, started + allowance).await;
+            assert!(
+                dropped.get(),
+                "Timed-out ownership must not remain detached."
+            );
+            assert!(started.elapsed() <= allowance);
+            assert_eq!(cleanup["ownerTaskAborted"], true);
+            assert_eq!(cleanup["ownerTaskReleaseObserved"], true);
+            assert_eq!(
+                cleanup["pendingReason"],
+                "owned-stop-confirmation-timed-out"
+            );
+            assert!(cleanup["ownedJobEmpty"].is_null());
+            assert!(!cleanup_passed(&cleanup));
+            assert!(observed.is_none());
+        }
     }));
 }
 

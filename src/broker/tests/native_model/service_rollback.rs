@@ -179,7 +179,8 @@ async fn rollback_owner(
     // A failed transport or owner may already have closed broker admission.
     // Preserve failed cleanup and power endpoints without permitting another
     // owner or converting unknown Job emptiness into a successful observation.
-    let (cleanup, _) = service_integration::stop_owner(stop, running, port, true).await;
+    let (cleanup, _) =
+        service_integration::stop_owner(stop, running, port, true, work_deadline).await;
     let cleaned = service_integration::cleanup_passed(&cleanup);
     report["originalPq2Rollback"]["sample"]["cleanup"] = cleanup;
     save_acceptance_report(evidence, report);
