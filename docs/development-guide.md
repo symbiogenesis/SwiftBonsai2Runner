@@ -70,8 +70,12 @@ Swift weights and the adapter still require explicit provisioning.
 
 Direct native-app launches also verify the selected Rust executable before hashing
 the model or creating credentials. Runtime failures name the compiled Prism version
-and show a PowerShell repair command for that app's data directory; model failures
-retain separate model/export guidance. Retry repeats verification after repair.
+and show a PowerShell repair command for that app's data directory. Before any
+provisioning, the command checks the maintenance tool's compiled release version,
+source commit, target and archive hash against the app's pin. Older or mismatched
+tools must be rebuilt from the same checkout or supplied by the same verified app
+package. Model failures retain separate model/export guidance. Retry repeats
+verification after repair.
 
 If the launcher reports a missing prebuilt executable, run the maintenance build
 command it prints from the repository root, then retry. Correct or remove any

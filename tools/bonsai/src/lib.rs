@@ -53,10 +53,15 @@ pub const COMMANDS: &[&str] = &[
 /// Returns the native maintenance protocol capabilities without reading a request.
 #[must_use]
 pub fn version() -> serde_json::Value {
+    let inference: serde_json::Value =
+        serde_json::from_str(include_str!("../../../config/prism-inference.lock.json"))
+            .unwrap_or_default();
     serde_json::json!({
         "Name": "bonsai-tools", "Version": env!("CARGO_PKG_VERSION"),
         "ProtocolVersion": 5, "StartupProtocolVersion": 1,
-        "BootstrapProtocolVersion": 1, "ChatLaunchProtocolVersion": 1, "Commands": COMMANDS
+        "BootstrapProtocolVersion": 1, "ChatLaunchProtocolVersion": 1, "Commands": COMMANDS,
+        "CompiledInference": {"Version": inference["version"], "Commit": inference["commit"],
+            "Target": inference["target"], "ArchiveSha256": inference["asset"]["sha256"]}
     })
 }
 

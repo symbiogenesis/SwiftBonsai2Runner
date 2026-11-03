@@ -274,6 +274,9 @@ fn native_runtime_guidance(data: &Path) -> String {
         serde_json::from_str(include_str!("../../../config/prism-inference.lock.json"))
             .unwrap_or_default();
     let version = lock["version"].as_str().unwrap_or("pinned");
+    let commit = lock["commit"].as_str().unwrap_or("");
+    let target = lock["target"].as_str().unwrap_or("");
+    let archive = lock["asset"]["sha256"].as_str().unwrap_or("");
     // Pipe ASCII JSON instead of putting JSON quotes in a native argument.
     // This also survives Windows PowerShell's legacy argument/pipe encoding.
     let raw = serde_json::json!({"operation":"inference", "dataDirectory":data}).to_string();
@@ -286,7 +289,7 @@ fn native_runtime_guidance(data: &Path) -> String {
     }
     let request = request.replace('\'', "''");
     format!(
-        "The selected Rust runtime (Prism {version}) is missing or failed verification. Prepare it for this app's data directory, then select Retry model:\n'{request}' | bonsai-tools provision --request -"
+        "The selected Rust runtime (Prism {version}) is missing or failed verification. Use bonsai-tools rebuilt from this checkout or supplied by the same verified app package. This command rejects a different maintenance runtime pin before provisioning; after repair select Retry model:\n& {{\n  $bonsaiRepairTool = (Get-Command bonsai-tools.exe -CommandType Application -ErrorAction Stop).Source\n  $bonsaiRepairPin = & $bonsaiRepairTool --version | ConvertFrom-Json -ErrorAction Stop | Select-Object -ExpandProperty CompiledInference -ErrorAction SilentlyContinue\n  if ($LASTEXITCODE -ne 0 -or $null -eq $bonsaiRepairPin -or $bonsaiRepairPin.Version -cne '{version}' -or $bonsaiRepairPin.Commit -cne '{commit}' -or $bonsaiRepairPin.Target -cne '{target}' -or $bonsaiRepairPin.ArchiveSha256 -cne '{archive}') {{ throw 'Use bonsai-tools from the same checkout or verified app package; this maintenance runtime pin does not match.' }}\n'{request}' | & $bonsaiRepairTool provision --request -\n}}"
     )
 }
 
@@ -2108,9 +2111,11 @@ mod tests {
         let data = std::path::Path::new("C:\\Local data\\Owner's Bonsai \u{1f331}");
         let guidance = super::native_runtime_guidance(data);
         let argument = guidance
-            .split(":\n'")
+            .split("\n'")
             .nth(1)
-            .and_then(|value| value.strip_suffix("' | bonsai-tools provision --request -"))
+            .and_then(|value| {
+                value.strip_suffix("' | & $bonsaiRepairTool provision --request -\n}")
+            })
             .ok_or("Missing complete repair command.")?
             .replace("''", "'");
         assert!(argument.is_ascii());
@@ -2127,6 +2132,25 @@ mod tests {
             "Prism {}",
             lock["version"].as_str().ok_or("Missing version.")?
         )));
+        for (field, value) in [
+            ("Version", &lock["version"]),
+            ("Commit", &lock["commit"]),
+            ("Target", &lock["target"]),
+            ("ArchiveSha256", &lock["asset"]["sha256"]),
+        ] {
+            assert!(guidance.contains(&format!(
+                "$bonsaiRepairPin.{field} -cne '{}'",
+                value.as_str().ok_or("Missing pin identity.")?
+            )));
+        }
+        assert!(
+            guidance
+                .find("throw '")
+                .ok_or("Missing mismatch rejection.")?
+                < guidance
+                    .find("provision --request -")
+                    .ok_or("Missing provisioning command.")?
+        );
         Ok(())
     }
 

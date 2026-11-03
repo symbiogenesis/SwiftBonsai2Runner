@@ -12,7 +12,7 @@ use sha2::{Digest as _, Sha256};
 const HEX: &[u8; 16] = b"0123456789abcdef";
 
 #[test]
-fn version_advertises_policy_commands_without_resolving_a_request_file()
+fn version_advertises_policy_commands_and_compiled_inference_without_request_files()
 -> Result<(), Box<dyn std::error::Error>> {
     let nonce = SystemTime::now().duration_since(UNIX_EPOCH)?.as_nanos();
     let scratch = std::env::temp_dir().join(format!(
@@ -33,6 +33,15 @@ fn version_advertises_policy_commands_without_resolving_a_request_file()
     assert_eq!(version["StartupProtocolVersion"], 1);
     assert_eq!(version["ChatLaunchProtocolVersion"], 1);
     assert_eq!(version["BootstrapProtocolVersion"], 1);
+    let inference: Value =
+        serde_json::from_str(include_str!("../../../config/prism-inference.lock.json"))?;
+    assert_eq!(
+        version["CompiledInference"],
+        json!({
+            "Version": inference["version"], "Commit": inference["commit"],
+            "Target": inference["target"], "ArchiveSha256": inference["asset"]["sha256"]
+        })
+    );
     let commands = version["Commands"]
         .as_array()
         .ok_or("Missing command capabilities")?;
