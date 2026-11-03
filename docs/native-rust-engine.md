@@ -445,10 +445,10 @@ $plan.policy.requiredGates
     operation = 'plan'; runnerRevision = $revision; nativeRowWorkers = 1
     weightRepresentation = 'current-repacked-PTQ1_0'
 } | ConvertTo-Json -Depth 64 -Compress) | ConvertFrom-Json -AsHashtable
-# Bind a later owning Prism main harness separately from the unchanged release.
+# Bind a reviewed owning Prism or Runner main harness separately from the release.
 & $env:BONSAI_TOOLS_PATH runtime-promotion --json (@{
     operation = 'plan'; runnerRevision = $revision; nativeRowWorkers = 1
-    serviceHarnessRevision = $reviewedPrismMain
+    serviceHarnessRevision = $reviewedHarnessMain
 } | ConvertTo-Json -Depth 64 -Compress) | ConvertFrom-Json -AsHashtable
 ```
 
@@ -476,10 +476,14 @@ Independently review CI/source/report/reviewer identities and require `promotion
 true`; command success alone cannot authorize promotion.
 
 `serviceHarnessRevision` defaults to the pinned runtime source; explicitly select a
-reviewed later Prism main revision when its private-service checker tests an older
-release. Only `released-adapter-service-integration` uses that harness revision.
+reviewed Prism or Runner main revision when its owning checker tests a separately
+pinned release. Only `released-adapter-service-integration` uses that harness revision.
 Runtime Foundation/conformance and all other Prism gates still require the exact
 released source, and Runner gates retain their exact application revision.
+The policy exposes both accepted `serviceHarnessProvenance` triples; their addition
+changes the policy digest, so regenerate the evidence envelope. A scored gate's
+`repository` identifies its owning project; `executionRepository` identifies the
+actual CI repository alongside `executionRevision` and `runUrl`.
 
 ### Required evidence
 
@@ -569,7 +573,7 @@ Pending records need only `id`, `status` and a bounded nonempty `note`.
 
 A completed released-service record additionally requires `testedRuntime` equal to
 the selected policy's release identity, and `harness` identifying the exact owning
-workflow and retained package. Its `execution` describes the selected Prism harness
+workflow and retained package. Its `execution` describes the selected owning harness
 main revision, run and device. For example (placeholders must be replaced):
 
 ```json
@@ -587,6 +591,18 @@ main revision, run and device. For example (placeholders must be replaced):
   }
 }
 ```
+
+The existing Prism pair requires `execution.repository` equal to
+`symbiogenesis/prism-inference` with the workflow and artifact naming above.
+Runner's owning harness requires `execution.repository` equal to
+`symbiogenesis/SwiftBonsai2Runner`, `workflowPath` equal to
+`.github/workflows/native-runtime-acceptance.yml`, and `artifactName` equal to
+`native-acceptance-bin-<run ID>-<attempt>`. Both require the exact selected
+`serviceHarnessRevision`, full tested-runtime identities and retained package
+digest. Mixing repositories, workflows or artifact naming families rejects.
+The owning source/run/artifact identities must be independently verified; a
+successful narrow service workload alone cannot attest that every gate requirement
+was exercised.
 
 The retained package is bounded to 64 MiB and uses the same external relative-path,
 locked-file and digest checks as reports. Artifact ID, owning workflow/run and

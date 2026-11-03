@@ -511,6 +511,122 @@ fn later_service_harness_preserves_exact_release_and_retained_package() -> crate
 }
 
 #[test]
+fn runner_service_harness_requires_its_exact_repository_workflow_and_package() -> crate::Result<()>
+{
+    let policy = policy(
+        &"a".repeat(40),
+        4,
+        Some(&"b".repeat(40)),
+        WeightRepresentation::CurrentRepackedPtq1,
+    )?;
+    let directory =
+        std::env::temp_dir().join(format!("Runner-Service-Provenance-{}", std::process::id()));
+    std::fs::create_dir(&directory).map_err(|error| error.to_string())?;
+    let report = b"independently reviewed Runner released-service evidence";
+    let package = b"retained source-bound Runner hosted harness package";
+    std::fs::write(directory.join("report.json"), report).map_err(|error| error.to_string())?;
+    std::fs::write(directory.join("harness.zip"), package).map_err(|error| error.to_string())?;
+    let result = (|| {
+        let mut input = evidence(&policy)?;
+        input["gates"] = json!([{
+            "id":SERVICE_GATE,"status":"passed","note":"Independent exact released-service acceptance review.",
+            "report":{"file":"report.json","sha256":sha256(report)},
+            "execution":{"repository":RUNNER,"revision":"b".repeat(40),"gitRef":"refs/heads/main",
+                "runId":"123","runAttempt":1,"architecture":"ARM64","deviceModel":"Snapdragon X2 Elite Extreme",
+                "processorName":"Snapdragon(R) X2 Elite Extreme - X2E94100 - Qualcomm Oryon(TM) CPU","selfHosted":true},
+            "reviewerId":"independent-reviewer","testedRuntime":tested_runtime(&policy),
+            "harness":{"workflowPath":".github/workflows/native-runtime-acceptance.yml",
+                "artifactId":"456","artifactName":"native-acceptance-bin-123-1",
+                "package":{"file":"harness.zip","sha256":sha256(package)}}
+        }]);
+        let scored = score(input.clone(), &policy, &directory)?;
+        assert_eq!(scored["gateCounts"]["passed"], 1);
+        assert_eq!(
+            scored["gateCounts"]["pending"],
+            GATES.len() + PTQ1_GATES.len() - 1
+        );
+        assert_eq!(scored["promotionReady"], false);
+        assert_eq!(scored["gates"][16]["executionRepository"], RUNNER);
+        assert_eq!(scored["gates"][16]["executionRevision"], "b".repeat(40));
+        assert_eq!(policy["identities"]["runnerRevision"], "a".repeat(40));
+        assert_runner_service_rejections(&input, &policy, &directory)?;
+        std::fs::write(directory.join("harness.zip"), b"changed")
+            .map_err(|error| error.to_string())?;
+        assert!(score(input, &policy, &directory).is_err());
+        Ok(())
+    })();
+    for name in ["report.json", "harness.zip"] {
+        std::fs::remove_file(directory.join(name)).map_err(|error| error.to_string())?;
+    }
+    std::fs::remove_dir(directory).map_err(|error| error.to_string())?;
+    result
+}
+
+fn assert_runner_service_rejections(
+    input: &Value,
+    policy: &Value,
+    directory: &Path,
+) -> crate::Result<()> {
+    for (pointer, value) in [
+        ("/gates/0/execution/repository", json!(PRISM)),
+        (
+            "/gates/0/execution/repository",
+            json!("unrelated/repository"),
+        ),
+        (
+            "/gates/0/execution/revision",
+            policy["identities"]["runnerRevision"].clone(),
+        ),
+        (
+            "/gates/0/harness/workflowPath",
+            json!(".github/workflows/private-service-acceptance.yml"),
+        ),
+        (
+            "/gates/0/harness/artifactName",
+            json!(format!("private-service-check-{}-123-1", "b".repeat(40))),
+        ),
+        (
+            "/gates/0/harness/artifactName",
+            json!("native-acceptance-bin-124-1"),
+        ),
+        (
+            "/gates/0/harness/artifactName",
+            json!("native-acceptance-bin-123-2"),
+        ),
+        ("/gates/0/harness/artifactId", json!("0")),
+        ("/gates/0/harness/package/sha256", json!("0".repeat(64))),
+        ("/gates/0/harness/package/file", json!("../harness.zip")),
+        ("/gates/0/harness/package", Value::Null),
+        ("/gates/0/testedRuntime", Value::Null),
+        ("/gates/0/testedRuntime/archiveSha256", Value::Null),
+        ("/gates/0/testedRuntime/workerSha256", Value::Null),
+        ("/gates/0/testedRuntime/serverSha256", Value::Null),
+    ] {
+        let mut changed = input.clone();
+        *changed
+            .pointer_mut(pointer)
+            .ok_or("Missing Runner service fixture field.")? = value;
+        assert!(
+            score(changed, policy, directory).is_err(),
+            "Accepted {pointer}"
+        );
+    }
+    let mut prism = input.clone();
+    prism["gates"][0]["execution"]["repository"] = json!(PRISM);
+    prism["gates"][0]["harness"]["workflowPath"] =
+        json!(".github/workflows/private-service-acceptance.yml");
+    prism["gates"][0]["harness"]["artifactName"] =
+        json!(format!("private-service-check-{}-123-1", "b".repeat(40)));
+    assert_eq!(
+        score(prism.clone(), policy, directory)?["gateCounts"]["passed"],
+        1
+    );
+    prism["gates"][0]["execution"]["repository"] = json!(RUNNER);
+    assert!(score(prism, policy, directory).is_err());
+    Ok(())
+}
+
+#[test]
 fn reviewed_pass_requires_report_device_main_and_human_identity() -> crate::Result<()> {
     let policy = policy_fixture()?;
     let directory = std::env::temp_dir().join(format!(
