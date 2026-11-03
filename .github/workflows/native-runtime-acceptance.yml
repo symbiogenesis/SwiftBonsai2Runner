@@ -235,6 +235,7 @@ jobs:
               'native_adapter_empty_initial_response_keeps_history_pending',
               'native_adapter_first_request_cancellation_retains_ready_phase_and_missing_work',
               'native_adapter_startup_budget_retains_pending_receipt_and_cleanup_reserve',
+              'native_adapter_startup_timeout_retains_failure_before_original_deadline',
               'native_adapter_startup_error_retains_unfinished_phase_without_qualifying_cleanup',
               'native_adapter_request_budget_drops_inflight_work_before_owned_cleanup',
               'native_bounded_history_and_stall_requests_preserve_distinct_output_limits',
