@@ -1,0 +1,13 @@
+{
+  "status": "retained-and-hash-verified",
+  "runId": "41565247997",
+  "revision": "3d91f113061bf55cde74d53dfbb8eea0d671b2e8",
+  "elapsedSeconds": 5.082578599991393,
+  "conservativePriorChargeSeconds": 40,
+  "selectionManifestSha256": "35bc8906238669533dddec3a5464308cca075e9e3e2d7dc8174dccca424a364f",
+  "officialRunnerFilesMatched": 276,
+  "officialRunnerBytesMatched": 248712239,
+  "binaryExecutions": 0,
+  "modelExecutions": 0,
+  "runnerRegistrations": 0
+}

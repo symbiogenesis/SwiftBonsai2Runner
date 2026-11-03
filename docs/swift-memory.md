@@ -59,7 +59,14 @@ its behavior, runtime cost and standard-profile qualification are independent.
 
 ## Release decision
 
-**2026-10-31: PTQ1 default promotion remains pending; diagnostic use only.**
+**2026-11-02: PTQ1 default promotion remains pending; experimental opt-in.**
+The current runtime is **0.1.13**, source `cae16fa6998dac58a947eba9ae4398ed6a9fb863`.
+The [nineteen-gate readiness audit](evidence/ptq1-0113-promotion-readiness-20261102.json)
+separates current evidence from missing acceptance. Exact-source hosted numerical
+preparation and Foundation pass, but the [latest owner preflight](evidence/ptq1-numerics-41565247997.json)
+failed before registration and ran no model. It establishes no numerical result.
+The release chronology below retains earlier identities and their original scope.
+
 The lossless representation is not rejected. The historical [decision receipt](evidence/ptq1-release-decision.json)
 binds the local and CI X2 startup failures, exact runtime/build identities and retained raw
 evidence digests. Rust service [source `27e4860`](https://github.com/symbiogenesis/prism-inference/pull/2)
@@ -67,10 +74,10 @@ introduced PTQ1/approved-adapter profiles and passed its owning
 [Foundation](https://github.com/symbiogenesis/prism-inference/actions/runs/41009394716)
 and [conformance](https://github.com/symbiogenesis/prism-inference/actions/runs/41009394718).
 The [one-token device smoke](evidence/ptq1-rust-smoke.json) passes complete numerical
-comparison at scale 1.3 for that historical source. Runner now pins Rust **0.1.10**,
+comparison at scale 1.3 for that historical source. The retained Rust **0.1.10** integration pins
 source `749a5f5b43bf77764a29682557ec91a8de8dcdef`; the [main integration record](evidence/prism-main-integration.json)
 binds both complete upstream CI gates, published bundles, reviewed source bytes and
-the exact pin. Its bounded current-release lifecycle evidence uses original PQ2
+the exact pin. That release's bounded lifecycle evidence uses original PQ2
 with four workers; it does not qualify PTQ1 or the default one-worker lane. The
 [readiness audit](evidence/ptq1-default-readiness.json) separates those identities
 and records the evidence gaps. [PLAN.md](../PLAN.md) remains the backlog.

@@ -1,0 +1,155 @@
+{
+  "schemaVersion": 1,
+  "kind": "current-release-ptq1-numerical-preparation-and-pre-registration-no-go",
+  "recordedDate": "2026-11-02",
+  "status": "hosted-preparation-passed-owner-pre-registration-failed-no-model-attempt",
+  "scope": "Exact settled-main source preparation and one bounded owner preflight. No numerical job step, collector, model or benchmark ran. No actual-model gate closed.",
+  "candidate": {
+    "runnerRevision": "3d91f113061bf55cde74d53dfbb8eea0d671b2e8",
+    "runtimeVersion": "0.1.13",
+    "runtimeRevision": "cae16fa6998dac58a947eba9ae4398ed6a9fb863",
+    "modelRepresentation": "current-repacked-PTQ1_0",
+    "modelSha256": "e658f0f0736a03a4549535a439f9b07254ebf8ab88ae27cbe6e52d098ca5d1f5",
+    "adapterSha256": "f1669534803d340a496015f5c45125f3437b4d13ec764f40e34488ce83967f42",
+    "adapterScale": 1.3,
+    "rustBackend": "neon",
+    "nativeRowWorkers": 4,
+    "adapterCondition": "standard",
+    "contextTokens": 8192,
+    "suppliedTokenIds": [
+      248045
+    ],
+    "nativeCaptureProcessesRequested": 1,
+    "rustCaptureProcessesRequested": 1,
+    "jobCommitLimitBytes": 12348030976,
+    "admissionBytes": 16642998272,
+    "physicalReserveBytes": 4294967296
+  },
+  "hostedChecks": {
+    "foundation": {
+      "runId": "41565367255",
+      "url": "https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41565367255",
+      "revision": "3d91f113061bf55cde74d53dfbb8eea0d671b2e8",
+      "conclusion": "success",
+      "scope": "All selected main-only Foundation obligations, including core/UI/maintenance/release/native integration and both speech lanes."
+    },
+    "numericalPreparation": {
+      "runId": "41565247997",
+      "url": "https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41565247997",
+      "workflowPath": ".github/workflows/native-ptq1-numerics.yml",
+      "prepareConclusion": "success",
+      "overallConclusion": "cancelled",
+      "numericsJobRunnerId": 0,
+      "numericsJobExecutedSteps": 0,
+      "scope": "Source-bound Rust collector/checker, model-free controls and both immutable hosted packages passed; the unassigned device job was cancelled."
+    }
+  },
+  "artifacts": [
+    {
+      "kind": "maintenance",
+      "artifactId": "13199680521",
+      "bytes": 2747412,
+      "sha256": "a41bbeba1035bb0e98c6dbff0e1fbde837471529f864345daeb54de9602b3b28",
+      "receiptBytes": 254,
+      "receiptSha256": "f481e79914896eb8112c85ef1d33c304cc08c397870d28b2fbcb9430be9c1bda"
+    },
+    {
+      "kind": "capture",
+      "artifactId": "13199350676",
+      "bytes": 858014,
+      "sha256": "f61da2045f9a6731ad23e1636c48b190038e419379851c65017992defa1e7e51",
+      "receiptBytes": 2956,
+      "receiptSha256": "f4a79658a93cc6376a4953190e4d4015ebd1db7d0a6ad1850abb30529173b07c"
+    }
+  ],
+  "packageReview": {
+    "intakeSeconds": 5.082578599991393,
+    "officialRunnerFilesMatched": 276,
+    "officialRunnerBytesMatched": 248712239,
+    "officialRunnerVersion": "2.338.2",
+    "officialRunnerArchiveSha256": "0790e3f586c2c5388ed8e293e7cef01bd0e8a2c5c68dd0a628f848b61da4b3a7",
+    "selectionManifestSha256": "35bc8906238669533dddec3a5464308cca075e9e3e2d7dc8174dccca424a364f",
+    "binaryExecutions": 0
+  },
+  "ownerPreflight": {
+    "guardianResult": "docs/evidence/ptq1-numerics-41565247997/guardian-result.json",
+    "ownerHelperStarted": true,
+    "ownerHelperExitCode": 1,
+    "ownerEvidenceDirectoryCreated": false,
+    "runnerRegistered": false,
+    "runnerCredentialFilesPresent": false,
+    "numericalJobStarted": false,
+    "modelAttempts": 0,
+    "additionalModelAttempts": 0,
+    "originalFailure": "Unknown pre-registration exception; raw child stderr was discarded, so no exact cause is independently established.",
+    "timestampBindingCorrection": "The first guardian invocation rejected an automatically decoded UTC timestamp before creating a child. ConvertFrom-Json -DateKind String corrected the binding while preserving the exact original start and unchanged helper/guardian sources."
+  },
+  "sourceOnlyFollowUp": {
+    "reference": "docs/evidence/ptq1-numerics-package-inventory-41565247997.json",
+    "finding": "An isolated extracted package validator deterministically rejects the retained valid capture package because culture-sensitive sorting differs from its fixed expected filename order.",
+    "correction": "A separate temporary helper requires exactly two case-sensitive expected filenames, independent of order. Both complete extracted package validators and eleven positive/negative inventory controls pass with archived API stubs.",
+    "originalExceptionProven": false,
+    "scope": "Source-only work after the closed session. Original source and receipts remain unchanged; no owner preflight, runner, hardware diagnostic, model, API call or retry ran. This is not numerical evidence."
+  },
+  "budget": {
+    "originalStartedTick": 1047539624400,
+    "originalStartedUtc": "2026-11-03T02:27:43.0912394Z",
+    "aggregateMaximumSeconds": 260,
+    "earlierWorkChargeSeconds": 40,
+    "ownerSessionClosedAtOriginalSeconds": 205.4620008,
+    "conservativeClosedTotalSeconds": 245.4620008,
+    "independentReviewCompletedAtOriginalSeconds": 183.5360403,
+    "independentReviewConservativeTotalSeconds": 223.5360403,
+    "originalClockRestarted": false,
+    "furtherDeviceWorkAllowed": false
+  },
+  "independentReview": {
+    "reviewerId": "Codex:/root/qualification_audit",
+    "reference": "docs/evidence/ptq1-numerics-41565247997/independent-review.json",
+    "passedChecks": 11,
+    "scope": "All retained original manifests, both ZIP/API/receipt/binary identities and ARM64 headers; exact selected condition; unassigned zero-step job; independent file-only owner/credential absence. No inference or loaded-model cleanup claim."
+  },
+  "retention": {
+    "directoryRelativeToLocalAppData": "SwiftBonsai2/qualification/ptq1-numerics-41565247997",
+    "originalFileManifestSha256": "7a761ceb892d9c9a7715c3f45f133afef253b4c8d85e6530a7bd86fb70d8b0b2",
+    "independentSelectionSha256": "420c85063a83964aefc20726a1aa0c13db5ced86b2d31eff4bdabc6fe5541166",
+    "repositorySelections": [
+      {
+        "path": "docs/evidence/ptq1-numerics-41565247997/guardian-result.json",
+        "bytes": 608,
+        "rawSha256": "3b391a6ab3a5aad8a1baab934699191eb570088cfe13fee1960dce41977d30b7"
+      },
+      {
+        "path": "docs/evidence/ptq1-numerics-41565247997/preflight-result.json",
+        "bytes": 1044,
+        "rawSha256": "f69b9e044fc5d7f7bbc34768d518b6489c7d354f91b7251ec9a04ce634bc31e6"
+      },
+      {
+        "path": "docs/evidence/ptq1-numerics-41565247997/independent-review.json",
+        "bytes": 5355,
+        "rawSha256": "031c6c4515b1ebeb5c3dede04575a5065025a678ffba4876e8da013cf5002179"
+      },
+      {
+        "path": "docs/evidence/ptq1-numerics-41565247997/intake-review.json",
+        "bytes": 475,
+        "rawSha256": "2282761b1b0118136936ecfa65ad066a328aeac348a7adcb772fe085daf2e28c"
+      },
+      {
+        "path": "docs/evidence/ptq1-numerics-41565247997/session-closure.json",
+        "bytes": 380,
+        "rawSha256": "e990c80db0c08c29fe640031a71eb8f8fc41d79d780691ca90996d285e9377a4"
+      }
+    ],
+    "digestScope": "Raw retained file bytes, including working-file line endings; Git blob normalization is separate."
+  },
+  "remaining": [
+    "Review a future owner using the verified exact-membership correction, explicit UTC decoding and bounded rejection diagnostics; this closed session is not reopened.",
+    "Qualify actual current-release numerical/live-state behavior; this preparation supplies no model result.",
+    "Preserve missing adapter provenance and independent full-context/output, quality, benefit, resource, isolation, recovery, installation and rollback gates."
+  ],
+  "numericalGatePassed": false,
+  "defaultPromotionQualified": false,
+  "experimentalLabelRemoved": false,
+  "defaultsChanged": false,
+  "admissionOrReservesChanged": false
+}

@@ -104,6 +104,17 @@ attempt](docs/evidence/ptq1-delivery-52f98b3.json) passed PTQ1/adapter readiness
 one-token streams at scales 1.3 and zero, and invalid-scale rejection. Its
 generated-history change-back request expired after 72.29 seconds within the
 215-second model-case allowance; that one-worker sequence remains unqualified.
+The [current-release numerical preparation and pre-registration no-go](docs/evidence/ptq1-numerics-41565247997.json)
+retain successful exact-source hosted tools and Foundation at `3d91f11`, with
+explicit NEON, four workers and the standard adapter selected. The temporary
+owner helper failed before registration; no numerical job step or model ran.
+Preserve the original clock and unknown failure classification: discarded raw
+stderr does not identify its cause. The [source-only reproduction](docs/evidence/ptq1-numerics-package-inventory-41565247997.json)
+finds a culture-sensitive filename sort that rejects the retained valid package;
+an exact-membership correction passes both package validators and eleven controls.
+Review a future owner with that correction, explicit UTC decoding and a bounded
+rejection reason; do not retry this closed attempt or transfer source-only
+validation to actual-model qualification.
 The [Prism 0.1.13 four-worker sequence](docs/evidence/ptq1-0113-lifecycle-41539984210/interpretation.json)
 now passes all three cap-one streams, invalid-scale rejection, same-owner reuse
 after rejection and captured assistant-history binding within 268.464 charged
@@ -144,6 +155,11 @@ The [frozen 0.1.10 PTQ1 promotion score](docs/evidence/ptq1-promotion-85fd2f1.js
 passes five independently reviewed documentary/packing gates and leaves fourteen
 pending for its explicit four-worker candidate. The pinned 0.1.13 runtime and
 later application identities require their own evidence and applicability review.
+Use the [nineteen-gate 0.1.13 readiness audit](docs/evidence/ptq1-0113-promotion-readiness-20261102.json)
+to distinguish available documentary evidence from missing device, independent
+human and clean-machine acceptance. The [fresh authoring-input check](docs/evidence/ptq1-authoring-inputs-20261102.json)
+still finds no published original checkpoint or adapter-bound conversion records;
+matching published B factors cannot reproduce the missing A-factor provenance.
 Close its actual-model, adapter provenance, paired benefit, quality, resource,
 isolation, recovery and installation gates before changing defaults or removing
 the README's adapter qualification. Later application identities need their own review.
