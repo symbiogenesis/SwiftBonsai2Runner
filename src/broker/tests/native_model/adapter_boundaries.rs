@@ -326,7 +326,16 @@ fn native_adapter_boundary_wire_sequence_preserves_rejections_and_failed_replay(
                 assert_eq!(report["scaleBoundaryWorkload"]["requests"].as_array().unwrap().len(),5);
                 assert_eq!(report["passed"],false,"Wire fixtures never qualify actual-model acceptance.");
                 let saved: Value = serde_json::from_slice(&fs::read(evidence.join("acceptance.json")).unwrap()).unwrap();
-                assert_eq!(saved,report);
+                // Compare the complete persisted structure after the same JSON
+                // round trip, which may round nondeterministic f64 telemetry.
+                let serialized: Value = serde_json::from_slice(&serde_json::to_vec(&report).unwrap()).unwrap();
+                assert_eq!(saved,serialized);
+                for receipt in [&report,&saved] {
+                    let progress = receipt["requestProgress"].as_array().unwrap();
+                    assert_eq!(progress.len(),3);
+                    assert!(progress.iter().all(|sample| sample["requestMilliseconds"]
+                        .as_f64().is_some_and(|milliseconds| milliseconds.is_finite() && milliseconds>0.0)));
+                }
                 fs::remove_file(evidence.join("acceptance.json")).unwrap();
                 fs::remove_dir(evidence).unwrap();
             }
