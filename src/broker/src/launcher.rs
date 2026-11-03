@@ -76,6 +76,8 @@ pub enum LaunchError {
     Policy,
     /// Locked model/runtime verification failed.
     Artifacts,
+    /// The selected native Rust runtime is missing, changed or unsafe to open.
+    NativeRuntime,
     /// The pinned abliteration adapter is missing, altered or unsafe to open.
     Adapter,
     /// Protected credential provisioning failed.
@@ -292,9 +294,9 @@ impl LaunchConfig {
             self.uses_repacked_ptq1(),
         )
         .map_err(|_| LaunchError::Policy)?;
+        let _native_executable = self.native_executable_guard()?;
         let _artifacts = self.verify_artifacts(&plan)?;
         let _adapter = Self::adapter_guard(&plan)?;
-        let _native_executable = self.native_executable_guard()?;
         Ok(LaunchCheck {
             memory_admitted: available_memory_bytes().map_err(|_| LaunchError::Memory)?
                 >= plan.required_available_bytes,
@@ -376,7 +378,9 @@ impl LaunchConfig {
         &self,
     ) -> Result<Option<(PathBuf, bonsai_artifacts::VerifiedFile)>, LaunchError> {
         if self.native_engine {
-            crate::inference::verify(&self.data, self.native_row_workers).map(Some)
+            crate::inference::verify(&self.data, self.native_row_workers)
+                .map(Some)
+                .map_err(|_| LaunchError::NativeRuntime)
         } else {
             Ok(None)
         }
@@ -413,13 +417,13 @@ impl LaunchConfig {
         &self,
         plan: LaunchPlan,
         credentials: &PrivateCredentials,
+        native: Option<(PathBuf, bonsai_artifacts::VerifiedFile)>,
     ) -> Result<(ProcessSpec, Option<bonsai_artifacts::VerifiedFile>), LaunchError> {
         // The worker may write only this child, never the sibling keys or logs.
         // Its parent already has the credential owner's protected inheritable ACL.
         let working_directory = credentials.directory().join("worker");
         std::fs::create_dir(&working_directory).map_err(|_| LaunchError::Path)?;
         validate_external_path(&working_directory).map_err(|_| LaunchError::Path)?;
-        let native = self.native_executable_guard()?;
         let (executable, arguments, guard) = if let Some((executable, guard)) = native {
             let arguments = self.native_arguments(&plan, credentials.backend_path());
             (executable, arguments, Some(guard))
@@ -533,6 +537,10 @@ impl LaunchConfig {
         )
         .map_err(|_| LaunchError::Policy)?;
         admit(preliminary.required_available_bytes)?;
+        if self.native_engine {
+            startup_timing.phase(StartupPhase::NativeRuntimeVerification);
+        }
+        let native_executable = self.native_executable_guard()?;
         startup_timing.phase(StartupPhase::ModelVerification);
         let artifacts = self.verify_artifacts(&preliminary)?;
         startup_timing.phase(StartupPhase::AdapterVerification);
@@ -557,7 +565,8 @@ impl LaunchConfig {
         let reservation =
             bound_loopback_socket(self.backend_port).map_err(|_| LaunchError::Port)?;
         admit(plan.required_available_bytes)?;
-        let (specification, native_executable) = self.specification(plan, &credentials)?;
+        let (specification, native_executable) =
+            self.specification(plan, &credentials, native_executable)?;
         validate_external_path(&specification.executable).map_err(|_| LaunchError::Path)?;
         drop(reservation);
         startup_timing.phase(StartupPhase::ProcessCreation);

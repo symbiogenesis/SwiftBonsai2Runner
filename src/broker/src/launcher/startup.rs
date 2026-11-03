@@ -9,11 +9,13 @@ use std::time::Instant;
 pub enum StartupPhase {
     /// Path, sandbox-support, policy and physical-memory admission checks.
     PolicyAndAdmission,
+    /// Verification and retained read ownership of the selected native runtime.
+    NativeRuntimeVerification,
     /// Selected model verification, plus runtime verification for publisher profiles.
     ModelVerification,
     /// Verification and retained read ownership of the optional pinned adapter.
     AdapterVerification,
-    /// Private credentials, runtime verification and process specification.
+    /// Private credentials and process specification using retained runtime ownership.
     CredentialsAndRuntime,
     /// Owned process creation and required native containment.
     ProcessCreation,

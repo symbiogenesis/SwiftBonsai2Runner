@@ -57,6 +57,60 @@ fn check(test: impl Future<Output = io::Result<()>>) -> io::Result<()> {
 }
 
 #[test]
+fn missing_native_runtime_is_distinct_from_missing_model_artifacts() -> io::Result<()> {
+    let data = std::env::temp_dir().join(format!(
+        "Bonsai-NativeRuntimePreflight-{}-{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map_err(io::Error::other)?
+            .as_nanos()
+    ));
+    std::fs::create_dir(&data)?;
+    let mut config = LaunchConfig::parse([
+        OsString::from("--launch-development"),
+        "--allow-unisolated-backend".into(),
+        "--native-engine".into(),
+        "--profile".into(),
+        "swift-pq2-assessment".into(),
+        "--data-directory".into(),
+        data.as_os_str().to_owned(),
+        "--evidence-parent".into(),
+        data.as_os_str().to_owned(),
+        "--frontend-port".into(),
+        "0".into(),
+        "--backend-port".into(),
+        "8081".into(),
+    ])
+    .map_err(|_| io::Error::other("Invalid fixture launch configuration."))?;
+    assert_eq!(
+        config.native_executable_guard().err(),
+        Some(LaunchError::NativeRuntime)
+    );
+    let plan = LaunchPlan::for_profile_with_options(
+        &data,
+        config.backend_port,
+        &data.join("not-created.key"),
+        config.profile,
+        false,
+        false,
+    )
+    .map_err(|_| io::Error::other("Invalid fixture launch policy."))?;
+    assert_eq!(
+        config.verify_artifacts(&plan).err(),
+        Some(LaunchError::Artifacts)
+    );
+    config.native_engine = false;
+    assert!(
+        config
+            .native_executable_guard()
+            .is_ok_and(|value| value.is_none())
+    );
+    std::fs::remove_dir(data)?;
+    Ok(())
+}
+
+#[test]
 fn owned_ready_backend_stops_with_service() -> io::Result<()> {
     check(async {
         let Fixture {

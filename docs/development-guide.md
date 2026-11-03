@@ -68,6 +68,11 @@ maintenance executable's compiled release lock. A changed existing installation
 fails verification and is retained. This step downloads only the small runtime;
 Swift weights and the adapter still require explicit provisioning.
 
+Direct native-app launches also verify the selected Rust executable before hashing
+the model or creating credentials. Runtime failures name the compiled Prism version
+and show a PowerShell repair command for that app's data directory; model failures
+retain separate model/export guidance. Retry repeats verification after repair.
+
 If the launcher reports a missing prebuilt executable, run the maintenance build
 command it prints from the repository root, then retry. Correct or remove any
 invalid `-ToolPath` or `BONSAI_TOOLS_PATH` override first. Older source launches used
@@ -324,7 +329,7 @@ and installed-package launches retain native admission. Installed launches use [
 | --- | --- | --- |
 | Publisher Prism CPU, original Swift PQ2 | Default, or explicit `--use-original-pq2`; pinned adapter enabled | Adapter scale follows response settings. Missing/altered adapters fail with provisioning guidance, without download or fallback. |
 | Publisher Prism CPU, current-weight PTQ1 export | `--use-repacked-ptq1` (app/broker `--use-repacked-ptq1`) | Same adapter opt-out/scale. Missing/changed bytes reject; no older publisher PTQ1 substitution or fallback. |
-| Experimental native Rust 0.1.13, original Swift PQ2 or exact current-weight PTQ1 | `--native-engine`, optionally `--use-repacked-ptq1` and `--no-abliterate-lora` (app/broker `--native-engine`) | Exact model, approved adapter, representation and effective row-worker readiness are verified; no engine switch after failure. Separate [PTQ1 qualification](swift-memory.md#current-weight-ptq1-option) is pending. |
+| Experimental native Rust 0.1.14, original Swift PQ2 or exact current-weight PTQ1 | `--native-engine`, optionally `--use-repacked-ptq1` and `--no-abliterate-lora` (app/broker `--native-engine`) | Exact model, approved adapter, representation and effective row-worker readiness are verified; no engine switch after failure. Separate [PTQ1 qualification](swift-memory.md#current-weight-ptq1-option) is pending. |
 
 `--no-abliterate-lora` (direct app `--no-abliterate-lora`) omits the adapter and disables
 its control. Source launch prepares the native release automatically; it can also

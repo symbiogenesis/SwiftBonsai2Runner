@@ -132,6 +132,7 @@ enum Failure {
     Shutdown,
     Stopped,
     Memory,
+    NativeRuntime,
     Rejected(&'static str),
     Message(&'static str),
 }
@@ -245,12 +246,13 @@ pub(crate) fn run(config: Config, commands: Receiver<Command>, events: EventSend
             }
             Err(failure) => {
                 let message = match failure {
-                    Failure::Message(message) | Failure::Rejected(message) => message,
+                    Failure::Message(message) | Failure::Rejected(message) => message.to_owned(),
+                    Failure::NativeRuntime => native_runtime_guidance(&config.data),
                     Failure::Shutdown | Failure::Memory | Failure::Stopped => return,
                 };
                 // worker has returned and its Broker guard has stopped/waited
                 // for the owned process before Retry can be offered.
-                if !wait_for_retry(&commands, &events, &mut history, &Event::Retryable(retry_guidance(message))) {
+                if !wait_for_retry(&commands, &events, &mut history, &Event::Retryable(retry_guidance(&message))) {
                     return;
                 }
             }
@@ -264,6 +266,27 @@ fn retry_guidance(message: &str) -> String {
     }
     format!(
         "{message}\nSelect Retry model to restart the local model. Completed turns remain in memory."
+    )
+}
+
+fn native_runtime_guidance(data: &Path) -> String {
+    let lock: serde_json::Value =
+        serde_json::from_str(include_str!("../../../config/prism-inference.lock.json"))
+            .unwrap_or_default();
+    let version = lock["version"].as_str().unwrap_or("pinned");
+    // Pipe ASCII JSON instead of putting JSON quotes in a native argument.
+    // This also survives Windows PowerShell's legacy argument/pipe encoding.
+    let raw = serde_json::json!({"operation":"inference", "dataDirectory":data}).to_string();
+    let mut request = String::with_capacity(raw.len());
+    for unit in raw.encode_utf16() {
+        match u8::try_from(unit) {
+            Ok(byte) if byte.is_ascii() => request.push(char::from(byte)),
+            _ => request.push_str(&format!("\\u{unit:04x}")),
+        }
+    }
+    let request = request.replace('\'', "''");
+    format!(
+        "The selected Rust runtime (Prism {version}) is missing or failed verification. Prepare it for this app's data directory, then select Retry model:\n'{request}' | bonsai-tools provision --request -"
     )
 }
 
@@ -494,7 +517,14 @@ fn wait_ready(
 
 fn startup_failure(diagnostic: &[u8], native_engine: bool) -> Failure {
     let text = String::from_utf8_lossy(diagnostic);
-    if !native_engine
+    if native_engine
+        && text.lines().any(|line| {
+            line == "Development backend launch failed: NativeRuntime."
+                || line == "Development backend launch failed: NativeRuntime. Provision the pinned Rust runtime with bonsai-tools provision, operation inference, using the same dataDirectory."
+        })
+    {
+        Failure::NativeRuntime
+    } else if !native_engine
         && text.lines().any(|line| {
             line == "Native backend startup failure: stage=authenticated-readiness, error=Backend, process=exited-0xC0000142"
         })
@@ -521,6 +551,10 @@ fn startup_failure(diagnostic: &[u8], native_engine: bool) -> Failure {
     } else if text.contains("Adapter") {
         Failure::Message(
             "The pinned abliteration LoRA could not be verified. Run bonsai-tools provision with operation adapter for this data directory, or restart with --no-abliterate-lora.",
+        )
+    } else if native_engine && text.contains("Artifacts") {
+        Failure::Message(
+            "The selected Swift model could not be verified. Run bonsai-tools provision with operation model, this data directory and config/swift-assessment.lock.json. For PTQ1, verify the selected current-weight export instead. Then select Retry model.",
         )
     } else if text.contains("Artifacts") {
         Failure::Message(
@@ -611,7 +645,7 @@ fn finish_turn(
         Err(failure) => {
             let message = match failure {
                 Failure::Rejected(message) => message,
-                Failure::Message(_) | Failure::Memory => {
+                Failure::Message(_) | Failure::Memory | Failure::NativeRuntime => {
                     "The response did not complete. Your message is restored for review; partial output has not been added to model history."
                 }
                 Failure::Shutdown | Failure::Stopped => return Err(failure),
@@ -2034,6 +2068,65 @@ mod tests {
         assert!(
             matches!(super::runtime_failure(b"unrelated service exit"), Failure::Message(other) if other != message)
         );
+        Ok(())
+    }
+
+    #[test]
+    fn native_runtime_failure_requires_an_exact_native_broker_marker() {
+        for line in [
+            "Development backend launch failed: NativeRuntime.",
+            "Development backend launch failed: NativeRuntime. Provision the pinned Rust runtime with bonsai-tools provision, operation inference, using the same dataDirectory.",
+        ] {
+            assert_eq!(
+                startup_failure(line.as_bytes(), true),
+                Failure::NativeRuntime
+            );
+            assert_ne!(
+                startup_failure(line.as_bytes(), false),
+                Failure::NativeRuntime
+            );
+        }
+        for diagnostic in [
+            "compiler warning: Development backend launch failed: NativeRuntime.",
+            "Development backend launch failed: NativeRuntime.unrecognized",
+            "Development backend launch failed: Artifacts.",
+        ] {
+            assert_ne!(
+                startup_failure(diagnostic.as_bytes(), true),
+                Failure::NativeRuntime
+            );
+        }
+        assert!(matches!(
+            startup_failure(b"Development backend launch failed: Artifacts.", true),
+            Failure::Message(message) if message.starts_with("The selected Swift model")
+        ));
+    }
+
+    #[test]
+    fn native_runtime_repair_command_preserves_the_selected_data_directory()
+    -> std::result::Result<(), String> {
+        let data = std::path::Path::new("C:\\Local data\\Owner's Bonsai \u{1f331}");
+        let guidance = super::native_runtime_guidance(data);
+        let argument = guidance
+            .split(":\n'")
+            .nth(1)
+            .and_then(|value| value.strip_suffix("' | bonsai-tools provision --request -"))
+            .ok_or("Missing complete repair command.")?
+            .replace("''", "'");
+        assert!(argument.is_ascii());
+        let request: serde_json::Value =
+            serde_json::from_str(&argument).map_err(|error| error.to_string())?;
+        assert_eq!(
+            request,
+            serde_json::json!({"operation":"inference", "dataDirectory":data})
+        );
+        let lock: serde_json::Value =
+            serde_json::from_str(include_str!("../../../config/prism-inference.lock.json"))
+                .map_err(|error| error.to_string())?;
+        assert!(guidance.contains(&format!(
+            "Prism {}",
+            lock["version"].as_str().ok_or("Missing version.")?
+        )));
         Ok(())
     }
 

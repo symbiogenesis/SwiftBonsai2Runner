@@ -126,6 +126,9 @@ fn launched(args: Vec<OsString>) -> ExitCode {
 fn launch_failure(error: bonsai_broker::launcher::LaunchError) -> ExitCode {
     use bonsai_broker::launcher::LaunchError;
     let guidance = match error {
+        LaunchError::NativeRuntime => {
+            " Provision the pinned Rust runtime with bonsai-tools provision, operation inference, using the same dataDirectory."
+        }
         LaunchError::SandboxEnvironment => {
             " Restart from a terminal or app session without inherited service credentials."
         }
