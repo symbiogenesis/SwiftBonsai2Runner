@@ -100,8 +100,9 @@ unmeasured; the packing saving alone does not qualify resources or performance.
 > Select the verified current-weight export with
 > `bonsai-tools chat --native-engine --use-repacked-ptq1 --native-row-workers 4`
 > after [provisioning it](docs/development-guide.md#runtime-selection).
-> The [0.1.13 four-worker promotion score](docs/evidence/ptq1-promotion-bb020f4-review.json)
-> has **6 of 19 gates passed**, with 13 pending for frozen candidate `bb020f4`.
+> The [0.1.13 four-worker promotion score](docs/evidence/ptq1-promotion-bb020f4-service-90a62b9-review.json)
+> retains **6 of 19 gates passed**, with 13 pending for frozen candidate `bb020f4`
+> and separately reviewed service harness `90a62b9`.
 >
 > The [original-PQ2 rollback gate](docs/evidence/ptq1-rollback-41573164864/independent-review.json)
 > now passes with the released runtime, standard adapter, four-worker readiness,
@@ -111,11 +112,13 @@ unmeasured; the packing saving alone does not qualify resources or performance.
 > 6.02 GiB**, respectively. AC/battery status was not recorded, so these remain
 > uncontrolled observations, with no performance or full-resource qualification.
 >
-> The pinned Rust 0.1.13 release now passes a [bounded four-worker service
-> sequence](docs/evidence/ptq1-0113-lifecycle-41539984210/interpretation.json):
-> three one-token-cap streams at adapter scales 1.3, zero and 1.3, invalid-scale
-> rejection, captured assistant history and owned cleanup. This does not measure
-> complete-answer quality or decode throughput.
+> The [latest bounded four-worker service trial](docs/evidence/ptq1-service-41577882160/independent-review.json)
+> passed three one-token-cap streams at scales 1.3, negative zero and 2.0, plus
+> invalid-scale rejection. Its context-error check received no complete HTTP
+> header and stopped before cancellation or fresh-owner replay. Parent-owned
+> cleanup completed within **119.737 charged seconds**. AC was connected at the
+> parent endpoints; the missing child after-power observation stays unknown.
+> These partial checks do not qualify the full service gate, quality or throughput.
 >
 > The [fresh hosted packing check](docs/evidence/ptq1-hosted-packing-b833d6b.json)
 > independently matched all **209,920,000 blocks**, their original symbols and

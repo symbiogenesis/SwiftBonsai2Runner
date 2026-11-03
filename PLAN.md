@@ -161,12 +161,15 @@ close actual-model logits/state, writer-basis or promotion gates. Keep intake,
 verification, model work and cleanup inside one aggregate five-minute owner allowance;
 the [default-readiness audit](docs/evidence/ptq1-default-readiness.json) separates
 historical passes from current-release qualification.
-Qualify the explicit `ptq1-adapter-boundaries-row4` service workload after its
-hosted preparation: four cap-one streams at 1.3, negative zero, 2.0 and 1.3,
-invalid-scale/context rejection and visible reset replay. Keep exact requests,
-power observations and the original cleanup reserve. Matching visible output
-does not prove numerical adapter effect, complete state restoration or absence
-of stale state; active cancellation and fresh-owner restart remain separate.
+Complete `ptq1-adapter-service-row4` beyond the
+[reviewed three scale-boundary streams and invalid-scale rejection](docs/evidence/ptq1-service-41577882160/independent-review.json).
+Qualify the typed private-context error through the released runtime and Runner,
+then complete context rejection, active interruption, owned cleanup and fresh-owner
+seeded replay within one feasible original allowance. The earlier session is
+permanently closed; do not continue its missing steps through another owner job.
+Preserve per-owner power observations and distinguish missing child endpoints from
+the retained parent endpoints. Visible output and matching prompt counts do not
+establish numerical adapter effect, full-state parity or full promotion.
 
 Use the [fresh 0.1.13 PTQ1 promotion score](docs/evidence/ptq1-promotion-bb020f4-review.json)
 for frozen Runner `bb020f4`, current-weight PTQ1 and four workers: six independently
