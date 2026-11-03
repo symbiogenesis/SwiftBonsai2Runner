@@ -197,6 +197,7 @@ impl Progress {
 
 struct Receipt<'a> {
     progress: Progress,
+    response: Option<response_capture::Observation>,
     started: tokio::time::Instant,
     evidence: &'a Path,
     report: &'a mut Value,
@@ -214,6 +215,13 @@ impl Receipt<'_> {
 
 impl Drop for Receipt<'_> {
     fn drop(&mut self) {
+        if let Some(response) = self.response.take() {
+            self.progress
+                .fields
+                .as_object_mut()
+                .unwrap()
+                .extend(response.finish().as_object().unwrap().clone());
+        }
         self.progress.fields["cancelledBeforeConnectionClose"] =
             json!(self.progress.fields["connectionClosed"] != true);
         self.progress.fields["requestMilliseconds"] =
@@ -266,16 +274,32 @@ pub(super) async fn try_exchange(
         .push(Value::Null);
     let mut receipt = Receipt {
         progress: Progress::new(label),
+        response: Some(response_capture::Observation::new()),
         started: tokio::time::Instant::now(),
         evidence,
         report,
         index,
     };
     receipt.save();
-    let Ok(mut stream) = try_connect(port, credential, body).await else {
-        receipt.progress.fields["transportErrorObserved"] = json!(true);
-        return None;
+    let stream = match try_connect(port, credential, body).await {
+        Ok(stream) => stream,
+        Err(error) => {
+            receipt
+                .response
+                .as_ref()
+                .unwrap()
+                .connection_error(error.kind());
+            return None;
+        }
     };
+    read_response(stream, &mut receipt).await
+}
+
+async fn read_response<S: tokio::io::AsyncRead + Unpin>(
+    stream: S,
+    receipt: &mut Receipt<'_>,
+) -> Option<Vec<u8>> {
+    let mut stream = receipt.response.as_ref().unwrap().reader(stream);
     let mut bytes = Vec::new();
     // Keep the fixed read scratch out of every enclosing future's inline state.
     // This observer nests inside acceptance deadlines and rollback fixtures.
@@ -354,6 +378,7 @@ fn native_progress_drop_retains_partial_content_without_qualifying_completion() 
     {
         let mut receipt = Receipt {
             progress: Progress::new("required-scale-1.3-stream"),
+            response: None,
             started: tokio::time::Instant::now(),
             evidence: &evidence,
             report: &mut report,
@@ -381,4 +406,79 @@ fn native_progress_drop_retains_partial_content_without_qualifying_completion() 
     assert_eq!(saved["streams"], json!([]));
     fs::remove_file(evidence.join("acceptance.json")).unwrap();
     fs::remove_dir(evidence).unwrap();
+}
+
+#[test]
+fn native_progress_read_error_retains_partial_response_identity_before_cleanup() {
+    struct ResetAfterPrefix(io::Cursor<Vec<u8>>);
+    impl tokio::io::AsyncRead for ResetAfterPrefix {
+        fn poll_read(
+            self: std::pin::Pin<&mut Self>,
+            cx: &mut std::task::Context<'_>,
+            buffer: &mut tokio::io::ReadBuf<'_>,
+        ) -> std::task::Poll<io::Result<()>> {
+            let prefix = &mut self.get_mut().0;
+            if prefix.position() == u64::try_from(prefix.get_ref().len()).unwrap() {
+                return std::task::Poll::Ready(Err(io::ErrorKind::ConnectionReset.into()));
+            }
+            tokio::io::AsyncRead::poll_read(std::pin::Pin::new(prefix), cx, buffer)
+        }
+    }
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    runtime.block_on(async {
+        let evidence = env::temp_dir().join(format!(
+            "Bonsai-Progress-Read-Failure-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        fs::create_dir(&evidence).unwrap();
+        let prefix = b"HTTP/1.1 413 private-reason\r\nX-Private: secret-header\r\n\r\nsecret-body";
+        let mut report = json!({"passed":false,"requestProgress":[null]});
+        {
+            let mut receipt = Receipt {
+                progress: Progress::new("context-rejection"),
+                response: Some(response_capture::Observation::new()),
+                started: tokio::time::Instant::now(),
+                evidence: &evidence,
+                report: &mut report,
+                index: 0,
+            };
+            assert!(
+                read_response(
+                    ResetAfterPrefix(io::Cursor::new(prefix.to_vec())),
+                    &mut receipt
+                )
+                .await
+                .is_none()
+            );
+        }
+        let retained = fs::read(evidence.join("acceptance.json")).unwrap();
+        let saved: Value = serde_json::from_slice(&retained).unwrap();
+        let progress = &saved["requestProgress"][0];
+        assert_eq!(progress["responseBytes"], prefix.len());
+        assert_eq!(progress["responseSha256"], adapter_digest(prefix));
+        assert_eq!(progress["responseHttpStatus"], 413);
+        assert_eq!(progress["transportErrorKind"], "ConnectionReset");
+        assert_eq!(progress["transportFailurePhase"], "read");
+        assert_eq!(progress["connectionClosed"], false);
+        assert_eq!(progress["cancelledBeforeConnectionClose"], true);
+        assert_eq!(saved["passed"], false);
+        let retained = String::from_utf8(retained).unwrap();
+        for private in [
+            "private-reason",
+            "secret-header",
+            "secret-body",
+            "X-Private",
+        ] {
+            assert!(!retained.contains(private));
+        }
+        fs::remove_file(evidence.join("acceptance.json")).unwrap();
+        fs::remove_dir(evidence).unwrap();
+    });
 }

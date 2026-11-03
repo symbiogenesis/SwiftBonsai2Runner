@@ -31,6 +31,8 @@ mod power;
 mod progress;
 #[path = "native_model/representation.rs"]
 mod representation;
+#[path = "native_model/response_capture.rs"]
+mod response_capture;
 #[path = "native_model/service_integration.rs"]
 mod service_integration;
 #[path = "native_model/service_rollback.rs"]

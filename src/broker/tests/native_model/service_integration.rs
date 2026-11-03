@@ -193,6 +193,7 @@ pub(super) fn pending_workload() -> Value {
         "cancellationRequestMessagesSha256":adapter_digest(&serde_json::to_vec(&body(EXTENDED_COMPLETION_CAP)["messages"]).unwrap()),
         "cancellationRequestedScaleF64Bits":format!("{:016x}",1.3_f64.to_bits()),
         "cancellationRequestBoundToBaseline":false,
+        "cancellationResponse":null,
         "cancellationPrefixMatchedBaseline":false,"terminalObservedBeforeStop":false,
         "brokerOperationInterrupted":false,"initialOwnerCleanupPassed":false,
         "freshOwnerReadinessPassed":false,"freshCredentialsDiffer":false,
@@ -306,7 +307,10 @@ fn complete_prefix(payload: &[u8]) -> (Option<String>, bool) {
     (content, terminal)
 }
 
-async fn cancellation_line(reader: &mut BufReader<TcpStream>, limit: usize) -> io::Result<String> {
+async fn cancellation_line<S: tokio::io::AsyncRead + Unpin>(
+    reader: &mut BufReader<S>,
+    limit: usize,
+) -> io::Result<String> {
     let mut line = String::new();
     let count = reader
         .take(u64::try_from(limit + 1).unwrap())
@@ -320,9 +324,9 @@ async fn cancellation_line(reader: &mut BufReader<TcpStream>, limit: usize) -> i
     Ok(line)
 }
 
-async fn cancellation_prefix(
-    client: TcpStream,
-) -> io::Result<(BufReader<TcpStream>, Option<String>)> {
+async fn cancellation_prefix<S: tokio::io::AsyncRead + Unpin>(
+    client: S,
+) -> io::Result<(BufReader<S>, Option<String>)> {
     let mut reader = BufReader::new(client);
     let mut header = String::new();
     loop {
@@ -414,19 +418,39 @@ async fn cancellation_before_deadline(
     evidence: &Path,
     deadline: tokio::time::Instant,
     report: &mut Value,
-) -> Option<(BufReader<TcpStream>, Option<String>)> {
+) -> Option<(
+    BufReader<response_capture::ObservedResponse<TcpStream>>,
+    Option<String>,
+)> {
     report["phase"] = json!("scale-1.3-first-prefix-and-explicit-stop");
     report["serviceIntegrationWorkload"]["phase"] = report["phase"].clone();
     save_acceptance_report(evidence, report);
+    let observation = response_capture::Observation::new();
     let captured = adapter_work_before_cleanup(deadline, async {
-        let client = try_connect(port, credential, &body(EXTENDED_COMPLETION_CAP)).await?;
-        cancellation_prefix(client).await
+        let client = try_connect(port, credential, &body(EXTENDED_COMPLETION_CAP))
+            .await
+            .inspect_err(|error| observation.connection_error(error.kind()))?;
+        cancellation_prefix(observation.reader(client)).await
     })
     .await;
+    let mut response = observation.finish();
+    response["prefixParsePassed"] = json!(captured.as_ref().is_some_and(Result::is_ok));
+    response["captureDeadlineExpired"] = json!(captured.is_none());
+    response["prefixFailureKind"] = json!(captured.as_ref().and_then(|result| {
+        result
+            .as_ref()
+            .err()
+            .map(|error| format!("{:?}", error.kind()))
+    }));
+    report["serviceIntegrationWorkload"]["cancellationResponse"] = response;
     if captured.as_ref().is_some_and(Result::is_err) {
         report["serviceIntegrationWorkload"]["pendingReason"] =
             json!("cancellation-response-transport-or-framing-failed");
+    } else if captured.is_none() {
+        report["serviceIntegrationWorkload"]["pendingReason"] =
+            json!("cancellation-response-deadline-expired");
     }
+    save_acceptance_report(evidence, report);
     captured.and_then(Result::ok)
 }
 
@@ -1063,6 +1087,78 @@ fn native_service_integration_cancellation_failures_return_without_unwinding() {
             assert!(observed.is_err());
             fixture.await.unwrap();
         }
+    });
+}
+
+#[test]
+fn native_service_integration_cancellation_failure_retains_response_identity() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    runtime.block_on(async {
+        let evidence = env::temp_dir().join(format!(
+            "Bonsai-Service-Prefix-Failure-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        fs::create_dir(&evidence).unwrap();
+        let response =
+            b"HTTP/1.1 503 private-reason\r\nX-Private: secret-header\r\n\r\nsecret-body";
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let port = listener.local_addr().unwrap().port();
+        let fixture = tokio::spawn(async move {
+            let (mut peer, _) = listener.accept().await.unwrap();
+            peer.write_all(response).await.unwrap();
+            peer.shutdown().await.unwrap();
+        });
+        let mut report = json!({"passed":false,"serviceIntegrationWorkload":pending_workload()});
+        let deadline = tokio::time::Instant::now() + STOP_WAIT + Duration::from_secs(5);
+        assert!(
+            cancellation_before_deadline(port, "fixture-only", &evidence, deadline, &mut report)
+                .await
+                .is_none()
+        );
+        fixture.await.unwrap();
+        let retained = fs::read(evidence.join("acceptance.json")).unwrap();
+        let saved: Value = serde_json::from_slice(&retained).unwrap();
+        let observed = &saved["serviceIntegrationWorkload"]["cancellationResponse"];
+        let bytes = usize::try_from(observed["responseBytes"].as_u64().unwrap()).unwrap();
+        assert!(
+            ("HTTP/1.1 503 private-reason\r\nX-Private: secret-header\r\n\r\n".len()
+                ..=response.len())
+                .contains(&bytes)
+        );
+        assert_eq!(
+            observed["responseSha256"],
+            adapter_digest(&response[..bytes])
+        );
+        assert_eq!(observed["responseHttpStatus"], 503);
+        assert_eq!(observed["prefixParsePassed"], false);
+        assert_eq!(observed["captureDeadlineExpired"], false);
+        assert_eq!(
+            saved["serviceIntegrationWorkload"]["pendingReason"],
+            "cancellation-response-transport-or-framing-failed"
+        );
+        assert_eq!(
+            saved["serviceIntegrationWorkload"]["brokerOperationInterrupted"],
+            false
+        );
+        assert_eq!(saved["passed"], false);
+        let retained = String::from_utf8(retained).unwrap();
+        for private in [
+            "private-reason",
+            "secret-header",
+            "secret-body",
+            "X-Private",
+        ] {
+            assert!(!retained.contains(private));
+        }
+        fs::remove_file(evidence.join("acceptance.json")).unwrap();
+        fs::remove_dir(evidence).unwrap();
     });
 }
 
