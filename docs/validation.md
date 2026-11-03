@@ -329,6 +329,43 @@ Model-free acceptance regressions:
 | `native_adapter_startup_budget_retains_pending_receipt_and_cleanup_reserve` | Paused-time startup cancellation retains its pending on-disk receipt and unfinished fixed-phase observation at the async timeout boundary; no startup starts inside the reserve. This does not measure native teardown duration, preempt synchronous verification or establish readiness/cleanup |
 | `native_adapter_startup_error_retains_unfinished_phase_without_qualifying_cleanup` | A returned startup error retains the unfinished fixed phase and failure reason in the on-disk receipt without manufacturing deadline expiry, readiness or cleanup |
 
+### Bounded source request attribution
+
+The [PTQ1 capture workflow](../.github/workflows/native-ptq1-numerics.yml) defaults
+to `capture_mode: numerical`. Explicit `request-timing` selects one production
+SwiftSession request through the same source-bound hosted checker package and
+native Rust owner; it does not execute the native reference model or ABI probes.
+Only current PTQ1 with the standard adapter at 1.3 is admitted, with one selected
+backend and one/four-worker policy. The fixed public tree-name messages use thinking
+disabled, seed 42, production sampling/stops, no prefix reuse, at most 128 rendered
+prompt tokens and one reserved output token. A sampled stop may commit zero tokens.
+
+Inspect the selection without a model or device operation:
+
+```powershell
+bonsai-tools native-qualification --json (@{ operation='plan'; captureMode='request-timing'; repositoryDirectory=$PWD.Path; rustBackend='neon'; rowWorkers=4 } | ConvertTo-Json -Compress)
+```
+
+Hosted preparation binds the selected mode and runs its model-free controls.
+`run_device: false` prepares tools only. A separately selected owner capture uses
+the same original five-minute aggregate allowance, parent identity, unchanged
+admission/Job/reserve policy and 32-second verification/cleanup reserve. An absolute
+checker deadline derives once from the remaining original monotonic allowance;
+blocking loading remains externally supervised. No default changes or further
+numerical job are part of this mode.
+
+Retained raw started/final receipts bind source, executable and input hashes,
+model/adapter identities, backend, workers, settings and deadline. Successful
+terminal state, positive finite timing brackets and successful operation/token
+counts must be internally consistent before attribution is accepted. Missing,
+empty, failed or incomplete final receipts leave the attempted work unknown;
+completed phase lower bounds do not establish emitted response tokens. The exact
+allowlist retains native supervision and public inputs on failure. No-op text
+consumption measures source-session work, with no HTTP/backpressure, isolated
+kernel, complete-answer quality, service-TPS or default-promotion claim. Actual
+device attribution remains pending until this explicit workload is captured and
+independently reviewed; it cannot continue a previous numerical matrix.
+
 ### Foundation and routing
 
 [Premerge portable checks](../.github/workflows/premerge.yml) provide a limited

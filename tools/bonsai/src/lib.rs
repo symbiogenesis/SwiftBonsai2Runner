@@ -125,7 +125,7 @@ pub mod gguf;
 /// Source-bound PTQ1 collector receipts and complete unsigned ABI comparisons.
 pub mod ptq1_capture;
 
-/// Fixed native numerical and row-worker qualification with original owner budgets.
+/// Fixed numerical captures and source request attribution with original owner budgets.
 pub mod native_qualification;
 
 /// Independent complete current-weight PTQ1 packing and preserved-byte checks.

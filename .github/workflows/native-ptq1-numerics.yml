@@ -6,6 +6,11 @@ on:
         description: Run the single five-minute owner-device trial after hosted preparation
         type: boolean
         default: false
+      capture_mode:
+        description: Numerical native/Rust pair or one owned source-session request timing; never both
+        type: choice
+        options: [numerical, request-timing]
+        default: numerical
       rust_backend:
         description: One Rust backend for the bounded one-token capture; broader qualification remains pending
         type: choice
@@ -17,7 +22,7 @@ on:
         options: ['1', '4']
         default: '1'
       adapter_condition:
-        description: One adapter condition for both captures; this does not schedule a control matrix
+        description: One numerical-pair adapter condition; request timing requires standard
         type: choice
         options: [standard, loaded-zero, no-adapter]
         default: standard
@@ -46,7 +51,24 @@ jobs:
           cargo +nightly-2026-11-02 test --locked --release --target-dir $env:BONSAI_TOOLS_TARGET -p bonsai-tools --lib build_tools::
       - name: Check native source, receipt and original-deadline policy
         shell: pwsh
-        run: cargo +nightly-2026-11-02 test --locked --release --target-dir $env:BONSAI_TOOLS_TARGET -p bonsai-tools --lib native_qualification::tests
+        run: cargo +nightly-2026-11-02 test --locked --release --target-dir $env:BONSAI_TOOLS_TARGET -p bonsai-tools --lib native_qualification::
+      - name: Bind the selected capture mode before owner preparation
+        shell: pwsh
+        env:
+          BONSAI_PTQ1_CAPTURE_MODE: ${{ inputs.capture_mode }}
+          BONSAI_PTQ1_RUST_BACKEND: ${{ inputs.rust_backend }}
+          BONSAI_PTQ1_ROW_WORKERS: ${{ inputs.native_row_workers }}
+          BONSAI_PTQ1_ADAPTER_CONDITION: ${{ inputs.adapter_condition }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          $plan = & $env:BONSAI_TOOLS_PATH native-qualification --json (@{
+            operation='plan'; kind='ptq1'; captureMode=$env:BONSAI_PTQ1_CAPTURE_MODE
+            repositoryDirectory=$env:GITHUB_WORKSPACE; rustBackend=$env:BONSAI_PTQ1_RUST_BACKEND
+            rowWorkers=[int]$env:BONSAI_PTQ1_ROW_WORKERS; adapterCondition=$env:BONSAI_PTQ1_ADAPTER_CONDITION
+          } | ConvertTo-Json -Compress) | ConvertFrom-Json
+          if ($plan.CaptureMode -cne $env:BONSAI_PTQ1_CAPTURE_MODE -or $plan.ModelProcessStarted -or $plan.DefaultMayChange) { throw 'Capture mode planning failed closed.' }
+          if ($env:BONSAI_PTQ1_CAPTURE_MODE -ceq 'request-timing' -and ($plan.NativeSamples -ne 0 -or $plan.RustSamples -ne 1 -or $plan.OutputTokens -ne 1)) { throw 'Request timing must select one bounded Rust source-session request only.' }
       - name: Validate fixed native-state decoding and control binding
         shell: pwsh
         run: >-
@@ -124,10 +146,11 @@ jobs:
         with:
           name: ptq1-capture-tools-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/SwiftBonsai-Ptq1CaptureTools
-      - name: Capture and compare the fixed one-token smoke
+      - name: Execute only the explicitly selected bounded capture
         shell: pwsh
         working-directory: ${{ runner.temp }}
         env:
+          BONSAI_PTQ1_CAPTURE_MODE: ${{ inputs.capture_mode }}
           BONSAI_PTQ1_RUST_BACKEND: ${{ inputs.rust_backend }}
           BONSAI_PTQ1_ROW_WORKERS: ${{ inputs.native_row_workers }}
           BONSAI_PTQ1_ADAPTER_CONDITION: ${{ inputs.adapter_condition }}
@@ -135,13 +158,15 @@ jobs:
           Set-StrictMode -Version Latest
           $ErrorActionPreference = 'Stop'
           $PSNativeCommandUseErrorActionPreference = $true
+          if ($env:BONSAI_PTQ1_CAPTURE_MODE -cnotin @('numerical', 'request-timing')) { throw 'Select one exact capture mode.' }
           if ($env:BONSAI_PTQ1_RUST_BACKEND -cnotin @('auto', 'scalar', 'neon')) { throw 'Select one explicit supported Rust capture backend.' }
           if ($env:BONSAI_PTQ1_ROW_WORKERS -cnotin @('1', '4')) { throw 'Select one exact Rust capture row-worker count.' }
           if ($env:BONSAI_PTQ1_ADAPTER_CONDITION -cnotin @('standard', 'loaded-zero', 'no-adapter')) { throw 'Select one exact adapter condition.' }
+          if ($env:BONSAI_PTQ1_CAPTURE_MODE -ceq 'request-timing' -and $env:BONSAI_PTQ1_ADAPTER_CONDITION -cne 'standard') { throw 'Request timing requires the standard adapter at scale 1.3.' }
           $budgetPath = Join-Path $env:RUNNER_TEMP 'ptq1-owner-budget.json'
           $budgetReport = [ordered]@{
             Revision=$env:GITHUB_SHA; RunId=$env:GITHUB_RUN_ID; RunAttempt=$env:GITHUB_RUN_ATTEMPT
-            Status='preparing'; WholeJobMaximumSeconds=300; DefaultMayChange=$false
+            Status='preparing'; CaptureMode=$env:BONSAI_PTQ1_CAPTURE_MODE; WholeJobMaximumSeconds=300; DefaultMayChange=$false
           }
           $budgetReport | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $budgetPath -Encoding utf8NoBOM
           "BONSAI_PTQ1_OWNER_BUDGET=$budgetPath" >> $env:GITHUB_ENV
@@ -175,6 +200,7 @@ jobs:
           $caller = [Diagnostics.Process]::GetCurrentProcess()
           try { $callerCreation = $caller.StartTime.ToUniversalTime().ToFileTimeUtc() } finally { $caller.Dispose() }
           @{ operation='capture'; kind='ptq1'; repositoryDirectory=$env:GITHUB_WORKSPACE
+            captureMode=$env:BONSAI_PTQ1_CAPTURE_MODE
             dataDirectory=(Join-Path $env:LOCALAPPDATA 'SwiftBonsai2')
             captureToolsDirectory=(Join-Path $env:RUNNER_TEMP 'SwiftBonsai-Ptq1CaptureTools')
             workBudgetSeconds=$workSeconds; workDeadlineTick=$workDeadline
@@ -213,14 +239,23 @@ jobs:
               }
             } finally { $child.Dispose() }
           }
-          if ($code -ne 0) { throw 'PTQ1 numerical capture/comparison failed; inspect retained evidence.' }
-          @("One supplied token [248045], exact current-weight PTQ1; adapter condition: $env:BONSAI_PTQ1_ADAPTER_CONDITION (standard is 1.3; loaded-zero loads the approved adapter at zero; no-adapter omits it).",
+          if ($code -ne 0) { throw 'The selected PTQ1 capture failed; inspect retained evidence.' }
+          if ($env:BONSAI_PTQ1_CAPTURE_MODE -ceq 'request-timing') {
+            @("One owned Rust $env:BONSAI_PTQ1_RUST_BACKEND source-session request, $env:BONSAI_PTQ1_ROW_WORKERS row workers, current PTQ1 and standard adapter 1.3; no native reference model or ABI process executes.",
+              'The fixed public tree-name messages use thinking disabled, seed 42, production sampler/stops, no prefix reuse, at most 128 rendered prompt tokens and one reserved output token. A sampled stop may commit zero output tokens.',
+              'Exact source/executable/input/model/adapter/settings/deadline identities and returned operation counters/timings are verified against retained native supervision and raw started/final receipts.',
+              'The original owner clock covers intake, admission, hashing, loading, work and cleanup; 32 seconds remain for verification and owned cleanup. Missing or empty final receipts leave work unknown.',
+              'Source-session brackets include checks and allocation with a no-op text consumer; no HTTP throughput, isolated kernel timing, complete-answer quality, released-service qualification or default promotion is established.',
+              'No additional numerical capture or continuation job runs.') | Add-Content -LiteralPath $env:GITHUB_STEP_SUMMARY
+          } else {
+            @("One supplied token [248045], exact current-weight PTQ1; adapter condition: $env:BONSAI_PTQ1_ADAPTER_CONDITION (standard is 1.3; loaded-zero loads the approved adapter at zero; no-adapter omits it).",
             "One native reference process and one Rust $env:BONSAI_PTQ1_RUST_BACKEND process; at most 240 seconds reduced by all checkout, intake and setup costs inside this five-minute job.",
             "Rust row workers: $env:BONSAI_PTQ1_ROW_WORKERS; exact worker count and actual parallel operations are checked independently of backend selection. Other worker policies remain unqualified.",
             'All logits and complete logical KV/convolution/recurrent values use the unchanged tolerance.',
             'This one condition does not establish cross-condition loaded-zero identity or nonzero application. Broader scalar/explicit-NEON trajectories, writer authoring basis, quality, performance and full context remain pending.',
             'A selected-backend smoke cannot be split into repeated owner-device runs to bypass the aggregate five-minute budget.',
-            'No default or admission change is authorized.') | Add-Content -LiteralPath $env:GITHUB_STEP_SUMMARY
+              'No default or admission change is authorized.') | Add-Content -LiteralPath $env:GITHUB_STEP_SUMMARY
+          }
       - name: Retain complete owner-job budget attribution
         if: always() && env.BONSAI_PTQ1_OWNER_BUDGET != ''
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
@@ -265,3 +300,22 @@ jobs:
           if-no-files-found: error
           retention-days: 90
           compression-level: 1
+      - name: Retain only selected source-session timing evidence and failures
+        if: always() && env.BONSAI_PTQ1_TIMING_EVIDENCE != ''
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: native-ptq1-request-timing-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ env.BONSAI_PTQ1_TIMING_EVIDENCE }}/request-timing-owner.json
+            ${{ env.BONSAI_PTQ1_TIMING_EVIDENCE }}/public-messages.json
+            ${{ env.BONSAI_PTQ1_TIMING_EVIDENCE }}/capture-tools.json
+            ${{ env.BONSAI_PTQ1_TIMING_EVIDENCE }}/maintenance-tools.json
+            ${{ env.BONSAI_PTQ1_TIMING_EVIDENCE }}/request-timing/request-timing-started.json
+            ${{ env.BONSAI_PTQ1_TIMING_EVIDENCE }}/request-timing/request-timing.json
+            ${{ env.BONSAI_PTQ1_TIMING_EVIDENCE }}/request-timing/supervision.json
+            ${{ env.BONSAI_PTQ1_TIMING_EVIDENCE }}/request-timing/arguments.json
+            ${{ env.BONSAI_PTQ1_TIMING_EVIDENCE }}/request-timing/artifacts.json
+            ${{ env.BONSAI_PTQ1_TIMING_EVIDENCE }}/request-timing/stdout.txt
+            ${{ env.BONSAI_PTQ1_TIMING_EVIDENCE }}/request-timing/stderr.txt
+          if-no-files-found: error
+          retention-days: 90

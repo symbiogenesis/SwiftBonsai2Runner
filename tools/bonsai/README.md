@@ -162,7 +162,7 @@ identity checks, fixed-token pairing and observed-condition comparisons; the
 former X2 PowerShell controller is removed. Pure `plan`, `compare-conditions`
 and `compare-sample-conditions` operations remain available.
 
-`native-qualification` owns one fixed numerical workload: `kind: "ptq1"`
+`native-qualification` defaults to `captureMode: "numerical"`: `kind: "ptq1"`
 selects one native/Rust pair at backend `auto`, `scalar` or `neon` and row-worker
 count 1 or 4. Its `adapterCondition` selects `standard` (default, approved adapter
 at 1.3), `loaded-zero` (the approved adapter is loaded at zero) or `no-adapter`
@@ -185,6 +185,26 @@ An isolated loaded-zero or no-adapter pass establishes only that selected native
 one-token comparison. Cross-condition logits/state identity, nonzero application
 and immutable writer authoring provenance require their own matched evidence;
 do not collect them by splitting a matrix into repeated owner-device jobs.
+
+Explicit `captureMode: "request-timing"` selects one source-built Rust checker
+request with current PTQ1 and the standard adapter at 1.3; other adapter conditions
+and `kind: "rows"` reject. The same backend and one/four-worker choices remain
+explicit. A fixed public tree-name prompt, thinking disabled, production sampler,
+seed 42, no prefix reuse and one reserved output token bound the work. This mode
+executes no native reference model or ABI process. It reuses the exact hosted
+capture package, artifact locks, memory admission, parent lifetime and native Job
+supervision; stdout may be empty only in timing mode. The checker receives one
+absolute deadline derived from the original remaining allowance, retaining 32
+seconds for receipt verification and owned cleanup. No clock renews at model load.
+The raw started/final receipts and supervision remain retained on failure; a
+missing or empty final receipt leaves work unknown. Successful source/executable,
+input, model/adapter, backend/worker and deadline identities, positive operation
+timings and bounded successful counters are verified before reporting completion.
+A sampled stop may commit zero output tokens. These source-session brackets use
+a no-op text consumer and qualify neither HTTP throughput, isolated kernel timing,
+complete answers, released-service behavior nor default promotion. The existing
+main-only numerical workflow exposes this separate mode and defaults to numerical
+capture; its tools-only preparation starts no device workload.
 
 `ptq1-packing` independently verifies the complete current-weight export against
 the original PQ2 file. Supply expanded absolute `sourcePath`, `outputPath` and

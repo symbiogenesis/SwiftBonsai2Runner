@@ -31,6 +31,12 @@ device observations do not qualify these binaries. Registry publication remains 
 Release/focused integration does not establish full-context, sustained-performance,
 creative, adapter or daily-isolation acceptance.
 
+Runner's opt-in [native owned request-timing mode](validation.md#bounded-source-request-attribution)
+uses the exact pinned checker source from its hosted capture package and retains
+parent/Job ownership, artifact admission, the original deadline and cleanup reserve.
+Its fixed public request has a one-token output bound and a no-op text consumer.
+Preparing this lane supplies no actual-device attribution or released-service evidence.
+
 The first required-container X2 PTQ1/adapter attempt on 0.1.7
 [failed during backend startup](evidence/ptq1-native-service.json), before verified
 readiness or streaming. The retained receipt does not establish whether weights

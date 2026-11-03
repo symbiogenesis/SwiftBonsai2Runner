@@ -4,7 +4,7 @@ use std::collections::BTreeMap;
 use std::fs::{self, OpenOptions};
 use std::io::{Read as _, Write as _};
 use std::path::{Path, PathBuf};
-use std::time::{Duration, Instant};
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use bonsai_artifacts::{ArtifactError, VerifiedFile, validate_external_path};
 use bonsai_windows_process::ParentProcess;
@@ -12,8 +12,8 @@ use serde_json::{Value, json};
 use sha2::{Digest as _, Sha256};
 
 use super::{
-    AdapterCondition, CHANNEL, Kind, LIMIT, PENDING, Request, plan, read_json, remaining_seconds,
-    require_runtime_source, sample_arguments, save_report,
+    AdapterCondition, CHANNEL, CaptureMode, Kind, LIMIT, PENDING, Request, plan, read_json,
+    remaining_seconds, request_timing, require_runtime_source, sample_arguments, save_report,
 };
 
 const ACTIVE_MODELS: &[&str] = &[
@@ -104,7 +104,7 @@ fn ci_guard(kind: Kind) -> crate::Result<()> {
     )
 }
 
-fn publish_evidence(path: &Path, kind: Kind) -> crate::Result<()> {
+fn publish_evidence(path: &Path, request: &Request) -> crate::Result<()> {
     let destination =
         PathBuf::from(std::env::var_os("GITHUB_ENV").ok_or("Expected the CI environment file.")?);
     external(&destination)?;
@@ -112,7 +112,9 @@ fn publish_evidence(path: &Path, kind: Kind) -> crate::Result<()> {
         .to_str()
         .filter(|value| !value.contains(['\r', '\n']))
         .ok_or("Evidence path must be single-line Unicode.")?;
-    let name = if kind == Kind::Ptq1 {
+    let name = if request.capture_mode == CaptureMode::RequestTiming {
+        "BONSAI_PTQ1_TIMING_EVIDENCE"
+    } else if request.kind == Kind::Ptq1 {
         "BONSAI_PTQ1_NUMERICS_EVIDENCE"
     } else {
         "BONSAI_ROW_QUALIFICATION_EVIDENCE"
@@ -242,7 +244,8 @@ impl Context<'_> {
             "requiredAvailableBytes": 16_642_998_272_u64, "physicalReserveBytes": 4_294_967_296_u64,
             "timeoutSeconds": if model { remaining - 32 } else { 10_u64.min(remaining - 32) },
             "totalTimeoutSeconds": remaining, "stdoutLimitBytes": 65_536,
-            "stderrLimitBytes": if model { 67_108_864 } else { 65_536 }, "requireNonemptyStdout": true,
+            "stderrLimitBytes": if model { 67_108_864 } else { 65_536 },
+            "requireNonemptyStdout": self.request.capture_mode != CaptureMode::RequestTiming,
             "ciOnly": false, "parentProcessId": self.parent_id, "parentCreationTimeFileTime": self.parent_creation }),
         )
     }
@@ -610,6 +613,12 @@ fn execute(context: &mut Context<'_>) -> crate::Result<()> {
     {
         return Err("Close the existing Bonsai app and project model processes before qualification; no process was interrupted.".into());
     }
+    // Source attribution executes one Rust checker only. Numerical mode retains
+    // its exact native runtime, public-header ABI controls and comparison pair.
+    if context.request.capture_mode == CaptureMode::RequestTiming {
+        let checked = admission(context)?;
+        return timing_sample(context, &checked, &receipt);
+    }
     let runtime = if context.request.kind == Kind::Ptq1 {
         Some(runtime(context, &receipt)?)
     } else {
@@ -618,6 +627,79 @@ fn execute(context: &mut Context<'_>) -> crate::Result<()> {
     let checked = admission(context)?;
     model_samples(context, &checked, runtime.as_ref())?;
     context.compare()
+}
+
+fn timing_sample(context: &mut Context<'_>, checked: &Value, tools: &Value) -> crate::Result<()> {
+    context.phase("request-timing-preparation")?;
+    let lane = context.lane("request-timing")?;
+    let messages = context.evidence.join("public-messages.json");
+    save_report(&messages, &request_timing::messages())?;
+    let input = context.hash_file(&messages, 65_536)?;
+    context.hold(input.clone())?;
+    let checker = tools["Files"]
+        .as_array()
+        .and_then(|files| {
+            files
+                .iter()
+                .find(|file| file["Name"] == "swift_model_check.exe")
+        })
+        .ok_or("Missing reviewed request timing checker identity.")?;
+    let now = u64::try_from(
+        SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map_err(|error| error.to_string())?
+            .as_millis(),
+    )
+    .map_err(|error| error.to_string())?;
+    // Translate the original remaining monotonic allowance once. File intake,
+    // verification, process startup and loading cannot renew this child deadline.
+    // Native Job supervision still enforces the original monotonic owner bound.
+    let deadline = request_timing::deadline(context.remaining()?, now)?;
+    let expected = request_timing::expected(
+        context.request,
+        context.pins,
+        checked,
+        &checker["Sha256"],
+        &input["sha256"],
+        deadline,
+    )?;
+    let arguments = request_timing::arguments(
+        context.request,
+        checked,
+        &lane,
+        &messages,
+        deadline,
+        &context.pins["rustSource"],
+    );
+    save_report(&lane.join("arguments.json"), &arguments)?;
+    save_report(&lane.join("artifacts.json"), &json!(context.artifacts))?;
+    context.report["ModelTrialsRequested"] = json!(true);
+    context.report["TimingReceiptStatus"] = json!("pending-unverified");
+    context.report["ExpectedTimingIdentity"] = expected.clone();
+    context.phase("source-session-request-timing")?;
+    let supervision = context.completion(
+        &context.bundle.join("swift_model_check.exe"),
+        &arguments,
+        &lane,
+        true,
+    )?;
+    context.report["Samples"] = json!([{"Backend":context.request.rust_backend,
+        "RustRowWorkers":context.request.row_workers,"Supervision":supervision}]);
+    context.phase("request-timing-receipt-verification")?;
+    let mut artifacts = Vec::new();
+    for name in ["request-timing-started.json", "request-timing.json"] {
+        let artifact = context.hash_file(&lane.join(name), 65_536)?;
+        context.hold(artifact.clone())?;
+        artifacts.push(artifact);
+    }
+    let receipt = read_json(&lane.join("request-timing.json"), 65_536)?;
+    request_timing::validate(&receipt, &expected)?;
+    context.report["TimingArtifacts"] = json!(artifacts);
+    context.report["TimingReceiptStatus"] = json!("verified-source-session-attribution");
+    context.report["TimingScope"] = json!(
+        "Fixed bounded public request; source-session operation brackets and committed-output counters only. No HTTP, decode TPS, isolated kernel timing, complete answer, service acceptance or release promotion."
+    );
+    save_report(&context.report_path, &context.report)
 }
 
 pub(super) fn capture(request: &Request, pins: &Value) -> crate::Result<Value> {
@@ -662,10 +744,11 @@ pub(super) fn capture(request: &Request, pins: &Value) -> crate::Result<Value> {
     ));
     external(&evidence)?;
     fs::create_dir(&evidence).map_err(|error| error.to_string())?;
-    publish_evidence(&evidence, request.kind)?;
+    publish_evidence(&evidence, request)?;
     let mut plan = plan(request, pins);
     plan["WorkBudgetSeconds"] = json!(seconds);
     let mut report = json!({"SchemaVersion": 1, "Status": "preparing", "Phase": "capture-tool-intake", "Plan": plan,
+        "CaptureMode":request.capture_mode.name(),
         "Revision": std::env::var("GITHUB_SHA").unwrap_or_default(),
         "RunUrl": format!("https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/{}", std::env::var("GITHUB_RUN_ID").unwrap_or_default()),
         "RunAttempt": std::env::var("GITHUB_RUN_ATTEMPT").ok(), "ProcessorName": null, "WorkDeadlineTick": deadline,
@@ -673,7 +756,14 @@ pub(super) fn capture(request: &Request, pins: &Value) -> crate::Result<Value> {
     if request.kind == Kind::Ptq1 {
         report["PendingControls"] = json!(PENDING);
     }
-    let report_path = evidence.join(if request.kind == Kind::Ptq1 {
+    if request.capture_mode == CaptureMode::RequestTiming {
+        report["TimingReceiptStatus"] = json!("pending-unverified");
+        report["IncompleteTimingReceiptMeans"] =
+            json!("unknown work; no emitted-token inference or qualification");
+    }
+    let report_path = evidence.join(if request.capture_mode == CaptureMode::RequestTiming {
+        "request-timing-owner.json"
+    } else if request.kind == Kind::Ptq1 {
         "numerics.json"
     } else {
         "qualification.json"
@@ -704,7 +794,11 @@ fn finish(context: &mut Context<'_>, result: crate::Result<()>) -> crate::Result
     context.report["WorkElapsedSeconds"] = json!(context.started.elapsed().as_secs_f64());
     match &result {
         Ok(()) => {
-            context.report["Status"] = json!(if context.request.kind == Kind::Ptq1 {
+            context.report["Status"] = json!(if context.request.capture_mode
+                == CaptureMode::RequestTiming
+            {
+                "completed-source-request-timing"
+            } else if context.request.kind == Kind::Ptq1 {
                 "completed-one-token-smoke"
             } else {
                 "completed-one-token-row-control"
@@ -724,7 +818,7 @@ fn finish(context: &mut Context<'_>, result: crate::Result<()>) -> crate::Result
         )
     })?;
     Ok(
-        json!({"Status": context.report["Status"], "EvidenceDirectory": context.evidence,
+        json!({"Status": context.report["Status"], "CaptureMode":context.request.capture_mode.name(), "EvidenceDirectory": context.evidence,
         "PendingControls": context.report["PendingControls"], "AppTpsQualified": false, "DefaultMayChange": false}),
     )
 }

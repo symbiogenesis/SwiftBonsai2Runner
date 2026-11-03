@@ -1,4 +1,4 @@
-//! Fixed native numerical/row capture plans and deadline-bound owner orchestration.
+//! Fixed numerical/row captures and source request attribution under original owner deadlines.
 
 #[cfg(any(windows, test))]
 use std::fs;
@@ -11,6 +11,7 @@ use std::path::{Path, PathBuf};
 use serde::Deserialize;
 use serde_json::{Value, json};
 
+mod request_timing;
 #[cfg(windows)]
 mod windows;
 
@@ -37,6 +38,23 @@ enum Kind {
     #[default]
     Ptq1,
     Rows,
+}
+
+#[derive(Clone, Copy, Default, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
+enum CaptureMode {
+    #[default]
+    Numerical,
+    RequestTiming,
+}
+
+impl CaptureMode {
+    const fn name(self) -> &'static str {
+        match self {
+            Self::Numerical => "numerical",
+            Self::RequestTiming => "request-timing",
+        }
+    }
 }
 
 #[derive(Clone, Copy, Default, Deserialize, PartialEq, Eq)]
@@ -86,6 +104,8 @@ struct Request {
     operation: Operation,
     #[serde(default)]
     kind: Kind,
+    #[serde(default)]
+    capture_mode: CaptureMode,
     repository_directory: PathBuf,
     #[serde(default = "auto_backend")]
     rust_backend: String,
@@ -180,7 +200,11 @@ fn require_runtime_source(source: &Value, runtime: &Value) -> crate::Result<()> 
 }
 
 fn plan(request: &Request, pins: &Value) -> Value {
+    if request.capture_mode == CaptureMode::RequestTiming {
+        return request_timing::plan(request, pins);
+    }
     let mut value = json!({"Status": "plan-only", "ModelProcessStarted": false,
+        "CaptureMode": request.capture_mode.name(),
         "SuppliedTokens": [248_045], "AdapterScale": request.adapter_condition.scale(), "RustBackend": request.rust_backend,
         "WorkBudgetSeconds": 240, "WholeJobMinutes": 5, "RequiredFreeDiskBytes": 1_073_741_824,
         "ContextTokens": 8192, "JobBytes": 12_348_030_976_u64, "AdmissionBytes": 16_642_998_272_u64,
@@ -305,7 +329,7 @@ fn remaining_seconds(
     Ok(remaining)
 }
 
-/// Plan or execute one fixed PTQ1/row qualification, or review current source pins.
+/// Plan or execute one fixed numerical capture or source request attribution.
 ///
 /// Captures require source-bound hosted tools, main-only owner CI and an original
 /// monotonic deadline. The command never builds tools or downloads models.
@@ -323,6 +347,11 @@ pub fn run(value: Value) -> crate::Result<Value> {
                 || request.adapter_condition != AdapterCondition::Standard))
     {
         return Err("Select one supported backend and exact one/four-worker PTQ1 policy; row qualification fixes both worker conditions.".into());
+    }
+    if request.capture_mode == CaptureMode::RequestTiming
+        && (request.kind != Kind::Ptq1 || request.adapter_condition != AdapterCondition::Standard)
+    {
+        return Err("Request timing selects only current-weight PTQ1 with the approved adapter at scale 1.3; no numerical pair or adapter matrix is run.".into());
     }
     let pins = source_pins(&request.repository_directory, request.kind)?;
     match request.operation {
