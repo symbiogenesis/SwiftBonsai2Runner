@@ -423,7 +423,7 @@ fn typed_private_context_rejection_sends_only_sanitized_public_admission_error()
                     assert!(!wire.contains(CLIENT_KEY) && !wire.contains(BACKEND_KEY));
                 } else {
                     assert_eq!(result, Err(ServeError::Backend(BackendError::CountSchema)));
-                    assert!(bytes.is_empty());
+                    assert_eq!(bytes.as_slice(), b"");
                 }
                 assert!(state.borrow().dropped && dropped.get());
             }
