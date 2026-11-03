@@ -78,3 +78,9 @@ docs/evidence/ptq1-retained-audit-*/*.json -text whitespace=cr-at-eol
 
 # Preserve selected rollback owner/build/acceptance and independent review bytes.
 docs/evidence/ptq1-rollback-41573164864/** -text whitespace=cr-at-eol
+
+# Preserve exact service trial receipts and independently retained hosted metadata.
+docs/evidence/ptq1-service-41577882160/** -text whitespace=cr-at-eol
+docs/evidence/ptq1-service-41577882160/exact-owner-panic.txt -whitespace
+docs/evidence/ptq1-service-ci-1f6a697/** -text whitespace=cr-at-eol
+docs/evidence/ptq1-service-ci-90a62b9/** -text whitespace=cr-at-eol
