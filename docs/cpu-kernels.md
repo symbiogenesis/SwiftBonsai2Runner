@@ -75,6 +75,27 @@ correction before narrowing; Rust overflow flags do not check wrapping SIMD. App
 scale before accumulating later blocks. Malformed scales/noncanonical PTQ1 bytes reject even at
 zero scale.
 
+The local Prism PQ2 decode candidate accumulates signed product pairs in two
+independent i16 vectors, then widens before the horizontal i32 reduction. Products
+are in `[-256, 254]`, pairs in `[-512, 508]`, each accumulator lane in
+`[-2048, 2032]`, and their combined lane in `[-4096, 4064]`. These bounds cover
+arbitrary PQ2 fourth symbols and i8 activations, independent of the Swift census.
+No floating operation, quantizer, PTQ1 native lane reduction or dispatch eligibility
+changes. Fewer source-level widening operations require Release code-generation
+inspection and matched request measurements before a performance claim.
+
+The explicit tiled-prefill candidate selects baseline NEON integer reductions
+over one decoded PQ2/PTQ1 block shared across the tile's tokens. It preserves odd
+PQ2 groups, PTQ1's four native integer lanes, ordered scales/FMAs, explicit scalar
+selection and unsupported-target fallback. The graph passes its requested backend
+into the tile; decoded vectors remain bounded stack storage, and preparation does
+not allocate unused PQ2 digit-plane activations. Rows remain sequential: this does
+not preserve the ordinary matvec path's row-worker parallelism. Compare complete
+prompt cost with the existing NEON/four-worker control before choosing this path.
+The released Runner pin and opt-in prefill boundary remain unchanged. The
+[source-check record](evidence/cpu-speed-next-20261103/summary.json) separates local
+correctness evidence from pending model and performance qualification.
+
 Q8_K chooses the first signed value with strictly greater absolute magnitude, uses `-127 / maximum`,
 ties-to-even rounding and an f32 scale. Q8_0 uses an absolute maximum, ties-away rounding and an
 FP16-rounded stored scale, while quantizing with the original inverse scale. Opposite-sign ties,

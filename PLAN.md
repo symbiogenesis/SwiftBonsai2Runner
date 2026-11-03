@@ -624,7 +624,7 @@ and retain the reset-every-request serving policy until reuse is qualified.
   state, logits, nonzero GDN adapter, continuation and restore evidence under the
   [prefill contract](docs/inference-algorithms.md#chunkwise-gated-deltanet-prefill),
   then matched whole-prompt benefit against qualified NEON/worker execution.
-  Source work reuse and the scalar tiled kernel establish no speedup or release gate.
+  Source work reuse and the SIMD tiled candidate establish no speedup or release gate.
 - If attention is material, compare grouped-head KV reuse and bounded score/value tiles,
   retaining versus recomputing scores. Preserve globally normalized FP16 probabilities
   before V; online-softmax/Flash changes require separate numerical and continuation
@@ -955,6 +955,19 @@ Follow [CPU arithmetic, dispatch and acceptance](docs/cpu-kernels.md). Pin artif
 runtime, compiler, format, shapes, ISA and numerics; choose work from CI hotspot,
 bandwidth, packing and dispatch evidence.
 
+Qualify the [packed decode and SIMD prefill source changes](docs/evidence/cpu-speed-next-20261103/summary.json)
+on settled Prism main through owner-managed checks. PQ2 decode now accumulates
+bounded i16 product pairs before widening once for the final i32 reduction; tiled
+prefill now reuses baseline NEON decoded weights across tokens while preserving
+scalar forcing and PTQ1 native lanes. The single 13.333-second local check applied
+canonical formatting and passed four receipt-parser controls, then stopped before
+any numerical test ran on a private-interface visibility error. Its minimal type
+visibility correction is applied but uncompiled. Preserve that closed clock and
+its original AC/saver/charge observations. Require final-source numerical controls,
+strict Release analysis, codegen/spill inspection, actual-model state/adapter parity
+and matched request benefit before a qualified release and Runner repin. No installed
+runtime, default, resource admission or performance verdict changes here.
+
 - Qualify actual prompt/response latency and complete application lifecycle for the
   [shared-slice row-parallel candidate](docs/oxibonsai-reuse.md#implementation-status),
   beyond the retained [fixed-step and short service evidence](docs/native-rust-engine.md#bounded-parallel-row-qualification).
@@ -985,9 +998,10 @@ bandwidth, packing and dispatch evidence.
   benefit before release integration; no local throughput gain is established.
 - Qualify the source tiled projection-prefill family for valid token tiles 8/16/32,
   with shared prepared activations and each packed block decoded once across token
-  dots, without persistent INT8/FP16 expansion. The real graph consumer currently
-  uses scalar tiled integer reductions. Compare it with existing NEON/workers and
-  stop if construction, lost SIMD/parallelism or scratch erases complete-prompt gains.
+  dots, without persistent INT8/FP16 expansion. The real graph consumer now selects
+  baseline NEON reductions on eligible targets and preserves explicit scalar forcing.
+  Rows remain sequential. Compare it with existing NEON/workers and stop if decoded
+  block construction, spills, lost row parallelism or scratch erases whole-prompt gains.
 - Establish installed Windows CPU/OS NEON/dotprod/I8MM eligibility before dispatch.
   Inspect Release code generation and forbidden-ISA leakage and require detection,
   parity and benefit under the [dispatch
@@ -1008,10 +1022,11 @@ bandwidth, packing and dispatch evidence.
   implement a justified consumer in Prism with full-range integer parity, pinned-Rust
   ARM64 codegen and paired complete-request CI evidence before repinning. Keep this
   conditional on useful parent work, without a standalone utility or benchmark project.
-- If integer-dot dependencies are material, screen [two
-  accumulators](docs/oxibonsai-reuse.md#neon-retain-concepts-preserve-swift-arithmetic)
-  in Prism's `i32x4` loop on three shapes. Preserve widening, exact dots, Q8 groups and
-  float order; inspect spills and require device CI benefit before repinning.
+- Qualify the bounded PQ2 product-pair candidate above against the earlier
+  [two-accumulator implementation](docs/oxibonsai-reuse.md#neon-retain-concepts-preserve-swift-arithmetic).
+  Inspect exact baseline ARM64 Release codegen, every intermediate bound and spills
+  on the selected shapes, then compare whole requests. Preserve Q8 groups, all four
+  PQ2 symbols and float order; require owner-managed device benefit before repinning.
 - Compare scalar Rust, optimized Rust and Prism in paired device CI, separating
   hot-cache and streaming weights, preparation, dispatch, prefill, decode and task
   costs, allocations and sustained energy and heat. Scope profiles by device, format,

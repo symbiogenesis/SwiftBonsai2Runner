@@ -85,6 +85,15 @@ unchanged. Source controls and work counts establish no actual-model parity or
 prompt-time gain. The plan retains full-model, long-prefix, adapter and resource
 qualification before service selection or repinning.
 
+Packed tiles now have an exact baseline NEON integer path that shares one decoded
+weight block across tokens, honors the graph's scalar/auto/NEON policy and retains
+the scalar fallback. PQ2/Q8_K, odd PQ2/Q8_0 and PTQ1's native four-lane floating
+accumulation keep their existing operation order. This removes the scalar-only
+integer loop from eligible tiles but still runs rows sequentially; compare whole
+prompts against the ordinary row-parallel matvec path. The
+[CPU kernel contract](cpu-kernels.md#packed-arithmetic) records bounds and the
+separate decode candidate; neither changes the triangular GDN numerical contract.
+
 [Gated Delta Networks](https://arxiv.org/html/2412.06464v3) derives chunkwise computation with
 compact WY/UT structure; the [official FLA
 implementation](https://github.com/fla-org/flash-linear-attention/blob/main/fla/ops/gated_delta_rule/chunk.py)
