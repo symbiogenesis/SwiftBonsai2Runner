@@ -69,12 +69,15 @@ pub fn run(request: Value) -> crate::Result<Value> {
     serde_json::to_value(budget).map_err(|error| error.to_string())
 }
 
-fn calculate(request: &Request) -> crate::Result<Budget> {
-    if !(DEFAULT_WHOLE_JOB_SECONDS..=MAXIMUM_WHOLE_JOB_SECONDS)
-        .contains(&request.whole_job_maximum_seconds)
-    {
+fn declared_limits(seconds: u16) -> crate::Result<(u16, u16)> {
+    if !(DEFAULT_WHOLE_JOB_SECONDS..=MAXIMUM_WHOLE_JOB_SECONDS).contains(&seconds) {
         return Err("The predeclared whole-job maximum must be 300..900 seconds.".into());
     }
+    Ok((seconds - POSTPROCESS_RESERVE_SECONDS, seconds - 60))
+}
+
+fn calculate(request: &Request) -> crate::Result<Budget> {
+    let (maximum_work, maximum_case) = declared_limits(request.whole_job_maximum_seconds)?;
     if !canonical_decimal(&request.run_id, 20)
         || request.revision.len() != 40
         || !request
@@ -97,8 +100,6 @@ fn calculate(request: &Request) -> crate::Result<Budget> {
         .ok_or("Acceptance monotonic clock frequency must be positive.")?;
     // Subtract the ceiling of elapsed time, preserving fractional setup costs
     // without allowing floating-point rounding to extend either deadline.
-    let maximum_work = request.whole_job_maximum_seconds - POSTPROCESS_RESERVE_SECONDS;
-    let maximum_case = request.whole_job_maximum_seconds - 60;
     let mut hard_limit = i128::from(maximum_case + 10)
         .min(i128::from(maximum_work) - i128::from(setup_ticks.div_ceil(TICKS_PER_SECOND)));
     let owner = request
