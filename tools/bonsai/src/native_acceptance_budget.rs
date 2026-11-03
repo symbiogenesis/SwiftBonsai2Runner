@@ -147,8 +147,8 @@ fn calculate(request: &Request) -> crate::Result<Budget> {
     let setup = preparation(request, now_tick, frequency)?;
     // Subtract the ceiling of elapsed time, preserving fractional setup costs
     // without allowing floating-point rounding to extend either deadline.
-    let mut hard_limit = i128::from(maximum_case + 10)
-        .min(i128::from(maximum_work) - i128::from(setup.charged));
+    let mut hard_limit =
+        i128::from(maximum_case + 10).min(i128::from(maximum_work) - i128::from(setup.charged));
     let owner = request
         .owner_deadline
         .as_object()
