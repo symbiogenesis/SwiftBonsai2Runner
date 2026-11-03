@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "kind": "independent-native-daily-readiness-retained-data-review",
+  "recordedDate": "2026-11-03",
+  "reviewerId": "Codex:/root/daily_review",
+  "status": "retained-data-verified-local-compilation-failed-acceptance-pending",
+  "scope": "File-only inspection and byte-length/SHA-256 verification of the retained selection. This later review is outside the original closed validation clock. No compiler, formatter, test, model, power query, diagnostic workload or CI action was performed by this reviewer.",
+  "capturedSourceRevision": "8150ccbe57242b1b72a7e29d4d747e13e377ac02",
+  "retainedEvidence": {
+    "directory": "docs/evidence/native-daily-readiness-20261103",
+    "manifest": "file-manifest.json",
+    "manifestBytes": 4706,
+    "manifestSha256": "d7d70c3f971a1a7702b69b1736f8cccfd976addce99f9fa3c9fdc18be45b6560",
+    "selectedPayloadFilesIndependentlyLengthAndHashVerified": 27,
+    "allSelectedLengthsAndDigestsMatch": true,
+    "receiptBytes": 18398,
+    "receiptSha256": "f09ccd36e2c0791cb802b2d03e06bb2a3e90c34abbb2a36c63d4570d61b10598",
+    "retentionMetadataBytes": 689,
+    "retentionMetadataSha256": "3cca097cf0f76b401c77c0cbc8d0c4a6facc86c0c01c254c0d3bccce86e5989d",
+    "selectionScope": "All 27 entries in the original manifest were read and checked. The manifest excludes itself and retention.json; those two files were separately inspected and identified above. This review and any later summary are not members of the original selection.",
+    "sourceVsRetainedTextIdentity": "The plan.json and driver-source.txt hashes in receipt.sourceFiles identify the primary-checkout copies and match those files exactly. Their retained integration-worktree copies match the original manifest and have identical text after CRLF normalization. Their distinct raw-byte identities are preserved rather than conflated."
+  },
+  "localVerification": {
+    "maximumTotalSeconds": 300,
+    "originalWorkCutoffSeconds": 240,
+    "receiptElapsedSecondsThroughLastSave": 15.37119160000293,
+    "chargedSecondsThroughRetention": 15.410510300003807,
+    "retainedWithinDeclaredTotal": true,
+    "passedObservations": [
+      "The primary checkout reported refs/heads/main, with no tracked/index changes in either primary or integration checkout before formatting.",
+      "The canonical formatter invocation returned zero, its edits were committed and fast-forwarded into local main, and the checked revision was retained.",
+      "PowerShell parsing returned zero for Start-Chat.ps1 and eight literal workflow run blocks."
+    ],
+    "failedObservation": "The first Cargo invocation exited 101 while compiling bonsai-tools lib tests. E0308 at chat_launch.rs:411 reports a BTreeMap<OsString, OsString> environment passed to startup_process::run, which requires BTreeMap<String, String>. No test executable ran.",
+    "cargoInvocations": 1,
+    "testsExecuted": 0,
+    "analyzersExecuted": 0,
+    "maintenanceReleaseBuildExecuted": false,
+    "maintenanceActivationExecuted": false,
+    "allRequestedChecksPassed": false,
+    "clockClosed": true,
+    "retryOrClockRestart": false,
+    "remainingChecks": "All focused test verdicts, strict Release all-target analyzers and the conditional maintenance build/activation remain pending. A later source-only correction cannot change this failed verdict or reopen its clock."
+  },
+  "power": {
+    "originalAggregateAndPerCheckEndpointsInspected": 26,
+    "originalPostRawRetentionEndpointsInspected": 1,
+    "allCapturedAcConnected": false,
+    "allCapturedBatterySaver": false,
+    "allCapturedChargePercent": 24,
+    "retentionEndpointScope": "After raw payload and manifest retention, before the final retention metadata write.",
+    "newPowerQueriesByReviewer": 0,
+    "uninterruptedStabilityEstablished": false,
+    "performanceComparisonQualified": false,
+    "interpretation": "The retained observations report battery operation. Equal endpoints do not establish uninterrupted conditions and qualify no performance comparison."
+  },
+  "modelExecutions": 0,
+  "benchmarks": 0,
+  "fullSuites": 0,
+  "ciActions": 0,
+  "pushes": 0,
+  "actualModelAcceptancePassed": false,
+  "defaultPromotionQualified": false,
+  "remainingAcceptance": [
+    "Owner-managed exact-source hosted compilation, focused controls, native linking and strict Release all-target chat/broker/tools analyzers, including any later source correction.",
+    "Owner-observed DX12 startup, model readiness, Stop/Retry and manual publisher rollback within one feasible predeclared workload.",
+    "The separate numerical/state, full context/output, quality/comfort, matched benefit, resource, isolation, speech/recovery and installation gates in PLAN.md."
+  ]
+}
