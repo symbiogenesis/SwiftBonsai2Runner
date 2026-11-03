@@ -1,0 +1,7 @@
+{
+  "operation": "file-score",
+  "runnerRevision": "bb020f45169b0698678ca5f789aef7af8cdc12b2",
+  "nativeRowWorkers": 4,
+  "weightRepresentation": "current-repacked-PTQ1_0",
+  "evidencePath": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-Ptq1-Promotion-bb020f4-20261102\\evidence.json"
+}

@@ -1,0 +1,11 @@
+{
+  "Kind": "prelaunch-executable-selection-correction",
+  "RunId": "41573164864",
+  "InitialFailure": "Get-Command returned two executable paths before any child started",
+  "Correction": "Select exactly the first application source",
+  "GuardianStarted": false,
+  "OwnerStarted": false,
+  "ModelStarted": false,
+  "OriginalClockCreated": false,
+  "EarlierChargeSeconds": 40
+}

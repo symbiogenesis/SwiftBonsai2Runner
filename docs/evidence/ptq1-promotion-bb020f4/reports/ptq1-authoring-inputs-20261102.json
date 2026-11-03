@@ -1,0 +1,95 @@
+{
+  "schemaVersion": 1,
+  "kind": "ptq1-approved-adapter-authoring-input-recheck",
+  "recordedDate": "2026-11-02",
+  "reviewerId": "Codex:/root/qualification_provenance",
+  "status": "external-authoring-inputs-still-required",
+  "scope": "Fresh public GitHub and Hugging Face metadata and immutable small-source inspection. No publisher contact, model/checkpoint/adapter/direction payload intake, model execution, benchmark or owner-device diagnostic. This report does not close a promotion gate.",
+  "previousAudit": "docs/evidence/ptq1-authoring-inputs-20261101.json",
+  "selectedIdentities": {
+    "approvedAdapterSha256": "f1669534803d340a496015f5c45125f3437b4d13ec764f40e34488ce83967f42",
+    "approvedAdapterBytes": 9682464,
+    "currentPtq1Sha256": "e658f0f0736a03a4549535a439f9b07254ebf8ab88ae27cbe6e52d098ca5d1f5",
+    "runtimeCommit": "cae16fa6998dac58a947eba9ae4398ed6a9fb863",
+    "runtimeVersion": "0.1.13"
+  },
+  "publicFindings": {
+    "publisherRepository": "Continuum-AI-Corp/OrcaBonsai-27B-Uncensored",
+    "observedMainCommit": "703028bb7fba03496e796b144839b161cf0f5409",
+    "observedCommitDateUtc": "2026-09-22T21:35:31Z",
+    "completeTreeBlobCount": 22,
+    "treeTruncated": false,
+    "publicReleaseCount": 0,
+    "newMainMaterialSincePreviousAudit": false,
+    "pullRequestsReviewed": [
+      { "number": 1, "state": "open", "subject": "Runtime output budget and cache-entry handling; no authoring-input manifest." },
+      { "number": 2, "state": "closed", "subject": "Compiled MLX refusal-direction correction; no authoring-input manifest." }
+    ],
+    "publicPublisherHuggingFaceModelCount": 0,
+    "referencedPackedModelRevision": "fcba37d2117a7077eac6b613b2668d14d9779edd",
+    "referencedPackedModelLastModifiedUtc": "2026-09-22T21:18:49Z",
+    "conclusion": "The inspected public sources still provide no original unfolded-checkpoint identities, conversion invocation bound to the approved adapter, or independent all-48 native SSM mapping proof. The README explicitly says that the unfolded FP16 checkpoint is not shipped. This does not establish absence of private inputs or material under other accounts."
+  },
+  "rawResponseIdentities": [
+    {
+      "url": "https://api.github.com/repos/Continuum-AI-Corp/OrcaBonsai-27B-Uncensored/commits/main",
+      "bytes": 10745,
+      "sha256": "5fa98acaf0aae14a00af232d711073d84efd9ebf3249a2beacd8721182ab66d5"
+    },
+    {
+      "url": "https://api.github.com/repos/Continuum-AI-Corp/OrcaBonsai-27B-Uncensored/git/trees/703028bb7fba03496e796b144839b161cf0f5409?recursive=1",
+      "bytes": 7230,
+      "sha256": "117e93d20382aca9966490480782cd015cebf397ee51ba11e5c9f56fd4990a23"
+    },
+    {
+      "url": "https://api.github.com/repos/Continuum-AI-Corp/OrcaBonsai-27B-Uncensored/releases?per_page=100",
+      "bytes": 2,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Continuum-AI-Corp/OrcaBonsai-27B-Uncensored/703028bb7fba03496e796b144839b161cf0f5409/README.md",
+      "bytes": 27704,
+      "sha256": "bc35a57d2405b78ecddca08bc0742a4b537e857b6e045b9203483d81e58d0ab8"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Continuum-AI-Corp/OrcaBonsai-27B-Uncensored/703028bb7fba03496e796b144839b161cf0f5409/scripts/export_gguf_lora.py",
+      "bytes": 13013,
+      "sha256": "7b0f11f3e550c82dda909d37833f90e65fa85d588ae8304cdf180126addab74e"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Continuum-AI-Corp/OrcaBonsai-27B-Uncensored/703028bb7fba03496e796b144839b161cf0f5409/directions/direction.json",
+      "bytes": 1458,
+      "sha256": "8aa9153e40da5840db3dd94c69adb61bd0af551dd11d6db5011a7efe52282f03"
+    },
+    {
+      "url": "https://huggingface.co/api/models?author=Continuum-AI-Corp&limit=50",
+      "bytes": 2,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "url": "https://huggingface.co/api/models/prism-ml/Ternary-Bonsai-2-27B-mlx-2bit",
+      "bytes": 20816,
+      "sha256": "22ed7f86f4ecd588ff9b878b67094ce5c59891aea94959abc8cb9189f3954d5a"
+    }
+  ],
+  "digestScope": "SHA-256 over each complete HTTP response body before text decoding. API documents are mutable observations; these digests are not claims of model evidence or durable raw-response archival.",
+  "rawResponsesRetained": false,
+  "requiredProducerHandoff": {
+    "checkpointManifest": "Immutable repository/revision and raw-file SHA-256/byte lengths for the original model.safetensors.index.json and checkpoint shards, with the original model.language_model.layers.N.linear_attn.out_proj.weight tensor identities for all 48 SSM blocks. Supply authenticated access to the original inputs or an independently reproducible source; vectors copied from the shipped adapter cannot substitute.",
+    "conversionManifest": "Original exporter revision and exact invocation, base GGUF identity, actual direction input digest, normalization procedure and output binding to approved adapter f1669534803d340a496015f5c45125f3437b4d13ec764f40e34488ce83967f42. Identify any preprocessing, unfolding, reordering or transform/sign inputs.",
+    "toolchainManifest": "The original Python, NumPy, safetensors, GGUF writer and matrix-multiplication implementation/version identities sufficient for independent reproduction of the exporter's F32 r @ W A factors.",
+    "mappingAndIndependentReproduction": "Declare the native-to-authoring 6144-channel signed permutation with native[channel] = signs[channel] * authoring[nativeToAuthoring[channel]]. Independently reproduce one 6144-element little-endian F32 A vector for each SSM block 0..63 excluding 3,7,...,63; retain per-site comparisons and native writer-input/correction evidence.",
+    "existingIntake": "The existing qualification operation basis-intake consumes these bounded manifests, approved adapter, selected direction, explicit mapping and all 48 independently reproduced A vectors. Intake integrity/comparison does not authenticate the authoring declarations or qualify native writer behavior. See docs/swift-lora.md#authoring-evidence-intake."
+  },
+  "alreadyEstablishedSeparately": {
+    "publishedDirectionConsistency": "docs/evidence/ptq1-direction-41530766802/independent-review.json",
+    "scope": "All 129 B factors agree with the selected published direction; this does not recover the missing checkpoint/conversion record or independently reproduce A."
+  },
+  "authoringProvenanceQualified": false,
+  "aFactorReproductionQualified": false,
+  "nativeWriterBasisQualified": false,
+  "defaultMayChange": false,
+  "publisherMessagesSent": 0,
+  "modelExecutions": 0,
+  "tensorPayloadDownloads": 0
+}

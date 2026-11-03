@@ -1,0 +1,10 @@
+{
+  "RunId": "41573164864",
+  "Revision": "bb020f45169b0698678ca5f789aef7af8cdc12b2",
+  "StartedTick": 1093767286723,
+  "StartedUtc": "2026-11-03T03:44:45.8573088Z",
+  "EarlierChargeSeconds": 40,
+  "MaximumSeconds": 260,
+  "ProcessCutoffSeconds": 258,
+  "ClockRestarted": false
+}

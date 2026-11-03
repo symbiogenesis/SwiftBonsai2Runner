@@ -61,6 +61,11 @@ docs/evidence/ptq1-promotion-469f57b.json -text whitespace=cr-at-eol
 docs/evidence/ptq1-promotion-469f57b-review.json -text whitespace=cr-at-eol
 docs/evidence/ptq1-promotion-469f57b/** -text whitespace=cr-at-eol
 
+# Preserve the frozen bb020f4 promotion input, policy, score and reviewed raw evidence.
+docs/evidence/ptq1-promotion-bb020f4.json -text whitespace=cr-at-eol
+docs/evidence/ptq1-promotion-bb020f4-review.json -text whitespace=cr-at-eol
+docs/evidence/ptq1-promotion-bb020f4/** -text whitespace=cr-at-eol
+
 # Keep hosted public queue ABI inputs and Rust/C control sources portable.
 tools/hexagon/windows_queue_abi.* text eol=lf
 tools/hexagon/windows-queue-abi.lock.json text eol=lf

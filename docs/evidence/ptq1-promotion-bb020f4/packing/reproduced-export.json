@@ -1,0 +1,18 @@
+{
+  "CodecCommit": "73bfe6cc485554822f80c473a3c0c4f25e80f41b",
+  "ConvertedBlocks": 209920000,
+  "ConvertedTensorCount": 402,
+  "ExactPq2ReconstructionVerified": true,
+  "MetadataChanges": "general.file_type UINT32 -> 143; PQ2 tensor type/offset fields; alignment padding normalized",
+  "NonPq2TensorBytesCopiedVerbatim": true,
+  "OutputBytes": 5946648928,
+  "OutputPath": "C:\\a\\_temp\\SwiftBonsai-Ptq1PackingData-59c96fc3e040419a9ddfabff9aa7abe0\\Swift-Bonsai-2-current-repacked-PTQ1_0.gguf",
+  "OutputSha256": "e658f0f0736a03a4549535a439f9b07254ebf8ab88ae27cbe6e52d098ca5d1f5",
+  "Qualification": "weight-symbol-and-scale parity only; PTQ1 native activation quantization, logits, quality and performance unqualified",
+  "SchemaVersion": 1,
+  "SourceBytes": 7206168928,
+  "SourceRevision": "a3bdac086bbb6b04d87d0108d18943b5f63868f7",
+  "SourceSha256": "5912bb739217cf25b4283a098c7b893d9baff36bdf2e72d3dbf4cb999d5633d5",
+  "TokenizerMetadataSha256": "4ac520292c253d0f559aa3a22de4784dee3eefec14cc0d62e2507c47063c1fe5",
+  "WorkingBufferBytes": 193202
+}

@@ -1,0 +1,12 @@
+{
+    "RunId":  "41573164864",
+    "Revision":  "bb020f45169b0698678ca5f789aef7af8cdc12b2",
+    "FoundationRunId":  "41572249082",
+    "ArtifactId":  "13201754748",
+    "ArtifactBytes":  4186086,
+    "ArtifactSha256":  "ad4e8630fe5879dd90f36f9f101604f249d0001f148d4edd15000430bba8c987",
+    "Profile":  "ptq1-pq2-complete-response-row4",
+    "OwnerMaximumSeconds":  260,
+    "EarlierChargeSeconds":  40,
+    "ModelAttempts":  1
+}

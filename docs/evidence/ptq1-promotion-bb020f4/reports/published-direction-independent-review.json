@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "kind": "independent-hosted-adapter-direction-review",
+  "recordedDate": "2026-11-02",
+  "reviewerId": "Codex:/root/review",
+  "status": "direction-consistency-confirmed",
+  "scope": "Read-only source, hosted receipt, inventory and public GitHub metadata review. No adapter comparison, model execution or qualification trial was repeated.",
+  "execution": {
+    "repository": "symbiogenesis/SwiftBonsai2Runner",
+    "revision": "6c25a5d04cbd355926d2d8c1fc26268a20bdd7bf",
+    "gitRef": "refs/heads/main",
+    "workflowPath": ".github/workflows/swift-lora-direction.yml",
+    "runId": "41530766802",
+    "runAttempt": 1,
+    "runUrl": "https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41530766802",
+    "publicApiConclusion": "success",
+    "publicApiSourceAndArtifactRunMatch": true,
+    "hostedOnlyWorkflowReviewed": true,
+    "modelExecuted": false,
+    "ownerDeviceTrialExecuted": false
+  },
+  "artifact": {
+    "id": "13182606755",
+    "name": "swift-lora-direction-41530766802-1",
+    "apiBytes": 5280,
+    "apiSha256": "c929740b27d996e33dc22beb42338bfd044bf70e70675e69356b39083830d642",
+    "archiveRehashedByThisReviewer": false,
+    "reviewedInput": "The eight extracted JSON files supplied by the parent; each raw file digest was independently recomputed. Public API metadata was fetched independently."
+  },
+  "identities": {
+    "adapterSha256": "f1669534803d340a496015f5c45125f3437b4d13ec764f40e34488ce83967f42",
+    "directionSha256": "06ab5afef2529d9302748507c85913d55dff53b7b739ccc98d8db7716ebd36b2",
+    "toolsSourceId": "eeb374ac3bfb87cabe28329488c48cd495427f77a510eb27299a971609393e29",
+    "toolSha256": "71603a93aad1c8dc6e62a35009e4d445d0d6c0bd5ab6b15dc13bf4be0147c5dc",
+    "toolchain": "nightly-2026-11-02-aarch64-pc-windows-msvc",
+    "identityAgreement": "Source/run, native intake, locks, tool receipt and comparison report agree. Reviewed workflow verifies the executable digest/source identity before invoking the exact-input comparator."
+  },
+  "comparison": {
+    "equation": "B[channel] = -selectedDirection[channel]",
+    "uniqueExpectedSites": 129,
+    "inventory": { "embedding": 1, "ffnDown": 64, "attentionOutput": 16, "ssmOutput": 48 },
+    "channelsPerSite": 5120,
+    "comparedChannels": 660480,
+    "mismatchedChannels": 0,
+    "maximumAbsoluteDifference": 0.0,
+    "directionL2Norm": 1.0000000040271313,
+    "directionL2NormTolerance": 0.00001,
+    "absoluteTolerance": 0.000001,
+    "relativeTolerance": 0.000001,
+    "allShippedBSha256": "1cdf553ae2623501140ec2e52c3dfa6a80d33fcfe6f91a6d3c4dcd5f887eeca0",
+    "review": "Independently reconstructed the complete expected site-name set, rejected duplicate/missing/extra names, and checked every site's channel count, mismatch count, difference and B digest. The sign matches both embedding and projection branches of the immutable publisher exporter."
+  },
+  "verifiedFiles": [
+    { "file": "adapter-intake.json", "bytes": 228, "sha256": "e62178469b87d28ae4a8490b2330315e4af27b0abd80bcc58181b18f811b30db" },
+    { "file": "attempt.json", "bytes": 236, "sha256": "b2da2dfa21b92f14565321bafc3655a8c09ada310f63ffa464d17409f8873461" },
+    { "file": "direction-comparison.json", "bytes": 26130, "sha256": "3811f7f384de29d6176f1a9d9c9434347708df0bba5d1598f6c099d11d93009a" },
+    { "file": "direction-intake.json", "bytes": 219, "sha256": "2b34e1052b3d81b9bd34f78f53efa62253d622401d83359e976ca73126d93b7f" },
+    { "file": "source-run.json", "bytes": 764, "sha256": "64b09ac25163fd63f0da4dec174599c3ac1c3e0683e1d9b3a8e57008c0663882" },
+    { "file": "swift-lora.direction.json", "bytes": 1275, "sha256": "b579baa8777d557aab9ae9e8db50d2103ee823729e308a6d9d4cd361afba93ff" },
+    { "file": "swift-lora.lock.json", "bytes": 2826, "sha256": "84bf87bd873a372ebd943dae81d3300d74ec09055d6c5fe0628873d3863ae74a" },
+    { "file": "tools-receipt.json", "bytes": 340, "sha256": "7724818c9be0b6a916e3590f737d712f60081088d97d3dbe950b5e779a57f112" }
+  ],
+  "authoringProvenanceQualified": false,
+  "aFactorReproductionQualified": false,
+  "nativeWriterBasisQualified": false,
+  "modelBehaviorQualified": false,
+  "humanQualityReviewed": false,
+  "defaultMayChange": false,
+  "remaining": "Authentic authoring checkpoint/conversion binding, A-factor reproduction, all-site native writer ordering, numerical/application/quality/resource/isolation and promotion gates remain pending."
+}

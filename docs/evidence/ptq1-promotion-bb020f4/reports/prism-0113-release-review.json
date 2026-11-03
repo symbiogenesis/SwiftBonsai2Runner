@@ -1,0 +1,459 @@
+{
+  "schemaVersion": 1,
+  "kind": "independent-prism-0.1.13-release-data-review",
+  "recordedDate": "2026-11-02",
+  "reviewer": "Codex:/root/review",
+  "status": "independently-reviewed-published-release-data",
+  "observedAtUtc": "2026-11-02T22:44:19.272123+00:00",
+  "sourceRevision": "cae16fa6998dac58a947eba9ae4398ed6a9fb863",
+  "version": "0.1.13",
+  "method": "Independent Python standard-library SHA-256, exact ZIP inventory, raw PE headers, TOML manifest/lock parsing, source ZIP bytes matched to every Git blob, normalized Cargo archives and clean package VCS identity; authenticated GitHub API run/job/artifact metadata and independently rehashed artifact ZIPs. No shipped executable or model code executed.",
+  "source": {
+    "bytes": 4427219,
+    "sha256": "3e87cec0245784a586565612c8122d3aba5f207a53532ddcc5de2797a2643a21",
+    "url": "https://github.com/symbiogenesis/prism-inference/archive/cae16fa6998dac58a947eba9ae4398ed6a9fb863.zip",
+    "entries": 692,
+    "allArchiveFileBytesMatchExactCommitGitBlobs": true,
+    "manifestsLockCompilerAndFoundationVersionMatch": true
+  },
+  "owningChecks": [
+    {
+      "name": "Foundation",
+      "runId": "41535008224",
+      "runAttempt": 1,
+      "url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008224",
+      "event": "push",
+      "branch": "main",
+      "sourceRevision": "cae16fa6998dac58a947eba9ae4398ed6a9fb863",
+      "status": "completed",
+      "conclusion": "success",
+      "jobs": 15,
+      "completedJobs": 15,
+      "everyJobSuccessful": true
+    },
+    {
+      "name": "Runtime conformance",
+      "runId": "41535008203",
+      "runAttempt": 1,
+      "url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008203",
+      "event": "push",
+      "branch": "main",
+      "sourceRevision": "cae16fa6998dac58a947eba9ae4398ed6a9fb863",
+      "status": "completed",
+      "conclusion": "success",
+      "jobs": 58,
+      "completedJobs": 58,
+      "everyJobSuccessful": true
+    },
+    {
+      "name": "Source package",
+      "runId": "41535008364",
+      "runAttempt": 1,
+      "url": "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008364",
+      "event": "push",
+      "branch": "main",
+      "sourceRevision": "cae16fa6998dac58a947eba9ae4398ed6a9fb863",
+      "status": "completed",
+      "conclusion": "success",
+      "jobs": 3,
+      "completedJobs": 3,
+      "everyJobSuccessful": true
+    }
+  ],
+  "allRequiredOwningChecksSuccessful": true,
+  "downloadedArtifacts": [
+    {
+      "id": "13184196588",
+      "name": "prism-inference-0.1.13-aarch64-pc-windows-msvc",
+      "bytes": 3183048,
+      "sha256": "9b871a1d1a5859d828320b881a6f25ed20448c358aed3ccd3543478e62596d46",
+      "apiDigestIndependentlyVerified": true,
+      "sourceRevision": "cae16fa6998dac58a947eba9ae4398ed6a9fb863",
+      "runId": "41535008224",
+      "runAttempt": 1
+    },
+    {
+      "id": "13183407611",
+      "name": "prism-inference-0.1.13-x86_64-pc-windows-msvc",
+      "bytes": 3456171,
+      "sha256": "b96a607b05d8747d8c71086ad4b0d3a7b17bababf41fe895e402502ae96c18e4",
+      "apiDigestIndependentlyVerified": true,
+      "sourceRevision": "cae16fa6998dac58a947eba9ae4398ed6a9fb863",
+      "runId": "41535008224",
+      "runAttempt": 1
+    },
+    {
+      "id": "13184950196",
+      "name": "source-package-x86_64-pc-windows-msvc-41535008364-1",
+      "bytes": 3454577,
+      "sha256": "5c68733258871f93ea5cfc10666beff92464377c7e039f6f6a7dfbeb690cea0e",
+      "apiDigestIndependentlyVerified": true,
+      "sourceRevision": "cae16fa6998dac58a947eba9ae4398ed6a9fb863",
+      "runId": "41535008364",
+      "runAttempt": 1
+    },
+    {
+      "id": "13183317379",
+      "name": "source-package-aarch64-unknown-linux-gnu-41535008364-1",
+      "bytes": 3437771,
+      "sha256": "39b23c95713d60ea4becfd9872cb9d076aef2516cc695e84d26d20e21bde25bb",
+      "apiDigestIndependentlyVerified": true,
+      "sourceRevision": "cae16fa6998dac58a947eba9ae4398ed6a9fb863",
+      "runId": "41535008364",
+      "runAttempt": 1
+    },
+    {
+      "id": "13183133895",
+      "name": "source-package-aarch64-pc-windows-msvc-41535008364-1",
+      "bytes": 3454576,
+      "sha256": "2715677253327e99f8b50655dad38d90820f4e07c8ca4951d8c38ca5b16f87ce",
+      "apiDigestIndependentlyVerified": true,
+      "sourceRevision": "cae16fa6998dac58a947eba9ae4398ed6a9fb863",
+      "runId": "41535008364",
+      "runAttempt": 1
+    }
+  ],
+  "foundationArchives": [
+    {
+      "target": "aarch64-pc-windows-msvc",
+      "archive": {
+        "name": "prism-inference-0.1.13-aarch64-pc-windows-msvc.zip",
+        "bytes": 3217665,
+        "sha256": "3b1f310cbfafd592375756600c261bdafcfc94ab1bac8f34c69ef7038167096a"
+      },
+      "receipt": {
+        "name": "prism-inference-0.1.13-aarch64-pc-windows-msvc.receipt.json",
+        "bytes": 1978,
+        "sha256": "dda3a05c50b9967642d7a0d43a9f65ee7171c7f72fcb6f3c349db5675a445434"
+      },
+      "receiptSourceRunCompilerAndTargetMatch": true,
+      "exactNineFileInventoryAndAllHashesMatchReceipt": true,
+      "files": [
+        {
+          "name": "bonsai-gguf.exe",
+          "bytes": 441856,
+          "sha256": "2be1349cdb56959dbbc41f9afbe03180601d1ea67b68f2dafa442df4451734bf",
+          "peMachine": "0xAA64"
+        },
+        {
+          "name": "bonsai-swift-worker.exe",
+          "bytes": 1541632,
+          "sha256": "9fcc8c2666ec024cb8bb28c42b604b33388c261f39f2fd3c05d2a8613ac2300d",
+          "peMachine": "0xAA64"
+        },
+        {
+          "name": "bonsai-token-worker.exe",
+          "bytes": 507904,
+          "sha256": "66b2800684fecac6680182a4735fe6f6927640f3dfdff903f325f0542dca80ab",
+          "peMachine": "0xAA64"
+        },
+        {
+          "name": "CAMELID-LICENSE.txt",
+          "bytes": 1087,
+          "sha256": "cfd0bfa3c3f54585039a58a2dd86a0541b15c29e9f825d244c6f3f0d7c771015",
+          "matchesSourceLicenseAfterCrLfNormalization": true
+        },
+        {
+          "name": "LICENSE",
+          "bytes": 11560,
+          "sha256": "3ddf9be5c28fe27dad143a5dc76eea25222ad1dd68934a047064e56ed2fa40c5",
+          "matchesSourceLicenseAfterCrLfNormalization": true
+        },
+        {
+          "name": "NOTICE",
+          "bytes": 2369,
+          "sha256": "e3b6278bbba57b0bb62cb830facd20c2ca347fdbd655be87b83a78b2a4d42a6b",
+          "matchesSourceLicenseAfterCrLfNormalization": true
+        },
+        {
+          "name": "prism-inference-server.exe",
+          "bytes": 2066944,
+          "sha256": "62bdf31962864b11e530aaae50da2c0a6b36cb651110080e5bf3f08f8d2713f4",
+          "peMachine": "0xAA64"
+        },
+        {
+          "name": "prism-inference.exe",
+          "bytes": 998912,
+          "sha256": "9064615b6382eaa0975e9840962cbaeb6e6bdf23a2e4f5d5be9cd3f9dead1531",
+          "peMachine": "0xAA64"
+        },
+        {
+          "name": "PRISM-LICENSE.txt",
+          "bytes": 1099,
+          "sha256": "bcd8ec749126d45cb06737d0690295d73df4b6e7e194205bcf91190368f27285",
+          "matchesSourceLicenseAfterCrLfNormalization": true
+        }
+      ]
+    },
+    {
+      "target": "x86_64-pc-windows-msvc",
+      "archive": {
+        "name": "prism-inference-0.1.13-x86_64-pc-windows-msvc.zip",
+        "bytes": 3494120,
+        "sha256": "fc49a4ed10287e1bfd0018f33d77ae8cf9de9e7e4bf0fd21e96c585b8740e338"
+      },
+      "receipt": {
+        "name": "prism-inference-0.1.13-x86_64-pc-windows-msvc.receipt.json",
+        "bytes": 1976,
+        "sha256": "e41a15bf1622da21a857dfbe9c9218c47f67bfc6b54634b22146fcd1590d51f0"
+      },
+      "receiptSourceRunCompilerAndTargetMatch": true,
+      "exactNineFileInventoryAndAllHashesMatchReceipt": true,
+      "files": [
+        {
+          "name": "bonsai-gguf.exe",
+          "bytes": 514048,
+          "sha256": "a668a89e28fc36405bc1d02dbaa9d4cddbbaaf20d6665c90d4f4be4bb0342354",
+          "peMachine": "0x8664"
+        },
+        {
+          "name": "bonsai-swift-worker.exe",
+          "bytes": 1845248,
+          "sha256": "8ea4905b0a4707eb3584fd158be8e5778db344bb82ee5e785fd37ae4a42d046f",
+          "peMachine": "0x8664"
+        },
+        {
+          "name": "bonsai-token-worker.exe",
+          "bytes": 585728,
+          "sha256": "fe768ad1f734ad4ed2260881c0308e6bc9354f9353d9774cec066efabfd8b518",
+          "peMachine": "0x8664"
+        },
+        {
+          "name": "CAMELID-LICENSE.txt",
+          "bytes": 1087,
+          "sha256": "cfd0bfa3c3f54585039a58a2dd86a0541b15c29e9f825d244c6f3f0d7c771015",
+          "matchesSourceLicenseAfterCrLfNormalization": true
+        },
+        {
+          "name": "LICENSE",
+          "bytes": 11560,
+          "sha256": "3ddf9be5c28fe27dad143a5dc76eea25222ad1dd68934a047064e56ed2fa40c5",
+          "matchesSourceLicenseAfterCrLfNormalization": true
+        },
+        {
+          "name": "NOTICE",
+          "bytes": 2369,
+          "sha256": "e3b6278bbba57b0bb62cb830facd20c2ca347fdbd655be87b83a78b2a4d42a6b",
+          "matchesSourceLicenseAfterCrLfNormalization": true
+        },
+        {
+          "name": "prism-inference-server.exe",
+          "bytes": 2427904,
+          "sha256": "02010d89b2cd7ae3948bae654358f52e1ed0f860c2a4176511488f1ff7f7c333",
+          "peMachine": "0x8664"
+        },
+        {
+          "name": "prism-inference.exe",
+          "bytes": 1184768,
+          "sha256": "612fc6e2ba4a91458580c5adcaffe4d01db239cf06ec59be53c221c060d2539e",
+          "peMachine": "0x8664"
+        },
+        {
+          "name": "PRISM-LICENSE.txt",
+          "bytes": 1099,
+          "sha256": "bcd8ec749126d45cb06737d0690295d73df4b6e7e194205bcf91190368f27285",
+          "matchesSourceLicenseAfterCrLfNormalization": true
+        }
+      ]
+    }
+  ],
+  "sourcePackageArtifacts": [
+    {
+      "target": "aarch64-pc-windows-msvc",
+      "receipt": {
+        "bytes": 863,
+        "sha256": "f44f2096b6979f3057d5f80965b063d46a41e7ee29ae8fa0b89157acda8fce18"
+      },
+      "commands": {
+        "bytes": 1149,
+        "sha256": "b416305781c69885fb5b8f662bc7bdf835348aec505c3842c11ad5ee90bf11e7"
+      },
+      "packages": [
+        {
+          "name": "bonsai-native-hash",
+          "version": "0.1.0",
+          "bytes": 6817,
+          "sha256": "963eba9bb29995e3421421c9b7241f7258ec54f9d751b182c2e23e653cf5e387"
+        },
+        {
+          "name": "bonsai-gguf",
+          "version": "0.1.1",
+          "bytes": 38225,
+          "sha256": "b928b70e26a1def993f84c6035c420f57190dd2e0186079fca8fa4cd11b04ae7"
+        },
+        {
+          "name": "prism-inference",
+          "version": "0.1.13",
+          "bytes": 3436346,
+          "sha256": "a856009ceac0e4af122d6ebea7ed22a44edfa0e5d50b559fdd5ba671c8252635"
+        }
+      ],
+      "normalizedManifestsAndCleanVcsRevisionVerified": true,
+      "allPackageHashesMatchReceipt": true,
+      "retainedCommandsMatchPinnedCompilerAndThreeConsumerVariants": true
+    },
+    {
+      "target": "x86_64-pc-windows-msvc",
+      "receipt": {
+        "bytes": 863,
+        "sha256": "f44f2096b6979f3057d5f80965b063d46a41e7ee29ae8fa0b89157acda8fce18"
+      },
+      "commands": {
+        "bytes": 1149,
+        "sha256": "6864d03e8f7c2d6c80ec4c63b33c9e75410b22f58cad0606c0737d1b81f9693b"
+      },
+      "packages": [
+        {
+          "name": "bonsai-native-hash",
+          "version": "0.1.0",
+          "bytes": 6817,
+          "sha256": "963eba9bb29995e3421421c9b7241f7258ec54f9d751b182c2e23e653cf5e387"
+        },
+        {
+          "name": "bonsai-gguf",
+          "version": "0.1.1",
+          "bytes": 38225,
+          "sha256": "b928b70e26a1def993f84c6035c420f57190dd2e0186079fca8fa4cd11b04ae7"
+        },
+        {
+          "name": "prism-inference",
+          "version": "0.1.13",
+          "bytes": 3436346,
+          "sha256": "a856009ceac0e4af122d6ebea7ed22a44edfa0e5d50b559fdd5ba671c8252635"
+        }
+      ],
+      "normalizedManifestsAndCleanVcsRevisionVerified": true,
+      "allPackageHashesMatchReceipt": true,
+      "retainedCommandsMatchPinnedCompilerAndThreeConsumerVariants": true
+    },
+    {
+      "target": "aarch64-unknown-linux-gnu",
+      "receipt": {
+        "bytes": 830,
+        "sha256": "92862210baf61f953c6962dafaf7bd9a85481ff7547fb2c3aef51e12cb80fea6"
+      },
+      "commands": {
+        "bytes": 1135,
+        "sha256": "aff1927666e42fddeb3855eb5fdf2038ea9959e3a0f7460c10c7d3d196e44baa"
+      },
+      "packages": [
+        {
+          "name": "bonsai-native-hash",
+          "version": "0.1.0",
+          "bytes": 6767,
+          "sha256": "204164fa17c7d04494ba0312d239c0b0f7f9c2a7aa3291a736ffaba19e355a2f"
+        },
+        {
+          "name": "bonsai-gguf",
+          "version": "0.1.1",
+          "bytes": 37923,
+          "sha256": "e6bcdf51368e55adfc4a3842ca7470222139e14631317fe5fb97348caca37767"
+        },
+        {
+          "name": "prism-inference",
+          "version": "0.1.13",
+          "bytes": 3420042,
+          "sha256": "78b5424b8c4a864679b22d8e4f192e13394fb566bd889ded52db70fb29ea9688"
+        }
+      ],
+      "normalizedManifestsAndCleanVcsRevisionVerified": true,
+      "allPackageHashesMatchReceipt": true,
+      "retainedCommandsMatchPinnedCompilerAndThreeConsumerVariants": true
+    }
+  ],
+  "reviewedSourceDelta": {
+    "baseVersion": "0.1.12",
+    "baseRevision": "c48687616f55eec9aff0de04860917de3e1047f2",
+    "ordinaryCpuProjectionArithmeticChanged": false,
+    "adapterOrderScaleAndProfileOwnershipChanged": false,
+    "graphStateCommitCheckpointAndRestoreChanged": false,
+    "wireProtocolsChanged": false,
+    "cpuBinaryDependencyGraphChanged": false,
+    "startupChange": "Retains one complete immutable-payload validation pass and removes duplicate projection-binding scans; PTQ1 extent and finite-scale validation remains.",
+    "runtimeChange": "Optional timing wrappers preserve sampler/model/callback/recovery ordering; ordinary calls add no attribution clocks. The new bounded-work hook defaults to success for CPU Qwen35; existing nonempty-prompt/context checks make its count overflow unreachable for admitted CPU work.",
+    "experimentalNativeExecution": "Explicit projection wrapper and unpublished Hexagon helper crates remain outside the five CPU executables; no accelerator profile is selected.",
+    "productionRecurrentArithmetic": "Existing copy-then-scale sequence retained; proposed fused update remains test-only."
+  },
+  "scope": {
+    "runtimeExecuted": false,
+    "modelExecuted": false,
+    "ownerDeviceBenchmarkExecuted": false,
+    "speedupMeasured": false,
+    "actualModelQualificationTransferred": false,
+    "adapterAuthoringProvenanceQualified": false,
+    "ptq1DefaultQualified": false,
+    "acceleratorQualified": false,
+    "registryPublicationVerified": false,
+    "runnerRepinVerified": false,
+    "defaultMayChange": false,
+    "remainingRequirements": "Runner integration and existing actual-model, resource, provenance, quality and isolation requirements remain separate. Publishing these reviewed bytes does not qualify PTQ1 or change defaults."
+  },
+  "releaseUrl": "https://github.com/symbiogenesis/prism-inference/releases/tag/v0.1.13",
+  "artifactVerification": {
+    "bothArchiveAndReceiptPairsDownloadedFromExactFoundationRun": true,
+    "allDownloadedArtifactZipHashesMatchGitHubApiDigests": true,
+    "allArchivesAndBundledFilesMatchSourceRunBoundReceipts": true,
+    "exactNineFileInventoryPerBundle": true,
+    "allTenExecutablePeTargetsMatch": true,
+    "allFourLicenseFilesPerBundleMatchSourceAfterCrLfNormalization": true,
+    "sourceManifestsLockAndCompilerMatch": true,
+    "rootAndServerParallelRowsEnabledInExactSourceFoundationBuild": true,
+    "sourcePackageThreeTargetsAndConsumerCommandsVerified": true,
+    "publishedTagAndAssetsVerified": true
+  },
+  "publicationVerification": {
+    "observedAtUtc": "2026-11-02T22:44:19.272123+00:00",
+    "releaseId": "432047824",
+    "releaseUrl": "https://github.com/symbiogenesis/prism-inference/releases/tag/v0.1.13",
+    "publishedAtUtc": "2026-11-02T22:43:30Z",
+    "draft": false,
+    "prerelease": false,
+    "tag": "refs/tags/v0.1.13",
+    "tagObjectType": "commit",
+    "tagCommit": "cae16fa6998dac58a947eba9ae4398ed6a9fb863",
+    "tagCommitMatchesReviewedSource": true,
+    "releaseNotesLinkAllThreeSuccessfulOwningRuns": true,
+    "allFourPublishedAssetsDownloadedAndRehashed": true,
+    "allFourPublishedAssetsByteIdenticalToFoundationArtifacts": true,
+    "assets": [
+      {
+        "assetId": "703430658",
+        "name": "prism-inference-0.1.13-aarch64-pc-windows-msvc.receipt.json",
+        "bytes": 1978,
+        "sha256": "dda3a05c50b9967642d7a0d43a9f65ee7171c7f72fcb6f3c349db5675a445434",
+        "url": "https://github.com/symbiogenesis/prism-inference/releases/download/v0.1.13/prism-inference-0.1.13-aarch64-pc-windows-msvc.receipt.json",
+        "downloadMatchesGitHubApiDigest": true,
+        "byteIdenticalToPreviouslyReviewedFoundationFile": true
+      },
+      {
+        "assetId": "703430659",
+        "name": "prism-inference-0.1.13-aarch64-pc-windows-msvc.zip",
+        "bytes": 3217665,
+        "sha256": "3b1f310cbfafd592375756600c261bdafcfc94ab1bac8f34c69ef7038167096a",
+        "url": "https://github.com/symbiogenesis/prism-inference/releases/download/v0.1.13/prism-inference-0.1.13-aarch64-pc-windows-msvc.zip",
+        "downloadMatchesGitHubApiDigest": true,
+        "byteIdenticalToPreviouslyReviewedFoundationFile": true
+      },
+      {
+        "assetId": "703430661",
+        "name": "prism-inference-0.1.13-x86_64-pc-windows-msvc.receipt.json",
+        "bytes": 1976,
+        "sha256": "e41a15bf1622da21a857dfbe9c9218c47f67bfc6b54634b22146fcd1590d51f0",
+        "url": "https://github.com/symbiogenesis/prism-inference/releases/download/v0.1.13/prism-inference-0.1.13-x86_64-pc-windows-msvc.receipt.json",
+        "downloadMatchesGitHubApiDigest": true,
+        "byteIdenticalToPreviouslyReviewedFoundationFile": true
+      },
+      {
+        "assetId": "703430656",
+        "name": "prism-inference-0.1.13-x86_64-pc-windows-msvc.zip",
+        "bytes": 3494120,
+        "sha256": "fc49a4ed10287e1bfd0018f33d77ae8cf9de9e7e4bf0fd21e96c585b8740e338",
+        "url": "https://github.com/symbiogenesis/prism-inference/releases/download/v0.1.13/prism-inference-0.1.13-x86_64-pc-windows-msvc.zip",
+        "downloadMatchesGitHubApiDigest": true,
+        "byteIdenticalToPreviouslyReviewedFoundationFile": true
+      }
+    ],
+    "runtimeExecuted": false,
+    "modelExecuted": false
+  }
+}

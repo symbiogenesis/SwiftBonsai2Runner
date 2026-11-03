@@ -1,0 +1,78 @@
+{
+  "defaultMayChange": false,
+  "elapsedSeconds": 462.1406434,
+  "execution": {
+    "architecture": "ARM64",
+    "deviceModel": "GitHub-hosted Windows ARM64",
+    "gitRef": "refs/heads/main",
+    "repository": "symbiogenesis/SwiftBonsai2Runner",
+    "revision": "bb020f45169b0698678ca5f789aef7af8cdc12b2",
+    "runAttempt": 1,
+    "runId": "41573364524",
+    "selfHosted": false
+  },
+  "expectedExportReceiptSha256": "c184dea2089127201a15595af86e61005ec5b3f9c14e8089fee5c8f630a762d5",
+  "exporterRuntime": {
+    "archiveSha256": "3b1f310cbfafd592375756600c261bdafcfc94ab1bac8f34c69ef7038167096a",
+    "gguf": [
+      {
+        "bytes": 441856,
+        "name": "bonsai-gguf.exe",
+        "sha256": "2be1349cdb56959dbbc41f9afbe03180601d1ea67b68f2dafa442df4451734bf"
+      }
+    ],
+    "revision": "cae16fa6998dac58a947eba9ae4398ed6a9fb863"
+  },
+  "kind": "hosted-current-weight-ptq1-packing-qualification",
+  "limits": {
+    "exporterProcessSeconds": 600,
+    "independentProcessSeconds": 305,
+    "independentVerificationSeconds": 300,
+    "originalDownloadSeconds": 1800,
+    "retries": 0,
+    "runtimeDownloadSeconds": 120,
+    "workflowJobMinutes": 60,
+    "workflowStepMinutes": 50
+  },
+  "maintenanceTool": {
+    "bytes": 6201856,
+    "sha256": "e2992ea9aad36daeac0c2dc864362b8cd89296aeff154b5c2f681b891560199a",
+    "sourceId": "5d2539968cbef5e02a16705974aee5e2c4d5ffec1982473bfb3e078916bea142"
+  },
+  "modelProcessStarted": false,
+  "ownerDeviceExecuted": false,
+  "phase": "complete",
+  "phaseDurations": [
+    {
+      "elapsedSeconds": 0.1081433,
+      "phase": "intake",
+      "startedElapsedSeconds": 0.0
+    },
+    {
+      "elapsedSeconds": 133.6843238,
+      "phase": "original-pq2-download",
+      "startedElapsedSeconds": 0.1081433
+    },
+    {
+      "elapsedSeconds": 0.6450052,
+      "phase": "pinned-exporter-provisioning",
+      "startedElapsedSeconds": 133.7924671
+    },
+    {
+      "elapsedSeconds": 94.8809867,
+      "phase": "ptq1-reproduction",
+      "startedElapsedSeconds": 134.4374723
+    },
+    {
+      "elapsedSeconds": 232.8164659,
+      "phase": "independent-complete-packing",
+      "startedElapsedSeconds": 229.318459
+    }
+  ],
+  "phaseStartedElapsedSeconds": 462.1349249,
+  "runUrl": "https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41573364524/attempts/1",
+  "schemaVersion": 1,
+  "scope": "Complete weight packing only. Activation, logits, live state, adapter basis, quality, resources and performance remain separate gates.",
+  "status": "matched",
+  "workflowPath": ".github/workflows/ptq1-packing-qualification.yml"
+}

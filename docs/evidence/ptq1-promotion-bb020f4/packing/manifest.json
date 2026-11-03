@@ -1,0 +1,27 @@
+{
+  "files": [
+    {
+      "bytes": 1165,
+      "file": "expected-export.json",
+      "sha256": "c184dea2089127201a15595af86e61005ec5b3f9c14e8089fee5c8f630a762d5"
+    },
+    {
+      "bytes": 862,
+      "file": "independent-packing.json",
+      "sha256": "1e7522d09619ef356674abb0b0b999e05c53d54629c4936f288d48a89033f6af"
+    },
+    {
+      "bytes": 2575,
+      "file": "qualification.json",
+      "sha256": "1c19bc0ad2181733ef53f8b79f2ad8a92b3525b4aa59aac93638e9dad15ad3e1"
+    },
+    {
+      "bytes": 1052,
+      "file": "reproduced-export.json",
+      "sha256": "9b6938bd53bafcfc3c5eaddda10ea42457d2adec3e9e16f906f4dee16596da4c"
+    }
+  ],
+  "revision": "bb020f45169b0698678ca5f789aef7af8cdc12b2",
+  "runId": "41573364524",
+  "schemaVersion": 1
+}

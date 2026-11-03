@@ -1,0 +1,22 @@
+{
+  "SchemaVersion": 1,
+  "Revision": "bb020f45169b0698678ca5f789aef7af8cdc12b2",
+  "RunId": "41573164864",
+  "RunAttempt": "1",
+  "Toolchain": "nightly-2026-11-02-aarch64-pc-windows-msvc",
+  "CompilerIdentity": "rustc 1.101.0-nightly (3e92e1a2d 2026-11-01)\nbinary: rustc\ncommit-hash: 3e92e1a2d20b991ef23a6c6064c34d57ee8c98d3\ncommit-date: 2026-11-01\nhost: aarch64-pc-windows-msvc\nrelease: 1.101.0-nightly\nLLVM version: 23.1.5",
+  "ToolsSourceId": "5d2539968cbef5e02a16705974aee5e2c4d5ffec1982473bfb3e078916bea142",
+  "Files": [
+    {
+      "Name": "native-model-acceptance.exe",
+      "Bytes": 3877376,
+      "Sha256": "8d098c4b3af41ba2157741726b676207a3792d45cbb63827e27337d9cf8d4b08"
+    },
+    {
+      "Name": "bonsai-tools.exe",
+      "Bytes": 6201856,
+      "Sha256": "d1552f19c5a84f6c9325b0fdc2baac10df844495a0f342f376a7c22d1d569afb"
+    }
+  ],
+  "ModelExecuted": false
+}
