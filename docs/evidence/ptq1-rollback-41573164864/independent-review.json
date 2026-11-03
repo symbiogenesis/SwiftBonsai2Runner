@@ -120,7 +120,8 @@
     "resourceAccountingDomainsNonAdditive": true,
     "pairedBenefitGateQualified": false,
     "fullResourceGateQualified": false,
-    "scope": "One fixed-order tree-name feasibility pair. PTQ1 was slower for this request. Lower bounded Job/private/resident observations do not establish reviewed capacity benefit, stable repeated latency, decode TPS, full-context resources or paging."
+    "scope": "One fixed-order tree-name feasibility pair. PTQ1 was slower for this request. Lower bounded Job/private/resident observations do not establish reviewed capacity benefit, stable repeated latency, decode TPS, full-context resources or paging.",
+    "powerComparisonEligible": false
   },
   "cleanup": {
     "bothOwnedJobsEmpty": true,
@@ -238,5 +239,30 @@
   ],
   "defaultPromotionQualified": false,
   "experimentalLabelRemovalQualified": false,
-  "additionalDeviceExecutionsByReviewer": 0
+  "additionalDeviceExecutionsByReviewer": 0,
+  "executedOwnerSourceHashesVerifiedAgainstPretrialReview": [
+    {
+      "file": "Invoke-TemporaryPtq1LifecycleOwner.ps1",
+      "bytes": 42605,
+      "sha256": "88956e7328842cf8936e62f0461ef95f47800f7c9a8d5d682d3e2cf50a2b79bc"
+    },
+    {
+      "file": "session-owner-intake.ps1",
+      "bytes": 20363,
+      "sha256": "d7e1deede4033e691e2706a39529296947d24c67571bf590e638d03279365f3f"
+    },
+    {
+      "file": "Invoke-GuardedRollbackSession.ps1",
+      "bytes": 9364,
+      "sha256": "a7abca7e06c0be95eb835ec7d7690efd1264a9f8a28a11a4efea31c4b6b7d41b"
+    }
+  ],
+  "powerConditions": {
+    "acOrBatteryDuringTrial": "unknown-not-recorded",
+    "powerSourceReceiptCaptured": false,
+    "powerComparisonEligible": false,
+    "livePowerReadAfterClosedClock": false,
+    "performanceInference": "The observed request-latency ratio1.9438936570954222 and lower bounded Job commitment are uncontrolled observations only. No AC/battery condition can be inferred retrospectively. Original PQ2 rollback correctness remains passed; no latency, energy, capacity or performance gate is qualified.",
+    "ownerSteering": "Later owner instruction requires AC power as a factor for future laptop trials; it does not supply the missing historical observation."
+  }
 }
