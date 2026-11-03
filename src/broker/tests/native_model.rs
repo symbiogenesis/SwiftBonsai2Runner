@@ -1,6 +1,13 @@
 //! Opt-in actual-model application acceptance. Ordinary suites never load weights.
 #![cfg(windows)]
 #![forbid(unsafe_code)]
+#![cfg_attr(
+    windows,
+    expect(
+        clippy::future_not_send,
+        reason = "Acceptance observers intentionally share thread-confined Rc/RefCell response capture and native hash state; current-thread runtimes, LocalSet and spawn_local never transfer these futures between threads."
+    )
+)]
 #![expect(
     clippy::unwrap_used,
     reason = "Acceptance assertions must fail loudly."
@@ -87,11 +94,13 @@ fn whole_job_budget() -> Duration {
 }
 
 fn maximum_case_budget() -> Duration {
-    whole_job_budget() - Duration::from_secs(60)
+    whole_job_budget()
+        .checked_sub(Duration::from_secs(60))
+        .unwrap()
 }
 
 fn case_budget_setting(setting: Option<&str>, whole_job: Option<&str>) -> Option<Duration> {
-    let maximum = whole_job_budget_setting(whole_job)? - Duration::from_secs(60);
+    let maximum = whole_job_budget_setting(whole_job)?.checked_sub(Duration::from_secs(60))?;
     let setting = setting?;
     if setting.is_empty() || !setting.bytes().all(|byte| byte.is_ascii_digit()) {
         return None;
