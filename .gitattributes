@@ -141,3 +141,4 @@ docs/evidence/ptq1-context-publication-014/** -text -whitespace
 
 # Preserve the closed development-default validation and delivery receipt bytes.
 docs/evidence/rust-development-default-20261103/** -text whitespace=cr-at-eol
+docs/evidence/speed-four-source-20261103/** -text
