@@ -1,0 +1,106 @@
+{
+  "schemaVersion": 1,
+  "kind": "independent-hosted-retained-ptq1-capture-integrity-review",
+  "recordedDate": "2026-11-02",
+  "reviewerId": "Codex:/root/promotion_review",
+  "status": "passed-selected-retained-numerical-data-integrity-and-replay",
+  "scope": "Authenticated CI metadata and23,707byte report archive review only. No original numerical payload download/hash, comparator run, model, checker, owner or device diagnostic executed locally by this reviewer.",
+  "auditExecution": {
+    "workflowPath": ".github/workflows/ptq1-retained-numerics-audit.yml",
+    "conclusion": "success",
+    "newModelExecuted": false,
+    "jobId": "125704077986",
+    "repository": "symbiogenesis/SwiftBonsai2Runner",
+    "runAttempt": 1,
+    "runId": "41571150128",
+    "runUrl": "https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41571150128/attempts/1",
+    "revision": "28bd3678a237f81296b6623e2c684b3cd22abb44",
+    "status": "completed",
+    "sixSyntheticControlsSucceeded": true,
+    "ownerDeviceExecuted": false,
+    "hostedLabel": "ubuntu-24.04",
+    "originalComparatorReplaySucceeded": true,
+    "jobName": "audit",
+    "cloudScratchCleanupSucceeded": true
+  },
+  "reportArtifact": {
+    "reports": [
+      {
+        "file": "audit.json",
+        "bytes": 1500,
+        "sha256": "d3e69357cfc7b847e61dae0fee1449218fb506c465547c478b65b918fecfaa92"
+      },
+      {
+        "file": "manifest.json",
+        "bytes": 26601,
+        "sha256": "0af15c100d08b1aaeda55f3d81a44a37277f66937d07c613e9df3a41b0c60355"
+      },
+      {
+        "file": "original-comparison.json",
+        "bytes": 36328,
+        "sha256": "81b84989e43cf6433c2d548bc0c80e7ff926a16bcf5753f5bc9b63ed7b98a23e"
+      },
+      {
+        "file": "producer.json",
+        "bytes": 26068,
+        "sha256": "dd740435f37fe6bc6f17e443f85a8ec0cf03a759c539cc396e915bd0261cab0a"
+      },
+      {
+        "file": "replayed-comparison.json",
+        "bytes": 35249,
+        "sha256": "dfb9e7c4a02ace08d5ad0a7c9f7bc1c8d2d2d36773dd8c0695d87a4670db9e7e"
+      }
+    ],
+    "originalMemberBytesRetained": true,
+    "bytes": 23707,
+    "apiAndDownloadedArchiveDigestMatched": true,
+    "id": "13201432534",
+    "name": "ptq1-retained-numerics-audit-41571150128-1",
+    "sha256": "10b5a2c158b39eb967ba39107796ab1f17a1b87393f9fc67f47b54addd944016",
+    "exactlyFiveBoundedJsonMembers": true
+  },
+  "originalCapture": {
+    "adapterScale": 1.3,
+    "adapterCondition": "standard",
+    "modelSha256": "e658f0f0736a03a4549535a439f9b07254ebf8ab88ae27cbe6e52d098ca5d1f5",
+    "backend": "neon",
+    "artifactId": "13200218351",
+    "runtimeRevision": "cae16fa6998dac58a947eba9ae4398ed6a9fb863",
+    "repository": "symbiogenesis/SwiftBonsai2Runner",
+    "runAttempt": 1,
+    "runId": "41568281287",
+    "revision": "469f57b233898fd10b97d5ebc10aaef78b940e30",
+    "artifactBytes": 294092332,
+    "comparatorSourceSha256": "b8372072b3d77a918c5c6fa7038da95f51a50701f6927fb4b4931a591b056c08",
+    "nativeRowWorkers": 4,
+    "artifactSha256": "c31de3e837f4d4d43df5d144892c0b5c4b36d747ab763799abe0556b419af8d8",
+    "adapterSha256": "f1669534803d340a496015f5c45125f3437b4d13ec764f40e34488ce83967f42",
+    "originalExecutionIdentityPreserved": true
+  },
+  "independentReportChecks": {
+    "reportedComparedValues": 39504384,
+    "originalComparisonSha256": "81b84989e43cf6433c2d548bc0c80e7ff926a16bcf5753f5bc9b63ed7b98a23e",
+    "nativeCaptureSerializedStateLogitsAndRustStdoutHashesBindToManifest": true,
+    "reportedComparedFiles": 129,
+    "reportedByteExactFiles": 129,
+    "originalAndReplayedComparisonsStructurallyIdentical": true,
+    "reportedFailedElements": 0,
+    "originalProducerRunSourceWorkflowAndDigestVerified": true,
+    "all129ReportedRustPayloadHashesBindToCloudManifest": true,
+    "cloudManifestDeclaredBytes": 316267936,
+    "all155CloudManifestRowsMatchVersionedInventoryMetadata": true,
+    "replayedComparisonSha256": "dfb9e7c4a02ace08d5ad0a7c9f7bc1c8d2d2d36773dd8c0695d87a4670db9e7e",
+    "rawByteDifference": "Original Windows JSON and replayed Linux JSON retain distinct exact bytes; parsed complete reports agree.",
+    "reportedMaximumAbsoluteError": 0
+  },
+  "resolution": {
+    "originalDeadlineLimitedRecordUnchanged": true,
+    "incompleteOwnerReview": "docs/evidence/ptq1-numerics-41568281287-review.json",
+    "selected155FileNumericalCaptureDataIntegrityResolvedBySeparateHostedExecution": true,
+    "originalOwnerClockExtendedOrRestarted": false,
+    "original181FileOwnerArchiveReviewRetroactivelyCompleted": false
+  },
+  "limitations": "One supplied token at position zero for explicitNEON/four-worker/standard1.3 only. Full-context/scalar/cross-condition numerics, adapter authoring provenance, service isolation/lifecycle, quality, benefit, resources, comfort and installation remain separate.",
+  "defaultPromotionQualified": false,
+  "experimentalLabelMayBeRemoved": false
+}

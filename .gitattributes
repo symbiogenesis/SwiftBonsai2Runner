@@ -56,9 +56,17 @@ docs/evidence/ptq1-0113-lifecycle-*/*.json -text whitespace=cr-at-eol
 # Preserve the original hosted complete packing report bytes and manifest hashes.
 docs/evidence/ptq1-packing-41567729492/*.json -text whitespace=cr-at-eol
 
+# Preserve the fresh frozen-candidate promotion input, policy, score and raw report bytes.
+docs/evidence/ptq1-promotion-469f57b.json -text whitespace=cr-at-eol
+docs/evidence/ptq1-promotion-469f57b-review.json -text whitespace=cr-at-eol
+docs/evidence/ptq1-promotion-469f57b/** -text whitespace=cr-at-eol
+
 # Keep hosted public queue ABI inputs and Rust/C control sources portable.
 tools/hexagon/windows_queue_abi.* text eol=lf
 tools/hexagon/windows-queue-abi.lock.json text eol=lf
 
 # Preserve original bounded numerical capture report bytes.
 docs/evidence/ptq1-numerics-41568281287/*.json -text whitespace=cr-at-eol
+
+# Preserve original hosted retained-capture audit report bytes.
+docs/evidence/ptq1-retained-audit-*/*.json -text whitespace=cr-at-eol
