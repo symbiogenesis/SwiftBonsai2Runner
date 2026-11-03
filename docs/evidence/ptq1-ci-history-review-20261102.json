@@ -3,7 +3,7 @@
   "kind": "independent-ptq1-ci-history-and-score-audit",
   "recordedDate": "2026-11-02",
   "reviewerId": "Codex:/root/promotion_review",
-  "status": "newer-partial-evidence-confirmed-no-newer-formal-score-found",
+  "status": "historical-ci-search-superseded-by-fresh-frozen469-score",
   "scope": "Authenticated GitHub Actions run/job/artifact metadata, workflow source, retained documentary scores and one tiny candidate log artifact. No model, checker, numerical comparator, device diagnostics or local numerical-payload hashing.",
   "coverage": {
     "allAvailableArtifactMetadataPagesQueried": true,
@@ -121,14 +121,6 @@
     "newerLoraQualificationRunsFound": false,
     "newerSuccessfulCompleteResponsePairFound": false
   },
-  "currentConclusion": {
-    "currentDefaultPromotionQualified": false,
-    "historicalFiveOfNineteenMustBeLabeledHistorical": true,
-    "newerFormalNineteenGateScoreFound": false,
-    "partialPassesMayIncrementCompletedBroadGates": false,
-    "currentFormalPassedCount": null,
-    "newerPartialPassesAreRealProgress": true
-  },
   "sourceLinks": [
     "https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41568280451",
     "https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41568281287",
@@ -138,5 +130,25 @@
     "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008203",
     "https://github.com/symbiogenesis/prism-inference/actions/runs/41224253383",
     "https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41265296736"
-  ]
+  ],
+  "historyConclusionBeforeFreshEvaluation": {
+    "currentDefaultPromotionQualified": false,
+    "historicalFiveOfNineteenMustBeLabeledHistorical": true,
+    "newerFormalNineteenGateScoreFound": false,
+    "partialPassesMayIncrementCompletedBroadGates": false,
+    "currentFormalPassedCount": null,
+    "newerPartialPassesAreRealProgress": true
+  },
+  "supersededBy": {
+    "score": "docs/evidence/ptq1-promotion-469f57b.json",
+    "independentReview": "docs/evidence/ptq1-promotion-469f57b-review.json",
+    "runtimeVersion": "0.1.13",
+    "runnerRevision": "469f57b233898fd10b97d5ebc10aaef78b940e30",
+    "nativeRowWorkers": 4,
+    "passed": 5,
+    "pending": 14,
+    "rejected": 0,
+    "promotionReady": false,
+    "meaning": "A new offline evaluation was performed after this historical CI search. It uses current exact-source CI evidence; this was not an overlooked older CI-generated aggregate."
+  }
 }

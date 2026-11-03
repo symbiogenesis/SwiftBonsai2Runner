@@ -156,13 +156,15 @@ close actual-model logits/state, writer-basis or promotion gates. Keep intake,
 verification, model work and cleanup inside one aggregate five-minute owner allowance;
 the [default-readiness audit](docs/evidence/ptq1-default-readiness.json) separates
 historical passes from current-release qualification.
-The [frozen 0.1.10 PTQ1 promotion score](docs/evidence/ptq1-promotion-85fd2f1.json)
-passes five independently reviewed documentary/packing gates and leaves fourteen
-pending for its explicit four-worker candidate. The pinned 0.1.13 runtime and
-later application identities require their own evidence and applicability review.
-Use the [nineteen-gate 0.1.13 readiness audit](docs/evidence/ptq1-0113-promotion-readiness-20261102.json)
-to distinguish available documentary evidence from missing device, independent
-human and clean-machine acceptance. The [fresh authoring-input check](docs/evidence/ptq1-authoring-inputs-20261102.json)
+Use the [fresh 0.1.13 PTQ1 promotion score](docs/evidence/ptq1-promotion-469f57b-review.json)
+for frozen Runner `469f57b`, current-weight PTQ1 and four workers: five independently
+reviewed documentary/packing gates pass and fourteen remain pending. Its retained
+input, policy, raw compiled score, exact CI records and independent review bind the
+current runtime and candidate. The [older 0.1.10 score](docs/evidence/ptq1-promotion-85fd2f1.json)
+remains historical; later application identities need their own applicability review.
+Close the fourteen required gates using actual device, independent human and
+clean-machine acceptance rather than counting narrow numerical/lifecycle checks
+as complete broad gates. The [fresh authoring-input check](docs/evidence/ptq1-authoring-inputs-20261102.json)
 still finds no published original checkpoint or adapter-bound conversion records;
 matching published B factors cannot reproduce the missing A-factor provenance.
 Close its actual-model, adapter provenance, paired benefit, quality, resource,
@@ -977,7 +979,7 @@ do not reset it. Further owner qualification remains pending for this investigat
   replay or partial CPU continuation.
 - Publish scoped profiles/no-go results from paired repeated CI: short and near-limit
   prompts, full output reserve, fixed and natural completions, edited and reused state,
-  AC/battery, pressure and 15â€“30-minute sustained use. Retain raw evidence, uncertainty,
+  AC/battery, pressure and 15Ã¢â‚¬â€œ30-minute sustained use. Retain raw evidence, uncertainty,
   LoRA parity, CPU rollback and [upgrade gates](docs/hexagon.md#qualification-evidence).
   Qualify Rust NPU coverage and device safety after Rust CPU parity, preserving signed
   deployment and full state.

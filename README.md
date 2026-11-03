@@ -1,16 +1,16 @@
 <div align="center">
 
-# 🌱 Swift Bonsai 2 - Runner
+# ðŸŒ± Swift Bonsai 2 - Runner
 
 **A local runner for the Swift Bonsai 2 model on Windows ARM64.**
 
-Creative writing · Brainstorming · Art direction
+Creative writing Â· Brainstorming Â· Art direction
 
 ![Platform: Windows ARM64](https://img.shields.io/badge/Windows-ARM64-0078D4?style=flat-square)
 ![UI: native Rust](https://img.shields.io/badge/UI-native_Rust-50855B?style=flat-square)
 [![License: Apache 2.0](https://img.shields.io/badge/license-Apache_2.0-50855B?style=flat-square)](LICENSE)
 
-[Get started](docs/development-guide.md) · [Documentation](#documentation) · [TODO](PLAN.md)
+[Get started](docs/development-guide.md) Â· [Documentation](#documentation) Â· [TODO](PLAN.md)
 
 </div>
 
@@ -42,7 +42,7 @@ with **Ctrl+F**. Enable **Save conversations on this device** in Settings to
 recover your workspace after closing; saved conversations use Windows user
 encryption. Saving is off by default.
 
-Thinking is off by default. Enable **Thinking** under **Settings → Response**
+Thinking is off by default. Enable **Thinking** under **Settings â†’ Response**
 for the next response, including every Extra effort pass. Each conversation
 keeps its own choice; optional conversation saving restores it.
 
@@ -65,9 +65,9 @@ and [local API contract](docs/broker-policy.md#public-request-contract).
 
 | | Current target |
 | --- | --- |
-| **Hardware** | Snapdragon X and X2 · Windows ARM64 |
-| **Model** | Swift Bonsai 2 · `PQ2_0` |
-| **CPU profile** | One active request · 8K-token context · FP16 attention caches |
+| **Hardware** | Snapdragon X and X2 Â· Windows ARM64 |
+| **Model** | Swift Bonsai 2 Â· `PQ2_0` |
+| **CPU profile** | One active request Â· 8K-token context Â· FP16 attention caches |
 | **Outstanding work** | [Central TODO](PLAN.md) |
 
 ## Performance
@@ -78,9 +78,9 @@ and [local API contract](docs/broker-policy.md#public-request-contract).
 | Swift Bonsai 2 `PQ2_0` (experimental Rust) | Rust 0.1.10 prerelease, one worker + LoRA 1.3 | 0.105 (truncated request) | 6.71 GiB | 11.5 GiB / not recorded | 15.5 GiB | 149.625 MiB |
 | Swift Bonsai 2 `PQ2_0` (experimental Rust) | Rust 0.1.10 prerelease, four workers + LoRA 1.3 | Pending (deadline) | 6.71 GiB | 11.5 GiB / not recorded | 15.5 GiB | 149.625 MiB |
 | Swift Bonsai 2 `PQ2_0` (captured source diagnostic) | Rust 0.1.9, four workers + LoRA 1.3 | Not measured | 6.71 GiB | 11.5 GiB / 7.04 GiB | 15.5 GiB | 149.625 MiB |
-| Swift Bonsai 2 `PTQ1_0` | PrismML C++ CPU | Not measured | 5.54 GiB | 11.5 GiB / — | 15.5 GiB | — |
-| Swift Bonsai 2 `PQ2_0` (current default) | PrismML C++ CPU | Not measured | 6.71 GiB | 11.5 GiB / — | 15.5 GiB | — |
-| Qwen3.8-27B `UD-Q3_K_XL` | llama.cpp reference | Not measured | 12.24 GiB | 18 GiB / — | 22 GiB | — |
+| Swift Bonsai 2 `PTQ1_0` | PrismML C++ CPU | Not measured | 5.54 GiB | 11.5 GiB / â€” | 15.5 GiB | â€” |
+| Swift Bonsai 2 `PQ2_0` (current default) | PrismML C++ CPU | Not measured | 6.71 GiB | 11.5 GiB / â€” | 15.5 GiB | â€” |
+| Qwen3.8-27B `UD-Q3_K_XL` | llama.cpp reference | Not measured | 12.24 GiB | 18 GiB / â€” | 22 GiB | â€” |
 
 The [bounded X2 Elite Extreme attempt](docs/evidence/native-request-speed.json)
 measured eight reported output tokens in 76.21 s: **0.105 request tokens/second**,
@@ -97,8 +97,10 @@ unmeasured; the packing saving alone does not qualify resources or performance.
 > [!NOTE]
 > **PTQ1 is an experimental opt-in; qualification for the app default is pending.**
 > Select the verified current-weight export with
-> `bonsai-tools chat --native-engine --use-repacked-ptq1` after
-> [provisioning it](docs/development-guide.md#runtime-selection).
+> `bonsai-tools chat --native-engine --use-repacked-ptq1 --native-row-workers 4`
+> after [provisioning it](docs/development-guide.md#runtime-selection).
+> The [0.1.13 four-worker promotion score](docs/evidence/ptq1-promotion-469f57b-review.json)
+> has **5 of 19 gates passed**, with 14 pending for the frozen source candidate.
 >
 > The pinned Rust 0.1.13 release now passes a [bounded four-worker service
 > sequence](docs/evidence/ptq1-0113-lifecycle-41539984210/interpretation.json):
