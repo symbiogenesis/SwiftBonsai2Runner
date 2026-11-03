@@ -72,7 +72,7 @@ Qualify source-launch time to the first native frame and authenticated model
 readiness after excluding worker checkouts from startup fingerprints and switching
 shared Windows artifact hashing to CNG. Retain cold-build versus unchanged-launch
 attribution and complete checksum/cancellation controls. Qualify the CNG verifier
-retained from Prism 0.1.13 in the prepared 0.1.14 delivery through Runner's
+retained from Prism 0.1.13 in the published 0.1.14 release through Runner's
 settled-main release integration and
 actual-model startup. End-to-end startup gains remain pending within the
 owner-device budget; performance comparisons and complete checks remain in owning
@@ -163,9 +163,10 @@ close actual-model logits/state, writer-basis or promotion gates. Keep intake,
 verification, model work and cleanup inside one aggregate five-minute owner allowance;
 the [default-readiness audit](docs/evidence/ptq1-default-readiness.json) separates
 historical passes from current-release qualification.
-Qualify the [prepared Prism 0.1.14 delivery](docs/evidence/prism-0114-pin-preparation.json)
-from exact source `9e8ea3e2c042ab0c3f1a8e9596ff155e202c3c57` after verified
-publication and Runner's owning integration checks. Its typed token-capacity
+Qualify the [published Prism 0.1.14 release](https://github.com/symbiogenesis/prism-inference/releases/tag/v0.1.14)
+from exact source `9e8ea3e2c042ab0c3f1a8e9596ff155e202c3c57`. Complete independent
+publication review and Runner's owning integration checks against the
+[prepared pin identities](docs/evidence/prism-0114-pin-preparation.json). Its typed token-capacity
 error preserves the private context-rejection contract; unknown counter failures
 remain failures. Hosted source checks do not establish actual-model behavior.
 Retain `ptq1-adapter-service-row4` and the

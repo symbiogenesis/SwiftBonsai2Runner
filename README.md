@@ -120,9 +120,10 @@ unmeasured; the packing saving alone does not qualify resources or performance.
 > parent endpoints; the missing child after-power observation stays unknown.
 > These partial checks do not qualify the full service gate, quality or throughput.
 >
-> The [0.1.14 delivery preparation](docs/evidence/prism-0114-pin-preparation.json)
-> binds the typed context-error fix to exact source and archive identities;
-> verified publication and Runner integration remain separate requirements.
+> The [published Prism 0.1.14 release](https://github.com/symbiogenesis/prism-inference/releases/tag/v0.1.14)
+> includes the typed context-error fix. The [Runner pin preparation](docs/evidence/prism-0114-pin-preparation.json)
+> binds its exact source and archive identities; owning Runner integration checks
+> remain pending.
 > The [combined service and original-PQ2 rollback profile](docs/validation.md#actual-model-application-acceptance)
 > is prepared for one bounded allowance with adapter 1.3 and four workers.
 > Actual 0.1.14 model/service/rollback acceptance remains pending. The earlier
