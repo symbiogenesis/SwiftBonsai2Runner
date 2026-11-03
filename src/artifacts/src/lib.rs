@@ -196,6 +196,7 @@ impl VerifiedRuntime {
 }
 
 /// A whole locked file and read handles that keep it and its ancestors stable.
+///
 /// Retain this guard until every child reading the file has exited.
 /// A contained reader retains metadata-only ancestor handles within its existing
 /// authority; it requires the host owner's guards and ACL policy to remain in
