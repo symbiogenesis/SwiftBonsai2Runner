@@ -26,12 +26,14 @@ Each SSM record contains `block`, `name`, `shard`, `dtype`, `shape`, `bytes` and
 `sha256`. The original tensor name is
 `model.language_model.layers.N.linear_attn.out_proj.weight`, shape `[5120, 6144]`.
 Supported original storage is `F16`, `BF16` or `F32`; declared tensor bytes must
-equal the shape times the dtype width and fit the declared shard. The tensor
+equal the shape times the dtype width. All declared SSM payloads assigned to one
+shard must collectively fit its declared size, with checked addition. The tensor
 digest identifies raw original stored tensor bytes, without a safetensors header.
 Independent reproduction must document any conversion to F32.
 
 The index uses the standard `weight_map` plus optional `metadata` fields, at most
-8192 tensor names and 64 metadata entries. Every indexed shard must be declared,
+8192 tensor names and 64 metadata entries. Duplicate raw tensor-map or metadata
+keys reject rather than silently replacing an earlier entry. Every indexed shard must be declared,
 every declared shard must be indexed, and all 48 original SSM names must resolve
 to their declared shard. Checking this relationship does not verify payload
 offsets, tensor bytes or the checkpoint's authenticity.

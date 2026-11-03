@@ -3,7 +3,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
 
-use serde::Deserialize;
+use serde::{Deserialize, Deserializer};
 use serde_json::{Value, json};
 
 use super::{Artifact, Intake, MANIFEST_LIMIT, artifact, hash, require, string};
@@ -81,8 +81,50 @@ struct Toolchain {
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Index {
+    #[serde(default, deserialize_with = "unique_metadata")]
     metadata: Option<BTreeMap<String, Value>>,
+    #[serde(deserialize_with = "unique_map")]
     weight_map: BTreeMap<String, String>,
+}
+
+fn unique_map<'de, D, T>(deserializer: D) -> std::result::Result<BTreeMap<String, T>, D::Error>
+where
+    D: Deserializer<'de>,
+    T: Deserialize<'de>,
+{
+    struct Unique<T>(std::marker::PhantomData<T>);
+    impl<'de, T: Deserialize<'de>> serde::de::Visitor<'de> for Unique<T> {
+        type Value = BTreeMap<String, T>;
+
+        fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            formatter.write_str("an object with distinct keys")
+        }
+
+        fn visit_map<A: serde::de::MapAccess<'de>>(
+            self,
+            mut access: A,
+        ) -> std::result::Result<Self::Value, A::Error> {
+            let mut values = BTreeMap::new();
+            while let Some((key, value)) = access.next_entry::<String, T>()? {
+                if values.insert(key, value).is_some() {
+                    return Err(serde::de::Error::custom(
+                        "Duplicate original checkpoint index key.",
+                    ));
+                }
+            }
+            Ok(values)
+        }
+    }
+    deserializer.deserialize_map(Unique(std::marker::PhantomData))
+}
+
+fn unique_metadata<'de, D>(
+    deserializer: D,
+) -> std::result::Result<Option<BTreeMap<String, Value>>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    unique_map(deserializer).map(Some)
 }
 
 fn source(source: &Source) -> Result<()> {
@@ -153,6 +195,7 @@ fn checkpoint(checkpoint: &Checkpoint, index: &Index) -> Result<()> {
         "Checkpoint shard inventory differs from its original index.",
     )?;
     let mut blocks = BTreeSet::new();
+    let mut declared_bytes = BTreeMap::<&str, u64>::new();
     for tensor in &checkpoint.ssm_tensors {
         let name = format!(
             "model.language_model.layers.{}.linear_attn.out_proj.weight",
@@ -174,6 +217,16 @@ fn checkpoint(checkpoint: &Checkpoint, index: &Index) -> Result<()> {
                 && index.weight_map.get(&tensor.name) == Some(&tensor.shard)
                 && blocks.insert(tensor.block),
             "Original SSM tensor name, extent, shard or index mapping is inconsistent.",
+        )?;
+        let total = declared_bytes.entry(tensor.shard.as_str()).or_default();
+        *total = total
+            .checked_add(tensor.bytes)
+            .ok_or("Declared SSM tensor byte sum overflow.")?;
+        require(
+            shards
+                .get(tensor.shard.as_str())
+                .is_some_and(|bytes| *total <= *bytes),
+            "Declared SSM tensor payloads collectively exceed their checkpoint shard.",
         )?;
     }
     require(

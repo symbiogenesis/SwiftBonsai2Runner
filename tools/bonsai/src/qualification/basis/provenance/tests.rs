@@ -67,6 +67,7 @@ fn original_checkpoint_records_require_complete_canonical_index_bound_ssm_tensor
         ("/ssmTensors/0/shard", json!("unlisted.safetensors")),
         ("/shards/0/file", json!("../model.safetensors")),
         ("/shards/0/bytes", json!(10)),
+        ("/shards/0/bytes", json!(62_914_560)),
         ("/index/file", json!("C:/index.json")),
     ] {
         let mut changed = original.clone();
@@ -88,6 +89,20 @@ fn original_checkpoint_records_require_complete_canonical_index_bound_ssm_tensor
     changed["weight_map"]["model.language_model.layers.0.linear_attn.out_proj.weight"] =
         json!("other.safetensors");
     assert!(check_checkpoint(original, changed).is_err());
+    Ok(())
+}
+
+#[test]
+fn original_checkpoint_index_rejects_duplicate_raw_tensor_and_metadata_keys() -> Result<()> {
+    for raw in [
+        r#"{"weight_map":{"tensor":"first.safetensors","tensor":"second.safetensors"}}"#,
+        r#"{"metadata":{"total_size":1,"total_size":2},"weight_map":{"tensor":"one.safetensors"}}"#,
+    ] {
+        assert!(serde_json::from_str::<Index>(raw).is_err());
+    }
+    let parsed: Index = serde_json::from_str(r#"{"weight_map":{"tensor":"one.safetensors"}}"#)
+        .map_err(|error| error.to_string())?;
+    assert!(parsed.metadata.is_none());
     Ok(())
 }
 
