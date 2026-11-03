@@ -61,13 +61,35 @@ its behavior, runtime cost and standard-profile qualification are independent.
 
 ## Release decision
 
-**2026-11-02: PTQ1 default promotion remains pending; experimental opt-in.**
-The current runtime is **0.1.13**, source `cae16fa6998dac58a947eba9ae4398ed6a9fb863`.
-The [nineteen-gate readiness audit](evidence/ptq1-0113-promotion-readiness-20261102.json)
-separates current evidence from missing acceptance. Exact-source hosted numerical
-preparation and Foundation pass, but the [latest owner preflight](evidence/ptq1-numerics-41565247997.json)
-failed before registration and ran no model. It establishes no numerical result.
-The release chronology below retains earlier identities and their original scope.
+**2026-11-03: NO-GO for PTQ1 default promotion; retain experimental opt-in.**
+The reviewed candidate uses **Prism 0.1.14**, source
+`9e8ea3e2c042ab0c3f1a8e9596ff155e202c3c57`, the current-weight PTQ1 artifact,
+the standard adapter at scale **1.3**, four CPU row workers and reset every request.
+The [release decision](evidence/ptq1-primetime-decision-20261103.json) binds the
+reviewed Runner source and evidence. Required acceptance is missing, so release
+approval is withheld. The format remains experimental; this decision does not
+establish an intrinsic arithmetic, quality or performance failure.
+
+| Required condition | Current decision basis |
+| --- | --- |
+| Exact-source application acceptance | No accepted source-bound hosted package is retained for the reviewed Runner revision. Current production linking, strict analyzers and actual-model service/UI acceptance remain unqualified. Historical failed validation clocks stay closed. |
+| Adapter basis and application | The declared all-48 public A reconstruction has no retained complete result. Original checkpoint/invocation authentication, native writer mappings and full-model loaded-zero/nonzero controls remain unqualified. Public reconstruction alone cannot authenticate the original authoring run. |
+| Practical benefit | The one retained 0.1.13 complete-answer pair observed 35.73 seconds for PTQ1 versus 18.38 for PQ2. Missing power observations disqualify performance and resource-benefit interpretation. No matched 10% latency improvement or accepted capacity/energy benefit is established. |
+| Daily use and independent review | Full context/output, recovery, isolation, sustained resources/comfort, clean-machine installation and independent human quality acceptance remain unqualified. |
+| Complete promotion verdict | All nineteen required gates must pass for the exact candidate. No compiled 0.1.14 promotion score is claimed. The historical 0.1.13 six-pass/thirteen-pending score does not transfer. |
+
+The independent [adapter](evidence/ptq1-primetime-basis-decision-20261103.json),
+[service](evidence/ptq1-primetime-service-decision-20261103.json) and
+[policy](evidence/ptq1-primetime-independent-decision-20261103.json) reviews retain
+the distinctions between absent evidence, failed historical work and passing
+narrow controls. [PLAN.md](../PLAN.md) owns the remaining work. Reconsider release
+only after authenticating the required adapter inputs, qualifying a frozen
+source-bound package and its device/human acceptance, demonstrating eligible
+benefit, retaining reproducible evidence and passing every promotion gate.
+The prepared ten-minute service/rollback workload can close a narrow operational
+milestone after its prerequisites pass; it cannot supply complete release approval.
+
+### Historical evidence
 
 The lossless representation is not rejected. The historical [decision receipt](evidence/ptq1-release-decision.json)
 binds the local and CI X2 startup failures, exact runtime/build identities and retained raw
@@ -91,8 +113,8 @@ and records the evidence gaps. [PLAN.md](../PLAN.md) remains the backlog.
 | Historical Rust 0.1.6 app integration | This version accepts original PQ2 without LoRA; PTQ1 and adapter service support are absent. The earlier three-token diagnostic remains valid only for its no-adapter scope. |
 | Rust replacement source | Source `27e4860` implements explicit PTQ1/approved-adapter service and sealed scale/reset semantics. A single supplied token at scale 1.3 on X2 matches all native logits and live state exactly. This does not establish actual service, quality or resource qualification. |
 | Rust 0.1.8 required-sandbox smoke | [X2 main-only application CI](https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41020705958) passes exact readiness, one scale-1.3 streamed response and owned Job/listener cleanup in a three-minute owner job. The four-token cap yields one reported output token and three visible bytes with `stop`; zero-scale and invalid-scale/reuse checks are skipped. [History](evidence/ptq1-native-service.json) retains the earlier 0.1.7 startup failure. This does not qualify broader lifecycle, answers, quality, resources or default promotion. |
-| Current Rust 0.1.10 release | [Exact published artifacts and reviewed pin](evidence/prism-main-integration.json) retain one worker and reset every request by default. [Bounded lifecycle acceptance](evidence/prism-0110-lifecycle-service.json) covers original PQ2 with four workers. Artifact verification and that different-format receipt do not transfer historical PTQ1 numerical/service evidence to these binaries. |
-| Current Rust 0.1.10 PTQ1 attempt | [One-worker settled-main lifecycle attempt](evidence/ptq1-0110-service-attempt.json) reaches verified model/adapter readiness, but the first scale-1.3 request exhausts its request allowance without a completed stream receipt. Zero-scale, invalid-scale and supplied-history steps remain pending. Intake through cleanup/retention takes 168.70 seconds; owned Job/listener and ephemeral runner cleanup pass. Partial output is unknown because cancellation discards the response buffer. This is an incomplete request, with no TPS, first-token or intrinsic-format verdict. |
+| Historical Rust 0.1.10 release | [Exact published artifacts and reviewed pin](evidence/prism-main-integration.json) retain one worker and reset every request by default. [Bounded lifecycle acceptance](evidence/prism-0110-lifecycle-service.json) covers original PQ2 with four workers. Artifact verification and that different-format receipt do not transfer historical PTQ1 numerical/service evidence to these binaries. |
+| Historical Rust 0.1.10 PTQ1 attempt | [One-worker settled-main lifecycle attempt](evidence/ptq1-0110-service-attempt.json) reaches verified model/adapter readiness, but the first scale-1.3 request exhausts its request allowance without a completed stream receipt. Zero-scale, invalid-scale and supplied-history steps remain pending. Intake through cleanup/retention takes 168.70 seconds; owned Job/listener and ephemeral runner cleanup pass. Partial output is unknown because cancellation discards the response buffer. This is an incomplete request, with no TPS, first-token or intrinsic-format verdict. |
 | Reduced Rust 0.1.10 PTQ1 follow-up | [Two complete one-token streams](evidence/ptq1-0110-bounded-scale-streams.json) pass at scales 1.3 and zero, with verified readiness and cleanup in 161.31 seconds. Invalid-scale rejection and captured-history change-back are skipped at the 45-second request-and-cleanup threshold; overall required acceptance fails. Observed startup is 36.75 seconds and requests take about 40 seconds each. No numerical identity, complete-answer, quality, TPS or paired-benefit gate closes. |
 | Rust DLL collector replacement | [Hosted source-bound compilation and model-free controls](evidence/ptq1-collector-hosted.json) pass, including seven collector controls. Exact-source Runner Foundation [subsequently passed](https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41221140592). Actual-model capture with this collector and the current-release checker remains pending; hosted success does not establish model parity. |
 | Complete correctness, answers and sustained use | Scalar/explicit NEON trajectories, PTQ1 LoRA basis/forward execution, 8K context/4K output, recovery, independent answer quality, target-device benefit and owner-accepted comfort remain unqualified. No throughput or quality verdict was collected in this session. |
@@ -122,7 +144,7 @@ full-context/output and cancellation/recovery trials, independent quality review
 and sustained resource/comfort and installation acceptance with PQ2 rollback.
 All independent [promotion criteria](validation.md#promotion-criteria) still apply.
 
-The current-release four-worker one-token numerical and scale/history captures
+The historical 0.1.13 four-worker one-token numerical and scale/history captures
 remain narrower than full-context scalar/NEON state qualification, immutable
 adapter writer-basis provenance and loaded-zero/nonzero controls. The existing publisher-based prefix/LoRA matrices
 cannot supply a Rust-service decision: the publisher startup gate fails on X2,

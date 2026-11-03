@@ -1,4 +1,7 @@
 # Keep retained observation selection bytes stable for their recorded SHA-256.
+# Keep the current PTQ1 release decision and independent reviews portable.
+docs/evidence/ptq1-primetime-*-20261103.json text eol=lf
+
 docs/evidence/ptq1-local-validation-20261103/** -text -whitespace
 docs/evidence/inference-efficiency-local-20261103/** -text -whitespace
 docs/evidence/inference-efficiency-followup-20261103/** -text -whitespace

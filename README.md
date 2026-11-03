@@ -158,7 +158,8 @@ unmeasured; the packing saving alone does not qualify resources or performance.
 > independent quality review and daily-service acceptance remain pending in
 > [the plan](PLAN.md#actual-model-acceptance). PQ2 remains the app default and
 > explicit rollback; the [release decision](docs/swift-memory.md#release-decision)
-> retains the historical results and failures.
+> records a **no-go for default promotion** under the current evidence and retains
+> the historical results and failures. PTQ1 remains experimental opt-in.
 >
 > Admission values are configured budgets including a 4 GiB physical reserve.
 > The restore-copy figure describes a transient allocation lifetime. Mapped weight

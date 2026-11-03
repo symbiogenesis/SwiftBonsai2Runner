@@ -3,6 +3,11 @@
 This is the single backlog. [Technical docs](docs/README.md) own current behavior,
 contracts, commands and evidence; completed work belongs in Git history.
 
+PTQ1 default promotion is a **no-go under the current evidence**. Follow the
+[release decision](docs/swift-memory.md#release-decision) and close the required
+adapter, exact-source application, device/human and benefit gates below before
+reconsidering it. Keep historical 0.1.13 scores separate from 0.1.14 acceptance.
+
 Use native Rust Prism 0.1.14 as the project's development default: original Swift
 PQ2, four CPU row workers and the standard adapter at scale 1.3. Preserve explicit
 publisher rollback with `--publisher-engine` (`-PublisherEngine` in Start-Chat.ps1),

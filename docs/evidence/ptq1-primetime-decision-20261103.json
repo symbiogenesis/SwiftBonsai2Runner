@@ -1,0 +1,212 @@
+{
+    "schemaVersion":  1,
+    "kind":  "ptq1-current-candidate-primetime-release-decision",
+    "recordedDate":  "2026-11-03",
+    "decision":  "no-go-for-default-promotion",
+    "decisionClass":  "required-release-evidence-not-satisfied",
+    "scope":  "Release admission for current-weight PTQ1 on the reviewed Runner source, Prism 0.1.14, standard adapter scale 1.3 and four CPU row workers. This source/evidence review is not a compiled promotion score, a fresh device result, or a rejection of the PTQ1 representation. Absence findings apply to retained repository evidence, not all possible external or private evidence.",
+    "candidate":  {
+                      "reviewedRunnerRevision":  "50f381f0d2833a308c39286df71e9be0b355733d",
+                      "reviewedRunnerBranch":  "main",
+                      "runtimeVersion":  "0.1.14",
+                      "runtimeRevision":  "9e8ea3e2c042ab0c3f1a8e9596ff155e202c3c57",
+                      "runtimeArchiveSha256":  "9a2cd183c048c49120a8d8cf1360b24ee08695a1b92fded7dbd918dd9f576759",
+                      "runtimeServerSha256":  "223b5e7c7c7715862b75ab87c38babd671b3b3374cab34d3d09373c2c5bf0658",
+                      "weightRepresentation":  "current-repacked-PTQ1_0",
+                      "modelBytes":  5946648928,
+                      "modelSha256":  "e658f0f0736a03a4549535a439f9b07254ebf8ab88ae27cbe6e52d098ca5d1f5",
+                      "originalPq2Bytes":  7206168928,
+                      "originalPq2Sha256":  "5912bb739217cf25b4283a098c7b893d9baff36bdf2e72d3dbf4cb999d5633d5",
+                      "adapterSha256":  "f1669534803d340a496015f5c45125f3437b4d13ec764f40e34488ce83967f42",
+                      "adapterScale":  1.3,
+                      "nativeRowWorkers":  4,
+                      "servingStatePolicy":  "reset-every-request",
+                      "sourceIdentityLimit":  "The reviewed revision is frozen for this decision. Subsequent documentation-only commits do not create compiled or device acceptance. Future qualification must select and freeze its own exact serving and harness identities."
+                  },
+    "promotionPolicy":  {
+                            "source":  "tools/bonsai/src/runtime_promotion.rs",
+                            "requiredGateCount":  19,
+                            "allRequiredGatesMustPass":  true,
+                            "missingEvidenceDispositionInScorer":  "pending",
+                            "compiledEvaluatorExecuted":  false,
+                            "compiledPolicySha256":  null,
+                            "compiledGateCounts":  null,
+                            "policySourceIdentity":  "See evidenceInventory for the raw reviewed source SHA-256. A source-file digest is not the compiled evaluator\u0027s policy digest.",
+                            "scope":  "A definite release NO-GO follows from unsatisfied mandatory admission requirements. It does not relabel missing evidence as a rejected numerical result or invent a compiled 0.1.14 score."
+                        },
+    "releaseBlockers":  [
+                            {
+                                "id":  "adapter-independent-basis-and-authentication",
+                                "classification":  "required-evidence-absent-or-unqualified",
+                                "sufficientToWithholdApproval":  true,
+                                "finding":  "No complete retained all-48 public A reconstruction/replay result or authenticated original authoring inputs establish the required adapter basis. Native writer mappings and full-model loaded-zero/nonzero application remain unqualified. A future matching reconstruction cannot authenticate the author\u0027s original checkpoint, invocation or toolchain.",
+                                "review":  "docs/evidence/ptq1-primetime-basis-decision-20261103.json"
+                            },
+                            {
+                                "id":  "exact-source-build-and-service-acceptance",
+                                "classification":  "required-current-source-acceptance-not-established",
+                                "sufficientToWithholdApproval":  true,
+                                "finding":  "No accepted current-source hosted build/link/analyzer package is retained for the reviewed Runner revision. Current 0.1.14 model/service/rollback and native UI acceptance remain pending. Earlier failed validation clocks and 0.1.13 device passes cannot qualify this candidate. The service acceptance case is CI-only and cannot be qualified by impersonating CI in a local process.",
+                                "review":  "docs/evidence/ptq1-primetime-service-decision-20261103.json"
+                            },
+                            {
+                                "id":  "eligible-practical-benefit",
+                                "classification":  "required-benefit-not-demonstrated",
+                                "sufficientToWithholdApproval":  true,
+                                "finding":  "No eligible matched same-runtime PQ2/PTQ1 complete-task comparison demonstrates at least 10 percent lower end-to-end latency or reviewed capacity/energy benefit within accepted latency and quality limits. Serialized packing savings and lower bounded Job commit do not satisfy this requirement.",
+                                "review":  "docs/evidence/ptq1-primetime-independent-decision-20261103.json"
+                            },
+                            {
+                                "id":  "complete-device-and-human-qualification",
+                                "classification":  "required-broad-acceptance-not-established",
+                                "sufficientToWithholdApproval":  true,
+                                "finding":  "Full context/output, scalar/explicit-NEON state trajectories, resources/paging, recovery, restricted identity/broker-only transport, speech/offline behavior, clean-machine installation and independent human quality/comfort acceptance remain unqualified. Source review and small fixtures cannot replace these conditions.",
+                                "review":  "docs/evidence/ptq1-local-gate-review-20261103.json"
+                            }
+                        ],
+    "retainedPositiveEvidence":  [
+                                     {
+                                         "finding":  "Lossless artifact reconstruction and copied tensor bytes support the exact current-weight repack. The model file saves 1259520000 bytes.",
+                                         "source":  "config/swift.ptq1-export.json",
+                                         "qualificationLimit":  "Artifact evidence supplies no activation, live-state, capacity, quality or speed verdict."
+                                     },
+                                     {
+                                         "finding":  "Retained exact-source 0.1.14 release publication and owning source checks exist.",
+                                         "source":  "docs/evidence/prism-0114-readiness-20261103.json",
+                                         "qualificationLimit":  "Release provenance/source evidence does not establish current Runner integration or model acceptance."
+                                     },
+                                     {
+                                         "finding":  "Historical 0.1.13 one-token numerical parity, bounded four-worker scale/history and original-PQ2 rollback provide useful narrow observations.",
+                                         "source":  "docs/evidence/ptq1-local-gate-review-20261103.json",
+                                         "qualificationLimit":  "Those historical observations retain their original source/runtime and workload identities. No broad current-candidate pass is transferred."
+                                     }
+                                 ],
+    "historicalPerformanceObservation":  {
+                                             "source":  "docs/evidence/ptq1-rollback-41573164864/independent-review.json",
+                                             "runtimeVersion":  "0.1.13",
+                                             "fixedOrder":  [
+                                                                "original-PQ2_0",
+                                                                "current-repacked-PTQ1_0"
+                                                            ],
+                                             "pq2RequestMilliseconds":  18380.3443,
+                                             "ptq1RequestMilliseconds":  35729.4347,
+                                             "ptq1OverPq2RequestLatency":  1.9438936570954222,
+                                             "observedCompleteAnswers":  [
+                                                                             "Oak",
+                                                                             "Oak"
+                                                                         ],
+                                             "powerBeforeAfterEachArm":  "unknown-not-captured-in-original-trial",
+                                             "performanceComparisonEligible":  false,
+                                             "capacityBenefitQualified":  false,
+                                             "interpretation":  "Retain the observed losing timing. It establishes neither a qualified performance rejection nor an acceptable benefit. No later power query can repair the original missing observations."
+                                         },
+    "historicalPromotionScore":  {
+                                     "runtimeVersion":  "0.1.13",
+                                     "review":  "docs/evidence/ptq1-promotion-bb020f4-service-90a62b9-final-review.json",
+                                     "passed":  6,
+                                     "pending":  13,
+                                     "rejected":  0,
+                                     "transferredAsCurrentCandidateScore":  false
+                                 },
+    "nextOperationalMilestone":  {
+                                     "profile":  "ptq1-adapter-service-rollback-row4",
+                                     "workloadPlan":  "docs/evidence/native-owner-packet-controls-20261103/owner-workload-plan.json",
+                                     "fixedEstimateSeconds":  450,
+                                     "smallestSupportedAllowanceMinutes":  10,
+                                     "prerequisites":  "Owner-managed exact-source hosted preparation with run_device=false, successful required checks and independent review of the frozen package, followed by explicit owner device selection and a predeclared whole-job allowance with aggregate/per-owner power observations.",
+                                     "closesCompletePromotion":  false,
+                                     "workloadStarted":  false,
+                                     "historicalClocksRemainClosed":  true
+                                 },
+    "reconsiderationRequirements":  [
+                                        "Retain and independently review the already declared all-48 public reconstruction and original authoring/native writer evidence. Do not substitute synthetic vectors, weaken tolerances or drop the standard adapter to claim this candidate passed.",
+                                        "Freeze serving/harness source and obtain a successful exact-source hosted package; qualify released service, native UI and original-PQ2 rollback against its actual artifacts.",
+                                        "Close the full numerical/context/output, resource/isolation/recovery, speech and installation gates with complete reproducible evidence.",
+                                        "Obtain independent human quality/comfort acceptance and an eligible matched benefit result, including original per-arm power conditions and losing observations.",
+                                        "Durably retain the exact evidence, verify its hashes, independently review applicability and run the existing compiled promotion evaluator. Every required gate must pass; no partial pass authorizes promotion."
+                                    ],
+    "evidenceInventory":  [
+                              {
+                                  "path":  "config/prism-inference.lock.json",
+                                  "bytes":  2433,
+                                  "sha256":  "8d2cf2f7cacf7795dc3283d8cd931cd50e077e6f9aac052b5c3fbc8327cd150a"
+                              },
+                              {
+                                  "path":  "config/swift.ptq1-export.json",
+                                  "bytes":  1165,
+                                  "sha256":  "c184dea2089127201a15595af86e61005ec5b3f9c14e8089fee5c8f630a762d5"
+                              },
+                              {
+                                  "path":  "config/swift-lora.lock.json",
+                                  "bytes":  2826,
+                                  "sha256":  "84bf87bd873a372ebd943dae81d3300d74ec09055d6c5fe0628873d3863ae74a"
+                              },
+                              {
+                                  "path":  "tools/bonsai/src/runtime_promotion.rs",
+                                  "bytes":  34422,
+                                  "sha256":  "80727d3b04de9d62d238d78808a4d0b62a55819df62eb3585b82e6614cb98e76"
+                              },
+                              {
+                                  "path":  "docs/evidence/ptq1-primetime-basis-decision-20261103.json",
+                                  "bytes":  8771,
+                                  "sha256":  "b5b9fe2088e98cd978ecd7704e6094c37f5caab2c381bff5c1d69896d425c30c"
+                              },
+                              {
+                                  "path":  "docs/evidence/ptq1-primetime-service-decision-20261103.json",
+                                  "bytes":  22433,
+                                  "sha256":  "8062ab5fd3e9986571f97a8e216b73eb7b80fb026e3f11a495af40134944b645"
+                              },
+                              {
+                                  "path":  "docs/evidence/ptq1-primetime-independent-decision-20261103.json",
+                                  "bytes":  22814,
+                                  "sha256":  "3db76770c3ac1db01389974330c632ec7bb5f65fcce98b0dbf841c4adfad6a9d"
+                              },
+                              {
+                                  "path":  "docs/evidence/ptq1-local-gate-review-20261103.json",
+                                  "bytes":  10102,
+                                  "sha256":  "899974adc28828dd3bbbfb197383aef61a7187d487fecb35501705b45e728940"
+                              },
+                              {
+                                  "path":  "docs/evidence/prism-0114-readiness-20261103.json",
+                                  "bytes":  21280,
+                                  "sha256":  "b3909561b7431a5fc8c0ad96caf10d0d494b8a85657fab9661ed672761abbbdc"
+                              },
+                              {
+                                  "path":  "docs/evidence/ptq1-rollback-41573164864/independent-review.json",
+                                  "bytes":  11908,
+                                  "sha256":  "7a618b690ad868deccf31a0721885e33d97715f72cf84f1d34d4e0dc0ad99641"
+                              },
+                              {
+                                  "path":  "docs/evidence/ptq1-promotion-bb020f4-service-90a62b9-final-review.json",
+                                  "bytes":  4721,
+                                  "sha256":  "9bcbe2846c9a4b056f1026b61e2fb6c50b22dd1299199184f5eb54205636428c"
+                              },
+                              {
+                                  "path":  "docs/evidence/native-owner-packet-controls-20261103/owner-workload-plan.json",
+                                  "bytes":  3049,
+                                  "sha256":  "8f4e0b4b78bba7d056ab0ba21f65c0477887c2e2def107ab5f6c3aac907d398d"
+                              }
+                          ],
+    "independentFinalReview":  "docs/evidence/ptq1-primetime-final-review-20261103.json",
+    "newExecutionScope":  {
+                              "method":  "Read source and retained evidence, inspect the scoped file inventory, compare exact candidate identities and verify documentary file hashes. No device diagnostic, model workload or executable qualification trial was started.",
+                              "buildsOrRustTests":  0,
+                              "modelExecutions":  0,
+                              "deviceOrPowerQueries":  0,
+                              "payloadDownloads":  0,
+                              "networkQueries":  0,
+                              "ciQueriesDispatchesOrMonitoring":  0,
+                              "pushes":  0,
+                              "newBroadPromotionGatesPassed":  [
+
+                                                               ]
+                          },
+    "releaseApproved":  false,
+    "defaultPromotionQualified":  false,
+    "formatIntrinsicallyRejected":  false,
+    "experimentalLabelMayBeRemoved":  false,
+    "defaultsChanged":  false,
+    "installedExecutableChanged":  false,
+    "admissionOrReservesChanged":  false,
+    "requirementsOrTolerancesWeakened":  false
+}
