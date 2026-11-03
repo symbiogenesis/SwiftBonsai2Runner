@@ -86,17 +86,13 @@ and [local API contract](docs/broker-policy.md#public-request-contract).
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | **Swift Bonsai 2 `PQ2_0` (development default)** | **Rust 0.1.14 release, four workers + LoRA 1.3** | **16.64** | **1.34** | **6.71 GiB** | **11.5 GiB / not measured** | **15.5 GiB** | **149.625 MiB** |
 | **Swift Bonsai 2 `PTQ1_0` (experimental opt-in)** | **Rust 0.1.14 release, four workers + LoRA 1.3** | **29.50** | **0.75** | **5.54 GiB** | **11.5 GiB / not measured** | **15.5 GiB** | **149.625 MiB** |
-| Swift Bonsai 2 `PTQ1_0` (historical release) | Rust 0.1.13 release, four workers + LoRA 1.3 | 28.69 | 0.75 | 5.54 GiB | 11.5 GiB / 6.02 GiB (short request) | 15.5 GiB | 149.625 MiB |
-| Swift Bonsai 2 `PQ2_0` (verified Rust rollback) | Rust 0.1.13 release, four workers + LoRA 1.3 | 16.45 | 1.32 | 6.71 GiB | 11.5 GiB / 7.20 GiB (short request) | 15.5 GiB | 149.625 MiB |
-| Swift Bonsai 2 `PQ2_0` (experimental Rust) | Rust 0.1.10 prerelease, one worker + LoRA 1.3 | 35.59 | 0.64 | 6.71 GiB | 11.5 GiB / not recorded | 15.5 GiB | 149.625 MiB |
-| Swift Bonsai 2 `PQ2_0` (experimental Rust) | Rust 0.1.10 prerelease, four workers + LoRA 1.3 | 16.98 | 1.34 | 6.71 GiB | 11.5 GiB / not recorded | 15.5 GiB | 149.625 MiB |
-| Swift Bonsai 2 `PQ2_0` (historical Rust release) | Rust 0.1.9 prerelease, four workers + LoRA 1.3 | 23.00 | 1.32 | 6.71 GiB | 11.5 GiB / 7.04 GiB (older source diagnostic) | 15.5 GiB | 149.625 MiB |
 | Swift Bonsai 2 `PTQ1_0` | PrismML C++ CPU | Startup failed | Startup failed | 5.54 GiB | 11.5 GiB / — | 15.5 GiB | — |
 | Swift Bonsai 2 `PQ2_0` (explicit publisher rollback) | PrismML C++ CPU | Startup failed | Startup failed | 6.71 GiB | 11.5 GiB / — | 15.5 GiB | — |
 | Qwen3.8-27B `UD-Q3_K_XL` | llama.cpp reference | Not installed | Not installed | 12.24 GiB | 18 GiB / — | 22 GiB | — |
 
 The [2026-11-03 separated timing capture](docs/evidence/token-timing-20261103/summary.json)
-measured every installed Rust profile above on the Snapdragon X2 Elite Extreme.
+measured seven installed Rust profiles on the Snapdragon X2 Elite Extreme.
+The current release profiles are shown above.
 Each fresh owner used the fixed prompt `Count from 1 to 100.`, thinking off,
 seed 42 and the standard Swift adapter at scale 1.3. All seven measured responses
 reported eight completion tokens and returned `1, 2, 3,` before hitting the cap.
