@@ -1495,13 +1495,23 @@ async fn start_adapter_with_progress(
     evidence: &Path,
     observe: impl FnMut(StartupProgress),
 ) -> Result<LaunchedService, LaunchError> {
-    timeout(
-        WAIT,
+    adapter_startup_with_timeout(
         adapter_configuration(profile, data, evidence)
             .start_with_progress(pending::<io::Result<()>>(), observe),
     )
     .await
-    .unwrap()
+}
+
+async fn adapter_startup_with_timeout<T>(
+    startup: impl Future<Output = Result<T, LaunchError>>,
+) -> Result<T, LaunchError> {
+    // The shared startup cap can expire before an admitted fifteen-minute
+    // case's absolute work deadline. Return an ordinary startup failure after
+    // dropping its owned future so callers still retain progress and power
+    // endpoints instead of unwinding past their terminal receipt.
+    timeout(WAIT, startup)
+        .await
+        .map_err(|_| LaunchError::Backend)?
 }
 
 fn adapter_request(messages: Value, scale: f64, limit: u32) -> Value {
@@ -2935,6 +2945,77 @@ fn native_adapter_startup_budget_retains_pending_receipt_and_cleanup_reserve() {
         assert_eq!(report["startupBudgetExpired"], false);
         assert_eq!(deadline - tokio::time::Instant::now(), CASE_BUDGET);
         assert!(report["pendingReason"].is_null());
+        fs::remove_file(evidence.join("acceptance.json")).unwrap();
+        fs::remove_dir(evidence).unwrap();
+    });
+}
+
+#[test]
+fn native_adapter_startup_timeout_retains_failure_before_original_deadline() {
+    struct InFlight(std::rc::Rc<std::cell::Cell<bool>>);
+    impl Drop for InFlight {
+        fn drop(&mut self) {
+            self.0.set(true);
+        }
+    }
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_time()
+        .start_paused(true)
+        .build()
+        .unwrap();
+    runtime.block_on(async {
+        let evidence = env::temp_dir().join(format!(
+            "Bonsai-Adapter-Startup-Timeout-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        fs::create_dir(&evidence).unwrap();
+        let deadline = tokio::time::Instant::now() + WAIT + STOP_WAIT + Duration::from_secs(2);
+        let mut report = json!({"passed":false,"verifiedReadinessObserved":false});
+        let progress = Mutex::new(Vec::new());
+        let dropped = std::rc::Rc::new(std::cell::Cell::new(false));
+        let in_flight = InFlight(dropped.clone());
+        let owner = adapter_start_before_cleanup(
+            deadline,
+            &evidence,
+            &mut report,
+            &progress,
+            adapter_startup_with_timeout(async {
+                let _in_flight = in_flight;
+                progress.lock().unwrap().push(StartupProgress {
+                    phase: StartupPhase::AuthenticatedReadiness,
+                    completed: false,
+                    elapsed_milliseconds: 0.0,
+                    phase_milliseconds: None,
+                });
+                pending::<Result<(), LaunchError>>().await
+            }),
+        )
+        .await;
+        assert!(owner.is_none());
+        assert!(dropped.get());
+        assert_eq!(
+            deadline - tokio::time::Instant::now(),
+            STOP_WAIT + Duration::from_secs(2)
+        );
+        assert_eq!(report["pendingReason"], "startup-failed");
+        assert_eq!(report["startupBudgetExpired"], false);
+        assert_eq!(report["startupProgress"][0]["phase"], "authenticated-readiness");
+        assert_eq!(report["startupProgress"][0]["completed"], false);
+        assert_eq!(report["verifiedReadinessObserved"], false);
+        assert_eq!(report["passed"], false);
+        assert!(report["initialCleanup"].is_null());
+        let saved: Value =
+            serde_json::from_slice(&fs::read(evidence.join("acceptance.json")).unwrap()).unwrap();
+        assert_eq!(saved, report);
+        assert_eq!(adapter_startup_with_timeout(async { Ok(7) }).await, Ok(7));
+        assert_eq!(
+            adapter_startup_with_timeout(async { Err::<(), _>(LaunchError::Process) }).await,
+            Err(LaunchError::Process)
+        );
         fs::remove_file(evidence.join("acceptance.json")).unwrap();
         fs::remove_dir(evidence).unwrap();
     });
