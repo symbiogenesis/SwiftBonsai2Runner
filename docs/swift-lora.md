@@ -118,6 +118,14 @@ The missing checkpoint/conversion identity is external evidence; additional
 native/Rust agreement cannot reconstruct its provenance. The audit closes no
 model qualification gate.
 
+The [2026-11-02 public-source recheck](evidence/ptq1-authoring-inputs-20261102.json)
+finds the same publisher revision and no new authoring material in the inspected
+repository, releases or referenced model metadata. It records the exact required
+producer handoff: checkpoint shard/tensor identities, the original conversion and
+toolchain records bound to the approved adapter, and all-48 reproduction/mapping
+inputs for the existing intake. The selected direction's later B-factor agreement
+does not supply those missing inputs.
+
 ### Direction consistency
 
 `bonsai-tools qualification` operation `basis-direction` independently checks all
