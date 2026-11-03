@@ -66,7 +66,7 @@ fn missing_native_runtime_is_distinct_from_missing_model_artifacts() -> io::Resu
             .map_err(io::Error::other)?
             .as_nanos()
     ));
-    std::fs::create_dir(&data)?;
+    fs::create_dir(&data)?;
     let mut config = LaunchConfig::parse([
         OsString::from("--launch-development"),
         "--allow-unisolated-backend".into(),
@@ -106,7 +106,7 @@ fn missing_native_runtime_is_distinct_from_missing_model_artifacts() -> io::Resu
             .native_executable_guard()
             .is_ok_and(|value| value.is_none())
     );
-    std::fs::remove_dir(data)?;
+    fs::remove_dir(data)?;
     Ok(())
 }
 

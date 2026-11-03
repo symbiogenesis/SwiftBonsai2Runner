@@ -2106,8 +2106,7 @@ mod tests {
     }
 
     #[test]
-    fn native_runtime_repair_command_preserves_the_selected_data_directory()
-    -> std::result::Result<(), String> {
+    fn native_runtime_repair_command_preserves_the_selected_data_directory() -> Result<(), String> {
         let data = std::path::Path::new("C:\\Local data\\Owner's Bonsai \u{1f331}");
         let guidance = super::native_runtime_guidance(data);
         let argument = guidance
