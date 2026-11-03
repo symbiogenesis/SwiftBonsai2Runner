@@ -1,0 +1,112 @@
+{
+  "schemaVersion": 1,
+  "kind": "independent-current-ptq1-release-decision-packet-review",
+  "recordedDate": "2026-11-03",
+  "reviewerId": "Codex:/root/primetime_verdict",
+  "status": "documentary-integrity-and-no-go-interpretation-passed",
+  "reviewedProductionSourceSnapshot": "50f381f0d2833a308c39286df71e9be0b355733d",
+  "scope": "Independent review of the parent's final consolidated decision, immutable worker decision bytes, unchanged referenced source/evidence inventories, current lock identities and revised documentation. This review accepts the documentary release-admission no-go; it supplies no compiled, model, device, performance, human or promotion pass.",
+  "consolidatedDecision": {
+    "path": "docs/evidence/ptq1-primetime-decision-20261103.json",
+    "bytes": 17542,
+    "sha256": "9681fd99aebe066fdf5c94dc480fdb8a4347c3b4bc51173e0daf7f91d30770b6",
+    "digestScope": "Exact reviewed UTF-8 without BOM, LF file bytes. The decision references this review by path without a digest to avoid a circular hash.",
+    "decision": "no-go-for-default-promotion",
+    "decisionClass": "required-release-evidence-not-satisfied"
+  },
+  "workerDecisions": [
+    {
+      "path": "docs/evidence/ptq1-primetime-basis-decision-20261103.json",
+      "bytes": 8771,
+      "sha256": "b5b9fe2088e98cd978ecd7704e6094c37f5caab2c381bff5c1d69896d425c30c",
+      "referencedInventoryEntriesVerified": 13
+    },
+    {
+      "path": "docs/evidence/ptq1-primetime-service-decision-20261103.json",
+      "bytes": 22433,
+      "sha256": "8062ab5fd3e9986571f97a8e216b73eb7b80fb026e3f11a495af40134944b645",
+      "referencedInventoryEntriesVerified": 19
+    },
+    {
+      "path": "docs/evidence/ptq1-primetime-independent-decision-20261103.json",
+      "bytes": 22814,
+      "sha256": "3db76770c3ac1db01389974330c632ec7bb5f65fcce98b0dbf841c4adfad6a9d",
+      "referencedInventoryEntriesVerified": 14
+    }
+  ],
+  "integrityChecks": {
+    "consolidatedInventoryEntriesVerified": 12,
+    "nestedWorkerInventoryEntriesVerified": 46,
+    "totalInventoryEntriesVerifiedIncludingRepeatedPaths": 58,
+    "byteLengthMismatches": 0,
+    "sha256Mismatches": 0,
+    "jsonRecordsParsed": 4,
+    "candidateRuntimeLockMatch": true,
+    "candidateServerAndArchiveMatch": true,
+    "candidateModelExportAndOriginalPq2Match": true,
+    "candidateAdapterLockMatch": true,
+    "candidateRuntimeVersion": "0.1.14",
+    "candidateRuntimeRevision": "9e8ea3e2c042ab0c3f1a8e9596ff155e202c3c57",
+    "policySourceUniqueGateIds": 19,
+    "sourcePolicyRequiresEveryGatePassed": true,
+    "compiledPolicyDigestNotClaimed": true,
+    "compiledGateCountsNotClaimed": true,
+    "compiledEvaluatorExecutionNotClaimed": true,
+    "historicalSixPassThirteenPendingScoreNotTransferred": true,
+    "reviewedNewLocalLinksResolve": true,
+    "releaseDecisionAnchorExists": true
+  },
+  "interpretationReview": {
+    "admissionDecisionSupported": "Any of the unsatisfied mandatory current-source acceptance, adapter basis/authentication, eligible practical benefit or complete device/human gates is sufficient to withhold default promotion. The four independent blocker groups are explicitly identified and have concrete reconsideration requirements.",
+    "absenceVersusFailurePreserved": "The decision identifies missing or unqualified retained evidence rather than fabricating a rejected numerical or performance measurement. Evidence absence is scoped to the reviewed repository snapshot, not all possible private or external evidence.",
+    "formatVerdictPreserved": "formatIntrinsicallyRejected remains false. The reviewed packing savings and exact representation identity are retained; no intrinsic arithmetic, quality or performance failure is claimed.",
+    "performanceLimitsPreserved": "The historical fixed-order single complete-answer pair retains 18380.3443ms PQ2 and 35729.4347ms PTQ1, ratio 1.9438936570954222. Missing original per-arm power observations prohibit a qualified comparison. The observed losing result remains visible without establishing an intrinsic-format slowdown or satisfying a capacity/energy route.",
+    "benefitThresholdPreserved": "The required route remains at least ten percent lower matched end-to-end latency, or independently reviewed capacity/energy benefit within accepted latency/quality limits. File-byte savings and bounded Job commit cannot substitute.",
+    "humanAndProvenanceLimitsPreserved": "Agents cannot supply independent human quality/comfort acceptance or authenticate original authoring inputs through self-declared manifests. A public reconstruction match would close only its stated numerical scope.",
+    "currentAndHistoricalVersionsSeparated": "The guide's release decision correctly identifies 0.1.14. Earlier source/runtime attempts are under Historical evidence and the former misleading current 0.1.10/0.1.13 labels are replaced with historical scope. The six-pass/thirteen-pending result remains attached to 0.1.13.",
+    "executionOwnershipAndBudgetPreserved": "No push or CI action is claimed or authorized by this review. Hosted preparation and owner device selection remain separate. The prepared 450-second narrow service/rollback workload requires its smallest supported ten-minute allowance after prerequisites pass and cannot establish complete promotion. Historical clocks remain closed."
+  },
+  "lineEndingCorrection": {
+    "finding": "The first parent packet matched its raw inventory but contained CRLF worker decision copies. A new text eol=lf rule alone would not rewrite those already checked-out bytes, so a later checkout could disagree with the sealed raw inventory.",
+    "resolution": "Parent converted all three worker decisions to UTF-8 without BOM/LF, refreshed all twelve consolidated inventory records and reserialized the consolidated decision. This reviewer then independently verified the final raw decision digest and all fifty-eight inventory entries. The .gitattributes rule covers the consolidated decision and all worker/final reviews.",
+    "mainIntegrationObligation": "Apply the same LF normalization to any already checked-out decision/review copies during main integration, then verify these raw digests. Do not rewrite the retained manifests to fit different bytes."
+  },
+  "normalizedDocumentationIdentities": [
+    {
+      "path": "README.md",
+      "normalizedLfUtf8Bytes": 13672,
+      "normalizedLfSha256": "46ca2b8c06703da706e90c09b22d34352067c3bb0ec0ca7db0a502420f1755dd"
+    },
+    {
+      "path": "PLAN.md",
+      "normalizedLfUtf8Bytes": 90072,
+      "normalizedLfSha256": "4a674f086ef1d33668b5f91b096ca5e86e9066660aef8d68da6d016d06049b93"
+    },
+    {
+      "path": "docs/swift-memory.md",
+      "normalizedLfUtf8Bytes": 42750,
+      "normalizedLfSha256": "44de7f324bda6457483df95cddca48428dd842890f1192c37fb815cc4c945149"
+    },
+    {
+      "path": ".gitattributes",
+      "normalizedLfUtf8Bytes": 7070,
+      "normalizedLfSha256": "34d16de24f14ef6f18b5cbdcd34b318589193bc3c794ab20ee7e6c6bb6ead8c5"
+    }
+  ],
+  "documentationDigestScope": "UTF-8 without BOM after converting CRLF to LF. These are explicitly normalized text identities, not raw working-tree digests. They permit Git checkout line-ending conversion without claiming different raw bytes are identical.",
+  "remainingConditions": "The consolidated reconsideration requirements remain required. Passing this documentary review closes no broad promotion gate and does not change source/runtime/model defaults, installation, resource admission or owner execution permissions.",
+  "newExecution": {
+    "method": "Read retained source/documents, parse JSON, compare locked identities and policy source, resolve changed local documentation links and hash selected files. No qualification workload was started.",
+    "buildsOrRustTests": 0,
+    "modelExecutions": 0,
+    "deviceOrPowerQueries": 0,
+    "networkQueries": 0,
+    "ciQueriesDispatchesOrMonitoring": 0,
+    "pushes": 0
+  },
+  "defaultPromotionQualified": false,
+  "formatIntrinsicallyRejected": false,
+  "experimentalLabelMayBeRemoved": false,
+  "requirementsOrTolerancesWeakened": false,
+  "newBroadPromotionGatesPassed": []
+}
