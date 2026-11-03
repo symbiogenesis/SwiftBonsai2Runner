@@ -1,0 +1,43 @@
+{
+  "results": [
+    {
+      "operation": "inference",
+      "stdout": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-native-repair-863bb68f097f4e29bd2af3f7fbd61d57\\inference-stdout.json",
+      "exit_code": 0,
+      "stderr": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-native-repair-863bb68f097f4e29bd2af3f7fbd61d57\\inference-stderr.txt",
+      "elapsed_seconds": 1.0580326
+    },
+    {
+      "operation": "model",
+      "stdout": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-native-repair-863bb68f097f4e29bd2af3f7fbd61d57\\model-stdout.json",
+      "exit_code": 0,
+      "stderr": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-native-repair-863bb68f097f4e29bd2af3f7fbd61d57\\model-stderr.txt",
+      "elapsed_seconds": 4.1739058
+    },
+    {
+      "operation": "adapter",
+      "stdout": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-native-repair-863bb68f097f4e29bd2af3f7fbd61d57\\adapter-stdout.json",
+      "exit_code": 0,
+      "stderr": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-native-repair-863bb68f097f4e29bd2af3f7fbd61d57\\adapter-stderr.txt",
+      "elapsed_seconds": 4.2710668
+    }
+  ],
+  "endpoint_snapshots_do_not_prove_uninterrupted_power": true,
+  "scope": "pinned-runtime-provision-and-artifact-verification-only",
+  "power_before": {
+    "battery_flags": "High",
+    "battery_percent": 85.00000238418579,
+    "ac": "Offline",
+    "battery_saver": "unknown"
+  },
+  "model_started": false,
+  "power_after": {
+    "battery_flags": "High",
+    "battery_percent": 85.00000238418579,
+    "ac": "Offline",
+    "battery_saver": "unknown"
+  },
+  "elapsed_seconds": 4.2774193,
+  "status": "passed",
+  "started_utc": "2026-11-03T06:52:07.2912803Z"
+}
