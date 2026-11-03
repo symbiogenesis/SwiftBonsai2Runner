@@ -24,9 +24,14 @@ Missing, changed or mismatched power conditions leave performance comparison
 ineligible. Equal endpoint observations alone do not prove continuous stability,
 and a later power query cannot establish conditions for a completed trial.
 
-Native application acceptance records `powerBefore`, `powerAfter` and
-`powerConditions`, with separate observations for each representation or worker
-comparison arm. Native numerical and request-timing captures retain the same
+Native application acceptance records model-case `powerBefore`, `powerAfter` and
+`powerConditions`, with separate observations for each owner, representation or worker
+comparison arm. These Rust endpoints follow workflow checkout, package intake and
+release verification; they do not establish power during that earlier setup or
+later receipt uploads. The owner must separately retain pre-setup and post-workload
+aggregate observations within the same declared allowance before another device trial.
+Absent aggregate observations remain unknown; later case snapshots cannot fill them.
+Native numerical and request-timing captures retain the same
 observations for each model sample and the overall capture. Queries use the
 existing read-only Windows power API. Unknown or mismatched AC/battery-saver
 conditions set `performanceComparisonEligible: false` and leave eligible timing
@@ -201,7 +206,7 @@ without failures before its own verified cleanup.
 
 Every request/startup uses the same absolute deadline with thirty seconds held
 for owned cleanup. Fresh startup requires more than sixty seconds remaining;
-missing work stays pending. Power endpoints are retained for the full workload
+missing work stays pending. Power endpoints are retained for the Rust model case
 and each owner, without claiming uninterrupted stability. Exact request/message
 digests and matching positive reported prompt counts bind completed streams;
 the production broker retains one canonical body for counting and generation.
@@ -217,11 +222,18 @@ The existing service-only profile retains its workload. After both PTQ1 owners
 have verified empty Jobs and released listeners, a third fresh owner selects
 `--use-original-pq2` with pinned Prism 0.1.14, adapter 1.3 and four workers.
 
-Both service cases share one absolute case deadline with their outer timeout.
-Their Stop path caps its existing thirty-second allowance at that same deadline,
+Both service cases retain one absolute case deadline with their outer timeout.
+The combined case gives its PTQ1 sequence an earlier deadline, withholding the
+seventy-five-second PQ2 tail through both PTQ1 teardowns. With at most 135 seconds
+remaining, it rejects before the first PTQ1 owner: the existing sixty-second fresh
+PTQ1 owner floor must fit in addition to the rollback tail. This necessary floor
+does not establish that the complete packet can fit a particular allowance.
+Their Stop path caps its existing thirty-second allowance at the applicable deadline,
 reserving ten seconds to abort and await a stuck owner task so ownership is not
 detached. Fixed pending reasons preserve failed Stop delivery, task/run failures,
 unexpected exits and unconfirmed listener release before retaining power-after.
+Only explicit connection refusal confirms listener release; an accepted connection
+means occupied, while timeout, access, network and other probe failures remain unknown.
 A task error leaves Job emptiness unknown. Confirmed cleanup is required before
 another owner or the post-cleanup PQ2 hash check; synchronous native teardown
 remains non-preemptible. These source controls require hosted and device acceptance.
@@ -239,13 +251,23 @@ reserve. The third startup requires more than seventy-five seconds remaining;
 startup/request work stops forty-five seconds before that deadline, retaining
 fifteen seconds after owned cleanup for complete-file verification. Hashing checks
 cancellation before each bounded read; blocking OS work still requires the outer
-owner deadline. Power endpoints cover each owner and the whole workload.
+owner deadline. Rust power endpoints cover each owner and the model case; the
+separately retained aggregate observations above must cover setup and final retention.
 `serviceIntegration` and `originalPq2Rollback` keep their distinct partial verdicts;
 the complete case requires both plus post-cleanup file verification. Missing or
 expired work remains pending, without a continuation job. Hosted preparation
 does not authorize another owner trial or reopen an earlier closed allowance.
 Performance/resource benefit, full-context numerics, provenance, human quality,
 comfort, isolation and default promotion remain independent.
+
+The [prepared packet estimate](evidence/native-owner-packet-controls-20261103/owner-workload-plan.json)
+budgets 450 seconds conservatively for setup, three startups, five PTQ1 generation/prefix
+operations, controls, one complete PQ2 response, all three cleanup reserves, hashing
+and retention. This planning estimate has no measured 0.1.14 completion result.
+The smallest currently supported workflow allowance covering it is ten minutes;
+the fifteen-minute option is unnecessary for this fixed packet. An owner must
+freeze the final source, review its hosted package and all prerequisite checks,
+retain aggregate power endpoints and predeclare the allowance before execution.
 
 Explicit `profile: pq2-adapter-row4` selects original PQ2, the approved adapter at
 scale 1.3 and pinned Prism 0.1.10 with `--native-row-workers 4`. It requires exactly

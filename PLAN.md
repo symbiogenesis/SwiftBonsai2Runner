@@ -49,10 +49,14 @@ The PTQ1 critical path is:
 
 The next delivery packet freezes the published Prism 0.1.14 CPU runtime and one
 settled Runner revision. Complete hosted Runner integration and source-bound
-acceptance preparation, then have the owner run the combined
-`ptq1-adapter-service-rollback-row4` workload once. Keep the five-minute default
-when its conservative estimate fits; otherwise predeclare the smallest supported
-extended allowance. Reuse one PTQ1 owner for scale/count/context controls and
+acceptance preparation with `run_device: false`, which leaves the laptop lane
+available and queues no owner job. Review that exact-source package before any
+explicit device selection. The [fixed combined-packet estimate](docs/evidence/native-owner-packet-controls-20261103/owner-workload-plan.json)
+is 450 seconds including all setup, three startups, requests, cleanup, hashing
+and retention; its smallest supported workflow allowance is ten minutes.
+Have the owner predeclare that allowance before running
+`ptq1-adapter-service-rollback-row4` once, stopping early when done or infeasible.
+Reuse one PTQ1 owner for scale/count/context controls and
 retain the required fresh owners for interruption replay and original-PQ2
 rollback. Do not remove those independent-owner checks to save startup time.
 Archive the complete raw receipts and independently review them before another
@@ -86,6 +90,18 @@ benchmarks and performance captures stay in owning CI.
 ## Application and daily service
 
 ### Actual-model acceptance
+
+Qualify the [owner-packet controls](docs/evidence/native-owner-packet-controls-20261103/summary.json)
+on settled main through owner-managed hosted preparation: explicit connection
+refusal must confirm listener release, and the PTQ1 sequence must preserve the
+separate seventy-five-second original-PQ2 tail. Exercise both new exact controls
+and the native linking/strict Release analyzers before owner admission. The one
+new-source local verification parsed seven workflow PowerShell blocks, then
+stopped on a null formatter-process exit observation before any Cargo invocation.
+Its failed receipt and closed clock remain retained; compiled checks are pending
+and must not be retried as a continuation. Retain independent aggregate power
+observations before setup and after final retention for the next owner trial;
+Rust model-case and per-owner endpoints cannot establish the earlier setup conditions.
 
 Qualify the [source-bound acceptance preparation](docs/evidence/native-primetime-preparation-20261103/summary.json)
 on settled main. Hosted preparation now requires exact-revision strict Release

@@ -1,0 +1,104 @@
+{
+    "schemaVersion":  1,
+    "kind":  "new-owner-packet-controls-source-verification",
+    "startedAtUtc":  "2026-11-03T08:02:49.9072435Z",
+    "startedTick":  1248607785730,
+    "tickFrequency":  10000000,
+    "sourceRevision":  "c62549554decf189097668d85428e765d4fc2798",
+    "repository":  "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\ready-next-integration",
+    "maximumTotalSeconds":  300,
+    "workCutoffSeconds":  240,
+    "powerBefore":  {
+                        "observedAtUtc":  "2026-11-03T08:02:50.0074835Z",
+                        "acConnected":  false,
+                        "chargePercent":  43.999999761581421,
+                        "batterySaver":  "unknown",
+                        "source":  "Windows.Forms.PowerStatus"
+                    },
+    "checks":  [
+                   {
+                       "name":  "workflow-powershell-parse",
+                       "startedSeconds":  0.2489234,
+                       "powerBefore":  {
+                                           "observedAtUtc":  "2026-11-03T08:02:50.1551862Z",
+                                           "acConnected":  false,
+                                           "chargePercent":  43.999999761581421,
+                                           "batterySaver":  "unknown",
+                                           "source":  "Windows.Forms.PowerStatus"
+                                       },
+                       "blocks":  7,
+                       "passed":  true,
+                       "powerAfter":  {
+                                          "observedAtUtc":  "2026-11-03T08:02:50.1761528Z",
+                                          "acConnected":  false,
+                                          "chargePercent":  43.999999761581421,
+                                          "batterySaver":  "unknown",
+                                          "source":  "Windows.Forms.PowerStatus"
+                                      },
+                       "finishedSeconds":  0.2793337
+                   },
+                   {
+                       "name":  "canonical-source-format",
+                       "arguments":  [
+                                         "--edition",
+                                         "2024",
+                                         "src/broker/tests/native_model/service_integration.rs",
+                                         "src/broker/tests/native_model/service_rollback.rs"
+                                     ],
+                       "startedSeconds":  0.2824477,
+                       "powerBefore":  {
+                                           "observedAtUtc":  "2026-11-03T08:02:50.1884405Z",
+                                           "acConnected":  false,
+                                           "chargePercent":  43.999999761581421,
+                                           "batterySaver":  "unknown",
+                                           "source":  "Windows.Forms.PowerStatus"
+                                       },
+                       "passed":  false,
+                       "exitCode":  null,
+                       "powerAfter":  {
+                                          "observedAtUtc":  "2026-11-03T08:02:50.2971207Z",
+                                          "acConnected":  false,
+                                          "chargePercent":  43.999999761581421,
+                                          "batterySaver":  "unknown",
+                                          "source":  "Windows.Forms.PowerStatus"
+                                      },
+                       "finishedSeconds":  0.3915333
+                   }
+               ],
+    "allRequestedChecksPassed":  false,
+    "modelExecutions":  0,
+    "benchmarks":  0,
+    "fullSuites":  0,
+    "ciActions":  0,
+    "pushes":  0,
+    "performanceComparisonQualified":  false,
+    "defaultPromotionQualified":  false,
+    "elapsedSeconds":  0.459803,
+    "failure":  "Focused check failed: canonical-source-format",
+    "sourceFiles":  [
+                        {
+                            "sha256":  "c66b023ca687d5a482124fd0e54f8b73aee936d8dc5e826cc2912776e6d39317",
+                            "file":  "src/broker/tests/native_model/service_integration.rs",
+                            "bytes":  43766
+                        },
+                        {
+                            "sha256":  "050e4740a5a8ce35f0759ec61c0ee37a2a3f65784aecb541e7942f05a62a7753",
+                            "file":  "src/broker/tests/native_model/service_rollback.rs",
+                            "bytes":  28224
+                        },
+                        {
+                            "sha256":  "be85604faf23cc349d1a4f8fd377f9293fdaa045a750b806d74002b41e32b41c",
+                            "file":  ".github/workflows/native-runtime-acceptance.yml",
+                            "bytes":  51067
+                        }
+                    ],
+    "powerAfter":  {
+                       "observedAtUtc":  "2026-11-03T08:02:50.3613047Z",
+                       "acConnected":  false,
+                       "chargePercent":  43.999999761581421,
+                       "batterySaver":  "unknown",
+                       "source":  "Windows.Forms.PowerStatus"
+                   },
+    "uninterruptedPowerStabilityEstablished":  false,
+    "clockClosed":  true
+}

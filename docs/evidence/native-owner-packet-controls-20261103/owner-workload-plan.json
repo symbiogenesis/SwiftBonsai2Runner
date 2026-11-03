@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "kind": "prospective-owner-service-rollback-workload-estimate",
+  "recordedDate": "2026-11-03",
+  "status": "preparation-only-owner-execution-not-started",
+  "profile": "ptq1-adapter-service-rollback-row4",
+  "runtimeVersion": "0.1.14",
+  "runtimeRevision": "9e8ea3e2c042ab0c3f1a8e9596ff155e202c3c57",
+  "adapterScale": 1.3,
+  "nativeRowWorkers": 4,
+  "servingStatePolicy": "reset-every-request",
+  "fixedWork": [
+    { "work": "Owner setup, checkout, hosted-tool intake and verification, including power observations", "seconds": 60 },
+    { "work": "Three independent verified owner startups", "seconds": 45 },
+    { "work": "Five PTQ1 generation/prefix operations, including fresh seeded replay", "seconds": 150 },
+    { "work": "Invalid-scale and context controls plus receipt overhead", "seconds": 30 },
+    { "work": "One naturally complete original-PQ2 answer", "seconds": 30 },
+    { "work": "Three thirty-second owned cleanup reserves", "seconds": 90 },
+    { "work": "Post-cleanup complete original-file CNG verification", "seconds": 15 },
+    { "work": "Final sanitized retention and aggregate power endpoint", "seconds": 30 }
+  ],
+  "conservativeEstimateSeconds": 450,
+  "smallestExposedSupportedAllowanceMinutes": 10,
+  "proposedBudgetReason": "Fixed PTQ1 service plus fresh original-PQ2 rollback: conservative 450s including setup, 3 startups, 5 PTQ1 operations, controls, complete PQ2 answer, 3 cleanup reserves, full-file hash and retention. Five minutes cannot cover this estimate; ten is the smallest exposed extension.",
+  "estimateBasis": "Conservative source planning informed by retained 0.1.13 request/startup brackets, not a matched comparison or measured 0.1.14 result. Reserves are charged even when actual cleanup finishes sooner. Stop early when selected work finishes or cannot fit.",
+  "historicalContext": [
+    "docs/evidence/ptq1-0113-lifecycle-41539984210/interpretation.json",
+    "docs/evidence/ptq1-rollback-41573164864/independent-review.json"
+  ],
+  "requiredBeforeExecution": [
+    "Freeze final Runner main source and obtain owner-reviewed exact-source Foundation and hosted acceptance package results, including strict Release chat/broker/tools analyzers and both new controls.",
+    "Owner explicitly chooses device execution; hosted-only preparation defaults run_device=false and starts no owner.",
+    "Close any user chat without qualification cleanup terminating an existing session.",
+    "Retain independent pre-setup and post-workload aggregate power observations plus all Rust model-case and owner endpoints. Unknown stays unknown; do not infer earlier conditions.",
+    "Predeclare the supported whole-job allowance and fixed estimate before setup. Charge owner registration/intake, all owners, cleanup and retention to the same original clock. Never retry or continue a partial matrix."
+  ],
+  "frozenRunnerRevision": null,
+  "hostedPackageReady": false,
+  "ownerWorkloadStarted": false,
+  "performanceComparisonQualified": false,
+  "defaultPromotionQualified": false
+}
