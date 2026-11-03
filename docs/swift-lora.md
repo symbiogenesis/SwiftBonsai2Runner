@@ -160,16 +160,20 @@ directory, an external `manifestPath` and its independently selected raw-byte
 it never loads a checkpoint or starts inference. Keep collection and review within
 the owner's aggregate budget, or perform reproduction and intake on hosted CI.
 
-The schema-1 manifest contains `modelSha256` for the current PTQ1 export,
+The schema-2 manifest contains `modelSha256` for the current PTQ1 export,
 `runtimeCommit` for the pinned release, `adapter`, `checkpointManifest`,
 `conversionManifest`, `toolchainManifest`, `direction`, a nonempty `normalization`
 description, `mapping`, `absoluteTolerance`, `relativeTolerance` and `ssmSites`.
 Every artifact reference is `{ "file": "NAME", "bytes": LENGTH, "sha256": "SHA256" }`;
 files must be individual ordinary files in `evidenceDirectory`. Raw-file sizes and
-SHA-256 digests are checked. The checkpoint/conversion/toolchain manifests must
-retain the immutable shard/tensor identities, exact invocation, tool versions and
-their binding to the approved adapter for independent review; intake hashes their
-bytes without authenticating those declarations.
+SHA-256 digests are checked. The checkpoint/conversion/toolchain manifests follow
+the [structured authoring-record contract](adapter-authoring-intake.md). Intake
+checks the actual bounded original safetensors index against every declared shard
+and all 48 canonical original SSM tensor names, shapes and payload identities. It
+also binds the exact conversion argv, exporter source and toolchain records to the
+selected checkpoint/direction/adapter/normalization. These consistency checks do
+not authenticate declarations or read checkpoint payloads. The former schema-1
+opaque-manifest intake is rejected; retained historical records remain unchanged.
 
 `mapping.nativeToAuthoring` is a permutation of all 6144 channel indices and
 `mapping.signs` contains 6144 values of either -1 or 1. Its explicit equation is

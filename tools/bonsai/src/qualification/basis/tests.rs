@@ -4,14 +4,14 @@ use super::{CHANNELS, Intake, Mapping, artifact, compare, header, validate, vect
 use crate::Result;
 use crate::identity::sha256;
 
-fn manifest() -> Result<Value> {
+pub(super) fn manifest() -> Result<Value> {
     let runtime: Value = serde_json::from_str(include_str!(
         "../../../../../config/prism-inference.lock.json"
     ))
     .map_err(|error| error.to_string())?;
     let reference = json!({"file":"input.json", "bytes":2, "sha256":sha256(b"{}")});
     Ok(
-        json!({"schemaVersion":1,"modelSha256":super::MODEL_SHA256,"runtimeCommit":runtime["commit"],
+        json!({"schemaVersion":2,"modelSha256":super::MODEL_SHA256,"runtimeCommit":runtime["commit"],
         "adapter":{"file":"adapter.gguf","bytes":super::ADAPTER_BYTES,"sha256":super::ADAPTER_SHA256},
         "checkpointManifest":reference,"conversionManifest":reference,"toolchainManifest":reference,
         "direction":reference,"normalization":"F32 L2 normalization before reproduction",
@@ -28,6 +28,7 @@ fn intake_requires_all_sites_exact_identities_mapping_and_tight_bounds() -> Resu
         &serde_json::from_value::<Intake>(original.clone()).map_err(|error| error.to_string())?,
     )?;
     for path in [
+        "/schemaVersion",
         "/ssmSites/1/block",
         "/mapping/nativeToAuthoring/1",
         "/mapping/signs/0",
@@ -37,6 +38,7 @@ fn intake_requires_all_sites_exact_identities_mapping_and_tight_bounds() -> Resu
     ] {
         let mut bad = original.clone();
         *bad.pointer_mut(path).ok_or("Missing basis fixture path.")? = match path {
+            "/schemaVersion" => json!(1),
             "/absoluteTolerance" => json!(0.1),
             "/runtimeCommit" | "/adapter/sha256" => json!("0".repeat(64)),
             _ => json!(0),

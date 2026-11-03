@@ -14,6 +14,7 @@ use crate::identity::sha256;
 
 mod direction;
 mod header;
+mod provenance;
 #[cfg(test)]
 mod tests;
 
@@ -119,7 +120,7 @@ fn validate(manifest: &Intake) -> Result<()> {
         serde_json::from_str(include_str!("../../../../config/prism-inference.lock.json"))
             .map_err(|error| error.to_string())?;
     require(
-        manifest.schema_version == 1
+        manifest.schema_version == 2
             && manifest.model_sha256 == MODEL_SHA256
             && manifest.runtime_commit == runtime["commit"]
             && manifest.adapter.bytes == ADAPTER_BYTES
@@ -223,6 +224,7 @@ pub(super) fn run(request: Map<String, Value>) -> Result<Value> {
         artifact(&directory, reference, MANIFEST_LIMIT)?;
         inputs.insert(name, reference.sha256.as_str());
     }
+    let provenance = provenance::validate(&directory, &manifest)?;
     let adapter = artifact(&directory, &manifest.adapter, ADAPTER_BYTES)?;
     let vectors = header::ssm_vectors(&adapter)?;
     let mut reports = Vec::new();
@@ -247,13 +249,15 @@ pub(super) fn run(request: Map<String, Value>) -> Result<Value> {
         );
     }
     Ok(
-        json!({"schemaVersion": 1, "kind": "adapter-authoring-basis-intake",
+        json!({"schemaVersion": 2, "kind": "adapter-authoring-basis-intake",
         "manifestSha256": request.manifest_sha256, "adapterSha256": manifest.adapter.sha256,
         "modelSha256": manifest.model_sha256, "runtimeCommit": manifest.runtime_commit,
         "status": if passed {"intake-complete"} else {"rejected-vector-comparison"},
-        "inputSha256": inputs, "ssmVectorComparisonPassed": passed, "sites": reports,
+        "inputSha256": inputs, "authoringManifestConsistency": provenance,
+        "ssmVectorComparisonPassed": passed, "sites": reports,
+        "authoringProvenanceQualified": false, "aFactorReproductionQualified": false,
         "writerBasisQualified": false, "defaultMayChange": false,
         "pending": ["Independent authentication of checkpoint/conversion/direction provenance and reproduction", "Independent native writer-input/correction validation of the declared mapping", "No-adapter/loaded-zero identity and nonzero logits/live-state application", "Scalar/explicit-NEON and application promotion gates"],
-        "scope": "Raw-byte intake and complete signed-permutation A-vector comparison only. Checkpoint payloads are not loaded or hashed. Caller-supplied manifests and vectors do not authenticate their authoring provenance or qualify the native writer basis."}),
+        "scope": "Raw-byte intake, declared checkpoint/index/conversion/toolchain consistency and complete signed-permutation A-vector comparison only. Checkpoint payloads are not loaded or hashed. Caller-supplied manifests and vectors do not authenticate their authoring provenance, independently reproduce A factors or qualify the native writer basis."}),
     )
 }

@@ -29,7 +29,8 @@ resource and installation gates below with reproducible evidence before promotio
 The PTQ1 critical path is:
 
 1. Obtain the approved adapter's immutable authoring inputs, check their bounded
-   manifests and all 48 supplied SSM A vectors through `qualification` operation
+   schema-2 envelope, original safetensors index and structured authoring
+   manifests plus all 48 supplied SSM A vectors through `qualification` operation
    `basis-intake`, then independently verify their authenticity, reproduction and
    native writer mappings. Successful intake, loading or matching runtimes cannot
    recover missing provenance.
