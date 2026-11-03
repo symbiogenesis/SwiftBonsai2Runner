@@ -406,6 +406,28 @@ async fn start_before_deadline(
     owner
 }
 
+async fn cancellation_before_deadline(
+    port: u16,
+    credential: &str,
+    evidence: &Path,
+    deadline: tokio::time::Instant,
+    report: &mut Value,
+) -> Option<(BufReader<TcpStream>, Option<String>)> {
+    report["phase"] = json!("scale-1.3-first-prefix-and-explicit-stop");
+    report["serviceIntegrationWorkload"]["phase"] = report["phase"].clone();
+    save_acceptance_report(evidence, report);
+    let captured = adapter_work_before_cleanup(deadline, async {
+        let client = try_connect(port, credential, &body(EXTENDED_COMPLETION_CAP)).await?;
+        cancellation_prefix(client).await
+    })
+    .await;
+    if captured.as_ref().is_some_and(Result::is_err) {
+        report["serviceIntegrationWorkload"]["pendingReason"] =
+            json!("cancellation-response-transport-or-framing-failed");
+    }
+    captured.and_then(Result::ok)
+}
+
 async fn initial_owner(
     profile: &AdapterProfile,
     data: &Path,
@@ -446,19 +468,7 @@ async fn initial_owner(
     let prefix = if boundaries
         && deadline.saturating_duration_since(tokio::time::Instant::now()) > NEXT_OWNER_RESERVE
     {
-        report["phase"] = json!("scale-1.3-first-prefix-and-explicit-stop");
-        report["serviceIntegrationWorkload"]["phase"] = report["phase"].clone();
-        save_acceptance_report(evidence, report);
-        let captured = adapter_work_before_cleanup(deadline, async {
-            let client = try_connect(port, &credential, &body(EXTENDED_COMPLETION_CAP)).await?;
-            cancellation_prefix(client).await
-        })
-        .await;
-        if captured.as_ref().is_some_and(Result::is_err) {
-            report["serviceIntegrationWorkload"]["pendingReason"] =
-                json!("cancellation-response-transport-or-framing-failed");
-        }
-        captured.and_then(Result::ok)
+        cancellation_before_deadline(port, &credential, evidence, deadline, report).await
     } else {
         None
     };
