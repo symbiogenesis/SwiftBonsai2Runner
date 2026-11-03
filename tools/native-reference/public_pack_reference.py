@@ -37,6 +37,13 @@ ARITHMETIC = "public-mlx-f16-inverse1024-f16-f32-dot-v1"
 BLOCKS = tuple(block for block in range(64) if (block + 1) % 4 != 0)
 ABSOLUTE = RELATIVE = 1e-5
 WORK_SECONDS = 2400
+REPLAY_SOURCE_FILES = (
+    "config/swift-lora.lock.json", "config/swift-lora.direction.json",
+    "tools/native-reference/public-authoring-pins.json",
+    "tools/native-reference/public_pack_reference.py",
+    "tools/native-reference/public_pack_formats.py",
+    "tools/native-reference/audit_public_reference.py",
+)
 
 
 def hosted(environment: dict[str, str]) -> None:
@@ -69,6 +76,27 @@ def write_json(path: Path, value: object) -> None:
 
 def sha256(raw: bytes) -> str:
     return hashlib.sha256(raw).hexdigest()
+
+
+def retain_replay_source(repository: Path, evidence: Path, revision: str) -> dict:
+    """Keep the finite raw source selection needed for a later offline replay."""
+    bundle = evidence / "replay-source"
+    bundle.mkdir(exist_ok=False)
+    files = []
+    for relative in REPLAY_SOURCE_FILES:
+        with (repository / relative).open("rb") as source:
+            raw = source.read(1024 * 1024 + 1)
+        require(0 < len(raw) <= 1024 * 1024, "replay source exceeds its finite byte bound")
+        destination = bundle / relative
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        with destination.open("xb") as output:
+            output.write(raw)
+        files.append({"path": relative, "bytes": len(raw), "sha256": sha256(raw)})
+    manifest = bundle / "source-manifest.json"
+    write_json(manifest, {"schemaVersion": 1, "kind": "public-reference-replay-source",
+                         "sourceRevision": revision, "files": files})
+    return {"replaySourceManifestFile": "replay-source/source-manifest.json",
+            "replaySourceManifestSha256": sha256(manifest.read_bytes())}
 
 
 def receive(directory: Path, pin: dict) -> Path:
@@ -259,6 +287,9 @@ def audit(data: Path, evidence: Path) -> bool:
               "fullCheckpointWritten": False, "all48PublicAComparisonPassed": False}
     attempt = evidence / "attempt.json"
     try:
+        report["stage"] = "replay-source-retention"
+        write_json(attempt, report)
+        report.update(retain_replay_source(repository, evidence, report["sourceRevision"]))
         write_json(attempt, report)
         configuration = io.StringIO()
         with contextlib.redirect_stdout(configuration):
@@ -341,6 +372,10 @@ def audit(data: Path, evidence: Path) -> bool:
     except Exception as error:
         report["status"] = "failed"
         report["failureClass"] = type(error).__name__
+        if type(error) is Rejected:
+            # These are fixed validation messages from our local readers. Never
+            # retain arbitrary HTTP, OS or library exception text or URLs.
+            report["validationFailure"] = str(error)[:256]
         raise
     finally:
         write_json(attempt, report)

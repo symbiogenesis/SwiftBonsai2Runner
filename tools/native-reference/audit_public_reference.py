@@ -8,8 +8,10 @@ import argparse
 import hashlib
 import json
 import math
+import os
 from pathlib import Path
 import re
+import stat
 import struct
 import sys
 
@@ -17,6 +19,13 @@ BLOCKS = tuple(block for block in range(64) if (block + 1) % 4 != 0)
 ARITHMETIC = "public-mlx-f16-inverse1024-f16-f32-dot-v1"
 REPOSITORY = "symbiogenesis/SwiftBonsai2Runner"
 WORKFLOW = ".github/workflows/ptq1-public-authoring-reference.yml"
+REPLAY_SOURCE_FILES = (
+    "config/swift-lora.lock.json", "config/swift-lora.direction.json",
+    "tools/native-reference/public-authoring-pins.json",
+    "tools/native-reference/public_pack_reference.py",
+    "tools/native-reference/public_pack_formats.py",
+    "tools/native-reference/audit_public_reference.py",
+)
 
 
 class Rejected(ValueError):
@@ -60,6 +69,68 @@ def strict_json(raw):
 
 def json_file(path, maximum=1024 * 1024):
     return strict_json(bounded(path, maximum))
+
+
+def replay_source(evidence, report, revision):
+    """Read the sealed finite source selection as data; execute none of it."""
+    fields = ("replaySourceManifestFile", "replaySourceManifestSha256")
+    present = [field in report for field in fields]
+    require(all(present) or not any(present), "incomplete retained source manifest binding")
+    if not any(present):
+        require(not (evidence / "replay-source").exists(), "retained source binding was removed")
+        return None  # Historical reports require their original reviewer checkout.
+    require(report[fields[0]] == "replay-source/source-manifest.json"
+            and type(report[fields[1]]) is str
+            and re.fullmatch(r"[0-9a-f]{64}", report[fields[1]]) is not None,
+            "retained source manifest selection differs")
+    bundle = evidence / "replay-source"
+    require(bundle.resolve().is_relative_to(evidence.resolve()), "retained source escapes evidence")
+    directories = {
+        "": {"config": True, "tools": True, "source-manifest.json": False},
+        "config": {"swift-lora.lock.json": False, "swift-lora.direction.json": False},
+        "tools": {"native-reference": True},
+        "tools/native-reference": {Path(name).name: False for name in REPLAY_SOURCE_FILES
+                                   if name.startswith("tools/native-reference/")},
+    }
+    reparse = getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0)
+    for relative, expected in directories.items():
+        directory = bundle / relative
+        metadata = directory.lstat()
+        require(stat.S_ISDIR(metadata.st_mode) and not stat.S_ISLNK(metadata.st_mode)
+                and not (getattr(metadata, "st_file_attributes", 0) & reparse),
+                "retained source directory is redirected or not a directory")
+        actual = set()
+        with os.scandir(directory) as entries:
+            for entry in entries:
+                require(entry.name in expected and entry.name not in actual,
+                        "retained source contains an unexpected entry")
+                actual.add(entry.name)
+                metadata = entry.stat(follow_symlinks=False)
+                require(not stat.S_ISLNK(metadata.st_mode)
+                        and not (getattr(metadata, "st_file_attributes", 0) & reparse)
+                        and (stat.S_ISDIR(metadata.st_mode) if expected[entry.name]
+                             else stat.S_ISREG(metadata.st_mode)),
+                        "retained source entry is redirected or has the wrong type")
+        require(actual == set(expected), "retained source inventory is incomplete")
+    manifest = strict_json(bounded(bundle / "source-manifest.json", 65536,
+                                   sha256=report[fields[1]]))
+    require(type(manifest) is dict and set(manifest) == {"schemaVersion", "kind", "sourceRevision", "files"}
+            and manifest["schemaVersion"] == 1 and manifest["kind"] == "public-reference-replay-source"
+            and manifest["sourceRevision"] == revision and type(manifest["files"]) is list
+            and len(manifest["files"]) == len(REPLAY_SOURCE_FILES),
+            "retained source manifest identity differs")
+    sources = {}
+    for item in manifest["files"]:
+        require(type(item) is dict and set(item) == {"path", "bytes", "sha256"}
+                and type(item["path"]) is str and item["path"] in REPLAY_SOURCE_FILES
+                and item["path"] not in sources and type(item["bytes"]) is int
+                and 0 < item["bytes"] <= 1024 * 1024 and type(item["sha256"]) is str
+                and re.fullmatch(r"[0-9a-f]{64}", item["sha256"]) is not None,
+                "retained source file declaration differs")
+        sources[item["path"]] = bounded(bundle / item["path"], 1024 * 1024,
+                                        item["bytes"], item["sha256"])
+    require(set(sources) == set(REPLAY_SOURCE_FILES), "retained source manifest inventory differs")
+    return sources
 
 
 def f32(value):
@@ -208,14 +279,22 @@ def audit(evidence, adapter_path, direction_path, revision, run_id, run_attempt)
             re.fullmatch(r"[1-9][0-9]*", run_attempt) is not None,
             "independent producer selection is invalid")
     evidence = Path(evidence)
-    pins_raw = bounded(Path(__file__).with_name("public-authoring-pins.json"), 65536)
-    pins = strict_json(pins_raw)
-    repository = Path(__file__).resolve().parents[2]
-    for filename, field in (("swift-lora.lock.json", "adapter"), ("swift-lora.direction.json", "direction")):
-        locked = json_file(repository / "config" / filename)[field]
-        require(all(pins[field][key] == locked[key] for key in ("filename", "bytes", "sha256", "url")),
-                "reviewer pins differ from approved repository lock")
     report = json_file(evidence / "report.json")
+    sources = replay_source(evidence, report, revision)
+    repository = Path(__file__).resolve().parents[2]
+    def source_raw(relative, maximum=1024 * 1024):
+        raw = sources[relative] if sources is not None else bounded(repository / relative, maximum)
+        require(0 < len(raw) <= maximum, "retained reviewer source exceeds its byte bound")
+        return raw
+
+    pins_raw = source_raw("tools/native-reference/public-authoring-pins.json", 65536)
+    pins = strict_json(pins_raw)
+    for filename, field in (("swift-lora.lock.json", "adapter"), ("swift-lora.direction.json", "direction")):
+        locked = strict_json(source_raw("config/" + filename))[field]
+        approved = json_file(repository / "config" / filename)[field]
+        require(all(pins[field][key] == locked[key] == approved[key]
+                    for key in ("filename", "bytes", "sha256", "url")),
+                "reviewer pins differ from approved repository lock")
     require(report == json_file(evidence / "attempt.json"), "terminal attempt differs from report")
     require(report["schemaVersion"] == 1 and report["kind"] == "independent-public-pack-A-reference"
             and report["arithmeticId"] == ARITHMETIC and report["stage"] == "complete"
@@ -233,7 +312,7 @@ def audit(evidence, adapter_path, direction_path, revision, run_id, run_attempt)
     toolchain = json_file(evidence / "toolchain.json")
     for field, filename in (("referenceScriptSha256", "public_pack_reference.py"),
                             ("formatScriptSha256", "public_pack_formats.py")):
-        require(toolchain[field] == digest(bounded(Path(__file__).with_name(filename), 1024 * 1024)),
+        require(toolchain[field] == digest(source_raw("tools/native-reference/" + filename)),
                 "retained producer script differs from reviewer source")
     require(toolchain["numpy"] == pins["numpy"] and toolchain["blasThreads"] == 1
             and toolchain["python"].split(maxsplit=1)[0] == pins["python"],
@@ -302,6 +381,8 @@ def audit(evidence, adapter_path, direction_path, revision, run_id, run_attempt)
             "status": "retained-result-verified", "sourceRevision": revision,
             "runId": run_id, "runAttempt": run_attempt, "reportSha256": digest(bounded(evidence / "report.json", 1024 * 1024)),
             "referencePinsSha256": digest(pins_raw),
+            "replaySourceManifestSha256": report.get("replaySourceManifestSha256"),
+            "retainedReplaySourceVerified": sources is not None,
             "reviewScriptSha256": digest(bounded(Path(__file__), 1024 * 1024)),
             "adapterSha256": pins["adapter"]["sha256"], "directionSha256": pins["direction"]["sha256"],
             "all48PublicAComparisonPassed": passed, "all129BComparisonsPassed": True, "sites": results,

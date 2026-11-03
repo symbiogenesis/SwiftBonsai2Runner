@@ -115,5 +115,6 @@ jobs:
             ${{ runner.temp }}/public-authoring-evidence/*.json
             ${{ runner.temp }}/public-authoring-evidence/*.log
             ${{ runner.temp }}/public-authoring-evidence/ssm-*.f32le
+            ${{ runner.temp }}/public-authoring-evidence/replay-source/**
           if-no-files-found: error
           retention-days: 30

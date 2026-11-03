@@ -1,8 +1,10 @@
 """Small model-free controls for the independent retained-public-result replay."""
 
 import copy
+import contextlib
 import json
 from pathlib import Path
+import shutil
 import struct
 import tempfile
 import unittest
@@ -140,10 +142,36 @@ class PublicReplayTests(unittest.TestCase):
         with mock.patch.object(audit, "__file__", str(self.source / "audit_public_reference.py")):
             return audit.audit(self.evidence, self.adapter, self.direction, "a" * 40, run_id, "1")
 
+    @contextlib.contextmanager
+    def sealed_fixture(self):
+        """The original six small files only; never copy a model or adapter."""
+        with tempfile.TemporaryDirectory() as temporary:
+            evidence = Path(temporary) / "evidence"
+            shutil.copytree(self.evidence, evidence)
+            bundle = evidence / "replay-source"
+            bundle.mkdir()
+            files = []
+            for relative in audit.REPLAY_SOURCE_FILES:
+                raw = (self.source.parents[1] / relative).read_bytes()
+                target = bundle / relative
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_bytes(raw)
+                files.append({"path": relative, "bytes": len(raw), "sha256": audit.digest(raw)})
+            manifest = {"schemaVersion": 1, "kind": "public-reference-replay-source",
+                        "sourceRevision": "a" * 40, "files": files}
+            path = bundle / "source-manifest.json"
+            path.write_bytes(encoded(manifest))
+            def bind(report):
+                report.update(replaySourceManifestFile="replay-source/source-manifest.json",
+                              replaySourceManifestSha256=audit.digest(path.read_bytes()))
+            with mock.patch.object(self, "evidence", evidence):
+                yield bundle, manifest, bind
+
     def test_complete_scalar_replay_retains_qualification_boundaries(self):
         result = self.replay()
         self.assertEqual(len(result["sites"]), 48)
         self.assertTrue(result["all48PublicAComparisonPassed"])
+        self.assertFalse(result["retainedReplaySourceVerified"])
         for flag in ("producerAuthenticated", "matrixReconstructionReexecuted",
                      "authorOriginalProvenanceQualified", "nativeWriterBasisQualified", "defaultMayChange"):
             self.assertIs(result[flag], False)
@@ -189,6 +217,85 @@ class PublicReplayTests(unittest.TestCase):
                 self.replay()
         finally:
             source.write_bytes(b"synthetic source")
+
+    def test_sealed_source_replays_with_different_checkout_bytes_without_executing_producer(self):
+        with self.sealed_fixture() as (bundle, manifest, bind):
+            source = self.source / "public_pack_formats.py"
+            # Line endings or newer source in the reviewer's checkout must not
+            # invalidate the separately bound original producer bytes.
+            source.write_bytes(b"reviewer checkout with different source\r\n")
+            try:
+                result = self.replay(bind)
+                self.assertTrue(result["retainedReplaySourceVerified"])
+                self.assertEqual(len(result["sites"]), 48)
+                self.assertTrue(result["all48PublicAComparisonPassed"])
+                self.assertFalse(result["producerAuthenticated"])
+                self.assertFalse(result["defaultMayChange"])
+                self.assertEqual(result["replaySourceManifestSha256"],
+                                 audit.digest((bundle / "source-manifest.json").read_bytes()))
+            finally:
+                source.write_bytes(b"synthetic source")
+
+    def test_sealed_source_rejects_missing_extra_changed_and_wrong_type_entries(self):
+        for mode in ("missing", "extra-root", "extra-nested", "changed", "wrong-type", "unbound"):
+            with self.subTest(mode=mode), self.sealed_fixture() as (bundle, manifest, bind):
+                source = bundle / "tools/native-reference/public_pack_reference.py"
+                if mode == "missing":
+                    source.unlink()
+                elif mode == "extra-root":
+                    (bundle / "unexpected.txt").write_bytes(b"extra")
+                elif mode == "extra-nested":
+                    (bundle / "tools/native-reference/unexpected.py").write_bytes(b"extra")
+                elif mode == "changed":
+                    source.write_bytes(b"changed producer")
+                elif mode == "wrong-type":
+                    source.unlink()
+                    source.mkdir()
+                with self.assertRaises(audit.Rejected):
+                    self.replay(None if mode == "unbound" else bind)
+
+    def test_sealed_source_rejects_manifest_tampering_paths_and_approved_lock_substitution(self):
+        for mode in ("digest", "revision", "duplicate", "path", "outside", "approved-lock"):
+            with self.subTest(mode=mode), self.sealed_fixture() as (bundle, manifest, bind):
+                if mode == "revision":
+                    manifest["sourceRevision"] = "b" * 40
+                elif mode == "duplicate":
+                    manifest["files"][1] = copy.deepcopy(manifest["files"][0])
+                elif mode == "path":
+                    manifest["files"][0]["path"] = "../swift-lora.lock.json"
+                elif mode == "approved-lock":
+                    pins = copy.deepcopy(self.pins)
+                    pins["adapter"]["url"] = "https://example.invalid/substitution"
+                    replacements = {"tools/native-reference/public-authoring-pins.json": pins,
+                                    "config/swift-lora.lock.json": {"adapter": pins["adapter"]}}
+                    for item in manifest["files"]:
+                        if item["path"] in replacements:
+                            raw = encoded(replacements[item["path"]])
+                            (bundle / item["path"]).write_bytes(raw)
+                            item.update(bytes=len(raw), sha256=audit.digest(raw))
+                (bundle / "source-manifest.json").write_bytes(encoded(manifest))
+                def mutate(report):
+                    bind(report)
+                    if mode == "digest":
+                        report["replaySourceManifestSha256"] = "0" * 64
+                    elif mode == "outside":
+                        report["replaySourceManifestFile"] = "../source-manifest.json"
+                with self.assertRaises(audit.Rejected):
+                    self.replay(mutate)
+
+    def test_sealed_source_preserves_a_verified_losing_result(self):
+        with self.sealed_fixture() as (bundle, manifest, bind):
+            raw = struct.pack("<f", 1.0) + b"\0" * (24576 - 4)
+            (self.evidence / "ssm-00.f32le").write_bytes(raw)
+            def mutate(report):
+                bind(report)
+                report.update(status="rejected-public-A-comparison", all48PublicAComparisonPassed=False)
+                report["sites"][0].update(authoringASha256=audit.digest(raw),
+                                          mismatchedElements=1, maximumAbsoluteDifference=1.0)
+            result = self.replay(mutate)
+            self.assertTrue(result["retainedReplaySourceVerified"])
+            self.assertFalse(result["all48PublicAComparisonPassed"])
+            self.assertEqual(result["status"], "retained-result-verified")
 
     def test_missing_or_extra_vector_files_reject(self):
         extra = self.evidence / "ssm-03.f32le"

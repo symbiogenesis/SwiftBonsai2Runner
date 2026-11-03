@@ -14,8 +14,8 @@ import numpy as np
 
 from public_pack_formats import Rejected, gguf_factors, safetensors_header, strict_json, tensor_array
 from public_pack_reference import (
-    BLOCKS, affine_f16, compare, config_sites, dequantize_f16, hosted,
-    inverse_f32, receive, reconstruct,
+    BLOCKS, REPLAY_SOURCE_FILES, affine_f16, compare, config_sites, dequantize_f16, hosted,
+    inverse_f32, receive, reconstruct, retain_replay_source,
 )
 
 
@@ -44,6 +44,32 @@ def select_code(weight, row, position, code):
 
 
 class PublicReferenceTests(unittest.TestCase):
+    def test_replay_bundle_preserves_exact_source_bytes_and_refuses_overwrite(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            repository, evidence = Path(temporary) / "checkout", Path(temporary) / "evidence"
+            evidence.mkdir()
+            originals = {}
+            for number, relative in enumerate(REPLAY_SOURCE_FILES):
+                raw = (str(number) + " original bytes\r\n").encode()
+                source = repository / relative
+                source.parent.mkdir(parents=True, exist_ok=True)
+                source.write_bytes(raw)
+                originals[relative] = raw
+            binding = retain_replay_source(repository, evidence, "a" * 40)
+            manifest_raw = (evidence / binding["replaySourceManifestFile"]).read_bytes()
+            self.assertEqual(binding["replaySourceManifestSha256"], hashlib.sha256(manifest_raw).hexdigest())
+            manifest = json.loads(manifest_raw)
+            self.assertEqual(manifest["sourceRevision"], "a" * 40)
+            self.assertEqual({item["path"] for item in manifest["files"]}, set(REPLAY_SOURCE_FILES))
+            for item in manifest["files"]:
+                raw = (evidence / "replay-source" / item["path"]).read_bytes()
+                self.assertEqual(raw, originals[item["path"]])
+                self.assertEqual(item["bytes"], len(raw))
+                self.assertEqual(item["sha256"], hashlib.sha256(raw).hexdigest())
+            with self.assertRaises(FileExistsError):
+                retain_replay_source(repository, evidence, "a" * 40)
+            self.assertEqual((evidence / binding["replaySourceManifestFile"]).read_bytes(), manifest_raw)
+
     def test_safetensors_rejects_ambiguous_json_and_pre_read_header_bounds(self):
         for raw in (b'{"x":1,"x":2}', b'{"x":NaN}', b'{"x":1e999}', b'\xff', b'{}{}'):
             with self.assertRaises(Rejected):
