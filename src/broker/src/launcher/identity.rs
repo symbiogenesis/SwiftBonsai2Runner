@@ -155,6 +155,12 @@ mod tests {
             ("0.1.11", false),
             ("0.1.12", false),
             ("0.1.13", false),
+            ("0.1.14", false),
+            ("0.1.14-dev", false),
+            ("v0.1.14", false),
+            ("0.1.14.0", false),
+            ("0.1.014", false),
+            ("0.1.15", false),
             ("1.0.0", false),
             ("0.1.010", false),
             ("v0.1.10", false),
@@ -189,7 +195,7 @@ mod tests {
     -> Result<(), serde_json::Error> {
         use serde_json::json;
 
-        for version in ["0.1.11", "0.1.12", "0.1.13"] {
+        for version in ["0.1.11", "0.1.12", "0.1.13", "0.1.14"] {
             for repacked in [false, true] {
                 for adapter in [false, true] {
                     for expected in [1, 4] {
@@ -244,7 +250,7 @@ mod tests {
 
     #[test]
     fn worker_readiness_rejects_coercion_unbounded_counts_and_duplicate_fields() {
-        for version in ["0.1.10", "0.1.11", "0.1.12", "0.1.13"] {
+        for version in ["0.1.10", "0.1.11", "0.1.12", "0.1.13", "0.1.14"] {
             let policy = WorkerReadiness::for_version(version, 4);
             for invalid in [
                 "null",
