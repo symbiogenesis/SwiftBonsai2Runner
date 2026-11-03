@@ -1,0 +1,298 @@
+{
+  "schemaVersion": 1,
+  "kind": "independent-current-release-ptq1-promotion-readiness-audit",
+  "recordedDate": "2026-11-02",
+  "reviewerId": "Codex:/root/qualification_audit",
+  "status": "pending-required-qualification",
+  "scope": "Read-only source, retained-evidence and authenticated CI metadata review. This is a documentary snapshot, not a runtime-promotion evaluator result. PLAN.md remains the sole outstanding-work backlog.",
+  "candidate": {
+    "runnerRevision": "3d91f113061bf55cde74d53dfbb8eea0d671b2e8",
+    "runtimeVersion": "0.1.13",
+    "runtimeRevision": "cae16fa6998dac58a947eba9ae4398ed6a9fb863",
+    "runtimeArchiveSha256": "3b1f310cbfafd592375756600c261bdafcfc94ab1bac8f34c69ef7038167096a",
+    "modelRepresentation": "current-repacked-PTQ1_0",
+    "modelSha256": "e658f0f0736a03a4549535a439f9b07254ebf8ab88ae27cbe6e52d098ca5d1f5",
+    "adapterSha256": "f1669534803d340a496015f5c45125f3437b4d13ec764f40e34488ce83967f42",
+    "adapterScale": 1.3,
+    "nativeRowWorkers": 4,
+    "servingStatePolicy": "reset-every-request",
+    "contextTokens": 8192,
+    "maximumCompletionTokens": 4096,
+    "admissionBytes": 16642998272,
+    "jobCommitLimitBytes": 12348030976,
+    "physicalReserveBytes": 4294967296,
+    "target": "aarch64-pc-windows-msvc"
+  },
+  "independentlyObservedCiMetadata": [
+    {
+      "repository": "symbiogenesis/prism-inference",
+      "runId": "41535008224",
+      "workflowPath": ".github/workflows/foundation.yml",
+      "revision": "cae16fa6998dac58a947eba9ae4398ed6a9fb863",
+      "branch": "main",
+      "event": "push",
+      "runAttempt": 1,
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "repository": "symbiogenesis/prism-inference",
+      "runId": "41535008203",
+      "workflowPath": ".github/workflows/runtime-conformance.yml",
+      "revision": "cae16fa6998dac58a947eba9ae4398ed6a9fb863",
+      "branch": "main",
+      "event": "push",
+      "runAttempt": 1,
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "repository": "symbiogenesis/prism-inference",
+      "runId": "41535008364",
+      "workflowPath": ".github/workflows/source-package.yml",
+      "revision": "cae16fa6998dac58a947eba9ae4398ed6a9fb863",
+      "branch": "main",
+      "event": "push",
+      "runAttempt": 1,
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "repository": "symbiogenesis/SwiftBonsai2Runner",
+      "runId": "41539965109",
+      "workflowPath": ".github/workflows/foundation.yml",
+      "revision": "74bef68c74417a56e38d90201b7f87ccc667a276",
+      "branch": "main",
+      "event": "push",
+      "runAttempt": 1,
+      "status": "completed",
+      "conclusion": "success"
+    }
+  ],
+  "sourceContinuity": {
+    "checkedWith": "git diff --name-only 74bef68c74417a56e38d90201b7f87ccc667a276 3d91f113061bf55cde74d53dfbb8eea0d671b2e8",
+    "changedPathsAreOnlyPlanOrDocumentation": true,
+    "compiledApplicationRuntimeLocksAndWorkflowsUnchanged": true,
+    "laterSourceChangesRequireNewApplicabilityReview": true,
+    "claimSkippedCandidateCiLanesExecuted": false
+  },
+  "gates": [
+    {
+      "id": "released-binary-provenance",
+      "status": "available-for-fresh-evaluation",
+      "evidence": "docs/evidence/prism-0113-release-review.json",
+      "assessment": "The retained independent review binds the exact source, release archive and all executable identities to successful owning CI. This auditor verified the current lock and independently reread run metadata; it did not redownload the release archive."
+    },
+    {
+      "id": "runtime-foundation",
+      "status": "available-for-fresh-evaluation",
+      "evidence": "docs/evidence/prism-0113-release-review.json",
+      "assessment": "Exact-source Foundation 41535008224 is successful; retain its complete report and independent review in the evaluator evidence directory."
+    },
+    {
+      "id": "runtime-conformance",
+      "status": "available-for-fresh-evaluation",
+      "evidence": "docs/evidence/prism-0113-release-review.json",
+      "assessment": "Exact-source conformance 41535008203 is successful; retain its complete report and independent review in the evaluator evidence directory."
+    },
+    {
+      "id": "runner-foundation",
+      "status": "pending-exact-candidate-evaluation",
+      "evidence": "docs/evidence/ptq1-implementation-20261102.json",
+      "assessment": "The successful 74bef68 Foundation and unchanged compiled application establish documentary continuity. The evaluator requires execution.revision to equal the selected runnerRevision, so do not substitute the earlier run for a later candidate without the required exact-candidate CI record."
+    },
+    {
+      "id": "full-context-numerical-parity",
+      "status": "pending-required-evidence",
+      "evidence": "tools/bonsai/src/native_qualification.rs",
+      "assessment": "The current-source one-token collector can establish only its selected backend/worker/adapter condition. It cannot close full 8192-token scalar and explicit-NEON logits and complete live-state parity."
+    },
+    {
+      "id": "prompt-sampler-termination",
+      "status": "pending-required-evidence",
+      "evidence": "docs/evidence/ptq1-0113-lifecycle-41539984210/interpretation.json",
+      "assessment": "Cap-one streaming and captured history do not establish exact template tokens, supplied reasoning history, seeded MT19937 draw ordering and full termination semantics."
+    },
+    {
+      "id": "full-output-lifecycle-recovery",
+      "status": "pending-required-evidence",
+      "evidence": "docs/evidence/ptq1-0113-lifecycle-41539984210/interpretation.json",
+      "assessment": "The bounded three-stream result does not cover 4096-token output at the full context bound, long history, active cancellation, backend loss or fresh retry."
+    },
+    {
+      "id": "full-model-resources",
+      "status": "pending-required-evidence",
+      "evidence": "docs/evidence/ptq1-0113-lifecycle-41539984210/interpretation.json",
+      "assessment": "Bounded lifetime Job commitment and root working set are separate accounting domains and cannot close full-context private/resident/system memory or sustained paging acceptance."
+    },
+    {
+      "id": "adapter-basis-and-logits",
+      "status": "pending-external-provenance-and-required-evidence",
+      "evidence": "docs/evidence/ptq1-authoring-inputs-20261101.json",
+      "assessment": "Obtain authentic immutable checkpoint/conversion inputs, independently reproduce A factors and verify all 48 native SSM writer mappings. Published B-direction agreement does not supply these. Matching one selected standard condition cannot establish loaded-zero identity or nonzero application across conditions."
+    },
+    {
+      "id": "adapter-standard-scale-throughput",
+      "status": "pending-required-evidence",
+      "evidence": "docs/swift-lora.md",
+      "assessment": "Per-prompt paired same-engine scale-1.3 decode throughput and the bounded adapter memory premium remain unmeasured. Public SSE request timing is not decode TPS."
+    },
+    {
+      "id": "adapter-standard-scale-quality",
+      "status": "pending-independent-human-review",
+      "evidence": "docs/swift-lora.md",
+      "assessment": "Retain exact paired complete responses and independent human review of every required quality dimension; an automated assistant review cannot replace this requirement."
+    },
+    {
+      "id": "sandbox-and-transport",
+      "status": "pending-required-evidence",
+      "evidence": "docs/sandboxing.md",
+      "assessment": "Actual-model restricted identity, denial of unrelated files/credentials/egress and same-user bypass, broker-only communication and bounded transport/cleanup remain independent of successful numerical capture."
+    },
+    {
+      "id": "speech-offline-and-recovery",
+      "status": "pending-required-evidence",
+      "evidence": "docs/validation.md",
+      "assessment": "Actual native-app speech/chat overlap, encrypted recovery, offline restart, explicit retry and stalled-consumer descendant cleanup require separate qualified evidence."
+    },
+    {
+      "id": "sustained-device-and-creative-acceptance",
+      "status": "pending-owner-human-review",
+      "evidence": "docs/validation.md",
+      "assessment": "Owner review of sustained responsiveness, heat/fan behavior and creative usefulness cannot be inferred from source checks or a bounded cap-one workload."
+    },
+    {
+      "id": "installation-and-rollback",
+      "status": "pending-clean-machine-acceptance",
+      "evidence": "docs/chat-packages.md",
+      "assessment": "Clean-machine ARM64 installation, notices/prerequisites, offline launch, upgrade/recovery and explicit pinned fallback remain unqualified."
+    },
+    {
+      "id": "paired-target-device-benefit",
+      "status": "pending-required-evidence",
+      "evidence": "docs/evidence/ptq1-complete-response-row4-preparation.json",
+      "assessment": "The prepared single fixed-order tree-name pair establishes no measured benefit. Promotion requires matched complete-task and resource evidence with at least 10 percent lower end-to-end latency or reviewed capacity/energy benefit within predeclared latency/quality limits."
+    },
+    {
+      "id": "released-adapter-service-integration",
+      "status": "pending-broader-service-acceptance",
+      "evidence": "docs/evidence/ptq1-0113-lifecycle-41539984210/interpretation.json",
+      "assessment": "The exact released runtime passes its bounded row4 scale/history sequence. The full service gate also requires canonical count/generation, cancellation, reset, stale-scale/state rejection and rollback with retained owning service-harness provenance."
+    },
+    {
+      "id": "current-weight-ptq1-packing",
+      "status": "pending-exact-candidate-evaluation",
+      "evidence": "docs/evidence/ptq1-hosted-packing-85fd2f1.json",
+      "assessment": "Complete historical all-block reconstruction evidence remains valid for its own source and exact artifact. Do not relabel its original Runner revision as the selected candidate execution; obtain the exact-candidate evaluator evidence and applicability review."
+    },
+    {
+      "id": "original-pq2-rollback",
+      "status": "pending-required-evidence",
+      "evidence": "docs/validation.md",
+      "assessment": "Explicit original-PQ2 readiness, response and owned cleanup must use this pinned release, adapter/scale and row4 worker policy; earlier PQ2 runtime results cannot qualify this candidate."
+    }
+  ],
+  "freshEvaluationContract": {
+    "implementation": "tools/bonsai/src/runtime_promotion.rs",
+    "requiredGateCount": 19,
+    "operations": [
+      "runtime-promotion plan",
+      "runtime-promotion file-score"
+    ],
+    "selectedWeightRepresentation": "current-repacked-PTQ1_0",
+    "selectedNativeRowWorkers": 4,
+    "requireExactCompiledPolicyAndIdentityEquality": true,
+    "requireRetainedRawReportSha256AndReviewer": true,
+    "requireExactMainCiRevisionAndRun": true,
+    "deviceGatesRequireSelfHostedSnapdragonIdentity": true,
+    "deviceFamiliesMayBeMixed": false,
+    "serviceGateRequiresExactRuntimeAndRetainedOwningHarnessPackage": true,
+    "historicalGateVerdictsTransferred": false,
+    "newGatePassesClaimed": 0
+  },
+  "boundedNumericalPreparationReview": {
+    "workflowPath": ".github/workflows/native-ptq1-numerics.yml",
+    "sourcePinsMatchCurrentRuntimeLock": true,
+    "selectedBackend": "neon",
+    "selectedNativeRowWorkers": 4,
+    "selectedAdapterCondition": "standard",
+    "suppliedTokens": [
+      248045
+    ],
+    "nativeModelProcesses": 1,
+    "rustModelProcesses": 1,
+    "executionPerformedByThisReviewer": false,
+    "reviewedControls": [
+      "Hosted tools bind the current Runner source, native header/ABI controls, exact Prism archive and parallel-rows capability.",
+      "Intake, runtime inventory/ABI verification, admission, both model processes and complete-state comparison share the original absolute owner deadline.",
+      "Native parent identity, Job memory limits, admission/reserve checks and owned cleanup remain mandatory.",
+      "Existing Bonsai app/model processes reject capture without interrupting them.",
+      "Missing evidence, expired allowance and incomplete comparisons fail closed; no retry or split matrix is permitted."
+    ]
+  },
+  "ownerDeviceModelExecutions": 0,
+  "ownerDeviceDiagnostics": 0,
+  "ownerDeviceBenchmarks": 0,
+  "localBuildsOrTestSuites": 0,
+  "defaultPromotionQualified": false,
+  "experimentalLabelMayBeRemoved": false,
+  "defaultsChanged": false,
+  "admissionOrReservesChanged": false,
+  "reviewedInputs": [
+    {
+      "path": "config/prism-inference.lock.json",
+      "bytes": 2433,
+      "sha256": "bb226f3d2847d3914611d2c4fdcfbce4e7a382c5707279bd658834f8e73c302b"
+    },
+    {
+      "path": "config/swift.ptq1-export.json",
+      "bytes": 1165,
+      "sha256": "c184dea2089127201a15595af86e61005ec5b3f9c14e8089fee5c8f630a762d5"
+    },
+    {
+      "path": "config/swift-lora.lock.json",
+      "bytes": 2826,
+      "sha256": "84bf87bd873a372ebd943dae81d3300d74ec09055d6c5fe0628873d3863ae74a"
+    },
+    {
+      "path": "tools/native-reference/pins.json",
+      "bytes": 724,
+      "sha256": "999787bbfc0a31822deecb5568dea9955955776fac3b85be1caa9d0645e087da"
+    },
+    {
+      "path": "tools/bonsai/src/runtime_promotion.rs",
+      "bytes": 33336,
+      "sha256": "0e12945c83dfbadd4b3d05d5143b9679af7ac72a5b8cd4571787ca49afcafa35"
+    },
+    {
+      "path": "tools/bonsai/src/native_qualification.rs",
+      "bytes": 11964,
+      "sha256": "e2d93ab71387d7c98535ae601c1ead87d096e86cd004884e3dcf97840e006439"
+    },
+    {
+      "path": "tools/bonsai/src/native_qualification/windows.rs",
+      "bytes": 30051,
+      "sha256": "435b75ab69b9cfc6414519c4a7cfad3514d544ed06496fef2b73eacf7d1f5fd6"
+    },
+    {
+      "path": ".github/workflows/native-ptq1-numerics.yml",
+      "bytes": 16697,
+      "sha256": "847a489c5e7a75020c760844c9ffc9cca57eb350e7ee5c870acb73def4dc4c53"
+    },
+    {
+      "path": "docs/evidence/prism-0113-release-review.json",
+      "bytes": 18801,
+      "sha256": "bb9ef39a1ff18e1583a826e5517387dc234cbe74b662ef6859cfbaf1d4acab56"
+    },
+    {
+      "path": "docs/evidence/ptq1-0113-lifecycle-41539984210/interpretation.json",
+      "bytes": 6218,
+      "sha256": "5bd40dfcbf6073f110f24c20e0a185c54c4bee5cb2a498f8e9b5eb5ad3582784"
+    },
+    {
+      "path": "docs/evidence/ptq1-0113-lifecycle-41539984210/independent-review.json",
+      "bytes": 6994,
+      "sha256": "69916b6723a318e38d217b104f581b2275dcbb94fee9f40a3064cc8c7a7aba71"
+    }
+  ]
+}
