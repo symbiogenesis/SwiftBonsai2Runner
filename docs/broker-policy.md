@@ -348,6 +348,8 @@ executables, models, profile JSON and overrides. The default is `reference-cpu`;
 | Launcher option | Boundary |
 | --- | --- |
 | Default weights | Original PQ2; no format substitution. |
+| Swift engine | Native Rust by development default; `--publisher-engine` selects manual publisher rollback and `--native-engine` remains accepted. Reference stays on its publisher runtime. Engine options are mutually exclusive. |
+| `--native-row-workers 1\|4` | Swift Rust defaults to four; explicit one remains available. Publisher/reference defaults to one and rejects four. Readiness must match the selected worker count. |
 | `--use-repacked-ptq1` | Only the pinned current-weight export; missing/altered bytes reject. Publisher and native Rust Swift support are explicit; full end-to-end qualification remains separate. |
 | `--use-abliterate-lora` | Only the pinned adapter on publisher or native Rust Swift CPU; enables bounded per-request scale with verified readiness. Reject for reference. The app requests it by default (`-NoAbliterateLora` opts out); direct broker launch omits it. |
 | `--check-only` | Verify policy/artifacts and report admission without credentials or a process. |

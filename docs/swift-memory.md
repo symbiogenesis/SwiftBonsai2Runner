@@ -1,6 +1,8 @@
 # Swift artifacts, memory and PTQ1
 
-**PQ2 remains the app default.** Bounded native CPU decode passes; creative
+**Original PQ2 on native Rust is the development default**, with four CPU row
+workers and the standard adapter at scale 1.3. Publisher rollback is explicit
+with `--publisher-engine`; PTQ1 remains opt-in. Bounded native CPU decode passes; creative
 quality, performance and daily-service isolation remain unqualified. The [Qwen reference](model-selection.md) has a separate
 lock/profile. No local training or fine-tuning is planned. [PLAN.md](../PLAN.md) owns
 outstanding qualification. This guide covers artifacts, resource policy, lossless
@@ -78,7 +80,7 @@ comparison at scale 1.3 for that historical source. The retained Rust **0.1.10**
 source `749a5f5b43bf77764a29682557ec91a8de8dcdef`; the [main integration record](evidence/prism-main-integration.json)
 binds both complete upstream CI gates, published bundles, reviewed source bytes and
 the exact pin. That release's bounded lifecycle evidence uses original PQ2
-with four workers; it does not qualify PTQ1 or the default one-worker lane. The
+with four workers; it does not qualify PTQ1 or a different worker policy. The
 [readiness audit](evidence/ptq1-default-readiness.json) separates those identities
 and records the evidence gaps. [PLAN.md](../PLAN.md) remains the backlog.
 

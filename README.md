@@ -32,12 +32,19 @@ the window opens. Explicit provisioning uses `bonsai-tools provision` with opera
 `inference` and an absolute `dataDirectory`; see the [setup commands](docs/development-guide.md#native-chat-app).
 
 Once you've [set up the model and runtime](docs/development-guide.md#native-chat-app),
-run `bonsai-tools chat --native-engine` to select the Rust engine, or
-`bonsai-tools chat` for the publisher C++ default. Updating the Rust runtime
-pin alone does not change that selection. Both open the native Windows chat app.
+run `bonsai-tools chat`. The development default is Rust Prism 0.1.14 with the
+original Swift PQ2 weights, four CPU row workers and the standard adapter at
+scale 1.3. Use `bonsai-tools chat --publisher-engine` for the explicit publisher
+C++ rollback. `--native-engine` remains accepted. Both open the native Windows chat app.
 
 The convenience launcher `./scripts/Start-Chat.ps1` uses the same prebuilt Rust
-tool; add `-NativeEngine` to select the Rust inference engine.
+tool and defaults to Rust; add `-PublisherEngine` for the publisher rollback.
+
+> [!NOTE]
+> **Rust is the development default.** Full-context/output, creative quality,
+> sustained performance, daily-service isolation and clean-machine installation
+> qualification remain pending. This choice makes no speed claim; PTQ1 remains
+> an explicit experimental option. Startup failure never switches engines or weights.
 
 Keep separate conversations and unsent drafts, rename your chats, and find text
 with **Ctrl+F**. Enable **Save conversations on this device** in Settings to
@@ -70,19 +77,21 @@ and [local API contract](docs/broker-policy.md#public-request-contract).
 | **Hardware** | Snapdragon X and X2 Â· Windows ARM64 |
 | **Model** | Swift Bonsai 2 Â· `PQ2_0` |
 | **CPU profile** | One active request Â· 8K-token context Â· FP16 attention caches |
+| **Engine** | Rust Prism 0.1.14; four CPU row workers; adapter scale 1.3 |
 | **Outstanding work** | [Central TODO](PLAN.md) |
 
 ## Performance
 
 | Model | Runtime | Tokens/second | Model file | Job commit cap / measured peak | Available RAM admission | Restore copy saved vs. Rust 0.1.4 |
 | --- | --- | ---: | ---: | ---: | ---: | ---: |
+| **Swift Bonsai 2 `PQ2_0` (development default)** | **Rust 0.1.14 release, four workers + LoRA 1.3** | **Not measured** | **6.71 GiB** | **11.5 GiB / not measured** | **15.5 GiB** | **149.625 MiB** |
 | **Swift Bonsai 2 `PTQ1_0` (experimental opt-in)** | **Rust 0.1.13 release, four workers + LoRA 1.3** | **Not measured** | **5.54 GiB** | **11.5 GiB / 6.02 GiB (short request)** | **15.5 GiB** | **149.625 MiB** |
 | Swift Bonsai 2 `PQ2_0` (verified Rust rollback) | Rust 0.1.13 release, four workers + LoRA 1.3 | Not measured | 6.71 GiB | 11.5 GiB / 7.20 GiB (short request) | 15.5 GiB | 149.625 MiB |
 | Swift Bonsai 2 `PQ2_0` (experimental Rust) | Rust 0.1.10 prerelease, one worker + LoRA 1.3 | 0.105 (truncated request) | 6.71 GiB | 11.5 GiB / not recorded | 15.5 GiB | 149.625 MiB |
 | Swift Bonsai 2 `PQ2_0` (experimental Rust) | Rust 0.1.10 prerelease, four workers + LoRA 1.3 | Pending (deadline) | 6.71 GiB | 11.5 GiB / not recorded | 15.5 GiB | 149.625 MiB |
 | Swift Bonsai 2 `PQ2_0` (captured source diagnostic) | Rust 0.1.9, four workers + LoRA 1.3 | Not measured | 6.71 GiB | 11.5 GiB / 7.04 GiB | 15.5 GiB | 149.625 MiB |
 | Swift Bonsai 2 `PTQ1_0` | PrismML C++ CPU | Not measured | 5.54 GiB | 11.5 GiB / â€” | 15.5 GiB | â€” |
-| Swift Bonsai 2 `PQ2_0` (current default) | PrismML C++ CPU | Not measured | 6.71 GiB | 11.5 GiB / â€” | 15.5 GiB | â€” |
+| Swift Bonsai 2 `PQ2_0` (explicit publisher rollback) | PrismML C++ CPU | Not measured | 6.71 GiB | 11.5 GiB / â€” | 15.5 GiB | â€” |
 | Qwen3.8-27B `UD-Q3_K_XL` | llama.cpp reference | Not measured | 12.24 GiB | 18 GiB / â€” | 22 GiB | â€” |
 
 The [bounded X2 Elite Extreme attempt](docs/evidence/native-request-speed.json)

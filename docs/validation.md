@@ -827,6 +827,12 @@ independent review and promotion.
 
 ## Promotion criteria
 
+Rust/PQ2 with four row workers is the owner-directed development default, with
+an explicit disclaimer and manual publisher rollback. That selection makes no
+full-qualification claim and changes none of the evaluator gates below. PTQ1
+promotion and removal of the qualification disclaimer still require the complete
+reviewed evidence.
+
 Every promoted runtime/profile must:
 
 - Pass its correctness, security, full-state recovery, creative-quality and

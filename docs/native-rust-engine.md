@@ -3,11 +3,19 @@
 [Prism Inference](https://github.com/symbiogenesis/prism-inference) owns the safe Rust
 CPU runtime, tokenizer, packed kernels and hybrid graph. Runner owns the app, broker,
 provisioning and [release integration](../config/prism-inference.lock.json). The pinned
-publisher engine remains the comparison/fallback; Rust promotion requires the complete
-scale-1.3 LoRA profile under the [promotion contract](#default-runtime-promotion).
+publisher engine remains an explicit comparison/rollback. The development default
+is Rust Prism 0.1.14, original Swift PQ2, four CPU row workers and the standard
+adapter at scale 1.3. Use `--publisher-engine` for manual rollback; failures never
+switch engines or weights. Full release qualification remains governed by the
+[promotion contract](#default-runtime-promotion), independently of this development choice.
 [PLAN.md](../PLAN.md#runtime-and-correctness) owns outstanding work. The [native Rust
 UI](ui-architecture.md) is a separate broker client: UI availability or browser/server
 feature parity does not qualify inference.
+
+This development default retains pending full-context/output, creative-quality,
+sustained-performance, daily-isolation and clean-machine acceptance. It claims no
+measured advantage. Current-weight PTQ1 remains opt-in; its packing savings and
+historical service checks do not establish a reason to replace original PQ2 now.
 
 ## Swift CPU supported subset
 
@@ -117,8 +125,8 @@ API has a registry release; the core runtime crate's publication policy is uncha
 
 The service implements the explicit PQ2/PTQ1 profiles with or without the exact
 approved rank-one adapter. Runner preserves `--use-repacked-ptq1` and adapter
-selection when `--native-engine` is requested, retains all artifact handles and
-requires exact representation/adapter readiness. The native child receives
+selection for the native Rust default or explicit `--native-engine`, retains all
+artifact handles and requires exact representation/adapter readiness. The native child receives
 `--use-repacked-ptq1` and `--abliterate-lora ABSOLUTE_PATH`; canonical count/generation
 requests bind the single adapter slot and finite scale in `[0, 2]`. Generation
 resets graph state at the prepared request's sealed scale; each adapter request
@@ -275,14 +283,15 @@ for CI-only timing/tracing, actual-model comparisons and evidence limits.
 
 The published 0.1.8 app path uses one compute worker. The 0.1.9 through 0.1.11 prereleases
 and 0.1.12/0.1.13 releases make the existing bounded `parallel-rows` implementation available
-in their binary bundles; all runtime entry points still default to one worker.
-Feature availability does not qualify a worker budget or change the selected engine.
+in their binary bundles. Prism's own runtime entry points default to one worker;
+Runner's Swift development default explicitly selects four. Feature availability
+does not qualify a worker budget or establish a performance advantage.
 
 The full 0.1.13 release builds both runtime and private server with `parallel-rows`.
 Its persistent pool has an explicit worker budget, and private readiness reports
 the instantiated graph's budget. The retained evidence below supports keeping
-four workers as an opt-in; current-release actual-model correctness and
-complete-answer benefit remain pending. No further Prism runtime change is needed
+four workers as an available development selection; current-release actual-model
+correctness and complete-answer benefit remain pending. No further Prism runtime change is needed
 to enable that selection.
 
 The [first original-PQ2 trial](evidence/row-parallel-smoke.json) matches all
@@ -424,8 +433,11 @@ application use; they do not change admission or runtime defaults.
 
 ## Default-runtime promotion
 
-The Rust `runtime-promotion` command reports the reviewed requirements for replacing the current
-Swift PQ2 standard profile with Rust Prism while retaining its pinned LoRA at scale 1.3.
+The Rust `runtime-promotion` command reports the reviewed requirements for full
+runtime qualification with the pinned LoRA at scale 1.3. Its policy and scoring
+remain unchanged by the owner-directed Rust/PQ2 development default. Pending gates
+stay pending; the development disclaimer and manual publisher rollback remain in
+place. A default selection alone cannot produce `promotionReady: true`.
 It reads the compiled release/model/adapter/template locks and requires an explicit full
 Runner revision. Omitting `weightRepresentation`, or explicitly selecting
 `original-PQ2_0`, preserves the existing PQ2 policy. Select
@@ -433,7 +445,7 @@ Runner revision. Omitting `weightRepresentation`, or explicitly selecting
 receipt, exact derived model and original PQ2 rollback identities. It retains all
 seventeen runtime/application gates and adds independently reviewed lossless-packing
 and actual-device original-PQ2 rollback gates. Its paired benefit gate compares
-PQ2 and PTQ1 on the same released engine and app settings. No default is changed.
+PQ2 and PTQ1 on the same released engine and app settings. Scoring changes no launch default.
 
 ### Integrated parity work
 
@@ -542,7 +554,8 @@ relative `reportFile` and service `harness.packageFile` for archive retrieval;
 pending attachments expose no unverified retrieval path. Archive the original
 manifest and those files with the score.
 Independently review CI/source/report/reviewer identities and require `promotionReady:
-true`; command success alone cannot authorize promotion.
+true` before claiming full qualification or promoting PTQ1; command success alone
+cannot authorize that promotion. The development default is a separate owner choice.
 
 `serviceHarnessRevision` defaults to the pinned runtime source; explicitly select a
 reviewed Prism or Runner main revision when its owning checker tests a separately

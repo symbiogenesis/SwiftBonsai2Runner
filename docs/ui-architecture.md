@@ -34,6 +34,14 @@ The [development guide](development-guide.md#source-launch-caches-and-runtime-se
 owns source-launch receipts/cache rules; the [package contract](chat-packages.md#launch-without-a-checkout)
 owns verified installed launches.
 
+Swift launches default to native Rust Prism 0.1.14, original PQ2, four CPU row
+workers and the standard adapter at scale 1.3. `--native-engine` remains accepted;
+`--publisher-engine` selects the explicit publisher rollback. Engine options are
+mutually exclusive, and retry preserves the selected engine and representation.
+The UI identifies this as a development default with full-context/quality
+qualification pending. Selection neither waives admission nor establishes full
+release qualification. PTQ1 remains an explicit opt-in.
+
 The launcher checks/builds presentation first. After the first UI tick, an owned
 preparation worker verifies/provisions the selected pinned Rust runtime,
 builds/verifies the broker and speech companions and creates fresh credentials.

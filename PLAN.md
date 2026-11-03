@@ -3,8 +3,17 @@
 This is the single backlog. [Technical docs](docs/README.md) own current behavior,
 contracts, commands and evidence; completed work belongs in Git history.
 
-Prioritize actual-model application acceptance, daily-service isolation, creative
-quality and comfort while preserving the qualified Swift CPU fallback. Research order:
+Use native Rust Prism 0.1.14 as the project's development default: original Swift
+PQ2, four CPU row workers and the standard adapter at scale 1.3. Preserve explicit
+publisher rollback with `--publisher-engine` (`-PublisherEngine` in Start-Chat.ps1),
+original-PQ2 selection and unchanged artifact, sandbox and resource admission.
+Keep PTQ1 opt-in. This owner-directed development choice does not assert complete
+release qualification or a measured advantage; retain the disclaimer and pending
+evidence below. No failure may switch engine or representation automatically.
+
+Prioritize usable native startup, model readiness, stop/retry and explicit rollback,
+then actual-model application acceptance, daily-service isolation, creative
+quality and comfort. Research order:
 measure batch-one bottlenecks and PTQ1 suitability; improve packed CPU projections and
 prefill; qualify exact prefix reuse and short-chain speculation; then consider precision
 changes or compatible drafters. Bounded GPU/NPU access discovery can run in parallel.
@@ -21,10 +30,18 @@ including reference tests, generated code, external inference dependencies and
 compiler/build plumbing. Follow the [file-by-file contract and inventory](docs/cpp-retirement.md);
 native reference controls are temporary, with independent evidence retained as data.
 
-The next delivery milestone is an accepted daily-use Swift current-weight PTQ1 CPU
-default with the standard adapter at scale 1.3 on the owner-managed hardware. Retain
-original PQ2 as the explicit rollback. Close the application, isolation, creative-quality,
-resource and installation gates below with reproducible evidence before promotion.
+The next development milestone is reliable daily use of the Rust/PQ2 default on
+the owner-managed hardware. Complete focused source checks, qualify an explicit
+DX12 launch after the observed Vulkan renderer failure, and retain source-bound
+model readiness, stop/retry and manual publisher rollback evidence within the
+existing owner budget. Hosted checks and device workloads remain owner-operated.
+Fix observed blockers before pursuing a wider qualification matrix.
+
+A fully qualified Swift current-weight PTQ1 CPU default with the standard adapter
+at scale 1.3 remains a separate release milestone. Retain original PQ2 as its explicit
+rollback. Close the application, isolation, creative-quality, resource and installation
+gates below with reproducible evidence before that promotion. Missing adapter authoring
+inputs and incomplete benefit/quality evidence do not block the Rust/PQ2 development choice.
 
 The PTQ1 critical path is:
 
@@ -45,10 +62,10 @@ The PTQ1 critical path is:
    resources, isolation, recovery and installation while retaining verified
    original-PQ2 rollback.
 4. Independently score every gate against settled source/release/app identities
-   before changing the engine/representation defaults or README qualification.
+   before promoting PTQ1 or claiming fully qualified runtime/representation defaults.
 
-The next delivery packet freezes the published Prism 0.1.14 CPU runtime and one
-settled Runner revision. Complete hosted Runner integration and source-bound
+The separate PTQ1 qualification packet freezes the published Prism 0.1.14 CPU
+runtime and one settled Runner revision. Complete hosted Runner integration and source-bound
 acceptance preparation with `run_device: false`, which leaves the laptop lane
 available and queues no owner job. Review that exact-source package before any
 explicit device selection. The [fixed combined-packet estimate](docs/evidence/native-owner-packet-controls-20261103/owner-workload-plan.json)
@@ -84,8 +101,9 @@ one clock. Preserve historical trial limits and the smaller limits in harnesses
 that have not implemented an explicit extension. Never restart a clock or divide
 a long matrix across repeated runs. Longer or infeasible qualification stays pending.
 Apply the [promotion
-criteria](#promotion-criteria) before changing defaults or admission. Full suites,
-benchmarks and performance captures stay in owning CI.
+criteria](#promotion-criteria) before full qualification, representation promotion
+or changes to admission. The Rust/PQ2 development choice above retains those
+pending gates. Full suites, benchmarks and performance captures stay in owning CI.
 
 ## Application and daily service
 
@@ -266,7 +284,7 @@ its [single-recipe hosted auditor](docs/adapter-public-reference.md) still needs
 actual all-48 output and independent review. Matching public A or B factors cannot
 authenticate the missing original invocation.
 Close its actual-model, adapter provenance, paired benefit, quality, resource,
-isolation, recovery and installation gates before changing defaults or removing
+isolation, recovery and installation gates before promoting PTQ1 or removing
 the README's adapter qualification. Later application identities need their own review.
 Preserve the 300-second aggregate owner ceiling, original clocks and model cleanup
 reserves; never restart a clock or continue a partial matrix. Obtain the approved
@@ -1166,6 +1184,10 @@ exclusions. Remaining areas:
   separate kernel needs separate acceptance.
 
 ## Promotion criteria
+
+The owner-directed Rust/PQ2 development default keeps its explicit disclaimer and
+manual publisher rollback. It does not satisfy or waive this full-qualification
+policy, and does not change the offline promotion evaluator or PTQ1 admission.
 
 Apply [validation's promotion criteria](docs/validation.md#promotion-criteria):
 independent correctness, security, full-state, quality and resource gates, sustained

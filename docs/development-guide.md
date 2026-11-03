@@ -10,13 +10,18 @@ are separate developer workflows, not additional app-setup steps.
 
 ## Current state
 
-The app explicitly selects Swift PQ2 CPU with a pinned pretrained adapter;
-Qwen `reference-cpu`, current-weight PTQ1 and experimental
-[Prism Inference](https://github.com/symbiogenesis/prism-inference) use separate
-immutable selections. No training is required. [Runtime selection](#runtime-selection)
+The app defaults to native Rust [Prism Inference](https://github.com/symbiogenesis/prism-inference)
+0.1.14, original Swift PQ2, four CPU row workers and the pinned pretrained adapter
+at scale 1.3. Publisher C++ rollback, Qwen `reference-cpu` and current-weight PTQ1
+use explicit immutable selections. No training is required. [Runtime selection](#runtime-selection)
 defines supported combinations; [memory](swift-memory.md) and
 [LoRA qualification](swift-lora.md#standard-profile-qualification) distinguish
 development evidence from pending quality, performance and service acceptance.
+
+This is a development default with full-context/output, creative-quality,
+sustained-performance, daily-isolation and clean-machine qualification pending.
+It makes no speed claim. Missing or failed artifacts never select another engine
+or representation automatically.
 
 [Automatic profiles](hardware-capabilities.md#automatic-profile-selection),
 [Adreno](adreno.md) and [Hexagon](hexagon.md) remain unqualified.
@@ -43,7 +48,7 @@ cargo build --locked --release --manifest-path (Join-Path $repo 'Cargo.toml') --
 $env:BONSAI_TOOLS_PATH = Join-Path $target 'release/bonsai-tools.exe'
 $env:PATH = (Split-Path $env:BONSAI_TOOLS_PATH) + [IO.Path]::PathSeparator + $env:PATH
 $data = Join-Path $env:LOCALAPPDATA 'SwiftBonsai2'
-bonsai-tools provision --json (@{ operation = 'engine'; dataDirectory = $data; lockPath = (Join-Path $PWD 'config/swift-assessment.lock.json') } | ConvertTo-Json -Compress)
+bonsai-tools provision --json (@{ operation = 'inference'; dataDirectory = $data } | ConvertTo-Json -Compress)
 bonsai-tools provision --json (@{ operation = 'model'; dataDirectory = $data; lockPath = (Join-Path $PWD 'config/swift-assessment.lock.json') } | ConvertTo-Json -Compress)
 bonsai-tools provision --json (@{ operation = 'adapter'; dataDirectory = $data } | ConvertTo-Json -Compress)
 bonsai-tools chat --data-directory $data
@@ -53,12 +58,14 @@ The optional convenience launcher uses the same prebuilt executable:
 
 ```powershell
 ./scripts/Start-Chat.ps1
-./scripts/Start-Chat.ps1 -NativeEngine
+./scripts/Start-Chat.ps1 -PublisherEngine
 ```
 
 It accepts `-DataDirectory` and `-ToolPath`, otherwise selecting
 `BONSAI_TOOLS_PATH`, the maintenance build above, or `bonsai-tools.exe` on PATH.
-Omitting `-NativeEngine` preserves the publisher engine default. The script
+Omitting engine options selects Rust. `-NativeEngine` remains an explicit Rust
+selection; `-PublisherEngine` selects the manual publisher rollback, after
+provisioning it as described under [runtime selection](#runtime-selection). The script
 only forwards to Rust and propagates its exit code; it builds or provisions nothing.
 
 When native Rust inference is selected, the Rust preparation worker verifies the
@@ -83,6 +90,11 @@ invalid `-ToolPath` or `BONSAI_TOOLS_PATH` override first. Older source launches
 `build/tools/<fingerprint>/`; those caches are not selected automatically. Rebuild
 from the current checkout into `build/maintenance` to use the current compiler pin
 and maintenance commands.
+
+Rebuild the maintenance executable to receive the new direct CLI Rust default
+and `--publisher-engine` option. The current PowerShell facade forwards explicit
+Rust/four-worker selection by default for compatible older tools. Its
+`-NativeRowWorkers 1` option selects one Rust worker; publisher launches require one.
 
 The native Rust `egui`/`eframe` app follows the [UI contract](ui-architecture.md).
 The window opens before broker/speech preparation finishes, so drafting remains
@@ -349,9 +361,10 @@ and installed-package launches retain native admission. Installed launches use [
 
 | Runtime/model | Source and installed launch options | Boundary |
 | --- | --- | --- |
-| Publisher Prism CPU, original Swift PQ2 | Default, or explicit `--use-original-pq2`; pinned adapter enabled | Adapter scale follows response settings. Missing/altered adapters fail with provisioning guidance, without download or fallback. |
-| Publisher Prism CPU, current-weight PTQ1 export | `--use-repacked-ptq1` (app/broker `--use-repacked-ptq1`) | Same adapter opt-out/scale. Missing/changed bytes reject; no older publisher PTQ1 substitution or fallback. |
-| Experimental native Rust 0.1.14, original Swift PQ2 or exact current-weight PTQ1 | `--native-engine`, optionally `--use-repacked-ptq1` and `--no-abliterate-lora` (app/broker `--native-engine`) | Exact model, approved adapter, representation and effective row-worker readiness are verified; no engine switch after failure. Separate [PTQ1 qualification](swift-memory.md#current-weight-ptq1-option) is pending. |
+| Native Rust Prism 0.1.14, original Swift PQ2 | Development default; optional explicit `--native-engine --use-original-pq2`; pinned adapter enabled | Four CPU row workers, adapter scale 1.3. Exact artifact/readiness checks remain mandatory; full daily-use qualification is pending. |
+| Native Rust Prism 0.1.14, current-weight PTQ1 export | `--use-repacked-ptq1`, optionally `--native-engine` | Experimental opt-in; separate [PTQ1 qualification](swift-memory.md#current-weight-ptq1-option) remains pending. Missing/changed bytes reject. |
+| Publisher Prism CPU, original Swift PQ2 | `--publisher-engine`, optionally `--use-original-pq2` | Manual rollback with the same pinned adapter and response scale; no automatic fallback. |
+| Publisher Prism CPU, current-weight PTQ1 export | `--publisher-engine --use-repacked-ptq1` | Same adapter opt-out/scale. No older publisher PTQ1 substitution. |
 
 `--no-abliterate-lora` (direct app `--no-abliterate-lora`) omits the adapter and disables
 its control. Source launch prepares the native release automatically; it can also
@@ -361,6 +374,18 @@ be provisioned explicitly:
 bonsai-tools provision --json (@{ operation = 'inference'; dataDirectory = $data } | ConvertTo-Json -Compress)
 bonsai-tools chat --data-directory $data --native-engine --no-abliterate-lora
 ```
+
+For manual publisher rollback, provision its pinned engine once, then launch it
+explicitly with the same model and adapter:
+
+```powershell
+bonsai-tools provision --json (@{ operation = 'engine'; dataDirectory = $data; lockPath = (Join-Path $PWD 'config/swift-assessment.lock.json') } | ConvertTo-Json -Compress)
+bonsai-tools chat --data-directory $data --publisher-engine --use-original-pq2
+```
+
+Engine options are mutually exclusive. Installed launches retain
+`NativeEngine: false` for publisher rollback and `NativeEngine: true` for explicit
+Rust selection; omitting it selects the current development default.
 
 A publisher startup diagnostic of `process=exited-0xC0000142` means Windows failed
 runtime initialization. **Retry model** repeats the selected runtime; it does not
@@ -375,20 +400,22 @@ are mutually exclusive in the launcher, native app and broker. The thin
 same Rust policy. Installed launches use `UseRepackedPtq1: false` for original
 PQ2. Explicit selection survives deferred startup and retry without relying on
 an omitted representation option; artifact failure never switches representation.
-The default and adapter scale 1.3 remain unchanged, and device rollback still
+Original PQ2 and adapter scale 1.3 remain the defaults. The engine selection is
+independent of the weight selection; current-release device rollback still
 requires qualification.
 
-`--native-engine --native-row-workers 4` explicitly selects the reviewed 0.1.13
-four-worker implementation. The default remains one worker; publisher/reference
-launches reject four, and no request can override this private launch setting.
+Native Rust defaults to four row workers using the pinned 0.1.14 implementation.
+`--native-row-workers 1` explicitly selects one worker. Publisher/reference
+launches default to one and reject four; no request can override this private launch setting.
 The [fixed-input comparison](evidence/row-parallel-smoke.json) preserves all logits
 and logical state bytes with a lower one-step evaluation duration. Application
 startup/streaming acceptance, complete-answer latency and broader qualification
 are separate. Keep the same model, adapter and resource limits when comparing.
 
-Publisher Prism stays default until [runtime promotion](native-rust-engine.md#default-runtime-promotion).
-Thinking uses the same setting across engines; native quality, throughput and
-daily-service qualification remain pending. Native HTTP remains numeric loopback
+The [full runtime-promotion policy](native-rust-engine.md#default-runtime-promotion)
+remains unchanged and independent of this Rust/PQ2 development choice. Thinking
+uses the same setting across engines; native quality, throughput and daily-service
+qualification remain pending. Native HTTP remains numeric loopback
 with the [broker's strict public subset](broker-policy.md).
 
 `-FrontendPort`/`-BackendPort` select distinct local ports. Swift/runtime provisioning
@@ -614,7 +641,9 @@ parent-directory owner remain within the trust boundary. No UI route is supplied
 ### Owned Windows development backend
 
 The launcher defaults to the compiled-in Qwen `reference-cpu` pins; Swift and
-its pinned adapter require the explicit selections below. It performs no download
+its pinned adapter require the explicit selections below. Selecting the Swift
+profile defaults to Rust with four row workers; add `--publisher-engine` for
+publisher comparison/rollback. It performs no download
 and accepts no arbitrary arguments. Use existing external data/evidence directories:
 
 ```powershell
@@ -660,11 +689,12 @@ daily acceptance remain unqualified.
 
 ## Build the CPU server from source
 
-### Experimental native Swift backend
+### Native Rust Swift backend
 
 Provision the independently released
 [Prism Inference](https://github.com/symbiogenesis/prism-inference) Windows ARM64
-executables, then add `--native-engine` to the owned launcher:
+executables, then select the Swift profile in the owned launcher. Its engine
+default is Rust; the explicit `--native-engine` option remains accepted:
 
 ```powershell
 $inference = bonsai-tools provision --json (@{ operation = 'inference'; dataDirectory = $data } | ConvertTo-Json -Compress) | ConvertFrom-Json

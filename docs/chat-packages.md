@@ -127,6 +127,13 @@ explicit settings with the native launcher's existing validation. Native Rust
 owns the per-user launch guard, model provisioning, credentials, Jobs and retry
 policy. No microphone activates at installation or launch.
 
+For current launcher builds, omitted `NativeEngine` selects the Rust development
+default with four row workers. `NativeEngine: false` explicitly selects publisher
+rollback and defaults to one worker; `NativeEngine: true` explicitly selects Rust.
+Supply `NativeRowWorkers: 1` to select one Rust worker. Older retained packages
+keep their original executable behavior; rebuild and install a matching package
+to receive the new default. A package manifest alone does not change that behavior.
+
 Set `UseRepackedPtq1: false` to select original PQ2 explicitly. The value is
 preserved through deferred startup and forwarded as `--use-original-pq2` to the
 native app and broker. No failed PTQ1 launch falls back automatically.

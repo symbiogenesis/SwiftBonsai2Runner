@@ -17,7 +17,7 @@ $env:BONSAI_TOOLS_PATH = 'C:\BonsaiTools\bonsai-tools.exe'
     operation = 'file-score'; qualificationProfile = 'standard-scale-one'
     evidencePath = 'C:\Evidence\capture.json'; reviewPath = $null
 } | ConvertTo-Json -Compress)
-& $env:BONSAI_TOOLS_PATH chat --repository-root $PWD --native-engine
+& $env:BONSAI_TOOLS_PATH chat --repository-root $PWD
 ```
 
 Every JSON command accepts `--json JSON_OBJECT`, `--request ABSOLUTE_JSON_PATH`,
@@ -33,14 +33,20 @@ $repo = $PWD.Path
 $target = Join-Path $env:LOCALAPPDATA 'SwiftBonsai2/build/maintenance'
 cargo build --locked --release --manifest-path (Join-Path $repo 'Cargo.toml') --package bonsai-tools --bin bonsai-tools --target-dir $target
 $bonsai = Join-Path $target 'release/bonsai-tools.exe'
-& $bonsai chat --repository-root $repo --native-engine
+& $bonsai chat --repository-root $repo
 ```
 
 `chat` is the native launch entry point; optional `scripts/Start-Chat.ps1`
-forwards to it and offers `-NativeEngine`, `-UseRepackedPtq1` and `-UseOriginalPq2`.
+forwards to it and offers `-NativeEngine`, `-PublisherEngine`, `-NativeRowWorkers`,
+`-UseRepackedPtq1` and `-UseOriginalPq2`. The development default is Rust Prism
+0.1.14, original PQ2, four CPU row workers and the standard adapter at scale 1.3.
+`--publisher-engine` selects manual publisher rollback; its worker default is one.
+Use `--native-row-workers 1` for explicit single-worker Rust. Both engine flags
+are mutually exclusive; `--native-engine` remains accepted for explicit Rust.
 It uses the nearest Runner checkout and
 `%LOCALAPPDATA%/SwiftBonsai2` unless `--repository-root` or `--data-directory`
-is supplied. Boolean options are `--native-engine`, `--use-repacked-ptq1`, `--use-original-pq2`,
+is supplied. Boolean options are `--native-engine`, `--publisher-engine`,
+`--use-repacked-ptq1`, `--use-original-pq2`,
 `--no-abliterate-lora`, `--no-tts`, `--no-speech-models`, `--speech-models-only`
 and `--force-build`. Value options are `--native-row-workers`, `--tts-quantization`,
 `--tts-threads`, `--frontend-port`, `--backend-port`, `--canary-port`, `--tts-port`,
@@ -50,6 +56,13 @@ cache, verification, cancellation and teardown policy remains in Rust. An
 unchanged direct launch needs no Cargo invocation. Rebuild the maintenance
 executable after updating its sources; `--force-build` rebuilds application
 companions, not the running maintenance image.
+
+Rebuild the maintenance executable to use the new direct CLI default and
+`--publisher-engine` option. The current PowerShell facade forwards explicit
+Rust/four-worker selection by default, including when invoking a compatible older
+tool. Full-context/output, creative-quality, sustained-performance, isolation and
+clean-machine qualification remain pending; this default makes no speed claim.
+JSON `NativeEngine: false` remains an explicit publisher selection.
 
 The two weight options are mutually exclusive. `--use-original-pq2` explicitly
 selects the pinned original Swift artifact with either engine; the current default

@@ -4,6 +4,11 @@ Chat preserves the native template and publisher's evaluated sampler, with think
 by default. These settings are not qualified as optimal for laptop use or creative
 writing. Actual-model application acceptance is pending.
 
+The development engine default is Rust Prism 0.1.14 with original Swift PQ2,
+four CPU row workers and the standard adapter at scale 1.3. Publisher rollback
+is explicit with `--publisher-engine`; PTQ1 remains opt-in. This choice does not
+qualify performance, full-context/output, quality, isolation or installation.
+
 ## Applied defaults
 
 | Setting | Default | Reason |
