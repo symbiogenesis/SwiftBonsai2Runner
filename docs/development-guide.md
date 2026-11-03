@@ -166,11 +166,29 @@ neither the inference runtime nor the underlying driver failure. New launches
 record the selected graphics adapter/backend and any device-lost reason in the
 same retained stderr evidence.
 
+The [retained Adreno X2-90 failure](evidence/native-renderer-20261103/summary.json)
+selected Vulkan and recorded device loss with a driver-fault message before the
+upload panic. In that case, select DX12 for the next explicit attempt. Repeating
+Vulkan does not test an alternative backend. DX12 startup remains unqualified by
+that failed launch; renderer selection does not change the inference engine.
+
 The native UI supports DX12, Vulkan and OpenGL/GLES through wgpu. For an explicit
 backend attempt, preserve your current `WGPU_BACKEND`, set
 `$env:WGPU_BACKEND = 'dx12'` (or `'vulkan'`), then rerun the same launch command.
 Restore the previous environment value after the attempt. This selects only the
 window renderer; it does not enable NPU inference or change model selection.
+For example, preserve and restore the setting even when launch fails:
+
+```powershell
+$previousBackend = $env:WGPU_BACKEND
+try {
+    $env:WGPU_BACKEND = 'dx12'
+    .\scripts\Start-Chat.ps1 -NativeEngine
+} finally {
+    $env:WGPU_BACKEND = $previousBackend
+}
+```
+
 There is no automatic relaunch or request replay. A model-free `--preview` checks
 the same renderer without loading a model; device diagnostics and their setup,
 comparison and cleanup still share the five-minute owner-device budget.

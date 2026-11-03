@@ -1,0 +1,6 @@
+{"backend":"Vulkan","device":909329968,"deviceType":"IntegratedGpu","driver":"Qualcomm Technologies Inc. Adreno Vulkan Driver","driverInfo":"Driver Build: b3549aaa68, I04672aa9d4, 1770010726\nDate: 02/02/2026\nCompiler Version: E031.50.36.00\nDriver Branch: BVT165\n","kind":"bonsai-chat-graphics","name":"Qualcomm(R) Adreno(TM) X2-90 GPU","stage":"adapter-selected","vendor":20803}
+{"kind":"bonsai-chat-graphics","message":"Unexpected error variant (driver implementation is at fault)","reason":"Unknown","stage":"device-lost"}
+
+thread 'main' (39824) panicked at <cargo-registry>\egui-wgpu-0.37.0\src\renderer.rs:1033:17:
+Failed to create staging buffer for index data. Index count: 7332. Required index buffer size: 29328. Actual size 49152 and capacity: 49152 (bytes)
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace

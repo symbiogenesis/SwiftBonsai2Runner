@@ -122,11 +122,15 @@ owner-device budget; performance comparisons and complete checks remain in ownin
 CI. Complete separate registry delivery for the reviewed native-hash, GGUF 0.1.1
 and Prism 0.1.14 packages; hosted source-package checks do not publish them.
 
-Diagnose the owner's [native renderer staging failure](docs/evidence/native-renderer-staging-failure.json)
-through the retained graphics adapter/device-loss diagnostics. Its exit 101
-occurred before inference validation. Qualify an explicit supported Windows
-graphics backend and restored launch before claiming a startup or inference fix;
-the valid small upload failure alone identifies no driver or backend cause.
+Qualify an explicit DX12 launch after the owner's
+[repeated native renderer failure](docs/evidence/native-renderer-20261103/summary.json).
+The retained diagnostics select Vulkan on Adreno X2-90 and report device loss
+with a driver-fault message before the GUI upload panic. This attributes the
+failed renderer path but does not establish the precise driver defect or infer
+anything about inference. Backend-aware launcher guidance is prepared; compiled
+checks and a restored launch remain separate pending gates. Preserve the
+[earlier failure](docs/evidence/native-renderer-staging-failure.json) and its
+unknown backend/device-loss details rather than backfilling them.
 
 Retain hosted regression coverage for Rust acceptance deadlines, startup receipt
 retention/redaction, host capability identities, PTQ1 collector admission, Find

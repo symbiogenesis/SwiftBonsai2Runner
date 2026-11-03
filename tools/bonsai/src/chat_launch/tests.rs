@@ -738,3 +738,31 @@ fn renderer_staging_failure_guidance_requires_the_recorded_panic() {
         assert!(graphics_failure_guidance(101, log).is_none());
     }
 }
+
+#[test]
+fn renderer_guidance_uses_only_the_selected_adapter_record() -> crate::Result<()> {
+    let panic =
+        "egui-wgpu-0.37.0 renderer.rs:1033:17:\nFailed to create staging buffer for index data.";
+    for (backend, selected, alternative) in [
+        ("Vulkan", "Vulkan was selected", "WGPU_BACKEND='dx12'"),
+        ("Dx12", "DX12 was selected", "WGPU_BACKEND='vulkan'"),
+    ] {
+        let adapter = json!({
+            "kind": "bonsai-chat-graphics", "stage": "adapter-selected", "backend": backend,
+        });
+        let log = format!("{adapter}\n{{malformed diagnostic\n{panic}");
+        let guidance = graphics_failure_guidance(101, &log).ok_or("Missing graphics guidance.")?;
+        assert!(guidance.contains(selected));
+        assert!(guidance.contains(alternative));
+        assert!(!guidance.contains("or 'vulkan'"));
+    }
+    for unrelated in [
+        json!({"kind": "other", "stage": "adapter-selected", "backend": "Vulkan"}),
+        json!({"kind": "bonsai-chat-graphics", "stage": "device-lost", "backend": "Vulkan"}),
+    ] {
+        let guidance = graphics_failure_guidance(101, &format!("{unrelated}\n{panic}"))
+            .ok_or("Missing graphics guidance.")?;
+        assert!(!guidance.contains("was selected"));
+    }
+    Ok(())
+}

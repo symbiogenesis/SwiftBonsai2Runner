@@ -621,15 +621,15 @@ fn launch_failure(code: u32, working: &Path) -> String {
     if let Ok(file) = fs::File::open(working.join("chat.log")) {
         let _read = file.take(32 * 1024).read_to_string(&mut log);
     }
-    let guidance = graphics_failure_guidance(code, &log).unwrap_or("");
+    let guidance = graphics_failure_guidance(code, &log).unwrap_or_default();
     format!(
         "Chat stopped with exit code {code}.{guidance} Evidence is retained under {}.",
         working.display()
     )
 }
 
-fn graphics_failure_guidance(code: u32, log: &str) -> Option<&'static str> {
-    (code == 101
+fn graphics_failure_guidance(code: u32, log: &str) -> Option<String> {
+    let staging_failure = code == 101
         && log.contains("egui-wgpu-")
         && log.contains("renderer.rs:")
         && [
@@ -637,10 +637,30 @@ fn graphics_failure_guidance(code: u32, log: &str) -> Option<&'static str> {
             "Failed to create staging buffer for vertex data.",
         ]
         .iter()
-        .any(|marker| log.contains(marker)))
-    .then_some(
-        " The native window renderer failed to upload GUI geometry. The retained error does not diagnose inference. An explicit graphics backend can be selected with $env:WGPU_BACKEND='dx12' or 'vulkan' before rerunning the same command; restore your previous setting afterwards. See docs/development-guide.md#native-renderer-failures.",
-    )
+        .any(|marker| log.contains(marker));
+    if !staging_failure {
+        return None;
+    }
+    let backend = log.lines().rev().find_map(|line| {
+        let entry: Value = serde_json::from_str(line).ok()?;
+        if entry["kind"] == "bonsai-chat-graphics" && entry["stage"] == "adapter-selected" {
+            entry["backend"].as_str().map(str::to_owned)
+        } else {
+            None
+        }
+    });
+    let selection = match backend.as_deref() {
+        Some("Vulkan") => {
+            " Vulkan was selected. For an explicit DX12 attempt, set $env:WGPU_BACKEND='dx12'"
+        }
+        Some("Dx12") => {
+            " DX12 was selected. For an explicit Vulkan attempt, set $env:WGPU_BACKEND='vulkan'"
+        }
+        _ => " For an explicit graphics backend attempt, set $env:WGPU_BACKEND='dx12' or 'vulkan'",
+    };
+    Some(format!(
+        " The native window renderer failed to upload GUI geometry. The retained error does not diagnose inference.{selection} before rerunning the same command; restore your previous setting afterwards. See docs/development-guide.md#native-renderer-failures."
+    ))
 }
 
 fn working_directory(requested: Option<&Path>) -> crate::Result<PathBuf> {
