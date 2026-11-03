@@ -114,6 +114,24 @@ pending gates. Full suites, benchmarks and performance captures stay in owning C
 
 ### Actual-model acceptance
 
+Resolve the installed broker's failed graceful shutdown before another local
+throughput capture. The owner-authorized
+[2026-11-03 local observations](docs/evidence/local-throughput-20261103/summary.json)
+retained Rust 0.1.14/four-worker/adapter-1.3 PQ2 and PTQ1 eight-token request rates,
+with aggregate and per-arm AC/saver/charge observations. Both owners required
+forced termination; an intermediate remaining backend stopped the workload before
+the publisher arms. Final retention found no model processes or trial credentials
+within 288.087 seconds of the original twelve-minute allowance. Keep that clock
+closed: no retry, benchmark qualification, graceful-cleanup acceptance or sustained
+decode verdict is supplied. The whole-response read did not capture first/last
+token arrival times; retain separate TTFT and generation-throughput measurements
+in a future admitted workload rather than deriving them from these request rates.
+Publisher request rates and Qwen (absent from the
+selected installed data) remain pending. Qualify delivery of the existing private
+owner-shutdown controls through the required source-bound checks before selecting
+another device workload; this capture used an older installed broker, not settled
+main's uncompiled shutdown changes.
+
 Qualify the [shared startup-timeout receipt fix](docs/evidence/ptq1-startup-timeout-20261103/summary.json)
 through owner-managed exact-source hosted preparation. An admitted extended case
 whose deadline outlasts the unchanged 600-second startup cap now retains an ordinary

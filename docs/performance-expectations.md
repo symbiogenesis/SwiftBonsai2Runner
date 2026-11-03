@@ -41,6 +41,16 @@ creative quality, GPU/NPU profiles, isolation and actual-model app acceptance re
 unqualified. [PLAN.md](../PLAN.md) owns delivery; [validation](validation.md) and
 independent [LoRA gates](swift-lora.md#standard-profile-qualification) govern acceptance.
 
+The [2026-11-03 local capture](evidence/local-throughput-20261103/summary.json)
+adds Rust 0.1.14/four-worker/adapter-1.3 observations: eight-token request rates
+of **0.281 tokens/s for PQ2** and **0.137 tokens/s for PTQ1**. Both truncated at
+the cap. These include prefill and TTFT; the whole-response capture did not record
+the token arrival times needed to separate TTFT and generation throughput. AC
+and battery saver matched at every recorded power sample, but both brokers
+required forced termination. The workload stopped before the publisher arms;
+final retention found no model processes or trial credentials. These raw request
+rates qualify neither sustained decode speed nor application acceptance.
+
 ## X1/X2 configuration evidence
 
 [Hardware policy](hardware-capabilities.md#automatic-profile-selection) owns selection, admission, phase handoff and qualified CPU

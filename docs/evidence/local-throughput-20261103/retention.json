@@ -1,0 +1,112 @@
+{
+  "startedUtc": "2026-11-03T10:04:26.994978+00:00",
+  "powerBeforeFinalCleanup": {
+    "utc": "2026-11-03T10:04:26.995031+00:00",
+    "acConnected": true,
+    "batterySaver": false,
+    "chargePercent": 24
+  },
+  "modelAttemptsRepeated": 0,
+  "stoppedBeforePublisher": true,
+  "qwenStatus": "not-installed-in-selected-data-directory",
+  "retained": [
+    {
+      "path": "rust-pq2-backend.stderr",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "rust-pq2-backend.stdout",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "rust-ptq1-backend.stderr",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "rust-ptq1-backend.stdout",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "ownedTermination": [
+    {
+      "pid": 22376,
+      "opened": false
+    }
+  ],
+  "activeModelProcessesAfterFinalCleanup": [],
+  "remainingTrialCredentialFiles": 0,
+  "runtime": {
+    "version": "0.1.14",
+    "sourceRevision": "9e8ea3e2c042ab0c3f1a8e9596ff155e202c3c57",
+    "files": [
+      {
+        "name": "bonsai-gguf.exe",
+        "bytes": 441856,
+        "sha256": "2be1349cdb56959dbbc41f9afbe03180601d1ea67b68f2dafa442df4451734bf",
+        "matchesPin": true
+      },
+      {
+        "name": "bonsai-swift-worker.exe",
+        "bytes": 1541632,
+        "sha256": "83e26b87e95657f64cd98d036c01279f942f30e50cdd1eca417be627a7fdc717",
+        "matchesPin": true
+      },
+      {
+        "name": "bonsai-token-worker.exe",
+        "bytes": 507904,
+        "sha256": "f6bd6e942fe66b4dd145a0b7983e51e64eb90bf80ef82e5a6520cb189b0bf023",
+        "matchesPin": true
+      },
+      {
+        "name": "CAMELID-LICENSE.txt",
+        "bytes": 1087,
+        "sha256": "cfd0bfa3c3f54585039a58a2dd86a0541b15c29e9f825d244c6f3f0d7c771015",
+        "matchesPin": true
+      },
+      {
+        "name": "LICENSE",
+        "bytes": 11560,
+        "sha256": "3ddf9be5c28fe27dad143a5dc76eea25222ad1dd68934a047064e56ed2fa40c5",
+        "matchesPin": true
+      },
+      {
+        "name": "NOTICE",
+        "bytes": 2369,
+        "sha256": "e3b6278bbba57b0bb62cb830facd20c2ca347fdbd655be87b83a78b2a4d42a6b",
+        "matchesPin": true
+      },
+      {
+        "name": "prism-inference-server.exe",
+        "bytes": 2068992,
+        "sha256": "223b5e7c7c7715862b75ab87c38babd671b3b3374cab34d3d09373c2c5bf0658",
+        "matchesPin": true
+      },
+      {
+        "name": "prism-inference.exe",
+        "bytes": 998912,
+        "sha256": "7de437e779ed4df5c36a07a28a3815b9c1c64e64456585defbebbe43883c5abc",
+        "matchesPin": true
+      },
+      {
+        "name": "PRISM-LICENSE.txt",
+        "bytes": 1099,
+        "sha256": "bcd8ec749126d45cb06737d0690295d73df4b6e7e194205bcf91190368f27285",
+        "matchesPin": true
+      }
+    ]
+  },
+  "processorName": "Snapdragon(R) X2 Elite Extreme - X2E94100 - Qualcomm Oryon(TM) CPU",
+  "powerAfterFinalRetention": {
+    "utc": "2026-11-03T10:04:27.281996+00:00",
+    "acConnected": true,
+    "batterySaver": false,
+    "chargePercent": 24
+  },
+  "elapsedSecondsThroughRetention": 288.0867726999859,
+  "withinDeclaredBudget": true,
+  "closedUtc": "2026-11-03T10:04:27.282016+00:00"
+}

@@ -1,5 +1,8 @@
 # Keep retained observation selection bytes stable for their recorded SHA-256.
 # Keep the current PTQ1 release decision and independent reviews portable.
+docs/evidence/local-throughput-20261103/** -text -whitespace
+docs/evidence/local-throughput-20261103-independent-review.json text eol=lf
+
 docs/evidence/ptq1-primetime-*-20261103.json text eol=lf
 
 # Preserve the original bounded blocker-fix validation receipt and logs.
