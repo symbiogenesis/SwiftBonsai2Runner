@@ -170,7 +170,88 @@ fn comparison(samples: &[Value], row_workers: u8) -> Value {
     json!({"status":"captured-complete-pair", "matchedOutputAndUsage":matched,
         "ptq1OverPq2RequestLatency":matched.then(|| samples[1]["stream"]["requestMilliseconds"].as_f64().unwrap()
             / samples[0]["stream"]["requestMilliseconds"].as_f64().unwrap()),
+        "resources":resource_comparison(samples, matched),
         "fixedOrder":true, "qualityReview":"pending", "repeatedTrialBenefitQualified":false})
+}
+
+const RESOURCE_METRICS: [(&str, &str); 4] = [
+    (
+        "osLifetimePeakJobCommitBytes",
+        "OS lifetime peak commitment for the complete owned Job, including descendants and startup",
+    ),
+    (
+        "osLifetimePeakRootWorkingSetBytes",
+        "OS lifetime peak root-process residency, including mapped pages and startup, excluding descendants",
+    ),
+    (
+        "sampledPeakRootPrivateBytes",
+        "maximum root-process private commitment observed by serving guard samples; startup is excluded",
+    ),
+    (
+        "sampledPeakRootWorkingSetBytes",
+        "maximum root-process residency observed by serving guard samples; startup and descendants are excluded",
+    ),
+];
+
+fn resource_comparison(samples: &[Value], matched: bool) -> Value {
+    let pending = |reason| {
+        json!({"status":"pending", "reason":reason, "metrics":[],
+            "fullResourceGateQualified":false,"pagingQualified":false,
+            "sustainedComfortQualified":false,"resourceBenefitQualified":false})
+    };
+    if samples.len() != 2 {
+        return pending("incomplete-pair");
+    }
+    if !matched {
+        return pending("different-complete-output-or-usage");
+    }
+    let resources = [
+        &samples[0]["cleanup"]["backendResources"],
+        &samples[1]["cleanup"]["backendResources"],
+    ];
+    for resource in &resources {
+        if resource["successfulGuardSamples"]
+            .as_u64()
+            .is_none_or(|n| n == 0)
+            || resource["guardIntervalMilliseconds"] != 250
+            || resource["sampledMinimumSystemAvailablePhysicalBytes"]
+                .as_u64()
+                .is_none_or(|n| n == 0)
+            || RESOURCE_METRICS
+                .iter()
+                .any(|(field, _)| resource[*field].as_u64().is_none_or(|n| n == 0))
+        {
+            return pending("missing-positive-resource-observations");
+        }
+        if resource["sampledPeakRootPrivateBytes"].as_u64().unwrap()
+            > resource["osLifetimePeakJobCommitBytes"].as_u64().unwrap()
+            || resource["sampledPeakRootWorkingSetBytes"].as_u64().unwrap()
+                > resource["osLifetimePeakRootWorkingSetBytes"]
+                    .as_u64()
+                    .unwrap()
+        {
+            return pending("inconsistent-sampled-and-lifetime-resource-observations");
+        }
+    }
+    let metrics: Vec<_> = RESOURCE_METRICS
+        .iter()
+        .map(|(field, scope)| {
+            json!({"field":field,"scope":scope,"pq2Bytes":resources[0][*field],
+            "ptq1Bytes":resources[1][*field],
+            "ptq1OverPq2":resources[1][*field].as_f64().unwrap()
+                / resources[0][*field].as_f64().unwrap()})
+        })
+        .collect();
+    let serving_observations: Vec<_> = resources.iter().map(|resource| {
+        json!({"successfulGuardSamples":resource["successfulGuardSamples"],
+            "guardIntervalMilliseconds":resource["guardIntervalMilliseconds"],
+            "sampledMinimumSystemAvailablePhysicalBytes":resource["sampledMinimumSystemAvailablePhysicalBytes"]})
+    }).collect();
+    json!({"status":"observed-bounded-pair", "metrics":metrics,
+        "servingObservationsInRepresentationOrder":serving_observations,
+        "scope":"One fixed-order matched complete-answer pair; commitment and residency are non-additive; sampled bounds are not lifetime peaks; system available memory is context, not attributed model consumption; no full-context, paging or sustained-use evidence",
+        "fullResourceGateQualified":false,"pagingQualified":false,
+        "sustainedComfortQualified":false,"resourceBenefitQualified":false})
 }
 
 async fn paired_responses(
@@ -290,8 +371,119 @@ fn complete_sample(repacked: bool, row_workers: u8) -> Value {
         "stream":{"finishReason":"stop","naturallyStopped":true,"reportedCompletionTokens":3,
             "visibleContent":"Oak","visibleContentSha256":digest(b"Oak"),"requestMilliseconds":1000},
         "cleanup":{"ownedJobEmpty":true,"listenerReleased":true}});
+    sample["cleanup"]["backendResources"] = backend_resource_observation(Some(BackendResources {
+        sample_count: 2,
+        sampled_peak_root_private_bytes: 800,
+        sampled_peak_root_working_set_bytes: 1600,
+        sampled_min_available_physical_bytes: Some(4 * 1024 * 1024 * 1024),
+        os_peak_job_commit_bytes: Some(1000),
+        os_peak_root_working_set_bytes: Some(2000),
+    }));
     record_worker_readiness(&mut sample, row_workers, true);
     sample
+}
+
+#[test]
+fn native_representation_resources_compare_matching_domains_only() {
+    for row_workers in [1, 4] {
+        let mut pair = vec![
+            complete_sample(false, row_workers),
+            complete_sample(true, row_workers),
+        ];
+        for (field, _) in RESOURCE_METRICS {
+            let previous = pair[1]["cleanup"]["backendResources"][field]
+                .as_u64()
+                .unwrap();
+            pair[1]["cleanup"]["backendResources"][field] = json!(previous / 2);
+        }
+        pair[1]["cleanup"]["backendResources"]["successfulGuardSamples"] = json!(3);
+        let observed = comparison(&pair, row_workers);
+        let resources = &observed["resources"];
+        assert_eq!(resources["status"], "observed-bounded-pair");
+        let metrics = resources["metrics"].as_array().unwrap();
+        assert_eq!(metrics.len(), RESOURCE_METRICS.len());
+        for (metric, (field, scope)) in metrics.iter().zip(RESOURCE_METRICS) {
+            assert_eq!(metric["field"], field);
+            assert_eq!(metric["scope"], scope);
+            assert_eq!(
+                metric["pq2Bytes"],
+                pair[0]["cleanup"]["backendResources"][field]
+            );
+            assert_eq!(
+                metric["ptq1Bytes"],
+                pair[1]["cleanup"]["backendResources"][field]
+            );
+            assert_eq!(metric["ptq1OverPq2"], 0.5);
+        }
+        let serving = &resources["servingObservationsInRepresentationOrder"];
+        assert_eq!(serving[0]["successfulGuardSamples"], 2);
+        assert_eq!(serving[1]["successfulGuardSamples"], 3);
+        assert_eq!(
+            serving[0]["sampledMinimumSystemAvailablePhysicalBytes"],
+            4_u64 * 1024 * 1024 * 1024
+        );
+        for field in [
+            "fullResourceGateQualified",
+            "pagingQualified",
+            "sustainedComfortQualified",
+            "resourceBenefitQualified",
+        ] {
+            assert_eq!(resources[field], false);
+        }
+        pair[1]["stream"]["reportedCompletionTokens"] = json!(4);
+        let unmatched = comparison(&pair, row_workers);
+        assert_eq!(unmatched["status"], "captured-complete-pair");
+        assert!(unmatched["ptq1OverPq2RequestLatency"].is_null());
+        assert_eq!(
+            unmatched["resources"]["reason"],
+            "different-complete-output-or-usage"
+        );
+        assert_eq!(unmatched["resources"]["metrics"], json!([]));
+    }
+}
+
+#[test]
+fn native_representation_resources_reject_missing_or_inconsistent_observations() {
+    let pair = vec![complete_sample(false, 4), complete_sample(true, 4)];
+    assert_eq!(
+        resource_comparison(&pair[..1], true)["reason"],
+        "incomplete-pair"
+    );
+    for index in 0..2 {
+        let mut changed = pair.clone();
+        changed[index]["cleanup"]["backendResources"] = Value::Null;
+        let missing = comparison(&changed, 4);
+        assert_eq!(missing["status"], "captured-complete-pair");
+        assert_eq!(missing["resources"]["status"], "pending");
+        assert_eq!(missing["resources"]["metrics"], json!([]));
+        for field in RESOURCE_METRICS.iter().map(|(field, _)| *field).chain([
+            "successfulGuardSamples",
+            "sampledMinimumSystemAvailablePhysicalBytes",
+        ]) {
+            for invalid in [Value::Null, json!(0), json!(-1), json!(0.5)] {
+                let mut changed = pair.clone();
+                changed[index]["cleanup"]["backendResources"][field] = invalid;
+                let result = comparison(&changed, 4);
+                assert_eq!(
+                    result["resources"]["reason"], "missing-positive-resource-observations",
+                    "{field}"
+                );
+                assert_eq!(result["resources"]["metrics"], json!([]));
+            }
+        }
+        for (field, invalid) in [
+            ("guardIntervalMilliseconds", Value::Null),
+            ("guardIntervalMilliseconds", json!(500)),
+            ("sampledPeakRootPrivateBytes", json!(1001)),
+            ("sampledPeakRootWorkingSetBytes", json!(2001)),
+        ] {
+            let mut changed = pair.clone();
+            changed[index]["cleanup"]["backendResources"][field] = invalid;
+            let result = comparison(&changed, 4);
+            assert_eq!(result["resources"]["status"], "pending", "{field}");
+            assert_eq!(result["resources"]["metrics"], json!([]));
+        }
+    }
 }
 
 #[test]

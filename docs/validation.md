@@ -192,6 +192,19 @@ template and sampler controls, startup and framed request times are retained.
 Different complete responses remain available for review; the request-latency
 ratio requires identical response bytes and completion usage.
 
+The pair also compares resource observations already retained during owned cleanup,
+without additional probes or model work. Matched response bytes and usage are
+required for these ratios too. Each accounting domain has its own PQ2 and PTQ1
+byte counts and ratio: OS lifetime Job commitment, OS lifetime root residency,
+sampled serving root private commitment and sampled serving root residency.
+The domains are non-additive. Both arms require positive native queries and
+serving guard samples; missing, malformed or internally inconsistent telemetry
+leaves the resource comparison pending even when complete responses were captured.
+Guard counts and minimum sampled system available memory accompany the comparison;
+system available memory is context, not attributed model consumption. These are
+bounded observations, with full-context resources, paging, sustained comfort and
+resource benefit still unqualified.
+
 Explicit `profile: ptq1-pq2-complete-response-row4` selects the same fixed pair
 with four configured native row workers for both fresh owners. Its separate
 case and receipts retain that policy; the original complete-response profile
@@ -305,6 +318,8 @@ Model-free acceptance regressions:
 | `native_case_budget_rejects_missing_unbounded_and_malformed_allowances` | Reject missing, zero, malformed, overflowing and over-240-second allowances; optional workloads use the reduced allowance and retain the 120-second recovery reserve |
 | `native_representation_row4_profile_is_explicit_and_preserves_pair` | Separate complete-response selection configures both fixed-order owners with four workers while retaining the one-worker profile and identical approved model, adapter, request and containment policies |
 | `native_representation_comparison_requires_released_worker_observation` | Both representation samples must retain the compiled release's matching worker-readiness version, observation flag and graph budget; missing or mismatched observations cannot produce a latency ratio |
+| `native_representation_resources_compare_matching_domains_only` | Matched complete responses and usage permit separate Job-commit, root-residency and sampled-serving ratios without summing domains or claiming full resource qualification |
+| `native_representation_resources_reject_missing_or_inconsistent_observations` | Missing, nonpositive or inconsistent native resource telemetry leaves the resource comparison pending while preserving complete-answer captures |
 | `native_representation_profiles_leave_skipped_arms_pending_at_original_deadline` | Both worker policies retain partial observations and pending status when the original shared deadline reaches the 60-second startup/cleanup reserve; no missing owner starts or receives a new clock |
 | `native_adapter_scale_history_profile_requires_separate_explicit_selection` | Scale/history lifecycle is a distinct original-PQ2 row4 selection; the one-stream smoke and no-extra-workload restrictions remain |
 | `native_adapter_scale_history_retains_partial_steps_without_qualifying_missing_work` | Real model-free HTTP peers verify zero/rejected/changed-back scales and supplied history; cancelling after zero or rejection preserves completed receipts without qualifying later work; exhausted request reserve starts no HTTP work |
