@@ -1,0 +1,142 @@
+{
+  "schemaVersion": 1,
+  "kind": "independent-ptq1-ci-history-and-score-audit",
+  "recordedDate": "2026-11-02",
+  "reviewerId": "Codex:/root/promotion_review",
+  "status": "newer-partial-evidence-confirmed-no-newer-formal-score-found",
+  "scope": "Authenticated GitHub Actions run/job/artifact metadata, workflow source, retained documentary scores and one tiny candidate log artifact. No model, checker, numerical comparator, device diagnostics or local numerical-payload hashing.",
+  "coverage": {
+    "allAvailableArtifactMetadataPagesQueried": true,
+    "artifactCreatedSinceUtc": "2026-10-31T00:00:00Z",
+    "recentRunsPerRepository": 100,
+    "repositories": [
+      "symbiogenesis/SwiftBonsai2Runner",
+      "symbiogenesis/prism-inference"
+    ],
+    "relevantWorkflowHistoriesRequestedUpTo100": true,
+    "artifactNameFilters": "promotion|parity|ptq1|lora|acceptance|sandbox|private-service|conformance|source-package",
+    "absenceClaim": "No newer formal promotion score was found in these inspected sources; this is not an assertion about uninspected private or external evidence."
+  },
+  "lastRetainedFormalScore": {
+    "passed": 5,
+    "runnerRevision": "85fd2f1565018ac9a0bb6ce02fd1f333d27dfe80",
+    "rejected": 0,
+    "runtimeVersion": "0.1.10",
+    "review": "docs/evidence/ptq1-promotion-85fd2f1-review.json",
+    "appliesToCurrentRuntimeWithoutFreshEvaluation": false,
+    "file": "docs/evidence/ptq1-promotion-85fd2f1.json",
+    "runtimeRevision": "749a5f5b43bf77764a29682557ec91a8de8dcdef",
+    "recordedDate": "2026-11-01",
+    "promotionReady": false,
+    "pending": 14
+  },
+  "newerEvidence": [
+    {
+      "sourcePackageRunId": "41535008364",
+      "status": "success",
+      "conformanceRunId": "41535008203",
+      "meaning": "Fresh exact-runtime evidence for the same documentary categories, not three additional gate IDs.",
+      "runtimeRevision": "cae16fa6998dac58a947eba9ae4398ed6a9fb863",
+      "foundationRunId": "41535008224",
+      "category": "exact0.1.13-runtime-documentary-gates"
+    },
+    {
+      "status": "success",
+      "category": "runner-foundation",
+      "runnerRevision": "469f57b233898fd10b97d5ebc10aaef78b940e30",
+      "meaning": "Exact-candidate owning Foundation now passes.",
+      "runId": "41568280451"
+    },
+    {
+      "runId": "41567729492",
+      "artifactId": "13200495516",
+      "meaning": "Complete402tensor/209920000block reconstruction. Later469 has only an equivalent compiler metadata boolean change; preserve actual execution revision and pending exact-candidate evaluator binding.",
+      "status": "success",
+      "runnerRevision": "b833d6b488a8e555f70c2f814a31f1f5e1241726",
+      "category": "current-weight-ptq1-packing"
+    },
+    {
+      "status": "success",
+      "category": "bounded-ptq1-scale-history",
+      "runnerRevision": "74bef68c74417a56e38d90201b7f87ccc667a276",
+      "meaning": "Three cap-one streams with scale changes, invalid-scale rejection and captured assistant history. Does not satisfy full-output lifecycle or broad owning-service acceptance.",
+      "runId": "41539984210"
+    },
+    {
+      "runId": "41568281287",
+      "artifactId": "13200218351",
+      "meaning": "Selected one-token explicitNEON/four-worker/standard1.3 comparison. Broad scalar/full-context/cross-condition gates remain pending; independent complete retained-payload verification is separate.",
+      "status": "success",
+      "runnerRevision": "469f57b233898fd10b97d5ebc10aaef78b940e30",
+      "category": "bounded-current-release-ptq1-neon"
+    },
+    {
+      "status": "success",
+      "category": "published-adapter-direction",
+      "runnerRevision": "6c25a5d04cbd355926d2d8c1fc26268a20bdd7bf",
+      "meaning": "All129B factors agree with published direction; missing checkpoint/conversion/A-factor writer provenance remains unresolved.",
+      "runId": "41530766802"
+    }
+  ],
+  "misleadingGreenRuns": [
+    {
+      "runId": "41224253383",
+      "overallConclusion": "success",
+      "meaning": "No device service gate passed.",
+      "revision": "9f496183c4a9e1ad7a9ee37b83ebc198a56efd27",
+      "actualAcceptanceConclusion": "skipped",
+      "prepareConclusion": "success",
+      "repository": "symbiogenesis/prism-inference"
+    },
+    {
+      "runId": "41221367710",
+      "overallConclusion": "failure",
+      "meaning": "Green capture step without durable receipts cannot qualify the gate.",
+      "captureStepConclusion": "success",
+      "retentionStepConclusion": "failure",
+      "repository": "symbiogenesis/prism-inference"
+    },
+    {
+      "artifactContents": "checks.log only;3828uncompressed bytes",
+      "inspectedArtifactId": "13066483574",
+      "runId": "41265296736",
+      "meaning": "Synthetic/model-free CLI policy and rejection checks preserve pending evidence. No nineteen-gate candidate score.",
+      "repository": "symbiogenesis/SwiftBonsai2Runner",
+      "revision": "a98070e8de32ca8720cca99b5b2a1a109f34980d",
+      "overallConclusion": "success",
+      "inspectedArtifactBytes": 1103
+    }
+  ],
+  "otherWorkflowFindings": {
+    "latestSandboxCreatedUtc": "2026-10-26T23:39:00Z",
+    "completeResponseRow4Conclusion": "cancelled",
+    "latestPtq1ScreenConclusion": "failure",
+    "latestSandboxConclusion": "success",
+    "latestSandboxRun": "40421181532",
+    "latestPtq1ScreenRuns": [
+      "41007117743",
+      "41005833161"
+    ],
+    "completeResponseRow4Run": "41323946846",
+    "newerLoraQualificationRunsFound": false,
+    "newerSuccessfulCompleteResponsePairFound": false
+  },
+  "currentConclusion": {
+    "currentDefaultPromotionQualified": false,
+    "historicalFiveOfNineteenMustBeLabeledHistorical": true,
+    "newerFormalNineteenGateScoreFound": false,
+    "partialPassesMayIncrementCompletedBroadGates": false,
+    "currentFormalPassedCount": null,
+    "newerPartialPassesAreRealProgress": true
+  },
+  "sourceLinks": [
+    "https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41568280451",
+    "https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41568281287",
+    "https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41567729492",
+    "https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41539984210",
+    "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008224",
+    "https://github.com/symbiogenesis/prism-inference/actions/runs/41535008203",
+    "https://github.com/symbiogenesis/prism-inference/actions/runs/41224253383",
+    "https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41265296736"
+  ]
+}
