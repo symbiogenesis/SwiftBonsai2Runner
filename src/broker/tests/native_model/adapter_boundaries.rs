@@ -23,10 +23,14 @@ fn body(scale: f64) -> Value {
 }
 
 fn replay_matches(first: &Value, replay: &Value) -> bool {
+    replay_matches_phase(first, replay, "scale-1.3-reset-replay")
+}
+
+pub(super) fn replay_matches_phase(first: &Value, replay: &Value, phase: &str) -> bool {
     first["passed"] == true
         && replay["passed"] == true
         && first["phase"] == "required-scale-1.3-stream"
-        && replay["phase"] == "scale-1.3-reset-replay"
+        && replay["phase"] == phase
         && first["requestedScaleF64Bits"] == format!("{:016x}", 1.3_f64.to_bits())
         && replay["requestedScaleF64Bits"] == first["requestedScaleF64Bits"]
         && first["requestedCompletionCap"] == 1
@@ -55,13 +59,40 @@ pub(super) async fn requests(
     deadline: tokio::time::Instant,
     report: &mut Value,
 ) -> bool {
-    for phase in [
+    boundary_requests(port, credential, evidence, deadline, report, true).await
+}
+
+pub(super) async fn requests_before_restart(
+    port: u16,
+    credential: &str,
+    evidence: &Path,
+    deadline: tokio::time::Instant,
+    report: &mut Value,
+) -> bool {
+    boundary_requests(port, credential, evidence, deadline, report, false).await
+}
+
+async fn boundary_requests(
+    port: u16,
+    credential: &str,
+    evidence: &Path,
+    deadline: tokio::time::Instant,
+    report: &mut Value,
+    same_owner_replay: bool,
+) -> bool {
+    let phases = [
         "scale-negative-zero",
         "scale-two",
         "invalid-scale",
         "context-rejection",
         "scale-1.3-reset-replay",
-    ] {
+    ];
+    let required = if same_owner_replay {
+        phases.len()
+    } else {
+        phases.len() - 1
+    };
+    for &phase in &phases[..required] {
         report["phase"] = json!(phase);
         report["scaleBoundaryWorkload"]["phase"] = json!(phase);
         if deadline.saturating_duration_since(tokio::time::Instant::now())
@@ -130,13 +161,21 @@ pub(super) async fn requests(
             return false;
         }
     }
-    report["scaleBoundaryWorkload"]["phase"] = json!("completed");
-    report["scaleBoundaryWorkload"]["status"] = json!("passed");
+    report["scaleBoundaryWorkload"]["phase"] = json!(if same_owner_replay {
+        "completed"
+    } else {
+        "awaiting-cancellation-and-fresh-owner-replay"
+    });
+    report["scaleBoundaryWorkload"]["status"] = json!(if same_owner_replay {
+        "passed"
+    } else {
+        "boundaries-passed"
+    });
     save_acceptance_report(evidence, report);
     true
 }
 
-fn pending_workload() -> Value {
+pub(super) fn pending_workload() -> Value {
     json!({"status":"pending","phase":"initial-owner-startup","requests":[],
         "invalidScaleRejected":false,"contextRejected":false,"sameOwnerReplayMatched":false,
         "minimumRemainingBudgetSeconds":ADAPTER_LIFECYCLE_RESERVE.as_secs(),

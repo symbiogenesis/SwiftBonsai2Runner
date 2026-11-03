@@ -31,6 +31,8 @@ mod power;
 mod progress;
 #[path = "native_model/representation.rs"]
 mod representation;
+#[path = "native_model/service_integration.rs"]
+mod service_integration;
 #[path = "native_model/speed.rs"]
 mod speed;
 
@@ -1391,6 +1393,7 @@ fn adapter_profile(name: &str) -> Option<&'static AdapterProfile> {
         "pq2-adapter-row4" => Some(&PQ2_ADAPTER_ROW4_PROFILE),
         "pq2-adapter-lifecycle-row4" => Some(&PQ2_ADAPTER_LIFECYCLE_PROFILE),
         adapter_boundaries::PROFILE => Some(&adapter_boundaries::ADAPTER_PROFILE),
+        service_integration::PROFILE => Some(&service_integration::ADAPTER_PROFILE),
         _ => None,
     }
 }
@@ -1468,7 +1471,11 @@ fn adapter_request(messages: Value, scale: f64, limit: u32) -> Value {
 
 fn adapter_completion_caps(profile: &AdapterProfile) -> [u32; 3] {
     if profile.repacked
-        && (profile.required_scale_history || profile.name == adapter_boundaries::PROFILE)
+        && (profile.required_scale_history
+            || matches!(
+                profile.name,
+                adapter_boundaries::PROFILE | service_integration::PROFILE
+            ))
     {
         // The current-release PTQ1 trial exhausted its first four-token request.
         // Keep every required lifecycle transition with less generation work.
@@ -1480,7 +1487,11 @@ fn adapter_completion_caps(profile: &AdapterProfile) -> [u32; 3] {
 
 fn adapter_messages(profile: &AdapterProfile, supplied_history: bool) -> Value {
     if profile.repacked
-        && (profile.required_scale_history || profile.name == adapter_boundaries::PROFILE)
+        && (profile.required_scale_history
+            || matches!(
+                profile.name,
+                adapter_boundaries::PROFILE | service_integration::PROFILE
+            ))
     {
         if supplied_history {
             json!([
@@ -1557,6 +1568,8 @@ async fn adapter_stream(
     observed["requestMessagesSha256"] = json!(adapter_digest(
         &serde_json::to_vec(&body["messages"]).unwrap()
     ));
+    observed["requestSha256"] = json!(adapter_digest(&serde_json::to_vec(body).unwrap()));
+    observed["reportedPromptTokens"] = json!(service_integration::reported_prompt_tokens(&bytes));
     observed
 }
 
@@ -1876,6 +1889,12 @@ async fn adapter_requests(
     }
     if profile.name == adapter_boundaries::PROFILE {
         return adapter_boundaries::requests(port, credential, evidence, deadline, report).await;
+    }
+    if profile.name == service_integration::PROFILE {
+        return adapter_boundaries::requests_before_restart(
+            port, credential, evidence, deadline, report,
+        )
+        .await;
     }
     // Optional requests share this one aggregate budget; no matrix or restart
     // can continue in another job. Preserve a conservative teardown reserve.

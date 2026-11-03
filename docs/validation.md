@@ -159,6 +159,30 @@ require their own evidence. Its four minimal streams avoid the earlier history
 lane's longer supplied-history prefill; this source choice establishes no device
 timing or proof that every preparation can fit the owner allowance.
 
+Explicit `profile: ptq1-adapter-service-row4` combines the remaining bounded
+released-service transitions in one original allowance. Three cap-one streams
+use the same `Hi` prompt at 1.3, negative zero and 2.0, followed by invalid-scale
+and oversized-context rejections. A fourth request keeps that prompt and scale
+1.3 with a 4096-token reservation. Stop follows its first visible prefix, which
+must match the initial cap-one output; a terminal event already received cannot
+qualify interruption. Three completed and three failed broker operations bind
+the two rejections and interrupted operation, with verified empty Job/listener.
+A fresh owner must independently verify readiness, replace credentials, then
+reproduce the exact initial cap-one response and report one completed operation
+without failures before its own verified cleanup.
+
+Every request/startup uses the same absolute deadline with thirty seconds held
+for owned cleanup. Fresh startup requires more than sixty seconds remaining;
+missing work stays pending. Power endpoints are retained for the full workload
+and each owner, without claiming uninterrupted stability. Exact request/message
+digests and matching positive reported prompt counts bind completed streams;
+the production broker retains one canonical body for counting and generation.
+This source-bound contract is distinct from a private wire capture or a server
+acknowledgement of each requested scale. The receipt leaves the complete service
+gate to independent source/retained-data review and establishes no numerical
+adapter effect, full-state parity, 4096 generated tokens, performance, quality,
+full promotion or continuation of an earlier trial.
+
 Explicit `profile: pq2-adapter-row4` selects original PQ2, the approved adapter at
 scale 1.3 and pinned Prism 0.1.10 with `--native-row-workers 4`. It requires exactly
 one four-token-cap stream, verified model/adapter readiness and owned Job/listener
