@@ -1,0 +1,10 @@
+{
+  "Commit": "cae16fa6998dac58a947eba9ae4398ed6a9fb863",
+  "Verified": true,
+  "Target": "aarch64-pc-windows-msvc",
+  "Completed": true,
+  "ModelAttempted": false,
+  "PreparationArtifactId": "13203907922",
+  "Version": "0.1.13",
+  "ElapsedSeconds": 8.781
+}

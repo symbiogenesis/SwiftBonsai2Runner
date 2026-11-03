@@ -1,0 +1,16 @@
+{
+  "Boundary": "before",
+  "ObservedAtUtc": "2026-11-03T04:33:32.7364723Z",
+  "OriginalElapsedSeconds": 1.8633647,
+  "Power": {
+    "ac_online": true,
+    "battery_percent": 77,
+    "battery_saver": false,
+    "source": "GetSystemPowerStatus",
+    "status": "observed"
+  },
+  "Status": "observed",
+  "Failure": null,
+  "QuerySeconds": 0.9158326,
+  "ContinuousPowerStabilityProven": false
+}
