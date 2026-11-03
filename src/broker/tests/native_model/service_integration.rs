@@ -507,8 +507,12 @@ async fn fresh_owner(
         && report["freshOwnerCleanup"]["failedOperations"] == 0
 }
 
-async fn acceptance(data: &Path, evidence: &Path, budget: Duration, report: &mut Value) {
-    let deadline = tokio::time::Instant::now() + budget;
+async fn acceptance(
+    data: &Path,
+    evidence: &Path,
+    deadline: tokio::time::Instant,
+    report: &mut Value,
+) {
     power::begin(report);
     let passed = sequence(data, evidence, deadline, report).await;
     report["lifecyclePassed"] = json!(passed);
@@ -944,9 +948,15 @@ fn pinned_native_ptq1_adapter_row4_checks_released_service_integration() {
         .build()
         .unwrap();
     runtime.block_on(LocalSet::new().run_until(async {
-        timeout(
-            budget,
-            acceptance(Path::new(&data), Path::new(&evidence), budget, &mut report),
+        let deadline = tokio::time::Instant::now() + budget;
+        tokio::time::timeout_at(
+            deadline,
+            acceptance(
+                Path::new(&data),
+                Path::new(&evidence),
+                deadline,
+                &mut report,
+            ),
         )
         .await
         .unwrap();

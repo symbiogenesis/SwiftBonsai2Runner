@@ -215,8 +215,12 @@ async fn rollback_owner(
     (passed, guard)
 }
 
-async fn acceptance(data: &Path, evidence: &Path, budget: Duration, report: &mut Value) {
-    let deadline = tokio::time::Instant::now() + budget;
+async fn acceptance(
+    data: &Path,
+    evidence: &Path,
+    deadline: tokio::time::Instant,
+    report: &mut Value,
+) {
     power::begin(report);
     let service = service_integration::sequence(data, evidence, deadline, report).await;
     report["serviceIntegration"] = report["serviceIntegrationWorkload"].clone();
@@ -496,9 +500,15 @@ fn pinned_native_ptq1_service_and_original_pq2_rollback_row4() {
         .build()
         .unwrap();
     runtime.block_on(LocalSet::new().run_until(async {
-        timeout(
-            budget,
-            acceptance(Path::new(&data), Path::new(&evidence), budget, &mut report),
+        let deadline = tokio::time::Instant::now() + budget;
+        tokio::time::timeout_at(
+            deadline,
+            acceptance(
+                Path::new(&data),
+                Path::new(&evidence),
+                deadline,
+                &mut report,
+            ),
         )
         .await
         .unwrap();
