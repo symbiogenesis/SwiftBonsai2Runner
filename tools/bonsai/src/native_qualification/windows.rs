@@ -636,7 +636,7 @@ fn timing_sample(context: &mut Context<'_>, checked: &Value, tools: &Value) -> c
     save_report(&messages, &request_timing::messages())?;
     let input = context.hash_file(&messages, 65_536)?;
     context.hold(input.clone())?;
-    let checker = tools["Files"]
+    let tool_image = tools["Files"]
         .as_array()
         .and_then(|files| {
             files
@@ -659,7 +659,7 @@ fn timing_sample(context: &mut Context<'_>, checked: &Value, tools: &Value) -> c
         context.request,
         context.pins,
         checked,
-        &checker["Sha256"],
+        &tool_image["Sha256"],
         &input["sha256"],
         deadline,
     )?;
