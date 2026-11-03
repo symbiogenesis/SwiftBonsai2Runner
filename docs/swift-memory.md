@@ -120,20 +120,26 @@ full-context/output and cancellation/recovery trials, independent quality review
 and sustained resource/comfort and installation acceptance with PQ2 rollback.
 All independent [promotion criteria](validation.md#promotion-criteria) still apply.
 
-The immediate evidence gaps are current-release PTQ1 numerical/state and
-one-worker service captures, followed by immutable adapter writer-basis and
-loaded-zero/nonzero controls. The existing publisher-based prefix/LoRA matrices
+The current-release four-worker one-token numerical and scale/history captures
+remain narrower than full-context scalar/NEON state qualification, immutable
+adapter writer-basis provenance and loaded-zero/nonzero controls. The existing publisher-based prefix/LoRA matrices
 cannot supply a Rust-service decision: the publisher startup gate fails on X2,
 and their fourteen/twenty-eight fresh-process workloads have not been redesigned
-to fit the five-minute total laptop allowance. Complete-response comparison must
-first have a reviewed, bounded Rust-service capture contract. Do not dispatch the
+to fit the five-minute total laptop allowance. The [bounded four-worker Rust-service
+pair](evidence/ptq1-rollback-41573164864/independent-review.json) now captures identical
+naturally completed tree-name answers and passes original-PQ2 rollback, cleanup
+and retained-file verification. Its fixed-order PTQ1 request took 35.73 seconds
+versus 18.38 for PQ2, with lower bounded PTQ1 Job commit. AC/battery status was not
+recorded, so performance comparison is ineligible and no resource-benefit gate
+passes. Stable power conditions, repeated benefit, per-prompt throughput and
+independent quality remain separate. Do not dispatch the
 legacy matrices or split them across repeated owner jobs. Missing full-context,
 output, human quality, security, resource and comfort evidence remains pending.
 The offline `runtime-promotion` evaluator has a separate explicit PTQ1 policy
 with nineteen gates, binding the complete export receipt and original-PQ2 rollback
-identities. The [frozen four-worker score](evidence/ptq1-promotion-85fd2f1.json)
-passes five independently reviewed documentary/packing gates and leaves fourteen
-pending. Its [independent review](evidence/ptq1-promotion-85fd2f1-review.json)
+identities. The [frozen four-worker score](evidence/ptq1-promotion-bb020f4.json)
+passes six independently reviewed documentary/packing/rollback gates and leaves thirteen
+pending. Its [independent review](evidence/ptq1-promotion-bb020f4/independent-final-review.json)
 binds the exact runtime, source, hosted packing and durable archive without
 transferring historical device results. The [delivery record](evidence/ptq1-delivery-20261101.json)
 also retains the pre-model owner no-go: no model or owner runner started, and the
