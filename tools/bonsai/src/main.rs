@@ -68,9 +68,9 @@ fn execute() -> bonsai_tools::Result<serde_json::Value> {
     }
     if arguments.len() == 1 && arguments[0] == "--help" {
         return Ok(serde_json::json!({
-            "Usage": "bonsai-tools COMMAND --request ABSOLUTE_JSON_PATH | --request - | --json JSON_OBJECT; bonsai-tools chat [--repository-root PATH] [--data-directory PATH] [--native-engine] [--use-repacked-ptq1|--use-original-pq2] [--no-speech-models]",
+            "Usage": "bonsai-tools COMMAND --request ABSOLUTE_JSON_PATH | --request - | --json JSON_OBJECT; bonsai-tools chat [--repository-root PATH] [--data-directory PATH] [--native-engine|--publisher-engine] [--use-repacked-ptq1|--use-original-pq2] [--no-speech-models]",
             "Commands": bonsai_tools::COMMANDS,
-            "Chat": "All native launch options are documented in tools/bonsai/README.md."
+            "Chat": "Development default: Rust engine, original PQ2, four row workers and standard adapter at scale 1.3. Full release qualification is pending; --publisher-engine selects manual rollback. All options are documented in tools/bonsai/README.md."
         }));
     }
     let command = arguments

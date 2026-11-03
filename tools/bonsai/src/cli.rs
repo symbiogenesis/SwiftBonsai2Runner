@@ -105,7 +105,7 @@ fn chat_options(arguments: &[OsString]) -> crate::Result<Map<String, Value>> {
             "--tts-port" => ("TtsPort", false, true),
             "--canary-key-file" => ("CanaryKeyFile", false, false),
             "--tts-key-file" => ("TtsKeyFile", false, false),
-            "--native-engine" => ("NativeEngine", true, false),
+            "--native-engine" | "--publisher-engine" => ("NativeEngine", true, false),
             "--use-repacked-ptq1" | "--use-original-pq2" => ("UseRepackedPtq1", true, false),
             "--no-abliterate-lora" => ("NoAbliterateLora", true, false),
             "--no-tts" => ("NoTts", true, false),
@@ -115,7 +115,7 @@ fn chat_options(arguments: &[OsString]) -> crate::Result<Map<String, Value>> {
             _ => return Err(format!("Unknown chat option: {option}")),
         };
         let value = if boolean {
-            Value::Bool(option != "--use-original-pq2")
+            Value::Bool(!matches!(option, "--use-original-pq2" | "--publisher-engine"))
         } else {
             let text = values
                 .next()
@@ -217,6 +217,23 @@ mod tests {
         );
         for first in ["--use-original-pq2", "--use-repacked-ptq1"] {
             for second in ["--use-original-pq2", "--use-repacked-ptq1"] {
+                assert!(chat_options(&[first.into(), second.into()]).is_err());
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn engine_options_preserve_explicit_false_and_reject_conflicting_selections()
+    -> crate::Result<()> {
+        assert!(chat_options(&[])?.get("NativeEngine").is_none());
+        assert_eq!(
+            chat_options(&["--publisher-engine".into()])?["NativeEngine"],
+            false
+        );
+        assert_eq!(chat_options(&["--native-engine".into()])?["NativeEngine"], true);
+        for first in ["--native-engine", "--publisher-engine"] {
+            for second in ["--native-engine", "--publisher-engine"] {
                 assert!(chat_options(&[first.into(), second.into()]).is_err());
             }
         }

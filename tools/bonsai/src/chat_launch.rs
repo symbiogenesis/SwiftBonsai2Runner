@@ -39,10 +39,10 @@ struct Request {
     no_abliterate_lora: bool,
     #[serde(default)]
     use_repacked_ptq1: bool,
-    #[serde(default)]
+    #[serde(default = "default_native_engine")]
     native_engine: bool,
-    #[serde(default = "default_native_row_workers")]
-    native_row_workers: u8,
+    #[serde(default, deserialize_with = "requested_native_row_workers")]
+    native_row_workers: Option<u8>,
     #[serde(default = "default_frontend_port")]
     frontend_port: u16,
     #[serde(default = "default_backend_port")]
@@ -69,8 +69,26 @@ fn default_quantization() -> String {
     "Q8_0".into()
 }
 
-const fn default_native_row_workers() -> u8 {
-    1
+const fn default_native_engine() -> bool {
+    true
+}
+
+fn requested_native_row_workers<'de, D>(deserializer: D) -> Result<Option<u8>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    // Omission selects the engine's default; an explicit null remains invalid.
+    u8::deserialize(deserializer).map(Some)
+}
+
+impl Request {
+    const fn native_row_workers(&self) -> u8 {
+        match self.native_row_workers {
+            Some(workers) => workers,
+            None if self.native_engine => 4,
+            None => 1,
+        }
+    }
 }
 
 const fn default_frontend_port() -> u16 {
@@ -184,11 +202,13 @@ fn validate_paths(request: &Request) -> crate::Result<()> {
 }
 
 fn prepare(mut request: Request, native_host: bool) -> crate::Result<Plan> {
-    if !matches!(request.native_row_workers, 1 | 4)
-        || (request.native_row_workers == 4 && !request.native_engine)
+    let native_row_workers = request.native_row_workers();
+    if !matches!(native_row_workers, 1 | 4)
+        || (native_row_workers == 4 && !request.native_engine)
     {
         return Err("NativeRowWorkers must be 1 or 4; four requires NativeEngine.".into());
     }
+    request.native_row_workers = Some(native_row_workers);
     if !request.speech_models_only && !native_host {
         return Err("Run chat in the native ARM64 executable on Windows ARM64.".into());
     }
@@ -428,12 +448,16 @@ fn launch_arguments(
     } else {
         "--use-original-pq2".into()
     });
-    if request.native_engine {
-        arguments.push("--native-engine".into());
-    }
-    if request.native_row_workers == 4 {
-        argument(&mut arguments, "--native-row-workers", "4");
-    }
+    arguments.push(if request.native_engine {
+        "--native-engine".into()
+    } else {
+        "--publisher-engine".into()
+    });
+    argument(
+        &mut arguments,
+        "--native-row-workers",
+        request.native_row_workers().to_string(),
+    );
     if let Some(key) = &request.canary_key_file {
         argument(&mut arguments, "--canary-key-file", key);
         argument(

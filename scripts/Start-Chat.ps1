@@ -1,16 +1,21 @@
 #requires -Version 5.1
 <#
 .SYNOPSIS
-Launches native chat with an optional Rust inference engine.
+Launches native chat with the Rust inference engine development default.
 .DESCRIPTION
 Uses a prebuilt bonsai-tools executable. Rust owns startup and application policy.
 .EXAMPLE
-./scripts/Start-Chat.ps1 -NativeEngine
+./scripts/Start-Chat.ps1
+.EXAMPLE
+./scripts/Start-Chat.ps1 -PublisherEngine
 #>
 [CmdletBinding()]
 [OutputType([string])]
 param(
     [switch]$NativeEngine,
+    [switch]$PublisherEngine,
+    [ValidateSet(1, 4)]
+    [int]$NativeRowWorkers = 4,
     [switch]$UseRepackedPtq1,
     [switch]$UseOriginalPq2,
     [string]$DataDirectory,
@@ -19,6 +24,13 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $false
+
+if ($NativeEngine -and $PublisherEngine) {
+    throw 'NativeEngine and PublisherEngine are mutually exclusive.'
+}
+if ($PublisherEngine -and $PSBoundParameters.ContainsKey('NativeRowWorkers') -and $NativeRowWorkers -ne 1) {
+    throw 'Four native row workers require the Rust engine.'
+}
 
 if (-not $ToolPath -and $env:LOCALAPPDATA) {
     $cachedTool = Join-Path $env:LOCALAPPDATA 'SwiftBonsai2/build/maintenance/release/bonsai-tools.exe'
@@ -46,7 +58,11 @@ $ToolPath = (Resolve-Path -LiteralPath $ToolPath).ProviderPath
 
 $launchArguments = @('chat', '--repository-root', (Split-Path $PSScriptRoot -Parent))
 if ($DataDirectory) { $launchArguments += @('--data-directory', $DataDirectory) }
-if ($NativeEngine) { $launchArguments += '--native-engine' }
+if ($PublisherEngine) {
+    $launchArguments += @('--publisher-engine', '--native-row-workers', '1')
+} else {
+    $launchArguments += @('--native-engine', '--native-row-workers', [string]$NativeRowWorkers)
+}
 if ($UseRepackedPtq1) { $launchArguments += '--use-repacked-ptq1' }
 if ($UseOriginalPq2) { $launchArguments += '--use-original-pq2' }
 & $ToolPath @launchArguments

@@ -178,7 +178,7 @@ fn fixture(name: &str) -> crate::Result<Fixture> {
     let request = json!({
         "DataDirectory": root.join("data"), "RepositoryRoot": root.join("repository"),
         "WorkingDirectory": working, "ChatPath": root.join("chat.exe"),
-        "BrokerPath": root.join("broker.exe"),
+        "BrokerPath": root.join("broker.exe"), "NativeEngine": false,
     });
     Ok(Fixture {
         root,
@@ -200,6 +200,73 @@ fn value_after(arguments: &[OsString], option: &str) -> crate::Result<OsString> 
         .find(|pair| pair[0] == option)
         .map(|pair| pair[1].clone())
         .ok_or_else(|| format!("Missing launch option {option}."))
+}
+
+#[test]
+fn development_default_and_explicit_rollback_survive_deferred_preparation() -> crate::Result<()>
+{
+    for native in [None, Some(true), Some(false)] {
+        for workers in [None, Some(1)] {
+            let mut fixture = fixture("development-default")?;
+            let object = fixture.request.as_object_mut().ok_or("Expected request.")?;
+            object.remove("NativeEngine");
+            if let Some(native) = native {
+                object.insert("NativeEngine".into(), json!(native));
+            }
+            if let Some(workers) = workers {
+                object.insert("NativeRowWorkers".into(), json!(workers));
+            }
+            object.insert("NoSpeechModels".into(), json!(true));
+            let selected_native = native.unwrap_or(true);
+            let selected_workers = workers.unwrap_or(if selected_native { 4 } else { 1 });
+            let mut recorder = Recorder::new(fixture.root.clone());
+            launch_pending(
+                plan(fixture.request)?.request,
+                &mut recorder,
+                &fixture.working,
+                &fixture.root.join("maintenance.exe"),
+            )?;
+            let (_, arguments, _) = recorder.launch()?;
+            let request_path = PathBuf::from(value_after(arguments, "--startup-request")?);
+            let serialized: Value =
+                serde_json::from_slice(&fs::read(request_path).map_err(|error| error.to_string())?)
+                    .map_err(|error| error.to_string())?;
+            assert_eq!(serialized["NativeEngine"], selected_native);
+            assert_eq!(serialized["NativeRowWorkers"], selected_workers);
+            assert_eq!(serialized["UseRepackedPtq1"], false);
+            assert_eq!(serialized["NoAbliterateLora"], false);
+            let prepared = prepare_backend(plan(serialized)?, &mut recorder, &fixture.working)?;
+            let arguments = prepared["Arguments"]
+                .as_array()
+                .ok_or("Missing arguments.")?;
+            assert_eq!(
+                arguments
+                    .iter()
+                    .filter(|arg| arg.as_str() == Some("--native-engine"))
+                    .count(),
+                usize::from(selected_native)
+            );
+            assert_eq!(
+                arguments
+                    .iter()
+                    .filter(|arg| arg.as_str() == Some("--publisher-engine"))
+                    .count(),
+                usize::from(!selected_native)
+            );
+            assert!(arguments.windows(2).any(|args| args[0] == "--native-row-workers"
+                && args[1] == selected_workers.to_string()));
+            assert!(arguments.iter().any(|arg| arg == "--use-original-pq2"));
+            assert_eq!(
+                recorder
+                    .events
+                    .iter()
+                    .filter(|event| matches!(event, Event::Inference(_)))
+                    .count(),
+                usize::from(selected_native)
+            );
+        }
+    }
+    Ok(())
 }
 
 #[test]
@@ -435,11 +502,8 @@ fn ordinary_startup_only_prepares_owned_services_and_creates_independent_keys() 
     );
     assert!(!arguments.iter().any(|value| value == "--use-repacked-ptq1"));
     assert!(!arguments.iter().any(|value| value == "--native-engine"));
-    assert!(
-        !arguments
-            .iter()
-            .any(|value| value == "--native-row-workers")
-    );
+    assert!(arguments.iter().any(|value| value == "--publisher-engine"));
+    assert_eq!(value_after(arguments, "--native-row-workers")?, "1");
     assert_eq!(value_after(arguments, "--tts-quantization")?, "Q8_0");
     assert_eq!(
         value_after(arguments, "--tts-voice-model")?,
@@ -612,7 +676,7 @@ fn explicit_rust_runtime_survives_early_window_and_backend_preparation() -> crat
             .map_err(|error| error.to_string())?;
     let deferred = prepare(request, true)?;
     assert!(deferred.request.native_engine && deferred.request.no_abliterate_lora);
-    assert_eq!(deferred.request.native_row_workers, 4);
+    assert_eq!(deferred.request.native_row_workers, Some(4));
     let prepared = prepare_backend(deferred, &mut recorder, &fixture.working)?;
     let arguments = prepared["Arguments"]
         .as_array()
