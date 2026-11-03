@@ -1,0 +1,80 @@
+{
+  "schemaVersion": 1,
+  "kind": "independent-ptq1-service-harness-and-authoring-intake-source-review",
+  "recordedDate": "2026-11-02",
+  "reviewerId": "Codex:/root/review",
+  "status": "source-reviewed-hosted-and-device-execution-pending",
+  "reviewedServiceCommits": [
+    "b8b5b7c6916e7e6fbe6ae92777d126bf1a3e370e",
+    "06f6f9bf14d5f0d95c95b8e4e489e1658a1124ce"
+  ],
+  "reviewedAuthoringIntakeCommits": [
+    "a370b85621d728295ed910bf15068b86bdac7b74",
+    "4fe0c098f7ca03c82520da56a04227b7d8a52685"
+  ],
+  "servingApplicability": {
+    "frozenServingCandidate": "bb020f45169b0698678ca5f789aef7af8cdc12b2",
+    "serviceHarnessReviewTip": "06f6f9bf14d5f0d95c95b8e4e489e1658a1124ce",
+    "unchangedPathsComparedByGit": [
+      "src/broker/src",
+      "src/chat-ui/src",
+      "src/windows-process/src",
+      "config",
+      "Cargo.lock",
+      "Cargo.toml",
+      "src/broker/Cargo.toml",
+      "src/chat-ui/Cargo.toml",
+      "src/cpu-policy/Cargo.toml"
+    ],
+    "cpuPolicyDifference": "Adds a pure power-observation formatting/comparison module and its export. Existing serving policies and their call sites are unchanged; the new harness calls the module for retained endpoint observations. No source difference supplies performance qualification.",
+    "newServiceCommitsChangeProductionServingOrPins": false,
+    "historicalDeviceExecutionRelabelled": false,
+    "scope": "Source applicability through the exact reviewed tip only. A later harness source must retain its own revision, hosted binaries and execution identity; earlier rollback and packing retain their original frozen identities."
+  },
+  "serviceReview": {
+    "explicitSelection": "The new ptq1-adapter-service-row4 profile requires current-weight PTQ1, pinned adapter and four workers. It does not replace the separately selected boundary/history profiles or admit optional additional workloads. Workflow dispatch, ignored test inventory and profile selection agree.",
+    "workload": "Three terminal one-token-cap streams at 1.3, negative zero and 2.0, invalid-scale and context rejection, a cap-4096 request stopped after complete nonempty SSE content, then fresh verified ownership and a seeded cap-one 1.3 replay. The large cap reserves output; it does not claim 4096 generated tokens.",
+    "requestAndResponseBindings": "The harness retains exact request/message digests, scale bit patterns, visible UTF-8 and digests, reported prompt/completion counts and terminal reasons. All three completed scale streams and fresh replay require matching nonzero bounded reported prompt counts. Per-request server scale acknowledgement and private count/generate wire capture remain explicitly absent.",
+    "cancellation": "A complete SSE record delimiter is required before observing content. Every complete record already received is checked for terminal/DONE events before returning. Natural completion cannot pass the initial cleanup's exact three-completed/three-failed broker counters: three successful scale operations, two rejection controls and exactly one interrupted operation. Fresh cleanup requires exactly one completed operation and no failed operation. These counters establish broker interruption, not the backend's precise kernel state at Stop.",
+    "sampler": "Same-owner prefix equality remains informational because earlier successful requests advance the sampler. Cancellation is bound to the baseline request/messages/scale, with a nonempty complete SSE prefix. Exact visible replay is required only after fresh ownership reinitializes the seed. This avoids treating ordinary sampler history as stale adapter state.",
+    "deadlinesAndCleanup": "Both owner startups and all requests share one case deadline. Startup/request work stops thirty seconds before it for complete owned cleanup. Fresh startup requires more than sixty seconds remaining. Missing work fails after cleanup and remains pending; deadline expiry cannot start another owner or extend the case. The existing outer hard limits and cleanup reserves are retained.",
+    "power": "Initial and fresh owners retain separate power observations before startup and after cleanup, plus overall endpoints. Unknown observations stay unknown and matching endpoints do not establish uninterrupted stability. The workload makes no qualified throughput, energy, sustained-resource or latency comparison.",
+    "qualification": "The harness leaves releasedServiceGateQualified and defaultRuntimeQualified false. Independent retained-data review combines actual released-service observations with exact released-source count/scale/reset negative controls before deciding the service gate. Numerical effect, full live-state parity, provenance and other promotion gates remain separate."
+  },
+  "reviewCorrections": [
+    "Require complete SSE record delimiters and reject terminal events already received rather than accepting a data line before its record completes.",
+    "Keep same-owner sampled prefix equality informational; require fresh-owner seeded replay equality and exact cancellation request binding.",
+    "Reject duplicate raw original-index tensor and metadata keys instead of silently replacing them in a map.",
+    "Require the aggregate distinct declared SSM payloads assigned to a shard to fit its declared size using checked addition."
+  ],
+  "authoringIntakeReview": {
+    "schema": "Schema-2 intake requires bounded structured checkpoint/index/conversion/toolchain records. Schema-1 opaque envelopes reject instead of being silently upgraded. The original index bytes are hash-verified and all 48 exact SSM block/name/shape/dtype/shard mappings are checked before vector comparison.",
+    "bindings": "Conversion declarations bind the selected raw checkpoint/toolchain manifest digests, direction digest, approved output adapter digest and normalization. Immutable revision spellings and bounded exporter/argv/preprocessing/toolchain declarations are required. The original unfolded checkpoint may differ from later Swift artifacts, so its actual authoring base is retained separately.",
+    "negativeControls": "Source tests cover ambiguous raw JSON index keys, missing or duplicated sites, wrong mappings/extents/dtypes/digests, individually fitting but collectively impossible shard extents, unbound conversion fields, missing toolchain identity and altered index bytes.",
+    "scope": "Manifest integrity and internal consistency only. No checkpoint payload is opened, fetched or hashed, no exporter is executed, no A factor is independently reproduced, and no writer basis or external provenance is authenticated. All corresponding qualification flags remain false."
+  },
+  "externalOwnerPreparation": {
+    "directory": "C:/tmp/Bonsai-Ptq1Service-20261102",
+    "preparedByThisReviewer": true,
+    "independentFinalHelperReviewRequired": "Parent performs final exact-source review and frozen selection before execution; this producer statement is not self-approval.",
+    "status": "source-prepared-not-executed-selection-not-ready",
+    "source": "Copied retained rollback owner helpers, preserving exact originals and complete adaptation diffs. Changed explicit profile/title/run-name selection, configurable exact compiler identity and original predeclared fresh-session allocation; removed only the unrelated original-PQ2 rehash from the outer guardian.",
+    "allocation": {"conservativePriorChargeSeconds": 10, "originalAggregateMaximumSeconds": 290, "ownerWorkSeconds": 270, "ownerTotalSeconds": 280, "outerProcessCutoffSeconds": 288, "ownerCleanupReserveSeconds": 10, "archiveReserveSeconds": 10},
+    "allocationInterpretation": "The first allocation was source preparation only and had never started a trial. The fresh allocation is declared before any diagnostic/model/build/test execution and totals at most 300 seconds; it does not restart, extend or continue a historical clock. The no-retry original-session-budget guard is unchanged.",
+    "nativePower": "Exact source-bound bonsai-tools host-cpu snapshots are attempted before and after the owner workload with a two-second query allowance. Failure retains explicit unknown power and never postpones owner cleanup to obtain an observation.",
+    "preexecutionCorrection": "A broad numeric source replacement accidentally changed three revision regexes from forty to ten digits. Parent review identified it before any execution. Every revision validator is restored to exactly forty lowercase hex digits; complete owner/intake diffs were reread and syntax parsed. No shortened regex was executed.",
+    "finalPreparedSources": [
+      {"file": "Invoke-GuardedServiceSession.ps1", "bytes": 6372, "sha256": "5195d70c6708dbc30ad2020d08dd67ae8519b3a9c044e42c20684b49d1e145c0"},
+      {"file": "Invoke-TemporaryPtq1LifecycleOwner.ps1", "bytes": 42509, "sha256": "eba9b284c8edb9a51823ec5f0367e3f21d3747227bc43b982f07a9673f40651a"},
+      {"file": "session-owner-intake.ps1", "bytes": 24482, "sha256": "e887938ea16871596bbf7d1dea091a32c961644703857971440e5b2a4f53d5a2"}
+    ]
+  },
+  "validation": {"committedDiffWhitespaceChecksPassed": true, "preparedPowerShellSyntaxParseIssues": 0, "hostedTestsRequired": true, "ownerWorkloadRequired": true},
+  "newDeviceDiagnostics": 0,
+  "newModelExecutions": 0,
+  "newBuildsOrTestExecutions": 0,
+  "broadPromotionGateNewlyClosed": false,
+  "defaultPromotionQualified": false,
+  "experimentalLabelMayBeRemoved": false,
+  "requirementsOrTolerancesWeakened": false
+}
