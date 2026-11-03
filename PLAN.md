@@ -39,7 +39,8 @@ The PTQ1 critical path is:
    Extended lifecycle and prefix-state reuse remain separate.
 3. Retain matched complete-answer benefit, per-prompt adapter throughput and
    independent human quality/comfort review, then close full context/output,
-   resources, isolation, recovery, installation and original-PQ2 rollback.
+   resources, isolation, recovery and installation while retaining verified
+   original-PQ2 rollback.
 4. Independently score every gate against settled source/release/app identities
    before changing the engine/representation defaults or README qualification.
 
@@ -139,30 +140,40 @@ startup and 26.038/25.753/55.558-second requests. Attribute backend work before
 optimizing a hotspot; these observations and older one-worker timings are not a
 controlled speedup comparison. Retain bounded
 live request/partial-prefix receipts; observed SSE delivery is not backend kernel
-timing or decode TPS, and completed-operation counts do not prove zero emitted tokens. Qualify the
-explicit `ptq1-pq2-complete-response` (one worker) or
-`ptq1-pq2-complete-response-row4` Rust-service pair for the intended worker policy
-within the same aggregate budget before planning broader comparisons. The
-[four-worker preparation](docs/evidence/ptq1-complete-response-row4-preparation.json)
-closes the harness-policy mismatch only; its device workload remains pending.
-Select one policy, without transferring evidence or dispatching a worker matrix.
-The single tree-name prompt and
-fixed-order pair establish feasibility only; repeated interleaving, stable-device
-conditions, per-prompt adapter decode throughput and independent complete-answer
-quality remain separate. Do not repeat the matrix to bypass the shared device budget.
+timing or decode TPS, and completed-operation counts do not prove zero emitted tokens.
+Extend the [passed four-worker complete-response feasibility pair and original-PQ2
+rollback](docs/evidence/ptq1-rollback-41573164864/independent-review.json) toward
+independently reviewed benefit within a feasible aggregate allowance. The single
+fixed-order tree-name pair returned identical complete answers but observed a
+1.944 PTQ1/PQ2 request-latency ratio and lower bounded PTQ1 Job commit; retain the
+losing outcome. AC/battery status was not captured, so performance comparison is
+ineligible. Future laptop trials must retain power observations for each arm;
+missing or mismatched power conditions cannot qualify timing or resource benefit.
+Repeated interleaving, stable-device conditions, per-prompt adapter decode
+throughput and independent complete-answer quality remain separate. Do not
+transfer evidence between worker policies or repeat a matrix to bypass the shared
+device budget. The completed session used 192.487 charged seconds through archival;
+its clock is closed and no additional owner workload may extend it.
 Source guards, [hosted build/ABI
 controls](docs/evidence/ptq1-collector-hosted.json) and the prepared profile do not
 close actual-model logits/state, writer-basis or promotion gates. Keep intake,
 verification, model work and cleanup inside one aggregate five-minute owner allowance;
 the [default-readiness audit](docs/evidence/ptq1-default-readiness.json) separates
 historical passes from current-release qualification.
-Use the [fresh 0.1.13 PTQ1 promotion score](docs/evidence/ptq1-promotion-469f57b-review.json)
-for frozen Runner `469f57b`, current-weight PTQ1 and four workers: five independently
-reviewed documentary/packing gates pass and fourteen remain pending. Its retained
+Qualify the explicit `ptq1-adapter-boundaries-row4` service workload after its
+hosted preparation: four cap-one streams at 1.3, negative zero, 2.0 and 1.3,
+invalid-scale/context rejection and visible reset replay. Keep exact requests,
+power observations and the original cleanup reserve. Matching visible output
+does not prove numerical adapter effect, complete state restoration or absence
+of stale state; active cancellation and fresh-owner restart remain separate.
+
+Use the [fresh 0.1.13 PTQ1 promotion score](docs/evidence/ptq1-promotion-bb020f4-review.json)
+for frozen Runner `bb020f4`, current-weight PTQ1 and four workers: six independently
+reviewed documentary/packing/rollback gates pass and thirteen remain pending. Its retained
 input, policy, raw compiled score, exact CI records and independent review bind the
 current runtime and candidate. The [older 0.1.10 score](docs/evidence/ptq1-promotion-85fd2f1.json)
 remains historical; later application identities need their own applicability review.
-Close the fourteen required gates using actual device, independent human and
+Close the thirteen required gates using actual device, independent human and
 clean-machine acceptance rather than counting narrow numerical/lifecycle checks
 as complete broad gates. The [fresh authoring-input check](docs/evidence/ptq1-authoring-inputs-20261102.json)
 still finds no published original checkpoint or adapter-bound conversion records;
@@ -595,13 +606,13 @@ not close pending hosted integration or full-model acceptance.
   using the verified
   **1,259,520,000-byte** packing difference. Account for mapped residency separately
   from private commit and preserve reserves. Collect and independently review all
-  gates in the explicit PTQ1 promotion policy, including exact packing provenance
-  and actual-device original-PQ2 rollback; PQ2 and worker variants cannot supply
+  gates in the explicit PTQ1 promotion policy, preserving exact packing provenance
+  and the reviewed original-PQ2 rollback; PQ2 and worker variants cannot supply
   a PTQ1 promotion verdict. Retain the self-contained promotion score with its exact
   policy/profile identities and remaining gate requirements alongside reviewed evidence;
   an actionable pending-gate report does not close those gates.
-  Replace the publisher-only prefix screen and oversized complete-answer matrix
-  with a reviewed, feasible Rust-service capture while retaining complete-response,
+  Extend the passed minimal Rust-service pair toward independently reviewed benefit
+  while retaining complete-response,
   per-prompt adapter TPS/quality, stable conditions and independent-review gates.
   An incomplete feasibility pair cannot be resumed through additional jobs.
 - Capture prefill, first useful answer, decode TPS, task time, retries and truncation,

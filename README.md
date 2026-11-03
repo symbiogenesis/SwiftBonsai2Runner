@@ -74,7 +74,8 @@ and [local API contract](docs/broker-policy.md#public-request-contract).
 
 | Model | Runtime | Tokens/second | Model file | Job commit cap / measured peak | Available RAM admission | Restore copy saved vs. Rust 0.1.4 |
 | --- | --- | ---: | ---: | ---: | ---: | ---: |
-| **Swift Bonsai 2 `PTQ1_0` (experimental opt-in)** | **Rust 0.1.13 release + LoRA 1.3** | **Not measured** | **5.54 GiB** | **11.5 GiB / not recorded** | **15.5 GiB** | **149.625 MiB** |
+| **Swift Bonsai 2 `PTQ1_0` (experimental opt-in)** | **Rust 0.1.13 release, four workers + LoRA 1.3** | **Not measured** | **5.54 GiB** | **11.5 GiB / 6.02 GiB (short request)** | **15.5 GiB** | **149.625 MiB** |
+| Swift Bonsai 2 `PQ2_0` (verified Rust rollback) | Rust 0.1.13 release, four workers + LoRA 1.3 | Not measured | 6.71 GiB | 11.5 GiB / 7.20 GiB (short request) | 15.5 GiB | 149.625 MiB |
 | Swift Bonsai 2 `PQ2_0` (experimental Rust) | Rust 0.1.10 prerelease, one worker + LoRA 1.3 | 0.105 (truncated request) | 6.71 GiB | 11.5 GiB / not recorded | 15.5 GiB | 149.625 MiB |
 | Swift Bonsai 2 `PQ2_0` (experimental Rust) | Rust 0.1.10 prerelease, four workers + LoRA 1.3 | Pending (deadline) | 6.71 GiB | 11.5 GiB / not recorded | 15.5 GiB | 149.625 MiB |
 | Swift Bonsai 2 `PQ2_0` (captured source diagnostic) | Rust 0.1.9, four workers + LoRA 1.3 | Not measured | 6.71 GiB | 11.5 GiB / 7.04 GiB | 15.5 GiB | 149.625 MiB |
@@ -99,8 +100,16 @@ unmeasured; the packing saving alone does not qualify resources or performance.
 > Select the verified current-weight export with
 > `bonsai-tools chat --native-engine --use-repacked-ptq1 --native-row-workers 4`
 > after [provisioning it](docs/development-guide.md#runtime-selection).
-> The [0.1.13 four-worker promotion score](docs/evidence/ptq1-promotion-469f57b-review.json)
-> has **5 of 19 gates passed**, with 14 pending for the frozen source candidate.
+> The [0.1.13 four-worker promotion score](docs/evidence/ptq1-promotion-bb020f4-review.json)
+> has **6 of 19 gates passed**, with 13 pending for frozen candidate `bb020f4`.
+>
+> The [original-PQ2 rollback gate](docs/evidence/ptq1-rollback-41573164864/independent-review.json)
+> now passes with the released runtime, standard adapter, four-worker readiness,
+> complete response, owned cleanup and verification of the retained original file.
+> Both models returned `Oak` in the fixed-order comparison. Request times were
+> **18.38 s for PQ2 and 35.73 s for PTQ1**; peak Job commit was **7.20 GiB and
+> 6.02 GiB**, respectively. AC/battery status was not recorded, so these remain
+> uncontrolled observations, with no performance or full-resource qualification.
 >
 > The pinned Rust 0.1.13 release now passes a [bounded four-worker service
 > sequence](docs/evidence/ptq1-0113-lifecycle-41539984210/interpretation.json):
