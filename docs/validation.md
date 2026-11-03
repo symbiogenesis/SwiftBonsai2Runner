@@ -270,13 +270,32 @@ freeze the final source, review its hosted package and all prerequisite checks,
 retain aggregate power endpoints and predeclare the allowance before execution.
 
 Explicit `profile: pq2-adapter-row4` selects original PQ2, the approved adapter at
-scale 1.3 and pinned Prism 0.1.10 with `--native-row-workers 4`. It requires exactly
+scale 1.3 and pinned Prism 0.1.14 with `--native-row-workers 4`. It requires exactly
 one four-token-cap stream, verified model/adapter readiness and owned Job/listener
 cleanup within the same budget. Its receipt binds the runtime lock, original
 model identity and adapter lock, and distinguishes the configured worker count
 from an independently observed thread count. It runs no optional requests or
 retry. Multi-scale, rejection/reuse, history, context, restart, quality, sustained
 service and TPS gates remain unrun; this smoke cannot enable a default.
+
+Explicit `profile: pq2-adapter-service-row4` prepares Stop/fresh-owner recovery
+coverage for the Rust development default: original PQ2, the pinned standard
+adapter and four row workers. It uses the same fixed service sequence as
+`ptq1-adapter-service-row4`: three cap-one scale streams, invalid-scale and
+context rejections, an interrupted scale-1.3 request after visible content, then
+fresh authenticated ownership and a matching cap-one replay with new credentials.
+Both owners must release their Jobs and listeners before the case passes. The
+original absolute deadline, thirty-second cleanup reserve and greater-than-sixty
+second fresh-owner admission floor apply. Optional history and stalled-consumer
+extensions reject; there is no automatic representation or engine switch.
+
+Hosted preparation runs the shared model-free service controls and checks that
+both ignored representation cases exist before packaging. This prepares an
+owner-operated model workload; it supplies no actual-model or UI acceptance
+verdict. Predeclare a feasible complete allowance and retain aggregate and
+per-owner power observations under the rules above. PTQ1 export metadata belongs
+only to PTQ1 receipts. Manual publisher rollback, explicit DX12 launch, complete
+state/context/output, quality, comfort and promotion remain separate gates.
 
 Explicit `profile: pq2-adapter-lifecycle-row4` separately requires the original
 PQ2 and approved adapter with four row workers through three short streams in
