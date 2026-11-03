@@ -17,6 +17,53 @@ pub(super) const ADAPTER_PROFILE: AdapterProfile = AdapterProfile {
     optional_requests: false,
     required_scale_history: false,
 };
+pub(super) const PQ2_PROFILE: &str = "pq2-adapter-service-row4";
+pub(super) const PQ2_CASE: &str =
+    "service_integration::pinned_native_pq2_adapter_row4_checks_released_service_integration";
+pub(super) const PQ2_ADAPTER_PROFILE: AdapterProfile = AdapterProfile {
+    name: PQ2_PROFILE,
+    case: PQ2_CASE,
+    repacked: false,
+    row_workers: 4,
+    optional_requests: false,
+    required_scale_history: false,
+};
+
+pub(super) fn is_service_profile(profile: &AdapterProfile) -> bool {
+    matches!(profile.name, PROFILE | PQ2_PROFILE)
+}
+
+const fn weight_representation(profile: &AdapterProfile) -> &'static str {
+    if profile.repacked {
+        "current-repacked-PTQ1_0"
+    } else {
+        "PQ2_0"
+    }
+}
+
+fn record_model_identity(profile: &AdapterProfile, report: &mut Value) {
+    report["weightRepresentation"] = json!(weight_representation(profile));
+    if profile.repacked {
+        report["modelExportReceipt"] =
+            serde_json::from_str::<Value>(include_str!("../../../../config/swift.ptq1-export.json"))
+                .unwrap();
+    } else {
+        report["modelIdentity"] =
+            serde_json::from_str::<Value>(include_str!("../../../../config/swift-assessment.lock.json"))
+                .unwrap()["model"]
+                .clone();
+    }
+}
+
+fn readiness_observation(profile: &AdapterProfile, report: &Value) -> Value {
+    json!({"startupMilliseconds":report["startupMilliseconds"],
+        "startupProgress":report["startupProgress"],
+        "verifiedReadinessObserved":report["verifiedReadinessObserved"],
+        "observedNativeRowWorkers":report["observedNativeRowWorkers"],
+        "expectedAdapterSha256":report["adapterLock"]["adapter"]["sha256"],
+        "expectedWeightRepresentation":weight_representation(profile),
+        "scope":"Production launcher independently verifies exact model, adapter, runtime, template, scale capability/range and effective row-worker readiness before returning ownership."})
+}
 
 pub(super) const NEXT_OWNER_RESERVE: Duration = Duration::from_secs(60);
 // NativeProcess::drop may wait up to ten seconds for contained descendants.
@@ -128,6 +175,9 @@ pub(super) async fn stop_owner(
 }
 
 pub(super) fn body(cap: u32) -> Value {
+    // Both representations deliberately use the same fixed short prompt and
+    // canonical requests as the existing scale-boundary control. Artifact
+    // selection changes only the owned launch, never the replay's identity.
     let mut body = request(adapter_messages(&ADAPTER_PROFILE, false), true, cap);
     body["enable_thinking"] = json!(false);
     body["abliteration_scale"] = json!(1.3);
@@ -328,6 +378,7 @@ async fn cancellation_prefix(
 }
 
 async fn start_before_deadline(
+    profile: &AdapterProfile,
     data: &Path,
     evidence: &Path,
     deadline: tokio::time::Instant,
@@ -344,24 +395,19 @@ async fn start_before_deadline(
         evidence,
         report,
         &progress,
-        start_adapter_with_progress(&ADAPTER_PROFILE, data, evidence, |observation| {
+        start_adapter_with_progress(profile, data, evidence, |observation| {
             progress.lock().unwrap().push(observation);
         }),
     )
     .await;
     record_worker_readiness(report, 4, owner.is_some());
-    report[label] = json!({"startupMilliseconds":report["startupMilliseconds"],
-        "startupProgress":report["startupProgress"],
-        "verifiedReadinessObserved":report["verifiedReadinessObserved"],
-        "observedNativeRowWorkers":report["observedNativeRowWorkers"],
-        "expectedAdapterSha256":report["adapterLock"]["adapter"]["sha256"],
-        "expectedWeightRepresentation":"current-repacked-PTQ1_0",
-        "scope":"Production launcher independently verifies exact model, adapter, runtime, template, scale capability/range and effective row-worker readiness before returning ownership."});
+    report[label] = readiness_observation(profile, report);
     save_acceptance_report(evidence, report);
     owner
 }
 
 async fn initial_owner(
+    profile: &AdapterProfile,
     data: &Path,
     evidence: &Path,
     deadline: tokio::time::Instant,
@@ -370,13 +416,13 @@ async fn initial_owner(
     report["initialOwnerPowerBefore"] = report["powerBefore"].clone();
     report["initialOwnerPowerAfter"] = Value::Null;
     let Some(owner) =
-        start_before_deadline(data, evidence, deadline, report, "initialOwnerReadiness").await
+        start_before_deadline(profile, data, evidence, deadline, report, "initialOwnerReadiness").await
     else {
         report["initialOwnerPowerAfter"] = power::snapshot();
         return None;
     };
     report["adapterEnabled"] = json!(true);
-    begin_adapter_requests(&ADAPTER_PROFILE, evidence, report);
+    begin_adapter_requests(profile, evidence, report);
     let port = owner.port();
     let credential = key(&owner);
     let (stop, stopped) = oneshot::channel();
@@ -384,7 +430,7 @@ async fn initial_owner(
     let boundaries = adapter_work_before_cleanup(
         deadline,
         adapter_requests(
-            &ADAPTER_PROFILE,
+            profile,
             port,
             &credential,
             evidence,
@@ -394,7 +440,7 @@ async fn initial_owner(
     )
     .await
     .unwrap_or_else(|| {
-        adapter_request_budget_expired(&ADAPTER_PROFILE, evidence, report);
+        adapter_request_budget_expired(profile, evidence, report);
         false
     });
     let prefix = if boundaries
@@ -462,6 +508,7 @@ async fn initial_owner(
 }
 
 async fn fresh_owner(
+    profile: &AdapterProfile,
     data: &Path,
     evidence: &Path,
     deadline: tokio::time::Instant,
@@ -477,7 +524,7 @@ async fn fresh_owner(
     report["freshOwnerPowerBefore"] = power::snapshot();
     report["freshOwnerPowerAfter"] = Value::Null;
     let Some(owner) =
-        start_before_deadline(data, evidence, deadline, report, "freshOwnerReadiness").await
+        start_before_deadline(profile, data, evidence, deadline, report, "freshOwnerReadiness").await
     else {
         report["freshOwnerPowerAfter"] = power::snapshot();
         return false;
@@ -527,13 +574,14 @@ async fn fresh_owner(
 }
 
 async fn acceptance(
+    profile: &AdapterProfile,
     data: &Path,
     evidence: &Path,
     deadline: tokio::time::Instant,
     report: &mut Value,
 ) {
     power::begin(report);
-    let passed = sequence(data, evidence, deadline, report).await;
+    let passed = sequence_for(profile, data, evidence, deadline, report).await;
     report["lifecyclePassed"] = json!(passed);
     report["allRequestedWorkloadsPassed"] = json!(passed);
     report["passed"] = json!(passed);
@@ -547,9 +595,21 @@ pub(super) async fn sequence(
     deadline: tokio::time::Instant,
     report: &mut Value,
 ) -> bool {
-    let initial = initial_owner(data, evidence, deadline, report).await;
+    // The combined PTQ1/original-PQ2 rollback packet retains its exact PTQ1
+    // service sequence and earlier absolute deadline through this entry point.
+    sequence_for(&ADAPTER_PROFILE, data, evidence, deadline, report).await
+}
+
+async fn sequence_for(
+    profile: &AdapterProfile,
+    data: &Path,
+    evidence: &Path,
+    deadline: tokio::time::Instant,
+    report: &mut Value,
+) -> bool {
+    let initial = initial_owner(profile, data, evidence, deadline, report).await;
     let passed = if let Some(credential) = initial {
-        fresh_owner(data, evidence, deadline, &credential, report).await
+        fresh_owner(profile, data, evidence, deadline, &credential, report).await
     } else {
         false
     };
@@ -783,6 +843,55 @@ fn native_service_integration_profile_preserves_bounds_and_pending_verdicts() {
 }
 
 #[test]
+fn native_pq2_service_integration_profile_preserves_original_default_and_bounds() {
+    let selected = adapter_profile(PQ2_PROFILE).unwrap();
+    assert!(!selected.repacked && !selected.optional_requests && !selected.required_scale_history);
+    assert_eq!(selected.row_workers, 4);
+    assert_eq!(profile_case(PQ2_PROFILE, false, false), Some(PQ2_CASE));
+    assert_eq!(profile_case(PQ2_PROFILE, true, false), None);
+    assert_eq!(profile_case(PQ2_PROFILE, false, true), None);
+    assert_eq!(adapter_completion_caps(selected), [1, 1, 1]);
+    let arguments = adapter_arguments(selected, "8081");
+    for required in [
+        "--native-engine",
+        "--require-native-sandbox",
+        "--use-abliterate-lora",
+        "--use-original-pq2",
+    ] {
+        assert_eq!(arguments.iter().filter(|argument| *argument == required).count(), 1);
+    }
+    assert!(!arguments.iter().any(|argument| argument == "--use-repacked-ptq1"));
+    assert!(arguments.windows(2).any(|pair| pair[0] == "--native-row-workers" && pair[1] == "4"));
+    assert_eq!(adapter_messages(selected, false), body(1)["messages"]);
+    assert_eq!(adapter_initial_fixture(selected)["requestedCompletionCap"], 1);
+    let mut report = json!({"verifiedReadinessObserved":false,"observedNativeRowWorkers":null});
+    record_model_identity(selected, &mut report);
+    assert_eq!(report["weightRepresentation"], "PQ2_0");
+    assert_eq!(report["modelIdentity"]["sha256"], representation::model_identity(false)["sha256"]);
+    assert!(report.get("modelExportReceipt").is_none());
+    let readiness = readiness_observation(selected, &report);
+    assert_eq!(readiness["expectedWeightRepresentation"], "PQ2_0");
+    assert_eq!(readiness["verifiedReadinessObserved"], false);
+    assert_eq!(readiness["observedNativeRowWorkers"], Value::Null);
+    let mut ptq1 = json!({});
+    record_model_identity(&ADAPTER_PROFILE, &mut ptq1);
+    assert_eq!(ptq1["weightRepresentation"], "current-repacked-PTQ1_0");
+    assert!(ptq1["modelExportReceipt"].is_object());
+    assert!(ptq1.get("modelIdentity").is_none());
+    assert_eq!(body(1)["max_completion_tokens"], 1);
+    assert_eq!(body(EXTENDED_COMPLETION_CAP)["max_completion_tokens"], 4096);
+    let mut first = adapter_initial_fixture(selected);
+    first["requestSha256"] = json!(adapter_digest(&serde_json::to_vec(&body(1)).unwrap()));
+    assert!(cancellation_request_matches_baseline(&first));
+    assert!(prefix_matches(&first, first["visibleContent"].as_str().unwrap()));
+    let mut replay = first.clone();
+    replay["phase"] = json!("fresh-owner-scale-1.3-replay");
+    assert!(adapter_boundaries::replay_matches_phase(
+        &first, &replay, "fresh-owner-scale-1.3-replay"
+    ));
+}
+
+#[test]
 fn native_service_integration_binds_prefix_and_reported_prompt_counts() {
     let mut first = adapter_initial_fixture(&ADAPTER_PROFILE);
     first["requestSha256"] = json!(adapter_digest(&serde_json::to_vec(&body(1)).unwrap()));
@@ -936,6 +1045,15 @@ fn native_service_integration_rejects_natural_completion_and_missing_rejections(
 
 #[test]
 fn native_service_integration_fresh_owner_reserve_keeps_original_deadline() {
+    fresh_owner_reserve(&ADAPTER_PROFILE);
+}
+
+#[test]
+fn native_pq2_service_integration_fresh_owner_reserve_keeps_original_deadline() {
+    fresh_owner_reserve(&PQ2_ADAPTER_PROFILE);
+}
+
+fn fresh_owner_reserve(profile: &AdapterProfile) {
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
@@ -954,6 +1072,7 @@ fn native_service_integration_fresh_owner_reserve_keeps_original_deadline() {
         let mut report = json!({"passed":false,"serviceIntegrationWorkload":pending_workload()});
         assert!(
             !fresh_owner(
+                profile,
                 Path::new("unused-no-model-start"),
                 &evidence,
                 deadline,
@@ -984,11 +1103,21 @@ fn native_service_integration_fresh_owner_reserve_keeps_original_deadline() {
 #[test]
 #[ignore = "Actual released PTQ1 service integration; one bounded main-only owner CI job."]
 fn pinned_native_ptq1_adapter_row4_checks_released_service_integration() {
+    service_acceptance(&ADAPTER_PROFILE);
+}
+
+#[test]
+#[ignore = "Actual released original-PQ2 service integration; one bounded main-only owner CI job."]
+fn pinned_native_pq2_adapter_row4_checks_released_service_integration() {
+    service_acceptance(&PQ2_ADAPTER_PROFILE);
+}
+
+fn service_acceptance(profile: &AdapterProfile) {
     ci_only();
     let budget = case_budget();
     assert_eq!(
         profile_case(&env::var("BONSAI_NATIVE_PROFILE").unwrap(), false, false),
-        Some(CASE)
+        Some(profile.case)
     );
     assert_ne!(env::var("BONSAI_NATIVE_EXTENDED").as_deref(), Ok("true"));
     assert_ne!(
@@ -997,7 +1126,7 @@ fn pinned_native_ptq1_adapter_row4_checks_released_service_integration() {
     );
     let data = env::var_os("BONSAI_NATIVE_DATA").unwrap();
     let evidence = env::var_os("BONSAI_NATIVE_EVIDENCE").unwrap();
-    let mut report = json!({"schemaVersion":1,"case":CASE,"profile":PROFILE,
+    let mut report = json!({"schemaVersion":1,"case":profile.case,"profile":profile.name,
         "revision":env::var("GITHUB_SHA").unwrap(),"runId":env::var("GITHUB_RUN_ID").unwrap(),
         "runAttempt":env::var("GITHUB_RUN_ATTEMPT").unwrap(),"passed":false,"lifecyclePassed":false,
         "allRequestedWorkloadsPassed":false,"requiredNativeSandbox":true,
@@ -1007,15 +1136,13 @@ fn pinned_native_ptq1_adapter_row4_checks_released_service_integration() {
         "requestedAdapterScales":[1.3,-0.0,2.0,1.3,1.3],
         "requestedCompletionCaps":[1,1,1,4096,1],
         "initialMessages":body(1)["messages"],"initialRequestSha256":adapter_digest(&serde_json::to_vec(&body(1)).unwrap()),
-        "servingStatePolicy":"reset-every-request","weightRepresentation":"current-repacked-PTQ1_0",
+        "servingStatePolicy":"reset-every-request",
         "scaleBoundaryWorkload":adapter_boundaries::pending_workload(),
         "serviceIntegrationWorkload":pending_workload(),
         "defaultRuntimeQualified":false,"releasedServiceGateQualified":false,
         "completeStateParityQualified":false,"authoringBasisQualified":false,
         "performanceQualified":false,"qualityQualified":false});
-    report["modelExportReceipt"] =
-        serde_json::from_str::<Value>(include_str!("../../../../config/swift.ptq1-export.json"))
-            .unwrap();
+    record_model_identity(profile, &mut report);
     report["runtimeLock"] =
         serde_json::from_str::<Value>(include_str!("../../../../config/prism-inference.lock.json"))
             .unwrap();
@@ -1032,6 +1159,7 @@ fn pinned_native_ptq1_adapter_row4_checks_released_service_integration() {
         tokio::time::timeout_at(
             deadline,
             acceptance(
+                profile,
                 Path::new(&data),
                 Path::new(&evidence),
                 deadline,

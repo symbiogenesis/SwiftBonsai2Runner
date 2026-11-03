@@ -1434,6 +1434,7 @@ fn adapter_profile(name: &str) -> Option<&'static AdapterProfile> {
         "pq2-adapter-lifecycle-row4" => Some(&PQ2_ADAPTER_LIFECYCLE_PROFILE),
         adapter_boundaries::PROFILE => Some(&adapter_boundaries::ADAPTER_PROFILE),
         service_integration::PROFILE => Some(&service_integration::ADAPTER_PROFILE),
+        service_integration::PQ2_PROFILE => Some(&service_integration::PQ2_ADAPTER_PROFILE),
         _ => None,
     }
 }
@@ -1511,13 +1512,7 @@ fn adapter_request(messages: Value, scale: f64, limit: u32) -> Value {
 }
 
 fn adapter_completion_caps(profile: &AdapterProfile) -> [u32; 3] {
-    if profile.repacked
-        && (profile.required_scale_history
-            || matches!(
-                profile.name,
-                adapter_boundaries::PROFILE | service_integration::PROFILE
-            ))
-    {
+    if minimal_adapter_requests(profile) {
         // The current-release PTQ1 trial exhausted its first four-token request.
         // Keep every required lifecycle transition with less generation work.
         [1, 1, 1]
@@ -1527,13 +1522,7 @@ fn adapter_completion_caps(profile: &AdapterProfile) -> [u32; 3] {
 }
 
 fn adapter_messages(profile: &AdapterProfile, supplied_history: bool) -> Value {
-    if profile.repacked
-        && (profile.required_scale_history
-            || matches!(
-                profile.name,
-                adapter_boundaries::PROFILE | service_integration::PROFILE
-            ))
-    {
+    if minimal_adapter_requests(profile) {
         if supplied_history {
             json!([
                 {"role":"user","content":"Hi"},
@@ -1552,6 +1541,12 @@ fn adapter_messages(profile: &AdapterProfile, supplied_history: bool) -> Value {
     } else {
         json!([{"role":"user","content":"Name a tree."}])
     }
+}
+
+fn minimal_adapter_requests(profile: &AdapterProfile) -> bool {
+    service_integration::is_service_profile(profile)
+        || (profile.repacked
+            && (profile.required_scale_history || profile.name == adapter_boundaries::PROFILE))
 }
 
 fn adapter_summary(label: &str, scale: f64, cap: u32, summary: &StreamSummary) -> Value {
@@ -2006,7 +2001,7 @@ async fn adapter_requests(
     if profile.name == adapter_boundaries::PROFILE {
         return adapter_boundaries::requests(port, credential, evidence, deadline, report).await;
     }
-    if profile.name == service_integration::PROFILE {
+    if service_integration::is_service_profile(profile) {
         return adapter_boundaries::requests_before_restart(
             port, credential, evidence, deadline, report,
         )
