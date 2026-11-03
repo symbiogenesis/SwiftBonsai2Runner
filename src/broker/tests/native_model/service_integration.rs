@@ -343,8 +343,10 @@ async fn fresh_owner(
     report["serviceIntegrationWorkload"]["freshOwnerReadinessPassed"] = json!(true);
     let port = owner.port();
     let credential = key(&owner);
-    assert!(credential != previous_credential);
-    report["serviceIntegrationWorkload"]["freshCredentialsDiffer"] = json!(true);
+    let fresh_credentials_differ = credential != previous_credential;
+    assert!(fresh_credentials_differ);
+    report["serviceIntegrationWorkload"]["freshCredentialsDiffer"] =
+        json!(fresh_credentials_differ);
     let (stop, stopped) = oneshot::channel();
     let running = spawn_local(owner.run(async { stopped.await.map_err(io::Error::other) }));
     let replay = adapter_work_before_cleanup(
