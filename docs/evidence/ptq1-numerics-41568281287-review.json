@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "kind": "incomplete-independent-bounded-current-release-ptq1-numerical-review",
+  "reviewerId": "Codex:/root/promotion_review",
+  "status": "pending-complete-independent-payload-integrity-review",
+  "runId": "41568281287",
+  "revision": "469f57b233898fd10b97d5ebc10aaef78b940e30",
+  "runtimeRevision": "cae16fa6998dac58a947eba9ae4398ed6a9fb863",
+  "scope": "Administrative record of checks completed before the original review cutoff. No new payload inspection or verification after that cutoff.",
+  "completed": {
+    "exactOwnerAndGuardianSourceHashesVerifiedBeforeCapture": true,
+    "retainedCleanupReportsNoRegistrationCredentialsOrOwnedProcessesInspected": true,
+    "reported129ByteExactFiles39504384ValuesZeroErrorsInspected": true,
+    "rawComparisonNativeRustControlsGuardianCleanupAndOriginalBudgetReceiptsInspected": true,
+    "exactFinalSelectionArchivesReceiptsAndFourExecutableHashesVerifiedBeforeCapture": true,
+    "selectedCondition": "explicit neon, four row workers, standard approved adapter at1.3, one supplied token248045 at position0"
+  },
+  "incomplete": {
+    "all129ReportedRustPayloadHashesIndependentlyVerified": false,
+    "nativeCaptureAndSerializedStateHashesIndependentlyVerified": false,
+    "fullIntegrityVerificationPassStarted": false,
+    "all181ManifestFileLengthsAndHashesIndependentlyVerified": false
+  },
+  "reason": "Two review-only path-prefix assertions rejected before payload hashing. The corrected normalization then refused to start because the original250-second review-start allowance had expired. No complete independent integrity pass is claimed.",
+  "originalBudget": {
+    "independentReviewCompletedWithinOriginalAllowance": false,
+    "startedTick": 1068106297045,
+    "conservativeEarlierChargeSeconds": 40,
+    "clockRestarted": false,
+    "maximumSeconds": 260,
+    "startedUtc": "2026-11-03T03:01:59.7583362Z",
+    "maximumChargedTotalSeconds": 300
+  },
+  "administrativeRetention": {
+    "firstDurableWriteResult": "default-sandbox-denied-no-file-created",
+    "recordUsesOnlyPreviouslyInspectedFacts": true,
+    "firstDurableWriteAttemptOriginalSeconds": 277.9390776,
+    "thisRecordWrittenAfterDeviceSessionCutoff": true
+  },
+  "modelAndComparatorExecutionsByReviewer": 0,
+  "liveProcessOrHardwareProbesByReviewer": 0,
+  "fullIndependentIntegrityVerdict": "pending",
+  "defaultPromotionQualified": false,
+  "experimentalLabelMayBeRemoved": false
+}
