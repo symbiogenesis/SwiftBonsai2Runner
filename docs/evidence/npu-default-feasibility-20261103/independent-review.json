@@ -1,0 +1,249 @@
+{
+    "schemaVersion":  1,
+    "kind":  "independent-source-and-retained-evidence-npu-default-feasibility-review",
+    "dateLocal":  "2026-11-03",
+    "outcome":  "no-go-for-default-promotion; bounded-qualification-development-can-continue",
+    "scope":  "Baseline before this session\u0027s new adapter probe implementation, native Rust Prism and original Swift PQ2 on the owner\u0027s X2. This reviews source and retained receipts, not fresh hardware execution.",
+    "reviewedRevisions":  {
+                              "runner":  "8663bbc0abdbf6663cd09b92b1bb8c2c2d0dd52d",
+                              "prism":  "1e0d6b4ceb4a411797a19332c23f6168c6dbbbee"
+                          },
+    "reviewerActivities":  {
+                               "sourceAndReceiptReads":  true,
+                               "newModelOrDeviceExecution":  false,
+                               "newBuildOrTestExecution":  false,
+                               "newPowerObservation":  false,
+                               "independentHardwareOrNumericalReplay":  false,
+                               "ciDispatchedOrMonitored":  false,
+                               "pushed":  false
+                           },
+    "existingEvidence":  {
+                             "guardedHvx":  {
+                                                "receipt":  "docs/evidence/hexagon-model-device-20261103-ac/summary.json",
+                                                "qualifiedScope":  "Only blk.0.ffn_up.weight, original-PQ2 token42, 40 operations and 1392640 returned integer comparisons; complete logical state/logits matched a scalar CPU shadow, explicit cleanup and empty owned Job accepted.",
+                                                "performanceMeasured":  false,
+                                                "adapterLoaded":  false
+                                            },
+                             "hmxBitplane":  {
+                                                 "receipt":  "docs/evidence/hexagon-hmx-session-20261103/summary.json",
+                                                 "qualifiedScope":  "Only blk.0.ffn_up.weight, original-PQ2 tokens42,43, 80 operations and 11141120 plane comparisons; complete per-token logical state/logits matched the scalar CPU shadow.",
+                                                 "supervisorCaveat":  "Original supervisor rejected the required ownerPinnedUntilExit=true flag. Corrected model-free replay accepts the retained terminal event; no new device execution followed that correction.",
+                                                 "effectiveHmxPlacementVerified":  false,
+                                                 "effectiveVtcmBytes":  null,
+                                                 "performanceMeasured":  false,
+                                                 "adapterLoaded":  false,
+                                                 "rawFullNumericalArraysRetained":  false
+                                             },
+                             "powerInterpretation":  "Retained CPU/native arm endpoints observed AC and saver off. The HMX workload later observed battery operation during retention. Endpoints alone prove no uninterrupted stability and neither receipt measures a performance or energy benefit. This review takes no new power snapshot and infers no past power status."
+                         },
+    "findings":  [
+                     {
+                         "id":  "terminal-lifetime-is-not-session-workload-budget",
+                         "severity":  "blocks-normal-serving",
+                         "evidence":  [
+                                          "runner:tools/hexagon/native_rpc/projection.rs:23",
+                                          "runner:tools/hexagon/native_rpc/projection.rs:44",
+                                          "runner:docs/evidence/hexagon-session-operation-budget.json:21",
+                                          "prism:src/graph/projection.rs:201"
+                                      ],
+                         "facts":  {
+                                       "terminalMaximumWriteAttempts":  24000,
+                                       "nativeMaximumSessionSecondsIncludingCleanup":  120,
+                                       "nativeCleanupReserveSeconds":  3,
+                                       "allEligibleHiddenOperationsPerToken":  22656,
+                                       "allEligibleEvaluationOperationsPerToken":  23256,
+                                       "hiddenPlusEvaluationOperations":  45912,
+                                       "firstProjectionOperationsPerToken":  40,
+                                       "maximumFirstProjectionEvaluationsByOperationsOnly":  600,
+                                       "runnerContextTokens":  8192
+                                   },
+                         "interpretation":  "The owner\u0027s session-specific allowance permits a longer aggregate investigation; it does not itself implement or qualify a longer native lifetime. All-eligible offload cannot reserve even one hidden prompt token plus an evaluation. First-projection placement avoids that particular all-eligible count but its 600-token operations-only lifetime still cannot admit the ordinary 8192-token context/output contract. The absolute 120-second deadline independently remains. Checkpoint/reset cannot replenish attempted capacity, and failures cannot trigger secret replay.",
+                         "requiredNextStep":  "Choose and explicitly qualify a bounded partial profile with truthful request admission, or design/review a supported persistent lifetime or fused submission path. A cap edit alone establishes no lifetime or resource qualification."
+                     },
+                     {
+                         "id":  "prototype-bridge-is-not-an-established-acceleration",
+                         "severity":  "blocks-benefit-claim",
+                         "evidence":  [
+                                          "runner:docs/evidence/hexagon-swift-traffic-ledger.json:179",
+                                          "runner:docs/evidence/hexagon-resident-host-24000-ledger.json:43",
+                                          "prism:tools/hexagon-runtime/src/hmx.rs:193"
+                                      ],
+                         "facts":  {
+                                       "allEligibleOriginalPackedWeightBytes":  6799564800,
+                                       "allEligibleHmxSubmissionAndResultPayloadBytesPerToken":  13694386176,
+                                       "allEligibleGuardedHvxSubmissionAndResultPayloadBytesPerToken":  16046604288,
+                                       "firstProjectionOriginalPackedWeightBytes":  23674880,
+                                       "firstProjectionApproximateShareOfEligiblePackedWeightBytesPercent":  0.348,
+                                       "firstProjectionHmxLogicalPayloadBytesPerToken":  47513600,
+                                       "firstProjectionMinimumHmxResidentHostWeightBytes":  25067520,
+                                       "maximumResidentHostWeightArenaBytes":  67108864
+                                   },
+                         "interpretation":  "These are static logical payloads, not measured DRAM traffic, occupancy, time or energy. The 0.348-percent weight share is an indicator of narrow coverage, not a speed bound: projection costs need measurement. HMX\u0027s eight rows are bitplanes of one token, not eight-token prefill. The mapped host cache can avoid repeated CPU packing but leaves kernel weight/result payload unchanged and may increase whole-allocation cache maintenance. No receipt establishes useful complete-answer benefit.",
+                         "requiredNextStep":  "Measure selected bottlenecks and matched same-artifact complete-answer total cost, including packing, transfer, RPC, CPU reduction, startup, synchronization, resources and per-arm power. Wider placement likely needs efficient signed fused packed kernels/device weight reuse to become attractive; this is an engineering inference, not a measured verdict."
+                     },
+                     {
+                         "id":  "probe-is-not-server-integration",
+                         "severity":  "blocks-default-delivery",
+                         "evidence":  [
+                                          "prism:tools/hexagon-runtime/Cargo.toml:6",
+                                          "prism:tools/hexagon-runtime/Cargo.toml:14",
+                                          "prism:src/graph/projection.rs:126",
+                                          "prism:server/Cargo.toml:22",
+                                          "runner:config/prism-inference.lock.json",
+                                          "runner:config/hexagon-experiment.lock.json:5"
+                                      ],
+                         "interpretation":  "Native session helpers are unpublished tool crates. The graph offers a borrowed experimental executor; the actual-model terminal probe consumes it. The production server and workers do not construct that native session, and Runner pins a CPU-only Prism0.1.14 release. Changing the disabled experimental lock would neither supply a deployable NPU server nor complete native ownership/readiness/resource admission.",
+                         "requiredNextStep":  "Release/pin an explicit supported native profile, integrate qualified ownership and effective-plan readiness with broker/launcher, and verify installation, isolation, cancellation, stop/retry, absence/upgrade failures and explicit same-artifact CPU rollback."
+                     },
+                     {
+                         "id":  "selected-device-resources-and-deployment-remain-open",
+                         "severity":  "blocks-service-admission",
+                         "evidence":  [
+                                          "runner:docs/hexagon-source-audit.md:27",
+                                          "runner:docs/hexagon-source-audit.md:104",
+                                          "runner:docs/hexagon-source-audit.md:135",
+                                          "runner:docs/hexagon-source-audit.md:386",
+                                          "runner:docs/evidence/hexagon-hmx-session-20261103/summary.json:64",
+                                          "prism:tools/hexagon-runtime/src/bin/model_probe.rs:752"
+                                      ],
+                         "interpretation":  "Verified archive/catalog members and loaded Microsoft-signed user driver are valuable access evidence. They do not independently observe which DSP bytes actually loaded or effective VTCM/DMA/mapping behavior. The selected HMX report explicitly says placement unverified and VTCM unknown. Explicit buffer cleanup/empty process Job do not establish all vendor resources or daily-service accounting. The reference process initializer requests unsigned DSP process class while still verifying signed package/catalog; no OS trust change is authorized by that. Applicable ABI/distribution prerequisites remain source-specific.",
+                         "requiredNextStep":  "Bind actual selected DSP and effective resources for the chosen route; account for allocations outside Job commit, ownership/failure lifetime and complete vendor teardown. Reusing the existing signed route does not automatically require the optional SDK generator or custom-kernel signing path. If custom kernels/generator outputs become selected, resolve their exact ABI, notices/terms and signed-distribution prerequisites first. No legal grant or violation is determined by this source review."
+                     },
+                     {
+                         "id":  "numerical-and-lifecycle-scope-is-narrow",
+                         "severity":  "blocks-correctness-and-daily-use-qualification",
+                         "evidence":  [
+                                          "runner:docs/evidence/hexagon-hmx-session-20261103/summary.json:144",
+                                          "prism:tools/hexagon-runtime/src/bin/model_probe.rs:305",
+                                          "prism:src/graph/projection.rs:88",
+                                          "runner:PLAN.md:1166"
+                                      ],
+                         "interpretation":  "One/two-token scalar no-adapter controls do not qualify the standard adapter at1.3, loaded-zero identity, four-worker/default-NEON policy, varied activations or edited/reused prefixes and failure recovery. Source controls and a reviewer of receipts cannot substitute for those exact selected-model cases. New adapter probe development advances NPU-1/2 but transfers no pass from the historical controls.",
+                         "requiredNextStep":  "Retain an exact-source broader numerical packet and independent retrievable inputs/results, then exercise persistent request/context reservation, cancellation/reset, prefix state and terminal failure behavior in the selected explicit profile."
+                     }
+                 ],
+    "recommendedScope":  {
+                             "firstProfile":  "Explicit X2 original-PQ2 partial-projection profile, selecting guarded-HVX or HMX only after its own applicable gates pass.",
+                             "optionalExpansionNotRequiredForPartialHvx":  [
+                                                                               "HMX qualification",
+                                                                               "PTQ1 or odd-block Q8_0",
+                                                                               "X1 family qualification",
+                                                                               "Adreno GPU qualification",
+                                                                               "automatic CPU/GPU/NPU selection",
+                                                                               "all-eligible projection placement"
+                                                                           ],
+                             "nextConcreteWork":  "Prepare and qualify bounded standard-adapter/loaded-zero and default CPU policy cases without extending native limits, while separately designing a viable serving lifetime and measuring worthwhile placement.",
+                             "defaultPromotionDecision":  "Keep ordinary chat on CPU until the selected explicit profile has correctness, resources/lifecycle, useful benefit and delivery/rollback evidence. Session wall-time authorization alone cannot close these engineering gates."
+                         },
+    "sourceIdentityEncoding":  "Raw reviewed checkout bytes; CRLF/LF differences change these hashes.",
+    "reviewedSources":  [
+                            {
+                                "repository":  "runner",
+                                "path":  "config/hexagon-experiment.lock.json",
+                                "bytes":  4628,
+                                "sha256":  "ce3095b266427e6571408784f6b278659135b07cfb343e7cfaef31d9af9b57dc"
+                            },
+                            {
+                                "repository":  "runner",
+                                "path":  "config/prism-inference.lock.json",
+                                "bytes":  2433,
+                                "sha256":  "8d2cf2f7cacf7795dc3283d8cd931cd50e077e6f9aac052b5c3fbc8327cd150a"
+                            },
+                            {
+                                "repository":  "runner",
+                                "path":  "tools/hexagon/native_rpc/projection.rs",
+                                "bytes":  14631,
+                                "sha256":  "6f7aac1cfd0b39b14b69a2b3e78c8d6c1c82e73f841ffb3c5f483ad3f566df5f"
+                            },
+                            {
+                                "repository":  "runner",
+                                "path":  "src/broker/src/lib.rs",
+                                "bytes":  29339,
+                                "sha256":  "b7f3a143b332181ecdd714b1060179397c88a9d26dc1814b1c5a5bff058ebbab"
+                            },
+                            {
+                                "repository":  "runner",
+                                "path":  "docs/hexagon-source-audit.md",
+                                "bytes":  45361,
+                                "sha256":  "29e41a1c4ae0f0e716a16006555f64e8706bccbe552c118cff41c2156e5156f5"
+                            },
+                            {
+                                "repository":  "runner",
+                                "path":  "docs/evidence/hexagon-session-operation-budget.json",
+                                "bytes":  1880,
+                                "sha256":  "daf11cdb2e526ee5eb03f1e82ce5789e1e8e73a9b9248acffc2adefea842d82d"
+                            },
+                            {
+                                "repository":  "runner",
+                                "path":  "docs/evidence/hexagon-swift-traffic-ledger.json",
+                                "bytes":  7674,
+                                "sha256":  "a7f4f9b94acf74cb0b7cbee674973559f9d0a24fbda59413b505a990d7a8b481"
+                            },
+                            {
+                                "repository":  "runner",
+                                "path":  "docs/evidence/hexagon-resident-host-24000-ledger.json",
+                                "bytes":  6806,
+                                "sha256":  "adb76b604dcc8e74337cbea3c560a8c9524704897911c3253522a872544926c0"
+                            },
+                            {
+                                "repository":  "runner",
+                                "path":  "docs/evidence/hexagon-hmx-session-20261103/summary.json",
+                                "bytes":  9526,
+                                "sha256":  "b51d9ba6f9f8cf3236624044df1c41648e52bd318faa0cc08f1e0ad7c6a23090"
+                            },
+                            {
+                                "repository":  "runner",
+                                "path":  "docs/evidence/hexagon-model-device-20261103-ac/summary.json",
+                                "bytes":  8806,
+                                "sha256":  "1aa7af05dc48554c7acfa4dd8eeadfd12a643a5959e30a1c8b6c8c51f01d0928"
+                            },
+                            {
+                                "repository":  "runner",
+                                "path":  "PLAN.md",
+                                "bytes":  110785,
+                                "sha256":  "12341726769ffaffda8e382a516b9b52d278a336cefd5bbed5d42679cc5421bb"
+                            },
+                            {
+                                "repository":  "prism",
+                                "path":  "tools/hexagon-runtime/Cargo.toml",
+                                "bytes":  966,
+                                "sha256":  "b1d243b8916f54c6dc864b6d54aa4a10973ba2be1951171090b5c5ef9a88bac3"
+                            },
+                            {
+                                "repository":  "prism",
+                                "path":  "tools/hexagon-runtime/src/bin/model_probe.rs",
+                                "bytes":  42818,
+                                "sha256":  "e1c9b59224cf387a9a29b8d26dad1e35ef95dc3f198cf85fdfb25fc4ba09c14a"
+                            },
+                            {
+                                "repository":  "prism",
+                                "path":  "tools/hexagon-runtime/src/hmx.rs",
+                                "bytes":  15343,
+                                "sha256":  "c181c5786b283ebd06f4eb1c2404c8831f856c517d1ff41142b217bfa96534b7"
+                            },
+                            {
+                                "repository":  "prism",
+                                "path":  "tools/hexagon-runtime/src/placement.rs",
+                                "bytes":  8789,
+                                "sha256":  "9e4c5106874abc6723634ed35f1f60ba3e517500368c2d1535eb2cbd8e90b190"
+                            },
+                            {
+                                "repository":  "prism",
+                                "path":  "src/graph/projection.rs",
+                                "bytes":  9239,
+                                "sha256":  "0b4397026080ce41749cfff8963cebc2b7794eba1189ff00f41be1eae8b07719"
+                            },
+                            {
+                                "repository":  "prism",
+                                "path":  "server/Cargo.toml",
+                                "bytes":  2642,
+                                "sha256":  "91cf3062880c23b5b509da97f88ddf3a841e9f326dba448bcb677461d74c8027"
+                            },
+                            {
+                                "repository":  "prism",
+                                "path":  "Cargo.toml",
+                                "bytes":  6410,
+                                "sha256":  "5d406bbe0902c416e1ec7057d8a2f6fca1dca560a56bc4074eef2fdcbeec4211"
+                            }
+                        ]
+}
