@@ -56,7 +56,11 @@ logit/state comparison and hash, final hashes matching the last comparison,
 complete native cleanup and an empty owned Job. HMX evidence must also carry the
 source-bound `nativeHmxBitplaneControl` result. Serialized cleanup must report
 successful queue stop/close, unmapping and module close, completed free, and no
-poisoned or retained owner. Resource observations retain unknown effective HMX
+poisoned allocation. `ownerPinnedUntilExit` must remain true: the native policy
+retains driver/module/catalog owners until process exit after successful
+unmapping/free; it does not report an outstanding allocation. The supervisor
+separately requires an empty owned Job after the process exits.
+Resource observations retain unknown effective HMX
 placement and VTCM; they cannot qualify physical placement or available capacity.
 Operation, session, child and
 cleanup limits are unchanged. No adapter is loaded by this control.

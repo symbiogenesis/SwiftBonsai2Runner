@@ -424,7 +424,9 @@ fn result(
     .any(|name| cleanup[*name] != 0)
         || cleanup["freeCompleted"] != true
         || cleanup["poisoned"] != false
-        || cleanup["ownerPinnedUntilExit"] != false
+        // Driver/module/catalog owners remain pinned through process exit even
+        // after safe unmapping/free; this is the native completed_cycle policy.
+        || cleanup["ownerPinnedUntilExit"] != true
     {
         return Err("The model result has incomplete or contradictory native cleanup.".into());
     }
@@ -706,7 +708,7 @@ mod tests {
             "integerValuesCompared":backend.integer_values_per_token()*u64::try_from(count).unwrap_or(0),"logitsBitwiseEqual":true,"stateBitwiseEqual":true,
             "nativeCompletedCycle":true,"profileEligible":false,"performanceMeasured":false,
             "nativeCleanup":{"queueStopResult":0,"queueCloseResult":0,"unmappingResult":0,"moduleCloseResult":0,
-                "freeCompleted":true,"poisoned":false,"ownerPinnedUntilExit":false},
+                "freeCompleted":true,"poisoned":false,"ownerPinnedUntilExit":true},
             "logitsSha256":"b".repeat(64),"stateSha256":"c".repeat(64),
             "cpuPowerBefore":power,"cpuPowerAfter":power,"npuPowerBefore":power,"npuPowerAfter":power})
     }
@@ -891,7 +893,7 @@ mod tests {
             ("/nativeCleanup/moduleCloseResult", json!("0")),
             ("/nativeCleanup/freeCompleted", json!(false)),
             ("/nativeCleanup/poisoned", json!(true)),
-            ("/nativeCleanup/ownerPinnedUntilExit", json!(true)),
+            ("/nativeCleanup/ownerPinnedUntilExit", json!(false)),
         ] {
             let mut changed = value.clone();
             *changed.pointer_mut(pointer).ok_or("Test field missing.")? = wrong;
@@ -906,6 +908,30 @@ mod tests {
                 .is_err()
             );
         }
+        Ok(())
+    }
+
+    #[test]
+    fn retained_hmx_two_token_result_replays_native_owner_pinning_policy() -> Result<()> {
+        // Exact terminal event from the single 2026-11-03 owner device attempt.
+        // This offline parser replay never loads a model or opens the driver.
+        let retained = include_str!("../../tests/fixtures/hexagon-hmx-two-token-result.json");
+        let driver = json!({"Path":"C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\qcnspmcdm8480.inf_arm64_4feba84cfc7ee278\\libcdsprpc.dll"});
+        let accepted = result(
+            retained,
+            "c76737a14f141b4f8236ad3d19cae16e5c4934b03055eb1c428928451d405107",
+            &[42, 43],
+            ExecutionBackend::HmxBitplane,
+            &driver,
+        )?;
+        assert_eq!(accepted["integerValuesCompared"], 11_141_120);
+        assert_eq!(accepted["nativeOperationsCompleted"], 80);
+        assert_eq!(accepted["nativeCleanup"]["ownerPinnedUntilExit"], true);
+        assert_eq!(
+            accepted["nativeResources"]["effectiveHmxPlacementVerified"],
+            false
+        );
+        assert!(accepted["nativeResources"]["effectiveVtcmBytes"].is_null());
         Ok(())
     }
 }
