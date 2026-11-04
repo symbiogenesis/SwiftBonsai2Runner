@@ -819,7 +819,7 @@ pub fn run(request: Value) -> Result<Value> {
         #[cfg(windows)]
         Request::DeviceWorker { request } => device::worker(&request),
         #[cfg(windows)]
-        Request::ModelDevice { request } => model_device::run(request),
+        Request::ModelDevice { request } => model_device::run(&request),
         Request::Preflight {
             package_path,
             output_path,

@@ -11,6 +11,7 @@ use serde_json::{Value, json};
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs::{self, File, OpenOptions};
 use std::io::Read as _;
+use std::os::windows::fs::OpenOptionsExt as _;
 use std::path::{Component, Path, PathBuf};
 use std::time::{Duration, Instant};
 
@@ -210,7 +211,6 @@ fn local_build(
         let path = source_path(&request.prism_repository_directory, name)?;
         if entry["bytes"] == 0 {
             let mut options = OpenOptions::new();
-            use std::os::windows::fs::OpenOptionsExt as _;
             options.read(true).share_mode(1).custom_flags(0x0020_0000);
             plain(&path)?;
             let file = options.open(&path).map_err(|error| error.to_string())?;
@@ -248,7 +248,7 @@ fn environment(package: &Path) -> Result<BTreeMap<String, String>> {
     // Native driver loading still uses its fixed system path and checked package.
     let mut environment: BTreeMap<_, _> = device::removals()
         .into_iter()
-        .map(|name| (name, String::new()))
+        .map(|name| (name.to_ascii_uppercase(), String::new()))
         .collect();
     environment.insert("PATH".into(), system.to_string_lossy().into_owned());
     environment.insert(
@@ -283,7 +283,6 @@ fn capture(
 fn model_guard(path: &Path) -> Result<File> {
     let mut options = OpenOptions::new();
     options.read(true);
-    use std::os::windows::fs::OpenOptionsExt as _;
     options.share_mode(1).custom_flags(0x0020_0000);
     let file = options.open(path).map_err(|error| error.to_string())?;
     let metadata = file.metadata().map_err(|error| error.to_string())?;
@@ -375,6 +374,10 @@ fn result(text: &str, request_digest: &str, token: u32, driver: &Value) -> Resul
     Ok(value.clone())
 }
 
+#[expect(
+    clippy::too_many_lines,
+    reason = "Keep one ordered terminal intake, signed catalog and driver verification, resource admission and owned graph comparison visible together."
+)]
 fn execute(request: &Request, started: Instant, report: &mut Value) -> Result<()> {
     let mut inputs = device::Inputs::default();
     local_build(request, &mut inputs, started, report)?;
@@ -526,7 +529,7 @@ fn execute(request: &Request, started: Instant, report: &mut Value) -> Result<()
     Ok(())
 }
 
-pub(super) fn run(request: Request) -> Result<Value> {
+pub(super) fn run(request: &Request) -> Result<Value> {
     let started = Instant::now();
     if !cfg!(target_arch = "aarch64")
         || request.maximum_seconds != 300
@@ -557,7 +560,7 @@ pub(super) fn run(request: Request) -> Result<Value> {
         "LocalBuild":true,"HostedBuild":false,"PrismRevision":request.expected_prism_revision,"MaximumSeconds":request.maximum_seconds,
         "CleanupReserveSeconds":CLEANUP_SECONDS,"ModelWorkAttempted":false,"OwnedJobTeardown":"not-started","ProfileEligible":false,
         "PerformanceMeasured":false,"TrustChanged":false,"PowerBefore":power(),"RequiredAvailablePhysicalBytes":REQUIRED_AVAILABLE_BYTES});
-    let outcome = execute(&request, started, &mut report);
+    let outcome = execute(request, started, &mut report);
     report["PowerAfter"] = power();
     report["ElapsedMilliseconds"] = json!(started.elapsed().as_millis());
     if let Err(error) = outcome {
