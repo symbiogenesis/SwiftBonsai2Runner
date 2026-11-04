@@ -1,0 +1,102 @@
+    Checking prism-inference v0.1.14 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\prism-hexagon-execution)
+    Checking bonsai-hexagon-runtime v0.1.0 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\prism-hexagon-execution\tools\hexagon-runtime)
+error: use Option::map_or_else instead of an if let/else
+   --> tools\hexagon-runtime\src\bin\model_probe.rs:200:5
+    |
+200 | /     match hexagon_native_rpc::power_status() {
+201 | |         Ok(status) => json!({"available":true,"acConnected":status.ac_connected,
+202 | |             "batterySaver":status.battery_saver,"batteryPercent":status.battery_percent}),
+203 | |         Err(_) => {
+...   |
+206 | |     }
+    | |_____^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/main/index.html#option_if_let_else
+    = note: `-D clippy::option-if-let-else` implied by `-D clippy::nursery`
+    = help: to override `-D clippy::nursery` add `#[allow(clippy::option_if_let_else)]`
+help: try
+    |
+200 ~     hexagon_native_rpc::power_status().map_or_else(|_| json!({"available":false,"acConnected":null,"batterySaver":null,"batteryPercent":null}), |status| json!({"available":true,"acConnected":status.ac_connected,
+201 +             "batterySaver":status.battery_saver,"batteryPercent":status.battery_percent}))
+    |
+
+error: strict comparison of `f32` or `f64`
+   --> tools\hexagon-runtime\src\bin\model_probe.rs:322:21
+    |
+322 |             require(output[limb * rows + row] == dot as f32)?;
+    |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: consider comparing them within some margin of error: `(output[limb * rows + row] - dot as f32).abs() < error_margin`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/main/index.html#float_cmp
+    = note: `-D clippy::float-cmp` implied by `-D clippy::pedantic`
+    = help: to override `-D clippy::pedantic` add `#[allow(clippy::float_cmp)]`
+
+error: calling `BTreeMap::default()` is more clear than this expression
+   --> tools\hexagon-runtime\src\bin\model_probe.rs:379:19
+    |
+379 |         metadata: Default::default(),
+    |                   ^^^^^^^^^^^^^^^^^^ help: try: `BTreeMap::default()`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/main/index.html#default_trait_access
+    = note: `-D clippy::default-trait-access` implied by `-D clippy::pedantic`
+    = help: to override `-D clippy::pedantic` add `#[allow(clippy::default_trait_access)]`
+
+error: this expression creates a reference which is immediately dereferenced by the compiler
+   --> tools\hexagon-runtime\src\bin\model_probe.rs:386:39
+    |
+386 |     let control = cpu_control(shadow, &request);
+    |                                       ^^^^^^^^ help: change this to: `request`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/main/index.html#needless_borrow
+    = note: `-D clippy::needless-borrow` implied by `-D clippy::all`
+    = help: to override `-D clippy::all` add `#[allow(clippy::needless_borrow)]`
+
+error: call to `std::mem::drop` with a value that does not implement `Drop`. Dropping such a type only extends its contained lifetimes
+   --> tools\hexagon-runtime\src\bin\model_probe.rs:440:17
+    |
+440 |                 drop(executor);
+    |                 ^^^^^^^^^^^^^^
+    |
+note: argument has type `bonsai_hexagon_runtime::GuardedQ2Executor<'_>`
+   --> tools\hexagon-runtime\src\bin\model_probe.rs:440:22
+    |
+440 |                 drop(executor);
+    |                      ^^^^^^^^
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/main/index.html#drop_non_drop
+    = note: `-D clippy::drop-non-drop` implied by `-D clippy::all`
+    = help: to override `-D clippy::all` add `#[allow(clippy::drop_non_drop)]`
+
+error: use Option::map_or instead of an if let/else
+   --> tools\hexagon-runtime\src\bin\model_probe.rs:455:13
+    |
+455 | /             match work {
+456 | |                 Ok(value) => { result = Some(value); Ok(()) },
+457 | |                 Err(_) => Err(Error::Contract),
+458 | |             }
+    | |_____________^ help: try: `work.map_or(Err(Error::Contract), |value| { result = Some(value); Ok(()) })`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/main/index.html#option_if_let_else
+
+error: you seem to be trying to use `match` for destructuring a single pattern. Consider using `if let`
+   --> tools\hexagon-runtime\src\bin\model_probe.rs:517:5
+    |
+517 | /     match main_work() {
+518 | |         Ok(()) => ExitCode::SUCCESS,
+519 | |         Err(_) => {
+520 | |             let _ = emit(&json!({"event":"error","schemaVersion":1,"completed":false,
+...   |
+524 | |     }
+    | |_____^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/main/index.html#single_match_else
+    = note: `-D clippy::single-match-else` implied by `-D clippy::pedantic`
+    = help: to override `-D clippy::pedantic` add `#[allow(clippy::single_match_else)]`
+help: try
+    |
+517 ~     if let Ok(()) = main_work() { ExitCode::SUCCESS } else {
+518 +         let _ = emit(&json!({"event":"error","schemaVersion":1,"completed":false,
+519 +             "reason":"hexagon-model-probe-rejected","profileEligible":false}));
+520 +         ExitCode::FAILURE
+521 +     }
+    |
+
+error: could not compile `bonsai-hexagon-runtime` (bin "prism-hexagon-model-probe") due to 7 previous errors

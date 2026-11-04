@@ -1,0 +1,235 @@
+{
+  "schemaVersion": 1,
+  "kind": "local-hexagon-cap-and-real-model-execution-implementation-validation",
+  "dateLocal": "2026-11-03",
+  "runnerImplementationCommits": [
+    "50ff9016",
+    "0e3627c5",
+    "1ea54fb9"
+  ],
+  "prismImplementationCommits": [
+    "9d985ef",
+    "e6fabbf",
+    "c5d6d3d"
+  ],
+  "probeBuildSourceCommit": "cc6c1dcf5488cd6a95b078e0f8a1c64e6bc71b86",
+  "nativeTerminalOperationCap": 24000,
+  "nativeSessionMaximumSeconds": 120,
+  "nativeCleanupReserveSeconds": 3,
+  "firstProjectionOperationsPerToken": 40,
+  "implemented": [
+    "unpublished-native-Rust-single-real-Swift-token-worker",
+    "independent-signed-integer-limb-oracle",
+    "every-logit-and-logical-state-value-bitwise-CPU-shadow-comparison",
+    "cleanup-gated-terminal-result-publication",
+    "source-bound-local-build-supervisor-with-Job-deadline-and-package-catalog-driver-resource-intake",
+    "per-arm-power-observations-with-explicit-unknowns"
+  ],
+  "checks": {
+    "probeFocusedTestsPassed": 5,
+    "nativeProjectionFocusedTestsPassed": 10,
+    "nativePowerFocusedTestsPassed": 1,
+    "runnerSupervisorFocusedTestsPassed": 2,
+    "distinctFocusedTestsPassed": 18,
+    "selectedPrismStrictReleaseClippyPassed": true,
+    "runnerStrictReleaseLibraryClippyPassed": true,
+    "probeReleaseBuildAndModelFreeSelfTestPassed": true,
+    "runnerSupervisorReleaseBuildPassed": true,
+    "changedRustFormattingPassed": true,
+    "runnerNativeTestMetadataCompilationPassed": true,
+    "originalTrafficLedgerVerified": true,
+    "currentOperationBudgetVerified": true,
+    "currentResidentLedgerVerified": true,
+    "completeSuitesExecuted": false,
+    "initialLintFailuresAndCorrectionsRetained": true
+  },
+  "deviceAttempted": false,
+  "modelLoaded": false,
+  "driverOpened": false,
+  "deviceTrialNotStartedReason": "After source preparation the remaining original allowance did not fit the fixed 300-second device supervisor plus receipt intake and retention. The guard refused before device/model work.",
+  "cpuModelArm": {
+    "executed": false,
+    "powerBefore": null,
+    "powerAfter": null
+  },
+  "nativeModelArm": {
+    "executed": false,
+    "powerBefore": null,
+    "powerAfter": null
+  },
+  "powerBefore": {
+    "ac_online": false,
+    "battery_percent": 39,
+    "battery_saver": false,
+    "source": "GetSystemPowerStatus",
+    "status": "observed"
+  },
+  "powerAfter": {
+    "ac_online": false,
+    "battery_percent": 32,
+    "battery_saver": false,
+    "source": "GetSystemPowerStatus",
+    "status": "observed"
+  },
+  "powerInterpretation": "Observed battery operation before and after source validation and retention; charge 39 to 32 percent, saver off at both endpoints. Continuity is not established; no model arms or performance comparison ran.",
+  "maximumAggregateSeconds": 720,
+  "startedUtc": "2026-11-04T02:08:34.4428490+00:00",
+  "evidenceRetainedUtc": "2026-11-04T02:20:00.680637+00:00",
+  "probeExecutableSha256": "bd0093f7ed13de6723afce32f79be685542d1d0869ef578b6115981d847f07fe",
+  "retainedExecutableDirectory": "C:\\Users\\symbi\\AppData\\Local\\Temp\\SwiftBonsai-Hexagon-Real-20261103\\model-bundle",
+  "localBuildProvenanceOnly": true,
+  "signedModelArithmeticQualified": false,
+  "adapterQualificationPerformed": false,
+  "fullHexagonInferenceQualified": false,
+  "productionNpuAdmissionEnabled": false,
+  "measuredInferenceSpeedup": null,
+  "historicalInvestigationRestarted": false,
+  "pushed": false,
+  "ciDispatchedOrMonitored": false,
+  "pendingAcceptance": [
+    "actual signed X2 first-projection and full logical state/logit result",
+    "HMX execution and effective resources",
+    "adapters wider placement and lifecycle",
+    "persistent serving and same-artifact performance benefit"
+  ],
+  "retainedFiles": [
+    {
+      "file": "clock.json",
+      "bytes": 206,
+      "sha256": "7aef9d444b6008042f6caa2bf20b3291eaf670c8a91c6de2c43a38dfcd22272c"
+    },
+    {
+      "file": "device-not-started.json",
+      "bytes": 234,
+      "sha256": "b25d5cf46ae828f2c0713dd60efbd57a9f9984bc99f867327b15cb8213f476bb"
+    },
+    {
+      "file": "local-model-build.json",
+      "bytes": 55386,
+      "sha256": "8665d45d9862c418970ec6fcc5f153547e5dd74164233fc82e2cc25591217235"
+    },
+    {
+      "file": "model-device-request.json",
+      "bytes": 1257,
+      "sha256": "f413266c46fb3dcedd205647abbe5855cb23fd1ed446bd30307c3d83a70da385"
+    },
+    {
+      "file": "power-after.json",
+      "bytes": 5963,
+      "sha256": "f2ea387b2e6f837e9166cea93e142d991dc173efc9ac49ef0e3e27226e77c739"
+    },
+    {
+      "file": "power-before.json",
+      "bytes": 5961,
+      "sha256": "360ff05d34e7138747822abbb76206d699d5e585d978c32be7c1325a39b9073c"
+    },
+    {
+      "file": "prism-native-power-tests.log",
+      "bytes": 477,
+      "sha256": "e994ce04bef4c23aabd1cdc4ca890fdbf700834e5244a81ea1e58ed5ff56148e"
+    },
+    {
+      "file": "prism-native-projection-tests.log",
+      "bytes": 1625,
+      "sha256": "89a09fdc094a7199987d232d51973493f8c20014bb12c9cd10d24810b260cbbc"
+    },
+    {
+      "file": "prism-probe-accepted-build.log",
+      "bytes": 213,
+      "sha256": "f654aad2540f765e945d2676beb9c38086ab51db1666969788d328d6c6f7b51a"
+    },
+    {
+      "file": "prism-probe-accepted-tests.log",
+      "bytes": 1121,
+      "sha256": "54b77f7b409155baf68280ba6679a634deddf4d4b94b2c75f2a42e8c0ae46bb4"
+    },
+    {
+      "file": "prism-probe-build.log",
+      "bytes": 266,
+      "sha256": "98d7c0babe8246a088fd433505cb80da3da46d542c5eb8e5dfc30b7d8ecb54ab"
+    },
+    {
+      "file": "prism-probe-clippy-correction.log",
+      "bytes": 1396,
+      "sha256": "3176f2843eea8b46da07ff0eec9e475fc68549e0cbab15ca5274b1898b179206"
+    },
+    {
+      "file": "prism-probe-clippy-correction2.log",
+      "bytes": 1876,
+      "sha256": "6a9c41460653c5c75d26a49da7e7e15b837c3bf9252d9bf325faa9757b297d26"
+    },
+    {
+      "file": "prism-probe-clippy-native-feature.log",
+      "bytes": 928,
+      "sha256": "514354f21967f14d6f5564fb5c46f58f7cc87b0ec834b0ea14f741cef942df5f"
+    },
+    {
+      "file": "prism-probe-clippy.log",
+      "bytes": 1641,
+      "sha256": "3689b0d21e7316ca24e89add9b39b6bc944571a155da003a3adbf40e42a8b24c"
+    },
+    {
+      "file": "prism-probe-final-clippy.log",
+      "bytes": 1052,
+      "sha256": "2130ab03a47309dffbd4ea4281192b3d4933c3ba3ea19f4864ff457037472c54"
+    },
+    {
+      "file": "prism-probe-final-clippy2.log",
+      "bytes": 5567,
+      "sha256": "60d821868a9040f67a1c6ca6a55fe994a5a120660fd546e643602f22087a31c4"
+    },
+    {
+      "file": "prism-probe-final-clippy3.log",
+      "bytes": 213,
+      "sha256": "47e734601c07f442a4630236baf39eceb9059877627385a19ad64db982515487"
+    },
+    {
+      "file": "prism-probe-final-tests.log",
+      "bytes": 1304,
+      "sha256": "1f6cd490845125c044852c8a6160709633c02121e0f54fe2946b17f1805826ee"
+    },
+    {
+      "file": "prism-probe-tests.log",
+      "bytes": 2819,
+      "sha256": "dca5f2df364d7591c84ab25267fd846e006c817260679b4d38344f63c803ee7c"
+    },
+    {
+      "file": "runner-model-probe-build.log",
+      "bytes": 201,
+      "sha256": "8528683644eac9baf1d4bfd28fc463a8bac028ee673d26097553cd30ebc8e72f"
+    },
+    {
+      "file": "runner-model-probe-clippy-correction.log",
+      "bytes": 200,
+      "sha256": "e1dcdffa380d67f978b4412e832b8b0198873d27f403489d1633c57fd32984fe"
+    },
+    {
+      "file": "runner-model-probe-clippy.log",
+      "bytes": 6359,
+      "sha256": "cd084dec3415e391d365f747cd188a3f31de38ff15917ab3d4e82d8fd7c5f4bc"
+    },
+    {
+      "file": "runner-model-probe-tests.log",
+      "bytes": 5532,
+      "sha256": "72dd16d69c4dfbef8344130a0b4b428b7c927960b503d1e5d5a0b413acd385a9"
+    },
+    {
+      "file": "workload-stop.json",
+      "bytes": 363,
+      "sha256": "a12cd276310d088e2ff090bd8c2e78413a9a408c8f379048a74f58e57fef7768"
+    },
+    {
+      "file": "power-after-retention.json",
+      "bytes": 5959,
+      "sha256": "90db75ad68da9333b10187d91d08912e3732ad6ebbbda2fffa203fa9ea03a43f"
+    }
+  ],
+  "chargedThroughEvidenceRetentionSeconds": 686.237795,
+  "powerAfterValidation": {
+    "ac_online": false,
+    "battery_percent": 33,
+    "battery_saver": false,
+    "source": "GetSystemPowerStatus",
+    "status": "observed"
+  }
+}

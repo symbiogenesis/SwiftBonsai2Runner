@@ -1,0 +1,146 @@
+    Checking windows-link v0.2.1
+    Checking stable_deref_trait v1.2.1
+    Checking cfg-if v1.0.5
+    Checking writeable v0.6.4
+    Checking smallvec v1.16.4
+    Checking litemap v0.8.3
+    Checking utf_types v1.0.0
+    Checking typenum v1.20.1
+    Checking serde_core v1.0.229
+    Checking icu_properties_data v2.4.0
+    Checking icu_normalizer_data v2.4.0
+    Checking memchr v2.8.3
+    Checking windows_aarch64_msvc v0.52.6
+    Checking zerofrom v0.1.8
+    Checking const-oid v0.10.2
+    Checking scopeguard v1.2.0
+    Checking itoa v1.0.18
+    Checking zmij v1.0.23
+    Checking windows-sys v0.61.2
+    Checking windows-result v0.4.1
+    Checking windows-strings v0.5.1
+    Checking getrandom v0.4.3
+    Checking windows-threading v0.2.1
+    Checking parking_lot_core v0.9.12
+    Checking utf8_iter v1.1.0
+    Checking percent-encoding v2.3.2
+    Checking windows-targets v0.52.6
+    Checking yoke v0.8.4
+    Checking cpufeatures v0.3.1
+    Checking lock_api v0.4.14
+    Checking bitflags v2.13.2
+    Checking num-traits v0.2.19
+    Checking memoffset v0.9.1
+    Checking libc v0.2.191
+    Checking zlib-rs v0.6.8
+    Checking equivalent v1.0.3
+    Checking hashbrown v0.17.1
+    Checking windows-sys v0.59.0
+    Checking windows-core v0.62.2
+    Checking pin-project-lite v0.2.17
+    Checking once_cell v1.21.4
+    Checking form_urlencoded v1.2.2
+    Checking bytes v1.12.1
+    Checking fastrand v2.5.0
+    Checking zerovec v0.11.9
+    Checking zerotrie v0.2.5
+    Checking parking_lot v0.12.5
+    Checking flatbuffers v25.12.19
+    Checking nix v0.29.0
+    Checking tracelogging v1.2.4
+    Checking thiserror v2.0.21
+    Checking uuid v1.29.0
+    Checking anyhow v1.0.104
+    Checking crc32fast v1.5.4
+    Checking windows-future v0.3.2
+    Checking windows-collections v0.3.2
+    Checking windows-numerics v0.3.1
+    Checking unicode-general-category v1.1.0
+    Checking chrono v0.4.45
+    Checking hybrid-array v0.4.15
+    Checking indexmap v2.14.2
+    Checking getrandom v0.2.17
+    Checking libloading v0.8.9
+    Checking base64 v0.22.1
+    Checking cidr v0.3.2
+    Checking typed-path v0.13.0
+    Checking widestring v1.2.1
+    Checking tinystr v0.8.5
+    Checking potential_utf v0.1.6
+    Checking ash v0.38.0+1.3.281
+    Checking icu_collections v2.4.0
+    Checking httparse v1.10.1
+    Checking bonsai-audio v0.1.0 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\hexagon-implementation-review\src\audio)
+    Checking windows v0.62.2
+    Checking icu_locale_core v2.4.0
+    Checking serde v1.0.229
+    Checking serde_json v1.0.154
+    Checking serde_path_to_error v0.1.20
+    Checking block-buffer v0.12.1
+    Checking crypto-common v0.2.2
+    Checking flate2 v1.1.10
+    Checking bonsai-cpu-policy v0.1.0 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\hexagon-implementation-review\src\cpu-policy)
+    Checking digest v0.11.3
+    Checking icu_provider v2.4.0
+    Checking sha2 v0.11.1
+    Checking icu_normalizer v2.4.0
+    Checking icu_properties v2.4.0
+    Checking winreg v0.55.0
+    Checking idna_adapter v1.2.2
+    Checking idna v1.1.0
+    Checking url v2.5.8
+    Checking socket2 v0.6.5
+    Checking winapi-util v0.1.11
+    Checking mio v1.2.4
+    Checking tempfile v3.27.0
+    Checking bonsai-windows-credentials v0.1.0 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\hexagon-implementation-review\src\windows-credentials)
+    Checking zip v9.2.1
+    Checking same-file v1.0.6
+    Checking tokio v1.54.1
+    Checking bonsai-artifacts v0.1.0 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\hexagon-implementation-review\src\artifacts)
+    Checking mxc-sdk v1.0.1
+    Checking bonsai-windows-process v0.1.0 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\hexagon-implementation-review\src\windows-process)
+    Checking bonsai-tools v0.1.0 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\hexagon-implementation-review\tools\bonsai)
+error: adding items after statements is confusing, since items exist from the start of the scope
+   --> tools\bonsai\src\hexagon_tools\model_device.rs:213:13
+    |
+213 |             use std::os::windows::fs::OpenOptionsExt as _;
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://clippy.rust-lang.org/main/index.html#items_after_statements
+    = note: `-D clippy::items-after-statements` implied by `-D clippy::pedantic`
+    = help: to override `-D clippy::pedantic` add `#[allow(clippy::items_after_statements)]`
+
+error: adding items after statements is confusing, since items exist from the start of the scope
+   --> tools\bonsai\src\hexagon_tools\model_device.rs:286:5
+    |
+286 |     use std::os::windows::fs::OpenOptionsExt as _;
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://clippy.rust-lang.org/main/index.html#items_after_statements
+
+error: this function has too many lines (145/100)
+   --> tools\bonsai\src\hexagon_tools\model_device.rs:378:1
+    |
+378 | fn execute(request: &Request, started: Instant, report: &mut Value) -> Result<()> {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://clippy.rust-lang.org/main/index.html#too_many_lines
+    = note: `-D clippy::too-many-lines` implied by `-D clippy::pedantic`
+    = help: to override `-D clippy::pedantic` add `#[allow(clippy::too_many_lines)]`
+
+error: this argument is passed by value, but not consumed in the function body
+   --> tools\bonsai\src\hexagon_tools\model_device.rs:529:28
+    |
+529 | pub(super) fn run(request: Request) -> Result<Value> {
+    |                            ^^^^^^^
+    |
+    = help: for further information visit https://clippy.rust-lang.org/main/index.html#needless_pass_by_value
+    = note: `-D clippy::needless-pass-by-value` implied by `-D clippy::pedantic`
+    = help: to override `-D clippy::pedantic` add `#[allow(clippy::needless_pass_by_value)]`
+help: consider taking a reference instead
+    |
+529 | pub(super) fn run(request: &Request) -> Result<Value> {
+    |                            +
+
+error: could not compile `bonsai-tools` (lib) due to 4 previous errors

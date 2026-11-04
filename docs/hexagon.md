@@ -27,6 +27,14 @@ records the historical terminal-cap refusal. The owner-authorized
 fits one all-eligible original-PQ2 evaluation, with 744 submissions left.
 It does not fit a hidden token plus evaluation (45,912 submissions), waive
 complete-request admission or extend the 120-second session/cleanup limits.
+The separate [local actual-model probe](../tools/hexagon/model-probe.md) now
+provides a runnable supervised first-projection path: one original-PQ2 token,
+every returned integer limb checked independently, complete CPU-shadow
+logits/state comparisons, and terminal publication only after explicit native
+cleanup. Its [local validation](evidence/hexagon-model-execution-20261103/summary.json)
+records passing focused source checks and builds. The aggregate allowance could
+not fit the complete device supervisor afterward, so no model/device attempt
+started and signed-device acceptance remains pending. This enables no profile.
 The [logical payload ledger](evidence/hexagon-swift-traffic-ledger.json) derives
 13.69 GB of signed-kernel input/result payload per all-eligible original-PQ2
 evaluation token. The opt-in [mapped host-weight arena and graph cache](../tools/hexagon/resident-host.md)

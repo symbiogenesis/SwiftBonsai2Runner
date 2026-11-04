@@ -1,0 +1,50 @@
+   Compiling typenum v1.20.1
+   Compiling memchr v2.8.3
+   Compiling proc-macro2 v1.0.107
+   Compiling quote v1.0.47
+   Compiling windows-link v0.2.1
+   Compiling unicode-ident v1.0.27
+   Compiling regex-syntax v0.8.11
+   Compiling serde_core v1.0.229
+   Compiling zmij v1.0.23
+   Compiling cfg-if v1.0.5
+   Compiling bit-vec v0.8.0
+   Compiling cpufeatures v0.3.1
+   Compiling bonsai-prism v0.1.1 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\prism-hexagon-execution\tools\prism)
+   Compiling smallvec v1.16.4
+   Compiling serde_json v1.0.154
+   Compiling serde v1.0.229
+   Compiling itoa v1.0.18
+   Compiling bonsai-ternary v0.1.0 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\prism-hexagon-execution\tools\ternary)
+   Compiling bonsai-hexagon-native v0.1.0 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\prism-hexagon-execution\tools\hexagon-native)
+   Compiling windows-sys v0.61.2
+   Compiling bit-set v0.8.0
+   Compiling unicode-normalization-alignments v0.1.12
+   Compiling aho-corasick v1.1.5
+   Compiling hybrid-array v0.4.15
+   Compiling bonsai-native-hash v0.1.0 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\prism-hexagon-execution\tools\native-hash)
+   Compiling bonsai-windows-process v0.1.0
+   Compiling block-buffer v0.12.1
+   Compiling crypto-common v0.2.2
+   Compiling syn v3.0.9
+   Compiling digest v0.11.3
+   Compiling regex-automata v0.4.18
+   Compiling sha2 v0.11.1
+   Compiling bonsai-gguf v0.1.1 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\prism-hexagon-execution\tools\gguf)
+   Compiling serde_derive v1.0.229
+   Compiling fancy-regex v0.14.0
+   Compiling regex v1.13.1
+   Compiling prism-inference v0.1.14 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\prism-hexagon-execution)
+   Compiling bonsai-hexagon-runtime v0.1.0 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\prism-hexagon-execution\tools\hexagon-runtime)
+    Finished `release` profile [optimized] target(s) in 16.91s
+     Running unittests src\bin\model_probe.rs (C:\Users\symbi\AppData\Local\Temp\inference-efficiency-local-20261103\target\release\build\bonsai-hexagon-runtime/c5f08cf6b7a23dad\out\prism_hexagon_model_probe-c5f08cf6b7a23dad.exe)
+
+running 5 tests
+test tests::model_probe_native_failure_and_oracle_mismatch_are_terminal_without_replay ... ok
+test tests::model_probe_oracle_rejects_plausible_wrong_unwritten_and_partial_results ... ok
+test tests::model_probe_success_counts_every_independently_compared_limb ... ok
+test tests::model_probe_oracle_decodes_nonzero_rows_lanes_and_signed_limbs ... ok
+test tests::model_probe_request_rejects_unknown_fields_and_infeasible_limits ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

@@ -1,0 +1,14 @@
+   Compiling prism-inference v0.1.14 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\prism-hexagon-execution)
+   Compiling bonsai-hexagon-runtime v0.1.0 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\prism-hexagon-execution\tools\hexagon-runtime)
+    Finished `release` profile [optimized] target(s) in 7.00s
+     Running unittests src\bin\model_probe.rs (C:\Users\symbi\AppData\Local\Temp\inference-efficiency-local-20261103\target\release\build\bonsai-hexagon-runtime/b51077cb14c4a557\out\prism_hexagon_model_probe-b51077cb14c4a557.exe)
+
+running 5 tests
+test tests::model_probe_native_failure_and_oracle_mismatch_are_terminal_without_replay ... ok
+test tests::model_probe_oracle_rejects_plausible_wrong_unwritten_and_partial_results ... ok
+test tests::model_probe_request_rejects_unknown_fields_and_infeasible_limits ... ok
+test tests::model_probe_success_counts_every_independently_compared_limb ... ok
+test tests::model_probe_oracle_decodes_nonzero_rows_lanes_and_signed_limbs ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

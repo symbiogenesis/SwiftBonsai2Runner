@@ -1126,6 +1126,16 @@ Follow [Adreno contracts](docs/adreno.md); discovery alone changes no CPU profil
 
 Follow [Hexagon contracts](docs/hexagon.md).
 
+Qualify the implemented [supervised local actual-model probe](tools/hexagon/model-probe.md)
+on X2: one original-PQ2 token with only `blk.0.ffn_up.weight` offloaded,
+independent signed integer-limb checks and complete CPU-shadow logits/state
+comparison before cleanup-gated publication. The
+[2026-11-03 local implementation workload](docs/evidence/hexagon-model-execution-20261103/summary.json)
+passed focused tests, strict lint and release builds, but left insufficient
+aggregate time for the fixed device supervisor and retention. Its guard
+started no model/device trial. Keep that deadline closed; actual-device
+acceptance, adapter coverage, wider placement and serving remain outstanding.
+
 Qualify the [source-only Prism graph integration](https://github.com/symbiogenesis/prism-inference/tree/1e7ed92e7787b9d8b150f9bb3fb5a74fa92fb14b/tools/hexagon-runtime)
 and bounded native HMX session on settled main. Exact PTQ1/odd-block PQ2 Q8_0
 composition and complete-request operation admission now have
