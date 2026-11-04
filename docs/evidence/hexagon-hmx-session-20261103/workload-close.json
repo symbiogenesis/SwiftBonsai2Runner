@@ -1,0 +1,17 @@
+{
+  "fixedWorkComplete": true,
+  "deviceAttempts": 1,
+  "deviceRetried": false,
+  "closedUtc": "2026-11-04T03:19:05.737595+00:00",
+  "chargedThroughRetentionSeconds": 2331.736846,
+  "maximumAggregateSeconds": 3600,
+  "powerAtClose": {
+    "status": "observed",
+    "source": "GetSystemPowerStatus",
+    "ac_online": false,
+    "battery_saver": false,
+    "battery_percent": 64,
+    "observedUtc": "2026-11-04T03:19:05.736830+00:00"
+  },
+  "remainingQualification": "pending; production profile disabled; no speedup claim"
+}

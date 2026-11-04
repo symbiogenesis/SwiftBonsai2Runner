@@ -1,0 +1,18 @@
+   Compiling bonsai-prism v0.1.1 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\prism-hmx-live-session\tools\prism)
+    Checking bonsai-ternary v0.1.0 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\prism-hmx-live-session\tools\ternary)
+    Checking bonsai-hexagon-native v0.1.0 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\prism-hmx-live-session\tools\hexagon-native)
+    Checking bonsai-native-hash v0.1.0 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\prism-hmx-live-session\tools\native-hash)
+    Checking bonsai-gguf v0.1.1 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\prism-hmx-live-session\tools\gguf)
+    Checking prism-inference v0.1.14 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\prism-hmx-live-session)
+    Checking bonsai-hexagon-runtime v0.1.0 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\prism-hmx-live-session\tools\hexagon-runtime)
+error: using a potentially dangerous silent `as` conversion
+   --> tools\hexagon-runtime\src\bin\model_probe.rs:450:51
+    |
+450 |             require(output[plane * rows + row] == dot as f32)?;
+    |                                                   ^^^^^^^^^^
+    |
+    = help: consider using a safe wrapper for this conversion
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/main/index.html#as_conversions
+    = note: requested on the command line with `-D clippy::as-conversions`
+
+error: could not compile `bonsai-hexagon-runtime` (bin "prism-hexagon-model-probe") due to 1 previous error

@@ -1,0 +1,43 @@
+{
+  "startedUtc": "2026-11-04T03:01:53.622613+00:00",
+  "finishedUtc": "2026-11-04T03:01:59.541346+00:00",
+  "elapsedSeconds": 5.918739,
+  "exitCode": 0,
+  "timedOut": false,
+  "powerBefore": {
+    "status": "observed",
+    "source": "GetSystemPowerStatus",
+    "ac_online": true,
+    "battery_saver": false,
+    "battery_percent": 65,
+    "observedUtc": "2026-11-04T03:01:53.623138+00:00"
+  },
+  "powerAfter": {
+    "status": "observed",
+    "source": "GetSystemPowerStatus",
+    "ac_online": true,
+    "battery_saver": false,
+    "battery_percent": 65,
+    "observedUtc": "2026-11-04T03:01:59.541460+00:00"
+  },
+  "command": [
+    "C:\\Users\\symbi\\.cargo\\bin\\cargo.exe",
+    "+nightly-2026-10-22",
+    "clippy",
+    "--locked",
+    "--offline",
+    "--release",
+    "--target",
+    "aarch64-pc-windows-msvc",
+    "--target-dir",
+    "C:\\Users\\symbi\\AppData\\Local\\Temp\\SwiftBonsai-Hmx-Session-20261103\\runner-target",
+    "-p",
+    "bonsai-tools",
+    "--lib",
+    "--no-deps",
+    "--",
+    "-D",
+    "warnings"
+  ],
+  "workingDirectory": "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\runner-hmx-live-supervisor"
+}

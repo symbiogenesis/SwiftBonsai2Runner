@@ -1,0 +1,40 @@
+{
+  "startedUtc": "2026-11-04T02:53:19.710961+00:00",
+  "finishedUtc": "2026-11-04T02:53:36.293434+00:00",
+  "elapsedSeconds": 16.582478,
+  "exitCode": 0,
+  "timedOut": false,
+  "powerBefore": {
+    "status": "observed",
+    "source": "GetSystemPowerStatus",
+    "ac_online": true,
+    "battery_saver": false,
+    "battery_percent": 59,
+    "observedUtc": "2026-11-04T02:53:19.711338+00:00"
+  },
+  "powerAfter": {
+    "status": "observed",
+    "source": "GetSystemPowerStatus",
+    "ac_online": true,
+    "battery_saver": false,
+    "battery_percent": 59,
+    "observedUtc": "2026-11-04T02:53:36.293524+00:00"
+  },
+  "command": [
+    "C:\\Users\\symbi\\.cargo\\bin\\cargo.exe",
+    "+nightly-2026-10-22",
+    "test",
+    "--locked",
+    "--offline",
+    "--release",
+    "--target",
+    "aarch64-pc-windows-msvc",
+    "--target-dir",
+    "C:\\Users\\symbi\\AppData\\Local\\Temp\\SwiftBonsai-Hmx-Session-20261103\\prism-target",
+    "-p",
+    "bonsai-hexagon-runtime",
+    "--bin",
+    "prism-hexagon-model-probe"
+  ],
+  "workingDirectory": "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\prism-hmx-live-session"
+}

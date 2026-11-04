@@ -1,0 +1,8 @@
+{
+  "status": "observed",
+  "source": "GetSystemPowerStatus",
+  "ac_online": true,
+  "battery_saver": false,
+  "battery_percent": 61,
+  "observedUtc": "2026-11-04T02:57:21.670207+00:00"
+}

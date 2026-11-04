@@ -28,6 +28,16 @@ Selected DSP-byte identity, broader Swift numerics/state, effective resources an
 performance remain unqualified; X1 needs independent evidence. The sections below distinguish source
 eligibility, data verification, native access and hosted wire controls.
 
+The later [two-token signed HMX control](evidence/hexagon-hmx-session-20261103/summary.json)
+compared 11,141,120 plane results across 80 operations, plus every logit and logical
+state value after tokens 42 and 43. Explicit native cleanup and owned-Job exit
+completed. Its original supervisor rejection is retained: the new validator
+incorrectly required the driver-owner pinning flag to be false, contrary to the
+native completed-cycle contract. The corrected validator replays the retained
+terminal event offline; the device trial was not repeated. This extends scoped
+signed arithmetic evidence while effective HMX placement/VTCM, adapters, wider
+placement, serving lifetime and measured benefit remain pending.
+
 ### Whole-token bridge cost
 
 The [static operation ledger](evidence/hexagon-swift-operation-ledger.json) requires

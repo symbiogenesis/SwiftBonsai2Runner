@@ -1,0 +1,26 @@
+{
+  "probeExecutable": {
+    "bytes": 887296,
+    "sha256": "044d596811431ab5ffac46fbbcf775b8f97c058d136d888a84b27cd419726476"
+  },
+  "runnerExecutable": {
+    "bytes": 6626304,
+    "sha256": "547281b67d7cac853097989420d34c2e4e31a0dbfbadb540fcb42ba75963d90a"
+  },
+  "modelPresent": true,
+  "packagePresent": true,
+  "catalogToolPresent": true,
+  "buildSourcePrismRevision": "38ff4b974c9f406404a72939dee38e94b8c74939",
+  "integratedPrismMain": "1e0d6b4",
+  "integratedRunnerMain": "b124a572",
+  "sourceTextEquivalentAfterCherryPick": true,
+  "mainVsBuildLineEndingDifferences": [
+    "tools/hexagon-runtime/src/bin/model_probe.rs",
+    "tools/private-service-acceptance/Budget.psm1",
+    "tools/private-service-acceptance/Intake.psm1",
+    "tools/private-service-acceptance/Test-Budget.ps1",
+    "tools/private-service-acceptance/Test-Intake.ps1",
+    "tools/private-service-acceptance/owner.rs"
+  ],
+  "exactSourceAdmission": "supervisor checks every raw-byte hash in the built worktree against local-model-build.json; integration comparison does not replace that guard"
+}

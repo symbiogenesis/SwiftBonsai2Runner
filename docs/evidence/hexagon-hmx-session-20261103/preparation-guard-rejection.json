@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "kind": "pre-device-integration-source-guard-rejection",
+  "deviceStarted": false,
+  "observedExactTimestamp": "unknown",
+  "reason": "The preparer initially required raw byte equality between built worktree and cherry-picked main, rejecting six CRLF/LF differences. All were independently confirmed to differ only in line endings. The exact built-worktree closure and supervisor raw-byte guard were never changed. No model/driver workload had begun.",
+  "affectedFiles": [
+    "tools/hexagon-runtime/src/bin/model_probe.rs",
+    "tools/private-service-acceptance/Budget.psm1",
+    "tools/private-service-acceptance/Intake.psm1",
+    "tools/private-service-acceptance/Test-Budget.ps1",
+    "tools/private-service-acceptance/Test-Intake.ps1",
+    "tools/private-service-acceptance/owner.rs"
+  ]
+}

@@ -148,3 +148,6 @@ docs/evidence/cpu-state-simd-20261103/** -text -whitespace
 
 # Preserve exact hosted failure and focused CI-repair validation bytes.
 docs/evidence/ci-repair-20261103/** -text -whitespace
+
+# Preserve exact HMX capture, rejected supervisor and offline-replay evidence bytes.
+docs/evidence/hexagon-hmx-session-20261103/** -text -whitespace

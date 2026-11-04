@@ -1128,26 +1128,29 @@ Follow [Adreno contracts](docs/adreno.md); discovery alone changes no CPU profil
 Follow [Hexagon contracts](docs/hexagon.md).
 
 Extend the [supervised actual-model probe](tools/hexagon/model-probe.md) beyond
-the [passed X2 AC first-projection control](docs/evidence/hexagon-model-device-20261103-ac/summary.json):
-one original-PQ2 token, 40 signed guarded-HVX operations, every integer limb
-checked independently, and complete CPU-shadow logits/state equality after
-explicit cleanup. Broader activations/quantizer edges, nonzero adapters,
-repeated-token and prefix lifecycle, effective device resources, wider placement
-and persistent serving remain outstanding. Retain the separate closed
-[source-preparation workload](docs/evidence/hexagon-model-execution-20261103/summary.json).
-This first device pass establishes no HMX execution, measured speedup or
-production eligibility; use separately declared future work rather than
-extending either historical deadline.
+the retained [guarded-HVX token control](docs/evidence/hexagon-model-device-20261103-ac/summary.json)
+and [signed HMX two-token control](docs/evidence/hexagon-hmx-session-20261103/summary.json).
+The latter completed 80 operations and 11,141,120 independently checked plane
+values for tokens 42 and 43, with complete per-token CPU-shadow logits/state
+equality and explicit cleanup. Its original supervisor rejection is preserved:
+the new validator misread the required driver-owner pinning flag. The corrected
+validator accepts the retained terminal event in a model-free replay; no device
+retry ran. Effective HMX placement/VTCM and complete vendor teardown remain unknown.
+Broader activations/quantizer edges, nonzero adapters, prefix/failure lifecycle,
+effective device resources, wider placement and persistent serving remain
+outstanding. Retain all separate closed historical workloads. Neither control
+establishes measured speedup or production eligibility.
 
 ### Promotion sequence
 
 Resume with **NPU-1**. Close each applicable gate with retained, exact-source
 evidence before enabling a daily-use profile. The detailed work below supplies
 the implementation leads; this checklist owns the order and acceptance decision.
-The [device receipt](docs/evidence/hexagon-model-device-20261103-ac/summary.json)
-and [independent review](docs/evidence/hexagon-model-device-20261103-ac/independent-review.json)
-qualify only token 42's first guarded-HVX projection. They do not qualify the
-24,000-submission lifetime, standard adapter, HMX, persistent serving or benefit.
+The [guarded-HVX receipt](docs/evidence/hexagon-model-device-20261103-ac/summary.json)
+and [HMX receipt and review](docs/evidence/hexagon-hmx-session-20261103/summary.json)
+cover only their declared first-projection tokens. They do not qualify the
+24,000-submission lifetime, standard adapter, effective HMX resources, persistent
+serving or benefit. NPU-1 remains open for the broader packet and adapter cases.
 
 - [ ] **NPU-1 — Prepare the next qualification packet.** Freeze the selected
   Runner/Prism source, executable/toolchain, original-PQ2 model, adapter,
@@ -1156,9 +1159,10 @@ qualify only token 42's first guarded-HVX projection. They do not qualify the
   independently retrievable raw inputs, outputs, hashes and numerical oracles.
   Extend the supervised probe for broader live activations/quantizer edges,
   multiple tokens and explicit adapter cases before selecting device work.
-  Preserve local versus hosted provenance and add individual cleanup return
-  codes to retained receipts; the first pass records their aggregate acceptance
-  through the source-bound completed-cycle contract.
+  Preserve local versus hosted provenance and retain individual cleanup return
+  codes plus the required driver-owner lifetime pinning policy. The HMX receipt
+  now carries these fields; the original HVX pass retains its aggregate
+  source-bound completed-cycle acceptance.
 - [ ] **NPU-2 — Qualify application arithmetic and adapters.** Compare every
   offloaded integer result, final logits and complete committed state against
   the same-artifact CPU oracle for varied prompts, activations, shapes and
@@ -1190,8 +1194,8 @@ qualify only token 42's first guarded-HVX projection. They do not qualify the
 - [ ] **NPU-5 — Establish useful end-to-end benefit.** Use measured bottlenecks
   to choose placement, fused packed kernels, device weight reuse and true
   multitoken prefill. Qualify signed HMX arithmetic/placement if that route is
-  selected; host bitplane tests and mapped host weights establish no HMX execution
-  or DSP residency. Compare the resulting profile against the matched CPU default
+  selected; the two-token signed HMX arithmetic control does not qualify effective
+  placement, resources or DSP residency. Compare the resulting profile against the matched CPU default
   at fixed model, adapter, prompts, outputs and settings. Retain repeated
   prefill/decode and complete-answer latency, throughput, memory, quality and
   sustained-comfort evidence, charging preparation, transfers, RPC, synchronization

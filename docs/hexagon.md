@@ -39,6 +39,17 @@ logit and complete logical state matched the CPU shadow. Signed package/driver
 intake, explicit stop/close/unmap/free and empty owned-Job teardown passed.
 Other projections remained CPU-owned; no adapter or HMX path ran. This qualifies
 that single-token first-projection control and enables no production profile.
+The separate [two-token HMX capture](evidence/hexagon-hmx-session-20261103/summary.json)
+completed 80 signed bitplane operations for tokens 42 and 43. Its source-bound
+worker checked all 11,141,120 returned plane values and complete per-token
+CPU-shadow logits/state bits. All four explicit cleanup return codes were zero,
+free completed and the owned Job was empty. The original supervisor rejected
+the valid native ownership flag; that receipt remains unchanged. A corrected
+validator and offline replay accept the retained terminal event without another
+device run. `ownerPinnedUntilExit: true` preserves driver/module/catalog owners
+through process exit after buffer cleanup; it is required by the native
+completed-cycle contract. Effective HMX placement/VTCM, adapters, wider placement,
+vendor teardown, persistent serving and performance remain unqualified.
 The [logical payload ledger](evidence/hexagon-swift-traffic-ledger.json) derives
 13.69 GB of signed-kernel input/result payload per all-eligible original-PQ2
 evaluation token. The opt-in [mapped host-weight arena and graph cache](../tools/hexagon/resident-host.md)
