@@ -1,0 +1,99 @@
+{
+  "schemaVersion": 1,
+  "kind": "recent-ci-failure-repair",
+  "sourceBaseRevision": "594cfdfe",
+  "fixedCodeRevision": "a21b8caa",
+  "ownerAuthorization": "Owner supplied run41624931261 and explicitly authorized reading recent CI with gh. No dispatch, push or waiting was requested or performed.",
+  "primaryRun": {
+    "id": 41624931261,
+    "revision": "356f38b032ef8c8237369a2c2f234ef85c1fd4f1",
+    "url": "https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41624931261",
+    "brokerCore": "success",
+    "brokerUi": "success",
+    "maintenance": "failed-nine-tests"
+  },
+  "recentFoundationRunsReviewed": [
+    41589153971,
+    41597359460,
+    41603057176,
+    41605650805,
+    41609634465,
+    41614038478,
+    41617149189,
+    41622701592,
+    41624931261
+  ],
+  "fixes": [
+    {
+      "kind": "workflow-expression-context",
+      "file": ".github/workflows/ptq1-public-authoring-reference.yml",
+      "result": "Move runner.environment from unsupported job env into the two consuming step env mappings. Retain hosted admission before dependencies and before reconstruction.",
+      "workerCommit": "45495ff94218abd1e6bf1c92871f962b7b95cd01",
+      "integrationCommit": "063efbd1"
+    },
+    {
+      "kind": "strict-capture-source-pins",
+      "file": "tools/native-reference/pins.json",
+      "result": "Align only capture source commit/url/bytes/digest with reviewed released Prism0.1.14 source. Keep strict runtime equality and unchanged released artifacts. The six tools failures all originated at this earlier guard. Add a checked-in equality regression.",
+      "workerCommit": "f9f8b00d2e99950162800463e1f764e23755d04e",
+      "integrationCommit": "a21b8caa"
+    },
+    {
+      "kind": "artifact-lifetime-fixtures",
+      "files": [
+        "src/artifacts/tests/contained.rs",
+        "src/artifacts/tests/lifetime.rs"
+      ],
+      "result": "Remove independent PrivateDirectory reader before testing VerifiedFile lifetime; nest renamed fixture roots under unique parents. New deterministic sibling guard control exercises unrelated common TEMP ancestry. Preserve production sharing locks and all denial/release assertions.",
+      "workerCommit": "4f4c60dd5ea5661902eedc200c21903e057dc0ec",
+      "integrationCommit": "4f4c60dd5ea5661902eedc200c21903e057dc0ec"
+    }
+  ],
+  "historicalAnalyzerFailures": "Prior artifacts identify documentation, Duration and UI String analyzer errors already corrected before the latest run. Latest hosted core/UI lanes passed; no additional source fix or rerun is inferred.",
+  "independentReview": "Separate static review of the combined diff found no blocking concern; source and sharing guards remain fail closed.",
+  "localValidation": {
+    "plan": "validation/plan.json",
+    "rawReceipt": "validation/receipt.json",
+    "fixedCodeRevision": "a21b8caa",
+    "allRequestedChecksPassed": true,
+    "focusedTestsPassed": 11,
+    "strictReleaseAllTargetAllFeatureClippy": [
+      "bonsai-artifacts",
+      "bonsai-tools"
+    ],
+    "workspaceFormatting": "passed",
+    "actionlint": "Original job-level runner context rejected with expected diagnostic; corrected step-scoped workflow accepted.",
+    "diagnosticAndRawLogRetentionSeconds": 105.87305070000002,
+    "maximumTotalSeconds": 300,
+    "clockClosed": true,
+    "clockRestarted": false,
+    "checksRetried": false,
+    "powerBefore": {
+      "observedAtUtc": "2026-11-04T00:33:20.310410+00:00",
+      "acConnected": false,
+      "batterySaver": false,
+      "chargePercent": 79,
+      "rawAcLineStatus": 0,
+      "rawBatteryFlag": 1
+    },
+    "powerAfter": {
+      "observedAtUtc": "2026-11-04T00:35:06.171285+00:00",
+      "acConnected": false,
+      "batterySaver": false,
+      "chargePercent": 76,
+      "rawAcLineStatus": 0,
+      "rawBatteryFlag": 1
+    },
+    "continuousPowerStabilityEstablished": false,
+    "performanceComparisonQualified": false,
+    "archiveNote": "Raw logs/receipt retained by original driver before its clock closed. Repository copy and this administrative summary add no test or diagnostic verdict. A fresh archive manifest binds the final retained bytes; the driver internal manifest predates its final elapsed metadata and is not used."
+  },
+  "hostedAcceptance": "pending-owner-push-and-rerun",
+  "originalDiagnostic": "Earlier203.426s clock remains closed; its compilation timeout and cleanup/approval timeout are not rewritten by this new-source workload.",
+  "modelExecutions": 0,
+  "fullSuitesExecutedLocally": 0,
+  "benchmarks": 0,
+  "ciDispatches": 0,
+  "pushes": 0,
+  "installedExecutablesChanged": false
+}

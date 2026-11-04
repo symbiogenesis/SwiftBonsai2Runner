@@ -1,0 +1,384 @@
+{
+  "kind": "corrected-source-ci-regression-validation",
+  "sourceRevision": "a21b8caa",
+  "startedAtUtc": "2026-11-04T00:33:20.310401+00:00",
+  "maximumTotalSeconds": 300,
+  "workCutoffSeconds": 265,
+  "powerBefore": {
+    "observedAtUtc": "2026-11-04T00:33:20.310410+00:00",
+    "acConnected": false,
+    "batterySaver": false,
+    "chargePercent": 79,
+    "rawAcLineStatus": 0,
+    "rawBatteryFlag": 1
+  },
+  "checks": [
+    {
+      "name": "compiler-identity",
+      "command": [
+        "C:\\Users\\symbi\\.rustup\\toolchains\\nightly-2026-11-02-aarch64-pc-windows-msvc\\bin\\rustc.exe",
+        "-vV"
+      ],
+      "powerBefore": {
+        "observedAtUtc": "2026-11-04T00:33:20.323158+00:00",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 79,
+        "rawAcLineStatus": 0,
+        "rawBatteryFlag": 1
+      },
+      "startedSeconds": 0.013340099976630881,
+      "passed": true,
+      "processId": 40376,
+      "exitCode": 0,
+      "powerAfter": {
+        "observedAtUtc": "2026-11-04T00:33:20.645684+00:00",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 79,
+        "rawAcLineStatus": 0,
+        "rawBatteryFlag": 1
+      },
+      "finishedSeconds": 0.33587559999432415
+    },
+    {
+      "name": "workspace-format",
+      "command": [
+        "C:\\Users\\symbi\\.rustup\\toolchains\\nightly-2026-11-02-aarch64-pc-windows-msvc\\bin\\cargo.exe",
+        "fmt",
+        "--manifest-path",
+        "C:\\Users\\symbi\\AppData\\Local\\Temp\\Runner-CI-Fix-20261103\\source\\Cargo.toml",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "powerBefore": {
+        "observedAtUtc": "2026-11-04T00:33:20.654677+00:00",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 79,
+        "rawAcLineStatus": 0,
+        "rawBatteryFlag": 1
+      },
+      "startedSeconds": 0.3448733999975957,
+      "passed": true,
+      "processId": 26576,
+      "exitCode": 0,
+      "powerAfter": {
+        "observedAtUtc": "2026-11-04T00:33:21.655187+00:00",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 79,
+        "rawAcLineStatus": 0,
+        "rawBatteryFlag": 1
+      },
+      "finishedSeconds": 1.3454251999792177
+    },
+    {
+      "name": "actionlint-intake",
+      "command": [
+        "C:\\Users\\symbi\\AppData\\Local\\Microsoft\\WinGet\\Packages\\GitHub.cli_Microsoft.Winget.Source_8wekyb3d8bbwe\\bin\\gh.exe",
+        "release",
+        "download",
+        "v1.7.12",
+        "--repo",
+        "rhysd/actionlint",
+        "--pattern",
+        "actionlint_1.7.12_windows_arm64.zip",
+        "--pattern",
+        "actionlint_1.7.12_checksums.txt",
+        "--dir",
+        "C:\\Users\\symbi\\AppData\\Local\\Temp\\Runner-CI-Fix-20261103\\verified-fixes\\actionlint-download"
+      ],
+      "powerBefore": {
+        "observedAtUtc": "2026-11-04T00:33:21.656775+00:00",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 79,
+        "rawAcLineStatus": 0,
+        "rawBatteryFlag": 1
+      },
+      "startedSeconds": 1.3469435999868438,
+      "passed": true,
+      "processId": 51788,
+      "exitCode": 0,
+      "powerAfter": {
+        "observedAtUtc": "2026-11-04T00:33:22.483189+00:00",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 79,
+        "rawAcLineStatus": 0,
+        "rawBatteryFlag": 1
+      },
+      "finishedSeconds": 2.1733802999951877
+    },
+    {
+      "name": "original-workflow-context-negative",
+      "command": [
+        "C:\\Users\\symbi\\AppData\\Local\\Temp\\Runner-CI-Fix-20261103\\verified-fixes\\actionlint\\actionlint.exe",
+        "-shellcheck=",
+        "-pyflakes=",
+        "C:\\Users\\symbi\\AppData\\Local\\Temp\\Runner-CI-Fix-20261103\\verified-fixes\\original-public-reference.yml"
+      ],
+      "powerBefore": {
+        "observedAtUtc": "2026-11-04T00:33:22.513607+00:00",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 79,
+        "rawAcLineStatus": 0,
+        "rawBatteryFlag": 1
+      },
+      "startedSeconds": 2.2037839999829885,
+      "passed": true,
+      "processId": 24404,
+      "exitCode": 1,
+      "powerAfter": {
+        "observedAtUtc": "2026-11-04T00:33:22.637015+00:00",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 79,
+        "rawAcLineStatus": 0,
+        "rawBatteryFlag": 1
+      },
+      "finishedSeconds": 2.3272375999949872
+    },
+    {
+      "name": "fixed-workflow-context",
+      "command": [
+        "C:\\Users\\symbi\\AppData\\Local\\Temp\\Runner-CI-Fix-20261103\\verified-fixes\\actionlint\\actionlint.exe",
+        "-shellcheck=",
+        "-pyflakes=",
+        "C:\\Users\\symbi\\AppData\\Local\\Temp\\Runner-CI-Fix-20261103\\source\\.github\\workflows\\ptq1-public-authoring-reference.yml"
+      ],
+      "powerBefore": {
+        "observedAtUtc": "2026-11-04T00:33:22.644466+00:00",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 79,
+        "rawAcLineStatus": 0,
+        "rawBatteryFlag": 1
+      },
+      "startedSeconds": 2.3346373999956995,
+      "passed": true,
+      "processId": 53692,
+      "exitCode": 0,
+      "powerAfter": {
+        "observedAtUtc": "2026-11-04T00:33:22.685418+00:00",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 79,
+        "rawAcLineStatus": 0,
+        "rawBatteryFlag": 1
+      },
+      "finishedSeconds": 2.3756081000028644
+    },
+    {
+      "name": "tools-source-and-allowance-controls",
+      "command": [
+        "C:\\Users\\symbi\\.rustup\\toolchains\\nightly-2026-11-02-aarch64-pc-windows-msvc\\bin\\cargo.exe",
+        "test",
+        "--manifest-path",
+        "C:\\Users\\symbi\\AppData\\Local\\Temp\\Runner-CI-Fix-20261103\\source\\Cargo.toml",
+        "--locked",
+        "--offline",
+        "--release",
+        "-p",
+        "bonsai-tools",
+        "--lib",
+        "--",
+        "native_qualification::request_timing::tests::timing_mode_is_explicit_one_standard_adapter_rust_request",
+        "native_qualification::tests::adapter_conditions_select_one_bound_pair_and_cannot_change_the_row_control",
+        "native_qualification::tests::capture_source_cannot_substitute_an_internally_consistent_stale_checkout",
+        "native_qualification::tests::current_runtime_source_and_bounded_atomic_receipts_fail_closed",
+        "native_qualification::tests::plans_keep_one_selected_ptq1_pair_and_the_fixed_row_pair",
+        "native_qualification::tests::missing_or_expired_owner_allowances_reject_before_preparation",
+        "native_qualification::tests::checked_in_ptq1_capture_source_matches_released_runtime",
+        "--exact"
+      ],
+      "powerBefore": {
+        "observedAtUtc": "2026-11-04T00:33:22.686464+00:00",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 79,
+        "rawAcLineStatus": 0,
+        "rawBatteryFlag": 1
+      },
+      "startedSeconds": 2.37663079999038,
+      "passed": true,
+      "processId": 53708,
+      "exitCode": 0,
+      "powerAfter": {
+        "observedAtUtc": "2026-11-04T00:34:18.135616+00:00",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 77,
+        "rawAcLineStatus": 0,
+        "rawBatteryFlag": 1
+      },
+      "finishedSeconds": 57.82582359999651,
+      "focusedTestsPassed": 7
+    },
+    {
+      "name": "contained-ancestor-release-control",
+      "command": [
+        "C:\\Users\\symbi\\.rustup\\toolchains\\nightly-2026-11-02-aarch64-pc-windows-msvc\\bin\\cargo.exe",
+        "test",
+        "--manifest-path",
+        "C:\\Users\\symbi\\AppData\\Local\\Temp\\Runner-CI-Fix-20261103\\source\\Cargo.toml",
+        "--locked",
+        "--offline",
+        "--release",
+        "-p",
+        "bonsai-artifacts",
+        "--test",
+        "contained",
+        "host_verification_denies_nested_ancestor_rename_and_delete_until_drop",
+        "--",
+        "--exact"
+      ],
+      "powerBefore": {
+        "observedAtUtc": "2026-11-04T00:34:18.142579+00:00",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 77,
+        "rawAcLineStatus": 0,
+        "rawBatteryFlag": 1
+      },
+      "startedSeconds": 57.83276180000394,
+      "passed": true,
+      "processId": 41164,
+      "exitCode": 0,
+      "powerAfter": {
+        "observedAtUtc": "2026-11-04T00:34:20.298559+00:00",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 77,
+        "rawAcLineStatus": 0,
+        "rawBatteryFlag": 1
+      },
+      "finishedSeconds": 59.98875609997776,
+      "focusedTestsPassed": 1
+    },
+    {
+      "name": "runtime-release-and-sibling-controls",
+      "command": [
+        "C:\\Users\\symbi\\.rustup\\toolchains\\nightly-2026-11-02-aarch64-pc-windows-msvc\\bin\\cargo.exe",
+        "test",
+        "--manifest-path",
+        "C:\\Users\\symbi\\AppData\\Local\\Temp\\Runner-CI-Fix-20261103\\source\\Cargo.toml",
+        "--locked",
+        "--offline",
+        "--release",
+        "-p",
+        "bonsai-artifacts",
+        "--test",
+        "lifetime",
+        "--",
+        "runtime_guard_holds_archive_installation_and_ancestors_until_drop",
+        "cancelled_runtime_verification_releases_open_handles",
+        "runtime_guard_release_ignores_unrelated_shared_temp_ancestor_guards",
+        "--exact"
+      ],
+      "powerBefore": {
+        "observedAtUtc": "2026-11-04T00:34:20.306814+00:00",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 77,
+        "rawAcLineStatus": 0,
+        "rawBatteryFlag": 1
+      },
+      "startedSeconds": 59.996998399990844,
+      "passed": true,
+      "processId": 54152,
+      "exitCode": 0,
+      "powerAfter": {
+        "observedAtUtc": "2026-11-04T00:34:29.670397+00:00",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 77,
+        "rawAcLineStatus": 0,
+        "rawBatteryFlag": 1
+      },
+      "finishedSeconds": 69.36063089998788,
+      "focusedTestsPassed": 3
+    },
+    {
+      "name": "touched-strict-release-all-targets",
+      "command": [
+        "C:\\Users\\symbi\\.rustup\\toolchains\\nightly-2026-11-02-aarch64-pc-windows-msvc\\bin\\cargo.exe",
+        "clippy",
+        "--manifest-path",
+        "C:\\Users\\symbi\\AppData\\Local\\Temp\\Runner-CI-Fix-20261103\\source\\Cargo.toml",
+        "--locked",
+        "--offline",
+        "--release",
+        "-p",
+        "bonsai-artifacts",
+        "-p",
+        "bonsai-tools",
+        "--all-features",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "powerBefore": {
+        "observedAtUtc": "2026-11-04T00:34:29.684680+00:00",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 77,
+        "rawAcLineStatus": 0,
+        "rawBatteryFlag": 1
+      },
+      "startedSeconds": 69.37486049998552,
+      "passed": true,
+      "processId": 49376,
+      "exitCode": 0,
+      "powerAfter": {
+        "observedAtUtc": "2026-11-04T00:35:06.163784+00:00",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 76,
+        "rawAcLineStatus": 0,
+        "rawBatteryFlag": 1
+      },
+      "finishedSeconds": 105.85398679997888
+    }
+  ],
+  "clockClosed": true,
+  "performanceComparisonQualified": false,
+  "uninterruptedPowerStabilityEstablished": false,
+  "modelExecutions": 0,
+  "benchmarks": 0,
+  "fullSuites": 0,
+  "ciDispatches": 0,
+  "pushes": 0,
+  "sourceFiles": {
+    ".github/workflows/ptq1-public-authoring-reference.yml": "2629a4c0c69fec390cfe256eac10f159ac2733cef27ea2a435a73ca71a8bc521",
+    "tools/native-reference/pins.json": "ee7f13f952a69ffc4013657ebc03439883769ef1a8f43264c3869143dc119414",
+    "config/prism-inference.lock.json": "8d2cf2f7cacf7795dc3283d8cd931cd50e077e6f9aac052b5c3fbc8327cd150a",
+    "tools/bonsai/src/native_qualification/tests.rs": "bc6525f47983784ee91324a4e79b6d9861fa0c328935086c80c46e39bad652b7",
+    "src/artifacts/tests/contained.rs": "e61cedc1343acca6ba7cbdea81bee0f679b08607fcbdc832f68a5bdd0f04cfa8",
+    "src/artifacts/tests/lifetime.rs": "aa769292cbfb21e628629931975d72c393d8a8009c0de278a1b2cd73c853cf3d",
+    "Cargo.toml": "039480aa7e4adcbaeccacfdeb652fd4976f764bd4b0bc1e481ec8a24907070ea",
+    "Cargo.lock": "8187b91ea1d9dc53758750626475bc294c5f2e940e1bd181adc570ffa4544fd3",
+    "rust-toolchain.toml": "6008774e25362e2ebacf5176f9244476c282a93918a67f89d8a0cd8e3d118adb"
+  },
+  "elapsedSeconds": 105.87305219998234,
+  "actionlint": {
+    "version": "1.7.12",
+    "archive": "actionlint_1.7.12_windows_arm64.zip",
+    "sha256": "cadcf7ea4efe3a68728893813643cebe1185e5b1d4be5b96245f65c9a4d5ea41",
+    "source": "https://github.com/rhysd/actionlint/releases/tag/v1.7.12"
+  },
+  "allRequestedChecksPassed": true,
+  "powerAfter": {
+    "observedAtUtc": "2026-11-04T00:35:06.171285+00:00",
+    "acConnected": false,
+    "batterySaver": false,
+    "chargePercent": 76,
+    "rawAcLineStatus": 0,
+    "rawBatteryFlag": 1
+  },
+  "elapsedSecondsThroughLogManifestRetention": 105.87305070000002
+}

@@ -515,6 +515,15 @@ identity or nonzero application across conditions.
 
 ## Runtime and correctness
 
+Qualify the [CI repair](docs/evidence/ci-repair-20261103/summary.json) on settled
+main through owner-managed hosted Foundation and public-reference preparation.
+The workflow now supplies runner identity at supported step scope; numerical
+capture pins match the reviewed released runtime; artifact lifetime controls
+isolate independent private-directory and shared temporary-ancestor readers.
+Retain the new-source focused regression, analyzer and workflow receipts separately
+from the earlier closed diagnostic. Successful local checks do not establish a
+hosted verdict or authorize model/reconstruction work.
+
 Qualify the [four-lane speed source integration](docs/evidence/speed-four-source-20261103/summary.json)
 on final settled source. It implements scoped packed PQ2 activation consumption,
 explicit Runner latest-prefix selection, real packed FFN tiles and separately
