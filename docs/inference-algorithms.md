@@ -88,8 +88,10 @@ qualification before service selection or repinning.
 Packed tiles now have an exact baseline NEON integer path that shares one decoded
 weight block across tokens, honors the graph's scalar/auto/NEON policy and retains
 the scalar fallback. PQ2/Q8_K, odd PQ2/Q8_0 and PTQ1's native four-lane floating
-accumulation keep their existing operation order. This removes the scalar-only
-integer loop from eligible tiles but still runs rows sequentially; compare whole
+accumulation keep their existing operation order. The follow-up source candidate
+also shares the graph's existing private row-worker pool over disjoint output
+slices. Caller-thread cancellation and joined tasks preserve the callback contract;
+an extra 16 KiB reservation covers bounded scheduling storage. Compare whole
 prompts against the ordinary row-parallel matvec path. The
 [CPU kernel contract](cpu-kernels.md#packed-arithmetic) records bounds and the
 separate decode candidate; neither changes the triangular GDN numerical contract.

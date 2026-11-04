@@ -1,0 +1,87 @@
+{
+  "schemaVersion": 1,
+  "kind": "remaining-cpu-speed-source-integration",
+  "recordedDate": "2026-11-03",
+  "status": "implemented-source-reviewed-compiled-acceptance-pending",
+  "authorization": "Owner requested addressing the remaining work most likely to improve inference speed.",
+  "source": {
+    "runnerBaseRevision": "4737fd10d6338d96da84792066d223b157f89799",
+    "prismBaseRevision": "8052cf111338f033a53f10b4afb94f13af54c42a",
+    "prismFinalRevision": "074c375eb44076053f7dd5609221598ed73b01ee",
+    "changes": [
+      "a70fdb8: stream BF16 weights without decoded-row scratch",
+      "aa94d82: share existing row workers with packed CPU prefill tiles",
+      "ee65fdd: exact hosted BF16/worker/graph controls and no-default library check",
+      "074c375: canonical formatting, explicit empty-slice coercion and prelude qualification correction"
+    ],
+    "workerCommits": ["ef1ae45", "54c2370"],
+    "delivery": "Logical commits in individual isolated worktrees, independently source-reviewed and integrated into local Prism main. Runner main retains the backlog and evidence updates. No push, pull request or CI action.",
+    "testedSource": "The source hashes in receipt.json bind the formatted candidate at ee65fdd plus the formatter's changes. The subsequent two parallel_tile.rs corrections were not compiled. Git commits normalize line endings; retained compiler-input hashes describe the actual validation worktree bytes.",
+    "postWorkloadScope": "Source corrections, independent static review, documentation and local Git integration after trial retention supply no new compiled verdict and do not reopen its clock."
+  },
+  "selection": {
+    "bf16": "Remove repeated row expansion and dimension/decoder dispatch from the existing recurrent alpha/beta projection path without changing precision or floating evaluation order.",
+    "prefill": "Preserve the existing private row-worker policy while sharing decoded packed blocks across prompt tokens; sequential rows were an explicit gap in the prior tiled source candidate.",
+    "deferred": "Existing prefix reuse, triangular GDN, fused recurrent copy/decay, optional ISA, accelerator and representation changes retain their independent qualification gates. No installed/default selection is inferred from source work counts."
+  },
+  "implemented": {
+    "bf16": "Consume immutable BF16 weight bytes directly after full tensor-geometry admission. Preserve BF16 activation rounding, finite weight checks, rounded F32 products, the same Sum<f64> reduction/final F32 rounding, scalar dispatch diagnostics and empty-output failure. Reusable decoded-row storage is not populated or mutated.",
+    "bf16NominalWorkReduction": "Across 48 recurrent layers with two 5120-by-48 BF16 matrices each, omit 94371840 bytes (90 MiB) of decoded F32 row writes and matching rereads per processed token. This is a source payload/work count, not measured memory traffic or latency.",
+    "prefill": "Share the graph's existing persistent private Rayon pool, whether selected before or after tiled prefill. Workers borrow original weights/prepared activations and disjoint token-major output slices. Each packed block is decoded once across tile tokens; row arithmetic, backend selection, fourth PQ2 symbol, odd groups and PTQ1 native floating lanes remain unchanged. No transpose, expanded matrix or second pool is introduced.",
+    "cancellation": "The original non-Send/non-Sync callback runs on the caller through in_place_scope, with nominal one-millisecond cooperative waits. Workers observe an atomic cancellation flag before each row. Tasks join before callback/numerical errors return; ordered error slots retain the earliest failing row chunk. Completion guards also signal on worker unwind. This is not a real-time cancellation guarantee.",
+    "resources": "A fixed additional 16384-byte tiled scratch reservation covers up to sixteen task descriptors with thirty-two output slices, bounded errors/counters and synchronization. It remains charged for serial tiles so later worker-policy changes fit. Existing worker stacks and admission reserves remain independently charged.",
+    "controls": "Independent decoded-row BF16 oracles and native captured BF16 results; packed scalar/NEON/worker parity; caller-thread non-Sync callback, joined cancellation, ordered failures and worker unwind; graph adapter/state/restore and policy changes. Exact names are mandatory in the owner-operated hosted efficiency gate."
+  },
+  "localValidation": {
+    "plan": "workload-plan.json",
+    "rawReceipt": "receipt.json",
+    "rawArchive": "archive.json",
+    "maximumTotalSeconds": 300,
+    "workCutoffSeconds": 270,
+    "elapsedSecondsThroughTrialRetention": 16.369114500004798,
+    "withinDeclaredAllowance": true,
+    "clockClosed": true,
+    "clockRestarted": false,
+    "retries": 0,
+    "passed": [
+      "Pinned compiler identity",
+      "Canonical changed-source formatting",
+      "Four exact-control receipt-parser/inventory controls"
+    ],
+    "failure": "Rust compilation rejected the inferred [&mut [_; 0]; N] task initializer where [&mut [f32]; N] is required, and the test's unnecessary std::mem::size_of qualification under deny(unused_qualifications). No numerical test executed; strict Release analysis and no-default compilation were not reached.",
+    "correction": "Explicitly type the initializer closure return as &mut [f32] to provide the slice coercion site; use size_of from the prelude. Independent source reviewers found no further concrete issue. These corrections remain uncompiled.",
+    "power": {
+      "before": {"acConnected": false, "batterySaver": false, "chargePercent": 63},
+      "after": {"acConnected": false, "batterySaver": false, "chargePercent": 63},
+      "afterTrialRetention": {"acConnected": false, "batterySaver": false, "chargePercent": 63},
+      "perCommandEndpoints": "receipt.json",
+      "continuousPowerStabilityEstablished": false,
+      "pastPowerConditionsInferred": false,
+      "performanceComparisonQualified": false
+    }
+  },
+  "qualification": {
+    "finalSourceCompiled": false,
+    "numericalControlsPassed": false,
+    "strictReleaseAnalysisPassed": false,
+    "portableFallbackCompiled": false,
+    "owningHostedChecksPassed": false,
+    "actualModelParityQualified": false,
+    "performanceImprovementQualified": false,
+    "installedRuntimeChanged": false,
+    "runnerReleasedPinChanged": false,
+    "defaultsChanged": false,
+    "admissionReduced": false
+  },
+  "remainingAcceptance": [
+    "Owner-managed final-source exact BF16/native packed/worker/graph controls, portable fallback compilation, strict Release analyzers and production linking.",
+    "Actual-model logits, complete state, nonzero/zero adapter, cancellation, restore and continuation acceptance.",
+    "Matched complete-request BF16 benefit and whole-prompt tile comparisons against ordinary NEON/four-worker execution with the established aggregate budget and power conditions.",
+    "Qualified Prism release and verified Runner repin before installed use; no measured speedup is claimed."
+  ],
+  "modelExecutions": 0,
+  "benchmarks": 0,
+  "fullSuites": 0,
+  "ciActions": 0,
+  "pushes": 0
+}

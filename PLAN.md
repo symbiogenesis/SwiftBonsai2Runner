@@ -964,6 +964,24 @@ Follow [CPU arithmetic, dispatch and acceptance](docs/cpu-kernels.md). Pin artif
 runtime, compiler, format, shapes, ISA and numerics; choose work from CI hotspot,
 bandwidth, packing and dispatch evidence.
 
+Qualify the [remaining CPU speed source changes](docs/evidence/cpu-remaining-speed-20261103/summary.json)
+on settled Prism main through owner-managed checks. Direct BF16 projections omit
+decoded-row materialization while preserving activation rounding and the original
+binary64 accumulation. Explicit packed prefill tiles now share the graph's existing
+private row-worker pool, borrowing disjoint output slices and keeping cancellation
+on the caller thread; the extra 16 KiB reservation must remain charged. Require
+exact numerical, worker-join/cancellation, graph restore and portable-fallback
+controls, strict Release analysis and production linking, then actual-model
+state/adapter parity and matched complete-request/prompt benefit before a qualified
+release and Runner repin. Source work counts establish no measured speedup;
+the installed runtime, defaults and resource admission are unchanged.
+The one 16.369-second model-free local check applied canonical formatting and
+passed four receipt controls, then stopped during compilation on an empty-slice
+type mismatch and unnecessary prelude qualification in the worker controls.
+Both narrow source corrections are applied but uncompiled. Preserve this failed
+receipt, closed clock and its original battery/saver/charge observations;
+numerical tests, strict analyzers and portable compilation remain pending.
+
 Qualify the [packed decode and SIMD prefill source changes](docs/evidence/cpu-speed-next-20261103/summary.json)
 on settled Prism main through owner-managed checks. PQ2 decode now accumulates
 bounded i16 product pairs before widening once for the final i32 reduction; tiled
@@ -1009,8 +1027,9 @@ runtime, default, resource admission or performance verdict changes here.
   with shared prepared activations and each packed block decoded once across token
   dots, without persistent INT8/FP16 expansion. The real graph consumer now selects
   baseline NEON reductions on eligible targets and preserves explicit scalar forcing.
-  Rows remain sequential. Compare it with existing NEON/workers and stop if decoded
-  block construction, spills, lost row parallelism or scratch erases whole-prompt gains.
+  The source candidate now inherits the existing private row-worker pool. Compare
+  it with ordinary NEON/workers and stop if decoded block construction, spills,
+  scheduling or scratch erases whole-prompt gains.
 - Establish installed Windows CPU/OS NEON/dotprod/I8MM eligibility before dispatch.
   Inspect Release code generation and forbidden-ISA leakage and require detection,
   parity and benefit under the [dispatch

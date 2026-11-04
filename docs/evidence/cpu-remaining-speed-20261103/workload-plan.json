@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "kind": "remaining-cpu-speed-source-validation",
+  "maximumTotalSeconds": 300,
+  "workCutoffSeconds": 270,
+  "conservativeEstimateSeconds": 260,
+  "reason": "One focused model-free check of direct BF16 projections and persistent row workers in packed tiled prefill. Reuse the existing offline native Prism build cache. Reserve thirty seconds for cleanup, power observations and evidence retention. Source preparation and review precede this workload; no earlier failed clock is reopened.",
+  "fixedWork": [
+    "Record aggregate and per-command AC, battery saver and charge observations, compiler identity and exact source hashes",
+    "Apply canonical formatting to changed Rust sources and run the focused hosted-control receipt/inventory parser checks",
+    "Run focused Release BF16 projection, packed tiled projection, worker cancellation and graph prefill correctness controls with parallel-rows",
+    "Run strict Release Clippy on the touched runtime library and graph integration target",
+    "Check the runtime library without default features for portable serial fallback compilation",
+    "Retain original logs, tested source hashes and terminal power observations within the original allowance"
+  ],
+  "failurePolicy": "Stop at the first failed command, absent required test, deadline or infeasible step. No source-correction retry, clock restart, model execution, full suite, benchmark, CI action or push. Any later correction remains source-only pending owner-managed checks.",
+  "powerScope": "This is correctness and source validation, with no performance comparison. Equal endpoint snapshots do not prove uninterrupted power stability. Missing observations remain unknown.",
+  "modelExecutions": 0,
+  "benchmarks": 0,
+  "fullSuites": 0,
+  "ciActions": 0,
+  "pushes": 0
+}

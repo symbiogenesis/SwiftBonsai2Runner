@@ -431,6 +431,17 @@ actual-model numerical, lifecycle and performance qualification remain pending.
 These local Prism changes require a qualified release and Runner repin before
 application use; they do not change admission or runtime defaults.
 
+The [remaining CPU source changes](evidence/cpu-remaining-speed-20261103/summary.json)
+stream BF16 alpha/beta weights directly through the existing rounded-product/F64
+sum contract. This avoids decoded-row materialization, with a nominal 90 MiB of
+scratch writes and matching rereads omitted per Swift token. Experimental packed
+prefill also shares the graph's existing private row pool while preserving
+caller-thread cancellation and adding a fixed 16 KiB scheduling reservation.
+These are source work/resource counts; actual-model correctness and matched
+complete-request benefit remain required before release integration. The bounded
+local compilation attempt failed, and its two source corrections remain
+uncompiled; no numerical or performance verdict transfers to this source.
+
 The speed-work integration adds finite-logit validation to the bounded top-20
 selection traversal, removing the separate complete-vocabulary validation pass.
 Nonfinite logits anywhere, including discarded tail candidates, reject before

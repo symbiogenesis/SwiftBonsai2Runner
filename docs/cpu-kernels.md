@@ -89,12 +89,25 @@ over one decoded PQ2/PTQ1 block shared across the tile's tokens. It preserves od
 PQ2 groups, PTQ1's four native integer lanes, ordered scales/FMAs, explicit scalar
 selection and unsupported-target fallback. The graph passes its requested backend
 into the tile; decoded vectors remain bounded stack storage, and preparation does
-not allocate unused PQ2 digit-plane activations. Rows remain sequential: this does
-not preserve the ordinary matvec path's row-worker parallelism. Compare complete
-prompt cost with the existing NEON/four-worker control before choosing this path.
+not allocate unused PQ2 digit-plane activations. The follow-up source candidate
+shares the graph's existing private row-worker pool across disjoint output slices,
+without transposition or a second pool. The original non-Sync cancellation callback
+stays on the caller; workers observe cancellation between rows and join before
+failed output is cleared. Its extra 16 KiB reservation is charged separately from
+existing worker stacks. Compare complete prompt cost with the ordinary
+NEON/four-worker control before choosing this path.
 The released Runner pin and opt-in prefill boundary remain unchanged. The
 [source-check record](evidence/cpu-speed-next-20261103/summary.json) separates local
 correctness evidence from pending model and performance qualification.
+
+The [remaining CPU source record](evidence/cpu-remaining-speed-20261103/summary.json)
+also covers direct BF16 weight consumption for Swift's recurrent alpha/beta
+projections. Tensor geometry is checked before row access, each weight remains
+finite-checked, and BF16 activations, rounded F32 products and the original F64
+sum/final F32 rounding are unchanged. No decoded row is materialized. Across
+48 recurrent layers' two 5,120-by-48 matrices this avoids a nominal 90 MiB of
+F32 scratch writes and matching rereads per token; compiler behavior and actual
+traffic/latency remain unmeasured. Rows in this BF16 path remain sequential.
 
 Q8_K chooses the first signed value with strictly greater absolute magnitude, uses `-127 / maximum`,
 ties-to-even rounding and an f32 scale. Q8_0 uses an absolute maximum, ties-away rounding and an
