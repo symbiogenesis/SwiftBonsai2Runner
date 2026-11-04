@@ -53,6 +53,8 @@ def main():
     parser.add_argument("--adapter-case", choices=["none", "loaded-zero", "standard-scale-1.3"],
                         default="standard-scale-1.3")
     parser.add_argument("--token-ids", type=int, nargs="+", default=[42, 43, 128])
+    parser.add_argument("--resident-host-weights", action="store_true",
+                        help="Use the explicit HMX resident host arena with graph parity only.")
     args = parser.parse_args()
     if not 1 <= len(args.token_ids) <= 3 or min(args.token_ids) < 0:
         parser.error("The current snapshot budget permits one to three nonnegative token IDs.")
@@ -101,6 +103,7 @@ def main():
         "tokenId": args.token_ids[0],
         "tokenIds": args.token_ids,
         "executionBackend": "hmx-bitplane",
+        "residentHostWeights": args.resident_host_weights,
         "adapterCase": args.adapter_case,
         "cpuBackend": "neon",
         "rowWorkers": 4,

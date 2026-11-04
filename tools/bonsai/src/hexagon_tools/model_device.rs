@@ -24,6 +24,9 @@ const CLEANUP_SECONDS: u64 = 75;
 const CHILD_SECONDS: u64 = 195;
 const REQUIRED_AVAILABLE_BYTES: u64 = 18 * 1024 * 1024 * 1024;
 const STATE_BUDGET_BYTES: u64 = 512 * 1024 * 1024;
+const RESIDENT_WEIGHT_BYTES: u64 = 25_067_520;
+const RESIDENT_MAPPED_BYTES: u64 = 26_259_456;
+const RESIDENT_METADATA_BYTES: u64 = 65_536;
 // Exact logical state for the pinned original-PQ2 model: 48 recurrent
 // layers plus the growing KV state of its 16 attention layers. The CPU arm
 // retains every complete snapshot until native comparisons finish.
@@ -100,6 +103,8 @@ pub(super) struct Request {
     #[serde(default)]
     execution_backend: ExecutionBackend,
     #[serde(default)]
+    resident_host_weights: bool,
+    #[serde(default)]
     adapter_path: Option<PathBuf>,
     #[serde(default)]
     adapter_case: AdapterCase,
@@ -135,6 +140,9 @@ impl Request {
     }
 
     fn validate_selection(&self) -> Result<()> {
+        if self.resident_host_weights && self.execution_backend != ExecutionBackend::HmxBitplane {
+            return Err("Resident host weights require the explicit HMX bitplane backend.".into());
+        }
         if self.adapter_path.is_some() != (self.adapter_case != AdapterCase::None)
             || ![1, 4].contains(&self.row_workers)
         {
@@ -409,6 +417,7 @@ fn result(
     request_digest: &str,
     tokens: &[u32],
     backend: ExecutionBackend,
+    resident_host_weights: bool,
     driver: &Value,
 ) -> Result<Value> {
     if !(1..=8).contains(&tokens.len()) {
@@ -447,6 +456,12 @@ fn result(
         return Err("The model probe omitted its unique terminal result.".into());
     };
     let token_count = u64::try_from(tokens.len()).map_err(|error| error.to_string())?;
+    residency_result(value, backend, resident_host_weights, token_count)?;
+    let compared_values = if resident_host_weights {
+        0
+    } else {
+        backend.integer_values_per_token() * token_count
+    };
     if value["schemaVersion"] != 1
         || value["completed"] != true
         || value["requestSha256"] != request_digest
@@ -462,7 +477,7 @@ fn result(
         || value["nativeOperationsSubmitted"] != 40 * token_count
         || value["nativeOperationsCompleted"] != 40 * token_count
         || value["projectionsCompleted"] != token_count
-        || value["integerValuesCompared"] != backend.integer_values_per_token() * token_count
+        || value["integerValuesCompared"] != compared_values
         || value["logitsBitwiseEqual"] != true
         || value["stateBitwiseEqual"] != true
         || value["nativeCompletedCycle"] != true
@@ -547,6 +562,53 @@ fn result(
         }
     }
     Ok(value.clone())
+}
+
+fn residency_result(
+    value: &Value,
+    backend: ExecutionBackend,
+    resident_host_weights: bool,
+    token_count: u64,
+) -> Result<()> {
+    // Historical full-integer controls predate these explicit fields. Their
+    // absence means only the original streaming path, never resident execution.
+    let mode = value.get("residentHostWeights");
+    let audit = value.get("integerAudit");
+    let expected_audit = if resident_host_weights {
+        "graph-parity-only"
+    } else {
+        "all-returned-integers"
+    };
+    if mode.is_some_and(|mode| mode != resident_host_weights)
+        || audit.is_some_and(|audit| audit != expected_audit)
+        || (resident_host_weights
+            && (backend != ExecutionBackend::HmxBitplane
+                || mode != Some(&json!(true))
+                || audit != Some(&json!(expected_audit))))
+    {
+        return Err(
+            "The model result does not bind its selected residency and integer audit mode.".into(),
+        );
+    }
+    if resident_host_weights {
+        let resources = &value["nativeResources"];
+        let residency = &value["hostResidency"];
+        if resources["residentWeightBytesPrepared"] != RESIDENT_WEIGHT_BYTES
+            || resources["mappedAllocationBytes"] != RESIDENT_MAPPED_BYTES
+            || residency["tensorsPrepared"] != 1
+            || residency["cacheHits"] != token_count - 1
+            || residency["weightPayloadBytesPrepared"] != RESIDENT_WEIGHT_BYTES
+            || !residency["metadataPayloadBytes"]
+                .as_u64()
+                .is_some_and(|bytes| (1..=RESIDENT_METADATA_BYTES).contains(&bytes))
+        {
+            return Err(
+                "The resident model result lacks its fixed mapped arena and cache accounting."
+                    .into(),
+            );
+        }
+    }
+    Ok(())
 }
 
 fn selection_result(value: &Value, request: &Request) -> Result<()> {
@@ -687,6 +749,7 @@ fn execute(request: &Request, started: Instant, report: &mut Value) -> Result<()
         .map_err(|error| error.to_string())?;
     let probe_request = json!({"schemaVersion":1,"modelPath":request.model_path,"packageDirectory":request.package_directory,
         "tokenId":request.token_id,"tokenIds":request.tokens(),"executionBackend":request.execution_backend,
+        "residentHostWeights":request.resident_host_weights,
         "adapterPath":request.adapter_path,"adapterCase":request.adapter_case,"cpuBackend":request.cpu_backend,"rowWorkers":request.row_workers,
         "contextLimit":request.tokens().len(),"modelMemoryLimitBytes":12_u64*1024*1024*1024,
         "stateBudgetBytes":STATE_BUDGET_BYTES,"sessionSeconds":120,"maximumOperations":40*request.tokens().len(),
@@ -739,6 +802,7 @@ fn execute(request: &Request, started: Instant, report: &mut Value) -> Result<()
         &request_digest,
         request.tokens(),
         request.execution_backend,
+        request.resident_host_weights,
         &driver,
     )?;
     selection_result(&native_result, request)?;
@@ -783,7 +847,7 @@ pub(super) fn run(request: &Request) -> Result<Value> {
         "LocalBuild":true,"HostedBuild":false,"PrismRevision":request.expected_prism_revision,"MaximumSeconds":request.maximum_seconds,
         "CleanupReserveSeconds":CLEANUP_SECONDS,"ModelWorkAttempted":false,"OwnedJobTeardown":"not-started","ProfileEligible":false,
         "PerformanceMeasured":false,"TrustChanged":false,"PowerBefore":power(),"RequiredAvailablePhysicalBytes":REQUIRED_AVAILABLE_BYTES,
-        "ExecutionBackend":request.execution_backend,"TokenIds":request.tokens(),"AdapterCase":request.adapter_case,
+        "ExecutionBackend":request.execution_backend,"ResidentHostWeights":request.resident_host_weights,"TokenIds":request.tokens(),"AdapterCase":request.adapter_case,
         "CpuBackend":request.cpu_backend,"RowWorkers":request.row_workers,
         "RequiredControlStateBytes":required_control_state_bytes(request.tokens().len())?,"ControlStateBudgetBytes":STATE_BUDGET_BYTES});
     let outcome = execute(request, started, &mut report);
@@ -837,6 +901,7 @@ mod tests {
             &"a".repeat(64),
             &[42],
             ExecutionBackend::GuardedHvx,
+            false,
             &driver,
         )?;
         for (pointer, wrong) in [
@@ -857,6 +922,7 @@ mod tests {
                     &"a".repeat(64),
                     &[42],
                     ExecutionBackend::GuardedHvx,
+                    false,
                     &driver
                 )
                 .is_err()
@@ -869,6 +935,7 @@ mod tests {
                 &"a".repeat(64),
                 &[42],
                 ExecutionBackend::GuardedHvx,
+                false,
                 &driver
             )
             .is_err()
@@ -879,6 +946,7 @@ mod tests {
                 &"a".repeat(64),
                 &[42],
                 ExecutionBackend::GuardedHvx,
+                false,
                 &driver
             )
             .is_err()
@@ -889,6 +957,7 @@ mod tests {
                 &"a".repeat(64),
                 &[42],
                 ExecutionBackend::GuardedHvx,
+                false,
                 &driver
             )
             .is_err()
@@ -906,6 +975,7 @@ mod tests {
             &"a".repeat(64),
             &[42],
             ExecutionBackend::GuardedHvx,
+            false,
             &json!({"Path":"fixed-driver"}),
         )?;
         value["npuPowerBefore"]
@@ -918,6 +988,7 @@ mod tests {
                 &"a".repeat(64),
                 &[42],
                 ExecutionBackend::GuardedHvx,
+                false,
                 &json!({"Path":"fixed-driver"})
             )
             .is_err()
@@ -934,6 +1005,7 @@ mod tests {
             &"a".repeat(64),
             &[42, 43],
             ExecutionBackend::HmxBitplane,
+            false,
             &driver,
         )?;
         for (pointer, wrong) in [
@@ -959,6 +1031,7 @@ mod tests {
                     &"a".repeat(64),
                     &[42, 43],
                     ExecutionBackend::HmxBitplane,
+                    false,
                     &driver
                 )
                 .is_err()
@@ -1005,6 +1078,7 @@ mod tests {
             &"a".repeat(64),
             &tokens,
             ExecutionBackend::HmxBitplane,
+            false,
             &driver,
         )?;
         value["tokenComparisons"][7]["stateBitwiseEqual"] = json!(false);
@@ -1014,6 +1088,7 @@ mod tests {
                 &"a".repeat(64),
                 &tokens,
                 ExecutionBackend::HmxBitplane,
+                false,
                 &driver
             )
             .is_err()
@@ -1048,6 +1123,87 @@ mod tests {
         }
         assert!(required_control_state_bytes(0).is_err());
         assert!(required_control_state_bytes(9).is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn resident_hmx_result_binds_graph_parity_and_actual_cache_accounting() -> Result<()> {
+        let driver = json!({"Path":"fixed-driver"});
+        let tokens = [42, 43, 128];
+        let mut value = complete_result(&tokens, ExecutionBackend::HmxBitplane);
+        value["residentHostWeights"] = json!(true);
+        value["integerAudit"] = json!("graph-parity-only");
+        value["integerValuesCompared"] = json!(0);
+        value["nativeResources"] = json!({
+            "residentWeightBytesPrepared":RESIDENT_WEIGHT_BYTES,
+            "mappedAllocationBytes":RESIDENT_MAPPED_BYTES,
+        });
+        value["hostResidency"] = json!({"tensorsPrepared":1,"cacheHits":2,
+            "weightPayloadBytesPrepared":RESIDENT_WEIGHT_BYTES,"metadataPayloadBytes":640});
+        result(
+            &value.to_string(),
+            &"a".repeat(64),
+            &tokens,
+            ExecutionBackend::HmxBitplane,
+            true,
+            &driver,
+        )?;
+        for (pointer, wrong) in [
+            ("/residentHostWeights", json!(false)),
+            ("/integerAudit", json!("all-returned-integers")),
+            ("/integerValuesCompared", json!(1)),
+            ("/nativeResources/residentWeightBytesPrepared", json!(0)),
+            (
+                "/nativeResources/mappedAllocationBytes",
+                json!(RESIDENT_MAPPED_BYTES + 1),
+            ),
+            ("/hostResidency/tensorsPrepared", json!(2)),
+            ("/hostResidency/cacheHits", json!(1)),
+            ("/hostResidency/weightPayloadBytesPrepared", json!(0)),
+            ("/hostResidency/metadataPayloadBytes", json!(0)),
+            ("/tokenComparisons/2/stateBitwiseEqual", json!(false)),
+        ] {
+            let mut changed = value.clone();
+            *changed.pointer_mut(pointer).ok_or("Test field missing.")? = wrong;
+            assert!(
+                result(
+                    &changed.to_string(),
+                    &"a".repeat(64),
+                    &tokens,
+                    ExecutionBackend::HmxBitplane,
+                    true,
+                    &driver,
+                )
+                .is_err()
+            );
+        }
+        assert!(
+            result(
+                &value.to_string(),
+                &"a".repeat(64),
+                &tokens,
+                ExecutionBackend::HmxBitplane,
+                false,
+                &driver,
+            )
+            .is_err()
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn resident_request_requires_explicit_hmx_and_defaults_to_streaming() -> Result<()> {
+        let mut value = request_value();
+        let legacy: Request =
+            serde_json::from_value(value.clone()).map_err(|error| error.to_string())?;
+        assert!(!legacy.resident_host_weights);
+        value["residentHostWeights"] = json!(true);
+        let guarded: Request =
+            serde_json::from_value(value.clone()).map_err(|error| error.to_string())?;
+        assert!(guarded.validate_selection().is_err());
+        value["executionBackend"] = json!("hmx-bitplane");
+        let resident: Request = serde_json::from_value(value).map_err(|error| error.to_string())?;
+        resident.validate_selection()?;
         Ok(())
     }
 
@@ -1144,6 +1300,7 @@ mod tests {
                     &"a".repeat(64),
                     &[42, 43],
                     ExecutionBackend::HmxBitplane,
+                    false,
                     &driver,
                 )
                 .is_err()
@@ -1163,6 +1320,7 @@ mod tests {
             "c76737a14f141b4f8236ad3d19cae16e5c4934b03055eb1c428928451d405107",
             &[42, 43],
             ExecutionBackend::HmxBitplane,
+            false,
             &driver,
         )?;
         assert_eq!(accepted["integerValuesCompared"], 11_141_120);

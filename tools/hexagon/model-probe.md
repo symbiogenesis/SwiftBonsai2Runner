@@ -25,6 +25,7 @@ production backend and establishes no inference speedup or broader adapter quali
     "tokenId": 42,
     "tokenIds": [42, 43],
     "executionBackend": "hmx-bitplane",
+    "residentHostWeights": false,
     "adapterCase": "standard-scale-1.3",
     "adapterPath": "C:\\external\\bonsai-abliterate-lora.gguf",
     "cpuBackend": "neon",
@@ -48,6 +49,18 @@ accepted value is `hmx-bitplane`. This preserves the original single-token
 request. The current probe executable emits explicit backend and sequence
 evidence even for that legacy request; older executable output without those
 fields cannot qualify the extended supervisor.
+
+`residentHostWeights` defaults to false. Setting it to true requires the explicit
+HMX backend and selects one fixed mapped host-weight arena: 25,067,520 bytes of
+prepared weight payload in a 26,259,456-byte native mapping, with at most 65,536
+bytes of host metadata. The first token prepares one tensor; later tokens must
+hit that cache. This mode reports `integerAudit: "graph-parity-only"` and zero
+per-integer comparisons while preserving every token's complete CPU-shadow
+logits/state comparison, operation accounting and explicit native cleanup.
+The normal path retains `integerAudit: "all-returned-integers"` and its full
+integer oracle. The supervisor binds the selected mode and actual cache counters;
+it accepts missing mode/audit fields only for historical normal-path receipts.
+Mapped host reuse establishes no DSP residency or production eligibility.
 
 The unchanged 536,870,912-byte control-state budget admits at most three tokens.
 The pinned model's complete logical snapshot after token position `i` contains
