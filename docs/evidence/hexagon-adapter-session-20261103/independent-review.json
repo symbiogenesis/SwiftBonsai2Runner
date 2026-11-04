@@ -1,0 +1,334 @@
+{
+    "schemaVersion":  1,
+    "kind":  "independent-npu-adapter-probe-source-and-failed-receipt-review",
+    "dateLocal":  "2026-11-03",
+    "outcome":  "source-controls-reviewed; device-adapter-qualification-failed-before-native-arm; default-promotion-no-go",
+    "reviewerActivities":  {
+                               "sourceAndReceiptReview":  true,
+                               "independentlyRehashedReceiptSourcesBeforeCorrection":  318,
+                               "independentlyRehashedSelectedRawFilesAndProbeExecutable":  true,
+                               "independentlyReranTests":  false,
+                               "independentlyReranHardware":  false,
+                               "independentRawNumericalReplay":  false,
+                               "newModelOrDeviceWorkloadByReviewer":  false,
+                               "newPowerSnapshotByReviewer":  false,
+                               "ciDispatchedOrMonitored":  false,
+                               "pushed":  false
+                           },
+    "sourceIdentities":  {
+                             "capturedPrismRevision":  "d965b48fafb09cfbfc42261fc99b889fb08fa04f",
+                             "capturedRunnerRevision":  "2d185dc9c1f38fab35d229b6173d273461420b25",
+                             "postCapturePrismCorrection":  "65c039dbb74fa144489195dd4a8b8409551eb499",
+                             "postCaptureRunnerCorrection":  "04f5f8f8bae8e809b0ec0ae69554af647e04ff03",
+                             "capturedProbeExecutableBytes":  1072640,
+                             "capturedProbeExecutableSha256":  "a7308f1924794e4d0810327b3d3a25c77c8cfc6412bce786430122d8c6164dac",
+                             "capturedRunnerExecutableBytes":  6601728,
+                             "capturedRunnerExecutableSha256":  "3da311ad2361f1a284f9c92e08fe95cf55505db9dc6904c22005735c4eefa010",
+                             "originalBuildReceiptSha256":  "ef3aa288851badd977904be4dabc3357f3efc992ae644df3883dee7444a583be",
+                             "originalChildRequestSha256":  "36480f50d360855507afe056b9609110dd429179e080613ae6b07b63c7169191",
+                             "originalDeviceReportSha256":  "ecc2ad0f89aa7199d233f3a0344b9c59ca00860a1f0f767e6e4b386fcf091b7a",
+                             "provenance":  "Local source-bound builds, not hosted provenance. Before the post-capture correction, all 318 source-file lengths and raw SHA-256 values were independently checked against the original build receipt with no mismatch. The captured probe executable was independently rehashed. Later source corrections have their own identities and supply no device pass to the captured executable."
+                         },
+    "sourceControlReview":  {
+                                "approvedAdapterPin":  "Runner Inputs::pinned checks the exact 9682464-byte f1669534803d340a496015f5c45125f3437b4d13ec764f40e34488ce83967f42 artifact and retains its deny-write/delete handle through execute, encompassing both comparison arms. Each loaded Prism graph separately calls RankOneAdapter::load_swift for independent exact artifact admission.",
+                                "loadedZeroControl":  "The loaded-zero CPU baseline is deliberately adapter-free; the native graph loads the approved adapter at positive-zero scale. Existing scale-zero arithmetic bypass and complete logits/state comparison provide the intended identity control when a device workload actually completes. It did not run in this captured attempt.",
+                                "standardAdapterControl":  "The standard case loads the same approved adapter at f32 scale1.3 (bits0x3fa66666) in both CPU and native graphs. Terminal policy fields bind both graph selections, but this capture produced no terminal result or adapter-parity pass.",
+                                "cpuPolicy":  "graph_for_arm passes explicit scalar or ExperimentalNeon to each actual graph and sets RowParallelism::new(1|4), checking graph.row_workers afterward. NEON requires matching feature/target eligibility before model execution; four workers require parallel-rows. NEON here is the packed-kernel policy: tensor formats without NEON retain their documented scalar path. This is not a claim that every graph operation executes NEON or that four workers were independently profiled.",
+                                "sequenceAndNumericalChecks":  "One to eight wire-format IDs remain bounded and ordered, beginning with tokenId. The full admitted sequence is reserved before its first native evaluation; every returned limb/plane is independently decoded in the source-bound child and every per-token logit/state element is compared with the CPU control. Supervisor checks the ordered per-token results, final hashes, selected backend, operation counts, adapter/CPU policy and terminal cleanup before publishing a pass. Complete raw numerical arrays are not retained for independent offline replay.",
+                                "unchangedNativeLimits":  "Native24000-attempt ceiling,120-second session,195-second child,75-second outer cleanup reserve and fixed300-second supervisor allowance remain. No production admission/default is enabled.",
+                                "knownPacketPreparationDefect":  "The initial source admitted the selected four-token sequence without precomputing cumulative retained CPU-state bytes. Source review warned that the snapshot budget could reject before the native arm. The chosen packet nevertheless exceeded its mandatory512MiB retention allowance; this is a concrete packet-admission defect, separate from adapter pinning and native cleanup controls."
+                            },
+    "capturedAttempt":  {
+                            "attempts":  1,
+                            "retried":  false,
+                            "adapterCase":  "standard-scale-1.3",
+                            "requestedCpuBackend":  "neon",
+                            "requestedRowWorkers":  4,
+                            "requestedExecutionBackend":  "hmx-bitplane",
+                            "tokenIds":  [
+                                             42,
+                                             43,
+                                             128,
+                                             256
+                                         ],
+                            "requestedNativeOperations":  160,
+                            "supervisorElapsedMilliseconds":  18147,
+                            "outerCaptureElapsedSeconds":  19.250501,
+                            "outerCaptureExitCode":  0,
+                            "exactChildExitCode":  null,
+                            "exactChildExitCodeReason":  "The original supervisor does not serialize its captured child code. Its failure branch reports a nonzero child result; the exact value remains unavailable. The post-capture ProbeExitCode change must not backfill this receipt.",
+                            "originalSupervisorOutcome":  "pending",
+                            "originalSupervisorFailure":  "The terminal model probe failed; retained output must be reviewed before new work.",
+                            "orderedWorkerEvents":  [
+                                                        "started",
+                                                        "cpu-arm-finished",
+                                                        "error"
+                                                    ],
+                            "cpuArmCompleted":  false,
+                            "cpuControlCompleteEventPresent":  false,
+                            "nativeProgressEventPresent":  false,
+                            "nativeArmFinishedEventPresent":  false,
+                            "terminalResultPresent":  false,
+                            "nativeResultPresent":  false,
+                            "observedNativeSubmissionEvents":  0,
+                            "returnedNativeOperationCounters":  null,
+                            "ownedJobTeardown":  "confirmed-empty",
+                            "interpretation":  "The attempt failed in CPU control before the source constructs the native arm. There is no observed native submission and no native counter or successful zero-work result. Outer CLIexit0 means receipt delivery succeeded; the pending/failure receipt does not qualify model, adapter or NPU correctness. Source ordering and events support no new native computation in this attempt.",
+                            "intakeObservationsFromSupervisor":  {
+                                                                     "localSourceFilesVerified":  318,
+                                                                     "runtimeFilesVerified":  17,
+                                                                     "catalogMembersVerified":  5,
+                                                                     "signedPackageVerified":  true,
+                                                                     "adapterHeldAgainstMutation":  true,
+                                                                     "availablePhysicalBytesBefore":  22156759040,
+                                                                     "requiredAvailablePhysicalBytes":  19327352832,
+                                                                     "driverSha256":  "5cf6aa86670cceb84461050ad00b012662e4859d15be2a1cf147d98d5002f37d",
+                                                                     "reviewerDidNotRepeatSignatureOrDeviceChecks":  true
+                                                                 },
+                            "power":  {
+                                          "workloadBeforePreparation":  "Battery,47percent,saver off; earlier read-only preparation power remains unknown.",
+                                          "cpuArmBefore":  {
+                                                               "available":  true,
+                                                               "acConnected":  false,
+                                                               "batterySaver":  false,
+                                                               "batteryPercent":  43
+                                                           },
+                                          "cpuArmAfter":  {
+                                                              "available":  true,
+                                                              "acConnected":  false,
+                                                              "batterySaver":  false,
+                                                              "batteryPercent":  43
+                                                          },
+                                          "nativeArmBefore":  null,
+                                          "nativeArmAfter":  null,
+                                          "nativePowerStatus":  "unknown; no native arm ran or emitted an observation",
+                                          "workloadAfterDevice":  "Battery,43percent,saver off.",
+                                          "interpretation":  "Equal battery endpoints do not prove uninterrupted power stability. No performance or energy comparison is qualified, and no earlier AC-powered result supplies power status for this attempt."
+                                      }
+                        },
+    "staticFailureAnalysis":  {
+                                  "method":  "Independent source derivation from pinned Swift geometry, Qwen35 state storage/visit_state promotion and cpu_control cumulative retention; no model rerun.",
+                                  "fixedRecurrentAndConvolutionBytesPerSnapshot":  156893184,
+                                  "kvBytesPerSnapshotPerPosition":  131072,
+                                  "cumulativeFormula":  "156893184*n +131072*n*(n+1)/2",
+                                  "threeSnapshotsBytes":  471465984,
+                                  "fourSnapshotsBytes":  628883456,
+                                  "eightSnapshotsBytes":  1259864064,
+                                  "fixedStateAllowanceBytes":  536870912,
+                                  "fourTokenPacketInfeasible":  true,
+                                  "originalExactThrownReasonKnown":  false,
+                                  "interpretation":  "Four mandatory snapshots cannot fit the original allowance; the source would reject at the fourth snapshot if all prior operations completed. The original generic error records neither a failing token nor phase, so the exact thrown cause cannot be established from that output. This static infeasibility must not be presented as an independently observed fourth-token failure."
+                              },
+    "postCaptureCorrectionReview":  {
+                                        "prism":  "Request.limits independently computes cumulative pinned-geometry snapshot bytes before external path/model loading and returns typed required/available fields when infeasible. CPU construction/evaluation/state-capture/state-digest errors now include their phase and optional zero-based token index. New focused boundary/diagnostic regressions preserve no-success behavior.",
+                                        "runner":  "Request.validate_tokens checks the independently derived cumulative formula against the unchanged512MiB allowance before source/package/model intake or output creation. One/two/three tokens fit; four/eight reject with exact sizes. Successful intake reports required/allowed bytes. After capture returns it now records ProbeExitCode before child failure handling. Result-only wire-cap checks remain separate from actual request admission.",
+                                        "materialSourceIssueFoundAfterCorrection":  false,
+                                        "newProductionProbeBuiltAfterCorrection":  false,
+                                        "newDeviceWorkloadAfterCorrection":  false,
+                                        "acceptanceLimit":  "This is a source/model-free preparation correction, not a retry or an adapter/NPU pass. The original failed binary, request and receipt remain unchanged."
+                                    },
+    "retainedValidationReview":  {
+                                     "beforeDevice":  "Initial focused Prism preparation failed on existing const setters that could drop an Arc-backed RowParallelism; removing invalid const qualifiers allowed11focusedPrismReleasebinary tests and selected strictClippy to pass. Runner9focusedtests, selected strictlibraryClippy and releasebuild passed. One intermediate malformed shell build command failed; the subsequent script-file Release build succeeded. Preserve all distinct receipts.",
+                                     "afterCorrection":  "Retained receipts show13focusedPrismReleasebinary tests and selected strictbinaryClippy passing with experimental-neon,parallel-rows; Runner10focusedtests and selected strictlibraryClippy passed. These are focused local checks, not full suites, hosted verdicts, new production-binary delivery or hardware qualification.",
+                                     "reviewerReadLogsRatherThanRerunning":  true
+                                 },
+    "promotionDecision":  {
+                              "standardAdapterDeviceGate":  "open; this attempt failed before native comparison",
+                              "loadedZeroDeviceGate":  "open; not selected or executed",
+                              "ordinaryChatBackend":  "CPU",
+                              "productionNpuAdmission":  "disabled",
+                              "defaultPromotion":  "no-go",
+                              "nextScope":  "A separately declared feasible original-PQ2 partial-profile packet can use the corrected preflight. Complete numerical, persistent lifecycle/resources, useful end-to-end benefit and explicit delivery/rollback remain as already scoped in PLAN.md; no additional gate is introduced by this review.",
+                              "baselineFeasibilityReview":  "../npu-default-feasibility-20261103/independent-review.json"
+                          },
+    "originalPacketRoot":  "C:\\Users\\symbi\\AppData\\Local\\Temp\\SwiftBonsai-Npu-Adapter-20261103",
+    "retainedRawFilePaths":  "Relative to this review directory; root retains the raw packet here with original subdirectory names. Model-bundle binaries are excluded from the Git evidence archive and remain at originalPacketRoot/model-bundle with the recorded hashes.",
+    "independentlyVerifiedRawFiles":  [
+                                          {
+                                              "path":  "clock.json",
+                                              "bytes":  236,
+                                              "sha256":  "cc1b5a1495106da64e5eb4f075dc0ee1fe682329ef199116890bf445a73baeb4"
+                                          },
+                                          {
+                                              "path":  "intake.json",
+                                              "bytes":  1352,
+                                              "sha256":  "2630da2eaf9ac983673bd765751a64930076d15d48890dbe76c3ce063883a325"
+                                          },
+                                          {
+                                              "path":  "local-model-build.json",
+                                              "bytes":  55388,
+                                              "sha256":  "ef3aa288851badd977904be4dabc3357f3efc992ae644df3883dee7444a583be"
+                                          },
+                                          {
+                                              "path":  "model-device-request.json",
+                                              "bytes":  1613,
+                                              "sha256":  "3679bb3e5c964289ba780d160762e2deb10f52a3095fd34a4986b5368afc7e9d"
+                                          },
+                                          {
+                                              "path":  "device-supervisor.json",
+                                              "bytes":  1001,
+                                              "sha256":  "33e54f9539c2d11eff4039d60ce435f37f2fd75cde0064a02f28d828119a339d"
+                                          },
+                                          {
+                                              "path":  "device-supervisor.stdout",
+                                              "bytes":  2682,
+                                              "sha256":  "42b6218335f22cb386881e8c6f481eabb545a8b2875a54a79766322470931aff"
+                                          },
+                                          {
+                                              "path":  "device-supervisor.stderr",
+                                              "bytes":  0,
+                                              "sha256":  "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+                                          },
+                                          {
+                                              "path":  "power-before-preparation.json",
+                                              "bytes":  197,
+                                              "sha256":  "03aacf29a79a95a117b25caea967de4c5247242ecfab7056db434397eae804e6"
+                                          },
+                                          {
+                                              "path":  "power-before-device.json",
+                                              "bytes":  197,
+                                              "sha256":  "60fff0d1ca618efae3b7e17e276d64cc41e8a83ba93d75f88b64d65599b942c3"
+                                          },
+                                          {
+                                              "path":  "power-after-device.json",
+                                              "bytes":  197,
+                                              "sha256":  "10fd5acb4a867cd32509be99528bc0293e96cc2ef8e8188181a00f33ce7f0f4e"
+                                          },
+                                          {
+                                              "path":  "prism-model-tests.json",
+                                              "bytes":  1249,
+                                              "sha256":  "7125dd68cccf0c0079aa2740fdffe98436957096c653030f26dbbe074e67f7df"
+                                          },
+                                          {
+                                              "path":  "prism-model-tests.stderr",
+                                              "bytes":  2492,
+                                              "sha256":  "494af8dfa955966818d49601cf4c80c1d0bef09f5d4abc5cd4cf82f4916c3433"
+                                          },
+                                          {
+                                              "path":  "prism-adapter-corrected-tests.json",
+                                              "bytes":  1248,
+                                              "sha256":  "74f447b09ed17fe952ea51e8fa9f306e51e4a9fbe153728d035227cd6fca4e1f"
+                                          },
+                                          {
+                                              "path":  "prism-adapter-corrected-tests.stdout",
+                                              "bytes":  1072,
+                                              "sha256":  "6f70804519278e5a759bd4732b052e79c01e7bfe7de9ea0bf32a68d3cfadf7bb"
+                                          },
+                                          {
+                                              "path":  "prism-adapter-clippy.json",
+                                              "bytes":  1265,
+                                              "sha256":  "4e542056d31883e9e43d757a68d670fc16f4ed4e2decc09ba846768627ddb169"
+                                          },
+                                          {
+                                              "path":  "prism-adapter-final-build.json",
+                                              "bytes":  1568,
+                                              "sha256":  "a2591dd6c3d13736bdb78e81d744ea662ab751e466e2eb7069ae60a78ca97238"
+                                          },
+                                          {
+                                              "path":  "prism-adapter-release-build.json",
+                                              "bytes":  973,
+                                              "sha256":  "78ac1d3bedb6998be871e486a105682f990db72a37394e25a5a4cbb13c041fa4"
+                                          },
+                                          {
+                                              "path":  "prism-adapter-release-build.stderr",
+                                              "bytes":  333,
+                                              "sha256":  "6935284448a8e55e043a1a1cd86e250f7ba833c847dbbd52b241a30badec316b"
+                                          },
+                                          {
+                                              "path":  "runner-focused.json",
+                                              "bytes":  975,
+                                              "sha256":  "e4aca3ea85840ce146f8420fb549153114fc9560f9be4ed93403a3b5e75a733c"
+                                          },
+                                          {
+                                              "path":  "runner-focused.stdout",
+                                              "bytes":  1156,
+                                              "sha256":  "b7b5834e640b9f543989443dfe326a30838e18725a805b6eca50985b958d888a"
+                                          },
+                                          {
+                                              "path":  "runner-focused.stderr",
+                                              "bytes":  9108,
+                                              "sha256":  "8cae8560323c1caaa6d141a3e7175e9a1f7c0c12901722cbe6855f6f4471bdfc"
+                                          },
+                                          {
+                                              "path":  "prism-snapshot-tests.json",
+                                              "bytes":  1248,
+                                              "sha256":  "f700575a02947ed41088ff9efa427a0128bf7768dd51babc8af9fca8c7bba610"
+                                          },
+                                          {
+                                              "path":  "prism-snapshot-tests.stdout",
+                                              "bytes":  1251,
+                                              "sha256":  "0a7880d172fd7802b4561be902daab75220c613f1c3fee1e5cc52120b9a8ca73"
+                                          },
+                                          {
+                                              "path":  "prism-snapshot-clippy.json",
+                                              "bytes":  1265,
+                                              "sha256":  "4721a7807e1850a75dc5382a909424cf388fbea93cc10b9a586db512c95ff8ee"
+                                          },
+                                          {
+                                              "path":  "prism-snapshot-clippy.stderr",
+                                              "bytes":  211,
+                                              "sha256":  "26c901831402a785a8205d1bdbefc5d17d5c7013f408109ee1380ebbbc254b44"
+                                          },
+                                          {
+                                              "path":  "runner-state-bound-focused.json",
+                                              "bytes":  986,
+                                              "sha256":  "407766faeeb78884f69ed13683d3afb10e49501e0b052c164c04db17a3a38a6d"
+                                          },
+                                          {
+                                              "path":  "runner-state-bound-focused.stdout",
+                                              "bytes":  1274,
+                                              "sha256":  "c9a699062b35e08295d1e483beee8f1ce183feb1824a31ed7c94caf48ac73b48"
+                                          },
+                                          {
+                                              "path":  "runner-state-bound-focused.stderr",
+                                              "bytes":  586,
+                                              "sha256":  "6ea715931507475da4e5bab9394277d1a988c8d7b40b9a5b1b9b15431e20bd70"
+                                          },
+                                          {
+                                              "path":  "standard-adapter-device/model-request.json",
+                                              "bytes":  904,
+                                              "sha256":  "36480f50d360855507afe056b9609110dd429179e080613ae6b07b63c7169191"
+                                          },
+                                          {
+                                              "path":  "standard-adapter-device/model-device.json",
+                                              "bytes":  3231,
+                                              "sha256":  "ecc2ad0f89aa7199d233f3a0344b9c59ca00860a1f0f767e6e4b386fcf091b7a"
+                                          },
+                                          {
+                                              "path":  "standard-adapter-device/model-probe.53144-1793765286488716100-2.stdout",
+                                              "bytes":  631,
+                                              "sha256":  "d04219f6e1f1d4e8845a019a8a3ac6a736a49ba91b1e87ee82ea12328e9f2851"
+                                          },
+                                          {
+                                              "path":  "standard-adapter-device/model-probe.53144-1793765286488716100-2.stderr",
+                                              "bytes":  0,
+                                              "sha256":  "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+                                          }
+                                      ],
+    "reviewedPostCaptureSourceRawPins":  [
+                                             {
+                                                 "repository":  "runner",
+                                                 "path":  "tools/bonsai/src/hexagon_tools/model_device.rs",
+                                                 "bytes":  46459,
+                                                 "sha256":  "840cf6adcb62c04fce3aef865cf10aa992bab0bab56548ab9255c94a9983291e"
+                                             },
+                                             {
+                                                 "repository":  "runner",
+                                                 "path":  "tools/hexagon/model-probe.md",
+                                                 "bytes":  9282,
+                                                 "sha256":  "95998110bb1c6994ffc466f2c1ed579863593809444bae4cff97c7be0369fa9e"
+                                             },
+                                             {
+                                                 "repository":  "prism",
+                                                 "path":  "tools/hexagon-runtime/src/bin/model_probe.rs",
+                                                 "bytes":  53852,
+                                                 "sha256":  "dc7310dd8d505aa274b5e27b29264c0b04f991187325c6cfc627f73893add821"
+                                             },
+                                             {
+                                                 "repository":  "prism",
+                                                 "path":  "tools/hexagon-runtime/Cargo.toml",
+                                                 "bytes":  1090,
+                                                 "sha256":  "65ec5604a1902c7908abb4b8c1c490871d2e86718f196f1105dd5c8bc06a25ad"
+                                             }
+                                         ]
+}
