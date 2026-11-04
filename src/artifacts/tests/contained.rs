@@ -45,6 +45,9 @@ fn host_verification_denies_nested_ancestor_rename_and_delete_until_drop() -> io
     fs::create_dir_all(&revision)?;
     let model = revision.join("model.bin");
     fs::write(&model, MODEL)?;
+    // PrivateDirectory independently locks the rename destination's parent.
+    // This control must observe only the VerifiedFile guard's lifetime.
+    drop(directory);
     let guard = VerifiedFile::verify(&model, 3, MODEL_HASH).map_err(io::Error::other)?;
     let delete_access = |path: &std::path::Path| {
         // Request DELETE without deleting a nonempty directory. This checks

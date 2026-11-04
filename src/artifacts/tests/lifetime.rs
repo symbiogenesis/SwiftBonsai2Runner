@@ -16,6 +16,7 @@ use std::{
 type TestResult = Result<(), Box<dyn Error>>;
 
 struct Fixture {
+    parent: PathBuf,
     root: PathBuf,
     spec: RuntimeSpec,
 }
@@ -24,11 +25,15 @@ impl Fixture {
     fn new() -> Result<Self, Box<dyn Error>> {
         static NEXT: AtomicU64 = AtomicU64::new(0);
         let stamp = SystemTime::now().duration_since(UNIX_EPOCH)?.as_nanos();
-        let root = std::env::temp_dir().join(format!(
+        let parent = std::env::temp_dir().join(format!(
             "SwiftBonsai-artifact-lifetime-{}-{stamp}-{}",
             std::process::id(),
             NEXT.fetch_add(1, Ordering::Relaxed)
         ));
+        fs::create_dir(&parent)?;
+        // Parallel guards retain the shared temporary directory. Rename only
+        // within this fixture's own parent when checking released handles.
+        let root = parent.join("fixture");
         fs::create_dir(&root)?;
         let runtime_directory = root.join("runtime");
         fs::create_dir(&runtime_directory)?;
@@ -63,7 +68,7 @@ impl Fixture {
             archive_bytes: u64::try_from(archive.len())?,
             archive_sha256: digest(&archive),
         };
-        Ok(Self { root, spec })
+        Ok(Self { parent, root, spec })
     }
 
     fn installed(&self, name: &str) -> PathBuf {
@@ -72,15 +77,16 @@ impl Fixture {
 
     fn remove(self) -> TestResult {
         // Only this test's uniquely created directory is eligible for cleanup.
-        assert!(self.root.is_absolute());
-        assert_eq!(self.root.parent(), Some(std::env::temp_dir().as_path()));
+        assert!(self.parent.is_absolute());
+        assert_eq!(self.parent.parent(), Some(std::env::temp_dir().as_path()));
+        assert_eq!(self.root.parent(), Some(self.parent.as_path()));
         assert!(
-            self.root
+            self.parent
                 .file_name()
                 .and_then(|name| name.to_str())
                 .is_some_and(|name| name.starts_with("SwiftBonsai-artifact-lifetime-"))
         );
-        fs::remove_dir_all(self.root)?;
+        fs::remove_dir_all(self.parent)?;
         Ok(())
     }
 }
@@ -142,6 +148,31 @@ fn runtime_guard_holds_archive_installation_and_ancestors_until_drop() -> TestRe
         assert_file_released(path)?;
     }
     fixture.remove()
+}
+
+#[test]
+fn runtime_guard_release_ignores_unrelated_shared_temp_ancestor_guards() -> TestResult {
+    let fixture = Fixture::new()?;
+    let sibling = Fixture::new()?;
+    let sibling_file = sibling.installed("LICENSE");
+    let bytes = fs::read(&sibling_file)?;
+    let sibling_guard =
+        VerifiedFile::verify(&sibling_file, u64::try_from(bytes.len())?, &digest(&bytes))?;
+    let verified = VerifiedRuntime::verify(&fixture.spec)?;
+    let moved = fixture.root.with_extension("moved");
+    assert!(fs::rename(&fixture.root, &moved).is_err());
+
+    drop(verified);
+    // The sibling still retains the common TEMP ancestor while this fixture's
+    // unique destination parent is released. No scheduler timing is involved.
+    fs::rename(&fixture.root, &moved)?;
+    fs::rename(&moved, &fixture.root)?;
+    assert_file_released(&fixture.spec.archive_path)?;
+    assert_file_released(&fixture.installed("llama-server.exe"))?;
+    assert_file_locked(&sibling_file);
+    drop(sibling_guard);
+    fixture.remove()?;
+    sibling.remove()
 }
 
 #[test]
