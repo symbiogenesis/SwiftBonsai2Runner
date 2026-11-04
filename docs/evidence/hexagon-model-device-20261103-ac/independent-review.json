@@ -1,0 +1,112 @@
+{
+  "schemaVersion": 1,
+  "kind": "scoped-actual-model-Hexagon-capture-review",
+  "dateLocal": "2026-11-03",
+  "verdict": "passed-for-one-original-PQ2-token-first-FFN-up-projection",
+  "reviewScope": "Separate-agent offline review of the primary agent's device capture and exact source contracts. This reviewer authored the Runner supervisor; this is not independent hardware re-execution or an independent oracle implementation.",
+  "newDeviceOrNumericalWorkPerformedByReviewer": false,
+  "captureDirectoryBasename": "SwiftBonsai-Hexagon-Device-20261103-AC",
+  "prismBuildSourceRevision": "cc6c1dcf5488cd6a95b078e0f8a1c64e6bc71b86",
+  "probeExecutableSha256": "bd0093f7ed13de6723afce32f79be685542d1d0869ef578b6115981d847f07fe",
+  "buildReceiptSha256": "8665d45d9862c418970ec6fcc5f153547e5dd74164233fc82e2cc25591217235",
+  "inputIdentity": {
+    "modelRepresentation": "original-Swift-PQ2_0",
+    "modelBytes": 7206168928,
+    "modelSha256": "5912bb739217cf25b4283a098c7b893d9baff36bdf2e72d3dbf4cb999d5633d5",
+    "tokenId": 42,
+    "contextLimit": 1,
+    "projection": "blk.0.ffn_up.weight",
+    "projectionColumns": 5120,
+    "projectionRows": 17408,
+    "activationProvenance": "actual-Rust-graph-token-activation",
+    "route": "guarded-HVX-original-Q8_K-and-ordered-CPU-reduction",
+    "otherProjectionsTransformsAdaptersAndState": "CPU; no adapter loaded"
+  },
+  "intake": {
+    "localBuildOnly": true,
+    "hostedBuild": false,
+    "sourceFilesVerifiedBySupervisor": 318,
+    "sourceBytesVerifiedBySupervisor": 4012250,
+    "reviewerRehashedDeclaredSourcesBeforeDeviceWork": true,
+    "reviewerSourceMismatches": 0,
+    "runtimeFilesVerified": 17,
+    "catalogMembersVerified": 5,
+    "rawCatalogErrors": 0,
+    "rawCatalogWarnings": 0,
+    "driverPublisher": "Microsoft Windows Hardware Compatibility Publisher",
+    "driverSignatureStatus": "Valid",
+    "driverSha256": "5cf6aa86670cceb84461050ad00b012662e4859d15be2a1cf147d98d5002f37d",
+    "driverHeldAgainstMutation": true,
+    "availablePhysicalBytesBefore": 23521943552,
+    "requiredAvailablePhysicalBytes": 19327352832
+  },
+  "rawEventReview": {
+    "events": 138,
+    "nativeProgressEvents": 133,
+    "strictlyOrderedWriteReadCompleteTriples": 40,
+    "submittedSequence": "1-through-40-once-each",
+    "completedSequence": "1-through-40-once-each",
+    "uniqueTerminalResult": true,
+    "errorEvents": 0,
+    "rawStdoutMatchesRetainedCombinedLogSha256": true,
+    "rawResultMatchesSupervisorNativeResult": true
+  },
+  "numericalResult": {
+    "nativeOperationsSubmitted": 40,
+    "nativeOperationsCompleted": 40,
+    "projectionsCompleted": 1,
+    "integerValuesCompared": 1392640,
+    "logitsBitwiseEqual": true,
+    "stateBitwiseEqual": true,
+    "cpuControlAndNativeLogitsDigestsMatch": true,
+    "cpuControlAndNativeStateDigestsMatch": true,
+    "logitsSha256": "69ccdaaaa739ef628ac749cbe034d5b25e6332ba6fc97f33ee4b434821179063",
+    "stateSha256": "2162316925620bdbbe55d896529c95e2d5cbb9bd02999e318ba8821130780742"
+  },
+  "cleanup": {
+    "nativeCompletedCycle": true,
+    "orderedRawStages": [
+      "compute-queue-stop-entered",
+      "compute-queue-close-entered",
+      "compute-fd-unmap-entered",
+      "compute-module-close-entered",
+      "compute-free-entered",
+      "compute-numeric-verified-stopped-unmapped-freed"
+    ],
+    "sourceContractReviewed": "Q2ProjectionReport::completed_cycle requires completed work, no deadline expiry, equal positive submitted/completed counts and QueueComputeReport::completed_cycle. The latter requires zero stop, queue-close, unmap and module-close results, free_completed and successful correlated numeric execution.",
+    "individualCleanupReturnCodesSerialized": false,
+    "returnCodeConclusionBasis": "source-bound-terminal-completed_cycle-check; raw stage markers alone prove entry only",
+    "ownedJobTeardown": "confirmed-empty",
+    "fullVendorSessionTeardownQualified": false
+  },
+  "power": {
+    "cpuBefore": {"available": true, "acConnected": true, "batterySaver": false, "batteryPercent": 36},
+    "cpuAfter": {"available": true, "acConnected": true, "batterySaver": false, "batteryPercent": 36},
+    "nativeBefore": {"available": true, "acConnected": true, "batterySaver": false, "batteryPercent": 36},
+    "nativeAfter": {"available": true, "acConnected": true, "batterySaver": false, "batteryPercent": 37},
+    "workloadBefore": {"available": true, "acConnected": true, "batterySaver": false, "batteryPercent": 36},
+    "workloadAfter": {"available": true, "acConnected": true, "batterySaver": false, "batteryPercent": 37},
+    "interpretation": "All observed endpoints report AC connected and saver off. Charge increased from 36 to 37 percent. Endpoint agreement does not prove uninterrupted power stability. No energy or performance comparison is qualified."
+  },
+  "retainedReceiptHashes": [
+    {"file": "single-token-device/model-device.json", "sha256": "e7297193de10b183a86a36988d97d117b2252be156f084f2272d37ca34dd3bee"},
+    {"file": "single-token-device/model-probe.txt", "sha256": "67e6f5c977f95e797a031541f2ca57a4b0ea77d2b9f37ea68a52dc2ebf508edc"},
+    {"file": "single-token-device/model-request.json", "sha256": "d6f9e3b65951d929d4714989c40c98e257dced2f997382caa0605832fae4af89"},
+    {"file": "single-token-device/catalog.txt", "sha256": "e91ff4ecbd7a081fc2fc377e76f52a36b33e43f11db469a480d0102ac0ee0456"}
+  ],
+  "supervisorElapsedMilliseconds": 51689,
+  "elapsedIsInferenceKernelTimingOrSpeedup": false,
+  "performanceMeasured": false,
+  "profileEligible": false,
+  "productionNpuAdmissionEnabled": false,
+  "remaining": [
+    "independently observed selected DSP-byte identity and effective device resources",
+    "HMX signed-device arithmetic and placement",
+    "adapter parity, additional tokens, generated history, wider qualified placement and state lifecycle",
+    "24,000-submission lifetime behavior; this workload submitted only 40 operations",
+    "persistent serving, cancellation, recovery, isolation and complete vendor teardown",
+    "efficient fused packed kernels, device weight reuse and true multitoken prefill",
+    "paired same-artifact end-to-end latency, throughput, energy and sustained-comfort benefit",
+    "qualified release profile and backend selection"
+  ]
+}
