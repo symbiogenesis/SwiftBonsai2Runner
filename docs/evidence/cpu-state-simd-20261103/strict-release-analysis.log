@@ -1,0 +1,97 @@
+    Checking windows-sys v0.61.2
+    Checking bonsai-native-hash v0.1.0 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\prism-exact-integration\tools\native-hash)
+    Checking bonsai-gguf v0.1.1 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\prism-exact-integration\tools\gguf)
+    Checking prism-inference v0.1.14 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\prism-exact-integration)
+error: 8 bindings with single-character names in scope
+  --> src\kernels\prefill_neon.rs:47:14
+   |
+47 |         let [a, b, c, d] = self.products16(group * 4, &halves[0]);
+   |              ^  ^  ^  ^
+48 |         let [e, f, g, h] = self.products16(group * 4 + 2, &halves[1]);
+   |              ^  ^  ^  ^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/main/index.html#many_single_char_names
+   = note: `-D clippy::many-single-char-names` implied by `-D clippy::pedantic`
+   = help: to override `-D clippy::pedantic` add `#[allow(clippy::many_single_char_names)]`
+
+error: using `chunks_exact` with a constant chunk size
+  --> src\kernels\pinned_gdn_neon.rs:19:10
+   |
+19 |         .chunks_exact(16)
+   |          ^^^^^^^^^^^^^^^^ help: consider using `as_chunks` instead: `as_chunks::<16>().0.iter()`
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/main/index.html#chunks_exact_to_as_chunks
+   = note: `-D clippy::chunks-exact-to-as-chunks` implied by `-D clippy::all`
+   = help: to override `-D clippy::all` add `#[allow(clippy::chunks_exact_to_as_chunks)]`
+
+error: using `chunks_exact` with a constant chunk size
+  --> src\kernels\pinned_gdn_neon.rs:20:35
+   |
+20 |         .zip(second[..vectorized].chunks_exact(16))
+   |                                   ^^^^^^^^^^^^^^^^
+   |
+help: consider using `as_chunks::<16>()` instead
+  --> src\kernels\pinned_gdn_neon.rs:20:35
+   |
+20 |         .zip(second[..vectorized].chunks_exact(16))
+   |                                   ^^^^^^^^^^^^^^^^
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/main/index.html#chunks_exact_to_as_chunks
+
+error: using `chunks_exact` with a constant chunk size
+  --> src\kernels\pinned_gdn_neon.rs:24:24
+   |
+24 |             .zip(first.chunks_exact(4))
+   |                        ^^^^^^^^^^^^^^^
+   |
+help: consider using `as_chunks::<4>()` instead
+  --> src\kernels\pinned_gdn_neon.rs:24:24
+   |
+24 |             .zip(first.chunks_exact(4))
+   |                        ^^^^^^^^^^^^^^^
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/main/index.html#chunks_exact_to_as_chunks
+
+error: using `chunks_exact` with a constant chunk size
+  --> src\kernels\pinned_gdn_neon.rs:25:25
+   |
+25 |             .zip(second.chunks_exact(4))
+   |                         ^^^^^^^^^^^^^^^
+   |
+help: consider using `as_chunks::<4>()` instead
+  --> src\kernels\pinned_gdn_neon.rs:25:25
+   |
+25 |             .zip(second.chunks_exact(4))
+   |                         ^^^^^^^^^^^^^^^
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/main/index.html#chunks_exact_to_as_chunks
+
+error: using `chunks_exact_mut` with a constant chunk size
+  --> src\kernels\pinned_gdn_neon.rs:56:10
+   |
+56 |         .chunks_exact_mut(4)
+   |          ^^^^^^^^^^^^^^^^^^^ help: consider using `as_chunks_mut` instead: `as_chunks_mut::<4>().0.iter_mut()`
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/main/index.html#chunks_exact_to_as_chunks
+
+error: using `chunks_exact` with a constant chunk size
+  --> src\kernels\pinned_gdn_neon.rs:57:34
+   |
+57 |         .zip(input[..vectorized].chunks_exact(4))
+   |                                  ^^^^^^^^^^^^^^^
+   |
+help: consider using `as_chunks::<4>()` instead
+  --> src\kernels\pinned_gdn_neon.rs:57:34
+   |
+57 |         .zip(input[..vectorized].chunks_exact(4))
+   |                                  ^^^^^^^^^^^^^^^
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/main/index.html#chunks_exact_to_as_chunks
+
+error: this function has too many lines (102/100)
+    --> src\kernels.rs:1798:5
+     |
+1798 |     fn multiply(&mut self, tensor: &Tensor, output: &mut Vec<f32>) -> Result<()> {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/main/index.html#too_many_lines
+     = note: `-D clippy::too-many-lines` implied by `-D clippy::pedantic`
+     = help: to override `-D clippy::pedantic` add `#[allow(clippy::too_many_lines)]`
+
+error: could not compile `prism-inference` (lib) due to 8 previous errors

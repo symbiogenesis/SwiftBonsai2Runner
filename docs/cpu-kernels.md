@@ -18,6 +18,25 @@ the last operation and `statistics()` exposes aggregate counts without payloads.
 at `u64::MAX`; reset and checkpoint restoration preserve diagnostics. Floating projections and
 ineligible packed operations use scalar.
 
+The local [exact state SIMD candidate](evidence/cpu-state-simd-20261103/summary.json)
+also uses safe baseline NEON for pinned GDN dot/update arithmetic and attention value
+tiles on the same supported Windows ARM64 build. These graph helpers retain their
+scalar implementations when the feature or target is unavailable. `MatvecBackend`
+continues to govern packed projections: aligned floating projections explicitly call
+the scalar pinned dot and retain accurate scalar diagnostics. There is no new optional
+ISA, precision mode, graph-state layout or selection profile.
+
+GDN keeps four independent native FMA registers, the same reduction tree and unfused
+scalar tails. Its scaled update checks four results together; a failing group is
+replayed in scalar lane order before publication, preserving the original finite-prefix
+mutation and untouched failing lane. Attention groups four adjacent channels in each
+vector while retaining all sixteen temporal accumulators, FP16 decoding, rounded
+probabilities, masked-zero FMAs and the original reduction/publication order. The
+accumulator payload remains 2 KiB; non-multiple-of-four tile widths stay scalar.
+No model or KV payload is expanded. Compiler code generation, actual stack footprint,
+complete-model parity and matched request/prompt benefit remain qualification gates;
+explicit vectors alone do not establish fewer instructions or a speedup.
+
 Baseline eligibility requires native `aarch64-pc-windows-msvc`, the compiled feature and baseline
 NEON. Complete PQ2/PTQ1 rows use packed kernels; unsupported formats/targets and disabled features
 use scalar. Scalar runs natively on ARM64. There is no optional-ISA detector, global target override

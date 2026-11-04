@@ -1,0 +1,38 @@
+   Compiling prism-inference v0.1.14 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\prism-exact-integration)
+    Finished `release` profile [optimized] target(s) in 23.25s
+     Running unittests src\lib.rs (inference-efficiency-local-20261103/target\release\build\prism-inference/54af78ea4746aafd\out\bonsai_prism_runtime-54af78ea4746aafd.exe)
+
+running 19 tests
+test kernels::pinned_attention::neon::tests::neon_value_tile_baseline_is_available_and_accumulator_remains_two_kib ... ok
+test graph::tests::pinned_gdn_arithmetic_matches_independent_native_capture ... ok
+test kernels::pinned_gdn::tests::pinned_gdn_preserves_exceptional_bits_and_first_failure_mutation ... ok
+test kernels::pinned_attention::tests::pinned_value_tiles_match_native_capture_and_visit_each_cached_row_once ... ok
+test kernels::pinned_attention::tests::pinned_attention_softmax_matches_native_masked_physical_rows ... ok
+test kernels::pinned_attention::tests::pinned_value_tiles_reject_malformed_extents_and_nonfinite_results ... ok
+test kernels::pinned_attention::tile_tests::pinned_value_vector_tiles_preserve_validation_and_finite_failure_publication ... ok
+test kernels::pinned_gdn::tests::pinned_gdn_rejects_mismatched_rows_and_nonfinite_results ... ok
+test kernels::pinned_gdn::tests::pinned_gdn_dispatch_matches_scalar_bits_and_tail ... ok
+test kernels::pinned_float_tests::aligned_pinned_float_projections_match_native_without_changing_generic_or_bf16 ... ok
+test kernels::pinned_attention::tests::pinned_attention_dot_matches_native_f16_rows_and_padded_cancellation ... ok
+test kernels::pinned_float_tests::unqualified_float_projection_tails_keep_the_previous_arithmetic ... ok
+test kernels::pinned_gdn::tests::pinned_gdn_retains_fused_vector_and_nonfused_tail_rounding ... ok
+test kernels::pinned_gdn::tests::pinned_gdn_neon_executes_exact_vector_and_tail_contract ... ok
+test kernels::pinned_attention::padding_tests::pruned_dot_padding_matches_full_physical_rows_bitwise ... ok
+test kernels::pinned_attention::padding_tests::pruned_softmax_padding_matches_full_physical_groups_bitwise ... ok
+test kernels::pinned_attention::padding_tests::pruned_value_padding_matches_full_rows_at_every_lane_boundary ... ok
+test kernels::pinned_attention::tile_tests::pinned_value_vector_tiles_preserve_scalar_bits_at_channel_and_padding_boundaries ... ok
+test graph::tests::attention_value_tiles_preserve_strided_oracle_bits_across_cache_pages ... ok
+
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 106 filtered out; finished in 0.02s
+
+     Running tests\graph.rs (inference-efficiency-local-20261103/target\release\build\prism-inference/552d012446592d8a\out\graph-552d012446592d8a.exe)
+
+running 5 tests
+test rank_one_checkpoint_and_failed_generation_preserve_complete_state ... ok
+test phase_shared_scratch_preserves_frozen_hybrid_state_and_recovery ... ok
+test pinned_arithmetic_requires_exact_swift_identity_and_survives_recovery ... ok
+test rank_one_zero_scale_preserves_full_and_recurrent_logits_and_state_bits ... ok
+test prefill::tiled_prefill_parallel_workers_preserve_state_restore_and_policy_changes ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 73 filtered out; finished in 0.02s
+

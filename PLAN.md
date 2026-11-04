@@ -964,6 +964,21 @@ Follow [CPU arithmetic, dispatch and acceptance](docs/cpu-kernels.md). Pin artif
 runtime, compiler, format, shapes, ISA and numerics; choose work from CI hotspot,
 bandwidth, packing and dispatch evidence.
 
+Qualify the [exact recurrent and attention SIMD source changes](docs/evidence/cpu-state-simd-20261103/summary.json)
+on settled Prism main through owner-managed checks. Pinned GDN dot/update now uses
+safe baseline NEON with native reduction/tail and first-failure mutation semantics;
+attention value tiles group adjacent channels without changing their temporal
+arithmetic or 2 KiB accumulator payload. Floating projections retain explicit scalar
+execution and diagnostics. The one new 39.363-second model-free check passed
+twenty-four focused Rust controls, including direct NEON/native captures and graph
+recovery, plus four receipt controls, then stopped on eight strict analyzer findings.
+Six typed-chunk findings and two earlier prefill/dispatch findings have source-reviewed
+corrections, which remain uncompiled. Preserve that failed receipt, closed clock and
+original battery/saver/charge observations. Require final-source exact controls,
+strict analyzers, portable fallback and production linking, then actual-model
+state/adapter parity, code-generation/spill review and matched complete-request benefit
+before a qualified release and Runner repin. No installed speedup is established.
+
 Qualify the [remaining CPU speed source changes](docs/evidence/cpu-remaining-speed-20261103/summary.json)
 on settled Prism main through owner-managed checks. Direct BF16 projections omit
 decoded-row materialization while preserving activation rounding and the original

@@ -144,6 +144,7 @@ docs/evidence/rust-development-default-20261103/** -text whitespace=cr-at-eol
 docs/evidence/speed-four-source-20261103/** -text -whitespace
 docs/evidence/cpu-speed-next-20261103/** -text -whitespace
 docs/evidence/cpu-remaining-speed-20261103/** -text -whitespace
+docs/evidence/cpu-state-simd-20261103/** -text -whitespace
 
 # Preserve exact hosted failure and focused CI-repair validation bytes.
 docs/evidence/ci-repair-20261103/** -text -whitespace
