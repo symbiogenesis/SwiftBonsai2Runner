@@ -23,6 +23,22 @@ const STANDARD_ADAPTER_SCALE_BITS: u32 = 0x3fa6_6666;
 const CLEANUP_SECONDS: u64 = 75;
 const CHILD_SECONDS: u64 = 195;
 const REQUIRED_AVAILABLE_BYTES: u64 = 18 * 1024 * 1024 * 1024;
+const STATE_BUDGET_BYTES: u64 = 512 * 1024 * 1024;
+// Exact logical state for the pinned original-PQ2 model: 48 recurrent
+// layers plus the growing KV state of its 16 attention layers. The CPU arm
+// retains every complete snapshot until native comparisons finish.
+const CONTROL_FIXED_STATE_BYTES: u64 = 156_893_184;
+const CONTROL_KV_BYTES_PER_TOKEN: u64 = 131_072;
+
+fn required_control_state_bytes(token_count: usize) -> Result<u64> {
+    if !(1..=8).contains(&token_count) {
+        return Err("Control state accounting requires one to eight explicit tokens.".into());
+    }
+    let count = u64::try_from(token_count).map_err(|error| error.to_string())?;
+    // The admitted count bound makes every product fit u64. Snapshot i
+    // contains CONTROL_FIXED_STATE_BYTES + i * CONTROL_KV_BYTES_PER_TOKEN.
+    Ok(count * CONTROL_FIXED_STATE_BYTES + CONTROL_KV_BYTES_PER_TOKEN * count * (count + 1) / 2)
+}
 
 #[derive(Clone, Copy, Default, Deserialize, PartialEq, Eq, Serialize)]
 enum ExecutionBackend {
@@ -108,6 +124,12 @@ impl Request {
             || tokens.iter().any(|&token| token >= 248_320)
         {
             return Err("Select one to eight explicit Swift tokens beginning with tokenId.".into());
+        }
+        let required = required_control_state_bytes(tokens.len())?;
+        if required > STATE_BUDGET_BYTES {
+            return Err(format!(
+                "The selected token sequence requires {required} retained CPU control-state bytes, exceeding its fixed {STATE_BUDGET_BYTES}-byte budget."
+            ));
         }
         Ok(())
     }
@@ -667,7 +689,7 @@ fn execute(request: &Request, started: Instant, report: &mut Value) -> Result<()
         "tokenId":request.token_id,"tokenIds":request.tokens(),"executionBackend":request.execution_backend,
         "adapterPath":request.adapter_path,"adapterCase":request.adapter_case,"cpuBackend":request.cpu_backend,"rowWorkers":request.row_workers,
         "contextLimit":request.tokens().len(),"modelMemoryLimitBytes":12_u64*1024*1024*1024,
-        "stateBudgetBytes":512_u64*1024*1024,"sessionSeconds":120,"maximumOperations":40*request.tokens().len(),
+        "stateBudgetBytes":STATE_BUDGET_BYTES,"sessionSeconds":120,"maximumOperations":40*request.tokens().len(),
         "maximumOwnedPayloadBytes":64_u64*1024*1024,"expectedParentPid":pid,"expectedParentCreationTime":creation});
     let path = request.output_directory.join("model-request.json");
     write_json(&path, &probe_request)?;
@@ -693,6 +715,7 @@ fn execute(request: &Request, started: Instant, report: &mut Value) -> Result<()
         started,
         "model-probe.txt",
     )?;
+    report["ProbeExitCode"] = json!(output.code);
     report["OwnedJobTeardown"] = json!("confirmed-empty");
     // Retain arm observations even when no terminal result is publishable.
     report["ProbeEvents"] = json!(
@@ -761,7 +784,8 @@ pub(super) fn run(request: &Request) -> Result<Value> {
         "CleanupReserveSeconds":CLEANUP_SECONDS,"ModelWorkAttempted":false,"OwnedJobTeardown":"not-started","ProfileEligible":false,
         "PerformanceMeasured":false,"TrustChanged":false,"PowerBefore":power(),"RequiredAvailablePhysicalBytes":REQUIRED_AVAILABLE_BYTES,
         "ExecutionBackend":request.execution_backend,"TokenIds":request.tokens(),"AdapterCase":request.adapter_case,
-        "CpuBackend":request.cpu_backend,"RowWorkers":request.row_workers});
+        "CpuBackend":request.cpu_backend,"RowWorkers":request.row_workers,
+        "RequiredControlStateBytes":required_control_state_bytes(request.tokens().len())?,"ControlStateBudgetBytes":STATE_BUDGET_BYTES});
     let outcome = execute(request, started, &mut report);
     report["PowerAfter"] = power();
     report["ElapsedMilliseconds"] = json!(started.elapsed().as_millis());
@@ -972,11 +996,8 @@ mod tests {
     #[test]
     fn eight_token_result_requires_every_projection_and_comparison() -> Result<()> {
         let tokens = [42, 0, 248_319, 42, 43, 44, 45, 46];
-        let mut request = request_value();
-        request["tokenIds"] = json!(tokens);
-        let request: Request =
-            serde_json::from_value(request).map_err(|error| error.to_string())?;
-        request.validate_tokens()?;
+        // This checks the result wire format independently of request resource
+        // admission; the fixed capture budget cannot admit eight snapshots.
         let mut value = complete_result(&tokens, ExecutionBackend::HmxBitplane);
         let driver = json!({"Path":"fixed-driver"});
         result(
@@ -997,6 +1018,36 @@ mod tests {
             )
             .is_err()
         );
+        Ok(())
+    }
+
+    #[test]
+    fn control_snapshot_budget_admits_three_and_rejects_four_before_intake() -> Result<()> {
+        for (count, expected, fits) in [
+            (1, 157_024_256, true),
+            (2, 314_179_584, true),
+            (3, 471_465_984, true),
+            (4, 628_883_456, false),
+            (8, 1_259_864_064, false),
+        ] {
+            assert_eq!(required_control_state_bytes(count)?, expected);
+            let mut value = request_value();
+            value["tokenIds"] = json!(vec![42; count]);
+            let request: Request =
+                serde_json::from_value(value).map_err(|error| error.to_string())?;
+            let admission = request.validate_tokens();
+            if fits {
+                admission?;
+            } else {
+                let reason = admission
+                    .err()
+                    .ok_or("Oversized snapshot control was admitted.")?;
+                assert!(reason.contains(&expected.to_string()));
+                assert!(reason.contains(&STATE_BUDGET_BYTES.to_string()));
+            }
+        }
+        assert!(required_control_state_bytes(0).is_err());
+        assert!(required_control_state_bytes(9).is_err());
         Ok(())
     }
 
