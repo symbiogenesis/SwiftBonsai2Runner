@@ -1,0 +1,11 @@
+    Checking prism-inference v0.1.14 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\npu-prism-qualification)
+    Checking bonsai-hexagon-runtime v0.1.0 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\npu-prism-qualification\tools\hexagon-runtime)
+    Finished `release` profile [optimized] target(s) in 3.23s
+\ : The term '\' is not recognized as the name of a cmdlet, function, script file, or operable program. Check the 
+spelling of the name, or if a path was included, verify that the path is correct and try again.
+At line:1 char:378
++ ... el-rows --bin prism-hexagon-model-probe -- -D warnings; if (\ -ne 0)  ...
++                                                                 ~
+    + CategoryInfo          : ObjectNotFound: (\:String) [], ParentContainsErrorRecordException
+    + FullyQualifiedErrorId : CommandNotFoundException
+ 

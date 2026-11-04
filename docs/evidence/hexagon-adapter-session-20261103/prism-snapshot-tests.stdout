@@ -1,0 +1,18 @@
+
+running 13 tests
+test tests::model_probe_adapter_case_requires_an_explicit_path_and_approved_scale ... ok
+test tests::model_probe_admits_complete_cpu_snapshot_retention_before_model_work ... ok
+test tests::model_probe_cpu_policy_rejects_silent_worker_and_neon_fallback ... ok
+test tests::model_probe_native_failure_and_oracle_mismatch_are_terminal_without_replay ... ok
+test tests::model_probe_cpu_failure_reports_stage_and_index_without_a_success_claim ... ok
+test tests::model_probe_request_rejects_unknown_fields_and_infeasible_limits ... ok
+test tests::model_probe_hmx_oracle_checks_all_planes_row_tiles_signs_and_output_bytes ... ok
+test tests::model_probe_hmx_native_failure_and_plane_mismatch_close_without_replay ... ok
+test tests::model_probe_success_counts_every_independently_compared_limb ... ok
+test tests::model_probe_oracle_decodes_nonzero_rows_lanes_and_signed_limbs ... ok
+test tests::model_probe_oracle_rejects_plausible_wrong_unwritten_and_partial_results ... ok
+test tests::model_probe_sequence_requires_bounded_tokens_context_and_complete_work ... ok
+test tests::model_probe_hmx_success_counts_every_plane_across_submissions ... ok
+
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+

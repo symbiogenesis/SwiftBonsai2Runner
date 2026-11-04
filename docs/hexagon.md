@@ -50,6 +50,19 @@ device run. `ownerPinnedUntilExit: true` preserves driver/module/catalog owners
 through process exit after buffer cleanup; it is required by the native
 completed-cycle contract. Effective HMX placement/VTCM, adapters, wider placement,
 vendor teardown, persistent serving and performance remain unqualified.
+The separate [adapter/default-policy preparation](evidence/hexagon-adapter-session-20261103/summary.json)
+adds exact approved-adapter cases and explicit one/four-worker scalar/NEON policy
+to this diagnostic. Its one four-token standard-adapter/1.3 control failed in the
+CPU reference arm before observed native setup. No adapter/NPU parity or benefit
+passed. The original generic error and pending supervisor receipt remain intact;
+an empty owned Job passed, while a zero outer exit code is not acceptance.
+Static geometry proves its four cumulative logical CPU snapshots require
+628,883,456 bytes, above the fixed 512 MiB control bound. Source-only corrections
+now reject insufficient capacity before model loading and retain CPU stage/token
+diagnostics plus the child exit status. The fixed supervisor budget fits at most
+three tokens even though the raw schema has an eight-token ceiling. Focused
+model-free checks do not qualify another device run; loaded-zero, nonzero adapter
+and broader numerical acceptance remain pending.
 The [logical payload ledger](evidence/hexagon-swift-traffic-ledger.json) derives
 13.69 GB of signed-kernel input/result payload per all-eligible original-PQ2
 evaluation token. The opt-in [mapped host-weight arena and graph cache](../tools/hexagon/resident-host.md)

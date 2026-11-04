@@ -1,0 +1,32 @@
+{
+  "startedUtc": "2026-11-04T04:05:07.308308+00:00",
+  "finishedUtc": "2026-11-04T04:05:16.180662+00:00",
+  "elapsedSeconds": 8.872359,
+  "exitCode": 0,
+  "timedOut": false,
+  "powerBefore": {
+    "status": "observed",
+    "source": "GetSystemPowerStatus",
+    "ac_online": false,
+    "battery_saver": false,
+    "battery_percent": 45,
+    "observedUtc": "2026-11-04T04:05:07.308865+00:00"
+  },
+  "powerAfter": {
+    "status": "observed",
+    "source": "GetSystemPowerStatus",
+    "ac_online": false,
+    "battery_saver": false,
+    "battery_percent": 45,
+    "observedUtc": "2026-11-04T04:05:16.180765+00:00"
+  },
+  "command": [
+    "powershell",
+    "-NoProfile",
+    "-ExecutionPolicy",
+    "Bypass",
+    "-Command",
+    ". 'C:\\Users\\symbi\\AppData\\Local\\Temp\\SwiftBonsai-Npu-Adapter-20261103\\build-env.ps1'; cargo test --offline --locked --release --target aarch64-pc-windows-msvc --target-dir 'C:\\Users\\symbi\\AppData\\Local\\Temp\\SwiftBonsai-Hmx-Session-20261103\\prism-target' -p bonsai-hexagon-runtime --features experimental-neon,parallel-rows --bin prism-hexagon-model-probe"
+  ],
+  "workingDirectory": "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\npu-prism-qualification"
+}

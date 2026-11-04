@@ -1,0 +1,30 @@
+{
+  "probeExecutable": {
+    "bytes": 1072640,
+    "sha256": "a7308f1924794e4d0810327b3d3a25c77c8cfc6412bce786430122d8c6164dac"
+  },
+  "runnerExecutable": {
+    "bytes": 6601728,
+    "sha256": "3da311ad2361f1a284f9c92e08fe95cf55505db9dc6904c22005735c4eefa010"
+  },
+  "buildSourcePrismRevision": "d965b48fafb09cfbfc42261fc99b889fb08fa04f",
+  "buildSourceRunnerRevision": "2d185dc9c1f38fab35d229b6173d273461420b25",
+  "modelPresent": true,
+  "adapter": {
+    "path": "C:\\Users\\symbi\\AppData\\Local\\SwiftBonsai2\\adapters\\703028bb7fba03496e796b144839b161cf0f5409\\bonsai-abliterate-lora.gguf",
+    "bytes": 9682464,
+    "sha256": "f1669534803d340a496015f5c45125f3437b4d13ec764f40e34488ce83967f42"
+  },
+  "packagePresent": true,
+  "catalogToolPresent": true,
+  "integratedSourceTextEquivalent": true,
+  "prismLineEndingDifferences": [
+    "tools/hexagon-runtime/src/bin/model_probe.rs",
+    "tools/private-service-acceptance/Budget.psm1",
+    "tools/private-service-acceptance/Intake.psm1",
+    "tools/private-service-acceptance/Test-Budget.ps1",
+    "tools/private-service-acceptance/Test-Intake.ps1",
+    "tools/private-service-acceptance/owner.rs"
+  ],
+  "exactSourceAdmission": "Supervisor independently hashes and holds every raw built-worktree source entry, executable, adapter, model, driver and runtime input."
+}

@@ -1,0 +1,55 @@
+   Compiling crossbeam-utils v0.8.23
+   Compiling typenum v1.20.1
+   Compiling memchr v2.8.3
+   Compiling proc-macro2 v1.0.107
+   Compiling crossbeam-epoch v0.9.21
+   Compiling crossbeam-deque v0.8.8
+   Compiling windows-link v0.2.1
+   Compiling quote v1.0.47
+   Compiling unicode-ident v1.0.27
+   Compiling regex-syntax v0.8.11
+   Compiling rayon-core v1.13.0
+   Compiling serde_core v1.0.229
+   Compiling zmij v1.0.23
+   Compiling bit-vec v0.8.0
+   Compiling cfg-if v1.0.5
+   Compiling bonsai-prism v0.1.1 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\npu-prism-qualification\tools\prism)
+   Compiling cpufeatures v0.3.1
+   Compiling smallvec v1.16.4
+   Compiling windows-sys v0.61.2
+   Compiling serde v1.0.229
+   Compiling serde_json v1.0.154
+   Compiling either v1.19.0
+   Compiling aho-corasick v1.1.5
+   Compiling bit-set v0.8.0
+   Compiling unicode-normalization-alignments v0.1.12
+   Compiling itoa v1.0.18
+   Compiling bonsai-ternary v0.1.0 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\npu-prism-qualification\tools\ternary)
+   Compiling fearless_simd v1.1.0
+   Compiling hybrid-array v0.4.15
+   Compiling bonsai-hexagon-native v0.1.0 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\npu-prism-qualification\tools\hexagon-native)
+   Compiling regex-automata v0.4.18
+   Compiling bonsai-native-hash v0.1.0 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\npu-prism-qualification\tools\native-hash)
+   Compiling bonsai-windows-process v0.1.0
+   Compiling syn v3.0.9
+   Compiling block-buffer v0.12.1
+   Compiling crypto-common v0.2.2
+   Compiling digest v0.11.3
+   Compiling sha2 v0.11.1
+   Compiling bonsai-gguf v0.1.1 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\npu-prism-qualification\tools\gguf)
+   Compiling serde_derive v1.0.229
+   Compiling rayon v1.12.0
+   Compiling fancy-regex v0.14.0
+   Compiling regex v1.13.1
+   Compiling prism-inference v0.1.14 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\npu-prism-qualification)
+error[E0493]: destructor of `RowParallelism` cannot be evaluated at compile-time
+  --> src\kernels\prefill.rs:43:9
+   |
+43 |         self.row_parallelism = parallelism;
+   |         ^^^^^^^^^^^^^^^^^^^^
+   |         |
+   |         the destructor for this type cannot be evaluated in constant functions
+   |         value is dropped here
+
+For more information about this error, try `rustc --explain E0493`.
+error: could not compile `prism-inference` (lib) due to 1 previous error

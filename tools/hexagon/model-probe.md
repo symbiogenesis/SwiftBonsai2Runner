@@ -121,7 +121,8 @@ The local receipt has this closed schema:
 Generate that receipt only after observing a successful local `cargo build
 --locked --release --target aarch64-pc-windows-msvc -p bonsai-hexagon-runtime
 --bin prism-hexagon-model-probe`, with its target directory outside the source
-closure. Preserve the actual compiler/executable lengths and SHA-256 values.
+closure. Add `--features experimental-neon,parallel-rows` for the explicit NEON,
+four-worker example above. Preserve the actual compiler/executable lengths and SHA-256 values.
 Enumerate **every regular file** below Prism `src/` and `tools/`, excluding
 directories named `target`, `.git` or `.worktrees`; add root `Cargo.toml`,
 `Cargo.lock`, and existing `build.rs`, `rust-toolchain.toml`, `.cargo/config.toml`.

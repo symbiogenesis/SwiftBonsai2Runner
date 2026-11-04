@@ -1141,6 +1141,22 @@ effective device resources, wider placement and persistent serving remain
 outstanding. Retain all separate closed historical workloads. Neither control
 establishes measured speedup or production eligibility.
 
+Retain the separate [adapter/default-CPU-policy preparation and failed control](docs/evidence/hexagon-adapter-session-20261103/summary.json).
+Its single four-token, standard-adapter/1.3, four-worker/NEON request failed in
+the CPU reference arm before any observed native setup or comparison. The
+supervisor retained its pending verdict and confirmed an empty owned Job;
+outer process exit zero is not numerical acceptance. Static pinned-geometry
+accounting proves four retained snapshots need 628,883,456 bytes, exceeding the
+unchanged 536,870,912-byte control budget; the original generic error does not
+independently identify the thrown failure. Keep that trial closed, with its
+original battery observations and no adapter/NPU pass. Qualify the source-only
+pre-execution snapshot admission and stage/token diagnostics independently;
+the fixed budget fits at most three tokens. Complete raw numerical replay,
+loaded-zero and nonzero adapter device acceptance remain pending. The
+[independent default-feasibility review](docs/evidence/npu-default-feasibility-20261103/independent-review.json)
+also retains the native lifetime, production integration and benefit blockers;
+the session's longer aggregate allowance changes none of those contracts.
+
 ### Promotion sequence
 
 Resume with **NPU-1**. Close each applicable gate with retained, exact-source

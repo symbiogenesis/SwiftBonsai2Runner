@@ -1,0 +1,4 @@
+   Compiling prism-inference v0.1.14 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\npu-prism-qualification)
+   Compiling bonsai-hexagon-runtime v0.1.0 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\npu-prism-qualification\tools\hexagon-runtime)
+    Finished `release` profile [optimized] target(s) in 8.00s
+     Running unittests src\bin\model_probe.rs (C:\Users\symbi\AppData\Local\Temp\SwiftBonsai-Hmx-Session-20261103\prism-target\aarch64-pc-windows-msvc\release\build\bonsai-hexagon-runtime/032e6d98238dd3dc\out\prism_hexagon_model_probe-032e6d98238dd3dc.exe)
