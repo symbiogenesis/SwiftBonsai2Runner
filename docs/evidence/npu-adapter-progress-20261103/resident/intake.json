@@ -1,0 +1,25 @@
+{
+  "runnerRevision": "8523ac334d8264fa8570df7b800a5f77baac3f8b",
+  "prismRevision": "2f10b0bf8e656829fbcf01e1cd93d0dd51a123d3",
+  "supervisor": {
+    "bytes": 6622720,
+    "sha256": "74f11ee7f30c646289a844e3a0d6a65c2fbe5832186e02601881ca3ae5f5f4fa"
+  },
+  "probe": {
+    "bytes": 1099776,
+    "sha256": "fddc843d397d778d19d8901738eb67574cdf14a760c752ce28222aa082c647c2"
+  },
+  "sourceFiles": 318,
+  "observedBuildReceipt": {
+    "bytes": 941,
+    "sha256": "94075deda4363d68c36fb8a65dea2c4a34861699b71fcf75fe412c8438ce8847"
+  },
+  "deviceCommand": [
+    "C:\\Users\\symbi\\AppData\\Local\\Temp\\SwiftBonsai-Npu-Progress-20261103\\resident\\model-bundle\\bonsai-tools.exe",
+    "hexagon-tools",
+    "--request",
+    "C:\\Users\\symbi\\AppData\\Local\\Temp\\SwiftBonsai-Npu-Progress-20261103\\resident\\model-device-request.json"
+  ],
+  "deviceAttempted": false,
+  "performanceQualified": false
+}

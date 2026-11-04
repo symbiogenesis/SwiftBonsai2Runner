@@ -1,0 +1,15 @@
+{
+  "closedUtc": "2026-11-04T04:51:33.061988+00:00",
+  "originalDeadlineUtc": "2026-11-04T05:06:11.837040+00:00",
+  "chargedThroughCloseSeconds": 1521.2249510000001,
+  "maximumAggregateSeconds": 2400,
+  "stopReason": "Declared correctness and resident diagnostic finished; no speed benefit or usable production NPU profile established. No further device work selected.",
+  "power": {
+    "observedUtc": "2026-11-04T04:51:33.062019+00:00",
+    "source": "GetSystemPowerStatus",
+    "ac_online": true,
+    "battery_saver": false,
+    "battery_percent": 33
+  },
+  "historicalDeadlinesReopened": false
+}

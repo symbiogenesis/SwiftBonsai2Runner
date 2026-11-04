@@ -1,0 +1,25 @@
+{
+  "operation": "model-device",
+  "request": {
+    "repositoryDirectory": "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\npu-probe-preparation",
+    "prismRepositoryDirectory": "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\npu-prism-timing",
+    "expectedPrismRevision": "4f960ad9a07329d79de43a85af458ec7a49753e2",
+    "executablePath": "C:\\Users\\symbi\\AppData\\Local\\Temp\\SwiftBonsai-Npu-Progress-20261103\\loaded-zero\\model-bundle\\prism-hexagon-model-probe.exe",
+    "executableSha256": "48e4436af6ceb42b13eab4345add32c8fdca05320ad2c6015cfe31b0328fb38d",
+    "buildReceiptPath": "C:\\Users\\symbi\\AppData\\Local\\Temp\\SwiftBonsai-Npu-Progress-20261103\\loaded-zero\\local-model-build.json",
+    "modelPath": "C:\\Users\\symbi\\AppData\\Local\\SwiftBonsai2\\models\\a3bdac086bbb6b04d87d0108d18943b5f63868f7\\Swift-Bonsai-2-PQ2_0.gguf",
+    "packageDirectory": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-Hexagon-SessionNext-20261030\\signed-q2-package\\runtime",
+    "signtoolPath": "C:\\Program Files (x86)\\Windows Kits\\10\\bin\\10.0.26100.0\\arm64\\signtool.exe",
+    "outputDirectory": "C:\\Users\\symbi\\AppData\\Local\\Temp\\SwiftBonsai-Npu-Progress-20261103\\loaded-zero\\device",
+    "tokenId": 42,
+    "maximumSeconds": 300,
+    "tokenIds": [
+      42
+    ],
+    "executionBackend": "hmx-bitplane",
+    "adapterCase": "loaded-zero",
+    "adapterPath": "C:\\Users\\symbi\\AppData\\Local\\SwiftBonsai2\\adapters\\703028bb7fba03496e796b144839b161cf0f5409\\bonsai-abliterate-lora.gguf",
+    "cpuBackend": "neon",
+    "rowWorkers": 4
+  }
+}

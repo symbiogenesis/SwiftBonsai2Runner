@@ -3,9 +3,10 @@
 `bonsai-tools hexagon-tools --request ABSOLUTE_JSON_PATH` accepts the separate
 `model-device` operation below. This local diagnostic evaluates one to three explicit
 original-PQ2 tokens with `blk.0.ffn_up.weight` on the selected guarded HVX or HMX
-bitplane path, compares every returned integer limb or plane and the complete
-graph logits/state against its CPU shadow after each token, and requires explicit
-native cleanup. Other projections stay on CPU. It enables no
+bitplane path, compares complete graph logits/state against its CPU shadow after
+each token, and requires explicit native cleanup. The default streaming mode also
+independently checks every returned integer limb or plane; the explicit resident
+timing mode below uses graph parity. Other projections stay on CPU. It enables no
 production backend and establishes no inference speedup or broader adapter qualification.
 
 ```json
@@ -95,7 +96,7 @@ change the projection placement or qualify the selected policy for daily service
 Both selected paths admit all 40 operations per token before the first native
 graph evaluation. A two-token control therefore requires exactly 80 completed
 operations and two completed projections in the same bounded session. Guarded
-HVX compares 1,392,640 returned integers per token; HMX compares 5,570,560 returned
+HVX compares 1,392,640 returned integers per token; streaming HMX compares 5,570,560 returned
 binary-plane values per token. The eight HMX planes decompose one token's
 quantized activation; they do not represent eight prefill tokens. The supervisor
 requires the selected backend, the exact ordered `tokenIds`, every per-token
@@ -113,6 +114,16 @@ Operation, session, child and
 cleanup limits are unchanged. Numerical hashes and comparisons come from the
 source-bound worker; complete raw numerical arrays are not retained for an
 independent offline arithmetic replay.
+
+Each `tokenComparisons[].timing` separates CPU evaluation, checked native graph
+evaluation, native submit/wait and the independent integer oracle in milliseconds.
+Evaluation excludes graph construction, state capture/digests and device setup/
+cleanup. Streaming's `nativeEvaluationExcludingIntegerOracleMilliseconds` is an
+estimate obtained by subtracting the measured oracle window. Resident graph-parity
+mode executes no per-dot oracle, so this field equals its actual evaluation window.
+The first resident evaluation includes cache preparation; later evaluations include
+cache lookup and native submission. These short windows are diagnostic and do not
+qualify completed-answer benefit, energy, sustained throughput or serving.
 
 The local receipt has this closed schema:
 
@@ -169,3 +180,12 @@ Both comparison arms observed AC at their endpoints with battery saver off.
 The supervisor's 51,689 ms includes intake, model admission and both arms;
 it is not kernel timing, decode throughput or evidence of a speedup. Wider
 placement, adapters, persistent service and production admission remain pending.
+
+The distinct [adapter/cache controls](../../docs/evidence/npu-adapter-progress-20261103/summary.json)
+pass standard-scale-1.3 tokens [42,43,128] and loaded-zero token 42 with NEON/four
+workers. A separate resident-host run passes complete state/logits parity and
+observes two cache hits, without per-dot CPU replay. Its AC CPU/native evaluation
+windows show no clear speed benefit. Original streaming and loaded-zero runs
+observed battery at their arm endpoints; retain those conditions separately.
+Broader adapter histories, resources, lifetime and production integration remain
+pending; the application default remains CPU.

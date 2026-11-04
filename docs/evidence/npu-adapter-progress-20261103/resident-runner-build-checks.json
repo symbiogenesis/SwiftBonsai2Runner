@@ -1,0 +1,30 @@
+{
+  "startedUtc": "2026-11-04T04:47:22.684088+00:00",
+  "finishedUtc": "2026-11-04T04:47:58.759367+00:00",
+  "elapsedSeconds": 36.075286,
+  "exitCode": 0,
+  "timedOut": false,
+  "powerBefore": {
+    "observedUtc": "2026-11-04T04:47:22.684894+00:00",
+    "source": "GetSystemPowerStatus",
+    "ac_online": true,
+    "battery_saver": false,
+    "battery_percent": 30
+  },
+  "powerAfter": {
+    "observedUtc": "2026-11-04T04:47:58.759535+00:00",
+    "source": "GetSystemPowerStatus",
+    "ac_online": true,
+    "battery_saver": false,
+    "battery_percent": 30
+  },
+  "command": [
+    "powershell.exe",
+    "-NoProfile",
+    "-ExecutionPolicy",
+    "Bypass",
+    "-File",
+    "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\docs\\evidence\\npu-adapter-progress-20261103\\build-runner.ps1"
+  ],
+  "workingDirectory": "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\npu-probe-preparation"
+}

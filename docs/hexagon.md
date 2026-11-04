@@ -61,8 +61,38 @@ Static geometry proves its four cumulative logical CPU snapshots require
 now reject insufficient capacity before model loading and retain CPU stage/token
 diagnostics plus the child exit status. The fixed supervisor budget fits at most
 three tokens even though the raw schema has an eight-token ceiling. Focused
-model-free checks do not qualify another device run; loaded-zero, nonzero adapter
-and broader numerical acceptance remain pending.
+model-free checks did not qualify another device run. That historical trial
+remains closed; the distinct corrected-source controls below cover the new work.
+
+The [bounded adapter and resident-host workload](evidence/npu-adapter-progress-20261103/summary.json)
+now passes original-PQ2 first-projection execution with the standard adapter at
+scale 1.3 for tokens 42, 43 and 128, explicit NEON and four row workers. It checked
+all 16,711,680 returned integer values over 120 signed HMX submissions and matched
+complete logits/state after every token. The separate loaded-zero token-42 case
+checked 5,570,560 values over 40 submissions against an adapter-free CPU baseline.
+All native cleanup codes were zero, allocations were freed, required owners
+remained pinned through exit and each owned Job ended empty.
+
+An explicit `residentHostWeights: true` screen prepares 25,067,520 packed bytes in
+a 26,259,456-byte native mapping and admits at most 65,536 metadata bytes. The
+three-token standard-adapter screen observed two cache hits and complete CPU
+logits/state parity. It uses `integerAudit: graph-parity-only`: no repeated CPU
+integer oracle, no copied weight oracle and no streaming fallback. This is mapped
+host weight reuse, not demonstrated DSP residency. The original streaming default
+still independently audits every returned integer. Both modes retain the same
+native duration, operation, model and cleanup limits.
+
+Per-token timing now separates CPU evaluation, native graph evaluation, native
+submission/wait and the streaming integer oracle. Model loading, graph creation,
+device setup/cleanup and state capture/comparison lie outside these windows.
+The resident AC screen measured CPU evaluations of 502-536 ms and native
+evaluations of 512-633 ms, including first-token preparation. This is a short
+diagnostic with no demonstrated speed benefit or release performance acceptance.
+Both resident comparison arms observed AC/saver-off endpoints; the earlier
+streaming and loaded-zero controls observed battery/saver-off endpoints. No
+cross-power cache benefit is claimed, and endpoints do not prove uninterrupted
+stability. Wider placement, persistent service, effective device resources,
+packaging and useful benefit remain pending; no application default changed.
 The [logical payload ledger](evidence/hexagon-swift-traffic-ledger.json) derives
 13.69 GB of signed-kernel input/result payload per all-eligible original-PQ2
 evaluation token. The opt-in [mapped host-weight arena and graph cache](../tools/hexagon/resident-host.md)

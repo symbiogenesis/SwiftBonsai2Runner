@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "dateLocal": "2026-11-03",
+  "outcome": "bounded-real-model-adapter-and-cache-progress; no-default-promotion",
+  "sourceIntegration": {
+    "runnerLocalMainBeforeEvidence": "8523ac334d8264fa8570df7b800a5f77baac3f8b",
+    "prismLocalMain": "2f10b0bf8e656829fbcf01e1cd93d0dd51a123d3",
+    "integration": "Reviewed worktree commits fast-forwarded into local main in both clones; no push."
+  },
+  "localChecks": {
+    "initialRunnerFocusedRegressions": 10,
+    "initialRunnerReleaseBuild": "passed",
+    "initialPrismTimingCompile": "failed-redundant-Cell-import; original raw receipt retained",
+    "correctedPrismTimingAndSnapshotRegressions": 2,
+    "correctedPrismReleaseBuild": "passed",
+    "residentRunnerFocusedRegressions": 12,
+    "residentRunnerReleaseBuild": "passed",
+    "residentPrismFocusedRegressions": 1,
+    "residentPrismReleaseBuild": "passed",
+    "fullSuitesOrBenchmarks": "not-run",
+    "hostedOrOwnerCI": "not-dispatched-or-monitored; remains-owner-operated",
+    "newIndependentHumanQualityReview": false
+  },
+  "deviceOutcomes": {
+    "standardAdapter": "passed-three-tokens; 120 operations; 16,711,680 integer comparisons; full logits/state parity",
+    "loadedZero": "passed-one-token; 40 operations; 5,570,560 integer comparisons; adapter-free CPU identity",
+    "residentStandardAdapter": "passed-three-tokens; 120 operations; full graph parity without per-dot CPU replay; one prepared tensor and two cache hits",
+    "allThreeCleanup": "zero queue stop/close, unmap and module close codes; allocation freed; required driver owners pinned through exit; owned Jobs empty"
+  },
+  "residentDiagnosticMilliseconds": {
+    "cpuEvaluation": [535.7278, 501.676, 511.6161],
+    "nativeEvaluation": [632.6752, 511.8128, 614.4412],
+    "nativeSubmitAndWait": [51.6425, 58.6531, 61.6746],
+    "integerOracle": [0, 0, 0],
+    "interpretation": "Single ordered-token diagnostic, not a performance qualification. First native evaluation includes preparation. CPU/native endpoints both observed AC and saver off; continuity and power-mode stability are not established. No clear speed win."
+  },
+  "powerTransition": "Initial preparation, streaming and loaded-zero controls observed battery. Resident builds and both resident comparison arms observed AC. No cross-power performance comparison is accepted.",
+  "defaultBlockers": [
+    "No demonstrated end-to-end latency, energy or capacity benefit; the direct cached timing screen does not show a speed win.",
+    "Production Prism 0.1.14 SwiftSession/worker remains CPU-only; no NPU application profile or persistent serving connection exists.",
+    "Native terminal lifetime remains 120 seconds and 24,000 attempts. First-projection placement uses 40 per token; all-eligible evaluation uses 23,256 per token. These bounds cannot admit the normal 8,192-token service contract.",
+    "Broader arithmetic/history, effective HMX placement/VTCM, resource/isolation, persistent failure recovery and release acceptance remain incomplete."
+  ],
+  "nextImplementation": "Reduce RPC submissions and CPU reconstruction through an efficient signed packed-kernel path, then connect a measured useful explicit runtime profile to the native Rust worker with truthful whole-request admission.",
+  "productionAdmissionEnabled": false,
+  "installedApplicationChanged": false,
+  "pushed": false
+}

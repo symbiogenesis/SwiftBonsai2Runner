@@ -154,3 +154,6 @@ docs/evidence/hexagon-hmx-session-20261103/** -text -whitespace
 
 # Preserve failed adapter-probe receipts, power observations and raw tool output.
 docs/evidence/hexagon-adapter-session-20261103/** -text -whitespace
+
+# Preserve passed adapter/cache observations and their raw SHA-256 manifest bytes.
+docs/evidence/npu-adapter-progress-20261103/** -text -whitespace

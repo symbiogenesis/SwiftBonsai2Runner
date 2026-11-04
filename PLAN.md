@@ -1141,21 +1141,32 @@ effective device resources, wider placement and persistent serving remain
 outstanding. Retain all separate closed historical workloads. Neither control
 establishes measured speedup or production eligibility.
 
-Retain the separate [adapter/default-CPU-policy preparation and failed control](docs/evidence/hexagon-adapter-session-20261103/summary.json).
-Its single four-token, standard-adapter/1.3, four-worker/NEON request failed in
-the CPU reference arm before any observed native setup or comparison. The
-supervisor retained its pending verdict and confirmed an empty owned Job;
-outer process exit zero is not numerical acceptance. Static pinned-geometry
-accounting proves four retained snapshots need 628,883,456 bytes, exceeding the
-unchanged 536,870,912-byte control budget; the original generic error does not
-independently identify the thrown failure. Keep that trial closed, with its
-original battery observations and no adapter/NPU pass. Qualify the source-only
-pre-execution snapshot admission and stage/token diagnostics independently;
-the fixed budget fits at most three tokens. Complete raw numerical replay,
-loaded-zero and nonzero adapter device acceptance remain pending. The
+Extend the [new bounded adapter and resident-host controls](docs/evidence/npu-adapter-progress-20261103/summary.json)
+beyond their declared first-projection tokens. Standard-adapter/1.3 execution
+passed for [42,43,128] with NEON/four workers, 120 signed HMX operations and
+16,711,680 checked integer values; loaded-zero passed for token 42 with 40
+operations and 5,570,560 checked values. The separate resident-host screen
+passed complete logits/state parity for the same three standard-adapter tokens,
+prepared 25,067,520 packed bytes once and observed two cache hits. That explicit
+screen uses graph parity without per-dot CPU replay; do not transfer the earlier
+integer-audit acceptance to it. All three owned Jobs ended empty with explicit
+native cleanup. The snapshot-admission controls and Release builds now pass;
+the earlier [four-token failure](docs/evidence/hexagon-adapter-session-20261103/summary.json)
+and the new corrected import compilation failure remain retained and closed.
+Broader activations/history, raw numerical replay, effective device resources,
+native lifetime, persistent serving and application delivery remain pending.
+
+Prioritize reducing submissions and host reconstruction before wider placement
+or a default profile. The resident screen's CPU evaluations took 502-536 ms and
+native evaluations 512-633 ms, with no per-dot audit in either native window;
+these short diagnostic windows show no clear benefit and qualify no performance
+gate. Its CPU/native power endpoints both observed AC with saver off; the earlier
+streaming and loaded-zero cases observed battery. Do not combine those different
+power conditions into a streaming-versus-resident benefit comparison. The
 [independent default-feasibility review](docs/evidence/npu-default-feasibility-20261103/independent-review.json)
-also retains the native lifetime, production integration and benefit blockers;
-the session's longer aggregate allowance changes none of those contracts.
+retains the still-applicable lifetime, production integration and benefit blockers.
+Keep production NPU admission disabled; the longer session allowance does not
+implement persistent serving or establish a speed advantage.
 
 ### Promotion sequence
 
@@ -1164,9 +1175,10 @@ evidence before enabling a daily-use profile. The detailed work below supplies
 the implementation leads; this checklist owns the order and acceptance decision.
 The [guarded-HVX receipt](docs/evidence/hexagon-model-device-20261103-ac/summary.json)
 and [HMX receipt and review](docs/evidence/hexagon-hmx-session-20261103/summary.json)
-cover only their declared first-projection tokens. They do not qualify the
-24,000-submission lifetime, standard adapter, effective HMX resources, persistent
-serving or benefit. NPU-1 remains open for the broader packet and adapter cases.
+cover only their declared first-projection tokens. Together with the new bounded
+adapter/cache controls, they do not qualify the 24,000-submission lifetime,
+broader adapter histories, effective HMX resources, persistent serving or benefit.
+NPU-1 remains open for the broader packet and remaining prerequisites.
 
 - [ ] **NPU-1 — Prepare the next qualification packet.** Freeze the selected
   Runner/Prism source, executable/toolchain, original-PQ2 model, adapter,

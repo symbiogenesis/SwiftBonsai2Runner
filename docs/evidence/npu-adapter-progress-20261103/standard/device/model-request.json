@@ -1,0 +1,24 @@
+{
+  "adapterCase": "standard-scale-1.3",
+  "adapterPath": "C:\\Users\\symbi\\AppData\\Local\\SwiftBonsai2\\adapters\\703028bb7fba03496e796b144839b161cf0f5409\\bonsai-abliterate-lora.gguf",
+  "contextLimit": 3,
+  "cpuBackend": "neon",
+  "executionBackend": "hmx-bitplane",
+  "expectedParentCreationTime": 134382410270754133,
+  "expectedParentPid": 58104,
+  "maximumOperations": 120,
+  "maximumOwnedPayloadBytes": 67108864,
+  "modelMemoryLimitBytes": 12884901888,
+  "modelPath": "C:\\Users\\symbi\\AppData\\Local\\SwiftBonsai2\\models\\a3bdac086bbb6b04d87d0108d18943b5f63868f7\\Swift-Bonsai-2-PQ2_0.gguf",
+  "packageDirectory": "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-Hexagon-SessionNext-20261030\\signed-q2-package\\runtime",
+  "rowWorkers": 4,
+  "schemaVersion": 1,
+  "sessionSeconds": 120,
+  "stateBudgetBytes": 536870912,
+  "tokenId": 42,
+  "tokenIds": [
+    42,
+    43,
+    128
+  ]
+}

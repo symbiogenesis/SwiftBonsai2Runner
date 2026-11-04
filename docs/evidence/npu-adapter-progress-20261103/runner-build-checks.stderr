@@ -1,0 +1,10 @@
+   Compiling bonsai-windows-credentials v0.1.0 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\npu-probe-preparation\src\windows-credentials)
+   Compiling bonsai-cpu-policy v0.1.0 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\npu-probe-preparation\src\cpu-policy)
+   Compiling bonsai-audio v0.1.0 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\npu-probe-preparation\src\audio)
+   Compiling bonsai-windows-process v0.1.0 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\npu-probe-preparation\src\windows-process)
+   Compiling bonsai-artifacts v0.1.0 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\npu-probe-preparation\src\artifacts)
+   Compiling bonsai-tools v0.1.0 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\npu-probe-preparation\tools\bonsai)
+    Finished `release` profile [optimized] target(s) in 31.73s
+     Running unittests src\lib.rs (C:\Users\symbi\AppData\Local\Temp\SwiftBonsai-Hmx-Session-20261103\runner-target\release\build\bonsai-tools/9ea432ffc44f85a8\out\bonsai_tools-9ea432ffc44f85a8.exe)
+   Compiling bonsai-tools v0.1.0 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\npu-probe-preparation\tools\bonsai)
+    Finished `release` profile [optimized] target(s) in 12.72s

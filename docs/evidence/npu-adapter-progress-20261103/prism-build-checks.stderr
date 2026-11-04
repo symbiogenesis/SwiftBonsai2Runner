@@ -1,0 +1,19 @@
+   Compiling bonsai-prism v0.1.1 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\npu-prism-timing\tools\prism)
+   Compiling bonsai-native-hash v0.1.0 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\npu-prism-timing\tools\native-hash)
+   Compiling bonsai-ternary v0.1.0 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\npu-prism-timing\tools\ternary)
+   Compiling bonsai-hexagon-native v0.1.0 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\npu-prism-timing\tools\hexagon-native)
+   Compiling bonsai-gguf v0.1.1 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\npu-prism-timing\tools\gguf)
+   Compiling prism-inference v0.1.14 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\npu-prism-timing)
+   Compiling bonsai-hexagon-runtime v0.1.0 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\npu-prism-timing\tools\hexagon-runtime)
+error: the item `Cell` is imported redundantly
+    --> tools\hexagon-runtime\src\bin\model_probe.rs:1071:15
+     |
+1071 |     use std::{cell::Cell, rc::Rc};
+     |               ^^^^^^^^^^
+1072 |
+1073 |     use super::*;
+     |         -------- the item `Cell` is already imported here
+     |
+     = note: requested on the command line with `-D redundant-imports`
+
+error: could not compile `bonsai-hexagon-runtime` (bin "prism-hexagon-model-probe" test) due to 1 previous error

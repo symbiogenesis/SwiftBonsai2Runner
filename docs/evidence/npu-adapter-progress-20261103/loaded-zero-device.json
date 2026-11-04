@@ -1,0 +1,28 @@
+{
+  "startedUtc": "2026-11-04T04:44:28.958021+00:00",
+  "finishedUtc": "2026-11-04T04:44:38.271459+00:00",
+  "elapsedSeconds": 9.313454,
+  "exitCode": 0,
+  "timedOut": false,
+  "powerBefore": {
+    "observedUtc": "2026-11-04T04:44:28.958465+00:00",
+    "source": "GetSystemPowerStatus",
+    "ac_online": false,
+    "battery_saver": false,
+    "battery_percent": 31
+  },
+  "powerAfter": {
+    "observedUtc": "2026-11-04T04:44:38.271609+00:00",
+    "source": "GetSystemPowerStatus",
+    "ac_online": false,
+    "battery_saver": false,
+    "battery_percent": 31
+  },
+  "command": [
+    "C:\\Users\\symbi\\AppData\\Local\\Temp\\SwiftBonsai-Npu-Progress-20261103\\loaded-zero\\model-bundle\\bonsai-tools.exe",
+    "hexagon-tools",
+    "--request",
+    "C:\\Users\\symbi\\AppData\\Local\\Temp\\SwiftBonsai-Npu-Progress-20261103\\loaded-zero\\model-device-request.json"
+  ],
+  "workingDirectory": "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner"
+}

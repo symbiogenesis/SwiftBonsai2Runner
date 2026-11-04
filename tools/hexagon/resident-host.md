@@ -48,6 +48,16 @@ counterexample, not an admitted placement. Two all-eligible evaluations exceed
 the session operation cap; a normal prompt and output reserve still need
 explicit partial placement or a separately qualified serving design.
 
+The [local adapter/cache screen](../../docs/evidence/npu-adapter-progress-20261103/summary.json)
+now exercises the first-projection cache on the signed X2 path: one tensor,
+25,067,520 prepared bytes, 65,520 metadata bytes and two hits across three tokens.
+Complete CPU-shadow logits/state match after every token. This explicit screen
+omits per-dot CPU replay and verifies actual native mapping/preparation counters;
+it does not establish device weight residency. CPU/native AC evaluation windows
+show no clear benefit. The separate streaming controls ran on battery, so they
+cannot qualify a streaming-versus-resident speed comparison. The next optimization
+needs fewer submissions and less reconstruction before any serving default changes.
+
 The native descriptor still covers the entire expanded allocation with the
 unchanged `0x90` flags on every operation. The first-projection example expands
 that allocation from 1,191,936 to 26,259,456 bytes. Its forty descriptors therefore
