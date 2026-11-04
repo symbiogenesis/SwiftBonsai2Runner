@@ -1,0 +1,7 @@
+{
+  "declarationUtc": "2026-11-04T05:07:58.013251+00:00",
+  "deadlineUtc": "2026-11-04T05:32:58.013251+00:00",
+  "earlierReadOnlyPreparationChargeSeconds": 900,
+  "maximumAggregateSeconds": 2400,
+  "historicalDeadlinesReopened": false
+}

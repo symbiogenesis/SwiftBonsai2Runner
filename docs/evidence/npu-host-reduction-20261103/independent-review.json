@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "kind": "independent-source-and-retained-receipt-review",
+  "reviewer": "/root/default_review",
+  "outcome": "approved-for-local-integration; no-default-promotion",
+  "reviewedPrismRevision": "16c5e53e426a7813401550ac3a3823c00dbdaa7c",
+  "checks": [
+    "Independently derive two-bit transpose and verify original lane mapping, all tile boundaries and unaffected scale/row bytes.",
+    "Verify build receipt SHA2560a2cae459a2451f91044f1d9cd0bf9b3824c9f46eba702269b710145423980ff against preparation and both raw supervisor receipts, and changed-source hashes against integrated Prism.",
+    "Inspect raw logs and build script supporting14 focused passing controls, formatting, offline locked Release build and strict library Clippy.",
+    "Compare raw terminal results against summary fields: each120 operations, complete per-token logits/state parity, streaming16711680 integer comparisons and resident0/graph-parity-only.",
+    "Verify both native cleanup records: all explicit codes0, free complete, required owner pinning true, poisoned false and owned Jobs empty.",
+    "Check resident CPU362-403ms/native420-477ms windows support no measured benefit/default; no historical packing performance comparison.",
+    "Confirm batch-four source lead remains explicitly unimplemented and all subsequent review/archive time is charged to the original clock."
+  ],
+  "independentHardwareExecution": false,
+  "independentNumericalReplay": false,
+  "newBuildsOrTests": false,
+  "newPowerObservation": false,
+  "ciDispatchedOrMonitored": false,
+  "pushed": false,
+  "productionAdmissionEnabled": false
+}

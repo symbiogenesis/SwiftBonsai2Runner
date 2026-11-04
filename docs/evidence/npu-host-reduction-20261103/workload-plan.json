@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "kind": "owner-authorized-x2-npu-host-packing-reduction",
+  "dateLocal": "2026-11-03",
+  "authorization": "Owner authorizes whatever workload length is required just for this session to pursue a useful default NPU path. This extends the aggregate laptop allowance only; existing native session and supervisor bounds stay effective.",
+  "maximumAggregateSeconds": 2400,
+  "earlierReadOnlyPreparationChargeSeconds": 900,
+  "remainingWorkAllowanceSeconds": 1500,
+  "conservativeRemainingEstimateSeconds": 900,
+  "reason": "Source review finds no usable production NPU serving path or demonstrated benefit. Implement and review an exact packed-weight transpose, run focused offline arithmetic and failure controls, build one source-bound probe using existing caches, and attempt two distinct corrected-source controls. All preparation, power observations, both arms of each control, cleanup and retention share this clock. Stop on failure or when remaining declared work cannot fit.",
+  "fixedWork": [
+    "Independently review production default feasibility and signed-kernel batching possibilities without executing vendor downloads or CI.",
+    "Implement a zero-allocation exact packed-weight transpose in the experimental Prism HMX executor, preserving original symbols, scales, operation accounting, float reduction and terminal failure behavior.",
+    "Run focused packed-layout, original-output, resident-reuse and failure controls plus strict Release Clippy for the changed library, and build the model probe with offline locked dependencies.",
+    "After passing source checks, attempt one streaming HMX standard-scale-1.3 control for tokens [42,43,128], NEON/four row workers, checking all returned integers and full logits/state.",
+    "Only after success, attempt one resident-host HMX standard-scale-1.3 control for the same tokens and CPU policy, retaining its explicit graph-parity-only audit and per-arm power/timing observations.",
+    "Retain exact source/executable identities, raw receipts, individual native cleanup outcomes and an independent local review. Integrate reviewed commits into local main without pushing. Keep default disabled unless an actual qualified serving implementation exists."
+  ],
+  "deviceAttemptsMaximum": 2,
+  "retryFailedTrial": false,
+  "historicalDeadlinesReopened": false,
+  "deviceSupervisorMaximumSeconds": 300,
+  "nativeSessionMaximumSeconds": 120,
+  "nativeTerminalOperationCap": 24000,
+  "performanceQualification": false,
+  "initialReadOnlyPreparationPower": "unknown; no retrospective power inference",
+  "powerPolicy": "Record current pre/post-workload power and CPU/native per-arm AC, saver and charge. Equal endpoints do not establish continuous stability. No cross-workload or mismatched-power performance qualification."
+}

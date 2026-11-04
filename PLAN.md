@@ -1156,8 +1156,29 @@ and the new corrected import compilation failure remain retained and closed.
 Broader activations/history, raw numerical replay, effective device resources,
 native lifetime, persistent serving and application delivery remain pending.
 
-Prioritize reducing submissions and host reconstruction before wider placement
-or a default profile. The resident screen's CPU evaluations took 502-536 ms and
+The separate [exact host-packing controls](docs/evidence/npu-host-reduction-20261103/summary.json)
+pass the same standard-adapter three-token streaming and resident placements
+on Prism `16c5e53`. The zero-allocation two-bit transpose replaces 128 individual
+symbol updates with eight four-byte copies per original block. Fourteen focused
+arithmetic/failure controls, formatting, strict Release library Clippy and the
+probe build passed; both signed controls matched complete logits/state and
+ended with explicit native cleanup and empty Jobs. Streaming independently
+checked all 16,711,680 returned integers; resident mode retains graph parity
+without that per-dot oracle. CPU/native arm endpoints observed AC, saver off
+and 48% charge. Resident CPU evaluations took 362-403 ms versus 420-477 ms
+with native offload; no useful benefit or before/after packing speedup is
+established. The original clocks remain closed, and production admission and
+the installed application remain unchanged.
+
+Prioritize the [existing signed batch-operation route](docs/hexagon-source-audit.md#batching-existing-signed-block-operations)
+before wider placement or a default profile. Prepare a bounded four-operation
+packet, separate logical-operation/queue-write accounting, full response and
+ownership controls, and exact ordered reconstruction before selecting a new
+device workload. Forty first-projection operations could use ten queue writes;
+this is a source-derived implementation lead, not executed batching or a speed
+claim. Preserve the 24,000 logical-attempt cap, absolute native deadline and
+complete-request admission; batching cannot replenish lifetime capacity.
+The earlier resident screen's CPU evaluations took 502-536 ms and
 native evaluations 512-633 ms, with no per-dot audit in either native window;
 these short diagnostic windows show no clear benefit and qualify no performance
 gate. Its CPU/native power endpoints both observed AC with saver off; the earlier

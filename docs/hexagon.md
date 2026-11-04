@@ -93,6 +93,19 @@ streaming and loaded-zero controls observed battery/saver-off endpoints. No
 cross-power cache benefit is claimed, and endpoints do not prove uninterrupted
 stability. Wider placement, persistent service, effective device resources,
 packaging and useful benefit remain pending; no application default changed.
+The separate [exact packed-weight transpose control](evidence/npu-host-reduction-20261103/summary.json)
+qualifies the new local Prism `16c5e53` packing implementation for the same
+three-token streaming and resident placements with standard adapter/1.3 and
+NEON/four workers. Fourteen focused controls, strict library Clippy, formatting
+and the Release probe build passed. Streaming checked all 16,711,680 returned
+integers; both modes matched complete logits/state and explicitly cleaned up
+with empty owned Jobs. Every CPU/native arm endpoint observed AC, saver off
+and 48% charge; continuity is unknown. Resident CPU evaluation took 362-403 ms
+versus 420-477 ms with native offload. These diagnostic windows establish no
+useful benefit or before/after packing speedup, and the application remains on
+CPU. The [signed batch-operation lead](hexagon-source-audit.md#batching-existing-signed-block-operations)
+is the next concrete submission-reduction implementation; it has not executed.
+
 The [logical payload ledger](evidence/hexagon-swift-traffic-ledger.json) derives
 13.69 GB of signed-kernel input/result payload per all-eligible original-PQ2
 evaluation token. The opt-in [mapped host-weight arena and graph cache](../tools/hexagon/resident-host.md)

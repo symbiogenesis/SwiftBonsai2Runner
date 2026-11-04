@@ -515,6 +515,39 @@ parity and total-cost measurements remain pending. It provides no PTQ1 arithmeti
 qualification or production eligibility. [PLAN](../PLAN.md#hexagon-npu) retains
 the ordering and aggregate owner-device budget.
 
+### Batching existing signed block operations
+
+The pinned [packet declarations](https://github.com/ggml-org/llama.cpp/blob/19cce6919992fdffd92e0ac152caaf1e2b8f254e/ggml/src/ggml-hexagon/htp/htp-ops.h#L229-L258)
+and [batch handler](https://github.com/ggml-org/llama.cpp/blob/19cce6919992fdffd92e0ac152caaf1e2b8f254e/ggml/src/ggml-hexagon/htp/main.c#L1166-L1277)
+provide a concrete source lead without changing signed DSP code: submit four
+independent K=128/N=8 operations per packet, retaining every block's separate
+integer planes and original CPU accumulation order. Forty first-projection
+operations would then need ten queue writes. This is derived, unimplemented
+work, with no measured benefit or selected-device acceptance.
+
+One buffer, twelve tensors, four operations and four reserved profile records
+need `24 + 4 * (3 * 56 + 232 + 48) = 1,816` command bytes before alignment.
+Reserve profile storage even when profiling is disabled. The reply remains
+88 bytes and must bind the expected tensor/operation counts. Full-M four-block
+outputs require 2,228,224 bytes and activations 16,384 bytes, beyond the existing
+25,067,520-byte resident host-weight payload. These derived host extents do not
+measure device traffic or residency. Recheck total admission and cache costs.
+
+The handler rewrites tensor offsets into DSP pointers, runs serial operations
+without an intra-batch cancellation check, continues its loop after errors,
+and returns one aggregate status. Rebuild all descriptors before each write;
+validate the entire batch before ordered reconstruction or publication. Any
+failed or uncertain member closes the scope and retains uncertain owners.
+Keep a separate write counter and reserve all four logical attempts before
+submission under the unchanged 24,000-operation and 120-second bounds.
+Preserve response/cleanup deadlines, solver geometry and full-FD cache flags.
+
+Before device work, require packet/count/extent and immutable-handle controls,
+stale replies, capacity refusal, submitted timeout, wrong or unwritten output
+in any member, complete failure without replay, and original fused/nonfused
+graph parity. Batching leaves host reconstruction and serving integration
+outstanding; larger K cannot erase per-block scale and reduction boundaries.
+
 ### Static whole-model operation limit
 
 The [original-PQ2 operation ledger](evidence/hexagon-swift-operation-ledger.json)

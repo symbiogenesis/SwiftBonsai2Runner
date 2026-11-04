@@ -1,0 +1,26 @@
+{
+  "startedUtc": "2026-11-04T05:09:59.832762+00:00",
+  "finishedUtc": "2026-11-04T05:10:00.221988+00:00",
+  "elapsedSeconds": 0.389232,
+  "exitCode": 0,
+  "timedOut": false,
+  "powerBefore": {
+    "observedUtc": "2026-11-04T05:09:59.833431+00:00",
+    "source": "GetSystemPowerStatus",
+    "ac_online": true,
+    "battery_saver": false,
+    "battery_percent": 47
+  },
+  "powerAfter": {
+    "observedUtc": "2026-11-04T05:10:00.222090+00:00",
+    "source": "GetSystemPowerStatus",
+    "ac_online": true,
+    "battery_saver": false,
+    "battery_percent": 47
+  },
+  "command": [
+    "python",
+    "C:/Users/symbi/source/repos/SwiftBonsai2Runner/docs/evidence/npu-host-reduction-20261103/prepare.py"
+  ],
+  "workingDirectory": "C:/Users/symbi/source/repos/SwiftBonsai2Runner"
+}
