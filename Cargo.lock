@@ -524,6 +524,7 @@ dependencies = [
  "egui_kittest",
  "egui_system_font_provider",
  "httparse",
+ "raw-window-handle",
  "serde",
  "serde_json",
  "wgpu",

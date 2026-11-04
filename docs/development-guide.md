@@ -157,6 +157,13 @@ unreadable recovery is preserved with a warning until explicit saving replaces i
 Keep the data folder private and outside Git: DPAPI does not isolate other
 same-user processes, and deletion is neither secure erasure nor backup removal.
 
+The native window separately remembers its normal size, position and maximized
+state in `DataDirectory/chat-window.json`. This small file contains geometry only
+and remains active when conversation saving is off. Closing while minimized keeps
+the previous visible placement; Windows moves a wholly offscreen restored window
+back onto the current monitor configuration. Invalid settings use the ordinary
+default window. Preview neither reads nor writes these settings.
+
 The app supports Windows high contrast, display scaling, labelled AccessKit
 controls and selectable/copyable text. Full bidirectional editing and native-control
 accessibility parity remain unqualified. Check layout, streaming selection,

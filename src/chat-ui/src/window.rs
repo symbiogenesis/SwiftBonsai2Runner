@@ -31,6 +31,11 @@ mod model_lifecycle;
 mod persistence;
 #[allow(
     unsafe_code,
+    reason = "Audited UI-thread native window placement with a borrowed eframe window handle."
+)]
+mod placement;
+#[allow(
+    unsafe_code,
     reason = "Audited Windows high-contrast and fatal-dialog boundary."
 )]
 mod platform;
@@ -96,6 +101,7 @@ struct State {
     delete_conversation: Option<u64>,
     conversation_notice: Option<&'static str>,
     recovery: Option<crate::recovery::Recovery>,
+    placement: Option<placement::Placement>,
     save_conversations: bool,
     recovery_dirty: bool,
     recovery_erase_pending: bool,
@@ -178,6 +184,7 @@ impl State {
             delete_conversation: None,
             conversation_notice: None,
             recovery: None,
+            placement: None,
             save_conversations: false,
             recovery_dirty: false,
             recovery_erase_pending: false,
@@ -1745,7 +1752,8 @@ impl State {
 }
 
 impl eframe::App for State {
-    fn logic(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+    fn logic(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
+        self.poll_placement(frame, ctx.input(|input| input.viewport().close_requested()));
         let was_ready = self.model.ready();
         let was_busy = self.model.busy();
         self.poll_startup();
@@ -1822,6 +1830,7 @@ fn native_options() -> eframe::NativeOptions {
 
 pub(super) fn run(config: Config) -> io::Result<()> {
     let recovery = crate::recovery::Recovery::open(&config.data);
+    let placement = placement::Placement::open(&config.data);
     eframe::run_native(
         "Swift Bonsai",
         native_options(),
@@ -1833,6 +1842,7 @@ pub(super) fn run(config: Config) -> io::Result<()> {
             let microphone = microphone::Microphone::new().ok();
             let mut state = State::create(commands, incoming_events, Some(&config), microphone);
             state.attach_recovery(recovery);
+            state.attach_placement(placement, cc);
             state.worker = Some(
                 std::thread::Builder::new()
                     .name("swift-chat-client".to_owned())
@@ -1847,6 +1857,7 @@ pub(super) fn run(config: Config) -> io::Result<()> {
 pub(super) fn run_startup(request: crate::startup::Request) -> io::Result<()> {
     // Retain the established recovery ordering: restore before accepting a draft.
     let recovery = crate::recovery::Recovery::open(&request.data);
+    let placement = placement::Placement::open(&request.data);
     let failure = std::sync::Arc::new(std::sync::Mutex::new(None));
     let reported_failure = std::sync::Arc::clone(&failure);
     eframe::run_native(
@@ -1860,6 +1871,7 @@ pub(super) fn run_startup(request: crate::startup::Request) -> io::Result<()> {
             let mut state = State::pending_startup(commands, incoming_events, request);
             state.startup_failure = Some(reported_failure);
             state.attach_recovery(recovery);
+            state.attach_placement(placement, cc);
             Ok(Box::new(state))
         }),
     )

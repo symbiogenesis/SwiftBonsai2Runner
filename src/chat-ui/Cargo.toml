@@ -22,6 +22,7 @@ eframe = { version = "=0.37.0", default-features = false, features = ["accesskit
 wgpu = { version = "=30.0.1", default-features = false, features = ["std", "parking_lot", "dx12", "vulkan", "gles", "wgsl"] }
 bonsai-windows-credentials = { path = "../windows-credentials" }
 bonsai-windows-process = { path = "../windows-process" }
+raw-window-handle = "=0.6.2"
 windows-sys = { workspace = true, features = ["Win32_Foundation", "Win32_Graphics_Gdi", "Win32_Media_Audio", "Win32_UI_WindowsAndMessaging", "Win32_UI_Accessibility"] }
 windows = { version = "=0.62.2", features = ["Win32_System_WinRT", "Foundation", "Media_Capture", "Media_MediaProperties", "Storage_Streams", "Security_Authorization_AppCapabilityAccess"] }
 windows-future = "=0.3.2"
