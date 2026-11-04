@@ -4,6 +4,7 @@
 
 use bonsai_artifacts::{ArtifactError, RuntimeSpec, VerifiedFile, VerifiedRuntime};
 use sha2::{Digest, Sha256};
+use std::os::windows::fs::OpenOptionsExt as _;
 use std::{
     error::Error,
     fs::{self, OpenOptions},
@@ -188,6 +189,46 @@ fn file_guard_holds_file_and_ancestors_until_drop() -> TestResult {
     fs::rename(&fixture.spec.runtime_directory, &moved)?;
     fs::rename(&moved, &fixture.spec.runtime_directory)?;
     assert_file_released(&path)?;
+    fixture.remove()
+}
+
+#[test]
+fn file_guard_allows_sibling_atomic_replacement_without_releasing_guards() -> TestResult {
+    let fixture = Fixture::new()?;
+    let model = fixture.installed("LICENSE");
+    let bytes = fs::read(&model)?;
+    let recovery = fixture.root.join("chat-recovery.dpapi");
+    let pending = fixture.root.join("chat-recovery.pending");
+    fs::write(&recovery, b"previous encrypted snapshot")?;
+    let guard = VerifiedFile::verify(&model, u64::try_from(bytes.len())?, &digest(&bytes))?;
+
+    // A running model retains this data-root ancestor. Autosave must be able to
+    // publish a sibling without releasing the artifact or rewriting it in place.
+    for snapshot in [b"first replacement".as_slice(), b"latest replacement"] {
+        fs::write(&pending, snapshot)?;
+        fs::rename(&pending, &recovery)?;
+        assert_eq!(fs::read(&recovery)?, snapshot);
+        assert_file_locked(&model);
+    }
+    // Explicit opt-out can also remove the saved sibling while the model lives.
+    fs::remove_file(&recovery)?;
+    assert!(!recovery.exists());
+    let moved = fixture.root.with_extension("moved");
+    assert!(fs::rename(&fixture.root, &moved).is_err());
+    // Test DELETE access directly: a nonempty-directory error alone cannot
+    // establish that the retained guard still prevents path replacement.
+    assert!(
+        OpenOptions::new()
+            .access_mode(0x0001_0000)
+            .share_mode(7)
+            .custom_flags(0x0200_0000)
+            .open(&fixture.root)
+            .is_err()
+    );
+    assert_file_locked(&model);
+    drop(guard);
+    fs::rename(&fixture.root, &moved)?;
+    fs::rename(&moved, &fixture.root)?;
     fixture.remove()
 }
 

@@ -308,7 +308,12 @@ fn hold_ancestors(
             let directory = OpenOptions::new()
                 .read(true)
                 .access_mode(if contained { 0x80 } else { 0x81 })
-                .share_mode(1)
+                // Keep directory paths stable without blocking mutable siblings.
+                // Renaming a child opens its destination parent for FILE_ADD_FILE;
+                // deny-write sharing would reject atomic chat recovery publication.
+                // Deny-delete sharing still prevents ancestor replacement, while
+                // artifact leaf handles separately deny both writes and deletion.
+                .share_mode(3)
                 .custom_flags(0x0220_0000)
                 .open(ancestor)
                 .map_err(|_| ArtifactError::Path)?;

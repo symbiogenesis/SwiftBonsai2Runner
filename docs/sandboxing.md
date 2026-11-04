@@ -184,7 +184,7 @@ handles and scrubbed buffers; recovery uses user-scoped DPAPI.
 | --- | --- |
 | One startup/build/download writer | Persistent sentinel, exclusive sharing and `File::try_lock`; handle release covers exit/crash. |
 | One recovery writer | Persistent sentinel plus `File::try_lock`, read/write sharing without delete sharing, preventing replacement while locked. |
-| Pinned artifacts/credentials | Retained read handles deny write/delete sharing; artifact ancestors remain held. |
+| Pinned artifacts/credentials | Retained file read handles deny write/delete sharing; artifact directory ancestors share reads/writes but deny deletion, preserving paths while permitting sibling atomic publication. |
 | New evidence/private keys | Exclusive creation; protected owner/LocalSystem DACL precedes secret writes. |
 | Artifact publication | Bounded staging, exact identity/hash verification and writer-guarded publication. |
 | Recovery publication | Bounded user-scoped DPAPI, flushed temporary file and same-directory replacement under the recovery guard. |
