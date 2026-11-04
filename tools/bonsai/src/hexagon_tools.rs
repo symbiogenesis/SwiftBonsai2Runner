@@ -16,6 +16,8 @@ use serde_json::{Value, json};
 use crate::{Result, identity, startup_cache, startup_process};
 
 mod device;
+#[cfg(windows)]
+mod model_device;
 mod preflight;
 mod projection_build;
 
@@ -62,6 +64,8 @@ enum Request {
     Device { request: device::Probe },
     #[cfg(windows)]
     DeviceWorker { request: device::Probe },
+    #[cfg(windows)]
+    ModelDevice { request: model_device::Request },
     Preflight {
         #[serde(default)]
         package_path: Option<PathBuf>,
@@ -814,6 +818,8 @@ pub fn run(request: Value) -> Result<Value> {
         Request::Device { request } => device::supervise(&request),
         #[cfg(windows)]
         Request::DeviceWorker { request } => device::worker(&request),
+        #[cfg(windows)]
+        Request::ModelDevice { request } => model_device::run(request),
         Request::Preflight {
             package_path,
             output_path,

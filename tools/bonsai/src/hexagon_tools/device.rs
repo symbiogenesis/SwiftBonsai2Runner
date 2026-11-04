@@ -171,7 +171,7 @@ fn marker<'a>(text: &'a str, kind: &str) -> Option<&'a str> {
 }
 
 #[cfg(windows)]
-fn removals() -> Vec<String> {
+pub(super) fn removals() -> Vec<String> {
     let names = [
         "ACTIONS_RUNTIME_TOKEN",
         "ACTIONS_ID_TOKEN_REQUEST_TOKEN",
@@ -199,7 +199,7 @@ fn removals() -> Vec<String> {
 }
 
 #[cfg(windows)]
-fn driver(path: &Path, holds: &mut Vec<File>) -> Result<Value> {
+pub(super) fn driver(path: &Path, holds: &mut Vec<File>) -> Result<Value> {
     let system = std::env::var_os("SystemRoot").ok_or("SystemRoot unavailable.")?;
     let root = PathBuf::from(system).join("System32/DriverStore/FileRepository");
     let normalized = path.to_string_lossy().replace('/', "\\");
@@ -365,16 +365,17 @@ fn parsed(text: &str) -> Result<Value> {
     crate::hexagon_policy::run(json!({"operation":"json","json":text}))
 }
 
-struct Inputs {
-    holds: Vec<File>,
+#[derive(Default)]
+pub(super) struct Inputs {
+    pub(super) holds: Vec<File>,
 }
 impl Inputs {
-    fn digest(&mut self, path: &Path, maximum: u64) -> Result<String> {
+    pub(super) fn digest(&mut self, path: &Path, maximum: u64) -> Result<String> {
         let (file, digest) = hold(path, maximum)?;
         self.holds.push(file);
         Ok(digest)
     }
-    fn json(&mut self, path: &Path, maximum: u64) -> Result<Value> {
+    pub(super) fn json(&mut self, path: &Path, maximum: u64) -> Result<Value> {
         let (mut file, _) = hold(path, maximum)?;
         let mut text = String::new();
         file.read_to_string(&mut text)
@@ -382,7 +383,7 @@ impl Inputs {
         self.holds.push(file);
         parsed(&text)
     }
-    fn pinned(&mut self, path: &Path, bytes: &Value, digest: &Value) -> Result<()> {
+    pub(super) fn pinned(&mut self, path: &Path, bytes: &Value, digest: &Value) -> Result<()> {
         let bytes = bytes
             .as_u64()
             .filter(|bytes| (1..=128 * 1024 * 1024).contains(bytes))
@@ -537,6 +538,29 @@ fn runtime(
     }
     exact_directory(&request.package_directory, &names)?;
     Ok(expected_members)
+}
+
+/// Reuse the complete signed compute-package intake for the local model probe.
+pub(super) fn compute_package(
+    inputs: &mut Inputs,
+    repository: &Path,
+    package: &Path,
+    report: &mut Value,
+) -> Result<Vec<String>> {
+    let request = Probe {
+        kind: "projection".into(),
+        repository_directory: repository.to_owned(),
+        package_directory: package.to_owned(),
+        fixture_directory: PathBuf::new(),
+        output_directory: PathBuf::new(),
+        signtool_path: PathBuf::new(),
+        expected_runner_revision: String::new(),
+        maximum_seconds: 300,
+        reference_initialization: false,
+        case: default_case(),
+        projection_request_file: None,
+    };
+    runtime(inputs, &request, &Value::Null, report)
 }
 
 fn worker_report(request: &Probe) -> Value {
