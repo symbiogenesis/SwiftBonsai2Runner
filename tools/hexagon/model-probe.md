@@ -54,7 +54,11 @@ quantized activation; they do not represent eight prefill tokens. The supervisor
 requires the selected backend, the exact ordered `tokenIds`, every per-token
 logit/state comparison and hash, final hashes matching the last comparison,
 complete native cleanup and an empty owned Job. HMX evidence must also carry the
-source-bound `nativeHmxBitplaneControl` result. Operation, session, child and
+source-bound `nativeHmxBitplaneControl` result. Serialized cleanup must report
+successful queue stop/close, unmapping and module close, completed free, and no
+poisoned or retained owner. Resource observations retain unknown effective HMX
+placement and VTCM; they cannot qualify physical placement or available capacity.
+Operation, session, child and
 cleanup limits are unchanged. No adapter is loaded by this control.
 
 The local receipt has this closed schema:

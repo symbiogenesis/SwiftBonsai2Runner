@@ -413,6 +413,21 @@ fn result(
             "The model result lacks complete numerical, identity or cleanup evidence.".into(),
         );
     }
+    let cleanup = &value["nativeCleanup"];
+    if [
+        "queueStopResult",
+        "queueCloseResult",
+        "unmappingResult",
+        "moduleCloseResult",
+    ]
+    .iter()
+    .any(|name| cleanup[*name] != 0)
+        || cleanup["freeCompleted"] != true
+        || cleanup["poisoned"] != false
+        || cleanup["ownerPinnedUntilExit"] != false
+    {
+        return Err("The model result has incomplete or contradictory native cleanup.".into());
+    }
     let comparisons = value["tokenComparisons"]
         .as_array()
         .filter(|comparisons| comparisons.len() == tokens.len())
@@ -690,6 +705,8 @@ mod tests {
             "nativeOperationsSubmitted":40*count,"nativeOperationsCompleted":40*count,"projectionsCompleted":count,
             "integerValuesCompared":backend.integer_values_per_token()*u64::try_from(count).unwrap_or(0),"logitsBitwiseEqual":true,"stateBitwiseEqual":true,
             "nativeCompletedCycle":true,"profileEligible":false,"performanceMeasured":false,
+            "nativeCleanup":{"queueStopResult":0,"queueCloseResult":0,"unmappingResult":0,"moduleCloseResult":0,
+                "freeCompleted":true,"poisoned":false,"ownerPinnedUntilExit":false},
             "logitsSha256":"b".repeat(64),"stateSha256":"c".repeat(64),
             "cpuPowerBefore":power,"cpuPowerAfter":power,"npuPowerBefore":power,"npuPowerAfter":power})
     }
@@ -859,6 +876,36 @@ mod tests {
         let mut unknown = legacy;
         unknown["executionBackend"] = json!("auto");
         assert!(serde_json::from_value::<Request>(unknown).is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn completed_cycle_requires_every_serialized_native_cleanup_result() -> Result<()> {
+        let driver = json!({"Path":"fixed-driver"});
+        let value = complete_result(&[42, 43], ExecutionBackend::HmxBitplane);
+        for (pointer, wrong) in [
+            ("/nativeCleanup", Value::Null),
+            ("/nativeCleanup/queueStopResult", json!(1)),
+            ("/nativeCleanup/queueCloseResult", Value::Null),
+            ("/nativeCleanup/unmappingResult", json!(512)),
+            ("/nativeCleanup/moduleCloseResult", json!("0")),
+            ("/nativeCleanup/freeCompleted", json!(false)),
+            ("/nativeCleanup/poisoned", json!(true)),
+            ("/nativeCleanup/ownerPinnedUntilExit", json!(true)),
+        ] {
+            let mut changed = value.clone();
+            *changed.pointer_mut(pointer).ok_or("Test field missing.")? = wrong;
+            assert!(
+                result(
+                    &changed.to_string(),
+                    &"a".repeat(64),
+                    &[42, 43],
+                    ExecutionBackend::HmxBitplane,
+                    &driver,
+                )
+                .is_err()
+            );
+        }
         Ok(())
     }
 }
