@@ -1,0 +1,6 @@
+   Compiling wgpu-core v30.0.1
+   Compiling wgpu v30.0.1
+   Compiling egui-wgpu v0.37.0
+   Compiling eframe v0.37.0
+   Compiling bonsai-chat v0.1.0 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\chat-history-fix\src\chat-ui)
+    Finished `release` profile [optimized] target(s) in 12.44s

@@ -1,0 +1,318 @@
+{
+  "kind": "chat-history-regression-model-free-validation",
+  "startedAtUtc": "2026-11-04T06:50:05.823313+00:00",
+  "maximumTotalSeconds": 300,
+  "powerBefore": {
+    "observedAtUtc": "2026-11-04T06:50:05.823611+00:00",
+    "source": "GetSystemPowerStatus",
+    "acConnected": false,
+    "batterySaver": false,
+    "chargePercent": 83,
+    "batteryFlags": 1
+  },
+  "checks": [
+    {
+      "name": "format",
+      "command": [
+        "C:\\Users\\symbi\\.rustup\\toolchains\\nightly-2026-11-02-aarch64-pc-windows-msvc\\bin\\rustfmt.exe",
+        "--edition",
+        "2024",
+        "src/chat-ui/src/recovery.rs",
+        "src/chat-ui/src/window/persistence.rs"
+      ],
+      "powerBefore": {
+        "observedAtUtc": "2026-11-04T06:50:05.824152+00:00",
+        "source": "GetSystemPowerStatus",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 83,
+        "batteryFlags": 1
+      },
+      "startedSeconds": 0.000846699986141175,
+      "exitCode": 0,
+      "powerAfter": {
+        "observedAtUtc": "2026-11-04T06:50:05.972613+00:00",
+        "source": "GetSystemPowerStatus",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 83,
+        "batteryFlags": 1
+      },
+      "finishedSeconds": 0.14931919999071397,
+      "passed": true
+    },
+    {
+      "name": "automatic-and-invalid",
+      "command": [
+        "C:\\Users\\symbi\\.rustup\\toolchains\\nightly-2026-11-02-aarch64-pc-windows-msvc\\bin\\cargo.exe",
+        "test",
+        "--locked",
+        "--offline",
+        "--release",
+        "--target",
+        "aarch64-pc-windows-msvc",
+        "--package",
+        "bonsai-chat",
+        "--bin",
+        "bonsai-chat",
+        "window::persistence::tests::recovery_automatic"
+      ],
+      "powerBefore": {
+        "observedAtUtc": "2026-11-04T06:50:05.972683+00:00",
+        "source": "GetSystemPowerStatus",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 83,
+        "batteryFlags": 1
+      },
+      "startedSeconds": 0.14937709999503568,
+      "exitCode": 0,
+      "powerAfter": {
+        "observedAtUtc": "2026-11-04T06:51:52.364012+00:00",
+        "source": "GetSystemPowerStatus",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 81,
+        "batteryFlags": 1
+      },
+      "finishedSeconds": 106.54074099997524,
+      "expectedTests": 2,
+      "passed": true
+    },
+    {
+      "name": "opt-out-and-reenable",
+      "command": [
+        "C:\\Users\\symbi\\.rustup\\toolchains\\nightly-2026-11-02-aarch64-pc-windows-msvc\\bin\\cargo.exe",
+        "test",
+        "--locked",
+        "--offline",
+        "--release",
+        "--target",
+        "aarch64-pc-windows-msvc",
+        "--package",
+        "bonsai-chat",
+        "--bin",
+        "bonsai-chat",
+        "window::persistence::tests::recovery_remembers_opt_out_and_explicit_reenable"
+      ],
+      "powerBefore": {
+        "observedAtUtc": "2026-11-04T06:51:52.372811+00:00",
+        "source": "GetSystemPowerStatus",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 81,
+        "batteryFlags": 1
+      },
+      "startedSeconds": 106.5495395999751,
+      "exitCode": 0,
+      "powerAfter": {
+        "observedAtUtc": "2026-11-04T06:51:52.970921+00:00",
+        "source": "GetSystemPowerStatus",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 81,
+        "batteryFlags": 1
+      },
+      "finishedSeconds": 107.14764949999517,
+      "expectedTests": 1,
+      "passed": true
+    },
+    {
+      "name": "partial-history",
+      "command": [
+        "C:\\Users\\symbi\\.rustup\\toolchains\\nightly-2026-11-02-aarch64-pc-windows-msvc\\bin\\cargo.exe",
+        "test",
+        "--locked",
+        "--offline",
+        "--release",
+        "--target",
+        "aarch64-pc-windows-msvc",
+        "--package",
+        "bonsai-chat",
+        "--bin",
+        "bonsai-chat",
+        "window::persistence::tests::recovery_preserves_drafts_without_promoting_partial_turns"
+      ],
+      "powerBefore": {
+        "observedAtUtc": "2026-11-04T06:51:52.981753+00:00",
+        "source": "GetSystemPowerStatus",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 81,
+        "batteryFlags": 1
+      },
+      "startedSeconds": 107.15847109997412,
+      "exitCode": 0,
+      "powerAfter": {
+        "observedAtUtc": "2026-11-04T06:51:53.446175+00:00",
+        "source": "GetSystemPowerStatus",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 81,
+        "batteryFlags": 1
+      },
+      "finishedSeconds": 107.62291299999924,
+      "expectedTests": 1,
+      "passed": true
+    },
+    {
+      "name": "rapid-toggles",
+      "command": [
+        "C:\\Users\\symbi\\.rustup\\toolchains\\nightly-2026-11-02-aarch64-pc-windows-msvc\\bin\\cargo.exe",
+        "test",
+        "--locked",
+        "--offline",
+        "--release",
+        "--target",
+        "aarch64-pc-windows-msvc",
+        "--package",
+        "bonsai-chat",
+        "--bin",
+        "bonsai-chat",
+        "window::persistence::tests::recovery_rapid_toggles_ignore_stale_erase_and_save_acknowledgments"
+      ],
+      "powerBefore": {
+        "observedAtUtc": "2026-11-04T06:51:53.456026+00:00",
+        "source": "GetSystemPowerStatus",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 81,
+        "batteryFlags": 1
+      },
+      "startedSeconds": 107.63274579998688,
+      "exitCode": 0,
+      "powerAfter": {
+        "observedAtUtc": "2026-11-04T06:51:53.888544+00:00",
+        "source": "GetSystemPowerStatus",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 81,
+        "batteryFlags": 1
+      },
+      "finishedSeconds": 108.06525139999576,
+      "expectedTests": 1,
+      "passed": true
+    },
+    {
+      "name": "encrypted-storage",
+      "command": [
+        "C:\\Users\\symbi\\.rustup\\toolchains\\nightly-2026-11-02-aarch64-pc-windows-msvc\\bin\\cargo.exe",
+        "test",
+        "--locked",
+        "--offline",
+        "--release",
+        "--target",
+        "aarch64-pc-windows-msvc",
+        "--package",
+        "bonsai-chat",
+        "--bin",
+        "bonsai-chat",
+        "recovery::tests::encrypted_recovery_"
+      ],
+      "powerBefore": {
+        "observedAtUtc": "2026-11-04T06:51:53.896461+00:00",
+        "source": "GetSystemPowerStatus",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 81,
+        "batteryFlags": 1
+      },
+      "startedSeconds": 108.07316239998909,
+      "exitCode": 0,
+      "powerAfter": {
+        "observedAtUtc": "2026-11-04T06:51:54.405276+00:00",
+        "source": "GetSystemPowerStatus",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 81,
+        "batteryFlags": 1
+      },
+      "finishedSeconds": 108.58198349998565,
+      "expectedTests": 2,
+      "passed": true
+    },
+    {
+      "name": "strict-release-clippy",
+      "command": [
+        "C:\\Users\\symbi\\.rustup\\toolchains\\nightly-2026-11-02-aarch64-pc-windows-msvc\\bin\\cargo.exe",
+        "clippy",
+        "--locked",
+        "--offline",
+        "--release",
+        "--target",
+        "aarch64-pc-windows-msvc",
+        "--package",
+        "bonsai-chat",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "powerBefore": {
+        "observedAtUtc": "2026-11-04T06:51:54.411520+00:00",
+        "source": "GetSystemPowerStatus",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 81,
+        "batteryFlags": 1
+      },
+      "startedSeconds": 108.58821949997218,
+      "exitCode": 0,
+      "powerAfter": {
+        "observedAtUtc": "2026-11-04T06:52:28.923169+00:00",
+        "source": "GetSystemPowerStatus",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 81,
+        "batteryFlags": 1
+      },
+      "finishedSeconds": 143.0998750999861,
+      "passed": true
+    },
+    {
+      "name": "production-build",
+      "command": [
+        "C:\\Users\\symbi\\.rustup\\toolchains\\nightly-2026-11-02-aarch64-pc-windows-msvc\\bin\\cargo.exe",
+        "build",
+        "--locked",
+        "--offline",
+        "--release",
+        "--target",
+        "aarch64-pc-windows-msvc",
+        "--package",
+        "bonsai-chat",
+        "--bin",
+        "bonsai-chat"
+      ],
+      "powerBefore": {
+        "observedAtUtc": "2026-11-04T06:52:28.923230+00:00",
+        "source": "GetSystemPowerStatus",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 81,
+        "batteryFlags": 1
+      },
+      "startedSeconds": 143.09992409998085,
+      "exitCode": 0,
+      "powerAfter": {
+        "observedAtUtc": "2026-11-04T06:52:41.402532+00:00",
+        "source": "GetSystemPowerStatus",
+        "acConnected": false,
+        "batterySaver": false,
+        "chargePercent": 81,
+        "batteryFlags": 1
+      },
+      "finishedSeconds": 155.57923579998896,
+      "passed": true
+    }
+  ],
+  "status": "passed",
+  "sourceSha256": {
+    "src/chat-ui/src/recovery.rs": "97da5a5bece684ac852fcad8e958aa8c7961b0301dc84972dba4802262f12220",
+    "src/chat-ui/src/window/persistence.rs": "b43488311c9ac48adfa09cdf3fb7587db4727d72f20986d1c5a61f476d5ad09a",
+    "Cargo.lock": "8187b91ea1d9dc53758750626475bc294c5f2e940e1bd181adc570ffa4544fd3",
+    "rust-toolchain.toml": "6008774e25362e2ebacf5176f9244476c282a93918a67f89d8a0cd8e3d118adb"
+  },
+  "elapsedSeconds": 155.5883560999937,
+  "pendingChecks": []
+}

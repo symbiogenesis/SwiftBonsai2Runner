@@ -115,6 +115,14 @@ pending gates. Full suites, benchmarks and performance captures stay in owning C
 
 ### Actual-model acceptance
 
+Qualify the [automatic encrypted chat recovery fix](docs/evidence/chat-history-20261104/receipt.json)
+on settled main through owner-managed hosted checks and native application acceptance.
+Verify a normal `Start-Chat.ps1` launch retains drafts, conversations and completed
+model history after closing/reopening, honors a persistent explicit saving opt-out,
+and never automatically replaces unreadable recovery or replays interrupted requests.
+Focused model-free controls and native compilation do not close actual-model recovery
+or daily-use acceptance; keep that existing owner work pending.
+
 Resolve the installed broker's earlier graceful-shutdown failure through the
 required source-bound private owner-shutdown controls and actual application
 acceptance. The separate task-specific owner used for the

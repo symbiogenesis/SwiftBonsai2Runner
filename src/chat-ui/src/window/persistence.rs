@@ -1,4 +1,4 @@
-//! Versioned, opt-in workspace recovery. Never restores an in-flight request.
+//! Versioned workspace recovery. Never restores an in-flight request.
 use super::{
     Conversation, Duration, INPUT_LIMIT, Instant, MAX_CONVERSATIONS, MAX_DIAGNOSTIC_CHARS,
     OUTPUT_TOKENS, RichText, State, Transcript, VOICE_LIMIT, client, egui, io,
@@ -144,6 +144,15 @@ impl State {
                     }
                 } else if opened.load_failed {
                     "Could not unlock saved conversations. The existing file is preserved. Enable saving to replace it with this workspace.".clone_into(&mut self.recovery_notice);
+                } else if opened.saving_disabled {
+                    self.recovery_erase_pending = true;
+                    "Saving is off. Enable it to keep conversations after closing this window."
+                        .clone_into(&mut self.recovery_notice);
+                } else {
+                    self.save_conversations = true;
+                    self.recovery_dirty = true;
+                    "Conversations save automatically on this device with Windows user encryption."
+                        .clone_into(&mut self.recovery_notice);
                 }
             }
             Err(_) => {
@@ -251,7 +260,7 @@ impl State {
             }
             .clone_into(&mut self.recovery_notice);
         }
-        ui.label(RichText::new("Off by default. Uses Windows user encryption in your model data folder. Restores drafts and completed history on the next launch. Turning this off removes the saved copy.").small().weak());
+        ui.label(RichText::new("Saves automatically with Windows user encryption in your model data folder. Restores drafts and completed history on the next launch. Turning this off removes the saved copy and keeps saving off on future launches.").small().weak());
         if !self.recovery_notice.is_empty() {
             ui.label(RichText::new(&self.recovery_notice).small());
         }
@@ -382,6 +391,129 @@ mod tests {
         let (commands, _incoming) = mpsc::channel();
         let (_events, incoming) = client::event_channel();
         State::create(commands, incoming, None, None)
+    }
+
+    #[test]
+    fn recovery_automatically_saves_and_restores_completed_history() -> io::Result<()> {
+        let directory = recovery_directory("automatic")?;
+        let mut original = state();
+        original.attach_recovery(crate::recovery::Recovery::open(&directory));
+        assert!(original.save_conversations && original.recovery_dirty);
+        original.input = "Draft for the next launch".to_owned();
+        original
+            .transcript
+            .push(Role::User, "Remember this".to_owned());
+        original
+            .transcript
+            .push(Role::Assistant, "Remembered".to_owned());
+        original.committed = serde_json::from_value(serde_json::json!([
+            {"role": "user", "content": "Remember this"},
+            {"role": "assistant", "content": "Remembered", "reasoning_content": "Saved reasoning"},
+        ]))
+        .map_err(io::Error::other)?;
+        // Closing before the autosave interval must still flush the final state.
+        drop(original);
+
+        let (commands, incoming) = mpsc::channel();
+        let (_events, events) = client::event_channel();
+        let mut restored = State::create(commands, events, None, None);
+        restored.attach_recovery(crate::recovery::Recovery::open(&directory));
+        assert!(restored.save_conversations && restored.restore_history);
+        assert_eq!(restored.input, "Draft for the next launch");
+        assert!(restored.transcript.plain_text().contains("Remembered"));
+        assert_eq!(restored.committed.len(), 2);
+        assert_eq!(
+            restored.committed[1].reasoning_content.as_deref(),
+            Some("Saved reasoning")
+        );
+        assert!(incoming.try_recv().is_err());
+        restored.preview = false;
+        restored.model = ModelLifecycle::Preparing;
+        restored.model_event(client::Event::Ready);
+        assert!(
+            matches!(incoming.try_recv(), Ok(client::Command::RestoreChat(history)) if history.len() == 2)
+        );
+        assert!(incoming.try_recv().is_err());
+        assert!(!restored.speech_input && !restored.speaking);
+        drop(restored);
+        remove_recovery_directory(&directory)
+    }
+
+    #[test]
+    fn recovery_remembers_opt_out_and_explicit_reenable() -> io::Result<()> {
+        let directory = recovery_directory("preference")?;
+        let mut original = state();
+        original.attach_recovery(crate::recovery::Recovery::open(&directory));
+        original.input = "Do not retain this draft".to_owned();
+        original.save_conversations = false;
+        original.recovery_erase_pending = true;
+        drop(original);
+        let path = directory.join("chat-recovery.dpapi");
+        assert!(!path.exists());
+        // Even ciphertext left after a failed/interrupted deletion cannot be
+        // restored while saving is disabled. It is removed on the next close.
+        std::fs::write(&path, b"Unwanted unreadable old ciphertext")?;
+        let mut disabled = state();
+        disabled.attach_recovery(crate::recovery::Recovery::open(&directory));
+        assert!(!disabled.save_conversations && disabled.recovery_erase_pending);
+        assert!(disabled.input.is_empty() && !disabled.restore_history);
+        drop(disabled);
+        assert!(!path.exists());
+
+        let mut enabled = state();
+        enabled.attach_recovery(crate::recovery::Recovery::open(&directory));
+        assert!(!enabled.save_conversations);
+        enabled.save_conversations = true;
+        enabled.recovery_erase_pending = false;
+        enabled.recovery_dirty = true;
+        enabled.input = "Keep this newer draft".to_owned();
+        drop(enabled);
+        let mut restored = state();
+        restored.attach_recovery(crate::recovery::Recovery::open(&directory));
+        assert!(restored.save_conversations);
+        assert_eq!(restored.input, "Keep this newer draft");
+        drop(restored);
+        remove_recovery_directory(&directory)
+    }
+
+    #[test]
+    fn recovery_automatic_saving_preserves_unreadable_and_invalid_workspaces() -> io::Result<()> {
+        let directory = recovery_directory("invalid")?;
+        let path = directory.join("chat-recovery.dpapi");
+        for bytes in [
+            b"Unreadable ciphertext".to_vec(),
+            bonsai_windows_credentials::protect_private_data(b"{}")?,
+        ] {
+            std::fs::write(&path, &bytes)?;
+            let mut original = state();
+            original.attach_recovery(crate::recovery::Recovery::open(&directory));
+            assert!(!original.save_conversations && !original.recovery_erase_pending);
+            assert!(original.recovery_notice.starts_with("Could not"));
+            original.input = "Must not replace the saved file".to_owned();
+            original.recovery_dirty = true;
+            drop(original);
+            assert_eq!(std::fs::read(&path)?, bytes);
+        }
+        remove_recovery_directory(&directory)
+    }
+
+    fn recovery_directory(label: &str) -> io::Result<std::path::PathBuf> {
+        let stamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map_err(io::Error::other)?
+            .as_nanos();
+        let directory = std::env::temp_dir().join(format!("Bonsai-recovery-{label}-{stamp}"));
+        std::fs::create_dir(&directory)?;
+        Ok(directory)
+    }
+
+    fn remove_recovery_directory(directory: &std::path::Path) -> io::Result<()> {
+        let path = directory.join("chat-recovery.dpapi");
+        if path.exists() {
+            std::fs::remove_file(path)?;
+        }
+        std::fs::remove_file(directory.join("chat-recovery.lock"))?;
+        std::fs::remove_dir(directory)
     }
 
     #[test]

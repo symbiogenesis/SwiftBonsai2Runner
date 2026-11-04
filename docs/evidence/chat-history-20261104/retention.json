@@ -1,0 +1,13 @@
+{
+  "powerAfter": {
+    "observedAtUtc": "2026-11-04T06:52:41.412162+00:00",
+    "source": "GetSystemPowerStatus",
+    "acConnected": false,
+    "batterySaver": false,
+    "chargePercent": 81,
+    "batteryFlags": 1
+  },
+  "elapsedSeconds": 155.58886099999654,
+  "performanceComparisonEligible": false,
+  "continuousPowerStability": "unknown"
+}

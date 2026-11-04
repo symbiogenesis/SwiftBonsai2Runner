@@ -143,13 +143,16 @@ Other recognized input/burst rejections follow the [broker error contract](broke
 
 ### Optional recovery and preview
 
-In **Settings**, enable **Save conversations on this device** to save drafts,
+Chat automatically saves drafts,
 response settings, voice description, transcript and exact completed history in
 `DataDirectory/chat-recovery.dpapi`. User-scoped DPAPI encrypts the bounded 8 MiB
-workspace; a file lock permits one writer per data folder. Saving defaults off.
+workspace; a file lock permits one writer per data folder.
 Interrupted text can remain visible after recovery but never becomes committed
 history or an automatic request. Restore activates neither microphone nor playback.
-Disabling saving deletes the saved copy and keeps the workspace open. Corrupt or
+In **Settings**, disable **Save conversations on this device** to delete the saved
+copy and keep the workspace open without saving. This choice survives restarts;
+the locked `chat-recovery.lock` sentinel retains only the saving preference.
+Enable the setting again to resume saving. Corrupt or
 unreadable recovery is preserved with a warning until explicit saving replaces it.
 Keep the data folder private and outside Git: DPAPI does not isolate other
 same-user processes, and deletion is neither secure erasure nor backup removal.

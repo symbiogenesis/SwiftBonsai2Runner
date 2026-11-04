@@ -1,0 +1,7 @@
+
+running 2 tests
+test window::persistence::tests::recovery_automatic_saving_preserves_unreadable_and_invalid_workspaces ... ok
+test window::persistence::tests::recovery_automatically_saves_and_restores_completed_history ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 238 filtered out; finished in 0.09s
+

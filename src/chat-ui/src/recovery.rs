@@ -1,4 +1,4 @@
-//! Optional encrypted recovery. Disk and DPAPI work run on a dedicated worker.
+//! Encrypted recovery. Disk and DPAPI work run on a dedicated worker.
 #![allow(
     clippy::redundant_pub_crate,
     reason = "Keep the private persistence worker visible only within the native application."
@@ -6,7 +6,7 @@
 use std::{
     cell::Cell,
     fs::{self, File, OpenOptions},
-    io::{self, Read, Write},
+    io::{self, Read, Seek as _, Write},
     os::windows::fs::{MetadataExt as _, OpenOptionsExt as _},
     path::{Path, PathBuf},
     sync::{
@@ -64,6 +64,7 @@ pub(crate) struct Opened {
     pub(crate) store: Recovery,
     pub(crate) saved: Option<Vec<u8>>,
     pub(crate) load_failed: bool,
+    pub(crate) saving_disabled: bool,
 }
 
 impl Recovery {
@@ -75,8 +76,13 @@ impl Recovery {
         for candidate in [data, path.as_path(), lock_path.as_path()] {
             bonsai_windows_credentials::validate_external_path(candidate)?;
         }
-        let lock = open_lock(&lock_path)?;
-        let loaded = read(&path);
+        let mut lock = open_lock(&lock_path)?;
+        let saving_disabled = saving_disabled(&mut lock)?;
+        let loaded = if saving_disabled {
+            Ok(None)
+        } else {
+            read(&path)
+        };
         let load_failed = loaded.is_err();
         let saved = loaded.unwrap_or_default();
         let (commands, incoming) = mpsc::sync_channel(1);
@@ -84,11 +90,12 @@ impl Recovery {
         let worker = std::thread::Builder::new()
             .name("swift-chat-recovery".to_owned())
             .spawn(move || {
-                let _lock = lock;
                 while let Ok(command) = incoming.recv() {
                     let event = match command {
                         Command::Save(operation, bytes, slot) => {
-                            let saved = save(&path, &bytes).is_ok();
+                            let saved = save(&path, &bytes)
+                                .and_then(|()| set_saving_disabled(&mut lock, false))
+                                .is_ok();
                             drop(bytes);
                             drop(slot);
                             if saved {
@@ -98,7 +105,10 @@ impl Recovery {
                             }
                         }
                         Command::Erase(operation) => {
-                            if erase(&path).is_ok() {
+                            if set_saving_disabled(&mut lock, true)
+                                .and_then(|()| erase(&path))
+                                .is_ok()
+                            {
                                 Event::Erased(operation)
                             } else {
                                 Event::Failed(operation)
@@ -125,6 +135,7 @@ impl Recovery {
             },
             saved,
             load_failed,
+            saving_disabled,
         })
     }
 
@@ -268,6 +279,32 @@ fn open_lock(path: &Path) -> io::Result<File> {
     }
     lock.try_lock().map_err(io::Error::other)?;
     Ok(lock)
+}
+
+// The already locked sentinel retains only the saving preference, never chat
+// content. Legacy empty sentinels select automatic saving. Record opt-out before
+// deletion so even an interrupted/failed erase cannot restore an unwanted chat;
+// clear it only after a new encrypted snapshot has been published successfully.
+fn saving_disabled(lock: &mut File) -> io::Result<bool> {
+    match lock.metadata()?.len() {
+        0 => Ok(false),
+        1 => {
+            let mut preference = [0];
+            lock.read_exact(&mut preference)?;
+            match preference[0] {
+                b'0' => Ok(true),
+                b'1' => Ok(false),
+                _ => Err(io::Error::other("Invalid conversation saving preference.")),
+            }
+        }
+        _ => Err(io::Error::other("Invalid conversation saving preference.")),
+    }
+}
+
+fn set_saving_disabled(lock: &mut File, disabled: bool) -> io::Result<()> {
+    lock.rewind()?;
+    lock.write_all(if disabled { b"0" } else { b"1" })?;
+    lock.sync_all()
 }
 
 fn read(path: &Path) -> io::Result<Option<Vec<u8>>> {
