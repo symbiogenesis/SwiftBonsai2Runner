@@ -1,4 +1,4 @@
-//! Explicit local-build intake and owned execution of one real Swift token.
+//! Explicit local-build intake and owned execution of a bounded Swift token sequence.
 //!
 //! This terminal diagnostic preserves the separate hosted projection intake and
 //! enables no application profile, backend selection or performance claim.
@@ -21,6 +21,24 @@ const CLEANUP_SECONDS: u64 = 75;
 const CHILD_SECONDS: u64 = 195;
 const REQUIRED_AVAILABLE_BYTES: u64 = 18 * 1024 * 1024 * 1024;
 
+#[derive(Clone, Copy, Default, Deserialize, PartialEq, Eq, Serialize)]
+enum ExecutionBackend {
+    #[default]
+    #[serde(rename = "guarded-hvx")]
+    GuardedHvx,
+    #[serde(rename = "hmx-bitplane")]
+    HmxBitplane,
+}
+
+impl ExecutionBackend {
+    const fn integer_values_per_token(self) -> u64 {
+        match self {
+            Self::GuardedHvx => 1_392_640,
+            Self::HmxBitplane => 5_570_560,
+        }
+    }
+}
+
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub(super) struct Request {
@@ -35,7 +53,30 @@ pub(super) struct Request {
     signtool_path: PathBuf,
     output_directory: PathBuf,
     token_id: u32,
+    #[serde(default)]
+    token_ids: Option<Vec<u32>>,
+    #[serde(default)]
+    execution_backend: ExecutionBackend,
     maximum_seconds: u32,
+}
+
+impl Request {
+    fn tokens(&self) -> &[u32] {
+        self.token_ids
+            .as_deref()
+            .unwrap_or_else(|| std::slice::from_ref(&self.token_id))
+    }
+
+    fn validate_tokens(&self) -> Result<()> {
+        let tokens = self.tokens();
+        if !(1..=2).contains(&tokens.len())
+            || tokens.first() != Some(&self.token_id)
+            || tokens.iter().any(|&token| token >= 248_320)
+        {
+            return Err("Select one or two explicit Swift tokens beginning with tokenId.".into());
+        }
+        Ok(())
+    }
 }
 
 #[derive(Deserialize, Serialize)]
@@ -294,7 +335,20 @@ fn model_guard(path: &Path) -> Result<File> {
     Ok(file)
 }
 
-fn result(text: &str, request_digest: &str, token: u32, driver: &Value) -> Result<Value> {
+#[expect(
+    clippy::too_many_lines,
+    reason = "Keep backend, sequence, numerical, native cleanup and per-arm power acceptance together."
+)]
+fn result(
+    text: &str,
+    request_digest: &str,
+    tokens: &[u32],
+    backend: ExecutionBackend,
+    driver: &Value,
+) -> Result<Value> {
+    if !(1..=2).contains(&tokens.len()) {
+        return Err("The model result needs one or two admitted tokens.".into());
+    }
     let events: Vec<Value> = text
         .lines()
         .map(|line| crate::hexagon_policy::run(json!({"operation":"json","json":line})))
@@ -314,6 +368,12 @@ fn result(text: &str, request_digest: &str, token: u32, driver: &Value) -> Resul
     }) {
         return Err("The model probe retained a contradictory or unknown event.".into());
     }
+    if !events
+        .last()
+        .is_some_and(|value| value["event"] == "result")
+    {
+        return Err("The model probe result must be its terminal event.".into());
+    }
     let results: Vec<Value> = events
         .into_iter()
         .filter(|value| value["event"] == "result")
@@ -321,17 +381,23 @@ fn result(text: &str, request_digest: &str, token: u32, driver: &Value) -> Resul
     let [value] = results.as_slice() else {
         return Err("The model probe omitted its unique terminal result.".into());
     };
+    let token_count = u64::try_from(tokens.len()).map_err(|error| error.to_string())?;
     if value["schemaVersion"] != 1
         || value["completed"] != true
         || value["requestSha256"] != request_digest
         || value["modelSha256"] != MODEL_SHA256
         || value["projection"] != "blk.0.ffn_up.weight"
-        || value["tokenId"] != token
+        || value["tokenId"] != tokens[0]
+        || value["tokenIds"] != json!(tokens)
+        || value["executionBackend"] != json!(backend)
+        || value["nativeHmxBitplaneControl"] != (backend == ExecutionBackend::HmxBitplane)
+        || value["maximumOperations"] != 40 * token_count
+        || value["sessionSeconds"] != 120
         || value["driverDll"] != driver["Path"]
-        || value["nativeOperationsSubmitted"] != 40
-        || value["nativeOperationsCompleted"] != 40
-        || value["projectionsCompleted"] != 1
-        || value["integerValuesCompared"] != 1_392_640
+        || value["nativeOperationsSubmitted"] != 40 * token_count
+        || value["nativeOperationsCompleted"] != 40 * token_count
+        || value["projectionsCompleted"] != token_count
+        || value["integerValuesCompared"] != backend.integer_values_per_token() * token_count
         || value["logitsBitwiseEqual"] != true
         || value["stateBitwiseEqual"] != true
         || value["nativeCompletedCycle"] != true
@@ -346,6 +412,33 @@ fn result(text: &str, request_digest: &str, token: u32, driver: &Value) -> Resul
         return Err(
             "The model result lacks complete numerical, identity or cleanup evidence.".into(),
         );
+    }
+    let comparisons = value["tokenComparisons"]
+        .as_array()
+        .filter(|comparisons| comparisons.len() == tokens.len())
+        .ok_or("The model result omitted complete per-token parity evidence.")?;
+    for (index, (comparison, &token)) in comparisons.iter().zip(tokens).enumerate() {
+        if comparison["index"] != index
+            || comparison["tokenId"] != token
+            || comparison["logitsBitwiseEqual"] != true
+            || comparison["stateBitwiseEqual"] != true
+            || ["logitsSha256", "stateSha256"].iter().any(|name| {
+                !comparison[*name]
+                    .as_str()
+                    .is_some_and(|digest| identity::is_lower_hex(digest, 64))
+            })
+        {
+            return Err("The model result has incomplete or reordered per-token parity.".into());
+        }
+    }
+    let last = comparisons
+        .last()
+        .ok_or("The model result omitted its final token comparison.")?;
+    if ["logitsSha256", "stateSha256"]
+        .iter()
+        .any(|name| value[*name] != last[*name])
+    {
+        return Err("The terminal hashes do not bind the final token comparison.".into());
     }
     for arm in [
         "cpuPowerBefore",
@@ -478,8 +571,9 @@ fn execute(request: &Request, started: Instant, report: &mut Value) -> Result<()
     let creation = bonsai_windows_process::current_process_creation_time()
         .map_err(|error| error.to_string())?;
     let probe_request = json!({"schemaVersion":1,"modelPath":request.model_path,"packageDirectory":request.package_directory,
-        "tokenId":request.token_id,"contextLimit":1,"modelMemoryLimitBytes":12_u64*1024*1024*1024,
-        "stateBudgetBytes":512_u64*1024*1024,"sessionSeconds":120,"maximumOperations":40,
+        "tokenId":request.token_id,"tokenIds":request.tokens(),"executionBackend":request.execution_backend,
+        "contextLimit":request.tokens().len(),"modelMemoryLimitBytes":12_u64*1024*1024*1024,
+        "stateBudgetBytes":512_u64*1024*1024,"sessionSeconds":120,"maximumOperations":40*request.tokens().len(),
         "maximumOwnedPayloadBytes":64_u64*1024*1024,"expectedParentPid":pid,"expectedParentCreationTime":creation});
     let path = request.output_directory.join("model-request.json");
     write_json(&path, &probe_request)?;
@@ -494,7 +588,7 @@ fn execute(request: &Request, started: Instant, report: &mut Value) -> Result<()
                 .into(),
         );
     }
-    report["Stage"] = json!("single-token-graph");
+    report["Stage"] = json!("bounded-token-graph");
     report["ModelWorkAttempted"] = json!(true);
     report["OwnedJobTeardown"] = json!("unconfirmed");
     let output = capture(
@@ -523,9 +617,15 @@ fn execute(request: &Request, started: Instant, report: &mut Value) -> Result<()
                 .into(),
         );
     }
-    report["NativeResult"] = result(&output.stdout, &request_digest, request.token_id, &driver)?;
+    report["NativeResult"] = result(
+        &output.stdout,
+        &request_digest,
+        request.tokens(),
+        request.execution_backend,
+        &driver,
+    )?;
     report["Outcome"] = json!("passed");
-    report["Stage"] = json!("single-token-graph-complete");
+    report["Stage"] = json!("bounded-token-graph-complete");
     Ok(())
 }
 
@@ -535,13 +635,13 @@ pub(super) fn run(request: &Request) -> Result<Value> {
         || request.maximum_seconds != 300
         || !identity::is_lower_hex(&request.expected_prism_revision, 40)
         || !identity::is_lower_hex(&request.executable_sha256, 64)
-        || request.token_id >= 248_320
     {
         return Err(
-            "Select one native ARM64 local-source-bound token probe with its fixed 300-second supervisor allowance."
+            "Select one native ARM64 local-source-bound token-sequence probe with its fixed 300-second supervisor allowance."
                 .into(),
         );
     }
+    request.validate_tokens()?;
     plain(&request.repository_directory)?;
     plain(&request.prism_repository_directory)?;
     for path in [
@@ -559,7 +659,8 @@ pub(super) fn run(request: &Request) -> Result<Value> {
     let mut report = json!({"schemaVersion":1,"kind":"runner-local-hexagon-model-probe","Outcome":"pending","Stage":"local-build-intake",
         "LocalBuild":true,"HostedBuild":false,"PrismRevision":request.expected_prism_revision,"MaximumSeconds":request.maximum_seconds,
         "CleanupReserveSeconds":CLEANUP_SECONDS,"ModelWorkAttempted":false,"OwnedJobTeardown":"not-started","ProfileEligible":false,
-        "PerformanceMeasured":false,"TrustChanged":false,"PowerBefore":power(),"RequiredAvailablePhysicalBytes":REQUIRED_AVAILABLE_BYTES});
+        "PerformanceMeasured":false,"TrustChanged":false,"PowerBefore":power(),"RequiredAvailablePhysicalBytes":REQUIRED_AVAILABLE_BYTES,
+        "ExecutionBackend":request.execution_backend,"TokenIds":request.tokens()});
     let outcome = execute(request, started, &mut report);
     report["PowerAfter"] = power();
     report["ElapsedMilliseconds"] = json!(started.elapsed().as_millis());
@@ -574,13 +675,20 @@ pub(super) fn run(request: &Request) -> Result<Value> {
 mod tests {
     use super::*;
 
-    fn complete_result() -> Value {
+    fn complete_result(tokens: &[u32], backend: ExecutionBackend) -> Value {
         let power =
             json!({"available":true,"acConnected":true,"batterySaver":false,"batteryPercent":100});
+        let count = tokens.len();
+        let comparisons: Vec<_> = tokens.iter().enumerate().map(|(index, token)| {
+            json!({"index":index,"tokenId":token,"logitsBitwiseEqual":true,"stateBitwiseEqual":true,
+                "logitsSha256":"b".repeat(64),"stateSha256":"c".repeat(64)})
+        }).collect();
         json!({"event":"result","schemaVersion":1,"completed":true,"requestSha256":"a".repeat(64),
-            "modelSha256":MODEL_SHA256,"projection":"blk.0.ffn_up.weight","tokenId":42,"driverDll":"fixed-driver",
-            "nativeOperationsSubmitted":40,"nativeOperationsCompleted":40,"projectionsCompleted":1,
-            "integerValuesCompared":1392640,"logitsBitwiseEqual":true,"stateBitwiseEqual":true,
+            "modelSha256":MODEL_SHA256,"projection":"blk.0.ffn_up.weight","tokenId":tokens[0],"driverDll":"fixed-driver",
+            "tokenIds":tokens,"executionBackend":backend,"nativeHmxBitplaneControl":backend==ExecutionBackend::HmxBitplane,
+            "maximumOperations":40*count,"sessionSeconds":120,"tokenComparisons":comparisons,
+            "nativeOperationsSubmitted":40*count,"nativeOperationsCompleted":40*count,"projectionsCompleted":count,
+            "integerValuesCompared":backend.integer_values_per_token()*u64::try_from(count).unwrap_or(0),"logitsBitwiseEqual":true,"stateBitwiseEqual":true,
             "nativeCompletedCycle":true,"profileEligible":false,"performanceMeasured":false,
             "logitsSha256":"b".repeat(64),"stateSha256":"c".repeat(64),
             "cpuPowerBefore":power,"cpuPowerAfter":power,"npuPowerBefore":power,"npuPowerAfter":power})
@@ -589,8 +697,14 @@ mod tests {
     #[test]
     fn terminal_parity_needs_complete_cleanup_identity_and_arm_observations() -> Result<()> {
         let driver = json!({"Path":"fixed-driver"});
-        let value = complete_result();
-        result(&value.to_string(), &"a".repeat(64), 42, &driver)?;
+        let value = complete_result(&[42], ExecutionBackend::GuardedHvx);
+        result(
+            &value.to_string(),
+            &"a".repeat(64),
+            &[42],
+            ExecutionBackend::GuardedHvx,
+            &driver,
+        )?;
         for (pointer, wrong) in [
             ("/nativeCompletedCycle", json!(false)),
             ("/nativeOperationsCompleted", json!(39)),
@@ -603,23 +717,61 @@ mod tests {
         ] {
             let mut changed = value.clone();
             *changed.pointer_mut(pointer).ok_or("Test field missing.")? = wrong;
-            assert!(result(&changed.to_string(), &"a".repeat(64), 42, &driver).is_err());
+            assert!(
+                result(
+                    &changed.to_string(),
+                    &"a".repeat(64),
+                    &[42],
+                    ExecutionBackend::GuardedHvx,
+                    &driver
+                )
+                .is_err()
+            );
         }
         let error_then_result = format!("{{\"event\":\"error\"}}\n{value}");
-        assert!(result(&error_then_result, &"a".repeat(64), 42, &driver).is_err());
-        assert!(result(&format!("{value}\n{value}"), &"a".repeat(64), 42, &driver).is_err());
+        assert!(
+            result(
+                &error_then_result,
+                &"a".repeat(64),
+                &[42],
+                ExecutionBackend::GuardedHvx,
+                &driver
+            )
+            .is_err()
+        );
+        assert!(
+            result(
+                &format!("{value}\n{value}"),
+                &"a".repeat(64),
+                &[42],
+                ExecutionBackend::GuardedHvx,
+                &driver
+            )
+            .is_err()
+        );
+        assert!(
+            result(
+                &format!("{value}\n{{\"event\":\"native-progress\"}}"),
+                &"a".repeat(64),
+                &[42],
+                ExecutionBackend::GuardedHvx,
+                &driver
+            )
+            .is_err()
+        );
         Ok(())
     }
 
     #[test]
     fn unknown_arm_power_stays_explicit_without_becoming_performance_evidence() -> Result<()> {
-        let mut value = complete_result();
+        let mut value = complete_result(&[42], ExecutionBackend::GuardedHvx);
         value["npuPowerBefore"] =
             json!({"available":false,"acConnected":null,"batterySaver":null,"batteryPercent":null});
         result(
             &value.to_string(),
             &"a".repeat(64),
-            42,
+            &[42],
+            ExecutionBackend::GuardedHvx,
             &json!({"Path":"fixed-driver"}),
         )?;
         value["npuPowerBefore"]
@@ -630,11 +782,83 @@ mod tests {
             result(
                 &value.to_string(),
                 &"a".repeat(64),
-                42,
+                &[42],
+                ExecutionBackend::GuardedHvx,
                 &json!({"Path":"fixed-driver"})
             )
             .is_err()
         );
+        Ok(())
+    }
+
+    #[test]
+    fn hmx_sequence_requires_selected_backend_and_every_token_comparison() -> Result<()> {
+        let driver = json!({"Path":"fixed-driver"});
+        let value = complete_result(&[42, 43], ExecutionBackend::HmxBitplane);
+        result(
+            &value.to_string(),
+            &"a".repeat(64),
+            &[42, 43],
+            ExecutionBackend::HmxBitplane,
+            &driver,
+        )?;
+        for (pointer, wrong) in [
+            ("/executionBackend", json!("guarded-hvx")),
+            ("/nativeHmxBitplaneControl", json!(false)),
+            ("/tokenIds", json!([42])),
+            ("/nativeOperationsSubmitted", json!(40)),
+            ("/nativeOperationsCompleted", json!(79)),
+            ("/maximumOperations", json!(40)),
+            ("/sessionSeconds", json!(121)),
+            ("/projectionsCompleted", json!(1)),
+            ("/integerValuesCompared", json!(2_785_280)),
+            ("/tokenComparisons/0/tokenId", json!(43)),
+            ("/tokenComparisons/1/index", json!(0)),
+            ("/tokenComparisons/1/stateBitwiseEqual", json!(false)),
+            ("/tokenComparisons/1/logitsSha256", json!("d".repeat(64))),
+        ] {
+            let mut changed = value.clone();
+            *changed.pointer_mut(pointer).ok_or("Test field missing.")? = wrong;
+            assert!(
+                result(
+                    &changed.to_string(),
+                    &"a".repeat(64),
+                    &[42, 43],
+                    ExecutionBackend::HmxBitplane,
+                    &driver
+                )
+                .is_err()
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn legacy_and_sequence_requests_keep_closed_token_and_backend_admission() -> Result<()> {
+        let legacy = json!({"repositoryDirectory":"repo","prismRepositoryDirectory":"prism",
+            "expectedPrismRevision":"revision","executablePath":"exe","executableSha256":"sha",
+            "buildReceiptPath":"receipt","modelPath":"model","packageDirectory":"package",
+            "signtoolPath":"sign","outputDirectory":"output","tokenId":42,"maximumSeconds":300});
+        let request: Request =
+            serde_json::from_value(legacy.clone()).map_err(|error| error.to_string())?;
+        request.validate_tokens()?;
+        assert_eq!(request.tokens(), &[42]);
+        assert!(request.execution_backend == ExecutionBackend::GuardedHvx);
+        for invalid in [
+            json!([]),
+            json!([43]),
+            json!([42, 43, 44]),
+            json!([42, 248320]),
+        ] {
+            let mut changed = legacy.clone();
+            changed["tokenIds"] = invalid;
+            let request: Request =
+                serde_json::from_value(changed).map_err(|error| error.to_string())?;
+            assert!(request.validate_tokens().is_err());
+        }
+        let mut unknown = legacy;
+        unknown["executionBackend"] = json!("auto");
+        assert!(serde_json::from_value::<Request>(unknown).is_err());
         Ok(())
     }
 }
