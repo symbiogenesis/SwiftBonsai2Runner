@@ -29,7 +29,6 @@ jobs:
     runs-on: windows-11-arm
     timeout-minutes: 60
     env:
-      RUNNER_ENVIRONMENT: ${{ runner.environment }}
       OPENBLAS_NUM_THREADS: '1'
       OMP_NUM_THREADS: '1'
       MKL_NUM_THREADS: '1'
@@ -38,6 +37,8 @@ jobs:
     steps:
       - name: Require the GitHub-hosted ARM64 lane before source or dependency work
         shell: pwsh
+        env:
+          RUNNER_ENVIRONMENT: ${{ runner.environment }}
         run: |
           if ($env:RUNNER_ENVIRONMENT -ne 'github-hosted' -or $env:RUNNER_OS -ne 'Windows' -or $env:RUNNER_ARCH -ne 'ARM64') {
             throw 'This reference belongs only to GitHub-hosted Windows ARM64.'
@@ -94,6 +95,8 @@ jobs:
         id: reconstruct
         if: github.event_name == 'workflow_dispatch' && inputs.run_reconstruction
         shell: pwsh
+        env:
+          RUNNER_ENVIRONMENT: ${{ runner.environment }}
         run: |
           python -B tools/native-reference/public_pack_reference.py --data-directory "$env:RUNNER_TEMP/public-authoring-input" --evidence-directory "$env:RUNNER_TEMP/public-authoring-evidence"
           exit $LASTEXITCODE
