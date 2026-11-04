@@ -69,13 +69,24 @@ impl Failure {
 
     pub(crate) fn notice(&self) -> String {
         let advice = match self.windows_code {
-            Some(32 | 33) => "Another program is holding the saved file open. Saving will retry automatically.",
+            Some(32 | 33) => {
+                "Another program is holding the saved file open. The update will retry automatically."
+            }
             Some(39 | 112) => "The drive is full. Free disk space so saving can continue.",
-            _ if self.kind == io::ErrorKind::PermissionDenied => "Windows denied access. Check folder permissions and security software.",
-            _ => "Saving will retry automatically. Check folder access and available disk space.",
+            _ if self.kind == io::ErrorKind::PermissionDenied => {
+                "Windows denied access. Check folder permissions and security software."
+            }
+            _ => {
+                "The update will retry automatically. Check folder access and available disk space."
+            }
         };
-        let code = self.windows_code.map_or_else(String::new, |code| format!(" (Windows error {code})"));
-        format!("Could not update saved conversations while {}{code}. {advice} Unsaved work remains in this window.", self.stage)
+        let code = self
+            .windows_code
+            .map_or_else(String::new, |code| format!(" (Windows error {code})"));
+        format!(
+            "Could not update saved conversations while {}{code}. {advice} Unsaved work remains in this window.",
+            self.stage
+        )
     }
 }
 
@@ -121,8 +132,9 @@ impl Recovery {
                     let event = match command {
                         Command::Save(operation, bytes, slot) => {
                             let saved = save(&path, &bytes).and_then(|()| {
-                                set_saving_disabled(&mut lock, false)
-                                    .map_err(|error| Failure::at("remembering the saving preference", &error))
+                                set_saving_disabled(&mut lock, false).map_err(|error| {
+                                    Failure::at("remembering the saving preference", &error)
+                                })
                             });
                             drop(bytes);
                             drop(slot);
@@ -133,9 +145,14 @@ impl Recovery {
                         }
                         Command::Erase(operation) => {
                             match set_saving_disabled(&mut lock, true)
-                                .map_err(|error| Failure::at("remembering the saving preference", &error))
-                                .and_then(|()| erase(&path).map_err(|error| Failure::at("removing the saved workspace", &error)))
-                            {
+                                .map_err(|error| {
+                                    Failure::at("remembering the saving preference", &error)
+                                })
+                                .and_then(|()| {
+                                    erase(&path).map_err(|error| {
+                                        Failure::at("removing the saved workspace", &error)
+                                    })
+                                }) {
                                 Ok(()) => Event::Erased(operation),
                                 Err(error) => Event::Failed(operation, error),
                             }
@@ -356,9 +373,10 @@ fn read(path: &Path) -> io::Result<Option<Vec<u8>>> {
 
 fn save(path: &Path, bytes: &[u8]) -> Result<(), Failure> {
     if bytes.is_empty() || bytes.len() > MAX_BYTES {
-        return Err(Failure::at("checking the saved-state limit", &io::Error::other(
-            "Saved conversations exceed their storage bound.",
-        )));
+        return Err(Failure::at(
+            "checking the saved-state limit",
+            &io::Error::other("Saved conversations exceed their storage bound."),
+        ));
     }
     bonsai_windows_credentials::validate_external_path(path)
         .map_err(|error| Failure::at("checking the storage path", &error))?;
@@ -377,7 +395,8 @@ fn save(path: &Path, bytes: &[u8]) -> Result<(), Failure> {
             .open(&temporary)
             .map_err(|error| Failure::at("creating the encrypted snapshot", &error))?;
         created = true;
-        file.write_all(&sealed).and_then(|()| file.sync_all())
+        file.write_all(&sealed)
+            .and_then(|()| file.sync_all())
             .map_err(|error| Failure::at("writing the encrypted snapshot", &error))?;
         drop(file);
         bonsai_windows_credentials::validate_external_path(path)
@@ -413,7 +432,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn encrypted_recovery_reports_replace_failure_and_preserves_previous_snapshot() -> io::Result<()> {
+    fn encrypted_recovery_reports_replace_failure_and_preserves_previous_snapshot() -> io::Result<()>
+    {
         let stamp = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .map_err(io::Error::other)?
@@ -423,15 +443,23 @@ mod tests {
         let path = directory.join("chat-recovery.dpapi");
         let store = Recovery::open(&directory)?.store;
         store.finish_with(|| Some(b"Last saved private draft".to_vec()));
-        assert!(matches!(store.events.recv_timeout(std::time::Duration::from_secs(5)), Ok(Event::Saved(_))));
+        assert!(matches!(
+            store.events.recv_timeout(std::time::Duration::from_secs(5)),
+            Ok(Event::Saved(_))
+        ));
         let original = fs::read(&path)?;
         // Model another application's read handle denying replacement. The
         // worker must retain the old snapshot and return a useful, safe error.
         let blocker = OpenOptions::new().read(true).share_mode(1).open(&path)?;
         store.finish_with(|| Some(b"New unsaved private draft".to_vec()));
-        let event = store.events.recv_timeout(std::time::Duration::from_secs(5)).map_err(io::Error::other)?;
+        let event = store
+            .events
+            .recv_timeout(std::time::Duration::from_secs(5))
+            .map_err(io::Error::other)?;
         let Event::Failed(_, failure) = event else {
-            return Err(io::Error::other("Expected the blocked replacement to fail."));
+            return Err(io::Error::other(
+                "Expected the blocked replacement to fail.",
+            ));
         };
         assert_eq!(failure.stage, "replacing the encrypted snapshot");
         assert!(failure.windows_code.is_some());
@@ -441,7 +469,10 @@ mod tests {
         assert_eq!(fs::read(&path)?, original);
         drop(blocker);
         store.finish_with(|| Some(b"New unsaved private draft".to_vec()));
-        assert!(matches!(store.events.recv_timeout(std::time::Duration::from_secs(5)), Ok(Event::Saved(_))));
+        assert!(matches!(
+            store.events.recv_timeout(std::time::Duration::from_secs(5)),
+            Ok(Event::Saved(_))
+        ));
         assert_eq!(read(&path)?, Some(b"New unsaved private draft".to_vec()));
         drop(store);
         fs::remove_file(path)?;

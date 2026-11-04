@@ -18,8 +18,8 @@ use std::{
 use windows_sys::Win32::{
     Foundation::{HWND, RECT},
     UI::WindowsAndMessaging::{
-        GetWindowPlacement, SW_SHOWMAXIMIZED, SW_SHOWMINIMIZED, SW_SHOWNORMAL,
-        SetWindowPlacement, WINDOWPLACEMENT,
+        GetWindowPlacement, SW_SHOWMAXIMIZED, SW_SHOWMINIMIZED, SW_SHOWNORMAL, SetWindowPlacement,
+        WINDOWPLACEMENT,
     },
 };
 
@@ -38,7 +38,10 @@ impl Saved {
     fn valid(self) -> bool {
         let [left, top, right, bottom] = self.normal;
         self.version == 1
-            && self.normal.iter().all(|coordinate| (-MAX_COORDINATE..=MAX_COORDINATE).contains(coordinate))
+            && self
+                .normal
+                .iter()
+                .all(|coordinate| (-MAX_COORDINATE..=MAX_COORDINATE).contains(coordinate))
             && (256..=32_768).contains(&(i64::from(right) - i64::from(left)))
             && (256..=32_768).contains(&(i64::from(bottom) - i64::from(top)))
     }
@@ -62,8 +65,18 @@ impl Saved {
         let [left, top, right, bottom] = self.normal;
         Ok(WINDOWPLACEMENT {
             length: u32::try_from(size_of::<WINDOWPLACEMENT>()).map_err(io::Error::other)?,
-            showCmd: if self.maximized { SW_SHOWMAXIMIZED } else { SW_SHOWNORMAL }.unsigned_abs(),
-            rcNormalPosition: RECT { left, top, right, bottom },
+            showCmd: if self.maximized {
+                SW_SHOWMAXIMIZED
+            } else {
+                SW_SHOWNORMAL
+            }
+            .unsigned_abs(),
+            rcNormalPosition: RECT {
+                left,
+                top,
+                right,
+                bottom,
+            },
             ..WINDOWPLACEMENT::default()
         })
     }
@@ -116,7 +129,9 @@ impl Placement {
         };
         let handle = cc.window_handle().map_err(io::Error::other)?;
         let RawWindowHandle::Win32(handle) = handle.as_raw() else {
-            return Err(io::Error::other("Native Windows window handle is unavailable."));
+            return Err(io::Error::other(
+                "Native Windows window handle is unavailable.",
+            ));
         };
         let native = saved.native()?;
         // SAFETY: eframe lends this live root HWND only on the UI thread; native
@@ -129,7 +144,11 @@ impl Placement {
     }
 
     fn observe(&mut self, frame: &eframe::Frame, closing: bool) -> io::Result<()> {
-        if !closing && self.last_observed.is_some_and(|observed| observed.elapsed() < Duration::from_millis(500)) {
+        if !closing
+            && self
+                .last_observed
+                .is_some_and(|observed| observed.elapsed() < Duration::from_millis(500))
+        {
             return Ok(());
         }
         self.last_observed = Some(Instant::now());
@@ -156,7 +175,10 @@ impl Placement {
         if self.latest == Some(saved) {
             return Ok(());
         }
-        *self.pending.lock().map_err(|_| io::Error::other("Window saving worker stopped."))? = Some(saved);
+        *self
+            .pending
+            .lock()
+            .map_err(|_| io::Error::other("Window saving worker stopped."))? = Some(saved);
         self.latest = Some(saved);
         if let Some(wake) = &self.wake {
             let _queued = wake.try_send(());
@@ -180,7 +202,11 @@ impl Drop for Placement {
 }
 
 impl State {
-    pub(super) fn attach_placement(&mut self, placement: io::Result<Placement>, cc: &eframe::CreationContext<'_>) {
+    pub(super) fn attach_placement(
+        &mut self,
+        placement: io::Result<Placement>,
+        cc: &eframe::CreationContext<'_>,
+    ) {
         match placement {
             Ok(placement) => {
                 if placement.restore(cc).is_err() {
@@ -188,7 +214,9 @@ impl State {
                 }
                 self.placement = Some(placement);
             }
-            Err(_) => self.record("Could not open window settings. Window size and position will not be saved."),
+            Err(_) => self.record(
+                "Could not open window settings. Window size and position will not be saved.",
+            ),
         }
     }
 
@@ -200,7 +228,9 @@ impl State {
             }
             let failed = placement.observe(frame, closing).is_err() || write_failed;
             if failed {
-                self.record("Could not save window size and position. Conversation saving is separate.");
+                self.record(
+                    "Could not save window size and position. Conversation saving is separate.",
+                );
             }
         }
     }
@@ -217,18 +247,26 @@ fn read(path: &Path) -> io::Result<Option<Saved>> {
     if u64::try_from(bytes.len()).map_err(io::Error::other)? > MAX_BYTES {
         return Ok(None);
     }
-    Ok(serde_json::from_slice::<Saved>(&bytes).ok().filter(|saved| saved.valid()))
+    Ok(serde_json::from_slice::<Saved>(&bytes)
+        .ok()
+        .filter(|saved| saved.valid()))
 }
 
 fn save(path: &Path, saved: Saved) -> io::Result<()> {
     bonsai_windows_credentials::validate_external_path(path)?;
-    let stamp = SystemTime::now().duration_since(UNIX_EPOCH).map_err(io::Error::other)?.as_nanos();
+    let stamp = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_err(io::Error::other)?
+        .as_nanos();
     let temporary = path.with_extension(format!("{}.{stamp}.pending", std::process::id()));
     bonsai_windows_credentials::validate_external_path(&temporary)?;
     let bytes = serde_json::to_vec(&saved).map_err(io::Error::other)?;
     let mut created = false;
     let result = (|| {
-        let mut file = OpenOptions::new().write(true).create_new(true).open(&temporary)?;
+        let mut file = OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&temporary)?;
         created = true;
         file.write_all(&bytes)?;
         file.sync_all()?;
@@ -247,13 +285,20 @@ mod tests {
     use super::*;
 
     const fn ordinary() -> Saved {
-        Saved { version: 1, normal: [-900, 100, 400, 1000], maximized: false }
+        Saved {
+            version: 1,
+            normal: [-900, 100, 400, 1000],
+            maximized: false,
+        }
     }
 
     #[test]
     fn window_placement_round_trips_normal_and_maximized_without_minimized() -> io::Result<()> {
         for maximized in [false, true] {
-            let saved = Saved { maximized, ..ordinary() };
+            let saved = Saved {
+                maximized,
+                ..ordinary()
+            };
             let mut native = saved.native()?;
             assert_eq!(Saved::from_native(&native), Some(saved));
             native.showCmd = SW_SHOWMINIMIZED.unsigned_abs();
@@ -264,12 +309,26 @@ mod tests {
 
     #[test]
     fn window_placement_rejects_invalid_bounds_and_oversized_files() -> io::Result<()> {
-        for normal in [[i32::MIN, 0, i32::MAX, 1000], [0, 0, 10, 10], [10, 0, 0, 1000], [0, 0, 100_000, 1000]] {
-            assert!(!Saved { normal, ..ordinary() }.valid());
+        for normal in [
+            [i32::MIN, 0, i32::MAX, 1000],
+            [0, 0, 10, 10],
+            [10, 0, 0, 1000],
+            [0, 0, 100_000, 1000],
+        ] {
+            assert!(
+                !Saved {
+                    normal,
+                    ..ordinary()
+                }
+                .valid()
+            );
         }
         let directory = directory("invalid")?;
         let path = directory.join("chat-window.json");
-        for bytes in [b"{}".to_vec(), vec![b' '; usize::try_from(MAX_BYTES + 1).map_err(io::Error::other)?]] {
+        for bytes in [
+            b"{}".to_vec(),
+            vec![b' '; usize::try_from(MAX_BYTES + 1).map_err(io::Error::other)?],
+        ] {
             fs::write(&path, bytes)?;
             assert!(read(&path)?.is_none());
         }
@@ -278,12 +337,17 @@ mod tests {
     }
 
     #[test]
-    fn window_placement_worker_flushes_latest_bounds_independently_of_conversations() -> io::Result<()> {
+    fn window_placement_worker_flushes_latest_bounds_independently_of_conversations()
+    -> io::Result<()> {
         let directory = directory("worker")?;
         let mut placement = Placement::open(&directory)?;
         assert!(placement.restored.is_none());
         placement.queue(ordinary())?;
-        let latest = Saved { normal: [500, 100, 1700, 950], maximized: true, ..ordinary() };
+        let latest = Saved {
+            normal: [500, 100, 1700, 950],
+            maximized: true,
+            ..ordinary()
+        };
         placement.queue(latest)?;
         drop(placement);
         assert_eq!(read(&directory.join("chat-window.json"))?, Some(latest));
@@ -296,7 +360,10 @@ mod tests {
     }
 
     fn directory(label: &str) -> io::Result<std::path::PathBuf> {
-        let stamp = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map_err(io::Error::other)?.as_nanos();
+        let stamp = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map_err(io::Error::other)?
+            .as_nanos();
         let directory = std::env::temp_dir().join(format!("Bonsai-window-{label}-{stamp}"));
         fs::create_dir(&directory)?;
         Ok(directory)

@@ -154,6 +154,9 @@ copy and keep the workspace open without saving. This choice survives restarts;
 the locked `chat-recovery.lock` sentinel retains only the saving preference.
 Enable the setting again to resume saving. Corrupt or
 unreadable recovery is preserved with a warning until explicit saving replaces it.
+Save failures identify the failed step and available Windows error code without
+including conversation text or paths. Unsaved changes stay in the open window;
+the next automatic save retries the latest workspace.
 Keep the data folder private and outside Git: DPAPI does not isolate other
 same-user processes, and deletion is neither secure erasure nor backup removal.
 

@@ -1,0 +1,3 @@
+   Compiling bonsai-artifacts v0.1.0 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\chat-save-error\src\artifacts)
+    Finished `release` profile [optimized] target(s) in 1.06s
+     Running tests\contained.rs (C:\Users\symbi\AppData\Local\SwiftBonsai2\build\chat\cd31d71ca8da53bd5d98bc6d\aarch64-pc-windows-msvc\release\build\bonsai-artifacts/b7e05c4c7bbfe2ea\out\contained-b7e05c4c7bbfe2ea.exe)

@@ -1,0 +1,18 @@
+{
+  "kind": "chat-live-save-and-native-window-model-free-validation",
+  "maximumTotalSeconds": 300,
+  "workCutoffSeconds": 270,
+  "conservativeEstimateSeconds": 240,
+  "fixedWork": [
+    "Format changed Rust source in the integrated private worktree",
+    "Three named artifact guard controls: sibling atomic save and retained file/ancestor protection",
+    "One DPAPI round-trip/tamper control; three encrypted-store controls including blocked-replacement preservation; three native window geometry controls",
+    "Five existing workspace history controls covering automatic restore, invalid-file preservation, opt-out/reenable, interrupted text and rapid toggles",
+    "Strict Release all-target Clippy for bonsai-chat, bonsai-artifacts and bonsai-windows-credentials",
+    "Native production build for chat, broker and maintenance; atomically refresh default maintenance tool only if preceding checks pass",
+    "Retain source identities, logs and aggregate/per-check power observations"
+  ],
+  "failurePolicy": "Stop at first failure or original cutoff, no retry/new clock. Unexecuted checks and application acceptance remain pending.",
+  "scope": "No model execution, real conversation reads/decryption, benchmarks, full suites, CI actions or pushes. Synthetic temporary storage only.",
+  "powerScope": "GetSystemPowerStatus before setup, around each check, and after retention. Unknown stays explicit; no performance comparison or uninterrupted stability claim."
+}

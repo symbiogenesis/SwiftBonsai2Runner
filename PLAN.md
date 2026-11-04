@@ -115,11 +115,19 @@ pending gates. Full suites, benchmarks and performance captures stay in owning C
 
 ### Actual-model acceptance
 
-Qualify the [automatic encrypted chat recovery fix](docs/evidence/chat-history-20261104/receipt.json)
+Qualify the [live conversation and window persistence fixes](docs/evidence/chat-save-window-20261104/receipt.json)
 on settled main through owner-managed hosted checks and native application acceptance.
 Verify a normal `Start-Chat.ps1` launch retains drafts, conversations and completed
-model history after closing/reopening, honors a persistent explicit saving opt-out,
-and never automatically replaces unreadable recovery or replays interrupted requests.
+model history while model artifact guards are active and after closing/reopening,
+honors a persistent explicit saving opt-out, and never automatically replaces
+unreadable recovery or replays interrupted requests. Verify ordinary and maximized
+window bounds across close/reopen, minimized close, display/DPI changes and a removed
+monitor; geometry saving remains independent of conversation opt-out.
+The local run passed four artifact/encryption controls, then stopped before UI tests
+on two redundant name qualifications in the new geometry test. Those names are
+corrected and independently source-reviewed but not recompiled. The owner explicitly
+retains follow-up validation and rebuilding; maintenance refresh and native builds
+remain pending, with existing installed executables unchanged.
 Focused model-free controls and native compilation do not close actual-model recovery
 or daily-use acceptance; keep that existing owner work pending.
 
