@@ -25,10 +25,11 @@ changes or compatible drafters. Bounded GPU/NPU access discovery can run in para
 Automatic profiles require device qualification; broader Prism work needs a Swift
 dependency or chosen milestone.
 
-The chosen parallel accelerator milestone is native Rust Prism Hexagon support:
-signed device access followed by a same-artifact packed X2 projection, then
-measured CPU/GPU/NPU selection. Qualify X1 independently when competitive; neither
-family names nor nominal TOPS choose a backend or displace the CPU gates below.
+The chosen parallel accelerator milestone is native Rust Prism Hexagon promotion:
+build on the passed X2 live-model projection through adapter, lifecycle,
+resource and benefit acceptance, then qualify measured CPU/GPU/NPU selection.
+Qualify X1 independently when competitive; neither family names nor nominal
+TOPS choose a backend or displace the CPU gates below.
 
 The long-term migration target is complete C++ retirement in Runner and Prism,
 including reference tests, generated code, external inference dependencies and
@@ -1138,6 +1139,103 @@ This first device pass establishes no HMX execution, measured speedup or
 production eligibility; use separately declared future work rather than
 extending either historical deadline.
 
+### Promotion sequence
+
+Resume with **NPU-1**. Close each applicable gate with retained, exact-source
+evidence before enabling a daily-use profile. The detailed work below supplies
+the implementation leads; this checklist owns the order and acceptance decision.
+The [device receipt](docs/evidence/hexagon-model-device-20261103-ac/summary.json)
+and [independent review](docs/evidence/hexagon-model-device-20261103-ac/independent-review.json)
+qualify only token 42's first guarded-HVX projection. They do not qualify the
+24,000-submission lifetime, standard adapter, HMX, persistent serving or benefit.
+
+- [ ] **NPU-1 — Prepare the next qualification packet.** Freeze the selected
+  Runner/Prism source, executable/toolchain, original-PQ2 model, adapter,
+  X2 SKU, driver, runtime/catalog and selected DSP identities. Close applicable
+  native ABI, SDK/license and signed-distribution prerequisites; retain
+  independently retrievable raw inputs, outputs, hashes and numerical oracles.
+  Extend the supervised probe for broader live activations/quantizer edges,
+  multiple tokens and explicit adapter cases before selecting device work.
+  Preserve local versus hosted provenance and add individual cleanup return
+  codes to retained receipts; the first pass records their aggregate acceptance
+  through the source-bound completed-cycle contract.
+- [ ] **NPU-2 — Qualify application arithmetic and adapters.** Compare every
+  offloaded integer result, final logits and complete committed state against
+  the same-artifact CPU oracle for varied prompts, activations, shapes and
+  generated history. Cover the selected scalar/NEON paths and default policy
+  of four CPU row workers, loaded-zero adapter identity, and the standard nonzero adapter at
+  scale 1.3, including scale/history changes. Require no quality or representation
+  drift. Qualify PTQ1/odd-block Q8_0 arithmetic independently if selected; the
+  original-PQ2 pass transfers no acceptance to those paths.
+- [ ] **NPU-3 — Close placement, resources and lifetime admission.** Bind
+  observed selected DSP bytes, effective VTCM/DMA/mapping/cache behavior and
+  each selected tensor/geometry to its real graph placement. Charge host packing,
+  scratch, resident arenas, state, RPC and device allocations outside Job commit
+  against the daily-service limits; the probe's 18 GiB free-memory threshold is
+  not daily-service resource acceptance. Reserve the entire unreused prompt and
+  maximum output plus prior attempted work before submission. Qualify relevant
+  real-device session/24,000-attempt lifetime behavior within a feasible declared
+  workload; resets/checkpoints must not replenish capacity. One all-eligible
+  evaluation fits, while a hidden token plus evaluation needs 45,912 operations.
+  Broader serving needs explicit partial placement or a separately reviewed
+  supported lifetime/fused design, with no implicit cap or duration increase.
+- [ ] **NPU-4 — Qualify persistent serving and failure recovery.** Cover fresh,
+  reused and edited prefixes, repeated requests/tokens, full context/output
+  reservations, cancellation before/after submission, stop/retry, reset,
+  interrupted or failed continuation and committed-state CPU rollback. Exercise
+  queue saturation, timeouts, unsupported shapes, memory pressure, allocation/
+  mapping failure, device loss and stale caches. Require bounded ownership,
+  isolation and verified native/vendor teardown; preserve uncertain buffers
+  until supervised exit, with no secret replay or partial CPU continuation.
+- [ ] **NPU-5 — Establish useful end-to-end benefit.** Use measured bottlenecks
+  to choose placement, fused packed kernels, device weight reuse and true
+  multitoken prefill. Qualify signed HMX arithmetic/placement if that route is
+  selected; host bitplane tests and mapped host weights establish no HMX execution
+  or DSP residency. Compare the resulting profile against the matched CPU default
+  at fixed model, adapter, prompts, outputs and settings. Retain repeated
+  prefill/decode and complete-answer latency, throughput, memory, quality and
+  sustained-comfort evidence, charging preparation, transfers, RPC, synchronization
+  and startup. Apply the [promotion criteria](#promotion-criteria): at least 10%
+  lower end-to-end latency, or accepted capacity/energy benefit within latency
+  and quality limits. Retain per-arm AC/battery/saver/charge observations and
+  uncertainty; missing or mismatched power cannot qualify a performance comparison.
+  The existing 51,689 ms supervisor duration is not an inference-speed measurement.
+- [ ] **NPU-6 — Deliver and qualify the explicit application profile.** Release
+  and pin the native Rust helper/runtime and supported signed kernels, then wire
+  checked placement/readiness into the broker/launcher with truthful effective-plan
+  reporting. Validate authentication, exact counting, one-slot/deadline/cancellation
+  policy, child-only environment, override rejection and isolation/resources beyond
+  one process Job. Cover clean installation, driver/runtime absence or changes,
+  upgrades, pressure and verified original-PQ2 CPU rollback. Keep the first-party
+  UI native Rust and preserve the published CPU runtime's dependency boundary.
+  No failure may silently change engine, representation or submitted work.
+- [ ] **NPU-7 — Independently review and promote the scoped release.** Score
+  correctness, adapters, lifecycle, placement/resources, quality/comfort, benefit,
+  packaging/isolation and rollback against one settled main/release/device tuple.
+  Retain independent numerical and human review plus reproducible evidence; a
+  reviewer of receipts alone does not independently rerun the hardware/oracle.
+  Enable only the passing explicit profile, document its supported subset and
+  no-go cases, and invalidate/requalify evidence after relevant source, model,
+  adapter, driver or kernel changes. Keep normal chat on CPU and NPU admission
+  disabled until these applicable gates close.
+- [ ] **NPU-8 — Qualify later backend/family expansion separately.** Connect
+  measured request-boundary CPU/GPU/NPU selection only after common-evidence,
+  resource and fallback checks. Adreno comparisons require a qualified GPU path;
+  X1 requires independent device evidence. Unselected HMX, PTQ1, X1 and automatic
+  selection research do not block an otherwise qualified explicit X2 partial-HVX
+  profile or inherit its qualification.
+
+For each later owner workload, declare fixed work, a conservative estimate and
+the smallest justified allowance under [the execution budgets](#research-scope-and-practical-budgets),
+including setup, every arm's power observations, cleanup and archival. The two
+2026-11-03 workloads remain closed; do not reuse their clocks, retry failures or
+divide a long matrix into repeated laptop runs. Complete suites and benchmarks
+remain CI-only; the owner alone dispatches, monitors and judges CI. Pending CI
+does not block local preparation completion. Retain sustained acceptance as
+pending when it cannot fit an eligible environment's limits.
+
+### Detailed qualification work
+
 Qualify the [source-only Prism graph integration](https://github.com/symbiogenesis/prism-inference/tree/1e7ed92e7787b9d8b150f9bb3fb5a74fa92fb14b/tools/hexagon-runtime)
 and bounded native HMX session on settled main. Exact PTQ1/odd-block PQ2 Q8_0
 composition and complete-request operation admission now have
@@ -1157,7 +1255,7 @@ original-PQ2 evaluation token, excluding source reads and further host copies.
 This is no measured traffic or speed verdict. Qualify the opt-in immutable mapped
 host-weight arena, bounded graph cache and explicit partial placement through
 signed execution, actual resources and same-artifact repeated-token comparison.
-The [resident-host bounds](docs/evidence/hexagon-resident-host-ledger.json) separate
+The [current resident-host bounds](docs/evidence/hexagon-resident-host-24000-ledger.json) separate
 saved CPU packing from unchanged signed-kernel payload and potentially increased
 whole-allocation cache maintenance. The arena does not establish DSP residency,
 efficient full inference or a daily service session. Develop signed fused packed
@@ -1168,13 +1266,14 @@ admission and the existing absolute duration/cleanup limits; qualify selected re
 logits/state, cancellation and teardown before publishing experimental output.
 
 Use the [bounded native F32/Q2 evidence](docs/evidence/hexagon-x2-queue-compute.json)
-for the next original-projection milestone. Its fixed guarded-Q2 integer and explicit
-cleanup cycle do not qualify a complete projection, model, selected DSP bytes,
+as primitive provenance beneath the passed live-model projection. Its fixed
+guarded-Q2 integer and explicit cleanup cycle do not qualify a complete projection, model, selected DSP bytes,
 vendor teardown or speed. Retain timed-write14 and old close-before-unmap512 as
 losing observations. The investigation charged 223,797 ms of its single 300,000 ms
 owner allowance including preparation, capture and final review; its remainder
 cannot fit another supported control plus teardown. Hosted waits and date changes
-do not reset it. Further owner qualification remains pending for this investigation.
+do not reset it. That historical investigation stays closed; select distinct
+future qualification work through the promotion sequence above.
 
 - Complete independent X1/v73 access and extend X2/v81 numerical, deployment,
   license/resource and effective-placement qualification. Bind the
@@ -1186,16 +1285,17 @@ do not reset it. Further owner qualification remains pending for this investigat
 - Qualify the separate [newer signed Q2 candidate](docs/hexagon-source-audit.md#newer-signed-q2-candidate)
   before choosing a packed route. Its v0.10.0 archive, seventeen runtime files and
   five catalog members are [verified as data](docs/evidence/hexagon-signed-q2-package.json);
-  extend the fixed signed Q2/Q8_1 integer result to actual projection inputs,
-  broader shapes, quantizer edges and long-lived queue ownership. Compare the
+  extend the passed live-model projection beyond token 42 to broader inputs,
+  shapes, quantizer edges and long-lived queue ownership. Compare the
   bounded guarded integer-dot
   composition with a directly fused packed kernel; ordinary Q2/Q8_1 substitution
   does not preserve Swift Q8_K/per-128 FMA. Custom kernels still require a supported
   signing/distribution operator, but they are not the only signed route to research.
 - Review and release the experimental native Rust capability/terminal-buffer boundary
   prepared in Prism without changing its publication boundary. After the successful
-  fixed module-open/4 KiB FD map/unmap/free/close cycle, qualify native computation,
-  delayed/extended mapping, asynchronous ownership and complete vendor teardown.
+  fixed module-open/4 KiB FD map/unmap/free/close and live first-projection cycles,
+  qualify broader native computation, delayed/extended mapping, asynchronous
+  ownership and complete vendor teardown.
   The explicit reference initializer requests an unsigned DSP process class while
   retaining Windows signed-package/catalog checks; it does not establish effective
   process class or authorize OS trust changes. Preserve the independent STATIC512,
@@ -1220,39 +1320,43 @@ do not reset it. Further owner qualification remains pending for this investigat
   contracts and authoritative u64 close against the matching SDK; the reference
   wrapper's narrowing pointer typedef is not an ABI to reuse.
   Extend the fixed native Rust F32/Q2 observations and independent Windows ARM64
-  queue/packet and public-branch start/stop wire controls to actual projection and
-  longer lifecycle evidence. Retain exact-source hosted tests, numerical output,
+  queue/packet and public-branch start/stop wire controls beyond the passed live
+  projection to longer lifecycle evidence. Retain exact-source hosted tests,
+  numerical output,
   correlated responses, bounded waits, in-use buffer retention and explicit
   stop/close/unmap evidence. The public
   wire control selects the non-Windows Qualcomm header branch on a native ARM64
   compiler; it does not establish the missing Windows whole-header closure or SDK
   equivalence. Preserve the signed guarded-Q2 arithmetic when consuming a projection.
-- Start with `blk.0.ffn_up.weight`, K=5120/M=17408/N=1, keeping transforms, adapter
-  corrections and committed state on CPU. Consume the [verified original projection
+- Extend the passed `blk.0.ffn_up.weight` control, K=5120/M=17408/N=1, keeping
+  transforms, adapter corrections and committed state on CPU. Consume the [verified original projection
   and signs](docs/evidence/hexagon-swift-projection-binding.json) through the
-  [CPU operation/wire controls](tools/hexagon/packed-projection.md), then bind signed
-  device outputs, actual activations, logits and complete state before timing or
-  expanding placement. Preserve Q8_K preparation and original per-128 FMA; qualify
+  [CPU operation/wire controls](tools/hexagon/packed-projection.md), extending signed
+  device outputs, actual activations, logits and complete state comparisons beyond
+  the one accepted token before timing or expanding placement. Preserve Q8_K
+  preparation and original per-128 FMA; qualify
   PTQ1 canonicality/Q8_0 independently. The model-free PQ2/Q2 weight-layout control
   adds 419,840,000 bytes for a whole packed copy and is not a production bridge.
-  Qualify the bounded guarded-Q2 projection submitter, including its source-native
+  Extend qualification of the bounded guarded-Q2 projection submitter, including its source-native
   576-byte host tile stride and separate 640-byte aligned VTCM destination stride.
-  Full-M scheduling retains 40 original-block operations; it needs signed solver,
-  quantizer and total-cost evidence before actual-model qualification. Extend actual
+  Full-M scheduling retains 40 original-block operations; broaden the fixed-shape
+  signed solver/quantizer coverage and obtain total-cost evidence. Extend actual
   placement/fallback/transfer accounting, including the guarded
   primitive's additional weights, activations, returned limb dots and CPU reduction.
   Effective VTCM, DMA descriptors, session/queue/mapping costs, all host scratch and
   resources outside Job commit remain admission charges; the proposed 18,752-byte
   fused double-buffer reserve covers only its declared tiles.
-  Qualify the prepared original-artifact projection probe and single-session
-  native Rust submitter on the signed
-  full-M shape and immutable externally supplied activation input within a feasible
-  remaining owner allowance. Retain the [source-bound hosted controls](docs/evidence/hexagon-original-projection-preparation.json).
+  Retain the prepared original-artifact external-activation probe as an optional
+  diagnostic for isolating arithmetic or wire failures, with the
+  [source-bound hosted controls](docs/evidence/hexagon-original-projection-preparation.json).
+  The live-graph control remains the acceptance baseline. Any newly selected
+  diagnostic still needs its own feasible declaration.
   Enforce every-limb and final bitwise comparison,
   correlated operation counts, complete explicit cleanup and atomic publication.
-  External activation bytes are not qualified live-model activations; actual
-  graph integration, state/logit/adapter parity and end-to-end benefit remain
-  separate gates. Keep production NPU admission disabled until they close.
+  External activation bytes do not establish live-model provenance. Broader
+  graph/state/logit coverage, adapter parity and end-to-end benefit remain
+  separate gates after the one-token pass. Keep production NPU admission disabled
+  until the applicable promotion sequence closes.
 - Qualify the implemented HMX integer-bitplane packing/reconstruction control
   against the matching signed K=128/N=8 path. Its eight rows represent activation
   bits of one token, with original CPU Q8_K and per-128 FMA retained; they do not
@@ -1280,7 +1384,7 @@ do not reset it. Further owner qualification remains pending for this investigat
   Plan explicit qualified placement and total session work before generation;
   smaller row tiles increase the count. Qualify a separately reviewed lifetime
   or fused design before persistent serving; do not replay failures or replenish
-  capacity through resets. Qualify the explicit first-projection model worker
+  capacity through resets. Extend the scoped accepted first-projection model worker
   under source-bound local supervision before broader placement.
 - Qualify complete ownership and restore for fresh, reused and edited prefixes,
   cancellation, reset and failed continuation; qualify chunkwise scheduling separately.
@@ -1310,7 +1414,10 @@ do not reset it. Further owner qualification remains pending for this investigat
   replay or partial CPU continuation.
 - Publish scoped profiles/no-go results from paired repeated CI: short and near-limit
   prompts, full output reserve, fixed and natural completions, edited and reused state,
-  AC/battery, pressure and 15–30-minute sustained use. Retain raw evidence, uncertainty,
+  AC/battery, pressure and 15–30-minute sustained use in an eligible environment.
+  Leave that sustained gate pending when setup, work and retention cannot fit the
+  owner's aggregate ceiling; do not split it across repeated laptop trials.
+  Retain raw evidence, uncertainty,
   LoRA parity, CPU rollback and [upgrade gates](docs/hexagon.md#qualification-evidence).
   Qualify Rust NPU coverage and device safety after Rust CPU parity, preserving signed
   deployment and full state.
