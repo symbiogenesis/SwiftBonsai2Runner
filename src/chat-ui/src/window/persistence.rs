@@ -283,8 +283,8 @@ impl State {
                         "Saving is off. The saved workspace has been removed."
                             .clone_into(&mut self.recovery_notice);
                     }
-                    crate::recovery::Event::Failed(_) => {
-                        "Could not update saved conversations. Check available disk space and folder access; unsaved work remains in this window.".clone_into(&mut self.recovery_notice);
+                    crate::recovery::Event::Failed(_, error) => {
+                        self.recovery_notice = error.notice();
                         self.recovery_dirty = self.save_conversations;
                     }
                     crate::recovery::Event::Saved(_) | crate::recovery::Event::Erased(_) => {}

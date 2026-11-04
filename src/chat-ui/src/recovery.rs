@@ -49,7 +49,34 @@ impl Drop for SnapshotSlot {
 pub(crate) enum Event {
     Saved(u64),
     Erased(u64),
-    Failed(u64),
+    Failed(u64, Failure),
+}
+
+pub(crate) struct Failure {
+    stage: &'static str,
+    kind: io::ErrorKind,
+    windows_code: Option<i32>,
+}
+
+impl Failure {
+    fn at(stage: &'static str, error: &io::Error) -> Self {
+        Self {
+            stage,
+            kind: error.kind(),
+            windows_code: error.raw_os_error(),
+        }
+    }
+
+    pub(crate) fn notice(&self) -> String {
+        let advice = match self.windows_code {
+            Some(32 | 33) => "Another program is holding the saved file open. Saving will retry automatically.",
+            Some(39 | 112) => "The drive is full. Free disk space so saving can continue.",
+            _ if self.kind == io::ErrorKind::PermissionDenied => "Windows denied access. Check folder permissions and security software.",
+            _ => "Saving will retry automatically. Check folder access and available disk space.",
+        };
+        let code = self.windows_code.map_or_else(String::new, |code| format!(" (Windows error {code})"));
+        format!("Could not update saved conversations while {}{code}. {advice} Unsaved work remains in this window.", self.stage)
+    }
 }
 
 pub(crate) struct Recovery {
@@ -93,25 +120,24 @@ impl Recovery {
                 while let Ok(command) = incoming.recv() {
                     let event = match command {
                         Command::Save(operation, bytes, slot) => {
-                            let saved = save(&path, &bytes)
-                                .and_then(|()| set_saving_disabled(&mut lock, false))
-                                .is_ok();
+                            let saved = save(&path, &bytes).and_then(|()| {
+                                set_saving_disabled(&mut lock, false)
+                                    .map_err(|error| Failure::at("remembering the saving preference", &error))
+                            });
                             drop(bytes);
                             drop(slot);
-                            if saved {
-                                Event::Saved(operation)
-                            } else {
-                                Event::Failed(operation)
+                            match saved {
+                                Ok(()) => Event::Saved(operation),
+                                Err(error) => Event::Failed(operation, error),
                             }
                         }
                         Command::Erase(operation) => {
-                            if set_saving_disabled(&mut lock, true)
-                                .and_then(|()| erase(&path))
-                                .is_ok()
+                            match set_saving_disabled(&mut lock, true)
+                                .map_err(|error| Failure::at("remembering the saving preference", &error))
+                                .and_then(|()| erase(&path).map_err(|error| Failure::at("removing the saved workspace", &error)))
                             {
-                                Event::Erased(operation)
-                            } else {
-                                Event::Failed(operation)
+                                Ok(()) => Event::Erased(operation),
+                                Err(error) => Event::Failed(operation, error),
                             }
                         }
                         Command::Fence(complete) => {
@@ -179,7 +205,7 @@ impl Recovery {
     /// Stale acknowledgments cannot clear a newer save/erase intention.
     pub(crate) const fn is_current(&self, event: &Event) -> bool {
         let operation = match event {
-            Event::Saved(operation) | Event::Erased(operation) | Event::Failed(operation) => {
+            Event::Saved(operation) | Event::Erased(operation) | Event::Failed(operation, _) => {
                 *operation
             }
         };
@@ -328,16 +354,19 @@ fn read(path: &Path) -> io::Result<Option<Vec<u8>>> {
     bonsai_windows_credentials::unprotect_private_data(&sealed).map(Some)
 }
 
-fn save(path: &Path, bytes: &[u8]) -> io::Result<()> {
+fn save(path: &Path, bytes: &[u8]) -> Result<(), Failure> {
     if bytes.is_empty() || bytes.len() > MAX_BYTES {
-        return Err(io::Error::other(
+        return Err(Failure::at("checking the saved-state limit", &io::Error::other(
             "Saved conversations exceed their storage bound.",
-        ));
+        )));
     }
-    bonsai_windows_credentials::validate_external_path(path)?;
-    let sealed = bonsai_windows_credentials::protect_private_data(bytes)?;
+    bonsai_windows_credentials::validate_external_path(path)
+        .map_err(|error| Failure::at("checking the storage path", &error))?;
+    let sealed = bonsai_windows_credentials::protect_private_data(bytes)
+        .map_err(|error| Failure::at("encrypting the workspace", &error))?;
     let temporary = temporary_path(path);
-    bonsai_windows_credentials::validate_external_path(&temporary)?;
+    bonsai_windows_credentials::validate_external_path(&temporary)
+        .map_err(|error| Failure::at("checking the temporary storage path", &error))?;
     // A unique create-new sibling receives ciphertext only. The old recovery
     // file survives failed encryption/writes and is replaced only after sync.
     let mut created = false;
@@ -345,13 +374,16 @@ fn save(path: &Path, bytes: &[u8]) -> io::Result<()> {
         let mut file = OpenOptions::new()
             .write(true)
             .create_new(true)
-            .open(&temporary)?;
+            .open(&temporary)
+            .map_err(|error| Failure::at("creating the encrypted snapshot", &error))?;
         created = true;
-        file.write_all(&sealed)?;
-        file.sync_all()?;
+        file.write_all(&sealed).and_then(|()| file.sync_all())
+            .map_err(|error| Failure::at("writing the encrypted snapshot", &error))?;
         drop(file);
-        bonsai_windows_credentials::validate_external_path(path)?;
+        bonsai_windows_credentials::validate_external_path(path)
+            .map_err(|error| Failure::at("checking the storage path", &error))?;
         fs::rename(&temporary, path)
+            .map_err(|error| Failure::at("replacing the encrypted snapshot", &error))
     })();
     if result.is_err() && created {
         let _removed = fs::remove_file(&temporary);
@@ -379,6 +411,43 @@ fn erase(path: &Path) -> io::Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn encrypted_recovery_reports_replace_failure_and_preserves_previous_snapshot() -> io::Result<()> {
+        let stamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map_err(io::Error::other)?
+            .as_nanos();
+        let directory = std::env::temp_dir().join(format!("Bonsai-recovery-failure-{stamp}"));
+        fs::create_dir(&directory)?;
+        let path = directory.join("chat-recovery.dpapi");
+        let store = Recovery::open(&directory)?.store;
+        store.finish_with(|| Some(b"Last saved private draft".to_vec()));
+        assert!(matches!(store.events.recv_timeout(std::time::Duration::from_secs(5)), Ok(Event::Saved(_))));
+        let original = fs::read(&path)?;
+        // Model another application's read handle denying replacement. The
+        // worker must retain the old snapshot and return a useful, safe error.
+        let blocker = OpenOptions::new().read(true).share_mode(1).open(&path)?;
+        store.finish_with(|| Some(b"New unsaved private draft".to_vec()));
+        let event = store.events.recv_timeout(std::time::Duration::from_secs(5)).map_err(io::Error::other)?;
+        let Event::Failed(_, failure) = event else {
+            return Err(io::Error::other("Expected the blocked replacement to fail."));
+        };
+        assert_eq!(failure.stage, "replacing the encrypted snapshot");
+        assert!(failure.windows_code.is_some());
+        let notice = failure.notice();
+        assert!(notice.contains("Windows error"));
+        assert!(!notice.contains("private draft") && !notice.contains("Bonsai-recovery"));
+        assert_eq!(fs::read(&path)?, original);
+        drop(blocker);
+        store.finish_with(|| Some(b"New unsaved private draft".to_vec()));
+        assert!(matches!(store.events.recv_timeout(std::time::Duration::from_secs(5)), Ok(Event::Saved(_))));
+        assert_eq!(read(&path)?, Some(b"New unsaved private draft".to_vec()));
+        drop(store);
+        fs::remove_file(path)?;
+        fs::remove_file(directory.join("chat-recovery.lock"))?;
+        fs::remove_dir(directory)
+    }
 
     #[test]
     fn recovery_reserves_snapshot_before_encoding_through_worker_completion() -> io::Result<()> {

@@ -101,9 +101,7 @@ fn transform(data: &[u8], protect: bool) -> io::Result<Vec<u8>> {
         }
     };
     if success == 0 {
-        return Err(io::Error::other(
-            "Windows could not protect or unlock saved conversations.",
-        ));
+        return Err(io::Error::last_os_error());
     }
     let length = usize::try_from(output.0.cbData).map_err(io::Error::other)?;
     if output.0.pbData.is_null() || length > if protect { MAX_SEALED } else { MAX_PLAIN } {
