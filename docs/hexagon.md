@@ -22,7 +22,11 @@ native capacity and whole-request operation checks before new inference.
 [Focused model-free controls](evidence/hexagon-ptq1-admission-preparation.json)
 pass; signed PQ2/PTQ1 model execution, resource qualification and persistent
 serving remain pending. The [static work ledger](evidence/hexagon-swift-operation-ledger.json)
-prevents admitting all eligible projections under the terminal session cap.
+records the historical terminal-cap refusal. The owner-authorized
+[24,000-operation budget](evidence/hexagon-session-operation-budget.json) now
+fits one all-eligible original-PQ2 evaluation, with 744 submissions left.
+It does not fit a hidden token plus evaluation (45,912 submissions), waive
+complete-request admission or extend the 120-second session/cleanup limits.
 The [logical payload ledger](evidence/hexagon-swift-traffic-ledger.json) derives
 13.69 GB of signed-kernel input/result payload per all-eligible original-PQ2
 evaluation token. The opt-in [mapped host-weight arena and graph cache](../tools/hexagon/resident-host.md)
@@ -33,7 +37,7 @@ misses select the streaming path before preparation. Preparation or submission
 failure closes the scope without replay. This removes repeated CPU packing/copies
 when hits occur; the kernel payload stays unchanged, and every submission still
 covers the expanded allocation with the existing cache flags. Actual cache cost
-may increase. [Static bounds](evidence/hexagon-resident-host-ledger.json) establish
+may increase. [Current static bounds](evidence/hexagon-resident-host-24000-ledger.json) establish
 no DSP residency, performance or production admission.
 
 Explicit immutable projection selection supports bounded partial-graph work,

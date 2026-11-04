@@ -27,8 +27,11 @@ eligibility, data verification, native access and hosted wire controls.
 
 The [static operation ledger](evidence/hexagon-swift-operation-ledger.json) requires
 23,256 synchronous submissions for one original-PQ2 token with every eligible
-projection and the logits head selected. This already exceeds the terminal
-21,760-operation session cap. The [logical payload ledger](evidence/hexagon-swift-traffic-ledger.json),
+projection and the logits head selected. This exceeded the historical
+21,760-operation cap. The owner authorized 24,000 submissions on 2026-11-03;
+the [current budget](evidence/hexagon-session-operation-budget.json) admits
+one evaluation with 744 submissions left. Complete prompt/output reservation,
+session duration and resource admission still apply. The [logical payload ledger](evidence/hexagon-swift-traffic-ledger.json),
 reproduced by `python -B tools/hexagon/verify_operation_traffic.py`, accounts for
 the existing block-preserving layouts across those same projections:
 
@@ -515,10 +518,13 @@ contract is excluded. The eight HMX rows represent one token's binary planes.
 | Final `output.weight`, 248,320 rows in 15 row tiles | 600 |
 | Token including logits | **23,256** |
 
-The terminal HVX and HMX sessions admit at most **21,760 operations**. Selecting
-every eligible base projection therefore cannot complete even one hidden token
-within that cap; it exceeds the limit by 896 operations before the optional
-600-operation logits head. Smaller row tiles increase the count. Embedding row
+The terminal HVX and HMX sessions now admit at most **24,000 write attempts**,
+as explicitly authorized by the owner on 2026-11-03. One evaluation fits with
+744 attempts remaining. One hidden token followed by an evaluation needs
+45,912 attempts and does not fit. The historical ledger retains the earlier
+21,760 cap and its original refusal; the separate
+[current budget](evidence/hexagon-session-operation-budget.json) binds the new
+enforced cap to the same projection geometries. Smaller row tiles increase the count. Embedding row
 gather, floating/BF16 tensors, transforms and adapter corrections remain on CPU.
 
 This is a static bound, derived without loading a model or opening a device.
@@ -526,7 +532,7 @@ It is neither measured RPC traffic nor an observed device refusal or speed
 result. A host payload cap or deliberate placement may keep additional
 projections on CPU before submission, so the count does not describe every
 mixed execution. Full-model use needs an explicit placement/work admission plan
-and separately qualified session lifetime or fused execution. The cap remains
-unchanged; neither partial work nor a native refusal authorizes CPU replay after
+and separately qualified session lifetime or fused execution. The duration,
+cleanup reserve and whole-request accounting remain unchanged; neither partial work nor a native refusal authorizes CPU replay after
 submission. The ledger binds exact inventory and limit source commits and Git
 blobs, rather than inferring coverage from the first-projection control.

@@ -1150,8 +1150,9 @@ saved CPU packing from unchanged signed-kernel payload and potentially increased
 whole-allocation cache maintenance. The arena does not establish DSP residency,
 efficient full inference or a daily service session. Develop signed fused packed
 kernels, device weight reuse and true multitoken prefill scheduling before treating
-broader placement or a raised session cap as a performance solution. Retain the
-existing cap and complete-request admission; qualify selected real graph work,
+broader placement or a raised session cap as a performance solution. The owner
+authorized a 24,000-submission terminal cap on 2026-11-03. Retain complete-request
+admission and the existing absolute duration/cleanup limits; qualify selected real graph work,
 logits/state, cancellation and teardown before publishing experimental output.
 
 Use the [bounded native F32/Q2 evidence](docs/evidence/hexagon-x2-queue-compute.json)
@@ -1260,10 +1261,15 @@ do not reset it. Further owner qualification remains pending for this investigat
   Resolve the [static whole-model operation limit](docs/hexagon-source-audit.md#static-whole-model-operation-limit)
   before full-model admission: selecting every eligible original-PQ2 base
   projection requires at least 22,656 operations per hidden token and 23,256
-  including logits, exceeding the unchanged 21,760-operation terminal cap.
+  including logits. The owner-authorized 24,000-operation terminal cap fits one
+  evaluation with 744 submissions left, but a hidden token followed by an
+  evaluation needs 45,912 and still rejects. Retain the historical 21,760-cap
+  ledger and use the [current budget](docs/evidence/hexagon-session-operation-budget.json).
   Plan explicit qualified placement and total session work before generation;
   smaller row tiles increase the count. Qualify a separately reviewed lifetime
-  or fused design rather than widening the diagnostic cap or replaying failures.
+  or fused design before persistent serving; do not replay failures or replenish
+  capacity through resets. Qualify the explicit first-projection model worker
+  under source-bound local supervision before broader placement.
 - Qualify complete ownership and restore for fresh, reused and edited prefixes,
   cancellation, reset and failed continuation; qualify chunkwise scheduling separately.
   Account for host/device mappings and copies, RPC, state, caches, load overlap and

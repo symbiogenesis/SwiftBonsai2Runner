@@ -311,7 +311,7 @@
     "maximumMappedAllocationBytes": 1396736,
     "mappingBudget": "exact-single-bounded-allocation; no-unmeasured-residency-credit",
     "lifetime": "one-session-one-map-one-queue; regenerate-mutable-DSP-command-and-poison-output-before-each-write; strict-sequence-monotonic-correlated-completion-before-reuse",
-    "operationMaximum": 21760,
+    "operationMaximum": 24000,
     "sessionMaximumSeconds": 120,
     "cleanupReserveSeconds": 3,
     "deadline": "one-absolute-clock-includes-initialization-callback-and-all-operations; external-Job-deadline-still-required",

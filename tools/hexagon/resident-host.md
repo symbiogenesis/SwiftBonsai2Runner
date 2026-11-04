@@ -3,8 +3,9 @@
 The experimental Prism HMX path can retain immutable, prepared weight tiles in
 an explicitly bounded mapped host arena and reuse them through opaque
 session-owned handles. Its default remains streaming. The optional arena is
-limited to 64 MiB and does not change the terminal duration or 21,760-operation
-cap. This is host RAM shared with the signed kernel; it is not persistent DSP
+limited to 64 MiB and does not change the terminal duration. The owner-authorized
+terminal cap is 24,000 write attempts, still shared by the entire request.
+This is host RAM shared with the signed kernel; it is not persistent DSP
 VTCM storage, a fused Swift kernel or a daily inference service.
 
 The runtime cache binds each complete projection to retained immutable tensor
@@ -17,7 +18,10 @@ addition to the original model and graph. The two cache limits account for
 different resources and must not be substituted for one another.
 
 Run `python -B tools/hexagon/verify_resident_traffic.py` to reproduce the retained
-[static ledger](../../docs/evidence/hexagon-resident-host-ledger.json). It derives
+[current static ledger](../../docs/evidence/hexagon-resident-host-24000-ledger.json).
+The [historical ledger](../../docs/evidence/hexagon-resident-host-ledger.json)
+retains the original 21,760-cap accounting. The current derivation uses the
+[enforced operation budget](../../docs/evidence/hexagon-session-operation-budget.json) and derives
 the packed payloads from the existing source-bound
 [streaming ledger](../../docs/evidence/hexagon-swift-traffic-ledger.json). The
 arena ceiling and native layout are explicit assumptions. This verifies
@@ -31,7 +35,7 @@ model loading or runtime acceptance.
 | Activation payload per token | 163,840 | 95,256,576 |
 | Returned plane payload per token | 22,282,240 | 6,399,590,400 |
 | Fits the 64 MiB arena | Yes, before other resources | No |
-| Fits the terminal operation cap for one token | Yes | No |
+| Fits the terminal operation cap for one token | Yes | Yes, with 744 attempts left |
 
 With eight repetitions of the first projection, retaining all of its packed
 weights would avoid at most 175,472,640 bytes of repeated CPU packing. The
@@ -40,7 +44,9 @@ across those repetitions. These extents establish no bandwidth or latency gain.
 The all-eligible case needs at least 13,999,104,000 bytes for the selected original
 and resident packed weights alone, exceeding the 11.5 GiB Swift service allowance
 before caches, scratch, state and other resources. It is a lower-bound
-counterexample, not an admitted placement.
+counterexample, not an admitted placement. Two all-eligible evaluations exceed
+the session operation cap; a normal prompt and output reserve still need
+explicit partial placement or a separately qualified serving design.
 
 The native descriptor still covers the entire expanded allocation with the
 unchanged `0x90` flags on every operation. The first-projection example expands

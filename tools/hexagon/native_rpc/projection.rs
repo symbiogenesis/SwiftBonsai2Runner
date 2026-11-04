@@ -16,8 +16,11 @@ use std::time::Duration;
 
 /// Largest weight-row extent of the independently bound Swift up projection.
 pub const Q2_PROJECTION_MAX_ROWS: usize = 17_408;
-/// Upper operation bound, including the conservative 32-row Swift schedule.
-pub const Q2_PROJECTION_MAX_OPERATIONS: u32 = 21_760;
+/// Owner-authorized upper write-attempt bound for one terminal session.
+///
+/// One all-eligible original-PQ2 evaluation needs 23,256 operations. Complete
+/// request capacity and the existing absolute session deadline still apply.
+pub const Q2_PROJECTION_MAX_OPERATIONS: u32 = 24_000;
 
 /// One terminal session's fixed allocation, operation and absolute-time bounds.
 #[derive(Clone, Copy, Debug)]
@@ -312,12 +315,16 @@ mod tests {
     fn limits_admit_full_m_without_changing_vtcm_or_accepting_tails() -> Result<(), Error> {
         let limits = Q2ProjectionLimits::new(17_408, 40, Duration::from_secs(20))?;
         assert_eq!(limits.allocation_bytes(), 1_396_736);
+        assert_eq!(
+            Q2ProjectionLimits::new(17_408, 24_000, Duration::from_secs(120))?.maximum_operations(),
+            24_000
+        );
         for (rows, operations, seconds) in [
             (0, 40, 20),
             (33, 40, 20),
             (17_440, 40, 20),
             (32, 0, 20),
-            (32, 21_761, 20),
+            (32, 24_001, 20),
             (32, 1, 3),
             (32, 1, 121),
         ] {

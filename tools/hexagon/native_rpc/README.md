@@ -147,7 +147,11 @@ mutates its command descriptors. No borrowed host view spans device execution.
 
 `Q2ProjectionLimits` bounds rows, total writes and one absolute session clock
 including initialization, caller preparation and every operation. Its maximum
-is 120 seconds, including a three-second cleanup reserve. The external owned
+is 24,000 write attempts and 120 seconds, including a three-second cleanup reserve.
+The owner explicitly authorized the operation increase on 2026-11-03. One
+all-eligible original-PQ2 evaluation needs 23,256 operations; a hidden token plus
+evaluation needs 45,912, so full-request capacity must still reject that placement.
+The external owned
 process deadline and the aggregate five-minute owner allowance still apply.
 Every operation uses a fresh monotonic sequence, exact descriptor/cache reply
 checks and complete finite/integer/bounded output validation before copying.

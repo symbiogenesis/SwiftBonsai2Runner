@@ -707,7 +707,7 @@ mod tests {
     #[test]
     fn progress_remains_bounded_for_small_row_full_projection_schedule() {
         let mut bytes = 0;
-        for completed in 0..21760 {
+        for completed in 0..hexagon_native_rpc::Q2_PROJECTION_MAX_OPERATIONS {
             for stage in [
                 "projection-queue-write-entered",
                 "projection-queue-read-entered",
@@ -724,7 +724,10 @@ mod tests {
             "projection-work-expired-pinned",
             "compute-free-entered",
         ] {
-            assert!(emit_progress(stage, 21759));
+            assert!(emit_progress(
+                stage,
+                hexagon_native_rpc::Q2_PROJECTION_MAX_OPERATIONS - 1
+            ));
         }
     }
     #[test]

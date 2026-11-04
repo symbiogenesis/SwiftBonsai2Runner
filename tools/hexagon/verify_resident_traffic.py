@@ -5,17 +5,18 @@ import hashlib
 import json
 
 from verify_operation_traffic import ROOT, derive as derive_streaming, read
+from verify_operation_budget import RETAINED as OPERATION_BUDGET, derive as derive_budget
 
 
-RETAINED = "docs/evidence/hexagon-resident-host-ledger.json"
+RETAINED = "docs/evidence/hexagon-resident-host-24000-ledger.json"
 SOURCES = (
     "tools/hexagon/verify_resident_traffic.py",
     "tools/hexagon/verify_operation_traffic.py",
     "docs/evidence/hexagon-swift-operation-ledger.json",
     "docs/evidence/hexagon-swift-traffic-ledger.json",
+    OPERATION_BUDGET,
 )
 MAXIMUM_ROWS = 17_408
-MAXIMUM_OPERATIONS = 21_760
 MAXIMUM_RESIDENT_ARENA_BYTES = 64 * 1024 * 1024
 SERVICE_BYTES = 12_348_030_976
 
@@ -25,7 +26,7 @@ def align(value, boundary):
     return (value + boundary - 1) // boundary * boundary
 
 
-def scenario(name, operations, original, weights, activation, results):
+def scenario(name, operations, original, weights, activation, results, maximum_operations):
     """Separate repeated CPU packing, kernel payloads and mapped descriptor size."""
     # The existing HMX command, scratch weight tile, activation planes and
     # results remain present before the optional append-only host arena.
@@ -57,7 +58,7 @@ def scenario(name, operations, original, weights, activation, results):
             {
                 "tokens": tokens,
                 "operations": operations * tokens,
-                "fitsTerminalOperationCap": operations * tokens <= MAXIMUM_OPERATIONS,
+                "fitsTerminalOperationCap": operations * tokens <= maximum_operations,
                 "streamingCpuPackedWeightBytes": weights * tokens,
                 "residentCpuPackedWeightBytesLowerBound": weights,
                 "avoidedRepeatedCpuPackingBytesUpperBound": weights * (tokens - 1),
@@ -71,6 +72,10 @@ def scenario(name, operations, original, weights, activation, results):
 def derive():
     """Reproduce conditional arithmetic, with every unqualified boundary explicit."""
     streaming = derive_streaming()
+    budget = derive_budget()
+    if json.loads(read(OPERATION_BUDGET)) != budget:
+        raise ValueError("current terminal operation budget changed")
+    maximum_operations = budget["terminalMaximumOperations"]
     if json.loads(read("docs/evidence/hexagon-swift-traffic-ledger.json")) != streaming:
         raise ValueError("streaming source identities or logical payloads changed")
     first = streaming["projectionFamilies"][0]
@@ -95,7 +100,7 @@ def derive():
         ],
         "assumptions": {
             "maximumWeightRowsPerOperation": MAXIMUM_ROWS,
-            "terminalOperationCap": MAXIMUM_OPERATIONS,
+            "terminalOperationCap": maximum_operations,
             "maximumResidentArenaBytes": MAXIMUM_RESIDENT_ARENA_BYTES,
             "residentRangeAlignmentBytes": 128,
             "allocationAlignmentBytes": 4096,
@@ -106,15 +111,15 @@ def derive():
             "cacheEviction": False,
         },
         "scenarios": [
-            scenario("blk.0.ffn_up.weight", *(first[field] // 64 for field in fields)),
+            scenario("blk.0.ffn_up.weight", *(first[field] // 64 for field in fields), maximum_operations),
             scenario("all-eligible-original-PQ2-plus-logits-idealized", *(
                 totals[field] for field in fields
-            )),
+            ), maximum_operations),
         ],
         "limitations": [
             "Conditional byte arithmetic, not runtime admission, actual cache occupancy, measured bandwidth or inference speedup.",
             "The first scenario assumes its complete weight payload is resident and reused; metadata, scales, temporary packing, allocator, CPU graph and DSP resources are additional.",
-            "The all-eligible scenario exceeds both the 64MiB arena and the unchanged terminal operation cap even for one token; it is not executable under this contract.",
+            "The all-eligible scenario exceeds the 64MiB arena. One evaluation fits the 24000-operation cap; a full prompt and output reserve still need complete-request admission.",
             "Resident mapped host weights remove repeated CPU packing/copy only when hits occur; they do not reduce the signed kernel's declared weight or returned-plane payloads.",
             "The full expanded allocation remains covered by each queue descriptor with unchanged 0x90 flags; actual cache maintenance may grow and is unmeasured.",
             "Descriptor-covered extent is not bytes transferred, cache-line work, DRAM traffic or simultaneous memory occupancy.",

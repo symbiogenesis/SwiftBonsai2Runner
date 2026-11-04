@@ -102,6 +102,7 @@ jobs:
           python -B tools/hexagon/pq2_bridge.py
           python -B tools/hexagon/verify_packed_fixture.py
           python -B tools/hexagon/verify_operation_traffic.py
+          python -B tools/hexagon/verify_operation_budget.py
           python -B tools/hexagon/verify_resident_traffic.py
       - name: Validate comparative CPU GPU NPU ranking without opening a device
         shell: pwsh
