@@ -17,6 +17,9 @@ use std::time::{Duration, Instant};
 
 const MODEL_BYTES: u64 = 7_206_168_928;
 const MODEL_SHA256: &str = "5912bb739217cf25b4283a098c7b893d9baff36bdf2e72d3dbf4cb999d5633d5";
+const ADAPTER_BYTES: u64 = 9_682_464;
+const ADAPTER_SHA256: &str = "f1669534803d340a496015f5c45125f3437b4d13ec764f40e34488ce83967f42";
+const STANDARD_ADAPTER_SCALE_BITS: u32 = 0x3fa6_6666;
 const CLEANUP_SECONDS: u64 = 75;
 const CHILD_SECONDS: u64 = 195;
 const REQUIRED_AVAILABLE_BYTES: u64 = 18 * 1024 * 1024 * 1024;
@@ -39,6 +42,29 @@ impl ExecutionBackend {
     }
 }
 
+#[derive(Clone, Copy, Default, Deserialize, PartialEq, Eq, Serialize)]
+enum AdapterCase {
+    #[default]
+    #[serde(rename = "none")]
+    None,
+    #[serde(rename = "loaded-zero")]
+    LoadedZero,
+    #[serde(rename = "standard-scale-1.3")]
+    Standard,
+}
+
+#[derive(Clone, Copy, Default, Deserialize, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "lowercase")]
+enum CpuBackend {
+    #[default]
+    Scalar,
+    Neon,
+}
+
+const fn default_row_workers() -> u32 {
+    1
+}
+
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub(super) struct Request {
@@ -57,6 +83,14 @@ pub(super) struct Request {
     token_ids: Option<Vec<u32>>,
     #[serde(default)]
     execution_backend: ExecutionBackend,
+    #[serde(default)]
+    adapter_path: Option<PathBuf>,
+    #[serde(default)]
+    adapter_case: AdapterCase,
+    #[serde(default)]
+    cpu_backend: CpuBackend,
+    #[serde(default = "default_row_workers")]
+    row_workers: u32,
     maximum_seconds: u32,
 }
 
@@ -69,11 +103,20 @@ impl Request {
 
     fn validate_tokens(&self) -> Result<()> {
         let tokens = self.tokens();
-        if !(1..=2).contains(&tokens.len())
+        if !(1..=8).contains(&tokens.len())
             || tokens.first() != Some(&self.token_id)
             || tokens.iter().any(|&token| token >= 248_320)
         {
-            return Err("Select one or two explicit Swift tokens beginning with tokenId.".into());
+            return Err("Select one to eight explicit Swift tokens beginning with tokenId.".into());
+        }
+        Ok(())
+    }
+
+    fn validate_selection(&self) -> Result<()> {
+        if self.adapter_path.is_some() != (self.adapter_case != AdapterCase::None)
+            || ![1, 4].contains(&self.row_workers)
+        {
+            return Err("Select the approved adapter path exactly for an adapter case, and one or four CPU row workers.".into());
         }
         Ok(())
     }
@@ -346,8 +389,8 @@ fn result(
     backend: ExecutionBackend,
     driver: &Value,
 ) -> Result<Value> {
-    if !(1..=2).contains(&tokens.len()) {
-        return Err("The model result needs one or two admitted tokens.".into());
+    if !(1..=8).contains(&tokens.len()) {
+        return Err("The model result needs one to eight admitted tokens.".into());
     }
     let events: Vec<Value> = text
         .lines()
@@ -484,6 +527,35 @@ fn result(
     Ok(value.clone())
 }
 
+fn selection_result(value: &Value, request: &Request) -> Result<()> {
+    let loaded = request.adapter_case != AdapterCase::None;
+    let standard = request.adapter_case == AdapterCase::Standard;
+    let scale_bits = if standard {
+        STANDARD_ADAPTER_SCALE_BITS
+    } else {
+        0
+    };
+    let digest = if loaded {
+        json!(ADAPTER_SHA256)
+    } else {
+        Value::Null
+    };
+    if value["adapterCase"] != json!(request.adapter_case)
+        || value["adapterLoaded"] != loaded
+        || value["adapterSha256"] != digest
+        || value["adapterScaleBits"] != scale_bits
+        || value["cpuBaselineAdapterLoaded"] != standard
+        || value["cpuBaselineAdapterScaleBits"] != scale_bits
+        || value["cpuBackend"] != json!(request.cpu_backend)
+        || value["rowWorkers"] != request.row_workers
+    {
+        return Err(
+            "The model result does not bind the selected adapter case and CPU policy.".into(),
+        );
+    }
+    Ok(())
+}
+
 #[expect(
     clippy::too_many_lines,
     reason = "Keep one ordered terminal intake, signed catalog and driver verification, resource admission and owned graph comparison visible together."
@@ -491,6 +563,10 @@ fn result(
 fn execute(request: &Request, started: Instant, report: &mut Value) -> Result<()> {
     let mut inputs = device::Inputs::default();
     local_build(request, &mut inputs, started, report)?;
+    if let Some(path) = &request.adapter_path {
+        inputs.pinned(path, &json!(ADAPTER_BYTES), &json!(ADAPTER_SHA256))?;
+        report["AdapterIdentity"] = json!({"Path":path,"Bytes":ADAPTER_BYTES,"Sha256":ADAPTER_SHA256,"FileHeldAgainstMutation":true});
+    }
     let dispatch_path = request
         .repository_directory
         .join("config/hexagon-dispatch.lock.json");
@@ -589,6 +665,7 @@ fn execute(request: &Request, started: Instant, report: &mut Value) -> Result<()
         .map_err(|error| error.to_string())?;
     let probe_request = json!({"schemaVersion":1,"modelPath":request.model_path,"packageDirectory":request.package_directory,
         "tokenId":request.token_id,"tokenIds":request.tokens(),"executionBackend":request.execution_backend,
+        "adapterPath":request.adapter_path,"adapterCase":request.adapter_case,"cpuBackend":request.cpu_backend,"rowWorkers":request.row_workers,
         "contextLimit":request.tokens().len(),"modelMemoryLimitBytes":12_u64*1024*1024*1024,
         "stateBudgetBytes":512_u64*1024*1024,"sessionSeconds":120,"maximumOperations":40*request.tokens().len(),
         "maximumOwnedPayloadBytes":64_u64*1024*1024,"expectedParentPid":pid,"expectedParentCreationTime":creation});
@@ -634,13 +711,15 @@ fn execute(request: &Request, started: Instant, report: &mut Value) -> Result<()
                 .into(),
         );
     }
-    report["NativeResult"] = result(
+    let native_result = result(
         &output.stdout,
         &request_digest,
         request.tokens(),
         request.execution_backend,
         &driver,
     )?;
+    selection_result(&native_result, request)?;
+    report["NativeResult"] = native_result;
     report["Outcome"] = json!("passed");
     report["Stage"] = json!("bounded-token-graph-complete");
     Ok(())
@@ -659,6 +738,7 @@ pub(super) fn run(request: &Request) -> Result<Value> {
         );
     }
     request.validate_tokens()?;
+    request.validate_selection()?;
     plain(&request.repository_directory)?;
     plain(&request.prism_repository_directory)?;
     for path in [
@@ -671,13 +751,17 @@ pub(super) fn run(request: &Request) -> Result<Value> {
     ] {
         validate_external_path(path).map_err(|error| error.to_string())?;
     }
+    if let Some(path) = &request.adapter_path {
+        validate_external_path(path).map_err(|error| error.to_string())?;
+    }
     fs::create_dir(&request.output_directory)
         .map_err(|_| "The model probe requires a new external evidence directory.".to_owned())?;
     let mut report = json!({"schemaVersion":1,"kind":"runner-local-hexagon-model-probe","Outcome":"pending","Stage":"local-build-intake",
         "LocalBuild":true,"HostedBuild":false,"PrismRevision":request.expected_prism_revision,"MaximumSeconds":request.maximum_seconds,
         "CleanupReserveSeconds":CLEANUP_SECONDS,"ModelWorkAttempted":false,"OwnedJobTeardown":"not-started","ProfileEligible":false,
         "PerformanceMeasured":false,"TrustChanged":false,"PowerBefore":power(),"RequiredAvailablePhysicalBytes":REQUIRED_AVAILABLE_BYTES,
-        "ExecutionBackend":request.execution_backend,"TokenIds":request.tokens()});
+        "ExecutionBackend":request.execution_backend,"TokenIds":request.tokens(),"AdapterCase":request.adapter_case,
+        "CpuBackend":request.cpu_backend,"RowWorkers":request.row_workers});
     let outcome = execute(request, started, &mut report);
     report["PowerAfter"] = power();
     report["ElapsedMilliseconds"] = json!(started.elapsed().as_millis());
@@ -691,6 +775,13 @@ pub(super) fn run(request: &Request) -> Result<Value> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn request_value() -> Value {
+        json!({"repositoryDirectory":"repo","prismRepositoryDirectory":"prism",
+            "expectedPrismRevision":"revision","executablePath":"exe","executableSha256":"sha",
+            "buildReceiptPath":"receipt","modelPath":"model","packageDirectory":"package",
+            "signtoolPath":"sign","outputDirectory":"output","tokenId":42,"maximumSeconds":300})
+    }
 
     fn complete_result(tokens: &[u32], backend: ExecutionBackend) -> Value {
         let power =
@@ -854,10 +945,7 @@ mod tests {
 
     #[test]
     fn legacy_and_sequence_requests_keep_closed_token_and_backend_admission() -> Result<()> {
-        let legacy = json!({"repositoryDirectory":"repo","prismRepositoryDirectory":"prism",
-            "expectedPrismRevision":"revision","executablePath":"exe","executableSha256":"sha",
-            "buildReceiptPath":"receipt","modelPath":"model","packageDirectory":"package",
-            "signtoolPath":"sign","outputDirectory":"output","tokenId":42,"maximumSeconds":300});
+        let legacy = request_value();
         let request: Request =
             serde_json::from_value(legacy.clone()).map_err(|error| error.to_string())?;
         request.validate_tokens()?;
@@ -866,7 +954,7 @@ mod tests {
         for invalid in [
             json!([]),
             json!([43]),
-            json!([42, 43, 44]),
+            json!([42, 43, 44, 45, 46, 47, 48, 49, 50]),
             json!([42, 248320]),
         ] {
             let mut changed = legacy.clone();
@@ -878,6 +966,108 @@ mod tests {
         let mut unknown = legacy;
         unknown["executionBackend"] = json!("auto");
         assert!(serde_json::from_value::<Request>(unknown).is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn eight_token_result_requires_every_projection_and_comparison() -> Result<()> {
+        let tokens = [42, 0, 248_319, 42, 43, 44, 45, 46];
+        let mut request = request_value();
+        request["tokenIds"] = json!(tokens);
+        let request: Request =
+            serde_json::from_value(request).map_err(|error| error.to_string())?;
+        request.validate_tokens()?;
+        let mut value = complete_result(&tokens, ExecutionBackend::HmxBitplane);
+        let driver = json!({"Path":"fixed-driver"});
+        result(
+            &value.to_string(),
+            &"a".repeat(64),
+            &tokens,
+            ExecutionBackend::HmxBitplane,
+            &driver,
+        )?;
+        value["tokenComparisons"][7]["stateBitwiseEqual"] = json!(false);
+        assert!(
+            result(
+                &value.to_string(),
+                &"a".repeat(64),
+                &tokens,
+                ExecutionBackend::HmxBitplane,
+                &driver
+            )
+            .is_err()
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn adapter_request_rejects_unbound_paths_and_unsupported_worker_policies() -> Result<()> {
+        for (adapter_case, path, workers) in [
+            ("none", json!("adapter"), 1),
+            ("loaded-zero", Value::Null, 4),
+            ("standard-scale-1.3", Value::Null, 4),
+            ("none", Value::Null, 2),
+        ] {
+            let mut value = request_value();
+            value["adapterCase"] = json!(adapter_case);
+            value["adapterPath"] = path;
+            value["rowWorkers"] = json!(workers);
+            let request: Request =
+                serde_json::from_value(value).map_err(|error| error.to_string())?;
+            assert!(request.validate_selection().is_err());
+        }
+        for (field, invalid) in [("adapterCase", "custom"), ("cpuBackend", "auto")] {
+            let mut value = request_value();
+            value[field] = json!(invalid);
+            assert!(serde_json::from_value::<Request>(value).is_err());
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn adapter_result_binds_zero_identity_and_standard_application_to_cpu_policy() -> Result<()> {
+        for (adapter_case, loaded, baseline_loaded, scale_bits) in [
+            ("none", false, false, 0),
+            ("loaded-zero", true, false, 0),
+            (
+                "standard-scale-1.3",
+                true,
+                true,
+                STANDARD_ADAPTER_SCALE_BITS,
+            ),
+        ] {
+            let mut value = request_value();
+            value["adapterCase"] = json!(adapter_case);
+            value["adapterPath"] = if loaded {
+                json!("adapter")
+            } else {
+                Value::Null
+            };
+            value["cpuBackend"] = json!("neon");
+            value["rowWorkers"] = json!(4);
+            let request: Request =
+                serde_json::from_value(value).map_err(|error| error.to_string())?;
+            request.validate_selection()?;
+            let value = json!({"adapterCase":adapter_case,"adapterLoaded":loaded,
+                "adapterSha256":if loaded { json!(ADAPTER_SHA256) } else { Value::Null },
+                "adapterScaleBits":scale_bits,"cpuBaselineAdapterLoaded":baseline_loaded,
+                "cpuBaselineAdapterScaleBits":scale_bits,"cpuBackend":"neon","rowWorkers":4});
+            selection_result(&value, &request)?;
+            for (field, wrong) in [
+                ("adapterCase", json!("custom")),
+                ("adapterLoaded", json!(!loaded)),
+                ("adapterSha256", json!("0".repeat(64))),
+                ("adapterScaleBits", json!(1)),
+                ("cpuBaselineAdapterLoaded", json!(!baseline_loaded)),
+                ("cpuBaselineAdapterScaleBits", json!(1)),
+                ("cpuBackend", json!("scalar")),
+                ("rowWorkers", json!(1)),
+            ] {
+                let mut changed = value.clone();
+                changed[field] = wrong;
+                assert!(selection_result(&changed, &request).is_err());
+            }
+        }
         Ok(())
     }
 

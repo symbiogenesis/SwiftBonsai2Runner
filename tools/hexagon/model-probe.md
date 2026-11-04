@@ -1,12 +1,12 @@
 # Local actual-model Hexagon probe
 
 `bonsai-tools hexagon-tools --request ABSOLUTE_JSON_PATH` accepts the separate
-`model-device` operation below. This local diagnostic evaluates one or two explicit
+`model-device` operation below. This local diagnostic evaluates one to eight explicit
 original-PQ2 tokens with `blk.0.ffn_up.weight` on the selected guarded HVX or HMX
 bitplane path, compares every returned integer limb or plane and the complete
 graph logits/state against its CPU shadow after each token, and requires explicit
 native cleanup. Other projections stay on CPU. It enables no
-production backend and establishes no inference speedup or adapter qualification.
+production backend and establishes no inference speedup or broader adapter qualification.
 
 ```json
 {
@@ -25,6 +25,10 @@ production backend and establishes no inference speedup or adapter qualification
     "tokenId": 42,
     "tokenIds": [42, 43],
     "executionBackend": "hmx-bitplane",
+    "adapterCase": "standard-scale-1.3",
+    "adapterPath": "C:\\external\\bonsai-abliterate-lora.gguf",
+    "cpuBackend": "neon",
+    "rowWorkers": 4,
     "maximumSeconds": 300
   }
 }
@@ -38,12 +42,30 @@ including builds, intake, power snapshots and archival, must independently fit
 its predeclared aggregate budget. Historical investigations remain closed.
 
 `tokenId` remains required. Omitting `tokenIds` selects that single token; an
-explicit sequence must contain one or two vocabulary IDs and start with
+explicit sequence must contain one to eight vocabulary IDs and start with
 `tokenId`. Omitting `executionBackend` selects `guarded-hvx`; the only other
 accepted value is `hmx-bitplane`. This preserves the original single-token
 request. The current probe executable emits explicit backend and sequence
 evidence even for that legacy request; older executable output without those
 fields cannot qualify the extended supervisor.
+
+`adapterCase` defaults to `none`, which requires omitting `adapterPath` (or setting
+it to null). `loaded-zero` and `standard-scale-1.3` require the exact approved
+9,682,464-byte adapter with SHA-256
+`f1669534803d340a496015f5c45125f3437b4d13ec764f40e34488ce83967f42`.
+The supervisor verifies and holds the adapter against mutation throughout both
+arms. The source-bound child independently admits its identity. `loaded-zero`
+compares an adapter-free CPU graph against a native graph with the adapter loaded
+at scale zero; `standard-scale-1.3` uses the adapter at scale 1.3 in both graphs.
+Final policy evidence binds the case, loaded status, adapter digest and scale bits,
+including the CPU baseline's loaded status and scale.
+
+`cpuBackend` accepts `scalar` (default) or explicit `neon`; `rowWorkers` accepts
+one (default) or four. NEON and parallel rows require the corresponding Prism
+build features; unavailable explicit selections fail before inference. Both CPU
+and native graph arms use the selected CPU policy for their CPU-owned work.
+The supervisor requires matching terminal policy fields. These options do not
+change the projection placement or qualify the selected policy for daily service.
 
 Both selected paths admit all 40 operations per token before the first native
 graph evaluation. A two-token control therefore requires exactly 80 completed
@@ -63,7 +85,9 @@ separately requires an empty owned Job after the process exits.
 Resource observations retain unknown effective HMX
 placement and VTCM; they cannot qualify physical placement or available capacity.
 Operation, session, child and
-cleanup limits are unchanged. No adapter is loaded by this control.
+cleanup limits are unchanged. Numerical hashes and comparisons come from the
+source-bound worker; complete raw numerical arrays are not retained for an
+independent offline arithmetic replay.
 
 The local receipt has this closed schema:
 
