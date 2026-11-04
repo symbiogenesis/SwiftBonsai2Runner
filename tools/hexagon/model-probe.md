@@ -79,3 +79,11 @@ owned-process teardown and local identities. CPU/NPU snapshots may be unknown;
 equal endpoints do not establish uninterrupted power stability. A failed child
 retains its raw output and completed arm observations without publishing parity.
 Do not retry or claim performance from this one-token correctness workload.
+
+The [2026-11-03 X2 AC receipt](../../docs/evidence/hexagon-model-device-20261103-ac/summary.json)
+passes this fixed token-42 control: all 40 submissions, 1,392,640 independent
+integer comparisons, full logits/state bits and explicit terminal cleanup.
+Both comparison arms observed AC at their endpoints with battery saver off.
+The supervisor's 51,689 ms includes intake, model admission and both arms;
+it is not kernel timing, decode throughput or evidence of a speedup. Wider
+placement, adapters, persistent service and production admission remain pending.

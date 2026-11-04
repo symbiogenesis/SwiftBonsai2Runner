@@ -1126,15 +1126,17 @@ Follow [Adreno contracts](docs/adreno.md); discovery alone changes no CPU profil
 
 Follow [Hexagon contracts](docs/hexagon.md).
 
-Qualify the implemented [supervised local actual-model probe](tools/hexagon/model-probe.md)
-on X2: one original-PQ2 token with only `blk.0.ffn_up.weight` offloaded,
-independent signed integer-limb checks and complete CPU-shadow logits/state
-comparison before cleanup-gated publication. The
-[2026-11-03 local implementation workload](docs/evidence/hexagon-model-execution-20261103/summary.json)
-passed focused tests, strict lint and release builds, but left insufficient
-aggregate time for the fixed device supervisor and retention. Its guard
-started no model/device trial. Keep that deadline closed; actual-device
-acceptance, adapter coverage, wider placement and serving remain outstanding.
+Extend the [supervised actual-model probe](tools/hexagon/model-probe.md) beyond
+the [passed X2 AC first-projection control](docs/evidence/hexagon-model-device-20261103-ac/summary.json):
+one original-PQ2 token, 40 signed guarded-HVX operations, every integer limb
+checked independently, and complete CPU-shadow logits/state equality after
+explicit cleanup. Broader activations/quantizer edges, nonzero adapters,
+repeated-token and prefix lifecycle, effective device resources, wider placement
+and persistent serving remain outstanding. Retain the separate closed
+[source-preparation workload](docs/evidence/hexagon-model-execution-20261103/summary.json).
+This first device pass establishes no HMX execution, measured speedup or
+production eligibility; use separately declared future work rather than
+extending either historical deadline.
 
 Qualify the [source-only Prism graph integration](https://github.com/symbiogenesis/prism-inference/tree/1e7ed92e7787b9d8b150f9bb3fb5a74fa92fb14b/tools/hexagon-runtime)
 and bounded native HMX session on settled main. Exact PTQ1/odd-block PQ2 Q8_0

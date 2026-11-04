@@ -1,6 +1,6 @@
 # Hexagon source, placement and evidence
 
-Source reviews: **2026-10-30 through 2026-11-02**. [Hexagon contracts](hexagon.md) govern execution;
+Source reviews and scoped device evidence: **2026-10-30 through 2026-11-03**. [Hexagon contracts](hexagon.md) govern execution;
 [PLAN.md](../PLAN.md#hexagon-npu) owns outstanding work. The
 [experiment lock](../config/hexagon-experiment.lock.json) and separate
 [Q2 candidate lock](../config/hexagon-signed-q2-candidate.lock.json) retain exact
@@ -18,9 +18,14 @@ through both releases. The final guarded-Q2 K=256/M=32/N=2 control verified all
 close and free with an empty owned Job. This qualifies that fixed synthetic
 integer primitive and explicit cleanup cycle; full native inference and vendor
 teardown remain independently pending.
-The original Swift projection/signs are bound as data. Selected DSP-byte identity,
-Swift numerics/state, resources and performance remain
-unqualified; X1 needs independent evidence. The sections below distinguish source
+The [2026-11-03 X2 AC actual-model control](evidence/hexagon-model-device-20261103-ac/summary.json)
+now executes the complete original `blk.0.ffn_up.weight` projection inside a real
+token evaluation: all 40 guarded-HVX submissions and 1,392,640 returned integer
+values passed, and logits plus complete logical state matched the CPU shadow
+bitwise. Explicit native cleanup and owned-Job teardown passed. Other projections
+stayed on CPU; adapters, HMX, repeated serving and performance were not tested.
+Selected DSP-byte identity, broader Swift numerics/state, effective resources and
+performance remain unqualified; X1 needs independent evidence. The sections below distinguish source
 eligibility, data verification, native access and hosted wire controls.
 
 ### Whole-token bridge cost

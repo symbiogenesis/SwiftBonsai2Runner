@@ -1,7 +1,7 @@
 # Hexagon deployment and execution contracts
 
-Current builds use CPU execution, including scalar/NEON in the [Rust runtime][rust-runtime].
-X1/X2 Hexagon inference remains unqualified; automatic selection is unimplemented and the
+Normal application builds use CPU execution, including scalar/NEON in the [Rust runtime][rust-runtime].
+Production X1/X2 Hexagon inference remains unqualified; automatic selection is unimplemented and the
 [experimental lock](../config/hexagon-experiment.lock.json) keeps admission disabled.
 [PLAN.md](../PLAN.md#hexagon-npu) owns outstanding work; [profile policy](hardware-capabilities.md#automatic-profile-selection)
 governs device/workload eligibility and interactive/battery objectives.
@@ -20,7 +20,7 @@ from Runner's pinned CPU release. It now includes an explicit PTQ1/odd-block PQ2
 Q8_0 executor preserving native DOTPROD lanes and float order, with actual remaining
 native capacity and whole-request operation checks before new inference.
 [Focused model-free controls](evidence/hexagon-ptq1-admission-preparation.json)
-pass; signed PQ2/PTQ1 model execution, resource qualification and persistent
+pass; broader signed PQ2/PTQ1 model execution, resource qualification and persistent
 serving remain pending. The [static work ledger](evidence/hexagon-swift-operation-ledger.json)
 records the historical terminal-cap refusal. The owner-authorized
 [24,000-operation budget](evidence/hexagon-session-operation-budget.json) now
@@ -31,10 +31,14 @@ The separate [local actual-model probe](../tools/hexagon/model-probe.md) now
 provides a runnable supervised first-projection path: one original-PQ2 token,
 every returned integer limb checked independently, complete CPU-shadow
 logits/state comparisons, and terminal publication only after explicit native
-cleanup. Its [local validation](evidence/hexagon-model-execution-20261103/summary.json)
-records passing focused source checks and builds. The aggregate allowance could
-not fit the complete device supervisor afterward, so no model/device attempt
-started and signed-device acceptance remains pending. This enables no profile.
+cleanup. After the separate
+[local source validation](evidence/hexagon-model-execution-20261103/summary.json),
+the owner-authorized [X2 AC device control](evidence/hexagon-model-device-20261103-ac/summary.json)
+passed for token 42: 40 native operations, all 1,392,640 integer values, every
+logit and complete logical state matched the CPU shadow. Signed package/driver
+intake, explicit stop/close/unmap/free and empty owned-Job teardown passed.
+Other projections remained CPU-owned; no adapter or HMX path ran. This qualifies
+that single-token first-projection control and enables no production profile.
 The [logical payload ledger](evidence/hexagon-swift-traffic-ledger.json) derives
 13.69 GB of signed-kernel input/result payload per all-eligible original-PQ2
 evaluation token. The opt-in [mapped host-weight arena and graph cache](../tools/hexagon/resident-host.md)

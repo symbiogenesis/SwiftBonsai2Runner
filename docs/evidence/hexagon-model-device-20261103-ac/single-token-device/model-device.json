@@ -1,0 +1,994 @@
+{
+  "AvailablePhysicalBytesBefore": 23521943552,
+  "BuildReceiptSha256": "8665d45d9862c418970ec6fcc5f153547e5dd74164233fc82e2cc25591217235",
+  "CandidateLockSha256": "052b1252fb4f878b27b1cf917162f8b204e023bdfbeea2ac8e2dfe34539583c9",
+  "CatalogMembersVerified": 5,
+  "CleanupReserveSeconds": 75,
+  "DriverIdentity": {
+    "Bytes": 593472,
+    "FileHeldAgainstMutation": true,
+    "Path": "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\qcnspmcdm8480.inf_arm64_4feba84cfc7ee278\\libcdsprpc.dll",
+    "Publisher": "Microsoft Windows Hardware Compatibility Publisher",
+    "Sha256": "5cf6aa86670cceb84461050ad00b012662e4859d15be2a1cf147d98d5002f37d",
+    "SignatureStatus": "Valid",
+    "SignerThumbprint": "32b4e7ce92a59c722b8bdf7ae3e66520cfb9de21"
+  },
+  "ElapsedMilliseconds": 51689,
+  "ExecutableSha256": "bd0093f7ed13de6723afce32f79be685542d1d0869ef578b6115981d847f07fe",
+  "HostedBuild": false,
+  "LocalBuild": true,
+  "LocalBuildSourceBytesVerified": 4012250,
+  "LocalBuildSourceFilesVerified": 318,
+  "MaximumSeconds": 300,
+  "ModelWorkAttempted": true,
+  "NativeResult": {
+    "completed": true,
+    "cpuPowerAfter": {
+      "acConnected": true,
+      "available": true,
+      "batteryPercent": 36,
+      "batterySaver": false
+    },
+    "cpuPowerBefore": {
+      "acConnected": true,
+      "available": true,
+      "batteryPercent": 36,
+      "batterySaver": false
+    },
+    "driverDll": "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\qcnspmcdm8480.inf_arm64_4feba84cfc7ee278\\libcdsprpc.dll",
+    "event": "result",
+    "integerValuesCompared": 1392640,
+    "logitsBitwiseEqual": true,
+    "logitsSha256": "69ccdaaaa739ef628ac749cbe034d5b25e6332ba6fc97f33ee4b434821179063",
+    "maximumOperations": 40,
+    "modelBytes": 7206168928,
+    "modelSha256": "5912bb739217cf25b4283a098c7b893d9baff36bdf2e72d3dbf4cb999d5633d5",
+    "nativeCompletedCycle": true,
+    "nativeOperationsCompleted": 40,
+    "nativeOperationsSubmitted": 40,
+    "nativeStage": "compute-numeric-verified-stopped-unmapped-freed",
+    "npuPowerAfter": {
+      "acConnected": true,
+      "available": true,
+      "batteryPercent": 37,
+      "batterySaver": false
+    },
+    "npuPowerBefore": {
+      "acConnected": true,
+      "available": true,
+      "batteryPercent": 36,
+      "batterySaver": false
+    },
+    "performanceMeasured": false,
+    "placementIdentity": "5912bb739217cf25b4283a098c7b893d9baff36bdf2e72d3dbf4cb999d5633d5:qwen35-text-v1:nonflash-f16:kv-f16:gdn-f32:prism-arm64-fused-v1:external-pq2-v1:hexagon-explicit-placement-v1:69dcd350f56c537f8ad5f342df4532638bc3796e1ac5b9700f34a5fe74b1b821",
+    "profileEligible": false,
+    "projection": "blk.0.ffn_up.weight",
+    "projectionsCompleted": 1,
+    "requestSha256": "d6f9e3b65951d929d4714989c40c98e257dced2f997382caa0605832fae4af89",
+    "schemaVersion": 1,
+    "sessionSeconds": 120,
+    "stateBitwiseEqual": true,
+    "stateSha256": "2162316925620bdbbe55d896529c95e2d5cbb9bd02999e318ba8821130780742",
+    "tokenId": 42
+  },
+  "Outcome": "passed",
+  "OwnedJobTeardown": "confirmed-empty",
+  "PerformanceMeasured": false,
+  "PowerAfter": {
+    "acConnected": true,
+    "available": true,
+    "batteryPercent": 37,
+    "batterySaver": false
+  },
+  "PowerBefore": {
+    "acConnected": true,
+    "available": true,
+    "batteryPercent": 36,
+    "batterySaver": false
+  },
+  "PrismRevision": "cc6c1dcf5488cd6a95b078e0f8a1c64e6bc71b86",
+  "ProbeEvents": [
+    {
+      "event": "started",
+      "modelBytes": 7206168928,
+      "modelSha256": "5912bb739217cf25b4283a098c7b893d9baff36bdf2e72d3dbf4cb999d5633d5",
+      "processId": 51860,
+      "projection": "blk.0.ffn_up.weight",
+      "requestSha256": "d6f9e3b65951d929d4714989c40c98e257dced2f997382caa0605832fae4af89",
+      "schemaVersion": 1
+    },
+    {
+      "completed": true,
+      "event": "cpu-arm-finished",
+      "powerAfter": {
+        "acConnected": true,
+        "available": true,
+        "batteryPercent": 36,
+        "batterySaver": false
+      },
+      "powerBefore": {
+        "acConnected": true,
+        "available": true,
+        "batteryPercent": 36,
+        "batterySaver": false
+      }
+    },
+    {
+      "event": "cpu-control-complete",
+      "logitsSha256": "69ccdaaaa739ef628ac749cbe034d5b25e6332ba6fc97f33ee4b434821179063",
+      "stateSha256": "2162316925620bdbbe55d896529c95e2d5cbb9bd02999e318ba8821130780742"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 0,
+      "operationsSubmitted": 0,
+      "stage": "compute-reference-process-init-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 0,
+      "operationsSubmitted": 0,
+      "stage": "compute-module-open-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 0,
+      "operationsSubmitted": 0,
+      "stage": "projection-allocation-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 0,
+      "operationsSubmitted": 0,
+      "stage": "projection-fd-map-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 0,
+      "operationsSubmitted": 0,
+      "stage": "projection-queue-create-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 0,
+      "operationsSubmitted": 0,
+      "stage": "projection-queue-export-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 0,
+      "operationsSubmitted": 0,
+      "stage": "projection-queue-start-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 0,
+      "operationsSubmitted": 1,
+      "stage": "projection-queue-write-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 0,
+      "operationsSubmitted": 1,
+      "stage": "projection-queue-read-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 1,
+      "operationsSubmitted": 1,
+      "stage": "projection-operation-complete"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 1,
+      "operationsSubmitted": 2,
+      "stage": "projection-queue-write-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 1,
+      "operationsSubmitted": 2,
+      "stage": "projection-queue-read-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 2,
+      "operationsSubmitted": 2,
+      "stage": "projection-operation-complete"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 2,
+      "operationsSubmitted": 3,
+      "stage": "projection-queue-write-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 2,
+      "operationsSubmitted": 3,
+      "stage": "projection-queue-read-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 3,
+      "operationsSubmitted": 3,
+      "stage": "projection-operation-complete"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 3,
+      "operationsSubmitted": 4,
+      "stage": "projection-queue-write-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 3,
+      "operationsSubmitted": 4,
+      "stage": "projection-queue-read-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 4,
+      "operationsSubmitted": 4,
+      "stage": "projection-operation-complete"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 4,
+      "operationsSubmitted": 5,
+      "stage": "projection-queue-write-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 4,
+      "operationsSubmitted": 5,
+      "stage": "projection-queue-read-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 5,
+      "operationsSubmitted": 5,
+      "stage": "projection-operation-complete"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 5,
+      "operationsSubmitted": 6,
+      "stage": "projection-queue-write-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 5,
+      "operationsSubmitted": 6,
+      "stage": "projection-queue-read-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 6,
+      "operationsSubmitted": 6,
+      "stage": "projection-operation-complete"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 6,
+      "operationsSubmitted": 7,
+      "stage": "projection-queue-write-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 6,
+      "operationsSubmitted": 7,
+      "stage": "projection-queue-read-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 7,
+      "operationsSubmitted": 7,
+      "stage": "projection-operation-complete"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 7,
+      "operationsSubmitted": 8,
+      "stage": "projection-queue-write-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 7,
+      "operationsSubmitted": 8,
+      "stage": "projection-queue-read-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 8,
+      "operationsSubmitted": 8,
+      "stage": "projection-operation-complete"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 8,
+      "operationsSubmitted": 9,
+      "stage": "projection-queue-write-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 8,
+      "operationsSubmitted": 9,
+      "stage": "projection-queue-read-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 9,
+      "operationsSubmitted": 9,
+      "stage": "projection-operation-complete"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 9,
+      "operationsSubmitted": 10,
+      "stage": "projection-queue-write-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 9,
+      "operationsSubmitted": 10,
+      "stage": "projection-queue-read-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 10,
+      "operationsSubmitted": 10,
+      "stage": "projection-operation-complete"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 10,
+      "operationsSubmitted": 11,
+      "stage": "projection-queue-write-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 10,
+      "operationsSubmitted": 11,
+      "stage": "projection-queue-read-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 11,
+      "operationsSubmitted": 11,
+      "stage": "projection-operation-complete"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 11,
+      "operationsSubmitted": 12,
+      "stage": "projection-queue-write-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 11,
+      "operationsSubmitted": 12,
+      "stage": "projection-queue-read-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 12,
+      "operationsSubmitted": 12,
+      "stage": "projection-operation-complete"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 12,
+      "operationsSubmitted": 13,
+      "stage": "projection-queue-write-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 12,
+      "operationsSubmitted": 13,
+      "stage": "projection-queue-read-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 13,
+      "operationsSubmitted": 13,
+      "stage": "projection-operation-complete"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 13,
+      "operationsSubmitted": 14,
+      "stage": "projection-queue-write-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 13,
+      "operationsSubmitted": 14,
+      "stage": "projection-queue-read-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 14,
+      "operationsSubmitted": 14,
+      "stage": "projection-operation-complete"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 14,
+      "operationsSubmitted": 15,
+      "stage": "projection-queue-write-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 14,
+      "operationsSubmitted": 15,
+      "stage": "projection-queue-read-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 15,
+      "operationsSubmitted": 15,
+      "stage": "projection-operation-complete"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 15,
+      "operationsSubmitted": 16,
+      "stage": "projection-queue-write-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 15,
+      "operationsSubmitted": 16,
+      "stage": "projection-queue-read-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 16,
+      "operationsSubmitted": 16,
+      "stage": "projection-operation-complete"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 16,
+      "operationsSubmitted": 17,
+      "stage": "projection-queue-write-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 16,
+      "operationsSubmitted": 17,
+      "stage": "projection-queue-read-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 17,
+      "operationsSubmitted": 17,
+      "stage": "projection-operation-complete"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 17,
+      "operationsSubmitted": 18,
+      "stage": "projection-queue-write-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 17,
+      "operationsSubmitted": 18,
+      "stage": "projection-queue-read-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 18,
+      "operationsSubmitted": 18,
+      "stage": "projection-operation-complete"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 18,
+      "operationsSubmitted": 19,
+      "stage": "projection-queue-write-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 18,
+      "operationsSubmitted": 19,
+      "stage": "projection-queue-read-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 19,
+      "operationsSubmitted": 19,
+      "stage": "projection-operation-complete"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 19,
+      "operationsSubmitted": 20,
+      "stage": "projection-queue-write-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 19,
+      "operationsSubmitted": 20,
+      "stage": "projection-queue-read-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 20,
+      "operationsSubmitted": 20,
+      "stage": "projection-operation-complete"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 20,
+      "operationsSubmitted": 21,
+      "stage": "projection-queue-write-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 20,
+      "operationsSubmitted": 21,
+      "stage": "projection-queue-read-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 21,
+      "operationsSubmitted": 21,
+      "stage": "projection-operation-complete"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 21,
+      "operationsSubmitted": 22,
+      "stage": "projection-queue-write-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 21,
+      "operationsSubmitted": 22,
+      "stage": "projection-queue-read-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 22,
+      "operationsSubmitted": 22,
+      "stage": "projection-operation-complete"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 22,
+      "operationsSubmitted": 23,
+      "stage": "projection-queue-write-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 22,
+      "operationsSubmitted": 23,
+      "stage": "projection-queue-read-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 23,
+      "operationsSubmitted": 23,
+      "stage": "projection-operation-complete"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 23,
+      "operationsSubmitted": 24,
+      "stage": "projection-queue-write-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 23,
+      "operationsSubmitted": 24,
+      "stage": "projection-queue-read-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 24,
+      "operationsSubmitted": 24,
+      "stage": "projection-operation-complete"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 24,
+      "operationsSubmitted": 25,
+      "stage": "projection-queue-write-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 24,
+      "operationsSubmitted": 25,
+      "stage": "projection-queue-read-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 25,
+      "operationsSubmitted": 25,
+      "stage": "projection-operation-complete"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 25,
+      "operationsSubmitted": 26,
+      "stage": "projection-queue-write-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 25,
+      "operationsSubmitted": 26,
+      "stage": "projection-queue-read-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 26,
+      "operationsSubmitted": 26,
+      "stage": "projection-operation-complete"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 26,
+      "operationsSubmitted": 27,
+      "stage": "projection-queue-write-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 26,
+      "operationsSubmitted": 27,
+      "stage": "projection-queue-read-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 27,
+      "operationsSubmitted": 27,
+      "stage": "projection-operation-complete"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 27,
+      "operationsSubmitted": 28,
+      "stage": "projection-queue-write-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 27,
+      "operationsSubmitted": 28,
+      "stage": "projection-queue-read-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 28,
+      "operationsSubmitted": 28,
+      "stage": "projection-operation-complete"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 28,
+      "operationsSubmitted": 29,
+      "stage": "projection-queue-write-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 28,
+      "operationsSubmitted": 29,
+      "stage": "projection-queue-read-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 29,
+      "operationsSubmitted": 29,
+      "stage": "projection-operation-complete"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 29,
+      "operationsSubmitted": 30,
+      "stage": "projection-queue-write-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 29,
+      "operationsSubmitted": 30,
+      "stage": "projection-queue-read-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 30,
+      "operationsSubmitted": 30,
+      "stage": "projection-operation-complete"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 30,
+      "operationsSubmitted": 31,
+      "stage": "projection-queue-write-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 30,
+      "operationsSubmitted": 31,
+      "stage": "projection-queue-read-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 31,
+      "operationsSubmitted": 31,
+      "stage": "projection-operation-complete"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 31,
+      "operationsSubmitted": 32,
+      "stage": "projection-queue-write-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 31,
+      "operationsSubmitted": 32,
+      "stage": "projection-queue-read-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 32,
+      "operationsSubmitted": 32,
+      "stage": "projection-operation-complete"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 32,
+      "operationsSubmitted": 33,
+      "stage": "projection-queue-write-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 32,
+      "operationsSubmitted": 33,
+      "stage": "projection-queue-read-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 33,
+      "operationsSubmitted": 33,
+      "stage": "projection-operation-complete"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 33,
+      "operationsSubmitted": 34,
+      "stage": "projection-queue-write-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 33,
+      "operationsSubmitted": 34,
+      "stage": "projection-queue-read-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 34,
+      "operationsSubmitted": 34,
+      "stage": "projection-operation-complete"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 34,
+      "operationsSubmitted": 35,
+      "stage": "projection-queue-write-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 34,
+      "operationsSubmitted": 35,
+      "stage": "projection-queue-read-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 35,
+      "operationsSubmitted": 35,
+      "stage": "projection-operation-complete"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 35,
+      "operationsSubmitted": 36,
+      "stage": "projection-queue-write-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 35,
+      "operationsSubmitted": 36,
+      "stage": "projection-queue-read-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 36,
+      "operationsSubmitted": 36,
+      "stage": "projection-operation-complete"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 36,
+      "operationsSubmitted": 37,
+      "stage": "projection-queue-write-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 36,
+      "operationsSubmitted": 37,
+      "stage": "projection-queue-read-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 37,
+      "operationsSubmitted": 37,
+      "stage": "projection-operation-complete"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 37,
+      "operationsSubmitted": 38,
+      "stage": "projection-queue-write-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 37,
+      "operationsSubmitted": 38,
+      "stage": "projection-queue-read-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 38,
+      "operationsSubmitted": 38,
+      "stage": "projection-operation-complete"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 38,
+      "operationsSubmitted": 39,
+      "stage": "projection-queue-write-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 38,
+      "operationsSubmitted": 39,
+      "stage": "projection-queue-read-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 39,
+      "operationsSubmitted": 39,
+      "stage": "projection-operation-complete"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 39,
+      "operationsSubmitted": 40,
+      "stage": "projection-queue-write-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 39,
+      "operationsSubmitted": 40,
+      "stage": "projection-queue-read-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 40,
+      "operationsSubmitted": 40,
+      "stage": "projection-operation-complete"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 40,
+      "operationsSubmitted": 40,
+      "stage": "compute-queue-stop-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 40,
+      "operationsSubmitted": 40,
+      "stage": "compute-queue-close-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 40,
+      "operationsSubmitted": 40,
+      "stage": "compute-fd-unmap-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 40,
+      "operationsSubmitted": 40,
+      "stage": "compute-module-close-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 40,
+      "operationsSubmitted": 40,
+      "stage": "compute-free-entered"
+    },
+    {
+      "event": "native-progress",
+      "operationsCompleted": 40,
+      "operationsSubmitted": 40,
+      "stage": "compute-numeric-verified-stopped-unmapped-freed"
+    },
+    {
+      "event": "native-arm-finished",
+      "powerAfter": {
+        "acConnected": true,
+        "available": true,
+        "batteryPercent": 37,
+        "batterySaver": false
+      },
+      "powerBefore": {
+        "acConnected": true,
+        "available": true,
+        "batteryPercent": 36,
+        "batterySaver": false
+      },
+      "returnedReport": true
+    },
+    {
+      "completed": true,
+      "cpuPowerAfter": {
+        "acConnected": true,
+        "available": true,
+        "batteryPercent": 36,
+        "batterySaver": false
+      },
+      "cpuPowerBefore": {
+        "acConnected": true,
+        "available": true,
+        "batteryPercent": 36,
+        "batterySaver": false
+      },
+      "driverDll": "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\qcnspmcdm8480.inf_arm64_4feba84cfc7ee278\\libcdsprpc.dll",
+      "event": "result",
+      "integerValuesCompared": 1392640,
+      "logitsBitwiseEqual": true,
+      "logitsSha256": "69ccdaaaa739ef628ac749cbe034d5b25e6332ba6fc97f33ee4b434821179063",
+      "maximumOperations": 40,
+      "modelBytes": 7206168928,
+      "modelSha256": "5912bb739217cf25b4283a098c7b893d9baff36bdf2e72d3dbf4cb999d5633d5",
+      "nativeCompletedCycle": true,
+      "nativeOperationsCompleted": 40,
+      "nativeOperationsSubmitted": 40,
+      "nativeStage": "compute-numeric-verified-stopped-unmapped-freed",
+      "npuPowerAfter": {
+        "acConnected": true,
+        "available": true,
+        "batteryPercent": 37,
+        "batterySaver": false
+      },
+      "npuPowerBefore": {
+        "acConnected": true,
+        "available": true,
+        "batteryPercent": 36,
+        "batterySaver": false
+      },
+      "performanceMeasured": false,
+      "placementIdentity": "5912bb739217cf25b4283a098c7b893d9baff36bdf2e72d3dbf4cb999d5633d5:qwen35-text-v1:nonflash-f16:kv-f16:gdn-f32:prism-arm64-fused-v1:external-pq2-v1:hexagon-explicit-placement-v1:69dcd350f56c537f8ad5f342df4532638bc3796e1ac5b9700f34a5fe74b1b821",
+      "profileEligible": false,
+      "projection": "blk.0.ffn_up.weight",
+      "projectionsCompleted": 1,
+      "requestSha256": "d6f9e3b65951d929d4714989c40c98e257dced2f997382caa0605832fae4af89",
+      "schemaVersion": 1,
+      "sessionSeconds": 120,
+      "stateBitwiseEqual": true,
+      "stateSha256": "2162316925620bdbbe55d896529c95e2d5cbb9bd02999e318ba8821130780742",
+      "tokenId": 42
+    }
+  ],
+  "ProfileEligible": false,
+  "RequiredAvailablePhysicalBytes": 19327352832,
+  "RuntimeFilesVerified": 17,
+  "SignedPackageVerified": true,
+  "Stage": "single-token-graph-complete",
+  "TrustChanged": false,
+  "kind": "runner-local-hexagon-model-probe",
+  "schemaVersion": 1
+}

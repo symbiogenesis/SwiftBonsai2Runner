@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "closedUtc": "2026-11-04T02:33:58.770503+00:00",
+  "maximumAggregateSeconds": 720,
+  "chargedSeconds": 628.770503,
+  "deviceAttempts": 1,
+  "scopePassed": true,
+  "selectedWorkComplete": true,
+  "deadlineRestarted": false,
+  "additionalDeviceWorkAllowedByThisClosedWorkload": false
+}
