@@ -14,6 +14,20 @@ fn repository() -> PathBuf {
 }
 
 #[test]
+fn checked_in_ptq1_capture_source_matches_released_runtime() -> crate::Result<()> {
+    let root = repository();
+    let pins = read_json(&root.join("tools/native-reference/pins.json"), 65_536)?;
+    let runtime = read_json(&root.join("config/prism-inference.lock.json"), 65_536)?;
+    assert_eq!(runtime["commit"], runtime["Source"]["Commit"]);
+    assert_eq!(
+        pins["rustSource"],
+        json!({"commit":runtime["Source"]["Commit"], "url":runtime["Source"]["Url"],
+            "bytes":runtime["Source"]["Bytes"], "sha256":runtime["Source"]["Sha256"]})
+    );
+    Ok(())
+}
+
+#[test]
 fn plans_keep_one_selected_ptq1_pair_and_the_fixed_row_pair() -> crate::Result<()> {
     for workers in [1, 4] {
         for backend in ["auto", "scalar", "neon"] {
