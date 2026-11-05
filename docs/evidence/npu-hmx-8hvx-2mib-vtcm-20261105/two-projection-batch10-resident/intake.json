@@ -1,0 +1,25 @@
+{
+  "runnerRevision": "76e3b38baa4195137b4cabe346f88a3fe44daead",
+  "prismRevision": "9f61217eb6145acf7d22fff731d3a2baf23c4b09",
+  "supervisor": {
+    "bytes": 6647808,
+    "sha256": "a75f8fd6f506eca0ea8dc06a8ea58c970b3b4740799ba62f344a7bbda232447d"
+  },
+  "probe": {
+    "bytes": 1247232,
+    "sha256": "a76dfc773f733c10c3d0261e85fde704aa59695a08a8adc6f806ec9481bba2f7"
+  },
+  "sourceFiles": 318,
+  "observedBuildReceipt": {
+    "bytes": 361,
+    "sha256": "4e906e611ca2ad91bc88f2e76cd130155934d61cb7eec2a8734c3356255b7d76"
+  },
+  "deviceCommand": [
+    "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-Hexagon-8Hvx2MiBVtcm-20261105\\two-projection-batch10-resident\\model-bundle\\bonsai-tools.exe",
+    "hexagon-tools",
+    "--request",
+    "C:\\Users\\symbi\\AppData\\Local\\Temp\\Bonsai-Hexagon-8Hvx2MiBVtcm-20261105\\two-projection-batch10-resident\\model-device-request.json"
+  ],
+  "deviceAttempted": false,
+  "performanceQualified": false
+}

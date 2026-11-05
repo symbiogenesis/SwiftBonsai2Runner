@@ -149,6 +149,23 @@ tokens `42`, `43` and `128` with clean teardown. Device submit-and-wait dropped 
 (`513.61-537.70` ms) near 1-projection native evaluation (`487.91-529.85` ms), but each
 projection still transfers `22.28` MB of 8-plane `FP32` outputs over shared memory across
 40 `K=128` `OP_MUL_MAT` dispatches; production admission remains disabled.
+The follow-up [static K>128 tiling, plane-reduction, and 8-HVX/2MiB-VTCM solver audit](evidence/hexagon-k-tiling-and-reduction-audit.json)
+(reproduced by `python -B tools/hexagon/verify_k_tiling_and_reduction_audit.py`) and
+[8-HVX / 2 MiB VTCM / Burst-mode HMX controls](evidence/npu-hmx-8hvx-2mib-vtcm-20261105/summary.json)
+on local Prism `9f61217` and Runner `76e3b38b` prove from pinned `v0.10.0` HTP source that
+multi-block `K>128` weight tiling cannot preserve `PinnedSwift` bitwise parity (due to
+`HMX_STORE_AFTER_F16` `FP16` output truncation and non-factorable per-128-block `PQ2_0`
+scales) and that `HTP_OP_SUM_ROWS` reduces along `ne[0]=17408` rather than across the 8
+bitplanes (`ne[1]=8`), while enabling all 8 128-byte HVX contexts (`n_hvx=8`,
+`n_threads=8`, `n_act_threads=4`), 2 MiB VTCM chunking (`n_chunk=4352`, `1,576,960` VTCM
+bytes, `4` chunks/op instead of `136`), and `HTP_POWER_MODE_BURST` (`7`). Under continuous
+AC power (`95%` charge, saver off across the `199.09`-second workload within the `300`-second
+default budget and at all arm endpoints), `nativeSubmitAndWaitMilliseconds` dropped
+`2.4x-2.8x` to `8.18-13.28` ms for 1 projection and `15.60-26.77` ms for 2 projections
+(`16.84` ms on token `43` and `15.60` ms on token `128`, `~7.80-8.42` ms per resident
+projection) with bitwise-equal logits/state and clean teardown; production admission
+remains disabled because the signed generic `Q2_0` binary still writes `22.28` MB of
+`FP32` bitplanes per projection versus `~2-3` ms on 4-worker NEON CPU.
 
 The [logical payload ledger](evidence/hexagon-swift-traffic-ledger.json) derives
 13.69 GB of signed-kernel input/result payload per all-eligible original-PQ2

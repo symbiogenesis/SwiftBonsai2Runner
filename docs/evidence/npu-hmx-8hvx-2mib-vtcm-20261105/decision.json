@@ -1,0 +1,72 @@
+{
+  "schemaVersion": 1,
+  "dateLocal": "2026-11-05",
+  "outcome": "hmx-8hvx-2mib-vtcm-burst-and-k-tiling-reduction-audit-integrated; no-default-promotion",
+  "runnerBaseRevision": "76e3b38baa4195137b4cabe346f88a3fe44daead",
+  "prismLocalMain": "9f61217eb6145acf7d22fff731d3a2baf23c4b09",
+  "sourceReview": {
+    "approved": true,
+    "method": "Completed static source audit of the signed v0.10.0 libggml-htp-v81.so DSP binary (ggml-org/llama.cpp@19cce6919992fdffd92e0ac152caaf1e2b8f254e) proving (1) multi-block K>128 weight tiling cannot preserve PinnedSwift bitwise parity because core_dot_chunk_fp16 accumulates across all K/32 dot tiles and truncates the output to IEEE-754 FP16 via HMX_STORE_AFTER_F16 (__fp16 *vtcm_output) while PQ2_0 carries distinct per-128-element FP16 scales and Q8_K carries per-256-element FP32 scales accumulated via ordered per-128-block f32::mul_add, and (2) DSP-side plane/scale reduction is unsupported by signed v0.10.0 opcodes because HTP_OP_SUM_ROWS sums along ne[0]=17408 rather than ne[1]=8 and htp_matmul_is_hmx_eligible requires M > 4. Uncovered and fixed three bottlenecks in hexagon-native-rpc hmx_projection: (a) enabled all 8 128-byte HVX contexts (HMX_Q2_HVX_WORKERS=8, kparams.n_threads=8, kparams.n_act_threads=4, div_n_act_threads=(1,0,2)) instead of 1 HVX thread for Q2_0 weight dequantization, FP16->FP32 output transfer, and L2 dcache flushes; (b) increased HMX_Q2_VTCM_REQUEST_BYTES from 64 KiB to 2 MiB (2,097,152 bytes of 8 MiB hardware VTCM), solving n_chunk=4352 (vtcm_size=1,576,960 bytes, 0 tail waste) and reducing synchronous HMX/DMA/HVX chunk iterations per OP_MUL_MAT from 136 to 4 (34x fewer chunk barriers); and (c) set HTP_POWER_MODE_BURST (7) in start_wire.",
+    "scope": "Static K>128 tiling and DSP plane-reduction audit (tools/hexagon/verify_k_tiling_and_reduction_audit.py, docs/evidence/hexagon-k-tiling-and-reduction-audit.json) plus 8-HVX worker pool, 2 MiB VTCM chunking (n_chunk=4352), and HTP_POWER_MODE_BURST=7 in hexagon-native-rpc."
+  },
+  "localValidation": {
+    "format": "passed",
+    "focusedControls": "34 hexagon-native unit tests, 44 hexagon-runtime/model_probe unit tests, and 24 Runner tools/hexagon Python unit tests (including 6 new K-tiling/reduction/solver audit tests) passed",
+    "strictReleaseClippy": "passed",
+    "releaseModelProbeAndSupervisorBuilds": "passed",
+    "singleProjectionBatchTenResidentSignedControl": "passed 120 logical operations in 12 queue writes across 3 projections (blk.0.ffn_up.weight on tokens 42, 43, 128) with bitwise-equal per-token logits and recurrent/KV state snapshots; 1 prepared tensor (25,067,520 bytes in 36,954,112-byte mapping) and 2 cache hits",
+    "twoProjectionBatchTenResidentSignedControl": "passed 240 logical operations in 24 queue writes across 6 projections (blk.0.ffn_up.weight and blk.0.ffn_gate.weight on tokens 42, 43, 128) with bitwise-equal per-token logits and recurrent/KV state snapshots; 2 prepared tensors (50,135,040 bytes in 62,021,632-byte mapping) and 4 cache hits",
+    "cleanup": "Both controls: four explicit native cleanup return codes zero, allocation freed, required owners pinned until exit, owned Jobs confirmed empty",
+    "scope": "One-projection (blk.0.ffn_up.weight) and two-projection (blk.0.ffn_up.weight, blk.0.ffn_gate.weight) resident batch-ten controls with 8 HVX workers, 2 MiB VTCM (n_chunk=4352), and burst power mode, tokens 42, 43, 128, standard adapter 1.3, NEON/four row workers. No broader arithmetic/lifecycle or production qualification."
+  },
+  "diagnosticEvaluationMilliseconds": {
+    "singleProjectionBatch10Resident": {
+      "cpuEvaluation": [
+        294.60979999999995,
+        317.7161,
+        342.2904
+      ],
+      "nativeEvaluation": [
+        451.2719,
+        320.3069,
+        536.9842
+      ],
+      "nativeSubmitAndWait": [
+        8.1828,
+        9.3322,
+        13.2849
+      ]
+    },
+    "twoProjectionBatch10Resident": {
+      "cpuEvaluation": [
+        566.9971,
+        552.4359,
+        553.0928
+      ],
+      "nativeEvaluation": [
+        618.8811,
+        457.3354,
+        464.3002
+      ],
+      "nativeSubmitAndWait": [
+        26.7678,
+        16.844,
+        15.6036
+      ]
+    },
+    "power": "Outer workload clock and all build/control steps observed AC power connected (acConnected: true, batterySaver: false, 95% battery charge) throughout the 199.086-second run (within the default 300-second owner-device allowance). All four arm endpoints in both device controls observed AC power (acConnected: true), battery saver off, and 95% charge. Equal endpoints cannot prove uninterrupted stability.",
+    "interpretation": "Enabling all 8 128-byte HVX workers (n_hvx=8, n_threads=8, n_act_threads=4), increasing the HMX VTCM request from 64 KiB (n_chunk=128, 136 chunks/op) to 2 MiB (n_chunk=4352, 4 chunks/op, 1,576,960 VTCM bytes), and selecting HTP_POWER_MODE_BURST (7) cut per-projection nativeSubmitAndWaitMilliseconds by 2.4x-2.8x: from 22.21-23.48 ms down to 8.18-13.28 ms for 1 projection (8.18 ms on token 42, 9.33 ms on token 43) and from 44.08-46.26 ms down to 15.60-26.77 ms for 2 projections (16.84 ms on token 43 and 15.60 ms on token 128, ~7.80-8.42 ms per 40-block projection or ~1.95-2.10 ms per 10-op packet). Because the static source audit proves that the signed v0.10.0 libggml-htp-v81.so binary cannot fuse multiple 128-weight PQ2_0 blocks (due to HMX_STORE_AFTER_F16 FP16 output truncation and distinct per-128-block scales) or reduce the 8 bitplanes on the DSP (HTP_OP_SUM_ROWS reduces ne[0]=17408 rather than ne[1]=8), each projection on the signed generic Q2_0 binary irreducibly requires 40 K=128/N=8 operations and 22.28 MB of FP32 bitplane writeback (~7.8-9.3 ms on DSP plus ~6-8 ms of 4-worker NEON host reconstruction vs ~2-3 ms on 4-worker NEON CPU)."
+  },
+  "defaultBlockers": [
+    "The published CPU Prism runtime and server have no NPU serving integration. Changing the descriptive admission lock alone cannot enable offload.",
+    "The experimental session is terminal, at most 120 seconds, 64 MiB mapped shared buffer (at most 2 resident 25.07 MB FFN projections), and 24,000 logical operation attempts.",
+    "Static source audit of v0.10.0 libggml-htp-v81.so proves that multi-block K>128 tiling and DSP-side 8-plane/scale reduction are not supported by signed generic Q2_0 symbols while preserving PinnedSwift bitwise parity. Even after cutting DSP submit-and-wait latency 2.8x (to 7.80-9.33 ms per resident projection via 8 HVX workers, 2 MiB VTCM n_chunk=4352, and burst power mode), the 22.28 MB FP32 bitplane writeback and host reconstruction remain slower than 4-worker NEON CPU (~2-3 ms per projection).",
+    "Broader arithmetic/history, native ownership/lifecycle, persistent recovery, packaging/isolation and release acceptance remain incomplete."
+  ],
+  "nextConcreteImplementation": "Because the signed v0.10.0 libggml-htp-v81.so binary has now been statically proven unable to fuse K>128 PQ2_0 blocks or reduce 8 bitplanes on-DSP without violating PinnedSwift per-128-block FMA parity, and its 8-HVX / 2 MiB VTCM (n_chunk=4352) / Burst-mode execution ceiling is 7.80-9.33 ms per projection (limited by 22.28 MB of FP32 bitplane DDR writeback per projection), beating 4-worker NEON CPU (~2-3 ms per projection) requires a custom fused PQ2_0 x Q8_K HMX/HVX DSP kernel that applies per-128-block FP16 weight scales and per-256-block FP32 activation scales on-DSP and writes a single 69.6 KB FP32 output vector (320x less DDR writeback), gated on an accepted Qualcomm/OEM or owner-authorized DSP signing route.",
+  "sourceIntegration": "Reviewed single logical Prism commit (9f61217eb6145acf7d22fff731d3a2baf23c4b09) on local main. Runner retains new static audit and raw device evidence and updates PLAN and technical docs on local main. No push or CI operations.",
+  "productionAdmissionEnabled": false,
+  "installedApplicationChanged": false,
+  "ciDispatchedOrMonitored": false,
+  "pushed": false
+}

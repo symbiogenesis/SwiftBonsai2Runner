@@ -558,7 +558,25 @@ verify two-projection resident batch-four placement (`blk.0.ffn_up.weight` and
 writes) with bitwise logits/state parity across tokens `42`, `43` and `128` (`32.53-34.22` ms
 submit/wait for one projection; `64.66-66.22` ms for two projections). Reducing
 per-projection queue round-trips and serving integration remain outstanding; larger K
-cannot erase per-block scale and reduction boundaries.
+cannot erase per-block scale and reduction boundaries. The subsequent
+[batch-ten HMX controls](evidence/npu-batch10-fast-queue-20261105/summary.json) on Prism
+`5136bd1` (`10` ops/packet, `4` queue writes/projection, 15 ms spin-polling and 4-worker
+64-row L1-tiled reconstruction) reduced `nativeSubmitAndWaitMilliseconds` to `22.21-23.48` ms
+(1 projection) and `44.08-46.26` ms (2 projections) on battery (`89%` charge), and the
+[static K>128 tiling, plane-reduction, and 8-HVX/2MiB-VTCM solver audit](evidence/hexagon-k-tiling-and-reduction-audit.json)
+plus [8-HVX / 2 MiB VTCM / Burst-mode HMX controls](evidence/npu-hmx-8hvx-2mib-vtcm-20261105/summary.json)
+on Prism `9f61217` and Runner `76e3b38b` prove from `v0.10.0` source that (a) `K>128`
+weight tiling violates `PinnedSwift` per-128-block `f32::mul_add` parity because
+`core_dot_chunk_fp16` (`hmx-mm-kernels-tiled.h:966-1040`) stores accumulated outputs as
+`FP16` via `HMX_STORE_AFTER_F16` (`0xc1f90800` vs `PinnedSwift` `0xc1f90b01` on the
+2-block golden fixture, and odd integers above `2,048` lose precision in `FP16`), (b)
+`HTP_OP_SUM_ROWS` (`sum-rows-ops.c:1-215`) reduces along `ne[0]=17408` rather than across
+`ne[1]=8` bitplanes, and (c) activating all 8 HVX workers (`n_hvx=8`, `n_threads=8`,
+`n_act_threads=4`, `div_n_act_threads=(1,0,2)`), 2 MiB VTCM chunking (`n_chunk=4352`,
+`vtcm_size=1,576,960`, reducing chunk iterations per op from `136` to `4`), and
+`HTP_POWER_MODE_BURST` (`7`) reduces `nativeSubmitAndWaitMilliseconds` on AC power (`95%`
+charge) to `8.18-13.28` ms for 1 projection and `15.60-26.77` ms for 2 projections
+(`~7.80-8.42` ms per resident projection on cache-hit tokens `43` and `128`).
 
 ### Static whole-model operation limit
 

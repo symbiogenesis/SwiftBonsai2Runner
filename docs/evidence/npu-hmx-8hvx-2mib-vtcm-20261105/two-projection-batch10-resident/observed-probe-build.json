@@ -1,0 +1,18 @@
+{
+  "name": "build-prism-hexagon-model-probe",
+  "exitCode": 0,
+  "timedOut": false,
+  "elapsedSeconds": 9.5101,
+  "powerBefore": {
+    "available": true,
+    "acConnected": true,
+    "batterySaver": false,
+    "batteryPercent": 95
+  },
+  "powerAfter": {
+    "available": true,
+    "acConnected": true,
+    "batterySaver": false,
+    "batteryPercent": 95
+  }
+}

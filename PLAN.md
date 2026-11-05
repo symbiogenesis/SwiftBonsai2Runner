@@ -1261,7 +1261,35 @@ per projection) back to shared memory, each projection still incurs `~22.2-23.5`
 execution/writeback plus `~10-15` ms of host reconstruction versus `~2-3` ms on 4-worker
 NEON CPU; prioritize evaluating whether multi-block `K>128` weight tiling or DSP-side
 plane/scale reduction is supported by any signed Hexagon package symbol before wider
-admission. The earlier resident screen's CPU evaluations took 502-536 ms and
+admission. The [static K>128 tiling, plane-reduction, and 8-HVX/2MiB-VTCM solver audit](docs/evidence/hexagon-k-tiling-and-reduction-audit.json)
+(reproduced by `python -B tools/hexagon/verify_k_tiling_and_reduction_audit.py`) and
+[8-HVX / 2 MiB VTCM / Burst-mode HMX controls](docs/evidence/npu-hmx-8hvx-2mib-vtcm-20261105/summary.json)
+on Prism `9f61217` and Runner `76e3b38b` resolve that `K>128` tiling and DSP-reduction
+gate: (1) `core_dot_chunk_fp16` (`hmx-mm-kernels-tiled.h:966-1040`) accumulates across
+all `K/32` dot tiles inside HMX and truncates the output to IEEE-754 `FP16` via
+`HMX_STORE_AFTER_F16` (`__fp16 *vtcm_output`) before widening to `FP32`, while `PQ2_0`
+carries distinct per-128-element `FP16` scales and `Q8_K` carries per-256-element `FP32`
+scales accumulated via ordered per-128-block `f32::mul_add` (`0xc1f90b01` golden vs
+`0xc1f90800` under `K=256` baked-scale `HMX_STORE_AFTER_F16`); (2) `HTP_OP_SUM_ROWS`
+(`sum-rows-ops.c:1-215`) reduces along `ne[0]=17408` rather than across `ne[1]=8`
+bitplanes, and `htp_matmul_is_hmx_eligible` requires `M > 4`; and (3) enabling all 8
+128-byte HVX contexts (`HMX_Q2_HVX_WORKERS=8`, `kparams.n_threads=8`,
+`kparams.n_act_threads=4`, `div_n_act_threads=(1,0,2)`), raising
+`HMX_Q2_VTCM_REQUEST_BYTES` from 64 KiB (`n_chunk=128`, `136` chunks/op) to 2 MiB
+(`n_chunk=4352`, `vtcm_size=1,576,960` bytes, `4` chunks/op with zero tail waste, `34x`
+fewer synchronous HMX/DMA/HVX chunk barriers), and selecting `HTP_POWER_MODE_BURST` (`7`)
+cut `nativeSubmitAndWaitMilliseconds` by `2.4x-2.8x` under continuous AC power (`95%`
+charge, saver off across the `199.09`-second run within the `300.0`-second default
+budget and at all four arm endpoints of both controls): `8.18`, `9.33` and `13.28` ms for
+`single-projection-batch10-resident` (`320.31-536.98` ms native evaluation vs
+`294.61-342.29` ms CPU) and `26.77`, `16.84` and `15.60` ms for
+`two-projection-batch10-resident` (`~7.80-8.42` ms per resident projection on tokens `43`
+and `128`, with native evaluation at `457.34` and `464.30` ms vs `552.44` and `553.09` ms
+on CPU, bitwise-equal logits/state and clean teardown). Because the signed generic `Q2_0`
+DSP binary irreducibly writes `22.28` MB of `FP32` bitplanes to DDR per projection
+(`~7.8-9.3` ms on DSP plus `~6-8` ms of host reconstruction vs `~2-3` ms per projection on
+4-worker NEON CPU), beating 4-worker NEON CPU per projection requires a custom fused
+`PQ2_0 × Q8_K` DSP kernel with an accepted signing route. The earlier resident screen's CPU evaluations took 502-536 ms and
 native evaluations 512-633 ms, with no per-dot audit in either native window;
 these short diagnostic windows show no clear benefit and qualify no performance
 gate. Its CPU/native power endpoints both observed AC with saver off; the earlier
