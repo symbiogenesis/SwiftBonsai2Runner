@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "step": "build-prism",
+  "command": [
+    "powershell.exe",
+    "-NoProfile",
+    "-ExecutionPolicy",
+    "Bypass",
+    "-File",
+    "C:\\Users\\symbi\\AppData\\Local\\Temp\\SwiftBonsai-MultiProj-20261104\\evidence\\build-prism.ps1"
+  ],
+  "workingDirectory": "C:\\Users\\symbi\\source\\repos\\prism-inference",
+  "startedAtUtc": "2026-11-05T05:40:22.397680+00:00",
+  "completedAtUtc": "2026-11-05T05:40:36.843466+00:00",
+  "durationSeconds": 14.214,
+  "AggregateElapsedSecondsAtEnd": 14.989,
+  "AggregateBudgetSeconds": 540,
+  "timedOut": false,
+  "exitCode": 101,
+  "powerBefore": {
+    "powerLineStatus": "Online",
+    "acConnected": true,
+    "batteryPercent": 100,
+    "batterySaver": true,
+    "available": true,
+    "batteryChargeStatus": "High",
+    "sampledAtUtc": "2026-11-05T05:40:22.3473797Z"
+  },
+  "powerAfter": {
+    "powerLineStatus": "Online",
+    "acConnected": true,
+    "batteryPercent": 100,
+    "batterySaver": true,
+    "available": true,
+    "batteryChargeStatus": "High",
+    "sampledAtUtc": "2026-11-05T05:40:36.8002624Z"
+  }
+}

@@ -1207,10 +1207,35 @@ CPU/native arm endpoints in both device controls observed AC, saver off and `97%
 charge (`141.81` seconds charged out of `540.0` seconds). Batching reduced
 `nativeSubmitAndWaitMilliseconds` to `33.91-35.52` ms (streaming) and `31.16-32.05` ms
 (resident), with resident native evaluations taking `446.33`, `431.31` and `434.37` ms
-versus `398.77`, `385.18` and `386.30` ms on CPU. No end-to-end speedup is established;
-prioritize reducing host activation-plane extraction and eight-plane integer dot
-reconstruction overhead and qualifying bounded multi-projection resident placement
-before wider admission. The earlier resident screen's CPU evaluations took 502-536 ms and
+versus `398.77`, `385.18` and `386.30` ms on CPU. The follow-up
+[host-reconstruction and multi-projection resident HMX controls](docs/evidence/npu-multi-projection-20261104/summary.json)
+on Prism `ebc22c2` and Runner `bbc63034` eliminate redundant unused streaming-slot
+zeroing on resident `frame_batch4`/`frame` submissions (`25.1` MB saved per projection),
+replace `5.57` million scalar `truncf` checks per projection with exact `i16` roundtrip
+validation, fuse padding/reconstruction plane checks into a row-major `batch_four`
+reconstruction loop (`4x` fewer strided `tensor.data` passes while preserving exact
+per-128 FMA/nonfused order), and extend the probe and supervisor to bounded
+multi-projection resident placement (`1..=2` resident projections within the `64` MiB
+arena, `1..=4` streaming projections, beginning with `blk.0.ffn_up.weight`). All 74
+Prism unit tests, 14 Runner `model_device` tests, formatting, strict Release Clippy
+and Release builds passed. Under continuous AC power (`100%` charge across the outer
+`132.25`-second run within the `540.0`-second predeclared allowance, with AC, saver off
+and `100%` charge at all four arm endpoints of both device controls),
+`single-projection-batch4-resident` (`blk.0.ffn_up.weight`, `120` ops in `30` queue writes,
+`29,822,976` mapped bytes) and `two-projection-batch4-resident` (`blk.0.ffn_up.weight` +
+`blk.0.ffn_gate.weight`, `240` ops in `60` queue writes, `54,890,496` mapped bytes with
+`50,135,040` resident weight bytes, `2` prepared tensors and `4` cache hits) both matched
+complete per-token CPU logits and logical state across tokens `42`, `43` and `128` and
+completed explicit native cleanup with empty owned Jobs. Single-projection native
+evaluation reached `487.59`, `466.35` and `432.66` ms (`32.53-34.22` ms submit/wait)
+versus `412.34`, `389.91` and `415.44` ms on CPU (`+17.22` ms on token 2); adding the
+second resident projection doubled `nativeSubmitAndWaitMilliseconds` to `64.66-66.22` ms
+(`~32.5` ms per projection across `10` queue writes) and raised native evaluation to
+`553.37`, `514.98` and `530.48` ms versus `579.56`, `452.71` and `411.89` ms on CPU.
+No end-to-end speedup is established; prioritize reducing per-projection FastRPC/MCDM
+queue round-trips beyond four `K=128` operations per packet and parallelizing or
+offloading eight-plane reconstruction so per-projection HMX cost drops below the
+`~2-3` ms 4-worker NEON CPU projection baseline before wider admission. The earlier resident screen's CPU evaluations took 502-536 ms and
 native evaluations 512-633 ms, with no per-dot audit in either native window;
 these short diagnostic windows show no clear benefit and qualify no performance
 gate. Its CPU/native power endpoints both observed AC with saver off; the earlier

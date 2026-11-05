@@ -1,0 +1,88 @@
+   Compiling bonsai-tools v0.1.0 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\tools\bonsai)
+error[E0425]: cannot find value `RESIDENT_MAPPED_BYTES` in this scope
+    --> tools\bonsai\src\hexagon_tools\model_device.rs:1286:37
+     |
+1286 |             "mappedAllocationBytes":RESIDENT_MAPPED_BYTES,
+     |                                     ^^^^^^^^^^^^^^^^^^^^^ not found in this scope
+     |
+note: similarly named constant `RESIDENT_METADATA_BYTES` defined here
+    --> tools\bonsai\src\hexagon_tools\model_device.rs:30:1
+     |
+  30 | const RESIDENT_METADATA_BYTES: u64 = 65_536;
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+help: a constant with a similar name exists
+     |
+1286 -             "mappedAllocationBytes":RESIDENT_MAPPED_BYTES,
+1286 +             "mappedAllocationBytes":RESIDENT_METADATA_BYTES,
+     |
+
+error[E0425]: cannot find value `RESIDENT_MAPPED_BYTES` in this scope
+    --> tools\bonsai\src\hexagon_tools\model_device.rs:1305:23
+     |
+1305 |                 json!(RESIDENT_MAPPED_BYTES + 1),
+     |                       ^^^^^^^^^^^^^^^^^^^^^ not found in this scope
+     |
+note: similarly named constant `RESIDENT_METADATA_BYTES` defined here
+    --> tools\bonsai\src\hexagon_tools\model_device.rs:30:1
+     |
+  30 | const RESIDENT_METADATA_BYTES: u64 = 65_536;
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+help: a constant with a similar name exists
+     |
+1305 -                 json!(RESIDENT_MAPPED_BYTES + 1),
+1305 +                 json!(RESIDENT_METADATA_BYTES + 1),
+     |
+
+error[E0425]: cannot find value `BATCH_RESIDENT_MAPPED_BYTES` in this scope
+    --> tools\bonsai\src\hexagon_tools\model_device.rs:1519:45
+     |
+1519 |                     "mappedAllocationBytes":BATCH_RESIDENT_MAPPED_BYTES,
+     |                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^ not found in this scope
+     |
+note: similarly named constant `BATCH_STREAMING_MAPPED_BYTES` defined here
+    --> tools\bonsai\src\hexagon_tools\model_device.rs:29:1
+     |
+  29 | const BATCH_STREAMING_MAPPED_BYTES: u64 = 4_755_456;
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+help: a constant with a similar name exists
+     |
+1519 -                     "mappedAllocationBytes":BATCH_RESIDENT_MAPPED_BYTES,
+1519 +                     "mappedAllocationBytes":BATCH_STREAMING_MAPPED_BYTES,
+     |
+
+error[E0425]: cannot find value `RESIDENT_MAPPED_BYTES` in this scope
+    --> tools\bonsai\src\hexagon_tools\model_device.rs:1546:27
+     |
+1546 |                     json!(RESIDENT_MAPPED_BYTES),
+     |                           ^^^^^^^^^^^^^^^^^^^^^ not found in this scope
+     |
+note: similarly named constant `RESIDENT_METADATA_BYTES` defined here
+    --> tools\bonsai\src\hexagon_tools\model_device.rs:30:1
+     |
+  30 | const RESIDENT_METADATA_BYTES: u64 = 65_536;
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+help: a constant with a similar name exists
+     |
+1546 -                     json!(RESIDENT_MAPPED_BYTES),
+1546 +                     json!(RESIDENT_METADATA_BYTES),
+     |
+
+error[E0425]: cannot find value `BATCH_RESIDENT_MAPPED_BYTES` in this scope
+    --> tools\bonsai\src\hexagon_tools\model_device.rs:1662:23
+     |
+1662 |                 json!(BATCH_RESIDENT_MAPPED_BYTES),
+     |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^ not found in this scope
+     |
+note: similarly named constant `BATCH_STREAMING_MAPPED_BYTES` defined here
+    --> tools\bonsai\src\hexagon_tools\model_device.rs:29:1
+     |
+  29 | const BATCH_STREAMING_MAPPED_BYTES: u64 = 4_755_456;
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+help: a constant with a similar name exists
+     |
+1662 -                 json!(BATCH_RESIDENT_MAPPED_BYTES),
+1662 +                 json!(BATCH_STREAMING_MAPPED_BYTES),
+     |
+
+For more information about this error, try `rustc --explain E0425`.
+error: could not compile `bonsai-tools` (lib test) due to 5 previous errors

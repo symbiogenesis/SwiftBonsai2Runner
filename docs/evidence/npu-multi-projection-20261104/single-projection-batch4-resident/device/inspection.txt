@@ -1,0 +1,1 @@
+{"driverDll":"C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\qcnspmcdm8480.inf_arm64_4feba84cfc7ee278\\libcdsprpc.dll","driverLoaded":false,"dspCodeLoaded":false,"event":"inspection","kind":"native-fastrpc-inspection","profileEligible":false}

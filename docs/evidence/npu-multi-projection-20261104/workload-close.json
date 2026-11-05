@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "kind": "owner-device-workload-close",
+  "startedAtUtc": "2026-11-05T05:40:21.854916+00:00",
+  "completedAtUtc": "2026-11-05T05:53:53.585106+00:00",
+  "earlierChargedExecutionSeconds": 100.899,
+  "elapsedSeconds": 132.245,
+  "budgetSeconds": 540,
+  "withinBudget": true,
+  "powerBefore": {
+    "powerLineStatus": "Online",
+    "acConnected": true,
+    "batteryPercent": 100,
+    "batterySaver": true,
+    "available": true,
+    "batteryChargeStatus": "High",
+    "sampledAtUtc": "2026-11-05T05:40:22.1053204Z"
+  },
+  "powerAfter": {
+    "powerLineStatus": "Online",
+    "acConnected": true,
+    "batteryPercent": 100,
+    "batterySaver": true,
+    "available": true,
+    "batteryChargeStatus": "High",
+    "sampledAtUtc": "2026-11-05T05:53:53.5419391Z"
+  },
+  "powerStableAcrossWorkload": true,
+  "failure": null
+}

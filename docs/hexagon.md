@@ -118,9 +118,23 @@ arm endpoints in both device runs observed AC power, saver off and `97%` charge
 (after the outer workload clock opened on battery at `82%` and connected to AC
 during build setup). Native submit-and-wait windows dropped to `33.91-35.52` ms
 (streaming) and `31.16-32.05` ms (resident), with resident native evaluations at
-`431.31-446.33` ms versus `385.18-398.77` ms on CPU. Host bitplane extraction and
-eight-plane dot reconstruction remain the next local optimization target; production
-admission remains disabled.
+`431.31-446.33` ms versus `385.18-398.77` ms on CPU. The follow-up
+[host-reconstruction and multi-projection resident HMX controls](evidence/npu-multi-projection-20261104/summary.json)
+on local Prism `ebc22c2` and Runner `bbc63034` eliminate redundant unused
+streaming-weight zeroing on resident submissions, replace `truncf` plane validation
+with exact `i16` roundtrip checks, fuse validation into a row-major `batch_four`
+reconstruction loop, and verify bounded two-projection resident placement
+(`blk.0.ffn_up.weight` and `blk.0.ffn_gate.weight`, `50,135,040` resident weight bytes
+in `54,890,496` mapped bytes, `240` logical operations in `60` queue writes across
+tokens `42`, `43` and `128`) with exact per-token logits/state parity and clean
+teardown under AC power (`100%` charge at all arm endpoints). Single-projection
+resident native evaluation reached `432.66-487.59` ms (`32.53-34.22` ms submit/wait)
+versus `389.91-415.44` ms on CPU, while two-projection resident placement doubled
+`nativeSubmitAndWaitMilliseconds` to `64.66-66.22` ms (`~32.5` ms per projection)
+and raised native evaluation to `514.98-553.37` ms versus `411.89-579.56` ms on CPU.
+Reducing per-projection queue round-trips beyond four `K=128` operations per packet
+and lowering per-projection reconstruction latency below the `~2-3` ms CPU projection
+baseline remain required before wider placement; production admission remains disabled.
 
 The [logical payload ledger](evidence/hexagon-swift-traffic-ledger.json) derives
 13.69 GB of signed-kernel input/result payload per all-eligible original-PQ2

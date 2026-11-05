@@ -549,9 +549,16 @@ Packet/count/extent and immutable-handle controls, stale replies, capacity refus
 submitted timeout, wrong or unwritten output in any member, complete failure
 without replay, and original fused/nonfused graph parity are enforced in unit tests
 and verified on X2 in both streaming (`33.91-35.52` ms submit/wait) and resident
-(`31.16-32.05` ms submit/wait) three-token controls. Batching leaves host plane
-extraction/reconstruction optimization, multi-projection placement and serving
-integration outstanding; larger K cannot erase per-block scale and reduction boundaries.
+(`31.16-32.05` ms submit/wait) three-token controls. The follow-up
+[host-reconstruction and multi-projection resident HMX controls](evidence/npu-multi-projection-20261104/summary.json)
+on Prism `ebc22c2` and Runner `bbc63034` remove unused resident streaming-slot zeroing,
+use exact `i16` plane-dot validation and row-major `batch_four` accumulation, and
+verify two-projection resident batch-four placement (`blk.0.ffn_up.weight` and
+`blk.0.ffn_gate.weight`, `54,890,496` mapped bytes, `240` operations in `60` queue
+writes) with bitwise logits/state parity across tokens `42`, `43` and `128` (`32.53-34.22` ms
+submit/wait for one projection; `64.66-66.22` ms for two projections). Reducing
+per-projection queue round-trips and serving integration remain outstanding; larger K
+cannot erase per-block scale and reduction boundaries.
 
 ### Static whole-model operation limit
 

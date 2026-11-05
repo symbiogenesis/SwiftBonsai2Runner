@@ -1,0 +1,19 @@
+
+running 14 tests
+test hexagon_tools::model_device::tests::resident_request_requires_explicit_hmx_and_defaults_to_streaming ... ok
+test hexagon_tools::model_device::tests::control_snapshot_budget_admits_three_and_rejects_four_before_intake ... ok
+test hexagon_tools::model_device::tests::adapter_request_rejects_unbound_paths_and_unsupported_worker_policies ... ok
+test hexagon_tools::model_device::tests::legacy_and_sequence_requests_keep_closed_token_and_backend_admission ... ok
+test hexagon_tools::model_device::tests::adapter_result_binds_zero_identity_and_standard_application_to_cpu_policy ... ok
+test hexagon_tools::model_device::tests::retained_hmx_two_token_result_replays_native_owner_pinning_policy ... ok
+test hexagon_tools::model_device::tests::completed_cycle_requires_every_serialized_native_cleanup_result ... ok
+test hexagon_tools::model_device::tests::hmx_sequence_requires_selected_backend_and_every_token_comparison ... ok
+test hexagon_tools::model_device::tests::unknown_arm_power_stays_explicit_without_becoming_performance_evidence ... ok
+test hexagon_tools::model_device::tests::eight_token_result_requires_every_projection_and_comparison ... ok
+test hexagon_tools::model_device::tests::terminal_parity_needs_complete_cleanup_identity_and_arm_observations ... ok
+test hexagon_tools::model_device::tests::batch_four_hmx_result_binds_queue_writes_and_mapped_allocation_extent ... ok
+test hexagon_tools::model_device::tests::multi_projection_batch4_resident_binds_two_tensors_arena_and_queue_writes ... ok
+test hexagon_tools::model_device::tests::resident_hmx_result_binds_graph_parity_and_actual_cache_accounting ... ok
+
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 310 filtered out; finished in 0.00s
+
