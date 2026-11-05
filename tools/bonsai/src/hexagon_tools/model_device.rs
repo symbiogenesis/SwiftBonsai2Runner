@@ -31,6 +31,9 @@ const RESIDENT_MAPPED_BYTES: u64 = STREAMING_MAPPED_BYTES + RESIDENT_WEIGHT_BYTE
 const BATCH_STREAMING_MAPPED_BYTES: u64 = 4_755_456;
 #[cfg(test)]
 const BATCH_RESIDENT_MAPPED_BYTES: u64 = BATCH_STREAMING_MAPPED_BYTES + RESIDENT_WEIGHT_BYTES;
+const BATCH10_STREAMING_MAPPED_BYTES: u64 = 11_886_592;
+#[cfg(test)]
+const BATCH10_RESIDENT_MAPPED_BYTES: u64 = BATCH10_STREAMING_MAPPED_BYTES + RESIDENT_WEIGHT_BYTES;
 const RESIDENT_METADATA_BYTES: u64 = 65_536;
 // Exact logical state for the pinned original-PQ2 model: 48 recurrent
 // layers plus the growing KV state of its 16 attention layers. The CPU arm
@@ -114,6 +117,8 @@ pub(super) struct Request {
     #[serde(default)]
     batch_four_operations: bool,
     #[serde(default)]
+    batch_ten_operations: bool,
+    #[serde(default)]
     adapter_path: Option<PathBuf>,
     #[serde(default)]
     adapter_case: AdapterCase,
@@ -186,8 +191,13 @@ impl Request {
         if self.resident_host_weights && self.execution_backend != ExecutionBackend::HmxBitplane {
             return Err("Resident host weights require the explicit HMX bitplane backend.".into());
         }
-        if self.batch_four_operations && self.execution_backend != ExecutionBackend::HmxBitplane {
-            return Err("Batch-four operations require the explicit HMX bitplane backend.".into());
+        if self.batch_four_operations && self.batch_ten_operations {
+            return Err("Select at most one explicit HMX batch mode.".into());
+        }
+        if (self.batch_four_operations || self.batch_ten_operations)
+            && self.execution_backend != ExecutionBackend::HmxBitplane
+        {
+            return Err("Batched operations require the explicit HMX bitplane backend.".into());
         }
         if self.adapter_path.is_some() != (self.adapter_case != AdapterCase::None)
             || ![1, 4].contains(&self.row_workers)
@@ -526,6 +536,7 @@ fn result(
     };
     let total_projections = projection_count * token_count;
     let batch_four = value.get("batchFourOperations") == Some(&json!(true));
+    let batch_ten = value.get("batchTenOperations") == Some(&json!(true));
     residency_result(
         value,
         backend,
@@ -538,6 +549,7 @@ fn result(
         backend,
         resident_host_weights,
         batch_four,
+        batch_ten,
         token_count,
         projection_count,
     )?;
@@ -677,8 +689,11 @@ fn residency_result(
     }
     if resident_host_weights {
         let batch_four = value.get("batchFourOperations") == Some(&json!(true));
+        let batch_ten = value.get("batchTenOperations") == Some(&json!(true));
         let expected_weights = RESIDENT_WEIGHT_BYTES * projection_count;
-        let base_mapped = if batch_four {
+        let base_mapped = if batch_ten {
+            BATCH10_STREAMING_MAPPED_BYTES
+        } else if batch_four {
             BATCH_STREAMING_MAPPED_BYTES
         } else {
             STREAMING_MAPPED_BYTES
@@ -709,28 +724,54 @@ fn batch_result(
     backend: ExecutionBackend,
     resident_host_weights: bool,
     batch_four_operations: bool,
+    batch_ten_operations: bool,
     token_count: u64,
     projection_count: u64,
 ) -> Result<()> {
-    let batch_mode = value.get("batchFourOperations");
+    if batch_four_operations && batch_ten_operations {
+        return Err("The model result cannot enable both batch-four and batch-ten modes.".into());
+    }
+    let batch_four_mode = value.get("batchFourOperations");
+    let batch_ten_mode = value.get("batchTenOperations");
     let batch_ops = value.get("nativeBatchOperations");
     let writes_sub = value.get("nativeQueueWritesSubmitted");
     let writes_comp = value.get("nativeQueueWritesCompleted");
-    let expected_batch = if batch_four_operations { 4_u64 } else { 1 };
-    let expected_writes = (40 / expected_batch) * projection_count * token_count;
-    let expected_mapped = if resident_host_weights {
-        BATCH_STREAMING_MAPPED_BYTES + RESIDENT_WEIGHT_BYTES * projection_count
+    let expected_batch = if batch_ten_operations {
+        10_u64
+    } else if batch_four_operations {
+        4
     } else {
-        BATCH_STREAMING_MAPPED_BYTES
+        1
     };
-    if batch_mode.is_some_and(|mode| mode != batch_four_operations)
+    let expected_writes = (40 / expected_batch) * projection_count * token_count;
+    let base_mapped = if batch_ten_operations {
+        BATCH10_STREAMING_MAPPED_BYTES
+    } else if batch_four_operations {
+        BATCH_STREAMING_MAPPED_BYTES
+    } else {
+        STREAMING_MAPPED_BYTES
+    };
+    let expected_mapped = if resident_host_weights {
+        base_mapped + RESIDENT_WEIGHT_BYTES * projection_count
+    } else {
+        base_mapped
+    };
+    if batch_four_mode.is_some_and(|mode| mode != batch_four_operations)
+        || batch_ten_mode.is_some_and(|mode| mode != batch_ten_operations)
         || batch_ops.is_some_and(|ops| ops != expected_batch)
         || writes_sub.is_some_and(|writes| writes != expected_writes)
         || writes_comp.is_some_and(|writes| writes != expected_writes)
         || (batch_four_operations
             && (backend != ExecutionBackend::HmxBitplane
-                || batch_mode != Some(&json!(true))
+                || batch_four_mode != Some(&json!(true))
                 || batch_ops != Some(&json!(4))
+                || writes_sub != Some(&json!(expected_writes))
+                || writes_comp != Some(&json!(expected_writes))
+                || value["nativeResources"]["mappedAllocationBytes"] != expected_mapped))
+        || (batch_ten_operations
+            && (backend != ExecutionBackend::HmxBitplane
+                || batch_ten_mode != Some(&json!(true))
+                || batch_ops != Some(&json!(10))
                 || writes_sub != Some(&json!(expected_writes))
                 || writes_comp != Some(&json!(expected_writes))
                 || value["nativeResources"]["mappedAllocationBytes"] != expected_mapped))
@@ -759,6 +800,7 @@ fn selection_result(value: &Value, request: &Request) -> Result<()> {
         request.execution_backend,
         request.resident_host_weights,
         request.batch_four_operations,
+        request.batch_ten_operations,
         token_count,
         projection_count,
     )?;
@@ -899,7 +941,7 @@ fn execute(request: &Request, started: Instant, report: &mut Value) -> Result<()
         .map_err(|error| error.to_string())?;
     let probe_request = json!({"schemaVersion":1,"modelPath":request.model_path,"packageDirectory":request.package_directory,
         "tokenId":request.token_id,"tokenIds":request.tokens(),"projections":request.projections(),"executionBackend":request.execution_backend,
-        "residentHostWeights":request.resident_host_weights,"batchFourOperations":request.batch_four_operations,
+        "residentHostWeights":request.resident_host_weights,"batchFourOperations":request.batch_four_operations,"batchTenOperations":request.batch_ten_operations,
         "adapterPath":request.adapter_path,"adapterCase":request.adapter_case,"cpuBackend":request.cpu_backend,"rowWorkers":request.row_workers,
         "contextLimit":request.tokens().len(),"modelMemoryLimitBytes":12_u64*1024*1024*1024,
         "stateBudgetBytes":STATE_BUDGET_BYTES,"sessionSeconds":120,"maximumOperations":40*request.projections().len()*request.tokens().len(),
@@ -997,7 +1039,7 @@ pub(super) fn run(request: &Request) -> Result<Value> {
         "LocalBuild":true,"HostedBuild":false,"PrismRevision":request.expected_prism_revision,"MaximumSeconds":request.maximum_seconds,
         "CleanupReserveSeconds":CLEANUP_SECONDS,"ModelWorkAttempted":false,"OwnedJobTeardown":"not-started","ProfileEligible":false,
         "PerformanceMeasured":false,"TrustChanged":false,"PowerBefore":power(),"RequiredAvailablePhysicalBytes":REQUIRED_AVAILABLE_BYTES,
-        "ExecutionBackend":request.execution_backend,"ResidentHostWeights":request.resident_host_weights,"BatchFourOperations":request.batch_four_operations,
+        "ExecutionBackend":request.execution_backend,"ResidentHostWeights":request.resident_host_weights,"BatchFourOperations":request.batch_four_operations,"BatchTenOperations":request.batch_ten_operations,
         "Projections":request.projections(),"TokenIds":request.tokens(),"AdapterCase":request.adapter_case,
         "CpuBackend":request.cpu_backend,"RowWorkers":request.row_workers,
         "RequiredControlStateBytes":required_control_state_bytes(request.tokens().len())?,"ControlStateBudgetBytes":STATE_BUDGET_BYTES});
@@ -1664,6 +1706,107 @@ mod tests {
             (
                 "/nativeResources/mappedAllocationBytes",
                 json!(BATCH_RESIDENT_MAPPED_BYTES),
+            ),
+        ] {
+            let mut changed = value.clone();
+            *changed.pointer_mut(pointer).ok_or("Test field missing.")? = wrong;
+            assert!(
+                result(
+                    &changed.to_string(),
+                    &"a".repeat(64),
+                    &tokens,
+                    ExecutionBackend::HmxBitplane,
+                    true,
+                    &driver
+                )
+                .is_err()
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn multi_projection_batch10_resident_binds_two_tensors_arena_and_queue_writes() -> Result<()> {
+        let driver = json!({"Path":"fixed-driver"});
+        let tokens = [42, 43, 128];
+        let projections = ["blk.0.ffn_up.weight", "blk.0.ffn_gate.weight"];
+        let mut req_val = request_value();
+        req_val["batchTenOperations"] = json!(true);
+        let invalid_req: Request =
+            serde_json::from_value(req_val.clone()).map_err(|error| error.to_string())?;
+        assert!(invalid_req.validate_selection().is_err());
+        req_val["executionBackend"] = json!("hmx-bitplane");
+        req_val["residentHostWeights"] = json!(true);
+        req_val["tokenIds"] = json!(tokens);
+        req_val["projections"] = json!(projections);
+        let valid_req: Request =
+            serde_json::from_value(req_val.clone()).map_err(|error| error.to_string())?;
+        valid_req.validate_tokens()?;
+        valid_req.validate_selection()?;
+        let mut conflicting = req_val;
+        conflicting["batchFourOperations"] = json!(true);
+        let conflicting_req: Request =
+            serde_json::from_value(conflicting).map_err(|error| error.to_string())?;
+        assert!(conflicting_req.validate_selection().is_err());
+
+        let mut value = complete_result(&tokens, ExecutionBackend::HmxBitplane);
+        for (key, val) in [
+            ("projections", json!(projections)),
+            ("residentHostWeights", json!(true)),
+            ("batchFourOperations", json!(false)),
+            ("batchTenOperations", json!(true)),
+            ("nativeBatchOperations", json!(10)),
+            ("integerAudit", json!("graph-parity-only")),
+            ("integerValuesCompared", json!(0)),
+            ("maximumOperations", json!(240)),
+            ("nativeOperationsSubmitted", json!(240)),
+            ("nativeOperationsCompleted", json!(240)),
+            ("nativeQueueWritesSubmitted", json!(24)),
+            ("nativeQueueWritesCompleted", json!(24)),
+            ("projectionsCompleted", json!(6)),
+            ("adapterCase", json!("none")),
+            ("adapterLoaded", json!(false)),
+            ("adapterSha256", Value::Null),
+            ("adapterScaleBits", json!(0)),
+            ("cpuBaselineAdapterLoaded", json!(false)),
+            ("cpuBaselineAdapterScaleBits", json!(0)),
+            ("cpuBackend", json!("scalar")),
+            ("rowWorkers", json!(1)),
+            (
+                "nativeResources",
+                json!({
+                    "residentWeightBytesPrepared": 2 * RESIDENT_WEIGHT_BYTES,
+                    "mappedAllocationBytes": BATCH10_STREAMING_MAPPED_BYTES + 2 * RESIDENT_WEIGHT_BYTES,
+                }),
+            ),
+            (
+                "hostResidency",
+                json!({
+                    "tensorsPrepared": 2,
+                    "cacheHits": 4,
+                    "weightPayloadBytesPrepared": 2 * RESIDENT_WEIGHT_BYTES,
+                    "metadataPayloadBytes": 1280,
+                }),
+            ),
+        ] {
+            value[key] = val;
+        }
+        let accepted = result(
+            &value.to_string(),
+            &"a".repeat(64),
+            &tokens,
+            ExecutionBackend::HmxBitplane,
+            true,
+            &driver,
+        )?;
+        selection_result(&accepted, &valid_req)?;
+        for (pointer, wrong) in [
+            ("/nativeBatchOperations", json!(4)),
+            ("/nativeQueueWritesSubmitted", json!(60)),
+            ("/nativeQueueWritesCompleted", json!(23)),
+            (
+                "/nativeResources/mappedAllocationBytes",
+                json!(BATCH10_RESIDENT_MAPPED_BYTES),
             ),
         ] {
             let mut changed = value.clone();

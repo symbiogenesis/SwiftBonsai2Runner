@@ -59,7 +59,11 @@ def main():
                         help="Use the explicit HMX resident host arena with graph parity only.")
     parser.add_argument("--batch-four-operations", action="store_true",
                         help="Submit four independent HMX bitplane operations per queue packet.")
+    parser.add_argument("--batch-ten-operations", action="store_true",
+                        help="Submit ten independent HMX bitplane operations per queue packet.")
     args = parser.parse_args()
+    if args.batch_four_operations and args.batch_ten_operations:
+        parser.error("Select at most one explicit HMX batch mode.")
     if not 1 <= len(args.token_ids) <= 3 or min(args.token_ids) < 0:
         parser.error("The current snapshot budget permits one to three nonnegative token IDs.")
     max_projections = 2 if args.resident_host_weights else 4
@@ -115,6 +119,7 @@ def main():
         "executionBackend": "hmx-bitplane",
         "residentHostWeights": args.resident_host_weights,
         "batchFourOperations": args.batch_four_operations,
+        "batchTenOperations": args.batch_ten_operations,
         "adapterCase": args.adapter_case,
         "cpuBackend": "neon",
         "rowWorkers": 4,
