@@ -34,6 +34,10 @@ const BATCH_RESIDENT_MAPPED_BYTES: u64 = BATCH_STREAMING_MAPPED_BYTES + RESIDENT
 const BATCH10_STREAMING_MAPPED_BYTES: u64 = 11_886_592;
 #[cfg(test)]
 const BATCH10_RESIDENT_MAPPED_BYTES: u64 = BATCH10_STREAMING_MAPPED_BYTES + RESIDENT_WEIGHT_BYTES;
+const NATIVE_Q2_STREAMING_MAPPED_BYTES: u64 = 25_161_728;
+#[cfg(test)]
+const NATIVE_Q2_RESIDENT_MAPPED_BYTES: u64 =
+    NATIVE_Q2_STREAMING_MAPPED_BYTES + RESIDENT_WEIGHT_BYTES;
 const RESIDENT_METADATA_BYTES: u64 = 65_536;
 // Exact logical state for the pinned original-PQ2 model: 48 recurrent
 // layers plus the growing KV state of its 16 attention layers. The CPU arm
@@ -58,6 +62,8 @@ enum ExecutionBackend {
     GuardedHvx,
     #[serde(rename = "hmx-bitplane")]
     HmxBitplane,
+    #[serde(rename = "native-q2")]
+    NativeQ2,
 }
 
 impl ExecutionBackend {
@@ -65,6 +71,14 @@ impl ExecutionBackend {
         match self {
             Self::GuardedHvx => 1_392_640,
             Self::HmxBitplane => 5_570_560,
+            Self::NativeQ2 => 0,
+        }
+    }
+
+    const fn operations_per_projection(self) -> u64 {
+        match self {
+            Self::GuardedHvx | Self::HmxBitplane => 40,
+            Self::NativeQ2 => 1,
         }
     }
 }
@@ -188,8 +202,16 @@ impl Request {
                     .into(),
             );
         }
-        if self.resident_host_weights && self.execution_backend != ExecutionBackend::HmxBitplane {
-            return Err("Resident host weights require the explicit HMX bitplane backend.".into());
+        if self.resident_host_weights
+            && !matches!(
+                self.execution_backend,
+                ExecutionBackend::HmxBitplane | ExecutionBackend::NativeQ2
+            )
+        {
+            return Err(
+                "Resident host weights require the explicit HMX bitplane or native-q2 backend."
+                    .into(),
+            );
         }
         if self.batch_four_operations && self.batch_ten_operations {
             return Err("Select at most one explicit HMX batch mode.".into());
@@ -558,6 +580,15 @@ fn result(
     } else {
         backend.integer_values_per_token() * total_projections
     };
+    let ops_per_proj = backend.operations_per_projection();
+    let numerical_accepted = if backend == ExecutionBackend::NativeQ2 {
+        value["logitsBitwiseEqual"].is_boolean()
+            && value["stateBitwiseEqual"].is_boolean()
+            && value["logitsBoundedTolerancePass"] == true
+            && valid_numerical_tolerance(&value["numericalTolerance"])
+    } else {
+        value["logitsBitwiseEqual"] == true && value["stateBitwiseEqual"] == true
+    };
     if value["schemaVersion"] != 1
         || value["completed"] != true
         || value["requestSha256"] != request_digest
@@ -567,15 +598,14 @@ fn result(
         || value["tokenIds"] != json!(tokens)
         || value["executionBackend"] != json!(backend)
         || value["nativeHmxBitplaneControl"] != (backend == ExecutionBackend::HmxBitplane)
-        || value["maximumOperations"] != 40 * total_projections
+        || value["maximumOperations"] != ops_per_proj * total_projections
         || value["sessionSeconds"] != 120
         || value["driverDll"] != driver["Path"]
-        || value["nativeOperationsSubmitted"] != 40 * total_projections
-        || value["nativeOperationsCompleted"] != 40 * total_projections
+        || value["nativeOperationsSubmitted"] != ops_per_proj * total_projections
+        || value["nativeOperationsCompleted"] != ops_per_proj * total_projections
         || value["projectionsCompleted"] != total_projections
         || value["integerValuesCompared"] != compared_values
-        || value["logitsBitwiseEqual"] != true
-        || value["stateBitwiseEqual"] != true
+        || !numerical_accepted
         || value["nativeCompletedCycle"] != true
         || value["profileEligible"] != false
         || value["performanceMeasured"] != false
@@ -611,10 +641,17 @@ fn result(
         .filter(|comparisons| comparisons.len() == tokens.len())
         .ok_or("The model result omitted complete per-token parity evidence.")?;
     for (index, (comparison, &token)) in comparisons.iter().zip(tokens).enumerate() {
+        let token_numerical = if backend == ExecutionBackend::NativeQ2 {
+            comparison["logitsBitwiseEqual"].is_boolean()
+                && comparison["stateBitwiseEqual"].is_boolean()
+                && comparison["logitsBoundedTolerancePass"] == true
+                && valid_numerical_tolerance(&comparison["numericalTolerance"])
+        } else {
+            comparison["logitsBitwiseEqual"] == true && comparison["stateBitwiseEqual"] == true
+        };
         if comparison["index"] != index
             || comparison["tokenId"] != token
-            || comparison["logitsBitwiseEqual"] != true
-            || comparison["stateBitwiseEqual"] != true
+            || !token_numerical
             || ["logitsSha256", "stateSha256"].iter().any(|name| {
                 !comparison[*name]
                     .as_str()
@@ -630,6 +667,8 @@ fn result(
     if ["logitsSha256", "stateSha256"]
         .iter()
         .any(|name| value[*name] != last[*name])
+        || (backend == ExecutionBackend::NativeQ2
+            && value["numericalTolerance"] != last["numericalTolerance"])
     {
         return Err("The terminal hashes do not bind the final token comparison.".into());
     }
@@ -660,6 +699,37 @@ fn result(
     Ok(value.clone())
 }
 
+fn valid_numerical_tolerance(tol: &Value) -> bool {
+    let Some(cos) = tol["cosineSimilarity"].as_f64() else {
+        return false;
+    };
+    let Some(rmse) = tol["rmse"].as_f64() else {
+        return false;
+    };
+    let Some(max_diff) = tol["maxAbsDiff"].as_f64() else {
+        return false;
+    };
+    let Some(mean_diff) = tol["meanAbsDiff"].as_f64() else {
+        return false;
+    };
+    let Some(top5) = tol["top5Overlap"].as_u64() else {
+        return false;
+    };
+    cos >= 0.995
+        && rmse <= 0.5
+        && max_diff <= 5.0
+        && mean_diff >= 0.0
+        && mean_diff <= max_diff
+        && tol["cpuTop1Token"]
+            .as_u64()
+            .is_some_and(|tok| tok < 248_320)
+        && tol["npuTop1Token"]
+            .as_u64()
+            .is_some_and(|tok| tok < 248_320)
+        && tol["top1Match"].is_boolean()
+        && top5 <= 5
+}
+
 fn residency_result(
     value: &Value,
     backend: ExecutionBackend,
@@ -671,16 +741,21 @@ fn residency_result(
     // absence means only the original streaming path, never resident execution.
     let mode = value.get("residentHostWeights");
     let audit = value.get("integerAudit");
-    let expected_audit = if resident_host_weights {
+    let expected_audit = if backend == ExecutionBackend::NativeQ2 {
+        "bounded-float-tolerance"
+    } else if resident_host_weights {
         "graph-parity-only"
     } else {
         "all-returned-integers"
     };
     if mode.is_some_and(|mode| mode != resident_host_weights)
         || audit.is_some_and(|audit| audit != expected_audit)
+        || (backend == ExecutionBackend::NativeQ2 && audit != Some(&json!(expected_audit)))
         || (resident_host_weights
-            && (backend != ExecutionBackend::HmxBitplane
-                || mode != Some(&json!(true))
+            && (!matches!(
+                backend,
+                ExecutionBackend::HmxBitplane | ExecutionBackend::NativeQ2
+            ) || mode != Some(&json!(true))
                 || audit != Some(&json!(expected_audit))))
     {
         return Err(
@@ -691,7 +766,9 @@ fn residency_result(
         let batch_four = value.get("batchFourOperations") == Some(&json!(true));
         let batch_ten = value.get("batchTenOperations") == Some(&json!(true));
         let expected_weights = RESIDENT_WEIGHT_BYTES * projection_count;
-        let base_mapped = if batch_ten {
+        let base_mapped = if backend == ExecutionBackend::NativeQ2 {
+            NATIVE_Q2_STREAMING_MAPPED_BYTES
+        } else if batch_ten {
             BATCH10_STREAMING_MAPPED_BYTES
         } else if batch_four {
             BATCH_STREAMING_MAPPED_BYTES
@@ -743,8 +820,11 @@ fn batch_result(
     } else {
         1
     };
-    let expected_writes = (40 / expected_batch) * projection_count * token_count;
-    let base_mapped = if batch_ten_operations {
+    let ops_per_proj = backend.operations_per_projection();
+    let expected_writes = (ops_per_proj / expected_batch) * projection_count * token_count;
+    let base_mapped = if backend == ExecutionBackend::NativeQ2 {
+        NATIVE_Q2_STREAMING_MAPPED_BYTES
+    } else if batch_ten_operations {
         BATCH10_STREAMING_MAPPED_BYTES
     } else if batch_four_operations {
         BATCH_STREAMING_MAPPED_BYTES
@@ -761,6 +841,11 @@ fn batch_result(
         || batch_ops.is_some_and(|ops| ops != expected_batch)
         || writes_sub.is_some_and(|writes| writes != expected_writes)
         || writes_comp.is_some_and(|writes| writes != expected_writes)
+        || (backend == ExecutionBackend::NativeQ2
+            && (batch_ops != Some(&json!(1))
+                || writes_sub != Some(&json!(expected_writes))
+                || writes_comp != Some(&json!(expected_writes))
+                || value["nativeResources"]["mappedAllocationBytes"] != expected_mapped))
         || (batch_four_operations
             && (backend != ExecutionBackend::HmxBitplane
                 || batch_four_mode != Some(&json!(true))
@@ -939,12 +1024,14 @@ fn execute(request: &Request, started: Instant, report: &mut Value) -> Result<()
     let pid = std::process::id();
     let creation = bonsai_windows_process::current_process_creation_time()
         .map_err(|error| error.to_string())?;
+    let ops_per_proj = usize::try_from(request.execution_backend.operations_per_projection())
+        .map_err(|error| error.to_string())?;
     let probe_request = json!({"schemaVersion":1,"modelPath":request.model_path,"packageDirectory":request.package_directory,
         "tokenId":request.token_id,"tokenIds":request.tokens(),"projections":request.projections(),"executionBackend":request.execution_backend,
         "residentHostWeights":request.resident_host_weights,"batchFourOperations":request.batch_four_operations,"batchTenOperations":request.batch_ten_operations,
         "adapterPath":request.adapter_path,"adapterCase":request.adapter_case,"cpuBackend":request.cpu_backend,"rowWorkers":request.row_workers,
         "contextLimit":request.tokens().len(),"modelMemoryLimitBytes":12_u64*1024*1024*1024,
-        "stateBudgetBytes":STATE_BUDGET_BYTES,"sessionSeconds":120,"maximumOperations":40*request.projections().len()*request.tokens().len(),
+        "stateBudgetBytes":STATE_BUDGET_BYTES,"sessionSeconds":120,"maximumOperations":ops_per_proj*request.projections().len()*request.tokens().len(),
         "maximumOwnedPayloadBytes":64_u64*1024*1024,"expectedParentPid":pid,"expectedParentCreationTime":creation});
     let path = request.output_directory.join("model-request.json");
     write_json(&path, &probe_request)?;
@@ -1817,6 +1904,118 @@ mod tests {
                     &"a".repeat(64),
                     &tokens,
                     ExecutionBackend::HmxBitplane,
+                    true,
+                    &driver
+                )
+                .is_err()
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn native_q2_resident_result_binds_single_op_queue_writes_and_bounded_tolerance() -> Result<()>
+    {
+        let driver = json!({"Path":"fixed-driver"});
+        let tokens = [42, 43, 128];
+        let projections = ["blk.0.ffn_up.weight", "blk.0.ffn_gate.weight"];
+        let mut req_val = request_value();
+        req_val["executionBackend"] = json!("native-q2");
+        req_val["residentHostWeights"] = json!(true);
+        req_val["tokenIds"] = json!(tokens);
+        req_val["projections"] = json!(projections);
+        let valid_req: Request =
+            serde_json::from_value(req_val.clone()).map_err(|error| error.to_string())?;
+        valid_req.validate_tokens()?;
+        valid_req.validate_selection()?;
+        let mut invalid_batch = req_val;
+        invalid_batch["batchFourOperations"] = json!(true);
+        let invalid_req: Request =
+            serde_json::from_value(invalid_batch).map_err(|error| error.to_string())?;
+        assert!(invalid_req.validate_selection().is_err());
+
+        let tol = json!({"maxAbsDiff":0.12,"meanAbsDiff":0.015,"rmse":0.022,
+            "cosineSimilarity":0.999_85,"cpuTop1Token":1024,"npuTop1Token":1024,
+            "top1Match":true,"top5Overlap":5});
+        let mut value = complete_result(&tokens, ExecutionBackend::NativeQ2);
+        let comparisons: Vec<_> = tokens.iter().enumerate().map(|(index, token)| {
+            json!({"index":index,"tokenId":token,"logitsBitwiseEqual":false,"stateBitwiseEqual":false,
+                "logitsBoundedTolerancePass":true,"numericalTolerance":tol,
+                "logitsSha256":"b".repeat(64),"stateSha256":"c".repeat(64)})
+        }).collect();
+        for (key, val) in [
+            ("projections", json!(projections)),
+            ("residentHostWeights", json!(true)),
+            ("batchFourOperations", json!(false)),
+            ("batchTenOperations", json!(false)),
+            ("nativeBatchOperations", json!(1)),
+            ("integerAudit", json!("bounded-float-tolerance")),
+            ("integerValuesCompared", json!(0)),
+            ("maximumOperations", json!(6)),
+            ("nativeOperationsSubmitted", json!(6)),
+            ("nativeOperationsCompleted", json!(6)),
+            ("nativeQueueWritesSubmitted", json!(6)),
+            ("nativeQueueWritesCompleted", json!(6)),
+            ("projectionsCompleted", json!(6)),
+            ("logitsBitwiseEqual", json!(false)),
+            ("stateBitwiseEqual", json!(false)),
+            ("logitsBoundedTolerancePass", json!(true)),
+            ("numericalTolerance", tol),
+            ("tokenComparisons", json!(comparisons)),
+            ("adapterCase", json!("none")),
+            ("adapterLoaded", json!(false)),
+            ("adapterSha256", Value::Null),
+            ("adapterScaleBits", json!(0)),
+            ("cpuBaselineAdapterLoaded", json!(false)),
+            ("cpuBaselineAdapterScaleBits", json!(0)),
+            ("cpuBackend", json!("scalar")),
+            ("rowWorkers", json!(1)),
+            (
+                "nativeResources",
+                json!({"residentWeightBytesPrepared": 2 * RESIDENT_WEIGHT_BYTES,
+                    "mappedAllocationBytes": NATIVE_Q2_STREAMING_MAPPED_BYTES + 2 * RESIDENT_WEIGHT_BYTES}),
+            ),
+            (
+                "hostResidency",
+                json!({"tensorsPrepared": 2, "cacheHits": 4,
+                    "weightPayloadBytesPrepared": 2 * RESIDENT_WEIGHT_BYTES, "metadataPayloadBytes": 1280}),
+            ),
+        ] {
+            value[key] = val;
+        }
+        let accepted = result(
+            &value.to_string(),
+            &"a".repeat(64),
+            &tokens,
+            ExecutionBackend::NativeQ2,
+            true,
+            &driver,
+        )?;
+        selection_result(&accepted, &valid_req)?;
+        for (pointer, wrong) in [
+            ("/maximumOperations", json!(240)),
+            ("/nativeOperationsCompleted", json!(240)),
+            ("/nativeQueueWritesCompleted", json!(24)),
+            ("/integerAudit", json!("graph-parity-only")),
+            ("/logitsBoundedTolerancePass", json!(false)),
+            ("/numericalTolerance/cosineSimilarity", json!(0.990)),
+            (
+                "/tokenComparisons/1/logitsBoundedTolerancePass",
+                json!(false),
+            ),
+            (
+                "/nativeResources/mappedAllocationBytes",
+                json!(NATIVE_Q2_RESIDENT_MAPPED_BYTES),
+            ),
+        ] {
+            let mut changed = value.clone();
+            *changed.pointer_mut(pointer).ok_or("Test field missing.")? = wrong;
+            assert!(
+                result(
+                    &changed.to_string(),
+                    &"a".repeat(64),
+                    &tokens,
+                    ExecutionBackend::NativeQ2,
                     true,
                     &driver
                 )
