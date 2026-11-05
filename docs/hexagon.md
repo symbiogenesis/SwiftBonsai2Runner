@@ -165,7 +165,21 @@ default budget and at all arm endpoints), `nativeSubmitAndWaitMilliseconds` drop
 (`16.84` ms on token `43` and `15.60` ms on token `128`, `~7.80-8.42` ms per resident
 projection) with bitwise-equal logits/state and clean teardown; production admission
 remains disabled because the signed generic `Q2_0` binary still writes `22.28` MB of
-`FP32` bitplanes per projection versus `~2-3` ms on 4-worker NEON CPU.
+`FP32` bitplanes per projection versus `~2-3` ms on 4-worker NEON CPU under 0-ULP bitwise parity.
+Under bounded floating-point tolerance (`executionBackend: "native-q2"`, `integerAudit: "bounded-float-tolerance"`), the
+[1-op full-K native Q2_0 HVX controls](evidence/npu-native-q2-1op-20261105/summary.json) and
+[decision](evidence/npu-native-q2-1op-20261105/decision.json) on local Prism `ccb1339` and Runner `cd3485bb`
+losslessly transcode `PQ2_0` weights into `llama.cpp`'s native tiled `HTP_TYPE_Q2_0` layout (copying each
+128-weight `FP16` scale into both 64-weight tiles) and execute a full `[5120, 17408]` projection in a single
+`K=5120, M=17408, N=1` operation (`hvx_mv_params` `kernel_type=7`, `n_hvx=8`, `n_prefetch=4`,
+`vtcm_size=1,912,832`), writing back only the final `69,632`-byte `F32` output vector (`320x` less output traffic
+per projection, zero host-side bitplane reconstruction) alongside signed `v81` HTP opcode descriptors in
+`htp_ops.rs`. Under continuous AC power (`99%` charge, saver off across the `32.26`-second workload within the
+`300`-second default budget and at all arm endpoints), `nativeSubmitAndWaitMilliseconds` dropped to
+`0.6436-0.9832` ms for 1 projection (`3` ops in `3` queue writes) and `1.0821-1.4439` ms (`~0.541` ms per
+`[5120, 17408]` projection, faster than 4-worker NEON CPU's `~2-3` ms) for 2 projections (`6` ops in `6` queue
+writes), with cosine similarity `0.999906-0.999974`, RMSE `0.0221-0.0286`, exact top-1 token agreement (`1183`,
+`12`, `248`), and `5/5` top-5 overlap across tokens `42`, `43` and `128`.
 
 The [logical payload ledger](evidence/hexagon-swift-traffic-ledger.json) derives
 13.69 GB of signed-kernel input/result payload per all-eligible original-PQ2

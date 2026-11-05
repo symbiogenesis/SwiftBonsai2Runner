@@ -1,0 +1,129 @@
+{
+  "schemaVersion": 1,
+  "kind": "owner-device-workload-execution",
+  "AllowanceSeconds": 300.0,
+  "ElapsedSeconds": 32.2561,
+  "WithinAllowance": true,
+  "PowerBefore": {
+    "available": true,
+    "acConnected": true,
+    "batterySaver": false,
+    "batteryPercent": 99
+  },
+  "PowerAfter": {
+    "available": true,
+    "acConnected": true,
+    "batterySaver": false,
+    "batteryPercent": 99
+  },
+  "Steps": [
+    {
+      "name": "build-prism-hexagon-model-probe",
+      "exitCode": 0,
+      "timedOut": false,
+      "elapsedSeconds": 2.6752,
+      "powerBefore": {
+        "available": true,
+        "acConnected": true,
+        "batterySaver": false,
+        "batteryPercent": 99
+      },
+      "powerAfter": {
+        "available": true,
+        "acConnected": true,
+        "batterySaver": false,
+        "batteryPercent": 99
+      }
+    },
+    {
+      "name": "build-bonsai-tools",
+      "exitCode": 0,
+      "timedOut": false,
+      "elapsedSeconds": 0.2629,
+      "powerBefore": {
+        "available": true,
+        "acConnected": true,
+        "batterySaver": false,
+        "batteryPercent": 99
+      },
+      "powerAfter": {
+        "available": true,
+        "acConnected": true,
+        "batterySaver": false,
+        "batteryPercent": 99
+      }
+    },
+    {
+      "name": "prepare-single-projection-native-q2-resident",
+      "exitCode": 0,
+      "timedOut": false,
+      "elapsedSeconds": 0.0046,
+      "powerBefore": {
+        "available": true,
+        "acConnected": true,
+        "batterySaver": false,
+        "batteryPercent": 99
+      },
+      "powerAfter": {
+        "available": true,
+        "acConnected": true,
+        "batterySaver": false,
+        "batteryPercent": 99
+      }
+    },
+    {
+      "name": "device-single-projection-native-q2-resident",
+      "exitCode": 0,
+      "timedOut": false,
+      "elapsedSeconds": 14.8319,
+      "powerBefore": {
+        "available": true,
+        "acConnected": true,
+        "batterySaver": false,
+        "batteryPercent": 99
+      },
+      "powerAfter": {
+        "available": true,
+        "acConnected": true,
+        "batterySaver": false,
+        "batteryPercent": 99
+      }
+    },
+    {
+      "name": "prepare-two-projection-native-q2-resident",
+      "exitCode": 0,
+      "timedOut": false,
+      "elapsedSeconds": 0.0031,
+      "powerBefore": {
+        "available": true,
+        "acConnected": true,
+        "batterySaver": false,
+        "batteryPercent": 99
+      },
+      "powerAfter": {
+        "available": true,
+        "acConnected": true,
+        "batterySaver": false,
+        "batteryPercent": 99
+      }
+    },
+    {
+      "name": "device-two-projection-native-q2-resident",
+      "exitCode": 0,
+      "timedOut": false,
+      "elapsedSeconds": 14.3484,
+      "powerBefore": {
+        "available": true,
+        "acConnected": true,
+        "batterySaver": false,
+        "batteryPercent": 99
+      },
+      "powerAfter": {
+        "available": true,
+        "acConnected": true,
+        "batterySaver": false,
+        "batteryPercent": 99
+      }
+    }
+  ]
+}

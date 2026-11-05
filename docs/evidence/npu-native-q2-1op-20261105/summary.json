@@ -1,0 +1,303 @@
+{
+  "schemaVersion": 1,
+  "kind": "hexagon-native-q2-1op-control-summary",
+  "prismRevision": "ccb1339e18456a669435d986561c85a31549856c",
+  "runnerRevision": "cd3485bb3d6bfabdc96cf631caaa0c50a88f274c",
+  "singleProjectionNativeQ2Resident": {
+    "outcome": "passed",
+    "stage": "bounded-token-graph-complete",
+    "elapsedMilliseconds": 14764,
+    "powerBefore": {
+      "acConnected": true,
+      "available": true,
+      "batteryPercent": 99,
+      "batterySaver": false
+    },
+    "powerAfter": {
+      "acConnected": true,
+      "available": true,
+      "batteryPercent": 99,
+      "batterySaver": false
+    },
+    "cpuPowerBefore": {
+      "acConnected": true,
+      "available": true,
+      "batteryPercent": 99,
+      "batterySaver": false
+    },
+    "cpuPowerAfter": {
+      "acConnected": true,
+      "available": true,
+      "batteryPercent": 99,
+      "batterySaver": false
+    },
+    "npuPowerBefore": {
+      "acConnected": true,
+      "available": true,
+      "batteryPercent": 99,
+      "batterySaver": false
+    },
+    "npuPowerAfter": {
+      "acConnected": true,
+      "available": true,
+      "batteryPercent": 99,
+      "batterySaver": false
+    },
+    "projections": [
+      "blk.0.ffn_up.weight"
+    ],
+    "executionBackend": "native-q2",
+    "residentHostWeights": true,
+    "batchFourOperations": false,
+    "batchTenOperations": false,
+    "nativeBatchOperations": 1,
+    "nativeOperationsSubmitted": 3,
+    "nativeOperationsCompleted": 3,
+    "nativeQueueWritesSubmitted": 3,
+    "nativeQueueWritesCompleted": 3,
+    "projectionsCompleted": 3,
+    "integerAudit": "bounded-float-tolerance",
+    "integerValuesCompared": 0,
+    "logitsBitwiseEqual": false,
+    "logitsBoundedTolerancePass": true,
+    "stateBitwiseEqual": false,
+    "logitsSha256": "abfa8e59e810394fe35ec02f6111da4f1a932b8ea03bc9e7fa8ab60f4fddeeea",
+    "stateSha256": "ca1bf52dce572e5d1be9e9e1c112ffb36faf1c07a84e9c28b844e92da93ad151",
+    "numericalTolerance": {
+      "cosineSimilarity": 0.9999081405653126,
+      "cpuTop1Token": 248,
+      "maxAbsDiff": 0.1532866694033146,
+      "meanAbsDiff": 0.022162491858943888,
+      "npuTop1Token": 248,
+      "rmse": 0.02803945849803501,
+      "top1Match": true,
+      "top5Overlap": 5
+    },
+    "nativeCompletedCycle": true,
+    "nativeCleanup": {
+      "freeCompleted": true,
+      "moduleCloseResult": 0,
+      "ownerPinnedUntilExit": true,
+      "poisoned": false,
+      "queueCloseResult": 0,
+      "queueStopResult": 0,
+      "unmappingResult": 0
+    },
+    "nativeResources": {
+      "architecture": 81,
+      "effectiveDomain": 3,
+      "effectiveHmxPlacementVerified": false,
+      "effectiveVtcmBytes": null,
+      "mappedAllocationBytes": 50229248,
+      "residentWeightBytesPrepared": 25067520
+    },
+    "hostResidency": {
+      "cacheHits": 2,
+      "metadataPayloadBytes": 65520,
+      "tensorsPrepared": 1,
+      "weightPayloadBytesPrepared": 25067520
+    },
+    "tokenTimings": [
+      {
+        "index": 0,
+        "tokenId": 42,
+        "logitsSha256": "5805ad1cdfd229acf2f7c530eb6b0dd07f46fc8a65734361d55716571c5a1197",
+        "stateSha256": "5d24cfa4310bb9dd08277e593eab2ae9ad03db3ca8ab7b61cfe5294c7d1d3267",
+        "logitsBoundedTolerancePass": true,
+        "cosineSimilarity": 0.9999491451532752,
+        "rmse": 0.02208391412571104,
+        "maxAbsDiff": 0.11577093601226808,
+        "top1Match": true,
+        "top5Overlap": 5,
+        "cpuEvaluationMilliseconds": 589.5686,
+        "independentIntegerOracleMilliseconds": 0.0,
+        "nativeCheckedEvaluationMilliseconds": 561.4911,
+        "nativeEvaluationExcludingIntegerOracleMilliseconds": 561.4911,
+        "nativeSubmitAndWaitMilliseconds": 0.9832
+      },
+      {
+        "index": 1,
+        "tokenId": 43,
+        "logitsSha256": "842abcc6cb57672f72a0caf721196c9f85c9a844b1d5c839f66642f7e5c348ad",
+        "stateSha256": "b6ca20330a85bf5c7c9671245b92ee2c17b53407caa060ddb0f6ccca44867007",
+        "logitsBoundedTolerancePass": true,
+        "cosineSimilarity": 0.9999724165430366,
+        "rmse": 0.02857036048870423,
+        "maxAbsDiff": 0.14659857749938965,
+        "top1Match": true,
+        "top5Overlap": 5,
+        "cpuEvaluationMilliseconds": 519.3917,
+        "independentIntegerOracleMilliseconds": 0.0,
+        "nativeCheckedEvaluationMilliseconds": 520.8368,
+        "nativeEvaluationExcludingIntegerOracleMilliseconds": 520.8368,
+        "nativeSubmitAndWaitMilliseconds": 0.6769
+      },
+      {
+        "index": 2,
+        "tokenId": 128,
+        "logitsSha256": "abfa8e59e810394fe35ec02f6111da4f1a932b8ea03bc9e7fa8ab60f4fddeeea",
+        "stateSha256": "ca1bf52dce572e5d1be9e9e1c112ffb36faf1c07a84e9c28b844e92da93ad151",
+        "logitsBoundedTolerancePass": true,
+        "cosineSimilarity": 0.9999081405653126,
+        "rmse": 0.02803945849803501,
+        "maxAbsDiff": 0.1532866694033146,
+        "top1Match": true,
+        "top5Overlap": 5,
+        "cpuEvaluationMilliseconds": 515.916,
+        "independentIntegerOracleMilliseconds": 0.0,
+        "nativeCheckedEvaluationMilliseconds": 524.5647,
+        "nativeEvaluationExcludingIntegerOracleMilliseconds": 524.5647,
+        "nativeSubmitAndWaitMilliseconds": 0.6436
+      }
+    ]
+  },
+  "twoProjectionNativeQ2Resident": {
+    "outcome": "passed",
+    "stage": "bounded-token-graph-complete",
+    "elapsedMilliseconds": 14282,
+    "powerBefore": {
+      "acConnected": true,
+      "available": true,
+      "batteryPercent": 99,
+      "batterySaver": false
+    },
+    "powerAfter": {
+      "acConnected": true,
+      "available": true,
+      "batteryPercent": 99,
+      "batterySaver": false
+    },
+    "cpuPowerBefore": {
+      "acConnected": true,
+      "available": true,
+      "batteryPercent": 99,
+      "batterySaver": false
+    },
+    "cpuPowerAfter": {
+      "acConnected": true,
+      "available": true,
+      "batteryPercent": 99,
+      "batterySaver": false
+    },
+    "npuPowerBefore": {
+      "acConnected": true,
+      "available": true,
+      "batteryPercent": 99,
+      "batterySaver": false
+    },
+    "npuPowerAfter": {
+      "acConnected": true,
+      "available": true,
+      "batteryPercent": 99,
+      "batterySaver": false
+    },
+    "projections": [
+      "blk.0.ffn_up.weight",
+      "blk.0.ffn_gate.weight"
+    ],
+    "executionBackend": "native-q2",
+    "residentHostWeights": true,
+    "batchFourOperations": false,
+    "batchTenOperations": false,
+    "nativeBatchOperations": 1,
+    "nativeOperationsSubmitted": 6,
+    "nativeOperationsCompleted": 6,
+    "nativeQueueWritesSubmitted": 6,
+    "nativeQueueWritesCompleted": 6,
+    "projectionsCompleted": 6,
+    "integerAudit": "bounded-float-tolerance",
+    "integerValuesCompared": 0,
+    "logitsBitwiseEqual": false,
+    "logitsBoundedTolerancePass": true,
+    "stateBitwiseEqual": false,
+    "logitsSha256": "2113c8832491e7d8d3e92875b5fb7cbbcef714b6824b8114c36c26cbf4ae8602",
+    "stateSha256": "07df65741d99ab99b8a4b119cb0463ac2a3a0115ac9fb4bd105fc800f6f68f4e",
+    "numericalTolerance": {
+      "cosineSimilarity": 0.9999061720352228,
+      "cpuTop1Token": 248,
+      "maxAbsDiff": 0.1601119041442871,
+      "meanAbsDiff": 0.0224267965246186,
+      "npuTop1Token": 248,
+      "rmse": 0.028367592533312988,
+      "top1Match": true,
+      "top5Overlap": 5
+    },
+    "nativeCompletedCycle": true,
+    "nativeCleanup": {
+      "freeCompleted": true,
+      "moduleCloseResult": 0,
+      "ownerPinnedUntilExit": true,
+      "poisoned": false,
+      "queueCloseResult": 0,
+      "queueStopResult": 0,
+      "unmappingResult": 0
+    },
+    "nativeResources": {
+      "architecture": 81,
+      "effectiveDomain": 3,
+      "effectiveHmxPlacementVerified": false,
+      "effectiveVtcmBytes": null,
+      "mappedAllocationBytes": 75296768,
+      "residentWeightBytesPrepared": 50135040
+    },
+    "hostResidency": {
+      "cacheHits": 4,
+      "metadataPayloadBytes": 65520,
+      "tensorsPrepared": 2,
+      "weightPayloadBytesPrepared": 50135040
+    },
+    "tokenTimings": [
+      {
+        "index": 0,
+        "tokenId": 42,
+        "logitsSha256": "511bfd91ed63638b69130d902a4f2c4d740202517f97a8f97212325c51dff1a5",
+        "stateSha256": "14036d6ea7d6a36fe2ced628e416653cbb3d8e2905c9a65592c9cf9c7deb8084",
+        "logitsBoundedTolerancePass": true,
+        "cosineSimilarity": 0.9999476675239254,
+        "rmse": 0.022571217517127453,
+        "maxAbsDiff": 0.12856030464172363,
+        "top1Match": true,
+        "top5Overlap": 5,
+        "cpuEvaluationMilliseconds": 591.3282,
+        "independentIntegerOracleMilliseconds": 0.0,
+        "nativeCheckedEvaluationMilliseconds": 567.1369,
+        "nativeEvaluationExcludingIntegerOracleMilliseconds": 567.1369,
+        "nativeSubmitAndWaitMilliseconds": 1.4439
+      },
+      {
+        "index": 1,
+        "tokenId": 43,
+        "logitsSha256": "e81add11012566d2ebc93438441bf03e8957e2380fa1ffca343d79b7b8787a77",
+        "stateSha256": "1dee19d0530f5d43413dacb32fa107ef69f713261c5af111508a473121d14e23",
+        "logitsBoundedTolerancePass": true,
+        "cosineSimilarity": 0.9999744057244158,
+        "rmse": 0.02677775400328124,
+        "maxAbsDiff": 0.14688777923583984,
+        "top1Match": true,
+        "top5Overlap": 5,
+        "cpuEvaluationMilliseconds": 516.7034,
+        "independentIntegerOracleMilliseconds": 0.0,
+        "nativeCheckedEvaluationMilliseconds": 519.2355,
+        "nativeEvaluationExcludingIntegerOracleMilliseconds": 519.2355,
+        "nativeSubmitAndWaitMilliseconds": 1.0908
+      },
+      {
+        "index": 2,
+        "tokenId": 128,
+        "logitsSha256": "2113c8832491e7d8d3e92875b5fb7cbbcef714b6824b8114c36c26cbf4ae8602",
+        "stateSha256": "07df65741d99ab99b8a4b119cb0463ac2a3a0115ac9fb4bd105fc800f6f68f4e",
+        "logitsBoundedTolerancePass": true,
+        "cosineSimilarity": 0.9999061720352228,
+        "rmse": 0.028367592533312988,
+        "maxAbsDiff": 0.1601119041442871,
+        "top1Match": true,
+        "top5Overlap": 5,
+        "cpuEvaluationMilliseconds": 516.4853,
+        "independentIntegerOracleMilliseconds": 0.0,
+        "nativeCheckedEvaluationMilliseconds": 506.1512,
+        "nativeEvaluationExcludingIntegerOracleMilliseconds": 506.1512,
+        "nativeSubmitAndWaitMilliseconds": 1.0821
+      }
+    ]
+  }
+}
