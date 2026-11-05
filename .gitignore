@@ -1,4 +1,5 @@
-# Broker build outputs; diagnostic scratch belongs in system temp.
+# Workspace and package Cargo build outputs; diagnostic scratch belongs in system temp.
+/target/
 /src/broker/target/
 /src/windows-process/target/
 /src/windows-credentials/target/
