@@ -27,6 +27,7 @@ production backend and establishes no inference speedup or broader adapter quali
     "tokenIds": [42, 43],
     "executionBackend": "hmx-bitplane",
     "residentHostWeights": false,
+    "batchFourOperations": false,
     "adapterCase": "standard-scale-1.3",
     "adapterPath": "C:\\external\\bonsai-abliterate-lora.gguf",
     "cpuBackend": "neon",
@@ -62,6 +63,16 @@ The normal path retains `integerAudit: "all-returned-integers"` and its full
 integer oracle. The supervisor binds the selected mode and actual cache counters;
 it accepts missing mode/audit fields only for historical normal-path receipts.
 Mapped host reuse establishes no DSP residency or production eligibility.
+
+`batchFourOperations` defaults to false. Setting it to true requires the explicit
+HMX backend and submits four independent `K=128/N=8` operations per queue packet
+(`n_tensors = 12`, `n_ops = 4`, 1,816 command header bytes), using a 4,755,456-byte
+streaming mapping or a 29,822,976-byte resident mapping. Logical operation
+accounting remains 40 per token (`nativeOperationsSubmitted` and
+`nativeOperationsCompleted` equal `40 * n`), while queue-write accounting reports
+10 writes per token (`nativeBatchOperations: 4`, `nativeQueueWritesSubmitted: 10 * n`,
+`nativeQueueWritesCompleted: 10 * n`). All four output slices in each batch are
+validated before reconstructing any block in original 128-column order.
 
 The unchanged 536,870,912-byte control-state budget admits at most three tokens.
 The pinned model's complete logical snapshot after token position `i` contains

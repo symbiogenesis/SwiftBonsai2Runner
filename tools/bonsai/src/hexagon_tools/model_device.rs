@@ -26,6 +26,8 @@ const REQUIRED_AVAILABLE_BYTES: u64 = 18 * 1024 * 1024 * 1024;
 const STATE_BUDGET_BYTES: u64 = 512 * 1024 * 1024;
 const RESIDENT_WEIGHT_BYTES: u64 = 25_067_520;
 const RESIDENT_MAPPED_BYTES: u64 = 26_259_456;
+const BATCH_STREAMING_MAPPED_BYTES: u64 = 4_755_456;
+const BATCH_RESIDENT_MAPPED_BYTES: u64 = 29_822_976;
 const RESIDENT_METADATA_BYTES: u64 = 65_536;
 // Exact logical state for the pinned original-PQ2 model: 48 recurrent
 // layers plus the growing KV state of its 16 attention layers. The CPU arm
@@ -105,6 +107,8 @@ pub(super) struct Request {
     #[serde(default)]
     resident_host_weights: bool,
     #[serde(default)]
+    batch_four_operations: bool,
+    #[serde(default)]
     adapter_path: Option<PathBuf>,
     #[serde(default)]
     adapter_case: AdapterCase,
@@ -142,6 +146,9 @@ impl Request {
     fn validate_selection(&self) -> Result<()> {
         if self.resident_host_weights && self.execution_backend != ExecutionBackend::HmxBitplane {
             return Err("Resident host weights require the explicit HMX bitplane backend.".into());
+        }
+        if self.batch_four_operations && self.execution_backend != ExecutionBackend::HmxBitplane {
+            return Err("Batch-four operations require the explicit HMX bitplane backend.".into());
         }
         if self.adapter_path.is_some() != (self.adapter_case != AdapterCase::None)
             || ![1, 4].contains(&self.row_workers)
@@ -456,7 +463,15 @@ fn result(
         return Err("The model probe omitted its unique terminal result.".into());
     };
     let token_count = u64::try_from(tokens.len()).map_err(|error| error.to_string())?;
+    let batch_four = value.get("batchFourOperations") == Some(&json!(true));
     residency_result(value, backend, resident_host_weights, token_count)?;
+    batch_result(
+        value,
+        backend,
+        resident_host_weights,
+        batch_four,
+        token_count,
+    )?;
     let compared_values = if resident_host_weights {
         0
     } else {
@@ -591,10 +606,16 @@ fn residency_result(
         );
     }
     if resident_host_weights {
+        let batch_four = value.get("batchFourOperations") == Some(&json!(true));
+        let expected_mapped = if batch_four {
+            BATCH_RESIDENT_MAPPED_BYTES
+        } else {
+            RESIDENT_MAPPED_BYTES
+        };
         let resources = &value["nativeResources"];
         let residency = &value["hostResidency"];
         if resources["residentWeightBytesPrepared"] != RESIDENT_WEIGHT_BYTES
-            || resources["mappedAllocationBytes"] != RESIDENT_MAPPED_BYTES
+            || resources["mappedAllocationBytes"] != expected_mapped
             || residency["tensorsPrepared"] != 1
             || residency["cacheHits"] != token_count - 1
             || residency["weightPayloadBytesPrepared"] != RESIDENT_WEIGHT_BYTES
@@ -611,7 +632,53 @@ fn residency_result(
     Ok(())
 }
 
+fn batch_result(
+    value: &Value,
+    backend: ExecutionBackend,
+    resident_host_weights: bool,
+    batch_four_operations: bool,
+    token_count: u64,
+) -> Result<()> {
+    let batch_mode = value.get("batchFourOperations");
+    let batch_ops = value.get("nativeBatchOperations");
+    let writes_sub = value.get("nativeQueueWritesSubmitted");
+    let writes_comp = value.get("nativeQueueWritesCompleted");
+    let expected_batch = if batch_four_operations { 4_u64 } else { 1 };
+    let expected_writes = (40 / expected_batch) * token_count;
+    let expected_mapped = if resident_host_weights {
+        BATCH_RESIDENT_MAPPED_BYTES
+    } else {
+        BATCH_STREAMING_MAPPED_BYTES
+    };
+    if batch_mode.is_some_and(|mode| mode != batch_four_operations)
+        || batch_ops.is_some_and(|ops| ops != expected_batch)
+        || writes_sub.is_some_and(|writes| writes != expected_writes)
+        || writes_comp.is_some_and(|writes| writes != expected_writes)
+        || (batch_four_operations
+            && (backend != ExecutionBackend::HmxBitplane
+                || batch_mode != Some(&json!(true))
+                || batch_ops != Some(&json!(4))
+                || writes_sub != Some(&json!(expected_writes))
+                || writes_comp != Some(&json!(expected_writes))
+                || value["nativeResources"]["mappedAllocationBytes"] != expected_mapped))
+    {
+        return Err(
+            "The model result does not bind its selected batch-four and queue-write accounting."
+                .into(),
+        );
+    }
+    Ok(())
+}
+
 fn selection_result(value: &Value, request: &Request) -> Result<()> {
+    let token_count = u64::try_from(request.tokens().len()).map_err(|error| error.to_string())?;
+    batch_result(
+        value,
+        request.execution_backend,
+        request.resident_host_weights,
+        request.batch_four_operations,
+        token_count,
+    )?;
     let loaded = request.adapter_case != AdapterCase::None;
     let standard = request.adapter_case == AdapterCase::Standard;
     let scale_bits = if standard {
@@ -749,7 +816,7 @@ fn execute(request: &Request, started: Instant, report: &mut Value) -> Result<()
         .map_err(|error| error.to_string())?;
     let probe_request = json!({"schemaVersion":1,"modelPath":request.model_path,"packageDirectory":request.package_directory,
         "tokenId":request.token_id,"tokenIds":request.tokens(),"executionBackend":request.execution_backend,
-        "residentHostWeights":request.resident_host_weights,
+        "residentHostWeights":request.resident_host_weights,"batchFourOperations":request.batch_four_operations,
         "adapterPath":request.adapter_path,"adapterCase":request.adapter_case,"cpuBackend":request.cpu_backend,"rowWorkers":request.row_workers,
         "contextLimit":request.tokens().len(),"modelMemoryLimitBytes":12_u64*1024*1024*1024,
         "stateBudgetBytes":STATE_BUDGET_BYTES,"sessionSeconds":120,"maximumOperations":40*request.tokens().len(),
@@ -847,7 +914,8 @@ pub(super) fn run(request: &Request) -> Result<Value> {
         "LocalBuild":true,"HostedBuild":false,"PrismRevision":request.expected_prism_revision,"MaximumSeconds":request.maximum_seconds,
         "CleanupReserveSeconds":CLEANUP_SECONDS,"ModelWorkAttempted":false,"OwnedJobTeardown":"not-started","ProfileEligible":false,
         "PerformanceMeasured":false,"TrustChanged":false,"PowerBefore":power(),"RequiredAvailablePhysicalBytes":REQUIRED_AVAILABLE_BYTES,
-        "ExecutionBackend":request.execution_backend,"ResidentHostWeights":request.resident_host_weights,"TokenIds":request.tokens(),"AdapterCase":request.adapter_case,
+        "ExecutionBackend":request.execution_backend,"ResidentHostWeights":request.resident_host_weights,"BatchFourOperations":request.batch_four_operations,
+        "TokenIds":request.tokens(),"AdapterCase":request.adapter_case,
         "CpuBackend":request.cpu_backend,"RowWorkers":request.row_workers,
         "RequiredControlStateBytes":required_control_state_bytes(request.tokens().len())?,"ControlStateBudgetBytes":STATE_BUDGET_BYTES});
     let outcome = execute(request, started, &mut report);
@@ -1331,6 +1399,89 @@ mod tests {
             false
         );
         assert!(accepted["nativeResources"]["effectiveVtcmBytes"].is_null());
+        Ok(())
+    }
+
+    #[test]
+    fn batch_four_hmx_result_binds_queue_writes_and_mapped_allocation_extent() -> Result<()> {
+        let driver = json!({"Path":"fixed-driver"});
+        let tokens = [42, 43, 128];
+        let mut req_val = request_value();
+        req_val["batchFourOperations"] = json!(true);
+        let invalid_req: Request =
+            serde_json::from_value(req_val.clone()).map_err(|error| error.to_string())?;
+        assert!(invalid_req.validate_selection().is_err());
+        req_val["executionBackend"] = json!("hmx-bitplane");
+        req_val["tokenIds"] = json!(tokens);
+        let valid_req: Request =
+            serde_json::from_value(req_val).map_err(|error| error.to_string())?;
+        valid_req.validate_selection()?;
+
+        for resident in [false, true] {
+            let mut value = complete_result(&tokens, ExecutionBackend::HmxBitplane);
+            value["batchFourOperations"] = json!(true);
+            value["nativeBatchOperations"] = json!(4);
+            value["nativeQueueWritesSubmitted"] = json!(30);
+            value["nativeQueueWritesCompleted"] = json!(30);
+            value["adapterCase"] = json!("none");
+            value["adapterLoaded"] = json!(false);
+            value["adapterSha256"] = Value::Null;
+            value["adapterScaleBits"] = json!(0);
+            value["cpuBaselineAdapterLoaded"] = json!(false);
+            value["cpuBaselineAdapterScaleBits"] = json!(0);
+            value["cpuBackend"] = json!("scalar");
+            value["rowWorkers"] = json!(1);
+            if resident {
+                value["residentHostWeights"] = json!(true);
+                value["integerAudit"] = json!("graph-parity-only");
+                value["integerValuesCompared"] = json!(0);
+                value["nativeResources"] = json!({
+                    "residentWeightBytesPrepared":RESIDENT_WEIGHT_BYTES,
+                    "mappedAllocationBytes":BATCH_RESIDENT_MAPPED_BYTES,
+                });
+                value["hostResidency"] = json!({"tensorsPrepared":1,"cacheHits":2,
+                    "weightPayloadBytesPrepared":RESIDENT_WEIGHT_BYTES,"metadataPayloadBytes":640});
+            } else {
+                value["nativeResources"] = json!({
+                    "residentWeightBytesPrepared":0,
+                    "mappedAllocationBytes":BATCH_STREAMING_MAPPED_BYTES,
+                });
+            }
+            let accepted = result(
+                &value.to_string(),
+                &"a".repeat(64),
+                &tokens,
+                ExecutionBackend::HmxBitplane,
+                resident,
+                &driver,
+            )?;
+            if !resident {
+                selection_result(&accepted, &valid_req)?;
+            }
+            for (pointer, wrong) in [
+                ("/nativeBatchOperations", json!(1)),
+                ("/nativeQueueWritesSubmitted", json!(120)),
+                ("/nativeQueueWritesCompleted", json!(29)),
+                (
+                    "/nativeResources/mappedAllocationBytes",
+                    json!(RESIDENT_MAPPED_BYTES),
+                ),
+            ] {
+                let mut changed = value.clone();
+                *changed.pointer_mut(pointer).ok_or("Test field missing.")? = wrong;
+                assert!(
+                    result(
+                        &changed.to_string(),
+                        &"a".repeat(64),
+                        &tokens,
+                        ExecutionBackend::HmxBitplane,
+                        resident,
+                        &driver,
+                    )
+                    .is_err()
+                );
+            }
+        }
         Ok(())
     }
 }
