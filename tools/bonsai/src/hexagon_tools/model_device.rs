@@ -24,10 +24,13 @@ const CLEANUP_SECONDS: u64 = 75;
 const CHILD_SECONDS: u64 = 195;
 const REQUIRED_AVAILABLE_BYTES: u64 = 18 * 1024 * 1024 * 1024;
 const STATE_BUDGET_BYTES: u64 = 512 * 1024 * 1024;
+const STREAMING_MAPPED_BYTES: u64 = 1_191_936;
 const RESIDENT_WEIGHT_BYTES: u64 = 25_067_520;
-const RESIDENT_MAPPED_BYTES: u64 = 26_259_456;
+#[cfg(test)]
+const RESIDENT_MAPPED_BYTES: u64 = STREAMING_MAPPED_BYTES + RESIDENT_WEIGHT_BYTES;
 const BATCH_STREAMING_MAPPED_BYTES: u64 = 4_755_456;
-const BATCH_RESIDENT_MAPPED_BYTES: u64 = 29_822_976;
+#[cfg(test)]
+const BATCH_RESIDENT_MAPPED_BYTES: u64 = BATCH_STREAMING_MAPPED_BYTES + RESIDENT_WEIGHT_BYTES;
 const RESIDENT_METADATA_BYTES: u64 = 65_536;
 // Exact logical state for the pinned original-PQ2 model: 48 recurrent
 // layers plus the growing KV state of its 16 attention layers. The CPU arm
@@ -103,6 +106,8 @@ pub(super) struct Request {
     #[serde(default)]
     token_ids: Option<Vec<u32>>,
     #[serde(default)]
+    projections: Option<Vec<String>>,
+    #[serde(default)]
     execution_backend: ExecutionBackend,
     #[serde(default)]
     resident_host_weights: bool,
@@ -119,11 +124,32 @@ pub(super) struct Request {
     maximum_seconds: u32,
 }
 
+fn valid_projection_name(name: &str) -> bool {
+    let Some(rest) = name.strip_prefix("blk.") else {
+        return false;
+    };
+    let Some((index, suffix)) = rest.split_once('.') else {
+        return false;
+    };
+    !index.is_empty()
+        && index.len() <= 2
+        && index.bytes().all(|byte| byte.is_ascii_digit())
+        && index.parse::<usize>().is_ok_and(|layer| layer < 64)
+        && matches!(suffix, "ffn_up.weight" | "ffn_gate.weight")
+}
+
 impl Request {
     fn tokens(&self) -> &[u32] {
         self.token_ids
             .as_deref()
             .unwrap_or_else(|| std::slice::from_ref(&self.token_id))
+    }
+
+    fn projections(&self) -> Vec<&str> {
+        self.projections.as_ref().map_or_else(
+            || vec!["blk.0.ffn_up.weight"],
+            |names| names.iter().map(String::as_str).collect(),
+        )
     }
 
     fn validate_tokens(&self) -> Result<()> {
@@ -144,6 +170,19 @@ impl Request {
     }
 
     fn validate_selection(&self) -> Result<()> {
+        let projections = self.projections();
+        let max_projections = if self.resident_host_weights { 2 } else { 4 };
+        let unique: BTreeSet<&str> = projections.iter().copied().collect();
+        if !(1..=max_projections).contains(&projections.len())
+            || projections.first() != Some(&"blk.0.ffn_up.weight")
+            || unique.len() != projections.len()
+            || projections.iter().any(|&name| !valid_projection_name(name))
+        {
+            return Err(
+                "Select one to two resident (or up to four streaming) unique FFN projections beginning with blk.0.ffn_up.weight."
+                    .into(),
+            );
+        }
         if self.resident_host_weights && self.execution_backend != ExecutionBackend::HmxBitplane {
             return Err("Resident host weights require the explicit HMX bitplane backend.".into());
         }
@@ -463,19 +502,49 @@ fn result(
         return Err("The model probe omitted its unique terminal result.".into());
     };
     let token_count = u64::try_from(tokens.len()).map_err(|error| error.to_string())?;
+    let projection_count = match value.get("projections") {
+        None => 1_u64,
+        Some(projections) => {
+            let list = projections
+                .as_array()
+                .ok_or("The model result projections field must be an array.")?;
+            let max_projections = if resident_host_weights { 2 } else { 4 };
+            let mut seen = BTreeSet::new();
+            if !(1..=max_projections).contains(&list.len())
+                || list.first().and_then(Value::as_str) != Some("blk.0.ffn_up.weight")
+                || list.iter().any(|item| {
+                    item.as_str()
+                        .is_none_or(|name| !valid_projection_name(name) || !seen.insert(name))
+                })
+            {
+                return Err(
+                    "The model result projections list is invalid or out of bounds.".into(),
+                );
+            }
+            u64::try_from(list.len()).map_err(|error| error.to_string())?
+        }
+    };
+    let total_projections = projection_count * token_count;
     let batch_four = value.get("batchFourOperations") == Some(&json!(true));
-    residency_result(value, backend, resident_host_weights, token_count)?;
+    residency_result(
+        value,
+        backend,
+        resident_host_weights,
+        token_count,
+        projection_count,
+    )?;
     batch_result(
         value,
         backend,
         resident_host_weights,
         batch_four,
         token_count,
+        projection_count,
     )?;
     let compared_values = if resident_host_weights {
         0
     } else {
-        backend.integer_values_per_token() * token_count
+        backend.integer_values_per_token() * total_projections
     };
     if value["schemaVersion"] != 1
         || value["completed"] != true
@@ -486,12 +555,12 @@ fn result(
         || value["tokenIds"] != json!(tokens)
         || value["executionBackend"] != json!(backend)
         || value["nativeHmxBitplaneControl"] != (backend == ExecutionBackend::HmxBitplane)
-        || value["maximumOperations"] != 40 * token_count
+        || value["maximumOperations"] != 40 * total_projections
         || value["sessionSeconds"] != 120
         || value["driverDll"] != driver["Path"]
-        || value["nativeOperationsSubmitted"] != 40 * token_count
-        || value["nativeOperationsCompleted"] != 40 * token_count
-        || value["projectionsCompleted"] != token_count
+        || value["nativeOperationsSubmitted"] != 40 * total_projections
+        || value["nativeOperationsCompleted"] != 40 * total_projections
+        || value["projectionsCompleted"] != total_projections
         || value["integerValuesCompared"] != compared_values
         || value["logitsBitwiseEqual"] != true
         || value["stateBitwiseEqual"] != true
@@ -584,6 +653,7 @@ fn residency_result(
     backend: ExecutionBackend,
     resident_host_weights: bool,
     token_count: u64,
+    projection_count: u64,
 ) -> Result<()> {
     // Historical full-integer controls predate these explicit fields. Their
     // absence means only the original streaming path, never resident execution.
@@ -607,18 +677,20 @@ fn residency_result(
     }
     if resident_host_weights {
         let batch_four = value.get("batchFourOperations") == Some(&json!(true));
-        let expected_mapped = if batch_four {
-            BATCH_RESIDENT_MAPPED_BYTES
+        let expected_weights = RESIDENT_WEIGHT_BYTES * projection_count;
+        let base_mapped = if batch_four {
+            BATCH_STREAMING_MAPPED_BYTES
         } else {
-            RESIDENT_MAPPED_BYTES
+            STREAMING_MAPPED_BYTES
         };
+        let expected_mapped = base_mapped + expected_weights;
         let resources = &value["nativeResources"];
         let residency = &value["hostResidency"];
-        if resources["residentWeightBytesPrepared"] != RESIDENT_WEIGHT_BYTES
+        if resources["residentWeightBytesPrepared"] != expected_weights
             || resources["mappedAllocationBytes"] != expected_mapped
-            || residency["tensorsPrepared"] != 1
-            || residency["cacheHits"] != token_count - 1
-            || residency["weightPayloadBytesPrepared"] != RESIDENT_WEIGHT_BYTES
+            || residency["tensorsPrepared"] != projection_count
+            || residency["cacheHits"] != projection_count * (token_count - 1)
+            || residency["weightPayloadBytesPrepared"] != expected_weights
             || !residency["metadataPayloadBytes"]
                 .as_u64()
                 .is_some_and(|bytes| (1..=RESIDENT_METADATA_BYTES).contains(&bytes))
@@ -638,15 +710,16 @@ fn batch_result(
     resident_host_weights: bool,
     batch_four_operations: bool,
     token_count: u64,
+    projection_count: u64,
 ) -> Result<()> {
     let batch_mode = value.get("batchFourOperations");
     let batch_ops = value.get("nativeBatchOperations");
     let writes_sub = value.get("nativeQueueWritesSubmitted");
     let writes_comp = value.get("nativeQueueWritesCompleted");
     let expected_batch = if batch_four_operations { 4_u64 } else { 1 };
-    let expected_writes = (40 / expected_batch) * token_count;
+    let expected_writes = (40 / expected_batch) * projection_count * token_count;
     let expected_mapped = if resident_host_weights {
-        BATCH_RESIDENT_MAPPED_BYTES
+        BATCH_STREAMING_MAPPED_BYTES + RESIDENT_WEIGHT_BYTES * projection_count
     } else {
         BATCH_STREAMING_MAPPED_BYTES
     };
@@ -672,12 +745,22 @@ fn batch_result(
 
 fn selection_result(value: &Value, request: &Request) -> Result<()> {
     let token_count = u64::try_from(request.tokens().len()).map_err(|error| error.to_string())?;
+    let expected_projections = request.projections();
+    let projection_count =
+        u64::try_from(expected_projections.len()).map_err(|error| error.to_string())?;
+    let projections = value.get("projections");
+    if projections.is_some_and(|actual| actual != &json!(expected_projections))
+        || (expected_projections.len() > 1 && projections != Some(&json!(expected_projections)))
+    {
+        return Err("The model result does not bind the selected projection placement.".into());
+    }
     batch_result(
         value,
         request.execution_backend,
         request.resident_host_weights,
         request.batch_four_operations,
         token_count,
+        projection_count,
     )?;
     let loaded = request.adapter_case != AdapterCase::None;
     let standard = request.adapter_case == AdapterCase::Standard;
@@ -815,11 +898,11 @@ fn execute(request: &Request, started: Instant, report: &mut Value) -> Result<()
     let creation = bonsai_windows_process::current_process_creation_time()
         .map_err(|error| error.to_string())?;
     let probe_request = json!({"schemaVersion":1,"modelPath":request.model_path,"packageDirectory":request.package_directory,
-        "tokenId":request.token_id,"tokenIds":request.tokens(),"executionBackend":request.execution_backend,
+        "tokenId":request.token_id,"tokenIds":request.tokens(),"projections":request.projections(),"executionBackend":request.execution_backend,
         "residentHostWeights":request.resident_host_weights,"batchFourOperations":request.batch_four_operations,
         "adapterPath":request.adapter_path,"adapterCase":request.adapter_case,"cpuBackend":request.cpu_backend,"rowWorkers":request.row_workers,
         "contextLimit":request.tokens().len(),"modelMemoryLimitBytes":12_u64*1024*1024*1024,
-        "stateBudgetBytes":STATE_BUDGET_BYTES,"sessionSeconds":120,"maximumOperations":40*request.tokens().len(),
+        "stateBudgetBytes":STATE_BUDGET_BYTES,"sessionSeconds":120,"maximumOperations":40*request.projections().len()*request.tokens().len(),
         "maximumOwnedPayloadBytes":64_u64*1024*1024,"expectedParentPid":pid,"expectedParentCreationTime":creation});
     let path = request.output_directory.join("model-request.json");
     write_json(&path, &probe_request)?;
@@ -915,7 +998,7 @@ pub(super) fn run(request: &Request) -> Result<Value> {
         "CleanupReserveSeconds":CLEANUP_SECONDS,"ModelWorkAttempted":false,"OwnedJobTeardown":"not-started","ProfileEligible":false,
         "PerformanceMeasured":false,"TrustChanged":false,"PowerBefore":power(),"RequiredAvailablePhysicalBytes":REQUIRED_AVAILABLE_BYTES,
         "ExecutionBackend":request.execution_backend,"ResidentHostWeights":request.resident_host_weights,"BatchFourOperations":request.batch_four_operations,
-        "TokenIds":request.tokens(),"AdapterCase":request.adapter_case,
+        "Projections":request.projections(),"TokenIds":request.tokens(),"AdapterCase":request.adapter_case,
         "CpuBackend":request.cpu_backend,"RowWorkers":request.row_workers,
         "RequiredControlStateBytes":required_control_state_bytes(request.tokens().len())?,"ControlStateBudgetBytes":STATE_BUDGET_BYTES});
     let outcome = execute(request, started, &mut report);
@@ -1481,6 +1564,121 @@ mod tests {
                     .is_err()
                 );
             }
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn multi_projection_batch4_resident_binds_two_tensors_arena_and_queue_writes() -> Result<()> {
+        let driver = json!({"Path":"fixed-driver"});
+        let tokens = [42, 43, 128];
+        let projections = ["blk.0.ffn_up.weight", "blk.0.ffn_gate.weight"];
+        let mut req_val = request_value();
+        req_val["executionBackend"] = json!("hmx-bitplane");
+        req_val["residentHostWeights"] = json!(true);
+        req_val["batchFourOperations"] = json!(true);
+        req_val["tokenIds"] = json!(tokens);
+        req_val["projections"] = json!(projections);
+        let valid_req: Request =
+            serde_json::from_value(req_val.clone()).map_err(|error| error.to_string())?;
+        valid_req.validate_tokens()?;
+        valid_req.validate_selection()?;
+        for invalid in [
+            json!([]),
+            json!(["blk.0.ffn_gate.weight"]),
+            json!(["blk.0.ffn_up.weight", "blk.0.ffn_up.weight"]),
+            json!(["blk.0.ffn_up.weight", "blk.0.ffn_down.weight"]),
+            json!([
+                "blk.0.ffn_up.weight",
+                "blk.0.ffn_gate.weight",
+                "blk.1.ffn_up.weight"
+            ]),
+        ] {
+            let mut invalid_req = req_val.clone();
+            invalid_req["projections"] = invalid;
+            let parsed: Request =
+                serde_json::from_value(invalid_req).map_err(|error| error.to_string())?;
+            assert!(parsed.validate_selection().is_err());
+        }
+        let mut value = complete_result(&tokens, ExecutionBackend::HmxBitplane);
+        for (key, val) in [
+            ("projections", json!(projections)),
+            ("residentHostWeights", json!(true)),
+            ("batchFourOperations", json!(true)),
+            ("nativeBatchOperations", json!(4)),
+            ("integerAudit", json!("graph-parity-only")),
+            ("integerValuesCompared", json!(0)),
+            ("maximumOperations", json!(240)),
+            ("nativeOperationsSubmitted", json!(240)),
+            ("nativeOperationsCompleted", json!(240)),
+            ("nativeQueueWritesSubmitted", json!(60)),
+            ("nativeQueueWritesCompleted", json!(60)),
+            ("projectionsCompleted", json!(6)),
+            ("adapterCase", json!("none")),
+            ("adapterLoaded", json!(false)),
+            ("adapterSha256", Value::Null),
+            ("adapterScaleBits", json!(0)),
+            ("cpuBaselineAdapterLoaded", json!(false)),
+            ("cpuBaselineAdapterScaleBits", json!(0)),
+            ("cpuBackend", json!("scalar")),
+            ("rowWorkers", json!(1)),
+            (
+                "nativeResources",
+                json!({
+                    "residentWeightBytesPrepared": 2 * RESIDENT_WEIGHT_BYTES,
+                    "mappedAllocationBytes": BATCH_STREAMING_MAPPED_BYTES + 2 * RESIDENT_WEIGHT_BYTES,
+                }),
+            ),
+            (
+                "hostResidency",
+                json!({
+                    "tensorsPrepared": 2,
+                    "cacheHits": 4,
+                    "weightPayloadBytesPrepared": 2 * RESIDENT_WEIGHT_BYTES,
+                    "metadataPayloadBytes": 1280,
+                }),
+            ),
+        ] {
+            value[key] = val;
+        }
+        let accepted = result(
+            &value.to_string(),
+            &"a".repeat(64),
+            &tokens,
+            ExecutionBackend::HmxBitplane,
+            true,
+            &driver,
+        )?;
+        selection_result(&accepted, &valid_req)?;
+        for (pointer, wrong) in [
+            ("/projections", json!(["blk.0.ffn_up.weight"])),
+            ("/projectionsCompleted", json!(3)),
+            ("/nativeOperationsCompleted", json!(120)),
+            ("/nativeQueueWritesCompleted", json!(30)),
+            ("/hostResidency/tensorsPrepared", json!(1)),
+            ("/hostResidency/cacheHits", json!(2)),
+            (
+                "/nativeResources/residentWeightBytesPrepared",
+                json!(RESIDENT_WEIGHT_BYTES),
+            ),
+            (
+                "/nativeResources/mappedAllocationBytes",
+                json!(BATCH_RESIDENT_MAPPED_BYTES),
+            ),
+        ] {
+            let mut changed = value.clone();
+            *changed.pointer_mut(pointer).ok_or("Test field missing.")? = wrong;
+            assert!(
+                result(
+                    &changed.to_string(),
+                    &"a".repeat(64),
+                    &tokens,
+                    ExecutionBackend::HmxBitplane,
+                    true,
+                    &driver
+                )
+                .is_err()
+            );
         }
         Ok(())
     }

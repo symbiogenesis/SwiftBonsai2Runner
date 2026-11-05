@@ -53,6 +53,8 @@ def main():
     parser.add_argument("--adapter-case", choices=["none", "loaded-zero", "standard-scale-1.3"],
                         default="standard-scale-1.3")
     parser.add_argument("--token-ids", type=int, nargs="+", default=[42, 43, 128])
+    parser.add_argument("--projections", nargs="+", default=["blk.0.ffn_up.weight"],
+                        help="Explicit FFN projections to place on Hexagon HMX.")
     parser.add_argument("--resident-host-weights", action="store_true",
                         help="Use the explicit HMX resident host arena with graph parity only.")
     parser.add_argument("--batch-four-operations", action="store_true",
@@ -60,6 +62,11 @@ def main():
     args = parser.parse_args()
     if not 1 <= len(args.token_ids) <= 3 or min(args.token_ids) < 0:
         parser.error("The current snapshot budget permits one to three nonnegative token IDs.")
+    max_projections = 2 if args.resident_host_weights else 4
+    if (not 1 <= len(args.projections) <= max_projections
+            or args.projections[0] != "blk.0.ffn_up.weight"
+            or len(set(args.projections)) != len(args.projections)):
+        parser.error("Select unique FFN projections beginning with blk.0.ffn_up.weight within the arena bound.")
     # This is the real build runner's retained result, never a fabricated pass.
     built = json.loads(args.successful_build_receipt.read_text(encoding="utf-8-sig"))
     if built.get("exitCode") != 0 or built.get("timedOut", False):
@@ -104,6 +111,7 @@ def main():
         "outputDirectory": str(output / "device"),
         "tokenId": args.token_ids[0],
         "tokenIds": args.token_ids,
+        "projections": args.projections,
         "executionBackend": "hmx-bitplane",
         "residentHostWeights": args.resident_host_weights,
         "batchFourOperations": args.batch_four_operations,

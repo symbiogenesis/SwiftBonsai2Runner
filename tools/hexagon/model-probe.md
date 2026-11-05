@@ -25,6 +25,7 @@ production backend and establishes no inference speedup or broader adapter quali
     "outputDirectory": "C:\\external\\new-model-probe-evidence",
     "tokenId": 42,
     "tokenIds": [42, 43],
+    "projections": ["blk.0.ffn_up.weight"],
     "executionBackend": "hmx-bitplane",
     "residentHostWeights": false,
     "batchFourOperations": false,
@@ -67,12 +68,21 @@ Mapped host reuse establishes no DSP residency or production eligibility.
 `batchFourOperations` defaults to false. Setting it to true requires the explicit
 HMX backend and submits four independent `K=128/N=8` operations per queue packet
 (`n_tensors = 12`, `n_ops = 4`, 1,816 command header bytes), using a 4,755,456-byte
-streaming mapping or a 29,822,976-byte resident mapping. Logical operation
-accounting remains 40 per token (`nativeOperationsSubmitted` and
-`nativeOperationsCompleted` equal `40 * n`), while queue-write accounting reports
-10 writes per token (`nativeBatchOperations: 4`, `nativeQueueWritesSubmitted: 10 * n`,
-`nativeQueueWritesCompleted: 10 * n`). All four output slices in each batch are
+streaming mapping or a `4,755,456 + 25,067,520 * p`-byte resident mapping for `p`
+placed projections (`29,822,976` bytes for one projection; `54,890,496` bytes for two).
+Logical operation accounting remains `40 * p` per token (`nativeOperationsSubmitted` and
+`nativeOperationsCompleted` equal `40 * p * n`), while queue-write accounting reports
+`10 * p` writes per token (`nativeBatchOperations: 4`, `nativeQueueWritesSubmitted: 10 * p * n`,
+`nativeQueueWritesCompleted: 10 * p * n`). All four output slices in each batch are
 validated before reconstructing any block in original 128-column order.
+
+`projections` defaults to `["blk.0.ffn_up.weight"]`. When explicitly supplied, it must
+contain one to two unique `[5120, 17408]` FFN projections (`blk.{0..63}.ffn_{up,gate}.weight`)
+in resident mode (at most `50,135,040` resident weight bytes within the 64 MiB arena) or
+up to four in streaming mode, always beginning with `"blk.0.ffn_up.weight"`. For `p`
+placed projections across `n` tokens, `projectionsCompleted` equals `p * n`, and resident
+mode requires `tensorsPrepared: p`, `cacheHits: p * (n - 1)`, and
+`residentWeightBytesPrepared: 25,067,520 * p`.
 
 The unchanged 536,870,912-byte control-state budget admits at most three tokens.
 The pinned model's complete logical snapshot after token position `i` contains
