@@ -132,9 +132,23 @@ resident native evaluation reached `432.66-487.59` ms (`32.53-34.22` ms submit/w
 versus `389.91-415.44` ms on CPU, while two-projection resident placement doubled
 `nativeSubmitAndWaitMilliseconds` to `64.66-66.22` ms (`~32.5` ms per projection)
 and raised native evaluation to `514.98-553.37` ms versus `411.89-579.56` ms on CPU.
-Reducing per-projection queue round-trips beyond four `K=128` operations per packet
-and lowering per-projection reconstruction latency below the `~2-3` ms CPU projection
-baseline remain required before wider placement; production admission remains disabled.
+The subsequent [batch-ten HMX queue, bounded spin-polling and parallel L1-tiled reconstruction controls](evidence/npu-batch10-fast-queue-20261105/summary.json)
+on local Prism `5136bd1` and Runner `580a0062` submit ten `K=128/N=8` operations per
+queue packet (`4,504` command bytes in an `8,192`-byte header, `n_tensors=30`, `n_ops=10`,
+`4` queue writes per projection), spin-poll `queue_read` `516` (`AEE_EWOULDBLOCK`) for up
+to 15 ms before sleeping, and partition 64-row L1-tiled 8-plane dot reconstruction across
+all four row workers (`RowParallelism::update_rows`). Under battery operation (`89%` charge,
+saver off across the `43.36`-second workload and all arm endpoints; kept separate from prior
+AC sessions), both `single-projection-batch10-resident` (`120` ops in `12` queue writes,
+`36,954,112` mapped bytes) and `two-projection-batch10-resident` (`240` ops in `24` queue
+writes, `62,021,632` mapped bytes with `50,135,040` resident weight bytes, `2` prepared
+tensors and `4` cache hits) matched complete per-token CPU logits and logical state across
+tokens `42`, `43` and `128` with clean teardown. Device submit-and-wait dropped to
+`22.21-23.48` ms for 1 projection and `44.08-46.26` ms for 2 projections (`~5.5-5.8` ms per
+10-op packet), and 4-worker reconstruction kept 2-projection native evaluation
+(`513.61-537.70` ms) near 1-projection native evaluation (`487.91-529.85` ms), but each
+projection still transfers `22.28` MB of 8-plane `FP32` outputs over shared memory across
+40 `K=128` `OP_MUL_MAT` dispatches; production admission remains disabled.
 
 The [logical payload ledger](evidence/hexagon-swift-traffic-ledger.json) derives
 13.69 GB of signed-kernel input/result payload per all-eligible original-PQ2

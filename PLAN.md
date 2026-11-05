@@ -1232,10 +1232,36 @@ versus `412.34`, `389.91` and `415.44` ms on CPU (`+17.22` ms on token 2); addin
 second resident projection doubled `nativeSubmitAndWaitMilliseconds` to `64.66-66.22` ms
 (`~32.5` ms per projection across `10` queue writes) and raised native evaluation to
 `553.37`, `514.98` and `530.48` ms versus `579.56`, `452.71` and `411.89` ms on CPU.
-No end-to-end speedup is established; prioritize reducing per-projection FastRPC/MCDM
-queue round-trips beyond four `K=128` operations per packet and parallelizing or
-offloading eight-plane reconstruction so per-projection HMX cost drops below the
-`~2-3` ms 4-worker NEON CPU projection baseline before wider admission. The earlier resident screen's CPU evaluations took 502-536 ms and
+The subsequent [batch-ten HMX queue, bounded spin-polling and parallel L1-tiled reconstruction controls](docs/evidence/npu-batch10-fast-queue-20261105/summary.json)
+on Prism `5136bd1` and Runner `580a0062` increase HMX queue batching to `10` `K=128/N=8`
+operations per packet (`4,504` command bytes in an `8,192`-byte header, `n_tensors=30`,
+`n_ops=10`, reducing each 40-block projection from `10` to `4` queue writes), add bounded
+15-millisecond spin-polling in `Session::read` on `queue_read` `516` (`AEE_EWOULDBLOCK`)
+before 1 ms OS timer sleep fallback, and parallelize 8-plane dot reconstruction across all
+four `RowParallelism` workers with 64-row L1 tiling (`accumulate_batch<B>`) while
+preserving exact per-128 FMA/nonfused accumulation order. All 81 Prism unit tests, 15
+Runner `model_device` tests, formatting, strict Release Clippy and Release builds passed.
+Under battery operation (`acConnected: false`, `batterySaver: false`, `89%` charge across
+the outer `43.36`-second run within the `540.0`-second predeclared allowance and at all
+four arm endpoints of both device controls; do not combine this battery session with prior
+AC-connected sessions for cross-session performance comparisons),
+`single-projection-batch10-resident` (`blk.0.ffn_up.weight`, `120` ops in `12` queue writes,
+`36,954,112` mapped bytes) and `two-projection-batch10-resident` (`blk.0.ffn_up.weight` +
+`blk.0.ffn_gate.weight`, `240` ops in `24` queue writes, `62,021,632` mapped bytes with
+`50,135,040` resident weight bytes, `2` prepared tensors and `4` cache hits) both matched
+complete per-token CPU logits and logical state across tokens `42`, `43` and `128` and
+completed explicit native cleanup with empty owned Jobs. `nativeSubmitAndWaitMilliseconds`
+dropped to `22.21-23.48` ms for 1 projection (`12` queue writes) and `44.08-46.26` ms for
+2 projections (`24` queue writes, `~5.5-5.8` ms per 10-op packet), while 4-worker L1-tiled
+reconstruction kept 2-projection native evaluation (`525.34`, `513.61` and `537.70` ms)
+close to 1-projection native evaluation (`529.85`, `502.53` and `487.91` ms). Because the
+signed `ggml-htp` DSP binary executes each `K=128/N=8` `OP_MUL_MAT` descriptor independently
+and writes 8 separate `FP32` bitplane vectors (`5.57` MB per `batch10` packet, `22.28` MB
+per projection) back to shared memory, each projection still incurs `~22.2-23.5` ms of DSP
+execution/writeback plus `~10-15` ms of host reconstruction versus `~2-3` ms on 4-worker
+NEON CPU; prioritize evaluating whether multi-block `K>128` weight tiling or DSP-side
+plane/scale reduction is supported by any signed Hexagon package symbol before wider
+admission. The earlier resident screen's CPU evaluations took 502-536 ms and
 native evaluations 512-633 ms, with no per-dot audit in either native window;
 these short diagnostic windows show no clear benefit and qualify no performance
 gate. Its CPU/native power endpoints both observed AC with saver off; the earlier
