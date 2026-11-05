@@ -1,0 +1,199 @@
+
+Verifying: C:\Users\symbi\AppData\Local\Temp\Bonsai-Hexagon-SessionNext-20261030\signed-q2-package\runtime\libggml-htp-v73.so
+File is signed in catalog: C:\Users\symbi\AppData\Local\Temp\Bonsai-Hexagon-SessionNext-20261030\signed-q2-package\runtime\libggml-htp.cat
+Hash of file (sha1): 58383FF0090DA4DEC40A902D4F6BED2CE601AC01
+
+Signing Certificate Chain:
+    Issued to: Microsoft Root Certificate Authority 2010
+    Issued by: Microsoft Root Certificate Authority 2010
+    Expires:   Sat Jun 23 16:04:01 2035
+    SHA1 hash: 3B1EFD3A66EA28B16697394703A72CA340A05BD5
+
+        Issued to: Microsoft Windows Third Party Component CA 2014
+        Issued by: Microsoft Root Certificate Authority 2010
+        Expires:   Mon Oct 15 14:41:27 2029
+        SHA1 hash: 1906DCF62629B563252C826FDD874EFCEB6856C6
+
+            Issued to: Microsoft Windows Hardware Compatibility Publisher
+            Issued by: Microsoft Windows Third Party Component CA 2014
+            Expires:   Tue May 11 12:17:34 2027
+            SHA1 hash: 6022340C9F4CB00307DF8DB036D392ADAC766212
+
+The signature is timestamped: Tue Oct 27 15:03:13 2026
+Timestamp Verified by:
+    Issued to: Microsoft Root Certificate Authority 2010
+    Issued by: Microsoft Root Certificate Authority 2010
+    Expires:   Sat Jun 23 16:04:01 2035
+    SHA1 hash: 3B1EFD3A66EA28B16697394703A72CA340A05BD5
+
+        Issued to: Microsoft Time-Stamp PCA 2010
+        Issued by: Microsoft Root Certificate Authority 2010
+        Expires:   Mon Sep 30 12:32:25 2030
+        SHA1 hash: 36056A5662DCADECF82CC14C8B80EC5E0BCC59A6
+
+            Issued to: Microsoft Time-Stamp Service
+            Issued by: Microsoft Time-Stamp PCA 2010
+            Expires:   Fri Nov 13 12:48:33 2026
+            SHA1 hash: BA83BE04A6DF5F3AB27E2F462C47561E408B793F
+
+Successfully verified: C:\Users\symbi\AppData\Local\Temp\Bonsai-Hexagon-SessionNext-20261030\signed-q2-package\runtime\libggml-htp-v73.so
+
+Verifying: C:\Users\symbi\AppData\Local\Temp\Bonsai-Hexagon-SessionNext-20261030\signed-q2-package\runtime\libggml-htp-v75.so
+File is signed in catalog: C:\Users\symbi\AppData\Local\Temp\Bonsai-Hexagon-SessionNext-20261030\signed-q2-package\runtime\libggml-htp.cat
+Hash of file (sha1): 763767DA9EF0033F5538850157EC26D1B7F8C1F4
+
+Signing Certificate Chain:
+    Issued to: Microsoft Root Certificate Authority 2010
+    Issued by: Microsoft Root Certificate Authority 2010
+    Expires:   Sat Jun 23 16:04:01 2035
+    SHA1 hash: 3B1EFD3A66EA28B16697394703A72CA340A05BD5
+
+        Issued to: Microsoft Windows Third Party Component CA 2014
+        Issued by: Microsoft Root Certificate Authority 2010
+        Expires:   Mon Oct 15 14:41:27 2029
+        SHA1 hash: 1906DCF62629B563252C826FDD874EFCEB6856C6
+
+            Issued to: Microsoft Windows Hardware Compatibility Publisher
+            Issued by: Microsoft Windows Third Party Component CA 2014
+            Expires:   Tue May 11 12:17:34 2027
+            SHA1 hash: 6022340C9F4CB00307DF8DB036D392ADAC766212
+
+The signature is timestamped: Tue Oct 27 15:03:13 2026
+Timestamp Verified by:
+    Issued to: Microsoft Root Certificate Authority 2010
+    Issued by: Microsoft Root Certificate Authority 2010
+    Expires:   Sat Jun 23 16:04:01 2035
+    SHA1 hash: 3B1EFD3A66EA28B16697394703A72CA340A05BD5
+
+        Issued to: Microsoft Time-Stamp PCA 2010
+        Issued by: Microsoft Root Certificate Authority 2010
+        Expires:   Mon Sep 30 12:32:25 2030
+        SHA1 hash: 36056A5662DCADECF82CC14C8B80EC5E0BCC59A6
+
+            Issued to: Microsoft Time-Stamp Service
+            Issued by: Microsoft Time-Stamp PCA 2010
+            Expires:   Fri Nov 13 12:48:33 2026
+            SHA1 hash: BA83BE04A6DF5F3AB27E2F462C47561E408B793F
+
+Successfully verified: C:\Users\symbi\AppData\Local\Temp\Bonsai-Hexagon-SessionNext-20261030\signed-q2-package\runtime\libggml-htp-v75.so
+
+Verifying: C:\Users\symbi\AppData\Local\Temp\Bonsai-Hexagon-SessionNext-20261030\signed-q2-package\runtime\libggml-htp-v79.so
+File is signed in catalog: C:\Users\symbi\AppData\Local\Temp\Bonsai-Hexagon-SessionNext-20261030\signed-q2-package\runtime\libggml-htp.cat
+Hash of file (sha1): 48896796B28992E177591F99E975326BD44F503A
+
+Signing Certificate Chain:
+    Issued to: Microsoft Root Certificate Authority 2010
+    Issued by: Microsoft Root Certificate Authority 2010
+    Expires:   Sat Jun 23 16:04:01 2035
+    SHA1 hash: 3B1EFD3A66EA28B16697394703A72CA340A05BD5
+
+        Issued to: Microsoft Windows Third Party Component CA 2014
+        Issued by: Microsoft Root Certificate Authority 2010
+        Expires:   Mon Oct 15 14:41:27 2029
+        SHA1 hash: 1906DCF62629B563252C826FDD874EFCEB6856C6
+
+            Issued to: Microsoft Windows Hardware Compatibility Publisher
+            Issued by: Microsoft Windows Third Party Component CA 2014
+            Expires:   Tue May 11 12:17:34 2027
+            SHA1 hash: 6022340C9F4CB00307DF8DB036D392ADAC766212
+
+The signature is timestamped: Tue Oct 27 15:03:13 2026
+Timestamp Verified by:
+    Issued to: Microsoft Root Certificate Authority 2010
+    Issued by: Microsoft Root Certificate Authority 2010
+    Expires:   Sat Jun 23 16:04:01 2035
+    SHA1 hash: 3B1EFD3A66EA28B16697394703A72CA340A05BD5
+
+        Issued to: Microsoft Time-Stamp PCA 2010
+        Issued by: Microsoft Root Certificate Authority 2010
+        Expires:   Mon Sep 30 12:32:25 2030
+        SHA1 hash: 36056A5662DCADECF82CC14C8B80EC5E0BCC59A6
+
+            Issued to: Microsoft Time-Stamp Service
+            Issued by: Microsoft Time-Stamp PCA 2010
+            Expires:   Fri Nov 13 12:48:33 2026
+            SHA1 hash: BA83BE04A6DF5F3AB27E2F462C47561E408B793F
+
+Successfully verified: C:\Users\symbi\AppData\Local\Temp\Bonsai-Hexagon-SessionNext-20261030\signed-q2-package\runtime\libggml-htp-v79.so
+
+Verifying: C:\Users\symbi\AppData\Local\Temp\Bonsai-Hexagon-SessionNext-20261030\signed-q2-package\runtime\libggml-htp-v81.so
+File is signed in catalog: C:\Users\symbi\AppData\Local\Temp\Bonsai-Hexagon-SessionNext-20261030\signed-q2-package\runtime\libggml-htp.cat
+Hash of file (sha1): 710B36E11045F8683AC9BD0047D75FE61EE3E5D2
+
+Signing Certificate Chain:
+    Issued to: Microsoft Root Certificate Authority 2010
+    Issued by: Microsoft Root Certificate Authority 2010
+    Expires:   Sat Jun 23 16:04:01 2035
+    SHA1 hash: 3B1EFD3A66EA28B16697394703A72CA340A05BD5
+
+        Issued to: Microsoft Windows Third Party Component CA 2014
+        Issued by: Microsoft Root Certificate Authority 2010
+        Expires:   Mon Oct 15 14:41:27 2029
+        SHA1 hash: 1906DCF62629B563252C826FDD874EFCEB6856C6
+
+            Issued to: Microsoft Windows Hardware Compatibility Publisher
+            Issued by: Microsoft Windows Third Party Component CA 2014
+            Expires:   Tue May 11 12:17:34 2027
+            SHA1 hash: 6022340C9F4CB00307DF8DB036D392ADAC766212
+
+The signature is timestamped: Tue Oct 27 15:03:13 2026
+Timestamp Verified by:
+    Issued to: Microsoft Root Certificate Authority 2010
+    Issued by: Microsoft Root Certificate Authority 2010
+    Expires:   Sat Jun 23 16:04:01 2035
+    SHA1 hash: 3B1EFD3A66EA28B16697394703A72CA340A05BD5
+
+        Issued to: Microsoft Time-Stamp PCA 2010
+        Issued by: Microsoft Root Certificate Authority 2010
+        Expires:   Mon Sep 30 12:32:25 2030
+        SHA1 hash: 36056A5662DCADECF82CC14C8B80EC5E0BCC59A6
+
+            Issued to: Microsoft Time-Stamp Service
+            Issued by: Microsoft Time-Stamp PCA 2010
+            Expires:   Fri Nov 13 12:48:33 2026
+            SHA1 hash: BA83BE04A6DF5F3AB27E2F462C47561E408B793F
+
+Successfully verified: C:\Users\symbi\AppData\Local\Temp\Bonsai-Hexagon-SessionNext-20261030\signed-q2-package\runtime\libggml-htp-v81.so
+
+Verifying: C:\Users\symbi\AppData\Local\Temp\Bonsai-Hexagon-SessionNext-20261030\signed-q2-package\runtime\libggml-htp-v85.so
+File is signed in catalog: C:\Users\symbi\AppData\Local\Temp\Bonsai-Hexagon-SessionNext-20261030\signed-q2-package\runtime\libggml-htp.cat
+Hash of file (sha1): 088A03365327E6B97AECD6A4A9ED24D58A7E55B7
+
+Signing Certificate Chain:
+    Issued to: Microsoft Root Certificate Authority 2010
+    Issued by: Microsoft Root Certificate Authority 2010
+    Expires:   Sat Jun 23 16:04:01 2035
+    SHA1 hash: 3B1EFD3A66EA28B16697394703A72CA340A05BD5
+
+        Issued to: Microsoft Windows Third Party Component CA 2014
+        Issued by: Microsoft Root Certificate Authority 2010
+        Expires:   Mon Oct 15 14:41:27 2029
+        SHA1 hash: 1906DCF62629B563252C826FDD874EFCEB6856C6
+
+            Issued to: Microsoft Windows Hardware Compatibility Publisher
+            Issued by: Microsoft Windows Third Party Component CA 2014
+            Expires:   Tue May 11 12:17:34 2027
+            SHA1 hash: 6022340C9F4CB00307DF8DB036D392ADAC766212
+
+The signature is timestamped: Tue Oct 27 15:03:13 2026
+Timestamp Verified by:
+    Issued to: Microsoft Root Certificate Authority 2010
+    Issued by: Microsoft Root Certificate Authority 2010
+    Expires:   Sat Jun 23 16:04:01 2035
+    SHA1 hash: 3B1EFD3A66EA28B16697394703A72CA340A05BD5
+
+        Issued to: Microsoft Time-Stamp PCA 2010
+        Issued by: Microsoft Root Certificate Authority 2010
+        Expires:   Mon Sep 30 12:32:25 2030
+        SHA1 hash: 36056A5662DCADECF82CC14C8B80EC5E0BCC59A6
+
+            Issued to: Microsoft Time-Stamp Service
+            Issued by: Microsoft Time-Stamp PCA 2010
+            Expires:   Fri Nov 13 12:48:33 2026
+            SHA1 hash: BA83BE04A6DF5F3AB27E2F462C47561E408B793F
+
+Successfully verified: C:\Users\symbi\AppData\Local\Temp\Bonsai-Hexagon-SessionNext-20261030\signed-q2-package\runtime\libggml-htp-v85.so
+
+Number of files successfully Verified: 5
+Number of warnings: 0
+Number of errors: 0

@@ -1,0 +1,11 @@
+    Finished `release` profile [optimized] target(s) in 0.05s
+     Running unittests src\lib.rs (C:\Users\symbi\AppData\Local\Temp\SwiftBonsai-Hmx-Session-20261103\prism-target\aarch64-pc-windows-msvc\release\build\bonsai-hexagon-native/7cf151e88b573485\out\hexagon_native_rpc-7cf151e88b573485.exe)
+    Finished `release` profile [optimized] target(s) in 0.09s
+     Running unittests src\lib.rs (C:\Users\symbi\AppData\Local\Temp\SwiftBonsai-Hmx-Session-20261103\prism-target\aarch64-pc-windows-msvc\release\build\bonsai-hexagon-runtime/10de1fc28a9e62d1\out\bonsai_hexagon_runtime-10de1fc28a9e62d1.exe)
+   Compiling bonsai-hexagon-runtime v0.1.0 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\prism-npu-batch4\tools\hexagon-runtime)
+    Finished `release` profile [optimized] target(s) in 1.18s
+     Running unittests src\bin\model_probe.rs (C:\Users\symbi\AppData\Local\Temp\SwiftBonsai-Hmx-Session-20261103\prism-target\aarch64-pc-windows-msvc\release\build\bonsai-hexagon-runtime/032e6d98238dd3dc\out\prism_hexagon_model_probe-032e6d98238dd3dc.exe)
+    Checking bonsai-hexagon-runtime v0.1.0 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\prism-npu-batch4\tools\hexagon-runtime)
+    Finished `release` profile [optimized] target(s) in 0.60s
+   Compiling bonsai-hexagon-runtime v0.1.0 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\prism-npu-batch4\tools\hexagon-runtime)
+    Finished `release` profile [optimized] target(s) in 1.52s

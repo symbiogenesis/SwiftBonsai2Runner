@@ -1,0 +1,32 @@
+{
+  "startedUtc": "2026-11-05T04:53:13.110064+00:00",
+  "finishedUtc": "2026-11-05T04:54:04.080060+00:00",
+  "elapsedSeconds": 50.969991,
+  "exitCode": 0,
+  "timedOut": false,
+  "powerBefore": {
+    "observedUtc": "2026-11-05T04:53:13.110056+00:00",
+    "source": "GetSystemPowerStatus",
+    "available": true,
+    "ac_online": true,
+    "battery_saver": false,
+    "battery_percent": 97
+  },
+  "powerAfter": {
+    "observedUtc": "2026-11-05T04:54:04.080098+00:00",
+    "source": "GetSystemPowerStatus",
+    "available": true,
+    "ac_online": true,
+    "battery_saver": false,
+    "battery_percent": 97
+  },
+  "command": [
+    "powershell.exe",
+    "-NoProfile",
+    "-ExecutionPolicy",
+    "Bypass",
+    "-File",
+    "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\runner-npu-batch4\\docs\\evidence\\npu-batch4-controls-20261104\\build-runner.ps1"
+  ],
+  "workingDirectory": "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\runner-npu-batch4"
+}

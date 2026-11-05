@@ -1,0 +1,75 @@
+   Compiling bonsai-hexagon-native v0.1.0 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\prism-npu-batch4\tools\hexagon-native)
+    Finished `release` profile [optimized] target(s) in 1.47s
+     Running unittests src\lib.rs (C:\Users\symbi\AppData\Local\Temp\SwiftBonsai-Hmx-Session-20261103\prism-target\aarch64-pc-windows-msvc\release\build\bonsai-hexagon-native/7cf151e88b573485\out\hexagon_native_rpc-7cf151e88b573485.exe)
+   Compiling bonsai-prism v0.1.1 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\prism-npu-batch4\tools\prism)
+   Compiling bonsai-hexagon-native v0.1.0 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\prism-npu-batch4\tools\hexagon-native)
+   Compiling prism-inference v0.1.14 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\prism-npu-batch4)
+   Compiling bonsai-hexagon-runtime v0.1.0 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\prism-npu-batch4\tools\hexagon-runtime)
+    Finished `release` profile [optimized] target(s) in 9.84s
+     Running unittests src\lib.rs (C:\Users\symbi\AppData\Local\Temp\SwiftBonsai-Hmx-Session-20261103\prism-target\aarch64-pc-windows-msvc\release\build\bonsai-hexagon-runtime/10de1fc28a9e62d1\out\bonsai_hexagon_runtime-10de1fc28a9e62d1.exe)
+   Compiling bonsai-hexagon-runtime v0.1.0 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\prism-npu-batch4\tools\hexagon-runtime)
+    Finished `release` profile [optimized] target(s) in 1.95s
+     Running unittests src\bin\model_probe.rs (C:\Users\symbi\AppData\Local\Temp\SwiftBonsai-Hmx-Session-20261103\prism-target\aarch64-pc-windows-msvc\release\build\bonsai-hexagon-runtime/032e6d98238dd3dc\out\prism_hexagon_model_probe-032e6d98238dd3dc.exe)
+   Compiling bonsai-prism v0.1.1 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\prism-npu-batch4\tools\prism)
+    Checking bonsai-ternary v0.1.0 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\prism-npu-batch4\tools\ternary)
+    Checking bonsai-native-hash v0.1.0 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\prism-npu-batch4\tools\native-hash)
+    Checking bonsai-hexagon-native v0.1.0 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\prism-npu-batch4\tools\hexagon-native)
+error: binding's name is too similar to existing binding
+   --> tools\hexagon-native\src\hmx_projection.rs:659:13
+    |
+659 |         let op_desc = 696 + member * 232;
+    |             ^^^^^^^
+    |
+note: existing binding defined here
+   --> tools\hexagon-native\src\hmx_projection.rs:635:13
+    |
+635 |         let o_desc = a_desc + 56;
+    |             ^^^^^^
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/main/index.html#similar_names
+    = note: `-D clippy::similar-names` implied by `-D clippy::pedantic`
+    = help: to override `-D clippy::pedantic` add `#[allow(clippy::similar_names)]`
+
+error: binding's name is too similar to existing binding
+   --> tools\hexagon-native\src\hmx_projection.rs:996:17
+    |
+996 |             let op_desc = 696 + member * 232;
+    |                 ^^^^^^^
+    |
+note: existing binding defined here
+   --> tools\hexagon-native\src\hmx_projection.rs:995:17
+    |
+995 |             let o_desc = a_desc + 56;
+    |                 ^^^^^^
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/main/index.html#similar_names
+
+    Checking bonsai-gguf v0.1.1 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\prism-npu-batch4\tools\gguf)
+error: this function has too many lines (125/100)
+   --> tools\hexagon-native\src\hmx_projection.rs:943:5
+    |
+943 | /     fn batch4_frame_builds_twelve_tensors_four_ops_and_preserves_resident_arena()
+944 | |     -> Result<(), Error> {
+    | |________________________^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/main/index.html#too_many_lines
+    = note: `-D clippy::too-many-lines` implied by `-D clippy::pedantic`
+    = help: to override `-D clippy::pedantic` add `#[allow(clippy::too_many_lines)]`
+
+error: could not compile `bonsai-hexagon-native` (lib) due to 1 previous error
+warning: build failed, waiting for other jobs to finish...
+error: this function has too many lines (102/100)
+   --> tools\hexagon-native\src\projection_native.rs:989:5
+    |
+989 |     fn actual_session_reuses_only_correlated_results_and_never_retries_failure() -> Result<(), Error>
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/main/index.html#too_many_lines
+
+error: this function has too many lines (102/100)
+    --> tools\hexagon-native\src\projection_native.rs:1098:5
+     |
+1098 |     fn hmx_session_checks_all_eight_planes_and_retains_uncertain_owners() -> Result<(), Error> {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/main/index.html#too_many_lines
+
+error: could not compile `bonsai-hexagon-native` (lib test) due to 5 previous errors

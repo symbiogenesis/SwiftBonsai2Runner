@@ -1,0 +1,30 @@
+   Compiling bonsai-hexagon-native v0.1.0 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\prism-npu-batch4\tools\hexagon-native)
+    Finished `release` profile [optimized] target(s) in 1.49s
+     Running unittests src\lib.rs (C:\Users\symbi\AppData\Local\Temp\SwiftBonsai-Hmx-Session-20261103\prism-target\aarch64-pc-windows-msvc\release\build\bonsai-hexagon-native/7cf151e88b573485\out\hexagon_native_rpc-7cf151e88b573485.exe)
+   Compiling bonsai-hexagon-native v0.1.0 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\prism-npu-batch4\tools\hexagon-native)
+   Compiling bonsai-hexagon-runtime v0.1.0 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\prism-npu-batch4\tools\hexagon-runtime)
+    Finished `release` profile [optimized] target(s) in 1.65s
+     Running unittests src\lib.rs (C:\Users\symbi\AppData\Local\Temp\SwiftBonsai-Hmx-Session-20261103\prism-target\aarch64-pc-windows-msvc\release\build\bonsai-hexagon-runtime/10de1fc28a9e62d1\out\bonsai_hexagon_runtime-10de1fc28a9e62d1.exe)
+   Compiling bonsai-hexagon-runtime v0.1.0 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\prism-npu-batch4\tools\hexagon-runtime)
+    Finished `release` profile [optimized] target(s) in 1.67s
+     Running unittests src\bin\model_probe.rs (C:\Users\symbi\AppData\Local\Temp\SwiftBonsai-Hmx-Session-20261103\prism-target\aarch64-pc-windows-msvc\release\build\bonsai-hexagon-runtime/032e6d98238dd3dc\out\prism_hexagon_model_probe-032e6d98238dd3dc.exe)
+    Checking bonsai-prism v0.1.1 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\prism-npu-batch4\tools\prism)
+    Checking bonsai-hexagon-native v0.1.0 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\prism-npu-batch4\tools\hexagon-native)
+    Checking prism-inference v0.1.14 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\prism-npu-batch4)
+    Checking bonsai-hexagon-runtime v0.1.0 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\prism-npu-batch4\tools\hexagon-runtime)
+error: used `assert!` to check that a value is empty
+    --> tools\hexagon-runtime\src\bin\model_probe.rs:1470:9
+     |
+1470 |         assert!(events.is_empty());
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/main/index.html#assert_is_empty
+     = note: `-D clippy::assert-is-empty` implied by `-D clippy::pedantic`
+     = help: to override `-D clippy::pedantic` add `#[allow(clippy::assert_is_empty)]`
+help: use `assert_eq!` to show the value on failure
+     |
+1470 -         assert!(events.is_empty());
+1470 +         assert_eq!(events, [] as [serde_json::Value; 0]);
+     |
+
+error: could not compile `bonsai-hexagon-runtime` (bin "prism-hexagon-model-probe" test) due to 1 previous error

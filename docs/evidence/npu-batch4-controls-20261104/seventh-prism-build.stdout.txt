@@ -1,0 +1,67 @@
+
+running 32 tests
+test compute::tests::numeric_control_requires_all_sixty_four_exact_outputs ... ok
+test power::tests::snapshots_preserve_unknown_and_refuse_undocumented_fields ... ok
+test compute::tests::fixed_wire_shapes_padding_and_numeric_poison ... ok
+test compute::tests::numeric_reply_after_write_error_preserves_error_and_never_permits_cleanup ... ok
+test compute::tests::guarded_q2_image_matches_original_integer_math_and_host_tile_strides ... ok
+test compute::tests::response_rejects_every_correlated_field_change_and_wrong_extent ... ok
+test hmx_projection::tests::hmx_limits_share_the_authorized_cap_without_extending_time_or_allocation ... ok
+test hmx_projection::tests::resident_registry_has_owner_identity_and_transactional_capacity_refusal ... ok
+test hmx_projection::tests::batch4_frame_builds_twelve_tensors_four_ops_and_preserves_resident_arena ... ok
+test hmx_projection::tests::fixed_hmx_solver_and_frame_keep_eight_planes_and_exact_bounded_extents ... ok
+test compute::tests::failed_or_uncorrelated_reply_never_becomes_numeric_evidence_or_cleanup ... ok
+test hmx_projection::tests::resident_frame_preserves_immutable_arena_and_signed_solver_fields ... ok
+test projection::tests::limits_admit_full_m_without_changing_vtcm_or_accepting_tails ... ok
+test projection::tests::sequence_validation_never_accepts_stale_reply ... ok
+test session::tests::partial_metadata_and_new_families_never_become_prepared_sessions ... ok
+test session_mapping::tests::partial_or_uncertain_sessions_never_claim_a_complete_cycle ... ok
+test session::tests::uri_is_bound_to_exact_architecture_domain_and_default_session ... ok
+test tests::partial_mapping_receipts_never_claim_a_complete_cycle ... ok
+test projection::tests::dynamic_frame_keeps_known_m32_bytes_and_full_m_strides ... ok
+test tests::raw_architecture_does_not_become_a_family_assumption ... ok
+test tests::exact_capability_layout_and_architecture_contract ... ok
+test windows::compute_native::projection_native::tests::actual_session_reuses_only_correlated_results_and_never_retries_failure ... ok
+test windows::compute_native::tests::actual_cleanup_unmaps_before_module_close_and_retains_on_any_failure ... ok
+test windows::compute_native::tests::refused_nonblocking_write_never_retries_or_calls_timed_api ... ok
+test windows::session_mapping_native::tests::fixed_session_fd_cycle_and_uncertain_lifetimes ... ok
+test windows::session_native::tests::changed_native_pointer_is_rejected_without_dereferencing_it ... ok
+test windows::session_native::tests::session_metadata_retains_both_codes_without_failure_fallback ... ok
+test windows::tests::process_lease_rejects_another_owner_without_waiting ... ok
+test windows::session_mapping_native::tests::reference_initialization_precedes_uri_and_open_and_never_retries ... ok
+test windows::compute_native::projection_native::tests::batch4_hmx_session_checks_all_twelve_tensors_four_outputs_and_capacity ... ok
+test windows::compute_native::projection_native::tests::hmx_session_checks_all_eight_planes_and_retains_uncertain_owners ... ok
+test windows::compute_native::projection_native::tests::resident_hmx_reuses_immutable_arena_and_never_reuses_a_faulted_owner ... ok
+
+test result: ok. 32 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 25 tests
+test guarded::tests::guarded_executor_memory_refusal_selects_cpu_before_any_submit ... ok
+test hmx::tests::hmx_executor_full_i8_planes_preserve_signed_reconstruction ... ok
+test placement::tests::placement_rejects_unknown_duplicate_empty_and_missing_bounded_counts ... ok
+test hmx::tests::hmx_executor_refusal_and_unwritten_output_close_without_replay ... ok
+test hmx::tests::hmx_resident_source_identity_retains_arc_and_checks_geometry ... ok
+test hmx::tests::hmx_resident_incomplete_preparation_faults_before_any_kernel_or_replay ... ok
+test hmx::tests::hmx_resident_unwritten_output_and_native_refusal_close_without_replay ... ok
+test hmx::tests::hmx_resident_capacity_refusal_streams_whole_projection_before_preparation ... ok
+test guarded::tests::guarded_executor_refusal_and_unwritten_output_are_terminal_without_replay ... ok
+test hmx::tests::hmx_batch4_member_failure_rejects_whole_batch_without_partial_completion ... ok
+test placement::tests::placement_matches_immutable_storage_geometry_and_original_activation_route ... ok
+test placement::tests::actual_graph_admits_only_selected_work_and_preserves_logits_and_state ... ok
+test placement::tests::prepared_projection_routes_unselected_work_to_cpu_before_any_submission ... ok
+test placement::tests::placement_identity_is_order_independent_and_binds_model_and_selection ... ok
+test placement::tests::submitted_failure_clears_output_and_permanently_closes_placement ... ok
+test hmx::tests::hmx_executor_retains_independent_original_fma_golden ... ok
+test q8::tests::q8_hmx_failure_and_unwritten_output_close_without_replay ... ok
+test q8::tests::q8_hmx_memory_refusal_retains_cpu_before_submission ... ok
+test hmx::tests::hmx_weight_transpose_preserves_every_symbol_position_and_other_rows ... ok
+test q8::tests::q8_hmx_matches_independent_pinned_native_dotprod_capture ... ok
+test guarded::tests::guarded_executor_preserves_prepared_codes_and_original_reduction_bits ... ok
+test hmx::tests::hmx_executor_preserves_preparation_fma_and_all_row_tiles ... ok
+test q8::tests::q8_hmx_preserves_prepared_groups_alias_bytes_and_partial_row_tiles ... ok
+test hmx::tests::hmx_resident_reuse_preserves_complete_original_outputs_and_operation_counts ... ok
+test hmx::tests::hmx_batch4_streaming_and_resident_preserve_exact_outputs_and_queue_write_counts ... ok
+
+test result: ok. 25 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+

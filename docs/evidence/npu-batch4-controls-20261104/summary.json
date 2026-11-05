@@ -1,0 +1,281 @@
+{
+  "schemaVersion": 1,
+  "kind": "local-x2-hmx-batch4-streaming-and-resident-controls",
+  "dateLocal": "2026-11-04",
+  "retainedUtc": "2026-11-05T04:54:36.140586+00:00",
+  "cases": {
+    "batch4-streaming": {
+      "outcome": "passed",
+      "stage": "bounded-token-graph-complete",
+      "probeExitCode": 0,
+      "ownedJobTeardown": "confirmed-empty",
+      "adapterCase": "standard-scale-1.3",
+      "cpuBackend": "neon",
+      "rowWorkers": 4,
+      "residentHostWeights": false,
+      "batchFourOperations": true,
+      "integerAudit": "all-returned-integers",
+      "nativeBatchOperations": 4,
+      "operationsSubmitted": 120,
+      "operationsCompleted": 120,
+      "queueWritesSubmitted": 30,
+      "queueWritesCompleted": 30,
+      "integerValuesCompared": 16711680,
+      "logitsBitwiseEqual": true,
+      "stateBitwiseEqual": true,
+      "nativeCleanup": {
+        "freeCompleted": true,
+        "moduleCloseResult": 0,
+        "ownerPinnedUntilExit": true,
+        "poisoned": false,
+        "queueCloseResult": 0,
+        "queueStopResult": 0,
+        "unmappingResult": 0
+      },
+      "nativeResources": {
+        "architecture": 81,
+        "effectiveDomain": 3,
+        "effectiveHmxPlacementVerified": false,
+        "effectiveVtcmBytes": null,
+        "mappedAllocationBytes": 4755456,
+        "residentWeightBytesPrepared": 0
+      },
+      "hostResidency": null,
+      "timingScope": {
+        "excludes": "Model loading, graph construction, device setup/cleanup, state snapshots/digests and final graph comparisons.",
+        "includes": "All CPU-owned graph work, offload packing/reconstruction, native submission and wait inside evaluate; checked native evaluation also includes the independently timed integer oracle.",
+        "kind": "single-run-diagnostic-evaluation-windows",
+        "qualifiedBenefitComparison": false,
+        "subtractedOracleWindowIsEstimated": true
+      },
+      "tokenComparisons": [
+        {
+          "index": 0,
+          "logitsBitwiseEqual": true,
+          "logitsSha256": "4703da79f45b0643607592f147ed05af8bb92d89348ccfe9546a32fc1dbb73d1",
+          "stateBitwiseEqual": true,
+          "stateSha256": "4a126654d71318d3c876583c121b4ddcfcce9bc2aa7f20d4cbdf0edc56b03c74",
+          "timing": {
+            "cpuEvaluationMilliseconds": 429.4439,
+            "independentIntegerOracleMilliseconds": 474.2225,
+            "nativeCheckedEvaluationMilliseconds": 945.3278,
+            "nativeEvaluationExcludingIntegerOracleMilliseconds": 471.1053,
+            "nativeSubmitAndWaitMilliseconds": 35.5152
+          },
+          "tokenId": 42
+        },
+        {
+          "index": 1,
+          "logitsBitwiseEqual": true,
+          "logitsSha256": "65297397bedf201f870e732fbf311ce33daf1f3532bfb6ed0c12e8df55b8ab3a",
+          "stateBitwiseEqual": true,
+          "stateSha256": "4d2d9f398731f31582c572548ca0dfb680143eac348eadb173f1bc65ebe29d53",
+          "timing": {
+            "cpuEvaluationMilliseconds": 415.5612,
+            "independentIntegerOracleMilliseconds": 481.8329,
+            "nativeCheckedEvaluationMilliseconds": 903.6435,
+            "nativeEvaluationExcludingIntegerOracleMilliseconds": 421.8106,
+            "nativeSubmitAndWaitMilliseconds": 35.5223
+          },
+          "tokenId": 43
+        },
+        {
+          "index": 2,
+          "logitsBitwiseEqual": true,
+          "logitsSha256": "7b285cb9c0352cfdd31b9105f6e713f385a1b8a357a9dbfe4daebd7692c7f051",
+          "stateBitwiseEqual": true,
+          "stateSha256": "aa3b811e2178d63aa8d4d04bd97940ac4e6b9fd09cb439e1e9ad28df4445a8fc",
+          "timing": {
+            "cpuEvaluationMilliseconds": 416.9555,
+            "independentIntegerOracleMilliseconds": 487.4163,
+            "nativeCheckedEvaluationMilliseconds": 941.868,
+            "nativeEvaluationExcludingIntegerOracleMilliseconds": 454.4517,
+            "nativeSubmitAndWaitMilliseconds": 33.9088
+          },
+          "tokenId": 128
+        }
+      ],
+      "power": {
+        "cpuPowerBefore": {
+          "acConnected": true,
+          "available": true,
+          "batteryPercent": 97,
+          "batterySaver": false
+        },
+        "cpuPowerAfter": {
+          "acConnected": true,
+          "available": true,
+          "batteryPercent": 97,
+          "batterySaver": false
+        },
+        "npuPowerBefore": {
+          "acConnected": true,
+          "available": true,
+          "batteryPercent": 97,
+          "batterySaver": false
+        },
+        "npuPowerAfter": {
+          "acConnected": true,
+          "available": true,
+          "batteryPercent": 97,
+          "batterySaver": false
+        }
+      },
+      "supervisorElapsedMilliseconds": 17567,
+      "performanceQualified": false
+    },
+    "batch4-resident": {
+      "outcome": "passed",
+      "stage": "bounded-token-graph-complete",
+      "probeExitCode": 0,
+      "ownedJobTeardown": "confirmed-empty",
+      "adapterCase": "standard-scale-1.3",
+      "cpuBackend": "neon",
+      "rowWorkers": 4,
+      "residentHostWeights": true,
+      "batchFourOperations": true,
+      "integerAudit": "graph-parity-only",
+      "nativeBatchOperations": 4,
+      "operationsSubmitted": 120,
+      "operationsCompleted": 120,
+      "queueWritesSubmitted": 30,
+      "queueWritesCompleted": 30,
+      "integerValuesCompared": 0,
+      "logitsBitwiseEqual": true,
+      "stateBitwiseEqual": true,
+      "nativeCleanup": {
+        "freeCompleted": true,
+        "moduleCloseResult": 0,
+        "ownerPinnedUntilExit": true,
+        "poisoned": false,
+        "queueCloseResult": 0,
+        "queueStopResult": 0,
+        "unmappingResult": 0
+      },
+      "nativeResources": {
+        "architecture": 81,
+        "effectiveDomain": 3,
+        "effectiveHmxPlacementVerified": false,
+        "effectiveVtcmBytes": null,
+        "mappedAllocationBytes": 29822976,
+        "residentWeightBytesPrepared": 25067520
+      },
+      "hostResidency": {
+        "cacheHits": 2,
+        "metadataPayloadBytes": 65520,
+        "tensorsPrepared": 1,
+        "weightPayloadBytesPrepared": 25067520
+      },
+      "timingScope": {
+        "excludes": "Model loading, graph construction, device setup/cleanup, state snapshots/digests and final graph comparisons.",
+        "includes": "All CPU-owned graph work, offload packing/reconstruction, native submission and wait inside evaluate; checked native evaluation also includes the independently timed integer oracle.",
+        "kind": "single-run-diagnostic-evaluation-windows",
+        "qualifiedBenefitComparison": false,
+        "subtractedOracleWindowIsEstimated": false
+      },
+      "tokenComparisons": [
+        {
+          "index": 0,
+          "logitsBitwiseEqual": true,
+          "logitsSha256": "4703da79f45b0643607592f147ed05af8bb92d89348ccfe9546a32fc1dbb73d1",
+          "stateBitwiseEqual": true,
+          "stateSha256": "4a126654d71318d3c876583c121b4ddcfcce9bc2aa7f20d4cbdf0edc56b03c74",
+          "timing": {
+            "cpuEvaluationMilliseconds": 398.7673,
+            "independentIntegerOracleMilliseconds": 0.0,
+            "nativeCheckedEvaluationMilliseconds": 446.3256,
+            "nativeEvaluationExcludingIntegerOracleMilliseconds": 446.3256,
+            "nativeSubmitAndWaitMilliseconds": 31.3621
+          },
+          "tokenId": 42
+        },
+        {
+          "index": 1,
+          "logitsBitwiseEqual": true,
+          "logitsSha256": "65297397bedf201f870e732fbf311ce33daf1f3532bfb6ed0c12e8df55b8ab3a",
+          "stateBitwiseEqual": true,
+          "stateSha256": "4d2d9f398731f31582c572548ca0dfb680143eac348eadb173f1bc65ebe29d53",
+          "timing": {
+            "cpuEvaluationMilliseconds": 385.1789,
+            "independentIntegerOracleMilliseconds": 0.0,
+            "nativeCheckedEvaluationMilliseconds": 431.314,
+            "nativeEvaluationExcludingIntegerOracleMilliseconds": 431.314,
+            "nativeSubmitAndWaitMilliseconds": 31.1617
+          },
+          "tokenId": 43
+        },
+        {
+          "index": 2,
+          "logitsBitwiseEqual": true,
+          "logitsSha256": "7b285cb9c0352cfdd31b9105f6e713f385a1b8a357a9dbfe4daebd7692c7f051",
+          "stateBitwiseEqual": true,
+          "stateSha256": "aa3b811e2178d63aa8d4d04bd97940ac4e6b9fd09cb439e1e9ad28df4445a8fc",
+          "timing": {
+            "cpuEvaluationMilliseconds": 386.2977,
+            "independentIntegerOracleMilliseconds": 0.0,
+            "nativeCheckedEvaluationMilliseconds": 434.3737,
+            "nativeEvaluationExcludingIntegerOracleMilliseconds": 434.3737,
+            "nativeSubmitAndWaitMilliseconds": 32.0495
+          },
+          "tokenId": 128
+        }
+      ],
+      "power": {
+        "cpuPowerBefore": {
+          "acConnected": true,
+          "available": true,
+          "batteryPercent": 97,
+          "batterySaver": false
+        },
+        "cpuPowerAfter": {
+          "acConnected": true,
+          "available": true,
+          "batteryPercent": 97,
+          "batterySaver": false
+        },
+        "npuPowerBefore": {
+          "acConnected": true,
+          "available": true,
+          "batteryPercent": 97,
+          "batterySaver": false
+        },
+        "npuPowerAfter": {
+          "acConnected": true,
+          "available": true,
+          "batteryPercent": 97,
+          "batterySaver": false
+        }
+      },
+      "supervisorElapsedMilliseconds": 12111,
+      "performanceQualified": false
+    }
+  },
+  "closedHistoricalWorkloadsRetried": false,
+  "earlierChargedExecutionSeconds": 49.474021,
+  "activeRunSeconds": 92.340222,
+  "chargedThroughRetentionSeconds": 141.814243,
+  "maximumAggregateSeconds": 540.0,
+  "powerBeforeWorkload": {
+    "observedUtc": "2026-11-05T03:36:07.633409+00:00",
+    "source": "GetSystemPowerStatus",
+    "available": true,
+    "ac_online": false,
+    "battery_saver": false,
+    "battery_percent": 82
+  },
+  "powerAtRetention": {
+    "observedUtc": "2026-11-05T04:54:36.140624+00:00",
+    "source": "GetSystemPowerStatus",
+    "available": true,
+    "ac_online": true,
+    "battery_saver": false,
+    "battery_percent": 97
+  },
+  "hostedChecksExecuted": false,
+  "ciDispatchedOrMonitored": false,
+  "pushed": false,
+  "workloadClosed": true,
+  "productionAdmissionEnabled": false,
+  "qualifiedBenefitComparison": false,
+  "interpretation": "Batch-four HMX bitplane operation batching (12 tensors and 4 operations per queue packet) reduces first-projection FastRPC queue writes from 40 to 10 per token (30 vs 120 across three tokens [42, 43, 128]) while preserving all 120 logical operations, all 16,711,680 independent plane comparisons in streaming mode, resident host weight cache hits in resident mode, bitwise-equal logits and recurrent/KV state snapshots after every token, and clean queue/mapping/module teardown."
+}

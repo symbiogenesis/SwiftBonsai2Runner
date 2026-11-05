@@ -1,0 +1,23 @@
+   Compiling bonsai-hexagon-native v0.1.0 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\prism-npu-batch4\tools\hexagon-native)
+    Finished `release` profile [optimized] target(s) in 1.64s
+     Running unittests src\lib.rs (C:\Users\symbi\AppData\Local\Temp\SwiftBonsai-Hmx-Session-20261103\prism-target\aarch64-pc-windows-msvc\release\build\bonsai-hexagon-native/7cf151e88b573485\out\hexagon_native_rpc-7cf151e88b573485.exe)
+   Compiling bonsai-prism v0.1.1 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\prism-npu-batch4\tools\prism)
+   Compiling bonsai-native-hash v0.1.0 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\prism-npu-batch4\tools\native-hash)
+   Compiling bonsai-ternary v0.1.0 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\prism-npu-batch4\tools\ternary)
+   Compiling bonsai-hexagon-native v0.1.0 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\prism-npu-batch4\tools\hexagon-native)
+   Compiling bonsai-gguf v0.1.1 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\prism-npu-batch4\tools\gguf)
+error: function `response_valid` is never used
+   --> tools\hexagon-native\src\projection.rs:232:15
+    |
+232 | pub(crate) fn response_valid(bytes: &[u8], sequence: u64) -> bool {
+    |               ^^^^^^^^^^^^^^
+    |
+note: the lint level is defined here
+   --> tools\hexagon-native\src\lib.rs:12:9
+    |
+ 12 | #![deny(warnings)]
+    |         ^^^^^^^^
+    = note: `#[deny(dead_code)]` implied by `#[deny(warnings)]`
+
+error: could not compile `bonsai-hexagon-native` (lib) due to 1 previous error
+warning: build failed, waiting for other jobs to finish...

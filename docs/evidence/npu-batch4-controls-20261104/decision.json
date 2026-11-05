@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "dateLocal": "2026-11-04",
+  "outcome": "batch-four-hmx-operation-route-integrated; no-default-promotion",
+  "runnerBaseRevision": "f8501776113fc6fa595950c4ff8f8fdcb39d4dd5",
+  "prismLocalMain": "6f31095dcc0274a5dddf4811a590b8b4fe900f44",
+  "sourceReview": {
+    "approved": true,
+    "method": "Verified 1,816-byte batch-four command header (1 buffer descriptor, 12 tensor descriptors, 4 operation descriptors, 4 reserved profile descriptors), 2,048-byte command region, separate logical-operation and queue-write counters under the unchanged 24,000-operation ceiling, full n_tensors=12 / n_ops=4 correlated response validation, per-submission descriptor regeneration, and full-batch NaN poisoning and integer validation before ordered CPU reconstruction.",
+    "scope": "Four independent K=128/N=8 HMX bitplane operations per queue packet reduce first-projection FastRPC queue writes from 40 to 10 per token (30 vs 120 across three tokens) while preserving per-block PQ2/Q8_K scales, ordered per-128 FMA/nonfused accumulation, immutable resident weight arena ownership, and terminal failure without CPU replay."
+  },
+  "localValidation": {
+    "format": "passed",
+    "focusedControls": "73 Prism unit tests (32 hexagon-native, 25 hexagon-runtime lib, 16 model_probe bin) and 10 Runner model_device tests passed",
+    "strictReleaseClippy": "passed",
+    "releaseModelProbeAndSupervisorBuilds": "passed",
+    "streamingBatchFourSignedControl": "passed 120 logical operations in 30 queue writes and 16,711,680 independent integer comparisons, with bitwise-equal per-token logits and recurrent/KV state snapshots",
+    "residentBatchFourSignedControl": "passed 120 logical operations in 30 queue writes and bitwise-equal per-token logits and recurrent/KV state snapshots without per-dot CPU oracle; 1 prepared tensor (25,067,520 bytes in 29,822,976-byte mapping) and 2 cache hits",
+    "cleanup": "Both controls: four explicit native cleanup return codes zero, allocation freed, required owners pinned until exit, owned Jobs confirmed empty",
+    "scope": "One first-projection placement (blk.0.ffn_up.weight), tokens 42, 43, 128, standard adapter 1.3, NEON/four row workers. No broader arithmetic/lifecycle or production qualification."
+  },
+  "diagnosticEvaluationMilliseconds": {
+    "streaming": {
+      "cpuEvaluation": [429.4439, 415.5612, 416.9555],
+      "nativeCheckedEvaluation": [945.3278, 903.6435, 941.868],
+      "independentIntegerOracle": [474.2225, 481.8329, 487.4163],
+      "nativeEvaluationExcludingIntegerOracle": [471.1053, 421.8106, 454.4517],
+      "nativeSubmitAndWait": [35.5152, 35.5223, 33.9088]
+    },
+    "resident": {
+      "cpuEvaluation": [398.7673, 385.1789, 386.2977],
+      "nativeEvaluation": [446.3256, 431.314, 434.3737],
+      "nativeSubmitAndWait": [31.3621, 31.1617, 32.0495]
+    },
+    "power": "Initial workload clock opened on battery (ac_online: false, 82% charge); AC power was connected during build setup before the final builds and both device controls. All four arm endpoints in both device controls observed AC, saver off and 97% charge. Equal endpoints cannot prove uninterrupted stability.",
+    "interpretation": "Batching four HMX operations per queue packet reduced nativeSubmitAndWaitMilliseconds to 33.91-35.52 ms (streaming) and 31.16-32.05 ms (resident) with 10 queue writes per token, but single-projection resident native evaluation (431.31-446.33 ms) remains slower than CPU evaluation (385.18-398.77 ms). No end-to-end benefit is established."
+  },
+  "defaultBlockers": [
+    "The published CPU Prism runtime and server have no NPU serving integration. Changing the descriptive admission lock alone cannot enable offload.",
+    "The experimental session is terminal, at most 120 seconds and 24,000 logical operation attempts. Batching four operations per write reduces queue writes (10 vs 40 per first projection) without expanding the 24,000 logical-operation ceiling.",
+    "No matched end-to-end latency, energy or capacity benefit has been established. Single-projection resident batch-four evaluation remains ~46-48 ms slower per cache-hit token than 4-worker NEON CPU evaluation.",
+    "Broader arithmetic/history, multi-projection placement, native ownership/lifecycle, persistent recovery, packaging/isolation and release acceptance remain incomplete."
+  ],
+  "nextConcreteImplementation": "Reduce host-side per-token activation bitplane extraction and 8-plane integer dot reconstruction overhead in HmxQ2Executor, and evaluate bounded multi-projection resident HMX placement within the 64 MiB native arena and 24,000-operation session cap before any performance qualification.",
+  "sourceIntegration": "Reviewed single logical Prism commit fast-forwarded into local main. Runner retains new raw evidence and updates PLAN and technical docs on local main. No push or CI operations.",
+  "productionAdmissionEnabled": false,
+  "installedApplicationChanged": false,
+  "ciDispatchedOrMonitored": false,
+  "pushed": false
+}

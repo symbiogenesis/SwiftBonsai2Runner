@@ -1,0 +1,15 @@
+    Finished `release` profile [optimized] target(s) in 0.15s
+     Running unittests src\lib.rs (C:\Users\symbi\AppData\Local\Temp\SwiftBonsai-Hmx-Session-20261103\prism-target\aarch64-pc-windows-msvc\release\build\bonsai-hexagon-native/7cf151e88b573485\out\hexagon_native_rpc-7cf151e88b573485.exe)
+    Finished `release` profile [optimized] target(s) in 0.10s
+     Running unittests src\lib.rs (C:\Users\symbi\AppData\Local\Temp\SwiftBonsai-Hmx-Session-20261103\prism-target\aarch64-pc-windows-msvc\release\build\bonsai-hexagon-runtime/10de1fc28a9e62d1\out\bonsai_hexagon_runtime-10de1fc28a9e62d1.exe)
+   Compiling bonsai-hexagon-runtime v0.1.0 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\prism-npu-batch4\tools\hexagon-runtime)
+error: trivial cast: `[serde_json::Value; 0]` as `[serde_json::Value; 0]`
+    --> tools\hexagon-runtime\src\bin\model_probe.rs:1470:28
+     |
+1470 |         assert_eq!(events, [] as [Value; 0]);
+     |                            ^^^^^^^^^^^^^^^^
+     |
+     = help: cast can be replaced by coercion; this might require a temporary variable
+     = note: requested on the command line with `-D trivial-casts`
+
+error: could not compile `bonsai-hexagon-runtime` (bin "prism-hexagon-model-probe" test) due to 1 previous error

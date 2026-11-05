@@ -1,0 +1,16 @@
+{
+  "startedUtc": "2026-11-05T03:36:07.633348+00:00",
+  "originalDeadlineUtc": "2026-11-05T03:45:07.633360+00:00",
+  "maximumAggregateSeconds": 540.0,
+  "powerBefore": {
+    "observedUtc": "2026-11-05T03:36:07.633409+00:00",
+    "source": "GetSystemPowerStatus",
+    "available": true,
+    "ac_online": false,
+    "battery_saver": false,
+    "battery_percent": 82
+  },
+  "earlierChargedExecutionSeconds": 49.474021,
+  "resumedAfterApprovalPauseUtc": "2026-11-05T04:53:03.800382+00:00",
+  "activeExecutionDeadlineUtc": "2026-11-05T05:01:14.326372+00:00"
+}

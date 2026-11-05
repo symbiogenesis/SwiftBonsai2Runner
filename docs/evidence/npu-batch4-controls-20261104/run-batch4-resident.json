@@ -1,0 +1,30 @@
+{
+  "startedUtc": "2026-11-05T04:54:23.860102+00:00",
+  "finishedUtc": "2026-11-05T04:54:36.103311+00:00",
+  "elapsedSeconds": 12.243203,
+  "exitCode": 0,
+  "timedOut": false,
+  "powerBefore": {
+    "observedUtc": "2026-11-05T04:54:23.860087+00:00",
+    "source": "GetSystemPowerStatus",
+    "available": true,
+    "ac_online": true,
+    "battery_saver": false,
+    "battery_percent": 97
+  },
+  "powerAfter": {
+    "observedUtc": "2026-11-05T04:54:36.103354+00:00",
+    "source": "GetSystemPowerStatus",
+    "available": true,
+    "ac_online": true,
+    "battery_saver": false,
+    "battery_percent": 97
+  },
+  "command": [
+    "C:\\Users\\symbi\\AppData\\Local\\Temp\\SwiftBonsai-Npu-Batch4-20261104\\batch4-resident\\model-bundle\\bonsai-tools.exe",
+    "hexagon-tools",
+    "--request",
+    "C:\\Users\\symbi\\AppData\\Local\\Temp\\SwiftBonsai-Npu-Batch4-20261104\\batch4-resident\\model-device-request.json"
+  ],
+  "workingDirectory": "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\runner-npu-batch4"
+}

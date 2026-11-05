@@ -1186,15 +1186,31 @@ with native offload; no useful benefit or before/after packing speedup is
 established. The original clocks remain closed, and production admission and
 the installed application remain unchanged.
 
-Prioritize the [existing signed batch-operation route](docs/hexagon-source-audit.md#batching-existing-signed-block-operations)
-before wider placement or a default profile. Prepare a bounded four-operation
-packet, separate logical-operation/queue-write accounting, full response and
-ownership controls, and exact ordered reconstruction before selecting a new
-device workload. Forty first-projection operations could use ten queue writes;
-this is a source-derived implementation lead, not executed batching or a speed
-claim. Preserve the 24,000 logical-attempt cap, absolute native deadline and
-complete-request admission; batching cannot replenish lifetime capacity.
-The earlier resident screen's CPU evaluations took 502-536 ms and
+The [batch-four HMX controls](docs/evidence/npu-batch4-controls-20261104/summary.json)
+implement and verify the [signed batch-operation route](docs/hexagon-source-audit.md#batching-existing-signed-block-operations)
+on Prism `6f31095`: each queue packet carries one buffer descriptor, twelve tensor
+descriptors, four `K=128/N=8` operation descriptors and four reserved profile records
+(`1,816` command bytes in a `2,048`-byte header), reducing first-projection queue
+writes from 40 to 10 per token (`30` writes for `120` logical operations across
+tokens `42`, `43` and `128`) while preserving separate logical-operation and
+queue-write counters under the unchanged 24,000-operation cap, full `n_tensors=12`
+and `n_ops=4` response checks, descriptor regeneration and complete batch output
+validation before ordered per-block CPU reconstruction. All 73 Prism unit tests,
+10 Runner `model_device` tests, formatting, strict Release Clippy and Release builds
+passed. Both supervised `batch4-streaming` (`4,755,456` mapped bytes, all `16,711,680`
+returned plane values independently checked) and `batch4-resident` (`29,822,976`
+mapped bytes with `25,067,520` resident packed weight bytes, `1` prepared tensor and
+`2` cache hits under `graph-parity-only`) matched complete per-token CPU logits and
+logical state and ended with explicit native cleanup and empty Jobs. The workload
+clock opened on battery (`82%`) before AC was connected during build setup; all four
+CPU/native arm endpoints in both device controls observed AC, saver off and `97%`
+charge (`141.81` seconds charged out of `540.0` seconds). Batching reduced
+`nativeSubmitAndWaitMilliseconds` to `33.91-35.52` ms (streaming) and `31.16-32.05` ms
+(resident), with resident native evaluations taking `446.33`, `431.31` and `434.37` ms
+versus `398.77`, `385.18` and `386.30` ms on CPU. No end-to-end speedup is established;
+prioritize reducing host activation-plane extraction and eight-plane integer dot
+reconstruction overhead and qualifying bounded multi-projection resident placement
+before wider admission. The earlier resident screen's CPU evaluations took 502-536 ms and
 native evaluations 512-633 ms, with no per-dot audit in either native window;
 these short diagnostic windows show no clear benefit and qualify no performance
 gate. Its CPU/native power endpoints both observed AC with saver off; the earlier

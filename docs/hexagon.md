@@ -103,8 +103,24 @@ with empty owned Jobs. Every CPU/native arm endpoint observed AC, saver off
 and 48% charge; continuity is unknown. Resident CPU evaluation took 362-403 ms
 versus 420-477 ms with native offload. These diagnostic windows establish no
 useful benefit or before/after packing speedup, and the application remains on
-CPU. The [signed batch-operation lead](hexagon-source-audit.md#batching-existing-signed-block-operations)
-is the next concrete submission-reduction implementation; it has not executed.
+CPU. The [signed batch-operation route](hexagon-source-audit.md#batching-existing-signed-block-operations)
+is now implemented on local Prism `6f31095` and verified by the
+[batch-four HMX controls](evidence/npu-batch4-controls-20261104/summary.json).
+Submitting four `K=128/N=8` operations per queue packet (`1,816` command bytes,
+`12` tensor descriptors and `4` operation descriptors) reduces first-projection
+queue writes from 40 to 10 per token (`30` writes for `120` logical operations
+across tokens `42`, `43` and `128`). Both `batch4-streaming` (`4,755,456` mapped
+bytes, all `16,711,680` returned plane integers independently audited) and
+`batch4-resident` (`29,822,976` mapped bytes, `25,067,520` resident packed weight
+bytes prepared once with `2` cache hits) matched complete per-token CPU logits and
+logical state and completed explicit native cleanup with empty owned Jobs. All four
+arm endpoints in both device runs observed AC power, saver off and `97%` charge
+(after the outer workload clock opened on battery at `82%` and connected to AC
+during build setup). Native submit-and-wait windows dropped to `33.91-35.52` ms
+(streaming) and `31.16-32.05` ms (resident), with resident native evaluations at
+`431.31-446.33` ms versus `385.18-398.77` ms on CPU. Host bitplane extraction and
+eight-plane dot reconstruction remain the next local optimization target; production
+admission remains disabled.
 
 The [logical payload ledger](evidence/hexagon-swift-traffic-ledger.json) derives
 13.69 GB of signed-kernel input/result payload per all-eligible original-PQ2

@@ -1,0 +1,16 @@
+{
+  "closedUtc": "2026-11-05T04:54:36.140586+00:00",
+  "originalDeadlineUtc": "2026-11-05T03:45:07.633360+00:00",
+  "chargedThroughCloseSeconds": 141.814243,
+  "maximumAggregateSeconds": 540.0,
+  "stopReason": "Both predeclared batch-four HMX controls (streaming and resident) passed with 30 queue writes and 120 logical operations across three tokens; stopping early as required.",
+  "power": {
+    "observedUtc": "2026-11-05T04:54:36.140624+00:00",
+    "source": "GetSystemPowerStatus",
+    "available": true,
+    "ac_online": true,
+    "battery_saver": false,
+    "battery_percent": 97
+  },
+  "historicalDeadlinesReopened": false
+}

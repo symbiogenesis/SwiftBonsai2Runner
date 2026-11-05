@@ -1,0 +1,32 @@
+{
+  "startedUtc": "2026-11-05T04:41:15.389819+00:00",
+  "finishedUtc": "2026-11-05T04:41:28.019139+00:00",
+  "elapsedSeconds": 12.629315,
+  "exitCode": 101,
+  "timedOut": false,
+  "powerBefore": {
+    "observedUtc": "2026-11-05T04:41:15.389808+00:00",
+    "source": "GetSystemPowerStatus",
+    "available": true,
+    "ac_online": true,
+    "battery_saver": false,
+    "battery_percent": 94
+  },
+  "powerAfter": {
+    "observedUtc": "2026-11-05T04:41:28.019179+00:00",
+    "source": "GetSystemPowerStatus",
+    "available": true,
+    "ac_online": true,
+    "battery_saver": false,
+    "battery_percent": 94
+  },
+  "command": [
+    "powershell.exe",
+    "-NoProfile",
+    "-ExecutionPolicy",
+    "Bypass",
+    "-File",
+    "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\runner-npu-batch4\\docs\\evidence\\npu-batch4-controls-20261104\\build-prism.ps1"
+  ],
+  "workingDirectory": "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\prism-npu-batch4"
+}
