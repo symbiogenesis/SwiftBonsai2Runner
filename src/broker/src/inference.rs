@@ -136,7 +136,7 @@ fn row_workers_supported(version: &str, workers: u8) -> Result<(), LaunchError> 
         || (workers == 4
             && matches!(
                 version,
-                "0.1.9" | "0.1.10" | "0.1.11" | "0.1.12" | "0.1.13" | "0.1.14"
+                "0.1.9" | "0.1.10" | "0.1.11" | "0.1.12" | "0.1.13" | "0.1.14" | "0.1.15"
             ))
     {
         Ok(())
@@ -155,6 +155,8 @@ fn prompt_reuse_supported(release: &ReleasePin, latest: bool) -> Result<(), Laun
     if !latest
         || (release.version == "0.1.14"
             && release.commit == "9e8ea3e2c042ab0c3f1a8e9596ff155e202c3c57")
+        || (release.version == "0.1.15"
+            && release.commit == "f709f073234fc8c93b9ba4cd8771dff419113723")
     {
         Ok(())
     } else {
@@ -200,7 +202,17 @@ mod tests {
         );
         assert!(prompt_reuse_supported(&pin, false).is_ok());
         pin.commit = "9e8ea3e2c042ab0c3f1a8e9596ff155e202c3c57".into();
-        for version in ["0.1.13", "0.1.15", "0.1.14-dev", "v0.1.14", "0.1.014"] {
+        for version in [
+            "0.1.13",
+            "0.1.15",
+            "0.1.16",
+            "0.1.15-dev",
+            "v0.1.15",
+            "0.1.015",
+            "0.1.14-dev",
+            "v0.1.14",
+            "0.1.014",
+        ] {
             pin.version = version.into();
             assert_eq!(
                 prompt_reuse_supported(&pin, true),
@@ -264,7 +276,9 @@ mod tests {
     #[test]
     fn four_row_workers_require_the_reviewed_parallel_release() {
         assert!(row_workers_supported("0.1.8", 1).is_ok());
-        for version in ["0.1.9", "0.1.10", "0.1.11", "0.1.12", "0.1.13", "0.1.14"] {
+        for version in [
+            "0.1.9", "0.1.10", "0.1.11", "0.1.12", "0.1.13", "0.1.14", "0.1.15",
+        ] {
             assert!(row_workers_supported(version, 1).is_ok());
             assert!(row_workers_supported(version, 4).is_ok());
             for workers in [0, 2, 3, 5, 16, 255] {
@@ -276,7 +290,11 @@ mod tests {
         }
         for version in [
             "0.1.8",
-            "0.1.15",
+            "0.1.16",
+            "0.1.15-dev",
+            "v0.1.15",
+            "0.1.15.0",
+            "0.1.015",
             "0.1.14-dev",
             "v0.1.14",
             "0.1.14.0",
