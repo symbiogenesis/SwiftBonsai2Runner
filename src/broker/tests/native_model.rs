@@ -181,7 +181,7 @@ const PQ2_ADAPTER_LIFECYCLE_PROFILE: AdapterProfile = AdapterProfile {
 fn native_four_worker_release(version: Option<&str>) -> bool {
     matches!(
         version,
-        Some("0.1.9" | "0.1.10" | "0.1.11" | "0.1.12" | "0.1.13" | "0.1.14" | "0.1.15")
+        Some("0.1.9" | "0.1.10" | "0.1.11" | "0.1.12" | "0.1.13" | "0.1.14" | "0.1.15" | "0.1.16")
     )
 }
 
@@ -191,7 +191,7 @@ fn worker_readiness_receipt(version: Option<&str>, expected: u8, verified: bool)
     // A configured argument or a receipt written before start cannot supply it.
     let observed = matches!(
         version,
-        Some("0.1.11" | "0.1.12" | "0.1.13" | "0.1.14" | "0.1.15")
+        Some("0.1.11" | "0.1.12" | "0.1.13" | "0.1.14" | "0.1.15" | "0.1.16")
     ) && matches!(expected, 1 | 4)
         && verified;
     json!({"configuredNativeRowWorkers":expected, "verifiedReadinessObserved":verified,
@@ -225,7 +225,12 @@ fn native_worker_receipts_require_exact_release_and_verified_readiness() {
         (Some("0.1.13"), true, true),
         (Some("0.1.14"), true, true),
         (Some("0.1.15"), true, true),
-        (Some("0.1.16"), false, false),
+        (Some("0.1.16"), true, true),
+        (Some("0.1.17"), false, false),
+        (Some("v0.1.16"), false, false),
+        (Some("0.1.16-dev"), false, false),
+        (Some("0.1.16.0"), false, false),
+        (Some("0.1.016"), false, false),
         (Some("v0.1.15"), false, false),
         (Some("0.1.15-dev"), false, false),
         (Some("0.1.15.0"), false, false),
@@ -277,7 +282,7 @@ fn native_worker_receipts_require_exact_release_and_verified_readiness() {
         report["rowWorkerCountIndependentlyObserved"],
         matches!(
             runtime_lock["version"].as_str(),
-            Some("0.1.11" | "0.1.12" | "0.1.13" | "0.1.14" | "0.1.15")
+            Some("0.1.11" | "0.1.12" | "0.1.13" | "0.1.14" | "0.1.15" | "0.1.16")
         )
     );
 }
