@@ -794,14 +794,16 @@ not close pending hosted integration or full-model acceptance.
      Do not replace `libcdsprpc.dll` with undocumented raw `\Device\QcNspMcdm` `ioctl`
      calls that bypass FastRPC session handshakes, signed PD catalog checks, or SMMU
      `rpcmem` registration.
-  2. **Immediate hybrid NPU/CPU placement and stateful codec decoding**: Run `Talker`
-     multi-token prefill (`T_ctx` tokens, 28 layers, `Q8_0`) on Hexagon `HTP0` while
-     keeping latency-critical `T = 1` single-token `Talker` decode and 5-layer
-     `CodePredictor` (`15` residual codebooks per frame with `SAMPLER_TAIL_FIXED` top-k
-     view) on host NEON CPU threads over host-mapped `HTP0-Host` / RPCSMEM buffers, and
-     prime/restore causal `CodecStateSnap` reference snapshots so buffered and streaming
-     synthesis decode only the generated `T_frames` without re-decoding `82–94` ICL
-     reference frames per utterance.
+  2. **Immediate hybrid NPU/CPU placement, fused CPU flash attention, and ICL prompt/codec caching (completed in `src/speech-tts/build_npu.rs`)**:
+     Run `Talker` multi-token prefill (`T_ctx` tokens, 28 layers, `Q8_0`) on Hexagon `HTP0`
+     while executing latency-critical `T = 1` single-token `Talker` decode (via zero-copy
+     `talker_cpu` GGUF views over cache-coherent `HTP0` `rpcmem` `F16` KV cache) and
+     5-layer `CodePredictor` (`15` residual codebooks per frame with `SAMPLER_TAIL_FIXED`
+     top-k view) on host NEON CPU threads with fused `ggml_flash_attn_ext` enabled,
+     routing prompt text/reference-code projections directly to `cpu_backend`, caching
+     ICL reference codec/text streams and speaker-embedding prefixes in `PromptCache`, and
+     priming/restoring causal `CodecStateSnap` reference snapshots so synthesis decodes
+     only the generated `T_frames`.
   3. **Pure-Rust `Talker` + `CodePredictor` + `hexagon-native-rpc` NPU backend**: Port
      `Talker` (28-layer Qwen3 transformer, 3D MRoPE, KV cache) and `CodePredictor`
      (5-layer residual RVQ predictor) to pure Rust in `src/speech-tts` atop the existing
