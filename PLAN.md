@@ -9,7 +9,7 @@ adapter, exact-source application, device/human and benefit gates below before
 reconsidering it. Keep historical 0.1.13 scores separate from 0.1.14 acceptance.
 
 Use native Rust Prism 0.1.17 as the project's development default: original Swift
-PQ2, four CPU row workers, the standard adapter at scale 1.3, and default Snapdragon X2 Hexagon NPU `native-q2` resident acceleration (`DEFAULT_NATIVE_Q2_PROJECTIONS`, `blk.0 + blk.1 + blk.2 + blk.3`, `427.62` MB pre-warmed at worker startup with automatic 4-worker NEON CPU fallback when the signed Hexagon runtime package or CDSP driver is absent). Preserve explicit
+PQ2, four CPU row workers, the standard adapter at scale 1.3, and default Snapdragon X2 Hexagon NPU `native-q2` resident acceleration (`DEFAULT_NATIVE_Q2_PROJECTIONS`, `blk.0..=blk.3` plus `blk.4` MLP, `502.82` MB pre-warmed at worker startup with automatic 4-worker NEON CPU fallback when the signed Hexagon runtime package or CDSP driver is absent). Preserve explicit
 publisher rollback with `--publisher-engine` (`-PublisherEngine` in Start-Chat.ps1),
 original-PQ2 selection and unchanged artifact, sandbox and resource admission.
 Keep PTQ1 opt-in. This owner-directed development choice does not assert complete

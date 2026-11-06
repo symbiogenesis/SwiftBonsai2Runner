@@ -23,9 +23,7 @@ const TRANSFORMS: [(&str, Transform); 14] = [
 
 fn replace(text: &str, before: &str, after: &str) -> io::Result<String> {
     if text.matches(before).count() != 1 {
-        return Err(io::Error::other(
-            "Pinned Qwen NPU overlay anchor differs.",
-        ));
+        return Err(io::Error::other("Pinned Qwen NPU overlay anchor differs."));
     }
     Ok(text.replacen(before, after, 1))
 }

@@ -222,7 +222,7 @@ impl Request {
     fn validate_selection(&self) -> Result<()> {
         let projections = self.projections();
         let max_projections = match self.execution_backend {
-            ExecutionBackend::NativeQ2 => 26,
+            ExecutionBackend::NativeQ2 => 28,
             ExecutionBackend::GuardedHvx | ExecutionBackend::HmxBitplane => {
                 if self.resident_host_weights { 2 } else { 4 }
             }
@@ -583,7 +583,7 @@ fn result(
                 .as_array()
                 .ok_or("The model result projections field must be an array.")?;
             let max_projections = match backend {
-                ExecutionBackend::NativeQ2 => 26,
+                ExecutionBackend::NativeQ2 => 28,
                 ExecutionBackend::GuardedHvx | ExecutionBackend::HmxBitplane => {
                     if resident_host_weights {
                         2
@@ -2053,6 +2053,40 @@ mod tests {
         assert_eq!(
             expected_resident_weight_bytes(&multi_layer, ExecutionBackend::NativeQ2)?,
             212_336_640
+        );
+        let full_arena = [
+            "blk.0.ffn_up.weight",
+            "blk.0.ffn_gate.weight",
+            "blk.0.ffn_down.weight",
+            "blk.0.attn_qkv.weight",
+            "blk.0.attn_gate.weight",
+            "blk.0.ssm_out.weight",
+            "blk.1.ffn_up.weight",
+            "blk.1.ffn_gate.weight",
+            "blk.1.ffn_down.weight",
+            "blk.1.attn_qkv.weight",
+            "blk.1.attn_gate.weight",
+            "blk.1.ssm_out.weight",
+            "blk.2.ffn_up.weight",
+            "blk.2.ffn_gate.weight",
+            "blk.2.ffn_down.weight",
+            "blk.2.attn_qkv.weight",
+            "blk.2.attn_gate.weight",
+            "blk.2.ssm_out.weight",
+            "blk.3.ffn_up.weight",
+            "blk.3.ffn_gate.weight",
+            "blk.3.ffn_down.weight",
+            "blk.3.attn_q.weight",
+            "blk.3.attn_k.weight",
+            "blk.3.attn_v.weight",
+            "blk.3.attn_output.weight",
+            "blk.4.ffn_up.weight",
+            "blk.4.ffn_gate.weight",
+            "blk.4.ffn_down.weight",
+        ];
+        assert_eq!(
+            expected_resident_weight_bytes(&full_arena, ExecutionBackend::NativeQ2)?,
+            502_824_960
         );
         assert!(
             expected_resident_weight_bytes(&multi_layer, ExecutionBackend::GuardedHvx).is_err()
