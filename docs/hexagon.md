@@ -1,8 +1,8 @@
 # Hexagon deployment and execution contracts
 
-Normal application builds use CPU execution, including scalar/NEON in the [Rust runtime][rust-runtime].
-Production X1/X2 Hexagon inference remains unqualified; automatic selection is unimplemented and the
-[experimental lock](../config/hexagon-experiment.lock.json) keeps admission disabled.
+On Windows ARM64 Snapdragon X2 (`v81`), `prism-inference-server` enables Hexagon NPU `native-q2` resident acceleration (`DEFAULT_NATIVE_Q2_PROJECTIONS`, the 13 `PQ2_0` projections in `blk.0 + blk.3`, `212,336,640` resident weight bytes pre-warmed at worker startup with scoped `<= 92` KiB `dspqueue` cache flushes) by default when the verified signed GenieX v0.10.0 runtime package (`<data_directory>/hexagon/runtime/libggml-htp-v81.so`) and CDSP driver are present, falling back cleanly to 4-worker NEON CPU when unavailable. The [experimental lock](../config/hexagon-experiment.lock.json) records `"admission": "default-x2-native-q2-resident"` and `"automaticSelection": true`. Normal CPU execution remains the fallback in the [Rust runtime][rust-runtime].
+Full-model X1/X2 release qualification remains separate from this Snapdragon X2 `blk.0 + blk.3` default.
+See the [experimental lock](../config/hexagon-experiment.lock.json) for current admission metadata.
 [PLAN.md](../PLAN.md#hexagon-npu) owns outstanding work; [profile policy](hardware-capabilities.md#automatic-profile-selection)
 governs device/workload eligibility and interactive/battery objectives.
 

@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
-  "purpose": "source-reviewed-native-access-and-bound-projection-candidate-only",
-  "reviewDate": "2026-10-30",
-  "admission": "disabled",
-  "automaticSelection": false,
+  "purpose": "default-x2-native-q2-resident-13-projection-acceleration-and-source-audit",
+  "reviewDate": "2026-11-05",
+  "admission": "default-x2-native-q2-resident",
+  "automaticSelection": true,
   "sourceAudit": "docs/hexagon-source-audit.md",
   "productionArchitecture": {
     "engine": "native-Rust-Prism",
@@ -14,7 +14,7 @@
   },
   "deviceQualification": {
     "X1": "pending-independent-device-workload-evidence",
-    "X2": "pending-independent-device-workload-evidence",
+    "X2": "default-native-q2-resident-blk0-blk3-13-projections-when-signed-package-present",
     "selection": "measured-relative-to-qualified-CPU-and-GPU-with-total-costs",
     "unknown": "ineligible-without-changing-CPU-policy"
   },
