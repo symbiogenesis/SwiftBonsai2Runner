@@ -4,16 +4,17 @@ use std::{fs, io, path::Path};
 
 type Transform = fn(&str) -> io::Result<String>;
 
-const TRANSFORMS: [(&str, Transform); 13] = [
+const TRANSFORMS: [(&str, Transform); 14] = [
     ("ggml/include/ggml.h", ggml_header),
     ("ggml/src/ggml.c", ggml_source),
     ("ggml/src/ggml-cpu/ggml-cpu.c", ggml_cpu),
     ("ggml/src/ggml-backend-meta.cpp", ggml_backend_meta),
     ("ggml/src/ggml-backend.cpp", ggml_backend),
     ("src/backend.h", backend_header),
+    ("src/gguf-weights.h", gguf_weights),
     ("src/kv-cache.h", kv_cache),
     ("src/talker-weights.h", talker_weights),
-    ("src/code-predictor-weights.h", code_predictor_weights),
+    ("src/pipeline-tts.h", pipeline_tts_header),
     ("src/talker-forward.h", talker_forward),
     ("src/prompt-builder.h", prompt_builder),
     ("src/pipeline-tts.cpp", pipeline_tts),
@@ -110,6 +111,19 @@ fn backend_header(text: &str) -> io::Result<String> {
     )
 }
 
+fn gguf_weights(text: &str) -> io::Result<String> {
+    let text = replace(
+        text,
+        "            gf_close(gf);\n            return false;\n        }\n    }",
+        "            gf_close(gf);\n            return false;\n        }\n        t->data = gf->mapping + gf->data_offset + toff;\n    }",
+    )?;
+    replace(
+        &text,
+        "static const void * gf_get_data(const GGUFModel & gf, const char * name) {\n    int64_t idx = gguf_find_tensor(gf.gguf, name);\n    if (idx < 0) {\n        return NULL;\n    }\n    size_t offset = gguf_get_tensor_offset(gf.gguf, idx);\n    return gf.mapping + gf.data_offset + offset;\n}",
+        "static const void * gf_get_data(const GGUFModel & gf, const char * name) {\n    struct ggml_tensor * src = ggml_get_tensor(gf.meta, name);\n    return src ? src->data : NULL;\n}",
+    )
+}
+
 fn kv_cache(text: &str) -> io::Result<String> {
     let text = replace(
         text,
@@ -129,23 +143,23 @@ fn kv_cache(text: &str) -> io::Result<String> {
 }
 
 fn talker_weights(text: &str) -> io::Result<String> {
-    replace(
+    let text = replace(
         text,
         "    tw->text_embedding  = gf_load_tensor(&wctx, gf, \"talker.text_embd.weight\");",
         "    tw->text_embedding  = ggml_get_tensor(gf.meta, \"talker.text_embd.weight\");",
-    )
-}
-
-fn code_predictor_weights(text: &str) -> io::Result<String> {
-    let text = replace(
-        text,
-        "    struct ggml_tensor *              norm_w;\n",
-        "    struct ggml_tensor *              norm_w;\n    struct ggml_tensor *              talker_codec_embedding;\n",
     )?;
     replace(
         &text,
-        "    cw->norm_w = gf_load_tensor(&wctx, gf, \"code_pred.output_norm.weight\");\n",
-        "    cw->norm_w                 = gf_load_tensor(&wctx, gf, \"code_pred.output_norm.weight\");\n    cw->talker_codec_embedding = gf_load_tensor(&wctx, gf, \"talker.codec_embd.weight\");\n",
+        "    tw->layers.clear();\n}",
+        "    tw->layers.clear();\n}\n\nstatic void talker_weights_bind_cpu(TalkerWeights * tw_cpu, const TalkerWeights & tw_src, const GGUFModel & gf) {\n    *tw_cpu                 = tw_src;\n    tw_cpu->weight_ctx      = NULL;\n    tw_cpu->weight_buf      = NULL;\n    tw_cpu->codec_embedding = ggml_get_tensor(gf.meta, \"talker.codec_embd.weight\");\n    tw_cpu->text_embedding  = ggml_get_tensor(gf.meta, \"talker.text_embd.weight\");\n    tw_cpu->text_proj_fc1_w = ggml_get_tensor(gf.meta, \"talker.text_proj.fc1.weight\");\n    tw_cpu->text_proj_fc1_b = ggml_get_tensor(gf.meta, \"talker.text_proj.fc1.bias\");\n    tw_cpu->text_proj_fc2_w = ggml_get_tensor(gf.meta, \"talker.text_proj.fc2.weight\");\n    tw_cpu->text_proj_fc2_b = ggml_get_tensor(gf.meta, \"talker.text_proj.fc2.bias\");\n    tw_cpu->codec_head_w    = ggml_get_tensor(gf.meta, \"talker.codec_head.weight\");\n    tw_cpu->norm_w          = ggml_get_tensor(gf.meta, \"talker.output_norm.weight\");\n    tw_cpu->layers.resize((size_t) tw_src.num_hidden_layers);\n    for (int l = 0; l < tw_src.num_hidden_layers; l++) {\n        TalkerLayer & layer = tw_cpu->layers[(size_t) l];\n        char          name[160];\n        snprintf(name, sizeof(name), \"talker.blk.%d.attn_norm.weight\", l);\n        layer.input_norm_w = ggml_get_tensor(gf.meta, name);\n        snprintf(name, sizeof(name), \"talker.blk.%d.ffn_norm.weight\", l);\n        layer.post_attn_norm_w = ggml_get_tensor(gf.meta, name);\n        snprintf(name, sizeof(name), \"talker.blk.%d.attn_q.weight\", l);\n        layer.attn.q_proj_w = ggml_get_tensor(gf.meta, name);\n        snprintf(name, sizeof(name), \"talker.blk.%d.attn_k.weight\", l);\n        layer.attn.k_proj_w = ggml_get_tensor(gf.meta, name);\n        snprintf(name, sizeof(name), \"talker.blk.%d.attn_v.weight\", l);\n        layer.attn.v_proj_w = ggml_get_tensor(gf.meta, name);\n        snprintf(name, sizeof(name), \"talker.blk.%d.attn_output.weight\", l);\n        layer.attn.o_proj_w = ggml_get_tensor(gf.meta, name);\n        snprintf(name, sizeof(name), \"talker.blk.%d.attn_q_norm.weight\", l);\n        layer.attn.q_norm_w = ggml_get_tensor(gf.meta, name);\n        snprintf(name, sizeof(name), \"talker.blk.%d.attn_k_norm.weight\", l);\n        layer.attn.k_norm_w = ggml_get_tensor(gf.meta, name);\n        snprintf(name, sizeof(name), \"talker.blk.%d.ffn_gate.weight\", l);\n        layer.mlp.gate_proj_w = ggml_get_tensor(gf.meta, name);\n        snprintf(name, sizeof(name), \"talker.blk.%d.ffn_up.weight\", l);\n        layer.mlp.up_proj_w = ggml_get_tensor(gf.meta, name);\n        snprintf(name, sizeof(name), \"talker.blk.%d.ffn_down.weight\", l);\n        layer.mlp.down_proj_w = ggml_get_tensor(gf.meta, name);\n    }\n}",
+    )
+}
+
+fn pipeline_tts_header(text: &str) -> io::Result<String> {
+    replace(
+        text,
+        "struct PipelineTTS {\n    GGUFModel             gguf_talker;\n    TalkerWeights         talker;",
+        "struct PipelineTTS {\n    GGUFModel             gguf_talker;\n    TalkerWeights         talker;\n    TalkerWeights         talker_cpu;",
     )
 }
 
@@ -155,25 +169,10 @@ fn talker_forward(text: &str) -> io::Result<String> {
         "    if (record_taps || read_hidden_host) {\n        ggml_set_output(h_final);\n    }\n\n    // Bridge: the last position hidden copies on device into column\n    // `kv_set` of the persistent [hidden, max_batch] tensor. Constant\n    // destination address across steps, so the decode graph topology\n    // stays replayable.\n    struct ggml_tensor * h_last =\n        ggml_view_1d(gctx, h_final, hidden, (size_t) (T - 1) * (size_t) hidden * sizeof(float));\n    struct ggml_tensor * bridge_col = ggml_view_1d(gctx, hidden_bridge, hidden, (size_t) kv_set * hidden_bridge->nb[1]);\n    struct ggml_tensor * bridge_cpy = ggml_cpy(gctx, h_last, bridge_col);\n\n    // codec_head: [hidden, vocab]. ggml_mul_mat returns [vocab, T].\n    struct ggml_tensor * logits = ggml_mul_mat(gctx, tw->codec_head_w, h_final);\n    ggml_set_name(logits, \"logits\");\n\n    if (record_taps) {\n        for (int i = 0; i < TALKER_N_BISECT_LAYERS; i++) {\n            if (taps[(size_t) i]) {\n                ggml_build_forward_expand(gf, taps[(size_t) i]);\n            }\n        }\n        ggml_build_forward_expand(gf, h_final);\n    }\n    ggml_build_forward_expand(gf, logits);\n    ggml_build_forward_expand(gf, bridge_cpy);",
         "    ggml_set_output(h_final);\n    (void) hidden_bridge;\n\n    // codec_head: [hidden, vocab]. ggml_mul_mat returns [vocab, T].\n    struct ggml_tensor * logits = ggml_mul_mat(gctx, tw->codec_head_w, h_final);\n    ggml_set_name(logits, \"logits\");\n\n    if (record_taps) {\n        for (int i = 0; i < TALKER_N_BISECT_LAYERS; i++) {\n            if (taps[(size_t) i]) {\n                ggml_build_forward_expand(gf, taps[(size_t) i]);\n            }\n        }\n    }\n    ggml_build_forward_expand(gf, h_final);\n    ggml_build_forward_expand(gf, logits);",
     )?;
-    let text = replace(
+    replace(
         &text,
         "    {\n        size_t row_bytes = (size_t) vocab * sizeof(float);\n        ggml_backend_tensor_get(logits, out->logits_last.data(), (size_t) (T - 1) * row_bytes, row_bytes);\n    }",
         "    {\n        size_t row_bytes = (size_t) vocab * sizeof(float);\n        ggml_backend_tensor_get(logits, out->logits_last.data(), (size_t) (T - 1) * row_bytes, row_bytes);\n        size_t hrow_bytes = (size_t) hidden * sizeof(float);\n        ggml_backend_tensor_get(h_final, (char *) hidden_bridge->data + (size_t) kv_set * hidden_bridge->nb[1],\n                                (size_t) (T - 1) * hrow_bytes, hrow_bytes);\n    }",
-    )?;
-    let text = replace(
-        &text,
-        "    struct ggml_tensor * id0  = ggml_view_1d(gctx, ids_in, N, 0);\n    struct ggml_tensor * x_in = ggml_get_rows(gctx, tw->codec_embedding, id0);\n    for (int g = 0; g < n_acoustic; g++) {\n        struct ggml_tensor * idg = ggml_view_1d(gctx, ids_in, N, (size_t) (g + 1) * (size_t) N * sizeof(int32_t));\n        x_in                     = ggml_add(gctx, x_in, ggml_get_rows(gctx, acoustic_embd[g], idg));\n    }\n    x_in = ggml_add(gctx, x_in, overlay);\n    ggml_set_name(x_in, \"input_embed\");\n\n    struct ggml_cgraph * gf = ggml_new_graph_custom(gctx, max_nodes, false);\n\n    struct ggml_tensor * h = x_in;\n    for (int l = 0; l < n_layers; l++) {\n        h = talker_layer_forward_batch(gctx, tw, tw->layers[(size_t) l], h, pos_in, mask_in, rows_in,\n                                       kv->k4[(size_t) l], kv->v4[(size_t) l], N, n_kv_pad, use_flash_attn, clamp_fp16,\n                                       gf);\n    }\n\n    struct ggml_tensor * h_final = ggml_rms_norm(gctx, h, tw->rms_norm_eps);\n    h_final                      = ggml_mul(gctx, h_final, tw->norm_w);\n    ggml_set_name(h_final, \"hidden_final\");\n\n    struct ggml_tensor * bridge_cols = ggml_view_2d(gctx, hidden_bridge, hidden, N, hidden_bridge->nb[1], 0);\n    struct ggml_tensor * bridge_cpy  = ggml_cpy(gctx, h_final, bridge_cols);\n\n    struct ggml_tensor * logits = ggml_mul_mat(gctx, tw->codec_head_w, h_final);\n    ggml_set_name(logits, \"logits\");\n    ggml_set_output(logits);\n    ggml_build_forward_expand(gf, logits);\n    ggml_build_forward_expand(gf, bridge_cpy);",
-        "    (void) ids_in;\n    (void) acoustic_embd;\n    (void) n_acoustic;\n    (void) hidden_bridge;\n    struct ggml_tensor * x_in = overlay;\n    ggml_set_name(x_in, \"input_embed\");\n\n    struct ggml_cgraph * gf = ggml_new_graph_custom(gctx, max_nodes, false);\n\n    struct ggml_tensor * h = x_in;\n    for (int l = 0; l < n_layers; l++) {\n        h = talker_layer_forward_batch(gctx, tw, tw->layers[(size_t) l], h, pos_in, mask_in, rows_in,\n                                       kv->k4[(size_t) l], kv->v4[(size_t) l], N, n_kv_pad, use_flash_attn, clamp_fp16,\n                                       gf);\n    }\n\n    struct ggml_tensor * h_final = ggml_rms_norm(gctx, h, tw->rms_norm_eps);\n    h_final                      = ggml_mul(gctx, h_final, tw->norm_w);\n    ggml_set_name(h_final, \"hidden_final\");\n    ggml_set_output(h_final);\n\n    struct ggml_tensor * logits = ggml_mul_mat(gctx, tw->codec_head_w, h_final);\n    ggml_set_name(logits, \"logits\");\n    ggml_set_output(logits);\n    ggml_build_forward_expand(gf, h_final);\n    ggml_build_forward_expand(gf, logits);",
-    )?;
-    let text = replace(
-        &text,
-        "    ggml_backend_tensor_set(tg->ids_in, frame_ids, 0, (size_t) (1 + n_acoustic) * (size_t) N * sizeof(int32_t));\n    ggml_backend_tensor_set(tg->overlay, overlays, 0, (size_t) tw->hidden_size * (size_t) N * sizeof(float));",
-        "    (void) frame_ids;\n    ggml_backend_tensor_set(tg->overlay, overlays, 0, (size_t) tw->hidden_size * (size_t) N * sizeof(float));",
-    )?;
-    replace(
-        &text,
-        "    out->logits_last.assign((size_t) tw->vocab_size * (size_t) N, 0.0f);\n    ggml_backend_tensor_get(tg->logits, out->logits_last.data(), 0,\n                            (size_t) tw->vocab_size * (size_t) N * sizeof(float));",
-        "    out->logits_last.assign((size_t) tw->vocab_size * (size_t) N, 0.0f);\n    ggml_backend_tensor_get(tg->logits, out->logits_last.data(), 0,\n                            (size_t) tw->vocab_size * (size_t) N * sizeof(float));\n    ggml_backend_tensor_get(ggml_get_tensor(tg->ctx, \"hidden_final\"), hidden_bridge->data, 0,\n                            (size_t) tw->hidden_size * (size_t) N * sizeof(float));",
     )
 }
 
@@ -194,7 +193,12 @@ fn pipeline_tts(text: &str) -> io::Result<String> {
     let text = replace(
         text,
         "            s.sampler_buf = ggml_backend_alloc_ctx_tensors(s.sampler_ctx, pt->backend);\n        }\n        if (!s.sampler_ctx || !s.sampler_buf) {\n            qt_log(QT_LOG_ERROR, \"[Pipeline] sampler state allocation failed (N=%d)\", N);\n            if (s.sampler_ctx) {\n                ggml_free(s.sampler_ctx);\n                s.sampler_ctx = NULL;\n            }\n            return false;\n        }\n        ggml_backend_buffer_clear(s.sampler_buf, 0);\n    }\n\n    return code_predictor_frame_graph_build(&pt->code_predictor, &pt->code_predictor_kv, pt->backend,\n                                            pt->talker.codec_embedding, pt->hidden_bridge, &s.sampler, tail, N,\n                                            pt->use_flash_attn, pt->clamp_fp16, &frame);",
-        "            s.sampler_buf = ggml_backend_alloc_ctx_tensors(s.sampler_ctx, pt->bp.cpu_backend);\n        }\n        if (!s.sampler_ctx || !s.sampler_buf) {\n            qt_log(QT_LOG_ERROR, \"[Pipeline] sampler state allocation failed (N=%d)\", N);\n            if (s.sampler_ctx) {\n                ggml_free(s.sampler_ctx);\n                s.sampler_ctx = NULL;\n            }\n            return false;\n        }\n        ggml_backend_buffer_clear(s.sampler_buf, 0);\n    }\n\n    return code_predictor_frame_graph_build(&pt->code_predictor, &pt->code_predictor_kv, pt->bp.cpu_backend,\n                                            pt->code_predictor.talker_codec_embedding, pt->hidden_bridge, &s.sampler,\n                                            tail, N, false, pt->clamp_fp16, &frame);",
+        "            s.sampler_buf = ggml_backend_alloc_ctx_tensors(s.sampler_ctx, pt->bp.cpu_backend);\n        }\n        if (!s.sampler_ctx || !s.sampler_buf) {\n            qt_log(QT_LOG_ERROR, \"[Pipeline] sampler state allocation failed (N=%d)\", N);\n            if (s.sampler_ctx) {\n                ggml_free(s.sampler_ctx);\n                s.sampler_ctx = NULL;\n            }\n            return false;\n        }\n        ggml_backend_buffer_clear(s.sampler_buf, 0);\n    }\n\n    return code_predictor_frame_graph_build(&pt->code_predictor, &pt->code_predictor_kv, pt->bp.cpu_backend,\n                                            pt->talker_cpu.codec_embedding, pt->hidden_bridge, &s.sampler, tail, N,\n                                            true, pt->clamp_fp16, &frame);",
+    )?;
+    let text = replace(
+        &text,
+        "    if (!talker_weights_load(&pt->talker, pt->gguf_talker, pt->backend)) {\n        gf_close(&pt->gguf_talker);\n        return false;\n    }",
+        "    if (!talker_weights_load(&pt->talker, pt->gguf_talker, pt->backend)) {\n        gf_close(&pt->gguf_talker);\n        return false;\n    }\n    talker_weights_bind_cpu(&pt->talker_cpu, pt->talker, pt->gguf_talker);",
     )?;
     let text = replace(
         &text,
@@ -218,6 +222,11 @@ fn pipeline_tts(text: &str) -> io::Result<String> {
     )?;
     let text = replace(
         &text,
+        "    code_predictor_weights_free(&pt->code_predictor);\n    talker_weights_free(&pt->talker);",
+        "    code_predictor_weights_free(&pt->code_predictor);\n    talker_weights_free(&pt->talker_cpu);\n    talker_weights_free(&pt->talker);",
+    )?;
+    let text = replace(
+        &text,
         "        if (!speaker_encoder_weights_load(&pt->speaker_encoder, pt->gguf_talker, pt->backend) ||",
         "        if (!speaker_encoder_weights_load(&pt->speaker_encoder, pt->gguf_talker, pt->bp.cpu_backend) ||",
     )?;
@@ -233,8 +242,8 @@ fn pipeline_tts(text: &str) -> io::Result<String> {
     )?;
     let text = replace(
         &text,
-        "        for (int i = 0; i < N_dec; i++) {\n            TtsSlot & s = e->slots[(size_t) i];\n            for (int g = 0; g < num_codebooks; g++) {\n                ids[(size_t) g * (size_t) N_dec + (size_t) i] = s.prev_ids[(size_t) g];\n            }\n            std::memcpy(overlays.data() + (size_t) i * (size_t) hidden, s.prev_overlay,\n                        (size_t) hidden * sizeof(float));\n        }",
-        "        std::vector<float> tmp_emb((size_t) hidden);\n        for (int i = 0; i < N_dec; i++) {\n            TtsSlot & s   = e->slots[(size_t) i];\n            float *   dst = overlays.data() + (size_t) i * (size_t) hidden;\n            std::memcpy(dst, s.prev_overlay, (size_t) hidden * sizeof(float));\n            embed_row_from_gguf(pt->gguf_talker, \"talker.codec_embd.weight\", s.prev_ids[0], hidden, tmp_emb.data());\n            for (int j = 0; j < hidden; j++) {\n                dst[j] += tmp_emb[(size_t) j];\n            }\n            for (int g = 0; g < n_acoustic; g++) {\n                char name[64];\n                snprintf(name, sizeof(name), \"code_pred.codec_embd.%d.weight\", g);\n                embed_row_from_gguf(pt->gguf_talker, name, s.prev_ids[(size_t) (g + 1)], hidden, tmp_emb.data());\n                for (int j = 0; j < hidden; j++) {\n                    dst[j] += tmp_emb[(size_t) j];\n                }\n            }\n        }",
+        "        if (!talker_forward_decode(&pt->talker, &pt->talker_kv, pt->backend, pt->talker_decode_graphs,\n                                   pt->hidden_bridge, ids.data(), pt->code_predictor.codec_embedding.data(), n_acoustic,\n                                   overlays.data(), N_dec, pt->use_flash_attn, pt->clamp_fp16, any_dump, &fw)) {",
+        "        if (!talker_forward_decode(&pt->talker_cpu, &pt->talker_kv, pt->bp.cpu_backend, pt->talker_decode_graphs,\n                                   pt->hidden_bridge, ids.data(), pt->code_predictor.codec_embedding.data(), n_acoustic,\n                                   overlays.data(), N_dec, true, pt->clamp_fp16, any_dump, &fw)) {",
     )?;
     replace(
         &text,
@@ -264,9 +273,9 @@ fn qwen_cpp(text: &str) -> io::Result<String> {
 #[cfg(test)]
 mod tests {
     use super::{
-        backend_header, code_predictor_weights, ggml_backend, ggml_backend_meta, ggml_cpu,
-        ggml_header, ggml_source, kv_cache, pipeline_tts, prompt_builder, qwen_cpp, talker_forward,
-        talker_weights,
+        backend_header, ggml_backend, ggml_backend_meta, ggml_cpu, ggml_header, ggml_source,
+        gguf_weights, kv_cache, pipeline_tts, pipeline_tts_header, prompt_builder, qwen_cpp,
+        talker_forward, talker_weights,
     };
 
     #[test]
@@ -278,9 +287,10 @@ mod tests {
             ggml_backend_meta,
             ggml_backend,
             backend_header,
+            gguf_weights,
             kv_cache,
             talker_weights,
-            code_predictor_weights,
+            pipeline_tts_header,
             talker_forward,
             prompt_builder,
             pipeline_tts,
@@ -293,9 +303,10 @@ mod tests {
         assert!(ggml_header(&header).is_err());
 
         let tw = talker_weights(
-            "    tw->text_embedding  = gf_load_tensor(&wctx, gf, \"talker.text_embd.weight\");",
+            "    tw->text_embedding  = gf_load_tensor(&wctx, gf, \"talker.text_embd.weight\");\n    tw->layers.clear();\n}",
         )?;
         assert!(tw.contains("ggml_get_tensor(gf.meta, \"talker.text_embd.weight\")"));
+        assert!(tw.contains("talker_weights_bind_cpu"));
         assert!(talker_weights(&tw).is_err());
         Ok(())
     }
