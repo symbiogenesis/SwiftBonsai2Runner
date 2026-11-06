@@ -1,7 +1,7 @@
 # Hexagon deployment and execution contracts
 
-On Windows ARM64 Snapdragon X2 (`v81`), `prism-inference-server` enables Hexagon NPU `native-q2` resident acceleration (`DEFAULT_NATIVE_Q2_PROJECTIONS`, the 28 `PQ2_0` projections in `blk.0 + blk.1 + blk.2 + blk.3` plus `blk.4` MLP `ffn_up`/`ffn_gate`/`ffn_down`, `502,824,960` resident weight bytes filling `99.9%` of the `480` MiB resident arena, pre-warmed at worker startup with scoped `<= 92` KiB `dspqueue` cache flushes, batched 2/3-op sibling submissions, and zero per-token fixture allocation) by default when the verified signed GenieX v0.10.0 runtime package (`<data_directory>/hexagon/runtime/libggml-htp-v81.so`) and CDSP driver are present, falling back cleanly to 4-worker NEON CPU when unavailable. The [experimental lock](../config/hexagon-experiment.lock.json) records `"admission": "default-x2-native-q2-resident"` and `"automaticSelection": true`. Normal CPU execution remains the fallback in the [Rust runtime][rust-runtime].
-Full-model X1/X2 release qualification remains separate from this Snapdragon X2 `blk.0..blk.4` default.
+On Windows ARM64 Snapdragon X2 (`v81`), `prism-inference-server` enables Hexagon NPU `native-q2` resident acceleration (`DEFAULT_NATIVE_Q2_PROJECTIONS`, the 56 `PQ2_0` projections across all 9 initial layers `blk.0..=blk.8`, `962,887,680` resident weight bytes / `918.28` MiB across two `<= 480` MiB `FastRPC` weight arenas via `req.n_bufs > 1` and `tensor.bi > 0`, pre-warmed at worker startup with scoped `<= 92` KiB `dspqueue` cache flushes, batched 2/3-op sibling submissions, and zero per-token fixture allocation) by default when the verified signed GenieX v0.10.0 runtime package (`<data_directory>/hexagon/runtime/libggml-htp-v81.so`) and CDSP driver are present, falling back cleanly to 4-worker NEON CPU when unavailable. The [experimental lock](../config/hexagon-experiment.lock.json) records `"admission": "default-x2-native-q2-resident"` and `"automaticSelection": true`. Normal CPU execution remains the fallback in the [Rust runtime][rust-runtime].
+Full-model X1/X2 release qualification remains separate from this Snapdragon X2 `blk.0..=blk.8` default.
 See the [experimental lock](../config/hexagon-experiment.lock.json) for current admission metadata.
 [PLAN.md](../PLAN.md#hexagon-npu) owns outstanding work; [profile policy](hardware-capabilities.md#automatic-profile-selection)
 governs device/workload eligibility and interactive/battery objectives.
@@ -184,7 +184,7 @@ writes), with cosine similarity `0.999906-0.999974`, RMSE `0.0221-0.0286`, exact
 The [logical payload ledger](evidence/hexagon-swift-traffic-ledger.json) derives
 13.69 GB of signed-kernel input/result payload per all-eligible original-PQ2
 evaluation token. The opt-in [mapped host-weight arena and graph cache](../tools/hexagon/resident-host.md)
-reuse immutable packed tiles across tokens, with a 64 MiB HMX bitplane arena ceiling (`480` MiB for `native-q2`),
+reuse immutable packed tiles across tokens, with a 64 MiB HMX bitplane arena ceiling (`480` MiB per arena and up to `4` arenas / `1,920` MiB per session for `native-q2`),
 separate host metadata accounting and unchanged terminal operation/deadline limits.
 The cache binds exact immutable source storage and geometry; complete capacity
 misses select the streaming path before preparation. Preparation or submission

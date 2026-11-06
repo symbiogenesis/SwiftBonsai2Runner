@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "purpose": "default-x2-native-q2-resident-28-projection-acceleration-and-source-audit",
+  "purpose": "default-x2-native-q2-resident-56-projection-acceleration-and-source-audit",
   "reviewDate": "2026-11-06",
   "admission": "default-x2-native-q2-resident",
   "automaticSelection": true,
@@ -14,7 +14,7 @@
   },
   "deviceQualification": {
     "X1": "pending-independent-device-workload-evidence",
-    "X2": "default-native-q2-resident-blk0-blk4-28-projections-when-signed-package-present",
+    "X2": "default-native-q2-resident-blk0-blk8-56-projections-when-signed-package-present",
     "selection": "measured-relative-to-qualified-CPU-and-GPU-with-total-costs",
     "unknown": "ineligible-without-changing-CPU-policy"
   },

@@ -39,7 +39,7 @@ const NATIVE_Q2_STREAMING_MAPPED_BYTES: u64 = 25_161_728;
 const NATIVE_Q2_RESIDENT_MAPPED_BYTES: u64 =
     NATIVE_Q2_STREAMING_MAPPED_BYTES + RESIDENT_WEIGHT_BYTES;
 const RESIDENT_METADATA_BYTES: u64 = 65_536;
-const NATIVE_Q2_RESIDENT_METADATA_BYTES: u64 = 262_144;
+const NATIVE_Q2_RESIDENT_METADATA_BYTES: u64 = 524_288;
 // Exact logical state for the pinned original-PQ2 model: 48 recurrent
 // layers plus the growing KV state of its 16 attention layers. The CPU arm
 // retains every complete snapshot until native comparisons finish.
@@ -144,7 +144,7 @@ pub(super) struct Request {
     maximum_seconds: u32,
 }
 
-const NATIVE_Q2_MAX_RESIDENT_WEIGHT_BYTES: u64 = 480 * 1024 * 1024;
+const NATIVE_Q2_MAX_RESIDENT_WEIGHT_BYTES: u64 = 4 * 480 * 1024 * 1024;
 
 fn projection_dimensions(name: &str, backend: ExecutionBackend) -> Option<(u64, u64)> {
     let rest = name.strip_prefix("blk.")?;
@@ -222,7 +222,7 @@ impl Request {
     fn validate_selection(&self) -> Result<()> {
         let projections = self.projections();
         let max_projections = match self.execution_backend {
-            ExecutionBackend::NativeQ2 => 28,
+            ExecutionBackend::NativeQ2 => 112,
             ExecutionBackend::GuardedHvx | ExecutionBackend::HmxBitplane => {
                 if self.resident_host_weights { 2 } else { 4 }
             }
@@ -583,7 +583,7 @@ fn result(
                 .as_array()
                 .ok_or("The model result projections field must be an array.")?;
             let max_projections = match backend {
-                ExecutionBackend::NativeQ2 => 28,
+                ExecutionBackend::NativeQ2 => 112,
                 ExecutionBackend::GuardedHvx | ExecutionBackend::HmxBitplane => {
                     if resident_host_weights {
                         2
@@ -2087,6 +2087,68 @@ mod tests {
         assert_eq!(
             expected_resident_weight_bytes(&full_arena, ExecutionBackend::NativeQ2)?,
             502_824_960
+        );
+        let dual_arena = [
+            "blk.0.ffn_up.weight",
+            "blk.0.ffn_gate.weight",
+            "blk.0.ffn_down.weight",
+            "blk.0.attn_qkv.weight",
+            "blk.0.attn_gate.weight",
+            "blk.0.ssm_out.weight",
+            "blk.1.ffn_up.weight",
+            "blk.1.ffn_gate.weight",
+            "blk.1.ffn_down.weight",
+            "blk.1.attn_qkv.weight",
+            "blk.1.attn_gate.weight",
+            "blk.1.ssm_out.weight",
+            "blk.2.ffn_up.weight",
+            "blk.2.ffn_gate.weight",
+            "blk.2.ffn_down.weight",
+            "blk.2.attn_qkv.weight",
+            "blk.2.attn_gate.weight",
+            "blk.2.ssm_out.weight",
+            "blk.3.ffn_up.weight",
+            "blk.3.ffn_gate.weight",
+            "blk.3.ffn_down.weight",
+            "blk.3.attn_q.weight",
+            "blk.3.attn_k.weight",
+            "blk.3.attn_v.weight",
+            "blk.3.attn_output.weight",
+            "blk.4.ffn_up.weight",
+            "blk.4.ffn_gate.weight",
+            "blk.4.ffn_down.weight",
+            "blk.4.attn_qkv.weight",
+            "blk.4.attn_gate.weight",
+            "blk.4.ssm_out.weight",
+            "blk.5.ffn_up.weight",
+            "blk.5.ffn_gate.weight",
+            "blk.5.ffn_down.weight",
+            "blk.5.attn_qkv.weight",
+            "blk.5.attn_gate.weight",
+            "blk.5.ssm_out.weight",
+            "blk.6.ffn_up.weight",
+            "blk.6.ffn_gate.weight",
+            "blk.6.ffn_down.weight",
+            "blk.6.attn_qkv.weight",
+            "blk.6.attn_gate.weight",
+            "blk.6.ssm_out.weight",
+            "blk.7.ffn_up.weight",
+            "blk.7.ffn_gate.weight",
+            "blk.7.ffn_down.weight",
+            "blk.7.attn_q.weight",
+            "blk.7.attn_k.weight",
+            "blk.7.attn_v.weight",
+            "blk.7.attn_output.weight",
+            "blk.8.ffn_up.weight",
+            "blk.8.ffn_gate.weight",
+            "blk.8.ffn_down.weight",
+            "blk.8.attn_qkv.weight",
+            "blk.8.attn_gate.weight",
+            "blk.8.ssm_out.weight",
+        ];
+        assert_eq!(
+            expected_resident_weight_bytes(&dual_arena, ExecutionBackend::NativeQ2)?,
+            962_887_680
         );
         assert!(
             expected_resident_weight_bytes(&multi_layer, ExecutionBackend::GuardedHvx).is_err()
