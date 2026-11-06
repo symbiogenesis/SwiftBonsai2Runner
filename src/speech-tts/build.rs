@@ -118,10 +118,10 @@ fn engine_build(
             ));
         }
         let compiler = absolute_env("BONSAI_TTS_COMPILER")?;
-        let resource_compiler = compiler
+        let compiler_dir = compiler
             .parent()
-            .ok_or_else(|| io::Error::other("Missing native speech compiler directory."))?
-            .join("llvm-rc.exe");
+            .ok_or_else(|| io::Error::other("Missing native speech compiler directory."))?;
+        let resource_compiler = compiler_dir.join("llvm-rc.exe");
         if compiler
             .file_name()
             .is_none_or(|name| name != "clang-cl.exe")
@@ -132,6 +132,8 @@ fn engine_build(
                 "Provision the pinned ARM64 clang-cl and LLVM resource compiler before building Qwen.",
             ));
         }
+        let archiver = msvc_tool("lib.exe", compiler_dir)?;
+        let linker = msvc_tool("link.exe", compiler_dir)?;
         let private_source = output.join("qwen-source");
         build_overlay::prepare(source, &private_source)?;
         let directory = output.join("qwen-build");
@@ -152,6 +154,14 @@ fn engine_build(
         configure.arg(format!(
             "-DCMAKE_RC_COMPILER:FILEPATH={}",
             resource_compiler.to_string_lossy().replace('\\', "/")
+        ));
+        configure.arg(format!(
+            "-DCMAKE_AR:FILEPATH={}",
+            archiver.to_string_lossy().replace('\\', "/")
+        ));
+        configure.arg(format!(
+            "-DCMAKE_LINKER:FILEPATH={}",
+            linker.to_string_lossy().replace('\\', "/")
         ));
         configure.args([
             "-DCMAKE_C_COMPILER_TARGET=aarch64-pc-windows-msvc",
@@ -176,6 +186,55 @@ fn engine_build(
         directory
     };
     Ok(directory)
+}
+
+fn msvc_tool(name: &str, compiler_dir: &Path) -> io::Result<PathBuf> {
+    if let Some(vc_tools) = env::var_os("VCToolsInstallDir") {
+        let root = PathBuf::from(vc_tools);
+        for sub in ["bin/Hostarm64/arm64", "bin/Hostx64/arm64"] {
+            let candidate = root.join(sub).join(name);
+            if candidate.is_file() && !candidate.starts_with(compiler_dir) {
+                return Ok(candidate);
+            }
+        }
+    }
+    if let Some(path_var) = env::var_os("PATH") {
+        for dir in env::split_paths(&path_var) {
+            if dir == compiler_dir {
+                continue;
+            }
+            let candidate = dir.join(name);
+            if candidate.is_file() {
+                return Ok(candidate);
+            }
+        }
+    }
+    if let Some(program_files) = env::var_os("ProgramFiles(x86)") {
+        let vswhere =
+            PathBuf::from(program_files).join("Microsoft Visual Studio/Installer/vswhere.exe");
+        if vswhere.is_file()
+            && let Ok(output) = Command::new(vswhere)
+                .args(["-latest", "-products", "*", "-property", "installationPath"])
+                .output()
+            && output.status.success()
+        {
+            let vs_root = PathBuf::from(String::from_utf8_lossy(&output.stdout).trim());
+            let version_file =
+                vs_root.join("VC/Auxiliary/Build/Microsoft.VCToolsVersion.default.txt");
+            if let Ok(version) = fs::read_to_string(version_file) {
+                let vc_root = vs_root.join("VC/Tools/MSVC").join(version.trim());
+                for sub in ["bin/Hostarm64/arm64", "bin/Hostx64/arm64"] {
+                    let candidate = vc_root.join(sub).join(name);
+                    if candidate.is_file() {
+                        return Ok(candidate);
+                    }
+                }
+            }
+        }
+    }
+    Err(io::Error::other(format!(
+        "Cannot locate Visual Studio ARM64 tool: {name}"
+    )))
 }
 
 fn absolute_env(name: &str) -> io::Result<PathBuf> {

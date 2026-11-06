@@ -7,6 +7,7 @@
 use std::{
     collections::BTreeMap,
     ffi::OsString,
+    fmt::Write as _,
     fs,
     path::{Path, PathBuf},
     sync::atomic::{AtomicU64, Ordering},
@@ -288,19 +289,32 @@ fn setup_environment(
     for name in ["CMAKE_C_COMPILER_TARGET", "CMAKE_CXX_COMPILER_TARGET"] {
         environment.insert(name.into(), TARGET.into());
     }
+    let mut transcribe_cmake_args = String::from(
+        "-DGGML_NATIVE=OFF -DGGML_OPENMP=OFF -DTRANSCRIBE_USE_OPENMP=OFF -DTRANSCRIBE_USE_SYSTEM_BLAS=OFF -DCMAKE_C_COMPILER_TARGET=aarch64-pc-windows-msvc -DCMAKE_CXX_COMPILER_TARGET=aarch64-pc-windows-msvc",
+    );
+    if let Some(vc_tools) = environment.get("VCToolsInstallDir") {
+        let vc_bin = Path::new(vc_tools).join("bin/Hostarm64/arm64");
+        let archiver = vc_bin.join("lib.exe");
+        let linker = vc_bin.join("link.exe");
+        if archiver.is_file() && linker.is_file() {
+            let ar_arg = archiver.to_string_lossy().replace('\\', "/");
+            let link_arg = linker.to_string_lossy().replace('\\', "/");
+            let _ = write!(
+                transcribe_cmake_args,
+                " -DCMAKE_AR:FILEPATH=\"{ar_arg}\" -DCMAKE_LINKER:FILEPATH=\"{link_arg}\""
+            );
+        }
+    }
     for (name, value) in [
         ("CMAKE_GENERATOR", "Ninja"),
         ("CL", "/EHsc"),
         ("CARGO_BUILD_JOBS", "4"),
         ("CMAKE_BUILD_PARALLEL_LEVEL", "4"),
         ("BONSAI_CMAKE_GENERATOR", "Ninja Multi-Config"),
-        (
-            "TRANSCRIBE_CMAKE_ARGS",
-            "-DGGML_NATIVE=OFF -DGGML_OPENMP=OFF -DTRANSCRIBE_USE_OPENMP=OFF -DTRANSCRIBE_USE_SYSTEM_BLAS=OFF -DCMAKE_C_COMPILER_TARGET=aarch64-pc-windows-msvc -DCMAKE_CXX_COMPILER_TARGET=aarch64-pc-windows-msvc",
-        ),
     ] {
         environment.insert(name.into(), value.into());
     }
+    environment.insert("TRANSCRIBE_CMAKE_ARGS".into(), transcribe_cmake_args);
     environment.insert("CMAKE".into(), cmake.to_string_lossy().into_owned());
     environment.insert("BONSAI_CMAKE".into(), cmake.to_string_lossy().into_owned());
     environment.insert(
@@ -426,7 +440,6 @@ pub(crate) fn build_with_environment(
         )?
     );
     if !build_environment.is_empty() {
-        use std::fmt::Write as _;
         write!(identity, "\n{build_environment:?}").map_err(|error| error.to_string())?;
     }
     let spec = crate::source_build::BuildSpec {
