@@ -222,9 +222,9 @@ fn msvc_tool(name: &str, compiler_dir: &Path) -> io::Result<PathBuf> {
             let version_file =
                 vs_root.join("VC/Auxiliary/Build/Microsoft.VCToolsVersion.default.txt");
             if let Ok(version) = fs::read_to_string(version_file) {
-                let vc_root = vs_root.join("VC/Tools/MSVC").join(version.trim());
+                let msvc_root = vs_root.join("VC/Tools/MSVC").join(version.trim());
                 for sub in ["bin/Hostarm64/arm64", "bin/Hostx64/arm64"] {
-                    let candidate = vc_root.join(sub).join(name);
+                    let candidate = msvc_root.join(sub).join(name);
                     if candidate.is_file() {
                         return Ok(candidate);
                     }
