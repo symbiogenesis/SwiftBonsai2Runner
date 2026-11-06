@@ -435,7 +435,7 @@ mod tests {
         0
     }
 
-    unsafe extern "C" fn close(handle: u64) -> i32 {
+    extern "C" fn close(handle: u64) -> i32 {
         let mut state = state();
         state.calls.push("close");
         if handle != 42 {
@@ -444,7 +444,7 @@ mod tests {
         if state.fail == "close" { 512 } else { 0 }
     }
 
-    unsafe extern "C" fn alloc(heap: i32, flags: u32, bytes: i32) -> *mut c_void {
+    extern "C" fn alloc(heap: i32, flags: u32, bytes: i32) -> *mut c_void {
         let mut state = state();
         state.calls.push("alloc");
         if (heap, flags, bytes) != (25, 1, 4096) || state.fail == "alloc" {
@@ -456,19 +456,19 @@ mod tests {
         pointer
     }
 
-    unsafe extern "C" fn free(_: *mut c_void) {
+    extern "C" fn free(_: *mut c_void) {
         let mut state = state();
         state.calls.push("free");
         state.page = None;
     }
 
-    unsafe extern "C" fn to_fd(_: *mut c_void) -> i32 {
+    extern "C" fn to_fd(_: *mut c_void) -> i32 {
         let mut state = state();
         state.calls.push("fd");
         if state.fail == "fd" { -4 } else { 7 }
     }
 
-    unsafe extern "C" fn map(
+    extern "C" fn map(
         domain: i32,
         fd: i32,
         _: *mut c_void,
@@ -484,7 +484,7 @@ mod tests {
         if state.fail == "map" { 512 } else { 0 }
     }
 
-    unsafe extern "C" fn unmap(domain: i32, fd: i32, _: *mut c_void, bytes: usize) -> i32 {
+    extern "C" fn unmap(domain: i32, fd: i32, _: *mut c_void, bytes: usize) -> i32 {
         let mut state = state();
         state.calls.push("unmap");
         if (domain, fd, bytes) != (3, 7, 4096) {

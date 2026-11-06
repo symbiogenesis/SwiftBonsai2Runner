@@ -245,7 +245,7 @@ mod tests {
         0
     }
 
-    unsafe extern "C" fn domain_refused(_: u32, _: *mut c_void, _: u32) -> i32 {
+    extern "C" fn domain_refused(_: u32, _: *mut c_void, _: u32) -> i32 {
         512
     }
 

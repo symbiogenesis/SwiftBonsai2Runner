@@ -468,7 +468,7 @@ mod device {
         }
     }
 
-    unsafe extern "C" fn discard_log(_level: c_int, _text: *const c_char, _context: *mut c_void) {
+    extern "C" fn discard_log(_level: c_int, _text: *const c_char, _context: *mut c_void) {
         // Do not dereference vendor text or allow it into the JSON protocol.
     }
 

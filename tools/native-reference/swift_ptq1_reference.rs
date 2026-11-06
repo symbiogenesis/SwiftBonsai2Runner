@@ -353,23 +353,6 @@ mod native {
         fn LoadLibraryExW(path: *const u16, reserved: *mut c_void, flags: u32) -> *mut c_void;
         fn GetProcAddress(module: *mut c_void, name: *const c_char) -> *mut c_void;
         fn FreeLibrary(module: *mut c_void) -> i32;
-        fn CreateFileW(
-            path: *const u16,
-            access: u32,
-            share: u32,
-            security: *mut c_void,
-            creation: u32,
-            flags: u32,
-            template: *mut c_void,
-        ) -> *mut c_void;
-        fn WriteFile(
-            file: *mut c_void,
-            buffer: *const c_void,
-            count: u32,
-            written: *mut u32,
-            overlapped: *mut c_void,
-        ) -> i32;
-        fn CloseHandle(handle: *mut c_void) -> i32;
     }
 
     // Foreign exceptions may abort inside catch_unwind or return an opaque Err.
@@ -552,79 +535,23 @@ mod native {
         }
     }
 
-    struct File(Option<NonNull<c_void>>);
-
-    impl File {
-        fn close(mut self) -> bool {
-            let Some(handle) = self.0.take() else {
-                return false;
-            };
-            // SAFETY: This takes and closes the guard's unique live handle once.
-            unsafe { CloseHandle(handle.as_ptr()) != 0 }
-        }
-    }
-
-    impl Drop for File {
-        fn drop(&mut self) {
-            if let Some(handle) = self.0.take() {
-                // SAFETY: Error/unwind cleanup returns this guard's unique live
-                // file handle once; ordinary paths check close explicitly.
-                unsafe { CloseHandle(handle.as_ptr()) };
-            }
-        }
-    }
-
     fn write_new(path: &Path, bytes: &[u8]) -> io::Result<()> {
+        use std::io::Write as _;
+        use std::os::windows::fs::OpenOptionsExt as _;
         require(
             bytes.len() <= MAX_STATE,
             "snapshot exceeds fixed byte bound",
         )?;
-        let path = wide(path)?;
-        // SAFETY: The NUL-terminated path is live; GENERIC_WRITE, FILE_SHARE_READ,
-        // CREATE_NEW and FILE_ATTRIBUTE_NORMAL preserve original file semantics.
-        let handle = unsafe {
-            CreateFileW(
-                path.as_ptr(),
-                0x4000_0000,
-                1,
-                std::ptr::null_mut(),
-                1,
-                0x80,
-                std::ptr::null_mut(),
-            )
-        };
-        require(
-            handle != std::ptr::without_provenance_mut::<c_void>(usize::MAX),
-            "snapshot already exists or cannot be created",
-        )?;
-        let file = File(Some(NonNull::new(handle).ok_or_else(|| {
-            io::Error::other("snapshot already exists or cannot be created")
-        })?));
-        let mut success = true;
-        for chunk in bytes.chunks(1_048_576) {
-            let count = u32::try_from(chunk.len()).map_err(io::Error::other)?;
-            let mut written = 0;
-            // SAFETY: The file handle is uniquely retained and chunk is a live
-            // initialized read-only span of count bytes for this blocking write.
-            let result = unsafe {
-                WriteFile(
-                    handle,
-                    chunk.as_ptr().cast(),
-                    count,
-                    &raw mut written,
-                    std::ptr::null_mut(),
-                )
-            };
-            if result == 0 || written != count {
-                success = false;
-                break;
-            }
-        }
-        let closed = file.close();
-        require(
-            success && closed,
-            "snapshot write failed; partial evidence retained",
-        )
+        let _ = wide(path)?;
+        let mut file = std::fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .share_mode(1)
+            .open(path)
+            .map_err(|_| io::Error::other("snapshot already exists or cannot be created"))?;
+        file.write_all(bytes)
+            .and_then(|()| file.flush())
+            .map_err(|_| io::Error::other("snapshot write failed; partial evidence retained"))
     }
 
     const fn model_settings(mut parameters: ModelParams) -> ModelParams {
@@ -770,11 +697,8 @@ mod native {
             "native sequence-state serialization truncated",
         )?;
         let record = token_record(0, token, size, logits)?;
-        // SAFETY: The read-only row contains VOCABULARY initialized f32s. On
-        // the explicitly supported little-endian target this is exact f32le.
-        let bytes =
-            unsafe { std::slice::from_raw_parts(logits.as_ptr().cast(), size_of_val(logits)) };
-        write_new(&evidence.join("logits-0.f32le"), bytes)?;
+        let bytes: Vec<u8> = logits.iter().copied().flat_map(f32::to_le_bytes).collect();
+        write_new(&evidence.join("logits-0.f32le"), &bytes)?;
         write_new(&evidence.join("state-0.native-seq"), &state)?;
         writeln!(output, "{record}")?;
         output.flush()?;
@@ -1267,11 +1191,11 @@ mod native {
             }
         }
 
-        unsafe extern "C-unwind" fn backend_init() {
+        extern "C-unwind" fn backend_init() {
             called("backend_init");
         }
 
-        unsafe extern "C-unwind" fn backend_free() {
+        extern "C-unwind" fn backend_free() {
             called("backend_free");
         }
 
@@ -1295,12 +1219,12 @@ mod native {
             }
         }
 
-        unsafe extern "C-unwind" fn free_model(pointer: *mut c_void) {
+        extern "C-unwind" fn free_model(pointer: *mut c_void) {
             observed(pointer.addr() == 1);
             called("free_model");
         }
 
-        unsafe extern "C-unwind" fn vocab(pointer: *const c_void) -> *const c_void {
+        extern "C-unwind" fn vocab(pointer: *const c_void) -> *const c_void {
             observed(pointer.addr() == 1);
             if called("vocab") {
                 std::ptr::null()
@@ -1309,7 +1233,7 @@ mod native {
             }
         }
 
-        unsafe extern "C-unwind" fn vocab_count(pointer: *const c_void) -> i32 {
+        extern "C-unwind" fn vocab_count(pointer: *const c_void) -> i32 {
             observed(pointer.addr() == 5);
             if called("vocab_count") { 0 } else { 248_320 }
         }
@@ -1333,12 +1257,12 @@ mod native {
             }
         }
 
-        unsafe extern "C-unwind" fn free_adapter(pointer: *mut c_void) {
+        extern "C-unwind" fn free_adapter(pointer: *mut c_void) {
             observed(pointer.addr() == 2);
             called("free_adapter");
         }
 
-        unsafe extern "C-unwind" fn init_context(
+        extern "C-unwind" fn init_context(
             model: *mut c_void,
             parameters: ContextParams,
         ) -> *mut c_void {
@@ -1357,7 +1281,7 @@ mod native {
             }
         }
 
-        unsafe extern "C-unwind" fn free_context(pointer: *mut c_void) {
+        extern "C-unwind" fn free_context(pointer: *mut c_void) {
             observed(pointer.addr() == 3);
             called("free_context");
         }
@@ -1401,7 +1325,7 @@ mod native {
             i32::from(called("decode"))
         }
 
-        unsafe extern "C-unwind" fn logits(context: *mut c_void, index: i32) -> *mut f32 {
+        extern "C-unwind" fn logits(context: *mut c_void, index: i32) -> *mut f32 {
             observed(context.addr() == 3 && index == -1);
             if called("logits") {
                 std::ptr::null_mut()
@@ -1410,7 +1334,7 @@ mod native {
             }
         }
 
-        unsafe extern "C-unwind" fn state_size(context: *mut c_void, sequence: i32) -> usize {
+        extern "C-unwind" fn state_size(context: *mut c_void, sequence: i32) -> usize {
             observed(context.addr() == 3 && sequence == 0);
             called("state_size");
             FAIL.with(|fail| match fail.get() {
@@ -1455,15 +1379,75 @@ mod native {
             }
         }
 
+        const fn zero_model_params() -> ModelParams {
+            ModelParams {
+                dspark_head_source: std::ptr::null(),
+                devices: std::ptr::null_mut(),
+                tensor_buft_overrides: std::ptr::null(),
+                n_gpu_layers: 0,
+                split_mode: 0,
+                load_mode: 0,
+                main_gpu: 0,
+                tensor_split: std::ptr::null(),
+                progress_callback: None,
+                progress_callback_user_data: std::ptr::null_mut(),
+                kv_overrides: std::ptr::null(),
+                vocab_only: false,
+                check_tensors: false,
+                use_extra_bufts: false,
+                no_host: false,
+                no_alloc: false,
+                load_mtp: false,
+            }
+        }
+
+        const fn zero_context_params() -> ContextParams {
+            ContextParams {
+                n_ctx: 0,
+                n_batch: 0,
+                n_ubatch: 0,
+                n_seq_max: 0,
+                n_rs_seq: 0,
+                n_outputs_max: 0,
+                n_outputs_max_per_seq: 0,
+                n_threads: 0,
+                n_threads_batch: 0,
+                ctx_type: 0,
+                rope_scaling_type: 0,
+                pooling_type: 0,
+                attention_type: 0,
+                flash_attn_type: 0,
+                rope_freq_base: 0.0,
+                rope_freq_scale: 0.0,
+                yarn_ext_factor: 0.0,
+                yarn_attn_factor: 0.0,
+                yarn_beta_fast: 0.0,
+                yarn_beta_slow: 0.0,
+                yarn_orig_ctx: 0,
+                defrag_thold: 0.0,
+                cb_eval: None,
+                cb_eval_user_data: std::ptr::null_mut(),
+                type_k: 0,
+                type_v: 0,
+                path_kv_mean_center: std::ptr::null(),
+                abort_callback: None,
+                abort_callback_data: std::ptr::null_mut(),
+                embeddings: false,
+                offload_kqv: false,
+                no_perf: false,
+                op_offload: false,
+                swa_full: false,
+                kv_unified: false,
+                samplers: std::ptr::null_mut(),
+                n_samplers: 0,
+                ctx_other: std::ptr::null_mut(),
+            }
+        }
+
         fn mock_defaults() -> Defaults<'static> {
-            // SAFETY: Every field is an integer/float, raw pointer, bool, or
-            // nullable function pointer. All-zero is valid for all those types.
-            let model = unsafe { std::mem::zeroed() };
-            // SAFETY: The context has the same valid zero field categories.
-            let context = unsafe { std::mem::zeroed() };
             Defaults {
-                model,
-                context,
+                model: zero_model_params(),
+                context: zero_context_params(),
                 one_batch,
                 _library: PhantomData,
             }
