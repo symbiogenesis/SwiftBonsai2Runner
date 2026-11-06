@@ -29,6 +29,7 @@ fn main() -> io::Result<()> {
     println!("cargo:rerun-if-changed=build_overlay.rs");
     println!("cargo:rerun-if-changed=build_tokenizer.rs");
     println!("cargo:rerun-if-changed=build_decode_graph.rs");
+    println!("cargo:rerun-if-changed=build_npu.rs");
     if env::var("CARGO_CFG_TARGET_OS").is_ok_and(|value| value != "windows") {
         return Ok(());
     }

@@ -6,6 +6,8 @@ use sha2::{Digest as _, Sha256};
 
 #[path = "build_decode_graph.rs"]
 mod decode_overlay;
+#[path = "build_npu.rs"]
+mod npu_overlay;
 #[path = "build_tokenizer.rs"]
 mod tokenizer_overlay;
 
@@ -151,7 +153,8 @@ fn vectors(text: &str) -> io::Result<String> {
     reason = "Keep the reviewed build helper private to its build-script or test parent."
 )]
 pub(super) fn prepare(source: &Path, destination: &Path) -> io::Result<()> {
-    prepare_with(source, destination, &TRANSFORMS)
+    prepare_with(source, destination, &TRANSFORMS)?;
+    npu_overlay::apply(destination)
 }
 
 const TRANSFORMS: [(&str, Transform); 10] = [

@@ -14,6 +14,7 @@ use std::{
 
 mod cpu_threads;
 mod decode_graph;
+mod hexagon;
 mod philox;
 mod qwen;
 mod sampling;
@@ -157,8 +158,19 @@ impl Context {
         let params = qwen::InitParams {
             talker_path: model.as_ptr(),
             codec_path: codec.as_ptr(),
-            device: c"CPU".as_ptr(),
-            use_fa: false,
+            device: if model
+                .to_str()
+                .is_ok_and(|path| std::path::Path::new(path).is_file())
+                && codec
+                    .to_str()
+                    .is_ok_and(|path| std::path::Path::new(path).is_file())
+            {
+                hexagon::select_device(discard_log)
+            } else {
+                c"CPU"
+            }
+            .as_ptr(),
+            use_fa: true,
             max_batch: 1,
             codec_chunk_sec: 8.0,
             ..qwen::InitParams::default()
