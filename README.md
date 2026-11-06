@@ -32,9 +32,9 @@ the window opens. Explicit provisioning uses `bonsai-tools provision` with opera
 `inference` and an absolute `dataDirectory`; see the [setup commands](docs/development-guide.md#native-chat-app).
 
 Once you've [set up the model and runtime](docs/development-guide.md#native-chat-app),
-run `bonsai-tools chat`. The development default is Rust Prism 0.1.14 with the
+run `bonsai-tools chat`. The development default is Rust Prism 0.1.15 with the
 original Swift PQ2 weights, four CPU row workers and the standard adapter at
-scale 1.3. Use `bonsai-tools chat --publisher-engine` for the explicit publisher
+scale 1.3, and default Snapdragon X2 Hexagon NPU `native-q2` resident acceleration (`blk.0 + blk.3`). Use `bonsai-tools chat --publisher-engine` for the explicit publisher
 C++ rollback. `--native-engine` remains accepted. Both open the native Windows chat app.
 
 The convenience launcher `./scripts/Start-Chat.ps1` uses the same prebuilt Rust
@@ -77,7 +77,7 @@ and [local API contract](docs/broker-policy.md#public-request-contract).
 | **Hardware** | Snapdragon X and X2 · Windows ARM64 |
 | **Model** | Swift Bonsai 2 · `PQ2_0` |
 | **CPU profile** | One active request · 8K-token context · FP16 attention caches |
-| **Engine** | Rust Prism 0.1.14; four CPU row workers; adapter scale 1.3 |
+| **Engine** | Rust Prism 0.1.15; four CPU row workers; Snapdragon X2 Hexagon NPU `native-q2` resident acceleration (`blk.0 + blk.3`); adapter scale 1.3 |
 | **Outstanding work** | [Central TODO](PLAN.md) |
 
 ## Performance
