@@ -1280,7 +1280,7 @@ mod tests {
         for (pointer, wrong) in [
             ("/nativeCompletedCycle", json!(false)),
             ("/nativeOperationsCompleted", json!(39)),
-            ("/integerValuesCompared", json!(1392639)),
+            ("/integerValuesCompared", json!(1_392_639)),
             ("/stateBitwiseEqual", json!(false)),
             ("/modelSha256", json!("0".repeat(64))),
             ("/driverDll", json!("other-driver")),
@@ -1425,7 +1425,7 @@ mod tests {
             json!([]),
             json!([43]),
             json!([42, 43, 44, 45, 46, 47, 48, 49, 50]),
-            json!([42, 248320]),
+            json!([42, 248_320]),
         ] {
             let mut changed = legacy.clone();
             changed["tokenIds"] = invalid;
@@ -1791,6 +1791,10 @@ mod tests {
     }
 
     #[test]
+    #[allow(
+        clippy::too_many_lines,
+        reason = "End-to-end batch-4 resident multi-projection contract test keeps admission and rejection cases together."
+    )]
     fn multi_projection_batch4_resident_binds_two_tensors_arena_and_queue_writes() -> Result<()> {
         let driver = json!({"Path":"fixed-driver"});
         let tokens = [42, 43, 128];
@@ -2007,6 +2011,10 @@ mod tests {
     }
 
     #[test]
+    #[allow(
+        clippy::too_many_lines,
+        reason = "End-to-end native-q2 resident multi-layer contract test keeps admission and rejection cases together."
+    )]
     fn native_q2_resident_result_binds_single_op_queue_writes_and_bounded_tolerance() -> Result<()>
     {
         let driver = json!({"Path":"fixed-driver"});
