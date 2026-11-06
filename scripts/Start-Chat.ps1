@@ -17,7 +17,7 @@ param(
     [switch]$NativeEngine,
     [switch]$PublisherEngine,
     [ValidateSet(1, 4)]
-    [int]$NativeRowWorkers = 4,
+    [int]$NativeRowWorkers,
     [ValidateSet('disabled', 'latest')]
     [string]$PromptReuse,
     [switch]$UseRepackedPtq1,
@@ -30,16 +30,6 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $false
-
-if ($NativeEngine -and $PublisherEngine) {
-    throw 'NativeEngine and PublisherEngine are mutually exclusive.'
-}
-if ($PublisherEngine -and $PromptReuse -eq 'latest') {
-    throw 'Latest prompt reuse requires the Rust engine.'
-}
-if ($PublisherEngine -and $PSBoundParameters.ContainsKey('NativeRowWorkers') -and $NativeRowWorkers -ne 1) {
-    throw 'Four native row workers require the Rust engine.'
-}
 
 if (-not $ToolPath -and $env:LOCALAPPDATA) {
     $cachedTool = Join-Path $env:LOCALAPPDATA 'SwiftBonsai2/build/maintenance/release/bonsai-tools.exe'
@@ -67,10 +57,10 @@ $ToolPath = (Resolve-Path -LiteralPath $ToolPath).ProviderPath
 
 $launchArguments = @('chat', '--repository-root', (Split-Path $PSScriptRoot -Parent))
 if ($DataDirectory) { $launchArguments += @('--data-directory', $DataDirectory) }
-if ($PublisherEngine) {
-    $launchArguments += @('--publisher-engine', '--native-row-workers', '1')
-} else {
-    $launchArguments += @('--native-engine', '--native-row-workers', [string]$NativeRowWorkers)
+if ($NativeEngine) { $launchArguments += '--native-engine' }
+if ($PublisherEngine) { $launchArguments += '--publisher-engine' }
+if ($PSBoundParameters.ContainsKey('NativeRowWorkers')) {
+    $launchArguments += @('--native-row-workers', [string]$NativeRowWorkers)
 }
 if ($UseRepackedPtq1) { $launchArguments += '--use-repacked-ptq1' }
 if ($UseOriginalPq2) { $launchArguments += '--use-original-pq2' }
