@@ -45,18 +45,8 @@ impl Text {
             consumed = self.pending.len() - pending.len();
             let maximum = segmentation::maximum(pending);
             let limit = maximum.unwrap_or(pending.len());
-            let sentence = pending[..limit]
-                .char_indices()
-                .find_map(|(index, character)| {
-                    let end = index + character.len_utf8();
-                    (character == '\n'
-                        || (matches!(character, '.' | '!' | '?' | '…')
-                            && pending[end..]
-                                .chars()
-                                .next()
-                                .is_some_and(char::is_whitespace)))
-                    .then_some(end)
-                });
+            let sentence =
+                segmentation::sentence_boundary(pending, limit, self.finished || expired);
             let boundary = sentence.or_else(|| {
                 if maximum.is_some() {
                     Some(segmentation::word_boundary(pending, limit))
@@ -112,6 +102,7 @@ mod tests {
             "a".repeat(MAX_SEGMENT),
             "🙂".repeat(MAX_SEGMENT + 5),
             "A bounded Unicode phrase 🙂 ".repeat(30),
+            "First sentence. \"Second!\" (Third?) 🙂".to_owned(),
             format!(
                 "{} {}",
                 "é".repeat(MAX_SEGMENT / 2),
@@ -140,6 +131,31 @@ mod tests {
         assert_eq!(text.ready(now), ["tail"]);
         assert!(text.ready(now).is_empty());
         assert!(text.append("late", now).is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn streaming_punctuation_handles_delimiters_numbered_lists_dividers_and_idle_endings()
+    -> Result<(), &'static str> {
+        let now = Instant::now();
+        let mut text = Text::default();
+        text.append(
+            "\"First sentence!\" (Second?) **Third.** 1. Numbered item. ---\nNext",
+            now,
+        )?;
+        assert_eq!(
+            text.ready(now),
+            [
+                "\"First sentence!\"",
+                "(Second?)",
+                "**Third.**",
+                "1. Numbered item."
+            ]
+        );
+        text.append(" sentence.", now)?;
+        assert!(text.ready(now).is_empty());
+        assert_eq!(text.ready(now + LATENCY), ["---\nNext sentence."]);
+        assert!(text.ready(now + LATENCY).is_empty());
         Ok(())
     }
 

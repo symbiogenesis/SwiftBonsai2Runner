@@ -179,7 +179,9 @@ fn next_segment(
         }
     };
     let mut characters = text.chars().count();
-    while let Ok(next) = segments.try_recv() {
+    while !super::segmentation::ends_sentence(&text)
+        && let Ok(next) = segments.try_recv()
+    {
         check(generation, current, stop)?;
         let count = next.chars().count();
         if characters + 1 + count > super::MAX_SEGMENT {
@@ -728,9 +730,10 @@ mod tests {
 
     #[test]
     fn queued_short_text_coalesces_without_reordering_or_exceeding_the_request_bound() {
-        let (sender, receiver) = mpsc::sync_channel(4);
-        assert!(sender.send("Hello.".to_owned()).is_ok());
-        assert!(sender.send("Another sentence.".to_owned()).is_ok());
+        let (sender, receiver) = mpsc::sync_channel(5);
+        assert!(sender.send("Hello".to_owned()).is_ok());
+        assert!(sender.send("another clause.".to_owned()).is_ok());
+        assert!(sender.send("Separate sentence.".to_owned()).is_ok());
         assert!(sender.send("x".repeat(super::super::MAX_SEGMENT)).is_ok());
         assert!(sender.send("Last.".to_owned()).is_ok());
         drop(sender);
@@ -738,7 +741,8 @@ mod tests {
         let current = AtomicU64::new(4);
         let stop = AtomicBool::new(false);
         for expected in [
-            "Hello. Another sentence.".to_owned(),
+            "Hello another clause.".to_owned(),
+            "Separate sentence.".to_owned(),
             "x".repeat(super::super::MAX_SEGMENT),
             "Last.".to_owned(),
         ] {
