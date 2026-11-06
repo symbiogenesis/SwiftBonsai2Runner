@@ -26,6 +26,23 @@ pub(crate) struct Request {
     payload: PathBuf,
     working: PathBuf,
     pub(crate) data: PathBuf,
+    pub(crate) canary_configured: bool,
+    pub(crate) tts_configured: bool,
+}
+
+#[derive(Default, serde::Deserialize)]
+#[serde(rename_all = "PascalCase")]
+struct RequestedSpeech {
+    #[serde(default)]
+    canary_key_file: Option<String>,
+    #[serde(default)]
+    tts_key_file: Option<String>,
+    #[serde(default)]
+    no_tts: bool,
+    #[serde(default)]
+    no_speech_models: bool,
+    #[serde(default)]
+    speech_models_only: bool,
 }
 
 impl Request {
@@ -49,6 +66,20 @@ impl Request {
                 ));
             }
         }
+        let payload = bounded_text(&request)?;
+        let speech: RequestedSpeech = serde_json::from_str(&payload).map_err(io::Error::other)?;
+        let has_canary_key = speech
+            .canary_key_file
+            .as_deref()
+            .is_some_and(|value| !value.is_empty());
+        let has_tts_key = speech
+            .tts_key_file
+            .as_deref()
+            .is_some_and(|value| !value.is_empty());
+        let canary_configured =
+            !speech.speech_models_only && (!speech.no_speech_models || has_canary_key);
+        let tts_configured = !speech.speech_models_only
+            && ((!speech.no_speech_models && !speech.no_tts) || has_tts_key);
         let working = request
             .parent()
             .ok_or_else(|| io::Error::other("Startup request needs an external parent directory."))?
@@ -60,6 +91,8 @@ impl Request {
             payload: request,
             working,
             data,
+            canary_configured,
+            tts_configured,
         })
     }
 }

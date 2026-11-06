@@ -20,7 +20,7 @@ impl State {
             if self.streaming_active {
                 self.stop_speech();
             }
-        } else if !self.speech_output {
+        } else if !self.speech_output && (self.speech_checked || !self.tts_configured) {
             let message = self.read_aloud_help();
             message.clone_into(&mut self.speech_status);
             self.help = Some(("Read aloud setup", message));

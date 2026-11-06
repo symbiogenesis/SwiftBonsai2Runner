@@ -245,6 +245,12 @@ impl State {
     ) -> Self {
         let mut state = Self::create(commands, events, None, None);
         state.preview = false;
+        state.canary_configured = request.canary_configured;
+        state.tts_configured = request.tts_configured;
+        state.speech_checked = !state.canary_configured && !state.tts_configured;
+        if !state.speech_checked {
+            "Preparing speech services…".clone_into(&mut state.speech_status);
+        }
         "Preparing runtime selection…".clone_into(&mut state.runtime_description);
         state.model = ModelLifecycle::Preparing;
         state.abliteration_enabled = false;
@@ -282,6 +288,7 @@ impl State {
     }
 
     fn fail_startup(&mut self, error: &io::Error) {
+        self.speech_checked = true;
         if let Some(failure) = &self.startup_failure
             && let Ok(mut failure) = failure.lock()
         {
@@ -312,6 +319,10 @@ impl State {
         self.tts_configured = config.qwen_tts.is_some();
         self.speech = speech::start(config.canary.clone(), config.qwen_tts.clone()).ok();
         self.speech_checked = self.speech.is_none();
+        if self.speech_checked && self.speaking {
+            self.speaking = false;
+            self.speaking_message = None;
+        }
         self.microphone = microphone::Microphone::new().ok();
         self.worker = Some(start(config, incoming, events)?);
         self.commands = commands;
@@ -709,11 +720,11 @@ impl State {
             self.cancel_microphone();
             "Microphone off. Review your message before sending."
                 .clone_into(&mut self.speech_status);
-        } else if !self.speech_input {
+        } else if !self.speech_input && (self.speech_checked || !self.canary_configured) {
             let message = self.microphone_help();
             message.clone_into(&mut self.speech_status);
             self.help = Some(("Microphone setup", message));
-        } else if !self.model.ready() {
+        } else if !self.model.ready() || !self.speech_input {
             "Enable the microphone after model startup completes."
                 .clone_into(&mut self.speech_status);
         } else if !self.model.busy() && !self.speaking {
@@ -748,7 +759,7 @@ impl State {
             return;
         }
         self.speech_notice = true;
-        if self.speech_output {
+        if self.speech_output || (!self.speech_checked && self.tts_configured) {
             let voice_description = self.voice_profile.trim().to_owned();
             if voice_description.is_empty() {
                 "Describe the voice in Settings before reading aloud."
@@ -761,13 +772,20 @@ impl State {
                 return;
             };
             self.stop_speech();
-            if self.speech_command(speech::Command::Speak {
-                text,
-                voice_description,
-            }) {
+            if self.speech_output {
+                if self.speech_command(speech::Command::Speak {
+                    text,
+                    voice_description,
+                }) {
+                    self.speaking = true;
+                    self.speaking_message = Some(message_id);
+                    "Reading the selected response aloud.".clone_into(&mut self.speech_status);
+                }
+            } else {
                 self.speaking = true;
                 self.speaking_message = Some(message_id);
-                "Reading the selected response aloud.".clone_into(&mut self.speech_status);
+                "Preparing Qwen3-TTS VoiceDesign to read the selected response aloud…"
+                    .clone_into(&mut self.speech_status);
             }
         } else {
             let message = self.read_aloud_help();
@@ -834,6 +852,30 @@ impl State {
                     }
                 }
                 .clone_into(&mut self.speech_status);
+                if output {
+                    if self.speaking && !self.streaming_active {
+                        let voice_description = self.voice_profile.trim().to_owned();
+                        if let Some(message_id) = self.speaking_message
+                            && !voice_description.is_empty()
+                            && let Some(text) =
+                                self.transcript.speech_text(message_id).map(str::to_owned)
+                        {
+                            if self.speech_command(speech::Command::Speak {
+                                text,
+                                voice_description,
+                            }) {
+                                "Reading the selected response aloud."
+                                    .clone_into(&mut self.speech_status);
+                            }
+                        } else {
+                            self.speaking = false;
+                            self.speaking_message = None;
+                        }
+                    }
+                } else if self.speaking {
+                    self.speaking = false;
+                    self.speaking_message = None;
+                }
             }
             speech::Event::Listening(listening) => {
                 self.listening = listening && self.dictation_requested;
@@ -1994,6 +2036,46 @@ mod startup_tests {
         assert_eq!(state.voice_profile, "My chosen voice");
         assert!(!state.abliteration_enabled);
         assert!(!state.preview && !state.model.ready());
+        drop(state);
+        fs::remove_dir_all(&directory)?;
+        Ok(())
+    }
+
+    #[test]
+    fn pending_native_startup_queues_read_aloud_without_setup_popup() -> io::Result<()> {
+        let (request, directory) = fixture()?;
+        let (commands, _incoming) = mpsc::channel();
+        let (_events, incoming_events) = client::event_channel();
+        let mut state = State::pending_startup(commands, incoming_events, request);
+        assert!(state.canary_configured && state.tts_configured && !state.speech_checked);
+        state
+            .transcript
+            .push(Role::Assistant, "Recovered answer to read aloud.".into());
+        state.transcript.remove_empty_response();
+        let message_id = state.transcript.messages[0].id;
+        state.toggle_dictation();
+        assert!(state.help.is_none());
+        assert_eq!(
+            state.speech_status,
+            "Enable the microphone after model startup completes."
+        );
+        state.toggle_streaming_read_aloud();
+        assert!(state.help.is_none() && state.streaming_read_aloud);
+        state.toggle_read_aloud(message_id);
+        assert!(state.help.is_none());
+        assert!(state.speaking && state.speaking_message == Some(message_id));
+        let (session, speech_commands) = speech::Session::fixture()?;
+        state.speech = Some(session);
+        state.speech_event(speech::Event::Capabilities {
+            input: true,
+            output: true,
+        });
+        assert!(state.speech_checked && state.speech_output);
+        assert!(matches!(
+            speech_commands.recv_timeout(Duration::from_secs(2)).map_err(io::Error::other)?,
+            speech::Command::Speak { text, voice_description }
+                if text == "Recovered answer to read aloud." && voice_description == state.voice_profile
+        ));
         drop(state);
         fs::remove_dir_all(&directory)?;
         Ok(())
