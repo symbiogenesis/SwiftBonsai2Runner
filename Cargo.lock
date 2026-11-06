@@ -605,14 +605,14 @@ dependencies = [
 
 [[package]]
 name = "bonsai-windows-credentials"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "windows-sys 0.61.2",
 ]
 
 [[package]]
 name = "bonsai-windows-process"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "ash",
  "flatbuffers",
