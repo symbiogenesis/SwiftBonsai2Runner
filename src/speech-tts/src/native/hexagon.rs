@@ -22,6 +22,7 @@ unsafe extern "system" {
 }
 
 unsafe extern "C" {
+    fn _wputenv_s(name: *const u16, value: *const u16) -> c_int;
     fn ggml_backend_register(reg: *mut c_void);
     fn ggml_backend_dev_by_name(name: *const c_char) -> *mut c_void;
 }
@@ -65,13 +66,6 @@ fn ensure_registered(discard_log: LogCallback) -> bool {
 }
 
 fn register_hexagon(discard_log: LogCallback) -> Option<PinnedRuntime> {
-    let system_root = env::var_os("SystemRoot")?;
-    let cdsprpc = PathBuf::from(system_root)
-        .join("System32")
-        .join("libcdsprpc.dll");
-    if !regular_file(&cdsprpc) {
-        return None;
-    }
     let runtime_dir = runtime_directory()?;
     if !valid_directory(&runtime_dir) {
         return None;
@@ -191,8 +185,14 @@ fn set_env_wide(name: &str, value: &Path) -> bool {
     let Some(value_wide) = encode_wide(value.as_os_str()) else {
         return false;
     };
-    // SAFETY: Both buffers are valid NUL-terminated UTF-16 strings that outlive the call.
-    unsafe { SetEnvironmentVariableW(name_wide.as_ptr(), value_wide.as_ptr()) != 0 }
+    // SAFETY: Both buffers are valid NUL-terminated UTF-16 strings that outlive
+    // the call. _wputenv_s updates the UCRT narrow/wide environment tables
+    // read by libcdsprpc.dll's getenv("ADSP_LIBRARY_PATH").
+    let ucrt_ok = unsafe { _wputenv_s(name_wide.as_ptr(), value_wide.as_ptr()) == 0 };
+    // SAFETY: Both buffers are valid NUL-terminated UTF-16 strings that outlive
+    // the call. SetEnvironmentVariableW updates the Win32 process environment block.
+    let win32_ok = unsafe { SetEnvironmentVariableW(name_wide.as_ptr(), value_wide.as_ptr()) != 0 };
+    ucrt_ok && win32_ok
 }
 
 fn load_library(path: &Path) -> Option<NonNull<c_void>> {
@@ -216,4 +216,22 @@ fn symbol(module: NonNull<c_void>, name: &'static [u8]) -> Option<*mut c_void> {
     // SAFETY: module is a live loaded library and name is NUL-terminated ASCII.
     let raw = unsafe { GetProcAddress(module.as_ptr(), name.as_ptr()) };
     (!raw.is_null()).then_some(raw)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn select_device_registers_htp0_when_runtime_present() {
+        let device = select_device(super::super::discard_log);
+        if runtime_directory()
+            .as_deref()
+            .is_some_and(|dir| regular_file(&dir.join("ggml-hexagon.dll")))
+        {
+            assert_eq!(device, c"HTP0");
+        } else {
+            assert_eq!(device, c"CPU");
+        }
+    }
 }
