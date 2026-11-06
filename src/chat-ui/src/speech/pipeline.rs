@@ -330,19 +330,21 @@ fn consume_with(
         output.reap()?;
         if started && output.queued() == 0 && buffered.ready.is_empty() {
             output.pause()?;
-            buffered.underrun();
+            if buffered.released {
+                buffered.underrun();
+            }
             started = false;
         }
         while output.queued() < PLAYBACK_PACKETS {
             if let Some(pcm) = buffered.pop() {
                 output.push(pcm)?;
-                if !started
-                    && (output.queued() >= PREROLL_PACKETS
-                        || (buffered.ready.is_empty() && buffered.flush))
-                {
+                let flushed = buffered.ready.is_empty() && buffered.flush;
+                if flushed {
+                    buffered.flush = false;
+                }
+                if !started && (output.queued() >= PREROLL_PACKETS || flushed) {
                     output.start()?;
                     started = true;
-                    buffered.flush = false;
                 }
             } else {
                 break;
@@ -444,7 +446,7 @@ impl Buffered {
         self.segment_bytes = 0;
         self.first = None;
         self.released = false;
-        self.flush = true;
+        self.flush = !self.ready.is_empty();
         Ok(())
     }
 
@@ -1132,6 +1134,33 @@ mod tests {
             assert_eq!(output.starts.first(), Some(&frames.min(PREROLL_PACKETS)));
             assert!(output.maximum <= PLAYBACK_PACKETS);
         }
+        let (sender, incoming) = mpsc::sync_channel(PREFETCH_PACKETS);
+        for _ in 0..PREROLL_PACKETS {
+            assert!(sender.send(Audio::Frame(vec![1; PACKET_BYTES])).is_ok());
+        }
+        assert!(sender.send(Audio::SegmentEnd).is_ok());
+        for _ in 0..PREROLL_PACKETS {
+            assert!(sender.send(Audio::Frame(vec![2; PACKET_BYTES])).is_ok());
+        }
+        assert!(sender.send(Audio::Frame(vec![2; PACKET_BYTES])).is_ok());
+        assert!(sender.send(Audio::SegmentEnd).is_ok());
+        drop(sender);
+        let mut multi_segment_output = RecordingOutput::default();
+        consume_with(
+            &incoming,
+            4,
+            &AtomicU64::new(4),
+            &AtomicBool::new(false),
+            &mut multi_segment_output,
+        )?;
+        assert_eq!(
+            multi_segment_output.starts,
+            vec![PREROLL_PACKETS, PREROLL_PACKETS]
+        );
+        assert_eq!(
+            multi_segment_output.played.len(),
+            PACKET_BYTES * (PREROLL_PACKETS * 2 + 1)
+        );
         let (sender, incoming) = mpsc::sync_channel(PREFETCH_PACKETS);
         assert!(sender.send(Audio::Frame(vec![0; 2])).is_ok());
         drop(sender);
