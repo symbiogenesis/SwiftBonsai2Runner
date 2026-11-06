@@ -1,0 +1,319 @@
+{
+    "schemaVersion":  1,
+    "kind":  "hexagon-full-layer-native-q2-control-summary",
+    "prismRevision":  "a383e92f7fb7b5e7891f93f95594c02e6c4a20f2",
+    "runnerBaseRevision":  "00edceee03a077829d402520ac409118b064ad1d",
+    "recurrentLayerNativeQ2Resident":  {
+                                           "outcome":  "passed",
+                                           "stage":  "bounded-token-graph-complete",
+                                           "elapsedMilliseconds":  16418,
+                                           "powerBefore":  {
+                                                               "acConnected":  false,
+                                                               "available":  true,
+                                                               "batteryPercent":  90,
+                                                               "batterySaver":  false
+                                                           },
+                                           "powerAfter":  {
+                                                              "acConnected":  false,
+                                                              "available":  true,
+                                                              "batteryPercent":  90,
+                                                              "batterySaver":  false
+                                                          },
+                                           "cpuPowerBefore":  {
+                                                                  "acConnected":  false,
+                                                                  "available":  true,
+                                                                  "batteryPercent":  90,
+                                                                  "batterySaver":  false
+                                                              },
+                                           "cpuPowerAfter":  {
+                                                                 "acConnected":  false,
+                                                                 "available":  true,
+                                                                 "batteryPercent":  90,
+                                                                 "batterySaver":  false
+                                                             },
+                                           "npuPowerBefore":  {
+                                                                  "acConnected":  false,
+                                                                  "available":  true,
+                                                                  "batteryPercent":  90,
+                                                                  "batterySaver":  false
+                                                              },
+                                           "npuPowerAfter":  {
+                                                                 "acConnected":  false,
+                                                                 "available":  true,
+                                                                 "batteryPercent":  90,
+                                                                 "batterySaver":  false
+                                                             },
+                                           "projections":  [
+                                                               "blk.0.ffn_up.weight",
+                                                               "blk.0.ffn_gate.weight",
+                                                               "blk.0.ffn_down.weight",
+                                                               "blk.0.attn_qkv.weight",
+                                                               "blk.0.attn_gate.weight",
+                                                               "blk.0.ssm_out.weight"
+                                                           ],
+                                           "executionBackend":  "native-q2",
+                                           "residentHostWeights":  true,
+                                           "batchFourOperations":  false,
+                                           "batchTenOperations":  false,
+                                           "nativeBatchOperations":  1,
+                                           "nativeOperationsSubmitted":  18,
+                                           "nativeOperationsCompleted":  18,
+                                           "nativeQueueWritesSubmitted":  18,
+                                           "nativeQueueWritesCompleted":  18,
+                                           "projectionsCompleted":  18,
+                                           "integerAudit":  "bounded-float-tolerance",
+                                           "integerValuesCompared":  0,
+                                           "logitsBitwiseEqual":  false,
+                                           "logitsBoundedTolerancePass":  true,
+                                           "stateBitwiseEqual":  false,
+                                           "logitsSha256":  "6ea3ad4c7cb7d67f109d51846b07668a6e8e3ea6f55c4d671736f8780d357ce0",
+                                           "stateSha256":  "df61df360297698bd6b7e9fb1e2725eba29443085391d15654df10da3d92b495",
+                                           "numericalTolerance":  {
+                                                                      "cosineSimilarity":  0.9998934606005014,
+                                                                      "cpuTop1Token":  248,
+                                                                      "maxAbsDiff":  0.17242121696472168,
+                                                                      "meanAbsDiff":  0.02420602633556582,
+                                                                      "npuTop1Token":  248,
+                                                                      "rmse":  0.030636925786153416,
+                                                                      "top1Match":  true,
+                                                                      "top5Overlap":  5
+                                                                  },
+                                           "nativeCompletedCycle":  true,
+                                           "nativeCleanup":  {
+                                                                 "freeCompleted":  true,
+                                                                 "moduleCloseResult":  0,
+                                                                 "ownerPinnedUntilExit":  true,
+                                                                 "poisoned":  false,
+                                                                 "queueCloseResult":  0,
+                                                                 "queueStopResult":  0,
+                                                                 "unmappingResult":  0
+                                                             },
+                                           "nativeResources":  {
+                                                                   "architecture":  81,
+                                                                   "effectiveDomain":  3,
+                                                                   "effectiveHmxPlacementVerified":  false,
+                                                                   "effectiveVtcmBytes":  null,
+                                                                   "mappedAllocationBytes":  132804608,
+                                                                   "residentWeightBytesPrepared":  107642880
+                                                               },
+                                           "hostResidency":  {
+                                                                 "cacheHits":  12,
+                                                                 "metadataPayloadBytes":  65520,
+                                                                 "tensorsPrepared":  6,
+                                                                 "weightPayloadBytesPrepared":  107642880
+                                                             },
+                                           "tokenTimings":  [
+                                                                {
+                                                                    "index":  0,
+                                                                    "tokenId":  42,
+                                                                    "logitsSha256":  "97126ca2ac4aa3cc24a6dc461dd86e852a37942bf2395416da5f091f47ef0f91",
+                                                                    "stateSha256":  "1f83c583ebd526a85599bf56c7965c67f3fa8f1c9834dab71e9726ad11aed3d4",
+                                                                    "logitsBoundedTolerancePass":  true,
+                                                                    "cosineSimilarity":  0.9999402006043856,
+                                                                    "rmse":  0.02490922594750238,
+                                                                    "maxAbsDiff":  0.12358760833740234,
+                                                                    "top1Match":  true,
+                                                                    "top5Overlap":  5,
+                                                                    "cpuEvaluationMilliseconds":  547.1141,
+                                                                    "independentIntegerOracleMilliseconds":  0.0,
+                                                                    "nativeCheckedEvaluationMilliseconds":  603.3340000000001,
+                                                                    "nativeEvaluationExcludingIntegerOracleMilliseconds":  603.3340000000001,
+                                                                    "nativeSubmitAndWaitMilliseconds":  2.8738
+                                                                },
+                                                                {
+                                                                    "index":  1,
+                                                                    "tokenId":  43,
+                                                                    "logitsSha256":  "72b0fca0c965f595c808f45fe631daa2666de40f6668d766563dc0d2a6675121",
+                                                                    "stateSha256":  "bed91b56d4b0ea3903daf4e37808c763dacede6808a5ac558593e4634a8ff1e7",
+                                                                    "logitsBoundedTolerancePass":  true,
+                                                                    "cosineSimilarity":  0.999973160335061,
+                                                                    "rmse":  0.02718548902172286,
+                                                                    "maxAbsDiff":  0.15155673027038574,
+                                                                    "top1Match":  true,
+                                                                    "top5Overlap":  5,
+                                                                    "cpuEvaluationMilliseconds":  589.8071,
+                                                                    "independentIntegerOracleMilliseconds":  0.0,
+                                                                    "nativeCheckedEvaluationMilliseconds":  584.1505,
+                                                                    "nativeEvaluationExcludingIntegerOracleMilliseconds":  584.1505,
+                                                                    "nativeSubmitAndWaitMilliseconds":  2.2704
+                                                                },
+                                                                {
+                                                                    "index":  2,
+                                                                    "tokenId":  128,
+                                                                    "logitsSha256":  "6ea3ad4c7cb7d67f109d51846b07668a6e8e3ea6f55c4d671736f8780d357ce0",
+                                                                    "stateSha256":  "df61df360297698bd6b7e9fb1e2725eba29443085391d15654df10da3d92b495",
+                                                                    "logitsBoundedTolerancePass":  true,
+                                                                    "cosineSimilarity":  0.9998934606005014,
+                                                                    "rmse":  0.030636925786153416,
+                                                                    "maxAbsDiff":  0.17242121696472168,
+                                                                    "top1Match":  true,
+                                                                    "top5Overlap":  5,
+                                                                    "cpuEvaluationMilliseconds":  628.7620000000001,
+                                                                    "independentIntegerOracleMilliseconds":  0.0,
+                                                                    "nativeCheckedEvaluationMilliseconds":  395.7987,
+                                                                    "nativeEvaluationExcludingIntegerOracleMilliseconds":  395.7987,
+                                                                    "nativeSubmitAndWaitMilliseconds":  2.3167999999999997
+                                                                }
+                                                            ]
+                                       },
+    "multiLayer13ProjNativeQ2Resident":  {
+                                             "outcome":  "passed",
+                                             "stage":  "bounded-token-graph-complete",
+                                             "elapsedMilliseconds":  15275,
+                                             "powerBefore":  {
+                                                                 "acConnected":  false,
+                                                                 "available":  true,
+                                                                 "batteryPercent":  90,
+                                                                 "batterySaver":  false
+                                                             },
+                                             "powerAfter":  {
+                                                                "acConnected":  false,
+                                                                "available":  true,
+                                                                "batteryPercent":  90,
+                                                                "batterySaver":  false
+                                                            },
+                                             "cpuPowerBefore":  {
+                                                                    "acConnected":  false,
+                                                                    "available":  true,
+                                                                    "batteryPercent":  90,
+                                                                    "batterySaver":  false
+                                                                },
+                                             "cpuPowerAfter":  {
+                                                                   "acConnected":  false,
+                                                                   "available":  true,
+                                                                   "batteryPercent":  90,
+                                                                   "batterySaver":  false
+                                                               },
+                                             "npuPowerBefore":  {
+                                                                    "acConnected":  false,
+                                                                    "available":  true,
+                                                                    "batteryPercent":  90,
+                                                                    "batterySaver":  false
+                                                                },
+                                             "npuPowerAfter":  {
+                                                                   "acConnected":  false,
+                                                                   "available":  true,
+                                                                   "batteryPercent":  90,
+                                                                   "batterySaver":  false
+                                                               },
+                                             "projections":  [
+                                                                 "blk.0.ffn_up.weight",
+                                                                 "blk.0.ffn_gate.weight",
+                                                                 "blk.0.ffn_down.weight",
+                                                                 "blk.0.attn_qkv.weight",
+                                                                 "blk.0.attn_gate.weight",
+                                                                 "blk.0.ssm_out.weight",
+                                                                 "blk.3.ffn_up.weight",
+                                                                 "blk.3.ffn_gate.weight",
+                                                                 "blk.3.ffn_down.weight",
+                                                                 "blk.3.attn_q.weight",
+                                                                 "blk.3.attn_k.weight",
+                                                                 "blk.3.attn_v.weight",
+                                                                 "blk.3.attn_output.weight"
+                                                             ],
+                                             "executionBackend":  "native-q2",
+                                             "residentHostWeights":  true,
+                                             "batchFourOperations":  false,
+                                             "batchTenOperations":  false,
+                                             "nativeBatchOperations":  1,
+                                             "nativeOperationsSubmitted":  39,
+                                             "nativeOperationsCompleted":  39,
+                                             "nativeQueueWritesSubmitted":  39,
+                                             "nativeQueueWritesCompleted":  39,
+                                             "projectionsCompleted":  39,
+                                             "integerAudit":  "bounded-float-tolerance",
+                                             "integerValuesCompared":  0,
+                                             "logitsBitwiseEqual":  false,
+                                             "logitsBoundedTolerancePass":  true,
+                                             "stateBitwiseEqual":  false,
+                                             "logitsSha256":  "7450aaf9e8ff814cff2e79bfbfda10cce45be960602e32f8c29ac0ecfab53009",
+                                             "stateSha256":  "577992ef5f5e9b78e814d7b7935ed3e644e82fd359f5b5781d8c23f8f022cc34",
+                                             "numericalTolerance":  {
+                                                                        "cosineSimilarity":  0.9999023493796104,
+                                                                        "cpuTop1Token":  248,
+                                                                        "maxAbsDiff":  0.1538468301296234,
+                                                                        "meanAbsDiff":  0.02287382664393609,
+                                                                        "npuTop1Token":  248,
+                                                                        "rmse":  0.028952692281631512,
+                                                                        "top1Match":  true,
+                                                                        "top5Overlap":  5
+                                                                    },
+                                             "nativeCompletedCycle":  true,
+                                             "nativeCleanup":  {
+                                                                   "freeCompleted":  true,
+                                                                   "moduleCloseResult":  0,
+                                                                   "ownerPinnedUntilExit":  true,
+                                                                   "poisoned":  false,
+                                                                   "queueCloseResult":  0,
+                                                                   "queueStopResult":  0,
+                                                                   "unmappingResult":  0
+                                                               },
+                                             "nativeResources":  {
+                                                                     "architecture":  81,
+                                                                     "effectiveDomain":  3,
+                                                                     "effectiveHmxPlacementVerified":  false,
+                                                                     "effectiveVtcmBytes":  null,
+                                                                     "mappedAllocationBytes":  237498368,
+                                                                     "residentWeightBytesPrepared":  212336640
+                                                                 },
+                                             "hostResidency":  {
+                                                                   "cacheHits":  26,
+                                                                   "metadataPayloadBytes":  65520,
+                                                                   "tensorsPrepared":  13,
+                                                                   "weightPayloadBytesPrepared":  212336640
+                                                               },
+                                             "tokenTimings":  [
+                                                                  {
+                                                                      "index":  0,
+                                                                      "tokenId":  42,
+                                                                      "logitsSha256":  "e2128ff7bf7a3c31b6bd55887d78880c9955cc1d1f3560521b7ec94a0495ce90",
+                                                                      "stateSha256":  "50f2fe57f6df94668a260c37de7e7dfe3a9df64b44f9c41aae37d0d4a65cfe03",
+                                                                      "logitsBoundedTolerancePass":  true,
+                                                                      "cosineSimilarity":  0.9999480338722292,
+                                                                      "rmse":  0.022756934451838743,
+                                                                      "maxAbsDiff":  0.10803470015525818,
+                                                                      "top1Match":  true,
+                                                                      "top5Overlap":  5,
+                                                                      "cpuEvaluationMilliseconds":  604.4296999999999,
+                                                                      "independentIntegerOracleMilliseconds":  0.0,
+                                                                      "nativeCheckedEvaluationMilliseconds":  496.0046,
+                                                                      "nativeEvaluationExcludingIntegerOracleMilliseconds":  496.0046,
+                                                                      "nativeSubmitAndWaitMilliseconds":  5.455299999999999
+                                                                  },
+                                                                  {
+                                                                      "index":  1,
+                                                                      "tokenId":  43,
+                                                                      "logitsSha256":  "f38d838b589a03f9328b6916a79e69f29452e654958c99c0e647ec4f55ed750d",
+                                                                      "stateSha256":  "b4a0ab06b141a219eef0bb880c591b60b58f181066d646c70688b11ca1a8663a",
+                                                                      "logitsBoundedTolerancePass":  true,
+                                                                      "cosineSimilarity":  0.9999765961721364,
+                                                                      "rmse":  0.025238673681707065,
+                                                                      "maxAbsDiff":  0.1512465476989746,
+                                                                      "top1Match":  true,
+                                                                      "top5Overlap":  5,
+                                                                      "cpuEvaluationMilliseconds":  544.2251,
+                                                                      "independentIntegerOracleMilliseconds":  0.0,
+                                                                      "nativeCheckedEvaluationMilliseconds":  555.4350000000001,
+                                                                      "nativeEvaluationExcludingIntegerOracleMilliseconds":  555.4350000000001,
+                                                                      "nativeSubmitAndWaitMilliseconds":  4.3826
+                                                                  },
+                                                                  {
+                                                                      "index":  2,
+                                                                      "tokenId":  128,
+                                                                      "logitsSha256":  "7450aaf9e8ff814cff2e79bfbfda10cce45be960602e32f8c29ac0ecfab53009",
+                                                                      "stateSha256":  "577992ef5f5e9b78e814d7b7935ed3e644e82fd359f5b5781d8c23f8f022cc34",
+                                                                      "logitsBoundedTolerancePass":  true,
+                                                                      "cosineSimilarity":  0.9999023493796104,
+                                                                      "rmse":  0.028952692281631512,
+                                                                      "maxAbsDiff":  0.1538468301296234,
+                                                                      "top1Match":  true,
+                                                                      "top5Overlap":  5,
+                                                                      "cpuEvaluationMilliseconds":  552.5113,
+                                                                      "independentIntegerOracleMilliseconds":  0.0,
+                                                                      "nativeCheckedEvaluationMilliseconds":  586.4784,
+                                                                      "nativeEvaluationExcludingIntegerOracleMilliseconds":  586.4784,
+                                                                      "nativeSubmitAndWaitMilliseconds":  4.7865
+                                                                  }
+                                                              ]
+                                         }
+}

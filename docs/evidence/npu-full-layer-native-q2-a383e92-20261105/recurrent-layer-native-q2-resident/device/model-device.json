@@ -1,0 +1,1145 @@
+{
+  "AdapterCase": "standard-scale-1.3",
+  "AdapterIdentity": {
+    "Bytes": 9682464,
+    "FileHeldAgainstMutation": true,
+    "Path": "C:\\Users\\symbi\\AppData\\Local\\SwiftBonsai2\\adapters\\703028bb7fba03496e796b144839b161cf0f5409\\bonsai-abliterate-lora.gguf",
+    "Sha256": "f1669534803d340a496015f5c45125f3437b4d13ec764f40e34488ce83967f42"
+  },
+  "AvailablePhysicalBytesBefore": 24493981696,
+  "BatchFourOperations": false,
+  "BatchTenOperations": false,
+  "BuildReceiptSha256": "7c6883cdfe3a17d11aa0993d6406aacf1cdf5e854be185bb36c237b7b43e75fd",
+  "CandidateLockSha256": "052b1252fb4f878b27b1cf917162f8b204e023bdfbeea2ac8e2dfe34539583c9",
+  "CatalogMembersVerified": 5,
+  "CleanupReserveSeconds": 75,
+  "ControlStateBudgetBytes": 536870912,
+  "CpuBackend": "neon",
+  "DriverIdentity": {
+    "Bytes": 593472,
+    "FileHeldAgainstMutation": true,
+    "Path": "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\qcnspmcdm8480.inf_arm64_4feba84cfc7ee278\\libcdsprpc.dll",
+    "Publisher": "Microsoft Windows Hardware Compatibility Publisher",
+    "Sha256": "5cf6aa86670cceb84461050ad00b012662e4859d15be2a1cf147d98d5002f37d",
+    "SignatureStatus": "Valid",
+    "SignerThumbprint": "32b4e7ce92a59c722b8bdf7ae3e66520cfb9de21"
+  },
+  "ElapsedMilliseconds": 16418,
+  "ExecutableSha256": "8650f495a3be46ba6eea56614266ee6a33245548667eaddb68aa9cf4398a6060",
+  "ExecutionBackend": "native-q2",
+  "HostedBuild": false,
+  "LocalBuild": true,
+  "LocalBuildSourceBytesVerified": 4251082,
+  "LocalBuildSourceFilesVerified": 321,
+  "MaximumSeconds": 300,
+  "ModelWorkAttempted": true,
+  "NativeResult": {
+    "adapterCase": "standard-scale-1.3",
+    "adapterLoaded": true,
+    "adapterScaleBits": 1067869798,
+    "adapterSha256": "f1669534803d340a496015f5c45125f3437b4d13ec764f40e34488ce83967f42",
+    "batchFourOperations": false,
+    "batchTenOperations": false,
+    "completed": true,
+    "cpuBackend": "neon",
+    "cpuBaselineAdapterLoaded": true,
+    "cpuBaselineAdapterScaleBits": 1067869798,
+    "cpuPowerAfter": {
+      "acConnected": false,
+      "available": true,
+      "batteryPercent": 90,
+      "batterySaver": false
+    },
+    "cpuPowerBefore": {
+      "acConnected": false,
+      "available": true,
+      "batteryPercent": 90,
+      "batterySaver": false
+    },
+    "driverDll": "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\qcnspmcdm8480.inf_arm64_4feba84cfc7ee278\\libcdsprpc.dll",
+    "event": "result",
+    "executionBackend": "native-q2",
+    "hostResidency": {
+      "cacheHits": 12,
+      "metadataPayloadBytes": 65520,
+      "tensorsPrepared": 6,
+      "weightPayloadBytesPrepared": 107642880
+    },
+    "integerAudit": "bounded-float-tolerance",
+    "integerValuesCompared": 0,
+    "logitsBitwiseEqual": false,
+    "logitsBoundedTolerancePass": true,
+    "logitsSha256": "6ea3ad4c7cb7d67f109d51846b07668a6e8e3ea6f55c4d671736f8780d357ce0",
+    "maximumOperations": 18,
+    "modelBytes": 7206168928,
+    "modelSha256": "5912bb739217cf25b4283a098c7b893d9baff36bdf2e72d3dbf4cb999d5633d5",
+    "nativeBatchOperations": 1,
+    "nativeCleanup": {
+      "freeCompleted": true,
+      "moduleCloseResult": 0,
+      "ownerPinnedUntilExit": true,
+      "poisoned": false,
+      "queueCloseResult": 0,
+      "queueStopResult": 0,
+      "unmappingResult": 0
+    },
+    "nativeCompletedCycle": true,
+    "nativeHmxBitplaneControl": false,
+    "nativeOperationsCompleted": 18,
+    "nativeOperationsSubmitted": 18,
+    "nativeQueueWritesCompleted": 18,
+    "nativeQueueWritesSubmitted": 18,
+    "nativeResources": {
+      "architecture": 81,
+      "effectiveDomain": 3,
+      "effectiveHmxPlacementVerified": false,
+      "effectiveVtcmBytes": null,
+      "mappedAllocationBytes": 132804608,
+      "residentWeightBytesPrepared": 107642880
+    },
+    "nativeStage": "compute-numeric-verified-stopped-unmapped-freed",
+    "npuPowerAfter": {
+      "acConnected": false,
+      "available": true,
+      "batteryPercent": 90,
+      "batterySaver": false
+    },
+    "npuPowerBefore": {
+      "acConnected": false,
+      "available": true,
+      "batteryPercent": 90,
+      "batterySaver": false
+    },
+    "numericalTolerance": {
+      "cosineSimilarity": 0.9998934606005014,
+      "cpuTop1Token": 248,
+      "maxAbsDiff": 0.17242121696472168,
+      "meanAbsDiff": 0.02420602633556582,
+      "npuTop1Token": 248,
+      "rmse": 0.030636925786153416,
+      "top1Match": true,
+      "top5Overlap": 5
+    },
+    "performanceMeasured": false,
+    "placementIdentity": "5912bb739217cf25b4283a098c7b893d9baff36bdf2e72d3dbf4cb999d5633d5:qwen35-text-v1:nonflash-f16:kv-f16:gdn-f32:prism-arm64-fused-v1:rank-one-lora-v1:f1669534803d340a496015f5c45125f3437b4d13ec764f40e34488ce83967f42:3fa66666:external-pq2-v1:hexagon-explicit-placement-v1:c56498d10e2d216d89473b72884faf1233844d01a4e822742d2dd245e6489781",
+    "profileEligible": false,
+    "projection": "blk.0.ffn_up.weight",
+    "projections": [
+      "blk.0.ffn_up.weight",
+      "blk.0.ffn_gate.weight",
+      "blk.0.ffn_down.weight",
+      "blk.0.attn_qkv.weight",
+      "blk.0.attn_gate.weight",
+      "blk.0.ssm_out.weight"
+    ],
+    "projectionsCompleted": 18,
+    "requestSha256": "3292a2c5f2f1c591d437f0ada88a2267c7c8a8d35898e1be3b3a82bb68ab3651",
+    "requiredControlStateBytes": 471465984,
+    "residentHostWeights": true,
+    "rowWorkers": 4,
+    "schemaVersion": 1,
+    "sessionSeconds": 120,
+    "stateBitwiseEqual": false,
+    "stateSha256": "df61df360297698bd6b7e9fb1e2725eba29443085391d15654df10da3d92b495",
+    "timingScope": {
+      "excludes": "Model loading, graph construction, device setup/cleanup, state snapshots/digests and final graph comparisons.",
+      "includes": "All CPU-owned graph work, offload packing/reconstruction, native submission and wait inside evaluate; checked native evaluation also includes the independently timed integer oracle.",
+      "kind": "single-run-diagnostic-evaluation-windows",
+      "qualifiedBenefitComparison": false,
+      "subtractedOracleWindowIsEstimated": false
+    },
+    "tokenComparisons": [
+      {
+        "index": 0,
+        "logitsBitwiseEqual": false,
+        "logitsBoundedTolerancePass": true,
+        "logitsSha256": "97126ca2ac4aa3cc24a6dc461dd86e852a37942bf2395416da5f091f47ef0f91",
+        "numericalTolerance": {
+          "cosineSimilarity": 0.9999402006043856,
+          "cpuTop1Token": 1183,
+          "maxAbsDiff": 0.12358760833740234,
+          "meanAbsDiff": 0.019880912939606903,
+          "npuTop1Token": 1183,
+          "rmse": 0.02490922594750238,
+          "top1Match": true,
+          "top5Overlap": 5
+        },
+        "stateBitwiseEqual": false,
+        "stateSha256": "1f83c583ebd526a85599bf56c7965c67f3fa8f1c9834dab71e9726ad11aed3d4",
+        "timing": {
+          "cpuEvaluationMilliseconds": 547.1141,
+          "independentIntegerOracleMilliseconds": 0.0,
+          "nativeCheckedEvaluationMilliseconds": 603.3340000000001,
+          "nativeEvaluationExcludingIntegerOracleMilliseconds": 603.3340000000001,
+          "nativeSubmitAndWaitMilliseconds": 2.8738
+        },
+        "tokenId": 42
+      },
+      {
+        "index": 1,
+        "logitsBitwiseEqual": false,
+        "logitsBoundedTolerancePass": true,
+        "logitsSha256": "72b0fca0c965f595c808f45fe631daa2666de40f6668d766563dc0d2a6675121",
+        "numericalTolerance": {
+          "cosineSimilarity": 0.999973160335061,
+          "cpuTop1Token": 12,
+          "maxAbsDiff": 0.15155673027038574,
+          "meanAbsDiff": 0.02147956717288126,
+          "npuTop1Token": 12,
+          "rmse": 0.02718548902172286,
+          "top1Match": true,
+          "top5Overlap": 5
+        },
+        "stateBitwiseEqual": false,
+        "stateSha256": "bed91b56d4b0ea3903daf4e37808c763dacede6808a5ac558593e4634a8ff1e7",
+        "timing": {
+          "cpuEvaluationMilliseconds": 589.8071,
+          "independentIntegerOracleMilliseconds": 0.0,
+          "nativeCheckedEvaluationMilliseconds": 584.1505,
+          "nativeEvaluationExcludingIntegerOracleMilliseconds": 584.1505,
+          "nativeSubmitAndWaitMilliseconds": 2.2704
+        },
+        "tokenId": 43
+      },
+      {
+        "index": 2,
+        "logitsBitwiseEqual": false,
+        "logitsBoundedTolerancePass": true,
+        "logitsSha256": "6ea3ad4c7cb7d67f109d51846b07668a6e8e3ea6f55c4d671736f8780d357ce0",
+        "numericalTolerance": {
+          "cosineSimilarity": 0.9998934606005014,
+          "cpuTop1Token": 248,
+          "maxAbsDiff": 0.17242121696472168,
+          "meanAbsDiff": 0.02420602633556582,
+          "npuTop1Token": 248,
+          "rmse": 0.030636925786153416,
+          "top1Match": true,
+          "top5Overlap": 5
+        },
+        "stateBitwiseEqual": false,
+        "stateSha256": "df61df360297698bd6b7e9fb1e2725eba29443085391d15654df10da3d92b495",
+        "timing": {
+          "cpuEvaluationMilliseconds": 628.7620000000001,
+          "independentIntegerOracleMilliseconds": 0.0,
+          "nativeCheckedEvaluationMilliseconds": 395.7987,
+          "nativeEvaluationExcludingIntegerOracleMilliseconds": 395.7987,
+          "nativeSubmitAndWaitMilliseconds": 2.3167999999999997
+        },
+        "tokenId": 128
+      }
+    ],
+    "tokenId": 42,
+    "tokenIds": [
+      42,
+      43,
+      128
+    ]
+  },
+  "Outcome": "passed",
+  "OwnedJobTeardown": "confirmed-empty",
+  "PerformanceMeasured": false,
+  "PowerAfter": {
+    "acConnected": false,
+    "available": true,
+    "batteryPercent": 90,
+    "batterySaver": false
+  },
+  "PowerBefore": {
+    "acConnected": false,
+    "available": true,
+    "batteryPercent": 90,
+    "batterySaver": false
+  },
+  "PrismRevision": "a383e92f7fb7b5e7891f93f95594c02e6c4a20f2",
+  "ProbeEvents": [
+    {
+      "event": "started",
+      "modelBytes": 7206168928,
+      "modelSha256": "5912bb739217cf25b4283a098c7b893d9baff36bdf2e72d3dbf4cb999d5633d5",
+      "processId": 23128,
+      "projection": "blk.0.ffn_up.weight",
+      "projections": [
+        "blk.0.ffn_up.weight",
+        "blk.0.ffn_gate.weight",
+        "blk.0.ffn_down.weight",
+        "blk.0.attn_qkv.weight",
+        "blk.0.attn_gate.weight",
+        "blk.0.ssm_out.weight"
+      ],
+      "requestSha256": "3292a2c5f2f1c591d437f0ada88a2267c7c8a8d35898e1be3b3a82bb68ab3651",
+      "schemaVersion": 1
+    },
+    {
+      "completed": true,
+      "event": "cpu-arm-finished",
+      "powerAfter": {
+        "acConnected": false,
+        "available": true,
+        "batteryPercent": 90,
+        "batterySaver": false
+      },
+      "powerBefore": {
+        "acConnected": false,
+        "available": true,
+        "batteryPercent": 90,
+        "batterySaver": false
+      }
+    },
+    {
+      "event": "cpu-control-complete",
+      "logitsSha256": "7b285cb9c0352cfdd31b9105f6e713f385a1b8a357a9dbfe4daebd7692c7f051",
+      "stateSha256": "aa3b811e2178d63aa8d4d04bd97940ac4e6b9fd09cb439e1e9ad28df4445a8fc",
+      "tokenIds": [
+        42,
+        43,
+        128
+      ]
+    },
+    {
+      "batchOperations": 1,
+      "event": "native-progress",
+      "operationsCompleted": 0,
+      "operationsSubmitted": 0,
+      "queueWritesCompleted": 0,
+      "queueWritesSubmitted": 0,
+      "stage": "compute-reference-process-init-entered"
+    },
+    {
+      "batchOperations": 1,
+      "event": "native-progress",
+      "operationsCompleted": 0,
+      "operationsSubmitted": 0,
+      "queueWritesCompleted": 0,
+      "queueWritesSubmitted": 0,
+      "stage": "compute-module-open-entered"
+    },
+    {
+      "batchOperations": 1,
+      "event": "native-progress",
+      "operationsCompleted": 0,
+      "operationsSubmitted": 0,
+      "queueWritesCompleted": 0,
+      "queueWritesSubmitted": 0,
+      "stage": "projection-allocation-entered"
+    },
+    {
+      "batchOperations": 1,
+      "event": "native-progress",
+      "operationsCompleted": 0,
+      "operationsSubmitted": 0,
+      "queueWritesCompleted": 0,
+      "queueWritesSubmitted": 0,
+      "stage": "projection-fd-map-entered"
+    },
+    {
+      "batchOperations": 1,
+      "event": "native-progress",
+      "operationsCompleted": 0,
+      "operationsSubmitted": 0,
+      "queueWritesCompleted": 0,
+      "queueWritesSubmitted": 0,
+      "stage": "projection-queue-create-entered"
+    },
+    {
+      "batchOperations": 1,
+      "event": "native-progress",
+      "operationsCompleted": 0,
+      "operationsSubmitted": 0,
+      "queueWritesCompleted": 0,
+      "queueWritesSubmitted": 0,
+      "stage": "projection-queue-export-entered"
+    },
+    {
+      "batchOperations": 1,
+      "event": "native-progress",
+      "operationsCompleted": 0,
+      "operationsSubmitted": 0,
+      "queueWritesCompleted": 0,
+      "queueWritesSubmitted": 0,
+      "stage": "projection-queue-start-entered"
+    },
+    {
+      "batchOperations": 1,
+      "event": "native-progress",
+      "operationsCompleted": 0,
+      "operationsSubmitted": 1,
+      "queueWritesCompleted": 0,
+      "queueWritesSubmitted": 1,
+      "stage": "projection-queue-write-entered"
+    },
+    {
+      "batchOperations": 1,
+      "event": "native-progress",
+      "operationsCompleted": 0,
+      "operationsSubmitted": 1,
+      "queueWritesCompleted": 0,
+      "queueWritesSubmitted": 1,
+      "stage": "projection-queue-read-entered"
+    },
+    {
+      "batchOperations": 1,
+      "event": "native-progress",
+      "operationsCompleted": 1,
+      "operationsSubmitted": 1,
+      "queueWritesCompleted": 1,
+      "queueWritesSubmitted": 1,
+      "stage": "projection-operation-complete"
+    },
+    {
+      "batchOperations": 1,
+      "event": "native-progress",
+      "operationsCompleted": 1,
+      "operationsSubmitted": 2,
+      "queueWritesCompleted": 1,
+      "queueWritesSubmitted": 2,
+      "stage": "projection-queue-write-entered"
+    },
+    {
+      "batchOperations": 1,
+      "event": "native-progress",
+      "operationsCompleted": 1,
+      "operationsSubmitted": 2,
+      "queueWritesCompleted": 1,
+      "queueWritesSubmitted": 2,
+      "stage": "projection-queue-read-entered"
+    },
+    {
+      "batchOperations": 1,
+      "event": "native-progress",
+      "operationsCompleted": 2,
+      "operationsSubmitted": 2,
+      "queueWritesCompleted": 2,
+      "queueWritesSubmitted": 2,
+      "stage": "projection-operation-complete"
+    },
+    {
+      "batchOperations": 1,
+      "event": "native-progress",
+      "operationsCompleted": 2,
+      "operationsSubmitted": 3,
+      "queueWritesCompleted": 2,
+      "queueWritesSubmitted": 3,
+      "stage": "projection-queue-write-entered"
+    },
+    {
+      "batchOperations": 1,
+      "event": "native-progress",
+      "operationsCompleted": 2,
+      "operationsSubmitted": 3,
+      "queueWritesCompleted": 2,
+      "queueWritesSubmitted": 3,
+      "stage": "projection-queue-read-entered"
+    },
+    {
+      "batchOperations": 1,
+      "event": "native-progress",
+      "operationsCompleted": 3,
+      "operationsSubmitted": 3,
+      "queueWritesCompleted": 3,
+      "queueWritesSubmitted": 3,
+      "stage": "projection-operation-complete"
+    },
+    {
+      "batchOperations": 1,
+      "event": "native-progress",
+      "operationsCompleted": 3,
+      "operationsSubmitted": 4,
+      "queueWritesCompleted": 3,
+      "queueWritesSubmitted": 4,
+      "stage": "projection-queue-write-entered"
+    },
+    {
+      "batchOperations": 1,
+      "event": "native-progress",
+      "operationsCompleted": 3,
+      "operationsSubmitted": 4,
+      "queueWritesCompleted": 3,
+      "queueWritesSubmitted": 4,
+      "stage": "projection-queue-read-entered"
+    },
+    {
+      "batchOperations": 1,
+      "event": "native-progress",
+      "operationsCompleted": 4,
+      "operationsSubmitted": 4,
+      "queueWritesCompleted": 4,
+      "queueWritesSubmitted": 4,
+      "stage": "projection-operation-complete"
+    },
+    {
+      "batchOperations": 1,
+      "event": "native-progress",
+      "operationsCompleted": 4,
+      "operationsSubmitted": 5,
+      "queueWritesCompleted": 4,
+      "queueWritesSubmitted": 5,
+      "stage": "projection-queue-write-entered"
+    },
+    {
+      "batchOperations": 1,
+      "event": "native-progress",
+      "operationsCompleted": 4,
+      "operationsSubmitted": 5,
+      "queueWritesCompleted": 4,
+      "queueWritesSubmitted": 5,
+      "stage": "projection-queue-read-entered"
+    },
+    {
+      "batchOperations": 1,
+      "event": "native-progress",
+      "operationsCompleted": 5,
+      "operationsSubmitted": 5,
+      "queueWritesCompleted": 5,
+      "queueWritesSubmitted": 5,
+      "stage": "projection-operation-complete"
+    },
+    {
+      "batchOperations": 1,
+      "event": "native-progress",
+      "operationsCompleted": 5,
+      "operationsSubmitted": 6,
+      "queueWritesCompleted": 5,
+      "queueWritesSubmitted": 6,
+      "stage": "projection-queue-write-entered"
+    },
+    {
+      "batchOperations": 1,
+      "event": "native-progress",
+      "operationsCompleted": 5,
+      "operationsSubmitted": 6,
+      "queueWritesCompleted": 5,
+      "queueWritesSubmitted": 6,
+      "stage": "projection-queue-read-entered"
+    },
+    {
+      "batchOperations": 1,
+      "event": "native-progress",
+      "operationsCompleted": 6,
+      "operationsSubmitted": 6,
+      "queueWritesCompleted": 6,
+      "queueWritesSubmitted": 6,
+      "stage": "projection-operation-complete"
+    },
+    {
+      "batchOperations": 1,
+      "event": "native-progress",
+      "operationsCompleted": 6,
+      "operationsSubmitted": 7,
+      "queueWritesCompleted": 6,
+      "queueWritesSubmitted": 7,
+      "stage": "projection-queue-write-entered"
+    },
+    {
+      "batchOperations": 1,
+      "event": "native-progress",
+      "operationsCompleted": 6,
+      "operationsSubmitted": 7,
+      "queueWritesCompleted": 6,
+      "queueWritesSubmitted": 7,
+      "stage": "projection-queue-read-entered"
+    },
+    {
+      "batchOperations": 1,
+      "event": "native-progress",
+      "operationsCompleted": 7,
+      "operationsSubmitted": 7,
+      "queueWritesCompleted": 7,
+      "queueWritesSubmitted": 7,
+      "stage": "projection-operation-complete"
+    },
+    {
+      "batchOperations": 1,
+      "event": "native-progress",
+      "operationsCompleted": 7,
+      "operationsSubmitted": 8,
+      "queueWritesCompleted": 7,
+      "queueWritesSubmitted": 8,
+      "stage": "projection-queue-write-entered"
+    },
+    {
+      "batchOperations": 1,
+      "event": "native-progress",
+      "operationsCompleted": 7,
+      "operationsSubmitted": 8,
+      "queueWritesCompleted": 7,
+      "queueWritesSubmitted": 8,
+      "stage": "projection-queue-read-entered"
+    },
+    {
+      "batchOperations": 1,
+      "event": "native-progress",
+      "operationsCompleted": 8,
+      "operationsSubmitted": 8,
+      "queueWritesCompleted": 8,
+      "queueWritesSubmitted": 8,
+      "stage": "projection-operation-complete"
+    },
+    {
+      "batchOperations": 1,
+      "event": "native-progress",
+      "operationsCompleted": 8,
+      "operationsSubmitted": 9,
+      "queueWritesCompleted": 8,
+      "queueWritesSubmitted": 9,
+      "stage": "projection-queue-write-entered"
+    },
+    {
+      "batchOperations": 1,
+      "event": "native-progress",
+      "operationsCompleted": 8,
+      "operationsSubmitted": 9,
+      "queueWritesCompleted": 8,
+      "queueWritesSubmitted": 9,
+      "stage": "projection-queue-read-entered"
+    },
+    {
+      "batchOperations": 1,
+      "event": "native-progress",
+      "operationsCompleted": 9,
+      "operationsSubmitted": 9,
+      "queueWritesCompleted": 9,
+      "queueWritesSubmitted": 9,
+      "stage": "projection-operation-complete"
+    },
+    {
+      "batchOperations": 1,
+      "event": "native-progress",
+      "operationsCompleted": 9,
+      "operationsSubmitted": 10,
+      "queueWritesCompleted": 9,
+      "queueWritesSubmitted": 10,
+      "stage": "projection-queue-write-entered"
+    },
+    {
+      "batchOperations": 1,
+      "event": "native-progress",
+      "operationsCompleted": 9,
+      "operationsSubmitted": 10,
+      "queueWritesCompleted": 9,
+      "queueWritesSubmitted": 10,
+      "stage": "projection-queue-read-entered"
+    },
+    {
+      "batchOperations": 1,
+      "event": "native-progress",
+      "operationsCompleted": 10,
+      "operationsSubmitted": 10,
+      "queueWritesCompleted": 10,
+      "queueWritesSubmitted": 10,
+      "stage": "projection-operation-complete"
+    },
+    {
+      "batchOperations": 1,
+      "event": "native-progress",
+      "operationsCompleted": 10,
+      "operationsSubmitted": 11,
+      "queueWritesCompleted": 10,
+      "queueWritesSubmitted": 11,
+      "stage": "projection-queue-write-entered"
+    },
+    {
+      "batchOperations": 1,
+      "event": "native-progress",
+      "operationsCompleted": 10,
+      "operationsSubmitted": 11,
+      "queueWritesCompleted": 10,
+      "queueWritesSubmitted": 11,
+      "stage": "projection-queue-read-entered"
+    },
+    {
+      "batchOperations": 1,
+      "event": "native-progress",
+      "operationsCompleted": 11,
+      "operationsSubmitted": 11,
+      "queueWritesCompleted": 11,
+      "queueWritesSubmitted": 11,
+      "stage": "projection-operation-complete"
+    },
+    {
+      "batchOperations": 1,
+      "event": "native-progress",
+      "operationsCompleted": 11,
+      "operationsSubmitted": 12,
+      "queueWritesCompleted": 11,
+      "queueWritesSubmitted": 12,
+      "stage": "projection-queue-write-entered"
+    },
+    {
+      "batchOperations": 1,
+      "event": "native-progress",
+      "operationsCompleted": 11,
+      "operationsSubmitted": 12,
+      "queueWritesCompleted": 11,
+      "queueWritesSubmitted": 12,
+      "stage": "projection-queue-read-entered"
+    },
+    {
+      "batchOperations": 1,
+      "event": "native-progress",
+      "operationsCompleted": 12,
+      "operationsSubmitted": 12,
+      "queueWritesCompleted": 12,
+      "queueWritesSubmitted": 12,
+      "stage": "projection-operation-complete"
+    },
+    {
+      "batchOperations": 1,
+      "event": "native-progress",
+      "operationsCompleted": 12,
+      "operationsSubmitted": 13,
+      "queueWritesCompleted": 12,
+      "queueWritesSubmitted": 13,
+      "stage": "projection-queue-write-entered"
+    },
+    {
+      "batchOperations": 1,
+      "event": "native-progress",
+      "operationsCompleted": 12,
+      "operationsSubmitted": 13,
+      "queueWritesCompleted": 12,
+      "queueWritesSubmitted": 13,
+      "stage": "projection-queue-read-entered"
+    },
+    {
+      "batchOperations": 1,
+      "event": "native-progress",
+      "operationsCompleted": 13,
+      "operationsSubmitted": 13,
+      "queueWritesCompleted": 13,
+      "queueWritesSubmitted": 13,
+      "stage": "projection-operation-complete"
+    },
+    {
+      "batchOperations": 1,
+      "event": "native-progress",
+      "operationsCompleted": 13,
+      "operationsSubmitted": 14,
+      "queueWritesCompleted": 13,
+      "queueWritesSubmitted": 14,
+      "stage": "projection-queue-write-entered"
+    },
+    {
+      "batchOperations": 1,
+      "event": "native-progress",
+      "operationsCompleted": 13,
+      "operationsSubmitted": 14,
+      "queueWritesCompleted": 13,
+      "queueWritesSubmitted": 14,
+      "stage": "projection-queue-read-entered"
+    },
+    {
+      "batchOperations": 1,
+      "event": "native-progress",
+      "operationsCompleted": 14,
+      "operationsSubmitted": 14,
+      "queueWritesCompleted": 14,
+      "queueWritesSubmitted": 14,
+      "stage": "projection-operation-complete"
+    },
+    {
+      "batchOperations": 1,
+      "event": "native-progress",
+      "operationsCompleted": 14,
+      "operationsSubmitted": 15,
+      "queueWritesCompleted": 14,
+      "queueWritesSubmitted": 15,
+      "stage": "projection-queue-write-entered"
+    },
+    {
+      "batchOperations": 1,
+      "event": "native-progress",
+      "operationsCompleted": 14,
+      "operationsSubmitted": 15,
+      "queueWritesCompleted": 14,
+      "queueWritesSubmitted": 15,
+      "stage": "projection-queue-read-entered"
+    },
+    {
+      "batchOperations": 1,
+      "event": "native-progress",
+      "operationsCompleted": 15,
+      "operationsSubmitted": 15,
+      "queueWritesCompleted": 15,
+      "queueWritesSubmitted": 15,
+      "stage": "projection-operation-complete"
+    },
+    {
+      "batchOperations": 1,
+      "event": "native-progress",
+      "operationsCompleted": 15,
+      "operationsSubmitted": 16,
+      "queueWritesCompleted": 15,
+      "queueWritesSubmitted": 16,
+      "stage": "projection-queue-write-entered"
+    },
+    {
+      "batchOperations": 1,
+      "event": "native-progress",
+      "operationsCompleted": 15,
+      "operationsSubmitted": 16,
+      "queueWritesCompleted": 15,
+      "queueWritesSubmitted": 16,
+      "stage": "projection-queue-read-entered"
+    },
+    {
+      "batchOperations": 1,
+      "event": "native-progress",
+      "operationsCompleted": 16,
+      "operationsSubmitted": 16,
+      "queueWritesCompleted": 16,
+      "queueWritesSubmitted": 16,
+      "stage": "projection-operation-complete"
+    },
+    {
+      "batchOperations": 1,
+      "event": "native-progress",
+      "operationsCompleted": 16,
+      "operationsSubmitted": 17,
+      "queueWritesCompleted": 16,
+      "queueWritesSubmitted": 17,
+      "stage": "projection-queue-write-entered"
+    },
+    {
+      "batchOperations": 1,
+      "event": "native-progress",
+      "operationsCompleted": 16,
+      "operationsSubmitted": 17,
+      "queueWritesCompleted": 16,
+      "queueWritesSubmitted": 17,
+      "stage": "projection-queue-read-entered"
+    },
+    {
+      "batchOperations": 1,
+      "event": "native-progress",
+      "operationsCompleted": 17,
+      "operationsSubmitted": 17,
+      "queueWritesCompleted": 17,
+      "queueWritesSubmitted": 17,
+      "stage": "projection-operation-complete"
+    },
+    {
+      "batchOperations": 1,
+      "event": "native-progress",
+      "operationsCompleted": 17,
+      "operationsSubmitted": 18,
+      "queueWritesCompleted": 17,
+      "queueWritesSubmitted": 18,
+      "stage": "projection-queue-write-entered"
+    },
+    {
+      "batchOperations": 1,
+      "event": "native-progress",
+      "operationsCompleted": 17,
+      "operationsSubmitted": 18,
+      "queueWritesCompleted": 17,
+      "queueWritesSubmitted": 18,
+      "stage": "projection-queue-read-entered"
+    },
+    {
+      "batchOperations": 1,
+      "event": "native-progress",
+      "operationsCompleted": 18,
+      "operationsSubmitted": 18,
+      "queueWritesCompleted": 18,
+      "queueWritesSubmitted": 18,
+      "stage": "projection-operation-complete"
+    },
+    {
+      "batchOperations": 1,
+      "event": "native-progress",
+      "operationsCompleted": 18,
+      "operationsSubmitted": 18,
+      "queueWritesCompleted": 18,
+      "queueWritesSubmitted": 18,
+      "stage": "compute-queue-stop-entered"
+    },
+    {
+      "batchOperations": 1,
+      "event": "native-progress",
+      "operationsCompleted": 18,
+      "operationsSubmitted": 18,
+      "queueWritesCompleted": 18,
+      "queueWritesSubmitted": 18,
+      "stage": "compute-queue-close-entered"
+    },
+    {
+      "batchOperations": 1,
+      "event": "native-progress",
+      "operationsCompleted": 18,
+      "operationsSubmitted": 18,
+      "queueWritesCompleted": 18,
+      "queueWritesSubmitted": 18,
+      "stage": "compute-fd-unmap-entered"
+    },
+    {
+      "batchOperations": 1,
+      "event": "native-progress",
+      "operationsCompleted": 18,
+      "operationsSubmitted": 18,
+      "queueWritesCompleted": 18,
+      "queueWritesSubmitted": 18,
+      "stage": "compute-module-close-entered"
+    },
+    {
+      "batchOperations": 1,
+      "event": "native-progress",
+      "operationsCompleted": 18,
+      "operationsSubmitted": 18,
+      "queueWritesCompleted": 18,
+      "queueWritesSubmitted": 18,
+      "stage": "compute-free-entered"
+    },
+    {
+      "batchOperations": 1,
+      "event": "native-progress",
+      "operationsCompleted": 18,
+      "operationsSubmitted": 18,
+      "queueWritesCompleted": 18,
+      "queueWritesSubmitted": 18,
+      "stage": "compute-numeric-verified-stopped-unmapped-freed"
+    },
+    {
+      "event": "native-arm-finished",
+      "powerAfter": {
+        "acConnected": false,
+        "available": true,
+        "batteryPercent": 90,
+        "batterySaver": false
+      },
+      "powerBefore": {
+        "acConnected": false,
+        "available": true,
+        "batteryPercent": 90,
+        "batterySaver": false
+      },
+      "returnedReport": true
+    },
+    {
+      "adapterCase": "standard-scale-1.3",
+      "adapterLoaded": true,
+      "adapterScaleBits": 1067869798,
+      "adapterSha256": "f1669534803d340a496015f5c45125f3437b4d13ec764f40e34488ce83967f42",
+      "batchFourOperations": false,
+      "batchTenOperations": false,
+      "completed": true,
+      "cpuBackend": "neon",
+      "cpuBaselineAdapterLoaded": true,
+      "cpuBaselineAdapterScaleBits": 1067869798,
+      "cpuPowerAfter": {
+        "acConnected": false,
+        "available": true,
+        "batteryPercent": 90,
+        "batterySaver": false
+      },
+      "cpuPowerBefore": {
+        "acConnected": false,
+        "available": true,
+        "batteryPercent": 90,
+        "batterySaver": false
+      },
+      "driverDll": "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\qcnspmcdm8480.inf_arm64_4feba84cfc7ee278\\libcdsprpc.dll",
+      "event": "result",
+      "executionBackend": "native-q2",
+      "hostResidency": {
+        "cacheHits": 12,
+        "metadataPayloadBytes": 65520,
+        "tensorsPrepared": 6,
+        "weightPayloadBytesPrepared": 107642880
+      },
+      "integerAudit": "bounded-float-tolerance",
+      "integerValuesCompared": 0,
+      "logitsBitwiseEqual": false,
+      "logitsBoundedTolerancePass": true,
+      "logitsSha256": "6ea3ad4c7cb7d67f109d51846b07668a6e8e3ea6f55c4d671736f8780d357ce0",
+      "maximumOperations": 18,
+      "modelBytes": 7206168928,
+      "modelSha256": "5912bb739217cf25b4283a098c7b893d9baff36bdf2e72d3dbf4cb999d5633d5",
+      "nativeBatchOperations": 1,
+      "nativeCleanup": {
+        "freeCompleted": true,
+        "moduleCloseResult": 0,
+        "ownerPinnedUntilExit": true,
+        "poisoned": false,
+        "queueCloseResult": 0,
+        "queueStopResult": 0,
+        "unmappingResult": 0
+      },
+      "nativeCompletedCycle": true,
+      "nativeHmxBitplaneControl": false,
+      "nativeOperationsCompleted": 18,
+      "nativeOperationsSubmitted": 18,
+      "nativeQueueWritesCompleted": 18,
+      "nativeQueueWritesSubmitted": 18,
+      "nativeResources": {
+        "architecture": 81,
+        "effectiveDomain": 3,
+        "effectiveHmxPlacementVerified": false,
+        "effectiveVtcmBytes": null,
+        "mappedAllocationBytes": 132804608,
+        "residentWeightBytesPrepared": 107642880
+      },
+      "nativeStage": "compute-numeric-verified-stopped-unmapped-freed",
+      "npuPowerAfter": {
+        "acConnected": false,
+        "available": true,
+        "batteryPercent": 90,
+        "batterySaver": false
+      },
+      "npuPowerBefore": {
+        "acConnected": false,
+        "available": true,
+        "batteryPercent": 90,
+        "batterySaver": false
+      },
+      "numericalTolerance": {
+        "cosineSimilarity": 0.9998934606005014,
+        "cpuTop1Token": 248,
+        "maxAbsDiff": 0.17242121696472168,
+        "meanAbsDiff": 0.02420602633556582,
+        "npuTop1Token": 248,
+        "rmse": 0.030636925786153416,
+        "top1Match": true,
+        "top5Overlap": 5
+      },
+      "performanceMeasured": false,
+      "placementIdentity": "5912bb739217cf25b4283a098c7b893d9baff36bdf2e72d3dbf4cb999d5633d5:qwen35-text-v1:nonflash-f16:kv-f16:gdn-f32:prism-arm64-fused-v1:rank-one-lora-v1:f1669534803d340a496015f5c45125f3437b4d13ec764f40e34488ce83967f42:3fa66666:external-pq2-v1:hexagon-explicit-placement-v1:c56498d10e2d216d89473b72884faf1233844d01a4e822742d2dd245e6489781",
+      "profileEligible": false,
+      "projection": "blk.0.ffn_up.weight",
+      "projections": [
+        "blk.0.ffn_up.weight",
+        "blk.0.ffn_gate.weight",
+        "blk.0.ffn_down.weight",
+        "blk.0.attn_qkv.weight",
+        "blk.0.attn_gate.weight",
+        "blk.0.ssm_out.weight"
+      ],
+      "projectionsCompleted": 18,
+      "requestSha256": "3292a2c5f2f1c591d437f0ada88a2267c7c8a8d35898e1be3b3a82bb68ab3651",
+      "requiredControlStateBytes": 471465984,
+      "residentHostWeights": true,
+      "rowWorkers": 4,
+      "schemaVersion": 1,
+      "sessionSeconds": 120,
+      "stateBitwiseEqual": false,
+      "stateSha256": "df61df360297698bd6b7e9fb1e2725eba29443085391d15654df10da3d92b495",
+      "timingScope": {
+        "excludes": "Model loading, graph construction, device setup/cleanup, state snapshots/digests and final graph comparisons.",
+        "includes": "All CPU-owned graph work, offload packing/reconstruction, native submission and wait inside evaluate; checked native evaluation also includes the independently timed integer oracle.",
+        "kind": "single-run-diagnostic-evaluation-windows",
+        "qualifiedBenefitComparison": false,
+        "subtractedOracleWindowIsEstimated": false
+      },
+      "tokenComparisons": [
+        {
+          "index": 0,
+          "logitsBitwiseEqual": false,
+          "logitsBoundedTolerancePass": true,
+          "logitsSha256": "97126ca2ac4aa3cc24a6dc461dd86e852a37942bf2395416da5f091f47ef0f91",
+          "numericalTolerance": {
+            "cosineSimilarity": 0.9999402006043856,
+            "cpuTop1Token": 1183,
+            "maxAbsDiff": 0.12358760833740234,
+            "meanAbsDiff": 0.019880912939606903,
+            "npuTop1Token": 1183,
+            "rmse": 0.02490922594750238,
+            "top1Match": true,
+            "top5Overlap": 5
+          },
+          "stateBitwiseEqual": false,
+          "stateSha256": "1f83c583ebd526a85599bf56c7965c67f3fa8f1c9834dab71e9726ad11aed3d4",
+          "timing": {
+            "cpuEvaluationMilliseconds": 547.1141,
+            "independentIntegerOracleMilliseconds": 0.0,
+            "nativeCheckedEvaluationMilliseconds": 603.3340000000001,
+            "nativeEvaluationExcludingIntegerOracleMilliseconds": 603.3340000000001,
+            "nativeSubmitAndWaitMilliseconds": 2.8738
+          },
+          "tokenId": 42
+        },
+        {
+          "index": 1,
+          "logitsBitwiseEqual": false,
+          "logitsBoundedTolerancePass": true,
+          "logitsSha256": "72b0fca0c965f595c808f45fe631daa2666de40f6668d766563dc0d2a6675121",
+          "numericalTolerance": {
+            "cosineSimilarity": 0.999973160335061,
+            "cpuTop1Token": 12,
+            "maxAbsDiff": 0.15155673027038574,
+            "meanAbsDiff": 0.02147956717288126,
+            "npuTop1Token": 12,
+            "rmse": 0.02718548902172286,
+            "top1Match": true,
+            "top5Overlap": 5
+          },
+          "stateBitwiseEqual": false,
+          "stateSha256": "bed91b56d4b0ea3903daf4e37808c763dacede6808a5ac558593e4634a8ff1e7",
+          "timing": {
+            "cpuEvaluationMilliseconds": 589.8071,
+            "independentIntegerOracleMilliseconds": 0.0,
+            "nativeCheckedEvaluationMilliseconds": 584.1505,
+            "nativeEvaluationExcludingIntegerOracleMilliseconds": 584.1505,
+            "nativeSubmitAndWaitMilliseconds": 2.2704
+          },
+          "tokenId": 43
+        },
+        {
+          "index": 2,
+          "logitsBitwiseEqual": false,
+          "logitsBoundedTolerancePass": true,
+          "logitsSha256": "6ea3ad4c7cb7d67f109d51846b07668a6e8e3ea6f55c4d671736f8780d357ce0",
+          "numericalTolerance": {
+            "cosineSimilarity": 0.9998934606005014,
+            "cpuTop1Token": 248,
+            "maxAbsDiff": 0.17242121696472168,
+            "meanAbsDiff": 0.02420602633556582,
+            "npuTop1Token": 248,
+            "rmse": 0.030636925786153416,
+            "top1Match": true,
+            "top5Overlap": 5
+          },
+          "stateBitwiseEqual": false,
+          "stateSha256": "df61df360297698bd6b7e9fb1e2725eba29443085391d15654df10da3d92b495",
+          "timing": {
+            "cpuEvaluationMilliseconds": 628.7620000000001,
+            "independentIntegerOracleMilliseconds": 0.0,
+            "nativeCheckedEvaluationMilliseconds": 395.7987,
+            "nativeEvaluationExcludingIntegerOracleMilliseconds": 395.7987,
+            "nativeSubmitAndWaitMilliseconds": 2.3167999999999997
+          },
+          "tokenId": 128
+        }
+      ],
+      "tokenId": 42,
+      "tokenIds": [
+        42,
+        43,
+        128
+      ]
+    }
+  ],
+  "ProbeExitCode": 0,
+  "ProfileEligible": false,
+  "Projections": [
+    "blk.0.ffn_up.weight",
+    "blk.0.ffn_gate.weight",
+    "blk.0.ffn_down.weight",
+    "blk.0.attn_qkv.weight",
+    "blk.0.attn_gate.weight",
+    "blk.0.ssm_out.weight"
+  ],
+  "RequiredAvailablePhysicalBytes": 19327352832,
+  "RequiredControlStateBytes": 471465984,
+  "ResidentHostWeights": true,
+  "RowWorkers": 4,
+  "RuntimeFilesVerified": 17,
+  "SignedPackageVerified": true,
+  "Stage": "bounded-token-graph-complete",
+  "TokenIds": [
+    42,
+    43,
+    128
+  ],
+  "TrustChanged": false,
+  "kind": "runner-local-hexagon-model-probe",
+  "schemaVersion": 1
+}

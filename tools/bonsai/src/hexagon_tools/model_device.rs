@@ -143,18 +143,48 @@ pub(super) struct Request {
     maximum_seconds: u32,
 }
 
-fn valid_projection_name(name: &str) -> bool {
-    let Some(rest) = name.strip_prefix("blk.") else {
-        return false;
-    };
-    let Some((index, suffix)) = rest.split_once('.') else {
-        return false;
-    };
-    !index.is_empty()
-        && index.len() <= 2
-        && index.bytes().all(|byte| byte.is_ascii_digit())
-        && index.parse::<usize>().is_ok_and(|layer| layer < 64)
-        && matches!(suffix, "ffn_up.weight" | "ffn_gate.weight")
+const NATIVE_Q2_MAX_RESIDENT_WEIGHT_BYTES: u64 = 256 * 1024 * 1024;
+
+fn projection_dimensions(name: &str, backend: ExecutionBackend) -> Option<(u64, u64)> {
+    let rest = name.strip_prefix("blk.")?;
+    let (index, suffix) = rest.split_once('.')?;
+    if index.is_empty() || index.len() > 2 || !index.bytes().all(|byte| byte.is_ascii_digit()) {
+        return None;
+    }
+    let layer = index.parse::<usize>().ok().filter(|&layer| layer < 64)?;
+    let full_attention = (layer + 1).is_multiple_of(4);
+    match backend {
+        ExecutionBackend::GuardedHvx | ExecutionBackend::HmxBitplane => {
+            matches!(suffix, "ffn_up.weight" | "ffn_gate.weight").then_some((5120, 17_408))
+        }
+        ExecutionBackend::NativeQ2 => match suffix {
+            "ffn_up.weight" | "ffn_gate.weight" => Some((5120, 17_408)),
+            "ffn_down.weight" => Some((17_408, 5120)),
+            "attn_qkv.weight" if !full_attention => Some((5120, 10_240)),
+            "attn_gate.weight" if !full_attention => Some((5120, 6144)),
+            "ssm_out.weight" if !full_attention => Some((6144, 5120)),
+            "attn_q.weight" if full_attention => Some((5120, 12_288)),
+            "attn_k.weight" | "attn_v.weight" if full_attention => Some((5120, 1024)),
+            "attn_output.weight" if full_attention => Some((6144, 5120)),
+            _ => None,
+        },
+    }
+}
+
+fn expected_resident_weight_bytes(projections: &[&str], backend: ExecutionBackend) -> Result<u64> {
+    let mut total = 0_u64;
+    for &name in projections {
+        let (columns, rows) = projection_dimensions(name, backend)
+            .ok_or("The projection name or geometry is unsupported for this backend.")?;
+        let bytes = (rows / 32)
+            .checked_mul(columns / 64)
+            .and_then(|tiles| tiles.checked_mul(576))
+            .ok_or("Resident weight byte calculation overflowed.")?;
+        total = total
+            .checked_add(bytes)
+            .ok_or("Resident weight byte total overflowed.")?;
+    }
+    Ok(total)
 }
 
 impl Request {
@@ -190,28 +220,39 @@ impl Request {
 
     fn validate_selection(&self) -> Result<()> {
         let projections = self.projections();
-        let max_projections = if self.resident_host_weights { 2 } else { 4 };
+        let max_projections = match self.execution_backend {
+            ExecutionBackend::NativeQ2 => 16,
+            ExecutionBackend::GuardedHvx | ExecutionBackend::HmxBitplane => {
+                if self.resident_host_weights { 2 } else { 4 }
+            }
+        };
         let unique: BTreeSet<&str> = projections.iter().copied().collect();
         if !(1..=max_projections).contains(&projections.len())
             || projections.first() != Some(&"blk.0.ffn_up.weight")
             || unique.len() != projections.len()
-            || projections.iter().any(|&name| !valid_projection_name(name))
+            || projections
+                .iter()
+                .any(|&name| projection_dimensions(name, self.execution_backend).is_none())
         {
             return Err(
-                "Select one to two resident (or up to four streaming) unique FFN projections beginning with blk.0.ffn_up.weight."
+                "Select valid unique layer projections beginning with blk.0.ffn_up.weight within the backend's projection limit."
                     .into(),
             );
         }
-        if self.resident_host_weights
-            && !matches!(
-                self.execution_backend,
-                ExecutionBackend::HmxBitplane | ExecutionBackend::NativeQ2
-            )
-        {
-            return Err(
-                "Resident host weights require the explicit HMX bitplane or native-q2 backend."
-                    .into(),
-            );
+        if self.resident_host_weights {
+            let resident_bytes =
+                expected_resident_weight_bytes(&projections, self.execution_backend)?;
+            match self.execution_backend {
+                ExecutionBackend::HmxBitplane if resident_bytes <= 2 * RESIDENT_WEIGHT_BYTES => {}
+                ExecutionBackend::NativeQ2
+                    if resident_bytes <= NATIVE_Q2_MAX_RESIDENT_WEIGHT_BYTES => {}
+                _ => {
+                    return Err(
+                        "Resident host weights require the explicit HMX bitplane or native-q2 backend within its arena capacity."
+                            .into(),
+                    );
+                }
+            }
         }
         if self.batch_four_operations && self.batch_ten_operations {
             return Err("Select at most one explicit HMX batch mode.".into());
@@ -534,26 +575,62 @@ fn result(
         return Err("The model probe omitted its unique terminal result.".into());
     };
     let token_count = u64::try_from(tokens.len()).map_err(|error| error.to_string())?;
-    let projection_count = match value.get("projections") {
-        None => 1_u64,
+    let (projection_count, expected_weights) = match value.get("projections") {
+        None => (1_u64, RESIDENT_WEIGHT_BYTES),
         Some(projections) => {
             let list = projections
                 .as_array()
                 .ok_or("The model result projections field must be an array.")?;
-            let max_projections = if resident_host_weights { 2 } else { 4 };
+            let max_projections = match backend {
+                ExecutionBackend::NativeQ2 => 16,
+                ExecutionBackend::GuardedHvx | ExecutionBackend::HmxBitplane => {
+                    if resident_host_weights {
+                        2
+                    } else {
+                        4
+                    }
+                }
+            };
             let mut seen = BTreeSet::new();
+            let mut names = Vec::with_capacity(list.len());
             if !(1..=max_projections).contains(&list.len())
                 || list.first().and_then(Value::as_str) != Some("blk.0.ffn_up.weight")
-                || list.iter().any(|item| {
-                    item.as_str()
-                        .is_none_or(|name| !valid_projection_name(name) || !seen.insert(name))
-                })
             {
                 return Err(
                     "The model result projections list is invalid or out of bounds.".into(),
                 );
             }
-            u64::try_from(list.len()).map_err(|error| error.to_string())?
+            for item in list {
+                let Some(name) = item.as_str() else {
+                    return Err(
+                        "The model result projections list is invalid or out of bounds.".into(),
+                    );
+                };
+                if projection_dimensions(name, backend).is_none() || !seen.insert(name) {
+                    return Err(
+                        "The model result projections list is invalid or out of bounds.".into(),
+                    );
+                }
+                names.push(name);
+            }
+            let resident_bytes = expected_resident_weight_bytes(&names, backend)?;
+            if resident_host_weights {
+                let max_bytes = match backend {
+                    ExecutionBackend::NativeQ2 => NATIVE_Q2_MAX_RESIDENT_WEIGHT_BYTES,
+                    ExecutionBackend::HmxBitplane => 2 * RESIDENT_WEIGHT_BYTES,
+                    ExecutionBackend::GuardedHvx => 0,
+                };
+                if resident_bytes > max_bytes {
+                    return Err(
+                        "The model result projections list exceeds the resident arena bound."
+                            .into(),
+                    );
+                }
+            }
+            (
+                u64::try_from(list.len()).map_err(|error| error.to_string())?,
+                resident_bytes,
+            )
         }
     };
     let total_projections = projection_count * token_count;
@@ -565,6 +642,7 @@ fn result(
         resident_host_weights,
         token_count,
         projection_count,
+        expected_weights,
     )?;
     batch_result(
         value,
@@ -574,6 +652,7 @@ fn result(
         batch_ten,
         token_count,
         projection_count,
+        expected_weights,
     )?;
     let compared_values = if resident_host_weights {
         0
@@ -736,6 +815,7 @@ fn residency_result(
     resident_host_weights: bool,
     token_count: u64,
     projection_count: u64,
+    expected_weights: u64,
 ) -> Result<()> {
     // Historical full-integer controls predate these explicit fields. Their
     // absence means only the original streaming path, never resident execution.
@@ -765,7 +845,6 @@ fn residency_result(
     if resident_host_weights {
         let batch_four = value.get("batchFourOperations") == Some(&json!(true));
         let batch_ten = value.get("batchTenOperations") == Some(&json!(true));
-        let expected_weights = RESIDENT_WEIGHT_BYTES * projection_count;
         let base_mapped = if backend == ExecutionBackend::NativeQ2 {
             NATIVE_Q2_STREAMING_MAPPED_BYTES
         } else if batch_ten {
@@ -796,6 +875,10 @@ fn residency_result(
     Ok(())
 }
 
+#[expect(
+    clippy::too_many_arguments,
+    reason = "Keep batch, residency and dynamic weight-extent verification together."
+)]
 fn batch_result(
     value: &Value,
     backend: ExecutionBackend,
@@ -804,6 +887,7 @@ fn batch_result(
     batch_ten_operations: bool,
     token_count: u64,
     projection_count: u64,
+    expected_weights: u64,
 ) -> Result<()> {
     if batch_four_operations && batch_ten_operations {
         return Err("The model result cannot enable both batch-four and batch-ten modes.".into());
@@ -832,7 +916,7 @@ fn batch_result(
         STREAMING_MAPPED_BYTES
     };
     let expected_mapped = if resident_host_weights {
-        base_mapped + RESIDENT_WEIGHT_BYTES * projection_count
+        base_mapped + expected_weights
     } else {
         base_mapped
     };
@@ -874,6 +958,8 @@ fn selection_result(value: &Value, request: &Request) -> Result<()> {
     let expected_projections = request.projections();
     let projection_count =
         u64::try_from(expected_projections.len()).map_err(|error| error.to_string())?;
+    let expected_weights =
+        expected_resident_weight_bytes(&expected_projections, request.execution_backend)?;
     let projections = value.get("projections");
     if projections.is_some_and(|actual| actual != &json!(expected_projections))
         || (expected_projections.len() > 1 && projections != Some(&json!(expected_projections)))
@@ -888,6 +974,7 @@ fn selection_result(value: &Value, request: &Request) -> Result<()> {
         request.batch_ten_operations,
         token_count,
         projection_count,
+        expected_weights,
     )?;
     let loaded = request.adapter_case != AdapterCase::None;
     let standard = request.adapter_case == AdapterCase::Standard;
@@ -1933,6 +2020,29 @@ mod tests {
         let invalid_req: Request =
             serde_json::from_value(invalid_batch).map_err(|error| error.to_string())?;
         assert!(invalid_req.validate_selection().is_err());
+
+        let multi_layer = [
+            "blk.0.ffn_up.weight",
+            "blk.0.ffn_gate.weight",
+            "blk.0.ffn_down.weight",
+            "blk.0.attn_qkv.weight",
+            "blk.0.attn_gate.weight",
+            "blk.0.ssm_out.weight",
+            "blk.3.ffn_up.weight",
+            "blk.3.ffn_gate.weight",
+            "blk.3.ffn_down.weight",
+            "blk.3.attn_q.weight",
+            "blk.3.attn_k.weight",
+            "blk.3.attn_v.weight",
+            "blk.3.attn_output.weight",
+        ];
+        assert_eq!(
+            expected_resident_weight_bytes(&multi_layer, ExecutionBackend::NativeQ2)?,
+            212_336_640
+        );
+        assert!(
+            expected_resident_weight_bytes(&multi_layer, ExecutionBackend::GuardedHvx).is_err()
+        );
 
         let tol = json!({"maxAbsDiff":0.12,"meanAbsDiff":0.015,"rmse":0.022,
             "cosineSimilarity":0.999_85,"cpuTop1Token":1024,"npuTop1Token":1024,

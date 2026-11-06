@@ -1,0 +1,20 @@
+{
+    "schemaVersion":  1,
+    "kind":  "owner-device-predeclared-workload-execution",
+    "startedAtUtc":  "2026-11-06T00:29:42.1868582+00:00",
+    "finishedAtUtc":  "2026-11-06T00:30:09.8735865+00:00",
+    "elapsedSeconds":  27.687,
+    "withinPredeclaredAllowance":  true,
+    "powerBeforeWorkload":  {
+                                "available":  true,
+                                "acConnected":  false,
+                                "batterySaver":  false,
+                                "batteryPercent":  91
+                            },
+    "powerAfterWorkload":  {
+                               "available":  true,
+                               "acConnected":  false,
+                               "batterySaver":  false,
+                               "batteryPercent":  91
+                           }
+}

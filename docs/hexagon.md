@@ -179,12 +179,12 @@ per projection, zero host-side bitplane reconstruction) alongside signed `v81` H
 `0.6436-0.9832` ms for 1 projection (`3` ops in `3` queue writes) and `1.0821-1.4439` ms (`~0.541` ms per
 `[5120, 17408]` projection, faster than 4-worker NEON CPU's `~2-3` ms) for 2 projections (`6` ops in `6` queue
 writes), with cosine similarity `0.999906-0.999974`, RMSE `0.0221-0.0286`, exact top-1 token agreement (`1183`,
-`12`, `248`), and `5/5` top-5 overlap across tokens `42`, `43` and `128`.
+`12`, `248`), and `5/5` top-5 overlap across tokens `42`, `43` and `128`. The [full-layer and multi-layer native Q2_0 HVX controls](evidence/npu-full-layer-native-q2-a383e92-20261105/summary.json) and [decision](evidence/npu-full-layer-native-q2-a383e92-20261105/decision.json) on local Prism `a383e92` (after a closed `27.69`-second [diagnostic](evidence/npu-full-layer-native-q2-20261105/decision.json) on `8a7980a` identified unscoped `HmxQ2WeightRegistry` capacity validation in `Session` construction) extend native `Q2_0` HVX execution across all 10 recurrent and full-attention `PQ2_0` projection geometries up to `K=17408` (`NATIVE_Q2_MAX_COLUMNS=17408`, `4` MiB VTCM request, `256` MiB `NATIVE_Q2_MAX_RESIDENT_WEIGHT_BYTES`, parallel `RowParallelism` chunk packing, and direct-output single-op submission): under continuous AC power (`99%` charge, saver off across the `32.97`-second trial and `60.66` seconds cumulative within the `300`-second default budget), all 6 `blk.0` recurrent projections (`107,642,880` resident weight bytes, `18` ops in `18` queue writes) executed in `2.2704-2.8738` ms per token (`~0.378` ms per projection, cosine similarity `0.999893-0.999973`, RMSE `0.0249-0.0306`), and all 13 `blk.0 + blk.3` recurrent + full-attention projections (`212,336,640` resident weight bytes, `39` ops in `39` queue writes) executed in `4.3826-5.4553` ms per token (`~0.337-0.420` ms per projection, cosine similarity `0.999902-0.999977`, RMSE `0.0228-0.0290`), with exact top-1 token agreement (`1183`, `12`, `248`), `5/5` top-5 overlap, and clean teardown.
 
 The [logical payload ledger](evidence/hexagon-swift-traffic-ledger.json) derives
 13.69 GB of signed-kernel input/result payload per all-eligible original-PQ2
 evaluation token. The opt-in [mapped host-weight arena and graph cache](../tools/hexagon/resident-host.md)
-reuse immutable packed tiles across tokens, with a 64 MiB native arena ceiling,
+reuse immutable packed tiles across tokens, with a 64 MiB HMX bitplane arena ceiling (`256` MiB for `native-q2`),
 separate host metadata accounting and unchanged terminal operation/deadline limits.
 The cache binds exact immutable source storage and geometry; complete capacity
 misses select the streaming path before preparation. Preparation or submission
