@@ -8,8 +8,8 @@ use std::{
 
 use super::super::decode_graph::Cache;
 
-type Destroy = unsafe extern "C" fn(*mut c_void);
-type Build = unsafe extern "C" fn(*mut c_void) -> *mut c_void;
+pub(super) type Destroy = unsafe extern "C" fn(*mut c_void);
+pub(super) type Build = unsafe extern "C" fn(*mut c_void) -> *mut c_void;
 
 struct Resource {
     pointer: NonNull<c_void>,

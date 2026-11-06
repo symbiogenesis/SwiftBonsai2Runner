@@ -1,19 +1,26 @@
-//! The production GGUF adapter and loading path, with bounded ABI fault injection.
+//! The production GGUF adapter and loading path, with bounded fault injection.
+#![forbid(unsafe_code)]
 
 use std::{
     cell::{Cell, RefCell},
-    ffi::{CStr, CString, c_char, c_int, c_void},
+    ffi::{CStr, CString, c_int, c_void},
     io,
 };
+
+use crate::gguf::invalid;
 
 use super::super::{
     OWNER_COUNTS, REJECT, RESULT_COUNTS, bonsai_qt_bpe_add_special, bonsai_qt_bpe_encode_to,
     bonsai_qt_bpe_free, encode_copy_for_test, encode_to,
 };
 use super::{
-    ARRAY, Api, Gguf, InitParams, STRING, UINT32, bonsai_qt_bpe_load_gguf,
-    bonsai_qt_bpe_load_specials, owner_mut, reload, specials,
+    Metadata, bonsai_qt_bpe_load_gguf, bonsai_qt_bpe_load_specials, owner_mut, reload_from,
+    specials,
 };
+
+const ARRAY: c_int = 9;
+const STRING: c_int = 8;
+const UINT32: c_int = 4;
 
 #[derive(Clone)]
 struct Fixture {
@@ -47,115 +54,100 @@ impl Default for Fixture {
 std::thread_local! {
     static FIXTURE: RefCell<Fixture> = RefCell::new(Fixture::default());
     static GGUF_COUNTS: Cell<(usize, usize)> = const { Cell::new((0, 0)) };
-    static READS: RefCell<Vec<(i64, usize)>> = const { RefCell::new(Vec::new()) };
+    static READS: RefCell<Vec<(usize, usize)>> = const { RefCell::new(Vec::new()) };
     pub(super) static SPECIAL_IDS: RefCell<Vec<i32>> = const { RefCell::new(Vec::new()) };
     static PARAMS_CORRECT: Cell<bool> = const { Cell::new(false) };
 }
 
-// SAFETY: All test API pointers originate from Box<Fixture> in open and remain
-// live while the production Rust GGUF guard borrows them. No mutation overlaps.
-fn fixture<'a>(context: *const c_void) -> &'a Fixture {
-    // SAFETY: The private test API enforces the allocation/lifetime above.
-    unsafe { &*context.cast::<Fixture>() }
+struct MockMetadata {
+    fixture: Fixture,
 }
 
-unsafe extern "C-unwind" fn open(path: *const c_char, params: InitParams) -> *mut c_void {
-    PARAMS_CORRECT.with(|correct| correct.set(params.no_alloc && params.context.is_null()));
-    // SAFETY: The production adapter supplies a live NUL-terminated CStr path.
-    if unsafe { CStr::from_ptr(path) } != c"fixture" {
-        return std::ptr::null_mut();
-    }
-    GGUF_COUNTS.with(|counts| {
-        let (opened, closed) = counts.get();
-        counts.set((opened + 1, closed));
-    });
-    FIXTURE.with(|value| Box::into_raw(Box::new(value.borrow().clone())).cast())
-}
-
-unsafe extern "C-unwind" fn close(context: *mut c_void) {
-    // SAFETY: The production guard returns its one original Box pointer once,
-    // after all string borrows and before the API function table goes away.
-    drop(unsafe { Box::from_raw(context.cast::<Fixture>()) });
-    GGUF_COUNTS.with(|counts| {
-        let (opened, closed) = counts.get();
-        counts.set((opened, closed + 1));
-    });
-}
-
-unsafe extern "C-unwind" fn find(context: *const c_void, name: *const c_char) -> i64 {
-    let fixture = fixture(context);
-    // SAFETY: The adapter supplies a live borrowed CStr for each lookup.
-    let name = unsafe { CStr::from_ptr(name) };
-    if name == super::TOKENS && fixture.tokens_present {
-        0
-    } else if name == super::MERGES && fixture.merges_present {
-        1
-    } else if name == c"first" {
-        2
-    } else if name == c"invalid" {
-        3
-    } else {
-        -1
+impl MockMetadata {
+    fn open(path: &CStr) -> io::Result<Self> {
+        PARAMS_CORRECT.with(|correct| correct.set(true));
+        if path != c"fixture" {
+            return Err(invalid());
+        }
+        GGUF_COUNTS.with(|counts| {
+            let (opened, closed) = counts.get();
+            counts.set((opened + 1, closed));
+        });
+        Ok(Self {
+            fixture: FIXTURE.with(|value| value.borrow().clone()),
+        })
     }
 }
 
-unsafe extern "C-unwind" fn kind(context: *const c_void, key: i64) -> c_int {
-    let fixture = fixture(context);
-    if key < 2 {
-        fixture.array_type
-    } else {
-        fixture.special_type
+impl Drop for MockMetadata {
+    fn drop(&mut self) {
+        GGUF_COUNTS.with(|counts| {
+            let (opened, closed) = counts.get();
+            counts.set((opened, closed + 1));
+        });
     }
 }
 
-unsafe extern "C-unwind" fn array_kind(context: *const c_void, _: i64) -> c_int {
-    fixture(context).element_type
-}
-
-unsafe extern "C-unwind" fn count(context: *const c_void, key: i64) -> usize {
-    let fixture = fixture(context);
-    if fixture.oversized {
-        return usize::try_from(1_u64 << 32).unwrap_or(usize::MAX);
+impl Metadata for MockMetadata {
+    fn find(&self, name: &CStr) -> Option<usize> {
+        if name == super::TOKENS && self.fixture.tokens_present {
+            Some(0)
+        } else if name == super::MERGES && self.fixture.merges_present {
+            Some(1)
+        } else if name == c"first" {
+            Some(2)
+        } else if name == c"invalid" {
+            Some(3)
+        } else {
+            None
+        }
     }
-    if key == 0 {
-        fixture.tokens.len()
-    } else {
-        fixture.merges.len()
+
+    fn string_count(&self, key: usize) -> io::Result<usize> {
+        let kind = if key < 2 {
+            self.fixture.array_type
+        } else {
+            self.fixture.special_type
+        };
+        if kind != ARRAY || self.fixture.element_type != STRING {
+            return Err(invalid());
+        }
+        if self.fixture.oversized {
+            return Ok(usize::try_from(1_u64 << 32).unwrap_or(usize::MAX));
+        }
+        Ok(if key == 0 {
+            self.fixture.tokens.len()
+        } else {
+            self.fixture.merges.len()
+        })
+    }
+
+    fn string(&self, key: usize, index: usize) -> io::Result<&[u8]> {
+        READS.with(|reads| reads.borrow_mut().push((key, index)));
+        let values = if key == 0 {
+            &self.fixture.tokens
+        } else {
+            &self.fixture.merges
+        };
+        values
+            .get(index)
+            .and_then(Option::as_ref)
+            .map(|value| value.to_bytes())
+            .ok_or_else(invalid)
+    }
+
+    fn u32_value(&self, key: usize) -> io::Result<u32> {
+        let kind = if key < 2 {
+            self.fixture.array_type
+        } else {
+            self.fixture.special_type
+        };
+        if kind != UINT32 {
+            return Err(invalid());
+        }
+        Ok(if key == 2 { 1 } else { u32::MAX })
     }
 }
-
-unsafe extern "C-unwind" fn string(
-    context: *const c_void,
-    key: i64,
-    index: usize,
-) -> *const c_char {
-    READS.with(|reads| reads.borrow_mut().push((key, index)));
-    let fixture = fixture(context);
-    let values = if key == 0 {
-        &fixture.tokens
-    } else {
-        &fixture.merges
-    };
-    values
-        .get(index)
-        .and_then(Option::as_ref)
-        .map_or(std::ptr::null(), |value| value.as_ptr())
-}
-
-unsafe extern "C-unwind" fn u32_value(_: *const c_void, key: i64) -> u32 {
-    if key == 2 { 1 } else { u32::MAX }
-}
-
-const API: Api = Api {
-    open,
-    close,
-    find,
-    kind,
-    array_kind,
-    count,
-    string,
-    u32_value,
-};
 
 struct Slot(*mut c_void);
 
@@ -165,7 +157,8 @@ impl Slot {
     }
 
     fn load(&mut self, path: &CStr) -> io::Result<()> {
-        reload(&mut self.0, path, &API)
+        let metadata = MockMetadata::open(path)?;
+        reload_from(&mut self.0, &metadata)
     }
 }
 
@@ -222,7 +215,7 @@ fn rust_gguf_loader_owns_metadata_candidates_and_transactional_replacement() -> 
         READS.with(|reads| reads.borrow().clone()),
         [(0, 0), (0, 1), (0, 2), (1, 0), (1, 1)]
     );
-    let table = owner_mut(slot.0).ok_or_else(super::invalid)?;
+    let table = owner_mut(slot.0).ok_or_else(invalid)?;
     assert_eq!(table.token_id_for_test(b"a"), Some(1));
     assert_eq!(table.token_id_for_test(b"<eos>"), Some(2));
     assert_eq!(table.merge_rank_for_test(b"a a"), Some(1));
@@ -276,8 +269,8 @@ fn rust_special_intake_preserves_order_signed_ids_errors_and_cleanup() -> io::Re
     let mut slot = Slot::new();
     slot.load(c"fixture")?;
     {
-        let metadata = Gguf::open(c"fixture", &API)?;
-        let owner = owner_mut(slot.0).ok_or_else(super::invalid)?;
+        let metadata = MockMetadata::open(c"fixture")?;
+        let owner = owner_mut(slot.0).ok_or_else(invalid)?;
         specials(
             owner,
             &metadata,
@@ -297,15 +290,15 @@ fn rust_special_intake_preserves_order_signed_ids_errors_and_cleanup() -> io::Re
     }
     {
         let _fault = Fault::at(6);
-        let metadata = Gguf::open(c"fixture", &API)?;
-        let owner = owner_mut(slot.0).ok_or_else(super::invalid)?;
+        let metadata = MockMetadata::open(c"fixture")?;
+        let owner = owner_mut(slot.0).ok_or_else(invalid)?;
         assert!(specials(owner, &metadata, [c"first"]).is_err());
     }
     balanced_metadata();
     FIXTURE.with(|value| value.borrow_mut().special_type = STRING);
     {
-        let metadata = Gguf::open(c"fixture", &API)?;
-        let owner = owner_mut(slot.0).ok_or_else(super::invalid)?;
+        let metadata = MockMetadata::open(c"fixture")?;
+        let owner = owner_mut(slot.0).ok_or_else(invalid)?;
         assert!(specials(owner, &metadata, [c"first"]).is_err());
     }
     balanced_metadata();
@@ -334,7 +327,7 @@ fn rust_encoding_owns_results_through_copy_failure_empty_output_and_unwind() -> 
     );
     assert_eq!(encode_copy_for_test(slot.0, b"", false), Some(vec![]));
     assert_eq!(encode_copy_for_test(slot.0, b"", true), Some(vec![3]));
-    let owner = owner_mut(slot.0).ok_or_else(super::invalid)?;
+    let owner = owner_mut(slot.0).ok_or_else(invalid)?;
     assert!(!encode_to(owner, b"a", false, |_| false)?);
     assert!(
         super::super::guard(|| {
@@ -423,7 +416,7 @@ fn real_pinned_gguf_reader_reloads_rust_owned_tables_without_model_weights() -> 
         std::process::id()
     ));
     let _file = File(path.clone());
-    let path_text = path.to_str().ok_or_else(super::invalid)?;
+    let path_text = path.to_str().ok_or_else(invalid)?;
     let c_path = CString::new(path_text).map_err(io::Error::other)?;
     fs::write(
         &path,

@@ -62,6 +62,16 @@ fn new_owner() -> io::Result<Box<Owner>> {
     Ok(owner)
 }
 
+fn replace_owner(slot: &mut *mut c_void, replacement: Box<Owner>) {
+    let old = std::mem::replace(slot, Box::into_raw(replacement).cast());
+    if !old.is_null() {
+        // SAFETY: The private native wrapper retains exactly one original
+        // Box<Owner> pointer in this slot, without outstanding borrows. Publish
+        // only the finalized replacement, then release the displaced owner.
+        drop(unsafe { Box::from_raw(old.cast::<Owner>()) });
+    }
+}
+
 fn guard<T>(call: impl FnOnce() -> T) -> Option<T> {
     catch_unwind(AssertUnwindSafe(call)).ok()
 }
@@ -89,15 +99,21 @@ fn owner_mut<'a>(owner: *mut c_void) -> Option<&'a mut Tokenizer> {
         return None;
     }
     // SAFETY: The handle is a live, exclusively borrowed Box<Owner> from
-    // bonsai_qt_bpe_new; the reviewed wrapper never copies or aliases ownership.
+    // new_owner; the reviewed wrapper never copies or aliases ownership.
     unsafe { owner.cast::<Owner>().as_mut() }.map(|owner| &mut owner.tokenizer)
 }
 
-// SAFETY: This unique private export transfers one Box owner to the native
-// RAII wrapper; ordinary setup errors and Rust panics cannot unwind into C++.
+fn owner_ref<'a>(owner: *const c_void) -> Option<&'a Tokenizer> {
+    if owner.is_null() || !owner.cast::<Owner>().is_aligned() {
+        return None;
+    }
+    // SAFETY: Native setup has finished and its single worker immutably
+    // borrows this live owner. No mutation or destruction overlaps the call.
+    unsafe { owner.cast::<Owner>().as_ref() }.map(|owner| &owner.tokenizer)
+}
+
 #[cfg(test)]
-#[unsafe(no_mangle)]
-pub(super) extern "C" fn bonsai_qt_bpe_new() -> *mut c_void {
+pub(super) fn bonsai_qt_bpe_new() -> *mut c_void {
     guard(|| new_owner().map_or(std::ptr::null_mut(), |owner| Box::into_raw(owner).cast()))
         .unwrap_or(std::ptr::null_mut())
 }
@@ -133,11 +149,8 @@ fn add(owner: *mut c_void, data: *const u8, length: usize, id: i32, merge: bool)
     .unwrap_or(false)
 }
 
-// SAFETY: Native supplies one exclusive owner and a disjoint borrowed GGUF
-// string extent. Rust copies the bounded spelling into its sole table owner.
 #[cfg(test)]
-#[unsafe(no_mangle)]
-pub(super) extern "C" fn bonsai_qt_bpe_add_token(
+pub(super) fn bonsai_qt_bpe_add_token(
     owner: *mut c_void,
     data: *const u8,
     length: usize,
@@ -146,11 +159,8 @@ pub(super) extern "C" fn bonsai_qt_bpe_add_token(
     add(owner, data, length, id, false)
 }
 
-// SAFETY: Same borrowed storage contract as add_token, with the native merge
-// array index passed as the rank. No native pointer is retained.
 #[cfg(test)]
-#[unsafe(no_mangle)]
-pub(super) extern "C" fn bonsai_qt_bpe_add_merge(
+pub(super) fn bonsai_qt_bpe_add_merge(
     owner: *mut c_void,
     data: *const u8,
     length: usize,
@@ -159,11 +169,8 @@ pub(super) extern "C" fn bonsai_qt_bpe_add_merge(
     add(owner, data, length, rank, true)
 }
 
-// SAFETY: Native serializes setup on one exclusive owner. Failure rejects the
-// candidate owner, which RAII releases without publishing a partial tokenizer.
 #[cfg(test)]
-#[unsafe(no_mangle)]
-pub(super) extern "C" fn bonsai_qt_bpe_finish(owner: *mut c_void) -> bool {
+pub(super) fn bonsai_qt_bpe_finish(owner: *mut c_void) -> bool {
     guard(|| owner_mut(owner).is_some_and(|owner| owner.finish().is_ok())).unwrap_or(false)
 }
 
@@ -191,43 +198,10 @@ pub(super) extern "C" fn bonsai_qt_bpe_add_special(
     .unwrap_or(false)
 }
 
-// SAFETY: Native supplies one exclusive owner and a scalar GGUF token ID.
-// Rust owns reverse lookup, invalid/empty no-op handling and duplicate policy.
 #[cfg(test)]
-#[unsafe(no_mangle)]
-pub(super) extern "C" fn bonsai_qt_bpe_add_special_id(owner: *mut c_void, id: i32) -> bool {
+pub(super) fn bonsai_qt_bpe_add_special_id(owner: *mut c_void, id: i32) -> bool {
     guard(|| owner_mut(owner).is_some_and(|owner| owner.add_special_id(id).is_ok()))
         .unwrap_or(false)
-}
-
-// SAFETY: Encoding immutably borrows a live finalized owner and disjoint text
-// span. The returned result owns all IDs independently; no input borrow escapes.
-#[cfg(test)]
-#[unsafe(no_mangle)]
-pub(super) extern "C" fn bonsai_qt_bpe_encode(
-    owner: *const c_void,
-    data: *const u8,
-    length: usize,
-    add_eos: bool,
-) -> *mut c_void {
-    guard(|| {
-        if owner.is_null() || !owner.cast::<Owner>().is_aligned() {
-            return std::ptr::null_mut();
-        }
-        let Some(bytes) = bytes(data, length) else {
-            return std::ptr::null_mut();
-        };
-        // SAFETY: Native setup has finished and its single worker immutably
-        // borrows this live owner. No mutation or destruction overlaps the call.
-        let owner = &unsafe { &*owner.cast::<Owner>() }.tokenizer;
-        owner
-            .encode(bytes, add_eos)
-            .ok()
-            .map_or(std::ptr::null_mut(), |ids| {
-                Box::into_raw(Box::new(ids)).cast()
-            })
-    })
-    .unwrap_or(std::ptr::null_mut())
 }
 
 struct Encoding(Vec<i32>);
@@ -270,15 +244,12 @@ pub(super) extern "C" fn bonsai_qt_bpe_encode_to(
     copy: Option<unsafe extern "C" fn(*mut c_void, *const i32, usize) -> bool>,
 ) -> bool {
     guard(|| {
-        if owner.is_null() || !owner.cast::<Owner>().is_aligned() {
+        let Some(owner) = owner_ref(owner) else {
             return false;
-        }
+        };
         let (Some(bytes), Some(copy)) = (bytes(data, length), copy) else {
             return false;
         };
-        // SAFETY: The generated native object borrows its one live Owner
-        // immutably; setup, replacement and destruction cannot overlap encoding.
-        let owner = &unsafe { &*owner.cast::<Owner>() }.tokenizer;
         encode_to(owner, bytes, add_eos, |ids| {
             let pointer = if ids.is_empty() {
                 std::ptr::null()
@@ -301,74 +272,13 @@ pub(super) fn encode_copy_for_test(
     text: &[u8],
     add_eos: bool,
 ) -> Option<Vec<i32>> {
-    unsafe extern "C" fn copy(userdata: *mut c_void, data: *const i32, count: usize) -> bool {
-        // SAFETY: The test helper exclusively borrows its local Vec through
-        // userdata until the synchronous export returns.
-        let output = unsafe { &mut *userdata.cast::<Vec<i32>>() };
-        if count != 0 {
-            // SAFETY: The export supplies exactly count initialized live IDs;
-            // nonempty results always use the Vec's nonnull aligned pointer.
-            output.extend_from_slice(unsafe { std::slice::from_raw_parts(data, count) });
-        }
-        true
-    }
+    let owner = owner_ref(owner)?;
+    let text = bytes(text.as_ptr(), text.len())?;
     let mut output = Vec::new();
-    bonsai_qt_bpe_encode_to(
-        owner,
-        text.as_ptr(),
-        text.len(),
-        add_eos,
-        (&raw mut output).cast(),
-        Some(copy),
-    )
-    .then_some(output)
-}
-
-#[cfg(test)]
-fn result<'a>(result: *const c_void) -> Option<&'a Vec<i32>> {
-    if result.is_null() || !result.cast::<Vec<i32>>().is_aligned() {
-        return None;
-    }
-    // SAFETY: The native result RAII guard retains one Box<Vec<i32>> produced
-    // by encode, with no mutation or destruction until the borrowed IDs are copied.
-    unsafe { result.cast::<Vec<i32>>().as_ref() }
-}
-
-// SAFETY: Native borrows the live result for its synchronous vector copy only.
-#[cfg(test)]
-#[unsafe(no_mangle)]
-pub(super) extern "C" fn bonsai_qt_bpe_result_data(owner: *const c_void) -> *const i32 {
-    result(owner).map_or(std::ptr::null(), |ids| {
-        if ids.is_empty() {
-            std::ptr::null()
-        } else {
-            ids.as_ptr()
-        }
+    encode_to(owner, text, add_eos, |ids| {
+        output.extend_from_slice(ids);
+        true
     })
-}
-
-// SAFETY: Native queries only a live opaque result created by encode.
-#[cfg(test)]
-#[unsafe(no_mangle)]
-pub(super) extern "C" fn bonsai_qt_bpe_result_len(owner: *const c_void) -> usize {
-    result(owner).map_or(0, Vec::len)
-}
-
-// SAFETY: Native releases each result exactly once after copying its ID range;
-// the result allocation and its payload were both allocated by Rust.
-#[cfg(test)]
-#[unsafe(no_mangle)]
-pub(super) extern "C" fn bonsai_qt_bpe_result_free(owner: *mut c_void) {
-    if !owner.is_null() {
-        let _ = guard(|| {
-            // SAFETY: The native result RAII guard transfers the original Box
-            // pointer back exactly once after the data borrow has ended.
-            drop(unsafe { Box::from_raw(owner.cast::<Vec<i32>>()) });
-        });
-    }
-}
-
-#[cfg(test)]
-pub(super) fn copy_result_for_test(owner: *const c_void) -> Option<Vec<i32>> {
-    result(owner).cloned()
+    .ok()?
+    .then_some(output)
 }

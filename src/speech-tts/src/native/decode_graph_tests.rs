@@ -1,4 +1,5 @@
 //! Exact former lifetime obligations on the production Rust cache ABI.
+#![forbid(unsafe_code)]
 
 use std::{cell::RefCell, ffi::c_void, rc::Rc};
 
@@ -32,6 +33,7 @@ impl Drop for Graph {
     }
 }
 
+#[derive(Clone)]
 struct Builder {
     width: i32,
     state: Rc<RefCell<State>>,
@@ -39,11 +41,18 @@ struct Builder {
     partial_failure: bool,
 }
 
-// SAFETY: Tests pass a unique Builder only during synchronous cache_begin.
-// This model-free callback follows the real noexcept builder's transfer rule.
-unsafe extern "C" fn build(data: *mut c_void) -> *mut c_void {
-    // SAFETY: The helper supplies its live, exclusively borrowed Builder.
-    let builder = unsafe { &mut *data.cast::<Builder>() };
+std::thread_local! {
+    static ACTIVE_BUILDER: RefCell<Option<Builder>> = const { RefCell::new(None) };
+    static GRAPHS: RefCell<Vec<Option<Graph>>> = const { RefCell::new(Vec::new()) };
+}
+
+extern "C" fn build(data: *mut c_void) -> *mut c_void {
+    if data.addr() != 1 {
+        return std::ptr::null_mut();
+    }
+    let Some(builder) = ACTIVE_BUILDER.with(|active| active.borrow().clone()) else {
+        return std::ptr::null_mut();
+    };
     let mut state = builder.state.borrow_mut();
     let live = state.live;
     state.before_build_live.push(live);
@@ -52,11 +61,11 @@ unsafe extern "C" fn build(data: *mut c_void) -> *mut c_void {
     }
     state.allocations += 1;
     state.live += 1;
-    let graph = Box::new(Graph {
+    let graph = Graph {
         id: state.allocations,
         width: builder.width,
         state: Rc::clone(&builder.state),
-    });
+    };
     drop(state);
     if builder.partial_failure {
         // The actual native builder also cleans partial GGML allocations
@@ -64,14 +73,22 @@ unsafe extern "C" fn build(data: *mut c_void) -> *mut c_void {
         drop(graph);
         return std::ptr::null_mut();
     }
-    Box::into_raw(graph).cast()
+    let handle = GRAPHS.with(|graphs| {
+        let mut graphs = graphs.borrow_mut();
+        graphs.push(Some(graph));
+        graphs.len()
+    });
+    std::ptr::without_provenance_mut(handle)
 }
 
-// SAFETY: The production Rust owner returns the one pointer transferred above,
-// once, only after synchronized work is complete. No graph borrow survives.
-unsafe extern "C" fn destroy(graph: *mut c_void) {
-    // SAFETY: graph is the original unique Box<Graph>, released exactly once.
-    drop(unsafe { Box::from_raw(graph.cast::<Graph>()) });
+extern "C" fn destroy(graph: *mut c_void) {
+    let slot = graph.addr().checked_sub(1);
+    GRAPHS.with(|graphs| {
+        let mut graphs = graphs.borrow_mut();
+        if let Some(entry) = slot.and_then(|index| graphs.get_mut(index)) {
+            let _ = entry.take();
+        }
+    });
 }
 
 struct Owner(*mut c_void);
@@ -83,14 +100,17 @@ impl Owner {
 
     fn begin(&self, tokens: i32, width: i32, builder: &mut Builder) -> *mut c_void {
         builder.width = width;
-        bonsai_qt_decode_cache_begin(
+        ACTIVE_BUILDER.with(|active| *active.borrow_mut() = Some(builder.clone()));
+        let pointer = bonsai_qt_decode_cache_begin(
             self.0,
             tokens,
             width,
-            (&raw mut *builder).cast(),
+            std::ptr::without_provenance_mut(1),
             Some(build),
             Some(destroy),
-        )
+        );
+        ACTIVE_BUILDER.with(|active| *active.borrow_mut() = None);
+        pointer
     }
 
     fn complete(&self) {
@@ -106,15 +126,26 @@ impl Drop for Owner {
 
 fn id(graph: *mut c_void) -> usize {
     assert!(!graph.is_null());
-    // SAFETY: Callers inspect the initialized Graph only during its active
-    // cache lease, before completion can permit replacement or destruction.
-    unsafe { (*graph.cast::<Graph>()).id }
+    let index = graph.addr() - 1;
+    GRAPHS.with(|graphs| {
+        graphs
+            .borrow()
+            .get(index)
+            .and_then(Option::as_ref)
+            .map_or(0, |entry| entry.id)
+    })
 }
 
 fn graph_width(graph: *mut c_void) -> i32 {
     assert!(!graph.is_null());
-    // SAFETY: This initialized graph is borrowed only during its active lease.
-    unsafe { (*graph.cast::<Graph>()).width }
+    let index = graph.addr() - 1;
+    GRAPHS.with(|graphs| {
+        graphs
+            .borrow()
+            .get(index)
+            .and_then(Option::as_ref)
+            .map_or(0, |entry| entry.width)
+    })
 }
 
 fn builder() -> Builder {
@@ -222,8 +253,7 @@ fn rust_owned_decode_cache_rejects_invalid_calls_without_build_or_eviction() {
     assert_eq!(builder.state.borrow().before_build_live, []);
     assert!(!cache.begin(256, 1, &mut builder).is_null());
     cache.complete();
-    let callbacks: [Option<unsafe extern "C" fn(*mut c_void) -> *mut c_void>; 2] =
-        [None, Some(build)];
+    let callbacks: [Option<super::decode_graph::Build>; 2] = [None, Some(build)];
     for callback in callbacks {
         assert!(
             bonsai_qt_decode_cache_begin(cache.0, 256, 1, std::ptr::null_mut(), callback, None)

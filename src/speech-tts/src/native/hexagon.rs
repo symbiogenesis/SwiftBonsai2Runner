@@ -32,18 +32,7 @@ type LogSet = unsafe extern "C" fn(Option<LogCallback>, *mut c_void);
 type Registry = unsafe extern "C" fn() -> *mut c_void;
 type DeviceCount = unsafe extern "C" fn(*mut c_void) -> usize;
 
-struct PinnedRuntime {
-    _base: NonNull<c_void>,
-    _hexagon: NonNull<c_void>,
-}
-
-// SAFETY: Module handles remain pinned for the lifetime of the process and are
-// never mutated or unloaded after one-time initialization.
-unsafe impl Send for PinnedRuntime {}
-// SAFETY: Shared references never mutate or close the pinned module handles.
-unsafe impl Sync for PinnedRuntime {}
-
-static HEXAGON_READY: OnceLock<Option<PinnedRuntime>> = OnceLock::new();
+static HEXAGON_READY: OnceLock<bool> = OnceLock::new();
 
 pub(super) fn select_device(discard_log: LogCallback) -> &'static CStr {
     if let Ok(requested) = env::var("BONSAIRUNNER_TTS_DEVICE") {
@@ -60,12 +49,10 @@ pub(super) fn select_device(discard_log: LogCallback) -> &'static CStr {
 }
 
 fn ensure_registered(discard_log: LogCallback) -> bool {
-    HEXAGON_READY
-        .get_or_init(|| register_hexagon(discard_log))
-        .is_some()
+    *HEXAGON_READY.get_or_init(|| register_hexagon(discard_log).is_some())
 }
 
-fn register_hexagon(discard_log: LogCallback) -> Option<PinnedRuntime> {
+fn register_hexagon(discard_log: LogCallback) -> Option<()> {
     let runtime_dir = runtime_directory()?;
     if !valid_directory(&runtime_dir) {
         return None;
@@ -75,7 +62,8 @@ fn register_hexagon(discard_log: LogCallback) -> Option<PinnedRuntime> {
             return None;
         }
     }
-    if env::var_os("ADSP_LIBRARY_PATH").is_none() && !set_env_wide("ADSP_LIBRARY_PATH", &runtime_dir)
+    if env::var_os("ADSP_LIBRARY_PATH").is_none()
+        && !set_env_wide("ADSP_LIBRARY_PATH", &runtime_dir)
     {
         return None;
     }
@@ -119,10 +107,8 @@ fn register_hexagon(discard_log: LogCallback) -> Option<PinnedRuntime> {
     if unsafe { ggml_backend_dev_by_name(c"HTP0".as_ptr()) }.is_null() {
         return None;
     }
-    Some(PinnedRuntime {
-        _base: base,
-        _hexagon: hexagon,
-    })
+    let _ = (base, hexagon);
+    Some(())
 }
 
 fn runtime_directory() -> Option<PathBuf> {

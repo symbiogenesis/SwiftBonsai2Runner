@@ -11,9 +11,8 @@ use sha2::{Digest, Sha256};
 
 use super::tokenizer::{
     bonsai_qt_bpe_add_merge, bonsai_qt_bpe_add_special, bonsai_qt_bpe_add_special_id,
-    bonsai_qt_bpe_add_token, bonsai_qt_bpe_encode, bonsai_qt_bpe_finish, bonsai_qt_bpe_free,
-    bonsai_qt_bpe_new, bonsai_qt_bpe_result_data, bonsai_qt_bpe_result_free,
-    bonsai_qt_bpe_result_len, copy_result_for_test, encode_copy_for_test,
+    bonsai_qt_bpe_add_token, bonsai_qt_bpe_finish, bonsai_qt_bpe_free, bonsai_qt_bpe_new,
+    encode_copy_for_test,
 };
 use crate::tokenizer::{Tokenizer, pretokenize};
 
@@ -91,14 +90,6 @@ impl NativeTokenizer {
 impl Drop for NativeTokenizer {
     fn drop(&mut self) {
         bonsai_qt_bpe_free(self.0);
-    }
-}
-
-struct NativeResult(*mut c_void);
-
-impl Drop for NativeResult {
-    fn drop(&mut self) {
-        bonsai_qt_bpe_result_free(self.0);
     }
 }
 
@@ -510,26 +501,16 @@ fn tokenizer_setup_and_result_owners_preserve_their_lifetimes() -> Result<()> {
 
     let owner = NativeTokenizer(bonsai_qt_bpe_new());
     assert!(!owner.0.is_null());
-    let unfinished = NativeResult(bonsai_qt_bpe_encode(owner.0, b"a".as_ptr(), 1, false));
-    assert!(unfinished.0.is_null());
+    assert!(encode_copy_for_test(owner.0, b"a", false).is_none());
     assert!(!bonsai_qt_bpe_add_token(owner.0, b"a".as_ptr(), 1, -1));
     assert!(bonsai_qt_bpe_add_token(owner.0, b"a".as_ptr(), 1, 0));
     assert!(bonsai_qt_bpe_finish(owner.0));
     assert!(!bonsai_qt_bpe_finish(owner.0));
     assert!(!bonsai_qt_bpe_add_token(owner.0, b"b".as_ptr(), 1, 1));
     assert!(!bonsai_qt_bpe_add_special(owner.0, std::ptr::null(), 0, 0));
-    let empty = NativeResult(bonsai_qt_bpe_encode(owner.0, std::ptr::null(), 0, false));
-    assert!(!empty.0.is_null());
-    assert_eq!(bonsai_qt_bpe_result_len(empty.0), 0);
-    assert!(bonsai_qt_bpe_result_data(empty.0).is_null());
-    let result = NativeResult(bonsai_qt_bpe_encode(owner.0, b"a".as_ptr(), 1, false));
-    assert!(!result.0.is_null());
-    assert_eq!(bonsai_qt_bpe_result_len(result.0), 1);
-    assert!(!bonsai_qt_bpe_result_data(result.0).is_null());
+    assert_eq!(encode_copy_for_test(owner.0, b"", false), Some(Vec::new()));
+    assert_eq!(encode_copy_for_test(owner.0, b"a", false), Some(vec![0]));
     drop(owner);
-    assert_eq!(copy_result_for_test(result.0), Some(vec![0]));
-    assert_eq!(copy_result_for_test(empty.0), Some(Vec::new()));
     bonsai_qt_bpe_free(std::ptr::null_mut());
-    bonsai_qt_bpe_result_free(std::ptr::null_mut());
     Ok(())
 }

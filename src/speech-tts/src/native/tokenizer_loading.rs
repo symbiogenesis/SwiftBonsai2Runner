@@ -1,184 +1,47 @@
-//! GGUF metadata access and transactional tokenizer ownership in Rust.
-//!
-//! The external GGML reader still parses the verified model. Its primitive C
-//! declarations match ggml cc5df49a6b878db2b68b9a7b45976e279594627d/include/gguf.h.
+//! Pure-Rust GGUF metadata access and transactional tokenizer ownership.
 
 use std::{
     ffi::{CStr, c_char, c_int, c_void},
     io,
-    panic::{AssertUnwindSafe, catch_unwind},
-    ptr::NonNull,
+    path::Path,
 };
 
-use super::{Owner, guard, new_owner, owner_mut, reject_stage};
+use crate::gguf::{Gguf, invalid};
+
+use super::{Owner, guard, new_owner, owner_mut, reject_stage, replace_owner};
 
 const TOKENS: &CStr = c"tokenizer.ggml.tokens";
 const MERGES: &CStr = c"tokenizer.ggml.merges";
 const MAX_METADATA_ENTRIES: usize = 1_000_000;
-const ARRAY: c_int = 9;
-const STRING: c_int = 8;
-const UINT32: c_int = 4;
 
-#[repr(C)]
-#[derive(Clone, Copy)]
-struct InitParams {
-    no_alloc: bool,
-    context: *mut *mut c_void,
+pub(super) trait Metadata {
+    fn find(&self, name: &CStr) -> Option<usize>;
+    fn string_count(&self, key: usize) -> io::Result<usize>;
+    fn string(&self, key: usize, index: usize) -> io::Result<&[u8]>;
+    fn u32_value(&self, key: usize) -> io::Result<u32>;
 }
 
-unsafe extern "C-unwind" {
-    fn gguf_init_from_file(path: *const c_char, params: InitParams) -> *mut c_void;
-    fn gguf_free(context: *mut c_void);
-    fn gguf_find_key(context: *const c_void, name: *const c_char) -> i64;
-    fn gguf_get_kv_type(context: *const c_void, key: i64) -> c_int;
-    fn gguf_get_arr_type(context: *const c_void, key: i64) -> c_int;
-    fn gguf_get_arr_n(context: *const c_void, key: i64) -> usize;
-    fn gguf_get_arr_str(context: *const c_void, key: i64, index: usize) -> *const c_char;
-    fn gguf_get_val_u32(context: *const c_void, key: i64) -> u32;
-}
+impl Metadata for Gguf {
+    fn find(&self, name: &CStr) -> Option<usize> {
+        Self::find(self, name.to_bytes())
+    }
 
-struct Api {
-    open: unsafe extern "C-unwind" fn(*const c_char, InitParams) -> *mut c_void,
-    close: unsafe extern "C-unwind" fn(*mut c_void),
-    find: unsafe extern "C-unwind" fn(*const c_void, *const c_char) -> i64,
-    kind: unsafe extern "C-unwind" fn(*const c_void, i64) -> c_int,
-    array_kind: unsafe extern "C-unwind" fn(*const c_void, i64) -> c_int,
-    count: unsafe extern "C-unwind" fn(*const c_void, i64) -> usize,
-    string: unsafe extern "C-unwind" fn(*const c_void, i64, usize) -> *const c_char,
-    u32_value: unsafe extern "C-unwind" fn(*const c_void, i64) -> u32,
-}
+    fn string_count(&self, key: usize) -> io::Result<usize> {
+        Self::string_count(self, key)
+    }
 
-const NATIVE_API: Api = Api {
-    open: gguf_init_from_file,
-    close: gguf_free,
-    find: gguf_find_key,
-    kind: gguf_get_kv_type,
-    array_kind: gguf_get_arr_type,
-    count: gguf_get_arr_n,
-    string: gguf_get_arr_str,
-    u32_value: gguf_get_val_u32,
-};
+    fn string(&self, key: usize, index: usize) -> io::Result<&[u8]> {
+        Self::string(self, key, index)
+    }
 
-fn invalid() -> io::Error {
-    io::Error::new(
-        io::ErrorKind::InvalidData,
-        "Invalid speech tokenizer metadata.",
-    )
-}
-
-// C++ allocation/string operations may throw through the primitive C API.
-// Permit that ABI unwind only as far as this guard, then abort the owned worker
-// without examining or dropping an opaque foreign exception or reusing state.
-// Some Rust runtimes abort directly when catch_unwind encounters a foreign
-// exception; the Err path must have the same outcome if it is returned instead.
-fn native_call<T>(call: impl FnOnce() -> T) -> T {
-    catch_unwind(AssertUnwindSafe(call)).unwrap_or_else(|_| std::process::abort())
-}
-
-trait Metadata {
-    fn find(&self, name: &CStr) -> Option<i64>;
-    fn string_count(&self, key: i64) -> io::Result<usize>;
-    fn string(&self, key: i64, index: usize) -> io::Result<&[u8]>;
-    fn u32_value(&self, key: i64) -> io::Result<u32>;
-}
-
-struct Gguf<'a> {
-    context: NonNull<c_void>,
-    api: &'a Api,
-}
-
-#[allow(
-    ffi_unwind_calls,
-    reason = "Each potentially throwing native metadata call is contained by native_call and aborts on unwind."
-)]
-impl<'a> Gguf<'a> {
-    fn open(path: &CStr, api: &'a Api) -> io::Result<Self> {
-        // SAFETY: The pinned C reader synchronously borrows a NUL-terminated
-        // path. no_alloc=true and a null context request metadata only. A
-        // successful return transfers one context to this Rust Drop guard.
-        let raw = native_call(|| unsafe {
-            (api.open)(
-                path.as_ptr(),
-                InitParams {
-                    no_alloc: true,
-                    context: std::ptr::null_mut(),
-                },
-            )
-        });
-        Ok(Self {
-            context: NonNull::new(raw).ok_or_else(invalid)?,
-            api,
-        })
+    fn u32_value(&self, key: usize) -> io::Result<u32> {
+        Self::u32_value(self, key)
     }
 }
 
-#[allow(
-    ffi_unwind_calls,
-    reason = "The native release is contained by native_call and aborts on unwind."
-)]
-impl Drop for Gguf<'_> {
-    fn drop(&mut self) {
-        // SAFETY: This guard uniquely owns the nonnull context from api.open;
-        // all metadata borrows end before its one matching release.
-        native_call(|| unsafe { (self.api.close)(self.context.as_ptr()) });
-    }
-}
-
-#[allow(
-    ffi_unwind_calls,
-    reason = "Every primitive metadata getter is contained by native_call and aborts on unwind."
-)]
-impl Metadata for Gguf<'_> {
-    fn find(&self, name: &CStr) -> Option<i64> {
-        // SAFETY: The immutable context and NUL-terminated key remain live for
-        // this synchronous call. GGML returns a valid index or -1.
-        let key = native_call(|| unsafe { (self.api.find)(self.context.as_ptr(), name.as_ptr()) });
-        (key >= 0).then_some(key)
-    }
-
-    fn string_count(&self, key: i64) -> io::Result<usize> {
-        // SAFETY: key was returned by find on this live immutable context.
-        let kind = native_call(|| unsafe { (self.api.kind)(self.context.as_ptr(), key) });
-        if kind != ARRAY {
-            return Err(invalid());
-        }
-        // SAFETY: The key is an existing ARRAY; query its element type before
-        // calling GGML getters, which abort on a mismatched type.
-        let element = native_call(|| unsafe { (self.api.array_kind)(self.context.as_ptr(), key) });
-        if element != STRING {
-            return Err(invalid());
-        }
-        // SAFETY: Both array and string element types were checked above.
-        Ok(native_call(|| unsafe {
-            (self.api.count)(self.context.as_ptr(), key)
-        }))
-    }
-
-    fn string(&self, key: i64, index: usize) -> io::Result<&[u8]> {
-        // SAFETY: The loader queries string_count before iterating exactly that
-        // extent; the immutable array's type and index are already checked.
-        let pointer =
-            native_call(|| unsafe { (self.api.string)(self.context.as_ptr(), key, index) });
-        if pointer.is_null() {
-            return Err(invalid());
-        }
-        // SAFETY: Pinned GGML returns an array-owned NUL-terminated string.
-        // The returned borrow cannot outlive this context. Like the retired
-        // std::strlen handoff, bytes after an embedded NUL are not inserted.
-        Ok(unsafe { CStr::from_ptr(pointer) }.to_bytes())
-    }
-
-    fn u32_value(&self, key: i64) -> io::Result<u32> {
-        // SAFETY: key was returned by find on this context.
-        let kind = native_call(|| unsafe { (self.api.kind)(self.context.as_ptr(), key) });
-        if kind != UINT32 {
-            return Err(invalid());
-        }
-        // SAFETY: The key's UINT32 type was checked before the typed getter.
-        Ok(native_call(|| unsafe {
-            (self.api.u32_value)(self.context.as_ptr(), key)
-        }))
-    }
+fn open_gguf(path: &CStr) -> io::Result<Gguf> {
+    let path = path.to_str().map_err(|_| invalid())?;
+    Gguf::open(Path::new(path))
 }
 
 fn candidate(metadata: &impl Metadata) -> io::Result<Box<Owner>> {
@@ -209,17 +72,15 @@ fn candidate(metadata: &impl Metadata) -> io::Result<Box<Owner>> {
     Ok(owner)
 }
 
-fn reload(slot: &mut *mut c_void, path: &CStr, api: &Api) -> io::Result<()> {
-    let metadata = Gguf::open(path, api)?;
-    let replacement = candidate(&metadata)?;
-    let old = std::mem::replace(slot, Box::into_raw(replacement).cast());
-    if !old.is_null() {
-        // SAFETY: The private native wrapper retains exactly one original
-        // Box<Owner> pointer in this slot, without outstanding borrows. Publish
-        // only the finalized replacement, then release the displaced owner.
-        drop(unsafe { Box::from_raw(old.cast::<Owner>()) });
-    }
+pub(super) fn reload_from(slot: &mut *mut c_void, metadata: &impl Metadata) -> io::Result<()> {
+    let replacement = candidate(metadata)?;
+    replace_owner(slot, replacement);
     Ok(())
+}
+
+fn reload(slot: &mut *mut c_void, path: &CStr) -> io::Result<()> {
+    let metadata = open_gguf(path)?;
+    reload_from(slot, &metadata)
 }
 
 fn specials(
@@ -260,7 +121,7 @@ pub(super) extern "C" fn bonsai_qt_bpe_load_gguf(
         }
         // SAFETY: The native caller borrows its NUL-terminated path until return.
         let path = unsafe { CStr::from_ptr(path) };
-        reload(slot, path, &NATIVE_API).is_ok()
+        reload(slot, path).is_ok()
     })
     .unwrap_or(false)
 }
@@ -306,7 +167,7 @@ pub(super) extern "C" fn bonsai_qt_bpe_load_specials(
         }
         // SAFETY: The native path storage remains NUL-terminated and live.
         let path = unsafe { CStr::from_ptr(path) };
-        let Ok(metadata) = Gguf::open(path, &NATIVE_API) else {
+        let Ok(metadata) = open_gguf(path) else {
             return 0;
         };
         if specials(owner, &metadata, names).is_ok() {
