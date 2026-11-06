@@ -784,6 +784,38 @@ not close pending hosted integration or full-model acceptance.
   The checked-in C++ collector is retired, but its Rust replacement still invokes
   the pinned native DLL engine. Preserve the complete source-bound ABI preflight
   and independent full-state numerical comparison until that engine is retired.
+- Execute the phased pure-Rust Qwen3-TTS and `hexagon-native-rpc` NPU migration in
+  `src/speech-tts`, retiring `qwentts.cpp`, `ggml`, and `ggml-hexagon.dll`/`ggml-base.dll`
+  while preserving the system `qcnspmcdm` DriverStore `libcdsprpc.dll` FastRPC boundary:
+  1. **Transport boundary**: Retain `libcdsprpc.dll` (resolved via Windows SCM `qcnspmcdm`
+     from `DriverStore\FileRepository\qcnspmcdm*.inf_arm64_*` with both Win32
+     `SetEnvironmentVariableW` and UCRT `_wputenv_s` for `ADSP_LIBRARY_PATH`) as the sole
+     supported OS/driver FastRPC boundary (`remote_handle64_*`, `rpcmem_*`, `dspqueue_*`).
+     Do not replace `libcdsprpc.dll` with undocumented raw `\Device\QcNspMcdm` `ioctl`
+     calls that bypass FastRPC session handshakes, signed PD catalog checks, or SMMU
+     `rpcmem` registration.
+  2. **Immediate hybrid NPU/CPU placement and stateful codec decoding**: Run `Talker`
+     multi-token prefill (`T_ctx` tokens, 28 layers, `Q8_0`) on Hexagon `HTP0` while
+     keeping latency-critical `T = 1` single-token `Talker` decode and 5-layer
+     `CodePredictor` (`15` residual codebooks per frame with `SAMPLER_TAIL_FIXED` top-k
+     view) on host NEON CPU threads over host-mapped `HTP0-Host` / RPCSMEM buffers, and
+     prime/restore causal `CodecStateSnap` reference snapshots so buffered and streaming
+     synthesis decode only the generated `T_frames` without re-decoding `82–94` ICL
+     reference frames per utterance.
+  3. **Pure-Rust `Talker` + `CodePredictor` + `hexagon-native-rpc` NPU backend**: Port
+     `Talker` (28-layer Qwen3 transformer, 3D MRoPE, KV cache) and `CodePredictor`
+     (5-layer residual RVQ predictor) to pure Rust in `src/speech-tts` atop the existing
+     Rust BPE tokenizer (`src/speech-tts/src/tokenizer.rs`), GGUF reader
+     (`src/speech-tts/src/gguf.rs`), and Philox/stochastic sampler
+     (`src/speech-tts/src/sampling.rs`), dispatching multi-token prefill and heavy
+     projections directly to the signed `libggml-htp-v81.so` / `v73.so` DSP skels through
+     `hexagon-native-rpc` (`dspqueue` + `htp_ops`) without `ggml-hexagon.dll` or
+     `ggml-base.dll`.
+  4. **Pure-Rust 12 Hz audio codec, speaker encoder, and C/C++ build retirement**: Port
+     the 12 Hz causal ConvNeXt/SnakeBeta audio decoder, ECAPA-TDNN speaker encoder, and
+     stateful `CodecStateSnap` streaming pipeline to pure Rust, then remove `qwentts.cpp`
+     source provisioning, CMake/C++ compilation (`src/speech-tts/build*.rs`), and all
+     `ggml-*.dll` runtime dependencies.
 
 ## Creative quality, adapters and memory
 

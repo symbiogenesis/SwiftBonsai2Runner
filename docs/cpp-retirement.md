@@ -157,6 +157,13 @@ decode-graph construction/compute/free callbacks and lease synchronization,
 `src/prompt-builder.h`, both sampling headers, pipeline/codec/speaker graphs and
 audio transforms. A Rust policy callback or removed test oracle does not retire
 the downloaded header, generated shim or linked engine that still contains it.
+For Hexagon NPU speech and LLM offload, the C++ retirement boundary covers
+`qwentts.cpp`, `ggml`, `ggml-base.dll`, `ggml-cpu.dll` and `ggml-hexagon.dll`
+(replaced by pure-Rust model/codec execution and `hexagon-native-rpc` `dspqueue` +
+`htp_ops` packet submission directly to the signed `libggml-htp-v73.so` /
+`libggml-htp-v81.so` DSP skels), while retaining the vendor OS/DriverStore
+`libcdsprpc.dll` (`qcnspmcdm`) FastRPC transport ABI (`remote_handle64_*`,
+`rpcmem_*`, `dspqueue_*`).
 
 Remove retired paths from `speech-tts/build*.rs`, native-speech provisioning/cache
 actions and scripts, `native_startup.rs`/`speech_build.rs`, compiler/source locks,
