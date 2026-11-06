@@ -39,6 +39,7 @@ const NATIVE_Q2_STREAMING_MAPPED_BYTES: u64 = 25_161_728;
 const NATIVE_Q2_RESIDENT_MAPPED_BYTES: u64 =
     NATIVE_Q2_STREAMING_MAPPED_BYTES + RESIDENT_WEIGHT_BYTES;
 const RESIDENT_METADATA_BYTES: u64 = 65_536;
+const NATIVE_Q2_RESIDENT_METADATA_BYTES: u64 = 262_144;
 // Exact logical state for the pinned original-PQ2 model: 48 recurrent
 // layers plus the growing KV state of its 16 attention layers. The CPU arm
 // retains every complete snapshot until native comparisons finish.
@@ -143,7 +144,7 @@ pub(super) struct Request {
     maximum_seconds: u32,
 }
 
-const NATIVE_Q2_MAX_RESIDENT_WEIGHT_BYTES: u64 = 256 * 1024 * 1024;
+const NATIVE_Q2_MAX_RESIDENT_WEIGHT_BYTES: u64 = 480 * 1024 * 1024;
 
 fn projection_dimensions(name: &str, backend: ExecutionBackend) -> Option<(u64, u64)> {
     let rest = name.strip_prefix("blk.")?;
@@ -221,7 +222,7 @@ impl Request {
     fn validate_selection(&self) -> Result<()> {
         let projections = self.projections();
         let max_projections = match self.execution_backend {
-            ExecutionBackend::NativeQ2 => 16,
+            ExecutionBackend::NativeQ2 => 26,
             ExecutionBackend::GuardedHvx | ExecutionBackend::HmxBitplane => {
                 if self.resident_host_weights { 2 } else { 4 }
             }
@@ -582,7 +583,7 @@ fn result(
                 .as_array()
                 .ok_or("The model result projections field must be an array.")?;
             let max_projections = match backend {
-                ExecutionBackend::NativeQ2 => 16,
+                ExecutionBackend::NativeQ2 => 26,
                 ExecutionBackend::GuardedHvx | ExecutionBackend::HmxBitplane => {
                     if resident_host_weights {
                         2
@@ -857,6 +858,11 @@ fn residency_result(
         let expected_mapped = base_mapped + expected_weights;
         let resources = &value["nativeResources"];
         let residency = &value["hostResidency"];
+        let max_metadata_bytes = if backend == ExecutionBackend::NativeQ2 {
+            NATIVE_Q2_RESIDENT_METADATA_BYTES
+        } else {
+            RESIDENT_METADATA_BYTES
+        };
         if resources["residentWeightBytesPrepared"] != expected_weights
             || resources["mappedAllocationBytes"] != expected_mapped
             || residency["tensorsPrepared"] != projection_count
@@ -864,7 +870,7 @@ fn residency_result(
             || residency["weightPayloadBytesPrepared"] != expected_weights
             || !residency["metadataPayloadBytes"]
                 .as_u64()
-                .is_some_and(|bytes| (1..=RESIDENT_METADATA_BYTES).contains(&bytes))
+                .is_some_and(|bytes| (1..=max_metadata_bytes).contains(&bytes))
         {
             return Err(
                 "The resident model result lacks its fixed mapped arena and cache accounting."

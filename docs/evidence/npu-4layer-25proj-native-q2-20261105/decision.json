@@ -1,0 +1,72 @@
+{
+  "schemaVersion": 1,
+  "dateLocal": "2026-11-05",
+  "outcome": "scoped-flush-13proj-and-4layer-25proj-native-q2-controls-integrated; no-default-promotion",
+  "runnerBaseRevision": "de1574717a762b4d96ed0caae09bc6ba20e1780f",
+  "prismLocalMain": "e2349afe226b0c62d5775efce1fb87a2d0c41f9c",
+  "sourceReview": {
+    "approved": true,
+    "method": "Audited upstream ggml-hexagon HTP firmware (process_opbatch and prep_op_bufs at 19cce6919992fdffd92e0ac152caaf1e2b8f254e) to verify that bufs[0].size (image[8..16]) governs CDSP mmap caching while dspqueue_buffer.size governs FastRPC sender cache-flush and recipient cache-invalidation range (flags 0x90). Added dirty_resident_weights tracking to Session in tools/hexagon-native/src/projection_native.rs so the initial submission after prepare_weights flushes the full allocation while subsequent Weights::NativeResident cache-hit submissions scope QueueBuffer.size to the page-aligned active working prefix ((active.output + rows * 4).next_multiple_of(4096) <= 94,208 bytes = 92 KiB). Raised NATIVE_Q2_MAX_RESIDENT_WEIGHT_BYTES from 256 MiB to 480 MiB (503,316,480 bytes, keeping working_bytes + resident_weights = 504,174,592 bytes within ggml-hexagon.dll m-size = 512 MiB), NATIVE_Q2_RESIDENT_METADATA_BYTES to 256 KiB (262,144 bytes), and max_projections to 26 so all 25 PQ2_0 projections of the complete 4-layer repeating block (blk.0 + blk.1 + blk.2 + blk.3, 427,622,400 bytes) fit resident.",
+    "scope": "Scoped resident QueueBuffer.size cache flush in projection_native.rs, 480 MiB NATIVE_Q2_MAX_RESIDENT_WEIGHT_BYTES in native_q2.rs, 256 KiB NATIVE_Q2_RESIDENT_METADATA_BYTES and 26-projection admission in model_probe.rs, and matching verification in bonsai-tools model_device.rs."
+  },
+  "localValidation": {
+    "format": "passed",
+    "focusedControls": "92 Prism unit tests (7 parallel_rows, 39 hexagon-native, 27 hexagon-runtime lib, 19 model_probe bin) and 16 Runner model_device tests passed",
+    "strictReleaseClippy": "passed",
+    "releaseModelProbeAndSupervisorBuilds": "passed",
+    "multiLayer13ProjNativeQ2ScopedFlushSignedControl": "passed 39 logical operations in 39 queue writes across 39 projections (all 6 PQ2_0 projections of recurrent layer blk.0 plus all 7 PQ2_0 projections of full-attention layer blk.3 on tokens 42, 43, 128) with bounded float tolerance pass on all 3 tokens (cosineSimilarity 0.999902-0.999977, rmse 0.0228-0.0290, maxAbsDiff 0.1080-0.1538, top1Match true, top5Overlap 5/5); 13 prepared tensors (212,336,640 bytes in 237,498,368-byte mapping) and 26 cache hits; warm-token nativeCheckedEvaluationMilliseconds dropped from 555.44-586.48 ms (at a383e92) to 422.49-446.20 ms (beating the 4-worker NEON CPU baseline 463.97-478.07 ms on warm tokens 1-2 and 1,386.00 ms vs 1,392.70 ms across all 3 tokens)",
+    "fourLayer25ProjNativeQ2ResidentSignedControl": "passed 75 logical operations in 75 queue writes across 75 projections (all 25 PQ2_0 projections of the complete 4-layer repeating unit blk.0 + blk.1 + blk.2 + blk.3 on tokens 42, 43, 128) with bounded float tolerance pass on all 3 tokens (cosineSimilarity 0.999895-0.999972, rmse 0.0217-0.0316, maxAbsDiff 0.1163-0.1669, top1Match true, top5Overlap 5/5); 25 prepared tensors (427,622,400 bytes in 452,784,128-byte mapping) and 50 cache hits; total NPU submit-and-wait latency 10.0536-10.9094 ms per token across all 25 projections (~0.402-0.436 ms per projection)",
+    "cleanup": "Both controls: four explicit native cleanup return codes zero, allocation freed, required owners pinned until exit, owned Jobs confirmed empty",
+    "scope": "Combined recurrent + full-attention layers (blk.0 + blk.3, 13 projections, 212.34 MB) with scoped cache flush and full 4-layer repeating block (blk.0 + blk.1 + blk.2 + blk.3, 25 projections, 427.62 MB) resident native-q2 1-op controls, tokens 42, 43, 128, standard adapter 1.3, NEON/four row workers. No broader arithmetic/lifecycle or production qualification."
+  },
+  "diagnosticEvaluationMilliseconds": {
+    "multiLayer13ProjNativeQ2ScopedFlush": {
+      "cpuEvaluation": [
+        450.6675,
+        463.9672,
+        478.0674
+      ],
+      "nativeEvaluation": [
+        517.3085,
+        422.4873,
+        446.2004
+      ],
+      "nativeSubmitAndWait": [
+        4.8742,
+        4.4271,
+        4.5424
+      ]
+    },
+    "fourLayer25ProjNativeQ2Resident": {
+      "cpuEvaluation": [
+        436.4171,
+        425.8284,
+        970.253
+      ],
+      "nativeEvaluation": [
+        1166.2678,
+        868.312,
+        807.5039
+      ],
+      "nativeSubmitAndWait": [
+        10.9094,
+        10.3379,
+        10.0536
+      ]
+    },
+    "power": "Outer workload clock and all control arms observed battery operation (acConnected: false, batterySaver: false, 76% battery charge) throughout the 37.13-second run (within the 300-second predeclared allowance). Because the controls ran on battery power rather than AC power, evaluation wall-clock comparisons are retained as diagnostic observations only and are not qualified as performance comparisons.",
+    "interpretation": "Scoping dspqueue_buffer.size to the page-aligned active working prefix (<= 92 KiB) on resident cache hits eliminated up to 237.5 MB x 2 of unnecessary FastRPC cache flushes/invalidations per projection on warm tokens, reducing 13-projection warm-token evaluation time from 555.44-586.48 ms (at a383e92) to 422.49-446.20 ms (faster than the 463.97-478.07 ms 4-worker NEON CPU baseline on tokens 1 and 2, and 1,386.00 ms vs 1,392.70 ms across all 3 tokens) with 4.4271-4.8742 ms total NPU submit-and-wait per token (~0.341-0.375 ms per projection). Expanding NATIVE_Q2_MAX_RESIDENT_WEIGHT_BYTES to 480 MiB (503,316,480 bytes) within ggml-hexagon.dll's 512 MiB single-buffer m-size ceiling enabled holding all 25 PQ2_0 projections of the complete 4-layer repeating block (blk.0 + blk.1 + blk.2 + blk.3, 427,622,400 bytes in a 452,784,128-byte FastRPC buffer) resident simultaneously: all 75 operations across 3 tokens completed in 10.0536-10.9094 ms of NPU submit-and-wait per token (~0.402-0.436 ms per projection) with 0.999895-0.999972 cosine similarity, exact top-1 token agreement (1183, 12, 248), and 5/5 top-5 overlap."
+  },
+  "defaultBlockers": [
+    "The published CPU Prism runtime and server have no NPU serving integration. Changing the descriptive admission lock alone cannot enable offload.",
+    "A single FastRPC rpcmem buffer is bounded by ggml-hexagon.dll m-size = 512 MiB (currently admitted up to 480 MiB resident weights + 24 MiB working buffer = 504 MiB, holding one full 4-layer repeating unit = 25 projections = 427.62 MB). Holding all 32 layers (8 x 4-layer repeating units, ~3.42 GB packed Q2_0) requires multi-buffer FastRPC arena management across multiple rpcmem FDs (up to the 3000 MiB v81 CDSP virtual address space limit) and/or double-buffered 4-layer block staging.",
+    "On Token 0 cold preparation, prepare_weights sets dirty_resident_weights = true before each of the 25 projections, causing 25 full-allocation flushes on Token 0; batch-preparing resident weights before the first submission or bounding dirty flush range to handle.range.end will reduce Token-0 cache-flush cost.",
+    "Controls in this session ran on battery power (acConnected: false, 76% charge); AC-powered comparison controls are required for qualified performance claims."
+  ],
+  "nextConcreteImplementation": "Scope dirty resident cache flushes on cold preparation to the newly written weight extent (or batch-prepare resident weights before first submission), and implement multi-buffer FastRPC resident arenas across multiple rpcmem FDs to scale beyond a single 512 MiB m-size buffer across multiple 4-layer repeating blocks.",
+  "sourceIntegration": "Committed e2349af on local Prism main and updated Runner model_device.rs, PLAN.md, docs/hexagon.md, and retained evidence bundle docs/evidence/npu-4layer-25proj-native-q2-20261105 on local Runner main. No push or CI operations.",
+  "productionAdmissionEnabled": false,
+  "installedApplicationChanged": false,
+  "ciDispatchedOrMonitored": false,
+  "pushed": false
+}
