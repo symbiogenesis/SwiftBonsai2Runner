@@ -38,6 +38,7 @@ use sse::Sse;
 
 const POLL: Duration = Duration::from_millis(100);
 const IO_POLL: Duration = Duration::from_millis(50);
+const SOCKET_POLL: Duration = Duration::from_millis(5);
 const DEADLINE: Duration = Duration::from_secs(600);
 // Ten seconds for the broker's explicit model stop, then bounded exit polling
 // and outer-Job cleanup. All phases share this one absolute deadline.
@@ -817,7 +818,7 @@ impl Interruptible<'_> {
         let timeout = self
             .until
             .saturating_duration_since(Instant::now())
-            .min(IO_POLL);
+            .min(SOCKET_POLL);
         match self.commands.recv_timeout(timeout) {
             Ok(Command::Stop) => self.interrupted = Some(Failure::Stopped),
             Ok(Command::Shutdown) | Err(RecvTimeoutError::Disconnected) => {
@@ -917,6 +918,7 @@ fn generate_until(
     let stream = connected.map_err(|_| {
         Failure::Message("Could not connect to the model service on this computer.")
     })?;
+    let _nodelay = stream.set_nodelay(true);
     stream
         .set_nonblocking(true)
         .map_err(|_| Failure::Message("Could not configure the local connection."))?;

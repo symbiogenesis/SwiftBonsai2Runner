@@ -1842,13 +1842,16 @@ impl eframe::App for State {
         }
         // No frame-rate polling: wait between events when idle. Microphone's
         // WinRT state machine is polled only during an explicit capture session.
-        let waiting = !self.preview
-            && (self.model.waiting_model()
-                || self.model.busy()
-                || self.speaking
-                || self.dictation_requested
-                || !self.speech_checked);
-        ctx.request_repaint_after(if waiting {
+        let active_generation = !self.preview && self.model.busy();
+        let waiting = active_generation
+            || (!self.preview
+                && (self.model.waiting_model()
+                    || self.speaking
+                    || self.dictation_requested
+                    || !self.speech_checked));
+        ctx.request_repaint_after(if active_generation {
+            Duration::from_millis(16)
+        } else if waiting {
             Duration::from_millis(50)
         } else {
             Duration::from_secs(1)
