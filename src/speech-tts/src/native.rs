@@ -172,7 +172,7 @@ impl Context {
             .as_ptr(),
             use_fa: true,
             max_batch: 1,
-            codec_chunk_sec: 8.0,
+            codec_chunk_sec: 24.0,
             ..qwen::InitParams::default()
         };
         // INITIALIZE keeps the selected count stable while native initialization
