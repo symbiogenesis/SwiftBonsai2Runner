@@ -221,10 +221,7 @@ mod parent_tests {
     use std::process::{Command, Stdio};
     use std::time::{SystemTime, UNIX_EPOCH};
 
-    use super::{
-        OpenProcess, PROCESS_QUERY_LIMITED_INFORMATION, PROCESS_SYNCHRONIZE, ParentProcess,
-        creation_file_time, owned,
-    };
+    use super::{ParentProcess, process_creation_time};
 
     #[test]
     fn retained_parent_identity_rejects_mismatch_and_observes_exit() -> io::Result<()> {
@@ -246,16 +243,7 @@ mod parent_tests {
             .stderr(Stdio::null())
             .spawn()?;
         let result = (|| {
-            // SAFETY: Query a newly spawned test process by its numeric PID;
-            // the new noninheritable owning handle is immediately retained.
-            let handle = owned(unsafe {
-                OpenProcess(
-                    PROCESS_QUERY_LIMITED_INFORMATION | PROCESS_SYNCHRONIZE,
-                    0,
-                    child.id(),
-                )
-            })?;
-            let identity = creation_file_time(&handle)?;
+            let identity = process_creation_time(child.id())?;
             if ParentProcess::open(child.id(), identity + 1).is_ok() {
                 return Err(io::Error::other("reused process identity accepted"));
             }
@@ -580,9 +568,25 @@ impl NativeProcess {
                 capacity = (capacity * 2).min(MAX_MEMBERS);
                 continue;
             }
-            // SAFETY: The initialized aligned buffer is at least eight bytes;
-            // the native class writes these two u32 counts before its ID array.
-            let [assigned, listed] = unsafe { ptr::read(storage.as_ptr().cast::<[u32; 2]>()) };
+            let mut header_bytes = [0_u8; 8];
+            for (slot, chunk) in storage[..header_units]
+                .iter()
+                .zip(header_bytes.as_chunks_mut::<{ size_of::<usize>() }>().0)
+            {
+                *chunk = slot.to_ne_bytes();
+            }
+            let assigned = u32::from_ne_bytes([
+                header_bytes[0],
+                header_bytes[1],
+                header_bytes[2],
+                header_bytes[3],
+            ]);
+            let listed = u32::from_ne_bytes([
+                header_bytes[4],
+                header_bytes[5],
+                header_bytes[6],
+                header_bytes[7],
+            ]);
             let assigned =
                 usize::try_from(assigned).map_err(|_| invalid("Job process count overflow"))?;
             let listed =
@@ -871,6 +875,13 @@ pub(super) fn require_exclusive_address(socket: &impl AsSocket) -> io::Result<()
 }
 
 pub(super) fn listener_process_id(port: u16) -> io::Result<Option<u32>> {
+    const TCP_ROW_WORDS: usize = 6;
+    const _: () = {
+        assert!(size_of::<MIB_TCPROW_OWNER_PID>() == TCP_ROW_WORDS * size_of::<u32>());
+        assert!(std::mem::offset_of!(MIB_TCPROW_OWNER_PID, dwLocalAddr) == 4);
+        assert!(std::mem::offset_of!(MIB_TCPROW_OWNER_PID, dwLocalPort) == 8);
+        assert!(std::mem::offset_of!(MIB_TCPROW_OWNER_PID, dwOwningPid) == 20);
+    };
     let mut bytes = 0;
     // SAFETY: The documented size-query call uses null storage and a valid size
     // pointer; IPv4 and the PID-listener table class are compatible.
@@ -928,22 +939,18 @@ pub(super) fn listener_process_id(port: u16) -> io::Result<Option<u32>> {
             return Err(io::Error::other("malformed TCP listener table"));
         }
         let mut owner = None;
-        for index in 0..count {
-            // SAFETY: Count and returned bytes were bounded above against this
-            // allocation. read_unaligned avoids relying on native row alignment.
-            let row = unsafe {
-                ptr::read_unaligned(
-                    storage
-                        .as_ptr()
-                        .cast::<u8>()
-                        .wrapping_add(4 + index * size_of::<MIB_TCPROW_OWNER_PID>())
-                        .cast::<MIB_TCPROW_OWNER_PID>(),
-                )
-            };
-            let port_bytes = row.dwLocalPort.to_ne_bytes();
-            if row.dwLocalAddr.to_ne_bytes() == [127, 0, 0, 1]
+        for row in storage[1..]
+            .as_chunks::<TCP_ROW_WORDS>()
+            .0
+            .iter()
+            .take(count)
+        {
+            let local_addr = row[1];
+            let port_bytes = row[2].to_ne_bytes();
+            let owning_pid = row[5];
+            if local_addr.to_ne_bytes() == [127, 0, 0, 1]
                 && u16::from_be_bytes([port_bytes[0], port_bytes[1]]) == port
-                && owner.replace(row.dwOwningPid).is_some()
+                && owner.replace(owning_pid).is_some()
             {
                 return Err(io::Error::other("ambiguous loopback listener ownership"));
             }
