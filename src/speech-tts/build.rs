@@ -134,6 +134,7 @@ fn engine_build(
         }
         let archiver = msvc_tool("lib.exe", compiler_dir)?;
         let linker = msvc_tool("link.exe", compiler_dir)?;
+        let manifest_tool = msvc_tool("mt.exe", compiler_dir)?;
         let private_source = output.join("qwen-source");
         build_overlay::prepare(source, &private_source)?;
         let directory = output.join("qwen-build");
@@ -162,6 +163,10 @@ fn engine_build(
         configure.arg(format!(
             "-DCMAKE_LINKER:FILEPATH={}",
             linker.to_string_lossy().replace('\\', "/")
+        ));
+        configure.arg(format!(
+            "-DCMAKE_MT:FILEPATH={}",
+            manifest_tool.to_string_lossy().replace('\\', "/")
         ));
         configure.args([
             "-DCMAKE_C_COMPILER_TARGET=aarch64-pc-windows-msvc",
@@ -198,6 +203,20 @@ fn msvc_tool(name: &str, compiler_dir: &Path) -> io::Result<PathBuf> {
             }
         }
     }
+    if let (Some(sdk_dir), Some(sdk_ver)) = (
+        env::var_os("WindowsSdkDir"),
+        env::var_os("WindowsSDKVersion"),
+    ) {
+        let ver = sdk_ver.to_string_lossy();
+        let candidate = PathBuf::from(sdk_dir)
+            .join("bin")
+            .join(ver.trim_matches(['\\', '/']))
+            .join("arm64")
+            .join(name);
+        if candidate.is_file() && !candidate.starts_with(compiler_dir) {
+            return Ok(candidate);
+        }
+    }
     if let Some(path_var) = env::var_os("PATH") {
         for dir in env::split_paths(&path_var) {
             if dir == compiler_dir {
@@ -210,8 +229,8 @@ fn msvc_tool(name: &str, compiler_dir: &Path) -> io::Result<PathBuf> {
         }
     }
     if let Some(program_files) = env::var_os("ProgramFiles(x86)") {
-        let vswhere =
-            PathBuf::from(program_files).join("Microsoft Visual Studio/Installer/vswhere.exe");
+        let program_root = PathBuf::from(program_files);
+        let vswhere = program_root.join("Microsoft Visual Studio/Installer/vswhere.exe");
         if vswhere.is_file()
             && let Ok(output) = Command::new(vswhere)
                 .args(["-latest", "-products", "*", "-property", "installationPath"])
@@ -228,6 +247,24 @@ fn msvc_tool(name: &str, compiler_dir: &Path) -> io::Result<PathBuf> {
                     if candidate.is_file() {
                         return Ok(candidate);
                     }
+                }
+            }
+        }
+        if let Ok(entries) = fs::read_dir(program_root.join("Windows Kits/10/bin")) {
+            let mut versions: Vec<PathBuf> = entries
+                .filter_map(Result::ok)
+                .map(|entry| entry.path())
+                .filter(|path| {
+                    path.file_name()
+                        .and_then(|n| n.to_str())
+                        .is_some_and(|n| n.starts_with("10."))
+                })
+                .collect();
+            versions.sort();
+            for version_dir in versions.into_iter().rev() {
+                let candidate = version_dir.join("arm64").join(name);
+                if candidate.is_file() {
+                    return Ok(candidate);
                 }
             }
         }

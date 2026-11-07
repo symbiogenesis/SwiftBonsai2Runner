@@ -289,22 +289,7 @@ fn setup_environment(
     for name in ["CMAKE_C_COMPILER_TARGET", "CMAKE_CXX_COMPILER_TARGET"] {
         environment.insert(name.into(), TARGET.into());
     }
-    let mut transcribe_cmake_args = String::from(
-        "-DGGML_NATIVE=OFF -DGGML_OPENMP=OFF -DTRANSCRIBE_USE_OPENMP=OFF -DTRANSCRIBE_USE_SYSTEM_BLAS=OFF -DCMAKE_C_COMPILER_TARGET=aarch64-pc-windows-msvc -DCMAKE_CXX_COMPILER_TARGET=aarch64-pc-windows-msvc",
-    );
-    if let Some(vc_tools) = environment.get("VCToolsInstallDir") {
-        let vc_bin = Path::new(vc_tools).join("bin/Hostarm64/arm64");
-        let archiver = vc_bin.join("lib.exe");
-        let linker = vc_bin.join("link.exe");
-        if archiver.is_file() && linker.is_file() {
-            let ar_arg = archiver.to_string_lossy().replace('\\', "/");
-            let link_arg = linker.to_string_lossy().replace('\\', "/");
-            let _ = write!(
-                transcribe_cmake_args,
-                " -DCMAKE_AR:FILEPATH=\"{ar_arg}\" -DCMAKE_LINKER:FILEPATH=\"{link_arg}\""
-            );
-        }
-    }
+    let transcribe_cmake_args = transcribe_cmake_args(&environment);
     for (name, value) in [
         ("CMAKE_GENERATOR", "Ninja"),
         ("CL", "/EHsc"),
@@ -326,6 +311,39 @@ fn setup_environment(
         source.to_string_lossy().into_owned(),
     );
     Ok(environment)
+}
+
+fn transcribe_cmake_args(environment: &BTreeMap<String, String>) -> String {
+    let mut args = String::from(
+        "-DGGML_NATIVE=OFF -DGGML_OPENMP=OFF -DTRANSCRIBE_USE_OPENMP=OFF -DTRANSCRIBE_USE_SYSTEM_BLAS=OFF -DCMAKE_C_COMPILER_TARGET=aarch64-pc-windows-msvc -DCMAKE_CXX_COMPILER_TARGET=aarch64-pc-windows-msvc",
+    );
+    if let Some(vc_tools) = environment.get("VCToolsInstallDir") {
+        let vc_bin = Path::new(vc_tools).join("bin/Hostarm64/arm64");
+        let archiver = vc_bin.join("lib.exe");
+        let linker = vc_bin.join("link.exe");
+        if archiver.is_file() && linker.is_file() {
+            let ar_arg = archiver.to_string_lossy().replace('\\', "/");
+            let link_arg = linker.to_string_lossy().replace('\\', "/");
+            let _ = write!(
+                args,
+                " -DCMAKE_AR:FILEPATH=\"{ar_arg}\" -DCMAKE_LINKER:FILEPATH=\"{link_arg}\""
+            );
+        }
+    }
+    if let (Some(sdk_dir), Some(sdk_ver)) = (
+        environment.get("WindowsSdkDir"),
+        environment.get("WindowsSDKVersion"),
+    ) {
+        let manifest_tool = Path::new(sdk_dir)
+            .join("bin")
+            .join(sdk_ver.trim_matches(['\\', '/']))
+            .join("arm64/mt.exe");
+        if manifest_tool.is_file() {
+            let mt_arg = manifest_tool.to_string_lossy().replace('\\', "/");
+            let _ = write!(args, " -DCMAKE_MT:FILEPATH=\"{mt_arg}\"");
+        }
+    }
+    args
 }
 
 /// Prepares verified compiler/source inputs and returns a child-only environment.

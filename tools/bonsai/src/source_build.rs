@@ -217,6 +217,9 @@ fn cached_build_with(
     let mut environment = prepare()?;
     environment.insert("CARGO_BUILD_FINGERPRINT".into(), "content".into());
     environment.insert("CARGO_UNSTABLE_CHECKSUM_FRESHNESS".into(), "true".into());
+    environment
+        .entry("CARGO_BUILD_JOBS".into())
+        .or_insert_with(|| "4".into());
     let arguments = cargo_arguments(spec);
     let log = spec
         .working_directory
