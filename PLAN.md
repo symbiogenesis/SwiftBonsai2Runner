@@ -1083,31 +1083,33 @@ release bundle and repinning Runner beyond `0.1.17` (`958fd4a`) to `0.1.18` (`c4
   inverse-embedding rotation (`BasisTransforms::rotate_with_parallelism` in `9801a60`).
 - Vectorized 4-group `f32x4` SIMD lane accumulations in tiled prefill for `PTQ1`
   (`Block::accumulate_lanes128`) and `Q8_0` (`Block::dot128_q8` in `b107698`).
+- Multi-worker head and channel parallelism (`RowParallelism` in `9a7da8f` and `33ddbc2`)
+  across per-head GDN recurrence updates (`apply_gated_delta_net` across 48 heads),
+  per-KV-head full attention (`apply_full_attention` across 8 KV heads / 4 query heads per
+  KV head), causal short convolution (`apply_short_conv` / `pinned_short_conv_in_place`
+  across `12,288` channels) and attention Q/K RMSNorm + RoPE
+  (`apply_attention_qk_norm_and_rope` across 32 Q heads and 8 K heads) with exact per-head
+  floating-point order and earliest-failure recovery.
+- Batched non-FFN tiled CPU prefill projections and token-parallel prefill normalizations
+  (`04f556e`), batching recurrent (`attn_qkv`, `attn_gate`, `ssm_beta`, `ssm_alpha`,
+  `ssm_out`) and full-attention (`attn_q`, `attn_k`, `attn_v`, `attn_output`) projections
+  across 8/16/32-token tiles with `TileReuse` separating Hadamard basis reuse from
+  quantized `ProjectionTile` preparation reuse, and parallelizing per-tile token
+  normalizations (`layer.norm`, `layer.post_norm`, post-convolution Q/K `l2_norm` and
+  `alpha`/`beta` gates) across `RowParallelism` workers.
+- Four-row × four-token (`4x4`) consumption-order `PQ2` (`dot_pq2_four_rows` with
+  stack-scoped `Pq2Activation` deinterleaving, unsigned `[0..3]` digit decoding,
+  `f16_bits_to_f32_x4` scale decoding and vectorized `f32x4` FMA/add reduction) and
+  four-row `PTQ1` / `PQ2 (Q8_0)` (`dot_q8_four_rows`) NEON prefill `GEMM` kernels wired
+  through `RowParallelism::fill_tile_four_rows` (`be62567`), preserving the
+  zero-heap-allocation invariant on `scratch.pq2_consumption` and per-row error/cancel
+  rewind semantics.
 
 Remaining CPU kernel, graph-level parallelism and tiled-prefill optimizations to
 implement and qualify in Prism:
-- Parallelize per-head GDN recurrence updates (`apply_gated_delta_net` across 48
-  independent `[128, 128]` recurrent state heads, `12` heads/worker across 4 workers)
-  and per-KV-head full attention (`apply_full_attention` across 8 KV heads / 4 query
-  heads per KV head, `2` KV heads/worker across 4 workers) across `RowParallelism`
-  workers while preserving exact per-head floating-point order and first-failure
-  recovery.
-- Parallelize causal short convolution (`apply_short_conv` /
-  `pinned_short_conv_in_place` across `12,288` channels × 4 taps in 48 layers) and
-  attention Q/K RMSNorm + RoPE (`apply_attention_qk_norm_and_rope` across 32 Q heads
-  and 8 K heads in 16 layers) across `RowParallelism` workers when `workers() > 1`.
-- Extend tiled CPU prefill (`ProjectionTile` in `src/kernels/prefill.rs` and
-  `Qwen35::ingest_cpu_tile` in `src/graph/prefill.rs`) beyond `1xT` per-row block
-  unpacking and FFN-only projection batching:
-  - Add a `PQ2` digit-plane consumption-order prefill fast path and multi-row ×
-    multi-token (`4x8` or `8x8`) register-blocked `GEMM` kernels (plus optional
-    ARMv8.2-A `dotprod` / `i8mm` dispatch behind runtime feature detection where
-    arithmetic contracts permit) without violating the zero-heap-allocation invariant
-    on non-consumption scratch.
-  - Batch recurrent (`attn_qkv`, `attn_gate`, `ssm_out`, `ssm_alpha`, `ssm_beta`) and
-    full-attention (`attn_q`, `attn_k`, `attn_v`, `attn_output`) projections across
-    the 8/16/32-token tile before sequential or chunkwise state updates instead of
-    executing non-FFN projections token-by-token.
+- Evaluate wider (`8x8`) register-blocked prefill `GEMM` tiles and optional ARMv8.2-A
+  `dotprod` / `i8mm` dispatch behind runtime feature detection where arithmetic contracts
+  permit.
 
 - Qualify actual prompt/response latency and complete application lifecycle for the
   [shared-slice row-parallel candidate](docs/oxibonsai-reuse.md#implementation-status),
