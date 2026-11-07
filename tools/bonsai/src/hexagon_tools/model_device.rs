@@ -144,7 +144,7 @@ pub(super) struct Request {
     maximum_seconds: u32,
 }
 
-const NATIVE_Q2_MAX_RESIDENT_WEIGHT_BYTES: u64 = 4 * 480 * 1024 * 1024;
+const NATIVE_Q2_MAX_RESIDENT_WEIGHT_BYTES: u64 = 6 * 480 * 1024 * 1024;
 
 fn projection_dimensions(name: &str, backend: ExecutionBackend) -> Option<(u64, u64)> {
     let rest = name.strip_prefix("blk.")?;
@@ -222,7 +222,7 @@ impl Request {
     fn validate_selection(&self) -> Result<()> {
         let projections = self.projections();
         let max_projections = match self.execution_backend {
-            ExecutionBackend::NativeQ2 => 112,
+            ExecutionBackend::NativeQ2 => 168,
             ExecutionBackend::GuardedHvx | ExecutionBackend::HmxBitplane => {
                 if self.resident_host_weights { 2 } else { 4 }
             }
@@ -583,7 +583,7 @@ fn result(
                 .as_array()
                 .ok_or("The model result projections field must be an array.")?;
             let max_projections = match backend {
-                ExecutionBackend::NativeQ2 => 112,
+                ExecutionBackend::NativeQ2 => 168,
                 ExecutionBackend::GuardedHvx | ExecutionBackend::HmxBitplane => {
                     if resident_host_weights {
                         2
@@ -2191,6 +2191,47 @@ mod tests {
         let quad_req: Request =
             serde_json::from_value(quad_req_val).map_err(|error| error.to_string())?;
         quad_req.validate_selection()?;
+        let six_arena: Vec<String> = (0..27)
+            .flat_map(|layer| {
+                let suffixes: &[&str] = if (layer + 1) % 4 == 0 {
+                    &[
+                        "ffn_up.weight",
+                        "ffn_gate.weight",
+                        "ffn_down.weight",
+                        "attn_q.weight",
+                        "attn_k.weight",
+                        "attn_v.weight",
+                        "attn_output.weight",
+                    ]
+                } else {
+                    &[
+                        "ffn_up.weight",
+                        "ffn_gate.weight",
+                        "ffn_down.weight",
+                        "attn_qkv.weight",
+                        "attn_gate.weight",
+                        "ssm_out.weight",
+                    ]
+                };
+                suffixes
+                    .iter()
+                    .map(move |suffix| format!("blk.{layer}.{suffix}"))
+            })
+            .collect();
+        let six_arena_refs: Vec<&str> = six_arena.iter().map(String::as_str).collect();
+        assert_eq!(six_arena_refs.len(), 168);
+        assert_eq!(
+            expected_resident_weight_bytes(&six_arena_refs, ExecutionBackend::NativeQ2)?,
+            2_888_663_040
+        );
+        let mut six_req_val = request_value();
+        six_req_val["executionBackend"] = json!("native-q2");
+        six_req_val["residentHostWeights"] = json!(true);
+        six_req_val["tokenIds"] = json!(tokens);
+        six_req_val["projections"] = json!(six_arena);
+        let six_req: Request =
+            serde_json::from_value(six_req_val).map_err(|error| error.to_string())?;
+        six_req.validate_selection()?;
         assert!(
             expected_resident_weight_bytes(&multi_layer, ExecutionBackend::GuardedHvx).is_err()
         );

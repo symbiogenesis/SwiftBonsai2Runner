@@ -1121,6 +1121,10 @@ release bundle and repinning Runner beyond `0.1.17` (`958fd4a`) to `0.1.18` (`c4
   4-token windows into 4-op `submit_resident_multi4` `dspqueue` submissions with
   pointer-deduplicated `rpcmem` activations and `submit_resident_batch3`/`batch2` tail
   batches.
+- Parallel chunkwise GDN prefill causal short-convolution, shared 16-key-head `(K·Q, K·K)`
+  triangular dot-matrix precomputation with zero per-layer heap allocations, parallel
+  full-attention KV head RMSNorm/RoPE/FP16 preparation (`ffd43cb`), and 4-token-per-group
+  register-blocked `dot_q8_four_rows`/`dot_q8_eight_rows` NEON prefill kernels (`d20214a`).
 
 Remaining CPU kernel, graph-level parallelism and tiled-prefill optimizations to
 implement and qualify in Prism:
@@ -1405,7 +1409,7 @@ Qualify the 28-projection single-arena (`c574d6c`/`d8afaec` in Prism `0.1.17`,
 expansions (`545f43d` in Prism, `0cc5f7d7` in Runner) on settled main through owning
 hosted checks, supervised AC-connected device receipts, a new Prism release and
 hosted checks, supervised AC-connected device receipts and Runner release-bundle repin to `0.1.18` (`c4cfe40`):
-- Multi-arena resident weight allocation (`MAX_NATIVE_Q2_ARENAS = 4`, alternating `[502_824_960, 460_062_720, 502_824_960, 460_062_720]` byte arenas up to `480 MiB` (`1,925,775,360` bytes / `1,836.56 MiB` total across `blk.0..=blk.17` with zero wasted bytes, `NATIVE_Q2_MAX_PROJECTIONS = 112`), 4-op multi-operation resident `dspqueue` submissions (`submit_resident_multi2..4` and `image_multi_resident` with shared-activation pointer deduplication), and multi-token tiled-prefill NPU dispatch (`project_f32_tokens`, `project_f32_pair_tokens` and `project_f32_triple_tokens` wired through `Qwen35::ingest_cpu_tile` and `gdn::recurrent_tile` in `e8deb79`), building on the 2-arena (`blk.0..=blk.8`, `962.89` MB)
+- Multi-arena resident weight allocation (`NATIVE_Q2_MAX_WEIGHT_ARENAS = 6`, alternating `[502_824_960, 460_062_720, 502_824_960, 460_062_720, 502_824_960, 460_062_720]` byte arenas up to `480 MiB` (`2,888,663,040` bytes / `2,754.84 MiB` total across `blk.0..=blk.26` with zero wasted bytes within CDSP `v-size = 3,000 MiB` on `v81`, `DEFAULT_NATIVE_Q2_PROJECTIONS = 168` in `e60b11f`), 4-op multi-operation resident `dspqueue` submissions (`submit_resident_multi2..4` and `image_multi_resident` with shared-activation pointer deduplication), and multi-token tiled-prefill NPU dispatch (`project_f32_tokens`, `project_f32_pair_tokens` and `project_f32_triple_tokens` wired through `Qwen35::ingest_cpu_tile`, `gdn::recurrent_tile`, `PlacedProjectionExecutor` and `WorkerThreadHexagonExecutor` in `e8deb79`/`e60b11f`), building on the 2-arena (`blk.0..=blk.8`, `962.89` MB) and 4-arena (`blk.0..=blk.17`, `1,836.56` MiB)
   each within `ggml-hexagon.dll` `m-size = 512 MiB`, `NATIVE_Q2_MAX_PROJECTIONS = 56`,
   `DEFAULT_NATIVE_Q2_PROJECTIONS` covering all 56 `PQ2_0` projections across the first
   9 transformer blocks `blk.0..=blk.8`, `962.89` MB total weight capacity pre-warmed at
