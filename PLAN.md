@@ -1061,6 +1061,54 @@ strict Release analysis, codegen/spill inspection, actual-model state/adapter pa
 and matched request benefit before a qualified release and Runner repin. No installed
 runtime, default, resource admission or performance verdict changes here.
 
+Qualify the post-`0.1.17` Prism CPU NEON and row-parallel source optimizations
+(`fb64903`..`f4d1844`, building on `fcb54af`, `386677c` and `547cf47`) on settled
+Prism `main` through owning hosted checks, Release ARM64 codegen/spill inspection,
+actual-model parity and matched request-throughput comparison before publishing the
+next Prism release and repinning Runner beyond `0.1.17` (`3b46465`):
+- Single-widen `PQ2` NEON consumption kernels (`pq2_half_unsigned_sum` and
+  `pq2_half_signed_sum` in `fb64903`), widening each 16-byte `PQ2` half once to
+  `(u16x8, u16x8)` across 1-, 4- and 8-row kernels instead of four times per half.
+- Direct 16-bit `PTQ1` NEON unpacking (`decode_ptq1_i16` plus 2 KiB lookup table
+  `PTQ1_TAIL_EVEN_U64`), streaming 6-register block accumulation
+  (`accumulate_ptq1_block_pinned`) and vectorized 4/8-row `f16` block scale decoding
+  (`f16_bits_to_f32_x4` / `f16_bits_to_f32_x8` in `f390ec2`), plus multi-row NEON
+  `PTQ1` source-contract kernels (`dot_ptq1_eight_rows_source`,
+  `dot_ptq1_four_rows_source` and `reduce4_i32x4` in `f4d1844`).
+- Eight-row NEON `BF16` dot kernel (`bf16_dot_eight_rows` in `435e6be`) for 8-row
+  parallel chunks of `BF16` projections (`ssm_alpha`, `ssm_beta`).
+- Multi-worker row parallelism (`RowParallelism`) for FFN `SwiGLU`
+  (`Arithmetic::swiglu_in_place_with_parallelism`, partitioning `17,408` elements per
+  layer into 256-element chunks in decode and tiled prefill) and tiled-prefill
+  inverse-embedding rotation (`BasisTransforms::rotate_with_parallelism` in `9801a60`).
+- Vectorized 4-group `f32x4` SIMD lane accumulations in tiled prefill for `PTQ1`
+  (`Block::accumulate_lanes128`) and `Q8_0` (`Block::dot128_q8` in `b107698`).
+
+Remaining CPU kernel, graph-level parallelism and tiled-prefill optimizations to
+implement and qualify in Prism:
+- Parallelize per-head GDN recurrence updates (`apply_gated_delta_net` across 48
+  independent `[128, 128]` recurrent state heads, `12` heads/worker across 4 workers)
+  and per-KV-head full attention (`apply_full_attention` across 8 KV heads / 4 query
+  heads per KV head, `2` KV heads/worker across 4 workers) across `RowParallelism`
+  workers while preserving exact per-head floating-point order and first-failure
+  recovery.
+- Parallelize causal short convolution (`apply_short_conv` /
+  `pinned_short_conv_in_place` across `12,288` channels × 4 taps in 48 layers) and
+  attention Q/K RMSNorm + RoPE (`apply_attention_qk_norm_and_rope` across 32 Q heads
+  and 8 K heads in 16 layers) across `RowParallelism` workers when `workers() > 1`.
+- Extend tiled CPU prefill (`ProjectionTile` in `src/kernels/prefill.rs` and
+  `Qwen35::ingest_cpu_tile` in `src/graph/prefill.rs`) beyond `1xT` per-row block
+  unpacking and FFN-only projection batching:
+  - Add a `PQ2` digit-plane consumption-order prefill fast path and multi-row ×
+    multi-token (`4x8` or `8x8`) register-blocked `GEMM` kernels (plus optional
+    ARMv8.2-A `dotprod` / `i8mm` dispatch behind runtime feature detection where
+    arithmetic contracts permit) without violating the zero-heap-allocation invariant
+    on non-consumption scratch.
+  - Batch recurrent (`attn_qkv`, `attn_gate`, `ssm_out`, `ssm_alpha`, `ssm_beta`) and
+    full-attention (`attn_q`, `attn_k`, `attn_v`, `attn_output`) projections across
+    the 8/16/32-token tile before sequential or chunkwise state updates instead of
+    executing non-FFN projections token-by-token.
+
 - Qualify actual prompt/response latency and complete application lifecycle for the
   [shared-slice row-parallel candidate](docs/oxibonsai-reuse.md#implementation-status),
   beyond the retained [fixed-step and short service evidence](docs/native-rust-engine.md#bounded-parallel-row-qualification).
@@ -1333,6 +1381,38 @@ power conditions into a streaming-versus-resident benefit comparison. The
 retains the still-applicable lifetime, production integration and benefit blockers.
 Keep production NPU admission disabled; the longer session allowance does not
 implement persistent serving or establish a speed advantage.
+
+Qualify the 28-projection single-arena (`c574d6c`/`d8afaec` in Prism `0.1.17`,
+`eafcca5b` in Runner) and 56-projection multi-arena `native-q2` resident placement
+expansions (`545f43d` in Prism, `0cc5f7d7` in Runner) on settled main through owning
+hosted checks, supervised AC-connected device receipts, a new Prism release and
+Runner repin beyond `0.1.17` (`3b46465`):
+- Multi-arena resident weight allocation (`MAX_NATIVE_Q2_ARENAS = 2`, up to `480 MiB`
+  each within `ggml-hexagon.dll` `m-size = 512 MiB`, `NATIVE_Q2_MAX_PROJECTIONS = 56`,
+  `DEFAULT_NATIVE_Q2_PROJECTIONS` covering all 56 `PQ2_0` projections across the first
+  9 transformer blocks `blk.0..=blk.8`, `962.89` MB total weight capacity pre-warmed at
+  worker startup) and grouped sibling `PQ2_0` dispatch (`execute_f32_projection_group`,
+  skipping redundant CPU `Q8_K` quantization when all `PQ2_0` siblings in a group execute
+  on the NPU `F32` executor).
+- Run and archive supervised AC-connected device controls for
+  `eight-layer-50proj-native-q2-resident` (`blk.0..=blk.7`, 50 projections, `855.24` MB
+  across 2 arenas) and `nine-layer-56proj-native-q2-resident` (`blk.0..=blk.8`, 56
+  projections, `962.89` MB across 2 arenas) within a single predeclared owner-device
+  allowance, verifying bounded float tolerance, per-arena mapping/unmapping, scoped
+  active-prefix cache flushes and complete native teardown.
+- Remaining Hexagon NPU performance and placement work:
+  - Evaluate expanding `MAX_NATIVE_Q2_ARENAS` beyond 2 arenas (`3..=6` `<= 480 MiB`
+    `rpcmem` weight arenas within CDSP `v-size = 3000 MiB` on `v81` and host SMMU/Job
+    commit limits) to cover additional transformer blocks (`blk.9..=blk.63`).
+  - Implement multi-operation `dspqueue` packet batching and intra-layer VTCM tensor
+    chaining for `native-q2` (fusing `HTP_OP_RMS_NORM`, sibling `Q2_0` projections,
+    `HTP_OP_GLU_SWIGLU`, `HTP_OP_ROPE`, `HTP_OP_FLASH_ATTN_EXT`, `HTP_OP_SSM_CONV` and
+    `HTP_OP_GATED_DELTA_NET` using the wired `v81` opcodes and VTCM pass flags) to
+    eliminate per-projection host-to-DSP queue synchronization and intermediate DDR
+    round-trips.
+  - Add multi-token `N > 1` `native-q2` prefill dispatch (`N = tile_tokens` in
+    `HTP_TYPE_Q2_0` `OP_MUL_MAT`) so prompt prefill reuses resident NPU weights across
+    8/16/32-token tiles instead of executing `N = 1` per token or falling back to CPU.
 
 ### Promotion sequence
 
