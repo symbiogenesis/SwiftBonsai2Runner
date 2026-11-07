@@ -8,7 +8,7 @@ PTQ1 default promotion is a **no-go under the current evidence**. Follow the
 adapter, exact-source application, device/human and benefit gates below before
 reconsidering it. Keep historical 0.1.13 scores separate from 0.1.14 acceptance.
 
-Use native Rust Prism 0.1.17 as the project's development default: original Swift
+Use native Rust Prism 0.1.18 (with pinned release bundle 0.1.17 until the 0.1.18 GitHub release artifact is published) as the project's development default: original Swift
 PQ2, four CPU row workers, the standard adapter at scale 1.3, and default Snapdragon X2 Hexagon NPU `native-q2` resident acceleration (`DEFAULT_NATIVE_Q2_PROJECTIONS`, all 112 `PQ2_0` projections across the first 18 layers `blk.0..=blk.17`, `1,925.78` MB across four `<= 480` MiB `FastRPC` weight arenas pre-warmed at worker startup with automatic 4-worker NEON CPU fallback when the signed Hexagon runtime package or CDSP driver is absent). Preserve explicit
 publisher rollback with `--publisher-engine` (`-PublisherEngine` in Start-Chat.ps1),
 original-PQ2 selection and unchanged artifact, sandbox and resource admission.
@@ -1061,11 +1061,11 @@ strict Release analysis, codegen/spill inspection, actual-model state/adapter pa
 and matched request benefit before a qualified release and Runner repin. No installed
 runtime, default, resource admission or performance verdict changes here.
 
-Qualify the post-`0.1.17` Prism CPU NEON and row-parallel source optimizations
+Qualify the Prism `0.1.18` (`c4cfe40`) CPU NEON and row-parallel source optimizations
 (`fb64903`..`f4d1844`, building on `fcb54af`, `386677c` and `547cf47`) on settled
 Prism `main` through owning hosted checks, Release ARM64 codegen/spill inspection,
 actual-model parity and matched request-throughput comparison before publishing the
-next Prism release and repinning Runner beyond `0.1.17` (`3b46465`):
+release bundle and repinning Runner beyond `0.1.17` (`958fd4a`) to `0.1.18` (`c4cfe40`):
 - Single-widen `PQ2` NEON consumption kernels (`pq2_half_unsigned_sum` and
   `pq2_half_signed_sum` in `fb64903`), widening each 16-byte `PQ2` half once to
   `(u16x8, u16x8)` across 1-, 4- and 8-row kernels instead of four times per half.
@@ -1386,7 +1386,7 @@ Qualify the 28-projection single-arena (`c574d6c`/`d8afaec` in Prism `0.1.17`,
 `eafcca5b` in Runner) and 56-projection multi-arena `native-q2` resident placement
 expansions (`545f43d` in Prism, `0cc5f7d7` in Runner) on settled main through owning
 hosted checks, supervised AC-connected device receipts, a new Prism release and
-Runner repin beyond `0.1.17` (`3b46465`):
+hosted checks, supervised AC-connected device receipts and Runner release-bundle repin to `0.1.18` (`c4cfe40`):
 - Multi-arena resident weight allocation (`MAX_NATIVE_Q2_ARENAS = 4`, alternating `[502_824_960, 460_062_720, 502_824_960, 460_062_720]` byte arenas up to `480 MiB` (`1,925,775,360` bytes / `1,836.56 MiB` total across `blk.0..=blk.17` with zero wasted bytes, `NATIVE_Q2_MAX_PROJECTIONS = 112`), 4-op multi-operation resident `dspqueue` submissions (`submit_resident_multi2..4` and `image_multi_resident` with shared-activation pointer deduplication), and multi-token tiled-prefill NPU dispatch (`project_f32_tokens` and `project_f32_pair_tokens` wired through `Qwen35::ingest_cpu_tile` and `gdn::recurrent_tile`), building on the 2-arena (`blk.0..=blk.8`, `962.89` MB)
   each within `ggml-hexagon.dll` `m-size = 512 MiB`, `NATIVE_Q2_MAX_PROJECTIONS = 56`,
   `DEFAULT_NATIVE_Q2_PROJECTIONS` covering all 56 `PQ2_0` projections across the first
