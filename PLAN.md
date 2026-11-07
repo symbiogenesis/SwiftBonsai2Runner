@@ -1104,12 +1104,28 @@ release bundle and repinning Runner beyond `0.1.17` (`958fd4a`) to `0.1.18` (`c4
   through `RowParallelism::fill_tile_four_rows` (`be62567`), preserving the
   zero-heap-allocation invariant on `scratch.pq2_consumption` and per-row error/cancel
   rewind semantics.
+- Eight-row × eight-token (`8x8`) consumption-order `PQ2` (`dot_pq2_eight_rows` with
+  `f16_bits_to_f32_x8` 8-row scale decoding and 8-token activation preparation reuse),
+  eight-row `PTQ1` / `PQ2 (Q8_0)` (`dot_q8_eight_rows` widening each token's `Q8Block`
+  once across 8 rows), 8/4-row multi-token `BF16` prefill `GEMM` (`dot_bf16_rows` with
+  `reuse_prepared` sharing across sibling `ssm_beta`/`ssm_alpha` projections), and
+  multi-worker parallel tile activation quantization (`prepare_input` across
+  `RowParallelism` workers) (`929b6c7`).
+- Four-head grouped-KV full-attention score and value-tile reuse (`dot_f16_four`,
+  `dot_f32_four` and `value_tile_four` in `bb9d218`), reading and converting each cached
+  `FP16` key and value row once per four query heads sharing the same KV head while
+  preserving each head's independent 4-register key dot and 16-lane temporal value-tile
+  FMA reduction trees.
+- Three-sibling full-attention tiled-prefill NPU batching (`project_f32_triple_tokens`
+  and `project_tile_triple` in `e8deb79`), packing `[attn_q, attn_k, attn_v]` across
+  4-token windows into 4-op `submit_resident_multi4` `dspqueue` submissions with
+  pointer-deduplicated `rpcmem` activations and `submit_resident_batch3`/`batch2` tail
+  batches.
 
 Remaining CPU kernel, graph-level parallelism and tiled-prefill optimizations to
 implement and qualify in Prism:
-- Evaluate wider (`8x8`) register-blocked prefill `GEMM` tiles and optional ARMv8.2-A
-  `dotprod` / `i8mm` dispatch behind runtime feature detection where arithmetic contracts
-  permit.
+- Evaluate optional ARMv8.2-A `dotprod` / `i8mm` dispatch behind runtime feature
+  detection where arithmetic contracts permit.
 
 - Qualify actual prompt/response latency and complete application lifecycle for the
   [shared-slice row-parallel candidate](docs/oxibonsai-reuse.md#implementation-status),
@@ -1389,7 +1405,7 @@ Qualify the 28-projection single-arena (`c574d6c`/`d8afaec` in Prism `0.1.17`,
 expansions (`545f43d` in Prism, `0cc5f7d7` in Runner) on settled main through owning
 hosted checks, supervised AC-connected device receipts, a new Prism release and
 hosted checks, supervised AC-connected device receipts and Runner release-bundle repin to `0.1.18` (`c4cfe40`):
-- Multi-arena resident weight allocation (`MAX_NATIVE_Q2_ARENAS = 4`, alternating `[502_824_960, 460_062_720, 502_824_960, 460_062_720]` byte arenas up to `480 MiB` (`1,925,775,360` bytes / `1,836.56 MiB` total across `blk.0..=blk.17` with zero wasted bytes, `NATIVE_Q2_MAX_PROJECTIONS = 112`), 4-op multi-operation resident `dspqueue` submissions (`submit_resident_multi2..4` and `image_multi_resident` with shared-activation pointer deduplication), and multi-token tiled-prefill NPU dispatch (`project_f32_tokens` and `project_f32_pair_tokens` wired through `Qwen35::ingest_cpu_tile` and `gdn::recurrent_tile`), building on the 2-arena (`blk.0..=blk.8`, `962.89` MB)
+- Multi-arena resident weight allocation (`MAX_NATIVE_Q2_ARENAS = 4`, alternating `[502_824_960, 460_062_720, 502_824_960, 460_062_720]` byte arenas up to `480 MiB` (`1,925,775,360` bytes / `1,836.56 MiB` total across `blk.0..=blk.17` with zero wasted bytes, `NATIVE_Q2_MAX_PROJECTIONS = 112`), 4-op multi-operation resident `dspqueue` submissions (`submit_resident_multi2..4` and `image_multi_resident` with shared-activation pointer deduplication), and multi-token tiled-prefill NPU dispatch (`project_f32_tokens`, `project_f32_pair_tokens` and `project_f32_triple_tokens` wired through `Qwen35::ingest_cpu_tile` and `gdn::recurrent_tile` in `e8deb79`), building on the 2-arena (`blk.0..=blk.8`, `962.89` MB)
   each within `ggml-hexagon.dll` `m-size = 512 MiB`, `NATIVE_Q2_MAX_PROJECTIONS = 56`,
   `DEFAULT_NATIVE_Q2_PROJECTIONS` covering all 56 `PQ2_0` projections across the first
   9 transformer blocks `blk.0..=blk.8`, `962.89` MB total weight capacity pre-warmed at
