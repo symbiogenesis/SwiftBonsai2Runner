@@ -2150,6 +2150,47 @@ mod tests {
             expected_resident_weight_bytes(&dual_arena, ExecutionBackend::NativeQ2)?,
             962_887_680
         );
+        let quad_arena: Vec<String> = (0..18)
+            .flat_map(|layer| {
+                let suffixes: &[&str] = if (layer + 1) % 4 == 0 {
+                    &[
+                        "ffn_up.weight",
+                        "ffn_gate.weight",
+                        "ffn_down.weight",
+                        "attn_q.weight",
+                        "attn_k.weight",
+                        "attn_v.weight",
+                        "attn_output.weight",
+                    ]
+                } else {
+                    &[
+                        "ffn_up.weight",
+                        "ffn_gate.weight",
+                        "ffn_down.weight",
+                        "attn_qkv.weight",
+                        "attn_gate.weight",
+                        "ssm_out.weight",
+                    ]
+                };
+                suffixes
+                    .iter()
+                    .map(move |suffix| format!("blk.{layer}.{suffix}"))
+            })
+            .collect();
+        let quad_arena_refs: Vec<&str> = quad_arena.iter().map(String::as_str).collect();
+        assert_eq!(quad_arena_refs.len(), 112);
+        assert_eq!(
+            expected_resident_weight_bytes(&quad_arena_refs, ExecutionBackend::NativeQ2)?,
+            1_925_775_360
+        );
+        let mut quad_req_val = request_value();
+        quad_req_val["executionBackend"] = json!("native-q2");
+        quad_req_val["residentHostWeights"] = json!(true);
+        quad_req_val["tokenIds"] = json!(tokens);
+        quad_req_val["projections"] = json!(quad_arena);
+        let quad_req: Request =
+            serde_json::from_value(quad_req_val).map_err(|error| error.to_string())?;
+        quad_req.validate_selection()?;
         assert!(
             expected_resident_weight_bytes(&multi_layer, ExecutionBackend::GuardedHvx).is_err()
         );
