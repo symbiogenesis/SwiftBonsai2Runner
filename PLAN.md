@@ -815,12 +815,21 @@ not close pending hosted integration or full-model acceptance.
      (`src/speech-tts/src/sampling.rs`), dispatching multi-token prefill and heavy
      projections directly to the signed `libggml-htp-v81.so` / `v73.so` DSP skels through
      `hexagon-native-rpc` (`dspqueue` + `htp_ops`) without `ggml-hexagon.dll` or
-     `ggml-base.dll`.
+     `ggml-base.dll`, and expose optional rank-one / LoRA adapter overlays (reusing
+     `prism-inference`'s adapter infrastructure) so lightweight regional-accent or
+     language LoRAs (such as `aguken-ai/qwen3-tts-indic-finetuned` variants) can attach
+     to the shared `Base` `Talker` without duplicating base model files.
   4. **Pure-Rust 12 Hz audio codec, speaker encoder, and C/C++ build retirement**: Port
      the 12 Hz causal ConvNeXt/SnakeBeta audio decoder, ECAPA-TDNN speaker encoder, and
      stateful `CodecStateSnap` streaming pipeline to pure Rust, then remove `qwentts.cpp`
      source provisioning, CMake/C++ compilation (`src/speech-tts/build*.rs`), and all
-     `ggml-*.dll` runtime dependencies.
+     `ggml-*.dll` runtime dependencies. Support the drop-in 48 kHz decoder upgrade
+     (`takuma104/Qwen3-TTS-Tokenizer-12Hz-48kHz`, which keeps the 12 Hz 16-codebook RVQ
+     interface unchanged and appends one ~95K-parameter `< 400 KB` 2x upsampling decoder
+     block) to double synthesis output from 24 kHz to 48 kHz (`SAMPLE_RATE: 48_000`,
+     `PACKET_BYTES: 9_600` in `src/chat-ui/src/speech/pipeline.rs`) while tapping or
+     2:1-decimating 24 kHz audio (`ref_audio_24k`) during `VoiceDesign` reference
+     extraction (`qt_extract_voice_ref`).
   5. **Bonsai-style ternary `Talker` compression (`PQ2_0` / `PTQ1_0`)**: After the
      pure-Rust `Talker` port (Step 3) and `Q4_K_M` baseline qualification, apply offline
      block-1024 Sylvester Walsh–Hadamard + sign folding (`input-last-dimension`, matching
@@ -893,6 +902,34 @@ not close pending hosted integration or full-model acceptance.
   bootstrap and warm `Base` synthesis (timbre, prosody, phoneme stability, EOS
   termination, first-audio/chunk latency, peak Job commit/working set and recorded
   AC/battery power conditions) while retaining `Q8_0`/`Q4_K_M` rollback.
+- Improve TTS enunciation, prosodic pacing, accent replication and high-frequency audio
+  fidelity without regressing memory admission or warm synthesis latency:
+  - **Decoupled `Talker` vs. `CodePredictor` (`subtalker_*`) sampling and windowed
+    repetition penalty (`src/speech-tts/src/native.rs`, `src/speech-tts/src/sampling.rs`)**:
+    Preserve expressive `temperature` (`~0.85–0.9`) during `VoiceDesign` reference
+    bootstrap while lowering `subtalker_temperature` (`0.5–0.65`) and tightening
+    `subtalker_top_p` (`0.85–0.9`) and `Talker` `top_p` (`~0.9`) during `Base` synthesis
+    so residual codebooks `1..=15` lock onto high-probability consonant formants without
+    frame-to-frame timbre jitter. Window `repetition_penalty` (or exempt silence/pause
+    boundary tokens) to eliminate progressive speaking-rate acceleration and clipped word
+    endings over multi-sentence read-aloud (`dffdeeq/Qwen3-TTS-streaming` and
+    `grimavatar/Qwen3-TTS-Train` findings).
+  - **Phonemically balanced, accent-eliciting reference conditioning (`src/speech-tts/src/native.rs`,
+    lifted from `NeoKazuya/qwen3-tts-enhanced`)**: Replace the flat 18-word
+    `REFERENCE_TEXT` with a compact (~30–35 word) phonemically balanced, multi-contour
+    elicitation passage (or two short contrasting narrative/dialogue reference clips
+    stitched into `ref_codes` before `VoiceDesign` teardown) covering trap-bath vowel
+    splits, rhotic/non-rhotic post-vocalic `/r/`, dental fricatives (`/θ/, /ð/`),
+    diphthongs, and declarative/clause-medial intonation contours so `Base` in-context
+    conditioning (`icl_codec_stream` / `icl_ref_text_stream`, cached once in `PromptCache`
+    at zero warm-request projection cost) faithfully reproduces diverse regional accents.
+  - **48 kHz drop-in codec decoder (`takuma104/Qwen3-TTS-Tokenizer-12Hz-48kHz`) and
+    segment boundary smoothing (`src/chat-ui/src/speech/pipeline.rs`)**: Qualify a pinned
+    GGUF conversion of the 48 kHz tokenizer decoder (preserving 24 kHz `ref_audio_24k`
+    reference extraction for `Base`), updated `/health` and WAV/PCM sample-rate framing,
+    and short Hann-window crossfading across 256-character UI sentence boundaries through
+    paired target-device CI and independent human listening (sibilant/plosive clarity,
+    enunciation, accent fidelity, chunk continuity, and peak Job commit/working set).
 - Qualify [native-owned VoiceDesign
   references](docs/streaming-resources.md#native-speech-generation-and-streaming)
   through Design teardown and Base extraction on first use, profile changes and
