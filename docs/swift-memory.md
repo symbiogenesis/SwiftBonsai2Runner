@@ -168,7 +168,23 @@ gates, binding the complete export receipt and original-PQ2 rollback identities.
 leaves thirteen pending. Its [independent review](evidence/ptq1-promotion-bb020f4/independent-final-review.json) binds the exact runtime, source, hosted packing
 and durable archive without transferring historical device results. The [delivery record](evidence/ptq1-delivery-20261101.json) also
 retains the pre-model owner no-go: no model or owner runner started, and the existing user chat
-remained open. The score does not authorize a PTQ1 default.
+remained open. The [0.1.13 four-worker promotion score](evidence/ptq1-promotion-bb020f4-service-90a62b9-review.json)
+retains 6 of 19 gates passed, with 13 pending for frozen candidate `bb020f4` and separately
+reviewed service harness `90a62b9`. The
+[latest bounded four-worker service trial](evidence/ptq1-service-41577882160/independent-review.json)
+passed three one-token-cap streams at scales 1.3, negative zero and 2.0, plus invalid-scale
+rejection, before its context-error check received no complete HTTP header and stopped within
+119.737 charged seconds (AC connected at parent endpoints; child after-power unknown). The
+[published Prism 0.1.14 release](https://github.com/symbiogenesis/prism-inference/releases/tag/v0.1.14)
+includes the typed context-error fix; the
+[Runner pin preparation](evidence/prism-0114-pin-preparation.json) and
+[publication review](evidence/ptq1-context-publication-014/independent-review.json) bind its exact
+source and archive identities, while actual 0.1.14 model/service/rollback acceptance under the
+[combined service and original-PQ2 rollback profile](validation.md#actual-model-application-acceptance)
+remains pending. The [retained 0.1.13 source diagnostic](evidence/ptq1-numerics-41568281287.json)
+matched all 39,504,384 logits and live-state values byte for byte for one supplied token on X2
+Elite Extreme with explicit NEON, four row workers and adapter scale 1.3 (5.85 GiB checker peak Job
+commit). None of these partial checks authorizes a PTQ1 default.
 
 A reproducible correctness/security/recovery regression rejects the tested
 configuration. A performance no-go must use the predeclared device/settings and
@@ -220,7 +236,10 @@ independently verified. The raw compiled/archived export receipt uses Windows
 CRLF; its distinct Git-blob LF digest is bound by an exact reversible line-ending
 check. These identities remain separate. This is complete packing evidence for
 that source, without activation, state, adapter-basis or performance qualification;
-later source and promotion records require their own review.
+later source and promotion records require their own review. The
+[fresh hosted packing check](evidence/ptq1-hosted-packing-b833d6b.json) independently matched all
+209,920,000 blocks, their original symbols and scales, and the preserved metadata and other tensor
+bytes with the pinned 0.1.13 exporter.
 
 All converted tensor block counts are divisible by sixteen, retaining 32-byte alignment.
 Non-tensor bytes occupy the 11,120,992-byte header/data-offset region; there are no

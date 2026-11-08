@@ -215,6 +215,31 @@ submit-and-wait per token (`~0.402-0.436` ms per projection, cosine similarity `
 RMSE `0.0217-0.0316`, exact top-1 token agreement `1183`, `12`, `248`, `5/5` top-5 overlap, and
 clean teardown).
 
+## Snapdragon X2 Hexagon NPU (`v81`) projection and layer timings
+
+Losslessly transcoding `PQ2_0` weights into tiled `HTP_TYPE_Q2_0` reduces shared-memory output
+traffic per `[5120, 17408]` projection by **320x** (`69,632` bytes vs. `22.28 MB` of 8-plane `FP32`
+bitplanes) and eliminates host bitplane reconstruction. The table below summarizes the supervised
+3-token (`42, 43, 128`) Snapdragon X2 Elite Extreme device controls (`LoRA 1.3`, 4 CPU row workers):
+
+| Placement / backend | Projections (`PQ2_0`) | Resident weight payload (`FastRPC` mapped) | NPU submit & wait / token (ms) | Per-projection NPU time (ms) | Token evaluation: NPU vs. 4-worker NEON CPU (ms) | Numerical verification | Power condition |
+| --- | --- | ---: | ---: | ---: | ---: | --- | --- |
+| [**1-op `native-q2` resident (`ccb1339`)**](evidence/npu-native-q2-1op-20261105/summary.json) | 1 (`blk.0.ffn_up`, `[5120, 17408]`) | 23.91 MiB (47.90 MiB) | **0.64–0.98** | **0.64–0.98** | 520.84–561.49 vs. 515.92–589.57 | Cosine `0.999908–0.999972`, RMSE `0.0221–0.0286`, top-1 `3/3`, top-5 `5/5` | AC (`99%`, saver off) |
+| [**1-op `native-q2` resident (`ccb1339`)**](evidence/npu-native-q2-1op-20261105/summary.json) | 2 (`blk.0.ffn_up + ffn_gate`) | 47.81 MiB (71.81 MiB) | **1.08–1.44** | **0.54–0.72** | **506.15**–567.14 vs. 516.49–591.33 | Cosine `0.999906–0.999974`, RMSE `0.0226–0.0284`, top-1 `3/3`, top-5 `5/5` | AC (`99%`, saver off) |
+| [**Full recurrent layer `native-q2` (`a383e92`)**](evidence/npu-full-layer-native-q2-a383e92-20261105/summary.json) | 6 (`blk.0` all recurrent projections) | 102.66 MiB (126.65 MiB) | **2.27–2.87** | **0.38–0.48** | 395.80–603.33 vs. 547.11–628.76 | Cosine `0.999893–0.999973`, RMSE `0.0249–0.0306`, top-1 `3/3`, top-5 `5/5` | Battery (`90%`, saver off; diagnostic) |
+| [**2-layer `native-q2` unscoped flush (`a383e92`)**](evidence/npu-full-layer-native-q2-a383e92-20261105/summary.json) | 13 (`blk.0` recurrent + `blk.3` full-attn) | 202.50 MiB (226.50 MiB) | **4.38–5.46** | **0.34–0.42** | 496.00–586.48 vs. 544.23–604.43 | Cosine `0.999902–0.999977`, RMSE `0.0228–0.0290`, top-1 `3/3`, top-5 `5/5` | Battery (`90%`, saver off; diagnostic) |
+| [**2-layer `native-q2` scoped `<= 92 KiB` flush (`e2349af`)**](evidence/npu-4layer-25proj-native-q2-20261105/summary.json) | 13 (`blk.0` recurrent + `blk.3` full-attn) | 202.50 MiB (226.50 MiB) | **4.43–4.87** | **0.34–0.37** | **422.49–446.20** (warm) vs. 463.97–478.07 (`1,386.00` vs. `1,392.70` total) | Cosine `0.999902–0.999977`, RMSE `0.0228–0.0290`, top-1 `3/3`, top-5 `5/5` | Battery (`76%`, saver off; diagnostic) |
+| [**4-layer block `native-q2` scoped flush (`e2349af`)**](evidence/npu-4layer-25proj-native-q2-20261105/summary.json) | 25 (`blk.0..=blk.3` complete repeating block) | 407.81 MiB (431.81 MiB) | **10.05–10.91** | **0.40–0.44** | 807.50–1,166.27 vs. 425.83–970.25 | Cosine `0.999895–0.999972`, RMSE `0.0217–0.0316`, top-1 `3/3`, top-5 `5/5` | Battery (`76%`, saver off; diagnostic) |
+| [**8-HVX / 2 MiB VTCM / Burst `batch10` HMX (`9f61217`)**](evidence/npu-hmx-8hvx-2mib-vtcm-20261105/summary.json) | 1 (`blk.0.ffn_up`, 40 ops in 4 writes/tok) | 23.91 MiB (35.24 MiB) | **8.18–13.28** | **8.18–13.28** | 320.31–536.98 vs. 294.61–342.29 | **0-ULP bitwise parity** (logits & state) | AC (`95%`, saver off) |
+| [**8-HVX / 2 MiB VTCM / Burst `batch10` HMX (`9f61217`)**](evidence/npu-hmx-8hvx-2mib-vtcm-20261105/summary.json) | 2 (`blk.0.ffn_up + ffn_gate`, 80 ops in 8 writes/tok) | 47.81 MiB (59.15 MiB) | **15.60–26.77** | **7.80–13.39** | **457.34–464.30** (warm) vs. 552.44–553.09 | **0-ULP bitwise parity** (logits & state) | AC (`95%`, saver off) |
+| [**4-worker L1-tiled `batch10` HMX (`5136bd1`)**](evidence/npu-batch10-fast-queue-20261105/summary.json) | 1–2 (`blk.0.ffn_up`, `+ ffn_gate`) | 23.91–47.81 MiB | 22.21–23.48 (1p) / 44.08–46.26 (2p) | 22.04–23.48 | 487.91–529.85 (1p) / 513.61–537.70 (2p) | **0-ULP bitwise parity** (logits & state) | Battery (`89%`, saver off; diagnostic) |
+| [**Fused host-reconstruct `batch4` HMX (`ebc22c2`)**](evidence/npu-multi-projection-20261104/summary.json) | 1–2 (`blk.0.ffn_up`, `+ ffn_gate`) | 23.91–47.81 MiB | 32.53–34.22 (1p) / 64.66–66.22 (2p) | 32.33–34.22 | 432.66–487.59 (1p) / 514.98–553.37 (2p) | **0-ULP bitwise parity** (logits & state) | AC (`100%`, saver off) |
+
+Battery-operated diagnostic runs (`a383e92`, `e2349af`, `5136bd1`) are kept separate from
+AC-connected runs (`ccb1339`, `9f61217`, `ebc22c2`) and are not treated as qualified
+cross-power speed comparisons. Full-model 6-arena (`168`-projection) AC-connected
+end-to-end service qualification remains pending in [PLAN.md](../PLAN.md#hexagon-npu).
+
 The [logical payload ledger](evidence/hexagon-swift-traffic-ledger.json) derives 13.69 GB of signed-kernel input/result payload per all-eligible
 original-PQ2 evaluation token. The opt-in [mapped host-weight arena and graph cache](../tools/hexagon/resident-host.md) reuse immutable
 packed tiles across tokens, with a 64 MiB HMX bitplane arena ceiling (`480` MiB per arena and up to

@@ -32,34 +32,71 @@ The [memory guide](swift-memory.md) records 16-token Prism CPU decode and PTQ1 r
 the [Rust runtime contract](native-rust-engine.md) owns NEON/hybrid-graph evidence.
 Neither establishes complete-answer performance. The
 [2026-11-03 separated timing capture](evidence/token-timing-20261103/summary.json)
-measured all seven installed Rust profiles (`0.1.9` through `0.1.14`); the [README table](../README.md#performance) records
-the exact versions. Rust 0.1.14/four-worker/adapter-1.3 PQ2 measured
-**16.64 s TTFT, 1.34 generation tokens/s and 7.20 GiB short-request peak Job commit**; PTQ1 measured
-**29.50 s, 0.75 tokens/s and 6.02 GiB short-request peak Job commit** (`1.17 GiB` lower
-short-request peak Job commit). Four-worker row parallelism in `0.1.10` (`16.98 s` TTFT, `1.34`
-generation tokens/s) improved upon single-worker `0.1.10` (`35.59 s` TTFT, `0.64` generation
-tokens/s) by **2.10x** on TTFT and **2.09x** on generation rate, while `0.1.10` startup/prefill
-changes reduced four-worker TTFT from `23.00 s` (`0.1.9`). Each response truncated at eight reported
-tokens. Runner now pins **Rust Prism `0.1.19`** (`951cc88`), which adds the `0.1.15`–`0.1.19` CPU
-NEON, multi-worker GDN/attention/conv/SwiGLU, `4x4`/`8x8` tiled-prefill GEMM, and Snapdragon X2
-6-arena 168-projection (`blk.0..=blk.26`, `2,888,663,040` resident weight bytes / `2,754.84 MiB`)
-`native-q2` resident NPU optimizations; see [Hexagon execution contracts](hexagon.md) and the [README NPU table](../README.md#snapdragon-x2-hexagon-npu-v81-projection-and-layer-timings)
+measured seven installed Rust profiles on the Snapdragon X2 Elite Extreme:
+
+| Model | Runtime | Time to first token (s) | Generation tokens/second | Model file | Job commit cap / measured peak | Available RAM admission | Restore copy saved vs. Rust 0.1.4 |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| **Swift Bonsai 2 `PQ2_0` (development default; pinned at Rust 0.1.19)** | **Rust 0.1.14 release (4 workers) + LoRA 1.3** | **16.64** | **1.34** | **6.71 GiB** | **11.5 GiB / 7.20 GiB (short request)** | **15.5 GiB** | **149.625 MiB** |
+| **Swift Bonsai 2 `PTQ1_0` (experimental opt-in; pinned at Rust 0.1.19)** | **Rust 0.1.14 release (4 workers) + LoRA 1.3** | **29.50** | **0.75** | **5.54 GiB** | **11.5 GiB / 6.02 GiB (short request)** | **15.5 GiB** | **149.625 MiB** |
+| Swift Bonsai 2 `PQ2_0` | Rust 0.1.13 release (4 workers) + LoRA 1.3 | 16.45 | 1.32 | 6.71 GiB | 11.5 GiB / 7.20 GiB (short request) | 15.5 GiB | 149.625 MiB |
+| Swift Bonsai 2 `PTQ1_0` | Rust 0.1.13 release (4 workers) + LoRA 1.3 | 28.69 | 0.75 | 5.54 GiB | 11.5 GiB / 6.02 GiB (short request) | 15.5 GiB | 149.625 MiB |
+| Swift Bonsai 2 `PQ2_0` | Rust 0.1.10 release (4 workers) + LoRA 1.3 | 16.98 | 1.34 | 6.71 GiB | 11.5 GiB / 7.20 GiB (short request) | 15.5 GiB | 149.625 MiB |
+| Swift Bonsai 2 `PQ2_0` | Rust 0.1.10 release (1 worker) + LoRA 1.3 | 35.59 | 0.64 | 6.71 GiB | 11.5 GiB / 7.20 GiB (short request) | 15.5 GiB | 149.625 MiB |
+| Swift Bonsai 2 `PQ2_0` | Rust 0.1.9 release (4 workers) + LoRA 1.3 | 23.00 | 1.32 | 6.71 GiB | 11.5 GiB / 7.20 GiB (short request) | 15.5 GiB | 149.625 MiB |
+| Swift Bonsai 2 `PTQ1_0` | PrismML C++ CPU | Startup failed | Startup failed | 5.54 GiB | 11.5 GiB / — | 15.5 GiB | — |
+| Swift Bonsai 2 `PQ2_0` (explicit publisher rollback) | PrismML C++ CPU | Startup failed | Startup failed | 6.71 GiB | 11.5 GiB / — | 15.5 GiB | — |
+| Qwen3.8-27B `UD-Q3_K_XL` | llama.cpp reference | Not installed | Not installed | 12.24 GiB | 18 GiB / — | 22 GiB | — |
+
+The current release profiles use the default four CPU row workers; comparing the
+`0.1.10` single-worker row (`35.59 s` TTFT, `0.64` generation tokens/s) against
+the four-worker row (`16.98 s` TTFT, `1.34` generation tokens/s) shows a **2.10x
+faster TTFT** and **2.09x faster generation rate** from four-worker row parallelism,
+while the `0.1.10` startup/prefill changes reduced four-worker TTFT from `23.00 s`
+(`0.1.9`) to `16.98 s` (`16.45–16.64 s` in `0.1.13`–`0.1.14`). Short-request peak Job
+commit measured **7.20 GiB** (`7,726,850,048–7,727,276,032` bytes) across all five
+`PQ2_0` profiles and **6.02 GiB** (`6,465,683,456–6,465,744,896` bytes) across both
+`PTQ1_0` profiles (**1.17 GiB lower peak Job commit** on short requests).
+Each fresh owner used the fixed prompt `Count from 1 to 100.`, thinking off,
+seed 42 and the standard Swift adapter at scale 1.3. All seven measured responses
+reported eight completion tokens and returned `1, 2, 3,` before hitting the cap.
+Runner now pins **Rust Prism `0.1.19`** (`951cc88`, with source `c8e96d7`..`cada2ca`), which
+adds the `0.1.15`–`0.1.19` CPU NEON, 18-worker row parallelism (`MAX_ROW_WORKERS = 18`),
+`TL1` nibble lookup tables (`Tl1BlockLut`), `TQ1_0`/`TQ2_0` LUT + NEON SIMD, direct
+`PTQ1 × Q8_K` dot kernels, multi-worker GDN/attention/conv/SwiGLU, `4x4`/`8x8` tiled-prefill
+GEMM, training-free suffix speculative decoding (`SuffixDecoding`) with transactional block
+verification, and Snapdragon X2 6-arena 168-projection (`blk.0..=blk.26`,
+`2,888,663,040` resident weight bytes / `2,754.84 MiB`) `native-q2` resident NPU optimizations
+(including 8-op `dspqueue` batching and fused `ffn_gate + ffn_up + HTP_OP_GLU_SWIGLU` VTCM
+chaining); an updated end-to-end HTTP timing capture on `0.1.19` remains pending.
+See [Hexagon execution contracts](hexagon.md#snapdragon-x2-hexagon-npu-v81-projection-and-layer-timings)
 for the supervised 3-token (`42, 43, 128`) X2 device control timings (`0.64–0.98 ms` for 1
 projection, `1.08–1.44 ms` for 2 projections, `2.27–2.87 ms` for 6 recurrent projections in `blk.0`,
 `4.43–4.87 ms` with `422.49–446.20 ms` warm token evaluation for 13 projections in `blk.0 + blk.3`,
 and `10.05–10.91 ms` for all 25 projections of the 4-layer repeating block `blk.0..=blk.3`).
 
-TTFT includes the required exact count/admission, prefill and direct backend HTTP
-delivery, excluding startup. Generation speed uses the seven intervals after the
-first token. Incremental receive timestamps and the source-bound ASCII counting
-contract support this client-observed window; these are not sustained rates or
-isolated kernel decode TPS. All recorded power samples had AC connected and
-battery saver off. All nine started measurement owners confirmed empty Jobs;
-the installed application's broker shutdown and daily-use gates remain separate.
+**TTFT** runs from client request start through the first output token, including
+required exact token-count admission, template processing, prefill and HTTP
+transport; model verification/loading/startup is excluded. **Generation tokens/s**
+is `(N - 1) / (last token time - first token time)`, using reported completion
+usage `N`, so it excludes TTFT. Incremental receive timestamps and source-verified
+ASCII token boundaries support these seven-token intervals; SSE event counts
+alone are not token counts. These are **client-observed short-window rates** over
+direct authenticated sandboxed backend HTTP, not isolated kernel decode TPS,
+sustained generation or a qualified speedup comparison.
 
-Both publisher backends exited before HTTP readiness, with cause unknown; the
-pinned Qwen reference was absent. Their timing cells remain unavailable. The
-[earlier whole-request observations](evidence/local-throughput-20261103/summary.json)
+Both publisher options exited before HTTP readiness, leaving their timings
+unavailable; the cause remains unknown. The pinned Qwen model was absent from
+the selected installed data, so no download or model attempt was made. Every
+started owner confirmed an empty Job, released its listener and left no model
+processes or trial credentials. This validates the measurement owner's cleanup;
+the installed application broker's earlier graceful-shutdown failure remains open.
+
+AC was connected and battery saver off at all **336 per-arm power samples** and
+the aggregate endpoints; charge rose from **43% to 46%**. Sampling does not prove
+uninterrupted stability. Setup, the streaming check, one offline Release build,
+all nine started arms, cleanup and final evidence retention shared one
+predeclared fourteen-minute ceiling and finished in **473.890 s**. No arm was
+retried. The [earlier whole-request observations](evidence/local-throughput-20261103/summary.json)
 and [historical one-worker attempt](evidence/native-request-speed.json) keep their
 original intervals and closed clocks; their request rates cannot supply TTFT or
 generation speed. [PLAN.md](../PLAN.md) owns pending acceptance under
