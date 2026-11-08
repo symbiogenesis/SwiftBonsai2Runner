@@ -1125,6 +1125,13 @@ release bundle and repinning Runner beyond `0.1.17` (`958fd4a`) to `0.1.18` (`c4
   triangular dot-matrix precomputation with zero per-layer heap allocations, parallel
   full-attention KV head RMSNorm/RoPE/FP16 preparation (`ffd43cb`), and 4-token-per-group
   register-blocked `dot_q8_four_rows`/`dot_q8_eight_rows` NEON prefill kernels (`d20214a`).
+- Single-dispatch head-major multi-token GDN causal short-convolution + `SiLU` + Q/K
+  `l2_norm` (`conv_head_major` into `gdn_conv_outputs`), L1-resident row-major exact GDN
+  recurrent tiled prefill (`exact_head_into` using `gdn_decay_and_dot`), paired NEON GDN
+  dot kernel (`pinned_gdn::dot_pair` loading `state` / `key_prior` once per `(key, query)`
+  pair), and batched multi-token full-attention tiled prefill (`full_attention_tile` with
+  per-tile shared `rope_frequencies` across all 16 full-attention layers and single-pass
+  grouped-KV cache scans across worker token chunks) (`5656461`).
 
 Remaining CPU kernel, graph-level parallelism and tiled-prefill optimizations to
 implement and qualify in Prism:
