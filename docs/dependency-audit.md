@@ -148,6 +148,9 @@ runtime source forbids unsafe code. See the
 | `toml`, `ureq` | CI-only manifest parsing (parse/serde/std) and synchronous HTTPS (Windows Schannel, otherwise Rustls); ureq defaults/compression disabled. |
 | `transcribe-cpp` | Static CPU ASR, defaults disabled; reviewed CMake script downloads no source and explicitly enables MSVC optimization. |
 | `simd-json` | Exact optional qualification-only crates.io pin; ordinary requests still use serde_json. |
+| `fearless_simd` | Pinned safe 128-bit NEON (`=0.4.1` in Runner speech crates, `=1.1.0` in Prism) wired into `bonsai-speech-tts` (`sylvester_walsh_hadamard_in_place`, `rms_norm`, `DacResUnit`) and `bonsai-speech-asr` (`validate_pcm`), alongside `bonsai-neon-dot` (`SDOT`/`SMMLA`) in Prism. |
+| `memchr` | Promoted from transitive to direct (`=2.8.3`, `default-features = false`) in `bonsai-broker`, `bonsai-chat`, and `bonsai-speech-service` for NEON-vectorized HTTP header, SSE line, multipart boundary, and ASCII folded Find scanning. |
+| `bonsai-native-hash` / Windows CNG | Hardware-accelerated ARMv8 SHA-2 via Windows CNG (`BCryptHashData` in `bonsai-native-hash` and `bonsai_windows_credentials::Sha256::digest_bytes` in `bonsai-tools`). |
 | `mxc-sdk`, `flatbuffers` | Required security integration; pursue upstream modularity. |
 | Internal crates | Retain shared process/credential/audio/policy/artifact boundaries; no unused direct path edge found. |
 

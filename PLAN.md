@@ -1961,6 +1961,7 @@ exclusions. Remaining areas:
   three Windows wgpu backends; removal needs support, device and fallback acceptance.
   Split archive APIs only for demonstrated independent-speech build or size benefit;
   preserve containment, accessibility and native UI.
+- Qualify the 2026-11-08 Prism & Runner kernel, accelerator, speech, transport and dependency integrations in their owning CI workflows: `bonsai-neon-dot` (`SDOT`/`SMMLA` `2x2` tiles) and `u8x16` `PTQ1_0` unpacking, last-layer state-only prefill narrowing, fused `RMSNorm + Sign*FWHT` / `SwiGLU + Sign*FWHT` NEON block kernels, streaming NEON top-k sampler pre-filter and low-jitter `parallel_tile` barrier, Hexagon NPU full intra-layer FFN VTCM chain (`image_ffn_full_chain_resident`) + `DMA64` stride guard + hybrid CPU/NPU prefill scheduler, GDN rollback-by-replay verify tape (`GdnVerifyTape`) + `DFlash2DraftConfig` + checkpoint-free greedy step verification, Adreno `Q2_0+FWHT` 3-processor placement planner (`plan_three_processor_placement`), `bonsai-native-hash` / Windows CNG SHA-256 routing, `fearless_simd` NEON + scoped multi-row `LinearProjection::forward_vec_parallel` + 4-frame TTS streaming + `FastConformer` `[B, C, T, F] -> [B, T, C * F]` transpose in `bonsai-speech-tts`/`bonsai-speech-asr`, and direct `memchr` NEON scanning in `bonsai-broker`/`bonsai-chat`/`bonsai-speech-service`.
 - Qualify [SIMD-JSON tape
   reuse](docs/dependency-audit.md#current-candidate-and-pending-gate) in main-only CI:
   Unicode, duplicate/unknown fields, shapes, bounds and canonical bytes; at least 5%

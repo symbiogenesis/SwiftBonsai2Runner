@@ -1,6 +1,6 @@
 # Inference research and proof register
 
-Research cutoff and last source review: **2026-10-29**.
+Research cutoff and last source review: **2026-11-08**.
 Signed constant floor-division addendum reviewed **2026-10-30**; the other source
 reviews retain their original cutoff.
 The [weight-space programming assessment](weight-space-programming.md) was reviewed
@@ -451,6 +451,7 @@ runtime replacements. Pin the relevant source revision before an experiment.
 | [Magnitude](https://github.com/magnitudedev/magnitude), [compatibility contract](https://github.com/magnitudedev/magnitude/blob/main/inference/docs/compatibility.md) | Rust execution, per-shape kernels, dynamic cache allocation and device-specific tuning | Its compatibility document excludes Adreno X from Vulkan and lists Windows x64 in its CPU OS coverage. No Windows ARM64/Swift claim follows from general Windows/CPU marketing. Its KV quantization also changes precision. |
 | [Camelid Bonsai 2 implementation](https://github.com/timtoole02/Camelid/blob/main/docs/BONSAI2.md) | Packed PTQ1, independent small-model drafting, hybrid rollback, allocation receipts and losing experiments | Published Windows x86/CUDA results, changed activation paths and speculative modes have distinct identities; Bonsai is not the Swift adapter profile. |
 | [Orangu internals](https://mnemosyne-systems.github.io/orangu/doc/server-internals.html) | Native Rust inference, packed representations, layout and allocation ideas | CIX/Mali and alternate activation/repacking evidence do not qualify Snapdragon. Its documented GPLv3 licensing needs review before any source reuse. |
+| [ik_llama.cpp PR #2857](https://github.com/ikawrakow/ik_llama.cpp/pull/2857), [llama.cpp PR #31288](https://github.com/ggml-org/llama.cpp/pull/31288), [PR #31442](https://github.com/ggml-org/llama.cpp/pull/31442), [vLLM PR #38950](https://github.com/vllm-project/vllm/pull/38950), [SGLang PR #22415](https://github.com/sgl-project/sglang/pull/22415), [streaming-qwen3-tts](https://github.com/rekuenkdr/streaming-qwen3-tts), [parakeet-rs `1d46c176`](https://github.com/altunenes/parakeet-rs/commit/1d46c176) | ARMv8.2-A `SDOT`/`SMMLA` (`i8mm`) `2x2` tiles, non-widening `u8x16` `PTQ1_0` unpacking, fused `RMSNorm + Sign*FWHT` / `SwiGLU + Sign*FWHT`, last-layer state-only prefill narrowing, streaming NEON top-k pre-filter, Hexagon DMA64 stride guard + full intra-layer FFN VTCM chain + hybrid CPU/NPU prefill planner, GDN rollback-by-replay verify tape + `DFlash2` draft config, Adreno `Q2_0+FWHT` 3-processor placement planner, 4-frame TTS streaming, and `FastConformer` `[B, C, T, F] -> [B, T, C * F]` transpose | Implemented in local Prism and Runner source with unit/property verification; device speed and quality promotion remain CI-only. |
 
 ## Engineering reports and Hacker News leads
 
@@ -497,7 +498,7 @@ complete-task accounting; UI delivery timing is not inference-kernel throughput.
 
 ### Source coverage
 
-The **2026-10-29** cutoff covers accessible papers/proceedings, original
+The **2026-11-08** cutoff covers accessible papers/proceedings, original
 repositories, author/vendor reports and HN leads, with emphasis on 2026 work.
 This bounded search does not establish that omitted work is absent. Future
 venue acceptances remain author claims; observed PR/release status is neither

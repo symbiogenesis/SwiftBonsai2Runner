@@ -20,7 +20,7 @@ comparisons. Sequential scheduling alone provides no matrix-matrix reuse.
 | Packed decode | NEON PQ2/PTQ1 and odd-group PQ2 preserve scalar quantizers, scale order and generic PQ2's fourth symbol |
 | Prefill | Bounded 1–256-token blocks retain sequential arithmetic and whole-request rollback; block scheduling alone gives no tiled matmul reuse |
 | Checkpoints | Sealed immutable KV pages may be shared; mutable tails and complete convolution/GDN state remain independently owned, with conservative snapshot budgets |
-| Speculation | `SuffixDrafter` (`SuffixDecoding`) proposes `1..=8` continuation tokens from prompt/history suffixes; `Runtime::generate_speculative`, `Runtime::verify_draft_block`, and `verify_stochastic_step` enforce exact greedy or Leviathan residual verification with transactional GDN/KV checkpoint rollback |
+| Speculation & sampling | `SuffixDrafter` (`SuffixDecoding`) and `DFlash2DraftConfig` propose `1..=8` continuation tokens; `Runtime::verify_draft_block` performs checkpoint-free greedy step verification before mutating live state, while `GdnVerifyTape` records accepted per-step recurrent inputs for rollback-by-replay without pre-step `288 MiB` state clones; `Sampler` uses a streaming NEON top-k pre-filter over `248,320`-vocab logits |
 
 Source map: [runtime](https://github.com/symbiogenesis/prism-inference/blob/main/src/runtime.rs),
 [decoder API](https://github.com/symbiogenesis/prism-inference/blob/main/src/lib.rs),
