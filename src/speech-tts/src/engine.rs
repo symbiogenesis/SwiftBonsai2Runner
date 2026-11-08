@@ -377,6 +377,133 @@ pub fn sylvester_walsh_hadamard_in_place(data: &mut [f32]) -> io::Result<()> {
     Ok(())
 }
 
+#[allow(
+    clippy::inline_always,
+    reason = "fearless_simd dispatch! requires inline(always) to inherit target_feature attributes."
+)]
+#[inline(always)]
+fn sign_flip_simd<S: Simd>(simd: S, input: &[f32], signs: &[i8], out: &mut [f32]) {
+    let (in_chunks, in_tail) = input.as_chunks::<4>();
+    let (s_chunks, s_tail) = signs.as_chunks::<4>();
+    let (out_chunks, out_tail) = out.as_chunks_mut::<4>();
+    for ((x_c, s_c), dst_c) in in_chunks
+        .iter()
+        .zip(s_chunks.iter())
+        .zip(out_chunks.iter_mut())
+    {
+        let xv = f32x4::from_slice(simd, x_c);
+        let sv = f32x4::from_slice(
+            simd,
+            &[
+                if s_c[0] < 0 { -1.0_f32 } else { 1.0_f32 },
+                if s_c[1] < 0 { -1.0_f32 } else { 1.0_f32 },
+                if s_c[2] < 0 { -1.0_f32 } else { 1.0_f32 },
+                if s_c[3] < 0 { -1.0_f32 } else { 1.0_f32 },
+            ],
+        );
+        (xv * sv).store_slice(dst_c);
+    }
+    for ((&x, &s), dst) in in_tail.iter().zip(s_tail.iter()).zip(out_tail.iter_mut()) {
+        *dst = if s < 0 { -x } else { x };
+    }
+}
+
+#[allow(
+    clippy::inline_always,
+    reason = "fearless_simd dispatch! requires inline(always) to inherit target_feature attributes."
+)]
+#[inline(always)]
+fn f32_dot_simd<S: Simd>(simd: S, a: &[f32], b: &[f32]) -> f32 {
+    let (a_chunks, a_tail) = a.as_chunks::<4>();
+    let (b_chunks, b_tail) = b.as_chunks::<4>();
+    let mut acc0 = f32x4::splat(simd, 0.0_f32);
+    let mut acc1 = f32x4::splat(simd, 0.0_f32);
+    let (a_pairs, a_rem) = a_chunks.as_chunks::<2>();
+    let (b_pairs, b_rem) = b_chunks.as_chunks::<2>();
+    for (ap, bp) in a_pairs.iter().zip(b_pairs.iter()) {
+        let a0 = f32x4::from_slice(simd, &ap[0]);
+        let b0 = f32x4::from_slice(simd, &bp[0]);
+        let a1 = f32x4::from_slice(simd, &ap[1]);
+        let b1 = f32x4::from_slice(simd, &bp[1]);
+        acc0 = a0.mul_add(b0, acc0);
+        acc1 = a1.mul_add(b1, acc1);
+    }
+    for (ac, bc) in a_rem.iter().zip(b_rem.iter()) {
+        let av = f32x4::from_slice(simd, ac);
+        let bv = f32x4::from_slice(simd, bc);
+        acc0 = av.mul_add(bv, acc0);
+    }
+    let sum_v = acc0 + acc1;
+    let mut lanes = [0.0_f32; 4];
+    sum_v.store_slice(&mut lanes);
+    let mut total = (lanes[0] + lanes[1]) + (lanes[2] + lanes[3]);
+    for (&av, &bv) in a_tail.iter().zip(b_tail.iter()) {
+        total = av.mul_add(bv, total);
+    }
+    total
+}
+
+#[allow(
+    clippy::inline_always,
+    reason = "fearless_simd dispatch! requires inline(always) to inherit target_feature attributes."
+)]
+#[inline(always)]
+fn q8_block_dot_simd<S: Simd>(simd: S, quants: &[i8; 32], x: &[f32]) -> f32 {
+    let (q_chunks, _) = quants.as_chunks::<4>();
+    let (x_chunks, _) = x.as_chunks::<4>();
+    let mut acc0 = f32x4::splat(simd, 0.0_f32);
+    let mut acc1 = f32x4::splat(simd, 0.0_f32);
+    for pair in 0..4 {
+        let q0 = &q_chunks[pair * 2];
+        let q1 = &q_chunks[pair * 2 + 1];
+        let x0 = f32x4::from_slice(simd, &x_chunks[pair * 2]);
+        let x1 = f32x4::from_slice(simd, &x_chunks[pair * 2 + 1]);
+        let qv0 = f32x4::from_slice(
+            simd,
+            &[
+                f32::from(q0[0]),
+                f32::from(q0[1]),
+                f32::from(q0[2]),
+                f32::from(q0[3]),
+            ],
+        );
+        let qv1 = f32x4::from_slice(
+            simd,
+            &[
+                f32::from(q1[0]),
+                f32::from(q1[1]),
+                f32::from(q1[2]),
+                f32::from(q1[3]),
+            ],
+        );
+        acc0 = qv0.mul_add(x0, acc0);
+        acc1 = qv1.mul_add(x1, acc1);
+    }
+    let sum_v = acc0 + acc1;
+    let mut lanes = [0.0_f32; 4];
+    sum_v.store_slice(&mut lanes);
+    (lanes[0] + lanes[1]) + (lanes[2] + lanes[3])
+}
+
+#[allow(
+    clippy::inline_always,
+    reason = "fearless_simd dispatch! requires inline(always) to inherit target_feature attributes."
+)]
+#[inline(always)]
+fn axpy_simd<S: Simd>(simd: S, scale: f32, x: &[f32], dst: &mut [f32]) {
+    let w_v = f32x4::splat(simd, scale);
+    let (x_chunks, x_tail) = x.as_chunks::<4>();
+    let (dst_chunks, dst_tail) = dst.as_chunks_mut::<4>();
+    for (xc, dc) in x_chunks.iter().zip(dst_chunks.iter_mut()) {
+        let xv = f32x4::from_slice(simd, xc);
+        let dv = f32x4::from_slice(simd, dc);
+        w_v.mul_add(xv, dv).store_slice(dc);
+    }
+    for (&xi, di) in x_tail.iter().zip(dst_tail.iter_mut()) {
+        *di = scale.mul_add(xi, *di);
+    }
+}
+
 /// Apply input-side Rademacher sign folding (`x[i] *= signs[i]`) followed by block-wise
 /// normalized Sylvester Walsh–Hadamard transform (`prism.hadamard.*`).
 pub fn apply_hadamard_sign_fold(
@@ -395,14 +522,15 @@ pub fn apply_hadamard_sign_fold(
             "Invalid Hadamard sign-fold dimensions.",
         ));
     }
-    let mut folded: Vec<f32> = input
-        .iter()
-        .zip(signs.iter())
-        .map(|(&x, &s)| if s < 0 { -x } else { x })
-        .collect();
-    for block in folded.chunks_exact_mut(block_size) {
-        sylvester_walsh_hadamard_in_place(block)?;
-    }
+    let mut folded = vec![0.0_f32; input.len()];
+    let norm = 1.0_f32 / usize_to_f32(block_size).sqrt();
+    let level = Level::new();
+    dispatch!(level, simd => {
+        sign_flip_simd(simd, input, signs, &mut folded);
+        for block in folded.chunks_exact_mut(block_size) {
+            fwht_simd_in_place(simd, block, norm);
+        }
+    });
     Ok(folded)
 }
 
@@ -516,6 +644,25 @@ impl LinearProjection {
         })
     }
 
+    /// Return the input-side `(signs, hadamard_block)` signature when this projection uses
+    /// `PQ2_0` or `PTQ1_0` block Walsh–Hadamard folding.
+    #[must_use]
+    pub const fn hadamard_signature(&self) -> Option<(&[i8], usize)> {
+        match &self.weight {
+            WeightQuantization::PQ2_0 {
+                hadamard_block,
+                signs,
+                ..
+            }
+            | WeightQuantization::PTQ1_0 {
+                hadamard_block,
+                signs,
+                ..
+            } => Some((signs.as_slice(), *hadamard_block)),
+            WeightQuantization::F32(_) | WeightQuantization::Q8_0 { .. } => None,
+        }
+    }
+
     /// Project one vector `input` (`[in_dim]`) into `[out_dim]`, optionally applying `lora`.
     pub fn forward_vec(
         &self,
@@ -527,13 +674,25 @@ impl LinearProjection {
 
     /// Project one vector `input` (`[in_dim]`) into `[out_dim]` using `fearless_simd` NEON
     /// and up to `threads` scoped row workers.
+    pub fn forward_vec_parallel(
+        &self,
+        input: &[f32],
+        lora: Option<&LoraProjectionPatch>,
+        threads: usize,
+    ) -> io::Result<Vec<f32>> {
+        self.forward_vec_with_pre_folded(input, None, lora, threads)
+    }
+
+    /// Project one vector `input` (`[in_dim]`) into `[out_dim]`, optionally reusing a pre-folded
+    /// Hadamard activation slice (`pre_folded`) shared across sibling projections (`q/k/v` or `gate/up`).
     #[allow(
         clippy::too_many_lines,
         reason = "Dispatches across F32, Q8_0, PQ2_0, and PTQ1_0 weight representations with optional scoped row parallelism."
     )]
-    pub fn forward_vec_parallel(
+    pub fn forward_vec_with_pre_folded(
         &self,
         input: &[f32],
+        pre_folded: Option<&[f32]>,
         lora: Option<&LoraProjectionPatch>,
         threads: usize,
     ) -> io::Result<Vec<f32>> {
@@ -548,6 +707,7 @@ impl LinearProjection {
             .clone()
             .unwrap_or_else(|| vec![0.0_f32; self.out_dim]);
         let worker_count = threads.clamp(1, 18).min(self.out_dim.max(1));
+        let level = Level::new();
 
         match &self.weight {
             WeightQuantization::F32(w) => {
@@ -559,15 +719,13 @@ impl LinearProjection {
                 }
                 let in_dim = self.in_dim;
                 let compute_slice = |row_offset: usize, dst_slice: &mut [f32]| {
-                    for (local_o, dst) in dst_slice.iter_mut().enumerate() {
-                        let o = row_offset + local_o;
-                        let row = &w[o * in_dim..(o + 1) * in_dim];
-                        let mut acc = *dst;
-                        for (&wi, &xi) in row.iter().zip(input.iter()) {
-                            acc = wi.mul_add(xi, acc);
+                    dispatch!(level, simd => {
+                        for (local_o, dst) in dst_slice.iter_mut().enumerate() {
+                            let o = row_offset + local_o;
+                            let row = &w[o * in_dim..(o + 1) * in_dim];
+                            *dst += f32_dot_simd(simd, row, input);
                         }
-                        *dst = acc;
-                    }
+                    });
                 };
                 run_row_chunks(&mut out, worker_count, compute_slice);
             }
@@ -581,20 +739,19 @@ impl LinearProjection {
                     ));
                 }
                 let compute_slice = |row_offset: usize, dst_slice: &mut [f32]| {
-                    for (local_o, dst) in dst_slice.iter_mut().enumerate() {
-                        let o = row_offset + local_o;
-                        let row_blocks = &blocks[o * blocks_per_row..(o + 1) * blocks_per_row];
-                        let mut acc = *dst;
-                        for (bi, blk) in row_blocks.iter().enumerate() {
-                            let x_slice = &input[bi * 32..(bi + 1) * 32];
-                            let mut b_sum = 0.0_f32;
-                            for (&q, &x) in blk.quants.iter().zip(x_slice.iter()) {
-                                b_sum = f32::from(q).mul_add(x, b_sum);
+                    dispatch!(level, simd => {
+                        for (local_o, dst) in dst_slice.iter_mut().enumerate() {
+                            let o = row_offset + local_o;
+                            let row_blocks = &blocks[o * blocks_per_row..(o + 1) * blocks_per_row];
+                            let mut acc = *dst;
+                            for (bi, blk) in row_blocks.iter().enumerate() {
+                                let x_slice = &input[bi * 32..(bi + 1) * 32];
+                                let b_sum = q8_block_dot_simd(simd, &blk.quants, x_slice);
+                                acc = blk.scale.mul_add(b_sum, acc);
                             }
-                            acc = blk.scale.mul_add(b_sum, acc);
+                            *dst = acc;
                         }
-                        *dst = acc;
-                    }
+                    });
                 };
                 run_row_chunks(&mut out, worker_count, compute_slice);
             }
@@ -605,10 +762,19 @@ impl LinearProjection {
                 hadamard_block,
                 signs,
             } => {
-                let x_folded = apply_hadamard_sign_fold(input, signs, *hadamard_block)?;
+                let owned_folded;
+                let x_folded: &[f32] = if let Some(pf) = pre_folded
+                    && pf.len() == self.in_dim
+                {
+                    pf
+                } else {
+                    owned_folded = apply_hadamard_sign_fold(input, signs, *hadamard_block)?;
+                    &owned_folded
+                };
                 let groups_per_row = self.in_dim / *group_size;
                 let bytes_per_row = self.in_dim / 4;
                 if *group_size == 0
+                    || !group_size.is_multiple_of(4)
                     || !self.in_dim.is_multiple_of(*group_size)
                     || !self.in_dim.is_multiple_of(4)
                     || scales.len() != self.out_dim * groups_per_row
@@ -620,6 +786,7 @@ impl LinearProjection {
                     ));
                 }
                 let gsize = *group_size;
+                let gbytes = gsize / 4;
                 let compute_slice = |row_offset: usize, dst_slice: &mut [f32]| {
                     for (local_o, dst) in dst_slice.iter_mut().enumerate() {
                         let o = row_offset + local_o;
@@ -628,14 +795,17 @@ impl LinearProjection {
                         let mut acc = *dst;
                         for (gi, &scale) in row_scales.iter().enumerate() {
                             let start_col = gi * gsize;
+                            let byte_slice = &row_bytes[gi * gbytes..(gi + 1) * gbytes];
+                            let x_group = &x_folded[start_col..start_col + gsize];
+                            let (x_quads, _) = x_group.as_chunks::<4>();
                             let mut g_sum = 0.0_f32;
-                            for idx in 0..gsize {
-                                let col = start_col + idx;
-                                let code = (row_bytes[col / 4] >> ((col % 4) * 2)) & 0b11;
-                                match code {
-                                    0 => g_sum -= x_folded[col],
-                                    2 => g_sum += x_folded[col],
-                                    _ => {}
+                            for (&b, xq) in byte_slice.iter().zip(x_quads.iter()) {
+                                for (sub, &xv) in xq.iter().enumerate() {
+                                    match (b >> (sub * 2)) & 0b11 {
+                                        0 => g_sum -= xv,
+                                        2 => g_sum += xv,
+                                        _ => {}
+                                    }
                                 }
                             }
                             acc = scale.mul_add(g_sum, acc);
@@ -653,10 +823,19 @@ impl LinearProjection {
                 hadamard_block,
                 signs,
             } => {
-                let x_folded = apply_hadamard_sign_fold(input, signs, *hadamard_block)?;
+                let owned_folded;
+                let x_folded: &[f32] = if let Some(pf) = pre_folded
+                    && pf.len() == self.in_dim
+                {
+                    pf
+                } else {
+                    owned_folded = apply_hadamard_sign_fold(input, signs, *hadamard_block)?;
+                    &owned_folded
+                };
                 let groups_per_row = self.in_dim / *group_size;
                 let bytes_per_row = self.in_dim / 8;
                 if *group_size == 0
+                    || !group_size.is_multiple_of(8)
                     || !self.in_dim.is_multiple_of(*group_size)
                     || !self.in_dim.is_multiple_of(8)
                     || scales.len() != self.out_dim * groups_per_row
@@ -669,6 +848,7 @@ impl LinearProjection {
                     ));
                 }
                 let gsize = *group_size;
+                let gbytes = gsize / 8;
                 let compute_slice = |row_offset: usize, dst_slice: &mut [f32]| {
                     for (local_o, dst) in dst_slice.iter_mut().enumerate() {
                         let o = row_offset + local_o;
@@ -678,16 +858,24 @@ impl LinearProjection {
                         let mut acc = *dst;
                         for (gi, &scale) in row_scales.iter().enumerate() {
                             let start_col = gi * gsize;
+                            let nz_slice = &row_nz[gi * gbytes..(gi + 1) * gbytes];
+                            let sg_slice = &row_sg[gi * gbytes..(gi + 1) * gbytes];
+                            let x_group = &x_folded[start_col..start_col + gsize];
+                            let (x_octs, _) = x_group.as_chunks::<8>();
                             let mut g_sum = 0.0_f32;
-                            for idx in 0..gsize {
-                                let col = start_col + idx;
-                                let byte_i = col / 8;
-                                let bit_i = col % 8;
-                                if (row_nz[byte_i] >> bit_i) & 1 != 0 {
-                                    if (row_sg[byte_i] >> bit_i) & 1 != 0 {
-                                        g_sum += x_folded[col];
-                                    } else {
-                                        g_sum -= x_folded[col];
+                            for ((&nz_b, &sg_b), xo) in
+                                nz_slice.iter().zip(sg_slice.iter()).zip(x_octs.iter())
+                            {
+                                if nz_b == 0 {
+                                    continue;
+                                }
+                                for (bit_i, &xv) in xo.iter().enumerate() {
+                                    if (nz_b >> bit_i) & 1 != 0 {
+                                        if (sg_b >> bit_i) & 1 != 0 {
+                                            g_sum += xv;
+                                        } else {
+                                            g_sum -= xv;
+                                        }
                                     }
                                 }
                             }
@@ -759,6 +947,25 @@ fn rms_norm_scale_simd<S: Simd>(
     }
 }
 
+#[allow(
+    clippy::inline_always,
+    reason = "fearless_simd dispatch! requires inline(always) to inherit target_feature attributes."
+)]
+#[inline(always)]
+fn rms_norm_in_place_simd<S: Simd>(simd: S, data: &mut [f32], weight: &[f32], scale: f32) {
+    let scale_v = f32x4::splat(simd, scale);
+    let (d_chunks, d_tail) = data.as_chunks_mut::<4>();
+    let (w_chunks, w_tail) = weight.as_chunks::<4>();
+    for (d_c, w_c) in d_chunks.iter_mut().zip(w_chunks.iter()) {
+        let xv = f32x4::from_slice(simd, d_c);
+        let wv = f32x4::from_slice(simd, w_c);
+        ((xv * scale_v) * wv).store_slice(d_c);
+    }
+    for (x, &w) in d_tail.iter_mut().zip(w_tail.iter()) {
+        *x = (*x * scale) * w;
+    }
+}
+
 /// RMS normalization (`x * weight / sqrt(mean(x^2) + eps)`).
 pub fn rms_norm(input: &[f32], weight: &[f32], eps: f32) -> io::Result<Vec<f32>> {
     if input.is_empty() || input.len() != weight.len() {
@@ -776,8 +983,60 @@ pub fn rms_norm(input: &[f32], weight: &[f32], eps: f32) -> io::Result<Vec<f32>>
     Ok(out)
 }
 
+/// In-place RMS normalization (`data[i] = (data[i] * scale) * weight[i]`), avoiding per-head heap allocations.
+pub fn rms_norm_in_place(data: &mut [f32], weight: &[f32], eps: f32) -> io::Result<()> {
+    if data.is_empty() || data.len() != weight.len() {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "RMSNorm dimension mismatch.",
+        ));
+    }
+    let inv_n = 1.0_f32 / usize_to_f32(data.len());
+    let mean_sq = data.iter().map(|&v| v * v).sum::<f32>() * inv_n;
+    let scale = 1.0_f32 / (mean_sq + eps).sqrt();
+    let level = Level::new();
+    dispatch!(level, simd => rms_norm_in_place_simd(simd, data, weight, scale));
+    Ok(())
+}
+
+#[allow(
+    clippy::inline_always,
+    reason = "fearless_simd dispatch! requires inline(always) to inherit target_feature attributes."
+)]
+#[inline(always)]
+fn rope_head_simd<S: Simd>(simd: S, lo: &mut [f32], hi: &mut [f32], cos: &[f32], sin: &[f32]) {
+    let (lo_chunks, lo_tail) = lo.as_chunks_mut::<4>();
+    let (hi_chunks, hi_tail) = hi.as_chunks_mut::<4>();
+    let (cos_chunks, cos_tail) = cos.as_chunks::<4>();
+    let (sin_chunks, sin_tail) = sin.as_chunks::<4>();
+    for (((lo_c, hi_c), cos_c), sin_c) in lo_chunks
+        .iter_mut()
+        .zip(hi_chunks.iter_mut())
+        .zip(cos_chunks.iter())
+        .zip(sin_chunks.iter())
+    {
+        let x0 = f32x4::from_slice(simd, lo_c);
+        let x1 = f32x4::from_slice(simd, hi_c);
+        let cv = f32x4::from_slice(simd, cos_c);
+        let sv = f32x4::from_slice(simd, sin_c);
+        x0.mul_add(cv, -(x1 * sv)).store_slice(lo_c);
+        x0.mul_add(sv, x1 * cv).store_slice(hi_c);
+    }
+    for (((x0_ref, x1_ref), &cos_v), &sin_v) in lo_tail
+        .iter_mut()
+        .zip(hi_tail.iter_mut())
+        .zip(cos_tail.iter())
+        .zip(sin_tail.iter())
+    {
+        let x0 = *x0_ref;
+        let x1 = *x1_ref;
+        *x0_ref = x0.mul_add(cos_v, -x1 * sin_v);
+        *x1_ref = x0.mul_add(sin_v, x1 * cos_v);
+    }
+}
+
 /// Apply 1D NEOX-style half-split `RoPE` (or collapsed 3D `MRoPE` when all 3 axes share `pos`)
-/// in place over `[num_heads, head_dim]`.
+/// in place over `[num_heads, head_dim]`, precomputing `(sin, cos)` once across all heads.
 pub fn apply_rope_neox_in_place(
     heads: &mut [f32],
     num_heads: usize,
@@ -794,19 +1053,24 @@ pub fn apply_rope_neox_in_place(
     let half = head_dim / 2;
     let hd_f = usize_to_f32(head_dim);
     let pos_f = usize_to_f32(pos);
-
-    for h in 0..num_heads {
-        let slice = &mut heads[h * head_dim..(h + 1) * head_dim];
-        for i in 0..half {
-            let exponent = usize_to_f32(2 * i) / hd_f;
-            let freq = pos_f / theta.powf(exponent);
-            let (sin_v, cos_v) = freq.sin_cos();
-            let x0 = slice[i];
-            let x1 = slice[i + half];
-            slice[i] = x0.mul_add(cos_v, -x1 * sin_v);
-            slice[i + half] = x0.mul_add(sin_v, x1 * cos_v);
-        }
+    let mut cos_table = Vec::with_capacity(half);
+    let mut sin_table = Vec::with_capacity(half);
+    for i in 0..half {
+        let exponent = usize_to_f32(2 * i) / hd_f;
+        let freq = pos_f / theta.powf(exponent);
+        let (sin_v, cos_v) = freq.sin_cos();
+        cos_table.push(cos_v);
+        sin_table.push(sin_v);
     }
+
+    let level = Level::new();
+    dispatch!(level, simd => {
+        for h in 0..num_heads {
+            let slice = &mut heads[h * head_dim..(h + 1) * head_dim];
+            let (lo, hi) = slice.split_at_mut(half);
+            rope_head_simd(simd, lo, hi, &cos_table, &sin_table);
+        }
+    });
     Ok(())
 }
 
@@ -852,6 +1116,7 @@ impl QwenDecoderLayer {
     /// Run a single-token step (`pos = kv.seq_len`), appending K/V into `kv` and applying optional `LoRA` patches.
     #[allow(
         clippy::too_many_arguments,
+        clippy::too_many_lines,
         reason = "Passes explicit GQA geometry, RoPE/RMSNorm scalars, KV cache, and optional LoRA adapter."
     )]
     pub fn forward_step(
@@ -874,19 +1139,62 @@ impl QwenDecoderLayer {
         let h_norm = rms_norm(input, &self.attn_norm_w, rms_eps)?;
         let patch = |proj: &LinearProjection| adapter.and_then(|a| a.patches.get(&proj.name));
 
-        let mut q = self.q_proj.forward_vec(&h_norm, patch(&self.q_proj))?;
-        let mut k = self.k_proj.forward_vec(&h_norm, patch(&self.k_proj))?;
-        let v = self.v_proj.forward_vec(&h_norm, patch(&self.v_proj))?;
+        let q_sig = self.q_proj.hadamard_signature();
+        let k_sig = self.k_proj.hadamard_signature();
+        let v_sig = self.v_proj.hadamard_signature();
+        let shared_qkv_folded = if let Some((signs, block)) = q_sig
+            && (k_sig == q_sig || v_sig == q_sig)
+        {
+            Some((
+                signs,
+                block,
+                apply_hadamard_sign_fold(&h_norm, signs, block)?,
+            ))
+        } else {
+            None
+        };
+        let qkv_fold_for = |sig: Option<(&[i8], usize)>| -> Option<&[f32]> {
+            shared_qkv_folded.as_ref().and_then(|(s, b, buf)| {
+                if sig == Some((*s, *b)) {
+                    Some(buf.as_slice())
+                } else {
+                    None
+                }
+            })
+        };
+
+        let mut q = self.q_proj.forward_vec_with_pre_folded(
+            &h_norm,
+            qkv_fold_for(q_sig),
+            patch(&self.q_proj),
+            1,
+        )?;
+        let mut k = self.k_proj.forward_vec_with_pre_folded(
+            &h_norm,
+            qkv_fold_for(k_sig),
+            patch(&self.k_proj),
+            1,
+        )?;
+        let v = self.v_proj.forward_vec_with_pre_folded(
+            &h_norm,
+            qkv_fold_for(v_sig),
+            patch(&self.v_proj),
+            1,
+        )?;
 
         for h in 0..num_q_heads {
-            let slice = &mut q[h * head_dim..(h + 1) * head_dim];
-            let normed = rms_norm(slice, &self.q_norm_w, rms_eps)?;
-            slice.copy_from_slice(&normed);
+            rms_norm_in_place(
+                &mut q[h * head_dim..(h + 1) * head_dim],
+                &self.q_norm_w,
+                rms_eps,
+            )?;
         }
         for h in 0..num_kv_heads {
-            let slice = &mut k[h * head_dim..(h + 1) * head_dim];
-            let normed = rms_norm(slice, &self.k_norm_w, rms_eps)?;
-            slice.copy_from_slice(&normed);
+            rms_norm_in_place(
+                &mut k[h * head_dim..(h + 1) * head_dim],
+                &self.k_norm_w,
+                rms_eps,
+            )?;
         }
 
         let pos = kv.seq_len;
@@ -904,40 +1212,37 @@ impl QwenDecoderLayer {
 
         let mut attn_out = vec![0.0_f32; num_q_heads * head_dim];
         let mut scores = vec![0.0_f32; total_seq];
+        let level = Level::new();
 
-        for qh in 0..num_q_heads {
-            let kvh = qh / gqa_ratio;
-            let q_vec = &q[qh * head_dim..(qh + 1) * head_dim];
-            let mut max_score = f32::NEG_INFINITY;
-            for t in 0..total_seq {
-                let k_vec =
-                    &kv.k[t * kv_stride + kvh * head_dim..t * kv_stride + (kvh + 1) * head_dim];
-                let mut dot = 0.0_f32;
-                for (&qi, &ki) in q_vec.iter().zip(k_vec.iter()) {
-                    dot = qi.mul_add(ki, dot);
+        dispatch!(level, simd => {
+            for qh in 0..num_q_heads {
+                let kvh = qh / gqa_ratio;
+                let q_vec = &q[qh * head_dim..(qh + 1) * head_dim];
+                let mut max_score = f32::NEG_INFINITY;
+                for (t, score_slot) in scores.iter_mut().enumerate() {
+                    let k_vec =
+                        &kv.k[t * kv_stride + kvh * head_dim..t * kv_stride + (kvh + 1) * head_dim];
+                    let s = f32_dot_simd(simd, q_vec, k_vec) * scale;
+                    *score_slot = s;
+                    if s > max_score {
+                        max_score = s;
+                    }
                 }
-                let s = dot * scale;
-                scores[t] = s;
-                if s > max_score {
-                    max_score = s;
+                let mut sum_exp = 0.0_f32;
+                for s in &mut scores {
+                    *s = (*s - max_score).exp();
+                    sum_exp += *s;
                 }
-            }
-            let mut sum_exp = 0.0_f32;
-            for s in &mut scores {
-                *s = (*s - max_score).exp();
-                sum_exp += *s;
-            }
-            let inv_sum = 1.0_f32 / sum_exp.max(1e-12_f32);
-            let out_head = &mut attn_out[qh * head_dim..(qh + 1) * head_dim];
-            for (t, &prob_unnorm) in scores.iter().enumerate() {
-                let w = prob_unnorm * inv_sum;
-                let v_vec =
-                    &kv.v[t * kv_stride + kvh * head_dim..t * kv_stride + (kvh + 1) * head_dim];
-                for (dst, &vi) in out_head.iter_mut().zip(v_vec.iter()) {
-                    *dst = w.mul_add(vi, *dst);
+                let inv_sum = 1.0_f32 / sum_exp.max(1e-12_f32);
+                let out_head = &mut attn_out[qh * head_dim..(qh + 1) * head_dim];
+                for (t, &prob_unnorm) in scores.iter().enumerate() {
+                    let w = prob_unnorm * inv_sum;
+                    let v_vec =
+                        &kv.v[t * kv_stride + kvh * head_dim..t * kv_stride + (kvh + 1) * head_dim];
+                    axpy_simd(simd, w, v_vec, out_head);
                 }
             }
-        }
+        });
 
         let o_vec = self.o_proj.forward_vec(&attn_out, patch(&self.o_proj))?;
         let mut x_res: Vec<f32> = input
@@ -947,8 +1252,27 @@ impl QwenDecoderLayer {
             .collect();
 
         let h2 = rms_norm(&x_res, &self.ffn_norm_w, rms_eps)?;
-        let gate = self.gate_proj.forward_vec(&h2, patch(&self.gate_proj))?;
-        let up = self.up_proj.forward_vec(&h2, patch(&self.up_proj))?;
+        let gate_sig = self.gate_proj.hadamard_signature();
+        let up_sig = self.up_proj.hadamard_signature();
+        let shared_ffn_folded = if let Some((signs, block)) = gate_sig
+            && up_sig == gate_sig
+        {
+            Some(apply_hadamard_sign_fold(&h2, signs, block)?)
+        } else {
+            None
+        };
+        let gate = self.gate_proj.forward_vec_with_pre_folded(
+            &h2,
+            shared_ffn_folded.as_deref(),
+            patch(&self.gate_proj),
+            1,
+        )?;
+        let up = self.up_proj.forward_vec_with_pre_folded(
+            &h2,
+            shared_ffn_folded.as_deref(),
+            patch(&self.up_proj),
+            1,
+        )?;
         let swiglu: Vec<f32> = gate
             .iter()
             .zip(up.iter())
@@ -960,9 +1284,7 @@ impl QwenDecoderLayer {
         let down = self
             .down_proj
             .forward_vec(&swiglu, patch(&self.down_proj))?;
-        for (dst, &d) in x_res.iter_mut().zip(down.iter()) {
-            *dst += d;
-        }
+        dispatch!(level, simd => axpy_simd(simd, 1.0_f32, &down, &mut x_res));
         Ok(x_res)
     }
 }
@@ -1541,6 +1863,33 @@ mod tests {
             proj_par.forward_vec(&x4, None)?,
             proj_par.forward_vec_parallel(&x4, None, 4)?
         );
+
+        let q8_proj = LinearProjection::new(
+            "code_pred.blk.0.attn_q.weight",
+            32,
+            2,
+            WeightQuantization::Q8_0 {
+                blocks: vec![
+                    super::Q8Block {
+                        scale: 0.25,
+                        quants: [2_i8; 32],
+                    },
+                    super::Q8Block {
+                        scale: -0.5,
+                        quants: [-1_i8; 32],
+                    },
+                ],
+            },
+            None,
+        )?;
+        let q8_out = q8_proj.forward_vec(&[0.5_f32; 32], None)?;
+        assert!((q8_out[0] - 8.0_f32).abs() < 1e-6);
+        assert!((q8_out[1] - 8.0_f32).abs() < 1e-6);
+
+        let mut in_place = x4;
+        let out_of_place = super::rms_norm(&x4, &[1.0, 0.5, 1.5, 2.0], 1e-6)?;
+        super::rms_norm_in_place(&mut in_place, &[1.0, 0.5, 1.5, 2.0], 1e-6)?;
+        assert_eq!(out_of_place.as_slice(), in_place.as_slice());
         Ok(())
     }
 }

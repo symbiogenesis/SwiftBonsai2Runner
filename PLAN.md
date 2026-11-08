@@ -850,7 +850,11 @@ not close pending hosted integration or full-model acceptance.
      or `Q4_K_M` for the 5-layer `CodePredictor`, and keep the 12 Hz ConvNeXt/`SnakeBeta` audio
      codec and ECAPA-TDNN speaker encoder at `Q8_0`/`F16`. Execute the ternary `Talker`
      projections through shared `prism-inference` Hadamard transform + `PQ2_0`/`PTQ1_0` NEON CPU
-     kernels and Snapdragon X2 Hexagon NPU `native-q2` (`HTP_TYPE_Q2_0`) resident offload.
+     kernels (`f32x4` SIMD `F32`/`Q8_0` row projections, byte-unrolled `PQ2_0`/`PTQ1_0` group
+     loops, shared pre-folded Hadamard activations across `q/k/v` and `gate/up`, precomputed
+     `f32x4` NEOX `RoPE`, in-place `RMSNorm`, and `f32x4` GQA scoring/value accumulation in
+     `src/speech-tts/src/engine.rs`) and Snapdragon X2 Hexagon NPU `native-q2` (`HTP_TYPE_Q2_0`)
+     resident offload.
 
 ## Creative quality, adapters and memory
 
