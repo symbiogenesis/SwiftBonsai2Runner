@@ -110,10 +110,14 @@ commit measured **7.20 GiB** (`7,726,850,048–7,727,276,032` bytes) across all 
 Each fresh owner used the fixed prompt `Count from 1 to 100.`, thinking off,
 seed 42 and the standard Swift adapter at scale 1.3. All seven measured responses
 reported eight completion tokens and returned `1, 2, 3,` before hitting the cap.
-Runner now pins **Rust Prism `0.1.19`** (`951cc88`), which adds the `0.1.15`–`0.1.19`
-CPU NEON, multi-worker GDN/attention/conv/SwiGLU, `4x4`/`8x8` tiled-prefill GEMM,
-and Snapdragon X2 6-arena 168-projection `native-q2` resident NPU optimizations;
-an updated end-to-end HTTP timing capture on `0.1.19` remains pending.
+Runner now pins **Rust Prism `0.1.19`** (`951cc88`, with source `c8e96d7`..`cada2ca`), which
+adds the `0.1.15`–`0.1.19` CPU NEON, 18-worker row parallelism (`MAX_ROW_WORKERS = 18`),
+`TL1` nibble lookup tables (`Tl1BlockLut`), `TQ1_0`/`TQ2_0` LUT + NEON SIMD, direct
+`PTQ1 × Q8_K` dot kernels, multi-worker GDN/attention/conv/SwiGLU, `4x4`/`8x8` tiled-prefill
+GEMM, training-free suffix speculative decoding (`SuffixDecoding`) with transactional block
+verification, and Snapdragon X2 6-arena 168-projection `native-q2` resident NPU optimizations
+(including 8-op `dspqueue` batching and fused `ffn_gate + ffn_up + HTP_OP_GLU_SWIGLU` VTCM
+chaining); an updated end-to-end HTTP timing capture on `0.1.19` remains pending.
 
 ### Snapdragon X2 Hexagon NPU (`v81`) projection and layer timings
 

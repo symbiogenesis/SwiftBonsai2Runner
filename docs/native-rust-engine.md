@@ -111,6 +111,7 @@ API has a registry release; the core runtime crate's publication policy is uncha
 | Reused sampler candidates; 32-channel attention-value tiles with at most 2 KiB accumulator payload | Transaction clones exclude scratch; frozen sampler/graph and bitwise attention fixtures preserve arithmetic/recovery. No measured TPS or model-peak-RAM gain. |
 | Atomic checkpoint restore | Stages fallible KV copies, then restores recurrent/convolution bits into live storage, preserving independent checkpoints and failure atomicity. Avoids 156,893,184 bytes (149.625 MiB) transient Swift payload. |
 | Aligned F32/F16 projections | Native-backed operator evidence only; generic, BF16 and unqualified tails are unchanged. No broader PTQ1 or reduced-admission claim. |
+| 18-worker ceiling, `TL1` LUT, `PTQ1×Q8_K` & `SuffixDecoding` | Source commits `c8e96d7`..`cada2ca` raise `MAX_ROW_WORKERS` to 18, add `Tl1BlockLut`/`dot_ptq1_q8k`/NEON `TQ2_0`, 8-op NPU batching + fused `GluSwiglu` VTCM chaining, and `SuffixDrafter`/Leviathan/block-verifier APIs; full-model device qualification remains separate. |
 
 | Area | Contract |
 | --- | --- |

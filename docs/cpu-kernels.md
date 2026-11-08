@@ -75,7 +75,8 @@ inventory.
 | --- | --- |
 | PQ2 rows divisible by 256 | Q8_K activation groups; each 128-weight block decodes two-bit codes to -1, 0, 1, 2; preserve integer dots and ordered floating scales/adds |
 | Odd-group PQ2 | Four independent Q8_0 scales per 128 weights, then ordered sums |
-| PTQ1 | Direct canonical base-three decode, four Q8_0 groups per 128 weights, then block scale; no intermediate PQ2 block |
+| PTQ1 | Direct canonical base-three decode, four Q8_0 groups per 128 weights (or direct `dot_ptq1_q8k` over `Q8_K` blocks), then block scale; no intermediate PQ2 block |
+| TQ1_0 / TQ2_0 / TL1 LUT | Compile-time `TQ1_BYTE_LUT`/`TQ2_BYTE_LUT` tables, 128-bit NEON `dot_tq2_block`, and 16-entry INT16 `Tl1BlockLut` nibble tables |
 | Hadamard/elementwise work | Preserve stage boundaries, signs, axes/basis, normalization and multiply/add order |
 | Activation quantizers | Preserve maxima/ties, clipping, scales, rounding and rejection |
 | Floating reductions/RMS/attention/recurrent work | Rounded f32 products and specified f64 accumulation; reassociation has a separate numerical contract |

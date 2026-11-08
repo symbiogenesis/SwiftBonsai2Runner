@@ -6,7 +6,8 @@ initial layers `blk.0..=blk.26`, `2,888,663,040` resident weight bytes / `2,754.
 `<= 480` MiB `FastRPC` weight arenas
 `[502_824_960, 460_062_720, 502_824_960, 460_062_720, 502_824_960, 460_062_720]` via
 `req.n_bufs > 1` and `tensor.bi > 0`, pre-warmed at worker startup with scoped `<= 92` KiB
-`dspqueue` cache flushes, batched 2/3-op sibling and 4-op multi-token tiled-prefill submissions, and
+`dspqueue` cache flushes, batched 2/3-op sibling, 4/8-op multi-token tiled-prefill, and fused
+`ffn_gate + ffn_up + HTP_OP_GLU_SWIGLU` VTCM-chained submissions, and
 zero per-token fixture allocation) by default when the verified signed GenieX v0.10.0 runtime
 package (`<data_directory>/hexagon/runtime/libggml-htp-v81.so`) and CDSP driver are present, falling
 back cleanly to 4-worker NEON CPU when unavailable. The [experimental lock](../config/hexagon-experiment.lock.json) records

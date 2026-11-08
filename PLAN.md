@@ -1196,6 +1196,17 @@ release bundle:
   pair), and batched multi-token full-attention tiled prefill (`full_attention_tile` with
   per-tile shared `rope_frequencies` across all 16 full-attention layers and single-pass
   grouped-KV cache scans across worker token chunks) (`5656461`).
+- Eighteen-worker CPU row-parallelism ceiling (`MAX_ROW_WORKERS = 18` in `cd5ee64` matching
+  the 18-core Snapdragon X2 Elite / X2 Elite Extreme topology), `TL1`-style 16-entry INT16
+  activation-pair nibble lookup tables (`Tl1BlockLut` in `src/kernels/tquants.rs` for
+  contiguous and 32-strided 128-element ternary blocks), compile-time `TQ1_BYTE_LUT` and
+  `TQ2_BYTE_LUT` byte tables, 128-bit NEON SIMD `TQ2_0` block dot products
+  (`neon::dot_tq2_block`), direct `PTQ1 × Q8_K` dot products (`dot_ptq1_q8k` in
+  `src/kernels.rs`), and training-free prompt/history suffix speculative decoding
+  (`SuffixDraftConfig`, `SuffixDrafter` / `SuffixDecoding`), Leviathan stochastic
+  verification (`verify_stochastic_step`), and transactional short-chain block verification
+  (`Runtime::generate_speculative`, `Runtime::verify_draft_block`, and
+  `SwiftSession::complete_speculative` in `cada2ca`).
 
 Remaining CPU kernel, graph-level parallelism and tiled-prefill optimizations to
 implement and qualify in Prism:
@@ -1547,8 +1558,14 @@ AC-connected device receipts and the pinned Runner release-bundle `0.1.19` (`951
   `[502_824_960, 460_062_720, 502_824_960, 460_062_720, 502_824_960, 460_062_720]` byte arenas up to
   `480 MiB` (`2,888,663,040` bytes / `2,754.84 MiB` total across `blk.0..=blk.26` with zero wasted
   bytes within CDSP `v-size = 3,000 MiB` on `v81`, `DEFAULT_NATIVE_Q2_PROJECTIONS = 168` in
-  `e60b11f`), 4-op multi-operation resident `dspqueue` submissions (`submit_resident_multi2..4` and
-  `image_multi_resident` with shared-activation pointer deduplication), and multi-token
+  `e60b11f`, with full 6-arena `total_used` accounting fixed in `c8e96d7`), 4-op and 8-op
+  multi-operation resident `dspqueue` submissions (`submit_resident_multi2..4`,
+  `submit_resident_multi8` and `image_multi_resident` with shared-activation pointer
+  deduplication), intra-layer fused 3-op `ffn_gate` + `ffn_up` + `HTP_OP_GLU_SWIGLU` VTCM
+  tensor chaining (`image_ffn_swiglu_resident`, `submit_resident_ffn_swiglu`, and
+  `project_f32_ffn_swiglu` in `c8e96d7`, keeping intermediate `[17408]` FFN gate/up vectors
+  in DSP VTCM via `HTP_OP_FLAG_BOTH_IN_VTCM` and writing back only one `69,632`-byte
+  post-`SwiGLU` `F32` vector to DDR), and multi-token
   tiled-prefill NPU dispatch (`project_f32_tokens`, `project_f32_pair_tokens` and
   `project_f32_triple_tokens` wired through `Qwen35::ingest_cpu_tile`, `gdn::recurrent_tile`,
   `PlacedProjectionExecutor` and `WorkerThreadHexagonExecutor` in `e8deb79`/`e60b11f`), building on
