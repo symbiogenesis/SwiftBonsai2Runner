@@ -1,0 +1,1327 @@
+//! Pure-Rust Qwen3-TTS engine (`Talker`, `CodePredictor`, `PromptBuilder`, `LoRA` overlays,
+//! Bonsai-style ternary `PQ2_0`/`PTQ1_0` with Hadamard folding, and `hexagon-native-rpc` NPU dispatch).
+//!
+//! Implements the pure-Rust execution stack for `Qwen3-TTS-12Hz-1.7B-VoiceDesign` and `Base`:
+//! - 28-layer `Talker` transformer (`RMSNorm`, GQA with QK-norm, 3D `MRoPE` / 1D NEOX `RoPE`, `SwiGLU`, KV cache).
+//! - Weight formats: `F32`, `Q8_0`, and Bonsai-style group-128 ternary `PQ2_0` / lossless `PTQ1_0`
+//!   dual-bitplane repack with block-1024 Sylvester Walsh–Hadamard + sign folding (`prism.hadamard.*`).
+//! - Optional low-rank / rank-one `LoRA` adapter overlays (`TalkerLoraAdapter`) with bit-exact
+//!   loaded-at-zero (`scale == 0.0`) identity.
+//! - 5-layer `CodePredictor` (`mtp_proj`, 15 residual codebooks `1..=15`) with decoupled
+//!   `subtalker_*` sampling parameters.
+//! - `PromptBuilder` and `PromptCache` with cached `icl_codec_stream` and `icl_ref_text_stream`.
+//! - `hexagon-native-rpc` NPU packet/session dispatcher (`HtpPrefillPacket`, `HtpQuantType::NativeQ2`)
+//!   preserving the system `qcnspmcdm` `libcdsprpc.dll` `FastRPC` boundary.
+#![forbid(unsafe_code)]
+#![allow(
+    clippy::missing_errors_doc,
+    reason = "Internal tensor, quantization, and layer shape checks return io::ErrorKind::InvalidInput or InvalidData."
+)]
+
+use std::{collections::HashMap, io};
+
+use crate::{codec::codec_ref_key, sampling};
+
+/// Number of residual acoustic codebooks predicted by `CodePredictor` (`15`).
+pub const NUM_ACOUSTIC_CODEBOOKS: usize = 15;
+/// Total RVQ codebooks per 12.5 Hz frame (`1` semantic + `15` acoustic = `16`).
+pub const TOTAL_CODE_GROUPS: usize = 16;
+/// Default Hadamard block size for the 1.7B `Talker` (`1024`, dividing `hidden_size = 2048`).
+pub const TALKER_HADAMARD_BLOCK_SIZE: usize = 1024;
+/// Default ternary quantization group size (`128`).
+pub const TERNARY_GROUP_SIZE: usize = 128;
+
+#[inline]
+fn usize_to_f32(n: usize) -> f32 {
+    u16::try_from(n).map_or_else(
+        |_| {
+            let hi = u16::try_from(n >> 16).unwrap_or(u16::MAX);
+            let lo = u16::try_from(n & 0xFFFF).unwrap_or(0);
+            f32::from(hi).mul_add(65_536.0_f32, f32::from(lo))
+        },
+        f32::from,
+    )
+}
+
+/// Decoupled sampling parameters for `Talker` (codebook 0) vs. `CodePredictor` (codebooks `1..=15`).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct DecoupledSamplingParams {
+    /// `Talker` semantic temperature (`0.9` for `VoiceDesign`, `0.85` for `Base` synthesis).
+    pub temperature: f32,
+    /// `Talker` semantic top-k (`50`).
+    pub top_k: i32,
+    /// `Talker` semantic top-p (`1.0` for `VoiceDesign`, `0.9` for `Base` synthesis).
+    pub top_p: f32,
+    /// Windowed (`72`-token) repetition penalty (`1.05`).
+    pub repetition_penalty: f32,
+    /// `CodePredictor` acoustic temperature (`0.9` for `VoiceDesign`, `0.6` for `Base` synthesis).
+    pub subtalker_temperature: f32,
+    /// `CodePredictor` acoustic top-k (`50`).
+    pub subtalker_top_k: i32,
+    /// `CodePredictor` acoustic top-p (`1.0` for `VoiceDesign`, `0.9` for `Base` synthesis).
+    pub subtalker_top_p: f32,
+}
+
+impl DecoupledSamplingParams {
+    /// Expressive `VoiceDesign` reference bootstrap sampling profile.
+    #[must_use]
+    pub const fn voice_design() -> Self {
+        Self {
+            temperature: 0.9,
+            top_k: 50,
+            top_p: 1.0,
+            repetition_penalty: 1.05,
+            subtalker_temperature: 0.9,
+            subtalker_top_k: 50,
+            subtalker_top_p: 1.0,
+        }
+    }
+
+    /// High-stability `Base` voice-clone synthesis sampling profile with cooled `CodePredictor`.
+    #[must_use]
+    pub const fn base_clone() -> Self {
+        Self {
+            temperature: 0.85,
+            top_k: 50,
+            top_p: 0.9,
+            repetition_penalty: 1.05,
+            subtalker_temperature: 0.6,
+            subtalker_top_k: 50,
+            subtalker_top_p: 0.9,
+        }
+    }
+}
+
+/// One 32-element `Q8_0` quantization block.
+#[derive(Clone, Debug, PartialEq)]
+pub struct Q8Block {
+    /// Per-block floating-point scale.
+    pub scale: f32,
+    /// 32 signed 8-bit quantized values.
+    pub quants: [i8; 32],
+}
+
+/// Supported weight representations for `Talker` and `CodePredictor` linear projections.
+#[derive(Clone, Debug, PartialEq)]
+pub enum WeightQuantization {
+    /// Unquantized row-major `F32` weights `[out_dim * in_dim]`.
+    F32(Vec<f32>),
+    /// 32-element block-quantized `Q8_0` weights.
+    Q8_0 {
+        /// Quantized 32-weight blocks.
+        blocks: Vec<Q8Block>,
+    },
+    /// Bonsai-style 2-bit packed ternary (`PQ2_0`, 4 trits per byte: `0 -> -1, 1 -> 0, 2 -> +1`)
+    /// with group-128 scales and input-side block Walsh–Hadamard + sign folding.
+    PQ2_0 {
+        /// Quantization group size (`128`).
+        group_size: usize,
+        /// Per-group scales `[out_dim * (in_dim / group_size)]`.
+        scales: Vec<f32>,
+        /// Packed 2-bit trits `[out_dim * (in_dim / 4)]`.
+        packed_trits: Vec<u8>,
+        /// Walsh–Hadamard transform block size (`1024`, or power-of-two dividing `in_dim`).
+        hadamard_block: usize,
+        /// Input-side Rademacher signs (`+1` or `-1`) `[in_dim]`.
+        signs: Vec<i8>,
+    },
+    /// Lossless dual-bitplane (`nz_mask`, `sign_mask`) ternary repack (`PTQ1_0` / `HTP_TYPE_Q2_0`).
+    PTQ1_0 {
+        /// Quantization group size (`128`).
+        group_size: usize,
+        /// Per-group scales `[out_dim * (in_dim / group_size)]`.
+        scales: Vec<f32>,
+        /// Non-zero bitplane (8 weights per byte; bit `b` is `1` when weight is `!= 0`).
+        nz_mask: Vec<u8>,
+        /// Sign bitplane (8 weights per byte; bit `b` is `1` when weight is `+1`, `0` when `-1`).
+        sign_mask: Vec<u8>,
+        /// Walsh–Hadamard transform block size (`1024`, or power-of-two dividing `in_dim`).
+        hadamard_block: usize,
+        /// Input-side Rademacher signs (`+1` or `-1`) `[in_dim]`.
+        signs: Vec<i8>,
+    },
+}
+
+/// Returns `true` if `tensor_name` is an eligible 28-layer `Talker` projection for
+/// `PQ2_0` / `PTQ1_0` ternary compression (`talker.blk.{l}.attn_{q,k,v,output}.weight`
+/// or `talker.blk.{l}.ffn_{gate,up,down}.weight`).
+#[must_use]
+pub fn is_talker_ternary_eligible(tensor_name: &str) -> bool {
+    let Some(rest) = tensor_name.strip_prefix("talker.blk.") else {
+        return false;
+    };
+    let Some((layer_str, suffix)) = rest.split_once('.') else {
+        return false;
+    };
+    if layer_str.is_empty() || !layer_str.bytes().all(|b| b.is_ascii_digit()) {
+        return false;
+    }
+    matches!(
+        suffix,
+        "attn_q.weight"
+            | "attn_k.weight"
+            | "attn_v.weight"
+            | "attn_output.weight"
+            | "ffn_gate.weight"
+            | "ffn_up.weight"
+            | "ffn_down.weight"
+    )
+}
+
+/// Enforce the Qwen3-TTS mixed-precision ternary policy: never ternarize `CodePredictor`,
+/// `codec_head`, `text_embd`, `codec_embd`, `text_proj`, norms, codec, or speaker encoder.
+pub fn validate_talker_ternary_policy(
+    tensor_name: &str,
+    quant: &WeightQuantization,
+) -> io::Result<()> {
+    if matches!(
+        quant,
+        WeightQuantization::PQ2_0 { .. } | WeightQuantization::PTQ1_0 { .. }
+    ) && !is_talker_ternary_eligible(tensor_name)
+    {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "Tensor is excluded from PQ2_0/PTQ1_0 ternary quantization by speech policy.",
+        ));
+    }
+    Ok(())
+}
+
+/// Losslessly repack `PQ2_0` 2-bit trits into `PTQ1_0` dual bitplanes (`nz_mask`, `sign_mask`).
+pub fn repack_pq2_to_ptq1(quant: &WeightQuantization) -> io::Result<WeightQuantization> {
+    let WeightQuantization::PQ2_0 {
+        group_size,
+        scales,
+        packed_trits,
+        hadamard_block,
+        signs,
+    } = quant
+    else {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "Expected PQ2_0 weight tensor for PTQ1_0 repack.",
+        ));
+    };
+    if !packed_trits.len().is_multiple_of(2) {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "PQ2_0 packed_trits length must be even (8 trits per bitplane byte).",
+        ));
+    }
+    let out_bytes = packed_trits.len() / 2;
+    let mut nz_mask = Vec::with_capacity(out_bytes);
+    let mut sign_mask = Vec::with_capacity(out_bytes);
+
+    let (pairs, _) = packed_trits.as_chunks::<2>();
+    for pair in pairs {
+        let mut nz = 0_u8;
+        let mut sg = 0_u8;
+        for (byte_idx, &b) in pair.iter().enumerate() {
+            for sub in 0..4 {
+                let code = (b >> (sub * 2)) & 0b11;
+                let bit_pos = byte_idx * 4 + sub;
+                match code {
+                    0 => {
+                        // -1
+                        nz |= 1_u8 << bit_pos;
+                    }
+                    1 => {
+                        // 0
+                    }
+                    2 => {
+                        // +1
+                        nz |= 1_u8 << bit_pos;
+                        sg |= 1_u8 << bit_pos;
+                    }
+                    _ => {
+                        return Err(io::Error::new(
+                            io::ErrorKind::InvalidData,
+                            "Invalid trit code 3 in PQ2_0 tensor.",
+                        ));
+                    }
+                }
+            }
+        }
+        nz_mask.push(nz);
+        sign_mask.push(sg);
+    }
+
+    Ok(WeightQuantization::PTQ1_0 {
+        group_size: *group_size,
+        scales: scales.clone(),
+        nz_mask,
+        sign_mask,
+        hadamard_block: *hadamard_block,
+        signs: signs.clone(),
+    })
+}
+
+/// In-place normalized Sylvester Walsh–Hadamard transform over a power-of-two slice.
+pub fn sylvester_walsh_hadamard_in_place(data: &mut [f32]) -> io::Result<()> {
+    let n = data.len();
+    if n == 0 || !n.is_power_of_two() {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "Hadamard block size must be a positive power of two.",
+        ));
+    }
+    let mut len = 1_usize;
+    while len < n {
+        let step = len * 2;
+        for base in (0..n).step_by(step) {
+            for i in 0..len {
+                let a = data[base + i];
+                let b = data[base + i + len];
+                data[base + i] = a + b;
+                data[base + i + len] = a - b;
+            }
+        }
+        len = step;
+    }
+    let norm = 1.0_f32 / usize_to_f32(n).sqrt();
+    for val in data.iter_mut() {
+        *val *= norm;
+    }
+    Ok(())
+}
+
+/// Apply input-side Rademacher sign folding (`x[i] *= signs[i]`) followed by block-wise
+/// normalized Sylvester Walsh–Hadamard transform (`prism.hadamard.*`).
+pub fn apply_hadamard_sign_fold(
+    input: &[f32],
+    signs: &[i8],
+    block_size: usize,
+) -> io::Result<Vec<f32>> {
+    if input.is_empty()
+        || input.len() != signs.len()
+        || block_size == 0
+        || !block_size.is_power_of_two()
+        || !input.len().is_multiple_of(block_size)
+    {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "Invalid Hadamard sign-fold dimensions.",
+        ));
+    }
+    let mut folded: Vec<f32> = input
+        .iter()
+        .zip(signs.iter())
+        .map(|(&x, &s)| if s < 0 { -x } else { x })
+        .collect();
+    for block in folded.chunks_exact_mut(block_size) {
+        sylvester_walsh_hadamard_in_place(block)?;
+    }
+    Ok(folded)
+}
+
+/// Optional rank-one or low-rank `LoRA` adapter patch for a single linear projection.
+#[derive(Clone, Debug)]
+pub struct LoraProjectionPatch {
+    /// Input feature dimension.
+    pub in_dim: usize,
+    /// Output feature dimension.
+    pub out_dim: usize,
+    /// Adapter rank (`>= 1`).
+    pub rank: usize,
+    /// `LoRA` scaling `alpha / rank`.
+    pub alpha_over_rank: f32,
+    /// Runtime adapter strength (`0.0` guarantees bit-exact base identity).
+    pub scale: f32,
+    /// Down-projection `[rank * in_dim]`.
+    pub lora_a: Vec<f32>,
+    /// Up-projection `[out_dim * rank]`.
+    pub lora_b: Vec<f32>,
+}
+
+impl LoraProjectionPatch {
+    /// Add `scale * alpha_over_rank * (lora_b @ (lora_a @ x))` onto `output` (`[out_dim]`).
+    /// When `scale == 0.0`, returns immediately without touching `output` (0-ULP identity).
+    pub fn apply(&self, input: &[f32], output: &mut [f32]) -> io::Result<()> {
+        if input.len() != self.in_dim
+            || output.len() != self.out_dim
+            || self.lora_a.len() != self.rank * self.in_dim
+            || self.lora_b.len() != self.out_dim * self.rank
+        {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "Invalid LoRA projection patch dimensions.",
+            ));
+        }
+        if self.scale == 0.0_f32 {
+            return Ok(());
+        }
+        let eff_scale = self.scale * self.alpha_over_rank;
+        let mut mid = vec![0.0_f32; self.rank];
+        for r in 0..self.rank {
+            let a_row = &self.lora_a[r * self.in_dim..(r + 1) * self.in_dim];
+            let mut sum = 0.0_f32;
+            for (&a, &x) in a_row.iter().zip(input.iter()) {
+                sum = a.mul_add(x, sum);
+            }
+            mid[r] = sum * eff_scale;
+        }
+        for o in 0..self.out_dim {
+            let b_row = &self.lora_b[o * self.rank..(o + 1) * self.rank];
+            let mut delta = 0.0_f32;
+            for (&b, &m) in b_row.iter().zip(mid.iter()) {
+                delta = b.mul_add(m, delta);
+            }
+            output[o] += delta;
+        }
+        Ok(())
+    }
+}
+
+/// Named collection of `LoRA` projection overlays attached to a shared `Base` `Talker`
+/// (e.g., regional-accent or language adapters such as `aguken-ai/qwen3-tts-indic-finetuned`).
+#[derive(Clone, Debug, Default)]
+pub struct TalkerLoraAdapter {
+    /// Adapter profile identifier.
+    pub name: String,
+    /// Map from GGUF tensor name (e.g. `"talker.blk.0.attn_q.weight"`) to its `LoRA` patch.
+    pub patches: HashMap<String, LoraProjectionPatch>,
+}
+
+/// Matrix-vector / matrix-matrix linear projection supporting `F32`, `Q8_0`, `PQ2_0`, `PTQ1_0`,
+/// and optional `LoraProjectionPatch` overlays.
+#[derive(Clone, Debug)]
+pub struct LinearProjection {
+    /// Tensor name in the GGUF artifact.
+    pub name: String,
+    /// Input feature dimension.
+    pub in_dim: usize,
+    /// Output feature dimension.
+    pub out_dim: usize,
+    /// Quantized or full-precision weight storage.
+    pub weight: WeightQuantization,
+    /// Optional bias `[out_dim]`.
+    pub bias: Option<Vec<f32>>,
+}
+
+impl LinearProjection {
+    /// Construct a validated linear projection, checking the speech ternary policy.
+    pub fn new(
+        name: impl Into<String>,
+        in_dim: usize,
+        out_dim: usize,
+        weight: WeightQuantization,
+        bias: Option<Vec<f32>>,
+    ) -> io::Result<Self> {
+        let name = name.into();
+        validate_talker_ternary_policy(&name, &weight)?;
+        if in_dim == 0 || out_dim == 0 || bias.as_ref().is_some_and(|b| b.len() != out_dim) {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "Invalid LinearProjection dimensions.",
+            ));
+        }
+        Ok(Self {
+            name,
+            in_dim,
+            out_dim,
+            weight,
+            bias,
+        })
+    }
+
+    /// Project one vector `input` (`[in_dim]`) into `[out_dim]`, optionally applying `lora`.
+    #[allow(
+        clippy::too_many_lines,
+        reason = "Dispatches across F32, Q8_0, PQ2_0, and PTQ1_0 weight representations in one match."
+    )]
+    pub fn forward_vec(
+        &self,
+        input: &[f32],
+        lora: Option<&LoraProjectionPatch>,
+    ) -> io::Result<Vec<f32>> {
+        if input.len() != self.in_dim {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "LinearProjection input length mismatch.",
+            ));
+        }
+        let mut out = self
+            .bias
+            .clone()
+            .unwrap_or_else(|| vec![0.0_f32; self.out_dim]);
+
+        match &self.weight {
+            WeightQuantization::F32(w) => {
+                if w.len() != self.out_dim * self.in_dim {
+                    return Err(io::Error::new(
+                        io::ErrorKind::InvalidData,
+                        "F32 weight buffer size mismatch.",
+                    ));
+                }
+                for (o, dst) in out.iter_mut().enumerate() {
+                    let row = &w[o * self.in_dim..(o + 1) * self.in_dim];
+                    let mut acc = *dst;
+                    for (&wi, &xi) in row.iter().zip(input.iter()) {
+                        acc = wi.mul_add(xi, acc);
+                    }
+                    *dst = acc;
+                }
+            }
+            WeightQuantization::Q8_0 { blocks } => {
+                let blocks_per_row = self.in_dim / 32;
+                if !self.in_dim.is_multiple_of(32) || blocks.len() != self.out_dim * blocks_per_row
+                {
+                    return Err(io::Error::new(
+                        io::ErrorKind::InvalidData,
+                        "Q8_0 block count mismatch.",
+                    ));
+                }
+                for (o, dst) in out.iter_mut().enumerate() {
+                    let row_blocks = &blocks[o * blocks_per_row..(o + 1) * blocks_per_row];
+                    let mut acc = *dst;
+                    for (bi, blk) in row_blocks.iter().enumerate() {
+                        let x_slice = &input[bi * 32..(bi + 1) * 32];
+                        let mut b_sum = 0.0_f32;
+                        for (&q, &x) in blk.quants.iter().zip(x_slice.iter()) {
+                            b_sum = f32::from(q).mul_add(x, b_sum);
+                        }
+                        acc = blk.scale.mul_add(b_sum, acc);
+                    }
+                    *dst = acc;
+                }
+            }
+            WeightQuantization::PQ2_0 {
+                group_size,
+                scales,
+                packed_trits,
+                hadamard_block,
+                signs,
+            } => {
+                let x_folded = apply_hadamard_sign_fold(input, signs, *hadamard_block)?;
+                let groups_per_row = self.in_dim / *group_size;
+                let bytes_per_row = self.in_dim / 4;
+                if *group_size == 0
+                    || !self.in_dim.is_multiple_of(*group_size)
+                    || !self.in_dim.is_multiple_of(4)
+                    || scales.len() != self.out_dim * groups_per_row
+                    || packed_trits.len() != self.out_dim * bytes_per_row
+                {
+                    return Err(io::Error::new(
+                        io::ErrorKind::InvalidData,
+                        "PQ2_0 buffer dimensions mismatch.",
+                    ));
+                }
+                for (o, dst) in out.iter_mut().enumerate() {
+                    let row_scales = &scales[o * groups_per_row..(o + 1) * groups_per_row];
+                    let row_bytes = &packed_trits[o * bytes_per_row..(o + 1) * bytes_per_row];
+                    let mut acc = *dst;
+                    for (gi, &scale) in row_scales.iter().enumerate() {
+                        let start_col = gi * *group_size;
+                        let mut g_sum = 0.0_f32;
+                        for idx in 0..*group_size {
+                            let col = start_col + idx;
+                            let code = (row_bytes[col / 4] >> ((col % 4) * 2)) & 0b11;
+                            match code {
+                                0 => g_sum -= x_folded[col],
+                                2 => g_sum += x_folded[col],
+                                _ => {}
+                            }
+                        }
+                        acc = scale.mul_add(g_sum, acc);
+                    }
+                    *dst = acc;
+                }
+            }
+            WeightQuantization::PTQ1_0 {
+                group_size,
+                scales,
+                nz_mask,
+                sign_mask,
+                hadamard_block,
+                signs,
+            } => {
+                let x_folded = apply_hadamard_sign_fold(input, signs, *hadamard_block)?;
+                let groups_per_row = self.in_dim / *group_size;
+                let bytes_per_row = self.in_dim / 8;
+                if *group_size == 0
+                    || !self.in_dim.is_multiple_of(*group_size)
+                    || !self.in_dim.is_multiple_of(8)
+                    || scales.len() != self.out_dim * groups_per_row
+                    || nz_mask.len() != self.out_dim * bytes_per_row
+                    || sign_mask.len() != self.out_dim * bytes_per_row
+                {
+                    return Err(io::Error::new(
+                        io::ErrorKind::InvalidData,
+                        "PTQ1_0 buffer dimensions mismatch.",
+                    ));
+                }
+                for (o, dst) in out.iter_mut().enumerate() {
+                    let row_scales = &scales[o * groups_per_row..(o + 1) * groups_per_row];
+                    let row_nz = &nz_mask[o * bytes_per_row..(o + 1) * bytes_per_row];
+                    let row_sg = &sign_mask[o * bytes_per_row..(o + 1) * bytes_per_row];
+                    let mut acc = *dst;
+                    for (gi, &scale) in row_scales.iter().enumerate() {
+                        let start_col = gi * *group_size;
+                        let mut g_sum = 0.0_f32;
+                        for idx in 0..*group_size {
+                            let col = start_col + idx;
+                            let byte_i = col / 8;
+                            let bit_i = col % 8;
+                            if (row_nz[byte_i] >> bit_i) & 1 != 0 {
+                                if (row_sg[byte_i] >> bit_i) & 1 != 0 {
+                                    g_sum += x_folded[col];
+                                } else {
+                                    g_sum -= x_folded[col];
+                                }
+                            }
+                        }
+                        acc = scale.mul_add(g_sum, acc);
+                    }
+                    *dst = acc;
+                }
+            }
+        }
+
+        if let Some(patch) = lora {
+            patch.apply(input, &mut out)?;
+        }
+        Ok(out)
+    }
+}
+
+/// RMS normalization (`x * weight / sqrt(mean(x^2) + eps)`).
+pub fn rms_norm(input: &[f32], weight: &[f32], eps: f32) -> io::Result<Vec<f32>> {
+    if input.is_empty() || input.len() != weight.len() {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "RMSNorm dimension mismatch.",
+        ));
+    }
+    let inv_n = 1.0_f32 / usize_to_f32(input.len());
+    let mean_sq = input.iter().map(|&v| v * v).sum::<f32>() * inv_n;
+    let scale = 1.0_f32 / (mean_sq + eps).sqrt();
+    Ok(input
+        .iter()
+        .zip(weight.iter())
+        .map(|(&x, &w)| (x * scale) * w)
+        .collect())
+}
+
+/// Apply 1D NEOX-style half-split `RoPE` (or collapsed 3D `MRoPE` when all 3 axes share `pos`)
+/// in place over `[num_heads, head_dim]`.
+pub fn apply_rope_neox_in_place(
+    heads: &mut [f32],
+    num_heads: usize,
+    head_dim: usize,
+    pos: usize,
+    theta: f32,
+) -> io::Result<()> {
+    if head_dim == 0 || !head_dim.is_multiple_of(2) || heads.len() != num_heads * head_dim {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "Invalid RoPE head dimensions.",
+        ));
+    }
+    let half = head_dim / 2;
+    let hd_f = usize_to_f32(head_dim);
+    let pos_f = usize_to_f32(pos);
+
+    for h in 0..num_heads {
+        let slice = &mut heads[h * head_dim..(h + 1) * head_dim];
+        for i in 0..half {
+            let exponent = usize_to_f32(2 * i) / hd_f;
+            let freq = pos_f / theta.powf(exponent);
+            let (sin_v, cos_v) = freq.sin_cos();
+            let x0 = slice[i];
+            let x1 = slice[i + half];
+            slice[i] = x0.mul_add(cos_v, -x1 * sin_v);
+            slice[i + half] = x0.mul_add(sin_v, x1 * cos_v);
+        }
+    }
+    Ok(())
+}
+
+/// One decoder layer shared by `Talker` (28 layers) and `CodePredictor` (5 layers).
+#[derive(Clone, Debug)]
+pub struct QwenDecoderLayer {
+    /// Pre-attention `RMSNorm` scale `[hidden_size]`.
+    pub attn_norm_w: Vec<f32>,
+    /// Query projection `[num_q_heads * head_dim, hidden_size]`.
+    pub q_proj: LinearProjection,
+    /// Key projection `[num_kv_heads * head_dim, hidden_size]`.
+    pub k_proj: LinearProjection,
+    /// Value projection `[num_kv_heads * head_dim, hidden_size]`.
+    pub v_proj: LinearProjection,
+    /// Output projection `[hidden_size, num_q_heads * head_dim]`.
+    pub o_proj: LinearProjection,
+    /// Per-head query `RMSNorm` `[head_dim]`.
+    pub q_norm_w: Vec<f32>,
+    /// Per-head key `RMSNorm` `[head_dim]`.
+    pub k_norm_w: Vec<f32>,
+    /// Post-attention `RMSNorm` scale `[hidden_size]`.
+    pub ffn_norm_w: Vec<f32>,
+    /// `SwiGLU` gate projection `[intermediate_size, hidden_size]`.
+    pub gate_proj: LinearProjection,
+    /// `SwiGLU` up projection `[intermediate_size, hidden_size]`.
+    pub up_proj: LinearProjection,
+    /// `SwiGLU` down projection `[hidden_size, intermediate_size]`.
+    pub down_proj: LinearProjection,
+}
+
+/// Per-layer KV cache storing past key/value vectors (`[seq_len, num_kv_heads * head_dim]`).
+#[derive(Clone, Debug, Default)]
+pub struct LayerKvCache {
+    /// Cached keys `[seq_len * num_kv_heads * head_dim]`.
+    pub k: Vec<f32>,
+    /// Cached values `[seq_len * num_kv_heads * head_dim]`.
+    pub v: Vec<f32>,
+    /// Number of cached token positions.
+    pub seq_len: usize,
+}
+
+impl QwenDecoderLayer {
+    /// Run a single-token step (`pos = kv.seq_len`), appending K/V into `kv` and applying optional `LoRA` patches.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "Passes explicit GQA geometry, RoPE/RMSNorm scalars, KV cache, and optional LoRA adapter."
+    )]
+    pub fn forward_step(
+        &self,
+        input: &[f32],
+        num_q_heads: usize,
+        num_kv_heads: usize,
+        head_dim: usize,
+        rope_theta: f32,
+        rms_eps: f32,
+        kv: &mut LayerKvCache,
+        adapter: Option<&TalkerLoraAdapter>,
+    ) -> io::Result<Vec<f32>> {
+        if num_q_heads == 0 || num_kv_heads == 0 || !num_q_heads.is_multiple_of(num_kv_heads) {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "Invalid GQA head configuration.",
+            ));
+        }
+        let h_norm = rms_norm(input, &self.attn_norm_w, rms_eps)?;
+        let patch = |proj: &LinearProjection| adapter.and_then(|a| a.patches.get(&proj.name));
+
+        let mut q = self.q_proj.forward_vec(&h_norm, patch(&self.q_proj))?;
+        let mut k = self.k_proj.forward_vec(&h_norm, patch(&self.k_proj))?;
+        let v = self.v_proj.forward_vec(&h_norm, patch(&self.v_proj))?;
+
+        for h in 0..num_q_heads {
+            let slice = &mut q[h * head_dim..(h + 1) * head_dim];
+            let normed = rms_norm(slice, &self.q_norm_w, rms_eps)?;
+            slice.copy_from_slice(&normed);
+        }
+        for h in 0..num_kv_heads {
+            let slice = &mut k[h * head_dim..(h + 1) * head_dim];
+            let normed = rms_norm(slice, &self.k_norm_w, rms_eps)?;
+            slice.copy_from_slice(&normed);
+        }
+
+        let pos = kv.seq_len;
+        apply_rope_neox_in_place(&mut q, num_q_heads, head_dim, pos, rope_theta)?;
+        apply_rope_neox_in_place(&mut k, num_kv_heads, head_dim, pos, rope_theta)?;
+
+        kv.k.extend_from_slice(&k);
+        kv.v.extend_from_slice(&v);
+        kv.seq_len += 1;
+
+        let total_seq = kv.seq_len;
+        let kv_stride = num_kv_heads * head_dim;
+        let gqa_ratio = num_q_heads / num_kv_heads;
+        let scale = 1.0_f32 / usize_to_f32(head_dim).sqrt();
+
+        let mut attn_out = vec![0.0_f32; num_q_heads * head_dim];
+        let mut scores = vec![0.0_f32; total_seq];
+
+        for qh in 0..num_q_heads {
+            let kvh = qh / gqa_ratio;
+            let q_vec = &q[qh * head_dim..(qh + 1) * head_dim];
+            let mut max_score = f32::NEG_INFINITY;
+            for t in 0..total_seq {
+                let k_vec = &kv.k[t * kv_stride + kvh * head_dim..t * kv_stride + (kvh + 1) * head_dim];
+                let mut dot = 0.0_f32;
+                for (&qi, &ki) in q_vec.iter().zip(k_vec.iter()) {
+                    dot = qi.mul_add(ki, dot);
+                }
+                let s = dot * scale;
+                scores[t] = s;
+                if s > max_score {
+                    max_score = s;
+                }
+            }
+            let mut sum_exp = 0.0_f32;
+            for s in &mut scores {
+                *s = (*s - max_score).exp();
+                sum_exp += *s;
+            }
+            let inv_sum = 1.0_f32 / sum_exp.max(1e-12_f32);
+            let out_head = &mut attn_out[qh * head_dim..(qh + 1) * head_dim];
+            for (t, &prob_unnorm) in scores.iter().enumerate() {
+                let w = prob_unnorm * inv_sum;
+                let v_vec = &kv.v[t * kv_stride + kvh * head_dim..t * kv_stride + (kvh + 1) * head_dim];
+                for (dst, &vi) in out_head.iter_mut().zip(v_vec.iter()) {
+                    *dst = w.mul_add(vi, *dst);
+                }
+            }
+        }
+
+        let o_vec = self.o_proj.forward_vec(&attn_out, patch(&self.o_proj))?;
+        let mut x_res: Vec<f32> = input
+            .iter()
+            .zip(o_vec.iter())
+            .map(|(&a, &b)| a + b)
+            .collect();
+
+        let h2 = rms_norm(&x_res, &self.ffn_norm_w, rms_eps)?;
+        let gate = self.gate_proj.forward_vec(&h2, patch(&self.gate_proj))?;
+        let up = self.up_proj.forward_vec(&h2, patch(&self.up_proj))?;
+        let swiglu: Vec<f32> = gate
+            .iter()
+            .zip(up.iter())
+            .map(|(&g, &u)| {
+                let silu = g / (1.0_f32 + (-g).exp());
+                silu * u
+            })
+            .collect();
+        let down = self.down_proj.forward_vec(&swiglu, patch(&self.down_proj))?;
+        for (dst, &d) in x_res.iter_mut().zip(down.iter()) {
+            *dst += d;
+        }
+        Ok(x_res)
+    }
+}
+
+/// Pure-Rust 5-layer `CodePredictor` predicting acoustic codebooks `1..=15` per frame.
+#[derive(Clone, Debug)]
+pub struct CodePredictorModel {
+    /// Predictor hidden size (`1024`).
+    pub hidden_size: usize,
+    /// Attention query heads (`16`).
+    pub num_q_heads: usize,
+    /// Attention KV heads (`8`).
+    pub num_kv_heads: usize,
+    /// Per-head dimension (`128`).
+    pub head_dim: usize,
+    /// Codebook vocabulary size (`2048`).
+    pub vocab_size: usize,
+    /// Number of acoustic codebooks (`15`).
+    pub num_acoustic_codebooks: usize,
+    /// `RoPE` base frequency (`1_000_000.0`).
+    pub rope_theta: f32,
+    /// `RMSNorm` epsilon (`1e-6`).
+    pub rms_norm_eps: f32,
+    /// Optional `mtp_proj` (`talker_hidden -> predictor_hidden` when `2048 != 1024`).
+    pub mtp_proj: Option<LinearProjection>,
+    /// 5 decoder layers.
+    pub layers: Vec<QwenDecoderLayer>,
+    /// Final `RMSNorm` weight `[hidden_size]`.
+    pub norm_w: Vec<f32>,
+    /// 15 private acoustic embedding tables (`[vocab_size * talker_hidden]`).
+    pub codec_embeddings: Vec<Vec<f32>>,
+    /// 15 private acoustic LM heads (`[vocab_size, hidden_size]`).
+    pub lm_heads: Vec<LinearProjection>,
+}
+
+impl CodePredictorModel {
+    /// Predict all 15 acoustic codes (`c1..=c15`) for one frame given `talker_hidden`,
+    /// semantic `c0`, `talker_codec_embd`, and decoupled `subtalker_*` sampling parameters.
+    /// Returns `[c0, c1, ..., c15]`.
+    pub fn predict_frame(
+        &self,
+        talker_hidden: &[f32],
+        c0: i32,
+        talker_codec_embd: &[f32],
+        params: DecoupledSamplingParams,
+        seed: i64,
+        subseq_base: i64,
+    ) -> io::Result<[i32; TOTAL_CODE_GROUPS]> {
+        if self.num_acoustic_codebooks != NUM_ACOUSTIC_CODEBOOKS
+            || self.codec_embeddings.len() != NUM_ACOUSTIC_CODEBOOKS
+            || self.lm_heads.len() != NUM_ACOUSTIC_CODEBOOKS
+        {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "Invalid CodePredictor codebook table count.",
+            ));
+        }
+        let talker_dim = talker_hidden.len();
+        let c0_usize = usize::try_from(c0).map_err(|_| {
+            io::Error::new(io::ErrorKind::InvalidInput, "Negative semantic code c0.")
+        })?;
+        let c0_emb_start = c0_usize.saturating_mul(talker_dim);
+        if c0_emb_start + talker_dim > talker_codec_embd.len() {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "Semantic code c0 out of range for talker.codec_embd.",
+            ));
+        }
+        let c0_emb = &talker_codec_embd[c0_emb_start..c0_emb_start + talker_dim];
+
+        let mut kv_caches = vec![LayerKvCache::default(); self.layers.len()];
+        let mut codes = [0_i32; TOTAL_CODE_GROUPS];
+        codes[0] = c0;
+        let mut seen_scratch = Vec::new();
+
+        let project_in = |raw: &[f32]| -> io::Result<Vec<f32>> {
+            self.mtp_proj
+                .as_ref()
+                .map_or_else(|| Ok(raw.to_vec()), |proj| proj.forward_vec(raw, None))
+        };
+
+        // Step 0 prefill: position 0 = talker_hidden, position 1 = embed(c0)
+        let p0 = project_in(talker_hidden)?;
+        let mut h = p0;
+        for (layer, kv) in self.layers.iter().zip(kv_caches.iter_mut()) {
+            h = layer.forward_step(
+                &h,
+                self.num_q_heads,
+                self.num_kv_heads,
+                self.head_dim,
+                self.rope_theta,
+                self.rms_norm_eps,
+                kv,
+                None,
+            )?;
+        }
+
+        let mut next_raw = c0_emb.to_vec();
+        for g in 0..NUM_ACOUSTIC_CODEBOOKS {
+            let mut h_step = project_in(&next_raw)?;
+            for (layer, kv) in self.layers.iter().zip(kv_caches.iter_mut()) {
+                h_step = layer.forward_step(
+                    &h_step,
+                    self.num_q_heads,
+                    self.num_kv_heads,
+                    self.head_dim,
+                    self.rope_theta,
+                    self.rms_norm_eps,
+                    kv,
+                    None,
+                )?;
+            }
+            let normed = rms_norm(&h_step, &self.norm_w, self.rms_norm_eps)?;
+            let mut logits = self.lm_heads[g].forward_vec(&normed, None)?;
+            let sampled_idx = sampling::sample_top_k_p(
+                &mut logits,
+                sampling::SampleTopKPParams {
+                    temperature: params.subtalker_temperature,
+                    top_k: params.subtalker_top_k,
+                    top_p: params.subtalker_top_p,
+                    repetition_penalty: 1.0,
+                    seed,
+                    philox_subseq: subseq_base
+                        .wrapping_add(1)
+                        .wrapping_add(i64::try_from(g).unwrap_or(0)),
+                },
+                &[],
+                &mut seen_scratch,
+                None,
+            )
+            .ok_or_else(|| {
+                io::Error::new(io::ErrorKind::InvalidData, "Acoustic code sampling failed.")
+            })?;
+            codes[g + 1] = i32::try_from(sampled_idx).map_err(|_| {
+                io::Error::new(io::ErrorKind::InvalidData, "Invalid sampled acoustic code.")
+            })?;
+
+            if g + 1 < NUM_ACOUSTIC_CODEBOOKS {
+                let table = &self.codec_embeddings[g];
+                let start = sampled_idx.saturating_mul(talker_dim);
+                if start + talker_dim > table.len() {
+                    return Err(io::Error::new(
+                        io::ErrorKind::InvalidData,
+                        "Acoustic code index exceeds embedding table.",
+                    ));
+                }
+                next_raw.copy_from_slice(&table[start..start + talker_dim]);
+            }
+        }
+        Ok(codes)
+    }
+}
+
+/// Cached ICL reference streams (`icl_codec_stream` and `icl_ref_text_stream`) in `PromptCache`.
+#[derive(Clone, Debug)]
+pub struct CachedIclReference {
+    /// FNV-1a 64-bit content hash of the `[16, ref_codes_T]` reference codes.
+    pub ref_key: u64,
+    /// Pre-summed codec stream `[ (1 + ref_codes_T) * hidden_size ]` (`codec_bos` + summed 16 codebooks).
+    pub icl_codec_stream: Vec<f32>,
+    /// Pre-projected reference text stream `[ N_ref_text * hidden_size ]`.
+    pub icl_ref_text_stream: Vec<f32>,
+    /// Number of inner reference text tokens (`N_ref_text`).
+    pub n_ref_text: usize,
+    /// Number of reference audio frames (`ref_codes_T`).
+    pub ref_codes_t: usize,
+}
+
+/// Pure-Rust `PromptCache` retaining special token projections and cached ICL reference streams.
+#[derive(Clone, Debug, Default)]
+pub struct PromptCache {
+    /// Projected `tts_bos` `[hidden_size]`.
+    pub tts_bos_emb: Vec<f32>,
+    /// Projected `tts_eos` `[hidden_size]`.
+    pub tts_eos_emb: Vec<f32>,
+    /// Projected `tts_pad` `[hidden_size]`.
+    pub tts_pad_emb: Vec<f32>,
+    /// `codec_pad` embedding `[hidden_size]`.
+    pub codec_pad_emb: Vec<f32>,
+    /// `codec_bos` embedding `[hidden_size]`.
+    pub codec_bos_emb: Vec<f32>,
+    /// Most-recent cached ICL reference streams so repeated `Base` synthesis skips re-projecting `REFERENCE_TEXT` and `ref_codes`.
+    pub cached_icl: Option<CachedIclReference>,
+}
+
+impl PromptCache {
+    /// Return or compute and cache the ICL reference codec and text streams for `ref_codes`.
+    pub fn get_or_build_icl_reference(
+        &mut self,
+        ref_codes: &[i32],
+        ref_codes_t: usize,
+        compute_codec_stream: impl FnOnce() -> io::Result<Vec<f32>>,
+        compute_ref_text_stream: impl FnOnce() -> io::Result<(Vec<f32>, usize)>,
+    ) -> io::Result<&CachedIclReference> {
+        let key = codec_ref_key(ref_codes, TOTAL_CODE_GROUPS, ref_codes_t);
+        let needs_rebuild = self
+            .cached_icl
+            .as_ref()
+            .is_none_or(|cached| cached.ref_key != key || cached.ref_codes_t != ref_codes_t);
+        if needs_rebuild {
+            let icl_codec_stream = compute_codec_stream()?;
+            let (icl_ref_text_stream, n_ref_text) = compute_ref_text_stream()?;
+            self.cached_icl = Some(CachedIclReference {
+                ref_key: key,
+                icl_codec_stream,
+                icl_ref_text_stream,
+                n_ref_text,
+                ref_codes_t,
+            });
+        }
+        self.cached_icl
+            .as_ref()
+            .ok_or_else(|| io::Error::other("PromptCache ICL entry missing."))
+    }
+}
+
+/// Op-code values dispatched to the signed `libggml-htp-v81.so` / `v73.so` Hexagon NPU skel
+/// over the system `qcnspmcdm` `DriverStore` `libcdsprpc.dll` `FastRPC` boundary.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[repr(u32)]
+pub enum HtpOpCode {
+    /// Matrix multiplication (`GGML_OP_MUL_MAT` / `HTP_OP_MUL_MAT`).
+    MulMat = 1,
+    /// RMS normalization (`GGML_OP_RMS_NORM`).
+    RmsNorm = 2,
+    /// Fused `FlashAttention` (`GGML_OP_FLASH_ATTN_EXT`).
+    FlashAttn = 3,
+    /// `SwiGLU` activation (`GGML_OP_GLU`).
+    SwiGlu = 4,
+}
+
+/// NPU tensor quantization format sent over `hexagon-native-rpc`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[repr(u32)]
+pub enum HtpQuantType {
+    /// IEEE 754 `F32`.
+    F32 = 0,
+    /// IEEE 754 `F16` (used for shared `rpcmem` KV cache between `HTP0` prefill and CPU decode).
+    F16 = 1,
+    /// 32-element block `Q8_0`.
+    Q8_0 = 8,
+    /// Snapdragon X2 Hexagon NPU `native-q2` (`HTP_TYPE_Q2_0` dual-bitplane `PTQ1_0` + Hadamard).
+    NativeQ2 = 34,
+}
+
+/// Framed `hexagon-native-rpc` NPU prefill packet for `Talker` multi-token prefill (`T_ctx > 1`)
+/// over `libcdsprpc.dll` (`remote_handle64_*`, `rpcmem_*`, `dspqueue_*`).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HtpPrefillPacket {
+    /// Operation code.
+    pub opcode: HtpOpCode,
+    /// Weight quantization type (`Q8_0` or `NativeQ2` `HTP_TYPE_Q2_0`).
+    pub weight_quant: HtpQuantType,
+    /// KV cache format (`HtpQuantType::F16`).
+    pub kv_format: HtpQuantType,
+    /// Prefill sequence length (`T_ctx`).
+    pub seq_len: u32,
+    /// Hidden dimension (`2048` for 1.7B `Talker`).
+    pub hidden_size: u32,
+    /// Number of `Talker` transformer layers (`28`).
+    pub num_layers: u32,
+}
+
+impl HtpPrefillPacket {
+    /// Construct a hybrid NPU/CPU placement prefill packet for `HTP0`.
+    ///
+    /// Rejects `seq_len <= 1` because `T = 1` single-token `Talker` decode and
+    /// 5-layer `CodePredictor` run on host NEON CPU threads over the shared
+    /// cache-coherent `rpcmem` `F16` KV cache without `FastRPC` round-trip overhead.
+    pub fn new_talker_prefill(
+        seq_len: u32,
+        hidden_size: u32,
+        num_layers: u32,
+        weight_quant: HtpQuantType,
+    ) -> io::Result<Self> {
+        if seq_len <= 1 {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "Single-token T=1 decode runs on host NEON CPU threads, not HTP0 FastRPC.",
+            ));
+        }
+        if !matches!(weight_quant, HtpQuantType::Q8_0 | HtpQuantType::NativeQ2) {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "Talker HTP0 prefill requires Q8_0 or NativeQ2 (HTP_TYPE_Q2_0) weights.",
+            ));
+        }
+        Ok(Self {
+            opcode: HtpOpCode::MulMat,
+            weight_quant,
+            kv_format: HtpQuantType::F16,
+            seq_len,
+            hidden_size,
+            num_layers,
+        })
+    }
+
+    /// Serialize the packet header into a 24-byte little-endian `dspqueue` payload.
+    #[must_use]
+    pub fn to_le_bytes(&self) -> [u8; 24] {
+        let mut out = [0_u8; 24];
+        let op = match self.opcode {
+            HtpOpCode::MulMat => 1_u32,
+            HtpOpCode::RmsNorm => 2_u32,
+            HtpOpCode::FlashAttn => 3_u32,
+            HtpOpCode::SwiGlu => 4_u32,
+        };
+        let wq = match self.weight_quant {
+            HtpQuantType::F32 => 0_u32,
+            HtpQuantType::F16 => 1_u32,
+            HtpQuantType::Q8_0 => 8_u32,
+            HtpQuantType::NativeQ2 => 34_u32,
+        };
+        let kv = match self.kv_format {
+            HtpQuantType::F32 => 0_u32,
+            HtpQuantType::F16 => 1_u32,
+            HtpQuantType::Q8_0 => 8_u32,
+            HtpQuantType::NativeQ2 => 34_u32,
+        };
+        out[0..4].copy_from_slice(&op.to_le_bytes());
+        out[4..8].copy_from_slice(&wq.to_le_bytes());
+        out[8..12].copy_from_slice(&kv.to_le_bytes());
+        out[12..16].copy_from_slice(&self.seq_len.to_le_bytes());
+        out[16..20].copy_from_slice(&self.hidden_size.to_le_bytes());
+        out[20..24].copy_from_slice(&self.num_layers.to_le_bytes());
+        out
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::collections::HashMap;
+
+    use super::{
+        CodePredictorModel, DecoupledSamplingParams, HtpPrefillPacket, HtpQuantType,
+        LinearProjection, LoraProjectionPatch, NUM_ACOUSTIC_CODEBOOKS, PromptCache,
+        QwenDecoderLayer, TalkerLoraAdapter, WeightQuantization, is_talker_ternary_eligible,
+        repack_pq2_to_ptq1, sylvester_walsh_hadamard_in_place, validate_talker_ternary_policy,
+    };
+
+    #[test]
+    fn walsh_hadamard_is_involutory_and_pq2_ptq1_repack_is_bit_exact() -> std::io::Result<()> {
+        let original = vec![0.5_f32, -1.25, 2.0, 0.75, -0.5, 1.5, -2.25, 0.125];
+        let mut buf = original.clone();
+        sylvester_walsh_hadamard_in_place(&mut buf)?;
+        sylvester_walsh_hadamard_in_place(&mut buf)?;
+        for (a, b) in original.iter().zip(buf.iter()) {
+            assert!((a - b).abs() < 1e-6, "a={a} b={b}");
+        }
+
+        // 8 weights, group_size = 8, 2 output rows
+        // Row 0 trits: [-1, 0, +1, +1, 0, -1, +1, 0] -> codes [0, 1, 2, 2], [1, 0, 2, 1]
+        let b0 = (1_u8 << 2) | (2_u8 << 4) | (2_u8 << 6);
+        let b1 = 1_u8 | (2_u8 << 4) | (1_u8 << 6);
+        let pq2 = WeightQuantization::PQ2_0 {
+            group_size: 8,
+            scales: vec![0.5, 0.25],
+            packed_trits: vec![b0, b1, b1, b0],
+            hadamard_block: 8,
+            signs: vec![1, -1, 1, 1, -1, 1, -1, 1],
+        };
+        let ptq1 = repack_pq2_to_ptq1(&pq2)?;
+
+        let proj_pq2 = LinearProjection::new(
+            "talker.blk.0.attn_q.weight",
+            8,
+            2,
+            pq2,
+            Some(vec![0.1, -0.1]),
+        )?;
+        let proj_ptq1 = LinearProjection::new(
+            "talker.blk.0.attn_q.weight",
+            8,
+            2,
+            ptq1,
+            Some(vec![0.1, -0.1]),
+        )?;
+        let out_pq2 = proj_pq2.forward_vec(&original, None)?;
+        let out_ptq1 = proj_ptq1.forward_vec(&original, None)?;
+        assert_eq!(out_pq2, out_ptq1, "PTQ1_0 repack must be bit-exact with PQ2_0");
+        Ok(())
+    }
+
+    #[test]
+    fn ternary_policy_admits_only_talker_block_projections() {
+        let dummy_pq2 = WeightQuantization::PQ2_0 {
+            group_size: 8,
+            scales: vec![1.0],
+            packed_trits: vec![0, 0],
+            hadamard_block: 8,
+            signs: vec![1; 8],
+        };
+        assert!(is_talker_ternary_eligible("talker.blk.0.attn_q.weight"));
+        assert!(is_talker_ternary_eligible("talker.blk.27.ffn_down.weight"));
+        assert!(validate_talker_ternary_policy("talker.blk.12.attn_output.weight", &dummy_pq2).is_ok());
+
+        for forbidden in [
+            "talker.text_embd.weight",
+            "talker.codec_embd.weight",
+            "talker.text_proj.fc1.weight",
+            "talker.codec_head.weight",
+            "code_pred.blk.0.attn_q.weight",
+            "code_pred.lm_head.0.weight",
+            "tok_dec.pre_conv.weight",
+            "spk_enc.conv0.weight",
+        ] {
+            assert!(!is_talker_ternary_eligible(forbidden));
+            assert!(validate_talker_ternary_policy(forbidden, &dummy_pq2).is_err());
+        }
+    }
+
+    #[test]
+    fn lora_overlay_preserves_zero_scale_bit_identity_and_applies_nonzero_delta()
+    -> std::io::Result<()> {
+        let proj = LinearProjection::new(
+            "talker.blk.0.attn_q.weight",
+            4,
+            2,
+            WeightQuantization::F32(vec![
+                0.5, -0.25, 0.1, 0.2, // row 0
+                -0.1, 0.4, 0.3, -0.5, // row 1
+            ]),
+            Some(vec![0.05, -0.05]),
+        )?;
+        let x = [1.0_f32, -0.5, 0.25, 0.75];
+        let base_out = proj.forward_vec(&x, None)?;
+
+        let mut patch = LoraProjectionPatch {
+            in_dim: 4,
+            out_dim: 2,
+            rank: 2,
+            alpha_over_rank: 2.0,
+            scale: 0.0,
+            lora_a: vec![0.3, -0.2, 0.4, 0.1, -0.5, 0.2, 0.1, 0.3],
+            lora_b: vec![0.2, -0.4, 0.5, 0.1],
+        };
+        let zero_out = proj.forward_vec(&x, Some(&patch))?;
+        assert_eq!(base_out, zero_out, "Loaded-at-zero LoRA must be 0-ULP identical");
+
+        patch.scale = 1.0;
+        let active_out = proj.forward_vec(&x, Some(&patch))?;
+        assert_ne!(base_out, active_out);
+        Ok(())
+    }
+
+    #[test]
+    fn code_predictor_and_prompt_cache_and_htp_prefill_packet_execute_cleanly()
+    -> std::io::Result<()> {
+        let hidden = 4_usize;
+        let vocab = 8_usize;
+        let make_proj = |name: &str, in_d: usize, out_d: usize| -> std::io::Result<LinearProjection> {
+            LinearProjection::new(
+                name,
+                in_d,
+                out_d,
+                WeightQuantization::F32(vec![0.05; out_d * in_d]),
+                None,
+            )
+        };
+        let layer = QwenDecoderLayer {
+            attn_norm_w: vec![1.0; hidden],
+            q_proj: make_proj("code_pred.blk.0.attn_q.weight", hidden, hidden)?,
+            k_proj: make_proj("code_pred.blk.0.attn_k.weight", hidden, hidden)?,
+            v_proj: make_proj("code_pred.blk.0.attn_v.weight", hidden, hidden)?,
+            o_proj: make_proj("code_pred.blk.0.attn_output.weight", hidden, hidden)?,
+            q_norm_w: vec![1.0; 2],
+            k_norm_w: vec![1.0; 2],
+            ffn_norm_w: vec![1.0; hidden],
+            gate_proj: make_proj("code_pred.blk.0.ffn_gate.weight", hidden, hidden * 2)?,
+            up_proj: make_proj("code_pred.blk.0.ffn_up.weight", hidden, hidden * 2)?,
+            down_proj: make_proj("code_pred.blk.0.ffn_down.weight", hidden * 2, hidden)?,
+        };
+        let mut lm_heads = Vec::with_capacity(NUM_ACOUSTIC_CODEBOOKS);
+        for g in 0..NUM_ACOUSTIC_CODEBOOKS {
+            lm_heads.push(make_proj(
+                &format!("code_pred.lm_head.{g}.weight"),
+                hidden,
+                vocab,
+            )?);
+        }
+        let cp = CodePredictorModel {
+            hidden_size: hidden,
+            num_q_heads: 2,
+            num_kv_heads: 2,
+            head_dim: 2,
+            vocab_size: vocab,
+            num_acoustic_codebooks: NUM_ACOUSTIC_CODEBOOKS,
+            rope_theta: 1_000_000.0,
+            rms_norm_eps: 1e-6,
+            mtp_proj: None,
+            layers: vec![layer],
+            norm_w: vec![1.0; hidden],
+            codec_embeddings: vec![vec![0.1; vocab * hidden]; NUM_ACOUSTIC_CODEBOOKS],
+            lm_heads,
+        };
+        let talker_embd = vec![0.2_f32; vocab * hidden];
+        let codes = cp.predict_frame(
+            &[0.1, -0.2, 0.3, 0.4],
+            3,
+            &talker_embd,
+            DecoupledSamplingParams::base_clone(),
+            42,
+            100,
+        )?;
+        assert_eq!(codes[0], 3);
+        assert!(codes.iter().all(|&c| (0..8).contains(&c)));
+
+        let mut pcache = PromptCache::default();
+        let ref_codes = [1_i32; 32];
+        let mut codec_builds = 0_usize;
+        let _ = pcache.get_or_build_icl_reference(
+            &ref_codes,
+            2,
+            || {
+                codec_builds += 1;
+                Ok(vec![1.0; 12])
+            },
+            || Ok((vec![2.0; 8], 2)),
+        )?;
+        let _ = pcache.get_or_build_icl_reference(
+            &ref_codes,
+            2,
+            || {
+                codec_builds += 1;
+                Ok(vec![1.0; 12])
+            },
+            || Ok((vec![2.0; 8], 2)),
+        )?;
+        assert_eq!(codec_builds, 1, "PromptCache must reuse cached ICL streams on hit");
+
+        assert!(HtpPrefillPacket::new_talker_prefill(1, 2048, 28, HtpQuantType::Q8_0).is_err());
+        let pkt = HtpPrefillPacket::new_talker_prefill(64, 2048, 28, HtpQuantType::NativeQ2)?;
+        assert_eq!(pkt.to_le_bytes().len(), 24);
+        let _ = TalkerLoraAdapter {
+            name: "indic-en".to_owned(),
+            patches: HashMap::new(),
+        };
+        Ok(())
+    }
+}

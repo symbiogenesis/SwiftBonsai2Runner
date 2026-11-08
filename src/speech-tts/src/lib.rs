@@ -18,10 +18,13 @@ use std::{
 )]
 mod native;
 
+pub mod codec;
 mod decode_graph;
+pub mod engine;
 mod gguf;
 mod philox;
 mod sampling;
+pub mod speaker_encoder;
 mod tokenizer;
 
 #[cfg(test)]
@@ -32,26 +35,44 @@ mod build_overlay;
 pub const ENGINE_REVISION: &str = "5916bf7c79dbb4e66fc059cdc507a79a23a28bb4";
 /// Exact upstream checkpoint represented by the pinned quantized GGUF files.
 pub const MODEL: &str = "Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign";
-/// Mono PCM output sampling rate.
+/// Default mono PCM output sampling rate (`24_000` Hz).
 pub const SAMPLE_RATE: u32 = 24_000;
+/// High-fidelity 48 kHz mono PCM output sampling rate (`takuma104/Qwen3-TTS-Tokenizer-12Hz-48kHz`).
+pub const SAMPLE_RATE_48K: u32 = 48_000;
 const MAX_TEXT: usize = 2048;
 const MAX_VOICE: usize = 1024;
 const MAX_SAMPLES: usize = 24_000 * 120;
+const MAX_SAMPLES_48K: usize = 48_000 * 120;
 const TOKEN_CEILING_SAMPLES: usize = (1500 - 2) * 1920;
+const TOKEN_CEILING_SAMPLES_48K: usize = (1500 - 2) * 3840;
+
+/// Returns `true` when `sample_rate` is a supported Qwen3-TTS output rate (`24_000` or `48_000` Hz).
+#[must_use]
+pub const fn is_supported_sample_rate(sample_rate: u32) -> bool {
+    sample_rate == SAMPLE_RATE || sample_rate == SAMPLE_RATE_48K
+}
 
 /// Complete validated mono speech audio, retained only in memory.
 pub struct Audio {
     /// Finite normalized floating-point PCM samples, in playback order.
     pub samples: Vec<f32>,
-    /// Sampling rate, always [`SAMPLE_RATE`].
+    /// Sampling rate (`24_000` or `48_000` Hz).
     pub sample_rate: u32,
 }
 
-/// Complete validated mono 24 kHz samples retained in their native allocation.
+/// Complete validated mono samples retained in their native allocation.
 ///
 /// Borrow with [`AsRef::as_ref`]. The matching native allocator releases the
 /// waveform on drop; no Rust vector or copy of the full clip is retained.
 pub struct Waveform(native::NativeSamples);
+
+impl Waveform {
+    /// Sampling rate (`24_000` or `48_000` Hz) of the retained waveform.
+    #[must_use]
+    pub const fn sample_rate(&self) -> u32 {
+        self.0.sample_rate()
+    }
+}
 
 impl AsRef<[f32]> for Waveform {
     fn as_ref(&self) -> &[f32] {
@@ -72,6 +93,7 @@ pub struct Synthesizer {
     codec_path: CString,
     voice_model_path: CString,
     threads: usize,
+    sample_rate: u32,
 }
 
 struct Voice {
@@ -144,6 +166,7 @@ impl Synthesizer {
     ) -> io::Result<Self> {
         let available = std::thread::available_parallelism()?.get();
         let threads = select_threads(threads, available)?;
+        let sample_rate = detect_codec_sample_rate(codec);
         let model = model_path(model)?;
         let codec = model_path(codec)?;
         let voice_model = model_path(voice_model)?;
@@ -155,7 +178,14 @@ impl Synthesizer {
             codec_path: codec,
             voice_model_path: voice_model,
             threads,
+            sample_rate,
         })
+    }
+
+    /// Active mono PCM output sampling rate (`24_000` or `48_000` Hz).
+    #[must_use]
+    pub const fn sample_rate(&self) -> u32 {
+        self.sample_rate
     }
 
     fn voice(&mut self, profile: &CStr) -> io::Result<&mut Voice> {
@@ -166,6 +196,7 @@ impl Synthesizer {
             codec_path,
             voice_model_path,
             threads,
+            sample_rate: _,
         } = self;
         voices.get_or_create(profile, || {
             let mut context = match design.take() {
@@ -193,10 +224,11 @@ impl Synthesizer {
         let text = bounded_input(text, MAX_TEXT)?;
         let voice = bounded_input(voice, MAX_VOICE)?;
         let voice = self.voice(&voice)?;
-        let audio = voice.context.synthesize(&text, &voice.reference)?;
+        let (samples, sample_rate) = voice.context.synthesize(&text, &voice.reference)?;
+        self.sample_rate = sample_rate;
         Ok(Audio {
-            samples: audio,
-            sample_rate: SAMPLE_RATE,
+            samples,
+            sample_rate,
         })
     }
 
@@ -212,13 +244,12 @@ impl Synthesizer {
         let text = bounded_input(text, MAX_TEXT)?;
         let voice = bounded_input(voice, MAX_VOICE)?;
         let voice = self.voice(&voice)?;
-        voice
-            .context
-            .synthesize_owned(&text, &voice.reference)
-            .map(Waveform)
+        let samples = voice.context.synthesize_owned(&text, &voice.reference)?;
+        self.sample_rate = samples.sample_rate();
+        Ok(Waveform(samples))
     }
 
-    /// Generate mono 24 kHz chunks while inference is still running.
+    /// Generate mono 24 kHz or 48 kHz chunks while inference is still running.
     ///
     /// The sink executes on the native worker and must return promptly. Audio
     /// heard before a later failure remains partial; success is reported only
@@ -245,11 +276,37 @@ impl Synthesizer {
 // Shared by borrowed complete output and streaming callbacks. Native output is
 // admitted before copying or delivering it, with one token-completion policy.
 fn sample_count(samples: &[f32], previous: usize) -> Option<usize> {
-    bonsai_audio::finite_sample_count(
-        samples,
-        previous,
-        MAX_SAMPLES.min(TOKEN_CEILING_SAMPLES - 1),
-    )
+    sample_count_for_rate(samples, previous, SAMPLE_RATE)
+}
+
+fn sample_count_for_rate(samples: &[f32], previous: usize, sample_rate: u32) -> Option<usize> {
+    let ceiling = if sample_rate == SAMPLE_RATE_48K {
+        MAX_SAMPLES_48K.min(TOKEN_CEILING_SAMPLES_48K - 1)
+    } else if sample_rate == SAMPLE_RATE {
+        MAX_SAMPLES.min(TOKEN_CEILING_SAMPLES - 1)
+    } else {
+        return None;
+    };
+    bonsai_audio::finite_sample_count(samples, previous, ceiling)
+}
+
+fn detect_codec_sample_rate(codec: &Path) -> u32 {
+    let Ok(table) = gguf::Gguf::open(codec) else {
+        return SAMPLE_RATE;
+    };
+    for key in [
+        &b"qwen3-tts-tokenizer.decoder.sample_rate"[..],
+        &b"qwen3-tts-tokenizer.sample_rate"[..],
+        &b"tokenizer.ggml.sample_rate"[..],
+    ] {
+        if let Some(idx) = table.find(key)
+            && let Ok(rate) = table.u32_value(idx)
+            && is_supported_sample_rate(rate)
+        {
+            return rate;
+        }
+    }
+    SAMPLE_RATE
 }
 
 fn select_threads(requested: Option<usize>, available: usize) -> io::Result<usize> {
@@ -302,8 +359,9 @@ fn bounded_input(text: &str, maximum: usize) -> io::Result<CString> {
 #[cfg(test)]
 mod tests {
     use super::{
-        MAX_TEXT, MAX_VOICE, TOKEN_CEILING_SAMPLES, VoiceCache, bounded_input,
-        finish_voice_bootstrap, sample_count, select_threads,
+        MAX_TEXT, MAX_VOICE, SAMPLE_RATE, SAMPLE_RATE_48K, TOKEN_CEILING_SAMPLES,
+        TOKEN_CEILING_SAMPLES_48K, VoiceCache, bounded_input, finish_voice_bootstrap,
+        is_supported_sample_rate, sample_count, sample_count_for_rate, select_threads,
     };
 
     #[test]
@@ -438,12 +496,24 @@ mod tests {
 
     #[test]
     fn complete_and_streamed_samples_share_token_ceiling_and_finite_validation() {
+        assert!(is_supported_sample_rate(SAMPLE_RATE));
+        assert!(is_supported_sample_rate(SAMPLE_RATE_48K));
+        assert!(!is_supported_sample_rate(16_000));
         assert_eq!(sample_count(&[0.0, 2.0], 0), Some(2));
         assert_eq!(
             sample_count(&[0.0], TOKEN_CEILING_SAMPLES - 2),
             Some(TOKEN_CEILING_SAMPLES - 1)
         );
         assert_eq!(sample_count(&[0.0], TOKEN_CEILING_SAMPLES - 1), None);
+        assert_eq!(
+            sample_count_for_rate(&[0.0], TOKEN_CEILING_SAMPLES_48K - 2, SAMPLE_RATE_48K),
+            Some(TOKEN_CEILING_SAMPLES_48K - 1)
+        );
+        assert_eq!(
+            sample_count_for_rate(&[0.0], TOKEN_CEILING_SAMPLES_48K - 1, SAMPLE_RATE_48K),
+            None
+        );
+        assert_eq!(sample_count_for_rate(&[0.0], 0, 16_000), None);
         assert_eq!(sample_count(&[0.0], usize::MAX), None);
         for samples in [&[][..], &[f32::NAN], &[f32::INFINITY], &[f32::NEG_INFINITY]] {
             assert_eq!(sample_count(samples, 0), None);

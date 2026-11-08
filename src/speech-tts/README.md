@@ -18,7 +18,7 @@ design context must report `voice_design`, and the reusable-speaker context must
 report `base`; speaker presets, user reference recordings and arbitrary native
 options are absent from this interface. Generated audio stays
 in memory and must be finite
-mono 24 kHz PCM within the existing 120-second bound. Suspected token-ceiling
+mono 24 kHz or 48 kHz PCM within the existing 120-second bound. Suspected token-ceiling
 output is rejected. Upstream request-bearing diagnostics are discarded.
 
 `Synthesizer::load(model, codec, voice_model)` initializes the owned design model, using two fewer
@@ -164,21 +164,36 @@ a reference process. The original header and standalone oracle are removed;
 `LICENSE.qwen-core` retains their attribution. These are historical captures, not
 fresh execution of the retired reference.
 
-`src/sampling.rs` also ports the pinned `apply_suppress` and
-`apply_repetition_penalty` helpers as safe slice operations. Suppression clips
+`src/sampling.rs` ports the complete pinned `apply_suppress`,
+`apply_repetition_penalty` (windowed to the trailing `REPETITION_PENALTY_WINDOW = 72`
+tokens), `greedy_argmax`, `top_k_mask`, `top_p_mask` and `sample_top_k_p`
+stochastic sampler as safe Rust operations. Suppression clips
 the reserved interval and preserves the selected EOS token. Repetition applies
-the penalty to each valid history token at most once, preserving the sign test and f32
-multiply/divide order. The native caller retains its reusable seen-token buffer;
-the Rust helpers allocate nothing. Greedy selection also runs in Rust and
-preserves the captured Windows ARM64 MSVC 14.51 vector-prefix/scalar-tail behavior,
-including NaNs; a conventional first-maximum loop differs on exceptional inputs.
+the penalty to each valid history token in the trailing window at most once,
+preserving the sign test and f32 multiply/divide order. The native caller retains
+its reusable seen-token buffer; the Rust masking and repetition helpers allocate
+nothing. Greedy selection runs in Rust and preserves the captured Windows ARM64
+MSVC 14.51 vector-prefix/scalar-tail behavior, including NaNs; a conventional
+first-maximum loop differs on exceptional inputs. Stochastic `sample_top_k_p`
+preserves MSVC STL `_Sort_unchecked` / `_Nth_element_unchecked` tie ordering,
+sequential `expf` softmax accumulation, Philox4x32-10 draw and CDF walk.
 The private overlay validates the downloaded `sampling.h` by exact normalized
-length/SHA-256. Historical captures retain every input and both output bit vectors
-for all 722 masking/penalty cases, plus 714 nonempty greedy cases. Rust replay
-checks complete schedule identity, fixture digests and consumption, duplicate/invalid
-token IDs, signed zero and exceptional floats. The duplicate header and native
-oracle are removed. A minimal generated declaration scaffold checks compilation;
-the full pinned probability pipeline still needs hosted owning-crate integration.
+length/SHA-256 and routes `sample_top_k_p`, `apply_suppress` and
+`apply_repetition_penalty` to Rust. Historical captures retain every input and
+both output bit vectors for all 722 masking/penalty cases, plus 714 nonempty
+greedy cases. Rust replay checks complete schedule identity, fixture digests and
+consumption, duplicate/invalid token IDs, signed zero and exceptional floats.
+The duplicate header and native oracle are removed.
+
+`src/engine.rs`, `src/codec.rs` and `src/speaker_encoder.rs` provide the safe
+pure-Rust implementations of the 28-layer `Talker` and 5-layer `CodePredictor`
+(with `PromptCache` ICL stream caching, `TalkerLoraAdapter` overlays, `PQ2_0` /
+`PTQ1_0` ternary + block-1024 Sylvester Walsh–Hadamard folding, and
+`HtpPrefillPacket` `hexagon-native-rpc` NPU prefill framing), the 12 Hz / 48 kHz
+causal `ConvNeXt` / `SnakeBeta` audio codec and 8-slot `CodecStateSnap` LRU cache,
+and the 24 kHz Slaney 128-mel ECAPA-TDNN speaker encoder. Native CMake/C++ linkage
+remains active until hosted consumer integration and actual-model qualification
+retire the external static libraries.
 
 Rust owns one keyed decode workspace, its geometry, eviction and resource lifetime.
 A native builder transfers a completed graph to the Rust owner; replacement drops
