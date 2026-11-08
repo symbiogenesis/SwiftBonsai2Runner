@@ -1221,6 +1221,18 @@ release bundle:
   verification (`verify_stochastic_step`), and transactional short-chain block verification
   (`Runtime::generate_speculative`, `Runtime::verify_draft_block`, and
   `SwiftSession::complete_speculative` in `cada2ca`).
+- Single-write fused GDN recurrent-state row step (`pinned_gdn::step_row_from` and
+  `pinned_gdn::step_row_in_place` in `bbca1b3`), keeping each decayed 128-element state row
+  in NEON registers across `dot_k` and `update_and_dot` to eliminate ~`301.9 MiB` of
+  recurrent-state memory traffic per token across 48 GDN layers; 1/4/8-row NEON integer dot
+  kernels for `Q8_0`, `Q4_0`, `Q4_1`, and 5-bit `Q5_0`/`Q5_1` (`dot_q8_0_block`,
+  `dot_q8_0_eight_rows`, `dot_q4_0_block`, `dot_q4_0_eight_rows`, `dot_q4_1_block`,
+  `dot_i16_block`) plus multi-worker `RowParallelism::fill` dispatch across all legacy,
+  `K`-quant, `I`-quant, `TQ`, `FP4`, and `Q1_0`/`Q2_0` matvec rows (`dc0bd7a`); and
+  single-pass row-parallel tiled prefill for all non-`PQ2`/`PTQ1` quantized projections
+  (`supports_tiled_rows`, `dot_quantized_tile_row`, `dot_q8_0_tile_row`, and
+  `dot_q4_0_tile_row` in `e53bd6a`), streaming each weight row once across up to 32 prefill
+  tokens and reusing prepared `Q8`/`Q8_K` activations across compatible sibling projections.
 
 Remaining CPU kernel, graph-level parallelism and tiled-prefill optimizations to
 implement and qualify in Prism:
@@ -1575,11 +1587,14 @@ AC-connected device receipts and the pinned Runner release-bundle `0.1.19` (`951
   `e60b11f`, with full 6-arena `total_used` accounting fixed in `c8e96d7`), 4-op and 8-op
   multi-operation resident `dspqueue` submissions (`submit_resident_multi2..4`,
   `submit_resident_multi8` and `image_multi_resident` with shared-activation pointer
-  deduplication), intra-layer fused 3-op `ffn_gate` + `ffn_up` + `HTP_OP_GLU_SWIGLU` VTCM
-  tensor chaining (`image_ffn_swiglu_resident`, `submit_resident_ffn_swiglu`, and
-  `project_f32_ffn_swiglu` in `c8e96d7`, keeping intermediate `[17408]` FFN gate/up vectors
-  in DSP VTCM via `HTP_OP_FLAG_BOTH_IN_VTCM` and writing back only one `69,632`-byte
-  post-`SwiGLU` `F32` vector to DDR), and multi-token
+  deduplication), intra-layer fused 3-op (`submit_resident_ffn_swiglu` in `c8e96d7`) and
+  2-token 6-op (`submit_resident_ffn_swiglu_multi2` and `image_ffn_swiglu_multi2_resident`
+  in `48364f8`) `ffn_gate` + `ffn_up` + `HTP_OP_GLU_SWIGLU` VTCM tensor chaining
+  (`project_f32_ffn_swiglu` and `project_f32_ffn_swiglu_tokens` wired into
+  `Evaluation::project_ffn_swiglu_into` and `PrefillWorkspace::project_tile_ffn_swiglu` when
+  no rank-one LoRA adapter is active, keeping intermediate `[17408]` FFN gate/up vectors in
+  DSP VTCM via `HTP_OP_FLAG_BOTH_IN_VTCM` and writing back only one `69,632`-byte
+  post-`SwiGLU` `F32` vector per token to DDR), and multi-token
   tiled-prefill NPU dispatch (`project_f32_tokens`, `project_f32_pair_tokens` and
   `project_f32_triple_tokens` wired through `Qwen35::ingest_cpu_tile`, `gdn::recurrent_tile`,
   `PlacedProjectionExecutor` and `WorkerThreadHexagonExecutor` in `e8deb79`/`e60b11f`), building on
