@@ -84,11 +84,22 @@ fn append_environment_file(variable: &str, contents: &str) -> Result<()> {
     Ok(())
 }
 
+const MAX_ACTION_OUTPUT_PATHS: usize = 64;
+
 fn action_outputs(plan: &impact::Plan, config: &Value, serialized: &str) -> Result<String> {
     use std::fmt::Write as _;
 
+    let bounded_plan;
+    let plan_output = if plan.paths.len() > MAX_ACTION_OUTPUT_PATHS {
+        let mut compact = plan.clone();
+        compact.paths.truncate(MAX_ACTION_OUTPUT_PATHS);
+        bounded_plan = serde_json::to_string(&compact).map_err(|e| e.to_string())?;
+        bounded_plan.as_str()
+    } else {
+        serialized
+    };
     let mut output = format!(
-        "plan={serialized}\npackages={}\n",
+        "plan={plan_output}\npackages={}\n",
         serde_json::to_string(&plan.packages).map_err(|e| e.to_string())?
     );
     for (name, selected) in &plan.groups {
@@ -265,5 +276,38 @@ mod tests {
         }
         assert!(parse(&["impact".into(), "--full".into()]).is_ok());
         assert!(parse(&["gate".into(), "--workflow".into(), "foundation".into()]).is_ok());
+    }
+
+    #[test]
+    fn action_outputs_bounds_large_path_lists_to_protect_linux_env_limits() -> crate::Result<()> {
+        let paths: Vec<String> = (0..1600)
+            .map(|index| format!("docs/evidence/unreferenced-{index:04}/summary.json"))
+            .collect();
+        let plan = Plan {
+            packages: vec!["bonsai-broker".into()],
+            groups: BTreeMap::from([("broker_checks".into(), true), ("speech".into(), false)]),
+            full: true,
+            paths,
+            reason: "unclassified input (conservative full validation)".into(),
+        };
+        let serialized = serde_json::to_string(&plan).map_err(|e| e.to_string())?;
+        assert!(serialized.len() > 65_536);
+        let output = action_outputs(&plan, &json!({}), &serialized)?;
+        assert!(output.len() < 8_192);
+        let plan_line = output
+            .lines()
+            .find_map(|line| line.strip_prefix("plan="))
+            .ok_or("missing plan output")?;
+        let parsed: serde_json::Value =
+            serde_json::from_str(plan_line).map_err(|e| e.to_string())?;
+        assert_eq!(
+            parsed["groups"],
+            json!({"broker_checks": true, "speech": false})
+        );
+        assert_eq!(
+            parsed["paths"].as_array().map(Vec::len),
+            Some(super::MAX_ACTION_OUTPUT_PATHS)
+        );
+        Ok(())
     }
 }
