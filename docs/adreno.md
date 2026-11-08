@@ -187,7 +187,12 @@ contains Windows ARM64 CPU/CUDA bundles and no OpenCL bundle. It records public 
 reported digests without downloads; metadata proves neither executed bytes nor publisher trust.
 The shipped runtime remains the CPU archive in `config/swift-assessment.lock.json`.
 
-Local Prism `bonsai-hexagon-runtime` also provides `plan_three_processor_placement` (`HeterogeneousPlacementPlan`, `AdrenoQ2KernelKind::WgslSubgroupShuffle` / `OpenClSubgroupBlockRead`), partitioning `blk.0..=blk.26` (`168` `PQ2_0` projections, `2,888,663,040` bytes) onto Hexagon NPU `native-q2` and `blk.27..=blk.63` (`232` `PQ2_0` projections, `3,967,856,640` bytes) onto Adreno X2-90 `Q2_0+FWHT` while keeping GDN/attention state and `lm_head` on CPU.
+Local Prism `bonsai-hexagon-runtime` also provides `plan_three_processor_placement`
+(`HeterogeneousPlacementPlan`, `AdrenoQ2KernelKind::WgslSubgroupShuffle` /
+`OpenClSubgroupBlockRead`), partitioning `blk.0..=blk.26` (`168` `PQ2_0` projections,
+`2,888,663,040` bytes) onto Hexagon NPU `native-q2` and `blk.27..=blk.63` (`232` `PQ2_0`
+projections, `3,967,856,640` bytes) onto Adreno X2-90 `Q2_0+FWHT` while keeping GDN/attention
+state and `lm_head` on CPU.
 
 The [Prism pilot contract](../PLAN.md#adreno-vulkan) requires one real Swift packed-projection shape
 against scalar CPU arithmetic and proven unchanged-policy worker access before execution. New

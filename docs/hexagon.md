@@ -238,7 +238,13 @@ bitplanes) and eliminates host bitplane reconstruction. The table below summariz
 Battery-operated diagnostic runs (`a383e92`, `e2349af`, `5136bd1`) are kept separate from
 AC-connected runs (`ccb1339`, `9f61217`, `ebc22c2`) and are not treated as qualified
 cross-power speed comparisons. Full-model 6-arena (`168`-projection) AC-connected
-end-to-end service qualification remains pending in [PLAN.md](../PLAN.md#hexagon-npu). Local Prism also implements `image_ffn_full_chain_resident` (`NativeQ2Executor::project_f32_ffn_chain` chaining `ffn_gate` + `ffn_up` + `HTP_OP_UNARY_SILU` + `HTP_OP_BINARY_MUL` + `HTP_OP_HADAMARD` + `ffn_down` inside one `dspqueue` packet), `requires_dma64_stride` (`HTP_DMA32_MAX_STRIDE_BYTES = 65,535`), `project_f32_with_rank1_adapter`, and `plan_hybrid_prefill_pipeline` (double-buffered CPU attention/GDN + NPU `168`-projection FFN pipeline schedule).
+end-to-end service qualification remains pending in [PLAN.md](../PLAN.md#hexagon-npu). Local Prism
+also implements `image_ffn_full_chain_resident` (`NativeQ2Executor::project_f32_ffn_chain`
+chaining `ffn_gate` + `ffn_up` + `HTP_OP_UNARY_SILU` + `HTP_OP_BINARY_MUL` + `HTP_OP_HADAMARD` +
+`ffn_down` inside one `dspqueue` packet), `requires_dma64_stride`
+(`HTP_DMA32_MAX_STRIDE_BYTES = 65,535`), `project_f32_with_rank1_adapter`, and
+`plan_hybrid_prefill_pipeline` (double-buffered CPU attention/GDN + NPU `168`-projection FFN
+pipeline schedule).
 
 The [logical payload ledger](evidence/hexagon-swift-traffic-ledger.json) derives 13.69 GB of signed-kernel input/result payload per all-eligible
 original-PQ2 evaluation token. The opt-in [mapped host-weight arena and graph cache](../tools/hexagon/resident-host.md) reuse immutable
