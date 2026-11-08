@@ -51,7 +51,9 @@ pub(super) const fn packet_bytes_for_rate(sample_rate: u32) -> usize {
     reason = "Clamped i16 PCM range [-32768, 32767] fits in i16 after rounding."
 )]
 fn float_to_i16(value: f32) -> i16 {
-    value.clamp(f32::from(i16::MIN), f32::from(i16::MAX)).round() as i16
+    value
+        .clamp(f32::from(i16::MIN), f32::from(i16::MAX))
+        .round() as i16
 }
 
 /// Apply a symmetric raised-cosine (Hann) C1-continuous crossfade across the
@@ -74,10 +76,7 @@ pub(super) fn smooth_segment_boundary(prev_tail_pcm16: &mut [u8], next_head_pcm1
         prev_tail_pcm16[prev_end_idx],
         prev_tail_pcm16[prev_end_idx + 1],
     ]));
-    let next_first = f32::from(i16::from_le_bytes([
-        next_head_pcm16[0],
-        next_head_pcm16[1],
-    ]));
+    let next_first = f32::from(i16::from_le_bytes([next_head_pcm16[0], next_head_pcm16[1]]));
     let midpoint = f32::midpoint(prev_last, next_first);
     let denom = f32::from(u16::try_from(count + 1).unwrap_or(2));
     for index in 0..count {
@@ -609,7 +608,11 @@ impl Buffered {
         if self.released {
             self.ready.push_back(pcm);
         } else {
-            let bytes_per_ms = if max_packet == PACKET_BYTES_48K { 96 } else { 48 };
+            let bytes_per_ms = if max_packet == PACKET_BYTES_48K {
+                96
+            } else {
+                48
+            };
             self.segment.push_back(pcm);
             if self.segment.len() >= PREROLL_PACKETS
                 && self.segment_bytes >= PREROLL_PACKETS * max_packet
@@ -886,8 +889,7 @@ mod tests {
         Arc, AtomicBool, AtomicU64, Audio, Buffered, Duration, Frames, HANN_BOUNDARY_SAMPLES,
         Instant, MAX_BUFFER_BYTES, Ordering, Output, PACKET_BYTES, PACKET_BYTES_48K,
         PLAYBACK_PACKETS, PREFETCH_PACKETS, PREROLL_PACKETS, SAMPLE_RATE, SAMPLE_RATE_48K,
-        VecDeque, check, consume_with, mpsc, packet_bytes_for_rate, send,
-        smooth_segment_boundary,
+        VecDeque, check, consume_with, mpsc, packet_bytes_for_rate, send, smooth_segment_boundary,
     };
     use crate::tts::Failure;
 

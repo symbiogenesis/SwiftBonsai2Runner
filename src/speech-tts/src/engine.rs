@@ -318,7 +318,10 @@ pub fn repack_pq2_to_ptq1(quant: &WeightQuantization) -> io::Result<WeightQuanti
     })
 }
 
-#[allow(clippy::inline_always, reason = "fearless_simd dispatch! requires inline(always) to inherit target_feature attributes.")]
+#[allow(
+    clippy::inline_always,
+    reason = "fearless_simd dispatch! requires inline(always) to inherit target_feature attributes."
+)]
 #[inline(always)]
 fn fwht_simd_in_place<S: Simd>(simd: S, data: &mut [f32], norm: f32) {
     let n = data.len();
@@ -726,14 +729,27 @@ where
     });
 }
 
-#[allow(clippy::inline_always, reason = "fearless_simd dispatch! requires inline(always) to inherit target_feature attributes.")]
+#[allow(
+    clippy::inline_always,
+    reason = "fearless_simd dispatch! requires inline(always) to inherit target_feature attributes."
+)]
 #[inline(always)]
-fn rms_norm_scale_simd<S: Simd>(simd: S, input: &[f32], weight: &[f32], scale: f32, out: &mut [f32]) {
+fn rms_norm_scale_simd<S: Simd>(
+    simd: S,
+    input: &[f32],
+    weight: &[f32],
+    scale: f32,
+    out: &mut [f32],
+) {
     let scale_v = f32x4::splat(simd, scale);
     let (in_chunks, in_tail) = input.as_chunks::<4>();
     let (w_chunks, w_tail) = weight.as_chunks::<4>();
     let (out_chunks, out_tail) = out.as_chunks_mut::<4>();
-    for ((x_c, w_c), dst_c) in in_chunks.iter().zip(w_chunks.iter()).zip(out_chunks.iter_mut()) {
+    for ((x_c, w_c), dst_c) in in_chunks
+        .iter()
+        .zip(w_chunks.iter())
+        .zip(out_chunks.iter_mut())
+    {
         let xv = f32x4::from_slice(simd, x_c);
         let wv = f32x4::from_slice(simd, w_c);
         ((xv * scale_v) * wv).store_slice(dst_c);
@@ -894,7 +910,8 @@ impl QwenDecoderLayer {
             let q_vec = &q[qh * head_dim..(qh + 1) * head_dim];
             let mut max_score = f32::NEG_INFINITY;
             for t in 0..total_seq {
-                let k_vec = &kv.k[t * kv_stride + kvh * head_dim..t * kv_stride + (kvh + 1) * head_dim];
+                let k_vec =
+                    &kv.k[t * kv_stride + kvh * head_dim..t * kv_stride + (kvh + 1) * head_dim];
                 let mut dot = 0.0_f32;
                 for (&qi, &ki) in q_vec.iter().zip(k_vec.iter()) {
                     dot = qi.mul_add(ki, dot);
@@ -914,7 +931,8 @@ impl QwenDecoderLayer {
             let out_head = &mut attn_out[qh * head_dim..(qh + 1) * head_dim];
             for (t, &prob_unnorm) in scores.iter().enumerate() {
                 let w = prob_unnorm * inv_sum;
-                let v_vec = &kv.v[t * kv_stride + kvh * head_dim..t * kv_stride + (kvh + 1) * head_dim];
+                let v_vec =
+                    &kv.v[t * kv_stride + kvh * head_dim..t * kv_stride + (kvh + 1) * head_dim];
                 for (dst, &vi) in out_head.iter_mut().zip(v_vec.iter()) {
                     *dst = w.mul_add(vi, *dst);
                 }
@@ -939,7 +957,9 @@ impl QwenDecoderLayer {
                 silu * u
             })
             .collect();
-        let down = self.down_proj.forward_vec(&swiglu, patch(&self.down_proj))?;
+        let down = self
+            .down_proj
+            .forward_vec(&swiglu, patch(&self.down_proj))?;
         for (dst, &d) in x_res.iter_mut().zip(down.iter()) {
             *dst += d;
         }
@@ -1322,7 +1342,10 @@ mod tests {
         )?;
         let out_pq2 = proj_pq2.forward_vec(&original, None)?;
         let out_ptq1 = proj_ptq1.forward_vec(&original, None)?;
-        assert_eq!(out_pq2, out_ptq1, "PTQ1_0 repack must be bit-exact with PQ2_0");
+        assert_eq!(
+            out_pq2, out_ptq1,
+            "PTQ1_0 repack must be bit-exact with PQ2_0"
+        );
         Ok(())
     }
 
@@ -1337,7 +1360,9 @@ mod tests {
         };
         assert!(is_talker_ternary_eligible("talker.blk.0.attn_q.weight"));
         assert!(is_talker_ternary_eligible("talker.blk.27.ffn_down.weight"));
-        assert!(validate_talker_ternary_policy("talker.blk.12.attn_output.weight", &dummy_pq2).is_ok());
+        assert!(
+            validate_talker_ternary_policy("talker.blk.12.attn_output.weight", &dummy_pq2).is_ok()
+        );
 
         for forbidden in [
             "talker.text_embd.weight",
@@ -1380,7 +1405,10 @@ mod tests {
             lora_b: vec![0.2, -0.4, 0.5, 0.1],
         };
         let zero_out = proj.forward_vec(&x, Some(&patch))?;
-        assert_eq!(base_out, zero_out, "Loaded-at-zero LoRA must be 0-ULP identical");
+        assert_eq!(
+            base_out, zero_out,
+            "Loaded-at-zero LoRA must be 0-ULP identical"
+        );
 
         patch.scale = 1.0;
         let active_out = proj.forward_vec(&x, Some(&patch))?;
@@ -1393,15 +1421,16 @@ mod tests {
     -> std::io::Result<()> {
         let hidden = 4_usize;
         let vocab = 8_usize;
-        let make_proj = |name: &str, in_d: usize, out_d: usize| -> std::io::Result<LinearProjection> {
-            LinearProjection::new(
-                name,
-                in_d,
-                out_d,
-                WeightQuantization::F32(vec![0.05; out_d * in_d]),
-                None,
-            )
-        };
+        let make_proj =
+            |name: &str, in_d: usize, out_d: usize| -> std::io::Result<LinearProjection> {
+                LinearProjection::new(
+                    name,
+                    in_d,
+                    out_d,
+                    WeightQuantization::F32(vec![0.05; out_d * in_d]),
+                    None,
+                )
+            };
         let layer = QwenDecoderLayer {
             attn_norm_w: vec![1.0; hidden],
             q_proj: make_proj("code_pred.blk.0.attn_q.weight", hidden, hidden)?,
@@ -1471,7 +1500,10 @@ mod tests {
             },
             || Ok((vec![2.0; 8], 2)),
         )?;
-        assert_eq!(codec_builds, 1, "PromptCache must reuse cached ICL streams on hit");
+        assert_eq!(
+            codec_builds, 1,
+            "PromptCache must reuse cached ICL streams on hit"
+        );
 
         assert!(HtpPrefillPacket::new_talker_prefill(1, 2048, 28, HtpQuantType::Q8_0).is_err());
         let pkt = HtpPrefillPacket::new_talker_prefill(64, 2048, 28, HtpQuantType::NativeQ2)?;
@@ -1488,7 +1520,10 @@ mod tests {
         let cfg = super::StreamChunkConfig::low_latency_4_frame().validate()?;
         assert_eq!(cfg.frames_for_chunk(0), 4);
         assert_eq!(cfg.frames_for_chunk(1), 4);
-        assert_eq!(super::StreamChunkConfig::standard_8_frame().frames_for_chunk(0), 8);
+        assert_eq!(
+            super::StreamChunkConfig::standard_8_frame().frames_for_chunk(0),
+            8
+        );
 
         let proj_par = LinearProjection::new(
             "talker.blk.0.attn_q.weight",

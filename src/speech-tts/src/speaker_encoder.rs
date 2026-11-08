@@ -147,7 +147,7 @@ impl MelSpectrogramExtractor {
             }
         }
 
-        let sr_f = usize_to_f32( usize::try_from(cfg.sample_rate).unwrap_or(24_000));
+        let sr_f = usize_to_f32(usize::try_from(cfg.sample_rate).unwrap_or(24_000));
         let fmin = cfg.fmin.max(0.0);
         let fmax = if cfg.fmax <= 0.0 {
             sr_f * 0.5

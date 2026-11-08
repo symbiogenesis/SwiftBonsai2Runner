@@ -157,15 +157,13 @@ fn multipart<'a>(media: &str, body: &'a [u8]) -> Result<&'a [u8], Error> {
     let parts = multipart_parts(interior, separator.as_bytes())?;
     let mut fields = HashMap::new();
     for part in parts.into_iter().flatten() {
-        let at = memchr::memmem::find(part, b"\r\n\r\n")
-            .ok_or(Error::bad("invalid_multipart"))?;
+        let at = memchr::memmem::find(part, b"\r\n\r\n").ok_or(Error::bad("invalid_multipart"))?;
         if at > 1024 {
             return Err(Error::bad("invalid_multipart"));
         }
         let mut headers = HashMap::new();
         for line in split_bytes(&part[..at], b"\r\n") {
-            let colon = memchr::memchr(b':', line)
-                .ok_or(Error::bad("invalid_multipart"))?;
+            let colon = memchr::memchr(b':', line).ok_or(Error::bad("invalid_multipart"))?;
             let name = std::str::from_utf8(&line[..colon])
                 .map_err(|_| Error::bad("invalid_multipart"))?
                 .to_ascii_lowercase();

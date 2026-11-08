@@ -17,7 +17,10 @@ use fearless_simd::{Level, dispatch, f32x4, prelude::*};
 
 use crate::{SAMPLE_RATE, SAMPLE_RATE_48K};
 
-#[allow(clippy::inline_always, reason = "fearless_simd dispatch! requires inline(always) to inherit target_feature attributes.")]
+#[allow(
+    clippy::inline_always,
+    reason = "fearless_simd dispatch! requires inline(always) to inherit target_feature attributes."
+)]
 #[inline(always)]
 fn add_slice_in_place_simd<S: Simd>(simd: S, dst: &mut [f32], src: &[f32]) {
     let (dst_chunks, dst_tail) = dst.as_chunks_mut::<4>();
@@ -346,7 +349,10 @@ impl SnakeBeta {
             ));
         }
         let a = alpha.iter().map(|&v| v.exp()).collect();
-        let inv_b = beta.iter().map(|&v| 1.0_f32 / (v.exp() + 1e-9_f32)).collect();
+        let inv_b = beta
+            .iter()
+            .map(|&v| 1.0_f32 / (v.exp() + 1e-9_f32))
+            .collect();
         Ok(Self { a, inv_b })
     }
 
@@ -595,7 +601,8 @@ impl RvqGroup {
                         "RVQ code index exceeds codebook_size.",
                     ));
                 }
-                let row = &self.codebooks[k][idx * self.codebook_dim..(idx + 1) * self.codebook_dim];
+                let row =
+                    &self.codebooks[k][idx * self.codebook_dim..(idx + 1) * self.codebook_dim];
                 for (dst, &val) in sum_emb.iter_mut().zip(row.iter()) {
                     *dst += val;
                 }
@@ -716,7 +723,12 @@ impl RvqEncodeSide {
     }
 
     /// Quantize `[frames, hidden_size]` into `[num_layers, frames]` codes.
-    pub fn encode(&self, hidden: &[f32], frames: usize, codes_out: &mut Vec<i32>) -> io::Result<()> {
+    pub fn encode(
+        &self,
+        hidden: &[f32],
+        frames: usize,
+        codes_out: &mut Vec<i32>,
+    ) -> io::Result<()> {
         if hidden.len() != frames * self.hidden_size {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidInput,
@@ -840,11 +852,7 @@ impl CodecStateCache {
     /// Save `state` under `key`, evicting the least-recently-used slot when full.
     pub fn snapshot(&mut self, key: u64, state: CodecStreamState) {
         self.stamp = self.stamp.saturating_add(1);
-        if let Some(existing) = self
-            .slots
-            .iter_mut()
-            .find(|s| s.stamp != 0 && s.key == key)
-        {
+        if let Some(existing) = self.slots.iter_mut().find(|s| s.stamp != 0 && s.key == key) {
             existing.state = state;
             existing.stamp = self.stamp;
             return;
@@ -903,7 +911,9 @@ impl DacDecoder {
                 "DAC streaming state block count mismatch.",
             ));
         }
-        let mut h = self.conv_pre.forward_stream(input, frames, &mut state.dac_pre)?;
+        let mut h = self
+            .conv_pre
+            .forward_stream(input, frames, &mut state.dac_pre)?;
         let mut cur_frames = frames;
         for (i, blk) in self.blocks.iter().enumerate() {
             let (next_h, next_f) = blk.forward_stream(
@@ -929,7 +939,7 @@ impl DacDecoder {
 #[cfg(test)]
 mod tests {
     use super::{
-         CODEC_SNAP_SLOTS, CausalConv1d, CausalTransConv1d, CodecStateCache, CodecStreamState,
+        CODEC_SNAP_SLOTS, CausalConv1d, CausalTransConv1d, CodecStateCache, CodecStreamState,
         ConvNeXtBlock, DacBlock, DacDecoder, DacResUnit, PadMode, RvqDecoder, RvqEncodeSide,
         RvqGroup, SnakeBeta, codec_ref_key, decimate_48k_to_24k,
     };
@@ -993,9 +1003,9 @@ mod tests {
             vec![1.0, 0.0, 0.0, 1.0],
             vec![vec![
                 -1.0, -1.0, // 0
-                -1.0, 1.0,  // 1
-                1.0, -1.0,  // 2
-                1.0, 1.0,   // 3
+                -1.0, 1.0, // 1
+                1.0, -1.0, // 2
+                1.0, 1.0, // 3
             ]],
         )?;
         let hidden = vec![0.9, -0.8, -0.95, 0.85];

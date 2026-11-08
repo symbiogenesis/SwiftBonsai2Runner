@@ -207,12 +207,11 @@ fn stream(
         if failed {
             return Err(io::Error::other("Invalid streaming speech audio."));
         }
-        total = bonsai_audio::finite_sample_count(samples, total, max_samples).ok_or_else(
-            || {
+        total =
+            bonsai_audio::finite_sample_count(samples, total, max_samples).ok_or_else(|| {
                 failed = true;
                 io::Error::other("Invalid streaming speech audio.")
-            },
-        )?;
+            })?;
         for chunk in samples.chunks(wave::PCM_SAMPLES) {
             if peer.write_all(frame.encode(chunk)).is_err() {
                 failed = true;

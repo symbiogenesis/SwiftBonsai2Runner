@@ -240,86 +240,90 @@ fn record_worker_readiness(report: &mut Value, expected: u8, verified: bool) {
         .extend(observation.as_object().unwrap().clone());
 }
 
-#[test]
-fn native_worker_receipts_require_exact_release_and_verified_readiness() {
-    for (version, four_admitted, worker_field_required) in [
-        (Some("0.1.8"), false, false),
-        (Some("0.1.9"), true, false),
-        (Some("0.1.10"), true, false),
-        (Some("0.1.11"), true, true),
-        (Some("0.1.12"), true, true),
-        (Some("0.1.13"), true, true),
-        (Some("0.1.14"), true, true),
-        (Some("0.1.15"), true, true),
-        (Some("0.1.16"), true, true),
-        (Some("0.1.17"), true, true),
-        (Some("0.1.18"), true, true),
-        (Some("0.1.19"), true, true),
-        (Some("0.1.20"), true, true),
-        (Some("0.1.21"), true, true),
-        (Some("0.1.22"), false, false),
-        (Some("v0.1.21"), false, false),
-        (Some("0.1.21-dev"), false, false),
-        (Some("0.1.21.0"), false, false),
-        (Some("0.1.021"), false, false),
-        (Some("v0.1.20"), false, false),
-        (Some("0.1.20-dev"), false, false),
-        (Some("0.1.20.0"), false, false),
-        (Some("0.1.020"), false, false),
-        (Some("v0.1.19"), false, false),
-        (Some("0.1.19-dev"), false, false),
-        (Some("0.1.19.0"), false, false),
-        (Some("0.1.019"), false, false),
-        (Some("v0.1.18"), false, false),
-        (Some("0.1.18-dev"), false, false),
-        (Some("0.1.18.0"), false, false),
-        (Some("0.1.018"), false, false),
-        (Some("v0.1.17"), false, false),
-        (Some("0.1.17-dev"), false, false),
-        (Some("0.1.17.0"), false, false),
-        (Some("0.1.017"), false, false),
-        (Some("v0.1.16"), false, false),
-        (Some("0.1.16-dev"), false, false),
-        (Some("0.1.16.0"), false, false),
-        (Some("0.1.016"), false, false),
-        (Some("v0.1.15"), false, false),
-        (Some("0.1.15-dev"), false, false),
-        (Some("0.1.15.0"), false, false),
-        (Some("0.1.015"), false, false),
-        (Some("v0.1.14"), false, false),
-        (Some("0.1.14-dev"), false, false),
-        (Some("0.1.14.0"), false, false),
-        (Some("0.1.014"), false, false),
-        (Some("v0.1.13"), false, false),
-        (Some("0.1.13-dev"), false, false),
-        (Some("0.1.13.0"), false, false),
-        (Some("0.1.013"), false, false),
-        (Some("v0.1.12"), false, false),
-        (Some("0.1.12-dev"), false, false),
-        (Some("0.1.12.0"), false, false),
-        (Some("v0.1.11"), false, false),
-        (Some("0.1.11-dev"), false, false),
-        (Some("0.1.11.0"), false, false),
-        (Some("0.1.011"), false, false),
-        (Some(""), false, false),
-        (None, false, false),
-    ] {
-        assert_eq!(native_four_worker_release(version), four_admitted);
-        for expected in [0, 1, 2, 4, 16] {
-            for verified in [false, true] {
-                let observed = worker_field_required && matches!(expected, 1 | 4) && verified;
-                let receipt = worker_readiness_receipt(version, expected, verified);
-                assert_eq!(receipt["rowWorkerReadinessVersion"], json!(version));
-                assert_eq!(receipt["verifiedReadinessObserved"], verified);
-                assert_eq!(receipt["configuredNativeRowWorkers"], expected);
-                assert_eq!(receipt["rowWorkerCountIndependentlyObserved"], observed);
-                assert_eq!(
-                    receipt["observedNativeRowWorkers"],
-                    json!(observed.then_some(expected))
-                );
-            }
+fn assert_worker_receipt_case(
+    version: Option<&str>,
+    four_admitted: bool,
+    worker_field_required: bool,
+) {
+    assert_eq!(native_four_worker_release(version), four_admitted);
+    for expected in [0, 1, 2, 4, 16] {
+        for verified in [false, true] {
+            let observed = worker_field_required && matches!(expected, 1 | 4) && verified;
+            let receipt = worker_readiness_receipt(version, expected, verified);
+            assert_eq!(receipt["rowWorkerReadinessVersion"], json!(version));
+            assert_eq!(receipt["verifiedReadinessObserved"], verified);
+            assert_eq!(receipt["configuredNativeRowWorkers"], expected);
+            assert_eq!(receipt["rowWorkerCountIndependentlyObserved"], observed);
+            assert_eq!(
+                receipt["observedNativeRowWorkers"],
+                json!(observed.then_some(expected))
+            );
         }
     }
+}
+
+#[test]
+fn native_worker_receipts_require_exact_release_and_verified_readiness() {
+    for version in ["0.1.9", "0.1.10"] {
+        assert_worker_receipt_case(Some(version), true, false);
+    }
+    for version in [
+        "0.1.11", "0.1.12", "0.1.13", "0.1.14", "0.1.15", "0.1.16", "0.1.17", "0.1.18", "0.1.19",
+        "0.1.20", "0.1.21",
+    ] {
+        assert_worker_receipt_case(Some(version), true, true);
+    }
+    for version in [
+        "0.1.8",
+        "0.1.22",
+        "v0.1.21",
+        "0.1.21-dev",
+        "0.1.21.0",
+        "0.1.021",
+        "v0.1.20",
+        "0.1.20-dev",
+        "0.1.20.0",
+        "0.1.020",
+        "v0.1.19",
+        "0.1.19-dev",
+        "0.1.19.0",
+        "0.1.019",
+        "v0.1.18",
+        "0.1.18-dev",
+        "0.1.18.0",
+        "0.1.018",
+        "v0.1.17",
+        "0.1.17-dev",
+        "0.1.17.0",
+        "0.1.017",
+        "v0.1.16",
+        "0.1.16-dev",
+        "0.1.16.0",
+        "0.1.016",
+        "v0.1.15",
+        "0.1.15-dev",
+        "0.1.15.0",
+        "0.1.015",
+        "v0.1.14",
+        "0.1.14-dev",
+        "0.1.14.0",
+        "0.1.014",
+        "v0.1.13",
+        "0.1.13-dev",
+        "0.1.13.0",
+        "0.1.013",
+        "v0.1.12",
+        "0.1.12-dev",
+        "0.1.12.0",
+        "v0.1.11",
+        "0.1.11-dev",
+        "0.1.11.0",
+        "0.1.011",
+        "",
+    ] {
+        assert_worker_receipt_case(Some(version), false, false);
+    }
+    assert_worker_receipt_case(None, false, false);
     let runtime_lock: Value =
         serde_json::from_str(include_str!("../../../config/prism-inference.lock.json")).unwrap();
     let mut report = json!({"runtimeLock":{"version":"untrusted-report-value"},

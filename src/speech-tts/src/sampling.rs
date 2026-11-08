@@ -214,7 +214,10 @@ fn msvc_partition_by_median_guess<T: Copy, F: Fn(T, T) -> bool>(
     msvc_guess_median(slice, 0, mid, len - 1, pred);
     let mut pfirst = mid;
     let mut plast = pfirst + 1;
-    while pfirst > 0 && !pred(slice[pfirst - 1], slice[pfirst]) && !pred(slice[pfirst], slice[pfirst - 1]) {
+    while pfirst > 0
+        && !pred(slice[pfirst - 1], slice[pfirst])
+        && !pred(slice[pfirst], slice[pfirst - 1])
+    {
         pfirst -= 1;
     }
     while plast < len && !pred(slice[plast], slice[pfirst]) && !pred(slice[pfirst], slice[plast]) {

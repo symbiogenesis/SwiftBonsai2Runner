@@ -5,13 +5,13 @@
 //! normalized mono 16 kHz samples and complete successful recognition results.
 #![forbid(unsafe_code)]
 
+use fearless_simd::{Level, dispatch, f32x4, prelude::*};
 use std::{
     fs::File,
     io::{self, Read},
     path::Path,
     sync::Once,
 };
-use fearless_simd::{Level, dispatch, f32x4, prelude::*};
 use transcribe_cpp::{Backend, Model, ModelOptions, RunOptions, Session, SessionOptions};
 
 /// Required sample rate for normalized mono input.
@@ -157,7 +157,10 @@ fn check_cancelled(cancellation: &Cancellation) -> io::Result<()> {
     Ok(())
 }
 
-#[allow(clippy::inline_always, reason = "fearless_simd dispatch! requires inline(always) to inherit target_feature attributes.")]
+#[allow(
+    clippy::inline_always,
+    reason = "fearless_simd dispatch! requires inline(always) to inherit target_feature attributes."
+)]
 #[inline(always)]
 fn pcm_in_unit_range_simd<S: Simd>(simd: S, pcm: &[f32]) -> bool {
     let min_v = f32x4::splat(simd, -1.0_f32);

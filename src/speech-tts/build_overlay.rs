@@ -373,8 +373,7 @@ static int sample_top_k_p(float * logits, int V, float temperature,
         );
         assert!(fs::read_to_string(source.join("src/sampling.h"))?.contains("philox_uniform_fill"));
         assert!(
-            fs::read_to_string(copy.join("src/sampling.h"))?
-                .contains("bonsai_qt_sample_top_k_p")
+            fs::read_to_string(copy.join("src/sampling.h"))?.contains("bonsai_qt_sample_top_k_p")
         );
         assert!(
             fs::read_to_string(source.join("src/sampling-graph.h"))?
