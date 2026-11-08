@@ -193,6 +193,7 @@ fn native_four_worker_release(version: Option<&str>) -> bool {
                 | "0.1.17"
                 | "0.1.18"
                 | "0.1.19"
+                | "0.1.20"
         )
     )
 }
@@ -213,6 +214,7 @@ fn worker_readiness_receipt(version: Option<&str>, expected: u8, verified: bool)
                 | "0.1.17"
                 | "0.1.18"
                 | "0.1.19"
+                | "0.1.20"
         )
     ) && matches!(expected, 1 | 4)
         && verified;
@@ -251,7 +253,12 @@ fn native_worker_receipts_require_exact_release_and_verified_readiness() {
         (Some("0.1.17"), true, true),
         (Some("0.1.18"), true, true),
         (Some("0.1.19"), true, true),
-        (Some("0.1.20"), false, false),
+        (Some("0.1.20"), true, true),
+        (Some("0.1.21"), false, false),
+        (Some("v0.1.20"), false, false),
+        (Some("0.1.20-dev"), false, false),
+        (Some("0.1.20.0"), false, false),
+        (Some("0.1.020"), false, false),
         (Some("v0.1.19"), false, false),
         (Some("0.1.19-dev"), false, false),
         (Some("0.1.19.0"), false, false),
@@ -329,6 +336,7 @@ fn native_worker_receipts_require_exact_release_and_verified_readiness() {
                     | "0.1.17"
                     | "0.1.18"
                     | "0.1.19"
+                    | "0.1.20"
             )
         )
     );
