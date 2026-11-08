@@ -13,7 +13,24 @@
 
 use std::io;
 
+use fearless_simd::{Level, dispatch, f32x4, prelude::*};
+
 use crate::{SAMPLE_RATE, SAMPLE_RATE_48K};
+
+#[allow(clippy::inline_always, reason = "fearless_simd dispatch! requires inline(always) to inherit target_feature attributes.")]
+#[inline(always)]
+fn add_slice_in_place_simd<S: Simd>(simd: S, dst: &mut [f32], src: &[f32]) {
+    let (dst_chunks, dst_tail) = dst.as_chunks_mut::<4>();
+    let (src_chunks, src_tail) = src.as_chunks::<4>();
+    for (d, s) in dst_chunks.iter_mut().zip(src_chunks.iter()) {
+        let dv = f32x4::from_slice(simd, d);
+        let sv = f32x4::from_slice(simd, s);
+        (dv + sv).store_slice(d);
+    }
+    for (d, &s) in dst_tail.iter_mut().zip(src_tail.iter()) {
+        *d += s;
+    }
+}
 
 /// Number of RVQ codebooks (`1` semantic + `15` acoustic).
 pub const TOKENIZER_NUM_CODEBOOKS: usize = 16;
@@ -381,9 +398,8 @@ impl DacResUnit {
         self.act2.apply_in_place(&mut h, frames)?;
         let mut dummy_state = [];
         let mut out = self.conv2.forward_stream(&h, frames, &mut dummy_state)?;
-        for (dst, &skip) in out.iter_mut().zip(input.iter()) {
-            *dst += skip;
-        }
+        let level = Level::new();
+        dispatch!(level, simd => add_slice_in_place_simd(simd, &mut out, input));
         Ok(out)
     }
 }

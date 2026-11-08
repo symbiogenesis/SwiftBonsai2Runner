@@ -558,6 +558,7 @@ name = "bonsai-speech-asr"
 version = "0.1.0"
 dependencies = [
  "bonsai-speech-service",
+ "fearless_simd",
  "serde_json",
  "transcribe-cpp",
 ]
@@ -583,6 +584,7 @@ version = "0.1.0"
 dependencies = [
  "bonsai-audio",
  "bonsai-speech-service",
+ "fearless_simd",
  "serde_json",
  "sha2",
 ]

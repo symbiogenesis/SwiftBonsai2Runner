@@ -12,6 +12,7 @@ description = "Bounded native Canary-Qwen 2.5B recognition for Bonsai speech ser
 
 [dependencies]
 bonsai-speech-service = { path = "../speech-service" }
+fearless_simd.workspace = true
 serde_json.workspace = true
 transcribe-cpp = { version = "=0.4.1", default-features = false }
 

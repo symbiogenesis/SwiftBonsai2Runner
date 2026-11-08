@@ -13,6 +13,7 @@ description = "Owned native Qwen VoiceDesign speech inference for Bonsai"
 [dependencies]
 bonsai-audio = { path = "../audio" }
 bonsai-speech-service = { path = "../speech-service" }
+fearless_simd.workspace = true
 serde_json.workspace = true
 
 [build-dependencies]

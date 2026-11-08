@@ -20,10 +20,72 @@
 
 use std::{collections::HashMap, io};
 
+use fearless_simd::{Level, dispatch, f32x4, prelude::*};
+
 use crate::{codec::codec_ref_key, sampling};
 
 /// Number of residual acoustic codebooks predicted by `CodePredictor` (`15`).
 pub const NUM_ACOUSTIC_CODEBOOKS: usize = 15;
+/// Default low-latency streaming chunk size in 12.5 Hz codec frames (`4` frames = `320` ms).
+pub const DEFAULT_STREAM_CHUNK_FRAMES: usize = 4;
+/// Minimum supported streaming chunk size in 12.5 Hz codec frames (`1` frame = `80` ms).
+pub const MIN_STREAM_CHUNK_FRAMES: usize = 1;
+/// Maximum supported streaming chunk size in 12.5 Hz codec frames (`32` frames = `2.56` s).
+pub const MAX_STREAM_CHUNK_FRAMES: usize = 32;
+
+/// Configurable streaming codec emission schedule (`streaming-qwen3-tts` / `qwen3-tts-rs`).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct StreamChunkConfig {
+    /// Number of 12.5 Hz frames in the first emitted audio chunk (`1..=32`, default `4`).
+    pub first_chunk_frames: usize,
+    /// Number of 12.5 Hz frames in subsequent steady-state chunks (`1..=32`, default `4`).
+    pub steady_chunk_frames: usize,
+}
+
+impl StreamChunkConfig {
+    /// Low-latency 4-frame (`320` ms) streaming schedule halving first-chunk TTFA vs. 8-frame chunking.
+    #[must_use]
+    pub const fn low_latency_4_frame() -> Self {
+        Self {
+            first_chunk_frames: DEFAULT_STREAM_CHUNK_FRAMES,
+            steady_chunk_frames: DEFAULT_STREAM_CHUNK_FRAMES,
+        }
+    }
+
+    /// Standard 8-frame (`640` ms) streaming schedule.
+    #[must_use]
+    pub const fn standard_8_frame() -> Self {
+        Self {
+            first_chunk_frames: 8,
+            steady_chunk_frames: 8,
+        }
+    }
+
+    /// Validate that both first and steady chunk sizes lie within `MIN_STREAM_CHUNK_FRAMES..=MAX_STREAM_CHUNK_FRAMES`.
+    pub fn validate(self) -> io::Result<Self> {
+        if self.first_chunk_frames < MIN_STREAM_CHUNK_FRAMES
+            || self.first_chunk_frames > MAX_STREAM_CHUNK_FRAMES
+            || self.steady_chunk_frames < MIN_STREAM_CHUNK_FRAMES
+            || self.steady_chunk_frames > MAX_STREAM_CHUNK_FRAMES
+        {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "StreamChunkConfig frame counts must be within 1..=32.",
+            ));
+        }
+        Ok(self)
+    }
+
+    /// Target frame count for emission `chunk_index` (`0` for first chunk, `> 0` for steady state).
+    #[must_use]
+    pub const fn frames_for_chunk(self, chunk_index: usize) -> usize {
+        if chunk_index == 0 {
+            self.first_chunk_frames
+        } else {
+            self.steady_chunk_frames
+        }
+    }
+}
 /// Total RVQ codebooks per 12.5 Hz frame (`1` semantic + `15` acoustic = `16`).
 pub const TOTAL_CODE_GROUPS: usize = 16;
 /// Default Hadamard block size for the 1.7B `Talker` (`1024`, dividing `hidden_size = 2048`).
@@ -256,6 +318,47 @@ pub fn repack_pq2_to_ptq1(quant: &WeightQuantization) -> io::Result<WeightQuanti
     })
 }
 
+#[allow(clippy::inline_always, reason = "fearless_simd dispatch! requires inline(always) to inherit target_feature attributes.")]
+#[inline(always)]
+fn fwht_simd_in_place<S: Simd>(simd: S, data: &mut [f32], norm: f32) {
+    let n = data.len();
+    let mut len = 1_usize;
+    while len < n {
+        let step = len * 2;
+        if len >= 4 {
+            for base in (0..n).step_by(step) {
+                let mut i = 0_usize;
+                while i + 4 <= len {
+                    let a = f32x4::from_slice(simd, &data[base + i..base + i + 4]);
+                    let b = f32x4::from_slice(simd, &data[base + i + len..base + i + len + 4]);
+                    (a + b).store_slice(&mut data[base + i..base + i + 4]);
+                    (a - b).store_slice(&mut data[base + i + len..base + i + len + 4]);
+                    i += 4;
+                }
+            }
+        } else {
+            for base in (0..n).step_by(step) {
+                for i in 0..len {
+                    let a = data[base + i];
+                    let b = data[base + i + len];
+                    data[base + i] = a + b;
+                    data[base + i + len] = a - b;
+                }
+            }
+        }
+        len = step;
+    }
+    let norm_v = f32x4::splat(simd, norm);
+    let (chunks, tail) = data.as_chunks_mut::<4>();
+    for chunk in chunks {
+        let v = f32x4::from_slice(simd, chunk);
+        (v * norm_v).store_slice(chunk);
+    }
+    for val in tail {
+        *val *= norm;
+    }
+}
+
 /// In-place normalized Sylvester Walsh–Hadamard transform over a power-of-two slice.
 pub fn sylvester_walsh_hadamard_in_place(data: &mut [f32]) -> io::Result<()> {
     let n = data.len();
@@ -265,23 +368,9 @@ pub fn sylvester_walsh_hadamard_in_place(data: &mut [f32]) -> io::Result<()> {
             "Hadamard block size must be a positive power of two.",
         ));
     }
-    let mut len = 1_usize;
-    while len < n {
-        let step = len * 2;
-        for base in (0..n).step_by(step) {
-            for i in 0..len {
-                let a = data[base + i];
-                let b = data[base + i + len];
-                data[base + i] = a + b;
-                data[base + i + len] = a - b;
-            }
-        }
-        len = step;
-    }
     let norm = 1.0_f32 / usize_to_f32(n).sqrt();
-    for val in data.iter_mut() {
-        *val *= norm;
-    }
+    let level = Level::new();
+    dispatch!(level, simd => fwht_simd_in_place(simd, data, norm));
     Ok(())
 }
 
@@ -425,14 +514,25 @@ impl LinearProjection {
     }
 
     /// Project one vector `input` (`[in_dim]`) into `[out_dim]`, optionally applying `lora`.
-    #[allow(
-        clippy::too_many_lines,
-        reason = "Dispatches across F32, Q8_0, PQ2_0, and PTQ1_0 weight representations in one match."
-    )]
     pub fn forward_vec(
         &self,
         input: &[f32],
         lora: Option<&LoraProjectionPatch>,
+    ) -> io::Result<Vec<f32>> {
+        self.forward_vec_parallel(input, lora, 1)
+    }
+
+    /// Project one vector `input` (`[in_dim]`) into `[out_dim]` using `fearless_simd` NEON
+    /// and up to `threads` scoped row workers.
+    #[allow(
+        clippy::too_many_lines,
+        reason = "Dispatches across F32, Q8_0, PQ2_0, and PTQ1_0 weight representations with optional scoped row parallelism."
+    )]
+    pub fn forward_vec_parallel(
+        &self,
+        input: &[f32],
+        lora: Option<&LoraProjectionPatch>,
+        threads: usize,
     ) -> io::Result<Vec<f32>> {
         if input.len() != self.in_dim {
             return Err(io::Error::new(
@@ -444,6 +544,7 @@ impl LinearProjection {
             .bias
             .clone()
             .unwrap_or_else(|| vec![0.0_f32; self.out_dim]);
+        let worker_count = threads.clamp(1, 18).min(self.out_dim.max(1));
 
         match &self.weight {
             WeightQuantization::F32(w) => {
@@ -453,14 +554,19 @@ impl LinearProjection {
                         "F32 weight buffer size mismatch.",
                     ));
                 }
-                for (o, dst) in out.iter_mut().enumerate() {
-                    let row = &w[o * self.in_dim..(o + 1) * self.in_dim];
-                    let mut acc = *dst;
-                    for (&wi, &xi) in row.iter().zip(input.iter()) {
-                        acc = wi.mul_add(xi, acc);
+                let in_dim = self.in_dim;
+                let compute_slice = |row_offset: usize, dst_slice: &mut [f32]| {
+                    for (local_o, dst) in dst_slice.iter_mut().enumerate() {
+                        let o = row_offset + local_o;
+                        let row = &w[o * in_dim..(o + 1) * in_dim];
+                        let mut acc = *dst;
+                        for (&wi, &xi) in row.iter().zip(input.iter()) {
+                            acc = wi.mul_add(xi, acc);
+                        }
+                        *dst = acc;
                     }
-                    *dst = acc;
-                }
+                };
+                run_row_chunks(&mut out, worker_count, compute_slice);
             }
             WeightQuantization::Q8_0 { blocks } => {
                 let blocks_per_row = self.in_dim / 32;
@@ -471,19 +577,23 @@ impl LinearProjection {
                         "Q8_0 block count mismatch.",
                     ));
                 }
-                for (o, dst) in out.iter_mut().enumerate() {
-                    let row_blocks = &blocks[o * blocks_per_row..(o + 1) * blocks_per_row];
-                    let mut acc = *dst;
-                    for (bi, blk) in row_blocks.iter().enumerate() {
-                        let x_slice = &input[bi * 32..(bi + 1) * 32];
-                        let mut b_sum = 0.0_f32;
-                        for (&q, &x) in blk.quants.iter().zip(x_slice.iter()) {
-                            b_sum = f32::from(q).mul_add(x, b_sum);
+                let compute_slice = |row_offset: usize, dst_slice: &mut [f32]| {
+                    for (local_o, dst) in dst_slice.iter_mut().enumerate() {
+                        let o = row_offset + local_o;
+                        let row_blocks = &blocks[o * blocks_per_row..(o + 1) * blocks_per_row];
+                        let mut acc = *dst;
+                        for (bi, blk) in row_blocks.iter().enumerate() {
+                            let x_slice = &input[bi * 32..(bi + 1) * 32];
+                            let mut b_sum = 0.0_f32;
+                            for (&q, &x) in blk.quants.iter().zip(x_slice.iter()) {
+                                b_sum = f32::from(q).mul_add(x, b_sum);
+                            }
+                            acc = blk.scale.mul_add(b_sum, acc);
                         }
-                        acc = blk.scale.mul_add(b_sum, acc);
+                        *dst = acc;
                     }
-                    *dst = acc;
-                }
+                };
+                run_row_chunks(&mut out, worker_count, compute_slice);
             }
             WeightQuantization::PQ2_0 {
                 group_size,
@@ -506,26 +616,31 @@ impl LinearProjection {
                         "PQ2_0 buffer dimensions mismatch.",
                     ));
                 }
-                for (o, dst) in out.iter_mut().enumerate() {
-                    let row_scales = &scales[o * groups_per_row..(o + 1) * groups_per_row];
-                    let row_bytes = &packed_trits[o * bytes_per_row..(o + 1) * bytes_per_row];
-                    let mut acc = *dst;
-                    for (gi, &scale) in row_scales.iter().enumerate() {
-                        let start_col = gi * *group_size;
-                        let mut g_sum = 0.0_f32;
-                        for idx in 0..*group_size {
-                            let col = start_col + idx;
-                            let code = (row_bytes[col / 4] >> ((col % 4) * 2)) & 0b11;
-                            match code {
-                                0 => g_sum -= x_folded[col],
-                                2 => g_sum += x_folded[col],
-                                _ => {}
+                let gsize = *group_size;
+                let compute_slice = |row_offset: usize, dst_slice: &mut [f32]| {
+                    for (local_o, dst) in dst_slice.iter_mut().enumerate() {
+                        let o = row_offset + local_o;
+                        let row_scales = &scales[o * groups_per_row..(o + 1) * groups_per_row];
+                        let row_bytes = &packed_trits[o * bytes_per_row..(o + 1) * bytes_per_row];
+                        let mut acc = *dst;
+                        for (gi, &scale) in row_scales.iter().enumerate() {
+                            let start_col = gi * gsize;
+                            let mut g_sum = 0.0_f32;
+                            for idx in 0..gsize {
+                                let col = start_col + idx;
+                                let code = (row_bytes[col / 4] >> ((col % 4) * 2)) & 0b11;
+                                match code {
+                                    0 => g_sum -= x_folded[col],
+                                    2 => g_sum += x_folded[col],
+                                    _ => {}
+                                }
                             }
+                            acc = scale.mul_add(g_sum, acc);
                         }
-                        acc = scale.mul_add(g_sum, acc);
+                        *dst = acc;
                     }
-                    *dst = acc;
-                }
+                };
+                run_row_chunks(&mut out, worker_count, compute_slice);
             }
             WeightQuantization::PTQ1_0 {
                 group_size,
@@ -550,30 +665,35 @@ impl LinearProjection {
                         "PTQ1_0 buffer dimensions mismatch.",
                     ));
                 }
-                for (o, dst) in out.iter_mut().enumerate() {
-                    let row_scales = &scales[o * groups_per_row..(o + 1) * groups_per_row];
-                    let row_nz = &nz_mask[o * bytes_per_row..(o + 1) * bytes_per_row];
-                    let row_sg = &sign_mask[o * bytes_per_row..(o + 1) * bytes_per_row];
-                    let mut acc = *dst;
-                    for (gi, &scale) in row_scales.iter().enumerate() {
-                        let start_col = gi * *group_size;
-                        let mut g_sum = 0.0_f32;
-                        for idx in 0..*group_size {
-                            let col = start_col + idx;
-                            let byte_i = col / 8;
-                            let bit_i = col % 8;
-                            if (row_nz[byte_i] >> bit_i) & 1 != 0 {
-                                if (row_sg[byte_i] >> bit_i) & 1 != 0 {
-                                    g_sum += x_folded[col];
-                                } else {
-                                    g_sum -= x_folded[col];
+                let gsize = *group_size;
+                let compute_slice = |row_offset: usize, dst_slice: &mut [f32]| {
+                    for (local_o, dst) in dst_slice.iter_mut().enumerate() {
+                        let o = row_offset + local_o;
+                        let row_scales = &scales[o * groups_per_row..(o + 1) * groups_per_row];
+                        let row_nz = &nz_mask[o * bytes_per_row..(o + 1) * bytes_per_row];
+                        let row_sg = &sign_mask[o * bytes_per_row..(o + 1) * bytes_per_row];
+                        let mut acc = *dst;
+                        for (gi, &scale) in row_scales.iter().enumerate() {
+                            let start_col = gi * gsize;
+                            let mut g_sum = 0.0_f32;
+                            for idx in 0..gsize {
+                                let col = start_col + idx;
+                                let byte_i = col / 8;
+                                let bit_i = col % 8;
+                                if (row_nz[byte_i] >> bit_i) & 1 != 0 {
+                                    if (row_sg[byte_i] >> bit_i) & 1 != 0 {
+                                        g_sum += x_folded[col];
+                                    } else {
+                                        g_sum -= x_folded[col];
+                                    }
                                 }
                             }
+                            acc = scale.mul_add(g_sum, acc);
                         }
-                        acc = scale.mul_add(g_sum, acc);
+                        *dst = acc;
                     }
-                    *dst = acc;
-                }
+                };
+                run_row_chunks(&mut out, worker_count, compute_slice);
             }
         }
 
@@ -581,6 +701,45 @@ impl LinearProjection {
             patch.apply(input, &mut out)?;
         }
         Ok(out)
+    }
+}
+
+fn run_row_chunks<F>(out: &mut [f32], worker_count: usize, compute_slice: F)
+where
+    F: Fn(usize, &mut [f32]) + Sync,
+{
+    if worker_count <= 1 || out.len() < 4 {
+        compute_slice(0, out);
+        return;
+    }
+    let chunk_rows = out.len().div_ceil(worker_count);
+    std::thread::scope(|scope| {
+        let mut row_offset = 0_usize;
+        for slice in out.chunks_mut(chunk_rows) {
+            let start = row_offset;
+            row_offset += slice.len();
+            let compute_ref = &compute_slice;
+            scope.spawn(move || {
+                compute_ref(start, slice);
+            });
+        }
+    });
+}
+
+#[allow(clippy::inline_always, reason = "fearless_simd dispatch! requires inline(always) to inherit target_feature attributes.")]
+#[inline(always)]
+fn rms_norm_scale_simd<S: Simd>(simd: S, input: &[f32], weight: &[f32], scale: f32, out: &mut [f32]) {
+    let scale_v = f32x4::splat(simd, scale);
+    let (in_chunks, in_tail) = input.as_chunks::<4>();
+    let (w_chunks, w_tail) = weight.as_chunks::<4>();
+    let (out_chunks, out_tail) = out.as_chunks_mut::<4>();
+    for ((x_c, w_c), dst_c) in in_chunks.iter().zip(w_chunks.iter()).zip(out_chunks.iter_mut()) {
+        let xv = f32x4::from_slice(simd, x_c);
+        let wv = f32x4::from_slice(simd, w_c);
+        ((xv * scale_v) * wv).store_slice(dst_c);
+    }
+    for ((&x, &w), dst) in in_tail.iter().zip(w_tail.iter()).zip(out_tail.iter_mut()) {
+        *dst = (x * scale) * w;
     }
 }
 
@@ -595,11 +754,10 @@ pub fn rms_norm(input: &[f32], weight: &[f32], eps: f32) -> io::Result<Vec<f32>>
     let inv_n = 1.0_f32 / usize_to_f32(input.len());
     let mean_sq = input.iter().map(|&v| v * v).sum::<f32>() * inv_n;
     let scale = 1.0_f32 / (mean_sq + eps).sqrt();
-    Ok(input
-        .iter()
-        .zip(weight.iter())
-        .map(|(&x, &w)| (x * scale) * w)
-        .collect())
+    let mut out = vec![0.0_f32; input.len()];
+    let level = Level::new();
+    dispatch!(level, simd => rms_norm_scale_simd(simd, input, weight, scale, &mut out));
+    Ok(out)
 }
 
 /// Apply 1D NEOX-style half-split `RoPE` (or collapsed 3D `MRoPE` when all 3 axes share `pos`)
@@ -1322,6 +1480,32 @@ mod tests {
             name: "indic-en".to_owned(),
             patches: HashMap::new(),
         };
+        Ok(())
+    }
+
+    #[test]
+    fn stream_chunk_config_and_parallel_projection_match_sequential() -> std::io::Result<()> {
+        let cfg = super::StreamChunkConfig::low_latency_4_frame().validate()?;
+        assert_eq!(cfg.frames_for_chunk(0), 4);
+        assert_eq!(cfg.frames_for_chunk(1), 4);
+        assert_eq!(super::StreamChunkConfig::standard_8_frame().frames_for_chunk(0), 8);
+
+        let proj_par = LinearProjection::new(
+            "talker.blk.0.attn_q.weight",
+            4,
+            8,
+            WeightQuantization::F32(
+                (0..32)
+                    .map(|i| f32::from(u8::try_from(i).unwrap_or(0)) * 0.1)
+                    .collect(),
+            ),
+            Some(vec![0.05; 8]),
+        )?;
+        let x4 = [0.25_f32, -0.5, 0.75, 1.0];
+        assert_eq!(
+            proj_par.forward_vec(&x4, None)?,
+            proj_par.forward_vec_parallel(&x4, None, 4)?
+        );
         Ok(())
     }
 }
