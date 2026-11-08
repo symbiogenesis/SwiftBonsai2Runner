@@ -2,7 +2,7 @@
 
 use super::{Failure, MAX_HEAD, Result};
 
-const MAX_PCM: usize = 24_000 * 2 * 120;
+const MAX_PCM: usize = 48_000 * 2 * 120;
 const INVALID: Failure = Failure::Message("The local speech stream was incomplete or invalid.");
 
 pub(super) fn decode(

@@ -369,6 +369,10 @@ impl Frames {
             }
             pcm = &pcm[count..];
             if self.pending.len() == self.packet_bytes {
+                self.previous_tail_sample = Some(i16::from_le_bytes([
+                    self.pending[self.packet_bytes - 2],
+                    self.pending[self.packet_bytes - 1],
+                ]));
                 let replacement = self.replacement();
                 sink(std::mem::replace(&mut self.pending, replacement))?;
             }
@@ -400,11 +404,11 @@ impl Frames {
             Ok(())
         } else if self.pending.len() % 2 == 0 {
             let len = self.pending.len();
-            let tail = i16::from_le_bytes([self.pending[len - 2], self.pending[len - 1]]);
             // Apply a gentle Hann tail taper toward 0 on the final HANN_BOUNDARY_SAMPLES
             // of the segment and record the boundary sample for the next segment's onset.
-            let mut next_dummy = [tail.to_le_bytes()[0], tail.to_le_bytes()[1]];
+            let mut next_dummy = [0_u8; HANN_BOUNDARY_SAMPLES * 2];
             smooth_segment_boundary(&mut self.pending, &mut next_dummy);
+            let tail = i16::from_le_bytes([self.pending[len - 2], self.pending[len - 1]]);
             self.previous_tail_sample = Some(tail);
             self.onset_remaining = HANN_BOUNDARY_SAMPLES;
             let replacement = self.replacement();
@@ -512,6 +516,13 @@ fn consume_with(
                 break;
             }
         }
+        if buffered.ready.is_empty() && buffered.flush {
+            buffered.flush = false;
+            if !started && output.queued() > 0 {
+                output.start()?;
+                started = true;
+            }
+        }
         if finished && buffered.ready.is_empty() && output.queued() == 0 {
             return Ok(());
         }
@@ -557,19 +568,22 @@ struct Buffered {
     segment: VecDeque<Vec<u8>>,
     bytes: usize,
     segment_bytes: usize,
+    packet_bytes: usize,
     first: Option<(Instant, usize)>,
     released: bool,
     slow: bool,
+    underrun: bool,
     flush: bool,
 }
 
 impl Buffered {
     fn frame(&mut self, pcm: Vec<u8>, now: Instant) -> Result<Option<Vec<u8>>, tts::Failure> {
-        let max_packet = if pcm.len() > PACKET_BYTES {
+        let max_packet = if pcm.len() > PACKET_BYTES || self.packet_bytes == PACKET_BYTES_48K {
             PACKET_BYTES_48K
         } else {
             PACKET_BYTES
         };
+        self.packet_bytes = max_packet;
         let max_buffer = if max_packet == PACKET_BYTES_48K {
             MAX_BUFFER_BYTES * 2
         } else {
@@ -593,16 +607,20 @@ impl Buffered {
         } else {
             let bytes_per_ms = if max_packet == PACKET_BYTES_48K { 96 } else { 48 };
             self.segment.push_back(pcm);
-            if self.segment_bytes >= PREROLL_PACKETS * max_packet {
+            if self.segment.len() >= PREROLL_PACKETS
+                && self.segment_bytes >= PREROLL_PACKETS * max_packet
+            {
                 // Exclude cold first-audio latency. This compares later supply
                 // time to the duration it produced, not to model load time.
                 let duration = Duration::from_millis(
                     u64::try_from(self.segment_bytes - initial).map_err(|_| AUDIO_FAILURE)?
                         / bytes_per_ms,
                 );
-                // One codec burst of jitter is normal even at real-time speed:
-                // the native ramp groups 80/160/320/640 ms into separate callbacks.
-                self.slow |= now.saturating_duration_since(first) > duration + CODEC_BURST;
+                // The native ramp groups 80/160/320/640 ms into separate callbacks,
+                // requiring 12 frames (960 ms) and two vocoder decodes between the
+                // first packet (Callback 2) and Packet 7 (Callback 4).
+                self.slow |= now.saturating_duration_since(first)
+                    > duration.saturating_mul(2) + CODEC_BURST.saturating_mul(2);
                 if !self.slow {
                     self.ready.append(&mut self.segment);
                     self.released = true;
@@ -616,11 +634,15 @@ impl Buffered {
         if self.segment_bytes == 0 {
             return Err(AUDIO_FAILURE);
         }
+        if self.segment.is_empty() {
+            self.underrun = false;
+        }
         self.ready.append(&mut self.segment);
         self.segment_bytes = 0;
         self.first = None;
         self.released = false;
-        self.flush = !self.ready.is_empty();
+        self.slow = self.underrun;
+        self.flush = true;
         Ok(())
     }
 
@@ -631,6 +653,7 @@ impl Buffered {
     }
 
     const fn underrun(&mut self) {
+        self.underrun = true;
         self.slow = true;
         self.released = false;
     }
@@ -1412,6 +1435,79 @@ mod tests {
             ),
             Err(Failure::Cancelled)
         );
+        Ok(())
+    }
+
+    #[test]
+    fn punctuation_boundaries_drain_48k_partial_tails_and_reset_false_underruns()
+    -> Result<(), Failure> {
+        // 1. 48 kHz short sentence (4 full 9,600-byte packets + 1 partial 1,920-byte tail
+        // at a punctuation mark) must not prematurely release on the partial tail or hang
+        // paused with queued buffers when SegmentEnd arrives.
+        let (sender, incoming) = mpsc::sync_channel(PREFETCH_PACKETS);
+        let mut frames_48k = Frames {
+            packet_bytes: PACKET_BYTES_48K,
+            ..Frames::default()
+        };
+        let sentence_one = vec![100_u8; PACKET_BYTES_48K * 4 + 1_920];
+        frames_48k.push(&sentence_one, |packet| {
+            sender
+                .send(Audio::Frame(packet))
+                .map_err(|_| super::AUDIO_FAILURE)
+        })?;
+        frames_48k.finish_segment(|packet| {
+            sender
+                .send(Audio::Frame(packet))
+                .map_err(|_| super::AUDIO_FAILURE)
+        })?;
+        assert!(sender.send(Audio::SegmentEnd).is_ok());
+        let sentence_two = vec![50_u8; PACKET_BYTES_48K * PREROLL_PACKETS];
+        frames_48k.push(&sentence_two, |packet| {
+            sender
+                .send(Audio::Frame(packet))
+                .map_err(|_| super::AUDIO_FAILURE)
+        })?;
+        frames_48k.finish_segment(|packet| {
+            sender
+                .send(Audio::Frame(packet))
+                .map_err(|_| super::AUDIO_FAILURE)
+        })?;
+        assert!(sender.send(Audio::SegmentEnd).is_ok());
+        drop(sender);
+
+        let mut output_48k = RecordingOutput::default();
+        consume_with(
+            &incoming,
+            1,
+            &AtomicU64::new(1),
+            &AtomicBool::new(false),
+            &mut output_48k,
+        )?;
+        assert_eq!(
+            output_48k.played.len(),
+            sentence_one.len() + sentence_two.len()
+        );
+        assert_eq!(output_48k.starts, vec![5, PREROLL_PACKETS]);
+
+        // 2. A boundary underrun right after all released packets of a sentence have
+        // drained (before SegmentEnd is popped) must reset when SegmentEnd arrives so
+        // the next sentence after punctuation still streams after PREROLL_PACKETS.
+        let now = Instant::now();
+        let mut buffered = Buffered::default();
+        for _ in 0..PREROLL_PACKETS {
+            assert!(buffered.frame(vec![1; PACKET_BYTES], now)?.is_none());
+        }
+        assert!(buffered.released);
+        while buffered.pop().is_some() {}
+        buffered.underrun();
+        assert!(buffered.slow);
+        buffered.end()?;
+        assert!(!buffered.slow);
+        for _ in 0..PREROLL_PACKETS {
+            assert!(buffered.frame(vec![2; PACKET_BYTES], now)?.is_none());
+        }
+        assert!(buffered.released);
+        assert_eq!(buffered.ready.len(), PREROLL_PACKETS);
         Ok(())
     }
 }
