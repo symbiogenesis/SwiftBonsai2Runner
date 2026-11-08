@@ -148,6 +148,7 @@ fn row_workers_supported(version: &str, workers: u8) -> Result<(), LaunchError> 
                     | "0.1.18"
                     | "0.1.19"
                     | "0.1.20"
+                    | "0.1.21"
             ))
     {
         Ok(())
@@ -178,6 +179,8 @@ fn prompt_reuse_supported(release: &ReleasePin, latest: bool) -> Result<(), Laun
             && release.commit == "951cc88486fdc5609a3aa57aad3b9e92216de2b1")
         || (release.version == "0.1.20"
             && release.commit == "3a22fefc497da3d571c07bba072f270fc9c4b135")
+        || (release.version == "0.1.21"
+            && release.commit == "90eb97481a8df532cc0375660a1533bb0c5fe4cb")
     {
         Ok(())
     } else {
@@ -232,6 +235,10 @@ mod tests {
             "0.1.19",
             "0.1.20",
             "0.1.21",
+            "0.1.22",
+            "0.1.21-dev",
+            "v0.1.21",
+            "0.1.021",
             "0.1.20-dev",
             "v0.1.20",
             "0.1.020",
@@ -319,7 +326,7 @@ mod tests {
         assert!(row_workers_supported("0.1.8", 1).is_ok());
         for version in [
             "0.1.9", "0.1.10", "0.1.11", "0.1.12", "0.1.13", "0.1.14", "0.1.15", "0.1.16",
-            "0.1.17", "0.1.18", "0.1.19", "0.1.20",
+            "0.1.17", "0.1.18", "0.1.19", "0.1.20", "0.1.21",
         ] {
             assert!(row_workers_supported(version, 1).is_ok());
             assert!(row_workers_supported(version, 4).is_ok());
@@ -332,7 +339,11 @@ mod tests {
         }
         for version in [
             "0.1.8",
-            "0.1.21",
+            "0.1.22",
+            "0.1.21-dev",
+            "v0.1.21",
+            "0.1.21.0",
+            "0.1.021",
             "0.1.20-dev",
             "v0.1.20",
             "0.1.20.0",

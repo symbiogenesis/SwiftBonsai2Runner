@@ -201,6 +201,11 @@ mod tests {
             ("0.1.20.0", false),
             ("0.1.020", false),
             ("0.1.21", false),
+            ("0.1.21-dev", false),
+            ("v0.1.21", false),
+            ("0.1.21.0", false),
+            ("0.1.021", false),
+            ("0.1.22", false),
             ("1.0.0", false),
             ("0.1.010", false),
             ("v0.1.10", false),
@@ -264,7 +269,7 @@ mod tests {
 
         for version in [
             "0.1.11", "0.1.12", "0.1.13", "0.1.14", "0.1.15", "0.1.16", "0.1.17", "0.1.18",
-            "0.1.19", "0.1.20",
+            "0.1.19", "0.1.20", "0.1.21",
         ] {
             for repacked in [false, true] {
                 for adapter in [false, true] {
@@ -322,7 +327,7 @@ mod tests {
     fn worker_readiness_rejects_coercion_unbounded_counts_and_duplicate_fields() {
         for version in [
             "0.1.10", "0.1.11", "0.1.12", "0.1.13", "0.1.14", "0.1.15", "0.1.16", "0.1.17",
-            "0.1.18", "0.1.19", "0.1.20",
+            "0.1.18", "0.1.19", "0.1.20", "0.1.21",
         ] {
             let policy = WorkerReadiness::for_version(version, 4);
             for invalid in [
