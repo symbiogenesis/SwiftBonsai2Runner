@@ -1,9 +1,0 @@
-
-running 4 tests
-test cli::tests::chat_options_preserve_types_and_reject_ambiguous_input ... ok
-test cli::tests::bounded_input_rejects_nonobjects_truncation_and_overflow ... ok
-test cli::tests::weight_options_preserve_explicit_false_and_reject_conflicting_selections ... ok
-test cli::tests::engine_options_preserve_explicit_false_and_reject_conflicting_selections ... ok
-
-test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 301 filtered out; finished in 0.00s
-

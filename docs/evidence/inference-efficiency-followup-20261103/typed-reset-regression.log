@@ -1,9 +1,0 @@
-   Compiling prism-inference v0.1.14 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\efficiency2-integration)
-    Finished `release` profile [optimized] target(s) in 3.87s
-     Running tests\graph.rs (C:\Users\symbi\AppData\Local\Temp\inference-efficiency-local-20261103\target\release\build\prism-inference/552d012446592d8a\out\graph-552d012446592d8a.exe)
-
-running 1 test
-test empty_reset_preserves_hybrid_state_after_late_failure_and_checkpoint_restore ... ok
-
-test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 69 filtered out; finished in 0.00s
-

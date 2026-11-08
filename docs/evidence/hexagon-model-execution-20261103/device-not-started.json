@@ -1,6 +1,0 @@
-{
-  "deviceAttempted": false,
-  "remainingSeconds": 267.3902062,
-  "requiredSeconds": 320,
-  "reason": "The fixed 300-second supervisor plus source-receipt intake and retention no longer fits the original aggregate deadline."
-}

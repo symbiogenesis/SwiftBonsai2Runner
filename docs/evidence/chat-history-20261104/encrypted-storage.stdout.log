@@ -1,7 +1,0 @@
-
-running 2 tests
-test recovery::tests::encrypted_recovery_replaces_atomically_locks_and_erases ... ok
-test recovery::tests::encrypted_recovery_finishes_erase_after_queued_saves ... ok
-
-test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 238 filtered out; finished in 0.07s
-

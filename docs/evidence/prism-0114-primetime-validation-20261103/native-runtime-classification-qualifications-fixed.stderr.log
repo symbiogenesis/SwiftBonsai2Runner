@@ -1,3 +1,0 @@
-   Compiling bonsai-broker v0.1.0 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\primetime-integration\src\broker)
-    Finished `release` profile [optimized] target(s) in 3.95s
-     Running unittests src\lib.rs (C:\Users\symbi\AppData\Local\Temp\ptq1-local-validation-20261103\target\release\build\bonsai-broker/b3544d6f2aa3ab07\out\bonsai_broker-b3544d6f2aa3ab07.exe)

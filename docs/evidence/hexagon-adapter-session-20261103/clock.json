@@ -1,7 +1,0 @@
-{
-  "declarationUtc": "2026-11-04T04:02:41.962933+00:00",
-  "deadlineUtc": "2026-11-04T04:52:41.962933+00:00",
-  "earlierPreparationChargeSeconds": 600,
-  "maximumAggregateSeconds": 3600,
-  "historicalDeadlinesReopened": false
-}

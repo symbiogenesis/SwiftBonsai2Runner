@@ -1,7 +1,0 @@
-   Compiling bonsai-tools v0.1.0 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\tools\bonsai)
-    Finished `release` profile [optimized] target(s) in 16.61s
-     Running unittests src\lib.rs (C:\Users\symbi\AppData\Local\Temp\SwiftBonsai-Hmx-Session-20261103\runner-target\release\build\bonsai-tools/9ea432ffc44f85a8\out\bonsai_tools-9ea432ffc44f85a8.exe)
-    Checking bonsai-tools v0.1.0 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\tools\bonsai)
-    Finished `release` profile [optimized] target(s) in 5.99s
-   Compiling bonsai-tools v0.1.0 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\tools\bonsai)
-    Finished `release` profile [optimized] target(s) in 14.14s

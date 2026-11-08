@@ -1,13 +1,8 @@
 # Keep retained observation selection bytes stable for their recorded SHA-256.
 # Keep the current PTQ1 release decision and independent reviews portable.
 docs/evidence/token-timing-20261103/** -text -whitespace
-docs/evidence/token-timing-20261103-prism-019.lock.json text eol=lf
-docs/evidence/token-timing-20261103-protocol-review.json text eol=lf
-docs/evidence/token-timing-20261103-independent-review.json text eol=lf
-docs/evidence/token-timing-20261103-stream-review.json text eol=lf
 
 docs/evidence/local-throughput-20261103/** -text -whitespace
-docs/evidence/local-throughput-20261103-independent-review.json text eol=lf
 
 docs/evidence/ptq1-primetime-*-20261103.json text eol=lf
 
@@ -17,10 +12,8 @@ docs/evidence/ptq1-unblock-20261103/** -text -whitespace
 # Preserve the closed shared-startup timeout check's raw bytes and hashes.
 docs/evidence/ptq1-startup-timeout-20261103/** -text -whitespace
 
-docs/evidence/ptq1-local-validation-20261103/** -text -whitespace
 docs/evidence/inference-efficiency-local-20261103/** -text -whitespace
 docs/evidence/inference-efficiency-followup-20261103/** -text -whitespace
-docs/evidence/prism-0114-local-readiness-20261103/** -text -whitespace
 docs/evidence/prism-0114-primetime-validation-20261103/** -text -whitespace
 docs/evidence/native-primetime-preparation-20261103/** -text -whitespace
 docs/evidence/native-owner-packet-controls-20261103/** -text -whitespace
@@ -28,7 +21,6 @@ docs/evidence/native-owner-packet-controls-20261103/** -text -whitespace
 docs/evidence/native-daily-readiness-20261103/** -text -whitespace
 
 docs/evidence/native-hosted-readiness-20261103/** -text -whitespace
-docs/evidence/prism-0114-primetime-preparation-20261103/maintenance-installation.json -text -whitespace
 docs/evidence/hexagon-advance-controls.json text eol=lf
 docs/evidence/hexagon-x2-dispatch.json text eol=lf
 docs/evidence/hexagon-x2-session-metadata.json text eol=lf
@@ -41,15 +33,12 @@ tools/native-reference/swift_ptq1_reference.rs text eol=lf
 
 # Preserve original CRLF/LF bytes of retained hosted SDK inventory receipts.
 docs/evidence/hexagon-sdk-inventory-41168523349/*.json -text
-docs/evidence/hexagon-sdk-inventory-41168523349/host.json whitespace=cr-at-eol
 
 # Preserve the second hosted SDK recipe/license metadata receipt bytes.
 docs/evidence/hexagon-sdk-inventory-41168872514/*.json -text
-docs/evidence/hexagon-sdk-inventory-41168872514/host.json whitespace=cr-at-eol
 
 # Preserve the third hosted SDK functional-token/NOTICE metadata receipt bytes.
 docs/evidence/hexagon-sdk-functional-41171339745/*.json -text
-docs/evidence/hexagon-sdk-functional-41171339745/host.json whitespace=cr-at-eol
 
 # Preserve captured source/log bytes, including original observation whitespace.
 docs/evidence/hexagon-public-qaic-41169481882/** -text -whitespace
@@ -67,29 +56,11 @@ docs/evidence/hexagon-public-qaic-41171073546/** -text -whitespace
 docs/evidence/hexagon-public-qaic-41171859264/** -text -whitespace
 docs/evidence/hexagon-public-qaic-41171448060/** -text -whitespace
 
-# Preserve exact JSON bytes and hashes from the bounded inference-speed attempt.
-docs/evidence/native-request-speed-20261031/*.json -text whitespace=cr-at-eol
-
-# Keep current-release PTQ1 failure and independent-review receipts byte-identical.
-docs/evidence/ptq1-0112-lifecycle-41379669484/*.json -text whitespace=cr-at-eol
-
 # Preserve exact hosted adapter-direction inputs, result and review receipt bytes.
 docs/evidence/ptq1-direction-41530766802/*.json -text whitespace=cr-at-eol
 
-# Preserve the exact hosted request-timing tool's source and executable receipt.
-docs/evidence/prism-request-timing-41533302218/*.json -text whitespace=cr-at-eol
-docs/evidence/prism-request-timing-41535596245/*.json -text whitespace=cr-at-eol
-
 # Preserve any exact receipts from the bounded 0.1.13 lifecycle attempt.
 docs/evidence/ptq1-0113-lifecycle-*/*.json -text whitespace=cr-at-eol
-
-# Preserve the original hosted complete packing report bytes and manifest hashes.
-docs/evidence/ptq1-packing-41567729492/*.json -text whitespace=cr-at-eol
-
-# Preserve the fresh frozen-candidate promotion input, policy, score and raw report bytes.
-docs/evidence/ptq1-promotion-469f57b.json -text whitespace=cr-at-eol
-docs/evidence/ptq1-promotion-469f57b-review.json -text whitespace=cr-at-eol
-docs/evidence/ptq1-promotion-469f57b/** -text whitespace=cr-at-eol
 
 # Preserve the frozen bb020f4 promotion input, policy, score and reviewed raw evidence.
 docs/evidence/ptq1-promotion-bb020f4.json -text whitespace=cr-at-eol
@@ -97,20 +68,14 @@ docs/evidence/ptq1-promotion-bb020f4-review.json -text whitespace=cr-at-eol
 docs/evidence/ptq1-promotion-bb020f4/** -text whitespace=cr-at-eol
 
 # Preserve the frozen 0.1.13 score and independently reviewed partial service data.
-docs/evidence/ptq1-promotion-bb020f4-service-90a62b9/** -text whitespace=cr-at-eol
-docs/evidence/ptq1-promotion-bb020f4-service-90a62b9/**/*.txt -text -whitespace
 docs/evidence/ptq1-promotion-bb020f4-service-90a62b9-review.json -text whitespace=cr-at-eol
 
 # Preserve the checked source/release receipt bytes for the prepared 0.1.14 pin.
 docs/evidence/prism-0114-pin-preparation.json -text whitespace=cr-at-eol
-docs/evidence/prism-0114-pin-preparation/** -text whitespace=cr-at-eol
 
 # Keep hosted public queue ABI inputs and Rust/C control sources portable.
 tools/hexagon/windows_queue_abi.* text eol=lf
 tools/hexagon/windows-queue-abi.lock.json text eol=lf
-
-# Preserve original bounded numerical capture report bytes.
-docs/evidence/ptq1-numerics-41568281287/*.json -text whitespace=cr-at-eol
 
 # Preserve original hosted retained-capture audit report bytes.
 docs/evidence/ptq1-retained-audit-*/*.json -text whitespace=cr-at-eol
@@ -120,16 +85,6 @@ docs/evidence/ptq1-rollback-41573164864/** -text whitespace=cr-at-eol
 
 # Preserve exact service trial receipts and independently retained hosted metadata.
 docs/evidence/ptq1-service-41577882160/** -text whitespace=cr-at-eol
-docs/evidence/ptq1-service-41577882160/exact-owner-panic.txt -whitespace
-docs/evidence/ptq1-service-41577882160/sanitized-diagnostics/startup-backend.*.txt -whitespace
-docs/evidence/ptq1-service-ci-1f6a697/** -text whitespace=cr-at-eol
-docs/evidence/ptq1-service-ci-90a62b9/** -text whitespace=cr-at-eol
-
-# Preserve exact hosted compiler and negative-fixture failure excerpts.
-docs/evidence/ptq1-context-hosted-corrections/** -text -whitespace
-
-# Preserve received release receipts, metadata and independent data-review bytes.
-docs/evidence/ptq1-context-release-014/** -text -whitespace
 
 # Retain exact terminal owning-CI and main-ancestor metadata for release 0.1.14.
 docs/evidence/ptq1-context-owning-ci-9e/** -text -whitespace

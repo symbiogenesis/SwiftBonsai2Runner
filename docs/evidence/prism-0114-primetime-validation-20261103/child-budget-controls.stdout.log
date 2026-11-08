@@ -1,8 +1,0 @@
-
-running 3 tests
-test native_case_budget_rejects_missing_unbounded_and_malformed_allowances ... ok
-test native_case_budget_cancels_owned_tasks_before_followup ... ok
-test native_case_budget_extension_requires_a_valid_predeclared_total ... ok
-
-test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 70 filtered out; finished in 0.05s
-

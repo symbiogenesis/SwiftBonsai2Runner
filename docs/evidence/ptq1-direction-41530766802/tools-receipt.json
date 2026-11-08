@@ -1,7 +1,0 @@
-{
-  "Toolchain": "nightly-2026-11-02-aarch64-pc-windows-msvc",
-  "SourceId": "eeb374ac3bfb87cabe28329488c48cd495427f77a510eb27299a971609393e29",
-  "Sha256": "71603a93aad1c8dc6e62a35009e4d445d0d6c0bd5ab6b15dc13bf4be0147c5dc",
-  "SchemaVersion": 2,
-  "ProbeSha256": "4bb72a261d7336b4effc3e53a8a39b624e967fb1741a30de5d8139d8c3c9bb17"
-}

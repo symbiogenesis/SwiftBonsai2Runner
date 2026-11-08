@@ -1,4 +1,0 @@
-   Compiling windows-sys v0.61.2
-   Compiling bonsai-windows-credentials v0.1.0 (C:\Users\symbi\source\repos\SwiftBonsai2Runner\.worktrees\chat-save-error\src\windows-credentials)
-    Finished `release` profile [optimized] target(s) in 2.45s
-     Running unittests src\lib.rs (C:\Users\symbi\AppData\Local\SwiftBonsai2\build\chat\cd31d71ca8da53bd5d98bc6d\aarch64-pc-windows-msvc\release\build\bonsai-windows-credentials/31e69c636af0d491\out\bonsai_windows_credentials-31e69c636af0d491.exe)

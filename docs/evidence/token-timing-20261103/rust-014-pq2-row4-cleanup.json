@@ -1,7 +1,0 @@
-{
-  "activeProcesses": 0,
-  "elapsedSeconds": 33.5970824,
-  "ownedJobStopped": true,
-  "peakJobMemoryBytes": 7727276032,
-  "reason": "cancelled-parent-or-deadline"
-}

@@ -1,9 +1,0 @@
-   Compiling bonsai-artifacts v0.1.0 (C:\Users\symbi\AppData\Local\Temp\Runner-CI-Fix-20261103\source\src\artifacts)
-    Finished `release` profile [optimized] target(s) in 0.83s
-     Running tests\contained.rs (C:\Users\symbi\AppData\Local\Temp\Runner-CI-Fix-20261103\target\release\build\bonsai-artifacts/ba16aa43ece3298b\out\contained-ba16aa43ece3298b.exe)
-
-running 1 test
-test host_verification_denies_nested_ancestor_rename_and_delete_until_drop ... ok
-
-test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 3 filtered out; finished in 0.01s
-
