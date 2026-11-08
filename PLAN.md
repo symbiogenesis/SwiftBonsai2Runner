@@ -821,6 +821,19 @@ not close pending hosted integration or full-model acceptance.
      stateful `CodecStateSnap` streaming pipeline to pure Rust, then remove `qwentts.cpp`
      source provisioning, CMake/C++ compilation (`src/speech-tts/build*.rs`), and all
      `ggml-*.dll` runtime dependencies.
+  5. **Bonsai-style ternary `Talker` compression (`PQ2_0` / `PTQ1_0`)**: After the
+     pure-Rust `Talker` port (Step 3) and `Q4_K_M` baseline qualification, apply offline
+     block-1024 Sylvester Walsh–Hadamard + sign folding (`input-last-dimension`, matching
+     the 1.7B `Talker`'s `2048` hidden width) and Hessian/activation-calibrated group-128
+     ternary quantization (`PQ2_0` and lossless `PTQ1_0` repack via `bonsai-ternary`) to
+     the 28-layer `Talker` `attn_q/k/v/output` and `ffn_gate/up/down` projections in the
+     upstream `Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign` and `Base` checkpoints. Keep
+     `text_embd`, `codec_embd`, `text_proj`, `codec_head` and RMS norms in `Q8_0`/`F16`/`F32`,
+     retain `Q8_0` or `Q4_K_M` for the 5-layer `CodePredictor`, and keep the 12 Hz
+     ConvNeXt/`SnakeBeta` audio codec and ECAPA-TDNN speaker encoder at `Q8_0`/`F16`.
+     Execute the ternary `Talker` projections through shared `prism-inference` Hadamard
+     transform + `PQ2_0`/`PTQ1_0` NEON CPU kernels and Snapdragon X2 Hexagon NPU
+     `native-q2` (`HTP_TYPE_Q2_0`) resident offload.
 
 ## Creative quality, adapters and memory
 
@@ -870,6 +883,16 @@ not close pending hosted integration or full-model acceptance.
   generated PCM from audible output, supply gaps and underruns; use [existing resource
   evidence](docs/performance-expectations.md#q4-speech-resource-comparison) and reuse
   contracts to choose remaining work.
+- Evaluate and qualify the mixed-precision ternary `Talker` candidate (`PQ2_0` / lossless
+  `PTQ1_0` repack) against the verified `Q8_0` and `Q4_K_M` speech locks once the
+  pure-Rust `Talker` runtime and offline Hadamard-folded artifact are prepared. Pin exact
+  immutable GGUF lengths, SHA-256 digests and `prism.hadamard.*` transform metadata before
+  device admission; never attempt to repack existing `Q8_0`/`Q4_K_M` weights directly or
+  ternarize `CodePredictor`, `codec_head` or the 12 Hz ConvNeXt/`SnakeBeta` codec. Require
+  paired target-device CI and independent human listening across `VoiceDesign` reference
+  bootstrap and warm `Base` synthesis (timbre, prosody, phoneme stability, EOS
+  termination, first-audio/chunk latency, peak Job commit/working set and recorded
+  AC/battery power conditions) while retaining `Q8_0`/`Q4_K_M` rollback.
 - Qualify [native-owned VoiceDesign
   references](docs/streaming-resources.md#native-speech-generation-and-streaming)
   through Design teardown and Base extraction on first use, profile changes and
