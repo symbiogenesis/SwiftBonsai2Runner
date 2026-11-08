@@ -40,13 +40,14 @@ extern "C" fn bonsai_qt_cpu_threads(logical_threads: c_uint) -> c_int {
     CPU_THREADS.get(logical_threads)
 }
 
-// Phonemically balanced, multi-contour elicitation fixture (33 words) covering
-// trap-bath vowel splits (path, glass, arch, calm), rhotic/non-rhotic post-vocalic
-// /r/ (morning, courtyard, north, weather, clear, shower), dental fricatives
-// (/θ/, /ð/: When, the, gather, whether, north, weather, smooth), diphthongs
-// (bright, light, quiet, near, clear, shower), and clause-medial + declarative
-// intonation contours. Recreating a stopped worker uses the same phrase and seed.
-static REFERENCE_TEXT: &CStr = c"When the bright morning light warms the quiet courtyard path, we gather near the old glass arch to ask whether the north wind will bring clear weather, calm seas, or a smooth shower.";
+// Compact, single-clause phonemically balanced elicitation fixture (17 words)
+// covering trap-bath vowel splits (path, glass, arch), rhotic/non-rhotic
+// post-vocalic /r/ (morning, courtyard, near, arch, clear, weather), dental
+// fricatives (/θ/, /ð/: The, the, path, weather), and diphthongs (bright,
+// light, quiet, near, clear) without internal comma pauses that would embed
+// silence gaps into the ICL reference codes or inflate per-segment prefill.
+// Recreating a stopped worker uses the same phrase and seed.
+static REFERENCE_TEXT: &CStr = c"The bright morning light warms the quiet courtyard path near the old glass arch in clear weather.";
 const VOICE_SEED: i64 = 42;
 const MAX_REFERENCE_SAMPLES: usize = 24_000 * 30;
 const CODEBOOKS: i32 = 16;
@@ -87,9 +88,11 @@ fn design_params(voice: &CStr) -> qwen::TtsParams {
 
 // Decouple Talker vs. CodePredictor (subtalker_*) sampling during Base synthesis:
 // keep expressive Talker temperature (0.85) with tightened nucleus (0.9) while
-// lowering subtalker_temperature (0.6) and tightening subtalker_top_p (0.9) so
+// lowering subtalker_temperature (0.6) and keeping subtalker_top_p at 1.0 (so
+// pipeline-tts.cpp stays on the fast top_k=50 SAMPLER_TAIL_FIXED path instead of
+// full-vocabulary SAMPLER_TAIL_FULL across all 15 residual codebooks) so
 // residual codebooks 1..=15 lock onto high-probability consonant formants
-// without frame-to-frame timbre jitter.
+// without frame-to-frame timbre jitter or CPU sampling stalls.
 fn clone_params(text: &CStr, reference: &qwen::RawVoiceReference) -> qwen::TtsParams {
     let mut params = synthesis_params(text);
     params.ref_text = REFERENCE_TEXT.as_ptr();
@@ -103,7 +106,7 @@ fn clone_params(text: &CStr, reference: &qwen::RawVoiceReference) -> qwen::TtsPa
     params.repetition_penalty = 1.05;
     params.subtalker_temperature = 0.6;
     params.subtalker_top_k = 50;
-    params.subtalker_top_p = 0.9;
+    params.subtalker_top_p = 1.0;
     params
 }
 
@@ -644,10 +647,11 @@ mod tests {
     #[test]
     fn every_utterance_borrows_the_same_speaker_codes_and_reference_transcript() {
         let ref_str = REFERENCE_TEXT.to_str().unwrap_or("");
-        assert_eq!(ref_str.split_whitespace().count(), 33);
+        assert_eq!(ref_str.split_whitespace().count(), 17);
+        assert!(!ref_str.contains(','));
         assert!(ref_str.contains("courtyard path"));
-        assert!(ref_str.contains("whether the north wind"));
-        assert!(ref_str.contains("smooth shower"));
+        assert!(ref_str.contains("old glass arch"));
+        assert!(ref_str.contains("clear weather"));
 
         let mut speaker = [0.5_f32; 8];
         let mut codes = [1_i32; 32];
@@ -680,7 +684,7 @@ mod tests {
             assert_eq!(params.repetition_penalty, 1.05);
             assert_eq!(params.subtalker_temperature, 0.6);
             assert_eq!(params.subtalker_top_k, 50);
-            assert_eq!(params.subtalker_top_p, 0.9);
+            assert_eq!(params.subtalker_top_p, 1.0);
         }
         for profile in [c"Warm narrator", c"Clear alto"] {
             let design = design_params(profile);

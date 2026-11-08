@@ -920,20 +920,22 @@ not close pending hosted integration or full-model acceptance.
     Preserve expressive `temperature` (`0.9`, `top_k: 50`, `top_p: 1.0`) during
     `VoiceDesign` reference bootstrap (`design_params`) while lowering `Talker`
     `temperature` (`0.85`), tightening `Talker` `top_p` (`0.9`), lowering
-    `subtalker_temperature` (`0.6`) and tightening `subtalker_top_p` (`0.9`) during `Base`
-    synthesis (`clone_params`) so residual codebooks `1..=15` lock onto high-probability
-    consonant formants without frame-to-frame timbre jitter. Window `repetition_penalty` to
+    `subtalker_temperature` (`0.6`) and keeping `subtalker_top_p` (`1.0`, `SAMPLER_TAIL_FIXED`)
+    during `Base` synthesis (`clone_params`) so residual codebooks `1..=15` lock onto
+    high-probability consonant formants without frame-to-frame timbre jitter or full-vocab
+    CPU sampling overhead. Window `repetition_penalty` to
     the trailing `REPETITION_PENALTY_WINDOW = 72` tokens (~5.76 s at 12.5 Hz) to eliminate
     progressive speaking-rate acceleration and clipped word endings over multi-sentence
     read-aloud (`dffdeeq/Qwen3-TTS-streaming` and `grimavatar/Qwen3-TTS-Train` findings).
   - **Phonemically balanced, accent-eliciting reference conditioning (`src/speech-tts/src/native.rs`,
-    lifted from `NeoKazuya/qwen3-tts-enhanced`, implemented)**: Replace the flat 18-word
-    `REFERENCE_TEXT` with a 33-word phonemically balanced, multi-contour elicitation
+    lifted from `NeoKazuya/qwen3-tts-enhanced`, implemented)**: Replace the flat two-sentence
+    `REFERENCE_TEXT` with a compact 17-word single-clause phonemically balanced elicitation
     passage covering trap-bath vowel splits, rhotic/non-rhotic post-vocalic `/r/`, dental
-    fricatives (`/θ/, /ð/`), diphthongs, and declarative/clause-medial intonation contours
-    so `Base` in-context conditioning (`icl_codec_stream` / `icl_ref_text_stream`, cached
-    once in `PromptCache` at zero warm-request projection cost) faithfully reproduces
-    diverse regional accents.
+    fricatives (`/θ/, /ð/`), and diphthongs without internal comma pauses so `Base`
+    in-context conditioning (`icl_codec_stream` / `icl_ref_text_stream`, cached once in
+    `PromptCache` at zero warm-request projection cost) faithfully reproduces diverse
+    regional accents without inflating ICL `ref_codes` length or inducing premature EOS at
+    punctuation pauses.
   - **48 kHz drop-in codec decoder (`takuma104/Qwen3-TTS-Tokenizer-12Hz-48kHz`) and
     segment boundary smoothing (`src/chat-ui/src/speech/pipeline.rs`, `src/speech-tts`,
     `src/speech-service`, implemented; GGUF lock & device listening pending)**: Support
