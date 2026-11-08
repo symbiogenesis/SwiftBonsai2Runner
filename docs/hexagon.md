@@ -184,7 +184,7 @@ writes), with cosine similarity `0.999906-0.999974`, RMSE `0.0221-0.0286`, exact
 The [logical payload ledger](evidence/hexagon-swift-traffic-ledger.json) derives
 13.69 GB of signed-kernel input/result payload per all-eligible original-PQ2
 evaluation token. The opt-in [mapped host-weight arena and graph cache](../tools/hexagon/resident-host.md)
-reuse immutable packed tiles across tokens, with a 64 MiB HMX bitplane arena ceiling (`480` MiB per arena and up to `4` arenas / `1,920` MiB per session for `native-q2`),
+reuse immutable packed tiles across tokens, with a 64 MiB HMX bitplane arena ceiling (`480` MiB per arena and up to `6` arenas / `2,880` MiB per session for `native-q2`, `2,888,663,040` bytes / `2,754.84` MiB across `blk.0..=blk.26`),
 separate host metadata accounting and unchanged terminal operation/deadline limits.
 The cache binds exact immutable source storage and geometry; complete capacity
 misses select the streaming path before preparation. Preparation or submission

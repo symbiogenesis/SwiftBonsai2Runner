@@ -32,10 +32,12 @@ The [memory guide](swift-memory.md) records 16-token Prism CPU decode and PTQ1 r
 the [Rust runtime contract](native-rust-engine.md) owns NEON/hybrid-graph evidence.
 Neither establishes complete-answer performance. The
 [2026-11-03 separated timing capture](evidence/token-timing-20261103/summary.json)
-measured all seven installed Rust profiles; the [README table](../README.md#performance)
-records the exact versions. Current Rust 0.1.14/four-worker/adapter-1.3 PQ2
-measured **16.64 s TTFT and 1.34 generation tokens/s**; PTQ1 measured
-**29.50 s and 0.75 tokens/s**. Each response truncated at eight reported tokens.
+measured all seven installed Rust profiles (`0.1.9` through `0.1.14`); the [README table](../README.md#performance)
+records the exact versions. Rust 0.1.14/four-worker/adapter-1.3 PQ2
+measured **16.64 s TTFT, 1.34 generation tokens/s and 7.20 GiB short-request peak Job commit**; PTQ1 measured
+**29.50 s, 0.75 tokens/s and 6.02 GiB short-request peak Job commit** (`1.17 GiB` lower short-request peak Job commit).
+Four-worker row parallelism in `0.1.10` (`16.98 s` TTFT, `1.34` generation tokens/s) improved upon single-worker `0.1.10` (`35.59 s` TTFT, `0.64` generation tokens/s) by **2.10x** on TTFT and **2.09x** on generation rate, while `0.1.10` startup/prefill changes reduced four-worker TTFT from `23.00 s` (`0.1.9`). Each response truncated at eight reported tokens.
+Runner now pins **Rust Prism `0.1.19`** (`951cc88`), which adds the `0.1.15`–`0.1.19` CPU NEON, multi-worker GDN/attention/conv/SwiGLU, `4x4`/`8x8` tiled-prefill GEMM, and Snapdragon X2 6-arena 168-projection (`blk.0..=blk.26`, `2,888,663,040` resident weight bytes / `2,754.84 MiB`) `native-q2` resident NPU optimizations; see [Hexagon execution contracts](hexagon.md) and the [README NPU table](../README.md#snapdragon-x2-hexagon-npu-v81-projection-and-layer-timings) for the supervised 3-token (`42, 43, 128`) X2 device control timings (`0.64–0.98 ms` for 1 projection, `1.08–1.44 ms` for 2 projections, `2.27–2.87 ms` for 6 recurrent projections in `blk.0`, `4.43–4.87 ms` with `422.49–446.20 ms` warm token evaluation for 13 projections in `blk.0 + blk.3`, and `10.05–10.91 ms` for all 25 projections of the 4-layer repeating block `blk.0..=blk.3`).
 
 TTFT includes the required exact count/admission, prefill and direct backend HTTP
 delivery, excluding startup. Generation speed uses the seven intervals after the

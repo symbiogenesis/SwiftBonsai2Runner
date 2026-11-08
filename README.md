@@ -32,9 +32,9 @@ the window opens. Explicit provisioning uses `bonsai-tools provision` with opera
 `inference` and an absolute `dataDirectory`; see the [setup commands](docs/development-guide.md#native-chat-app).
 
 Once you've [set up the model and runtime](docs/development-guide.md#native-chat-app),
-run `bonsai-tools chat`. The development default is Rust Prism 0.1.18 with the
+run `bonsai-tools chat`. The development default is Rust Prism 0.1.19 with the
 original Swift PQ2 weights, four CPU row workers and the standard adapter at
-scale 1.3, and default Snapdragon X2 Hexagon NPU `native-q2` resident acceleration (`blk.0..=blk.17`, 112 projections across 4 arenas). Use `bonsai-tools chat --publisher-engine` for the explicit publisher
+scale 1.3, and default Snapdragon X2 Hexagon NPU `native-q2` resident acceleration (`blk.0..=blk.26`, 168 projections across 6 arenas). Use `bonsai-tools chat --publisher-engine` for the explicit publisher
 C++ rollback. `--native-engine` remains accepted. Both open the native Windows chat app.
 
 The convenience launcher `./scripts/Start-Chat.ps1` uses the same prebuilt Rust
@@ -77,25 +77,78 @@ and [local API contract](docs/broker-policy.md#public-request-contract).
 | **Hardware** | Snapdragon X and X2 · Windows ARM64 |
 | **Model** | Swift Bonsai 2 · `PQ2_0` |
 | **CPU profile** | One active request · 8K-token context · FP16 attention caches |
-| **Engine** | Rust Prism 0.1.18; four CPU row workers; Snapdragon X2 Hexagon NPU `native-q2` resident acceleration (`blk.0..=blk.17`, 112 projections); adapter scale 1.3 |
+| **Engine** | Rust Prism 0.1.19; four CPU row workers; Snapdragon X2 Hexagon NPU `native-q2` resident acceleration (`blk.0..=blk.26`, 168 projections across 6 arenas); adapter scale 1.3 |
 | **Outstanding work** | [Central TODO](PLAN.md) |
 
 ## Performance
 
 | Model | Runtime | Time to first token (s) | Generation tokens/second | Model file | Job commit cap / measured peak | Available RAM admission | Restore copy saved vs. Rust 0.1.4 |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| **Swift Bonsai 2 `PQ2_0` (development default)** | **Rust 0.1.14 release + LoRA 1.3** | **16.64** | **1.34** | **6.71 GiB** | **11.5 GiB / not measured** | **15.5 GiB** | **149.625 MiB** |
-| **Swift Bonsai 2 `PTQ1_0` (experimental opt-in)** | **Rust 0.1.14 release + LoRA 1.3** | **29.50** | **0.75** | **5.54 GiB** | **11.5 GiB / not measured** | **15.5 GiB** | **149.625 MiB** |
+| **Swift Bonsai 2 `PQ2_0` (development default; pinned at Rust 0.1.19)** | **Rust 0.1.14 release (4 workers) + LoRA 1.3** | **16.64** | **1.34** | **6.71 GiB** | **11.5 GiB / 7.20 GiB (short request)** | **15.5 GiB** | **149.625 MiB** |
+| **Swift Bonsai 2 `PTQ1_0` (experimental opt-in; pinned at Rust 0.1.19)** | **Rust 0.1.14 release (4 workers) + LoRA 1.3** | **29.50** | **0.75** | **5.54 GiB** | **11.5 GiB / 6.02 GiB (short request)** | **15.5 GiB** | **149.625 MiB** |
+| Swift Bonsai 2 `PQ2_0` | Rust 0.1.13 release (4 workers) + LoRA 1.3 | 16.45 | 1.32 | 6.71 GiB | 11.5 GiB / 7.20 GiB (short request) | 15.5 GiB | 149.625 MiB |
+| Swift Bonsai 2 `PTQ1_0` | Rust 0.1.13 release (4 workers) + LoRA 1.3 | 28.69 | 0.75 | 5.54 GiB | 11.5 GiB / 6.02 GiB (short request) | 15.5 GiB | 149.625 MiB |
+| Swift Bonsai 2 `PQ2_0` | Rust 0.1.10 release (4 workers) + LoRA 1.3 | 16.98 | 1.34 | 6.71 GiB | 11.5 GiB / 7.20 GiB (short request) | 15.5 GiB | 149.625 MiB |
+| Swift Bonsai 2 `PQ2_0` | Rust 0.1.10 release (1 worker) + LoRA 1.3 | 35.59 | 0.64 | 6.71 GiB | 11.5 GiB / 7.20 GiB (short request) | 15.5 GiB | 149.625 MiB |
+| Swift Bonsai 2 `PQ2_0` | Rust 0.1.9 release (4 workers) + LoRA 1.3 | 23.00 | 1.32 | 6.71 GiB | 11.5 GiB / 7.20 GiB (short request) | 15.5 GiB | 149.625 MiB |
 | Swift Bonsai 2 `PTQ1_0` | PrismML C++ CPU | Startup failed | Startup failed | 5.54 GiB | 11.5 GiB / — | 15.5 GiB | — |
 | Swift Bonsai 2 `PQ2_0` (explicit publisher rollback) | PrismML C++ CPU | Startup failed | Startup failed | 6.71 GiB | 11.5 GiB / — | 15.5 GiB | — |
 | Qwen3.8-27B `UD-Q3_K_XL` | llama.cpp reference | Not installed | Not installed | 12.24 GiB | 18 GiB / — | 22 GiB | — |
 
 The [2026-11-03 separated timing capture](docs/evidence/token-timing-20261103/summary.json)
 measured seven installed Rust profiles on the Snapdragon X2 Elite Extreme.
-The current release profiles shown above use the default four CPU row workers.
+The current release profiles use the default four CPU row workers; comparing the
+`0.1.10` single-worker row (`35.59 s` TTFT, `0.64` generation tokens/s) against
+the four-worker row (`16.98 s` TTFT, `1.34` generation tokens/s) shows a **2.10x
+faster TTFT** and **2.09x faster generation rate** from four-worker row parallelism,
+while the `0.1.10` startup/prefill changes reduced four-worker TTFT from `23.00 s`
+(`0.1.9`) to `16.98 s` (`16.45–16.64 s` in `0.1.13`–`0.1.14`). Short-request peak Job
+commit measured **7.20 GiB** (`7,726,850,048–7,727,276,032` bytes) across all five
+`PQ2_0` profiles and **6.02 GiB** (`6,465,683,456–6,465,744,896` bytes) across both
+`PTQ1_0` profiles (**1.17 GiB lower peak Job commit** on short requests).
 Each fresh owner used the fixed prompt `Count from 1 to 100.`, thinking off,
 seed 42 and the standard Swift adapter at scale 1.3. All seven measured responses
 reported eight completion tokens and returned `1, 2, 3,` before hitting the cap.
+Runner now pins **Rust Prism `0.1.19`** (`951cc88`), which adds the `0.1.15`–`0.1.19`
+CPU NEON, multi-worker GDN/attention/conv/SwiGLU, `4x4`/`8x8` tiled-prefill GEMM,
+and Snapdragon X2 6-arena 168-projection `native-q2` resident NPU optimizations;
+an updated end-to-end HTTP timing capture on `0.1.19` remains pending.
+
+### Snapdragon X2 Hexagon NPU (`v81`) projection and layer timings
+
+In `Prism 0.1.19`, `prism-inference-server` pre-warms **`DEFAULT_NATIVE_Q2_PROJECTIONS = 168`**
+(`blk.0..=blk.26`, **`2,888,663,040` resident weight bytes / `2,754.84 MiB`** across
+six alternating `<= 480 MiB` `FastRPC` weight arenas `[502_824_960, 460_062_720, 502_824_960, 460_062_720, 502_824_960, 460_062_720]`
+within CDSP `v-size = 3,000 MiB`, with scoped `<= 92 KiB` active-prefix `dspqueue`
+cache flushes and batched 2/3-op sibling plus 4-op multi-token tiled-prefill
+submissions) by default on Snapdragon X2 when the verified signed GenieX `v0.10.0`
+runtime (`libggml-htp-v81.so`) and CDSP driver are present, falling back to
+4-worker NEON CPU otherwise. Losslessly transcoding `PQ2_0` weights into tiled
+`HTP_TYPE_Q2_0` reduces shared-memory output traffic per `[5120, 17408]` projection
+by **320x** (`69,632` bytes vs. `22.28 MB` of 8-plane `FP32` bitplanes) and eliminates
+host bitplane reconstruction.
+
+The table below summarizes the supervised 3-token (`42, 43, 128`) Snapdragon X2 Elite
+Extreme device controls (`LoRA 1.3`, 4 CPU row workers; see [Hexagon execution contracts](docs/hexagon.md)
+for full receipts):
+
+| Placement / backend | Projections (`PQ2_0`) | Resident weight payload (`FastRPC` mapped) | NPU submit & wait / token (ms) | Per-projection NPU time (ms) | Token evaluation: NPU vs. 4-worker NEON CPU (ms) | Numerical verification | Power condition |
+| --- | --- | ---: | ---: | ---: | ---: | --- | --- |
+| [**1-op `native-q2` resident (`ccb1339`)**](docs/evidence/npu-native-q2-1op-20261105/summary.json) | 1 (`blk.0.ffn_up`, `[5120, 17408]`) | 23.91 MiB (47.90 MiB) | **0.64–0.98** | **0.64–0.98** | 520.84–561.49 vs. 515.92–589.57 | Cosine `0.999908–0.999972`, RMSE `0.0221–0.0286`, top-1 `3/3`, top-5 `5/5` | AC (`99%`, saver off) |
+| [**1-op `native-q2` resident (`ccb1339`)**](docs/evidence/npu-native-q2-1op-20261105/summary.json) | 2 (`blk.0.ffn_up + ffn_gate`) | 47.81 MiB (71.81 MiB) | **1.08–1.44** | **0.54–0.72** | **506.15**–567.14 vs. 516.49–591.33 | Cosine `0.999906–0.999974`, RMSE `0.0226–0.0284`, top-1 `3/3`, top-5 `5/5` | AC (`99%`, saver off) |
+| [**Full recurrent layer `native-q2` (`a383e92`)**](docs/evidence/npu-full-layer-native-q2-a383e92-20261105/summary.json) | 6 (`blk.0` all recurrent projections) | 102.66 MiB (126.65 MiB) | **2.27–2.87** | **0.38–0.48** | 395.80–603.33 vs. 547.11–628.76 | Cosine `0.999893–0.999973`, RMSE `0.0249–0.0306`, top-1 `3/3`, top-5 `5/5` | Battery (`90%`, saver off; diagnostic) |
+| [**2-layer `native-q2` unscoped flush (`a383e92`)**](docs/evidence/npu-full-layer-native-q2-a383e92-20261105/summary.json) | 13 (`blk.0` recurrent + `blk.3` full-attn) | 202.50 MiB (226.50 MiB) | **4.38–5.46** | **0.34–0.42** | 496.00–586.48 vs. 544.23–604.43 | Cosine `0.999902–0.999977`, RMSE `0.0228–0.0290`, top-1 `3/3`, top-5 `5/5` | Battery (`90%`, saver off; diagnostic) |
+| [**2-layer `native-q2` scoped `<= 92 KiB` flush (`e2349af`)**](docs/evidence/npu-4layer-25proj-native-q2-20261105/summary.json) | 13 (`blk.0` recurrent + `blk.3` full-attn) | 202.50 MiB (226.50 MiB) | **4.43–4.87** | **0.34–0.37** | **422.49–446.20** (warm) vs. 463.97–478.07 (`1,386.00` vs. `1,392.70` total) | Cosine `0.999902–0.999977`, RMSE `0.0228–0.0290`, top-1 `3/3`, top-5 `5/5` | Battery (`76%`, saver off; diagnostic) |
+| [**4-layer block `native-q2` scoped flush (`e2349af`)**](docs/evidence/npu-4layer-25proj-native-q2-20261105/summary.json) | 25 (`blk.0..=blk.3` complete repeating block) | 407.81 MiB (431.81 MiB) | **10.05–10.91** | **0.40–0.44** | 807.50–1,166.27 vs. 425.83–970.25 | Cosine `0.999895–0.999972`, RMSE `0.0217–0.0316`, top-1 `3/3`, top-5 `5/5` | Battery (`76%`, saver off; diagnostic) |
+| [**8-HVX / 2 MiB VTCM / Burst `batch10` HMX (`9f61217`)**](docs/evidence/npu-hmx-8hvx-2mib-vtcm-20261105/summary.json) | 1 (`blk.0.ffn_up`, 40 ops in 4 writes/tok) | 23.91 MiB (35.24 MiB) | **8.18–13.28** | **8.18–13.28** | 320.31–536.98 vs. 294.61–342.29 | **0-ULP bitwise parity** (logits & state) | AC (`95%`, saver off) |
+| [**8-HVX / 2 MiB VTCM / Burst `batch10` HMX (`9f61217`)**](docs/evidence/npu-hmx-8hvx-2mib-vtcm-20261105/summary.json) | 2 (`blk.0.ffn_up + ffn_gate`, 80 ops in 8 writes/tok) | 47.81 MiB (59.15 MiB) | **15.60–26.77** | **7.80–13.39** | **457.34–464.30** (warm) vs. 552.44–553.09 | **0-ULP bitwise parity** (logits & state) | AC (`95%`, saver off) |
+| [**4-worker L1-tiled `batch10` HMX (`5136bd1`)**](docs/evidence/npu-batch10-fast-queue-20261105/summary.json) | 1–2 (`blk.0.ffn_up`, `+ ffn_gate`) | 23.91–47.81 MiB | 22.21–23.48 (1p) / 44.08–46.26 (2p) | 22.04–23.48 | 487.91–529.85 (1p) / 513.61–537.70 (2p) | **0-ULP bitwise parity** (logits & state) | Battery (`89%`, saver off; diagnostic) |
+| [**Fused host-reconstruct `batch4` HMX (`ebc22c2`)**](docs/evidence/npu-multi-projection-20261104/summary.json) | 1–2 (`blk.0.ffn_up`, `+ ffn_gate`) | 23.91–47.81 MiB | 32.53–34.22 (1p) / 64.66–66.22 (2p) | 32.33–34.22 | 432.66–487.59 (1p) / 514.98–553.37 (2p) | **0-ULP bitwise parity** (logits & state) | AC (`100%`, saver off) |
+
+Battery-operated diagnostic runs (`a383e92`, `e2349af`, `5136bd1`) are kept separate from
+AC-connected runs (`ccb1339`, `9f61217`, `ebc22c2`) and are not treated as qualified
+cross-power speed comparisons. Full-model 6-arena (`168`-projection) AC-connected
+end-to-end service qualification remains pending in [PLAN.md](PLAN.md#hexagon-npu).
 
 **TTFT** runs from client request start through the first output token, including
 required exact token-count admission, template processing, prefill and HTTP
