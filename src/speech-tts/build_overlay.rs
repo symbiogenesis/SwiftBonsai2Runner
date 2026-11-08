@@ -29,8 +29,8 @@ const BPE_SHA256: [u8; 32] = [
     0x27, 0x31, 0xaa, 0xe2, 0x55, 0xbb, 0x95, 0xab, 0x93, 0x48, 0x35, 0xf1, 0x14, 0x91, 0x42, 0x9d,
     0x67, 0xc9, 0xd9, 0xf1, 0x2e, 0xa9, 0xf3, 0x3d, 0xbd, 0xb4, 0x5d, 0x67, 0x37, 0xee, 0x24, 0x03,
 ];
-// This identifies the downloaded source; its probability pipeline remains
-// native. Captured controls retain the retired checked-in copy's observations.
+// Exact normalized identity of the pinned native sampler header; its entire
+// masking, repetition, greedy and stochastic probability pipeline is routed to Rust.
 const SAMPLING_BYTES: usize = 6906;
 const SAMPLING_SHA256: [u8; 32] = [
     0x98, 0x12, 0xa8, 0xb4, 0x28, 0xef, 0xff, 0xcf, 0xe3, 0xd8, 0x32, 0x40, 0x9f, 0x3e, 0xae, 0x09,
@@ -94,26 +94,28 @@ fn semantic_sampling_with_identity(
     let end = text
         .find("// Stochastic sampler.")
         .ok_or_else(|| io::Error::other("Pinned Qwen sampler source differs."))?;
-    let text = format!(
-        "{}extern \"C\" int bonsai_qt_greedy_argmax(const float * logits, int V);\n{}{}",
+    if start >= end {
+        return Err(io::Error::other("Pinned Qwen sampler source differs."));
+    }
+    for required in [
+        "return (int) (std::max_element(logits, logits + V) - logits);",
+        "std::nth_element",
+        "std::sort(sorted_buf.begin()",
+        SEMANTIC_DRAW,
+    ] {
+        if text[end..].matches(required).count() != 1 {
+            return Err(io::Error::other("Pinned Qwen build overlay input differs."));
+        }
+    }
+    Ok(format!(
+        "{}extern \"C\" int bonsai_qt_greedy_argmax(const float * logits, int V);\n{}",
         &text[..start],
         SAMPLING_HELPERS,
-        &text[end..]
-    );
-    let text = replace_once(
-        &text,
-        "return (int) (std::max_element(logits, logits + V) - logits);",
-        "return bonsai_qt_greedy_argmax(logits, V);",
-    )?;
-    replace_once(
-        &text,
-        SEMANTIC_DRAW,
-        "    u = bonsai_qt_philox_uniform(seed, philox_subseq, 0u);",
-    )
+    ))
 }
 
-// Native code retains only reusable storage and delegates slice policy to Rust.
-const SAMPLING_HELPERS: &str = "// Runner owns the masking and unique-history repetition policy.\nextern \"C\" void bonsai_qt_apply_suppress(float * logits, int V, int lo, int hi, int keep);\nextern \"C\" void bonsai_qt_apply_repetition_penalty(float * logits, int V, const int32_t * history, int n_history, float penalty, uint8_t * seen);\n\nstatic inline void apply_suppress(float * logits, int V, int lo, int hi, int keep) {\n    bonsai_qt_apply_suppress(logits, V, lo, hi, keep);\n}\n\nstatic inline void apply_repetition_penalty(float * logits, int V, const int32_t * history, int n_history, float penalty) {\n    if (penalty == 1.0f || n_history <= 0) { return; }\n    static thread_local std::vector<uint8_t> seen_buf;\n    seen_buf.resize((size_t) V);\n    bonsai_qt_apply_repetition_penalty(logits, V, history, n_history, penalty, seen_buf.data());\n}\n\n";
+// Native code retains only reusable storage and delegates all sampler policy to Rust.
+const SAMPLING_HELPERS: &str = "// Runner owns masking, windowed repetition penalty, greedy and stochastic top-k/top-p sampling.\nextern \"C\" void bonsai_qt_apply_suppress(float * logits, int V, int lo, int hi, int keep);\nextern \"C\" void bonsai_qt_apply_repetition_penalty(float * logits, int V, const int32_t * history, int n_history, float penalty, uint8_t * seen);\nextern \"C\" int bonsai_qt_sample_top_k_p(float * logits, int V, float temperature, int top_k, float top_p, float penalty, const int32_t * history, int n_history, int64_t seed, int64_t philox_subseq, float * dump_u_out, uint8_t * seen);\n\nstatic inline void apply_suppress(float * logits, int V, int lo, int hi, int keep) {\n    bonsai_qt_apply_suppress(logits, V, lo, hi, keep);\n}\n\nstatic inline void apply_repetition_penalty(float * logits, int V, const int32_t * history, int n_history, float penalty) {\n    if (penalty == 1.0f || n_history <= 0) { return; }\n    static thread_local std::vector<uint8_t> seen_buf;\n    seen_buf.resize((size_t) V);\n    bonsai_qt_apply_repetition_penalty(logits, V, history, n_history, penalty, seen_buf.data());\n}\n\nstatic inline int sample_top_k_p(float * logits, int V, float temperature, int top_k, float top_p, float rep_pen, const int32_t * history, int n_history, int64_t seed, int64_t philox_subseq, float * dump_u_out = nullptr) {\n    if (temperature <= 0.0f) {\n        if (dump_u_out) {\n            *dump_u_out = -1.0f;\n        }\n        return bonsai_qt_greedy_argmax(logits, V);\n    }\n    static thread_local std::vector<uint8_t> seen_buf;\n    if (rep_pen != 1.0f && n_history > 0 && V > 0) {\n        seen_buf.resize((size_t) V);\n    }\n    return bonsai_qt_sample_top_k_p(logits, V, temperature, top_k, top_p, rep_pen, history, n_history, seed, philox_subseq, dump_u_out, seen_buf.data());\n}\n";
 
 fn predictor_sampling(text: &str) -> io::Result<String> {
     replace_once(
@@ -369,10 +371,19 @@ static int sample_top_k_p(float * logits, int V, float temperature,
             fs::read_to_string(copy.join("src/philox.h"))?,
             PHILOX_DECLARATION
         );
-        for relative in ["src/sampling.h", "src/sampling-graph.h"] {
-            assert!(fs::read_to_string(source.join(relative))?.contains("philox_uniform_fill"));
-            assert!(fs::read_to_string(copy.join(relative))?.contains("bonsai_qt_philox_uniform"));
-        }
+        assert!(fs::read_to_string(source.join("src/sampling.h"))?.contains("philox_uniform_fill"));
+        assert!(
+            fs::read_to_string(copy.join("src/sampling.h"))?
+                .contains("bonsai_qt_sample_top_k_p")
+        );
+        assert!(
+            fs::read_to_string(source.join("src/sampling-graph.h"))?
+                .contains("philox_uniform_fill")
+        );
+        assert!(
+            fs::read_to_string(copy.join("src/sampling-graph.h"))?
+                .contains("bonsai_qt_philox_uniform")
+        );
         assert_eq!(
             fs::read_to_string(source.join("src/bpe.h"))?,
             FIXTURE_SOURCE
@@ -442,10 +453,11 @@ static int sample_top_k_p(float * logits, int V, float temperature,
             }
             if draw == SAMPLER_FIXTURE {
                 assert!(!patched.contains(SEMANTIC_DRAW));
+                assert!(patched.contains("bonsai_qt_sample_top_k_p"));
             } else {
                 assert!(!patched.contains("philox_uniform_fill"));
+                assert!(patched.contains("bonsai_qt_philox_uniform"));
             }
-            assert!(patched.contains("bonsai_qt_philox_uniform"));
             assert!(transform(&patched).is_err());
             assert!(transform("changed").is_err());
             assert!(transform(&original.repeat(2)).is_err());
@@ -471,13 +483,14 @@ static int sample_top_k_p(float * logits, int V, float temperature,
         let patched = fixture_semantic_sampling(SAMPLER_FIXTURE)?;
         assert!(patched.contains("bonsai_qt_apply_suppress(logits, V, lo, hi, keep);"));
         assert!(patched.contains("bonsai_qt_apply_repetition_penalty(logits, V, history, n_history, penalty, seen_buf.data());"));
+        assert!(patched.contains("bonsai_qt_sample_top_k_p(logits, V, temperature, top_k, top_p, rep_pen, history, n_history, seed, philox_subseq, dump_u_out, seen_buf.data());"));
         assert!(!patched.contains("logits[i] = -INFINITY;\n    }\n}"));
         assert!(!patched.contains("seen_buf[(size_t) tok]"));
         assert!(!patched.contains("std::max_element"));
         assert!(patched.contains("return bonsai_qt_greedy_argmax(logits, V);"));
-        assert!(patched.contains("std::nth_element"));
-        assert!(patched.contains("std::sort(sorted_buf.begin()"));
-        assert!(patched.contains("u = bonsai_qt_philox_uniform(seed, philox_subseq, 0u);"));
+        assert!(!patched.contains("std::nth_element"));
+        assert!(!patched.contains("std::sort(sorted_buf.begin()"));
+        assert!(!patched.contains("philox_uniform_fill"));
         assert!(
             fixture_semantic_sampling(&SAMPLER_FIXTURE.replace("if (lo < 0)", "if (lo <= 0)"))
                 .is_err()
@@ -540,7 +553,7 @@ static int sample_top_k_p(float * logits, int V, float temperature,
         let source = working.join("probe.cpp");
         fs::write(
             &source,
-            "#include \"sampling.h\"\n#include \"bpe.h\"\nvoid probe(float * logits, int V, const int32_t * history, int count) {\n    (void) &sample_top_k_p;\n    apply_suppress(logits, V, -1, V, 2);\n    apply_repetition_penalty(logits, V, history, count, 1.05f);\n    (void) sample_top_k_p(logits, V, 0.0f, 0, 0);\n    (void) sample_top_k_p(logits, V, 1.0f, 0, 0);\n}\nvoid tokenizer_probe(const char * path, const std::string & text) {\n    BPETokenizer tokenizer;\n    (void) load_bpe_from_gguf(&tokenizer, path);\n    const char * keys[] = {\"first\"};\n    (void) bpe_load_specials_from_keys(&tokenizer, path, keys, 1);\n    bpe_add_special(&tokenizer, text, 0);\n    (void) bpe_encode(&tokenizer, text, false);\n}\n",
+            "#include \"sampling.h\"\n#include \"bpe.h\"\nvoid probe(float * logits, int V, const int32_t * history, int count) {\n    (void) &sample_top_k_p;\n    apply_suppress(logits, V, -1, V, 2);\n    apply_repetition_penalty(logits, V, history, count, 1.05f);\n    float dump = 0.0f;\n    (void) sample_top_k_p(logits, V, 0.0f, 50, 1.0f, 1.05f, history, count, 0, 0, &dump);\n    (void) sample_top_k_p(logits, V, 1.0f, 50, 0.9f, 1.05f, history, count, 0, 0, &dump);\n}\nvoid tokenizer_probe(const char * path, const std::string & text) {\n    BPETokenizer tokenizer;\n    (void) load_bpe_from_gguf(&tokenizer, path);\n    const char * keys[] = {\"first\"};\n    (void) bpe_load_specials_from_keys(&tokenizer, path, keys, 1);\n    bpe_add_special(&tokenizer, text, 0);\n    (void) bpe_encode(&tokenizer, text, false);\n}\n",
         )?;
         let compile = Command::new(compiler)
             .args(["/nologo", "/std:c++17", "/EHsc", "/W4", "/WX", "/c"])

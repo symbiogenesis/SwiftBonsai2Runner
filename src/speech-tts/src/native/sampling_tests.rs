@@ -11,6 +11,7 @@ use sha2::{Digest, Sha256};
 
 use super::sampling::{
     bonsai_qt_apply_repetition_penalty, bonsai_qt_apply_suppress, bonsai_qt_greedy_argmax,
+    bonsai_qt_sample_top_k_p,
 };
 
 const SAMPLING_FIXTURE: &[u8] = include_bytes!("../../tests/fixtures/sampling-v1.bin");
@@ -207,18 +208,54 @@ fn rust_greedy_argmax_matches_captured_arm64_bits() -> Result<(), Box<dyn Error>
         assert_eq!(word(&mut remaining)?, u32::try_from(vocabulary)?);
         assert_bits(&case.logits, &mut remaining, index)?;
         let expected = i32::from_le_bytes(word(&mut remaining)?.to_le_bytes());
-        // The pinned native greedy branch also sets dump_u_out to -1 without
-        // drawing from Philox. The overlay retains that scalar write.
-        assert_eq!(word(&mut remaining)?, (-1.0_f32).to_bits());
+        let expected_dump_bits = word(&mut remaining)?;
+        assert_eq!(expected_dump_bits, (-1.0_f32).to_bits());
         assert_eq!(
             bonsai_qt_greedy_argmax(case.logits.as_ptr(), vocabulary),
             expected,
             "Greedy case {index}."
         );
+        let mut logits_copy = case.logits;
+        let mut dump_u = 123.0_f32;
+        let sampled = bonsai_qt_sample_top_k_p(
+            logits_copy.as_mut_ptr(),
+            vocabulary,
+            0.0,
+            0,
+            1.0,
+            1.0,
+            std::ptr::null(),
+            0,
+            0,
+            0,
+            &raw mut dump_u,
+            std::ptr::null_mut(),
+        );
+        assert_eq!(sampled, expected, "Sample greedy case {index}.");
+        assert_eq!(dump_u.to_bits(), expected_dump_bits);
     }
     assert_eq!(remaining, []);
     // Empty storage is the explicit Rust boundary, omitted by the native capture.
     assert_eq!(bonsai_qt_greedy_argmax(std::ptr::null(), 0), 0);
+    let mut empty_dump = 99.0_f32;
+    assert_eq!(
+        bonsai_qt_sample_top_k_p(
+            std::ptr::null_mut(),
+            0,
+            0.0,
+            0,
+            1.0,
+            1.0,
+            std::ptr::null(),
+            0,
+            0,
+            0,
+            &raw mut empty_dump,
+            std::ptr::null_mut(),
+        ),
+        0
+    );
+    assert_eq!(empty_dump.to_bits(), (-1.0_f32).to_bits());
     Ok(())
 }
 
@@ -251,4 +288,24 @@ fn empty_and_no_op_sampler_abi_calls_accept_null_storage() {
         2.0,
         std::ptr::null_mut(),
     );
+    let mut logits = [-20.0_f32, 15.0, -20.0, -20.0];
+    let history = [0_i32, 2];
+    let mut seen = [0_u8; 4];
+    let mut dump_u = -1.0_f32;
+    let choice = bonsai_qt_sample_top_k_p(
+        logits.as_mut_ptr(),
+        4,
+        0.6,
+        2,
+        0.9,
+        1.05,
+        history.as_ptr(),
+        2,
+        42,
+        1,
+        &raw mut dump_u,
+        seen.as_mut_ptr(),
+    );
+    assert_eq!(choice, 1);
+    assert!(dump_u > 0.0 && dump_u <= 1.0);
 }

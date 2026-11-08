@@ -6,6 +6,8 @@
 
 use std::ffi::c_int;
 
+use super::super::sampling::SampleTopKPParams;
+
 // SAFETY: The pinned greedy sampler supplies vocabulary initialized f32s,
 // borrowed read-only for this synchronous call. No reference or pointer escapes.
 #[unsafe(no_mangle)]
@@ -91,4 +93,84 @@ pub(super) extern "C" fn bonsai_qt_apply_repetition_penalty(
     if !super::super::sampling::repetition_penalty(logits, history, penalty, seen) {
         std::process::abort();
     }
+}
+
+// SAFETY: The pinned wrapper supplies disjoint initialized storage: vocabulary
+// writable f32 logits, optional dump_u_out writable f32, and (when temperature > 0,
+// penalty != 1.0, and history_count > 0) history_count readable i32 history and
+// vocabulary writable workspace bytes. All borrows end before this synchronous
+// call returns.
+#[unsafe(no_mangle)]
+#[allow(
+    clippy::too_many_arguments,
+    reason = "Matches the private C ABI signature of the pinned Qwen sample_top_k_p function."
+)]
+pub(super) extern "C" fn bonsai_qt_sample_top_k_p(
+    logits: *mut f32,
+    vocabulary: c_int,
+    temperature: f32,
+    top_k: c_int,
+    top_p: f32,
+    penalty: f32,
+    history: *const i32,
+    history_count: c_int,
+    seed: i64,
+    philox_subseq: i64,
+    dump_u_out: *mut f32,
+    seen_ptr: *mut u8,
+) -> c_int {
+    let vocabulary = usize::try_from(vocabulary).unwrap_or_else(|_| std::process::abort());
+    let dump_ref = if dump_u_out.is_null() {
+        None
+    } else if !dump_u_out.is_aligned() {
+        std::process::abort();
+    } else {
+        // SAFETY: Non-null aligned dump_u_out is exclusively borrowed for this call.
+        Some(unsafe { &mut *dump_u_out })
+    };
+    if vocabulary == 0 {
+        if temperature <= 0.0
+            && let Some(dump) = dump_ref
+        {
+            *dump = -1.0;
+        }
+        return 0;
+    }
+    if logits.is_null() || !logits.is_aligned() {
+        std::process::abort();
+    }
+    // SAFETY: The caller provides vocabulary initialized f32 logits exclusively for this call.
+    let logits = unsafe { std::slice::from_raw_parts_mut(logits, vocabulary) };
+    let mut empty_seen = [];
+    let (history_slice, seen_slice): (&[i32], &mut [u8]) =
+        if temperature <= 0.0 || penalty == 1.0 || history_count <= 0 {
+            (&[], &mut empty_seen)
+        } else {
+            let count = usize::try_from(history_count).unwrap_or_else(|_| std::process::abort());
+            if history.is_null() || !history.is_aligned() || seen_ptr.is_null() {
+                std::process::abort();
+            }
+            // SAFETY: Non-empty active repetition penalty borrows disjoint history and seen buffers.
+            let hist = unsafe { std::slice::from_raw_parts(history, count) };
+            // SAFETY: The native caller resizes the thread-local seen buffer to vocabulary bytes.
+            let seen_buf = unsafe { std::slice::from_raw_parts_mut(seen_ptr, vocabulary) };
+            (hist, seen_buf)
+        };
+    let Some(selected) = super::super::sampling::sample_top_k_p(
+        logits,
+        SampleTopKPParams {
+            temperature,
+            top_k,
+            top_p,
+            repetition_penalty: penalty,
+            seed,
+            philox_subseq,
+        },
+        history_slice,
+        seen_slice,
+        dump_ref,
+    ) else {
+        std::process::abort();
+    };
+    c_int::try_from(selected).unwrap_or_else(|_| std::process::abort())
 }
