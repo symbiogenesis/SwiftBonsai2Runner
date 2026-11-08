@@ -563,6 +563,10 @@ fn consume_with(
 // producer channel and 800 ms WinMM queue. Slow synthesis waits for a validated
 // segment instead of repeatedly playing short bursts separated by silence.
 #[derive(Default)]
+#[allow(
+    clippy::struct_excessive_bools,
+    reason = "Playback staging tracks four independent boolean lifecycle latches."
+)]
 struct Buffered {
     ready: VecDeque<Vec<u8>>,
     segment: VecDeque<Vec<u8>>,

@@ -17,6 +17,10 @@ pub(super) fn hex(bytes: &[u8]) -> String {
 }
 
 pub(super) fn sha256(bytes: &[u8]) -> String {
+    #[cfg(windows)]
+    if let Ok(digest) = bonsai_windows_credentials::Sha256::digest_bytes(bytes) {
+        return hex(&digest);
+    }
     hex(&Sha256::digest(bytes))
 }
 

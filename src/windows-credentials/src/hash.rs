@@ -64,6 +64,18 @@ impl Sha256 {
         check(unsafe { BCryptFinishHash(self.0.as_ptr(), digest.as_mut_ptr(), 32, 0) })?;
         Ok(digest)
     }
+
+    /// Compute the 32-byte SHA-256 digest of a slice in one call via Windows CNG.
+    ///
+    /// # Errors
+    /// Returns a provider allocation, update or finalization failure.
+    pub fn digest_bytes(bytes: &[u8]) -> io::Result<[u8; 32]> {
+        let mut hasher = Self::new()?;
+        for chunk in bytes.chunks(0x4000_0000) {
+            hasher.update(chunk)?;
+        }
+        hasher.finish()
+    }
 }
 
 impl Drop for Sha256 {

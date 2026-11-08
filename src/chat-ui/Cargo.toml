@@ -14,6 +14,7 @@ description = "Native Rust desktop chat for the local Swift Bonsai 2 broker"
 serde = { workspace = true, features = ["derive", "rc"] }
 serde_json.workspace = true
 httparse = "=1.10.1"
+memchr.workspace = true
 
 [target.'cfg(windows)'.dependencies]
 bonsai-audio = { path = "../audio" }

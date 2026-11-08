@@ -30,10 +30,7 @@ pub(super) fn head_end(raw: &[u8], previous: usize) -> Option<usize> {
     // A terminator can straddle the previous read by at most three bytes.
     // Each byte is scanned at most four times even with one-byte fragments.
     let start = previous.saturating_sub(3);
-    raw[start..]
-        .array_windows()
-        .position(|bytes| bytes == b"\r\n\r\n")
-        .map(|offset| start + offset + 4)
+    memchr::memmem::find(&raw[start..], b"\r\n\r\n").map(|offset| start + offset + 4)
 }
 
 pub(super) fn valid_line_endings(raw: &[u8]) -> bool {

@@ -14,6 +14,7 @@ categories = ["network-programming", "multimedia::audio"]
 bonsai-audio = { path = "../audio" }
 bonsai-artifacts = { path = "../artifacts" }
 httparse = "=1.10.1"
+memchr.workspace = true
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 socket2 = "=0.6.5"

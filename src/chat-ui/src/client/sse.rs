@@ -109,7 +109,23 @@ impl Framer {
             self.event.clear();
             self.dispatched = false;
         }
-        while let Some((&byte, rest)) = bytes.split_first() {
+        while !bytes.is_empty() {
+            if self.started && !self.after_cr {
+                let plain_len = memchr::memchr2(b'\r', b'\n', bytes).unwrap_or(bytes.len());
+                if plain_len > 0 {
+                    if self.line.len() + plain_len > MAX_EVENT {
+                        return Err(Failure::Message("A streaming line exceeded its limit."));
+                    }
+                    self.line.extend_from_slice(&bytes[..plain_len]);
+                    *bytes = &bytes[plain_len..];
+                    if bytes.is_empty() {
+                        break;
+                    }
+                }
+            }
+            let Some((&byte, rest)) = bytes.split_first() else {
+                break;
+            };
             *bytes = rest;
             if !self.started {
                 match (self.bom_bytes, byte) {
@@ -182,7 +198,7 @@ impl Framer {
         if self.line.first() == Some(&b':') {
             return Ok(());
         }
-        let (field, value) = self.line.iter().position(|&byte| byte == b':').map_or(
+        let (field, value) = memchr::memchr(b':', &self.line).map_or(
             (self.line.as_slice(), b"".as_slice()),
             |colon| {
                 let value = &self.line[colon + 1..];

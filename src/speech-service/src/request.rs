@@ -125,17 +125,13 @@ fn split_bytes<'a, 'd>(
     delimiter: &'d [u8],
 ) -> impl Iterator<Item = &'a [u8]> + use<'a, 'd> {
     let mut remaining = Some(bytes);
+    let finder = memchr::memmem::Finder::new(delimiter);
     std::iter::from_fn(move || {
         let bytes = remaining.take()?;
-        Some(
-            bytes
-                .windows(delimiter.len())
-                .position(|window| window == delimiter)
-                .map_or(bytes, |index| {
-                    remaining = Some(&bytes[index + delimiter.len()..]);
-                    &bytes[..index]
-                }),
-        )
+        Some(finder.find(bytes).map_or(bytes, |index| {
+            remaining = Some(&bytes[index + delimiter.len()..]);
+            &bytes[..index]
+        }))
     })
 }
 
@@ -161,18 +157,14 @@ fn multipart<'a>(media: &str, body: &'a [u8]) -> Result<&'a [u8], Error> {
     let parts = multipart_parts(interior, separator.as_bytes())?;
     let mut fields = HashMap::new();
     for part in parts.into_iter().flatten() {
-        let at = part
-            .windows(4)
-            .position(|window| window == b"\r\n\r\n")
+        let at = memchr::memmem::find(part, b"\r\n\r\n")
             .ok_or(Error::bad("invalid_multipart"))?;
         if at > 1024 {
             return Err(Error::bad("invalid_multipart"));
         }
         let mut headers = HashMap::new();
         for line in split_bytes(&part[..at], b"\r\n") {
-            let colon = line
-                .iter()
-                .position(|byte| *byte == b':')
+            let colon = memchr::memchr(b':', line)
                 .ok_or(Error::bad("invalid_multipart"))?;
             let name = std::str::from_utf8(&line[..colon])
                 .map_err(|_| Error::bad("invalid_multipart"))?
