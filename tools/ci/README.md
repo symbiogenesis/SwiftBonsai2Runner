@@ -1,9 +1,10 @@
 # Rust CI tooling
 
-`bonsai-ci` provides workspace impact planning, Cargo check orchestration,
-regression tests and the aggregate gate. It reads Cargo manifests directly and uses the routing
-policy in `.github/ci/impact.json`. Impact planning never builds inspected packages or runs Cargo metadata. Git is required for ancestor and diff queries; HTTPS baseline
-lookup uses Rust with a 20-second timeout and the supplied `GITHUB_TOKEN`.
+`bonsai-ci` provides workspace impact planning, Cargo check orchestration, regression tests and the
+aggregate gate. It reads Cargo manifests directly and uses the routing policy in
+`.github/ci/impact.json`. Impact planning never builds inspected packages or runs Cargo metadata.
+Git is required for ancestor and diff queries; HTTPS baseline lookup uses Rust with a 20-second
+timeout and the supplied `GITHUB_TOKEN`.
 
 ```powershell
 $scratch = Join-Path ([IO.Path]::GetTempPath()) ('Bonsai-CI-' + [guid]::NewGuid().ToString('N'))
@@ -71,6 +72,9 @@ formatting, compile portable CI/CPU-policy/broker targets and run six exact name
 routing, gate and request-policy regressions. Missing named cases fail the screen.
 This limited check uses read-only repository permissions and no models or physical
 devices; main-only Foundation and device acceptance remain separate requirements.
+[Markdown standards](../../.github/workflows/markdown.yml) separately run `rumdl`
+against [`.rumdl.toml`](../../.rumdl.toml) on hosted Linux ARM64 when Markdown
+files or linter configuration change.
 
 ## Native Rust checks
 

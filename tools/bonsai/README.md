@@ -1,7 +1,7 @@
 # Bonsai maintenance tools
 
-`bonsai-tools` provides protected credential creation, fixed CPU and server invocation plans,
-bounded completion-process supervision and LoRA qualification scoring. It forbids unsafe code and reuses the
+`bonsai-tools` provides protected credential creation, fixed CPU and server invocation plans, bounded
+completion-process supervision and LoRA qualification scoring. It forbids unsafe code and reuses the
 audited Windows boundary crates.
 
 ## Packaged use
@@ -171,10 +171,10 @@ former PowerShell modules/scripts have been removed. The offline qualification,
 PTQ1 screen, runtime promotion and inference-lock wrapper scripts have also been
 removed; invoke the native JSON commands directly as in the examples above.
 
-`host-capabilities` accepts `operation: "project"` with bounded `facts`, or
-`operation: "identity"` with the v1 `capabilities` report. Native `doctor` supplies registry, CPU-set, memory and SetupAPI observations;
-optional unavailable fields remain explicit unknowns. Rust owns projection,
-canonical ordering and digest bytes. See [host inventory](../../docs/hardware-capabilities.md).
+`host-capabilities` accepts `operation: "project"` with bounded `facts`, or `operation: "identity"`
+with the v1 `capabilities` report. Native `doctor` supplies registry, CPU-set, memory and SetupAPI
+observations; optional unavailable fields remain explicit unknowns. Rust owns projection, canonical
+ordering and digest bytes. See [host inventory](../../docs/hardware-capabilities.md).
 
 `native-acceptance-budget` receives canonical seven-fraction UTC timestamps,
 monotonic ticks/frequency, run/revision and the optional complete owner binding.

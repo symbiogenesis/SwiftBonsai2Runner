@@ -290,12 +290,12 @@ two-prompt matrix is retired, not partitioned across repeated short jobs. Other 
 prompts remain pending work in PLAN. OS file cache is not flushed.
 
 All setup, verification, preflight, model loading and comparison share one at-most-240-second
-process budget within the five-minute owner job. Hosted tool compilation is outside that device
-job; the device verifies this run's exact revision, digest and ARM64 tools instead of compiling.
-The parent charges checkout and tool intake to its remaining job clock, caps the child at the
-lesser of 240 seconds and the remaining time before 270 job seconds, and bounds teardown at ten
-seconds, within the original deadline. Rust reserves twenty seconds for cleanup/reporting and refuses model trials when
-the remaining budget cannot fit the four per-sample deadlines plus teardown room.
+process budget within the five-minute owner job. Hosted tool compilation is outside that device job;
+the device verifies this run's exact revision, digest and ARM64 tools instead of compiling. The
+parent charges checkout and tool intake to its remaining job clock, caps the child at the lesser of
+240 seconds and the remaining time before 270 job seconds, and bounds teardown at ten seconds,
+within the original deadline. Rust reserves twenty seconds for cleanup/reporting and refuses model
+trials when the remaining budget cannot fit the four per-sample deadlines plus teardown room.
 
 The completion batch's opt-in `totalTimeoutSeconds` (1..240) charges artifact/runtime hashing and
 all samples to one monotonic clock. Hash verification checks that clock at the existing one-second

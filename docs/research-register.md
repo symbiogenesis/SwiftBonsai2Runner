@@ -48,7 +48,7 @@ proprietary kernels and future instructions are outside scope.
 Prefer existing weights and compatible published auxiliaries. Exclude full
 retraining, pretraining and new architectures. Bounded statistics, calibration,
 layerwise transforms and tiny auxiliary fits need a native implementation and
-measured laptop time/RAM estimate; “training-free” does not establish feasibility.
+measured laptop time/RAM estimate; "training-free" does not establish feasibility.
 
 Predeclare candidate count, shapes, prompt/token sample, peak RAM and deadline.
 Every diagnostic, model qualification or benchmark run on the owner's laptop

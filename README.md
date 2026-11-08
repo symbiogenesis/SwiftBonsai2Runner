@@ -31,11 +31,12 @@ the inference engine. Native source launch prepares a missing pinned runtime aft
 the window opens. Explicit provisioning uses `bonsai-tools provision` with operation
 `inference` and an absolute `dataDirectory`; see the [setup commands](docs/development-guide.md#native-chat-app).
 
-Once you've [set up the model and runtime](docs/development-guide.md#native-chat-app),
-run `bonsai-tools chat`. The development default is Rust Prism 0.1.19 with the
-original Swift PQ2 weights, four CPU row workers and the standard adapter at
-scale 1.3, and default Snapdragon X2 Hexagon NPU `native-q2` resident acceleration (`blk.0..=blk.26`, 168 projections across 6 arenas). Use `bonsai-tools chat --publisher-engine` for the explicit publisher
-C++ rollback. `--native-engine` remains accepted. Both open the native Windows chat app.
+Once you've [set up the model and runtime](docs/development-guide.md#native-chat-app), run `bonsai-tools chat`. The development default is Rust
+Prism 0.1.19 with the original Swift PQ2 weights, four CPU row workers and the standard adapter at
+scale 1.3, and default Snapdragon X2 Hexagon NPU `native-q2` resident acceleration
+(`blk.0..=blk.26`, 168 projections across 6 arenas). Use `bonsai-tools chat --publisher-engine` for
+the explicit publisher C++ rollback. `--native-engine` remains accepted. Both open the native
+Windows chat app.
 
 The convenience launcher `./scripts/Start-Chat.ps1` uses the same prebuilt Rust
 tool and defaults to Rust; add `-PublisherEngine` for the publisher rollback.
@@ -117,16 +118,16 @@ an updated end-to-end HTTP timing capture on `0.1.19` remains pending.
 ### Snapdragon X2 Hexagon NPU (`v81`) projection and layer timings
 
 In `Prism 0.1.19`, `prism-inference-server` pre-warms **`DEFAULT_NATIVE_Q2_PROJECTIONS = 168`**
-(`blk.0..=blk.26`, **`2,888,663,040` resident weight bytes / `2,754.84 MiB`** across
-six alternating `<= 480 MiB` `FastRPC` weight arenas `[502_824_960, 460_062_720, 502_824_960, 460_062_720, 502_824_960, 460_062_720]`
-within CDSP `v-size = 3,000 MiB`, with scoped `<= 92 KiB` active-prefix `dspqueue`
-cache flushes and batched 2/3-op sibling plus 4-op multi-token tiled-prefill
-submissions) by default on Snapdragon X2 when the verified signed GenieX `v0.10.0`
-runtime (`libggml-htp-v81.so`) and CDSP driver are present, falling back to
-4-worker NEON CPU otherwise. Losslessly transcoding `PQ2_0` weights into tiled
-`HTP_TYPE_Q2_0` reduces shared-memory output traffic per `[5120, 17408]` projection
-by **320x** (`69,632` bytes vs. `22.28 MB` of 8-plane `FP32` bitplanes) and eliminates
-host bitplane reconstruction.
+(`blk.0..=blk.26`, **`2,888,663,040` resident weight bytes / `2,754.84 MiB`** across six alternating
+`<= 480 MiB` `FastRPC` weight arenas
+`[502_824_960, 460_062_720, 502_824_960, 460_062_720, 502_824_960, 460_062_720]` within CDSP
+`v-size = 3,000 MiB`, with scoped `<= 92 KiB` active-prefix `dspqueue` cache flushes and batched
+2/3-op sibling plus 4-op multi-token tiled-prefill submissions) by default on Snapdragon X2 when the
+verified signed GenieX `v0.10.0` runtime (`libggml-htp-v81.so`) and CDSP driver are present, falling
+back to 4-worker NEON CPU otherwise. Losslessly transcoding `PQ2_0` weights into tiled
+`HTP_TYPE_Q2_0` reduces shared-memory output traffic per `[5120, 17408]` projection by **320x**
+(`69,632` bytes vs. `22.28 MB` of 8-plane `FP32` bitplanes) and eliminates host bitplane
+reconstruction.
 
 The table below summarizes the supervised 3-token (`42, 43, 128`) Snapdragon X2 Elite
 Extreme device controls (`LoRA 1.3`, 4 CPU row workers; see [Hexagon execution contracts](docs/hexagon.md)
@@ -282,8 +283,6 @@ Start with [setup and development](docs/development-guide.md),
 For design and research, use [application contracts](docs/README.md#application-contracts),
 [models and runtime](docs/README.md#models-memory-and-runtime), and
 [hardware and inference](docs/README.md#hardware-and-inference).
-
----
 
 ## License
 

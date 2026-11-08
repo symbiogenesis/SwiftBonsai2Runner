@@ -445,15 +445,14 @@ argument or key content is copied into those classifications.
 | Optional `bounded_history` (`BONSAI_NATIVE_EXTENDED` internally) | Reject 4,500 synthetic forest-note repetitions with a 4,096-token reservation; admit 128 repetitions in assistant history with a four-token cap and thinking disabled; complete another four-token non-thinking stream in the same instance | This replaces the larger disabled 3,900-repetition/4K-generation workload. Fixture repetitions are not tokens. Record visible bytes, terminal reason and usage when supplied; missing usage is unknown and events are not tokens. Bounded history does not qualify long-history behavior, 4K generation or exact 8K occupancy. |
 | Optional `stalled_consumer` | Request the full 4,096-token output reservation with thinking disabled, read first nonempty content, retain the connection without reads for one second, then explicit owner Stop. Finish within 30 seconds with empty Job/released listener; require one additional failed operation and no completed operation, require generated content from a fresh owner after Stop and a further successful fresh-owner request after the existing abandonment trial | The output cap reserves capacity; this workload never waits for 4K generation. Natural completion cannot qualify interruption. The receipt proves unfinished broker forwarding, not backend activity at Stop, socket saturation, maximum backlog or measured cancellation latency. |
 
-The original per-request safety limits, 8K context, 64-token margin, output,
-memory and containment limits remain; the shorter aggregate device budget takes
-precedence over every longer timeout. Streams require complete HTTP framing, a supported
-terminal reason and `[DONE]`. Interrupted instances never reopen admission or replay
-the request. Optional workloads remain unqualified until successful device CI
-receipts are retained. The credential-free `acceptance.json` is saved before
-startup and at each workload/cleanup/recovery phase with `passed: false`; only
-complete success changes it to true. A timeout/failure retains the latest phase
-and completed observations without claiming unrun checks. The [promotion evaluator](native-rust-engine.md#default-runtime-promotion) keeps exits independent.
+The original per-request safety limits, 8K context, 64-token margin, output, memory and containment
+limits remain; the shorter aggregate device budget takes precedence over every longer timeout.
+Streams require complete HTTP framing, a supported terminal reason and `[DONE]`. Interrupted
+instances never reopen admission or replay the request. Optional workloads remain unqualified until
+successful device CI receipts are retained. The credential-free `acceptance.json` is saved before
+startup and at each workload/cleanup/recovery phase with `passed: false`; only complete success
+changes it to true. A timeout/failure retains the latest phase and completed observations without
+claiming unrun checks. The [promotion evaluator](native-rust-engine.md#default-runtime-promotion) keeps exits independent.
 
 The core PQ2 receipt saves supplied-history termination, visible bytes and reported
 usage, context rejection and same-owner reuse as each completes. Initial Stop,
@@ -590,14 +589,13 @@ contains application packages, not upstream runtime catalogs.
 | Native integration | Released GGUF/Python integration and admission-only checks; Rust maintenance tests own provisioning, plans, supervision and package lifecycle/tamper/path checks |
 | Released runtime | Archive/install/profile/adapter/admission policy, GGUF wrappers, help switching and actual pinned Rust inference provisioning with `includeCapabilities: true` |
 
-For example, a broker edit selects broker checks; shared Windows-boundary edits
-also select broker/CLI consumers. CLI edits select CLI/app integration. Missing/unclassified diffs or changes to
-workspace/lockfile/toolchain/CI inputs select full coverage. Manual dispatch
-selects everything. Each workflow compares with its newest successful main-push
-ancestor, covering failed/cancelled intervening changes. New automatic pushes
-supersede older Foundation push runs; manual dispatch groups remain independent.
-Planner/gate regressions run first; the tested cached Linux planner executable
-is handed to aggregation, avoiding a second compiler install/build or Cargo metadata.
+For example, a broker edit selects broker checks; shared Windows-boundary edits also select
+broker/CLI consumers. CLI edits select CLI/app integration. Missing/unclassified diffs or changes to
+workspace/lockfile/toolchain/CI inputs select full coverage. Manual dispatch selects everything.
+Each workflow compares with its newest successful main-push ancestor, covering failed/cancelled
+intervening changes. New automatic pushes supersede older Foundation push runs; manual dispatch
+groups remain independent. Planner/gate regressions run first; the tested cached Linux planner
+executable is handed to aggregation, avoiding a second compiler install/build or Cargo metadata.
 
 Maintenance owns affected Windows Job tests and produces a CLI plus feature-gated
 Rust completion probe. Consumers verify revision, both digests and ARM64 identities;

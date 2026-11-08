@@ -294,24 +294,20 @@ four workers as an available development selection; current-release actual-model
 correctness and complete-answer benefit remain pending. No further Prism runtime change is needed
 to enable that selection.
 
-The [first original-PQ2 trial](evidence/row-parallel-smoke.json) matches all
-129 files / 39,504,384 logits and logical state values byte for byte at adapter
-scale 1.3. One forward evaluation falls from 1,553.3135 ms to 575.6722 ms, with
-401 observed parallel projections. The CI owner job takes 125 seconds and the
-outer runner lifetime 131.13 seconds; the later explicit cleanup confirmation is
-also retained. These are fixed-step source-checker observations, not application
-TPS or complete performance qualification. Use
-`bonsai-tools chat --native-row-workers 1` to select one instead of the four-worker development default; unsupported
-versions/engine selections fail closed.
-The [published-runtime service check](evidence/pq2-native-service-row4.json)
-also starts verified 0.1.9 with original PQ2, the approved adapter at scale 1.3
-and four workers explicitly configured under required native containment. Its one
-four-token-cap stream ends normally after one reported token; the owned Job is
-empty and the listener released after shutdown. The full owner attempt, including
-a setup correction and cleanup, takes 220.58 seconds without resetting its
-original five-minute deadline. This is broker/service acceptance evidence, not
-GUI, TPS, full-context or default-runtime qualification. The receipt preserves
-the then-unconfirmed GitHub verdict separately from the passed local model case.
+The [first original-PQ2 trial](evidence/row-parallel-smoke.json) matches all 129 files / 39,504,384 logits and logical state values
+byte for byte at adapter scale 1.3. One forward evaluation falls from 1,553.3135 ms to 575.6722 ms,
+with 401 observed parallel projections. The CI owner job takes 125 seconds and the outer runner
+lifetime 131.13 seconds; the later explicit cleanup confirmation is also retained. These are
+fixed-step source-checker observations, not application TPS or complete performance qualification.
+Use `bonsai-tools chat --native-row-workers 1` to select one instead of the four-worker development
+default; unsupported versions/engine selections fail closed. The [published-runtime service check](evidence/pq2-native-service-row4.json)
+also starts verified 0.1.9 with original PQ2, the approved adapter at scale 1.3 and four workers
+explicitly configured under required native containment. Its one four-token-cap stream ends normally
+after one reported token; the owned Job is empty and the listener released after shutdown. The full
+owner attempt, including a setup correction and cleanup, takes 220.58 seconds without resetting its
+original five-minute deadline. This is broker/service acceptance evidence, not GUI, TPS,
+full-context or default-runtime qualification. The receipt preserves the then-unconfirmed GitHub
+verdict separately from the passed local model case.
 
 The [row-worker workflow](../.github/workflows/native-row-qualification.yml) builds
 its exact source/hash-bound checker on hosted Windows ARM64 without models.

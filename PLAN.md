@@ -8,13 +8,17 @@ PTQ1 default promotion is a **no-go under the current evidence**. Follow the
 adapter, exact-source application, device/human and benefit gates below before
 reconsidering it. Keep historical 0.1.13 scores separate from 0.1.14 acceptance.
 
-Use native Rust Prism 0.1.19 (`951cc88486fdc5609a3aa57aad3b9e92216de2b1`) as the project's development default: original Swift
-PQ2, four CPU row workers, the standard adapter at scale 1.3, and default Snapdragon X2 Hexagon NPU `native-q2` resident acceleration (`DEFAULT_NATIVE_Q2_PROJECTIONS`, all 168 `PQ2_0` projections across the first 27 layers `blk.0..=blk.26`, `2,888,663,040` bytes / `2,754.84` MiB across six `<= 480` MiB `FastRPC` weight arenas pre-warmed at worker startup with automatic 4-worker NEON CPU fallback when the signed Hexagon runtime package or CDSP driver is absent). Preserve explicit
-publisher rollback with `--publisher-engine` (`-PublisherEngine` in Start-Chat.ps1),
-original-PQ2 selection and unchanged artifact, sandbox and resource admission.
-Keep PTQ1 opt-in. This owner-directed development choice does not assert complete
-release qualification or a measured advantage; retain the disclaimer and pending
-evidence below. No failure may switch engine or representation automatically.
+Use native Rust Prism 0.1.19 (`951cc88486fdc5609a3aa57aad3b9e92216de2b1`) as the project's
+development default: original Swift PQ2, four CPU row workers, the standard adapter at scale 1.3,
+and default Snapdragon X2 Hexagon NPU `native-q2` resident acceleration
+(`DEFAULT_NATIVE_Q2_PROJECTIONS`, all 168 `PQ2_0` projections across the first 27 layers
+`blk.0..=blk.26`, `2,888,663,040` bytes / `2,754.84` MiB across six `<= 480` MiB `FastRPC` weight
+arenas pre-warmed at worker startup with automatic 4-worker NEON CPU fallback when the signed
+Hexagon runtime package or CDSP driver is absent). Preserve explicit publisher rollback with
+`--publisher-engine` (`-PublisherEngine` in Start-Chat.ps1), original-PQ2 selection and unchanged
+artifact, sandbox and resource admission. Keep PTQ1 opt-in. This owner-directed development choice
+does not assert complete release qualification or a measured advantage; retain the disclaimer and
+pending evidence below. No failure may switch engine or representation automatically.
 
 Prioritize usable native startup, model readiness, stop/retry and explicit rollback,
 then actual-model application acceptance, daily-service isolation, creative
@@ -608,7 +612,6 @@ and retain the reset-every-request serving policy until reuse is qualified.
   replace Prism server's exact Git dependency with that reviewed registry release,
   and validate packaging before re-enabling server crate publication. Preserve
   the explicit GitHub binary/source delivery boundary until those gates pass.
-
 - Audit immutable comparison and reuse revisions: model, adapter, tensor and transform
   identity, hardware, numerics, licenses and notices. Keep PQ2, current-weight PTQ1 and
   Qwen as separate controls; respect [OxiBonsai reuse
@@ -794,16 +797,16 @@ not close pending hosted integration or full-model acceptance.
      Do not replace `libcdsprpc.dll` with undocumented raw `\Device\QcNspMcdm` `ioctl`
      calls that bypass FastRPC session handshakes, signed PD catalog checks, or SMMU
      `rpcmem` registration.
-  2. **Immediate hybrid NPU/CPU placement, fused CPU flash attention, and ICL prompt/codec caching (completed in `src/speech-tts/build_npu.rs`)**:
-     Run `Talker` multi-token prefill (`T_ctx` tokens, 28 layers, `Q8_0`) on Hexagon `HTP0`
-     while executing latency-critical `T = 1` single-token `Talker` decode (via zero-copy
-     `talker_cpu` GGUF views over cache-coherent `HTP0` `rpcmem` `F16` KV cache) and
-     5-layer `CodePredictor` (`15` residual codebooks per frame with `SAMPLER_TAIL_FIXED`
-     top-k view) on host NEON CPU threads with fused `ggml_flash_attn_ext` enabled,
-     routing prompt text/reference-code projections directly to `cpu_backend`, caching
-     ICL reference codec/text streams and speaker-embedding prefixes in `PromptCache`, and
-     priming/restoring causal `CodecStateSnap` reference snapshots so synthesis decodes
-     only the generated `T_frames`.
+  2. **Immediate hybrid NPU/CPU placement, fused CPU flash attention, and ICL prompt/codec caching
+     (completed in `src/speech-tts/build_npu.rs`)**: Run `Talker` multi-token prefill (`T_ctx`
+     tokens, 28 layers, `Q8_0`) on Hexagon `HTP0` while executing latency-critical `T = 1`
+     single-token `Talker` decode (via zero-copy `talker_cpu` GGUF views over cache-coherent
+     `HTP0` `rpcmem` `F16` KV cache) and 5-layer `CodePredictor` (`15` residual codebooks per
+     frame with `SAMPLER_TAIL_FIXED` top-k view) on host NEON CPU threads with fused
+     `ggml_flash_attn_ext` enabled, routing prompt text/reference-code projections directly to
+     `cpu_backend`, caching ICL reference codec/text streams and speaker-embedding prefixes in
+     `PromptCache`, and priming/restoring causal `CodecStateSnap` reference snapshots so synthesis
+     decodes only the generated `T_frames`.
   3. **Pure-Rust `Talker` + `CodePredictor` + `hexagon-native-rpc` NPU backend**: Port
      `Talker` (28-layer Qwen3 transformer, 3D MRoPE, KV cache) and `CodePredictor`
      (5-layer residual RVQ predictor) to pure Rust in `src/speech-tts` atop the existing
@@ -1061,11 +1064,12 @@ strict Release analysis, codegen/spill inspection, actual-model state/adapter pa
 and matched request benefit before a qualified release and Runner repin. No installed
 runtime, default, resource admission or performance verdict changes here.
 
-Qualify the Prism `0.1.19` (`951cc88`, building on `0.1.18` `c4cfe40`) CPU NEON and row-parallel source optimizations
-(`fb64903`..`5656461`, building on `fcb54af`, `386677c` and `547cf47`) on settled
-Prism `main` through owning hosted checks, Release ARM64 codegen/spill inspection,
-actual-model parity and matched request-throughput comparison for the pinned
-`0.1.19` (`951cc88`) release bundle:
+Qualify the Prism `0.1.19` (`951cc88`, building on `0.1.18` `c4cfe40`) CPU NEON and row-parallel
+source optimizations (`fb64903`..`5656461`, building on `fcb54af`, `386677c` and `547cf47`) on
+settled Prism `main` through owning hosted checks, Release ARM64 codegen/spill inspection,
+actual-model parity and matched request-throughput comparison for the pinned `0.1.19` (`951cc88`)
+release bundle:
+
 - Single-widen `PQ2` NEON consumption kernels (`pq2_half_unsigned_sum` and
   `pq2_half_signed_sum` in `fb64903`), widening each 16-byte `PQ2` half once to
   `(u16x8, u16x8)` across 1-, 4- and 8-row kernels instead of four times per half.
@@ -1135,9 +1139,9 @@ actual-model parity and matched request-throughput comparison for the pinned
 
 Remaining CPU kernel, graph-level parallelism and tiled-prefill optimizations to
 implement and qualify in Prism:
+
 - Evaluate optional ARMv8.2-A `dotprod` / `i8mm` dispatch behind runtime feature
   detection where arithmetic contracts permit.
-
 - Qualify actual prompt/response latency and complete application lifecycle for the
   [shared-slice row-parallel candidate](docs/oxibonsai-reuse.md#implementation-status),
   beyond the retained [fixed-step and short service evidence](docs/native-rust-engine.md#bounded-parallel-row-qualification).
@@ -1297,131 +1301,203 @@ with native offload; no useful benefit or before/after packing speedup is
 established. The original clocks remain closed, and production admission and
 the installed application remain unchanged.
 
-The [batch-four HMX controls](docs/evidence/npu-batch4-controls-20261104/summary.json)
-implement and verify the [signed batch-operation route](docs/hexagon-source-audit.md#batching-existing-signed-block-operations)
-on Prism `6f31095`: each queue packet carries one buffer descriptor, twelve tensor
-descriptors, four `K=128/N=8` operation descriptors and four reserved profile records
-(`1,816` command bytes in a `2,048`-byte header), reducing first-projection queue
-writes from 40 to 10 per token (`30` writes for `120` logical operations across
-tokens `42`, `43` and `128`) while preserving separate logical-operation and
-queue-write counters under the unchanged 24,000-operation cap, full `n_tensors=12`
-and `n_ops=4` response checks, descriptor regeneration and complete batch output
-validation before ordered per-block CPU reconstruction. All 73 Prism unit tests,
-10 Runner `model_device` tests, formatting, strict Release Clippy and Release builds
-passed. Both supervised `batch4-streaming` (`4,755,456` mapped bytes, all `16,711,680`
-returned plane values independently checked) and `batch4-resident` (`29,822,976`
-mapped bytes with `25,067,520` resident packed weight bytes, `1` prepared tensor and
-`2` cache hits under `graph-parity-only`) matched complete per-token CPU logits and
-logical state and ended with explicit native cleanup and empty Jobs. The workload
-clock opened on battery (`82%`) before AC was connected during build setup; all four
-CPU/native arm endpoints in both device controls observed AC, saver off and `97%`
-charge (`141.81` seconds charged out of `540.0` seconds). Batching reduced
-`nativeSubmitAndWaitMilliseconds` to `33.91-35.52` ms (streaming) and `31.16-32.05` ms
-(resident), with resident native evaluations taking `446.33`, `431.31` and `434.37` ms
-versus `398.77`, `385.18` and `386.30` ms on CPU. The follow-up
+The [batch-four HMX controls](docs/evidence/npu-batch4-controls-20261104/summary.json) implement and verify the [signed batch-operation route](docs/hexagon-source-audit.md#batching-existing-signed-block-operations) on Prism
+`6f31095`: each queue packet carries one buffer descriptor, twelve tensor descriptors, four
+`K=128/N=8` operation descriptors and four reserved profile records (`1,816` command bytes in a
+`2,048`-byte header), reducing first-projection queue writes from 40 to 10 per token (`30` writes
+for `120` logical operations across tokens `42`, `43` and `128`) while preserving separate
+logical-operation and queue-write counters under the unchanged 24,000-operation cap, full
+`n_tensors=12` and `n_ops=4` response checks, descriptor regeneration and complete batch output
+validation before ordered per-block CPU reconstruction. All 73 Prism unit tests, 10 Runner
+`model_device` tests, formatting, strict Release Clippy and Release builds passed. Both supervised
+`batch4-streaming` (`4,755,456` mapped bytes, all `16,711,680` returned plane values independently
+checked) and `batch4-resident` (`29,822,976` mapped bytes with `25,067,520` resident packed weight
+bytes, `1` prepared tensor and `2` cache hits under `graph-parity-only`) matched complete per-token
+CPU logits and logical state and ended with explicit native cleanup and empty Jobs. The workload
+clock opened on battery (`82%`) before AC was connected during build setup; all four CPU/native arm
+endpoints in both device controls observed AC, saver off and `97%` charge (`141.81` seconds charged
+out of `540.0` seconds). Batching reduced `nativeSubmitAndWaitMilliseconds` to `33.91-35.52` ms
+(streaming) and `31.16-32.05` ms (resident), with resident native evaluations taking `446.33`,
+`431.31` and `434.37` ms versus `398.77`, `385.18` and `386.30` ms on CPU. The follow-up
 [host-reconstruction and multi-projection resident HMX controls](docs/evidence/npu-multi-projection-20261104/summary.json)
-on Prism `ebc22c2` and Runner `bbc63034` eliminate redundant unused streaming-slot
-zeroing on resident `frame_batch4`/`frame` submissions (`25.1` MB saved per projection),
-replace `5.57` million scalar `truncf` checks per projection with exact `i16` roundtrip
-validation, fuse padding/reconstruction plane checks into a row-major `batch_four`
-reconstruction loop (`4x` fewer strided `tensor.data` passes while preserving exact
-per-128 FMA/nonfused order), and extend the probe and supervisor to bounded
-multi-projection resident placement (`1..=2` resident projections within the `64` MiB
-arena, `1..=4` streaming projections, beginning with `blk.0.ffn_up.weight`). All 74
-Prism unit tests, 14 Runner `model_device` tests, formatting, strict Release Clippy
-and Release builds passed. Under continuous AC power (`100%` charge across the outer
-`132.25`-second run within the `540.0`-second predeclared allowance, with AC, saver off
-and `100%` charge at all four arm endpoints of both device controls),
-`single-projection-batch4-resident` (`blk.0.ffn_up.weight`, `120` ops in `30` queue writes,
-`29,822,976` mapped bytes) and `two-projection-batch4-resident` (`blk.0.ffn_up.weight` +
-`blk.0.ffn_gate.weight`, `240` ops in `60` queue writes, `54,890,496` mapped bytes with
-`50,135,040` resident weight bytes, `2` prepared tensors and `4` cache hits) both matched
-complete per-token CPU logits and logical state across tokens `42`, `43` and `128` and
-completed explicit native cleanup with empty owned Jobs. Single-projection native
-evaluation reached `487.59`, `466.35` and `432.66` ms (`32.53-34.22` ms submit/wait)
-versus `412.34`, `389.91` and `415.44` ms on CPU (`+17.22` ms on token 2); adding the
-second resident projection doubled `nativeSubmitAndWaitMilliseconds` to `64.66-66.22` ms
-(`~32.5` ms per projection across `10` queue writes) and raised native evaluation to
-`553.37`, `514.98` and `530.48` ms versus `579.56`, `452.71` and `411.89` ms on CPU.
-The subsequent [batch-ten HMX queue, bounded spin-polling and parallel L1-tiled reconstruction controls](docs/evidence/npu-batch10-fast-queue-20261105/summary.json)
-on Prism `5136bd1` and Runner `580a0062` increase HMX queue batching to `10` `K=128/N=8`
-operations per packet (`4,504` command bytes in an `8,192`-byte header, `n_tensors=30`,
-`n_ops=10`, reducing each 40-block projection from `10` to `4` queue writes), add bounded
-15-millisecond spin-polling in `Session::read` on `queue_read` `516` (`AEE_EWOULDBLOCK`)
-before 1 ms OS timer sleep fallback, and parallelize 8-plane dot reconstruction across all
-four `RowParallelism` workers with 64-row L1 tiling (`accumulate_batch<B>`) while
-preserving exact per-128 FMA/nonfused accumulation order. All 81 Prism unit tests, 15
-Runner `model_device` tests, formatting, strict Release Clippy and Release builds passed.
-Under battery operation (`acConnected: false`, `batterySaver: false`, `89%` charge across
-the outer `43.36`-second run within the `540.0`-second predeclared allowance and at all
-four arm endpoints of both device controls; do not combine this battery session with prior
-AC-connected sessions for cross-session performance comparisons),
-`single-projection-batch10-resident` (`blk.0.ffn_up.weight`, `120` ops in `12` queue writes,
-`36,954,112` mapped bytes) and `two-projection-batch10-resident` (`blk.0.ffn_up.weight` +
-`blk.0.ffn_gate.weight`, `240` ops in `24` queue writes, `62,021,632` mapped bytes with
-`50,135,040` resident weight bytes, `2` prepared tensors and `4` cache hits) both matched
-complete per-token CPU logits and logical state across tokens `42`, `43` and `128` and
-completed explicit native cleanup with empty owned Jobs. `nativeSubmitAndWaitMilliseconds`
-dropped to `22.21-23.48` ms for 1 projection (`12` queue writes) and `44.08-46.26` ms for
-2 projections (`24` queue writes, `~5.5-5.8` ms per 10-op packet), while 4-worker L1-tiled
-reconstruction kept 2-projection native evaluation (`525.34`, `513.61` and `537.70` ms)
-close to 1-projection native evaluation (`529.85`, `502.53` and `487.91` ms). Because the
-signed `ggml-htp` DSP binary executes each `K=128/N=8` `OP_MUL_MAT` descriptor independently
-and writes 8 separate `FP32` bitplane vectors (`5.57` MB per `batch10` packet, `22.28` MB
-per projection) back to shared memory, each projection still incurs `~22.2-23.5` ms of DSP
-execution/writeback plus `~10-15` ms of host reconstruction versus `~2-3` ms on 4-worker
-NEON CPU; prioritize evaluating whether multi-block `K>128` weight tiling or DSP-side
-plane/scale reduction is supported by any signed Hexagon package symbol before wider
-admission. The [static K>128 tiling, plane-reduction, and 8-HVX/2MiB-VTCM solver audit](docs/evidence/hexagon-k-tiling-and-reduction-audit.json)
-(reproduced by `python -B tools/hexagon/verify_k_tiling_and_reduction_audit.py`) and
+on Prism `ebc22c2` and Runner `bbc63034` eliminate redundant unused streaming-slot zeroing on
+resident `frame_batch4`/`frame` submissions (`25.1` MB saved per projection), replace `5.57` million
+scalar `truncf` checks per projection with exact `i16` roundtrip validation, fuse
+padding/reconstruction plane checks into a row-major `batch_four` reconstruction loop (`4x` fewer
+strided `tensor.data` passes while preserving exact per-128 FMA/nonfused order), and extend the
+probe and supervisor to bounded multi-projection resident placement (`1..=2` resident projections
+within the `64` MiB arena, `1..=4` streaming projections, beginning with `blk.0.ffn_up.weight`). All
+74 Prism unit tests, 14 Runner `model_device` tests, formatting, strict Release Clippy and Release
+builds passed. Under continuous AC power (`100%` charge across the outer `132.25`-second run within
+the `540.0`-second predeclared allowance, with AC, saver off and `100%` charge at all four arm
+endpoints of both device controls), `single-projection-batch4-resident` (`blk.0.ffn_up.weight`,
+`120` ops in `30` queue writes, `29,822,976` mapped bytes) and `two-projection-batch4-resident`
+(`blk.0.ffn_up.weight` + `blk.0.ffn_gate.weight`, `240` ops in `60` queue writes, `54,890,496`
+mapped bytes with `50,135,040` resident weight bytes, `2` prepared tensors and `4` cache hits) both
+matched complete per-token CPU logits and logical state across tokens `42`, `43` and `128` and
+completed explicit native cleanup with empty owned Jobs. Single-projection native evaluation reached
+`487.59`, `466.35` and `432.66` ms (`32.53-34.22` ms submit/wait) versus `412.34`, `389.91` and
+`415.44` ms on CPU (`+17.22` ms on token 2); adding the second resident projection doubled
+`nativeSubmitAndWaitMilliseconds` to `64.66-66.22` ms (`~32.5` ms per projection across `10` queue
+writes) and raised native evaluation to `553.37`, `514.98` and `530.48` ms versus `579.56`, `452.71`
+and `411.89` ms on CPU. The subsequent
+[batch-ten HMX queue, bounded spin-polling and parallel L1-tiled reconstruction controls](docs/evidence/npu-batch10-fast-queue-20261105/summary.json) on Prism
+`5136bd1` and Runner `580a0062` increase HMX queue batching to `10` `K=128/N=8` operations per
+packet (`4,504` command bytes in an `8,192`-byte header, `n_tensors=30`, `n_ops=10`, reducing each
+40-block projection from `10` to `4` queue writes), add bounded 15-millisecond spin-polling in
+`Session::read` on `queue_read` `516` (`AEE_EWOULDBLOCK`) before 1 ms OS timer sleep fallback, and
+parallelize 8-plane dot reconstruction across all four `RowParallelism` workers with 64-row L1
+tiling (`accumulate_batch<B>`) while preserving exact per-128 FMA/nonfused accumulation order. All
+81 Prism unit tests, 15 Runner `model_device` tests, formatting, strict Release Clippy and Release
+builds passed. Under battery operation (`acConnected: false`, `batterySaver: false`, `89%` charge
+across the outer `43.36`-second run within the `540.0`-second predeclared allowance and at all four
+arm endpoints of both device controls; do not combine this battery session with prior AC-connected
+sessions for cross-session performance comparisons), `single-projection-batch10-resident`
+(`blk.0.ffn_up.weight`, `120` ops in `12` queue writes, `36,954,112` mapped bytes) and
+`two-projection-batch10-resident` (`blk.0.ffn_up.weight` + `blk.0.ffn_gate.weight`, `240` ops in
+`24` queue writes, `62,021,632` mapped bytes with `50,135,040` resident weight bytes, `2` prepared
+tensors and `4` cache hits) both matched complete per-token CPU logits and logical state across
+tokens `42`, `43` and `128` and completed explicit native cleanup with empty owned Jobs.
+`nativeSubmitAndWaitMilliseconds` dropped to `22.21-23.48` ms for 1 projection (`12` queue writes)
+and `44.08-46.26` ms for 2 projections (`24` queue writes, `~5.5-5.8` ms per 10-op packet), while
+4-worker L1-tiled reconstruction kept 2-projection native evaluation (`525.34`, `513.61` and
+`537.70` ms) close to 1-projection native evaluation (`529.85`, `502.53` and `487.91` ms). Because
+the signed `ggml-htp` DSP binary executes each `K=128/N=8` `OP_MUL_MAT` descriptor independently and
+writes 8 separate `FP32` bitplane vectors (`5.57` MB per `batch10` packet, `22.28` MB per
+projection) back to shared memory, each projection still incurs `~22.2-23.5` ms of DSP
+execution/writeback plus `~10-15` ms of host reconstruction versus `~2-3` ms on 4-worker NEON CPU;
+prioritize evaluating whether multi-block `K>128` weight tiling or DSP-side plane/scale reduction is
+supported by any signed Hexagon package symbol before wider admission. The
+[static K>128 tiling, plane-reduction, and 8-HVX/2MiB-VTCM solver audit](docs/evidence/hexagon-k-tiling-and-reduction-audit.json) (reproduced by
+`python -B tools/hexagon/verify_k_tiling_and_reduction_audit.py`) and
 [8-HVX / 2 MiB VTCM / Burst-mode HMX controls](docs/evidence/npu-hmx-8hvx-2mib-vtcm-20261105/summary.json)
-on Prism `9f61217` and Runner `76e3b38b` resolve that `K>128` tiling and DSP-reduction
-gate: (1) `core_dot_chunk_fp16` (`hmx-mm-kernels-tiled.h:966-1040`) accumulates across
-all `K/32` dot tiles inside HMX and truncates the output to IEEE-754 `FP16` via
-`HMX_STORE_AFTER_F16` (`__fp16 *vtcm_output`) before widening to `FP32`, while `PQ2_0`
-carries distinct per-128-element `FP16` scales and `Q8_K` carries per-256-element `FP32`
-scales accumulated via ordered per-128-block `f32::mul_add` (`0xc1f90b01` golden vs
-`0xc1f90800` under `K=256` baked-scale `HMX_STORE_AFTER_F16`); (2) `HTP_OP_SUM_ROWS`
-(`sum-rows-ops.c:1-215`) reduces along `ne[0]=17408` rather than across `ne[1]=8`
-bitplanes, and `htp_matmul_is_hmx_eligible` requires `M > 4`; and (3) enabling all 8
-128-byte HVX contexts (`HMX_Q2_HVX_WORKERS=8`, `kparams.n_threads=8`,
-`kparams.n_act_threads=4`, `div_n_act_threads=(1,0,2)`), raising
-`HMX_Q2_VTCM_REQUEST_BYTES` from 64 KiB (`n_chunk=128`, `136` chunks/op) to 2 MiB
-(`n_chunk=4352`, `vtcm_size=1,576,960` bytes, `4` chunks/op with zero tail waste, `34x`
-fewer synchronous HMX/DMA/HVX chunk barriers), and selecting `HTP_POWER_MODE_BURST` (`7`)
-cut `nativeSubmitAndWaitMilliseconds` by `2.4x-2.8x` under continuous AC power (`95%`
-charge, saver off across the `199.09`-second run within the `300.0`-second default
+on Prism `9f61217` and Runner `76e3b38b` resolve that `K>128` tiling and DSP-reduction gate: (1)
+`core_dot_chunk_fp16` (`hmx-mm-kernels-tiled.h:966-1040`) accumulates across all `K/32` dot tiles
+inside HMX and truncates the output to IEEE-754 `FP16` via `HMX_STORE_AFTER_F16`
+(`__fp16 *vtcm_output`) before widening to `FP32`, while `PQ2_0` carries distinct per-128-element
+`FP16` scales and `Q8_K` carries per-256-element `FP32` scales accumulated via ordered per-128-block
+`f32::mul_add` (`0xc1f90b01` golden vs `0xc1f90800` under `K=256` baked-scale
+`HMX_STORE_AFTER_F16`); (2) `HTP_OP_SUM_ROWS` (`sum-rows-ops.c:1-215`) reduces along `ne[0]=17408`
+rather than across `ne[1]=8` bitplanes, and `htp_matmul_is_hmx_eligible` requires `M > 4`; and (3)
+enabling all 8 128-byte HVX contexts (`HMX_Q2_HVX_WORKERS=8`, `kparams.n_threads=8`,
+`kparams.n_act_threads=4`, `div_n_act_threads=(1,0,2)`), raising `HMX_Q2_VTCM_REQUEST_BYTES` from 64
+KiB (`n_chunk=128`, `136` chunks/op) to 2 MiB (`n_chunk=4352`, `vtcm_size=1,576,960` bytes, `4`
+chunks/op with zero tail waste, `34x` fewer synchronous HMX/DMA/HVX chunk barriers), and selecting
+`HTP_POWER_MODE_BURST` (`7`) cut `nativeSubmitAndWaitMilliseconds` by `2.4x-2.8x` under continuous
+AC power (`95%` charge, saver off across the `199.09`-second run within the `300.0`-second default
 budget and at all four arm endpoints of both controls): `8.18`, `9.33` and `13.28` ms for
-`single-projection-batch10-resident` (`320.31-536.98` ms native evaluation vs
-`294.61-342.29` ms CPU) and `26.77`, `16.84` and `15.60` ms for
-`two-projection-batch10-resident` (`~7.80-8.42` ms per resident projection on tokens `43`
-and `128`, with native evaluation at `457.34` and `464.30` ms vs `552.44` and `553.09` ms
-on CPU, bitwise-equal logits/state and clean teardown). Because the signed generic `Q2_0`
-DSP binary irreducibly writes `22.28` MB of `FP32` bitplanes to DDR per projection
-(`~7.8-9.3` ms on DSP plus `~6-8` ms of host reconstruction vs `~2-3` ms per projection on
-4-worker NEON CPU), beating 4-worker NEON CPU per projection under 0-ULP bitwise parity requires a custom fused
-`PQ2_0 × Q8_K` DSP kernel with an accepted signing route. Under bounded floating-point tolerance (`executionBackend: "native-q2"`, `integerAudit: "bounded-float-tolerance"`), the [1-op full-K native Q2_0 HVX controls](docs/evidence/npu-native-q2-1op-20261105/summary.json) and [decision](docs/evidence/npu-native-q2-1op-20261105/decision.json) on Prism `ccb1339` and Runner `cd3485bb` transcode `PQ2_0` weights losslessly at preparation time into `llama.cpp`'s native tiled `HTP_TYPE_Q2_0` layout (repeating each 128-weight `FP16` block scale across both 64-weight tiles) and dispatch the entire `[5120, 17408]` projection as a single `K=5120, M=17408, N=1` operation (`hvx_mv_params` `kernel_type=7`, `n_hvx=8`, `n_prefetch=4`, `vtcm_size=1,912,832`), plus expose the signed `v81` HTP opcode descriptors (`HTP_OP_RMS_NORM`, `HTP_OP_RMS_NORM_MUL`, `HTP_OP_GLU_SWIGLU`, `HTP_OP_UNARY_SILU`, `HTP_OP_MUL`/`ADD`/`SUB`/`DIV`, `HTP_OP_ROPE`, `HTP_OP_FLASH_ATTN_EXT`, `HTP_OP_SSM_CONV`, `HTP_OP_GATED_DELTA_NET`, `HTP_OP_HADAMARD`, and VTCM pass flags). Under continuous AC power (`99%` charge, saver off across the `32.26`-second run within the `300.0`-second default budget and at all four arm endpoints of both controls), DSP-side reduction shrinks shared-memory output traffic from `22.28` MB of bitplanes to a single `69,632`-byte `F32` vector (`320x` less output traffic per projection, zero host bitplane reconstruction) and cuts `nativeSubmitAndWaitMilliseconds` to `0.9832`, `0.6769` and `0.6436` ms for `single-projection-native-q2-resident` (`3` ops in `3` queue writes) and `1.4439`, `1.0908` and `1.0821` ms (`~0.541` ms per `[5120, 17408]` projection, faster than 4-worker NEON CPU's `~2-3` ms) for `two-projection-native-q2-resident` (`6` ops in `6` queue writes, with token `128` native evaluation at `506.15` ms vs `516.49` ms on CPU), while matching all `248,320` vocabulary logits across tokens `42`, `43` and `128` with cosine similarity `0.999906-0.999974`, RMSE `0.0221-0.0286`, exact top-1 token agreement (`1183`, `12`, `248`), and `5/5` top-5 overlap. The follow-up [full-layer and 13-projection multi-layer native Q2_0 HVX controls](docs/evidence/npu-full-layer-native-q2-a383e92-20261105/summary.json) and [decision](docs/evidence/npu-full-layer-native-q2-a383e92-20261105/decision.json) on Prism `a383e92` (retaining the [closed 27.687-second diagnostic at 8a7980a](docs/evidence/npu-full-layer-native-q2-20261105/decision.json) that identified unconditional `HmxQ2WeightRegistry` capacity checking in `Session` construction after `htp_iface_start`) verify `ggml-hexagon.dll` `.data` buffer limits (`m-size = 512 MiB`, `v-size = 3000 MiB` on `v81`, `h-size = 1024 MiB`) and `libggml-htp-v81.so` `4 MiB` VTCM acquisition, expand `NativeQ2ProjectionLimits` to `K <= 17,408`, `M <= 17,408`, `4 MiB` VTCM (for `K > 6,144` projections such as `ffn_down` `[17408, 5120]` where `n_prefetch=4` uses `2,949,376` bytes VTCM), and `256 MiB` resident weight arena (`NATIVE_Q2_MAX_RESIDENT_WEIGHT_BYTES`), parallelize host `PQ2_0 -> HTP_TYPE_Q2_0` tile packing across 4 row workers via `RowParallelism::update_chunks`, and admit all 10 `PQ2_0` layer projection types across recurrent and full-attention layers. All 91 Prism unit tests, 16 Runner `model_device` tests, formatting, strict Release Clippy and Release builds passed. Under battery operation (`acConnected: false`, `batterySaver: false`, `90%` charge across the `32.971`-second run within the `300.0`-second predeclared allowance, `60.658` seconds cumulative including the closed `8a7980a` diagnostic; do not treat battery evaluation wall-clock windows as qualified performance comparisons), `recurrent-layer-native-q2-resident` (all 6 `blk.0` projections: `ffn_up`, `ffn_gate`, `ffn_down`, `attn_qkv`, `attn_gate`, `ssm_out`, `18` ops in `18` queue writes, `132,804,608` mapped bytes with `107,642,880` resident weight bytes, `6` prepared tensors and `12` cache hits) and `multi-layer-13proj-native-q2-resident` (all 6 `blk.0` recurrent projections plus all 7 `blk.3` full-attention projections: `ffn_up`, `ffn_gate`, `ffn_down`, `attn_q`, `attn_k`, `attn_v`, `attn_output`, `39` ops in `39` queue writes, `237,498,368` mapped bytes with `212,336,640` resident weight bytes, `13` prepared tensors and `26` cache hits) both passed bounded float tolerance across tokens `42`, `43` and `128` (`cosineSimilarity` `0.999893-0.999977`, `rmse` `0.0228-0.0306`, `maxAbsDiff` `0.1080-0.1724`, exact top-1 token agreement `1183`, `12`, `248`, and `5/5` top-5 overlap) and completed explicit native cleanup with empty owned Jobs, with total `nativeSubmitAndWaitMilliseconds` at `2.8738`, `2.2704` and `2.3168` ms across all 6 projections of `blk.0` (`~0.378` ms per projection) and `5.4553`, `4.3826` and `4.7865` ms across all 13 projections of `blk.0 + blk.3` (`~0.337-0.420` ms per projection). The subsequent [scoped-flush 13-projection and 4-layer 25-projection native Q2_0 HVX controls](docs/evidence/npu-4layer-25proj-native-q2-20261105/summary.json) and [decision](docs/evidence/npu-4layer-25proj-native-q2-20261105/decision.json) on Prism `e2349af` add `dirty_resident_weights` tracking to `Session` in `projection_native.rs` so the first submission after `prepare_weights` flushes the full allocation while subsequent `Weights::NativeResident` cache-hit submissions scope `QueueBuffer.size` (`dspqueue_buffer.size`) to the page-aligned active working prefix (`(active.output + rows * 4).next_multiple_of(4096) <= 94,208` bytes = `92 KiB` while keeping `bufs[0].size` at `self.expected.size`), and raise `NATIVE_Q2_MAX_RESIDENT_WEIGHT_BYTES` from `256 MiB` to `480 MiB` (`503,316,480` bytes within `ggml-hexagon.dll` `m-size = 512 MiB`), `NATIVE_Q2_RESIDENT_METADATA_BYTES` to `256 KiB` (`262,144` bytes), and `max_projections` to `26`. All 92 Prism unit tests, 16 Runner `model_device` tests, formatting, strict Release Clippy and Release builds passed. Under battery operation (`acConnected: false`, `batterySaver: false`, `76%` charge across the `37.13`-second run within the `300.0`-second predeclared allowance; retained as diagnostic observations rather than AC-qualified performance comparisons), `multi-layer-13proj-native-q2-scoped-flush` (`blk.0 + blk.3`, `13` projections, `39` ops in `39` queue writes, `237,498,368` mapped bytes with `212,336,640` resident weight bytes, `13` prepared tensors and `26` cache hits) reduced warm-token `nativeCheckedEvaluationMilliseconds` from `555.44` and `586.48` ms (at `a383e92`) to `422.49` and `446.20` ms (beating the 4-worker NEON CPU baseline's `463.97` and `478.07` ms on tokens `43` and `128`, and `1,386.00` ms vs `1,392.70` ms across all 3 tokens) with `4.8742`, `4.4271` and `4.5424` ms of NPU submit-and-wait per token (`~0.341-0.375` ms per projection), and `four-layer-25proj-native-q2-resident` (all 25 `PQ2_0` projections of the complete 4-layer repeating block `blk.0 + blk.1 + blk.2 + blk.3`, `75` ops in `75` queue writes, `452,784,128` mapped bytes with `427,622,400` resident weight bytes, `25` prepared tensors and `50` cache hits) completed all 75 operations across tokens `42`, `43` and `128` in `10.9094`, `10.3379` and `10.0536` ms of NPU submit-and-wait per token (`~0.402-0.436` ms per projection) with bounded float tolerance pass on all 3 tokens (`cosineSimilarity` `0.999895-0.999972`, `rmse` `0.0217-0.0316`, `maxAbsDiff` `0.1163-0.1669`, exact top-1 token agreement `1183`, `12`, `248`, `5/5` top-5 overlap, and clean teardown). The earlier resident screen's CPU evaluations took 502-536 ms and
-native evaluations 512-633 ms, with no per-dot audit in either native window;
-these short diagnostic windows show no clear benefit and qualify no performance
-gate. Its CPU/native power endpoints both observed AC with saver off; the earlier
-streaming and loaded-zero cases observed battery. Do not combine those different
-power conditions into a streaming-versus-resident benefit comparison. The
+`single-projection-batch10-resident` (`320.31-536.98` ms native evaluation vs `294.61-342.29` ms
+CPU) and `26.77`, `16.84` and `15.60` ms for `two-projection-batch10-resident` (`~7.80-8.42` ms per
+resident projection on tokens `43` and `128`, with native evaluation at `457.34` and `464.30` ms vs
+`552.44` and `553.09` ms on CPU, bitwise-equal logits/state and clean teardown). Because the signed
+generic `Q2_0` DSP binary irreducibly writes `22.28` MB of `FP32` bitplanes to DDR per projection
+(`~7.8-9.3` ms on DSP plus `~6-8` ms of host reconstruction vs `~2-3` ms per projection on 4-worker
+NEON CPU), beating 4-worker NEON CPU per projection under 0-ULP bitwise parity requires a custom
+fused `PQ2_0 × Q8_K` DSP kernel with an accepted signing route. Under bounded floating-point
+tolerance (`executionBackend: "native-q2"`, `integerAudit: "bounded-float-tolerance"`), the
+[1-op full-K native Q2_0 HVX controls](docs/evidence/npu-native-q2-1op-20261105/summary.json) and [decision](docs/evidence/npu-native-q2-1op-20261105/decision.json) on Prism `ccb1339` and Runner `cd3485bb`
+transcode `PQ2_0` weights losslessly at preparation time into `llama.cpp`'s native tiled
+`HTP_TYPE_Q2_0` layout (repeating each 128-weight `FP16` block scale across both 64-weight tiles)
+and dispatch the entire `[5120, 17408]` projection as a single `K=5120, M=17408, N=1` operation
+(`hvx_mv_params` `kernel_type=7`, `n_hvx=8`, `n_prefetch=4`, `vtcm_size=1,912,832`), plus expose the
+signed `v81` HTP opcode descriptors (`HTP_OP_RMS_NORM`, `HTP_OP_RMS_NORM_MUL`, `HTP_OP_GLU_SWIGLU`,
+`HTP_OP_UNARY_SILU`, `HTP_OP_MUL`/`ADD`/`SUB`/`DIV`, `HTP_OP_ROPE`, `HTP_OP_FLASH_ATTN_EXT`,
+`HTP_OP_SSM_CONV`, `HTP_OP_GATED_DELTA_NET`, `HTP_OP_HADAMARD`, and VTCM pass flags). Under
+continuous AC power (`99%` charge, saver off across the `32.26`-second run within the `300.0`-second
+default budget and at all four arm endpoints of both controls), DSP-side reduction shrinks
+shared-memory output traffic from `22.28` MB of bitplanes to a single `69,632`-byte `F32` vector
+(`320x` less output traffic per projection, zero host bitplane reconstruction) and cuts
+`nativeSubmitAndWaitMilliseconds` to `0.9832`, `0.6769` and `0.6436` ms for
+`single-projection-native-q2-resident` (`3` ops in `3` queue writes) and `1.4439`, `1.0908` and
+`1.0821` ms (`~0.541` ms per `[5120, 17408]` projection, faster than 4-worker NEON CPU's `~2-3` ms)
+for `two-projection-native-q2-resident` (`6` ops in `6` queue writes, with token `128` native
+evaluation at `506.15` ms vs `516.49` ms on CPU), while matching all `248,320` vocabulary logits
+across tokens `42`, `43` and `128` with cosine similarity `0.999906-0.999974`, RMSE `0.0221-0.0286`,
+exact top-1 token agreement (`1183`, `12`, `248`), and `5/5` top-5 overlap. The follow-up
+[full-layer and 13-projection multi-layer native Q2_0 HVX controls](docs/evidence/npu-full-layer-native-q2-a383e92-20261105/summary.json) and [decision](docs/evidence/npu-full-layer-native-q2-a383e92-20261105/decision.json) on Prism
+`a383e92` (retaining the [closed 27.687-second diagnostic at 8a7980a](docs/evidence/npu-full-layer-native-q2-20261105/decision.json) that identified unconditional
+`HmxQ2WeightRegistry` capacity checking in `Session` construction after `htp_iface_start`) verify
+`ggml-hexagon.dll` `.data` buffer limits (`m-size = 512 MiB`, `v-size = 3000 MiB` on `v81`,
+`h-size = 1024 MiB`) and `libggml-htp-v81.so` `4 MiB` VTCM acquisition, expand
+`NativeQ2ProjectionLimits` to `K <= 17,408`, `M <= 17,408`, `4 MiB` VTCM (for `K > 6,144`
+projections such as `ffn_down` `[17408, 5120]` where `n_prefetch=4` uses `2,949,376` bytes VTCM),
+and `256 MiB` resident weight arena (`NATIVE_Q2_MAX_RESIDENT_WEIGHT_BYTES`), parallelize host
+`PQ2_0 -> HTP_TYPE_Q2_0` tile packing across 4 row workers via `RowParallelism::update_chunks`, and
+admit all 10 `PQ2_0` layer projection types across recurrent and full-attention layers. All 91 Prism
+unit tests, 16 Runner `model_device` tests, formatting, strict Release Clippy and Release builds
+passed. Under battery operation (`acConnected: false`, `batterySaver: false`, `90%` charge across
+the `32.971`-second run within the `300.0`-second predeclared allowance, `60.658` seconds cumulative
+including the closed `8a7980a` diagnostic; do not treat battery evaluation wall-clock windows as
+qualified performance comparisons), `recurrent-layer-native-q2-resident` (all 6 `blk.0` projections:
+`ffn_up`, `ffn_gate`, `ffn_down`, `attn_qkv`, `attn_gate`, `ssm_out`, `18` ops in `18` queue writes,
+`132,804,608` mapped bytes with `107,642,880` resident weight bytes, `6` prepared tensors and `12`
+cache hits) and `multi-layer-13proj-native-q2-resident` (all 6 `blk.0` recurrent projections plus
+all 7 `blk.3` full-attention projections: `ffn_up`, `ffn_gate`, `ffn_down`, `attn_q`, `attn_k`,
+`attn_v`, `attn_output`, `39` ops in `39` queue writes, `237,498,368` mapped bytes with
+`212,336,640` resident weight bytes, `13` prepared tensors and `26` cache hits) both passed bounded
+float tolerance across tokens `42`, `43` and `128` (`cosineSimilarity` `0.999893-0.999977`, `rmse`
+`0.0228-0.0306`, `maxAbsDiff` `0.1080-0.1724`, exact top-1 token agreement `1183`, `12`, `248`, and
+`5/5` top-5 overlap) and completed explicit native cleanup with empty owned Jobs, with total
+`nativeSubmitAndWaitMilliseconds` at `2.8738`, `2.2704` and `2.3168` ms across all 6 projections of
+`blk.0` (`~0.378` ms per projection) and `5.4553`, `4.3826` and `4.7865` ms across all 13
+projections of `blk.0 + blk.3` (`~0.337-0.420` ms per projection). The subsequent
+[scoped-flush 13-projection and 4-layer 25-projection native Q2_0 HVX controls](docs/evidence/npu-4layer-25proj-native-q2-20261105/summary.json) and [decision](docs/evidence/npu-4layer-25proj-native-q2-20261105/decision.json) on
+Prism `e2349af` add `dirty_resident_weights` tracking to `Session` in `projection_native.rs` so the
+first submission after `prepare_weights` flushes the full allocation while subsequent
+`Weights::NativeResident` cache-hit submissions scope `QueueBuffer.size` (`dspqueue_buffer.size`) to
+the page-aligned active working prefix
+(`(active.output + rows * 4).next_multiple_of(4096) <= 94,208` bytes = `92 KiB` while keeping
+`bufs[0].size` at `self.expected.size`), and raise `NATIVE_Q2_MAX_RESIDENT_WEIGHT_BYTES` from
+`256 MiB` to `480 MiB` (`503,316,480` bytes within `ggml-hexagon.dll` `m-size = 512 MiB`),
+`NATIVE_Q2_RESIDENT_METADATA_BYTES` to `256 KiB` (`262,144` bytes), and `max_projections` to `26`.
+All 92 Prism unit tests, 16 Runner `model_device` tests, formatting, strict Release Clippy and
+Release builds passed. Under battery operation (`acConnected: false`, `batterySaver: false`, `76%`
+charge across the `37.13`-second run within the `300.0`-second predeclared allowance; retained as
+diagnostic observations rather than AC-qualified performance comparisons),
+`multi-layer-13proj-native-q2-scoped-flush` (`blk.0 + blk.3`, `13` projections, `39` ops in `39`
+queue writes, `237,498,368` mapped bytes with `212,336,640` resident weight bytes, `13` prepared
+tensors and `26` cache hits) reduced warm-token `nativeCheckedEvaluationMilliseconds` from `555.44`
+and `586.48` ms (at `a383e92`) to `422.49` and `446.20` ms (beating the 4-worker NEON CPU baseline's
+`463.97` and `478.07` ms on tokens `43` and `128`, and `1,386.00` ms vs `1,392.70` ms across all 3
+tokens) with `4.8742`, `4.4271` and `4.5424` ms of NPU submit-and-wait per token (`~0.341-0.375` ms
+per projection), and `four-layer-25proj-native-q2-resident` (all 25 `PQ2_0` projections of the
+complete 4-layer repeating block `blk.0 + blk.1 + blk.2 + blk.3`, `75` ops in `75` queue writes,
+`452,784,128` mapped bytes with `427,622,400` resident weight bytes, `25` prepared tensors and `50`
+cache hits) completed all 75 operations across tokens `42`, `43` and `128` in `10.9094`, `10.3379`
+and `10.0536` ms of NPU submit-and-wait per token (`~0.402-0.436` ms per projection) with bounded
+float tolerance pass on all 3 tokens (`cosineSimilarity` `0.999895-0.999972`, `rmse`
+`0.0217-0.0316`, `maxAbsDiff` `0.1163-0.1669`, exact top-1 token agreement `1183`, `12`, `248`,
+`5/5` top-5 overlap, and clean teardown). The earlier resident screen's CPU evaluations took 502-536
+ms and native evaluations 512-633 ms, with no per-dot audit in either native window; these short
+diagnostic windows show no clear benefit and qualify no performance gate. Its CPU/native power
+endpoints both observed AC with saver off; the earlier streaming and loaded-zero cases observed
+battery. Do not combine those different power conditions into a streaming-versus-resident benefit
+comparison. The
 [independent default-feasibility review](docs/evidence/npu-default-feasibility-20261103/independent-review.json)
 retains the still-applicable lifetime, production integration and benefit blockers.
 Keep production NPU admission disabled; the longer session allowance does not
 implement persistent serving or establish a speed advantage.
 
-Qualify the 28-projection single-arena (`c574d6c`/`d8afaec` in Prism `0.1.17`,
-`eafcca5b` in Runner) and multi-arena `native-q2` resident placement
-expansions (`545f43d`..`e60b11f` in Prism, `0cc5f7d7`..`3895fbb5` in Runner) on settled main through owning
-hosted checks, supervised AC-connected device receipts and the pinned Runner release-bundle `0.1.19` (`951cc88`):
-- Multi-arena resident weight allocation (`NATIVE_Q2_MAX_WEIGHT_ARENAS = 6`, alternating `[502_824_960, 460_062_720, 502_824_960, 460_062_720, 502_824_960, 460_062_720]` byte arenas up to `480 MiB` (`2,888,663,040` bytes / `2,754.84 MiB` total across `blk.0..=blk.26` with zero wasted bytes within CDSP `v-size = 3,000 MiB` on `v81`, `DEFAULT_NATIVE_Q2_PROJECTIONS = 168` in `e60b11f`), 4-op multi-operation resident `dspqueue` submissions (`submit_resident_multi2..4` and `image_multi_resident` with shared-activation pointer deduplication), and multi-token tiled-prefill NPU dispatch (`project_f32_tokens`, `project_f32_pair_tokens` and `project_f32_triple_tokens` wired through `Qwen35::ingest_cpu_tile`, `gdn::recurrent_tile`, `PlacedProjectionExecutor` and `WorkerThreadHexagonExecutor` in `e8deb79`/`e60b11f`), building on the 2-arena (`blk.0..=blk.8`, `962.89` MB) and 4-arena (`blk.0..=blk.17`, `1,836.56` MiB)
-  each within `ggml-hexagon.dll` `m-size = 512 MiB`, `NATIVE_Q2_MAX_PROJECTIONS = 56`,
-  `DEFAULT_NATIVE_Q2_PROJECTIONS` covering all 56 `PQ2_0` projections across the first
-  9 transformer blocks `blk.0..=blk.8`, `962.89` MB total weight capacity pre-warmed at
-  worker startup) and grouped sibling `PQ2_0` dispatch (`execute_f32_projection_group`,
-  skipping redundant CPU `Q8_K` quantization when all `PQ2_0` siblings in a group execute
-  on the NPU `F32` executor).
+Qualify the 28-projection single-arena (`c574d6c`/`d8afaec` in Prism `0.1.17`, `eafcca5b` in Runner)
+and multi-arena `native-q2` resident placement expansions (`545f43d`..`e60b11f` in Prism,
+`0cc5f7d7`..`3895fbb5` in Runner) on settled main through owning hosted checks, supervised
+AC-connected device receipts and the pinned Runner release-bundle `0.1.19` (`951cc88`):
+
+- Multi-arena resident weight allocation (`NATIVE_Q2_MAX_WEIGHT_ARENAS = 6`, alternating
+  `[502_824_960, 460_062_720, 502_824_960, 460_062_720, 502_824_960, 460_062_720]` byte arenas up to
+  `480 MiB` (`2,888,663,040` bytes / `2,754.84 MiB` total across `blk.0..=blk.26` with zero wasted
+  bytes within CDSP `v-size = 3,000 MiB` on `v81`, `DEFAULT_NATIVE_Q2_PROJECTIONS = 168` in
+  `e60b11f`), 4-op multi-operation resident `dspqueue` submissions (`submit_resident_multi2..4` and
+  `image_multi_resident` with shared-activation pointer deduplication), and multi-token
+  tiled-prefill NPU dispatch (`project_f32_tokens`, `project_f32_pair_tokens` and
+  `project_f32_triple_tokens` wired through `Qwen35::ingest_cpu_tile`, `gdn::recurrent_tile`,
+  `PlacedProjectionExecutor` and `WorkerThreadHexagonExecutor` in `e8deb79`/`e60b11f`), building on
+  the 2-arena (`blk.0..=blk.8`, `962.89` MB) and 4-arena (`blk.0..=blk.17`, `1,836.56` MiB) each
+  within `ggml-hexagon.dll` `m-size = 512 MiB`, `NATIVE_Q2_MAX_PROJECTIONS = 56`,
+  `DEFAULT_NATIVE_Q2_PROJECTIONS` covering all 56 `PQ2_0` projections across the first 9 transformer
+  blocks `blk.0..=blk.8`, `962.89` MB total weight capacity pre-warmed at worker startup) and
+  grouped sibling `PQ2_0` dispatch (`execute_f32_projection_group`, skipping redundant CPU `Q8_K`
+  quantization when all `PQ2_0` siblings in a group execute on the NPU `F32` executor).
 - Run and archive supervised AC-connected device controls for
   `eight-layer-50proj-native-q2-resident` (`blk.0..=blk.7`, 50 projections, `855.24` MB
   across 2 arenas) and `nine-layer-56proj-native-q2-resident` (`blk.0..=blk.8`, 56
@@ -1571,15 +1647,14 @@ authorized a 24,000-submission terminal cap on 2026-11-03. Retain complete-reque
 admission and the existing absolute duration/cleanup limits; qualify selected real graph work,
 logits/state, cancellation and teardown before publishing experimental output.
 
-Use the [bounded native F32/Q2 evidence](docs/evidence/hexagon-x2-queue-compute.json)
-as primitive provenance beneath the passed live-model projection. Its fixed
-guarded-Q2 integer and explicit cleanup cycle do not qualify a complete projection, model, selected DSP bytes,
-vendor teardown or speed. Retain timed-write14 and old close-before-unmap512 as
-losing observations. The investigation charged 223,797 ms of its single 300,000 ms
-owner allowance including preparation, capture and final review; its remainder
-cannot fit another supported control plus teardown. Hosted waits and date changes
-do not reset it. That historical investigation stays closed; select distinct
-future qualification work through the promotion sequence above.
+Use the [bounded native F32/Q2 evidence](docs/evidence/hexagon-x2-queue-compute.json) as primitive provenance beneath the passed live-model
+projection. Its fixed guarded-Q2 integer and explicit cleanup cycle do not qualify a complete
+projection, model, selected DSP bytes, vendor teardown or speed. Retain timed-write14 and old
+close-before-unmap512 as losing observations. The investigation charged 223,797 ms of its single
+300,000 ms owner allowance including preparation, capture and final review; its remainder cannot fit
+another supported control plus teardown. Hosted waits and date changes do not reset it. That
+historical investigation stays closed; select distinct future qualification work through the
+promotion sequence above.
 
 - Complete independent X1/v73 access and extend X2/v81 numerical, deployment,
   license/resource and effective-placement qualification. Bind the

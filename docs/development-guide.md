@@ -244,11 +244,11 @@ $speech.TtsCodecPath
 $speech.TtsVoiceModelPath
 ```
 
-Rust `speech-build` with `operation: "models"` and `model: "Canary"` or `"QwenTts"`
-selects one engine. Rust `provision` with `operation: "speech-reference"` explicitly provisions original reference
-snapshots, which the app no longer uses. `--no-tts` skips automatic TTS setup;
-`--no-speech-models` skips all automatic speech setup/downloads. Neither provisioning
-nor compiling opens a microphone.
+Rust `speech-build` with `operation: "models"` and `model: "Canary"` or `"QwenTts"` selects one
+engine. Rust `provision` with `operation: "speech-reference"` explicitly provisions original
+reference snapshots, which the app no longer uses. `--no-tts` skips automatic TTS setup;
+`--no-speech-models` skips all automatic speech setup/downloads. Neither provisioning nor compiling
+opens a microphone.
 
 Native speech builds require the pinned Rust compiler, Visual Studio 18 ARM64 C++
 tools and Windows SDK. Pinned LLVM ARM64/engine archives and all outputs stay

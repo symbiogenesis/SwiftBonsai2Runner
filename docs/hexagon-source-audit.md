@@ -1,11 +1,9 @@
 # Hexagon source, placement and evidence
 
-Source reviews and scoped device evidence: **2026-10-30 through 2026-11-03**. [Hexagon contracts](hexagon.md) govern execution;
-[PLAN.md](../PLAN.md#hexagon-npu) owns outstanding work. The
-[experiment lock](../config/hexagon-experiment.lock.json) and separate
-[Q2 candidate lock](../config/hexagon-signed-q2-candidate.lock.json) retain exact
-source/package identities and keep admission disabled. Production CPU policy,
-runtime pins and backend availability are unchanged; automatic selection is absent.
+Source reviews and scoped device evidence: **2026-10-30 through 2026-11-03**. [Hexagon contracts](hexagon.md)
+govern execution; [PLAN.md](../PLAN.md#hexagon-npu) owns outstanding work. The [experiment lock](../config/hexagon-experiment.lock.json) and separate
+[Q2 candidate lock](../config/hexagon-signed-q2-candidate.lock.json) retain exact source/package identities and keep admission disabled. Production
+CPU policy, runtime pins and backend availability are unchanged; automatic selection is absent.
 
 X2 has generic signed-package numeric access, a native terminal FD cycle and a
 [native created/exported/started queue](evidence/hexagon-x2-queue-compute.json).
@@ -38,7 +36,7 @@ terminal event offline; the device trial was not repeated. This extends scoped
 signed arithmetic evidence while effective HMX placement/VTCM, adapters, wider
 placement, serving lifetime and measured benefit remain pending.
 
-### Whole-token bridge cost
+## Whole-token bridge cost
 
 The [static operation ledger](evidence/hexagon-swift-operation-ledger.json) requires
 23,256 synchronous submissions for one original-PQ2 token with every eligible
@@ -605,12 +603,11 @@ as explicitly authorized by the owner on 2026-11-03. One evaluation fits with
 enforced cap to the same projection geometries. Smaller row tiles increase the count. Embedding row
 gather, floating/BF16 tensors, transforms and adapter corrections remain on CPU.
 
-This is a static bound, derived without loading a model or opening a device.
-It is neither measured RPC traffic nor an observed device refusal or speed
-result. A host payload cap or deliberate placement may keep additional
-projections on CPU before submission, so the count does not describe every
-mixed execution. Full-model use needs an explicit placement/work admission plan
-and separately qualified session lifetime or fused execution. The duration,
-cleanup reserve and whole-request accounting remain unchanged; neither partial work nor a native refusal authorizes CPU replay after
-submission. The ledger binds exact inventory and limit source commits and Git
-blobs, rather than inferring coverage from the first-projection control.
+This is a static bound, derived without loading a model or opening a device. It is neither measured
+RPC traffic nor an observed device refusal or speed result. A host payload cap or deliberate
+placement may keep additional projections on CPU before submission, so the count does not describe
+every mixed execution. Full-model use needs an explicit placement/work admission plan and separately
+qualified session lifetime or fused execution. The duration, cleanup reserve and whole-request
+accounting remain unchanged; neither partial work nor a native refusal authorizes CPU replay after
+submission. The ledger binds exact inventory and limit source commits and Git blobs, rather than
+inferring coverage from the first-projection control.

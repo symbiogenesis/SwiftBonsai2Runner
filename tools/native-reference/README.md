@@ -92,22 +92,19 @@ admission, each owned capture and bounded atomic partial receipts live in Rust.
 The independent Python full-state comparator remains an owned, deadline-bound
 child of the Rust command. No PowerShell capture wrapper remains.
 
-Actual execution belongs only to the main-only manual
-`native-ptq1-numerics.yml` workflow on a native ARM64 Snapdragon ephemeral runner
-with only the `ptq1-numerics-<run_id>` label, `run_device: true`, its physical-runner concurrency group and credential-clean
-child. The default `run_device: false` prepares and tests the source-bound bundle
-on hosted CI only. It retains bounded compiler/test log tails and a build receipt,
-including failed preparation; it does not start an owner-device or model process.
-The exact PTQ1 export and native package must already be provisioned; loaded
-conditions also require the approved adapter. Both numerical workloads refuse
-an existing Bonsai app or project model process before model work.
-One model runs at a time. The shared policy retains 15.5 GiB admission, 11.5 GiB
-Job commit and 4 GiB physical reserve. Source preparation and compilation run in
-hosted CI; all owner preparation is included in its 240-second work budget.
-Snapshots occupy approximately 301 MiB before metadata/compression; the Rust owner
-requires 1 GiB external disk headroom. The upload selection excludes weights,
-adapters and build caches. Archive credential-free evidence durably before
-temporary artifacts expire.
+Actual execution belongs only to the main-only manual `native-ptq1-numerics.yml` workflow on a
+native ARM64 Snapdragon ephemeral runner with only the `ptq1-numerics-<run_id>` label,
+`run_device: true`, its physical-runner concurrency group and credential-clean child. The default
+`run_device: false` prepares and tests the source-bound bundle on hosted CI only. It retains bounded
+compiler/test log tails and a build receipt, including failed preparation; it does not start an
+owner-device or model process. The exact PTQ1 export and native package must already be provisioned;
+loaded conditions also require the approved adapter. Both numerical workloads refuse an existing
+Bonsai app or project model process before model work. One model runs at a time. The shared policy
+retains 15.5 GiB admission, 11.5 GiB Job commit and 4 GiB physical reserve. Source preparation and
+compilation run in hosted CI; all owner preparation is included in its 240-second work budget.
+Snapshots occupy approximately 301 MiB before metadata/compression; the Rust owner requires 1 GiB
+external disk headroom. The upload selection excludes weights, adapters and build caches. Archive
+credential-free evidence durably before temporary artifacts expire.
 
 The collector saves one logits row and complete native sequence-zero state. Its
 expected artifact identity is meaningful together with the Rust owner's retained

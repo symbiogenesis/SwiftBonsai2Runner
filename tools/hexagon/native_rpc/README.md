@@ -68,7 +68,7 @@ one of the following arguments:
   stop/queue-close/module-close/unmap/free must pass. Any uncertain consumer pins
   its allocation and owners through supervised process exit. This fixed access
   control qualifies neither Swift arithmetic, selected DSP bytes, full vendor
-  teardown nor speed. The [compute supervisor](../../../scripts/Invoke-HexagonComputeProbe.ps1)
+  teardown nor speed. The [compute supervisor](../../bonsai/src/hexagon_tools/device.rs)
   requires trusted hosted ABI/build intake and independently rechecks package,
   catalog and driver identities before native calls.
 - `--reference-queue-q2-probe ABSOLUTE_PACKAGE_DIRECTORY`: uses the same ownership

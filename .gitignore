@@ -8,3 +8,4 @@
 # continues to keep its builds and diagnostic evidence in external temp lanes.
 /tools/validation/bin/
 /tools/validation/obj/
+/.rumdl_cache/

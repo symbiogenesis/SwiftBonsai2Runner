@@ -20,7 +20,9 @@
   "ignored": [
     "*.md",
     "docs/**",
-    ".gitignore"
+    ".gitignore",
+    ".rumdl.toml",
+    ".github/workflows/markdown.yml"
   ],
   "package_inputs": {
     "bonsai-cpu-policy": [

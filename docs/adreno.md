@@ -195,7 +195,6 @@ resolves Vulkan access or establishes speed/quality. Model/kernel comparisons an
 [CI-only](validation.md).
 
 [prism-audit]: https://github.com/PrismML-Eng/Bonsai-demo/blob/main/BACKEND-SUPPORT.md
-[opencl]: https://github.com/PrismML-Eng/llama.cpp/blob/prism/docs/backend/OPENCL.md
 [directml]: https://learn.microsoft.com/en-us/windows/ai/directml/dml
 [vulkan-query]: https://docs.vulkan.org/guide/latest/querying_extensions_features.html
 [subgroups]: https://docs.vulkan.org/guide/latest/subgroups.html

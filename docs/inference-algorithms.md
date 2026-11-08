@@ -57,12 +57,11 @@ implementation](https://github.com/microsoft/BitNet) is a technique reference su
 engine's `q8k_into`/`q8_into`, 128-weight scales, 256-activation Q8_K groups, 32-activation Q8_0
 groups and floating scale/add order. Stock BitNet quantization is not this engine's specification.
 
-The [CPU contract](cpu-kernels.md#packed-arithmetic) owns packed controls, including generic PQ2's
-**+2** symbol and bounds for every LUT intermediate/correction; the ternary [Swift census](../config/swift.pq2-census.json)
-does not authorize ternary-only dispatch for arbitrary tensors. Validated immutable representations may
-avoid repeated canonical decoding; arbitrary public tensors still need rejection checks.
-`dot(code - 1, q) = dot(code, q) - sum(q)` permits using `Q8KBlock.sums` under the same scale contract
-as lane subtraction.
+The [CPU contract](cpu-kernels.md#packed-arithmetic) owns packed controls, including generic PQ2's **+2** symbol and bounds for every
+LUT intermediate/correction; the ternary [Swift census](../config/swift.pq2-census.json) does not authorize ternary-only dispatch for
+arbitrary tensors. Validated immutable representations may avoid repeated canonical decoding;
+arbitrary public tensors still need rejection checks. `dot(code - 1, q) = dot(code, q) - sum(q)`
+permits using `Q8KBlock.sums` under the same scale contract as lane subtraction.
 
 ### Vec-LUT for multiple prompt tokens
 

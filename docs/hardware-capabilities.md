@@ -259,7 +259,8 @@ acceptance still need review.
 
 Reserved value-free `FallbackReason` codes are `unknown-capability`, `unavailable-backend`,
 `incompatible-runtime`, `incompatible-driver`, `stale-evidence`, `insufficient-memory` and
-`strict-backend-unavailable`. The selection contract below defines their use; no selector emits them yet.
+`strict-backend-unavailable`. The selection contract below defines their use; no selector emits them
+yet.
 
 ## Automatic profile selection
 
@@ -396,11 +397,11 @@ driver/evidence/cache, budgets/workload boundaries, deterministic ranking, objec
 fallback, strict rejection and complete-state handoff/failure/cancellation. Simulate negative ISA
 cases; execute optional instructions/accelerators only on eligible hardware.
 
-Promotion follows the [validation criteria](validation.md#promotion-criteria), including independent [LoRA
-TPS/quality](swift-lora.md#standard-profile-qualification), installation/rollback and affected-upgrade requalification.
-Qualified families may coexist with unsupported classes and qualified CPU fallbacks.
-[Validation policy](validation.md) requires main-only matching-device CI for full suites,
-benchmarks and performance captures; local builds/focused untimed checks are allowed.
+Promotion follows the [validation criteria](validation.md#promotion-criteria), including independent [LoRA TPS/quality](swift-lora.md#standard-profile-qualification),
+installation/rollback and affected-upgrade requalification. Qualified families may coexist with
+unsupported classes and qualified CPU fallbacks. [Validation policy](validation.md) requires main-only
+matching-device CI for full suites, benchmarks and performance captures; local builds/focused
+untimed checks are allowed.
 
 ## Focused checks
 
