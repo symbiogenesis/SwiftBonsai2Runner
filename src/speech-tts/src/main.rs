@@ -28,6 +28,10 @@ impl bonsai_speech_service::Engine for NativeEngine {
         true
     }
 
+    fn sample_rate(&self) -> u32 {
+        self.synthesizer.sample_rate()
+    }
+
     fn infer_stream(
         &mut self,
         request: bonsai_speech_service::Request<'_>,
@@ -70,9 +74,10 @@ impl bonsai_speech_service::Engine for NativeEngine {
             .synthesizer
             .synthesize_owned(text, voice_description)
             .map_err(|_| io::Error::other("Native synthesis failed."))?;
+        let sample_rate = audio.sample_rate();
         Ok(bonsai_speech_service::Output::Waveform {
             samples: audio,
-            sample_rate: bonsai_speech_tts::SAMPLE_RATE,
+            sample_rate,
         })
     }
 }

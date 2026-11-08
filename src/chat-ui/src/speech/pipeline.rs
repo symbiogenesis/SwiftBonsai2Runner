@@ -17,18 +17,94 @@ use windows_sys::Win32::Media::Audio::{
 const AUDIO_FAILURE: tts::Failure =
     tts::Failure::Message("Audio playback failed. Check the Windows audio output device.");
 const POLL: Duration = Duration::from_millis(5);
-// Normalize callbacks into 100 ms of mono 24 kHz PCM16, so queue bounds describe
-// audio duration even when HTTP/native chunks are tiny.
+/// Default 24 kHz mono output sample rate.
+pub(super) const SAMPLE_RATE: u32 = 24_000;
+/// Upgraded 48 kHz mono output sample rate (`takuma104/Qwen3-TTS-Tokenizer-12Hz-48kHz`).
+pub(super) const SAMPLE_RATE_48K: u32 = 48_000;
+// Normalize callbacks into 100 ms of mono PCM16 (4,800 bytes at 24 kHz; 9,600 bytes
+// at 48 kHz), so queue bounds describe audio duration even when chunks are tiny.
 const PACKET_BYTES: usize = 4_800;
-const PREFETCH_PACKETS: usize = 160; // 16 seconds / 768,000 bytes, outside WinMM.
+pub(super) const PACKET_BYTES_48K: usize = 9_600;
+/// Hann-window half-width (in samples) for smoothing 256-character UI sentence boundaries.
+pub(super) const HANN_BOUNDARY_SAMPLES: usize = 64;
+const PREFETCH_PACKETS: usize = 160; // 16 seconds / 768,000 bytes at 24 kHz, outside WinMM.
 const PLAYBACK_PACKETS: usize = 8;
 // Only released packets enter this pool. Full queues discard excess buffers,
-// keeping retained spare PCM capacity to one WinMM queue (38,400 bytes).
+// keeping retained spare PCM capacity to one WinMM queue.
 const RECYCLED_PACKETS: usize = PLAYBACK_PACKETS;
 // Cover the native codec's 640 ms steady bursts, including after an underrun.
 const PREROLL_PACKETS: usize = 7;
 const CODEC_BURST: Duration = Duration::from_millis(640);
 const MAX_BUFFER_BYTES: usize = 48_000 * 120;
+
+pub(super) const fn packet_bytes_for_rate(sample_rate: u32) -> usize {
+    if sample_rate == SAMPLE_RATE_48K {
+        PACKET_BYTES_48K
+    } else {
+        PACKET_BYTES
+    }
+}
+
+#[allow(
+    clippy::as_conversions,
+    clippy::cast_possible_truncation,
+    reason = "Clamped i16 PCM range [-32768, 32767] fits in i16 after rounding."
+)]
+fn float_to_i16(value: f32) -> i16 {
+    value.clamp(f32::from(i16::MIN), f32::from(i16::MAX)).round() as i16
+}
+
+/// Apply a symmetric raised-cosine (Hann) C1-continuous crossfade across the
+/// trailing samples of `prev_tail_pcm16` and the leading samples of `next_head_pcm16`.
+///
+/// The Hann weights `w_in(i) = 0.5 * (1 - cos(pi * (i + 1) / (N + 1)))` and
+/// `w_out(i) = 1 - w_in(i)` form an exact partition of unity (`w_in + w_out == 1.0`),
+/// guiding both segment edges smoothly to their shared midpoint at the splice
+/// without altering segment duration or distorting continuous signals.
+pub(super) fn smooth_segment_boundary(prev_tail_pcm16: &mut [u8], next_head_pcm16: &mut [u8]) {
+    let prev_samples = prev_tail_pcm16.len() / 2;
+    let next_samples = next_head_pcm16.len() / 2;
+    let count = prev_samples.min(next_samples).min(HANN_BOUNDARY_SAMPLES);
+    if count == 0 {
+        return;
+    }
+    let prev_start = (prev_samples - count) * 2;
+    let prev_end_idx = (prev_samples - 1) * 2;
+    let prev_last = f32::from(i16::from_le_bytes([
+        prev_tail_pcm16[prev_end_idx],
+        prev_tail_pcm16[prev_end_idx + 1],
+    ]));
+    let next_first = f32::from(i16::from_le_bytes([
+        next_head_pcm16[0],
+        next_head_pcm16[1],
+    ]));
+    let midpoint = f32::midpoint(prev_last, next_first);
+    let denom = f32::from(u16::try_from(count + 1).unwrap_or(2));
+    for index in 0..count {
+        let step = f32::from(u16::try_from(index + 1).unwrap_or(1));
+        let phase = core::f32::consts::PI * step / denom;
+        let w_in = 0.5_f32 * (1.0_f32 - phase.cos());
+        let w_out = 1.0_f32 - w_in;
+
+        let p_off = prev_start + index * 2;
+        let p_val = f32::from(i16::from_le_bytes([
+            prev_tail_pcm16[p_off],
+            prev_tail_pcm16[p_off + 1],
+        ]));
+        let p_smoothed = float_to_i16(p_val.mul_add(w_out, midpoint * w_in)).to_le_bytes();
+        prev_tail_pcm16[p_off] = p_smoothed[0];
+        prev_tail_pcm16[p_off + 1] = p_smoothed[1];
+
+        let n_off = index * 2;
+        let n_val = f32::from(i16::from_le_bytes([
+            next_head_pcm16[n_off],
+            next_head_pcm16[n_off + 1],
+        ]));
+        let n_smoothed = float_to_i16(n_val.mul_add(w_in, midpoint * w_out)).to_le_bytes();
+        next_head_pcm16[n_off] = n_smoothed[0];
+        next_head_pcm16[n_off + 1] = n_smoothed[1];
+    }
+}
 
 enum Audio {
     Frame(Vec<u8>),
@@ -111,6 +187,8 @@ fn produce(
     current: &Arc<AtomicU64>,
     stop: &Arc<AtomicBool>,
 ) -> Result<(), tts::Failure> {
+    let sample_rate = client.sample_rate();
+    let packet_bytes = packet_bytes_for_rate(sample_rate);
     let (sender, incoming) = mpsc::sync_channel(PREFETCH_PACKETS);
     let (recycle, recycled) = mpsc::sync_channel(RECYCLED_PACKETS);
     let output_stop = Arc::clone(stop);
@@ -118,12 +196,13 @@ fn produce(
     let playback = thread::Builder::new()
         .name("bonsai-tts-pcm".to_owned())
         .spawn(move || {
-            let result = consume(
+            let result = consume_at_rate(
                 &incoming,
                 generation,
                 &output_current,
                 &output_stop,
                 recycle,
+                sample_rate,
             );
             if result.is_err() {
                 output_stop.store(true, Ordering::Release);
@@ -133,15 +212,16 @@ fn produce(
         .map_err(|_| AUDIO_FAILURE)?;
     let synthesis = (|| {
         let mut pending = None;
-        let mut frames = Frames::reusing(recycled);
+        let mut frames = Frames::reusing_with_packet_bytes(recycled, packet_bytes);
         while let Some(text) = next_segment(segments, &mut pending, generation, current, stop)? {
             client.synthesize_pcm(&text, voice, generation, current, stop, |pcm| {
                 frames.push(pcm, |packet| {
                     send(&sender, Audio::Frame(packet), generation, current, stop)
                 })
             })?;
-            frames
-                .finish(|packet| send(&sender, Audio::Frame(packet), generation, current, stop))?;
+            frames.finish_segment(|packet| {
+                send(&sender, Audio::Frame(packet), generation, current, stop)
+            })?;
             send(&sender, Audio::SegmentEnd, generation, current, stop)?;
         }
         Ok(())
@@ -198,6 +278,9 @@ fn next_segment(
 struct Frames {
     pending: Vec<u8>,
     recycled: Option<Receiver<Vec<u8>>>,
+    packet_bytes: usize,
+    previous_tail_sample: Option<i16>,
+    onset_remaining: usize,
 }
 
 impl Default for Frames {
@@ -205,15 +288,26 @@ impl Default for Frames {
         Self {
             pending: Vec::with_capacity(PACKET_BYTES),
             recycled: None,
+            packet_bytes: PACKET_BYTES,
+            previous_tail_sample: None,
+            onset_remaining: 0,
         }
     }
 }
 
 impl Frames {
+    #[cfg(test)]
     fn reusing(recycled: Receiver<Vec<u8>>) -> Self {
+        Self::reusing_with_packet_bytes(recycled, PACKET_BYTES)
+    }
+
+    fn reusing_with_packet_bytes(recycled: Receiver<Vec<u8>>, packet_bytes: usize) -> Self {
         Self {
+            pending: Vec::with_capacity(packet_bytes),
             recycled: Some(recycled),
-            ..Self::default()
+            packet_bytes,
+            previous_tail_sample: None,
+            onset_remaining: 0,
         }
     }
 
@@ -221,7 +315,44 @@ impl Frames {
         self.recycled
             .as_ref()
             .and_then(|recycled| recycled.try_recv().ok())
-            .unwrap_or_else(|| Vec::with_capacity(PACKET_BYTES))
+            .unwrap_or_else(|| Vec::with_capacity(self.packet_bytes))
+    }
+
+    fn apply_onset_smoothing(&mut self, start_offset: usize) {
+        let Some(prev_last) = self.previous_tail_sample else {
+            return;
+        };
+        if self.onset_remaining == 0 || self.pending.len() < start_offset + 2 {
+            return;
+        }
+        let available_samples = (self.pending.len() - start_offset) / 2;
+        let to_smooth = available_samples.min(self.onset_remaining);
+        if to_smooth == 0 {
+            return;
+        }
+        let first_sample = f32::from(i16::from_le_bytes([
+            self.pending[start_offset],
+            self.pending[start_offset + 1],
+        ]));
+        let midpoint = f32::midpoint(f32::from(prev_last), first_sample);
+        let total = HANN_BOUNDARY_SAMPLES;
+        let already_done = total.saturating_sub(self.onset_remaining);
+        let denom = f32::from(u16::try_from(total + 1).unwrap_or(2));
+        for idx in 0..to_smooth {
+            let step = f32::from(u16::try_from(already_done + idx + 1).unwrap_or(1));
+            let phase = core::f32::consts::PI * step / denom;
+            let w_in = 0.5_f32 * (1.0_f32 - phase.cos());
+            let w_out = 1.0_f32 - w_in;
+            let off = start_offset + idx * 2;
+            let sample = f32::from(i16::from_le_bytes([
+                self.pending[off],
+                self.pending[off + 1],
+            ]));
+            let smoothed = float_to_i16(sample.mul_add(w_in, midpoint * w_out)).to_le_bytes();
+            self.pending[off] = smoothed[0];
+            self.pending[off + 1] = smoothed[1];
+        }
+        self.onset_remaining -= to_smooth;
     }
 
     fn push(
@@ -230,10 +361,14 @@ impl Frames {
         mut sink: impl FnMut(Vec<u8>) -> Result<(), tts::Failure>,
     ) -> Result<(), tts::Failure> {
         while !pcm.is_empty() {
-            let count = pcm.len().min(PACKET_BYTES - self.pending.len());
+            let start_offset = self.pending.len();
+            let count = pcm.len().min(self.packet_bytes - start_offset);
             self.pending.extend_from_slice(&pcm[..count]);
+            if self.onset_remaining > 0 {
+                self.apply_onset_smoothing(start_offset - (start_offset % 2));
+            }
             pcm = &pcm[count..];
-            if self.pending.len() == PACKET_BYTES {
+            if self.pending.len() == self.packet_bytes {
                 let replacement = self.replacement();
                 sink(std::mem::replace(&mut self.pending, replacement))?;
             }
@@ -241,6 +376,7 @@ impl Frames {
         Ok(())
     }
 
+    #[cfg(test)]
     fn finish(
         &mut self,
         sink: impl FnOnce(Vec<u8>) -> Result<(), tts::Failure>,
@@ -254,10 +390,33 @@ impl Frames {
             Err(AUDIO_FAILURE)
         }
     }
+
+    fn finish_segment(
+        &mut self,
+        sink: impl FnOnce(Vec<u8>) -> Result<(), tts::Failure>,
+    ) -> Result<(), tts::Failure> {
+        if self.pending.is_empty() {
+            self.onset_remaining = HANN_BOUNDARY_SAMPLES;
+            Ok(())
+        } else if self.pending.len() % 2 == 0 {
+            let len = self.pending.len();
+            let tail = i16::from_le_bytes([self.pending[len - 2], self.pending[len - 1]]);
+            // Apply a gentle Hann tail taper toward 0 on the final HANN_BOUNDARY_SAMPLES
+            // of the segment and record the boundary sample for the next segment's onset.
+            let mut next_dummy = [tail.to_le_bytes()[0], tail.to_le_bytes()[1]];
+            smooth_segment_boundary(&mut self.pending, &mut next_dummy);
+            self.previous_tail_sample = Some(tail);
+            self.onset_remaining = HANN_BOUNDARY_SAMPLES;
+            let replacement = self.replacement();
+            sink(std::mem::replace(&mut self.pending, replacement))
+        } else {
+            Err(AUDIO_FAILURE)
+        }
+    }
 }
 
 fn recycle(sender: &SyncSender<Vec<u8>>, mut pcm: Vec<u8>) {
-    if pcm.capacity() == PACKET_BYTES {
+    if pcm.capacity() == PACKET_BYTES || pcm.capacity() == PACKET_BYTES_48K {
         pcm.clear();
         let _returned = sender.try_send(pcm);
     }
@@ -291,19 +450,20 @@ fn send(
     }
 }
 
-fn consume(
+fn consume_at_rate(
     incoming: &Receiver<Audio>,
     generation: u64,
     current: &AtomicU64,
     stop: &AtomicBool,
     recycle: SyncSender<Vec<u8>>,
+    sample_rate: u32,
 ) -> Result<(), tts::Failure> {
     consume_with(
         incoming,
         generation,
         current,
         stop,
-        &mut WaveOutput::open(recycle)?,
+        &mut WaveOutput::open_with_rate(recycle, sample_rate)?,
     )
 }
 
@@ -405,14 +565,24 @@ struct Buffered {
 
 impl Buffered {
     fn frame(&mut self, pcm: Vec<u8>, now: Instant) -> Result<Option<Vec<u8>>, tts::Failure> {
+        let max_packet = if pcm.len() > PACKET_BYTES {
+            PACKET_BYTES_48K
+        } else {
+            PACKET_BYTES
+        };
+        let max_buffer = if max_packet == PACKET_BYTES_48K {
+            MAX_BUFFER_BYTES * 2
+        } else {
+            MAX_BUFFER_BYTES
+        };
         if pcm.is_empty()
-            || pcm.len() > PACKET_BYTES
+            || pcm.len() > max_packet
             || pcm.len() % 2 != 0
-            || self.segment_bytes + pcm.len() > MAX_BUFFER_BYTES
+            || self.segment_bytes + pcm.len() > max_buffer
         {
             return Err(AUDIO_FAILURE);
         }
-        if self.bytes + pcm.len() > MAX_BUFFER_BYTES {
+        if self.bytes + pcm.len() > max_buffer {
             return Ok(Some(pcm));
         }
         let (first, initial) = *self.first.get_or_insert((now, pcm.len()));
@@ -421,12 +591,14 @@ impl Buffered {
         if self.released {
             self.ready.push_back(pcm);
         } else {
+            let bytes_per_ms = if max_packet == PACKET_BYTES_48K { 96 } else { 48 };
             self.segment.push_back(pcm);
-            if self.segment_bytes >= PREROLL_PACKETS * PACKET_BYTES {
+            if self.segment_bytes >= PREROLL_PACKETS * max_packet {
                 // Exclude cold first-audio latency. This compares later supply
                 // time to the duration it produced, not to model load time.
                 let duration = Duration::from_millis(
-                    u64::try_from(self.segment_bytes - initial).map_err(|_| AUDIO_FAILURE)? / 48,
+                    u64::try_from(self.segment_bytes - initial).map_err(|_| AUDIO_FAILURE)?
+                        / bytes_per_ms,
                 );
                 // One codec burst of jitter is normal even at real-time speed:
                 // the native ramp groups 80/160/320/640 ms into separate callbacks.
@@ -471,7 +643,6 @@ struct Buffer {
     pcm: Vec<u8>,
 }
 
-#[derive(Default)]
 struct PlaybackBuffers {
     // WinMM retains these addresses. Moving the boxes never moves the headers.
     queued: VecDeque<Box<Buffer>>,
@@ -481,13 +652,28 @@ struct PlaybackBuffers {
         reason = "Reused WinMM descriptors must keep their original stable addresses."
     )]
     spare: Vec<Box<Buffer>>,
+    max_packet_bytes: usize,
+}
+
+impl Default for PlaybackBuffers {
+    fn default() -> Self {
+        Self::with_max_packet_bytes(PACKET_BYTES)
+    }
 }
 
 impl PlaybackBuffers {
+    const fn with_max_packet_bytes(max_packet_bytes: usize) -> Self {
+        Self {
+            queued: VecDeque::new(),
+            spare: Vec::new(),
+            max_packet_bytes,
+        }
+    }
+
     fn take(&mut self, mut pcm: Vec<u8>) -> Result<Box<Buffer>, tts::Failure> {
         if self.queued.len() >= PLAYBACK_PACKETS
             || pcm.is_empty()
-            || pcm.len() > PACKET_BYTES
+            || pcm.len() > self.max_packet_bytes
             || pcm.len() % 2 != 0
         {
             return Err(AUDIO_FAILURE);
@@ -558,12 +744,20 @@ struct WaveOutput {
 }
 
 impl WaveOutput {
-    fn open(recycle: SyncSender<Vec<u8>>) -> Result<Self, tts::Failure> {
+    fn open_with_rate(
+        recycle: SyncSender<Vec<u8>>,
+        sample_rate: u32,
+    ) -> Result<Self, tts::Failure> {
+        let rate = if sample_rate == SAMPLE_RATE_48K {
+            SAMPLE_RATE_48K
+        } else {
+            SAMPLE_RATE
+        };
         let format = WAVEFORMATEX {
             wFormatTag: 1,
             nChannels: 1,
-            nSamplesPerSec: 24_000,
-            nAvgBytesPerSec: 48_000,
+            nSamplesPerSec: rate,
+            nAvgBytesPerSec: rate * 2,
             nBlockAlign: 2,
             wBitsPerSample: 16,
             cbSize: 0,
@@ -576,7 +770,7 @@ impl WaveOutput {
         }
         Ok(Self {
             handle,
-            buffers: PlaybackBuffers::default(),
+            buffers: PlaybackBuffers::with_max_packet_bytes(packet_bytes_for_rate(rate)),
             header_bytes: u32::try_from(size_of::<WAVEHDR>()).map_err(|_| AUDIO_FAILURE)?,
             recycle,
         })
@@ -662,11 +856,41 @@ impl Drop for WaveOutput {
 #[cfg(test)]
 mod tests {
     use super::{
-        Arc, AtomicBool, AtomicU64, Audio, Buffered, Duration, Frames, Instant, MAX_BUFFER_BYTES,
-        Ordering, Output, PACKET_BYTES, PLAYBACK_PACKETS, PREFETCH_PACKETS, PREROLL_PACKETS,
-        VecDeque, check, consume_with, mpsc, send,
+        Arc, AtomicBool, AtomicU64, Audio, Buffered, Duration, Frames, HANN_BOUNDARY_SAMPLES,
+        Instant, MAX_BUFFER_BYTES, Ordering, Output, PACKET_BYTES, PACKET_BYTES_48K,
+        PLAYBACK_PACKETS, PREFETCH_PACKETS, PREROLL_PACKETS, SAMPLE_RATE, SAMPLE_RATE_48K,
+        VecDeque, check, consume_with, mpsc, packet_bytes_for_rate, send,
+        smooth_segment_boundary,
     };
     use crate::tts::Failure;
+
+    #[test]
+    fn hann_window_boundary_smoothing_preserves_unity_and_eliminates_step_clicks() {
+        assert_eq!(packet_bytes_for_rate(SAMPLE_RATE), PACKET_BYTES);
+        assert_eq!(packet_bytes_for_rate(SAMPLE_RATE_48K), PACKET_BYTES_48K);
+
+        // A constant signal across the boundary remains unchanged.
+        let constant_sample = 12_000_i16.to_le_bytes();
+        let mut prev_const = constant_sample.repeat(HANN_BOUNDARY_SAMPLES * 2);
+        let mut next_const = constant_sample.repeat(HANN_BOUNDARY_SAMPLES * 2);
+        let expected_const = prev_const.clone();
+        smooth_segment_boundary(&mut prev_const, &mut next_const);
+        assert_eq!(prev_const, expected_const);
+        assert_eq!(next_const, expected_const);
+
+        // Opposite-polarity DC step (+10000 -> -10000) tapers smoothly toward 0 at the splice.
+        let mut prev_step = 10_000_i16.to_le_bytes().repeat(HANN_BOUNDARY_SAMPLES);
+        let mut next_step = (-10_000_i16).to_le_bytes().repeat(HANN_BOUNDARY_SAMPLES);
+        smooth_segment_boundary(&mut prev_step, &mut next_step);
+        let last_prev = i16::from_le_bytes([
+            prev_step[prev_step.len() - 2],
+            prev_step[prev_step.len() - 1],
+        ]);
+        let first_next = i16::from_le_bytes([next_step[0], next_step[1]]);
+        assert!(last_prev.abs() < 200);
+        assert!(first_next.abs() < 200);
+        assert!((i32::from(last_prev) - i32::from(first_next)).abs() < 400);
+    }
 
     #[test]
     fn streaming_segment_input_waits_through_gaps_then_finishes_or_cancels() {
@@ -839,7 +1063,7 @@ mod tests {
             PLAYBACK_PACKETS * PACKET_BYTES
         );
         // A larger external allocation cannot expand retained spare capacity.
-        super::recycle(&sender, vec![0; PACKET_BYTES * 2]);
+        super::recycle(&sender, vec![0; PACKET_BYTES * 3]);
         assert!(receiver.try_recv().is_err());
         drop(receiver);
         super::recycle(&sender, vec![0; PACKET_BYTES]);

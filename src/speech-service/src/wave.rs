@@ -23,11 +23,22 @@ pub(super) const PCM_SAMPLES: usize = 16_384;
 pub(super) const PCM_BYTES: usize = PCM_SAMPLES * 2;
 
 pub(super) const MAX_SAMPLES: usize = 2_880_000;
+pub(super) const MAX_SAMPLES_48K: usize = 5_760_000;
+
+pub(super) const fn max_samples_for_rate(sample_rate: u32) -> Option<usize> {
+    match sample_rate {
+        24_000 => Some(MAX_SAMPLES),
+        48_000 => Some(MAX_SAMPLES_48K),
+        _ => None,
+    }
+}
 
 // Validate all output before a caller can commit successful response headers.
 pub(super) fn header(samples: &[f32], sample_rate: u32) -> Result<[u8; 44], Error> {
-    if sample_rate != 24_000 || bonsai_audio::finite_sample_count(samples, 0, MAX_SAMPLES).is_none()
-    {
+    let Some(max_samples) = max_samples_for_rate(sample_rate) else {
+        return Err(Error::new(502, "invalid_audio_output"));
+    };
+    if bonsai_audio::finite_sample_count(samples, 0, max_samples).is_none() {
         return Err(Error::new(502, "invalid_audio_output"));
     }
     bonsai_audio::mono_pcm16_header(sample_rate, samples.len())
@@ -129,5 +140,12 @@ mod tests {
         assert!(header(&audio.samples, audio.sample_rate).is_err());
         audio.samples.clear();
         assert!(header(&audio.samples, audio.sample_rate).is_err());
+
+        // 48 kHz drop-in codec output is also accepted up to 120 seconds.
+        let header_48k = header(&[0.0; 4], 48_000).ok();
+        assert_eq!(
+            header_48k.as_ref().map(|bytes| &bytes[24..28]),
+            Some(48_000_u32.to_le_bytes().as_slice())
+        );
     }
 }

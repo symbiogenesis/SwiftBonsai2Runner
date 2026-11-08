@@ -126,7 +126,11 @@ fn respond(
                 serde_json::json!({"model":kind.model(),"ready":true,"sample_rate":16000,"max_clip_seconds":30,"input_format":"pcm_s16le_wav","channels":1})
             }
             Kind::QwenTts => {
-                serde_json::json!({"model":kind.model(),"ready":true,"voice_design":true,"sample_rate":24000,"max_text_characters":2048,"max_voice_characters":1024,"streaming_pcm":engine.streaming_pcm(),"consistent_voice":engine.consistent_voice()})
+                let sample_rate = engine.sample_rate();
+                if wave::max_samples_for_rate(sample_rate).is_none() {
+                    return Err(Error::new(502, "invalid_audio_output"));
+                }
+                serde_json::json!({"model":kind.model(),"ready":true,"voice_design":true,"sample_rate":sample_rate,"max_text_characters":2048,"max_voice_characters":1024,"streaming_pcm":engine.streaming_pcm(),"consistent_voice":engine.consistent_voice()})
             }
         };
         return send(peer, 200, "application/json", value.to_string().as_bytes())
@@ -189,6 +193,8 @@ fn stream(
     request: crate::Request<'_>,
     peer: &mut TcpStream,
 ) -> Result<(), Error> {
+    let max_samples = wave::max_samples_for_rate(engine.sample_rate())
+        .ok_or_else(|| Error::new(502, "invalid_audio_output"))?;
     let watchdog = Watchdog::start(peer, Duration::from_secs(180))
         .map_err(|_| Error::new(503, "supervision_unavailable"))?;
     peer.set_write_timeout(Some(WRITE))
@@ -201,7 +207,7 @@ fn stream(
         if failed {
             return Err(io::Error::other("Invalid streaming speech audio."));
         }
-        total = bonsai_audio::finite_sample_count(samples, total, wave::MAX_SAMPLES).ok_or_else(
+        total = bonsai_audio::finite_sample_count(samples, total, max_samples).ok_or_else(
             || {
                 failed = true;
                 io::Error::other("Invalid streaming speech audio.")

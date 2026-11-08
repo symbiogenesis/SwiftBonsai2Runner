@@ -40,9 +40,13 @@ extern "C" fn bonsai_qt_cpu_threads(logical_threads: c_uint) -> c_int {
     CPU_THREADS.get(logical_threads)
 }
 
-// A single public neutral fixture defines voice identity, never the text being
-// read. Recreating a stopped worker uses the same phrase and sampler seed.
-static REFERENCE_TEXT: &CStr = c"The morning light fills the quiet garden. I will read each sentence in the same clear, natural voice.";
+// Phonemically balanced, multi-contour elicitation fixture (33 words) covering
+// trap-bath vowel splits (path, glass, arch, calm), rhotic/non-rhotic post-vocalic
+// /r/ (morning, courtyard, north, weather, clear, shower), dental fricatives
+// (/θ/, /ð/: When, the, gather, whether, north, weather, smooth), diphthongs
+// (bright, light, quiet, near, clear, shower), and clause-medial + declarative
+// intonation contours. Recreating a stopped worker uses the same phrase and seed.
+static REFERENCE_TEXT: &CStr = c"When the bright morning light warms the quiet courtyard path, we gather near the old glass arch to ask whether the north wind will bring clear weather, calm seas, or a smooth shower.";
 const VOICE_SEED: i64 = 42;
 const MAX_REFERENCE_SAMPLES: usize = 24_000 * 30;
 const CODEBOOKS: i32 = 16;
@@ -81,6 +85,11 @@ fn design_params(voice: &CStr) -> qwen::TtsParams {
     params
 }
 
+// Decouple Talker vs. CodePredictor (subtalker_*) sampling during Base synthesis:
+// keep expressive Talker temperature (0.85) with tightened nucleus (0.9) while
+// lowering subtalker_temperature (0.6) and tightening subtalker_top_p (0.9) so
+// residual codebooks 1..=15 lock onto high-probability consonant formants
+// without frame-to-frame timbre jitter.
 fn clone_params(text: &CStr, reference: &qwen::RawVoiceReference) -> qwen::TtsParams {
     let mut params = synthesis_params(text);
     params.ref_text = REFERENCE_TEXT.as_ptr();
@@ -88,6 +97,13 @@ fn clone_params(text: &CStr, reference: &qwen::RawVoiceReference) -> qwen::TtsPa
     params.ref_spk_dim = reference.speaker_dimension;
     params.ref_codes = reference.codes;
     params.ref_frames = reference.frames;
+    params.temperature = 0.85;
+    params.top_k = 50;
+    params.top_p = 0.9;
+    params.repetition_penalty = 1.05;
+    params.subtalker_temperature = 0.6;
+    params.subtalker_top_k = 50;
+    params.subtalker_top_p = 0.9;
     params
 }
 
@@ -238,7 +254,7 @@ impl Context {
         &mut self,
         text: &CStr,
         reference: &VoiceReference,
-    ) -> io::Result<Vec<f32>> {
+    ) -> io::Result<(Vec<f32>, u32)> {
         self.synthesize_audio(&clone_params(text, &reference.0))
     }
 
@@ -251,8 +267,10 @@ impl Context {
             .into_samples()
     }
 
-    fn synthesize_audio(&mut self, params: &qwen::TtsParams) -> io::Result<Vec<f32>> {
-        self.generate_audio(params)?.copy_samples()
+    fn synthesize_audio(&mut self, params: &qwen::TtsParams) -> io::Result<(Vec<f32>, u32)> {
+        let audio = self.generate_audio(params)?;
+        let rate = audio.sample_rate()?;
+        Ok((audio.copy_samples()?, rate))
     }
 
     #[allow(
@@ -346,7 +364,11 @@ extern "C" fn stream_chunk(samples: *const f32, count: c_int, user: *mut c_void)
             state.failed = true;
             return false;
         };
-        if samples.is_null() || !samples.is_aligned() || count == 0 || count > super::MAX_SAMPLES {
+        if samples.is_null()
+            || !samples.is_aligned()
+            || count == 0
+            || count > super::MAX_SAMPLES_48K
+        {
             state.failed = true;
             return false;
         }
@@ -376,6 +398,13 @@ struct NativeAudio(RawAudio);
 pub(super) struct NativeSamples {
     audio: NativeAudio,
     count: usize,
+    sample_rate: u32,
+}
+
+impl NativeSamples {
+    pub(super) const fn sample_rate(&self) -> u32 {
+        self.sample_rate
+    }
 }
 
 impl AsRef<[f32]> for NativeSamples {
@@ -389,11 +418,24 @@ impl AsRef<[f32]> for NativeSamples {
 }
 
 impl NativeAudio {
+    fn sample_rate(&self) -> io::Result<u32> {
+        let rate = u32::try_from(self.0.sample_rate).map_err(|_| invalid_audio())?;
+        if !super::is_supported_sample_rate(rate) {
+            return Err(invalid_audio());
+        }
+        Ok(rate)
+    }
+
     fn samples(&self) -> io::Result<&[f32]> {
         let count = usize::try_from(self.0.sample_count).map_err(|_| invalid_audio())?;
+        let rate = self.sample_rate()?;
+        let max_samples = if rate == super::SAMPLE_RATE_48K {
+            super::MAX_SAMPLES_48K
+        } else {
+            super::MAX_SAMPLES
+        };
         if count == 0
-            || count > super::MAX_SAMPLES
-            || self.0.sample_rate != 24_000
+            || count > max_samples
             || self.0.channels != 1
             || self.0.samples.is_null()
             || !self.0.samples.is_aligned()
@@ -405,16 +447,40 @@ impl NativeAudio {
         // bounded to 120 seconds and far below isize::MAX. The allocation stays
         // alive throughout this borrow and is freed only when this guard drops.
         let source = unsafe { std::slice::from_raw_parts(self.0.samples, count) };
-        super::sample_count(source, 0).ok_or_else(invalid_audio)?;
+        super::sample_count_for_rate(source, 0, rate).ok_or_else(invalid_audio)?;
         Ok(source)
     }
 
     fn into_samples(self) -> io::Result<NativeSamples> {
+        let sample_rate = self.sample_rate()?;
         let count = self.samples()?.len();
-        Ok(NativeSamples { audio: self, count })
+        Ok(NativeSamples {
+            audio: self,
+            count,
+            sample_rate,
+        })
     }
 
-    fn into_reference_samples(self) -> io::Result<NativeSamples> {
+    fn into_reference_samples(mut self) -> io::Result<NativeSamples> {
+        let rate = self.sample_rate()?;
+        let _ = self.samples()?;
+        if rate == super::SAMPLE_RATE_48K {
+            let count = usize::try_from(self.0.sample_count).map_err(|_| invalid_audio())?;
+            let decimated = count / 2;
+            if decimated == 0 {
+                return Err(invalid_audio());
+            }
+            // SAFETY: self.samples() validated that self.0.samples points to count
+            // aligned, finite f32 values exclusively owned by this guard. Decimate
+            // 2:1 in place so Base voice extraction receives 24 kHz mono PCM
+            // without allocating a second buffer.
+            let slice = unsafe { std::slice::from_raw_parts_mut(self.0.samples, count) };
+            for index in 0..decimated {
+                slice[index] = f32::midpoint(slice[index * 2], slice[index * 2 + 1]);
+            }
+            self.0.sample_count = c_int::try_from(decimated).map_err(|_| invalid_audio())?;
+            self.0.sample_rate = 24_000;
+        }
         let samples = self.into_samples()?;
         if !(CODEC_HOP..=MAX_REFERENCE_SAMPLES).contains(&samples.count) {
             return Err(invalid_audio());
@@ -450,6 +516,10 @@ fn invalid_audio() -> io::Error {
 
 #[cfg(test)]
 mod tests {
+    #![allow(
+        clippy::float_cmp,
+        reason = "Exact sampler parameter float assertions describe the pinned contract."
+    )]
     use super::{
         Context, NativeAudio, REFERENCE_TEXT, StreamState, VOICE_SEED, abort_on_unwind,
         clone_params, design_params, qwen,
@@ -463,7 +533,7 @@ mod tests {
         fn malloc(size: usize) -> *mut std::ffi::c_void;
     }
 
-    fn native_audio(samples: &[f32]) -> io::Result<NativeAudio> {
+    fn native_audio_at_rate(samples: &[f32], sample_rate: i32) -> io::Result<NativeAudio> {
         let sample_count = i32::try_from(samples.len()).map_err(io::Error::other)?;
         // SAFETY: Request a bounded nonzero allocation; malloc returns null on
         // failure or suitably aligned storage for this many f32 values.
@@ -473,13 +543,17 @@ mod tests {
         let audio = NativeAudio(qwen::RawAudio {
             samples: storage.as_ptr().cast(),
             sample_count,
-            sample_rate: 24_000,
+            sample_rate,
             channels: 1,
         });
         // SAFETY: The distinct malloc allocation owns samples.len() writable
         // f32 slots. The NativeAudio guard now guarantees its matching release.
         unsafe { std::ptr::copy_nonoverlapping(samples.as_ptr(), audio.0.samples, samples.len()) };
         Ok(audio)
+    }
+
+    fn native_audio(samples: &[f32]) -> io::Result<NativeAudio> {
+        native_audio_at_rate(samples, 24_000)
     }
 
     #[test]
@@ -492,7 +566,14 @@ mod tests {
         assert_eq!(samples.as_ref().as_ptr(), storage);
         assert_eq!(samples.as_ref(), expected);
         assert_eq!(samples.as_ref().as_ptr(), storage);
+        assert_eq!(samples.sample_rate(), 24_000);
         drop(samples); // Calls the actual pinned qt_audio_free on this allocation.
+
+        let audio_48k = native_audio_at_rate(&expected, 48_000)?;
+        let samples_48k = audio_48k.into_samples()?;
+        assert_eq!(samples_48k.as_ref(), expected);
+        assert_eq!(samples_48k.sample_rate(), 48_000);
+        drop(samples_48k);
 
         for case in 0..6 {
             let mut audio = native_audio(&expected)?;
@@ -525,8 +606,26 @@ mod tests {
             let samples = audio.into_reference_samples()?;
             assert_eq!(samples.as_ref().as_ptr(), original);
             assert_eq!(samples.as_ref(), expected);
+            assert_eq!(samples.sample_rate(), 24_000);
             drop(samples); // Actual native release, independent of any model.
         }
+        // Verify 48 kHz VoiceDesign reference audio is decimated 2:1 in place to 24 kHz.
+        let mut source_48k = Vec::with_capacity(super::CODEC_HOP * 2);
+        for index in 0..super::CODEC_HOP {
+            let val = if index % 2 == 0 { 0.5_f32 } else { -0.25_f32 };
+            source_48k.push(val);
+            source_48k.push(val);
+        }
+        let audio_48k = native_audio_at_rate(&source_48k, 48_000)?;
+        let original_48k = audio_48k.0.samples.cast_const();
+        let ref_24k = audio_48k.into_reference_samples()?;
+        assert_eq!(ref_24k.as_ref().as_ptr(), original_48k);
+        assert_eq!(ref_24k.sample_rate(), 24_000);
+        assert_eq!(ref_24k.as_ref().len(), super::CODEC_HOP);
+        assert_eq!(ref_24k.as_ref()[0], 0.5);
+        assert_eq!(ref_24k.as_ref()[1], -0.25);
+        drop(ref_24k);
+
         for count in [super::CODEC_HOP - 1, super::MAX_REFERENCE_SAMPLES + 1] {
             assert_eq!(
                 native_audio(&vec![0.0; count])?
@@ -544,6 +643,12 @@ mod tests {
 
     #[test]
     fn every_utterance_borrows_the_same_speaker_codes_and_reference_transcript() {
+        let ref_str = REFERENCE_TEXT.to_str().unwrap_or("");
+        assert_eq!(ref_str.split_whitespace().count(), 33);
+        assert!(ref_str.contains("courtyard path"));
+        assert!(ref_str.contains("whether the north wind"));
+        assert!(ref_str.contains("smooth shower"));
+
         let mut speaker = [0.5_f32; 8];
         let mut codes = [1_i32; 32];
         let reference = qwen::RawVoiceReference {
@@ -569,6 +674,13 @@ mod tests {
             assert!(params.ref_audio_24k.is_null());
             assert_eq!(params.seed, VOICE_SEED);
             assert!(params.seed >= 0);
+            assert_eq!(params.temperature, 0.85);
+            assert_eq!(params.top_k, 50);
+            assert_eq!(params.top_p, 0.9);
+            assert_eq!(params.repetition_penalty, 1.05);
+            assert_eq!(params.subtalker_temperature, 0.6);
+            assert_eq!(params.subtalker_top_k, 50);
+            assert_eq!(params.subtalker_top_p, 0.9);
         }
         for profile in [c"Warm narrator", c"Clear alto"] {
             let design = design_params(profile);
@@ -576,6 +688,13 @@ mod tests {
             assert_eq!(design.instruct, profile.as_ptr());
             assert_eq!(design.seed, VOICE_SEED);
             assert!(design.ref_spk_emb.is_null() && design.ref_codes.is_null());
+            assert_eq!(design.temperature, 0.9);
+            assert_eq!(design.top_k, 50);
+            assert_eq!(design.top_p, 1.0);
+            assert_eq!(design.repetition_penalty, 1.05);
+            assert_eq!(design.subtalker_temperature, 0.9);
+            assert_eq!(design.subtalker_top_k, 50);
+            assert_eq!(design.subtalker_top_p, 1.0);
         }
     }
 

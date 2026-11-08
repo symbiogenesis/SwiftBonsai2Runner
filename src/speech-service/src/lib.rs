@@ -37,7 +37,7 @@ pub const TTS_MODEL: &str = "Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign";
 pub enum Kind {
     /// Canary Qwen speech recognition with 16 kHz mono input.
     Canary,
-    /// Qwen3-TTS 1.7B `VoiceDesign` with 24 kHz mono output.
+    /// Qwen3-TTS 1.7B `VoiceDesign` with 24 kHz or 48 kHz mono output.
     QwenTts,
 }
 
@@ -76,7 +76,7 @@ pub enum Request<'a> {
 pub struct Audio {
     /// Finite samples, clipped only when encoded into signed PCM16 output.
     pub samples: Vec<f32>,
-    /// Output must use the fixed 24,000 Hz service rate.
+    /// Output must use a supported service rate (24,000 Hz or 48,000 Hz).
     pub sample_rate: u32,
 }
 
@@ -95,7 +95,7 @@ pub enum Output<S = Vec<f32>> {
     Waveform {
         /// Immutable complete samples, owned for the lifetime of this object.
         samples: S,
-        /// Output must use the fixed 24,000 Hz service rate.
+        /// Output must use a supported service rate (24,000 Hz or 48,000 Hz).
         sample_rate: u32,
     },
 }
@@ -113,7 +113,11 @@ pub trait Engine {
     /// Return an error for failed or incomplete generation. The protocol emits
     /// only a value-free model-failure code, without formatting this error.
     fn infer(&mut self, request: Request<'_>) -> io::Result<Output<Self::Waveform>>;
-    /// Whether this engine implements bounded incremental mono 24 kHz output.
+    /// Output sample rate for TTS synthesis (defaults to 24,000 Hz; 48,000 Hz when the 48 kHz decoder is loaded).
+    fn sample_rate(&self) -> u32 {
+        24_000
+    }
+    /// Whether this engine implements bounded incremental mono PCM output.
     fn streaming_pcm(&self) -> bool {
         false
     }
@@ -123,7 +127,7 @@ pub trait Engine {
     fn consistent_voice(&self) -> bool {
         false
     }
-    /// Generate finite mono 24 kHz samples incrementally, blocking until complete.
+    /// Generate finite mono samples incrementally, blocking until complete.
     ///
     /// The sink may run on the native compute worker. Stop and return an error
     /// if the sink rejects a chunk. Successful return certifies complete output.

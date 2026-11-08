@@ -15,7 +15,7 @@ use crate::native_speech::{Launch, Service};
 use serde::{Deserialize, Serialize};
 use std::{
     path::PathBuf,
-    sync::atomic::{AtomicBool, AtomicU64, Ordering},
+    sync::atomic::{AtomicBool, AtomicU32, AtomicU64, Ordering},
     time::Duration,
 };
 
@@ -33,7 +33,7 @@ pub(crate) struct Config {
     pub(crate) launch: Option<Launch>,
 }
 /// Uses the same bounded transport policy with its own configured key and port.
-pub(crate) struct Client(canary::Client, AtomicBool);
+pub(crate) struct Client(canary::Client, AtomicBool, AtomicU32);
 
 impl Client {
     pub(crate) fn new(config: &Config) -> Result<Self, &'static str> {
@@ -42,8 +42,12 @@ impl Client {
             key_file: config.key_file.clone(),
             launch: None,
         })
-        .map(|client| Self(client, AtomicBool::new(false)))
+        .map(|client| Self(client, AtomicBool::new(false), AtomicU32::new(24_000)))
         .map_err(|_| "The Qwen TTS endpoint or protected credential file is unavailable.")
+    }
+
+    pub(crate) fn sample_rate(&self) -> u32 {
+        self.2.load(Ordering::Acquire)
     }
 
     /// Verify the specific `VoiceDesign` model without generating or playing audio.
@@ -65,8 +69,11 @@ impl Client {
                 let health: Health = serde_json::from_slice(&bytes).map_err(|_| {
                     Failure::Message("The Qwen TTS companion returned invalid capabilities.")
                 })?;
-                if health.model != MODEL || !health.ready || !health.voice_design
-                    || health.sample_rate != 24000 || health.max_text_characters != MAX_TEXT
+                if health.model != MODEL
+                    || !health.ready
+                    || !health.voice_design
+                    || (health.sample_rate != 24_000 && health.sample_rate != 48_000)
+                    || health.max_text_characters != MAX_TEXT
                     || health.max_voice_characters != MAX_VOICE
                 {
                     return Err(Failure::Message("The Qwen TTS VoiceDesign model is not ready with the required audio format."));
@@ -75,6 +82,7 @@ impl Client {
                     return Err(Failure::Message("Update the Qwen TTS companion to support a consistent voice across paragraphs and messages."));
                 }
                 self.1.store(health.streaming_pcm, Ordering::Release);
+                self.2.store(health.sample_rate, Ordering::Release);
                 Ok(())
             });
         call.check().map_err(transport_failure).and(result)
@@ -249,9 +257,10 @@ const fn transport_failure(failure: Failure) -> Failure {
 
 fn validate_wav(wav: &[u8]) -> Result<(), Failure> {
     let invalid = Failure::Message(
-        "Qwen TTS must return a mono 24 kHz 16-bit PCM WAV clip of at most 120 seconds.",
+        "Qwen TTS must return a mono 24 kHz or 48 kHz 16-bit PCM WAV clip of at most 120 seconds.",
     );
     bonsai_audio::mono_pcm16_data(wav, 24_000, 24_000 * 120)
+        .or_else(|| bonsai_audio::mono_pcm16_data(wav, 48_000, 48_000 * 120))
         .map(|_| ())
         .ok_or(invalid)
 }
@@ -368,6 +377,7 @@ mod tests {
             Ok(())
         });
         client.ready().map_err(io::Error::other)?;
+        assert_eq!(client.sample_rate(), 24_000);
         let result = client
             .synthesize(
                 "Read this sample.",
@@ -443,6 +453,11 @@ mod tests {
             let mut invalid = wav();
             invalid[offset] ^= 1;
             assert!(validate_wav(&invalid).is_err());
+        }
+        if let Some(head_48k) = bonsai_audio::mono_pcm16_header(48_000, 2) {
+            let mut valid_48k = head_48k.to_vec();
+            valid_48k.extend_from_slice(&[0; 4]);
+            assert!(validate_wav(&valid_48k).is_ok());
         }
     }
 
