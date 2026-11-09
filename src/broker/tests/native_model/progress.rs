@@ -23,7 +23,7 @@ struct Progress {
 
 impl Progress {
     fn new(label: &str) -> Self {
-        Self {
+        let mut progress = Self {
             state: WireState::Headers,
             cursor: 0,
             event: Vec::new(),
@@ -38,7 +38,14 @@ impl Progress {
                 "cancelledBeforeConnectionClose":false,
                 "emittedTokenCountKnown":false,"decodeTokensPerSecond":null,
                 "scope":"client-observed public HTTP/SSE progress; event and byte counts are not generated-token counts; request/read timestamps include buffering, transport, observer parsing and synchronous receipt I/O"}),
+        };
+        // Only the explicit synthetic timing capture retains generated text.
+        // Ordinary acceptance progress continues to retain counts and hashes.
+        if label.starts_with("token-timing-") {
+            progress.fields["contentDeltas"] = json!([]);
+            progress.fields["reasoningContentObserved"] = json!(false);
         }
+        progress
     }
 
     fn event_byte(&mut self, byte: u8, milliseconds: f64) {
@@ -75,6 +82,13 @@ impl Progress {
         }
         if let Some(choices) = event["choices"].as_array() {
             for choice in choices {
+                if self.fields["contentDeltas"].is_array()
+                    && choice["delta"]["reasoning_content"]
+                        .as_str()
+                        .is_some_and(|text| !text.is_empty())
+                {
+                    self.fields["reasoningContentObserved"] = json!(true);
+                }
                 if let Some(text) = choice["delta"]["content"]
                     .as_str()
                     .filter(|text| !text.is_empty())
@@ -85,6 +99,13 @@ impl Progress {
                         self.fields["firstVisibleContentMilliseconds"] = json!(milliseconds);
                     }
                     self.fields["lastVisibleContentMilliseconds"] = json!(milliseconds);
+                    if let Some(deltas) = self.fields["contentDeltas"].as_array_mut() {
+                        if deltas.len() == 16 {
+                            self.fields["framingRejected"] = json!(true);
+                            return;
+                        }
+                        deltas.push(json!({"text":text,"milliseconds":milliseconds}));
+                    }
                 }
                 if let Some(reason) = choice["finish_reason"].as_str() {
                     if ["length", "stop"].contains(&reason) {
@@ -325,6 +346,68 @@ async fn read_response<S: tokio::io::AsyncRead + Unpin>(
             .observe(&bytes, receipt.started.elapsed().as_secs_f64() * 1000.0);
         receipt.save();
     }
+}
+
+#[test]
+fn native_progress_token_timing_retains_fragmented_deltas_and_cancelled_prefix() {
+    let mut payload = String::new();
+    for token in ["1", ",", " ", "2", ",", " ", "3", ","] {
+        payload.push_str(&format!(
+            "data: {}\n\n",
+            json!({"choices":[{"delta":{"content":token},"finish_reason":null}]})
+        ));
+    }
+    payload.push_str(concat!(
+        "data: {\"choices\":[{\"delta\":{},\"finish_reason\":\"length\"}],\"usage\":{\"completion_tokens\":8}}\n\n",
+        "data: [DONE]\n\n"
+    ));
+    let mut wire = b"HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n".to_vec();
+    for chunk in payload.as_bytes().chunks(3) {
+        wire.extend_from_slice(format!("{:X}\r\n", chunk.len()).as_bytes());
+        wire.extend_from_slice(chunk);
+        wire.extend_from_slice(b"\r\n");
+    }
+    wire.extend_from_slice(b"0\r\n\r\n");
+    let mut progress = Progress::new("token-timing-fragmented-fixture");
+    for end in 1..=wire.len() {
+        progress.observe(&wire[..end], 2.0);
+    }
+    assert_eq!(progress.fields["contentDeltas"].as_array().unwrap().len(), 8);
+    assert_eq!(progress.fields["contentDeltas"][0]["text"], "1");
+    assert_eq!(progress.fields["contentDeltas"][7]["text"], ",");
+    // Coalesced records retain the actual shared receive timestamp; no token
+    // times are interpolated even when the reported usage is known.
+    assert_eq!(progress.fields["contentDeltas"][0]["milliseconds"], 2.0);
+    assert_eq!(progress.fields["contentDeltas"][7]["milliseconds"], 2.0);
+    assert_eq!(progress.fields["reportedCompletionTokens"], 8);
+    assert_eq!(progress.fields["doneMarkerObserved"], true);
+    let evidence = env::temp_dir().join(format!(
+        "Bonsai-Token-Timing-Progress-{}-{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    fs::create_dir(&evidence).unwrap();
+    let mut report = json!({"passed":false,"requestProgress":[null]});
+    {
+        let _receipt = Receipt {
+            progress,
+            response: None,
+            started: tokio::time::Instant::now(),
+            evidence: &evidence,
+            report: &mut report,
+            index: 0,
+        };
+    }
+    let saved: Value =
+        serde_json::from_slice(&fs::read(evidence.join("acceptance.json")).unwrap()).unwrap();
+    assert_eq!(saved["requestProgress"][0]["cancelledBeforeConnectionClose"], true);
+    assert_eq!(saved["requestProgress"][0]["contentDeltas"].as_array().unwrap().len(), 8);
+    assert_eq!(saved["passed"], false);
+    fs::remove_file(evidence.join("acceptance.json")).unwrap();
+    fs::remove_dir(evidence).unwrap();
 }
 
 #[test]

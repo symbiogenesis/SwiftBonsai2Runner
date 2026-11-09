@@ -46,6 +46,8 @@ mod service_integration;
 mod service_rollback;
 #[path = "native_model/speed.rs"]
 mod speed;
+#[path = "native_model/token_timing.rs"]
+mod token_timing;
 
 const CASE: &str = "pinned_native_model_streams_recovers_and_restarts_in_required_sandbox";
 const PTQ1_ADAPTER_CASE: &str =
