@@ -7,7 +7,7 @@ use crate::{
     wave,
 };
 use std::{
-    collections::HashMap,
+    fmt::NumBuffer,
     io::{self, Read, Write},
     net::{Shutdown, TcpStream},
     time::{Duration, Instant},
@@ -337,15 +337,14 @@ fn parse_head(bytes: &[u8], port: u16, key: &[u8; 64], kind: Kind) -> Result<Hea
     {
         return Err(Error::bad("invalid_headers"));
     }
-    let mut headers = HashMap::new();
-    for header in parsed.headers.iter() {
+    for (index, header) in parsed.headers.iter().enumerate() {
         if header
             .value
             .iter()
             .any(|byte| (*byte < 32 && *byte != b'\t') || *byte == 127)
-            || headers
-                .insert(header.name.to_ascii_lowercase(), header.value.trim_ascii())
-                .is_some()
+            || parsed.headers[..index]
+                .iter()
+                .any(|previous| previous.name.eq_ignore_ascii_case(header.name))
         {
             return Err(Error::bad("invalid_headers"));
         }
@@ -353,16 +352,20 @@ fn parse_head(bytes: &[u8], port: u16, key: &[u8; 64], kind: Kind) -> Result<Hea
     let mut expected = [0; 71];
     expected[..7].copy_from_slice(b"Bearer ");
     expected[7..].copy_from_slice(key);
-    if !headers
-        .get("authorization")
+    if !header_value(parsed.headers, "authorization")
         .is_some_and(|value| bool::from(value.ct_eq(&expected)))
     {
         return Err(Error::new(401, "unauthorized"));
     }
-    if headers.get("host").copied() != Some(format!("127.0.0.1:{port}").as_bytes()) {
+    let mut port_digits = NumBuffer::new();
+    let port_bytes = port.format_into(&mut port_digits).as_bytes();
+    let mut expected_host = [0_u8; 15];
+    expected_host[..10].copy_from_slice(b"127.0.0.1:");
+    expected_host[10..10 + port_bytes.len()].copy_from_slice(port_bytes);
+    if header_value(parsed.headers, "host") != Some(&expected_host[..10 + port_bytes.len()]) {
         return Err(Error::bad("invalid_host"));
     }
-    if headers.keys().any(|name| {
+    if parsed.headers.iter().any(|header| {
         [
             "transfer-encoding",
             "content-encoding",
@@ -374,13 +377,16 @@ fn parse_head(bytes: &[u8], port: u16, key: &[u8; 64], kind: Kind) -> Result<Hea
             "proxy-authorization",
             "proxy-connection",
         ]
-        .contains(&name.as_str())
-            || name.starts_with("x-forwarded-")
+        .iter()
+        .any(|forbidden| header.name.eq_ignore_ascii_case(forbidden))
+            || header
+                .name
+                .get(..12)
+                .is_some_and(|prefix| prefix.eq_ignore_ascii_case("x-forwarded-"))
     }) {
         return Err(Error::bad("unsupported_headers"));
     }
-    if headers
-        .get("connection")
+    if header_value(parsed.headers, "connection")
         .is_some_and(|value| !value.eq_ignore_ascii_case(b"close"))
     {
         return Err(Error::bad("unsupported_connection"));
@@ -391,14 +397,14 @@ fn parse_head(bytes: &[u8], port: u16, key: &[u8; 64], kind: Kind) -> Result<Hea
         .ok_or(Error::bad("invalid_headers"))?;
     let first_line = &bytes[..first_end];
     let health = first_line == b"GET /health HTTP/1.1";
-    let route = match kind {
-        Kind::Canary => "/v1/audio/transcriptions",
-        Kind::QwenTts => "/v1/audio/speech",
+    let post_request_line: &[u8] = match kind {
+        Kind::Canary => b"POST /v1/audio/transcriptions HTTP/1.1",
+        Kind::QwenTts => b"POST /v1/audio/speech HTTP/1.1",
     };
-    if !health && first_line != format!("POST {route} HTTP/1.1").as_bytes() {
+    if !health && first_line != post_request_line {
         return Err(Error::new(404, "unsupported_route"));
     }
-    let (length, media) = framing(&headers, health, kind)?;
+    let (length, media) = framing(parsed.headers, health, kind)?;
     Ok(Head {
         health,
         length,
@@ -406,16 +412,20 @@ fn parse_head(bytes: &[u8], port: u16, key: &[u8; 64], kind: Kind) -> Result<Hea
     })
 }
 
+fn header_value<'a>(headers: &[httparse::Header<'a>], name: &str) -> Option<&'a [u8]> {
+    headers
+        .iter()
+        .find(|header| header.name.eq_ignore_ascii_case(name))
+        .map(|header| header.value.trim_ascii())
+}
+
 fn framing(
-    headers: &HashMap<String, &[u8]>,
+    headers: &[httparse::Header<'_>],
     health: bool,
     kind: Kind,
 ) -> Result<(usize, String), Error> {
     let raw_length =
-        headers
-            .get("content-length")
-            .copied()
-            .unwrap_or(if health { b"0" } else { b"" });
+        header_value(headers, "content-length").unwrap_or(if health { b"0" } else { b"" });
     if health && raw_length != b"0" {
         return Err(Error::bad("invalid_framing"));
     }
@@ -438,7 +448,7 @@ fn framing(
     if !health && !(1..=maximum).contains(&length) {
         return Err(Error::new(413, "body_limit"));
     }
-    let media = std::str::from_utf8(headers.get("content-type").copied().unwrap_or_default())
+    let media = std::str::from_utf8(header_value(headers, "content-type").unwrap_or_default())
         .map_err(|_| Error::new(415, "unsupported_media_type"))?
         .to_owned();
     Ok((length, media))

@@ -2,7 +2,7 @@
 
 use crate::{CANARY_MODEL, Request, TTS_MODEL, http::Error, wave};
 use serde::Deserialize;
-use std::{borrow::Cow, collections::HashMap};
+use std::borrow::Cow;
 
 pub(super) enum Prepared<'a> {
     Health,
@@ -147,66 +147,86 @@ fn multipart_parts<'a>(bytes: &'a [u8], separator: &[u8]) -> Result<[Option<&'a 
 }
 
 fn multipart<'a>(media: &str, body: &'a [u8]) -> Result<&'a [u8], Error> {
-    let boundary = boundary(media)?;
-    let start = format!("--{boundary}\r\n");
-    let end = format!("\r\n--{boundary}--\r\n");
-    let separator = format!("\r\n--{boundary}\r\n");
+    let boundary = boundary(media)?.as_bytes();
+    let sep_len = boundary.len() + 6;
+    let mut separator_buf = [0_u8; 76];
+    separator_buf[..4].copy_from_slice(b"\r\n--");
+    separator_buf[4..4 + boundary.len()].copy_from_slice(boundary);
+    separator_buf[4 + boundary.len()..sep_len].copy_from_slice(b"\r\n");
+    let separator = &separator_buf[..sep_len];
+    let start = &separator[2..];
+
+    let end_len = boundary.len() + 8;
+    let mut end_buf = [0_u8; 78];
+    end_buf[..4].copy_from_slice(b"\r\n--");
+    end_buf[4..4 + boundary.len()].copy_from_slice(boundary);
+    end_buf[4 + boundary.len()..end_len].copy_from_slice(b"--\r\n");
+    let end = &end_buf[..end_len];
+
     let interior = body
-        .strip_circumfix(start.as_bytes(), end.as_bytes())
+        .strip_circumfix(start, end)
         .ok_or(Error::bad("invalid_multipart"))?;
-    let parts = multipart_parts(interior, separator.as_bytes())?;
-    let mut fields = HashMap::new();
+    let parts = multipart_parts(interior, separator)?;
+    let mut model: Option<&'a [u8]> = None;
+    let mut language: Option<&'a [u8]> = None;
+    let mut file: Option<&'a [u8]> = None;
     for part in parts.into_iter().flatten() {
         let at = memchr::memmem::find(part, b"\r\n\r\n").ok_or(Error::bad("invalid_multipart"))?;
         if at > 1024 {
             return Err(Error::bad("invalid_multipart"));
         }
-        let mut headers = HashMap::new();
+        let mut disposition: Option<&[u8]> = None;
+        let mut content_type: Option<&[u8]> = None;
         for line in split_bytes(&part[..at], b"\r\n") {
             let colon = memchr::memchr(b':', line).ok_or(Error::bad("invalid_multipart"))?;
-            let name = std::str::from_utf8(&line[..colon])
-                .map_err(|_| Error::bad("invalid_multipart"))?
-                .to_ascii_lowercase();
-            if !matches!(name.as_str(), "content-disposition" | "content-type")
-                || headers
-                    .insert(name, line[colon + 1..].trim_ascii())
-                    .is_some()
-            {
+            let header_name = &line[..colon];
+            let header_value = line[colon + 1..].trim_ascii();
+            let slot = if header_name.eq_ignore_ascii_case(b"content-disposition") {
+                &mut disposition
+            } else if header_name.eq_ignore_ascii_case(b"content-type") {
+                &mut content_type
+            } else {
+                return Err(Error::bad("invalid_multipart"));
+            };
+            if slot.replace(header_value).is_some() {
                 return Err(Error::bad("invalid_multipart"));
             }
         }
-        let disposition = headers
-            .get("content-disposition")
-            .ok_or(Error::bad("invalid_multipart"))?;
+        let disposition = disposition.ok_or(Error::bad("invalid_multipart"))?;
         let (name, filename) = disposition_field(disposition)?;
         if name == "file" {
             if !filename
-                || !headers.get("content-type").is_some_and(|value| {
+                || !content_type.is_some_and(|value| {
                     [
                         b"audio/wav".as_slice(),
                         b"audio/x-wav",
                         b"application/octet-stream",
                     ]
-                    .contains(value)
+                    .contains(&value)
                 })
             {
                 return Err(Error::bad("invalid_audio"));
             }
-        } else if filename || headers.contains_key("content-type") {
+        } else if filename || content_type.is_some() {
             return Err(Error::bad("invalid_multipart"));
         }
-        if fields.insert(name, &part[at + 4..]).is_some() {
+        let field_slot = match name {
+            "model" => &mut model,
+            "language" => &mut language,
+            "file" => &mut file,
+            _ => return Err(Error::bad("invalid_multipart")),
+        };
+        if field_slot.replace(&part[at + 4..]).is_some() {
             return Err(Error::bad("invalid_multipart"));
         }
     }
-    if fields.get("model").copied() != Some(CANARY_MODEL.as_bytes()) {
+    if model != Some(CANARY_MODEL.as_bytes()) {
         return Err(Error::bad("unsupported_model"));
     }
-    if fields.get("language").is_some_and(|value| *value != b"en") {
+    if language.is_some_and(|value| value != b"en") {
         return Err(Error::bad("unsupported_language"));
     }
-    let audio = fields.get("file").ok_or(Error::bad("invalid_audio"))?;
-    Ok(audio)
+    file.ok_or(Error::bad("invalid_audio"))
 }
 
 fn disposition_field(bytes: &[u8]) -> Result<(&str, bool), Error> {
