@@ -36,7 +36,7 @@ fn block(mut counter: [u32; 4], mut key: [u32; 2]) -> [u32; 4] {
     counter
 }
 
-#[allow(
+#[expect(
     clippy::as_conversions,
     clippy::cast_precision_loss,
     reason = "The pinned C++ expression intentionally rounds the u32 word to f32 before adding 0.5."
@@ -46,7 +46,7 @@ fn uniform_word(word: u32) -> f32 {
 }
 
 /// Draw the reference's first lane from one independently addressed subsequence.
-#[allow(
+#[expect(
     clippy::redundant_pub_crate,
     reason = "The sampler helper stays private to the speech crate and its native ABI module."
 )]

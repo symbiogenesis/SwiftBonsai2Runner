@@ -4,7 +4,7 @@
 //! this adapter never plays audio or substitutes a system voice.
 
 #![forbid(unsafe_code)]
-#![allow(
+#![expect(
     clippy::redundant_pub_crate,
     reason = "Only the native speech worker uses this crate-private adapter."
 )]

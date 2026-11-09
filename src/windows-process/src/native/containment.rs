@@ -41,7 +41,7 @@ const MAX_READONLY_GRANTS: usize = 128;
 /// Owns only a native PSEC handle; creation and policy remain immutable thereafter.
 pub(super) struct Environment(ProcessSecurityEnvironment);
 
-#[allow(
+#[expect(
     clippy::non_send_fields_in_send_ty,
     reason = "The upstream owner wraps a process-wide opaque Windows handle; the safety contract is documented here."
 )]

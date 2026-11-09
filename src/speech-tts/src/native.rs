@@ -1,5 +1,5 @@
 //! Ownership and bounds for the pinned native Qwen C ABI.
-#![allow(
+#![expect(
     clippy::redundant_pub_crate,
     reason = "Keep the audited native boundary visible only to its parent module."
 )]
@@ -519,10 +519,6 @@ fn invalid_audio() -> io::Error {
 
 #[cfg(test)]
 mod tests {
-    #![allow(
-        clippy::float_cmp,
-        reason = "Exact sampler parameter float assertions describe the pinned contract."
-    )]
     use super::{
         Context, NativeAudio, REFERENCE_TEXT, StreamState, VOICE_SEED, abort_on_unwind,
         clone_params, design_params, qwen,
@@ -843,7 +839,7 @@ mod tests {
     }
 
     #[test]
-    #[allow(
+    #[expect(
         clippy::panic,
         reason = "The isolated child deliberately exercises the aborting unwind boundary."
     )]

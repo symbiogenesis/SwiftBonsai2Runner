@@ -1,6 +1,6 @@
 //! Bounded canonical serialization, including allocation growth before rejection.
 
-#![allow(
+#![expect(
     clippy::redundant_pub_crate,
     reason = "Keep the canonical serializer explicitly crate scoped."
 )]

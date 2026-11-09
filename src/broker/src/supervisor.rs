@@ -88,10 +88,6 @@ pub enum ServeError {
 /// # Errors
 /// Returns [`ServeError`] for request rejection, backend/response failure,
 /// deadline expiry or client abandonment.
-#[allow(
-    clippy::future_not_send,
-    reason = "the supplied connector and streams may be local; no task is spawned"
-)]
 pub async fn serve_chat<C>(
     client: C,
     policy: &RequestPolicy,
@@ -104,10 +100,6 @@ where
     serve_chat_inner(client, policy, backend, deadline, None).await
 }
 
-#[allow(
-    clippy::future_not_send,
-    reason = "the supplied connector and streams may be local; no task is spawned"
-)]
 pub(crate) async fn serve_chat_with_budget<C>(
     client: C,
     policy: &RequestPolicy,
@@ -121,10 +113,6 @@ where
     serve_chat_inner(client, policy, backend, deadline, Some(budget)).await
 }
 
-#[allow(
-    clippy::future_not_send,
-    reason = "the supplied connector and streams may be local; no task is spawned"
-)]
 async fn serve_chat_inner<C>(
     client: C,
     policy: &RequestPolicy,
@@ -191,10 +179,6 @@ where
     result
 }
 
-#[allow(
-    clippy::future_not_send,
-    reason = "the supplied client may be local; no task is spawned"
-)]
 async fn receive_admitted<C>(
     client: C,
     policy: &RequestPolicy,

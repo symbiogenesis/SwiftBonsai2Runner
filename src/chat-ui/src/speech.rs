@@ -4,7 +4,7 @@
 //! clips and free-form voice descriptions cross this owned, text/audio boundary.
 //! Generated PCM stays in bounded queues until native playback completes or is stopped.
 
-#![allow(
+#![expect(
     clippy::redundant_pub_crate,
     reason = "The window uses this crate-private worker boundary."
 )]
@@ -448,7 +448,7 @@ const fn output_failure(failure: tts::Failure) -> &'static str {
     }
 }
 
-#[allow(
+#[expect(
     clippy::too_many_lines,
     reason = "One bounded worker owns command ordering, cancellation and the audio buffer lifetime."
 )]

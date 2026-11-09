@@ -1,6 +1,6 @@
 //! Shared input syntax for explicit development configuration.
 
-#![allow(
+#![expect(
     clippy::redundant_pub_crate,
     reason = "Keep shared configuration helpers explicitly crate scoped"
 )]

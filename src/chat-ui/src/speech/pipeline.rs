@@ -45,7 +45,7 @@ pub(super) const fn packet_bytes_for_rate(sample_rate: u32) -> usize {
     }
 }
 
-#[allow(
+#[expect(
     clippy::as_conversions,
     clippy::cast_possible_truncation,
     reason = "Clamped i16 PCM range [-32768, 32767] fits in i16 after rounding."
@@ -562,7 +562,7 @@ fn consume_with(
 // producer channel and 800 ms WinMM queue. Slow synthesis waits for a validated
 // segment instead of repeatedly playing short bursts separated by silence.
 #[derive(Default)]
-#[allow(
+#[expect(
     clippy::struct_excessive_bools,
     reason = "Playback staging tracks four independent boolean lifecycle latches."
 )]
@@ -677,7 +677,7 @@ struct PlaybackBuffers {
     // WinMM retains these addresses. Moving the boxes never moves the headers.
     queued: VecDeque<Box<Buffer>>,
     // Only successfully unprepared, empty descriptors enter this bounded pool.
-    #[allow(
+    #[expect(
         clippy::vec_box,
         reason = "Reused WinMM descriptors must keep their original stable addresses."
     )]

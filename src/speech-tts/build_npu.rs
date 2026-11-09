@@ -28,10 +28,6 @@ fn replace(text: &str, before: &str, after: &str) -> io::Result<String> {
     Ok(text.replacen(before, after, 1))
 }
 
-#[allow(
-    clippy::redundant_pub_crate,
-    reason = "Only the parent source-copy overlay invokes these reviewed transforms."
-)]
 pub(super) fn apply(destination: &Path) -> io::Result<()> {
     for &(relative, transform) in &TRANSFORMS {
         let path = destination.join(relative);

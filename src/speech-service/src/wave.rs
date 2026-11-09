@@ -54,7 +54,7 @@ pub(super) fn pcm_into<'a>(samples: &[f32], bytes: &'a mut [u8]) -> &'a [u8] {
     }
     bytes
 }
-#[allow(
+#[expect(
     clippy::as_conversions,
     clippy::cast_possible_truncation,
     reason = "Finite samples are explicitly clamped and rounded into the representable PCM16 range."

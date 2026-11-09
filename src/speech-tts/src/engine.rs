@@ -13,7 +13,7 @@
 //! - `hexagon-native-rpc` NPU packet/session dispatcher (`HtpPrefillPacket`, `HtpQuantType::NativeQ2`)
 //!   preserving the system `qcnspmcdm` `libcdsprpc.dll` `FastRPC` boundary.
 #![forbid(unsafe_code)]
-#![allow(
+#![expect(
     clippy::missing_errors_doc,
     reason = "Internal tensor, quantization, and layer shape checks return io::ErrorKind::InvalidInput or InvalidData."
 )]
@@ -318,7 +318,7 @@ pub fn repack_pq2_to_ptq1(quant: &WeightQuantization) -> io::Result<WeightQuanti
     })
 }
 
-#[allow(
+#[expect(
     clippy::inline_always,
     reason = "fearless_simd dispatch! requires inline(always) to inherit target_feature attributes."
 )]
@@ -377,7 +377,7 @@ pub fn sylvester_walsh_hadamard_in_place(data: &mut [f32]) -> io::Result<()> {
     Ok(())
 }
 
-#[allow(
+#[expect(
     clippy::inline_always,
     reason = "fearless_simd dispatch! requires inline(always) to inherit target_feature attributes."
 )]
@@ -408,7 +408,7 @@ fn sign_flip_simd<S: Simd>(simd: S, input: &[f32], signs: &[i8], out: &mut [f32]
     }
 }
 
-#[allow(
+#[expect(
     clippy::inline_always,
     reason = "fearless_simd dispatch! requires inline(always) to inherit target_feature attributes."
 )]
@@ -443,7 +443,7 @@ fn f32_dot_simd<S: Simd>(simd: S, a: &[f32], b: &[f32]) -> f32 {
     total
 }
 
-#[allow(
+#[expect(
     clippy::inline_always,
     reason = "fearless_simd dispatch! requires inline(always) to inherit target_feature attributes."
 )]
@@ -526,7 +526,7 @@ const PTQ1_NIBBLE_TRITS_F32: [[f32; 4]; 256] = {
     table
 };
 
-#[allow(
+#[expect(
     clippy::inline_always,
     reason = "fearless_simd dispatch! requires inline(always) to inherit target_feature attributes."
 )]
@@ -556,7 +556,7 @@ fn pq2_group_dot_simd<S: Simd>(simd: S, byte_slice: &[u8], x_group: &[f32]) -> f
     (lanes[0] + lanes[1]) + (lanes[2] + lanes[3])
 }
 
-#[allow(
+#[expect(
     clippy::inline_always,
     reason = "fearless_simd dispatch! requires inline(always) to inherit target_feature attributes."
 )]
@@ -584,7 +584,7 @@ fn ptq1_group_dot_simd<S: Simd>(simd: S, nz_slice: &[u8], sg_slice: &[u8], x_gro
     (lanes[0] + lanes[1]) + (lanes[2] + lanes[3])
 }
 
-#[allow(
+#[expect(
     clippy::inline_always,
     reason = "fearless_simd dispatch! requires inline(always) to inherit target_feature attributes."
 )]
@@ -779,7 +779,7 @@ impl LinearProjection {
 
     /// Project one vector `input` (`[in_dim]`) into `[out_dim]`, optionally reusing a pre-folded
     /// Hadamard activation slice (`pre_folded`) shared across sibling projections (`q/k/v` or `gate/up`).
-    #[allow(
+    #[expect(
         clippy::too_many_lines,
         reason = "Dispatches across F32, Q8_0, PQ2_0, and PTQ1_0 weight representations with optional scoped row parallelism."
     )]
@@ -988,7 +988,7 @@ where
     });
 }
 
-#[allow(
+#[expect(
     clippy::inline_always,
     reason = "fearless_simd dispatch! requires inline(always) to inherit target_feature attributes."
 )]
@@ -1018,7 +1018,7 @@ fn rms_norm_scale_simd<S: Simd>(
     }
 }
 
-#[allow(
+#[expect(
     clippy::inline_always,
     reason = "fearless_simd dispatch! requires inline(always) to inherit target_feature attributes."
 )]
@@ -1070,7 +1070,7 @@ pub fn rms_norm_in_place(data: &mut [f32], weight: &[f32], eps: f32) -> io::Resu
     Ok(())
 }
 
-#[allow(
+#[expect(
     clippy::inline_always,
     reason = "fearless_simd dispatch! requires inline(always) to inherit target_feature attributes."
 )]
@@ -1185,7 +1185,7 @@ pub struct LayerKvCache {
 
 impl QwenDecoderLayer {
     /// Run a single-token step (`pos = kv.seq_len`), appending K/V into `kv` and applying optional `LoRA` patches.
-    #[allow(
+    #[expect(
         clippy::too_many_arguments,
         clippy::too_many_lines,
         reason = "Passes explicit GQA geometry, RoPE/RMSNorm scalars, KV cache, and optional LoRA adapter."

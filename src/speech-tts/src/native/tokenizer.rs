@@ -41,7 +41,7 @@ fn reject_stage(stage: u8) -> io::Result<()> {
 }
 
 #[cfg(not(test))]
-#[allow(
+#[expect(
     clippy::unnecessary_wraps,
     reason = "Keep the production construction path identical to test-only stage fault injection."
 )]

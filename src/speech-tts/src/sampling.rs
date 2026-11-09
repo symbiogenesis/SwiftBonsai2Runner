@@ -16,7 +16,7 @@
 /// progressive speaking-rate acceleration and clipped word endings over
 /// multi-sentence read-aloud while preserving bit-exact replay on all 722
 /// captured `sampling-v1.bin` controls (whose maximum history length is 66).
-#[allow(
+#[expect(
     clippy::redundant_pub_crate,
     reason = "Sampler policy is private to the speech crate and its native ABI module."
 )]
@@ -26,7 +26,7 @@ const ISORT_MAX: usize = 32;
 
 /// Scalar parameters for one stochastic or greedy `sample_top_k_p` draw.
 #[derive(Clone, Copy, Debug)]
-#[allow(
+#[expect(
     clippy::redundant_pub_crate,
     reason = "Sampler policy is private to the speech crate and its native ABI module."
 )]
@@ -57,7 +57,7 @@ struct TokenProb {
 /// behavior, including its exceptional-value results. The mechanism and exact
 /// local STL source identities are recorded in `greedy-v1.provenance.json`;
 /// broader compiler/target and owning-crate qualification remain separate gates.
-#[allow(
+#[expect(
     clippy::redundant_pub_crate,
     reason = "Sampler policy is private to the speech crate and its native ABI module."
 )]
@@ -89,7 +89,7 @@ pub(super) fn greedy_argmax(logits: &[f32]) -> usize {
 }
 
 /// Mask the clipped half-open interval, preserving the optional kept token.
-#[allow(
+#[expect(
     clippy::redundant_pub_crate,
     reason = "Sampler policy is private to the speech crate and its native ABI module."
 )]
@@ -110,7 +110,7 @@ pub(super) fn suppress(logits: &mut [f32], low: i32, high: i32, keep: i32) {
 /// The caller supplies one workspace byte per logit. A smaller workspace is
 /// rejected before mutation; the audited native wrapper always supplies the
 /// complete vocabulary extent.
-#[allow(
+#[expect(
     clippy::redundant_pub_crate,
     clippy::float_cmp,
     reason = "Sampler policy is private to the speech crate and its native ABI module."
@@ -371,7 +371,7 @@ fn msvc_nth_element<T: Copy, F: Fn(T, T) -> bool>(mut slice: &mut [T], mut nth: 
 }
 
 /// Apply the pinned top-k cutoff in place (`0 < top_k < logits.len()`).
-#[allow(
+#[expect(
     clippy::redundant_pub_crate,
     reason = "Sampler policy is private to the speech crate and its native ABI module."
 )]
@@ -392,7 +392,7 @@ pub(super) fn top_k_mask(logits: &mut [f32], top_k: i32) {
 }
 
 /// Apply the pinned top-p nucleus mask in place (`0.0 < top_p < 1.0`).
-#[allow(
+#[expect(
     clippy::redundant_pub_crate,
     reason = "Sampler policy is private to the speech crate and its native ABI module."
 )]
@@ -445,7 +445,7 @@ pub(super) fn top_p_mask(logits: &mut [f32], top_p: f32) {
 /// 4. [`top_k_mask`] when `0 < top_k < V`.
 /// 5. [`top_p_mask`] when `0.0 < top_p < 1.0`.
 /// 6. Sequential `expf` softmax and Philox4x32-10 uniform multinomial draw.
-#[allow(
+#[expect(
     clippy::redundant_pub_crate,
     reason = "Sampler policy is private to the speech crate and its native ABI module."
 )]
@@ -503,7 +503,7 @@ pub(super) fn sample_top_k_p(
 
 #[cfg(test)]
 mod tests {
-    #![allow(
+    #![expect(
         clippy::float_cmp,
         reason = "Exact zero, infinity and integral results describe the pinned sampler contract."
     )]

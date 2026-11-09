@@ -1,6 +1,6 @@
 //! Shared ownership and memory isolation for explicitly requested native speech.
 #![forbid(unsafe_code)]
-#![allow(
+#![expect(
     clippy::redundant_pub_crate,
     reason = "Only the native speech adapters and worker use this shared owner."
 )]

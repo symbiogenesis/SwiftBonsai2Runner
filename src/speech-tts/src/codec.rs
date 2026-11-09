@@ -6,7 +6,7 @@
 //! 8-slot LRU cache for zero-redecode ICL reference priming, and the `SEANet` +
 //! Mimi transformer + RVQ reference encoder.
 #![forbid(unsafe_code)]
-#![allow(
+#![expect(
     clippy::missing_errors_doc,
     reason = "Internal codec and convolution shape checks return io::ErrorKind::InvalidInput."
 )]
@@ -17,7 +17,7 @@ use fearless_simd::{Level, dispatch, f32x4, prelude::*};
 
 use crate::{SAMPLE_RATE, SAMPLE_RATE_48K};
 
-#[allow(
+#[expect(
     clippy::inline_always,
     reason = "fearless_simd dispatch! requires inline(always) to inherit target_feature attributes."
 )]
@@ -35,7 +35,7 @@ fn add_slice_in_place_simd<S: Simd>(simd: S, dst: &mut [f32], src: &[f32]) {
     }
 }
 
-#[allow(
+#[expect(
     clippy::inline_always,
     reason = "fearless_simd dispatch! requires inline(always) to inherit target_feature attributes."
 )]
@@ -60,7 +60,7 @@ fn reduce_f32x4<S: Simd>(v: f32x4<S>) -> f32 {
     (a[0] + a[2]) + (a[1] + a[3])
 }
 
-#[allow(
+#[expect(
     clippy::inline_always,
     reason = "fearless_simd dispatch! requires inline(always) to inherit target_feature attributes."
 )]
@@ -93,7 +93,7 @@ fn dot_f32_simd<S: Simd>(simd: S, a: &[f32], b: &[f32], init: f32) -> f32 {
     sum
 }
 
-#[allow(
+#[expect(
     clippy::inline_always,
     reason = "fearless_simd dispatch! requires inline(always) to inherit target_feature attributes."
 )]
@@ -172,7 +172,7 @@ fn dot_four_rows_f32_simd<S: Simd>(
     [s0, s1, s2, s3]
 }
 
-#[allow(
+#[expect(
     clippy::inline_always,
     reason = "fearless_simd dispatch! requires inline(always) to inherit target_feature attributes."
 )]
@@ -210,7 +210,7 @@ fn matvec_4rows_simd<S: Simd>(
     }
 }
 
-#[allow(
+#[expect(
     clippy::inline_always,
     reason = "fearless_simd dispatch! requires inline(always) to inherit target_feature attributes."
 )]
@@ -253,7 +253,7 @@ fn trans_conv1d_scatter_frame_simd<S: Simd>(
     }
 }
 
-#[allow(
+#[expect(
     clippy::inline_always,
     clippy::too_many_arguments,
     clippy::too_many_lines,
@@ -390,7 +390,7 @@ fn convnext_frame_simd<S: Simd>(
     }
 }
 
-#[allow(
+#[expect(
     clippy::inline_always,
     reason = "fearless_simd dispatch! requires inline(always) to inherit target_feature attributes."
 )]
@@ -1468,7 +1468,7 @@ mod tests {
     }
 
     #[test]
-    #[allow(
+    #[expect(
         clippy::too_many_lines,
         reason = "Verifies both 4-block 24 kHz and 5-block 48 kHz DAC decode and 2:1 decimation in one test."
     )]

@@ -157,7 +157,7 @@ fn check_cancelled(cancellation: &Cancellation) -> io::Result<()> {
     Ok(())
 }
 
-#[allow(
+#[expect(
     clippy::inline_always,
     reason = "fearless_simd dispatch! requires inline(always) to inherit target_feature attributes."
 )]

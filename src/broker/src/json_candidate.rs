@@ -275,7 +275,7 @@ fn timed(body: &[u8], candidate: bool, pinned: bool, iterations: usize, reused: 
     started.elapsed().as_nanos()
 }
 
-#[allow(
+#[expect(
     clippy::cast_precision_loss,
     clippy::as_conversions,
     reason = "Timing ratios intentionally approximate integer nanoseconds in binary64."

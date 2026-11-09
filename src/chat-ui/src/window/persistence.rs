@@ -109,7 +109,7 @@ struct WorkspaceView<'a> {
 }
 
 #[derive(serde::Serialize)]
-#[allow(
+#[expect(
     clippy::struct_excessive_bools,
     reason = "Recovery serializes independent response choices and transcript status."
 )]

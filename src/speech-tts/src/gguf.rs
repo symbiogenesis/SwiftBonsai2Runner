@@ -1,6 +1,6 @@
 //! Pure-Rust bounded GGUF v2/v3 metadata reader for speech tokenizer tables.
 #![forbid(unsafe_code)]
-#![allow(
+#![expect(
     clippy::redundant_pub_crate,
     reason = "Keep GGUF metadata parsing private to the speech crate."
 )]

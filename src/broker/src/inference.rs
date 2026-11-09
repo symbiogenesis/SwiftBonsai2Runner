@@ -1,5 +1,5 @@
 //! Compiled release identity for the independently built inference server.
-#![allow(
+#![expect(
     clippy::redundant_pub_crate,
     reason = "Explicit parent scope keeps these implementation helpers private."
 )]

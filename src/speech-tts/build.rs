@@ -1,8 +1,4 @@
 //! Build the reviewed, externally provisioned native Qwen static libraries.
-#![allow(
-    clippy::print_stdout,
-    reason = "Cargo build-script directives are the required communication protocol."
-)]
 
 use std::{
     env,

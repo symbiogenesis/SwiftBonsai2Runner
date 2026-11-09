@@ -102,10 +102,6 @@ fn active(commands: &Receiver<Command>, until: Instant) -> Result<()> {
     Ok(())
 }
 
-#[allow(
-    clippy::too_many_lines,
-    reason = "Keep the three bounded stages and their distinct incomplete-result policies in one linear workflow."
-)]
 fn run_with(
     pending: &[Message],
     options: ResponseOptions,

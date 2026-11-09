@@ -173,19 +173,11 @@ const RUST_SIGNATURE: &str =
 const BUILD_MARKER: &str =
     r"// Batched decode: append one position per KV set over the static graph";
 
-#[allow(
-    clippy::redundant_pub_crate,
-    reason = "Only the parent source-copy overlay selects these fixed transforms."
-)]
 pub(super) fn graph_type(text: &str) -> io::Result<String> {
     let original = identity(text, GRAPH_TYPE_BYTES, GRAPH_TYPE_SHA256)?;
     Ok(format!("{original}{NATIVE_HOLDER}"))
 }
 
-#[allow(
-    clippy::redundant_pub_crate,
-    reason = "Only the parent source-copy overlay selects these fixed transforms."
-)]
 pub(super) fn forward(text: &str) -> io::Result<String> {
     let original = identity(text, FORWARD_BYTES, FORWARD_SHA256)?;
     patch_forward(&original)
@@ -206,19 +198,11 @@ fn patch_forward(text: &str) -> io::Result<String> {
     )
 }
 
-#[allow(
-    clippy::redundant_pub_crate,
-    reason = "Only the parent source-copy overlay selects these fixed transforms."
-)]
 pub(super) fn pipeline_header(text: &str) -> io::Result<String> {
     let original = identity(text, PIPELINE_HEADER_BYTES, PIPELINE_HEADER_SHA256)?;
     replace(&original, OLD_FIELD, RUST_FIELD)
 }
 
-#[allow(
-    clippy::redundant_pub_crate,
-    reason = "Only the parent source-copy overlay selects these fixed transforms."
-)]
 pub(super) fn pipeline(text: &str) -> io::Result<String> {
     let original = identity(text, PIPELINE_BYTES, PIPELINE_SHA256)?;
     patch_pipeline(&original)

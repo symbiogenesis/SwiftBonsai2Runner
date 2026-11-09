@@ -1089,7 +1089,7 @@ fn wide(value: &OsStr) -> Vec<u16> {
 
 const fn win_size<T>() -> u32 {
     // All callers instantiate fixed Win32 structures, much smaller than u32::MAX.
-    #[allow(
+    #[expect(
         clippy::cast_possible_truncation,
         clippy::as_conversions,
         reason = "Fixed Win32 structure sizes fit in their u32 byte-count fields."

@@ -66,7 +66,7 @@ fn tokenizer(text: &str) -> io::Result<String> {
 }
 
 #[cfg(test)]
-#[allow(
+#[expect(
     clippy::redundant_pub_crate,
     reason = "Expose the generated header only to sibling model-free tokenizer tests."
 )]
@@ -150,7 +150,7 @@ fn vectors(text: &str) -> io::Result<String> {
 }
 
 /// Copy externally verified immutable source bytes, then overlay only that copy.
-#[allow(
+#[expect(
     clippy::redundant_pub_crate,
     reason = "Keep the reviewed build helper private to its build-script or test parent."
 )]

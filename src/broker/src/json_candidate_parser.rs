@@ -4,7 +4,7 @@ use crate::{AuthorizedHead, ClientChat, Object, PendingChat, Rejection};
 use serde::Deserialize;
 
 /// Bounded input and parser allocations retained between qualification calls.
-#[allow(
+#[expect(
     clippy::redundant_pub_crate,
     reason = "Sibling qualification modules share this type; a public export violates unreachable_pub."
 )]

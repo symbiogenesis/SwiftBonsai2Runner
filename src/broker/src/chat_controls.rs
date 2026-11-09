@@ -43,7 +43,7 @@ const SPELLINGS: [&str; 33] = [
 ];
 
 /// No allocation or normalization; at most 33 fixed-size checks per `<` byte.
-#[allow(
+#[expect(
     clippy::redundant_pub_crate,
     reason = "Only the parent request policy uses this private module; a public export violates unreachable_pub."
 )]

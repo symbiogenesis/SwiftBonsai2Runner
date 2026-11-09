@@ -30,7 +30,7 @@ fn read_validation_keeps_regular_file_and_repository_checks() -> io::Result<()> 
 }
 
 #[test]
-#[allow(
+#[expect(
     clippy::used_underscore_binding,
     reason = "Verify the noninheritable reader retained only to protect directory lifetime."
 )]
@@ -49,7 +49,7 @@ fn private_worker_storage_has_protected_acl_without_extra_credentials() -> io::R
 }
 
 #[test]
-#[allow(
+#[expect(
     clippy::used_underscore_binding,
     reason = "Check noninheritance of the handle retained only for its lifetime."
 )]
@@ -95,7 +95,7 @@ fn retained_tokens_validate_content_and_hold_files_until_drop() -> io::Result<()
 }
 
 #[test]
-#[allow(
+#[expect(
     clippy::used_underscore_binding,
     reason = "Inspect the handles retained only for their lifetime in production."
 )]

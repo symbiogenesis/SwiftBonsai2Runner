@@ -4,7 +4,7 @@
 //! under the MIT license in `LICENSE.qwen-core`. GGUF access remains native;
 //! these owned tables, special matching, segmentation and merges are safe Rust.
 #![forbid(unsafe_code)]
-#![allow(
+#![expect(
     clippy::redundant_pub_crate,
     reason = "Keep the tokenizer and model-free boundary observations private to this crate."
 )]

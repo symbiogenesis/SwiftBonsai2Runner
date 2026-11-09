@@ -3,7 +3,7 @@
 //! The owner retains one completed native graph, releases it before replacement,
 //! and prevents eviction or teardown while a synchronous compute lease is active.
 #![forbid(unsafe_code)]
-#![allow(
+#![expect(
     clippy::redundant_pub_crate,
     reason = "Keep graph ownership private to the speech crate and audited ABI."
 )]

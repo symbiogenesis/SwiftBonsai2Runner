@@ -61,7 +61,7 @@ fn contraction(text: &[u8], start: usize) -> io::Result<Option<usize>> {
     Ok(None)
 }
 
-#[allow(
+#[expect(
     clippy::too_many_lines,
     reason = "Keep the native scanner's ordered rules and byte-level whitespace quirks together for review."
 )]

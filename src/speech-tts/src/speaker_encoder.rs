@@ -13,7 +13,7 @@
 //! 7. Attentive Statistical Pooling (`ASP`, `1536 -> 3072`) + final `k = 1` FC
 //!    projection (`3072 -> 2048` x-vector speaker embedding).
 #![forbid(unsafe_code)]
-#![allow(
+#![expect(
     clippy::missing_errors_doc,
     reason = "Internal spectrogram and TDNN shape checks return io::ErrorKind::InvalidInput."
 )]
@@ -22,7 +22,7 @@ use std::io;
 
 use fearless_simd::{Level, dispatch, f32x4, prelude::*};
 
-#[allow(
+#[expect(
     clippy::inline_always,
     reason = "fearless_simd dispatch! requires inline(always) to inherit target_feature attributes."
 )]
@@ -45,7 +45,7 @@ fn window_frame_simd<S: Simd>(simd: S, frame: &[f32], hann: &[f32], dst: &mut [f
     }
 }
 
-#[allow(
+#[expect(
     clippy::inline_always,
     reason = "fearless_simd dispatch! requires inline(always) to inherit target_feature attributes."
 )]
@@ -87,7 +87,7 @@ fn f32_dot_pair_simd<S: Simd>(simd: S, x: &[f32], y0: &[f32], y1: &[f32]) -> (f3
     (s0, s1)
 }
 
-#[allow(
+#[expect(
     clippy::inline_always,
     reason = "fearless_simd dispatch! requires inline(always) to inherit target_feature attributes."
 )]
@@ -121,7 +121,7 @@ fn f32_dot_simd<S: Simd>(simd: S, a: &[f32], b: &[f32]) -> f32 {
     total
 }
 
-#[allow(
+#[expect(
     clippy::inline_always,
     reason = "fearless_simd dispatch! requires inline(always) to inherit target_feature attributes."
 )]
@@ -140,7 +140,7 @@ fn axpy_simd<S: Simd>(simd: S, scale: f32, x: &[f32], dst: &mut [f32]) {
     }
 }
 
-#[allow(
+#[expect(
     clippy::inline_always,
     reason = "fearless_simd dispatch! requires inline(always) to inherit target_feature attributes."
 )]
@@ -193,7 +193,7 @@ fn axpy4_simd<S: Simd>(
     }
 }
 
-#[allow(
+#[expect(
     clippy::inline_always,
     reason = "fearless_simd dispatch! requires inline(always) to inherit target_feature attributes."
 )]
@@ -822,7 +822,7 @@ mod tests {
     }
 
     #[test]
-    #[allow(
+    #[expect(
         clippy::too_many_lines,
         reason = "Constructs synthetic TDNN, SE-Res2Net, MFA, ASP, and FC layers in one end-to-end test."
     )]

@@ -306,7 +306,7 @@ fn rust_special_intake_preserves_order_signed_ids_errors_and_cleanup() -> io::Re
 }
 
 #[test]
-#[allow(
+#[expect(
     clippy::panic,
     reason = "Deliberate safe-Rust unwind verifies owned encoding cleanup before the ABI guard returns failure."
 )]

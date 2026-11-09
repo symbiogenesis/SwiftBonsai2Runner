@@ -1,5 +1,5 @@
 //! Native egui chat presentation. Backend work and audio remain off the UI loop.
-#![allow(
+#![expect(
     clippy::redundant_pub_crate,
     reason = "Keep presentation internals parent-only."
 )]
@@ -78,7 +78,7 @@ fn runtime_description(config: &Config) -> String {
     }
 }
 
-#[allow(
+#[expect(
     clippy::struct_excessive_bools,
     reason = "Independent broker, audio and presentation state is explicit."
 )]
@@ -1502,7 +1502,7 @@ impl State {
         }
     }
 
-    #[allow(
+    #[expect(
         clippy::too_many_lines,
         reason = "Keep composer focus, IME and action dispatch together."
     )]

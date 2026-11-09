@@ -1,5 +1,5 @@
 //! Allocation-free native adapters for the safe Qwen sampler policy.
-#![allow(
+#![expect(
     clippy::float_cmp,
     reason = "Exact comparison with one is the pinned sampler's required no-op branch."
 )]
@@ -101,10 +101,6 @@ pub(super) extern "C" fn bonsai_qt_apply_repetition_penalty(
 // vocabulary writable workspace bytes. All borrows end before this synchronous
 // call returns.
 #[unsafe(no_mangle)]
-#[allow(
-    clippy::too_many_arguments,
-    reason = "Matches the private C ABI signature of the pinned Qwen sample_top_k_p function."
-)]
 pub(super) extern "C" fn bonsai_qt_sample_top_k_p(
     logits: *mut f32,
     vocabulary: c_int,

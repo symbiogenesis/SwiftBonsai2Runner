@@ -1,5 +1,5 @@
 //! Cancellable native preparation while the existing chat window is available.
-#![allow(
+#![expect(
     clippy::redundant_pub_crate,
     reason = "Keep the private preparation worker visible only within the native application."
 )]

@@ -1,7 +1,7 @@
 //! Owned, bounded loopback client for the native chat window.
 
 #![forbid(unsafe_code)]
-#![allow(
+#![expect(
     clippy::redundant_pub_crate,
     reason = "The window and worker share a deliberately crate-private command boundary"
 )]
@@ -206,7 +206,7 @@ struct ResponseOptions {
 }
 
 /// Launch the owned broker, then serve one in-memory conversation until shutdown.
-#[allow(
+#[expect(
     clippy::needless_pass_by_value,
     reason = "The background thread owns its configuration and channels until the broker is stopped"
 )]

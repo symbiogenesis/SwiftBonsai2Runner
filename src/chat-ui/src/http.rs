@@ -1,7 +1,7 @@
 //! Shared header scanning and media types for the local HTTP adapters.
 
 #![forbid(unsafe_code)]
-#![allow(
+#![expect(
     clippy::redundant_pub_crate,
     reason = "The native HTTP adapters share this crate-private parser."
 )]

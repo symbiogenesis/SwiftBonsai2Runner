@@ -5,7 +5,7 @@
 //! that process on client cancellation or an expired model deadline. It never
 //! records microphone input, plays sound, logs model input or writes audio files.
 #![forbid(unsafe_code)]
-#![allow(
+#![expect(
     clippy::redundant_pub_crate,
     reason = "Explicit parent-only visibility keeps protocol and credential internals out of the public engine API."
 )]

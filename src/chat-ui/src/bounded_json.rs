@@ -1,6 +1,6 @@
 //! Serialize bounded JSON without first retaining an oversized encoded document.
 
-#![allow(
+#![expect(
     clippy::redundant_pub_crate,
     reason = "Share the bounded encoder only within the native application."
 )]

@@ -4,7 +4,7 @@
 //! fixed-length response per connection, with no redirects, retries or proxies.
 
 #![forbid(unsafe_code)]
-#![allow(
+#![expect(
     clippy::redundant_pub_crate,
     reason = "Only the native speech worker uses this crate-private adapter."
 )]

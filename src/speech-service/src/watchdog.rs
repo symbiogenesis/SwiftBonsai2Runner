@@ -81,7 +81,7 @@ impl Drop for Watchdog {
     }
 }
 
-#[allow(
+#[expect(
     clippy::exit,
     reason = "This library runs only inside an independently Job-owned speech companion; blocking native inference cannot otherwise be cancelled safely. Exit closes only this companion and never the UI or Swift owner."
 )]

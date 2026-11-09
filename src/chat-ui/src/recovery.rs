@@ -1,5 +1,5 @@
 //! Encrypted recovery. Disk and DPAPI work run on a dedicated worker.
-#![allow(
+#![expect(
     clippy::redundant_pub_crate,
     reason = "Keep the private persistence worker visible only within the native application."
 )]

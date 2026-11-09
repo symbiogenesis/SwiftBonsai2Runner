@@ -31,7 +31,7 @@ mod tts;
 mod window;
 
 #[cfg(windows)]
-#[allow(
+#[expect(
     clippy::too_many_lines,
     reason = "Parse the bounded native launcher contract without accepting arbitrary service arguments."
 )]
