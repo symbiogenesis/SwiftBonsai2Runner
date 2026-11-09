@@ -194,6 +194,7 @@ def main():
                 raise RuntimeError("A genuine positive hosted run/attempt identity is required")
         elapsed = clock.get("elapsedSecondsThroughRetention")
         if (clock.get("clockClosed") is not True or clock.get("withinDeclaredAllowance") is not True
+                or clock.get("retentionComplete") is not True
                 or clock.get("cleanupConfirmed") is not True or clock.get("maximumTotalSeconds") != 300
                 or clock.get("cleanupIncomplete", False) is not False
                 or not isinstance(elapsed, (int, float)) or isinstance(elapsed, bool)
