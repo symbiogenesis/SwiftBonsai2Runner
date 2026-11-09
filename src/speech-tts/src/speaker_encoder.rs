@@ -20,6 +20,197 @@
 
 use std::io;
 
+use fearless_simd::{Level, dispatch, f32x4, prelude::*};
+
+#[allow(
+    clippy::inline_always,
+    reason = "fearless_simd dispatch! requires inline(always) to inherit target_feature attributes."
+)]
+#[inline(always)]
+fn window_frame_simd<S: Simd>(simd: S, frame: &[f32], hann: &[f32], dst: &mut [f32]) {
+    let (f_chunks, f_tail) = frame.as_chunks::<4>();
+    let (h_chunks, h_tail) = hann.as_chunks::<4>();
+    let (d_chunks, d_tail) = dst.as_chunks_mut::<4>();
+    for ((fc, hc), dc) in f_chunks
+        .iter()
+        .zip(h_chunks.iter())
+        .zip(d_chunks.iter_mut())
+    {
+        let fv = f32x4::from_slice(simd, fc);
+        let hv = f32x4::from_slice(simd, hc);
+        (fv * hv).store_slice(dc);
+    }
+    for ((&f, &h), d) in f_tail.iter().zip(h_tail.iter()).zip(d_tail.iter_mut()) {
+        *d = f * h;
+    }
+}
+
+#[allow(
+    clippy::inline_always,
+    reason = "fearless_simd dispatch! requires inline(always) to inherit target_feature attributes."
+)]
+#[inline(always)]
+fn f32_dot_pair_simd<S: Simd>(simd: S, x: &[f32], y0: &[f32], y1: &[f32]) -> (f32, f32) {
+    let (x_chunks, x_tail) = x.as_chunks::<4>();
+    let (y0_chunks, y0_tail) = y0.as_chunks::<4>();
+    let (y1_chunks, y1_tail) = y1.as_chunks::<4>();
+    let mut acc0_a = f32x4::splat(simd, 0.0_f32);
+    let mut acc0_b = f32x4::splat(simd, 0.0_f32);
+    let mut acc1_a = f32x4::splat(simd, 0.0_f32);
+    let mut acc1_b = f32x4::splat(simd, 0.0_f32);
+    let (x_pairs, x_rem) = x_chunks.as_chunks::<2>();
+    let (y0_pairs, y0_rem) = y0_chunks.as_chunks::<2>();
+    let (y1_pairs, y1_rem) = y1_chunks.as_chunks::<2>();
+    for ((xp, y0p), y1p) in x_pairs.iter().zip(y0_pairs.iter()).zip(y1_pairs.iter()) {
+        let x_a = f32x4::from_slice(simd, &xp[0]);
+        let x_b = f32x4::from_slice(simd, &xp[1]);
+        acc0_a = x_a.mul_add(f32x4::from_slice(simd, &y0p[0]), acc0_a);
+        acc0_b = x_b.mul_add(f32x4::from_slice(simd, &y0p[1]), acc0_b);
+        acc1_a = x_a.mul_add(f32x4::from_slice(simd, &y1p[0]), acc1_a);
+        acc1_b = x_b.mul_add(f32x4::from_slice(simd, &y1p[1]), acc1_b);
+    }
+    for ((xc, y0c), y1c) in x_rem.iter().zip(y0_rem.iter()).zip(y1_rem.iter()) {
+        let xv = f32x4::from_slice(simd, xc);
+        acc0_a = xv.mul_add(f32x4::from_slice(simd, y0c), acc0_a);
+        acc1_a = xv.mul_add(f32x4::from_slice(simd, y1c), acc1_a);
+    }
+    let mut l0 = [0.0_f32; 4];
+    let mut l1 = [0.0_f32; 4];
+    (acc0_a + acc0_b).store_slice(&mut l0);
+    (acc1_a + acc1_b).store_slice(&mut l1);
+    let mut s0 = (l0[0] + l0[1]) + (l0[2] + l0[3]);
+    let mut s1 = (l1[0] + l1[1]) + (l1[2] + l1[3]);
+    for ((&xv, &v0), &v1) in x_tail.iter().zip(y0_tail.iter()).zip(y1_tail.iter()) {
+        s0 = xv.mul_add(v0, s0);
+        s1 = xv.mul_add(v1, s1);
+    }
+    (s0, s1)
+}
+
+#[allow(
+    clippy::inline_always,
+    reason = "fearless_simd dispatch! requires inline(always) to inherit target_feature attributes."
+)]
+#[inline(always)]
+fn f32_dot_simd<S: Simd>(simd: S, a: &[f32], b: &[f32]) -> f32 {
+    let (a_chunks, a_tail) = a.as_chunks::<4>();
+    let (b_chunks, b_tail) = b.as_chunks::<4>();
+    let mut acc0 = f32x4::splat(simd, 0.0_f32);
+    let mut acc1 = f32x4::splat(simd, 0.0_f32);
+    let (a_pairs, a_rem) = a_chunks.as_chunks::<2>();
+    let (b_pairs, b_rem) = b_chunks.as_chunks::<2>();
+    for (ap, bp) in a_pairs.iter().zip(b_pairs.iter()) {
+        let a0 = f32x4::from_slice(simd, &ap[0]);
+        let b0 = f32x4::from_slice(simd, &bp[0]);
+        let a1 = f32x4::from_slice(simd, &ap[1]);
+        let b1 = f32x4::from_slice(simd, &bp[1]);
+        acc0 = a0.mul_add(b0, acc0);
+        acc1 = a1.mul_add(b1, acc1);
+    }
+    for (ac, bc) in a_rem.iter().zip(b_rem.iter()) {
+        let av = f32x4::from_slice(simd, ac);
+        let bv = f32x4::from_slice(simd, bc);
+        acc0 = av.mul_add(bv, acc0);
+    }
+    let mut lanes = [0.0_f32; 4];
+    (acc0 + acc1).store_slice(&mut lanes);
+    let mut total = (lanes[0] + lanes[1]) + (lanes[2] + lanes[3]);
+    for (&av, &bv) in a_tail.iter().zip(b_tail.iter()) {
+        total = av.mul_add(bv, total);
+    }
+    total
+}
+
+#[allow(
+    clippy::inline_always,
+    reason = "fearless_simd dispatch! requires inline(always) to inherit target_feature attributes."
+)]
+#[inline(always)]
+fn axpy_simd<S: Simd>(simd: S, scale: f32, x: &[f32], dst: &mut [f32]) {
+    let w_v = f32x4::splat(simd, scale);
+    let (x_chunks, x_tail) = x.as_chunks::<4>();
+    let (dst_chunks, dst_tail) = dst.as_chunks_mut::<4>();
+    for (xc, dc) in x_chunks.iter().zip(dst_chunks.iter_mut()) {
+        let xv = f32x4::from_slice(simd, xc);
+        let dv = f32x4::from_slice(simd, dc);
+        w_v.mul_add(xv, dv).store_slice(dc);
+    }
+    for (&xi, di) in x_tail.iter().zip(dst_tail.iter_mut()) {
+        *di = scale.mul_add(xi, *di);
+    }
+}
+
+#[allow(
+    clippy::inline_always,
+    reason = "fearless_simd dispatch! requires inline(always) to inherit target_feature attributes."
+)]
+#[inline(always)]
+fn axpy4_simd<S: Simd>(
+    simd: S,
+    w: [f32; 4],
+    x0: &[f32],
+    x1: &[f32],
+    x2: &[f32],
+    x3: &[f32],
+    dst: &mut [f32],
+) {
+    let w0 = f32x4::splat(simd, w[0]);
+    let w1 = f32x4::splat(simd, w[1]);
+    let w2 = f32x4::splat(simd, w[2]);
+    let w3 = f32x4::splat(simd, w[3]);
+    let (c0, t0) = x0.as_chunks::<4>();
+    let (c1, t1) = x1.as_chunks::<4>();
+    let (c2, t2) = x2.as_chunks::<4>();
+    let (c3, t3) = x3.as_chunks::<4>();
+    let (dc, dt) = dst.as_chunks_mut::<4>();
+    for ((((v0, v1), v2), v3), d) in c0
+        .iter()
+        .zip(c1.iter())
+        .zip(c2.iter())
+        .zip(c3.iter())
+        .zip(dc.iter_mut())
+    {
+        let mut acc = f32x4::from_slice(simd, d);
+        acc = w0.mul_add(f32x4::from_slice(simd, v0), acc);
+        acc = w1.mul_add(f32x4::from_slice(simd, v1), acc);
+        acc = w2.mul_add(f32x4::from_slice(simd, v2), acc);
+        acc = w3.mul_add(f32x4::from_slice(simd, v3), acc);
+        acc.store_slice(d);
+    }
+    for ((((&s0, &s1), &s2), &s3), d) in t0
+        .iter()
+        .zip(t1.iter())
+        .zip(t2.iter())
+        .zip(t3.iter())
+        .zip(dt.iter_mut())
+    {
+        let mut acc = *d;
+        acc = w[0].mul_add(s0, acc);
+        acc = w[1].mul_add(s1, acc);
+        acc = w[2].mul_add(s2, acc);
+        acc = w[3].mul_add(s3, acc);
+        *d = acc;
+    }
+}
+
+#[allow(
+    clippy::inline_always,
+    reason = "fearless_simd dispatch! requires inline(always) to inherit target_feature attributes."
+)]
+#[inline(always)]
+fn relu_in_place_simd<S: Simd>(simd: S, dst: &mut [f32]) {
+    let zero_v = f32x4::splat(simd, 0.0_f32);
+    let (chunks, tail) = dst.as_chunks_mut::<4>();
+    for c in chunks {
+        f32x4::from_slice(simd, c).max(zero_v).store_slice(c);
+    }
+    for val in tail {
+        if *val < 0.0_f32 {
+            *val = 0.0_f32;
+        }
+    }
+}
+
 /// Expected input sample rate for the Qwen3-TTS speaker encoder (`24_000` Hz).
 pub const SPEAKER_ENCODER_SAMPLE_RATE: u32 = 24_000;
 /// Default STFT FFT size (`1024`).
@@ -213,36 +404,29 @@ impl MelSpectrogramExtractor {
             ));
         }
         let n_frames = (padded.len() - self.cfg.n_fft) / self.cfg.hop + 1;
-        let mut mag = vec![0.0_f32; self.n_freq * n_frames];
-
-        for t in 0..n_frames {
-            let start = t * self.cfg.hop;
-            let frame = &padded[start..start + self.cfg.n_fft];
-            for k in 0..self.n_freq {
-                let re_row = &self.dft_real[k * self.cfg.n_fft..(k + 1) * self.cfg.n_fft];
-                let im_row = &self.dft_imag[k * self.cfg.n_fft..(k + 1) * self.cfg.n_fft];
-                let mut re = 0.0_f32;
-                let mut im = 0.0_f32;
-                for n in 0..self.cfg.n_fft {
-                    let w_x = frame[n] * self.hann[n];
-                    re = w_x.mul_add(re_row[n], re);
-                    im = w_x.mul_add(im_row[n], im);
-                }
-                mag[k * n_frames + t] = re.mul_add(re, im.mul_add(im, 1e-9_f32)).sqrt();
-            }
-        }
-
         let mut log_mel = vec![0.0_f32; self.cfg.n_mels * n_frames];
-        for m in 0..self.cfg.n_mels {
-            let basis_row = &self.mel_basis[m * self.n_freq..(m + 1) * self.n_freq];
+        let mut windowed = vec![0.0_f32; self.cfg.n_fft];
+        let mut mag_frame = vec![0.0_f32; self.n_freq];
+        let level = Level::new();
+
+        dispatch!(level, simd => {
             for t in 0..n_frames {
-                let mut sum = 0.0_f32;
-                for k in 0..self.n_freq {
-                    sum = basis_row[k].mul_add(mag[k * n_frames + t], sum);
+                let start = t * self.cfg.hop;
+                let frame = &padded[start..start + self.cfg.n_fft];
+                window_frame_simd(simd, frame, &self.hann, &mut windowed);
+                for (k, mag_slot) in mag_frame.iter_mut().enumerate() {
+                    let re_row = &self.dft_real[k * self.cfg.n_fft..(k + 1) * self.cfg.n_fft];
+                    let im_row = &self.dft_imag[k * self.cfg.n_fft..(k + 1) * self.cfg.n_fft];
+                    let (re, im) = f32_dot_pair_simd(simd, &windowed, re_row, im_row);
+                    *mag_slot = re.mul_add(re, im.mul_add(im, 1e-9_f32)).sqrt();
                 }
-                log_mel[m * n_frames + t] = sum.max(1e-5_f32).ln();
+                for m in 0..self.cfg.n_mels {
+                    let basis_row = &self.mel_basis[m * self.n_freq..(m + 1) * self.n_freq];
+                    let sum = f32_dot_simd(simd, basis_row, &mag_frame);
+                    log_mel[m * n_frames + t] = sum.max(1e-5_f32).ln();
+                }
             }
-        }
+        });
         Ok((log_mel, n_frames))
     }
 }
@@ -313,29 +497,52 @@ impl TdnnConv1d {
         }
 
         let mut out = vec![0.0_f32; self.out_c * frames];
-        for oc in 0..self.out_c {
-            let b = self.bias[oc];
-            let out_row = &mut out[oc * frames..(oc + 1) * frames];
-            out_row.fill(b);
-            for ic in 0..self.in_c {
-                let in_row = &padded[ic * padded_frames..(ic + 1) * padded_frames];
-                let w_base = (oc * self.in_c + ic) * self.kernel;
-                for k in 0..self.kernel {
-                    let w = self.weight[w_base + k];
-                    let offset = k * self.dilation;
-                    for t in 0..frames {
-                        out_row[t] = w.mul_add(in_row[t + offset], out_row[t]);
+        let level = Level::new();
+        dispatch!(level, simd => {
+            for oc in 0..self.out_c {
+                let b = self.bias[oc];
+                let out_row = &mut out[oc * frames..(oc + 1) * frames];
+                out_row.fill(b);
+                if self.kernel == 1 {
+                    let w_row = &self.weight[oc * self.in_c..(oc + 1) * self.in_c];
+                    let mut ic = 0;
+                    while ic + 4 <= self.in_c {
+                        let r0 = &padded[ic * padded_frames..ic * padded_frames + frames];
+                        let r1 = &padded[(ic + 1) * padded_frames..(ic + 1) * padded_frames + frames];
+                        let r2 = &padded[(ic + 2) * padded_frames..(ic + 2) * padded_frames + frames];
+                        let r3 = &padded[(ic + 3) * padded_frames..(ic + 3) * padded_frames + frames];
+                        axpy4_simd(
+                            simd,
+                            [w_row[ic], w_row[ic + 1], w_row[ic + 2], w_row[ic + 3]],
+                            r0,
+                            r1,
+                            r2,
+                            r3,
+                            out_row,
+                        );
+                        ic += 4;
+                    }
+                    while ic < self.in_c {
+                        let in_row = &padded[ic * padded_frames..ic * padded_frames + frames];
+                        axpy_simd(simd, w_row[ic], in_row, out_row);
+                        ic += 1;
+                    }
+                } else {
+                    for ic in 0..self.in_c {
+                        let in_row = &padded[ic * padded_frames..(ic + 1) * padded_frames];
+                        let w_base = (oc * self.in_c + ic) * self.kernel;
+                        for k in 0..self.kernel {
+                            let w = self.weight[w_base + k];
+                            let offset = k * self.dilation;
+                            axpy_simd(simd, w, &in_row[offset..offset + frames], out_row);
+                        }
                     }
                 }
-            }
-            if apply_relu {
-                for val in out_row.iter_mut() {
-                    if *val < 0.0_f32 {
-                        *val = 0.0_f32;
-                    }
+                if apply_relu {
+                    relu_in_place_simd(simd, out_row);
                 }
             }
-        }
+        });
         Ok(out)
     }
 }

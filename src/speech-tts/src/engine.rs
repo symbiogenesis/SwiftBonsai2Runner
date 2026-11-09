@@ -485,6 +485,105 @@ fn q8_block_dot_simd<S: Simd>(simd: S, quants: &[i8; 32], x: &[f32]) -> f32 {
     (lanes[0] + lanes[1]) + (lanes[2] + lanes[3])
 }
 
+const PQ2_BYTE_TRITS_F32: [[f32; 4]; 256] = {
+    let mut table = [[0.0_f32; 4]; 256];
+    let mut b = 0_usize;
+    while b < 256 {
+        let mut sub = 0_usize;
+        while sub < 4 {
+            let code = (b >> (sub * 2)) & 0b11;
+            table[b][sub] = match code {
+                0 => -1.0_f32,
+                2 => 1.0_f32,
+                _ => 0.0_f32,
+            };
+            sub += 1;
+        }
+        b += 1;
+    }
+    table
+};
+
+const PTQ1_NIBBLE_TRITS_F32: [[f32; 4]; 256] = {
+    let mut table = [[0.0_f32; 4]; 256];
+    let mut idx = 0_usize;
+    while idx < 256 {
+        let nz = idx & 0x0F;
+        let sg = (idx >> 4) & 0x0F;
+        let mut bit_i = 0_usize;
+        while bit_i < 4 {
+            if (nz >> bit_i) & 1 != 0 {
+                table[idx][bit_i] = if (sg >> bit_i) & 1 != 0 {
+                    1.0_f32
+                } else {
+                    -1.0_f32
+                };
+            }
+            bit_i += 1;
+        }
+        idx += 1;
+    }
+    table
+};
+
+#[allow(
+    clippy::inline_always,
+    reason = "fearless_simd dispatch! requires inline(always) to inherit target_feature attributes."
+)]
+#[inline(always)]
+fn pq2_group_dot_simd<S: Simd>(simd: S, byte_slice: &[u8], x_group: &[f32]) -> f32 {
+    let (x_quads, _) = x_group.as_chunks::<4>();
+    let (b_pairs, b_rem) = byte_slice.as_chunks::<2>();
+    let (x_pairs, x_rem) = x_quads.as_chunks::<2>();
+    let mut acc0 = f32x4::splat(simd, 0.0_f32);
+    let mut acc1 = f32x4::splat(simd, 0.0_f32);
+    for (bp, xp) in b_pairs.iter().zip(x_pairs.iter()) {
+        let w0 = f32x4::from_slice(simd, &PQ2_BYTE_TRITS_F32[usize::from(bp[0])]);
+        let w1 = f32x4::from_slice(simd, &PQ2_BYTE_TRITS_F32[usize::from(bp[1])]);
+        let x0 = f32x4::from_slice(simd, &xp[0]);
+        let x1 = f32x4::from_slice(simd, &xp[1]);
+        acc0 = w0.mul_add(x0, acc0);
+        acc1 = w1.mul_add(x1, acc1);
+    }
+    for (&b, xq) in b_rem.iter().zip(x_rem.iter()) {
+        let w = f32x4::from_slice(simd, &PQ2_BYTE_TRITS_F32[usize::from(b)]);
+        let x = f32x4::from_slice(simd, xq);
+        acc0 = w.mul_add(x, acc0);
+    }
+    let sum_v = acc0 + acc1;
+    let mut lanes = [0.0_f32; 4];
+    sum_v.store_slice(&mut lanes);
+    (lanes[0] + lanes[1]) + (lanes[2] + lanes[3])
+}
+
+#[allow(
+    clippy::inline_always,
+    reason = "fearless_simd dispatch! requires inline(always) to inherit target_feature attributes."
+)]
+#[inline(always)]
+fn ptq1_group_dot_simd<S: Simd>(simd: S, nz_slice: &[u8], sg_slice: &[u8], x_group: &[f32]) -> f32 {
+    let (x_octs, _) = x_group.as_chunks::<8>();
+    let mut acc0 = f32x4::splat(simd, 0.0_f32);
+    let mut acc1 = f32x4::splat(simd, 0.0_f32);
+    for ((&nz_b, &sg_b), xo) in nz_slice.iter().zip(sg_slice.iter()).zip(x_octs.iter()) {
+        if nz_b == 0 {
+            continue;
+        }
+        let lo_idx = usize::from((nz_b & 0x0F) | ((sg_b & 0x0F) << 4));
+        let hi_idx = usize::from((nz_b >> 4) | (sg_b & 0xF0));
+        let w0 = f32x4::from_slice(simd, &PTQ1_NIBBLE_TRITS_F32[lo_idx]);
+        let w1 = f32x4::from_slice(simd, &PTQ1_NIBBLE_TRITS_F32[hi_idx]);
+        let x0 = f32x4::from_slice(simd, &xo[0..4]);
+        let x1 = f32x4::from_slice(simd, &xo[4..8]);
+        acc0 = w0.mul_add(x0, acc0);
+        acc1 = w1.mul_add(x1, acc1);
+    }
+    let sum_v = acc0 + acc1;
+    let mut lanes = [0.0_f32; 4];
+    sum_v.store_slice(&mut lanes);
+    (lanes[0] + lanes[1]) + (lanes[2] + lanes[3])
+}
+
 #[allow(
     clippy::inline_always,
     reason = "fearless_simd dispatch! requires inline(always) to inherit target_feature attributes."
@@ -572,22 +671,17 @@ impl LoraProjectionPatch {
         }
         let eff_scale = self.scale * self.alpha_over_rank;
         let mut mid = vec![0.0_f32; self.rank];
-        for r in 0..self.rank {
-            let a_row = &self.lora_a[r * self.in_dim..(r + 1) * self.in_dim];
-            let mut sum = 0.0_f32;
-            for (&a, &x) in a_row.iter().zip(input.iter()) {
-                sum = a.mul_add(x, sum);
+        let level = Level::new();
+        dispatch!(level, simd => {
+            for (r, mid_slot) in mid.iter_mut().enumerate() {
+                let a_row = &self.lora_a[r * self.in_dim..(r + 1) * self.in_dim];
+                *mid_slot = f32_dot_simd(simd, a_row, input) * eff_scale;
             }
-            mid[r] = sum * eff_scale;
-        }
-        for o in 0..self.out_dim {
-            let b_row = &self.lora_b[o * self.rank..(o + 1) * self.rank];
-            let mut delta = 0.0_f32;
-            for (&b, &m) in b_row.iter().zip(mid.iter()) {
-                delta = b.mul_add(m, delta);
+            for (o, out_slot) in output.iter_mut().enumerate() {
+                let b_row = &self.lora_b[o * self.rank..(o + 1) * self.rank];
+                *out_slot += f32_dot_simd(simd, b_row, &mid);
             }
-            output[o] += delta;
-        }
+        });
         Ok(())
     }
 }
@@ -788,30 +882,22 @@ impl LinearProjection {
                 let gsize = *group_size;
                 let gbytes = gsize / 4;
                 let compute_slice = |row_offset: usize, dst_slice: &mut [f32]| {
-                    for (local_o, dst) in dst_slice.iter_mut().enumerate() {
-                        let o = row_offset + local_o;
-                        let row_scales = &scales[o * groups_per_row..(o + 1) * groups_per_row];
-                        let row_bytes = &packed_trits[o * bytes_per_row..(o + 1) * bytes_per_row];
-                        let mut acc = *dst;
-                        for (gi, &scale) in row_scales.iter().enumerate() {
-                            let start_col = gi * gsize;
-                            let byte_slice = &row_bytes[gi * gbytes..(gi + 1) * gbytes];
-                            let x_group = &x_folded[start_col..start_col + gsize];
-                            let (x_quads, _) = x_group.as_chunks::<4>();
-                            let mut g_sum = 0.0_f32;
-                            for (&b, xq) in byte_slice.iter().zip(x_quads.iter()) {
-                                for (sub, &xv) in xq.iter().enumerate() {
-                                    match (b >> (sub * 2)) & 0b11 {
-                                        0 => g_sum -= xv,
-                                        2 => g_sum += xv,
-                                        _ => {}
-                                    }
-                                }
+                    dispatch!(level, simd => {
+                        for (local_o, dst) in dst_slice.iter_mut().enumerate() {
+                            let o = row_offset + local_o;
+                            let row_scales = &scales[o * groups_per_row..(o + 1) * groups_per_row];
+                            let row_bytes = &packed_trits[o * bytes_per_row..(o + 1) * bytes_per_row];
+                            let mut acc = *dst;
+                            for (gi, &scale) in row_scales.iter().enumerate() {
+                                let start_col = gi * gsize;
+                                let byte_slice = &row_bytes[gi * gbytes..(gi + 1) * gbytes];
+                                let x_group = &x_folded[start_col..start_col + gsize];
+                                let g_sum = pq2_group_dot_simd(simd, byte_slice, x_group);
+                                acc = scale.mul_add(g_sum, acc);
                             }
-                            acc = scale.mul_add(g_sum, acc);
+                            *dst = acc;
                         }
-                        *dst = acc;
-                    }
+                    });
                 };
                 run_row_chunks(&mut out, worker_count, compute_slice);
             }
@@ -850,39 +936,24 @@ impl LinearProjection {
                 let gsize = *group_size;
                 let gbytes = gsize / 8;
                 let compute_slice = |row_offset: usize, dst_slice: &mut [f32]| {
-                    for (local_o, dst) in dst_slice.iter_mut().enumerate() {
-                        let o = row_offset + local_o;
-                        let row_scales = &scales[o * groups_per_row..(o + 1) * groups_per_row];
-                        let row_nz = &nz_mask[o * bytes_per_row..(o + 1) * bytes_per_row];
-                        let row_sg = &sign_mask[o * bytes_per_row..(o + 1) * bytes_per_row];
-                        let mut acc = *dst;
-                        for (gi, &scale) in row_scales.iter().enumerate() {
-                            let start_col = gi * gsize;
-                            let nz_slice = &row_nz[gi * gbytes..(gi + 1) * gbytes];
-                            let sg_slice = &row_sg[gi * gbytes..(gi + 1) * gbytes];
-                            let x_group = &x_folded[start_col..start_col + gsize];
-                            let (x_octs, _) = x_group.as_chunks::<8>();
-                            let mut g_sum = 0.0_f32;
-                            for ((&nz_b, &sg_b), xo) in
-                                nz_slice.iter().zip(sg_slice.iter()).zip(x_octs.iter())
-                            {
-                                if nz_b == 0 {
-                                    continue;
-                                }
-                                for (bit_i, &xv) in xo.iter().enumerate() {
-                                    if (nz_b >> bit_i) & 1 != 0 {
-                                        if (sg_b >> bit_i) & 1 != 0 {
-                                            g_sum += xv;
-                                        } else {
-                                            g_sum -= xv;
-                                        }
-                                    }
-                                }
+                    dispatch!(level, simd => {
+                        for (local_o, dst) in dst_slice.iter_mut().enumerate() {
+                            let o = row_offset + local_o;
+                            let row_scales = &scales[o * groups_per_row..(o + 1) * groups_per_row];
+                            let row_nz = &nz_mask[o * bytes_per_row..(o + 1) * bytes_per_row];
+                            let row_sg = &sign_mask[o * bytes_per_row..(o + 1) * bytes_per_row];
+                            let mut acc = *dst;
+                            for (gi, &scale) in row_scales.iter().enumerate() {
+                                let start_col = gi * gsize;
+                                let nz_slice = &row_nz[gi * gbytes..(gi + 1) * gbytes];
+                                let sg_slice = &row_sg[gi * gbytes..(gi + 1) * gbytes];
+                                let x_group = &x_folded[start_col..start_col + gsize];
+                                let g_sum = ptq1_group_dot_simd(simd, nz_slice, sg_slice, x_group);
+                                acc = scale.mul_add(g_sum, acc);
                             }
-                            acc = scale.mul_add(g_sum, acc);
+                            *dst = acc;
                         }
-                        *dst = acc;
-                    }
+                    });
                 };
                 run_row_chunks(&mut out, worker_count, compute_slice);
             }
@@ -1667,6 +1738,48 @@ mod tests {
         assert_eq!(
             out_pq2, out_ptq1,
             "PTQ1_0 repack must be bit-exact with PQ2_0"
+        );
+
+        // Exercise 16-element SIMD group loops (group_size = 32, in_dim = 64, 2 output rows).
+        let input64: Vec<f32> = (0_u8..64).map(|i| (f32::from(i) - 31.5) * 0.0625).collect();
+        let packed64: Vec<u8> = (0_u8..32)
+            .map(|i| {
+                let c0 = i % 3;
+                let c1 = (i + 1) % 3;
+                let c2 = (i + 2) % 3;
+                let c3 = (i * 2) % 3;
+                c0 | (c1 << 2) | (c2 << 4) | (c3 << 6)
+            })
+            .collect();
+        let signs64: Vec<i8> = (0_u8..64)
+            .map(|i| if i % 2 == 0 { 1 } else { -1 })
+            .collect();
+        let pq2_64 = WeightQuantization::PQ2_0 {
+            group_size: 32,
+            scales: vec![0.375, -0.625, 0.5, 0.25],
+            packed_trits: packed64,
+            hadamard_block: 16,
+            signs: signs64,
+        };
+        let ptq1_64 = repack_pq2_to_ptq1(&pq2_64)?;
+        let proj_pq2_64 = LinearProjection::new(
+            "talker.blk.0.attn_k.weight",
+            64,
+            2,
+            pq2_64,
+            Some(vec![0.125, -0.25]),
+        )?;
+        let proj_ptq1_64 = LinearProjection::new(
+            "talker.blk.0.attn_k.weight",
+            64,
+            2,
+            ptq1_64,
+            Some(vec![0.125, -0.25]),
+        )?;
+        assert_eq!(
+            proj_pq2_64.forward_vec(&input64, None)?,
+            proj_ptq1_64.forward_vec(&input64, None)?,
+            "16-wide SIMD PTQ1_0 and PQ2_0 kernels must be bit-identical"
         );
         Ok(())
     }
