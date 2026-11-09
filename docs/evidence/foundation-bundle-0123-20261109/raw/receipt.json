@@ -1,0 +1,1324 @@
+{
+  "schemaVersion": 1,
+  "kind": "bounded-foundation-bundle-operation",
+  "sourceRevision": "a7cdee96080d6cc33fb6a22b62ede94117150b9b",
+  "version": "0.1.23",
+  "operationId": "prism0123-20261109-a7cdee96",
+  "startedUtc": "2026-11-09T22:32:35.171903+00:00",
+  "maximumAggregateSeconds": 300,
+  "workCutoffSeconds": 260,
+  "cancellationCutoffSeconds": 285,
+  "driverSha256": "c37e113498fb5258a24a5d32c91865d4a0b499c2b2f8bf7f372badab0911c037",
+  "declarationSha256": "5ffb0655fd3b07260c28105d9b4233f58100c527b79a12a05f0479954c48c493",
+  "status": "failed-or-incomplete",
+  "steps": [
+    {
+      "name": "local-head",
+      "arguments": [
+        "C:\\Users\\symbi\\AppData\\Local\\Microsoft\\WinGet\\Packages\\Git.MinGit_Microsoft.Winget.Source_8wekyb3d8bbwe\\cmd\\git.exe",
+        "-C",
+        "C:\\Users\\symbi\\source\\repos\\prism-inference",
+        "rev-parse",
+        "HEAD"
+      ],
+      "powerBefore": {
+        "source": "GetSystemPowerStatus",
+        "utc": "2026-11-09T22:32:35.172589+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 99
+      },
+      "startedAtSeconds": 0.015773099999933038,
+      "stdout": "01-local-head.json",
+      "stderr": "01-local-head.stderr.log",
+      "timedOut": false,
+      "exitCode": 0,
+      "powerAfter": {
+        "source": "GetSystemPowerStatus",
+        "utc": "2026-11-09T22:32:35.235529+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 99
+      },
+      "finishedAtSeconds": 0.07872370000040974
+    },
+    {
+      "name": "local-branch",
+      "arguments": [
+        "C:\\Users\\symbi\\AppData\\Local\\Microsoft\\WinGet\\Packages\\Git.MinGit_Microsoft.Winget.Source_8wekyb3d8bbwe\\cmd\\git.exe",
+        "-C",
+        "C:\\Users\\symbi\\source\\repos\\prism-inference",
+        "branch",
+        "--show-current"
+      ],
+      "powerBefore": {
+        "source": "GetSystemPowerStatus",
+        "utc": "2026-11-09T22:32:35.238572+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 99
+      },
+      "startedAtSeconds": 0.08175949999895238,
+      "stdout": "02-local-branch.json",
+      "stderr": "02-local-branch.stderr.log",
+      "timedOut": false,
+      "exitCode": 0,
+      "powerAfter": {
+        "source": "GetSystemPowerStatus",
+        "utc": "2026-11-09T22:32:35.303596+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 99
+      },
+      "finishedAtSeconds": 0.14679119999891554
+    },
+    {
+      "name": "local-clean",
+      "arguments": [
+        "C:\\Users\\symbi\\AppData\\Local\\Microsoft\\WinGet\\Packages\\Git.MinGit_Microsoft.Winget.Source_8wekyb3d8bbwe\\cmd\\git.exe",
+        "-C",
+        "C:\\Users\\symbi\\source\\repos\\prism-inference",
+        "status",
+        "--porcelain"
+      ],
+      "powerBefore": {
+        "source": "GetSystemPowerStatus",
+        "utc": "2026-11-09T22:32:35.305848+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 99
+      },
+      "startedAtSeconds": 0.14903579999918293,
+      "stdout": "03-local-clean.json",
+      "stderr": "03-local-clean.stderr.log",
+      "timedOut": false,
+      "exitCode": 0,
+      "powerAfter": {
+        "source": "GetSystemPowerStatus",
+        "utc": "2026-11-09T22:32:35.410199+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 99
+      },
+      "finishedAtSeconds": 0.25339290000010806
+    },
+    {
+      "name": "local-origin",
+      "arguments": [
+        "C:\\Users\\symbi\\AppData\\Local\\Microsoft\\WinGet\\Packages\\Git.MinGit_Microsoft.Winget.Source_8wekyb3d8bbwe\\cmd\\git.exe",
+        "-C",
+        "C:\\Users\\symbi\\source\\repos\\prism-inference",
+        "remote",
+        "get-url",
+        "origin"
+      ],
+      "powerBefore": {
+        "source": "GetSystemPowerStatus",
+        "utc": "2026-11-09T22:32:35.410875+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 99
+      },
+      "startedAtSeconds": 0.25405639999917184,
+      "stdout": "04-local-origin.json",
+      "stderr": "04-local-origin.stderr.log",
+      "timedOut": false,
+      "exitCode": 0,
+      "powerAfter": {
+        "source": "GetSystemPowerStatus",
+        "utc": "2026-11-09T22:32:35.477244+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 99
+      },
+      "finishedAtSeconds": 0.3204387999994651
+    },
+    {
+      "name": "local-ancestor",
+      "arguments": [
+        "C:\\Users\\symbi\\AppData\\Local\\Microsoft\\WinGet\\Packages\\Git.MinGit_Microsoft.Winget.Source_8wekyb3d8bbwe\\cmd\\git.exe",
+        "-C",
+        "C:\\Users\\symbi\\source\\repos\\prism-inference",
+        "merge-base",
+        "--is-ancestor",
+        "3bd63f675fd4a97a927e0e6abc11874089814d60",
+        "a7cdee96080d6cc33fb6a22b62ede94117150b9b"
+      ],
+      "powerBefore": {
+        "source": "GetSystemPowerStatus",
+        "utc": "2026-11-09T22:32:35.486364+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 99
+      },
+      "startedAtSeconds": 0.32955289999881643,
+      "stdout": "05-local-ancestor.json",
+      "stderr": "05-local-ancestor.stderr.log",
+      "timedOut": false,
+      "exitCode": 0,
+      "powerAfter": {
+        "source": "GetSystemPowerStatus",
+        "utc": "2026-11-09T22:32:35.557008+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 99
+      },
+      "finishedAtSeconds": 0.4002030999999988
+    },
+    {
+      "name": "local-tracked",
+      "arguments": [
+        "C:\\Users\\symbi\\AppData\\Local\\Microsoft\\WinGet\\Packages\\Git.MinGit_Microsoft.Winget.Source_8wekyb3d8bbwe\\cmd\\git.exe",
+        "-C",
+        "C:\\Users\\symbi\\source\\repos\\prism-inference",
+        "ls-files",
+        "-z"
+      ],
+      "powerBefore": {
+        "source": "GetSystemPowerStatus",
+        "utc": "2026-11-09T22:32:35.557806+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 99
+      },
+      "startedAtSeconds": 0.40098889999899257,
+      "stdout": "06-local-tracked.json",
+      "stderr": "06-local-tracked.stderr.log",
+      "timedOut": false,
+      "exitCode": 0,
+      "powerAfter": {
+        "source": "GetSystemPowerStatus",
+        "utc": "2026-11-09T22:32:35.622039+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 99
+      },
+      "finishedAtSeconds": 0.465241199999582
+    },
+    {
+      "name": "canonical-source-tree",
+      "arguments": [
+        "C:\\Users\\symbi\\AppData\\Local\\Microsoft\\WinGet\\Packages\\Git.MinGit_Microsoft.Winget.Source_8wekyb3d8bbwe\\cmd\\git.exe",
+        "-C",
+        "C:\\Users\\symbi\\source\\repos\\prism-inference",
+        "ls-tree",
+        "-r",
+        "-z",
+        "a7cdee96080d6cc33fb6a22b62ede94117150b9b"
+      ],
+      "powerBefore": {
+        "source": "GetSystemPowerStatus",
+        "utc": "2026-11-09T22:32:35.780890+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 99
+      },
+      "startedAtSeconds": 0.6240780999996787,
+      "stdout": "07-canonical-source-tree.json",
+      "stderr": "07-canonical-source-tree.stderr.log",
+      "timedOut": false,
+      "exitCode": 0,
+      "powerAfter": {
+        "source": "GetSystemPowerStatus",
+        "utc": "2026-11-09T22:32:35.844022+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 99
+      },
+      "finishedAtSeconds": 0.6872167999990779
+    },
+    {
+      "name": "remote-main-before",
+      "arguments": [
+        "C:\\Users\\symbi\\AppData\\Local\\Microsoft\\WinGet\\Packages\\GitHub.cli_Microsoft.Winget.Source_8wekyb3d8bbwe\\bin\\gh.exe",
+        "api",
+        "--hostname",
+        "github.com",
+        "-H",
+        "X-GitHub-Api-Version: 2022-11-28",
+        "repos/symbiogenesis/prism-inference/git/ref/heads/main"
+      ],
+      "powerBefore": {
+        "source": "GetSystemPowerStatus",
+        "utc": "2026-11-09T22:32:35.858964+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 99
+      },
+      "startedAtSeconds": 0.702152699999715,
+      "stdout": "08-remote-main-before.json",
+      "stderr": "08-remote-main-before.stderr.log",
+      "timedOut": false,
+      "exitCode": 0,
+      "powerAfter": {
+        "source": "GetSystemPowerStatus",
+        "utc": "2026-11-09T22:32:36.400040+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 99
+      },
+      "finishedAtSeconds": 1.2432367999990674
+    },
+    {
+      "name": "authorized-exact-source-push",
+      "arguments": [
+        "C:\\Users\\symbi\\AppData\\Local\\Microsoft\\WinGet\\Packages\\Git.MinGit_Microsoft.Winget.Source_8wekyb3d8bbwe\\cmd\\git.exe",
+        "-C",
+        "C:\\Users\\symbi\\source\\repos\\prism-inference",
+        "push",
+        "origin",
+        "a7cdee96080d6cc33fb6a22b62ede94117150b9b:refs/heads/main"
+      ],
+      "powerBefore": {
+        "source": "GetSystemPowerStatus",
+        "utc": "2026-11-09T22:32:36.412181+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 99
+      },
+      "startedAtSeconds": 1.2553699999989476,
+      "stdout": "09-authorized-exact-source-push.json",
+      "stderr": "09-authorized-exact-source-push.stderr.log",
+      "timedOut": false,
+      "exitCode": 0,
+      "powerAfter": {
+        "source": "GetSystemPowerStatus",
+        "utc": "2026-11-09T22:32:38.634905+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 99
+      },
+      "finishedAtSeconds": 3.4780995000000985
+    },
+    {
+      "name": "remote-main-after",
+      "arguments": [
+        "C:\\Users\\symbi\\AppData\\Local\\Microsoft\\WinGet\\Packages\\GitHub.cli_Microsoft.Winget.Source_8wekyb3d8bbwe\\bin\\gh.exe",
+        "api",
+        "--hostname",
+        "github.com",
+        "-H",
+        "X-GitHub-Api-Version: 2022-11-28",
+        "repos/symbiogenesis/prism-inference/git/ref/heads/main"
+      ],
+      "powerBefore": {
+        "source": "GetSystemPowerStatus",
+        "utc": "2026-11-09T22:32:38.646054+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 99
+      },
+      "startedAtSeconds": 3.4892416999991838,
+      "stdout": "10-remote-main-after.json",
+      "stderr": "10-remote-main-after.stderr.log",
+      "timedOut": false,
+      "exitCode": 0,
+      "powerAfter": {
+        "source": "GetSystemPowerStatus",
+        "utc": "2026-11-09T22:32:39.201869+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 99
+      },
+      "finishedAtSeconds": 4.045074499999828
+    },
+    {
+      "name": "discover-foundation",
+      "arguments": [
+        "C:\\Users\\symbi\\AppData\\Local\\Microsoft\\WinGet\\Packages\\GitHub.cli_Microsoft.Winget.Source_8wekyb3d8bbwe\\bin\\gh.exe",
+        "api",
+        "--hostname",
+        "github.com",
+        "-H",
+        "X-GitHub-Api-Version: 2022-11-28",
+        "repos/symbiogenesis/prism-inference/actions/workflows/foundation.yml/runs?event=push&branch=main&head_sha=a7cdee96080d6cc33fb6a22b62ede94117150b9b&per_page=25"
+      ],
+      "powerBefore": {
+        "source": "GetSystemPowerStatus",
+        "utc": "2026-11-09T22:32:39.226280+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 99
+      },
+      "startedAtSeconds": 4.06947559999935,
+      "stdout": "11-discover-foundation.json",
+      "stderr": "11-discover-foundation.stderr.log",
+      "timedOut": false,
+      "exitCode": 0,
+      "powerAfter": {
+        "source": "GetSystemPowerStatus",
+        "utc": "2026-11-09T22:32:39.888630+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 99
+      },
+      "finishedAtSeconds": 4.73183649999919
+    },
+    {
+      "name": "discover-foundation",
+      "arguments": [
+        "C:\\Users\\symbi\\AppData\\Local\\Microsoft\\WinGet\\Packages\\GitHub.cli_Microsoft.Winget.Source_8wekyb3d8bbwe\\bin\\gh.exe",
+        "api",
+        "--hostname",
+        "github.com",
+        "-H",
+        "X-GitHub-Api-Version: 2022-11-28",
+        "repos/symbiogenesis/prism-inference/actions/workflows/foundation.yml/runs?event=push&branch=main&head_sha=a7cdee96080d6cc33fb6a22b62ede94117150b9b&per_page=25"
+      ],
+      "powerBefore": {
+        "source": "GetSystemPowerStatus",
+        "utc": "2026-11-09T22:32:41.906803+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 99
+      },
+      "startedAtSeconds": 6.750006199999916,
+      "stdout": "12-discover-foundation.json",
+      "stderr": "12-discover-foundation.stderr.log",
+      "timedOut": false,
+      "exitCode": 0,
+      "powerAfter": {
+        "source": "GetSystemPowerStatus",
+        "utc": "2026-11-09T22:32:42.565832+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 99
+      },
+      "finishedAtSeconds": 7.409041400000206
+    },
+    {
+      "name": "discover-foundation",
+      "arguments": [
+        "C:\\Users\\symbi\\AppData\\Local\\Microsoft\\WinGet\\Packages\\GitHub.cli_Microsoft.Winget.Source_8wekyb3d8bbwe\\bin\\gh.exe",
+        "api",
+        "--hostname",
+        "github.com",
+        "-H",
+        "X-GitHub-Api-Version: 2022-11-28",
+        "repos/symbiogenesis/prism-inference/actions/workflows/foundation.yml/runs?event=push&branch=main&head_sha=a7cdee96080d6cc33fb6a22b62ede94117150b9b&per_page=25"
+      ],
+      "powerBefore": {
+        "source": "GetSystemPowerStatus",
+        "utc": "2026-11-09T22:32:44.576622+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 99
+      },
+      "startedAtSeconds": 9.419822399999248,
+      "stdout": "13-discover-foundation.json",
+      "stderr": "13-discover-foundation.stderr.log",
+      "timedOut": false,
+      "exitCode": 0,
+      "powerAfter": {
+        "source": "GetSystemPowerStatus",
+        "utc": "2026-11-09T22:32:45.392818+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 99
+      },
+      "finishedAtSeconds": 10.236024300000281
+    },
+    {
+      "name": "cancel-automatic-foundation",
+      "arguments": [
+        "C:\\Users\\symbi\\AppData\\Local\\Microsoft\\WinGet\\Packages\\GitHub.cli_Microsoft.Winget.Source_8wekyb3d8bbwe\\bin\\gh.exe",
+        "api",
+        "--hostname",
+        "github.com",
+        "-H",
+        "X-GitHub-Api-Version: 2022-11-28",
+        "--method",
+        "POST",
+        "--input",
+        "-",
+        "repos/symbiogenesis/prism-inference/actions/runs/42712826648/cancel"
+      ],
+      "powerBefore": {
+        "source": "GetSystemPowerStatus",
+        "utc": "2026-11-09T22:32:45.440584+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 99
+      },
+      "startedAtSeconds": 10.283782200000132,
+      "stdout": "14-cancel-automatic-foundation.json",
+      "stderr": "14-cancel-automatic-foundation.stderr.log",
+      "timedOut": false,
+      "exitCode": 0,
+      "powerAfter": {
+        "source": "GetSystemPowerStatus",
+        "utc": "2026-11-09T22:32:46.489758+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 99
+      },
+      "finishedAtSeconds": 11.332961099999011
+    },
+    {
+      "name": "observe-automatic-foundation",
+      "arguments": [
+        "C:\\Users\\symbi\\AppData\\Local\\Microsoft\\WinGet\\Packages\\GitHub.cli_Microsoft.Winget.Source_8wekyb3d8bbwe\\bin\\gh.exe",
+        "api",
+        "--hostname",
+        "github.com",
+        "-H",
+        "X-GitHub-Api-Version: 2022-11-28",
+        "repos/symbiogenesis/prism-inference/actions/runs/42712826648"
+      ],
+      "powerBefore": {
+        "source": "GetSystemPowerStatus",
+        "utc": "2026-11-09T22:32:46.492312+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 99
+      },
+      "startedAtSeconds": 11.335504499998933,
+      "stdout": "15-observe-automatic-foundation.json",
+      "stderr": "15-observe-automatic-foundation.stderr.log",
+      "timedOut": false,
+      "exitCode": 0,
+      "powerAfter": {
+        "source": "GetSystemPowerStatus",
+        "utc": "2026-11-09T22:32:47.437248+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 99
+      },
+      "finishedAtSeconds": 12.280453299999863
+    },
+    {
+      "name": "observe-automatic-foundation",
+      "arguments": [
+        "C:\\Users\\symbi\\AppData\\Local\\Microsoft\\WinGet\\Packages\\GitHub.cli_Microsoft.Winget.Source_8wekyb3d8bbwe\\bin\\gh.exe",
+        "api",
+        "--hostname",
+        "github.com",
+        "-H",
+        "X-GitHub-Api-Version: 2022-11-28",
+        "repos/symbiogenesis/prism-inference/actions/runs/42712826648"
+      ],
+      "powerBefore": {
+        "source": "GetSystemPowerStatus",
+        "utc": "2026-11-09T22:32:49.478653+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 99
+      },
+      "startedAtSeconds": 14.321853899999041,
+      "stdout": "16-observe-automatic-foundation.json",
+      "stderr": "16-observe-automatic-foundation.stderr.log",
+      "timedOut": false,
+      "exitCode": 0,
+      "powerAfter": {
+        "source": "GetSystemPowerStatus",
+        "utc": "2026-11-09T22:32:50.121265+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 99
+      },
+      "finishedAtSeconds": 14.964473300000463
+    },
+    {
+      "name": "observe-automatic-foundation",
+      "arguments": [
+        "C:\\Users\\symbi\\AppData\\Local\\Microsoft\\WinGet\\Packages\\GitHub.cli_Microsoft.Winget.Source_8wekyb3d8bbwe\\bin\\gh.exe",
+        "api",
+        "--hostname",
+        "github.com",
+        "-H",
+        "X-GitHub-Api-Version: 2022-11-28",
+        "repos/symbiogenesis/prism-inference/actions/runs/42712826648"
+      ],
+      "powerBefore": {
+        "source": "GetSystemPowerStatus",
+        "utc": "2026-11-09T22:32:52.161296+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 99
+      },
+      "startedAtSeconds": 17.00449689999914,
+      "stdout": "17-observe-automatic-foundation.json",
+      "stderr": "17-observe-automatic-foundation.stderr.log",
+      "timedOut": false,
+      "exitCode": 0,
+      "powerAfter": {
+        "source": "GetSystemPowerStatus",
+        "utc": "2026-11-09T22:32:52.849733+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 99
+      },
+      "finishedAtSeconds": 17.6929369999998
+    },
+    {
+      "name": "observe-automatic-foundation",
+      "arguments": [
+        "C:\\Users\\symbi\\AppData\\Local\\Microsoft\\WinGet\\Packages\\GitHub.cli_Microsoft.Winget.Source_8wekyb3d8bbwe\\bin\\gh.exe",
+        "api",
+        "--hostname",
+        "github.com",
+        "-H",
+        "X-GitHub-Api-Version: 2022-11-28",
+        "repos/symbiogenesis/prism-inference/actions/runs/42712826648"
+      ],
+      "powerBefore": {
+        "source": "GetSystemPowerStatus",
+        "utc": "2026-11-09T22:32:54.889944+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 99
+      },
+      "startedAtSeconds": 19.733145399999557,
+      "stdout": "18-observe-automatic-foundation.json",
+      "stderr": "18-observe-automatic-foundation.stderr.log",
+      "timedOut": false,
+      "exitCode": 0,
+      "powerAfter": {
+        "source": "GetSystemPowerStatus",
+        "utc": "2026-11-09T22:32:55.634031+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 99
+      },
+      "finishedAtSeconds": 20.477237400000377
+    },
+    {
+      "name": "observe-automatic-foundation",
+      "arguments": [
+        "C:\\Users\\symbi\\AppData\\Local\\Microsoft\\WinGet\\Packages\\GitHub.cli_Microsoft.Winget.Source_8wekyb3d8bbwe\\bin\\gh.exe",
+        "api",
+        "--hostname",
+        "github.com",
+        "-H",
+        "X-GitHub-Api-Version: 2022-11-28",
+        "repos/symbiogenesis/prism-inference/actions/runs/42712826648"
+      ],
+      "powerBefore": {
+        "source": "GetSystemPowerStatus",
+        "utc": "2026-11-09T22:32:57.689967+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 99
+      },
+      "startedAtSeconds": 22.533169799999087,
+      "stdout": "19-observe-automatic-foundation.json",
+      "stderr": "19-observe-automatic-foundation.stderr.log",
+      "timedOut": false,
+      "exitCode": 0,
+      "powerAfter": {
+        "source": "GetSystemPowerStatus",
+        "utc": "2026-11-09T22:32:58.540790+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 99
+      },
+      "finishedAtSeconds": 23.383996099999422
+    },
+    {
+      "name": "observe-automatic-foundation",
+      "arguments": [
+        "C:\\Users\\symbi\\AppData\\Local\\Microsoft\\WinGet\\Packages\\GitHub.cli_Microsoft.Winget.Source_8wekyb3d8bbwe\\bin\\gh.exe",
+        "api",
+        "--hostname",
+        "github.com",
+        "-H",
+        "X-GitHub-Api-Version: 2022-11-28",
+        "repos/symbiogenesis/prism-inference/actions/runs/42712826648"
+      ],
+      "powerBefore": {
+        "source": "GetSystemPowerStatus",
+        "utc": "2026-11-09T22:33:00.590357+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 99
+      },
+      "startedAtSeconds": 25.43356809999932,
+      "stdout": "20-observe-automatic-foundation.json",
+      "stderr": "20-observe-automatic-foundation.stderr.log",
+      "timedOut": false,
+      "exitCode": 0,
+      "powerAfter": {
+        "source": "GetSystemPowerStatus",
+        "utc": "2026-11-09T22:33:01.390920+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 99
+      },
+      "finishedAtSeconds": 26.23412499999904
+    },
+    {
+      "name": "remote-exact-commit",
+      "arguments": [
+        "C:\\Users\\symbi\\AppData\\Local\\Microsoft\\WinGet\\Packages\\GitHub.cli_Microsoft.Winget.Source_8wekyb3d8bbwe\\bin\\gh.exe",
+        "api",
+        "--hostname",
+        "github.com",
+        "-H",
+        "X-GitHub-Api-Version: 2022-11-28",
+        "repos/symbiogenesis/prism-inference/git/commits/a7cdee96080d6cc33fb6a22b62ede94117150b9b"
+      ],
+      "powerBefore": {
+        "source": "GetSystemPowerStatus",
+        "utc": "2026-11-09T22:33:01.442628+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 99
+      },
+      "startedAtSeconds": 26.28582439999991,
+      "stdout": "21-remote-exact-commit.json",
+      "stderr": "21-remote-exact-commit.stderr.log",
+      "timedOut": false,
+      "exitCode": 0,
+      "powerAfter": {
+        "source": "GetSystemPowerStatus",
+        "utc": "2026-11-09T22:33:02.301254+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 99
+      },
+      "finishedAtSeconds": 27.1444575000005
+    },
+    {
+      "name": "remote-workflow",
+      "arguments": [
+        "C:\\Users\\symbi\\AppData\\Local\\Microsoft\\WinGet\\Packages\\GitHub.cli_Microsoft.Winget.Source_8wekyb3d8bbwe\\bin\\gh.exe",
+        "api",
+        "--hostname",
+        "github.com",
+        "-H",
+        "X-GitHub-Api-Version: 2022-11-28",
+        "repos/symbiogenesis/prism-inference/contents/.github/workflows/foundation-bundle.yml?ref=a7cdee96080d6cc33fb6a22b62ede94117150b9b"
+      ],
+      "powerBefore": {
+        "source": "GetSystemPowerStatus",
+        "utc": "2026-11-09T22:33:02.326784+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 99
+      },
+      "startedAtSeconds": 27.169986400000198,
+      "stdout": "22-remote-workflow.json",
+      "stderr": "22-remote-workflow.stderr.log",
+      "timedOut": false,
+      "exitCode": 0,
+      "powerAfter": {
+        "source": "GetSystemPowerStatus",
+        "utc": "2026-11-09T22:33:03.224302+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 99
+      },
+      "finishedAtSeconds": 28.067499200000384
+    },
+    {
+      "name": "canonical-workflow",
+      "arguments": [
+        "C:\\Users\\symbi\\AppData\\Local\\Microsoft\\WinGet\\Packages\\Git.MinGit_Microsoft.Winget.Source_8wekyb3d8bbwe\\cmd\\git.exe",
+        "-C",
+        "C:\\Users\\symbi\\source\\repos\\prism-inference",
+        "show",
+        "a7cdee96080d6cc33fb6a22b62ede94117150b9b:.github/workflows/foundation-bundle.yml"
+      ],
+      "powerBefore": {
+        "source": "GetSystemPowerStatus",
+        "utc": "2026-11-09T22:33:03.238378+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 99
+      },
+      "startedAtSeconds": 28.081571799999438,
+      "stdout": "23-canonical-workflow.json",
+      "stderr": "23-canonical-workflow.stderr.log",
+      "timedOut": false,
+      "exitCode": 0,
+      "powerAfter": {
+        "source": "GetSystemPowerStatus",
+        "utc": "2026-11-09T22:33:03.321789+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 99
+      },
+      "finishedAtSeconds": 28.164987399999518
+    },
+    {
+      "name": "dispatch-owned-bundle",
+      "arguments": [
+        "C:\\Users\\symbi\\AppData\\Local\\Microsoft\\WinGet\\Packages\\GitHub.cli_Microsoft.Winget.Source_8wekyb3d8bbwe\\bin\\gh.exe",
+        "api",
+        "--hostname",
+        "github.com",
+        "-H",
+        "X-GitHub-Api-Version: 2022-11-28",
+        "--method",
+        "POST",
+        "--input",
+        "-",
+        "repos/symbiogenesis/prism-inference/actions/workflows/foundation-bundle.yml/dispatches"
+      ],
+      "powerBefore": {
+        "source": "GetSystemPowerStatus",
+        "utc": "2026-11-09T22:33:03.337447+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 99
+      },
+      "startedAtSeconds": 28.180640599999606,
+      "stdout": "24-dispatch-owned-bundle.json",
+      "stderr": "24-dispatch-owned-bundle.stderr.log",
+      "timedOut": false,
+      "exitCode": 0,
+      "powerAfter": {
+        "source": "GetSystemPowerStatus",
+        "utc": "2026-11-09T22:33:04.703141+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 99
+      },
+      "finishedAtSeconds": 29.546338899999682
+    },
+    {
+      "name": "discover-foundation-bundle",
+      "arguments": [
+        "C:\\Users\\symbi\\AppData\\Local\\Microsoft\\WinGet\\Packages\\GitHub.cli_Microsoft.Winget.Source_8wekyb3d8bbwe\\bin\\gh.exe",
+        "api",
+        "--hostname",
+        "github.com",
+        "-H",
+        "X-GitHub-Api-Version: 2022-11-28",
+        "repos/symbiogenesis/prism-inference/actions/workflows/foundation-bundle.yml/runs?event=workflow_dispatch&branch=main&head_sha=a7cdee96080d6cc33fb6a22b62ede94117150b9b&per_page=25"
+      ],
+      "powerBefore": {
+        "source": "GetSystemPowerStatus",
+        "utc": "2026-11-09T22:33:04.704651+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 99
+      },
+      "startedAtSeconds": 29.547836100000495,
+      "stdout": "25-discover-foundation-bundle.json",
+      "stderr": "25-discover-foundation-bundle.stderr.log",
+      "timedOut": false,
+      "exitCode": 0,
+      "powerAfter": {
+        "source": "GetSystemPowerStatus",
+        "utc": "2026-11-09T22:33:05.517348+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 99
+      },
+      "finishedAtSeconds": 30.360542899999928
+    },
+    {
+      "name": "discover-foundation-bundle",
+      "arguments": [
+        "C:\\Users\\symbi\\AppData\\Local\\Microsoft\\WinGet\\Packages\\GitHub.cli_Microsoft.Winget.Source_8wekyb3d8bbwe\\bin\\gh.exe",
+        "api",
+        "--hostname",
+        "github.com",
+        "-H",
+        "X-GitHub-Api-Version: 2022-11-28",
+        "repos/symbiogenesis/prism-inference/actions/workflows/foundation-bundle.yml/runs?event=workflow_dispatch&branch=main&head_sha=a7cdee96080d6cc33fb6a22b62ede94117150b9b&per_page=25"
+      ],
+      "powerBefore": {
+        "source": "GetSystemPowerStatus",
+        "utc": "2026-11-09T22:33:07.519497+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 99
+      },
+      "startedAtSeconds": 32.36269279999942,
+      "stdout": "26-discover-foundation-bundle.json",
+      "stderr": "26-discover-foundation-bundle.stderr.log",
+      "timedOut": false,
+      "exitCode": 0,
+      "powerAfter": {
+        "source": "GetSystemPowerStatus",
+        "utc": "2026-11-09T22:33:08.021219+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 99
+      },
+      "finishedAtSeconds": 32.86443589999908
+    },
+    {
+      "name": "discover-foundation-bundle",
+      "arguments": [
+        "C:\\Users\\symbi\\AppData\\Local\\Microsoft\\WinGet\\Packages\\GitHub.cli_Microsoft.Winget.Source_8wekyb3d8bbwe\\bin\\gh.exe",
+        "api",
+        "--hostname",
+        "github.com",
+        "-H",
+        "X-GitHub-Api-Version: 2022-11-28",
+        "repos/symbiogenesis/prism-inference/actions/workflows/foundation-bundle.yml/runs?event=workflow_dispatch&branch=main&head_sha=a7cdee96080d6cc33fb6a22b62ede94117150b9b&per_page=25"
+      ],
+      "powerBefore": {
+        "source": "GetSystemPowerStatus",
+        "utc": "2026-11-09T22:33:08.046839+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 99
+      },
+      "startedAtSeconds": 32.89003740000044,
+      "stdout": "27-discover-foundation-bundle.json",
+      "stderr": "27-discover-foundation-bundle.stderr.log",
+      "timedOut": false,
+      "exitCode": 0,
+      "powerAfter": {
+        "source": "GetSystemPowerStatus",
+        "utc": "2026-11-09T22:33:08.507502+00:00",
+        "acConnected": true,
+        "batterySaver": false,
+        "chargePercent": 99
+      },
+      "finishedAtSeconds": 33.35070730000007
+    }
+  ],
+  "powerBefore": {
+    "source": "GetSystemPowerStatus",
+    "utc": "2026-11-09T22:32:35.156919+00:00",
+    "acConnected": true,
+    "batterySaver": false,
+    "chargePercent": 99
+  },
+  "powerAfter": {
+    "source": "GetSystemPowerStatus",
+    "utc": "2026-11-09T22:33:08.537254+00:00",
+    "acConnected": true,
+    "batterySaver": false,
+    "chargePercent": 99
+  },
+  "powerSamples": [
+    {
+      "source": "GetSystemPowerStatus",
+      "utc": "2026-11-09T22:32:35.182094+00:00",
+      "acConnected": true,
+      "batterySaver": false,
+      "chargePercent": 99
+    },
+    {
+      "source": "GetSystemPowerStatus",
+      "utc": "2026-11-09T22:32:35.246589+00:00",
+      "acConnected": true,
+      "batterySaver": false,
+      "chargePercent": 99
+    },
+    {
+      "source": "GetSystemPowerStatus",
+      "utc": "2026-11-09T22:32:35.313897+00:00",
+      "acConnected": true,
+      "batterySaver": false,
+      "chargePercent": 99
+    },
+    {
+      "source": "GetSystemPowerStatus",
+      "utc": "2026-11-09T22:32:35.417657+00:00",
+      "acConnected": true,
+      "batterySaver": false,
+      "chargePercent": 99
+    },
+    {
+      "source": "GetSystemPowerStatus",
+      "utc": "2026-11-09T22:32:35.499562+00:00",
+      "acConnected": true,
+      "batterySaver": false,
+      "chargePercent": 99
+    },
+    {
+      "source": "GetSystemPowerStatus",
+      "utc": "2026-11-09T22:32:35.565872+00:00",
+      "acConnected": true,
+      "batterySaver": false,
+      "chargePercent": 99
+    },
+    {
+      "source": "GetSystemPowerStatus",
+      "utc": "2026-11-09T22:32:35.788896+00:00",
+      "acConnected": true,
+      "batterySaver": false,
+      "chargePercent": 99
+    },
+    {
+      "source": "GetSystemPowerStatus",
+      "utc": "2026-11-09T22:32:35.866364+00:00",
+      "acConnected": true,
+      "batterySaver": false,
+      "chargePercent": 99
+    },
+    {
+      "source": "GetSystemPowerStatus",
+      "utc": "2026-11-09T22:32:36.369676+00:00",
+      "acConnected": true,
+      "batterySaver": false,
+      "chargePercent": 99
+    },
+    {
+      "source": "GetSystemPowerStatus",
+      "utc": "2026-11-09T22:32:36.421402+00:00",
+      "acConnected": true,
+      "batterySaver": false,
+      "chargePercent": 99
+    },
+    {
+      "source": "GetSystemPowerStatus",
+      "utc": "2026-11-09T22:32:36.927345+00:00",
+      "acConnected": true,
+      "batterySaver": false,
+      "chargePercent": 99
+    },
+    {
+      "source": "GetSystemPowerStatus",
+      "utc": "2026-11-09T22:32:37.439068+00:00",
+      "acConnected": true,
+      "batterySaver": false,
+      "chargePercent": 99
+    },
+    {
+      "source": "GetSystemPowerStatus",
+      "utc": "2026-11-09T22:32:37.946107+00:00",
+      "acConnected": true,
+      "batterySaver": false,
+      "chargePercent": 99
+    },
+    {
+      "source": "GetSystemPowerStatus",
+      "utc": "2026-11-09T22:32:38.452451+00:00",
+      "acConnected": true,
+      "batterySaver": false,
+      "chargePercent": 99
+    },
+    {
+      "source": "GetSystemPowerStatus",
+      "utc": "2026-11-09T22:32:38.650991+00:00",
+      "acConnected": true,
+      "batterySaver": false,
+      "chargePercent": 99
+    },
+    {
+      "source": "GetSystemPowerStatus",
+      "utc": "2026-11-09T22:32:39.160095+00:00",
+      "acConnected": true,
+      "batterySaver": false,
+      "chargePercent": 99
+    },
+    {
+      "source": "GetSystemPowerStatus",
+      "utc": "2026-11-09T22:32:39.264740+00:00",
+      "acConnected": true,
+      "batterySaver": false,
+      "chargePercent": 99
+    },
+    {
+      "source": "GetSystemPowerStatus",
+      "utc": "2026-11-09T22:32:39.781676+00:00",
+      "acConnected": true,
+      "batterySaver": false,
+      "chargePercent": 99
+    },
+    {
+      "source": "GetSystemPowerStatus",
+      "utc": "2026-11-09T22:32:39.906209+00:00",
+      "acConnected": true,
+      "batterySaver": false,
+      "chargePercent": 99
+    },
+    {
+      "source": "GetSystemPowerStatus",
+      "utc": "2026-11-09T22:32:41.917113+00:00",
+      "acConnected": true,
+      "batterySaver": false,
+      "chargePercent": 99
+    },
+    {
+      "source": "GetSystemPowerStatus",
+      "utc": "2026-11-09T22:32:42.421122+00:00",
+      "acConnected": true,
+      "batterySaver": false,
+      "chargePercent": 99
+    },
+    {
+      "source": "GetSystemPowerStatus",
+      "utc": "2026-11-09T22:32:42.574899+00:00",
+      "acConnected": true,
+      "batterySaver": false,
+      "chargePercent": 99
+    },
+    {
+      "source": "GetSystemPowerStatus",
+      "utc": "2026-11-09T22:32:44.587353+00:00",
+      "acConnected": true,
+      "batterySaver": false,
+      "chargePercent": 99
+    },
+    {
+      "source": "GetSystemPowerStatus",
+      "utc": "2026-11-09T22:32:45.094696+00:00",
+      "acConnected": true,
+      "batterySaver": false,
+      "chargePercent": 99
+    },
+    {
+      "source": "GetSystemPowerStatus",
+      "utc": "2026-11-09T22:32:45.465732+00:00",
+      "acConnected": true,
+      "batterySaver": false,
+      "chargePercent": 99
+    },
+    {
+      "source": "GetSystemPowerStatus",
+      "utc": "2026-11-09T22:32:45.975838+00:00",
+      "acConnected": true,
+      "batterySaver": false,
+      "chargePercent": 99
+    },
+    {
+      "source": "GetSystemPowerStatus",
+      "utc": "2026-11-09T22:32:46.477381+00:00",
+      "acConnected": true,
+      "batterySaver": false,
+      "chargePercent": 99
+    },
+    {
+      "source": "GetSystemPowerStatus",
+      "utc": "2026-11-09T22:32:46.512262+00:00",
+      "acConnected": true,
+      "batterySaver": false,
+      "chargePercent": 99
+    },
+    {
+      "source": "GetSystemPowerStatus",
+      "utc": "2026-11-09T22:32:47.021668+00:00",
+      "acConnected": true,
+      "batterySaver": false,
+      "chargePercent": 99
+    },
+    {
+      "source": "GetSystemPowerStatus",
+      "utc": "2026-11-09T22:32:47.476770+00:00",
+      "acConnected": true,
+      "batterySaver": false,
+      "chargePercent": 99
+    },
+    {
+      "source": "GetSystemPowerStatus",
+      "utc": "2026-11-09T22:32:49.491180+00:00",
+      "acConnected": true,
+      "batterySaver": false,
+      "chargePercent": 99
+    },
+    {
+      "source": "GetSystemPowerStatus",
+      "utc": "2026-11-09T22:32:49.994217+00:00",
+      "acConnected": true,
+      "batterySaver": false,
+      "chargePercent": 99
+    },
+    {
+      "source": "GetSystemPowerStatus",
+      "utc": "2026-11-09T22:32:50.159657+00:00",
+      "acConnected": true,
+      "batterySaver": false,
+      "chargePercent": 99
+    },
+    {
+      "source": "GetSystemPowerStatus",
+      "utc": "2026-11-09T22:32:52.172548+00:00",
+      "acConnected": true,
+      "batterySaver": false,
+      "chargePercent": 99
+    },
+    {
+      "source": "GetSystemPowerStatus",
+      "utc": "2026-11-09T22:32:52.679690+00:00",
+      "acConnected": true,
+      "batterySaver": false,
+      "chargePercent": 99
+    },
+    {
+      "source": "GetSystemPowerStatus",
+      "utc": "2026-11-09T22:32:52.887493+00:00",
+      "acConnected": true,
+      "batterySaver": false,
+      "chargePercent": 99
+    },
+    {
+      "source": "GetSystemPowerStatus",
+      "utc": "2026-11-09T22:32:54.901160+00:00",
+      "acConnected": true,
+      "batterySaver": false,
+      "chargePercent": 99
+    },
+    {
+      "source": "GetSystemPowerStatus",
+      "utc": "2026-11-09T22:32:55.408356+00:00",
+      "acConnected": true,
+      "batterySaver": false,
+      "chargePercent": 99
+    },
+    {
+      "source": "GetSystemPowerStatus",
+      "utc": "2026-11-09T22:32:55.687069+00:00",
+      "acConnected": true,
+      "batterySaver": false,
+      "chargePercent": 99
+    },
+    {
+      "source": "GetSystemPowerStatus",
+      "utc": "2026-11-09T22:32:57.710644+00:00",
+      "acConnected": true,
+      "batterySaver": false,
+      "chargePercent": 99
+    },
+    {
+      "source": "GetSystemPowerStatus",
+      "utc": "2026-11-09T22:32:58.216908+00:00",
+      "acConnected": true,
+      "batterySaver": false,
+      "chargePercent": 99
+    },
+    {
+      "source": "GetSystemPowerStatus",
+      "utc": "2026-11-09T22:32:58.588073+00:00",
+      "acConnected": true,
+      "batterySaver": false,
+      "chargePercent": 99
+    },
+    {
+      "source": "GetSystemPowerStatus",
+      "utc": "2026-11-09T22:33:00.602828+00:00",
+      "acConnected": true,
+      "batterySaver": false,
+      "chargePercent": 99
+    },
+    {
+      "source": "GetSystemPowerStatus",
+      "utc": "2026-11-09T22:33:01.112278+00:00",
+      "acConnected": true,
+      "batterySaver": false,
+      "chargePercent": 99
+    },
+    {
+      "source": "GetSystemPowerStatus",
+      "utc": "2026-11-09T22:33:01.461956+00:00",
+      "acConnected": true,
+      "batterySaver": false,
+      "chargePercent": 99
+    },
+    {
+      "source": "GetSystemPowerStatus",
+      "utc": "2026-11-09T22:33:01.983240+00:00",
+      "acConnected": true,
+      "batterySaver": false,
+      "chargePercent": 99
+    },
+    {
+      "source": "GetSystemPowerStatus",
+      "utc": "2026-11-09T22:33:02.359459+00:00",
+      "acConnected": true,
+      "batterySaver": false,
+      "chargePercent": 99
+    },
+    {
+      "source": "GetSystemPowerStatus",
+      "utc": "2026-11-09T22:33:02.865350+00:00",
+      "acConnected": true,
+      "batterySaver": false,
+      "chargePercent": 99
+    },
+    {
+      "source": "GetSystemPowerStatus",
+      "utc": "2026-11-09T22:33:03.250895+00:00",
+      "acConnected": true,
+      "batterySaver": false,
+      "chargePercent": 99
+    },
+    {
+      "source": "GetSystemPowerStatus",
+      "utc": "2026-11-09T22:33:03.348888+00:00",
+      "acConnected": true,
+      "batterySaver": false,
+      "chargePercent": 99
+    },
+    {
+      "source": "GetSystemPowerStatus",
+      "utc": "2026-11-09T22:33:03.861514+00:00",
+      "acConnected": true,
+      "batterySaver": false,
+      "chargePercent": 99
+    },
+    {
+      "source": "GetSystemPowerStatus",
+      "utc": "2026-11-09T22:33:04.370582+00:00",
+      "acConnected": true,
+      "batterySaver": false,
+      "chargePercent": 99
+    },
+    {
+      "source": "GetSystemPowerStatus",
+      "utc": "2026-11-09T22:33:04.713706+00:00",
+      "acConnected": true,
+      "batterySaver": false,
+      "chargePercent": 99
+    },
+    {
+      "source": "GetSystemPowerStatus",
+      "utc": "2026-11-09T22:33:05.229316+00:00",
+      "acConnected": true,
+      "batterySaver": false,
+      "chargePercent": 99
+    },
+    {
+      "source": "GetSystemPowerStatus",
+      "utc": "2026-11-09T22:33:05.518989+00:00",
+      "acConnected": true,
+      "batterySaver": false,
+      "chargePercent": 99
+    },
+    {
+      "source": "GetSystemPowerStatus",
+      "utc": "2026-11-09T22:33:07.524862+00:00",
+      "acConnected": true,
+      "batterySaver": false,
+      "chargePercent": 99
+    },
+    {
+      "source": "GetSystemPowerStatus",
+      "utc": "2026-11-09T22:33:08.063370+00:00",
+      "acConnected": true,
+      "batterySaver": false,
+      "chargePercent": 99
+    }
+  ],
+  "dispatchAttempted": true,
+  "pushAttempted": true,
+  "fullFoundationMayHaveStarted": true,
+  "cleanupIncomplete": true,
+  "clockClosed": true,
+  "clockRestarted": false,
+  "retries": 0,
+  "modelsExecuted": 0,
+  "benchmarksExecuted": 0,
+  "otherCiQueried": false,
+  "fullFoundationQualified": false,
+  "performanceQualified": false,
+  "continuousPowerStabilityProven": false,
+  "ownedRuns": {
+    "automatic-foundation": {
+      "runId": 42712826648,
+      "runAttempt": 1,
+      "workflow": "foundation.yml",
+      "event": "push",
+      "nonce": null,
+      "status": "completed",
+      "url": "https://github.com/symbiogenesis/prism-inference/actions/runs/42712826648",
+      "conclusion": "cancelled",
+      "terminalConfirmed": true,
+      "cancelAttempted": true
+    }
+  },
+  "elapsedSeconds": 33.38045190000048,
+  "remoteRevisionBefore": "3bd63f675fd4a97a927e0e6abc11874089814d60",
+  "remoteRevisionAfter": "a7cdee96080d6cc33fb6a22b62ede94117150b9b",
+  "remoteWorkflowSha256": "b1cc0921b1b67ab5b3b9bb29e1941699c64a7d35438510f90bf02ace6da4ca34",
+  "failure": "RuntimeError: Run identity differs from the one authorized source/workflow operation",
+  "bundleCleanup": "RuntimeError: Run identity differs from the one authorized source/workflow operation"
+}

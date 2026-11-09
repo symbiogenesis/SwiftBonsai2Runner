@@ -179,6 +179,16 @@ Clippy errors before packaging or upload. Preserve its closed 52.8568851-second
 clock,71 AC/saver-off/99% observations and verified archive; no retry. Complete
 corrected-source validation through the separately authorized bounded hosted
 Foundation bundle, then normalized package verification and actual registry upload.
+The [first bounded Foundation operation](docs/evidence/foundation-bundle-0123-20261109/summary.json)
+pushed the exact authorized Prism source `a7cdee9`, then stopped on an operator
+run-name identity error. Its automatic and dedicated runs are both confirmed
+cancelled, with cleanup observed137.31 seconds from the original start inside
+the300-second deadline; preserve the original raw failure and separate cleanup
+supplement. The correction passed six offline fixture controls in0.149 seconds.
+Execute the [prepared source-ready attempt](docs/evidence/foundation-bundle-0123-20261109-attempt2/workload-plan.json)
+only after a new explicit owner authorization: one fresh nonce, no push or old-run
+queries, and one unchanged five-minute aggregate bound. Do not reopen the first
+clock or treat the source push and offline replay as a successful bundle.
 Only the runtime crate changes; preserve the five existing helper versions. Verify
 the genuine bundle's source/archive/executable identities before repinning Runner,
 keeping full Foundation and application acceptance independently pending. Declare a

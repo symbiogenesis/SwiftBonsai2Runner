@@ -1,0 +1,11 @@
+test_automatic_foundation_still_binds_exact_source_push_identity (test_operate.RunIdentityTests.test_automatic_foundation_still_binds_exact_source_push_identity) ... ok
+test_bundle_requires_explicit_nonce_and_matching_workflow_event (test_operate.RunIdentityTests.test_bundle_requires_explicit_nonce_and_matching_workflow_event) ... ok
+test_observed_dynamic_run_name_binds_without_display_label_authority (test_operate.RunIdentityTests.test_observed_dynamic_run_name_binds_without_display_label_authority) ... ok
+test_reobservation_cannot_change_bound_run_or_workflow_id (test_operate.RunIdentityTests.test_reobservation_cannot_change_bound_run_or_workflow_id) ... ok
+test_run_and_workflow_ids_require_positive_integers (test_operate.RunIdentityTests.test_run_and_workflow_ids_require_positive_integers) ... ok
+test_source_workflow_event_branch_nonce_and_attempt_mismatches_fail (test_operate.RunIdentityTests.test_source_workflow_event_branch_nonce_and_attempt_mismatches_fail) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.001s
+
+OK

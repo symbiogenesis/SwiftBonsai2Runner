@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "kind": "focused-offline-operator-identity-regression",
+  "fixedWork": "Run the six new test_operate.py metadata-identity controls once against the retained response fixture and its negative cases. Observe power before and after, and retain result, exact input hashes and final clock. No CI, network, push, compiler or model operation.",
+  "maximumAggregateSeconds": 30,
+  "conservativeEstimateSeconds": 3,
+  "testTimeoutSeconds": 10,
+  "reason": "Focused local source validation for the newly corrected identity predicate, using existing immutable data only. This does not rerun or reopen the failed Foundation operation.",
+  "retries": 0,
+  "clockRestartAllowed": false
+}

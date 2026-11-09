@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "kind": "bounded-foundation-operator-identity-failure",
+  "sourceRevision": "a7cdee96080d6cc33fb6a22b62ede94117150b9b",
+  "version": "0.1.23",
+  "status": "source-pushed-both-owned-runs-confirmed-cancelled-no-bundle",
+  "authorization": "Owner approved this exact six-commit Prism main push and one bounded Foundation operation. This attempt is closed. Another dispatch requires explicit new authorization under the no-retry rule.",
+  "push": {"from": "3bd63f675fd4a97a927e0e6abc11874089814d60", "to": "a7cdee96080d6cc33fb6a22b62ede94117150b9b", "nonForce": true, "remoteConfirmed": true, "additionalPushesAuthorized": false},
+  "runs": [
+    {"id": 42712826648, "workflow": "foundation.yml", "event": "push", "terminal": true, "conclusion": "cancelled", "receipt": "raw/receipt.json"},
+    {"id": 42712889670, "workflow": "foundation-bundle.yml", "event": "workflow_dispatch", "operationId": "prism0123-20261109-a7cdee96", "terminal": true, "conclusion": "cancelled", "receipt": "cleanup-supplement.json"}
+  ],
+  "failure": {
+    "cause": "The operator incorrectly required API run.name to equal the static workflow label. The actual API response has the dynamic run-name in name and display_title. Authoritative source/path/event/branch/attempt/nonce fields matched.",
+    "scope": "Metadata admission failed while the dedicated run was queued; no accepted final-source check or artifact was obtained.",
+    "originalRawReceipt": "raw/receipt.json",
+    "originalTerminalClock": "raw/final-clock.json",
+    "originalElapsedSecondsThroughRetention": 33.89289099999951,
+    "originalCleanupIncomplete": true,
+    "supplementaryCleanup": "cleanup-supplement.json",
+    "cleanupElapsedSecondsFromOriginalStart": 137.309955,
+    "cleanupTimeSource": "UTC elapsed from the retained original start under its unchanged absolute300-second deadline. The original raw monotonic clock and receipts remain unchanged.",
+    "bothRunsTerminalConfirmed": true,
+    "withinOriginalAggregateAllowance": true,
+    "newDispatchesDuringCleanup": 0,
+    "clockRestarted": false
+  },
+  "correction": {
+    "scope": "Admit stable source/workflow/event/branch/nonce/attempt and positive integer run/workflow IDs; retain those IDs on reobservation. Display names are not identity authority.",
+    "offlineReplay": "offline-replay.json",
+    "offlineClock": "offline-replay-clock.json",
+    "offlineControlsPassed": 6,
+    "elapsedSecondsThroughReceiptRetention": 0.14905730000100448,
+    "modelsCiNetworkAndPushesDuringReplay": 0,
+    "fixturePostReplayReview": {"path": "fixtures/observed-bundle-run.json", "bytes": 415, "sha256": "91a0cb23c9ee0cdad4fdc760fc788c0c4a63eee21b8f0eb256b615b98f15c71c", "scope": "Static later source review. The original replay input map omitted this nested fixture; this is not a contemporaneous replay hash."}
+  },
+  "power": {"raw": "raw/receipt.json and raw/final-clock.json", "cleanup": "cleanup-supplement.json", "offlineReplay": "offline-replay.json", "observedEndpoints": "AC connected, battery saver off,99% charge", "continuousPowerStabilityEstablished": false},
+  "publicationAttempted": false,
+  "runnerRepinned": false,
+  "performanceMeasured": false,
+  "fullFoundationQualified": false,
+  "remaining": "The separately prepared source-ready attempt requires a new owner approval, fresh nonce and fresh evidence. It performs no push and no historical-run handling. Publication, true binary repin and performance remain gated on actual successful verified bundle evidence."
+}
