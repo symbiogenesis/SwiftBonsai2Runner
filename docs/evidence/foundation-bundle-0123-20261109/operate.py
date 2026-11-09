@@ -38,6 +38,29 @@ EXECUTABLES = {"prism-inference.exe", "bonsai-token-worker.exe", "bonsai-swift-w
 FILES = EXECUTABLES | {"LICENSE", "NOTICE", "PRISM-LICENSE.txt", "CAMELID-LICENSE.txt"}
 
 
+def run_identity_matches(run, workflow, event, nonce=None, *, expected_run_id=None,
+                         expected_workflow_id=None):
+    """Bind stable source/workflow/run identity; GitHub's name is a display label."""
+    if workflow not in (WORKFLOW, FULL_WORKFLOW):
+        return False
+    expected_event = "workflow_dispatch" if workflow == WORKFLOW else "push"
+    if event != expected_event or (workflow == WORKFLOW and not isinstance(nonce, str)):
+        return False
+    run_id, workflow_id = run.get("id"), run.get("workflow_id")
+    path = run.get("path")
+    # API name may contain the dynamic run-name, as in the retained failed run.
+    # Path, committed head, event and unique display_title nonce establish ownership.
+    return (type(run_id) is int and run_id > 0
+            and type(workflow_id) is int and workflow_id > 0
+            and type(run.get("run_attempt")) is int and run["run_attempt"] == 1
+            and run.get("head_sha") == REVISION and run.get("head_branch") == "main"
+            and run.get("event") == event and isinstance(path, str)
+            and path.split("@", 1)[0] == ".github/workflows/" + workflow
+            and (nonce is None or run.get("display_title") == "Foundation bundle / " + nonce)
+            and (expected_run_id is None or run_id == expected_run_id)
+            and (expected_workflow_id is None or workflow_id == expected_workflow_id))
+
+
 def utc():
     return datetime.now(timezone.utc).isoformat()
 
@@ -236,14 +259,13 @@ class Operation:
         return candidates[0] if candidates else None
 
     def bind_run(self, label, run, workflow, event, nonce=None):
-        if (not isinstance(run.get("id"), int) or run["id"] <= 0 or run.get("run_attempt") != 1
-                or run.get("head_sha") != REVISION or run.get("head_branch") != "main"
-                or run.get("event") != event
-                or run.get("name") != ("Foundation bundle" if workflow == WORKFLOW else "Foundation")
-                or run.get("path", "").split("@", 1)[0] != ".github/workflows/" + workflow
-                or nonce is not None and run.get("display_title") != "Foundation bundle / " + nonce):
+        previous = self.owned.get(label, {})
+        if not run_identity_matches(run, workflow, event, nonce,
+                                    expected_run_id=previous.get("runId"),
+                                    expected_workflow_id=previous.get("workflowId")):
             raise RuntimeError("Run identity differs from the one authorized source/workflow operation")
         self.owned[label] = {"runId": run["id"], "runAttempt": 1, "workflow": workflow,
+                             "workflowId": run["workflow_id"],
                              "event": event, "nonce": nonce, "status": run["status"],
                              "url": run.get("html_url"),
                              "conclusion": run.get("conclusion"), "terminalConfirmed": run["status"] == "completed",
