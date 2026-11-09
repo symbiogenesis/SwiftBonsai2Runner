@@ -6,8 +6,8 @@
 
 use crate::{
     AdmittedChat, MAX_HEADER_BYTES, MAX_HEADERS, Object, PendingChat, Rejection, configuration,
-    response::{MAX_RESPONSE_BYTES, validate_content_metadata, validate_metadata},
-    singleton, wire,
+    response::{MAX_RESPONSE_BYTES, valid_content_type},
+    wire,
 };
 use http::{Response, StatusCode, Version};
 use serde::Deserialize;
@@ -102,12 +102,13 @@ pub async fn count_and_admit<S>(
 where
     S: AsyncRead + AsyncWrite + Unpin + 'static,
 {
-    let response = exchange(stream, &pending.body, false, COUNT_ROUTE, policy, deadline).await?;
-    let context_rejected = response.status() == StatusCode::PAYLOAD_TOO_LARGE;
+    let (status, body) =
+        exchange(stream, &pending.body, false, COUNT_ROUTE, policy, deadline).await?;
+    let context_rejected = status == StatusCode::PAYLOAD_TOO_LARGE;
     // Read directly into the final allocation, keeping one byte for the
     // oversized-body probe without allowing unbounded read_to_end growth.
     let limit = u64::try_from(MAX_COUNT_BYTES + 1).map_err(|_| BackendError::CountSchema)?;
-    let mut body = response.into_body().take(limit);
+    let mut body = body.take(limit);
     let mut bytes = Vec::with_capacity(MAX_COUNT_BYTES + 1);
     body.read_to_end(&mut bytes).await.map_err(|error| {
         if error.kind() == io::ErrorKind::TimedOut {
@@ -182,7 +183,7 @@ pub async fn request_chat<S>(
 where
     S: AsyncRead + AsyncWrite + Unpin + 'static,
 {
-    exchange(
+    let (status, body) = exchange(
         stream,
         chat.backend_body(),
         chat.streams_response(),
@@ -190,7 +191,20 @@ where
         policy,
         deadline,
     )
-    .await
+    .await?;
+    Response::builder()
+        .version(Version::HTTP_11)
+        .status(status)
+        .header(
+            http::header::CONTENT_TYPE,
+            if chat.streams_response() {
+                "text/event-stream"
+            } else {
+                "application/json"
+            },
+        )
+        .body(body)
+        .map_err(|_| BackendError::Metadata)
 }
 
 // Production transfers the body into the exchange so it can be released before
@@ -200,11 +214,11 @@ pub(crate) async fn request_chat_owned<S>(
     chat: AdmittedChat,
     policy: &BackendPolicy,
     deadline: Instant,
-) -> Result<Response<BackendBody<S>>, BackendError>
+) -> Result<BackendBody<S>, BackendError>
 where
     S: AsyncRead + AsyncWrite + Unpin + 'static,
 {
-    exchange(
+    let (_, body) = exchange(
         stream,
         chat.body,
         chat.stream,
@@ -212,7 +226,8 @@ where
         policy,
         deadline,
     )
-    .await
+    .await?;
+    Ok(body)
 }
 
 async fn exchange<S, B: AsRef<[u8]>>(
@@ -222,7 +237,7 @@ async fn exchange<S, B: AsRef<[u8]>>(
     route: &str,
     policy: &BackendPolicy,
     deadline: Instant,
-) -> Result<Response<BackendBody<S>>, BackendError>
+) -> Result<(StatusCode, BackendBody<S>), BackendError>
 where
     S: AsyncRead + AsyncWrite + Unpin + 'static,
 {
@@ -248,17 +263,20 @@ where
     drop(body);
 
     let mut reader = BufReader::with_capacity(8192, stream);
-    let (metadata, framing) =
+    let (status, framing) =
         read_head(&mut reader, streaming, route == COUNT_ROUTE, deadline).await?;
     ensure_time(deadline)?;
-    Ok(metadata.map(|()| BackendBody {
-        reader: Some(reader),
-        framing,
-        remaining_budget: MAX_RESPONSE_BYTES,
-        metadata_bytes: 0,
-        deadline,
-        timer: Box::pin(sleep_until(deadline)),
-    }))
+    Ok((
+        status,
+        BackendBody {
+            reader: Some(reader),
+            framing,
+            remaining_budget: MAX_RESPONSE_BYTES,
+            metadata_bytes: 0,
+            deadline,
+            timer: Box::pin(sleep_until(deadline)),
+        },
+    ))
 }
 
 async fn read_head<S: AsyncRead + Unpin>(
@@ -266,7 +284,7 @@ async fn read_head<S: AsyncRead + Unpin>(
     streaming: bool,
     counting: bool,
     deadline: Instant,
-) -> Result<(Response<()>, Framing), BackendError> {
+) -> Result<(StatusCode, Framing), BackendError> {
     ensure_time(deadline)?;
     let available = timeout_at(deadline, reader.fill_buf())
         .await
@@ -319,7 +337,7 @@ fn parse_head(
     raw: &[u8],
     streaming: bool,
     counting: bool,
-) -> Result<(Response<()>, Framing), BackendError> {
+) -> Result<(StatusCode, Framing), BackendError> {
     if !raw.starts_with(b"HTTP/1.1 ") || !wire::valid_line_endings(raw) {
         return Err(BackendError::WireSyntax);
     }
@@ -338,30 +356,29 @@ fn parse_head(
     if parsed.version != Some(1) {
         return Err(BackendError::Metadata);
     }
-    let mut response = Response::builder()
-        .version(Version::HTTP_11)
-        .status(status)
-        .body(())
-        .map_err(|_| BackendError::Metadata)?;
-    wire::append_headers(response.headers_mut(), parsed.headers)
-        .map_err(|()| BackendError::WireSyntax)?;
-    if status == StatusCode::PAYLOAD_TOO_LARGE {
-        validate_count_rejection_metadata(&response)?;
-    } else {
-        validate_metadata(&response, streaming).map_err(|_| BackendError::Metadata)?;
+    let headers = &*parsed.headers;
+    if !wire::valid_header_syntax(headers) {
+        return Err(BackendError::WireSyntax);
     }
-    let headers = response.headers();
-    if headers.contains_key("trailer") || headers.contains_key("upgrade") {
+    if status == StatusCode::PAYLOAD_TOO_LARGE {
+        validate_count_rejection_metadata(headers)?;
+    } else {
+        validate_wire_content_metadata(headers, streaming)?;
+    }
+    if wire::has_header(headers, "trailer") || wire::has_header(headers, "upgrade") {
         return Err(BackendError::Framing);
     }
-    if let Some(connection) = singleton(headers, "connection").map_err(|_| BackendError::Framing)?
+    if let Some(connection) =
+        wire::singleton_slice(headers, "connection").map_err(|_| BackendError::Framing)?
         && !connection.eq_ignore_ascii_case(b"close")
         && !connection.eq_ignore_ascii_case(b"keep-alive")
     {
         return Err(BackendError::Framing);
     }
-    let length = singleton(headers, "content-length").map_err(|_| BackendError::Framing)?;
-    let transfer = singleton(headers, "transfer-encoding").map_err(|_| BackendError::Framing)?;
+    let length =
+        wire::singleton_slice(headers, "content-length").map_err(|_| BackendError::Framing)?;
+    let transfer =
+        wire::singleton_slice(headers, "transfer-encoding").map_err(|_| BackendError::Framing)?;
     let framing = match (length, transfer) {
         (Some(bytes), None) => {
             let length = wire::content_length(bytes).map_err(|_| BackendError::Framing)?;
@@ -377,17 +394,35 @@ fn parse_head(
         },
         _ => return Err(BackendError::Framing),
     };
-    Ok((response, framing))
+    Ok((status, framing))
 }
 
-fn validate_count_rejection_metadata(response: &Response<()>) -> Result<(), BackendError> {
-    validate_content_metadata(response, false).map_err(|_| BackendError::Metadata)?;
+fn validate_wire_content_metadata(
+    headers: &[httparse::Header<'_>],
+    streaming: bool,
+) -> Result<(), BackendError> {
+    if wire::has_header(headers, "content-encoding") {
+        return Err(BackendError::Metadata);
+    }
+    let content_type = wire::singleton_slice(headers, "content-type")
+        .map_err(|_| BackendError::Metadata)?
+        .ok_or(BackendError::Metadata)?;
+    if !valid_content_type(content_type, streaming) {
+        return Err(BackendError::Metadata);
+    }
+    Ok(())
+}
+
+fn validate_count_rejection_metadata(
+    headers: &[httparse::Header<'_>],
+) -> Result<(), BackendError> {
+    validate_wire_content_metadata(headers, false)?;
     for (name, expected) in [
         ("connection", b"close".as_slice()),
         ("cache-control", b"no-store"),
         ("x-content-type-options", b"nosniff"),
     ] {
-        if !singleton(response.headers(), name)
+        if !wire::singleton_slice(headers, name)
             .map_err(|_| BackendError::Metadata)?
             .is_some_and(|value| value.eq_ignore_ascii_case(expected))
         {

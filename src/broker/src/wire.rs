@@ -5,7 +5,7 @@
     reason = "Keep shared HTTP helpers explicitly crate scoped"
 )]
 
-use http::{HeaderMap, HeaderName, HeaderValue};
+use crate::Rejection;
 
 pub(super) enum LengthError {
     Syntax,
@@ -41,15 +41,58 @@ pub(super) fn valid_line_endings(raw: &[u8]) -> bool {
     })
 }
 
-pub(super) fn append_headers(
-    target: &mut HeaderMap,
-    headers: &[httparse::Header<'_>],
-) -> Result<(), ()> {
-    for header in headers {
-        let name = HeaderName::from_bytes(header.name.as_bytes()).map_err(|_| ())?;
-        let value = HeaderValue::from_bytes(header.value).map_err(|_| ())?;
-        // insert() would hide duplicate critical headers, including identical CL.
-        target.append(name, value);
+pub(super) fn valid_header_syntax(headers: &[httparse::Header<'_>]) -> bool {
+    headers.iter().all(|header| {
+        !header.name.is_empty()
+            && header.name.bytes().all(is_header_name_byte)
+            && header
+                .value
+                .iter()
+                .all(|&byte| byte == b'\t' || (byte >= b' ' && byte != 0x7f))
+    })
+}
+
+const fn is_header_name_byte(byte: u8) -> bool {
+    matches!(
+        byte,
+        b'0'..=b'9'
+            | b'a'..=b'z'
+            | b'A'..=b'Z'
+            | b'!'
+            | b'#'
+            | b'$'
+            | b'%'
+            | b'&'
+            | b'\''
+            | b'*'
+            | b'+'
+            | b'-'
+            | b'.'
+            | b'^'
+            | b'_'
+            | b'`'
+            | b'|'
+            | b'~'
+    )
+}
+
+pub(super) fn has_header(headers: &[httparse::Header<'_>], name: &str) -> bool {
+    headers
+        .iter()
+        .any(|header| header.name.eq_ignore_ascii_case(name))
+}
+
+pub(super) fn singleton_slice<'a>(
+    headers: &'a [httparse::Header<'a>],
+    name: &str,
+) -> Result<Option<&'a [u8]>, Rejection> {
+    let mut values = headers
+        .iter()
+        .filter(|header| header.name.eq_ignore_ascii_case(name))
+        .map(|header| header.value);
+    let first = values.next();
+    if values.next().is_some() {
+        return Err(Rejection::Headers);
     }
-    Ok(())
+    Ok(first)
 }

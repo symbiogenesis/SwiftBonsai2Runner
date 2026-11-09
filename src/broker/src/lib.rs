@@ -237,6 +237,81 @@ impl RequestPolicy {
             pinned_abliteration: self.pinned_abliteration,
         })
     }
+
+    pub(crate) fn check_wire_headers(
+        &self,
+        headers: &[httparse::Header<'_>],
+    ) -> Result<AuthorizedHead, Rejection> {
+        if headers.len() > MAX_HEADERS {
+            return Err(Rejection::Headers);
+        }
+        let bytes = headers.iter().try_fold(0usize, |total, header| {
+            total.checked_add(header.name.len() + header.value.len() + 4)
+        });
+        if bytes.is_none_or(|n| n > MAX_HEADER_BYTES) {
+            return Err(Rejection::Headers);
+        }
+        let auth =
+            wire::singleton_slice(headers, "authorization")?.ok_or(Rejection::Unauthorized)?;
+        if auth.len() != self.authorization.len()
+            || !bool::from(auth.ct_eq(self.authorization.as_slice()))
+        {
+            return Err(Rejection::Unauthorized);
+        }
+        if wire::singleton_slice(headers, "host")? != Some(self.authority.as_bytes()) {
+            return Err(Rejection::Host);
+        }
+        if let Some(origin) = wire::singleton_slice(headers, "origin")?
+            && origin != self.origin.as_bytes()
+        {
+            return Err(Rejection::Origin);
+        }
+        for name in [
+            "transfer-encoding",
+            "content-encoding",
+            "trailer",
+            "expect",
+            "upgrade",
+        ] {
+            if wire::has_header(headers, name) {
+                return Err(Rejection::Framing);
+            }
+        }
+        if headers.iter().any(|header| {
+            header.name.eq_ignore_ascii_case("forwarded")
+                || header
+                    .name
+                    .get(..12)
+                    .is_some_and(|prefix| prefix.eq_ignore_ascii_case("x-forwarded-"))
+        }) {
+            return Err(Rejection::Headers);
+        }
+        if let Some(connection) = wire::singleton_slice(headers, "connection")?
+            && !connection.eq_ignore_ascii_case(b"close")
+            && !connection.eq_ignore_ascii_case(b"keep-alive")
+        {
+            return Err(Rejection::Framing);
+        }
+        let content_type =
+            wire::singleton_slice(headers, "content-type")?.ok_or(Rejection::ContentType)?;
+        if !content_type.eq_ignore_ascii_case(b"application/json")
+            && !content_type.eq_ignore_ascii_case(b"application/json; charset=utf-8")
+        {
+            return Err(Rejection::ContentType);
+        }
+        let length = wire::singleton_slice(headers, "content-length")?.ok_or(Rejection::Framing)?;
+        let length = wire::content_length(length).map_err(|error| match error {
+            wire::LengthError::Syntax => Rejection::Framing,
+            wire::LengthError::Overflow => Rejection::BodySize,
+        })?;
+        if length == 0 || length > MAX_BODY_BYTES {
+            return Err(Rejection::BodySize);
+        }
+        Ok(AuthorizedHead {
+            length,
+            pinned_abliteration: self.pinned_abliteration,
+        })
+    }
 }
 
 fn singleton<'a>(headers: &'a HeaderMap, name: &str) -> Result<Option<&'a [u8]>, Rejection> {

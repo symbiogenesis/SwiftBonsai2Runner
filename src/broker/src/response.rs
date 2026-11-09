@@ -181,11 +181,12 @@ where
     }
 }
 
-// The owned backend decoder can lend payloads. Keep the public AsyncRead adapter
-// for supplied readers while production can use vectored writes for full spans.
+// The owned backend decoder has already validated response metadata and can
+// lend payloads. Keep the public AsyncRead adapter for supplied readers while
+// production can use vectored writes for full spans.
 pub(crate) async fn send_buffered_chat_response_mode<W, R>(
     mut client: W,
-    backend: Response<R>,
+    mut body: R,
     streaming: bool,
     supervisor_deadline: Instant,
 ) -> Result<(), ResponseError>
@@ -194,8 +195,6 @@ where
     R: AsyncBufRead + Unpin + 'static,
 {
     ensure_time(supervisor_deadline)?;
-    validate_metadata(&backend, streaming)?;
-    let mut body = backend.into_body();
     if streaming && client.is_write_vectored() {
         write_buffered_sse_response(&mut client, &mut body, supervisor_deadline).await
     } else if streaming {
@@ -416,41 +415,34 @@ async fn write_json_response<W: AsyncWrite + Unpin, R: AsyncRead + Unpin>(
     .await
 }
 
-pub(crate) fn validate_metadata<R>(
+fn validate_metadata<R>(
     backend: &Response<R>,
     streaming: bool,
 ) -> Result<(), ResponseError> {
-    if backend.status() != StatusCode::OK {
-        return Err(ResponseError::BackendMetadata);
-    }
-    validate_content_metadata(backend, streaming)
-}
-
-pub(crate) fn validate_content_metadata<R>(
-    backend: &Response<R>,
-    streaming: bool,
-) -> Result<(), ResponseError> {
-    if backend.headers().contains_key("content-encoding") {
+    if backend.status() != StatusCode::OK || backend.headers().contains_key("content-encoding") {
         return Err(ResponseError::BackendMetadata);
     }
     let content_type = singleton(backend.headers(), "content-type")
         .map_err(|_| ResponseError::BackendMetadata)?
         .ok_or(ResponseError::BackendMetadata)?;
+    if !valid_content_type(content_type, streaming) {
+        return Err(ResponseError::BackendMetadata);
+    }
+    Ok(())
+}
+
+pub(crate) fn valid_content_type(content_type: &[u8], streaming: bool) -> bool {
     let expected: &[u8] = if streaming {
         b"text/event-stream"
     } else {
         b"application/json"
     };
     let Some(media) = content_type.get(..expected.len()) else {
-        return Err(ResponseError::BackendMetadata);
+        return false;
     };
     let parameters = &content_type[expected.len()..];
-    if !media.eq_ignore_ascii_case(expected)
-        || !(parameters.is_empty() || parameters.eq_ignore_ascii_case(b"; charset=utf-8"))
-    {
-        return Err(ResponseError::BackendMetadata);
-    }
-    Ok(())
+    media.eq_ignore_ascii_case(expected)
+        && (parameters.is_empty() || parameters.eq_ignore_ascii_case(b"; charset=utf-8"))
 }
 
 async fn collect_json<R: AsyncRead + Unpin>(
