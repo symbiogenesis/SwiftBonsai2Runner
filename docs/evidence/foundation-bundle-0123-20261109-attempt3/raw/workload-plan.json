@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 1,
+  "kind": "prepared-fixed-source055-foundation-six-minute-exception",
+  "recordedDate": "2026-11-09",
+  "authorization": "Execution awaits explicit owner approval for one exact non-force Prism main push from a7cdee96080d6cc33fb6a22b62ede94117150b9b through055c7430cb4771dfddb24ddaa30494af6ad182da and one fresh six-minute Foundation bundle operation. This preparation grants no permission, starts no CI, and does not reopen either historical operation. The standing five-minute default remains unchanged.",
+  "source": {
+    "repository": "symbiogenesis/prism-inference",
+    "revision": "055c7430cb4771dfddb24ddaa30494af6ad182da",
+    "allowedRemoteBase": "a7cdee96080d6cc33fb6a22b62ede94117150b9b",
+    "version": "0.1.23",
+    "target": "aarch64-pc-windows-msvc",
+    "workflow": ".github/workflows/foundation-bundle.yml",
+    "hostedJobMaximumSeconds": 300,
+    "changesSinceRemoteBase": "Two local commits: four cfg(test) empty-assertion corrections and the five-minute dedicated hosted job/contract/documentation change. No production inference/kernel/default behavior changed.",
+    "operationId": "One fresh caller-supplied nonce matching [A-Za-z0-9][A-Za-z0-9_-]{0,47}; both historical operation nonces are rejected."
+  },
+  "budget": {
+    "maximumAggregateSeconds": 360,
+    "workCutoffSeconds": 335,
+    "ciMonitorCutoffSeconds": 315,
+    "cancellationConfirmationCutoffSeconds": 345,
+    "retentionReserveSeconds": 15,
+    "maximumIndividualCommandSeconds": 10,
+    "minimumMandatorySecondsBeforeDispatch": 295,
+    "hostedWorkConservativeSeconds": 265,
+    "minimumArtifactAdmissionSeconds": 20,
+    "minimumOptionalSourceAdmissionSeconds": 12,
+    "conservativeEstimateSeconds": 350,
+    "estimateBreakdownSeconds": {
+      "sourcePowerPushAutoCancelDispatchAndQueue": 45,
+      "hostedSetupCheckoutCompilerAndCache": 60,
+      "nineControlsFormattingAndStrictAnalyzers": 125,
+      "portableLibraryCheck": 10,
+      "productionLinking": 60,
+      "hostedPackagingAndUpload": 10,
+      "artifactAndOptionalSourceVerification": 15,
+      "cleanupPowerAndRetention": 25
+    },
+    "reason": "The prior terminal CI retained approximately60 seconds of hosted setup and115 seconds in final-source checks before failing its four test assertions; portable checking, linking and packaging were not reached. The corrected candidate therefore needs a conservative350-second complete operation estimate, including265 seconds of hosted work. Six minutes is the smallest whole-minute allowance above350 seconds. It requires a new explicit owner exception and does not change the standing default.",
+    "admission": "Before the only dedicated dispatch require295 seconds remaining before the335-second work cutoff:265 hosted work plus10 dispatch plus20 artifact intake. Stop if source/push/automatic-run cleanup consumes40 seconds or more. Monitor owned CI only until315 seconds, leaving30 seconds for cancellation confirmation and15 for final retention. Successful artifact work may continue only to335 seconds. The source ZIP is optional and attempted only with12 original work seconds remaining.",
+    "retries": 0,
+    "clockRestartAllowed": false,
+    "historicalClocksRemainClosed": true
+  },
+  "fixedWork": [
+    "Bind clean exact local Prism main, approved origin, tracked input hashes, canonical Git blobs, executing driver/declaration bytes and power. Observe official remote main; reject any revision other than the declared base or selected candidate.",
+    "Perform the one newly authorized exact non-force source push only when remote main is at the declared base. If already at055, record that fact; --source-ready requires that exact remote state and bypasses push and automatic-run handling.",
+    "After this operation's source push, identify only the automatic Foundation push run at055 and cancel it once if active, confirming terminal status before the dedicated dispatch. Never query or cancel closed runs42712826648,42712889670 or42714544937, or other workflows triggered by the push.",
+    "Verify the exact remote commit and canonical workflow bytes. Admit one fresh nonce-bound foundation-bundle.yml dispatch only with295 mandatory work seconds remaining, then bind positive run/workflow IDs, source, path, event, main branch, first attempt and nonce. API name is a display label and is never identity authority.",
+    "Poll only the newly owned run until315 seconds. On failure or insufficient time, cancel it once if active and confirm termination inside345 seconds. If confirmation is unavailable, retain cleanup unknown explicitly and produce no passed verification receipt.",
+    "After successful terminal CI, verify the official artifact digest and genuine source/run identity, the exact three-file outer artifact and nine-file release ZIP, every length/SHA-256 and all five ARM64 PE headers. Require matching0.1.23/toolchain/nonce, nine receipt controls, final-source checks and production linking, with full Foundation/model/performance qualification explicitly false.",
+    "When at least12 original work seconds remain, download the exact055 GitHub source ZIP once through this same fixed script's guarded child. Compare all canonical committed Git blobs and retain SHA-256; keep missing source evidence pending. No second source request follows a failure.",
+    "Retain aggregate/per-API power observations, periodic samples, API JSON, actual archives and receipts, source hashes, manifest and final clock within the same360 seconds. Unknown power remains unknown; equal observations prove no uninterrupted stability. No registry upload, model, benchmark or automatic retry is part of this operation."
+  ],
+  "implementation": {
+    "driver": "operate.py",
+    "style": "Standalone frozen experiment driver copied from the corrected prior operator; fixed source and deadlines are declared before function defaults. Earlier drivers and raw receipts remain unchanged.",
+    "defaultSourceReady": false,
+    "sourceDownloadChild": "The actual executing __file__ with --download-source; only the literal055 GitHub source URL is admitted.",
+    "guardedDefinitions": "Preparing or parsing this driver performs no action. main runs only when explicitly invoked after approval."
+  },
+  "paths": {
+    "source": "C:/Users/symbi/source/repos/prism-inference (clean local main055)",
+    "workingOutput": "%TEMP%/SwiftBonsai-FoundationBundle-0123-20261109-Attempt3, fresh and external",
+    "retainedEvidence": "A fresh raw directory under this attempt's evidence folder",
+    "suggestedFreshOperationId": "prism0123-20261109-attempt3-055c7430"
+  },
+  "handoff": {
+    "verifiedReceipt": "verified-bundle.json passed=true must be accompanied by final-clock.json maximumTotalSeconds360, clockClosed=true, elapsed<360, withinDeclaredAllowance=true, cleanupConfirmed=true and retentionComplete=true.",
+    "fullFoundationQualified": false,
+    "modelAcceptanceQualified": false,
+    "performanceQualified": false,
+    "registryPublicationOrRunnerRepin": "Separate gated actions after actual successful evidence and immutable release-byte review."
+  }
+}
