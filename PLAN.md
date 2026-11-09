@@ -166,6 +166,16 @@ its original closed 69.432-second clock and AC/saver-off/99% observations separa
 from the explicitly authorized new attempt's closed 59.250-second clock and
 AC/saver-off/98% observations. Neither clock authorizes a further trial or retry.
 
+The owner separately authorized one fresh local README measurement in this session.
+Execute only the [declared fixed refresh](docs/evidence/readme-performance-20261109-refresh/workload-plan.json):
+one eight-token request per representation on pinned Prism 0.1.22, four workers,
+adapter 1.3 and Thinking off. Its conservative 365-second estimate requires the
+smallest whole-minute seven-minute aggregate allowance, including the single offline
+build, intake, both startups/requests, power, cleanup and retention. Stop on completion,
+failure or insufficient time; do not retry or reopen earlier clocks. Independently
+verify the retained raw metrics, per-arm power and cleanup before updating the README.
+Unpublished Prism source optimizations remain unmeasured by this capture.
+
 Qualify the [shared startup-timeout receipt fix](docs/evidence/ptq1-startup-timeout-20261103/summary.json)
 through owner-managed exact-source hosted preparation. An admitted extended case
 whose deadline outlasts the unchanged 600-second startup cap now retains an ordinary
