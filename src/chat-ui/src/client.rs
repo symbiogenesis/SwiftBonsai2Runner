@@ -9,6 +9,7 @@
 use bonsai_windows_process::{OwnedProcess, ToolProcessSpec};
 use serde::{Deserialize, Serialize};
 use std::{
+    borrow::Cow,
     collections::BTreeMap,
     ffi::OsString,
     fmt::Write as _,
@@ -1022,16 +1023,7 @@ struct HttpBody<R> {
 impl<R: Read> HttpBody<R> {
     fn new(reader: R) -> Result<Self> {
         let mut reader = BufReader::with_capacity(READ_SIZE, reader);
-        let mut head = Vec::new();
-        while !head.ends_with(b"\r\n\r\n") {
-            if head.len() == MAX_HEAD {
-                return Err(Failure::Message(
-                    "The local response header exceeded its limit.",
-                ));
-            }
-            head.push(read_byte(&mut reader)?);
-        }
-        let (framing, kind) = parse_head(&head)?;
+        let (framing, kind) = read_head(&mut reader)?;
         let mut body = Self {
             reader,
             framing,
@@ -1050,13 +1042,15 @@ impl<R: Read> HttpBody<R> {
     fn rejection(&mut self, code: &str, message: &'static str) -> Result<Failure> {
         #[derive(Deserialize)]
         #[serde(deny_unknown_fields)]
-        struct Envelope {
-            error: ErrorCode,
+        struct Envelope<'a> {
+            #[serde(borrow)]
+            error: ErrorCode<'a>,
         }
         #[derive(Deserialize)]
         #[serde(deny_unknown_fields)]
-        struct ErrorCode {
-            code: String,
+        struct ErrorCode<'a> {
+            #[serde(borrow)]
+            code: Cow<'a, str>,
         }
         let invalid = Failure::Message("The local model returned an unrecognized error reply.");
         let mut error = Vec::new();
@@ -1066,7 +1060,7 @@ impl<R: Read> HttpBody<R> {
             }
             error.extend_from_slice(bytes);
         }
-        let envelope: Envelope = serde_json::from_slice(&error).map_err(|_| invalid)?;
+        let envelope: Envelope<'_> = serde_json::from_slice(&error).map_err(|_| invalid)?;
         if envelope.error.code != code {
             return Err(invalid);
         }
@@ -1186,6 +1180,39 @@ fn read_line<'a>(reader: &mut impl Read, bytes: &'a mut [u8]) -> Result<&'a [u8]
             return Ok(&bytes[..length - 2]);
         }
     }
+}
+
+fn read_head<R: Read>(reader: &mut BufReader<R>) -> Result<(Framing, ResponseKind)> {
+    let available = reader.fill_buf().map_err(|_| {
+        Failure::Message("The connection to the model on this computer was interrupted before a complete reply was received.")
+    })?;
+    if available.is_empty() {
+        return Err(Failure::Message(LOCAL_CONNECTION_CLOSED));
+    }
+    let window = &available[..available.len().min(MAX_HEAD)];
+    if let Some(offset) = window.windows(4).position(|bytes| bytes == b"\r\n\r\n") {
+        let end = offset + 4;
+        let parsed = parse_head(&window[..end]);
+        reader.consume(end);
+        return parsed;
+    }
+    if available.len() >= MAX_HEAD {
+        return Err(Failure::Message(
+            "The local response header exceeded its limit.",
+        ));
+    }
+    let mut head = available.to_vec();
+    let consumed = head.len();
+    reader.consume(consumed);
+    while !head.ends_with(b"\r\n\r\n") {
+        if head.len() == MAX_HEAD {
+            return Err(Failure::Message(
+                "The local response header exceeded its limit.",
+            ));
+        }
+        head.push(read_byte(reader)?);
+    }
+    parse_head(&head)
 }
 
 fn parse_head(head: &[u8]) -> Result<(Framing, ResponseKind)> {

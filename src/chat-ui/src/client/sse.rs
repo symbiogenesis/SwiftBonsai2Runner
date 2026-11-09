@@ -1,8 +1,11 @@
 //! Borrowed SSE framing and JSON deltas, separate from completed reply storage.
 
 use super::{Completion, Failure, MAX_EVENT, Result};
-use serde::{Deserialize, de::IgnoredAny};
-use std::borrow::Cow;
+use serde::{
+    Deserialize, Deserializer,
+    de::{IgnoredAny, SeqAccess, Visitor},
+};
+use std::{borrow::Cow, fmt, marker::PhantomData};
 
 #[derive(Default)]
 pub(super) struct Sse {
@@ -35,6 +38,25 @@ struct Frame<'a> {
     event: &'a [u8],
 }
 
+trait LendingFrames {
+    type Frame<'a>
+    where
+        Self: 'a;
+
+    fn next_frame<'a>(&'a mut self, bytes: &mut &[u8]) -> Result<Option<Self::Frame<'a>>>;
+}
+
+fn drain_frames<S: LendingFrames>(
+    source: &mut S,
+    mut bytes: &[u8],
+    mut visit: impl for<'a> FnMut(S::Frame<'a>) -> Result<()>,
+) -> Result<()> {
+    while let Some(frame) = source.next_frame(&mut bytes)? {
+        visit(frame)?;
+    }
+    Ok(())
+}
+
 // The transparent wrapper makes Serde's borrowed-Cow string visitor apply
 // inside Option as well: unescaped strings borrow; JSON escapes own decoding.
 #[derive(Deserialize)]
@@ -44,8 +66,46 @@ struct Text<'a>(#[serde(borrow)] Cow<'a, str>);
 #[derive(Deserialize)]
 struct Chunk<'a> {
     #[serde(default, borrow)]
-    choices: Vec<Choice<'a>>,
+    choices: Choices<'a>,
     error: Option<IgnoredAny>,
+}
+
+#[derive(Default)]
+enum Choices<'a> {
+    #[default]
+    Empty,
+    One(Choice<'a>),
+    Many,
+}
+
+impl<'de: 'a, 'a> Deserialize<'de> for Choices<'a> {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> std::result::Result<Self, D::Error> {
+        struct ChoicesVisitor<'a>(PhantomData<&'a ()>);
+
+        impl<'de: 'a, 'a> Visitor<'de> for ChoicesVisitor<'a> {
+            type Value = Choices<'a>;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+                formatter.write_str("a sequence of completion choices")
+            }
+
+            fn visit_seq<A: SeqAccess<'de>>(
+                self,
+                mut seq: A,
+            ) -> std::result::Result<Self::Value, A::Error> {
+                let Some(first) = seq.next_element()? else {
+                    return Ok(Choices::Empty);
+                };
+                if seq.next_element::<IgnoredAny>()?.is_some() {
+                    while seq.next_element::<IgnoredAny>()?.is_some() {}
+                    return Ok(Choices::Many);
+                }
+                Ok(Choices::One(first))
+            }
+        }
+
+        deserializer.deserialize_seq(ChoicesVisitor(PhantomData))
+    }
 }
 
 #[derive(Deserialize)]
@@ -70,13 +130,12 @@ struct Delta<'a> {
 impl Sse {
     pub(super) fn push(
         &mut self,
-        mut bytes: &[u8],
+        bytes: &[u8],
         delta: &mut impl FnMut(Cow<'_, str>, Cow<'_, str>) -> Result<()>,
     ) -> Result<()> {
-        while let Some(frame) = self.framer.next_event(&mut bytes)? {
-            self.reply.dispatch(frame, delta)?;
-        }
-        Ok(())
+        drain_frames(&mut self.framer, bytes, |frame| {
+            self.reply.dispatch(frame, delta)
+        })
     }
 
     pub(super) fn finish(&self) -> Result<Completion> {
@@ -97,6 +156,14 @@ impl Sse {
 
     pub(super) fn into_answer(self) -> (String, String) {
         (self.reply.text, self.reply.reasoning)
+    }
+}
+
+impl LendingFrames for Framer {
+    type Frame<'a> = Frame<'a>;
+
+    fn next_frame<'a>(&'a mut self, bytes: &mut &[u8]) -> Result<Option<Self::Frame<'a>>> {
+        self.next_event(bytes)
     }
 }
 
@@ -258,12 +325,12 @@ impl Reply {
         }
         let chunk: Chunk<'_> = serde_json::from_slice(frame.data)
             .map_err(|_| Failure::Message("The model returned an invalid streaming event."))?;
-        if chunk.error.is_some() || chunk.choices.len() > 1 {
+        if chunk.error.is_some() || matches!(chunk.choices, Choices::Many) {
             return Err(Failure::Message(
                 "The model could not complete this response.",
             ));
         }
-        if let Some(choice) = chunk.choices.into_iter().next() {
+        if let Choices::One(choice) = chunk.choices {
             if self.completion.is_some() || choice.index.is_some_and(|index| index != 0) {
                 return Err(Failure::Message(
                     "The model returned an unexpected completion choice.",
