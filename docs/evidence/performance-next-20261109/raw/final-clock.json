@@ -1,0 +1,13 @@
+{
+  "powerAfterRetention": {
+    "source": "GetSystemPowerStatus",
+    "observedUtc": "2026-11-09T20:34:54.334041+00:00",
+    "acConnected": true,
+    "batterySaver": false,
+    "chargePercent": 99
+  },
+  "elapsedSecondsThroughRetention": 58.72694210000009,
+  "maximumTotalSeconds": 300,
+  "clockClosed": true,
+  "withinDeclaredAllowance": true
+}

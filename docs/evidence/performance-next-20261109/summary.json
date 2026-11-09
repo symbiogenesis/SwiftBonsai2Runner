@@ -1,0 +1,129 @@
+{
+  "schemaVersion": 1,
+  "kind": "parallel-performance-follow-up-source-integration",
+  "recordedDate": "2026-11-09",
+  "status": "source-integrated-test-fixture-correction-reviewed-final-validation-pending",
+  "authorization": "Owner requested pursuing the most exciting performance-relevant PLAN.md goals in parallel, as far as reasonable.",
+  "source": {
+    "runnerBaseRevision": "01e1703e",
+    "prismBaseRevision": "73eec9624ece3aaa46755700fc14d4839612bfae",
+    "prismFinalRevision": "fdf6748f8113f0cc44a9ec63dad8994aecf9232b",
+    "integratedCommits": [
+      "cb71dda: retain the validated fixed Swift sampler filter",
+      "e1db59d: consume original attention gates without staging copies",
+      "51addd1: separate attention oracle setup and comparison",
+      "c3c8db0: allocate native-Q2 packing scratch only for copied or transient paths",
+      "6388f77: derive attention copy payload from actual Swift metadata",
+      "79b3e76: cover grouped and scalar tail heads together",
+      "210ceac: qualify the true nonresident single/tiled fallback as a source control",
+      "ebfc6b5: split test assertions and compare exact float bits",
+      "6823d42: bind all new controls to the owner-operated hosted efficiency gate",
+      "2959882: retain the canonical formatting applied inside the declared check",
+      "fdf6748: explicit binary32 annotation in the independent attention oracle"
+    ],
+    "workerCommits": [
+      "20a549c runtime",
+      "5942a40, 54c9b2a, 140da1a, c00403c CPU",
+      "77e3a42, b979981, 10c4350 Hexagon"
+    ],
+    "checkSource": "6823d42 plus its one canonical formatting pass; every tracked file hash is in raw/receipt.json. Commit 2959882 retains that formatted source. The later single-token f32 fixture annotation has source review only.",
+    "delivery": "Three individual worker Git worktrees and logical commits, reviewed and cherry-picked into an individual integration worktree; fast-forward delivery to local Prism main. Runner plan and evidence prepared in an individual Runner worktree and integrated into local Runner main. No push, PR, CI dispatch, query, monitoring or wait."
+  },
+  "implemented": {
+    "attention": {
+      "change": "Decode and tiled prefill borrow immutable gate heads directly from the existing interleaved query/gate projection. Query normalization retains separate mutable scratch; gate sigmoid, score/value arithmetic and publication order remain unchanged.",
+      "swiftGeometry": "config/swift.metadata.json: 24 query heads, width 256, 16 full-attention layers.",
+      "sourceCopyPayloadBytesPerToken": 393216,
+      "sourceCopyReadAndWriteBytesPerToken": 786432,
+      "limits": "Counts exclude the unchanged later gate reads; actual traffic, latency and process RAM are unmeasured. Recurrent/FFN gate scratch and conservative admission remain charged.",
+      "preparedControls": "Independent analytical single-token oracle, source and pinned arithmetic, one/two/four workers, six heads per KV group exercising four-head SIMD and scalar tails, failure before cache publication and same-scratch recovery; existing full graph tiled continuation and FP16 failure controls."
+    },
+    "sampler": {
+      "change": "SwiftSampler retains its validated stateless TopP configuration. Native MinP(0) is a no-op and Temperature(1) preserves admitted finite logit bits, so neither temporary state is constructed per token. Existing TopP and Distribution arithmetic is retained.",
+      "sourceTemporaryConfigAllocationsOmittedPerToken": 3,
+      "limits": "This follows Config::validate's temporary Vec construction. One additional State metadata value is retained; no allocator timing, lower RAM or reduced admission is claimed. Generic sampler configuration behavior is unchanged.",
+      "preparedControls": "Independent original three-stage chain, candidate backing float bits and metadata, signed zero, subnormals, finite extremes, 64 RNG rounds, reset, independent clones and full-vocabulary rejection. Existing top-k parity control now calls the original chain independently."
+    },
+    "nativeQ2": {
+      "change": "Eight lazy resident entry families share direct initialization without first allocating unused packed-weight scratch. Copied preparation allocates bounded scratch after admission; true nonresident execution allocates only after selecting the transient path.",
+      "limits": "The existing prewarmed default is unchanged by this follow-up. Signed DSP bytes, resident arena and metadata bounds, operation limits, terminal failure policy, resource admission and cleanup remain unchanged. No startup or execution benefit is measured.",
+      "preparedControls": "Fake direct/copied arenas, byte parity, capacity refusal without scratch growth, invalid scales without handle publication, terminal failed-submit clearing across eight entry families, and successful true nonresident single/tiled mock submissions at exact payload bounds. No driver is opened."
+    },
+    "hostedGate": "The existing fixed exact-name gate now includes the new numerical/failure controls; portable and Windows ARM64-only inventories remain separate. Existing source/compiler/executable binding, feature-disabled compilation, strict Release analyzers and production linking remain required. No workflow was dispatched or inspected remotely."
+  },
+  "localValidation": {
+    "plan": "workload-plan.json",
+    "driver": "validate.py",
+    "inventory": "controls.json",
+    "rawReceipt": "raw/receipt.json",
+    "archive": "raw/archive.json",
+    "terminalClock": "raw/final-clock.json",
+    "maximumTotalSeconds": 300,
+    "workCutoffSeconds": 260,
+    "conservativeEstimateSeconds": 250,
+    "elapsedSecondsThroughRetention": 58.72694210000009,
+    "withinDeclaredAllowance": true,
+    "clockClosed": true,
+    "clockRestarted": false,
+    "retries": 0,
+    "passed": [
+      "Pinned nightly-2026-11-09 compiler identity and tracked-source hashing",
+      "Canonical formatting and format check before compilation",
+      "All four existing hosted receipt and source-inventory Python controls"
+    ],
+    "failure": "Compile-controls exited 101 on E0689 at the independent attention oracle's (-gate).exp(): the untyped projection vector left the float method ambiguous. No selected Rust test executed.",
+    "postTrialCorrection": "The projection fixture now uses vec![0.0_f32; geometry.query_gate_width()], which fixes the projected vector, borrowed gates and independent expected-gate vector to binary32. Root and CPU worker independently reviewed the exact one-token type annotation. No compiler, analyzer, formatter or test was rerun after the closed trial.",
+    "notReached": [
+      "Successful compilation of all four selected test executables",
+      "All sixteen selected Rust controls",
+      "Strict selected analyzer verdict",
+      "Feature-disabled library compilation",
+      "Final-source compiled or formatting verdict after the f32 annotation",
+      "Owning hosted Release correctness, code generation, analyzers and production linking"
+    ],
+    "cleanupIncomplete": false,
+    "power": {
+      "before": {"acConnected": true, "batterySaver": false, "chargePercent": 99},
+      "afterChecks": {"acConnected": true, "batterySaver": false, "chargePercent": 99},
+      "afterRetention": {"acConnected": true, "batterySaver": false, "chargePercent": 99},
+      "perCommandEndpoints": "raw/receipt.json",
+      "continuousPowerStabilityEstablished": false,
+      "pastPowerConditionsInferred": false,
+      "performanceComparisonQualified": false
+    }
+  },
+  "independentReview": [
+    "Root reviewed all three production diffs, exact source work counts and numerical/failure controls before integration.",
+    "CPU worker independently reviewed fixed-chain sampler state, identity-stage arithmetic, RNG, cloning and reset.",
+    "Runtime worker independently reviewed lazy resident preparation and true transient fallback scratch requirements.",
+    "Hexagon worker independently reviewed immutable attention gate lifetimes, task partitioning and first-error ordering.",
+    "Runtime worker reviewed the bounded validation driver; post-retention power and explicit incomplete-cleanup status were added before execution.",
+    "Root and CPU worker independently reviewed the explicit binary32 fixture correction without retrying the failed trial."
+  ],
+  "qualification": {
+    "rustControlsExecuted": 0,
+    "receiptControlsPassed": 4,
+    "finalSourceCompiled": false,
+    "selectedStrictAnalysisPassed": false,
+    "portableFeatureDisabledCheckPassed": false,
+    "owningHostedChecksPassed": false,
+    "actualModelParityQualified": false,
+    "performanceImprovementQualified": false,
+    "runnerReleasedPinChanged": false,
+    "installedRuntimeChanged": false,
+    "defaultsChanged": false,
+    "admissionReduced": false
+  },
+  "remainingAcceptance": [
+    "Owner-managed exact settled-source hosted correctness, portable fallback, strict Release analyzers and production linking, including the final fixture correction.",
+    "Release ARM64 code-generation/spill and resource review, exact whole-model logits/state/adapter parity, continuation, cancellation, restore and accelerator teardown where applicable.",
+    "Matched complete-request latency or resource benefit with proper power evidence and one supported aggregate owner allowance; source counts alone establish no gain.",
+    "Qualified immutable Prism release and verified Runner repin before application use."
+  ],
+  "modelExecutions": 0,
+  "acceleratorDeviceCalls": 0,
+  "benchmarks": 0,
+  "fullSuites": 0,
+  "ciActions": 0,
+  "pushes": 0
+}

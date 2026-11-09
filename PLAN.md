@@ -1122,6 +1122,20 @@ failure/publication, portable-fallback and source/compiler/executable identities
 Source work/storage reductions and model-free controls establish no measured speedup,
 installed-runtime change, reduced admission or speculative-default qualification.
 
+Qualify the [follow-up performance source candidate](docs/evidence/performance-next-20261109/summary.json)
+on settled Prism main through owner-managed hosted checks. It reads full-attention
+gates from their original projection in decode and tiled prefill, retains the fixed
+Swift sampler's validated filter state, and omits unused packed-weight scratch from
+lazy native-Q2 resident preparation. Require the exact grouped/tail-head, original
+sampler-chain/RNG, copied/direct/transient packing, resource and failure controls,
+strict Release analysis, portable fallback and native linking. The one local check
+passed formatting and four receipt controls, then stopped during compilation on an
+ambiguous float type in the new attention oracle before any Rust control ran. Its
+explicit binary32 annotation is independently source-reviewed but uncompiled;
+preserve the failed receipt and closed clock without retrying. Actual-model
+state/logit/adapter parity and matched complete-request benefit remain pending
+before release or Runner repinning; source work counts qualify no speed or RAM gain.
+
 Qualify the [exact recurrent and attention SIMD source changes](docs/evidence/cpu-state-simd-20261103/summary.json)
 on settled Prism main through owner-managed checks. Pinned GDN dot/update now uses
 safe baseline NEON with native reduction/tail and first-failure mutation semantics;
