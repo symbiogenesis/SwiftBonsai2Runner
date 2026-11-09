@@ -28,7 +28,7 @@ TOOLCHAIN = "nightly-2026-11-09-" + TARGET
 WORKFLOW = "foundation-bundle.yml"
 FULL_WORKFLOW = "foundation.yml"
 STEM = f"prism-inference-{VERSION}-{TARGET}"
-MAXIMUM, WORK_CUTOFF, CLEANUP_CUTOFF = 300, 240, 280
+MAXIMUM, WORK_CUTOFF, CLEANUP_CUTOFF = 300, 260, 285
 MIB = 1024 * 1024
 MAX_ARCHIVE = 64 * MIB
 GH = Path(r"C:\Users\symbi\AppData\Local\Microsoft\WinGet\Packages\GitHub.cli_Microsoft.Winget.Source_8wekyb3d8bbwe\bin\gh.exe")
@@ -340,7 +340,9 @@ class Operation:
         self.receipt["remoteWorkflowSha256"] = hashlib.sha256(content).hexdigest()
 
     def dispatch_and_wait(self):
-        self.check(minimum=90)
+        # Keep145s for selected queue/work,10s for dispatch and the same35s
+        # artifact/receive reserve enforced by the polling loop below.
+        self.check(minimum=190)
         self.receipt["dispatchAttempted"] = True
         self.save()
         self.api("dispatch-owned-bundle", f"actions/workflows/{WORKFLOW}/dispatches",

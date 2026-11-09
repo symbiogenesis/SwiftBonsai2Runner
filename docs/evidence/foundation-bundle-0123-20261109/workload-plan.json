@@ -15,9 +15,9 @@
   },
   "budget": {
     "maximumAggregateSeconds": 300,
-    "workCutoffSeconds": 240,
-    "cancellationConfirmationCutoffSeconds": 280,
-    "retentionReserveSeconds": 20,
+    "workCutoffSeconds": 260,
+    "cancellationConfirmationCutoffSeconds": 285,
+    "retentionReserveSeconds": 15,
     "maximumIndividualCommandSeconds": 10,
     "conservativeEstimateSeconds": 290,
     "estimateBreakdownSeconds": {
@@ -25,10 +25,11 @@
       "automaticFoundationIdentificationAndCancellation": 30,
       "workflowPropagationAndDispatch": 20,
       "dedicatedQueueAndCachedHostedWork": 145,
-      "artifactSourceDownloadAndVerification": 30,
+      "mandatoryArtifactDownloadAndVerification": 20,
+      "optionalSourceDownloadAndVerification": 10,
       "cleanupAndFinalRetention": 40
     },
-    "reason": "One exact-source cached hosted bundle operation, including the authorized source push and cancellation of its automatic full Foundation run. Completion is conditional on queue/cache availability; the four-minute hosted job is subordinate to the original five-minute aggregate clock and must be cancelled when remaining time cannot fit completion and retention.",
+    "reason": "One exact-source cached hosted bundle operation, including the authorized source push and cancellation of its automatic full Foundation run. Mandatory work estimates240s and fits the260s work cutoff; the optional10s source step starts only with its existing22s remaining-time guard. Before dispatch, require190s for10s dispatch,145s selected queue/hosted work and the polling loop's35s artifact/receive reserve. Final cancellation confirmation has25s and retention15s within the unchanged300s aggregate cap. Completion is conditional on queue/cache availability; the four-minute hosted job is subordinate to the original five-minute aggregate clock and must be cancelled when remaining time cannot fit completion and retention.",
     "retries": 0,
     "clockRestartAllowed": false,
     "historicalClocksRemainClosed": true
