@@ -11,7 +11,6 @@ categories = ["os::windows-apis"]
 description = "Windows Job ownership and bounded native process lifecycle for Bonsai"
 
 [target.'cfg(windows)'.dependencies]
-ash = { version = "=0.38.0", default-features = false, features = ["loaded", "std"] }
 flatbuffers = "=25.12.19"
 mxc-sdk = { version = "=1.0.1", default-features = false }
 windows-sys = { workspace = true, features = ["Wdk_Graphics_Direct3D", "Wdk_System_SystemServices", "Win32_Foundation", "Win32_Devices_DeviceAndDriverInstallation", "Win32_Globalization", "Win32_Security", "Win32_Security_Cryptography", "Win32_Security_Cryptography_Catalog", "Win32_Security_Cryptography_Sip", "Win32_Security_WinTrust", "Win32_Storage_FileSystem", "Win32_System_JobObjects", "Win32_System_LibraryLoader", "Win32_System_Threading", "Win32_System_ProcessStatus", "Win32_System_SystemInformation", "Win32_System_Registry", "Win32_System_Power", "Win32_System_Performance", "Win32_System_Diagnostics_ToolHelp", "Win32_NetworkManagement_IpHelper", "Win32_Networking_WinSock"] }

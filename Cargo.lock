@@ -618,7 +618,6 @@ dependencies = [
 name = "bonsai-windows-process"
 version = "0.1.1"
 dependencies = [
- "ash",
  "flatbuffers",
  "mxc-sdk",
  "windows-sys 0.61.2",
