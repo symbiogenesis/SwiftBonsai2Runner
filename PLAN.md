@@ -154,6 +154,17 @@ full resources or application acceptance. The user-requested matrix, one offline
 Release owner build, power observations, cleanup and final archival consumed
 473.890 seconds of one predeclared fourteen-minute allowance, with no repeated arm.
 
+Obtain source-bound Prism 0.1.22 short-request timings before replacing the README's
+dated 0.1.14 measurements. The [November 9 owner-authorized attempt](docs/evidence/readme-performance-20261109/summary.json)
+passed its single offline Release build, then stopped before focused controls or
+model startup because the PowerShell driver overwrote its stage-name variable.
+Retain the original closed 69.432-second clock, build logs and AC/saver-off/99%
+observations. The corrected driver is source-only and unexecuted; another attempt
+requires an explicit owner exception to the no-retry rule. Do not infer CPU/NPU
+placement from HTTP readiness or exclude pending asynchronous device preparation
+from first-request TTFT. Sustained benefit and full application acceptance remain
+separate gates.
+
 Qualify the [shared startup-timeout receipt fix](docs/evidence/ptq1-startup-timeout-20261103/summary.json)
 through owner-managed exact-source hosted preparation. An admitted extended case
 whose deadline outlasts the unchanged 600-second startup cap now retains an ordinary

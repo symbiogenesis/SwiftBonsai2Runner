@@ -1,0 +1,19 @@
+{
+  "kind": "final-retention-clock",
+  "elapsedSecondsThroughEvidenceAndManifestRetention": 69.4316155,
+  "scope": "Clock and power follow evidence/manifest retention; exclude writing this final small clock receipt itself.",
+  "maximumAggregateSeconds": 600,
+  "withinAggregateAllowance": true,
+  "powerAfterFinalRetention": {
+    "utc": "2026-11-09T19:53:26.4887807Z",
+    "elapsedSeconds": 69.4316702,
+    "status": "observed",
+    "source": "GetSystemPowerStatus",
+    "ac_online": true,
+    "battery_saver": false,
+    "battery_percent": 99
+  },
+  "retries": 0,
+  "ciActions": 0,
+  "closed": true
+}

@@ -1,0 +1,674 @@
+{
+  "schemaVersion": 1,
+  "kind": "owner-authorized-readme-token-timing",
+  "revision": "9c7e457b49429aec00f72c6c5bff24b71985fef4",
+  "startedUtc": "2026-11-09T19:52:17.0535620Z",
+  "startedTick": 23689344667,
+  "maximumAggregateSeconds": 600,
+  "processAndRetentionReserveSeconds": 60,
+  "authorization": "Owner explicitly requested: actually, you run the benchmark. This direct local capture is authorized for this workload only; no CI identity is asserted.",
+  "fixedWork": "One offline Release native_model build, new focused synthetic timing controls, one PQ2 then one PTQ1 eight-token request in fresh required-sandbox owners; four workers, adapter 1.3, seed 42, thinking off. No retry, downloads, CI, old-runtime or worker matrix.",
+  "estimatedSeconds": 485,
+  "estimateBreakdownSeconds": {
+    "twoStartups": 100,
+    "build": 150,
+    "setupAndIntake": 45,
+    "retention": 30,
+    "cleanup": 60,
+    "requests": 100
+  },
+  "allowanceReason": "The conservative 485-second fixed-work estimate exceeds five minutes; ten minutes is the smallest justified allowance. Stop early on completion or any failed stage.",
+  "status": "stopped",
+  "phase": "closed",
+  "powerBefore": {
+    "utc": "2026-11-09T19:52:17.2818638Z",
+    "elapsedSeconds": 0.2247718,
+    "status": "observed",
+    "source": "GetSystemPowerStatus",
+    "ac_online": true,
+    "battery_saver": false,
+    "battery_percent": 99
+  },
+  "powerAfter": {
+    "utc": "2026-11-09T19:53:26.3999277Z",
+    "elapsedSeconds": 69.3428201,
+    "status": "observed",
+    "source": "GetSystemPowerStatus",
+    "ac_online": true,
+    "battery_saver": false,
+    "battery_percent": 99
+  },
+  "powerSamples": [
+    {
+      "utc": "2026-11-09T19:52:18.3277383Z",
+      "elapsedSeconds": 1.2706915,
+      "status": "observed",
+      "source": "GetSystemPowerStatus",
+      "ac_online": true,
+      "battery_saver": false,
+      "battery_percent": 99
+    },
+    {
+      "utc": "2026-11-09T19:52:19.3343743Z",
+      "elapsedSeconds": 2.2772962,
+      "status": "observed",
+      "source": "GetSystemPowerStatus",
+      "ac_online": true,
+      "battery_saver": false,
+      "battery_percent": 99
+    },
+    {
+      "utc": "2026-11-09T19:52:20.3427204Z",
+      "elapsedSeconds": 3.2856798,
+      "status": "observed",
+      "source": "GetSystemPowerStatus",
+      "ac_online": true,
+      "battery_saver": false,
+      "battery_percent": 99
+    },
+    {
+      "utc": "2026-11-09T19:52:21.3477544Z",
+      "elapsedSeconds": 4.2906934,
+      "status": "observed",
+      "source": "GetSystemPowerStatus",
+      "ac_online": true,
+      "battery_saver": false,
+      "battery_percent": 99
+    },
+    {
+      "utc": "2026-11-09T19:52:22.3569881Z",
+      "elapsedSeconds": 5.2999209,
+      "status": "observed",
+      "source": "GetSystemPowerStatus",
+      "ac_online": true,
+      "battery_saver": false,
+      "battery_percent": 99
+    },
+    {
+      "utc": "2026-11-09T19:52:23.3714768Z",
+      "elapsedSeconds": 6.3144463,
+      "status": "observed",
+      "source": "GetSystemPowerStatus",
+      "ac_online": true,
+      "battery_saver": false,
+      "battery_percent": 99
+    },
+    {
+      "utc": "2026-11-09T19:52:24.3761566Z",
+      "elapsedSeconds": 7.3191014,
+      "status": "observed",
+      "source": "GetSystemPowerStatus",
+      "ac_online": true,
+      "battery_saver": false,
+      "battery_percent": 99
+    },
+    {
+      "utc": "2026-11-09T19:52:25.3781928Z",
+      "elapsedSeconds": 8.3211155,
+      "status": "observed",
+      "source": "GetSystemPowerStatus",
+      "ac_online": true,
+      "battery_saver": false,
+      "battery_percent": 99
+    },
+    {
+      "utc": "2026-11-09T19:52:26.3847113Z",
+      "elapsedSeconds": 9.3276342,
+      "status": "observed",
+      "source": "GetSystemPowerStatus",
+      "ac_online": true,
+      "battery_saver": false,
+      "battery_percent": 99
+    },
+    {
+      "utc": "2026-11-09T19:52:27.3859863Z",
+      "elapsedSeconds": 10.3289131,
+      "status": "observed",
+      "source": "GetSystemPowerStatus",
+      "ac_online": true,
+      "battery_saver": false,
+      "battery_percent": 99
+    },
+    {
+      "utc": "2026-11-09T19:52:28.3995598Z",
+      "elapsedSeconds": 11.3424719,
+      "status": "observed",
+      "source": "GetSystemPowerStatus",
+      "ac_online": true,
+      "battery_saver": false,
+      "battery_percent": 99
+    },
+    {
+      "utc": "2026-11-09T19:52:29.3998078Z",
+      "elapsedSeconds": 12.3427264,
+      "status": "observed",
+      "source": "GetSystemPowerStatus",
+      "ac_online": true,
+      "battery_saver": false,
+      "battery_percent": 99
+    },
+    {
+      "utc": "2026-11-09T19:52:30.4013259Z",
+      "elapsedSeconds": 13.3442521,
+      "status": "observed",
+      "source": "GetSystemPowerStatus",
+      "ac_online": true,
+      "battery_saver": false,
+      "battery_percent": 99
+    },
+    {
+      "utc": "2026-11-09T19:52:31.4086656Z",
+      "elapsedSeconds": 14.3515826,
+      "status": "observed",
+      "source": "GetSystemPowerStatus",
+      "ac_online": true,
+      "battery_saver": false,
+      "battery_percent": 99
+    },
+    {
+      "utc": "2026-11-09T19:52:32.4102356Z",
+      "elapsedSeconds": 15.3531605,
+      "status": "observed",
+      "source": "GetSystemPowerStatus",
+      "ac_online": true,
+      "battery_saver": false,
+      "battery_percent": 99
+    },
+    {
+      "utc": "2026-11-09T19:52:33.4161132Z",
+      "elapsedSeconds": 16.3590429,
+      "status": "observed",
+      "source": "GetSystemPowerStatus",
+      "ac_online": true,
+      "battery_saver": false,
+      "battery_percent": 99
+    },
+    {
+      "utc": "2026-11-09T19:52:34.4246354Z",
+      "elapsedSeconds": 17.3675682,
+      "status": "observed",
+      "source": "GetSystemPowerStatus",
+      "ac_online": true,
+      "battery_saver": false,
+      "battery_percent": 99
+    },
+    {
+      "utc": "2026-11-09T19:52:35.4351384Z",
+      "elapsedSeconds": 18.3780849,
+      "status": "observed",
+      "source": "GetSystemPowerStatus",
+      "ac_online": true,
+      "battery_saver": false,
+      "battery_percent": 99
+    },
+    {
+      "utc": "2026-11-09T19:52:36.4519401Z",
+      "elapsedSeconds": 19.3948713,
+      "status": "observed",
+      "source": "GetSystemPowerStatus",
+      "ac_online": true,
+      "battery_saver": false,
+      "battery_percent": 99
+    },
+    {
+      "utc": "2026-11-09T19:52:37.4533819Z",
+      "elapsedSeconds": 20.3963032,
+      "status": "observed",
+      "source": "GetSystemPowerStatus",
+      "ac_online": true,
+      "battery_saver": false,
+      "battery_percent": 99
+    },
+    {
+      "utc": "2026-11-09T19:52:38.4612142Z",
+      "elapsedSeconds": 21.4041341,
+      "status": "observed",
+      "source": "GetSystemPowerStatus",
+      "ac_online": true,
+      "battery_saver": false,
+      "battery_percent": 99
+    },
+    {
+      "utc": "2026-11-09T19:52:39.4686197Z",
+      "elapsedSeconds": 22.4115432,
+      "status": "observed",
+      "source": "GetSystemPowerStatus",
+      "ac_online": true,
+      "battery_saver": false,
+      "battery_percent": 99
+    },
+    {
+      "utc": "2026-11-09T19:52:40.4823195Z",
+      "elapsedSeconds": 23.4252511,
+      "status": "observed",
+      "source": "GetSystemPowerStatus",
+      "ac_online": true,
+      "battery_saver": false,
+      "battery_percent": 99
+    },
+    {
+      "utc": "2026-11-09T19:52:41.4846495Z",
+      "elapsedSeconds": 24.4276434,
+      "status": "observed",
+      "source": "GetSystemPowerStatus",
+      "ac_online": true,
+      "battery_saver": false,
+      "battery_percent": 99
+    },
+    {
+      "utc": "2026-11-09T19:52:42.5081257Z",
+      "elapsedSeconds": 25.4512805,
+      "status": "observed",
+      "source": "GetSystemPowerStatus",
+      "ac_online": true,
+      "battery_saver": false,
+      "battery_percent": 99
+    },
+    {
+      "utc": "2026-11-09T19:52:43.5091820Z",
+      "elapsedSeconds": 26.4521001,
+      "status": "observed",
+      "source": "GetSystemPowerStatus",
+      "ac_online": true,
+      "battery_saver": false,
+      "battery_percent": 99
+    },
+    {
+      "utc": "2026-11-09T19:52:44.5099323Z",
+      "elapsedSeconds": 27.4528667,
+      "status": "observed",
+      "source": "GetSystemPowerStatus",
+      "ac_online": true,
+      "battery_saver": false,
+      "battery_percent": 99
+    },
+    {
+      "utc": "2026-11-09T19:52:45.5204949Z",
+      "elapsedSeconds": 28.463412,
+      "status": "observed",
+      "source": "GetSystemPowerStatus",
+      "ac_online": true,
+      "battery_saver": false,
+      "battery_percent": 99
+    },
+    {
+      "utc": "2026-11-09T19:52:46.5275086Z",
+      "elapsedSeconds": 29.470433,
+      "status": "observed",
+      "source": "GetSystemPowerStatus",
+      "ac_online": true,
+      "battery_saver": false,
+      "battery_percent": 99
+    },
+    {
+      "utc": "2026-11-09T19:52:47.5273925Z",
+      "elapsedSeconds": 30.4703112,
+      "status": "observed",
+      "source": "GetSystemPowerStatus",
+      "ac_online": true,
+      "battery_saver": false,
+      "battery_percent": 99
+    },
+    {
+      "utc": "2026-11-09T19:52:48.5448341Z",
+      "elapsedSeconds": 31.4877956,
+      "status": "observed",
+      "source": "GetSystemPowerStatus",
+      "ac_online": true,
+      "battery_saver": false,
+      "battery_percent": 99
+    },
+    {
+      "utc": "2026-11-09T19:52:49.5524515Z",
+      "elapsedSeconds": 32.4953558,
+      "status": "observed",
+      "source": "GetSystemPowerStatus",
+      "ac_online": true,
+      "battery_saver": false,
+      "battery_percent": 99
+    },
+    {
+      "utc": "2026-11-09T19:52:50.5591264Z",
+      "elapsedSeconds": 33.5020581,
+      "status": "observed",
+      "source": "GetSystemPowerStatus",
+      "ac_online": true,
+      "battery_saver": false,
+      "battery_percent": 99
+    },
+    {
+      "utc": "2026-11-09T19:52:51.5601190Z",
+      "elapsedSeconds": 34.5030275,
+      "status": "observed",
+      "source": "GetSystemPowerStatus",
+      "ac_online": true,
+      "battery_saver": false,
+      "battery_percent": 99
+    },
+    {
+      "utc": "2026-11-09T19:52:52.5606402Z",
+      "elapsedSeconds": 35.5035528,
+      "status": "observed",
+      "source": "GetSystemPowerStatus",
+      "ac_online": true,
+      "battery_saver": false,
+      "battery_percent": 99
+    },
+    {
+      "utc": "2026-11-09T19:52:53.5653927Z",
+      "elapsedSeconds": 36.5082963,
+      "status": "observed",
+      "source": "GetSystemPowerStatus",
+      "ac_online": true,
+      "battery_saver": false,
+      "battery_percent": 99
+    },
+    {
+      "utc": "2026-11-09T19:52:54.5674089Z",
+      "elapsedSeconds": 37.5103293,
+      "status": "observed",
+      "source": "GetSystemPowerStatus",
+      "ac_online": true,
+      "battery_saver": false,
+      "battery_percent": 99
+    },
+    {
+      "utc": "2026-11-09T19:52:55.5677265Z",
+      "elapsedSeconds": 38.5106382,
+      "status": "observed",
+      "source": "GetSystemPowerStatus",
+      "ac_online": true,
+      "battery_saver": false,
+      "battery_percent": 99
+    },
+    {
+      "utc": "2026-11-09T19:52:56.5821426Z",
+      "elapsedSeconds": 39.5250592,
+      "status": "observed",
+      "source": "GetSystemPowerStatus",
+      "ac_online": true,
+      "battery_saver": false,
+      "battery_percent": 99
+    },
+    {
+      "utc": "2026-11-09T19:52:57.5848425Z",
+      "elapsedSeconds": 40.5277513,
+      "status": "observed",
+      "source": "GetSystemPowerStatus",
+      "ac_online": true,
+      "battery_saver": false,
+      "battery_percent": 99
+    },
+    {
+      "utc": "2026-11-09T19:52:58.5910449Z",
+      "elapsedSeconds": 41.5340081,
+      "status": "observed",
+      "source": "GetSystemPowerStatus",
+      "ac_online": true,
+      "battery_saver": false,
+      "battery_percent": 99
+    },
+    {
+      "utc": "2026-11-09T19:52:59.5923545Z",
+      "elapsedSeconds": 42.5352733,
+      "status": "observed",
+      "source": "GetSystemPowerStatus",
+      "ac_online": true,
+      "battery_saver": false,
+      "battery_percent": 99
+    },
+    {
+      "utc": "2026-11-09T19:53:00.5940676Z",
+      "elapsedSeconds": 43.5369683,
+      "status": "observed",
+      "source": "GetSystemPowerStatus",
+      "ac_online": true,
+      "battery_saver": false,
+      "battery_percent": 99
+    },
+    {
+      "utc": "2026-11-09T19:53:01.5996902Z",
+      "elapsedSeconds": 44.5425961,
+      "status": "observed",
+      "source": "GetSystemPowerStatus",
+      "ac_online": true,
+      "battery_saver": false,
+      "battery_percent": 99
+    },
+    {
+      "utc": "2026-11-09T19:53:02.6007695Z",
+      "elapsedSeconds": 45.543689,
+      "status": "observed",
+      "source": "GetSystemPowerStatus",
+      "ac_online": true,
+      "battery_saver": false,
+      "battery_percent": 99
+    },
+    {
+      "utc": "2026-11-09T19:53:03.6007721Z",
+      "elapsedSeconds": 46.543684,
+      "status": "observed",
+      "source": "GetSystemPowerStatus",
+      "ac_online": true,
+      "battery_saver": false,
+      "battery_percent": 99
+    },
+    {
+      "utc": "2026-11-09T19:53:04.6091231Z",
+      "elapsedSeconds": 47.5520341,
+      "status": "observed",
+      "source": "GetSystemPowerStatus",
+      "ac_online": true,
+      "battery_saver": false,
+      "battery_percent": 99
+    },
+    {
+      "utc": "2026-11-09T19:53:05.6185266Z",
+      "elapsedSeconds": 48.5614331,
+      "status": "observed",
+      "source": "GetSystemPowerStatus",
+      "ac_online": true,
+      "battery_saver": false,
+      "battery_percent": 99
+    },
+    {
+      "utc": "2026-11-09T19:53:06.6260062Z",
+      "elapsedSeconds": 49.5690662,
+      "status": "observed",
+      "source": "GetSystemPowerStatus",
+      "ac_online": true,
+      "battery_saver": false,
+      "battery_percent": 99
+    },
+    {
+      "utc": "2026-11-09T19:53:07.6324169Z",
+      "elapsedSeconds": 50.5753243,
+      "status": "observed",
+      "source": "GetSystemPowerStatus",
+      "ac_online": true,
+      "battery_saver": false,
+      "battery_percent": 99
+    },
+    {
+      "utc": "2026-11-09T19:53:08.6341292Z",
+      "elapsedSeconds": 51.5770481,
+      "status": "observed",
+      "source": "GetSystemPowerStatus",
+      "ac_online": true,
+      "battery_saver": false,
+      "battery_percent": 99
+    },
+    {
+      "utc": "2026-11-09T19:53:09.6429396Z",
+      "elapsedSeconds": 52.5858491,
+      "status": "observed",
+      "source": "GetSystemPowerStatus",
+      "ac_online": true,
+      "battery_saver": false,
+      "battery_percent": 99
+    },
+    {
+      "utc": "2026-11-09T19:53:10.6435325Z",
+      "elapsedSeconds": 53.5864436,
+      "status": "observed",
+      "source": "GetSystemPowerStatus",
+      "ac_online": true,
+      "battery_saver": false,
+      "battery_percent": 99
+    },
+    {
+      "utc": "2026-11-09T19:53:11.6485890Z",
+      "elapsedSeconds": 54.5914932,
+      "status": "observed",
+      "source": "GetSystemPowerStatus",
+      "ac_online": true,
+      "battery_saver": false,
+      "battery_percent": 99
+    },
+    {
+      "utc": "2026-11-09T19:53:12.6517957Z",
+      "elapsedSeconds": 55.5947034,
+      "status": "observed",
+      "source": "GetSystemPowerStatus",
+      "ac_online": true,
+      "battery_saver": false,
+      "battery_percent": 99
+    },
+    {
+      "utc": "2026-11-09T19:53:13.6518920Z",
+      "elapsedSeconds": 56.5948485,
+      "status": "observed",
+      "source": "GetSystemPowerStatus",
+      "ac_online": true,
+      "battery_saver": false,
+      "battery_percent": 99
+    },
+    {
+      "utc": "2026-11-09T19:53:14.6587467Z",
+      "elapsedSeconds": 57.6016621,
+      "status": "observed",
+      "source": "GetSystemPowerStatus",
+      "ac_online": true,
+      "battery_saver": false,
+      "battery_percent": 99
+    },
+    {
+      "utc": "2026-11-09T19:53:15.6594411Z",
+      "elapsedSeconds": 58.6023591,
+      "status": "observed",
+      "source": "GetSystemPowerStatus",
+      "ac_online": true,
+      "battery_saver": false,
+      "battery_percent": 99
+    },
+    {
+      "utc": "2026-11-09T19:53:16.6604375Z",
+      "elapsedSeconds": 59.6033504,
+      "status": "observed",
+      "source": "GetSystemPowerStatus",
+      "ac_online": true,
+      "battery_saver": false,
+      "battery_percent": 99
+    },
+    {
+      "utc": "2026-11-09T19:53:17.6748379Z",
+      "elapsedSeconds": 60.6177578,
+      "status": "observed",
+      "source": "GetSystemPowerStatus",
+      "ac_online": true,
+      "battery_saver": false,
+      "battery_percent": 99
+    },
+    {
+      "utc": "2026-11-09T19:53:18.6843076Z",
+      "elapsedSeconds": 61.6272175,
+      "status": "observed",
+      "source": "GetSystemPowerStatus",
+      "ac_online": true,
+      "battery_saver": false,
+      "battery_percent": 99
+    },
+    {
+      "utc": "2026-11-09T19:53:19.6867974Z",
+      "elapsedSeconds": 62.6297038,
+      "status": "observed",
+      "source": "GetSystemPowerStatus",
+      "ac_online": true,
+      "battery_saver": false,
+      "battery_percent": 99
+    },
+    {
+      "utc": "2026-11-09T19:53:20.6977910Z",
+      "elapsedSeconds": 63.6407084,
+      "status": "observed",
+      "source": "GetSystemPowerStatus",
+      "ac_online": true,
+      "battery_saver": false,
+      "battery_percent": 99
+    },
+    {
+      "utc": "2026-11-09T19:53:21.7086436Z",
+      "elapsedSeconds": 64.6515451,
+      "status": "observed",
+      "source": "GetSystemPowerStatus",
+      "ac_online": true,
+      "battery_saver": false,
+      "battery_percent": 99
+    },
+    {
+      "utc": "2026-11-09T19:53:22.7109510Z",
+      "elapsedSeconds": 65.6538624,
+      "status": "observed",
+      "source": "GetSystemPowerStatus",
+      "ac_online": true,
+      "battery_saver": false,
+      "battery_percent": 99
+    },
+    {
+      "utc": "2026-11-09T19:53:23.7217577Z",
+      "elapsedSeconds": 66.6646681,
+      "status": "observed",
+      "source": "GetSystemPowerStatus",
+      "ac_online": true,
+      "battery_saver": false,
+      "battery_percent": 99
+    },
+    {
+      "utc": "2026-11-09T19:53:24.7258818Z",
+      "elapsedSeconds": 67.6687852,
+      "status": "observed",
+      "source": "GetSystemPowerStatus",
+      "ac_online": true,
+      "battery_saver": false,
+      "battery_percent": 99
+    },
+    {
+      "utc": "2026-11-09T19:53:25.7380398Z",
+      "elapsedSeconds": 68.680945,
+      "status": "observed",
+      "source": "GetSystemPowerStatus",
+      "ac_online": true,
+      "battery_saver": false,
+      "battery_percent": 99
+    }
+  ],
+  "build": {
+    "exitCode": 0,
+    "expired": false,
+    "startedAtAggregateSeconds": 0.2491537,
+    "elapsedSeconds": 69.0838454
+  },
+  "controls": null,
+  "capture": null,
+  "failure": "Cannot find path 'C:\\Users\\symbi\\AppData\\Local\\SwiftBonsai2\\qualification\\readme-performance-20261109\\build.stdout.log' because it does not exist.",
+  "retries": 0,
+  "ciActions": 0,
+  "downloads": 0,
+  "performanceQualified": false,
+  "testExecutable": null,
+  "caseBudgetSeconds": null,
+  "finishedUtc": "2026-11-09T19:53:26.4168042Z",
+  "withinAggregateAllowance": true,
+  "elapsedSeconds": 69.3615995,
+  "continuousPowerStabilityProven": false
+}

@@ -81,7 +81,8 @@ model. For technical details, see the [UI architecture](docs/ui-architecture.md)
 
 The app currently uses **Prism 0.1.22**. Updated response-speed and peak-memory
 measurements for this release, including its Snapdragon X2 Hexagon NPU path, are
-**pending**.
+**pending**. A [November 9 capture](docs/evidence/readme-performance-20261109/summary.json)
+stopped during harness preparation before either model loaded.
 
 The latest [recorded CPU measurements](docs/evidence/token-timing-20261103/summary.json)
 are from **November 3, 2026**, using **Prism 0.1.14**, four CPU workers and the

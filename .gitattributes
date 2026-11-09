@@ -2,6 +2,9 @@
 # Keep the current PTQ1 release decision and independent reviews portable.
 docs/evidence/token-timing-20261103/** -text -whitespace
 
+# Preserve the closed README timing attempt, source and offline recovery hashes.
+docs/evidence/readme-performance-20261109/** -text -whitespace
+
 docs/evidence/local-throughput-20261103/** -text -whitespace
 
 docs/evidence/ptq1-primetime-*-20261103.json text eol=lf

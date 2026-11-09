@@ -17,6 +17,12 @@ nor prose quality. Measure useful-answer time under the protocol below.
 
 ## Current Swift evidence
 
+The [November 9 Prism 0.1.22 timing attempt](evidence/readme-performance-20261109/summary.json)
+stopped after its successful offline Release build because a PowerShell variable-name
+collision saved the build logs under unexpected names. No timing control or model arm
+ran, so it supplies no new latency, token-rate or memory measurement. The original
+69.432-second clock is closed; the separately retained driver correction has not run.
+
 | Publisher evidence | What it establishes |
 | --- | --- |
 | Current merged PQ2 | IFBench and AIME were refreshed; AIME final-answer-only ties the base. |

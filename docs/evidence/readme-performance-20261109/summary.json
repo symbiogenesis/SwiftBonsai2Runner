@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "kind": "readme-performance-capture-preparation-failure",
+  "recordedDate": "2026-11-09",
+  "revision": "9c7e457b49429aec00f72c6c5bff24b71985fef4",
+  "runtimeVersionSelected": "0.1.22",
+  "status": "stopped-before-controls-or-model-startup",
+  "authorization": "Owner explicitly requested that the agent run the benchmark, overriding CI-only execution for this one local workload. No CI was impersonated or contacted.",
+  "maximumAggregateSeconds": 600,
+  "conservativeEstimateSeconds": 485,
+  "elapsedSecondsThroughEvidenceAndManifestRetention": 69.4316155,
+  "finalClockScope": "Retained clock follows evidence and manifest writes, excluding its own final small receipt write. The original clock is closed.",
+  "offlineReleaseBuild": {
+    "attempts": 1,
+    "exitCode": 0,
+    "elapsedSeconds": 69.0838454,
+    "cargoBuildFinishedSuccess": true,
+    "scope": "Compiled the native_model Release test executable; no tests or models executed. No CI verdict is implied."
+  },
+  "failure": {
+    "stage": "read-build-artifact-log",
+    "cause": "PowerShell treats variable names case-insensitively. The credential-environment removal loop overwrote the Run-OwnedStage Name parameter, so build logs were written with the final environment-variable name instead of the build prefix.",
+    "expectedLog": "build.stdout.log",
+    "actualLogs": [
+      "ACTIONS_RUNNER_INPUT_TOKEN.stdout.log",
+      "ACTIONS_RUNNER_INPUT_TOKEN.stderr.log"
+    ],
+    "filenameContainsCredential": false,
+    "retention": "The original session, driver, retention manifest and final clock are unchanged. Existing misnamed logs were copied afterward for offline review, documented separately by offline-retention.json."
+  },
+  "power": {
+    "source": "GetSystemPowerStatus",
+    "aggregateBefore": { "ac_online": true, "battery_saver": false, "battery_percent": 99 },
+    "aggregateAfter": { "ac_online": true, "battery_saver": false, "battery_percent": 99 },
+    "afterFinalRetention": { "ac_online": true, "battery_saver": false, "battery_percent": 99 },
+    "allRecordedSamplesAcConnectedSaverOffCharge99": true,
+    "perModelArmObservations": [],
+    "perModelArmObservationReason": "No model arm started.",
+    "continuousPowerStabilityProven": false
+  },
+  "focusedControlsExecuted": 0,
+  "modelAttempts": 0,
+  "modelProcessesStarted": 0,
+  "timingResults": [],
+  "retries": 0,
+  "downloads": 0,
+  "ciActions": 0,
+  "correction": {
+    "source": "capture-driver-corrected.ps1",
+    "changes": [
+      "Use separate StageName and credentialEnvironmentName variables.",
+      "Require an explicit fresh public evidence destination.",
+      "Archive the executing driver path, explicitly supplied when invoked as a scriptblock.",
+      "Render the console summary from explicit ordered-map values."
+    ],
+    "executionStatus": "source-only-correction-not-executed",
+    "newTrialAuthorized": false
+  },
+  "performanceQualified": false,
+  "currentReadmeNumbersRemainHistorical": true,
+  "nextStep": "Review the retained failure and corrected source. Another attempt requires an explicit owner exception to the no-retry rule; do not reopen this clock."
+}
