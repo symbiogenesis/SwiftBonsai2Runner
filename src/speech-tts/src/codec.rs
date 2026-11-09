@@ -35,6 +35,410 @@ fn add_slice_in_place_simd<S: Simd>(simd: S, dst: &mut [f32], src: &[f32]) {
     }
 }
 
+#[allow(
+    clippy::inline_always,
+    reason = "fearless_simd dispatch! requires inline(always) to inherit target_feature attributes."
+)]
+#[inline(always)]
+fn sub_slice_in_place_simd<S: Simd>(simd: S, dst: &mut [f32], src: &[f32]) {
+    let (dst_chunks, dst_tail) = dst.as_chunks_mut::<4>();
+    let (src_chunks, src_tail) = src.as_chunks::<4>();
+    for (d, s) in dst_chunks.iter_mut().zip(src_chunks.iter()) {
+        let dv = f32x4::from_slice(simd, d);
+        let sv = f32x4::from_slice(simd, s);
+        (dv - sv).store_slice(d);
+    }
+    for (d, &s) in dst_tail.iter_mut().zip(src_tail.iter()) {
+        *d -= s;
+    }
+}
+
+#[inline]
+fn reduce_f32x4<S: Simd>(v: f32x4<S>) -> f32 {
+    let mut a = [0.0_f32; 4];
+    v.store_slice(&mut a);
+    (a[0] + a[2]) + (a[1] + a[3])
+}
+
+#[allow(
+    clippy::inline_always,
+    reason = "fearless_simd dispatch! requires inline(always) to inherit target_feature attributes."
+)]
+#[inline(always)]
+fn dot_f32_simd<S: Simd>(simd: S, a: &[f32], b: &[f32], init: f32) -> f32 {
+    let zero = f32x4::splat(simd, 0.0);
+    let mut acc0 = zero;
+    let mut acc1 = zero;
+    let (a8, a_rem8) = a.as_chunks::<8>();
+    let (b8, b_rem8) = b.as_chunks::<8>();
+    for (ac, bc) in a8.iter().zip(b8.iter()) {
+        let av0 = f32x4::from_slice(simd, &ac[..4]);
+        let bv0 = f32x4::from_slice(simd, &bc[..4]);
+        let av1 = f32x4::from_slice(simd, &ac[4..]);
+        let bv1 = f32x4::from_slice(simd, &bc[4..]);
+        acc0 = av0.mul_add(bv0, acc0);
+        acc1 = av1.mul_add(bv1, acc1);
+    }
+    let (a4, a_tail) = a_rem8.as_chunks::<4>();
+    let (b4, b_tail) = b_rem8.as_chunks::<4>();
+    for (ac, bc) in a4.iter().zip(b4.iter()) {
+        let av = f32x4::from_slice(simd, ac);
+        let bv = f32x4::from_slice(simd, bc);
+        acc0 = av.mul_add(bv, acc0);
+    }
+    let mut sum = init + reduce_f32x4(acc0 + acc1);
+    for (&av, &bv) in a_tail.iter().zip(b_tail.iter()) {
+        sum = av.mul_add(bv, sum);
+    }
+    sum
+}
+
+#[allow(
+    clippy::inline_always,
+    reason = "fearless_simd dispatch! requires inline(always) to inherit target_feature attributes."
+)]
+#[inline(always)]
+fn dot_four_rows_f32_simd<S: Simd>(
+    simd: S,
+    w0: &[f32],
+    w1: &[f32],
+    w2: &[f32],
+    w3: &[f32],
+    x: &[f32],
+    inits: [f32; 4],
+) -> [f32; 4] {
+    let zero = f32x4::splat(simd, 0.0);
+    let mut a0_0 = zero;
+    let mut a0_1 = zero;
+    let mut a1_0 = zero;
+    let mut a1_1 = zero;
+    let mut a2_0 = zero;
+    let mut a2_1 = zero;
+    let mut a3_0 = zero;
+    let mut a3_1 = zero;
+
+    let (x8, x_rem8) = x.as_chunks::<8>();
+    let (w0_8, w0_rem8) = w0.as_chunks::<8>();
+    let (w1_8, w1_rem8) = w1.as_chunks::<8>();
+    let (w2_8, w2_rem8) = w2.as_chunks::<8>();
+    let (w3_8, w3_rem8) = w3.as_chunks::<8>();
+
+    for (idx, xc) in x8.iter().enumerate() {
+        let xv0 = f32x4::from_slice(simd, &xc[..4]);
+        let xv1 = f32x4::from_slice(simd, &xc[4..]);
+
+        let r0 = &w0_8[idx];
+        a0_0 = f32x4::from_slice(simd, &r0[..4]).mul_add(xv0, a0_0);
+        a0_1 = f32x4::from_slice(simd, &r0[4..]).mul_add(xv1, a0_1);
+
+        let r1 = &w1_8[idx];
+        a1_0 = f32x4::from_slice(simd, &r1[..4]).mul_add(xv0, a1_0);
+        a1_1 = f32x4::from_slice(simd, &r1[4..]).mul_add(xv1, a1_1);
+
+        let r2 = &w2_8[idx];
+        a2_0 = f32x4::from_slice(simd, &r2[..4]).mul_add(xv0, a2_0);
+        a2_1 = f32x4::from_slice(simd, &r2[4..]).mul_add(xv1, a2_1);
+
+        let r3 = &w3_8[idx];
+        a3_0 = f32x4::from_slice(simd, &r3[..4]).mul_add(xv0, a3_0);
+        a3_1 = f32x4::from_slice(simd, &r3[4..]).mul_add(xv1, a3_1);
+    }
+
+    let (x4, x_tail) = x_rem8.as_chunks::<4>();
+    let (w0_4, w0_tail) = w0_rem8.as_chunks::<4>();
+    let (w1_4, w1_tail) = w1_rem8.as_chunks::<4>();
+    let (w2_4, w2_tail) = w2_rem8.as_chunks::<4>();
+    let (w3_4, w3_tail) = w3_rem8.as_chunks::<4>();
+
+    for (idx, xc) in x4.iter().enumerate() {
+        let xv = f32x4::from_slice(simd, xc);
+        a0_0 = f32x4::from_slice(simd, &w0_4[idx]).mul_add(xv, a0_0);
+        a1_0 = f32x4::from_slice(simd, &w1_4[idx]).mul_add(xv, a1_0);
+        a2_0 = f32x4::from_slice(simd, &w2_4[idx]).mul_add(xv, a2_0);
+        a3_0 = f32x4::from_slice(simd, &w3_4[idx]).mul_add(xv, a3_0);
+    }
+
+    let mut s0 = inits[0] + reduce_f32x4(a0_0 + a0_1);
+    let mut s1 = inits[1] + reduce_f32x4(a1_0 + a1_1);
+    let mut s2 = inits[2] + reduce_f32x4(a2_0 + a2_1);
+    let mut s3 = inits[3] + reduce_f32x4(a3_0 + a3_1);
+
+    for (idx, &xv) in x_tail.iter().enumerate() {
+        s0 = w0_tail[idx].mul_add(xv, s0);
+        s1 = w1_tail[idx].mul_add(xv, s1);
+        s2 = w2_tail[idx].mul_add(xv, s2);
+        s3 = w3_tail[idx].mul_add(xv, s3);
+    }
+    [s0, s1, s2, s3]
+}
+
+#[allow(
+    clippy::inline_always,
+    reason = "fearless_simd dispatch! requires inline(always) to inherit target_feature attributes."
+)]
+#[inline(always)]
+fn matvec_4rows_simd<S: Simd>(
+    simd: S,
+    weight: &[f32],
+    input: &[f32],
+    bias: Option<&[f32]>,
+    out: &mut [f32],
+) {
+    let in_c = input.len();
+    let (out_quads, out_rem) = out.as_chunks_mut::<4>();
+    for (q_idx, quad) in out_quads.iter_mut().enumerate() {
+        let o_base = q_idx * 4;
+        let w_base = o_base * in_c;
+        let inits = bias.map_or([0.0_f32; 4], |b| {
+            [b[o_base], b[o_base + 1], b[o_base + 2], b[o_base + 3]]
+        });
+        *quad = dot_four_rows_f32_simd(
+            simd,
+            &weight[w_base..w_base + in_c],
+            &weight[w_base + in_c..w_base + 2 * in_c],
+            &weight[w_base + 2 * in_c..w_base + 3 * in_c],
+            &weight[w_base + 3 * in_c..w_base + 4 * in_c],
+            input,
+            inits,
+        );
+    }
+    let rem_base = out_quads.len() * 4;
+    for (r_idx, slot) in out_rem.iter_mut().enumerate() {
+        let o = rem_base + r_idx;
+        let init = bias.map_or(0.0_f32, |b| b[o]);
+        *slot = dot_f32_simd(simd, &weight[o * in_c..(o + 1) * in_c], input, init);
+    }
+}
+
+#[allow(
+    clippy::inline_always,
+    reason = "fearless_simd dispatch! requires inline(always) to inherit target_feature attributes."
+)]
+#[inline(always)]
+fn trans_conv1d_scatter_frame_simd<S: Simd>(
+    simd: S,
+    in_row: &[f32],
+    weight: &[f32],
+    out_c: usize,
+    kernel: usize,
+    raw_window: &mut [f32],
+) {
+    let oc_quads = out_c / 4;
+    for (ic, &x) in in_row.iter().enumerate() {
+        let xv = f32x4::splat(simd, x);
+        let ic_w_base = ic * out_c * kernel;
+        for q_idx in 0..oc_quads {
+            let oc_base = q_idx * 4;
+            let w0 = &weight[ic_w_base + oc_base * kernel..ic_w_base + (oc_base + 1) * kernel];
+            let w1 =
+                &weight[ic_w_base + (oc_base + 1) * kernel..ic_w_base + (oc_base + 2) * kernel];
+            let w2 =
+                &weight[ic_w_base + (oc_base + 2) * kernel..ic_w_base + (oc_base + 3) * kernel];
+            let w3 =
+                &weight[ic_w_base + (oc_base + 3) * kernel..ic_w_base + (oc_base + 4) * kernel];
+            for k in 0..kernel {
+                let dst = &mut raw_window[k * out_c + oc_base..k * out_c + oc_base + 4];
+                let wv = f32x4::from_slice(simd, &[w0[k], w1[k], w2[k], w3[k]]);
+                let rv = f32x4::from_slice(simd, dst);
+                xv.mul_add(wv, rv).store_slice(dst);
+            }
+        }
+        for oc in (oc_quads * 4)..out_c {
+            let w_base = ic_w_base + oc * kernel;
+            for k in 0..kernel {
+                let dst_idx = k * out_c + oc;
+                raw_window[dst_idx] = x.mul_add(weight[w_base + k], raw_window[dst_idx]);
+            }
+        }
+    }
+}
+
+#[allow(
+    clippy::inline_always,
+    clippy::too_many_arguments,
+    clippy::too_many_lines,
+    reason = "fearless_simd dispatch! requires inline(always) to inherit target_feature attributes."
+)]
+#[inline(always)]
+fn convnext_frame_simd<S: Simd>(
+    simd: S,
+    ext: &[f32],
+    frame: usize,
+    channels: usize,
+    kernel: usize,
+    inv_c: f32,
+    dw_weight: &[f32],
+    dw_bias: &[f32],
+    norm_w: &[f32],
+    norm_b: &[f32],
+    pwconv1_w: &[f32],
+    pwconv1_b: &[f32],
+    pwconv2_w: &[f32],
+    pwconv2_b: &[f32],
+    gamma: &[f32],
+    norm_buf: &mut [f32],
+    mid: &mut [f32],
+    out_row: &mut [f32],
+) {
+    // 1. Depthwise causal conv across `channels` channels (4 channels per f32x4 lane)
+    let (y_quads, y_rem) = norm_buf.as_chunks_mut::<4>();
+    let (b_quads, b_rem) = dw_bias.as_chunks::<4>();
+    for (q_idx, (yq, bq)) in y_quads.iter_mut().zip(b_quads.iter()).enumerate() {
+        let ch_base = q_idx * 4;
+        let mut acc = f32x4::from_slice(simd, bq);
+        let w0 = &dw_weight[ch_base * kernel..(ch_base + 1) * kernel];
+        let w1 = &dw_weight[(ch_base + 1) * kernel..(ch_base + 2) * kernel];
+        let w2 = &dw_weight[(ch_base + 2) * kernel..(ch_base + 3) * kernel];
+        let w3 = &dw_weight[(ch_base + 3) * kernel..(ch_base + 4) * kernel];
+        for ki in 0..kernel {
+            let ext_off = (frame + ki) * channels + ch_base;
+            let xv = f32x4::from_slice(simd, &ext[ext_off..ext_off + 4]);
+            let wv = f32x4::from_slice(simd, &[w0[ki], w1[ki], w2[ki], w3[ki]]);
+            acc = wv.mul_add(xv, acc);
+        }
+        acc.store_slice(yq);
+    }
+    let rem_base = y_quads.len() * 4;
+    for (r_idx, (ys, &bias)) in y_rem.iter_mut().zip(b_rem.iter()).enumerate() {
+        let ch = rem_base + r_idx;
+        let mut acc = bias;
+        let w_row = &dw_weight[ch * kernel..(ch + 1) * kernel];
+        for ki in 0..kernel {
+            acc = w_row[ki].mul_add(ext[(frame + ki) * channels + ch], acc);
+        }
+        *ys = acc;
+    }
+
+    // 2. LayerNorm across `channels` channels
+    let mean = norm_buf.iter().copied().sum::<f32>() * inv_c;
+    let mean_v = f32x4::splat(simd, mean);
+    let mut var_acc = f32x4::splat(simd, 0.0);
+    let (y_chunks, y_tail) = norm_buf.as_chunks::<4>();
+    for yc in y_chunks {
+        let diff = f32x4::from_slice(simd, yc) - mean_v;
+        var_acc = diff.mul_add(diff, var_acc);
+    }
+    let mut var_sum = reduce_f32x4(var_acc);
+    for &val in y_tail {
+        let diff = val - mean;
+        var_sum = diff.mul_add(diff, var_sum);
+    }
+    let inv_std = 1.0_f32 / var_sum.mul_add(inv_c, 1e-6_f32).sqrt();
+    let inv_std_v = f32x4::splat(simd, inv_std);
+    let (y_quads, y_rem) = norm_buf.as_chunks_mut::<4>();
+    let (weight_quads, weight_rem) = norm_w.as_chunks::<4>();
+    let (bias_quads, bias_rem) = norm_b.as_chunks::<4>();
+    for ((yq, wq), bq) in y_quads
+        .iter_mut()
+        .zip(weight_quads.iter())
+        .zip(bias_quads.iter())
+    {
+        let yv = (f32x4::from_slice(simd, yq) - mean_v) * inv_std_v;
+        yv.mul_add(f32x4::from_slice(simd, wq), f32x4::from_slice(simd, bq))
+            .store_slice(yq);
+    }
+    for ((ys, &nw), &nb) in y_rem.iter_mut().zip(weight_rem.iter()).zip(bias_rem.iter()) {
+        *ys = ((*ys - mean) * inv_std).mul_add(nw, nb);
+    }
+
+    // 3. pwconv1 + tanh-approximated GELU
+    matvec_4rows_simd(simd, pwconv1_w, norm_buf, Some(pwconv1_b), mid);
+    let k_gelu = (2.0_f32 / core::f32::consts::PI).sqrt();
+    for x_slot in mid.iter_mut() {
+        let val = *x_slot;
+        let inner = k_gelu * 0.044_715_f32.mul_add(val * val * val, val);
+        *x_slot = 0.5_f32 * val * (1.0_f32 + inner.tanh());
+    }
+
+    // 4. pwconv2 + gamma scale + residual add into `out_row`
+    let mid_c = mid.len();
+    let (out_quads, out_rem) = out_row.as_chunks_mut::<4>();
+    let (g_quads, g_rem) = gamma.as_chunks::<4>();
+    for (q_idx, (oq, gq)) in out_quads.iter_mut().zip(g_quads.iter()).enumerate() {
+        let o_base = q_idx * 4;
+        let w_base = o_base * mid_c;
+        let inits = [
+            pwconv2_b[o_base],
+            pwconv2_b[o_base + 1],
+            pwconv2_b[o_base + 2],
+            pwconv2_b[o_base + 3],
+        ];
+        let dots = dot_four_rows_f32_simd(
+            simd,
+            &pwconv2_w[w_base..w_base + mid_c],
+            &pwconv2_w[w_base + mid_c..w_base + 2 * mid_c],
+            &pwconv2_w[w_base + 2 * mid_c..w_base + 3 * mid_c],
+            &pwconv2_w[w_base + 3 * mid_c..w_base + 4 * mid_c],
+            mid,
+            inits,
+        );
+        let dv = f32x4::from_slice(simd, &dots);
+        let gv = f32x4::from_slice(simd, gq);
+        let rv = f32x4::from_slice(simd, oq);
+        dv.mul_add(gv, rv).store_slice(oq);
+    }
+    let rem_base = out_quads.len() * 4;
+    for (r_idx, (os, &g_val)) in out_rem.iter_mut().zip(g_rem.iter()).enumerate() {
+        let out_idx = rem_base + r_idx;
+        let acc = dot_f32_simd(
+            simd,
+            &pwconv2_w[out_idx * mid_c..(out_idx + 1) * mid_c],
+            mid,
+            pwconv2_b[out_idx],
+        );
+        *os = acc.mul_add(g_val, *os);
+    }
+}
+
+#[allow(
+    clippy::inline_always,
+    reason = "fearless_simd dispatch! requires inline(always) to inherit target_feature attributes."
+)]
+#[inline(always)]
+fn rvq_argmin_simd<S: Simd>(
+    simd: S,
+    cb: &[f32],
+    sq: &[f32],
+    r: &[f32],
+    codebook_size: usize,
+    d: usize,
+) -> usize {
+    let mut best_e = 0_usize;
+    let mut best_sc = f32::INFINITY;
+    let quads = codebook_size / 4;
+    for q_idx in 0..quads {
+        let e_base = q_idx * 4;
+        let w_base = e_base * d;
+        let dots = dot_four_rows_f32_simd(
+            simd,
+            &cb[w_base..w_base + d],
+            &cb[w_base + d..w_base + 2 * d],
+            &cb[w_base + 2 * d..w_base + 3 * d],
+            &cb[w_base + 3 * d..w_base + 4 * d],
+            r,
+            [0.0_f32; 4],
+        );
+        for (k, &dot) in dots.iter().enumerate() {
+            let e = e_base + k;
+            let sc = (-2.0_f32).mul_add(dot, sq[e]);
+            if sc < best_sc {
+                best_sc = sc;
+                best_e = e;
+            }
+        }
+    }
+    for e in (quads * 4)..codebook_size {
+        let c = &cb[e * d..(e + 1) * d];
+        let dot = dot_f32_simd(simd, r, c, 0.0_f32);
+        let sc = (-2.0_f32).mul_add(dot, sq[e]);
+        if sc < best_sc {
+            best_sc = sc;
+            best_e = e;
+        }
+    }
+    best_e
+}
+
 /// Number of RVQ codebooks (`1` semantic + `15` acoustic).
 pub const TOKENIZER_NUM_CODEBOOKS: usize = 16;
 /// Samples per 12.5 Hz codec frame at 24 kHz (`1920`).
@@ -167,25 +571,7 @@ impl CausalConv1d {
             }
         }
 
-        let mut out = vec![0.0_f32; out_frames * self.out_c];
-        for t_out in 0..out_frames {
-            let t_in_base = t_out * self.stride;
-            let out_row = &mut out[t_out * self.out_c..(t_out + 1) * self.out_c];
-            if let Some(bias) = &self.bias {
-                out_row.copy_from_slice(bias);
-            }
-            for (oc, out_slot) in out_row.iter_mut().enumerate().take(self.out_c) {
-                let mut acc = *out_slot;
-                for ic in 0..self.in_c {
-                    let w_base = (oc * self.in_c + ic) * self.kernel;
-                    for k in 0..self.kernel {
-                        let t_in = t_in_base + k * self.dilation;
-                        acc = self.weight[w_base + k].mul_add(padded[t_in * self.in_c + ic], acc);
-                    }
-                }
-                *out_slot = acc;
-            }
-        }
+        let out = self.compute_frames(&padded, out_frames, self.stride);
         Ok((out, out_frames))
     }
 
@@ -217,25 +603,43 @@ impl CausalConv1d {
             state.copy_from_slice(&ext[tail_start..]);
         }
 
-        let mut out = vec![0.0_f32; frames * self.out_c];
-        for t in 0..frames {
-            let out_row = &mut out[t * self.out_c..(t + 1) * self.out_c];
-            if let Some(bias) = &self.bias {
-                out_row.copy_from_slice(bias);
+        Ok(self.compute_frames(&ext, frames, 1))
+    }
+
+    fn compute_frames(&self, ext: &[f32], out_frames: usize, stride: usize) -> Vec<f32> {
+        let mut out = vec![0.0_f32; out_frames * self.out_c];
+        let level = Level::new();
+        let bias = self.bias.as_deref();
+        if self.kernel == 1 {
+            for t_out in 0..out_frames {
+                let t_in = t_out * stride;
+                let in_row = &ext[t_in * self.in_c..(t_in + 1) * self.in_c];
+                let out_row = &mut out[t_out * self.out_c..(t_out + 1) * self.out_c];
+                dispatch!(
+                    level,
+                    simd => matvec_4rows_simd(simd, &self.weight, in_row, bias, out_row)
+                );
             }
-            for (oc, out_slot) in out_row.iter_mut().enumerate().take(self.out_c) {
-                let mut acc = *out_slot;
-                for ic in 0..self.in_c {
-                    let w_base = (oc * self.in_c + ic) * self.kernel;
-                    for k in 0..self.kernel {
-                        let t_ext = t + k * self.dilation;
-                        acc = self.weight[w_base + k].mul_add(ext[t_ext * self.in_c + ic], acc);
-                    }
-                }
-                *out_slot = acc;
-            }
+            return out;
         }
-        Ok(out)
+        let patch_len = self.in_c * self.kernel;
+        let mut patch = vec![0.0_f32; patch_len];
+        for t_out in 0..out_frames {
+            let t_in_base = t_out * stride;
+            for ic in 0..self.in_c {
+                let p_base = ic * self.kernel;
+                for k in 0..self.kernel {
+                    let t_in = t_in_base + k * self.dilation;
+                    patch[p_base + k] = ext[t_in * self.in_c + ic];
+                }
+            }
+            let out_row = &mut out[t_out * self.out_c..(t_out + 1) * self.out_c];
+            dispatch!(
+                level,
+                simd => matvec_4rows_simd(simd, &self.weight, &patch, bias, out_row)
+            );
+        }
+        out
     }
 }
 
@@ -299,18 +703,22 @@ impl CausalTransConv1d {
             raw[..trim * self.out_c].copy_from_slice(carry);
         }
 
+        let level = Level::new();
         for t in 0..frames {
             let in_row = &input[t * self.in_c..(t + 1) * self.in_c];
             let out_base = t * self.stride;
-            for (ic, &x) in in_row.iter().enumerate().take(self.in_c) {
-                for oc in 0..self.out_c {
-                    let w_base = (ic * self.out_c + oc) * self.kernel;
-                    for k in 0..self.kernel {
-                        let dst_idx = (out_base + k) * self.out_c + oc;
-                        raw[dst_idx] = x.mul_add(self.weight[w_base + k], raw[dst_idx]);
-                    }
-                }
-            }
+            let raw_window = &mut raw[out_base * self.out_c..(out_base + self.kernel) * self.out_c];
+            dispatch!(
+                level,
+                simd => trans_conv1d_scatter_frame_simd(
+                    simd,
+                    in_row,
+                    &self.weight,
+                    self.out_c,
+                    self.kernel,
+                    raw_window,
+                )
+            );
         }
 
         if trim > 0 {
@@ -321,9 +729,7 @@ impl CausalTransConv1d {
         if let Some(bias) = &self.bias {
             for t in 0..emit {
                 let row = &mut emitted[t * self.out_c..(t + 1) * self.out_c];
-                for (dst, &b) in row.iter_mut().zip(bias.iter()) {
-                    *dst += b;
-                }
+                dispatch!(level, simd => add_slice_in_place_simd(simd, row, bias));
             }
         }
         Ok(emitted)
@@ -502,57 +908,35 @@ impl ConvNeXtBlock {
         let inv_c = 1.0_f32 / usize_to_f32(c);
         let mid_c = self.pwconv1_b.len();
         let mut out = input.to_vec();
+        let mut y = vec![0.0_f32; c];
+        let mut mid = vec![0.0_f32; mid_c];
+        let level = Level::new();
 
         for t in 0..frames {
-            let mut y = vec![0.0_f32; c];
-            for ch in 0..c {
-                let mut acc = self.dw_bias[ch];
-                let w_row = &self.dw_weight[ch * k..(ch + 1) * k];
-                for ki in 0..k {
-                    acc = w_row[ki].mul_add(ext[(t + ki) * c + ch], acc);
-                }
-                y[ch] = acc;
-            }
-            // LayerNorm across channels
-            let mean = y.iter().copied().sum::<f32>() * inv_c;
-            let var = y
-                .iter()
-                .map(|&v| {
-                    let d = v - mean;
-                    d * d
-                })
-                .sum::<f32>()
-                * inv_c;
-            let inv_std = 1.0_f32 / (var + 1e-6_f32).sqrt();
-            for ch in 0..c {
-                y[ch] = ((y[ch] - mean) * inv_std).mul_add(self.norm_w[ch], self.norm_b[ch]);
-            }
-
-            // pwconv1 + exact/tanh GELU
-            let mut mid = vec![0.0_f32; mid_c];
-            for o in 0..mid_c {
-                let w_row = &self.pwconv1_w[o * c..(o + 1) * c];
-                let mut acc = self.pwconv1_b[o];
-                for i in 0..c {
-                    acc = w_row[i].mul_add(y[i], acc);
-                }
-                // Tanh-approximated GELU matching ggml_gelu
-                let x = acc;
-                let k_gelu = (2.0_f32 / core::f32::consts::PI).sqrt();
-                let inner = k_gelu * 0.044_715_f32.mul_add(x * x * x, x);
-                mid[o] = 0.5_f32 * x * (1.0_f32 + inner.tanh());
-            }
-
-            // pwconv2 + gamma + residual
             let out_row = &mut out[t * c..(t + 1) * c];
-            for o in 0..c {
-                let w_row = &self.pwconv2_w[o * mid_c..(o + 1) * mid_c];
-                let mut acc = self.pwconv2_b[o];
-                for i in 0..mid_c {
-                    acc = w_row[i].mul_add(mid[i], acc);
-                }
-                out_row[o] = acc.mul_add(self.gamma[o], out_row[o]);
-            }
+            dispatch!(
+                level,
+                simd => convnext_frame_simd(
+                    simd,
+                    &ext,
+                    t,
+                    c,
+                    k,
+                    inv_c,
+                    &self.dw_weight,
+                    &self.dw_bias,
+                    &self.norm_w,
+                    &self.norm_b,
+                    &self.pwconv1_w,
+                    &self.pwconv1_b,
+                    &self.pwconv2_w,
+                    &self.pwconv2_b,
+                    &self.gamma,
+                    &mut y,
+                    &mut mid,
+                    out_row,
+                )
+            );
         }
         Ok(out)
     }
@@ -589,6 +973,7 @@ impl RvqGroup {
         }
         let mut out = vec![0.0_f32; frames * self.hidden_dim];
         let mut sum_emb = vec![0.0_f32; self.codebook_dim];
+        let level = Level::new();
         for t in 0..frames {
             sum_emb.fill(0.0_f32);
             for k in 0..self.num_codebooks {
@@ -603,19 +988,13 @@ impl RvqGroup {
                 }
                 let row =
                     &self.codebooks[k][idx * self.codebook_dim..(idx + 1) * self.codebook_dim];
-                for (dst, &val) in sum_emb.iter_mut().zip(row.iter()) {
-                    *dst += val;
-                }
+                dispatch!(level, simd => add_slice_in_place_simd(simd, &mut sum_emb, row));
             }
             let out_row = &mut out[t * self.hidden_dim..(t + 1) * self.hidden_dim];
-            for o in 0..self.hidden_dim {
-                let w_row = &self.out_proj_w[o * self.codebook_dim..(o + 1) * self.codebook_dim];
-                let mut acc = 0.0_f32;
-                for i in 0..self.codebook_dim {
-                    acc = w_row[i].mul_add(sum_emb[i], acc);
-                }
-                out_row[o] = acc;
-            }
+            dispatch!(
+                level,
+                simd => matvec_4rows_simd(simd, &self.out_proj_w, &sum_emb, None, out_row)
+            );
         }
         Ok(out)
     }
@@ -651,9 +1030,8 @@ impl RvqDecoder {
         }
         let mut h_sem = self.semantic.decode(&sem_codes, frames)?;
         let h_aco = self.acoustic.decode(&aco_codes, frames)?;
-        for (dst, &val) in h_sem.iter_mut().zip(h_aco.iter()) {
-            *dst += val;
-        }
+        let level = Level::new();
+        dispatch!(level, simd => add_slice_in_place_simd(simd, &mut h_sem, &h_aco));
         Ok(h_sem)
     }
 }
@@ -701,12 +1079,13 @@ impl RvqEncodeSide {
                 "Invalid RvqEncodeSide dimensions.",
             ));
         }
+        let level = Level::new();
         let mut sqsum = Vec::with_capacity(num_layers);
         for cb in &codebooks {
             let mut layer_sq = Vec::with_capacity(codebook_size);
             for e in 0..codebook_size {
                 let row = &cb[e * codebook_dim..(e + 1) * codebook_dim];
-                let norm_sq: f32 = row.iter().map(|&v| v * v).sum();
+                let norm_sq = dispatch!(level, simd => dot_f32_simd(simd, row, row, 0.0_f32));
                 layer_sq.push(norm_sq);
             }
             sqsum.push(layer_sq);
@@ -737,17 +1116,14 @@ impl RvqEncodeSide {
         }
         let d = self.codebook_dim;
         let mut res = vec![0.0_f32; frames * d];
+        let level = Level::new();
         for t in 0..frames {
             let x = &hidden[t * self.hidden_size..(t + 1) * self.hidden_size];
             let y = &mut res[t * d..(t + 1) * d];
-            for o in 0..d {
-                let w_row = &self.input_proj[o * self.hidden_size..(o + 1) * self.hidden_size];
-                let mut acc = 0.0_f32;
-                for i in 0..self.hidden_size {
-                    acc = w_row[i].mul_add(x[i], acc);
-                }
-                y[o] = acc;
-            }
+            dispatch!(
+                level,
+                simd => matvec_4rows_simd(simd, &self.input_proj, x, None, y)
+            );
         }
 
         for l in 0..self.num_layers {
@@ -755,25 +1131,13 @@ impl RvqEncodeSide {
             let sq = &self.sqsum[l];
             for t in 0..frames {
                 let r = &mut res[t * d..(t + 1) * d];
-                let mut best_e = 0_usize;
-                let mut best_sc = f32::INFINITY;
-                for e in 0..self.codebook_size {
-                    let c = &cb[e * d..(e + 1) * d];
-                    let mut dot = 0.0_f32;
-                    for i in 0..d {
-                        dot = r[i].mul_add(c[i], dot);
-                    }
-                    let sc = (-2.0_f32).mul_add(dot, sq[e]);
-                    if sc < best_sc {
-                        best_sc = sc;
-                        best_e = e;
-                    }
-                }
+                let best_e = dispatch!(
+                    level,
+                    simd => rvq_argmin_simd(simd, cb, sq, r, self.codebook_size, d)
+                );
                 codes_out.push(i32::try_from(best_e).unwrap_or(0));
                 let best_centroid = &cb[best_e * d..(best_e + 1) * d];
-                for i in 0..d {
-                    r[i] -= best_centroid[i];
-                }
+                dispatch!(level, simd => sub_slice_in_place_simd(simd, r, best_centroid));
             }
         }
         Ok(())
@@ -1179,6 +1543,95 @@ mod tests {
 
         let decimated = decimate_48k_to_24k(&[0.2, 0.6, -0.4, 0.0]);
         assert_eq!(decimated, vec![0.4, -0.2]);
+        Ok(())
+    }
+
+    #[test]
+    fn simd_wide_conv_convnext_and_rvq_preserve_streaming_and_centroid_parity()
+    -> std::io::Result<()> {
+        let conv = CausalConv1d {
+            out_c: 10,
+            in_c: 9,
+            kernel: 3,
+            dilation: 2,
+            stride: 1,
+            pad_mode: PadMode::Constant,
+            weight: (0..(10 * 9 * 3))
+                .map(|i| f32::from(u16::try_from((i % 29) + 1).unwrap_or(1)) * 0.01)
+                .collect(),
+            bias: Some(
+                (0..10)
+                    .map(|i| f32::from(u8::try_from(i).unwrap_or(0)) * 0.02)
+                    .collect(),
+            ),
+        };
+        let input: Vec<f32> = (0..(6 * 9))
+            .map(|i| f32::from(u8::try_from(i % 13).unwrap_or(0)).mul_add(0.05, -0.3))
+            .collect();
+        let (offline, _) = conv.forward(&input, 6)?;
+        let mut state = vec![0.0_f32; conv.stream_context_frames() * conv.in_c];
+        let mut streamed = Vec::new();
+        for chunk in input.chunks(2 * 9) {
+            streamed.extend(conv.forward_stream(chunk, 2, &mut state)?);
+        }
+        assert_eq!(offline, streamed);
+
+        let tconv = CausalTransConv1d {
+            in_c: 6,
+            out_c: 10,
+            kernel: 4,
+            stride: 2,
+            weight: (0..(6 * 10 * 4))
+                .map(|i| f32::from(u16::try_from((i % 19) + 1).unwrap_or(1)) * 0.015)
+                .collect(),
+            bias: Some(
+                (0..10)
+                    .map(|i| f32::from(u8::try_from(i).unwrap_or(0)) * -0.01)
+                    .collect(),
+            ),
+        };
+        let t_input: Vec<f32> = (0..(4 * 6))
+            .map(|i| f32::from(u8::try_from(i % 11).unwrap_or(0)).mul_add(0.07, -0.2))
+            .collect();
+        let (t_offline, _) = tconv.forward(&t_input, 4)?;
+        let mut carry = vec![0.0_f32; tconv.carry_frames() * tconv.out_c];
+        let mut t_streamed = Vec::new();
+        for chunk in t_input.chunks(2 * 6) {
+            t_streamed.extend(tconv.forward_stream(chunk, 2, &mut carry)?);
+        }
+        assert_eq!(t_offline, t_streamed);
+
+        let c = 10;
+        let mid_c = 18;
+        let cn = ConvNeXtBlock {
+            channels: c,
+            kernel: 3,
+            dw_weight: vec![0.05; c * 3],
+            dw_bias: vec![0.01; c],
+            norm_w: vec![1.0; c],
+            norm_b: vec![0.0; c],
+            pwconv1_w: (0..(mid_c * c))
+                .map(|i| f32::from(u16::try_from((i % 17) + 1).unwrap_or(1)) * 0.01)
+                .collect(),
+            pwconv1_b: vec![0.02; mid_c],
+            pwconv2_w: (0..(c * mid_c))
+                .map(|i| f32::from(u16::try_from((i % 23) + 1).unwrap_or(1)) * 0.01)
+                .collect(),
+            pwconv2_b: vec![-0.01; c],
+            gamma: vec![0.5; c],
+        };
+        let cn_in: Vec<f32> = (0..(4 * c))
+            .map(|i| f32::from(u8::try_from(i % 9).unwrap_or(0)).mul_add(0.1, -0.4))
+            .collect();
+        let mut dw_all = vec![0.0_f32; 2 * c];
+        let cn_batch = cn.forward_stream(&cn_in, 4, &mut dw_all)?;
+        let mut dw_step = vec![0.0_f32; 2 * c];
+        let mut cn_stream = Vec::new();
+        for chunk in cn_in.chunks(2 * c) {
+            cn_stream.extend(cn.forward_stream(chunk, 2, &mut dw_step)?);
+        }
+        assert_eq!(cn_batch, cn_stream);
+        assert_eq!(dw_all, dw_step);
         Ok(())
     }
 }
