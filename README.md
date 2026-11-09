@@ -79,22 +79,30 @@ model. For technical details, see the [UI architecture](docs/ui-architecture.md)
 
 ## Performance
 
-Short test prompts on a Snapdragon X2 Elite Extreme laptop (plugged into wall power,
-using four CPU threads) measured the following speeds and memory use:
+The app currently uses **Prism 0.1.22**. Updated response-speed and peak-memory
+measurements for this release, including its Snapdragon X2 Hexagon NPU path, are
+**pending**.
 
-| Model option | Wait before first word | Writing speed | Download size | Memory used (short reply) | Free RAM required |
+The latest [recorded CPU measurements](docs/evidence/token-timing-20261103/summary.json)
+are from **November 3, 2026**, using **Prism 0.1.14**, four CPU workers and the
+standard adapter at strength 1.3 on a **Snapdragon X2 Elite Extreme** laptop.
+AC power was connected and battery saver was off at every recorded power sample.
+
+| Model option | Time to first token | Generation speed | Model file size | Peak Job commit (short reply) | Free RAM required |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| **Standard model (default)** | **16.6 s** | **1.34 tokens/s** | **6.71 GiB** | **7.20 GiB** | **15.5 GiB** |
-| **Extra-compact model (experimental)** | **29.5 s** | **0.75 tokens/s** | **5.54 GiB** | **6.02 GiB** | **15.5 GiB** |
+| **Standard model (PQ2)** | **16.64 s** | **1.34 tokens/s** | **6.71 GiB** | **7.20 GiB** | **15.5 GiB** |
+| **Extra-compact model (PTQ1, experimental)** | **29.50 s** | **0.75 tokens/s** | **5.54 GiB** | **6.02 GiB** | **15.5 GiB** |
 
-Splitting the work across four CPU threads roughly doubled both initial response
-speed and writing speed compared with a single thread. Newer engine updates add
-further CPU and Snapdragon X2 Hexagon NPU speedups, and end-to-end timing for those
-updates is still in progress.
+Each option was measured once with `Count from 1 to 100.`, Thinking off and an
+eight-token reply limit. Time to first token excludes model loading; generation
+speed excludes that initial wait. These are client-observed short-reply rates,
+with sustained speed still unmeasured. Peak Job commit excludes mapped-file
+residency and NPU allocations; it is not total RAM use.
 
 The extra-compact model option (`--use-repacked-ptq1`) saves about **1.17 GiB** of
-disk space and memory without changing the model's weights, but it currently writes
-more slowly than the standard model and remains an optional experiment.
+disk space without changing the model's weights. It also used about **1.17 GiB**
+less peak Job commit in these short CPU requests, while generating tokens more
+slowly on the measured release. It remains an optional experiment.
 
 For detailed benchmarks, NPU layer timings, and memory breakdowns, see:
 
