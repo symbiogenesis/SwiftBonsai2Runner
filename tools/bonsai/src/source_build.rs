@@ -11,7 +11,6 @@ use std::{
 use bonsai_artifacts::validate_external_path;
 use serde::Deserialize;
 use serde_json::{Value, json};
-use sha2::{Digest as _, Sha256};
 
 use crate::{startup_cache as cache, startup_process};
 
@@ -62,9 +61,9 @@ pub(crate) fn channel(repository: &Path) -> crate::Result<String> {
 }
 
 pub(crate) fn cache_key(repository: &Path, channel: &str) -> String {
-    crate::identity::hex(&Sha256::digest(
+    crate::identity::sha256(
         format!("{}\n{channel}", repository.to_string_lossy().to_uppercase()).as_bytes(),
-    ))
+    )
     // MSVC still rejects some archive paths beyond MAX_PATH. The full source
     // identity stays in the verified receipt; a 96-bit directory label leaves
     // room for Cargo's target, package and artifact names on ordinary profiles.
@@ -120,7 +119,7 @@ fn identity(spec: &BuildSpec) -> String {
 fn receipt_path(spec: &BuildSpec, identity: &str) -> PathBuf {
     spec.target_directory.join(format!(
         "startup-build-{}.json",
-        crate::identity::hex(&Sha256::digest(identity.as_bytes()))
+        crate::identity::sha256(identity.as_bytes())
     ))
 }
 

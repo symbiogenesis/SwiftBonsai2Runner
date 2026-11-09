@@ -6,11 +6,10 @@ use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use crate::identity::{hex, is_lower_hex};
+use crate::identity::{Hasher, is_lower_hex};
 use bonsai_artifacts::{hash_reader, open_locked_file, validate_external_path};
 use serde::Deserialize;
 use serde_json::{Value, json};
-use sha2::{Digest as _, Sha256};
 use zip::ZipArchive;
 
 const REPOSITORY: &str = "https://github.com/symbiogenesis/prism-inference";
@@ -281,7 +280,7 @@ fn verify_entry(reader: &mut impl Read, identity: &Identity) -> crate::Result<()
     let mut dos = [0; 64];
     let mut pe = [0; 6];
     let mut offset = None;
-    let mut hash = Sha256::new();
+    let mut hash = Hasher::new()?;
     let mut total = 0_u64;
     let mut buffer = vec![0; 65536].into_boxed_slice();
     loop {
@@ -312,11 +311,11 @@ fn verify_entry(reader: &mut impl Read, identity: &Identity) -> crate::Result<()
                 copy_overlap(&mut pe, position, &buffer[..count], total)?;
             }
         }
-        hash.update(&buffer[..count]);
+        hash.update(&buffer[..count])?;
         total = end;
     }
     if total != identity.bytes
-        || hex(&hash.finalize()) != identity.sha256
+        || hash.finalize_hex()? != identity.sha256
         || executable && (offset.is_none() || pe != [b'P', b'E', 0, 0, 0x64, 0xaa])
     {
         return Err("Release entry hash, length or ARM64 machine differs from its lock.".into());

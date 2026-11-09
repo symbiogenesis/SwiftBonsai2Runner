@@ -7,11 +7,10 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use crate::identity::{hex, is_lower_hex};
+use crate::identity::{Hasher, hex, is_lower_hex};
 use bonsai_artifacts::{is_redirect, open_locked_file, validate_external_path};
 use serde::Deserialize;
 use serde_json::{Value, json};
-use sha2::{Digest as _, Sha256};
 use zip::{HasZipMetadata as _, ZipArchive};
 
 const MAX_BYTES: u64 = 1024 * 1024 * 1024;
@@ -328,7 +327,7 @@ fn digest(
     output: &mut impl Write,
     buffer: &mut [u8],
 ) -> crate::Result<[u8; 32]> {
-    let mut hash = Sha256::new();
+    let mut hash = Hasher::new()?;
     let mut count = 0_u64;
     loop {
         crate::startup_cancel::checkpoint()?;
@@ -344,7 +343,7 @@ fn digest(
         if count > expected {
             return Err("Native source entry exceeded its byte bound.".into());
         }
-        hash.update(&buffer[..copied]);
+        hash.update(&buffer[..copied])?;
         output
             .write_all(&buffer[..copied])
             .map_err(|_| "Cannot write native source bytes.")?;
@@ -352,7 +351,7 @@ fn digest(
     if count != expected {
         return Err("Native source byte length differs from its archive.".into());
     }
-    Ok(hash.finalize().into())
+    hash.finalize_bytes()
 }
 
 struct PreparedSource {

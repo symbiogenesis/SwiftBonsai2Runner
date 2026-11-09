@@ -10,7 +10,8 @@ use std::{
 use bonsai_artifacts::{is_redirect, validate_external_path};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
-use sha2::{Digest as _, Sha256};
+
+use crate::identity::Hasher;
 
 const MAX_METADATA_BYTES: u64 = 32_768;
 const FILES: &[&str] = &[
@@ -203,16 +204,16 @@ fn verify_file(directory: &Path, entry: &PackageFile) -> crate::Result<()> {
     if file.metadata().map_err(|error| error.to_string())?.len() != entry.bytes {
         return Err(format!("Package byte length mismatch: {}", entry.name));
     }
-    let mut digest = Sha256::new();
+    let mut digest = Hasher::new()?;
     let mut buffer = vec![0; 65_536];
     loop {
         let count = file.read(&mut buffer).map_err(|error| error.to_string())?;
         if count == 0 {
             break;
         }
-        digest.update(&buffer[..count]);
+        digest.update(&buffer[..count])?;
     }
-    if crate::identity::hex(&digest.finalize()) != entry.sha256 {
+    if digest.finalize_hex()? != entry.sha256 {
         return Err(format!("Package SHA-256 mismatch: {}", entry.name));
     }
     if entry.name.starts_with("bin/") {

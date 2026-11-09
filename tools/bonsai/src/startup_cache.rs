@@ -12,10 +12,9 @@ use std::{
     path::{Component, Path, PathBuf},
 };
 
-use crate::identity::hex;
+use crate::identity::Hasher;
 use bonsai_artifacts::{is_redirect, validate_external_path};
 use serde::{Deserialize, Serialize};
-use sha2::{Digest as _, Sha256};
 
 pub(crate) fn lock_file(path: &Path) -> crate::Result<File> {
     validate_external_path(path).map_err(|error| error.to_string())?;
@@ -65,7 +64,7 @@ fn source_file(path: &Path) -> crate::Result<File> {
 pub(crate) fn digest_file(path: &Path) -> crate::Result<String> {
     crate::startup_cancel::checkpoint()?;
     let mut file = source_file(path)?;
-    let mut hash = Sha256::new();
+    let mut hash = Hasher::new()?;
     let mut buffer = vec![0; 65536];
     loop {
         crate::startup_cancel::checkpoint()?;
@@ -73,9 +72,9 @@ pub(crate) fn digest_file(path: &Path) -> crate::Result<String> {
         if count == 0 {
             break;
         }
-        hash.update(&buffer[..count]);
+        hash.update(&buffer[..count])?;
     }
-    Ok(hex(&hash.finalize()))
+    hash.finalize_hex()
 }
 
 pub(crate) fn assert_arm64(path: &Path) -> crate::Result<()> {
@@ -104,9 +103,9 @@ pub(crate) fn assert_arm64(path: &Path) -> crate::Result<()> {
     Ok(())
 }
 
-fn part(hash: &mut Sha256, bytes: &[u8]) {
-    hash.update(bytes.len().to_le_bytes());
-    hash.update(bytes);
+fn part(hash: &mut Hasher, bytes: &[u8]) -> crate::Result<()> {
+    hash.update(&bytes.len().to_le_bytes())?;
+    hash.update(bytes)
 }
 
 fn non_build_input(root: &Path, path: &Path) -> bool {
@@ -607,16 +606,16 @@ fn fingerprint_with(
     let mut files = BTreeSet::new();
     enumerate(repository, repository, &mut files)?;
     let mut supported = embedded_inputs(repository, &mut files)?;
-    let mut hash = Sha256::new();
-    part(&mut hash, b"bonsai-rust-startup-v2");
-    part(&mut hash, repository.to_string_lossy().as_bytes());
-    part(&mut hash, identity.as_bytes());
+    let mut hash = Hasher::new()?;
+    part(&mut hash, b"bonsai-rust-startup-v2")?;
+    part(&mut hash, repository.to_string_lossy().as_bytes())?;
+    part(&mut hash, identity.as_bytes())?;
     for file in files {
         let relative = file
             .strip_prefix(repository)
             .map_err(|error| error.to_string())?;
-        part(&mut hash, relative.to_string_lossy().as_bytes());
-        part(&mut hash, digest_file(&file)?.as_bytes());
+        part(&mut hash, relative.to_string_lossy().as_bytes())?;
+        part(&mut hash, digest_file(&file)?.as_bytes())?;
         if file.file_name().is_some_and(|name| name == "Cargo.toml") {
             supported &= !external_dependencies(
                 &fs::read_to_string(&file).map_err(|error| error.to_string())?,
@@ -626,8 +625,8 @@ fn fingerprint_with(
         }
     }
     for (name, value) in environment {
-        part(&mut hash, name.as_bytes());
-        part(&mut hash, value.as_bytes());
+        part(&mut hash, name.as_bytes())?;
+        part(&mut hash, value.as_bytes())?;
     }
     for name in [
         "RUSTC",
@@ -669,8 +668,8 @@ fn fingerprint_with(
     }
     for config in configs {
         let content = fs::read_to_string(&config).map_err(|error| error.to_string())?;
-        part(&mut hash, config.to_string_lossy().as_bytes());
-        part(&mut hash, content.as_bytes());
+        part(&mut hash, config.to_string_lossy().as_bytes())?;
+        part(&mut hash, content.as_bytes())?;
         for key in [
             "paths",
             "path",
@@ -685,7 +684,11 @@ fn fingerprint_with(
             supported &= assignments(&content, key).is_empty();
         }
     }
-    Ok(supported.then(|| hex(&hash.finalize())))
+    if supported {
+        Ok(Some(hash.finalize_hex()?))
+    } else {
+        Ok(None)
+    }
 }
 
 #[derive(Serialize, Deserialize)]

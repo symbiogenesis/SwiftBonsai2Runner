@@ -178,7 +178,6 @@ mod windows {
 
     use bonsai_artifacts::validate_external_path;
     use bonsai_windows_process::ProcessSpec;
-    use sha2::{Digest as _, Sha256};
 
     use super::{Value, checked_report, json, unknown};
 
@@ -195,7 +194,7 @@ mod windows {
         if bytes.is_empty() || bytes.len() > 16 * 1024 * 1024 {
             return Err("System OpenCL loader identity exceeds its bound.".into());
         }
-        let loader = json!({"file": "OpenCL.dll", "bytes": bytes.len(), "sha256": crate::identity::hex(&Sha256::digest(&bytes)), "signature_verified": false, "dependencies_verified": false});
+        let loader = json!({"file": "OpenCL.dll", "bytes": bytes.len(), "sha256": crate::identity::sha256(&bytes), "signature_verified": false, "dependencies_verified": false});
         let platforms: Vec<_> = inventory.platforms.iter().map(|platform| json!({
             "name": platform.name, "vendor": platform.vendor, "version": platform.version,
             "devices": platform.devices.iter().map(|device| json!({

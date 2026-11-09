@@ -9,7 +9,8 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use bonsai_artifacts::{ArtifactError, VerifiedFile, validate_external_path};
 use bonsai_windows_process::ParentProcess;
 use serde_json::{Value, json};
-use sha2::{Digest as _, Sha256};
+
+use crate::identity::Hasher;
 
 use super::{
     AdapterCondition, CHANNEL, CaptureMode, Kind, LIMIT, PENDING, Request, plan, read_json,
@@ -219,7 +220,7 @@ impl Context<'_> {
         if length == 0 || length > maximum {
             return Err("Qualification artifact exceeds its fixed byte bound.".into());
         }
-        let mut hash = Sha256::new();
+        let mut hash = Hasher::new()?;
         let mut buffer = vec![0; 65_536];
         let mut total = 0_u64;
         loop {
@@ -232,12 +233,12 @@ impl Context<'_> {
             if total > length {
                 return Err("Qualification artifact grew during hashing.".into());
             }
-            hash.update(&buffer[..count]);
+            hash.update(&buffer[..count])?;
         }
         if total != length {
             return Err("Qualification artifact changed during hashing.".into());
         }
-        Ok(json!({"path": path, "bytes": length, "sha256": crate::identity::hex(&hash.finalize())}))
+        Ok(json!({"path": path, "bytes": length, "sha256": hash.finalize_hex()?}))
     }
 
     fn hold(&mut self, artifact: Value) -> crate::Result<()> {

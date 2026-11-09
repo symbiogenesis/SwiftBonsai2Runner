@@ -2,7 +2,7 @@ use std::collections::BTreeSet;
 use std::fs::File;
 use std::io::{BufReader, Read as _};
 
-use sha2::{Digest as _, Sha256};
+use crate::identity::Hasher;
 
 use super::Deadline;
 
@@ -23,7 +23,7 @@ pub(super) struct Header {
 
 struct Reader<'a> {
     file: BufReader<&'a mut File>,
-    digest: Sha256,
+    digest: Hasher,
     position: u64,
     file_bytes: u64,
     elements: u64,
@@ -42,9 +42,9 @@ impl Reader<'_> {
             .read_exact(bytes)
             .map_err(|error| error.to_string())?;
         if masked {
-            self.digest.update(vec![0; bytes.len()]);
+            self.digest.update(&vec![0; bytes.len()])?;
         } else {
-            self.digest.update(&*bytes);
+            self.digest.update(bytes)?;
         }
         self.position = end;
         Ok(())
@@ -139,7 +139,7 @@ pub(super) fn read(file: &mut File, packed: bool, deadline: &Deadline) -> crate:
     let file_bytes = file.metadata().map_err(|error| error.to_string())?.len();
     let mut reader = Reader {
         file: BufReader::new(file),
-        digest: Sha256::new(),
+        digest: Hasher::new()?,
         position: 0,
         file_bytes,
         elements: 0,
@@ -236,6 +236,6 @@ pub(super) fn read(file: &mut File, packed: bool, deadline: &Deadline) -> crate:
     Ok(Header {
         tensors,
         data_offset,
-        normalized_digest: reader.digest.finalize().to_vec(),
+        normalized_digest: reader.digest.finalize_bytes()?.to_vec(),
     })
 }

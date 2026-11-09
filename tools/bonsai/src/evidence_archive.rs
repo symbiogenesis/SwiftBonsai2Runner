@@ -10,9 +10,8 @@ use std::{
 use bonsai_artifacts::{VerifiedFile, open_locked_file, validate_external_path};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
-use sha2::{Digest as _, Sha256};
 
-use crate::identity::{hex, is_lower_hex, sha256};
+use crate::identity::{Hasher, is_lower_hex, sha256};
 
 const MANIFEST: &str = "evidence-manifest.json";
 const MANIFEST_LIMIT: u64 = 1024 * 1024;
@@ -342,7 +341,7 @@ fn copy(directory: &Path, output: &Path, bytes: &[u8], manifest: &Manifest) -> c
         let mut source =
             open_locked_file(&directory.join(&entry.path)).map_err(|error| error.to_string())?;
         let mut destination = create(&path)?;
-        let mut digest = Sha256::new();
+        let mut digest = Hasher::new()?;
         let mut remaining = entry.bytes;
         let mut buffer = vec![0_u8; 64 * 1024];
         loop {
@@ -358,9 +357,9 @@ fn copy(directory: &Path, output: &Path, bytes: &[u8], manifest: &Manifest) -> c
             destination
                 .write_all(&buffer[..count])
                 .map_err(|error| error.to_string())?;
-            digest.update(&buffer[..count]);
+            digest.update(&buffer[..count])?;
         }
-        if remaining != 0 || hex(&digest.finalize()) != entry.sha256 {
+        if remaining != 0 || digest.finalize_hex()? != entry.sha256 {
             return Err("Evidence copy differs from the selected identity.".into());
         }
         destination.sync_all().map_err(|error| error.to_string())?;

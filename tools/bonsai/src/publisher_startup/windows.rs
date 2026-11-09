@@ -10,7 +10,6 @@ use std::{
 use bonsai_windows_process::ParentProcess;
 use serde::Deserialize;
 use serde_json::{Value, json};
-use sha2::{Digest as _, Sha256};
 
 use super::{
     MODEL, PIN, allowance, cases, external, inventory, observation, pinned, smoke_deadline,
@@ -285,7 +284,7 @@ pub(super) fn run(value: Value) -> crate::Result<Value> {
     let receipt = json!({"SchemaVersion":2, "Status":"preparing",
         "Scope":if request.model_smoke { "x2-hosted-candidate-pq2-model-smoke-only" } else { "x2-hosted-candidate-model-free-startup-only" },
         "HostedRunId":pin["execution"]["runId"], "HostedArtifactSha256":pin["artifact"]["sha256"],
-        "HostedEvidenceSha256":crate::identity::hex(&Sha256::digest(PIN.as_bytes())),
+        "HostedEvidenceSha256":crate::identity::sha256(PIN.as_bytes()),
         "Source":pin["source"], "PackageFiles":pin["results"]["packageFiles"], "SupervisorSha256":null,
         "WorkerPolicy":"ordinary-required-headless", "WorkBudgetSeconds":request.work_budget_seconds,
         "StartedAtUtc":bonsai_windows_process::utc_now(), "RequestedProbes":if request.model_smoke { json!(["pq2-four-token-smoke"]) } else { json!(cases().iter().map(|probe| &probe["Name"]).collect::<Vec<_>>()) },

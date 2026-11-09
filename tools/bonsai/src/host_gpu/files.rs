@@ -7,7 +7,8 @@ use std::{
 
 use bonsai_windows_process::VulkanModuleFileCandidate;
 use serde_json::{Value, json};
-use sha2::{Digest as _, Sha256};
+
+use crate::identity::Hasher;
 
 const MAX_FILE_BYTES: u64 = 16 * 1024 * 1024;
 const MAX_TOTAL_BYTES: u64 = 64 * 1024 * 1024;
@@ -32,7 +33,7 @@ fn digest(
         return Err("byte-budget-exhausted");
     }
     let mut reader = reader.take(expected_bytes + 1);
-    let mut hash = Sha256::new();
+    let mut hash = Hasher::new().map_err(|_| "hash-unavailable")?;
     let mut bytes = 0_u64;
     let mut buffer = vec![0_u8; 64 * 1024];
     loop {
@@ -50,12 +51,12 @@ fn digest(
         }
         if count == 0 {
             return if bytes == expected_bytes {
-                Ok(hash.finalize().into())
+                hash.finalize_bytes().map_err(|_| "hash-unavailable")
             } else {
                 Err("file-size-changed")
             };
         }
-        hash.update(&buffer[..count]);
+        hash.update(&buffer[..count]).map_err(|_| "hash-unavailable")?;
     }
 }
 
@@ -121,6 +122,8 @@ pub(super) fn observe(candidates: Option<&[VulkanModuleFileCandidate]>) -> Value
 #[cfg(test)]
 mod tests {
     use std::io::{self, Cursor};
+
+    use sha2::{Digest as _, Sha256};
 
     use super::*;
 
