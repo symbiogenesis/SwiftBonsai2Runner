@@ -130,8 +130,10 @@ class Operation:
                         "sourceRevision": REVISION, "version": VERSION, "operationId": args.operation_id,
                         "startedUtc": utc(), "maximumAggregateSeconds": MAXIMUM,
                         "workCutoffSeconds": WORK_CUTOFF, "cancellationCutoffSeconds": CLEANUP_CUTOFF,
-                        "driverSha256": sha256(Path(__file__)),
-                        "declarationSha256": sha256(Path(__file__).with_name("workload-plan.json")),
+                        "driverSha256": sha256(args.entrypoint),
+                        "operatorBaseSha256": sha256(Path(__file__)),
+                        "declarationSha256": sha256(args.declaration),
+                        "sourceReadyMode": args.source_ready,
                         "status": "preparing", "steps": [], "powerBefore": before, "powerAfter": None,
                         "powerSamples": [], "dispatchAttempted": False, "pushAttempted": False,
                         "fullFoundationMayHaveStarted": False, "cleanupIncomplete": False,
@@ -324,6 +326,14 @@ class Operation:
         write_json(self.args.work / "source-git-blobs.json", self.source_blobs)
         remote = self.api("remote-main-before", "git/ref/heads/main")
         remote_sha = remote.get("object", {}).get("sha")
+        if self.args.source_ready:
+            if remote_sha != REVISION:
+                raise RuntimeError("Source-ready mode requires the selected revision already on remote main")
+            self.receipt.update(remoteRevisionBefore=REVISION, remoteRevisionAfter=REVISION,
+                                pushSkippedSourceReady=True)
+            # This mode never queries or cancels any historical automatic Foundation run.
+            self.verify_remote_source_and_workflow()
+            return
         if remote_sha not in (REMOTE_BASE, REVISION):
             raise RuntimeError("Remote main is neither the approved base nor the selected exact revision")
         self.receipt["remoteRevisionBefore"] = remote_sha
@@ -346,6 +356,9 @@ class Operation:
                 break
             self.pause(find_deadline)
         self.cancel("automatic-foundation", min(WORK_CUTOFF, self.elapsed() + 30))
+        self.verify_remote_source_and_workflow()
+
+    def verify_remote_source_and_workflow(self):
         propagation_deadline = min(WORK_CUTOFF, self.elapsed() + 15)
         commit = self.api("remote-exact-commit", f"git/commits/{REVISION}", cutoff=propagation_deadline)
         if commit.get("sha") != REVISION:
@@ -580,9 +593,11 @@ class Operation:
                 if path.is_file():
                     self.check(MAXIMUM - 5)
                     shutil.copyfile(path, self.args.retain / path.name)
-            for name in ("operate.py", "workload-plan.json"):
+            for name, source in (("operator-base.py", Path(__file__)),
+                                 ("operate.py", self.args.entrypoint),
+                                 ("workload-plan.json", self.args.declaration)):
                 self.check(MAXIMUM - 5)
-                shutil.copyfile(Path(__file__).with_name(name), self.args.retain / name)
+                shutil.copyfile(source, self.args.retain / name)
             manifest = {}
             for path in self.args.retain.iterdir():
                 self.check(MAXIMUM - 3)
@@ -614,17 +629,24 @@ class Operation:
                           "finalClock": clock}), flush=True)
 
 
-def main():
-    started = time.monotonic()
+def main(started=None):
+    started = time.monotonic() if started is None else started
     before = power()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source", type=Path, required=True)
     parser.add_argument("--work", type=Path, required=True)
     parser.add_argument("--retain", type=Path, required=True)
     parser.add_argument("--operation-id", required=True)
+    parser.add_argument("--source-ready", action="store_true")
+    parser.add_argument("--declaration", type=Path, default=Path(__file__).with_name("workload-plan.json"))
+    parser.add_argument("--entrypoint", type=Path, default=Path(__file__))
     args = parser.parse_args()
     if os.name != "nt" or re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]{0,47}", args.operation_id) is None:
         raise ValueError("Use native Windows and one fresh safe operation nonce")
+    if args.source_ready and args.operation_id == "prism0123-20261109-a7cdee96":
+        raise ValueError("The historical operation nonce is closed; use a fresh authorized nonce")
+    if not args.declaration.is_absolute() or not args.declaration.is_file() or not args.entrypoint.is_file():
+        raise ValueError("The exact executing entrypoint and absolute declaration file are required")
     for path in (args.source, args.work, args.retain):
         if not path.is_absolute():
             raise ValueError("All paths must be expanded absolute paths")
@@ -638,6 +660,13 @@ def main():
     operation = Operation(args, started, before)
     try:
         operation.source_intake_and_push()
+        if args.source_ready:
+            # Preserve190s for dispatch/queue/cached work/artifact intake after this last10s remote check.
+            operation.check(minimum=200)
+            remote = operation.api("source-ready-main-before-dispatch", "git/ref/heads/main")
+            if remote.get("object", {}).get("sha") != REVISION:
+                raise RuntimeError("Remote source changed before source-ready dispatch")
+            operation.check(minimum=190)
         run = operation.dispatch_and_wait()
         operation.verify_artifact(run)
         operation.optional_source_archive()

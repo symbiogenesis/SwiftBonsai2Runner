@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 1,
+  "kind": "prepared-separately-authorized-source-ready-foundation-attempt",
+  "recordedDate": "2026-11-09",
+  "authorization": "Prepared for a new explicit owner-authorized attempt after the first operation's run-name binding failure. Execution awaits that new approval. No preparation action dispatches CI or reopens an earlier clock.",
+  "source": {
+    "repository": "symbiogenesis/prism-inference",
+    "revision": "a7cdee96080d6cc33fb6a22b62ede94117150b9b",
+    "version": "0.1.23",
+    "target": "aarch64-pc-windows-msvc",
+    "workflow": "foundation-bundle.yml",
+    "operationId": "One new caller-supplied safe nonce; prism0123-20261109-a7cdee96 is closed and rejected.",
+    "sourceReadyMode": true,
+    "pushesAllowed": 0,
+    "automaticFoundationQueriesAllowed": 0,
+    "historicalRunQueriesOrCancellationAllowed": 0,
+    "historicalRunIds": [42712826648, 42712889670]
+  },
+  "budget": {
+    "maximumAggregateSeconds": 300,
+    "workCutoffSeconds": 260,
+    "cancellationConfirmationCutoffSeconds": 285,
+    "retentionReserveSeconds": 15,
+    "maximumIndividualCommandSeconds": 10,
+    "conservativeEstimateSeconds": 265,
+    "estimateBreakdownSeconds": {
+      "cleanSourcePowerAndExactRemoteIntake": 20,
+      "dedicatedDispatchAndDiscovery": 10,
+      "dedicatedQueueAndCachedHostedWork": 145,
+      "artifactDownloadAndVerification": 30,
+      "optionalSourceZip": 10,
+      "cleanupPowerAndEvidenceRetention": 50
+    },
+    "minimumMandatorySecondsAtDispatch": 190,
+    "reason": "The exact source is already published on remote main, so this attempt contains no push or automatic-run handling. One cached hosted job plus artifact verification fits the single five-minute operation only when admitted time remains. Queue/cache delays cause cancellation, not a restarted clock or another dispatch.",
+    "retries": 0,
+    "clockRestartAllowed": false,
+    "historicalClocksRemainClosed": true
+  },
+  "fixedWork": [
+    "Bind clean local main, canonical source blobs, working checkout hashes, exact official remote main and matching workflow bytes. Reject a remote source mismatch without pushing.",
+    "Recheck remote main before one fresh nonce-bound foundation-bundle.yml dispatch. Require at least190 seconds of the original work allowance for the mandatory dispatch/queue/work/artifact stages.",
+    "Discover only the dedicated workflow's exact source and new nonce; poll or cancel that newly identified run only. Do not query or cancel the two closed historical runs, and never query automatic Foundation or other workflows.",
+    "On successful CI, verify the official artifact digest/run binding, exact nine-file inner ZIP, all five ARM64 PE headers and every length/SHA-256. Verify genuine source/version/toolchain/run/attempt, nine receipt controls, source analyzers/portable check/linking, and explicit false full-Foundation/model/performance qualification fields.",
+    "If enough original time remains, download the exact GitHub source ZIP once and compare every canonical committed Git blob; preserve working-checkout CRLF hashes separately. Keep missing source evidence explicitly pending.",
+    "Record power before/after the aggregate and every API step, keeping unavailable values unknown. Cancel an active own run when work fails or cannot fit, confirm terminal status inside the original reserve, and retain actual archives, API JSON, receipts, hashes and terminal clock. No retry or new allowance follows a failure."
+  ],
+  "implementation": {
+    "entrypoint": "operate.py",
+    "sharedOperator": "../foundation-bundle-0123-20261109/operate.py",
+    "declarationBinding": "The entrypoint passes its exact declaration and own path to the shared guarded module. The aggregate clock begins before importing that module; import never invokes the old main.",
+    "retainedDrivers": ["operate.py", "operator-base.py"],
+    "retainedDeclaration": "workload-plan.json"
+  },
+  "paths": {
+    "source": "C:/Users/symbi/source/repos/prism-inference (clean local main at the exact revision)",
+    "workingOutput": "A new external system-temp directory, distinct from the first operation",
+    "retainedEvidence": "A new raw directory in this attempt's evidence folder"
+  },
+  "handoff": {
+    "required": "verified-bundle.json passed=true plus final-clock.json clockClosed=true, withinDeclaredAllowance=true, elapsed<300, cleanupConfirmed=true and retentionComplete=true.",
+    "fullFoundationQualified": false,
+    "modelAcceptanceQualified": false,
+    "performanceQualified": false,
+    "registryPublicationOrRunnerRepin": "Separate gated actions after actual successful immutable evidence; neither is performed by this operator."
+  }
+}
