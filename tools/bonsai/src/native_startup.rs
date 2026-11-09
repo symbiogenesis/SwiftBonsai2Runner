@@ -57,11 +57,9 @@ fn require_host() -> crate::Result<()> {
 
 #[cfg(any(windows, test))]
 fn host_report(identity: &Value) -> Value {
-    use sha2::{Digest as _, Sha256};
-
-    let digest = Sha256::digest(format!("runner-native-speech-host-v1\n{identity}").as_bytes());
+    let digest = crate::identity::sha256(format!("runner-native-speech-host-v1\n{identity}").as_bytes());
     json!({"SchemaVersion": 1, "Kind": "runner-native-speech-host",
-        "HostCacheKey": crate::identity::hex(&digest), "Host": identity})
+        "HostCacheKey": digest, "Host": identity})
 }
 
 /// Reports checked build-host identity without provisioning or compiling anything.

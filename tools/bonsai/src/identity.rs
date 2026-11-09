@@ -4,6 +4,7 @@
     reason = "Private maintenance modules expose only a crate-local implementation API."
 )]
 
+#[cfg(not(windows))]
 use sha2::{Digest as _, Sha256};
 
 pub(crate) struct Hasher {
@@ -70,10 +71,14 @@ pub(super) fn hex(bytes: &[u8]) -> String {
 
 pub(super) fn sha256(bytes: &[u8]) -> String {
     #[cfg(windows)]
-    if let Ok(digest) = bonsai_windows_credentials::Sha256::digest_bytes(bytes) {
-        return hex(&digest);
+    {
+        bonsai_windows_credentials::Sha256::digest_bytes(bytes)
+            .map_or_else(|_| String::new(), |digest| hex(&digest))
     }
-    hex(&Sha256::digest(bytes))
+    #[cfg(not(windows))]
+    {
+        hex(&Sha256::digest(bytes))
+    }
 }
 
 pub(super) fn is_lower_hex(text: &str, length: usize) -> bool {
