@@ -5,6 +5,7 @@
 )]
 
 use std::{
+    borrow::Cow,
     collections::{BTreeMap, BTreeSet},
     fs::{self, File, OpenOptions},
     io::{Read as _, Seek as _, SeekFrom, Write as _},
@@ -231,7 +232,7 @@ fn build_environment(name: &str) -> bool {
 #[derive(Debug)]
 enum RustToken<'a> {
     Word(&'a str),
-    Literal(Option<String>),
+    Literal(Option<Cow<'a, str>>),
     Punctuation(u8),
 }
 
@@ -283,7 +284,7 @@ fn rust_tokens(source: &str) -> Vec<RustToken<'_>> {
     tokens
 }
 
-fn rust_literal(source: &str, start: usize) -> Option<(usize, Option<String>)> {
+fn rust_literal(source: &str, start: usize) -> Option<(usize, Option<Cow<'_, str>>)> {
     let bytes = source.as_bytes();
     if matches!(bytes[start], b'b' | b'c')
         && bytes
@@ -314,14 +315,21 @@ fn rust_literal(source: &str, start: usize) -> Option<(usize, Option<String>)> {
             .count();
         let quote = start + hashes + 1;
         if bytes.get(quote) == Some(&b'"') {
-            let ending = format!("\"{}", "#".repeat(hashes));
             let content = quote + 1;
-            let end = source[content..]
-                .find(&ending)
-                .map_or(bytes.len(), |end| content + end);
+            let end = bytes[content..]
+                .iter()
+                .enumerate()
+                .find_map(|(offset, &byte)| {
+                    (byte == b'"'
+                        && bytes
+                            .get(content + offset + 1..content + offset + 1 + hashes)
+                            .is_some_and(|tail| tail.iter().all(|&item| item == b'#')))
+                    .then_some(content + offset)
+                })
+                .unwrap_or(bytes.len());
             return Some((
-                (end + ending.len()).min(bytes.len()),
-                Some(source[content..end].into()),
+                (end + 1 + hashes).min(bytes.len()),
+                Some(Cow::Borrowed(&source[content..end])),
             ));
         }
     }
@@ -329,12 +337,21 @@ fn rust_literal(source: &str, start: usize) -> Option<(usize, Option<String>)> {
         return None;
     }
     let mut end = start + 1;
+    let mut escaped = false;
     while end < bytes.len() {
         if bytes[end] == b'\\' {
+            escaped = true;
             end = (end + 2).min(bytes.len());
         } else if bytes[end] == b'"' {
             end += 1;
-            return Some((end, serde_json::from_str(&source[start..end]).ok()));
+            let literal = if escaped {
+                serde_json::from_str::<String>(&source[start..end])
+                    .ok()
+                    .map(Cow::Owned)
+            } else {
+                Some(Cow::Borrowed(&source[start + 1..end - 1]))
+            };
+            return Some((end, literal));
         } else {
             end += 1;
         }
@@ -351,12 +368,12 @@ fn punctuation(tokens: &[RustToken<'_>], index: &mut usize, value: u8) -> Option
     }
 }
 
-fn include_expression(
-    tokens: &[RustToken<'_>],
+fn include_expression<'a>(
+    tokens: &[RustToken<'a>],
     index: &mut usize,
     manifest: &Path,
     depth: usize,
-) -> Option<String> {
+) -> Option<Cow<'a, str>> {
     if depth > 8 {
         return None;
     }
@@ -376,7 +393,7 @@ fn include_expression(
             return None;
         }
         punctuation(tokens, index, b')')?;
-        return Some(manifest.to_string_lossy().into_owned());
+        return Some(Cow::Owned(manifest.to_string_lossy().into_owned()));
     }
     let mut value = String::new();
     loop {
@@ -389,7 +406,7 @@ fn include_expression(
         }
     }
     punctuation(tokens, index, b')')?;
-    Some(value)
+    Some(Cow::Owned(value))
 }
 
 fn embedded_inputs(repository: &Path, files: &mut BTreeSet<PathBuf>) -> crate::Result<bool> {
@@ -441,7 +458,7 @@ fn embedded_inputs(repository: &Path, files: &mut BTreeSet<PathBuf>) -> crate::R
                 supported = false;
                 continue;
             }
-            let input = normalized(&file.parent().unwrap_or(repository).join(value));
+            let input = normalized(&file.parent().unwrap_or(repository).join(&*value));
             if !input.starts_with(repository) {
                 supported = false;
                 continue;
