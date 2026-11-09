@@ -56,10 +56,16 @@ fn metrics(progress: &Value) -> Value {
     {
         return measured;
     }
-    let Some(first) = deltas.first().and_then(|delta| delta["milliseconds"].as_f64()) else {
+    let Some(first) = deltas
+        .first()
+        .and_then(|delta| delta["milliseconds"].as_f64())
+    else {
         return measured;
     };
-    let Some(last) = deltas.last().and_then(|delta| delta["milliseconds"].as_f64()) else {
+    let Some(last) = deltas
+        .last()
+        .and_then(|delta| delta["milliseconds"].as_f64())
+    else {
         return measured;
     };
     let mut previous = first;
@@ -86,7 +92,7 @@ fn metrics(progress: &Value) -> Value {
     measured["generationIntervalSeconds"] = json!(interval);
     measured["generationIntervalTokens"] = json!(CAP - 1);
     measured["tokenBoundaryEvidence"] = json!(
-        "pinned-0.1.22-nonspeculative-per-committed-token-callback; ASCII-only; below-1024-byte-split-bound; eight-nonempty-deltas-match-eight-reported-tokens"
+        "reviewed-pinned-nonspeculative-per-committed-token-callback; ASCII-only; below-1024-byte-split-bound; eight-nonempty-deltas-match-eight-reported-tokens"
     );
     measured
 }
@@ -234,17 +240,35 @@ fn native_token_timing_requires_source_supported_boundaries_and_positive_interva
 #[test]
 #[ignore = "Exactly two short row4 model requests, only after explicit owner authorization and one aggregate budget."]
 fn pinned_native_row4_captures_separated_token_timings() {
-    assert_eq!(env::var("BONSAI_NATIVE_OWNER_TIMING").as_deref(), Ok("true"));
+    assert_eq!(
+        env::var("BONSAI_NATIVE_OWNER_TIMING").as_deref(),
+        Ok("true")
+    );
     assert_eq!(env::consts::ARCH, "aarch64");
     assert_eq!(env::var("BONSAI_NATIVE_PROFILE").as_deref(), Ok(PROFILE));
     assert_ne!(env::var("BONSAI_NATIVE_EXTENDED").as_deref(), Ok("true"));
-    assert_ne!(env::var("BONSAI_NATIVE_STALLED_CONSUMER").as_deref(), Ok("true"));
+    assert_ne!(
+        env::var("BONSAI_NATIVE_STALLED_CONSUMER").as_deref(),
+        Ok("true")
+    );
     let revision = env::var("BONSAI_NATIVE_OWNER_REVISION").unwrap();
     assert_eq!(revision.len(), 40);
     assert!(revision.bytes().all(|byte| byte.is_ascii_hexdigit()));
     let runtime_lock: Value =
         serde_json::from_str(include_str!("../../../../config/prism-inference.lock.json")).unwrap();
-    assert_eq!(runtime_lock["version"], "0.1.22");
+    assert!(matches!(
+        (
+            runtime_lock["version"].as_str(),
+            runtime_lock["commit"].as_str()
+        ),
+        (
+            Some("0.1.22"),
+            Some("6b4f4520b465e5feb665a71af64e7b0e21eb750a")
+        ) | (
+            Some("0.1.23"),
+            Some("a7cdee96080d6cc33fb6a22b62ede94117150b9b")
+        )
+    ));
     let budget = case_budget();
     let data = env::var_os("BONSAI_NATIVE_DATA").unwrap();
     let evidence = env::var_os("BONSAI_NATIVE_EVIDENCE").unwrap();
@@ -274,5 +298,8 @@ fn pinned_native_row4_captures_separated_token_timings() {
         let deadline = tokio::time::Instant::now() + budget;
         paired_capture(Path::new(&data), evidence, deadline, &mut report).await;
     }));
-    assert_eq!(report["passed"], true, "Short token timing remains pending.");
+    assert_eq!(
+        report["passed"], true,
+        "Short token timing remains pending."
+    );
 }

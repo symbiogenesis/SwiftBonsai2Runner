@@ -198,6 +198,7 @@ fn native_four_worker_release(version: Option<&str>) -> bool {
                 | "0.1.20"
                 | "0.1.21"
                 | "0.1.22"
+                | "0.1.23"
         )
     )
 }
@@ -221,6 +222,7 @@ fn worker_readiness_receipt(version: Option<&str>, expected: u8, verified: bool)
                 | "0.1.20"
                 | "0.1.21"
                 | "0.1.22"
+                | "0.1.23"
         )
     ) && matches!(expected, 1 | 4)
         && verified;
@@ -273,13 +275,13 @@ fn native_worker_receipts_require_exact_release_and_verified_readiness() {
     }
     for version in [
         "0.1.11", "0.1.12", "0.1.13", "0.1.14", "0.1.15", "0.1.16", "0.1.17", "0.1.18", "0.1.19",
-        "0.1.20", "0.1.21", "0.1.22",
+        "0.1.20", "0.1.21", "0.1.22", "0.1.23",
     ] {
         assert_worker_receipt_case(Some(version), true, true);
     }
     for version in [
         "0.1.8",
-        "0.1.23",
+        "0.1.24",
         "v0.1.22",
         "0.1.22-dev",
         "0.1.22.0",
@@ -358,6 +360,7 @@ fn native_worker_receipts_require_exact_release_and_verified_readiness() {
                     | "0.1.20"
                     | "0.1.21"
                     | "0.1.22"
+                    | "0.1.23"
             )
         )
     );
