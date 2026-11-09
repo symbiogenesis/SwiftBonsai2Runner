@@ -129,3 +129,6 @@ docs/evidence/hexagon-adapter-session-20261103/** -text -whitespace
 # Preserve passed adapter/cache observations and their raw SHA-256 manifest bytes.
 docs/evidence/npu-adapter-progress-20261103/** -text -whitespace
 docs/evidence/npu-host-reduction-20261103/** -text -whitespace
+
+# Preserve the source delivery declaration and raw receipt bytes.
+docs/evidence/performance-release-20261109/** -text -whitespace
