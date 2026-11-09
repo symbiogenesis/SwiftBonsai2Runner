@@ -200,8 +200,13 @@ impl Tokenizer {
         ids: &mut Vec<i32>,
         probes: &mut usize,
     ) -> io::Result<()> {
-        for chunk in pretokenize(bytes)? {
-            self.encode_chunk(chunk, ids, probes)?;
+        if bytes.len() > MAX_INPUT_BYTES || std::str::from_utf8(bytes).is_err() {
+            return Err(invalid(
+                "Qwen tokenizer input is oversized or invalid UTF-8.",
+            ));
+        }
+        for chunk in scanner::pretokenize_iter(bytes) {
+            self.encode_chunk(chunk?, ids, probes)?;
         }
         Ok(())
     }

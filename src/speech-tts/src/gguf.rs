@@ -200,8 +200,10 @@ fn read_array(reader: &mut impl Read, retained_bytes: &mut usize) -> io::Result<
             raw.resize(len, 0);
             reader.read_exact(&mut raw)?;
             // Preserve the retired C-string handoff: bytes after an embedded NUL are ignored.
-            let truncated = raw.split(|&byte| byte == 0).next().unwrap_or(&raw);
-            values.push(truncated.to_vec().into_boxed_slice());
+            if let Some(nul) = raw.iter().position(|&byte| byte == 0) {
+                raw.truncate(nul);
+            }
+            values.push(raw.into_boxed_slice());
         }
         return Ok(Entry::StringArray(values));
     }

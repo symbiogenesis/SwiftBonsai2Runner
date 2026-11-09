@@ -65,119 +65,137 @@ fn contraction(text: &[u8], start: usize) -> io::Result<Option<usize>> {
     clippy::too_many_lines,
     reason = "Keep the native scanner's ordered rules and byte-level whitespace quirks together for review."
 )]
+fn next_chunk<'a>(text: &'a [u8], index: &mut usize) -> io::Result<Option<&'a [u8]>> {
+    if *index >= text.len() {
+        return Ok(None);
+    }
+    let start = *index;
+    let (current, width) = codepoint(text, start)?;
+    if matches!(current, 0x27 | 0x2019)
+        && start + width < text.len()
+        && let Some(end) = contraction(text, start + width)?
+    {
+        *index = end;
+        return Ok(Some(&text[start..end]));
+    }
+    if letter(current) {
+        *index = letters_end(text, start + width)?;
+        return Ok(Some(&text[start..*index]));
+    }
+    if !newline(current) && !letter(current) && !digit(current) && !whitespace(current) {
+        let after = start + width;
+        if after < text.len() {
+            let (next, next_width) = codepoint(text, after)?;
+            if letter(next) {
+                *index = letters_end(text, after + next_width)?;
+                return Ok(Some(&text[start..*index]));
+            }
+        }
+    }
+    if digit(current) {
+        *index = start + 1;
+        return Ok(Some(&text[start..=start]));
+    }
+    if newline(current) {
+        let mut cursor = start;
+        while cursor < text.len() && newline(u32::from(text[cursor])) {
+            cursor += 1;
+        }
+        *index = cursor;
+        return Ok(Some(&text[start..cursor]));
+    }
+    if whitespace(current) {
+        let mut whitespace_end = start + width;
+        while whitespace_end < text.len()
+            && whitespace(u32::from(text[whitespace_end]))
+            && !newline(u32::from(text[whitespace_end]))
+        {
+            whitespace_end += 1;
+        }
+        let followed = whitespace_end < text.len()
+            && !whitespace(u32::from(text[whitespace_end]))
+            && !newline(u32::from(text[whitespace_end]));
+        if followed && whitespace_end - start > 1 {
+            *index = whitespace_end - 1;
+            return Ok(Some(&text[start..*index]));
+        }
+        let mut cursor = start + width;
+        if cursor < text.len() {
+            let (next, next_width) = codepoint(text, cursor)?;
+            if letter(next) {
+                *index = letters_end(text, cursor + next_width)?;
+                return Ok(Some(&text[start..*index]));
+            }
+            if digit(next) {
+                *index = cursor;
+                return Ok(Some(&text[start..cursor]));
+            }
+            if !whitespace(next) && !newline(next) {
+                while cursor < text.len() {
+                    let (next, next_width) = codepoint(text, cursor)?;
+                    if whitespace(next) || letter(next) || digit(next) {
+                        break;
+                    }
+                    cursor += next_width;
+                }
+                while cursor < text.len() && newline(u32::from(text[cursor])) {
+                    cursor += 1;
+                }
+                *index = cursor;
+                return Ok(Some(&text[start..cursor]));
+            }
+        }
+        cursor = whitespace_end;
+        while cursor < text.len() {
+            let (next, next_width) = codepoint(text, cursor)?;
+            if !whitespace(next) {
+                break;
+            }
+            cursor += next_width;
+        }
+        *index = cursor;
+        return Ok(Some(&text[start..cursor]));
+    }
+    let mut cursor = start + width;
+    while cursor < text.len() {
+        let (next, next_width) = codepoint(text, cursor)?;
+        if whitespace(next) || letter(next) || digit(next) || newline(next) {
+            break;
+        }
+        cursor += next_width;
+    }
+    while cursor < text.len() && newline(u32::from(text[cursor])) {
+        cursor += 1;
+    }
+    *index = cursor;
+    Ok(Some(&text[start..cursor]))
+}
+
+pub(super) fn pretokenize_iter(text: &[u8]) -> impl Iterator<Item = io::Result<&[u8]>> {
+    let mut index = 0;
+    let mut failed = false;
+    std::iter::from_fn(move || {
+        if failed {
+            return None;
+        }
+        match next_chunk(text, &mut index) {
+            Ok(Some(chunk)) => Some(Ok(chunk)),
+            Ok(None) => None,
+            Err(err) => {
+                failed = true;
+                Some(Err(err))
+            }
+        }
+    })
+}
+
 pub(super) fn pretokenize(text: &[u8]) -> io::Result<Vec<&[u8]>> {
     let mut chunks = Vec::new();
     chunks
         .try_reserve_exact(text.len())
         .map_err(io::Error::other)?;
-    let mut index = 0;
-    while index < text.len() {
-        let start = index;
-        let (current, width) = codepoint(text, index)?;
-        if matches!(current, 0x27 | 0x2019)
-            && index + width < text.len()
-            && let Some(end) = contraction(text, index + width)?
-        {
-            chunks.push(&text[index..end]);
-            index = end;
-            continue;
-        }
-        if letter(current) {
-            index = letters_end(text, index + width)?;
-            chunks.push(&text[start..index]);
-            continue;
-        }
-        if !newline(current) && !letter(current) && !digit(current) && !whitespace(current) {
-            let after = index + width;
-            if after < text.len() {
-                let (next, next_width) = codepoint(text, after)?;
-                if letter(next) {
-                    index = letters_end(text, after + next_width)?;
-                    chunks.push(&text[start..index]);
-                    continue;
-                }
-            }
-        }
-        if digit(current) {
-            while index < text.len() && digit(u32::from(text[index])) {
-                chunks.push(&text[index..=index]);
-                index += 1;
-            }
-            continue;
-        }
-        if newline(current) {
-            while index < text.len() && newline(u32::from(text[index])) {
-                index += 1;
-            }
-            chunks.push(&text[start..index]);
-            continue;
-        }
-        if whitespace(current) {
-            let mut whitespace_end = index + width;
-            while whitespace_end < text.len()
-                && whitespace(u32::from(text[whitespace_end]))
-                && !newline(u32::from(text[whitespace_end]))
-            {
-                whitespace_end += 1;
-            }
-            let followed = whitespace_end < text.len()
-                && !whitespace(u32::from(text[whitespace_end]))
-                && !newline(u32::from(text[whitespace_end]));
-            if followed && whitespace_end - start > 1 {
-                index = whitespace_end - 1;
-                chunks.push(&text[start..index]);
-                continue;
-            }
-            index = start + width;
-            if index < text.len() {
-                let (next, next_width) = codepoint(text, index)?;
-                if letter(next) {
-                    index = letters_end(text, index + next_width)?;
-                    chunks.push(&text[start..index]);
-                    continue;
-                }
-                if digit(next) {
-                    chunks.push(&text[start..index]);
-                    continue;
-                }
-                if !whitespace(next) && !newline(next) {
-                    while index < text.len() {
-                        let (next, next_width) = codepoint(text, index)?;
-                        if whitespace(next) || letter(next) || digit(next) {
-                            break;
-                        }
-                        index += next_width;
-                    }
-                    while index < text.len() && newline(u32::from(text[index])) {
-                        index += 1;
-                    }
-                    chunks.push(&text[start..index]);
-                    continue;
-                }
-            }
-            index = whitespace_end;
-            while index < text.len() {
-                let (next, next_width) = codepoint(text, index)?;
-                if !whitespace(next) {
-                    break;
-                }
-                index += next_width;
-            }
-            chunks.push(&text[start..index]);
-            continue;
-        }
-        index += width;
-        while index < text.len() {
-            let (next, next_width) = codepoint(text, index)?;
-            if whitespace(next) || letter(next) || digit(next) || newline(next) {
-                break;
-            }
-            index += next_width;
-        }
-        while index < text.len() && newline(u32::from(text[index])) {
-            index += 1;
-        }
-        chunks.push(&text[start..index]);
+    for chunk in pretokenize_iter(text) {
+        chunks.push(chunk?);
     }
     Ok(chunks)
 }

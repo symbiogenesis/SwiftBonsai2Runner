@@ -1392,6 +1392,13 @@ pub struct CodePredictorModel {
 }
 
 impl CodePredictorModel {
+    fn project_in<'a>(&self, raw: &'a [f32]) -> io::Result<std::borrow::Cow<'a, [f32]>> {
+        self.mtp_proj
+            .as_ref()
+            .map_or(Ok(std::borrow::Cow::Borrowed(raw)), |proj| {
+                proj.forward_vec(raw, None).map(std::borrow::Cow::Owned)
+            })
+    }
     /// Predict all 15 acoustic codes (`c1..=c15`) for one frame given `talker_hidden`,
     /// semantic `c0`, `talker_codec_embd`, and decoupled `subtalker_*` sampling parameters.
     /// Returns `[c0, c1, ..., c15]`.
@@ -1431,17 +1438,10 @@ impl CodePredictorModel {
         codes[0] = c0;
         let mut seen_scratch = Vec::new();
 
-        let project_in = |raw: &[f32]| -> io::Result<Vec<f32>> {
-            self.mtp_proj
-                .as_ref()
-                .map_or_else(|| Ok(raw.to_vec()), |proj| proj.forward_vec(raw, None))
-        };
-
         // Step 0 prefill: position 0 = talker_hidden, position 1 = embed(c0)
-        let p0 = project_in(talker_hidden)?;
-        let mut h = p0;
+        let mut h = self.project_in(talker_hidden)?;
         for (layer, kv) in self.layers.iter().zip(kv_caches.iter_mut()) {
-            h = layer.forward_step(
+            h = std::borrow::Cow::Owned(layer.forward_step(
                 &h,
                 self.num_q_heads,
                 self.num_kv_heads,
@@ -1450,14 +1450,14 @@ impl CodePredictorModel {
                 self.rms_norm_eps,
                 kv,
                 None,
-            )?;
+            )?);
         }
 
-        let mut next_raw = c0_emb.to_vec();
+        let mut next_raw = c0_emb;
         for g in 0..NUM_ACOUSTIC_CODEBOOKS {
-            let mut h_step = project_in(&next_raw)?;
+            let mut h_step = self.project_in(next_raw)?;
             for (layer, kv) in self.layers.iter().zip(kv_caches.iter_mut()) {
-                h_step = layer.forward_step(
+                h_step = std::borrow::Cow::Owned(layer.forward_step(
                     &h_step,
                     self.num_q_heads,
                     self.num_kv_heads,
@@ -1466,7 +1466,7 @@ impl CodePredictorModel {
                     self.rms_norm_eps,
                     kv,
                     None,
-                )?;
+                )?);
             }
             let normed = rms_norm(&h_step, &self.norm_w, self.rms_norm_eps)?;
             let mut logits = self.lm_heads[g].forward_vec(&normed, None)?;
@@ -1502,7 +1502,7 @@ impl CodePredictorModel {
                         "Acoustic code index exceeds embedding table.",
                     ));
                 }
-                next_raw.copy_from_slice(&table[start..start + talker_dim]);
+                next_raw = &table[start..start + talker_dim];
             }
         }
         Ok(codes)
@@ -1520,7 +1520,7 @@ pub struct CachedIclReference {
     pub icl_ref_text_stream: Vec<f32>,
     /// Number of inner reference text tokens (`N_ref_text`).
     pub n_ref_text: usize,
-    /// Number of reference audio frames (`ref_codes_T`).
+    /// Number of reference audio frames (`ref_codes_t`).
     pub ref_codes_t: usize,
 }
 
@@ -1551,24 +1551,21 @@ impl PromptCache {
         compute_ref_text_stream: impl FnOnce() -> io::Result<(Vec<f32>, usize)>,
     ) -> io::Result<&CachedIclReference> {
         let key = codec_ref_key(ref_codes, TOTAL_CODE_GROUPS, ref_codes_t);
-        let needs_rebuild = self
-            .cached_icl
-            .as_ref()
-            .is_none_or(|cached| cached.ref_key != key || cached.ref_codes_t != ref_codes_t);
-        if needs_rebuild {
-            let icl_codec_stream = compute_codec_stream()?;
-            let (icl_ref_text_stream, n_ref_text) = compute_ref_text_stream()?;
-            self.cached_icl = Some(CachedIclReference {
-                ref_key: key,
-                icl_codec_stream,
-                icl_ref_text_stream,
-                n_ref_text,
-                ref_codes_t,
-            });
+        if let Some(cached) = self.cached_icl.as_ref()
+            && cached.ref_key == key
+            && cached.ref_codes_t == ref_codes_t
+        {
+            return Ok(cached);
         }
-        self.cached_icl
-            .as_ref()
-            .ok_or_else(|| io::Error::other("PromptCache ICL entry missing."))
+        let icl_codec_stream = compute_codec_stream()?;
+        let (icl_ref_text_stream, n_ref_text) = compute_ref_text_stream()?;
+        Ok(self.cached_icl.insert(CachedIclReference {
+            ref_key: key,
+            icl_codec_stream,
+            icl_ref_text_stream,
+            n_ref_text,
+            ref_codes_t,
+        }))
     }
 }
 

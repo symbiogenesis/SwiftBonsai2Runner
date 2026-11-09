@@ -1201,16 +1201,50 @@ impl CodecStateCache {
         Self::default()
     }
 
-    /// Restore the streaming state matching `key`, bumping its LRU stamp on hit.
-    pub fn restore(&mut self, key: u64) -> Option<CodecStreamState> {
+    /// Borrow the streaming state matching `key`, bumping its LRU stamp on hit.
+    pub fn get(&mut self, key: u64) -> Option<&CodecStreamState> {
         for slot in &mut self.slots {
             if slot.stamp != 0 && slot.key == key {
                 self.stamp = self.stamp.saturating_add(1);
                 slot.stamp = self.stamp;
-                return Some(slot.state.clone());
+                return Some(&slot.state);
             }
         }
         None
+    }
+
+    /// Borrow the cached streaming state for `key`, or compute and snapshot it on a miss.
+    pub fn get_or_prime(
+        &mut self,
+        key: u64,
+        prime: impl FnOnce() -> io::Result<CodecStreamState>,
+    ) -> io::Result<&CodecStreamState> {
+        for slot in &mut self.slots {
+            if slot.stamp != 0 && slot.key == key {
+                self.stamp = self.stamp.saturating_add(1);
+                slot.stamp = self.stamp;
+                return Ok(&slot.state);
+            }
+        }
+        let state = prime()?;
+        self.stamp = self.stamp.saturating_add(1);
+        let mut lru_idx = 0_usize;
+        for i in 1..CODEC_SNAP_SLOTS {
+            if self.slots[i].stamp < self.slots[lru_idx].stamp {
+                lru_idx = i;
+            }
+        }
+        self.slots[lru_idx] = CodecStateSnap {
+            key,
+            stamp: self.stamp,
+            state,
+        };
+        Ok(&self.slots[lru_idx].state)
+    }
+
+    /// Restore the streaming state matching `key`, bumping its LRU stamp on hit.
+    pub fn restore(&mut self, key: u64) -> Option<CodecStreamState> {
+        self.get(key).cloned()
     }
 
     /// Save `state` under `key`, evicting the least-recently-used slot when full.
@@ -1632,6 +1666,29 @@ mod tests {
         }
         assert_eq!(cn_batch, cn_stream);
         assert_eq!(dw_all, dw_step);
+        Ok(())
+    }
+
+    #[test]
+    fn codec_state_cache_lends_and_primes_lru_slots() -> std::io::Result<()> {
+        let mut cache = super::CodecStateCache::new();
+        let make_state = |marker: f32| super::CodecStreamState {
+            pre_conv: vec![marker],
+            ..super::CodecStreamState::default()
+        };
+        assert_eq!(
+            cache.get_or_prime(10, || Ok(make_state(1.0)))?.pre_conv,
+            vec![1.0]
+        );
+        assert_eq!(
+            cache
+                .get_or_prime(10, || {
+                    Err(std::io::Error::other("cached hit must not recompute"))
+                })?
+                .pre_conv,
+            vec![1.0]
+        );
+        assert_eq!(cache.restore(10).map(|s| s.pre_conv), Some(vec![1.0]));
         Ok(())
     }
 }

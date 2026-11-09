@@ -485,16 +485,31 @@ impl TdnnConv1d {
         }
         let pad = ((self.kernel - 1) * self.dilation) / 2;
         let padded_frames = frames + 2 * pad;
-        let mut padded = vec![0.0_f32; self.in_c * padded_frames];
-        for c in 0..self.in_c {
-            let row = &input[c * frames..(c + 1) * frames];
-            let p_row = if pad > 0 {
-                reflect_pad_1d(row, pad, pad)?
-            } else {
-                row.to_vec()
-            };
-            padded[c * padded_frames..(c + 1) * padded_frames].copy_from_slice(&p_row);
-        }
+        let owned_padded;
+        let padded: &[f32] = if pad == 0 {
+            input
+        } else {
+            if frames == 0 || pad >= frames {
+                return Err(io::Error::new(
+                    io::ErrorKind::InvalidInput,
+                    "Reflect padding width must be strictly less than signal length.",
+                ));
+            }
+            let mut buf = vec![0.0_f32; self.in_c * padded_frames];
+            for c in 0..self.in_c {
+                let row = &input[c * frames..(c + 1) * frames];
+                let dst = &mut buf[c * padded_frames..(c + 1) * padded_frames];
+                for i in 0..pad {
+                    dst[i] = row[pad - i];
+                }
+                dst[pad..pad + frames].copy_from_slice(row);
+                for i in 0..pad {
+                    dst[pad + frames + i] = row[frames - 2 - i];
+                }
+            }
+            owned_padded = buf;
+            &owned_padded
+        };
 
         let mut out = vec![0.0_f32; self.out_c * frames];
         let level = Level::new();
@@ -621,19 +636,18 @@ impl SeRes2NetBlock {
         let mut res2net_out = vec![0.0_f32; channels * frames];
         res2net_out[..chunk_len].copy_from_slice(&h[..chunk_len]);
 
-        let mut prev = vec![0.0_f32; chunk_len];
+        let mut prev = Vec::new();
         for i in 1..self.scale {
             let slice = &h[i * chunk_len..(i + 1) * chunk_len];
-            let branch_in = if i == 1 {
-                slice.to_vec()
-            } else {
+            let branch_in: &[f32] = if i == 1 {
                 slice
-                    .iter()
-                    .zip(prev.iter())
-                    .map(|(&a, &b)| a + b)
-                    .collect()
+            } else {
+                for (dst, &src) in prev.iter_mut().zip(slice.iter()) {
+                    *dst += src;
+                }
+                &prev
             };
-            let y = self.branches[i - 1].forward(&branch_in, frames, true)?;
+            let y = self.branches[i - 1].forward(branch_in, frames, true)?;
             res2net_out[i * chunk_len..(i + 1) * chunk_len].copy_from_slice(&y);
             prev = y;
         }
