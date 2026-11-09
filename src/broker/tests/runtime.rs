@@ -74,7 +74,7 @@ async fn backend_request(stream: &mut TcpStream) {
         assert_ne!(size, 0);
         bytes.extend_from_slice(&buffer[..size]);
         assert!(bytes.len() < 16 * 1024);
-        if let Some(end) = bytes.windows(4).position(|part| part == b"\r\n\r\n") {
+        if let Some(end) = bytes.array_windows().position(|part| part == b"\r\n\r\n") {
             let head = std::str::from_utf8(&bytes[..end]).unwrap();
             let length: usize = head
                 .lines()
@@ -207,7 +207,7 @@ fn successful_delivery_and_notification_failure_both_drain_without_detached_work
         let running = spawn_local(async move {
             run(&worker, async {
                 stopped.await.unwrap();
-                Err(std::io::Error::from(ErrorKind::Other))
+                Err(std::io::Error::other("write failed"))
             })
             .await
         });

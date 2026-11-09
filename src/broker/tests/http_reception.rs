@@ -41,7 +41,7 @@ fn policy() -> RequestPolicy {
     RequestPolicy::new(8080, KEY).unwrap()
 }
 fn deadline() -> Instant {
-    Instant::now() + Duration::from_secs(60)
+    Instant::now() + Duration::from_mins(1)
 }
 
 fn head(length: usize, extra: &str) -> String {
@@ -393,10 +393,10 @@ fn complete_body_does_not_wait_for_peer_eof() {
 fn stalled_reads_obey_header_intake_and_supervisor_deadlines() {
     run(async {
         for (prefix, supervisor, expected) in [
-            (Vec::new(), Duration::from_secs(60), HEADER_TIMEOUT),
+            (Vec::new(), Duration::from_mins(1), HEADER_TIMEOUT),
             (
                 head(CHAT.len(), "").into_bytes(),
-                Duration::from_secs(60),
+                Duration::from_mins(1),
                 INTAKE_TIMEOUT,
             ),
             (

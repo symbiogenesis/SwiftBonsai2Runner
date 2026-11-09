@@ -488,8 +488,8 @@ fn main() -> std::io::Result<()> {
         assert!(
             specification
                 .arguments
-                .windows(2)
-                .any(|pair| { pair[0] == "--voice-model" && pair[1] == voice.as_os_str() })
+                .array_windows()
+                .any(|[flag, value]| flag == "--voice-model" && value == voice.as_os_str())
         );
         assert!(policy.readonly_paths.contains(&voice));
         launch.voice_model = None;

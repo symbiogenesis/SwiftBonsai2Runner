@@ -293,15 +293,15 @@ fn native_service_rollback_profile_is_separate_and_keeps_explicit_original_selec
     }
     assert!(!args.iter().any(|arg| arg == "--use-repacked-ptq1"));
     assert_eq!(
-        args.windows(2)
-            .filter(|args| args[0] == "--native-row-workers" && args[1] == "4")
+        args.array_windows()
+            .filter(|[flag, value]| flag == "--native-row-workers" && value == "4")
             .count(),
         1
     );
     assert_eq!(representation::body()["max_completion_tokens"], 32);
     assert_eq!(representation::body()["abliteration_scale"], 1.3);
     assert_eq!(representation::body()["enable_thinking"], false);
-    assert_eq!(NEXT_OWNER_RESERVE, Duration::from_secs(60) + HASH_RESERVE);
+    assert_eq!(NEXT_OWNER_RESERVE, Duration::from_mins(1) + HASH_RESERVE);
 }
 
 #[test]
@@ -443,14 +443,14 @@ fn native_service_rollback_deadline_and_missing_ptq1_cleanup_never_start_an_owne
         for field in ["initialCleanup","freshOwnerCleanup"] {
             let mut changed = report.clone();
             changed[field]["ownedJobEmpty"] = json!(false);
-            assert!(!can_start_rollback(deadline+Duration::from_secs(60),&changed));
+            assert!(!can_start_rollback(deadline+Duration::from_mins(1),&changed));
             changed[field]["ownedJobEmpty"] = json!(true);
             changed[field]["listenerReleased"] = json!(false);
-            assert!(!can_start_rollback(deadline+Duration::from_secs(60),&changed));
+            assert!(!can_start_rollback(deadline+Duration::from_mins(1),&changed));
         }
         let mut pending_service = report.clone();
         pending_service["serviceIntegrationWorkload"]["status"] = json!("pending");
-        assert!(!can_start_rollback(deadline+Duration::from_secs(60),&pending_service));
+        assert!(!can_start_rollback(deadline+Duration::from_mins(1),&pending_service));
         assert_eq!(deadline-tokio::time::Instant::now(),NEXT_OWNER_RESERVE);
         assert_eq!(report["passed"],false);
         fs::remove_file(evidence.join("acceptance.json")).unwrap();

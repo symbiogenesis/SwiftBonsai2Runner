@@ -615,7 +615,11 @@ mod tests {
         // Verify 48 kHz VoiceDesign reference audio is decimated 2:1 in place to 24 kHz.
         let mut source_48k = Vec::with_capacity(super::CODEC_HOP * 2);
         for index in 0..super::CODEC_HOP {
-            let val = if index % 2 == 0 { 0.5_f32 } else { -0.25_f32 };
+            let val = if index.is_multiple_of(2) {
+                0.5_f32
+            } else {
+                -0.25_f32
+            };
             source_48k.push(val);
             source_48k.push(val);
         }

@@ -328,7 +328,7 @@ async fn read_request(stream: &mut TcpStream) -> (String, Vec<u8>) {
         let count = stream.read(&mut buffer).await.unwrap();
         assert_ne!(count, 0);
         raw.extend_from_slice(&buffer[..count]);
-        if let Some(end) = raw.windows(4).position(|part| part == b"\r\n\r\n") {
+        if let Some(end) = raw.array_windows().position(|part| part == b"\r\n\r\n") {
             let head = String::from_utf8(raw[..end + 4].to_vec()).unwrap();
             let length: usize = head
                 .lines()

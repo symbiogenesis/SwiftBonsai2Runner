@@ -296,7 +296,7 @@ fn serve_probe(stream: &mut BlockingStream, key: &str) -> io::Result<()> {
     stream.set_write_timeout(Some(Duration::from_secs(2)))?;
     let mut request = Vec::with_capacity(1024);
     let mut buffer = [0; 1024];
-    while !request.windows(4).any(|bytes| bytes == b"\r\n\r\n") {
+    while !request.array_windows().any(|bytes| bytes == b"\r\n\r\n") {
         let count = stream.read(&mut buffer)?;
         if count == 0 || request.len() + count > 16 * 1024 {
             return Err(io::Error::other("Invalid synthetic backend request."));

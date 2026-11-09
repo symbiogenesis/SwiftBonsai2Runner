@@ -40,7 +40,7 @@ use sse::Sse;
 const POLL: Duration = Duration::from_millis(100);
 const IO_POLL: Duration = Duration::from_millis(50);
 const SOCKET_POLL: Duration = Duration::from_millis(5);
-const DEADLINE: Duration = Duration::from_secs(600);
+const DEADLINE: Duration = Duration::from_mins(10);
 // Ten seconds for the broker's explicit model stop, then bounded exit polling
 // and outer-Job cleanup. All phases share this one absolute deadline.
 const BROKER_STOP: Duration = Duration::from_secs(15);
@@ -1190,7 +1190,10 @@ fn read_head<R: Read>(reader: &mut BufReader<R>) -> Result<(Framing, ResponseKin
         return Err(Failure::Message(LOCAL_CONNECTION_CLOSED));
     }
     let window = &available[..available.len().min(MAX_HEAD)];
-    if let Some(offset) = window.windows(4).position(|bytes| bytes == b"\r\n\r\n") {
+    if let Some(offset) = window
+        .array_windows()
+        .position(|bytes| bytes == b"\r\n\r\n")
+    {
         let end = offset + 4;
         let parsed = parse_head(&window[..end]);
         reader.consume(end);
@@ -1390,8 +1393,8 @@ mod tests {
         let selected = runtime_arguments(&config);
         assert!(
             selected
-                .windows(2)
-                .any(|args| args == ["--prompt-reuse", "latest"])
+                .array_windows()
+                .any(|args| args == &["--prompt-reuse", "latest"])
         );
         let retry = Config {
             evidence: "retry-evidence".into(),

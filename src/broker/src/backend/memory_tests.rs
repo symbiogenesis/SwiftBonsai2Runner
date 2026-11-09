@@ -98,7 +98,7 @@ fn owned_request_drops_prompt_before_any_response_read_and_preserves_wire_bytes(
                 streaming,
                 "/v1/chat/completions",
                 &policy,
-                Instant::now() + Duration::from_secs(60),
+                Instant::now() + Duration::from_mins(1),
             )
             .await;
             assert!(response.is_ok());
@@ -128,7 +128,7 @@ fn header_fast_path_and_fragmented_fallback_preserve_coalesced_payload() -> io::
                 &mut reader,
                 false,
                 false,
-                Instant::now() + Duration::from_secs(60),
+                Instant::now() + Duration::from_mins(1),
             )
             .await
             .map_err(|_| io::Error::other("Fixture head was rejected."))?;
@@ -167,8 +167,8 @@ fn borrowed_payloads_exclude_framing_and_interoperate_with_direct_reads() -> io:
                 },
                 remaining_budget: MAX_RESPONSE_BYTES,
                 metadata_bytes: 0,
-                deadline: Instant::now() + Duration::from_secs(60),
-                timer: Box::pin(sleep_until(Instant::now() + Duration::from_secs(60))),
+                deadline: Instant::now() + Duration::from_mins(1),
+                timer: Box::pin(sleep_until(Instant::now() + Duration::from_mins(1))),
             };
             let storage = body
                 .reader

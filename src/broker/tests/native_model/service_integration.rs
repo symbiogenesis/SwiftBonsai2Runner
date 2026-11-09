@@ -67,7 +67,7 @@ fn readiness_observation(profile: &AdapterProfile, report: &Value) -> Value {
         "scope":"Production launcher independently verifies exact model, adapter, runtime, template, scale capability/range and effective row-worker readiness before returning ownership."})
 }
 
-pub(super) const NEXT_OWNER_RESERVE: Duration = Duration::from_secs(60);
+pub(super) const NEXT_OWNER_RESERVE: Duration = Duration::from_mins(1);
 // NativeProcess::drop may wait up to ten seconds for contained descendants.
 // A timed-out task must be cancelled and observed inside the existing Stop
 // allowance instead of being detached by dropping its JoinHandle.
@@ -916,8 +916,8 @@ fn native_pq2_service_integration_profile_preserves_original_default_and_bounds(
     );
     assert!(
         arguments
-            .windows(2)
-            .any(|pair| pair[0] == "--native-row-workers" && pair[1] == "4")
+            .array_windows()
+            .any(|[flag, value]| flag == "--native-row-workers" && value == "4")
     );
     assert_eq!(adapter_messages(selected, false), body(1)["messages"]);
     assert_eq!(

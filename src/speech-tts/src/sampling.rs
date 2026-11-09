@@ -658,7 +658,7 @@ mod tests {
         let mut many: Vec<TokenProb> = (0..64)
             .map(|id| TokenProb {
                 id,
-                prob: if id % 2 == 0 { 0.5 } else { 0.25 },
+                prob: if id.is_multiple_of(2) { 0.5 } else { 0.25 },
             })
             .collect();
         msvc_sort(&mut many, |a, b| a.prob > b.prob);

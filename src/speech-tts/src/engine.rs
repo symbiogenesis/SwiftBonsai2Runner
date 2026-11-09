@@ -1749,7 +1749,7 @@ mod tests {
             })
             .collect();
         let signs64: Vec<i8> = (0_u8..64)
-            .map(|i| if i % 2 == 0 { 1 } else { -1 })
+            .map(|i| if i.is_multiple_of(2) { 1 } else { -1 })
             .collect();
         let pq2_64 = WeightQuantization::PQ2_0 {
             group_size: 32,

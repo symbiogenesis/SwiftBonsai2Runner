@@ -76,10 +76,12 @@ fn cpu_sets_reject_malformed_duplicate_and_unbounded_records() {
 fn cpu_sets_query_observes_current_windows_host_without_changing_policy() -> io::Result<()> {
     let sets = crate::cpu_sets()?;
     assert_ne!(sets, Vec::new());
-    assert!(
-        sets.windows(2)
-            .all(|pair| (pair[0].group, pair[0].logical_processor_index)
-                < (pair[1].group, pair[1].logical_processor_index))
-    );
+    assert!(sets.array_windows().all(|[first, second]| (
+        first.group,
+        first.logical_processor_index
+    ) < (
+        second.group,
+        second.logical_processor_index
+    )));
     Ok(())
 }

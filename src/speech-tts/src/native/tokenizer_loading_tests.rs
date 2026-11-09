@@ -388,7 +388,7 @@ fn tiny_gguf(tokens: &[&[u8]], merges: &[&[u8]]) -> io::Result<Vec<u8>> {
         bytes.extend(4_u32.to_le_bytes());
         bytes.extend(id.to_le_bytes());
     }
-    while bytes.len() % 32 != 0 {
+    while !bytes.len().is_multiple_of(32) {
         bytes.push(0);
     }
     Ok(bytes)

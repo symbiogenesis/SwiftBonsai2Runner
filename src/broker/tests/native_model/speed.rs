@@ -7,7 +7,7 @@ const CASE: &str = PQ2_ADAPTER_SPEED_CASE;
 const CAP: u32 = 8;
 const PROMPT: &str = "Count from 1 to 100.";
 // A second owner must have time to start, execute, and release its Job.
-const NEXT_OWNER_RESERVE: Duration = Duration::from_secs(60);
+const NEXT_OWNER_RESERVE: Duration = Duration::from_mins(1);
 const SERIAL: AdapterProfile = AdapterProfile {
     name: PROFILE,
     case: CASE,

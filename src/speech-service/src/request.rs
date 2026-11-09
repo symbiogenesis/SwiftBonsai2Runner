@@ -196,8 +196,8 @@ fn multipart<'a>(media: &str, body: &'a [u8]) -> Result<&'a [u8], Error> {
         let (name, filename) = disposition_field(disposition)?;
         if name == "file" {
             if !filename
-                || !content_type.is_some_and(|value| {
-                    [
+                || content_type.is_none_or(|value| {
+                    ![
                         b"audio/wav".as_slice(),
                         b"audio/x-wav",
                         b"application/octet-stream",

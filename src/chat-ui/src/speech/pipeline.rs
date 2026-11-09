@@ -386,7 +386,7 @@ impl Frames {
     ) -> Result<(), tts::Failure> {
         if self.pending.is_empty() {
             Ok(())
-        } else if self.pending.len() % 2 == 0 {
+        } else if self.pending.len().is_multiple_of(2) {
             let replacement = self.replacement();
             sink(std::mem::replace(&mut self.pending, replacement))
         } else {
@@ -401,7 +401,7 @@ impl Frames {
         if self.pending.is_empty() {
             self.onset_remaining = HANN_BOUNDARY_SAMPLES;
             Ok(())
-        } else if self.pending.len() % 2 == 0 {
+        } else if self.pending.len().is_multiple_of(2) {
             let len = self.pending.len();
             // Apply a gentle Hann tail taper toward 0 on the final HANN_BOUNDARY_SAMPLES
             // of the segment and record the boundary sample for the next segment's onset.
@@ -594,7 +594,7 @@ impl Buffered {
         };
         if pcm.is_empty()
             || pcm.len() > max_packet
-            || pcm.len() % 2 != 0
+            || !pcm.len().is_multiple_of(2)
             || self.segment_bytes + pcm.len() > max_buffer
         {
             return Err(AUDIO_FAILURE);
@@ -704,7 +704,7 @@ impl PlaybackBuffers {
         if self.queued.len() >= PLAYBACK_PACKETS
             || pcm.is_empty()
             || pcm.len() > self.max_packet_bytes
-            || pcm.len() % 2 != 0
+            || !pcm.len().is_multiple_of(2)
         {
             return Err(AUDIO_FAILURE);
         }

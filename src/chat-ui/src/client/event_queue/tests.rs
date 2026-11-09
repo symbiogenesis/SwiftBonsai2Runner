@@ -6,7 +6,7 @@ use std::{sync::mpsc, thread, time::Duration};
 
 fn fill(sender: &EventSender) -> Result<()> {
     for index in 0..STREAM_EVENTS {
-        let mut event = Some(if index % 2 == 0 {
+        let mut event = Some(if index.is_multiple_of(2) {
             Event::Text("x".into())
         } else {
             Event::Reasoning("y".into())
@@ -204,7 +204,7 @@ fn backpressured_delivery_resumes_with_exact_fifo_bytes_after_consumption() -> R
     let events: Vec<_> = receiver.try_iter().collect();
     assert_eq!(events.len(), STREAM_EVENTS);
     for (index, event) in events[..STREAM_EVENTS - 1].iter().enumerate() {
-        if index % 2 == 0 {
+        if index.is_multiple_of(2) {
             assert!(matches!(event, Event::Reasoning(text) if text == "y"));
         } else {
             assert!(matches!(event, Event::Text(text) if text == "x"));

@@ -135,24 +135,24 @@ fn streaming_pcm_frames_complete_output_and_leaves_failures_incomplete() -> io::
         assert!(response.starts_with(b"HTTP/1.1 200"));
         assert!(
             response
-                .windows(b"Transfer-Encoding: chunked".len())
+                .array_windows()
                 .any(|part| part == b"Transfer-Encoding: chunked")
         );
         assert!(
             response
-                .windows(b"Content-Type: audio/pcm".len())
+                .array_windows()
                 .any(|part| part == b"Content-Type: audio/pcm")
         );
         assert_eq!(response.ends_with(b"0\r\n\r\n"), !failure && !invalid);
         assert_eq!(
             response
-                .windows(b"HTTP/1.1".len())
+                .array_windows()
                 .filter(|part| *part == b"HTTP/1.1")
                 .count(),
             1
         );
         let boundary = response
-            .windows(4)
+            .array_windows()
             .position(|part| part == b"\r\n\r\n")
             .ok_or_else(|| io::Error::other("Missing streaming response headers."))?;
         assert!(response[boundary + 4..].starts_with(b"6\r\n\x01\x80\x00\x00\xff\x7f\r\n"));
@@ -262,7 +262,7 @@ fn native_http_preserves_exact_health_and_voice_design_audio() -> io::Result<()>
         let (response, calls) = exchange(kind, "GET /health", &[], &[])?;
         assert!(response.starts_with(b"HTTP/1.1 200"));
         let boundary = response
-            .windows(4)
+            .array_windows()
             .position(|bytes| bytes == b"\r\n\r\n")
             .ok_or_else(|| io::Error::other("Missing response head"))?;
         let health: serde_json::Value = serde_json::from_slice(&response[boundary + 4..])?;
@@ -290,7 +290,7 @@ fn native_http_preserves_exact_health_and_voice_design_audio() -> io::Result<()>
     assert_eq!(calls, 1);
     assert!(response.starts_with(b"HTTP/1.1 200"));
     let boundary = response
-        .windows(4)
+        .array_windows()
         .position(|bytes| bytes == b"\r\n\r\n")
         .ok_or_else(|| io::Error::other("Missing response head"))?;
     let audio = &response[boundary + 4..];
@@ -316,7 +316,7 @@ fn native_multipart_transcription_maps_pcm_without_disk_files() -> io::Result<()
     assert_eq!(calls, 1);
     assert!(
         response
-            .windows(b"recognized words".len())
+            .array_windows()
             .any(|bytes| bytes == b"recognized words")
     );
     Ok(())
@@ -339,7 +339,7 @@ fn memory_body_intake_preserves_the_maximum_declared_speech_payload() -> io::Res
     assert!(response.starts_with(b"HTTP/1.1 200"));
     assert_eq!(calls, 1);
     let boundary = response
-        .windows(4)
+        .array_windows()
         .position(|bytes| bytes == b"\r\n\r\n")
         .ok_or_else(|| io::Error::other("Missing response head"))?;
     assert_eq!(&response[boundary + 4..][44..], b"\x01\x80\0\0\xff\x7f");
@@ -371,7 +371,7 @@ fn escaped_transcripts_cannot_exceed_the_clients_serialized_response_limit() -> 
     assert!(response.len() < 65536);
     assert!(
         response
-            .windows(b"model_failure".len())
+            .array_windows()
             .any(|bytes| bytes == b"model_failure")
     );
     Ok(())
@@ -667,7 +667,7 @@ fn completed_pcm_and_wave_clients_can_close_before_the_next_request() -> io::Res
     };
     let key = std::str::from_utf8(&KEY).map_err(io::Error::other)?;
     for index in 0..COMPLETED_REQUESTS {
-        let pcm = index % 2 == 0;
+        let pcm = index.is_multiple_of(2);
         let body = String::from_utf8(speech()).map_err(io::Error::other)?;
         let body = if pcm {
             body.replace("\"wav\"", "\"pcm\"")
@@ -820,7 +820,7 @@ fn wave_response_validates_before_headers_and_preserves_pcm_bytes() -> io::Resul
         )?;
         assert_eq!(
             response
-                .windows(8)
+                .array_windows()
                 .filter(|bytes| *bytes == b"HTTP/1.1")
                 .count(),
             1
@@ -829,7 +829,7 @@ fn wave_response_validates_before_headers_and_preserves_pcm_bytes() -> io::Resul
             assert!(response.starts_with(b"HTTP/1.1 502"));
             assert!(
                 response
-                    .windows(20)
+                    .array_windows()
                     .any(|bytes| bytes == b"invalid_audio_output")
             );
             continue;
@@ -837,11 +837,11 @@ fn wave_response_validates_before_headers_and_preserves_pcm_bytes() -> io::Resul
         assert!(response.starts_with(b"HTTP/1.1 200"));
         assert!(
             response
-                .windows(20)
+                .array_windows()
                 .any(|bytes| bytes == b"Content-Length: 60\r\n")
         );
         let boundary = response
-            .windows(4)
+            .array_windows()
             .position(|bytes| bytes == b"\r\n\r\n")
             .ok_or_else(|| io::Error::other("Missing WAV response headers."))?;
         let wave = &response[boundary + 4..];

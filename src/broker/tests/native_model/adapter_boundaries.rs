@@ -23,7 +23,7 @@ fn body(scale: f64) -> Value {
 }
 
 fn context_observation(bytes: &[u8]) -> Value {
-    let header_end = bytes.windows(4).position(|part| part == b"\r\n\r\n");
+    let header_end = bytes.array_windows().position(|part| part == b"\r\n\r\n");
     let parsed = header_end.and_then(|end| {
         if end > 16 * 1024 {
             return None;
@@ -441,7 +441,7 @@ fn native_adapter_boundary_wire_sequence_preserves_rejections_and_failed_replay(
                     }
                 });
                 let mut report = json!({"passed":false,"streams":[initial],"scaleBoundaryWorkload":pending_workload()});
-                let passed = requests(port,"fixture",&evidence,tokio::time::Instant::now()+Duration::from_secs(120),&mut report).await;
+                let passed = requests(port,"fixture",&evidence,tokio::time::Instant::now()+Duration::from_mins(2),&mut report).await;
                 fixture.await.unwrap();
                 assert_eq!(passed,final_tokens==1);
                 assert_eq!(report["scaleBoundaryWorkload"]["invalidScaleRejected"],true);

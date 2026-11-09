@@ -71,7 +71,7 @@ impl Drop for Source {
 }
 
 fn body(reader: BufReader<Source>, framing: Framing) -> BackendBody<Source> {
-    let deadline = Instant::now() + Duration::from_secs(60);
+    let deadline = Instant::now() + Duration::from_mins(1);
     BackendBody {
         reader: Some(reader),
         framing,

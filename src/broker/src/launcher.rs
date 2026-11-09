@@ -62,7 +62,7 @@ pub const LAUNCH_USAGE: &str = concat!(
 );
 
 const PHYSICAL_RESERVE: u64 = 4 * 1024 * 1024 * 1024;
-const STARTUP_TIMEOUT: Duration = Duration::from_secs(600);
+const STARTUP_TIMEOUT: Duration = Duration::from_mins(10);
 const STOP_TIMEOUT: Duration = Duration::from_secs(10);
 const HEALTH_LIMIT: usize = 20 * 1024;
 
@@ -1079,8 +1079,8 @@ fn validate_response(bytes: &[u8], status: u16) -> io::Result<&[u8]> {
     let body = &bytes[head..];
     if body.len() > 4096
         || length != Some(body.len())
-        || !content_type.is_some_and(|value| {
-            value == b"application/json" || value == b"application/json; charset=utf-8"
+        || content_type.is_none_or(|value| {
+            value != b"application/json" && value != b"application/json; charset=utf-8"
         })
     {
         return Err(invalid());
@@ -1452,14 +1452,16 @@ mod tests {
                 if workers == "4" {
                     assert!(
                         child
-                            .windows(2)
-                            .any(|args| args[0] == "--row-workers" && args[1] == "4")
+                            .array_windows()
+                            .any(|[flag, value]| flag == "--row-workers" && value == "4")
                     );
                 }
                 let adapter = plan.adapter.as_ref().ok_or(LaunchError::Adapter)?;
                 assert!(
-                    child.windows(2).any(|args| args[0] == "--abliterate-lora"
-                        && args[1] == adapter.path.as_os_str())
+                    child
+                        .array_windows()
+                        .any(|[flag, value]| flag == "--abliterate-lora"
+                            && value == adapter.path.as_os_str())
                 );
                 assert_eq!(
                     child.iter().any(|arg| arg == "--use-repacked-ptq1"),
@@ -1495,8 +1497,8 @@ mod tests {
             let child = config.native_arguments(&plan, &key);
             assert_eq!(
                 child
-                    .windows(2)
-                    .filter(|args| args[0] == "--prompt-reuse" && args[1] == "latest")
+                    .array_windows()
+                    .filter(|[flag, value]| flag == "--prompt-reuse" && value == "latest")
                     .count(),
                 usize::from(latest)
             );

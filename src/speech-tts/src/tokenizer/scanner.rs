@@ -189,6 +189,7 @@ pub(super) fn pretokenize_iter(text: &[u8]) -> impl Iterator<Item = io::Result<&
     })
 }
 
+#[cfg(test)]
 pub(super) fn pretokenize(text: &[u8]) -> io::Result<Vec<&[u8]>> {
     let mut chunks = Vec::new();
     chunks

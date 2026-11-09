@@ -63,7 +63,7 @@ fn extensions(value: &str) -> io::Result<Vec<String>> {
         names.push(name.to_owned());
     }
     names.sort_unstable();
-    if names.windows(2).any(|pair| pair[0] == pair[1]) {
+    if names.array_windows().any(|[a, b]| a == b) {
         return Err(invalid());
     }
     Ok(names)

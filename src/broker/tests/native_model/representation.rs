@@ -13,7 +13,7 @@ pub(super) const ROW4_CASE: &str =
     "representation::pinned_native_ptq1_pq2_row4_capture_complete_responses";
 const CAP: u32 = 32;
 const PROMPT: &str = "Name one tree. Answer with only its name.";
-const NEXT_OWNER_RESERVE: Duration = Duration::from_secs(60);
+const NEXT_OWNER_RESERVE: Duration = Duration::from_mins(1);
 fn profiles(row_workers: u8) -> [AdapterProfile; 2] {
     assert!([1, 4].contains(&row_workers));
     let (name, case) = if row_workers == 1 {
@@ -746,9 +746,9 @@ fn native_representation_row4_profile_is_explicit_and_preserves_pair() {
         assert_eq!(config.uses_repacked_ptq1(), parallel.repacked);
     }
     assert!(!profiles(4)[0].repacked && profiles(4)[1].repacked);
-    assert_eq!(NEXT_OWNER_RESERVE, Duration::from_secs(60));
+    assert_eq!(NEXT_OWNER_RESERVE, Duration::from_mins(1));
     assert_eq!(STOP_WAIT, Duration::from_secs(30));
-    assert_eq!(CASE_BUDGET, Duration::from_secs(240));
+    assert_eq!(CASE_BUDGET, Duration::from_mins(4));
 }
 
 #[test]

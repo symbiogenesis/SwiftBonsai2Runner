@@ -881,13 +881,13 @@ pub(super) fn bind_exclusive_loopback_listener(
     port: u16,
     backlog: i32,
 ) -> io::Result<std::net::TcpListener> {
-    static WINSOCK: std::sync::OnceLock<i32> = std::sync::OnceLock::new();
-    let status = *WINSOCK.get_or_init(|| {
+    static WINSOCK: std::sync::LazyLock<i32> = std::sync::LazyLock::new(|| {
         // SAFETY: Plain-old-data WSADATA buffer initialized by WSAStartup.
         let mut data = unsafe { std::mem::zeroed::<WSADATA>() };
         // SAFETY: Request Winsock 2.2 once for the process lifetime.
         unsafe { WSAStartup(0x0202, &raw mut data) }
     });
+    let status = *WINSOCK;
     if status != 0 {
         return Err(io::Error::from_raw_os_error(status));
     }

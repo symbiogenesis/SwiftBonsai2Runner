@@ -145,7 +145,7 @@ fn swift_plan_selects_only_pinned_pq2_runtime_and_assessment_limits() {
         plan.executable,
         plan.runtime_directory.join("llama-server.exe")
     );
-    let pairs: Vec<_> = plan.arguments.windows(2).collect();
+    let pairs: Vec<_> = plan.arguments.array_windows().collect();
     for pair in [
         ["--batch-size", "128"],
         ["--ubatch-size", "64"],
@@ -159,7 +159,7 @@ fn swift_plan_selects_only_pinned_pq2_runtime_and_assessment_limits() {
         assert!(
             pairs
                 .iter()
-                .any(|actual| actual[0] == pair[0] && actual[1] == pair[1])
+                .any(|[first, second]| first == pair[0] && second == pair[1])
         );
     }
     for required in [
@@ -213,7 +213,7 @@ fn pinned_plan_uses_independent_tokens_and_fixed_memory_budget() {
         ["--cache-type-k", "f16"],
         ["--cache-type-v", "f16"],
     ] {
-        assert!(plan.arguments.windows(2).any(|pair| pair == expected));
+        assert!(plan.arguments.array_windows().any(|pair| pair == &expected));
     }
     assert!(!plan.arguments.iter().any(|arg| arg == "--system-prompt"));
     assert!(

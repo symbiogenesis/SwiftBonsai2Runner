@@ -31,7 +31,7 @@ const MAX_HEAD: usize = 16 * 1024;
 const MAX_TEXT: usize = 32768;
 const IO_POLL: Duration = Duration::from_millis(250);
 const READY_LIMIT: Duration = Duration::from_secs(5);
-const TRANSCRIBE_LIMIT: Duration = Duration::from_secs(120);
+const TRANSCRIBE_LIMIT: Duration = Duration::from_mins(2);
 
 mod pcm;
 
@@ -449,7 +449,7 @@ fn normalize_wav<'a>(wav: &'a [u8], call: &Call<'_>) -> Result<CanonicalWav<'a>>
         offset = padded_end;
     }
     let data = data.ok_or(invalid)?;
-    if !format || data.is_empty() || data.len() % 2 != 0 || data.len() > 960_000 {
+    if !format || data.is_empty() || !data.len().is_multiple_of(2) || data.len() > 960_000 {
         return Err(invalid);
     }
     let header = bonsai_audio::mono_pcm16_header(SAMPLE_RATE, data.len() / 2).ok_or(invalid)?;
@@ -498,11 +498,11 @@ fn boundary(wav: &CanonicalWav<'_>, call: &Call<'_>) -> Result<String> {
     join[tail..tail + prefix].copy_from_slice(&wav.data[..prefix]);
     let windows = wav
         .header
-        .windows(WINDOW)
-        .chain(join[..tail + prefix].windows(WINDOW))
-        .chain(wav.data.windows(WINDOW));
+        .array_windows::<WINDOW>()
+        .chain(join[..tail + prefix].array_windows::<WINDOW>())
+        .chain(wav.data.array_windows::<WINDOW>());
     for (index, window) in windows.enumerate() {
-        if index % 8192 == 0 {
+        if index.is_multiple_of(8192) {
             call.check()?;
         }
         if let Some(suffix) = window.strip_prefix(PREFIX)
@@ -911,7 +911,7 @@ mod tests {
                 let upload = request(&mut stream)?;
                 assert!(upload.starts_with(b"POST /v1/audio/transcriptions HTTP/1.1\r\n"));
                 let body_at = upload
-                    .windows(4)
+                    .array_windows()
                     .position(|bytes| bytes == b"\r\n\r\n")
                     .ok_or_else(|| io::Error::other("Missing upload header terminator."))?
                     + 4;
@@ -934,12 +934,12 @@ mod tests {
                 );
                 assert!(
                     upload
-                        .windows(MODEL.len())
+                        .array_windows::<{ MODEL.len() }>()
                         .any(|bytes| bytes == MODEL.as_bytes())
                 );
                 assert!(
                     upload
-                        .windows(19)
+                        .array_windows()
                         .any(|bytes| bytes == b"filename=\"clip.wav\"")
                 );
                 respond(&mut stream, response)?;

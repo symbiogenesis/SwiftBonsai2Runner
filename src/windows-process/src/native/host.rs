@@ -152,8 +152,8 @@ mod tests {
         assert!(host.windows_version[2] > 0);
         assert!(
             host.processor_features
-                .windows(2)
-                .all(|pair| pair[0] < pair[1])
+                .array_windows()
+                .all(|[first, second]| first < second)
         );
         assert_eq!(host, super::query()?);
         Ok(())

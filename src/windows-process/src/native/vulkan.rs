@@ -445,8 +445,9 @@ impl Loader {
         let library = Library(handle);
         // SAFETY: The module is owned and live; the fixed Vulkan loader symbol is
         // NUL-terminated and used only while `library` remains live.
-        let proc_addr = unsafe { GetProcAddress(library.0, c"vkGetInstanceProcAddr".as_ptr().cast()) }
-            .ok_or_else(|| io::Error::other("system Vulkan loader unavailable"))?;
+        let proc_addr =
+            unsafe { GetProcAddress(library.0, c"vkGetInstanceProcAddr".as_ptr().cast()) }
+                .ok_or_else(|| io::Error::other("system Vulkan loader unavailable"))?;
         // SAFETY: `vkGetInstanceProcAddr` has the exact Khronos Vulkan 1.0 ABI.
         let get_instance_proc_addr = unsafe {
             std::mem::transmute::<unsafe extern "system" fn() -> isize, vk::GetInstanceProcAddr>(
@@ -454,19 +455,19 @@ impl Loader {
             )
         };
         // SAFETY: Global loader commands use a null VkInstance and NUL-terminated name.
-        let enumerate_instance_version = unsafe {
-            get_instance_proc_addr(null_mut(), c"vkEnumerateInstanceVersion".as_ptr())
-        }
-        .map(|function| {
-            // SAFETY: Exact `vkEnumerateInstanceVersion` symbol and Khronos ABI.
-            unsafe {
-                std::mem::transmute::<vk::VoidFunction, vk::EnumerateInstanceVersion>(function)
-            }
-        });
+        let enumerate_instance_version =
+            unsafe { get_instance_proc_addr(null_mut(), c"vkEnumerateInstanceVersion".as_ptr()) }
+                .map(|function| {
+                    // SAFETY: Exact `vkEnumerateInstanceVersion` symbol and Khronos ABI.
+                    unsafe {
+                        std::mem::transmute::<vk::VoidFunction, vk::EnumerateInstanceVersion>(
+                            function,
+                        )
+                    }
+                });
         // SAFETY: Global loader command lookup with null VkInstance.
-        let create_fn =
-            unsafe { get_instance_proc_addr(null_mut(), c"vkCreateInstance".as_ptr()) }
-                .ok_or_else(|| io::Error::other("system Vulkan loader unavailable"))?;
+        let create_fn = unsafe { get_instance_proc_addr(null_mut(), c"vkCreateInstance".as_ptr()) }
+            .ok_or_else(|| io::Error::other("system Vulkan loader unavailable"))?;
         // SAFETY: Exact `vkCreateInstance` symbol and Khronos ABI.
         let create_instance =
             unsafe { std::mem::transmute::<vk::VoidFunction, vk::CreateInstance>(create_fn) };
@@ -492,11 +493,7 @@ impl Loader {
         }
     }
 
-    fn instance_symbol(
-        &self,
-        instance: vk::Instance,
-        name: &CStr,
-    ) -> io::Result<vk::VoidFunction> {
+    fn instance_symbol(&self, instance: vk::Instance, name: &CStr) -> io::Result<vk::VoidFunction> {
         // SAFETY: Valid live VkInstance and NUL-terminated Vulkan command name.
         unsafe { (self.get_instance_proc_addr)(instance, name.as_ptr()) }.ok_or_else(invalid)
     }
@@ -528,10 +525,7 @@ const fn graphics_count_result(status: i32, count: u32) -> WindowsGraphicsAdapte
 fn graphics_adapter_count() -> WindowsGraphicsAdapterCount {
     use windows_sys::{
         Wdk::Graphics::Direct3D::D3DKMT_ENUMADAPTERS2,
-        Win32::{
-            Foundation::GetLastError,
-            System::LibraryLoader::GetModuleHandleExW,
-        },
+        Win32::{Foundation::GetLastError, System::LibraryLoader::GetModuleHandleExW},
     };
 
     type Count = unsafe extern "system" fn(*mut D3DKMT_ENUMADAPTERS2) -> i32;
@@ -619,7 +613,8 @@ fn create_instance(
     let mut raw_instance: vk::Instance = null_mut();
     // SAFETY: Initialized create structures have live pointers; no layers or
     // extensions are requested. The instance is destroyed before its Loader.
-    let status = unsafe { (loader.create_instance)(&raw const create, null(), &raw mut raw_instance) };
+    let status =
+        unsafe { (loader.create_instance)(&raw const create, null(), &raw mut raw_instance) };
     let after = module_snapshot(before.as_deref(), true);
     let (after, file_candidates) = after.map_or((None, None), |(names, candidates)| {
         (Some(names), Some(candidates))
@@ -882,7 +877,12 @@ fn adapter(
         .get(..heaps)
         .ok_or_else(invalid)?
         .iter()
-        .map(|heap| (heap.size, heap.flags & vk::MEMORY_HEAP_DEVICE_LOCAL_BIT != 0))
+        .map(|heap| {
+            (
+                heap.size,
+                heap.flags & vk::MEMORY_HEAP_DEVICE_LOCAL_BIT != 0,
+            )
+        })
         .collect();
 
     let features = features(
@@ -947,11 +947,7 @@ pub(super) fn query() -> io::Result<VulkanInventory> {
     // SAFETY: Valid instance and initialized storage for the advertised count.
     // SUCCESS is required; INCOMPLETE rejects rather than growing without bound.
     let result = unsafe {
-        (instance.enumerate_physical_devices)(
-            instance.handle,
-            &raw mut count,
-            devices.as_mut_ptr(),
-        )
+        (instance.enumerate_physical_devices)(instance.handle, &raw mut count, devices.as_mut_ptr())
     };
     if result != vk::SUCCESS {
         return Err(failure(

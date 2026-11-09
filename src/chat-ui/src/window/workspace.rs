@@ -310,10 +310,9 @@ impl State {
                 egui::Button::new("Copy conversation"),
             )
             .clicked()
+            && let Some(transcript) = transcript
         {
-            if let Some(transcript) = transcript {
-                ui.ctx().copy_text(transcript.plain_text());
-            }
+            ui.ctx().copy_text(transcript.plain_text());
             ui.close();
         }
         ui.separator();

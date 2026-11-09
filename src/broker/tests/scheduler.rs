@@ -19,7 +19,7 @@ fn run(test: impl Future<Output = ()>) {
 }
 
 fn deadline() -> Instant {
-    Instant::now() + Duration::from_secs(60)
+    Instant::now() + Duration::from_mins(1)
 }
 
 #[test]
@@ -82,7 +82,7 @@ fn expired_deadlines_reject_ready_entry_and_release_capacity() {
         ));
         let active = gate.reserve().unwrap().enter(deadline()).await.unwrap();
         let limit = active.deadline();
-        advance(Duration::from_secs(60)).await;
+        advance(Duration::from_mins(1)).await;
         assert_eq!(active.deadline(), limit);
         assert_eq!(active.check(), Err(GateError::Deadline));
         assert!(matches!(gate.reserve(), Err(GateError::Capacity)));

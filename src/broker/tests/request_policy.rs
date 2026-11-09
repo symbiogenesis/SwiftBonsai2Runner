@@ -551,7 +551,7 @@ fn message_limit_preserves_maximum_valid_histories() {
     for count in [MAX_MESSAGES - 1, MAX_MESSAGES, MAX_MESSAGES + 1] {
         let messages: Vec<_> = (0..count)
             .map(|index| {
-                let role = if count % 2 == 0 && index == 0 {
+                let role = if count.is_multiple_of(2) && index == 0 {
                     "system"
                 } else if index % 2 == count % 2 {
                     "assistant"

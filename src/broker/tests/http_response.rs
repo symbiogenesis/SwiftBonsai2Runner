@@ -64,7 +64,7 @@ fn admitted(stream: bool) -> AdmittedChat {
 }
 
 fn deadline() -> Instant {
-    Instant::now() + Duration::from_secs(60)
+    Instant::now() + Duration::from_mins(1)
 }
 
 #[derive(Default)]
@@ -206,7 +206,7 @@ impl AsyncWrite for Client {
                 .state
                 .borrow()
                 .bytes
-                .windows(4)
+                .array_windows()
                 .any(|part| part == b"\r\n\r\n");
             if in_body {
                 let timer = self.timer.get_or_insert_with(|| Box::pin(sleep(delay)));
@@ -270,7 +270,7 @@ fn response(body: Backend, stream: bool) -> Response<Backend> {
 
 fn wire_parts(bytes: &[u8]) -> (BTreeMap<String, String>, &[u8], usize) {
     let split = bytes
-        .windows(4)
+        .array_windows()
         .position(|part| part == b"\r\n\r\n")
         .unwrap()
         + 4;
@@ -315,7 +315,7 @@ fn chunks(bytes: &[u8], terminal: bool) -> (Vec<u8>, Vec<usize>) {
     let mut ends = Vec::new();
     while at < bytes.len() {
         let line_end = bytes[at..]
-            .windows(2)
+            .array_windows()
             .position(|part| part == b"\r\n")
             .unwrap()
             + at;

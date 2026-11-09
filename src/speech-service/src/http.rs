@@ -143,8 +143,8 @@ fn respond(
         return stream(engine, input, peer);
     }
     let limit = match kind {
-        Kind::Canary => Duration::from_secs(120),
-        Kind::QwenTts => Duration::from_secs(180),
+        Kind::Canary => Duration::from_mins(2),
+        Kind::QwenTts => Duration::from_mins(3),
     };
     let watchdog =
         Watchdog::start(peer, limit).map_err(|_| Error::new(503, "supervision_unavailable"))?;
@@ -195,7 +195,7 @@ fn stream(
 ) -> Result<(), Error> {
     let max_samples = wave::max_samples_for_rate(engine.sample_rate())
         .ok_or_else(|| Error::new(502, "invalid_audio_output"))?;
-    let watchdog = Watchdog::start(peer, Duration::from_secs(180))
+    let watchdog = Watchdog::start(peer, Duration::from_mins(3))
         .map_err(|_| Error::new(503, "supervision_unavailable"))?;
     peer.set_write_timeout(Some(WRITE))
         .and_then(|()| peer.write_all(b"HTTP/1.1 200 Response\r\nContent-Type: audio/pcm\r\nTransfer-Encoding: chunked\r\nConnection: close\r\nCache-Control: no-store\r\nX-Content-Type-Options: nosniff\r\n\r\n"))

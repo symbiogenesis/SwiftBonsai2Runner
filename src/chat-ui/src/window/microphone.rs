@@ -25,7 +25,7 @@ use windows_future::{AsyncStatus, IAsyncAction, IAsyncOperation};
 const CLIP_LIMIT: Duration = Duration::from_secs(5);
 const START_LIMIT: Duration = Duration::from_secs(15);
 const OPERATION_LIMIT: Duration = Duration::from_secs(45);
-const PERMISSION_LIMIT: Duration = Duration::from_secs(120);
+const PERMISSION_LIMIT: Duration = Duration::from_mins(2);
 const MAX_WAV: u64 = 600 * 1024;
 
 pub(super) enum Event {

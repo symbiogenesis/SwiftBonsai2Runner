@@ -111,7 +111,8 @@ impl Progress {
         while self.cursor < bytes.len() && self.fields["framingRejected"] != true {
             match self.state {
                 WireState::Headers => {
-                    let Some(end) = bytes.windows(4).position(|part| part == b"\r\n\r\n") else {
+                    let Some(end) = bytes.array_windows().position(|part| part == b"\r\n\r\n")
+                    else {
                         self.fields["framingRejected"] = json!(bytes.len() > 16 * 1024);
                         return;
                     };
@@ -138,7 +139,8 @@ impl Progress {
                 }
                 WireState::Size => {
                     let remaining = &bytes[self.cursor..];
-                    let Some(end) = remaining.windows(2).position(|part| part == b"\r\n") else {
+                    let Some(end) = remaining.array_windows().position(|part| part == b"\r\n")
+                    else {
                         self.fields["framingRejected"] = json!(remaining.len() > 32);
                         return;
                     };

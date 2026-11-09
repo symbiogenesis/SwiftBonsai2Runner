@@ -415,10 +415,7 @@ async fn write_json_response<W: AsyncWrite + Unpin, R: AsyncRead + Unpin>(
     .await
 }
 
-fn validate_metadata<R>(
-    backend: &Response<R>,
-    streaming: bool,
-) -> Result<(), ResponseError> {
+fn validate_metadata<R>(backend: &Response<R>, streaming: bool) -> Result<(), ResponseError> {
     if backend.status() != StatusCode::OK || backend.headers().contains_key("content-encoding") {
         return Err(ResponseError::BackendMetadata);
     }

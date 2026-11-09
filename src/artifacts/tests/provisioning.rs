@@ -220,7 +220,7 @@ fn runtime_stage_rejects_entry_and_expansion_budgets() -> TestResult {
 
     let mut bytes = archive(&[("llama-server.exe", &image)])?;
     let central = bytes
-        .windows(4)
+        .array_windows()
         .position(|window| window == b"PK\x01\x02")
         .ok_or("Missing ZIP central header")?;
     bytes[central + 24..central + 28].copy_from_slice(&(512_u32 * 1024 * 1024 + 1).to_le_bytes());

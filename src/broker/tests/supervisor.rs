@@ -43,7 +43,7 @@ fn policy() -> RequestPolicy {
 }
 
 fn deadline() -> Instant {
-    Instant::now() + Duration::from_secs(60)
+    Instant::now() + Duration::from_mins(1)
 }
 
 fn request(stream: bool) -> Vec<u8> {

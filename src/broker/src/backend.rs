@@ -413,9 +413,7 @@ fn validate_wire_content_metadata(
     Ok(())
 }
 
-fn validate_count_rejection_metadata(
-    headers: &[httparse::Header<'_>],
-) -> Result<(), BackendError> {
+fn validate_count_rejection_metadata(headers: &[httparse::Header<'_>]) -> Result<(), BackendError> {
     validate_wire_content_metadata(headers, false)?;
     for (name, expected) in [
         ("connection", b"close".as_slice()),

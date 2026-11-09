@@ -35,6 +35,7 @@ fn copy_bytes(bytes: &[u8]) -> io::Result<Vec<u8>> {
 }
 
 /// The pinned scanner's borrowed chunks, which can split multibyte whitespace.
+#[cfg(test)]
 pub(super) fn pretokenize(text: &[u8]) -> io::Result<Vec<&[u8]>> {
     if text.len() > MAX_INPUT_BYTES || std::str::from_utf8(text).is_err() {
         return Err(invalid(
@@ -85,7 +86,7 @@ impl Tokenizer {
         if self.finished
             || bytes.len() > MAX_SPELLING_BYTES
             || value < 0
-            || usize::try_from(value).map_or(true, |value| value >= MAX_ENTRIES)
+            || !usize::try_from(value).is_ok_and(|value| value < MAX_ENTRIES)
         {
             return Err(invalid("Qwen tokenizer table entry is outside its bounds."));
         }

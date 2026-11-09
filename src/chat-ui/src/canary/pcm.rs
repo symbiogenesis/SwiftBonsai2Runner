@@ -44,7 +44,7 @@ pub(super) fn decode(
             .checked_add(length)
             .filter(|&value| value <= MAX_PCM)
             .ok_or(INVALID)?;
-        if length % 2 != 0 {
+        if !length.is_multiple_of(2) {
             return Err(INVALID);
         }
         let mut remaining = length;
@@ -110,7 +110,7 @@ impl<F: FnMut(&mut [u8]) -> Result<usize>> Buffered<F> {
     // the cursor before returning keeps framing and refill bookkeeping private;
     // the borrow prevents another read until the caller finishes with this span.
     fn pcm(&mut self, maximum: usize, check: &mut impl FnMut() -> Result<()>) -> Result<&[u8]> {
-        if maximum < 2 || maximum % 2 != 0 || !self.fill()? {
+        if maximum < 2 || !maximum.is_multiple_of(2) || !self.fill()? {
             return Err(INVALID);
         }
         check()?;

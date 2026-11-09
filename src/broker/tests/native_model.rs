@@ -60,9 +60,9 @@ const PQ2_ADAPTER_LIFECYCLE_CASE: &str =
     "pinned_native_pq2_adapter_row4_checks_scale_change_rejection_and_history";
 const PQ2_ADAPTER_SPEED_PROFILE: &str = "pq2-adapter-speed";
 const PQ2_ADAPTER_SPEED_CASE: &str = "speed::pinned_native_pq2_adapter_compares_request_throughput";
-const CASE_BUDGET: Duration = Duration::from_secs(240);
-const OPTIONAL_RESERVE: Duration = Duration::from_secs(120);
-const WAIT: Duration = Duration::from_secs(600);
+const CASE_BUDGET: Duration = Duration::from_mins(4);
+const OPTIONAL_RESERVE: Duration = Duration::from_mins(2);
+const WAIT: Duration = Duration::from_mins(10);
 const EXTENDED_COMPLETION_CAP: u32 = 4096;
 const BOUNDED_HISTORY_REPETITIONS: usize = 128;
 const SHORT_COMPLETION_CAP: u32 = 4;
@@ -75,7 +75,7 @@ const ADAPTER_LIFECYCLE_RESERVE: Duration = Duration::from_secs(45);
 
 fn whole_job_budget_setting(setting: Option<&str>) -> Option<Duration> {
     let Some(setting) = setting else {
-        return Some(Duration::from_secs(300));
+        return Some(Duration::from_mins(5));
     };
     if setting.is_empty()
         || setting.starts_with('0')
@@ -95,12 +95,12 @@ fn whole_job_budget() -> Duration {
 
 fn maximum_case_budget() -> Duration {
     whole_job_budget()
-        .checked_sub(Duration::from_secs(60))
+        .checked_sub(Duration::from_mins(1))
         .unwrap()
 }
 
 fn case_budget_setting(setting: Option<&str>, whole_job: Option<&str>) -> Option<Duration> {
-    let maximum = whole_job_budget_setting(whole_job)?.checked_sub(Duration::from_secs(60))?;
+    let maximum = whole_job_budget_setting(whole_job)?.checked_sub(Duration::from_mins(1))?;
     let setting = setting?;
     if setting.is_empty() || !setting.bytes().all(|byte| byte.is_ascii_digit()) {
         return None;
@@ -557,7 +557,7 @@ async fn exchange(port: u16, key: &str, body: &Value) -> Vec<u8> {
 
 fn response<'a>(bytes: &'a [u8], status: &str) -> (&'a str, &'a [u8]) {
     let end = bytes
-        .windows(4)
+        .array_windows()
         .position(|part| part == b"\r\n\r\n")
         .unwrap();
     let head = std::str::from_utf8(&bytes[..end]).unwrap();
@@ -585,7 +585,10 @@ fn stream_payload(bytes: &[u8]) -> Vec<u8> {
     );
     let mut payload = Vec::new();
     loop {
-        let end = body.windows(2).position(|part| part == b"\r\n").unwrap();
+        let end = body
+            .array_windows()
+            .position(|part| part == b"\r\n")
+            .unwrap();
         let length = usize::from_str_radix(std::str::from_utf8(&body[..end]).unwrap(), 16).unwrap();
         body = &body[end + 2..];
         assert!(body.len() >= length + 2);
@@ -1411,7 +1414,7 @@ fn native_bounded_history_and_stall_requests_preserve_distinct_output_limits() {
     assert_eq!(stalled["enable_thinking"], false);
     assert_eq!(STALLED_CONSUMER_PAUSE, Duration::from_secs(1));
     assert_eq!(STOP_WAIT, Duration::from_secs(30));
-    assert_eq!(CASE_BUDGET, Duration::from_secs(240));
+    assert_eq!(CASE_BUDGET, Duration::from_mins(4));
     let skipped = skipped_workload(true);
     assert_eq!(skipped["status"], "pending");
     assert_eq!(
@@ -2243,8 +2246,8 @@ fn native_row4_profile_is_explicit_original_pq2_and_one_stream_only() {
             assert_eq!(args.iter().filter(|arg| *arg == required).count(), 1);
         }
         assert!(
-            args.windows(2)
-                .any(|pair| pair[0] == "--profile" && pair[1] == "swift-pq2-assessment")
+            args.array_windows()
+                .any(|[flag, value]| flag == "--profile" && value == "swift-pq2-assessment")
         );
         assert_eq!(
             args.iter().any(|arg| arg == "--use-repacked-ptq1"),
@@ -2258,8 +2261,8 @@ fn native_row4_profile_is_explicit_original_pq2_and_one_stream_only() {
         );
         if profile.row_workers == 4 {
             assert!(
-                args.windows(2)
-                    .any(|pair| pair[0] == "--native-row-workers" && pair[1] == "4")
+                args.array_windows()
+                    .any(|[flag, value]| flag == "--native-row-workers" && value == "4")
             );
             assert!(!profile.repacked);
             assert!(!profile.optional_requests);
@@ -2273,7 +2276,7 @@ fn native_row4_profile_is_explicit_original_pq2_and_one_stream_only() {
     assert_eq!(body["abliteration_scale"], 1.3);
     assert_eq!(body["max_completion_tokens"], 4);
     assert_eq!(body["enable_thinking"], false);
-    assert_eq!(CASE_BUDGET, Duration::from_secs(240));
+    assert_eq!(CASE_BUDGET, Duration::from_mins(4));
 }
 
 async fn adapter_scale_history_fixture(
@@ -2846,8 +2849,8 @@ fn native_adapter_scale_history_profile_requires_separate_explicit_selection() {
             repacked
         );
         assert_eq!(
-            args.windows(2)
-                .any(|pair| pair[0] == "--native-row-workers" && pair[1] == "4"),
+            args.array_windows()
+                .any(|[flag, value]| flag == "--native-row-workers" && value == "4"),
             workers == 4
         );
     }
@@ -3455,10 +3458,7 @@ fn native_case_budget_rejects_missing_unbounded_and_malformed_allowances() {
 
 #[test]
 fn native_case_budget_extension_requires_a_valid_predeclared_total() {
-    assert_eq!(
-        whole_job_budget_setting(None),
-        Some(Duration::from_secs(300))
-    );
+    assert_eq!(whole_job_budget_setting(None), Some(Duration::from_mins(5)));
     assert_eq!(case_budget_setting(Some("241"), None), None);
     for (whole, maximum) in [("300", 240), ("600", 540), ("900", 840)] {
         assert_eq!(

@@ -671,7 +671,7 @@ fn valid_history(messages: &[Message<'_>]) -> bool {
         && turns.len() % 2 == 1
         && turns.iter().enumerate().all(|(i, m)| {
             m.role
-                == if i % 2 == 0 {
+                == if i.is_multiple_of(2) {
                     Role::User
                 } else {
                     Role::Assistant

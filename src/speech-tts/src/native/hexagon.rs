@@ -71,21 +71,18 @@ fn register_hexagon(discard_log: LogCallback) -> Option<()> {
     let hexagon = load_library(&runtime_dir.join("ggml-hexagon.dll"))?;
     let log_set: LogSet = unsafe {
         // SAFETY: ggml_log_set in the pinned ggml-base.dll matches theLogSet C ABI.
-        std::mem::transmute::<*mut c_void, LogSet>(symbol(base, b"ggml_log_set\0")?)
+        std::mem::transmute::<*mut c_void, LogSet>(symbol(base, c"ggml_log_set")?)
     };
     let dev_count: DeviceCount = unsafe {
         // SAFETY: ggml_backend_reg_dev_count matches the DeviceCount C ABI.
         std::mem::transmute::<*mut c_void, DeviceCount>(symbol(
             base,
-            b"ggml_backend_reg_dev_count\0",
+            c"ggml_backend_reg_dev_count",
         )?)
     };
     let hexagon_reg: Registry = unsafe {
         // SAFETY: ggml_backend_hexagon_reg in ggml-hexagon.dll matches Registry C ABI.
-        std::mem::transmute::<*mut c_void, Registry>(symbol(
-            hexagon,
-            b"ggml_backend_hexagon_reg\0",
-        )?)
+        std::mem::transmute::<*mut c_void, Registry>(symbol(hexagon, c"ggml_backend_hexagon_reg")?)
     };
     // SAFETY: Install the non-unwinding discard logger into the DLL before
     // querying or initializing the Hexagon registry.
@@ -195,12 +192,9 @@ fn load_library(path: &Path) -> Option<NonNull<c_void>> {
     NonNull::new(raw)
 }
 
-fn symbol(module: NonNull<c_void>, name: &'static [u8]) -> Option<*mut c_void> {
-    if name.last() != Some(&0) {
-        return None;
-    }
+fn symbol(module: NonNull<c_void>, name: &'static CStr) -> Option<*mut c_void> {
     // SAFETY: module is a live loaded library and name is NUL-terminated ASCII.
-    let raw = unsafe { GetProcAddress(module.as_ptr(), name.as_ptr()) };
+    let raw = unsafe { GetProcAddress(module.as_ptr(), name.as_ptr().cast::<u8>()) };
     (!raw.is_null()).then_some(raw)
 }
 

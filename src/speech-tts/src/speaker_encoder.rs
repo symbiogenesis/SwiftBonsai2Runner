@@ -476,7 +476,7 @@ impl TdnnConv1d {
         if input.len() != self.in_c * frames
             || self.weight.len() != self.out_c * self.in_c * self.kernel
             || self.bias.len() != self.out_c
-            || self.kernel % 2 == 0
+            || self.kernel.is_multiple_of(2)
         {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidInput,

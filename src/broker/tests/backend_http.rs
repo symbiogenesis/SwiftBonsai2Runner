@@ -45,7 +45,7 @@ fn policy() -> BackendPolicy {
 }
 
 fn deadline() -> Instant {
-    Instant::now() + Duration::from_secs(60)
+    Instant::now() + Duration::from_mins(1)
 }
 
 fn pending(stream: bool) -> PendingChat {
@@ -282,7 +282,7 @@ impl Drop for Stream {
 
 fn request_parts<'a>(bytes: &'a [u8], path: &str) -> (BTreeMap<String, String>, &'a [u8]) {
     let split = bytes
-        .windows(4)
+        .array_windows()
         .position(|part| part == b"\r\n\r\n")
         .unwrap()
         + 4;
@@ -313,7 +313,7 @@ fn request_parts<'a>(bytes: &'a [u8], path: &str) -> (BTreeMap<String, String>, 
     }
     assert!(
         !bytes
-            .windows(CLIENT_KEY.len())
+            .array_windows::<{ CLIENT_KEY.len() }>()
             .any(|part| part == CLIENT_KEY.as_bytes())
     );
     (headers, &bytes[split..])

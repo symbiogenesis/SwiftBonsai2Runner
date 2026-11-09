@@ -224,14 +224,14 @@ fn corpus() -> Vec<(Vec<u8>, bool)> {
         '中', '\u{301}', '\u{a0}', '\u{2000}', '\u{200b}', '😀',
     ];
     let mut state = 0x1a2b_3c4d_u32;
-    for index in 0..256 {
+    for index in 0_u32..256 {
         let mut text = String::new();
         for _ in 0..index % 47 {
             state = state.wrapping_mul(1_664_525).wrapping_add(1_013_904_223);
             let slot = usize::from(state.to_le_bytes()[0]) % alphabet.len();
             text.push(alphabet[slot]);
         }
-        requests.push((text.into_bytes(), index % 2 == 0));
+        requests.push((text.into_bytes(), index.is_multiple_of(2)));
     }
     requests
 }

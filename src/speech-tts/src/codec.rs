@@ -1671,10 +1671,10 @@ mod tests {
 
     #[test]
     fn codec_state_cache_lends_and_primes_lru_slots() -> std::io::Result<()> {
-        let mut cache = super::CodecStateCache::new();
-        let make_state = |marker: f32| super::CodecStreamState {
+        let mut cache = CodecStateCache::new();
+        let make_state = |marker: f32| CodecStreamState {
             pre_conv: vec![marker],
-            ..super::CodecStreamState::default()
+            ..CodecStreamState::default()
         };
         assert_eq!(
             cache.get_or_prime(10, || Ok(make_state(1.0)))?.pre_conv,

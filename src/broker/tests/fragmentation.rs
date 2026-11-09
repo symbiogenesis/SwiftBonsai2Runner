@@ -312,7 +312,7 @@ struct Outcome {
 
 fn parts(wire: &[u8]) -> (&[u8], &[u8]) {
     let split = wire
-        .windows(4)
+        .array_windows()
         .position(|bytes| bytes == b"\r\n\r\n")
         .unwrap()
         + 4;
@@ -344,7 +344,10 @@ fn assert_success(outcome: &Outcome, streaming: bool) {
     if streaming {
         let mut decoded = Vec::new();
         loop {
-            let end = body.windows(2).position(|bytes| bytes == b"\r\n").unwrap();
+            let end = body
+                .array_windows()
+                .position(|bytes| bytes == b"\r\n")
+                .unwrap();
             let count =
                 usize::from_str_radix(std::str::from_utf8(&body[..end]).unwrap(), 16).unwrap();
             body = &body[end + 2..];
@@ -504,7 +507,7 @@ fn every_truncated_sse_reply_omits_successful_downstream_terminal_framing() {
         assert_eq!(outcome.calls, 2);
         let client = outcome.states[0].borrow();
         assert!(!parts(&client.written).1.ends_with(b"0\r\n\r\n"));
-        assert!(!client.written.windows(6).any(|part| part == b"[DONE]"));
+        assert!(!client.written.array_windows().any(|part| part == b"[DONE]"));
     });
 }
 

@@ -23,7 +23,7 @@ use std::{
 const MODEL: &str = "Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign";
 const MAX_TEXT: usize = 2048;
 const MAX_VOICE: usize = 1024;
-const SYNTHESIS_LIMIT: Duration = Duration::from_secs(180);
+const SYNTHESIS_LIMIT: Duration = Duration::from_mins(3);
 const READY_LIMIT: Duration = Duration::from_secs(5);
 
 /// Explicit local endpoint; no voice text or credential bytes have Debug output.

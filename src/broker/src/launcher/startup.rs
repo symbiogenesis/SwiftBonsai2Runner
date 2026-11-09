@@ -126,8 +126,8 @@ mod tests {
             assert!(observation.elapsed_milliseconds.is_finite());
             assert!(observation.elapsed_milliseconds >= 0.0);
         }
-        for pair in observations.windows(2) {
-            assert!(pair[0].elapsed_milliseconds <= pair[1].elapsed_milliseconds);
+        for [first, second] in observations.array_windows() {
+            assert!(first.elapsed_milliseconds <= second.elapsed_milliseconds);
         }
         let mut finished = Vec::new();
         {
