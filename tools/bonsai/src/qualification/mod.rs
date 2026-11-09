@@ -1,5 +1,5 @@
 //! Fixed paired qualification, canonical control identities, and offline scoring.
-#![allow(
+#![expect(
     clippy::float_cmp,
     reason = "Fixed JSON controls and integer-valued identities require exact equality."
 )]

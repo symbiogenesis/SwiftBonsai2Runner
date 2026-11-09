@@ -12,7 +12,7 @@ use crate::Result;
 
 const ATTESTATION: &str = "I reviewed the exact captured responses without automated scoring.";
 
-#[allow(
+#[expect(
     clippy::struct_excessive_bools,
     reason = "Each boolean records a separate mandatory acceptance gate."
 )]
@@ -117,7 +117,7 @@ fn validate_samples(evidence: &Evidence, policy: &Policy, controls_digest: &str)
     Ok(())
 }
 
-#[allow(
+#[expect(
     clippy::manual_midpoint,
     reason = "Preserve legacy arithmetic for bounded finite observations."
 )]

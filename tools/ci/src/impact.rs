@@ -204,10 +204,6 @@ fn select_groups(
 /// # Errors
 /// Returns a diagnostic for malformed configuration, invalid manifests or an
 /// unreadable workspace. Unknown configured package/group names are rejected.
-#[allow(
-    clippy::too_many_lines,
-    reason = "The ordered routing policy follows the existing planner's conservative fallback precedence."
-)]
 pub fn select(
     root: &Path,
     paths: &[String],

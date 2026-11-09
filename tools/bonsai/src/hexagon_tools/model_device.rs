@@ -1791,7 +1791,7 @@ mod tests {
     }
 
     #[test]
-    #[allow(
+    #[expect(
         clippy::too_many_lines,
         reason = "End-to-end batch-4 resident multi-projection contract test keeps admission and rejection cases together."
     )]
@@ -2011,7 +2011,7 @@ mod tests {
     }
 
     #[test]
-    #[allow(
+    #[expect(
         clippy::too_many_lines,
         reason = "End-to-end native-q2 resident multi-layer contract test keeps admission and rejection cases together."
     )]

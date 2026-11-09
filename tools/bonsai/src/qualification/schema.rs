@@ -1,11 +1,14 @@
 //! Object-only evidence schemas. Required nullable members remain required.
+#![expect(
+    clippy::struct_field_names,
+    reason = "Names mirror the committed evidence schema."
+)]
 
 use serde::{Deserialize, Deserializer, de::Error as _};
 use serde_json::{Map, Value};
 
 macro_rules! object {
     ($name:ident { $($field:ident : $ty:ty => $key:literal),* $(,)? } $(optional { $($opt:ident : $opt_ty:ty => $opt_key:literal),* $(,)? })?) => {
-        #[allow(clippy::struct_field_names, reason = "Names mirror the committed evidence schema.")]
         pub(super) struct $name {
             $(pub(super) $field: $ty,)*
             $($(pub(super) $opt: Option<$opt_ty>,)*)?

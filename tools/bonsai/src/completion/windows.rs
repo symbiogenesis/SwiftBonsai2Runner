@@ -36,7 +36,7 @@ struct Sample {
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
-#[allow(
+#[expect(
     clippy::struct_excessive_bools,
     reason = "Independent wire switches select capture validation, CI policy and optional observations."
 )]
