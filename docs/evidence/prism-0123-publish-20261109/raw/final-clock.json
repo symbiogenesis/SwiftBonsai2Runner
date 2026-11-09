@@ -1,0 +1,16 @@
+{
+  "maximumTotalSeconds": 300,
+  "elapsedSecondsThroughRetention": 40.06391090000034,
+  "powerAfterRetention": {
+    "source": "GetSystemPowerStatus",
+    "utc": "2026-11-09T23:43:31.953241+00:00",
+    "acConnected": true,
+    "batterySaver": false,
+    "chargePercent": 99
+  },
+  "clockClosed": true,
+  "retries": 0,
+  "cleanupConfirmed": true,
+  "scope": "Includes raw evidence and archive manifest; excludes writing this final small clock receipt.",
+  "withinDeclaredAllowance": true
+}

@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "kind": "hosted-accepted-source-registry-publication",
+  "recordedDate": "2026-11-09",
+  "authorization": "Owner explicitly requested promoting the new release and checking performance after repinning. This declaration permits one registry publication step only after the separate bounded Foundation bundle operation accepts the exact final source. It authorizes no additional push, CI operation or model workload.",
+  "sourceRevision": "055c7430cb4771dfddb24ddaa30494af6ad182da",
+  "version": "0.1.23",
+  "prerequisite": {
+    "receipt": "Operator-retained verified-bundle.json, supplied explicitly to the driver",
+    "required": "passed=true; exact sourceRevision/version; workflowFile=foundation-bundle.yml; positive runId/runAttempt; runConclusion=success; finalSourceChecksPassed=true; productionLinkingPassed=true; fullFoundationQualified=false",
+    "closedOperatorClock": "The separately owner-approved corrected-source Foundation operation must retain maximumTotalSeconds=360, clockClosed=true, withinDeclaredAllowance=true, elapsedSecondsThroughRetention<=360, retentionComplete=true and cleanupConfirmed=true. This source's selected exception does not change the default five-minute CI rule or this publication's300-second limit. The operator receipt and clock are copied and hashed as immutable publication inputs.",
+    "scope": "The dedicated hosted operation checks nine receipt/version controls, formatting, strict four-package Release all-target analysis, portable library compilation and production linking. It does not qualify the complete Foundation suite, actual models or performance."
+  },
+  "budget": {
+    "maximumTotalSeconds": 300,
+    "workCutoffSeconds": 270,
+    "conservativeEstimateSeconds": 290,
+    "estimateBreakdownSeconds": {
+      "gateSourcePowerAndRegistryIntake": 10,
+      "defaultNormalizedCargoPackageVerification": 140,
+      "normalizedArchiveAndFinalSourceAudit": 10,
+      "defaultVerifyingCargoPublication": 90,
+      "publicVersionAndChecksumConfirmation": 10,
+      "cleanupPowerAndRetention": 30
+    },
+    "reason": "This fixed packaging/upload work follows actual hosted acceptance of new final source; local source analyzers or old failed trials are not repeated. The conservative290-second estimate fits the default five-minute allowance. Compilation may reuse only existing compiler outputs. Stop early on completion, failure, an invalid prerequisite or insufficient remaining time.",
+    "retries": 0,
+    "clockRestartAllowed": false,
+    "historicalClocksRemainClosed": true
+  },
+  "fixedWork": [
+    "Verify and retain the bounded hosted bundle receipt and closed operator clock; observe aggregate power and bind driver, declaration, compiler identity and clean exact Prism local main source hashes.",
+    "Observe official crates.io0.1.23 metadata once before packaging. An existing immutable version permits no upload; it must match the subsequently audited local archive to count as verified availability.",
+    "Require250 seconds before the work cutoff for packaging, audit, publication and confirmation, or150 if the immutable version already exists and no upload will occur. Run cargo package --locked --offline -p prism-inference once with default normalized-package verification. Audit package identity, clean VCS revision, normalized dependencies and the five unchanged exact helper pins; retain the verified .crate and its SHA-256.",
+    "Recheck clean main, exact revision, tracked source hashes and immutable prerequisite/driver/declaration hashes immediately before upload.",
+    "If the version was absent, run cargo publish --locked --registry crates-io -p prism-inference once with default verification enabled, only when at least100 seconds remain before the work cutoff. Observe official version/checksum metadata once afterward and require the audited archive checksum. No retries or polling outside Cargo's ordinary command.",
+    "Record aggregate/per-command power endpoints and periodic power during subprocesses. Unknown remains explicit. Retain raw logs, prerequisite copies, source hashes, exact archive, manifest and final closed clock, including cleanup, within the same300-second allowance."
+  ],
+  "paths": {
+    "source": "C:/Users/symbi/source/repos/prism-inference (clean local main)",
+    "compilerCache": "%TEMP%/SwiftBonsai-PerformanceAdvance-20261109/target (compiler outputs only)",
+    "workingEvidence": "%TEMP%/SwiftBonsai-Prism0123Publish-20261109",
+    "retainedEvidence": "raw",
+    "driver": "publish.py"
+  },
+  "unchangedHelperPins": {
+    "bonsai-ternary": "=0.1.2",
+    "bonsai-prism": "=0.1.4",
+    "bonsai-native-hash": "=0.1.2",
+    "bonsai-neon-dot": "=0.1.1",
+    "bonsai-gguf": "=0.1.4"
+  },
+  "limits": {
+    "localSourceAnalyzerOrReceiptTestRuns": 0,
+    "models": 0,
+    "acceleratorCalls": 0,
+    "benchmarks": 0,
+    "fullSuites": 0,
+    "ciActions": 0,
+    "pushes": 0,
+    "fullFoundationQualified": false,
+    "performanceQualified": false
+  }
+}

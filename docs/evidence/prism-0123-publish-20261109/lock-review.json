@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "kind": "offline-candidate-pin-generation",
+  "version": "0.1.23",
+  "sourceRevision": "055c7430cb4771dfddb24ddaa30494af6ad182da",
+  "helper": "C:/Users/symbi/source/repos/SwiftBonsai2Runner/target/release/bonsai-tools.exe",
+  "command": "inference-lock --request ABSOLUTE_JSON_PATH",
+  "initialInvocation": {"request": "lock-request-rejected.json", "exitCode": 1, "toolProcessWallSeconds": 1.2736165, "error": "Artifact storage could not be opened safely.", "cause": "The output and inputs were inside a Git checkout, which validate_external_path intentionally rejects. No guard or source was changed."},
+  "correctedInvocation": {"request": "lock-request.json", "exitCode": 0, "toolProcessWallSeconds": 1.6135343, "verified": true, "runId": "42721996680", "runAttempt": 1, "inputAndOutputStorage": "Original verified external system-temp files, outside every Git checkout", "verification": "lock-verification.json", "candidate": "candidate-lock.json"},
+  "scope": "Ordinary offline release-verifier invocation correction, with no compilation, model, benchmark, network or CI. Per-process tool wall times do not establish an aggregate trial duration or past power conditions. The active pin is changed separately only after actual GitHub asset publication."
+}

@@ -1,0 +1,20 @@
+   Packaging prism-inference v0.1.23 (C:\Users\symbi\source\repos\prism-inference)
+    Packaged 533 files, 19.6MiB (3.5MiB compressed)
+   Verifying prism-inference v0.1.23 (C:\Users\symbi\source\repos\prism-inference)
+   Compiling proc-macro2 v1.0.107
+   Compiling quote v1.0.47
+   Compiling serde_core v1.0.229
+   Compiling windows-sys v0.61.2
+   Compiling bonsai-prism v0.1.4
+   Compiling serde_json v1.0.154
+   Compiling syn v3.0.9
+   Compiling serde v1.0.229
+   Compiling smallvec v1.16.4
+   Compiling unicode-normalization-alignments v0.1.12
+   Compiling bonsai-native-hash v0.1.2
+   Compiling bonsai-gguf v0.1.4
+   Compiling bonsai-ternary v0.1.2
+   Compiling bonsai-neon-dot v0.1.1
+   Compiling serde_derive v1.0.229
+   Compiling prism-inference v0.1.23 (C:\Users\symbi\AppData\Local\Temp\SwiftBonsai-PerformanceAdvance-20261109\target\package\prism-inference-0.1.23)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 24.47s
