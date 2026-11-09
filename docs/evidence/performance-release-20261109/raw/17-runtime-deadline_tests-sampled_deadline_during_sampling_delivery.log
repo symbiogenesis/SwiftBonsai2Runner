@@ -1,0 +1,6 @@
+
+running 1 test
+test runtime::deadline_tests::sampled_deadline_during_sampling_delivery_or_snapshot_restores_caller_rng ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 182 filtered out; finished in 0.00s
+

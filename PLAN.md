@@ -1106,6 +1106,28 @@ LoRA gates; calibration proves neither quality nor reduced admission.
 
 ## CPU kernels
 
+Qualify the [parallel performance and registry candidate](docs/evidence/performance-release-20261109/summary.json)
+on settled Prism main through owner-managed checks. It halves declared Swift 128-wide
+multi-token GDN row staging, uses immutable validated logits to omit redundant
+finite predicates in Greedy/Swift selection, and fills existing native-Q2
+8-operation resident sibling tail packets. Exact numerical/error/RNG contracts,
+conservative admission and serving defaults remain unchanged. The one local
+check compiled all six selected targets and passed 22 exact Rust controls and
+five receipt controls, then stopped on incompatible pinned `syn` 2/3 requirements
+in strict analysis. Its 63.152-second clock is closed within the declared
+ten-minute source/publication allowance, with AC connected, saver off and 100%
+charge at all retained endpoints; do not retry it. The narrow documented
+analyzer policy and complete hosted runtime-test/format-policy identity fixes
+are independently source-reviewed but unexecuted. Require strict analysis,
+portable fallback, normalized source-package verification and owning checks
+before the requested crates.io delivery. Prism 0.1.23 and the server's exact
+`=0.1.23` dependency are prepared locally; no upload was attempted. All five
+helper versions were already published and remain unchanged. Runner's verified
+0.1.22 binary lock stays in place until a qualified immutable five-executable
+bundle supplies source/archive/file identities. Full-model state/adapter and
+cancellation parity, ARM64 codegen/resources, vendor lifecycle and matched
+whole-request benefit remain pending; source work counts establish no speedup.
+
 Follow [CPU arithmetic, dispatch and acceptance](docs/cpu-kernels.md). Pin artifacts,
 runtime, compiler, format, shapes, ISA and numerics; choose work from CI hotspot,
 bandwidth, packing and dispatch evidence.

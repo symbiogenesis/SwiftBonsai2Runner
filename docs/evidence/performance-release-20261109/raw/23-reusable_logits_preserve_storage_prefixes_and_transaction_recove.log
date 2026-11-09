@@ -1,0 +1,6 @@
+
+running 1 test
+test reusable_logits_preserve_storage_prefixes_and_transaction_recovery ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 35 filtered out; finished in 0.00s
+
