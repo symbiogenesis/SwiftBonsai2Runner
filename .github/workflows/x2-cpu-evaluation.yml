@@ -29,10 +29,10 @@ jobs:
       - uses: ./.github/actions/bonsai-tools
       - uses: ./.github/actions/rust-toolchain
         with:
-          toolchain: nightly-2026-11-02-aarch64-pc-windows-msvc
+          toolchain: nightly-2026-11-09-aarch64-pc-windows-msvc
       - name: Check native X2 observation, deadline and pair-comparison controls
         shell: pwsh
-        run: cargo +nightly-2026-11-02 test --locked --release --target-dir $env:BONSAI_TOOLS_TARGET -p bonsai-tools --lib cpu_evaluation
+        run: cargo +nightly-2026-11-09 test --locked --release --target-dir $env:BONSAI_TOOLS_TARGET -p bonsai-tools --lib cpu_evaluation
       - name: Bind checked tools to this exact source revision
         shell: pwsh
         run: |

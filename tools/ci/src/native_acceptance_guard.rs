@@ -7,7 +7,7 @@ use serde_json::{Value, json};
 
 use crate::Result;
 
-const TOOLCHAIN: &str = "nightly-2026-11-02-aarch64-pc-windows-msvc";
+const TOOLCHAIN: &str = "nightly-2026-11-09-aarch64-pc-windows-msvc";
 const PACKAGES: [&str; 3] = ["bonsai-broker", "bonsai-chat", "bonsai-tools"];
 const SOURCES: [&str; 5] = [
     ".github/workflows/native-runtime-acceptance.yml",

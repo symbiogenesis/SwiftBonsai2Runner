@@ -55,7 +55,7 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/rust-toolchain
         with:
-          toolchain: nightly-2026-11-02-aarch64-pc-windows-msvc
+          toolchain: nightly-2026-11-09-aarch64-pc-windows-msvc
       - uses: ./.github/actions/bonsai-tools
       - name: Check native Hexagon evidence policy without opening a device
         shell: pwsh
@@ -63,7 +63,7 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           $PSNativeCommandUseErrorActionPreference = $true
-          cargo +nightly-2026-11-02-aarch64-pc-windows-msvc test --locked --release --manifest-path (Join-Path $env:GITHUB_WORKSPACE 'Cargo.toml') --package bonsai-tools --all-features --target-dir $env:BONSAI_TOOLS_TARGET --lib hexagon_
+          cargo +nightly-2026-11-09-aarch64-pc-windows-msvc test --locked --release --manifest-path (Join-Path $env:GITHUB_WORKSPACE 'Cargo.toml') --package bonsai-tools --all-features --target-dir $env:BONSAI_TOOLS_TARGET --lib hexagon_
       - name: Stage the current source-bound policy executable
         shell: pwsh
         working-directory: ${{ runner.temp }}
@@ -113,9 +113,9 @@ jobs:
           $PSNativeCommandUseErrorActionPreference = $true
           $manifest = Join-Path $env:GITHUB_WORKSPACE 'Cargo.toml'
           $target = Join-Path $env:RUNNER_TEMP 'SwiftBonsai-Hexagon-Control-Target'
-          cargo +nightly-2026-11-02-aarch64-pc-windows-msvc test --manifest-path $manifest --target-dir $target --locked --release -p bonsai-cpu-policy hardware::ranking::tests
-          cargo +nightly-2026-11-02-aarch64-pc-windows-msvc clippy --manifest-path $manifest --target-dir $target --locked --release -p bonsai-cpu-policy --all-targets -- -D warnings
-          cargo +nightly-2026-11-02-aarch64-pc-windows-msvc fmt --manifest-path $manifest -p bonsai-cpu-policy -- --check
+          cargo +nightly-2026-11-09-aarch64-pc-windows-msvc test --manifest-path $manifest --target-dir $target --locked --release -p bonsai-cpu-policy hardware::ranking::tests
+          cargo +nightly-2026-11-09-aarch64-pc-windows-msvc clippy --manifest-path $manifest --target-dir $target --locked --release -p bonsai-cpu-policy --all-targets -- -D warnings
+          cargo +nightly-2026-11-09-aarch64-pc-windows-msvc fmt --manifest-path $manifest -p bonsai-cpu-policy -- --check
       - name: Prepare source-bound native diagnostics and packed HVX HMX controls without a device
         shell: pwsh
         working-directory: ${{ runner.temp }}
@@ -170,7 +170,7 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/rust-toolchain
         with:
-          toolchain: nightly-2026-11-02-aarch64-pc-windows-msvc
+          toolchain: nightly-2026-11-09-aarch64-pc-windows-msvc
       - uses: ./.github/actions/bonsai-tools
       - name: Check out the exact Rust GGUF reader for the narrow artifact binder
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

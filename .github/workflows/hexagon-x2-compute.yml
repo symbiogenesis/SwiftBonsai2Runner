@@ -26,7 +26,7 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/rust-toolchain
         with:
-          toolchain: nightly-2026-11-02-aarch64-pc-windows-msvc
+          toolchain: nightly-2026-11-09-aarch64-pc-windows-msvc
       - uses: ./.github/actions/bonsai-tools
       - name: Check native Hexagon evidence policy without opening a device
         shell: pwsh
@@ -34,7 +34,7 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           $PSNativeCommandUseErrorActionPreference = $true
-          cargo +nightly-2026-11-02-aarch64-pc-windows-msvc test --locked --release --manifest-path (Join-Path $env:GITHUB_WORKSPACE 'Cargo.toml') --package bonsai-tools --all-features --target-dir $env:BONSAI_TOOLS_TARGET --lib hexagon_
+          cargo +nightly-2026-11-09-aarch64-pc-windows-msvc test --locked --release --manifest-path (Join-Path $env:GITHUB_WORKSPACE 'Cargo.toml') --package bonsai-tools --all-features --target-dir $env:BONSAI_TOOLS_TARGET --lib hexagon_
       - name: Stage the current source-bound policy executable
         shell: pwsh
         working-directory: ${{ runner.temp }}

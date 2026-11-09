@@ -17,7 +17,7 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/rust-toolchain
         with:
-          toolchain: nightly-2026-11-02-aarch64-pc-windows-msvc
+          toolchain: nightly-2026-11-09-aarch64-pc-windows-msvc
       - name: Record the immutable parser and host identities
         shell: pwsh
         working-directory: ${{ runner.temp }}
@@ -42,8 +42,8 @@ jobs:
             ParserVersion = $parser.Groups[1].Value
             ParserChecksum = $parser.Groups[3].Value
             ParserPath = 'padded-tape-serde-reuse'
-            Compiler = (cargo +nightly-2026-11-02-aarch64-pc-windows-msvc --version)
-            Rustc = (rustc +nightly-2026-11-02-aarch64-pc-windows-msvc -vV)
+            Compiler = (cargo +nightly-2026-11-09-aarch64-pc-windows-msvc --version)
+            Rustc = (rustc +nightly-2026-11-09-aarch64-pc-windows-msvc -vV)
             OS = [Environment]::OSVersion.VersionString
             Architecture = [Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString()
             CPU = @(Get-CimInstance Win32_Processor | Select-Object Name, Manufacturer, NumberOfCores, NumberOfLogicalProcessors)
@@ -54,16 +54,16 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           $PSNativeCommandUseErrorActionPreference = $true
-          cargo +nightly-2026-11-02-aarch64-pc-windows-msvc test --release --locked --manifest-path (Join-Path $env:GITHUB_WORKSPACE 'Cargo.toml') -p bonsai-broker --features json-candidate --lib json_candidate::fixed_candidate_
-          cargo +nightly-2026-11-02-aarch64-pc-windows-msvc test --release --locked --manifest-path (Join-Path $env:GITHUB_WORKSPACE 'Cargo.toml') -p bonsai-broker --features json-candidate --lib json_candidate_parser::tests::
-          cargo +nightly-2026-11-02-aarch64-pc-windows-msvc test --release --locked --manifest-path (Join-Path $env:GITHUB_WORKSPACE 'Cargo.toml') -p bonsai-broker --features json-candidate --test request_policy
+          cargo +nightly-2026-11-09-aarch64-pc-windows-msvc test --release --locked --manifest-path (Join-Path $env:GITHUB_WORKSPACE 'Cargo.toml') -p bonsai-broker --features json-candidate --lib json_candidate::fixed_candidate_
+          cargo +nightly-2026-11-09-aarch64-pc-windows-msvc test --release --locked --manifest-path (Join-Path $env:GITHUB_WORKSPACE 'Cargo.toml') -p bonsai-broker --features json-candidate --lib json_candidate_parser::tests::
+          cargo +nightly-2026-11-09-aarch64-pc-windows-msvc test --release --locked --manifest-path (Join-Path $env:GITHUB_WORKSPACE 'Cargo.toml') -p bonsai-broker --features json-candidate --test request_policy
       - name: Compare cold and reused immutable-body preparation
         shell: pwsh
         working-directory: ${{ runner.temp }}
         run: |
           $ErrorActionPreference = 'Stop'
           $PSNativeCommandUseErrorActionPreference = $true
-          cargo +nightly-2026-11-02-aarch64-pc-windows-msvc test --release --locked --manifest-path (Join-Path $env:GITHUB_WORKSPACE 'Cargo.toml') -p bonsai-broker --features json-candidate --lib json_candidate::ci_comparison -- --exact --ignored
+          cargo +nightly-2026-11-09-aarch64-pc-windows-msvc test --release --locked --manifest-path (Join-Path $env:GITHUB_WORKSPACE 'Cargo.toml') -p bonsai-broker --features json-candidate --lib json_candidate::ci_comparison -- --exact --ignored
           $result = Get-Content -Raw -LiteralPath (Join-Path $env:BONSAI_JSON_EVIDENCE 'comparison.json') | ConvertFrom-Json
           @(
             "Candidate path: $($result.candidate_path)",

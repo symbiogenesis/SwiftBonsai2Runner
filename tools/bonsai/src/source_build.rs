@@ -339,7 +339,7 @@ mod tests {
     #[test]
     fn cache_labels_leave_room_for_windows_linker_artifacts() {
         let repository = Path::new("C:/Users/symbi/source/repos/SwiftBonsai2Runner");
-        let compiler = "nightly-2026-11-02-aarch64-pc-windows-msvc";
+        let compiler = "nightly-2026-11-09-aarch64-pc-windows-msvc";
         let key = cache_key(repository, compiler);
         assert_eq!(key.len(), 24);
         assert_eq!(key, cache_key(repository, compiler));
@@ -363,7 +363,7 @@ mod tests {
             working_directory: scratch.join("work"),
             target_directory: scratch.join("target"),
             packages: vec!["bonsai-chat".into(), "bonsai-broker".into()],
-            channel: "nightly-2026-11-02-aarch64-pc-windows-msvc".into(),
+            channel: "nightly-2026-11-09-aarch64-pc-windows-msvc".into(),
             target: Some("aarch64-pc-windows-msvc".into()),
             identity: "fixture".into(),
             force: false,

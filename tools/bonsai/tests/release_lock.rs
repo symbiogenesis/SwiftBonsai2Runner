@@ -57,7 +57,7 @@ fn source(path: &Path, server_version: &str, malformed: bool) -> TestResult {
             ),
             (
                 toolchain_name.as_str(),
-                b"\xef\xbb\xbf[toolchain]\nchannel = \"nightly-2026-11-02\"\n",
+                b"\xef\xbb\xbf[toolchain]\nchannel = \"nightly-2026-11-09\"\n",
             ),
         ])?,
     )?;
@@ -99,7 +99,7 @@ fn release_review_binds_source_bundle_run_and_architecture_without_replacing_out
     let receipt_path = root.join("receipt.json");
     let receipt = json!({"SchemaVersion": 1, "Repository": "https://github.com/symbiogenesis/prism-inference",
         "SourceRevision": REVISION, "Version": "0.1.0", "Target": "aarch64-pc-windows-msvc",
-        "Toolchain": "nightly-2026-11-02-aarch64-pc-windows-msvc", "RunId": "12345", "RunAttempt": "2",
+        "Toolchain": "nightly-2026-11-09-aarch64-pc-windows-msvc", "RunId": "12345", "RunAttempt": "2",
         "Files": names.iter().map(|name| json!({"Name": name, "Bytes": image.len(), "Sha256": digest(&image)})).collect::<Vec<_>>(),
         "Archive": {"Name": "prism-inference-0.1.0-aarch64-pc-windows-msvc.zip", "Bytes": bundle.len(), "Sha256": digest(&bundle)}});
     fs::write(&receipt_path, serde_json::to_vec(&receipt)?)?;

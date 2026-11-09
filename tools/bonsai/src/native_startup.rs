@@ -57,7 +57,8 @@ fn require_host() -> crate::Result<()> {
 
 #[cfg(any(windows, test))]
 fn host_report(identity: &Value) -> Value {
-    let digest = crate::identity::sha256(format!("runner-native-speech-host-v1\n{identity}").as_bytes());
+    let digest =
+        crate::identity::sha256(format!("runner-native-speech-host-v1\n{identity}").as_bytes());
     json!({"SchemaVersion": 1, "Kind": "runner-native-speech-host",
         "HostCacheKey": digest, "Host": identity})
 }
@@ -562,7 +563,7 @@ mod tests {
         assert!(crate::identity::is_lower_hex(key, 64));
         let data = Path::new("C:/data");
         let repo = Path::new("C:/source");
-        let channel = "nightly-2026-11-02-aarch64-pc-windows-msvc";
+        let channel = "nightly-2026-11-09-aarch64-pc-windows-msvc";
         let directory = host_cache_directory(data, repo, channel, key);
         assert_eq!(
             directory

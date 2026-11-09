@@ -21,7 +21,7 @@ mod model_device;
 mod preflight;
 mod projection_build;
 
-const TOOLCHAIN: &str = "nightly-2026-11-02-aarch64-pc-windows-msvc";
+const TOOLCHAIN: &str = "nightly-2026-11-09-aarch64-pc-windows-msvc";
 const TARGET: &str = "aarch64-pc-windows-msvc";
 const NATIVE_INPUTS: &[&str] = &[
     "lib.rs",

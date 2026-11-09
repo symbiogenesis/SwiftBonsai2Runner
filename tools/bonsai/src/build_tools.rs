@@ -19,7 +19,7 @@ mod engine;
 mod headless;
 mod speech_cache;
 
-const CHANNEL: &str = "nightly-2026-11-02-aarch64-pc-windows-msvc";
+const CHANNEL: &str = "nightly-2026-11-09-aarch64-pc-windows-msvc";
 const RECEIPT_LIMIT: usize = 65_536;
 
 #[derive(Deserialize)]

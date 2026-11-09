@@ -53,7 +53,7 @@ jobs:
       - uses: ./.github/actions/bonsai-tools
       - uses: ./.github/actions/rust-toolchain
         with:
-          toolchain: nightly-2026-11-02-aarch64-pc-windows-msvc
+          toolchain: nightly-2026-11-09-aarch64-pc-windows-msvc
       - uses: ./.github/actions/ci-tool
       - name: Check actual PowerShell syntax and typed receipt rejection controls
         shell: pwsh
@@ -88,7 +88,7 @@ jobs:
           $controls = @('command::native_acceptance_guard::tests::negative_fixtures_cover_receipts_and_test_output',
             'command::native_acceptance_guard::tests::workflow_receipt_requires_source_bound_complete_controls')
           foreach ($case in $controls) {
-            $output = @(& cargo +nightly-2026-11-02 test --locked --release --manifest-path (Join-Path $env:GITHUB_WORKSPACE 'Cargo.toml') --package bonsai-ci --lib $case -- --exact)
+            $output = @(& cargo +nightly-2026-11-09 test --locked --release --manifest-path (Join-Path $env:GITHUB_WORKSPACE 'Cargo.toml') --package bonsai-ci --lib $case -- --exact)
             $code = $LASTEXITCODE
             $output | Write-Output
             & $env:BONSAI_CI_PATH native-acceptance-guard --json (@{ operation='test-output'; output=$output; exitCode=$code; expectedPassed=1 } | ConvertTo-Json -Depth 4 -Compress)
@@ -125,7 +125,7 @@ jobs:
           "BONSAI_NATIVE_ANALYZER_EVIDENCE=$evidence" >> $env:GITHUB_ENV
           # This hosted prerequisite closes no model/device gate. In particular,
           # it cannot extend the closed local UI-analyzer validation session.
-          & $env:BONSAI_CI_PATH rust-check --root $env:GITHUB_WORKSPACE --package bonsai-chat --package bonsai-broker --package bonsai-tools --phase clippy --phase build --toolchain nightly-2026-11-02-aarch64-pc-windows-msvc --target (Join-Path $env:RUNNER_TEMP 'Native-Acceptance-Build') --evidence $evidence --timeout-seconds 1200
+          & $env:BONSAI_CI_PATH rust-check --root $env:GITHUB_WORKSPACE --package bonsai-chat --package bonsai-broker --package bonsai-tools --phase clippy --phase build --toolchain nightly-2026-11-09-aarch64-pc-windows-msvc --target (Join-Path $env:RUNNER_TEMP 'Native-Acceptance-Build') --evidence $evidence --timeout-seconds 1200
           if ($LASTEXITCODE -ne 0) { throw 'Hosted strict Release analyzers or native executable linking failed; no owner-device acceptance package is admitted.' }
       - name: Require model-free renderer, default selection and private owner shutdown controls
         shell: pwsh
@@ -139,18 +139,18 @@ jobs:
               'chat_launch::tests::graphics_backend_selection_rejects_unsupported_values_before_startup',
               'cli::tests::graphics_backend_option_preserves_explicit_selection_and_rejects_duplicates',
               'chat_launch::tests::development_default_and_explicit_rollback_survive_deferred_preparation')) {
-            $output = @(& cargo +nightly-2026-11-02 test --locked --release --manifest-path (Join-Path $env:GITHUB_WORKSPACE 'Cargo.toml') --package bonsai-tools --lib $case -- --exact)
+            $output = @(& cargo +nightly-2026-11-09 test --locked --release --manifest-path (Join-Path $env:GITHUB_WORKSPACE 'Cargo.toml') --package bonsai-tools --lib $case -- --exact)
             $code = $LASTEXITCODE
             $output | Write-Output
             & $env:BONSAI_CI_PATH native-acceptance-guard --json (@{ operation='test-output'; output=$output; exitCode=$code; expectedPassed=1 } | ConvertTo-Json -Depth 4 -Compress)
             if ($LASTEXITCODE -ne 0) { throw 'Exact renderer/default-selection control failed or was not executed.' }
           }
-          $output = @(& cargo +nightly-2026-11-02 test --locked --release --manifest-path (Join-Path $env:GITHUB_WORKSPACE 'Cargo.toml') --package bonsai-broker --lib owner_shutdown_)
+          $output = @(& cargo +nightly-2026-11-09 test --locked --release --manifest-path (Join-Path $env:GITHUB_WORKSPACE 'Cargo.toml') --package bonsai-broker --lib owner_shutdown_)
           $code = $LASTEXITCODE
           $output | Write-Output
           & $env:BONSAI_CI_PATH native-acceptance-guard --json (@{ operation='test-output'; output=$output; exitCode=$code; expectedPassed=$null } | ConvertTo-Json -Depth 4 -Compress)
           if ($LASTEXITCODE -ne 0) { throw 'Private owner shutdown controls failed or none were executed.' }
-          $output = @(& cargo +nightly-2026-11-02 test --locked --release --manifest-path (Join-Path $env:GITHUB_WORKSPACE 'Cargo.toml') --package bonsai-chat --bin bonsai-chat owned_broker_)
+          $output = @(& cargo +nightly-2026-11-09 test --locked --release --manifest-path (Join-Path $env:GITHUB_WORKSPACE 'Cargo.toml') --package bonsai-chat --bin bonsai-chat owned_broker_)
           $code = $LASTEXITCODE
           $output | Write-Output
           & $env:BONSAI_CI_PATH native-acceptance-guard --json (@{ operation='test-output'; output=$output; exitCode=$code; expectedPassed=$null } | ConvertTo-Json -Depth 4 -Compress)
@@ -169,7 +169,7 @@ jobs:
           $messages = Join-Path $env:RUNNER_TEMP 'native-acceptance-build.jsonl'
           "BONSAI_NATIVE_BUILD_EVIDENCE=$messages" >> $env:GITHUB_ENV
           $cargo = (Get-Command cargo -CommandType Application -ErrorAction Stop | Select-Object -First 1).Source
-          & $cargo +nightly-2026-11-02 test --locked --release --no-run --message-format=json --manifest-path (Join-Path $env:GITHUB_WORKSPACE 'Cargo.toml') --package bonsai-broker --test native_model | Set-Content -LiteralPath $messages -Encoding utf8NoBOM
+          & $cargo +nightly-2026-11-09 test --locked --release --no-run --message-format=json --manifest-path (Join-Path $env:GITHUB_WORKSPACE 'Cargo.toml') --package bonsai-broker --test native_model | Set-Content -LiteralPath $messages -Encoding utf8NoBOM
           if ($LASTEXITCODE -ne 0) { throw 'Hosted acceptance binary build failed.' }
           $artifacts = @(Get-Content -LiteralPath $messages | ForEach-Object { $_ | ConvertFrom-Json } | Where-Object { $_.reason -ceq 'compiler-artifact' -and $_.target.name -ceq 'native_model' -and $_.executable })
           if ($artifacts.Count -ne 1) { throw 'Exactly one native_model test binary is required.' }
@@ -270,7 +270,7 @@ jobs:
           Copy-Item -LiteralPath $env:BONSAI_CI_PATH -Destination (Join-Path $package 'bonsai-ci.exe')
           $analyzerReceipt = Join-Path $env:BONSAI_NATIVE_ANALYZER_EVIDENCE 'rust-checks.json'
           $analyzers = Get-Content -LiteralPath $analyzerReceipt -Raw | ConvertFrom-Json
-          $compilerIdentity = (& rustc +nightly-2026-11-02 -vV) -join "`n"
+          $compilerIdentity = (& rustc +nightly-2026-11-09 -vV) -join "`n"
           & $env:BONSAI_CI_PATH native-acceptance-guard --json (@{ operation='analyzer'; receipt=$analyzers; revision=$env:GITHUB_SHA; compilerIdentity=$compilerIdentity } | ConvertTo-Json -Depth 12 -Compress)
           if ($LASTEXITCODE -ne 0) { throw 'Hosted analyzer/link receipt was rejected.' }
           $contract = Get-Content -LiteralPath $env:BONSAI_NATIVE_CONTRACT_RECEIPT -Raw | ConvertFrom-Json
@@ -289,7 +289,7 @@ jobs:
           }
           [ordered]@{
             SchemaVersion=2; Revision=$env:GITHUB_SHA; RunId=$env:GITHUB_RUN_ID; RunAttempt=$env:GITHUB_RUN_ATTEMPT
-            Toolchain='nightly-2026-11-02-aarch64-pc-windows-msvc'; CompilerIdentity=$compilerIdentity
+            Toolchain='nightly-2026-11-09-aarch64-pc-windows-msvc'; CompilerIdentity=$compilerIdentity
             ToolsSourceId=$env:BONSAI_TOOLS_SOURCE_ID; Files=@($files); ModelExecuted=$false
           } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $package 'receipt.json') -Encoding utf8NoBOM
           "BONSAI_ACCEPTANCE_PACKAGE=$package" >> $env:GITHUB_ENV
@@ -378,7 +378,7 @@ jobs:
           if (($members -join ',') -cne 'bonsai-ci.exe,bonsai-tools.exe,native-model-acceptance.exe,receipt.json,strict-release-analyzers.json,workflow-contract.json') { throw 'Hosted acceptance package inventory differs.' }
           if ($receipt.SchemaVersion -ne 2 -or $receipt.Revision -cne $env:GITHUB_SHA -or
               $receipt.RunId -cne $env:GITHUB_RUN_ID -or $receipt.RunAttempt -cne $env:GITHUB_RUN_ATTEMPT -or
-              $receipt.Toolchain -cne 'nightly-2026-11-02-aarch64-pc-windows-msvc' -or
+              $receipt.Toolchain -cne 'nightly-2026-11-09-aarch64-pc-windows-msvc' -or
               $receipt.ModelExecuted -ne $false -or $receipt.ToolsSourceId -cnotmatch '^[a-f0-9]{64}$' -or
               [string]::IsNullOrWhiteSpace($receipt.CompilerIdentity) -or @($receipt.Files).Count -ne 5) { throw 'Hosted acceptance source/run identity mismatch.' }
           foreach ($name in @('native-model-acceptance.exe', 'bonsai-tools.exe', 'bonsai-ci.exe', 'strict-release-analyzers.json', 'workflow-contract.json')) {

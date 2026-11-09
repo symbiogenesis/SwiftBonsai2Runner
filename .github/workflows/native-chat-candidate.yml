@@ -16,7 +16,7 @@ jobs:
       - uses: ./.github/actions/rust-toolchain
         id: rust
         with:
-          toolchain: nightly-2026-11-02-aarch64-pc-windows-msvc
+          toolchain: nightly-2026-11-09-aarch64-pc-windows-msvc
       - name: Build exact native GUI and broker without launching either
         shell: pwsh
         working-directory: ${{ runner.temp }}
