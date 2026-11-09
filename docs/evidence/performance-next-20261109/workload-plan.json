@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "kind": "performance-next-model-free-source-validation",
+  "recordedDate": "2026-11-09",
+  "authorization": "Owner requested further pursuit of exciting performance-relevant PLAN.md goals in parallel, as far as reasonable.",
+  "source": {
+    "runnerBaseRevision": "01e1703e",
+    "prismBaseRevision": "73eec9624ece3aaa46755700fc14d4839612bfae",
+    "selection": [
+      "Read full-attention gates from existing interleaved projection output in ordinary and tiled CPU execution",
+      "Cache validated fixed Swift sampler filter state and omit its exact finite-logit identity stages",
+      "Omit temporary packed-weight allocations in lazy native-Q2 resident preparation when direct initialization is supported"
+    ],
+    "settledSource": "Source commit and every tracked file hash are retained by validate.py after one canonical formatting pass, before compilation. Exact control inventory is controls.json."
+  },
+  "budget": {
+    "maximumTotalSeconds": 300,
+    "workCutoffSeconds": 260,
+    "conservativeEstimateSeconds": 250,
+    "estimate": {
+      "setupIdentityFormattingHashingAndReceiptControls": 20,
+      "offlineLibraryControlCompilation": 100,
+      "exactFocusedControls": 20,
+      "selectedStrictAnalyzers": 70,
+      "featureDisabledLibraryCheck": 20,
+      "cleanupAndEvidenceRetention": 20
+    },
+    "reason": "One fixed model-free correctness screen for three new disjoint work/storage reductions; four Cargo jobs, existing immutable dependencies, no downloads, no model or benchmark. Stop on first failure or when the remaining work cannot fit.",
+    "noRetry": true,
+    "clockRestartAllowed": false,
+    "historicalClocks": "All prior trials, including the previous fan-out, stay closed. This declaration selects new source changes and is not a continuation, retry, or performance comparison."
+  },
+  "fixedWork": [
+    "Retain pinned nightly compiler and source identities",
+    "Apply canonical Cargo formatting once before compilation and verify formatting",
+    "Hash every tracked integration source",
+    "Run the existing four hosted receipt/inventory Python controls",
+    "Compile three selected library test executables and the graph test target offline with parallel-rows without running suites",
+    "Run each exact nonignored control in controls.json once, requiring exactly one passing test",
+    "Strict Clippy for the three selected libraries and graph integration target",
+    "Compile the feature-disabled prism-inference library",
+    "Check source immutability; terminate owned timed-out diagnostics if necessary; retain raw logs, hashes, power, terminal receipt and closed clock"
+  ],
+  "power": {
+    "query": "GetSystemPowerStatus",
+    "timing": "Before and after the aggregate workload and each command",
+    "unknown": "Explicit null when unavailable; never infer past conditions",
+    "continuousStabilityEstablished": false,
+    "performanceComparison": false
+  },
+  "execution": {
+    "driver": "validate.py",
+    "inventory": "controls.json",
+    "evidenceDirectory": "%TEMP%/SwiftBonsai-PerformanceNext-20261109",
+    "cargoTarget": "Dedicated external evidence subdirectory",
+    "retainedDirectory": "raw",
+    "models": 0,
+    "benchmarks": 0,
+    "fullSuites": 0,
+    "deviceAcceleratorCalls": 0,
+    "ciActions": 0,
+    "pushes": 0
+  }
+}
