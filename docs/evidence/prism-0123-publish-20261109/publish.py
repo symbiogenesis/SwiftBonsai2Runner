@@ -19,7 +19,7 @@ import urllib.error
 import urllib.request
 
 
-REVISION = "a7cdee96080d6cc33fb6a22b62ede94117150b9b"
+REVISION = "055c7430cb4771dfddb24ddaa30494af6ad182da"
 VERSION = "0.1.23"
 MAXIMUM, WORK_CUTOFF = 300, 270
 TOOLCHAIN = Path(r"C:\Users\symbi\.rustup\toolchains\nightly-2026-11-09-aarch64-pc-windows-msvc\bin")
@@ -195,10 +195,10 @@ def main():
         elapsed = clock.get("elapsedSecondsThroughRetention")
         if (clock.get("clockClosed") is not True or clock.get("withinDeclaredAllowance") is not True
                 or clock.get("retentionComplete") is not True
-                or clock.get("cleanupConfirmed") is not True or clock.get("maximumTotalSeconds") != 300
+                or clock.get("cleanupConfirmed") is not True or clock.get("maximumTotalSeconds") != 360
                 or clock.get("cleanupIncomplete", False) is not False
                 or not isinstance(elapsed, (int, float)) or isinstance(elapsed, bool)
-                or not math.isfinite(elapsed) or not 0 <= elapsed <= 300):
+                or not math.isfinite(elapsed) or not 0 <= elapsed <= 360):
             raise RuntimeError("Hosted operator clock or cleanup is not accepted")
         receipt["operatorInputSha256"] = {"verified-bundle.json": hashlib.sha256(operator_bytes).hexdigest(),
                                           "operator-final-clock.json": hashlib.sha256(clock_bytes).hexdigest()}

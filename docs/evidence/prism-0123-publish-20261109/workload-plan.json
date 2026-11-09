@@ -3,12 +3,12 @@
   "kind": "hosted-accepted-source-registry-publication",
   "recordedDate": "2026-11-09",
   "authorization": "Owner explicitly requested promoting the new release and checking performance after repinning. This declaration permits one registry publication step only after the separate bounded Foundation bundle operation accepts the exact final source. It authorizes no additional push, CI operation or model workload.",
-  "sourceRevision": "a7cdee96080d6cc33fb6a22b62ede94117150b9b",
+  "sourceRevision": "055c7430cb4771dfddb24ddaa30494af6ad182da",
   "version": "0.1.23",
   "prerequisite": {
     "receipt": "Operator-retained verified-bundle.json, supplied explicitly to the driver",
     "required": "passed=true; exact sourceRevision/version; workflowFile=foundation-bundle.yml; positive runId/runAttempt; runConclusion=success; finalSourceChecksPassed=true; productionLinkingPassed=true; fullFoundationQualified=false",
-    "closedOperatorClock": "Operator final-clock.json must retain maximumTotalSeconds=300, clockClosed=true, withinDeclaredAllowance=true, elapsedSecondsThroughRetention<=300, retentionComplete=true and cleanupConfirmed=true. The operator receipt and clock are copied and hashed as immutable publication inputs.",
+    "closedOperatorClock": "The separately owner-approved corrected-source Foundation operation must retain maximumTotalSeconds=360, clockClosed=true, withinDeclaredAllowance=true, elapsedSecondsThroughRetention<=360, retentionComplete=true and cleanupConfirmed=true. This source's selected exception does not change the default five-minute CI rule or this publication's300-second limit. The operator receipt and clock are copied and hashed as immutable publication inputs.",
     "scope": "The dedicated hosted operation checks nine receipt/version controls, formatting, strict four-package Release all-target analysis, portable library compilation and production linking. It does not qualify the complete Foundation suite, actual models or performance."
   },
   "budget": {

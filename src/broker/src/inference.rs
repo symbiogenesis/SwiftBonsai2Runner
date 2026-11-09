@@ -186,7 +186,7 @@ fn prompt_reuse_supported(release: &ReleasePin, latest: bool) -> Result<(), Laun
         || (release.version == "0.1.22"
             && release.commit == "6b4f4520b465e5feb665a71af64e7b0e21eb750a")
         || (release.version == "0.1.23"
-            && release.commit == "a7cdee96080d6cc33fb6a22b62ede94117150b9b")
+            && release.commit == "055c7430cb4771dfddb24ddaa30494af6ad182da")
     {
         Ok(())
     } else {
