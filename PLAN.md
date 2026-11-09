@@ -173,14 +173,17 @@ wall time is a separate observation. Keep that attempt closed and retain existin
 README figures until a successful new-version capture.
 
 The owner now requests Prism 0.1.23 promotion, a real binary repin and then performance
-measurement. Execute the [fixed final-source registry release](docs/evidence/prism-0123-registry-20261109/workload-plan.json)
-once under its declared nine-minute aggregate allowance (510-second conservative
-estimate), retaining all source, package, power, publication and cleanup receipts.
-Only the runtime crate changes; preserve the five existing helper versions. Prepare
-an honestly scoped Foundation bundle under the new five-minute aggregate exception,
-then verify its exact source/archive/executable identities before repinning Runner.
-Declare a distinct new-version measurement only after that repin; do not reopen
-the failed 0.1.22 attempt or claim unpublished source reductions as measured gains.
+measurement. The [final-source registry check](docs/evidence/prism-0123-registry-20261109/summary.json)
+passed six receipt controls and formatting, then stopped on eight test-only strict
+Clippy errors before packaging or upload. Preserve its closed 52.8568851-second
+clock,71 AC/saver-off/99% observations and verified archive; no retry. Complete
+corrected-source validation through the separately authorized bounded hosted
+Foundation bundle, then normalized package verification and actual registry upload.
+Only the runtime crate changes; preserve the five existing helper versions. Verify
+the genuine bundle's source/archive/executable identities before repinning Runner,
+keeping full Foundation and application acceptance independently pending. Declare a
+distinct new-version measurement only after that repin; do not reopen the failed
+0.1.22 attempt or claim unpublished source reductions as measured gains.
 
 Qualify the [shared startup-timeout receipt fix](docs/evidence/ptq1-startup-timeout-20261103/summary.json)
 through owner-managed exact-source hosted preparation. An admitted extended case
