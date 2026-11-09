@@ -498,38 +498,35 @@ impl Message {
         let pixels_per_point = ui.ctx().pixels_per_point();
         let highlight_fill = ui.visuals().selection.bg_fill;
         let highlight_color = ui.visuals().selection.stroke.color;
-        let same_geometry = self.cache.as_ref().is_some_and(|cache| {
-            cache.width.to_bits() == width.to_bits()
-                && cache.pixels_per_point.to_bits() == pixels_per_point.to_bits()
-        });
-        let body_unchanged = same_geometry
-            && self.cache.as_ref().is_some_and(|cache| {
-                cache.body_revision == self.body_revision
+        let reasoning_visible = self.show_reasoning && !self.reasoning.is_empty();
+        // Polonius lets a complete cache hit lend self.cache directly while a
+        // partial miss ends the borrow and reclaims reusable galley owners below.
+        let (body_unchanged, reasoning_unchanged, underline_unchanged) =
+            if let Some(cache) = self.cache.as_ref() {
+                let same_geometry = cache.width.to_bits() == width.to_bits()
+                    && cache.pixels_per_point.to_bits() == pixels_per_point.to_bits();
+                let body_unchanged = same_geometry
+                    && cache.body_revision == self.body_revision
                     && cache.color == color
                     && cache.highlights == highlights
                     && (matches.is_empty()
                         || (cache.highlight_fill == highlight_fill
-                            && cache.highlight_color == highlight_color))
-            });
-        let reasoning_unchanged = same_geometry
-            && self.cache.as_ref().is_some_and(|cache| {
-                cache.reasoning_bytes == self.reasoning.len()
-                    && cache.reasoning_color == reasoning_color
-            });
-        let reasoning_visible = self.show_reasoning && !self.reasoning.is_empty();
-        let underline_unchanged = body_unchanged
-            && self
-                .cache
-                .as_ref()
-                .is_some_and(|cache| cache.selected.as_ref() == selected);
-        if let Some(cache) = self.cache.as_ref()
-            && body_unchanged
-            && reasoning_unchanged
-            && underline_unchanged
-            && cache.reasoning.is_some() == reasoning_visible
-        {
-            return cache;
-        }
+                            && cache.highlight_color == highlight_color));
+                let reasoning_unchanged = same_geometry
+                    && cache.reasoning_bytes == self.reasoning.len()
+                    && cache.reasoning_color == reasoning_color;
+                let underline_unchanged = body_unchanged && cache.selected.as_ref() == selected;
+                if body_unchanged
+                    && reasoning_unchanged
+                    && underline_unchanged
+                    && cache.reasoning.is_some() == reasoning_visible
+                {
+                    return cache;
+                }
+                (body_unchanged, reasoning_unchanged, underline_unchanged)
+            } else {
+                (false, false, false)
+            };
         #[cfg(test)]
         {
             self.cache_updates += 1;

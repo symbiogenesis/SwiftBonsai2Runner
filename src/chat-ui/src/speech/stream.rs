@@ -34,12 +34,19 @@ impl Text {
         Ok(())
     }
 
+    #[cfg(test)]
     pub(super) fn ready(&mut self, now: Instant) -> VecDeque<String> {
         let mut result = VecDeque::new();
+        self.drain_ready(now, &mut result);
+        result
+    }
+
+    pub(super) fn drain_ready(&mut self, now: Instant, result: &mut VecDeque<String>) {
         let expired = self
             .since
             .is_some_and(|since| now.duration_since(since) >= LATENCY);
         let mut consumed = 0;
+        let mut emitted = false;
         loop {
             let pending = self.pending[consumed..].trim_start();
             consumed = self.pending.len() - pending.len();
@@ -68,6 +75,7 @@ impl Text {
             let piece = pending[..boundary].trim();
             if !piece.is_empty() {
                 result.push_back(piece.to_owned());
+                emitted = true;
             }
             consumed += boundary;
         }
@@ -82,11 +90,10 @@ impl Text {
                 }
                 self.pending.drain(..consumed);
             }
-            if !result.is_empty() {
+            if emitted {
                 self.since = Some(now);
             }
         }
-        result
     }
 }
 

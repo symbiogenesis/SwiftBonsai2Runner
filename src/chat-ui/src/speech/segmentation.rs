@@ -3,6 +3,10 @@
 use super::{MAX_SEGMENT, MAX_TEXT, VecDeque};
 
 pub(super) fn segments(text: &str) -> Option<VecDeque<String>> {
+    Some(segments_iter(text)?.map(str::to_owned).collect())
+}
+
+pub(super) fn segments_iter(text: &str) -> Option<impl Iterator<Item = &str>> {
     if text.trim().is_empty()
         || text.contains('\0')
         || text.encode_utf16().take(MAX_TEXT + 1).count() > MAX_TEXT
@@ -10,20 +14,21 @@ pub(super) fn segments(text: &str) -> Option<VecDeque<String>> {
         return None;
     }
     let mut remaining = text.trim();
-    let mut result = VecDeque::new();
-    while !remaining.is_empty() {
-        let maximum = maximum(remaining);
-        let limit = maximum.unwrap_or(remaining.len());
-        let boundary = sentence_boundary(remaining, limit, true)
-            .or_else(|| maximum.map(|limit| word_boundary(remaining, limit)))
-            .unwrap_or(remaining.len());
-        let piece = remaining[..boundary].trim();
-        if !piece.is_empty() {
-            result.push_back(piece.to_owned());
+    Some(std::iter::from_fn(move || {
+        while !remaining.is_empty() {
+            let maximum = maximum(remaining);
+            let limit = maximum.unwrap_or(remaining.len());
+            let boundary = sentence_boundary(remaining, limit, true)
+                .or_else(|| maximum.map(|limit| word_boundary(remaining, limit)))
+                .unwrap_or(remaining.len());
+            let piece = remaining[..boundary].trim();
+            remaining = remaining[boundary..].trim_start();
+            if !piece.is_empty() {
+                return Some(piece);
+            }
         }
-        remaining = remaining[boundary..].trim_start();
-    }
-    Some(result)
+        None
+    }))
 }
 
 /// Return the byte offset only when another character exceeds the clip bound.

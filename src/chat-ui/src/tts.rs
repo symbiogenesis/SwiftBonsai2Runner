@@ -14,6 +14,7 @@ use crate::canary::{self, Call, Media};
 use crate::native_speech::{Launch, Service};
 use serde::{Deserialize, Serialize};
 use std::{
+    borrow::Cow,
     path::PathBuf,
     sync::atomic::{AtomicBool, AtomicU32, AtomicU64, Ordering},
     time::Duration,
@@ -66,7 +67,7 @@ impl Client {
             .map_err(transport_failure)
             .and_then(|bytes| {
                 call.check().map_err(transport_failure)?;
-                let health: Health = serde_json::from_slice(&bytes).map_err(|_| {
+                let health: Health<'_> = serde_json::from_slice(&bytes).map_err(|_| {
                     Failure::Message("The Qwen TTS companion returned invalid capabilities.")
                 })?;
                 if health.model != MODEL
@@ -220,8 +221,9 @@ impl Client {
     clippy::struct_excessive_bools,
     reason = "The companion wire schema exposes independent readiness and capability flags."
 )]
-struct Health {
-    model: String,
+struct Health<'a> {
+    #[serde(borrow)]
+    model: Cow<'a, str>,
     ready: bool,
     voice_design: bool,
     sample_rate: u32,

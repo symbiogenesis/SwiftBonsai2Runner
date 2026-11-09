@@ -386,7 +386,7 @@ fn render(
         return Err(failure);
     }
     if let Some(stream) = &mut output.stream {
-        output.segments.extend(stream.ready(Instant::now()));
+        stream.drain_ready(Instant::now(), &mut output.segments);
     }
     let finished = output.stream.as_ref().is_none_or(|stream| stream.finished);
     if let Some(service) = &output.service {

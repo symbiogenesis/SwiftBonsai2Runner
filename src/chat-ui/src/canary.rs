@@ -12,6 +12,7 @@
 use crate::native_speech::{Launch, Service};
 use serde::Deserialize;
 use std::{
+    borrow::Cow,
     collections::HashSet,
     io::{Read, Write},
     net::{Ipv4Addr, SocketAddr, SocketAddrV4, TcpStream},
@@ -111,7 +112,7 @@ impl Client {
         let call = Call::new(generation, current, READY_LIMIT);
         let result = self.exchange("GET", "/health", None, &[], Media::Json, &call)
             .and_then(|body| {
-                let health: Health = serde_json::from_slice(&body).map_err(|_| {
+                let health: Health<'_> = serde_json::from_slice(&body).map_err(|_| {
                     Failure::Message("The Canary companion returned an invalid capability response.")
                 })?;
                 if health.model != MODEL
@@ -198,7 +199,7 @@ impl Client {
         };
         let response = read_response(&mut stream, call, Media::Json)?;
         call.check()?;
-        let transcript: Transcript = serde_json::from_slice(&response).map_err(|_| {
+        let transcript: Transcript<'_> = serde_json::from_slice(&response).map_err(|_| {
             Failure::Message("The Canary companion returned an invalid transcription.")
         })?;
         if transcript.model != MODEL {
@@ -214,7 +215,7 @@ impl Client {
             ));
         }
         call.check()?;
-        Ok(transcript.text)
+        Ok(transcript.text.into_owned())
     }
 
     pub(crate) fn exchange(
@@ -311,20 +312,24 @@ impl Client {
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
-struct Health {
-    model: String,
+struct Health<'a> {
+    #[serde(borrow)]
+    model: Cow<'a, str>,
     ready: bool,
     sample_rate: u32,
     max_clip_seconds: u32,
-    input_format: String,
+    #[serde(borrow)]
+    input_format: Cow<'a, str>,
     channels: u8,
 }
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
-struct Transcript {
-    text: String,
-    model: String,
+struct Transcript<'a> {
+    #[serde(borrow)]
+    text: Cow<'a, str>,
+    #[serde(borrow)]
+    model: Cow<'a, str>,
 }
 
 pub(crate) struct Call<'a> {

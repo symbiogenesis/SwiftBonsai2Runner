@@ -1,6 +1,7 @@
 //! Plain-text find state. Only visible message bodies participate, never reasoning.
 use super::{Message, egui};
 use std::{
+    borrow::Cow,
     collections::{BTreeMap, btree_map::Entry},
     ops::Range,
 };
@@ -128,12 +129,7 @@ impl Search {
             // Streaming bodies fold each scalar independently; contextual
             // string lowercasing (for example final sigma) must not change the
             // query's matching convention.
-            let query: String = self.query.chars().flat_map(char::to_lowercase).collect();
-            if self.cached_query != query {
-                self.query_revision = self.query_revision.wrapping_add(1);
-                self.cached_messages.clear();
-                query.clone_into(&mut self.cached_query);
-            }
+            self.sync_cached_query();
             self.cache_epoch = !self.cache_epoch;
             let epoch = self.cache_epoch;
             for message in messages {
@@ -141,7 +137,8 @@ impl Search {
                 let cached = match self.cached_messages.entry(message.id) {
                     Entry::Occupied(entry) => entry.into_mut(),
                     Entry::Vacant(entry) => {
-                        let (cached, scanned) = CachedMatches::scan(&message.body, &query, tail);
+                        let (cached, scanned) =
+                            CachedMatches::scan(&message.body, &self.cached_query, tail);
                         #[cfg(test)]
                         {
                             self.rebuilt_cache_entries += 1;
@@ -163,7 +160,8 @@ impl Search {
                             &mut cached.ranges,
                         )
                     } else {
-                        let (fresh, scanned) = CachedMatches::scan(&message.body, &query, tail);
+                        let (fresh, scanned) =
+                            CachedMatches::scan(&message.body, &self.cached_query, tail);
                         *cached = fresh;
                         #[cfg(test)]
                         {
@@ -209,6 +207,20 @@ impl Search {
         self.reconcile_selection(previous.as_ref());
         if old_matches != self.matches {
             self.revision = self.revision.wrapping_add(1);
+        }
+    }
+
+    fn sync_cached_query(&mut self) {
+        if !self
+            .cached_query
+            .chars()
+            .eq(self.query.chars().flat_map(char::to_lowercase))
+        {
+            self.query_revision = self.query_revision.wrapping_add(1);
+            self.cached_messages.clear();
+            self.cached_query.clear();
+            self.cached_query
+                .extend(self.query.chars().flat_map(char::to_lowercase));
         }
     }
 
@@ -368,20 +380,20 @@ impl Search {
             }
             self.refresh(messages);
             let count = self.matches.len();
-            let label = if count == 0 {
+            let label: Cow<'static, str> = if count == 0 {
                 if self.query.is_empty() {
-                    "Message text only".to_owned()
+                    Cow::Borrowed("Message text only")
                 } else {
-                    "No matches".to_owned()
+                    Cow::Borrowed("No matches")
                 }
             } else {
-                format!(
+                Cow::Owned(format!(
                     "{} of {count}{}",
                     self.active + 1,
                     if self.limited { "+" } else { "" }
-                )
+                ))
             };
-            ui.label(label);
+            ui.label(label.as_ref());
             let previous = ui.add_enabled(count > 0, egui::Button::new("Previous match"));
             let next = ui.add_enabled(count > 0, egui::Button::new("Next match"));
             if previous.clicked()

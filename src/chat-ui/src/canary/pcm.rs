@@ -11,16 +11,7 @@ pub(super) fn decode(
     mut sink: impl FnMut(&[u8]) -> Result<()>,
 ) -> Result<()> {
     let mut reader = Buffered::new(read);
-    let mut head = Vec::new();
-    while !head.ends_with(b"\r\n\r\n") {
-        check()?;
-        if head.len() == MAX_HEAD {
-            return Err(INVALID);
-        }
-        head.push(reader.byte()?);
-    }
-    validate_head(&head)?;
-    drop(head);
+    reader.read_head(&mut check)?;
     let mut total = 0_usize;
     loop {
         let mut line = [0; 10];
@@ -143,6 +134,35 @@ impl<F: FnMut(&mut [u8]) -> Result<usize>> Buffered<F> {
             *byte = self.byte()?;
         }
         Ok(())
+    }
+
+    fn read_head(&mut self, check: &mut impl FnMut() -> Result<()>) -> Result<()> {
+        check()?;
+        if !self.fill()? {
+            return Err(INVALID);
+        }
+        let available = &self.buffer[self.start..self.end];
+        let bounded = &available[..available.len().min(MAX_HEAD)];
+        if let Some(offset) = bounded
+            .array_windows()
+            .position(|window| window == b"\r\n\r\n")
+        {
+            let end = self.start + offset + 4;
+            let head = &self.buffer[self.start..end];
+            self.start = end;
+            return validate_head(head);
+        }
+        let mut head = Vec::with_capacity(bounded.len());
+        head.extend_from_slice(bounded);
+        self.start += bounded.len();
+        while !head.ends_with(b"\r\n\r\n") {
+            check()?;
+            if head.len() == MAX_HEAD {
+                return Err(INVALID);
+            }
+            head.push(self.byte()?);
+        }
+        validate_head(&head)
     }
 }
 
