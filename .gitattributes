@@ -8,6 +8,9 @@ docs/evidence/performance-fanout-20261109/** -text -whitespace
 # Preserve the follow-up source check's closed receipt and original failure bytes.
 docs/evidence/performance-next-20261109/** -text -whitespace
 
+# Preserve the new grouped-GDN/suffix/solver check's closed receipt and hashes.
+docs/evidence/performance-progress-20261109/** -text -whitespace
+
 # Preserve the closed README timing attempt, source and offline recovery hashes.
 docs/evidence/readme-performance-20261109/** -text -whitespace
 docs/evidence/readme-performance-20261109-attempt2/** -text -whitespace

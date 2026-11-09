@@ -1110,6 +1110,22 @@ Follow [CPU arithmetic, dispatch and acceptance](docs/cpu-kernels.md). Pin artif
 runtime, compiler, format, shapes, ISA and numerics; choose work from CI hotspot,
 bandwidth, packing and dispatch evidence.
 
+Qualify the [grouped GDN, suffix correction and resident solver source changes](docs/evidence/performance-progress-20261109/summary.json)
+on settled Prism main through owner-managed hosted checks. Swift's 128-wide GDN
+decode rows now use half the private staging payload, including normal four/eight-row
+groups; suffix rejection reuses its verified greedy correction; resident native-Q2
+handles retain immutable solver parameters under the existing metadata cap.
+The one 80.684-second model-free source check compiled the selected targets and
+passed all eleven exact Rust controls plus four receipt controls, then stopped
+on inherited strict-analysis findings: incompatible `windows-sys` versions and an
+overlong documentation paragraph. Its comment-only paragraph correction is source-reviewed;
+the dependency finding, final-source strict analysis and feature-disabled check remain
+pending. Preserve the failed receipt and closed clock without retrying. Require
+Release ARM64 codegen/stack review, full-model state/logit/adapter and cancellation
+parity, vendor lifecycle/resources and matched whole-request benefit before a
+qualified release or Runner repin. Source work/storage reductions qualify no speedup,
+reduced admission or speculative default; installed runtime and defaults are unchanged.
+
 Qualify the [parallel performance source candidate](docs/evidence/performance-fanout-20261109/summary.json)
 on settled Prism main through owner-managed hosted checks, Release ARM64 codegen/spill
 inspection and matched actual-model request/startup acceptance. It reuses private

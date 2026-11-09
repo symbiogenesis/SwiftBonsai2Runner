@@ -1,0 +1,6 @@
+
+running 1 test
+test native_q2::tests::native_q2_batches_two_and_three_resident_sibling_projections_in_single_queue_writes ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 36 filtered out; finished in 0.00s
+

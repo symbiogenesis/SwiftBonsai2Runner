@@ -1,0 +1,124 @@
+{
+  "schemaVersion": 1,
+  "kind": "parallel-performance-progress-source-integration",
+  "recordedDate": "2026-11-09",
+  "status": "source-integrated-eleven-controls-passed-strict-analysis-pending",
+  "authorization": "Owner requested pursuing the most exciting performance-relevant PLAN.md goals in parallel, as far as reasonable.",
+  "source": {
+    "runnerBaseRevision": "e4a8a36e",
+    "prismBaseRevision": "fdf6748f8113f0cc44a9ec63dad8994aecf9232b",
+    "prismFinalRevision": "45cc0987733643edf62f25301c40cf984d7d5ef6",
+    "integratedCommits": [
+      "8bc6922: select bounded single-row GDN staging capacity",
+      "4634217: reuse verified suffix correction selection",
+      "e68de11: retain immutable HVX solver parameters in resident handles",
+      "47546fb: specialize normal grouped GDN decode staging",
+      "2f82473: bind exact hosted correctness inventory and source contracts",
+      "8494f5d: retain canonical formatting used for the successful focused controls",
+      "45cc098: comment-only correction for the inherited first-paragraph lint"
+    ],
+    "workerCommits": [
+      "005649b, f399b43 CPU",
+      "f669aba runtime",
+      "4b1185a Hexagon"
+    ],
+    "checkSource": "2f82473 plus the single canonical formatting pass, retained exactly in 8494f5d. Raw receipt includes every tracked source hash and the formatting diff. Only one blank rustdoc paragraph separator was added after the trial closed; no executable source changed afterward.",
+    "delivery": "Three individual worker worktrees with logical commits, independently reviewed and cherry-picked into an individual Prism integration worktree. Runner declaration, plan and evidence use their own worktree. Reviewed results integrate into local main in both repositories. No push, PR, CI dispatch, query, monitoring or wait."
+  },
+  "implemented": {
+    "gdn": {
+      "change": "Single-token NEON row-from, row-in-place and four/eight-row-from helpers choose const-generic eight-block staging for rows up to 128 elements and sixteen blocks for eligible wider rows through 256. Both use the existing arithmetic body and failure publication.",
+      "defaultConsumer": "The initial single-row change was extended to normal grouped decode after caller review showed Swift ordinarily selects the eight-row helper.",
+      "sourcePayload": "At width 128, single-row staging is 512 instead of 1024 bytes; four-row staging is 2048 instead of 4096; eight-row staging is 4096 instead of 8192. Counts describe declared source array payload, not actual stack frames, generated initializer stores or memory traffic.",
+      "controls": "Four direct NEON controls compare independent scalar state/output bits at widths 16/112/128/144/240/256, signed zero/subnormal inputs, dot/update/query failures, grouped atomic publication and unsupported zero/tail/over-capacity refusal. Conservative worker and scratch reserves stay charged."
+    },
+    "suffix": {
+      "change": "Keep a rejected candidate's already validated target token in a per-round Option and consume it lazily at the existing correction boundary.",
+      "sourceWorkAvoided": "One full greedy traversal of 248320 F32 logits per rejected round for Swift. No evaluation or callback changes logits between rejection and correction; both cancellation boundaries remain.",
+      "controls": "Independent fixed token oracles and ordinary-generation comparisons cover initial/partial rejection, accepted chains, bonus, EOS/output bounds, complete decoder traces and logits bits. Separate checks inject cancellation before/after correction, verify no correction evaluation/emission, restore exact state and continue. No sampling policy, transaction or default changes."
+    },
+    "nativeQ2": {
+      "change": "Store the immutable HVX prefetch/row-size/VTCM solver tuple with each private resident weight handle at validated preparation; use it for every resident single, secondary-arena, batched and fused FFN descriptor. Transient descriptors still solve active geometry.",
+      "resources": "The registry adds no per-handle collection. Existing size_of-based runtime metadata reservation and postallocation checks charge the larger handles under the unchanged cap. Signed kernels, packed layout, placement, terminal failure policy, operation/deadline limits and vendor cleanup remain unchanged.",
+      "controls": "Portable independent solver allocation algebra and exact kernel-parameter bytes across 24 geometries including the 6144-column threshold; complete resident/transient frame parity with signed zero/subnormal activations; malformed geometry publishes no reservation. The existing small mock sibling/multitoken batching control also passes with the larger handles."
+    },
+    "hostedGate": "The owner-operated fixed inventory now includes all eight new controls and the dependent runtime batching regression, with Windows ARM64 NEON controls separate from portable solver/wire controls. Existing source/compiler/executable binding, strict Release analysis, feature-disabled fallback and production linking remain required. No workflow was run."
+  },
+  "localValidation": {
+    "plan": "workload-plan.json",
+    "driver": "validate.py",
+    "inventory": "controls.json",
+    "rawReceipt": "raw/receipt.json",
+    "archive": "raw/archive.json",
+    "terminalClock": "raw/final-clock.json",
+    "maximumTotalSeconds": 300,
+    "workCutoffSeconds": 260,
+    "conservativeEstimateSeconds": 250,
+    "elapsedSecondsThroughRetention": 80.68378289999964,
+    "withinDeclaredAllowance": true,
+    "clockClosed": true,
+    "clockRestarted": false,
+    "retries": 0,
+    "passed": [
+      "Pinned nightly-2026-11-09 ARM64 MSVC compiler identity and tracked source hashing",
+      "Single canonical formatting pass and format check before compilation",
+      "All four hosted receipt and inventory Python controls",
+      "Three selected library test executables and graph integration executable compiled and linked offline with parallel-rows",
+      "All eleven exact nonignored Rust controls: four GDN capacity/failure, two suffix correction/rollback, two solver/wire, one small mock batching, two full graph state/adapter recovery controls"
+    ],
+    "failure": "Strict analysis exited 101 on inherited bonsai-hexagon-runtime findings: multiple_crate_versions for windows-sys 0.59.0/0.61.2 and too_long_first_doc_paragraph at native_q2.rs:307. No new runtime/CPU/native implementation finding was emitted before Cargo stopped; this is not a successful analyzer verdict.",
+    "postTrialCorrection": "Added one blank rustdoc paragraph separator after the executor summary. Independently source-reviewed, comment-only, uncompiled after the closed trial. No dependency unification, lint suppression or diagnostic retry.",
+    "notReached": [
+      "Successful complete selected strict-analysis verdict",
+      "Feature-disabled library compilation",
+      "Final source-immutability command after the analyzer failure",
+      "Owning hosted Release correctness, codegen/stack review, all-target analyzers and production linking"
+    ],
+    "cleanupIncomplete": false,
+    "power": {
+      "before": {"acConnected": true, "batterySaver": false, "chargePercent": 99},
+      "afterChecks": {"acConnected": true, "batterySaver": false, "chargePercent": 99},
+      "afterRetention": {"acConnected": true, "batterySaver": false, "chargePercent": 99},
+      "perCommandEndpoints": "raw/receipt.json",
+      "continuousPowerStabilityEstablished": false,
+      "pastPowerConditionsInferred": false,
+      "performanceComparisonQualified": false
+    }
+  },
+  "independentReview": [
+    "Root reviewed all implementation diffs, tests, conservative metadata accounting and source counts before integration.",
+    "CPU worker reviewed suffix correction token/state/logit/EOS and cancellation-boundary parity.",
+    "Runtime worker reviewed CPU capacity/failure semantics and native immutable solver/geometry, every descriptor family, preparation atomicity and metadata admission.",
+    "Hexagon worker reviewed grouped CPU arithmetic/publication and the aggregate driver; cleanup was extended to every wait exception before execution.",
+    "Runtime worker reviewed exact test names, executable mappings and portable/Windows ARM64 gate selection.",
+    "Root and Hexagon worker reviewed the comment-only post-trial paragraph correction without rerunning diagnostics."
+  ],
+  "qualification": {
+    "rustControlsPassed": 11,
+    "receiptControlsPassed": 4,
+    "implementationCompiledAndLinked": true,
+    "postTrialRustdocCorrectionCompiled": false,
+    "selectedStrictAnalysisPassed": false,
+    "portableFeatureDisabledCheckPassed": false,
+    "owningHostedChecksPassed": false,
+    "actualModelParityQualified": false,
+    "performanceImprovementQualified": false,
+    "runnerReleasedPinChanged": false,
+    "installedRuntimeChanged": false,
+    "defaultsChanged": false,
+    "admissionReduced": false
+  },
+  "remainingAcceptance": [
+    "Resolve the inherited dependency-version analysis finding through the owning dependency policy, then obtain exact settled-source hosted Release correctness, portable fallback, strict all-target analyzers and production linking.",
+    "Inspect ARM64 Release code generation and GDN stack frames/initializer stores, preserving bounded fallbacks and metadata resource charges.",
+    "Qualify full-model logits/state/adapter parity, continuation, cancellation/restore and native preparation/vendor teardown with immutable source identities.",
+    "Retain matched complete-request latency or resource benefit with proper power evidence and a supported aggregate allowance. No source count alone establishes speed, traffic or process-memory improvement.",
+    "Publish a qualified immutable Prism release and verify Runner repinning before installed application use."
+  ],
+  "modelExecutions": 0,
+  "acceleratorDeviceCalls": 0,
+  "benchmarks": 0,
+  "fullSuites": 0,
+  "ciActions": 0,
+  "pushes": 0
+}
