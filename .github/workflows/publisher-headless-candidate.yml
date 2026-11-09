@@ -9,7 +9,7 @@ jobs:
     runs-on: windows-11-arm
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - uses: ./.github/actions/bonsai-tools
@@ -37,7 +37,7 @@ jobs:
           & $env:BONSAI_TOOLS_PATH build-tools --json (@{ operation = 'headless-publisher'; repositoryRoot = $env:GITHUB_WORKSPACE; outputDirectory = $output } | ConvertTo-Json -Compress)
       - name: Retain public-source candidate and bounded model-free evidence
         if: always() && env.BONSAI_HEADLESS_CANDIDATE != ''
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: publisher-headless-candidate-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ env.BONSAI_HEADLESS_CANDIDATE }}

@@ -20,7 +20,7 @@ jobs:
     runs-on: windows-11-arm
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - uses: ./.github/actions/rust-toolchain
@@ -40,7 +40,7 @@ jobs:
           python -B (Join-Path $env:GITHUB_WORKSPACE 'tools/hexagon/windows_queue_abi.py') --output (Join-Path $env:RUNNER_TEMP 'SwiftBonsai-Hexagon-Windows-ABI') --rustc (Join-Path '${{ steps.rust.outputs.toolchain-path }}' 'bin/rustc.exe')
       - name: Retain independent compiler, source, ABI, wire and losing-control evidence
         if: always()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: hexagon-windows-abi-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/SwiftBonsai-Hexagon-Windows-ABI/review

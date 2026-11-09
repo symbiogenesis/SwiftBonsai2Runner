@@ -47,7 +47,7 @@ jobs:
     runs-on: windows-11-arm
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - uses: ./.github/actions/bonsai-tools
@@ -96,8 +96,7 @@ jobs:
           }
           $sources = @('.github/workflows/native-runtime-acceptance.yml', 'scripts/Start-Chat.ps1', 'tools/ci/Cargo.toml', 'tools/ci/src/command.rs', 'tools/ci/src/native_acceptance_guard.rs') | ForEach-Object {
             $bytes = [Text.UTF8Encoding]::new($false).GetBytes([IO.File]::ReadAllText((Join-Path $env:GITHUB_WORKSPACE $_)).Replace("`r`n", "`n"))
-            $sha = [Security.Cryptography.SHA256]::Create()
-            try { $hash = [BitConverter]::ToString($sha.ComputeHash($bytes)).Replace('-', '').ToLowerInvariant() } finally { $sha.Dispose() }
+            $hash = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData($bytes)).ToLowerInvariant()
             [ordered]@{ Path=$_; Bytes=$bytes.Length; Sha256=$hash }
           }
           $contract = [ordered]@{
@@ -277,8 +276,7 @@ jobs:
           $contract = Get-Content -LiteralPath $env:BONSAI_NATIVE_CONTRACT_RECEIPT -Raw | ConvertFrom-Json
           $sources = @('.github/workflows/native-runtime-acceptance.yml', 'scripts/Start-Chat.ps1', 'tools/ci/Cargo.toml', 'tools/ci/src/command.rs', 'tools/ci/src/native_acceptance_guard.rs') | ForEach-Object {
             $bytes = [Text.UTF8Encoding]::new($false).GetBytes([IO.File]::ReadAllText((Join-Path $env:GITHUB_WORKSPACE $_)).Replace("`r`n", "`n"))
-            $sha = [Security.Cryptography.SHA256]::Create()
-            try { $hash = [BitConverter]::ToString($sha.ComputeHash($bytes)).Replace('-', '').ToLowerInvariant() } finally { $sha.Dispose() }
+            $hash = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData($bytes)).ToLowerInvariant()
             [ordered]@{ Path=$_; Bytes=$bytes.Length; Sha256=$hash }
           }
           & $env:BONSAI_CI_PATH native-acceptance-guard --json (@{ operation='workflow-receipt'; receipt=$contract; revision=$env:GITHUB_SHA; sources=@($sources) } | ConvertTo-Json -Depth 8 -Compress)
@@ -297,7 +295,7 @@ jobs:
           "BONSAI_ACCEPTANCE_PACKAGE=$package" >> $env:GITHUB_ENV
       - name: Retain strict Release analyzer diagnostics even when preparation fails
         if: always() && env.BONSAI_NATIVE_ANALYZER_EVIDENCE != ''
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: native-acceptance-analyzers-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ env.BONSAI_NATIVE_ANALYZER_EVIDENCE }}
@@ -305,14 +303,14 @@ jobs:
           retention-days: 90
       - name: Retain hosted compiler diagnostics even when preparation fails
         if: always() && env.BONSAI_NATIVE_BUILD_EVIDENCE != ''
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: native-acceptance-build-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ env.BONSAI_NATIVE_BUILD_EVIDENCE }}
           if-no-files-found: error
           retention-days: 90
       - name: Retain public-source binaries and source/digest receipt
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: native-acceptance-bin-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ env.BONSAI_ACCEPTANCE_PACKAGE }}
@@ -355,7 +353,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Download exact hosted acceptance package
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: native-acceptance-bin-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/Native-Acceptance-Package
@@ -401,8 +399,7 @@ jobs:
           $contract = Get-Content -LiteralPath $contractPath -Raw | ConvertFrom-Json
           $sources = @('.github/workflows/native-runtime-acceptance.yml', 'scripts/Start-Chat.ps1', 'tools/ci/Cargo.toml', 'tools/ci/src/command.rs', 'tools/ci/src/native_acceptance_guard.rs') | ForEach-Object {
             $bytes = [Text.UTF8Encoding]::new($false).GetBytes([IO.File]::ReadAllText((Join-Path $env:GITHUB_WORKSPACE $_)).Replace("`r`n", "`n"))
-            $sha = [Security.Cryptography.SHA256]::Create()
-            try { $hash = [BitConverter]::ToString($sha.ComputeHash($bytes)).Replace('-', '').ToLowerInvariant() } finally { $sha.Dispose() }
+            $hash = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData($bytes)).ToLowerInvariant()
             [ordered]@{ Path=$_; Bytes=$bytes.Length; Sha256=$hash }
           }
           & $guard native-acceptance-guard --json (@{ operation='workflow-receipt'; receipt=$contract; revision=$env:GITHUB_SHA; sources=@($sources) } | ConvertTo-Json -Depth 8 -Compress)

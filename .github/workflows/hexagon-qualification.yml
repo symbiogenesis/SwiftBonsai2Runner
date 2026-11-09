@@ -50,7 +50,7 @@ jobs:
     runs-on: windows-11-arm
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - uses: ./.github/actions/rust-toolchain
@@ -128,7 +128,7 @@ jobs:
           $output = Join-Path $env:RUNNER_TEMP 'SwiftBonsai-Hexagon-Prepared'
           @{ operation = 'build-dispatch'; repositoryDirectory = $env:GITHUB_WORKSPACE; outputDirectory = $output } | ConvertTo-Json -Compress | & $env:BONSAI_TOOLS_PATH hexagon-tools --request -
       - name: Retain this run's exact two-file access fixture bundle
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: hexagon-dispatch-fixture-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/SwiftBonsai-Hexagon-Prepared/bundle
@@ -136,7 +136,7 @@ jobs:
           retention-days: 90
       - name: Retain hosted compile and model-free direct Rust controls
         if: always()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: hexagon-hosted-controls-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
@@ -148,14 +148,14 @@ jobs:
           if-no-files-found: warn
           retention-days: 90
       - name: Retain the source-bound native session probe bundle
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: hexagon-native-probe-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/SwiftBonsai-Hexagon-Prepared/native-rpc-bundle
           if-no-files-found: error
           retention-days: 90
       - name: Retain the source-bound original-artifact projection probe
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: hexagon-projection-probe-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/SwiftBonsai-Hexagon-Prepared/projection-probe-bundle
@@ -165,7 +165,7 @@ jobs:
     runs-on: windows-11-arm
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - uses: ./.github/actions/rust-toolchain
@@ -173,7 +173,7 @@ jobs:
           toolchain: nightly-2026-11-02-aarch64-pc-windows-msvc
       - uses: ./.github/actions/bonsai-tools
       - name: Check out the exact Rust GGUF reader for the narrow artifact binder
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: symbiogenesis/prism-inference
           ref: 7aca2251f09acb345d4afb53d5ce411f81017745
@@ -190,7 +190,7 @@ jobs:
           $PSNativeCommandUseErrorActionPreference = $true
           @{ operation = 'build-packed-artifact'; repositoryDirectory = $env:GITHUB_WORKSPACE; ggufSourceDirectory = (Join-Path $env:GITHUB_WORKSPACE '.hexagon-gguf-source'); outputDirectory = (Join-Path $env:RUNNER_TEMP 'SwiftBonsai-Hexagon-Artifact') } | ConvertTo-Json -Compress | & $env:BONSAI_TOOLS_PATH hexagon-tools --request -
       - name: Retain the source-bound artifact binder bundle
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: hexagon-packed-artifact-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/SwiftBonsai-Hexagon-Artifact/bundle
@@ -198,7 +198,7 @@ jobs:
           retention-days: 90
       - name: Retain hosted artifact-binder controls
         if: always()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: hexagon-packed-artifact-controls-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
@@ -220,11 +220,11 @@ jobs:
         shell: pwsh
         run: |
           "BONSAI_HEXAGON_JOB_STARTED_UTC=$([DateTime]::UtcNow.ToString('o'))" >> $env:GITHUB_ENV
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - uses: ./.github/actions/use-bonsai-tools
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: hexagon-native-probe-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/SwiftBonsai-Hexagon-Native-Bundle
@@ -264,7 +264,7 @@ jobs:
           if ($result.Outcome -cne 'passed') { throw 'Native signed-session access remains pending; inspect the retained stage receipt.' }
       - name: Retain credential-free native signed-session mapping evidence
         if: always() && env.BONSAI_HEXAGON_SESSION_EVIDENCE != ''
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: hexagon-native-session-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
@@ -286,7 +286,7 @@ jobs:
         shell: pwsh
         run: |
           "BONSAI_HEXAGON_JOB_STARTED_UTC=$([DateTime]::UtcNow.ToString('o'))" >> $env:GITHUB_ENV
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - uses: ./.github/actions/use-bonsai-tools
@@ -329,7 +329,7 @@ jobs:
           if ($result.CollectionStatus -cne 'collected') { throw 'Hexagon inventory incomplete; inspect the retained pending receipt.' }
       - name: Retain credential-free prerequisite evidence
         if: always() && env.BONSAI_HEXAGON_EVIDENCE != ''
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: hexagon-prerequisites-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
@@ -350,11 +350,11 @@ jobs:
         shell: pwsh
         run: |
           "BONSAI_HEXAGON_JOB_STARTED_UTC=$([DateTime]::UtcNow.ToString('o'))" >> $env:GITHUB_ENV
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - uses: ./.github/actions/use-bonsai-tools
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: hexagon-dispatch-fixture-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/SwiftBonsai-Hexagon-Dispatch-Bundle
@@ -393,7 +393,7 @@ jobs:
           if ($result.Outcome -cne 'passed' -or -not $result.DeviceDispatchVerified) { throw 'The signed access gate remains pending; inspect retained stage evidence.' }
       - name: Retain only credential-free bounded dispatch evidence
         if: always() && env.BONSAI_HEXAGON_DISPATCH_EVIDENCE != ''
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: hexagon-dispatch-${{ github.run_id }}-${{ github.run_attempt }}
           path: |

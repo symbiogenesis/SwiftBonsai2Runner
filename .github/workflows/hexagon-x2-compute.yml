@@ -21,7 +21,7 @@ jobs:
     runs-on: windows-11-arm
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - uses: ./.github/actions/rust-toolchain
@@ -70,7 +70,7 @@ jobs:
           $PSNativeCommandUseErrorActionPreference = $true
           @{ operation = 'build-dispatch'; repositoryDirectory = $env:GITHUB_WORKSPACE; outputDirectory = (Join-Path $env:RUNNER_TEMP 'SwiftBonsai-X2-Compute') } | ConvertTo-Json -Compress | & $env:BONSAI_TOOLS_PATH hexagon-tools --request -
       - name: Retain the exact native fixture for separately budgeted owner intake
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: hexagon-x2-native-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/SwiftBonsai-X2-Compute/native-rpc-bundle
@@ -78,7 +78,7 @@ jobs:
           retention-days: 90
       - name: Retain bounded model-free native and packed results
         if: always()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: hexagon-x2-controls-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
@@ -88,7 +88,7 @@ jobs:
           if-no-files-found: warn
           retention-days: 90
       - name: Retain the source-bound original-projection worker
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: hexagon-x2-projection-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/SwiftBonsai-X2-Compute/projection-probe-bundle

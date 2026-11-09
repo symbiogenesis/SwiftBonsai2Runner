@@ -30,7 +30,6 @@ runs:
         Set-StrictMode -Version Latest
         $ErrorActionPreference = 'Stop'
         $PSNativeCommandUseErrorActionPreference = $true
-        $PSNativeCommandUseErrorActionPreference = $true
         & $env:BONSAI_CI_PATH rust-select --root $env:GITHUB_WORKSPACE
     - name: Reuse the pinned native Rust compiler
       if: steps.packages.outputs.has-packages == 'true'
@@ -100,7 +99,6 @@ runs:
         $PSNativeCommandUseErrorActionPreference = $true
         $evidence = Join-Path $env:RUNNER_TEMP ('SwiftBonsai-BrokerChecks-' + [guid]::NewGuid().ToString('N'))
         "BROKER_CHECK_EVIDENCE=$evidence" >> $env:GITHUB_ENV
-        $PSNativeCommandUseErrorActionPreference = $true
         & $env:BONSAI_CI_PATH rust-check --root $env:GITHUB_WORKSPACE --group Broker --packages-json $env:BROKER_PACKAGES --target $env:CARGO_TARGET_DIR --evidence $evidence --timeout-seconds 1800 --full-tests --build
     - name: Retain this lane's correctness and analyzer evidence
       if: always() && env.BROKER_CHECK_EVIDENCE != ''

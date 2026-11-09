@@ -9,7 +9,7 @@ jobs:
     runs-on: windows-11-arm
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - uses: ./.github/actions/bonsai-tools
@@ -36,7 +36,7 @@ jobs:
           $output = Join-Path $env:RUNNER_TEMP ('Bonsai-NativeSpeechCandidate-' + [guid]::NewGuid().ToString('N'))
           & $env:BONSAI_TOOLS_PATH build-tools --json (@{ operation = 'speech-candidate'; repositoryRoot = $env:GITHUB_WORKSPACE; outputDirectory = $output } | ConvertTo-Json -Compress)
       - name: Retain exact speech candidate binaries and source receipts
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: native-speech-candidate-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
@@ -51,7 +51,7 @@ jobs:
           retention-days: 90
       - name: Retain bounded public-source speech build evidence
         if: always() && env.BONSAI_SPEECH_CANDIDATE_EVIDENCE != ''
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: native-speech-candidate-build-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ env.BONSAI_SPEECH_CANDIDATE_EVIDENCE }}

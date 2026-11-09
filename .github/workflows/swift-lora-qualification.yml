@@ -22,7 +22,7 @@ jobs:
     runs-on: windows-11-arm
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - uses: ./.github/actions/bonsai-tools
@@ -42,7 +42,7 @@ jobs:
             Set-Content -LiteralPath (Join-Path $env:RUNNER_TEMP 'lora-plan.json') -Encoding utf8NoBOM
           'Qualification remains pending. This workflow records the fixed plan without model execution. The 28-sample matrix requires a hosted Snapdragon target; it must not be split across owner runs to evade the five-minute total allowance.' |
             Add-Content -LiteralPath $env:GITHUB_STEP_SUMMARY
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: swift-lora-plan-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/lora-plan.json

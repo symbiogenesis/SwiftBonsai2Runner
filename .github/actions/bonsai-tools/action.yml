@@ -62,7 +62,6 @@ runs:
         Set-StrictMode -Version Latest
         $ErrorActionPreference = 'Stop'
         $PSNativeCommandUseErrorActionPreference = $true
-        $PSNativeCommandUseErrorActionPreference = $true
         & $env:BONSAI_CI_PATH rust-check --root $env:GITHUB_WORKSPACE --package bonsai-tools --phase build --target $env:BONSAI_TOOLS_TARGET --evidence $env:BONSAI_TOOLS_BUILD_EVIDENCE
         $builtTool = Join-Path $env:BONSAI_TOOLS_TARGET 'release/bonsai-tools.exe'
         if (-not [IO.File]::Exists($builtTool)) { throw 'Packaged maintenance CLI build output is missing.' }

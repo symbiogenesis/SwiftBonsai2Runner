@@ -44,7 +44,7 @@ jobs:
             throw 'This reference belongs only to GitHub-hosted Windows ARM64.'
           }
           New-Item -ItemType Directory -Path "$env:RUNNER_TEMP/public-authoring-evidence" -ErrorAction Stop | Out-Null
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         id: source
         with:
           persist-credentials: false
@@ -111,7 +111,7 @@ jobs:
           Write-Output 'No complete public result was produced; retained comparison replay remains pending.'
       - name: Retain reference data, toolchain identities and failed attempts
         if: always()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: ptq1-public-authoring-reference-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
