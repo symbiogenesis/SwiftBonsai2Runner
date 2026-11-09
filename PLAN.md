@@ -166,15 +166,21 @@ its original closed 69.432-second clock and AC/saver-off/99% observations separa
 from the explicitly authorized new attempt's closed 59.250-second clock and
 AC/saver-off/98% observations. Neither clock authorizes a further trial or retry.
 
-The owner separately authorized one fresh local README measurement in this session.
-Execute only the [declared fixed refresh](docs/evidence/readme-performance-20261109-refresh/workload-plan.json):
-one eight-token request per representation on pinned Prism 0.1.22, four workers,
-adapter 1.3 and Thinking off. Its conservative 365-second estimate requires the
-smallest whole-minute seven-minute aggregate allowance, including the single offline
-build, intake, both startups/requests, power, cleanup and retention. Stop on completion,
-failure or insufficient time; do not retry or reopen earlier clocks. Independently
-verify the retained raw metrics, per-arm power and cleanup before updating the README.
-Unpublished Prism source optimizations remain unmeasured by this capture.
+The separately authorized [fresh 0.1.22 refresh](docs/evidence/readme-performance-20261109-refresh/summary.json)
+stopped at the driver's explicit source-path guard before power, build or model work.
+Its aggregate endpoint and power remain unknown; the tool's 0.7794621-second process
+wall time is a separate observation. Keep that attempt closed and retain existing
+README figures until a successful new-version capture.
+
+The owner now requests Prism 0.1.23 promotion, a real binary repin and then performance
+measurement. Execute the [fixed final-source registry release](docs/evidence/prism-0123-registry-20261109/workload-plan.json)
+once under its declared nine-minute aggregate allowance (510-second conservative
+estimate), retaining all source, package, power, publication and cleanup receipts.
+Only the runtime crate changes; preserve the five existing helper versions. Prepare
+an honestly scoped Foundation bundle under the new five-minute aggregate exception,
+then verify its exact source/archive/executable identities before repinning Runner.
+Declare a distinct new-version measurement only after that repin; do not reopen
+the failed 0.1.22 attempt or claim unpublished source reductions as measured gains.
 
 Qualify the [shared startup-timeout receipt fix](docs/evidence/ptq1-startup-timeout-20261103/summary.json)
 through owner-managed exact-source hosted preparation. An admitted extended case

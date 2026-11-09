@@ -21,6 +21,9 @@ docs/evidence/readme-performance-20261109-attempt2/** -text -whitespace
 # Preserve the explicitly authorized fresh README capture and its source receipts.
 docs/evidence/readme-performance-20261109-refresh/** -text -whitespace
 
+# Keep the final-source crates.io delivery declaration and receipts byte-identical.
+docs/evidence/prism-0123-registry-20261109/** -text -whitespace
+
 docs/evidence/local-throughput-20261103/** -text -whitespace
 
 docs/evidence/ptq1-primetime-*-20261103.json text eol=lf
