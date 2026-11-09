@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "kind": "performance-fanout-model-free-source-validation",
+  "recordedDate": "2026-11-09",
+  "authorization": "Owner requested pursuing the most exciting performance-relevant PLAN goals in parallel and going as far as reasonably possible.",
+  "source": {
+    "runnerBaseRevision": "35d9665d",
+    "prismBaseRevision": "6b4f4520b465e5feb665a71af64e7b0e21eb750a",
+    "prismIntegratedRevisionBeforeFormatting": "b45e5e6",
+    "lanes": [
+      "b2b2f3d runtime suffix traversal and bounded proposal storage",
+      "2d5eaf8 private NEON GDN staging reuse",
+      "945ae02 direct native-Q2 resident initialization",
+      "5a59849 hosted exact control inventory",
+      "b45e5e6 isolated NEON dependency source binding"
+    ]
+  },
+  "budget": {
+    "maximumTotalSeconds": 300,
+    "workCutoffSeconds": 260,
+    "conservativeEstimateSeconds": 250,
+    "estimate": {
+      "setupIdentityFormattingHashingAndReceiptControls": 20,
+      "offlineLibraryControlCompilation": 100,
+      "thirteenExactControls": 20,
+      "selectedStrictAnalyzers": 70,
+      "featureDisabledLibraryCheck": 20,
+      "cleanupAndEvidenceRetention": 20
+    },
+    "reason": "One fixed model-free correctness screen for three disjoint performance changes; four Cargo jobs, existing immutable dependency cache, no downloads, no model or benchmark. Stop on first failure or when the remaining fixed work cannot fit.",
+    "noRetry": true,
+    "clockRestartAllowed": false,
+    "fullSuites": "CI only; not selected",
+    "historicalClocks": "Remain closed; this checks new source and is not a continuation or retry of prior trials."
+  },
+  "fixedWork": [
+    "Pinned nightly compiler and source identities",
+    "Apply canonical Cargo formatting once before compilation; verify formatting",
+    "Hash all tracked integration sources",
+    "Four existing Python hosted receipt/inventory controls",
+    "Compile only three selected library test executables offline with parallel-rows; do not run full suites",
+    "Run exactly thirteen named controls declared in validate.py, each once, requiring exactly one passing nonignored test",
+    "Strict Clippy for the three selected packages' libraries and tests, without running test suites",
+    "Feature-disabled prism-inference library compilation",
+    "Owned diagnostic process timeout cleanup if necessary; retain logs, hashes, source identity, terminal receipt and original closed clock"
+  ],
+  "power": {
+    "query": "GetSystemPowerStatus",
+    "timing": "Before and after aggregate work and each individual command",
+    "unknown": "Remain explicit null; no past source inferred",
+    "continuousStabilityEstablished": false,
+    "performanceComparison": false
+  },
+  "execution": {
+    "driver": "validate.py",
+    "evidenceDirectory": "%TEMP%/SwiftBonsai-PerformanceFanout-20261109",
+    "cargoTarget": "Dedicated target beneath external evidence; no installation or existing source cache mutation beyond ordinary Cargo cache reads",
+    "retainedDirectory": "raw",
+    "models": 0,
+    "benchmarks": 0,
+    "deviceAcceleratorCalls": 0,
+    "ciActions": 0,
+    "pushes": 0
+  }
+}
