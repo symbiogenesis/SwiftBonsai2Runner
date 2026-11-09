@@ -1,0 +1,1190 @@
+{
+    "revision":  "8ace4e249e469553237830054b015a09070d120a",
+    "branch":  "main",
+    "clean":  true,
+    "selectedSourceCount":  236,
+    "sourceInputs":  [
+                         {
+                             "path":  "Cargo.lock",
+                             "bytes":  125582,
+                             "sha256":  "2ae856d816c84aeb713e39dff33c65f3de8e86a92759d3aaea539b92aee92052"
+                         },
+                         {
+                             "path":  "Cargo.toml",
+                             "bytes":  3288,
+                             "sha256":  "951fd88cafdb234e75417c0563e98b009976a777b79697ad1e55b444835b2554"
+                         },
+                         {
+                             "path":  "config/hexagon-dispatch.lock.json",
+                             "bytes":  2939,
+                             "sha256":  "6d4e5d5378591a60cbcc22d3bfbfeb07b16fe77adbb2d6853548e4f81ba7acfc"
+                         },
+                         {
+                             "path":  "config/hexagon-experiment.lock.json",
+                             "bytes":  4694,
+                             "sha256":  "af88af435555cef84c5cf5e7e955c4dc40bd6dce2c3fbc12818d7e27a96a78c2"
+                         },
+                         {
+                             "path":  "config/hexagon-signed-q2-candidate.lock.json",
+                             "bytes":  51407,
+                             "sha256":  "052b1252fb4f878b27b1cf917162f8b204e023bdfbeea2ac8e2dfe34539583c9"
+                         },
+                         {
+                             "path":  "config/model.metadata.json",
+                             "bytes":  6386,
+                             "sha256":  "77f5997d14320d4d10694f98ad4ef09c441abc3aead006baec6a424a77d3e759"
+                         },
+                         {
+                             "path":  "config/native-speech.lock.json",
+                             "bytes":  1821,
+                             "sha256":  "f3cb40c1088e1e8dbcbe7210aca2f1a51debc7a6fcc93a90747c39b282816b48"
+                         },
+                         {
+                             "path":  "config/prism-inference.lock.json",
+                             "bytes":  2434,
+                             "sha256":  "540fbae4820f97a220e64148278ec70e550f725471a2f34f96ab5842eed3645a"
+                         },
+                         {
+                             "path":  "config/profiles/reference-cpu.json",
+                             "bytes":  931,
+                             "sha256":  "90cf0b15f431eac31362ef8d1e8f854d095849f168e258a6727dc05686189f37"
+                         },
+                         {
+                             "path":  "config/runtime.lock.json",
+                             "bytes":  2153,
+                             "sha256":  "218cae1ecc5d8878494b15be6ad6139392ccfd84d21b078447c7c7c6274c512b"
+                         },
+                         {
+                             "path":  "config/rust-packages.json",
+                             "bytes":  2029,
+                             "sha256":  "b5efe1ecf8cec95674a7cc5d99cd5768b81e59b19b96ed971bc6bcbf27ae6ab3"
+                         },
+                         {
+                             "path":  "config/swift-assessment.lock.json",
+                             "bytes":  1769,
+                             "sha256":  "a378f4a4551170a27f9d0f3649114c954011cc149c0ebd16fb4413ac1094a86b"
+                         },
+                         {
+                             "path":  "config/swift-lora.app-qualification.json",
+                             "bytes":  5476,
+                             "sha256":  "313df442397f6518819f3ac8ddf6e6305f803957269fc2eb9b5bd4898743251a"
+                         },
+                         {
+                             "path":  "config/swift-lora.direction.json",
+                             "bytes":  1275,
+                             "sha256":  "b579baa8777d557aab9ae9e8db50d2103ee823729e308a6d9d4cd361afba93ff"
+                         },
+                         {
+                             "path":  "config/swift-lora.lock.json",
+                             "bytes":  2826,
+                             "sha256":  "84bf87bd873a372ebd943dae81d3300d74ec09055d6c5fe0628873d3863ae74a"
+                         },
+                         {
+                             "path":  "config/swift-lora.qualification.json",
+                             "bytes":  5285,
+                             "sha256":  "233c3ca310bb2f44a2560d560ba2c9c887f03e26a18ad9672d135815a2058860"
+                         },
+                         {
+                             "path":  "config/swift.metadata.json",
+                             "bytes":  4474,
+                             "sha256":  "9cf39a8dabb8b3d16f8d776e3228e3fb8aebcf4cbd4778de84fe4df534cc1c02"
+                         },
+                         {
+                             "path":  "config/swift.pq2-census.json",
+                             "bytes":  1169,
+                             "sha256":  "262692cf026c1dae4d56606ac946db0823ff0a6e8defdf075f4b2cb522020aed"
+                         },
+                         {
+                             "path":  "config/swift.ptq1-export.json",
+                             "bytes":  1165,
+                             "sha256":  "c184dea2089127201a15595af86e61005ec5b3f9c14e8089fee5c8f630a762d5"
+                         },
+                         {
+                             "path":  "rust-toolchain.toml",
+                             "bytes":  337,
+                             "sha256":  "7d4eea91eb66c5e141866c1a1f0d07970f79cf21e0a303f4c25790e0981eb970"
+                         },
+                         {
+                             "path":  "rustfmt.toml",
+                             "bytes":  119,
+                             "sha256":  "53ad376b53b0a363d5573551ae0784931560481bfa96c157199dc6c6087594dd"
+                         },
+                         {
+                             "path":  "src/artifacts/Cargo.toml",
+                             "bytes":  696,
+                             "sha256":  "88184cf6247dc159d24872fa3b24b790d1a5ad11b0e156150bc82cbbe76d5532"
+                         },
+                         {
+                             "path":  "src/artifacts/README.md",
+                             "bytes":  1757,
+                             "sha256":  "550d74c5aebd3260718a3a9e07468a42e513231a403a79e60ef1acc107618b51"
+                         },
+                         {
+                             "path":  "src/artifacts/src/install.rs",
+                             "bytes":  5396,
+                             "sha256":  "72993c6b528194e30d8953e59fb2b9abc1e27e008e67ea77ce72c320c979208e"
+                         },
+                         {
+                             "path":  "src/artifacts/src/lib.rs",
+                             "bytes":  36056,
+                             "sha256":  "9b190623ad90fd3ed658904b5fb56bd3849adc06e1dfa05cee3522b739324341"
+                         },
+                         {
+                             "path":  "src/artifacts/tests/contained.rs",
+                             "bytes":  6250,
+                             "sha256":  "e61cedc1343acca6ba7cbdea81bee0f679b08607fcbdc832f68a5bdd0f04cfa8"
+                         },
+                         {
+                             "path":  "src/artifacts/tests/lifetime.rs",
+                             "bytes":  12447,
+                             "sha256":  "3dce5df95127c55558062cdc2121383eb6c047c3e07af8f319076708513cdd1a"
+                         },
+                         {
+                             "path":  "src/artifacts/tests/provisioning.rs",
+                             "bytes":  9636,
+                             "sha256":  "2acf04672e4aaa454ce146e7eaeabe4b78e913f898453748780a613f45036458"
+                         },
+                         {
+                             "path":  "src/audio/Cargo.toml",
+                             "bytes":  411,
+                             "sha256":  "c114d2731230fc6c8cf23149e29ec95b8bd44b885e9d075e1f697a03e33ce62e"
+                         },
+                         {
+                             "path":  "src/audio/src/lib.rs",
+                             "bytes":  7474,
+                             "sha256":  "47cbdd9c852ae0fa77f8e0c5a77a13ad8c0efeeb3f0c86ef4f2fcdfd947311b2"
+                         },
+                         {
+                             "path":  "src/broker/Cargo.toml",
+                             "bytes":  1313,
+                             "sha256":  "4a36cc89709239712c986a0f4adfac0f0e607a6b39a599f068efe9e96feb53bc"
+                         },
+                         {
+                             "path":  "src/broker/src/abliteration_tests.rs",
+                             "bytes":  10381,
+                             "sha256":  "b879d129331a72cd6be6dc951c687e86bc5e37c60cee01e269476660069b6f34"
+                         },
+                         {
+                             "path":  "src/broker/src/artifacts.rs",
+                             "bytes":  11065,
+                             "sha256":  "abeddffd8d73a90ca486db7f6d82ea8a843a310e71dc8f7298e9d21c42badcf8"
+                         },
+                         {
+                             "path":  "src/broker/src/backend.rs",
+                             "bytes":  25156,
+                             "sha256":  "c72847c59cc1d2bb7d2fdd2ae9eec5d5e7a04964201ff093711b398d00e7021e"
+                         },
+                         {
+                             "path":  "src/broker/src/backend/memory_tests.rs",
+                             "bytes":  7423,
+                             "sha256":  "a8736336ec63fd24511a054f9b537509d34fd1d3257fafd3b23ae7aff3b3861e"
+                         },
+                         {
+                             "path":  "src/broker/src/backend/payload_tests.rs",
+                             "bytes":  10682,
+                             "sha256":  "cad541652dcc4e6177bd47707e8c860a97280b8a6218f0c3ea788ddf24e47c4f"
+                         },
+                         {
+                             "path":  "src/broker/src/chat_controls.rs",
+                             "bytes":  3340,
+                             "sha256":  "b4d95fe1baa4aed0a06c8ae76c21ca93365e34de92a5efa540cbc0a321c8845c"
+                         },
+                         {
+                             "path":  "src/broker/src/configuration.rs",
+                             "bytes":  698,
+                             "sha256":  "ae9ab7db68792e25b2043539013abacf90811ac75445836d6c243e252f246c79"
+                         },
+                         {
+                             "path":  "src/broker/src/inference.rs",
+                             "bytes":  13865,
+                             "sha256":  "5084da543c3bd704dc5cf25ecc36193e580c54cf924a7c0efedacfc53a4e202d"
+                         },
+                         {
+                             "path":  "src/broker/src/json_candidate.rs",
+                             "bytes":  15196,
+                             "sha256":  "a104efbc297b6018badf5f3e4783d756a8afdc7f0e2f90956b6bc5aed653d80c"
+                         },
+                         {
+                             "path":  "src/broker/src/json_candidate_parser.rs",
+                             "bytes":  7610,
+                             "sha256":  "286d28f1cacafa4f8d6cc2acba6171ae1c70d814d5e8d2f48c11aad59455cfb2"
+                         },
+                         {
+                             "path":  "src/broker/src/launch_policy.rs",
+                             "bytes":  27501,
+                             "sha256":  "df5912f016d10b7e2d67021ebe8c806d9572e0913f0b0b23fa19a3707bdd262f"
+                         },
+                         {
+                             "path":  "src/broker/src/launcher.rs",
+                             "bytes":  71439,
+                             "sha256":  "295d82b2c9842d075b7a73c1b2ec70c397327f00fe0bbe7e483934a4e3aeea73"
+                         },
+                         {
+                             "path":  "src/broker/src/launcher/identity.rs",
+                             "bytes":  14029,
+                             "sha256":  "07eb95e0f3b7010a225929e68ee860c532e9f02e9fad36ed069a030501c7e89f"
+                         },
+                         {
+                             "path":  "src/broker/src/launcher/startup.rs",
+                             "bytes":  5893,
+                             "sha256":  "e80a62aa5a5544d57706b7dfcd289cff61a72f306555bfc80c137ca24e115258"
+                         },
+                         {
+                             "path":  "src/broker/src/launcher_tests.rs",
+                             "bytes":  11323,
+                             "sha256":  "625484ea05c50584aff86af7b2570755fb5206dd132839d9fb32bbb0ea4e70e7"
+                         },
+                         {
+                             "path":  "src/broker/src/lib.rs",
+                             "bytes":  32326,
+                             "sha256":  "d5d132ef92652a5e98bb85aae4b1627c77c4c7e4d65fbef23e559fd3e344871a"
+                         },
+                         {
+                             "path":  "src/broker/src/main.rs",
+                             "bytes":  7869,
+                             "sha256":  "6ecf8d3114da34d52eb15152e2a674d5af73b86304924d60f1a4af1f40f3259a"
+                         },
+                         {
+                             "path":  "src/broker/src/owner_shutdown.rs",
+                             "bytes":  5784,
+                             "sha256":  "261a05f95a28780675d546eebcea62980ee7b6afda1114dcfcdd9ed9164d2e72"
+                         },
+                         {
+                             "path":  "src/broker/src/owner_shutdown/tests.rs",
+                             "bytes":  4722,
+                             "sha256":  "226d4a5ebe68dbe3ea94ef7da37b99fc35ab4c4c3884232c5745a7c2eb85791c"
+                         },
+                         {
+                             "path":  "src/broker/src/reception.rs",
+                             "bytes":  11457,
+                             "sha256":  "11b0cf1541c21210b96f13e2929a3fd3748dc4ca67e4c39a9d5d2a7f901344b7"
+                         },
+                         {
+                             "path":  "src/broker/src/reception/memory_tests.rs",
+                             "bytes":  7192,
+                             "sha256":  "890e682a731ab063d8fd5c813542ce9f7712c4b574fea1ca2dd0bd4451fe566d"
+                         },
+                         {
+                             "path":  "src/broker/src/request_buffer.rs",
+                             "bytes":  3335,
+                             "sha256":  "1506003c3c13e8a8ffc5faddfe8e9668f26eeb3faa5d8a567915938844fd4d56"
+                         },
+                         {
+                             "path":  "src/broker/src/response.rs",
+                             "bytes":  21143,
+                             "sha256":  "a962c2f81bc29114e26001a19baf7eac0e9b7c519ee3c637f42549b987393b86"
+                         },
+                         {
+                             "path":  "src/broker/src/response/memory_tests.rs",
+                             "bytes":  12003,
+                             "sha256":  "b818875e7f4fb5f61c56c0b4cab2aea8ed38d6d6bb2e54f1fdd8b072921ec4b7"
+                         },
+                         {
+                             "path":  "src/broker/src/runtime.rs",
+                             "bytes":  15769,
+                             "sha256":  "fafcdb19077799a148a1daa0991ed4b19121bd57126c4a8c728d656db4879e52"
+                         },
+                         {
+                             "path":  "src/broker/src/scheduler.rs",
+                             "bytes":  8122,
+                             "sha256":  "cf93a36d941dbeb5a2fcf25e20d7f03235b53c94c973016b6d6468cb43814a19"
+                         },
+                         {
+                             "path":  "src/broker/src/service.rs",
+                             "bytes":  11657,
+                             "sha256":  "3eb2e41dca81d86886d95c6ccabf09af07ad98bded7a28ef9c5f9e43fa80e075"
+                         },
+                         {
+                             "path":  "src/broker/src/service/burst.rs",
+                             "bytes":  4397,
+                             "sha256":  "de565e1603b36b92db1b77f79629e69e55757faa7cc6dc6300d727634a3dae97"
+                         },
+                         {
+                             "path":  "src/broker/src/supervisor.rs",
+                             "bytes":  9360,
+                             "sha256":  "4d921e2f5f91d76710f91d8f6b0e56548037c8c75acedf094f15b6c2c9d964ef"
+                         },
+                         {
+                             "path":  "src/broker/src/transport.rs",
+                             "bytes":  3089,
+                             "sha256":  "df55ddcf8beb5c4b118ae1e6b31a52ca574f6b62cae7b1f37329b1c955d5e13a"
+                         },
+                         {
+                             "path":  "src/broker/src/wire.rs",
+                             "bytes":  2892,
+                             "sha256":  "a39a78b8480c19a2dc86c8eaed66a9c5d7aa4be034896dd75281e74639229ee9"
+                         },
+                         {
+                             "path":  "src/broker/tests/backend_http.rs",
+                             "bytes":  43948,
+                             "sha256":  "c5ce22f3c1f5a39eaa658045aaf0e1e4a2c6c8daa1c8295ed94d26e982bf6ea7"
+                         },
+                         {
+                             "path":  "src/broker/tests/control_tokens.rs",
+                             "bytes":  5452,
+                             "sha256":  "273d0ee9d93b1b444935ec31cb3380879709a20527ed1e53636ce901b3c6127c"
+                         },
+                         {
+                             "path":  "src/broker/tests/fixtures/swift-control-tokens.json",
+                             "bytes":  3543,
+                             "sha256":  "8cb137d5bb479e3049b092cd9c218e9fa5dc707700629cf721fb22fa76924f8c"
+                         },
+                         {
+                             "path":  "src/broker/tests/fragmentation.rs",
+                             "bytes":  18311,
+                             "sha256":  "a80390ab673039109e9cc62706e2ec38b37fbdacb086c7b3cb87f7983cbc7fd2"
+                         },
+                         {
+                             "path":  "src/broker/tests/http_reception.rs",
+                             "bytes":  16809,
+                             "sha256":  "58beb9be43e32671b51e1e294134a05824a8372bca563f44373cf83807030980"
+                         },
+                         {
+                             "path":  "src/broker/tests/http_response.rs",
+                             "bytes":  37188,
+                             "sha256":  "c1362882caddeb18406855ca1b70f2e9d3da658fa4e840d96c55579b0326b123"
+                         },
+                         {
+                             "path":  "src/broker/tests/launch_policy.rs",
+                             "bytes":  8699,
+                             "sha256":  "3e6182612713b3da4ce2444d11f5fb22a4f2157b97a2d59a85e14f3b27fc846c"
+                         },
+                         {
+                             "path":  "src/broker/tests/local_service.rs",
+                             "bytes":  25308,
+                             "sha256":  "a8701d2f7e9c5c80605af4be1ac9645f010898dfe4a04ec557380125c081081a"
+                         },
+                         {
+                             "path":  "src/broker/tests/native_model.rs",
+                             "bytes":  147564,
+                             "sha256":  "2d982586baa2c02a3dde23f07119b3c933cb389822313138e934074608304e43"
+                         },
+                         {
+                             "path":  "src/broker/tests/native_model/adapter_boundaries.rs",
+                             "bytes":  25235,
+                             "sha256":  "f799906e8cecc48979a6527344358483e85bca9f6fc7656b82dce3244eb8daa7"
+                         },
+                         {
+                             "path":  "src/broker/tests/native_model/power.rs",
+                             "bytes":  1115,
+                             "sha256":  "06e7578bc6400800ab1b7625943ea7f0f2a044b7a899185f164802d126e3a981"
+                         },
+                         {
+                             "path":  "src/broker/tests/native_model/progress.rs",
+                             "bytes":  23634,
+                             "sha256":  "8ab8342da4be00531eb6d0566456d3a72f8ad07576103b283965b040529594ae"
+                         },
+                         {
+                             "path":  "src/broker/tests/native_model/representation.rs",
+                             "bytes":  42190,
+                             "sha256":  "6fe560fd40573e4e2a5036f9724ea4836437e59ae52814d13a758f377c57e382"
+                         },
+                         {
+                             "path":  "src/broker/tests/native_model/response_capture.rs",
+                             "bytes":  9977,
+                             "sha256":  "bf8cbca91cd89883f24cfe141fc1b2eeba7fe4041023062a80220efbe6111bbe"
+                         },
+                         {
+                             "path":  "src/broker/tests/native_model/service_integration.rs",
+                             "bytes":  54939,
+                             "sha256":  "3bc37fa7608c189321c67e62b618acb8b9b798789476c90616892ecc78967bba"
+                         },
+                         {
+                             "path":  "src/broker/tests/native_model/service_rollback.rs",
+                             "bytes":  28229,
+                             "sha256":  "07c3b6b457fa5448e455d0de1a86cd06c4fe57178443cea94de4157826464ec5"
+                         },
+                         {
+                             "path":  "src/broker/tests/native_model/speed.rs",
+                             "bytes":  21662,
+                             "sha256":  "6aa4db6d9548d7fc8d56a91fe47c5fe5fcedb251016e01bd253a86daef659e7d"
+                         },
+                         {
+                             "path":  "src/broker/tests/native_model/token_timing.rs",
+                             "bytes":  13971,
+                             "sha256":  "0c84a8c1045b812684f7436d5e34281a4c1ac91641f542fbe314545f2f4440f9"
+                         },
+                         {
+                             "path":  "src/broker/tests/policy_boundaries.rs",
+                             "bytes":  6532,
+                             "sha256":  "d6d42a25d7567e364c5d18662ee81e2f850c235d69a7a30f645bda5c338d3112"
+                         },
+                         {
+                             "path":  "src/broker/tests/request_policy.rs",
+                             "bytes":  25698,
+                             "sha256":  "ddbf57a5487001d1ddd820fd8e675dbb360c62a442fcb7a88c15ea938d0978e1"
+                         },
+                         {
+                             "path":  "src/broker/tests/runtime.rs",
+                             "bytes":  11986,
+                             "sha256":  "99adc458696dd63c9d44c694ef92f01a7527ae02e0779dfd83106c0f9b67db6e"
+                         },
+                         {
+                             "path":  "src/broker/tests/scheduler.rs",
+                             "bytes":  6570,
+                             "sha256":  "ffb2647475da19e4a99d810d1ad56c11183e07107580d635956761ebc7ba57c5"
+                         },
+                         {
+                             "path":  "src/broker/tests/scheduler_simulation.rs",
+                             "bytes":  14399,
+                             "sha256":  "4d45dea718f38cfafedb78fc7dc734a70f1e768c4c7fcfe280b2484ace77ae9e"
+                         },
+                         {
+                             "path":  "src/broker/tests/supervisor.rs",
+                             "bytes":  20019,
+                             "sha256":  "601d9d7cf79224030c6eac38ca424961cd1aaa44ec273c3cd4df70738790cd1e"
+                         },
+                         {
+                             "path":  "src/chat-ui/Cargo.toml",
+                             "bytes":  1629,
+                             "sha256":  "61efdf4bdde69c7c325dc0abaa51c7e643f282ebe9c5f8b5e69d2585b6bf78e0"
+                         },
+                         {
+                             "path":  "src/chat-ui/src/bounded_json.rs",
+                             "bytes":  4117,
+                             "sha256":  "0516b3babc4f28bf8b49cad8621be87b71f6215f6dbcfdcb9819747de522469f"
+                         },
+                         {
+                             "path":  "src/chat-ui/src/canary.rs",
+                             "bytes":  48677,
+                             "sha256":  "983dfd81c3805c8f5d8446c35c57f06312b954c694ec62190e843a8740a04e09"
+                         },
+                         {
+                             "path":  "src/chat-ui/src/canary/pcm.rs",
+                             "bytes":  15488,
+                             "sha256":  "0a7c795b473c1d8f241ebdf1357e234a637baa67d1ad01f5e6b23792f8e4b250"
+                         },
+                         {
+                             "path":  "src/chat-ui/src/client.rs",
+                             "bytes":  99953,
+                             "sha256":  "8a15e9f3b663cb70546ffcfc733f7ea511bc0fc8d8c1fb908fb350d86b814707"
+                         },
+                         {
+                             "path":  "src/chat-ui/src/client/cancellation_tests.rs",
+                             "bytes":  5106,
+                             "sha256":  "edbce776b1c3900bb9b93b0975f86e6bd5f78da1bfc75685151025b65cf01f1b"
+                         },
+                         {
+                             "path":  "src/chat-ui/src/client/effort.rs",
+                             "bytes":  7226,
+                             "sha256":  "4a75d45fd749f81df213eb3fa178196367e48c7c59e96bd7236457c2927904c9"
+                         },
+                         {
+                             "path":  "src/chat-ui/src/client/effort/tests.rs",
+                             "bytes":  12552,
+                             "sha256":  "f07c025183e9a6364c1940ebb2c0d6e1ba5e3df400e605bfc369a1757de69bc7"
+                         },
+                         {
+                             "path":  "src/chat-ui/src/client/event_queue.rs",
+                             "bytes":  6246,
+                             "sha256":  "61302456e6f13500b591bc59611e804d16c3f12752667d3590eb2f686e8d2731"
+                         },
+                         {
+                             "path":  "src/chat-ui/src/client/event_queue/tests.rs",
+                             "bytes":  9527,
+                             "sha256":  "35b3fc98a90d1acae0ef8e563068206b449b59564c1fcbfb917730b09dae9437"
+                         },
+                         {
+                             "path":  "src/chat-ui/src/client/memory_tests.rs",
+                             "bytes":  4916,
+                             "sha256":  "989105dbce77af47ea6a0a39851aa1316fdd707890d8eb921c6e088c96c0c590"
+                         },
+                         {
+                             "path":  "src/chat-ui/src/client/owner_control.rs",
+                             "bytes":  5169,
+                             "sha256":  "b9831730aa3fc90a3a6ea9f02b9530efd6bd023d94c99fedf6eb13c30b8f6f4f"
+                         },
+                         {
+                             "path":  "src/chat-ui/src/client/sse.rs",
+                             "bytes":  14576,
+                             "sha256":  "52621f3ada36e126c08023aa07323dd4add34ff091e8e1b7b3b98a822c166851"
+                         },
+                         {
+                             "path":  "src/chat-ui/src/http.rs",
+                             "bytes":  4099,
+                             "sha256":  "9233f39d7f04065110c5a125c61122bb9899d5692321f4e6c1948c2f81ab4b14"
+                         },
+                         {
+                             "path":  "src/chat-ui/src/main.rs",
+                             "bytes":  30797,
+                             "sha256":  "b170e369ba36f36f2728dc8f88b2114cdd0d9476af8798fa83fc74fe3a3fb6f1"
+                         },
+                         {
+                             "path":  "src/chat-ui/src/native_speech.rs",
+                             "bytes":  22593,
+                             "sha256":  "fe004d483dbe4787a694af59a5f546b0ca53af540371fb3b5cdcae6ad91b0ff0"
+                         },
+                         {
+                             "path":  "src/chat-ui/src/recovery.rs",
+                             "bytes":  26523,
+                             "sha256":  "cddd5716441ba3a543b5f42311dc0b0202de2b51a465c9e5eefce735bf2c8276"
+                         },
+                         {
+                             "path":  "src/chat-ui/src/speech.rs",
+                             "bytes":  43318,
+                             "sha256":  "8029e02f814699dd986797a5565c5916e42bcd9c18efbaf583aa3f9bea6ce1f2"
+                         },
+                         {
+                             "path":  "src/chat-ui/src/speech/command_queue.rs",
+                             "bytes":  20401,
+                             "sha256":  "0d4ccafc72910056709994af166f2ba5a1fe622440393b0e21e31e0f35be52ba"
+                         },
+                         {
+                             "path":  "src/chat-ui/src/speech/pipeline.rs",
+                             "bytes":  56964,
+                             "sha256":  "971bba90463765c89cd033c486911229a86de86f1724a19c14287726cd81b59a"
+                         },
+                         {
+                             "path":  "src/chat-ui/src/speech/segmentation.rs",
+                             "bytes":  4135,
+                             "sha256":  "919b4e675f71ab15e9e7d9c3e85d75642657521d7a2bc1ec7ff93d80877a214c"
+                         },
+                         {
+                             "path":  "src/chat-ui/src/speech/stream.rs",
+                             "bytes":  9257,
+                             "sha256":  "fe732d053d0b7d42caa9de43c476d8e9d15c5ec2eeb7f75b3e2cc192521a4769"
+                         },
+                         {
+                             "path":  "src/chat-ui/src/startup.rs",
+                             "bytes":  14880,
+                             "sha256":  "878c26fef58ec37e6c32cfdb59e2519ce55679aa2d778caebee628172ab3677f"
+                         },
+                         {
+                             "path":  "src/chat-ui/src/tts.rs",
+                             "bytes":  21978,
+                             "sha256":  "5703a5852fee3b14a69884f432a9866c422750204e3f8dba4ad2126da9acec14"
+                         },
+                         {
+                             "path":  "src/chat-ui/src/window.rs",
+                             "bytes":  86903,
+                             "sha256":  "0baa69ad7d5713578d13b99f32b1e29f0a55943b132ef56f1fb5f142e0b07e28"
+                         },
+                         {
+                             "path":  "src/chat-ui/src/window/graphics.rs",
+                             "bytes":  2372,
+                             "sha256":  "9d940c3bc81f7cc1714a055f1d7b751b20d9da63f74f8abfcac56374f1a859da"
+                         },
+                         {
+                             "path":  "src/chat-ui/src/window/interaction_tests.rs",
+                             "bytes":  38981,
+                             "sha256":  "16e89ff6243b5cb99efdc5d9239764b61135f07ab97e7e466f66ca82ab923423"
+                         },
+                         {
+                             "path":  "src/chat-ui/src/window/keyboard_tests.rs",
+                             "bytes":  5797,
+                             "sha256":  "69fa783a52e9fc1ba1ecc94154cd84ba1e50239b9d4ef8b6e1ee11ba7f9dd6e4"
+                         },
+                         {
+                             "path":  "src/chat-ui/src/window/microphone.rs",
+                             "bytes":  19403,
+                             "sha256":  "29f221d09079b02fcfb102626b844412ff9e0e1461929c0881ea24f3ea863a5b"
+                         },
+                         {
+                             "path":  "src/chat-ui/src/window/model_lifecycle.rs",
+                             "bytes":  2507,
+                             "sha256":  "38df3c06b29cf393e536d2ca7957278a24f685f5f5fcce65b80d08d5e523f98c"
+                         },
+                         {
+                             "path":  "src/chat-ui/src/window/persistence.rs",
+                             "bytes":  41805,
+                             "sha256":  "715727ac296d3af97918e24dcb2c6cae3318d43278243de03ad0979551d59066"
+                         },
+                         {
+                             "path":  "src/chat-ui/src/window/placement.rs",
+                             "bytes":  12863,
+                             "sha256":  "70d1a4c472432e713dcaff658dd2737aab18d12dd04cfcd4b219b1581d0a962d"
+                         },
+                         {
+                             "path":  "src/chat-ui/src/window/platform.rs",
+                             "bytes":  7186,
+                             "sha256":  "4c01e7429da3f40e3b231f3a4204f78d7f41e0ed2d538ffdd7d6e7bf779928f9"
+                         },
+                         {
+                             "path":  "src/chat-ui/src/window/read_aloud.rs",
+                             "bytes":  10152,
+                             "sha256":  "7ac1ae7e26dd1905c71a03954653a6176181c734de90dc78c47acb46a86858f2"
+                         },
+                         {
+                             "path":  "src/chat-ui/src/window/tests.rs",
+                             "bytes":  31576,
+                             "sha256":  "78b2c3f76acf208d7ef63d4731809222880b50a151bb27bb741873ead6441e71"
+                         },
+                         {
+                             "path":  "src/chat-ui/src/window/transcript.rs",
+                             "bytes":  29205,
+                             "sha256":  "875c7ecdd630e55213f798fdf7553a544ab32e469d755517b0681b56095fd9b8"
+                         },
+                         {
+                             "path":  "src/chat-ui/src/window/transcript/cache_tests.rs",
+                             "bytes":  23813,
+                             "sha256":  "57100e2e7e9c90a657778b23016bf4deb1871d2f0d754d225466f0ae724d277a"
+                         },
+                         {
+                             "path":  "src/chat-ui/src/window/transcript/search.rs",
+                             "bytes":  20165,
+                             "sha256":  "d92f644d60987cd69a8ea4a15e65e31b8636777fb7c2269e2fe91aa734f0c6f7"
+                         },
+                         {
+                             "path":  "src/chat-ui/src/window/transcript/search/performance_tests.rs",
+                             "bytes":  22717,
+                             "sha256":  "fc02ee6aed70c5ace51b0ec6c9a230126ebfe7e5cf582a6901e817d873f71889"
+                         },
+                         {
+                             "path":  "src/chat-ui/src/window/transcript/search/shortcuts.rs",
+                             "bytes":  7981,
+                             "sha256":  "fa18c3cf3bd5ef813e7c34ded64d5a638dea2ba82095036bffe69b32c561a880"
+                         },
+                         {
+                             "path":  "src/chat-ui/src/window/workspace.rs",
+                             "bytes":  16121,
+                             "sha256":  "d7c002d199e04dcbf050ad7f91db3212bc6ae9bd583136478a3cc822de24bc29"
+                         },
+                         {
+                             "path":  "src/cpu-policy/Cargo.toml",
+                             "bytes":  437,
+                             "sha256":  "f487baa1f5266747037ac2772e37f352b7cac5ca3e2639df008b311c35ee123a"
+                         },
+                         {
+                             "path":  "src/cpu-policy/README.md",
+                             "bytes":  1777,
+                             "sha256":  "9f56feffbc2e96ca6b7374f8d5e07b40f8a6844acecf1d120c9f7e4da0aa085b"
+                         },
+                         {
+                             "path":  "src/cpu-policy/src/hardware.rs",
+                             "bytes":  17700,
+                             "sha256":  "eb4f6f7a28842039d1cd5782a5adb0bf85f076100016bf8be0a77dc3f85900f0"
+                         },
+                         {
+                             "path":  "src/cpu-policy/src/hardware/ranking.rs",
+                             "bytes":  9265,
+                             "sha256":  "4b99924d98bfcb4f707055d19bc3c6886a1fa671d6d37de09d0c9a08263c545f"
+                         },
+                         {
+                             "path":  "src/cpu-policy/src/hardware/ranking/tests.rs",
+                             "bytes":  9708,
+                             "sha256":  "49fc8ae9c49cfc2fe9960e6509dc5a44baf0bbb42481cf56891892a12089fbd0"
+                         },
+                         {
+                             "path":  "src/cpu-policy/src/hardware/tests.rs",
+                             "bytes":  11586,
+                             "sha256":  "43ef5da0c07ff07afe724cf85e16d4d340ae4c38a46c211681df5f1bda682552"
+                         },
+                         {
+                             "path":  "src/cpu-policy/src/lib.rs",
+                             "bytes":  25647,
+                             "sha256":  "32b54f57e393c2bf63ca9abda28b3c0d59320c42642e8328a5410a5b49ad9afc"
+                         },
+                         {
+                             "path":  "src/cpu-policy/src/power.rs",
+                             "bytes":  6442,
+                             "sha256":  "cf576a7b158c4ef7798c38937c1e42cf83be7bfd5f979e64e5ca58bf85578191"
+                         },
+                         {
+                             "path":  "src/cpu-policy/src/server.rs",
+                             "bytes":  10507,
+                             "sha256":  "d452755b7d8faf78ee13b84ae87b069e3cca5518b5b51bfa81f6809327438944"
+                         },
+                         {
+                             "path":  "src/cpu-policy/src/server/tests.rs",
+                             "bytes":  6910,
+                             "sha256":  "2c13e837416d370fbaf4f41920ae47acfc4f194a2c517de2cec2b2ace629b730"
+                         },
+                         {
+                             "path":  "src/cpu-policy/src/tests.rs",
+                             "bytes":  13729,
+                             "sha256":  "a549db86e55e74ee96e185c50fa7b7b71d865c3cc10e43dffa01f642f483ff2d"
+                         },
+                         {
+                             "path":  "src/cpu-policy/tests/fixtures/cpu-policy-v1.json",
+                             "bytes":  15500,
+                             "sha256":  "f9ff14391974f2fccdf80ef36e0d59b06491dc2b206d567ec90469a5eefb4f44"
+                         },
+                         {
+                             "path":  "src/cpu-policy/tests/fixtures/runtime-capabilities-v1.json",
+                             "bytes":  606,
+                             "sha256":  "85765928e6db0a63b4e7e07ca24b5127b5646b3e75ae1bb7209b701c49ec7f72"
+                         },
+                         {
+                             "path":  "src/cpu-policy/tests/fixtures/server-policy-v1.json",
+                             "bytes":  4449,
+                             "sha256":  "cde4eb0b01e4ce3bf817ceb6173d0874130b7dbc4c3d55cb6d2afcdc85a9a23e"
+                         },
+                         {
+                             "path":  "src/speech-asr/Cargo.toml",
+                             "bytes":  600,
+                             "sha256":  "365643e6f365f890c27b982ef61d6d3982bdc4690a2bf4481739a1096cf45928"
+                         },
+                         {
+                             "path":  "src/speech-asr/README.md",
+                             "bytes":  2061,
+                             "sha256":  "60930a2804c5dd84a952ac263bfa5c2a118fe9523b85606b5b285738dff8263a"
+                         },
+                         {
+                             "path":  "src/speech-asr/model.lock.json",
+                             "bytes":  893,
+                             "sha256":  "0dccbebd9c80bee97aded85f924126c12a610229a3af77d7dcaa072eaed35729"
+                         },
+                         {
+                             "path":  "src/speech-asr/src/lib.rs",
+                             "bytes":  13359,
+                             "sha256":  "e4642e60e9b9c0e3eef70d7d3910836227b7b898df190d3d650b594cd37dc581"
+                         },
+                         {
+                             "path":  "src/speech-asr/src/main.rs",
+                             "bytes":  2742,
+                             "sha256":  "ea5fbd6e8eae08eb06ac0c5879bf8b93cb95839cede86883db5805be1a119d9e"
+                         },
+                         {
+                             "path":  "src/speech-service/Cargo.toml",
+                             "bytes":  823,
+                             "sha256":  "44f294262108002a8dda6e2e57a5f3d7ab02c4849fdf67e3520cd060aa8ef555"
+                         },
+                         {
+                             "path":  "src/speech-service/src/credentials.rs",
+                             "bytes":  798,
+                             "sha256":  "4a2dd793af02825fd7a12d6a4c045dcb5d2719ce164e889cdc991e234c475383"
+                         },
+                         {
+                             "path":  "src/speech-service/src/http.rs",
+                             "bytes":  29064,
+                             "sha256":  "ff74f9e65aca4672ad035f41c502d902f6cb839cb918d7ebcd0f6403c52532b9"
+                         },
+                         {
+                             "path":  "src/speech-service/src/launch.rs",
+                             "bytes":  19472,
+                             "sha256":  "7c3534296fee16e7799a6c47fba5765749c5bddc23aa481fa707d88fb84fbffd"
+                         },
+                         {
+                             "path":  "src/speech-service/src/lib.rs",
+                             "bytes":  7678,
+                             "sha256":  "c82f5c8ee4045ce84da03e87b16e0f0d34d92c6085e8798c46d83e0017a0a2b1"
+                         },
+                         {
+                             "path":  "src/speech-service/src/request.rs",
+                             "bytes":  12942,
+                             "sha256":  "7395064a4f0f27a9c4e329c829561b7d888af8206beb04399d3fb74281ece718"
+                         },
+                         {
+                             "path":  "src/speech-service/src/tests.rs",
+                             "bytes":  28814,
+                             "sha256":  "fb95707b08e5a01e34499b10334775caf8f0b2dd78f3a286b30453daafe9d26e"
+                         },
+                         {
+                             "path":  "src/speech-service/src/watchdog.rs",
+                             "bytes":  3650,
+                             "sha256":  "e2370618536d8e05da7bec79e9a2a7935b5b2240a5fe21dae77f84982fe359d1"
+                         },
+                         {
+                             "path":  "src/speech-service/src/wave.rs",
+                             "bytes":  5748,
+                             "sha256":  "bd9b77baf5e6e134b27f5b8359eec5661dcb7798494bde04a2f11223c397eab1"
+                         },
+                         {
+                             "path":  "src/speech-tts/Cargo.toml",
+                             "bytes":  641,
+                             "sha256":  "5d4c0bfe8925df93456afadd660806dc24425571457ea42063b8a79c2f723480"
+                         },
+                         {
+                             "path":  "src/speech-tts/LICENSE.ggml",
+                             "bytes":  1099,
+                             "sha256":  "bcd8ec749126d45cb06737d0690295d73df4b6e7e194205bcf91190368f27285"
+                         },
+                         {
+                             "path":  "src/speech-tts/LICENSE.qwen-core",
+                             "bytes":  1108,
+                             "sha256":  "82b0aa4d13fb095c817a5055b21daa73b91313ce62ab98307e0f4a39bafe7c63"
+                         },
+                         {
+                             "path":  "src/speech-tts/README.md",
+                             "bytes":  19481,
+                             "sha256":  "b91e69c28fc964ada70bcf925d55b24a5c7fd6a0055d7940023e8f46bde91f15"
+                         },
+                         {
+                             "path":  "src/speech-tts/build.rs",
+                             "bytes":  12828,
+                             "sha256":  "03a9e95695f2b6f975753b5531662da703513558302b5f58ea0f80b86d65bd5a"
+                         },
+                         {
+                             "path":  "src/speech-tts/build_decode_graph.rs",
+                             "bytes":  11238,
+                             "sha256":  "cca5844f9ea91079894b993afd6625b4fd13ea36dbd9983985b5eb058ba9723f"
+                         },
+                         {
+                             "path":  "src/speech-tts/build_npu.rs",
+                             "bytes":  40533,
+                             "sha256":  "dd7ab2ae4314324d6c4eae349555b34e5d80523a7c50cc43b47b6bdd5ccf72a2"
+                         },
+                         {
+                             "path":  "src/speech-tts/build_overlay.rs",
+                             "bytes":  28469,
+                             "sha256":  "72e4eaffc877f9b50bae0c0d4fb04b28c120f6a14e4504030f53fb85588703fb"
+                         },
+                         {
+                             "path":  "src/speech-tts/build_tokenizer.rs",
+                             "bytes":  3315,
+                             "sha256":  "5a0144dc16851089e9d2d96fee11b3528ae0be62b2ae8e5ee0c8d1ac067b0fae"
+                         },
+                         {
+                             "path":  "src/speech-tts/model-q4.lock.json",
+                             "bytes":  1683,
+                             "sha256":  "45fee07641d6c3d0ee47afd966722cc14168a816631d96b2803210edb9ab4c30"
+                         },
+                         {
+                             "path":  "src/speech-tts/model.lock.json",
+                             "bytes":  1528,
+                             "sha256":  "a88140f6b5f3c4ded8b260a593c83d9afe9cf6d3364f7b19eb24f16b714b13c2"
+                         },
+                         {
+                             "path":  "src/speech-tts/src/codec.rs",
+                             "bytes":  61812,
+                             "sha256":  "8ae103d753558ce06a816c3b1defb2776f6aae9d5df206dfba8d8ec4c5c2f09e"
+                         },
+                         {
+                             "path":  "src/speech-tts/src/decode_graph.rs",
+                             "bytes":  2757,
+                             "sha256":  "4be2c17c1f02073d186fd183fbedc3e7bb15240cafd0d10e45f25698bfb70899"
+                         },
+                         {
+                             "path":  "src/speech-tts/src/decode_graph_tests.rs",
+                             "bytes":  4642,
+                             "sha256":  "5390e16d767ff6459fcd8f65678ba4c5b8c964d13c0a0e939be78b1a6d7c81ed"
+                         },
+                         {
+                             "path":  "src/speech-tts/src/engine.rs",
+                             "bytes":  77334,
+                             "sha256":  "3783d856b72caac2ebd2a3fb83fbc1d3ea21e6a240e0208da9a0b034ed46fbd3"
+                         },
+                         {
+                             "path":  "src/speech-tts/src/gguf.rs",
+                             "bytes":  7567,
+                             "sha256":  "10d00eafc850ea6f6b3653e79a0135806e2982655309fc4f1eaa15665223943f"
+                         },
+                         {
+                             "path":  "src/speech-tts/src/lib.rs",
+                             "bytes":  20013,
+                             "sha256":  "0449d99fd74a6fbc1e65e07e241c446a6ef8d87221b6f8f706897d250a9b80fb"
+                         },
+                         {
+                             "path":  "src/speech-tts/src/main.rs",
+                             "bytes":  4715,
+                             "sha256":  "fd78e33a81a2a3b80efcdbc579b759b527dfec96bf8befbba1cc49d1082872cc"
+                         },
+                         {
+                             "path":  "src/speech-tts/src/native.rs",
+                             "bytes":  34827,
+                             "sha256":  "2ec142864c421821e469d7f91c15c7b78e48090f358c9d8c5fb304cdfd32b4cb"
+                         },
+                         {
+                             "path":  "src/speech-tts/src/native/cpu_threads.rs",
+                             "bytes":  2898,
+                             "sha256":  "453fcbb88ad494806ba67ad339d15d520285b326e670117b4fe3d475dfb283c5"
+                         },
+                         {
+                             "path":  "src/speech-tts/src/native/decode_graph.rs",
+                             "bytes":  4257,
+                             "sha256":  "acb95b8d894ba4fd5eb0e819fabb5d2a6e973e6972c651faa71f8ef54be1be01"
+                         },
+                         {
+                             "path":  "src/speech-tts/src/native/decode_graph_tests.rs",
+                             "bytes":  8182,
+                             "sha256":  "85ee0de548b35f8f4b715acd8fc72005dcecb759f6aa1617bba12e0e5886d375"
+                         },
+                         {
+                             "path":  "src/speech-tts/src/native/hexagon.rs",
+                             "bytes":  7865,
+                             "sha256":  "4df9f6ac6b6d2dc0510bcc73aa00d62d26d0b3ef0d9cdfb607749f2320c4054c"
+                         },
+                         {
+                             "path":  "src/speech-tts/src/native/philox.rs",
+                             "bytes":  499,
+                             "sha256":  "a46cc4cdd1bd2e1bb7884b4e65d8e78abb8bb69d88a8b159dd1bbc0b0fd6d7ef"
+                         },
+                         {
+                             "path":  "src/speech-tts/src/native/philox_tests.rs",
+                             "bytes":  3669,
+                             "sha256":  "09fb955a07a5597a8012fb78d8aef420867977e0d945dfd0413f7e04e402d48f"
+                         },
+                         {
+                             "path":  "src/speech-tts/src/native/qwen.rs",
+                             "bytes":  7326,
+                             "sha256":  "8d009f9faa46999f50bce82d9318ad460f21b1803ff1463bb599ebebcec59db6"
+                         },
+                         {
+                             "path":  "src/speech-tts/src/native/sampling.rs",
+                             "bytes":  6985,
+                             "sha256":  "908feffff86a70c5c4ccc8a423f12be3e3cb46752240b8c1b61ee651d2ec0cb7"
+                         },
+                         {
+                             "path":  "src/speech-tts/src/native/sampling_tests.rs",
+                             "bytes":  9693,
+                             "sha256":  "8a3798b4e4af766a8dc28819415e9fbe9c4accb4cfb1cf21736d6749e9bd0393"
+                         },
+                         {
+                             "path":  "src/speech-tts/src/native/tokenizer.rs",
+                             "bytes":  8985,
+                             "sha256":  "eb75c86c56a9d9db2ebe02c1de656320841f0922d791cf817154351f82de42fd"
+                         },
+                         {
+                             "path":  "src/speech-tts/src/native/tokenizer_loading.rs",
+                             "bytes":  5926,
+                             "sha256":  "29df89ef34490a4731ca76cd11e52694e836e670711b58cdd0169ac89a80f6a0"
+                         },
+                         {
+                             "path":  "src/speech-tts/src/native/tokenizer_loading_tests.rs",
+                             "bytes":  14751,
+                             "sha256":  "b6066573800f84c9239228c36dbdfdbb54ced6427f04e2d651425e818b4ad727"
+                         },
+                         {
+                             "path":  "src/speech-tts/src/native/tokenizer_tests.rs",
+                             "bytes":  17166,
+                             "sha256":  "227ecf6dc4a750065c6f67f4fc6146b517f46358ceff6e24eb1509f3ef5d4ef2"
+                         },
+                         {
+                             "path":  "src/speech-tts/src/philox.rs",
+                             "bytes":  4487,
+                             "sha256":  "549eb4615b6372f5632c6ed859bb9bf2883e8445979c2369f81246389723cc25"
+                         },
+                         {
+                             "path":  "src/speech-tts/src/sampling.rs",
+                             "bytes":  23904,
+                             "sha256":  "ace9e5f8409b1f08e3302664c21c5812cd0180852119c80f212c2c966f7daeca"
+                         },
+                         {
+                             "path":  "src/speech-tts/src/speaker_encoder.rs",
+                             "bytes":  35440,
+                             "sha256":  "3fcff2de0c39561d5743c4c20fd1448859af2e409e6146e7b1906928d63d15d4"
+                         },
+                         {
+                             "path":  "src/speech-tts/src/tokenizer.rs",
+                             "bytes":  13650,
+                             "sha256":  "546d22c38862999538dc64e1388904caadd73097aaae53ff0ad1d26207a8acc1"
+                         },
+                         {
+                             "path":  "src/speech-tts/src/tokenizer/scanner.rs",
+                             "bytes":  6764,
+                             "sha256":  "d4a281dce1e74531d1bfb9c60c10dd11087a4032f10541ef5c36ca1dc3bf92ab"
+                         },
+                         {
+                             "path":  "src/speech-tts/tests/fixtures/decode-graph-v1.provenance.json",
+                             "bytes":  6189,
+                             "sha256":  "82d1eb3b68731dd1a5b5f9b6b341d290317f8af22c3abc38e208fc6d92d84de5"
+                         },
+                         {
+                             "path":  "src/speech-tts/tests/fixtures/greedy-v1.bin",
+                             "bytes":  81664,
+                             "sha256":  "ffa6f1013c35bc8aa46a1be60eadc02d5badcdc7c7f97fb9c3af84bb67617ea7"
+                         },
+                         {
+                             "path":  "src/speech-tts/tests/fixtures/greedy-v1.provenance.json",
+                             "bytes":  3001,
+                             "sha256":  "8f2b37bf16110081aa52f73e55f406dc40975e22ecb21638c8bed7ce0623e897"
+                         },
+                         {
+                             "path":  "src/speech-tts/tests/fixtures/philox-v1.bin",
+                             "bytes":  105880,
+                             "sha256":  "662aa6850e5726b2e5173002a0182b9b854829389b035b7919c718aae1621e59"
+                         },
+                         {
+                             "path":  "src/speech-tts/tests/fixtures/philox-v1.provenance.json",
+                             "bytes":  2759,
+                             "sha256":  "c2e2ee482298070a39daa96184edb91f3aa060959f57204e4d98231a3d3f1182"
+                         },
+                         {
+                             "path":  "src/speech-tts/tests/fixtures/sampling-v1.bin",
+                             "bytes":  306584,
+                             "sha256":  "0f758ee6c996b4c44ecb756b8664c6cc0bd17e60dc02da5f2db25970f6f4eb23"
+                         },
+                         {
+                             "path":  "src/speech-tts/tests/fixtures/sampling-v1.provenance.json",
+                             "bytes":  4018,
+                             "sha256":  "8a069543a7a6e230bc542f8afece972fd422c5761e5d6554f6d2457498e22453"
+                         },
+                         {
+                             "path":  "src/speech-tts/tests/fixtures/tokenizer-lifecycle-v1.provenance.json",
+                             "bytes":  5271,
+                             "sha256":  "5155b0ae862e6fd5e31ce075de692914458ce989d10e054c8d80bf7532be7ee4"
+                         },
+                         {
+                             "path":  "src/speech-tts/tests/fixtures/tokenizer-v1.expected.bin",
+                             "bytes":  298339,
+                             "sha256":  "e955ba85eab341ef13574b983bcec8c7aa79f1c7fca52d8a24faa7047d3a10e8"
+                         },
+                         {
+                             "path":  "src/speech-tts/tests/fixtures/tokenizer-v1.inputs.bin",
+                             "bytes":  71250,
+                             "sha256":  "1b090f66128db82327d8cf402b8c73078d837e5dea8e22c6c122563611392e95"
+                         },
+                         {
+                             "path":  "src/speech-tts/tests/fixtures/tokenizer-v1.provenance.json",
+                             "bytes":  4179,
+                             "sha256":  "f2e117e4bd55ffbd2b84c1ac31285ef075550c4fd9e4f3631bdb7f42b325d4f8"
+                         },
+                         {
+                             "path":  "src/windows-credentials/Cargo.toml",
+                             "bytes":  617,
+                             "sha256":  "9dc4151818f6a5ff258b2da6d0d32505e5381cf26b33bdded301c8a16e5ab83e"
+                         },
+                         {
+                             "path":  "src/windows-credentials/LICENSE",
+                             "bytes":  11560,
+                             "sha256":  "3ddf9be5c28fe27dad143a5dc76eea25222ad1dd68934a047064e56ed2fa40c5"
+                         },
+                         {
+                             "path":  "src/windows-credentials/NOTICE",
+                             "bytes":  2471,
+                             "sha256":  "6e118a0c7b950163e8c69fd75aa53b44631db803d5c1d1ab5b2363dcf7dda328"
+                         },
+                         {
+                             "path":  "src/windows-credentials/README.md",
+                             "bytes":  3223,
+                             "sha256":  "2d47b538d3820fbaf6e096537f205bd626ff156334a29ae9174c8491bfeafde8"
+                         },
+                         {
+                             "path":  "src/windows-credentials/src/hash.rs",
+                             "bytes":  4827,
+                             "sha256":  "eb4d90ec6a1c27243648315f62ca8406e981dde26962231b7f522fcfaccdbf69"
+                         },
+                         {
+                             "path":  "src/windows-credentials/src/lib.rs",
+                             "bytes":  16639,
+                             "sha256":  "e87cd875cb645c6da8c0fb50a7138c6cf482fe92cba57f63497c93631bbfff2b"
+                         },
+                         {
+                             "path":  "src/windows-credentials/src/native.rs",
+                             "bytes":  16429,
+                             "sha256":  "3d38633e83020185c83ad9f7c44af27eab657e2a3b61fead393f35fd216004fe"
+                         },
+                         {
+                             "path":  "src/windows-credentials/src/sealed.rs",
+                             "bytes":  5181,
+                             "sha256":  "1e2e66b16f5b327fc35006cb0b953f24dfea4f30ded06dcbc6ef1a07db483c7f"
+                         },
+                         {
+                             "path":  "src/windows-credentials/src/tests.rs",
+                             "bytes":  9711,
+                             "sha256":  "e058bd2ae5f7f1a0c99579fd0ac14b61c1a377064acb995b1d677f3fc7b7ff1c"
+                         },
+                         {
+                             "path":  "src/windows-process/Cargo.toml",
+                             "bytes":  1423,
+                             "sha256":  "a9afeed811d54cf15f91a1d7c078a2885471f4f9fe561ee9752b097661c6ecae"
+                         },
+                         {
+                             "path":  "src/windows-process/LICENSE",
+                             "bytes":  11560,
+                             "sha256":  "3ddf9be5c28fe27dad143a5dc76eea25222ad1dd68934a047064e56ed2fa40c5"
+                         },
+                         {
+                             "path":  "src/windows-process/NOTICE",
+                             "bytes":  2471,
+                             "sha256":  "6e118a0c7b950163e8c69fd75aa53b44631db803d5c1d1ab5b2363dcf7dda328"
+                         },
+                         {
+                             "path":  "src/windows-process/src/lib.rs",
+                             "bytes":  55787,
+                             "sha256":  "81d793f289a16b1ee044fc46dd3606b1be9ae315ce160765b270e91077ae16e6"
+                         },
+                         {
+                             "path":  "src/windows-process/src/native.rs",
+                             "bytes":  50459,
+                             "sha256":  "1d07a152d5ab2857a40f9553216e8b30993e5b092aa5f80fd24b9bb21ab1094b"
+                         },
+                         {
+                             "path":  "src/windows-process/src/native/caller.rs",
+                             "bytes":  2105,
+                             "sha256":  "d6f5f545d7f9899f44ddcb27f604eb61f0f552f23c9f3116d7bf311635624734"
+                         },
+                         {
+                             "path":  "src/windows-process/src/native/containment.rs",
+                             "bytes":  14000,
+                             "sha256":  "0b0e6bdefdafa6b110fef1ae7055ef64ce1380f42a841b91e366bd51a40686f3"
+                         },
+                         {
+                             "path":  "src/windows-process/src/native/cpu.rs",
+                             "bytes":  6332,
+                             "sha256":  "0f402520f2e47807572359088d1249d6c4e65007c53752649b8b3f6c6e3c5656"
+                         },
+                         {
+                             "path":  "src/windows-process/src/native/cpu/tests.rs",
+                             "bytes":  3095,
+                             "sha256":  "2ab7715d34ddcdea4c62d5b3e9c03d120de1afb12bdcda892e0bcf282e7cc967"
+                         },
+                         {
+                             "path":  "src/windows-process/src/native/devices.rs",
+                             "bytes":  5721,
+                             "sha256":  "d35974d8695e6069c7e959209b29418f105f9263817a675e2c30e5b19b1ef179"
+                         },
+                         {
+                             "path":  "src/windows-process/src/native/environment.rs",
+                             "bytes":  7331,
+                             "sha256":  "05b76cdc015a1a48708825dcb67dcee9fd1f1383f7a7b7971034ded3a76796f5"
+                         },
+                         {
+                             "path":  "src/windows-process/src/native/host.rs",
+                             "bytes":  6399,
+                             "sha256":  "78385324434b0881fc81911a2a0a12b83ff1d52ba5201245705af58476d2c04c"
+                         },
+                         {
+                             "path":  "src/windows-process/src/native/isa.rs",
+                             "bytes":  2330,
+                             "sha256":  "4292a1005b76b9c8ac7a1bf8907b7ba890e3975358a49c2c5ef51d7c43175f19"
+                         },
+                         {
+                             "path":  "src/windows-process/src/native/job_probe.rs",
+                             "bytes":  7310,
+                             "sha256":  "8226e7964d8556a876bb136a28d934a95004d1c15b82512832193d4345e15309"
+                         },
+                         {
+                             "path":  "src/windows-process/src/native/maintenance.rs",
+                             "bytes":  5666,
+                             "sha256":  "04f65f9bae662a8ff5972d4ff18e8b784284908791e54fdb36a6e1dcf6d6f3d1"
+                         },
+                         {
+                             "path":  "src/windows-process/src/native/opencl.rs",
+                             "bytes":  12426,
+                             "sha256":  "fc25a8e463571edeb14c84a705a4d2fd23c36fa1244b37d2a7998dd97c07f4ef"
+                         },
+                         {
+                             "path":  "src/windows-process/src/native/power.rs",
+                             "bytes":  3212,
+                             "sha256":  "f8f325499202db274efc715d5c0bd8285fad7f0ce52124eaa40b27c457ffad48"
+                         },
+                         {
+                             "path":  "src/windows-process/src/native/power_policy.rs",
+                             "bytes":  12662,
+                             "sha256":  "fefaf0a3c0641713a23726ae8ef9cef11d02b4e63fcde37015bde35d51c0d293"
+                         },
+                         {
+                             "path":  "src/windows-process/src/native/signature.rs",
+                             "bytes":  8833,
+                             "sha256":  "7624adc697d8c1b92fd440b87fb90826a674a475458db785d70b9459d43d66ef"
+                         },
+                         {
+                             "path":  "src/windows-process/src/native/signature/catalog.rs",
+                             "bytes":  6362,
+                             "sha256":  "4f8ae8cf5c3541d8975117e157786d0dbab45d47a8498d0d38b6990cd69c2f16"
+                         },
+                         {
+                             "path":  "src/windows-process/src/native/vulkan.rs",
+                             "bytes":  44276,
+                             "sha256":  "c9d05c43d99c08d76834c2324594fda9450489ba4c86efa299d4c79b2e5d2fce"
+                         },
+                         {
+                             "path":  "src/windows-process/tests/maintenance.rs",
+                             "bytes":  2276,
+                             "sha256":  "a1552bbe19a3ad6ca1d9d3cfc764cc11f2055ef05db9d2300349a88a4ef92dfa"
+                         },
+                         {
+                             "path":  "src/windows-process/tests/ownership.rs",
+                             "bytes":  27928,
+                             "sha256":  "39fcf22f4fea959c50c0ac892cb7cf1b26a368b4f8be280b802db42e6c3c2dbb"
+                         },
+                         {
+                             "path":  "src/windows-process/tests/support/probe.rs",
+                             "bytes":  20635,
+                             "sha256":  "db15d8e7e21c5af960df06d0e6c30a2d774c3e559aa1a22c179b2f8571beb2cb"
+                         }
+                     ],
+    "driverSha256":  "787f80e38c9003573903293e4875b820bef700fc0186931fd283136d2c267d1b",
+    "workloadPlanSha256":  "a58cb94f0cae8ff95d193efb241cc80b448fc6efde7a9dc61e6fa8d1340f1cdc"
+}

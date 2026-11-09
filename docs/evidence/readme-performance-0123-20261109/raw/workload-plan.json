@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "kind": "post-repin-owner-authorized-short-token-timing",
+  "recordedDate": "2026-11-09",
+  "authorization": "Owner explicitly requested promoting the new release and then checking performance after repinning. This declares one new final-version capture, not a retry of the closed0.1.22 launcher or earlier source checks. No CI, push or further retry.",
+  "runtime": {
+    "version": "0.1.23",
+    "sourceRevision": "055c7430cb4771dfddb24ddaa30494af6ad182da",
+    "target": "aarch64-pc-windows-msvc",
+    "runnerRevision": "Exact clean committed local main passed explicitly at execution, after actual binary repinning and this declaration."
+  },
+  "prerequisites": {
+    "committedPin": "Primary config/prism-inference.lock.json must already select0.1.23/exact055c743, with all nine file identities and the canonical published ZIP asset URL.",
+    "verifiedBundleJsonPath": "Retained verified-bundle.json with exact source/version, hosted source/link success, original cached ZIP hash/path and verified source-archive identity. Only read/hash during this new clock.",
+    "publishedReleaseJsonPath": "Retained official GitHub release JSON: tag_namev0.1.23, draftfalse, nonempty published_at, and the named uploaded ZIP asset with pinned URL,size and sha256digest. Prerelease state must be explicit.",
+    "cratePublicationReceiptPath": "Actual publication receipt with statuspassed, publicationOutcomeverified-version-and-checksum, version0.1.23 and exact055c743 source.",
+    "sourceDriverPath": "Mandatory explicit absolute path to this committed capture-driver.ps1; no PSCommandPath default.",
+    "helper": "Use only the existing primary target/release/bonsai-tools.exe, bound by absolute path,length,SHA256. Do not rebuild it."
+  },
+  "budget": {
+    "maximumAggregateSeconds": 420,
+    "conservativeEstimateSeconds": 380,
+    "estimateBreakdownSeconds": {
+      "sourceProofPowerAndCachedArchiveProvisioning": 45,
+      "oneCachedOfflineReleaseBrokerTestBuild": 35,
+      "fourFocusedControls": 10,
+      "twoStartups": 100,
+      "twoRequests": 100,
+      "ownerCleanup": 60,
+      "powerAndEvidenceRetention": 30
+    },
+    "reason": "The fixed380-second estimate includes setup, original proof/hash intake, a cache-only runtime install, one offline build, four controls, two fresh sandbox owners, requests, power, cleanup and raw retention. Seven minutes is the smallest whole-minute allowance above that conservative estimate. Stop early on completion, failure or insufficient original time.",
+    "buildCutoffSeconds": 90,
+    "controlsCutoffSeconds": 100,
+    "minimumModelCaseSeconds": 260,
+    "modelCaseMaximumSeconds": 360,
+    "processAndRetentionReserveSeconds": 60,
+    "retries": 0,
+    "clockRestartAllowed": false,
+    "historicalClocksRemainClosed": true
+  },
+  "fixedWork": [
+    "Start one original clock; record aggregate power and exact clean Runner main identity; verify/hash the committed driver, declaration, runtime pin, release/registry/bundle proofs, cached ZIP and existing provision helper.",
+    "Copy the already verified ZIP exclusively into the installed data downloads directory, or verify an existing identical cache entry without replacing it. Preserve every collision. Copy the committed pin into external working evidence and invoke the existing Rust helper with provision operationinference, explicitlockPath, includeCapabilitiesfalse/includeHelpfalse. The verified present cache makes this setup network-free. Verify all nine installed files and the helper/pin identities.",
+    "Build only bonsai-broker library/native_model test executables once, offline/locked/Release with pinned nightly-2026-11-09 and existing primary compiler cache.",
+    "Require four focused passes before models: inference::tests::four_row_workers_require_the_reviewed_parallel_release (exact library test); native_worker_receipts_require_exact_release_and_verified_readiness (exact native_model test); and both existing token_timing synthetic controls (filtertoken_timing, ignored model capture remains ignored).",
+    "Run only token_timing::pinned_native_row4_captures_separated_token_timings once: PQ2 then PTQ1, fresh required-sandbox owner per arm, one eight-token public broker request each, Count from1 to100., fourworkers, adapter1.3, seed42, Thinkingoff. Retain per-arm power endpoints, aggregate endpoints and periodic observations without inferring continuous stability or effective NPU execution.",
+    "Require source-supported positive token intervals, exact0.1.23/055c743 runtime identity and confirmed owner/Job/listener cleanup. Recheck source/input hashes; retain raw build/control/provision/capture logs, source/installation identities, copied proofs/pin, acceptance, manifest and final closed clock within the same allowance."
+  ],
+  "paths": {
+    "source": "C:/Users/symbi/source/repos/SwiftBonsai2Runner (local main)",
+    "installedData": "C:/Users/symbi/AppData/Local/SwiftBonsai2",
+    "workingOutput": "%TEMP%/SwiftBonsai-ReadmePerformance0123-20261109 (fresh)",
+    "retainedEvidence": "raw (fresh isolated evidence destination)",
+    "driver": "capture-driver.ps1"
+  },
+  "limits": {"networkDownloads": 0, "ciActions": 0, "pushes": 0, "fullSuites": 0,
+    "sustainedPerformanceQualified": false, "fullFoundationQualified": false,
+    "effectiveNpuExecutionQualified": false, "qualityQualified": false}
+}
