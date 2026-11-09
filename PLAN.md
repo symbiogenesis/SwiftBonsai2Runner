@@ -1110,6 +1110,18 @@ Follow [CPU arithmetic, dispatch and acceptance](docs/cpu-kernels.md). Pin artif
 runtime, compiler, format, shapes, ISA and numerics; choose work from CI hotspot,
 bandwidth, packing and dispatch evidence.
 
+Qualify the [parallel performance source candidate](docs/evidence/performance-fanout-20261109/summary.json)
+on settled Prism main through owner-managed hosted checks, Release ARM64 codegen/spill
+inspection and matched actual-model request/startup acceptance. It reuses private
+GDN multi-token decay/update staging, scans suffix history once with bounded proposal
+storage, and packs native-Q2 prewarmed weights directly into admitted resident arenas.
+Require exact state/logit/adapter and cancellation/rollback parity, complete vendor
+lifecycle/resources and matched whole-request or startup benefit before a qualified
+release and Runner repin. The extended hosted gate must retain the exact numerical,
+failure/publication, portable-fallback and source/compiler/executable identities.
+Source work/storage reductions and model-free controls establish no measured speedup,
+installed-runtime change, reduced admission or speculative-default qualification.
+
 Qualify the [exact recurrent and attention SIMD source changes](docs/evidence/cpu-state-simd-20261103/summary.json)
 on settled Prism main through owner-managed checks. Pinned GDN dot/update now uses
 safe baseline NEON with native reduction/tail and first-failure mutation semantics;
