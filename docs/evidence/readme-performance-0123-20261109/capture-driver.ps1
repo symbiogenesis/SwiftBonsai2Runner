@@ -39,8 +39,8 @@ $session = [ordered]@{
     schemaVersion=1; kind='post-repin-owner-authorized-short-token-timing'; revision=$Revision
     startedUtc=$trialStartedUtc; startedTick=$trialStartedTick
     maximumAggregateSeconds=$maximumSeconds; processAndRetentionReserveSeconds=$processReserveSeconds
-    authorization='Owner explicitly requested promoting the new release and then checking performance after repinning. This permits one fresh0.1.23/a7 capture only; all historical clocks remain closed and no retry or CI action is authorized.'
-    fixedWork='Verify actual published/pinned0.1.23/a7 identities, cache-only runtime provisioning with existing helper, one offline Release broker library/native_model build, four focused controls, then one PQ2 and one PTQ1 eight-token request in fresh required-sandbox owners; four workers, adapter1.3, seed42, Thinkingoff.'
+    authorization='Owner explicitly requested promoting the new release and then checking performance after repinning. This permits one fresh0.1.23/055c743 capture only; all historical clocks remain closed and no retry or CI action is authorized.'
+    fixedWork='Verify actual published/pinned0.1.23/055c743 identities, cache-only runtime provisioning with existing helper, one offline Release broker library/native_model build, four focused controls, then one PQ2 and one PTQ1 eight-token request in fresh required-sandbox owners; four workers, adapter1.3, seed42, Thinkingoff.'
     estimatedSeconds=380
     estimateBreakdownSeconds=@{sourceAndCachedProvision=45; build=35; fourControls=10; twoStartups=100; requests=100; cleanup=60; retention=30}
     allowanceReason='The conservative380-second fixed-work estimate exceeds five minutes; seven minutes is the smallest whole-minute allowance above it. Stop on completion, failure or insufficient original time.'
@@ -294,7 +294,7 @@ namespace Readme0123TimingPower {
         throw 'Provision helper changed during setup.'
     }
     $session.publicationProof=[ordered]@{version=$expectedRuntimeVersion; sourceRevision=$expectedRuntimeRevision
-        pinSha256=$proofIdentities[0].sha256; proofInputs=@($proofIdentities); archivePath=$archivePath
+        pinSha256=$proofIdentities[0].sha256; proofInputs=$proofIdentities.ToArray(); archivePath=$archivePath
         archiveSha256=$pin.asset.sha256; cachedArchive=$cachedArchive; cachePreviouslyExisted=$cachePreviouslyExisted
         helper=$helperIdentity; installedDirectory=$installedDirectory; verifiedInstalledFiles=9
         publishedAssetId=$publishedAssets[0].id; releasePrerelease=$releaseProof.prerelease}
@@ -368,7 +368,7 @@ namespace Readme0123TimingPower {
     if ($LASTEXITCODE -ne 0) { throw 'Final source status query failed.' }
     $session.sourceAfter=@{revision=$finalRevision; clean=($finalStatus.Length -eq 0)}
     if ($finalRevision -ne $Revision -or $finalStatus.Length -ne 0) { throw 'Source changed during the capture.' }
-    foreach ($inputFile in @($sourceInputs)+@($proofIdentities)) {
+    foreach ($inputFile in (@($sourceInputs) + $proofIdentities.ToArray())) {
         $inputPath=if ([IO.Path]::IsPathRooted($inputFile.path)) { $inputFile.path } else { Join-Path $Repository $inputFile.path }
         if ((Get-FileHash -LiteralPath $inputPath -Algorithm SHA256).Hash.ToLowerInvariant() -cne $inputFile.sha256) {
             throw 'Bound source or publication input changed during the capture.'
