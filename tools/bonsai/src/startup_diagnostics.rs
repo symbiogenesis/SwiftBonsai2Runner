@@ -171,7 +171,11 @@ fn sessions(root: &Path) -> Result<Vec<PathBuf>, &'static str> {
     let mut directories = Vec::new();
     for entry in fs::read_dir(root).map_err(|_| "collection-failed")? {
         let entry = entry.map_err(|_| "collection-failed")?;
-        if !entry.file_name().to_str().is_some_and(session_name) {
+        if entry
+            .file_name()
+            .to_str()
+            .is_none_or(|name| !session_name(name))
+        {
             continue;
         }
         // Include a matching reparse point so key validation closes publication.

@@ -72,10 +72,7 @@ impl Stage {
 
     fn publish(&self, destination: &Path) -> crate::Result<()> {
         external(destination)?;
-        if destination
-            .try_exists()
-            .map_err(|error| error.to_string())?
-        {
+        if fs::exists(destination).map_err(|error| error.to_string())? {
             return Err("Package output already exists.".into());
         }
         fs::rename(&self.0, destination).map_err(|error| error.to_string())
@@ -93,11 +90,7 @@ impl Drop for Stage {
 
 pub(super) fn create(request: Create) -> crate::Result<Value> {
     external(&request.output_directory)?;
-    if request
-        .output_directory
-        .try_exists()
-        .map_err(|error| error.to_string())?
-    {
+    if fs::exists(&request.output_directory).map_err(|error| error.to_string())? {
         return Err("Package output already exists.".into());
     }
     if !super::version(&request.version)
@@ -186,10 +179,7 @@ fn install(root: &Path, source: &Path, digest: &str) -> crate::Result<Value> {
     fs::create_dir_all(&versions).map_err(|error| error.to_string())?;
     let destination = versions.join(&selected.id);
     external(&destination)?;
-    if !destination
-        .try_exists()
-        .map_err(|error| error.to_string())?
-    {
+    if !fs::exists(&destination).map_err(|error| error.to_string())? {
         let stage = Stage::new(&versions)?;
         let schema = package["Manifest"]["schemaVersion"]
             .as_u64()
@@ -239,7 +229,7 @@ pub(super) fn activate(root: &Path, source: Option<(&Path, &str)>) -> crate::Res
         .map_err(|error| format!("Cannot own package installation: {error}"))?;
     let pointer = root.join("active.json");
     external(&pointer)?;
-    let old = if pointer.try_exists().map_err(|error| error.to_string())? {
+    let old = if fs::exists(&pointer).map_err(|error| error.to_string())? {
         Some(super::selection(root)?)
     } else {
         None

@@ -84,7 +84,7 @@ fn observed_host_identity(report: &Value) -> Option<&Value> {
             .iter()
             .any(|feature| feature.as_u64().is_none_or(|feature| feature >= 256))
         || features
-            .windows(2)
+            .array_windows::<2>()
             .any(|pair| pair[0].as_u64() >= pair[1].as_u64())
     {
         return None;

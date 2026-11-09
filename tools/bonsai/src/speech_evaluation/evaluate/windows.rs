@@ -230,7 +230,7 @@ fn wait_ready(
     port: u16,
     cold: Instant,
 ) -> crate::Result<Duration> {
-    let deadline = cold + Duration::from_secs(300);
+    let deadline = cold + Duration::from_mins(5);
     loop {
         supervisor.checkpoint()?;
         if Instant::now() >= deadline {

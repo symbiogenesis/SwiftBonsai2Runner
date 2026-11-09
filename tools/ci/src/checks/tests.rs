@@ -120,7 +120,7 @@ fn production_batches_preserve_explicit_package_coverage_and_release_policy() ->
                 assert!(!check.arguments.contains(&"--all".into()));
                 let names = check
                     .arguments
-                    .windows(2)
+                    .array_windows::<2>()
                     .filter(|pair| pair[0] == "--package")
                     .map(|pair| pair[1].clone())
                     .collect::<Vec<_>>();

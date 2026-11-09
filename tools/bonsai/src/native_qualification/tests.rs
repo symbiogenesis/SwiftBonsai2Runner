@@ -169,7 +169,7 @@ fn capture_source_cannot_substitute_an_internally_consistent_stale_checkout() ->
 fn every_deadline_includes_elapsed_setup_and_cannot_be_renewed() -> crate::Result<()> {
     assert_eq!(
         remaining_seconds(
-            Duration::from_secs(240),
+            Duration::from_mins(4),
             Duration::from_millis(1500),
             15_000,
             10_000,
@@ -179,7 +179,7 @@ fn every_deadline_includes_elapsed_setup_and_cannot_be_renewed() -> crate::Resul
     );
     assert_eq!(
         remaining_seconds(
-            Duration::from_secs(240),
+            Duration::from_mins(4),
             Duration::from_millis(1500),
             300_000,
             10_000,
@@ -195,7 +195,7 @@ fn every_deadline_includes_elapsed_setup_and_cannot_be_renewed() -> crate::Resul
     ] {
         assert!(
             remaining_seconds(
-                Duration::from_secs(240),
+                Duration::from_mins(4),
                 Duration::ZERO,
                 deadline,
                 now,
@@ -206,8 +206,8 @@ fn every_deadline_includes_elapsed_setup_and_cannot_be_renewed() -> crate::Resul
     }
     assert!(
         remaining_seconds(
-            Duration::from_secs(240),
-            Duration::from_secs(240),
+            Duration::from_mins(4),
+            Duration::from_mins(4),
             300_000,
             0,
             1000

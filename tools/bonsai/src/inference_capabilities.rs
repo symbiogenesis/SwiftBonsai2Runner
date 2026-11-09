@@ -125,7 +125,7 @@ mod windows {
         .map_err(|error| error.to_string())?;
         let started = Instant::now();
         let mut checkpoint = || {
-            if started.elapsed() >= Duration::from_secs(60) {
+            if started.elapsed() >= Duration::from_mins(1) {
                 return Err(ArtifactError::Cancelled);
             }
             parent.ensure_alive().map_err(|_| ArtifactError::Cancelled)

@@ -142,9 +142,7 @@ fn external(path: &Path) -> Result<()> {
                     }
                 }
                 if metadata.is_dir()
-                    && ancestor
-                        .join(".git")
-                        .try_exists()
+                    && fs::exists(ancestor.join(".git"))
                         .map_err(|_| "storage-inspection-failed")?
                 {
                     return Err("external-storage-outside-git-required");
@@ -355,11 +353,11 @@ fn projection(request: Request, started: Instant) -> Result<Value> {
     let deadline = started + Duration::from_secs(u64::from(request.maximum_seconds));
     check_time(deadline)?;
     overrides(request.package_directory.as_deref())?;
-    if request
-        .output_directory
-        .try_exists()
-        .map_err(|_| "output-inspection-failed")?
-        || !request.output_directory.parent().is_some_and(Path::is_dir)
+    if fs::exists(&request.output_directory).map_err(|_| "output-inspection-failed")?
+        || request
+            .output_directory
+            .parent()
+            .is_none_or(|parent| !parent.is_dir())
     {
         return Err("new-external-output-directory-required");
     }

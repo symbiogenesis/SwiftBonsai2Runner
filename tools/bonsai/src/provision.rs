@@ -219,7 +219,7 @@ fn adapter(request: &Request, working: &Path) -> crate::Result<Value> {
             selected.bytes,
             &selected.sha256,
             working,
-            std::time::Duration::from_secs(300),
+            std::time::Duration::from_mins(5),
         )?;
     }
     Ok(

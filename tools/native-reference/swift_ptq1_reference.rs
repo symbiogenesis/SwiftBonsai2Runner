@@ -39,7 +39,7 @@ fn absolute(path: &OsStr) -> bool {
         && matches!(units.get(2), Some(47 | 92))
         && !units.contains(&u16::from(b'%'))
         && !units.contains(&0)
-        && !units.windows(2).any(|pair| pair == [46, 46])
+        && !units.array_windows().any(|&pair| pair == [46, 46])
 }
 
 fn basename_is(path: &OsStr, expected: &str) -> bool {

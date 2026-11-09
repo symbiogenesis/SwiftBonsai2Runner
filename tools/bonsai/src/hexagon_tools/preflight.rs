@@ -181,7 +181,7 @@ pub(super) fn supervise(
     }
     if let Some(path) = &output_path {
         validate_external_path(path).map_err(|error| error.to_string())?;
-        if path.exists() || !path.parent().is_some_and(Path::is_dir) {
+        if path.exists() || path.parent().is_none_or(|parent| !parent.is_dir()) {
             return Err("Receipt must be new external storage with an existing parent.".into());
         }
     }

@@ -397,11 +397,7 @@ pub fn run(value: Value) -> crate::Result<Value> {
     }
     let request: Request = serde_json::from_value(value).map_err(|error| error.to_string())?;
     validate_external_path(&request.output_path).map_err(|error| error.to_string())?;
-    if request
-        .output_path
-        .try_exists()
-        .map_err(|error| error.to_string())?
-    {
+    if fs::exists(&request.output_path).map_err(|error| error.to_string())? {
         return Err("Use a new candidate lock output file.".into());
     }
     let mut receipt_file = open_input(&request.receipt_path, MIB)?;

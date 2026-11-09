@@ -154,7 +154,10 @@ fn validate(manifest: &Intake) -> Result<()> {
     let blocks: BTreeSet<_> = manifest.ssm_sites.iter().map(|site| site.block).collect();
     require(
         manifest.ssm_sites.len() == 48
-            && blocks == (0..64).filter(|block| (block + 1) % 4 != 0).collect(),
+            && blocks
+                == (0_u32..64)
+                    .filter(|block| !(block + 1).is_multiple_of(4))
+                    .collect(),
         "Basis intake requires exactly all 48 distinct Swift SSM sites.",
     )
 }

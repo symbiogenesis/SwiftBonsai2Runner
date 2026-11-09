@@ -265,12 +265,13 @@ fn policy_for_profile(profile: QualificationProfile) -> Result<Policy> {
             "Duplicate prompt or unsupported category.",
         )?;
         for repeat in 1_u32..=3 {
-            let arms =
-                if (usize::try_from(repeat).map_err(|error| error.to_string())? + index) % 2 == 0 {
-                    ["adapter", "baseline"]
-                } else {
-                    ["baseline", "adapter"]
-                };
+            let arms = if (usize::try_from(repeat).map_err(|error| error.to_string())? + index)
+                .is_multiple_of(2)
+            {
+                ["adapter", "baseline"]
+            } else {
+                ["baseline", "adapter"]
+            };
             for arm in arms {
                 let order = u32::try_from(schedule.len() + 1).map_err(|error| error.to_string())?;
                 schedule.push(Scheduled {
@@ -514,7 +515,7 @@ fn expanded_path(path: &Path) -> Result<PathBuf> {
         .map(|(index, _)| index)
         .collect();
     let unresolved = percent_positions
-        .windows(2)
+        .array_windows::<2>()
         .any(|pair| pair[1] > pair[0] + 1);
     require(
         path.is_absolute()

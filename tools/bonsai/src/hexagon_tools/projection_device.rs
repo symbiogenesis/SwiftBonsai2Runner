@@ -71,11 +71,11 @@ fn request_record(probe: &Probe) -> Result<(Request, Value)> {
 
 pub(super) fn validate_request(probe: &Probe) -> Result<()> {
     let (request, _) = request_record(probe)?;
-    if request
-        .output_directory
-        .try_exists()
-        .map_err(|error| error.to_string())?
-        || !request.output_directory.parent().is_some_and(Path::is_dir)
+    if std::fs::exists(&request.output_directory).map_err(|error| error.to_string())?
+        || request
+            .output_directory
+            .parent()
+            .is_none_or(|parent| !parent.is_dir())
         || !request.binding_directory.is_dir()
         || !request.activation_file.is_file()
     {

@@ -324,7 +324,7 @@ fn exercise(
     let fd = unsafe { (calls.to_fd)(buffer) };
     report.mapping.descriptor_observed = fd >= 0;
     report.mapping.descriptor_error = (fd < 0).then_some(fd);
-    if fd < 0 || buffer.addr() % 4096 != 0 {
+    if fd < 0 || !buffer.addr().is_multiple_of(4096) {
         // SAFETY: this scratch has not been mapped or submitted to any consumer.
         unsafe { (calls.free)(buffer) };
         report.mapping.free_completed = true;

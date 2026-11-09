@@ -105,7 +105,7 @@ fn observed(sets: &[bonsai_windows_process::CpuSet]) -> Value {
 /// # Errors
 /// Rejects every request except an empty JSON object.
 pub fn run(request: &Value) -> crate::Result<Value> {
-    if !request.as_object().is_some_and(serde_json::Map::is_empty) {
+    if request.as_object().is_none_or(|object| !object.is_empty()) {
         return Err("Native CPU inventory requires an empty request object.".into());
     }
     #[cfg(windows)]

@@ -214,7 +214,7 @@ fn prompt_reuse_survives_deferred_preparation_and_rejects_unsupported_selection(
         let arguments = result["Arguments"].as_array().ok_or("Missing arguments.")?;
         assert_eq!(
             arguments
-                .windows(2)
+                .array_windows::<2>()
                 .filter(|args| args[0] == "--prompt-reuse" && args[1] == "latest")
                 .count(),
             usize::from(latest)
@@ -238,7 +238,7 @@ fn prompt_reuse_survives_deferred_preparation_and_rejects_unsupported_selection(
 
 fn value_after(arguments: &[OsString], option: &str) -> crate::Result<OsString> {
     arguments
-        .windows(2)
+        .array_windows::<2>()
         .find(|pair| pair[0] == option)
         .map(|pair| pair[1].clone())
         .ok_or_else(|| format!("Missing launch option {option}."))
@@ -297,7 +297,7 @@ fn development_default_and_explicit_rollback_survive_deferred_preparation() -> c
             );
             assert!(
                 arguments
-                    .windows(2)
+                    .array_windows::<2>()
                     .any(|args| args[0] == "--native-row-workers" && args[1] == worker_argument)
             );
             assert!(arguments.iter().any(|arg| arg == "--use-original-pq2"));
@@ -729,7 +729,7 @@ fn explicit_rust_runtime_survives_early_window_and_backend_preparation() -> crat
     assert!(arguments.iter().any(|value| value == "--native-engine"));
     assert!(
         arguments
-            .windows(2)
+            .array_windows::<2>()
             .any(|args| args[0] == "--native-row-workers" && args[1] == "4")
     );
     assert!(

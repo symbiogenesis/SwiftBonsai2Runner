@@ -298,7 +298,7 @@ impl Capture {
 pub(super) fn read_sample(root: &Path, id: &str) -> Result<Option<(Value, Value)>> {
     let lane = validate_path(&root.join(id))?;
     let path = lane.join("supervision.json");
-    if !path.try_exists().map_err(|error| error.to_string())? {
+    if !fs::exists(&path).map_err(|error| error.to_string())? {
         return Ok(None);
     }
     let supervision = read_json(&path)?;
@@ -404,7 +404,7 @@ fn execute(
         capture.receipt["RuntimeFiles"] = supervision["RuntimeFiles"].clone();
     } else {
         let path = capture.root.join("supervision.json");
-        if path.try_exists().map_err(|error| error.to_string())? {
+        if fs::exists(&path).map_err(|error| error.to_string())? {
             capture.receipt["ModelProcessStarted"] =
                 read_json(&path)?["ModelProcessStarted"].clone();
         }
@@ -443,10 +443,7 @@ fn capture_with(
         "qualification.json",
     ] {
         require(
-            !root
-                .join(name)
-                .try_exists()
-                .map_err(|error| error.to_string())?,
+            !fs::exists(root.join(name)).map_err(|error| error.to_string())?,
             "Capture evidence must be new.",
         )?;
     }

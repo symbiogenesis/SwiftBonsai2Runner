@@ -75,7 +75,7 @@ fn main() -> io::Result<ExitCode> {
                 let _ = emit(b"retained-failure-output", b"")?;
                 return Ok(ExitCode::from(7));
             }
-            std::thread::sleep(Duration::from_secs(120));
+            std::thread::sleep(Duration::from_mins(2));
             Ok(ExitCode::SUCCESS)
         }
         _ => Err(io::Error::other("unknown completion probe mode")),

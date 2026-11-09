@@ -287,7 +287,7 @@ fn capture(
                     PHASE_NAMES[phase]
                 ));
             }
-            if start.elapsed() > Duration::from_secs(600) {
+            if start.elapsed() > Duration::from_mins(10) {
                 return Err("TTS evaluation exceeded its bounded session deadline.".into());
             }
             let memory = process.memory_usage().map_err(|error| error.to_string())?;

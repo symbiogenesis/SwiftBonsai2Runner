@@ -64,7 +64,7 @@ pub(super) fn run(
     entered(&mut report, "projection-allocation-entered", &mut progress);
     // SAFETY: one explicitly bounded cached system-heap allocation, under i32 limits.
     let memory = unsafe { (calls.alloc)(25, 1, allocator_request) };
-    if memory.is_null() || memory.addr() % 4096 != 0 {
+    if memory.is_null() || !memory.addr().is_multiple_of(4096) {
         report.queue.stage = "projection-allocation-refused-pinned";
         return Ok(report);
     }

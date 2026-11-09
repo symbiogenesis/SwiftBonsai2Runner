@@ -207,9 +207,9 @@ pub(super) fn driver(path: &Path, holds: &mut Vec<File>) -> Result<Value> {
     if !normalized
         .to_ascii_lowercase()
         .starts_with(&root.to_ascii_lowercase())
-        || !path.file_name().is_some_and(|name| {
+        || path.file_name().is_none_or(|name| {
             name.to_str()
-                .is_some_and(|name| name.eq_ignore_ascii_case("libcdsprpc.dll"))
+                .is_none_or(|name| !name.eq_ignore_ascii_case("libcdsprpc.dll"))
         })
     {
         return Err("Observed FastRPC driver must belong to the Windows DriverStore.".into());
@@ -344,7 +344,12 @@ fn capture(
                 }
                 return Ok((code, bounded_text(&stdout, 131_072)?));
             }
-            if clock.elapsed() >= Duration::from_secs(if kind == "catalog" { 10 } else { 240 }) {
+            let deadline = if kind == "catalog" {
+                Duration::from_secs(10)
+            } else {
+                Duration::from_mins(4)
+            };
+            if clock.elapsed() >= deadline {
                 return Err("Hexagon capture exhausted its worker deadline.".into());
             }
             std::thread::sleep(Duration::from_millis(10));

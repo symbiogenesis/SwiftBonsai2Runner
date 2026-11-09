@@ -154,11 +154,11 @@ fn independent_packing_rejects_invalid_tensor_geometry_and_array_tags() -> crate
     let source = fixture(false)?;
     let output = fixture(true)?;
     let name = source
-        .windows(5)
+        .array_windows()
         .position(|bytes| bytes == b"quant")
         .ok_or("Missing fixture descriptor.")?;
     let signs = source
-        .windows(20)
+        .array_windows()
         .position(|bytes| bytes == b"prism.hadamard.signs")
         .ok_or("Missing fixture signs.")?;
     let mut cases = Vec::new();
@@ -191,7 +191,7 @@ fn independent_packing_rejects_metadata_payload_and_late_corruption() -> crate::
         (1, 1, 4)
     );
     let template = output
-        .windows(17)
+        .array_windows()
         .position(|bytes| bytes == b"retained-template")
         .ok_or("Missing fixture template.")?;
     for index in [template, output.len() - 64, output.len() - 6] {

@@ -47,9 +47,9 @@ fn text(bytes: &mut Vec<u8>, value: &str) -> Result<()> {
 
 fn adapter() -> Result<(Vec<u8>, Vec<usize>)> {
     let mut targets = vec![("token_embd.weight".to_owned(), [1_u64, 248_320])];
-    for block in 0..64 {
+    for block in 0_u32..64 {
         targets.push((format!("blk.{block}.ffn_down.weight"), [17_408, 1]));
-        let family = if (block + 1) % 4 == 0 {
+        let family = if (block + 1).is_multiple_of(4) {
             "attn_output"
         } else {
             "ssm_out"

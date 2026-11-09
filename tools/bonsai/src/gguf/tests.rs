@@ -50,8 +50,8 @@ fn export_uses_swift_pin_and_forwards_the_whole_process_limit() -> crate::Result
     assert!(arguments.contains(&text(&swift["model"], "sha256")?.into()));
     assert!(
         arguments
-            .windows(2)
-            .any(|pair| pair == [OsString::from("--timeout-seconds"), OsString::from("19")])
+            .array_windows()
+            .any(|pair| *pair == [OsString::from("--timeout-seconds"), OsString::from("19")])
     );
     assert!(execute(None, None, &[], 0).is_err());
     assert!(execute(None, None, &[], 3601).is_err());

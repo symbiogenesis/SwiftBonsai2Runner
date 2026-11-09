@@ -166,7 +166,7 @@ fn external(path: &Path) -> Result<()> {
                         return Err(bad("Reparse external storage is unsupported."));
                     }
                 }
-                if metadata.is_dir() && ancestor.join(".git").try_exists()? {
+                if metadata.is_dir() && fs::exists(ancestor.join(".git"))? {
                     return Err(bad(
                         "Extraction inputs and outputs must be outside Git storage.",
                     ));
@@ -196,7 +196,7 @@ fn write_new(path: &Path, bytes: &[u8]) -> Result<File> {
 fn extract(model: &Path, output: &Path) -> Result<String> {
     external(model)?;
     external(output)?;
-    if output.try_exists()? || !output.parent().is_some_and(Path::is_dir) {
+    if fs::exists(output)? || output.parent().is_none_or(|parent| !parent.is_dir()) {
         return Err(bad(
             "Output must be a new directory with an existing external parent.",
         ));
@@ -283,8 +283,8 @@ fn self_check() -> Result<()> {
         "prism.hadamard.weight_names".into(),
         MetadataValue::Array(MetadataArray::String(names)),
     );
-    let values: Vec<i32> = (0..28_672)
-        .map(|index| if index % 2 == 0 { -1 } else { 1 })
+    let values: Vec<i32> = (0_u32..28_672)
+        .map(|index| if index.is_multiple_of(2) { -1 } else { 1 })
         .collect();
     metadata.insert(
         "prism.hadamard.sign_values".into(),
@@ -295,7 +295,7 @@ fn self_check() -> Result<()> {
         || output
             .iter()
             .enumerate()
-            .any(|(index, byte)| *byte != if index % 2 == 0 { 255 } else { 1 })
+            .any(|(index, byte)| *byte != if index.is_multiple_of(2) { 255 } else { 1 })
         || hash == ALL_SIGNS_SHA256
     {
         return Err(bad("Synthetic sign extraction control failed."));

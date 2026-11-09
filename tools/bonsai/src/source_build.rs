@@ -147,7 +147,7 @@ pub(crate) fn cached_build(
     spec: &BuildSpec,
     prepare: impl FnOnce() -> crate::Result<BTreeMap<String, String>>,
 ) -> crate::Result<BTreeMap<String, PathBuf>> {
-    cached_build_with_timeout(spec, prepare, Duration::from_secs(3600))
+    cached_build_with_timeout(spec, prepare, Duration::from_hours(1))
 }
 
 pub(crate) fn cached_build_with_timeout(

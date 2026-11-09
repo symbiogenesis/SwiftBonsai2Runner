@@ -166,7 +166,7 @@ fn payloads(bytes: &[u8]) -> Result<Payloads<'_>> {
     }
     extents.sort_unstable();
     require(
-        extents.windows(2).all(|pair| pair[0].1 <= pair[1].0),
+        extents.array_windows().all(|[a, b]| a.1 <= b.0),
         "GGUF adapter tensor payloads overlap.",
     )?;
     Ok(payloads)
@@ -201,9 +201,9 @@ pub(super) fn direction_vectors(bytes: &[u8]) -> Result<BTreeMap<String, &[u8]>>
     let mut payloads = payloads(bytes)?;
     let mut vectors = BTreeMap::new();
     let mut sites = vec![("token_embd.weight".to_owned(), vec![1, 248_320])];
-    for block in 0..64 {
+    for block in 0_u32..64 {
         sites.push((format!("blk.{block}.ffn_down.weight"), vec![17_408, 1]));
-        let family = if (block + 1) % 4 == 0 {
+        let family = if (block + 1).is_multiple_of(4) {
             "attn_output"
         } else {
             "ssm_out"

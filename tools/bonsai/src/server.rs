@@ -145,8 +145,7 @@ mod windows {
                     .as_str()
                     .ok_or("Missing model hash.")?,
                 || {
-                    if started.elapsed() >= Duration::from_secs(240)
-                        || parent.ensure_alive().is_err()
+                    if started.elapsed() >= Duration::from_mins(4) || parent.ensure_alive().is_err()
                     {
                         return Err(bonsai_artifacts::ArtifactError::Cancelled);
                     }

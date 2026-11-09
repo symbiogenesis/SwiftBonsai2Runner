@@ -176,7 +176,7 @@ pub(super) fn build(
             "Build override environment is unsupported; no environment was changed.".into(),
         );
     }
-    let cpus = std::thread::available_parallelism().map_or(1, std::num::NonZeroUsize::get);
+    let cpus = std::thread::available_parallelism().map_or(1, std::num::NonZero::get);
     let memory = if parallel == 0 { available() } else { None };
     let jobs = parallelism(parallel, cpus, memory)?;
     let lock = read_json(&repository.join("config/runtime.lock.json"))?;

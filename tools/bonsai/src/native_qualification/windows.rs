@@ -402,8 +402,8 @@ fn intake(context: &mut Context<'_>) -> crate::Result<Value> {
         .map_err(|error| error.to_string())?;
     if entries.len() != names.len() + 1
         || entries.iter().any(|entry| {
-            fs::symlink_metadata(entry.path()).map_or(true, |metadata| {
-                !metadata.is_file() || bonsai_artifacts::is_redirect(&metadata)
+            !fs::symlink_metadata(entry.path()).is_ok_and(|metadata| {
+                metadata.is_file() && !bonsai_artifacts::is_redirect(&metadata)
             }) || !entry
                 .file_name()
                 .to_str()

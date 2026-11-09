@@ -486,7 +486,7 @@ fn app_scale_invocations_use_512_tokens_and_only_the_pinned_scale() -> Result<()
             .ok_or("Missing app arguments.")?;
         assert!(
             arguments
-                .windows(2)
+                .array_windows::<2>()
                 .any(|pair| pair[0] == "--n-predict" && pair[1] == "512")
         );
         if let Some(index) = arguments.iter().position(|value| value == "--lora-scaled") {

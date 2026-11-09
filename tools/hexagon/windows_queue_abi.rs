@@ -3,7 +3,7 @@
 #![deny(warnings)]
 
 use std::io::{self, Write};
-use std::mem::{align_of, offset_of, size_of};
+use std::mem::offset_of;
 use std::process::ExitCode;
 
 #[repr(C)]

@@ -212,10 +212,7 @@ fn capture_with(
         "bonsai-abliterate-lora.gguf",
     ] {
         require(
-            !root
-                .join(name)
-                .try_exists()
-                .map_err(|error| error.to_string())?,
+            !fs::exists(root.join(name)).map_err(|error| error.to_string())?,
             "Screen evidence must be new.",
         )?;
     }

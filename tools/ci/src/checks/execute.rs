@@ -84,7 +84,7 @@ fn command(spec: &ToolProcessSpec, allowance: Duration, log: &Path) -> Result<(u
         }
         if started.elapsed() >= allowance
             || [&spec.stdout, &spec.stderr].into_iter().any(|path| {
-                fs::metadata(path).map_or(true, |metadata| metadata.len() > MAX_LOG_BYTES)
+                !fs::metadata(path).is_ok_and(|metadata| metadata.len() <= MAX_LOG_BYTES)
             })
         {
             child

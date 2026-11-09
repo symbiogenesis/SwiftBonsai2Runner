@@ -48,7 +48,7 @@ impl Q2ProjectionLimits {
             || operations == 0
             || operations > Q2_PROJECTION_MAX_OPERATIONS
             || duration < Duration::from_secs(4)
-            || duration > Duration::from_secs(120)
+            || duration > Duration::from_mins(2)
         {
             return Err(Error::Contract);
         }
@@ -316,7 +316,7 @@ mod tests {
         let limits = Q2ProjectionLimits::new(17_408, 40, Duration::from_secs(20))?;
         assert_eq!(limits.allocation_bytes(), 1_396_736);
         assert_eq!(
-            Q2ProjectionLimits::new(17_408, 24_000, Duration::from_secs(120))?.maximum_operations(),
+            Q2ProjectionLimits::new(17_408, 24_000, Duration::from_mins(2))?.maximum_operations(),
             24_000
         );
         for (rows, operations, seconds) in [

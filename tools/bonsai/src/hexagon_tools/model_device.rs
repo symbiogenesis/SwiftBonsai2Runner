@@ -2150,9 +2150,9 @@ mod tests {
             expected_resident_weight_bytes(&dual_arena, ExecutionBackend::NativeQ2)?,
             962_887_680
         );
-        let quad_arena: Vec<String> = (0..18)
+        let quad_arena: Vec<String> = (0_u32..18)
             .flat_map(|layer| {
-                let suffixes: &[&str] = if (layer + 1) % 4 == 0 {
+                let suffixes: &[&str] = if (layer + 1).is_multiple_of(4) {
                     &[
                         "ffn_up.weight",
                         "ffn_gate.weight",
@@ -2191,9 +2191,9 @@ mod tests {
         let quad_req: Request =
             serde_json::from_value(quad_req_val).map_err(|error| error.to_string())?;
         quad_req.validate_selection()?;
-        let six_arena: Vec<String> = (0..27)
+        let six_arena: Vec<String> = (0_u32..27)
             .flat_map(|layer| {
-                let suffixes: &[&str] = if (layer + 1) % 4 == 0 {
+                let suffixes: &[&str] = if (layer + 1).is_multiple_of(4) {
                     &[
                         "ffn_up.weight",
                         "ffn_gate.weight",

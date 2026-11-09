@@ -71,10 +71,10 @@ fn external(path: &Path) -> crate::Result<()> {
 
 fn new_output(path: &Path) -> crate::Result<()> {
     external(path)?;
-    if path.try_exists().map_err(|error| error.to_string())? {
+    if fs::exists(path).map_err(|error| error.to_string())? {
         return Err("Output must name a new external file.".into());
     }
-    if !path.parent().is_some_and(Path::is_dir) {
+    if path.parent().is_none_or(|parent| !parent.is_dir()) {
         return Err("The external output directory must already exist.".into());
     }
     Ok(())

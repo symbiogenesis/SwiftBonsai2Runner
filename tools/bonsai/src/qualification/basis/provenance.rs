@@ -231,7 +231,10 @@ fn checkpoint(checkpoint: &Checkpoint, index: &Index) -> Result<()> {
     }
     require(
         checkpoint.ssm_tensors.len() == 48
-            && blocks == (0..64).filter(|block| (block + 1) % 4 != 0).collect(),
+            && blocks
+                == (0_u32..64)
+                    .filter(|block| !(block + 1).is_multiple_of(4))
+                    .collect(),
         "Checkpoint manifest requires exactly the 48 original Swift SSM tensors.",
     )
 }

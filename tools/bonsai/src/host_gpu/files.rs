@@ -56,7 +56,8 @@ fn digest(
                 Err("file-size-changed")
             };
         }
-        hash.update(&buffer[..count]).map_err(|_| "hash-unavailable")?;
+        hash.update(&buffer[..count])
+            .map_err(|_| "hash-unavailable")?;
     }
 }
 

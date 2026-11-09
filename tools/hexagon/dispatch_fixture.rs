@@ -279,8 +279,8 @@ mod device {
     }
 
     pub(super) fn check_abi() -> Result<(), Failure> {
-        if std::mem::size_of::<InitParams>() != 24
-            || std::mem::align_of::<InitParams>() != 8
+        if size_of::<InitParams>() != 24
+            || align_of::<InitParams>() != 8
             || std::mem::offset_of!(InitParams, mem_size) != 0
             || std::mem::offset_of!(InitParams, mem_buffer) != 8
             || std::mem::offset_of!(InitParams, no_alloc) != 16
@@ -570,10 +570,10 @@ mod device {
         // SAFETY: All pointers are live context tensors; reported byte extents
         // are checked against owned Rust slices before either set or get call.
         let extents_match = unsafe {
-            (api.tensor_bytes)(weights) == std::mem::size_of_val(weight_values.as_slice())
+            (api.tensor_bytes)(weights) == size_of_val(weight_values.as_slice())
                 && (api.tensor_bytes)(activations)
-                    == std::mem::size_of_val(activation_values.as_slice())
-                && (api.tensor_bytes)(output) == std::mem::size_of_val(output_values.as_slice())
+                    == size_of_val(activation_values.as_slice())
+                && (api.tensor_bytes)(output) == size_of_val(output_values.as_slice())
         };
         if !extents_match {
             return Err(Failure::failed("abi", "tensor-byte-extent-mismatch"));
@@ -586,7 +586,7 @@ mod device {
                 weights,
                 weight_values.as_ptr().cast(),
                 0,
-                std::mem::size_of_val(weight_values.as_slice()),
+                size_of_val(weight_values.as_slice()),
             )
         };
         // SAFETY: Same synchronous-copy and exact-extent contract as above.
@@ -595,7 +595,7 @@ mod device {
                 activations,
                 activation_values.as_ptr().cast(),
                 0,
-                std::mem::size_of_val(activation_values.as_slice()),
+                size_of_val(activation_values.as_slice()),
             )
         };
         // SAFETY: Poison every output value so missing writes cannot pass using
@@ -605,7 +605,7 @@ mod device {
                 output,
                 output_values.as_ptr().cast(),
                 0,
-                std::mem::size_of_val(output_values.as_slice()),
+                size_of_val(output_values.as_slice()),
             )
         };
         eprintln!("hexagon-fixture:stage=dispatch");
@@ -620,7 +620,7 @@ mod device {
             return Err(Failure::failed("dispatch", "hexagon-graph-compute-failed"));
         }
         eprintln!("hexagon-fixture:stage=readback");
-        let output_bytes = std::mem::size_of_val(output_values.as_slice());
+        let output_bytes = size_of_val(output_values.as_slice());
         // SAFETY: Synchronization completed; the destination is exclusively owned
         // and spans exactly the checked output tensor extent.
         unsafe { (api.tensor_get)(output, output_values.as_mut_ptr().cast(), 0, output_bytes) };

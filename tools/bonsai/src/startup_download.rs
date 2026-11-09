@@ -538,18 +538,18 @@ mod tests {
         let arguments = curl_arguments("https://example.com/file", Path::new("partial"), 7, 11);
         assert!(
             arguments
-                .windows(2)
-                .any(|pair| pair == ["--max-filesize", "4"])
+                .array_windows()
+                .any(|pair| *pair == ["--max-filesize", "4"])
         );
         assert!(
             arguments
-                .windows(2)
-                .any(|pair| pair == ["--continue-at", "7"])
+                .array_windows()
+                .any(|pair| *pair == ["--continue-at", "7"])
         );
         assert!(
             arguments
-                .windows(2)
-                .any(|pair| pair == ["--proto-redir", "=https"])
+                .array_windows()
+                .any(|pair| *pair == ["--proto-redir", "=https"])
         );
     }
 
