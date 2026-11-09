@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "kind": "performance-advance-model-free-source-validation",
+  "recordedDate": "2026-11-09",
+  "authorization": "Owner requested pursuing the most exciting performance-relevant PLAN.md goals in parallel, as far as reasonable.",
+  "source": {
+    "runnerBaseRevision": "bd698444",
+    "prismBaseRevision": "45cc0987733643edf62f25301c40cf984d7d5ef6",
+    "selection": [
+      "Read original projected GDN token rows directly instead of first copying them into overwritten head-major convolution output",
+      "Use bounded reverse-Z suffix matching to eliminate repeated backward comparison of matching history windows",
+      "Pack a single-operation transient native-Q2 projection once for a token tile instead of once per token",
+      "Bind a documented exception for the pinned incompatible Windows binding requirements into exact hosted analyzer source identity"
+    ],
+    "settledSource": "validate.py records the integration commit, one canonical formatting diff and all tracked source hashes before compilation; controls.json freezes the exact selected controls before execution."
+  },
+  "budget": {
+    "maximumTotalSeconds": 300,
+    "workCutoffSeconds": 260,
+    "conservativeEstimateSeconds": 250,
+    "estimate": {
+      "compilerFormattingSourceIntakeAndReceiptControls": 25,
+      "offlineSelectedLibraryAndGraphCompilation": 100,
+      "exactNewControlsAndDependentStateRecovery": 20,
+      "selectedStrictAnalyzers": 65,
+      "featureDisabledLibraryCompilation": 20,
+      "cleanupPowerAndEvidenceRetention": 20
+    },
+    "reason": "One fixed model-free correctness screen for newly implemented source changes, using four Cargo jobs and immutable offline dependencies. The preceding distinct source check completed in approximately 81 seconds; 250 seconds conservatively covers new compilation, controls, analyzers and retention without an extended allowance. No downloads, model, DSP calls, complete suite, performance capture or benchmark. Stop at the first failure or when the next required step cannot fit.",
+    "noRetry": true,
+    "clockRestartAllowed": false,
+    "historicalClocks": "Every historical trial remains closed. This is a distinct new-source workload, not a continuation or retry of any prior trial. No historical driver is rerun."
+  },
+  "fixedWork": [
+    "Record initial aggregate power, exact pinned compiler identity and integration revision",
+    "Apply canonical Cargo formatting once and check it; retain the exact formatting diff",
+    "Hash all tracked integration inputs and run the focused hosted receipt/inventory Python controls",
+    "Compile the selected Prism, Hexagon-native and Hexagon-runtime library test executables and graph test target offline with parallel-rows, without running suites",
+    "Execute each exact nonignored selected control from controls.json once, requiring exactly one passing match",
+    "Run strict Clippy for those three libraries and the graph target",
+    "Compile the feature-disabled prism-inference library",
+    "Verify source immutability; terminate owned timed-out processes when necessary; retain raw logs, hashes, power endpoints, terminal receipt and closed clock"
+  ],
+  "power": {
+    "query": "GetSystemPowerStatus",
+    "timing": "Before and after aggregate work, separately for each command, and after final retention",
+    "unavailable": "Explicit unknown/null; never infer past power conditions",
+    "continuousStabilityEstablished": false,
+    "performanceComparison": false
+  },
+  "execution": {
+    "driver": "validate.py",
+    "inventory": "controls.json",
+    "evidenceDirectory": "%TEMP%/SwiftBonsai-PerformanceAdvance-20261109",
+    "cargoTarget": "Dedicated external evidence subdirectory",
+    "retainedDirectory": "raw",
+    "models": 0,
+    "benchmarks": 0,
+    "fullSuites": 0,
+    "acceleratorDeviceCalls": 0,
+    "ciActions": 0,
+    "pushes": 0
+  }
+}

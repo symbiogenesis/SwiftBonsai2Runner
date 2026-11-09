@@ -1,0 +1,30 @@
+{
+  "bonsai_prism_runtime": [
+    "kernels::pinned_convolution::tests::pinned_convolution_projected_rows_match_independent_scalar_bits",
+    "kernels::pinned_convolution::tests::pinned_convolution_projected_rows_preserve_failure_publication",
+    "kernels::pinned_convolution::tests::pinned_convolution_projected_rows_reject_geometry_before_mutation",
+    "kernels::pinned_convolution::tests::pinned_convolution_matches_native_zero_partial_and_full_history",
+    "speculative::tests::suffix_z_matcher_bounds_work_on_adversarial_near_matches",
+    "speculative::tests::suffix_z_matcher_preserves_periodic_ties_overlap_and_linear_bound",
+    "speculative::tests::suffix_drafter_exhaustively_matches_length_first_overlap_and_tie_order",
+    "speculative::tests::suffix_drafter_maximum_windows_match_reference_and_reject_before_writing",
+    "runtime::deadline_tests::speculative_rejected_suffix_correction_matches_independent_greedy_requests",
+    "runtime::deadline_tests::speculative_rejected_suffix_keeps_both_correction_cancellation_boundaries"
+  ],
+  "bonsai_hexagon_runtime": [
+    "native_q2::tests::native_q2_transient_token_tile_matches_independent_layout_and_scalar_outputs",
+    "native_q2::tests::native_q2_transient_token_tile_preserves_failure_order_and_terminal_publication",
+    "native_q2::tests::native_q2_batches_two_and_three_resident_sibling_projections_in_single_queue_writes",
+    "native_q2::tests::native_q2_nonresident_single_and_tiled_fallback_preserve_packing_and_bounds"
+  ],
+  "hexagon_native_rpc": [
+    "native_q2::tests::native_q2_cached_resident_frame_matches_transient_and_refuses_invalid_plan"
+  ],
+  "graph": [
+    "prefill::tiled_prefill_parallel_grouped_kv_and_head_major_recurrent_match_single_token",
+    "prefill::tiled_prefill_packed_ffn_and_adapter_preserve_original_basis_bits",
+    "prefill::tiled_prefill_parallel_workers_preserve_state_restore_and_policy_changes",
+    "prefill::tiled_prefill_runtime_failure_restores_all_layer_state_before_replay",
+    "rank_one_checkpoint_and_failed_generation_preserve_complete_state"
+  ]
+}
