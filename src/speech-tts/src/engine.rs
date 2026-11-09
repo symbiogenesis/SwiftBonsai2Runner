@@ -975,16 +975,22 @@ where
         return;
     }
     let chunk_rows = out.len().div_ceil(worker_count);
+    let mut chunks = out.chunks_mut(chunk_rows);
+    let Some(first) = chunks.next() else {
+        return;
+    };
+    let first_len = first.len();
     std::thread::scope(|scope| {
-        let mut row_offset = 0_usize;
-        for slice in out.chunks_mut(chunk_rows) {
+        let mut row_offset = first_len;
+        let compute_ref = &compute_slice;
+        for slice in chunks {
             let start = row_offset;
             row_offset += slice.len();
-            let compute_ref = &compute_slice;
             scope.spawn(move || {
                 compute_ref(start, slice);
             });
         }
+        compute_ref(0, first);
     });
 }
 
