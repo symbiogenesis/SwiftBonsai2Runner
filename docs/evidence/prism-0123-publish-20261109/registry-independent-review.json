@@ -1,0 +1,99 @@
+{
+  "schemaVersion": 1,
+  "kind": "independent-offline-registry-publication-review",
+  "recordedDate": "2026-11-09",
+  "method": "Independent retained JSON/log, TAR/TOML, length and SHA-256 review in an individual Runner worktree. No API/network/CI request, compiler, software test, power query, model, benchmark or push by this reviewer.",
+  "status": "retained-publication-and-checksum-evidence-verified",
+  "sourceRevision": "055c7430cb4771dfddb24ddaa30494af6ad182da",
+  "package": "prism-inference",
+  "version": "0.1.23",
+  "archive": {
+    "membersVerified": 19,
+    "allLengthsMatch": true,
+    "allSha256Match": true,
+    "driverAndDeclarationMatchReceiptHashes": true,
+    "filesModifiedByReview": false,
+    "manifestSha256": "6640ed79d9efab9e36f8127a53d13f1594fa601415b4d08c2306a35d77e3cb11"
+  },
+  "hostedPrerequisite": {
+    "verifiedBundleCopyMatchesReviewedOperatorBytes": true,
+    "closedOperatorClockCopyMatchesReviewedOperatorBytes": true,
+    "operatorRunId": 42721996680,
+    "operatorMaximumSeconds": 360,
+    "operatorElapsedSeconds": 296.1143460000003,
+    "operatorCleanupAndRetentionConfirmed": true,
+    "operatorInputSha256": {
+      "verified-bundle.json": "2924a8ff0de0b7f192d7ff4006f51e2c5cef187b87a061ca1e94a80fc3cbb2e6",
+      "operator-final-clock.json": "ebf49d4b037077c0973745f5f7f252a979ebaa756a2f3a523534687adf412ee1"
+    }
+  },
+  "sourceAndPackage": {
+    "cleanExactLocalMainBeforeAndImmediatelyBeforeUpload": true,
+    "all13ExternalCommandExitCodesZero": true,
+    "defaultNormalizedPackageVerificationEnabledAndPassed": true,
+    "defaultCargoPublishVerificationEnabledAndPassed": true,
+    "allowDirtyOrNoVerifyOverridesUsed": false,
+    "retainedCrate": "raw/prism-inference-0.1.23.crate",
+    "bytes": 3659533,
+    "sha256": "c786a16b899588e23a205be47092d6c3b4be8a6c273a46681f28df23a9d87b73",
+    "tarRegularFiles": 533,
+    "duplicateLinkedOrUnsafeTarEntries": false,
+    "normalizedManifestNameVersionAndRepositoryMatch": true,
+    "normalizedManifestHasNoWorkspace": true,
+    "vcsCommit": "055c7430cb4771dfddb24ddaa30494af6ad182da",
+    "vcsPathInRepository": "",
+    "vcsDirtyFlagAbsentAndCleanGitStatusRetained": true,
+    "ordinaryPackageFilesMatchCapturedCleanCheckoutSha256": 530,
+    "ordinaryFilesByteIdenticalToAcceptedCanonicalSourceZip": 51,
+    "ordinaryFilesDifferOnlyByCheckoutCrLfVersusCanonicalLf": 479,
+    "otherSourceDifferences": 0,
+    "sourceComparisonScope": "Cargo.toml.orig maps to the tracked Cargo.toml. Generated normalized Cargo.toml, Cargo.lock and .cargo_vcs_info.json are audited separately. All remaining files match the captured clean working checkout exactly; CRLF differences from the GitHub source ZIP are explicit.",
+    "unchangedExactRegistryHelpers": {"bonsai-ternary": "=0.1.2", "bonsai-prism": "=0.1.4", "bonsai-native-hash": "=0.1.2", "bonsai-neon-dot": "=0.1.1", "bonsai-gguf": "=0.1.4"},
+    "allHelperDependenciesNormalizedWithoutPathOrGit": true,
+    "normalizedLockConfirmsHelperRegistryVersionsAndChecksums": true,
+    "privateServerAndHexagonCratesAbsentFromNormalizedLock": true,
+    "compilerHost": "aarch64-pc-windows-msvc",
+    "compilerRelease": "1.102.0-nightly",
+    "compilerCommit": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494"
+  },
+  "recordedRegistryOutcome": {
+    "before": "version absent",
+    "uploadCommands": 1,
+    "cargoReportedPublished": true,
+    "afterVersion": "0.1.23",
+    "afterChecksumMatchesRetainedCrate": true,
+    "afterYanked": false,
+    "afterMetadataSha256": "026c2e552d53c05289466dd06bafa019c389cecd2d5b9adcc07802c66ff625b0",
+    "scope": "Independent review of the retained official registry observation and upload logs; no new live registry query."
+  },
+  "clockAndCleanup": {
+    "maximumTotalSeconds": 300,
+    "elapsedSecondsThroughRetention": 40.06391090000034,
+    "clockClosed": true,
+    "withinDeclaredAllowance": true,
+    "cleanupConfirmed": true,
+    "retries": 0,
+    "clockRestarted": false,
+    "finalClockSha256": "a9acbbad26334d68d2991c0c91763a5776c16830d791dc0d355be4f2aead485e"
+  },
+  "power": {
+    "periodicSamples": 49,
+    "aggregateAndStepEndpointsIncludingPostRetention": 29,
+    "totalRetainedObservationsReviewed": 78,
+    "allRecordedAcConnected": true,
+    "allRecordedBatterySaver": false,
+    "allRecordedChargePercent": 99,
+    "continuousPowerStabilityProven": false,
+    "performanceComparisonQualified": false,
+    "newPowerQueriesByReviewer": 0
+  },
+  "limits": {
+    "localAnalyzerOrReceiptTestRuns": 0,
+    "ciActions": 0,
+    "pushes": 0,
+    "fullFoundationQualified": false,
+    "modelAcceptanceQualified": false,
+    "performanceQualified": false,
+    "runnerBinaryRepinPerformedByReview": false
+  }
+}
