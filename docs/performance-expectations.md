@@ -36,8 +36,8 @@ measured seven installed Rust profiles on the Snapdragon X2 Elite Extreme:
 
 | Model | Runtime | Time to first token (s) | Generation tokens/second | Model file | Job commit cap / measured peak | Available RAM admission | Restore copy saved vs. Rust 0.1.4 |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| **Swift Bonsai 2 `PQ2_0` (development default; pinned at Rust 0.1.21)** | **Rust 0.1.14 release (4 workers) + LoRA 1.3** | **16.64** | **1.34** | **6.71 GiB** | **11.5 GiB / 7.20 GiB (short request)** | **15.5 GiB** | **149.625 MiB** |
-| **Swift Bonsai 2 `PTQ1_0` (experimental opt-in; pinned at Rust 0.1.21)** | **Rust 0.1.14 release (4 workers) + LoRA 1.3** | **29.50** | **0.75** | **5.54 GiB** | **11.5 GiB / 6.02 GiB (short request)** | **15.5 GiB** | **149.625 MiB** |
+| **Swift Bonsai 2 `PQ2_0` (development default; pinned at Rust 0.1.22)** | **Rust 0.1.14 release (4 workers) + LoRA 1.3** | **16.64** | **1.34** | **6.71 GiB** | **11.5 GiB / 7.20 GiB (short request)** | **15.5 GiB** | **149.625 MiB** |
+| **Swift Bonsai 2 `PTQ1_0` (experimental opt-in; pinned at Rust 0.1.22)** | **Rust 0.1.14 release (4 workers) + LoRA 1.3** | **29.50** | **0.75** | **5.54 GiB** | **11.5 GiB / 6.02 GiB (short request)** | **15.5 GiB** | **149.625 MiB** |
 | Swift Bonsai 2 `PQ2_0` | Rust 0.1.13 release (4 workers) + LoRA 1.3 | 16.45 | 1.32 | 6.71 GiB | 11.5 GiB / 7.20 GiB (short request) | 15.5 GiB | 149.625 MiB |
 | Swift Bonsai 2 `PTQ1_0` | Rust 0.1.13 release (4 workers) + LoRA 1.3 | 28.69 | 0.75 | 5.54 GiB | 11.5 GiB / 6.02 GiB (short request) | 15.5 GiB | 149.625 MiB |
 | Swift Bonsai 2 `PQ2_0` | Rust 0.1.10 release (4 workers) + LoRA 1.3 | 16.98 | 1.34 | 6.71 GiB | 11.5 GiB / 7.20 GiB (short request) | 15.5 GiB | 149.625 MiB |
@@ -59,15 +59,15 @@ commit measured **7.20 GiB** (`7,726,850,048–7,727,276,032` bytes) across all 
 Each fresh owner used the fixed prompt `Count from 1 to 100.`, thinking off,
 seed 42 and the standard Swift adapter at scale 1.3. All seven measured responses
 reported eight completion tokens and returned `1, 2, 3,` before hitting the cap.
-Runner now pins **Rust Prism `0.1.21`** (`90eb974`, with source `c8e96d7`..`0fb511f`), which
-adds the `0.1.15`–`0.1.21` CPU NEON, 18-worker row parallelism (`MAX_ROW_WORKERS = 18`),
+Runner now pins **Rust Prism `0.1.22`** (`6b4f452`, with source `c8e96d7`..`795ee6e`), which
+adds the `0.1.15`–`0.1.22` CPU NEON, 18-worker row parallelism (`MAX_ROW_WORKERS = 18`),
 `TL1` nibble lookup tables (`Tl1BlockLut`), `TQ1_0`/`TQ2_0` LUT + NEON SIMD, direct
 `PTQ1 × Q8_K` dot kernels, multi-worker GDN/attention/conv/SwiGLU, `4x4`/`8x8` tiled-prefill
 GEMM, training-free suffix speculative decoding (`SuffixDecoding`) with transactional block
 verification, and Snapdragon X2 6-arena 168-projection (`blk.0..=blk.26`,
 `2,888,663,040` resident weight bytes / `2,754.84 MiB`) `native-q2` resident NPU optimizations
 (including 8-op `dspqueue` batching and fused `ffn_gate + ffn_up + HTP_OP_GLU_SWIGLU` VTCM
-chaining); an updated end-to-end HTTP timing capture on `0.1.21` remains pending.
+chaining); an updated end-to-end HTTP timing capture on `0.1.22` remains pending.
 See [Hexagon execution contracts](hexagon.md#snapdragon-x2-hexagon-npu-v81-projection-and-layer-timings)
 for the supervised 3-token (`42, 43, 128`) X2 device control timings (`0.64–0.98 ms` for 1
 projection, `1.08–1.44 ms` for 2 projections, `2.27–2.87 ms` for 6 recurrent projections in `blk.0`,

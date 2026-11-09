@@ -8,9 +8,9 @@
     "headerSha256": "50d9375b080df279b9a5d93df9e489f18785b0b9fa98a51045a7c637433e0d9c"
   },
   "rustSource": {
-    "commit": "90eb97481a8df532cc0375660a1533bb0c5fe4cb",
-    "url": "https://github.com/symbiogenesis/prism-inference/archive/90eb97481a8df532cc0375660a1533bb0c5fe4cb.zip",
-    "bytes": 4709355,
-    "sha256": "1f6b357d47300d5130c52797a5210b34f82a06a65e7c9c1b56bd88ad6b78df21"
+    "commit": "6b4f4520b465e5feb665a71af64e7b0e21eb750a",
+    "url": "https://github.com/symbiogenesis/prism-inference/archive/6b4f4520b465e5feb665a71af64e7b0e21eb750a.zip",
+    "bytes": 4774821,
+    "sha256": "d02552d8203080c56e7df7cbdf5848abcd9a01225ceb43b715dbf71da7981033"
   }
 }

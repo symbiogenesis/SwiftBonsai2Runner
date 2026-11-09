@@ -8,7 +8,7 @@ PTQ1 default promotion is a **no-go under the current evidence**. Follow the
 adapter, exact-source application, device/human and benefit gates below before
 reconsidering it. Keep historical 0.1.13 scores separate from 0.1.14 acceptance.
 
-Use native Rust Prism 0.1.21 (`90eb97481a8df532cc0375660a1533bb0c5fe4cb`) as the project's
+Use native Rust Prism 0.1.22 (`6b4f4520b465e5feb665a71af64e7b0e21eb750a`) as the project's
 development default: original Swift PQ2, four CPU row workers, the standard adapter at scale 1.3,
 and default Snapdragon X2 Hexagon NPU `native-q2` resident acceleration
 (`DEFAULT_NATIVE_Q2_PROJECTIONS`, all 168 `PQ2_0` projections across the first 27 layers
@@ -1144,10 +1144,10 @@ strict Release analysis, codegen/spill inspection, actual-model state/adapter pa
 and matched request benefit before a qualified release and Runner repin. No installed
 runtime, default, resource admission or performance verdict changes here.
 
-Qualify the Prism `0.1.21` (`90eb974`, building on `0.1.20` `3a22fef`) CPU NEON and row-parallel
-source optimizations (`fb64903`..`0fb511f`, building on `fcb54af`, `386677c` and `547cf47`) on
+Qualify the Prism `0.1.22` (`6b4f452`, building on `0.1.21` `90eb974`) CPU NEON and row-parallel
+source optimizations (`fb64903`..`795ee6e`, building on `fcb54af`, `386677c` and `547cf47`) on
 settled Prism `main` through owning hosted checks, Release ARM64 codegen/spill inspection,
-actual-model parity and matched request-throughput comparison for the pinned `0.1.21` (`90eb974`)
+actual-model parity and matched request-throughput comparison for the pinned `0.1.22` (`6b4f452`)
 release bundle:
 
 - Single-widen `PQ2` NEON consumption kernels (`pq2_half_unsigned_sum` and
@@ -1584,7 +1584,7 @@ implement persistent serving or establish a speed advantage.
 Qualify the 28-projection single-arena (`c574d6c`/`d8afaec` in Prism `0.1.17`, `eafcca5b` in Runner)
 and multi-arena `native-q2` resident placement expansions (`545f43d`..`e60b11f` in Prism,
 `0cc5f7d7`..`3895fbb5` in Runner) on settled main through owning hosted checks, supervised
-AC-connected device receipts and the pinned Runner release-bundle `0.1.21` (`90eb974`):
+AC-connected device receipts and the pinned Runner release-bundle `0.1.22` (`6b4f452`):
 
 - Multi-arena resident weight allocation (`NATIVE_Q2_MAX_WEIGHT_ARENAS = 6`, alternating
   `[502_824_960, 460_062_720, 502_824_960, 460_062_720, 502_824_960, 460_062_720]` byte arenas up to
