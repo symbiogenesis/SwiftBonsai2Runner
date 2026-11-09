@@ -23,6 +23,9 @@ docs/evidence/readme-performance-20261109-refresh/** -text -whitespace
 
 # Keep the final-source crates.io delivery declaration and receipts byte-identical.
 docs/evidence/prism-0123-registry-20261109/** -text -whitespace
+docs/evidence/prism-0123-publish-20261109/** -text -whitespace
+docs/evidence/foundation-bundle-0123-20261109/** -text -whitespace
+docs/evidence/readme-performance-0123-20261109/** -text -whitespace
 
 docs/evidence/local-throughput-20261103/** -text -whitespace
 
