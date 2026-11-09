@@ -1,0 +1,401 @@
+warning: in the working copy of 'src/kernels/pinned_convolution.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/speculative.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tools/hexagon-runtime/src/native_q2.rs', LF will be replaced by CRLF the next time Git touches it
+diff --git a/src/kernels/pinned_convolution.rs b/src/kernels/pinned_convolution.rs
+index 2ff79d4..785b311 100644
+--- a/src/kernels/pinned_convolution.rs
++++ b/src/kernels/pinned_convolution.rs
+@@ -308,8 +308,15 @@ pub(crate) fn step_silu_tokens_in_place(
+     width: usize,
+ ) -> Result<()> {
+     step_tokens_inner::<true, false>(
+-        history, tokens, channels, coefficients, width,
+-        ProjectionRows { rows: &[], offset: 0 },
++        history,
++        tokens,
++        channels,
++        coefficients,
++        width,
++        ProjectionRows {
++            rows: &[],
++            offset: 0,
++        },
+     )
+ }
+ 
+@@ -991,37 +998,64 @@ mod tests {
+     #[test]
+     fn pinned_convolution_projected_rows_match_independent_scalar_bits() -> Result<()> {
+         let samples = [
+-            -0.0, 0.0, f32::from_bits(1), -f32::from_bits(1),
+-            0.125, -0.375, 100.0, -100.0, 0.75,
++            -0.0,
++            0.0,
++            f32::from_bits(1),
++            -f32::from_bits(1),
++            0.125,
++            -0.375,
++            100.0,
++            -100.0,
++            0.75,
+         ];
+         for channels in [1, 4, 8, 12, 65, 128] {
+             for width in [1, 2, 4, 5] {
+                 for count in [0, 1, 2, 8, 16, 32] {
+-                    let history: Vec<_> = samples.iter().copied().cycle()
+-                        .take(channels * (width - 1)).collect();
++                    let history: Vec<_> = samples
++                        .iter()
++                        .copied()
++                        .cycle()
++                        .take(channels * (width - 1))
++                        .collect();
+                     let coefficients: Vec<_> = [0.125, -0.25, 0.5, 0.0, -0.0]
+-                        .into_iter().cycle().take(channels * width).collect();
+-                    let rows: Vec<Vec<_>> = (0..count).map(|token| {
+-                        let mut row = vec![f32::NAN; 3];
+-                        row.extend(samples.iter().copied().cycle().skip(token)
+-                            .take(channels));
+-                        row.extend([f32::INFINITY; 2]);
+-                        row
+-                    }).collect();
++                        .into_iter()
++                        .cycle()
++                        .take(channels * width)
++                        .collect();
++                    let rows: Vec<Vec<_>> = (0..count)
++                        .map(|token| {
++                            let mut row = vec![f32::NAN; 3];
++                            row.extend(samples.iter().copied().cycle().skip(token).take(channels));
++                            row.extend([f32::INFINITY; 2]);
++                            row
++                        })
++                        .collect();
+                     let original_rows: Vec<_> = rows.iter().map(|row| bits(row)).collect();
+                     let mut expected_history = history.clone();
+                     let expected = scalar_projected_rows(
+-                        &mut expected_history, &rows, 3, channels, &coefficients, width,
++                        &mut expected_history,
++                        &rows,
++                        3,
++                        channels,
++                        &coefficients,
++                        width,
+                     );
+                     let mut actual_history = history;
+                     let mut actual = vec![f32::NAN; count * channels];
+                     step_silu_token_rows_into(
+-                        &mut actual_history, &rows, &(3..3 + channels),
+-                        &coefficients, width, &mut actual,
++                        &mut actual_history,
++                        &rows,
++                        &(3..3 + channels),
++                        &coefficients,
++                        width,
++                        &mut actual,
+                     )?;
+                     assert_eq!(bits(&actual), bits(&expected), "{channels}/{width}/{count}");
+                     assert_eq!(bits(&actual_history), bits(&expected_history));
+-                    assert_eq!(rows.iter().map(|row| bits(row)).collect::<Vec<_>>(), original_rows);
++                    assert_eq!(
++                        rows.iter().map(|row| bits(row)).collect::<Vec<_>>(),
++                        original_rows
++                    );
+                 }
+             }
+         }
+@@ -1050,20 +1084,42 @@ mod tests {
+                         }
+                         let original_rows: Vec<_> = rows.iter().map(|row| bits(row)).collect();
+                         let mut expected_history = history.clone();
+-                        let mut expected: Vec<_> = rows.iter()
+-                            .flat_map(|row| row[1..1 + channels].iter().copied()).collect();
+-                        assert!(step_silu_tokens_in_place(
+-                            &mut expected_history, &mut expected,
+-                            channels, &coefficients, width,
+-                        ).is_err());
++                        let mut expected: Vec<_> = rows
++                            .iter()
++                            .flat_map(|row| row[1..1 + channels].iter().copied())
++                            .collect();
++                        assert!(
++                            step_silu_tokens_in_place(
++                                &mut expected_history,
++                                &mut expected,
++                                channels,
++                                &coefficients,
++                                width,
++                            )
++                            .is_err()
++                        );
+                         let mut actual = vec![-999.0; count * channels];
+-                        assert!(step_silu_token_rows_into(
+-                            &mut history, &rows, &(1..1 + channels),
+-                            &coefficients, width, &mut actual,
+-                        ).is_err());
+-                        assert_eq!(bits(&actual), bits(&expected), "{channels}/{width}/{count}/{fault}");
++                        assert!(
++                            step_silu_token_rows_into(
++                                &mut history,
++                                &rows,
++                                &(1..1 + channels),
++                                &coefficients,
++                                width,
++                                &mut actual,
++                            )
++                            .is_err()
++                        );
++                        assert_eq!(
++                            bits(&actual),
++                            bits(&expected),
++                            "{channels}/{width}/{count}/{fault}"
++                        );
+                         assert_eq!(bits(&history), bits(&expected_history));
+-                        assert_eq!(rows.iter().map(|row| bits(row)).collect::<Vec<_>>(), original_rows);
++                        assert_eq!(
++                            rows.iter().map(|row| bits(row)).collect::<Vec<_>>(),
++                            original_rows
++                        );
+                     }
+                 }
+             }
+@@ -1085,9 +1141,17 @@ mod tests {
+             let mut history = vec![0.25; history_len];
+             let coefficients = vec![0.125; coefficients_len];
+             let mut output = vec![-999.0; output_len];
+-            assert!(step_silu_token_rows_into(
+-                &mut history, &rows, &(start..end), &coefficients, width, &mut output,
+-            ).is_err());
++            assert!(
++                step_silu_token_rows_into(
++                    &mut history,
++                    &rows,
++                    &(start..end),
++                    &coefficients,
++                    width,
++                    &mut output,
++                )
++                .is_err()
++            );
+             assert_eq!(history, vec![0.25; history_len]);
+             assert_eq!(output, vec![-999.0; output_len]);
+         }
+diff --git a/src/speculative.rs b/src/speculative.rs
+index 93f3b86..81a5428 100644
+--- a/src/speculative.rs
++++ b/src/speculative.rs
+@@ -164,12 +164,11 @@ impl SuffixDrafter {
+             return Ok(&[]);
+         }
+         let max_len = config.max_match_tokens.min(history.len() - 1);
+-        let Some(continuation_start) = suffix_match_start(
+-            history,
+-            config.min_match_tokens,
+-            max_len,
+-            |left, right| left == right,
+-        )? else {
++        let Some(continuation_start) =
++            suffix_match_start(history, config.min_match_tokens, max_len, |left, right| {
++                left == right
++            })?
++        else {
+             return Ok(&[]);
+         };
+         let available = (history.len() - continuation_start).min(limit);
+@@ -202,7 +201,10 @@ fn suffix_match_start(
+             0
+         };
+         while matched < maximum - offset
+-            && equal(history[length - matched - 1], history[length - offset - matched - 1])
++            && equal(
++                history[length - matched - 1],
++                history[length - offset - matched - 1],
++            )
+         {
+             matched += 1;
+         }
+@@ -860,15 +862,11 @@ mod tests {
+                             }
+                             let maximum = maximum.min(length - 1);
+                             let mut comparisons = 0;
+-                            let start = suffix_match_start(
+-                                &history,
+-                                minimum,
+-                                maximum,
+-                                |left, right| {
++                            let start =
++                                suffix_match_start(&history, minimum, maximum, |left, right| {
+                                     comparisons += 1;
+                                     left == right
+-                                },
+-                            )?;
++                                })?;
+                             let actual = start.map_or(&[][..], |start| {
+                                 &history[start..start + 8.min(length - start)]
+                             });
+diff --git a/tools/hexagon-runtime/src/native_q2.rs b/tools/hexagon-runtime/src/native_q2.rs
+index 0640028..3b6c67d 100644
+--- a/tools/hexagon-runtime/src/native_q2.rs
++++ b/tools/hexagon-runtime/src/native_q2.rs
+@@ -1006,7 +1006,12 @@ impl<S: NativeQ2Submitter> NativeQ2Executor<S> {
+             return Ok(());
+         }
+         if cached.is_none() && self.residency.is_none() {
+-            return self.project_transient_token_tile(tensor, (columns, rows), activations, outputs);
++            return self.project_transient_token_tile(
++                tensor,
++                (columns, rows),
++                activations,
++                outputs,
++            );
+         }
+         for activation in activations {
+             if activation.len() != columns {
+@@ -3298,8 +3303,11 @@ mod tests {
+                     for index in 0..128 {
+                         let group = (index % 32) / 4;
+                         let lane = index % 4;
+-                        let at = pair + (group / 4) * 576 + (group % 4) * 128
+-                            + (row % 32) * 4 + index / 32;
++                        let at = pair
++                            + (group / 4) * 576
++                            + (group % 4) * 128
++                            + (row % 32) * 4
++                            + index / 32;
+                         let code = (weights[at] >> (lane * 2)) & 3;
+                         dot += f32::from(i16::from(code) - 1) * activation[block * 128 + index];
+                     }
+@@ -3318,7 +3326,11 @@ mod tests {
+         let mut tensor = lazy_tensor("blk.0.ffn_up.weight", 256, rows);
+         let mut data = tensor.data.to_vec();
+         for (index, block) in data.as_chunks_mut::<34>().0.iter_mut().enumerate() {
+-            let header = if index.is_multiple_of(3) { 0x3800_u16 } else { 0x3c00_u16 };
++            let header = if index.is_multiple_of(3) {
++                0x3800_u16
++            } else {
++                0x3c00_u16
++            };
+             block[..2].copy_from_slice(&header.to_le_bytes());
+             for (lane, byte) in block[2..].iter_mut().enumerate() {
+                 *byte = u8::try_from((index * 13 + lane * 7) % 256).unwrap_or(0);
+@@ -3346,8 +3358,8 @@ mod tests {
+                 }
+                 for group in 0..8 {
+                     for digit in 0..4 {
+-                        let at = pair + (group / 4) * 576 + (group % 4) * 128
+-                            + (row % 32) * 4 + digit;
++                        let at =
++                            pair + (group / 4) * 576 + (group % 4) * 128 + (row % 32) * 4 + digit;
+                         for lane in 0..4 {
+                             let code = (original[2 + group * 4 + lane] >> (digit * 2)) & 3;
+                             expected_weights[at] |= code << (lane * 2);
+@@ -3369,7 +3381,11 @@ mod tests {
+             nonfinite_call: None,
+         };
+         let executor = NativeQ2Executor::new(submitter, limits, payload);
+-        if refused_residency { executor.with_resident_weights(metadata) } else { Ok(executor) }
++        if refused_residency {
++            executor.with_resident_weights(metadata)
++        } else {
++            Ok(executor)
++        }
+     }
+ 
+     #[test]
+@@ -3377,17 +3393,24 @@ mod tests {
+         clippy::suboptimal_flops,
+         reason = "The independent original-PQ2 test oracle retains explicit multiply then add order."
+     )]
+-    fn native_q2_transient_token_tile_matches_independent_layout_and_scalar_outputs() -> Result<()> {
++    fn native_q2_transient_token_tile_matches_independent_layout_and_scalar_outputs() -> Result<()>
++    {
+         for rows in [32, 64] {
+             let tensor = transient_token_tensor(rows);
+             for refused_residency in [false, true] {
+                 for tokens in [0, 1, 8, 16, 32] {
+                     let mut executor = transient_token_executor(&tensor, refused_residency)?;
+-                    let activations: Vec<Vec<f32>> = (0..tokens).map(|token| {
+-                        (0..256).map(|index| {
+-                            f32::from(i16::try_from((token * 3 + index) % 17).unwrap_or(0) - 8)
+-                        }).collect()
+-                    }).collect();
++                    let activations: Vec<Vec<f32>> = (0..tokens)
++                        .map(|token| {
++                            (0..256)
++                                .map(|index| {
++                                    f32::from(
++                                        i16::try_from((token * 3 + index) % 17).unwrap_or(0) - 8,
++                                    )
++                                })
++                                .collect()
++                        })
++                        .collect();
+                     let mut outputs = vec![vec![91.0]; tokens];
+                     executor.project_f32_tokens(&tensor, &activations, true, &mut outputs)?;
+                     for (activation, output) in activations.iter().zip(&outputs) {
+@@ -3398,7 +3421,8 @@ mod tests {
+                                 let mut dot = 0.0_f32;
+                                 for index in 0..128 {
+                                     let code = (original[2 + index % 32] >> (2 * (index / 32))) & 3;
+-                                    dot += f32::from(i16::from(code) - 1) * activation[block * 128 + index];
++                                    dot += f32::from(i16::from(code) - 1)
++                                        * activation[block * 128 + index];
+                                 }
+                                 expected += scale(original)? * dot;
+                             }
+@@ -3424,7 +3448,8 @@ mod tests {
+     }
+ 
+     #[test]
+-    fn native_q2_transient_token_tile_preserves_failure_order_and_terminal_publication() -> Result<()> {
++    fn native_q2_transient_token_tile_preserves_failure_order_and_terminal_publication()
++    -> Result<()> {
+         for refused_residency in [false, true] {
+             for failure in 0..7 {
+                 let mut tensor = transient_token_tensor(32);
+@@ -3441,7 +3466,9 @@ mod tests {
+                         let mut data = tensor.data.to_vec();
+                         data[34..36].copy_from_slice(&0x7e00_u16.to_le_bytes());
+                         tensor.data = Arc::from(data);
+-                        if failure == 6 { activations[0][0] = f32::NAN; }
++                        if failure == 6 {
++                            activations[0][0] = f32::NAN;
++                        }
+                     }
+                     _ => return Err(invalid("unsupported test failure selection")),
+                 }
+@@ -3456,16 +3483,30 @@ mod tests {
+                 };
+                 assert_eq!(executor.submitter.activations.len(), expected_calls);
+                 if failure == 6 {
+-                    let error = result.err().ok_or_else(|| invalid("missing expected error"))?;
+-                    assert!(error.to_string().contains("nonfinite Hexagon projection value"));
++                    let error = result
++                        .err()
++                        .ok_or_else(|| invalid("missing expected error"))?;
++                    assert!(
++                        error
++                            .to_string()
++                            .contains("nonfinite Hexagon projection value")
++                    );
+                 }
+                 let attempted = u64::try_from(expected_calls)?;
+-                let completed = if matches!(failure, 3 | 4) { 1 } else { attempted };
++                let completed = if matches!(failure, 3 | 4) {
++                    1
++                } else {
++                    attempted
++                };
+                 assert_eq!(executor.statistics().operations_attempted, attempted);
+                 assert_eq!(executor.statistics().operations_completed, completed);
+                 assert_eq!(executor.queue_writes_attempted(), attempted);
+                 assert_eq!(executor.queue_writes_completed(), completed);
+-                assert!(executor.project_f32_tokens(&tensor, &activations, true, &mut outputs).is_err());
++                assert!(
++                    executor
++                        .project_f32_tokens(&tensor, &activations, true, &mut outputs)
++                        .is_err()
++                );
+                 assert_eq!(executor.submitter.activations.len(), expected_calls);
+                 assert_eq!(executor.residency_statistics().tensors_prepared, 0);
+             }

@@ -1110,6 +1110,30 @@ Follow [CPU arithmetic, dispatch and acceptance](docs/cpu-kernels.md). Pin artif
 runtime, compiler, format, shapes, ISA and numerics; choose work from CI hotspot,
 bandwidth, packing and dispatch evidence.
 
+Qualify the [direct prefill, linear suffix and transient tile source changes](docs/evidence/performance-advance-20261109/summary.json)
+on settled Prism main through owner-managed hosted checks. Eligible ARM64 GDN
+prefill now reads immutable projected token rows directly, omitting the raw
+head-major staging copy (60 MiB of nominal writes plus matching reads for a
+32-token Swift tile across 48 recurrent layers). Suffix drafting uses a bounded
+64-byte reverse-Z table with linear token comparisons. Single-operation transient
+native-Q2 tiles pack weights once across their ordered token submissions instead
+of once per token; resident and multi-operation tiled dispatch are unchanged.
+The exact hosted gate now includes seven new controls and binds the documented
+incompatible Windows-binding analyzer policy into source identity.
+
+The single new model-free source check passed canonical formatting and all five
+receipt controls, then stopped at the selected compilation's 180-second cap
+before any Rust control executed. Process-tree termination and parent exit were
+confirmed; final retention closed at 185.058 seconds within the five-minute
+aggregate allowance, with AC connected, saver off and 99% charge at the aggregate
+endpoints. Preserve this failed receipt and closed clock without retrying it.
+Complete selected-target compilation, all twenty exact Rust controls, strict
+analysis, feature-disabled compilation, Release ARM64 codegen/resource review,
+actual-model state/logit/adapter and cancellation parity, and matched whole-request
+benefit in their owning lanes before release or Runner repinning. Source work
+counts establish no measured speedup, reduced admission or new default; existing
+installed runtimes remain unchanged.
+
 Qualify the [grouped GDN, suffix correction and resident solver source changes](docs/evidence/performance-progress-20261109/summary.json)
 on settled Prism main through owner-managed hosted checks. Swift's 128-wide GDN
 decode rows now use half the private staging payload, including normal four/eight-row

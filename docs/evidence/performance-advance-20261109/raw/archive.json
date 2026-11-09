@@ -1,0 +1,14 @@
+{
+  "clockClosed": true,
+  "files": {
+    "01-compiler.log": "f384a15180d0cec293758df05f1259c243f75de344f28f46011a6dc7cf305c29",
+    "02-source-head.log": "c10e051dbc2fcad26e2c5171cb6ff43dba036b1503fc3a5c66544185ed713843",
+    "03-format.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "04-format-check.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "05-source-files.log": "484bfe694d1248bc08dacc999fae121e1f776a679b7cff15565537ec123157ab",
+    "06-formatted-source-diff.log": "0a4bb3e9ff2b84854202e3a7577b5321a61da12a6564e162471023db663b75db",
+    "07-receipt-controls.log": "874ebec3bd21701d41702afb34e803592b792a6d86d0220501fd415877e364b2",
+    "08-compile-controls.log": "74a3b438fb74ad7e614da3b83c070a27002f9d74b484c213750ec4577042db8f",
+    "receipt.json": "c25a8671d851b1ea88d8f8399a0264793b12bf00baaf7ffc760dec6486ccf676"
+  }
+}
