@@ -3,7 +3,7 @@ name = "bonsai-speech-asr"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
-publish = false
+publish.workspace = true
 license.workspace = true
 repository.workspace = true
 keywords = ["speech", "asr", "canary", "gguf", "native"]
@@ -11,7 +11,7 @@ categories = ["multimedia::audio"]
 description = "Bounded native Canary-Qwen 2.5B recognition for Bonsai speech services"
 
 [dependencies]
-bonsai-speech-service = { path = "../speech-service" }
+bonsai-speech-service.workspace = true
 fearless_simd.workspace = true
 serde_json.workspace = true
 transcribe-cpp = { version = "=0.4.1", default-features = false }

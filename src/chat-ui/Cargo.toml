@@ -3,7 +3,7 @@ name = "bonsai-chat"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
-publish = false
+publish.workspace = true
 license.workspace = true
 repository.workspace = true
 keywords = ["chat", "windows", "native", "llm", "rust"]
@@ -13,16 +13,16 @@ description = "Native Rust desktop chat for the local Swift Bonsai 2 broker"
 [dependencies]
 serde = { workspace = true, features = ["derive", "rc"] }
 serde_json.workspace = true
-httparse = "=1.10.1"
+httparse.workspace = true
 memchr.workspace = true
 
 [target.'cfg(windows)'.dependencies]
-bonsai-audio = { path = "../audio" }
+bonsai-audio.workspace = true
 eframe = { version = "=0.37.0", default-features = false, features = ["accesskit", "clipboard", "default_fonts", "system_fonts", "wgpu_no_default_features"] }
 # Select all supported Windows backends explicitly for eframe's shared renderer.
 wgpu = { version = "=30.0.1", default-features = false, features = ["std", "parking_lot", "dx12", "vulkan", "gles", "wgsl"] }
-bonsai-windows-credentials = { path = "../windows-credentials" }
-bonsai-windows-process = { path = "../windows-process" }
+bonsai-windows-credentials.workspace = true
+bonsai-windows-process.workspace = true
 raw-window-handle = "=0.6.2"
 windows-sys = { workspace = true, features = ["Win32_Foundation", "Win32_Graphics_Gdi", "Win32_Media_Audio", "Win32_UI_WindowsAndMessaging", "Win32_UI_Accessibility"] }
 windows = { version = "=0.62.2", features = ["Win32_System_WinRT", "Foundation", "Media_Capture", "Media_MediaProperties", "Storage_Streams", "Security_Authorization_AppCapabilityAccess"] }

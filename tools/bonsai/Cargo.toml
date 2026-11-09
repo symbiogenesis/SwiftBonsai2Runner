@@ -27,18 +27,18 @@ test = false
 doc = false
 
 [dependencies]
-bonsai-artifacts = { path = "../../src/artifacts" }
-bonsai-audio = { path = "../../src/audio" }
-bonsai-cpu-policy = { path = "../../src/cpu-policy" }
-httparse = "=1.10.1"
+bonsai-artifacts.workspace = true
+bonsai-audio.workspace = true
+bonsai-cpu-policy.workspace = true
+httparse.workspace = true
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 sha2.workspace = true
 zip.workspace = true
 
 [target.'cfg(windows)'.dependencies]
-bonsai-windows-process = { path = "../../src/windows-process" }
-bonsai-windows-credentials = { path = "../../src/windows-credentials" }
+bonsai-windows-process.workspace = true
+bonsai-windows-credentials.workspace = true
 
 [lints]
 workspace = true

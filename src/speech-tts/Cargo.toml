@@ -3,7 +3,7 @@ name = "bonsai-speech-tts"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
-publish = false
+publish.workspace = true
 license.workspace = true
 repository.workspace = true
 keywords = ["speech", "tts", "qwen", "ggml", "native"]
@@ -11,8 +11,8 @@ categories = ["multimedia::audio"]
 description = "Owned native Qwen VoiceDesign speech inference for Bonsai"
 
 [dependencies]
-bonsai-audio = { path = "../audio" }
-bonsai-speech-service = { path = "../speech-service" }
+bonsai-audio.workspace = true
+bonsai-speech-service.workspace = true
 fearless_simd.workspace = true
 serde_json.workspace = true
 

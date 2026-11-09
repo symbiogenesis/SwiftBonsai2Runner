@@ -5,6 +5,7 @@ edition.workspace = true
 rust-version.workspace = true
 publish.workspace = true
 license.workspace = true
+repository.workspace = true
 description = "Bounded development chat transport and request supervision for the Bonsai broker"
 
 [features]
@@ -20,20 +21,20 @@ path = "src/main.rs"
 test = false
 
 [dependencies]
-bonsai-artifacts = { path = "../artifacts" }
-bonsai-cpu-policy = { path = "../cpu-policy" }
+bonsai-artifacts.workspace = true
+bonsai-cpu-policy.workspace = true
 http = "=1.5.0"
-httparse = "=1.10.1"
+httparse.workspace = true
 memchr.workspace = true
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 simd-json = { version = "=0.19.0", optional = true }
-subtle = "=2.6.1"
+subtle.workspace = true
 tokio = { workspace = true, features = ["io-util", "net", "rt", "signal", "sync", "time"] }
 
 [target.'cfg(windows)'.dependencies]
-bonsai-windows-process = { path = "../windows-process" }
-bonsai-windows-credentials = { path = "../windows-credentials" }
+bonsai-windows-process.workspace = true
+bonsai-windows-credentials.workspace = true
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["test-util"] }

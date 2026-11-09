@@ -11,17 +11,17 @@ keywords = ["speech", "http", "native", "local", "audio"]
 categories = ["network-programming", "multimedia::audio"]
 
 [dependencies]
-bonsai-audio = { path = "../audio" }
-bonsai-artifacts = { path = "../artifacts" }
-httparse = "=1.10.1"
+bonsai-audio.workspace = true
+bonsai-artifacts.workspace = true
+httparse.workspace = true
 memchr.workspace = true
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
-subtle = "=2.6.1"
+subtle.workspace = true
 
 [target.'cfg(windows)'.dependencies]
-bonsai-windows-credentials = { path = "../windows-credentials" }
-bonsai-windows-process = { path = "../windows-process" }
+bonsai-windows-credentials.workspace = true
+bonsai-windows-process.workspace = true
 
 [lints]
 workspace = true
