@@ -1,0 +1,103 @@
+{
+  "schemaVersion": 1,
+  "kind": "independent-offline-successful-source055-bundle-review",
+  "recordedDate": "2026-11-09",
+  "method": "Independent retained JSON, ZIP/CRC, SHA-256, canonical Git-blob, TOML and ARM64 PE-header review in an individual Runner worktree. No CI/API/network request, compiler, software test, power query, model, benchmark or push by this reviewer.",
+  "status": "all-scoped-bundle-data-gates-passed",
+  "sourceRevision": "055c7430cb4771dfddb24ddaa30494af6ad182da",
+  "version": "0.1.23",
+  "rawArchive": {
+    "membersVerified": 217,
+    "allLengthsMatch": true,
+    "allSha256Match": true,
+    "executedEntrypointBaseAndDeclarationMatchReceiptHashes": true,
+    "rawFilesModifiedByReview": false
+  },
+  "ownedOperations": {
+    "exactNonForcePushes": 1,
+    "dedicatedDispatches": 1,
+    "automaticFoundation": {"id": 42721953165, "attempt": 1, "sourceMatches": true, "status": "completed", "conclusion": "cancelled", "terminalConfirmed": true},
+    "dedicatedBundle": {"id": 42721996680, "attempt": 1, "workflowId": 412647161, "workflowFile": "foundation-bundle.yml", "event": "workflow_dispatch", "branch": "main", "operationId": "prism0123-20261109-attempt3-055c7430", "status": "completed", "conclusion": "success", "terminalConfirmed": true},
+    "dedicatedFinalApiSourcePathEventNonceAndAttemptMatch": true,
+    "bothOwnedRunsTerminal": true,
+    "cleanupConfirmed": true,
+    "retries": 0
+  },
+  "officialArtifact": {
+    "id": 13720352532,
+    "name": "prism-inference-0.1.23-aarch64-pc-windows-msvc",
+    "file": "raw/102-download-owned-artifact.zip",
+    "bytes": 5314497,
+    "sha256": "6d3b7687768cffb1867007687b25f1f7ab18526aacd782709882c2916c1795b6",
+    "officialRunSourceAndArtifactIdentityMatch": true,
+    "officialDigestAndLengthMatchDownloadedBytes": true,
+    "exactOuterEntries": ["prism-inference-0.1.23-aarch64-pc-windows-msvc.zip", "prism-inference-0.1.23-aarch64-pc-windows-msvc.receipt.json", "bundle-scope.json"],
+    "allOuterEntriesMatchRetainedInnerFiles": true
+  },
+  "releaseBundle": {
+    "file": "raw/prism-inference-0.1.23-aarch64-pc-windows-msvc.zip",
+    "bytes": 5409721,
+    "sha256": "bc792fdd6044ff4392a8aedbe241f634bd4492ce086d62dcca392f8d993725ee",
+    "exactInnerFileCount": 9,
+    "arm64Executables": ["prism-inference.exe", "bonsai-token-worker.exe", "bonsai-swift-worker.exe", "prism-inference-server.exe", "bonsai-gguf.exe"],
+    "licenseFiles": ["LICENSE", "NOTICE", "PRISM-LICENSE.txt", "CAMELID-LICENSE.txt"],
+    "everyEntryLengthAndSha256MatchProducerReceipt": true,
+    "allFiveDosAndArm64PeHeadersPass": true,
+    "noDuplicateEncryptedLinkedOrUnsafeArchiveEntries": true,
+    "producerSourceRunAttemptVersionTargetAndRepositoryMatch": true,
+    "compilerPin": "nightly-2026-11-09-aarch64-pc-windows-msvc",
+    "compilerScope": "Genuine source-bound producer receipt and matching source compiler pin; no separate local compiler invocation by this reviewer."
+  },
+  "sourceArchive": {
+    "file": "raw/source.zip",
+    "url": "https://github.com/symbiogenesis/prism-inference/archive/055c7430cb4771dfddb24ddaa30494af6ad182da.zip",
+    "bytes": 4816622,
+    "sha256": "7bf185775527e51c45f693c59ac0fc5dde68663a254ca6432b4ed4b60ebaa007",
+    "fullCommitRootMatches": true,
+    "canonicalGitBlobsVerified": 743,
+    "exactRegularFileInventoryMatchesCommittedTree": true,
+    "noExtraSourceFiles": true,
+    "runtimeAndPrivateServerVersion": "0.1.23",
+    "serverExactRuntimeDependency": "=0.1.23",
+    "pinnedCompilerChannel": "nightly-2026-11-09",
+    "workingCheckoutCrLfHashesKeptSeparate": true
+  },
+  "producerScope": {
+    "receiptControlsPassed": 9,
+    "finalSourceChecksPassed": true,
+    "productionLinkingPassed": true,
+    "exactOperationNonceMatches": true,
+    "fullFoundationQualified": false,
+    "modelAcceptanceQualified": false,
+    "performanceQualified": false,
+    "interpretation": "The successful dedicated workflow and scoped producer receipt establish its selected source-policy/analyzer/portable/linking/bundle result. They do not qualify the complete Foundation suite or actual-model behavior."
+  },
+  "clock": {
+    "maximumAggregateSeconds": 360,
+    "elapsedSecondsThroughRetention": 296.1143460000003,
+    "closed": true,
+    "withinDeclaredAllowance": true,
+    "cleanupConfirmed": true,
+    "retentionComplete": true,
+    "clockRestarted": false
+  },
+  "power": {
+    "periodicSamples": 206,
+    "aggregateAndStepEndpointsIncludingPostRetention": 209,
+    "totalRetainedObservationsReviewed": 415,
+    "allRecordedAcConnected": true,
+    "allRecordedBatterySaver": false,
+    "allRecordedChargePercent": 99,
+    "continuousPowerStabilityProven": false,
+    "performanceComparisonQualified": false,
+    "newPowerQueriesByReviewer": 0
+  },
+  "reviewedEvidenceSha256": {
+    "raw/archive.json": "fdad021760c92ebf538e7186302ccbe493adfbd17eb2b48f23e4679f11d9072e",
+    "raw/final-clock.json": "ebf49d4b037077c0973745f5f7f252a979ebaa756a2f3a523534687adf412ee1",
+    "raw/verified-bundle.json": "2924a8ff0de0b7f192d7ff4006f51e2c5cef187b87a061ca1e94a80fc3cbb2e6",
+    "raw/prism-inference-0.1.23-aarch64-pc-windows-msvc.receipt.json": "a163aabbcb9557dc21153197826c92953d214f407442079451b8247d8808f07c",
+    "raw/bundle-scope.json": "33057011858261253a26f33fc99a8170fcc776503e77748662c0e6c98a024f22"
+  },
+  "handoff": "Scoped bundle and source bytes are ready for separate publication and immutable release/Runner-lock review. This review performs no publication, repin or performance capture."
+}
