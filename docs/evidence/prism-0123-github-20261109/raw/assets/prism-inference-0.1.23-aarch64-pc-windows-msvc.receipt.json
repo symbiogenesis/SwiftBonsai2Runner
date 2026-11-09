@@ -1,0 +1,62 @@
+{
+  "SchemaVersion": 1,
+  "Repository": "https://github.com/symbiogenesis/prism-inference",
+  "SourceRevision": "055c7430cb4771dfddb24ddaa30494af6ad182da",
+  "Version": "0.1.23",
+  "Target": "aarch64-pc-windows-msvc",
+  "Toolchain": "nightly-2026-11-09-aarch64-pc-windows-msvc",
+  "Files": [
+    {
+      "Name": "bonsai-gguf.exe",
+      "Bytes": 438272,
+      "Sha256": "d1f42b500ccff6db5bc7ea7839435ab812036796c47a47b6bdc7f9f9ccfbbf90"
+    },
+    {
+      "Name": "bonsai-swift-worker.exe",
+      "Bytes": 3062784,
+      "Sha256": "ab14189119523495d7912e12711c4a284a8ea1e7e1428903544090419f75a2fd"
+    },
+    {
+      "Name": "bonsai-token-worker.exe",
+      "Bytes": 504320,
+      "Sha256": "2a948fa02173f6ff7563540aa82f096dfbc12d505a2fdd53e4694ffe7a51ebeb"
+    },
+    {
+      "Name": "CAMELID-LICENSE.txt",
+      "Bytes": 1087,
+      "Sha256": "cfd0bfa3c3f54585039a58a2dd86a0541b15c29e9f825d244c6f3f0d7c771015"
+    },
+    {
+      "Name": "LICENSE",
+      "Bytes": 11560,
+      "Sha256": "3ddf9be5c28fe27dad143a5dc76eea25222ad1dd68934a047064e56ed2fa40c5"
+    },
+    {
+      "Name": "NOTICE",
+      "Bytes": 2369,
+      "Sha256": "e3b6278bbba57b0bb62cb830facd20c2ca347fdbd655be87b83a78b2a4d42a6b"
+    },
+    {
+      "Name": "prism-inference-server.exe",
+      "Bytes": 3866112,
+      "Sha256": "6e684a6aabc7ee8c01f4754f667d38d66f3ec7b002078178f0c0dda9cefc4c2a"
+    },
+    {
+      "Name": "prism-inference.exe",
+      "Bytes": 2511872,
+      "Sha256": "481eb94b459131c30f376867814ee915e11b981cd943ac0cf8870bf7595f430a"
+    },
+    {
+      "Name": "PRISM-LICENSE.txt",
+      "Bytes": 1099,
+      "Sha256": "bcd8ec749126d45cb06737d0690295d73df4b6e7e194205bcf91190368f27285"
+    }
+  ],
+  "Archive": {
+    "Name": "prism-inference-0.1.23-aarch64-pc-windows-msvc.zip",
+    "Bytes": 5409721,
+    "Sha256": "bc792fdd6044ff4392a8aedbe241f634bd4492ce086d62dcca392f8d993725ee"
+  },
+  "RunId": "42721996680",
+  "RunAttempt": "1"
+}

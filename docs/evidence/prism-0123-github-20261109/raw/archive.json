@@ -1,0 +1,140 @@
+{
+  "files": {
+    "01-tag-before.stderr.log": {
+      "bytes": 26,
+      "sha256": "a610a1e09352bf51f3b6947315b340b22127697a464711d72e80bea47f576fdc"
+    },
+    "01-tag-before.stdout.log": {
+      "bytes": 1373,
+      "sha256": "8d889a14ef354074ed3a235dd5835fa44c068fca3808bc5ed1c1d7c40b512d7a"
+    },
+    "02-releases-before.stderr.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "02-releases-before.stdout.log": {
+      "bytes": 148307,
+      "sha256": "4f87664ae0a52fdfb607b996f016aa2a17ef6bdc20c048de34a5326facfd1347"
+    },
+    "03-created-tag.stderr.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "03-created-tag.stdout.log": {
+      "bytes": 1877,
+      "sha256": "b59988a6f573ec1252932669e1e75940f5ddbf7eb0056a70ab0e22aef71e0560"
+    },
+    "04-create-draft.stderr.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "04-create-draft.stdout.log": {
+      "bytes": 93,
+      "sha256": "7e266240874d8dc766014038a7951ed9cbf2235bf20af4bf2db1e473cc88265a"
+    },
+    "05-upload-assets.stderr.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "05-upload-assets.stdout.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "06-draft-release-list.stderr.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "06-draft-release-list.stdout.log": {
+      "bytes": 156512,
+      "sha256": "44f6400f075d132fc72a2c6c0ebbd999eccb6e2b54b111c19ea24df8f0c5f242"
+    },
+    "07-draft-release.stderr.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "07-draft-release.stdout.log": {
+      "bytes": 9648,
+      "sha256": "45d28c066fc32645fb446efd6225c7c2deb6f411e2144720bd3ce752719803df"
+    },
+    "08-publish-prerelease.stderr.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "08-publish-prerelease.stdout.log": {
+      "bytes": 71,
+      "sha256": "4291decaf18b5fe3451b4f9a2024962def1efa9ef6e6662b174c77f85185cad8"
+    },
+    "09-published-release.stderr.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "09-published-release.stdout.log": {
+      "bytes": 9724,
+      "sha256": "70736f514474b14d9c28ce35ef7fd5fd06c7a2af6e8120d5b8b8368a1c75f7e0"
+    },
+    "bundle-clock.json": {
+      "bytes": 681,
+      "sha256": "ebf49d4b037077c0973745f5f7f252a979ebaa756a2f3a523534687adf412ee1"
+    },
+    "bundle-proof.json": {
+      "bytes": 2344,
+      "sha256": "2924a8ff0de0b7f192d7ff4006f51e2c5cef187b87a061ca1e94a80fc3cbb2e6"
+    },
+    "crate-receipt.json": {
+      "bytes": 105396,
+      "sha256": "af91656a2dea56aaa90ca8935ebfac19139acd4f1916aa8ead811671f3136617"
+    },
+    "created-tag-request.json": {
+      "bytes": 81,
+      "sha256": "ef5a197f8a1dfbd3bceebd33c86fc23e85bda4737313da6f455d572dbd941f13"
+    },
+    "created-tag.json": {
+      "bytes": 412,
+      "sha256": "26105333d3fd97bdbf7ccc1eb832b303dceaebf9f033f4c8fac08dd2e4798ab9"
+    },
+    "deliver.py": {
+      "bytes": 18298,
+      "sha256": "3f16f040a82aa2f381f7e66a68549cd1595bff6cbd947ab0da8ca5327b6e8115"
+    },
+    "draft-release-list.json": {
+      "bytes": 185288,
+      "sha256": "57ddcb898992f608703f4c901a36dcf1304fbf4af4557de271fcb008d1af1b7f"
+    },
+    "draft-release.json": {
+      "bytes": 9515,
+      "sha256": "d38fd764cd3a4b5d0ecfbdfa0c98a9dc4f9faa9ffd3b7595dc1fa02d782970f9"
+    },
+    "github-release-notes.md": {
+      "bytes": 1562,
+      "sha256": "fece8cee72ca14fa5acc03eee6e224659ca3a512ef382847a9ab74231a438f1e"
+    },
+    "published-release.json": {
+      "bytes": 9590,
+      "sha256": "c8b4e7ea05d935f47a221e818202c58c7bec4e303bef9557062680aa1581a0aa"
+    },
+    "receipt.json": {
+      "bytes": 18947,
+      "sha256": "94a96b28a0a9e67b21974769281b23788e58a59f5646f5c8ff692c10bfad272a"
+    },
+    "releases-before.json": {
+      "bytes": 175470,
+      "sha256": "3f4c4af6426df4109eeaade52a9e0348faabf30f184cb63ffa68a5454798e0c2"
+    },
+    "workload-plan.json": {
+      "bytes": 2752,
+      "sha256": "84e0458649cfee7b2ed96f0eef6a54bfa8c7b07a633498de63da0b7d8db91d64"
+    },
+    "assets/bundle-scope.json": {
+      "bytes": 520,
+      "sha256": "33057011858261253a26f33fc99a8170fcc776503e77748662c0e6c98a024f22"
+    },
+    "assets/prism-inference-0.1.23-aarch64-pc-windows-msvc.receipt.json": {
+      "bytes": 1979,
+      "sha256": "a163aabbcb9557dc21153197826c92953d214f407442079451b8247d8808f07c"
+    },
+    "assets/prism-inference-0.1.23-aarch64-pc-windows-msvc.zip": {
+      "bytes": 5409721,
+      "sha256": "bc792fdd6044ff4392a8aedbe241f634bd4492ce086d62dcca392f8d993725ee"
+    }
+  }
+}

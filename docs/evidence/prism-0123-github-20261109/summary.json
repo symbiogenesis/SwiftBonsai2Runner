@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "kind": "published-verified-github-development-prerelease",
+  "status": "passed",
+  "version": "0.1.23",
+  "sourceRevision": "055c7430cb4771dfddb24ddaa30494af6ad182da",
+  "authorization": "Owner explicitly authorized this exact tag and verified GitHub prerelease publication. No additional Git reference or CI operation was authorized or performed by this delivery.",
+  "release": {"id": 439778894, "tag": "v0.1.23", "url": "https://github.com/symbiogenesis/prism-inference/releases/tag/v0.1.23", "draft": false, "prerelease": true, "publishedAt": "2026-11-09T23:49:53Z", "assets": 3},
+  "archive": {"name": "prism-inference-0.1.23-aarch64-pc-windows-msvc.zip", "bytes": 5409721, "sha256": "bc792fdd6044ff4392a8aedbe241f634bd4492ce086d62dcca392f8d993725ee"},
+  "checks": {"tagCommitMatches": true, "verifiedTagRequiredForDraft": true, "allDraftAndPublishedAssetDigestsMatch": true, "canonicalPublishedAssetUrlsMatch": true, "existingAssetsClobbered": false},
+  "clock": {"path": "raw/final-clock.json", "maximumTotalSeconds": 120, "elapsedSecondsThroughRetention": 14.676586300000054, "closed": true, "withinAllowance": true, "cleanupConfirmed": true, "retries": 0},
+  "power": {"aggregateEndpointsAndRecordedObservations": "AC connected, battery saver off,99% charge", "continuousStabilityEstablished": false},
+  "evidence": {"receipt": "raw/receipt.json", "officialTag": "raw/created-tag.json", "officialRelease": "raw/published-release.json", "archive": "raw/archive.json", "independentReview": "independent-review.json"},
+  "fullFoundationQualified": false,
+  "modelAcceptanceQualified": false,
+  "performanceQualified": false,
+  "scope": "Publishes the genuine source-bound ARM64 bundle, producer receipt and bundle-only scope. The separately verified candidate pin can now select an actually published immutable asset. Actual models and performance are separate work."
+}

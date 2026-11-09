@@ -1,0 +1,10 @@
+{
+  "ref": "refs/tags/v0.1.23",
+  "node_id": "REF_kwDOVWipD7FyZWZzL3RhZ3MvdjAuMS4yMw",
+  "url": "https://api.github.com/repos/symbiogenesis/prism-inference/git/refs/tags/v0.1.23",
+  "object": {
+    "sha": "055c7430cb4771dfddb24ddaa30494af6ad182da",
+    "type": "commit",
+    "url": "https://api.github.com/repos/symbiogenesis/prism-inference/git/commits/055c7430cb4771dfddb24ddaa30494af6ad182da"
+  }
+}

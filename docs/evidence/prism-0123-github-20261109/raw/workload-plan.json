@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "kind": "owner-authorized-tag-and-github-prerelease-delivery",
+  "recordedDate": "2026-11-09",
+  "authorization": "Owner explicitly authorized creating v0.1.23 at055c7430cb4771dfddb24ddaa30494af6ad182da and publishing the verified GitHub prerelease. No other Git reference, push, CI operation or model workload is authorized.",
+  "sourceRevision": "055c7430cb4771dfddb24ddaa30494af6ad182da",
+  "version": "0.1.23",
+  "hostedRunId": 42721996680,
+  "hostedRunAttempt": 1,
+  "budget": {
+    "maximumTotalSeconds": 120,
+    "workCutoffSeconds": 105,
+    "conservativeEstimateSeconds": 60,
+    "estimateBreakdownSeconds": {"intakeAndCollisionChecks": 10, "tagAndDraft": 10, "uploadAndDraftAudit": 15, "publishAndMetadataAudit": 10, "powerCleanupAndRetention": 15},
+    "maximumSubprocessSeconds": 20,
+    "cleanupAndRetentionReserveSeconds": 15,
+    "retries": 0,
+    "clockRestartAllowed": false,
+    "historicalClocksRemainClosed": true
+  },
+  "inputs": ["--bundle-proof", "--bundle-clock", "--crate-receipt", "--notes", "--work", "--retain"],
+  "fixedWork": [
+    "Require the verified055/0.1.23 hosted bundle run42721996680/attempt1, its accepted closed360-second operator clock and cleanup, and actual verified crates.io publication with matching checksum. Copy and hash the proofs, notes, driver, declaration and three immutable assets.",
+    "Using only the pinned existing GitHub CLI, query the exact tag and release once. Any existing tag/release collision or ambiguous response stops the operation before writes.",
+    "Create only refs/tags/v0.1.23 at the exact055 commit through structured gh api POST git/refs input. Create a draft prerelease with --verify-tag --target055 --latest=false and the copied notes file.",
+    "Upload only the actual ARM64 ZIP, source-bound producer receipt and bundle-scope.json without clobbering. Retain raw official tag/draft metadata; require all three asset sizes and SHA-256 digests and the exact target/source.",
+    "Publish the draft with --draft=false --prerelease --latest=false. Retain published-release.json and require v0.1.23, draftfalse, prereleasetrue, published_at, exact target055 and the canonical named ZIP URL/size/digest.",
+    "Record aggregate/subprocess/periodic power with unavailable values unknown, auth source names without credential values, process cleanup and partial publication state. Retain raw metadata, logs, proofs, notes, assets, hashes and the final clock within the same120-second allowance. Never retry or automatically delete tags, assets or releases."
+  ],
+  "limits": {"ciActions": 0, "models": 0, "benchmarks": 0, "otherReferenceWrites": 0, "automaticRemoteDeletion": false, "fullFoundationQualified": false, "performanceQualified": false}
+}

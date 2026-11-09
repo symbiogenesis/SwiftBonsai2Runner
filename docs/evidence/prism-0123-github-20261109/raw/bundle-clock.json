@@ -1,0 +1,20 @@
+{
+  "maximumAggregateSeconds": 360,
+  "maximumTotalSeconds": 360,
+  "elapsedSecondsThroughRetention": 296.1143460000003,
+  "withinDeclaredAllowance": true,
+  "clockClosed": true,
+  "closed": true,
+  "retentionComplete": true,
+  "cleanupIncomplete": false,
+  "retries": 0,
+  "cleanupConfirmed": true,
+  "powerAfterRetention": {
+    "source": "GetSystemPowerStatus",
+    "utc": "2026-11-09T23:41:54.883283+00:00",
+    "acConnected": true,
+    "batterySaver": false,
+    "chargePercent": 99
+  },
+  "scope": "Includes source push, queue, both owned runs, downloads, verification, cancellation and archive retention; excludes writing this small terminal receipt."
+}
