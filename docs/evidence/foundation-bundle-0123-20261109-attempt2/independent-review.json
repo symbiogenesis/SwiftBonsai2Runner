@@ -1,0 +1,115 @@
+{
+  "schemaVersion": 1,
+  "kind": "independent-offline-source-ready-foundation-failure-review",
+  "recordedDate": "2026-11-09",
+  "method": "Static retained JSON/log-ZIP/source review and SHA-256/length checks in an individual Runner worktree. No CI/API/network request, compiler, fixture test, power query, model or benchmark was executed by this reviewer.",
+  "sourceRevision": "a7cdee96080d6cc33fb6a22b62ede94117150b9b",
+  "run": {
+    "id": 42714544937,
+    "attempt": 1,
+    "workflowId": 412647161,
+    "workflowFile": "foundation-bundle.yml",
+    "event": "workflow_dispatch",
+    "headBranch": "main",
+    "operationId": "prism0123-20261109-attempt2-a7cdee96",
+    "status": "completed",
+    "conclusion": "failure",
+    "terminalConfirmed": true,
+    "cleanupConfirmed": true,
+    "freshDispatches": 1,
+    "pushes": 0,
+    "automaticFoundationQueries": 0,
+    "historicalRunQueriesOrCancellation": 0,
+    "retries": 0
+  },
+  "rawArchive": {
+    "path": "raw/archive.json",
+    "membersVerified": 146,
+    "allLengthsMatch": true,
+    "allSha256Match": true,
+    "entrypointMatchesReceiptHash": true,
+    "sharedOperatorMatchesReceiptHash": true,
+    "declarationMatchesReceiptHash": true,
+    "rawReceiptOrClockModifiedByReview": false
+  },
+  "terminalLogReview": {
+    "declaration": "log-review/workload-plan.json",
+    "receipt": "log-review/receipt.json",
+    "jobId": 129492567687,
+    "runnerLabel": "windows-11-arm",
+    "jobSourceAndRunIdentityMatch": true,
+    "jobsJsonBytes": 3421,
+    "logZipBytes": 31569,
+    "jobsAndLogZipMatchRecordedLengthsAndSha256": true,
+    "logZipMembersReadWithCrcValidation": 13,
+    "scope": "One separately declared read-only review of the already terminal run; no dispatch, push, rerun or resumed CI allowance."
+  },
+  "observedChecks": {
+    "bundleVersionReceiptControlsPassed": 3,
+    "inferenceEfficiencyReceiptControlsPassed": 6,
+    "bothPositiveTestCountAndOkResultsPresentInActualLog": true,
+    "formattingPassedBeforeStrictAnalysis": true,
+    "strictReleaseAllTargetAnalysisPassed": false,
+    "strictFailureCrate": "bonsai-hexagon-runtime (lib test)",
+    "rootCauseDiagnostics": [
+      {"file": "tools/hexagon-runtime/src/native_q2.rs", "line": 2829, "lint": "assert_is_empty", "expression": "assert!(singles[0].is_empty())"},
+      {"file": "tools/hexagon-runtime/src/native_q2.rs", "line": 2904, "lint": "assert_is_empty", "expression": "assert!(output.is_empty())"},
+      {"file": "tools/hexagon-runtime/src/native_q2.rs", "line": 2942, "lint": "assert_is_empty", "expression": "assert!(!copied.scratch_weights.is_empty())"},
+      {"file": "tools/hexagon-runtime/src/native_q2.rs", "line": 3892, "lint": "assert_is_empty", "expression": "assert!(output.is_empty())"}
+    ],
+    "rootCauseDiagnosticCount": 4,
+    "scope": "These are the four observed strict-analysis diagnostics, not a claim that no other analyzer failure could appear after correction.",
+    "featureDisabledCheckReached": false,
+    "productionBuildAndPackageStep": "skipped",
+    "releaseArtifactUploadStep": "skipped"
+  },
+  "clocks": {
+    "originalAttempt": {"maximumAggregateSeconds": 300, "elapsedSecondsThroughRetention": 202.04330020000089, "closed": true, "withinAllowance": true, "cleanupConfirmed": true},
+    "withheldFailureEvidenceSupplement": {"path": "failure-log-supplement.json", "reportedElapsedFromOriginalStartSeconds": 288.401853, "apiSteps": 0, "reason": "The original absolute allowance could not fit log evidence intake; the supplement stopped without querying CI or reopening that clock."},
+    "separateTerminalLogRead": {"maximumAggregateSeconds": 30, "elapsedSecondsThroughRetention": 1.6590521999987686, "closed": true, "withinAllowance": true, "dispatches": 0},
+    "clockRestarted": false,
+    "newAttemptAuthorizedByThisReview": false
+  },
+  "power": {
+    "originalAttemptPeriodicSamples": 149,
+    "originalAttemptAggregateAndStepEndpointsIncludingPostRetention": 143,
+    "withheldSupplementEndpoints": 2,
+    "separateLogReviewAggregateAndStepEndpoints": 6,
+    "allRecordedAcConnected": true,
+    "allRecordedBatterySaver": false,
+    "allRecordedChargePercent": 98,
+    "continuousPowerStabilityProven": false,
+    "scope": "Observations belong to their separate recorded phases. Unobserved gaps are not filled from later snapshots, and no hardware performance comparison is qualified.",
+    "newPowerQueriesByReviewer": 0
+  },
+  "sourceCorrectionPeerReview": {
+    "file": "tools/hexagon-runtime/src/native_q2.rs",
+    "changes": 4,
+    "allInsideCfgTestModuleStartingLine": 2622,
+    "sliceExpectedType": "&[f32]",
+    "outputExpectedType": "Vec<f32>",
+    "scratchWeightExpectedType": "Vec<u8>",
+    "semantics": "Typed empty slice/vector comparisons preserve the three empty checks and one nonempty check. Assertion macros borrow the existing values; Vec::new does not allocate payload storage.",
+    "productionKernelDefaultOrPolicyChanged": false,
+    "compiledOrExecutedByReviewer": false,
+    "remaining": "Final-source analyzer and release qualification remain pending a separately authorized future operation."
+  },
+  "qualification": {
+    "releaseBundleProducedOrDownloadedByOperation": false,
+    "verifiedBundleReceiptProduced": false,
+    "registryPublicationQualified": false,
+    "runnerBinaryRepinQualified": false,
+    "fullFoundationQualified": false,
+    "applicationAcceptanceQualified": false,
+    "performanceQualified": false
+  },
+  "reviewedEvidenceSha256": {
+    "raw/archive.json": "5c18d9303520fd5788a4fed346a343516add96126a5a7056b9fd53dc7444a192",
+    "raw/final-clock.json": "ae58c60a29461a26e010a1119023769438a6ef566884990b801526bd61f6bd20",
+    "failure-log-supplement.json": "5be65af538d014c50e4aeffdaec7be966ff19906e61a2d0315f819a54ef86f98",
+    "log-review/receipt.json": "cae7b23ca9bb69e4fb16743f391890e85386a10e3b2247729fa9e758bbec1a7e",
+    "log-review/final-clock.json": "fb2f39f0b0a43c0c1e1786af31b926b424a9fa889c32abf37ea774a3ef56f12a",
+    "log-review/jobs.json": "05f2cd792c239fc776808609a01f7e4fc9bace077c66111f33f1529bbc4c322c",
+    "log-review/logs.zip": "f198314aea3953fc6c38ad5ddb47e61aa8d6e1084b7554e53f0915807f269507"
+  }
+}
