@@ -1,0 +1,87 @@
+{
+  "schemaVersion": 1,
+  "kind": "independent-offline-foundation-operation-failure-review",
+  "recordedDate": "2026-11-09",
+  "method": "Static JSON, source AST, length and SHA-256 review in an individual Runner worktree. No CI/API/network call, power query, model, benchmark or fixture-test execution by this reviewer.",
+  "sourceRevision": "a7cdee96080d6cc33fb6a22b62ede94117150b9b",
+  "archive": {
+    "path": "raw/archive.json",
+    "sha256": "f41253926327074303440886199946a8ab190bc9f0064cd4076a61981ee9cf03",
+    "members": 59,
+    "allLengthsMatch": true,
+    "allSha256Match": true,
+    "executedDriverMatchesReceiptHash": true,
+    "executedDeclarationMatchesReceiptHash": true,
+    "canonicalSourceFileCount": 743,
+    "originalRawFilesChangedByReview": false
+  },
+  "failure": {
+    "status": "runtime-run-identity-guard-failed-after-successful-dispatch",
+    "all27ExternalCommandsReturnedZero": true,
+    "reason": "The archived bind_run implementation compared API name with the literal Foundation bundle. GitHub returned the dynamic run-name Foundation bundle / prism0123-20261109-a7cdee96 in both name and display_title. Stable source/path/event/branch/attempt and nonce fields matched.",
+    "observedRunId": 42712889670,
+    "observedWorkflowId": 412647161,
+    "observedName": "Foundation bundle / prism0123-20261109-a7cdee96",
+    "observedPath": ".github/workflows/foundation-bundle.yml",
+    "observedEvent": "workflow_dispatch",
+    "observedAttempt": 1,
+    "observedHeadBranch": "main",
+    "discoveryReceipt": "raw/26-discover-foundation-bundle.json",
+    "discoveryReceiptSha256": "1bca71e1a726f3691bc3ecd47afdd2ff31eaf2185a31f10d33d31c2a25d66f53",
+    "archivedBindingPredicateMatchesOriginalCommittedSourceAst": true,
+    "externalPolicyRewriteNeededToExplainFailure": false
+  },
+  "authorizedActions": {
+    "exactNonForcePushes": 1,
+    "remoteBefore": "3bd63f675fd4a97a927e0e6abc11874089814d60",
+    "remoteAfter": "a7cdee96080d6cc33fb6a22b62ede94117150b9b",
+    "pushExitCode": 0,
+    "dedicatedDispatches": 1,
+    "retries": 0,
+    "otherCiQueriedByOperator": false
+  },
+  "cleanup": {
+    "automaticFoundation": {"runId": 42712826648, "status": "completed", "conclusion": "cancelled", "terminalReceipt": "raw/20-observe-automatic-foundation.json"},
+    "originalDedicatedRunCleanup": "unknown in the original retained raw receipt because the same display-label guard rejected cleanup binding",
+    "supplement": "cleanup-supplement.json",
+    "supplementSha256": "2f9fda5eaf9f090e4668e466ceb13f66412c108475bcb2bff3ea342ac9c4004a",
+    "dedicatedFoundation": {"runId": 42712889670, "status": "completed", "conclusion": "cancelled", "sourceAndNonceMatch": true, "terminalConfirmed": true},
+    "bothOwnedFoundationRunsTerminal": true,
+    "otherWorkflowStatus": "unknown; outside this authorized operation and not queried",
+    "newDispatchDuringSupplement": false,
+    "originalRawCleanupUnknownRecordPreserved": true
+  },
+  "clock": {
+    "maximumAggregateSeconds": 300,
+    "originalRawRetentionSeconds": 33.89289099999951,
+    "originalRawClockClosedFlag": true,
+    "originalRawCleanupIncompleteFlag": true,
+    "supplementReportedElapsedFromOriginalStartSeconds": 137.309955,
+    "supplementElapsedScope": "Supplement's reported elapsed from the original UTC start; the same original absolute deadline was retained. This is not a fresh allowance or a reconstructed performance timing.",
+    "supplementWithinOriginalAggregateAllowance": true,
+    "clockRestarted": false,
+    "furtherAttemptAuthorizedByThisReview": false
+  },
+  "power": {
+    "originalPeriodicSamples": 57,
+    "originalAggregateAndStepEndpointsIncludingPostRetention": 57,
+    "supplementAggregateAndStepEndpoints": 16,
+    "totalRetainedObservationsReviewed": 130,
+    "allRecordedAcConnected": true,
+    "allRecordedBatterySaver": false,
+    "allRecordedChargePercent": 99,
+    "continuousPowerStabilityProven": false,
+    "unobservedIntervals": "The interval between original raw retention and the cleanup supplement has no retained power samples; no stability is inferred across that gap.",
+    "newPowerQueriesByReviewer": 0
+  },
+  "qualification": {
+    "verifiedBundleReceiptProduced": false,
+    "artifactDownloadedOrVerified": false,
+    "registryPublicationQualified": false,
+    "runnerBinaryRepinQualified": false,
+    "fullFoundationQualified": false,
+    "performanceQualified": false,
+    "noClaimAboutTestsExecutedInsideCancelledHostedRuns": true
+  },
+  "correction": "The separate source fix removes display-label authority, retains exact path/source/event/branch/nonce/attempt checks, requires positive integer run/workflow IDs, and refuses ID changes on reobservation. Its offline fixture regressions are separate from this failed CI operation."
+}
