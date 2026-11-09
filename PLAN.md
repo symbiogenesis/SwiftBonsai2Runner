@@ -8,7 +8,7 @@ PTQ1 default promotion is a **no-go under the current evidence**. Follow the
 adapter, exact-source application, device/human and benefit gates below before
 reconsidering it. Keep historical 0.1.13 scores separate from 0.1.14 acceptance.
 
-Use native Rust Prism 0.1.22 (`6b4f4520b465e5feb665a71af64e7b0e21eb750a`) as the project's
+Use native Rust Prism 0.1.23 (`055c7430cb4771dfddb24ddaa30494af6ad182da`) as the project's
 development default: original Swift PQ2, four CPU row workers, the standard adapter at scale 1.3,
 and default Snapdragon X2 Hexagon NPU `native-q2` resident acceleration
 (`DEFAULT_NATIVE_Q2_PROJECTIONS`, all 168 `PQ2_0` projections across the first 27 layers
@@ -192,17 +192,25 @@ Its202.043-second clock is closed with confirmed terminal cleanup and146 verifie
 raw archive members. A separate1.659-second read-only terminal-log review retains
 the diagnostics; it did not restart CI or reopen that clock. The four assertions
 are corrected and source-reviewed locally, with production behavior unchanged.
-The corrected Prism candidate is `055c743`; a complete cold check, portable build,
-production linking and packaging conservatively require350 seconds. Execute the
-[prepared six-minute operation](docs/evidence/foundation-bundle-0123-20261109-attempt3/workload-plan.json)
-only after explicit new owner approval for that one allowance and the exact two-
-commit source push. Preserve the standing five-minute default and all older closed
-clocks. No successful bundle, registry upload, actual repin or new timings are claimed.
-Only the runtime crate changes; preserve the five existing helper versions. Verify
-the genuine bundle's source/archive/executable identities before repinning Runner,
-keeping full Foundation and application acceptance independently pending. Declare a
-distinct new-version measurement only after that repin; do not reopen the failed
-0.1.22 attempt or claim unpublished source reductions as measured gains.
+The explicitly approved [corrected-source Foundation operation](docs/evidence/foundation-bundle-0123-20261109-attempt3/summary.json)
+pushed `055c743`, passed nine version/receipt controls, formatting, strict Release
+all-target analysis, portable library compilation, production linking and help
+smoke checks. Its296.114-second clock is closed within the six-minute exception,
+with both owned runs terminal and all217 raw archive members independently verified.
+All415 power observations reported AC connected, saver off and99% charge; they
+establish no uninterrupted stability. The genuine nine-file bundle, five ARM64
+executables and743 canonical source blobs match the source-bound producer receipt.
+The standing five-minute default and all earlier closed clocks remain unchanged.
+The separate [registry publication](docs/evidence/prism-0123-publish-20261109/summary.json)
+passed default Cargo package/publication verification and confirmed the public
+0.1.23 checksum in40.064 seconds of its300-second allowance. Only the runtime
+crate changed; all five registry helper versions remain unchanged. The separately
+approved [GitHub prerelease delivery](docs/evidence/prism-0123-github-20261109/summary.json)
+created only `v0.1.23` at `055c743` and verified all three uploaded asset digests
+before and after publication in14.677 seconds of120. Runner selects the verified
+nine-file binary pin. Complete the declared new-version capture before changing
+README measurements. Keep full Foundation and application acceptance independently pending;
+do not reopen the failed0.1.22 attempt or claim source reductions as measured gains.
 
 Qualify the [shared startup-timeout receipt fix](docs/evidence/ptq1-startup-timeout-20261103/summary.json)
 through owner-managed exact-source hosted preparation. An admitted extended case
@@ -1155,14 +1163,14 @@ five receipt controls, then stopped on incompatible pinned `syn` 2/3 requirement
 in strict analysis. Its 63.152-second clock is closed within the declared
 ten-minute source/publication allowance, with AC connected, saver off and 100%
 charge at all retained endpoints; do not retry it. The narrow documented
-analyzer policy and complete hosted runtime-test/format-policy identity fixes
-are independently source-reviewed but unexecuted. Require strict analysis,
-portable fallback, normalized source-package verification and owning checks
-before the requested crates.io delivery. Prism 0.1.23 and the server's exact
-`=0.1.23` dependency are prepared locally; no upload was attempted. All five
-helper versions were already published and remain unchanged. Runner's verified
-0.1.22 binary lock stays in place until a qualified immutable five-executable
-bundle supplies source/archive/file identities. Full-model state/adapter and
+analyzer policy and hosted runtime-test/format-policy identity fixes subsequently
+passed the separately approved exact-source bundle checks on `055c743`, including
+strict analysis, portable fallback and production linking. Default normalized
+package verification and actual crates.io publication of0.1.23 passed separately;
+the private server's exact `=0.1.23` dependency remains unpublished. All five
+helper versions remain unchanged. Runner's verified0.1.23 binary lock selects the
+published five-executable prerelease with exact source/archive/file identities.
+Full-model state/adapter and
 cancellation parity, ARM64 codegen/resources, vendor lifecycle and matched
 whole-request benefit remain pending; source work counts establish no speedup.
 
@@ -1285,8 +1293,8 @@ runtime, default, resource admission or performance verdict changes here.
 Qualify the Prism `0.1.22` (`6b4f452`, building on `0.1.21` `90eb974`) CPU NEON and row-parallel
 source optimizations (`fb64903`..`795ee6e`, building on `fcb54af`, `386677c` and `547cf47`) on
 settled Prism `main` through owning hosted checks, Release ARM64 codegen/spill inspection,
-actual-model parity and matched request-throughput comparison for the pinned `0.1.22` (`6b4f452`)
-release bundle:
+actual-model parity and matched request-throughput comparison for those changes,
+now included in the pinned `0.1.23` (`055c743`) release bundle:
 
 - Single-widen `PQ2` NEON consumption kernels (`pq2_half_unsigned_sum` and
   `pq2_half_signed_sum` in `fb64903`), widening each 16-byte `PQ2` half once to
@@ -1722,7 +1730,7 @@ implement persistent serving or establish a speed advantage.
 Qualify the 28-projection single-arena (`c574d6c`/`d8afaec` in Prism `0.1.17`, `eafcca5b` in Runner)
 and multi-arena `native-q2` resident placement expansions (`545f43d`..`e60b11f` in Prism,
 `0cc5f7d7`..`3895fbb5` in Runner) on settled main through owning hosted checks, supervised
-AC-connected device receipts and the pinned Runner release-bundle `0.1.22` (`6b4f452`):
+AC-connected device receipts and the pinned Runner release-bundle `0.1.23` (`055c743`):
 
 - Multi-arena resident weight allocation (`NATIVE_Q2_MAX_WEIGHT_ARENAS = 6`, alternating
   `[502_824_960, 460_062_720, 502_824_960, 460_062_720, 502_824_960, 460_062_720]` byte arenas up to

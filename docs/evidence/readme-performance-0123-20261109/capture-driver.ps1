@@ -202,7 +202,7 @@ namespace Readme0123TimingPower {
         $pin.target -cne 'aarch64-pc-windows-msvc' -or $pin.release -cne 'v0.1.23' -or
         $pin.asset.filename -cne $assetName -or $pin.asset.url -cne $assetUrl -or
         $pin.asset.bytes -le 0 -or $pin.asset.sha256 -cnotmatch '^[a-f0-9]{64}$') {
-        throw 'Primary committed runtime pin is not the required actual0.1.23/a7 release.'
+        throw 'Primary committed runtime pin is not the required actual0.1.23/055c743 release.'
     }
     $requiredNames=@('prism-inference.exe','bonsai-token-worker.exe','bonsai-swift-worker.exe',
         'prism-inference-server.exe','bonsai-gguf.exe','LICENSE','NOTICE','PRISM-LICENSE.txt','CAMELID-LICENSE.txt')

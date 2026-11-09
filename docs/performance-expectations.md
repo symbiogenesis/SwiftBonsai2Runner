@@ -97,16 +97,18 @@ commit measured **7.20 GiB** (`7,726,850,048–7,727,276,032` bytes) across all 
 Each fresh owner used the fixed prompt `Count from 1 to 100.`, thinking off,
 seed 42 and the standard Swift adapter at scale 1.3. All seven measured responses
 reported eight completion tokens and returned `1, 2, 3,` before hitting the cap.
-Runner now pins **Rust Prism `0.1.22`** (`6b4f452`, with source `c8e96d7`..`795ee6e`), which
-adds the `0.1.15`–`0.1.22` CPU NEON, 18-worker row parallelism (`MAX_ROW_WORKERS = 18`),
+Runner now pins **Rust Prism `0.1.23`** (`055c743`, building on `0.1.22` `6b4f452`), which
+includes the `0.1.15`–`0.1.22` CPU NEON, 18-worker row parallelism (`MAX_ROW_WORKERS = 18`),
 `TL1` nibble lookup tables (`Tl1BlockLut`), `TQ1_0`/`TQ2_0` LUT + NEON SIMD, direct
 `PTQ1 × Q8_K` dot kernels, multi-worker GDN/attention/conv/SwiGLU, `4x4`/`8x8` tiled-prefill
 GEMM, training-free suffix speculative decoding (`SuffixDecoding`) with transactional block
 verification, and Snapdragon X2 6-arena 168-projection (`blk.0..=blk.26`,
 `2,888,663,040` resident weight bytes / `2,754.84 MiB`) `native-q2` resident NPU optimizations
 (including 8-op `dspqueue` batching and fused `ffn_gate + ffn_up + HTP_OP_GLU_SWIGLU` VTCM
-chaining). The November 9 capture above records short-request HTTP timings for
-`0.1.22`; sustained performance and matched repeated benefit remain pending.
+chaining). Version `0.1.23` also includes direct floating projections, compact rollback
+checkpoints, validated-logit sampling and recurrent staging. The existing November 9
+capture above records `0.1.22`; the new pin alone supplies no new measurement.
+Sustained performance and matched repeated benefit remain pending.
 See [Hexagon execution contracts](hexagon.md#snapdragon-x2-hexagon-npu-v81-projection-and-layer-timings)
 for the supervised 3-token (`42, 43, 128`) X2 device control timings (`0.64–0.98 ms` for 1
 projection, `1.08–1.44 ms` for 2 projections, `2.27–2.87 ms` for 6 recurrent projections in `blk.0`,
