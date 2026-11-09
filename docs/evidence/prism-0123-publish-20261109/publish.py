@@ -210,7 +210,11 @@ def main():
         receipt["compilerIdentity"] = run("compiler-identity", [TOOLCHAIN / "rustc.exe", "-Vv"], 5)
         before = registry("registryBefore")
         cargo = TOOLCHAIN / "cargo.exe"
-        run("normalized-package", [cargo, "package", "--locked", "--offline", "-p", "prism-inference"], 140, minimum=140)
+        # Admit the whole remaining fixed sequence, not a package build that
+        # already cannot leave its conservative audit/upload/confirmation time.
+        required_remaining = 250 if before is None else 150
+        run("normalized-package", [cargo, "package", "--locked", "--offline", "-p", "prism-inference"],
+            140, minimum=required_remaining)
         package = Path(env["CARGO_TARGET_DIR"]) / "package/prism-inference-0.1.23.crate"
         prefix = "prism-inference-0.1.23/"
         with tarfile.open(package, "r:gz") as archive:
