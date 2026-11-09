@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "kind": "readme-performance-refresh-preparation-failure",
+  "recordedDate": "2026-11-09",
+  "status": "launch-failed-before-power-build-or-model-execution",
+  "authorization": "The owner selected Collect fresh local measurements after being told the README already matched retained evidence. This authorized one new bounded attempt, which is now closed without retry.",
+  "runnerSourceRevision": "636a03a0d5252d40580c7b6db46d60d8d4e8dfe1",
+  "runtimeVersionSelected": "0.1.22",
+  "runtimeSourceRevisionSelected": "6b4f4520b465e5feb665a71af64e7b0e21eb750a",
+  "declaration": "workload-plan.json",
+  "driver": "capture-driver.ps1",
+  "failureReceipt": "launch-failure.json",
+  "workload": {
+    "declaredMaximumAggregateSeconds": 420,
+    "conservativeEstimateSeconds": 365,
+    "selectedWork": "One cached offline Release native_model build, two existing synthetic timing controls, then one fresh eight-token PQ2 request and one fresh eight-token PTQ1 request, four workers, adapter 1.3, seed 42 and Thinking off, including power, cleanup and retention.",
+    "result": "Executing-driver-path guard threw at line 19 before output directory creation, source intake, power provider setup, compilation, controls or model startup.",
+    "toolReportedProcessWallSeconds": 0.7794621,
+    "aggregateElapsedSeconds": null,
+    "aggregateElapsedScope": "No internal terminal-clock receipt was produced. The tool's process wall time is retained separately and cannot establish the complete aggregate elapsed time.",
+    "clockClosed": true,
+    "clockRestarted": false,
+    "retries": 0
+  },
+  "power": {
+    "before": {"status": "unknown", "acConnected": null, "batterySaver": null, "chargePercent": null},
+    "after": {"status": "unknown", "acConnected": null, "batterySaver": null, "chargePercent": null},
+    "separateArmObservations": [],
+    "continuousPowerStabilityProven": false,
+    "performanceComparisonQualified": false
+  },
+  "executed": {
+    "builds": 0,
+    "tests": 0,
+    "models": 0,
+    "benchmarks": 0,
+    "downloads": 0,
+    "ciActions": 0,
+    "pushes": 0
+  },
+  "measurements": [],
+  "qualification": {
+    "newPerformanceNumbersAvailable": false,
+    "sustainedPerformanceQualified": false,
+    "effectiveNpuExecutionQualified": false,
+    "applicationAcceptanceQualified": false,
+    "qualityQualified": false,
+    "ciAcceptanceQualified": false
+  },
+  "readmeDisposition": "Keep the existing November 9 Prism 0.1.22 measurements from ../readme-performance-20261109-attempt2/summary.json. This failed attempt supplies no replacement numbers.",
+  "historicalEvidence": "The earlier failed preparation and successful attempt2 retain their original receipts and closed clocks unchanged.",
+  "nextWork": "The owner subsequently requested a new Prism release, a genuine Runner binary repin, and performance measurement after that repin. This is separate work and does not authorize retrying this closed 0.1.22 attempt."
+}

@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 1,
+  "kind": "readme-performance-refresh-launch-failure",
+  "recordedDate": "2026-11-09",
+  "evidenceSource": "Primary agent's retained tool result and immediate post-failure path checks; this receipt is a later static transcription, not a new execution.",
+  "sourceRevision": "636a03a0d5252d40580c7b6db46d60d8d4e8dfe1",
+  "invocation": {
+    "executable": "powershell.exe",
+    "arguments": [
+      "-NoProfile",
+      "-ExecutionPolicy",
+      "Bypass",
+      "-File",
+      "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\docs\\evidence\\readme-performance-20261109-refresh\\capture-driver.ps1",
+      "-Repository",
+      "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner",
+      "-Revision",
+      "636a03a0d5252d40580c7b6db46d60d8d4e8dfe1",
+      "-OutputDirectory",
+      "C:\\Users\\symbi\\AppData\\Local\\Temp\\SwiftBonsai-ReadmeRefresh-20261109",
+      "-EvidenceDirectory",
+      "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\target\\readme-measure-20261109\\runner\\docs\\evidence\\readme-performance-20261109-refresh\\raw",
+      "-ModelCase",
+      "token_timing::pinned_native_row4_captures_separated_token_timings",
+      "-ControlFilter",
+      "token_timing"
+    ],
+    "explicitDriverSourcePathSupplied": false
+  },
+  "result": {
+    "exitCode": 1,
+    "toolReportedProcessWallSeconds": 0.7794621,
+    "toolWallScope": "Execution tool process wall time only; not the driver's complete aggregate workload clock.",
+    "error": "An executing driver file is required; scriptblock callers must supply its exact DriverSourcePath.",
+    "driverLine": 19,
+    "phase": "executing-driver-path-guard",
+    "driverAggregateElapsedSeconds": null,
+    "driverAggregateEndpointAvailable": false,
+    "rawStdoutOrStderrFileRetained": false,
+    "causeScope": "The omitted DriverSourcePath default did not provide an admissible executing file path under this invocation. The guard threw before creating output or taking power observations."
+  },
+  "postFailurePathChecks": {
+    "source": "Primary agent's explicit Test-Path checks immediately after the failed launch.",
+    "workingOutputDirectoryExists": false,
+    "rawEvidenceDirectoryExists": false
+  },
+  "power": {
+    "before": {"status": "unknown", "acConnected": null, "batterySaver": null, "chargePercent": null},
+    "after": {"status": "unknown", "acConnected": null, "batterySaver": null, "chargePercent": null},
+    "perArm": [],
+    "observations": 0,
+    "reason": "The driver guard failed before Add-Type and GetSystemPowerStatus. No later query is substituted."
+  },
+  "execution": {
+    "sourceIntakeStarted": false,
+    "builds": 0,
+    "tests": 0,
+    "models": 0,
+    "benchmarks": 0,
+    "downloads": 0,
+    "ciActions": 0,
+    "pushes": 0,
+    "retries": 0,
+    "clockClosed": true,
+    "clockRestarted": false
+  }
+}
