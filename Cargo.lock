@@ -577,7 +577,6 @@ dependencies = [
  "memchr",
  "serde",
  "serde_json",
- "socket2",
  "subtle",
 ]
 

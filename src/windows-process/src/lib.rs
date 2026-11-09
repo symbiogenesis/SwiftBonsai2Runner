@@ -971,6 +971,22 @@ pub fn require_exclusive_address(socket: &impl AsSocket) -> io::Result<()> {
     native::require_exclusive_address(socket)
 }
 
+/// Binds a numeric IPv4 loopback (`127.0.0.1`) TCP listener with `SO_EXCLUSIVEADDRUSE`
+/// and the requested listen backlog using direct `WinSock` calls.
+///
+/// # Errors
+/// Rejects negative backlogs or failed Winsock initialization, socket creation,
+/// exclusive-address configuration, binding, or listening.
+pub fn bind_exclusive_loopback_listener(
+    port: u16,
+    backlog: i32,
+) -> io::Result<std::net::TcpListener> {
+    if backlog <= 0 {
+        return Err(invalid("listener backlog must be positive"));
+    }
+    native::bind_exclusive_loopback_listener(port, backlog)
+}
+
 fn invalid(message: &'static str) -> io::Error {
     io::Error::new(io::ErrorKind::InvalidInput, message)
 }

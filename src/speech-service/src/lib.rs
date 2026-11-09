@@ -10,12 +10,7 @@
     reason = "Explicit parent-only visibility keeps protocol and credential internals out of the public engine API."
 )]
 
-use socket2::{Domain, Protocol, Socket, Type};
-use std::{
-    io,
-    net::{Ipv4Addr, SocketAddrV4, TcpListener},
-    path::Path,
-};
+use std::{io, net::Ipv4Addr, path::Path};
 
 mod credentials;
 mod http;
@@ -178,12 +173,10 @@ pub fn serve_with_ready(
         return Err(io::Error::other("Use an unprivileged speech port."));
     }
     let credential = credentials::Credential::open(key_file)?;
-    let socket = Socket::new(Domain::IPV4, Type::STREAM, Some(Protocol::TCP))?;
     #[cfg(windows)]
-    bonsai_windows_process::require_exclusive_address(&socket)?;
-    socket.bind(&SocketAddrV4::new(Ipv4Addr::LOCALHOST, port).into())?;
-    socket.listen(1)?;
-    let listener: TcpListener = socket.into();
+    let listener = bonsai_windows_process::bind_exclusive_loopback_listener(port, 1)?;
+    #[cfg(not(windows))]
+    let listener = std::net::TcpListener::bind((Ipv4Addr::LOCALHOST, port))?;
     on_ready(port)?;
     let mut scratch = http::Scratch::default();
     loop {

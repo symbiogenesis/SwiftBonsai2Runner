@@ -7,7 +7,8 @@ use std::ffi::{OsStr, c_void};
 use std::io;
 use std::os::windows::ffi::OsStrExt as _;
 use std::os::windows::io::{
-    AsRawHandle as _, AsRawSocket as _, AsSocket, FromRawHandle as _, OwnedHandle,
+    AsRawHandle as _, AsRawSocket as _, AsSocket, FromRawHandle as _, FromRawSocket as _,
+    OwnedHandle, OwnedSocket,
 };
 use std::path::Path;
 use std::ptr::{self, null, null_mut};
@@ -21,7 +22,9 @@ use windows_sys::Win32::NetworkManagement::IpHelper::{
     GetExtendedTcpTable, MIB_TCPROW_OWNER_PID, TCP_TABLE_OWNER_PID_LISTENER,
 };
 use windows_sys::Win32::Networking::WinSock::{
-    AF_INET, SO_EXCLUSIVEADDRUSE, SOCKET_ERROR, SOL_SOCKET, WSAGetLastError, setsockopt,
+    AF_INET, IN_ADDR, IN_ADDR_0, INVALID_SOCKET, IPPROTO_TCP, SO_EXCLUSIVEADDRUSE, SOCK_STREAM,
+    SOCKADDR_IN, SOCKET_ERROR, SOL_SOCKET, WSA_FLAG_NO_HANDLE_INHERIT, WSA_FLAG_OVERLAPPED,
+    WSADATA, WSAGetLastError, WSASocketW, WSAStartup, bind, listen, setsockopt,
 };
 use windows_sys::Win32::Security::SECURITY_ATTRIBUTES;
 use windows_sys::Win32::Storage::FileSystem::{
@@ -874,6 +877,75 @@ pub(super) fn require_exclusive_address(socket: &impl AsSocket) -> io::Result<()
     Ok(())
 }
 
+pub(super) fn bind_exclusive_loopback_listener(
+    port: u16,
+    backlog: i32,
+) -> io::Result<std::net::TcpListener> {
+    static WINSOCK: std::sync::OnceLock<i32> = std::sync::OnceLock::new();
+    let status = *WINSOCK.get_or_init(|| {
+        // SAFETY: Plain-old-data WSADATA buffer initialized by WSAStartup.
+        let mut data = unsafe { std::mem::zeroed::<WSADATA>() };
+        // SAFETY: Request Winsock 2.2 once for the process lifetime.
+        unsafe { WSAStartup(0x0202, &raw mut data) }
+    });
+    if status != 0 {
+        return Err(io::Error::from_raw_os_error(status));
+    }
+    // SAFETY: Winsock is initialized; AF_INET/SOCK_STREAM/IPPROTO_TCP agree and
+    // overlapped + non-inheritable flags match std::net::TcpListener expectations.
+    let raw = unsafe {
+        WSASocketW(
+            i32::from(AF_INET),
+            SOCK_STREAM,
+            IPPROTO_TCP,
+            null(),
+            0,
+            WSA_FLAG_OVERLAPPED | WSA_FLAG_NO_HANDLE_INHERIT,
+        )
+    };
+    if raw == INVALID_SOCKET {
+        // SAFETY: Retrieve this thread's Winsock error immediately after failure.
+        return Err(io::Error::from_raw_os_error(unsafe { WSAGetLastError() }));
+    }
+    // SAFETY: A successful WSASocketW returned a uniquely owned fresh socket handle.
+    let socket = unsafe {
+        OwnedSocket::from_raw_socket(
+            u64::try_from(raw).map_err(|_| io::Error::other("socket handle overflow"))?,
+        )
+    };
+    require_exclusive_address(&socket)?;
+    let address = SOCKADDR_IN {
+        sin_family: AF_INET,
+        sin_port: port.to_be(),
+        sin_addr: IN_ADDR {
+            S_un: IN_ADDR_0 {
+                S_addr: u32::from_ne_bytes([127, 0, 0, 1]),
+            },
+        },
+        sin_zero: [0; 8],
+    };
+    // SAFETY: Socket stays owned by `socket`; `address` is a valid initialized
+    // IPv4 SOCKADDR_IN with exact byte length for this synchronous bind call.
+    if unsafe {
+        bind(
+            raw,
+            ptr::from_ref(&address).cast(),
+            i32::try_from(size_of_val(&address))
+                .map_err(|_| io::Error::other("socket address size overflow"))?,
+        )
+    } == SOCKET_ERROR
+    {
+        // SAFETY: Retrieve this thread's Winsock error immediately after failure.
+        return Err(io::Error::from_raw_os_error(unsafe { WSAGetLastError() }));
+    }
+    // SAFETY: Socket is bound and owned by `socket` during this synchronous call.
+    if unsafe { listen(raw, backlog) } == SOCKET_ERROR {
+        // SAFETY: Retrieve this thread's Winsock error immediately after failure.
+        return Err(io::Error::from_raw_os_error(unsafe { WSAGetLastError() }));
+    }
+    Ok(std::net::TcpListener::from(socket))
+}
+
 pub(super) fn listener_process_id(port: u16) -> io::Result<Option<u32>> {
     const TCP_ROW_WORDS: usize = 6;
     const _: () = {
@@ -1136,11 +1208,8 @@ impl Drop for CreationAttributes {
 #[cfg(test)]
 mod tests {
     use std::net::{Ipv4Addr, TcpListener};
-    use std::os::windows::io::{FromRawSocket as _, OwnedSocket};
 
-    use windows_sys::Win32::Networking::WinSock::{
-        INVALID_SOCKET, IPPROTO_TCP, SOCK_STREAM, getsockopt, socket,
-    };
+    use windows_sys::Win32::Networking::WinSock::{getsockopt, socket};
 
     use super::*;
 
@@ -1164,6 +1233,10 @@ mod tests {
         assert_eq!(exclusive_option(&socket)?, 0);
         require_exclusive_address(&socket)?;
         assert_ne!(exclusive_option(&socket)?, 0);
+        let listener = bind_exclusive_loopback_listener(0, 1)?;
+        assert_ne!(exclusive_option(&listener)?, 0);
+        let bound_port = listener.local_addr()?.port();
+        assert!(bind_exclusive_loopback_listener(bound_port, 1).is_err());
         Ok(())
     }
 
