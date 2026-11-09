@@ -1,7 +1,7 @@
 //! Exact readiness for the explicitly selected native representation and adapter.
 
 use serde::{Deserialize, Deserializer};
-use std::io;
+use std::{borrow::Cow, io, ops::Deref};
 
 /// The selected private projection-worker budget, separate from execution evidence.
 #[derive(Clone, Copy)]
@@ -36,21 +36,34 @@ impl WorkerReadiness {
 }
 
 #[derive(Deserialize)]
+#[serde(transparent)]
+struct Text<'a>(#[serde(borrow)] Cow<'a, str>);
+
+impl Deref for Text<'_> {
+    type Target = str;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+#[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
-struct Models {
-    data: Vec<crate::Object<NativeModel>>,
+struct Models<'a> {
+    #[serde(borrow)]
+    data: [crate::Object<NativeModel<'a>>; 1],
 }
 
 #[derive(Default)]
-enum AdapterIdentity {
+enum AdapterIdentity<'a> {
     #[default]
     Absent,
-    Present(Option<String>),
+    Present(Option<Text<'a>>),
 }
 
-impl<'de> Deserialize<'de> for AdapterIdentity {
+impl<'de: 'a, 'a> Deserialize<'de> for AdapterIdentity<'a> {
     fn deserialize<D: Deserializer<'de>>(input: D) -> Result<Self, D::Error> {
-        Option::<String>::deserialize(input).map(Self::Present)
+        Option::<Text<'a>>::deserialize(input).map(Self::Present)
     }
 }
 
@@ -62,26 +75,31 @@ fn present<'de, D: Deserializer<'de>, T: Deserialize<'de>>(
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
-struct NativeModel {
-    id: String,
-    object: String,
-    model_sha256: String,
-    template_sha256: String,
-    runtime: String,
+struct NativeModel<'a> {
+    #[serde(borrow)]
+    id: Text<'a>,
+    #[serde(borrow)]
+    object: Text<'a>,
+    #[serde(borrow)]
+    model_sha256: Text<'a>,
+    #[serde(borrow)]
+    template_sha256: Text<'a>,
+    #[serde(borrow)]
+    runtime: Text<'a>,
     context_tokens: usize,
     seed: u32,
     #[serde(default, deserialize_with = "present")]
     row_workers: Option<u8>,
-    #[serde(default, deserialize_with = "present")]
-    weight_representation: Option<String>,
-    #[serde(default)]
-    adapter_sha256: AdapterIdentity,
+    #[serde(default, borrow, deserialize_with = "present")]
+    weight_representation: Option<Text<'a>>,
+    #[serde(default, borrow)]
+    adapter_sha256: AdapterIdentity<'a>,
     #[serde(default, deserialize_with = "present")]
     supports_abliteration_scale: Option<bool>,
     #[serde(default, deserialize_with = "present")]
     abliteration_scale_range: Option<[u8; 2]>,
-    #[serde(default, deserialize_with = "present")]
-    prompt_reuse: Option<String>,
+    #[serde(default, borrow, deserialize_with = "present")]
+    prompt_reuse: Option<Text<'a>>,
 }
 
 pub(super) fn validate_native_identity(
@@ -91,11 +109,9 @@ pub(super) fn validate_native_identity(
     workers: WorkerReadiness,
 ) -> io::Result<()> {
     let body = super::validate_response(bytes, 200)?;
-    let crate::Object(models): crate::Object<Models> =
+    let crate::Object(models): crate::Object<Models<'_>> =
         serde_json::from_slice(body).map_err(io::Error::other)?;
-    let [crate::Object(model)] = models.data.as_slice() else {
-        return Err(io::Error::other("native model inventory mismatch"));
-    };
+    let [crate::Object(model)] = &models.data;
     let (id, hash, representation) = if repacked {
         (
             "Swift-Bonsai-2-current-repacked-PTQ1_0",
@@ -121,11 +137,11 @@ pub(super) fn validate_native_identity(
             && model.supports_abliteration_scale.is_none()
             && model.abliteration_scale_range.is_none()
     };
-    if model.id != id
-        || model.object != "model"
-        || model.model_sha256 != hash
-        || model.template_sha256 != crate::inference::TEMPLATE_SHA256
-        || model.runtime != "prism-inference"
+    if &*model.id != id
+        || &*model.object != "model"
+        || &*model.model_sha256 != hash
+        || &*model.template_sha256 != crate::inference::TEMPLATE_SHA256
+        || &*model.runtime != "prism-inference"
         || model.context_tokens != crate::CONTEXT_TOKENS
         || model.seed != 42
         || !workers.accepts(model.row_workers)

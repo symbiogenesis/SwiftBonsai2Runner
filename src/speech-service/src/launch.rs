@@ -79,11 +79,14 @@ pub fn require_native_host() -> io::Result<()> {
 /// Rejects missing, duplicate or unknown options; unsafe paths; unsupported codec
 /// combinations; and ports outside 1024 through 65535. Errors contain no values.
 pub fn parse(kind: Kind, arguments: impl IntoIterator<Item = OsString>) -> io::Result<Command> {
-    let values: Vec<_> = arguments.into_iter().collect();
-    if values.len() == 1 && values[0] == "--version" {
-        return Ok(Command::Version);
+    let mut arguments = arguments.into_iter().peekable();
+    if arguments.peek().is_some_and(|arg| arg == "--version") {
+        let _ = arguments.next();
+        if arguments.next().is_none() {
+            return Ok(Command::Version);
+        }
+        return Err(invalid_arguments());
     }
-    let mut arguments = values.into_iter();
     let (mut model, mut codec, mut token_file, mut port) = (None, None, None, None);
     let mut voice_model = None;
     let (mut threads, mut quantization) = (None, None);

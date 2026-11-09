@@ -1029,11 +1029,12 @@ async fn exchange(
 
 fn validate_health(bytes: &[u8]) -> io::Result<()> {
     #[derive(serde::Deserialize)]
-    struct Health {
-        status: String,
+    struct Health<'a> {
+        #[serde(borrow)]
+        status: std::borrow::Cow<'a, str>,
     }
     let body = validate_response(bytes, 200)?;
-    let value: Health = serde_json::from_slice(body).map_err(io::Error::other)?;
+    let value: Health<'_> = serde_json::from_slice(body).map_err(io::Error::other)?;
     if value.status != "ok" {
         return Err(io::Error::other("Backend is not ready."));
     }

@@ -75,17 +75,51 @@ fn headers(head: &[u8], media: &str, maximum: usize) -> crate::Result<Framing> {
     }
 }
 
-fn line(reader: &mut impl Read, maximum: usize) -> crate::Result<Vec<u8>> {
-    let mut line = Vec::new();
-    while !line.ends_with(b"\r\n") {
-        if line.len() == maximum {
+fn read_head<R: Read>(
+    reader: &mut BufReader<R>,
+    media: &str,
+    maximum: usize,
+) -> crate::Result<Framing> {
+    let available = reader.fill_buf().map_err(|_| INVALID)?;
+    if available.is_empty() {
+        return Err(INVALID.into());
+    }
+    let window = &available[..available.len().min(MAX_HEAD)];
+    if let Some(offset) = window.windows(4).position(|bytes| bytes == b"\r\n\r\n") {
+        let end = offset + 4;
+        let parsed = headers(&window[..end], media, maximum);
+        reader.consume(end);
+        return parsed;
+    }
+    if available.len() >= MAX_HEAD {
+        return Err(INVALID.into());
+    }
+    let mut head = available.to_vec();
+    let consumed = head.len();
+    reader.consume(consumed);
+    while !head.ends_with(b"\r\n\r\n") {
+        if head.len() == MAX_HEAD {
             return Err(INVALID.into());
         }
         let mut byte = [0];
         reader.read_exact(&mut byte).map_err(|_| INVALID)?;
-        line.push(byte[0]);
+        head.push(byte[0]);
     }
-    Ok(line)
+    headers(&head, media, maximum)
+}
+
+fn line<'a>(reader: &mut impl Read, storage: &'a mut [u8]) -> crate::Result<&'a [u8]> {
+    let mut length = 0;
+    while !storage[..length].ends_with(b"\r\n") {
+        if length == storage.len() {
+            return Err(INVALID.into());
+        }
+        reader
+            .read_exact(&mut storage[length..=length])
+            .map_err(|_| INVALID)?;
+        length += 1;
+    }
+    Ok(&storage[..length])
 }
 
 fn payload(
@@ -117,18 +151,14 @@ fn decode(
     started: Instant,
 ) -> crate::Result<Response> {
     let mut reader = BufReader::with_capacity(16_384, reader);
-    let mut head = Vec::new();
-    while !head.ends_with(b"\r\n\r\n") {
-        let next = line(&mut reader, MAX_HEAD.saturating_sub(head.len()))?;
-        head.extend_from_slice(&next);
-    }
-    let framing = headers(&head, media, maximum)?;
+    let framing = read_head(&mut reader, media, maximum)?;
     let mut bytes = Vec::new();
     let mut first = None;
     match framing {
         Framing::Length(length) => payload(&mut reader, length, &mut bytes, &mut first, started)?,
         Framing::Chunked => loop {
-            let chunk_line = line(&mut reader, 10)?;
+            let mut chunk_storage = [0; 10];
+            let chunk_line = line(&mut reader, &mut chunk_storage)?;
             let digits = &chunk_line[..chunk_line.len() - 2];
             if digits.is_empty() || !digits.iter().all(u8::is_ascii_hexdigit) {
                 return Err(INVALID.into());
@@ -137,7 +167,7 @@ fn decode(
                 usize::from_str_radix(std::str::from_utf8(digits).map_err(|_| INVALID)?, 16)
                     .map_err(|_| INVALID)?;
             if length == 0 {
-                if line(&mut reader, 2)? != b"\r\n" {
+                if line(&mut reader, &mut [0; 2])? != b"\r\n" {
                     return Err(INVALID.into());
                 }
                 break;
@@ -151,7 +181,7 @@ fn decode(
                 return Err(INVALID.into());
             }
             payload(&mut reader, length, &mut bytes, &mut first, started)?;
-            if line(&mut reader, 2)? != b"\r\n" {
+            if line(&mut reader, &mut [0; 2])? != b"\r\n" {
                 return Err(INVALID.into());
             }
         },
