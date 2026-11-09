@@ -1,0 +1,63 @@
+{
+  "schemaVersion": 1,
+  "kind": "performance-progress-model-free-source-validation",
+  "recordedDate": "2026-11-09",
+  "authorization": "Owner requested pursuing the most exciting performance-relevant PLAN.md goals in parallel, as far as reasonable.",
+  "source": {
+    "runnerBaseRevision": "e4a8a36e",
+    "prismBaseRevision": "fdf6748f8113f0cc44a9ec63dad8994aecf9232b",
+    "selection": [
+      "Reduce bounded private NEON GDN staging for Swift's 128-wide rows while preserving the existing arithmetic and failure publication",
+      "Retain the exact greedy correction selected during a rejected speculative round instead of scanning the same logits again",
+      "Cache immutable native-Q2 solver parameters in admitted resident weight handles instead of recomputing them for each descriptor"
+    ],
+    "settledSource": "validate.py retains the integration commit, one canonical formatting diff and every tracked source hash before compilation. controls.json freezes the exact selected names."
+  },
+  "budget": {
+    "maximumTotalSeconds": 300,
+    "workCutoffSeconds": 260,
+    "conservativeEstimateSeconds": 250,
+    "estimate": {
+      "setupCompilerFormattingSourceHashingAndReceiptControls": 20,
+      "offlineSelectedLibraryAndGraphCompilation": 100,
+      "exactNewControlsAndGraphRecovery": 20,
+      "selectedStrictAnalyzers": 70,
+      "featureDisabledLibraryCompilation": 20,
+      "cleanupPowerAndEvidenceRetention": 20
+    },
+    "reason": "One fixed model-free correctness screen for three new independent changes, with four Cargo jobs and existing immutable offline dependencies. No downloads, model, DSP calls, full suite, performance capture or benchmark. Stop on first failure or when the next required step cannot fit.",
+    "noRetry": true,
+    "clockRestartAllowed": false,
+    "historicalClocks": "All historical trials remain closed. This declaration selects newly implemented changes; it does not restart, continue or retry any earlier workload. Inherited code must compile as part of the new selected targets, but no prior driver is rerun."
+  },
+  "fixedWork": [
+    "Record pinned nightly compiler identity, integration revision and initial power",
+    "Apply canonical Cargo formatting once and check it before compilation; retain the exact diff",
+    "Hash all tracked integration sources and run the four hosted receipt/inventory Python controls",
+    "Compile the three selected library test executables and graph test target offline with parallel-rows without running suites",
+    "Run each exact nonignored control from controls.json once, requiring exactly one passing match",
+    "Run strict Clippy for the three selected libraries and graph target",
+    "Compile the feature-disabled prism-inference library",
+    "Verify source immutability; terminate owned timed-out processes if necessary; retain raw logs, hashes, endpoint power, terminal receipt and closed clock"
+  ],
+  "power": {
+    "query": "GetSystemPowerStatus",
+    "timing": "Before and after the aggregate workload and separately for every command, including post-retention observation",
+    "unknown": "Explicit null when unavailable; never infer earlier observations",
+    "continuousStabilityEstablished": false,
+    "performanceComparison": false
+  },
+  "execution": {
+    "driver": "validate.py",
+    "inventory": "controls.json",
+    "evidenceDirectory": "%TEMP%/SwiftBonsai-PerformanceProgress-20261109",
+    "cargoTarget": "Dedicated external evidence subdirectory",
+    "retainedDirectory": "raw",
+    "models": 0,
+    "benchmarks": 0,
+    "fullSuites": 0,
+    "acceleratorDeviceCalls": 0,
+    "ciActions": 0,
+    "pushes": 0
+  }
+}
