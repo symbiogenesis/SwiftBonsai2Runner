@@ -185,10 +185,19 @@ run-name identity error. Its automatic and dedicated runs are both confirmed
 cancelled, with cleanup observed137.31 seconds from the original start inside
 the300-second deadline; preserve the original raw failure and separate cleanup
 supplement. The correction passed six offline fixture controls in0.149 seconds.
-Execute the [prepared source-ready attempt](docs/evidence/foundation-bundle-0123-20261109-attempt2/workload-plan.json)
-only after a new explicit owner authorization: one fresh nonce, no push or old-run
-queries, and one unchanged five-minute aggregate bound. Do not reopen the first
-clock or treat the source push and offline replay as a successful bundle.
+The separately approved [source-ready attempt](docs/evidence/foundation-bundle-0123-20261109-attempt2/summary.json)
+passed three version controls, six receipt controls and formatting, then failed
+strict Clippy on four additional test-only empty assertions in the Hexagon helper.
+Its202.043-second clock is closed with confirmed terminal cleanup and146 verified
+raw archive members. A separate1.659-second read-only terminal-log review retains
+the diagnostics; it did not restart CI or reopen that clock. The four assertions
+are corrected and source-reviewed locally, with production behavior unchanged.
+The corrected Prism candidate is `055c743`; a complete cold check, portable build,
+production linking and packaging conservatively require350 seconds. Execute the
+[prepared six-minute operation](docs/evidence/foundation-bundle-0123-20261109-attempt3/workload-plan.json)
+only after explicit new owner approval for that one allowance and the exact two-
+commit source push. Preserve the standing five-minute default and all older closed
+clocks. No successful bundle, registry upload, actual repin or new timings are claimed.
 Only the runtime crate changes; preserve the five existing helper versions. Verify
 the genuine bundle's source/archive/executable identities before repinning Runner,
 keeping full Foundation and application acceptance independently pending. Declare a

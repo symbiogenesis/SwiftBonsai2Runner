@@ -1,0 +1,7 @@
+{
+  "kind": "terminal-foundation-log-read-only-review",
+  "runId": 42714544937,
+  "maximumAggregateSeconds": 30,
+  "estimatedSeconds": 20,
+  "fixedWork": "Read existing terminal job metadata and log archive once, retain raw bytes/hashes and power. No dispatch, push, rerun, waits, source compilation, model or benchmark. Prior operation clocks remain closed."
+}

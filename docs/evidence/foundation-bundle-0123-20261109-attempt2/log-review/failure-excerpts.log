@@ -1,0 +1,12 @@
+2026-11-09T22:47:28.9575075Z error: used `assert!` to check that a value is empty
+2026-11-09T22:47:29.0612611Z error: used `assert!` to check that a value is empty
+2026-11-09T22:47:29.1227142Z error: used `assert!` to check that a value is not empty
+2026-11-09T22:47:29.1482112Z error: used `assert!` to check that a value is empty
+2026-11-09T22:47:29.1486673Z error: could not compile `bonsai-hexagon-runtime` (lib test) due to 4 previous errors
+2026-11-09T22:47:30.4069988Z ##[error]Process completed with exit code 1.
+2026-11-09T22:47:28.9575016Z error: used `assert!` to check that a value is empty
+2026-11-09T22:47:29.0612590Z error: used `assert!` to check that a value is empty
+2026-11-09T22:47:29.1227107Z error: used `assert!` to check that a value is not empty
+2026-11-09T22:47:29.1482110Z error: used `assert!` to check that a value is empty
+2026-11-09T22:47:29.1486668Z error: could not compile `bonsai-hexagon-runtime` (lib test) due to 4 previous errors
+2026-11-09T22:47:30.4069949Z ##[error]Process completed with exit code 1.

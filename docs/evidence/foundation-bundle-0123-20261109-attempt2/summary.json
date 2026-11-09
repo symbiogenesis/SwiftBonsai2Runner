@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "kind": "terminal-source-ready-foundation-analyzer-failure",
+  "sourceRevision": "a7cdee96080d6cc33fb6a22b62ede94117150b9b",
+  "version": "0.1.23",
+  "status": "hosted-analyzer-failed-no-bundle",
+  "authorization": "Owner explicitly authorized one fresh five-minute source-ready attempt. This attempt is now closed; its approval authorizes no further retry or push.",
+  "run": {"id": 42714544937, "attempt": 1, "workflow": "foundation-bundle.yml", "sourceReady": true, "pushes": 0, "dispatches": 1, "status": "completed", "conclusion": "failure", "cleanupConfirmed": true},
+  "rawReceipt": "raw/receipt.json",
+  "rawArchive": "raw/archive.json",
+  "clock": {"path": "raw/final-clock.json", "maximumAggregateSeconds": 300, "elapsedSecondsThroughRetention": 202.04330020000089, "closed": true, "withinAllowance": true, "retries": 0},
+  "observedChecks": {
+    "versionControlsPassed": 3,
+    "receiptControlsPassed": 6,
+    "formattingPassed": true,
+    "strictReleaseAllTargetAnalysisPassed": false,
+    "diagnostics": "Four assert_is_empty findings confined to Hexagon-runtime cfg(test) assertions, at original lines2829,2904,2942,3892. No production inference/kernel change is needed.",
+    "portableCheckReached": false,
+    "productionLinkingReached": false,
+    "bundleUploadReached": false
+  },
+  "observedJobDurationsSeconds": {"setupCheckoutCompilerAndCache": 62, "finalSourceChecksBeforeFailure": 115, "postCheckout": 4},
+  "failureEvidence": {
+    "withheldSupplement": "failure-log-supplement.json",
+    "withheldScope": "At288.401853 seconds from the original start, insufficient time remained for log intake. No API request was made and the original clock stayed closed.",
+    "separateReadOnlyReview": "log-review/receipt.json",
+    "separateReviewClock": "log-review/final-clock.json",
+    "separateReviewElapsedSeconds": 1.6590521999987686,
+    "separateReviewMaximumSeconds": 30,
+    "separateReviewScope": "Existing terminal logs/job metadata only; no dispatch, rerun, push, compiler, model or benchmark. Earlier clocks were not reopened.",
+    "independentReview": "independent-review.json",
+    "rawMembersIndependentlyVerified": 146
+  },
+  "power": {"source": "GetSystemPowerStatus", "observedAggregatePerStepAndPostRetention": "AC connected, saver off,98% charge", "periodicSamples": 149, "continuousPowerStabilityEstablished": false},
+  "correctedCandidate": {"sourceRevision": "055c7430cb4771dfddb24ddaa30494af6ad182da", "changes": "Four equivalent cast-free, allocation-free test assertions and a five-minute hosted job ceiling with matching contract/docs. Production logic and standing five-minute aggregate policy unchanged.", "status": "Source reviewed, locally committed, uncompiled and not pushed."},
+  "remaining": "The prepared fixed corrected-source operation estimates350 seconds and needs a separately approved six-minute exception plus the exact two-commit source push. Registry publication, actual Runner binary repin and performance capture remain unexecuted and gated on successful source/bundle evidence.",
+  "publicationAttempted": false,
+  "runnerRepinned": false,
+  "modelExecutions": 0,
+  "performanceMeasured": false,
+  "fullFoundationQualified": false
+}
