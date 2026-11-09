@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "kind": "one-authorized-foundation-release-bundle-operation",
+  "recordedDate": "2026-11-09",
+  "authorization": "The owner authorized Foundation release-bundle operations within five aggregate minutes and separately approved one non-force Prism main push through a7cdee96080d6cc33fb6a22b62ede94117150b9b. This declaration permits one such operation only; preparing these files executes nothing.",
+  "source": {
+    "repository": "symbiogenesis/prism-inference",
+    "revision": "a7cdee96080d6cc33fb6a22b62ede94117150b9b",
+    "allowedRemoteBase": "3bd63f675fd4a97a927e0e6abc11874089814d60",
+    "version": "0.1.23",
+    "target": "aarch64-pc-windows-msvc",
+    "workflow": ".github/workflows/foundation-bundle.yml",
+    "workflowName": "Foundation bundle",
+    "operationId": "One fresh caller-supplied nonce matching [A-Za-z0-9][A-Za-z0-9_-]{0,47}; never reuse it for another dispatch."
+  },
+  "budget": {
+    "maximumAggregateSeconds": 300,
+    "workCutoffSeconds": 240,
+    "cancellationConfirmationCutoffSeconds": 280,
+    "retentionReserveSeconds": 20,
+    "maximumIndividualCommandSeconds": 10,
+    "conservativeEstimateSeconds": 290,
+    "estimateBreakdownSeconds": {
+      "sourcePowerRemoteIntakeAndAuthorizedPush": 25,
+      "automaticFoundationIdentificationAndCancellation": 30,
+      "workflowPropagationAndDispatch": 20,
+      "dedicatedQueueAndCachedHostedWork": 145,
+      "artifactSourceDownloadAndVerification": 30,
+      "cleanupAndFinalRetention": 40
+    },
+    "reason": "One exact-source cached hosted bundle operation, including the authorized source push and cancellation of its automatic full Foundation run. Completion is conditional on queue/cache availability; the four-minute hosted job is subordinate to the original five-minute aggregate clock and must be cancelled when remaining time cannot fit completion and retention.",
+    "retries": 0,
+    "clockRestartAllowed": false,
+    "historicalClocksRemainClosed": true
+  },
+  "fixedWork": [
+    "Bind clean local Prism main at the exact source revision, origin URL, tracked input hashes, driver/declaration bytes and aggregate power observations.",
+    "Observe official remote main. If still at the declared ancestor, perform the one authorized exact non-force push, bounded by ten seconds; if already at the selected revision, retain that fact and skip the push. Reject every other remote revision.",
+    "Query only full Foundation push runs at this exact head SHA. Identify the unique automatic run and cancel it once if active, confirming terminal status before the dedicated dispatch. Do not query, cancel or monitor any other workflow triggered by the push.",
+    "Verify the official remote commit and byte-identical dedicated workflow at the exact source revision. Permit at most fifteen seconds for source/workflow propagation; never repush or retry a failed command.",
+    "Dispatch foundation-bundle.yml once on main with expected_revision and the unique operation_id. Discover only this workflow's matching source/nonce run, then poll that run only.",
+    "On success, download only the exact named ARM64 artifact. Verify official artifact/run identity and digest, exactly three outer artifact entries, the nine-file inner bundle, every length/SHA-256 and all five ARM64 PE headers. Verify source/run/attempt/version/toolchain and explicit limited qualification scope.",
+    "When enough original time remains, download the exact GitHub source ZIP once. Verify its full-commit root and every canonical committed Git blob; retain local checkout SHA-256 separately because Windows CRLF bytes can differ. Retain the ZIP length and SHA-256 for later Runner lock review.",
+    "If either owned run fails, cannot fit or remains active at the work cutoff, cancel that run once and confirm termination inside the original reserve. Report cleanup unknown explicitly if confirmation is unavailable. Retain API JSON, logs, actual archives/receipt/scope, power, hashes and final clock. No restart, additional dispatch, model, benchmark or registry upload."
+  ],
+  "paths": {
+    "source": "C:/Users/symbi/source/repos/prism-inference (local main)",
+    "workingOutput": "A fresh external system-temp directory passed as --work",
+    "retainedEvidence": "A fresh directory passed as --retain; preserve actual archives rather than summaries alone",
+    "operator": "operate.py"
+  },
+  "handoff": {
+    "verifiedReceipt": "verified-bundle.json exists with passed=true only after successful owned CI, byte verification and confirmed cleanup. Consumers must additionally require final-clock.json within300s and cleanupIncomplete=false.",
+    "fullFoundationQualified": false,
+    "modelAcceptanceQualified": false,
+    "performanceQualified": false,
+    "registryPublication": "Separate pending release action; this operation does not publish crates or a GitHub release.",
+    "runnerRepin": "Requires separately reviewed immutable release bytes and a verified source ZIP; a bundle artifact alone does not assert release availability or full qualification."
+  }
+}
