@@ -4,6 +4,7 @@ docs/evidence/token-timing-20261103/** -text -whitespace
 
 # Preserve the closed README timing attempt, source and offline recovery hashes.
 docs/evidence/readme-performance-20261109/** -text -whitespace
+docs/evidence/readme-performance-20261109-attempt2/** -text -whitespace
 
 docs/evidence/local-throughput-20261103/** -text -whitespace
 

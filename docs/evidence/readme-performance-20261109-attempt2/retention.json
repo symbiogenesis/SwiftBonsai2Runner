@@ -1,0 +1,47 @@
+[
+  {
+    "path": "acceptance.json",
+    "bytes": 34260,
+    "sha256": "8edec4b0c21345a4cc20fe96c1a1cdd0c464c28bdc5df90cf311b18763e27897"
+  },
+  {
+    "path": "build.stderr.log",
+    "bytes": 62,
+    "sha256": "b1bfdc52d1cea2d4e4c6812dd29fa654959a50500fdd854457dc805c093d389b"
+  },
+  {
+    "path": "build.stdout.log",
+    "bytes": 175530,
+    "sha256": "6cc1b50518f4dafe24a7b9ec66939816a67616a1ce013f00bcbca8777ca70ee4"
+  },
+  {
+    "path": "capture-driver.ps1",
+    "bytes": 13650,
+    "sha256": "4e325fd2f4911945f7b698d2e236ab747240289207e2f7d1b5c5647e4bd8e1fa"
+  },
+  {
+    "path": "capture.stderr.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "capture.stdout.log",
+    "bytes": 192,
+    "sha256": "ee618964c4c15977e5ad1fc92ee25f6ef6b6f388b3a3a8de165a6a7d5deb94a7"
+  },
+  {
+    "path": "controls.stderr.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "controls.stdout.log",
+    "bytes": 506,
+    "sha256": "8d9e32479b3d5313261dd01a118dda6f296bd1c96ed58e1852431fa58849319b"
+  },
+  {
+    "path": "session.json",
+    "bytes": 17241,
+    "sha256": "50d3e7192713e6dae2bf744067758e9023a22a12fb9c90a044e9ceb743deab2d"
+  }
+]

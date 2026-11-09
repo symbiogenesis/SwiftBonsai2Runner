@@ -17,11 +17,43 @@ nor prose quality. Measure useful-answer time under the protocol below.
 
 ## Current Swift evidence
 
-The [November 9 Prism 0.1.22 timing attempt](evidence/readme-performance-20261109/summary.json)
-stopped after its successful offline Release build because a PowerShell variable-name
-collision saved the build logs under unexpected names. No timing control or model arm
-ran, so it supplies no new latency, token-rate or memory measurement. The original
-69.432-second clock is closed; the separately retained driver correction has not run.
+The [November 9 Prism 0.1.22 capture](evidence/readme-performance-20261109-attempt2/summary.json)
+measured two short requests through the public broker HTTP/SSE API on the Snapdragon
+X2 Elite Extreme, with four observed row workers, standard adapter scale 1.3,
+seed 42, Thinking off and an eight-token cap:
+
+| Model | Runtime | First-request TTFT (s) | Generation tokens/second | Model file | Peak Job commit | Available RAM admission |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| **Swift Bonsai 2 `PQ2_0` (development default)** | **Rust 0.1.22; default acceleration policy** | **6.63** | **3.16** | **6.71 GiB** | **7.06 GiB** | **15.5 GiB** |
+| **Swift Bonsai 2 `PTQ1_0` (experimental opt-in)** | **Rust 0.1.22; CPU** | **20.08** | **1.59** | **5.54 GiB** | **5.89 GiB** | **15.5 GiB** |
+
+Each fresh owner received `Count from 1 to 100.` and returned `1, 2, 3,` with
+eight reported completion tokens and `length`. Exact ASCII deltas, monotonic receive
+timestamps and the pinned non-speculative per-committed-token callback establish
+the seven post-first-token intervals. First-request TTFT begins after verified
+HTTP readiness and can include remaining asynchronous model/device preparation.
+Generation is `(N - 1) / (last token receipt - first token receipt)`, excluding TTFT.
+Public broker forwarding, exact-count admission, receive coalescing and observer
+receipt I/O remain included. These are short-window client observations.
+
+PQ2 used the default policy that attempts X2 Hexagon acceleration with CPU fallback;
+authenticated readiness does not expose effective placement, so actual NPU use is
+**unknown**. Peak Job commit was `7,576,604,672` bytes for PQ2 and `6,320,873,472`
+bytes for PTQ1, a `1.16949 GiB` difference. This counter excludes mapped-file
+residency and device allocations; it is not total RAM use or a qualified resource benefit.
+Both owners confirmed empty Jobs and released listeners. All 57 periodic power
+samples and aggregate, per-arm and post-retention endpoints observed AC connected,
+saver off and 98% charge; sampling does not prove uninterrupted stability.
+One cached offline Release build, two synthetic controls, both requests, cleanup
+and evidence/manifest retention finished in **59.250 s** of a predeclared ten-minute
+allowance (365-second conservative estimate). No further retry or CI action occurred.
+Sustained speed, repeated benefit, quality and application acceptance remain pending.
+
+This new attempt was explicitly authorized after the
+[earlier preparation failure](evidence/readme-performance-20261109/summary.json).
+That original 69.432-second clock remains closed and its receipts unchanged. No
+cross-version speedup is inferred: the November 3 observations below used direct
+sandboxed backend HTTP, while the new capture includes the public broker.
 
 | Publisher evidence | What it establishes |
 | --- | --- |
@@ -36,14 +68,14 @@ The publisher reports uneven instruction following, tool use and open-ended codi
 
 The [memory guide](swift-memory.md) records 16-token Prism CPU decode and PTQ1 results;
 the [Rust runtime contract](native-rust-engine.md) owns NEON/hybrid-graph evidence.
-Neither establishes complete-answer performance. The
+Neither establishes complete-answer performance. The historical
 [2026-11-03 separated timing capture](evidence/token-timing-20261103/summary.json)
 measured seven installed Rust profiles on the Snapdragon X2 Elite Extreme:
 
 | Model | Runtime | Time to first token (s) | Generation tokens/second | Model file | Job commit cap / measured peak | Available RAM admission | Restore copy saved vs. Rust 0.1.4 |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| **Swift Bonsai 2 `PQ2_0` (development default; pinned at Rust 0.1.22)** | **Rust 0.1.14 release (4 workers) + LoRA 1.3** | **16.64** | **1.34** | **6.71 GiB** | **11.5 GiB / 7.20 GiB (short request)** | **15.5 GiB** | **149.625 MiB** |
-| **Swift Bonsai 2 `PTQ1_0` (experimental opt-in; pinned at Rust 0.1.22)** | **Rust 0.1.14 release (4 workers) + LoRA 1.3** | **29.50** | **0.75** | **5.54 GiB** | **11.5 GiB / 6.02 GiB (short request)** | **15.5 GiB** | **149.625 MiB** |
+| Swift Bonsai 2 `PQ2_0` | Rust 0.1.14 release (4 workers) + LoRA 1.3 | 16.64 | 1.34 | 6.71 GiB | 11.5 GiB / 7.20 GiB (short request) | 15.5 GiB | 149.625 MiB |
+| Swift Bonsai 2 `PTQ1_0` | Rust 0.1.14 release (4 workers) + LoRA 1.3 | 29.50 | 0.75 | 5.54 GiB | 11.5 GiB / 6.02 GiB (short request) | 15.5 GiB | 149.625 MiB |
 | Swift Bonsai 2 `PQ2_0` | Rust 0.1.13 release (4 workers) + LoRA 1.3 | 16.45 | 1.32 | 6.71 GiB | 11.5 GiB / 7.20 GiB (short request) | 15.5 GiB | 149.625 MiB |
 | Swift Bonsai 2 `PTQ1_0` | Rust 0.1.13 release (4 workers) + LoRA 1.3 | 28.69 | 0.75 | 5.54 GiB | 11.5 GiB / 6.02 GiB (short request) | 15.5 GiB | 149.625 MiB |
 | Swift Bonsai 2 `PQ2_0` | Rust 0.1.10 release (4 workers) + LoRA 1.3 | 16.98 | 1.34 | 6.71 GiB | 11.5 GiB / 7.20 GiB (short request) | 15.5 GiB | 149.625 MiB |
@@ -73,14 +105,15 @@ GEMM, training-free suffix speculative decoding (`SuffixDecoding`) with transact
 verification, and Snapdragon X2 6-arena 168-projection (`blk.0..=blk.26`,
 `2,888,663,040` resident weight bytes / `2,754.84 MiB`) `native-q2` resident NPU optimizations
 (including 8-op `dspqueue` batching and fused `ffn_gate + ffn_up + HTP_OP_GLU_SWIGLU` VTCM
-chaining); an updated end-to-end HTTP timing capture on `0.1.22` remains pending.
+chaining). The November 9 capture above records short-request HTTP timings for
+`0.1.22`; sustained performance and matched repeated benefit remain pending.
 See [Hexagon execution contracts](hexagon.md#snapdragon-x2-hexagon-npu-v81-projection-and-layer-timings)
 for the supervised 3-token (`42, 43, 128`) X2 device control timings (`0.64–0.98 ms` for 1
 projection, `1.08–1.44 ms` for 2 projections, `2.27–2.87 ms` for 6 recurrent projections in `blk.0`,
 `4.43–4.87 ms` with `422.49–446.20 ms` warm token evaluation for 13 projections in `blk.0 + blk.3`,
 and `10.05–10.91 ms` for all 25 projections of the 4-layer repeating block `blk.0..=blk.3`).
 
-**TTFT** runs from client request start through the first output token, including
+For the November 3 capture, **TTFT** runs from client request start through the first output token, including
 required exact token-count admission, template processing, prefill and HTTP
 transport; model verification/loading/startup is excluded. **Generation tokens/s**
 is `(N - 1) / (last token time - first token time)`, using reported completion

@@ -1,0 +1,103 @@
+{
+  "schemaVersion": 1,
+  "kind": "readme-performance-separated-token-timing",
+  "recordedDate": "2026-11-09",
+  "runnerSourceRevision": "501aa8be9afdacb3a1d7b0b9a453ef847c0bbe51",
+  "runtimeVersion": "0.1.22",
+  "runtimeSourceRevision": "6b4f4520b465e5feb665a71af64e7b0e21eb750a",
+  "status": "two-short-request-observations-with-confirmed-cleanup",
+  "authorization": "Owner explicitly requested: make a new attempt. This permits this one new local attempt after the retained preparation failure; no earlier clock was reopened and no further retry was made.",
+  "earlierFailure": "../readme-performance-20261109/summary.json",
+  "workload": {
+    "representationOrder": ["PQ2_0", "current-repacked-PTQ1_0"],
+    "freshOwners": 2,
+    "configuredAndObservedRowWorkers": 4,
+    "standardAdapterScale": 1.3,
+    "seed": 42,
+    "thinking": false,
+    "prompt": "Count from 1 to 100.",
+    "completionCap": 8,
+    "allVisibleOutput": "1, 2, 3,",
+    "allFinishReasons": "length",
+    "maximumAggregateSeconds": 600,
+    "conservativeEstimateSeconds": 365,
+    "elapsedSecondsThroughEvidenceAndManifestRetention": 59.2499212,
+    "clockScope": "Includes one cached offline Release build, focused controls, model intake/startup, both requests, power observations, cleanup and evidence/manifest retention; excludes writing the final small clock receipt itself.",
+    "withinAllowance": true,
+    "withinAttemptRetries": 0,
+    "downloads": 0,
+    "ciActions": 0
+  },
+  "metrics": {
+    "timeToFirstToken": "Client request start after verified HTTP readiness through first nonempty content-token receipt. Includes broker forwarding, exact-count admission and any remaining asynchronous model/device preparation; excludes startup elapsed before HTTP readiness.",
+    "generationTokensPerSecond": "(reported completion usage - 1) / (last content-token receipt time - first content-token receipt time). Each successful capture has eight ASCII content deltas, eight reported tokens and seven measured intervals, supported by the pinned non-speculative per-committed-token callback source.",
+    "scope": "Public local broker HTTP/SSE client observations including transport, receive coalescing and synchronous observer receipt I/O; not isolated kernel decode or sustained throughput.",
+    "memory": "OS lifetime peak Job commit including descendants and startup. Excludes mapped-file residency and device allocations; not total RAM use. Admission remains 15.5 GiB available RAM.",
+    "effectiveAccelerationBackend": null,
+    "accelerationScope": "Default PQ2 acceleration policy attempts Snapdragon X2 native-q2 with CPU fallback. Effective CPU/NPU execution is not exposed by authenticated readiness and was not independently observed. PTQ1 uses the CPU path."
+  },
+  "observations": [
+    {
+      "representation": "PQ2_0",
+      "timeToFirstTokenSeconds": 6.6336065,
+      "generationTokensPerSecond": 3.1553333179172767,
+      "generationIntervalTokens": 7,
+      "generationIntervalSeconds": 2.2184660999999997,
+      "startupMilliseconds": 9359.4899,
+      "modelFileBytes": 7206168928,
+      "osLifetimePeakJobCommitBytes": 7576604672,
+      "observedRowWorkers": 4,
+      "cleanupConfirmed": true,
+      "ownedJobEmpty": true,
+      "listenerReleased": true
+    },
+    {
+      "representation": "current-repacked-PTQ1_0",
+      "timeToFirstTokenSeconds": 20.0751434,
+      "generationTokensPerSecond": 1.5860449793293014,
+      "generationIntervalTokens": 7,
+      "generationIntervalSeconds": 4.413494000000003,
+      "startupMilliseconds": 9852.1774,
+      "modelFileBytes": 5946648928,
+      "osLifetimePeakJobCommitBytes": 6320873472,
+      "observedRowWorkers": 4,
+      "cleanupConfirmed": true,
+      "ownedJobEmpty": true,
+      "listenerReleased": true
+    }
+  ],
+  "power": {
+    "source": "GetSystemPowerStatus",
+    "periodicSamples": 57,
+    "aggregateBeforeAndAfterRetained": true,
+    "separateArmBeforeAndAfterRetained": true,
+    "postRetentionObservationRetained": true,
+    "allRecordedAcOnline": true,
+    "allRecordedBatterySaver": false,
+    "allRecordedChargePercent": 98,
+    "knownMatchingPowerConditions": true,
+    "continuousPowerStabilityProven": false
+  },
+  "checks": {
+    "cachedOfflineReleaseBuildExitCode": 0,
+    "requiredSyntheticControlsPassed": 2,
+    "ignoredCaptureCaseExitCode": 0,
+    "bothSourceSupportedTokenIntervals": true,
+    "bothConfirmedCleanup": true,
+    "retainedRawManifestFiles": 9,
+    "retainedRawManifestHashesVerified": true,
+    "compiledTestExecutableBytes": 5472256,
+    "compiledTestExecutableSha256": "20d1359e4158fc8fe097cabb1840e4a62a80d323855be03088d8a5341241eb4d"
+  },
+  "qualification": {
+    "repeatedTrialBenefitQualified": false,
+    "sustainedPerformanceQualified": false,
+    "effectiveNpuExecutionQualified": false,
+    "completeStateParityQualified": false,
+    "applicationAcceptanceQualified": false,
+    "qualityQualified": false,
+    "ciAcceptanceQualified": false,
+    "crossVersionSpeedupQualified": false,
+    "crossVersionLimit": "November 3 measurements used direct sandboxed backend HTTP; this capture uses public broker HTTP/SSE and a newer runtime/default policy. Do not derive a controlled cross-version speedup from these observations."
+  }
+}

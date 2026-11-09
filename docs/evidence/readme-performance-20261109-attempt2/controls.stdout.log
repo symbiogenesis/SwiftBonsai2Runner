@@ -1,0 +1,8 @@
+
+running 3 tests
+test token_timing::pinned_native_row4_captures_separated_token_timings ... ignored, Exactly two short row4 model requests, only after explicit owner authorization and one aggregate budget.
+test token_timing::native_token_timing_requires_source_supported_boundaries_and_positive_interval ... ok
+test progress::native_progress_token_timing_retains_fragmented_deltas_and_cancelled_prefix ... ok
+
+test result: ok. 2 passed; 0 failed; 1 ignored; 0 measured; 86 filtered out; finished in 0.04s
+
