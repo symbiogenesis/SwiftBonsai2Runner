@@ -154,31 +154,31 @@ full resources or application acceptance. The user-requested matrix, one offline
 Release owner build, power observations, cleanup and final archival consumed
 473.890 seconds of one predeclared fourteen-minute allowance, with no repeated arm.
 
-Qualify sustained Prism 0.1.22 performance, repeated benefit and full application
-acceptance beyond the [November 9 short-request capture](docs/evidence/readme-performance-20261109-attempt2/summary.json).
+Qualify sustained Prism 0.1.23 performance, repeated benefit and full application
+acceptance beyond the [post-repin November 9 capture](docs/evidence/readme-performance-0123-20261109/summary.json).
 It supplies two eight-token public-broker observations with confirmed cleanup,
 not sustained decode or effective NPU execution. Keep the observed power conditions
 and first-request preparation scope attached to the README numbers; do not infer
-CPU/NPU placement from HTTP readiness or a controlled cross-version speedup against
-the historical direct-backend capture. Preserve the
+CPU/NPU placement from HTTP readiness or a controlled cross-version speedup from
+either historical capture. Preserve the
 [earlier preparation failure](docs/evidence/readme-performance-20261109/summary.json),
 its original closed 69.432-second clock and AC/saver-off/99% observations separately
-from the explicitly authorized new attempt's closed 59.250-second clock and
+from the historical0.1.22 capture's closed59.250-second clock and
 AC/saver-off/98% observations. Neither clock authorizes a further trial or retry.
 
 The separately authorized [fresh 0.1.22 refresh](docs/evidence/readme-performance-20261109-refresh/summary.json)
 stopped at the driver's explicit source-path guard before power, build or model work.
 Its aggregate endpoint and power remain unknown; the tool's 0.7794621-second process
-wall time is a separate observation. Keep that attempt closed and retain existing
-README figures until a successful new-version capture.
+wall time is a separate observation. Keep that attempt closed; it supplies no new
+performance measurement.
 
 The owner now requests Prism 0.1.23 promotion, a real binary repin and then performance
 measurement. The [final-source registry check](docs/evidence/prism-0123-registry-20261109/summary.json)
 passed six receipt controls and formatting, then stopped on eight test-only strict
 Clippy errors before packaging or upload. Preserve its closed 52.8568851-second
-clock,71 AC/saver-off/99% observations and verified archive; no retry. Complete
-corrected-source validation through the separately authorized bounded hosted
-Foundation bundle, then normalized package verification and actual registry upload.
+clock,71 AC/saver-off/99% observations and verified archive; no retry. Corrected-
+source hosted validation, normalized package verification and actual publication
+are recorded separately below.
 The [first bounded Foundation operation](docs/evidence/foundation-bundle-0123-20261109/summary.json)
 pushed the exact authorized Prism source `a7cdee9`, then stopped on an operator
 run-name identity error. Its automatic and dedicated runs are both confirmed
@@ -208,8 +208,12 @@ crate changed; all five registry helper versions remain unchanged. The separatel
 approved [GitHub prerelease delivery](docs/evidence/prism-0123-github-20261109/summary.json)
 created only `v0.1.23` at `055c743` and verified all three uploaded asset digests
 before and after publication in14.677 seconds of120. Runner selects the verified
-nine-file binary pin. Complete the declared new-version capture before changing
-README measurements. Keep full Foundation and application acceptance independently pending;
+nine-file binary pin. The [new-version capture](docs/evidence/readme-performance-0123-20261109/summary.json)
+passed four focused controls and both eight-token requests with confirmed cleanup;
+its87.649-second clock is closed inside420 seconds. All90 recorded power
+observations reported AC connected, saver off and99% charge, without proving
+uninterrupted stability. README now records the independently recomputed0.1.23
+observations. Keep full Foundation and application acceptance independently pending;
 do not reopen the failed0.1.22 attempt or claim source reductions as measured gains.
 
 Qualify the [shared startup-timeout receipt fix](docs/evidence/ptq1-startup-timeout-20261103/summary.json)

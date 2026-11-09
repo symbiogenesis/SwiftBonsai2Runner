@@ -17,6 +17,45 @@ nor prose quality. Measure useful-answer time under the protocol below.
 
 ## Current Swift evidence
 
+The [November 9 Prism 0.1.23 capture](evidence/readme-performance-0123-20261109/summary.json)
+followed actual crates.io publication, the verified GitHub development prerelease
+and Runner's binary repin to `055c743`. It measured one request per representation
+through public broker HTTP/SSE on the Snapdragon X2 Elite Extreme, with four observed
+row workers, standard adapter scale 1.3, seed 42, Thinking off and an eight-token cap:
+
+| Model | Runtime | First-request TTFT (s) | Generation tokens/second | Model file | Peak Job commit | Available RAM admission |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| **Swift Bonsai 2 `PQ2_0` (development default)** | **Rust 0.1.23; default acceleration policy** | **8.23** | **2.66** | **6.71 GiB** | **7.07 GiB** | **15.5 GiB** |
+| **Swift Bonsai 2 `PTQ1_0` (experimental opt-in)** | **Rust 0.1.23; CPU** | **15.68** | **1.41** | **5.54 GiB** | **5.89 GiB** | **15.5 GiB** |
+
+Both fresh owners returned `1, 2, 3,` for `Count from 1 to 100.`, with eight
+reported completion tokens and `length`. Eight nonempty ASCII deltas and the
+reviewed pinned non-speculative callback support seven positive token intervals.
+TTFT begins at client request start after HTTP readiness and can include remaining
+asynchronous model/device preparation. Generation is seven divided by the time
+between the first and last token receipts. Broker forwarding, exact-count admission,
+receive coalescing and observer receipt I/O remain included.
+
+Peak Job commit was `7,588,093,952` bytes for PQ2 and `6,326,587,392` bytes for PTQ1,
+a `1.17487 GiB` difference. It includes startup and descendants, excludes mapped-file
+residency and device allocations, and does not establish total RAM use or a resource
+benefit. PQ2 used the default X2 Hexagon policy with CPU fallback; effective NPU
+execution remains **unknown** because authenticated readiness does not expose it.
+Both owners confirmed empty Jobs and released listeners.
+
+All 90 power observations, including 81 periodic samples and separate aggregate,
+per-arm and post-retention endpoints, reported AC connected, saver off and 99%
+charge. Sampling does not prove uninterrupted stability. Cache-only provisioning,
+one offline Release build, four focused controls, both requests, cleanup and
+evidence/manifest retention finished in **87.649 s** of the predeclared seven-minute
+allowance (380-second conservative estimate), without a retry or CI action.
+The raw receipts and independently recomputed metrics are retained. These single
+short requests do not establish sustained speed, repeated benefit, quality,
+application acceptance or a controlled cross-version speedup. Keep the earlier
+observations below separate; their original clocks remain closed.
+
+### Earlier 0.1.22 capture
+
 The [November 9 Prism 0.1.22 capture](evidence/readme-performance-20261109-attempt2/summary.json)
 measured two short requests through the public broker HTTP/SSE API on the Snapdragon
 X2 Elite Extreme, with four observed row workers, standard adapter scale 1.3,
@@ -49,7 +88,7 @@ and evidence/manifest retention finished in **59.250 s** of a predeclared ten-mi
 allowance (365-second conservative estimate). No further retry or CI action occurred.
 Sustained speed, repeated benefit, quality and application acceptance remain pending.
 
-This new attempt was explicitly authorized after the
+This 0.1.22 attempt was explicitly authorized after the
 [earlier preparation failure](evidence/readme-performance-20261109/summary.json).
 That original 69.432-second clock remains closed and its receipts unchanged. No
 cross-version speedup is inferred: the November 3 observations below used direct
@@ -106,9 +145,9 @@ verification, and Snapdragon X2 6-arena 168-projection (`blk.0..=blk.26`,
 `2,888,663,040` resident weight bytes / `2,754.84 MiB`) `native-q2` resident NPU optimizations
 (including 8-op `dspqueue` batching and fused `ffn_gate + ffn_up + HTP_OP_GLU_SWIGLU` VTCM
 chaining). Version `0.1.23` also includes direct floating projections, compact rollback
-checkpoints, validated-logit sampling and recurrent staging. The existing November 9
-capture above records `0.1.22`; the new pin alone supplies no new measurement.
-Sustained performance and matched repeated benefit remain pending.
+checkpoints, validated-logit sampling and recurrent staging. The latest November 9
+capture above records short requests on `0.1.23`; sustained performance and matched
+repeated benefit remain pending.
 See [Hexagon execution contracts](hexagon.md#snapdragon-x2-hexagon-npu-v81-projection-and-layer-timings)
 for the supervised 3-token (`42, 43, 128`) X2 device control timings (`0.64–0.98 ms` for 1
 projection, `1.08–1.44 ms` for 2 projections, `2.27–2.87 ms` for 6 recurrent projections in `blk.0`,

@@ -79,15 +79,15 @@ model. For technical details, see the [UI architecture](docs/ui-architecture.md)
 
 ## Performance
 
-The latest [recorded measurements](docs/evidence/readme-performance-20261109-attempt2/summary.json)
-are from **November 9, 2026**, using **Prism 0.1.22**, four CPU workers and the
+The latest [recorded measurements](docs/evidence/readme-performance-0123-20261109/summary.json)
+are from **November 9, 2026**, using **Prism 0.1.23**, four CPU workers and the
 standard adapter at strength 1.3 on a **Snapdragon X2 Elite Extreme** laptop.
 AC power was connected and battery saver was off at every recorded power sample.
 
 | Model option | Time to first token | Generation speed | Model file size | Peak Job commit (short reply) | Free RAM required |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| **Standard model (PQ2, default)** | **6.63 s** | **3.16 tokens/s** | **6.71 GiB** | **7.06 GiB** | **15.5 GiB** |
-| **Extra-compact model (PTQ1, experimental)** | **20.08 s** | **1.59 tokens/s** | **5.54 GiB** | **5.89 GiB** | **15.5 GiB** |
+| **Standard model (PQ2, default)** | **8.23 s** | **2.66 tokens/s** | **6.71 GiB** | **7.07 GiB** | **15.5 GiB** |
+| **Extra-compact model (PTQ1, experimental)** | **15.68 s** | **1.41 tokens/s** | **5.54 GiB** | **5.89 GiB** | **15.5 GiB** |
 
 Each option was measured once with `Count from 1 to 100.`, Thinking off and an
 eight-token reply limit through the local API. First-token timing starts after
