@@ -24,7 +24,8 @@
       "hexagon": ["f5dff5798ab053bffcb1cf0f8f83a284db8c3d06", "47acf511616282a859e231afcc93f9078b35b0e7"]
     },
     "checkSource": "ab4d934 plus the one canonical formatting pass, retained in af90337. The raw receipt retains every tracked input hash and the full formatting diff. No executable source was corrected after the closed check.",
-    "delivery": "Three individual worker worktrees with logical commits, independently reviewed and cherry-picked into an individual Prism integration worktree. Runner declaration, plan and evidence have their own worktree and commits. Reviewed results integrate into both local main branches. No push, pull request, CI dispatch, query, monitoring or wait."
+    "delivery": "Three individual worker worktrees with logical commits, independently reviewed and cherry-picked into an individual Prism integration worktree. Runner declaration, plan and evidence have their own worktree and commits. Reviewed results integrate into both local main branches. No push, pull request, CI dispatch, query, monitoring or wait.",
+    "byteRetention": "Post-closure repository delivery review caught Git's automatic line-ending conversion. A path-scoped .gitattributes rule preserves this directory as original bytes, including captured logs and the digest-bound driver, declaration and inventory. Original worker-worktree files were retained unchanged and re-added under that rule; no observation or clock was regenerated and no diagnostic was rerun."
   },
   "implemented": {
     "gdnPrefill": {
