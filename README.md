@@ -84,6 +84,10 @@ are from **November 9, 2026**, using **Prism 0.1.23**, four CPU workers and the
 standard adapter at strength 1.3 on a **Snapdragon X2 Elite Extreme** laptop.
 AC power was connected and battery saver was off at every recorded power sample.
 
+The newer [Prism 0.1.24 crate](https://crates.io/crates/prism-inference/0.1.24)
+is published; its verified Runner binary update and new measurements are
+[pending](PLAN.md). The timings below still apply to 0.1.23.
+
 | Model option | Time to first token | Generation speed | Model file size | Peak Job commit (short reply) | Free RAM required |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | **Standard model (PQ2, default)** | **8.23 s** | **2.66 tokens/s** | **6.71 GiB** | **7.07 GiB** | **15.5 GiB** |
@@ -121,6 +125,7 @@ model** on other hardware:
 ![Base Bonsai 2 PQ2 generation speed: Apple M5 Pro 28.1, RTX 4090 81.2 and RTX 5090 129.9 tokens per second.](docs/assets/reference-throughput.svg)
 
 [Source: Prism throughput benchmarks](https://huggingface.co/prism-ml/Ternary-Bonsai-2-27B-gguf#cross-platform-throughput).
+The published figures were checked again on **November 9, 2026** and are unchanged.
 These are reference points from other machines, not a speed forecast for Swift on
 Snapdragon laptops. Turning on **Thinking** or sending long prompts also increases the
 wait before an answer finishes.
@@ -134,6 +139,7 @@ that compares with other compressed versions of the same Qwen model:
 ![Published benchmark averages: Qwen FP16 86.32, Qwen Q4 85.18, base Bonsai 2 84.78 and Qwen IQ2 72.59, on a zero-to-100 scale.](docs/assets/answer-quality.svg)
 
 [Source: Prism benchmark results](https://huggingface.co/prism-ml/Ternary-Bonsai-2-27B-gguf#benchmarks).
+The published scores were checked again on **November 9, 2026** and are unchanged.
 These scores cover **base Bonsai, not Swift**, and do not measure creative writing.
 Swift's publisher notes [uneven general-purpose behavior](https://ukisai.com/swift-bonsai-2#research-status-and-limitations),
 and we are still evaluating its creative-writing quality for everyday use. See

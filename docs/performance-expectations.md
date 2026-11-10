@@ -10,12 +10,18 @@ no vision tower. The quality chart uses the publisher's 14-benchmark thinking-mo
 evaluated with EvalScope/vLLM on H100; it includes vision tasks. Neither chart evaluates Swift or
 our Qwen Q3 reference. Source: [Prism's model
 card](https://huggingface.co/prism-ml/Ternary-Bonsai-2-27B-gguf#cross-platform-throughput), checked
-October 23, 2026.
+November 9, 2026. The [source refresh](evidence/publisher-reference-20261109.json)
+confirmed that all seven plotted reference values remain unchanged.
 
 Other-hardware throughput and general benchmark averages predict neither Snapdragon speed
 nor prose quality. Measure useful-answer time under the protocol below.
 
 ## Current Swift evidence
+
+The [Prism 0.1.24 crate publication](evidence/prism-0124-publish-20261109/summary.json)
+does not yet provide a verified Runner binary update or new model timings.
+Owner source/bundle publication, binary repinning and a fresh bounded capture
+remain in [the plan](../PLAN.md). The current measurements below apply to 0.1.23.
 
 The [November 9 Prism 0.1.23 capture](evidence/readme-performance-0123-20261109/summary.json)
 followed actual crates.io publication, the verified GitHub development prerelease
