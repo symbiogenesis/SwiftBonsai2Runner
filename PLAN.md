@@ -1156,6 +1156,24 @@ LoRA gates; calibration proves neither quality nor reduced admission.
 
 ## CPU kernels
 
+Qualify the [three-lane performance source changes](docs/evidence/performance-impact-20261109/summary.json)
+on settled Prism main through owner-managed hosted checks. Grouped GDN kernels
+combine private update-lane finite masks before publication, native decoder
+evaluation carries its existing finite-output proof into Runtime, and resident
+native-Q2 packets reuse populated descriptor geometry within each submission.
+Keep exact arithmetic, custom-decoder validation, complete-state rollback, packet
+bytes, operation order and conservative resource admission. The single 123.029-second
+source check passed 22 exact Rust controls and six receipt controls, then stopped
+on four test-only empty-assertion lints. Their equivalent typed-empty corrections
+are independently source-reviewed but uncompiled; retain the failed receipt and
+closed clock without retrying. All 65 power observations reported AC connected,
+saver off and 99% charge, without establishing uninterrupted stability.
+Require final-source strict Release checks, portable fallback, production linking,
+ARM64 codegen and
+stack review, actual-model logits/state/adapter and vendor lifecycle acceptance,
+then matched whole-request benefit before performance qualification or Runner
+repinning. These source work reductions establish no measured speedup.
+
 Qualify the [parallel performance and registry candidate](docs/evidence/performance-release-20261109/summary.json)
 on settled Prism main through owner-managed checks. It halves declared Swift 128-wide
 multi-token GDN row staging, uses immutable validated logits to omit redundant

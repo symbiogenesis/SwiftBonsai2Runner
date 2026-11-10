@@ -1,0 +1,29 @@
+{
+  "kind": "offline-retained-byte-and-source-review",
+  "status": "passed",
+  "rawArchiveMembersVerified": 32,
+  "rawFilesIncludingManifestAndClock": 34,
+  "frozenInputsVerified": 3,
+  "rustControlsVerified": 22,
+  "receiptControlsPassed": 6,
+  "selectedTestExecutables": 5,
+  "trackedSourceHashes": 743,
+  "postTrialChangedFiles": [
+    "tests/graph.rs",
+    "tests/runtime.rs"
+  ],
+  "postTrialChangeReview": "Exactly four equivalent typed-empty test assertions; no production source changed.",
+  "selectedStrictAnalysisPassed": false,
+  "featureDisabledCompilationReached": false,
+  "powerObservations": 65,
+  "allObservedPowerEndpointsAcConnectedSaverOff99Percent": true,
+  "continuousPowerStabilityEstablished": false,
+  "originalClockClosed": true,
+  "originalElapsedSecondsThroughRetention": 123.02876749999996,
+  "enclosingProcessWallSeconds": 123.063917,
+  "withinDeclaredAllowance": true,
+  "workloadRerun": false,
+  "newModelOrDeviceEvidence": false,
+  "performanceQualified": false,
+  "offlineReviewSeconds": 0.09748600000239094
+}

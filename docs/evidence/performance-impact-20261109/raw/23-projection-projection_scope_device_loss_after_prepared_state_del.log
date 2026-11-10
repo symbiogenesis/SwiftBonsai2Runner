@@ -1,0 +1,6 @@
+
+running 1 test
+test projection::projection_scope_device_loss_after_prepared_state_delta_never_replays_or_reopens ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 83 filtered out; finished in 0.05s
+
