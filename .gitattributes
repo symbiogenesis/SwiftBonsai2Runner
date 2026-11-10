@@ -146,3 +146,6 @@ docs/evidence/performance-release-20261109/** -text -whitespace
 
 # Preserve the new three-lane source screen's declaration and raw receipts.
 docs/evidence/performance-impact-20261109/** -text -whitespace
+
+# Preserve the three validation-reuse lanes' closed declaration and raw hashes.
+docs/evidence/performance-complete-20261109/** -text -whitespace
