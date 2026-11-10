@@ -2229,6 +2229,45 @@ serving is not a total-RAM saving here. [Withdrawn PolarQuant/unresolved
 Litespark](docs/research-register.md#withdrawn-or-unresolved-reports) remain negative
 evidence, not tasks.
 
+## Future Qwen MoE migration
+
+Activate this work only after Qwen 4 is released and the resulting Bonsai model
+upgrade is available. The owner expects that upgrade to be MoE; derive its actual
+architecture and resource needs from the published artifacts. Until then, retain
+these [Colibri ideas](https://github.com/JustVugg/colibri/tree/0a5504a1dc64f86fcd0fe7db298b0448c730e7e6)
+as conditional work, with no current implementation or device trial:
+
+- Authenticate the upgraded Bonsai weights, tokenizer, quantization and adapter
+  identities, and establish native Rust runtime support. Qwen family names do
+  not establish geometry, routing, state layout or accelerator compatibility.
+- Adopt explicit [resident/expert capacity accounting](https://github.com/JustVugg/colibri/blob/0a5504a1dc64f86fcd0fe7db298b0448c730e7e6/c/resource_plan.py):
+  reserve dense/shared weights, router weights, context/recurrent state,
+  workspace, metadata, staging and host headroom before sizing expert caches.
+  Price unequal experts conservatively from each layer's maximum resident size,
+  and include retained host/device copies. Charge shared GPU/NPU allocations
+  against the same physical RAM pool once; separate discrete memory only when
+  independently established. Keep unknown capacity explicit and arithmetic
+  checked. Capacity coverage is not a measured cache hit rate or admission.
+- Evaluate bounded hot/warm/cold expert placement: frequently used experts in
+  accelerator memory, a warm RAM cache, and cold experts read from verified
+  local storage when needed. Preserve all weights, precision and router choices.
+  Implement only tiers justified by the upgraded model and measured batch-one
+  bottleneck; integrated-device copies and transfer overhead may erase a gain.
+  Bound cache metadata, staging, I/O and cancellation/teardown. Persistent usage
+  traces require an explicit storage/privacy policy.
+- Consider [download-space preflight](https://github.com/JustVugg/colibri/blob/0a5504a1dc64f86fcd0fe7db298b0448c730e7e6/c/setup_catalog.py)
+  for the larger model: check the actual destination's additional locked bytes
+  after a valid partial download, then recheck the full requirement before an
+  ignored-Range restart can truncate that partial. Retain resumable data on
+  failure, unknown-space diagnostics, immutable verification and separate space
+  accounting for staging/extraction. A free-space snapshot reserves no storage.
+- Qualify correctness, resource admission, stop/retry, cleanup, native application
+  acceptance and a practical benefit before selecting a new profile or tier.
+  Use the existing predeclared aggregate budgets and power observations; Colibri
+  CUDA/Vulkan results cannot qualify Snapdragon Adreno/Hexagon or local disk
+  latency. Preserve explicit Swift rollback. Keep implementation entirely Rust
+  and the first-party UI native under the existing architecture contract.
+
 ## Deferred Prism migration
 
 Reopen broader [Prism](https://github.com/symbiogenesis/prism-inference) work only for a
