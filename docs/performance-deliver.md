@@ -40,6 +40,16 @@ distinguishes reached checks from pending checks and retains original power
 observations. Source copy and queue-write counts establish no measured latency,
 throughput or process-memory improvement.
 
+All five selected targets compiled and all 38 exact Rust controls and six
+receipt controls passed. Strict Release analysis then stopped on five inherited
+attribute/documentation findings, closing the original clock after 157.160
+seconds within the declared nine-minute allowance. Their narrow corrections
+were independently source-reviewed; production arithmetic and ownership bodies
+are unchanged. The failed receipt remains failed, with no rerun. Production
+worker linking and feature-disabled compilation were not reached. Power
+observations report battery operation, saver off and 63% before to 60% after;
+endpoints establish no uninterrupted stability or performance comparison.
+
 Owning hosted acceptance, complete-model state/logit/adapter and cancellation
 parity, ARM64 code generation and resources, signed vendor lifetime, and matched
 complete-request benefit remain required before a qualified release and repin.

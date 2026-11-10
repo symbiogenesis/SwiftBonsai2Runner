@@ -691,8 +691,10 @@ and retain the reset-every-request serving policy until reuse is qualified.
   allocations, scratch lifetimes and peaks for reusable logits, state-only ingestion,
   shared activations, physical FP16 KV, checkpoint pages and sampler candidates. Audit
   full-cache replacement, broadcast and transpose materialization and repeated
-  preparation; remove the largest avoidable copy or allocation while preserving
-  independent snapshots. Qualify long-context tiled attention-value traversal under the
+  preparation. Qualify the implemented immutable-logits snapshot ownership under
+  the [prefill/snapshot/FFN contract](docs/performance-deliver.md), then remove the
+  largest remaining avoidable copy or allocation while preserving independent
+  snapshots. Qualify long-context tiled attention-value traversal under the
   [overhead
   review](docs/native-rust-engine.md#2026-literature-runtime-overhead-and-work-placement).
 - Qualify the local [inference efficiency candidates](docs/native-rust-engine.md#local-inference-efficiency-candidates):
@@ -716,8 +718,10 @@ and retain the reset-every-request serving policy until reuse is qualified.
   [prefill contract](docs/inference-algorithms.md#chunkwise-gated-deltanet-prefill),
   then matched whole-prompt benefit against qualified NEON/worker execution.
   Source work reuse and the SIMD tiled candidate establish no speedup or release gate.
-- If attention is material, compare grouped-head KV reuse and bounded score/value tiles,
-  retaining versus recomputing scores. Preserve globally normalized FP16 probabilities
+- Qualify the implemented complete six-head decode and tiled-prefill KV reuse,
+  including the [causal-prefix, worker and scratch contracts](docs/performance-deliver.md).
+  If attention remains material, compare bounded score/value tiles and retaining
+  versus recomputing scores. Preserve globally normalized FP16 probabilities
   before V; online-softmax/Flash changes require separate numerical and continuation
   qualification under the [attention
   contract](docs/inference-algorithms.md#attention-locality-and-the-io-bound).
@@ -1155,6 +1159,24 @@ LoRA gates; calibration proves neither quality nor reduced admission.
   X1/X2, including installation and rollback, sustained use and upgrade requalification.
 
 ## CPU kernels
+
+Qualify the [three completed prefill, snapshot and FFN source implementations](docs/performance-deliver.md)
+on settled Prism main through owner-managed checks: complete six-head tiled-prefill
+KV locality, immutable complete runtime logits shared by rollback/prefix snapshots,
+and paired resident native-Q2 full-FFN token packets. Their implementation work is
+complete; the [delivery record](docs/evidence/performance-deliver-20261109/summary.json)
+owns exact source, focused controls, power observations and local-check results.
+All five selected targets compiled and all 38 exact Rust controls plus six receipt
+controls passed. The one local run closed at 157.160 seconds after five inherited
+strict-Release lint findings; their attribute/documentation-only corrections are
+source-reviewed without retry. Preserve that failed receipt and its closed clock,
+with battery/saver-off/63% to 60% endpoints. Final-source strict analysis, worker
+linking and feature-disabled compilation remain pending.
+Require owning hosted acceptance, complete-model state/logit/adapter and cancellation
+parity, ARM64 code generation and resources, signed vendor lifetime and matched
+complete-request benefit before release and Runner repinning. Preserve conservative
+snapshot charges, the extra six-head score reservation and simultaneous native
+chain workspace. True multi-token native-Q2 matrix prefill remains separate.
 
 Qualify the [three completed performance source implementations](docs/evidence/performance-finish-20261109/summary.json)
 on settled Prism and Runner main through owner-managed checks: complete six-head

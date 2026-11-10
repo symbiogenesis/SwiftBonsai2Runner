@@ -1,0 +1,137 @@
+{
+  "schemaVersion": 1,
+  "kind": "three-complete-performance-source-implementations",
+  "recordedDate": "2026-11-09",
+  "status": "three-implementations-complete-all-38-exact-controls-passed-five-inherited-lints-corrected-final-source-owning-validation-pending",
+  "source": {
+    "runnerBaseRevision": "de8ed62c2b9892a91f74fbd4856f50de8a47f7ba",
+    "runnerDeclarationRevision": "86749ad952dbeae64899b200c6669ff7187a71ea",
+    "prismBaseRevision": "c09d7e3cbcf2741a22910adf8e29276712e9eb46",
+    "prismCheckedRevision": "2114636aa0d5d1e2e567a36af230863b735e742b",
+    "prismFinalRevision": "a0e9db0c3716dcc7048da7bb40469cdf2f29ed1f",
+    "workerCommits": [
+      "3b7b49e10902a8b4c864a1e4298703a915bbcd10 CPU implementation and independent oracle",
+      "87c4c8896d66ddce0d40666a1106c38d16aae5c1 production prefill dispatch/recovery control",
+      "92de441ccfca85cce8aecfc9dfad588c894f43df runtime immutable logits snapshots",
+      "59fcb61713e86aefacbba9f203c88e84f98430c4 paired full resident FFN chains"
+    ],
+    "finalLintOnlyCommits": [
+      "8b42d84 remove two obsolete attention lint expectations",
+      "81cedf1 remove redundant must_use and fix one documentation token",
+      "a0e9db0 retain sampler helper crate visibility with an item-local observed-lint expectation"
+    ],
+    "postCheckDelta": "Five attributes/documentation corrections only; every production arithmetic and ownership body remains identical to the compiled and tested candidate. No formatter, compiler, test or analyzer rerun followed the closed check.",
+    "delivery": "Each worker used its own Git worktree and one commit per logical change. Root reviewed and integrated into an isolated Prism worktree, then fast-forwarded clean local Prism main. Runner records integrate into clean local Runner main. Both stay local; no pushes, PRs or CI actions."
+  },
+  "closedSourceImplementationItems": [
+    {
+      "item": "Complete six-head tiled-prefill KV locality",
+      "planScope": "CPU attention locality and tiled-prefill reductions",
+      "production": "Pinned Swift prefill uses complete six-query-head groups per KV head, bounded to each token's absolute causal prefix even after the whole tile is appended. Current-token F32, past-token F16, native reduction lanes, probability rounding and gates remain intact. Other arithmetic/geometries retain their prior path.",
+      "sourceCost": "Removes two single-head tails; does not claim uniformly fewer cache iterator sweeps. Charges two extra full-context score rows per tile token, up to 2 MiB at 32 tokens/context8192, even serial.",
+      "correctness": "Three new controls passed: independent 8/16/32-token/page/worker oracle, invalid/future-NaN failure boundary, and actual production pinned/source dispatch plus cancellation/cache restoration. Existing six-head decode and original-gate regression controls also passed."
+    },
+    {
+      "item": "Immutable complete runtime logits snapshots",
+      "planScope": "Runtime allocation/copy audit and exact-prefix snapshot ownership",
+      "production": "Rollback and saved-prefix snapshots share immutable complete Arc<Vec<f32>> distributions. Restore shares the original output. Mutation detaches without copying stale logits, then reuses the unique allocation. Empty snapshots preserve dormant reset-only output capacity. Complete decoder state/token identity and finite-proof boundaries remain transactional.",
+      "sourceCost": "Omits copying 248320 f32 values / 993280 logical bytes per Swift snapshot capture or saved-prefix restoration. Every owner still charges full retained vector capacity plus Vec/Arc metadata; no admission reduction.",
+      "correctness": "All six new ownership/bit/storage/stop/cap/failure/cancellation/fault/budget controls passed, together with selected existing finite-decoder, sampled/terminal, prefix, speculative, timing and reusable-output regressions."
+    },
+    {
+      "item": "Paired native resident full-FFN token chains",
+      "planScope": "Chosen Hexagon milestone: bounded complete FFN prefill scheduling and transport",
+      "production": "The existing graph tile caller now reaches an executor override that sends two complete ordered single-token FFN chains through actual borrowed/owned native sessions in one correlated 8/10/12-operation packet. Explicit one-packet capability preserves exact scalar fallback counters for arbitrary submitters. Odd tails remain single-chain calls. All outputs validate before publication; any failure clears the whole tile and closes the executor without replay.",
+      "sourceCost": "Queue writes become ceil(tokens/2) for capable native submitters. Logical operations and lifetime caps remain unchanged. Working allocation reserves 8 KiB commands plus two sets of eight maximum-width F32 regions before allocation; larger existing packed workspace remains charged. True N>1 matrix arithmetic remains outside this implementation.",
+      "correctness": "Four new packet-equivalence/capacity/arena, real fake-DSP native transport/correlation/terminal-failure, owned forwarding and tile/tail/counter controls passed. Existing request whitelist and single-chain optional-shape/failure controls passed. No actual DSP or model executed."
+    }
+  ],
+  "localValidation": {
+    "declaration": "workload-plan.json",
+    "driver": "validate.py",
+    "inventory": "controls.json",
+    "receipt": "raw/receipt.json",
+    "archive": "raw/archive.json",
+    "terminalClock": "raw/final-clock.json",
+    "status": "failed",
+    "maximumTotalSeconds": 540,
+    "conservativeEstimateSeconds": 500,
+    "elapsedSecondsThroughRetention": 157.1601813999987,
+    "withinDeclaredAllowance": true,
+    "clockClosed": true,
+    "clockRestarted": false,
+    "retries": 0,
+    "canonicalFormatPassed": true,
+    "formattedSourceDiff": "empty",
+    "trackedSourceFilesHashed": 757,
+    "compiledTestTargets": 5,
+    "selectedRustControls": 38,
+    "rustControlsPassed": 38,
+    "rustControlsFailed": 0,
+    "receiptControlsPassed": 6,
+    "strictReleaseAnalysis": "failed on five inherited findings; corrected without reopening the check",
+    "inheritedLintFindings": [
+      "native_q2::NativeQ2ValidatedOutputs::from_validated redundant must_use",
+      "owned NativeQ2Session documentation SwiGLU missing backticks",
+      "sampling::selection::candidate_lanes redundant_pub_crate",
+      "pinned_attention_six_neon::publish obsolete needless_range_loop expectation",
+      "pinned_attention_neon::reduce_four_heads obsolete needless_range_loop expectation"
+    ],
+    "notReached": [
+      "Production Swift worker Release linking",
+      "Feature-disabled runtime library compilation",
+      "Final source/declaration rehash after all checks",
+      "Owning hosted acceptance"
+    ],
+    "cleanupIncomplete": false,
+    "rawArchiveSourceCopiesVerified": true,
+    "receiptSha256": "60a909280ffa66623bcc2fb7e544341e74d0f7857a0b3508ebe7d9a1a9e41be5",
+    "terminalClockSha256": "ed7331401b3abcf55509291e411d4fecd115c70c0a514acc26bc0a3111f659f0",
+    "power": {
+      "observations": 97,
+      "allBatteryOperation": true,
+      "allBatterySaverOff": true,
+      "chargePercentValues": [60, 63],
+      "aggregateBefore": {"acConnected": false, "batterySaver": false, "chargePercent": 63},
+      "aggregateAfter": {"acConnected": false, "batterySaver": false, "chargePercent": 60},
+      "afterRetention": {"acConnected": false, "batterySaver": false, "chargePercent": 60},
+      "continuousPowerStabilityEstablished": false,
+      "pastPowerInferred": false,
+      "performanceComparisonQualified": false
+    }
+  },
+  "independentReview": [
+    "Root reviewed all three production implementations, resource charges, exact controls and final lint-only diffs.",
+    "CPU worker reviewed runtime snapshot ownership, rollback, capacity and empty-output reuse.",
+    "Runtime worker reviewed paired native framing, exact counts, workspace, terminal publication and driver deadlines/retention.",
+    "NPU worker reviewed six-head causal bounds, original arithmetic, worker partitions, scratch charging and production recovery coverage.",
+    "Root found and resolved native custom-submitter queue undercount before compilation; explicit capability preserves scalar accounting.",
+    "Root found and resolved empty-snapshot output-capacity loss before compilation; the added control passed.",
+    "All five inherited lint-only corrections were source-reviewed after the check; no execution was repeated."
+  ],
+  "remainingAcceptance": [
+    "Final-source strict Release analysis, feature-disabled compilation and production linking through owner-managed checks.",
+    "Owning hosted exact controls/full suites on settled main.",
+    "Complete-model state/logit/adapter and cancellation/restore parity; ARM64 code generation, resources and signed vendor lifetime.",
+    "Matched complete-request benefit under qualified power/device conditions.",
+    "Qualified release and immutable Runner repin before installed application use."
+  ],
+  "qualification": {
+    "threeSourceImplementationsComplete": true,
+    "allSelectedControlsPassedOnCheckedSource": true,
+    "finalLintCorrectionsCompiled": false,
+    "owningHostedVerdict": null,
+    "actualModelParityQualified": false,
+    "performanceImprovementQualified": false,
+    "installedRuntimeChanged": false,
+    "runnerReleasePinChanged": false,
+    "profileDefaultsChanged": false,
+    "admissionReduced": false
+  },
+  "models": 0,
+  "acceleratorDeviceCalls": 0,
+  "benchmarks": 0,
+  "fullSuites": 0,
+  "ciActions": 0,
+  "pushes": 0
+}
