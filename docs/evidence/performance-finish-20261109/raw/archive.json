@@ -1,0 +1,25 @@
+{
+  "clockClosed": true,
+  "sourceCopiesVerified": true,
+  "files": {
+    "01-compiler.log": "f384a15180d0cec293758df05f1259c243f75de344f28f46011a6dc7cf305c29",
+    "02-source-head.log": "e8de60eb79a44d4cd97cb03b1cb28316655107bd85dab1f0079900f52e9e7468",
+    "03-format.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "04-format-check.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "05-runner-format.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "06-runner-format-check.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "07-runner-source-head.log": "45a709e3adfe29179475497b4256fc434cb80bff3d7be8ff0be5b16048c0eb1f",
+    "08-prism-source-files.log": "385ba6a67429f10dd2eacbb629c335bdbc41873d9f6c435c40a911a1dd985cdf",
+    "09-runner-source-files.log": "a6308967e23c3d6860841dfd588278dde544040db2003c9f8e006183355e2bb6",
+    "10-runner-formatted-diff.log": "0e00cd95486f8610489e37fe7a393179b10e69075b90a4076d5c4b78d231777d",
+    "11-formatted-source-diff.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "12-receipt-controls.log": "12559a626e4a65cd25dc5dbd616ae1cbc01dc9ac89c79abe77e3f9e9d1034b86",
+    "13-compile-controls.log": "1e6464f7d89a8479c42c20bef7a0aad2cc6d0558f39e1e36345f3b58ea6708cb",
+    "14-kernels-pinned_attention-six-tests-six_head_scores_match_indepen.log": "9e75a2737a5478ac96010b0802a7885544726261e0fbdf62481f8245788f155c",
+    "15-kernels-pinned_attention-six-tests-six_head_values_match_indepen.log": "58fc6d3bb1fd2b145a29aae3f05765eafbe51ebf2eff3bdde9896d336c777c1d",
+    "16-kernels-pinned_attention-six-tests-six_head_values_reject_invali.log": "f0123c1332e74eea1cf510e0f50aa6cd2070abb3b4b4a8f6a87df34ce9cecf07",
+    "17-graph-attention_six-tests-six_head_decode_matches_single_head_re.log": "5cd76ac1f91e899d4825a76db90de4bb9cca520e2d5012db103079e14d2b6b18",
+    "18-graph-tests-full_attention_reads_original_interleaved_gates_acro.log": "aeb5f25e4493e01b7b9c644c5a543f0bcde21fb27c0f66f5253e9a34d8d67595",
+    "receipt.json": "88d06f127857403e9b2f11a05779e40602fccd9f1dfdcd73a4e3fe378036242f"
+  }
+}

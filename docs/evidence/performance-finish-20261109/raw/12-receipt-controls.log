@@ -1,0 +1,11 @@
+test_artifacts_require_all_unique_selected_test_executables (test_inference_efficiency.EfficiencyReceiptTests.test_artifacts_require_all_unique_selected_test_executables) ... ok
+test_exact_control_rejects_zero_ignored_failed_or_duplicate_matches (test_inference_efficiency.EfficiencyReceiptTests.test_exact_control_rejects_zero_ignored_failed_or_duplicate_matches) ... ok
+test_fixed_inventory_is_unique_and_all_controls_exist_in_source (test_inference_efficiency.EfficiencyReceiptTests.test_fixed_inventory_is_unique_and_all_controls_exist_in_source) ... ok
+test_neon_controls_require_the_exact_supported_target_without_mutating_portable_gate (test_inference_efficiency.EfficiencyReceiptTests.test_neon_controls_require_the_exact_supported_target_without_mutating_portable_gate) ... ok
+test_source_identity_binds_runtime_controls_and_format_policy (test_inference_efficiency.EfficiencyReceiptTests.test_source_identity_binds_runtime_controls_and_format_policy) ... ok
+test_source_identity_binds_the_analyzer_dependency_policy (test_inference_efficiency.EfficiencyReceiptTests.test_source_identity_binds_the_analyzer_dependency_policy) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 1.057s
+
+OK

@@ -1156,6 +1156,22 @@ LoRA gates; calibration proves neither quality nor reduced admission.
 
 ## CPU kernels
 
+Qualify the [three completed performance source implementations](docs/evidence/performance-finish-20261109/summary.json)
+on settled Prism and Runner main through owner-managed checks: complete six-head
+Swift decode locality, reset-only terminal state ingestion, and real native
+resident full-FFN-chain transport. The [implementation contract](docs/performance-finish.md)
+records their exact scope and the compatible Runner timing reader. All six selected
+Prism test targets compiled and the four new six-head controls passed. The one
+133.379-second model-free check then stopped at an inherited graph fixture whose
+four-channel RoPE geometry is unsupported by pinned Swift. Its test-only correction
+uses the actual 256-channel/64-rotary contract and is independently source-reviewed;
+no retry or recompilation followed. Preserve the closed clock and battery/saver-off
+82% to 79% endpoint observations; they qualify no performance comparison.
+Require the remaining exact controls, strict Release analysis, portable compilation
+and production linking, then full-model state/logit/adapter and cancellation parity,
+signed vendor lifetime/resources and matched complete-request benefit before release
+or Runner repinning. True multi-token native-Q2 matrix prefill remains separate.
+
 Qualify the [attention, sampler and owned-session source implementations](docs/evidence/performance-closeout-20261109/summary.json)
 on settled Prism main through owner-managed checks. Require all 38 exact controls,
 strict Release analysis, native worker linking and feature-disabled compilation,
@@ -1819,11 +1835,13 @@ AC-connected device receipts and the pinned Runner release-bundle `0.1.23` (`055
     `rpcmem` weight arenas within CDSP `v-size = 3000 MiB` on `v81` and host SMMU/Job
     commit limits) to cover additional transformer blocks (`blk.9..=blk.63`).
   - Complete the remaining intra-layer VTCM tensor chaining for `native-q2`:
-    `HTP_OP_RMS_NORM`, RoPE, full attention, convolution/GDN and the complete FFN
-    down/residual chain. Qualify existing sibling packet batching, direct resident
-    preparation and three-/six-operation SwiGLU through the public owned session,
-    including signed outputs, resources and teardown. The full-FFN-chain backend
-    still refuses; facade forwarding does not implement that backend. Require
+    `HTP_OP_RMS_NORM`, RoPE, full attention and convolution/GDN. Qualify existing
+    sibling packet batching, direct resident
+    preparation, three-/six-operation SwiGLU and the implemented full-FFN-chain
+    backend through the public owned session, including signed outputs, resources
+    and teardown. The [complete native transport](docs/performance-finish.md)
+    now correlates the supported four-/five-/six-operation chain shapes; signed
+    arithmetic and whole-model acceptance remain pending. Require
     actual total-request benefit from fewer host/DSP synchronizations and DDR
     round-trips.
   - Add multi-token `N > 1` `native-q2` prefill dispatch (`N = tile_tokens` in

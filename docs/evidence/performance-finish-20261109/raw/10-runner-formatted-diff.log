@@ -1,0 +1,37 @@
+warning: in the working copy of 'src/broker/tests/native_model/progress.rs', LF will be replaced by CRLF the next time Git touches it
+diff --git a/src/broker/tests/native_model/progress.rs b/src/broker/tests/native_model/progress.rs
+index 29b5c4ee..1e265eae 100644
+--- a/src/broker/tests/native_model/progress.rs
++++ b/src/broker/tests/native_model/progress.rs
+@@ -372,7 +372,10 @@ fn native_progress_token_timing_retains_fragmented_deltas_and_cancelled_prefix()
+     for end in 1..=wire.len() {
+         progress.observe(&wire[..end], 2.0);
+     }
+-    assert_eq!(progress.fields["contentDeltas"].as_array().unwrap().len(), 8);
++    assert_eq!(
++        progress.fields["contentDeltas"].as_array().unwrap().len(),
++        8
++    );
+     assert_eq!(progress.fields["contentDeltas"][0]["text"], "1");
+     assert_eq!(progress.fields["contentDeltas"][7]["text"], ",");
+     // Coalesced records retain the actual shared receive timestamp; no token
+@@ -403,8 +406,17 @@ fn native_progress_token_timing_retains_fragmented_deltas_and_cancelled_prefix()
+     }
+     let saved: Value =
+         serde_json::from_slice(&fs::read(evidence.join("acceptance.json")).unwrap()).unwrap();
+-    assert_eq!(saved["requestProgress"][0]["cancelledBeforeConnectionClose"], true);
+-    assert_eq!(saved["requestProgress"][0]["contentDeltas"].as_array().unwrap().len(), 8);
++    assert_eq!(
++        saved["requestProgress"][0]["cancelledBeforeConnectionClose"],
++        true
++    );
++    assert_eq!(
++        saved["requestProgress"][0]["contentDeltas"]
++            .as_array()
++            .unwrap()
++            .len(),
++        8
++    );
+     assert_eq!(saved["passed"], false);
+     fs::remove_file(evidence.join("acceptance.json")).unwrap();
+     fs::remove_dir(evidence).unwrap();

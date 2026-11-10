@@ -1,0 +1,51 @@
+{
+  "bonsai_prism_runtime": [
+    "kernels::pinned_attention::six::tests::six_head_scores_match_independent_native_lanes_and_tails",
+    "kernels::pinned_attention::six::tests::six_head_values_match_independent_channels_and_visit_each_row_once",
+    "kernels::pinned_attention::six::tests::six_head_values_reject_invalid_geometry_and_late_failure_atomically",
+    "graph::attention_six::tests::six_head_decode_matches_single_head_recompute_across_pages",
+    "graph::tests::full_attention_reads_original_interleaved_gates_across_worker_groups",
+    "kernels::pinned_attention::gated_tests::gated_four_head_tiles_match_independent_channel_oracle",
+    "kernels::pinned_attention::gated_tests::gated_tiles_preserve_ungated_failure_publication_and_reject_bad_gates",
+    "runtime::terminal_tests::terminal_state_only_matches_tokens_state_rng_and_counts_then_recomputes",
+    "runtime::terminal_tests::terminal_state_only_stop_draw_has_no_ingestion_or_output",
+    "runtime::terminal_tests::terminal_state_only_failure_cancellation_and_delivery_restore_state_and_sampler",
+    "runtime::terminal_tests::terminal_state_only_rejects_retained_snapshots_and_expired_requests_before_work",
+    "runtime::deadline_tests::sampled_deadline_during_sampling_delivery_or_snapshot_restores_caller_rng"
+  ],
+  "graph": [
+    "state_only_ingestion_matches_hybrid_outputs_checkpoints_and_reset",
+    "state_only_ingestion_skips_only_output_validation",
+    "state_only_ingestion_rejects_invalid_tokens_without_advancing",
+    "empty_checkpoint_request_rollback_replays_fresh_after_delivery_failure"
+  ],
+  "runtime": [
+    "reusable_logits_preserve_storage_prefixes_and_transaction_recovery",
+    "ingestion_failure_and_cancellation_restore_committed_state_and_logits",
+    "timing::timing_preserves_sampled_output_state_rng_and_reused_prefix",
+    "timing::timed_stop_draw_is_counted_without_decode_or_callback_work"
+  ],
+  "hexagon_native_rpc": [
+    "projection::tests::full_ffn_request_correlates_exact_counts_and_rejects_other_shapes",
+    "native_q2_forwarding_tests::owned_session_forwards_full_ffn_chain_and_preserves_failure",
+    "native_q2_forwarding_tests::owned_session_preserves_fused_swiglu_calls_and_rejection",
+    "native_q2::tests::multi_arena_resident_descriptors_deduplicate_buffers_and_route_bi",
+    "windows::compute_native::projection_native::tests::resident_native_q2_full_ffn_chain_executes_all_optional_shapes_and_reuses_flush",
+    "windows::compute_native::projection_native::tests::resident_native_q2_full_ffn_chain_failures_are_terminal_without_replay",
+    "windows::compute_native::projection_native::tests::resident_native_q2_scopes_queue_buffer_flush_after_initial_dirty_submission",
+    "windows::compute_native::projection_native::tests::resident_native_q2_batch2_and_batch3_share_activation_and_validate_mixed_rows",
+    "windows::compute_native::projection_native::tests::resident_native_q2_multi_arena_populates_secondary_buffer_and_batches_across_arenas",
+    "windows::compute_native::projection_native::tests::actual_session_reuses_only_correlated_results_and_never_retries_failure",
+    "windows::compute_native::projection_native::tests::hmx_session_checks_all_eight_planes_and_retains_uncertain_owners",
+    "windows::compute_native::projection_native::tests::resident_hmx_reuses_immutable_arena_and_never_reuses_a_faulted_owner",
+    "windows::compute_native::projection_native::tests::batch4_hmx_session_checks_all_twelve_tensors_four_outputs_and_capacity",
+    "windows::compute_native::projection_native::tests::batch10_hmx_session_checks_all_thirty_tensors_ten_outputs_and_capacity",
+    "windows::compute_native::projection_native::tests::resident_native_q2_multi4_executes_four_operations_in_single_queue_write"
+  ],
+  "bonsai_hexagon_runtime": [
+    "native_q2::tests::native_q2_batches_two_and_three_resident_sibling_projections_in_single_queue_writes"
+  ],
+  "prism_inference_server": [
+    "native_backend::tests::private_latest_prefix_policy_preserves_counting_and_transactional_reset_boundaries"
+  ]
+}
