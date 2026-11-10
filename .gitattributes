@@ -161,3 +161,6 @@ docs/evidence/performance-deliver-20261109/** -text -whitespace
 
 # Preserve the paired-prefill/BPE/multi-operation tile declaration and raw receipts.
 docs/evidence/performance-resolve-20261109/** -text -whitespace
+
+# Preserve the three-item closeout declaration, failure and original hash bytes.
+docs/evidence/performance-close-20261109/** -text -whitespace
