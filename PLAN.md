@@ -697,7 +697,10 @@ and retain the reset-every-request serving policy until reuse is qualified.
   snapshots. The [request-preparation closeout](docs/performance-resolve.md)
   implements bounded request-local reuse of exact short BPE piece results;
   qualify request-time benefit and tokenizer/application acceptance rather than
-  rebuilding this source work. Qualify long-context tiled attention-value traversal under the
+  rebuilding this source work. The [bounded special-parsing implementation](docs/performance-close.md)
+  also removes input-wide match storage and eager maximum-segment reservation;
+  qualify its windowed matching and tokenizer/request-time behavior rather than
+  reimplementing that allocation work. Qualify long-context tiled attention-value traversal under the
   [overhead
   review](docs/native-rust-engine.md#2026-literature-runtime-overhead-and-work-placement).
 - Qualify the local [inference efficiency candidates](docs/native-rust-engine.md#local-inference-efficiency-candidates):
@@ -722,7 +725,8 @@ and retain the reset-every-request serving policy until reuse is qualified.
   then matched whole-prompt benefit against qualified NEON/worker execution.
   Source work reuse and the SIMD tiled candidate establish no speedup or release gate.
 - Qualify the implemented complete six-head decode and tiled-prefill KV reuse,
-  including [paired-token cached-key scoring](docs/performance-resolve.md) and
+  including [paired-token cached-key scoring](docs/performance-resolve.md),
+  [paired-token value conversion](docs/performance-close.md), and
   the [causal-prefix, worker and scratch contracts](docs/performance-deliver.md).
   If attention remains material, compare bounded score/value tiles and retaining
   versus recomputing scores. Preserve globally normalized FP16 probabilities
@@ -1163,6 +1167,14 @@ LoRA gates; calibration proves neither quality nor reduced admission.
   X1/X2, including installation and rollback, sustained use and upgrade requalification.
 
 ## CPU kernels
+
+Qualify the [paired-value, bounded special-parsing and resident-packet source closeouts](docs/performance-close.md)
+through owner-managed hosted acceptance, ARM64 codegen/stack review, actual-model
+state/logit/adapter and cancellation parity, signed vendor lifecycle/resources
+and matched complete-request benefit before release and Runner repinning.
+The [delivery record](docs/evidence/performance-close-20261109/summary.json) owns
+exact implementation and local-check evidence; do not reopen the completed
+source work or infer a measured speedup from its work/storage counts.
 
 The [paired prefill, request preparation and tiled projection closeout](docs/performance-resolve.md)
 completes three further source implementations in local Prism main: two-token
@@ -1896,6 +1908,11 @@ AC-connected device receipts and the pinned Runner release-bundle `0.1.23` (`055
     caller outputs. Qualify its tile-major submission/failure order, unchanged
     per-token accumulation, resource bounds and total-request benefit; do not
     count it as the still-open multi-token matrix solver.
+    [Resident multi-tile packet batching](docs/performance-close.md) is also
+    implemented using existing single-token signed operations. Qualify its exact
+    packet/tail order, public owned-session capability, padded outputs, terminal
+    failures, resource accounting and whole-request benefit. The audited
+    `HVX_QUANT_ROW_N1` solver does not establish the separate `N > 1` matrix route.
 
 ### Promotion sequence
 
