@@ -1,0 +1,46 @@
+{
+  "bonsai_prism_runtime": [
+    "kernels::pinned_attention::six::pair_values::tests::paired_values_match_native_dot_and_share_common_cache_rows",
+    "kernels::pinned_attention::six::pair_values::tests::paired_values_reject_malformed_and_late_second_token_failure_before_publication",
+    "special_input::window_tests::windowed_specials_match_independent_oracle_at_all_spelling_boundary_offsets",
+    "special_input::window_tests::windowed_specials_keep_fixed_scratch_and_grow_only_emitted_segments",
+    "special_input::window_tests::windowed_specials_retain_maximum_special_index_and_literal_limits",
+    "graph::attention_six::prefill_tests::six_head_paired_prefill_excludes_future_rows_and_rejects_malformed_input",
+    "graph::attention_six::prefill_tests::six_head_prefill_tiles_match_causal_oracle_across_pages_and_workers",
+    "graph::attention_six::prefill_tests::six_head_prefill_excludes_future_nan_and_rejects_bad_prefix_before_output",
+    "graph::prefill::six_tests::six_head_production_prefill_preserves_causal_state_dispatch_and_cancellation",
+    "graph::tests::full_attention_reads_original_interleaved_gates_across_worker_groups"
+  ],
+  "graph": [
+    "prefill::tiled_prefill_exact_hybrid_state_and_logits_cross_pages",
+    "prefill::tiled_prefill_packed_ffn_and_adapter_preserve_original_basis_bits",
+    "prefill::tiled_prefill_failure_restores_request_and_explicit_reset_clears_first_tile"
+  ],
+  "tokenizer": [
+    "text_encoding_windowed_specials_preserve_ids_bounds_and_failure_precedence",
+    "repeated_piece_preparation_preserves_special_boundaries_unicode_and_limits",
+    "text_encoding_respects_pretokenizer_boundaries_and_never_inserts_tokens",
+    "text_encoding_specials_require_explicit_opt_in_and_preserve_surrounding_bytes",
+    "text_encoding_unicode_and_control_bytes_round_trip_with_bounded_output",
+    "text_token_capacity_is_typed_without_reclassifying_byte_safety_limits",
+    "text_encoding_charges_piece_limits_across_special_boundaries"
+  ],
+  "special_input": [
+    "overlapping_failure_links_agree_with_a_simple_independent_oracle",
+    "spelling_and_special_count_limits_are_enforced",
+    "input_and_output_are_bounded_even_with_unlimited_caller_limits",
+    "adjacent_and_unicode_specials_preserve_borrowed_text_ranges"
+  ],
+  "bonsai_hexagon_runtime": [
+    "native_q2::multitile_tests::native_q2_resident_multitile_batches_match_original_tiles_and_queue_counts",
+    "native_q2::multitile_tests::native_q2_resident_multitile_batch_failures_publish_nothing_and_never_replay",
+    "native_q2::multitile_tests::native_q2_resident_multitile_normalizes_capabilities_and_small_groups",
+    "native_q2::multitile_tests::native_q2_multitile_tokens_match_scalar_transient_and_resident",
+    "native_q2::multitile_tests::native_q2_multitile_tokens_preserve_failure_and_publication",
+    "native_q2::multitile_tests::native_q2_multitile_tokens_reject_invalid_input_before_submission"
+  ],
+  "hexagon_native_rpc": [
+    "native_q2_forwarding_tests::owned_session_keeps_eight_operations_in_one_native_call",
+    "windows::compute_native::projection_native::tests::resident_native_q2_multi4_executes_four_operations_in_single_queue_write"
+  ]
+}
