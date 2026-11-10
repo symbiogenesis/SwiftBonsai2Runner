@@ -1,0 +1,34 @@
+{
+  "bonsai_prism_runtime": [
+    "kernels::pinned_gdn::neon::tests::pinned_gdn_grouped_finite_masks_keep_late_failures_atomic",
+    "kernels::pinned_gdn::neon::tests::pinned_gdn_grouped_finite_masks_replay_original_row_failure_bits",
+    "kernels::pinned_gdn::neon::tests::pinned_gdn_grouped_decode_capacities_match_independent_scalar_bits",
+    "kernels::pinned_gdn::neon::tests::pinned_gdn_grouped_decode_capacities_keep_failure_atomic",
+    "kernels::pinned_gdn::neon::tests::pinned_gdn_staged_rows_match_independent_scalar_bits",
+    "kernels::pinned_gdn::neon::tests::pinned_gdn_multitoken_capacities_preserve_refusal"
+  ],
+  "runtime": [
+    "finite_decoder_default_checks_custom_outputs_and_clears_failures",
+    "runtime_consumes_finite_decoder_output_and_rejects_unrelated_proofs",
+    "validated_sampler_never_receives_invalid_decoder_outputs_and_rolls_back",
+    "reusable_logits_preserve_storage_prefixes_and_transaction_recovery",
+    "ingestion_failure_and_cancellation_restore_committed_state_and_logits"
+  ],
+  "graph": [
+    "finite_decoder_output_preserves_hybrid_bits_storage_and_snapshot_ownership",
+    "finite_decoder_output_clears_late_failure_without_publishing_hybrid_state",
+    "projection::projection_scope_preserves_logits_state_adapter_basis_checkpoint_and_reset",
+    "projection::projection_scope_device_loss_after_prepared_state_delta_never_replays_or_reopens",
+    "projection::projection_scope_keeps_q8_zero_and_ptq1_paths_on_cpu_and_checks_complete_output",
+    "prefill::tiled_prefill_parallel_workers_preserve_state_restore_and_policy_changes",
+    "rank_one_checkpoint_and_failed_generation_preserve_complete_state"
+  ],
+  "hexagon_native_rpc": [
+    "native_q2::tests::native_q2_reused_packet_geometry_matches_complete_scalar_frames",
+    "native_q2::tests::native_q2_reused_packet_geometry_refuses_invalid_members_before_writing",
+    "native_q2::tests::multi_arena_resident_descriptors_deduplicate_buffers_and_route_bi"
+  ],
+  "bonsai_hexagon_runtime": [
+    "native_q2::tests::native_q2_resident_sibling_four_token_batches_preserve_order_and_tails"
+  ]
+}

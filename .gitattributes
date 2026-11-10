@@ -143,3 +143,6 @@ docs/evidence/npu-host-reduction-20261103/** -text -whitespace
 
 # Preserve the source delivery declaration and raw receipt bytes.
 docs/evidence/performance-release-20261109/** -text -whitespace
+
+# Preserve the new three-lane source screen's declaration and raw receipts.
+docs/evidence/performance-impact-20261109/** -text -whitespace
