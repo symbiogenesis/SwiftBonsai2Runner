@@ -149,3 +149,6 @@ docs/evidence/performance-impact-20261109/** -text -whitespace
 
 # Preserve the three validation-reuse lanes' closed declaration and raw hashes.
 docs/evidence/performance-complete-20261109/** -text -whitespace
+
+# Preserve the closed three-item implementation check and its recorded hashes.
+docs/evidence/performance-closeout-20261109/** -text -whitespace
