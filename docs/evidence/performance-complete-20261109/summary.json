@@ -1,0 +1,129 @@
+{
+  "schemaVersion": 1,
+  "kind": "three-performance-implementations-source-integration",
+  "recordedDate": "2026-11-09",
+  "status": "source-integrated-compile-correction-reviewed-final-validation-pending",
+  "authorization": "Owner requested fan-out to fully implement at least three of the most impactful performance-relevant PLAN.md items.",
+  "source": {
+    "runnerBaseRevision": "a41ef25a",
+    "prismBaseRevision": "9cfe1ac",
+    "prismCheckRevision": "b2a93e1968fcbef907572eca2fe001c02562506a",
+    "prismFinalRevision": "cfa9ffb47d741b9d9f33e9182c56482b41ae1b41",
+    "workerCommits": [
+      "2f68105b4d7ba297fb483cfd2927fbab7cd09b07 CPU",
+      "7280ff826bbf68d8d7eb360028d68b95d99181d9 sampler",
+      "9fbc2db74812a1e577b03766797f1753943ecf41 native-Q2"
+    ],
+    "integratedCommits": [
+      "3de1183: reuse fixed Swift top-p exponential weights",
+      "9cae080: reuse scoped activation finite proof in quantizers",
+      "a719a25: carry exact borrowed native-Q2 finite-output evidence",
+      "b2a93e1: bind three lanes and dependent stop behavior to hosted correctness gate",
+      "4f71a4e: retain canonical formatting applied inside the declared check",
+      "cfa9ffb: explicitly select NativeQ2Submitter in the dual-trait native Session"
+    ],
+    "checkSource": "b2a93e1 plus the one canonical formatting pass retained in 4f71a4e; exact tracked file hashes and formatting diff are in raw/receipt.json and raw/06-formatted-source-diff.log. The final one-line explicit-trait correction has source review only.",
+    "delivery": "Three separate worker Git worktrees with individual logical commits, reviewed and cherry-picked into a separate integration worktree. Shared documentation append conflict resolved by retaining all three contracts. Runner declaration, evidence and backlog use a separate worktree. Review and fast-forward integration into local Prism and Runner main; no push, pull request or CI action."
+  },
+  "implemented": {
+    "cpuQuantizers": {
+      "planScope": "CPU kernels: quantizer and repeated preparation overhead, preserving packed arithmetic and rejection semantics.",
+      "change": "Private immutable FiniteActivations carries the original complete-input preflight into Q8_K, Q8_0 and pinned PTQ1 preparation. Scalar and baseline NEON max passes omit already-proven input finite predicates and associated NEON mask reductions.",
+      "sourceReduction": "5,120 repeated finite predicates per 5,120-column preparation; maximum traversal and every scale, code, rounding and output check remain.",
+      "correctness": "Original standalone quantizers remain checked. New controls compare every scale/code/sum bit under generic and pinned contracts, with signed zero, subnormals, negative maximum ties, later NaN versus earlier scale overflow, shape/format precedence, stale-layout invalidation, retained storage, failure clearing and recovery.",
+      "resources": "Call-scoped borrowed proof; no retained allocation. Conservative resource admission remains charged. Scalar execution remains subject to portable owning checks."
+    },
+    "swiftSampler": {
+      "planScope": "Runtime and correctness: bounded Swift top-20 sampler and per-token preparation overhead.",
+      "change": "The production sorted fixed Swift chain retains TopP's unnormalized binary32 exponentials for Distribution in an 80-byte stack array, omitting up to twenty repeated exp calls per token.",
+      "correctness": "Original generic sampler chain remains the independent oracle and unsorted fallback. Native f32 TopP normalization/thresholds, inactive backing probabilities, f64 Distribution sum and normalization, singleton draw, selected token, reset, clone and RNG ordering remain exact. New controls cover widths 1/2/19/20, finite extremes, overflowed subtraction, subnormal weights, ties, rejected guards and fallback; dependent stop/transaction controls are selected.",
+      "resources": "Fixed 80-byte call-local stack payload; no retained cache or heap allocation. No admission reduction."
+    },
+    "nativeQ2": {
+      "planScope": "Chosen Hexagon milestone: reduce host dispatch/output overhead without changing signed computation or placement.",
+      "change": "Scalar and two/three-sibling single-token resident projections carry immutable finite-output evidence from native checked copy through borrowed, owned and public wrappers. Executor consumption binds every ordered original destination pointer and length before completed statistics can publish.",
+      "sourceReduction": "One repeated finite predicate and four nominal read bytes per selected output row; actual traffic and latency are unmeasured.",
+      "correctness": "Public evidence construction scans arbitrary submitters' output. Only the native crate can reuse an existing checked-copy result. Exact borrowed slices cannot mutate before consumption. Foreign, reordered and partial evidence rejects terminally. Native fake queues reject poisoned scalar and final-sibling replies, clear outputs and preserve completed counters. Transient, multitoken, fused FFN and partial-row accumulation validation remains.",
+      "diagnosticChange": "A custom submitter reporting success with nonfinite output now fails with native-rpc-contract-failed instead of nonfinite Hexagon projection value. Both are terminal, clear all output and publish no completed counters. Submission-returned failures retain their existing diagnostic/stage.",
+      "resources": "Fixed stack arrays of slice borrows/destination pairs; no heap allocation. Signed kernels, packet bytes, operation order, lifetime limits, conservative resources and defaults remain unchanged."
+    },
+    "hostedGate": "Eleven new exact entries cover the new controls, native fake sessions and dependent declared-stop behavior. Portable and Windows ARM64-only inventories remain distinct; source/compiler/executable identity, strict Release analysis, native linking and feature-disabled fallback remain required. No workflow was dispatched, queried or monitored."
+  },
+  "localValidation": {
+    "plan": "workload-plan.json",
+    "driver": "validate.py",
+    "inventory": "controls.json",
+    "receipt": "raw/receipt.json",
+    "archive": "raw/archive.json",
+    "terminalClock": "raw/final-clock.json",
+    "maximumTotalSeconds": 480,
+    "workCutoffSeconds": 430,
+    "conservativeEstimateSeconds": 430,
+    "elapsedSecondsThroughRetention": 71.91833650000262,
+    "withinDeclaredAllowance": true,
+    "clockClosed": true,
+    "clockRestarted": false,
+    "retries": 0,
+    "passed": [
+      "Pinned nightly-2026-11-09 compiler identity and declared source identity",
+      "Canonical formatting and format check before compilation",
+      "Tracked-source hashing and retained formatting diff",
+      "All six hosted receipt/source-inventory controls"
+    ],
+    "failure": "Selected compilation exited 101 after 66.264 seconds: E0034 in projection_native.rs:1914 because Session implements HmxQ2Submitter and NativeQ2Submitter, each with submit_resident. No selected Rust test executed.",
+    "postTrialCorrection": "cfa9ffb changes only self.submit_resident(...) to NativeQ2Submitter::submit_resident(self, ...) in Session's validated scalar wrapper. Root and Hexagon worker independently reviewed the explicit checked-native route and audited all related calls; batch methods and owned/public wrappers have no analogous ambiguity. No compiler, formatter, test or analyzer was rerun.",
+    "notReached": [
+      "Successful compilation of all six selected test executables",
+      "All 21 exact selected Rust correctness controls",
+      "Selected strict Release analyzer verdict",
+      "Production worker Release linking",
+      "Feature-disabled runtime compilation",
+      "Final-source compiled and formatting verdict after the explicit-trait correction",
+      "Owning hosted validation and complete suites"
+    ],
+    "cleanupIncomplete": false,
+    "power": {
+      "before": {"acConnected": true, "batterySaver": false, "chargePercent": 99},
+      "afterChecks": {"acConnected": true, "batterySaver": false, "chargePercent": 99},
+      "afterRetention": {"acConnected": true, "batterySaver": false, "chargePercent": 99},
+      "perCommandEndpoints": "raw/receipt.json",
+      "continuousPowerStabilityEstablished": false,
+      "pastPowerConditionsInferred": false,
+      "performanceComparisonQualified": false
+    }
+  },
+  "independentReview": [
+    "Root reviewed all production changes and independent numerical/failure controls before integration.",
+    "Runtime worker reviewed CPU immutable proof, shape/nonfinite/overflow precedence, scalar/NEON arithmetic and scratch recovery.",
+    "CPU worker reviewed native proof sealing, ordered pointer/length binding, session forwarding, terminal cleanup/counters, and the fixed validation driver/budget.",
+    "CPU and Hexagon workers reviewed fixed sampler f32/f64 operation order, inactive backing bits, singleton draw, RNG, reset and fallback.",
+    "Runtime worker independently reviewed native output evidence and conservative custom-submitter behavior.",
+    "Root and Hexagon worker reviewed the one-line post-trial trait disambiguation without restarting the failed run."
+  ],
+  "qualification": {
+    "selectedRustControlsExecuted": 0,
+    "receiptControlsPassed": 6,
+    "finalSourceCompiled": false,
+    "selectedStrictAnalysisPassed": false,
+    "portableFeatureDisabledCheckPassed": false,
+    "owningHostedChecksPassed": false,
+    "actualModelParityQualified": false,
+    "performanceImprovementQualified": false,
+    "runnerReleasedPinChanged": false,
+    "installedRuntimeChanged": false,
+    "defaultsChanged": false,
+    "admissionReduced": false
+  },
+  "remainingAcceptance": [
+    "Owner-managed settled-source compilation, exact controls, strict Release analysis, portable fallback and native production linking, including the explicit-trait correction.",
+    "Release ARM64 codegen, stack/resource review and actual-model full state/logit/adapter parity, continuation, cancellation/restore and vendor lifecycle acceptance.",
+    "Matched complete-request latency or resource benefit with properly observed power conditions inside a separately supported aggregate allowance; source work counts establish no speedup.",
+    "Qualified immutable Prism release and verified Runner repin before installed application use."
+  ],
+  "modelExecutions": 0,
+  "acceleratorDeviceCalls": 0,
+  "benchmarks": 0,
+  "fullSuites": 0,
+  "ciActions": 0,
+  "pushes": 0
+}

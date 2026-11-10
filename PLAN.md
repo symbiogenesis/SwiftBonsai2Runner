@@ -1156,6 +1156,25 @@ LoRA gates; calibration proves neither quality nor reduced admission.
 
 ## CPU kernels
 
+Qualify the [three validation-reuse implementations](docs/evidence/performance-complete-20261109/summary.json)
+on settled Prism main through owner-managed hosted checks. Packed CPU quantizers
+consume their existing immutable finite-input proof, the fixed Swift sampler
+reuses top-p exponentials in its distribution stage, and resident native-Q2 scalar
+and two/three-sibling projections consume finite-output evidence bound to the
+exact destination slices. Preserve original quantizer error precedence, complete
+candidate backing bits and RNG progression, arbitrary-submitter validation,
+terminal failure/publication, and conservative resource admission. The one local
+check passed formatting and six receipt controls, then stopped at compilation on
+an ambiguous native resident trait call before any selected Rust test ran. Its
+minimal explicit-trait correction is independently source-reviewed but uncompiled;
+retain the failed receipt and closed 71.918-second clock without retrying it.
+All recorded endpoints report AC connected, saver off and 99% charge without
+establishing uninterrupted stability. Require final
+source Release checks, portable fallback and native linking, then full-model
+state/adapter parity, vendor lifecycle and matched complete-request benefit before
+a qualified release and Runner repin. Source predicate/exponential counts establish
+no measured throughput or RAM gain; performance qualification remains pending.
+
 Qualify the [three-lane performance source changes](docs/evidence/performance-impact-20261109/summary.json)
 on settled Prism main through owner-managed hosted checks. Grouped GDN kernels
 combine private update-lane finite masks before publication, native decoder
