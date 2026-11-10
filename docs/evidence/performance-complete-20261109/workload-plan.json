@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "kind": "three-performance-implementations-model-free-source-check",
+  "recordedDate": "2026-11-09",
+  "authorization": "Owner requested fan-out to fully implement at least three of the most impactful performance-relevant PLAN.md items.",
+  "source": {
+    "runnerBaseRevision": "a41ef25a",
+    "prismBaseRevision": "9cfe1ac",
+    "prismSelectedRevision": "b2a93e1968fcbef907572eca2fe001c02562506a",
+    "selection": [
+      "Consume immutable finite activation validation during packed CPU quantizer preparation",
+      "Reuse fixed Swift top-p exponentials during distribution sampling",
+      "Consume slice-bound native-Q2 finite output validation during resident execution"
+    ],
+    "settledSource": "Freeze the integration commit before executing validate.py. Retain canonical formatting diff, all tracked source hashes, exact controls.json inventory and selected executable digests."
+  },
+  "budget": {
+    "maximumTotalSeconds": 480,
+    "workCutoffSeconds": 430,
+    "conservativeEstimateSeconds": 430,
+    "estimate": {
+      "compilerFormattingSourceHashingAndReceiptControls": 15,
+      "offlineSelectedLibraryGraphAndRuntimeCompilation": 220,
+      "exactNewAndDependentCorrectnessControls": 20,
+      "selectedStrictReleaseAnalyzers": 95,
+      "productionWorkerLinking": 20,
+      "featureDisabledLibraryCompilation": 25,
+      "cleanupPowerAndEvidenceRetention": 35
+    },
+    "reason": "One fixed model-free correctness screen for three new independent production changes, with fresh offline test compilation, strict Release analysis, worker linking and feature-disabled compilation. Earlier fresh selected compilation exceeded 180 seconds; this complete fixed work has a conservative 430-second estimate. Eight minutes is the smallest whole-minute allowance above the estimate and reserves 50 seconds after the work cutoff for process cleanup and retention. Four Cargo jobs; no downloads, model, DSP call, full suite or benchmark.",
+    "noRetry": true,
+    "clockRestartAllowed": false,
+    "historicalClocks": "All earlier workloads remain closed. This is distinct new source work, not a retry or extension of a historical trial. Stop on the first failure, completion, or when the next selected step cannot fit."
+  },
+  "fixedWork": [
+    "Observe pinned compiler identity, declared integration revision and power",
+    "Apply canonical formatting once and retain its diff before compilation",
+    "Hash all tracked source files and run six hosted receipt/inventory controls",
+    "Compile three selected library test executables and graph/runtime/swift_sampling targets offline with parallel-rows without executing suites",
+    "Run each exact nonignored control frozen in controls.json once, requiring exactly one passing match",
+    "Run strict Release Clippy for those libraries and graph/runtime/swift_sampling targets",
+    "Build and link the production bonsai-swift-worker in Release with parallel-rows",
+    "Compile the feature-disabled runtime library",
+    "Check source immutability, terminate any owned timed-out process tree, retain raw logs/hashes/power/final receipt and close the original clock"
+  ],
+  "power": {
+    "query": "GetSystemPowerStatus",
+    "timing": "Aggregate endpoints, before and after every command, and after retention",
+    "unknown": "Explicit null when unavailable; never infer historical power conditions",
+    "continuousStabilityEstablished": false,
+    "performanceComparison": false
+  },
+  "execution": {
+    "driver": "validate.py",
+    "inventory": "controls.json",
+    "evidenceDirectory": "%TEMP%/SwiftBonsai-PerformanceComplete-20261109",
+    "cargoTarget": "Fresh external evidence subdirectory",
+    "retainedDirectory": "raw",
+    "models": 0,
+    "acceleratorDeviceCalls": 0,
+    "benchmarks": 0,
+    "fullSuites": 0,
+    "ciActions": 0,
+    "pushes": 0
+  }
+}
