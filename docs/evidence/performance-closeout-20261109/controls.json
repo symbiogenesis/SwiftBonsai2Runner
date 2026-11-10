@@ -1,0 +1,52 @@
+{
+  "bonsai_prism_runtime": [
+    "kernels::finite_activation_tests::prepared_quantizers_reuse_finite_proof_with_original_code_bits",
+    "kernels::finite_activation_tests::prepared_finite_proof_preserves_preflight_precedence_and_storage",
+    "kernels::finite_activation_tests::prepared_finite_proof_retains_q8_overflow_and_external_validation",
+    "sampling::swift::tests::cached_top_p_exponents_preserve_original_backing_bits_draws_and_reset",
+    "sampling::swift::tests::cached_top_p_guards_preserve_candidates_and_rng_with_unsorted_fallback",
+    "sampling::swift::tests::fixed_chain_reuses_filter_and_preserves_original_stage_bits_and_rng",
+    "sampling::swift::tests::selection_rejects_nonfinite_discarded_logits_without_losing_rng_or_storage",
+    "kernels::pinned_attention::gated_tests::gated_four_head_tiles_match_independent_channel_oracle",
+    "kernels::pinned_attention::gated_tests::gated_two_token_tiles_match_independent_causal_oracle",
+    "kernels::pinned_attention::gated_tests::gated_tiles_preserve_ungated_failure_publication_and_reject_bad_gates",
+    "sampling::selection::tests::lane_masks_preserve_signed_zero_winners_and_invalid_visitation",
+    "sampling::selection::tests::lane_masks_preserve_dense_and_sparse_visits_as_threshold_advances",
+    "sampling::selection::tests::greedy_lane_pruning_preserves_scalar_ties_tails_and_rejections",
+    "sampling::swift::tests::lane_pruned_heap_preserves_native_ties_threshold_advances_and_tails",
+    "sampling::swift::tests::lane_pruned_heap_rejects_every_nonfinite_position_without_consuming_rng",
+    "sampling::swift::tests::bounded_top_k_matches_full_candidate_filter_bit_for_bit",
+    "sampling::swift::tests::finite_selection_matches_checked_heap_bits_rng_reset_and_rejection",
+    "graph::tests::full_attention_reads_original_interleaved_gates_across_worker_groups",
+    "kernels::pinned_attention::gated_tests::gated_two_token_tiles_never_gate_a_failed_partial_publication"
+  ],
+  "runtime": [
+    "ingestion_failure_and_cancellation_restore_committed_state_and_logits",
+    "validated_sampler_never_receives_invalid_decoder_outputs_and_rolls_back"
+  ],
+  "graph": [
+    "projection::projection_scope_preserves_logits_state_adapter_basis_checkpoint_and_reset",
+    "prefill::tiled_prefill_packed_ffn_and_adapter_preserve_original_basis_bits",
+    "rank_one_checkpoint_and_failed_generation_preserve_complete_state",
+    "prefill::tiled_prefill_parallel_grouped_kv_and_head_major_recurrent_match_single_token"
+  ],
+  "swift_sampling": [
+    "swift_rng_rolls_back_after_cancelled_or_abandoned_stream_then_retries",
+    "swift_declared_stop_is_not_delivered_and_commits_its_draw"
+  ],
+  "hexagon_native_rpc": [
+    "native_q2::tests::native_q2_finite_output_evidence_binds_regions_and_preserves_bits",
+    "windows::compute_native::projection_native::tests::resident_native_q2_scopes_queue_buffer_flush_after_initial_dirty_submission",
+    "windows::compute_native::projection_native::tests::resident_native_q2_batch2_and_batch3_share_activation_and_validate_mixed_rows",
+    "native_q2_forwarding_tests::owned_session_forwards_direct_resident_initialization_once",
+    "native_q2_forwarding_tests::owned_session_keeps_eight_operations_in_one_native_call",
+    "native_q2_forwarding_tests::owned_session_preserves_fused_swiglu_calls_and_rejection",
+    "native_q2_forwarding_tests::owned_session_preserves_borrowed_output_evidence_and_errors"
+  ],
+  "bonsai_hexagon_runtime": [
+    "native_q2::tests::native_q2_default_output_evidence_preserves_success_and_terminal_failures",
+    "native_q2::tests::native_q2_unrelated_output_evidence_cannot_publish",
+    "native_q2::tests::native_q2_batches_two_and_three_resident_sibling_projections_in_single_queue_writes",
+    "native_q2::tests::native_q2_nonresident_single_and_tiled_fallback_preserve_packing_and_bounds"
+  ]
+}
