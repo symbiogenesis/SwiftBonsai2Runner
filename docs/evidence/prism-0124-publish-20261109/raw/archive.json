@@ -1,0 +1,160 @@
+{
+  "files": {
+    "01-source-head.log": {
+      "bytes": 41,
+      "sha256": "c43201086fcc7216c8af4dcbf47b80aa281b0e7d487f4c33f2803e26b1e36781"
+    },
+    "02-source-branch.log": {
+      "bytes": 5,
+      "sha256": "6403203dd5a0867eb14d104ee8a73730bd72dd9ad92e78d996a6dba0a5dcfc01"
+    },
+    "03-source-status.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "04-unchanged-helper-trees.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "05-compiler-identity.log": {
+      "bytes": 213,
+      "sha256": "f384a15180d0cec293758df05f1259c243f75de344f28f46011a6dc7cf305c29"
+    },
+    "06-source-archive.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "07-bonsai-ternary-metadata.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "08-bonsai-ternary-archive.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "09-bonsai-prism-metadata.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "10-bonsai-prism-archive.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "11-bonsai-native-hash-metadata.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "12-bonsai-native-hash-archive.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "13-bonsai-neon-dot-metadata.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "14-bonsai-neon-dot-archive.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "15-bonsai-gguf-metadata.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "16-bonsai-gguf-archive.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "17-registry-before.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "18-normalized-package.log": {
+      "bytes": 1348,
+      "sha256": "1d046dbfdc4e8f43e2da99cf2340ed0e5ce780e69b27253eced1f24f35de5ecc"
+    },
+    "19-source-head.log": {
+      "bytes": 41,
+      "sha256": "c43201086fcc7216c8af4dcbf47b80aa281b0e7d487f4c33f2803e26b1e36781"
+    },
+    "20-source-branch.log": {
+      "bytes": 5,
+      "sha256": "6403203dd5a0867eb14d104ee8a73730bd72dd9ad92e78d996a6dba0a5dcfc01"
+    },
+    "21-source-status.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "22-publish.log": {
+      "bytes": 868,
+      "sha256": "c60e06477e4f240f147ad20e843f235605c2bd8c34f340fe93521389ac3ea6a2"
+    },
+    "23-registry-after.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "bonsai-gguf-0.1.4.crate": {
+      "bytes": 38217,
+      "sha256": "429517d3c2ffbd57f57dd60f567b56c6ce001d6669bfbddb9b56d093f8e3e967"
+    },
+    "bonsai-gguf.json": {
+      "bytes": 1715,
+      "sha256": "ab506e45494d72435600e53e368a5ffd932e17297471438b99b58da38a15f6e6"
+    },
+    "bonsai-native-hash-0.1.2.crate": {
+      "bytes": 7137,
+      "sha256": "c58e13209dd81aead63703bb711a888207479f440c41749e0fc57b74291490b2"
+    },
+    "bonsai-native-hash.json": {
+      "bytes": 1683,
+      "sha256": "81b5f89efb8d4f87965d43513f29188a3707279b78844059c4a5a03fa9a8ac88"
+    },
+    "bonsai-neon-dot-0.1.1.crate": {
+      "bytes": 16163,
+      "sha256": "25f0b6b8a37c072fed8403fa55d51a8af08a1f451256b8b70a78e0d4bdaa004d"
+    },
+    "bonsai-neon-dot.json": {
+      "bytes": 1665,
+      "sha256": "4a3331b402ca1304084811d590c6306c3bfca3376b2ab6cd53a72cf1806ce7d4"
+    },
+    "bonsai-prism-0.1.4.crate": {
+      "bytes": 235203,
+      "sha256": "ef073ca15cfb1f1bd6bf90cc5a91760dff1b5a8b2a8594ec68f42ce984bbaf7f"
+    },
+    "bonsai-prism.json": {
+      "bytes": 1935,
+      "sha256": "6750c3d8c11f1423dc3a7a842ae9438053e80806e52fd937c0e0056ea8fb444d"
+    },
+    "bonsai-ternary-0.1.2.crate": {
+      "bytes": 43613,
+      "sha256": "ec4b4301b7f3e8fc16057ab0cf7f60acd2fbbb829fca646210e5b71b2a80aad1"
+    },
+    "bonsai-ternary.json": {
+      "bytes": 1647,
+      "sha256": "f31e519d38b6bb9d6110594193117c52a4531d4b661c8b5fadbd90b2e25d1616"
+    },
+    "prism-inference-0.1.24.crate": {
+      "bytes": 3708626,
+      "sha256": "9262f8e737323cd66020cd5d72982e14ccdfd667b9fc0da0a0108014449fbd75"
+    },
+    "publish.py": {
+      "bytes": 15156,
+      "sha256": "5f12b3338bee82f0a43c97e6cfac7f6a88b3254e00697ca9b508d0d754b268f6"
+    },
+    "receipt.json": {
+      "bytes": 44896,
+      "sha256": "fbacdfce00d56e5001f200286b06bc1e4ad0f404c4a8d709633ebf9560234470"
+    },
+    "registry-after.json": {
+      "bytes": 1970,
+      "sha256": "47d0c285a1ca102ec1501bb144cd27efbc9ed8c9546ef5225265b46975093b9f"
+    },
+    "registry-before.json": {
+      "bytes": 5,
+      "sha256": "38e0b9de817f645c4bec37c0d4a3e58baecccb040f5718dc069a72c7385a0bed"
+    },
+    "workload-plan.json": {
+      "bytes": 1563,
+      "sha256": "d9ccbefdf7ce5451b00ab1b7cc9b214c224429fa4abc67f141b1449be45af119"
+    }
+  }
+}

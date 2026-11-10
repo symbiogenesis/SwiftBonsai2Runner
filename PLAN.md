@@ -3,6 +3,20 @@
 This is the single backlog. [Technical docs](docs/README.md) own current behavior,
 contracts, commands and evidence; completed work belongs in Git history.
 
+Complete the owner-requested Prism 0.1.24 binary repin and README performance
+refresh after owner source/bundle publication. The [registry delivery record](docs/evidence/prism-0124-publish-20261109/summary.json)
+confirms the new runtime crate and unchanged five helper versions; Runner has no
+Cargo dependency on those crates and still consumes the verified 0.1.23 binary
+bundle below. The private server's package and exact runtime pin are locally
+0.1.24 but remain unpublished with the Hexagon crates. The no-push rule leaves
+source publication with the owner; no exception was received. After a genuine
+source-bound 0.1.24 Foundation bundle exists, verify its source/archive/nine-file
+identities, update the active runtime and exact-source acceptance pins, then
+predeclare one fresh two-representation short capture with aggregate and per-arm
+power/cleanup observations before replacing the README's measured values.
+Preserve historical fixtures and closed clocks. Complete CI, sustained performance
+and full model acceptance remain independently pending.
+
 PTQ1 default promotion is a **no-go under the current evidence**. Follow the
 [release decision](docs/swift-memory.md#release-decision) and close the required
 adapter, exact-source application, device/human and benefit gates below before

@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "kind": "fixed-prism-0124-registry-operation",
+  "sourceRevision": "f80f90e72c8a15b0a05e251fc49b354f6b7201ff",
+  "maximumTotalSeconds": 300,
+  "workCutoffSeconds": 270,
+  "estimatedSeconds": 240,
+  "fixedWork": [
+    "Clean exact-source intake and compiler identity",
+    "Compare five registry helper archives to committed source; keep unchanged versions",
+    "One offline normalized root package verification",
+    "Audit normalized VCS identity and exact registry dependencies",
+    "One normal cargo publish with default verification",
+    "Confirm public registry checksum and retain raw evidence"
+  ],
+  "estimateBreakdownSeconds": {
+    "retention": 20,
+    "helperIntakeAndComparison": 35,
+    "normalizedPackageVerification": 100,
+    "audit": 5,
+    "publicationAndConfirmation": 70,
+    "intake": 10
+  },
+  "retries": 0,
+  "noGitPush": true,
+  "noCI": true,
+  "noModels": true,
+  "noBenchmarks": true,
+  "qualificationScope": "Default normalized root package build only; hosted full suites, server/Hexagon, external consumers and actual-model acceptance remain pending.",
+  "originalStartedUtc": "2026-11-10T05:49:47.307184+00:00",
+  "preEntryLaunchFailure": {
+    "failure": "Copied driver consisted of zero bytes; Python parser exited before any checks or upload",
+    "processWallSeconds": 0.4715499,
+    "power": "unknown",
+    "continuation": "Corrected copy remains charged to the original prelaunch file-write timestamp; no clock reset and no failed workload stage retried."
+  }
+}

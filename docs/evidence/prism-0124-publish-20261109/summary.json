@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "kind": "published-prism-runtime-with-runner-binary-handoff-pending",
+  "recordedDate": "2026-11-09",
+  "status": "registry-published-binary-repin-and-new-performance-capture-pending",
+  "version": "0.1.24",
+  "sourceRevision": "f80f90e72c8a15b0a05e251fc49b354f6b7201ff",
+  "publication": {
+    "name": "prism-inference",
+    "url": "https://crates.io/crates/prism-inference/0.1.24",
+    "checksum": "9262f8e737323cd66020cd5d72982e14ccdfd667b9fc0da0a0108014449fbd75",
+    "archiveBytes": 3708626,
+    "normalizedMembers": 555,
+    "yanked": false
+  },
+  "unchangedRegistryHelpers": {
+    "bonsai-ternary": "0.1.2",
+    "bonsai-prism": "0.1.4",
+    "bonsai-native-hash": "0.1.2",
+    "bonsai-neon-dot": "0.1.1",
+    "bonsai-gguf": "0.1.4"
+  },
+  "checks": {
+    "defaultCargoPackageVerificationPassed": true,
+    "defaultCargoPublishVerificationPassed": true,
+    "normalizedCleanVcsAndRegistryDependenciesVerified": true,
+    "publicVersionAndChecksumMatched": true,
+    "helperTreesUnchangedSincePublishedSource": "055c7430cb4771dfddb24ddaa30494af6ad182da",
+    "fiveRegistryHelperArchiveChecksumsAndSourceMembersMatched": true,
+    "independentReview": "independent-review.json"
+  },
+  "clock": {
+    "path": "raw/final-clock.json",
+    "maximumTotalSeconds": 300,
+    "elapsedSecondsThroughRetention": 112.2743418,
+    "closed": true,
+    "withinAllowance": true,
+    "cleanupConfirmed": true,
+    "preEntryParserFailureAndCorrectionIncluded": true,
+    "retriesOfWorkloadStages": 0
+  },
+  "power": {
+    "atOriginalPrelaunchStart": "unknown; the failed copied driver never executed a power provider",
+    "correctedEntryWorkloadAndRetentionObservations": "AC connected, battery saver off, 99% charge",
+    "continuousStabilityEstablished": false,
+    "performanceComparisonQualified": false
+  },
+  "runner": {
+    "currentBinaryVersion": "0.1.23",
+    "currentBinarySource": "055c7430cb4771dfddb24ddaa30494af6ad182da",
+    "cargoPrismDependencies": 0,
+    "newBinaryPinInstalled": false,
+    "newModelMeasurementsTaken": false,
+    "blockingPrerequisite": "Owner source publication and a verified source-bound 0.1.24 Windows ARM64 binary bundle. Repository AGENTS.md prohibits agent Git pushes; no exception was received.",
+    "nextSteps": [
+      "Owner publishes prepared Prism main and produces the Foundation 0.1.24 release bundle with its genuine receipt.",
+      "Verify source archive, all nine bundle files, five ARM64 PE targets and producer receipt with inference-lock; update active runtime gates and exact-source timing controls.",
+      "Predeclare one fresh bounded two-representation short capture, retain per-arm and aggregate power/cleanup evidence, then update README and performance documentation from that capture."
+    ]
+  },
+  "scope": "Only the public runtime required a new registry version. The server package and its exact runtime dependency advance locally to 0.1.24 but retain publish=false, as do the Hexagon crates. Runner consumes a binary distribution, so no Cargo dependency can substitute for the missing bundle.",
+  "pushes": 0,
+  "ciActions": 0,
+  "modelsExecuted": 0,
+  "benchmarksExecuted": 0,
+  "fullFoundationQualified": false,
+  "modelAcceptanceQualified": false,
+  "performanceQualified": false
+}
