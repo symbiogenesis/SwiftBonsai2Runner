@@ -1,5 +1,9 @@
 """One non-retryable model-free source check with a shared eight-minute clock."""
 
+import time
+
+STARTED = time.monotonic()
+
 import argparse
 import ctypes
 from datetime import datetime, timezone
@@ -10,7 +14,6 @@ from pathlib import Path
 import re
 import shutil
 import subprocess
-import time
 
 
 TOOLCHAIN = Path(r"C:\Users\symbi\.rustup\toolchains\nightly-2026-11-09-aarch64-pc-windows-msvc\bin")
@@ -43,7 +46,7 @@ def main():
     parser.add_argument("--evidence", type=Path, required=True)
     parser.add_argument("--retain", type=Path, required=True)
     args = parser.parse_args()
-    started = time.monotonic()
+    started = STARTED
     args.evidence.mkdir(parents=True, exist_ok=False)
     receipt = {"schemaVersion": 1, "startedUtc": datetime.now(timezone.utc).isoformat(),
                "maximumTotalSeconds": 480, "workCutoffSeconds": 430, "steps": [],
@@ -119,6 +122,9 @@ def main():
         run("compiler", [TOOLCHAIN / "rustc.exe", "-vV"], cap=10)
         receipt["sourceCommit"] = run("source-head", [GIT, "-c", f"safe.directory={args.source.as_posix()}",
                                                      "rev-parse", "HEAD"], cap=10).strip()
+        declared_source = json.loads(Path(__file__).with_name("workload-plan.json").read_text(encoding="utf-8"))["source"]["prismSelectedRevision"]
+        if receipt["sourceCommit"] != declared_source:
+            raise RuntimeError("Selected source does not match the fixed declaration")
         # Apply canonical formatting once before any compiler/test command.
         run("format", [TOOLCHAIN / "cargo.exe", "fmt", "--all"], cap=30)
         run("format-check", [TOOLCHAIN / "cargo.exe", "fmt", "--all", "--", "--check"], cap=30)
