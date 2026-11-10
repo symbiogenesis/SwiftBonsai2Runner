@@ -1156,6 +1156,15 @@ LoRA gates; calibration proves neither quality nor reduced admission.
 
 ## CPU kernels
 
+Qualify the [attention, sampler and owned-session source implementations](docs/evidence/performance-closeout-20261109/summary.json)
+on settled Prism main through owner-managed checks. Require all 38 exact controls,
+strict Release analysis, native worker linking and feature-disabled compilation,
+including the corrected dispatch-aware failure assertion. Keep the retained failed
+70.050-second local operation and its original power observations closed; do not
+retry it. Full-model state/adapter, cancellation, vendor lifecycle, resources and
+matched complete-request benefit remain pending before release and Runner repinning.
+Source work reductions establish no installed performance or qualification change.
+
 Qualify the [three validation-reuse implementations](docs/evidence/performance-complete-20261109/summary.json)
 on settled Prism main through owner-managed hosted checks. Packed CPU quantizers
 consume their existing immutable finite-input proof, the fixed Swift sampler
@@ -1166,8 +1175,10 @@ candidate backing bits and RNG progression, arbitrary-submitter validation,
 terminal failure/publication, and conservative resource admission. The one local
 check passed formatting and six receipt controls, then stopped at compilation on
 an ambiguous native resident trait call before any selected Rust test ran. Its
-minimal explicit-trait correction is independently source-reviewed but uncompiled;
-retain the failed receipt and closed 71.918-second clock without retrying it.
+minimal explicit-trait correction was independently source-reviewed; the newer
+candidate above compiled it and passed the three exact quantizer controls and
+four selected fixed-sampler controls. Retain the original failed receipt and
+closed 71.918-second clock without retrying it.
 All recorded endpoints report AC connected, saver off and 99% charge without
 establishing uninterrupted stability. Require final
 source Release checks, portable fallback and native linking, then full-model
@@ -1807,11 +1818,13 @@ AC-connected device receipts and the pinned Runner release-bundle `0.1.23` (`055
   - Evaluate expanding `MAX_NATIVE_Q2_ARENAS` beyond 2 arenas (`3..=6` `<= 480 MiB`
     `rpcmem` weight arenas within CDSP `v-size = 3000 MiB` on `v81` and host SMMU/Job
     commit limits) to cover additional transformer blocks (`blk.9..=blk.63`).
-  - Implement multi-operation `dspqueue` packet batching and intra-layer VTCM tensor
-    chaining for `native-q2` (fusing `HTP_OP_RMS_NORM`, sibling `Q2_0` projections,
-    `HTP_OP_GLU_SWIGLU`, `HTP_OP_ROPE`, `HTP_OP_FLASH_ATTN_EXT`, `HTP_OP_SSM_CONV` and
-    `HTP_OP_GATED_DELTA_NET` using the wired `v81` opcodes and VTCM pass flags) to
-    eliminate per-projection host-to-DSP queue synchronization and intermediate DDR
+  - Complete the remaining intra-layer VTCM tensor chaining for `native-q2`:
+    `HTP_OP_RMS_NORM`, RoPE, full attention, convolution/GDN and the complete FFN
+    down/residual chain. Qualify existing sibling packet batching, direct resident
+    preparation and three-/six-operation SwiGLU through the public owned session,
+    including signed outputs, resources and teardown. The full-FFN-chain backend
+    still refuses; facade forwarding does not implement that backend. Require
+    actual total-request benefit from fewer host/DSP synchronizations and DDR
     round-trips.
   - Add multi-token `N > 1` `native-q2` prefill dispatch (`N = tile_tokens` in
     `HTP_TYPE_Q2_0` `OP_MUL_MAT`) so prompt prefill reuses resident NPU weights across

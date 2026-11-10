@@ -1,0 +1,6 @@
+
+running 1 test
+test sampling::swift::tests::fixed_chain_reuses_filter_and_preserves_original_stage_bits_and_rng ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 198 filtered out; finished in 0.03s
+

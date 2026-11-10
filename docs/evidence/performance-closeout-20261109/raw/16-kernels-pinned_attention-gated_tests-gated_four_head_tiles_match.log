@@ -1,0 +1,6 @@
+
+running 1 test
+test kernels::pinned_attention::gated_tests::gated_four_head_tiles_match_independent_channel_oracle ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 198 filtered out; finished in 0.17s
+

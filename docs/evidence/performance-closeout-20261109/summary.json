@@ -1,0 +1,148 @@
+{
+  "schemaVersion": 1,
+  "kind": "three-performance-source-implementation-closeout",
+  "recordedDate": "2026-11-09",
+  "status": "three-implementations-complete-local-compilation-passed-test-assertion-corrected-owning-validation-pending",
+  "source": {
+    "runnerBaseRevision": "0ad1d0ea",
+    "runnerDeclarationRevision": "ba5b4df8692454b330213ef26c51d69cec2b75ab",
+    "prismBaseRevision": "cfa9ffb47d741b9d9f33e9182c56482b41ae1b41",
+    "prismCheckRevision": "8205c173db7d78251acb3b1c8e5e2ec8d1d85cf9",
+    "prismCanonicalFormattingRevision": "b06993348ce90e0a262edee92abbd51ab417f890",
+    "prismFinalRevision": "8d5514aaa3ce97df479c1eef5318e9fcfbd5851f",
+    "workerCommits": [
+      "27600b36d5b19a4f4cadd7ece4fda4224b3d557d CPU attention",
+      "8512fda1a783774d490f4e78ebe316a0966ec71c runtime sampler",
+      "592d87f6148ef0cd0be03854252989c870c9dba7 NPU facade",
+      "0c335ff3df6b17eb57e12a00893e84b73413ca34 NPU failure assertions"
+    ],
+    "delivery": "Each worker used an individual Git worktree with logical commits. Root reviewed and cherry-picked into a separate Prism integration worktree. Runner declaration, evidence and backlog use an independent worktree. Changes integrate by fast-forward into local main; no push, PR or CI action.",
+    "checkedSource": "8205c173 plus the canonical formatting retained verbatim in b069933. Production source is unchanged after successful compilation. Final test-only dispatch-aware assertion has independent source review and was not recompiled.",
+    "prismTestOnlyCorrectionRevision": "0b6b15157cf12ea86dd2571197f5d83f557f74f8",
+    "finalDeltaFromCompiledSource": "Dispatch-aware test assertion and documentation only; no production source changed."
+  },
+  "closedSourceImplementationItems": [
+    {
+      "item": "Grouped attention reduction and sigmoid-gate publication fusion",
+      "planScope": "CPU kernels: elementwise/prefill fusion; runtime allocation/copy audit.",
+      "change": "Grouped NEON decode and paired/odd tiled-prefill attention applies original scalar exp and vector add/divide/multiply gating at the final destination store. Reduced vectors reuse the dead first temporal accumulator lane. Scalar/source paths and single-head tails retain their previous arithmetic.",
+      "sourceReduction": "Successful grouped NEON tiles omit one full attended-output reread and rewrite. No added scratch allocation or accumulator storage.",
+      "correctness": "Independent single-token and two-token channel-oracle controls passed. Complete reduction finiteness disables all gates on failure; original ungated partial publication order remains. Independent review checked the untouched baseline loops, KV/state ownership and both-token suppression.",
+      "qualification": "Failed local check is a root-added test oracle error on atomic scalar failure publication; final assertion correction is uncompiled. Final-source owning tests, analysis and model benefit pending."
+    },
+    {
+      "item": "Exact SIMD candidate-lane consumption for Swift, ReferenceSampler and Greedy",
+      "planScope": "Runtime sampler overhead; CPU reductions and repeated candidate traversal.",
+      "change": "Retain exact strict-greater SIMD comparison masks and visit set bits in ascending original token order, rechecking the updated heap root/maximum. A nonfinite block in checked mode visits every lane. Portable fallback continues visiting every lane.",
+      "sourceReduction": "A sparse winning 16-logit block visits only winning candidate lanes instead of all sixteen. No new allocation.",
+      "correctness": "Monotone threshold preserves excluded-lane ineligibility, original heap/tie schedule, signed zero, complete-input errors, backing and RNG. Five new exact controls cover masks, dense/sparse thresholds, all tails, native heap parity and every invalid position.",
+      "qualification": "Compiled all new controls; they were not executed before the earlier attention assertion failure. Portable codegen, final strict analysis, actual-model and request benefit pending."
+    },
+    {
+      "item": "Complete public owned native-Q2 fast-path forwarding",
+      "planScope": "Chosen Hexagon milestone: avoid repeated resident weight copies and per-projection queue synchronization; existing sibling packets and fused SwiGLU integration.",
+      "change": "The actual public NativeQ2Session now forwards direct in-place resident weight preparation, eight-operation batches and existing three-/six-operation fused SwiGLU submissions, together with every other NativeQ2Submitter override. One shared implementation is instantiated by the actual facade and recording controls.",
+      "sourceReduction": "Eliminates facade-forced copied preparation and two-four-operation fallback for an existing eight-operation native packet. Existing fused SwiGLU calls reach their native implementation.",
+      "correctness": "Four compiled model-free controls exercise callback/call counts, payload bytes, ordered activations, failed-output preservation without replay, borrowed evidence destination binding and errors. Root and CPU worker independently reviewed forwarding. Underlying admission, cleanup, signed arithmetic and operation counts remain unchanged.",
+      "qualification": "Source wiring defect closed locally. Recording controls were compiled but not executed before the earlier assertion failure. Full FFN chain remains unsupported; true N>1 solver, signed device lifecycle and measured benefit remain pending."
+    }
+  ],
+  "hostedControlsAdded": 13,
+  "localValidation": {
+    "plan": "workload-plan.json",
+    "driver": "validate.py",
+    "inventory": "controls.json",
+    "rawReceipt": "raw/receipt.json",
+    "archive": "raw/archive.json",
+    "terminalClock": "raw/final-clock.json",
+    "maximumTotalSeconds": 420,
+    "conservativeEstimateSeconds": 385,
+    "workCutoffSeconds": 370,
+    "elapsedSecondsThroughRetention": 70.05033249999906,
+    "withinDeclaredAllowance": true,
+    "clockClosed": true,
+    "clockRestarted": false,
+    "retries": 0,
+    "status": "failed",
+    "passed": [
+      "Pinned compiler and declared source identity",
+      "Canonical formatting and format check",
+      "All six receipt/source-inventory controls",
+      "Offline compilation and linking of all six selected test executables",
+      "Nine exact Rust controls, including both new grouped attention arithmetic oracles"
+    ],
+    "selectedRustControls": 38,
+    "rustControlsExecuted": 10,
+    "rustControlsPassed": 9,
+    "rustControlsFailed": 1,
+    "passedExactRustControls": [
+      "kernels::finite_activation_tests::prepared_quantizers_reuse_finite_proof_with_original_code_bits",
+      "kernels::finite_activation_tests::prepared_finite_proof_preserves_preflight_precedence_and_storage",
+      "kernels::finite_activation_tests::prepared_finite_proof_retains_q8_overflow_and_external_validation",
+      "sampling::swift::tests::cached_top_p_exponents_preserve_original_backing_bits_draws_and_reset",
+      "sampling::swift::tests::cached_top_p_guards_preserve_candidates_and_rng_with_unsorted_fallback",
+      "sampling::swift::tests::fixed_chain_reuses_filter_and_preserves_original_stage_bits_and_rng",
+      "sampling::swift::tests::selection_rejects_nonfinite_discarded_logits_without_losing_rng_or_storage",
+      "kernels::pinned_attention::gated_tests::gated_four_head_tiles_match_independent_channel_oracle",
+      "kernels::pinned_attention::gated_tests::gated_two_token_tiles_match_independent_causal_oracle"
+    ],
+    "failure": "Root-added independent prefix assertion assumed NEON incremental failure publication on scalar widths 1/3. The scalar fallback stages atomically and correctly leaves all destinations untouched. The existing gated-versus-ungated equivalence assertion passed before this added incorrect assertion.",
+    "correction": "Final test-only 0b6b151 chooses published prefix length from the exact cfg, actual NEON availability and tile divisibility; scalar expects zero published channels. Root and CPU worker reviewed against unchanged scalar/NEON baseline. No formatter, compiler, analyzer or test was rerun.",
+    "notReached": [
+      "Remaining 28 exact selected Rust controls",
+      "Strict Release analysis",
+      "Production worker Release linking",
+      "Feature-disabled library compilation",
+      "Final test-only assertion recompilation and execution",
+      "Owner-managed hosted checks and full suites"
+    ],
+    "cleanupIncomplete": false,
+    "rawArchiveMembersVerified": 19,
+    "rawReceiptSha256": "3fdd245d465685afeface9448b064e49551fc8922127b45dc0a5b40e8a788233",
+    "finalClockSha256": "1a5be38494b09d762832e9920341887d269fc2af7609069c23ee1e90d28a42c8",
+    "power": {
+      "observations": 39,
+      "allAcConnected": true,
+      "allBatterySaverOff": true,
+      "chargePercentValues": [
+        99
+      ],
+      "perCommandEndpoints": "raw/receipt.json",
+      "continuousPowerStabilityEstablished": false,
+      "pastPowerInferred": false,
+      "performanceComparisonQualified": false
+    }
+  },
+  "independentReview": [
+    "Root reviewed all three production changes and new controls.",
+    "NPU worker independently reviewed attention exact reduction, dead-lane staging, failure ordering, sigmoid arithmetic and graph wiring against the unchanged baseline.",
+    "NPU worker independently reviewed sampler threshold monotonicity, tie visitation, finite validation and local fearless_simd API definitions.",
+    "CPU worker independently reviewed complete owned NPU forwarding, fake-backend controls, borrowed evidence and failed publication.",
+    "Runtime worker reviewed the original validation driver and declaration; cleanupIncomplete explicitly gates success.",
+    "CPU worker independently reviewed the final scalar-versus-NEON test-only correction; production source was not changed."
+  ],
+  "remainingAcceptance": [
+    "Final-source owner-managed exact controls, strict Release analysis, portable fallback and production native linking.",
+    "Complete-model state/logit/adapter, continuation and cancellation/restore qualification; signed vendor lifecycle/resources for NPU.",
+    "Matched whole-request latency/resource benefit with correctly observed power conditions; no source count establishes speedup.",
+    "Qualified Prism release and immutable Runner repin before installed application use."
+  ],
+  "qualification": {
+    "productionSourceCompiled": true,
+    "allSelectedExactControlsPassed": false,
+    "finalSourceFullValidationPassed": false,
+    "owningHostedVerdict": null,
+    "actualModelParityQualified": false,
+    "performanceImprovementQualified": false,
+    "installedRuntimeChanged": false,
+    "runnerReleasePinChanged": false,
+    "defaultsChanged": false,
+    "admissionReduced": false
+  },
+  "models": 0,
+  "acceleratorDeviceCalls": 0,
+  "benchmarks": 0,
+  "fullSuites": 0,
+  "ciActions": 0,
+  "pushes": 0
+}
