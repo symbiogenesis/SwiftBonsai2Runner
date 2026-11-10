@@ -63,6 +63,36 @@ fn completed(output: u64) -> crate::Result<Value> {
     Ok(receipt)
 }
 
+fn completed_terminal(output: u64) -> crate::Result<Value> {
+    let mut receipt = completed(output)?;
+    // Independent producer fixture: retain the historical eleven positions,
+    // omit the one unused decode and append only reset-only terminal ingestion.
+    receipt["phases"] = json!(
+        [
+            ("sampler-snapshot", 1, 0),
+            ("rollback-snapshot", 1, 0),
+            ("prefix-preparation", 1, 0),
+            ("prefill-ingestion", 1, 2),
+            ("prefill-evaluation", 1, 1),
+            ("decode-evaluation", 0, 0),
+            ("sampling", 1, 1),
+            ("callback", output, output),
+            ("completion-snapshot", 0, 0),
+            ("rollback-restore", 0, 0),
+            ("sampler-restore", 0, 0),
+            ("terminal-ingestion", output, output),
+        ]
+        .into_iter()
+        .map(|(name, calls, tokens)| {
+            json!({"phase":name,"milliseconds":if calls == 0 { 0.0 } else { 1.0 },
+                "attempted_calls":calls,"completed_calls":calls,"attempted_tokens":tokens,
+                "completed_tokens_lower_bound":tokens,"partial_progress_unknown":false})
+        })
+        .collect::<Vec<_>>()
+    );
+    Ok(receipt)
+}
+
 #[test]
 fn timing_mode_is_explicit_one_standard_adapter_rust_request() -> crate::Result<()> {
     for backend in ["auto", "scalar", "neon"] {
@@ -168,22 +198,106 @@ fn timing_arguments_bind_fixed_public_work_and_original_deadline() -> crate::Res
 fn timing_receipts_require_every_exact_identity_and_allow_sampled_stop() -> crate::Result<()> {
     let expected = expected_fixture()?;
     for output in [0, 1] {
-        let receipt = completed(output)?;
-        validate(&receipt, &expected)?;
-        for field in expected
-            .as_object()
-            .ok_or("Missing fixture object.")?
-            .keys()
-        {
-            for invalid in [Value::Null, json!("changed")] {
-                let mut changed = receipt.clone();
-                changed[field] = invalid;
-                assert!(validate(&changed, &expected).is_err(), "{field}");
+        for receipt in [completed(output)?, completed_terminal(output)?] {
+            validate(&receipt, &expected)?;
+            for field in expected
+                .as_object()
+                .ok_or("Missing fixture object.")?
+                .keys()
+            {
+                for invalid in [Value::Null, json!("changed")] {
+                    let mut changed = receipt.clone();
+                    changed[field] = invalid;
+                    assert!(validate(&changed, &expected).is_err(), "{field}");
+                }
             }
         }
     }
     assert!(validate(&Value::Null, &expected).is_err());
     assert!(serde_json::from_slice::<Value>(b"").is_err());
+    Ok(())
+}
+
+#[test]
+fn timing_receipts_reject_mixed_terminal_and_decode_work() -> crate::Result<()> {
+    let expected = expected_fixture()?;
+    let terminal = completed_terminal(1)?;
+    let legacy = completed(1)?;
+    let mut double_counted = terminal.clone();
+    double_counted["phases"][5] = legacy["phases"][5].clone();
+    assert!(validate(&double_counted, &expected).is_err());
+
+    let mut terminal_inventory_with_legacy_work = double_counted.clone();
+    terminal_inventory_with_legacy_work["phases"][11] =
+        completed_terminal(0)?["phases"][11].clone();
+    assert!(validate(&terminal_inventory_with_legacy_work, &expected).is_err());
+
+    let mut missing_terminal_work = terminal.clone();
+    missing_terminal_work["phases"][11] = completed_terminal(0)?["phases"][11].clone();
+    assert!(validate(&missing_terminal_work, &expected).is_err());
+
+    let mut ingested_stop = completed_terminal(0)?;
+    ingested_stop["phases"][11] = terminal["phases"][11].clone();
+    assert!(validate(&ingested_stop, &expected).is_err());
+
+    let mut wrong_units = terminal.clone();
+    wrong_units["phases"][11]["attempted_tokens"] = json!(2);
+    wrong_units["phases"][11]["completed_tokens_lower_bound"] = json!(2);
+    assert!(validate(&wrong_units, &expected).is_err());
+
+    for field in [
+        "attempted_calls",
+        "completed_calls",
+        "attempted_tokens",
+        "completed_tokens_lower_bound",
+    ] {
+        for invalid in [Value::Null, json!(0), json!(2)] {
+            let mut changed = terminal.clone();
+            changed["phases"][11][field] = invalid;
+            assert!(validate(&changed, &expected).is_err(), "{field}");
+        }
+    }
+    for (path, invalid) in [
+        ("/phases/11/milliseconds", json!(-1)),
+        ("/phases/11/milliseconds", json!(600)),
+        ("/phases/11/partial_progress_unknown", json!(true)),
+    ] {
+        let mut changed = terminal.clone();
+        *changed
+            .pointer_mut(path)
+            .ok_or("Missing terminal mutation path.")? = invalid;
+        assert!(validate(&changed, &expected).is_err(), "{path}");
+    }
+    Ok(())
+}
+
+#[test]
+fn timing_receipts_reject_duplicate_unknown_and_truncated_terminal_inventory() -> crate::Result<()>
+{
+    let expected = expected_fixture()?;
+    let terminal = completed_terminal(1)?;
+    for invalid in [json!("decode-evaluation"), json!("unknown"), Value::Null] {
+        let mut changed = terminal.clone();
+        changed["phases"][11]["phase"] = invalid;
+        assert!(validate(&changed, &expected).is_err());
+    }
+    for mutation in 0..4 {
+        let mut changed = terminal.clone();
+        let phases = changed["phases"]
+            .as_array_mut()
+            .ok_or("Missing phase fixture.")?;
+        match mutation {
+            0 => {
+                assert!(phases.pop().is_some());
+            }
+            1 => {
+                assert_eq!(phases.remove(8)["phase"], "completion-snapshot");
+            }
+            2 => phases.push(phases[11].clone()),
+            _ => phases.swap(5, 11),
+        }
+        assert!(validate(&changed, &expected).is_err());
+    }
     Ok(())
 }
 

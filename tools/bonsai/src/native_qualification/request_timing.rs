@@ -160,10 +160,17 @@ fn validate_phases(receipt: &Value, prompt: u64, output: u64) -> crate::Result<(
         "completion-snapshot",
         "rollback-restore",
         "sampler-restore",
+        "terminal-ingestion",
     ];
-    if phases.len() != names.len() {
-        return Err("Request timing phase inventory is incomplete.".into());
-    }
+    // The released producer has eleven phases. Reset-only terminal ingestion
+    // appends a twelfth phase and replaces the final vocabulary evaluation.
+    // Exact ordered inventories reject duplicates, unknown names and mixing
+    // counters from the two source contracts without changing identity binding.
+    let terminal = match phases.len() {
+        11 => false,
+        12 => true,
+        _ => return Err("Request timing phase inventory is incomplete.".into()),
+    };
     for (phase, name) in phases.iter().zip(names) {
         let calls = phase["attempted_calls"].as_u64();
         let completed = phase["completed_calls"].as_u64();
@@ -188,18 +195,21 @@ fn validate_phases(receipt: &Value, prompt: u64, output: u64) -> crate::Result<(
     }
     // Only a fully returned successful request permits this binding. An early
     // sampled stop may commit zero tokens despite completing one selection.
+    let decode = if terminal { 0 } else { output };
+    let terminal_output = if terminal { output } else { 0 };
     let work = [
         (1, 0),
         (1, 0),
         (1, 0),
         ((prompt - 1).div_ceil(64), prompt - 1),
         (1, 1),
-        (output, output),
+        (decode, decode),
         (1, 1),
         (output, output),
         (0, 0),
         (0, 0),
         (0, 0),
+        (terminal_output, terminal_output),
     ];
     for (phase, (calls, tokens)) in phases.iter().zip(work) {
         if phase["completed_tokens_lower_bound"] != tokens
