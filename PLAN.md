@@ -694,7 +694,10 @@ and retain the reset-every-request serving policy until reuse is qualified.
   preparation. Qualify the implemented immutable-logits snapshot ownership under
   the [prefill/snapshot/FFN contract](docs/performance-deliver.md), then remove the
   largest remaining avoidable copy or allocation while preserving independent
-  snapshots. Qualify long-context tiled attention-value traversal under the
+  snapshots. The [request-preparation closeout](docs/performance-resolve.md)
+  implements bounded request-local reuse of exact short BPE piece results;
+  qualify request-time benefit and tokenizer/application acceptance rather than
+  rebuilding this source work. Qualify long-context tiled attention-value traversal under the
   [overhead
   review](docs/native-rust-engine.md#2026-literature-runtime-overhead-and-work-placement).
 - Qualify the local [inference efficiency candidates](docs/native-rust-engine.md#local-inference-efficiency-candidates):
@@ -719,7 +722,8 @@ and retain the reset-every-request serving policy until reuse is qualified.
   then matched whole-prompt benefit against qualified NEON/worker execution.
   Source work reuse and the SIMD tiled candidate establish no speedup or release gate.
 - Qualify the implemented complete six-head decode and tiled-prefill KV reuse,
-  including the [causal-prefix, worker and scratch contracts](docs/performance-deliver.md).
+  including [paired-token cached-key scoring](docs/performance-resolve.md) and
+  the [causal-prefix, worker and scratch contracts](docs/performance-deliver.md).
   If attention remains material, compare bounded score/value tiles and retaining
   versus recomputing scores. Preserve globally normalized FP16 probabilities
   before V; online-softmax/Flash changes require separate numerical and continuation
@@ -1159,6 +1163,23 @@ LoRA gates; calibration proves neither quality nor reduced admission.
   X1/X2, including installation and rollback, sustained use and upgrade requalification.
 
 ## CPU kernels
+
+The [paired prefill, request preparation and tiled projection closeout](docs/performance-resolve.md)
+completes three further source implementations in local Prism main: two-token
+six-head cached-key scoring, bounded request-local BPE piece results, and shared
+packed weights/output scratch across multi-operation native-Q2 token tiles.
+The [delivery record](docs/evidence/performance-resolve-20261109/summary.json)
+owns exact source and the single declared local validation. Their implementation
+work is closed. All four selected targets compiled and all 27 exact Rust controls
+plus six receipt controls passed. Strict Release analysis stopped on one reported
+branch-order lint; its equivalent correction was independently source-reviewed
+without retrying the closed 169.466-second run. Keep battery/saver-off/44% to 43%
+observations attached; production linking, feature-disabled compilation and
+final-source strict analysis remain pending. Owning hosted acceptance, ARM64
+codegen/resources, actual-model
+state/adapter/cancellation parity, vendor lifecycle and matched whole-request
+benefit remain pending before a qualified release and Runner repin. Source work
+counts establish no measured speedup or reduced admission.
 
 Qualify the [three completed prefill, snapshot and FFN source implementations](docs/performance-deliver.md)
 on settled Prism main through owner-managed checks: complete six-head tiled-prefill
@@ -1869,6 +1890,12 @@ AC-connected device receipts and the pinned Runner release-bundle `0.1.23` (`055
   - Add multi-token `N > 1` `native-q2` prefill dispatch (`N = tile_tokens` in
     `HTP_TYPE_Q2_0` `OP_MUL_MAT`) so prompt prefill reuses resident NPU weights across
     8/16/32-token tiles instead of executing `N = 1` per token or falling back to CPU.
+    The separate [multi-operation N=1 tile reuse](docs/performance-resolve.md)
+    implementation is complete: transient weights pack once per weight tile
+    across all prompt tokens, with one shared partial-output buffer and reused
+    caller outputs. Qualify its tile-major submission/failure order, unchanged
+    per-token accumulation, resource bounds and total-request benefit; do not
+    count it as the still-open multi-token matrix solver.
 
 ### Promotion sequence
 

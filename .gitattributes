@@ -158,3 +158,6 @@ docs/evidence/performance-finish-20261109/** -text -whitespace
 
 # Preserve the fixed implementation check and its original retained bytes.
 docs/evidence/performance-deliver-20261109/** -text -whitespace
+
+# Preserve the paired-prefill/BPE/multi-operation tile declaration and raw receipts.
+docs/evidence/performance-resolve-20261109/** -text -whitespace
