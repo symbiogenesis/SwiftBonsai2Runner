@@ -152,3 +152,6 @@ docs/evidence/performance-complete-20261109/** -text -whitespace
 
 # Preserve the closed three-item implementation check and its recorded hashes.
 docs/evidence/performance-closeout-20261109/** -text -whitespace
+
+# Preserve the new implementation declaration and closed check's original bytes.
+docs/evidence/performance-finish-20261109/** -text -whitespace
