@@ -269,6 +269,13 @@ Swift is ready. Cover unavailable Swift without deferred send, Escape, switching
 closing, late results, ASR/TTS exclusion and owned-worker cleanup. Source checks
 cannot qualify native picker/clipboard behavior, real audio conversion, transcript
 accuracy or actual-model submission; owner-managed acceptance remains pending.
+The single 33.35-second local source check passed whitespace, formatting and the
+three changed Markdown files. Strict offline locked release all-target Clippy
+stopped on 11 lints, including three preexisting assertions, before regressions
+ran. Apply source corrections without retrying the closed trial; final
+all-target analysis and attachment/normalization regressions remain pending in
+owner-managed CI. Both power endpoints reported AC connected, battery saver off
+and 100% charge; endpoints establish no uninterrupted stability or performance.
 
 Qualify conversation switching, creation, deletion and per-conversation drafts
 during native startup, generation and after preparation failure. Confirm background
