@@ -39,7 +39,7 @@ Upstream hardening includes [symlink extraction](https://github.com/zip-rs/zip2/
 Runner still requires bounded custom extraction; these fixes establish neither
 an exploitable Runner flaw nor a measured size/speed gain.
 
-[Dependency audit CI](../.github/workflows/dependency-audit.yml) runs for relevant
+[The source-checks audit job](../.github/workflows/source-checks.yml) runs for relevant
 main pushes, weekly and manually. Pinned cargo-audit fetches RustSec anew;
 vulnerabilities/yanks fail, while maintenance notices remain visible without
 blanket ignores.

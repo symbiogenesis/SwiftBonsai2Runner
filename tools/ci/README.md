@@ -43,17 +43,24 @@ The retained workflows own current checks or open gates in [PLAN.md](../../PLAN.
 
 | Purpose | Workflows |
 | --- | --- |
-| Routine source checks | `foundation`, `premerge`, `markdown`, `dependency-audit` |
+| Routine source checks | `foundation`, `source-checks` |
 | Windows ARM64 packaging and publication | `release` |
-| Runtime application, row-worker and numerical acceptance | `native-runtime-acceptance`, `native-row-qualification`, `native-ptq1-numerics` |
+| Runtime application and numerical acceptance | `native-runtime-acceptance`, `native-ptq1-numerics` |
 | Independent packing and pending public-pack reconstruction | `ptq1-packing-qualification`, `ptq1-public-authoring-reference` |
-| Native accelerator and containment controls | `hexagon-qualification`, `hexagon-windows-abi`, `sandbox-qualification` |
+| Native accelerator and containment controls | `hexagon-qualification`, `sandbox-qualification` |
 | Pending paired performance and dependency gates | `tts-evaluation`, `x2-cpu-evaluation`, `json-candidate` |
 
 Standalone chat, speech and runtime-parity candidate pipelines duplicated the
 production checks and builds now owned by Foundation, release and native-runtime
-acceptance. The X2 compute pipeline duplicated Hexagon qualification and the
-independently triggered Windows ABI control. These duplicate pipelines are retired.
+acceptance. The X2 compute pipeline duplicated Hexagon qualification and its
+hosted Windows ABI control. These duplicate pipelines are retired.
+
+Source checks combine portable pull-request checks, Markdown standards and the
+weekly dependency audit, selecting jobs from changed paths without compiling a
+planner. Hexagon qualification also owns its independent hosted Windows
+ABI control. The completed row-worker experiment against frozen source is retired;
+its CLI recipes and retained evidence remain available. These changes close no
+current-runtime qualification gate.
 
 Completed one-shot publisher startup, SDK inventory, public QAIC, adapter direction
 and retained numerical audit pipelines are also retired. Their source recipes,
@@ -91,15 +98,18 @@ analyzer/link receipt and workflow-contract receipt. The package's own
 remain stale and cannot qualify the new source. A successful contract check
 closes no actual-model, performance, quality or promotion gate.
 
-[Premerge portable checks](../../.github/workflows/premerge.yml) run on hosted
-Linux ARM64 for pull requests to `main` and manual dispatch. They check workspace
-formatting, compile portable CI/CPU-policy/broker targets and run six exact named
-routing, gate and request-policy regressions. Missing named cases fail the screen.
-This limited check uses read-only repository permissions and no models or physical
-devices; main-only Foundation and device acceptance remain separate requirements.
-[Markdown standards](../../.github/workflows/markdown.yml) separately run `rumdl`
-against [`.rumdl.toml`](../../.rumdl.toml) on hosted Linux ARM64 when Markdown
-files or linter configuration change.
+[Source checks](../../.github/workflows/source-checks.yml) run separate portable,
+Markdown and dependency-audit jobs on hosted Linux ARM64. Pull requests to `main`
+select portable checks for changes outside documentation: workspace formatting,
+portable CI/CPU-policy/broker compilation and six exact named routing, gate and
+request-policy regressions. Missing named cases fail the screen. Markdown or
+linter changes select `rumdl` against [`.rumdl.toml`](../../.rumdl.toml), while
+relevant main pushes and the weekly schedule select a fresh dependency audit.
+Manual dispatch selects portable and Markdown checks on any branch, plus the
+audit on `main`. Unknown source ranges select all checks eligible for that event.
+Source-checks workflow edits select every eligible check. These jobs retain read-only repository
+permissions and use no models or physical devices; Foundation and device acceptance
+remain separate requirements.
 
 ## Native Rust checks
 

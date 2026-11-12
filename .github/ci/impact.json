@@ -9,7 +9,7 @@
     ".github/ci/**",
     "tools/ci/**",
     ".github/workflows/foundation.yml",
-    ".github/workflows/premerge.yml",
+    ".github/workflows/source-checks.yml",
     ".github/actions/rust-toolchain/**",
     ".github/actions/check-rust/**",
     ".github/actions/native-speech/**",
@@ -21,8 +21,7 @@
     "*.md",
     "docs/**",
     ".gitignore",
-    ".rumdl.toml",
-    ".github/workflows/markdown.yml"
+    ".rumdl.toml"
   ],
   "package_inputs": {
     "bonsai-cpu-policy": [

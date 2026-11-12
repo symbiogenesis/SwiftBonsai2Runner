@@ -6,7 +6,6 @@ on:
       - '*.md'
       - 'docs/**'
       - '.rumdl.toml'
-      - '.github/workflows/markdown.yml'
   workflow_dispatch:
 permissions:
   contents: read

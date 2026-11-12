@@ -578,12 +578,18 @@ independently reviewed; it cannot continue a previous numerical matrix.
 
 ### Foundation and routing
 
-[Premerge portable checks](../.github/workflows/premerge.yml) provide a limited
-hosted Linux ARM64 screen for pull requests to `main` and manual dispatch: workspace
+[Source checks](../.github/workflows/source-checks.yml) provide a limited
+hosted Linux ARM64 portable screen for pull requests to `main` and manual dispatch: workspace
 Rust formatting, portable CI/CPU-policy/broker compilation and six exact named
 model-free routing, gate and request-policy regressions. A missing named case fails.
-The read-only workflow runs no complete suite, model, benchmark or self-hosted job;
-it qualifies neither native Windows behavior nor actual-model/device acceptance.
+The workflow also owns Markdown standards on relevant pushes and pull requests,
+and fresh dependency audits on relevant main pushes and the weekly schedule.
+Changed paths select each job without a compiler; documentation-only changes skip
+portable compilation. Missing or unusable ranges select every check eligible for
+that event. Manual dispatch selects portable and Markdown checks on any branch,
+and dependency auditing on `main`. These read-only jobs run no complete suite,
+model, benchmark or self-hosted job; they qualify neither native Windows behavior
+nor actual-model/device acceptance.
 
 [Foundation](../.github/workflows/foundation.yml) runs on `main` pushes/manual
 dispatch, skipping root-Markdown/`docs/`-only pushes. Its [Rust planner](../tools/ci/README.md)

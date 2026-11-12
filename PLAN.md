@@ -6,9 +6,11 @@ contracts, commands and evidence; completed work belongs in Git history.
 Have the owner push the local CI corrections and confirm Markdown standards and
 Foundation on the resulting source. The [bounded local check record](docs/evidence/ci-fixes-20261112/retained.json)
 keeps local validation separate from pending hosted acceptance.
-The [workflow-cleanup delivery](https://github.com/symbiogenesis/SwiftBonsai2Runner/blob/9511ec9574dedd788d9b08ccaf116793b3e76374/docs/evidence/ci-cleanup-20261112/delivery.json)
-records the retained 16 workflows and local routing checks; its deletions also
-await the owner's push. No local documentation correction supplies a hosted verdict.
+Have the owner push the workflow retirements and consolidation: routine portable,
+Markdown and dependency checks share Source checks; Hexagon qualification owns its
+independent hosted Windows ABI control, and the completed frozen-source row-worker
+experiment is retired. Confirm the new workflow selection and retained checks in
+owner-managed hosted CI. Earlier cleanup and local checks supply no hosted verdict.
 
 Publish the first experimental Windows ARM64 MSI release, **v0.1.0**, after the
 owner reviews and pushes the local installer/pipeline commits to Runner `main`.
