@@ -275,6 +275,22 @@ generation Stop or conversation actions. Include selector Escape priority and
 the separate cancellation behavior for active input.
 Source fixtures do not close these actual-device acceptance gates.
 
+Qualify the responsive sidebar and Appearance preferences on Windows ARM64:
+resize/hide/reopen the docked sidebar, then move between docked and anchored-drawer
+layouts without losing drafts or interrupting background generation. Cover
+480×480 windows, display scaling, drawer Escape/backdrop and conversation actions,
+keyboard focus, System/Light/Dark changes and Windows high-contrast precedence.
+Verify 14–24-point prose, code and thinking reflow with correct Find highlights
+and unchanged source text, adjustable reading width, and independent appearance
+persistence across restart, conversation-saving opt-out and preview. Focused
+model-free controls and rendered samples do not close assistive-technology,
+real-window or actual-model acceptance.
+Run the new `appearance_` and `reader_size_reflows_` controls, existing Settings
+and deletion regressions, and strict native all-target analysis on final source.
+For optional rendered captures, set `BONSAI_ERGONOMICS_CAPTURE_DIRECTORY` to a
+directory outside Git before selecting `ergonomics_capture_when_requested`.
+The earlier local capture-path failure supplies no rendered-layout verdict.
+
 Qualify native message iteration and styled answers on Windows ARM64: edited and
 regenerated branches must preserve original drafts/settings and send only their
 exact committed prefix; user/assistant branching, Continue with an unsent draft,
