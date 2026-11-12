@@ -1414,7 +1414,6 @@ impl State {
 
     fn sidebar_footer(&mut self, ui: &mut egui::Ui) {
         ui.spacing_mut().item_spacing.y = 4.0;
-        ui.separator();
         ui.add_space(4.0);
         if ui
             .add_sized([ui.available_width(), 36.0], egui::Button::new("Settings"))
