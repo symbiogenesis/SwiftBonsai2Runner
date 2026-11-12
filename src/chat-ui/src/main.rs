@@ -328,7 +328,7 @@ fn validate_configuration(
 fn main() -> std::process::ExitCode {
     let args: Vec<_> = std::env::args_os().skip(1).collect();
     let result = if args.len() == 1 && args[0] == "--preview" {
-        window::run_preview()
+        window::run_preview().map(|()| false)
     } else if args
         .first()
         .is_some_and(|argument| argument == "--startup-tool")
@@ -338,9 +338,11 @@ fn main() -> std::process::ExitCode {
         configuration(args)
             .map_err(std::io::Error::other)
             .and_then(window::run)
+            .map(|()| false)
     };
     match result {
-        Ok(()) => std::process::ExitCode::SUCCESS,
+        Ok(true) => std::process::ExitCode::from(42),
+        Ok(false) => std::process::ExitCode::SUCCESS,
         Err(error) => {
             window::show_error(&error.to_string());
             std::process::ExitCode::FAILURE

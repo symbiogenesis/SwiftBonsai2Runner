@@ -43,6 +43,7 @@ mod read_aloud;
 #[cfg(test)]
 mod tests;
 mod transcript;
+mod updates;
 mod workspace;
 
 use model_lifecycle::ModelLifecycle;
@@ -89,6 +90,8 @@ struct State {
     startup_request: Option<crate::startup::Request>,
     startup: Option<crate::startup::Session>,
     startup_failure: Option<std::sync::Arc<std::sync::Mutex<Option<String>>>>,
+    updates: Option<updates::Updates>,
+    update_exit: Option<std::sync::Arc<std::sync::atomic::AtomicBool>>,
     model: ModelLifecycle,
     preview: bool,
     input: String,
@@ -168,6 +171,8 @@ impl State {
             startup_request: None,
             startup: None,
             startup_failure: None,
+            updates: None,
+            update_exit: None,
             model: if config.is_some() {
                 ModelLifecycle::Preparing
             } else {
@@ -244,6 +249,7 @@ impl State {
         request: crate::startup::Request,
     ) -> Self {
         let mut state = Self::create(commands, events, None, None);
+        state.updates = updates::Updates::for_startup(&request);
         state.preview = false;
         state.canary_configured = request.canary_configured;
         state.tts_configured = request.tts_configured;
@@ -441,7 +447,12 @@ impl State {
     }
 
     fn retry(&mut self) {
-        if !self.model.retryable() {
+        if !self.model.retryable()
+            || self
+                .updates
+                .as_ref()
+                .is_some_and(updates::Updates::installing)
+        {
             return;
         }
         if self.commands.send(Command::Retry).is_err() {
@@ -1035,6 +1046,7 @@ impl State {
 
 impl Drop for State {
     fn drop(&mut self) {
+        self.updates.take();
         self.startup_request.take();
         self.startup.take();
         self.stop_speech();
@@ -1127,6 +1139,13 @@ impl State {
             self.show_settings = !self.show_settings;
         }
         ui.add_space(8.0);
+        if self
+            .updates
+            .as_ref()
+            .is_some_and(updates::Updates::available)
+        {
+            ui.label(RichText::new("Application update available in Settings").small());
+        }
         ui.label(
             RichText::new(if self.preview {
                 "Interface preview"
@@ -1202,6 +1221,63 @@ impl State {
         ui.add_space(16.0);
     }
 
+    fn can_install_update(&self) -> bool {
+        self.startup.is_none()
+            && self.startup_request.is_none()
+            && matches!(
+                self.model,
+                ModelLifecycle::Ready | ModelLifecycle::Retryable
+            )
+    }
+
+    fn update_controls(&mut self, ui: &mut egui::Ui) {
+        let can_install = self.can_install_update();
+        let Some(updates) = &mut self.updates else {
+            ui.heading("Application updates");
+            ui.label("Automatic updates are available in the installed Windows application.");
+            ui.add_space(16.0);
+            return;
+        };
+        let requested = updates.controls(ui, can_install);
+        if self.model == ModelLifecycle::Unavailable {
+            ui.label("If model preparation failed, close Swift and install the MSI from GitHub releases.");
+        }
+        if !requested {
+            return;
+        }
+        updates.wait_for_stop();
+        self.stop_speech();
+        if self.model == ModelLifecycle::Ready {
+            if self.commands.send(Command::Stop).is_err() {
+                self.fail("The model worker stopped. Close and restart the app before updating.");
+            } else {
+                self.model = ModelLifecycle::Stopping;
+                self.set_status("Stopping the local model before updating...", false);
+            }
+        }
+    }
+
+    fn poll_updates(&mut self, ctx: &egui::Context) {
+        let Some(updates) = &mut self.updates else {
+            return;
+        };
+        if self.model == ModelLifecycle::Retryable {
+            updates.finish_stop(true);
+        } else if self.model == ModelLifecycle::Unavailable {
+            updates.finish_stop(false);
+        }
+        let diagnostic = updates.poll();
+        if updates.should_close() {
+            if let Some(approved) = &self.update_exit {
+                approved.store(true, std::sync::atomic::Ordering::Release);
+            }
+            ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+        }
+        if let Some(message) = diagnostic {
+            self.record(&message);
+        }
+    }
+
     fn settings(&mut self, ctx: &egui::Context) {
         if !self.show_settings {
             return;
@@ -1224,6 +1300,7 @@ impl State {
                 );
                 self.recovery_controls(ui);
                 self.runtime_controls(ui);
+                self.update_controls(ui);
                 ui.heading("Response");
                 ui.add_enabled_ui(!self.model.busy(), |ui| {
                     self.thinking_controls(ui);
@@ -1368,6 +1445,14 @@ impl State {
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                 if ui.button("Settings").clicked() {
                     self.show_settings = !self.show_settings;
+                }
+                if self
+                    .updates
+                    .as_ref()
+                    .is_some_and(updates::Updates::available)
+                    && ui.small_button("Update available").clicked()
+                {
+                    self.show_settings = true;
                 }
                 ui.add_enabled_ui(!self.transcript.messages.is_empty(), |ui| {
                     self.transcript.find_button(ui);
@@ -1800,6 +1885,7 @@ impl eframe::App for State {
         let was_busy = self.model.busy();
         self.poll_startup();
         self.drain_events();
+        self.poll_updates(ctx);
         if ((!was_ready && self.model.ready())
             || (was_busy && !self.model.busy() && self.model.ready()))
             && ctx.memory(|memory| {
@@ -1899,12 +1985,14 @@ pub(super) fn run(config: Config) -> io::Result<()> {
     .map_err(|error| io::Error::other(error.to_string()))
 }
 
-pub(super) fn run_startup(request: crate::startup::Request) -> io::Result<()> {
+pub(super) fn run_startup(request: crate::startup::Request) -> io::Result<bool> {
     // Retain the established recovery ordering: restore before accepting a draft.
     let recovery = crate::recovery::Recovery::open(&request.data);
     let placement = placement::Placement::open(&request.data);
     let failure = std::sync::Arc::new(std::sync::Mutex::new(None));
     let reported_failure = std::sync::Arc::clone(&failure);
+    let update_exit = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+    let approved_update = std::sync::Arc::clone(&update_exit);
     eframe::run_native(
         "Swift Bonsai",
         native_options(),
@@ -1915,6 +2003,7 @@ pub(super) fn run_startup(request: crate::startup::Request) -> io::Result<()> {
             let (_events, incoming_events) = client::event_channel();
             let mut state = State::pending_startup(commands, incoming_events, request);
             state.startup_failure = Some(reported_failure);
+            state.update_exit = Some(approved_update);
             state.attach_recovery(recovery);
             state.attach_placement(placement, cc);
             Ok(Box::new(state))
@@ -1925,7 +2014,10 @@ pub(super) fn run_startup(request: crate::startup::Request) -> io::Result<()> {
         .lock()
         .map_err(|_| io::Error::other("Cannot read native preparation result."))?
         .take();
-    error.map_or(Ok(()), |error| Err(io::Error::other(error)))
+    error.map_or_else(
+        || Ok(update_exit.load(std::sync::atomic::Ordering::Acquire)),
+        |error| Err(io::Error::other(error)),
+    )
 }
 /// Opens only a seeded interface; no backend, credential or audio operation runs.
 pub(super) fn run_preview() -> io::Result<()> {

@@ -11,6 +11,27 @@ fn state() -> (State, Receiver<Command>, client::EventSender) {
 }
 
 #[test]
+fn updater_install_admission_requires_idle_or_confirmed_stopped_model() {
+    let (mut state, _commands, _events) = state();
+    for phase in [
+        ModelLifecycle::Unavailable,
+        ModelLifecycle::Preparing,
+        ModelLifecycle::Restarting,
+        ModelLifecycle::Generating,
+        ModelLifecycle::AwaitingTeardown,
+        ModelLifecycle::Stopping,
+    ] {
+        state.model = phase;
+        assert!(!state.can_install_update());
+    }
+    for phase in [ModelLifecycle::Ready, ModelLifecycle::Retryable] {
+        state.model = phase;
+        assert!(state.can_install_update());
+    }
+    assert!(state.updates.is_none());
+}
+
+#[test]
 fn model_notifications_have_a_finite_per_frame_work_budget() {
     let (mut state, _commands, events) = state();
     for _ in 0..80 {

@@ -46,6 +46,14 @@ struct RequestedSpeech {
 }
 
 impl Request {
+    pub(crate) fn update_tool(&self) -> &Path {
+        &self.executable
+    }
+
+    pub(crate) fn update_handoff_path(&self) -> PathBuf {
+        self.payload.with_extension("update.json")
+    }
+
     pub(crate) fn parse(arguments: &[OsString]) -> io::Result<Self> {
         if arguments.len() != 6
             || arguments[0] != "--startup-tool"
