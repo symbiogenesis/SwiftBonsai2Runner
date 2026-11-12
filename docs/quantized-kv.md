@@ -145,10 +145,24 @@ The initial decision margins are deliberately practical:
 
 | Observation | Passing margin |
 | --- | --- |
-| Useful answer quality | A human reviewer, with candidate labels hidden, scores complete answers from 1 (unusable) to 5 (fully useful). Mean compressed quality may be at most 0.5 lower, with no individual task more than 1 lower. All predeclared objective checks passed by FP16 remain passing; no new material factual, canon or task-completion failure is accepted. |
+| Useful answer quality | A human reviewer, with candidate labels hidden, scores complete answers from 1 (unusable) to 5 (fully useful), with both arms at least 3 (usable). Mean compressed quality may be at most 0.5 lower, with no individual task more than 1 lower. All predeclared objective checks passed by FP16 remain passing; no new material factual, canon or task-completion failure is accepted. |
 | Cache memory | Actual packed K/V storage, including scales, is at most 35% of matched FP16 K/V storage at the same occupied positions. Verify that no full-history FP16/F32 mirror remains. |
 | Process memory | Near-full-context complete-task peak private bytes fall by at least 128 MiB, with matched measurement coverage and checkpoint/recovery costs included. Report absolute peaks and the actual saved fraction of total process memory. |
 | Responsiveness and reliability | Where matched-power timing is available, no complete task is more than 10% slower. Otherwise retain an unqualified latency result and require the owner to accept observed responsiveness before profile promotion. No extra failed/retried request or selected-profile state, cancellation or recovery regression is accepted. A speedup or energy improvement is not required for a memory-led decision. |
+
+Use [`bonsai-tools kv-promotion`](../tools/bonsai/README.md#practical-compressed-kv-review)
+to freeze the packet and review its retained complete answers, matched cache
+positions, quality scores and process-memory observations offline. It reports a
+scoped owner-review result; it neither captures a model run nor changes defaults.
+The suggested prompts and exact request fields are documented with the command.
+
+`Qwen35::state_memory` and `SwiftSession::state_memory` supply committed cache
+payload, the calculated full-context payload bound and live state capacities;
+the raw generation CLI includes `state_memory` in its completion record.
+Retained capacities after reset remain charged. These observations exclude model,
+workspace, external checkpoints, allocator and process/device memory; collect
+complete-task process peaks independently rather than treating a state budget or
+full-context calculation as a measured saving.
 
 Bind the declaration and complete paired answers to immutable source, executable,
 model/adapter and profile identities. Retain every pair, objective result and

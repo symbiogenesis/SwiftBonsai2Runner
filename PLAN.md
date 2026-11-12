@@ -1467,6 +1467,12 @@ LoRA gates; calibration proves neither quality nor reduced admission.
   state is separately 149.625 MiB. Cache ratios do not apply to weights.
 - Advance the owner-selected [native Snapdragon candidate](docs/quantized-kv.md)
   toward K4/V4 (`rsq4`) default/required operation in a qualified device profile.
+  The local offline `kv-promotion` reviewer, scoped live-state memory reporting
+  and compressed-profile prefix/adapter/recovery controls prepare that decision.
+  Final source validation remains pending: the bounded local check stopped on
+  lint failures, corrected in source without reopening its closed allowance;
+  the newly selected regressions were not executed. No actual-model comparison,
+  promotion verdict or runtime-bundle publication is established by these edits.
   Its codec, graph and native CLI/service selection are implemented in Prism;
   K4/V3 remains a separate later capacity experiment. Close selected-profile
   packed-attention, scalar/NEON, exact quantized checkpoint, cancellation, prefix
