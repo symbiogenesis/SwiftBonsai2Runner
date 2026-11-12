@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package Name="Swift Bonsai 2 Runner" Manufacturer="symbiogenesis"
+           Version="$(var.ProductVersion)" UpgradeCode="9CA9B9F7-6807-4CA5-A52C-37A805F4802B"
+           Language="1033" Scope="perMachine" InstallerVersion="500" Compressed="yes">
+    <MajorUpgrade DowngradeErrorMessage="A newer Swift Bonsai 2 Runner is already installed."
+                  Schedule="afterInstallInitialize" />
+    <MediaTemplate EmbedCab="yes" />
+    <Property Id="ARPNOMODIFY" Value="1" />
+    <Property Id="ARPURLINFOABOUT" Value="https://github.com/symbiogenesis/SwiftBonsai2Runner" />
+    <Property Id="WINDOWSBUILDNUMBER">
+      <RegistrySearch Id="WindowsBuild" Root="HKLM"
+                      Key="SOFTWARE\Microsoft\Windows NT\CurrentVersion"
+                      Name="CurrentBuildNumber" Type="raw" Bitness="always64" />
+    </Property>
+    <Property Id="VCRUNTIMEARM64">
+      <RegistrySearch Id="Arm64VisualCppRuntime" Root="HKLM"
+                      Key="SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\arm64"
+                      Name="Installed" Type="raw" Bitness="always64" />
+    </Property>
+    <Launch Condition="Installed OR (VersionNT64 AND WINDOWSBUILDNUMBER &gt;= 22000)"
+            Message="Swift Bonsai 2 Runner requires Windows 11 ARM64." />
+    <Launch Condition="Installed OR VCRUNTIMEARM64 = &quot;#1&quot;"
+            Message="Install the latest Microsoft Visual C++ v14 ARM64 Redistributable from https://learn.microsoft.com/cpp/windows/latest-supported-vc-redist before installing Swift Bonsai 2 Runner." />
+
+    <StandardDirectory Id="ProgramFiles6432Folder">
+      <Directory Id="INSTALLFOLDER" Name="Swift Bonsai 2 Runner">
+        <Directory Id="MAINTENANCEFOLDER" Name="maintenance">
+          <Component Id="TrustedMaintenance" Guid="*">
+            <File Id="TrustedMaintenanceExe" Source="$(var.PackageDirectory)\bin\bonsai-tools.exe" KeyPath="yes">
+              <Shortcut Id="StartMenuChat" Directory="ProgramMenuFolder" Name="Swift Bonsai 2 Runner"
+                        Arguments="installed-chat" WorkingDirectory="INSTALLFOLDER" Advertise="yes" />
+            </File>
+          </Component>
+        </Directory>
+        <Component Id="ActivePackage" Guid="*">
+          <File Id="ActiveSelection" Source="$(var.StageDirectory)\active.json" KeyPath="yes" />
+        </Component>
+        <Directory Id="CONFIGFOLDER" Name="config">
+          <Component Id="SwiftModelLock" Guid="*">
+            <File Id="SwiftAssessmentLock" Source="$(var.RepositoryRoot)\config\swift-assessment.lock.json" KeyPath="yes" />
+          </Component>
+        </Directory>
+        <Directory Id="VERSIONSFOLDER" Name="versions">
+          <Directory Id="VERSIONFOLDER" Name="$(var.PackageId)" />
+        </Directory>
+      </Directory>
+    </StandardDirectory>
+    <Feature Id="Application" Title="Swift Bonsai 2 Runner" Level="1">
+      <ComponentRef Id="TrustedMaintenance" />
+      <ComponentRef Id="ActivePackage" />
+      <ComponentRef Id="SwiftModelLock" />
+      <Files Include="$(var.PackageDirectory)\**" Directory="VERSIONFOLDER" />
+    </Feature>
+  </Package>
+</Wix>
