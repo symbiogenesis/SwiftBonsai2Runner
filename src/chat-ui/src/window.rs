@@ -524,6 +524,9 @@ impl State {
     }
 
     fn handle_input_shortcuts(&mut self, ctx: &egui::Context) {
+        if self.dictation_requested && ctx.input(|input| input.viewport().close_requested()) {
+            self.cancel_microphone();
+        }
         ctx.input(|input| {
             for event in &input.events {
                 match event {

@@ -1147,7 +1147,7 @@ fn escape_cancels_a_queued_voice_message_before_overlay_dismissal() {
         }
         queue_voice_message(&mut state);
         let ctx = egui::Context::default();
-        let _output = ctx.run(
+        let output = ctx.run_ui(
             egui::RawInput {
                 events: vec![egui::Event::Key {
                     key: egui::Key::Escape,
@@ -1158,15 +1158,16 @@ fn escape_cancels_a_queued_voice_message_before_overlay_dismissal() {
                 }],
                 ..egui::RawInput::default()
             },
-            |ctx| {
-                state.handle_input_shortcuts(ctx);
+            |ui| {
+                state.handle_input_shortcuts(ui.ctx());
                 state.speech_event(speech::Event::Recognized {
                     generation: 7,
                     text: "Late voice message".to_owned(),
                 });
-                state.flush_voice_transcript(ctx);
+                state.flush_voice_transcript(ui.ctx());
             },
         );
+        output.drop_without_applying_deltas();
         assert_eq!(state.input, "Keep this draft");
         assert!(state.pending_voice_transcript.is_none());
         assert!(!state.dictation_requested);
@@ -1180,7 +1181,7 @@ fn new_chat_shortcut_cancels_a_queued_voice_message_before_submission() {
     state.model = ModelLifecycle::Ready;
     queue_voice_message(&mut state);
     let ctx = egui::Context::default();
-    let _output = ctx.run(
+    let output = ctx.run_ui(
         egui::RawInput {
             events: vec![egui::Event::Key {
                 key: egui::Key::N,
@@ -1191,11 +1192,12 @@ fn new_chat_shortcut_cancels_a_queued_voice_message_before_submission() {
             }],
             ..egui::RawInput::default()
         },
-        |ctx| {
-            state.handle_input_shortcuts(ctx);
-            state.flush_voice_transcript(ctx);
+        |ui| {
+            state.handle_input_shortcuts(ui.ctx());
+            state.flush_voice_transcript(ui.ctx());
         },
     );
+    output.drop_without_applying_deltas();
     assert!(matches!(commands.try_recv(), Ok(Command::NewChat)));
     assert!(commands.try_recv().is_err());
     assert_eq!(state.active_conversation, 2);
@@ -1209,7 +1211,7 @@ fn pointer_press_defers_voice_message_until_cancel_click_settles() {
     state.input = "Keep this draft".to_owned();
     queue_voice_message(&mut state);
     let ctx = egui::Context::default();
-    let _output = ctx.run(
+    let output = ctx.run_ui(
         egui::RawInput {
             events: vec![egui::Event::PointerButton {
                 pos: egui::pos2(20.0, 20.0),
@@ -1219,11 +1221,12 @@ fn pointer_press_defers_voice_message_until_cancel_click_settles() {
             }],
             ..egui::RawInput::default()
         },
-        |ctx| state.flush_voice_transcript(ctx),
+        |ui| state.flush_voice_transcript(ui.ctx()),
     );
+    output.drop_without_applying_deltas();
     assert!(state.pending_voice_transcript.is_some());
     assert!(commands.try_recv().is_err());
-    let _output = ctx.run(
+    let output = ctx.run_ui(
         egui::RawInput {
             events: vec![egui::Event::PointerButton {
                 pos: egui::pos2(20.0, 20.0),
@@ -1233,11 +1236,12 @@ fn pointer_press_defers_voice_message_until_cancel_click_settles() {
             }],
             ..egui::RawInput::default()
         },
-        |ctx| {
+        |ui| {
             state.finish_dictation();
-            state.flush_voice_transcript(ctx);
+            state.flush_voice_transcript(ui.ctx());
         },
     );
+    output.drop_without_applying_deltas();
     assert_eq!(state.input, "Keep this draft");
     assert!(state.pending_voice_transcript.is_none());
     assert!(commands.try_recv().is_err());
@@ -1250,10 +1254,11 @@ fn voice_message_waits_for_native_input_dispatch_before_sending_once() {
     queue_voice_message(&mut state);
     assert!(commands.try_recv().is_err());
     let ctx = egui::Context::default();
-    let _output = ctx.run(egui::RawInput::default(), |ctx| {
-        state.flush_voice_transcript(ctx);
-        state.flush_voice_transcript(ctx);
+    let output = ctx.run_ui(egui::RawInput::default(), |ui| {
+        state.flush_voice_transcript(ui.ctx());
+        state.flush_voice_transcript(ui.ctx());
     });
+    output.drop_without_applying_deltas();
     assert!(matches!(
         commands.try_recv(),
         Ok(Command::Send { text, .. }) if text == "Queued voice message"
@@ -1267,7 +1272,7 @@ fn ime_preedit_keeps_a_queued_voice_message_as_an_unsent_draft() {
     state.model = ModelLifecycle::Ready;
     queue_voice_message(&mut state);
     let ctx = egui::Context::default();
-    let _output = ctx.run(
+    let output = ctx.run_ui(
         egui::RawInput {
             events: vec![egui::Event::Ime(egui::ImeEvent::Preedit {
                 text: "composing".to_owned(),
@@ -1275,11 +1280,12 @@ fn ime_preedit_keeps_a_queued_voice_message_as_an_unsent_draft() {
             })],
             ..egui::RawInput::default()
         },
-        |ctx| {
-            state.handle_input_shortcuts(ctx);
-            state.flush_voice_transcript(ctx);
+        |ui| {
+            state.handle_input_shortcuts(ui.ctx());
+            state.flush_voice_transcript(ui.ctx());
         },
     );
+    output.drop_without_applying_deltas();
     assert!(state.composing);
     assert_eq!(state.input, "Queued voice message");
     assert!(state.pending_voice_transcript.is_none());
