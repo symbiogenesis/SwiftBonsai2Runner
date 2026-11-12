@@ -77,19 +77,37 @@ struct Response {
     version: Option<String>,
 }
 
-fn valid_version(version: &str) -> bool {
-    version.len() <= 32
-        && version.split('.').count() == 3
-        && version
-            .split('.')
-            .all(|part| !part.is_empty() && part.bytes().all(|byte| byte.is_ascii_digit()))
+fn parse_version(text: &str) -> Option<(u8, u8, u16)> {
+    if text.len() > 13
+        || text.split('.').any(|part| {
+            part.is_empty()
+                || (part.len() > 1 && part.starts_with('0'))
+                || !part.bytes().all(|byte| byte.is_ascii_digit())
+        })
+    {
+        return None;
+    }
+    let mut parts = text.split('.');
+    let parsed = (
+        parts.next()?.parse().ok()?,
+        parts.next()?.parse().ok()?,
+        parts.next()?.parse().ok()?,
+    );
+    parts.next().is_none().then_some(parsed)
+}
+
+fn newer_version(text: &str) -> bool {
+    matches!(
+        (parse_version(text), parse_version(env!("CARGO_PKG_VERSION"))),
+        (Some(candidate), Some(current)) if candidate > current
+    )
 }
 
 fn response(text: &str, operation: Operation, expected: Option<&str>) -> io::Result<Response> {
     let response: Response = serde_json::from_str(text).map_err(io::Error::other)?;
     let valid = match operation {
         Operation::Check => match response.status.as_str() {
-            "available" => response.version.as_deref().is_some_and(valid_version),
+            "available" => response.version.as_deref().is_some_and(newer_version),
             "current" | "no-release" => true,
             _ => false,
         },
@@ -100,7 +118,7 @@ fn response(text: &str, operation: Operation, expected: Option<&str>) -> io::Res
                 } else {
                     "queued"
                 }
-                && expected.is_some_and(valid_version)
+                && expected.is_some_and(newer_version)
                 && response.version.as_deref() == expected
         }
     };
@@ -452,6 +470,34 @@ impl Updates {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn update_results_reject_noncanonical_out_of_bounds_and_nonnewer_versions() {
+        assert_eq!(parse_version("255.255.65535"), Some((255, 255, 65535)));
+        for invalid in [
+            "",
+            "0.01.1",
+            "00.2.0",
+            "0.2",
+            "0.2.0.0",
+            "0.2.0-beta",
+            "256.0.0",
+            "0.256.0",
+            "0.0.65536",
+            "0.2.+1",
+            "0.0.0",
+            env!("CARGO_PKG_VERSION"),
+        ] {
+            for (status, operation) in [
+                ("available", Operation::Check),
+                ("downloaded", Operation::Download),
+                ("queued", Operation::Install),
+            ] {
+                let text = serde_json::json!({"Status": status, "Version": invalid}).to_string();
+                assert!(response(&text, operation, Some(invalid)).is_err());
+            }
+        }
+    }
 
     #[test]
     fn update_results_bind_download_and_install_to_the_selected_version() -> io::Result<()> {
