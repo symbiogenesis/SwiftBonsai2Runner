@@ -142,7 +142,10 @@ fn find_sync_sidebar_updates_selected_chat_and_clears_without_taking_focus() {
     );
     assert!(chat.get_by_label("1 of 1").rect().is_positive());
     type_query(&mut chat, " does not exist");
-    assert!(chat.state().app.conversation_search.rows.is_empty());
+    assert_eq!(
+        chat.state().app.conversation_search.rows,
+        Vec::<usize>::new()
+    );
     assert_eq!(
         chat.get_by_role_and_label(egui::Role::TextInput, "Find in conversation")
             .value()

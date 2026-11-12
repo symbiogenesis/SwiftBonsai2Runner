@@ -44,10 +44,7 @@ impl Store {
     pub(super) fn open(data: &Path) -> io::Result<Opened> {
         let path = data.join("chat-profile.dpapi");
         bonsai_windows_credentials::validate_external_path(&path)?;
-        let (saved, load_failed) = match read(&path) {
-            Ok(saved) => (saved, false),
-            Err(_) => (None, true),
-        };
+        let (saved, load_failed) = read(&path).map_or((None, true), |saved| (saved, false));
         let pending = Arc::new(Mutex::new(None::<String>));
         let queued = Arc::clone(&pending);
         let failed = Arc::new(AtomicBool::new(false));
@@ -258,7 +255,7 @@ mod tests {
         restored.attach_recovery(crate::recovery::Recovery::open(&directory));
         restored.attach_profile(Store::open(&directory));
         assert_eq!(restored.voice_profile, chosen);
-        assert!(restored.input.is_empty());
+        assert_eq!(restored.input, "");
         assert!(!restored.save_conversations && !restored.speaking && !restored.listening);
         assert!(!directory.join("chat-recovery.dpapi").exists());
         drop(restored);

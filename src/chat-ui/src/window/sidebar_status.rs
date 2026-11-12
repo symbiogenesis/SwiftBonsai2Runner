@@ -36,7 +36,7 @@ impl State {
             text_width(model) + text_width("History") + text_width("Private") + 34.0;
         let available = ui.available_width();
         let group_gap = ((available - content_width) * 0.5).clamp(0.0, 14.0);
-        let inset = ((available - content_width - 2.0 * group_gap) * 0.5).max(0.0);
+        let inset = (2.0_f32.mul_add(-group_gap, available - content_width) * 0.5).max(0.0);
         super::navigation::bounded_width(ui, |ui| {
             ui.allocate_ui_with_layout(
                 egui::vec2(available, 0.0),
