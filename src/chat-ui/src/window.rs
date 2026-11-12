@@ -21,6 +21,7 @@ mod appearance;
 mod audio_files;
 #[cfg(test)]
 mod background_tests;
+mod branding;
 mod context_capacity;
 #[cfg(test)]
 mod ergonomics_tests;
@@ -1392,11 +1393,10 @@ impl State {
         {
             ui.ctx().request_repaint();
         }
-        ui.add_space(8.0);
+        ui.add_space(4.0);
         if !self.sidebar_open {
-            ui.label(RichText::new("BONSAI").strong().size(22.0));
-            ui.label(RichText::new("A little space to think.").small().weak());
-            ui.add_space(24.0);
+            branding::mark(ui);
+            ui.add_space(4.0);
         }
         if ui
             .add_enabled(

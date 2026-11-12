@@ -285,6 +285,8 @@ resize/hide/reopen the docked sidebar, then move between docked and anchored-dra
 layouts without losing drafts or interrupting background generation. Cover
 480×480 windows, display scaling, drawer Escape/backdrop and conversation actions,
 keyboard focus, System/Light/Dark changes and Windows high-contrast precedence.
+Check the compact vector seedling above New conversation for crisp edges at
+display scales and adequate contrast, with the former wordmark/tagline removed.
 Confirm the compact footer keeps model, conversation-saving and privacy status
 on one line at minimum sidebar width, with full hover and accessible descriptions.
 Footer formatting and source review passed; native analysis stopped at the
