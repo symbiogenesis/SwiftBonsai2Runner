@@ -338,6 +338,12 @@ Complete the focused `conversation_history_` regressions and strict native
 all-target Clippy on corrected source. The initial Clippy pass stopped on lints;
 automatic approval review rejected continuation under the no-retry rule, so
 another validation pass requires explicit owner approval.
+The search-caret alignment check passed formatting and strict native all-target
+Clippy; six of seven history-search regressions passed. Diagnose and fix
+`conversation_history_escape_clears_before_drawer_dismissal_during_generation`:
+egui drops text-field focus on Escape before the focused-search guard runs, so
+the query remains uncleared. Replay that control in owner-managed validation;
+the failed local trial is closed and was not retried.
 
 Qualify the composer microphone with the pinned Qwen3-ASR 1.7B Q8_0 model on
 Windows ARM64: explicit permission, click-to-finish and 25-second completion,

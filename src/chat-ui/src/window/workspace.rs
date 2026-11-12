@@ -435,6 +435,7 @@ impl State {
                         .add(
                             egui::TextEdit::singleline(&mut self.conversation_search.text)
                                 .id(history_search::field_id())
+                                .align(egui::Align2::LEFT_CENTER)
                                 .desired_width((ui.available_width() - clear_width).max(24.0))
                                 .frame(egui::Frame::NONE)
                                 .return_key(None),
