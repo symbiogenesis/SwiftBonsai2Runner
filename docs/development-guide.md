@@ -316,7 +316,9 @@ Find retain exact source text and offsets. HTML and link-like text remain litera
 this bounded styling subset does not execute code or activate generated links.
 
 **Settings** opens a centered native modal with side navigation in wide windows
-and horizontal categories in narrow windows. Its **Response** page names the selected conversation
+and wrapping categories in narrow or short windows. A compact page title and
+close button sit above the controls; the scope stays visible while scrolling.
+Its **Response** page names the selected conversation
 under **This conversation**. The other pages state **All conversations · This
 device**:
 

@@ -270,7 +270,9 @@ unrerun under the closed trial's no-retry rule. Complete final analysis and nati
 device/assistive-technology acceptance in owner-managed validation.
 
 Qualify the native Settings modal on Windows ARM64 at normal and minimum window
-sizes, display scaling and high contrast. Verify Response names the selected
+sizes, display scaling and high contrast. Verify the compact category title,
+reduced card spacing and fixed scope/Close controls, including wrapping navigation
+in minimum and wide-but-short windows. Verify Response names the selected
 conversation, Voice/Privacy/Application state their app-wide scope, and the
 composer response summary opens Response. Confirm immediate setting persistence,
 generation locks, advanced adapter disclosure, inline setup/diagnostics,
@@ -279,6 +281,14 @@ focus return without changing drafts or triggering background Find, Send,
 generation Stop or conversation actions. Include selector Escape priority and
 the separate cancellation behavior for active input.
 Source fixtures do not close these actual-device acceptance gates.
+The compact-layout source review and formatting/whitespace checks passed. Its
+single five-minute model-free check stopped on three existing strict Clippy
+findings in `profile.rs` and `sidebar_status.rs`; the expanded Settings regressions
+and native captures were not run. The operation closed in under 100 seconds,
+including setup and temporary-log cleanup, with AC connected, battery saver off
+and 100% charge at both power snapshots. Endpoint snapshots do not prove
+uninterrupted conditions. Keep final analysis, focused regressions and rendered
+acceptance pending; the closed check was not retried.
 
 Qualify conversation Find keyboard and sidebar integration on Windows ARM64:
 Ctrl+F from the composer and sidebar, including the narrow drawer and an empty

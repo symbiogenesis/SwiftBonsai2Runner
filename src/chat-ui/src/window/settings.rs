@@ -29,16 +29,6 @@ impl Page {
             Self::Application => "Application",
         }
     }
-
-    const fn title(self) -> &'static str {
-        match self {
-            Self::Response => "Shape your next response",
-            Self::Appearance => "Make room to read",
-            Self::Voice => "A voice that feels right",
-            Self::Privacy => "Keep your space private",
-            Self::Application => "About your application",
-        }
-    }
 }
 
 #[derive(Default)]
@@ -137,9 +127,12 @@ impl State {
             return;
         }
         let content = ctx.content_rect();
-        let margin: i8 = if content.height() < 600.0 { 16 } else { 24 };
+        let margin: i8 = 16;
         let width = (f32::from(margin).mul_add(-2.0, content.width()) - 32.0).clamp(240.0, 800.0);
         let wide = width >= 700.0 && content.height() >= 560.0;
+        // Reserve the outer inset and footer; the page subtracts its actual
+        // heading, scope and (when narrow) wrapping navigation before scrolling.
+        let page_height = f32::from(margin).mul_add(-2.0, content.height()) - 88.0;
         let visuals = ctx.global_style().visuals.clone();
         let frame = egui::Frame::new()
             .fill(visuals.window_fill)
@@ -153,38 +146,26 @@ impl State {
             .backdrop_color(egui::Color32::from_black_alpha(150))
             .show(ctx, |ui| {
                 ui.set_width(width);
-                done |= settings_header(ui);
-                ui.add_space(16.0);
-                ui.separator();
-                ui.add_space(16.0);
+                ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Wrap);
+                ui.spacing_mut().item_spacing.y = 6.0;
+                ui.spacing_mut().button_padding = egui::vec2(10.0, 6.0);
                 if wide {
-                    let body_height = (f32::from(margin)
-                        .mul_add(-2.0, content.height() - ui.min_rect().height())
-                        - 80.0)
-                        .clamp(60.0, 470.0);
                     ui.horizontal_top(|ui| {
-                        ui.spacing_mut().item_spacing.x = 24.0;
+                        ui.spacing_mut().item_spacing.x = 16.0;
                         ui.vertical(|ui| {
-                            ui.set_width(156.0);
+                            ui.set_width(144.0);
                             self.settings_navigation(ui, false);
                         });
                         ui.vertical(|ui| {
                             ui.set_width(ui.available_width());
-                            self.settings_content(ui, body_height);
+                            done |= self.settings_page(ui, page_height, false);
                         });
                     });
                 } else {
-                    self.settings_navigation(ui, true);
-                    ui.add_space(16.0);
-                    let body_height = (f32::from(margin)
-                        .mul_add(-2.0, content.height() - ui.min_rect().height())
-                        - 80.0)
-                        .clamp(60.0, 470.0);
-                    self.settings_content(ui, body_height);
+                    done |= self.settings_page(ui, page_height, true);
                 }
-                ui.add_space(16.0);
+                ui.add_space(8.0);
                 ui.separator();
-                ui.add_space(12.0);
                 ui.horizontal(|ui| {
                     ui.label(RichText::new("Changes apply immediately.").small().weak());
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
@@ -195,7 +176,7 @@ impl State {
                                         .color(ui.visuals().selection.stroke.color),
                                 )
                                 .fill(ui.visuals().selection.bg_fill)
-                                .min_size(egui::vec2(84.0, 36.0))
+                                .min_size(egui::vec2(72.0, 34.0))
                                 .corner_radius(10),
                             )
                             .clicked();
@@ -220,22 +201,21 @@ impl State {
         };
         // A horizontal navigation row needs a bounded cross-axis; with_layout
         // would center its controls in the modal's entire remaining height.
-        ui.allocate_ui_with_layout(egui::vec2(ui.available_width(), 38.0), layout, |ui| {
+        ui.allocate_ui_with_layout(egui::vec2(ui.available_width(), 34.0), layout, |ui| {
             for page in Page::ALL {
                 if !horizontal && matches!(page, Page::Response | Page::Appearance) {
                     if page == Page::Appearance {
-                        ui.add_space(20.0);
+                        ui.add_space(12.0);
                     }
                     ui.label(
                         RichText::new(if page == Page::Response {
-                            "CONVERSATION"
+                            "Conversation"
                         } else {
-                            "ON THIS DEVICE"
+                            "On this device"
                         })
                         .small()
                         .weak(),
                     );
-                    ui.add_space(4.0);
                 }
                 let selected = self.settings_view.page == page;
                 let text = RichText::new(page.label()).color(if selected {
@@ -245,7 +225,7 @@ impl State {
                 });
                 let response = ui.add(
                     egui::Button::selectable(selected, text)
-                        .min_size(egui::vec2(button_width, 38.0))
+                        .min_size(egui::vec2(button_width, 34.0))
                         .wrap_mode(egui::TextWrapMode::Extend)
                         .corner_radius(10),
                 );
@@ -260,6 +240,45 @@ impl State {
         });
     }
 
+    fn settings_page(&mut self, ui: &mut egui::Ui, height: f32, horizontal_nav: bool) -> bool {
+        let close = settings_header(ui, self.settings_view.page.label());
+        if horizontal_nav {
+            self.settings_navigation(ui, true);
+        }
+        self.settings_scope(ui);
+        ui.add_space(4.0);
+        let body_height = (height - ui.min_rect().height()).clamp(60.0, 380.0);
+        self.settings_content(ui, body_height);
+        close
+    }
+
+    fn settings_scope(&self, ui: &mut egui::Ui) {
+        let page = self.settings_view.page;
+        ui.horizontal(|ui| {
+            ui.label(
+                RichText::new(if page == Page::Response {
+                    "This conversation"
+                } else {
+                    "All conversations · This device"
+                })
+                .small()
+                .weak(),
+            );
+            if page == Page::Response
+                && let Some(conversation) = self
+                    .conversations
+                    .iter()
+                    .find(|conversation| conversation.id == self.active_conversation)
+            {
+                ui.label(RichText::new("·").weak());
+                ui.add(
+                    egui::Label::new(RichText::new(&conversation.title).small().weak()).truncate(),
+                )
+                .on_hover_text(&conversation.title);
+            }
+        });
+    }
+
     fn settings_content(&mut self, ui: &mut egui::Ui, height: f32) {
         let page = self.settings_view.page;
         egui::ScrollArea::vertical()
@@ -267,42 +286,12 @@ impl State {
             .min_scrolled_height(height)
             .max_height(height)
             .auto_shrink([false, false])
-            .show(ui, |ui| {
-                ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Wrap);
-                ui.horizontal(|ui| {
-                    ui.label(
-                        RichText::new(if page == Page::Response {
-                            "This conversation"
-                        } else {
-                            "All conversations · This device"
-                        })
-                        .small()
-                        .color(ui.visuals().text_color()),
-                    );
-                    if page == Page::Response
-                        && let Some(conversation) = self
-                            .conversations
-                            .iter()
-                            .find(|conversation| conversation.id == self.active_conversation)
-                    {
-                        ui.label(RichText::new("·").weak());
-                        ui.add(
-                            egui::Label::new(RichText::new(&conversation.title).small().weak())
-                                .truncate(),
-                        )
-                        .on_hover_text(&conversation.title);
-                    }
-                });
-                ui.add_space(8.0);
-                ui.label(RichText::new(page.title()).strong().size(21.0));
-                ui.add_space(16.0);
-                match page {
-                    Page::Response => self.response_preferences(ui),
-                    Page::Appearance => self.appearance_preferences(ui),
-                    Page::Voice => self.voice_preferences(ui),
-                    Page::Privacy => settings_card(ui, |ui| self.recovery_controls(ui)),
-                    Page::Application => self.application_preferences(ui),
-                }
+            .show(ui, |ui| match page {
+                Page::Response => self.response_preferences(ui),
+                Page::Appearance => self.appearance_preferences(ui),
+                Page::Voice => self.voice_preferences(ui),
+                Page::Privacy => settings_card(ui, |ui| self.recovery_controls(ui)),
+                Page::Application => self.application_preferences(ui),
             });
     }
 
@@ -338,7 +327,7 @@ impl State {
                     .weak(),
             );
         });
-        ui.add_space(12.0);
+        ui.add_space(8.0);
         settings_card(ui, |ui| {
             ui.label(RichText::new("Reading comfort").strong());
             ui.add_space(12.0);
@@ -389,18 +378,20 @@ impl State {
     }
 
     fn response_preferences(&mut self, ui: &mut egui::Ui) {
-        ui.label(RichText::new("Applies only to this conversation. Changes affect the next response and every Extra effort pass.").small().weak());
+        ui.label(
+            RichText::new("Changes affect the next response and every Extra effort pass.")
+                .small()
+                .weak(),
+        );
         if self.model.busy() {
             ui.add_space(8.0);
             ui.label("Response controls unlock when the current response finishes.");
         }
-        ui.add_space(12.0);
+        ui.add_space(8.0);
         settings_card(ui, |ui| {
-            ui.label(RichText::new("Response style").strong());
-            ui.add_space(8.0);
             self.thinking_preferences(ui);
         });
-        ui.add_space(12.0);
+        ui.add_space(8.0);
         settings_card(ui, |ui| {
             egui::CollapsingHeader::new("Advanced response controls")
                 .id_salt("settings-advanced-response")
@@ -506,7 +497,7 @@ impl State {
                 ui.label("Finish or stop speech before changing the voice profile.");
             }
         });
-        ui.add_space(12.0);
+        ui.add_space(8.0);
         settings_card(ui, |ui| {
             ui.label(
                 RichText::new(if self.speech_output {
@@ -528,9 +519,9 @@ impl State {
 
     fn application_preferences(&mut self, ui: &mut egui::Ui) {
         settings_card(ui, |ui| self.update_controls(ui));
-        ui.add_space(12.0);
+        ui.add_space(8.0);
         settings_card(ui, |ui| self.runtime_controls(ui));
-        ui.add_space(12.0);
+        ui.add_space(8.0);
         settings_card(ui, |ui| {
             egui::CollapsingHeader::new("Diagnostics")
                 .id_salt("settings-diagnostics")
@@ -561,18 +552,15 @@ impl State {
     }
 }
 
-fn settings_header(ui: &mut egui::Ui) -> bool {
+fn settings_header(ui: &mut egui::Ui, title: &str) -> bool {
     let mut close = false;
     ui.horizontal(|ui| {
-        ui.vertical(|ui| {
-            ui.label(RichText::new("Settings").strong().size(24.0));
-            ui.label(RichText::new("A little more your own.").small().weak());
-        });
+        ui.label(RichText::new(title).strong().size(18.0));
         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
             close = ui
                 .add(
                     egui::Button::new(RichText::new("×").size(22.0))
-                        .min_size(egui::vec2(36.0, 36.0))
+                        .min_size(egui::vec2(34.0, 34.0))
                         .frame_when_inactive(false)
                         .corner_radius(10),
                 )
@@ -589,7 +577,7 @@ fn settings_card(ui: &mut egui::Ui, contents: impl FnOnce(&mut egui::Ui)) {
         .fill(ui.visuals().panel_fill)
         .stroke(ui.visuals().widgets.noninteractive.bg_stroke)
         .corner_radius(12)
-        .inner_margin(16)
+        .inner_margin(12)
         .show(ui, |ui| {
             ui.set_width(ui.available_width());
             contents(ui);

@@ -252,10 +252,15 @@ fn thinking_popup_capture_when_requested() -> io::Result<()> {
 
 #[test]
 fn settings_modal_keeps_navigation_and_dismissal_inside_small_and_large_windows() {
-    for size in [[1180.0, 860.0], [620.0, 640.0]] {
+    for size in [
+        [480.0, 480.0],
+        [620.0, 640.0],
+        [1180.0, 480.0],
+        [1180.0, 860.0],
+    ] {
         let mut chat = harness(size, false);
         open_settings(&mut chat);
-        for page in ["Response", "Voice", "Privacy", "Application"] {
+        for page in ["Response", "Appearance", "Voice", "Privacy", "Application"] {
             select_page(&mut chat, page);
             let scope = if page == "Response" {
                 "This conversation"
@@ -265,6 +270,7 @@ fn settings_modal_keeps_navigation_and_dismissal_inside_small_and_large_windows(
             assert!(chat.get_by_label(scope).rect().is_positive());
             for label in [
                 "Response",
+                "Appearance",
                 "Voice",
                 "Privacy",
                 "Application",
@@ -280,6 +286,20 @@ fn settings_modal_keeps_navigation_and_dismissal_inside_small_and_large_windows(
                         && rect.bottom() <= size[1],
                     "Settings control {label} on {page} escaped {size:?}: {rect:?}"
                 );
+            }
+            if page == "Response" {
+                let done = chat
+                    .get_by_role_and_label(egui::Role::Button, "Done")
+                    .rect();
+                for label in ["Thinking", "Extra effort"] {
+                    let rect = chat
+                        .get_by_role_and_label(egui::Role::CheckBox, label)
+                        .rect();
+                    assert!(
+                        rect.is_positive() && rect.top() >= 0.0 && rect.bottom() < done.top(),
+                        "Response control {label} is not initially visible at {size:?}: {rect:?}"
+                    );
+                }
             }
         }
         assert_eq!(chat.state().app.input, "Keep my next draft 🌱");
@@ -493,6 +513,7 @@ fn settings_modal_capture_when_requested() -> io::Result<()> {
     bonsai_windows_credentials::validate_external_path(&directory)?;
     std::fs::create_dir_all(&directory)?;
     for (name, size) in [
+        ("settings-response-minimum.png", [480.0, 480.0]),
         ("settings-response-wide.png", [1180.0, 860.0]),
         ("settings-response-narrow.png", [620.0, 640.0]),
     ] {
