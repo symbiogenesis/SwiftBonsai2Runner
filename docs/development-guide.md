@@ -34,6 +34,110 @@ Inventory and nonlaunching policy plans load no model and cannot promote default
 Owned UI inference/speech requires [native containment](sandboxing.md), whose
 actual-model and broker-only/same-user isolation limits still apply.
 
+## Implementation delivery
+
+[PLAN's execution map](../PLAN.md#execution-map) selects outstanding work; this
+section defines how to deliver it. Keep task state, prerequisites and acceptance
+requirements in PLAN instead of creating a second backlog. Identify whether the
+next action is implementation, integration, qualification, an owner/external
+dependency or conditional work before assigning it. Prefer connecting existing
+candidates and preparing their named gates over rebuilding equivalent helpers.
+
+### Candidate and worker ownership
+
+Choose a coherent candidate and record exact source and input identities before
+qualification: Runner and Prism revisions, compiler/channel/target, executable
+digests, runtime archive and file locks, model/representation, adapter/scale and
+the selected device/driver/kernel tuple. Integrate reviewed logical changes into
+local `main` before freezing it. A version number alone does not identify a
+candidate. Keep new implementation in separate worktrees while its predecessor
+is qualified; evaluate changed dependencies explicitly before reusing evidence.
+
+The active 0.1.23 bundle already contains efficiencies whose remaining work is
+qualification. The requested 0.1.24 binary repin requires its genuine source-bound
+published bundle. Still-newer local CPU candidates need their own source review,
+including the new `bonsai-neon-dot` release required by its detected-capability
+consumer. Do not make these three delivery identities interchangeable or require
+a future repin for behavior already consumed by Runner. The [runtime lock update](#prepare-a-runtime-lock-update)
+and [CPU contract](cpu-kernels.md) own the exact verification steps.
+
+Use one integrator and at most three implementation workers. Assign disjoint
+files and explicit producer/consumer interfaces from application lifecycle and
+distribution, Prism runtime work, speech integration or qualification tooling.
+Each worker uses its own Git worktree, owns a bounded change and commits each
+logical change separately. Give shared dependency/release pins, receipt schemas,
+workflow contracts and final serving integration a single owner. Agree interface
+changes before dependent implementation and review consumer effects before
+integrating the producer. Reassign completed workers to the next unblocked task;
+independent fixture replay and human-review preparation can proceed while source
+or external provenance is pending.
+
+The integrator reviews and integrates completed commits into each repository's
+local `main`, preserving the owner's work and the exact qualification candidate.
+Workers report commands, results, limits and remaining gates when their local
+work finishes. They never push, open routine delivery PRs, dispatch/query/poll CI
+or wait for an owner verdict to count local implementation as complete. Hosted
+and device acceptance remain pending until their owning evidence exists.
+
+### Speech integration interfaces
+
+Agree these boundaries before parallel work on the existing Rust candidates.
+They describe implementation contracts, not a claim that the serving path has
+already migrated from `native::Context`.
+
+| Work owner | Producer/consumer contract | Required ownership and acceptance |
+| --- | --- | --- |
+| Verified loading and Talker/CodePredictor | Immutable tensor views bind model/codec locks, shapes, dtype, transform metadata and approved adapter identity to the runtime consumer. | Retain file guards and model lifetimes; define cache/state, sampler progression and transactional cancellation/rollback. Qualify full serving integration and actual-model parity. |
+| Codec and speaker streaming | Explicit sample rate, channel/frame geometry, bounded PCM chunks and reference/bootstrap inputs connect speaker extraction, codec state and synthesis. | One owner controls mutable stream/cache state and teardown. Preserve Design-before-Base release, bounds and independent audio/lifecycle/resource review. |
+| Native Rust RPC | Typed operation/tensor/stride descriptors connect the verified model path to supported signed FastRPC execution. | Preserve the documented `libcdsprpc.dll` driver boundary, in-flight buffer lifetime, terminal completion and verified teardown. Header serialization alone is not dispatch or a completion fence. |
+| Final serving integration | The existing speech service and native UI consume one qualified pipeline through their current bounded contracts. | One integrator owns service wiring, cancellation and cache invalidation; interface completion cannot waive full pinned-model, listening or resource gates. |
+
+Prepare and qualify the ordinary Q4 baseline first while retaining the Q8
+control. Ternary Talker artifacts, new 48 kHz model locks and signed offload keep
+their separate prerequisites and qualification after baseline integration.
+Canary ASR remains a separate complete Rust-engine replacement, including its
+artifact, transcript/state, cancellation, lifecycle, quality and resource gates.
+Remove C++/native dependencies and compiler provisioning only under the
+[file-family retirement contract](cpp-retirement.md). All presentation remains
+native Rust under the [UI contract](ui-architecture.md).
+
+### Qualification reuse and owner handoff
+
+Reuse existing deadline, power, identity, typed receipt and selected-archive
+machinery. Extend shared fixtures for complete committed state, logits,
+KV/GDN/convolution ownership, adapter identity, sampler progression and failure
+recovery, with explicit mappings to each prefix/prefill/speculation/accelerator
+path's assertions. Reuse of tooling or applicable immutable data never makes one
+path's pass qualify another. Keep independent-owner controls, per-arm power and
+all named replay inputs. The [validation contract](validation.md) and
+[native acceptance admission](../tools/ci/README.md#native-acceptance-admission)
+own the current schemas and gates.
+
+Deliver one concrete owner handoff for a candidate, using the ordinary delivery
+message unless a durable acceptance record is required. Include:
+
+1. Reviewed local commits and exact Runner/Prism/compiler/artifact identities,
+   with the candidate's PLAN IDs and any source still awaiting publication.
+2. Exact owner commands, source refs, workflow names/inputs and their order;
+   distinguish source publication, hosted preparation, device work and release
+   publication. Use [release commands](releases.md) and the owning workflow
+   guides, with concrete reviewed values instead of an unreviewed latest ref.
+3. Expected asset/package names, receipt schemas and required digest checks,
+   plus rollback identities. Acceptance consumes its own same-run package;
+   caching compiler outputs never reuses another run's verdict or receipt.
+4. The fixed device workload, conservative estimate and smallest supported
+   allowance declared before setup; aggregate/per-arm power observations,
+   independent owners and cleanup/evidence reserves retain their existing limits.
+5. Local commands/results/limits, every pending hosted/device/human gate and
+   the explicitly selected credential-free evidence with its durable destination
+   and independently retained retrieval digest when archival is required.
+
+The owner performs every push and owns CI dispatch, monitoring and verdicts
+under AGENTS.md. Preparation leaves no authorization to start a device job.
+Retain losing/no-go outcomes and closed clocks; use the existing selected-receipt
+staging and `evidence-archive` operations under [evidence retention](validation.md#evidence-retention)
+instead of duplicating captures or inventing empty evidence records.
+
 ## Native chat app
 
 The [portable package workflow](chat-packages.md) installs reviewed prebuilt app

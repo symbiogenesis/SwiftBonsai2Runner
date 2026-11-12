@@ -3,6 +3,62 @@
 This is the single backlog. [Technical docs](docs/README.md) own current behavior,
 contracts, commands and evidence; completed work belongs in Git history.
 
+## Execution map
+
+Use this index to choose the next unblocked action in the detailed work below.
+The states describe work remaining: **implementation** needs production code;
+**integration** needs an existing candidate connected to its consumer;
+**qualification** needs the named evidence; **owner** needs publication or an
+owner-operated workflow; **external** needs unavailable authenticated inputs;
+**conditional** retains its existing activation condition. A candidate or local
+check is never a qualification pass. Update the state and prerequisite here when
+the corresponding detailed task changes; keep every acceptance obligation below.
+
+| ID / next state | Owning repository | Prerequisite | Next action and acceptance gate |
+| --- | --- | --- | --- |
+| C1 / owner | Runner | Reviewed local CI corrections and startup preflight | Publish through the owner and qualify Source checks and Foundation on that source; see [publication prerequisites](#publication-and-qualification-prerequisites). |
+| A1 / qualification | Runner with pinned Prism | C1 and an exact-source acceptance package | Qualify Rust/PQ2 DX12 startup, readiness, Stop/Retry, recovery and explicit publisher rollback under [actual-model acceptance](#actual-model-acceptance). |
+| R1 / owner, integration | Prism, then Runner | Published source-bound 0.1.24 bundle | Verify source/archive/nine-file identities, repin and prepare active-release acceptance. Keep newer local CPU candidates and their helper-publication prerequisite separately identified under [CPU kernels](#cpu-kernels). |
+| R2 / qualification | Prism, then Runner | Settled candidate, required helper release and owning hosted checks | Close CPU/prefill codegen, fallback, state/adapter/cancellation and matched selected-device benefit gates, with independent X1 evidence where selected. Qualify changes already consumed in 0.1.23 without requiring another repin; see [runtime correctness](#runtime-and-correctness). |
+| R3 / integration, qualification | Prism and Runner harnesses | Agreed execution/state identities and existing complete-state fixtures | Prepare shared state/restore and fault-control tooling independently of runtime qualification; map each prefix/prefill/speculation/accelerator path to its independent assertions and evidence. |
+| S1 / implementation, integration | Runner; Prism for shared runtime/RPC consumers | Agreed verified-loading, state, stream and transport ownership interfaces | Integrate Talker/CodePredictor, codec/speaker and signed Rust RPC through [C++ retirement](#complete-c-retirement); qualify the ordinary Q4 baseline before ternary speech and new 48 kHz artifacts. |
+| S2 / implementation, qualification | Runner | Authenticated Canary artifacts and replacement controls | Replace ASR's native engine and close transcript/state, cancellation, lifecycle, quality and resource gates before removing its compiler/dependency paths. |
+| P1 / external, qualification | Prism and Runner | Original authoring inputs for provenance; hosted public-pack reconstruction for its separate gate | Run the declared reconstruction and independent replay while pursuing provenance intake independently; follow the PTQ1 critical path below. Neither blocks A1. |
+| N1 / qualification | Prism and Runner | Frozen NPU-1 packet and applicable signed/runtime prerequisites | Complete [NPU-1 through NPU-7](#promotion-sequence) for the selected explicit X2 profile. HMX/PTQ1/X1/GPU/automatic selection retain their separate later gates. |
+| Q1 / qualification | Runner and independent human reviewers | Exact complete-answer/audio captures and declared rubric | Prepare the [creative and speech](#creative-quality-adapters-and-memory) review packets in parallel with source work; retained output can support applicable review without another device capture. |
+| D1 / owner, qualification | Runner | Reviewed source, exact release assets and C1 | Publish the first MSI/updater and close installed update, clean-machine, isolation and rollback acceptance; deploy and retrieve the selected [durable evidence](#durable-qualification-evidence). |
+| F1 / conditional | As specified in each detailed section | Its existing measured need, compatible artifact or release trigger | Retain precision research, broader profiles, optional agents, future Qwen migration and deferred Prism/dependency work in full; activation conditions and ordering remain unchanged. |
+
+Freeze one coherent qualification candidate after its reviewed logical commits are
+integrated into local `main`: exact Runner/Prism revisions, compiler, release bytes,
+locks, model/adapter and selected device/driver/kernel identities. Separate the
+current 0.1.23 application packet, the requested 0.1.24 delivery, and any newer local
+source candidate. Reuse tools and immutable inputs where their contracts permit;
+never transfer a pass across changed identities or substitute a historical packet.
+Continue later implementation in separate worktrees while that candidate is
+qualified. Relevant changes require an explicit applicability review and fresh
+evidence where affected, without reopening closed workloads.
+
+Run at most three implementation workers beside one integrator, assigning
+disjoint files/interfaces from the application, runtime, speech or qualification
+tooling work. Each worker uses an individual Git worktree and one commit per
+logical change. The integrator owns shared pins, workflow contracts and final
+serving integration, reviews each commit and leaves integrated changes on local
+`main`. Use the [delivery workflow](docs/development-guide.md#implementation-delivery)
+for candidate selection, speech interfaces and one concrete owner handoff. Local
+completion does not wait for CI, and no fan-out pushes or operates CI.
+
+## Publication and qualification prerequisites
+
+Have the owner qualify the native acceptance build cache, shared regression
+runner and early checked-tools producer on their final source. Verify cache hit,
+miss and relevant-input invalidation without reusing acceptance receipts or
+skipping checks; preserve fresh same-run packages and rejection of missing or
+failed named controls. Confirm Foundation's consumers verify the producer's
+source/digests and all original maintenance, speech and integration obligations
+remain required by the aggregate gate. Local checks close none of those hosted,
+actual-model or performance gates.
+
 Have the owner push the local CI corrections and confirm Markdown standards and
 Foundation on the resulting source. The [bounded local check record](docs/evidence/ci-fixes-20261112/retained.json)
 keeps local validation separate from pending hosted acceptance.
