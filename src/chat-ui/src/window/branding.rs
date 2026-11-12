@@ -1,8 +1,31 @@
-//! Compact seedling drawn as native vectors, inspired by the README's sprout.
+//! Compact sidebar identity with the README-inspired native vector seedling.
 use super::egui;
 use egui::{Color32, Pos2, Stroke, epaint::CubicBezierShape};
 
-pub(super) fn mark(ui: &mut egui::Ui) {
+pub(super) fn logo(ui: &mut egui::Ui) {
+    let mut wording = egui::text::LayoutJob::default();
+    for text in [
+        egui::RichText::new("SwiftBonsai2").strong().size(14.0),
+        egui::RichText::new(" - Your private, local AI companion")
+            .size(12.0)
+            .weak(),
+    ] {
+        text.append_to(
+            &mut wording,
+            ui.style(),
+            egui::FontSelection::Default,
+            egui::Align::Center,
+        );
+    }
+    ui.horizontal(|ui| {
+        ui.spacing_mut().item_spacing.x = 8.0;
+        mark(ui);
+        // Keep every word visible at the minimum sidebar width.
+        ui.add(egui::Label::new(wording).wrap());
+    });
+}
+
+fn mark(ui: &mut egui::Ui) {
     let (rect, response) = ui.allocate_exact_size(egui::Vec2::splat(26.0), egui::Sense::hover());
     response.widget_info(|| {
         egui::WidgetInfo::labeled(egui::Role::Image, ui.is_enabled(), "SwiftBonsai2")

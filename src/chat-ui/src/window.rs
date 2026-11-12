@@ -1394,10 +1394,8 @@ impl State {
             ui.ctx().request_repaint();
         }
         ui.add_space(4.0);
-        if !self.sidebar_open {
-            branding::mark(ui);
-            ui.add_space(4.0);
-        }
+        branding::logo(ui);
+        ui.add_space(4.0);
         if ui
             .add_enabled(
                 self.model.workspace_available(),
