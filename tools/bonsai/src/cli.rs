@@ -169,9 +169,95 @@ pub fn chat(arguments: &[OsString]) -> crate::Result<Value> {
     Ok(Value::Object(request))
 }
 
+/// Builds a verified installed-package launch without a source checkout.
+///
+/// # Errors
+/// Rejects source-build/executable overrides, malformed options and missing paths.
+pub fn installed_chat(arguments: &[OsString]) -> crate::Result<Value> {
+    let (installation, arguments) = match arguments {
+        [option, directory, rest @ ..] if option == "--installation-directory" => {
+            (PathBuf::from(directory), rest)
+        }
+        _ => {
+            let executable = std::env::current_exe().map_err(|error| error.to_string())?;
+            let directory = executable
+                .parent()
+                .and_then(Path::parent)
+                .ok_or("Missing installed maintenance executable directory.")?;
+            (directory.to_path_buf(), arguments)
+        }
+    };
+    if !installation.is_absolute() {
+        return Err("Installation directory must be expanded and absolute.".into());
+    }
+    let mut options = chat_options(arguments)?;
+    for key in options.keys() {
+        if !matches!(
+            key.as_str(),
+            "DataDirectory"
+                | "NoSpeechModels"
+                | "NoTts"
+                | "NoAbliterateLora"
+                | "UseRepackedPtq1"
+                | "NativeEngine"
+                | "NativeRowWorkers"
+                | "TtsQuantization"
+                | "TtsThreads"
+                | "FrontendPort"
+                | "BackendPort"
+                | "CanaryPort"
+                | "TtsPort"
+        ) {
+            return Err(format!("Unsupported installed launch option: {key}"));
+        }
+    }
+    if !options.contains_key("DataDirectory") {
+        let data = PathBuf::from(
+            std::env::var_os("LOCALAPPDATA")
+                .ok_or("Supply --data-directory or set LOCALAPPDATA.")?,
+        )
+        .join("SwiftBonsai2");
+        options.insert(
+            "DataDirectory".into(),
+            serde_json::to_value(data).map_err(|error| error.to_string())?,
+        );
+    }
+    Ok(serde_json::json!({
+        "operation": "start", "installationDirectory": installation, "options": options
+    }))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn installed_chat_preserves_options_and_rejects_source_overrides() -> crate::Result<()> {
+        let root = std::env::temp_dir().join("Bonsai installed package");
+        let prefix = vec![
+            "--installation-directory".into(),
+            root.clone().into_os_string(),
+            "--data-directory".into(),
+            root.join("user data").into_os_string(),
+        ];
+        let mut arguments = prefix.clone();
+        arguments.extend(["--no-speech-models".into(), "--publisher-engine".into()]);
+        let request = installed_chat(&arguments)?;
+        assert_eq!(request["operation"], "start");
+        assert_eq!(request["installationDirectory"], serde_json::json!(root));
+        assert_eq!(request["options"]["NativeEngine"], false);
+        assert_eq!(request["options"]["NoSpeechModels"], true);
+        for forbidden in ["--repository-root", "--chat-path", "--broker-path"] {
+            let mut arguments = prefix.clone();
+            arguments.extend([forbidden.into(), root.clone().into_os_string()]);
+            assert!(installed_chat(&arguments).is_err());
+        }
+        let mut arguments = prefix;
+        arguments.push("--force-build".into());
+        assert!(installed_chat(&arguments).is_err());
+        assert!(installed_chat(&["--installation-directory".into(), "relative".into()]).is_err());
+        Ok(())
+    }
 
     #[test]
     fn bounded_input_rejects_nonobjects_truncation_and_overflow() -> crate::Result<()> {

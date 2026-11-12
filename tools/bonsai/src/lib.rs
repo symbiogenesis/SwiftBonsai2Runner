@@ -7,6 +7,7 @@ pub type Result<T> = std::result::Result<T, String>;
 /// Commands exposed by the maintenance executable and its checked bootstrap receipts.
 pub const COMMANDS: &[&str] = &[
     "chat",
+    "installed-chat",
     "hexagon-tools",
     "build-tools",
     "provision",
