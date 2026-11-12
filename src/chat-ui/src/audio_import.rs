@@ -71,6 +71,7 @@ const CONVERSION_LIMIT: Duration = Duration::from_secs(45);
 const POLL: Duration = Duration::from_millis(10);
 type ImportResult = Result<Option<Vec<u8>>, &'static str>;
 
+#[derive(Clone, Copy)]
 pub(crate) enum Source {
     Picker { owner: isize },
     Clipboard,
@@ -262,7 +263,7 @@ fn pick_file(owner: isize, shared: &Shared) -> Result<Option<PathBuf>, &'static 
     let filter: Vec<u16> = "Audio files (*.mp3;*.wav;*.m4a;*.aac;*.flac;*.wma)\0*.mp3;*.wav;*.m4a;*.aac;*.flac;*.wma\0\0".encode_utf16().collect();
     let title: Vec<u16> = "Add audio prompt\0".encode_utf16().collect();
     let mut dialog = OPENFILENAMEW {
-        lStructSize: u32::try_from(std::mem::size_of::<OPENFILENAMEW>())
+        lStructSize: u32::try_from(size_of::<OPENFILENAMEW>())
             .map_err(|_| CODEC_FAILURE)?,
         hwndOwner: owner as HWND,
         lpstrFile: name.as_mut_ptr(),
@@ -281,7 +282,7 @@ fn pick_file(owner: isize, shared: &Shared) -> Result<Option<PathBuf>, &'static 
     };
     // SAFETY: All pointers refer to owned buffers live for this synchronous call;
     // no multiselect is requested and Shared outlives every picker hook callback.
-    let selected = unsafe { GetOpenFileNameW(&mut dialog) };
+    let selected = unsafe { GetOpenFileNameW(&raw mut dialog) };
     shared.dialog.store(0, Ordering::Release);
     if shared.cancelled.load(Ordering::Acquire) {
         return Err(CANCELLED);
