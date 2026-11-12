@@ -55,6 +55,12 @@ collector-required intermediate files or receipt formats.
 Each worker in a parallel fan-out must use its own individual Git worktree.
 Within each worktree, place each logical change in its own individual commit.
 
+# GitHub tooling
+
+Prefer the `gh` CLI for GitHub-related work when it is available, including
+repository, issue, release and Actions inspection or management. Use it within
+the owner's authorized scope and the push, pull-request and CI rules below.
+
 # Runner repository workflow
 
 Never push anything, including `main`, branches or tags, directly or through
