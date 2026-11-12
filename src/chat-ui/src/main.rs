@@ -18,6 +18,8 @@ mod canary;
 #[cfg(windows)]
 mod client;
 #[cfg(windows)]
+mod context;
+#[cfg(windows)]
 mod http;
 #[cfg(windows)]
 mod native_speech;

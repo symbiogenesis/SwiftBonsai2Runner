@@ -12,6 +12,8 @@ pub(super) struct ConversationSnapshot {
     pub(super) transcript: Transcript,
     #[serde(deserialize_with = "super::persistence::deserialize_history")]
     pub(super) committed: Vec<client::Message>,
+    #[serde(skip)]
+    pub(super) context_history: Option<usize>,
     pub(super) input: String,
     pub(super) last_answer: String,
     pub(super) retained_draft: String,
@@ -76,6 +78,7 @@ impl State {
         ConversationSnapshot {
             transcript: std::mem::take(&mut self.transcript),
             committed: std::mem::take(&mut self.committed),
+            context_history: self.context_history.take(),
             input: std::mem::take(&mut self.input),
             last_answer: std::mem::take(&mut self.last_answer),
             retained_draft: std::mem::take(&mut self.retained_draft),
@@ -109,6 +112,7 @@ impl State {
     pub(super) fn clear_conversation(&mut self) {
         self.transcript.clear();
         self.committed.clear();
+        self.context_history = None;
         self.input.clear();
         self.last_answer.clear();
         self.retained_draft.clear();
@@ -126,6 +130,7 @@ impl State {
     pub(super) fn load_conversation(&mut self, snapshot: ConversationSnapshot) {
         self.transcript = snapshot.transcript;
         self.committed = snapshot.committed;
+        self.context_history = snapshot.context_history;
         self.input = snapshot.input;
         self.last_answer = snapshot.last_answer;
         self.retained_draft = snapshot.retained_draft;
@@ -202,6 +207,7 @@ impl State {
     const fn swap_conversation(&mut self, saved: &mut ConversationSnapshot) {
         std::mem::swap(&mut self.transcript, &mut saved.transcript);
         std::mem::swap(&mut self.committed, &mut saved.committed);
+        std::mem::swap(&mut self.context_history, &mut saved.context_history);
         std::mem::swap(&mut self.input, &mut saved.input);
         std::mem::swap(&mut self.last_answer, &mut saved.last_answer);
         std::mem::swap(&mut self.retained_draft, &mut saved.retained_draft);

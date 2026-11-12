@@ -43,12 +43,7 @@ pub(crate) struct Estimate {
 
 impl Estimate {
     /// Combine a cached committed-history estimate with the current draft/options.
-    pub(crate) fn new(
-        history: usize,
-        draft: &str,
-        output_cap: u32,
-        extra_effort: bool,
-    ) -> Self {
+    pub(crate) fn new(history: usize, draft: &str, output_cap: u32, extra_effort: bool) -> Self {
         let draft = text_tokens(draft.trim()).saturating_add(NEXT_TURN_FRAMING_TOKENS);
         let workflow = if extra_effort {
             EFFORT_PLANNING_TOKENS
@@ -102,8 +97,8 @@ impl Estimate {
     ///
     /// This is an explicit user action suggestion, never a promise of admission.
     pub(crate) fn suggested_cap(self) -> Option<u32> {
-        let available = CONTEXT_TOKENS
-            .saturating_sub(self.prompt_tokens().saturating_add(RESERVE_TOKENS));
+        let available =
+            CONTEXT_TOKENS.saturating_sub(self.prompt_tokens().saturating_add(RESERVE_TOKENS));
         OUTPUT_CAPS.into_iter().rev().find(|&cap| {
             usize::try_from(cap).is_ok_and(|cap| cap < self.output && cap <= available)
         })

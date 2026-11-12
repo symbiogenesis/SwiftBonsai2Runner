@@ -20,6 +20,7 @@ use std::{
 mod audio_files;
 #[cfg(test)]
 mod background_tests;
+mod context_capacity;
 mod graphics;
 #[cfg(test)]
 mod interaction_tests;
@@ -103,6 +104,8 @@ struct State {
     input: String,
     transcript: Transcript,
     committed: Vec<client::Message>,
+    context_history: Option<usize>,
+    context_draft: context_capacity::DraftCache,
     conversations: Vec<Conversation>,
     active_conversation: u64,
     request_conversation: Option<u64>,
@@ -199,6 +202,8 @@ impl State {
             input: String::new(),
             transcript: Transcript::default(),
             committed: Vec::new(),
+            context_history: None,
+            context_draft: context_capacity::DraftCache::default(),
             conversations: vec![Conversation::new(1)],
             active_conversation: 1,
             request_conversation: None,
@@ -529,6 +534,7 @@ impl State {
         if self.rename_conversation.is_some()
             || self.delete_conversation.is_some()
             || self.edit_message.is_some()
+            || egui::Popup::is_any_open(ctx)
         {
             return;
         }
@@ -769,6 +775,7 @@ impl State {
         }
         self.transcript.bind_committed(&self.committed, &history);
         self.committed = history;
+        self.context_history = None;
     }
 
     fn stopping_response(&mut self, text: &str) {
@@ -1828,7 +1835,7 @@ impl State {
                     .corner_radius(14)
                     .inner_margin(14)
                     .show(ui, |ui| {
-                        let label = ui.label(RichText::new("Message").small().weak());
+                        let label = self.context_toolbar(ui);
                         // A pasted manuscript must not push the transcript and
                         // Send/Stop controls outside the window. TextEdit keeps
                         // the caret visible within this native scroll area.
@@ -1929,6 +1936,7 @@ impl State {
                         if self.rename_conversation.is_none()
                             && self.delete_conversation.is_none()
                             && self.edit_message.is_none()
+                            && !egui::Popup::is_any_open(ui.ctx())
                             && response.has_focus()
                             && !self.composing
                             && !ime_event
