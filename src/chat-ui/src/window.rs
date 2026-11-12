@@ -17,6 +17,7 @@ use std::{
     time::{Duration, Instant},
 };
 
+mod audio_files;
 #[cfg(test)]
 mod background_tests;
 mod graphics;
@@ -136,6 +137,12 @@ struct State {
     speech: Option<speech::Session>,
     speech_checked: bool,
     speech_input: bool,
+    audio_file_input: bool,
+    audio_import: Option<crate::audio_import::Session>,
+    audio_file_generation: u64,
+    audio_file_active: bool,
+    native_owner: Option<isize>,
+    audio_paste: Option<crate::audio_import::PasteHook>,
     speech_output: bool,
     canary_configured: bool,
     tts_configured: bool,
@@ -226,6 +233,12 @@ impl State {
             speech,
             speech_checked,
             speech_input: false,
+            audio_file_input: false,
+            audio_import: None,
+            audio_file_generation: 0,
+            audio_file_active: false,
+            native_owner: None,
+            audio_paste: None,
             speech_output: false,
             canary_configured: config.is_some_and(|config| config.canary.is_some()),
             tts_configured: config.is_some_and(|config| config.qwen_tts.is_some()),
@@ -777,6 +790,7 @@ impl State {
             return true;
         }
         self.speech_input = false;
+        self.audio_file_input = false;
         self.speech_output = false;
         self.cancel_microphone();
         self.speaking = false;
@@ -806,6 +820,10 @@ impl State {
     }
 
     fn cancel_microphone(&mut self) {
+        if let Some(import) = &self.audio_import {
+            import.cancel();
+        }
+        self.audio_file_active = false;
         if let Some(session) = &self.speech {
             session.set_input_generation(None);
             let _result = session.commands.send(speech::Command::StopListening);
@@ -945,6 +963,7 @@ impl State {
                 Err(mpsc::TryRecvError::Disconnected) => {
                     self.speech_checked = true;
                     self.speech_input = false;
+                    self.audio_file_input = false;
                     self.speech_output = false;
                     self.cancel_microphone();
                     self.speaking = false;
@@ -965,6 +984,7 @@ impl State {
             speech::Event::Capabilities { input, output } => {
                 self.speech_checked = true;
                 self.speech_input = input && self.microphone.is_some();
+                self.audio_file_input = input;
                 self.speech_output = output;
                 match (self.speech_input, output) {
                     (true, true) => "Microphone and read aloud are ready.",
@@ -1067,6 +1087,7 @@ impl State {
         {
             return;
         }
+        let from_file = self.audio_file_active;
         self.cancel_microphone();
         let text = text.trim();
         if text.is_empty() {
@@ -1084,11 +1105,20 @@ impl State {
         {
             self.submit();
             if self.model.busy() {
-                "Voice message transcribed and sent.".clone_into(&mut self.speech_status);
+                if from_file {
+                    "Audio file transcribed and sent."
+                } else {
+                    "Voice message transcribed and sent."
+                }
+                .clone_into(&mut self.speech_status);
             }
         } else {
-            "Voice message transcribed. Select Send when the model is ready."
-                .clone_into(&mut self.speech_status);
+            if from_file {
+                "Audio file transcribed. Select Send when the model is ready."
+            } else {
+                "Voice message transcribed. Select Send when the model is ready."
+            }
+            .clone_into(&mut self.speech_status);
         }
         self.focus_composer = true;
     }
@@ -1153,6 +1183,9 @@ impl State {
     }
 
     fn poll_microphone(&mut self) {
+        if self.audio_file_active {
+            return;
+        }
         let previous = self.speech_status.clone();
         let Some(microphone) = &mut self.microphone else {
             return;
@@ -1187,6 +1220,7 @@ impl State {
 
 impl Drop for State {
     fn drop(&mut self) {
+        self.audio_paste.take();
         self.updates.take();
         self.startup_request.take();
         self.startup.take();
@@ -1902,6 +1936,7 @@ impl State {
                             self.submit();
                         }
                         ui.horizontal_wrapped(|ui| {
+                            self.audio_file_button(ui);
                             self.read_aloud_controls(ui);
                             ui.with_layout(
                                 egui::Layout::right_to_left(egui::Align::Center),
@@ -2081,7 +2116,10 @@ impl eframe::App for State {
         {
             self.focus_composer = true;
         }
+        self.prepare_audio_paste(frame);
         self.handle_input_shortcuts(ctx);
+        self.handle_audio_paste(ctx);
+        self.poll_audio_import();
         self.poll_microphone();
         self.drain_speech_events();
         self.poll_recovery();
@@ -2097,6 +2135,7 @@ impl eframe::App for State {
                 && (self.model.waiting_model()
                     || self.speaking
                     || self.dictation_requested
+                    || self.audio_import.is_some()
                     || !self.speech_checked));
         ctx.request_repaint_after(if active_generation {
             Duration::from_millis(16)

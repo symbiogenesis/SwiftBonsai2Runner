@@ -6,6 +6,12 @@
 )]
 
 #[cfg(windows)]
+#[allow(
+    unsafe_code,
+    reason = "Audited native file picker, file clipboard and Windows audio conversion boundary."
+)]
+mod audio_import;
+#[cfg(windows)]
 mod bounded_json;
 #[cfg(windows)]
 mod canary;

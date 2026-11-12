@@ -1127,3 +1127,20 @@ fn real_text_selection_does_not_leak_when_conversation_message_ids_repeat() {
             .has_selection()
     );
 }
+
+#[test]
+fn audio_file_plus_is_accessible_and_remains_inside_the_composer() {
+    for size in [[1180.0, 860.0], [620.0, 640.0]] {
+        let mut chat = harness(size, false);
+        let add = chat.get_by_role_and_label(egui::Role::Button, "Add audio file");
+        let microphone = chat.get_by_role_and_label(egui::Role::Button, "Microphone");
+        assert!(add.rect().is_positive());
+        assert!(add.rect().left() >= 0.0 && add.rect().bottom() <= size[1]);
+        assert!(add.rect().center().x < microphone.rect().center().x);
+        add.click();
+        chat.run();
+        assert!(chat.get_by_label("Audio file setup").rect().is_positive());
+        assert!(chat.state().app.microphone.is_none());
+        assert!(chat.state().commands.try_recv().is_err());
+    }
+}
