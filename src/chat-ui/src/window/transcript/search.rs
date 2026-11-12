@@ -90,6 +90,10 @@ pub(super) struct Search {
 }
 
 impl Search {
+    pub(super) const fn is_open(&self) -> bool {
+        !matches!(self.visibility, Visibility::Closed)
+    }
+
     pub(super) const fn focus(&mut self) {
         self.visibility = Visibility::Focus;
     }

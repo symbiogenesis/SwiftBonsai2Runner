@@ -1934,8 +1934,14 @@ impl State {
         let narrow = ui.available_width() < navigation::DOCK_THRESHOLD;
         self.docked_navigation(ui, narrow);
         let horizontal_margin = if narrow { 12 } else { 24 };
+        let find_open = self.transcript.find_open();
         egui::CentralPanel::default()
-            .frame(egui::Frame::new().inner_margin(egui::Margin::symmetric(horizontal_margin, 12)))
+            .frame(egui::Frame::new().inner_margin(egui::Margin {
+                left: horizontal_margin,
+                right: horizontal_margin,
+                top: if find_open { 12 } else { 0 },
+                bottom: 12,
+            }))
             .show(ui, |ui| {
                 self.conversation_notices(ui);
                 egui::Panel::bottom("composer-panel")
@@ -1947,11 +1953,13 @@ impl State {
                     }))
                     .show(ui, |ui| self.composer(ui));
                 let empty = self.transcript.messages.is_empty();
-                let closed_find = ui
-                    .push_id(("conversation-find", self.active_conversation), |ui| {
-                        self.transcript.search_bar(ui)
-                    })
-                    .inner;
+                // Even an empty Find scope advances egui's layout cursor.
+                let closed_find = find_open
+                    && ui
+                        .push_id(("conversation-find", self.active_conversation), |ui| {
+                            self.transcript.search_bar(ui)
+                        })
+                        .inner;
                 if closed_find {
                     self.focus_composer = true;
                     ui.ctx().request_repaint();
@@ -1964,7 +1972,9 @@ impl State {
                         if empty {
                             self.empty_state(ui);
                         } else {
-                            ui.add_space(20.0);
+                            if find_open {
+                                ui.add_space(20.0);
+                            }
                             let width = ui.available_width().min(self.appearance.column_width());
                             let margin = ((ui.available_width() - width) * 0.5).max(0.0);
                             ui.horizontal(|ui| {

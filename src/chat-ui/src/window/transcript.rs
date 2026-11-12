@@ -348,6 +348,10 @@ impl Transcript {
         text
     }
 
+    pub(super) const fn find_open(&self) -> bool {
+        self.search.is_open()
+    }
+
     pub(super) const fn focus_find(&mut self) {
         self.search.focus();
     }
