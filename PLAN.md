@@ -292,6 +292,8 @@ Verify the compact main-header SwiftBonsai2 name and small companion tagline,
 including name-only narrow layouts and preview/generation status substitutions.
 Confirm the compact footer keeps model, conversation-saving and privacy status
 on one line at minimum sidebar width, with full hover and accessible descriptions.
+Check the eight-point bottom inset in both docked and drawer layouts, with the
+drawer still filling the window height.
 Verify centered group spacing, stable model/history/privacy order, the outline
 privacy lock and the custom calendar to the left of History: a checkmark when
 saving is on and a slash when off. Verify legibility and theme contrast at normal

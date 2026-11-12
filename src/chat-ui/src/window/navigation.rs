@@ -2,6 +2,12 @@
 use super::{RichText, State, appearance, egui};
 
 pub(super) const DOCK_THRESHOLD: f32 = 900.0;
+const SIDEBAR_MARGIN: egui::Margin = egui::Margin {
+    left: 16,
+    right: 16,
+    top: 16,
+    bottom: 8,
+};
 
 impl State {
     pub(super) fn attach_appearance(
@@ -104,7 +110,7 @@ impl State {
             .frame(
                 egui::Frame::new()
                     .fill(ui.visuals().window_fill)
-                    .inner_margin(16),
+                    .inner_margin(SIDEBAR_MARGIN),
             )
             .show(ui, |ui| self.sidebar(ui));
         self.appearance.sidebar_width = response.response.rect.width().clamp(216.0, 340.0);
@@ -127,13 +133,14 @@ impl State {
         let frame = egui::Frame::new()
             .fill(visuals.window_fill)
             .stroke(visuals.window_stroke)
-            .inner_margin(16)
+            .inner_margin(SIDEBAR_MARGIN)
             .corner_radius(egui::CornerRadius {
                 nw: 0,
                 ne: 16,
                 sw: 0,
                 se: 16,
             });
+        let vertical_margin = frame.total_margin().sum().y;
         let mut close = false;
         let modal = egui::Modal::new(egui::Id::unique("conversation-drawer"))
             .area(
@@ -148,7 +155,7 @@ impl State {
             .backdrop_color(egui::Color32::from_black_alpha(100))
             .show(ctx, |ui| {
                 ui.set_width(width - 32.0);
-                ui.set_height((content.height() - 34.0).max(200.0));
+                ui.set_height((content.height() - vertical_margin).max(200.0));
                 ui.horizontal(|ui| {
                     ui.label(RichText::new("Conversations").strong().size(18.0));
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {

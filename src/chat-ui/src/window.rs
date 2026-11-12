@@ -1386,7 +1386,12 @@ impl State {
         )
         .map(|state| state.size().y);
         let footer = egui::Panel::bottom("sidebar-footer")
-            .frame(egui::Frame::new().inner_margin(egui::Margin::symmetric(0, 8)))
+            .frame(egui::Frame::new().inner_margin(egui::Margin {
+                left: 0,
+                right: 0,
+                top: 8,
+                bottom: 0,
+            }))
             .show(ui, |ui| self.sidebar_footer(ui));
         // Settle the measured bottom anchor after first layout or a notice change.
         if previous_height.is_none_or(|height| (height - footer.response.rect.height()).abs() > 0.5)
