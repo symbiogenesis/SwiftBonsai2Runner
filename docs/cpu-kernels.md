@@ -39,6 +39,44 @@ and matched complete-request benefit remain required before release and repin.
 X1 needs independent device evidence; X2 observations cannot qualify it. No
 backend profile, runtime pin or memory-admission limit changes here.
 
+### Next CPU candidates
+
+The next three local Prism changes target repeated CPU dispatch and attention
+work, independently of Hexagon availability:
+
+- Prepared PQ2 activations retain an opaque, safely detected SDOT capability.
+  Eligible one-, four- and eight-row consumption kernels reuse that capability
+  instead of probing CPU features again for every packed block. Original
+  activation bytes, all four PQ2 symbols and ordered floating scales remain
+  unchanged. Baseline NEON and portable fallback remain separate paths. Native
+  scratch adds one capability field (eight padded header bytes on ARM64), with
+  no per-block or weight storage increase. Multi-token prefill wrappers retain
+  their existing dispatch.
+- Six-head decode and paired-token attention scores retain the native reduction
+  tree in NEON registers for aligned key widths. The scalar finish remains for
+  tails. This removes source-level accumulator scalarization for Swift's
+  256-element keys without changing key precision, temporal FMA lanes or the
+  final addition order. Release code generation must establish actual spills
+  and instruction savings before a performance claim.
+- Eligible parallel full-attention preparation combines query normalization
+  and RoPE with key normalization/RoPE and value rounding in one worker pass.
+  When KV heads divide evenly across workers, matching query/KV partitions
+  remove one worker dispatch and transient error-slot allocation per
+  full-attention layer (sixteen of each per Swift token). Other geometries keep
+  the existing path. A cold error collector defers key/value failures until all
+  queries succeed and retains the earliest failing original KV chunk. Only
+  provisional scratch may change before a failure; committed state stays
+  transactional.
+
+These candidates need final-source hosted checks, feature-disabled and portable
+fallback, ARM64 code-generation/resource review, complete-model state/logit/
+adapter and cancellation parity, and matched complete-request X1 measurements.
+Development on X2 supplies no X1 speedup verdict. Runner's verified binary pin
+and conservative admission remain unchanged; release and repin are pending.
+Registry delivery also requires publishing a new `bonsai-neon-dot` version and
+updating the runtime's exact helper dependency: published `0.1.1` does not supply
+the new capability API.
+
 ## Execution and dispatch
 
 The default `experimental-neon` feature uses [`fearless_simd` 1.1.0][fearless]'s safe core API under

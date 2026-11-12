@@ -1197,6 +1197,16 @@ coefficients, and bounded stack merging for short BPE pieces. Require independen
 X1 request benefit after exact-source correctness, fallback and resource gates;
 X2 development checks establish no X1 performance verdict. Release and verified
 binary repin remain pending; preserve the current runtime and admission policy.
+Also qualify the [next three CPU candidates](docs/cpu-kernels.md#next-cpu-candidates):
+prepared PQ2 SDOT capability reuse, aligned six-/twelve-query NEON attention-score
+finishing, and combined parallel query/key/value attention preparation. Require
+exact-source numerical/error controls, feature-disabled fallback, ARM64 codegen
+and resource review, complete-model/adapter/cancellation parity and independent
+matched X1 request benefit before release and verified binary repin. Keep X2
+development observations separate from X1 qualification.
+Before registry delivery, publish a new `bonsai-neon-dot` helper version and
+update Prism's exact dependency pin for its new detected-capability API; the
+currently published `0.1.1` helper cannot satisfy that source consumer.
 
 Require final-source exact numerical/failure controls, strict Release analyzers,
 portable fallback and production linking; ARM64 codegen/stack/resource review;
