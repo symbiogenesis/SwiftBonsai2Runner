@@ -3,7 +3,9 @@
 Baseline NEON supports PQ2, odd-group PQ2 and PTQ1 with scalar reference/fallback. This guide owns
 arithmetic, dispatch, qualification and the [X2 thread screen](#x2-cpu-thread-screen).
 Synthetic parity does not qualify whole-model parity or device speedup; pinned Prism remains the
-control engine. [PLAN.md](../PLAN.md#cpu-kernels) owns outstanding work.
+control engine. Runner's active [release lock](../config/prism-inference.lock.json)
+is Prism 0.1.23; local-source candidates and historical publisher screens below
+retain their own identities. [PLAN.md](../PLAN.md#cpu-kernels) owns outstanding work.
 
 ## Execution and dispatch
 
@@ -15,16 +17,20 @@ driver inherit it. `Qwen35::with_backend` and `--backend auto|scalar|neon` selec
 attempts/successes, scalar/NEON dispatches, preparation failures and fallback reasons, including
 provisional work. `MatvecScratch::with_backend` forces a kernel policy; `selected_backend()` reports
 the last operation and `statistics()` exposes aggregate counts without payloads. Counters saturate
-at `u64::MAX`; reset and checkpoint restoration preserve diagnostics. Floating projections and
-ineligible packed operations use scalar.
+at `u64::MAX`; reset and checkpoint restoration preserve diagnostics. These
+packed-kernel diagnostics report floating projections as scalar; independent
+baseline SIMD helpers can still execute inside those floating/state operations.
+Ineligible packed operations retain their scalar path.
 
-The local state SIMD implementation also uses safe baseline NEON for pinned GDN dot/update
+The pinned state SIMD implementation also uses safe baseline NEON for pinned GDN dot/update
 arithmetic and attention value
 tiles on the same supported Windows ARM64 build. These graph helpers retain their
 scalar implementations when the feature or target is unavailable. `MatvecBackend`
-continues to govern packed projections: aligned floating projections explicitly call
-the scalar pinned dot and retain accurate scalar diagnostics. There is no new optional
-ISA, precision mode, graph-state layout or selection profile.
+continues to govern packed projections. Direct floating/BF16 helpers and pinned
+graph-state helpers have separate compile-time baseline-NEON gates, preserving
+their original reduction contracts. Their use is not identified by the packed
+dispatch counters. These graph helpers add no optional ISA, precision mode,
+graph-state layout or selection profile.
 
 GDN keeps four independent native FMA registers, the same reduction tree and unfused
 scalar tails. Its scaled update checks four results together; a failing group is
@@ -39,8 +45,10 @@ explicit vectors alone do not establish fewer instructions or a speedup.
 
 Baseline eligibility requires native `aarch64-pc-windows-msvc`, the compiled feature and baseline
 NEON. Complete PQ2/PTQ1 rows use packed kernels; unsupported formats/targets and disabled features
-use scalar. Scalar runs natively on ARM64. There is no optional-ISA detector, global target override
-or persistent expanded weight copy. Kernel `Auto` does not select Snapdragon generations or
+use scalar. Scalar runs natively on ARM64. Optional `dotprod`/`i8mm` primitives
+use the isolated `bonsai-neon-dot` feature checks; they do not require a global
+target override or persistent expanded weight copy. Kernel `Auto` does not
+select Snapdragon generations or
 CPU/GPU/NPU profiles; that boundary belongs to the [hardware contract](hardware-capabilities.md#automatic-profile-selection).
 
 Runtime, loader, graph, codecs and broker retain `forbid(unsafe_code)`. Safe dependency APIs are the
@@ -127,10 +135,16 @@ finite-checked, and BF16 activations, rounded F32 products and the original F64
 sum/final F32 rounding are unchanged. No decoded row is materialized. Across
 48 recurrent layers' two 5,120-by-48 matrices this avoids a nominal 90 MiB of
 F32 scratch writes and matching rereads per token; compiler behavior and actual
-traffic/latency remain unmeasured. Rows in this BF16 path remain sequential.
+traffic/latency remain unmeasured. In the pinned 0.1.23 eligible NEON build,
+BF16 uses direct eight/four-row helpers through the existing row-worker pool;
+the unsupported-build path retains direct scalar row consumption. This does
+not require a decoded F32 row or change the conservative memory admission.
 
 Q8_K chooses the first signed value with strictly greater absolute magnitude, uses `-127 / maximum`,
-ties-to-even rounding and an f32 scale. Q8_0 uses an absolute maximum, ties-away rounding and an
+generic ties-to-even rounding and an f32 scale. Pinned Swift instead retains
+the native fused magic-add Q8_K rounding; independent half-boundary captures
+distinguish the two in the [packed control](../tools/hexagon/packed-projection.md).
+Q8_0 uses an absolute maximum, ties-away rounding and an
 FP16-rounded stored scale, while quantizing with the original inverse scale. Opposite-sign ties,
 signed zero, finite extremes and nonfinite rejection are part of the contract. Equal decoded
 PQ2/PTQ1 weights can produce different matvec outputs; see the [packing
