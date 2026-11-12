@@ -19,9 +19,9 @@ All owner-device setup, checks and cleanup share one five-minute aggregate
 allowance; do not run a complete suite locally.
 
 [Hexagon qualification](../../.github/workflows/hexagon-qualification.yml) owns
-current native fixture preparation and model-free policy controls. The separate
-[Windows ARM64 ABI workflow](../../.github/workflows/hexagon-windows-abi.yml) checks
-native queue layouts and the retained generated start/stop wire control.
+current native fixture preparation, model-free policy controls and the independent
+`public-native-abi` hosted job. That job checks native queue layouts and the retained
+generated start/stop wire control without depending on device preparation or admission.
 The duplicate X2 compute workflow and the completed SDK inventory and public
 QAIC generation workflows are retired. Their helpers, exact pins and
 [retained provenance](../../docs/hexagon-source-audit.md#sdk-inputs-recipe-and-terms)
