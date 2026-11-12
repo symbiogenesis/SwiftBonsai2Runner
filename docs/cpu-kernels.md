@@ -7,6 +7,38 @@ control engine. Runner's active [release lock](../config/prism-inference.lock.js
 is Prism 0.1.23; local-source candidates and historical publisher screens below
 retain their own identities. [PLAN.md](../PLAN.md#cpu-kernels) owns outstanding work.
 
+## X1-oriented source candidates
+
+Three further CPU changes are implemented in local Prism source. They target
+repeated preparation and cache pressure without requiring X2 Hexagon execution:
+
+- PQ2 prepared activations keep their byte planes separate from optional widened
+  baseline-NEON storage. The existing runtime-detected SDOT route uses compact
+  byte planes without reserving unused widened lanes; baseline NEON retains
+  prepared widening. Decode and tiled prefill share this representation, with
+  original Q8_K blocks, packed weights and floating accumulation order preserved.
+  On a 64-bit native SDOT build, each 128-column payload is 136 rather than 392
+  bytes, while each scratch owner adds one 24-byte vector header. These logical
+  storage counts do not measure process memory or change admission.
+- Pinned width-four short convolution prepares immutable coefficients in place
+  at graph construction. Four-channel groups then load tap vectors directly
+  instead of transposing the same coefficients during every step. Decode and
+  tiled prefill retain original FMA, SiLU and history order; other arithmetic,
+  widths and raw-slice helper contracts retain their existing representation.
+  Preparation retains the original coefficient count without a second copy.
+- Uncached BPE pieces of at most sixteen bytes merge in bounded stack storage.
+  Cached adjacent rules update only around a completed merge, preserving
+  minimum-rank/leftmost selection, byte corruption errors and token limits.
+  The request-local piece cache and longer-piece heap path retain their bounds.
+
+These are source work/storage reductions, not measured X1 or X2 speedups.
+Runner continues to consume its immutable 0.1.23 bundle. Final-source hosted
+checks, feature-disabled fallback, ARM64 codegen/stack review, complete-model
+state/logit/adapter and cancellation parity, tokenizer/application acceptance,
+and matched complete-request benefit remain required before release and repin.
+X1 needs independent device evidence; X2 observations cannot qualify it. No
+backend profile, runtime pin or memory-admission limit changes here.
+
 ## Execution and dispatch
 
 The default `experimental-neon` feature uses [`fearless_simd` 1.1.0][fearless]'s safe core API under

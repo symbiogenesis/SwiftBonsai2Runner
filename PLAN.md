@@ -1183,6 +1183,12 @@ checks before a qualified release and Runner repin. Current contracts cover
 and [paired values, special parsing and resident packets](docs/performance-close.md).
 Also cover GDN staging and finite-output reuse, bounded suffix drafting, immutable
 solver metadata, native packet validation and resident-weight preparation.
+Qualify the three [X1-oriented CPU source candidates](docs/cpu-kernels.md#x1-oriented-source-candidates):
+compact SDOT PQ2 activation scratch, immutable prepared short-convolution
+coefficients, and bounded stack merging for short BPE pieces. Require independent
+X1 request benefit after exact-source correctness, fallback and resource gates;
+X2 development checks establish no X1 performance verdict. Release and verified
+binary repin remain pending; preserve the current runtime and admission policy.
 
 Require final-source exact numerical/failure controls, strict Release analyzers,
 portable fallback and production linking; ARM64 codegen/stack/resource review;
