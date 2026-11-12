@@ -5,12 +5,16 @@
 )]
 
 use std::{
-    collections::BTreeMap,
+    collections::{BTreeMap, BTreeSet},
     ffi::OsString,
     fmt::Write as _,
     fs,
     path::{Path, PathBuf},
-    sync::atomic::{AtomicU64, Ordering},
+    sync::{
+        Arc, Mutex,
+        atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering},
+    },
+    thread,
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
@@ -512,23 +516,20 @@ pub(crate) fn models(
 }
 
 fn provision_models(
-    mut result: Value,
+    result: Value,
     verify_only: bool,
     defer: bool,
     working: &Path,
 ) -> crate::Result<Value> {
-    for plan in result["Plans"]
-        .as_array()
-        .ok_or("Missing speech model plan.")?
-    {
+    provision_models_with(result, |plan| {
         let path = Path::new(text(plan, "Path")?);
         let bytes = plan["Bytes"]
             .as_u64()
             .ok_or("Missing speech model length.")?;
         if defer && path.exists() {
-            crate::startup_download::verify_length(path, bytes)?;
+            crate::startup_download::verify_length(path, bytes)
         } else if verify_only {
-            crate::startup_download::verify(path, bytes, text(plan, "Sha256")?)?;
+            crate::startup_download::verify(path, bytes, text(plan, "Sha256")?)
         } else {
             crate::startup_download::receive(
                 text(plan, "Uri")?,
@@ -536,8 +537,124 @@ fn provision_models(
                 bytes,
                 text(plan, "Sha256")?,
                 working,
-            )?;
+            )
         }
+    })
+}
+
+struct ModelPreparation {
+    next: AtomicUsize,
+    cancelled: Arc<AtomicBool>,
+    failure: Mutex<Option<String>>,
+}
+
+impl ModelPreparation {
+    fn fail(&self, error: String) {
+        if let Ok(mut failure) = self.failure.lock()
+            && failure.is_none()
+        {
+            *failure = Some(error);
+        }
+        self.cancelled.store(true, Ordering::Release);
+    }
+}
+
+struct PreparationWorker<'a> {
+    group: &'a ModelPreparation,
+    finished: bool,
+}
+
+impl Drop for PreparationWorker<'_> {
+    fn drop(&mut self) {
+        if !self.finished {
+            self.group
+                .fail("Speech artifact preparation worker panicked.".into());
+        }
+    }
+}
+
+fn provision_models_with(
+    mut result: Value,
+    provision: impl Fn(&Value) -> crate::Result<()> + Sync,
+) -> crate::Result<Value> {
+    let plans = result["Plans"]
+        .as_array()
+        .ok_or("Missing speech model plan.")?;
+    let mut outputs = BTreeSet::new();
+    for plan in plans {
+        let path = Path::new(text(plan, "Path")?);
+        external(path)?;
+        let name = path
+            .file_name()
+            .ok_or("Speech artifact has no filename.")?
+            .to_string_lossy();
+        // Also reject an output colliding with another artifact's partial/lock.
+        // Windows accepts either separator and ordinarily folds filename case.
+        for output in [
+            path.to_path_buf(),
+            path.with_file_name(format!("{name}.partial")),
+            path.with_file_name(format!("{name}.download.lock")),
+        ] {
+            if !outputs.insert(output.to_string_lossy().replace('\\', "/").to_uppercase()) {
+                return Err("Speech artifact output paths overlap.".into());
+            }
+        }
+    }
+    let group = ModelPreparation {
+        next: AtomicUsize::new(0),
+        cancelled: Arc::new(AtomicBool::new(false)),
+        failure: Mutex::new(None),
+    };
+    thread::scope(|scope| {
+        let mut workers = Vec::with_capacity(plans.len().min(2));
+        for index in 0..plans.len().min(2) {
+            let group = &group;
+            let provision = &provision;
+            let worker = thread::Builder::new()
+                .name(format!("speech-artifacts-{index}"))
+                .spawn_scoped(scope, move || {
+                    let mut guard = PreparationWorker {
+                        group,
+                        finished: false,
+                    };
+                    crate::startup_cancel::with_peer_cancellation(&group.cancelled, || {
+                        while !group.cancelled.load(Ordering::Acquire) {
+                            let Some(plan) = plans.get(group.next.fetch_add(1, Ordering::Relaxed))
+                            else {
+                                break;
+                            };
+                            if let Err(error) =
+                                crate::startup_cancel::checkpoint().and_then(|()| provision(plan))
+                            {
+                                group.fail(error);
+                                break;
+                            }
+                        }
+                    });
+                    guard.finished = true;
+                });
+            match worker {
+                Ok(worker) => workers.push(worker),
+                Err(error) => {
+                    group.fail(format!(
+                        "Cannot start speech artifact preparation worker: {error}"
+                    ));
+                    break;
+                }
+            }
+        }
+        for worker in workers {
+            if worker.join().is_err() {
+                group.fail("Speech artifact preparation worker panicked.".into());
+            }
+        }
+    });
+    if let Some(error) = group
+        .failure
+        .into_inner()
+        .map_err(|_| "Speech artifact preparation result was poisoned.")?
+    {
+        return Err(error);
     }
     result
         .as_object_mut()
@@ -549,6 +666,121 @@ fn provision_models(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn parallel_plan() -> crate::Result<Value> {
+        let root = std::env::temp_dir().join(format!("Bonsai-ParallelSpeech-{}", nonce()?));
+        Ok(json!({"Retained": true, "Plans": (0..4).map(|index|
+            json!({"Path": root.join(format!("artifact-{index}.gguf")), "Index": index})
+        ).collect::<Vec<_>>()}))
+    }
+
+    fn meet_peer(gate: &(Mutex<usize>, std::sync::Condvar)) -> crate::Result<()> {
+        let mut arrivals = gate.0.lock().map_err(|error| error.to_string())?;
+        *arrivals += 1;
+        gate.1.notify_all();
+        let (arrivals, timeout) = gate
+            .1
+            .wait_timeout_while(arrivals, Duration::from_secs(2), |arrivals| *arrivals < 2)
+            .map_err(|error| error.to_string())?;
+        drop(arrivals);
+        if timeout.timed_out() {
+            return Err("Independent speech artifact preparation did not overlap.".into());
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn speech_artifact_preparation_overlaps_with_exactly_two_workers() -> crate::Result<()> {
+        let active = AtomicUsize::new(0);
+        let peak = AtomicUsize::new(0);
+        let hits: [_; 4] = std::array::from_fn(|_| AtomicUsize::new(0));
+        let gate = (Mutex::new(0), std::sync::Condvar::new());
+        let result = provision_models_with(parallel_plan()?, |plan| {
+            let index = usize::try_from(plan["Index"].as_u64().ok_or("Missing artifact index.")?)
+                .map_err(|error| error.to_string())?;
+            hits[index].fetch_add(1, Ordering::Relaxed);
+            peak.fetch_max(active.fetch_add(1, Ordering::AcqRel) + 1, Ordering::Relaxed);
+            let met = meet_peer(&gate);
+            active.fetch_sub(1, Ordering::Release);
+            met
+        })?;
+        assert_eq!(peak.load(Ordering::Relaxed), 2);
+        assert!(hits.iter().all(|hits| hits.load(Ordering::Relaxed) == 1));
+        assert!(result.get("Plans").is_none());
+        assert_eq!(result["Retained"], true);
+        Ok(())
+    }
+
+    #[test]
+    fn speech_artifact_failure_and_panic_cancel_peer_before_joining() -> crate::Result<()> {
+        for panic in [false, true] {
+            let plan = parallel_plan()?;
+            let gate = (Mutex::new(0), std::sync::Condvar::new());
+            let peer_cancelled = AtomicBool::new(false);
+            let calls = AtomicUsize::new(0);
+            let result = provision_models_with(plan, |plan| {
+                calls.fetch_add(1, Ordering::Relaxed);
+                meet_peer(&gate)?;
+                if plan["Index"] == 0 {
+                    if panic {
+                        std::panic::resume_unwind(Box::new("Synthetic speech artifact panic."));
+                    }
+                    return Err("Synthetic speech artifact failure.".into());
+                }
+                let started = std::time::Instant::now();
+                while started.elapsed() < Duration::from_secs(2) {
+                    if let Err(error) = crate::startup_cancel::checkpoint() {
+                        peer_cancelled.store(true, Ordering::Release);
+                        return Err(error);
+                    }
+                    thread::yield_now();
+                }
+                Err("Peer cancellation was not observed.".into())
+            });
+            let error = result.err().ok_or("Expected speech artifact failure.")?;
+            assert_eq!(
+                error,
+                if panic {
+                    "Speech artifact preparation worker panicked."
+                } else {
+                    "Synthetic speech artifact failure."
+                }
+            );
+            assert!(peer_cancelled.load(Ordering::Acquire));
+            assert_eq!(calls.load(Ordering::Relaxed), 2);
+            crate::startup_cancel::checkpoint()?;
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn speech_artifact_output_collisions_fail_before_any_work() -> crate::Result<()> {
+        let original = parallel_plan()?;
+        let path = Path::new(text(&original["Plans"][0], "Path")?);
+        for duplicate in [
+            path.to_path_buf(),
+            PathBuf::from(path.to_string_lossy().to_uppercase()),
+            path.with_file_name(format!(
+                "{}.partial",
+                path.file_name().ok_or("Missing name.")?.to_string_lossy()
+            )),
+            path.with_file_name(format!(
+                "{}.download.lock",
+                path.file_name().ok_or("Missing name.")?.to_string_lossy()
+            )),
+        ] {
+            let mut plan = original.clone();
+            plan["Plans"][1]["Path"] = json!(duplicate);
+            let calls = AtomicUsize::new(0);
+            let result = provision_models_with(plan, |_| {
+                calls.fetch_add(1, Ordering::Relaxed);
+                Ok(())
+            });
+            assert!(result.is_err_and(|error| error.contains("output paths overlap")));
+            assert_eq!(calls.load(Ordering::Relaxed), 0);
+        }
+        Ok(())
+    }
 
     #[test]
     fn native_host_identity_partitions_complete_cargo_output_directories() -> crate::Result<()> {
