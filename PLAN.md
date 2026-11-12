@@ -3,6 +3,16 @@
 This is the single backlog. [Technical docs](docs/README.md) own current behavior,
 contracts, commands and evidence; completed work belongs in Git history.
 
+Publish the first experimental Windows ARM64 MSI release, **v0.1.0**, after the
+owner reviews and pushes the local installer/pipeline commits to Runner `main`.
+The [release guide](docs/releases.md) records the owner-run publication command;
+the [first-release notes](docs/releases/v0.1.0.md) retain the development-default
+and qualification limits. GitHub pipeline activation, a genuine hosted build,
+MSI install/uninstall acceptance and a downloadable release remain pending.
+The no-push rule leaves source publication with the owner. Retain the exact
+source/assets/checksums from that first successful run; static source checks do
+not establish clean-machine model, speech, signing or daily-use acceptance.
+
 Complete the owner-requested Prism 0.1.24 binary repin and README performance
 refresh after owner source/bundle publication. The [registry delivery record](docs/evidence/prism-0124-publish-20261109/summary.json)
 confirms the new runtime crate and unchanged five helper versions; Runner has no
