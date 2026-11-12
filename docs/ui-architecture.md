@@ -89,18 +89,20 @@ state. Failure retains the running app and never substitutes an unverified file.
 Installation requires an explicit native confirmation and known owned teardown.
 The UI queues a verified update request for its maintenance launcher and closes
 through the ordinary persistence and process cleanup path. After the native
-window exits, the launcher revalidates the staged installer, releases its launch
-guard, starts the fixed Windows Installer handoff and exits so application files
-can be replaced. It must not install while the model owner is uncertain or
-create a detached child that escapes the existing containment contract.
+window exits, the launcher retains its launch guard through staged installer
+revalidation and the fixed Windows Installer handoff. It then exits, releasing
+the guard so application files can be replaced. It must not install while model
+ownership is uncertain or create a detached child that escapes the existing
+containment contract.
 The queued request alone never authorizes installation: the native window must
 report the dedicated successful update exit after receiving its queued receipt.
 An ordinary close, cancellation, crash or cleanup failure cannot activate a
 leftover queue. Failed preparation or unknown model ownership disables in-app
 installation while discovery and downloads remain available.
 Conversation saving retains its existing opt-out; updating does not enable it.
-Windows may request administrator approval. Reopening uses the Start menu;
-automatic restart is not promised. Model/runtime downloads and local user data
+Windows may request administrator approval. After the installer finishes,
+reopen from the Start menu; automatic restart is not promised.
+Model/runtime downloads and local user data
 remain separate from MSI application files.
 
 ### Conversation and failure semantics
