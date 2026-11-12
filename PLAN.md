@@ -961,28 +961,61 @@ not close pending hosted integration or full-model acceptance.
 
 ### Quality and speech
 
-- Evaluate the [weight-space programming lead](docs/weight-space-programming.md)
-  with an early stop: first establish a reproducible Swift failure in complete
-  reasoning/answer captures, using exact model, runtime, template, sampler,
-  thinking, adapter and termination identities. No Swift loop defect or beneficial
-  weight correction is established. Reuse existing captures and human review before
-  adding instrumentation; short prefixes and synthetic fixtures cannot justify an edit.
-  Budget one investigation session, then stop if there is no concentrated correctable
-  fault or feasible evaluation. If justified, allow one or two candidate sessions for
-  a Swift-specific FFN direction and small F32 correction, followed by separate hosted
-  validation; these are contingent effort estimates, not promised improvement.
-  Preserve the standard adapter when isolating the candidate effect: overlapping
-  corrections need explicit composition beyond the current single rank-one slot.
-  Bind the patch to original PQ2 and the current lossless PTQ1 repack independently,
-  preserve original-activation basis, and retain loaded-zero identity and rollback.
-  Require held-out complete-answer correctness, instruction following and creative
-  quality without material throughput/resource regression; measure useful-answer time
-  separately from tokens/second. Do not infer benefit from shorter output, copied
-  article layer IDs, a different adapter/sampler or smaller context/output limits.
-  A discovery/comparison matrix is not feasible under the retained startup evidence
-  and aggregate five-minute laptop ceiling; leave model work pending until a complete
-  workload fits or an appropriate hosted target is available. Do not split it across
-  owner sessions. This assessment does not qualify a runtime/default change.
+- Investigate the [MIT, LP and Beaker weight-space findings](docs/weight-space-programming.md)
+  for the current Swift/Bonsai 27B on the owner's Snapdragon X2 Elite Extreme with
+  48 GB RAM. Keep the packed 27B model as the target; no Swift loop defect or beneficial
+  correction is established. Follow this order, with an early stop when no concentrated
+  correctable fault or feasible evaluation is found:
+  1. Reuse retained complete reasoning/answer captures and independent human review
+     before adding instrumentation. Retain exact model, representation, runtime,
+     template, effective thinking, sampler, adapter and termination identities.
+     Assess repetition, truncation, instruction following, creative quality and time
+     to a useful completed answer; short prefixes and synthetic fixtures cannot justify
+     an edit. Preserve the standard adapter at scale 1.3 and the 4K/8K output/context caps.
+  2. Compare ordinary prompt, template and sampling controls before weight changes,
+     retaining each arm's exact settings. Beaker's token-ban result is a research
+     baseline, not an approved prose-token restriction. Separate fitting, development
+     and held-out data; freeze candidates before held-out evaluation. Shorter answers
+     alone do not establish useful work, correctness or a speed gain.
+  3. If the diagnosis warrants it, prototype an optional native Rust residual-steering
+     path in Prism, disabled by default and independent of Orca. Bind an admitted
+     correction artifact to exact model/representation and runtime, vector hash,
+     dimensions, activation basis, insertion sites and strength. Reject unsupported
+     sites, shapes and nonfinite values. Preserve loaded-zero identity by bypassing
+     correction arithmetic; changing correction identity or strength must invalidate
+     prefix/checkpoint reuse and reset affected state. Qualify the same declared
+     operation across decode, tiled prefill and selected CPU/NPU paths, cancellation
+     and rollback before exposing it through Runner. No current service admission or
+     runtime/default change is implied.
+  4. Add bounded selected-layer/token residual and FFN activation capture only when
+     direction discovery needs it; use pooled statistics where sufficient. Keep LP
+     fitting and repeated discovery/evaluation off the laptop when they cannot fit one
+     complete declared workload. Deliver verified small F32 artifacts to native Rust
+     inference; add no optimizer, Python service or hosted Beaker dependency to the app.
+     Prefer testing constant steering (20 KiB F32 payload per site) before an 88 KiB
+     rank-one FFN correction; pursue the latter only if it improves on constant steering
+     or addresses a conditional fault. Retain explicit composition with Orca at overlapping sites
+     beyond the current single rank-one slot. Preserve original-activation basis
+     through folded Hadamard projections and qualify PQ2 and current-weight lossless
+     PTQ1 separately. Payload size alone does not establish inference overhead.
+  5. Require held-out complete-answer correctness, instruction following and creative
+     quality without material throughput/resource regression. Measure useful-answer
+     time separately from tokens/second; retain loaded-zero logits/state identity,
+     nonzero effect, resource observations and explicit rollback. Copied article
+     layer/neuron IDs, changed adapters or reduced context/output limits cannot qualify
+     benefit. Future authenticated Bonsai releases, including any Qwen4-derived or
+     smaller options, may reuse the tooling and artifact contract but need their own
+     directions, mappings, strengths and held-out qualification.
+  Full discovery matrices and benchmarks remain CI-only and owner-controlled; the
+  assessment authorizes no CI dispatch or model trial. The laptop default is five
+  minutes aggregate, with a dedicated predeclared workload using only the smallest
+  justified allowance up to fifteen minutes and existing narrower harness limits
+  retained. Declare fixed work, estimate and reason before starting; setup, loading,
+  all arms, power observations, cleanup and evidence retention share that clock.
+  Record AC power before/after the aggregate workload and each arm, plus saver/charge
+  when available; unknown or mismatched conditions cannot qualify performance benefit,
+  and equal endpoints do not prove uninterrupted stability. Do not retry failed trials,
+  restart clocks, reopen historical deadlines or split a matrix across owner sessions.
 - Establish an independent writing and art-direction rubric: drafting, constrained
   revision, continuity, dialogue, voice and tone, composition, instruction following,
   coherence, repetition, unwanted refusals and useful completed answers. Qualify
