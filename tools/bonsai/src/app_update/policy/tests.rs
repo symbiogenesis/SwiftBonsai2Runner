@@ -122,7 +122,10 @@ fn discovery_selects_before_asset_validation_and_never_falls_back() -> crate::Re
         json!([release("0.1.2"), incomplete]),
     ] {
         assert_eq!(
-            selected(values)?.1.ok_or("Missing newest fixture.")?.version,
+            selected(values)?
+                .1
+                .ok_or("Missing newest fixture.")?
+                .version,
             "0.1.2"
         );
     }
