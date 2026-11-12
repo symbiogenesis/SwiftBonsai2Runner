@@ -190,6 +190,24 @@ inventory.
 | Isolated `bonsai-neon-dot` (`SDOT`/`SMMLA`) & `u8x16` `PTQ1_0` | Safe boundary crate (`tools/neon-dot`) wrapping ARMv8.2-A `vdotq_s32` (`dotprod`) and `vmmlaq_s32` (`i8mm` `2x2` row-by-token tiles) behind runtime feature checks, plus non-widening `u8x16` base-3 division-by-multiplication `PTQ1_0` trit unpacking (`dot_ptq1_q80_block`, `dot_ptq1_q8k`) |
 | Fused `RMSNorm + Sign*FWHT` & `SwiGLU + Sign*FWHT` | Single-pass 16-register NEON block helpers (`rms_norm_signed_fwht_in_place`, `swiglu_signed_fwht_into`) eliminating intermediate scratch round-trips; last-layer state-only prefill (`Evaluation::full_attention_kv_only`, `Evaluation::recurrent_attention_state_only`) skips dead output-proj/FFN on `layer 63`; `parallel_tile` uses a spin-then-park completion barrier |
 
+The **2026-11-12** local-source audit found `Tl1BlockLut` construction only in
+tests, besides its public reexport. The API is not wired into production matvec,
+and no cross-token Vec-LUT consumer was found. Existing packed token tiles reuse
+decoded weight blocks; they do not implement activation-LUT execution. The
+[lookup contract](inference-algorithms.md#packed-lookup-kernels) distinguishes
+these mechanisms and the research register retains the original sources.
+
+An integrated exact LUT path must share bounded activation preparation across
+eligible output rows and token tiles while preserving Q8_K/Q8_0 quantizers,
+128-weight scales, block/lane accumulation order and all intermediate bounds.
+Generic PQ2 must retain its +2 symbol or take the checked generic fallback;
+Swift's ternary census does not narrow the public tensor contract. Include
+table construction, cache traffic, layouts/repacking, overlapping retained
+storage and dispatch in comparisons with qualified SDOT/I8MM and baseline
+NEON. Smaller integer work or a faster isolated lookup does not establish a
+complete-request improvement. PLAN retains the bounded candidate comparisons
+and release/qualification gates; this review enables no new kernel default.
+
 PQ2 code 3 means **+2**, despite the exporter's narrower ternary-only contract. PTQ1 digits are
 interleaved: bytes 0–15 hold five digits at stride 16, bytes 16–23 hold five at stride 8, and bytes
 24–25 hold four at stride 2. Q4_0 stores 16 low nibbles before 16 high nibbles. Canonicality and

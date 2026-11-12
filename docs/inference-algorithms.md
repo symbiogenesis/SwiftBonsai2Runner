@@ -32,6 +32,14 @@ Retained scratch proves storage reuse, not eliminated computation or model-level
 State-only ingestion validates every computed state value while omitting unused output/logit checks.
 Block prefill preserves cancellation/backpressure bounds and atomic commit.
 
+The **2026-11-12** source review distinguishes three guarantees: lossless storage
+reconstructs original bits; exact execution preserves the declared arithmetic and
+state; corrected speculative sampling preserves the target distribution. The
+last guarantee does not promise seed-for-seed text identity. Similar benchmark
+scores alone establish none of them. A learned drafter can preserve the target
+distribution when its proposals receive the required target verification and
+sampling correction; training a drafter is not itself a target approximation.
+
 ## Scratch lifetimes
 
 Prism's sequential graph shares attention-projection/FFN-up storage and their gate storage, then
@@ -63,12 +71,22 @@ arbitrary tensors. Validated immutable representations may avoid repeated canoni
 arbitrary public tensors still need rejection checks. `dot(code - 1, q) = dot(code, q) - sum(q)`
 permits using `Q8KBlock.sums` under the same scale contract as lane subtraction.
 
+Local Prism's `Tl1BlockLut` supplies bounded activation-table construction, but
+the November source review found only its public reexport and test callers.
+It is not a selected production matvec path. Table availability does not
+establish shared preparation, dispatch, graph integration or measured benefit.
+
 ### Vec-LUT for multiple prompt tokens
 
 [Vec-LUT](https://arxiv.org/html/2512.06443v2) and its [implementation](https://github.com/OpenBitSys/vlut.cpp)
 group lookups across prompt tokens and stream cache-sized tables using bounded INT16 partials/INT32
 accumulation. Transfer requires unchanged quantizers/scales, bounds for all accepted inputs and
 accounting for layouts, repacking, retained copies and scratch; published platforms do not qualify Swift.
+
+The cited work originated in December 2025 and was revised in April 2026.
+No cross-token Vec-LUT execution path was found in local Prism during the
+November review. Existing token tiles share decoded weights across tokens;
+that mechanism does not implement multi-token activation lookup tables.
 
 ## Chunkwise Gated DeltaNet prefill
 
@@ -137,15 +155,36 @@ Stochastic speculation needs proven acceptance/rejection correction, as in [Levi
 al.](https://proceedings.mlr.press/v202/leviathan23a.html); greedy agreement does not qualify
 creative sampling. Retain request rollback even if candidate recovery becomes cheaper.
 
+As reviewed on **2026-11-12**, both `Runtime::verify_draft_block` and
+`generate_speculative_inner` test candidates and call target `evaluate` one
+token at a time. `SwiftSession::complete_speculative` uses that greedy path.
+It does not amortize target weight reads over a candidate block. The standalone
+`verify_stochastic_step` helper is not integrated with Swift's default
+temperature 1, top-20 and top-p 0.95 sampler. Runner still requires speculation
+to be disabled; these source APIs establish no serving speedup or sampler pass.
+
+A weight-amortizing verifier needs layerwise token-tiled target projections,
+causal attention and convolution, and target logits at every candidate position.
+Partial acceptance must restore the accepted prefix's complete KV, GDN and
+convolution state before correction or bonus tokens commit. EOS, output caps,
+failed publication and cancellation retain whole-request rollback. Qualify
+greedy behavior first, then actual conditional proposal probabilities and
+residual sampling under the deployed sampler. `GdnVerifyTape` and
+`DFlash2DraftConfig` remain standalone APIs rather than an integrated verifier,
+loaded drafter or checkpoint-free serving path.
+
 [Inverse-state rollback can be singular or unstable](research-register.md#t5-chunking-recurrence-and-recovering-rejected-tokens);
 floating gates can underflow/saturate and convolution overwrites history. Use snapshots or saved
 factors with checked forward reconstruction.
 
 ### 2026 state-traffic and verification research
 
-The [hybrid-state catalog, H20 to H21](research-register.md#hybrid-recurrence-prefix-caching-and-speculative-decoding)
-owns KVBuffer/TreeWY sources and negative results through **2026-10-29**. Neither is implemented
-in the selected runtime:
+The [hybrid-state catalog](research-register.md#hybrid-recurrence-prefix-caching-and-speculative-decoding)
+owns KVBuffer/TreeWY sources and negative results. The November 12 review adds
+[KVBuffer v2](https://arxiv.org/html/2605.19049v2), revised **2026-11-05**.
+Its main decoding gains use large batches; its low-request-rate Qwen3.5-4B
+result includes no throughput gain, and FP32 comparisons have nonzero state or
+output differences. Neither technique is implemented in the selected runtime:
 
 | Candidate | Swift proof obligation |
 | --- | --- |
@@ -163,6 +202,19 @@ in the selected runtime:
 The [catalog, H19/H22 to H23](research-register.md#hybrid-recurrence-prefix-caching-and-speculative-decoding)
 retains sources, mechanisms and evaluation scope. DFlash 2 is an author report with released
 drafters, not another peer-reviewed paper; learned components remain separate artifacts.
+
+Published [Bonsai 2-specific DFlash2 drafters](https://huggingface.co/naklitechie/Qwen3.8-27B-DFlash2-ternary-bonsai2)
+make compatible-artifact screening concrete. The author reports workload-dependent
+results, slower creative chat in one Apple comparison and changed greedy CUDA
+output near ties during batched verification. These observations qualify neither
+Swift's adapter profile nor its stochastic sampler or Snapdragon execution.
+Validate tokenizer, transformed basis, shared embeddings/head and feature taps
+against exact artifact identities. The published tap indices `[5,19,33,47,61]`
+differ from the standalone local default `[2,17,32,47,63]`; this is an interface
+check to resolve before integration, not an active serving defect. A separate
+Qwen reference with MTP tensors does not establish an admitted Swift MTP path.
+Adaptive short draft lengths may reduce wasted verification, but acceptance
+alone cannot establish benefit without full drafting/verify/recovery cost.
 
 ### Certified sparse attention is a separate approximation
 

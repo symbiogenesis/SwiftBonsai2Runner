@@ -34,6 +34,16 @@ memory admission are unchanged. Per-request `cache_prompt` and other cache
 overrides remain unsupported. Reuse can reduce repeated-history prefill; it does
 not itself increase ongoing token generation speed or help unrelated prompts.
 
+The **2026-11-12** [inference survey](research-register.md#priorities-for-this-model-and-hardware)
+identifies qualification of this existing opt-in path as the first reuse
+opportunity for append-only local chat. It needs no additional saved-prefix
+snapshots, sparse checkpoint policy or radix tree. The useful comparison is
+complete multi-turn request latency with cached and uncached token counts;
+ongoing decode TPS alone cannot demonstrate the saved prefill work. Edited or
+branching histories retain the separate complete-state cache obligations in
+[the algorithm contract](inference-algorithms.md#hybrid-cache-reuse-and-speculative-state).
+The survey changes neither the reset-by-default contract nor its acceptance gates.
+
 Focused model-free controls cover CLI/schema rejection, deferred selection,
 Retry preservation, native-only routing, exact source capability and readiness
 agreement. Existing Prism graph controls compare complete logits/state and
