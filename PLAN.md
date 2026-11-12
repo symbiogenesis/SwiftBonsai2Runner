@@ -21,7 +21,7 @@ the corresponding detailed task changes; keep every acceptance obligation below.
 | R1 / owner, integration | Prism, then Runner | Published source-bound 0.1.24 bundle | Verify source/archive/nine-file identities, repin and prepare active-release acceptance. Keep newer local CPU candidates and their helper-publication prerequisite separately identified under [CPU kernels](#cpu-kernels). |
 | R2 / implementation, qualification | Prism, then Runner | Settled candidate, required helper release and owning hosted checks | Qualify the explicit exact LUT candidate, integrate selected cross-token consumers and genuinely batched verification; close CPU/prefill codegen, fallback, state/adapter/cancellation and matched selected-device benefit gates, with independent X1 evidence where selected. Qualify changes already consumed in 0.1.23 without another repin; follow the [inference delivery order](#lossless-inference-delivery-order). |
 | R3 / integration, qualification | Prism and Runner harnesses | Agreed execution/state identities and existing complete-state fixtures | Prepare shared state/restore and fault-control tooling independently of runtime qualification; map each prefix/prefill/speculation/accelerator path to its independent assertions and evidence. |
-| K1 / integration, qualification | Prism, then Runner | Implemented native K4/V4 and K4/V3 source, FP16 controls and the declared [compressed-KV contract](docs/quantized-kv.md) | Complete source qualification and a published verified runtime bundle, then integrate matching broker/profile/context contracts. Qualify exact quantized-state recovery, negligible held-out quality loss and material benefit independently on X1 Elite and X2 Elite Extreme before standard/mandatory promotion. |
+| K1 / integration, qualification | Prism, then Runner | Implemented native K4/V4 source, FP16 controls and the declared [practical compressed-KV packet](docs/quantized-kv.md#first-practical-promotion-packet) | Close selected-profile state/recovery controls, run the fixed paired actual-model quality/memory packet on one selected device, and deliver a published verified runtime bundle with matching broker/profile/context contracts. Promote K4/V4 to default/required within a passing device profile with explicit FP16 recovery; qualify X1/X2 independently and defer K4/V3. |
 | S1 / implementation, integration | Runner; Prism for shared runtime/RPC consumers | Agreed verified-loading, state, stream and transport ownership interfaces | Integrate Talker/CodePredictor, codec/speaker and signed Rust RPC through [C++ retirement](#complete-c-retirement); qualify the ordinary Q4 baseline before ternary speech and new 48 kHz artifacts. |
 | S2 / implementation, qualification | Runner | Pinned Qwen3-ASR 1.7B artifacts and replacement controls | Qualify microphone-to-Swift submission, then replace ASR's native engine and close transcript/state, cancellation, lifecycle, quality and resource gates before removing its compiler/dependency paths. |
 | P1 / external, qualification | Prism and Runner | Original authoring inputs for provenance; hosted public-pack reconstruction for its separate gate | Run the declared reconstruction and independent replay while pursuing provenance intake independently; follow the PTQ1 critical path below. Neither blocks A1. |
@@ -1465,23 +1465,33 @@ LoRA gates; calibration proves neither quality nor reduced admission.
 - Estimate process savings and traffic against PTQ1 first: 8K FP16 attention KV is 512
   MiB, so INT8 saves at most ~256 MiB before scales and scratch; recurrent/convolution
   state is separately 149.625 MiB. Cache ratios do not apply to weights.
-- Qualify the owner-selected [native Snapdragon candidate](docs/quantized-kv.md),
-  whose rotated 256-channel K4/V4 and K4/V3 codec, graph and native CLI/service
-  selection are implemented in Prism source. Retain Q8 as a simpler possible
-  comparison control without authorizing a broad device matrix. Complete strict
-  source/service checks and broader packed-attention, scalar/NEON, exact quantized
-  checkpoint, cancellation, prefix and adapter qualification. Charge scales,
-  metadata, rotations, scratch and retained copies; keep FP32 GDN/convolution state
-  unchanged. Retain serial query-head streaming as the current compressed path;
-  further grouped-head tuning requires its own source and measured-benefit gates.
-  Predeclare negligible-loss margins and held-out long-context/task/creative review,
-  then qualify material complete-task memory/performance benefit on X1 Elite and X2
-  Elite Extreme independently under matched observed power. Make compression standard
-  for a selected profile only after those gates pass, with FP16 recovery/control;
-  source tests alone do not authorize that promotion. Complete exact-source runtime
-  delivery/repin and matching broker/UI/context identities before application use.
-  Defer SVD or index schemes without an 8K need; follow [compression
-  constraints](docs/inference-algorithms.md#compression-and-approximation-constraints).
+- Advance the owner-selected [native Snapdragon candidate](docs/quantized-kv.md)
+  toward K4/V4 (`rsq4`) default/required operation in a qualified device profile.
+  Its codec, graph and native CLI/service selection are implemented in Prism;
+  K4/V3 remains a separate later capacity experiment. Close selected-profile
+  packed-attention, scalar/NEON, exact quantized checkpoint, cancellation, prefix
+  and adapter controls; exact FP16 output/logit parity is not required. Charge
+  scales, metadata, rotations, scratch and retained copies; keep FP32
+  GDN/convolution state unchanged. Retain serial query-head streaming; further
+  grouped-head tuning needs its own checks and measured-benefit gate.
+  Use the [three-task paired packet](docs/quantized-kv.md#first-practical-promotion-packet)
+  with predeclared held-out deep retrieval, practical instructions and creative
+  continuation, standard adapter 1.3 and fixed settings. Accept roughly equivalent
+  useful answers under its declared margins, at least 65% lower measured K/V
+  storage and at least 128 MiB lower near-full-context peak private bytes. Where
+  qualified timing exists, require no over 10% complete-task latency regression;
+  otherwise retain a capacity-only result and owner acceptance of responsiveness.
+  Retain all complete answers, losing cases and power observations; unknown or
+  mismatched power prevents timing/energy claims, not valid memory/quality evidence.
+  Speedup and energy gains are not required.
+  Qualify X1 Elite and X2 Elite Extreme independently: a selected-device pass can
+  promote that device profile without waiting for the other. Complete exact-source
+  runtime delivery/repin and matching broker/readiness/context contracts before
+  application selection, with explicit FP16 comparison/recovery and unchanged
+  process admission and 8K limit. The small packet supports scoped development
+  promotion, not universal quality or complete application release qualification.
+  Defer SVD, indexes and a broad Q8 comparison without a measured 8K need; follow
+  [compression constraints](docs/inference-algorithms.md#compression-and-approximation-constraints).
 - Only for material state traffic or storage, compare FP16 recurrence with FP32, then at
   most one DAMP-inspired FP16/INT8 split. Keep convolution separate; charge scales,
   rounding and RNG, restore and trajectory error. Add low-rank bypass or directional

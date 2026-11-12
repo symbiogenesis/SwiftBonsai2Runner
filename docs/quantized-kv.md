@@ -6,10 +6,13 @@ qualify a new application profile, increase Runner's 8K context limit or replace
 the pinned 0.1.23 runtime bundle. [PLAN.md](../PLAN.md#bounded-calibration-and-optional-precision)
 owns the remaining application integration, delivery and qualification work.
 
-The intended endpoint is a standard compressed-cache profile **if measured
-quality loss is negligible and the selected device gains a material resource or
-performance benefit**. Until those independent gates pass, FP16 remains the
-application default and an explicit comparison/rollback control.
+The selected endpoint is **K4/V4 (`rsq4`) as the default and required cache for
+a qualified device profile**, once a paired actual-model check shows roughly
+equivalent useful answers and substantially less cache memory with a real process
+memory saving. Identical tokens, FP16 logits or perfect reconstruction are not
+promotion requirements. Until that evidence and runtime delivery exist, FP16
+remains the application default and the explicit comparison/recovery control.
+Qualify X1 and X2 separately; a selected-device pass need not wait for the other.
 
 ## Source selection and current checks
 
@@ -125,18 +128,59 @@ agreement, attention outputs and complete graph logits. Complete-state and
 lifecycle controls must cover checkpoint independence, restore atomicity,
 reset/scale changes, edited/reused histories, cancellation and failure recovery.
 
-Before generating quality captures, declare the corpus, seeds, context depths,
-task failure criteria, acceptable numerical/error margins and the definition of
-negligible quality loss. Use held-out long-context retrieval, task completion,
-continuations and canon-sensitive creative work with independent human review.
-Report confidence/uncertainty and all losing cases. Local reconstruction MSE,
-one matching greedy answer or another model's benchmark cannot close this gate.
+### First practical promotion packet
 
-Compare admitted **complete-task** memory, latency, energy, retries and output
-quality with FP16 on X1 and X2 independently. Require a material benefit under
-the declared thresholds without a disqualifying quality, stability or comfort
-regression before making the candidate standard/mandatory for that profile.
-Keep an explicit FP16 recovery/comparison path and retain no-go outcomes.
+Start with K4/V4 alone against FP16. K4/V3 is a later capacity experiment and does
+not enlarge this first comparison. The fixed packet contains three held-out tasks:
+a deep-context factual retrieval, a practical instruction-following task and a
+canon-sensitive creative continuation. Declare the exact prompts and required
+facts/constraints before generating either arm. The retrieval case must reach at
+least 7,168 occupied tokens within the existing 8,192-token total bound; keep the
+same reserved output in both arms. Do not tune the codec or replace losing prompts
+after observing results. Use the same immutable original PQ2 model, standard
+adapter at scale 1.3, prompt/template, seed, sampler, worker count, accelerator
+placement and request limits in each arm.
+
+The initial decision margins are deliberately practical:
+
+| Observation | Passing margin |
+| --- | --- |
+| Useful answer quality | A human reviewer, with candidate labels hidden, scores complete answers from 1 (unusable) to 5 (fully useful). Mean compressed quality may be at most 0.5 lower, with no individual task more than 1 lower. All predeclared objective checks passed by FP16 remain passing; no new material factual, canon or task-completion failure is accepted. |
+| Cache memory | Actual packed K/V storage, including scales, is at most 35% of matched FP16 K/V storage at the same occupied positions. Verify that no full-history FP16/F32 mirror remains. |
+| Process memory | Near-full-context complete-task peak private bytes fall by at least 128 MiB, with matched measurement coverage and checkpoint/recovery costs included. Report absolute peaks and the actual saved fraction of total process memory. |
+| Responsiveness and reliability | Where matched-power timing is available, no complete task is more than 10% slower. Otherwise retain an unqualified latency result and require the owner to accept observed responsiveness before profile promotion. No extra failed/retried request or selected-profile state, cancellation or recovery regression is accepted. A speedup or energy improvement is not required for a memory-led decision. |
+
+Bind the declaration and complete paired answers to immutable source, executable,
+model/adapter and profile identities. Retain every pair, objective result and
+human score, including losing cases. Report cache storage separately from process
+peaks: the projected 8K K4/V4 saving is 380 MiB of attention payload, not a 74%
+reduction of the whole model process. Missing memory observations, quality review
+or a comparison arm leave the decision pending; source tests alone cannot pass it.
+A baseline that fails its own required task is not positive equivalence evidence.
+Unknown or mismatched power prevents a latency/energy verdict; it does not erase
+valid directly measured cache/process memory and answer-quality observations.
+Keep that capacity-only result and its usability-acceptance limit explicit.
+
+This small packet supports a scoped development decision, with limited confidence
+about unseen tasks; it does not establish universal quality equivalence. Keep
+ordinary application release, isolation and installation obligations separate.
+Longer held-out reviews can use the same retained complete answers where applicable,
+without making a broader matrix a prerequisite for this selected-device decision.
+
+### Delivery and profile decision
+
+After passing the source/lifecycle controls and this actual-model packet for the
+selected device, deliver an exact-source published and verified Prism runtime
+bundle and matching Runner launch, readiness and context contracts. Make `rsq4`
+the default and required cache within that qualified profile; requests cannot
+quietly override it or fall back to FP16 after a failure. Keep an explicit FP16
+comparison/recovery profile, selected at a safe fresh-session boundary. Do not
+reduce process admission or increase context from cache arithmetic alone.
+
+A pass on X2 may promote the X2 profile while X1 remains pending, and vice versa.
+Record the selected source/device scope and any no-go; other devices keep their
+existing profile until independently checked. K4/V3, precision changes to GDN or
+convolution state and context above 8K require separate decisions.
 
 Use the existing [research budget and power rules](research-register.md#experiment-scope-and-budgets).
 Every owner-device workload defaults to five minutes total. A fixed, predeclared
