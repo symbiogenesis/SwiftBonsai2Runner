@@ -309,14 +309,14 @@ Find retain exact source text and offsets. HTML and link-like text remain litera
 this bounded styling subset does not execute code or activate generated links.
 
 **Settings** opens a centered native modal with side navigation in wide windows
-and horizontal categories in narrow windows. The response summary beside the
+and horizontal categories in narrow windows. **Response options** above the
 composer opens its **Response** page directly, naming the selected conversation
 under **This conversation**. The other pages state **All conversations · This
 device**:
 
 | Page | Scope and controls |
 | --- | --- |
-| **Response** | Selected conversation: Thinking, Extra effort, output cap and **Advanced response controls**. |
+| **Response** | Selected conversation: Thinking, Extra effort and **Advanced response controls** for reply limits and adapter strength. |
 | **Voice** | All conversations: the shared Voice profile and read-aloud setup. |
 | **Appearance** | Device-wide System/Light/Dark theme, reading text size and maximum reading width, with a live sample and reset. Windows high contrast takes precedence. |
 | **Privacy** | All conversations: automatic encrypted saving and its persistent opt-out. |
@@ -334,27 +334,28 @@ inside Settings.
 | --- | --- |
 | **Thinking** | Off initially and in older saved chats; enables reasoning for the next response and every Extra effort pass. |
 | **Mode** | Standard makes one call. Experimental Extra effort makes at most three sequential plan/draft/review calls under one ten-minute deadline, shows stage labels and retains complete drafts. A truncated revision does not replace a complete draft; quality gains remain unproven. |
-| **Output cap** | The composer's **Reply** selector and **Settings > Response** share this conversation's cap. Defaults to 4,096; also offers 512/1,024/2,048 reasoning-inclusive tokens within the fixed 8,192-token context and 64-token template reserve. |
+| **Output cap** | Available only in **Settings > Response > Advanced response controls**, under **Reply length**. Defaults to 4,096; also offers 512/1,024/2,048 reasoning-inclusive tokens within the fixed 8,192-token context and 64-token template reserve. |
 | **Abliteration scale** | The advanced adapter disclosure in **Settings > Response** explains this experimental correction. The pinned adapter defaults to 1.3; choose 0-2 in 0.1 steps for the next response/every Extra effort pass without restart. Zero disables the correction. Older saved chats use 1.3; effectiveness and quality remain experimental. |
 
-The composer's **Context** button shows approximate occupancy for the selected
-conversation's next Send. Open it for a segmented breakdown of committed history
-including retained reasoning, the trimmed draft and approximate template framing,
+The composer's **Conversation space** button opens approximate occupancy for the
+selected conversation's next Send. Open it for a segmented breakdown of committed
+history including retained reasoning, the trimmed draft and approximate template framing,
 Extra effort planning overhead when enabled, the selected reply reservation and
-the fixed 64-token reserve. The percentage and input counts are heuristic and may
+the fixed 64-token reserve. The input counts are heuristic and may
 overestimate or underestimate the tokenizer. The selected reply cap, reserve and
 8,192-token limit are exact policy values; the estimate is no guarantee of fit.
 Extra effort estimates cover its planning pass only: later passes include generated
 working material that is not yet known. Message iteration can use a different
 prompt or committed prefix, so the composer estimate does not preflight those actions.
 
-At approximately 85% occupancy or estimated overflow, the details offer an explicit
-smaller supported reply cap when one fits the estimate, and **Start fresh** when a
-conversation slot is available. Starting fresh preserves the previous conversation
-and its draft. No estimate disables Send, trims history or changes a cap automatically.
+At approximately 85% occupancy or estimated overflow, a plain-language warning offers
+**Start fresh**. The details explain when a smaller reply limit may help and point
+to advanced Settings; they never change the limit. Starting fresh preserves the
+previous conversation and its draft. No estimate disables Send, trims history or
+changes a cap automatically.
 Reply controls retain the normal generation lock. When the visible conversation
-owns an active response, **Context updating** avoids presenting unfinished output
-as committed history; another selected conversation keeps its own next-draft estimate.
+owns an active response, the space details explain that they update after the response
+finishes; another selected conversation keeps its own next-draft estimate.
 Escape closes context details before Find or Stop, and Enter in those details does
 not submit the composer.
 

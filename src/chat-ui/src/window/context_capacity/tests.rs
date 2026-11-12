@@ -79,6 +79,7 @@ fn context_capacity_capture_when_requested() -> std::io::Result<()> {
     for (name, size, details) in [
         ("context-details-wide.png", [1180.0, 860.0], true),
         ("context-warning-narrow.png", [620.0, 640.0], false),
+        ("composer-toolbar-minimum.png", [480.0, 480.0], false),
     ] {
         let mut chat = harness_with_render(size, "Help me refine this idea.", true);
         let mut messages = history("Help me refine this idea.");
@@ -90,7 +91,7 @@ fn context_capacity_capture_when_requested() -> std::io::Result<()> {
         chat.state_mut().app.transcript = transcript;
         chat.run();
         if details {
-            chat.get_by_role_and_label(egui::Role::Button, "Context capacity")
+            chat.get_by_role_and_label(egui::Role::Button, "Conversation space")
                 .click();
             chat.run();
         }
@@ -173,7 +174,7 @@ fn context_capacity_recovery_and_branch_rebuild_without_saving_estimates() -> st
 }
 
 #[test]
-fn context_capacity_warning_keeps_send_available_and_reply_choice_reaches_worker() {
+fn context_capacity_warning_keeps_send_available_without_changing_reply_limits() {
     for size in [[1180.0, 860.0], [620.0, 640.0]] {
         let mut chat = harness(size, &"a".repeat(20_000));
         assert_eq!(
@@ -190,19 +191,60 @@ fn context_capacity_warning_keeps_send_available_and_reply_choice_reaches_worker
             .get_by_role_and_label(egui::Role::Button, "Send  ↑")
             .rect();
         assert!(egui::Rect::from_min_size(egui::Pos2::ZERO, size.into()).contains_rect(send));
-        chat.get_by_role_and_label(egui::Role::Button, "Use 2,048-token reply")
-            .click();
-        chat.run();
         assert_eq!(chat.state().app.input, "Keep this draft");
-        assert_eq!(chat.state().app.output_budget, 2);
-        assert!(chat.state().app.recovery_dirty);
+        assert_eq!(chat.state().app.output_budget, 3);
+        assert!(chat.query_by_label("Use 2,048-token reply").is_none());
         chat.get_by_role_and_label(egui::Role::Button, "Send  ↑")
             .click();
         chat.run();
         assert!(chat.state().commands.try_iter().any(|command| matches!(
             command,
-            client::Command::Send { max_completion_tokens: 2048, text, .. } if text == "Keep this draft"
+            client::Command::Send { max_completion_tokens: 4096, text, .. } if text == "Keep this draft"
         )));
+    }
+}
+
+#[test]
+fn context_capacity_toolbar_keeps_plain_actions_visible_at_minimum_and_wide_sizes() {
+    for size in [[480.0, 480.0], [620.0, 640.0], [1180.0, 860.0]] {
+        for theme in [
+            crate::window::appearance::Theme::Light,
+            crate::window::appearance::Theme::Dark,
+        ] {
+            let mut chat = harness(size, "Question");
+            chat.state_mut().app.appearance.theme = theme;
+            chat.state_mut().app.appearance.text_size = 24;
+            chat.state_mut().app.enable_thinking = true;
+            chat.state_mut().app.extra_effort = true;
+            chat.state_mut().app.abliteration_scale = 2.0;
+            chat.state().app.appearance.apply(&chat.ctx);
+            chat.run();
+            let bounds = egui::Rect::from_min_size(egui::Pos2::ZERO, size.into());
+            let space = chat
+                .get_by_role_and_label(egui::Role::Button, "Conversation space")
+                .rect();
+            let options = chat
+                .get_by_role_and_label(egui::Role::Button, "Response options")
+                .rect();
+            assert!(bounds.contains_rect(space) && bounds.contains_rect(options));
+            assert!(!space.intersects(options));
+            assert!(space.height() >= 32.0 && options.height() >= 32.0);
+            for label in ["Conversation space", "Response options"] {
+                assert!(
+                    chat.get_by_role_and_label(egui::Role::Button, label)
+                        .accesskit_node()
+                        .toggled()
+                        .is_none()
+                );
+            }
+            assert!(chat.query_by_label("Reply token limit").is_none());
+            assert!(
+                chat.query_by_label("Thinking on · Extra effort · Adapter 2.0")
+                    .is_none()
+            );
+            assert_eq!(chat.state().app.input, "Keep this draft");
+            assert!(chat.state().commands.try_recv().is_err());
+        }
     }
 }
 
@@ -211,7 +253,7 @@ fn context_capacity_popover_is_keyboard_accessible_and_scopes_extra_effort() {
     let mut chat = harness([620.0, 640.0], "Question");
     chat.state_mut().app.extra_effort = true;
     chat.run();
-    chat.get_by_role_and_label(egui::Role::Button, "Context capacity")
+    chat.get_by_role_and_label(egui::Role::Button, "Conversation space")
         .focus();
     chat.key_press(egui::Key::Space);
     chat.run();
@@ -255,7 +297,7 @@ fn context_capacity_escape_closes_details_before_stopping_generation() {
     chat.state_mut().app.model = ModelLifecycle::Generating;
     chat.state_mut().app.request_conversation = Some(owner);
     chat.run();
-    chat.get_by_role_and_label(egui::Role::Button, "Context capacity")
+    chat.get_by_role_and_label(egui::Role::Button, "Conversation space")
         .click();
     chat.run();
     assert!(chat.query_by_label("Space for this draft").is_some());

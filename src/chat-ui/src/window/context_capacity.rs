@@ -37,16 +37,6 @@ impl State {
             .unwrap_or(4096)
     }
 
-    fn select_output_cap(&mut self, cap: u32) {
-        if !self.model.busy()
-            && let Some(index) = OUTPUT_TOKENS.iter().position(|&value| value == cap)
-            && self.output_budget != index
-        {
-            self.output_budget = index;
-            self.recovery_dirty = true;
-        }
-    }
-
     fn context_pending(&self) -> bool {
         self.request_conversation == Some(self.active_conversation)
             && matches!(
@@ -65,60 +55,27 @@ impl State {
                 ui.horizontal_wrapped(|ui| {
                     ui.spacing_mut().item_spacing.x = 8.0;
                     let label = ui.label(RichText::new("Message").small().weak());
-                    let summary = if pending {
-                        "Context · updating".to_owned()
+                    let response = toolbar_button(
+                        ui,
+                        "Conversation space",
+                        !pending && estimate.pressure() != Pressure::Comfortable,
+                    )
+                    .on_hover_text(if pending {
+                        "Conversation space updates when this response finishes. Open for details."
                     } else {
-                        let percent = estimate.total.saturating_mul(100) / context::CONTEXT_TOKENS;
-                        format!("Context · ~{percent}%")
-                    };
-                    let color = if pending || estimate.pressure() == Pressure::Comfortable {
-                        ui.visuals().weak_text_color()
-                    } else {
-                        ui.visuals().warn_fg_color
-                    };
-                    let response = ui
-                        .add(
-                            egui::Button::new(RichText::new(summary).small().color(color))
-                                .frame_when_inactive(false)
-                                .corner_radius(8),
-                        )
-                        .accessible_name("Context capacity")
-                        .on_hover_text("Estimated space for this draft, completed history and the reply limit. Open for details.");
+                        "See how much room is left for this conversation and your next message."
+                    });
                     egui::Popup::menu(&response)
                         .align(egui::RectAlign::TOP_START)
                         .width(320.0)
                         .close_behavior(egui::PopupCloseBehavior::CloseOnClickOutside)
                         .show(|ui| self.context_details(ui, estimate, pending));
-                    ui.add_enabled_ui(!self.model.busy(), |ui| {
-                        egui::ComboBox::from_id_salt("composer-output-cap")
-                            .selected_text(format!("Reply · {}", tokens(estimate.output)))
-                            .width(122.0)
-                            .show_ui(ui, |ui| {
-                                for cap in OUTPUT_TOKENS {
-                                    if ui
-                                        .selectable_label(
-                                            self.selected_output_cap() == cap,
-                                            format!("{} tokens", tokens(usize::try_from(cap).unwrap_or(4096))),
-                                        )
-                                        .clicked()
-                                    {
-                                        self.select_output_cap(cap);
-                                    }
-                                }
-                            })
-                            .response
-                            .accessible_name("Reply token limit")
-                            .on_hover_text("Maximum tokens for the next reply, including thinking. Saved for this conversation.");
-                    });
                     self.response_summary(ui);
                     label
                 })
                 .inner
             })
             .inner;
-        // Re-evaluate after a reply-limit selection so the guidance updates in
-        // the same frame. Ordinary messages carry no extra warning row.
-        let estimate = self.context_estimate();
         if !pending && estimate.pressure() != Pressure::Comfortable {
             self.context_guidance(ui, estimate);
         }
@@ -183,10 +140,13 @@ impl State {
         if self.extra_effort {
             ui.label("First pass only. Extra effort's later passes add generated notes and drafts and need more room.");
         }
-        ui.label(RichText::new("Changing the reply limit keeps every completed turn and your draft. Message actions use their own prompts.").small().weak());
+        ui.label(RichText::new("Reply limits are in Settings → Response → Advanced response controls. Changing them keeps your conversation and draft. Message actions use their own prompts.").small().weak());
         if !pending && estimate.pressure() != Pressure::Comfortable {
+            if estimate.suggested_cap().is_some() {
+                ui.label("A smaller reply limit could leave more room for this message.");
+            }
             ui.add_space(8.0);
-            self.context_actions(ui, estimate);
+            self.context_actions(ui);
         }
     }
 
@@ -194,27 +154,18 @@ impl State {
         ui.horizontal_wrapped(|ui| {
             ui.label(
                 RichText::new(if estimate.pressure() == Pressure::Over {
-                    "This draft may exceed the context limit."
+                    "This message may be too long for this conversation."
                 } else {
-                    "This conversation may be near its context limit."
+                    "This conversation is getting full."
                 })
                 .small()
                 .color(ui.visuals().warn_fg_color),
             );
-            self.context_actions(ui, estimate);
+            self.context_actions(ui);
         });
     }
 
-    fn context_actions(&mut self, ui: &mut egui::Ui, estimate: Estimate) {
-        if let Some(cap) = estimate.suggested_cap()
-            && ui
-                .add_enabled(!self.model.busy(), egui::Button::new(format!("Use {}-token reply", tokens(usize::try_from(cap).unwrap_or(4096)))).small())
-                .on_hover_text("Change only the reply limit for this conversation; fit is still checked exactly when sending.")
-                .clicked()
-        {
-            self.select_output_cap(cap);
-            egui::Popup::close_all(ui.ctx());
-        }
+    fn context_actions(&mut self, ui: &mut egui::Ui) {
         if ui
             .add_enabled(
                 self.model.workspace_available(),
@@ -227,6 +178,29 @@ impl State {
             egui::Popup::close_all(ui.ctx());
         }
     }
+}
+
+/// Keep the composer's secondary actions consistent across native themes.
+pub(super) fn toolbar_button(ui: &mut egui::Ui, text: &str, active: bool) -> egui::Response {
+    use egui::class::HasClasses as _;
+
+    ui.scope(|ui| {
+        ui.spacing_mut().button_padding = egui::vec2(10.0, 6.0);
+        let mut label = RichText::new(text).small();
+        if active {
+            label = label.color(ui.visuals().selection.stroke.color);
+        }
+        ui.add(
+            egui::Button::new(label)
+                .corner_radius(16)
+                .min_size(egui::vec2(0.0, 32.0))
+                // Highlight customized options or a capacity warning without
+                // announcing a toggle: activating these buttons opens a surface.
+                .with_class_if(egui::Button::CLASS_SELECTED, active),
+        )
+        .on_hover_cursor(egui::CursorIcon::PointingHand)
+    })
+    .inner
 }
 
 fn capacity_meter(ui: &mut egui::Ui, estimate: Estimate) {

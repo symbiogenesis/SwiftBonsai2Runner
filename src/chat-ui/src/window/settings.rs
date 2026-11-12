@@ -70,10 +70,14 @@ impl State {
                 && (self.abliteration_scale - client::DEFAULT_ABLITERATION_SCALE).abs()
                     > f32::EPSILON);
         let help = match (self.enable_thinking, self.extra_effort) {
-            (true, true) => "Thinking and extra effort are on. Open options for your next response.",
+            (true, true) => {
+                "Thinking and extra effort are on. Open options for your next response."
+            }
             (true, false) => "Thinking is on. Open options for your next response.",
             (false, true) => "Extra effort is on. Open options for your next response.",
-            (false, false) => "Choose how Swift responds in this conversation. Opens response settings.",
+            (false, false) => {
+                "Choose how Swift responds in this conversation. Opens response settings."
+            }
         };
         if super::context_capacity::toolbar_button(ui, "Response options", customized)
             .accessible_name("Response options")
