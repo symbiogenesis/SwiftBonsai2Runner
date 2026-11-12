@@ -160,8 +160,8 @@ projection, `1.08–1.44 ms` for 2 projections, `2.27–2.87 ms` for 6 recurrent
 `4.43–4.87 ms` with `422.49–446.20 ms` warm token evaluation for 13 projections in `blk.0 + blk.3`,
 and `10.05–10.91 ms` for all 25 projections of the 4-layer repeating block `blk.0..=blk.3`).
 
-For the November 3 capture, **TTFT** runs from client request start through the first output token, including
-required exact token-count admission, template processing, prefill and HTTP
+For the November 3 capture, **TTFT** runs from client request start through the first output token,
+including required exact token-count admission, template processing, prefill and HTTP
 transport; model verification/loading/startup is excluded. **Generation tokens/s**
 is `(N - 1) / (last token time - first token time)`, using reported completion
 usage `N`, so it excludes TTFT. Incremental receive timestamps and source-verified
