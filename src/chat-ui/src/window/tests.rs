@@ -449,6 +449,28 @@ fn speech_memory_failure_keeps_text_chat_and_completed_answer_available() -> io:
 }
 
 #[test]
+fn dictation_updates_loading_drafts_and_switching_cancels_late_transcripts() {
+    for phase in [
+        ModelLifecycle::Preparing,
+        ModelLifecycle::Unavailable,
+        ModelLifecycle::Retryable,
+    ] {
+        let (mut state, commands, _events) = state();
+        state.model = phase;
+        state.dictation_requested = true;
+        state.microphone_generation = Some(7);
+        state.accept_transcript(7, "Dictated draft");
+        assert_eq!(state.input, "Dictated draft");
+        state.submit();
+        assert!(commands.try_recv().is_err());
+        state.new_chat();
+        state.accept_transcript(7, "Late transcript");
+        assert!(state.input.is_empty());
+        assert!(!state.dictation_requested);
+    }
+}
+
+#[test]
 fn cancelled_dictation_cannot_insert_a_late_transcript() {
     let (mut state, _commands, _events) = state();
     state.model = ModelLifecycle::Ready;

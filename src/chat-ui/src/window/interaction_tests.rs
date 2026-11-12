@@ -292,10 +292,12 @@ fn speech_controls_follow_speech_readiness_independently_of_chat_readiness() -> 
     for model in [ModelLifecycle::Preparing, ModelLifecycle::Ready] {
         chat.state_mut().app.model = model;
         for output in [false, true] {
-            chat.state_mut().app.speech_event(speech::Event::Capabilities {
-                input: false,
-                output,
-            });
+            chat.state_mut()
+                .app
+                .speech_event(speech::Event::Capabilities {
+                    input: false,
+                    output,
+                });
             chat.run();
             for (role, label) in [
                 (egui::Role::Button, "Read this response aloud"),

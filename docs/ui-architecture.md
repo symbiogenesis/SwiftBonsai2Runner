@@ -139,7 +139,9 @@ locally and the selected conversation's committed history is restored at readine
 without replaying a prompt. Generation, teardown and the brief unacknowledged
 restart retain conversation ownership until their queued turn events are settled.
 A late rejected prompt returns only to its original conversation if it still exists.
-Loading and failure status stays visible when switching conversations. Speech
+Loading and failure status stays visible when switching conversations. Prepared
+dictation can update a draft before Swift is ready, and switching cancels capture
+and ignores late transcripts. Speech
 controls follow their separate output capability; they cannot queue playback during
 speech preparation. Once available, an explicit read action retains on-demand TTS
 model loading and authenticated readiness checks. Stop speech remains available.

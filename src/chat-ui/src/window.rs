@@ -753,8 +753,8 @@ impl State {
             let message = self.microphone_help();
             message.clone_into(&mut self.speech_status);
             self.help = Some(("Microphone setup", message));
-        } else if !self.model.ready() || !self.speech_input {
-            "Enable the microphone after model startup completes."
+        } else if !self.speech_input {
+            "Enable the microphone after speech preparation completes."
                 .clone_into(&mut self.speech_status);
         } else if !self.model.busy() && !self.speaking {
             let Some(microphone) = &mut self.microphone else {
@@ -959,7 +959,6 @@ impl State {
     fn accept_transcript(&mut self, generation: u64, text: &str) {
         if !self.dictation_requested
             || self.microphone_generation != Some(generation)
-            || !self.model.ready()
             || self.model.busy()
         {
             return;
@@ -2149,7 +2148,7 @@ mod startup_tests {
         assert!(state.help.is_none());
         assert_eq!(
             state.speech_status,
-            "Enable the microphone after model startup completes."
+            "Enable the microphone after speech preparation completes."
         );
         state.toggle_streaming_read_aloud();
         assert!(state.help.is_none() && !state.streaming_read_aloud);
@@ -2169,11 +2168,15 @@ mod startup_tests {
         assert!(state.streaming_read_aloud);
         state.toggle_read_aloud(message_id);
         assert!(matches!(
-            speech_commands.recv_timeout(Duration::from_secs(2)).map_err(io::Error::other)?,
+            speech_commands
+                .recv_timeout(Duration::from_secs(2))
+                .map_err(io::Error::other)?,
             speech::Command::StopListening
         ));
         assert!(matches!(
-            speech_commands.recv_timeout(Duration::from_secs(2)).map_err(io::Error::other)?,
+            speech_commands
+                .recv_timeout(Duration::from_secs(2))
+                .map_err(io::Error::other)?,
             speech::Command::StopSpeaking
         ));
         assert!(matches!(
