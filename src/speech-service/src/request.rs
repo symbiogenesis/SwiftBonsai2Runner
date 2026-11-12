@@ -1,6 +1,6 @@
 //! Strict JSON and multipart supported subsets; all payloads stay in memory.
 
-use crate::{CANARY_MODEL, Request, TTS_MODEL, http::Error, wave};
+use crate::{ASR_MODEL, Request, TTS_MODEL, http::Error, wave};
 use serde::Deserialize;
 use std::borrow::Cow;
 
@@ -220,10 +220,10 @@ fn multipart<'a>(media: &str, body: &'a [u8]) -> Result<&'a [u8], Error> {
             return Err(Error::bad("invalid_multipart"));
         }
     }
-    if model != Some(CANARY_MODEL.as_bytes()) {
+    if model != Some(ASR_MODEL.as_bytes()) {
         return Err(Error::bad("unsupported_model"));
     }
-    if language.is_some_and(|value| value != b"en") {
+    if language.is_some_and(|value| value != b"Auto") {
         return Err(Error::bad("unsupported_language"));
     }
     file.ok_or(Error::bad("invalid_audio"))

@@ -1,4 +1,4 @@
-//! Native companion transport shared by Canary recognition and Qwen `VoiceDesign`.
+//! Native companion transport shared by Qwen3-ASR recognition and Qwen `VoiceDesign`.
 //!
 //! Load the actual engine before calling [`serve`]. This library belongs in a
 //! separately owned speech companion process: its inference watchdog terminates
@@ -23,14 +23,16 @@ mod wave;
 mod tests;
 
 /// The only supported recognition checkpoint identity.
-pub const CANARY_MODEL: &str = "nvidia/canary-qwen-2.5b";
+pub const ASR_MODEL: &str = "Qwen/Qwen3-ASR-1.7B";
+/// Legacy recognition constant retained for source compatibility; identifies Qwen3-ASR.
+pub const CANARY_MODEL: &str = ASR_MODEL;
 /// The only supported voice-design checkpoint identity.
 pub const TTS_MODEL: &str = "Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign";
 
 /// Fixed speech service capabilities, independent of engine implementation.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Kind {
-    /// Canary Qwen speech recognition with 16 kHz mono input.
+    /// Qwen3-ASR 1.7B recognition with 16 kHz mono input (legacy variant name).
     Canary,
     /// Qwen3-TTS 1.7B `VoiceDesign` with 24 kHz or 48 kHz mono output.
     QwenTts,
@@ -41,7 +43,7 @@ impl Kind {
     #[must_use]
     pub const fn model(self) -> &'static str {
         match self {
-            Self::Canary => CANARY_MODEL,
+            Self::Canary => ASR_MODEL,
             Self::QwenTts => TTS_MODEL,
         }
     }
@@ -77,7 +79,7 @@ pub struct Audio {
 
 /// Completed inference output, retained in memory until its HTTP response ends.
 pub enum Output<S = Vec<f32>> {
-    /// Plain recognition output, never automatically submitted as a chat prompt.
+    /// Plain recognition output; the client owns subsequent chat submission.
     Transcript(String),
     /// Complete voice-design waveform with no reference recording or preset.
     Audio(Audio),

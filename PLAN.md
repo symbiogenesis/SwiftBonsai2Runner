@@ -22,7 +22,7 @@ the corresponding detailed task changes; keep every acceptance obligation below.
 | R2 / qualification | Prism, then Runner | Settled candidate, required helper release and owning hosted checks | Close CPU/prefill codegen, fallback, state/adapter/cancellation and matched selected-device benefit gates, with independent X1 evidence where selected. Qualify changes already consumed in 0.1.23 without requiring another repin; see [runtime correctness](#runtime-and-correctness). |
 | R3 / integration, qualification | Prism and Runner harnesses | Agreed execution/state identities and existing complete-state fixtures | Prepare shared state/restore and fault-control tooling independently of runtime qualification; map each prefix/prefill/speculation/accelerator path to its independent assertions and evidence. |
 | S1 / implementation, integration | Runner; Prism for shared runtime/RPC consumers | Agreed verified-loading, state, stream and transport ownership interfaces | Integrate Talker/CodePredictor, codec/speaker and signed Rust RPC through [C++ retirement](#complete-c-retirement); qualify the ordinary Q4 baseline before ternary speech and new 48 kHz artifacts. |
-| S2 / implementation, qualification | Runner | Authenticated Canary artifacts and replacement controls | Replace ASR's native engine and close transcript/state, cancellation, lifecycle, quality and resource gates before removing its compiler/dependency paths. |
+| S2 / implementation, qualification | Runner | Pinned Qwen3-ASR 1.7B artifacts and replacement controls | Qualify microphone-to-Swift submission, then replace ASR's native engine and close transcript/state, cancellation, lifecycle, quality and resource gates before removing its compiler/dependency paths. |
 | P1 / external, qualification | Prism and Runner | Original authoring inputs for provenance; hosted public-pack reconstruction for its separate gate | Run the declared reconstruction and independent replay while pursuing provenance intake independently; follow the PTQ1 critical path below. Neither blocks A1. |
 | N1 / qualification | Prism and Runner | Frozen NPU-1 packet and applicable signed/runtime prerequisites | Complete [NPU-1 through NPU-7](#promotion-sequence) for the selected explicit X2 profile. HMX/PTQ1/X1/GPU/automatic selection retain their separate later gates. |
 | Q1 / qualification | Runner and independent human reviewers | Exact complete-answer/audio captures and declared rubric | Prepare the [creative and speech](#creative-quality-adapters-and-memory) review packets in parallel with source work; retained output can support applicable review without another device capture. |
@@ -242,6 +242,22 @@ pending gates. Full suites, benchmarks and performance captures stay in owning C
 ## Application and daily service
 
 ### Actual-model acceptance
+
+Qualify the composer microphone with the pinned Qwen3-ASR 1.7B Q8_0 model on
+Windows ARM64: explicit permission, click-to-finish and 25-second completion,
+language autodetection, exactly one text prompt through Swift's normal request
+path, empty/failed transcription, model preparation/failure, cancellation and late
+results after conversation changes. Confirm unavailable Swift preserves recognized
+text as a draft without deferred submission, ASR/TTS exclusion, verified model and
+service identities, recorder teardown and resource admission. Earlier Canary
+fixture recognition does not qualify Qwen3-ASR; source checks establish neither
+actual audio behavior nor accuracy or performance. Keep the independent native
+Rust ASR replacement and C++ retirement gates below.
+The bounded local source check stopped on a Markdown line length and six uses
+of an obsolete egui test API, before running regressions. Those source issues
+were corrected without retrying the closed trial; final all-target analysis and
+the named voice, protocol, provisioning and recognizer regressions remain pending
+in owner-managed CI.
 
 Qualify conversation switching, creation, deletion and per-conversation drafts
 during native startup, generation and after preparation failure. Confirm background
@@ -909,7 +925,7 @@ not close pending hosted integration or full-model acceptance.
   schedules, corrections, unsupported outcomes and numerical/target boundaries.
   Remove dispatch, native ABI probes, build/cache/source-download paths and linkage
   only when their retained obligations have replacements.
-- Replace Qwen/GGML TTS and Canary ASR's `transcribe-cpp` inference dependency with
+- Replace Qwen/GGML TTS and Qwen3-ASR's `transcribe-cpp` inference dependency with
   native Rust model/audio execution, qualifying exact artifacts, token/PCM/state,
   cancellation, lifecycle, quality and resource contracts. Then remove compiler,
   CMake, static/native library and source provisioning paths. Retire publisher and
@@ -1105,7 +1121,7 @@ not close pending hosted integration or full-model acceptance.
   comparisons are insufficient.
 - Qualify chat alone, warm TTS and overlap with a small shared thread-budget set: UI
   frames, audio continuity, useful-answer time, sustained memory and heat. Check cold
-  idle separately from active, warm and Canary monitoring, including wake and Stop
+  idle separately from active, warm and Qwen3-ASR monitoring, including wake and Stop
   during the 30-second TTS lease. Preserve [ASR/TTS exclusion and
   reserves](docs/streaming-resources.md#speech-scheduling-and-playback).
 - Defer [speech

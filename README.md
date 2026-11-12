@@ -65,8 +65,9 @@ is pending the owner's source push and GitHub release workflow run.
   adapter's strength for the next reply (set to **1.3** by default, or **0** to turn
   it off). Its effect and output quality on Swift are still experimental.
 - **Voice and dictation:** Chat by typing, hear answers read aloud in a voice you
-  describe in plain words, or dictate a message to review before sending. The
-  microphone stays off until you turn it on and grant Windows permission. **Read
+  describe in plain words, or record a message with Qwen3-ASR 1.7B. Finish recording
+  to transcribe and send it to Swift. The microphone stays off until you turn it
+  on and grant Windows permission. **Read
   aloud as responses arrive** speaks new replies while Swift writes, and each
   reply's speaker button lets you replay it anytime.
 

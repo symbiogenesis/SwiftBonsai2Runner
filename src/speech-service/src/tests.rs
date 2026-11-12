@@ -347,10 +347,54 @@ fn memory_body_intake_preserves_the_maximum_declared_speech_payload() -> io::Res
 }
 
 fn multipart_audio() -> Vec<u8> {
-    let mut body = format!("--fixture\r\nContent-Disposition: form-data; name=\"model\"\r\n\r\n{}\r\n--fixture\r\nContent-Disposition: form-data; name=\"file\"; filename=\"speech.wav\"\r\nContent-Type: audio/wav\r\n\r\n", crate::CANARY_MODEL).into_bytes();
+    multipart_audio_for_model(crate::ASR_MODEL)
+}
+
+fn multipart_audio_for_model(model: &str) -> Vec<u8> {
+    let mut body = format!("--fixture\r\nContent-Disposition: form-data; name=\"model\"\r\n\r\n{model}\r\n--fixture\r\nContent-Disposition: form-data; name=\"file\"; filename=\"speech.wav\"\r\nContent-Type: audio/wav\r\n\r\n").into_bytes();
     body.extend_from_slice(&input_wav());
     body.extend_from_slice(b"\r\n--fixture--\r\n");
     body
+}
+
+#[test]
+fn qwen_asr_rejects_legacy_canary_before_inference() -> io::Result<()> {
+    let body = multipart_audio_for_model("nvidia/canary-qwen-2.5b");
+    let (response, calls) = exchange(
+        Kind::Canary,
+        "POST /v1/audio/transcriptions",
+        &[
+            ("Content-Type", "multipart/form-data; boundary=fixture"),
+            ("Content-Length", &body.len().to_string()),
+        ],
+        &body,
+    )?;
+    assert!(response.starts_with(b"HTTP/1.1 400"));
+    assert_eq!(calls, 0);
+    Ok(())
+}
+
+#[test]
+fn qwen_asr_accepts_autodetection_and_rejects_language_overrides() -> io::Result<()> {
+    for (language, status, expected_calls) in [("Auto", "200", 1), ("en", "400", 0)] {
+        let prefix = format!(
+            "--fixture\r\nContent-Disposition: form-data; name=\"language\"\r\n\r\n{language}\r\n"
+        );
+        let mut body = prefix.into_bytes();
+        body.extend_from_slice(&multipart_audio());
+        let (response, calls) = exchange(
+            Kind::Canary,
+            "POST /v1/audio/transcriptions",
+            &[
+                ("Content-Type", "multipart/form-data; boundary=fixture"),
+                ("Content-Length", &body.len().to_string()),
+            ],
+            &body,
+        )?;
+        assert!(response.starts_with(format!("HTTP/1.1 {status}").as_bytes()));
+        assert_eq!(calls, expected_calls);
+    }
+    Ok(())
 }
 
 #[test]

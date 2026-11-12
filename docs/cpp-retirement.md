@@ -148,7 +148,7 @@ its existing source-level assertions and contracts through the process above.
 ## External engines, generators and build dependencies
 
 Retirement also covers the Qwen/GGML TTS core and `transcribe-cpp`/`transcribe-cpp-sys`
-Canary ASR core, including their separate GGML versions. Native Rust replacements
+Qwen3-ASR core, including their separate GGML versions. Native Rust replacements
 must retain model verification, audio/token contracts, cancellation, state, output
 quality and actual-device resource acceptance. Reusing a C++ library's Rust binding
 does not satisfy this milestone.

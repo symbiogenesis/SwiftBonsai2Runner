@@ -95,7 +95,7 @@ already migrated from `native::Context`.
 Prepare and qualify the ordinary Q4 baseline first while retaining the Q8
 control. Ternary Talker artifacts, new 48 kHz model locks and signed offload keep
 their separate prerequisites and qualification after baseline integration.
-Canary ASR remains a separate complete Rust-engine replacement, including its
+Qwen3-ASR remains a separate complete Rust-engine replacement, including its
 artifact, transcript/state, cancellation, lifecycle, quality and resource gates.
 Remove C++/native dependencies and compiler provisioning only under the
 [file-family retirement contract](cpp-retirement.md). All presentation remains
@@ -345,16 +345,17 @@ comparison and cleanup still share the five-minute owner-device budget.
 
 ### Speech setup and operation
 
-The launcher provisions native ARM64 Canary Qwen 2.5B and Qwen3-TTS 1.7B
+The launcher provisions native ARM64 Qwen3-ASR 1.7B and Qwen3-TTS 1.7B
 VoiceDesign/Base companions. Rust owns services, authentication, validation, WAV
 processing and process ownership; reviewed native GGML C++ engines provide inference.
-Canary uses CPU. TTS can select an optional local Hexagon `HTP0` backend and
+Qwen3-ASR uses CPU. TTS can select an optional local Hexagon `HTP0` backend and
 otherwise uses CPU; `BONSAIRUNNER_TTS_DEVICE=CPU` explicitly selects CPU.
 This separate speech path is not the Swift `native-q2` policy, and its presence
 checks do not establish runtime signature/hash verification, contained device
 access, audio quality or a speed advantage. See the [TTS runtime contract](../src/speech-tts/README.md).
-The four pinned Q8_0 GGUF files total about 6.7 GiB under
-`$data/speech/native/<revision>/`. Downloads resume with exact size/SHA-256
+The four pinned Q8_0 GGUF files total about 6.1 GiB under
+`$data/speech/native/`; ASR uses `qwen3-asr/<revision>/`, and TTS uses
+`qwen-tts/<revision>/`. Downloads resume with exact size/SHA-256
 verification; launch checks cached sizes, then each service fully hashes and holds
 files before first load. Original snapshots/private runtimes are preserved.
 
@@ -368,9 +369,12 @@ $speech.TtsCodecPath
 $speech.TtsVoiceModelPath
 ```
 
-Rust `speech-build` with `operation: "models"` and `model: "Canary"` or `"QwenTts"` selects one
-engine. Rust `provision` with `operation: "speech-reference"` explicitly provisions original
-reference snapshots, which the app no longer uses. `--no-tts` skips automatic TTS setup;
+Rust `speech-build` with `operation: "models"` and `model: "QwenAsr"` or `"QwenTts"` selects one
+engine. The legacy `"Canary"` selector, `CanaryModelPath` result and `--canary-*`
+connection options remain compatibility names for Qwen3-ASR; they do not select
+the old Canary checkpoint. Rust `provision` with `operation: "speech-reference"`
+explicitly provisions original reference snapshots, which the app no longer uses.
+`--no-tts` skips automatic TTS setup;
 `--no-speech-models` skips all automatic speech setup/downloads. Neither provisioning nor compiling
 opens a microphone.
 
@@ -382,15 +386,16 @@ LLVM extraction uses `System32/tar.exe`. Cached launch invokes neither download.
 `bonsai-tools chat --asr-path PATH` / `--tts-path PATH` select built executables,
 whose services still verify models.
 
-Only explicitly enabled, Windows-permitted microphone capture starts input.
-Five-second mono 16 kHz WAV clips remain in memory; capture pauses for each
-transcription and reuses the recorder only for the same enabled, permitted
-generation. Disabling or revoking access closes the recorder.
-Fixed clip boundaries can split words: this is neither streaming ASR nor VAD.
-Transcripts return to the composer for review, never automatic send. Disabling,
-revocation, Send, New conversation, read-aloud or closing cancels input; late
-completions cannot reactivate it. Missing/not-ready Canary or denied permission
-keeps capture off and exposes setup guidance.
+The microphone button beside Send starts input only after explicit action and
+Windows permission. Click it again to finish the utterance; capture also finishes
+at 25 seconds. Mono 16 kHz WAV audio stays in memory and is transcribed locally by
+Qwen3-ASR 1.7B with language autodetection. The recognized text enters the composer
+and is sent once through the normal Swift prompt path if the model is ready.
+If Swift is unavailable or still preparing, the text remains a draft for explicit
+Send; readiness never sends it later. This is bounded utterance capture, not VAD
+or streaming ASR. Cancel/Escape, revocation, Send, conversation changes, read-aloud
+or closing cancel input and invalidate late results. Missing/not-ready Qwen3-ASR
+or denied permission keeps capture off and exposes setup guidance.
 
 Each completed response's lower-right **speaker button** reads it independently,
 including while a newer response generates. The active button becomes **Stop**;
@@ -414,9 +419,9 @@ speech; a hidden response never interrupts manual playback in the visible chat. 
 checkbox without replay on restore. Working drafts and reasoning are excluded.
 
 Owned speech uses separate Windows Jobs and mutual exclusion: read-aloud releases
-Canary before Qwen loads; transcription releases Qwen. Canary loads only after
-the first captured clip and stays warm only for the enabled input generation.
-Qwen loads on demand after Swift startup, synthesizes sequential 256-character
+Qwen3-ASR before TTS loads; transcription releases TTS. Qwen3-ASR loads only after
+the captured utterance and stays loaded only for that input generation.
+Qwen3-TTS loads on demand after Swift startup, synthesizes sequential 256-character
 segments with bounded streaming playback/prefetch and stays warm at most 30 idle
 seconds after success. Stop, failure, transcription or shutdown releases it immediately;
 resource monitoring continues while warm. Each service requires 9 GiB available,
@@ -450,7 +455,7 @@ each other and chat ports. Key-only services remain externally owned and trigger
 no unused provisioning/builds. Authenticated capabilities are checked; TTS requires
 `consistent_voice: true` and can use complete-WAV playback without streaming.
 No substitute recognizer or Windows voice is used. Idle controls expose missing
-setup guidance. See [Canary](../tools/canary-asr/README.md) and
+setup guidance. See [Qwen3-ASR](../tools/canary-asr/README.md) and
 [Qwen](../tools/qwen-tts/README.md) for protocols. Native smoke checks establish a
 working path, not full audio quality, latency or daily-use qualification.
 

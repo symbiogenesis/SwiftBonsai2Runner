@@ -182,7 +182,7 @@ to avoid mixing GGML versions. The dependency-free `bonsai-audio` codec borrows
 validated mono PCM16 WAV payloads and opens no devices; callers retain their own
 sample-rate, duration and error policies.
 
-Canary uses CPU; TTS can register an optional local Hexagon `HTP0` backend with
+Qwen3-ASR 1.7B uses CPU; TTS can register an optional local Hexagon `HTP0` backend with
 CPU fallback. This is separate from Swift's resident `native-q2` acceleration.
 The [TTS contract](../src/speech-tts/README.md) records backend selection and its
 verification/qualification limits; containment and resource admission still apply.
@@ -190,13 +190,17 @@ verification/qualification limits; containment and resource admission still appl
 Microphone access is requested on the UI thread only after explicit action.
 Denied, cancelled or unavailable access fails closed; stale permission, capture
 or transcription results cannot reactivate it. Audio stays on authenticated
-numeric loopback. Transcripts require review before send; speech output uses only
-visible assistant answers, excluding reasoning/private drafts.
+numeric loopback. The composer microphone records one bounded utterance; finishing
+capture transcribes with Qwen3-ASR 1.7B and submits the text through the ordinary
+prompt path when Swift is ready. Otherwise the text remains a draft, with no
+deferred automatic send. Cancel, conversation changes and teardown invalidate
+late results. Speech output uses only visible assistant answers, excluding
+reasoning/private drafts.
 
 [Speech operation](development-guide.md#speech-setup-and-operation) defines
 provisioning, capture lifecycle, fixed voice conditioning, mutually exclusive
 talkers, budgets, service lifetime and external-service requirements (including
-`consistent_voice: true` and complete-WAV fallback). The [Canary](../tools/canary-asr/README.md)
+`consistent_voice: true` and complete-WAV fallback). The [ASR](../tools/canary-asr/README.md)
 and [Qwen](../tools/qwen-tts/README.md) READMEs define companion protocols.
 Service failure exposes setup guidance without substituting a recognizer or
 Windows voice. Images, video and image generation remain unavailable in the

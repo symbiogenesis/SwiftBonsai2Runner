@@ -365,7 +365,9 @@ mod tests {
         let Command::Serve(arguments) = parse(Kind::Canary, values)? else {
             return Err(io::Error::other("Missing serve arguments"));
         };
-        let pin = r#"{"schemaVersion":1,"model":"nvidia/canary-qwen-2.5b","bytes":3,"sha256":"ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"}"#;
+        let pin = r#"{"schemaVersion":1,"model":"Qwen/Qwen3-ASR-1.7B","bytes":3,"sha256":"ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"}"#;
+        let legacy = pin.replace("Qwen/Qwen3-ASR-1.7B", "nvidia/canary-qwen-2.5b");
+        assert!(verify_models(Kind::Canary, &arguments, &legacy).is_err());
         let guard = verify_models(Kind::Canary, &arguments, pin)?;
         assert!(
             fs::OpenOptions::new()

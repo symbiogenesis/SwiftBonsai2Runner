@@ -112,9 +112,7 @@ fn files(root: &Path, kind: &str, source: &str) -> crate::Result<Vec<Value>> {
     {
         return Err("Invalid native speech model identity.".into());
     }
-    if kind == "Canary"
-        && (pin["architecture"] != "qwen3_asr" || pin["quantization"] != "Q8_0")
-    {
+    if kind == "Canary" && (pin["architecture"] != "qwen3_asr" || pin["quantization"] != "Q8_0") {
         return Err("Native recognition requires the pinned Qwen3-ASR 1.7B Q8_0 model.".into());
     }
     let artifacts: BTreeMap<String, Artifact> = if kind == "Canary" {
