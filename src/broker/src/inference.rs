@@ -24,9 +24,9 @@ pub(super) const TEMPLATE_SHA256: &str =
 // Source review enables the policy; actual use still requires the separately
 // verified released executable in LOCK. Newer versions need another source review.
 const TURBOQUANT_REVISION: &str = "99bab71270b1e6a6fb6d47eec2e34b8097cdcd4c";
-// The integrator replaces this disabled placeholder with the final reviewed
-// adaptive-context source; only genuine matching released bytes can activate it.
-const ADAPTIVE_CONTEXT_REVISION: &str = "";
+// Reviewed 0.1.26 candidate; only genuine matching released bytes in LOCK can
+// activate it. The published 0.1.25 lock remains fixed-context.
+const ADAPTIVE_CONTEXT_REVISION: &str = "857dc4445d3d640c5e62ac85477b91871d2a8467";
 
 fn adaptive_context_supported(release: &ReleasePin) -> bool {
     release.version == "0.1.26" && release.commit == ADAPTIVE_CONTEXT_REVISION

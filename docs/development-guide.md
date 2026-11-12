@@ -726,6 +726,13 @@ Cache readiness includes the expected numerical graph identity. The development
 choice accepts approximation and pending measured quality/memory qualification;
 process admission and the 8K context bound remain unchanged.
 
+The new [adaptive-context source](adaptive-context.md) calculates native prompt
+capacity from available memory using the selected K4/V4 or FP16 cache cost.
+It retains the output cap, process ceiling and physical reserve. Activation needs
+a new source-bound runtime bundle and matching Runner repin; the old 0.1.25
+release remains fixed 8K. The native Context control displays observed capacity
+and explains that it is checked again for each prompt.
+
 A publisher startup diagnostic of `process=exited-0xC0000142` means Windows failed
 runtime initialization. **Retry model** repeats the selected runtime; it does not
 switch to Rust. Close the window and relaunch with `--native-engine` after provisioning

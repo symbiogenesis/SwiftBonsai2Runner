@@ -22,6 +22,7 @@ the corresponding detailed task changes; keep every acceptance obligation below.
 | R2 / implementation, qualification | Prism, then Runner | Settled candidate, published comparison tooling and owning hosted checks | Publish and run the prepared [native CPU bundle comparison](docs/cpu-bundle-comparison.md) against registry 0.1.25; the existing X2 screen compares publisher thread counts, while one-token source timing is attribution only. Qualify the explicit exact LUT candidate, integrate selected cross-token consumers and genuinely batched verification; close CPU/prefill codegen, fallback, state/adapter/cancellation and matched selected-device benefit gates. X2 CPU benefit may promote reviewed shared CPU paths on X1 under [cross-generation CPU promotion](docs/cpu-kernels.md#cross-generation-cpu-promotion); device-specific tuning and claims retain matching-family gates. Qualify changes already consumed in 0.1.23 without another repin; follow the [inference delivery order](#lossless-inference-delivery-order). |
 | R3 / integration, qualification | Prism and Runner harnesses | Agreed execution/state identities and existing complete-state fixtures | Prepare shared state/restore and fault-control tooling independently of runtime qualification; map each prefix/prefill/speculation/accelerator path to its independent assertions and evidence. |
 | K1 / owner, qualification | Prism, then Runner | Published 0.1.25 K4/V4 development runtime and matching local Runner repin | Have the owner publish the reviewed Runner repin, preserving explicit FP16 recovery and existing admission/8K bounds. Complete the [paired quality/memory packet](docs/quantized-kv.md#first-practical-promotion-packet) for measured qualification, independently on X1/X2; it is not a prerequisite for the development default. Defer K4/V3. |
+| K2 / integration, owner, qualification | Prism, then Runner | Reviewed adaptive-context source and a genuine source-bound runtime bundle | Publish and repin [memory-backed per-prompt context](docs/adaptive-context.md), retaining K4/V4 by default, explicit FP16 recovery, process/physical reserves, exact counts and the output cap. Qualify long-context answers, pressure between count/generation, state recovery and native UI capacity observations; the old 0.1.25 bundle remains fixed 8K until repinned. |
 | S1 / implementation, integration | Runner; Prism for shared runtime/RPC consumers | Agreed verified-loading, state, stream and transport ownership interfaces | Integrate Talker/CodePredictor, codec/speaker and signed Rust RPC through [C++ retirement](#complete-c-retirement); qualify the ordinary Q4 baseline before ternary speech and new 48 kHz artifacts. |
 | S2 / implementation, qualification | Runner | Pinned Qwen3-ASR 1.7B artifacts and replacement controls | Qualify microphone-to-Swift submission, then replace ASR's native engine and close transcript/state, cancellation, lifecycle, quality and resource gates before removing its compiler/dependency paths. |
 | P1 / external, qualification | Prism and Runner | Original authoring inputs for provenance; hosted public-pack reconstruction for its separate gate | Run the declared reconstruction and independent replay while pursuing provenance intake independently; follow the PTQ1 critical path below. Neither blocks A1. |
@@ -182,6 +183,15 @@ comparison control keeps FP16. This development selection does not qualify
 performance, quality or cache savings. The
 [cache contract](docs/quantized-kv.md) retains measured-quality, memory and
 independent device qualification, unchanged process admission and the 8K bound.
+
+The owner now requests [memory-backed context for each prompt](docs/adaptive-context.md).
+The new source recomputes capacity for the selected cache policy while retaining
+the process ceiling and host reserve. Its larger trained-model ceiling does not
+promise that much usable context. Publish a genuine source-bound runtime bundle
+and update Runner's compiled runtime/source pins before activating it; the old
+0.1.25 bundle retains 8K. Qualify pressure changes, larger-context complete answers,
+state/cancellation recovery and UI capacity reporting on that exact candidate.
+Historical 8K packets and the K4/V4 quality comparison keep their original bounds.
 
 Prioritize usable native startup, model readiness, stop/retry and explicit rollback,
 then actual-model application acceptance, daily-service isolation, creative

@@ -25,6 +25,7 @@ implemented behavior from actual-model, device, quality and isolation acceptance
 
 | Contract | Contents |
 | --- | --- |
+| [Memory-backed context](adaptive-context.md) | Per-prompt native capacity, cache accounting, broker/UI observations and source-bound activation |
 | [UI architecture](ui-architecture.md) | Rust/native boundary, launch ownership, conversation state and speech responsibilities |
 | [Broker](broker-policy.md) | Public/private protocol, authentication, framing, admission, completion and recovery |
 | [Streaming resources](streaming-resources.md) | Text/Find, HTTP, recovery and speech/PCM storage, work bounds and ownership |

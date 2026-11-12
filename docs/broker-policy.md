@@ -151,6 +151,13 @@ Positive counts and checked arithmetic must satisfy:
 rendered prompt tokens + requested completion tokens + 64 reserve <= 8192
 ```
 
+That remains the legacy/publisher and currently pinned 0.1.25 contract. The new
+[adaptive native contract](adaptive-context.md) substitutes a freshly observed
+memory-backed capacity for 8192 only after explicit exact-source capability
+selection. Its private count response must include that capacity, bounded by
+the trained-model and runtime resource ceilings. A second memory check before
+generation can reject a request whose count previously fitted.
+
 The reserve is conservative policy, not a measured tokenizer-error allowance.
 Bytes/characters are never treated as tokens. Counter errors or identity drift
 must reject admission.

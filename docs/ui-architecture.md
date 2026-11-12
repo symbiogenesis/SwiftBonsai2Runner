@@ -59,6 +59,13 @@ new native Swift launch; retry preserves the selected cache. Requests cannot
 override it or trigger an automatic downgrade. The [cache contract](quantized-kv.md)
 keeps process admission, context limits and device qualification separate.
 
+The [adaptive-context source](adaptive-context.md) adds per-prompt memory-backed
+admission for an eligible new runtime bundle. Broker headers carry observed
+capacity to the native UI; before that observation the meter shows unknown
+capacity. A last observed capacity is guidance and can change at the next prompt.
+The UI performs no free-memory admission calculation on the event loop. The
+currently pinned 0.1.25 bundle retains its fixed 8K context.
+
 The launcher checks/builds presentation first. After the first UI tick, an owned
 preparation worker verifies/provisions the selected pinned Rust runtime alongside
 building/verifying the broker, then hands off text chat after both finish. Either

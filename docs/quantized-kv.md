@@ -7,6 +7,11 @@ device profile or increasing the 8K context limit.
 [PLAN.md](../PLAN.md#bounded-calibration-and-optional-precision)
 owns remaining delivery and qualification work.
 
+The new [adaptive-context source](adaptive-context.md) uses the selected cache's
+actual record cost when computing memory-backed capacity for each prompt. It
+requires a new verified runtime bundle and Runner repin; the old 0.1.25 binary
+does not gain that behavior from a broker or UI update alone.
+
 The owner selects **K4/V4 (`rsq4`) as the development default and required cache
 for ordinary Swift sessions**. This decision accepts approximate answers and
 pending actual-model quality, memory and device qualification; perfect
