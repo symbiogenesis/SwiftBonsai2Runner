@@ -68,6 +68,22 @@ fn harness_with_render(size: [f32; 2], text: &str, render: bool) -> Harness<'sta
     )
 }
 
+fn context_details_rect(chat: &Harness<'_, Fixture>) -> egui::Rect {
+    assert!(chat.query_by_label("Context details").is_some());
+    // Named accessibility containers need not carry a bounding box. The popup
+    // area's actual rectangle is the geometry used for layout and hit testing.
+    let areas = chat
+        .ctx
+        .memory(|memory| memory.layer_ids().map(|layer| layer.id).collect::<Vec<_>>());
+    let popup = areas
+        .into_iter()
+        .find(|id| egui::Popup::is_id_open(&chat.ctx, *id))
+        .expect("Context details must have an open popup area");
+    chat.ctx
+        .memory(|memory| memory.area_rect(popup))
+        .expect("The open Context details area must retain its rectangle")
+}
+
 #[test]
 fn context_capacity_capture_when_requested() -> std::io::Result<()> {
     let Some(value) = std::env::var_os("BONSAI_UI_CAPTURE_DIRECTORY") else {
@@ -297,7 +313,7 @@ fn context_capacity_popover_is_keyboard_accessible_and_scopes_extra_effort() {
     let extra_effort = "First pass only. Extra effort's later passes add generated notes and drafts and need more room.";
     chat.get_by_label(extra_effort).scroll_to_me();
     chat.run();
-    let details = chat.get_by_label("Context details").rect();
+    let details = context_details_rect(&chat);
     assert!(details.contains_rect(chat.get_by_label(extra_effort).rect()));
     chat.key_press(egui::Key::Enter);
     chat.run();
@@ -316,7 +332,7 @@ fn context_capacity_details_leave_both_toolbar_actions_uncovered() {
         chat.get_by_role_and_label(egui::Role::Button, "Context")
             .click();
         chat.run();
-        let details = chat.get_by_label("Context details").rect();
+        let details = context_details_rect(&chat);
         let bounds = egui::Rect::from_min_size(egui::Pos2::ZERO, size.into());
         assert!(bounds.contains_rect(details));
         for label in ["Context", "Thinking"] {
