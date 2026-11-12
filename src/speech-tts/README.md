@@ -118,6 +118,10 @@ The third-party engine and GGML are MIT licensed. Their exact notices accompany
 this crate as `LICENSE.qwen-core` and `LICENSE.ggml`. The original Qwen model is
 Apache-2.0; preserve its attribution and notices when distributing model files.
 
+Local builds and focused tests are allowed. Full suites and every benchmark
+remain CI-only. Window launch or successful compilation alone does not qualify
+speech content, voice quality, latency or combined memory use with Swift.
+
 ## Optional Hexagon runtime
 
 The native initialization path tries to register an existing `HTP0` backend from
@@ -132,10 +136,6 @@ The selector checks local path shape, required files and exports; it does not
 verify runtime hashes or signatures. It therefore does not establish authenticated
 deployment, GPU/NPU qualification or a performance benefit. Model files retain
 their separate immutable verification. GPU backends are not selected by this path.
-
-Local builds and focused tests are allowed. Full suites and every benchmark
-remain CI-only. Window launch or successful compilation alone does not qualify
-speech content, voice quality, latency or combined memory use with Swift.
 
 ## Rust parameter and CPU thread helpers
 

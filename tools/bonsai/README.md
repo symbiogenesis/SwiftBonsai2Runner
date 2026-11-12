@@ -72,8 +72,8 @@ defaults and options. The PowerShell facade forwards only supplied options; an o
 maintenance executable can retain older defaults. Full-context/output, creative-quality,
 sustained-performance, isolation and clean-machine qualification remain pending; this default
 makes no speed claim. JSON `NativeEngine: false` remains an explicit publisher selection.
-`--prompt-reuse none|latest` selects the [experimental prefix policy](../../docs/prefix-reuse.md);
-it defaults to `none` and `latest` requires the Rust engine.
+`--prompt-reuse disabled|latest` selects the [experimental prefix policy](../../docs/prefix-reuse.md);
+it defaults to `disabled` and `latest` requires the Rust engine.
 
 The two weight options are mutually exclusive. `--use-original-pq2` explicitly
 selects the pinned original Swift artifact with either engine; the current default
