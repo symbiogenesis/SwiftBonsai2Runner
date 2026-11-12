@@ -57,14 +57,23 @@ impl Message {
             );
             if !controls.can_branch {
                 ui.separator();
-                ui.label("A new branch needs an available conversation slot.");
+                ui.label("Branching needs a free conversation slot and an available workspace.");
             } else if !controls.can_send {
                 ui.separator();
                 ui.label("Sending is available when the model is ready.");
+            } else if !options.edit
+                && !options.regenerate
+                && !options.branch
+                && !options.continue_response
+            {
+                ui.separator();
+                ui.label("These actions require a completed message included in Swift's conversation context.");
             }
         });
         let name = format!("Actions for message {}", self.id);
-        response.accessible_name(&name).on_hover_text("Message actions");
+        response
+            .accessible_name(&name)
+            .on_hover_text("Message actions");
         action
     }
 }

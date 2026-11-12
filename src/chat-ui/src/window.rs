@@ -2001,6 +2001,31 @@ impl State {
         });
     }
 
+    fn show_transcript(&mut self, ui: &mut egui::Ui, width: f32) {
+        let available = !self
+            .updates
+            .as_ref()
+            .is_some_and(updates::Updates::installing);
+        let controls = transcript::MessageControls {
+            history: &self.committed,
+            can_send: available && !self.preview && self.model == ModelLifecycle::Ready,
+            can_branch: available
+                && self.model.workspace_available()
+                && self.conversations.len() < MAX_CONVERSATIONS,
+        };
+        match self.transcript.show_with_actions(
+            ui,
+            width,
+            self.speaking_message,
+            self.speech_output,
+            Some(controls),
+        ) {
+            Some(transcript::TranscriptAction::ReadAloud(id)) => self.toggle_read_aloud(id),
+            Some(transcript::TranscriptAction::Message(action)) => self.message_action(action),
+            None => {}
+        }
+    }
+
     fn draw(&mut self, ui: &mut egui::Ui) {
         let narrow = ui.available_width() < 900.0;
         if !narrow {
@@ -2057,31 +2082,7 @@ impl State {
                                     ui.set_width(width);
                                     ui.push_id(
                                         ("conversation-text", self.active_conversation),
-                                        |ui| {
-                                            let controls = transcript::MessageControls {
-                                                history: &self.committed,
-                                                can_send: !self.preview
-                                                    && self.model == ModelLifecycle::Ready,
-                                                can_branch: self.model.workspace_available()
-                                                    && self.conversations.len() < MAX_CONVERSATIONS,
-                                            };
-                                            if let Some(action) = self.transcript.show_with_actions(
-                                                ui,
-                                                width,
-                                                self.speaking_message,
-                                                self.speech_output,
-                                                Some(controls),
-                                            ) {
-                                                match action {
-                                                    transcript::TranscriptAction::ReadAloud(id) => {
-                                                        self.toggle_read_aloud(id);
-                                                    }
-                                                    transcript::TranscriptAction::Message(action) => {
-                                                        self.message_action(action);
-                                                    }
-                                                }
-                                            }
-                                        },
+                                        |ui| self.show_transcript(ui, width),
                                     );
                                 });
                             });

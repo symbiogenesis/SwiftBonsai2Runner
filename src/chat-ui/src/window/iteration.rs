@@ -29,6 +29,7 @@ pub(super) struct EditMessage {
     pub(super) source_conversation: u64,
     pub(super) message: u64,
     pub(super) text: String,
+    focus: bool,
 }
 
 impl State {
@@ -62,7 +63,9 @@ impl State {
                     source_conversation: self.active_conversation,
                     message: id,
                     text: self.committed[index].content.to_string(),
+                    focus: true,
                 });
+                self.focus_composer = false;
             }
             MessageAction::Regenerate(id) if self.message_options(id).regenerate => {
                 let Some(index) = self.transcript.committed_index(id, &self.committed) else {
@@ -167,6 +170,9 @@ impl State {
             self.answer_complete = true;
         }
         self.update_worker_conversation(Command::RestoreChat(self.committed.clone()));
+        if self.model == ModelLifecycle::Ready {
+            self.set_status("Ready in your new branch.", false);
+        }
         self.conversation_notice =
             Some("Created a branch. The original conversation is unchanged.");
         self.recovery_dirty = true;
@@ -210,7 +216,7 @@ impl State {
             egui::ScrollArea::vertical()
                 .max_height((ctx.content_rect().height() - 240.0).max(100.0))
                 .show(ui, |ui| {
-                    ui.add(
+                    let response = ui.add(
                         egui::TextEdit::multiline(&mut edit.text)
                             .id_salt("edited-message")
                             .desired_width(f32::INFINITY)
@@ -218,6 +224,10 @@ impl State {
                             .char_limit(INPUT_LIMIT),
                     )
                     .labelled_by(label.id);
+                    if edit.focus {
+                        response.request_focus();
+                        edit.focus = false;
+                    }
                 });
             if !enabled {
                 ui.label("Return to the source conversation and wait until the model is ready to resend.");
@@ -237,6 +247,8 @@ impl State {
             self.resend_edited_message(edit);
         } else if !cancelled && !modal.should_close() {
             self.edit_message = Some(edit);
+        } else {
+            self.focus_composer = true;
         }
     }
 }

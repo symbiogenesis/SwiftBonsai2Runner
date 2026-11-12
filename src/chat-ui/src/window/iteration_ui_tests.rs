@@ -16,7 +16,8 @@ fn harness(size: [f32; 2]) -> Harness<'static, Fixture> {
     app.model = ModelLifecycle::Ready;
     app.input = "Keep my next draft 🌱".into();
     app.transcript.push(Role::User, "Original question".into());
-    app.transcript.push(Role::Assistant, "Original answer".into());
+    app.transcript
+        .push(Role::Assistant, "Original answer".into());
     app.transcript.remove_empty_response();
     app.committed = vec![
         client::Message {
