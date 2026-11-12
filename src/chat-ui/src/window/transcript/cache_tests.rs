@@ -63,6 +63,59 @@ fn unchanged_layouts_reuse_cache_and_reasoning_visibility_invalidates_it() {
 }
 
 #[test]
+fn reader_size_reflows_styled_text_reasoning_and_find_once() {
+    let body = "# Heading 界\nUse `needle` here.\n```rust\nlet x = 1;\n```";
+    let mut transcript = Transcript::default();
+    transcript.push(Role::User, "A literal draft".to_owned());
+    transcript.push(Role::Assistant, body.to_owned());
+    transcript.append("Visible reasoning 🌱", true);
+    transcript.messages[1].show_reasoning = true;
+    transcript.search.query = "needle".to_owned();
+    let mut chat = harness(transcript);
+    chat.run();
+    assert_eq!(layout_counts(chat.state()), vec![1, 1]);
+    assert_active_underline_matches_glyphs(&chat.state().messages[1]);
+    let initial_updates = chat.state().messages[1].cache_updates;
+    let initial_underline = chat.state().messages[1].underline_layouts;
+    let initial_height = chat.state().messages[1].height();
+
+    // Width, DPI, colors and source bytes stay unchanged. Font choice alone
+    // must invalidate both galleys and the geometry of the active Find result.
+    chat.ctx.data_mut(|data| {
+        data.insert_temp(egui::Id::unique("reading-text-size"), 24.0_f32);
+    });
+    chat.run();
+    assert_eq!(layout_counts(chat.state()), vec![2, 2]);
+    let message = &chat.state().messages[1];
+    assert_eq!(message.body, body);
+    assert_eq!(message.cache_updates, initial_updates + 1);
+    assert_eq!(message.underline_layouts, initial_underline + 1);
+    assert!(message.height() > initial_height);
+    let Some(cache) = &message.cache else {
+        assert!(message.cache.is_some(), "Expected a reader layout cache");
+        return;
+    };
+    assert_eq!(cache.body.job.text, body);
+    assert!(cache.body.job.sections.iter().any(|section| {
+        section.format.font_id == FontId::monospace(24.0)
+    }));
+    assert!(cache.body.job.sections.iter().any(|section| {
+        section.format.font_id.size.to_bits() == 33.0_f32.to_bits()
+    }));
+    assert!(cache.reasoning.as_ref().is_some_and(|reasoning| {
+        reasoning.job.text == "Visible reasoning 🌱"
+            && reasoning.job.sections.iter().all(|section| {
+                section.format.font_id == FontId::proportional(21.0)
+            })
+    }));
+    assert_active_underline_matches_glyphs(message);
+    chat.run();
+    assert_eq!(layout_counts(chat.state()), vec![2, 2]);
+    assert_eq!(chat.state().messages[1].cache_updates, initial_updates + 1);
+    assert_eq!(chat.state().messages[1].underline_layouts, initial_underline + 1);
+}
+
+#[test]
 fn find_discards_replaced_scroll_offsets_before_rendering_shorter_unicode_text() {
     let mut transcript = Transcript::default();
     transcript.push(Role::User, "retained hit".to_owned());

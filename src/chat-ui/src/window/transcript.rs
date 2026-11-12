@@ -38,6 +38,7 @@ pub(super) enum Role {
 struct LayoutCache {
     width: f32,
     pixels_per_point: f32,
+    text_size: f32,
     color: Color32,
     code_background: Option<Color32>,
     reasoning_color: Color32,
@@ -554,6 +555,7 @@ impl Message {
         let code_background = (self.role == Role::Assistant).then_some(ui.visuals().code_bg_color);
         let reasoning_color = ui.visuals().weak_text_color();
         let pixels_per_point = ui.ctx().pixels_per_point();
+        let text_size = super::appearance::text_size(ui.ctx());
         let highlight_fill = ui.visuals().selection.bg_fill;
         let highlight_color = ui.visuals().selection.stroke.color;
         let reasoning_visible = self.show_reasoning && !self.reasoning.is_empty();
@@ -562,7 +564,8 @@ impl Message {
         let (body_unchanged, reasoning_unchanged, underline_unchanged) =
             if let Some(cache) = self.cache.as_ref() {
                 let same_geometry = cache.width.to_bits() == width.to_bits()
-                    && cache.pixels_per_point.to_bits() == pixels_per_point.to_bits();
+                    && cache.pixels_per_point.to_bits() == pixels_per_point.to_bits()
+                    && cache.text_size.to_bits() == text_size.to_bits();
                 let body_unchanged = same_geometry
                     && cache.body_revision == self.body_revision
                     && cache.color == color
@@ -603,7 +606,7 @@ impl Message {
             {
                 self.body_layouts += 1;
             }
-            self.layout_body(ui, width, matches)
+            self.layout_body(ui, width, text_size, matches)
         };
         let underline = if let Some(selected) = selected {
             if underline_unchanged {
@@ -626,7 +629,7 @@ impl Message {
             Some(ui.fonts_mut(|fonts| {
                 fonts.layout(
                     self.reasoning.clone(),
-                    FontId::proportional(14.0),
+                    FontId::proportional(text_size * 0.875),
                     reasoning_color,
                     width,
                 )
@@ -635,6 +638,7 @@ impl Message {
         self.cache.insert(LayoutCache {
             width,
             pixels_per_point,
+            text_size,
             color,
             code_background,
             reasoning_color,
@@ -654,6 +658,7 @@ impl Message {
         &self,
         ui: &egui::Ui,
         width: f32,
+        text_size: f32,
         matches: &[search::Match],
     ) -> Arc<egui::Galley> {
         #[cfg(test)]
@@ -663,6 +668,7 @@ impl Message {
             &self.body,
             self.role == Role::Assistant,
             width,
+            text_size,
             ui.visuals(),
             matches,
         );

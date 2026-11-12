@@ -154,10 +154,11 @@ pub(super) fn layout_job(
     body: &str,
     structured: bool,
     width: f32,
+    text_size: f32,
     visuals: &egui::Visuals,
     matches: &[search::Match],
 ) -> egui::text::LayoutJob {
-    let normal = egui::TextFormat::simple(egui::FontId::proportional(16.0), visuals.text_color());
+    let normal = egui::TextFormat::simple(egui::FontId::proportional(text_size), visuals.text_color());
     let mut builder = Builder {
         job: egui::text::LayoutJob::default(),
         matches,
@@ -171,7 +172,7 @@ pub(super) fn layout_job(
         builder.append(body, &normal);
         return builder.job;
     }
-    let mut code = egui::TextFormat::simple(egui::FontId::monospace(16.0), visuals.text_color());
+    let mut code = egui::TextFormat::simple(egui::FontId::monospace(text_size), visuals.text_color());
     code.background = visuals.code_bg_color;
     let mut fence: Option<Fence> = None;
     for line in body.split_inclusive('\n') {
@@ -190,13 +191,13 @@ pub(super) fn layout_job(
             let trimmed = line.trim_start_matches(' ');
             let mut format = normal.clone();
             if let Some(size) = heading_size(trimmed) {
-                format.font_id.size = size;
+                format.font_id.size = size * (text_size / 16.0);
             } else if trimmed.starts_with("> ") {
                 format.italics = true;
             }
             if let Some(prefix) = list_prefix(line) {
                 let mut marker = format.clone();
-                marker.font_id = egui::FontId::monospace(16.0);
+                marker.font_id = egui::FontId::monospace(text_size);
                 builder.append(&line[..prefix], &marker);
                 builder.inline(&line[prefix..], &format, &code);
             } else {
@@ -222,7 +223,7 @@ mod tests {
     fn structured_text_retains_raw_unicode_and_styles_native_code_and_headings() {
         let source = "# Heading 界\n\nUse `let é = 1;` here.\n- First\n2. Second\n> A quote\n```rust\nfn main() { /* 🌱 */ }\n```\n<html>literal</html>";
         let visuals = egui::Visuals::dark();
-        let job = layout_job(source, true, 600.0, &visuals, &[]);
+        let job = layout_job(source, true, 600.0, 16.0, &visuals, &[]);
         assert_eq!(job.text, source);
         assert_eq!(job.wrap.max_width.to_bits(), 600.0_f32.to_bits());
         assert_eq!(
@@ -262,7 +263,7 @@ mod tests {
             "````rust\n```\nstill code",
             "An unfinished `界",
         ] {
-            let job = layout_job(source, true, 600.0, &visuals, &[]);
+            let job = layout_job(source, true, 600.0, 16.0, &visuals, &[]);
             assert_eq!(job.text, source);
             assert!(
                 format_at(&job, source.len() - 1)
@@ -270,7 +271,7 @@ mod tests {
             );
         }
         let source = "~~~rust\ncode\n~~~\nProse";
-        let job = layout_job(source, true, 600.0, &visuals, &[]);
+        let job = layout_job(source, true, 600.0, 16.0, &visuals, &[]);
         assert_eq!(job.text, source);
         assert!(
             format_at(&job, source.len() - 1)
@@ -288,7 +289,7 @@ mod tests {
             message: 1,
             range: start..end,
         }];
-        let job = layout_job(source, true, 420.0, &visuals, &matches);
+        let job = layout_job(source, true, 420.0, 16.0, &visuals, &matches);
         assert_eq!(job.text, source);
         for section in &job.sections {
             assert!(source.is_char_boundary(section.byte_range.start.0));
@@ -310,7 +311,7 @@ mod tests {
     fn user_markup_and_escaped_inline_markers_stay_literal() {
         let source = "# Heading\n```rust\n界\n```\n`inline`";
         let visuals = egui::Visuals::dark();
-        let job = layout_job(source, false, 600.0, &visuals, &[]);
+        let job = layout_job(source, false, 600.0, 16.0, &visuals, &[]);
         assert_eq!(job.text, source);
         assert!(
             job.sections
@@ -318,7 +319,7 @@ mod tests {
                 .all(|section| section.format.font_id == egui::FontId::proportional(16.0))
         );
         let escaped = "Escaped \\`normal";
-        let job = layout_job(escaped, true, 600.0, &visuals, &[]);
+        let job = layout_job(escaped, true, 600.0, 16.0, &visuals, &[]);
         assert_eq!(job.text, escaped);
         assert!(
             job.sections
@@ -331,11 +332,11 @@ mod tests {
     fn alternating_markers_bound_sections_and_plain_lines_coalesce() {
         let visuals = egui::Visuals::dark();
         let source = "`x` ".repeat(MAX_STYLE_SPANS);
-        let job = layout_job(&source, true, 600.0, &visuals, &[]);
+        let job = layout_job(&source, true, 600.0, 16.0, &visuals, &[]);
         assert_eq!(job.text, source);
         assert!(job.sections.len() <= MAX_STYLE_SPANS + 1);
         let source = "ordinary line\n".repeat(100);
-        let job = layout_job(&source, true, 600.0, &visuals, &[]);
+        let job = layout_job(&source, true, 600.0, 16.0, &visuals, &[]);
         assert_eq!(job.text, source);
         assert_eq!(job.sections.len(), 1);
     }
