@@ -355,7 +355,7 @@ Reply limits and adapter controls remain in advanced Settings.
 | Setting | Behavior |
 | --- | --- |
 | **Thinking** | Off initially and in older saved chats; enables reasoning for the next response and every Extra effort pass. |
-| **Mode** | Standard makes one call. Experimental Extra effort makes at most three sequential plan/draft/review calls under one ten-minute deadline, shows stage labels and retains complete drafts. A truncated revision does not replace a complete draft; quality gains remain unproven. |
+| **Mode** | Standard makes one call. Experimental Extra effort makes at most three sequential plan/draft/review calls, shows stage labels and retains complete drafts. Neither mode has an elapsed generation-time limit; Stop cancels the active response. A truncated revision does not replace a complete draft; quality gains remain unproven. |
 | **Output cap** | Available only in **Settings > Response > Advanced response controls**, under **Reply length**. Defaults to 4,096; also offers 512/1,024/2,048 reasoning-inclusive tokens within the fixed 8,192-token context and 64-token template reserve. |
 | **Abliteration scale** | The advanced adapter disclosure in **Settings > Response** explains this experimental correction. The pinned adapter defaults to 1.3; choose 0-2 in 0.1 steps for the next response/every Extra effort pass without restart. Zero disables the correction. Older saved chats use 1.3; effectiveness and quality remain experimental. |
 
@@ -926,7 +926,8 @@ implements authentication, request bounds and lifecycle controls.
 
 The [broker contract](broker-policy.md) defines authentication, exact counting,
 HTTP bounds and cancellation: one active request, zero through eight waiting,
-30-second queue wait and ten-minute total deadline. Keep the sending side open
+30-second queue wait and no total generation-time limit. Intake, connection and
+write operations retain their individual deadlines. Keep the sending side open
 until completion. Interrupted generation closes admission permanently; recovery
 requires explicit backend teardown/relaunch.
 

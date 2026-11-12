@@ -871,8 +871,9 @@ identity or nonzero application across conditions.
 - Qualify the [broker security and transport contract](docs/broker-policy.md): numeric
   loopback, exact Host, Origin and routes, private credentials, rejected tools/MCP,
   dynamic loading and capability overrides, bounds on queues, bytes, tokens and
-  duration, cancellation on disconnect or stalled consumption. Exercise the global
-  8-request burst, 1/second refill, absolute deadlines, complete HTTP 429 responses
+  operation waits, cancellation on disconnect or stalled consumption. Ordinary
+  generation has no elapsed-time cap. Exercise the global 8-request burst,
+  1/second refill, absolute deadlines, complete HTTP 429 responses
   during writes, constant-space draining, reuse and explicit resend without replay.
 - Extend [streaming resource contracts](docs/streaming-resources.md) to actual-model
   device trials: ready-prefix delivery, long transcripts, speech backlog and chat

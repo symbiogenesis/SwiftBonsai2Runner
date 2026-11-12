@@ -60,9 +60,9 @@ generated notes/references are data. There are no autonomous tools or open-ended
 Each call retains sampler/template/exact admission: 8K context, reasoning-inclusive caps
 512/1,024/2,048/4,096 (default 4,096), and the broker's 64-token margin. Smaller caps leave more
 prompt room but can stop reasoning before an answer. Count included plan/draft text; reject
-overflow rather than dropping history or raising limits. A shared deadline/cancellation covers
-all stages, with progress labels. Retain failed/incomplete stages; truncated revisions neither
-replace complete drafts nor become finished answers.
+overflow rather than dropping history or raising limits. Shared cancellation covers all
+stages, with progress labels and no elapsed generation-time limit. Retain failed/incomplete
+stages; truncated revisions neither replace complete drafts nor become finished answers.
 
 Focused checks cover single-call defaults, stage order, bounds, cancellation and draft retention.
 The experimental option has no qualified quality/speed gain; GVS5H coding results do not establish

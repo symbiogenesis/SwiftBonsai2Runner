@@ -59,10 +59,12 @@ service-wide admission ownership themselves.
 | Authenticated burst / sustained request admission | 8 requests / 1 request per second |
 | Header intake / complete intake | 5 seconds / 30 seconds from intake start |
 | Connect / complete write operation | 5 seconds each |
-| Queue wait / total request | 30 seconds / 10 minutes from acceptance |
+| Queue wait | 30 seconds from acceptance |
+| Total generation time | No automatic elapsed-time limit |
 
-All deadlines are absolute, shortened by the supervisor deadline and never
-refreshed by progress. Expiry is checked around I/O and after bounded synchronous
+Operation deadlines are absolute and never refreshed by progress. An explicit
+supervisor deadline can shorten them; ordinary service requests have no total
+deadline. Expiry is checked around timed I/O and after bounded synchronous
 parsing; it is not a preemptive CPU limit. Errors expose value-free categories.
 
 ## Text-chat admission
@@ -214,8 +216,9 @@ identical bytes to `/v1/chat/completions`. Both functions rebuild Host,
 Authorization, Content-Type, Content-Length, `Accept-Encoding: identity` and
 `Connection: close`; caller routes, URLs and headers cannot override them.
 There are no redirects or retries. One five-second deadline covers the whole
-request write/flush; response headers may wait until the total deadline for
-initial prefill.
+request write/flush. Exact counting and generation response headers/body have no
+elapsed-time limit in ordinary service; a supplied request deadline still bounds
+lower-level exchanges. Disconnect and shutdown cancel pending work.
 
 Response parsing requires strict CRLF HTTP/1.1, status 200 and one matching
 Content-Type. Content-Encoding, Trailer and Upgrade are rejected. Exactly one
@@ -223,8 +226,9 @@ decimal Content-Length or singleton exact `chunked` Transfer-Encoding is
 required, including empty bodies. Interim, close-delimited or ambiguously framed
 responses are unsupported. Coalesced body bytes remain in the buffered reader.
 
-`BackendBody` implements `AsyncRead`, enforcing decoded-byte/deadline limits,
-32-byte chunk-size lines including CRLF and 64 KiB cumulative chunk metadata.
+`BackendBody` implements `AsyncRead`, enforcing decoded-byte limits and any
+supplied deadline, 32-byte chunk-size lines including CRLF and 64 KiB cumulative
+chunk metadata.
 Chunk extensions/trailers are rejected; the pinned server emits neither.
 Immediately ready metadata work yields after bounded steps. Short bodies,
 malformed delimiters or incomplete termination return sticky I/O errors and
@@ -259,11 +263,12 @@ flush or shutdown can fail after a terminator reached the peer. HTTP completion
 does not establish successful generation: SSE can contain an error event.
 Clients must interpret completion/errors and render model text safely.
 
-Backend reads use the total deadline. Each complete client operation (headers,
-one chunk, or final flush/shutdown) has at most five seconds; partial writes do
-not restart it. JSON's whole write shares one such deadline. Errors can follow
-partial output, so close without appending a second response. Shutdown runs only
-on success. Cancellation drops both endpoints.
+Backend reads observe any supplied request deadline, with no elapsed-time limit
+in ordinary service. Each complete client operation (headers, one chunk, or final
+flush/shutdown) has at most five seconds; partial writes do not restart it. JSON's
+whole write shares one such deadline. Errors can follow partial output, so close
+without appending a second response. Shutdown runs only on success. Cancellation
+drops both endpoints.
 
 ## Development orchestration and loopback transport
 
@@ -276,8 +281,9 @@ refuses admission and wakes waiters; the active guard alone does not cancel work
 
 `supervisor::serve_chat` owns one client stream and runs reception, exact counting,
 admission, generation and forwarding with the same connector/canonical body.
-Rejected counts never start generation. Its total deadline is at most ten
-minutes from entry. It supports local/non-Send streams and spawns no task.
+Rejected counts never start generation. Its `RequestDeadline` can carry a caller's
+absolute deadline or omit a total deadline; it adds no fixed request-time cap.
+It supports local/non-Send streams and spawns no task.
 After intake, a one-byte client read races the backend pipeline. EOF, read error
 or extra input wins ties and drops both endpoints. TCP half-close counts as
 abandonment: clients must keep their sending side open until response completion.
@@ -297,10 +303,11 @@ capacity before accepting; pending accepts and unpolled returned handles count.
 The OS backlog is separate. Full capacity returns immediately, so callers must
 avoid busy retry loops.
 
-`AcceptedChat::serve()` includes its thirty-second queue wait in the ten-minute
-total from acceptance. Shutdown races accepting/active work and wakes queued
-entries. `close()` retains the listener until service drop. Async cleanup still
-requires polling; dropping operations closes sockets/releases permits directly.
+`AcceptedChat::serve()` allows a thirty-second queue wait from acceptance, then
+serves without a total elapsed-time limit. Shutdown races accepting/active work
+and wakes queued entries. `close()` retains the listener until service drop.
+Async cleanup still requires polling; dropping operations closes sockets/releases
+permits directly.
 
 Once generation connection is attempted, failed delivery, disconnect, expiry or
 external cancellation permanently closes admission before releasing the active
