@@ -183,6 +183,7 @@ fn context_capacity_warning_keeps_send_available_and_reply_choice_reaches_worker
         assert!(
             !chat
                 .get_by_role_and_label(egui::Role::Button, "Send  ↑")
+                .accesskit_node()
                 .is_disabled()
         );
         let send = chat

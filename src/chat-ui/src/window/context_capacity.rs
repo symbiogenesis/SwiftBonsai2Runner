@@ -207,7 +207,7 @@ impl State {
     fn context_actions(&mut self, ui: &mut egui::Ui, estimate: Estimate) {
         if let Some(cap) = estimate.suggested_cap()
             && ui
-                .add_enabled(!self.model.busy(), egui::Button::new(format!("Use {}-token reply", tokens(cap))).small())
+                .add_enabled(!self.model.busy(), egui::Button::new(format!("Use {}-token reply", tokens(usize::try_from(cap).unwrap_or(4096)))).small())
                 .on_hover_text("Change only the reply limit for this conversation; fit is still checked exactly when sending.")
                 .clicked()
         {
