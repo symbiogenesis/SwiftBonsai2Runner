@@ -259,6 +259,17 @@ were corrected without retrying the closed trial; final all-target analysis and
 the named voice, protocol, provisioning and recognizer regressions remain pending
 in owner-managed CI.
 
+Qualify composer audio-file input with the pinned Qwen3-ASR 1.7B model on
+Windows ARM64: native plus-button picker, Explorer file paste with composer focus,
+MP3/WAV and installed-decoder M4A/AAC/FLAC/WMA, mono/stereo rate conversion, empty,
+malformed, unsupported, over-64-MiB and over-30-second rejection without truncation.
+Confirm file import requires no microphone permission, preserves the draft on failure,
+inserts at the selection/cursor and submits exactly one ordinary text prompt when
+Swift is ready. Cover unavailable Swift without deferred send, Escape, switching,
+closing, late results, ASR/TTS exclusion and owned-worker cleanup. Source checks
+cannot qualify native picker/clipboard behavior, real audio conversion, transcript
+accuracy or actual-model submission; owner-managed acceptance remains pending.
+
 Qualify conversation switching, creation, deletion and per-conversation drafts
 during native startup, generation and after preparation failure. Confirm background
 responses, reasoning, Extra effort stages and exact history stay with their original

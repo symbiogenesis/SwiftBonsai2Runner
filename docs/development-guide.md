@@ -397,6 +397,20 @@ or streaming ASR. Cancel/Escape, revocation, Send, conversation changes, read-al
 or closing cancel input and invalidate late results. Missing/not-ready Qwen3-ASR
 or denied permission keeps capture off and exposes setup guidance.
 
+The **plus button** at the composer's lower left selects one local audio file.
+You can also copy an audio file in Explorer and press **Ctrl+V** while the composer
+has focus. Supported extensions are MP3, WAV, M4A, AAC, FLAC and WMA, subject to
+the installed Windows media decoders. Import and conversion run off the UI thread,
+keep audio in memory and require no microphone permission. Select one file at a
+time, at most 64 MiB and 30 seconds; larger or longer files are rejected without
+truncation. The worker converts accepted audio to mono 16 kHz PCM16 WAV and uses
+the same
+Qwen3-ASR 1.7B transcription path as microphone input. Transcripts replace the
+composer selection or insert at its cursor and count as ordinary text prompts:
+the app sends once when Swift is ready, or leaves a draft for explicit Send otherwise.
+Escape, conversation changes and closing cancel import/transcription and discard
+late results. Unsupported, empty or failed audio leaves the existing draft intact.
+
 Each completed response's lower-right **speaker button** reads it independently,
 including while a newer response generates. The active button becomes **Stop**;
 selecting another response switches playback. Empty/streaming responses cannot
@@ -420,7 +434,8 @@ checkbox without replay on restore. Working drafts and reasoning are excluded.
 
 Owned speech uses separate Windows Jobs and mutual exclusion: read-aloud releases
 Qwen3-ASR before TTS loads; transcription releases TTS. Qwen3-ASR loads only after
-the captured utterance and stays loaded only for that input generation.
+a captured utterance or imported audio file and stays loaded only for that input
+generation.
 Qwen3-TTS loads on demand after Swift startup, synthesizes sequential 256-character
 segments with bounded streaming playback/prefetch and stays warm at most 30 idle
 seconds after success. Stop, failure, transcription or shutdown releases it immediately;

@@ -197,6 +197,16 @@ deferred automatic send. Cancel, conversation changes and teardown invalidate
 late results. Speech output uses only visible assistant answers, excluding
 reasoning/private drafts.
 
+The composer's native plus button selects one audio file; Ctrl+V in the focused
+composer accepts files copied from Explorer. A cancellable owned worker reads and
+normalizes MP3/WAV and Windows-supported M4A/AAC/FLAC/WMA to in-memory mono 16 kHz
+PCM16 WAV, rejecting files over 64 MiB or audio longer than 30 seconds. File input
+requires no microphone permission. It enters the same authenticated Qwen3-ASR and
+ordinary text-prompt path, preserving draft selection/cursor insertion, cancellation,
+conversation
+ownership and no deferred automatic send. File decoding adds no public API route
+or inference-model capability.
+
 [Speech operation](development-guide.md#speech-setup-and-operation) defines
 provisioning, capture lifecycle, fixed voice conditioning, mutually exclusive
 talkers, budgets, service lifetime and external-service requirements (including
