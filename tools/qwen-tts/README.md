@@ -30,13 +30,14 @@ quality and speed remain unqualified.
 
 For an independently managed native companion, run from an external working
 directory with absolute external artifact/key paths. `$speech` contains the
-verified paths returned by the setup guide's `-SpeechModelsOnly` command:
+verified paths returned by the setup guide's `bonsai-tools chat --speech-models-only`
+command. `$ttsKey` is an absolute key-file path string, not the credential value:
 
 ```powershell
 & $ttsExecutable --model $speech.TtsModelPath --codec $speech.TtsCodecPath --voice-model $speech.TtsVoiceModelPath --token-file $ttsKey --port 8767
 ```
 
-Pass `-TtsKeyFile $ttsKey` to `Start-Chat.ps1` as described in the setup guide.
+Launch with `bonsai-tools chat --tts-key-file $ttsKey` as described in the setup guide.
 `--threads 1` through `256` selects an explicit inference budget; omitting it
 uses the library's automatic budget. Use the repository's protected development
 key tooling: exactly 64 lowercase hex bytes, no newline, owner/LocalSystem access.

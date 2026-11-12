@@ -24,14 +24,15 @@ them, and existing downloaded snapshots are preserved.
 For a separately managed native companion, run its built executable from an
 external working directory, with absolute external model and protected key paths.
 `$speech` contains the verified paths returned by the setup guide's
-`-SpeechModelsOnly` command:
+`bonsai-tools chat --speech-models-only` command. `$canaryKey` is an absolute
+key-file path string, not the credential value:
 
 ```powershell
 & $asrExecutable --model $speech.CanaryModelPath --token-file $canaryKey --port 8766
 ```
 
-Then pass `-CanaryKeyFile $canaryKey` to `Start-Chat.ps1` as described in the setup
-guide. A key contains exactly 64 lowercase hex bytes without a newline,
+Then launch with `bonsai-tools chat --canary-key-file $canaryKey` as described
+in the setup guide. A key contains exactly 64 lowercase hex bytes without a newline,
 protected for the owner and LocalSystem.
 Never pass its value through arguments, environment variables or logs.
 
