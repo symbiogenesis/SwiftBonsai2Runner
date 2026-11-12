@@ -7,9 +7,9 @@
   "runnerSourceRevision": "636a03a0d5252d40580c7b6db46d60d8d4e8dfe1",
   "runtimeVersionSelected": "0.1.22",
   "runtimeSourceRevisionSelected": "6b4f4520b465e5feb665a71af64e7b0e21eb750a",
-  "declaration": "workload-plan.json",
-  "driver": "capture-driver.ps1",
-  "failureReceipt": "launch-failure.json",
+  "declaration": "7b37b29826b377386c1ddfe933cd4e75d6a97856:docs/evidence/readme-performance-20261109-refresh/workload-plan.json",
+  "driver": "7b37b29826b377386c1ddfe933cd4e75d6a97856:docs/evidence/readme-performance-20261109-refresh/capture-driver.ps1",
+  "failureReceipt": "7b37b29826b377386c1ddfe933cd4e75d6a97856:docs/evidence/readme-performance-20261109-refresh/launch-failure.json",
   "workload": {
     "declaredMaximumAggregateSeconds": 420,
     "conservativeEstimateSeconds": 365,
@@ -48,6 +48,13 @@
     "ciAcceptanceQualified": false
   },
   "readmeDisposition": "Keep the existing November 9 Prism 0.1.22 measurements from ../readme-performance-20261109-attempt2/summary.json. This failed attempt supplies no replacement numbers.",
-  "historicalEvidence": "The earlier failed preparation and successful attempt2 retain their original receipts and closed clocks unchanged.",
-  "nextWork": "The owner subsequently requested a new Prism release, a genuine Runner binary repin, and performance measurement after that repin. This is separate work and does not authorize retrying this closed 0.1.22 attempt."
+  "historicalEvidence": "The earlier failure remains summarized with exact Git history references; successful attempt2 keeps its selected raw measurements and original closed-clock facts.",
+  "nextWork": "The owner subsequently requested a new Prism release, a genuine Runner binary repin, and performance measurement after that repin. This is separate work and does not authorize retrying this closed 0.1.22 attempt.",
+  "currentRetention": {
+    "kind": "historical-preparation-failure-summary",
+    "originalDirectory": "7b37b29826b377386c1ddfe933cd4e75d6a97856:docs/evidence/readme-performance-20261109-refresh/",
+    "failureMessage": "An executing driver file is required; scriptblock callers must supply its exact DriverSourcePath.",
+    "cleanup": "Post-failure checks found neither the working output directory nor the raw evidence directory. No owner or listener had started.",
+    "scope": "Original result, fixed work, allowance, unknown power and closed-clock limits remain here. The original declaration, driver and launch receipt remain in Git history at the stated revision. This summary cannot replay their hashes and authorizes no retry."
+  }
 }
