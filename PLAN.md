@@ -1582,6 +1582,23 @@ Final-source analyzers and focused controls remain unexecuted after the local
 validation harness failed during Visual Studio environment setup. Keep that
 attempt closed; source review and formatting do not supply compiler/test verdicts.
 
+Qualify the [complete-row SDOT, fixed-attention and bounded-GDN candidates](docs/cpu-kernels.md#complete-row-sdot-fixed-attention-lanes-and-bounded-gdn-phases)
+in local Prism `8504810`: one detected SDOT call for complete one-/four-/eight-row
+PQ2 consumption, fixed sixteen-column six-/twelve-query attention score loops,
+and four-row arithmetic phases within atomic eight-row GDN decode. Require
+final-source exact arithmetic/failure controls, native/x64 strict Release
+analysis and production linking, feature-disabled fallback, ARM64 codegen/spill/
+stack review, full-model logits/state/adapter/cancellation parity and independent
+matched X1 request benefit. Charge GDN's repeated small key/query reads and all
+dispatch/preparation costs; source call counts and accumulator lifetimes establish
+no speedup. Publish the new complete-row helper API with the existing helper
+update before registry delivery. Release and verified Runner repin remain pending;
+preserve the current runtime, profiles and admission policy.
+The fixed local compiler/control workload stopped at inherited native helper
+errors and x64 lint findings. Their source corrections are reviewed but have
+not been replayed; keep final-source analyzer and execution acceptance pending
+and that original local clock closed.
+
 Require final-source exact numerical/failure controls, strict Release analyzers,
 portable fallback and production linking; ARM64 codegen/stack/resource review;
 complete-model state/logit/adapter and cancellation parity; signed vendor

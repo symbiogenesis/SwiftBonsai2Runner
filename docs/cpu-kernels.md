@@ -146,6 +146,56 @@ acceptance remain independent. The new half-widening API joins the existing
 helper-publication and exact-dependency prerequisite; Runner still consumes
 its verified 0.1.23 binary until a qualified release and repin.
 
+### Complete-row SDOT, fixed attention lanes and bounded GDN phases
+
+Local Prism source `8504810` adds three CPU candidates for X1, without requiring
+Hexagon execution:
+
+- Detected SDOT PQ2 consumption keeps complete one-, four- and eight-row
+  projections inside one target-feature call. Integer dots, half-scale widening
+  and ordered floating accumulation stay inside that call rather than returning
+  between every 128-column block. At width 5,120, a four-/eight-row group replaces
+  forty integer-helper calls and forty half-widening calls with one complete-row call.
+  Original Q8_K scales, all four PQ2 symbols, fused/separate arithmetic and
+  136-byte prepared blocks remain unchanged. Baseline NEON, scalar and tiled
+  multi-token kernels retain their existing paths. The new safe helper API joins
+  the existing helper-publication and exact-dependency prerequisite.
+- Six-head and paired twelve-query attention scores consume sixteen key columns
+  per loop with four fixed accumulator indices. Swift's width-256 key changes
+  from thirty-two to sixteen loop iterations and query-row slices. Cached-half
+  conversion sharing, native FMA lanes, scalar tails, masked padding, reductions
+  and paired-token sharing remain unchanged. Fewer source loop operations do
+  not establish fewer machine instructions or spills.
+- Eight-row GDN decode retains its eight-row transactional staging and commits
+  through two four-row arithmetic phases. Each dot phase has sixteen live
+  accumulator vectors rather than thirty-two, leaving room for inputs on
+  ARM64's thirty-two-vector-register architecture. Every key dot still precedes
+  updates, and all eight destinations remain untouched until success. Swift's
+  private staging remains 4 KiB, plus eight scalar deltas between phases; the
+  small key/query inputs are read again for each four-row phase. Four-row decode
+  shares the same arithmetic helpers; batched token kernels are unchanged.
+
+These are source candidates, with no measured X1 speedup. Independent focused
+controls cover exact native/portable arithmetic, forced baseline consumption,
+FMA rounding, awkward extents, temporal state and late-failure publication.
+Final-source strict Release analysis, native and portable execution, ARM64
+codegen/spill/stack review, complete-model logits/state/adapter/cancellation
+parity and matched X1 complete-request benefit remain qualification gates.
+In particular, GDN's extra input reads must be included in that comparison.
+Runner continues to consume its verified 0.1.23 bundle until release and repin;
+neither device profiles nor conservative memory admission change.
+
+One fixed model-free local workload on `01fbf5d` closed after 40.412 seconds of
+its 300-second allowance. Native exact controls and strict analysis stopped at
+the pre-existing half-widening helper's missing explicit NEON function context;
+no tests executed. Strict x64 analysis found helper documentation and existing
+LUT executor lints. Source corrections are included in `8504810`, without a
+retry. Rust formatting, these Markdown files and whitespace checks passed on
+the captured source; final-source compiler and execution checks remain pending.
+Aggregate and per-command endpoints observed AC connected, saver off and 100%
+charge; they establish neither continuous stability nor performance benefit.
+No model, benchmark or CI operation ran.
+
 ## Execution and dispatch
 
 The default `experimental-neon` feature uses [`fearless_simd` 1.1.0][fearless]'s safe core API under
