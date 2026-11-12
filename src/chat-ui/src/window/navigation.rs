@@ -9,6 +9,16 @@ const SIDEBAR_MARGIN: egui::Margin = egui::Margin {
     bottom: 8,
 };
 
+pub(super) fn bounded_width(ui: &mut egui::Ui, contents: impl FnOnce(&mut egui::Ui)) {
+    // Keep unwrapped labels from increasing their parent's measured width.
+    let rect = ui.available_rect_before_wrap();
+    let mut content = ui.new_child(egui::UiBuilder::new().max_rect(rect));
+    content.shrink_clip_rect(rect);
+    contents(&mut content);
+    let used = egui::Rect::from_min_size(rect.min, egui::vec2(rect.width(), content.min_size().y));
+    ui.allocate_rect(used, egui::Sense::hover());
+}
+
 impl State {
     pub(super) fn attach_appearance(
         &mut self,
@@ -112,7 +122,7 @@ impl State {
                     .fill(ui.visuals().window_fill)
                     .inner_margin(SIDEBAR_MARGIN),
             )
-            .show(ui, |ui| self.sidebar(ui));
+            .show(ui, |ui| bounded_width(ui, |ui| self.sidebar(ui)));
         self.appearance.sidebar_width = response.response.rect.width().clamp(216.0, 340.0);
     }
 

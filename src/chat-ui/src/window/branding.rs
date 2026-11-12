@@ -3,16 +3,19 @@ use super::egui;
 use egui::{Color32, Pos2, Stroke, epaint::CubicBezierShape};
 
 pub(super) fn logo(ui: &mut egui::Ui) {
-    ui.horizontal(|ui| {
-        ui.spacing_mut().item_spacing.x = 8.0;
-        mark(ui);
-        let mut text = wording(ui, " - ");
-        let inline_width = ui.fonts_mut(|fonts| fonts.layout_job(text.clone()).size().x);
-        if inline_width > ui.available_width() {
-            text = wording(ui, "\n");
-        }
-        // Keep both lines beside the seedling, using text line spacing only.
-        ui.add(egui::Label::new(text).extend());
+    super::navigation::bounded_width(ui, |ui| {
+        ui.horizontal(|ui| {
+            ui.spacing_mut().item_spacing.x = 8.0;
+            mark(ui);
+            let mut text = wording(ui, " - ");
+            let inline_width = ui.fonts_mut(|fonts| fonts.layout_job(text.clone()).size().x);
+            if inline_width > ui.available_width() {
+                text = wording(ui, "\n");
+            }
+            // Keep both lines beside the seedling, using text line spacing only.
+            ui.add(egui::Label::new(text).extend())
+                .on_hover_text("SwiftBonsai2 - Your private, local AI companion");
+        });
     });
 }
 

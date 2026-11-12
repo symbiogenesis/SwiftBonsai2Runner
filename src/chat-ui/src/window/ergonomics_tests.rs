@@ -9,9 +9,18 @@ struct Fixture {
 }
 
 fn harness(size: [f32; 2], render: bool) -> Harness<'static, Fixture> {
+    harness_with_preferences(size, render, appearance::Preferences::default())
+}
+
+fn harness_with_preferences(
+    size: [f32; 2],
+    render: bool,
+    preferences: appearance::Preferences,
+) -> Harness<'static, Fixture> {
     let (commands, requests) = mpsc::channel();
     let (events, incoming) = client::event_channel();
     let mut app = State::create(commands, incoming, None, None);
+    app.appearance = preferences;
     app.preview = false;
     app.model = ModelLifecycle::Ready;
     app.input = "Keep my next thought 🌱".into();
@@ -74,6 +83,59 @@ fn ergonomics_sidebar_resizes_collapses_and_reopens_with_the_draft_intact() {
     assert!(chat.state().app.appearance.sidebar_visible);
     assert_eq!(chat.state().app.input, "Keep my next thought 🌱");
     assert!(chat.state().commands.try_recv().is_err());
+}
+
+#[test]
+fn ergonomics_sidebar_keeps_manual_shrink_after_release_and_layout_changes() -> io::Result<()> {
+    let mut chat = harness([1180.0, 860.0], false);
+    chat.state_mut().app.conversations[0].title = "A long conversation title ".repeat(16);
+    chat.run();
+    let start = egui::pos2(chat.state().app.appearance.sidebar_width, 260.0);
+    let end = egui::pos2(216.0, start.y);
+    chat.hover_at(start);
+    chat.drag_at(start);
+    chat.run_steps(1);
+    chat.hover_at(end);
+    chat.run_steps(1);
+    chat.drop_at(end);
+    chat.run();
+    chat.run_steps(8);
+    assert!((chat.state().app.appearance.sidebar_width - 216.0).abs() < 1.0);
+    assert!(
+        chat.get_by_role_and_label(egui::Role::Button, "+ New conversation")
+            .rect()
+            .right()
+            < 216.0
+    );
+
+    chat.state_mut().app.model = ModelLifecycle::Generating;
+    chat.state_mut().app.save_conversations = false;
+    chat.run();
+    chat.get_by_role_and_label(egui::Role::Button, "Hide conversations")
+        .click();
+    chat.run();
+    chat.get_by_role_and_label(egui::Role::Button, "Show conversations")
+        .click();
+    chat.run();
+    chat.set_size(egui::vec2(480.0, 640.0));
+    chat.run();
+    chat.get_by_role_and_label(egui::Role::Button, "Conversation menu")
+        .click();
+    chat.run();
+    chat.set_size(egui::vec2(1180.0, 860.0));
+    chat.run();
+    chat.run_steps(8);
+    assert!((chat.state().app.appearance.sidebar_width - 216.0).abs() < 1.0);
+    assert!(chat.state().app.model.busy());
+    assert_eq!(chat.state().app.input, "Keep my next thought 🌱");
+    assert!(chat.state().commands.try_recv().is_err());
+
+    let saved = serde_json::to_vec(&chat.state().app.appearance).map_err(io::Error::other)?;
+    let preferences = serde_json::from_slice(&saved).map_err(io::Error::other)?;
+    let mut restored = harness_with_preferences([1180.0, 860.0], false, preferences);
+    restored.run();
+    assert!((restored.state().app.appearance.sidebar_width - 216.0).abs() < 1.0);
+    Ok(())
 }
 
 #[test]

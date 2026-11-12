@@ -37,29 +37,32 @@ impl State {
         let available = ui.available_width();
         let group_gap = ((available - content_width) * 0.5).clamp(0.0, 14.0);
         let inset = ((available - content_width - 2.0 * group_gap) * 0.5).max(0.0);
-        ui.allocate_ui_with_layout(
-            egui::vec2(available, 0.0),
-            egui::Layout::left_to_right(egui::Align::Center).with_main_wrap(false),
-            |ui| {
-                ui.spacing_mut().item_spacing.x = 0.0;
-                ui.add_space(inset);
-                ui.add(egui::Label::new(RichText::new(model).small()).extend())
-                    .accessible_name(description)
-                    .on_hover_text(description);
-                ui.add_space(group_gap);
-                history_indicator(ui, self.save_conversations).on_hover_text(saving_description);
-                ui.add_space(4.0);
-                ui.add(egui::Label::new(RichText::new("History").small().weak()).extend())
-                    .accessible_name(saving_description)
-                    .on_hover_text(saving_description);
-                ui.add_space(group_gap);
-                privacy_icon(ui).on_hover_text("Private · On your device");
-                ui.add_space(4.0);
-                ui.add(egui::Label::new(RichText::new("Private").small().weak()).extend())
-                    .accessible_name("Private · On your device")
-                    .on_hover_text("Private · On your device");
-            },
-        );
+        super::navigation::bounded_width(ui, |ui| {
+            ui.allocate_ui_with_layout(
+                egui::vec2(available, 0.0),
+                egui::Layout::left_to_right(egui::Align::Center).with_main_wrap(false),
+                |ui| {
+                    ui.spacing_mut().item_spacing.x = 0.0;
+                    ui.add_space(inset);
+                    ui.add(egui::Label::new(RichText::new(model).small()).extend())
+                        .accessible_name(description)
+                        .on_hover_text(description);
+                    ui.add_space(group_gap);
+                    history_indicator(ui, self.save_conversations)
+                        .on_hover_text(saving_description);
+                    ui.add_space(4.0);
+                    ui.add(egui::Label::new(RichText::new("History").small().weak()).extend())
+                        .accessible_name(saving_description)
+                        .on_hover_text(saving_description);
+                    ui.add_space(group_gap);
+                    privacy_icon(ui).on_hover_text("Private · On your device");
+                    ui.add_space(4.0);
+                    ui.add(egui::Label::new(RichText::new("Private").small().weak()).extend())
+                        .accessible_name("Private · On your device")
+                        .on_hover_text("Private · On your device");
+                },
+            );
+        });
     }
 }
 
