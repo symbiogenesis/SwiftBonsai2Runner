@@ -121,6 +121,16 @@ fn verified_release(candidate: &Candidate, working: &Path) -> crate::Result<poli
     Ok(installer)
 }
 
+fn selected_release(version: &str, working: &Path) -> crate::Result<Candidate> {
+    Version::parse(version)?.newer_than_current()?;
+    let (_, candidate) = discover(working)?;
+    candidate
+        .filter(|candidate| candidate.version == version)
+        .ok_or_else(|| {
+            "The selected update is no longer the newest published release; check again.".into()
+        })
+}
+
 fn download(root: &Path, version: &str) -> crate::Result<Value> {
     installation(root, true)?;
     Version::parse(version)?.newer_than_current()?;
@@ -128,10 +138,7 @@ fn download(root: &Path, version: &str) -> crate::Result<Value> {
     fs::create_dir_all(&directory).map_err(|error| error.to_string())?;
     external(&directory)?;
     let _lock = crate::startup_cache::lock_file(&directory.join("update.lock"))?;
-    let (_, candidate) = discover(&directory)?;
-    let candidate = candidate
-        .filter(|candidate| candidate.version == version)
-        .ok_or("The selected update is no longer the newest published release; check again.")?;
+    let candidate = selected_release(version, &directory)?;
     let installer = verified_release(&candidate, &directory)?;
     let path = directory.join(&installer.asset.name);
     crate::startup_download::receive_with_timeout(
@@ -149,39 +156,43 @@ fn download(root: &Path, version: &str) -> crate::Result<Value> {
     Ok(json!({"Status": "downloaded", "Version": version, "ReleaseUrl": candidate.release_url}))
 }
 
-fn verify_stage(version: &str) -> crate::Result<(PathBuf, fs::File)> {
+fn verify_stage(
+    directory: &Path,
+    version: &str,
+    published: &policy::Installer,
+) -> crate::Result<bonsai_artifacts::VerifiedFile> {
     Version::parse(version)?.newer_than_current()?;
-    let directory = staged(version)?;
+    published.validate(version)?;
     let bytes = transfer::read_bounded(&directory.join("verified-release.json"), MAX_METADATA)?;
     let installer: policy::Installer =
         serde_json::from_slice(&bytes).map_err(|error| error.to_string())?;
     installer.validate(version)?;
+    if installer != *published {
+        return Err(
+            "The staged update differs from the published release; download and confirm it again."
+                .into(),
+        );
+    }
     let path = directory.join(&installer.asset.name);
-    let mut file = bonsai_artifacts::open_locked_file(&path).map_err(|error| error.to_string())?;
-    transfer::verify(&mut file, installer.asset.bytes, &installer.asset.sha256)?;
-    Ok((path, file))
+    bonsai_artifacts::VerifiedFile::verify_with(
+        &path,
+        installer.asset.bytes,
+        &installer.asset.sha256,
+        || {
+            crate::startup_cancel::checkpoint()
+                .map_err(|_| bonsai_artifacts::ArtifactError::Cancelled)
+        },
+    )
+    .map_err(|error| error.to_string())
 }
 
 fn queue(root: &Path, version: &str, handoff: &Path) -> crate::Result<Value> {
     installation(root, true)?;
     let directory = staged(version)?;
     let _lock = crate::startup_cache::lock_file(&directory.join("update.lock"))?;
-    let (_, candidate) = discover(&directory)?;
-    let candidate = candidate
-        .filter(|candidate| candidate.version == version)
-        .ok_or("The selected update is no longer the newest published release; check again.")?;
+    let candidate = selected_release(version, &directory)?;
     let fresh = verified_release(&candidate, &directory)?;
-    let cached: policy::Installer = serde_json::from_slice(&transfer::read_bounded(
-        &directory.join("verified-release.json"),
-        MAX_METADATA,
-    )?)
-    .map_err(|error| error.to_string())?;
-    if fresh != cached {
-        return Err(
-            "The published update changed after download; the installed app is unchanged.".into(),
-        );
-    }
-    let (_path, _guard) = verify_stage(version)?;
+    let _guard = verify_stage(&directory, version, &fresh)?;
     external(handoff)?;
     let name = handoff
         .file_name()
@@ -260,27 +271,33 @@ pub fn run(value: Value) -> crate::Result<Value> {
     }
 }
 
-pub(crate) fn apply_after_exit(handoff: &Path) -> crate::Result<Option<Value>> {
+pub(crate) fn apply_after_exit(handoff: &Path) -> crate::Result<Value> {
     external(handoff)?;
-    if !fs::exists(handoff).map_err(|error| error.to_string())? {
-        return Ok(None);
-    }
     let request: Handoff = serde_json::from_slice(&transfer::read_bounded(handoff, 8192)?)
         .map_err(|error| error.to_string())?;
     if request.schema_version != 1 {
         return Err("Unsupported update handoff schema.".into());
     }
     installation(&request.installation_directory, true)?;
-    let (path, _immutable_installer) = verify_stage(&request.version)?;
+    let directory = staged(&request.version)?;
+    let _lock = crate::startup_cache::lock_file(&directory.join("update.lock"))?;
+    // The cache is user-writable. Never let a rewritten receipt authenticate
+    // replacement bytes after the UI's earlier confirmation and verification.
+    let candidate = selected_release(&request.version, &directory)?;
+    let published = verified_release(&candidate, &directory)?;
+    let immutable_installer = verify_stage(&directory, &request.version, &published)?;
     #[cfg(windows)]
     {
         use std::os::windows::process::CommandExt as _;
         use std::process::{Command, Stdio};
         let installer = crate::startup_download::system_tool("msiexec.exe")?;
         let install_folder = format!("INSTALLFOLDER={}", request.installation_directory.display());
+        // Consume authorization before process creation. A failed spawn requires
+        // a new confirmation; cleanup failure must never follow a live installer.
+        fs::remove_file(handoff).map_err(|error| error.to_string())?;
         let process = Command::new(installer)
             .arg("/i")
-            .arg(&path)
+            .arg(immutable_installer.path())
             .arg("/passive")
             .arg("/norestart")
             .arg(install_folder)
@@ -290,14 +307,16 @@ pub(crate) fn apply_after_exit(handoff: &Path) -> crate::Result<Option<Value>> {
             .creation_flags(0x0000_0200 | 0x0800_0000)
             .spawn()
             .map_err(|error| error.to_string())?;
-        fs::remove_file(handoff).map_err(|error| error.to_string())?;
-        Ok(Some(
+        Ok(
             json!({"Status": "update-installer-started", "Version": request.version, "InstallerProcessId": process.id()}),
-        ))
+        )
     }
     #[cfg(not(windows))]
     {
-        let _ = path;
+        let _ = immutable_installer;
         Err("Application installation requires Windows.".into())
     }
 }
+
+#[cfg(all(test, windows))]
+mod tests;

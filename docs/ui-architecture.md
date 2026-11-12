@@ -89,8 +89,12 @@ state. Failure retains the running app and never substitutes an unverified file.
 Installation requires an explicit native confirmation and known owned teardown.
 The UI queues a verified update request for its maintenance launcher and closes
 through the ordinary persistence and process cleanup path. After the native
-window exits, the launcher retains its launch guard through staged installer
-revalidation and the fixed Windows Installer handoff. It then exits, releasing
+window exits, the launcher checks the published release again and requires the
+staged receipt and installer to match that fresh identity. It retains its launch
+guard, installer read handle and ancestor directory handles through the fixed
+Windows Installer process creation. The queued request is consumed before
+process creation; missing requests and final network/identity failures are errors.
+It then exits, releasing
 the guard so application files can be replaced. It must not install while model
 ownership is uncertain or create a detached child that escapes the existing
 containment contract.

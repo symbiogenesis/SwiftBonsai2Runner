@@ -129,8 +129,14 @@ Choose **Download update**, then **Install update and close** when ready.
 Installation requires confirmation; finish the current response first. The
 normal shutdown path must confirm teardown of owned model and speech work and
 finish local persistence before Windows Installer replaces application files.
-The maintenance launcher waits for the native window to exit and rechecks the
-staged installer before handing off. Windows may request administrator approval
+The maintenance launcher waits for the native window to exit, checks the published
+release again and compares its identity with the staged receipt and actual MSI
+bytes. This final check also needs a working network connection. A changed or
+withdrawn release, changed cache, or failed final check stops installation; reopen
+the application to check and confirm again. The launcher retains read handles to
+the verified MSI and its ancestor directories through Windows Installer process
+creation, and consumes the queued request before starting that process.
+Windows may request administrator approval
 for the per-machine MSI. Conversation saving continues to honor its existing
 setting; choosing an update does not enable saving. Model downloads and existing
 user data remain outside the application installation directory.
@@ -139,6 +145,9 @@ The first release remains unsigned. HTTPS and release SHA-256 checks detect
 changed or mismatched bytes within the GitHub release trust boundary; they are
 not an independent publisher signature. If verification, shutdown or installer
 handoff fails, the updater reports the failure rather than weakening checks.
+The launcher exits after process creation so its application files can be replaced;
+its file guards do not cover the full installer lifetime or isolate a compromised
+process running as the same user.
 After installation, reopen the application from the Start menu.
 
 In-app installation stays unavailable during model preparation, an active

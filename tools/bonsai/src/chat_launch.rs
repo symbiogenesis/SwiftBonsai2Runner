@@ -818,9 +818,7 @@ pub fn run(value: Value) -> crate::Result<Value> {
     // Installer startup returns immediately; returning releases admission and
     // lets this maintenance image exit before Windows replaces its files.
     if let Some(handoff) = handoff {
-        if let Some(update) = crate::app_update::apply_after_exit(&handoff)? {
-            return Ok(update);
-        }
+        return crate::app_update::apply_after_exit(&handoff);
     }
     Ok(result)
 }
