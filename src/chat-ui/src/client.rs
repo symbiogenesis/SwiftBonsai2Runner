@@ -59,7 +59,7 @@ const CONTROL_TOKEN_MESSAGE: &str = "This conversation contains reserved chat ma
 const RATE_LIMIT_MESSAGE: &str =
     "Too many messages were sent in a short time. Wait a moment, then send again.";
 const TEARDOWN_FAILURE_MESSAGE: &str = "The local model's owned processes could not be confirmed stopped. Copy any conversation or drafts you want to keep, then close this app before launching again.";
-pub(crate) const STOPPED_MESSAGE: &str = "Response stopped. Select Retry model to continue. Completed conversation turns are retained; the interrupted turn is not added to model history.";
+pub(crate) const STOPPED_MESSAGE: &str = "Response stopped. Select Retry model to continue. Any usable partial reply remains in the conversation.";
 
 pub(crate) const DEFAULT_ABLITERATION_SCALE: f32 = 1.3;
 
@@ -691,7 +691,7 @@ fn finish_turn(
                 | Failure::Memory
                 | Failure::NativeRuntime
                 | Failure::Teardown => {
-                    "The response did not complete. Your message is restored for review; partial output has not been added to model history."
+                    "The response did not complete. Review the conversation and retry the model."
                 }
                 Failure::Shutdown | Failure::Stopped => return Err(failure),
             };

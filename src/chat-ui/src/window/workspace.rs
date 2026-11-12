@@ -1,5 +1,5 @@
-//! Bounded conversation workspace. Visible partial output and committed model
-//! history remain separate, so switching never promotes an interrupted turn.
+//! Bounded conversation workspace. Locally identified interrupted replies are
+//! retained as context without replaying their original requests.
 use super::{Command, RichText, State, Transcript, client, egui};
 
 #[derive(serde::Serialize, serde::Deserialize)]

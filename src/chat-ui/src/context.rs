@@ -112,8 +112,8 @@ impl Estimate {
 
 /// Estimate committed model history, including reasoning even with Thinking off.
 ///
-/// Call only when committed history changes; visible interrupted text and effort
-/// drafts do not belong in this slice. No history text is copied or retained here.
+/// Call only when conversation history changes; adopted partial replies are
+/// included and unadopted effort drafts are excluded. No history text is retained here.
 pub(crate) fn history_tokens(history: &[Message]) -> usize {
     history.iter().fold(0_usize, |total, message| {
         total

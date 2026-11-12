@@ -34,8 +34,9 @@ by the 4 MiB response cap. They do not bypass the incremental stream limit.
 Committed history keeps its request/response bounds. Unexpected lifecycle-capacity
 exhaustion closes the worker without blocking teardown.
 
-Context guidance uses committed model history rather than the visible transcript;
-interrupted text and intermediate effort drafts never increase its history total.
+Context guidance uses model history rather than the visible transcript; an adopted
+interrupted prompt and its selected partial reply increase the history total, while
+other intermediate effort drafts do not.
 The active response owner shows an updating state while generation is unsettled.
 Other selected conversations retain their next-draft estimates independently.
 Extra effort estimates include planning instructions but cannot account for later

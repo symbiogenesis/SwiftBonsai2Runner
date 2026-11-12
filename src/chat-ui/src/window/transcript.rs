@@ -69,6 +69,11 @@ pub(super) struct Message {
     pub(super) body: String,
     #[serde(default)]
     history_index: Option<usize>,
+    // Identifies a live turn across recovery without guessing from duplicate text.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    turn_prefix: Option<usize>,
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub(super) interrupted: bool,
     #[serde(skip)]
     body_revision: u64,
     reasoning: String,
@@ -90,6 +95,10 @@ pub(super) struct Message {
     #[cfg(test)]
     #[serde(skip)]
     highlight_range_visits: std::cell::Cell<usize>,
+}
+
+const fn is_false(value: &bool) -> bool {
+    !*value
 }
 
 #[derive(Default, serde::Serialize)]
@@ -174,6 +183,8 @@ impl Transcript {
             role,
             body,
             history_index: None,
+            turn_prefix: None,
+            interrupted: false,
             body_revision: 0,
             reasoning: String::new(),
             pending: role == Role::Assistant,
@@ -236,6 +247,7 @@ impl Transcript {
     }
 
     pub(super) fn stage(&mut self) {
+        let turn_prefix = self.messages.last().and_then(|message| message.turn_prefix);
         if let Some(message) = self.messages.last_mut() {
             message.pending = false;
         }
@@ -244,6 +256,9 @@ impl Transcript {
                 && (!message.body.is_empty() || !message.reasoning.is_empty())
         }) {
             self.push(Role::Assistant, String::new());
+            if let Some(message) = self.messages.last_mut() {
+                message.turn_prefix = turn_prefix;
+            }
         }
     }
 
@@ -706,6 +721,12 @@ impl Message {
                     .size(18.0),
             );
             ui.label(RichText::new(name).strong().size(14.0));
+            if self.interrupted {
+                ui.label(RichText::new("Interrupted").small().weak())
+                    .on_hover_text(
+                        "This partial response is included in the conversation context.",
+                    );
+            }
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                 if let Some(controls) = controls {
                     action = self.message_controls(ui, controls);

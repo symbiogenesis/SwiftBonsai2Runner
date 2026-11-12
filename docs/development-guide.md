@@ -278,11 +278,11 @@ unsent draft and response settings. Cancel/Escape leaves the source unchanged.
 its completed turn; a user message becomes a draft after the preceding turns.
 Branches use one of the 16 conversation slots.
 
-**Continue response** is available on the latest committed answer when Swift is
+**Continue response** is available on the latest answer in conversation context when Swift is
 ready. It sends an explicit followup asking Swift to continue without repeating,
 and preserves the unsent composer draft. It uses the same context admission and
-response settings as Send. Interrupted output and intermediate Extra effort drafts
-are excluded from iteration history. Older recovered messages without saved
+response settings as Send. An identified interrupted reply is included in history;
+other intermediate Extra effort drafts are excluded. Older recovered messages without saved
 positions remain copyable and searchable, with iteration disabled. Newly completed
 turns gain verified positions through the normal committed-history event.
 
@@ -354,8 +354,14 @@ Chat automatically saves drafts,
 response settings, voice description, transcript and exact completed history in
 `DataDirectory/chat-recovery.dpapi`. User-scoped DPAPI encrypts the bounded 8 MiB
 workspace; a file lock permits one writer per data folder.
-Interrupted text can remain visible after recovery but never becomes committed
-history or an automatic request. Restore activates neither microphone nor playback.
+An interrupted reply with a locally identified prompt and visible answer is marked
+**Interrupted** and retained as conversation context. Later prompts can reference it;
+its message menu supports Continue response and Branch from here. Stop, failure and
+recovery never automatically resend the original request. If no usable answer exists,
+the prompt remains available for review. Older snapshots can recover an unbound
+trailing pair when their saved incomplete state and last answer identify it;
+ambiguous partial replies remain visible outside history.
+Restore activates neither microphone nor playback.
 In **Settings > Privacy**, disable **Save conversations on this device** to delete
 the saved copy and keep the workspace open without saving. This choice survives restarts;
 the locked `chat-recovery.lock` sentinel retains only the saving preference.

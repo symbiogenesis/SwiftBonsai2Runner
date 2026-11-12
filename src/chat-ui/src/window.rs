@@ -482,8 +482,7 @@ impl State {
                 .take(48)
                 .collect();
         }
-        self.transcript.push(Role::User, text);
-        self.transcript.push(Role::Assistant, String::new());
+        self.transcript.start_turn(text, self.committed.len());
         self.request_conversation = Some(self.active_conversation);
         self.recovery_dirty = true;
         self.input.clear();
@@ -643,9 +642,17 @@ impl State {
         if !self.routing_request {
             self.stop_speech();
         }
+        let adopted = matches!(
+            self.model,
+            ModelLifecycle::Generating
+                | ModelLifecycle::Stopping
+                | ModelLifecycle::AwaitingTeardown
+        ) && self.adopt_interrupted();
         self.model = ModelLifecycle::Unavailable;
         self.transcript.remove_empty_response();
-        self.retain_draft();
+        if !adopted && !self.transcript.latest_interrupted(&self.committed) {
+            self.retain_draft();
+        }
         self.set_status(message, true);
     }
 
@@ -667,15 +674,25 @@ impl State {
             }
             return;
         }
+        let adopted = if retry_required {
+            self.adopt_interrupted()
+        } else {
+            false
+        };
+        if !retry_required {
+            self.transcript.clear_turn(self.committed.len());
+        }
         if self.model.stopping() || self.model == ModelLifecycle::Restarting {
             // A rejection can queue just before Stop or behind the first
             // teardown notice. Preserve explicit Stop/retry ownership until
             // teardown ends or the worker acknowledges the new attempt.
-            if self.input.is_empty() {
+            if !adopted && self.input.is_empty() {
                 self.input = text.chars().take(INPUT_LIMIT).collect();
                 self.place_composer_cursor(self.input.chars().count());
             }
-            self.retain_draft();
+            if !adopted {
+                self.retain_draft();
+            }
             return;
         }
         if !self.routing_request {
@@ -691,12 +708,14 @@ impl State {
             ModelLifecycle::Ready
         };
         self.transcript.remove_empty_response();
-        if self.input.is_empty() {
+        if !adopted && self.input.is_empty() {
             self.input = text.chars().take(INPUT_LIMIT).collect();
             self.place_composer_cursor(self.input.chars().count());
         }
-        self.retain_draft();
-        self.set_status(message, true);
+        if !adopted {
+            self.retain_draft();
+        }
+        self.set_status(if adopted { "Response interrupted. The partial reply is included in this conversation; retry the model to continue." } else { message }, true);
         self.focus_composer = !retry_required;
     }
 
@@ -827,12 +846,15 @@ impl State {
             self.stop_speech();
         }
         self.model = ModelLifecycle::Stopping;
-        if self.input.is_empty() {
+        let adopted = self.adopt_interrupted();
+        if !adopted && self.input.is_empty() {
             self.input = text.chars().take(INPUT_LIMIT).collect();
             self.place_composer_cursor(self.input.chars().count());
         }
         self.transcript.remove_empty_response();
-        self.retain_draft();
+        if !adopted {
+            self.retain_draft();
+        }
         self.set_status("Response stopped. Releasing the local model…", false);
     }
 
@@ -840,6 +862,22 @@ impl State {
         self.model = ModelLifecycle::Retryable;
         self.set_status(client::STOPPED_MESSAGE, false);
         self.focus_composer = true;
+    }
+
+    fn adopt_interrupted(&mut self) -> bool {
+        if self.transcript.adopt_interrupted(&mut self.committed) {
+            if let Some(answer) = self.committed.last() {
+                self.last_answer = answer.content.to_string();
+                self.answer_complete = false;
+            }
+            self.restore_history = true;
+            self.context_history = None;
+            self.recovery_dirty = true;
+            true
+        } else {
+            self.transcript.clear_turn(self.committed.len());
+            false
+        }
     }
 
     fn speech_command(&mut self, command: speech::Command) -> bool {

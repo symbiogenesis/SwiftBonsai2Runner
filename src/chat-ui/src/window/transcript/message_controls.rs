@@ -13,11 +13,8 @@ impl Message {
             egui::Button::new("⋯").frame_when_inactive(false),
         )
         .ui(ui, |ui| {
-            let options = self.iteration_options(
-                controls.history,
-                controls.can_send,
-                controls.can_branch,
-            );
+            let options =
+                self.iteration_options(controls.history, controls.can_send, controls.can_branch);
             let mut item = |enabled, label, help, selected| {
                 if ui
                     .add_enabled(enabled, egui::Button::new(label))
@@ -67,7 +64,9 @@ impl Message {
                 && !options.continue_response
             {
                 ui.separator();
-                ui.label("These actions require a completed message included in Swift's conversation context.");
+                ui.label(
+                    "These actions require a message included in Swift's conversation context.",
+                );
             }
         });
         let name = format!("Actions for message {}", self.id);

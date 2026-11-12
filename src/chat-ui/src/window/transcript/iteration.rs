@@ -46,6 +46,154 @@ impl Message {
 }
 
 impl Transcript {
+    pub(in crate::window) fn start_turn(&mut self, prompt: String, prefix: usize) {
+        self.push(Role::User, prompt);
+        if let Some(message) = self.messages.last_mut() {
+            message.turn_prefix = Some(prefix);
+        }
+        self.push(Role::Assistant, String::new());
+        if let Some(message) = self.messages.last_mut() {
+            message.turn_prefix = Some(prefix);
+        }
+    }
+
+    /// Adopt only a locally identified turn, never a text-matched legacy turn.
+    /// No request is sent: the next explicit send restores this history first.
+    pub(in crate::window) fn adopt_interrupted(
+        &mut self,
+        history: &mut Vec<client::Message>,
+    ) -> bool {
+        let prefix = history.len();
+        if prefix > 126 || !prefix.is_multiple_of(2) {
+            return false;
+        }
+        let Some(prompt_index) = self
+            .messages
+            .iter()
+            .rposition(|message| message.role == Role::User && message.turn_prefix == Some(prefix))
+        else {
+            return false;
+        };
+        let Some(answer_offset) = self.messages[prompt_index + 1..]
+            .iter()
+            .rposition(|message| {
+                message.role == Role::Assistant
+                    && message.turn_prefix == Some(prefix)
+                    && !message.body.trim().is_empty()
+            })
+        else {
+            return false;
+        };
+        let answer_index = prompt_index + 1 + answer_offset;
+        let prompt = &self.messages[prompt_index];
+        let answer = &self.messages[answer_index];
+        if prompt.body.is_empty()
+            || prompt.body.len() > 1024 * 1024
+            || answer.body.len() > 1024 * 1024
+            || answer.reasoning.len() > 1024 * 1024
+        {
+            return false;
+        }
+        history.push(client::Message {
+            role: "user",
+            content: prompt.body.as_str().into(),
+            reasoning_content: None,
+        });
+        history.push(client::Message {
+            role: "assistant",
+            content: answer.body.as_str().into(),
+            reasoning_content: (!answer.reasoning.is_empty())
+                .then(|| answer.reasoning.as_str().into()),
+        });
+        for message in &mut self.messages[prompt_index..] {
+            if message.turn_prefix == Some(prefix) {
+                message.turn_prefix = None;
+                message.pending = false;
+            }
+        }
+        self.messages[prompt_index].history_index = Some(prefix);
+        self.messages[answer_index].history_index = Some(prefix + 1);
+        self.messages[answer_index].interrupted = true;
+        true
+    }
+
+    /// Older snapshots saved the active answer and completion state, but had no
+    /// turn marker. Use that state only for the last unbound prompt/answer pair.
+    pub(in crate::window) fn recover_interrupted(
+        &mut self,
+        history: &mut Vec<client::Message>,
+        last_answer: &str,
+        answer_complete: bool,
+    ) -> bool {
+        if self.adopt_interrupted(history) {
+            return true;
+        }
+        if answer_complete || last_answer.trim().is_empty() || history.len() > 126 {
+            return false;
+        }
+        let Some(answer_index) = self.messages.len().checked_sub(1) else {
+            return false;
+        };
+        let answer = &self.messages[answer_index];
+        if answer.role != Role::Assistant
+            || answer.history_index.is_some()
+            || answer.turn_prefix.is_some()
+            || answer.body != last_answer
+        {
+            return false;
+        }
+        let Some(prompt_index) = self.messages[..answer_index]
+            .iter()
+            .rposition(|message| message.role == Role::User)
+        else {
+            return false;
+        };
+        if self.messages[prompt_index].history_index.is_some()
+            || self.messages[prompt_index].turn_prefix.is_some()
+        {
+            return false;
+        }
+        let prefix = history.len();
+        self.messages[prompt_index].turn_prefix = Some(prefix);
+        self.messages[answer_index].turn_prefix = Some(prefix);
+        let adopted = self.adopt_interrupted(history);
+        if !adopted {
+            self.clear_turn(prefix);
+        }
+        adopted
+    }
+
+    pub(in crate::window) fn clear_turn(&mut self, prefix: usize) {
+        for message in &mut self.messages {
+            if message.turn_prefix == Some(prefix) {
+                message.turn_prefix = None;
+            }
+        }
+    }
+
+    pub(in crate::window) fn latest_interrupted(&self, history: &[client::Message]) -> bool {
+        history.len().checked_sub(1).is_some_and(|last| {
+            self.messages.iter().any(|message| {
+                message.interrupted && message.committed_index(history) == Some(last)
+            })
+        })
+    }
+
+    pub(in crate::window) fn copy_interrupted_marks(
+        &mut self,
+        source: &Self,
+        history: &[client::Message],
+    ) {
+        for message in &mut self.messages {
+            let Some(index) = message.committed_index(history) else {
+                continue;
+            };
+            message.interrupted = source.messages.iter().any(|original| {
+                original.interrupted && original.committed_index(history) == Some(index)
+            });
+        }
+    }
+
     pub(in crate::window) fn committed_index(
         &self,
         id: u64,
@@ -89,6 +237,7 @@ impl Transcript {
         {
             answer.history_index = Some(answer_index);
         }
+        self.clear_turn(prompt_index);
     }
 
     pub(in crate::window) fn from_committed(history: &[client::Message]) -> Self {
@@ -124,6 +273,47 @@ mod tests {
             content: text.into(),
             reasoning_content: None,
         }
+    }
+
+    #[test]
+    fn interruption_uses_last_identified_effort_stage_and_rejects_unidentified_text() {
+        let mut history = vec![
+            entry("user", "Same prompt"),
+            entry("assistant", "Old answer"),
+        ];
+        let mut transcript = Transcript::from_committed(&history);
+        transcript.start_turn("Same prompt".into(), history.len());
+        transcript.append("First draft", false);
+        transcript.stage();
+        transcript.append("Partial revision", false);
+        assert!(transcript.adopt_interrupted(&mut history));
+        assert_eq!(history.len(), 4);
+        assert_eq!(history[3].content.as_ref(), "Partial revision");
+        assert_eq!(transcript.messages[2].committed_index(&history), Some(2));
+        assert_eq!(transcript.messages[3].committed_index(&history), None);
+        assert_eq!(transcript.messages[4].committed_index(&history), Some(3));
+        assert!(transcript.messages[4].interrupted);
+        assert!(!transcript.adopt_interrupted(&mut history));
+
+        let mut legacy = Transcript::from_committed(&history);
+        legacy.push(Role::User, "Same prompt".into());
+        legacy.push(Role::Assistant, "Partial revision".into());
+        assert!(!legacy.adopt_interrupted(&mut history));
+        assert_eq!(history.len(), 4);
+    }
+
+    #[test]
+    fn interruption_legacy_recovery_requires_unfinished_snapshot_and_exact_tail() {
+        let mut history = vec![entry("user", "Same"), entry("assistant", "Old")];
+        let mut transcript = Transcript::from_committed(&history);
+        transcript.push(Role::User, "Same".into());
+        transcript.push(Role::Assistant, "Partial".into());
+        assert!(!transcript.recover_interrupted(&mut history, "Partial", true));
+        assert!(!transcript.recover_interrupted(&mut history, "Different", false));
+        assert!(transcript.recover_interrupted(&mut history, "Partial", false));
+        assert_eq!(history[2].content.as_ref(), "Same");
+        assert_eq!(history[3].content.as_ref(), "Partial");
+        assert!(!transcript.recover_interrupted(&mut history, "Partial", false));
     }
 
     #[test]

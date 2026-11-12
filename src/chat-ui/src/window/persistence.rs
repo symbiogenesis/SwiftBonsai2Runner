@@ -137,7 +137,7 @@ impl State {
                 if let Some(bytes) = opened.saved {
                     if self.restore_workspace(&bytes).is_ok() {
                         self.save_conversations = true;
-                        "Conversations restored. Completed turns are ready to continue."
+                        "Conversations restored. Interrupted replies remain available as context."
                             .clone_into(&mut self.recovery_notice);
                     } else {
                         "Could not restore saved conversations. The existing file is preserved. Enable saving to replace it with this workspace.".clone_into(&mut self.recovery_notice);
@@ -223,8 +223,23 @@ impl State {
         if !saved.valid() {
             return Err(io::Error::other("Invalid saved workspace."));
         }
-        // Readiness belongs to the fresh owned broker, never to disk. Retained
-        // partial text remains visible but only committed turns reach history.
+        // A locally identified in-flight turn can supply context after a crash.
+        // Recovery never starts or replays its request.
+        let mut adopted = saved.active.transcript.recover_interrupted(
+            &mut saved.active.committed,
+            &saved.active.last_answer,
+            saved.active.answer_complete,
+        );
+        for conversation in &mut saved.conversations {
+            if let Some(snapshot) = &mut conversation.saved {
+                adopted |= snapshot.transcript.recover_interrupted(
+                    &mut snapshot.committed,
+                    &snapshot.last_answer,
+                    snapshot.answer_complete,
+                );
+            }
+        }
+        // Readiness belongs to the fresh owned broker, never to disk.
         "Recovered conversation. Preparing your local model…".clone_into(&mut saved.active.status);
         saved.active.warning = false;
         self.conversations = saved.conversations;
@@ -233,6 +248,7 @@ impl State {
         self.voice_profile = saved.voice_profile;
         self.load_conversation(saved.active);
         self.restore_history = true;
+        self.recovery_dirty |= adopted;
         Ok(())
     }
 
@@ -391,6 +407,32 @@ mod tests {
         let (commands, _incoming) = mpsc::channel();
         let (_events, incoming) = client::event_channel();
         State::create(commands, incoming, None, None)
+    }
+
+    #[test]
+    fn interruption_recovery_adopts_identified_partial_without_replaying() -> io::Result<()> {
+        let mut original = state();
+        original.transcript.start_turn("Original prompt".into(), 0);
+        original.transcript.append("Partial response", false);
+        original.input = "New draft".into();
+        let bytes = original.workspace_bytes()?;
+        let (commands, incoming) = mpsc::channel();
+        let (_events, events) = client::event_channel();
+        let mut restored = State::create(commands, events, None, None);
+        restored.restore_workspace(&bytes)?;
+        assert_eq!(restored.committed.len(), 2);
+        assert_eq!(restored.committed[0].content.as_ref(), "Original prompt");
+        assert_eq!(restored.committed[1].content.as_ref(), "Partial response");
+        assert_eq!(restored.input, "New draft");
+        assert!(incoming.try_recv().is_err());
+        let answer = restored
+            .transcript
+            .messages
+            .last()
+            .ok_or_else(|| io::Error::other("partial answer missing"))?;
+        assert_eq!(answer.committed_index(&restored.committed), Some(1));
+        assert!(answer.interrupted);
+        Ok(())
     }
 
     #[test]

@@ -131,7 +131,8 @@ impl State {
             return false;
         };
         let history = self.committed[..end].to_vec();
-        let transcript = Transcript::from_committed(&history);
+        let mut transcript = Transcript::from_committed(&history);
+        transcript.copy_interrupted_marks(&self.transcript, &history);
         let title = self
             .conversations
             .iter()
@@ -400,5 +401,65 @@ mod tests {
         assert_ne!(state.active_conversation, owner);
         assert!(state.restore_history);
         assert!(commands.try_recv().is_err());
+    }
+
+    #[test]
+    fn interruption_continue_and_branch_use_partial_reply_and_preserve_draft() -> std::io::Result<()>
+    {
+        let (mut state, commands) = fixture();
+        state.input = "Interrupted prompt".into();
+        state.submit();
+        assert!(matches!(commands.try_recv(), Ok(Command::Send { .. })));
+        state.model_event(client::Event::Text("Partial answer".into()));
+        state.input = "New draft".into();
+        state.model_event(client::Event::Stopping("Interrupted prompt".into()));
+        state.model_event(client::Event::Stopped);
+        let answer = state
+            .transcript
+            .messages
+            .last()
+            .ok_or_else(|| std::io::Error::other("partial answer missing"))?
+            .id;
+        assert!(
+            state
+                .committed
+                .last()
+                .is_some_and(|message| message.content.as_ref() == "Partial answer")
+        );
+        assert!(state.message_options(answer).branch);
+        assert!(!state.message_options(answer).continue_response);
+        state.model = ModelLifecycle::Ready;
+        state.restore_selected_history();
+        assert!(
+            matches!(commands.try_recv(), Ok(Command::RestoreChat(history)) if history.last().is_some_and(|message| message.content.as_ref() == "Partial answer"))
+        );
+        assert!(state.message_options(answer).continue_response);
+        state.message_action(MessageAction::Branch(answer));
+        assert!(
+            matches!(commands.try_recv(), Ok(Command::RestoreChat(history)) if history.last().is_some_and(|message| message.content.as_ref() == "Partial answer"))
+        );
+        assert!(
+            state.conversations[0]
+                .saved
+                .as_ref()
+                .is_some_and(|saved| saved.input == "New draft")
+        );
+        let branch_answer = state
+            .transcript
+            .messages
+            .last()
+            .ok_or_else(|| std::io::Error::other("branch answer missing"))?
+            .id;
+        state.message_action(MessageAction::Continue(branch_answer));
+        assert!(
+            matches!(commands.try_recv(), Ok(Command::Send { text, .. }) if text == CONTINUE_PROMPT)
+        );
+        assert!(
+            state
+                .committed
+                .last()
+                .is_some_and(|message| message.content.as_ref() == "Partial answer")
+        );
+        Ok(())
     }
 }

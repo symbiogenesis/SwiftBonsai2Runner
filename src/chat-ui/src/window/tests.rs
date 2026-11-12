@@ -165,7 +165,7 @@ fn queued_rejections_after_stop_preserve_teardown_and_composer_drafts() {
             assert_eq!(state.transcript.plain_text(), transcript);
             assert_eq!(
                 state.input,
-                if newer_draft.is_empty() {
+                if newer_draft.is_empty() && !retry_required {
                     "Original question"
                 } else {
                     newer_draft
@@ -214,11 +214,25 @@ fn queued_rejection_after_stop_retains_completed_extra_effort_draft() {
         state.drain_events();
         assert_eq!(state.status, status);
         state.model_event(Event::Stopped);
-        assert_eq!(state.last_answer, "A complete draft.");
-        assert!(state.answer_complete);
+        assert_eq!(
+            state.last_answer,
+            if retry_required {
+                "An unfinished revision"
+            } else {
+                "A complete draft."
+            }
+        );
+        assert_eq!(state.answer_complete, !retry_required);
         assert_eq!(state.transcript.plain_text(), transcript);
-        assert_eq!(state.input, "Original question");
-        assert!(state.committed.is_empty());
+        assert_eq!(
+            state.input,
+            if retry_required {
+                ""
+            } else {
+                "Original question"
+            }
+        );
+        assert_eq!(state.committed.len(), if retry_required { 2 } else { 0 });
         assert!(state.model.retryable() && !state.model.ready());
         assert_eq!(state.status, client::STOPPED_MESSAGE);
     }
@@ -291,10 +305,10 @@ fn response_controls_preserve_limits_recover_composer_and_retain_complete_draft(
     });
     assert!(!state.model.ready());
     assert!(!state.model.busy());
-    assert!(state.answer_complete);
-    assert_eq!(state.last_answer, "A complete draft.");
+    assert!(!state.answer_complete);
+    assert_eq!(state.last_answer, "Partial revision");
     assert_eq!(state.transcript.messages.len(), count);
-    assert_eq!(state.input, "A story about a garden");
+    assert!(state.input.is_empty());
     state.model_event(Event::Retryable("Retry the local model.".to_owned()));
     state.retry();
     assert!(matches!(commands.try_recv(), Ok(Command::Retry)));
@@ -749,7 +763,7 @@ fn conversation_workspace_preserves_drafts_settings_and_exact_committed_turns() 
 }
 
 #[test]
-fn conversation_workspace_never_promotes_interrupted_visible_output() {
+fn conversation_workspace_restores_interrupted_output_as_followup_context() {
     let (mut state, commands, _events) = state();
     state.model = ModelLifecycle::Ready;
     state.input = "Unfinished request".to_owned();
@@ -766,14 +780,19 @@ fn conversation_workspace_never_promotes_interrupted_visible_output() {
     assert!(matches!(commands.try_recv(), Ok(Command::Retry)));
     state.model_event(Event::Starting);
     state.model_event(Event::Ready);
+    assert!(
+        matches!(commands.try_recv(), Ok(Command::RestoreChat(history)) if history.len() == 2 && history[1].content.as_ref() == "Partial answer")
+    );
     let original = state.active_conversation;
     state.new_chat();
     assert!(matches!(commands.try_recv(), Ok(Command::NewChat)));
     state.switch_conversation(original);
-    assert!(matches!(commands.try_recv(), Ok(Command::RestoreChat(history)) if history.is_empty()));
+    assert!(
+        matches!(commands.try_recv(), Ok(Command::RestoreChat(history)) if history.len() == 2 && history[1].content.as_ref() == "Partial answer")
+    );
     assert!(state.transcript.plain_text().contains("Partial answer"));
-    assert_eq!(state.input, "Unfinished request");
-    assert!(state.committed.is_empty());
+    assert!(state.input.is_empty());
+    assert_eq!(state.committed.len(), 2);
 }
 
 #[test]
