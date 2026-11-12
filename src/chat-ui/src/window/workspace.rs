@@ -327,7 +327,6 @@ impl State {
             self.active_conversation,
             &self.transcript,
         );
-        ui.add_space(12.0);
         ui.horizontal(|ui| {
             ui.label(RichText::new("CONVERSATIONS").small().strong().weak());
             ui.label(
