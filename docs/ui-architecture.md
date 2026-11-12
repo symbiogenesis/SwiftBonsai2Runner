@@ -181,7 +181,13 @@ responses never restart streaming speech or finish another conversation's playba
 Stop speech remains available.
 
 [Find controls](development-guide.md#conversations-and-response-settings) search
-visible message bodies. [Streaming resources](streaming-resources.md#native-chat-and-transcript)
+visible message bodies. Ctrl+F is handled before the composer and sidebar text
+editors, with dialogs and popups retaining priority. Selecting a filtered sidebar
+result opens the same native Find controls with the trimmed query, matching-body
+highlights and the first match selected; reselecting the current result does too.
+Both searches use the same Unicode scalar lowercase convention. Find edits and
+dismissal leave the sidebar filter intact; title-only results report no body
+matches. [Streaming resources](streaming-resources.md#native-chat-and-transcript)
 defines incremental matching, highlight/underline-cache invalidation, context-estimate
 caching and work bounds. The compact Context: control uses a native painted circular
 meter for estimated reserved occupancy, clamped to a full ring. Hover and accessible

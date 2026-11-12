@@ -371,6 +371,47 @@ fn active_find_underline_maps_unicode_wrapping_and_newlines_without_relayout() {
 }
 
 #[test]
+fn find_sync_transferred_query_uses_native_highlights_and_first_match_scroll() {
+    let mut transcript = Transcript::default();
+    transcript.push(Role::User, "hit cat hit".to_owned());
+    transcript.find_query("hit");
+    assert_eq!(transcript.search.active, 0);
+    assert!(
+        transcript
+            .search
+            .target
+            .as_ref()
+            .is_some_and(|found| found.range == (0..3))
+    );
+    let mut chat = harness(transcript);
+    chat.run();
+    assert_eq!(chat.state().search.matches.len(), 2);
+    assert!(chat.state().search.target.is_none());
+    assert!(
+        chat.state().messages[0]
+            .cache
+            .as_ref()
+            .is_some_and(|cache| {
+                cache.highlights.count == 2 && cache.selected.as_ref() == Some(&(0..3))
+            })
+    );
+    assert_active_underline_matches_glyphs(&chat.state().messages[0]);
+    chat.state_mut().search.latest = true;
+    chat.state_mut().find_query("cat");
+    assert!(!chat.state().search.latest);
+    chat.run();
+    assert!(
+        chat.state().messages[0]
+            .cache
+            .as_ref()
+            .is_some_and(|cache| {
+                cache.highlights.count == 1 && cache.selected.as_ref() == Some(&(4..7))
+            })
+    );
+    assert_active_underline_matches_glyphs(&chat.state().messages[0]);
+}
+
+#[test]
 fn highlight_identity_tracks_same_length_queries_replacement_and_result_eviction() {
     let mut transcript = Transcript::default();
     transcript.push(Role::User, "hit cat".to_owned());

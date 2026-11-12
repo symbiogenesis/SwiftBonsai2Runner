@@ -90,6 +90,20 @@ pub(super) struct Search {
 }
 
 impl Search {
+    pub(super) const fn focus(&mut self) {
+        self.visibility = Visibility::Focus;
+    }
+
+    pub(super) fn query_changed(&mut self, messages: &[Message]) {
+        self.active = 0;
+        self.matches.clear();
+        self.latest = false;
+        self.invalidate();
+        self.revision = self.revision.wrapping_add(1);
+        self.refresh(messages);
+        self.target = self.matches.first().cloned();
+    }
+
     pub(super) const fn invalidate(&mut self) {
         self.pending_refresh = Refresh::Full;
     }
@@ -343,11 +357,6 @@ impl Search {
     pub(super) fn bar(&mut self, ui: &mut egui::Ui, messages: &[Message]) {
         let accepts_input =
             ui.is_enabled() && ui.memory(|memory| memory.allows_interaction(ui.layer_id()));
-        if accepts_input
-            && ui.input_mut(|input| input.consume_key(egui::Modifiers::CTRL, egui::Key::F))
-        {
-            self.visibility = Visibility::Focus;
-        }
         if self.visibility == Visibility::Closed {
             return;
         }
@@ -372,12 +381,7 @@ impl Search {
                 self.visibility = Visibility::Open;
             }
             if input.changed() {
-                self.active = 0;
-                self.matches.clear();
-                self.invalidate();
-                self.revision = self.revision.wrapping_add(1);
-                self.refresh(messages);
-                self.target = self.matches.first().cloned();
+                self.query_changed(messages);
             }
             self.refresh(messages);
             let count = self.matches.len();

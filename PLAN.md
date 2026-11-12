@@ -280,6 +280,13 @@ generation Stop or conversation actions. Include selector Escape priority and
 the separate cancellation behavior for active input.
 Source fixtures do not close these actual-device acceptance gates.
 
+Qualify conversation Find keyboard and sidebar integration on Windows ARM64:
+Ctrl+F from the composer and sidebar, including the narrow drawer and an empty
+conversation; selecting and reselecting filtered results must show the same query,
+native highlights and match navigation. Cover Unicode and long phrases,
+title-only results, preserved drafts/filter state and modal keyboard priority.
+Focused model-free source checks do not close actual-device UI acceptance.
+
 Qualify the responsive sidebar and Appearance preferences on Windows ARM64:
 resize/hide/reopen the docked sidebar, including a manual shrink to 216 points that
 stays fixed after release, idle frames, status changes and restart. Move between

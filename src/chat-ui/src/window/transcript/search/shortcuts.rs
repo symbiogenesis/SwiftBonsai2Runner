@@ -84,6 +84,9 @@ mod tests {
     fn harness() -> Harness<'static, Fixture> {
         Harness::builder().with_size([700.0, 300.0]).build_ui_state(
             |ui, fixture: &mut Fixture| {
+                if ui.input_mut(|input| input.consume_key(egui::Modifiers::CTRL, egui::Key::F)) {
+                    fixture.transcript.focus_find();
+                }
                 fixture.escaped |= fixture.transcript.search.close_on_escape(ui.ctx());
                 fixture.global_escape |= ui
                     .input_mut(|input| input.consume_key(egui::Modifiers::NONE, egui::Key::Escape));

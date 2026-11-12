@@ -645,11 +645,20 @@ impl State {
             && self.delete_conversation.is_none()
             && self.edit_message.is_none()
             && !egui::Popup::is_any_open(ctx)
-            && ctx.input_mut(|input| {
-                input.consume_key(egui::Modifiers::CTRL | egui::Modifiers::SHIFT, egui::Key::B)
-            })
         {
-            self.toggle_navigation(ctx);
+            // Run before the sidebar and composer text editors consume Ctrl+F.
+            if ctx.input_mut(|input| input.consume_key(egui::Modifiers::CTRL, egui::Key::F)) {
+                self.sidebar_open = false;
+                self.sidebar_focus = false;
+                self.focus_composer = false;
+                self.transcript.focus_find();
+                ctx.request_repaint();
+            }
+            if ctx.input_mut(|input| {
+                input.consume_key(egui::Modifiers::CTRL | egui::Modifiers::SHIFT, egui::Key::B)
+            }) {
+                self.toggle_navigation(ctx);
+            }
         }
         self.handle_escape(ctx);
     }
@@ -1560,9 +1569,7 @@ impl State {
                 {
                     self.open_settings(settings::Page::Application);
                 }
-                ui.add_enabled_ui(!self.transcript.messages.is_empty(), |ui| {
-                    self.transcript.find_button(ui);
-                });
+                self.transcript.find_button(ui);
             });
         });
         ui.add_space(8.0);
@@ -1963,11 +1970,9 @@ impl State {
                     }))
                     .show(ui, |ui| self.composer(ui));
                 let empty = self.transcript.messages.is_empty();
-                if !empty {
-                    ui.push_id(("conversation-find", self.active_conversation), |ui| {
-                        self.transcript.search_bar(ui);
-                    });
-                }
+                ui.push_id(("conversation-find", self.active_conversation), |ui| {
+                    self.transcript.search_bar(ui);
+                });
                 let scroll = egui::ScrollArea::vertical()
                     .id_salt(("conversation-scroll", self.active_conversation))
                     .stick_to_bottom(true)

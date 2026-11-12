@@ -47,7 +47,7 @@ impl Search {
     ) {
         if self.previous != self.text {
             self.text.clone_into(&mut self.previous);
-            self.query = self.text.trim().to_lowercase().into();
+            self.query = lowercase(self.text.trim()).into();
             self.reset_scroll = true;
         }
         self.rows.clear();
@@ -95,12 +95,12 @@ impl MatchCache {
         {
             self.scans += 1;
         }
-        let result = title.to_lowercase().contains(query.as_ref())
+        let result = lowercase(title).contains(query.as_ref())
             || transcript.is_some_and(|transcript| {
                 transcript
                     .messages
                     .iter()
-                    .any(|message| message.body.to_lowercase().contains(query.as_ref()))
+                    .any(|message| lowercase(&message.body).contains(query.as_ref()))
             });
         self.query = Some(Arc::clone(query));
         title.clone_into(&mut self.title);
@@ -108,6 +108,12 @@ impl MatchCache {
         self.result = Some(result);
         result
     }
+}
+
+// Use the same scalar folding as transcript Find, including Greek sigma and
+// lowercase expansions, so sidebar body results have identical highlights.
+fn lowercase(text: &str) -> String {
+    text.chars().flat_map(char::to_lowercase).collect()
 }
 
 // egui itself uses f32 for scroll offsets. Precision loss far beyond the visible

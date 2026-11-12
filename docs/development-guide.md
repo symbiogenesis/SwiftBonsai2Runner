@@ -266,6 +266,10 @@ list before closing a drawer or stopping a response. Creating a conversation or
 branch clears search so the new conversation appears. The query is temporary
 and is not restored on the next launch. Large lists render only visible rows and
 reuse cached matches while the query and searchable content are unchanged.
+Selecting a filtered result opens Find in that conversation with the same trimmed
+phrase, highlights matching message text and jumps to the first match. This also
+works when selecting the current conversation again. A title-only result shows
+**No matches** in Find. Editing or closing Find leaves the sidebar filter intact.
 
 While a response generates, you can draft the next message, browse another chat
 or create a conversation. Only one response runs at a time; Enter never queues a
@@ -284,6 +288,9 @@ sits beside Settings; previous/next controls appear below the header. **F3/Shift
 (or **Enter/Shift+Enter** while Find is focused) moves between matches; **Latest**
 or the bottom-center down arrow returns to the newest message. **Escape** closes Find and clears highlights;
 a second Escape stops active generation or speech.
+**Ctrl+F** focuses Find from the composer or sidebar and closes an open conversation
+drawer. It also works in empty conversations. Settings, dialogs and open popups
+retain keyboard priority.
 
 Each message's **actions** menu provides iteration tools for verified committed
 turns. **Edit and resend** opens an editor; **Create branch and send** submits

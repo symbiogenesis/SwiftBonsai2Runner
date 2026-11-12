@@ -48,6 +48,43 @@ fn open_find(chat: &mut Harness<'_, Fixture>) {
 }
 
 #[test]
+fn find_sync_ctrl_f_preempts_composer_and_sidebar_text_editors() {
+    for (role, label) in [
+        (egui::Role::MultilineTextInput, "Message"),
+        (egui::Role::TextInput, "Search conversations"),
+    ] {
+        let mut chat = harness();
+        chat.get_by_role_and_label(role, label).focus();
+        chat.run();
+        open_find(&mut chat);
+        assert!(
+            chat.get_by_role_and_label(egui::Role::TextInput, "Find in conversation")
+                .is_focused()
+        );
+        assert!(chat.get_by_label("1 of 1").rect().is_positive());
+        assert_eq!(chat.state().app.input, "Preserve this draft");
+        assert_eq!(chat.state().app.conversation_search.text, "");
+        assert!(chat.state().commands.try_recv().is_err());
+    }
+}
+
+#[test]
+fn find_sync_ctrl_f_opens_in_an_empty_conversation() {
+    let mut chat = harness();
+    chat.state_mut().app.transcript.clear();
+    chat.run();
+    chat.key_press_modifiers(egui::Modifiers::CTRL, egui::Key::F);
+    chat.run();
+    let field = chat.get_by_role_and_label(egui::Role::TextInput, "Find in conversation");
+    assert!(field.is_focused());
+    field.type_text("missing");
+    chat.run();
+    assert!(chat.get_by_label("No matches").rect().is_positive());
+    assert_eq!(chat.state().app.input, "Preserve this draft");
+    assert!(chat.state().commands.try_recv().is_err());
+}
+
+#[test]
 fn find_escape_preserves_generation_and_draft_before_explicit_stop() {
     let mut chat = harness();
     chat.state_mut().app.model = ModelLifecycle::Generating;

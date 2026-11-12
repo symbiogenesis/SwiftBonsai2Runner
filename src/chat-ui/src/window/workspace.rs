@@ -395,6 +395,13 @@ impl State {
                 self.switch_conversation(id);
                 self.sidebar_open = false;
                 self.focus_composer = true;
+                // Include reselecting the current result, which does not swap
+                // snapshots. A local Find never changes the sidebar filter.
+                let query = self.conversation_search.text.trim();
+                if self.active_conversation == id && !query.is_empty() {
+                    self.transcript.find_query(query);
+                    self.focus_composer = false;
+                }
             }
             Some(ConversationAction::Rename(id, title)) => {
                 self.rename_conversation = Some((id, title));

@@ -348,6 +348,16 @@ impl Transcript {
         text
     }
 
+    pub(super) const fn focus_find(&mut self) {
+        self.search.focus();
+    }
+
+    pub(super) fn find_query(&mut self, query: &str) {
+        query.clone_into(&mut self.search.query);
+        self.search.focus();
+        self.search.query_changed(&self.messages);
+    }
+
     pub(super) fn search_bar(&mut self, ui: &mut egui::Ui) {
         self.search.bar(ui, &self.messages);
     }

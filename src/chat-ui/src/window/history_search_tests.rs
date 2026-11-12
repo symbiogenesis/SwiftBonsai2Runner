@@ -79,6 +79,131 @@ fn clear_query(chat: &mut Harness<'_, Fixture>) {
     chat.run();
 }
 
+fn open_sidebar(chat: &mut Harness<'_, Fixture>, width: f32) {
+    if width < navigation::DOCK_THRESHOLD {
+        chat.get_by_role_and_label(egui::Role::Button, "Conversation menu")
+            .click();
+        chat.run();
+    }
+}
+
+#[test]
+fn find_sync_sidebar_selection_and_reselection_open_the_same_find() {
+    for size in [[1180.0, 860.0], [480.0, 640.0]] {
+        let mut chat = harness(size);
+        let original = chat.state().app.active_conversation;
+        open_sidebar(&mut chat, size[0]);
+        type_query(&mut chat, "  ÉLAN  ");
+        chat.get_by_role_and_label(egui::Role::Button, "Garden notes")
+            .click();
+        chat.run();
+        assert!(!chat.state().app.sidebar_open);
+        let field = chat.get_by_role_and_label(egui::Role::TextInput, "Find in conversation");
+        assert!(field.is_focused());
+        assert_eq!(field.value().as_deref(), Some("ÉLAN"));
+        assert!(chat.get_by_label("1 of 1").rect().is_positive());
+        assert_eq!(chat.state().app.input, "An unfinished gardening draft");
+        let saved = chat
+            .state()
+            .app
+            .conversations
+            .iter()
+            .find(|conversation| conversation.id == original)
+            .and_then(|conversation| conversation.saved.as_ref());
+        assert_eq!(saved.map(|snapshot| snapshot.input.as_str()), Some(DRAFT));
+
+        // Local edits and dismissal must not rewrite the cross-chat filter.
+        field.type_text("!");
+        chat.run();
+        assert!(chat.get_by_label("No matches").rect().is_positive());
+        assert_eq!(chat.state().app.conversation_search.text, "  ÉLAN  ");
+        chat.key_press(egui::Key::Escape);
+        chat.run();
+        assert!(chat.query_by_label("Find in conversation").is_none());
+        open_sidebar(&mut chat, size[0]);
+        chat.get_by_role_and_label(egui::Role::Button, "Garden notes")
+            .click();
+        chat.run();
+        assert!(chat.get_by_label("1 of 1").rect().is_positive());
+        assert!(
+            chat.get_by_role_and_label(egui::Role::TextInput, "Find in conversation")
+                .is_focused()
+        );
+        while let Ok(command) = chat.state().commands.try_recv() {
+            assert!(!matches!(command, Command::Send { .. }));
+        }
+    }
+}
+
+#[test]
+fn find_sync_ctrl_f_leaves_the_drawer_and_preserves_its_filter() {
+    let mut chat = harness([480.0, 640.0]);
+    open_sidebar(&mut chat, 480.0);
+    type_query(&mut chat, "garden");
+    chat.key_press_modifiers(egui::Modifiers::CTRL, egui::Key::F);
+    chat.run();
+    assert!(!chat.state().app.sidebar_open);
+    assert!(
+        chat.get_by_role_and_label(egui::Role::TextInput, "Find in conversation")
+            .is_focused()
+    );
+    assert_eq!(chat.state().app.conversation_search.text, "garden");
+    assert_eq!(chat.state().app.input, DRAFT);
+    assert!(chat.state().commands.try_recv().is_err());
+}
+
+#[test]
+fn find_sync_sidebar_and_find_share_unicode_and_long_phrase_matching() {
+    for query in ["Σ".to_owned(), "cedar ".repeat(50)] {
+        let mut chat = harness([1180.0, 860.0]);
+        let query = query.trim();
+        chat.state_mut()
+            .app
+            .transcript
+            .replace_response(&format!("Ο{query} then Ο{query}"), None);
+        chat.run();
+        type_query(&mut chat, query);
+        assert_eq!(chat.state().app.conversation_search.rows, [2]);
+        chat.get_by_role_and_label(egui::Role::Button, "Notebook")
+            .click();
+        chat.run();
+        assert_eq!(
+            chat.get_by_role_and_label(egui::Role::TextInput, "Find in conversation")
+                .value()
+                .as_deref(),
+            Some(query)
+        );
+        assert!(chat.get_by_label("1 of 2").rect().is_positive());
+        chat.key_press(egui::Key::F3);
+        chat.run();
+        assert!(chat.get_by_label("2 of 2").rect().is_positive());
+        chat.get_by_role_and_label(egui::Role::Button, "Notebook")
+            .click();
+        chat.run();
+        assert!(chat.get_by_label("1 of 2").rect().is_positive());
+        assert!(chat.state().commands.try_recv().is_err());
+    }
+}
+
+#[test]
+fn find_sync_title_only_result_shows_no_body_matches() {
+    let mut chat = harness([1180.0, 860.0]);
+    chat.state_mut().app.transcript.clear();
+    chat.run();
+    type_query(&mut chat, "Notebook");
+    chat.get_by_role_and_label(egui::Role::Button, "Notebook")
+        .click();
+    chat.run();
+    assert_eq!(
+        chat.get_by_role_and_label(egui::Role::TextInput, "Find in conversation")
+            .value()
+            .as_deref(),
+        Some("Notebook")
+    );
+    assert!(chat.get_by_label("No matches").rect().is_positive());
+    assert!(chat.state().commands.try_recv().is_err());
+}
+
 #[test]
 fn conversation_history_filters_unicode_titles_and_inactive_messages_as_you_type() {
     let mut chat = harness([1180.0, 860.0]);
