@@ -23,6 +23,9 @@ mod background_tests;
 mod graphics;
 #[cfg(test)]
 mod interaction_tests;
+mod iteration;
+#[cfg(test)]
+mod iteration_ui_tests;
 #[cfg(test)]
 mod keyboard_tests;
 #[allow(
@@ -107,6 +110,7 @@ struct State {
     next_conversation: u64,
     rename_conversation: Option<(u64, String)>,
     delete_conversation: Option<u64>,
+    edit_message: Option<iteration::EditMessage>,
     conversation_notice: Option<&'static str>,
     recovery: Option<crate::recovery::Recovery>,
     placement: Option<placement::Placement>,
@@ -202,6 +206,7 @@ impl State {
             next_conversation: 2,
             rename_conversation: None,
             delete_conversation: None,
+            edit_message: None,
             conversation_notice: None,
             recovery: None,
             placement: None,
@@ -521,7 +526,10 @@ impl State {
             self.cancel_microphone();
             "Voice message cancelled.".clone_into(&mut self.speech_status);
         }
-        if self.rename_conversation.is_some() || self.delete_conversation.is_some() {
+        if self.rename_conversation.is_some()
+            || self.delete_conversation.is_some()
+            || self.edit_message.is_some()
+        {
             return;
         }
         if self.transcript.close_find_on_escape(ctx) {
@@ -553,6 +561,7 @@ impl State {
         });
         if self.rename_conversation.is_none()
             && self.delete_conversation.is_none()
+            && self.edit_message.is_none()
             && ctx.input_mut(|input| input.consume_key(egui::Modifiers::CTRL, egui::Key::N))
         {
             self.new_chat();
@@ -758,6 +767,7 @@ impl State {
             answer.content.as_ref().clone_into(&mut self.last_answer);
             self.answer_complete = true;
         }
+        self.transcript.bind_committed(&self.committed, &history);
         self.committed = history;
     }
 
@@ -1102,6 +1112,7 @@ impl State {
             && !self.composing
             && self.rename_conversation.is_none()
             && self.delete_conversation.is_none()
+            && self.edit_message.is_none()
         {
             self.submit();
             if self.model.busy() {
@@ -1917,6 +1928,7 @@ impl State {
                         });
                         if self.rename_conversation.is_none()
                             && self.delete_conversation.is_none()
+                            && self.edit_message.is_none()
                             && response.has_focus()
                             && !self.composing
                             && !ime_event
@@ -2046,13 +2058,28 @@ impl State {
                                     ui.push_id(
                                         ("conversation-text", self.active_conversation),
                                         |ui| {
-                                            if let Some(message_id) = self.transcript.show(
+                                            let controls = transcript::MessageControls {
+                                                history: &self.committed,
+                                                can_send: !self.preview
+                                                    && self.model == ModelLifecycle::Ready,
+                                                can_branch: self.model.workspace_available()
+                                                    && self.conversations.len() < MAX_CONVERSATIONS,
+                                            };
+                                            if let Some(action) = self.transcript.show_with_actions(
                                                 ui,
                                                 width,
                                                 self.speaking_message,
                                                 self.speech_output,
+                                                Some(controls),
                                             ) {
-                                                self.toggle_read_aloud(message_id);
+                                                match action {
+                                                    transcript::TranscriptAction::ReadAloud(id) => {
+                                                        self.toggle_read_aloud(id);
+                                                    }
+                                                    transcript::TranscriptAction::Message(action) => {
+                                                        self.message_action(action);
+                                                    }
+                                                }
                                             }
                                         },
                                     );
@@ -2073,6 +2100,7 @@ impl State {
         self.settings(&ctx);
         self.diagnostics(&ctx);
         self.conversation_dialogs(&ctx);
+        self.iteration_dialog(&ctx);
         if let Some((title, message)) = self.help {
             let mut open = true;
             egui::Window::new(title)

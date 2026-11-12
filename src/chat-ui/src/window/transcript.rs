@@ -5,7 +5,19 @@ use std::{ops::Range, sync::Arc};
 
 #[cfg(test)]
 mod cache_tests;
+mod message_controls;
 mod search;
+
+pub(super) struct MessageControls<'a> {
+    pub(super) history: &'a [super::client::Message],
+    pub(super) can_send: bool,
+    pub(super) can_branch: bool,
+}
+
+pub(super) enum TranscriptAction {
+    ReadAloud(u64),
+    Message(super::iteration::MessageAction),
+}
 
 const MAX_BYTES: usize = 4 * 1024 * 1024;
 pub(super) const MAX_MESSAGES: usize = 512;
@@ -343,6 +355,7 @@ impl Transcript {
             .map(|message| message.body.as_str())
     }
 
+    #[cfg(test)]
     pub(super) fn show(
         &mut self,
         ui: &mut egui::Ui,
@@ -350,7 +363,21 @@ impl Transcript {
         speaking_message: Option<u64>,
         speech_enabled: bool,
     ) -> Option<u64> {
-        let mut clicked_speaker = None;
+        match self.show_with_actions(ui, width, speaking_message, speech_enabled, None) {
+            Some(TranscriptAction::ReadAloud(id)) => Some(id),
+            _ => None,
+        }
+    }
+
+    pub(super) fn show_with_actions(
+        &mut self,
+        ui: &mut egui::Ui,
+        width: f32,
+        speaking_message: Option<u64>,
+        speech_enabled: bool,
+        controls: Option<MessageControls<'_>>,
+    ) -> Option<TranscriptAction> {
+        let mut action = None;
         self.search.refresh(&self.messages);
         let width = width.max(120.0);
         let mut remaining = self.search.matches.as_slice();
@@ -381,11 +408,19 @@ impl Transcript {
                 .as_ref()
                 .filter(|found| found.message == message.id);
             if ui.is_rect_visible(rect) || target.is_some() {
-                let found_rect = message.show(ui, rect, target.map(|found| found.range.start));
+                let (found_rect, message_action) = message.show(
+                    ui,
+                    rect,
+                    target.map(|found| found.range.start),
+                    controls.as_ref(),
+                );
+                if let Some(message_action) = message_action {
+                    action = Some(TranscriptAction::Message(message_action));
+                }
                 if message.role == Role::Assistant
                     && message.speaker(ui, rect, speaking_message, speech_enabled)
                 {
-                    clicked_speaker = Some(message.id);
+                    action = Some(TranscriptAction::ReadAloud(message.id));
                 }
                 if let Some(found_rect) = found_rect {
                     ui.scroll_to_rect(found_rect, Some(egui::Align::Center));
@@ -398,7 +433,7 @@ impl Transcript {
             ui.scroll_to_cursor(Some(egui::Align::Max));
             self.search.latest = false;
         }
-        clicked_speaker
+        action
     }
 }
 
@@ -642,8 +677,10 @@ impl Message {
         ui: &mut egui::Ui,
         rect: egui::Rect,
         target: Option<usize>,
-    ) -> Option<egui::Rect> {
+        controls: Option<&MessageControls<'_>>,
+    ) -> (Option<egui::Rect>, Option<super::iteration::MessageAction>) {
         let mut found_rect = None;
+        let mut action = None;
         let fill = if self.role == Role::User {
             ui.visuals().faint_bg_color
         } else {
@@ -670,6 +707,9 @@ impl Message {
             );
             ui.label(RichText::new(name).strong().size(14.0));
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                if let Some(controls) = controls {
+                    action = self.message_controls(ui, controls);
+                }
                 if ui
                     .small_button("Copy")
                     .on_hover_text("Copy this message")
@@ -721,7 +761,7 @@ impl Message {
                 }
             }
         }
-        found_rect
+        (found_rect, action)
     }
 }
 
