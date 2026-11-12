@@ -111,10 +111,11 @@ preview do not check for or install application updates.
 
 The update feed is the existing GitHub release contract: a published Windows
 ARM64 MSI, `release-manifest.json` and `SHA256SUMS.txt` from the same release.
-The updater considers published experimental prereleases as well as full
-releases and compares numeric application versions. It never installs an equal
-or older version. A repository with no published releases simply has no update
-available; a first release is not required to add or run this code.
+The updater considers published prereleases and full releases within its
+bounded release listing and compares numeric application versions. It never
+installs an equal or older version. A repository with no published releases
+simply has no update available; a first release is not required to add or run
+this code.
 
 Update discovery uses GitHub's release listing because its
 [latest-release endpoint](https://docs.github.com/en/rest/releases/releases#get-the-latest-release)
@@ -139,6 +140,13 @@ changed or mismatched bytes within the GitHub release trust boundary; they are
 not an independent publisher signature. If verification, shutdown or installer
 handoff fails, the updater reports the failure rather than weakening checks.
 After installation, reopen the application from the Start menu.
+
+In-app installation stays unavailable during model preparation, an active
+response or uncertain owned teardown. Checking and downloading remain available
+if model setup fails. After closing Swift, the downloaded installer is under
+`%LOCALAPPDATA%\SwiftBonsai2\updates\<version>\`; verify it against that release's
+published checksum before opening it manually. Resolve uncertain model cleanup
+before replacing application files.
 
 ## Publish a release
 

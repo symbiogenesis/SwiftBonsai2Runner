@@ -93,6 +93,11 @@ window exits, the launcher revalidates the staged installer, releases its launch
 guard, starts the fixed Windows Installer handoff and exits so application files
 can be replaced. It must not install while the model owner is uncertain or
 create a detached child that escapes the existing containment contract.
+The queued request alone never authorizes installation: the native window must
+report the dedicated successful update exit after receiving its queued receipt.
+An ordinary close, cancellation, crash or cleanup failure cannot activate a
+leftover queue. Failed preparation or unknown model ownership disables in-app
+installation while discovery and downloads remain available.
 Conversation saving retains its existing opt-out; updating does not enable it.
 Windows may request administrator approval. Reopening uses the Start menu;
 automatic restart is not promised. Model/runtime downloads and local user data
