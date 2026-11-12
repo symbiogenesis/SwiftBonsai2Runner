@@ -10,7 +10,8 @@ https://github.com/microsoft/mxc/tree/v1.0.1
 Copyright (c) Microsoft Corporation. Its MIT permission terms are reproduced
 below; dependency-specific notices remain applicable.
 
-The project retains the Prism/ggml-derived native codec probe in tools/codec-probe.
+The former Runner-native codec probe has been retired. Its Prism/ggml-derived
+reference attribution remains applicable to retained controls and inherited portions.
 The Rust runtime, codecs, GGUF tooling and storage adapter are maintained in
 https://github.com/symbiogenesis/prism-inference. Released binaries retain
 their bundled Apache and third-party notices.

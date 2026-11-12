@@ -29,7 +29,9 @@ provide reproducibility, not continuing advisory notification.
 
 ## Dependency policy
 
-Hashing belongs in `bonsai-artifacts`; the broker has no direct `sha2` dependency.
+Artifact verification belongs in `bonsai-artifacts`; the broker has no direct `sha2` dependency.
+Windows artifact/maintenance hashing uses the shared CNG boundary in
+`bonsai-windows-credentials`; portable and test paths retain `sha2`.
 ZIP 9.2.1 disables defaults and enables only `deflate-flate2-zlib-rs`.
 Upstream hardening includes [symlink extraction](https://github.com/zip-rs/zip2/pull/1116),
 [Unicode-path renaming](https://github.com/zip-rs/zip2/pull/1177) and
@@ -148,15 +150,17 @@ runtime source forbids unsafe code. See the
 | `toml`, `ureq` | CI-only manifest parsing (parse/serde/std) and synchronous HTTPS (Windows Schannel, otherwise Rustls); ureq defaults/compression disabled. |
 | `transcribe-cpp` | Static CPU ASR, defaults disabled; reviewed CMake script downloads no source and explicitly enables MSVC optimization. |
 | `simd-json` | Exact optional qualification-only crates.io pin; ordinary requests still use serde_json. |
-| `fearless_simd` | Pinned safe 128-bit NEON (`=1.1.0` in Runner speech crates and Prism) wired into `bonsai-speech-tts` (`sylvester_walsh_hadamard_in_place`, `rms_norm`, `DacResUnit`) and `bonsai-speech-asr` (`validate_pcm`), alongside `bonsai-neon-dot` (`SDOT`/`SMMLA`) in Prism. |
+| `fearless_simd` | Pinned safe SIMD (`=1.1.0` in Runner speech crates and Prism). ASR uses it in `validate_pcm`; TTS uses it in the candidate Rust `engine`/`codec` modules, which have not replaced the native serving core. Prism's `bonsai-neon-dot` kernels are a separate runtime dependency. |
 | `memchr` | Promoted from transitive to direct (`=2.8.3`, `default-features = false`) in `bonsai-broker`, `bonsai-chat`, and `bonsai-speech-service` for NEON-vectorized HTTP header, SSE line, multipart boundary, and ASCII folded Find scanning. |
-| `bonsai-native-hash` / Windows CNG | Hardware-accelerated ARMv8 SHA-2 via Windows CNG (`BCryptHashData` in `bonsai-native-hash` and `bonsai_windows_credentials::Sha256::digest_bytes` in `bonsai-tools`). |
+| Windows CNG | Runner artifact and maintenance digests use `bonsai_windows_credentials::Sha256` (`BCryptHashData`); CPU dispatch belongs to the Windows provider. Prism's `bonsai-native-hash` is external to this workspace. These paths alone establish no device speedup. |
 | `mxc-sdk`, `flatbuffers` | Required security integration; pursue upstream modularity. |
 | Internal crates | Retain shared process/credential/audio/policy/artifact boundaries; no unused direct path edge found. |
 
 ASR/TTS intentionally use separate executables and GGML versions. ASR disables
-Metal/optional accelerators and pins CPU-only CMake. TTS disables accelerators,
-BLAS, OpenMP, KleidiAI, dynamic backends, tests and examples. Combining their
+Metal/optional accelerators and pins CPU-only CMake. TTS builds static CPU libraries
+with BLAS, OpenMP, KleidiAI, automatic dynamic-backend loading, tests and examples disabled. Its runtime can separately register an existing
+local Hexagon `HTP0` DLL backend; [speech source documentation](../src/speech-tts/README.md#optional-hexagon-runtime)
+defines that unqualified selection and its verification limits. Combining their
 native libraries risks version conflicts; RustSec does not fully cover bundled C/C++.
 Speech only needs `VerifiedFile` from `bonsai-artifacts`, whose ZIP APIs are
 unconditional. Splitting them may reduce standalone compile scope, but workspace
@@ -259,7 +263,12 @@ All benchmarks run in CI only.
 
 ## Reviewed pins and tooling
 
-Selection reviewed **2026-11-01**; this date is not a claim of continuing freshness.
+The dependency selection below was reviewed **2026-11-01**; this date is not a claim
+of continuing freshness. Current compiler and runtime selections are the
+[toolchain file](../rust-toolchain.toml) (nightly 2026-11-09) and
+[runtime lock](../config/prism-inference.lock.json) (Prism 0.1.23, source
+`055c7430cb4771dfddb24ddaa30494af6ad182da`). Historical checks below do not qualify
+these later selections. The pending 0.1.24 binary repin remains in PLAN.
 
 | Dependency/tool | Reviewed selection |
 | --- | --- |
@@ -272,20 +281,21 @@ Selection reviewed **2026-11-01**; this date is not a claim of continuing freshn
 | .NET SDK | Retired from Runner validation with the PowerShell/C# bootstrap |
 | cargo-audit / LLVM | 0.22.2 / 23.1.4; PSScriptAnalyzer retired with repository scripts |
 
-The maintenance update selects published nightly **2026-11-02** (rustc
-`3e92e1a2d`, 1.101.0-nightly), ZIP 9.2.1 and the newest compatible transitive
-packages. The official nightly manifest already advertised this dated channel
-at review. Rust, Clippy and rustfmt are available for every CI host target.
-`cargo update --dry-run --verbose` found no further compatible updates.
+A later maintenance update selected nightly **2026-11-02** (rustc
+`3e92e1a2d`, 1.101.0-nightly), ZIP 9.2.1 and the compatible transitive packages
+then available. Its recorded `cargo update --dry-run --verbose` found no further
+compatible updates at that time. The current compiler pin has since advanced to
+2026-11-09; the old compiler and update checks are historical evidence.
 
-`windows-future` 0.3.2 remains the newest compatible release: latest `windows`
-0.62.2 returns its asynchronous types and requires `windows-core` 0.62.2;
+The reviewed `windows-future` 0.3.2 selection is compatible with `windows`
+0.62.2, which returns its asynchronous types and requires `windows-core` 0.62.2;
 `windows-future` 0.100.0 requires the incompatible `windows-core` 0.100 family.
 GitHub Actions, cargo-audit, LLVM, Hexagon SDK and the then-released Prism 0.1.12
-runtime were already current at that review. The later reviewed
-[Prism 0.1.13 CPU release](native-rust-engine.md#swift-cpu-supported-subset) is pinned
-separately; its startup validation change carries no measured device gain or
-inherited model qualification. Speech source pins match upstream heads.
+runtime were current at that review. The later
+[Prism 0.1.13 CPU release](native-rust-engine.md#swift-cpu-supported-subset) was a historical
+pin; its startup validation change carries no measured device gain or inherited
+model qualification. Current 0.1.23 identities are recorded above. Speech source
+pins are immutable; their match to upstream heads was a dated review observation.
 Model/adapter locks and source-bound qualification controls retain their exact
 identities; newer reference/candidate artifacts need separate
 [runtime review](development-guide.md#prepare-a-runtime-lock-update).
@@ -310,12 +320,14 @@ Clippy/docs/build for `bonsai-artifacts`, `bonsai-broker`, `bonsai-tools`, archi
 path/expansion/hostile-source regressions, actionlint 1.7.12 and YAML/event/permission
 checks, without hosted-validation receipts. These checks establish no performance
 gain; full suites and benchmarks remain CI-only.
-Evidence directories under `C:\Users\symbi\AppData\Local\Temp\`:
+Historical evidence locations under `C:\Users\symbi\AppData\Local\Temp\` follow.
+Their current availability has not been reverified; a temporary path alone is not
+durable retention or acceptance for current source.
 
 | Evidence | Path suffix |
 | --- | --- |
 | Original audit, sources, metadata and logs | `Bonsai-DependencyAudit-b2037a17954346d992abd517055f1ecb` |
 | Renderer checks | `Bonsai-WgpuRefine-2143bcc4c15b4cdfbfa4b483ea4d7937` |
-| Fresh audit JSON | `Runner-DependencyAudit-ee63cbf6ce19403d9afcfef303829a94\audit.json` |
+| Historical audit JSON | `Runner-DependencyAudit-ee63cbf6ce19403d9afcfef303829a94\audit.json` |
 | Rust update checks | `Runner-DependencyUpdate-1793293946274` |
 | Standards | `SwiftBonsai-Standards-4f0235a8a0164835a225fed72989ab83` |

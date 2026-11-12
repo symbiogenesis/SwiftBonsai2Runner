@@ -26,14 +26,13 @@ Dependency terms apply independently of the application's license.
 | `tokio` 1.54.1 | MIT | Retain copyright and permission notice. |
 | `mxc-sdk` 1.0.1 | MIT | Retain Microsoft copyright and MIT permission notice; the native PSEC integration is confined to the Windows process boundary. |
 | `flatbuffers` 25.12.19 | Apache-2.0 | Retain the selected license and notices for the fixed PSEC policy encoder. |
-| `fearless_simd` 1.1.0 | Apache-2.0 OR MIT | Optional native ARM64 Windows kernels; retain applicable license/attribution. |
+| `fearless_simd` 1.1.0 | Apache-2.0 OR MIT | Direct dependency of the Runner speech crates and used by the external runtime; retain applicable license/attribution. |
 | `subtle` 2.6.1 | BSD-3-Clause | Retain copyright, conditions and disclaimer; respect non-endorsement. |
-| `zip` 9.1.3 | MIT | Retain the notice; enabled deflate dependencies also have permissive options. |
+| `zip` 9.2.1 | MIT | Retain the notice; enabled deflate dependencies also have permissive options. |
 | `simd-json` 0.19.0 | Apache-2.0 OR MIT | Qualification-only published crate; retain its selected license terms and the attribution in NOTICE when redistributing. |
 | `zlib-rs` | Zlib | Retain source notices and identify altered versions. |
 | `unicode-ident` | (MIT OR Apache-2.0) AND Unicode-3.0 | Include Unicode-3.0 notices as well as the selected code license. |
 | `r-efi` | MIT OR Apache-2.0 OR LGPL-2.1-or-later | A permissive alternative is available; LGPL is not required. |
-| `cbindgen` 0.29.4 | MPL-2.0 | Optional `tools/prism` build tool, not linked into the application. Redistributing the tool or modified tool source requires its own MPL compliance. |
 | `eframe`, `egui`, `epaint`, `egui-wgpu`, `egui-winit`, `egui_system_font_provider` 0.37.0 | MIT OR Apache-2.0 | Retain the selected code license and attribution; embedded font terms are separate. |
 | `wgpu` and its core/HAL/type crates 30.0.1 | MIT OR Apache-2.0 | Retain the selected license and attribution. |
 | `winit` 0.30.13, `accesskit_winit` 0.34.2 | Apache-2.0 | Retain the license and applicable notices; identify modified files. |
@@ -46,10 +45,9 @@ Dependency terms apply independently of the application's license.
 
 The other reviewed code packages have permissive alternatives; bundled font
 assets have separate terms. None lacked a declared license in the review.
-cbindgen has no permissive alternative declared. Its use does not require our
-source or generated declarations to adopt MPL. See its
-[license](https://github.com/mozilla/cbindgen/blob/v0.29.4/LICENSE) and the
-[MPL FAQ](https://www.mozilla.org/en-US/MPL/2.0/FAQ/).
+The former `tools/prism` build helper and its cbindgen dependency are retired;
+cbindgen is absent from the current workspace lockfile. Historical review of that
+tool does not describe the current application dependency graph.
 
 ### Native GUI fonts
 
@@ -112,6 +110,11 @@ modifies that exact Swift assessment source under its MIT license. Its manifest
 retains the source LICENSE digest; preserve the upstream copyright/license with
 any source or binary integration. No UCRT implementation source is distributed.
 
+Speech executables also bundle the MIT-licensed transcribe.cpp and Qwen/GGML cores;
+retain their source-specific notices from the exact [speech pins](../config/native-speech.lock.json),
+[ASR lock](../src/speech-asr/model.lock.json) and `src/speech-tts/LICENSE.*` files.
+These native-engine terms are separate from the speech model terms below.
+
 Retain each exact distribution's bundled licenses/notices. A top-level MIT
 license does not replace terms for additional included components.
 
@@ -125,6 +128,8 @@ relicense them.
 | Swift Bonsai 2 GGUF | `a3bdac086bbb6b04d87d0108d18943b5f63868f7` | [Apache-2.0](https://huggingface.co/ukisai/Swift-Bonsai-2-GGUF/blob/a3bdac086bbb6b04d87d0108d18943b5f63868f7/LICENSE) |
 | Qwen3.8-27B GGUF reference | `4ca720788d1e01f1bff70c033e0d0028fd02e502` | [Apache-2.0 declaration](https://huggingface.co/unsloth/Qwen3.8-27B-GGUF/blob/4ca720788d1e01f1bff70c033e0d0028fd02e502/README.md) |
 | Approved OrcaBonsai LoRA | `703028bb7fba03496e796b144839b161cf0f5409` | [Apache-2.0 declaration](https://github.com/Continuum-AI-Corp/OrcaBonsai-27B-Uncensored/blob/703028bb7fba03496e796b144839b161cf0f5409/README.md#license) |
+| Canary-Qwen 2.5B Q8_0 recognition | Conversion `a4480da236b7d99d7a12186868de021ef4ff5ced`; source `b1469e1bba1cfe140205529c79c434ca47180960` | CC-BY-4.0, recorded in the [native lock](../src/speech-asr/model.lock.json); retain NVIDIA attribution and identify conversion changes. |
+| Qwen3-TTS VoiceDesign/Base and codec | Conversion `b7ee2e8c7459c3bea99da23e3d178125a7d1713c` | Apache-2.0; [speech artifact documentation](../tools/qwen-tts/README.md#artifacts) identifies the Q8_0 and optional Q4_K_M selections. |
 
 Swift's [NOTICE](https://huggingface.co/ukisai/Swift-Bonsai-2-GGUF/blob/a3bdac086bbb6b04d87d0108d18943b5f63868f7/NOTICE.txt)
 attributes Bonsai to Prism ML and the Qwen base to Alibaba Cloud. Preserve it
@@ -137,7 +142,7 @@ tools require their own review if adopted.
 Include project LICENSE/NOTICE and every bundled dependency's applicable
 copyright/license/notice material, including Unicode notices. Mark modified
 Apache-licensed files. Include separate upstream notices/licenses when shipping
-models/adapters. If shipping cbindgen, satisfy its MPL source-availability terms.
+models/adapters. Review separately any additional build tools redistributed with a release.
 
 Assemble a complete installer notice bundle from the exact packages, runtime
 archive and artifacts shipped; repeat the
