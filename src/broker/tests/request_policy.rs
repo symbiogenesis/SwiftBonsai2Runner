@@ -680,3 +680,39 @@ fn context_admission_fails_closed_at_boundary_and_overflow() {
         Err(Rejection::TokenCountUnavailable)
     ));
 }
+
+#[test]
+fn adaptive_context_admission_reserves_output_within_the_trusted_limit() {
+    use bonsai_broker::MAX_CONTEXT_TOKENS;
+    let output = usize::try_from(MAX_COMPLETION_TOKENS).unwrap();
+    for capacity in [4_096, CONTEXT_TOKENS, 32_768, MAX_CONTEXT_TOKENS] {
+        let boundary = capacity.saturating_sub(output + TEMPLATE_MARGIN_TOKENS);
+        if boundary > 0 {
+            let admitted = prepare(CHAT)
+                .unwrap()
+                .admit_with_context_limit(capacity, |_| Ok(boundary))
+                .unwrap();
+            assert_eq!(admitted.context_tokens(), capacity);
+        }
+        assert!(matches!(
+            prepare(CHAT)
+                .unwrap()
+                .admit_with_context_limit(capacity, |_| Ok(boundary + 1)),
+            Err(Rejection::ContextLimit)
+        ));
+    }
+    for invalid in [0, MAX_CONTEXT_TOKENS + 1, usize::MAX] {
+        assert!(matches!(
+            prepare(CHAT)
+                .unwrap()
+                .admit_with_context_limit(invalid, |_| Ok(1)),
+            Err(Rejection::ContextLimit)
+        ));
+    }
+    assert!(matches!(
+        prepare(CHAT)
+            .unwrap()
+            .admit_with_context_limit(MAX_CONTEXT_TOKENS, |_| Ok(usize::MAX)),
+        Err(Rejection::ContextLimit)
+    ));
+}

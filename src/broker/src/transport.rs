@@ -52,6 +52,11 @@ impl LoopbackBackend {
         self.process_id = Some(process_id);
     }
 
+    #[cfg(windows)]
+    pub(crate) fn enable_adaptive_context(&mut self) {
+        self.policy.enable_adaptive_context();
+    }
+
     fn check_owner(&self) -> Result<(), BackendError> {
         #[cfg(windows)]
         if let Some(process_id) = self.process_id

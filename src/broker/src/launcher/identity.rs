@@ -10,6 +10,7 @@ pub(super) struct WorkerReadiness {
     legacy_missing_allowed: bool,
     latest_prompt_reuse: bool,
     kv_cache: Option<crate::inference::KvCache>,
+    adaptive_context: bool,
 }
 
 impl WorkerReadiness {
@@ -21,6 +22,7 @@ impl WorkerReadiness {
             legacy_missing_allowed: matches!(version, "0.1.8" | "0.1.9" | "0.1.10"),
             latest_prompt_reuse: false,
             kv_cache: None,
+            adaptive_context: false,
         }
     }
 
@@ -31,6 +33,11 @@ impl WorkerReadiness {
 
     pub(super) const fn with_kv_cache(mut self, policy: Option<crate::inference::KvCache>) -> Self {
         self.kv_cache = policy;
+        self
+    }
+
+    pub(super) const fn with_adaptive_context(mut self, adaptive: bool) -> Self {
+        self.adaptive_context = adaptive;
         self
     }
 
@@ -94,6 +101,8 @@ struct NativeModel<'a> {
     #[serde(borrow)]
     runtime: Text<'a>,
     context_tokens: usize,
+    #[serde(default, borrow, deserialize_with = "present")]
+    context_policy: Option<Text<'a>>,
     seed: u32,
     #[serde(default, deserialize_with = "present")]
     row_workers: Option<u8>,
@@ -182,7 +191,14 @@ pub(super) fn validate_native_identity(
         || &*model.model_sha256 != hash
         || &*model.template_sha256 != crate::inference::TEMPLATE_SHA256
         || &*model.runtime != "prism-inference"
-        || model.context_tokens != crate::CONTEXT_TOKENS
+        || model.context_tokens
+            != if workers.adaptive_context {
+                crate::MAX_CONTEXT_TOKENS
+            } else {
+                crate::CONTEXT_TOKENS
+            }
+        || model.context_policy.as_deref()
+            != workers.adaptive_context.then_some("available-memory-v1")
         || model.seed != 42
         || !workers.accepts(model.row_workers)
         || model.prompt_reuse.as_deref() != workers.latest_prompt_reuse.then_some("latest")
@@ -243,6 +259,48 @@ mod tests {
             body.len()
         )
         .into_bytes())
+    }
+
+    #[test]
+    fn adaptive_context_readiness_requires_the_reviewed_policy_and_model_ceiling()
+    -> Result<(), serde_json::Error> {
+        use serde_json::json;
+        let fixed = WorkerReadiness::for_version("0.1.26", 4)
+            .with_kv_cache(Some(crate::inference::KvCache::Rsq4));
+        let adaptive = fixed.with_adaptive_context(true);
+        let (mut model, _) = kv_cache_model(false, false);
+        assert!(
+            validate_native_identity(&model_response(&model)?, false, false, adaptive).is_err()
+        );
+        model["context_tokens"] = json!(crate::MAX_CONTEXT_TOKENS);
+        model["context_policy"] = json!("available-memory-v1");
+        assert!(validate_native_identity(&model_response(&model)?, false, false, adaptive).is_ok());
+        assert!(validate_native_identity(&model_response(&model)?, false, false, fixed).is_err());
+        for (field, value) in [
+            ("context_policy", json!("fixed")),
+            ("context_policy", json!("available-memory-v2")),
+            ("context_policy", json!(null)),
+            ("context_tokens", json!(crate::CONTEXT_TOKENS)),
+            ("context_tokens", json!(crate::MAX_CONTEXT_TOKENS + 1)),
+            ("context_tokens", json!(0)),
+        ] {
+            let mut changed = model.clone();
+            changed[field] = value;
+            assert!(
+                validate_native_identity(&model_response(&changed)?, false, false, adaptive)
+                    .is_err()
+            );
+        }
+        let body = serde_json::to_string(&json!({"data": [model]}))?.replace(
+            "\"context_policy\":\"available-memory-v1\"",
+            "\"context_policy\":\"available-memory-v1\",\"context_policy\":\"available-memory-v1\"",
+        );
+        let response = format!(
+            "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\n\r\n{body}",
+            body.len()
+        );
+        assert!(validate_native_identity(response.as_bytes(), false, false, adaptive).is_err());
+        Ok(())
     }
 
     #[test]

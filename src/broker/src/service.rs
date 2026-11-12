@@ -147,6 +147,12 @@ impl LocalChatService {
         self.policy.pinned_abliteration = true;
     }
 
+    /// Only the launcher may enable the verified memory-backed count contract.
+    #[cfg(windows)]
+    pub(crate) fn enable_adaptive_context(&mut self) {
+        self.backend.enable_adaptive_context();
+    }
+
     /// Stop admission and wake queued, accepting and active operations.
     ///
     /// Polling operations observe closure and drop their owned streams. No
@@ -211,8 +217,9 @@ impl AcceptedChat<'_> {
     /// Active generation has no total elapsed-time cap; errors never append a second
     /// HTTP response. Client half-close is treated as abandonment by the
     /// supervisor, and disconnecting closes the backend transport. Once a
-    /// generation connection is attempted, any failure or caller cancellation
-    /// closes the entire admission gate: a new request must not follow an
+    /// generation connection is attempted, failures and caller cancellation
+    /// close the entire admission gate, except an exact verified runtime context
+    /// rejection before generation output: a new request must not follow an
     /// unacknowledged backend cancellation. Recreating this service requires
     /// the caller to establish a stopped or freshly owned backend first.
     ///
@@ -257,7 +264,13 @@ impl AcceptedChat<'_> {
                     .map(|result| result.map_err(ServiceError::Request))
             })
             .await;
-            backend.completed.store(result.is_ok(), Ordering::Relaxed);
+            let context_rejected = matches!(
+                &result,
+                Err(ServiceError::Request(ServeError::Backend(error))) if error.is_context_limit()
+            );
+            backend
+                .completed
+                .store(result.is_ok() || context_rejected, Ordering::Relaxed);
             if self.service.gate.is_closed() {
                 Err(ServiceError::Gate(GateError::Closed))
             } else {

@@ -60,8 +60,10 @@ pub const MAX_CONTENT_PARTS: usize = 128;
 pub const MODEL_ALIAS: &str = "bonsai";
 /// Largest allowed completion token budget.
 pub const MAX_COMPLETION_TOKENS: u32 = 4096;
-/// Total prompt and completion context budget of the pinned model.
+/// Total prompt and completion budget of historical fixed-context runtimes.
 pub const CONTEXT_TOKENS: usize = 8192;
+/// Unscaled Swift model context ceiling; memory admission may select less.
+pub const MAX_CONTEXT_TOKENS: usize = 262_144;
 /// Context reserved for template accounting differences.
 pub const TEMPLATE_MARGIN_TOKENS: usize = 64;
 
@@ -702,6 +704,34 @@ impl PendingChat {
         self,
         count_rendered_prompt: impl FnOnce(&[u8]) -> Result<usize, Rejection>,
     ) -> Result<AdmittedChat, Rejection> {
+        self.admit_with_capacity(count_rendered_prompt, CONTEXT_TOKENS)
+    }
+
+    /// Admit against a trusted runtime's memory-backed limit for this prompt.
+    ///
+    /// The owner must verify the runtime's adaptive-context capability and use
+    /// the exact counted canonical bytes again for generation. Client values
+    /// must never supply this bound. The runtime rechecks memory before output.
+    ///
+    /// # Errors
+    /// Returns the same errors as [`Self::admit`], and rejects zero or a limit
+    /// beyond the verified model's unscaled context ceiling.
+    pub fn admit_with_context_limit(
+        self,
+        context_tokens: usize,
+        count_rendered_prompt: impl FnOnce(&[u8]) -> Result<usize, Rejection>,
+    ) -> Result<AdmittedChat, Rejection> {
+        if !(1..=MAX_CONTEXT_TOKENS).contains(&context_tokens) {
+            return Err(Rejection::ContextLimit);
+        }
+        self.admit_with_capacity(count_rendered_prompt, context_tokens)
+    }
+
+    fn admit_with_capacity(
+        self,
+        count_rendered_prompt: impl FnOnce(&[u8]) -> Result<usize, Rejection>,
+        context_tokens: usize,
+    ) -> Result<AdmittedChat, Rejection> {
         let prompt = count_rendered_prompt(&self.body)?;
         if prompt == 0 {
             return Err(Rejection::TokenCountUnavailable);
@@ -711,12 +741,13 @@ impl PendingChat {
         let total = prompt
             .checked_add(completion)
             .and_then(|n| n.checked_add(TEMPLATE_MARGIN_TOKENS));
-        if total.is_none_or(|n| n > CONTEXT_TOKENS) {
+        if total.is_none_or(|n| n > context_tokens) {
             return Err(Rejection::ContextLimit);
         }
         Ok(AdmittedChat {
             body: self.body,
             stream: self.stream,
+            context_tokens,
         })
     }
 }
@@ -726,9 +757,16 @@ impl PendingChat {
 pub struct AdmittedChat {
     body: Vec<u8>,
     stream: bool,
+    context_tokens: usize,
 }
 
 impl AdmittedChat {
+    /// Memory-backed context capacity observed during exact-count admission.
+    #[must_use]
+    pub const fn context_tokens(&self) -> usize {
+        self.context_tokens
+    }
+
     /// Borrow the canonical request body admitted by the trusted token counter.
     #[must_use]
     pub fn backend_body(&self) -> &[u8] {

@@ -24,6 +24,17 @@ pub(super) const TEMPLATE_SHA256: &str =
 // Source review enables the policy; actual use still requires the separately
 // verified released executable in LOCK. Newer versions need another source review.
 const TURBOQUANT_REVISION: &str = "99bab71270b1e6a6fb6d47eec2e34b8097cdcd4c";
+// The integrator replaces this disabled placeholder with the final reviewed
+// adaptive-context source; only genuine matching released bytes can activate it.
+const ADAPTIVE_CONTEXT_REVISION: &str = "";
+
+fn adaptive_context_supported(release: &ReleasePin) -> bool {
+    release.version == "0.1.26" && release.commit == ADAPTIVE_CONTEXT_REVISION
+}
+
+pub(super) fn pinned_adaptive_context() -> Result<bool, LaunchError> {
+    release(LOCK).map(|release| adaptive_context_supported(&release))
+}
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) enum KvCache {
@@ -49,7 +60,8 @@ impl KvCache {
 }
 
 fn turboquant_supported(release: &ReleasePin) -> bool {
-    (release.version == "0.1.25" && release.commit == TURBOQUANT_REVISION)
+    adaptive_context_supported(release)
+        || (release.version == "0.1.25" && release.commit == TURBOQUANT_REVISION)
         || (release.version == "0.1.24"
             && release.commit == "8d2b3067e5f17369f579857a180c01a422a58211")
 }
@@ -264,7 +276,9 @@ pub(super) fn verify(
     latest_prompt_reuse: bool,
 ) -> Result<(PathBuf, VerifiedFile), LaunchError> {
     let release = release(LOCK)?;
-    row_workers_supported(&release.version, row_workers)?;
+    if !adaptive_context_supported(&release) || !matches!(row_workers, 1 | 4) {
+        row_workers_supported(&release.version, row_workers)?;
+    }
     prompt_reuse_supported(&release, latest_prompt_reuse)?;
     let file = release
         .files
@@ -284,6 +298,22 @@ pub(super) fn verify(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn adaptive_context_capability_requires_exact_release_source() -> Result<(), LaunchError> {
+        let mut pin = release(LOCK)?;
+        pin.version = "0.1.26".into();
+        pin.commit = ADAPTIVE_CONTEXT_REVISION.into();
+        assert!(adaptive_context_supported(&pin));
+        assert_eq!(select_kv_cache(&pin, None)?, Some(KvCache::Rsq4));
+        assert!(prompt_reuse_supported(&pin, true).is_ok());
+        pin.commit = "f".repeat(40);
+        assert!(!adaptive_context_supported(&pin));
+        pin.commit = ADAPTIVE_CONTEXT_REVISION.into();
+        pin.version = "0.1.27".into();
+        assert!(!adaptive_context_supported(&pin));
+        Ok(())
+    }
 
     #[test]
     fn kv_cache_default_and_recovery_require_the_exact_reviewed_source() -> Result<(), LaunchError>

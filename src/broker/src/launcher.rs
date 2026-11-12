@@ -655,6 +655,9 @@ impl LaunchConfig {
             return Err(LaunchError::Service);
         };
         service.require_backend_process(process.id());
+        if self.native_engine && crate::inference::pinned_adaptive_context()? {
+            service.enable_adaptive_context();
+        }
         if adapter {
             service.enable_pinned_abliteration();
         }
@@ -958,13 +961,16 @@ async fn native_identity(port: u16, key: &str, process_id: u32, config: &LaunchC
     timeout(Duration::from_secs(2), async {
         let version = crate::inference::pinned_version()
             .map_err(|_| io::Error::other("native runtime pin mismatch"))?;
+        let adaptive_context = crate::inference::pinned_adaptive_context()
+            .map_err(|_| io::Error::other("native runtime context policy mismatch"))?;
         validate_native_identity(
             &exchange(port, "/v1/models", Some(key), process_id).await?,
             config.uses_repacked_ptq1(),
             config.use_abliterate_lora,
             WorkerReadiness::for_version(&version, config.native_row_workers)
                 .with_prompt_reuse(config.latest_prompt_reuse)
-                .with_kv_cache(config.kv_cache),
+                .with_kv_cache(config.kv_cache)
+                .with_adaptive_context(adaptive_context),
         )
     })
     .await

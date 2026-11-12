@@ -13,7 +13,7 @@ use crate::{
         receive_chat_with_budget,
     },
     response::{
-        ResponseError, send_buffered_chat_response_mode, send_context_rejection,
+        ContextCapacity, ResponseError, send_buffered_chat_response_mode, send_context_rejection,
         send_control_rejection, send_rate_rejection,
     },
     service::BurstBudget,
@@ -138,12 +138,16 @@ where
         let chat = match count_and_admit(counter, pending, backend.policy(), deadline).await {
             Ok(chat) => chat,
             Err(error) => {
-                if error == BackendError::Admission(Rejection::ContextLimit) {
+                if error.is_context_limit() {
                     // No generation connection or client response has started.
                     // Never use this path for a failure after response forwarding.
-                    send_context_rejection(output, deadline)
-                        .await
-                        .map_err(ServeError::Response)?;
+                    send_context_rejection(
+                        output,
+                        deadline,
+                        rejection_capacity(error, backend.policy()),
+                    )
+                    .await
+                    .map_err(ServeError::Response)?;
                 }
                 return Err(ServeError::Backend(error));
             }
@@ -153,10 +157,30 @@ where
             .await
             .map_err(ServeError::Backend)?;
         let streaming = chat.streams_response();
-        let response = request_chat_owned(generation, chat, backend.policy(), deadline)
-            .await
-            .map_err(ServeError::Backend)?;
-        send_buffered_chat_response_mode(output, response, streaming, deadline)
+        let capacity = ContextCapacity {
+            tokens: chat.context_tokens(),
+            adaptive: backend.policy().adaptive_context(),
+        };
+        let response = match request_chat_owned(generation, chat, backend.policy(), deadline).await
+        {
+            Ok(response) => response,
+            Err(error) => {
+                if error.is_context_limit() {
+                    // A negotiated runtime may reject fresh memory pressure
+                    // before emitting any generation bytes. This exact typed
+                    // rejection is recoverable; arbitrary 413s remain failures.
+                    send_context_rejection(
+                        output,
+                        deadline,
+                        rejection_capacity(error, backend.policy()),
+                    )
+                    .await
+                    .map_err(ServeError::Response)?;
+                }
+                return Err(ServeError::Backend(error));
+            }
+        };
+        send_buffered_chat_response_mode(output, response, streaming, deadline, capacity)
             .await
             .map_err(ServeError::Response)
     });
@@ -175,6 +199,22 @@ where
     .await;
     ensure_time(deadline)?;
     result
+}
+
+fn rejection_capacity(error: BackendError, policy: &BackendPolicy) -> Option<ContextCapacity> {
+    match error {
+        BackendError::ContextLimit(tokens) => Some(ContextCapacity {
+            tokens,
+            adaptive: true,
+        }),
+        BackendError::Admission(Rejection::ContextLimit) if !policy.adaptive_context() => {
+            Some(ContextCapacity {
+                tokens: crate::CONTEXT_TOKENS,
+                adaptive: false,
+            })
+        }
+        _ => None,
+    }
 }
 
 async fn receive_admitted<C>(

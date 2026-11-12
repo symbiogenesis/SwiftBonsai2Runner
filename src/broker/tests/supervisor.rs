@@ -342,6 +342,85 @@ fn canonical_count_and_generation_share_body_and_drop_streams() {
 }
 
 #[test]
+fn adaptive_context_headers_report_only_the_negotiated_admission_observation() {
+    run(async {
+        for streaming in [false, true] {
+            let count = br#"{"input_tokens":16000,"object":"response.input_tokens","context_tokens":32768}"#;
+            let generation = if streaming {
+                b"data: [DONE]\n\n".as_slice()
+            } else {
+                br#"{"choices":[]}"#
+            };
+            let mut backend = Connector::new([
+                BackendStream::new(response(count, false)),
+                BackendStream::new(response(generation, streaming)),
+            ]);
+            backend.policy = backend.policy.with_adaptive_context();
+            let (client, mut peer, dropped) = clients();
+            let (result, bytes) =
+                both(serve_chat(client, &policy(), &backend, deadline()), async {
+                    peer.write_all(&request(streaming)).await.unwrap();
+                    let mut bytes = Vec::new();
+                    peer.read_to_end(&mut bytes).await.unwrap();
+                    bytes
+                })
+                .await;
+            assert_eq!(result, Ok(()));
+            assert_eq!(backend.calls.get(), 2);
+            let wire = String::from_utf8(bytes).unwrap();
+            let (head, _) = wire.split_once("\r\n\r\n").unwrap();
+            assert!(head.contains("\r\nX-Bonsai-Context-Tokens: 32768\r\n"));
+            assert!(head.contains("\r\nX-Bonsai-Context-Policy: available-memory-v1\r\n"));
+            assert!(head.contains("\r\nX-Bonsai-Max-Context-Tokens: 262144\r\n"));
+            assert!(dropped.get());
+        }
+    });
+}
+
+#[test]
+fn adaptive_context_pressure_between_count_and_generation_rejects_before_success_headers() {
+    run(async {
+        for reject_at_count in [false, true] {
+            let count = br#"{"input_tokens":16000,"object":"response.input_tokens","context_tokens":32768}"#;
+            let rejected = br#"{"error":{"code":"context_length_exceeded"},"context_tokens":4096}"#;
+            let rejection = format!(
+                "HTTP/1.1 413 Content Too Large\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\nCache-Control: no-store\r\nX-Content-Type-Options: nosniff\r\n\r\n{}",
+                rejected.len(), std::str::from_utf8(rejected).unwrap()
+            ).into_bytes();
+            let streams = if reject_at_count {
+                vec![BackendStream::new(rejection)]
+            } else {
+                vec![
+                    BackendStream::new(response(count, false)),
+                    BackendStream::new(rejection),
+                ]
+            };
+            let mut backend = Connector::new(streams);
+            backend.policy = backend.policy.with_adaptive_context();
+            let (client, mut peer, _) = clients();
+            let (result, bytes) =
+                both(serve_chat(client, &policy(), &backend, deadline()), async {
+                    peer.write_all(&request(true)).await.unwrap();
+                    let mut bytes = Vec::new();
+                    peer.read_to_end(&mut bytes).await.unwrap();
+                    bytes
+                })
+                .await;
+            assert_eq!(
+                result,
+                Err(ServeError::Backend(BackendError::ContextLimit(4096)))
+            );
+            assert_eq!(backend.calls.get(), if reject_at_count { 1 } else { 2 });
+            let wire = String::from_utf8(bytes).unwrap();
+            assert!(wire.starts_with("HTTP/1.1 413 Content Too Large\r\n"));
+            assert!(!wire.contains("200 OK"));
+            assert!(wire.contains("\r\nX-Bonsai-Context-Tokens: 4096\r\n"));
+            assert!(wire.ends_with(r#"{"error":{"code":"context_length_exceeded"}}"#));
+        }
+    });
+}
+
+#[test]
 fn rejected_count_never_connects_generation() {
     run(async {
         for (body, rejection, stream) in [

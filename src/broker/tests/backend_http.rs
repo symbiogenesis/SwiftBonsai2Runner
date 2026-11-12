@@ -810,6 +810,87 @@ fn exact_count_schema_rejects_missing_duplicate_unknown_or_noninteger_fields() {
 }
 
 #[test]
+fn adaptive_context_count_requires_negotiated_bounded_integer_capacity() {
+    run(async {
+        let adaptive = policy().with_adaptive_context();
+        let count =
+            br#"{"input_tokens":16000,"object":"response.input_tokens","context_tokens":32768}"#;
+        let admitted = count_and_admit(
+            Stream::new(length_response(count, false), 3),
+            pending(false),
+            &adaptive,
+            deadline(),
+        )
+        .await
+        .unwrap();
+        assert_eq!(admitted.context_tokens(), 32_768);
+        assert!(matches!(
+            count_and_admit(
+                Stream::new(length_response(count, false), 3),
+                pending(false),
+                &policy(),
+                deadline()
+            )
+            .await,
+            Err(BackendError::CountSchema)
+        ));
+        for bytes in [
+            COUNT,
+            br#"{"input_tokens":100,"object":"response.input_tokens","context_tokens":0}"#,
+            br#"{"input_tokens":100,"object":"response.input_tokens","context_tokens":262145}"#,
+            br#"{"input_tokens":100,"object":"response.input_tokens","context_tokens":null}"#,
+            br#"{"input_tokens":100,"object":"response.input_tokens","context_tokens":"32768"}"#,
+            br#"{"input_tokens":100,"object":"response.input_tokens","context_tokens":32768.0}"#,
+            br#"{"input_tokens":100,"object":"response.input_tokens","context_tokens":32768,"context_tokens":32768}"#,
+        ] {
+            assert!(matches!(
+                count_and_admit(Stream::new(length_response(bytes, false), 3), pending(false), &adaptive, deadline()).await,
+                Err(BackendError::CountSchema)
+            ));
+        }
+        let count =
+            br#"{"input_tokens":16000,"object":"response.input_tokens","context_tokens":8192}"#;
+        assert!(matches!(
+            count_and_admit(
+                Stream::new(length_response(count, false), 3),
+                pending(false),
+                &adaptive,
+                deadline()
+            )
+            .await,
+            Err(BackendError::ContextLimit(8192))
+        ));
+    });
+}
+
+#[test]
+fn adaptive_context_generation_pressure_rejection_is_typed_and_bounded() {
+    run(async {
+        let adaptive = policy().with_adaptive_context();
+        for capacity in [0, 4096] {
+            let body = format!(
+                r#"{{"error":{{"code":"context_length_exceeded"}},"context_tokens":{capacity}}}"#
+            );
+            assert!(matches!(
+                request_chat(Stream::new(context_response(body.as_bytes(), false), 1), &admitted(true), &adaptive, deadline()).await,
+                Err(BackendError::ContextLimit(observed)) if observed == capacity
+            ));
+        }
+        for body in [
+            br#"{"error":{"code":"context_length_exceeded"},"context_tokens":262145}"#.as_slice(),
+            br#"{"error":{"code":"context_length_exceeded"},"context_tokens":null}"#,
+            br#"{"error":{"code":"context_length_exceeded"},"context_tokens":4096,"context_tokens":4096}"#,
+            br#"{"error":{"code":"context_length_exceeded","message":"private"},"context_tokens":4096}"#,
+        ] {
+            assert!(matches!(
+                request_chat(Stream::new(context_response(body, false), 1), &admitted(true), &adaptive, deadline()).await,
+                Err(BackendError::CountSchema)
+            ));
+        }
+    });
+}
+
+#[test]
 fn typed_private_context_rejection_is_framed_bounded_and_count_route_only() {
     run(async {
         for chunked in [false, true] {

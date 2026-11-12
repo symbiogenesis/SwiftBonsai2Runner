@@ -8,7 +8,9 @@
 use crate::{AdmittedChat, Object, deadline::RequestDeadline, singleton};
 use http::{Response, StatusCode};
 use serde::de::IgnoredAny;
-use std::{fmt::NumBuffer, future::poll_fn, io::IoSlice, pin::Pin, task::Poll, time::Duration};
+use std::{
+    borrow::Cow, fmt::NumBuffer, future::poll_fn, io::IoSlice, pin::Pin, task::Poll, time::Duration,
+};
 use tokio::{
     io::{
         AsyncBufRead, AsyncBufReadExt, AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt, ReadBuf,
@@ -40,6 +42,36 @@ const SSE_HEAD: &str = concat!(
     "Content-Type: text/event-stream\r\nTransfer-Encoding: chunked\r\n\r\n"
 );
 
+/// Only trusted exact-count admission supplies this response observation.
+#[derive(Clone, Copy)]
+pub(crate) struct ContextCapacity {
+    pub(crate) tokens: usize,
+    pub(crate) adaptive: bool,
+}
+
+impl ContextCapacity {
+    fn headers(self) -> String {
+        let (policy, maximum) = if self.adaptive {
+            ("available-memory-v1", crate::MAX_CONTEXT_TOKENS)
+        } else {
+            ("fixed", crate::CONTEXT_TOKENS)
+        };
+        format!(
+            "X-Bonsai-Context-Tokens: {}\r\nX-Bonsai-Context-Policy: {policy}\r\nX-Bonsai-Max-Context-Tokens: {maximum}\r\n",
+            self.tokens,
+        )
+    }
+}
+
+fn sse_head(capacity: Option<ContextCapacity>) -> Cow<'static, str> {
+    capacity.map_or(Cow::Borrowed(SSE_HEAD), |capacity| {
+        Cow::Owned(format!(
+            "HTTP/1.1 200 OK\r\n{COMMON_HEADERS}{}Content-Type: text/event-stream\r\nTransfer-Encoding: chunked\r\n\r\n",
+            capacity.headers()
+        ))
+    })
+}
+
 /// Value-free errors: no upstream header, body, prompt or I/O diagnostic escapes.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ResponseError {
@@ -62,6 +94,7 @@ pub enum ResponseError {
 pub(crate) async fn send_context_rejection<W: AsyncWrite + Unpin>(
     mut client: W,
     supervisor_deadline: RequestDeadline,
+    capacity: Option<ContextCapacity>,
 ) -> Result<(), ResponseError> {
     const BODY: &[u8] = br#"{"error":{"code":"context_length_exceeded"}}"#;
     const HEAD: &str = concat!(
@@ -69,6 +102,20 @@ pub(crate) async fn send_context_rejection<W: AsyncWrite + Unpin>(
         common_headers!(),
         "Content-Type: application/json\r\nContent-Length: "
     );
+    if let Some(capacity) = capacity {
+        let head = format!(
+            "HTTP/1.1 413 Content Too Large\r\n{COMMON_HEADERS}{}Content-Type: application/json\r\nContent-Length: {}\r\n\r\n",
+            capacity.headers(),
+            BODY.len()
+        );
+        return write_group(
+            &mut client,
+            &[head.as_bytes(), BODY],
+            supervisor_deadline,
+            true,
+        )
+        .await;
+    }
     let mut head = [0; HEAD.len() + CONTENT_LENGTH_SPACE];
     let head = rejection_head(&mut head, HEAD.as_bytes(), BODY.len());
     write_group(&mut client, &[head, BODY], supervisor_deadline, true).await
@@ -175,9 +222,9 @@ where
     validate_metadata(&backend, streaming)?;
     let mut body = backend.into_body();
     if streaming {
-        write_sse_response(&mut client, &mut body, supervisor_deadline).await
+        write_sse_response(&mut client, &mut body, supervisor_deadline, None).await
     } else {
-        write_json_response(&mut client, &mut body, supervisor_deadline).await
+        write_json_response(&mut client, &mut body, supervisor_deadline, None).await
     }
 }
 
@@ -189,6 +236,7 @@ pub(crate) async fn send_buffered_chat_response_mode<W, R>(
     mut body: R,
     streaming: bool,
     supervisor_deadline: RequestDeadline,
+    capacity: ContextCapacity,
 ) -> Result<(), ResponseError>
 where
     W: AsyncWrite + Unpin + 'static,
@@ -196,11 +244,12 @@ where
 {
     ensure_time(supervisor_deadline)?;
     if streaming && client.is_write_vectored() {
-        write_buffered_sse_response(&mut client, &mut body, supervisor_deadline).await
+        write_buffered_sse_response(&mut client, &mut body, supervisor_deadline, Some(capacity))
+            .await
     } else if streaming {
-        write_sse_response(&mut client, &mut body, supervisor_deadline).await
+        write_sse_response(&mut client, &mut body, supervisor_deadline, Some(capacity)).await
     } else {
-        write_json_response(&mut client, &mut body, supervisor_deadline).await
+        write_json_response(&mut client, &mut body, supervisor_deadline, Some(capacity)).await
     }
 }
 
@@ -208,8 +257,15 @@ async fn write_sse_response<W: AsyncWrite + Unpin, R: AsyncRead + Unpin>(
     client: &mut W,
     body: &mut R,
     supervisor_deadline: RequestDeadline,
+    capacity: Option<ContextCapacity>,
 ) -> Result<(), ResponseError> {
-    write_group(client, &[SSE_HEAD.as_bytes()], supervisor_deadline, false).await?;
+    write_group(
+        client,
+        &[sse_head(capacity).as_bytes()],
+        supervisor_deadline,
+        false,
+    )
+    .await?;
     // Read into the final wire frame: no per-chunk String allocation or
     // separate writes for the size, payload and CRLF.
     let mut buffer = [0u8; CHUNK_PREFIX_BYTES + RESPONSE_BUFFER_BYTES + 2];
@@ -271,8 +327,9 @@ async fn write_buffered_sse_response<W: AsyncWrite + Unpin, R: AsyncBufRead + Un
     client: &mut W,
     body: &mut R,
     deadline: RequestDeadline,
+    capacity: Option<ContextCapacity>,
 ) -> Result<(), ResponseError> {
-    write_group(client, &[SSE_HEAD.as_bytes()], deadline, false).await?;
+    write_group(client, &[sse_head(capacity).as_bytes()], deadline, false).await?;
     let mut frame = [0; CHUNK_PREFIX_BYTES + RESPONSE_BUFFER_BYTES + 2];
     let mut sent = 0;
     loop {
@@ -402,10 +459,12 @@ async fn write_json_response<W: AsyncWrite + Unpin, R: AsyncRead + Unpin>(
     client: &mut W,
     body: &mut R,
     supervisor_deadline: RequestDeadline,
+    capacity: Option<ContextCapacity>,
 ) -> Result<(), ResponseError> {
     let bytes = collect_json(body, supervisor_deadline).await?;
+    let context_headers = capacity.map_or_else(String::new, ContextCapacity::headers);
     let head = format!(
-        "HTTP/1.1 200 OK\r\n{COMMON_HEADERS}Content-Type: application/json\r\nContent-Length: {}\r\n\r\n",
+        "HTTP/1.1 200 OK\r\n{COMMON_HEADERS}{context_headers}Content-Type: application/json\r\nContent-Length: {}\r\n\r\n",
         bytes.len()
     );
     write_group(

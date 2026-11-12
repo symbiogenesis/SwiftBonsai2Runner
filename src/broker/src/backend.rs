@@ -11,7 +11,7 @@ use crate::{
     wire,
 };
 use http::{Response, StatusCode, Version};
-use serde::Deserialize;
+use serde::{Deserialize, Deserializer};
 use std::{
     borrow::Cow,
     io,
@@ -60,6 +60,17 @@ pub enum BackendError {
     CountSchema,
     /// The counted prompt or a recognized private counter context rejection failed admission.
     Admission(Rejection),
+    /// A verified adaptive runtime rejected against this observed memory-backed limit.
+    ContextLimit(usize),
+}
+
+impl BackendError {
+    pub(crate) const fn is_context_limit(self) -> bool {
+        matches!(
+            self,
+            Self::Admission(Rejection::ContextLimit) | Self::ContextLimit(_)
+        )
+    }
 }
 
 /// Private backend connection metadata. No Debug/Serialize implementation.
@@ -67,6 +78,7 @@ pub enum BackendError {
 pub struct BackendPolicy {
     authority: String,
     authorization: String,
+    adaptive_context: bool,
 }
 
 impl BackendPolicy {
@@ -81,7 +93,25 @@ impl BackendPolicy {
         Ok(Self {
             authority: format!("127.0.0.1:{port}"),
             authorization: format!("Bearer {key}"),
+            adaptive_context: false,
         })
+    }
+
+    /// Enable the exact available-memory-v1 contract after immutable runtime
+    /// identity and readiness verification. Client requests cannot select it.
+    #[must_use]
+    pub const fn with_adaptive_context(mut self) -> Self {
+        self.adaptive_context = true;
+        self
+    }
+
+    pub(crate) const fn adaptive_context(&self) -> bool {
+        self.adaptive_context
+    }
+
+    #[cfg(windows)]
+    pub(crate) const fn enable_adaptive_context(&mut self) {
+        self.adaptive_context = true;
     }
 }
 
@@ -106,7 +136,42 @@ where
     let deadline = deadline.into();
     let (status, body) =
         exchange(stream, &pending.body, false, COUNT_ROUTE, policy, deadline).await?;
-    let context_rejected = status == StatusCode::PAYLOAD_TOO_LARGE;
+    let bytes = bounded_count_body(body, deadline).await?;
+    if status == StatusCode::PAYLOAD_TOO_LARGE {
+        return Err(context_rejection(&bytes, policy)?);
+    }
+    let Object(count): Object<Count<'_>> =
+        serde_json::from_slice(&bytes).map_err(|_| BackendError::CountSchema)?;
+    ensure_time(deadline)?;
+    if count.object != "response.input_tokens" {
+        return Err(BackendError::CountSchema);
+    }
+    let context_tokens = match (policy.adaptive_context, count.context_tokens) {
+        (false, None) => crate::CONTEXT_TOKENS,
+        (true, Some(limit)) if (1..=crate::MAX_CONTEXT_TOKENS).contains(&limit) => limit,
+        _ => return Err(BackendError::CountSchema),
+    };
+    // PendingChat checks positivity and retains the canonical allocation unchanged.
+    let admitted = pending
+        .admit_with_context_limit(context_tokens, |_| Ok(count.input_tokens))
+        .map_err(|error| {
+            if policy.adaptive_context && error == Rejection::ContextLimit {
+                BackendError::ContextLimit(context_tokens)
+            } else {
+                BackendError::Admission(error)
+            }
+        })?;
+    ensure_time(deadline)?;
+    Ok(admitted)
+}
+
+async fn bounded_count_body<S>(
+    body: BackendBody<S>,
+    deadline: RequestDeadline,
+) -> Result<Vec<u8>, BackendError>
+where
+    S: AsyncRead + AsyncWrite + Unpin + 'static,
+{
     // Read directly into the final allocation, keeping one byte for the
     // oversized-body probe without allowing unbounded read_to_end growth.
     let limit = u64::try_from(MAX_COUNT_BYTES + 1).map_err(|_| BackendError::CountSchema)?;
@@ -122,28 +187,27 @@ where
     if bytes.len() > MAX_COUNT_BYTES {
         return Err(BackendError::CountSchema);
     }
-    if context_rejected {
-        let Object(rejection): Object<CountRejection<'_>> =
-            serde_json::from_slice(&bytes).map_err(|_| BackendError::CountSchema)?;
-        ensure_time(deadline)?;
-        return if rejection.error.0.code == "context_length_exceeded" {
-            Err(BackendError::Admission(Rejection::ContextLimit))
-        } else {
-            Err(BackendError::CountSchema)
-        };
-    }
-    let Object(count): Object<Count<'_>> =
-        serde_json::from_slice(&bytes).map_err(|_| BackendError::CountSchema)?;
     ensure_time(deadline)?;
-    if count.object != "response.input_tokens" {
+    Ok(bytes)
+}
+
+fn context_rejection(bytes: &[u8], policy: &BackendPolicy) -> Result<BackendError, BackendError> {
+    let Object(rejection): Object<CountRejection<'_>> =
+        serde_json::from_slice(bytes).map_err(|_| BackendError::CountSchema)?;
+    if rejection.error.0.code != "context_length_exceeded" {
         return Err(BackendError::CountSchema);
     }
-    // PendingChat checks positivity and retains the canonical allocation unchanged.
-    let admitted = pending
-        .admit(|_| Ok(count.input_tokens))
-        .map_err(BackendError::Admission)?;
-    ensure_time(deadline)?;
-    Ok(admitted)
+    match (policy.adaptive_context, rejection.context_tokens) {
+        (_, None) => Ok(BackendError::Admission(Rejection::ContextLimit)),
+        (true, Some(limit)) if limit <= crate::MAX_CONTEXT_TOKENS => {
+            Ok(BackendError::ContextLimit(limit))
+        }
+        _ => Err(BackendError::CountSchema),
+    }
+}
+
+fn context_present<'de, D: Deserializer<'de>>(input: D) -> Result<Option<usize>, D::Error> {
+    usize::deserialize(input).map(Some)
 }
 
 #[derive(Deserialize)]
@@ -152,6 +216,8 @@ struct Count<'a> {
     input_tokens: usize,
     #[serde(borrow)]
     object: Cow<'a, str>,
+    #[serde(default, deserialize_with = "context_present")]
+    context_tokens: Option<usize>,
 }
 
 #[derive(Deserialize)]
@@ -159,6 +225,8 @@ struct Count<'a> {
 struct CountRejection<'a> {
     #[serde(borrow)]
     error: Object<CountRejectionCode<'a>>,
+    #[serde(default, deserialize_with = "context_present")]
+    context_tokens: Option<usize>,
 }
 
 #[derive(Deserialize)]
@@ -195,6 +263,10 @@ where
         deadline,
     )
     .await?;
+    if status == StatusCode::PAYLOAD_TOO_LARGE {
+        let bytes = bounded_count_body(body, deadline).await?;
+        return Err(context_rejection(&bytes, policy)?);
+    }
     Response::builder()
         .version(Version::HTTP_11)
         .status(status)
@@ -221,7 +293,7 @@ pub(crate) async fn request_chat_owned<S>(
 where
     S: AsyncRead + AsyncWrite + Unpin + 'static,
 {
-    let (_, body) = exchange(
+    let (status, body) = exchange(
         stream,
         chat.body,
         chat.stream,
@@ -230,6 +302,10 @@ where
         deadline,
     )
     .await?;
+    if status == StatusCode::PAYLOAD_TOO_LARGE {
+        let bytes = bounded_count_body(body, deadline).await?;
+        return Err(context_rejection(&bytes, policy)?);
+    }
     Ok(body)
 }
 
@@ -267,8 +343,13 @@ where
     drop(body);
 
     let mut reader = BufReader::with_capacity(8192, stream);
-    let (status, framing) =
-        read_head(&mut reader, streaming, route == COUNT_ROUTE, deadline).await?;
+    let (status, framing) = read_head(
+        &mut reader,
+        streaming,
+        route == COUNT_ROUTE || policy.adaptive_context,
+        deadline,
+    )
+    .await?;
     ensure_time(deadline)?;
     Ok((
         status,
