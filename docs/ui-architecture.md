@@ -117,7 +117,8 @@ remain separate from MSI application files.
 | Component | Contract |
 | --- | --- |
 | Workspace | At most 16 conversations, each with its own draft, response settings, visible transcript and exact committed history. Transcript count/byte eviction (at most 512 messages) never changes model history. |
-| Presentation | Only user/assistant content enters the selectable plain-text transcript; never interpret output as HTML. Setup/retry/transport/speech status use separate controls and bounded collapsible diagnostics. Rename/delete use centered native modals; deletion names the target and blocks background input. Cancel/Escape preserves the conversation/draft. |
+| Presentation | Only user/assistant content enters the selectable transcript. Limited native text styles preserve every source character and byte offset; never interpret output as HTML, activate model-supplied links or execute code. Setup/retry/transport/speech status use separate controls and bounded collapsible diagnostics. Rename/delete/edit use centered native modals; deletion names the target and blocks background input. Cancel/Escape preserves the conversation/draft. |
+| Message iteration | Edit and resend and Regenerate create a new conversation with the exact committed prefix, preserving the original and its draft. Branch from here creates a conversation without sending; a selected user prompt becomes its draft. Continue response explicitly sends a followup to the last committed answer while retaining the existing draft. Actions verify saved message positions against committed content and respect readiness and the 16-conversation bound. Interrupted output and intermediate effort drafts never become committed history through these actions. |
 | Recovery | Automatic by default with a persistent explicit opt-out; user-scoped DPAPI, 8 MiB bound, atomic replacement outside Git and one writer/data directory. Restore completed history without request replay, microphone or playback; keep interrupted visible text separate. [Recovery operation](development-guide.md#optional-recovery-and-preview) defines saved fields, unreadable-file preservation, saving/deletion and same-user limits. |
 | Window placement | Separate bounded geometry-only file in the data directory, independent of conversation saving. Preserve normal bounds and maximized state, never reopen minimized; native Windows restores offscreen placement onto current monitors. Preview leaves the real window settings untouched. Disk writes run on a coalescing worker joined at shutdown. |
 | Stop/retry | Stop freezes queued updates and wakes network waits. Retry waits for owned-backend teardown, creates fresh credentials/diagnostics and repeats artifact, identity and 15.5 GiB admission checks. Preserve completed turns and newer drafts; restore an interrupted prompt only to an empty composer. Never replay automatically or reduce the profile. If completion wins the Stop race, the visible answer and committed history agree. |
@@ -160,6 +161,13 @@ defines incremental matching, highlight/underline-cache invalidation and work bo
 `bonsai-chat.exe --preview` uses the same presentation with marked sample content
 and no broker, credentials, microphone or speech service; it checks layout and
 interaction only.
+
+Assistant headings, list/quote prefixes and inline or fenced code receive native
+egui text styles. Markdown markers remain visible, code uses a monospace font,
+and incomplete fences remain readable during streaming. Copy, selection and Find
+continue to address the exact original text. This is a bounded presentation subset,
+not a general Markdown or HTML renderer; additional style spans fall back to
+ordinary text while retaining bounded search highlights.
 
 ## Interoperability belongs at the API boundary
 

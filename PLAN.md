@@ -243,6 +243,16 @@ pending gates. Full suites, benchmarks and performance captures stay in owning C
 
 ### Actual-model acceptance
 
+Qualify native message iteration and styled answers on Windows ARM64: edited and
+regenerated branches must preserve original drafts/settings and send only their
+exact committed prefix; user/assistant branching, Continue with an unsent draft,
+context rejection, Stop, background ownership and recovery must retain the normal
+request policy. Cover duplicate prompts, interrupted/intermediate effort output,
+transcript eviction, the 16-conversation limit, edit-modal keyboard/IME behavior,
+and styled Unicode/code selection, copying and Find across streamed replacements,
+scaling and high contrast. Focused source fixtures do not establish actual-model,
+assistive-technology or daily-use acceptance; those owner-managed gates remain open.
+
 Qualify the composer microphone with the pinned Qwen3-ASR 1.7B Q8_0 model on
 Windows ARM64: explicit permission, click-to-finish and 25-second completion,
 language autodetection, exactly one text prompt through Swift's normal request

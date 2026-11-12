@@ -245,6 +245,28 @@ sits beside Settings; previous/next controls appear below the header. **F3/Shift
 or the bottom-center down arrow returns to the newest message. **Escape** closes Find and clears highlights;
 a second Escape stops active generation or speech.
 
+Each message's **actions** menu provides iteration tools for verified committed
+turns. **Edit and resend** opens an editor; **Create branch and send** submits
+the revised prompt in a new conversation using the preceding completed history.
+**Regenerate** creates a branch and sends the original prompt again, excluding
+its previous answer and later turns. Both retain the original conversation,
+unsent draft and response settings. Cancel/Escape leaves the source unchanged.
+**Branch from here** creates a conversation without sending: an assistant includes
+its completed turn; a user message becomes a draft after the preceding turns.
+Branches use one of the 16 conversation slots.
+
+**Continue response** is available on the latest committed answer when Swift is
+ready. It sends an explicit followup asking Swift to continue without repeating,
+and preserves the unsent composer draft. It uses the same context admission and
+response settings as Send. Interrupted output and intermediate Extra effort drafts
+are excluded from iteration history. Older recovery files enable actions only
+when the visible transcript can be verified as a complete committed suffix.
+
+Assistant text uses native heading, list/quote and inline/fenced code styles.
+Code is monospace; original Markdown markers remain visible. Copy, selection and
+Find retain exact source text and offsets. HTML and link-like text remain literal;
+this bounded styling subset does not execute code or activate generated links.
+
 | Setting | Behavior |
 | --- | --- |
 | **Thinking** | Off initially and in older saved chats; enables reasoning for the next response and every Extra effort pass. |
