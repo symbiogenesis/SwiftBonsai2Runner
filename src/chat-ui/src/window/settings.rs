@@ -103,7 +103,7 @@ impl State {
         }
         let content = ctx.content_rect();
         let margin: i8 = if content.height() < 600.0 { 16 } else { 24 };
-        let width = (content.width() - f32::from(margin) * 2.0 - 32.0).clamp(240.0, 800.0);
+        let width = (f32::from(margin).mul_add(-2.0, content.width()) - 32.0).clamp(240.0, 800.0);
         let wide = width >= 700.0 && content.height() >= 560.0;
         let visuals = ctx.global_style().visuals.clone();
         let frame = egui::Frame::new()
@@ -123,9 +123,8 @@ impl State {
                 ui.separator();
                 ui.add_space(16.0);
                 if wide {
-                    let body_height = (content.height()
-                        - ui.min_rect().height()
-                        - f32::from(margin) * 2.0
+                    let body_height = (f32::from(margin)
+                        .mul_add(-2.0, content.height() - ui.min_rect().height())
                         - 80.0)
                         .clamp(60.0, 470.0);
                     ui.horizontal_top(|ui| {
@@ -142,9 +141,8 @@ impl State {
                 } else {
                     self.settings_navigation(ui, true);
                     ui.add_space(16.0);
-                    let body_height = (content.height()
-                        - ui.min_rect().height()
-                        - f32::from(margin) * 2.0
+                    let body_height = (f32::from(margin)
+                        .mul_add(-2.0, content.height() - ui.min_rect().height())
                         - 80.0)
                         .clamp(60.0, 470.0);
                     self.settings_content(ui, body_height);

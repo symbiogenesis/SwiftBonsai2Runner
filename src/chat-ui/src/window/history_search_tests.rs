@@ -111,7 +111,10 @@ fn conversation_history_filters_unicode_titles_and_inactive_messages_as_you_type
 fn conversation_history_reuses_matches_and_refreshes_streams_renames_and_replacements() {
     let mut chat = harness([1180.0, 860.0]);
     type_query(&mut chat, "new leaf");
-    assert!(chat.state().app.conversation_search.rows.is_empty());
+    assert_eq!(
+        chat.state().app.conversation_search.rows,
+        Vec::<usize>::new()
+    );
     let scans: Vec<_> = chat
         .state()
         .app
@@ -154,7 +157,10 @@ fn conversation_history_excludes_reasoning_and_drafts_and_clears_without_switchi
     let active = chat.state().app.active_conversation;
     for query in ["privatecompass", "cobalt"] {
         type_query(&mut chat, query);
-        assert!(chat.state().app.conversation_search.rows.is_empty());
+        assert_eq!(
+            chat.state().app.conversation_search.rows,
+            Vec::<usize>::new()
+        );
         assert!(chat.query_by_label("No conversations found").is_some());
         clear_query(&mut chat);
         assert_eq!(chat.state().app.conversation_search.rows, [0, 1, 2]);
@@ -188,7 +194,7 @@ fn conversation_history_escape_clears_before_drawer_dismissal_during_generation(
     type_query(&mut chat, "élan");
     chat.key_press(egui::Key::Escape);
     chat.run();
-    assert!(chat.state().app.conversation_search.text.is_empty());
+    assert_eq!(chat.state().app.conversation_search.text, "");
     assert!(chat.state().app.sidebar_open);
     assert!(chat.state().app.model.busy());
     assert_eq!(chat.state().app.input, DRAFT);
@@ -249,7 +255,7 @@ fn conversation_history_new_conversation_clears_the_filter_and_preserves_the_dra
     chat.run();
     assert_eq!(chat.state().app.conversations.len(), 4);
     assert_ne!(chat.state().app.active_conversation, original);
-    assert!(chat.state().app.conversation_search.text.is_empty());
+    assert_eq!(chat.state().app.conversation_search.text, "");
     assert_eq!(chat.state().app.conversation_search.rows, [0, 1, 2, 3]);
     assert!(
         chat.get_by_role_and_label(egui::Role::MultilineTextInput, "Message")

@@ -373,7 +373,8 @@ impl State {
                 .position(|&index| self.conversations[index].id == self.active_conversation)
         {
             let offset = history_search::row_offset(row, 40.0 + ui.spacing().item_spacing.y);
-            scroll = scroll.vertical_scroll_offset((offset - ui.available_height() * 0.5).max(0.0));
+            scroll =
+                scroll.vertical_scroll_offset(ui.available_height().mul_add(-0.5, offset).max(0.0));
         } else if reset {
             scroll = scroll.vertical_scroll_offset(0.0);
         }

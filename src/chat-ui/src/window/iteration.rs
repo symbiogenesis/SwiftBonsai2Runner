@@ -414,7 +414,7 @@ mod tests {
             }
             assert_eq!(state.conversations.len(), 33);
             assert_ne!(state.active_conversation, source);
-            assert!(state.conversation_search.text.is_empty());
+            assert_eq!(state.conversation_search.text, "");
             let original = state
                 .conversations
                 .iter()
