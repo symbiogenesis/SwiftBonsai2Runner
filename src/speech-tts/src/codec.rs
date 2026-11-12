@@ -1219,12 +1219,8 @@ impl CodecStateCache {
         key: u64,
         prime: impl FnOnce() -> io::Result<CodecStreamState>,
     ) -> io::Result<&CodecStreamState> {
-        for slot in &mut self.slots {
-            if slot.stamp != 0 && slot.key == key {
-                self.stamp = self.stamp.saturating_add(1);
-                slot.stamp = self.stamp;
-                return Ok(&slot.state);
-            }
+        if let Some(state) = self.get(key) {
+            return Ok(state);
         }
         let state = prime()?;
         self.stamp = self.stamp.saturating_add(1);
