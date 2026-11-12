@@ -48,7 +48,7 @@ impl Store {
             Ok(saved) => (saved, false),
             Err(_) => (None, true),
         };
-        let pending = Arc::new(Mutex::new(None));
+        let pending = Arc::new(Mutex::new(None::<String>));
         let queued = Arc::clone(&pending);
         let failed = Arc::new(AtomicBool::new(false));
         let reported = Arc::clone(&failed);
