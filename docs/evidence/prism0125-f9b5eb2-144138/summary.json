@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "kind": "bounded-foundation-bundle-operation",
+  "operationId": "prism0125-f9b5eb2-144138",
+  "sourceRevision": "f9b5eb2f61bbb53d2129cededb3434c80b8dbcf9",
+  "version": "0.1.25",
+  "maximumTotalSeconds": 300,
+  "conservativeEstimateSeconds": 240,
+  "reason": "Verify an existing source-bound Windows bundle, or one cached dedicated bundle-only build; reserve45seconds to cancel and retain evidence. No model or performance trial.",
+  "powerBefore": {
+    "source": "GetSystemPowerStatus",
+    "ac": "battery",
+    "batterySaver": "off",
+    "chargePercent": 60,
+    "utc": "2026-11-12T14:41:38.412980+00:00"
+  },
+  "runId": 43239852828,
+  "dispatched": true,
+  "events": [],
+  "fullFoundationQualified": false,
+  "modelAcceptanceQualified": false,
+  "performanceQualified": false,
+  "status": "no-bundle",
+  "error": "Dedicated bundle run did not pass: failure",
+  "terminalStatus": "completed",
+  "terminalConclusion": "failure",
+  "powerAfter": {
+    "source": "GetSystemPowerStatus",
+    "ac": "battery",
+    "batterySaver": "off",
+    "chargePercent": 59,
+    "utc": "2026-11-12T14:44:29.238098+00:00"
+  },
+  "elapsedSecondsThroughRetention": 170.826,
+  "withinAllowance": true,
+  "closed": true,
+  "retries": 0,
+  "diagnosis": {
+    "scope": "Unreleased comparison example on f9b5eb2; published runtime source99 is unaffected.",
+    "errors": [
+      "cpu_bundle_check.rs: unchecked Instant subtraction of receipt reserve",
+      "cpu_bundle_check.rs: needless by-value TextEvent argument",
+      "cpu_bundle_check/tests.rs: unchecked Instant subtraction in fixture"
+    ],
+    "correctionCommit": "3589f3723d61a85a80d7447eedf418c33f7ff812",
+    "correctionStatus": "Reviewed source fix integrated into local Prism main; rustfmt only, owning strict CI remains pending. The failed Foundation operation was not retried.",
+    "integratedCorrectionCommit": "ead6ede"
+  }
+}

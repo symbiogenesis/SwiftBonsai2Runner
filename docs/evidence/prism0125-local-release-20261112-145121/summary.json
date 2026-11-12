@@ -1,0 +1,310 @@
+{
+  "schemaVersion": 1,
+  "kind": "local-experimental-release-build",
+  "sourceRevision": "99bab71270b1e6a6fb6d47eec2e34b8097cdcd4c",
+  "version": "0.1.25",
+  "maximumAggregateSeconds": 480,
+  "conservativeEstimateSeconds": 420,
+  "reason": "Owner explicitly requested release-first alternative after bundle CI failed only on unreleased comparison-example lints. Build the exact already-published runtime source, verify five native executables and nine-file/source identities, and reserve cleanup. No model or benchmark.",
+  "powerBefore": {
+    "source": "GetSystemPowerStatus",
+    "status": "observed",
+    "ac": "battery",
+    "batterySaver": "off",
+    "chargePercent": 58,
+    "utc": "2026-11-12T14:51:21.708183+00:00"
+  },
+  "commands": [
+    {
+      "phase": "source-checkout",
+      "command": "C:\\Program Files\\Microsoft Visual Studio\\18\\Enterprise\\Common7\\IDE\\CommonExtensions\\Microsoft\\TeamFoundation\\Team Explorer\\Git\\cmd\\git.exe -C C:\\Users\\symbi\\source\\repos\\prism-inference worktree add --detach <clean-source99> 99bab71270b1e6a6fb6d47eec2e34b8097cdcd4c",
+      "exitCode": 0,
+      "seconds": 0.529,
+      "powerBefore": {
+        "source": "GetSystemPowerStatus",
+        "status": "observed",
+        "ac": "battery",
+        "batterySaver": "off",
+        "chargePercent": 58,
+        "utc": "2026-11-12T14:51:21.708232+00:00"
+      },
+      "powerAfter": {
+        "source": "GetSystemPowerStatus",
+        "status": "observed",
+        "ac": "battery",
+        "batterySaver": "off",
+        "chargePercent": 58,
+        "utc": "2026-11-12T14:51:22.237310+00:00"
+      }
+    },
+    {
+      "phase": "compiler",
+      "command": "C:\\Users\\symbi\\.cargo\\bin\\rustc.exe +nightly-2026-11-09 -vV",
+      "exitCode": 0,
+      "seconds": 0.177,
+      "powerBefore": {
+        "source": "GetSystemPowerStatus",
+        "status": "observed",
+        "ac": "battery",
+        "batterySaver": "off",
+        "chargePercent": 58,
+        "utc": "2026-11-12T14:51:22.237428+00:00"
+      },
+      "powerAfter": {
+        "source": "GetSystemPowerStatus",
+        "status": "observed",
+        "ac": "battery",
+        "batterySaver": "off",
+        "chargePercent": 58,
+        "utc": "2026-11-12T14:51:22.414395+00:00"
+      }
+    },
+    {
+      "phase": "strict-release-analysis",
+      "command": "C:\\Users\\symbi\\.cargo\\bin\\cargo.exe +nightly-2026-11-09 clippy --manifest-path <clean-source99>\\Cargo.toml --target-dir <cached-build-target> --locked --offline --release -p prism-inference -p prism-inference-server -p bonsai-gguf -p bonsai-neon-dot -p bonsai-native-hash --all-targets --features prism-inference/parallel-rows,prism-inference-server/parallel-rows -- -D warnings",
+      "exitCode": 0,
+      "seconds": 47.267,
+      "powerBefore": {
+        "source": "GetSystemPowerStatus",
+        "status": "observed",
+        "ac": "battery",
+        "batterySaver": "off",
+        "chargePercent": 58,
+        "utc": "2026-11-12T14:51:22.414553+00:00"
+      },
+      "powerAfter": {
+        "source": "GetSystemPowerStatus",
+        "status": "observed",
+        "ac": "battery",
+        "batterySaver": "off",
+        "chargePercent": 57,
+        "utc": "2026-11-12T14:52:09.681586+00:00"
+      }
+    },
+    {
+      "phase": "release-binaries",
+      "command": "C:\\Users\\symbi\\.cargo\\bin\\cargo.exe +nightly-2026-11-09 build --manifest-path <clean-source99>\\Cargo.toml --target-dir <cached-build-target> --locked --offline --release -p prism-inference -p prism-inference-server -p bonsai-gguf --bins --features prism-inference/parallel-rows,prism-inference-server/parallel-rows",
+      "exitCode": 0,
+      "seconds": 66.983,
+      "powerBefore": {
+        "source": "GetSystemPowerStatus",
+        "status": "observed",
+        "ac": "battery",
+        "batterySaver": "off",
+        "chargePercent": 57,
+        "utc": "2026-11-12T14:52:09.682001+00:00"
+      },
+      "powerAfter": {
+        "source": "GetSystemPowerStatus",
+        "status": "observed",
+        "ac": "battery",
+        "batterySaver": "off",
+        "chargePercent": 56,
+        "utc": "2026-11-12T14:53:16.664893+00:00"
+      }
+    },
+    {
+      "phase": "help-prism-inference.exe",
+      "command": "<cached-build-target>\\release\\prism-inference.exe --help",
+      "exitCode": 0,
+      "seconds": 0.085,
+      "powerBefore": {
+        "source": "GetSystemPowerStatus",
+        "status": "observed",
+        "ac": "battery",
+        "batterySaver": "off",
+        "chargePercent": 56,
+        "utc": "2026-11-12T14:53:16.665094+00:00"
+      },
+      "powerAfter": {
+        "source": "GetSystemPowerStatus",
+        "status": "observed",
+        "ac": "battery",
+        "batterySaver": "off",
+        "chargePercent": 56,
+        "utc": "2026-11-12T14:53:16.750557+00:00"
+      }
+    },
+    {
+      "phase": "help-bonsai-token-worker.exe",
+      "command": "<cached-build-target>\\release\\bonsai-token-worker.exe --help",
+      "exitCode": 0,
+      "seconds": 0.09,
+      "powerBefore": {
+        "source": "GetSystemPowerStatus",
+        "status": "observed",
+        "ac": "battery",
+        "batterySaver": "off",
+        "chargePercent": 56,
+        "utc": "2026-11-12T14:53:16.751087+00:00"
+      },
+      "powerAfter": {
+        "source": "GetSystemPowerStatus",
+        "status": "observed",
+        "ac": "battery",
+        "batterySaver": "off",
+        "chargePercent": 56,
+        "utc": "2026-11-12T14:53:16.841120+00:00"
+      }
+    },
+    {
+      "phase": "help-bonsai-swift-worker.exe",
+      "command": "<cached-build-target>\\release\\bonsai-swift-worker.exe --help",
+      "exitCode": 0,
+      "seconds": 0.078,
+      "powerBefore": {
+        "source": "GetSystemPowerStatus",
+        "status": "observed",
+        "ac": "battery",
+        "batterySaver": "off",
+        "chargePercent": 56,
+        "utc": "2026-11-12T14:53:16.841367+00:00"
+      },
+      "powerAfter": {
+        "source": "GetSystemPowerStatus",
+        "status": "observed",
+        "ac": "battery",
+        "batterySaver": "off",
+        "chargePercent": 56,
+        "utc": "2026-11-12T14:53:16.919128+00:00"
+      }
+    },
+    {
+      "phase": "help-prism-inference-server.exe",
+      "command": "<cached-build-target>\\release\\prism-inference-server.exe --help",
+      "exitCode": 0,
+      "seconds": 0.1,
+      "powerBefore": {
+        "source": "GetSystemPowerStatus",
+        "status": "observed",
+        "ac": "battery",
+        "batterySaver": "off",
+        "chargePercent": 56,
+        "utc": "2026-11-12T14:53:16.919485+00:00"
+      },
+      "powerAfter": {
+        "source": "GetSystemPowerStatus",
+        "status": "observed",
+        "ac": "battery",
+        "batterySaver": "off",
+        "chargePercent": 56,
+        "utc": "2026-11-12T14:53:17.019229+00:00"
+      }
+    },
+    {
+      "phase": "help-bonsai-gguf.exe",
+      "command": "<cached-build-target>\\release\\bonsai-gguf.exe --help",
+      "exitCode": 0,
+      "seconds": 0.065,
+      "powerBefore": {
+        "source": "GetSystemPowerStatus",
+        "status": "observed",
+        "ac": "battery",
+        "batterySaver": "off",
+        "chargePercent": 56,
+        "utc": "2026-11-12T14:53:17.019478+00:00"
+      },
+      "powerAfter": {
+        "source": "GetSystemPowerStatus",
+        "status": "observed",
+        "ac": "battery",
+        "batterySaver": "off",
+        "chargePercent": 56,
+        "utc": "2026-11-12T14:53:17.084723+00:00"
+      }
+    },
+    {
+      "phase": "package",
+      "command": "C:\\Users\\symbi\\AppData\\Local\\Microsoft\\WindowsApps\\Microsoft.PowerShell_8wekyb3d8bbwe\\pwsh.exe -NoProfile -NonInteractive -File <clean-source99>\\scripts\\New-ReleaseBundle.ps1 -BuildDirectory <cached-build-target>\\release -OutputDirectory C:\\Users\\symbi\\AppData\\Local\\Temp\\Prism0125-Release-8aqqieap\\package -Target aarch64-pc-windows-msvc -SourceRevision 99bab71270b1e6a6fb6d47eec2e34b8097cdcd4c -Version 0.1.25 -Toolchain nightly-2026-11-09-aarch64-pc-windows-msvc",
+      "exitCode": 1,
+      "seconds": 0.555,
+      "powerBefore": {
+        "source": "GetSystemPowerStatus",
+        "status": "observed",
+        "ac": "battery",
+        "batterySaver": "off",
+        "chargePercent": 56,
+        "utc": "2026-11-12T14:53:17.084949+00:00"
+      },
+      "powerAfter": {
+        "source": "GetSystemPowerStatus",
+        "status": "observed",
+        "ac": "battery",
+        "batterySaver": "off",
+        "chargePercent": 56,
+        "utc": "2026-11-12T14:53:17.640170+00:00"
+      }
+    }
+  ],
+  "performanceQualified": false,
+  "modelAcceptanceQualified": false,
+  "retries": 0,
+  "compilerIdentity": "rustc 1.102.0-nightly (5b7b37aef 2026-11-08)\nbinary: rustc\ncommit-hash: 5b7b37aefcb5b2fba3c2392bc9065b9e4602d494\ncommit-date: 2026-11-08\nhost: aarch64-pc-windows-msvc\nrelease: 1.102.0-nightly\nLLVM version: 23.1.5\n",
+  "status": "verified-experimental-release-bundle",
+  "error": null,
+  "sourceWorktreeRemoved": true,
+  "temporaryPackagingRemoved": true,
+  "powerAfter": {
+    "source": "GetSystemPowerStatus",
+    "status": "observed",
+    "ac": "battery",
+    "batterySaver": "off",
+    "chargePercent": 56,
+    "utc": "2026-11-12T14:55:36.025315+00:00"
+  },
+  "elapsedSecondsThroughRetention": 254.317,
+  "withinAllowance": true,
+  "closed": true,
+  "packagingCorrection": {
+    "reason": "Completed build passed; stage exactly five binaries outside Git for existing packaging path contract. No compilation, analysis, executable probes or model trial repeated. Original 480-second deadline retained.",
+    "utc": "2026-11-12T14:55:32.136481+00:00",
+    "powerBefore": {
+      "source": "GetSystemPowerStatus",
+      "status": "observed",
+      "ac": "battery",
+      "batterySaver": "off",
+      "chargePercent": 56,
+      "utc": "2026-11-12T14:55:32.136509+00:00"
+    },
+    "powerAfter": {
+      "source": "GetSystemPowerStatus",
+      "status": "observed",
+      "ac": "battery",
+      "batterySaver": "off",
+      "chargePercent": 56,
+      "utc": "2026-11-12T14:55:36.025300+00:00"
+    },
+    "result": "Verified external staging and packaging completed within original allowance; first packaging path rejection was corrected without repeating completed analysis, build or executable probes."
+  },
+  "canonicalSourceBlobCount": 790,
+  "sourceTag": "v0.1.25",
+  "tagPushPending": false,
+  "localTagPrepared": true,
+  "packagingWorktreeRemoved": true,
+  "publication": {
+    "url": "https://github.com/symbiogenesis/prism-inference/releases/tag/v0.1.25",
+    "tag": "v0.1.25",
+    "tagRevision": "99bab71270b1e6a6fb6d47eec2e34b8097cdcd4c",
+    "prerelease": true,
+    "publishedAt": "2026-11-12T14:56:43Z",
+    "assets": [
+      {
+        "name": "prism-inference-0.1.25-aarch64-pc-windows-msvc.receipt.json",
+        "bytes": 1971,
+        "digest": "sha256:ea54d93d9367122c372b5bc3396ccf112ecaca7900714ed19ed1f08a5ef42bbf",
+        "url": "https://github.com/symbiogenesis/prism-inference/releases/download/v0.1.25/prism-inference-0.1.25-aarch64-pc-windows-msvc.receipt.json"
+      },
+      {
+        "name": "prism-inference-0.1.25-aarch64-pc-windows-msvc.zip",
+        "bytes": 5715851,
+        "digest": "sha256:22e1ba7e5cf3d19136bcf03a0e451dbfe58a9792bde457652c3f21841ffc5154",
+        "url": "https://github.com/symbiogenesis/prism-inference/releases/download/v0.1.25/prism-inference-0.1.25-aarch64-pc-windows-msvc.zip"
+      }
+    ]
+  },
+  "releaseReceipt": "prism-inference-0.1.25-aarch64-pc-windows-msvc.receipt.json",
+  "sourceArchiveMetadata": "source-archive.json",
+  "limits": "Experimental local release build only. No model was loaded. No CPU optimization or target-family speed, total-memory, complete-state, sustained, installed or full-Foundation acceptance claimed. Endpoint power samples do not prove uninterrupted stability.",
+  "temporaryVerifiedArtifactsRemoved": true,
+  "retainedReleaseAssets": "https://github.com/symbiogenesis/prism-inference/releases/tag/v0.1.25"
+}
