@@ -14,15 +14,15 @@ fn release(version: &str) -> Value {
             asset(&format!("SwiftBonsai2Runner-{version}-windows-arm64.msi"), 4096)]})
 }
 
-fn selected(releases: Value) -> crate::Result<(bool, Option<Candidate>)> {
+fn selected(releases: &Value) -> crate::Result<(bool, Option<Candidate>)> {
     select(
-        &serde_json::to_vec(&releases).map_err(|error| error.to_string())?,
+        &serde_json::to_vec(releases).map_err(|error| error.to_string())?,
         "0.1.0",
     )
 }
 
 fn fixture() -> crate::Result<Candidate> {
-    selected(json!([release("0.1.1")]))?
+    selected(&json!([release("0.1.1")]))?
         .1
         .ok_or_else(|| "Expected newer fixture release.".into())
 }
@@ -65,12 +65,12 @@ fn versions_compare_numerically_and_reject_noncanonical_or_out_of_msi_bounds() -
 
 #[test]
 fn discovery_handles_empty_current_draft_and_numeric_prerelease_ordering() -> crate::Result<()> {
-    let (published, candidate) = selected(json!([]))?;
+    let (published, candidate) = selected(&json!([]))?;
     assert!(!published);
     assert!(candidate.is_none());
     let mut draft = release("0.1.99");
     draft["draft"] = true.into();
-    let (_, candidate) = selected(json!([
+    let (_, candidate) = selected(&json!([
         release("0.1.2"),
         draft,
         release("0.1.10"),
@@ -80,11 +80,11 @@ fn discovery_handles_empty_current_draft_and_numeric_prerelease_ordering() -> cr
         candidate.ok_or("Missing update fixture.")?.version,
         "0.1.10"
     );
-    let (published, candidate) = selected(json!([release("0.1.0")]))?;
+    let (published, candidate) = selected(&json!([release("0.1.0")]))?;
     assert!(published);
     assert!(candidate.is_none());
     assert!(select(b"not-json", "0.1.0").is_err());
-    assert!(selected(json!({"releases": []})).is_err());
+    assert!(selected(&json!({"releases": []})).is_err());
     Ok(())
 }
 
@@ -98,7 +98,7 @@ fn discovery_rejects_foreign_urls_wrong_arch_missing_digests_and_duplicate_asset
             1 => value["assets"][2]["name"] = "SwiftBonsai2Runner-0.1.1-windows-x64.msi".into(),
             2 => value["assets"][2]["digest"] = Value::Null,
             3 => {
-                value["assets"][2]["browser_download_url"] = "https://example.com/update.msi".into()
+                value["assets"][2]["browser_download_url"] = "https://example.com/update.msi".into();
             }
             _ => {
                 let repeated = value["assets"][2].clone();
@@ -108,7 +108,7 @@ fn discovery_rejects_foreign_urls_wrong_arch_missing_digests_and_duplicate_asset
                     .push(repeated);
             }
         }
-        assert!(selected(json!([value])).is_err());
+        assert!(selected(&json!([value])).is_err());
     }
     Ok(())
 }
@@ -122,7 +122,7 @@ fn discovery_selects_before_asset_validation_and_never_falls_back() -> crate::Re
         json!([release("0.1.2"), incomplete]),
     ] {
         assert_eq!(
-            selected(values)?
+            selected(&values)?
                 .1
                 .ok_or("Missing newest fixture.")?
                 .version,
@@ -135,7 +135,7 @@ fn discovery_selects_before_asset_validation_and_never_falls_back() -> crate::Re
         json!([invalid_newest, release("0.1.2")]),
         json!([release("0.1.2"), invalid_newest]),
     ] {
-        assert!(selected(values).is_err());
+        assert!(selected(&values).is_err());
     }
     Ok(())
 }
@@ -144,9 +144,9 @@ fn discovery_selects_before_asset_validation_and_never_falls_back() -> crate::Re
 fn discovery_rejects_ambiguous_repeated_published_versions() {
     let mut changed = release("0.1.1");
     changed["assets"][2]["digest"] = format!("sha256:{}", "b".repeat(64)).into();
-    assert!(selected(json!([release("0.1.1"), changed])).is_err());
-    assert!(selected(json!([changed, release("0.1.1")])).is_err());
-    assert!(selected(json!([release("0.1.1"), release("0.1.1")])).is_err());
+    assert!(selected(&json!([release("0.1.1"), changed])).is_err());
+    assert!(selected(&json!([changed, release("0.1.1")])).is_err());
+    assert!(selected(&json!([release("0.1.1"), release("0.1.1")])).is_err());
 }
 
 #[test]
@@ -184,7 +184,7 @@ fn manifest_requires_same_version_source_target_size_and_three_way_checksum() ->
             .is_err()
         );
     }
-    let mut invalid = valid.clone();
+    let mut invalid = valid;
     invalid["assets"][0]["bytes"] = 4097.into();
     assert!(
         installer(
