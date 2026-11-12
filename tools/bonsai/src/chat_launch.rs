@@ -787,7 +787,7 @@ pub fn run(value: Value) -> crate::Result<Value> {
     if !request.speech_models_only && !cfg!(all(windows, target_arch = "aarch64")) {
         return Err("Run chat in the native ARM64 executable on Windows ARM64.".into());
     }
-    let instance_guard = if request.speech_models_only {
+    let _instance = if request.speech_models_only {
         None
     } else {
         let directory = std::env::var_os("LOCALAPPDATA")
@@ -813,10 +813,10 @@ pub fn run(value: Value) -> crate::Result<Value> {
         .as_object_mut()
         .and_then(|object| object.remove("UpdateHandoff"))
         .and_then(|value| value.as_str().map(PathBuf::from));
-    // The native UI and its complete owned Job have already stopped. Release
-    // the launch guard before starting a separate Windows Installer process.
-    // Installer startup returns immediately so this maintenance image unlocks.
-    drop(instance_guard);
+    // The native UI and its complete owned Job have already stopped. Retain
+    // launch admission through installer revalidation and process creation.
+    // Installer startup returns immediately; returning releases admission and
+    // lets this maintenance image exit before Windows replaces its files.
     if let Some(handoff) = handoff {
         if let Some(update) = crate::app_update::apply_after_exit(&handoff)? {
             return Ok(update);
