@@ -1,18 +1,20 @@
 //! Scoped preferences in one responsive, keyboard-contained native surface.
-use super::{OUTPUT_TOKENS, RichText, State, VOICE_LIMIT, client, egui};
+use super::{OUTPUT_TOKENS, RichText, State, VOICE_LIMIT, appearance, client, egui};
 
 #[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq)]
 pub(super) enum Page {
     #[default]
     Response,
+    Appearance,
     Voice,
     Privacy,
     Application,
 }
 
 impl Page {
-    const ALL: [Self; 4] = [
+    const ALL: [Self; 5] = [
         Self::Response,
+        Self::Appearance,
         Self::Voice,
         Self::Privacy,
         Self::Application,
@@ -21,6 +23,7 @@ impl Page {
     const fn label(self) -> &'static str {
         match self {
             Self::Response => "Response",
+            Self::Appearance => "Appearance",
             Self::Voice => "Voice",
             Self::Privacy => "Privacy",
             Self::Application => "Application",
@@ -30,6 +33,7 @@ impl Page {
     const fn title(self) -> &'static str {
         match self {
             Self::Response => "Shape your next response",
+            Self::Appearance => "Make room to read",
             Self::Voice => "A voice that feels right",
             Self::Privacy => "Keep your space private",
             Self::Application => "About your application",
@@ -98,15 +102,15 @@ impl State {
             return;
         }
         let content = ctx.content_rect();
-        let width = (content.width() - 96.0).clamp(240.0, 800.0);
+        let margin: i8 = if content.height() < 600.0 { 16 } else { 24 };
+        let width = (content.width() - f32::from(margin) * 2.0 - 32.0).clamp(240.0, 800.0);
         let wide = width >= 700.0;
-        let body_height = (content.height() - if wide { 266.0 } else { 320.0 }).clamp(120.0, 470.0);
         let visuals = ctx.global_style().visuals.clone();
         let frame = egui::Frame::new()
             .fill(visuals.window_fill)
             .stroke(visuals.window_stroke)
             .corner_radius(20)
-            .inner_margin(24)
+            .inner_margin(margin)
             .shadow(visuals.window_shadow);
         let mut done = false;
         let modal = egui::Modal::new(egui::Id::unique("settings-modal"))
@@ -119,6 +123,7 @@ impl State {
                 ui.separator();
                 ui.add_space(16.0);
                 if wide {
+                    let body_height = (content.height() - ui.min_rect().height() - f32::from(margin) * 2.0 - 80.0).clamp(60.0, 470.0);
                     ui.horizontal_top(|ui| {
                         ui.spacing_mut().item_spacing.x = 24.0;
                         ui.vertical(|ui| {
@@ -133,6 +138,7 @@ impl State {
                 } else {
                     self.settings_navigation(ui, true);
                     ui.add_space(16.0);
+                    let body_height = (content.height() - ui.min_rect().height() - f32::from(margin) * 2.0 - 80.0).clamp(60.0, 470.0);
                     self.settings_content(ui, body_height);
                 }
                 ui.add_space(16.0);
@@ -161,13 +167,9 @@ impl State {
     }
 
     fn settings_navigation(&mut self, ui: &mut egui::Ui, horizontal: bool) {
-        let button_width = if horizontal {
-            (-3.0_f32).mul_add(ui.spacing().item_spacing.x, ui.available_width()) / 4.0
-        } else {
-            ui.available_width()
-        };
+        let button_width = if horizontal { 0.0 } else { ui.available_width() };
         let layout = if horizontal {
-            egui::Layout::left_to_right(egui::Align::Center)
+            egui::Layout::left_to_right(egui::Align::Center).with_main_wrap(true)
         } else {
             egui::Layout::top_down(egui::Align::Min)
         };
@@ -175,8 +177,8 @@ impl State {
         // would center its controls in the modal's entire remaining height.
         ui.allocate_ui_with_layout(egui::vec2(ui.available_width(), 38.0), layout, |ui| {
             for page in Page::ALL {
-                if !horizontal && matches!(page, Page::Response | Page::Voice) {
-                    if page == Page::Voice {
+                if !horizontal && matches!(page, Page::Response | Page::Appearance) {
+                    if page == Page::Appearance {
                         ui.add_space(20.0);
                     }
                     ui.label(
@@ -196,9 +198,11 @@ impl State {
                 } else {
                     ui.visuals().text_color()
                 });
-                let response = ui.add_sized(
-                    [button_width, 38.0],
-                    egui::Button::selectable(selected, text).corner_radius(10),
+                let response = ui.add(
+                    egui::Button::selectable(selected, text)
+                        .min_size(egui::vec2(button_width, 38.0))
+                        .wrap_mode(egui::TextWrapMode::Extend)
+                        .corner_radius(10),
                 );
                 if self.settings_view.focus && selected {
                     response.request_focus();
@@ -249,11 +253,81 @@ impl State {
                 ui.add_space(16.0);
                 match page {
                     Page::Response => self.response_preferences(ui),
+                    Page::Appearance => self.appearance_preferences(ui),
                     Page::Voice => self.voice_preferences(ui),
                     Page::Privacy => settings_card(ui, |ui| self.recovery_controls(ui)),
                     Page::Application => self.application_preferences(ui),
                 }
             });
+    }
+
+    fn appearance_preferences(&mut self, ui: &mut egui::Ui) {
+        let before = self.appearance;
+        settings_card(ui, |ui| {
+            ui.label(RichText::new("Theme").strong());
+            ui.add_space(8.0);
+            ui.horizontal_wrapped(|ui| {
+                for theme in appearance::Theme::ALL {
+                    let selected = self.appearance.theme == theme;
+                    let text = RichText::new(theme.label()).color(if selected {
+                        ui.visuals().selection.stroke.color
+                    } else {
+                        ui.visuals().text_color()
+                    });
+                    if ui.add(
+                        egui::Button::selectable(selected, text)
+                            .min_size(egui::vec2(78.0, 36.0))
+                            .corner_radius(10),
+                    ).clicked() {
+                        self.appearance.theme = theme;
+                    }
+                }
+            });
+            ui.add_space(8.0);
+            ui.label(RichText::new("System follows Windows. High contrast always takes priority.").small().weak());
+        });
+        ui.add_space(12.0);
+        settings_card(ui, |ui| {
+            ui.label(RichText::new("Reading comfort").strong());
+            ui.add_space(12.0);
+            ui.label("Text size");
+            ui.add(
+                egui::Slider::new(&mut self.appearance.text_size, 14..=24)
+                    .step_by(1.0)
+                    .suffix(" pt")
+                    .text("Reading text size"),
+            );
+            ui.add_space(12.0);
+            ui.label("Reading width");
+            ui.add(
+                egui::Slider::new(&mut self.appearance.reading_width, 640..=1_040)
+                    .step_by(40.0)
+                    .suffix(" pt")
+                    .text("Reading column width"),
+            );
+            ui.label(RichText::new("The conversation and composer fit the space available. Controls keep their usual size.").small().weak());
+            ui.add_space(16.0);
+            egui::Frame::new()
+                .fill(ui.visuals().extreme_bg_color)
+                .corner_radius(10)
+                .inner_margin(14)
+                .show(ui, |ui| {
+                    ui.label(RichText::new("A little space to think.").strong().size(f32::from(self.appearance.text_size)));
+                    ui.add_space(8.0);
+                    ui.label(RichText::new("Follow an idea at your own pace. Find the words, take a breath, and leave room for what comes next.").size(f32::from(self.appearance.text_size)));
+                });
+        });
+        ui.add_space(12.0);
+        ui.label(RichText::new("Appearance is saved on this device, including when conversation saving is off.").small().weak());
+        if ui.button("Reset appearance").clicked() {
+            let defaults = appearance::Preferences::default();
+            self.appearance.theme = defaults.theme;
+            self.appearance.text_size = defaults.text_size;
+            self.appearance.reading_width = defaults.reading_width;
+        }
+        if self.appearance != before {
+            self.appearance_changed(ui.ctx());
+        }
     }
 
     fn response_preferences(&mut self, ui: &mut egui::Ui) {
