@@ -64,33 +64,20 @@ impl State {
     }
 
     pub(super) fn response_summary(&mut self, ui: &mut egui::Ui) {
-        let thinking = if self.enable_thinking {
-            "Thinking on"
-        } else {
-            "Thinking off"
+        let customized = self.enable_thinking
+            || self.extra_effort
+            || (self.abliteration_enabled
+                && (self.abliteration_scale - client::DEFAULT_ABLITERATION_SCALE).abs()
+                    > f32::EPSILON);
+        let help = match (self.enable_thinking, self.extra_effort) {
+            (true, true) => "Thinking and extra effort are on. Open options for your next response.",
+            (true, false) => "Thinking is on. Open options for your next response.",
+            (false, true) => "Extra effort is on. Open options for your next response.",
+            (false, false) => "Choose how Swift responds in this conversation. Opens response settings.",
         };
-        let effort = if self.extra_effort {
-            "Extra effort"
-        } else {
-            "Standard"
-        };
-        let mut summary = format!("{thinking} · {effort}");
-        if self.abliteration_enabled
-            && (self.abliteration_scale - client::DEFAULT_ABLITERATION_SCALE).abs() > f32::EPSILON
-        {
-            use std::fmt::Write as _;
-            let _written = write!(summary, " · Adapter {:.1}", self.abliteration_scale);
-        }
-        if ui
-            .add(
-                egui::Button::new(RichText::new(summary).small())
-                    .frame_when_inactive(false)
-                    .corner_radius(8),
-            )
-            .accessible_name("Response settings")
-            .on_hover_text(
-                "Response preferences for this conversation. Changes apply to your next response.",
-            )
+        if super::context_capacity::toolbar_button(ui, "Response options", customized)
+            .accessible_name("Response options")
+            .on_hover_text(help)
             .clicked()
         {
             self.open_settings(Page::Response);
@@ -374,12 +361,16 @@ impl State {
             self.recovery_dirty |= changed;
         });
         ui.add_space(12.0);
-        settings_card(ui, |ui| self.reply_preferences(ui));
-        ui.add_space(12.0);
         settings_card(ui, |ui| {
             egui::CollapsingHeader::new("Advanced response controls")
                 .id_salt("settings-advanced-response")
-                .show(ui, |ui| self.adapter_preferences(ui));
+                .show(ui, |ui| {
+                    ui.add_space(8.0);
+                    self.reply_preferences(ui);
+                    ui.add_space(12.0);
+                    ui.separator();
+                    self.adapter_preferences(ui);
+                });
         });
     }
 

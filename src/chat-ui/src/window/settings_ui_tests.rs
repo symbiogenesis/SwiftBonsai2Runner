@@ -52,7 +52,7 @@ fn harness(size: [f32; 2], render: bool) -> Harness<'static, Fixture> {
 }
 
 fn open_settings(chat: &mut Harness<'_, Fixture>) {
-    chat.get_by_role_and_label(egui::Role::Button, "Response settings")
+    chat.get_by_role_and_label(egui::Role::Button, "Response options")
         .click();
     chat.run();
     assert!(chat.state().app.show_settings);
@@ -60,6 +60,15 @@ fn open_settings(chat: &mut Harness<'_, Fixture>) {
 
 fn select_page(chat: &mut Harness<'_, Fixture>, page: &str) {
     chat.get_by_role_and_label(egui::Role::Button, page).click();
+    chat.run();
+}
+
+fn expand_advanced_response(chat: &mut Harness<'_, Fixture>) {
+    chat.get_by_role_and_label(egui::Role::DisclosureTriangle, "Advanced response controls")
+        .scroll_to_me();
+    chat.run();
+    chat.get_by_role_and_label(egui::Role::DisclosureTriangle, "Advanced response controls")
+        .click();
     chat.run();
 }
 
@@ -206,12 +215,15 @@ fn settings_response_controls_stay_locked_while_a_response_is_generating() {
             .accesskit_node()
             .is_disabled()
     );
-    chat.get_by_role_and_label(egui::Role::DisclosureTriangle, "Advanced response controls")
+    expand_advanced_response(&mut chat);
+    chat.get_by_role_and_label(egui::Role::ComboBox, "Output cap")
         .scroll_to_me();
     chat.run();
-    chat.get_by_role_and_label(egui::Role::DisclosureTriangle, "Advanced response controls")
-        .click();
-    chat.run();
+    assert!(
+        chat.get_by_role_and_label(egui::Role::ComboBox, "Output cap")
+            .accesskit_node()
+            .is_disabled()
+    );
     chat.get_by_role_and_label(egui::Role::Slider, "Abliteration scale")
         .scroll_to_me();
     chat.run();
@@ -229,6 +241,7 @@ fn settings_popup_escape_closes_the_combo_before_the_modal() {
     for size in [[1180.0, 860.0], [620.0, 640.0]] {
         let mut chat = harness(size, false);
         open_settings(&mut chat);
+        expand_advanced_response(&mut chat);
         chat.get_by_role_and_label(egui::Role::ComboBox, "Output cap")
             .scroll_to_me();
         chat.run();
@@ -245,6 +258,51 @@ fn settings_popup_escape_closes_the_combo_before_the_modal() {
         assert!(!chat.state().app.show_settings);
         assert_eq!(chat.state().app.input, "Keep my next draft 🌱");
         assert!(chat.state().commands.try_recv().is_err());
+    }
+}
+
+#[test]
+fn settings_reply_limit_is_advanced_and_keeps_each_conversations_choice() {
+    for size in [[1180.0, 860.0], [620.0, 640.0]] {
+        let mut chat = harness(size, false);
+        let original = chat.state().app.active_conversation;
+        chat.state_mut().app.recovery_dirty = false;
+        assert!(
+            chat.query_by_role_and_label(egui::Role::ComboBox, "Output cap")
+                .is_none()
+        );
+        open_settings(&mut chat);
+        assert!(
+            chat.query_by_role_and_label(egui::Role::ComboBox, "Output cap")
+                .is_none()
+        );
+        expand_advanced_response(&mut chat);
+        chat.get_by_role_and_label(egui::Role::ComboBox, "Output cap")
+            .scroll_to_me();
+        chat.run();
+        chat.get_by_role_and_label(egui::Role::ComboBox, "Output cap")
+            .click();
+        chat.run();
+        chat.get_by_label("1024 tokens").click();
+        chat.run();
+        assert_eq!(chat.state().app.output_budget, 1);
+        assert!(chat.state().app.recovery_dirty);
+        assert!(chat.state().commands.try_recv().is_err());
+        chat.get_by_role_and_label(egui::Role::Button, "Done")
+            .click();
+        chat.run();
+        chat.state_mut().app.new_chat();
+        assert_eq!(chat.state().app.output_budget, 3);
+        chat.state_mut().app.switch_conversation(original);
+        chat.run();
+        assert_eq!(chat.state().app.output_budget, 1);
+        assert_eq!(chat.state().app.input, "Keep my next draft 🌱");
+        assert!(
+            chat.state()
+                .commands
+                .try_iter()
+                .all(|command| !matches!(command, Command::Send { .. }))
+        );
     }
 }
 
