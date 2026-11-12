@@ -536,6 +536,143 @@ fn chat_renders_at_minimum_window_size_without_starting_services() {
 }
 
 #[test]
+fn conversation_workspace_loading_restores_only_the_selected_history_at_readiness() {
+    let (mut state, commands, _events) = state();
+    let original = state.active_conversation;
+    state.input = "First unsent draft".into();
+    state.enable_thinking = true;
+    state.output_budget = 1;
+    state.committed = vec![
+        client::Message {
+            role: "user",
+            content: "Completed question".into(),
+            reasoning_content: None,
+        },
+        client::Message {
+            role: "assistant",
+            content: "Completed answer".into(),
+            reasoning_content: Some("Retained reasoning".into()),
+        },
+    ];
+    state
+        .transcript
+        .push(Role::Assistant, "Visible answer".into());
+    state.transcript.remove_empty_response();
+    let status = state.status.clone();
+    state.new_chat();
+    let second = state.active_conversation;
+    state.input = "Second unsent draft".into();
+    state.switch_conversation(original);
+    assert_eq!(state.input, "First unsent draft");
+    assert!(state.enable_thinking);
+    assert_eq!(state.output_budget, 1);
+    assert_eq!(
+        state.transcript.plain_text(),
+        "Swift Bonsai\nVisible answer"
+    );
+    assert_eq!(state.status, status);
+    state.switch_conversation(second);
+    assert_eq!(state.input, "Second unsent draft");
+    state.switch_conversation(original);
+    state.remove_conversation(second);
+    state.submit();
+    assert!(commands.try_recv().is_err());
+    assert!(state.restore_history);
+    state.model_event(Event::Ready);
+    assert!(
+        matches!(commands.try_recv(), Ok(Command::RestoreChat(history))
+        if history.len() == 2
+            && history[1].content.as_ref() == "Completed answer"
+            && history[1].reasoning_content.as_deref() == Some("Retained reasoning"))
+    );
+    assert!(!state.restore_history);
+    assert!(commands.try_recv().is_err());
+    state.submit();
+    assert!(matches!(commands.try_recv(), Ok(Command::Send { text, .. })
+        if text == "First unsent draft"));
+}
+
+#[test]
+fn conversation_workspace_loading_deletion_clears_recovered_history_before_ready() {
+    let (mut state, commands, _events) = state();
+    state.restore_history = true;
+    state.committed.push(client::Message {
+        role: "user",
+        content: "Deleted history".into(),
+        reasoning_content: None,
+    });
+    state.input = "Deleted draft".into();
+    let original = state.active_conversation;
+    let status = state.status.clone();
+    state.remove_conversation(original);
+    assert_ne!(state.active_conversation, original);
+    assert_eq!(state.conversations.len(), 1);
+    assert!(state.input.is_empty() && state.committed.is_empty());
+    assert_eq!(state.status, status);
+    assert!(commands.try_recv().is_err());
+    state.model_event(Event::Ready);
+    assert!(matches!(commands.try_recv(), Ok(Command::RestoreChat(history)) if history.is_empty()));
+    assert!(commands.try_recv().is_err());
+}
+
+#[test]
+fn conversation_workspace_remains_local_when_the_model_worker_is_unavailable() {
+    for phase in [
+        ModelLifecycle::Unavailable,
+        ModelLifecycle::Retryable,
+        ModelLifecycle::Ready,
+    ] {
+        let (mut state, commands, _events) = state();
+        drop(commands);
+        state.model = phase;
+        state.input = "Keep this draft".into();
+        let original = state.active_conversation;
+        state.new_chat();
+        let second = state.active_conversation;
+        assert_ne!(second, original);
+        state.switch_conversation(original);
+        assert_eq!(state.input, "Keep this draft");
+        state.remove_conversation(second);
+        state.remove_conversation(original);
+        assert_eq!(state.conversations.len(), 1);
+        assert_ne!(state.active_conversation, original);
+        assert!(!state.model.ready());
+        assert!(state.restore_history);
+    }
+}
+
+#[test]
+fn conversation_workspace_late_rejection_restores_only_its_original_conversation() {
+    for delete_original in [false, true] {
+        let (mut state, commands, _events) = state();
+        state.model_event(Event::Ready);
+        let original = state.active_conversation;
+        state.input = "Original prompt".into();
+        state.submit();
+        assert!(matches!(commands.try_recv(), Ok(Command::Send { .. })));
+        state.model_event(Event::Retryable("Model stopped".into()));
+        state.new_chat();
+        let second = state.active_conversation;
+        if delete_original {
+            state.remove_conversation(original);
+        }
+        state.model_event(Event::Rejected {
+            message: "Queued prompt could not run".into(),
+            text: "Original prompt".into(),
+            retry_required: true,
+        });
+        assert_eq!(state.active_conversation, second);
+        assert!(state.input.is_empty());
+        assert!(state.transcript.messages.is_empty());
+        if !delete_original {
+            state.switch_conversation(original);
+            assert_eq!(state.input, "Original prompt");
+        }
+        assert!(commands.try_recv().is_err());
+    }
+}
+
+#[test]
 fn conversation_workspace_preserves_drafts_settings_and_exact_committed_turns() {
     let (mut state, commands, _events) = state();
     state.model = ModelLifecycle::Ready;
@@ -627,13 +764,20 @@ fn conversation_workspace_bounds_count_blocks_busy_switches_and_deletes_explicit
     state.new_chat();
     assert!(matches!(commands.try_recv(), Ok(Command::NewChat)));
     let second = state.active_conversation;
-    state.model = ModelLifecycle::Generating;
-    state.switch_conversation(original);
-    state.remove_conversation(second);
-    state.new_chat();
-    assert_eq!(state.active_conversation, second);
-    assert_eq!(state.conversations.len(), 2);
-    assert!(commands.try_recv().is_err());
+    for phase in [
+        ModelLifecycle::Generating,
+        ModelLifecycle::Stopping,
+        ModelLifecycle::AwaitingTeardown,
+        ModelLifecycle::Restarting,
+    ] {
+        state.model = phase;
+        state.switch_conversation(original);
+        state.remove_conversation(second);
+        state.new_chat();
+        assert_eq!(state.active_conversation, second);
+        assert_eq!(state.conversations.len(), 2);
+        assert!(commands.try_recv().is_err());
+    }
     state.model = ModelLifecycle::Ready;
     state.remove_conversation(second);
     assert_eq!(state.active_conversation, original);

@@ -133,6 +133,17 @@ and recognized rejections restore their prompt only to an empty composer.
 Events come from one ordered worker channel, replaced when attaching a worker;
 these phase guards do not add independent request or attempt identifiers.
 
+Conversation browsing, creation, deletion and drafts remain available while the
+model prepares or is unavailable. History changes during preparation are kept
+locally and the selected conversation's committed history is restored at readiness,
+without replaying a prompt. Generation, teardown and the brief unacknowledged
+restart retain conversation ownership until their queued turn events are settled.
+A late rejected prompt returns only to its original conversation if it still exists.
+Loading and failure status stays visible when switching conversations. Speech
+controls follow their separate output capability; they cannot queue playback during
+speech preparation. Once available, an explicit read action retains on-demand TTS
+model loading and authenticated readiness checks. Stop speech remains available.
+
 [Find controls](development-guide.md#conversations-and-response-settings) search
 visible message bodies. [Streaming resources](streaming-resources.md#native-chat-and-transcript)
 defines incremental matching, highlight/underline-cache invalidation and work bounds.

@@ -55,6 +55,21 @@ enum ConversationAction {
 }
 
 impl State {
+    pub(super) fn update_worker_conversation(&mut self, command: Command) {
+        // Startup polling discards history commands. Coalesce local changes
+        // into the current committed snapshot and restore it at Ready instead.
+        self.restore_history = true;
+        if self.preview || !self.model.ready() {
+            return;
+        }
+        if self.commands.send(command).is_ok() {
+            self.restore_history = false;
+        } else {
+            // A lost worker must not prevent local conversation management.
+            self.fail("The model worker stopped. Close and restart the app.");
+        }
+    }
+
     pub(super) fn take_conversation(&mut self) -> ConversationSnapshot {
         ConversationSnapshot {
             transcript: std::mem::take(&mut self.transcript),
@@ -68,8 +83,12 @@ impl State {
             streaming_read_aloud: self.streaming_read_aloud,
             output_budget: self.output_budget,
             abliteration_scale: self.abliteration_scale,
-            status: self.status.clone(),
-            warning: self.warning,
+            status: if self.model.ready() {
+                self.status.clone()
+            } else {
+                "Ready when you are.".to_owned()
+            },
+            warning: self.model.ready() && self.warning,
         }
     }
 
@@ -113,15 +132,18 @@ impl State {
         self.streaming_read_aloud = snapshot.streaming_read_aloud;
         self.output_budget = snapshot.output_budget;
         self.abliteration_scale = snapshot.abliteration_scale;
-        self.status = snapshot.status;
-        self.warning = snapshot.warning;
+        // Loading/failure status belongs to the model, not a saved transcript.
+        if self.model.ready() {
+            self.status = snapshot.status;
+            self.warning = snapshot.warning;
+        }
         self.stage = None;
         self.place_composer_cursor(self.input.chars().count());
         self.focus_composer = true;
     }
 
     pub(super) fn switch_conversation(&mut self, id: u64) {
-        if !self.model.ready() || self.model.busy() || id == self.active_conversation {
+        if !self.model.workspace_available() || id == self.active_conversation {
             return;
         }
         let Some(index) = self
@@ -134,15 +156,7 @@ impl State {
         let Some(saved) = self.conversations[index].saved.as_ref() else {
             return;
         };
-        if !self.preview
-            && self
-                .commands
-                .send(Command::RestoreChat(saved.committed.clone()))
-                .is_err()
-        {
-            self.fail("The model worker stopped. Close and restart the app.");
-            return;
-        }
+        self.update_worker_conversation(Command::RestoreChat(saved.committed.clone()));
         self.stop_speech();
         self.save_conversation();
         self.conversation_notice = None;
@@ -154,7 +168,7 @@ impl State {
     }
 
     pub(super) fn remove_conversation(&mut self, id: u64) {
-        if !self.model.ready() || self.model.busy() {
+        if !self.model.workspace_available() {
             return;
         }
         let Some(index) = self
@@ -176,17 +190,16 @@ impl State {
                     return;
                 }
             } else {
-                if !self.preview && self.commands.send(Command::NewChat).is_err() {
-                    self.fail("The model worker stopped. Close and restart the app.");
-                    return;
-                }
+                self.update_worker_conversation(Command::NewChat);
                 self.stop_speech();
                 self.clear_conversation();
                 self.active_conversation = self.next_conversation;
                 self.next_conversation = self.next_conversation.saturating_add(1);
                 self.conversations
                     .push(Conversation::new(self.active_conversation));
-                self.set_status("Ready for a new conversation.", false);
+                if self.model.ready() {
+                    self.set_status("Ready for a new conversation.", false);
+                }
             }
         }
         self.conversations.remove(index);
@@ -251,7 +264,7 @@ impl State {
                 ui.visuals().text_color()
             });
             let response = ui
-                .add_enabled_ui(self.model.ready() && !self.model.busy(), |ui| {
+                .add_enabled_ui(self.model.workspace_available(), |ui| {
                     ui.add_sized(
                         [width, 40.0],
                         egui::Button::selectable(active, title)
@@ -263,7 +276,7 @@ impl State {
                 .inner;
             // Only scroll when the composer can consume this focus request in
             // the same frame; pending focus during generation must not repaint forever.
-            if active && self.focus_composer && self.model.ready() && !self.model.busy() {
+            if active && self.focus_composer && !self.model.busy() {
                 response.scroll_to_me(Some(egui::Align::Center));
             }
             if response.on_hover_text(&conversation.title).clicked() {
@@ -318,7 +331,7 @@ impl State {
         ui.separator();
         if ui
             .add_enabled(
-                self.model.ready() && !self.model.busy(),
+                self.model.workspace_available(),
                 egui::Button::new(RichText::new("Delete").color(ui.visuals().error_fg_color)),
             )
             .clicked()
@@ -398,7 +411,7 @@ impl State {
                         cancelled = ui.button("Keep conversation").clicked();
                         confirmed = ui
                             .add_enabled(
-                                self.model.ready() && !self.model.busy(),
+                                self.model.workspace_available(),
                                 egui::Button::new(RichText::new("Delete conversation").color(ui.visuals().error_fg_color)),
                             )
                             .clicked();

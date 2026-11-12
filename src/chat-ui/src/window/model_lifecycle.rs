@@ -23,6 +23,15 @@ impl ModelLifecycle {
         matches!(self, Self::Generating)
     }
 
+    pub(super) const fn workspace_available(self) -> bool {
+        // Generation and its final queued events still belong to the active
+        // conversation. Startup and terminal failures have no pending turn.
+        matches!(
+            self,
+            Self::Unavailable | Self::Preparing | Self::Ready | Self::Retryable
+        )
+    }
+
     pub(super) const fn stopping(self) -> bool {
         matches!(self, Self::Stopping)
     }

@@ -99,6 +99,7 @@ struct State {
     committed: Vec<client::Message>,
     conversations: Vec<Conversation>,
     active_conversation: u64,
+    request_conversation: Option<u64>,
     next_conversation: u64,
     rename_conversation: Option<(u64, String)>,
     delete_conversation: Option<u64>,
@@ -184,6 +185,7 @@ impl State {
             committed: Vec::new(),
             conversations: vec![Conversation::new(1)],
             active_conversation: 1,
+            request_conversation: None,
             next_conversation: 2,
             rename_conversation: None,
             delete_conversation: None,
@@ -411,6 +413,7 @@ impl State {
         }
         self.transcript.push(Role::User, text);
         self.transcript.push(Role::Assistant, String::new());
+        self.request_conversation = Some(self.active_conversation);
         self.recovery_dirty = true;
         self.input.clear();
         self.place_composer_cursor(0);
@@ -420,7 +423,7 @@ impl State {
     }
 
     fn new_chat(&mut self) {
-        if !self.model.ready() || self.model.busy() {
+        if !self.model.workspace_available() {
             return;
         }
         if self.conversations.len() >= MAX_CONVERSATIONS {
@@ -430,10 +433,7 @@ impl State {
             );
             return;
         }
-        if !self.preview && self.commands.send(Command::NewChat).is_err() {
-            self.fail("The model worker stopped. Close and restart the app.");
-            return;
-        }
+        self.update_worker_conversation(Command::NewChat);
         self.stop_speech();
         self.save_conversation();
         self.conversation_notice = None;
@@ -443,7 +443,9 @@ impl State {
         self.active_conversation = id;
         self.clear_conversation();
         self.recovery_dirty = true;
-        self.set_status("Ready for a new conversation.", false);
+        if self.model.ready() {
+            self.set_status("Ready for a new conversation.", false);
+        }
     }
 
     fn retry(&mut self) {
@@ -510,6 +512,22 @@ impl State {
     }
 
     fn reject(&mut self, message: &str, text: &str, retry_required: bool) {
+        if let Some(id) = self.request_conversation
+            && id != self.active_conversation
+        {
+            // A worker can reject a queued Send after announcing teardown.
+            // Restore its prompt only to the conversation that sent it.
+            if let Some(saved) = self
+                .conversations
+                .iter_mut()
+                .find(|conversation| conversation.id == id)
+                .and_then(|conversation| conversation.saved.as_mut())
+                && saved.input.is_empty()
+            {
+                saved.input = text.chars().take(INPUT_LIMIT).collect();
+            }
+            return;
+        }
         if self.model.stopping() || self.model == ModelLifecycle::Restarting {
             // A rejection can queue just before Stop or behind the first
             // teardown notice. Preserve explicit Stop/retry ownership until
@@ -1113,9 +1131,7 @@ impl State {
         ui.add_space(24.0);
         if ui
             .add_enabled(
-                self.model.ready()
-                    && !self.model.busy()
-                    && self.conversations.len() < MAX_CONVERSATIONS,
+                self.model.workspace_available() && self.conversations.len() < MAX_CONVERSATIONS,
                 egui::Button::new("+ New conversation")
                     .min_size(egui::vec2(ui.available_width(), 44.0))
                     .corner_radius(10),
@@ -1653,8 +1669,7 @@ impl State {
                                         self.composer_cursor = state.cursor.char_range();
                                     }
                                 }
-                                let focus_requested =
-                                    self.focus_composer && self.model.ready() && !self.model.busy();
+                                let focus_requested = self.focus_composer && !self.model.busy();
                                 if focus_requested {
                                     response.request_focus();
                                     self.focus_composer = false;

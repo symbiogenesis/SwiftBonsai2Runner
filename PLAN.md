@@ -183,6 +183,14 @@ pending gates. Full suites, benchmarks and performance captures stay in owning C
 
 ### Actual-model acceptance
 
+Qualify conversation switching, creation, deletion and per-conversation drafts
+during native startup and after preparation failure. Confirm the selected committed
+history reaches the ready worker without prompt replay, and late rejections cannot
+populate another conversation. Verify speech controls follow speech preparation
+independently of Swift readiness, retain explicit on-demand TTS loading and never
+start queued playback after preparation. Source checks do not replace native
+startup, recovery and audio acceptance.
+
 Qualify the [live conversation and window persistence fixes](docs/evidence/chat-save-window-20261104/receipt.json)
 on settled main through owner-managed hosted checks and native application acceptance.
 Verify a normal `Start-Chat.ps1` launch retains drafts, conversations and completed

@@ -484,6 +484,46 @@ fn accessible_chat_controls_handle_enter_and_shift_enter() {
 }
 
 #[test]
+fn conversation_controls_work_while_loading_without_sending() {
+    let mut chat = harness([1180.0, 860.0], true);
+    chat.state_mut().app.model = ModelLifecycle::Preparing;
+    chat.state_mut().app.conversations[0].title = "Original conversation".into();
+    chat.state_mut().app.input = "Original draft".into();
+    let original = chat.state().app.active_conversation;
+    chat.run();
+    chat.get_by_role_and_label(egui::Role::Button, "+ New conversation")
+        .click();
+    chat.run();
+    let second = chat.state().app.active_conversation;
+    assert_ne!(second, original);
+    chat.get_by_role_and_label(egui::Role::MultilineTextInput, "Message")
+        .type_text("Draft while loading");
+    chat.run();
+    chat.key_press(egui::Key::Enter);
+    chat.run();
+    assert_eq!(chat.state().app.input, "Draft while loading");
+    chat.get_by_role_and_label(egui::Role::Button, "Send  ↑")
+        .click();
+    chat.run();
+    assert!(chat.state().commands.try_recv().is_err());
+    chat.get_by_role_and_label(egui::Role::Button, "Original conversation")
+        .click();
+    chat.run();
+    assert_eq!(chat.state().app.active_conversation, original);
+    assert_eq!(chat.state().app.input, "Original draft");
+    assert_eq!(chat.state().app.transcript.messages.len(), 2);
+    request_conversation_deletion(&mut chat, "Original conversation");
+    chat.get_by_role_and_label(egui::Role::Button, "Delete conversation")
+        .click();
+    chat.run();
+    assert_eq!(chat.state().app.active_conversation, second);
+    assert_eq!(chat.state().app.input, "Draft while loading");
+    assert_eq!(chat.state().app.conversations.len(), 1);
+    assert!(chat.state().commands.try_recv().is_err());
+    assert_eq!(chat.state().app.model, ModelLifecycle::Preparing);
+}
+
+#[test]
 fn composer_keeps_a_draft_while_the_model_prepares() {
     let mut chat = harness([620.0, 760.0], false);
     chat.state_mut().app.model = ModelLifecycle::Preparing;
