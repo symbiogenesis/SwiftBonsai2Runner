@@ -126,7 +126,6 @@ impl State {
     pub(super) fn load_conversation(&mut self, snapshot: ConversationSnapshot) {
         self.transcript = snapshot.transcript;
         self.committed = snapshot.committed;
-        self.transcript.link_legacy_history(&self.committed);
         self.input = snapshot.input;
         self.last_answer = snapshot.last_answer;
         self.retained_draft = snapshot.retained_draft;

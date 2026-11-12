@@ -31,7 +31,7 @@ fn harness(size: [f32; 2]) -> Harness<'static, Fixture> {
             reasoning_content: None,
         },
     ];
-    app.transcript.link_legacy_history(&app.committed);
+    app.transcript.bind_committed(&[], &app.committed);
     Harness::builder()
         .with_size(size)
         .with_context_setup(|context| {

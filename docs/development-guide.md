@@ -259,8 +259,9 @@ Branches use one of the 16 conversation slots.
 ready. It sends an explicit followup asking Swift to continue without repeating,
 and preserves the unsent composer draft. It uses the same context admission and
 response settings as Send. Interrupted output and intermediate Extra effort drafts
-are excluded from iteration history. Older recovery files enable actions only
-when the visible transcript can be verified as a complete committed suffix.
+are excluded from iteration history. Older recovered messages without saved
+positions remain copyable and searchable, with iteration disabled. Newly completed
+turns gain verified positions through the normal committed-history event.
 
 Assistant text uses native heading, list/quote and inline/fenced code styles.
 Code is monospace; original Markdown markers remain visible. Copy, selection and

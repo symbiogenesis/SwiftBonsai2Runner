@@ -57,31 +57,6 @@ impl Transcript {
             .and_then(|message| message.committed_index(history))
     }
 
-    // Old recovery files have no positions. Link only an entirely verified
-    // suffix, never an individual text search that could select a duplicate.
-    pub(in crate::window) fn link_legacy_history(&mut self, history: &[client::Message]) {
-        if self.messages.is_empty()
-            || self.messages.len() > history.len()
-            || self
-                .messages
-                .iter()
-                .any(|message| message.history_index.is_some() || message.pending)
-        {
-            return;
-        }
-        let offset = history.len() - self.messages.len();
-        if self
-            .messages
-            .iter()
-            .zip(&history[offset..])
-            .all(|(visible, committed)| visible.matches_history(committed))
-        {
-            for (index, message) in self.messages.iter_mut().enumerate() {
-                message.history_index = Some(offset + index);
-            }
-        }
-    }
-
     pub(in crate::window) fn bind_committed(
         &mut self,
         previous: &[client::Message],
@@ -173,7 +148,6 @@ mod tests {
         transcript.push(Role::User, "Again".into());
         transcript.push(Role::Assistant, "Answer".into());
         transcript.remove_empty_response();
-        transcript.link_legacy_history(&history);
         let uncommitted = transcript.messages[4].id;
         assert_eq!(transcript.committed_index(uncommitted, &history), None);
     }
@@ -212,23 +186,27 @@ mod tests {
     }
 
     #[test]
-    fn iteration_legacy_recovery_requires_a_complete_matching_suffix() {
+    fn iteration_legacy_duplicate_text_never_establishes_committed_positions() {
         let history = vec![entry("user", "Question"), entry("assistant", "Answer")];
+        // An interrupted duplicate after display eviction can have exactly the
+        // same text as committed history. Only a saved index or a fresh commit
+        // event establishes identity; legacy text is never linked by equality.
         let mut transcript = Transcript::from_committed(&history);
         for message in &mut transcript.messages {
             message.history_index = None;
         }
-        transcript.messages[1].body = "Interrupted".into();
-        transcript.link_legacy_history(&history);
-        assert!(
-            transcript
-                .messages
-                .iter()
-                .all(|message| message.history_index.is_none())
-        );
-        transcript.messages[1].body = "Answer".into();
-        transcript.link_legacy_history(&history);
-        assert_eq!(transcript.messages[1].history_index, Some(1));
+        for message in &transcript.messages {
+            assert_eq!(message.committed_index(&history), None);
+        }
+        transcript.push(Role::User, "Question".into());
+        transcript.push(Role::Assistant, "Answer".into());
+        let mut extended = history.clone();
+        extended.extend(history.iter().cloned());
+        transcript.bind_committed(&history, &extended);
+        assert_eq!(transcript.messages[0].history_index, None);
+        assert_eq!(transcript.messages[1].history_index, None);
+        assert_eq!(transcript.messages[2].history_index, Some(2));
+        assert_eq!(transcript.messages[3].history_index, Some(3));
     }
 
     #[test]
