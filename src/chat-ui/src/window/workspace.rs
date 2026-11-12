@@ -449,6 +449,15 @@ impl State {
                         .add(
                             egui::TextEdit::singleline(&mut self.conversation_search.text)
                                 .id(history_search::field_id())
+                                // Keep focus through egui's input prepass so
+                                // handle_escape can clear this query before
+                                // dismissing Find, the drawer or generation.
+                                .event_filter(egui::EventFilter {
+                                    horizontal_arrows: true,
+                                    vertical_arrows: true,
+                                    escape: true,
+                                    ..Default::default()
+                                })
                                 .align(egui::Align2::LEFT_CENTER)
                                 .desired_width((ui.available_width() - clear_width).max(24.0))
                                 .frame(egui::Frame::NONE)
