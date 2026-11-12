@@ -435,13 +435,11 @@ impl State {
                         .add(
                             egui::TextEdit::singleline(&mut self.conversation_search.text)
                                 .id(history_search::field_id())
-                                .hint_text("Search conversations")
                                 .desired_width((ui.available_width() - clear_width).max(24.0))
                                 .frame(egui::Frame::NONE)
                                 .return_key(None),
                         )
-                        .accessible_name("Search conversations")
-                        .on_hover_text("Search conversation titles and message text");
+                        .accessible_name("Search conversations");
                     if field.clicked() || field.changed() {
                         self.focus_composer = false;
                     }
