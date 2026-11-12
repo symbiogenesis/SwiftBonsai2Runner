@@ -245,6 +245,10 @@ preserving newer drafts; a closed connection alone identifies no token/memory ca
 ### Conversations and response settings
 
 The sidebar holds up to 16 conversations with independent drafts and settings.
+Drag its inner edge to resize it, or use the sidebar button / **Ctrl+Shift+B**
+to hide and reopen it. Narrow windows use a left-anchored conversation drawer;
+selecting a conversation, clicking its backdrop or pressing Escape closes it
+without stopping a response. The docked sidebar's width and visibility are saved.
 Switch while ready or generating; use **New conversation** or the row's **actions** menu to
 rename, copy or delete. Deletion names its target; **Keep conversation** or
 Escape cancels, and deleting the last chat creates an empty one. Status and
@@ -301,6 +305,7 @@ device**:
 | --- | --- |
 | **Response** | Selected conversation: Thinking, Extra effort, output cap and **Advanced response controls**. |
 | **Voice** | All conversations: the shared Voice profile and read-aloud setup. |
+| **Appearance** | Device-wide System/Light/Dark theme, reading text size and maximum reading width, with a live sample and reset. Windows high contrast takes precedence. |
 | **Privacy** | All conversations: automatic encrypted saving and its persistent opt-out. |
 | **Application** | Device-wide runtime information, application updates and inline diagnostics. |
 
@@ -379,6 +384,15 @@ and remains active when conversation saving is off. Closing while minimized keep
 the previous visible placement; Windows moves a wholly offscreen restored window
 back onto the current monitor configuration. Invalid settings use the ordinary
 default window. Preview neither reads nor writes these settings.
+
+**Settings > Appearance** adjusts prose, code, thinking and composer text from
+14–24 points and the reading column from 640–1,040 points, constrained by the
+available window width. Interface controls keep their ordinary size. The default
+window is 1,080×780 points and can shrink to 480×480 for split-screen use.
+Appearance, sidebar width and docked visibility persist separately in the bounded
+`DataDirectory/chat-appearance.json`; this file contains no conversation content
+and remains active when conversation saving is off. Writes run on a coalescing
+worker and flush on close. Preview neither reads nor writes these preferences.
 
 The app supports Windows high contrast, display scaling, labelled AccessKit
 controls and selectable/copyable text. Full bidirectional editing and native-control

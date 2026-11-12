@@ -158,7 +158,8 @@ pub(super) fn layout_job(
     visuals: &egui::Visuals,
     matches: &[search::Match],
 ) -> egui::text::LayoutJob {
-    let normal = egui::TextFormat::simple(egui::FontId::proportional(text_size), visuals.text_color());
+    let normal =
+        egui::TextFormat::simple(egui::FontId::proportional(text_size), visuals.text_color());
     let mut builder = Builder {
         job: egui::text::LayoutJob::default(),
         matches,
@@ -172,7 +173,8 @@ pub(super) fn layout_job(
         builder.append(body, &normal);
         return builder.job;
     }
-    let mut code = egui::TextFormat::simple(egui::FontId::monospace(text_size), visuals.text_color());
+    let mut code =
+        egui::TextFormat::simple(egui::FontId::monospace(text_size), visuals.text_color());
     code.background = visuals.code_bg_color;
     let mut fence: Option<Fence> = None;
     for line in body.split_inclusive('\n') {

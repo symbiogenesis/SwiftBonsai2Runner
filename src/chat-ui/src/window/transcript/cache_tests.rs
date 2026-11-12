@@ -96,23 +96,38 @@ fn reader_size_reflows_styled_text_reasoning_and_find_once() {
         return;
     };
     assert_eq!(cache.body.job.text, body);
-    assert!(cache.body.job.sections.iter().any(|section| {
-        section.format.font_id == FontId::monospace(24.0)
-    }));
-    assert!(cache.body.job.sections.iter().any(|section| {
-        section.format.font_id.size.to_bits() == 33.0_f32.to_bits()
-    }));
+    assert!(
+        cache
+            .body
+            .job
+            .sections
+            .iter()
+            .any(|section| { section.format.font_id == FontId::monospace(24.0) })
+    );
+    assert!(
+        cache
+            .body
+            .job
+            .sections
+            .iter()
+            .any(|section| { section.format.font_id.size.to_bits() == 33.0_f32.to_bits() })
+    );
     assert!(cache.reasoning.as_ref().is_some_and(|reasoning| {
         reasoning.job.text == "Visible reasoning 🌱"
-            && reasoning.job.sections.iter().all(|section| {
-                section.format.font_id == FontId::proportional(21.0)
-            })
+            && reasoning
+                .job
+                .sections
+                .iter()
+                .all(|section| section.format.font_id == FontId::proportional(21.0))
     }));
     assert_active_underline_matches_glyphs(message);
     chat.run();
     assert_eq!(layout_counts(chat.state()), vec![2, 2]);
     assert_eq!(chat.state().messages[1].cache_updates, initial_updates + 1);
-    assert_eq!(chat.state().messages[1].underline_layouts, initial_underline + 1);
+    assert_eq!(
+        chat.state().messages[1].underline_layouts,
+        initial_underline + 1
+    );
 }
 
 #[test]

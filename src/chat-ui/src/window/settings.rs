@@ -104,7 +104,7 @@ impl State {
         let content = ctx.content_rect();
         let margin: i8 = if content.height() < 600.0 { 16 } else { 24 };
         let width = (content.width() - f32::from(margin) * 2.0 - 32.0).clamp(240.0, 800.0);
-        let wide = width >= 700.0;
+        let wide = width >= 700.0 && content.height() >= 560.0;
         let visuals = ctx.global_style().visuals.clone();
         let frame = egui::Frame::new()
             .fill(visuals.window_fill)
@@ -123,7 +123,11 @@ impl State {
                 ui.separator();
                 ui.add_space(16.0);
                 if wide {
-                    let body_height = (content.height() - ui.min_rect().height() - f32::from(margin) * 2.0 - 80.0).clamp(60.0, 470.0);
+                    let body_height = (content.height()
+                        - ui.min_rect().height()
+                        - f32::from(margin) * 2.0
+                        - 80.0)
+                        .clamp(60.0, 470.0);
                     ui.horizontal_top(|ui| {
                         ui.spacing_mut().item_spacing.x = 24.0;
                         ui.vertical(|ui| {
@@ -138,7 +142,11 @@ impl State {
                 } else {
                     self.settings_navigation(ui, true);
                     ui.add_space(16.0);
-                    let body_height = (content.height() - ui.min_rect().height() - f32::from(margin) * 2.0 - 80.0).clamp(60.0, 470.0);
+                    let body_height = (content.height()
+                        - ui.min_rect().height()
+                        - f32::from(margin) * 2.0
+                        - 80.0)
+                        .clamp(60.0, 470.0);
                     self.settings_content(ui, body_height);
                 }
                 ui.add_space(16.0);
@@ -167,7 +175,11 @@ impl State {
     }
 
     fn settings_navigation(&mut self, ui: &mut egui::Ui, horizontal: bool) {
-        let button_width = if horizontal { 0.0 } else { ui.available_width() };
+        let button_width = if horizontal {
+            0.0
+        } else {
+            ui.available_width()
+        };
         let layout = if horizontal {
             egui::Layout::left_to_right(egui::Align::Center).with_main_wrap(true)
         } else {
@@ -274,17 +286,24 @@ impl State {
                     } else {
                         ui.visuals().text_color()
                     });
-                    if ui.add(
-                        egui::Button::selectable(selected, text)
-                            .min_size(egui::vec2(78.0, 36.0))
-                            .corner_radius(10),
-                    ).clicked() {
+                    if ui
+                        .add(
+                            egui::Button::selectable(selected, text)
+                                .min_size(egui::vec2(78.0, 36.0))
+                                .corner_radius(10),
+                        )
+                        .clicked()
+                    {
                         self.appearance.theme = theme;
                     }
                 }
             });
             ui.add_space(8.0);
-            ui.label(RichText::new("System follows Windows. High contrast always takes priority.").small().weak());
+            ui.label(
+                RichText::new("System follows Windows. High contrast always takes priority.")
+                    .small()
+                    .weak(),
+            );
         });
         ui.add_space(12.0);
         settings_card(ui, |ui| {
@@ -318,7 +337,13 @@ impl State {
                 });
         });
         ui.add_space(12.0);
-        ui.label(RichText::new("Appearance is saved on this device, including when conversation saving is off.").small().weak());
+        ui.label(
+            RichText::new(
+                "Appearance is saved on this device, including when conversation saving is off.",
+            )
+            .small()
+            .weak(),
+        );
         if ui.button("Reset appearance").clicked() {
             let defaults = appearance::Preferences::default();
             self.appearance.theme = defaults.theme;

@@ -345,7 +345,11 @@ impl State {
                 }
             });
         match action {
-            Some(ConversationAction::Select(id)) => self.switch_conversation(id),
+            Some(ConversationAction::Select(id)) => {
+                self.switch_conversation(id);
+                self.sidebar_open = false;
+                self.focus_composer = true;
+            }
             Some(ConversationAction::Rename(id, title)) => {
                 self.rename_conversation = Some((id, title));
                 ui.ctx().memory_mut(|memory| {

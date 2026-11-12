@@ -102,9 +102,15 @@ pub(super) fn text_size(ctx: &egui::Context) -> f32 {
 pub(super) fn configure(ctx: &egui::Context) {
     for theme in [egui::Theme::Dark, egui::Theme::Light] {
         let mut style = (*ctx.style_of(theme)).clone();
-        style.text_styles.insert(egui::TextStyle::Small, FontId::proportional(12.0));
-        style.text_styles.insert(egui::TextStyle::Body, FontId::proportional(16.0));
-        style.text_styles.insert(egui::TextStyle::Button, FontId::proportional(14.0));
+        style
+            .text_styles
+            .insert(egui::TextStyle::Small, FontId::proportional(12.0));
+        style
+            .text_styles
+            .insert(egui::TextStyle::Body, FontId::proportional(16.0));
+        style
+            .text_styles
+            .insert(egui::TextStyle::Button, FontId::proportional(14.0));
         style.spacing.item_spacing = egui::vec2(10.0, 8.0);
         style.spacing.button_padding = egui::vec2(12.0, 9.0);
         style.spacing.interact_size.y = 34.0;
@@ -142,7 +148,8 @@ fn palette(theme: egui::Theme) -> egui::Visuals {
         visuals.widgets.inactive.bg_fill = Color32::from_rgb(230, 235, 222);
         visuals.widgets.hovered.bg_fill = Color32::from_rgb(217, 229, 207);
         visuals.widgets.active.bg_fill = Color32::from_rgb(199, 219, 187);
-        visuals.widgets.noninteractive.bg_stroke = egui::Stroke::new(1.0, Color32::from_rgb(213, 218, 204));
+        visuals.widgets.noninteractive.bg_stroke =
+            egui::Stroke::new(1.0, Color32::from_rgb(213, 218, 204));
         visuals.widgets.noninteractive.fg_stroke.color = ink;
         visuals.widgets.inactive.fg_stroke.color = ink;
         visuals.widgets.hovered.fg_stroke.color = ink;
@@ -196,15 +203,18 @@ impl Store {
                     }
                 }
             })?;
-        Ok((Self {
-            latest: preferences,
-            pending,
-            wake: Some(wake),
-            failed,
-            retry,
-            last_attempt: Instant::now(),
-            worker: Some(worker),
-        }, preferences))
+        Ok((
+            Self {
+                latest: preferences,
+                pending,
+                wake: Some(wake),
+                failed,
+                retry,
+                last_attempt: Instant::now(),
+                worker: Some(worker),
+            },
+            preferences,
+        ))
     }
 
     pub(super) fn queue(&mut self, preferences: Preferences) -> io::Result<()> {
@@ -218,11 +228,17 @@ impl Store {
             return Ok(());
         }
         self.retry.store(false, Ordering::Release);
-        *self.pending.lock().map_err(|_| io::Error::other("Appearance saving worker stopped."))? = Some(preferences);
+        *self
+            .pending
+            .lock()
+            .map_err(|_| io::Error::other("Appearance saving worker stopped."))? =
+            Some(preferences);
         if let Some(wake) = &self.wake {
             match wake.try_send(()) {
-                Ok(()) | Err(mpsc::TrySendError::Full(())) => {},
-                Err(mpsc::TrySendError::Disconnected(())) => return Err(io::Error::other("Appearance saving worker stopped.")),
+                Ok(()) | Err(mpsc::TrySendError::Full(())) => {}
+                Err(mpsc::TrySendError::Disconnected(())) => {
+                    return Err(io::Error::other("Appearance saving worker stopped."));
+                }
             }
         }
         self.latest = preferences;
@@ -246,9 +262,13 @@ impl Drop for Store {
 
 fn read(path: &Path) -> io::Result<Preferences> {
     let mut bytes = Vec::new();
-    File::open(path)?.take(MAX_BYTES + 1).read_to_end(&mut bytes)?;
+    File::open(path)?
+        .take(MAX_BYTES + 1)
+        .read_to_end(&mut bytes)?;
     if u64::try_from(bytes.len()).map_err(io::Error::other)? > MAX_BYTES {
-        return Err(io::Error::other("Appearance settings exceed their size limit."));
+        return Err(io::Error::other(
+            "Appearance settings exceed their size limit.",
+        ));
     }
     let saved: Saved = serde_json::from_slice(&bytes).map_err(io::Error::other)?;
     if saved.version != 1 || !saved.preferences.valid() {
@@ -259,13 +279,23 @@ fn read(path: &Path) -> io::Result<Preferences> {
 
 fn save(path: &Path, preferences: Preferences) -> io::Result<()> {
     bonsai_windows_credentials::validate_external_path(path)?;
-    let stamp = SystemTime::now().duration_since(UNIX_EPOCH).map_err(io::Error::other)?.as_nanos();
+    let stamp = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_err(io::Error::other)?
+        .as_nanos();
     let temporary = path.with_extension(format!("{}.{stamp}.pending", std::process::id()));
     bonsai_windows_credentials::validate_external_path(&temporary)?;
-    let bytes = serde_json::to_vec(&Saved { version: 1, preferences }).map_err(io::Error::other)?;
+    let bytes = serde_json::to_vec(&Saved {
+        version: 1,
+        preferences,
+    })
+    .map_err(io::Error::other)?;
     let mut created = false;
     let result = (|| {
-        let mut file = OpenOptions::new().write(true).create_new(true).open(&temporary)?;
+        let mut file = OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&temporary)?;
         created = true;
         file.write_all(&bytes)?;
         file.sync_all()?;
@@ -287,33 +317,70 @@ mod tests {
     fn appearance_preferences_reject_unbounded_or_nonfinite_geometry() {
         assert!(Preferences::default().valid());
         for sidebar_width in [f32::NAN, f32::INFINITY, 215.0, 341.0] {
-            assert!(!Preferences { sidebar_width, ..Preferences::default() }.valid());
+            assert!(
+                !Preferences {
+                    sidebar_width,
+                    ..Preferences::default()
+                }
+                .valid()
+            );
         }
-        assert!(!Preferences { text_size: 25, ..Preferences::default() }.valid());
-        assert!(!Preferences { reading_width: 639, ..Preferences::default() }.valid());
+        assert!(
+            !Preferences {
+                text_size: 25,
+                ..Preferences::default()
+            }
+            .valid()
+        );
+        assert!(
+            !Preferences {
+                reading_width: 639,
+                ..Preferences::default()
+            }
+            .valid()
+        );
     }
 
     #[test]
     fn appearance_preferences_update_reader_size_and_selected_theme() {
         let ctx = egui::Context::default();
         configure(&ctx);
-        let preferences = Preferences { theme: Theme::Light, text_size: 22, ..Preferences::default() };
+        let preferences = Preferences {
+            theme: Theme::Light,
+            text_size: 22,
+            ..Preferences::default()
+        };
         preferences.apply(&ctx);
-        assert_eq!(text_size(&ctx), 22.0);
+        assert_eq!(text_size(&ctx).to_bits(), 22.0_f32.to_bits());
         assert_eq!(ctx.theme(), egui::Theme::Light);
-        Preferences { theme: Theme::Dark, ..preferences }.apply(&ctx);
+        Preferences {
+            theme: Theme::Dark,
+            ..preferences
+        }
+        .apply(&ctx);
         assert_eq!(ctx.theme(), egui::Theme::Dark);
     }
 
     #[test]
     fn appearance_store_flushes_latest_and_defaults_invalid_files() -> io::Result<()> {
-        let stamp = SystemTime::now().duration_since(UNIX_EPOCH).map_err(io::Error::other)?.as_nanos();
+        let stamp = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map_err(io::Error::other)?
+            .as_nanos();
         let directory = std::env::temp_dir().join(format!("Bonsai-appearance-{stamp}"));
         fs::create_dir(&directory)?;
         let (mut store, initial) = Store::open(&directory)?;
         assert_eq!(initial, Preferences::default());
-        store.queue(Preferences { text_size: 20, ..initial })?;
-        let latest = Preferences { theme: Theme::Light, text_size: 24, sidebar_visible: false, ..initial };
+        store.queue(Preferences {
+            text_size: 20,
+            ..initial
+        })?;
+        let latest = Preferences {
+            theme: Theme::Light,
+            text_size: 24,
+            sidebar_visible: false,
+            ..initial
+        };
         store.queue(latest)?;
         drop(store);
         let path = directory.join("chat-appearance.json");

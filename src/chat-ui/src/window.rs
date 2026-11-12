@@ -8,7 +8,7 @@ use crate::{
     client::{self, Command, Completion, Config, Event},
     speech,
 };
-use eframe::egui::{self, Color32, RichText};
+use eframe::egui::{self, RichText};
 use std::{
     collections::VecDeque,
     io,
@@ -17,10 +17,13 @@ use std::{
     time::{Duration, Instant},
 };
 
+mod appearance;
 mod audio_files;
 #[cfg(test)]
 mod background_tests;
 mod context_capacity;
+#[cfg(test)]
+mod ergonomics_tests;
 mod graphics;
 #[cfg(test)]
 mod interaction_tests;
@@ -35,6 +38,7 @@ mod keyboard_tests;
 )]
 mod microphone;
 mod model_lifecycle;
+mod navigation;
 mod persistence;
 #[allow(
     unsafe_code,
@@ -133,7 +137,10 @@ struct State {
     show_diagnostics: bool,
     show_settings: bool,
     settings_view: settings::View,
+    appearance: appearance::Preferences,
+    appearance_store: Option<appearance::Store>,
     sidebar_open: bool,
+    sidebar_focus: bool,
     help: Option<(&'static str, &'static str)>,
     extra_effort: bool,
     enable_thinking: bool,
@@ -233,7 +240,10 @@ impl State {
             show_diagnostics: false,
             show_settings: false,
             settings_view: settings::View::default(),
+            appearance: appearance::Preferences::default(),
+            appearance_store: None,
             sidebar_open: false,
+            sidebar_focus: false,
             help: None,
             extra_effort: false,
             enable_thinking: false,
@@ -506,6 +516,7 @@ impl State {
             return;
         }
         self.update_worker_conversation(Command::NewChat);
+        self.sidebar_open = false;
         self.stop_speech();
         self.save_conversation();
         self.conversation_notice = None;
@@ -576,6 +587,7 @@ impl State {
             || self.delete_conversation.is_some()
             || self.edit_message.is_some()
             || self.show_settings
+            || (self.sidebar_open && ctx.content_rect().width() < navigation::DOCK_THRESHOLD)
             || egui::Popup::is_any_open(ctx)
         {
             return;
@@ -614,6 +626,17 @@ impl State {
             && ctx.input_mut(|input| input.consume_key(egui::Modifiers::CTRL, egui::Key::N))
         {
             self.new_chat();
+        }
+        if !self.show_settings
+            && self.rename_conversation.is_none()
+            && self.delete_conversation.is_none()
+            && self.edit_message.is_none()
+            && !egui::Popup::is_any_open(ctx)
+            && ctx.input_mut(|input| {
+                input.consume_key(egui::Modifiers::CTRL | egui::Modifiers::SHIFT, egui::Key::B)
+            })
+        {
+            self.toggle_navigation(ctx);
         }
         self.handle_escape(ctx);
     }
@@ -1316,6 +1339,10 @@ impl State {
 
 impl Drop for State {
     fn drop(&mut self) {
+        if let Some(store) = &mut self.appearance_store {
+            let _queued = store.queue(self.appearance);
+        }
+        self.appearance_store.take();
         self.audio_paste.take();
         self.updates.take();
         self.startup_request.take();
@@ -1338,38 +1365,7 @@ impl Drop for State {
 }
 
 fn configure(ctx: &egui::Context) {
-    let mut style = (*ctx.style_of(egui::Theme::Dark)).clone();
-    style
-        .text_styles
-        .insert(egui::TextStyle::Small, egui::FontId::proportional(12.0));
-    style
-        .text_styles
-        .insert(egui::TextStyle::Body, egui::FontId::proportional(16.0));
-    style
-        .text_styles
-        .insert(egui::TextStyle::Button, egui::FontId::proportional(14.0));
-    style.spacing.item_spacing = egui::vec2(10.0, 8.0);
-    style.spacing.button_padding = egui::vec2(12.0, 9.0);
-    style.spacing.interact_size.y = 34.0;
-    style.visuals = forest_visuals();
-    ctx.set_theme(egui::Theme::Dark);
-    ctx.set_style_of(egui::Theme::Dark, style);
-}
-
-fn forest_visuals() -> egui::Visuals {
-    let mut visuals = egui::Visuals::dark();
-    visuals.panel_fill = Color32::from_rgb(20, 25, 24);
-    visuals.window_fill = Color32::from_rgb(27, 33, 31);
-    visuals.extreme_bg_color = Color32::from_rgb(24, 30, 28);
-    visuals.faint_bg_color = Color32::from_rgb(35, 43, 39);
-    visuals.override_text_color = Some(Color32::from_rgb(226, 232, 226));
-    visuals.selection.bg_fill = Color32::from_rgb(154, 182, 150);
-    visuals.selection.stroke = egui::Stroke::new(1.0, Color32::from_rgb(17, 31, 21));
-    visuals.widgets.inactive.bg_fill = Color32::from_rgb(42, 51, 46);
-    visuals.widgets.hovered.bg_fill = Color32::from_rgb(58, 71, 62);
-    visuals.widgets.active.bg_fill = Color32::from_rgb(66, 84, 70);
-    visuals.error_fg_color = Color32::from_rgb(246, 145, 145);
-    visuals
+    appearance::configure(ctx);
 }
 
 impl State {
@@ -1379,9 +1375,11 @@ impl State {
             .frame(egui::Frame::new().inner_margin(egui::Margin::symmetric(0, 12)))
             .show(ui, |ui| self.sidebar_footer(ui));
         ui.add_space(8.0);
-        ui.label(RichText::new("BONSAI").strong().size(22.0));
-        ui.label(RichText::new("A little space to think.").small().weak());
-        ui.add_space(24.0);
+        if !self.sidebar_open {
+            ui.label(RichText::new("BONSAI").strong().size(22.0));
+            ui.label(RichText::new("A little space to think.").small().weak());
+            ui.add_space(24.0);
+        }
         if ui
             .add_enabled(
                 self.model.workspace_available() && self.conversations.len() < MAX_CONVERSATIONS,
@@ -1531,28 +1529,22 @@ impl State {
 
     fn header(&mut self, ui: &mut egui::Ui, narrow: bool) {
         ui.horizontal(|ui| {
-            if narrow
-                && ui
-                    .button("Menu")
-                    .accessible_name("Conversation menu")
-                    .on_hover_text("Conversation menu")
-                    .clicked()
-            {
-                self.sidebar_open = !self.sidebar_open;
-            }
+            self.navigation_button(ui, narrow);
             ui.vertical(|ui| {
                 ui.label(RichText::new("Swift Bonsai").strong().size(19.0));
-                ui.label(
-                    RichText::new(if self.preview {
-                        "Interface preview · no model or audio services"
-                    } else if self.model.busy() {
-                        "Responding to your message…"
-                    } else {
-                        "Your private, local AI companion"
-                    })
-                    .small()
-                    .weak(),
-                );
+                if !narrow {
+                    ui.label(
+                        RichText::new(if self.preview {
+                            "Interface preview · no model or audio services"
+                        } else if self.model.busy() {
+                            "Responding to your message…"
+                        } else {
+                            "Your private, local AI companion"
+                        })
+                        .small()
+                        .weak(),
+                    );
+                }
             });
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                 if ui.button("Settings").clicked() {
@@ -1737,7 +1729,7 @@ impl State {
         reason = "Keep composer focus, IME and action dispatch together."
     )]
     fn composer(&mut self, ui: &mut egui::Ui) {
-        let width = ui.available_width().min(800.0);
+        let width = ui.available_width().min(self.appearance.column_width());
         let margin = ((ui.available_width() - width) * 0.5).max(0.0);
         ui.horizontal(|ui| {
             ui.add_space(margin);
@@ -1754,11 +1746,16 @@ impl State {
                         // the caret visible within this native scroll area.
                         let editor = egui::ScrollArea::vertical()
                             .id_salt(("composer-scroll", self.active_conversation))
-                            .max_height(160.0)
+                            .max_height(
+                                (ui.ctx().content_rect().height() * 0.24).clamp(64.0, 160.0),
+                            )
                             .show(ui, |ui| {
                                 let output = ui
                                     .scope(|ui| {
                                         egui::TextEdit::multiline(&mut self.input)
+                                            .font(egui::FontId::proportional(
+                                                appearance::text_size(ui.ctx()),
+                                            ))
                                             .id_salt("composer")
                                             .hint_text(if self.model.busy() {
                                                 "Draft your next message…"
@@ -1950,28 +1947,11 @@ impl State {
     }
 
     fn draw_workspace(&mut self, ui: &mut egui::Ui) {
-        let narrow = ui.available_width() < 900.0;
-        if !narrow {
-            egui::Panel::left("navigation")
-                .exact_size(266.0)
-                .frame(
-                    egui::Frame::new()
-                        .fill(ui.visuals().window_fill)
-                        .inner_margin(18),
-                )
-                .show(ui, |ui| self.sidebar(ui));
-        } else if self.sidebar_open && !self.show_settings {
-            let mut open = self.sidebar_open;
-            egui::Window::new("Conversations")
-                .open(&mut open)
-                .collapsible(false)
-                .default_width(280.0)
-                .default_height(500.0)
-                .show(ui.ctx(), |ui| self.sidebar(ui));
-            self.sidebar_open = open;
-        }
+        let narrow = ui.available_width() < navigation::DOCK_THRESHOLD;
+        self.docked_navigation(ui, narrow);
+        let horizontal_margin = if narrow { 12 } else { 24 };
         egui::CentralPanel::default()
-            .frame(egui::Frame::new().inner_margin(egui::Margin::symmetric(24, 16)))
+            .frame(egui::Frame::new().inner_margin(egui::Margin::symmetric(horizontal_margin, 12)))
             .show(ui, |ui| {
                 self.header(ui, narrow);
                 egui::Panel::bottom("composer-panel")
@@ -1997,7 +1977,7 @@ impl State {
                             self.empty_state(ui);
                         } else {
                             ui.add_space(20.0);
-                            let width = ui.available_width().min(800.0);
+                            let width = ui.available_width().min(self.appearance.column_width());
                             let margin = ((ui.available_width() - width) * 0.5).max(0.0);
                             ui.horizontal(|ui| {
                                 ui.add_space(margin);
@@ -2025,12 +2005,14 @@ impl State {
     fn draw(&mut self, ui: &mut egui::Ui) {
         // Disable the workspace on the first modal frame too: egui's modal
         // focus layer is otherwise inherited only from the preceding pass.
-        ui.add_enabled_ui(!self.show_settings, |ui| self.draw_workspace(ui));
+        let drawer = self.sidebar_open && ui.available_width() < navigation::DOCK_THRESHOLD;
+        ui.add_enabled_ui(!self.show_settings && !drawer, |ui| self.draw_workspace(ui));
         let ctx = ui.ctx().clone();
         if self.show_settings {
             self.settings(&ctx);
             return;
         }
+        self.navigation_drawer(&ctx);
         self.diagnostics(&ctx);
         self.conversation_dialogs(&ctx);
         self.iteration_dialog(&ctx);
@@ -2085,8 +2067,9 @@ impl eframe::App for State {
         self.poll_microphone();
         self.drain_speech_events();
         self.poll_recovery();
+        self.poll_appearance(ctx);
         if self.last_theme_check.elapsed() >= Duration::from_secs(1) {
-            ctx.set_visuals(platform::high_contrast_visuals().unwrap_or_else(forest_visuals));
+            self.appearance.apply(ctx);
             self.last_theme_check = Instant::now();
         }
         // No frame-rate polling: wait between events when idle. Microphone's
@@ -2117,8 +2100,8 @@ impl eframe::App for State {
 fn native_options() -> eframe::NativeOptions {
     eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
-            .with_inner_size([1180.0, 860.0])
-            .with_min_inner_size([620.0, 640.0]),
+            .with_inner_size([1080.0, 780.0])
+            .with_min_inner_size([480.0, 480.0]),
         renderer: eframe::Renderer::Wgpu,
         ..eframe::NativeOptions::default()
     }
@@ -2127,6 +2110,7 @@ fn native_options() -> eframe::NativeOptions {
 pub(super) fn run(config: Config) -> io::Result<()> {
     let recovery = crate::recovery::Recovery::open(&config.data);
     let placement = placement::Placement::open(&config.data);
+    let appearance = appearance::Store::open(&config.data);
     eframe::run_native(
         "Swift Bonsai",
         native_options(),
@@ -2139,6 +2123,7 @@ pub(super) fn run(config: Config) -> io::Result<()> {
             let mut state = State::create(commands, incoming_events, Some(&config), microphone);
             state.attach_recovery(recovery);
             state.attach_placement(placement, cc);
+            state.attach_appearance(appearance, &cc.egui_ctx);
             state.worker = Some(
                 std::thread::Builder::new()
                     .name("swift-chat-client".to_owned())
@@ -2154,6 +2139,7 @@ pub(super) fn run_startup(request: crate::startup::Request) -> io::Result<bool> 
     // Retain the established recovery ordering: restore before accepting a draft.
     let recovery = crate::recovery::Recovery::open(&request.data);
     let placement = placement::Placement::open(&request.data);
+    let appearance = appearance::Store::open(&request.data);
     let failure = std::sync::Arc::new(std::sync::Mutex::new(None));
     let reported_failure = std::sync::Arc::clone(&failure);
     let update_exit = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
@@ -2171,6 +2157,7 @@ pub(super) fn run_startup(request: crate::startup::Request) -> io::Result<bool> 
             state.update_exit = Some(approved_update);
             state.attach_recovery(recovery);
             state.attach_placement(placement, cc);
+            state.attach_appearance(appearance, &cc.egui_ctx);
             Ok(Box::new(state))
         }),
     )
