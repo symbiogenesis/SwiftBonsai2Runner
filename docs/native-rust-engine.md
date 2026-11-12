@@ -382,11 +382,13 @@ new weights, altered precision, accelerator setup or prefix-reuse policy.
 These are local source candidates in the sibling `prism-inference` repository.
 The reviewed commits on local Prism `main` are `095976c` (one-column projections),
 `80fa071` (empty checkpoints) and `11f60ce` (bounded sampler). The
-[retained local checks](evidence/inference-efficiency-local-20261103/archive.json)
+[historical local check record](https://github.com/symbiogenesis/SwiftBonsai2Runner/blob/7b37b29826b377386c1ddfe933cd4e75d6a97856/docs/evidence/inference-efficiency-local-20261103/archive.json)
 include 14 focused passing correctness tests and strict Release Clippy with
 `parallel-rows` enabled. Exact final source hashes match the analyzer input.
 The original 247.630-second allowance includes build, corrections and archival;
-initial lint and harness-encoding failures remain retained. All captured workload
+initial lint and harness-encoding failures are recorded there. Its scratch-file
+inventory is historical; the raw logs are unavailable in the current tree and
+the record cannot supply independent replay. All captured workload
 endpoints report battery operation with saver off; charge changed from 93% to 92%.
 No model, benchmark or CI ran, and endpoint snapshots do not establish continuous
 power stability or measured performance.
@@ -413,13 +415,14 @@ Independent source review checked the canonical-empty-state invariant and paddin
 arithmetic. Frozen full-padding controls cover bitwise results at lane, 256-token
 and context boundaries; hybrid graph controls cover late first-token failure,
 independent snapshots and continuation. The
-[bounded follow-up record](evidence/inference-efficiency-followup-20261103/archive.json)
-retains the exact source and local validation scope. Local Prism `main` contains
+[historical follow-up record](https://github.com/symbiogenesis/SwiftBonsai2Runner/blob/7b37b29826b377386c1ddfe933cd4e75d6a97856/docs/evidence/inference-efficiency-followup-20261103/archive.json)
+records the local validation scope; its scratch-file inventory supplies no raw
+replay in the current tree. Local Prism `main` contains
 `94200c8` (empty resets), `03fe862` (attention padding) and `5056810` (test assertion
 correction). All 18 focused correctness tests passed, followed by a passing rerun
 of the corrected reset regression and strict Release Clippy for the library and
 graph integration target with `parallel-rows`. Initial assertion-lint and cast
-failures remain retained. The single allowance closed at 101.483 seconds through
+failures are recorded in that history. The single allowance closed at 101.483 seconds through
 archival; recorded endpoints show battery operation, saver off and charge changing
 from 85% to 84%.
 These snapshots do not establish continuous power stability or performance.

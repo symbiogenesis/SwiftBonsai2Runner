@@ -83,7 +83,7 @@ and external-engine retirement remain separate.
 | `tools/native-reference/swift_ptq1_reference.cpp` | Replaced by the single-file Rust collector. Native source-header download and C++ compilation are removed from bundle preparation. Immutable observations retain all 369 layout/default/configuration/returned-aggregate controls; compile-time guards cover all 62 offsets, three sizes and alignments. The actual pinned-DLL probe/observations pass locally. The [source-bound hosted bundle](evidence/ptq1-collector-hosted.json) passes collector compilation and all seven Rust success/failure/output/cleanup controls. Schema-two receipts bind Rust source and controls; owner preflight compares the complete observation set before admission. Actual-model logits/state comparison remains pending. The DLL engine itself is still native and has a separate retirement gate. |
 
 [Initial capture evidence](evidence/cpp-retirement-model-free.json) retains the
-first 30 model-free checks. [Final control evidence](evidence/cpp-retirement-final-controls.json)
+first 30 model-free checks. The [historical final source review](https://github.com/symbiogenesis/SwiftBonsai2Runner/blob/7b37b29826b377386c1ddfe933cd4e75d6a97856/docs/evidence/cpp-retirement-final-controls.json)
 binds the later source identities to 43 passing focused Rust checks, strict lint
 checks, the complete actual-DLL ABI comparison, receipt/observation rejection and
 syntax compilation of both affected pinned Qwen source units. The subsequent

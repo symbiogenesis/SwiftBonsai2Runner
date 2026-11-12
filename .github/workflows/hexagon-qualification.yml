@@ -16,7 +16,7 @@ on:
       - config/hexagon-dispatch.lock.json
       - docs/evidence/hexagon-swift-operation-ledger.json
       - docs/evidence/hexagon-swift-traffic-ledger.json
-      - docs/evidence/hexagon-resident-host-ledger.json
+      - docs/evidence/hexagon-resident-host-24000-ledger.json
   workflow_dispatch:
     inputs:
       run_device:

@@ -106,9 +106,7 @@ Native residual-writer evidence must establish the correction's basis on Swift;
 loading or changed text cannot. Even correct input order does not establish that an
 original-Bonsai correction suits Swift's modified weights. The approved file is unmodified.
 
-The [2026-10-31 readiness audit](evidence/ptq1-adapter-basis-readiness.json) binds
-the reviewed publisher source digests and exact PTQ1/adapter identities. Closing
-this gate requires the following evidence together:
+Closing this gate requires the following evidence together:
 
 - Immutable checkpoint, conversion and direction identities tied to the shipped
   adapter, with an explicit authoring-to-native SSM channel mapping.
@@ -121,7 +119,7 @@ this gate requires the following evidence together:
 The missing original checkpoint/conversion identity is external authentication
 evidence. Public reconstruction can establish a candidate's numerical agreement;
 additional native/Rust agreement cannot reconstruct original-run provenance.
-The audit closes no model qualification gate.
+Source review closes no model qualification gate.
 
 The [2026-11-02 public-source recheck](evidence/ptq1-authoring-inputs-20261102.json)
 finds the same publisher revision and no new authoring material in the inspected

@@ -4,7 +4,7 @@ This is the single backlog. [Technical docs](docs/README.md) own current behavio
 contracts, commands and evidence; completed work belongs in Git history.
 
 Have the owner push the local CI corrections and confirm Markdown standards and
-Foundation on the resulting source. The [bounded local check record](docs/evidence/ci-fixes-20261112/delivery.json)
+Foundation on the resulting source. The [bounded local check record](docs/evidence/ci-fixes-20261112/retained.json)
 keeps local validation separate from pending hosted acceptance.
 
 Publish the first experimental Windows ARM64 MSI release, **v0.1.0**, after the
@@ -23,15 +23,15 @@ Include final post-exit publication revalidation, cache/receipt replacement,
 network loss after confirmation and consumed-handoff launch failures in installed
 acceptance. Qualify release-script native failure handling, UTF-8 round trips and
 safe paths on PowerShell 7.6+ in owner-managed hosted validation, along with the
-native UI update regressions. Keep the [hardening check record](docs/evidence/update-hardening-20261111/delivery.json)
+native UI update regressions. Keep the [hardening check record](docs/evidence/update-hardening-20261111/retained.json)
 and its closed local allowance attached to those pending gates.
-The [bounded updater checks](docs/evidence/app-updates-20261111/delivery.json)
+The [bounded updater checks](docs/evidence/app-updates-20261111/retained.json)
 passed five policy/tampering fixtures, the acknowledged-handoff regression and
 the native UI type-check. They do not close installed update acceptance.
 The no-push rule leaves source publication with the owner. The
-[local source review](docs/evidence/windows-release-20261111/delivery.json) retains
+[local source review](docs/evidence/windows-release-20261111/retained.json) retains
 passing final workflow, PowerShell, XML, Rust formatting and Markdown checks;
-the original context error and parser-policy block remain preserved separately.
+the original context error and parser-policy block remain preserved in that record.
 Retain the exact source/assets/checksums from the first successful hosted run;
 static checks do not establish clean-machine model, speech, signing or daily-use acceptance.
 
@@ -275,10 +275,12 @@ digest-bound receipt before owner-device admission. Earlier formatting and
 source review do not establish compiled acceptance.
 
 Complete the strict Release UI analyzer left pending by the
-[bounded local readiness validation](docs/evidence/prism-0114-primetime-validation-20261103/retention.json)
+[historical local readiness validation](https://github.com/symbiogenesis/SwiftBonsai2Runner/blob/7b37b29826b377386c1ddfe933cd4e75d6a97856/docs/evidence/prism-0114-primetime-validation-20261103/retention.json)
 in owning hosted checks. Preserve its original 570-second work cutoff and failed
 600-second retention budget; do not reopen that source-validation session to finish
-the analyzer. The local checks and verified artifact repair do not close actual-model
+the analyzer. Its listed scratch files are absent from the current tree; the
+historical inventory does not provide raw replay or missing power observations.
+The local checks and verified artifact repair do not close actual-model
 acceptance or replace a source-bound hosted package for the next owner workload.
 
 Qualify the Rust-only maintenance migration through settled-main hosted ARM64
@@ -448,7 +450,7 @@ public bytes do not establish zero backend tokens. Broader/full-context work sti
 needs a feasible workload or a faster qualified runtime, rather than split trials.
 
 Retain the startup change `0da7bcf` delivered in the
-[reviewed Prism 0.1.13 release](docs/evidence/prism-0113-release-review.json): graph construction retains
+[historical Prism 0.1.13 release review](https://github.com/symbiogenesis/SwiftBonsai2Runner/blob/7b37b29826b377386c1ddfe933cd4e75d6a97856/docs/evidence/prism-0113-release-review.json): graph construction retains
 one complete payload-validation pass and removes duplicate scans when binding
 projections, preserving malformed-payload rejection, including invalid unused-MTP
 tensors. Valid unused tensors remain allowed. Its exact-source

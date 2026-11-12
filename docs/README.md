@@ -76,4 +76,7 @@ source-review diaries, temporary validation drivers and duplicate build/release
 payloads belong in Git history. Trimmed historical summaries identify the original
 revision and state when raw replay requires that history; they do not qualify
 current source.
-The evidence tree before this cleanup is available at commit `3c03fbfe`.
+The evidence tree before the latest cleanup is available at commit
+`7b37b29826b377386c1ddfe933cd4e75d6a97856`. Historical Git links identify local
+commits; read them locally with `git show <revision>:<path>`. They become available
+on GitHub after the owner publishes those commits.

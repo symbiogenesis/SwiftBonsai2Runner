@@ -269,7 +269,7 @@ publisher Prism CPU server; direct app/broker launches use `--use-repacked-ptq1`
 artifact handle stays verified/held through owned teardown. Arbitrary paths, checkpoint
 substitutions and missing-file fallback are unsupported. The explicit experimental
 `--native-engine` route implements this selection and the approved adapter in Rust
-[0.1.9 prerelease](evidence/prism-019-release.json); service implementation alone does
+[0.1.9 prerelease](https://github.com/symbiogenesis/SwiftBonsai2Runner/blob/7b37b29826b377386c1ddfe933cd4e75d6a97856/docs/evidence/prism-019-release.json); service implementation alone does
 not establish release qualification. Row workers remain one unless explicitly
 selected; separate source-checker evidence does not qualify app TPS.
 

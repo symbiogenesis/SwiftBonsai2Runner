@@ -19,7 +19,7 @@ different resources and must not be substituted for one another.
 
 Run `python -B tools/hexagon/verify_resident_traffic.py` to reproduce the retained
 [current static ledger](../../docs/evidence/hexagon-resident-host-24000-ledger.json).
-The [historical ledger](../../docs/evidence/hexagon-resident-host-ledger.json)
+The [historical ledger](https://github.com/symbiogenesis/SwiftBonsai2Runner/blob/7b37b29826b377386c1ddfe933cd4e75d6a97856/docs/evidence/hexagon-resident-host-ledger.json)
 retains the original 21,760-cap accounting. The current derivation uses the
 [enforced operation budget](../../docs/evidence/hexagon-session-operation-budget.json) and derives
 the packed payloads from the existing source-bound
