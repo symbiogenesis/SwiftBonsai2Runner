@@ -20,7 +20,19 @@ use zip::ZipArchive;
 
 const MAX_EXPANDED_BYTES: u64 = 512 * 1024 * 1024;
 const MAX_ENTRIES: usize = 4096;
-const HASH_BUFFER_BYTES: usize = 64 * 1024;
+// Amortize file-read and CNG calls when verifying multi-gigabyte models. This
+// remains bounded independently of artifact size and checks cancellation before
+// every read; small standalone files need no full-size allocation.
+const HASH_BUFFER_BYTES: usize = 1024 * 1024;
+
+fn verification_buffer(bytes: u64) -> Vec<u8> {
+    vec![
+        0;
+        usize::try_from(bytes)
+            .unwrap_or(HASH_BUFFER_BYTES)
+            .clamp(1, HASH_BUFFER_BYTES)
+    ]
+}
 
 mod install;
 pub use install::stage_runtime;
@@ -230,8 +242,8 @@ impl VerifiedFile {
         }
         let mut handles = Vec::new();
         hold_ancestors(path, &mut handles, &mut checkpoint)?;
-        let mut file = open_locked_file(path)?;
-        let mut buffer = vec![0; HASH_BUFFER_BYTES];
+        let mut file = open_locked_file_with_access(path, true)?;
+        let mut buffer = verification_buffer(bytes);
         check_locked(&mut file, bytes, hash, &mut buffer, &mut checkpoint)?;
         handles.push(file);
         Ok(Self {
@@ -264,15 +276,26 @@ fn classify_hash_error(error: ArtifactError, fallback: ArtifactError) -> Artifac
 /// # Errors
 /// Rejects unsafe external paths, redirects, non-files and failed opens.
 pub fn open_locked_file(path: &Path) -> Result<File, ArtifactError> {
+    open_locked_file_with_access(path, false)
+}
+
+fn open_locked_file_with_access(path: &Path, sequential: bool) -> Result<File, ArtifactError> {
     validate_read_path(path)?;
     let mut options = OpenOptions::new();
     options.read(true);
     #[cfg(windows)]
     {
         use std::os::windows::fs::OpenOptionsExt;
-        // FILE_SHARE_READ only; OPEN_REPARSE_POINT prevents following a leaf redirect.
-        options.share_mode(1).custom_flags(0x0020_0000);
+        // FILE_SHARE_READ only; OPEN_REPARSE_POINT prevents following a leaf
+        // redirect. Only whole-file verification requests SEQUENTIAL_SCAN;
+        // ordinary readers, including random-access model readers, retain their
+        // existing cache policy.
+        options
+            .share_mode(1)
+            .custom_flags(0x0020_0000 | if sequential { 0x0800_0000 } else { 0 });
     }
+    #[cfg(not(windows))]
+    let _ = sequential;
     let file = options.open(path).map_err(|_| ArtifactError::Path)?;
     let metadata = file.metadata().map_err(|_| ArtifactError::Path)?;
     if !metadata.is_file() || is_redirect(&metadata) {
@@ -569,7 +592,7 @@ fn verify_installed_files<R: Read + Seek>(
         checkpoint()?;
         let path = root.join(&entry.name);
         hold_ancestors(&path, handles, checkpoint)?;
-        let mut installed = open_locked_file(&path)?;
+        let mut installed = open_locked_file_with_access(&path, true)?;
         let mut source = archive
             .by_index(entry.index)
             .map_err(|_| ArtifactError::Archive)?;
@@ -834,6 +857,116 @@ mod tests {
             hash_reader(&mut Cursor::new(b""), 0, &mut buffer, &mut || Ok(())),
             Ok("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855".into())
         );
+    }
+    #[test]
+    fn verification_buffer_amortizes_reads_and_preserves_the_complete_tail()
+    -> Result<(), Box<dyn std::error::Error>> {
+        struct RecordedReader {
+            inner: Cursor<Vec<u8>>,
+            requests: Vec<usize>,
+        }
+        impl Read for RecordedReader {
+            fn read(&mut self, buffer: &mut [u8]) -> std::io::Result<usize> {
+                self.requests.push(buffer.len());
+                self.inner.read(buffer)
+            }
+        }
+        let payload: Vec<_> = (0..=255_u8)
+            .cycle()
+            .take(2 * HASH_BUFFER_BYTES + 137)
+            .collect();
+        let expected = digest_hex(Sha256::digest(&payload).into());
+        let length = u64::try_from(payload.len())?;
+        let mut reader = RecordedReader {
+            inner: Cursor::new(payload),
+            requests: Vec::new(),
+        };
+        assert_eq!(
+            hash_reader(
+                &mut reader,
+                length,
+                &mut verification_buffer(length),
+                &mut || Ok(()),
+            )?,
+            expected
+        );
+        // Two complete chunks, the partial final chunk, and the mandatory EOF
+        // read. A larger file never causes artifact-sized scratch allocation.
+        assert_eq!(reader.requests, vec![HASH_BUFFER_BYTES; 4]);
+        assert_eq!(verification_buffer(u64::MAX).len(), HASH_BUFFER_BYTES);
+        assert_eq!(verification_buffer(0).len(), 1);
+        assert_eq!(verification_buffer(3).len(), 3);
+
+        reader.inner.get_mut()[2 * HASH_BUFFER_BYTES + 136] ^= 1;
+        reader.inner.set_position(0);
+        assert_ne!(
+            hash_reader(
+                &mut reader,
+                length,
+                &mut verification_buffer(length),
+                &mut || Ok(()),
+            )?,
+            expected
+        );
+        let _ = reader.inner.get_mut().pop();
+        reader.inner.set_position(0);
+        assert_eq!(
+            hash_reader(
+                &mut reader,
+                length,
+                &mut verification_buffer(length),
+                &mut || Ok(()),
+            ),
+            Err(ArtifactError::Identity)
+        );
+        Ok(())
+    }
+    #[cfg(windows)]
+    #[test]
+    fn sequential_verification_retains_file_guards_and_rejects_tail_changes()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let nonce = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)?
+            .as_nanos();
+        let root = std::env::temp_dir().join(format!(
+            "SwiftBonsai-sequential-verification-{}-{nonce}",
+            std::process::id()
+        ));
+        fs::create_dir(&root)?;
+        let path = root.join("model.bin");
+        let mut payload = vec![0xa5; HASH_BUFFER_BYTES + 137];
+        let length = u64::try_from(payload.len())?;
+        let digest = digest_hex(Sha256::digest(&payload).into());
+        fs::write(&path, &payload)?;
+        let guard = VerifiedFile::verify(&path, length, &digest)?;
+        // Ordinary locked readers remain seekable while verification retains
+        // deny-write/delete sharing on the same file and ancestor guards.
+        let mut reader = open_locked_file(&path)?;
+        reader.seek(SeekFrom::Start(length - 1))?;
+        let mut tail = [0];
+        reader.read_exact(&mut tail)?;
+        assert_eq!(tail, [0xa5]);
+        drop(reader);
+        assert!(OpenOptions::new().write(true).open(&path).is_err());
+        assert!(fs::remove_file(&path).is_err());
+        assert!(fs::rename(&path, root.join("moved.bin")).is_err());
+        drop(guard);
+
+        payload[HASH_BUFFER_BYTES + 136] ^= 1;
+        fs::write(&path, &payload)?;
+        assert_eq!(
+            VerifiedFile::verify(&path, length, &digest).err(),
+            Some(ArtifactError::Identity)
+        );
+        let _ = payload.pop();
+        fs::write(&path, &payload)?;
+        assert_eq!(
+            VerifiedFile::verify(&path, length, &digest).err(),
+            Some(ArtifactError::Identity)
+        );
+        fs::remove_file(path)?;
+        fs::remove_dir(root)?;
+        Ok(())
     }
     #[cfg(windows)]
     #[test]
