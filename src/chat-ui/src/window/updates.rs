@@ -17,7 +17,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-const CHECK_INTERVAL: Duration = Duration::from_secs(6 * 60 * 60);
+const CHECK_INTERVAL: Duration = Duration::from_hours(6);
 const MAX_OUTPUT: u64 = 64 * 1024;
 
 #[derive(Clone)]
