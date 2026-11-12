@@ -81,6 +81,8 @@ still return WAV. Older services need an update before the UI will read aloud.
 Both native compilation and actual synthetic speech generation have passed on
 Windows ARM64. These establish correctness of one path, not a performance
 measurement or broad voice/language qualification. Full suites and all benchmarks
-remain CI-only. GPU/NPU acceleration is not enabled. Thread counts, quantization,
+remain CI-only. The [optional local Hexagon runtime](../../src/speech-tts/README.md#optional-hexagon-runtime)
+can select `HTP0`; its deployment, device behavior and performance remain unqualified.
+GPU acceleration is not selected. Thread counts, quantization,
 streaming throughput and voice quality require separate evaluation on the target
 hardware; successful protocol tests do not establish a speedup.

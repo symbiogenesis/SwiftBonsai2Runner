@@ -118,6 +118,21 @@ The third-party engine and GGML are MIT licensed. Their exact notices accompany
 this crate as `LICENSE.qwen-core` and `LICENSE.ggml`. The original Qwen model is
 Apache-2.0; preserve its attribution and notices when distributing model files.
 
+## Optional Hexagon runtime
+
+The native initialization path tries to register an existing `HTP0` backend from
+`BONSAI_HEXAGON_RUNTIME_DIR`, or `%LOCALAPPDATA%/SwiftBonsai2/hexagon/runtime` when
+that override is absent. It requires `ggml-base.dll`, `ggml-hexagon.dll` and
+`libggml-htp-v81.so`; failed registration selects CPU. Setting
+`BONSAIRUNNER_TTS_DEVICE=CPU` suppresses registration. If absent, `ADSP_LIBRARY_PATH`
+is set in the speech companion for the selected directory. This is separate from
+the static CPU build and from Swift's native-Q2 runtime policy.
+
+The selector checks local path shape, required files and exports; it does not
+verify runtime hashes or signatures. It therefore does not establish authenticated
+deployment, GPU/NPU qualification or a performance benefit. Model files retain
+their separate immutable verification. GPU backends are not selected by this path.
+
 Local builds and focused tests are allowed. Full suites and every benchmark
 remain CI-only. Window launch or successful compilation alone does not qualify
 speech content, voice quality, latency or combined memory use with Swift.
@@ -185,13 +200,15 @@ greedy cases. Rust replay checks complete schedule identity, fixture digests and
 consumption, duplicate/invalid token IDs, signed zero and exceptional floats.
 The duplicate header and native oracle are removed.
 
-`src/engine.rs`, `src/codec.rs` and `src/speaker_encoder.rs` provide the safe
+`src/engine.rs`, `src/codec.rs` and `src/speaker_encoder.rs` contain candidate safe
 pure-Rust implementations of the 28-layer `Talker` and 5-layer `CodePredictor`
 (with `PromptCache` ICL stream caching, `TalkerLoraAdapter` overlays, `PQ2_0` /
 `PTQ1_0` ternary + block-1024 Sylvester Walsh–Hadamard folding, and
 `HtpPrefillPacket` `hexagon-native-rpc` NPU prefill framing), the 12 Hz / 48 kHz
 causal `ConvNeXt` / `SnakeBeta` audio codec and 8-slot `CodecStateSnap` LRU cache,
-and the 24 kHz Slaney 128-mel ECAPA-TDNN speaker encoder. Native CMake/C++ linkage
+and the 24 kHz Slaney 128-mel ECAPA-TDNN speaker encoder. These modules have not
+replaced `Synthesizer`'s native `Context` inference path. `HtpPrefillPacket` describes
+packet framing; it is not an integrated NPU dispatcher. Native CMake/C++ linkage
 remains active until hosted consumer integration and actual-model qualification
 retire the external static libraries.
 
@@ -208,9 +225,9 @@ rewind, all batch-width pairs, partial allocation failure and final cleanup.
 Exact source identities and assertion mappings remain in
 `tests/fixtures/decode-graph-v1.provenance.json`.
 
-The source audit retains the probability pipeline, mel constants
-and resampler upstream. Top-k/top-p ordering and mel changes need separate
-numerical evidence. Resampling is outside the current already-24-kHz reference
+The serving path retains the probability pipeline, mel constants
+and resampler upstream; candidate Rust modules do not change that active path.
+Top-k/top-p ordering and mel changes need separate numerical evidence. Resampling is outside the current already-24-kHz reference
 path. Full-model speech output, quality and resource acceptance remain CI work
 under `PLAN.md`; bit parity alone makes no performance claim.
 
