@@ -402,6 +402,7 @@ fn thinking_setting_defaults_off_reaches_next_turn_and_locks_while_busy() {
     chat.run();
     assert!(chat.state().app.enable_thinking);
     chat.state_mut().app.model = ModelLifecycle::Ready;
+    chat.run();
     chat.get_by_role_and_label(egui::Role::CheckBox, "Thinking")
         .click();
     chat.run();
@@ -424,10 +425,10 @@ fn abliteration_settings_keyboard_selection_reaches_next_turn_and_locks_while_bu
     assert!((chat.state().app.abliteration_scale - 1.3).abs() < f32::EPSILON);
     chat.state_mut().app.show_settings = true;
     chat.run();
-    chat.get_by_role_and_label(egui::Role::Button, "Advanced response controls")
+    chat.get_by_role_and_label(egui::Role::DisclosureTriangle, "Advanced response controls")
         .scroll_to_me();
     chat.run();
-    chat.get_by_role_and_label(egui::Role::Button, "Advanced response controls")
+    chat.get_by_role_and_label(egui::Role::DisclosureTriangle, "Advanced response controls")
         .click();
     chat.run();
     chat.get_by_role_and_label(egui::Role::Slider, "Abliteration scale")
@@ -461,10 +462,10 @@ fn abliteration_startup_opt_out_disables_settings_control() {
     chat.state_mut().app.abliteration_enabled = false;
     chat.state_mut().app.show_settings = true;
     chat.run();
-    chat.get_by_role_and_label(egui::Role::Button, "Advanced response controls")
+    chat.get_by_role_and_label(egui::Role::DisclosureTriangle, "Advanced response controls")
         .scroll_to_me();
     chat.run();
-    chat.get_by_role_and_label(egui::Role::Button, "Advanced response controls")
+    chat.get_by_role_and_label(egui::Role::DisclosureTriangle, "Advanced response controls")
         .click();
     chat.run();
     chat.get_by_role_and_label(egui::Role::Slider, "Abliteration scale")

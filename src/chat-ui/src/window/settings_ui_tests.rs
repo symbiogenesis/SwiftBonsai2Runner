@@ -175,7 +175,7 @@ fn settings_response_scope_stays_with_its_conversation_and_voice_is_shared() {
     chat.get_by_role_and_label(egui::Role::MultilineTextInput, "Voice profile")
         .focus();
     chat.run();
-    chat.key_press_modifiers(egui::Modifiers::CTRL, egui::Key::A);
+    chat.key_press_modifiers(egui::Modifiers::COMMAND, egui::Key::A);
     chat.run();
     chat.get_by_role_and_label(egui::Role::MultilineTextInput, "Voice profile")
         .type_text("A clear, measured storytelling voice.");
@@ -206,10 +206,10 @@ fn settings_response_controls_stay_locked_while_a_response_is_generating() {
             .accesskit_node()
             .is_disabled()
     );
-    chat.get_by_role_and_label(egui::Role::Button, "Advanced response controls")
+    chat.get_by_role_and_label(egui::Role::DisclosureTriangle, "Advanced response controls")
         .scroll_to_me();
     chat.run();
-    chat.get_by_role_and_label(egui::Role::Button, "Advanced response controls")
+    chat.get_by_role_and_label(egui::Role::DisclosureTriangle, "Advanced response controls")
         .click();
     chat.run();
     chat.get_by_role_and_label(egui::Role::Slider, "Abliteration scale")

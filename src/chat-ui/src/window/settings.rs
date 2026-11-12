@@ -1,7 +1,7 @@
 //! Scoped preferences in one responsive, keyboard-contained native surface.
 use super::{OUTPUT_TOKENS, RichText, State, VOICE_LIMIT, client, egui};
 
-#[derive(Clone, Copy, Default, Eq, Hash, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq)]
 pub(super) enum Page {
     #[default]
     Response,
@@ -45,7 +45,7 @@ pub(super) struct View {
 }
 
 impl State {
-    pub(super) fn open_settings(&mut self, page: Page) {
+    pub(super) const fn open_settings(&mut self, page: Page) {
         self.settings_view.page = page;
         self.settings_view.focus = true;
         self.show_settings = true;
@@ -101,7 +101,7 @@ impl State {
         let width = (content.width() - 96.0).clamp(240.0, 800.0);
         let wide = width >= 700.0;
         let body_height = (content.height() - if wide { 266.0 } else { 320.0 }).clamp(120.0, 470.0);
-        let visuals = ctx.style().visuals.clone();
+        let visuals = ctx.global_style().visuals.clone();
         let frame = egui::Frame::new()
             .fill(visuals.window_fill)
             .stroke(visuals.window_stroke)
@@ -120,13 +120,13 @@ impl State {
                 ui.add_space(16.0);
                 if wide {
                     ui.horizontal_top(|ui| {
+                        ui.spacing_mut().item_spacing.x = 24.0;
                         ui.vertical(|ui| {
                             ui.set_width(156.0);
                             self.settings_navigation(ui, false);
                         });
-                        ui.add_space(16.0);
                         ui.vertical(|ui| {
-                            ui.set_width((width - 182.0).max(240.0));
+                            ui.set_width(ui.available_width());
                             self.settings_content(ui, body_height);
                         });
                     });
@@ -162,7 +162,7 @@ impl State {
 
     fn settings_navigation(&mut self, ui: &mut egui::Ui, horizontal: bool) {
         let button_width = if horizontal {
-            (ui.available_width() - 3.0 * ui.spacing().item_spacing.x) / 4.0
+            (-3.0_f32).mul_add(ui.spacing().item_spacing.x, ui.available_width()) / 4.0
         } else {
             ui.available_width()
         };
@@ -171,7 +171,9 @@ impl State {
         } else {
             egui::Layout::top_down(egui::Align::Min)
         };
-        ui.with_layout(layout, |ui| {
+        // A horizontal navigation row needs a bounded cross-axis; with_layout
+        // would center its controls in the modal's entire remaining height.
+        ui.allocate_ui_with_layout(egui::vec2(ui.available_width(), 38.0), layout, |ui| {
             for page in Page::ALL {
                 if !horizontal && matches!(page, Page::Response | Page::Voice) {
                     if page == Page::Voice {
@@ -217,6 +219,7 @@ impl State {
             .max_height(height)
             .auto_shrink([false, false])
             .show(ui, |ui| {
+                ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Wrap);
                 ui.horizontal(|ui| {
                     ui.label(
                         RichText::new(if page == Page::Response {
