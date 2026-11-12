@@ -28,6 +28,7 @@ pub(crate) struct Request {
     pub(crate) data: PathBuf,
     pub(crate) canary_configured: bool,
     pub(crate) tts_configured: bool,
+    staged: bool,
 }
 
 #[derive(Default, serde::Deserialize)]
@@ -43,6 +44,8 @@ struct RequestedSpeech {
     no_speech_models: bool,
     #[serde(default)]
     speech_models_only: bool,
+    #[serde(default)]
+    preparation_stage: Option<String>,
 }
 
 impl Request {
@@ -76,6 +79,10 @@ impl Request {
         }
         let payload = bounded_text(&request)?;
         let speech: RequestedSpeech = serde_json::from_str(&payload).map_err(io::Error::other)?;
+        // New launchers advertise the stage contract in their serialized request.
+        // An older maintenance executable can still build this UI from source;
+        // retain its combined preparation protocol until it is rebuilt too.
+        let staged = speech.preparation_stage.as_deref() == Some("all");
         let has_canary_key = speech
             .canary_key_file
             .as_deref()
@@ -101,6 +108,7 @@ impl Request {
             data,
             canary_configured,
             tts_configured,
+            staged,
         })
     }
 }
@@ -159,7 +167,9 @@ fn execute(
     let object = payload
         .as_object_mut()
         .ok_or_else(|| io::Error::other("Native startup requires an object."))?;
-    object.insert("PreparationStage".into(), stage.into());
+    if stage != "all" {
+        object.insert("PreparationStage".into(), stage.into());
+    }
     if let Some(broker) = broker {
         object.insert("BrokerPath".into(), serde_json::json!(broker));
     }
@@ -273,7 +283,7 @@ fn prepare_stages(
     cancelled: &AtomicBool,
     mut prepare: impl FnMut(&str, Option<&Path>) -> io::Result<crate::client::Config>,
 ) {
-    let config = match prepare("model", None) {
+    let config = match prepare(if request.staged { "model" } else { "all" }, None) {
         Ok(config) => config,
         Err(error) => {
             let _sent = outgoing.send(Err(error));
@@ -281,7 +291,7 @@ fn prepare_stages(
         }
     };
     let broker = config.broker.clone();
-    let speech_pending = request.canary_configured || request.tts_configured;
+    let speech_pending = request.staged && (request.canary_configured || request.tts_configured);
     if outgoing
         .send(Ok(Progress::Model {
             config,
@@ -384,6 +394,7 @@ mod tests {
             data: config.data.clone(),
             canary_configured: true,
             tts_configured: true,
+            staged: true,
         };
         let (outgoing, incoming) = mpsc::sync_channel(2);
         let (release, gate) = mpsc::channel();
@@ -427,15 +438,24 @@ mod tests {
     #[test]
     fn staged_preparation_finishes_with_both_results_unread_and_skips_cancelled_speech() {
         let config = model_config();
-        let request = Request {
+        let mut request = Request {
             executable: config.data.join("tool.exe"),
             payload: config.data.join("request.json"),
             working: config.data.clone(),
             data: config.data.clone(),
             canary_configured: true,
             tts_configured: true,
+            staged: true,
         };
-        for cancelled in [false, true] {
+        for (cancelled, staged, speech) in [
+            (false, true, true),
+            (true, true, true),
+            (false, false, true),
+            (false, true, false),
+        ] {
+            request.staged = staged;
+            request.canary_configured = speech;
+            request.tts_configured = speech;
             let (outgoing, incoming) = mpsc::sync_channel(2);
             let mut stages = Vec::new();
             prepare_stages(
@@ -447,12 +467,14 @@ mod tests {
                     Ok(config.clone())
                 },
             );
-            assert_eq!(stages.len(), if cancelled { 1 } else { 2 });
+            let prepares_speech = !cancelled && staged && speech;
+            assert_eq!(stages.len(), if prepares_speech { 2 } else { 1 });
+            assert_eq!(stages[0], if staged { "model" } else { "all" });
             assert!(matches!(
                 incoming.try_recv(),
                 Ok(Ok(Progress::Model { .. }))
             ));
-            assert_eq!(incoming.try_recv().is_ok(), !cancelled);
+            assert_eq!(incoming.try_recv().is_ok(), prepares_speech);
         }
     }
 

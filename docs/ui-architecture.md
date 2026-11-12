@@ -55,8 +55,8 @@ while Swift loads and serves text chat. A speech preparation failure leaves text
 chat and its drafts/history intact; closing cancels both owned stages.
 Runtime preparation downloads only a missing locked runtime; model and adapter
 provisioning remain explicit. Drafts and recovered conversations survive preparation;
-model preparation failures leave the window available. Closing cancels preparation and waits for
-owned descendants. Artifact verification and memory admission precede model use.
+model preparation failures leave the window available. Closing cancels preparation
+and waits for owned descendants. Artifact verification and memory admission precede model use.
 Owned inference and speech require [native containment](sandboxing.md), with no
 uncontained fallback. Microphone consent is a separate UI capability check.
 

@@ -191,6 +191,9 @@ chat running and reports the failure in speech status. ASR and TTS model loading
 remains on demand, when transcribing or reading aloud, rather than adding their
 weight allocations to application startup. Closing the window cancels any
 remaining preparation and waits for owned processes to stop.
+Rebuild the maintenance executable as well as the native UI to enable staged
+startup. A new UI launched by older maintenance tools retains combined setup
+until those tools are rebuilt.
 
 Direct native-app launches also verify the selected Rust executable before hashing
 the model or creating credentials. Runtime failures name the compiled Prism version
