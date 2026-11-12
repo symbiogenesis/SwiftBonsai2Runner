@@ -196,6 +196,55 @@ Aggregate and per-command endpoints observed AC connected, saver off and 100%
 charge; they establish neither continuous stability nor performance benefit.
 No model, benchmark or CI operation ran.
 
+### Scoped PQ2 validation, tiled Q/K/V preparation and temporal GDN
+
+Local Prism `b98574a` integrates three further CPU source candidates targeting
+repeated work in projection and prompt ingestion, without requiring X1 Hexagon
+access:
+
+- A borrowed prepared-PQ2 view checks activation scales once per projection or
+  compatible sibling group and shares that proof across row tiles. For a
+  5,120-column, 17,408-row projection with eight-row tiles, this changes 87,040
+  activation-scale finite predicates to forty. Original weight-scale, geometry
+  and result checks remain required. The immutable borrow binds the proof to
+  current activation bytes; public unprepared calls remain defensive. No
+  persistent weight copy or new activation allocation is needed.
+- Tiled full-attention preparation joins query normalization/RoPE and key/value
+  normalization, RoPE and rounding in one token-partitioned worker submission.
+  This extends the existing decode scheduling idea to prompt tiles and omits
+  sixteen submissions per ordinary Swift tile, or fifteen when the final
+  full-attention layer uses its existing KV-only narrowing. Query failures
+  retain precedence over every key/value failure, and the earliest
+  original key/value chunk wins after workers join. Only provisional scratch
+  changes before the existing state publication boundary.
+- Eight-row multi-token GDN uses four-row arithmetic phases in both source-state
+  and in-place paths. Each dot phase has sixteen accumulator vectors rather
+  than thirty-two; all eight key dots still precede updates. Original per-token
+  arithmetic, private eight-row staging and atomic destination publication
+  remain intact. The small key/query arrays are read again for the second
+  four-row phase, so lower source register pressure alone establishes no gain.
+
+These changes establish no measured X1 speedup. Require final-source native and
+portable strict Release analysis, exact arithmetic and failure controls,
+feature-disabled fallback and production linking; ARM64 codegen/spill/stack
+review; complete-model state/logit/adapter/cancellation parity; and independent
+matched X1 complete-request benefit. Include preparation, dispatch and repeated
+input reads in timing. The prepared-PQ2 API joins the existing helper-publication
+and exact-dependency prerequisite. Runner continues to consume its verified
+0.1.23 bundle until release and repin; profiles and admission remain unchanged.
+
+The fixed model-free check on `750f7b3` closed after 15.026 seconds of its
+300-second allowance. Strict native all-target Release Clippy stopped at an
+obsolete GDN line-count expectation and two test assertion lints. Source
+corrections remove that expectation and make the empty-score assertions
+explicit, without reopening the clock. No test executed; x64, feature-disabled
+analysis and production linking were skipped. Rust formatting, Markdown and
+whitespace checks passed on the captured source. Aggregate and per-command
+endpoints observed AC disconnected, saver off and 85% charge; uninterrupted
+power stability remains unknown. All selected children exited, command logs
+were removed and the external build cache was retained. No model, benchmark or
+CI operation ran. Final-source compiler and execution acceptance remain pending.
+
 ## Execution and dispatch
 
 The default `experimental-neon` feature uses [`fearless_simd` 1.1.0][fearless]'s safe core API under

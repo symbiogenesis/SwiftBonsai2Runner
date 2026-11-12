@@ -1628,6 +1628,24 @@ errors and x64 lint findings. Their source corrections are reviewed but have
 not been replayed; keep final-source analyzer and execution acceptance pending
 and that original local clock closed.
 
+Qualify the [scoped PQ2, tiled Q/K/V and temporal GDN candidates](docs/cpu-kernels.md#scoped-pq2-validation-tiled-qkv-preparation-and-temporal-gdn):
+local Prism `b98574a` integrates borrowed activation validation shared across
+projection row tiles, one joined query/key/value preparation submission per
+full-attention prompt tile, and four-row arithmetic phases inside atomic
+eight-row multi-token GDN. Require
+final-source native/x64 strict Release analysis, exact arithmetic/error controls,
+feature-disabled fallback and production linking, ARM64 codegen/spill/stack
+review, full-model state/logit/adapter/cancellation parity and independent
+matched X1 complete-request benefit. Charge every preparation/dispatch cost and
+GDN's repeated key/query reads; source predicate, submission and accumulator
+counts establish no speedup. Publish the prepared-PQ2 helper API with the existing
+helper update before registry delivery. Release and verified Runner repin remain
+pending; preserve the current runtime, profiles and conservative admission.
+The fixed local check stopped at one obsolete lint expectation and two test
+assertion lints before executing tests. Their source corrections do not reopen
+that closed clock or supply final-source compiler/execution acceptance; x64,
+feature-disabled and linking checks remain pending.
+
 Require final-source exact numerical/failure controls, strict Release analyzers,
 portable fallback and production linking; ARM64 codegen/stack/resource review;
 complete-model state/logit/adapter and cancellation parity; signed vendor
