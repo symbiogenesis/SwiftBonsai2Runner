@@ -226,6 +226,73 @@ fn streaming_read_aloud_control_is_available_during_generation_and_stops_audio()
 }
 
 #[test]
+fn compact_message_headers_keep_short_exchanges_and_actions_visible() -> io::Result<()> {
+    for size in [[1180.0, 860.0], [620.0, 640.0]] {
+        let mut chat = harness(size, false);
+        chat.state_mut()
+            .app
+            .transcript
+            .push(Role::User, "A short prompt.".to_owned());
+        chat.state_mut()
+            .app
+            .transcript
+            .push(Role::Assistant, "A short response.".to_owned());
+        chat.state_mut().app.transcript.remove_empty_response();
+        chat.state_mut().app.transcript.messages[1].interrupted = true;
+        chat.state_mut()
+            .app
+            .transcript
+            .push(Role::User, "A follow-up.".to_owned());
+        chat.run();
+        let prompt = chat.get_by_label("A short prompt.").rect();
+        let answer = chat.get_by_label("A short response.").rect();
+        let followup = chat.get_by_label("A follow-up.").rect();
+        // A short exchange should leave room to read and write at minimum size,
+        // without an empty speech footer separating the answer from its followup.
+        assert!(followup.bottom() - prompt.top() < 230.0);
+        assert!(followup.top() - answer.bottom() < 100.0);
+        assert!(
+            followup.bottom()
+                < chat
+                    .get_by_role_and_label(egui::Role::MultilineTextInput, "Message")
+                    .rect()
+                    .top()
+        );
+        let speaker = chat
+            .get_by_role_and_label(egui::Role::Button, "Read this response aloud")
+            .rect();
+        let interrupted = chat.get_by_label("Interrupted").rect();
+        assert!(interrupted.right() < speaker.left());
+        assert!(speaker.bottom() <= answer.top());
+        for button in chat.get_all_by_role_and_label(egui::Role::Button, "Copy") {
+            let rect = button.rect();
+            assert!(rect.height() >= 32.0);
+            assert!(rect.left() >= 0.0 && rect.right() <= size[0]);
+            assert!(!rect.intersects(speaker));
+        }
+        let action = chat
+            .get_by_role_and_label(egui::Role::Button, "Actions for message 2")
+            .rect();
+        assert!(action.left() >= speaker.right());
+        assert!(action.right() <= size[0]);
+        if let Some(value) = std::env::var_os("BONSAI_UI_CAPTURE_DIRECTORY") {
+            let directory = capture_directory(value)?;
+            fs::create_dir_all(&directory)?;
+            let name = if size[0] < 900.0 {
+                "messages-narrow.png"
+            } else {
+                "messages-wide.png"
+            };
+            chat.render()
+                .map_err(io::Error::other)?
+                .save(directory.join(name))
+                .map_err(io::Error::other)?;
+        }
+    }
+    Ok(())
+}
+
+#[test]
 fn response_speakers_stay_in_bubbles_and_support_keyboard_play_and_stop() -> io::Result<()> {
     for size in [[1180.0, 960.0], [620.0, 800.0]] {
         let mut chat = harness(size, true);
@@ -242,7 +309,7 @@ fn response_speakers_stay_in_bubbles_and_support_keyboard_play_and_stop() -> io:
         let speaker = chat
             .get_by_role_and_label(egui::Role::Button, "Read this response aloud")
             .rect();
-        assert!(speaker.top() > body.bottom());
+        assert!(speaker.bottom() <= body.top());
         assert!(speaker.center().x > body.center().x);
         assert!(
             speaker.bottom()
@@ -259,7 +326,7 @@ fn response_speakers_stay_in_bubbles_and_support_keyboard_play_and_stop() -> io:
             .rect();
         let reasoning = chat.get_by_label("Private reasoning").rect();
         assert!(
-            speaker.top() > reasoning.bottom(),
+            speaker.bottom() <= body.top() && reasoning.top() > body.bottom(),
             "Speaker {speaker:?} overlaps reasoning {reasoning:?} at {size:?}"
         );
         assert!(

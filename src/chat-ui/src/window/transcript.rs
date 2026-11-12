@@ -24,8 +24,10 @@ pub(super) enum TranscriptAction {
 
 const MAX_BYTES: usize = 4 * 1024 * 1024;
 pub(super) const MAX_MESSAGES: usize = 512;
-const SPEAKER_SIZE: f32 = 36.0;
-const SPEAKER_FOOTER_HEIGHT: f32 = 64.0;
+const MESSAGE_INSET: Vec2 = Vec2::new(16.0, 12.0);
+const MESSAGE_ACTION_SIZE: f32 = 32.0;
+const MESSAGE_CONTENT_GAP: f32 = 6.0;
+const MESSAGE_GAP: f32 = 12.0;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub(super) enum Role {
@@ -425,7 +427,13 @@ impl Transcript {
                 },
                 count,
             };
-            message.layout(ui, width - 40.0, ranges, highlights, selected);
+            message.layout(
+                ui,
+                2.0_f32.mul_add(-MESSAGE_INSET.x, width),
+                ranges,
+                highlights,
+                selected,
+            );
             let height = message.height();
             let (rect, _) = ui.allocate_exact_size(Vec2::new(width, height), egui::Sense::hover());
             let target = self
@@ -439,21 +447,18 @@ impl Transcript {
                     rect,
                     target.map(|found| found.range.start),
                     controls.as_ref(),
+                    speaking_message,
+                    speech_enabled,
                 );
                 if let Some(message_action) = message_action {
-                    action = Some(TranscriptAction::Message(message_action));
-                }
-                if message.role == Role::Assistant
-                    && message.speaker(ui, rect, speaking_message, speech_enabled)
-                {
-                    action = Some(TranscriptAction::ReadAloud(message.id));
+                    action = Some(message_action);
                 }
                 if let Some(found_rect) = found_rect {
                     ui.scroll_to_rect(found_rect, Some(egui::Align::Center));
                     self.search.target = None;
                 }
             }
-            ui.add_space(16.0);
+            ui.add_space((MESSAGE_GAP - ui.spacing().item_spacing.y).max(0.0));
         }
         if self.search.latest {
             ui.scroll_to_cursor(Some(egui::Align::Max));
@@ -475,29 +480,20 @@ impl Message {
     fn speaker(
         &self,
         ui: &mut egui::Ui,
-        bubble: egui::Rect,
         speaking_message: Option<u64>,
         speech_enabled: bool,
     ) -> bool {
         let playing = speaking_message == Some(self.id);
-        let rect = egui::Rect::from_min_size(
-            bubble.right_bottom() - Vec2::splat(SPEAKER_SIZE + 20.0),
-            Vec2::splat(SPEAKER_SIZE),
-        );
-        let mut footer = ui.new_child(
-            egui::UiBuilder::new()
-                .id_salt(("message-speaker", self.id))
-                .max_rect(rect),
-        );
         let label = if playing {
             "Stop reading this response"
         } else {
             "Read this response aloud"
         };
-        let response = footer.add_enabled(
+        let response = ui.add_enabled(
             playing || (speech_enabled && self.can_speak()),
             egui::Button::new("")
-                .min_size(rect.size())
+                .min_size(Vec2::splat(MESSAGE_ACTION_SIZE))
+                .frame_when_inactive(false)
                 .selected(playing),
         );
         response.widget_info(|| {
@@ -508,8 +504,8 @@ impl Message {
         } else {
             label
         });
-        let painter = footer.painter_at(response.rect);
-        let color = footer.style().interact(&response).fg_stroke.color;
+        let painter = ui.painter_at(response.rect);
+        let color = ui.style().interact(&response).fg_stroke.color;
         let center = response.rect.center();
         if playing {
             painter.rect_filled(
@@ -676,16 +672,17 @@ impl Message {
         let Some(cache) = &self.cache else {
             return 100.0;
         };
-        let mut height = 40.0 + 24.0 + 12.0 + cache.body.size().y.max(20.0);
-        if self.role == Role::Assistant {
-            height += SPEAKER_FOOTER_HEIGHT;
-        }
+        // One shared header holds identity and actions for either role. Speech
+        // never reserves a separate row, including while it is unavailable.
+        let mut height = 2.0_f32.mul_add(MESSAGE_INSET.y, MESSAGE_ACTION_SIZE)
+            + MESSAGE_CONTENT_GAP
+            + cache.body.size().y.max(20.0);
         if !self.reasoning.is_empty() {
-            height += 32.0;
+            height += MESSAGE_CONTENT_GAP + MESSAGE_ACTION_SIZE;
             if self.show_reasoning
                 && let Some(reasoning) = &cache.reasoning
             {
-                height += reasoning.size().y + 8.0;
+                height += reasoning.size().y + MESSAGE_CONTENT_GAP;
             }
         }
         height
@@ -697,9 +694,10 @@ impl Message {
         rect: egui::Rect,
         target: Option<usize>,
         controls: Option<&MessageControls<'_>>,
-    ) -> (Option<egui::Rect>, Option<super::iteration::MessageAction>) {
+        speaking_message: Option<u64>,
+        speech_enabled: bool,
+    ) -> (Option<egui::Rect>, Option<TranscriptAction>) {
         let mut found_rect = None;
-        let mut action = None;
         let fill = if self.role == Role::User {
             ui.visuals().faint_bg_color
         } else {
@@ -709,42 +707,14 @@ impl Message {
         let mut child = ui.new_child(
             egui::UiBuilder::new()
                 .id_salt(("message", self.id))
-                .max_rect(rect.shrink(20.0))
+                .max_rect(rect.shrink2(MESSAGE_INSET))
                 .layout(egui::Layout::top_down(egui::Align::Min)),
         );
         child.set_clip_rect(rect.intersect(ui.clip_rect()));
-        child.horizontal(|ui| {
-            let (avatar, name) = if self.role == Role::User {
-                ("●", "You")
-            } else {
-                ("B", "Swift Bonsai")
-            };
-            ui.label(
-                RichText::new(avatar)
-                    .color(ui.visuals().selection.bg_fill)
-                    .size(18.0),
-            );
-            ui.label(RichText::new(name).strong().size(14.0));
-            if self.interrupted {
-                ui.label(RichText::new("Interrupted").small().weak())
-                    .on_hover_text(
-                        "This partial response is included in the conversation context.",
-                    );
-            }
-            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                if let Some(controls) = controls {
-                    action = self.message_controls(ui, controls);
-                }
-                if ui
-                    .small_button("Copy")
-                    .on_hover_text("Copy this message")
-                    .clicked()
-                {
-                    ui.ctx().copy_text(self.body.clone());
-                }
-            });
-        });
-        child.add_space(8.0);
+        child.spacing_mut().item_spacing = Vec2::splat(MESSAGE_CONTENT_GAP);
+        child.spacing_mut().button_padding = egui::vec2(8.0, 4.0);
+        child.spacing_mut().interact_size.y = MESSAGE_ACTION_SIZE;
+        let action = self.header(&mut child, controls, speaking_message, speech_enabled);
         if let Some(cache) = &self.cache {
             if self.body.is_empty() && self.pending {
                 child.label(RichText::new("Responding…").weak().italics());
@@ -768,20 +738,25 @@ impl Message {
                 }
             }
             if !self.reasoning.is_empty() {
-                child.add_space(8.0);
                 let label = if self.show_reasoning {
                     "Hide thinking"
                 } else {
                     "Show thinking"
                 };
-                if child.small_button(label).clicked() {
+                if child
+                    .add(
+                        egui::Button::new(label)
+                            .min_size(egui::vec2(0.0, MESSAGE_ACTION_SIZE))
+                            .frame_when_inactive(false),
+                    )
+                    .clicked()
+                {
                     self.show_reasoning = !self.show_reasoning;
                     child.ctx().request_repaint();
                 }
                 if self.show_reasoning
                     && let Some(reasoning) = &cache.reasoning
                 {
-                    child.add_space(4.0);
                     child.add(egui::Label::new(Arc::clone(reasoning)).selectable(true));
                 }
             }

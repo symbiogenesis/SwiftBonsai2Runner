@@ -189,6 +189,13 @@ continue to address the exact original text. This is a bounded presentation subs
 not a general Markdown or HTML renderer; additional style spans fall back to
 ordinary text while retaining bounded search highlights.
 
+Message cards use one compact header for the speaker, Copy, read-aloud and
+iteration actions. Read-aloud remains keyboard accessible, including Stop during
+playback, and reserves no separate footer while speech is unavailable. Cards
+share 16-point horizontal and 12-point vertical insets with a 12-point gap;
+thinking expands beneath the answer using its measured text height. Cached text
+wrapping and Find geometry use the same content insets as presentation.
+
 ## Interoperability belongs at the API boundary
 
 Use local LLM HTTP/JSON/SSE conventions: numeric loopback, bearer authorization,

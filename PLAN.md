@@ -252,6 +252,18 @@ pending gates. Full suites, benchmarks and performance captures stay in owning C
 
 ### Actual-model acceptance
 
+Qualify compact message headers on Windows ARM64 at normal and minimum window
+sizes, scaling and high contrast. Confirm Copy, speech play/Stop and iteration
+menus fit beside the speaker and Interrupted badge, and expanded thinking,
+selection and Find remain correctly positioned without clipping. Six focused
+source regressions and two DX12 previews passed in a 42-second model-free check
+with AC connected, battery saver off and 100% charge at both workload endpoints;
+these snapshots do not establish uninterrupted power conditions. Strict UI Clippy
+then reported two new geometry findings and four pre-existing interrupted-reply
+findings. Those source corrections and the final card-gap normalization remain
+unrerun under the closed trial's no-retry rule. Complete final analysis and native
+device/assistive-technology acceptance in owner-managed validation.
+
 Qualify the native Settings modal on Windows ARM64 at normal and minimum window
 sizes, display scaling and high contrast. Verify Response names the selected
 conversation, Voice/Privacy/Application state their app-wide scope, and the

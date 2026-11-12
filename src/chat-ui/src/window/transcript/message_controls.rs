@@ -1,8 +1,64 @@
 //! Explicit iteration actions stay separate from selectable model text.
-use super::{Message, MessageControls, Role, egui};
+use super::{
+    MESSAGE_ACTION_SIZE, Message, MessageControls, RichText, Role, TranscriptAction, egui,
+};
 use crate::window::iteration::MessageAction;
 
 impl Message {
+    pub(super) fn header(
+        &self,
+        ui: &mut egui::Ui,
+        controls: Option<&MessageControls<'_>>,
+        speaking_message: Option<u64>,
+        speech_enabled: bool,
+    ) -> Option<TranscriptAction> {
+        let mut action = None;
+        ui.horizontal(|ui| {
+            ui.set_min_height(MESSAGE_ACTION_SIZE);
+            let (avatar, name) = if self.role == Role::User {
+                ("●", "You")
+            } else {
+                ("B", "Swift Bonsai")
+            };
+            ui.label(
+                RichText::new(avatar)
+                    .color(ui.visuals().selection.bg_fill)
+                    .size(18.0),
+            );
+            ui.label(RichText::new(name).strong().size(14.0));
+            if self.interrupted {
+                ui.label(RichText::new("Interrupted").small().weak())
+                    .on_hover_text(
+                        "This partial response is included in the conversation context.",
+                    );
+            }
+            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                if let Some(controls) = controls {
+                    action = self
+                        .message_controls(ui, controls)
+                        .map(TranscriptAction::Message);
+                }
+                if self.role == Role::Assistant
+                    && self.speaker(ui, speaking_message, speech_enabled)
+                {
+                    action = Some(TranscriptAction::ReadAloud(self.id));
+                }
+                if ui
+                    .add(
+                        egui::Button::new("Copy")
+                            .min_size(egui::vec2(0.0, MESSAGE_ACTION_SIZE))
+                            .frame_when_inactive(false),
+                    )
+                    .on_hover_text("Copy this message")
+                    .clicked()
+                {
+                    ui.ctx().copy_text(self.body.clone());
+                }
+            });
+        });
+        action
+    }
+
     pub(super) fn message_controls(
         &self,
         ui: &mut egui::Ui,
@@ -10,7 +66,9 @@ impl Message {
     ) -> Option<MessageAction> {
         let mut action = None;
         let (response, _) = egui::containers::menu::MenuButton::from_button(
-            egui::Button::new("⋯").frame_when_inactive(false),
+            egui::Button::new("⋯")
+                .min_size(egui::Vec2::splat(MESSAGE_ACTION_SIZE))
+                .frame_when_inactive(false),
         )
         .ui(ui, |ui| {
             let options =
