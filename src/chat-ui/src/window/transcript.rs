@@ -5,6 +5,7 @@ use std::{ops::Range, sync::Arc};
 
 #[cfg(test)]
 mod cache_tests;
+mod formatting;
 mod message_controls;
 mod search;
 
@@ -34,6 +35,7 @@ struct LayoutCache {
     width: f32,
     pixels_per_point: f32,
     color: Color32,
+    code_background: Option<Color32>,
     reasoning_color: Color32,
     body_revision: u64,
     // Search owns the ranges. For an unchanged body and effective query, the
@@ -529,6 +531,7 @@ impl Message {
         selected: Option<&Range<usize>>,
     ) -> &LayoutCache {
         let color = ui.visuals().text_color();
+        let code_background = (self.role == Role::Assistant).then_some(ui.visuals().code_bg_color);
         let reasoning_color = ui.visuals().weak_text_color();
         let pixels_per_point = ui.ctx().pixels_per_point();
         let highlight_fill = ui.visuals().selection.bg_fill;
@@ -543,6 +546,7 @@ impl Message {
                 let body_unchanged = same_geometry
                     && cache.body_revision == self.body_revision
                     && cache.color == color
+                    && cache.code_background == code_background
                     && cache.highlights == highlights
                     && (matches.is_empty()
                         || (cache.highlight_fill == highlight_fill
@@ -612,6 +616,7 @@ impl Message {
             width,
             pixels_per_point,
             color,
+            code_background,
             reasoning_color,
             body_revision: self.body_revision,
             highlights,
@@ -631,26 +636,16 @@ impl Message {
         width: f32,
         matches: &[search::Match],
     ) -> Arc<egui::Galley> {
-        let mut job = egui::text::LayoutJob::default();
-        job.wrap.max_width = width;
-        let normal =
-            egui::TextFormat::simple(FontId::proportional(16.0), ui.visuals().text_color());
-        let mut previous = 0;
-        for found in matches {
-            #[cfg(test)]
-            {
-                self.highlight_range_visits
-                    .set(self.highlight_range_visits.get() + 1);
-            }
-            let range = &found.range;
-            job.append(&self.body[previous..range.start], 0.0, normal.clone());
-            let mut highlight = normal.clone();
-            highlight.background = ui.visuals().selection.bg_fill;
-            highlight.color = ui.visuals().selection.stroke.color;
-            job.append(&self.body[range.clone()], 0.0, highlight);
-            previous = range.end;
-        }
-        job.append(&self.body[previous..], 0.0, normal);
+        #[cfg(test)]
+        self.highlight_range_visits
+            .set(self.highlight_range_visits.get() + matches.len());
+        let job = formatting::layout_job(
+            &self.body,
+            self.role == Role::Assistant,
+            width,
+            ui.visuals(),
+            matches,
+        );
         ui.fonts_mut(|fonts| fonts.layout_job(job))
     }
     fn height(&self) -> f32 {
