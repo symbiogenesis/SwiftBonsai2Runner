@@ -675,7 +675,8 @@ $plan = (& $bonsai kv-promotion --json ($planRequest | ConvertTo-Json -Depth 30 
 The emitted policy fixes K4/V4 (`rsq4`) against FP16, at least 65% lower deep-task
 peak KV bytes including scales, at least 128 MiB lower deep-task whole-process
 peak private bytes, no individual usefulness drop over one point, and no average
-drop over half a point on a blind human 1..5 rubric; three means usable and both arms must reach it. The owner may review anonymous shuffled answers. Every objective check
+drop over half a point on a blind human 1..5 rubric; three means usable and both arms must reach
+it. The owner may review anonymous shuffled answers. Every objective check
 must pass in both arms; a failing baseline needs investigation rather than a
 candidate pass. A qualified complete-task latency regression above 10% is a no-go;
 no speedup or energy saving is required.
@@ -684,18 +685,24 @@ A `review` request has the same `declaration` and an `evidence` object:
 
 - `planSha256`: the emitted plan digest. `controls`: booleans `exactPackedRestore`,
   `cancellationRecovery`, `editedPrefixRecovery`, `adapterScaleRecovery`,
-  `explicitF16Rollback`, `ownedCleanup`, `noFullHistoryMirror`, and `comparableWholeTaskMemoryCoverage`, all attested against this candidate. Coverage includes startup, the complete request and retained checkpoint/restore overhead.
+  `explicitF16Rollback`, `ownedCleanup`, `noFullHistoryMirror`, and
+  `comparableWholeTaskMemoryCoverage`, all attested against this candidate. Coverage includes
+  startup, the complete request and retained checkpoint/restore overhead.
 - `pairs`: exactly three records in declaration order, each with `id`, exact
   `prompt`, `baseline`, `candidate`, `quality` and `objectiveChecks`.
 - Each arm: the complete declared `identities`; `kvCache` (`f16` or `rsq4`);
   actual distinct raw `graphIdentity` including its matching `kv-f16` or `kv-rsq4` marker; `inputTokens`,
   `generatedTokens`, `occupiedTokens`; `complete: true`; full UTF-8 `answer` and
-  matching `answerSha256`; complete-task `peakPrivateBytes`, `peakKvBytes`; equal `kvObservationTokens` at the measured cache position (at least 7,168 for the deep task), and `extraFailedOrRetriedRequests: 0`;
+  matching `answerSha256`; complete-task `peakPrivateBytes`, `peakKvBytes`; equal
+  `kvObservationTokens` at the measured cache position (at least 7,168 for the deep task), and
+  `extraFailedOrRetriedRequests: 0`;
   optional `endToEndMilliseconds`; `powerBefore`, `powerAfter`, and
   `uninterruptedPowerObserved`. Power objects contain nullable `acConnected`,
   `batterySaver`, `batteryPercent`. Use explicit null for unavailable observations.
   Occupancy allows the final sampled token to remain unconsumed. Both arms use
-  identical input counts and the same predeclared output limit, with that limit and the 64-token reserve fitting inside 8K. Cache memory is compared at the same observed position; natural answer lengths may differ.
+  identical input counts and the same predeclared output limit, with that limit and the 64-token
+  reserve fitting inside 8K. Cache memory is compared at the same observed position; natural
+  answer lengths may differ.
 - `quality`: `reviewerId`, `blind: true`, exact
   `baselineAnswerSha256`, `candidateAnswerSha256`, integer
   `baselineUsefulness`/`candidateUsefulness` in 1..5, and `majorRegression`.

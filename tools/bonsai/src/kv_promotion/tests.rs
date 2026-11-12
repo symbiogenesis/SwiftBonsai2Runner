@@ -1,7 +1,11 @@
 use super::*;
 
 fn fixture() -> crate::Result<(Value, Value)> {
-    let prompts = ["Find the archive key.", "Follow the format.", "Continue the scene."];
+    let prompts = [
+        "Find the archive key.",
+        "Follow the format.",
+        "Continue the scene.",
+    ];
     let ids = json!({"runnerRevision": "a".repeat(40), "prismRevision": "b".repeat(40),
         "runtimeSha256": "c".repeat(64), "modelSha256": "d".repeat(64),
         "adapterSha256": "e".repeat(64), "templateSha256": "f".repeat(64),
@@ -17,7 +21,8 @@ fn fixture() -> crate::Result<(Value, Value)> {
             "objectiveChecks": ["task-completed"]})).collect::<Vec<_>>()});
     let plan = run(json!({"operation": "plan", "declaration": declaration}))?;
     let answer = "A complete answer.";
-    let arm = |profile: &str, input_tokens: u32, private: u64, kv: u64, milliseconds: u32| json!({
+    let arm = |profile: &str, input_tokens: u32, private: u64, kv: u64, milliseconds: u32| {
+        json!({
         "identities": ids, "kvCache": profile,
         "graphIdentity": format!("model:swift-graph:kv-{profile}:gdn-f32"),
         "inputTokens": input_tokens, "generatedTokens": 16, "occupiedTokens": input_tokens + 16,
@@ -25,7 +30,8 @@ fn fixture() -> crate::Result<(Value, Value)> {
         "peakPrivateBytes": private, "peakKvBytes": kv, "kvObservationTokens": input_tokens, "extraFailedOrRetriedRequests": 0, "endToEndMilliseconds": milliseconds,
         "powerBefore": {"acConnected": true, "batterySaver": false, "batteryPercent": 80},
         "powerAfter": {"acConnected": true, "batterySaver": false, "batteryPercent": 80},
-        "uninterruptedPowerObserved": true});
+        "uninterruptedPowerObserved": true})
+    };
     let pairs = names.iter().zip(prompts).map(|(id, prompt)| json!({
         "id": id, "prompt": prompt,
         "baseline": arm("f16", if *id == "deep-retrieval" {7200} else {100},
@@ -48,7 +54,8 @@ fn fixture() -> crate::Result<(Value, Value)> {
 #[test]
 fn review_retains_no_go_results_and_rejects_tampered_or_incomplete_pairs() -> crate::Result<()> {
     let (declaration, evidence) = fixture()?;
-    let evaluate = |value| run(json!({"operation": "review", "declaration": declaration, "evidence": value}));
+    let evaluate =
+        |value| run(json!({"operation": "review", "declaration": declaration, "evidence": value}));
     let result = evaluate(evidence.clone())?;
     assert_eq!(result["status"], "ready-for-owner-review");
     assert_eq!(result["promotionApplied"], false);
@@ -59,10 +66,13 @@ fn review_retains_no_go_results_and_rejects_tampered_or_incomplete_pairs() -> cr
         ("/pairs/1/candidate/endToEndMilliseconds", json!(1101)),
         ("/pairs/1/quality/majorRegression", json!(true)),
         ("/pairs/1/quality/candidateUsefulness", json!(2)),
+        ("/pairs/1/quality/baselineUsefulness", json!(1)),
         ("/pairs/2/objectiveChecks/0/candidatePassed", json!(false)),
     ] {
         let mut losing = evidence.clone();
-        *losing.pointer_mut(pointer).ok_or("Missing fixture field.")? = value;
+        *losing
+            .pointer_mut(pointer)
+            .ok_or("Missing fixture field.")? = value;
         let result = evaluate(losing)?;
         assert_eq!(result["status"], "no-go", "{pointer}");
         assert_eq!(result["pairs"].as_array().map(Vec::len), Some(3));
@@ -71,18 +81,29 @@ fn review_retains_no_go_results_and_rejects_tampered_or_incomplete_pairs() -> cr
         ("/planSha256", json!("0".repeat(64))),
         ("/pairs/0/prompt", json!("different input")),
         ("/pairs/0/candidate/answer", json!("changed bytes")),
-        ("/pairs/0/candidate/identities/modelSha256", json!("0".repeat(64))),
+        (
+            "/pairs/0/candidate/identities/modelSha256",
+            json!("0".repeat(64)),
+        ),
         ("/pairs/0/candidate/complete", json!(false)),
-        ("/pairs/0/candidate/inputTokens", json!(4294967295_u32)),
+        ("/pairs/0/candidate/inputTokens", json!(u32::MAX)),
         ("/pairs/0/candidate/inputTokens", json!(8000)),
         ("/pairs/0/candidate/kvObservationTokens", json!(7199)),
         ("/pairs/0/candidate/extraFailedOrRetriedRequests", json!(1)),
-        ("/pairs/0/quality/candidateAnswerSha256", json!("0".repeat(64))),
+        (
+            "/pairs/0/quality/candidateAnswerSha256",
+            json!("0".repeat(64)),
+        ),
         ("/pairs/0/quality/blind", json!(false)),
-        ("/pairs/0/objectiveChecks/0/id", json!("different criterion")),
+        (
+            "/pairs/0/objectiveChecks/0/id",
+            json!("different criterion"),
+        ),
     ] {
         let mut invalid = evidence.clone();
-        *invalid.pointer_mut(pointer).ok_or("Missing fixture field.")? = value;
+        *invalid
+            .pointer_mut(pointer)
+            .ok_or("Missing fixture field.")? = value;
         assert!(evaluate(invalid).is_err(), "{pointer}");
     }
     let mut capacity_only = evidence;
