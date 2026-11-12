@@ -1,0 +1,4 @@
+.github\workflows\release.yml:27:28: context "runner" is not allowed here. no context is available here. see https://docs.github.com/en/actions/learn-github-actions/contexts#context-availability for more details [expression]
+   |
+27 |     working-directory: ${{ runner.temp }}
+   |                            ^~~~~~~~~~~

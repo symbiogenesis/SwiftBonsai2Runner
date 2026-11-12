@@ -9,9 +9,12 @@ The [release guide](docs/releases.md) records the owner-run publication command;
 the [first-release notes](docs/releases/v0.1.0.md) retain the development-default
 and qualification limits. GitHub pipeline activation, a genuine hosted build,
 MSI install/uninstall acceptance and a downloadable release remain pending.
-The no-push rule leaves source publication with the owner. Retain the exact
-source/assets/checksums from that first successful run; static source checks do
-not establish clean-machine model, speech, signing or daily-use acceptance.
+The no-push rule leaves source publication with the owner. The
+[local source review](docs/evidence/windows-release-20261111/delivery.json) retains
+passing final workflow, PowerShell, XML, Rust formatting and Markdown checks;
+the original context error and parser-policy block remain preserved separately.
+Retain the exact source/assets/checksums from the first successful hosted run;
+static checks do not establish clean-machine model, speech, signing or daily-use acceptance.
 
 Complete the owner-requested Prism 0.1.24 binary repin and README performance
 refresh after owner source/bundle publication. The [registry delivery record](docs/evidence/prism-0124-publish-20261109/summary.json)

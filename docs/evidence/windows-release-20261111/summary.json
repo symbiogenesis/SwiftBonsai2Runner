@@ -1,0 +1,93 @@
+{
+  "schemaVersion": 1,
+  "kind": "windows-release-static-validation",
+  "startedUtc": "2026-11-12T05:18:29.755296+00:00",
+  "maximumAggregateSeconds": 300,
+  "powerBefore": {
+    "observedUtc": "2026-11-12T05:18:29.755516+00:00",
+    "source": "GetSystemPowerStatus",
+    "acConnected": true,
+    "batterySaver": false,
+    "chargePercent": 96
+  },
+  "checks": [
+    {
+      "name": "source-revision",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "name": "actionlint",
+      "exitCode": 1,
+      "passed": false
+    },
+    {
+      "name": "installer-xml-and-toolchain-json",
+      "passed": true
+    },
+    {
+      "name": "powershell-parser",
+      "exitCode": 1,
+      "passed": false
+    },
+    {
+      "name": "launcher-rustfmt",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "name": "markdown-check",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "name": "markdown-format",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "name": "diff-check",
+      "exitCode": 0,
+      "passed": true
+    }
+  ],
+  "comparisonArms": [],
+  "performanceQualified": false,
+  "hostedBuildAndMsiAcceptance": "pending-owner-source-publication",
+  "releasePublished": false,
+  "gitPushes": 0,
+  "ciRunsDispatched": 0,
+  "sourceRevision": "1506120792550daf3920374b0c008d5c281c8b2b",
+  "actionlintArchiveSha256": "cadcf7ea4efe3a68728893813643cebe1185e5b1d4be5b96245f65c9a4d5ea41",
+  "sourceSha256": {
+    ".github/release/Collect-Notices.ps1": "ee630f0352e6ad8cb4a604bdb3de4d444566bfed2ddacaa218f847900f3172ec",
+    ".github/release/Package-Release.ps1": "279b7daea9e785c57c9637228d71cb24f6b68ed448a6d6da3eb94c46a3cbc85a",
+    ".github/release/Publish-Release.ps1": "8238c6da528d6c36fbf78eb5016c70b47ef30882f939e12e22ffdebf8c9f24e3",
+    ".github/workflows/release.yml": "cf2a5e7ddbae41f9d5d4e8fb43abb66a79316508a93d723a472880f9c7e8fda8",
+    "docs/chat-packages.md": "c5a6f781a1b9ba9e42ea1c0ca1c4e88974666b3172d6592465e310e8f7656887",
+    "docs/README.md": "85ff15b2350e197c611bf9704ac0488d4289e02bca7628de4f6f0d1095c4dede",
+    "docs/releases/v0.1.0.md": "d3eb2f8f56eaf7c9a68a21502f590ab28a1b1fd6bd2b17aa79f93106b6d0ebc5",
+    "docs/releases.md": "bda887adb5cd400a35a58b7f2676ad63ccc62d2c022e84484203a914be3f93dd",
+    "installer/windows/Package.wxs": "eaa935f03024ae69f787dab53238765e57ec9f0d4749496aa7fcc819f3f9845a",
+    "PLAN.md": "4b16c161c113e8c1045f47edc84b78adcbc09508b0c52076c1c2be6edea20cda",
+    "README.md": "bab4f607f58cda97f8990d6435b8c72606da585e14c66bbc031c5fb72b11a73b",
+    "scripts/release/Build-WindowsInstaller.ps1": "5db6e8db0be5122ac6a00799e923e2dca7d5d4541a0d828253006d716acc7e41",
+    "scripts/release/Test-WindowsInstaller.ps1": "53bd7c424e9bf34701dd87017fa84ec7b623e8b91d353a2ccb0c5665d87092b8",
+    "tools/bonsai/src/cli.rs": "4f1c14d078a08abf9265b084b4ffe6894ab4712e4109e79c1d3748c933c416ec",
+    "tools/bonsai/src/lib.rs": "2ac818e1acf8540d4059f88c06ee35076b5376d260f579f89e645248f7e12ee3",
+    "tools/bonsai/src/main.rs": "e88c35e01c2e207b2c1ecd5053eefa2040b55ef12ba62ecfb02cc171d72b8237"
+  },
+  "powerAfter": {
+    "observedUtc": "2026-11-12T05:18:31.068005+00:00",
+    "source": "GetSystemPowerStatus",
+    "acConnected": true,
+    "batterySaver": false,
+    "chargePercent": 96
+  },
+  "continuousPowerStabilityEstablished": false,
+  "allStaticChecksPassed": false,
+  "retainedScratchDirectory": "C:\\Users\\symbi\\AppData\\Local\\Temp\\SwiftBonsai-ReleaseStatic-7uawe1ps",
+  "closed": true,
+  "elapsedSecondsThroughRetention": 1.313304,
+  "withinAllowance": true
+}

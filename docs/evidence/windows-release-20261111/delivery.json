@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "kind": "local-windows-arm64-release-pipeline-delivery",
+  "status": "locally-prepared-publication-pending-owner-push",
+  "release": {
+    "tag": "v0.1.0",
+    "prerelease": true,
+    "published": false,
+    "remoteReleaseCreated": false,
+    "platform": "Windows 11 ARM64",
+    "installer": "SwiftBonsai2Runner-0.1.0-windows-arm64.msi",
+    "signed": false
+  },
+  "reviewedImplementationRevision": "b1fc63d8410142e0251c4267f902abda9ab0de93",
+  "localChecks": {
+    "workflow": "actionlint 1.7.12 passed on corrected source",
+    "powershell": "10 release scripts and workflow run blocks parsed without executing them",
+    "installer": "WiX XML and pinned toolchain JSON parsed",
+    "rust": "pinned rustfmt syntax and formatting checks passed for the three changed launcher sources",
+    "markdown": "rumdl check and format check passed on six changed documentation files",
+    "whitespace": "git diff --check passed for the initial integrated implementation",
+    "originalReceipt": "summary.json",
+    "sourceCorrectionReceipt": "correction.json",
+    "originalFailuresPreserved": true,
+    "elapsedAggregateSecondsFromOriginalStartThroughCorrectedChecks": 55.068769,
+    "originalMaximumAggregateSeconds": 300,
+    "newAllowanceOrClockRestart": false,
+    "allPowerSnapshots": "AC connected, battery saver off, 96% charge",
+    "continuousPowerStabilityEstablished": false,
+    "performanceComparisonPerformed": false
+  },
+  "implementation": {
+    "workflow": ".github/workflows/release.yml",
+    "target": "aarch64-pc-windows-msvc",
+    "wixVersion": "7.0.1",
+    "ownerDispatch": "gh workflow run release.yml --repo symbiogenesis/SwiftBonsai2Runner --ref main -f tag=v0.1.0 -f prerelease=true",
+    "hostedChecksRequiredBeforePublication": true,
+    "publication": "Create a draft at the checked source, verify uploaded assets and publish only after all selected hosted checks succeed.",
+    "applicationDataPreserved": true,
+    "modelsBundled": false,
+    "firstPartyUi": "native Rust",
+    "nonWindowsApplicationTargets": []
+  },
+  "authorization": {
+    "gitPushesPerformed": 0,
+    "ciRunsDispatched": 0,
+    "pullRequestsCreated": 0,
+    "restriction": "AGENTS.md reserves every Git push for the owner; the new workflow cannot be dispatched until its source is published to the default branch."
+  },
+  "pending": [
+    "Owner push of reviewed local main commits.",
+    "Hosted release build, full selected Rust checks, actual WiX compilation and MSI install/inspect/uninstall smoke.",
+    "Publication and final remote verification of the first v0.1.0 prerelease and installer assets.",
+    "Clean-machine hardware, actual-model, speech, upgrade, signing and daily-use acceptance recorded in PLAN.md."
+  ]
+}
