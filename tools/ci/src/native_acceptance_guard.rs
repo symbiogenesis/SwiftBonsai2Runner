@@ -7,7 +7,7 @@ use serde_json::{Value, json};
 
 use crate::Result;
 
-const TOOLCHAIN: &str = "nightly-2026-11-09-aarch64-pc-windows-msvc";
+const TOOLCHAIN: &str = "nightly-2026-11-12-aarch64-pc-windows-msvc";
 const PACKAGES: [&str; 3] = ["bonsai-broker", "bonsai-chat", "bonsai-tools"];
 const SOURCES: [&str; 6] = [
     ".github/actions/native-regressions/action.yml",

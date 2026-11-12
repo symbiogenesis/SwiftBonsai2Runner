@@ -16,10 +16,10 @@ const FIXTURES: &str = "tools/native-reference/fixtures";
 const PIN_MISMATCH: &str = "Hosted capture tools differ from reviewed source/revision pins.";
 const BINARY_NAMES: [&str; 2] = ["swift-ptq1-reference.exe", "swift_model_check.exe"];
 const BINARY_LIMIT: u64 = 134_217_728;
-const COMPILER_VERSION: &str = "rustc 1.102.0-nightly (5b7b37aef 2026-11-08)\n\
+const COMPILER_VERSION: &str = "rustc 1.102.0-nightly (3ef0c22cd 2026-11-11)\n\
 binary: rustc\n\
-commit-hash: 5b7b37aefcb5b2fba3c2392bc9065b9e4602d494\n\
-commit-date: 2026-11-08\n\
+commit-hash: 3ef0c22cdb86ac42dc6b8f0f1ec36857daa6f2a1\n\
+commit-date: 2026-11-11\n\
 host: aarch64-pc-windows-msvc\n\
 release: 1.102.0-nightly\n\
 LLVM version: 23.1.5";
@@ -209,7 +209,7 @@ fn receipt(
         || receipt["RunnerRevision"] != revision
         || receipt["CollectorLanguage"] != "rust"
         || receipt["CollectorSourcePath"] != COLLECTOR
-        || receipt["RustToolchain"] != "nightly-2026-11-09-aarch64-pc-windows-msvc"
+        || receipt["RustToolchain"] != "nightly-2026-11-12-aarch64-pc-windows-msvc"
     {
         return Err(PIN_MISMATCH.into());
     }
@@ -334,7 +334,7 @@ mod tests {
             let original = json!({
                 "SchemaVersion":3, "RunnerRevision":revision, "CollectorLanguage":"rust", "CollectorSourcePath":super::COLLECTOR,
                 "BuildFeatures":["parallel-rows"], "CheckerFeatures":["parallel-rows"], "SupportedRowWorkers":[1,4],
-                "RustToolchain":"nightly-2026-11-09-aarch64-pc-windows-msvc", "NativeSource":pins["nativeSource"], "RustSource":pins["rustSource"],
+                "RustToolchain":"nightly-2026-11-12-aarch64-pc-windows-msvc", "NativeSource":pins["nativeSource"], "RustSource":pins["rustSource"],
                 "CollectorSourceSha256":sha256(source), "AbiControlSha256":sha256(abi), "AbiProvenanceSha256":sha256(provenance),
                 "Files":binary_inventory(),
                 "Compiler":{"RustcVerbose":super::COMPILER_VERSION,"Sha256":"b".repeat(64),"LinkerSha256":"c".repeat(64)}
@@ -467,7 +467,7 @@ mod tests {
             ),
             (
                 "RustcVerbose",
-                json!(super::COMPILER_VERSION.replace("5b7b37aef", "000000000")),
+                json!(super::COMPILER_VERSION.replace("3ef0c22cd", "000000000")),
             ),
             (
                 "RustcVerbose",

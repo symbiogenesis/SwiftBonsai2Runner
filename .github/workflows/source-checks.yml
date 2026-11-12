@@ -153,19 +153,19 @@ jobs:
           persist-credentials: false
       - uses: $/.github/actions/rust-toolchain
         with:
-          toolchain: nightly-2026-11-09-aarch64-unknown-linux-gnu
+          toolchain: nightly-2026-11-12-aarch64-unknown-linux-gnu
           components: rustfmt
       - name: Check workspace Rust formatting
         working-directory: ${{ runner.temp }}
         env:
           CARGO_TARGET_DIR: ${{ runner.temp }}/SwiftBonsai-Premerge
-        run: cargo +nightly-2026-11-09 fmt --manifest-path "$GITHUB_WORKSPACE/Cargo.toml" --all -- --check
+        run: cargo +nightly-2026-11-12 fmt --manifest-path "$GITHUB_WORKSPACE/Cargo.toml" --all -- --check
       - name: Compile portable policy, broker and CI targets
         working-directory: ${{ runner.temp }}
         env:
           CARGO_TARGET_DIR: ${{ runner.temp }}/SwiftBonsai-Premerge
         run: >-
-          cargo +nightly-2026-11-09 check --locked --release
+          cargo +nightly-2026-11-12 check --locked --release
           --manifest-path "$GITHUB_WORKSPACE/Cargo.toml"
           --package bonsai-ci --package bonsai-cpu-policy --package bonsai-broker
           --all-targets
@@ -181,12 +181,12 @@ jobs:
             # An accidentally renamed/removed case must not silently pass with
             # zero tests. Listing compiles the target without executing it.
             local listed
-            listed="$(cargo +nightly-2026-11-09 test --locked --release --manifest-path "$GITHUB_WORKSPACE/Cargo.toml" "$@" "$case_name" -- --exact --list)"
+            listed="$(cargo +nightly-2026-11-12 test --locked --release --manifest-path "$GITHUB_WORKSPACE/Cargo.toml" "$@" "$case_name" -- --exact --list)"
             if ! printf '%s\n' "$listed" | grep -Fx -- "$case_name: test"; then
               echo "Required focused regression is missing: $case_name" >&2
               return 1
             fi
-            cargo +nightly-2026-11-09 test --locked --release --manifest-path "$GITHUB_WORKSPACE/Cargo.toml" "$@" "$case_name" -- --exact
+            cargo +nightly-2026-11-12 test --locked --release --manifest-path "$GITHUB_WORKSPACE/Cargo.toml" "$@" "$case_name" -- --exact
           }
           exact_test leaf_change_selects_transitive_consumers_without_sibling --package bonsai-ci --test routing
           exact_test failed_planner_and_malformed_results_cannot_pass --package bonsai-ci --test routing
@@ -268,18 +268,18 @@ jobs:
       - uses: $/.github/actions/rust-toolchain
         id: compiler
         with:
-          toolchain: nightly-2026-11-09-aarch64-unknown-linux-gnu
+          toolchain: nightly-2026-11-12-aarch64-unknown-linux-gnu
           components: ''
       - name: Cache the pinned audit tool
         id: audit-tool
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ runner.temp }}/cargo-audit
-          key: cargo-audit-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.compiler.outputs.image-identity }}-nightly-2026-11-09-0.22.2
+          key: cargo-audit-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.compiler.outputs.image-identity }}-nightly-2026-11-12-0.22.2
       - name: Install the pinned audit tool
         if: steps.audit-tool.outputs.cache-hit != 'true'
         working-directory: ${{ runner.temp }}
-        run: cargo +nightly-2026-11-09 install cargo-audit --version 0.22.2 --locked --root "$RUNNER_TEMP/cargo-audit"
+        run: cargo +nightly-2026-11-12 install cargo-audit --version 0.22.2 --locked --root "$RUNNER_TEMP/cargo-audit"
       - name: Check the complete lockfile against fresh advisories
         working-directory: ${{ runner.temp }}
         # Do not cache the advisory database or suppress off-target notices.

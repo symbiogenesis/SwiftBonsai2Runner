@@ -48,7 +48,7 @@ class NativeRegressionsTests(unittest.TestCase):
                 "REGRESSION_TARGET_NAME": "",
                 "REGRESSION_SELECTIONS": json.dumps(selections),
                 "REGRESSION_TARGET_DIRECTORY": str(scratch / "target"),
-                "REGRESSION_TOOLCHAIN": "nightly-2026-11-09-aarch64-pc-windows-msvc",
+                "REGRESSION_TOOLCHAIN": "nightly-2026-11-12-aarch64-pc-windows-msvc",
                 "GITHUB_WORKSPACE": str(scratch / "source"),
                 "BONSAI_CI_PATH": str(guard),
                 "FIXTURE_CARGO": str(cargo),
@@ -81,7 +81,7 @@ class NativeRegressionsTests(unittest.TestCase):
         ])
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(len(calls), 2)
-        self.assertEqual(calls[0][:4], ["+nightly-2026-11-09-aarch64-pc-windows-msvc", "test", "--locked", "--release"])
+        self.assertEqual(calls[0][:4], ["+nightly-2026-11-12-aarch64-pc-windows-msvc", "test", "--locked", "--release"])
         self.assertEqual(calls[0][-4:], ["--lib", "module::exact_case", "--", "--exact"])
         self.assertEqual(calls[1][-2:], ["--lib", "owner_shutdown_"])
         self.assertEqual([proof["expectedPassed"] for proof in proofs], [1, None])

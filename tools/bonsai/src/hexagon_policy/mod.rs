@@ -11,7 +11,7 @@ mod session;
 #[cfg(test)]
 mod tests;
 
-const TOOLCHAIN: &str = "nightly-2026-11-09-aarch64-pc-windows-msvc";
+const TOOLCHAIN: &str = "nightly-2026-11-12-aarch64-pc-windows-msvc";
 const SOURCE_NAMES: &[&str] = &[
     "lib.rs",
     "windows.rs",

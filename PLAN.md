@@ -784,7 +784,7 @@ state/adapter/cancellation parity and matched performance. Local source controls
 do not supply hosted, model or speed verdicts.
 
 Complete settled-source Foundation for all 12 registered crates' owning Release
-Clippy, rustdoc, tests and builds on the current `nightly-2026-11-09` pin.
+Clippy, rustdoc, tests and builds on the current `nightly-2026-11-12` pin.
 The [historical standards run](https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41386105716)
 targeted source `d2a2962` on `nightly-2026-11-02`. Its preceding run passed test,
 documentation and build phases, including native speech fixtures/linking, but

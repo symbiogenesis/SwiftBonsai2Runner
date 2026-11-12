@@ -26,7 +26,7 @@ jobs:
         id: compiler
         uses: $/.github/actions/rust-toolchain
         with:
-          toolchain: nightly-2026-11-09-aarch64-pc-windows-msvc
+          toolchain: nightly-2026-11-12-aarch64-pc-windows-msvc
       - name: Prepare external build, working and evidence paths
         shell: pwsh
         working-directory: ${{ runner.temp }}
@@ -73,7 +73,7 @@ jobs:
           $records = [Collections.Generic.List[object]]::new()
           $report = [ordered]@{
             SchemaVersion=1; Revision=$env:GITHUB_SHA; MxcVersion=$mxc.Groups[1].Value
-            Toolchain='nightly-2026-11-09-aarch64-pc-windows-msvc'
+            Toolchain='nightly-2026-11-12-aarch64-pc-windows-msvc'
             OsBuild=$os.CurrentBuildNumber; OsRevision=$os.UBR
             Architecture=[Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString()
             Tests=$records; Passed=$false; ActualModelQualified=$false
@@ -81,7 +81,7 @@ jobs:
           }
           try {
             foreach ($test in $tests) {
-              $arguments = @('+nightly-2026-11-09', 'test', '--locked', '--manifest-path', $manifest,
+              $arguments = @('+nightly-2026-11-12', 'test', '--locked', '--manifest-path', $manifest,
                 '--package', $test.Package, '--test', $test.Target)
               if ($test.Package -ceq 'bonsai-windows-process') { $arguments += @('--features', 'test-probe') }
               $listed = @(& $cargo @arguments -- --list --ignored)

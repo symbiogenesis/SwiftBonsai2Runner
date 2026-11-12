@@ -46,7 +46,7 @@ jobs:
       - name: Select the native Rust compiler
         uses: $/.github/actions/rust-toolchain
         with:
-          toolchain: nightly-2026-11-09-aarch64-pc-windows-msvc
+          toolchain: nightly-2026-11-12-aarch64-pc-windows-msvc
       - name: Capture paired TTS timing and listening samples
         shell: pwsh
         working-directory: ${{ runner.temp }}

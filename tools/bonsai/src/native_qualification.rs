@@ -18,7 +18,7 @@ mod windows;
 #[cfg(any(windows, test))]
 const LIMIT: u64 = 1_048_576;
 #[cfg(windows)]
-const CHANNEL: &str = "nightly-2026-11-09-aarch64-pc-windows-msvc";
+const CHANNEL: &str = "nightly-2026-11-12-aarch64-pc-windows-msvc";
 const PENDING: &[&str] = &[
     "no-adapter",
     "loaded-zero-identity",

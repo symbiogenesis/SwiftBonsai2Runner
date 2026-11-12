@@ -18,7 +18,7 @@ inputs:
     required: true
   toolchain:
     description: Explicit native Windows ARM64 Rust compiler.
-    default: nightly-2026-11-09-aarch64-pc-windows-msvc
+    default: nightly-2026-11-12-aarch64-pc-windows-msvc
 runs:
   using: composite
   steps:

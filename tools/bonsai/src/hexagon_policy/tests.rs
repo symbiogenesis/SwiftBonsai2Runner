@@ -229,7 +229,7 @@ fn compute_plans_and_environment_keep_fixed_cases_and_no_credentials() -> Result
 }
 
 fn build_record(session: bool) -> Value {
-    let mut value = json!({"SchemaVersion":1,"RunnerRevision":"1".repeat(40),"RustToolchain":"nightly-2026-11-09-aarch64-pc-windows-msvc","SourceSha256":"2".repeat(64),"ManifestSha256":"4".repeat(64),"LockSha256":"5".repeat(64),"HostedBuild":true,"Target":"aarch64-pc-windows-msvc","CompilerIdentitySha256":"3".repeat(64),"Executable":{"Name":if session {"native-hexagon-query.exe"} else {"hexagon-dispatch-fixture.exe"},"Bytes":65536,"Sha256":"6".repeat(64)}});
+    let mut value = json!({"SchemaVersion":1,"RunnerRevision":"1".repeat(40),"RustToolchain":"nightly-2026-11-12-aarch64-pc-windows-msvc","SourceSha256":"2".repeat(64),"ManifestSha256":"4".repeat(64),"LockSha256":"5".repeat(64),"HostedBuild":true,"Target":"aarch64-pc-windows-msvc","CompilerIdentitySha256":"3".repeat(64),"Executable":{"Name":if session {"native-hexagon-query.exe"} else {"hexagon-dispatch-fixture.exe"},"Bytes":65536,"Sha256":"6".repeat(64)}});
     if session {
         value["RunId"] = json!("1234");
         value["RunAttempt"] = json!("1");

@@ -103,7 +103,7 @@ $assets = @($msi, $archive, (Join-Path $OutputDirectory 'THIRD-PARTY-NOTICES.txt
 }
 @{
     schemaVersion = 1; version = $version; tag = $Tag; sourceRevision = $SourceRevision
-    target = 'aarch64-pc-windows-msvc'; toolchain = 'nightly-2026-11-09-aarch64-pc-windows-msvc'
+    target = 'aarch64-pc-windows-msvc'; toolchain = 'nightly-2026-11-12-aarch64-pc-windows-msvc'
     manifestSha256 = $manifestDigest; signed = $false
     runUrl = "https://github.com/$env:GITHUB_REPOSITORY/actions/runs/$env:GITHUB_RUN_ID"
     installerSmoke = 'passed-install-inspect-uninstall-without-model'; builds = $builds; assets = $assets
