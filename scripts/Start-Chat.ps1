@@ -53,7 +53,11 @@ if (-not $ToolPath -or -not (Test-Path -LiteralPath $ToolPath -PathType Leaf)) {
     $message += "`nSee docs/development-guide.md#native-chat-app for setup instructions."
     throw $message
 }
-$ToolPath = (Resolve-Path -LiteralPath $ToolPath).ProviderPath
+$resolvedTool = Resolve-Path -LiteralPath $ToolPath
+if ($resolvedTool.Provider.Name -cne 'FileSystem' -or [IO.Path]::GetExtension($resolvedTool.ProviderPath) -ine '.exe') {
+    throw 'The native launcher must be a filesystem executable (.exe).'
+}
+$ToolPath = $resolvedTool.ProviderPath
 
 $launchArguments = @('chat', '--repository-root', (Split-Path $PSScriptRoot -Parent))
 if ($DataDirectory) { $launchArguments += @('--data-directory', $DataDirectory) }
