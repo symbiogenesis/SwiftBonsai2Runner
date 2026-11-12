@@ -161,3 +161,41 @@ wrappers; feature, batching, selection and suite-guard regressions are Rust
 tests. The maintenance PowerShell/C# bootstrap and its tests have also been
 retired; native command input, caller identity, build ownership and immutable
 publication tests own those contracts.
+
+## Action dependency pins
+
+Keep every external action and reusable-workflow `uses:` reference at a full
+40-character commit SHA, including references inside composite actions. Keep
+release versions in comments for review. Same-repository actions use `$/` paths
+so GitHub and the lockfile tool can inspect their dependency closure.
+
+The generated [actions.lock](../../.github/workflows/actions.lock) records the
+upstream reference, resolved commit and repository identities. Source checks run
+`gh actions-lock --verify` to reject missing, stale or unverifiable lock entries;
+the verifier does not independently enforce our inline-SHA policy. A `sha-as-ref`
+warning is expected for our deliberate full-SHA references and does not mean the
+lock verification failed.
+
+Use only the official `github/gh-actions-lock` tool at the version and binary
+SHA-256 recorded in Source checks. The workflow verifies the downloaded bytes
+before executing them. Keep additions to CI dependencies sparse: each action,
+linter and downloaded tool adds code and maintainers to the trust boundary.
+Update the tool's release version and reviewed checksum together; do not fetch a
+fresh checksum at runtime or install an unpinned extension. No extra YAML parser
+or security linter is required for this lockfile check.
+
+When changing an action, use a disposable worktree and the same verified tool:
+
+1. Resolve the intended upstream release to its commit and update every affected
+   workflow and composite-action SHA, retaining its version comment.
+2. Run `gh actions-lock` to regenerate the lockfile. Generation may replace SHA
+   references with release tags. Review those edits and restore the corresponding
+   full commit SHA in every external `uses:` reference; keep the generated
+   symbolic upstream references inside `actions.lock` for provenance checking.
+3. Run `gh actions-lock --verify` against the complete workflow directory. Review
+   the workflow, composite-action and lockfile changes together, including any
+   added transitive dependencies or changed repository identities.
+
+Do not use `--accept-moved` in automation. Investigate moved references before
+accepting them. Local verification does not establish a hosted CI verdict, and
+the owner retains pushes and CI dispatch.
