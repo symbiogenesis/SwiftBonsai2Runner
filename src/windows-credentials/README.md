@@ -11,7 +11,7 @@ share this reader. It retains a noninheritable read handle that denies write and
 delete opens, and uses the same scrubbed secret storage as newly created keys.
 It does not attest the existing file's ACL or freeze mutable ancestors.
 
-Only the audited `src/native.rs` and `src/sealed.rs` boundaries may use unsafe Rust.
+Only the audited `src/native.rs`, `src/sealed.rs` and `src/hash.rs` boundaries may use unsafe Rust.
 `CreateDirectoryW` and `CreateFileW(CREATE_NEW)` establish protected ACLs at creation, granting full
 control only to the process user and LocalSystem. Directory ACLs allow object/container inheritance;
 files have explicit protected ACLs. Actual owner, protected DACL and every ACE are checked before
@@ -42,9 +42,14 @@ They use `BONSAI_CREDENTIAL_TEST_ROOT` when supplied, otherwise external Windows
 temp, and retain their small evidence directories. See [validation](../../docs/validation.md)
 for local/CI limits.
 
-`protect_private_data` / `unprotect_private_data` support opt-in conversation
-recovery through user-scoped Windows DPAPI with fixed application-purpose entropy,
+`protect_private_data` / `unprotect_private_data` support conversation
+recovery (enabled by default in the app, with a persistent opt-out) through
+user-scoped Windows DPAPI with fixed application-purpose entropy,
 no interactive prompts and an 8 MiB plaintext bound. Windows authenticates the
 encrypted data; corrupted or inaccessible data fails closed. Native output
 allocations are scrubbed before `LocalFree`. These APIs do not write files or
 provide isolation against another process running as the same Windows user.
+
+`Sha256` owns a streaming Windows CNG hash handle for artifact and maintenance
+digests. Each update borrows its input for one call; finishing consumes the state,
+and every path releases the handle. The Windows provider owns CPU dispatch.

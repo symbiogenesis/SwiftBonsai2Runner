@@ -14,9 +14,9 @@ TOPS do not enter the ranking.
 
 The maintenance CLI combines its pure plan with a physical-memory observation.
 The broker reuses profile memory limits, server arguments and environment-name
-policy. The PowerShell server preflight delegates strict reference profile checks
-and its launch-disabled plan to the same crate. Qualification samplers remain a
-separate contract.
+policy. The native `bonsai-tools server-policy` and `server-plan` commands delegate strict
+reference-profile checks and the launch-disabled plan to the same crate.
+Qualification samplers remain a separate contract.
 
 Planning uses compiled immutable configurations and constructs paths without
 reading artifacts, querying the operating system, writing files, or starting

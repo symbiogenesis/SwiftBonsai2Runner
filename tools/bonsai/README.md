@@ -38,8 +38,10 @@ $bonsai = Join-Path $target 'release/bonsai-tools.exe'
 
 `chat` is the native launch entry point; optional `scripts/Start-Chat.ps1`
 forwards to it and offers `-NativeEngine`, `-PublisherEngine`, `-NativeRowWorkers`,
-`-UseRepackedPtq1`, `-UseOriginalPq2` and `-GraphicsBackend`. The development default is Rust Prism
-0.1.14, original PQ2, four CPU row workers and the standard adapter at scale 1.3.
+`-UseRepackedPtq1`, `-UseOriginalPq2`, `-PromptReuse` and `-GraphicsBackend`. The development
+default is Rust Prism 0.1.23, original PQ2, four CPU row workers and the standard adapter at scale 1.3.
+The [runtime lock](../../config/prism-inference.lock.json) owns the exact release/source identities;
+the [Hexagon contract](../../docs/hexagon.md) describes conditional X2 NPU acceleration.
 `--publisher-engine` selects manual publisher rollback; its worker default is one.
 Use `--native-row-workers 1` for explicit single-worker Rust. Both engine flags
 are mutually exclusive; `--native-engine` remains accepted for explicit Rust.
@@ -48,7 +50,8 @@ It uses the nearest Runner checkout and
 is supplied. Boolean options are `--native-engine`, `--publisher-engine`,
 `--use-repacked-ptq1`, `--use-original-pq2`,
 `--no-abliterate-lora`, `--no-tts`, `--no-speech-models`, `--speech-models-only`
-and `--force-build`. Value options are `--native-row-workers`, `--graphics-backend`, `--tts-quantization`,
+and `--force-build`. Value options are `--native-row-workers`, `--prompt-reuse`,
+`--graphics-backend`, `--tts-quantization`,
 `--tts-threads`, `--frontend-port`, `--backend-port`, `--canary-port`, `--tts-port`,
 `--chat-path`, `--broker-path`, `--asr-path`, `--tts-path`, `--canary-key-file`,
 `--tts-key-file` and `--working-directory`. All existing launch admission,
@@ -64,12 +67,13 @@ selected adapter/backend remains recorded in `chat.log`; the requested option
 is retained in the deferred startup request. This does not change inference,
 automatically retry a failed renderer or establish device qualification.
 
-Rebuild the maintenance executable to use the new direct CLI default and
-`--publisher-engine` option. The current PowerShell facade forwards explicit
-Rust/four-worker selection by default, including when invoking a compatible older
-tool. Full-context/output, creative-quality, sustained-performance, isolation and
-clean-machine qualification remain pending; this default makes no speed claim.
-JSON `NativeEngine: false` remains an explicit publisher selection.
+Rebuild the maintenance executable after source changes to receive current launch
+defaults and options. The PowerShell facade forwards only supplied options; an older
+maintenance executable can retain older defaults. Full-context/output, creative-quality,
+sustained-performance, isolation and clean-machine qualification remain pending; this default
+makes no speed claim. JSON `NativeEngine: false` remains an explicit publisher selection.
+`--prompt-reuse none|latest` selects the [experimental prefix policy](../../docs/prefix-reuse.md);
+it defaults to `none` and `latest` requires the Rust engine.
 
 The two weight options are mutually exclusive. `--use-original-pq2` explicitly
 selects the pinned original Swift artifact with either engine; the current default
@@ -349,12 +353,23 @@ These additive contracts leave the general JSON protocol at version 5.
 their JSON requests. New schema-2 packages contain only five native executables
 and three notices; the PowerShell packaging module, launch/install wrappers and
 their tests are retired. Rust retains schema-1 package inspection and rollback.
+`installed-chat` is the human-facing alias for `start`; it accepts an optional leading
+`--installation-directory PATH` and the installed launch options defined by the package contract.
+It never enables source-path or build overrides.
 Run the command using an independently trusted maintenance executable: package
 hashes cannot authenticate the program performing the checks. `start` verifies
 the active package and derives its fixed executable paths before native launch.
 The legacy `launch` operation still supports a caller-bound directory, ID and
 manifest digest. Caller options cannot override paths or request a source build.
 The native launcher opens the pending UI before preparing backend and speech.
+
+`app-update` provides installed-MSI `check`, `download` and `install` operations.
+Requests identify `installationDirectory`; `download` also selects `version`, and
+`install` requires `version` and `handoffPath`. A queued request cannot install by itself:
+confirmed native UI exit and owned teardown must complete before the maintenance launcher
+revalidates the publication and hands off to Windows Installer. Source/preview launches
+perform no update work. See the [release/update contract](../../docs/releases.md#automatic-update-checks)
+for publication identities, confirmation and pending installed acceptance.
 
 `gguf` replaces `Read-Gguf.ps1`, `Export-SwiftPtq1.ps1` and their module. Use
 `operation: "inspect"` with `modelPath`, optional new `outputPath`, and either
@@ -517,9 +532,10 @@ verified again and retained by the existing capture supervisor.
 Both front-door and low-level captures require credential-free main-branch hosted
 CI on an actual native Snapdragon X/X2 Elite. The 28/14-process full matrices have
 no demonstrated complete five-minute owner bound, so self-hosted/owner execution
-rejects before preparation. Their manual workflows retain hosted nonlaunching
-`plan`/`screen-plan` results and leave qualification pending. The removed
-PowerShell wrappers are retired; use a prebuilt executable for capture operations. Never split a
+rejects before preparation. The former LoRA/PTQ1 plan-only workflows are retired; use
+the native nonlaunching `plan`/`screen-plan` operations directly and keep full
+qualification pending. The removed PowerShell wrappers are retired; use a prebuilt
+executable for capture operations. Never split a
 matrix across repeated owner jobs to bypass the aggregate allowance.
 
 Frozen pre-port PowerShell fixtures cover complete CPU policies, artifact identities
