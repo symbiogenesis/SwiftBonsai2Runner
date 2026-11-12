@@ -129,7 +129,7 @@ replace Runner's compiled binary lock.
 | Model | Exact original PQ2 from the [assessment lock](../config/swift-assessment.lock.json), or explicitly selected verified [current-weight PTQ1 export](../config/swift.ptq1-export.json); length, SHA-256 and metadata remain mandatory |
 | Weights | Dense `qwen35`; [851 tensors](../config/swift.metadata.json): 353 F32, 96 BF16 and 402 PQ2_0 or PTQ1_0, according to the selected artifact |
 | Execution | Scalar/eligible baseline NEON CPU execution; the current private worker also attempts the [X2 resident `native-q2` placement](hexagon.md). Unsupported operations reject; unavailable accelerator initialization retains CPU execution. |
-| State | One 8,192-token conversation; 16 full-attention and 48 recurrent blocks; FP16 attention K/V, F32 recurrent/convolution state and bounded allocation |
+| State | One 8,192-token conversation; 16 full-attention and 48 recurrent blocks; active 0.1.23 uses FP16 K/V, reviewed new source defaults to [K4/V4](quantized-kv.md) after verified delivery/repin; F32 recurrent/convolution state and bounded allocation |
 | Input/output | Verified embedded template, exact prompt tokens, supplied reasoning history, declared stops and incremental text |
 | Generation | [Inference defaults](inference-defaults.md), optional thinking with `xhigh` effort, production MT19937 draw ordering and native sampler tie behavior |
 | Lifecycle | Verified readiness, identical canonical count/generation requests, one active generation, authentication, streaming, cancellation, deadlines, reset and recovery |

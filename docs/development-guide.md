@@ -710,6 +710,20 @@ Engine options are mutually exclusive. Installed launches retain
 `NativeEngine: false` for publisher rollback and `NativeEngine: true` for explicit
 Rust selection; omitting it selects the current development default.
 
+The owner selects [TurboQuant-inspired K4/V4 (`rsq4`)](quantized-kv.md) as the
+development default in new Swift runtime source. Runner activates that default
+only for the exact reviewed runtime source after published-bundle verification
+and repinning. The current 0.1.23 bundle predates it and retains FP16. Trusted
+source launches accept `--kv-cache f16|rsq4` (`-KvCache F16|Rsq4` through
+`Start-Chat.ps1`); installed-launch JSON uses `KvCache: "f16"` or `"rsq4"`.
+Omission follows the pinned runtime's reviewed default. Explicit `rsq4` rejects
+an unsupported pin before starting inference. Publisher/reference launches reject
+this native cache selection. Choose `f16` on a fresh launch for comparison or
+recovery; retry preserves the cache, and client requests cannot change it.
+Cache readiness includes the expected numerical graph identity. The development
+choice accepts approximation and pending measured quality/memory qualification;
+process admission and the 8K context bound remain unchanged.
+
 A publisher startup diagnostic of `process=exited-0xC0000142` means Windows failed
 runtime initialization. **Retry model** repeats the selected runtime; it does not
 switch to Rust. Close the window and relaunch with `--native-engine` after provisioning

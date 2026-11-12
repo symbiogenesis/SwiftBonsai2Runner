@@ -23,7 +23,7 @@ qualify performance, full-context/output, quality, isolation or installation.
 | Added system prompt | None | Retain publisher instructions and user-supplied task/voice constraints |
 | Generation harness | One completion, EOS honored | No automatic critique/rewrite, forced extra thinking, majority voting or best-of-N |
 | Assistant history | Preserve supplied `reasoning_content` with `preserve_thinking: true` | Both verified templates support replaying prior assistant reasoning |
-| Attention / recurrent state | FP16 K/V; F32 recurrent/convolution state | Preserve the current numerical baseline |
+| Attention / recurrent state | Active 0.1.23 bundle: FP16 K/V. Reviewed new Swift source: K4/V4 (`rsq4`); F32 recurrent/convolution state | Owner-selected development default; requires verified runtime delivery/repin, with explicit FP16 recovery |
 | Context handling | Exact rendered token count; reject overflow | Preserve supplied history rather than silently shifting or truncating it |
 | RoPE | Model metadata, no override | Context extension can change short-context behavior |
 | Cache reuse / speculation | Disabled by default | Explicit [latest-prefix reuse](prefix-reuse.md) is available for native launches; speculation is outside Runner serving. Neither is an established quality improvement. |
@@ -88,8 +88,11 @@ without external feedback can hurt; neither supports mandatory expert personas/r
 Supply relevant references, audience, voice and constraints; request useful revisions.
 
 [KIVI](https://arxiv.org/abs/2402.02750) validates a specific asymmetric cache method on tested
-models, not arbitrary Q4/Q8 Swift caches. Retain FP16 (512 MiB at 8K) until a supported alternative
-passes quality. Prefix reuse saves computation, not added knowledge/reasoning.
+models, not arbitrary Q4/Q8 Swift caches. The owner selects the native
+[TurboQuant-inspired K4/V4 default](quantized-kv.md) for development without
+claiming completed quality or device qualification. FP16 (512 MiB at 8K) remains
+the explicit comparison/recovery option and the active 0.1.23 bundle's cache.
+Prefix reuse saves computation, not added knowledge/reasoning.
 
 ## Capacity and execution limits
 

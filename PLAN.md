@@ -21,7 +21,7 @@ the corresponding detailed task changes; keep every acceptance obligation below.
 | R1 / owner, integration | Prism, then Runner | Published source-bound 0.1.24 bundle | Verify source/archive/nine-file identities, repin and prepare active-release acceptance. Keep newer local CPU candidates and their helper-publication prerequisite separately identified under [CPU kernels](#cpu-kernels). |
 | R2 / implementation, qualification | Prism, then Runner | Settled candidate, required helper release and owning hosted checks | Qualify the explicit exact LUT candidate, integrate selected cross-token consumers and genuinely batched verification; close CPU/prefill codegen, fallback, state/adapter/cancellation and matched selected-device benefit gates, with independent X1 evidence where selected. Qualify changes already consumed in 0.1.23 without another repin; follow the [inference delivery order](#lossless-inference-delivery-order). |
 | R3 / integration, qualification | Prism and Runner harnesses | Agreed execution/state identities and existing complete-state fixtures | Prepare shared state/restore and fault-control tooling independently of runtime qualification; map each prefix/prefill/speculation/accelerator path to its independent assertions and evidence. |
-| K1 / integration, qualification | Prism, then Runner | Implemented native K4/V4 source, FP16 controls and the declared [practical compressed-KV packet](docs/quantized-kv.md#first-practical-promotion-packet) | Close selected-profile state/recovery controls, run the fixed paired actual-model quality/memory packet on one selected device, and deliver a published verified runtime bundle with matching broker/profile/context contracts. Promote K4/V4 to default/required within a passing device profile with explicit FP16 recovery; qualify X1/X2 independently and defer K4/V3. |
+| K1 / owner, qualification | Prism, then Runner | Owner-selected K4/V4 development default, reviewed native source and matching Runner launch/readiness controls | Publish and verify a runtime bundle containing the reviewed source, then repin to activate default/required `rsq4` in Runner. Keep explicit FP16 recovery and existing admission/8K bounds. Complete the [paired quality/memory packet](docs/quantized-kv.md#first-practical-promotion-packet) for measured qualification, independently on X1/X2; it is not a prerequisite for the development default. Defer K4/V3. |
 | S1 / implementation, integration | Runner; Prism for shared runtime/RPC consumers | Agreed verified-loading, state, stream and transport ownership interfaces | Integrate Talker/CodePredictor, codec/speaker and signed Rust RPC through [C++ retirement](#complete-c-retirement); qualify the ordinary Q4 baseline before ternary speech and new 48 kHz artifacts. |
 | S2 / implementation, qualification | Runner | Pinned Qwen3-ASR 1.7B artifacts and replacement controls | Qualify microphone-to-Swift submission, then replace ASR's native engine and close transcript/state, cancellation, lifecycle, quality and resource gates before removing its compiler/dependency paths. |
 | P1 / external, qualification | Prism and Runner | Original authoring inputs for provenance; hosted public-pack reconstruction for its separate gate | Run the declared reconstruction and independent replay while pursuing provenance intake independently; follow the PTQ1 critical path below. Neither blocks A1. |
@@ -149,6 +149,17 @@ Hexagon runtime package or CDSP driver is absent). Preserve explicit publisher r
 artifact, sandbox and resource admission. Keep PTQ1 opt-in. This owner-directed development choice
 does not assert complete release qualification or a measured advantage; retain the disclaimer and
 pending evidence below. No failure may switch engine or representation automatically.
+
+The owner also selects TurboQuant-inspired K4/V4 (`rsq4`) as the default and
+required cache for ordinary Swift sessions in reviewed new Prism source. Accept
+approximation and pending actual-model qualification for this development choice;
+do not require perfect answers or a completed paired quality/memory packet before
+selecting it. Explicit `f16` remains available for a fresh comparison/recovery
+session, with no request-level override or automatic downgrade. Runner's active
+0.1.23 bundle predates this cache and remains FP16 until the owner publishes a
+source-bound replacement and its exact verified bytes are repinned. The
+[cache contract](docs/quantized-kv.md) retains measured-quality, memory and
+independent device qualification, unchanged process admission and the 8K bound.
 
 Prioritize usable native startup, model readiness, stop/retry and explicit rollback,
 then actual-model application acceptance, daily-service isolation, creative
@@ -1465,14 +1476,17 @@ LoRA gates; calibration proves neither quality nor reduced admission.
 - Estimate process savings and traffic against PTQ1 first: 8K FP16 attention KV is 512
   MiB, so INT8 saves at most ~256 MiB before scales and scratch; recurrent/convolution
   state is separately 149.625 MiB. Cache ratios do not apply to weights.
-- Advance the owner-selected [native Snapdragon candidate](docs/quantized-kv.md)
-  toward K4/V4 (`rsq4`) default/required operation in a qualified device profile.
+- Deliver the owner-selected [native Snapdragon default](docs/quantized-kv.md):
+  K4/V4 (`rsq4`) is the development default and required ordinary Swift cache in
+  reviewed source. Its application activation needs exact-source runtime
+  publication/verification and repinning, not perfect reconstruction or a
+  completed actual-model packet. Keep explicit FP16 comparison/recovery at a
+  fresh-session boundary and reject silent fallback.
   The local offline `kv-promotion` reviewer, scoped live-state memory reporting
-  and compressed-profile prefix/adapter/recovery controls prepare that decision.
-  Final source validation remains pending: the bounded local check stopped on
-  lint failures, corrected in source without reopening its closed allowance;
-  the newly selected regressions were not executed. No actual-model comparison,
-  promotion verdict or runtime-bundle publication is established by these edits.
+  and compressed-profile prefix/adapter/recovery controls support follow-up
+  measured qualification.
+  No actual-model comparison, measured quality/memory qualification or
+  runtime-bundle publication is established by the source default decision.
   Its codec, graph and native CLI/service selection are implemented in Prism;
   K4/V3 remains a separate later capacity experiment. Close selected-profile
   packed-attention, scalar/NEON, exact quantized checkpoint, cancellation, prefix
@@ -1491,11 +1505,15 @@ LoRA gates; calibration proves neither quality nor reduced admission.
   mismatched power prevents timing/energy claims, not valid memory/quality evidence.
   Speedup and energy gains are not required.
   Qualify X1 Elite and X2 Elite Extreme independently: a selected-device pass can
-  promote that device profile without waiting for the other. Complete exact-source
+  qualify that device profile without waiting for the other. Complete exact-source
   runtime delivery/repin and matching broker/readiness/context contracts before
   application selection, with explicit FP16 comparison/recovery and unchanged
-  process admission and 8K limit. The small packet supports scoped development
-  promotion, not universal quality or complete application release qualification.
+  process admission and 8K limit. Extend the model-free graph-contract inventory
+  to describe rotated profiles before using discovery for their automatic
+  selection; current selection uses exact reviewed source and live readiness.
+  The small packet supports scoped measured
+  qualification, not universal quality or complete application release qualification,
+  and does not block the owner-directed development default.
   Defer SVD, indexes and a broad Q8 comparison without a measured 8K need; follow
   [compression constraints](docs/inference-algorithms.md#compression-and-approximation-constraints).
 - Only for material state traffic or storage, compare FP16 recurrence with FP32, then at

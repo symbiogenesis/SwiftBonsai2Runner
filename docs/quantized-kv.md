@@ -1,24 +1,33 @@
 # Native Snapdragon quantized KV
 
-This is the contract for the **experimental compressed-KV source candidate
-implemented in Prism** for Snapdragon X1 Elite and X2 Elite Extreme. It does not
+This is the contract for the **TurboQuant-inspired K4/V4 development default
+implemented in Prism source** for Snapdragon X1 Elite and X2 Elite Extreme. It does not
 qualify a new application profile, increase Runner's 8K context limit or replace
 the pinned 0.1.23 runtime bundle. [PLAN.md](../PLAN.md#bounded-calibration-and-optional-precision)
 owns the remaining application integration, delivery and qualification work.
 
-The selected endpoint is **K4/V4 (`rsq4`) as the default and required cache for
-a qualified device profile**, once a paired actual-model check shows roughly
-equivalent useful answers and substantially less cache memory with a real process
-memory saving. Identical tokens, FP16 logits or perfect reconstruction are not
-promotion requirements. Until that evidence and runtime delivery exist, FP16
-remains the application default and the explicit comparison/recovery control.
-Qualify X1 and X2 separately; a selected-device pass need not wait for the other.
+The owner selects **K4/V4 (`rsq4`) as the development default and required cache
+for ordinary Swift sessions**. This decision accepts approximate answers and
+pending actual-model quality, memory and device qualification; perfect
+reconstruction, identical tokens, FP16 logits and a completed comparison packet
+are not prerequisites for this development default. The paired packet below
+remains the standard for a measured quality/memory qualification claim.
+
+Explicit `f16` selection starts a comparison/recovery session. A request or failed
+compressed session cannot silently choose FP16. Runner's active verified 0.1.23
+bundle still uses FP16 because it predates this implementation. The development
+selection reaches the application after delivery and repinning of the exact
+reviewed runtime bytes; it does not waive artifact verification. Qualify X1 and
+X2 separately before making device-specific benefit claims.
 
 ## Source selection and current checks
 
 The safe codec API is `kv_quant::Quantizer::{new, scalar}`. Graph construction
 selects `graph::KvCachePolicy::{F16, Rotated4, Rotated4Keys3Values}` explicitly;
-existing constructors retain FP16. The raw generation CLI accepts
+generic graph constructors retain FP16 reference behavior. Normal Swift-session
+loaders, raw CLI generation with verified Swift weights and the private Swift
+service default to `rsq4`; other raw CLI models retain FP16.
+The raw generation CLI accepts
 `--kv-cache f16|rsq4|rsq4k3v` and records the policy and current graph identity in
 its completion metadata. Tokenize mode rejects this generation-only option.
 
@@ -26,9 +35,16 @@ its completion metadata. Tokenize mode rejects this generation-only option.
 `--kv-cache` option expose the candidate at the existing fixed 8K service bound.
 Client request bodies cannot select precision. Non-FP16 readiness reports
 `kv_cache` and the actual `startup_graph_identity`; the startup label remains
-accurate when a later request changes the adapter scale. Existing strict Runner
-brokers reject those different profile fields. Application use requires a
-published, verified Prism bundle and matching broker/profile/context contracts.
+accurate when a later request changes the adapter scale. Runner's trusted launch
+policy selects the cache from the exact reviewed runtime source and checks the
+matching cache and startup graph identity; older releases retain their FP16
+contract. Application use requires a published, verified Prism bundle with that
+source identity. The trusted launch option `--kv-cache f16|rsq4` permits explicit
+recovery without exposing precision in client request bodies.
+
+The model-free capability inventory still lists the FP16 graph contracts and is
+not the cache selector. Rotated-profile discovery remains follow-up integration
+work; current cache selection relies on reviewed source and live readiness.
 
 The sibling Prism checkout owns `src/kv_quant.rs`,
 `src/graph/quantized_kv.rs` and its `docs/quantized-kv.md` runtime contract.
@@ -73,7 +89,7 @@ scores directly and packed values accumulate in the rotated basis before one
 inverse transform. Per-head/tile scratch is bounded, with no whole-history
 expansion or retained FP16/F32 mirror.
 
-K4/V4 is the conservative candidate; K4/V3 is the asymmetric capacity candidate.
+K4/V4 is the selected development default; K4/V3 is the opt-in capacity candidate.
 Their codebooks, transform/sign seed, normalization, layout version and arithmetic
 must be sealed into the numerical identity. QJL residual sketches, fitted
 anisotropy corrections and precision changes to recurrent state are excluded
@@ -118,7 +134,7 @@ other storage above. Increasing context still requires matching runtime,
 tokenizer, broker, capability/readiness and UI limits, supported request bounds
 and an exact-source verified runtime release.
 
-## Qualification and promotion contract
+## Qualification contract
 
 Freeze the exact Runner/Prism source, model/adapter, compiler, codec/layout,
 selected precision, context/output bounds and device/driver identities before
@@ -148,7 +164,7 @@ The initial decision margins are deliberately practical:
 | Useful answer quality | A human reviewer, with candidate labels hidden, scores complete answers from 1 (unusable) to 5 (fully useful), with both arms at least 3 (usable). Mean compressed quality may be at most 0.5 lower, with no individual task more than 1 lower. All predeclared objective checks passed by FP16 remain passing; no new material factual, canon or task-completion failure is accepted. |
 | Cache memory | Actual packed K/V storage, including scales, is at most 35% of matched FP16 K/V storage at the same occupied positions. Verify that no full-history FP16/F32 mirror remains. |
 | Process memory | Near-full-context complete-task peak private bytes fall by at least 128 MiB, with matched measurement coverage and checkpoint/recovery costs included. Report absolute peaks and the actual saved fraction of total process memory. |
-| Responsiveness and reliability | Where matched-power timing is available, no complete task is more than 10% slower. Otherwise retain an unqualified latency result and require the owner to accept observed responsiveness before profile promotion. No extra failed/retried request or selected-profile state, cancellation or recovery regression is accepted. A speedup or energy improvement is not required for a memory-led decision. |
+| Responsiveness and reliability | Where matched-power timing is available, no complete task is more than 10% slower. Otherwise retain an unqualified latency result and require the owner to accept observed responsiveness before recording capacity-only qualification. No extra failed/retried request or selected-profile state, cancellation or recovery regression is accepted. A speedup or energy improvement is not required for a memory-led decision. |
 
 Use [`bonsai-tools kv-promotion`](../tools/bonsai/README.md#practical-compressed-kv-review)
 to freeze the packet and review its retained complete answers, matched cache
@@ -175,25 +191,26 @@ Unknown or mismatched power prevents a latency/energy verdict; it does not erase
 valid directly measured cache/process memory and answer-quality observations.
 Keep that capacity-only result and its usability-acceptance limit explicit.
 
-This small packet supports a scoped development decision, with limited confidence
-about unseen tasks; it does not establish universal quality equivalence. Keep
+This small packet supports a scoped measured qualification, with limited confidence
+about unseen tasks; it does not establish universal quality equivalence. It is
+follow-up validation of the owner-selected development default. Keep
 ordinary application release, isolation and installation obligations separate.
 Longer held-out reviews can use the same retained complete answers where applicable,
 without making a broader matrix a prerequisite for this selected-device decision.
 
 ### Delivery and profile decision
 
-After passing the source/lifecycle controls and this actual-model packet for the
-selected device, deliver an exact-source published and verified Prism runtime
-bundle and matching Runner launch, readiness and context contracts. Make `rsq4`
-the default and required cache within that qualified profile; requests cannot
-quietly override it or fall back to FP16 after a failure. Keep an explicit FP16
+Deliver an exact-source published and verified Prism runtime bundle and matching
+Runner launch, readiness and context contracts. The reviewed source selects
+`rsq4` by default and requires it for that session; requests cannot quietly
+override it or fall back to FP16 after a failure. Keep an explicit FP16
 comparison/recovery profile, selected at a safe fresh-session boundary. Do not
 reduce process admission or increase context from cache arithmetic alone.
 
-A pass on X2 may promote the X2 profile while X1 remains pending, and vice versa.
-Record the selected source/device scope and any no-go; other devices keep their
-existing profile until independently checked. K4/V3, precision changes to GDN or
+Passing the source/lifecycle controls and paired actual-model packet qualifies
+the measured device profile. A pass on X2 leaves X1 qualification pending, and
+vice versa; the shared development selection does not transfer evidence between
+them. Record the selected source/device scope and every no-go. K4/V3, precision changes to GDN or
 convolution state and context above 8K require separate decisions.
 
 Use the existing [research budget and power rules](research-register.md#experiment-scope-and-budgets).

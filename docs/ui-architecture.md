@@ -48,6 +48,15 @@ resident `native-q2` path under the [Hexagon policy](hexagon.md); CPU fallback f
 an absent signed package or CDSP driver does not change engine or representation.
 PTQ1 remains an explicit opt-in.
 
+The owner-selected cache default in new Swift runtime source is TurboQuant-inspired
+K4/V4 (`rsq4`), with measured quality/memory qualification pending. Runner binds
+that selection to the exact reviewed runtime source and verifies cache and startup
+graph readiness. Its active 0.1.23 bundle retains FP16 until a verified replacement
+is published and repinned. Trusted `--kv-cache f16` selects explicit recovery on a
+new native Swift launch; retry preserves the selected cache. Requests cannot
+override it or trigger an automatic downgrade. The [cache contract](quantized-kv.md)
+keeps process admission, context limits and device qualification separate.
+
 The launcher checks/builds presentation first. After the first UI tick, an owned
 preparation worker verifies/provisions the selected pinned Rust runtime alongside
 building/verifying the broker, then hands off text chat after both finish. Either
