@@ -1,5 +1,5 @@
 //! Scoped preferences in one responsive, keyboard-contained native surface.
-use super::{OUTPUT_TOKENS, RichText, State, VOICE_LIMIT, appearance, client, egui};
+use super::{OUTPUT_TOKENS, RichText, State, VOICE_LIMIT, appearance, egui};
 
 #[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq)]
 pub(super) enum Page {
@@ -63,29 +63,73 @@ impl State {
         ctx.request_repaint();
     }
 
-    pub(super) fn response_summary(&mut self, ui: &mut egui::Ui) {
-        let customized = self.enable_thinking
-            || self.extra_effort
-            || (self.abliteration_enabled
-                && (self.abliteration_scale - client::DEFAULT_ABLITERATION_SCALE).abs()
-                    > f32::EPSILON);
+    pub(super) fn thinking_button(&mut self, ui: &mut egui::Ui) {
         let help = match (self.enable_thinking, self.extra_effort) {
             (true, true) => {
-                "Thinking and extra effort are on. Open options for your next response."
+                "Thinking and extra effort are on. Change how Swift thinks before replying."
             }
-            (true, false) => "Thinking is on. Open options for your next response.",
-            (false, true) => "Extra effort is on. Open options for your next response.",
+            (true, false) => "Thinking is on. Change how Swift thinks before replying.",
+            (false, true) => "Extra effort is on. Change how Swift thinks before replying.",
             (false, false) => {
-                "Choose how Swift responds in this conversation. Opens response settings."
+                "Choose whether Swift thinks before replying or takes extra time to review."
             }
         };
-        if super::context_capacity::toolbar_button(ui, "Response options", customized)
-            .accessible_name("Response options")
-            .on_hover_text(help)
-            .clicked()
-        {
-            self.open_settings(Page::Response);
-        }
+        let response = super::context_capacity::toolbar_button(
+            ui,
+            "Thinking",
+            self.enable_thinking || self.extra_effort,
+        )
+        .on_hover_text(help);
+        egui::Popup::menu(&response)
+            .accessible_name("Thinking options")
+            .align(egui::RectAlign::TOP_START)
+            .width(280.0)
+            .gap(6.0)
+            .frame(
+                egui::Frame::popup(ui.style())
+                    .corner_radius(14)
+                    .inner_margin(14),
+            )
+            .close_behavior(egui::PopupCloseBehavior::CloseOnClickOutside)
+            .show(|ui| {
+                ui.label(RichText::new("Thinking").strong().size(16.0));
+                ui.label(RichText::new("For this conversation").small().weak());
+                ui.add_space(10.0);
+                ui.separator();
+                ui.add_space(10.0);
+                self.thinking_preferences(ui);
+                if self.model.busy() {
+                    ui.add_space(12.0);
+                    ui.label(
+                        RichText::new("Available when this response finishes.")
+                            .small()
+                            .weak(),
+                    );
+                }
+            });
+    }
+
+    fn thinking_preferences(&mut self, ui: &mut egui::Ui) {
+        let changed = ui
+            .add_enabled_ui(!self.model.busy(), |ui| {
+                ui.spacing_mut().interact_size.y = 28.0;
+                let mut changed = ui.checkbox(&mut self.enable_thinking, "Thinking").changed();
+                ui.label(
+                    RichText::new("Reason before answering. Uses part of the reply limit.")
+                        .small()
+                        .weak(),
+                );
+                ui.add_space(12.0);
+                changed |= ui.checkbox(&mut self.extra_effort, "Extra effort").changed();
+                ui.label(
+                    RichText::new("Plan, draft and review. Experimental; takes longer and may not improve answers.")
+                        .small()
+                        .weak(),
+                );
+                changed
+            })
+            .inner;
+        self.recovery_dirty |= changed;
     }
 
     pub(super) fn settings(&mut self, ctx: &egui::Context) {
@@ -354,15 +398,7 @@ impl State {
         settings_card(ui, |ui| {
             ui.label(RichText::new("Response style").strong());
             ui.add_space(8.0);
-            let changed = ui.add_enabled_ui(!self.model.busy(), |ui| {
-                let mut changed = ui.checkbox(&mut self.enable_thinking, "Thinking").changed();
-                ui.label(RichText::new("Reason before answering. Thinking uses part of the reply limit.").small().weak());
-                ui.add_space(12.0);
-                changed |= ui.checkbox(&mut self.extra_effort, "Extra effort (experimental)").changed();
-                ui.label(RichText::new("Plan, draft and review in up to three passes. Takes longer; quality gains are unproven.").small().weak());
-                changed
-            }).inner;
-            self.recovery_dirty |= changed;
+            self.thinking_preferences(ui);
         });
         ui.add_space(12.0);
         settings_card(ui, |ui| {

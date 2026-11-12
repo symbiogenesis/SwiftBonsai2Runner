@@ -52,8 +52,15 @@ fn harness(size: [f32; 2], render: bool) -> Harness<'static, Fixture> {
 }
 
 fn open_settings(chat: &mut Harness<'_, Fixture>) {
-    chat.get_by_role_and_label(egui::Role::Button, "Response options")
-        .click();
+    let mut clicked_header = false;
+    for button in chat.query_all_by_role_and_label(egui::Role::Button, "Settings") {
+        if button.rect().top() < 80.0 {
+            button.click();
+            clicked_header = true;
+            break;
+        }
+    }
+    assert!(clicked_header);
     chat.run();
     assert!(chat.state().app.show_settings);
 }
@@ -70,6 +77,177 @@ fn expand_advanced_response(chat: &mut Harness<'_, Fixture>) {
     chat.get_by_role_and_label(egui::Role::DisclosureTriangle, "Advanced response controls")
         .click();
     chat.run();
+}
+
+fn open_thinking(chat: &mut Harness<'_, Fixture>) {
+    chat.get_by_role_and_label(egui::Role::Button, "Thinking")
+        .click();
+    chat.run();
+    assert!(chat.query_by_label("Thinking options").is_some());
+    assert!(!chat.state().app.show_settings);
+}
+
+#[test]
+fn thinking_popup_has_only_two_controls_inside_minimum_and_wide_windows() {
+    for size in [[480.0, 480.0], [620.0, 640.0], [1180.0, 860.0]] {
+        let mut chat = harness(size, false);
+        open_thinking(&mut chat);
+        let bounds = egui::Rect::from_min_size(egui::Pos2::ZERO, size.into());
+        let popup = chat.get_by_label("Thinking options");
+        assert_eq!(popup.query_all_by_role(egui::Role::CheckBox).count(), 2);
+        assert_eq!(popup.query_all_by_role(egui::Role::ComboBox).count(), 0);
+        assert_eq!(popup.query_all_by_role(egui::Role::Slider).count(), 0);
+        assert!(chat.query_by_label("Reply length").is_none());
+        assert!(chat.query_by_label("Adapter strength").is_none());
+        for label in ["Thinking", "Extra effort"] {
+            let rect = popup
+                .get_by_role_and_label(egui::Role::CheckBox, label)
+                .rect();
+            assert!(rect.height() >= 28.0 && bounds.contains_rect(rect));
+        }
+        assert_eq!(chat.state().app.input, "Keep my next draft 🌱");
+        assert!(chat.state().commands.try_recv().is_err());
+    }
+}
+
+#[test]
+fn thinking_popup_changes_are_saved_only_for_the_selected_conversation() {
+    let mut chat = harness([620.0, 640.0], false);
+    let original = chat.state().app.active_conversation;
+    let output_budget = chat.state().app.output_budget;
+    let adapter = chat.state().app.abliteration_scale;
+    chat.state_mut().app.recovery_dirty = false;
+    open_thinking(&mut chat);
+    assert!(!chat.state().app.recovery_dirty);
+    for label in ["Thinking", "Extra effort"] {
+        chat.get_by_role_and_label(egui::Role::CheckBox, label)
+            .click();
+        chat.run();
+        assert!(chat.query_by_label("Thinking options").is_some());
+    }
+    assert!(chat.state().app.enable_thinking && chat.state().app.extra_effort);
+    assert!(chat.state().app.recovery_dirty);
+    assert_eq!(chat.state().app.output_budget, output_budget);
+    assert!((chat.state().app.abliteration_scale - adapter).abs() < f32::EPSILON);
+    chat.key_press(egui::Key::Escape);
+    chat.run();
+    chat.state_mut().app.new_chat();
+    assert!(!chat.state().app.enable_thinking && !chat.state().app.extra_effort);
+    chat.state_mut().app.switch_conversation(original);
+    chat.run();
+    assert!(chat.state().app.enable_thinking && chat.state().app.extra_effort);
+    assert_eq!(chat.state().app.input, "Keep my next draft 🌱");
+    assert!(
+        chat.state()
+            .commands
+            .try_iter()
+            .all(|command| !matches!(command, Command::Send { .. }))
+    );
+}
+
+#[test]
+fn thinking_popup_locks_both_choices_during_generation() {
+    let mut chat = harness([620.0, 640.0], false);
+    chat.state_mut().app.model = ModelLifecycle::Generating;
+    chat.state_mut().app.recovery_dirty = false;
+    open_thinking(&mut chat);
+    for label in ["Thinking", "Extra effort"] {
+        assert!(
+            chat.get_by_role_and_label(egui::Role::CheckBox, label)
+                .accesskit_node()
+                .is_disabled()
+        );
+    }
+    assert!(!chat.state().app.enable_thinking && !chat.state().app.extra_effort);
+    assert!(!chat.state().app.recovery_dirty);
+    assert!(chat.state().commands.try_recv().is_err());
+}
+
+#[test]
+fn thinking_popup_keyboard_dismissal_keeps_the_draft_and_active_response() {
+    let mut chat = harness([620.0, 640.0], false);
+    let owner = chat.state().app.active_conversation;
+    chat.state_mut().app.model = ModelLifecycle::Generating;
+    chat.state_mut().app.request_conversation = Some(owner);
+    chat.get_by_role_and_label(egui::Role::Button, "Thinking")
+        .focus();
+    chat.key_press(egui::Key::Space);
+    chat.run();
+    assert!(chat.query_by_label("Thinking options").is_some());
+    chat.key_press(egui::Key::Enter);
+    chat.run();
+    assert!(chat.state().app.model.busy());
+    assert!(chat.state().commands.try_recv().is_err());
+    chat.key_press(egui::Key::Escape);
+    chat.run();
+    assert!(chat.query_by_label("Thinking options").is_none());
+    assert!(chat.state().app.model.busy());
+    assert_eq!(chat.state().app.input, "Keep my next draft 🌱");
+    assert!(chat.state().commands.try_recv().is_err());
+    chat.key_press(egui::Key::Escape);
+    chat.run();
+    assert!(matches!(
+        chat.state().commands.try_recv(),
+        Ok(Command::Stop)
+    ));
+}
+
+#[test]
+fn thinking_and_context_popups_replace_each_other() {
+    let mut chat = harness([620.0, 640.0], false);
+    chat.get_by_role_and_label(egui::Role::Button, "Context")
+        .click();
+    chat.run();
+    assert!(chat.query_by_label("Space for this draft").is_some());
+    open_thinking(&mut chat);
+    assert!(chat.query_by_label("Space for this draft").is_none());
+    chat.get_by_role_and_label(egui::Role::Button, "Context")
+        .click();
+    chat.run();
+    assert!(chat.query_by_label("Thinking options").is_none());
+    assert!(chat.query_by_label("Space for this draft").is_some());
+    assert!(chat.state().commands.try_recv().is_err());
+}
+
+#[test]
+fn thinking_popup_capture_when_requested() -> io::Result<()> {
+    let Some(value) = std::env::var_os("BONSAI_UI_CAPTURE_DIRECTORY") else {
+        return Ok(());
+    };
+    let directory = std::path::PathBuf::from(value);
+    bonsai_windows_credentials::validate_external_path(&directory)?;
+    std::fs::create_dir_all(&directory)?;
+    for (name, size, theme) in [
+        (
+            "thinking-popup-wide.png",
+            [1180.0, 860.0],
+            appearance::Theme::Dark,
+        ),
+        (
+            "thinking-popup-minimum.png",
+            [480.0, 480.0],
+            appearance::Theme::Dark,
+        ),
+        (
+            "thinking-popup-light.png",
+            [620.0, 640.0],
+            appearance::Theme::Light,
+        ),
+    ] {
+        let mut chat = harness(size, true);
+        chat.state_mut().app.appearance.theme = theme;
+        chat.state().app.appearance.apply(&chat.ctx);
+        chat.state_mut().app.enable_thinking = true;
+        chat.run();
+        open_thinking(&mut chat);
+        chat.render()
+            .map_err(io::Error::other)?
+            .save(directory.join(name))
+            .map_err(io::Error::other)?;
+        assert!(chat.state().app.worker.is_none());
+        assert!(chat.state().app.speech.is_none());
+    }
+    Ok(())
 }
 
 #[test]
