@@ -1132,10 +1132,15 @@ fn long_conversation_find_scrolls_to_offscreen_matches_and_keeps_latest_reachabl
         let latest = chat
             .get_by_role_and_label(egui::Role::Button, "Latest")
             .rect();
+        let toolbar = chat
+            .get_by_role_and_label(egui::Role::Button, "Context")
+            .rect();
         assert!((latest.width() - latest.height()).abs() < 0.5);
         assert!((latest.center().x - composer.center().x).abs() < 12.0);
-        assert!(latest.top() > composer.top() - 100.0);
-        assert!(latest.bottom() < composer.top());
+        // Anchor the jump button to the top of the composer, including its
+        // toolbar; the editor can start lower when narrow controls wrap.
+        assert!(latest.top() > toolbar.top() - 100.0);
+        assert!(latest.bottom() < toolbar.top());
         chat.get_by_role_and_label(egui::Role::Button, "Latest")
             .click();
         // Let scrolling and the disappearing button's hover animation settle.
