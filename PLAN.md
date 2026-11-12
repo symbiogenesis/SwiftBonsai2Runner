@@ -250,6 +250,17 @@ pending gates. Full suites, benchmarks and performance captures stay in owning C
 
 ### Actual-model acceptance
 
+Qualify the native Settings modal on Windows ARM64 at normal and minimum window
+sizes, display scaling and high contrast. Verify Response names the selected
+conversation, Voice/Privacy/Application state their app-wide scope, and the
+composer response summary opens Response. Confirm immediate setting persistence,
+generation locks, advanced adapter disclosure, inline setup/diagnostics,
+keyboard/assistive-technology navigation and scrolling, and Done/Close/Escape
+focus return without changing drafts or triggering background Find, Send,
+generation Stop or conversation actions. Include selector Escape priority and
+the separate cancellation behavior for active input.
+Source fixtures do not close these actual-device acceptance gates.
+
 Qualify native message iteration and styled answers on Windows ARM64: edited and
 regenerated branches must preserve original drafts/settings and send only their
 exact committed prefix; user/assistant branching, Continue with an unsent draft,

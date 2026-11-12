@@ -291,12 +291,33 @@ Code is monospace; original Markdown markers remain visible. Copy, selection and
 Find retain exact source text and offsets. HTML and link-like text remain literal;
 this bounded styling subset does not execute code or activate generated links.
 
+**Settings** opens a centered native modal with side navigation in wide windows
+and horizontal categories in narrow windows. The response summary beside the
+composer opens its **Response** page directly, naming the selected conversation
+under **This conversation**. The other pages state **All conversations · This
+device**:
+
+| Page | Scope and controls |
+| --- | --- |
+| **Response** | Selected conversation: Thinking, Extra effort, output cap and **Advanced response controls**. |
+| **Voice** | All conversations: the shared Voice profile and read-aloud setup. |
+| **Privacy** | All conversations: automatic encrypted saving and its persistent opt-out. |
+| **Application** | Device-wide runtime information, application updates and inline diagnostics. |
+
+Changes apply immediately; **Done**, **Close** or Escape dismisses the modal
+without reverting them. Closing restores composer focus and preserves its draft.
+Escape closes an open selector before dismissing Settings. While Settings is
+open, background conversation actions, Find, Send and generation Stop shortcuts
+are blocked; active input retains its explicit cancellation behavior. A response
+already in progress continues normally. Voice setup and diagnostics expand
+inside Settings.
+
 | Setting | Behavior |
 | --- | --- |
 | **Thinking** | Off initially and in older saved chats; enables reasoning for the next response and every Extra effort pass. |
 | **Mode** | Standard makes one call. Experimental Extra effort makes at most three sequential plan/draft/review calls under one ten-minute deadline, shows stage labels and retains complete drafts. A truncated revision does not replace a complete draft; quality gains remain unproven. |
-| **Output cap** | The composer's **Reply** selector and Settings share this conversation's cap. Defaults to 4,096; also offers 512/1,024/2,048 reasoning-inclusive tokens within the fixed 8,192-token context and 64-token template reserve. |
-| **Abliteration scale** | Pinned adapter defaults to 1.3; choose 0-2 in 0.1 steps for the next response/every Extra effort pass without restart. Zero disables the correction. Older saved chats use 1.3; effectiveness and quality remain experimental. |
+| **Output cap** | The composer's **Reply** selector and **Settings > Response** share this conversation's cap. Defaults to 4,096; also offers 512/1,024/2,048 reasoning-inclusive tokens within the fixed 8,192-token context and 64-token template reserve. |
+| **Abliteration scale** | The advanced adapter disclosure in **Settings > Response** explains this experimental correction. The pinned adapter defaults to 1.3; choose 0-2 in 0.1 steps for the next response/every Extra effort pass without restart. Zero disables the correction. Older saved chats use 1.3; effectiveness and quality remain experimental. |
 
 The composer's **Context** button shows approximate occupancy for the selected
 conversation's next Send. Open it for a segmented breakdown of committed history
@@ -319,12 +340,12 @@ as committed history; another selected conversation keeps its own next-draft est
 Escape closes context details before Find or Stop, and Enter in those details does
 not submit the composer.
 
-Settings belong to each conversation and are retained while saving is enabled;
-response controls lock during generation. The broker still counts the exact prompt
-for every call and never discards history to make it fit. A framed context rejection
-restores the prompt and keeps the model ready; lower the output cap or start a
-conversation. Reaching an admitted response's cap is a separate partial-answer
-outcome, after which you can explicitly ask Swift to continue.
+Response settings belong to each conversation and are retained while saving is
+enabled; response controls lock during generation. The broker still counts the
+exact prompt for every call and never discards history to make it fit. A framed
+context rejection restores the prompt and keeps the model ready; lower the output
+cap or start a conversation. Reaching an admitted response's cap is a separate
+partial-answer outcome, after which you can explicitly ask Swift to continue.
 Other recognized input/burst rejections follow the [broker error contract](broker-policy.md#native-client-completion-and-recovery).
 
 ### Optional recovery and preview
@@ -335,8 +356,8 @@ response settings, voice description, transcript and exact completed history in
 workspace; a file lock permits one writer per data folder.
 Interrupted text can remain visible after recovery but never becomes committed
 history or an automatic request. Restore activates neither microphone nor playback.
-In **Settings**, disable **Save conversations on this device** to delete the saved
-copy and keep the workspace open without saving. This choice survives restarts;
+In **Settings > Privacy**, disable **Save conversations on this device** to delete
+the saved copy and keep the workspace open without saving. This choice survives restarts;
 the locked `chat-recovery.lock` sentinel retains only the saving preference.
 Enable the setting again to resume saving. Corrupt or
 unreadable recovery is preserved with a warning until explicit saving replaces it.
@@ -482,8 +503,9 @@ Each completed response's lower-right **speaker button** reads it independently,
 including while a newer response generates. The active button becomes **Stop**;
 selecting another response switches playback. Empty/streaming responses cannot
 start manual playback. Only visible answer text is spoken, excluding reasoning.
-Describe the **Voice profile**, for example "A warm, low-pitched narrator with a
-calm pace and clear consonants." No preset or reference recording is required.
+Describe the **Voice profile** in **Settings > Voice**, for example "A warm,
+low-pitched narrator with a calm pace and clear consonants." No preset or
+reference recording is required.
 The native library's [fixed voice conditioning](../src/speech-tts/README.md#voice-conditioning)
 reuses one reference across segments and messages with the same profile.
 Changing the profile creates a new reference; restarts regenerate it from the
