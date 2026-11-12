@@ -215,19 +215,13 @@ exact extracted receipt bytes. This resolves the selected direction's consistenc
 with B, leaving checkpoint/conversion provenance, A reproduction, native SSM
 mapping and model behavior unqualified.
 
-The main-only [published direction workflow](../.github/workflows/swift-lora-direction.yml)
-performs the smaller B-factor consistency check on GitHub-hosted Windows ARM64.
-It uses the native bounded downloader for the exact approved adapter and the
-[immutable public raw direction](../config/swift-lora.direction.json), then runs
-`basis-direction` and retains the complete per-site report, native intake receipts,
-input locks and source/run/tool identities. It downloads no model or checkpoint
-and makes no native writer-basis or promotion verdict. Dispatch it with
-`gh workflow run swift-lora-direction.yml --ref main`, then independently archive
-and review its evidence. The selected public raw vector is not a substitute for
-an authenticated record of the original authoring invocation.
-The value-free `attempt.json` retains the current stage, terminal status and native
-exit code when observed, including failed intake or comparison with no stdout report.
-A `running` receipt after forced interruption establishes no completed result.
+The native `basis-direction` comparator remains available for the exact approved
+adapter and [immutable public raw direction](../config/swift-lora.direction.json).
+Retain the complete per-site report, native intake receipts, input locks and
+source/tool identities when reviewing those inputs. The selected public raw vector
+cannot authenticate the original authoring invocation or qualify native writer
+basis and promotion. The completed hosted comparison above preserves its original
+source/run identities independently of the retired one-shot workflow.
 
 ## Memory and execution cost
 
@@ -293,8 +287,8 @@ A separate opt-in [app-scale contract](../config/swift-lora.app-qualification.js
 uses **scale 1.3** with the same four prompts, 24 paired samples, four zero-scale
 controls, greedy sampler and **512-token output cap**. Its distinct contract digest
 binds captures, nonzero-logits proof and independent complete-answer reviews;
-scale-one evidence cannot satisfy it. Select `qualification: app-scale-1.3` in the
-manual workflow, or inspect it without inference:
+scale-one evidence cannot satisfy it. Select `qualificationProfile: app-scale-1.3`
+in the native command, or inspect it without inference:
 
 ```powershell
 & $env:BONSAI_TOOLS_PATH qualification --json (@{
@@ -341,11 +335,9 @@ rewrite evidence or review hashes.
 
 ### Capture on the target device
 
-The manually dispatched [workflow](../.github/workflows/swift-lora-qualification.yml)
-runs only on `main` and retains the nonlaunching plan on hosted Windows ARM64.
-It downloads no model weights and schedules no owner-device capture. PQ2 is the
-default. The exact current-weight PTQ1 export is a separate fixed comparison because
-its activation quantization differs.
+The native planning command downloads no model weights and schedules no
+owner-device capture. PQ2 is the default. The exact current-weight PTQ1 export is
+a separate fixed comparison because its activation quantization differs.
 
 Inspect the plan locally without model loading or benchmarking:
 
@@ -360,8 +352,8 @@ envelope from `dataDirectory`, optional `useRepackedPtq1` and `qualificationProf
 It requires credential-free, main-branch hosted CI on an actual Snapdragon X/X2 Elite.
 Both the front door and low-level capture reject owner/self-hosted execution.
 The 24 paired samples plus four loaded-at-zero controls have no demonstrated complete
-five-minute bound. The manual workflow therefore retains a hosted nonlaunching plan
-and leaves capture pending; do not split the matrix across repeated owner jobs.
+five-minute bound. Capture remains pending a suitable hosted target; do not split
+the matrix across repeated owner jobs.
 
 | Capture component | Contract |
 | --- | --- |
