@@ -4,13 +4,54 @@
   "status": "passed",
   "version": "0.1.23",
   "sourceRevision": "055c7430cb4771dfddb24ddaa30494af6ad182da",
-  "publication": {"name": "prism-inference", "url": "https://crates.io/crates/prism-inference/0.1.23", "checksum": "c786a16b899588e23a205be47092d6c3b4be8a6c273a46681f28df23a9d87b73", "archiveBytes": 3659533, "normalizedMembers": 533, "yanked": false},
-  "checks": {"defaultCargoPackageVerificationPassed": true, "defaultCargoPublishVerificationPassed": true, "normalizedVcsAndRegistryDependenciesVerified": true, "publicVersionAndChecksumMatched": true, "helperVersionsChanged": false},
-  "clock": {"path": "raw/final-clock.json", "maximumTotalSeconds": 300, "elapsedSecondsThroughRetention": 40.06391090000034, "closed": true, "withinAllowance": true, "cleanupConfirmed": true, "retries": 0},
-  "power": {"source": "GetSystemPowerStatus", "aggregateEndpointsAndRecordedObservations": "AC connected, battery saver off,99% charge", "continuousStabilityEstablished": false},
-  "evidence": {"receipt": "raw/receipt.json", "archive": "raw/archive.json", "independentReview": "registry-independent-review.json", "hostedPrerequisite": "../foundation-bundle-0123-20261109-attempt3/summary.json"},
+  "publication": {
+    "name": "prism-inference",
+    "url": "https://crates.io/crates/prism-inference/0.1.23",
+    "checksum": "c786a16b899588e23a205be47092d6c3b4be8a6c273a46681f28df23a9d87b73",
+    "archiveBytes": 3659533,
+    "normalizedMembers": 533,
+    "yanked": false
+  },
+  "checks": {
+    "defaultCargoPackageVerificationPassed": true,
+    "defaultCargoPublishVerificationPassed": true,
+    "normalizedVcsAndRegistryDependenciesVerified": true,
+    "publicVersionAndChecksumMatched": true,
+    "helperVersionsChanged": false
+  },
+  "clock": {
+    "maximumTotalSeconds": 300,
+    "elapsedSecondsThroughRetention": 40.06391090000034,
+    "closed": true,
+    "withinAllowance": true,
+    "cleanupConfirmed": true,
+    "retries": 0
+  },
+  "power": {
+    "source": "GetSystemPowerStatus",
+    "aggregateEndpointsAndRecordedObservations": "AC connected, battery saver off,99% charge",
+    "continuousStabilityEstablished": false
+  },
   "scope": "Only the public runtime crate was published. The five registry helper versions remain unchanged; server and accelerator crates remain unpublished. Actual GitHub delivery, binary repin and performance are recorded separately. Historical trial clocks remain closed.",
   "fullFoundationQualified": false,
   "modelAcceptanceQualified": false,
-  "performanceQualified": false
+  "performanceQualified": false,
+  "retention": {
+    "kind": "historical-summary",
+    "originalGitRevision": "3c03fbfe",
+    "originalDirectory": "docs/evidence/prism-0123-publish-20261109",
+    "rawPayloadsAndPollingLogsRemoved": true,
+    "scope": "Summarizes the original operation and review. Original raw artifacts, declarations, scripts and inventories are available in Git history at this revision and directory. This trimmed record cannot replay their hashes or source comparisons and is not a new verification, power observation, publication or retry.",
+    "originalRawInventorySha256": "6640ed79d9efab9e36f8127a53d13f1594fa601415b4d08c2306a35d77e3cb11"
+  },
+  "hostedPrerequisite": "../foundation-bundle-0123-20261109-attempt3/summary.json",
+  "historicalIndependentReview": {
+    "rawMembersVerified": 19,
+    "normalizedPackageSourceAndRegistryMetadataMatched": true,
+    "recordedPowerObservationsVerified": 78,
+    "normalizedSourceComparison": "Cargo.toml.orig maps to the tracked Cargo.toml. Generated normalized Cargo.toml, Cargo.lock and .cargo_vcs_info.json are audited separately. All remaining files match the captured clean working checkout exactly; CRLF differences from the GitHub source ZIP are explicit.",
+    "sourceFilesIdenticalToCanonicalLf": 51,
+    "sourceFilesDifferingOnlyByCheckoutCrLf": 479,
+    "otherSourceDifferences": 0
+  }
 }

@@ -1,7 +1,0 @@
-{
-  "closed": true,
-  "elapsedSecondsThroughReceiptRetention": 0.14905730000100448,
-  "maximumAggregateSeconds": 30,
-  "retries": 0,
-  "withinDeclaredAllowance": true
-}
