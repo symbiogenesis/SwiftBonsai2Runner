@@ -29,7 +29,7 @@ impl<'a> Headers<'a> {
         Ok(())
     }
 
-    pub(super) fn finish(self) -> Result<Option<Capacity>> {
+    pub(super) fn finish(self, context_rejection: bool) -> Result<Option<Capacity>> {
         let (policy, observed, maximum) = match (self.policy, self.observed, self.maximum) {
             (None, None, None) => return Ok(None),
             (Some(policy), Some(observed), Some(maximum)) => {
@@ -45,6 +45,13 @@ impl<'a> Headers<'a> {
                 if maximum == MAX_CONTEXT_TOKENS && (1..=maximum).contains(&observed) =>
             {
                 Ok(Some(Capacity::Adaptive { observed }))
+            }
+            b"available-memory-v1"
+                if context_rejection && maximum == MAX_CONTEXT_TOKENS && observed == 0 =>
+            {
+                // A pressure rejection may leave no allocatable context. It is
+                // not a usable denominator or a new successful observation.
+                Ok(Some(Capacity::Unknown))
             }
             _ => Err(INVALID),
         }
@@ -105,5 +112,18 @@ mod tests {
             );
             assert!(super::super::parse_head(head.as_bytes()).is_err());
         }
+    }
+
+    #[test]
+    fn context_metadata_zero_pressure_capacity_preserves_typed_context_rejection() {
+        let payload = r#"{"error":{"code":"context_length_exceeded"}}"#;
+        let response = format!(
+            "HTTP/1.1 413 Payload Too Large\r\nContent-Type: application/json\r\nContent-Length: {}\r\nX-Bonsai-Context-Policy: available-memory-v1\r\nX-Bonsai-Context-Tokens: 0\r\nX-Bonsai-Max-Context-Tokens: 262144\r\n\r\n{payload}",
+            payload.len()
+        );
+        assert!(matches!(
+            super::super::HttpBody::new(response.as_bytes()),
+            Err(Failure::Rejected(super::super::CONTEXT_LIMIT_MESSAGE))
+        ));
     }
 }

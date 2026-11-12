@@ -1310,7 +1310,8 @@ fn parse_head(head: &[u8]) -> Result<(Framing, ResponseKind, Option<crate::conte
             ));
         }
     };
-    Ok((framing, kind, context.finish()?))
+    let context = context.finish(matches!(kind, ResponseKind::ContextError))?;
+    Ok((framing, kind, context))
 }
 
 #[cfg(test)]
