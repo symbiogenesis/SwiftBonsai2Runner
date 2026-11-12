@@ -30,10 +30,15 @@ published, verified Prism bundle and matching broker/profile/context contracts.
 The sibling Prism checkout owns `src/kv_quant.rs`,
 `src/graph/quantized_kv.rs` and its `docs/quantized-kv.md` runtime contract.
 These local source changes are separate from Runner's active release pin.
-Focused native checks passed 12 codec, four packed-cache graph, four NEON-helper
-and six tiny hybrid-graph controls. Strict Clippy and service checks remain
-pending. No full-model quality, long-context, performance or per-device promotion
-verdict follows from those focused controls.
+At local Prism `a4659c0`, 30 focused Release controls pass: 12 codec, four
+packed-cache graph, four NEON-helper, six tiny hybrid-graph, one CLI policy and
+three private-service checks. The ten affected storage/graph controls passed
+again after the final allocation correction. Strict Release all-target Clippy
+passes for the runtime, server and NEON helper on native ARM64 and Windows x64,
+with `parallel-rows` and pinned nightly-2026-11-09. Formatting and changed Markdown
+checks pass. No full-model quality, long-context, performance, complete CI or
+per-device promotion verdict follows from those focused controls. The bounded
+validation and power observations are recorded in Prism's integration commit.
 
 ## Scope and algorithm
 
