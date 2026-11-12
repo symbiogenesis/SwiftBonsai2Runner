@@ -1,27 +1,18 @@
 //! Versioned workspace recovery. Never restores an in-flight request.
 use super::{
-    Conversation, Duration, INPUT_LIMIT, Instant, MAX_CONVERSATIONS, MAX_DIAGNOSTIC_CHARS,
-    OUTPUT_TOKENS, RichText, State, Transcript, VOICE_LIMIT, client, egui, io,
-    workspace::ConversationSnapshot,
+    Conversation, Duration, INPUT_LIMIT, Instant, MAX_DIAGNOSTIC_CHARS, OUTPUT_TOKENS, RichText,
+    State, Transcript, VOICE_LIMIT, client, egui, io, workspace::ConversationSnapshot,
 };
 
 #[derive(serde::Deserialize)]
 #[serde(deny_unknown_fields)]
 struct SavedWorkspace {
     version: u32,
-    #[serde(deserialize_with = "deserialize_conversations")]
     conversations: Vec<Conversation>,
     active_conversation: u64,
     next_conversation: u64,
     active: ConversationSnapshot,
     voice_profile: String,
-}
-
-fn deserialize_conversations<'de, D>(deserializer: D) -> Result<Vec<Conversation>, D::Error>
-where
-    D: serde::Deserializer<'de>,
-{
-    deserialize_bounded_sequence(deserializer, MAX_CONVERSATIONS)
 }
 
 pub(super) fn deserialize_history<'de, D>(deserializer: D) -> Result<Vec<client::Message>, D::Error>
@@ -42,7 +33,8 @@ where
 
 // Reject an extra element before deserializing its payload. Post-parse checks
 // alone let a small file containing many empty objects allocate a large graph
-// of messages or conversations before discovering that it cannot be restored.
+// of messages before discovering that it cannot be restored. Conversation count
+// is unrestricted; the complete encoded workspace has a separate byte budget.
 fn deserialize_bounded_sequence<'de, D, T>(
     deserializer: D,
     limit: usize,
@@ -334,7 +326,6 @@ impl SavedWorkspace {
         let mut ids = std::collections::HashSet::new();
         self.version == 1
             && !self.conversations.is_empty()
-            && self.conversations.len() <= MAX_CONVERSATIONS
             && self.voice_profile.chars().count() <= VOICE_LIMIT
             && self.next_conversation < u64::MAX
             && self.conversations.iter().all(|conversation| {
@@ -559,37 +550,124 @@ mod tests {
     }
 
     #[test]
-    fn recovery_rejects_excess_conversations_before_decoding_their_payloads() -> io::Result<()> {
+    fn conversation_history_recovery_round_trips_many_conversations() -> io::Result<()> {
+        let mut original = state();
+        original.input = "Active draft 雨 🌱".to_owned();
+        let mut saved: serde_json::Value =
+            serde_json::from_slice(&original.workspace_bytes()?).map_err(io::Error::other)?;
+        let active = saved["active"].clone();
+        let mut conversations = vec![saved["conversations"][0].clone()];
+        // Exercise a workspace well beyond the former 16-conversation cap,
+        // including independent inactive drafts, settings and model history.
+        for id in 2..=128_u64 {
+            let prompt = format!("Prompt {id}");
+            let answer = format!("Answer {id}");
+            let mut snapshot = active.clone();
+            snapshot["input"] = serde_json::json!(format!("Draft {id} 🌱"));
+            snapshot["last_answer"] = serde_json::json!(answer);
+            snapshot["answer_complete"] = serde_json::json!(true);
+            snapshot["enable_thinking"] = serde_json::json!(id.is_multiple_of(2));
+            snapshot["committed"] = serde_json::json!([
+                {"role": "user", "content": prompt},
+                {"role": "assistant", "content": answer},
+            ]);
+            snapshot["transcript"]["messages"] = serde_json::json!([
+                {"role": "User", "body": prompt, "reasoning": ""},
+                {"role": "Assistant", "body": answer, "reasoning": ""},
+            ]);
+            conversations.push(serde_json::json!({
+                "id": id,
+                "title": format!("Conversation {id}"),
+                "renamed": true,
+                "saved": snapshot,
+            }));
+        }
+        saved["conversations"] = serde_json::json!(conversations);
+        saved["next_conversation"] = serde_json::json!(129);
+        original.restore_workspace(&serde_json::to_vec(&saved).map_err(io::Error::other)?)?;
+        let mut restored = state();
+        restored.restore_workspace(&original.workspace_bytes()?)?;
+        assert_eq!(restored.conversations.len(), 128);
+        assert_eq!(restored.active_conversation, 1);
+        assert_eq!(restored.next_conversation, 129);
+        assert_eq!(restored.input, "Active draft 雨 🌱");
+        for conversation in restored.conversations.iter().skip(1) {
+            let id = conversation.id;
+            assert_eq!(conversation.title, format!("Conversation {id}"));
+            let snapshot = conversation
+                .saved
+                .as_ref()
+                .ok_or_else(|| io::Error::other("Inactive conversation snapshot missing."))?;
+            assert_eq!(snapshot.input, format!("Draft {id} 🌱"));
+            assert_eq!(snapshot.committed.len(), 2);
+            assert_eq!(
+                snapshot.committed[0].content.as_ref(),
+                format!("Prompt {id}")
+            );
+            assert_eq!(
+                snapshot.committed[1].content.as_ref(),
+                format!("Answer {id}")
+            );
+            assert_eq!(snapshot.enable_thinking, id.is_multiple_of(2));
+            assert!(
+                snapshot
+                    .transcript
+                    .plain_text()
+                    .contains(&format!("Answer {id}"))
+            );
+        }
+        assert!(!restored.model.busy() && !restored.speaking);
+        Ok(())
+    }
+
+    #[test]
+    fn conversation_history_recovery_rejects_invalid_identities_without_replacing_state()
+    -> io::Result<()> {
         let mut original = state();
         original.input = "Keep this draft after any rejected restore.".to_owned();
         let mut saved: serde_json::Value =
             serde_json::from_slice(&original.workspace_bytes()?).map_err(io::Error::other)?;
         let active = saved["active"].clone();
-        let mut conversations = vec![saved["conversations"][0].clone()];
-        for index in 1..MAX_CONVERSATIONS {
-            conversations.push(serde_json::json!({
-                "id": index + 1,
-                "title": "Saved conversation",
-                "renamed": false,
-                "saved": active,
+        saved["conversations"]
+            .as_array_mut()
+            .ok_or_else(|| io::Error::other("Expected conversation list."))?
+            .push(serde_json::json!({
+                "id": 2, "title": "Inactive", "renamed": false, "saved": active,
             }));
-        }
-        saved["conversations"] = serde_json::json!(conversations);
-        saved["next_conversation"] = serde_json::json!(MAX_CONVERSATIONS + 1);
+        saved["next_conversation"] = serde_json::json!(3);
         original.restore_workspace(&serde_json::to_vec(&saved).map_err(io::Error::other)?)?;
-        assert_eq!(original.conversations.len(), MAX_CONVERSATIONS);
-        conversations.push(serde_json::json!({"invalid excess conversation": true}));
-        saved["conversations"] = serde_json::json!(conversations);
+        let accepted = original.workspace_bytes()?;
+        for invalid in 0..5 {
+            let mut rejected = saved.clone();
+            match invalid {
+                0 => rejected["conversations"][1]["id"] = serde_json::json!(1),
+                1 => rejected["conversations"][1]["id"] = serde_json::json!(3),
+                2 => rejected["active_conversation"] = serde_json::json!(99),
+                3 => rejected["next_conversation"] = serde_json::json!(u64::MAX),
+                _ => rejected["conversations"][1]["saved"] = serde_json::Value::Null,
+            }
+            assert!(
+                original
+                    .restore_workspace(&serde_json::to_vec(&rejected).map_err(io::Error::other)?)
+                    .is_err()
+            );
+            assert_eq!(original.workspace_bytes()?, accepted);
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn conversation_history_recovery_rejects_oversized_bytes_without_replacing_state()
+    -> io::Result<()> {
+        let mut original = state();
+        original.input = "Keep this draft after an oversized restore.".to_owned();
+        let accepted = original.workspace_bytes()?;
         let error = original
-            .restore_workspace(&serde_json::to_vec(&saved).map_err(io::Error::other)?)
+            .restore_workspace(&vec![b' '; 8 * 1024 * 1024 + 1])
             .err()
-            .ok_or_else(|| io::Error::other("Expected an early conversation limit."))?;
-        assert!(error.to_string().contains("item limit"));
-        assert_eq!(original.conversations.len(), MAX_CONVERSATIONS);
-        assert_eq!(
-            original.input,
-            "Keep this draft after any rejected restore."
-        );
+            .ok_or_else(|| io::Error::other("Expected recovery byte limit."))?;
+        assert!(error.to_string().contains("too large"));
+        assert_eq!(original.workspace_bytes()?, accepted);
         Ok(())
     }
 
