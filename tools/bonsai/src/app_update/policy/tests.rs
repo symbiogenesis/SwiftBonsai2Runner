@@ -98,7 +98,8 @@ fn discovery_rejects_foreign_urls_wrong_arch_missing_digests_and_duplicate_asset
             1 => value["assets"][2]["name"] = "SwiftBonsai2Runner-0.1.1-windows-x64.msi".into(),
             2 => value["assets"][2]["digest"] = Value::Null,
             3 => {
-                value["assets"][2]["browser_download_url"] = "https://example.com/update.msi".into();
+                value["assets"][2]["browser_download_url"] =
+                    "https://example.com/update.msi".into();
             }
             _ => {
                 let repeated = value["assets"][2].clone();
