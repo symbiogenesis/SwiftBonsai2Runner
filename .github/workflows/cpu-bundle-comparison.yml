@@ -1,0 +1,210 @@
+name: Native CPU bundle comparison
+on:
+  workflow_dispatch:
+    inputs:
+      tooling_revision:
+        description: Exact published Prism tooling SHA containing the reviewed collector and comparator
+        type: string
+        required: true
+      candidate_registry_version:
+        description: Reviewed immutable registry runtime candidate
+        type: choice
+        options: ['0.1.25']
+        default: '0.1.25'
+      run_device:
+        description: Run one fixed ten-minute owner ABBA workload after hosted preparation
+        type: boolean
+        default: false
+      owner_allowance_minutes:
+        description: Predeclared aggregate allowance including ephemeral-runner setup and retention
+        type: choice
+        options: ['10']
+        default: '10'
+permissions:
+  contents: read
+concurrency:
+  group: swift-lora-snapdragon
+  cancel-in-progress: false
+env:
+  CPU_BUNDLE_RUNTIME_COMMIT: 99bab71270b1e6a6fb6d47eec2e34b8097cdcd4c
+jobs:
+  prepare:
+    if: github.ref == 'refs/heads/main' && github.repository == 'symbiogenesis/SwiftBonsai2Runner'
+    runs-on: windows-11-arm
+    timeout-minutes: 45
+    outputs:
+      preparation_sha256: ${{ steps.package.outputs.preparation_sha256 }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Validate the fixed source and allowance selection
+        shell: pwsh
+        env:
+          TOOLING_REVISION: ${{ inputs.tooling_revision }}
+          CANDIDATE_VERSION: ${{ inputs.candidate_registry_version }}
+          OWNER_ALLOWANCE: ${{ inputs.owner_allowance_minutes }}
+        run: |
+          if ($env:TOOLING_REVISION -cnotmatch '^[a-f0-9]{40}$' -or
+              $env:CANDIDATE_VERSION -cne '0.1.25' -or $env:OWNER_ALLOWANCE -cne '10') {
+            throw 'Select the exact reviewed tooling, runtime registry version and fixed allowance.'
+          }
+      - uses: $/.github/actions/bonsai-tools
+      - name: Check the actual supervisor and CPU condition consumers
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          cargo +nightly-2026-11-12 test --locked --release --target-dir $env:BONSAI_TOOLS_TARGET -p bonsai-tools --lib cpu_evaluation::conditions
+          cargo +nightly-2026-11-12 test --locked --release --target-dir $env:BONSAI_TOOLS_TARGET -p bonsai-tools --test completion
+      - uses: $/.github/actions/rust-toolchain
+        with:
+          toolchain: nightly-2026-11-09-aarch64-pc-windows-msvc
+      - name: Isolate only the two external runtime source checkouts
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          foreach ($directory in @('prism-tooling', 'prism-baseline')) {
+            if ((Test-Path -LiteralPath $directory) -or (git ls-files -- "$directory/")) {
+              throw 'Runtime source checkout paths must be new and contain no tracked Runner source.'
+            }
+          }
+          $exclude = git rev-parse --git-path info/exclude
+          @('/prism-tooling/', '/prism-baseline/') | Add-Content -LiteralPath $exclude
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: symbiogenesis/prism-inference
+          ref: ${{ inputs.tooling_revision }}
+          path: prism-tooling
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: symbiogenesis/prism-inference
+          ref: 055c7430cb4771dfddb24ddaa30494af6ad182da
+          path: prism-baseline
+          persist-credentials: false
+      - name: Check the comparison policy and actual PowerShell consumer
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          python -B -m unittest discover -s prism-tooling/.github/ci -p test_cpu_bundle.py
+          $tokens = $null; $errors = $null
+          [void][Management.Automation.Language.Parser]::ParseFile((Join-Path $env:GITHUB_WORKSPACE 'scripts/Invoke-CpuBundleComparison.ps1'), [ref]$tokens, [ref]$errors)
+          if ($errors.Count) { throw ($errors | Out-String) }
+      - name: Prepare source-bound native baseline and immutable registry candidate
+        id: package
+        shell: pwsh
+        env:
+          TOOLING_REVISION: ${{ inputs.tooling_revision }}
+          CANDIDATE_VERSION: ${{ inputs.candidate_registry_version }}
+          RUNNER_ENVIRONMENT: ${{ runner.environment }}
+        run: |
+          Set-StrictMode -Version Latest
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          $packet = Join-Path $env:RUNNER_TEMP 'Prism-CpuBundle-Packet'
+          python -B prism-tooling/.github/ci/cpu_bundle.py prepare `
+            --baseline-root (Join-Path $env:GITHUB_WORKSPACE 'prism-baseline') `
+            --tooling-root (Join-Path $env:GITHUB_WORKSPACE 'prism-tooling') `
+            --candidate-registry-version $env:CANDIDATE_VERSION `
+            --runner-revision $env:GITHUB_SHA --output $packet
+          "preparation_sha256=$((Get-FileHash -LiteralPath (Join-Path $packet 'preparation.json') -Algorithm SHA256).Hash.ToLowerInvariant())" >> $env:GITHUB_OUTPUT
+          # The device consumes this run's checked supervisor, never a stale tool.
+          $tools = Join-Path $env:RUNNER_TEMP 'SwiftBonsai-CheckedTools'
+          [void][IO.Directory]::CreateDirectory($tools)
+          $tool = Join-Path $tools 'bonsai-tools.exe'
+          $probe = Join-Path $tools 'bonsai-completion-test-probe.exe'
+          Copy-Item -LiteralPath $env:BONSAI_TOOLS_PATH -Destination $tool
+          Copy-Item -LiteralPath $env:BONSAI_COMPLETION_PROBE_PATH -Destination $probe
+          @{
+            SchemaVersion = 2; Revision = $env:GITHUB_SHA
+            Sha256 = (Get-FileHash -LiteralPath $tool -Algorithm SHA256).Hash.ToLowerInvariant()
+            ProbeSha256 = (Get-FileHash -LiteralPath $probe -Algorithm SHA256).Hash.ToLowerInvariant()
+          } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $tools 'receipt.json') -Encoding utf8NoBOM
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: native-cpu-bundle-${{ github.sha }}
+          path: ${{ runner.temp }}/Prism-CpuBundle-Packet
+          if-no-files-found: error
+          retention-days: 90
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: bonsai-tools-windows-arm64-${{ github.sha }}
+          path: ${{ runner.temp }}/SwiftBonsai-CheckedTools
+          if-no-files-found: error
+          retention-days: 90
+  compare:
+    needs: prepare
+    if: github.ref == 'refs/heads/main' && inputs.run_device
+    runs-on: [self-hosted, Windows, ARM64, 'cpu-bundle-${{ github.run_id }}']
+    timeout-minutes: 10
+    steps:
+      - name: Admit the original pre-bootstrap owner allowance
+        shell: pwsh
+        run: |
+          Set-StrictMode -Version Latest
+          $ErrorActionPreference = 'Stop'
+          # The owner creates this external receipt before registering/starting
+          # this run's ephemeral runner. Missing setup timing is not inferred.
+          if (-not $env:CPU_BUNDLE_OWNER_START_RECEIPT -or
+              -not [IO.Path]::IsPathFullyQualified($env:CPU_BUNDLE_OWNER_START_RECEIPT)) {
+            throw 'Create the original owner-start receipt before ephemeral-runner bootstrap.'
+          }
+          $original = Get-Content -LiteralPath $env:CPU_BUNDLE_OWNER_START_RECEIPT -Raw | ConvertFrom-Json
+          $frequency = [Diagnostics.Stopwatch]::Frequency
+          $now = [Diagnostics.Stopwatch]::GetTimestamp()
+          if ($original.kind -cne 'prism-cpu-bundle-owner-start' -or $original.schema_version -ne 1 -or
+              $original.run_id -cne $env:GITHUB_RUN_ID -or $original.runner_commit -cne $env:GITHUB_SHA -or
+              $original.candidate_commit -cne $env:CPU_BUNDLE_RUNTIME_COMMIT -or
+              $original.clock_frequency -ne $frequency -or $original.budget_seconds -ne 600 -or
+              $original.deadline_tick -ne $original.started_tick + 600L * $frequency -or
+              $original.started_tick -ge $now -or $original.deadline_tick - $now -lt 540L * $frequency) {
+            throw 'The complete fixed comparison cannot fit its original pre-bootstrap allowance.'
+          }
+          $start = Join-Path $env:RUNNER_TEMP 'CpuBundle-OwnerStart.json'
+          Copy-Item -LiteralPath $env:CPU_BUNDLE_OWNER_START_RECEIPT -Destination $start
+          "BONSAI_CPU_BUNDLE_START=$start" >> $env:GITHUB_ENV
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: $/.github/actions/use-bonsai-tools
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: native-cpu-bundle-${{ github.sha }}
+          path: ${{ runner.temp }}/Prism-CpuBundle-Packet
+      - name: Capture one fixed native CPU ABBA comparison
+        shell: pwsh
+        working-directory: ${{ runner.temp }}
+        env:
+          RUNNER_ENVIRONMENT: ${{ runner.environment }}
+          PREPARATION_SHA256: ${{ needs.prepare.outputs.preparation_sha256 }}
+          CPU_BUNDLE_TOOLING_COMMIT: ${{ inputs.tooling_revision }}
+        run: |
+          & (Join-Path $env:GITHUB_WORKSPACE 'scripts/Invoke-CpuBundleComparison.ps1') `
+            -StartReceipt $env:BONSAI_CPU_BUNDLE_START `
+            -PacketDirectory (Join-Path $env:RUNNER_TEMP 'Prism-CpuBundle-Packet') `
+            -ExpectedPacketSha256 $env:PREPARATION_SHA256 `
+            -ToolingCommit $env:CPU_BUNDLE_TOOLING_COMMIT `
+            -CandidateCommit $env:CPU_BUNDLE_RUNTIME_COMMIT
+      - name: Retain the explicit credential-free comparison selection
+        if: always() && env.BONSAI_CPU_BUNDLE_EVIDENCE != '' && env.BONSAI_CPU_BUNDLE_UPLOAD_ALLOWED == 'true'
+        timeout-minutes: 1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: native-cpu-bundle-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+          # The script stages only named JSON/replay inputs and nonempty failure
+          # diagnostics. Empty supervisor streams remain intermediate files.
+          path: ${{ env.BONSAI_CPU_BUNDLE_EVIDENCE }}
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 1
+      - name: Confirm the original aggregate deadline through upload and final power
+        if: always() && env.BONSAI_CPU_BUNDLE_START != ''
+        shell: pwsh
+        env:
+          RUNNER_ENVIRONMENT: ${{ runner.environment }}
+        run: |
+          & (Join-Path $env:GITHUB_WORKSPACE 'scripts/Invoke-CpuBundleComparison.ps1') `
+            -StartReceipt $env:BONSAI_CPU_BUNDLE_START -FinalizeBudget
