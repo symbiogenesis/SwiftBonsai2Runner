@@ -1,6 +1,5 @@
 name: Hexagon native Windows ARM64 queue and wire ABI
 on:
-  workflow_call:
   push:
     branches: [main, 'codex/hexagon-**']
     paths:
