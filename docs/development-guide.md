@@ -244,7 +244,10 @@ preserving newer drafts; a closed connection alone identifies no token/memory ca
 
 ### Conversations and response settings
 
-The sidebar holds up to 16 conversations with independent drafts and settings.
+The sidebar holds conversations with independent drafts and settings, without a
+conversation-count cap. Creation, branching and recovery share this behavior;
+the encrypted workspace's 8 MiB byte budget and per-conversation message
+safeguards still apply, so saved history is not unlimited storage.
 Drag its inner edge to resize it, or use the sidebar button / **Ctrl+Shift+B**
 to hide and reopen it. Narrow windows use a left-anchored conversation drawer;
 selecting a conversation, clicking its backdrop or pressing Escape closes it
@@ -253,6 +256,16 @@ Switch while ready or generating; use **New conversation** or the row's **action
 rename, copy or delete. Deletion names its target; **Keep conversation** or
 Escape cancels, and deleting the last chat creates an empty one. Status and
 collapsible diagnostics stay outside the user/assistant transcript.
+
+**Search conversations** above the history list filters conversation titles and
+visible message bodies as you type. Matching uses Unicode case-insensitive
+substrings and excludes reasoning and unsent drafts. Filtering preserves the
+selected conversation and its draft, even when that conversation does not match.
+Use **Clear** or press Escape while the search field is focused to restore the
+list before closing a drawer or stopping a response. Creating a conversation or
+branch clears search so the new conversation appears. The query is temporary
+and is not restored on the next launch. Large lists render only visible rows and
+reuse cached matches while the query and searchable content are unchanged.
 
 While a response generates, you can draft the next message, browse another chat
 or create a conversation. Only one response runs at a time; Enter never queues a
@@ -280,7 +293,7 @@ its previous answer and later turns. Both retain the original conversation,
 unsent draft and response settings. Cancel/Escape leaves the source unchanged.
 **Branch from here** creates a conversation without sending: an assistant includes
 its completed turn; a user message becomes a draft after the preceding turns.
-Branches use one of the 16 conversation slots.
+Branches have no conversation-count cap and retain the usual recovery byte budget.
 
 **Continue response** is available on the latest answer in conversation context when Swift is
 ready. It sends an explicit followup asking Swift to continue without repeating,

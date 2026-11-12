@@ -304,7 +304,7 @@ request policy. Qualify locally identified interrupted replies as followup and b
 context after Stop, failure and recovery, including background ownership, retained
 drafts, completion races, legacy recovery without identity and capacity bounds.
 Cover duplicate prompts, interrupted/intermediate effort output,
-transcript eviction, the 16-conversation limit, edit-modal keyboard/IME behavior,
+transcript eviction, many-conversation creation/branch/recovery, edit-modal keyboard/IME behavior,
 and styled Unicode/code selection, copying and Find across streamed replacements,
 scaling and high contrast. Qualify composer context guidance across draft edits,
 retained reasoning, recovery, branches and background generation: show heuristic
@@ -320,6 +320,20 @@ on native test compilation: pinned-egui byte-index types, one unused iteration
 test import and an audio-source qualification. Source corrections are local; the
 closed trial was not retried. The 21 selected regressions and strict native
 all-target analysis remain pending in owner-managed validation.
+
+Qualify large conversation histories and live sidebar search on Windows ARM64:
+create, branch, save and reopen more than 16 conversations while preserving each
+draft, setting and committed history. Retain the existing encrypted-workspace
+byte budget and per-conversation message safeguards without introducing another
+conversation-count cap. Cover title/body Unicode case-insensitive substring
+matching as you type, exclusion of reasoning and unsent drafts, no-result states,
+Clear and focused-search Escape before drawer dismissal or Stop, filtering without
+changing selection, and query clearing when a conversation or branch is created.
+Verify transient search does not reappear after restart, live updates and renames
+invalidate cached matches, and virtualized large lists retain pointer/keyboard
+selection and focus in docked and narrow drawer layouts. Focused source controls
+do not close native-device, assistive-technology, actual-model or daily-use
+acceptance; those owner-managed gates remain pending.
 
 Qualify the composer microphone with the pinned Qwen3-ASR 1.7B Q8_0 model on
 Windows ARM64: explicit permission, click-to-finish and 25-second completion,
