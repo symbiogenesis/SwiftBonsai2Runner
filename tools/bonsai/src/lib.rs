@@ -29,6 +29,7 @@ pub const COMMANDS: &[&str] = &[
     "completion",
     "qualification",
     "runtime-promotion",
+    "kv-promotion",
     "evidence-archive",
     "speech-models",
     "inference-lock",
@@ -93,6 +94,9 @@ pub mod qualification;
 
 /// Exact standard-profile promotion policy and offline evidence completeness review.
 pub mod runtime_promotion;
+
+/// Practical selected-device compressed-KV comparison plans and offline review.
+pub mod kv_promotion;
 
 /// Offline preservation and digest-anchored retrieval of reviewed evidence.
 pub mod evidence_archive;

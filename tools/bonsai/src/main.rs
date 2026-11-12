@@ -136,6 +136,7 @@ fn dispatch(command: &str, request: serde_json::Value) -> bonsai_tools::Result<s
         }
         "qualification" => bonsai_tools::qualification::run(request),
         "runtime-promotion" => bonsai_tools::runtime_promotion::run(request),
+        "kv-promotion" => bonsai_tools::kv_promotion::run(request),
         "evidence-archive" => bonsai_tools::evidence_archive::run(request),
         "speech-models" => bonsai_tools::speech::run(request),
         "inference-lock" => bonsai_tools::inference_lock::run(request),

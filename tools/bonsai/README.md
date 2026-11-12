@@ -625,3 +625,100 @@ Same-run artifact provenance remains the caller's responsibility; no command
 changes OS trust, installs drivers, loads a model or qualifies Swift inference.
 All setup/intake/execution/cleanup shares the owner's five-minute total budget.
 Offline `hexagon-policy` plans and evidence validators remain available.
+
+## Practical compressed-KV review
+
+`kv-promotion` is an offline plan/review command for the selected-device
+[compressed-KV development promotion](../../docs/quantized-kv.md). It never starts a
+model, changes the runtime pin or enables compression. It accepts approximate
+answer equivalence; exact FP16 answers/logits are not required. A result of
+`ready-for-owner-review` is a bounded practical finding, not release qualification.
+
+First freeze a `declaration` with `identities` and exactly three ordered
+`workloads`. All names below are case-sensitive JSON fields:
+
+- `identities`: full lowercase `runnerRevision` and `prismRevision` Git commits;
+  lowercase SHA-256 `runtimeSha256`, `modelSha256`, `adapterSha256`,
+  `templateSha256`, `codecIdentity` and `samplerSha256`; concrete
+  `compilerIdentity`, unique `deviceIdentity`, observed `processorName`,
+  `driverIdentity` and `projectionBackend`; `adapterScale: 1.3`, `seed: 42`,
+  `contextTokens: 8192`, declared `maxCompletionTokens` in 1..4096 and
+  `rowWorkers` of 1 or 4. `codecIdentity` hashes the complete reviewed codec
+  numerical/layout descriptor. `samplerSha256` hashes the complete sampler
+  settings. Runtime digest identifies the actual executable used by both arms.
+- Each workload: `id`, `promptSha256` over exact UTF-8 prompt bytes, and an array
+  `objectiveChecks` of unique predefined check labels. The IDs, in order, are
+  `deep-retrieval`, `instructions`, `creative-continuation`.
+
+Useful initial held-out tasks are below. Finalize their exact text, objective
+checks, padding, sampler settings and token budget **before** requesting a plan.
+Do not tune them after seeing candidate answers. Use a source-bound native token
+count to make the deep task occupy at least 7,168 tokens while preserving its
+reply reservation inside 8,192; an approximate character count is insufficient.
+Count preparation and both comparison arms against the same declared workload.
+
+| Task | Suggested prompt and objective checks |
+| --- | --- |
+| `deep-retrieval` | Place `The sealed archive access phrase is amber heron 47.` near the start of a fixed, unrelated numbered manifest. Put `The night ferry leaves pier nine at 06:40.` near its end. Ask for the phrase and ferry departure without adding facts. Declare both exact retrieval checks. Freeze all padding before capture. |
+| `instructions` | `Return exactly three numbered steps for safely restoring a mistakenly deleted local text file. Do not propose downloading software, running commands, or changing another file. State uncertainty where recovery is not guaranteed.` Check three steps, useful recovery advice, stated uncertainty and all restrictions. |
+| `creative-continuation` | `Mara cannot swim. The town's only bridge washed away yesterday. Her brother is waiting across the river with a lantern. Continue this scene in 150 words or fewer, preserve those facts, and end with a question spoken by Mara.` Check canon, length, speaker/question and coherent useful continuation. |
+
+The protocol uses the existing common JSON entry point:
+
+```powershell
+# $declaration contains the frozen fields above; retain this exact declaration.
+$planRequest = @{ operation = 'plan'; declaration = $declaration }
+$plan = (& $bonsai kv-promotion --json ($planRequest | ConvertTo-Json -Depth 30 -Compress)) | ConvertFrom-Json
+# Store $plan before capture. No capture or default change happens here.
+```
+
+The emitted policy fixes K4/V4 (`rsq4`) against FP16, at least 65% lower deep-task
+peak KV bytes including scales, at least 128 MiB lower deep-task whole-process
+peak private bytes, no individual usefulness drop over one point, and no average
+drop over half a point on a blind human 1..5 rubric; three means usable and both arms must reach it. The owner may review anonymous shuffled answers. Every objective check
+must pass in both arms; a failing baseline needs investigation rather than a
+candidate pass. A qualified complete-task latency regression above 10% is a no-go;
+no speedup or energy saving is required.
+
+A `review` request has the same `declaration` and an `evidence` object:
+
+- `planSha256`: the emitted plan digest. `controls`: booleans `exactPackedRestore`,
+  `cancellationRecovery`, `editedPrefixRecovery`, `adapterScaleRecovery`,
+  `explicitF16Rollback`, `ownedCleanup`, `noFullHistoryMirror`, and `comparableWholeTaskMemoryCoverage`, all attested against this candidate. Coverage includes startup, the complete request and retained checkpoint/restore overhead.
+- `pairs`: exactly three records in declaration order, each with `id`, exact
+  `prompt`, `baseline`, `candidate`, `quality` and `objectiveChecks`.
+- Each arm: the complete declared `identities`; `kvCache` (`f16` or `rsq4`);
+  actual distinct raw `graphIdentity` including its matching `kv-f16` or `kv-rsq4` marker; `inputTokens`,
+  `generatedTokens`, `occupiedTokens`; `complete: true`; full UTF-8 `answer` and
+  matching `answerSha256`; complete-task `peakPrivateBytes`, `peakKvBytes`; equal `kvObservationTokens` at the measured cache position (at least 7,168 for the deep task), and `extraFailedOrRetriedRequests: 0`;
+  optional `endToEndMilliseconds`; `powerBefore`, `powerAfter`, and
+  `uninterruptedPowerObserved`. Power objects contain nullable `acConnected`,
+  `batterySaver`, `batteryPercent`. Use explicit null for unavailable observations.
+  Occupancy allows the final sampled token to remain unconsumed. Both arms use
+  identical input counts and the same predeclared output limit, with that limit and the 64-token reserve fitting inside 8K. Cache memory is compared at the same observed position; natural answer lengths may differ.
+- `quality`: `reviewerId`, `blind: true`, exact
+  `baselineAnswerSha256`, `candidateAnswerSha256`, integer
+  `baselineUsefulness`/`candidateUsefulness` in 1..5, and `majorRegression`.
+  Major fact, task or canon failure is a regression even if average scores pass.
+- `objectiveChecks`: records with `id`, `baselinePassed`, `candidatePassed`, in
+  the declaration's exact order. Record losing results instead of dropping them.
+
+```powershell
+$reviewRequest = @{ operation = 'review'; declaration = $declaration; evidence = $evidence }
+$reviewRequest | ConvertTo-Json -Depth 40 | & $bonsai kv-promotion --request -
+```
+
+The reviewer recomputes prompt and complete-answer digests and binds review to
+those answer bytes. It rejects mismatched identities, missing or partial answers
+and altered checks. Preserve the request containing those exact bytes as the
+replay input, plus the concise result; neither a bare hash nor the result alone
+can replace it. Observations and reviewer identity still need independent review:
+this command cannot authenticate attestations or prove trial provenance.
+
+Timing is qualified only with known matching AC/battery-saver observations and
+attested uninterrupted observation across both arms. Equal endpoints alone are
+insufficient. Unknown or mismatched power leaves timing unqualified, while valid
+capacity/quality evidence remains available; the owner must separately record
+acceptance of observed responsiveness before choosing a capacity-only default.
+X1 and X2 results stay separate. Retain FP16 recovery, the fixed 8K limit and
+existing admission reserves. Full release and hosted gates remain independent.
