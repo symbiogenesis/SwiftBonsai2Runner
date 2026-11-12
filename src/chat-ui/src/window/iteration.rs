@@ -256,10 +256,7 @@ impl State {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
-        client,
-        window::{Role, mpsc},
-    };
+    use crate::{client, window::mpsc};
 
     fn fixture() -> (State, mpsc::Receiver<Command>) {
         let (commands, incoming) = mpsc::channel();

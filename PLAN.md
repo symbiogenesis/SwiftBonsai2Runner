@@ -252,6 +252,11 @@ transcript eviction, the 16-conversation limit, edit-modal keyboard/IME behavior
 and styled Unicode/code selection, copying and Find across streamed replacements,
 scaling and high contrast. Focused source fixtures do not establish actual-model,
 assistive-technology or daily-use acceptance; those owner-managed gates remain open.
+The bounded local iteration check passed formatting and whitespace, then stopped
+on native test compilation: pinned-egui byte-index types, one unused iteration
+test import and an audio-source qualification. Source corrections are local; the
+closed trial was not retried. The 21 selected regressions and strict native
+all-target analysis remain pending in owner-managed validation.
 
 Qualify the composer microphone with the pinned Qwen3-ASR 1.7B Q8_0 model on
 Windows ARM64: explicit permission, click-to-finish and 25-second completion,
