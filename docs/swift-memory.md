@@ -84,11 +84,7 @@ source identities.
 | Daily use and independent review | Full context/output, recovery, isolation, sustained resources/comfort, clean-machine installation and independent human quality acceptance remain unqualified. |
 | Complete promotion verdict | All nineteen required gates must pass for the exact candidate. No compiled 0.1.14 promotion score is claimed. The historical 0.1.13 six-pass/thirteen-pending score does not transfer. |
 
-The independent [adapter](evidence/ptq1-primetime-basis-decision-20261103.json),
-[service](evidence/ptq1-primetime-service-decision-20261103.json) and
-[policy](evidence/ptq1-primetime-independent-decision-20261103.json) reviews retain
-the distinctions between absent evidence, failed historical work and passing
-narrow controls. [PLAN.md](../PLAN.md) owns the remaining work. Reconsider release
+[PLAN.md](../PLAN.md) owns the remaining work. Reconsider release
 only after authenticating the required adapter inputs, qualifying a frozen
 source-bound package and its device/human acceptance, demonstrating eligible
 benefit, retaining reproducible evidence and passing every promotion gate.
@@ -176,10 +172,9 @@ passed three one-token-cap streams at scales 1.3, negative zero and 2.0, plus in
 rejection, before its context-error check received no complete HTTP header and stopped within
 119.737 charged seconds (AC connected at parent endpoints; child after-power unknown). The
 [published Prism 0.1.14 release](https://github.com/symbiogenesis/prism-inference/releases/tag/v0.1.14)
-includes the typed context-error fix; the
-[Runner pin preparation](evidence/prism-0114-pin-preparation.json) and
-[publication review](evidence/ptq1-context-publication-014/independent-review.json) bind its exact
-source and archive identities, while actual 0.1.14 model/service/rollback acceptance under the
+includes the typed context-error fix. The
+[publication review](evidence/ptq1-context-publication-014/independent-review.json) binds its exact
+source, published archives and reviewed Runner pin; actual 0.1.14 model/service/rollback acceptance under the
 [combined service and original-PQ2 rollback profile](validation.md#actual-model-application-acceptance)
 remains pending. The [retained 0.1.13 source diagnostic](evidence/ptq1-numerics-41568281287.json)
 matched all 39,504,384 logits and live-state values byte for byte for one supplied token on X2
