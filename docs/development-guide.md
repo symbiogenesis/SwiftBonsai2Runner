@@ -765,7 +765,9 @@ evidence directories private.
 Retained inventories cover Snapdragon X2 Elite Extreme X2E94100 and a 32 GB
 X Elite X1E-78-100; see [device evidence](cpu-kernels.md#x2-cpu-thread-screen).
 The Rust/PQ2 development policy can use resident `native-q2` acceleration on X2;
-X1 acceleration needs independent qualification. This fixed policy is separate
+X1 Hexagon/Adreno acceleration needs independent qualification. Shared CPU
+work reductions may use [X2 benefit with an X1 applicability review](cpu-kernels.md#cross-generation-cpu-promotion)
+for common deployment without an X1 benchmark. This fixed policy is separate
 from qualified automatic profile selection.
 [Hardware profiles](hardware-capabilities.md#automatic-profile-selection)
 defines qualification for device/workload/objective selection, phase

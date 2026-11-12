@@ -19,7 +19,7 @@ the corresponding detailed task changes; keep every acceptance obligation below.
 | C1 / owner | Runner | Reviewed local CI corrections and startup preflight | Publish through the owner and qualify Source checks and Foundation on that source; see [publication prerequisites](#publication-and-qualification-prerequisites). |
 | A1 / qualification | Runner with pinned Prism | C1 and an exact-source acceptance package | Qualify Rust/PQ2 DX12 startup, readiness, Stop/Retry, recovery and explicit publisher rollback under [actual-model acceptance](#actual-model-acceptance). |
 | R1 / owner, integration | Prism, then Runner | Published source-bound 0.1.24 bundle | Verify source/archive/nine-file identities, repin and prepare active-release acceptance. Keep newer local CPU candidates and their helper-publication prerequisite separately identified under [CPU kernels](#cpu-kernels). |
-| R2 / implementation, qualification | Prism, then Runner | Settled candidate, required helper release and owning hosted checks | Qualify the explicit exact LUT candidate, integrate selected cross-token consumers and genuinely batched verification; close CPU/prefill codegen, fallback, state/adapter/cancellation and matched selected-device benefit gates, with independent X1 evidence where selected. Qualify changes already consumed in 0.1.23 without another repin; follow the [inference delivery order](#lossless-inference-delivery-order). |
+| R2 / implementation, qualification | Prism, then Runner | Settled candidate, required helper release and owning hosted checks | Qualify the explicit exact LUT candidate, integrate selected cross-token consumers and genuinely batched verification; close CPU/prefill codegen, fallback, state/adapter/cancellation and matched selected-device benefit gates. X2 CPU benefit may promote reviewed shared CPU paths on X1 under [cross-generation CPU promotion](docs/cpu-kernels.md#cross-generation-cpu-promotion); device-specific tuning and claims retain matching-family gates. Qualify changes already consumed in 0.1.23 without another repin; follow the [inference delivery order](#lossless-inference-delivery-order). |
 | R3 / integration, qualification | Prism and Runner harnesses | Agreed execution/state identities and existing complete-state fixtures | Prepare shared state/restore and fault-control tooling independently of runtime qualification; map each prefix/prefill/speculation/accelerator path to its independent assertions and evidence. |
 | K1 / owner, qualification | Prism, then Runner | Owner-selected K4/V4 development default, reviewed native source and matching Runner launch/readiness controls | Publish and verify a runtime bundle containing the reviewed source, then repin to activate default/required `rsq4` in Runner. Keep explicit FP16 recovery and existing admission/8K bounds. Complete the [paired quality/memory packet](docs/quantized-kv.md#first-practical-promotion-packet) for measured qualification, independently on X1/X2; it is not a prerequisite for the development default. Defer K4/V3. |
 | S1 / implementation, integration | Runner; Prism for shared runtime/RPC consumers | Agreed verified-loading, state, stream and transport ownership interfaces | Integrate Talker/CodePredictor, codec/speaker and signed Rust RPC through [C++ retirement](#complete-c-retirement); qualify the ordinary Q4 baseline before ternary speech and new 48 kHz artifacts. |
@@ -1574,6 +1574,18 @@ LoRA gates; calibration proves neither quality nor reduced admission.
 
 ## CPU kernels
 
+Use [cross-generation CPU promotion](docs/cpu-kernels.md#cross-generation-cpu-promotion)
+for shared CPU work reductions: matched CPU-only whole-request benefit on X2,
+plus the reviewed X1 path/ISA/fallback applicability and existing correctness,
+state and resource gates, can authorize shared release, repin and enabling that
+common CPU path on X1. A separate X1 benchmark is not a blanket prerequisite.
+Keep actual device identities and X1 performance claims separate. Uncertain
+cache/register/dispatch tradeoffs remain explicit or retain their existing
+control until matching-family evidence supports a tuned default. Accelerator,
+precision and complete device-profile qualification retain their own gates.
+If no selector preserves the control for a family-sensitive change, defer that
+candidate or implement reversible selection before shared promotion.
+
 Qualify the completed local Prism source changes through owner-managed hosted
 checks before a qualified release and Runner repin. Current contracts cover
 [six-head prefill, shared logits and FFN packets](docs/performance-deliver.md),
@@ -1584,17 +1596,18 @@ Also cover GDN staging and finite-output reuse, bounded suffix drafting, immutab
 solver metadata, native packet validation and resident-weight preparation.
 Qualify the three [X1-oriented CPU source candidates](docs/cpu-kernels.md#x1-oriented-source-candidates):
 compact SDOT PQ2 activation scratch, immutable prepared short-convolution
-coefficients, and bounded stack merging for short BPE pieces. Require independent
-X1 request benefit after exact-source correctness, fallback and resource gates;
-X2 development checks establish no X1 performance verdict. Release and verified
-binary repin remain pending; preserve the current runtime and admission policy.
+coefficients, and bounded stack merging for short BPE pieces. Require matched
+selected-family CPU request benefit after exact-source correctness, fallback,
+resource and cross-generation applicability gates; X2 can supply that benefit
+without an X1 benchmark. Release and verified binary repin remain pending;
+preserve the current runtime and admission policy.
 Also qualify the [next three CPU candidates](docs/cpu-kernels.md#next-cpu-candidates):
 prepared PQ2 SDOT capability reuse, aligned six-/twelve-query NEON attention-score
 finishing, and combined parallel query/key/value attention preparation. Require
 exact-source numerical/error controls, feature-disabled fallback, ARM64 codegen
-and resource review, complete-model/adapter/cancellation parity and independent
-matched X1 request benefit before release and verified binary repin. Keep X2
-development observations separate from X1 qualification.
+and resource review, complete-model/adapter/cancellation parity and matched
+selected-family CPU request benefit before release and verified binary repin.
+Apply the shared CPU applicability review; retain device-specific tuning and claims.
 Before registry delivery, publish a new `bonsai-neon-dot` helper version and
 update Prism's exact dependency pin for its new detected-capability API; the
 currently published `0.1.1` helper cannot satisfy that source consumer.
@@ -1604,8 +1617,8 @@ for elementwise worker dispatch, and adapter-enabled SwiGLU/down-basis
 preparation. Require exact-source numerical/error/adapter controls, strict
 Release analysis and production linking, feature-disabled fallback, ARM64
 codegen and stack/resource review, complete-model state/logit/cancellation parity
-and independent matched X1 request benefit before release and verified repin.
-Keep X2 development checks separate from X1 qualification; source work counts
+and matched selected-family CPU request benefit plus shared CPU applicability
+before release and verified repin. Keep X1 performance claims separate; source work counts
 establish no latency, throughput or process-memory improvement.
 Require the corrected FFN consumer fixture to select the production arithmetic
 policy in both decode and tiled controls before scoring parity. Its initial
@@ -1618,11 +1631,14 @@ NEON half widening with exact exceptional/portable decoding, and explicit bounde
 `Pq2LutExecutor` consumption through prepared matvec and graph execution.
 Require exact-source numerical/error/adapter/state controls, exhaustive half-bit
 parity, native/x64 strict Release analysis and production linking, feature-disabled
-fallback, ARM64 codegen/stack/resource review and independent matched X1 request
-benefit. Include LUT construction and its 80 KiB table capacity at 5,120 columns
-in comparisons with SDOT/NEON; keep it opt-in and retain a no-go if total cost
-erases the benefit. Publish the new half-widening helper API with the existing
-detected-capability helper update before registry delivery. Release, verified
+fallback, ARM64 codegen/stack/resource review, shared CPU applicability and matched
+selected-family CPU request benefit. Include LUT construction and its 80 KiB
+table capacity at 5,120 columns in comparisons with SDOT/NEON; keep it opt-in
+and retain a no-go if total cost
+erases the benefit. LUT default selection needs matching-family benefit; its
+opt-in delivery does not block shared work reductions. Publish the new
+half-widening helper API with the existing detected-capability helper update
+before registry delivery. Release, verified
 binary repin and full-model/cancellation qualification remain pending; no measured
 speedup or admission-policy change is established by source work.
 Final-source analyzers and focused controls remain unexecuted after the local
@@ -1635,9 +1651,10 @@ PQ2 consumption, fixed sixteen-column six-/twelve-query attention score loops,
 and four-row arithmetic phases within atomic eight-row GDN decode. Require
 final-source exact arithmetic/failure controls, native/x64 strict Release
 analysis and production linking, feature-disabled fallback, ARM64 codegen/spill/
-stack review, full-model logits/state/adapter/cancellation parity and independent
-matched X1 request benefit. Charge GDN's repeated small key/query reads and all
-dispatch/preparation costs; source call counts and accumulator lifetimes establish
+stack review, full-model logits/state/adapter/cancellation parity, shared CPU
+applicability and matched selected-family CPU request benefit. Charge GDN's
+repeated small key/query reads and all dispatch/preparation costs; source call
+counts and accumulator lifetimes establish
 no speedup. Publish the new complete-row helper API with the existing helper
 update before registry delivery. Release and verified Runner repin remain pending;
 preserve the current runtime, profiles and admission policy.
@@ -1653,9 +1670,9 @@ full-attention prompt tile, and four-row arithmetic phases inside atomic
 eight-row multi-token GDN. Require
 final-source native/x64 strict Release analysis, exact arithmetic/error controls,
 feature-disabled fallback and production linking, ARM64 codegen/spill/stack
-review, full-model state/logit/adapter/cancellation parity and independent
-matched X1 complete-request benefit. Charge every preparation/dispatch cost and
-GDN's repeated key/query reads; source predicate, submission and accumulator
+review, full-model state/logit/adapter/cancellation parity, shared CPU applicability
+and matched selected-family CPU complete-request benefit. Charge every
+preparation/dispatch cost and GDN's repeated key/query reads; source predicate, submission and accumulator
 counts establish no speedup. Publish the prepared-PQ2 helper API with the existing
 helper update before registry delivery. Release and verified Runner repin remain
 pending; preserve the current runtime, profiles and conservative admission.

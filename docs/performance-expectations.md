@@ -205,6 +205,13 @@ Compare CPU/Adreno/Hexagon and phase combinations separately for each SKU/driver
 the measurement protocol below. Interactive/battery rankings require matching-device evidence;
 focused untimed discovery/selection checks cannot establish them.
 
+Shared CPU work reductions use the
+[cross-generation promotion rule](cpu-kernels.md#cross-generation-cpu-promotion):
+matched CPU-only whole-request X2 benefit plus a passing X1 applicability review
+can authorize common deployment without an X1 benchmark. X1 speedup figures and
+family-specific tuned defaults still need X1 evidence; accelerator rankings and
+complete device-profile qualification remain separate.
+
 ## 2026 literature: measurement and comparison
 
 The [systems catalog](research-register.md#2026-systems-measurement-and-output-budget-work) records

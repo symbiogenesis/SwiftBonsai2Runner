@@ -7,6 +7,61 @@ control engine. Runner's active [release lock](../config/prism-inference.lock.js
 is Prism 0.1.23; local-source candidates and historical publisher screens below
 retain their own identities. [PLAN.md](../PLAN.md#cpu-kernels) owns outstanding work.
 
+## Cross-generation CPU promotion
+
+Shared CPU work reductions may be promoted for X1 and X2 using matched
+complete-request CPU benefit on one selected family; X2 evidence is sufficient
+without a separate X1 benchmark when the applicability review below passes.
+This permits a shared Prism release, Runner repin and enabling the reviewed
+common CPU path on X1. It does not establish a measured X1 speedup or qualify
+the complete X1 runtime/device profile.
+
+The architectural basis is shared ARM64 execution, with baseline NEON and
+runtime-checked optional instructions in this implementation. The CPUs are not
+identical: Qualcomm's [X Elite brief][x1-brief] lists twelve Oryon cores, 42 MB
+total cache and 135 GB/s memory bandwidth; its [X2 Elite brief][x2-brief] lists
+third-generation Oryon and, for X2E-94-100, twelve prime plus six performance
+cores, 53 MB cache and 228 GB/s bandwidth. Our inference is that removing shared
+work can justify common deployment, while cache, scheduling and memory-cost
+tradeoffs can have different performance outcomes.
+
+For each shared candidate:
+
+- Retain final-source correctness, numerical/error, full-state, adapter,
+  cancellation, strict Release/linking and resource gates. Review the common
+  ARM64 code path and generated code; optional SDOT/I8MM execution must retain
+  runtime CPU/OS detection and tested baseline-NEON/portable fallback. X2-only
+  features or changed X1 paths need their own applicable correctness controls.
+- Require a paired baseline/candidate CPU-only complete-request comparison on
+  the selected family, including preparation, dispatch, fallback and cleanup
+  costs. Bind the actual backend, source/build/artifacts, workload, workers and
+  matched power conditions; an unobserved CPU/NPU mixture or a microbenchmark
+  cannot supply this gate. Retain existing benefit thresholds, repetition and
+  uncertainty requirements, CI ownership and aggregate budgets.
+- Record why the work reduction applies to the reviewed X1 path without relying
+  on X2-specific cache capacity, core topology, instruction availability or
+  additional memory admission; review plausible X1 regressions without claiming
+  that this proves X1 benefit. Eliminating duplicate checks, allocations,
+  helper calls or worker submissions can qualify under this review; source
+  counts alone do not replace the selected-device benefit gate.
+- Keep cost-tradeoff choices explicit or retain the existing control on an
+  unmeasured family when applicability remains uncertain. LUT versus SDOT,
+  tile/cache sizes, worker counts/affinity and added reads to reduce register
+  pressure need matching-family benefit before changing that family's tuned
+  default. They may still ship as opt-in candidates without blocking shared
+  improvements that pass the review. If a family-sensitive candidate has no
+  selector, defer/exclude it from shared promotion or implement reversible
+  selection before claiming the previous control remains available.
+
+Receipts keep their actual device identities and results. X1-specific speed,
+energy, sustained behavior and tuning claims require X1 measurements; an X1
+regression reopens the affected shared choice and requires verified release
+rollback or an available explicit control, without assuming a runtime selector.
+Accelerator selection, precision/quality changes, memory-admission increases
+and complete runtime/device-profile qualification retain their separate gates.
+Do not mix X1 and X2 records inside an existing single-family qualification
+packet or transfer historical passes across changed source identities.
+
 ## X1-oriented source candidates
 
 Three further CPU changes are implemented in local Prism source. They target
@@ -35,8 +90,9 @@ These are source work/storage reductions, not measured X1 or X2 speedups.
 Runner continues to consume its immutable 0.1.23 bundle. Final-source hosted
 checks, feature-disabled fallback, ARM64 codegen/stack review, complete-model
 state/logit/adapter and cancellation parity, tokenizer/application acceptance,
-and matched complete-request benefit remain required before release and repin.
-X1 needs independent device evidence; X2 observations cannot qualify it. No
+and matched complete-request benefit remain required before release and repin
+under [cross-generation CPU promotion](#cross-generation-cpu-promotion).
+X2 CPU evidence can support shared deployment; X1 speed claims remain unmeasured. No
 backend profile, runtime pin or memory-admission limit changes here.
 
 ### Next CPU candidates
@@ -70,7 +126,8 @@ work, independently of Hexagon availability:
 
 These candidates need final-source hosted checks, feature-disabled and portable
 fallback, ARM64 code-generation/resource review, complete-model state/logit/
-adapter and cancellation parity, and matched complete-request X1 measurements.
+adapter and cancellation parity, and matched complete-request measurements on
+one selected family under [cross-generation CPU promotion](#cross-generation-cpu-promotion).
 Development on X2 supplies no X1 speedup verdict. Runner's verified binary pin
 and conservative admission remain unchanged; release and repin are pending.
 Registry delivery also requires publishing a new `bonsai-neon-dot` version and
@@ -102,7 +159,8 @@ scheduling work, including paths used with the standard adapter:
 These are source work reductions, with no measured X1 or X2 benefit. Require
 final-source exact arithmetic, failure and adapter controls, feature-disabled
 fallback, strict Release analysis and linking, ARM64 codegen/stack review,
-complete-model state/logit/cancellation parity and matched X1 request benefit.
+complete-model state/logit/cancellation parity and matched selected-family CPU
+request benefit under [cross-generation CPU promotion](#cross-generation-cpu-promotion).
 Runner's immutable 0.1.23 runtime remains active until release and verified repin.
 
 ### Grouped dispatch, hardware half widening and exact LUT execution
@@ -139,9 +197,11 @@ conversion and packed integer work:
 These implementations establish no measured X1 speedup. Require final-source
 strict Release analysis and linking, native and portable controls, exhaustive
 half-encoding parity, sibling failure/adapter/state controls and ARM64
-codegen/stack/resource review. Matched X1 complete-request measurements must
+codegen/stack/resource review. Matched selected-family CPU complete-request measurements must
 include table preparation, worker dispatch and all fallback costs, with losing
-or no-go outcomes retained. Full-model logits/state/adapter and cancellation
+or no-go outcomes retained. Apply [cross-generation CPU promotion](#cross-generation-cpu-promotion)
+to shared work reductions; LUT selection remains explicit pending matching-family
+benefit. Full-model logits/state/adapter and cancellation
 acceptance remain independent. The new half-widening API joins the existing
 helper-publication and exact-dependency prerequisite; Runner still consumes
 its verified 0.1.23 binary until a qualified release and repin.
@@ -180,7 +240,8 @@ controls cover exact native/portable arithmetic, forced baseline consumption,
 FMA rounding, awkward extents, temporal state and late-failure publication.
 Final-source strict Release analysis, native and portable execution, ARM64
 codegen/spill/stack review, complete-model logits/state/adapter/cancellation
-parity and matched X1 complete-request benefit remain qualification gates.
+parity and matched selected-family CPU complete-request benefit remain qualification
+gates under [cross-generation CPU promotion](#cross-generation-cpu-promotion).
 In particular, GDN's extra input reads must be included in that comparison.
 Runner continues to consume its verified 0.1.23 bundle until release and repin;
 neither device profiles nor conservative memory admission change.
@@ -227,9 +288,11 @@ access:
 These changes establish no measured X1 speedup. Require final-source native and
 portable strict Release analysis, exact arithmetic and failure controls,
 feature-disabled fallback and production linking; ARM64 codegen/spill/stack
-review; complete-model state/logit/adapter/cancellation parity; and independent
-matched X1 complete-request benefit. Include preparation, dispatch and repeated
-input reads in timing. The prepared-PQ2 API joins the existing helper-publication
+review; complete-model state/logit/adapter/cancellation parity; and matched
+selected-family CPU complete-request benefit under
+[cross-generation CPU promotion](#cross-generation-cpu-promotion).
+Include preparation, dispatch and repeated input reads in timing.
+The prepared-PQ2 API joins the existing helper-publication
 and exact-dependency prerequisite. Runner continues to consume its verified
 0.1.23 bundle until release and repin; profiles and admission remain unchanged.
 
@@ -503,7 +566,9 @@ row/tile dispatch, hot-cache/streaming weights, quantization/unpack/dot/transfor
 load/repack, prefill/first-token/ decode/task cost, scratch/residency/allocations and overlapping
 source/destination storage. Compiler/LLVM/options, actual backend/fallback and native CPU/OS
 identity are part of its scope. A microkernel result does not qualify a whole-model replacement or
-another X1/X2 device. Standard LoRA TPS/quality remains independent.
+another X1/X2 device. Selected-family whole-request CPU evidence may support shared source
+promotion under [the applicability review](#cross-generation-cpu-promotion); measured performance
+claims remain device-specific. Standard LoRA TPS/quality remains independent.
 
 Local builds, disassembly and focused correctness checks are permitted. Full suites and every
 benchmark run only in CI under the [validation policy](validation.md). Hosted ARM64 supplies
@@ -720,7 +785,9 @@ performance gain.
 LoRA and PTQ1 captures retain the observed processor name and distinguish `Snapdragon X Elite`,
 `Snapdragon X2 Elite` and `Snapdragon X2 Elite Extreme`. X2 receipts require a matching processor
 observation; relabeling historical X1 evidence rejects. Device-dependent runtime promotion gates
-cannot combine different families. Existing frozen X1 contract hashes and legacy receipt shapes
+cannot combine different families. The [shared CPU promotion rule](#cross-generation-cpu-promotion)
+reuses a reviewed deployment decision, without relabeling or mixing those records.
+Existing frozen X1 contract hashes and legacy receipt shapes
 remain readable; identity observations alone do not qualify any X2 profile.
 
 [fearless]: https://docs.rs/fearless_simd/1.1.0/fearless_simd/
@@ -733,3 +800,5 @@ remain readable; identity observations alone do not qualify any X2 profile.
 [ternary]: https://github.com/symbiogenesis/prism-inference/blob/main/tools/ternary/src/lib.rs
 [kernel-tests]: https://github.com/symbiogenesis/prism-inference/blob/main/tests/kernels.rs
 [simd-tests]: https://github.com/symbiogenesis/prism-inference/blob/main/tests/simd.rs
+[x1-brief]: https://www.qualcomm.com/content/dam/qcomm-martech/dm-assets/documents/Product-Brief-Snapdragon-X-Elite.pdf
+[x2-brief]: https://www.qualcomm.com/content/dam/qcomm-martech/dm-assets/documents/Snapdragon-X2-Elite-Product-Brief.pdf

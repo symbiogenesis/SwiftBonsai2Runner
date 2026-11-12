@@ -978,6 +978,15 @@ full-qualification claim and changes none of the evaluator gates below. PTQ1
 promotion and removal of the qualification disclaimer still require the complete
 reviewed evidence.
 
+Shared CPU source promotion follows the
+[cross-generation applicability rule](cpu-kernels.md#cross-generation-cpu-promotion):
+matched CPU-only whole-request benefit on X2 may authorize reviewed common CPU
+paths on X1 without a separate X1 benchmark. All applicable source correctness,
+state, fallback and resource gates remain required. This does not qualify a full
+X1 device profile, authorize mixed-family evaluator packets or establish X1
+performance, energy or sustained-use results. Family-sensitive tuned defaults
+retain matching-family evidence.
+
 Every promoted runtime/profile must:
 
 - Pass its correctness, security, full-state recovery, creative-quality and
