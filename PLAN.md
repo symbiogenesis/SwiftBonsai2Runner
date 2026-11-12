@@ -320,14 +320,17 @@ Start fresh preserving drafts/history, cache invalidation, minimum-window layout
 and popup keyboard/assistive-technology behavior without unintended Send or Stop.
 Focused source fixtures do not establish actual-model,
 assistive-technology or daily-use acceptance; those owner-managed gates remain open.
-The composer now uses matching rounded **Conversation space** and **Response options**
-buttons with plain labels. Reply length stays inside **Settings > Response > Advanced
-response controls**; capacity warnings no longer offer token-limit changes.
-Qualify minimum-window layout, Light/Dark and high contrast, keyboard popup/modal
-ownership, advanced-only reply access and preserved per-conversation choices.
-The bounded toolbar check passed strict analysis and 17 focused regressions;
-the final preview-driven highlighted-text contrast correction remains source-only.
-Run final analysis and those regressions in owner-managed CI before acceptance.
+The composer now pairs **Context:** with a circular reserved-occupancy indicator and
+offers a separate **Thinking** popup containing only Thinking and Extra effort.
+Reply length stays inside **Settings > Response > Advanced response controls**;
+capacity warnings no longer offer token-limit changes. Qualify minimum-window
+layout, Light/Dark and high contrast, progress and pending-ring semantics, keyboard
+popup ownership, generation locks and preserved per-conversation choices.
+The refinement check passed formatting, whitespace and changed-document lint, then
+strict all-target analysis stopped on six redundant/implicit string-copy test lints.
+The copies were removed without retrying the closed trial; the 24 selected context,
+Thinking and Settings regressions and native captures were not run. Final analysis,
+those regressions and native accessibility acceptance remain owner-managed work.
 The bounded local iteration check passed formatting and whitespace, then stopped
 on native test compilation: pinned-egui byte-index types, one unused iteration
 test import and an audio-source qualification. Source corrections are local; the

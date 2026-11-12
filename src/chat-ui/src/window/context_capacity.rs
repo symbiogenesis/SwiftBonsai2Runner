@@ -55,22 +55,19 @@ impl State {
                 ui.horizontal_wrapped(|ui| {
                     ui.spacing_mut().item_spacing.x = 8.0;
                     let label = ui.label(RichText::new("Message").small().weak());
-                    let response = toolbar_button(
-                        ui,
-                        "Conversation space",
-                        !pending && estimate.pressure() != Pressure::Comfortable,
-                    )
-                    .on_hover_text(if pending {
-                        "Conversation space updates when this response finishes. Open for details."
-                    } else {
-                        "See how much room is left for this conversation and your next message."
-                    });
+                    let response = context_button(ui, estimate, pending);
                     egui::Popup::menu(&response)
                         .align(egui::RectAlign::TOP_START)
                         .width(320.0)
+                        .gap(6.0)
+                        .frame(
+                            egui::Frame::popup(ui.style())
+                                .corner_radius(14)
+                                .inner_margin(14),
+                        )
                         .close_behavior(egui::PopupCloseBehavior::CloseOnClickOutside)
                         .show(|ui| self.context_details(ui, estimate, pending));
-                    self.response_summary(ui);
+                    self.thinking_button(ui);
                     label
                 })
                 .inner
@@ -180,22 +177,116 @@ impl State {
     }
 }
 
-/// Keep the composer's secondary actions consistent across native themes.
+fn context_button(ui: &mut egui::Ui, estimate: Estimate, pending: bool) -> egui::Response {
+    let used = u16::try_from(estimate.total.min(context::CONTEXT_TOKENS)).unwrap_or(8192);
+    let fraction = f32::from(used) / 8192.0;
+    let ring = egui::Atom::paint(egui::Vec2::splat(16.0), move |ui, args| {
+        context_ring(
+            ui,
+            args.rect.center(),
+            fraction,
+            estimate.pressure(),
+            pending,
+        );
+    });
+    let response = toolbar_action(ui, (RichText::new("Context:").size(13.0), ring), false)
+        .accessible_name("Context");
+    let description = if pending {
+        "Context updates when this response finishes. Open for details.".to_owned()
+    } else {
+        let percent = estimate.total.saturating_mul(100) / context::CONTEXT_TOKENS;
+        format!("About {percent}% of context reserved, including the next reply. Open for details.")
+    };
+    let _ = response.ctx.accesskit_node_builder(response.id, |node| {
+        node.set_description(description.clone());
+    });
+    response.on_hover_text(description)
+}
+
+fn context_ring(
+    ui: &egui::Ui,
+    center: egui::Pos2,
+    fraction: f32,
+    pressure: Pressure,
+    pending: bool,
+) {
+    const RADIUS: f32 = 6.5;
+    ui.painter().circle_stroke(
+        center,
+        RADIUS,
+        egui::Stroke::new(1.0, ui.visuals().weak_text_color()),
+    );
+    if pending {
+        // An unfilled ring with a dash means the unfinished turn is not yet
+        // counted. Do not display a stale fraction or animate an idle widget.
+        ui.painter().line_segment(
+            [center - egui::vec2(2.0, 0.0), center + egui::vec2(2.0, 0.0)],
+            egui::Stroke::new(1.5, ui.visuals().weak_text_color()),
+        );
+        return;
+    }
+    let color = if pressure == Pressure::Comfortable {
+        ui.visuals().text_color()
+    } else {
+        ui.visuals().warn_fg_color
+    };
+    if fraction > 0.0 {
+        let points = (0..=48_u16)
+            .map(|step| {
+                let angle = std::f32::consts::TAU.mul_add(
+                    fraction * f32::from(step) / 48.0,
+                    -std::f32::consts::FRAC_PI_2,
+                );
+                let (sin, cos) = angle.sin_cos();
+                center + egui::vec2(cos, sin) * RADIUS
+            })
+            .collect();
+        ui.painter()
+            .add(egui::Shape::line(points, egui::Stroke::new(2.5, color)));
+    }
+}
+
+/// Keep the composer's popup actions consistent across native themes.
 pub(super) fn toolbar_button(ui: &mut egui::Ui, text: &str, active: bool) -> egui::Response {
+    let color = if active {
+        ui.visuals().selection.stroke.color
+    } else {
+        ui.visuals().text_color()
+    };
+    let chevron = egui::Atom::paint(egui::Vec2::splat(8.0), move |ui, args| {
+        let center = args.rect.center();
+        ui.painter().add(egui::Shape::line(
+            vec![
+                center + egui::vec2(-2.5, -1.5),
+                center + egui::vec2(0.0, 1.0),
+                center + egui::vec2(2.5, -1.5),
+            ],
+            egui::Stroke::new(1.25, color),
+        ));
+    });
+    toolbar_action(
+        ui,
+        (RichText::new(text).size(13.0).color(color), chevron),
+        active,
+    )
+}
+
+fn toolbar_action<'a>(
+    ui: &mut egui::Ui,
+    contents: impl egui::IntoAtoms<'a>,
+    active: bool,
+) -> egui::Response {
     use egui::class::HasClasses as _;
 
     ui.scope(|ui| {
         ui.spacing_mut().button_padding = egui::vec2(10.0, 6.0);
-        let mut label = RichText::new(text).small();
-        if active {
-            label = label.color(ui.visuals().selection.stroke.color);
-        }
         ui.add(
-            egui::Button::new(label)
+            egui::Button::new(contents)
+                .gap(7.0)
                 .corner_radius(16)
                 .min_size(egui::vec2(0.0, 32.0))
-                // Highlight customized options or a capacity warning without
-                // announcing a toggle: activating these buttons opens a surface.
+                // Highlight enabled thinking without announcing a toggle:
+                // activating the button opens its popup.
                 .with_class_if(egui::Button::CLASS_SELECTED, active),
         )
         .on_hover_cursor(egui::CursorIcon::PointingHand)

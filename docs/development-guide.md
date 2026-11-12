@@ -309,8 +309,7 @@ Find retain exact source text and offsets. HTML and link-like text remain litera
 this bounded styling subset does not execute code or activate generated links.
 
 **Settings** opens a centered native modal with side navigation in wide windows
-and horizontal categories in narrow windows. **Response options** above the
-composer opens its **Response** page directly, naming the selected conversation
+and horizontal categories in narrow windows. Its **Response** page names the selected conversation
 under **This conversation**. The other pages state **All conversations · This
 device**:
 
@@ -330,6 +329,12 @@ are blocked; active input retains its explicit cancellation behavior. A response
 already in progress continues normally. Voice setup and diagnostics expand
 inside Settings.
 
+The composer's **Thinking** button opens a separate compact popup with just two
+checkboxes: **Thinking** and **Extra effort**. Both apply to the selected conversation
+and lock while a response is running. The same choices appear in **Settings > Response**.
+Click outside or press Escape to dismiss the popup; Enter never sends the background draft.
+Reply limits and adapter controls remain in advanced Settings.
+
 | Setting | Behavior |
 | --- | --- |
 | **Thinking** | Off initially and in older saved chats; enables reasoning for the next response and every Extra effort pass. |
@@ -337,8 +342,11 @@ inside Settings.
 | **Output cap** | Available only in **Settings > Response > Advanced response controls**, under **Reply length**. Defaults to 4,096; also offers 512/1,024/2,048 reasoning-inclusive tokens within the fixed 8,192-token context and 64-token template reserve. |
 | **Abliteration scale** | The advanced adapter disclosure in **Settings > Response** explains this experimental correction. The pinned adapter defaults to 1.3; choose 0-2 in 0.1 steps for the next response/every Extra effort pass without restart. Zero disables the correction. Older saved chats use 1.3; effectiveness and quality remain experimental. |
 
-The composer's **Conversation space** button opens approximate occupancy for the
-selected conversation's next Send. Open it for a segmented breakdown of committed
+The composer's **Context:** button pairs its label with a circular occupancy indicator
+for the selected conversation's next Send. The ring includes the next reply reservation,
+fills up to its full circumference and uses a warning color near capacity. Hover or
+focus exposes an approximate percentage; an unfinished response instead shows a hollow
+ring with a dash until the estimate updates. Open it for a segmented breakdown of committed
 history including retained reasoning, the trimmed draft and approximate template framing,
 Extra effort planning overhead when enabled, the selected reply reservation and
 the fixed 64-token reserve. The input counts are heuristic and may
@@ -356,7 +364,7 @@ changes a cap automatically.
 Reply controls retain the normal generation lock. When the visible conversation
 owns an active response, the space details explain that they update after the response
 finishes; another selected conversation keeps its own next-draft estimate.
-Escape closes context details before Find or Stop, and Enter in those details does
+Escape closes either composer popup before Find or Stop, and Enter in those popups does
 not submit the composer.
 
 Response settings belong to each conversation and are retained while saving is

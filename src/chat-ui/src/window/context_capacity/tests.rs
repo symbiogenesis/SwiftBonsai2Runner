@@ -76,22 +76,24 @@ fn context_capacity_capture_when_requested() -> std::io::Result<()> {
     let directory = std::path::PathBuf::from(value);
     bonsai_windows_credentials::validate_external_path(&directory)?;
     std::fs::create_dir_all(&directory)?;
-    for (name, size, details) in [
-        ("context-details-wide.png", [1180.0, 860.0], true),
-        ("context-warning-narrow.png", [620.0, 640.0], false),
-        ("composer-toolbar-minimum.png", [480.0, 480.0], false),
+    for (name, size, details, crowded) in [
+        ("context-details-wide.png", [1180.0, 860.0], true, true),
+        ("context-warning-narrow.png", [620.0, 640.0], false, true),
+        ("composer-toolbar-minimum.png", [480.0, 480.0], false, false),
     ] {
         let mut chat = harness_with_render(size, "Help me refine this idea.", true);
         let mut messages = history("Help me refine this idea.");
         messages[1].content =
             "A clear question is a good place to begin. What would you like to explore?".into();
-        messages[1].reasoning_content = Some("a".repeat(20_000).into());
+        if crowded {
+            messages[1].reasoning_content = Some("a".repeat(20_000).into());
+        }
         chat.state_mut().app.commit_history(messages);
         let transcript = crate::window::Transcript::from_committed(&chat.state().app.committed);
         chat.state_mut().app.transcript = transcript;
         chat.run();
         if details {
-            chat.get_by_role_and_label(egui::Role::Button, "Conversation space")
+            chat.get_by_role_and_label(egui::Role::Button, "Context")
                 .click();
             chat.run();
         }
@@ -221,15 +223,16 @@ fn context_capacity_toolbar_keeps_plain_actions_visible_at_minimum_and_wide_size
             chat.run();
             let bounds = egui::Rect::from_min_size(egui::Pos2::ZERO, size.into());
             let space = chat
-                .get_by_role_and_label(egui::Role::Button, "Conversation space")
+                .get_by_role_and_label(egui::Role::Button, "Context")
                 .rect();
             let options = chat
-                .get_by_role_and_label(egui::Role::Button, "Response options")
+                .get_by_role_and_label(egui::Role::Button, "Thinking")
                 .rect();
             assert!(bounds.contains_rect(space) && bounds.contains_rect(options));
             assert!(!space.intersects(options));
             assert!(space.height() >= 32.0 && options.height() >= 32.0);
-            for label in ["Conversation space", "Response options"] {
+            assert!(space.width() < 112.0 && options.width() < 104.0);
+            for label in ["Context", "Thinking"] {
                 assert!(
                     chat.get_by_role_and_label(egui::Role::Button, label)
                         .accesskit_node()
@@ -249,11 +252,44 @@ fn context_capacity_toolbar_keeps_plain_actions_visible_at_minimum_and_wide_size
 }
 
 #[test]
+fn context_capacity_ring_description_tracks_drafts_and_hides_unfinished_occupancy() {
+    let mut chat = harness([480.0, 480.0], "Question");
+    let description = chat
+        .get_by_role_and_label(egui::Role::Button, "Context")
+        .accesskit_node()
+        .description()
+        .unwrap_or_default();
+    assert!(description.contains('%'));
+    chat.state_mut().app.input = "Longer next message. ".repeat(100);
+    chat.run();
+    let longer = chat
+        .get_by_role_and_label(egui::Role::Button, "Context")
+        .accesskit_node()
+        .description()
+        .unwrap_or_default();
+    assert!(longer.contains('%'));
+    assert_ne!(description, longer);
+    let owner = chat.state().app.active_conversation;
+    chat.state_mut().app.model = ModelLifecycle::Generating;
+    chat.state_mut().app.request_conversation = Some(owner);
+    chat.run();
+    let pending = chat
+        .get_by_role_and_label(egui::Role::Button, "Context")
+        .accesskit_node()
+        .description()
+        .unwrap_or_default();
+    assert!(pending.contains("updates when this response finishes"));
+    assert!(!pending.contains('%'));
+    assert_eq!(chat.state().app.output_budget, 3);
+    assert!(chat.state().commands.try_recv().is_err());
+}
+
+#[test]
 fn context_capacity_popover_is_keyboard_accessible_and_scopes_extra_effort() {
     let mut chat = harness([620.0, 640.0], "Question");
     chat.state_mut().app.extra_effort = true;
     chat.run();
-    chat.get_by_role_and_label(egui::Role::Button, "Conversation space")
+    chat.get_by_role_and_label(egui::Role::Button, "Context")
         .focus();
     chat.key_press(egui::Key::Space);
     chat.run();
@@ -297,7 +333,7 @@ fn context_capacity_escape_closes_details_before_stopping_generation() {
     chat.state_mut().app.model = ModelLifecycle::Generating;
     chat.state_mut().app.request_conversation = Some(owner);
     chat.run();
-    chat.get_by_role_and_label(egui::Role::Button, "Conversation space")
+    chat.get_by_role_and_label(egui::Role::Button, "Context")
         .click();
     chat.run();
     assert!(chat.query_by_label("Space for this draft").is_some());
