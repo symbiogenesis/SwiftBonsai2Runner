@@ -323,42 +323,11 @@ impl Search {
         self.revision = self.revision.wrapping_add(1);
     }
 
-    pub(super) fn button(&mut self, ui: &mut egui::Ui) {
-        let response = ui
-            .add(
-                egui::Button::new("")
-                    .min_size(egui::Vec2::splat(32.0))
-                    .selected(self.visibility != Visibility::Closed),
-            )
-            .accessible_name("Find")
-            .on_hover_text("Find in this conversation · Ctrl+F");
-        let center = response.rect.center();
-        let stroke = ui.style().interact(&response).fg_stroke;
-        let painter = ui.painter_at(response.rect);
-        painter.circle_stroke(center - egui::vec2(2.0, 2.0), 5.0, stroke);
-        painter.line_segment(
-            [center + egui::vec2(2.0, 2.0), center + egui::vec2(7.0, 7.0)],
-            stroke,
-        );
-        if response.clicked() {
-            self.visibility = if self.visibility == Visibility::Closed {
-                Visibility::Focus
-            } else {
-                Visibility::Closed
-            };
-            if self.visibility == Visibility::Closed {
-                self.query.clear();
-                self.target = None;
-                self.invalidate();
-            }
-        }
-    }
-
-    pub(super) fn bar(&mut self, ui: &mut egui::Ui, messages: &[Message]) {
+    pub(super) fn bar(&mut self, ui: &mut egui::Ui, messages: &[Message]) -> bool {
         let accepts_input =
             ui.is_enabled() && ui.memory(|memory| memory.allows_interaction(ui.layer_id()));
         if self.visibility == Visibility::Closed {
-            return;
+            return false;
         }
         ui.horizontal_wrapped(|ui| {
             let field_id = ui.make_persistent_id("find-query");
@@ -415,7 +384,17 @@ impl Search {
             {
                 self.navigate(false);
             }
-        });
+            let close = ui
+                .small_button("×")
+                .accessible_name("Close find")
+                .on_hover_text("Close find · Escape")
+                .clicked();
+            if close {
+                self.close();
+            }
+            close
+        })
+        .inner
     }
 }
 

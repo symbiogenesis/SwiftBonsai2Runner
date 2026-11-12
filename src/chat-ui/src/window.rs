@@ -1436,12 +1436,17 @@ impl State {
     fn sidebar_footer(&mut self, ui: &mut egui::Ui) {
         ui.spacing_mut().item_spacing.y = 4.0;
         ui.add_space(4.0);
-        if ui
-            .add_sized([ui.available_width(), 36.0], egui::Button::new("Settings"))
-            .clicked()
-        {
-            self.open_settings(settings::Page::Response);
-        }
+        ui.horizontal(|ui| {
+            if ui.ctx().content_rect().width() >= navigation::DOCK_THRESHOLD {
+                self.navigation_button(ui, false);
+            }
+            if ui
+                .add_sized([ui.available_width(), 36.0], egui::Button::new("Settings"))
+                .clicked()
+            {
+                self.open_settings(settings::Page::Response);
+            }
+        });
         ui.add_space(4.0);
         if self
             .updates
@@ -1537,43 +1542,7 @@ impl State {
         self.show_diagnostics = open;
     }
 
-    fn header(&mut self, ui: &mut egui::Ui, narrow: bool) {
-        ui.horizontal(|ui| {
-            self.navigation_button(ui, narrow);
-            ui.vertical(|ui| {
-                ui.spacing_mut().item_spacing.y = 2.0;
-                ui.label(RichText::new("SwiftBonsai2").strong().size(18.0));
-                if !narrow {
-                    ui.label(
-                        RichText::new(if self.preview {
-                            "Interface preview · no model or audio services"
-                        } else if self.model.busy() {
-                            "Responding to your message…"
-                        } else {
-                            "Your private, local AI companion"
-                        })
-                        .small()
-                        .weak(),
-                    );
-                }
-            });
-            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                if ui.button("Settings").clicked() {
-                    self.open_settings(settings::Page::Response);
-                }
-                if self
-                    .updates
-                    .as_ref()
-                    .is_some_and(updates::Updates::available)
-                    && ui.small_button("Update available").clicked()
-                {
-                    self.open_settings(settings::Page::Application);
-                }
-                self.transcript.find_button(ui);
-            });
-        });
-        ui.add_space(8.0);
-        ui.separator();
+    fn conversation_notices(&mut self, ui: &mut egui::Ui) {
         if self.model.busy()
             && let Some(owner) = self.request_conversation
             && owner != self.active_conversation
@@ -1733,6 +1702,29 @@ impl State {
         }
     }
 
+    fn composer_send_controls(&mut self, ui: &mut egui::Ui) {
+        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+            if self.model.busy() {
+                if ui.button("Stop").clicked() {
+                    self.stop_generation();
+                }
+            } else if ui
+                .add_enabled(
+                    self.model.ready() && !self.input.trim().is_empty(),
+                    egui::Button::new(
+                        RichText::new("Send  ↑").color(ui.visuals().selection.stroke.color),
+                    )
+                    .fill(ui.visuals().selection.bg_fill),
+                )
+                .on_hover_text("Send message · Enter")
+                .clicked()
+            {
+                self.submit();
+            }
+            self.microphone_button(ui);
+        });
+    }
+
     #[expect(
         clippy::too_many_lines,
         reason = "Keep composer focus, IME and action dispatch together."
@@ -1876,34 +1868,19 @@ impl State {
                         {
                             self.submit();
                         }
+                        // Keep the send group out of a narrow remainder beside
+                        // the audio controls, including with the collapsed rail.
+                        let separate_send_row = ui.available_width() < 420.0;
                         ui.horizontal_wrapped(|ui| {
                             self.audio_file_button(ui);
                             self.read_aloud_controls(ui);
-                            ui.with_layout(
-                                egui::Layout::right_to_left(egui::Align::Center),
-                                |ui| {
-                                    if self.model.busy() {
-                                        if ui.button("Stop").clicked() {
-                                            self.stop_generation();
-                                        }
-                                    } else if ui
-                                        .add_enabled(
-                                            self.model.ready() && !self.input.trim().is_empty(),
-                                            egui::Button::new(
-                                                RichText::new("Send  ↑")
-                                                    .color(ui.visuals().selection.stroke.color),
-                                            )
-                                            .fill(ui.visuals().selection.bg_fill),
-                                        )
-                                        .on_hover_text("Send message · Enter")
-                                        .clicked()
-                                    {
-                                        self.submit();
-                                    }
-                                    self.microphone_button(ui);
-                                },
-                            );
+                            if !separate_send_row {
+                                self.composer_send_controls(ui);
+                            }
                         });
+                        if separate_send_row {
+                            self.composer_send_controls(ui);
+                        }
                     });
                 // Text-only status should grow with its contents, without
                 // reserving the horizontal helper's button-height row.
@@ -1960,7 +1937,7 @@ impl State {
         egui::CentralPanel::default()
             .frame(egui::Frame::new().inner_margin(egui::Margin::symmetric(horizontal_margin, 12)))
             .show(ui, |ui| {
-                self.header(ui, narrow);
+                self.conversation_notices(ui);
                 egui::Panel::bottom("composer-panel")
                     .frame(egui::Frame::new().inner_margin(egui::Margin {
                         left: 0,
@@ -1970,9 +1947,15 @@ impl State {
                     }))
                     .show(ui, |ui| self.composer(ui));
                 let empty = self.transcript.messages.is_empty();
-                ui.push_id(("conversation-find", self.active_conversation), |ui| {
-                    self.transcript.search_bar(ui);
-                });
+                let closed_find = ui
+                    .push_id(("conversation-find", self.active_conversation), |ui| {
+                        self.transcript.search_bar(ui)
+                    })
+                    .inner;
+                if closed_find {
+                    self.focus_composer = true;
+                    ui.ctx().request_repaint();
+                }
                 let scroll = egui::ScrollArea::vertical()
                     .id_salt(("conversation-scroll", self.active_conversation))
                     .stick_to_bottom(true)

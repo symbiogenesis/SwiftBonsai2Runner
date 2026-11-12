@@ -248,10 +248,12 @@ The sidebar holds conversations with independent drafts and settings, without a
 conversation-count cap. Creation, branching and recovery share this behavior;
 the encrypted workspace's 8 MiB byte budget and per-conversation message
 safeguards still apply, so saved history is not unlimited storage.
-Drag its inner edge to resize it, or use the sidebar button / **Ctrl+Shift+B**
+Drag its inner edge to resize it, or use the sidebar button beside Settings
+/ **Ctrl+Shift+B**
 to hide and reopen it. Narrow windows use a left-anchored conversation drawer;
 selecting a conversation, clicking its backdrop or pressing Escape closes it
-without stopping a response. The docked sidebar's width and visibility are saved.
+without stopping a response. When hidden or narrow, a compact left rail keeps the
+sidebar button available. The docked sidebar's width and visibility are saved.
 Switch while ready or generating; use **New conversation** or the row's **actions** menu to
 rename, copy or delete. Deletion names its target; **Keep conversation** or
 Escape cancels, and deleting the last chat creates an empty one. Status and
@@ -282,11 +284,14 @@ teardown/restart, while drafts remain editable.
 
 The composer scrolls long drafts without hiding Microphone or Send/Stop.
 **Enter** sends when ready, **Shift+Enter** inserts a newline and **Ctrl+End**
-moves to the draft's end. **Find** / **Ctrl+F** searches visible message bodies
-with Unicode case-insensitive matching, excluding reasoning. Its magnifying glass
-sits beside Settings; previous/next controls appear below the header. **F3/Shift+F3**
+moves to the draft's end. **Ctrl+F** searches visible message bodies
+with Unicode case-insensitive matching, excluding reasoning. The search field and
+previous/next controls appear above the transcript only while Find is open.
+Settings is in the sidebar footer. The conversation has no permanent top bar or
+Find button. **F3/Shift+F3**
 (or **Enter/Shift+Enter** while Find is focused) moves between matches; **Latest**
-or the bottom-center down arrow returns to the newest message. **Escape** closes Find and clears highlights;
+or the bottom-center down arrow returns to the newest message. **Close find** or
+**Escape** closes Find and clears highlights;
 a second Escape stops active generation or speech.
 **Ctrl+F** focuses Find from the composer or sidebar and closes an open conversation
 drawer. It also works in empty conversations. Settings, dialogs and open popups

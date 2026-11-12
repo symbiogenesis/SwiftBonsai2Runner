@@ -50,7 +50,10 @@ fn harness(size: [f32; 2], seeded: bool) -> Harness<'static, Fixture> {
             ));
         })
         .build_ui_state(
-            |ui, fixture: &mut Fixture| fixture.app.draw(ui),
+            |ui, fixture: &mut Fixture| {
+                fixture.app.handle_input_shortcuts(ui.ctx());
+                fixture.app.draw(ui);
+            },
             Fixture::new(seeded),
         )
 }
@@ -990,8 +993,7 @@ fn capture_chat_layouts_when_requested() -> io::Result<()> {
                 );
             }
             chat.run();
-            chat.get_by_role_and_label(egui::Role::Button, "Find")
-                .click();
+            chat.key_press_modifiers(egui::Modifiers::CTRL, egui::Key::F);
             chat.run();
             chat.get_by_role_and_label(egui::Role::TextInput, "Find in conversation")
                 .type_text("quiet bookshop");
@@ -1027,7 +1029,7 @@ fn find_controls_navigate_unicode_matches_and_refresh_streamed_text() {
         })
         .build_ui_state(
             |ui, transcript: &mut Transcript| {
-                transcript.find_button(ui);
+                transcript.close_find_on_escape(ui.ctx());
                 transcript.search_bar(ui);
                 egui::ScrollArea::vertical().show(ui, |ui| transcript.show(ui, 700.0, None, true));
             },
@@ -1039,8 +1041,7 @@ fn find_controls_navigate_unicode_matches_and_refresh_streamed_text() {
                 transcript
             },
         );
-    chat.get_by_role_and_label(egui::Role::Button, "Find")
-        .click();
+    chat.state_mut().focus_find();
     chat.run();
     chat.get_by_role_and_label(egui::Role::TextInput, "Find in conversation")
         .type_text("ÉLAN");
@@ -1058,8 +1059,7 @@ fn find_controls_navigate_unicode_matches_and_refresh_streamed_text() {
     chat.run();
     assert!(chat.get_by_label("1 of 4").rect().is_positive());
     assert!(!chat.state().plain_text().contains("Reasoning"));
-    chat.get_by_role_and_label(egui::Role::Button, "Find")
-        .click();
+    chat.key_press(egui::Key::Escape);
     chat.run();
     assert!(chat.query_by_label("Find in conversation").is_none());
 }
@@ -1092,24 +1092,14 @@ fn long_conversation_find_scrolls_to_offscreen_matches_and_keeps_latest_reachabl
             chat.query_by_role_and_label(egui::Role::Button, "Latest")
                 .is_none()
         );
-        chat.get_by_role_and_label(egui::Role::Button, "Find")
-            .click();
+        chat.key_press_modifiers(egui::Modifiers::CTRL, egui::Key::F);
         chat.run();
         chat.get_by_role_and_label(egui::Role::TextInput, "Find in conversation")
             .type_text("Needle");
         chat.run();
         let controls = chat
-            .get_by_role_and_label(egui::Role::Button, "Find")
+            .get_by_role_and_label(egui::Role::Button, "Next match")
             .rect();
-        assert!(
-            chat.query_all_by_role_and_label(egui::Role::Button, "Settings")
-                .any(|settings| {
-                    let settings = settings.rect();
-                    controls.right() <= settings.left()
-                        && settings.left() - controls.right() < 16.0
-                        && (controls.center().y - settings.center().y).abs() < 1.0
-                })
-        );
         let first = chat.get_by_label(FIRST).rect();
         let composer = chat
             .get_by_role_and_label(egui::Role::MultilineTextInput, "Message")
@@ -1127,7 +1117,10 @@ fn long_conversation_find_scrolls_to_offscreen_matches_and_keeps_latest_reachabl
         assert!(last.bottom() < composer.top());
         assert!(chat.query_by_label(FIRST).is_none());
         assert!(chat.get_by_label("2 of 2").rect().is_positive());
-        assert!((chat.get_by_label("Find").rect().top() - controls.top()).abs() < 0.5);
+        let next = chat
+            .get_by_role_and_label(egui::Role::Button, "Next match")
+            .rect();
+        assert!((next.top() - controls.top()).abs() < 0.5);
 
         chat.get_by_role_and_label(egui::Role::Button, "Previous match")
             .click();
@@ -1162,7 +1155,10 @@ fn long_conversation_find_scrolls_to_offscreen_matches_and_keeps_latest_reachabl
                 .is_none()
         );
         assert!(chat.query_by_label(FIRST).is_none());
-        assert!((chat.get_by_label("Find").rect().top() - controls.top()).abs() < 0.5);
+        let next = chat
+            .get_by_role_and_label(egui::Role::Button, "Next match")
+            .rect();
+        assert!((next.top() - controls.top()).abs() < 0.5);
     }
 }
 

@@ -57,6 +57,92 @@ fn harness_with_preferences(
 }
 
 #[test]
+fn conversation_tools_leave_room_for_messages_and_keep_find_and_navigation_accessible() {
+    for size in [[1180.0, 860.0], [480.0, 480.0]] {
+        let mut chat = harness(size, false);
+        chat.state_mut().app.transcript.clear();
+        chat.state_mut()
+            .app
+            .transcript
+            .push(Role::User, "Help me make a little room to think.".into());
+        chat.state_mut()
+            .app
+            .transcript
+            .push(Role::Assistant, "A little space for ideas.".into());
+        chat.run();
+        let bounds = egui::Rect::from_min_size(egui::Pos2::ZERO, egui::Vec2::from(size));
+        let navigation = if size[0] < navigation::DOCK_THRESHOLD {
+            "Conversation menu"
+        } else {
+            "Hide conversations"
+        };
+        let toggle = chat
+            .get_by_role_and_label(egui::Role::Button, navigation)
+            .rect();
+        let composer = chat
+            .get_by_role_and_label(egui::Role::MultilineTextInput, "Message")
+            .rect();
+        assert!(bounds.contains_rect(toggle) && bounds.contains_rect(composer));
+        assert!(
+            bounds.contains_rect(
+                chat.get_by_role_and_label(egui::Role::Button, "Send  ↑")
+                    .rect()
+            )
+        );
+        assert!(toggle.right() < composer.left());
+        assert!(
+            chat.query_by_role_and_label(egui::Role::Button, "Find")
+                .is_none()
+        );
+        assert!(
+            chat.get_by_label("Help me make a little room to think.")
+                .rect()
+                .top()
+                < 100.0
+        );
+        assert!(chat.query_by_label("Find in conversation").is_none());
+        chat.key_press_modifiers(egui::Modifiers::CTRL, egui::Key::F);
+        chat.run();
+        let field = chat.get_by_role_and_label(egui::Role::TextInput, "Find in conversation");
+        assert!(field.is_focused());
+        field.type_text("little");
+        chat.run();
+        assert!(chat.get_by_label("1 of 2").rect().is_positive());
+        chat.key_press(egui::Key::Escape);
+        chat.run();
+        assert!(chat.query_by_label("Find in conversation").is_none());
+        chat.get_by_role_and_label(egui::Role::Button, navigation)
+            .click();
+        chat.run();
+        if size[0] < navigation::DOCK_THRESHOLD {
+            assert!(chat.state().app.sidebar_open);
+            chat.key_press(egui::Key::Escape);
+        } else {
+            assert!(!chat.state().app.appearance.sidebar_visible);
+            chat.get_by_role_and_label(egui::Role::Button, "Show conversations")
+                .click();
+        }
+        chat.run();
+        chat.key_press_modifiers(egui::Modifiers::CTRL, egui::Key::F);
+        chat.run();
+        assert!(
+            chat.get_by_role_and_label(egui::Role::TextInput, "Find in conversation")
+                .is_focused()
+        );
+        chat.get_by_role_and_label(egui::Role::Button, "Close find")
+            .click();
+        chat.run();
+        assert!(chat.query_by_label("Find in conversation").is_none());
+        assert!(
+            chat.get_by_role_and_label(egui::Role::MultilineTextInput, "Message")
+                .is_focused()
+        );
+        assert_eq!(chat.state().app.input, "Keep my next thought 🌱");
+        assert!(chat.state().commands.try_recv().is_err());
+    }
+}
+
+#[test]
 fn ergonomics_sidebar_resizes_collapses_and_reopens_with_the_draft_intact() {
     let mut chat = harness([1180.0, 860.0], false);
     let start = egui::pos2(chat.state().app.appearance.sidebar_width, 260.0);
@@ -198,6 +284,9 @@ fn ergonomics_largest_reader_and_appearance_settings_fit_the_minimum_window() {
                 .rect()
         )
     );
+    chat.get_by_role_and_label(egui::Role::Button, "Conversation menu")
+        .click();
+    chat.run();
     chat.get_by_role_and_label(egui::Role::Button, "Settings")
         .click();
     chat.run();
@@ -227,6 +316,12 @@ fn ergonomics_capture_when_requested() -> io::Result<()> {
     std::fs::create_dir_all(&directory)?;
     for (name, size, theme) in [
         ("light-wide.png", [1080.0, 780.0], appearance::Theme::Light),
+        (
+            "conversation-minimum.png",
+            [480.0, 480.0],
+            appearance::Theme::Dark,
+        ),
+        ("hidden-find.png", [1080.0, 780.0], appearance::Theme::Dark),
         ("dark-drawer.png", [480.0, 640.0], appearance::Theme::Dark),
         (
             "appearance-minimum.png",
@@ -239,6 +334,9 @@ fn ergonomics_capture_when_requested() -> io::Result<()> {
         chat.state().app.appearance.apply(&chat.ctx);
         if name == "dark-drawer.png" {
             chat.state_mut().app.sidebar_open = true;
+        } else if name == "hidden-find.png" {
+            chat.state_mut().app.appearance.sidebar_visible = false;
+            chat.state_mut().app.transcript.find_query("little");
         } else if name == "appearance-minimum.png" {
             chat.state_mut()
                 .app

@@ -358,12 +358,8 @@ impl Transcript {
         self.search.query_changed(&self.messages);
     }
 
-    pub(super) fn search_bar(&mut self, ui: &mut egui::Ui) {
-        self.search.bar(ui, &self.messages);
-    }
-
-    pub(super) fn find_button(&mut self, ui: &mut egui::Ui) {
-        self.search.button(ui);
+    pub(super) fn search_bar(&mut self, ui: &mut egui::Ui) -> bool {
+        self.search.bar(ui, &self.messages)
     }
 
     pub(super) fn latest_button(&mut self, ui: &mut egui::Ui, viewport: egui::Rect) {

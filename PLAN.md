@@ -308,8 +308,21 @@ Check the compact sidebar seedling and its full "SwiftBonsai2 - Your private,
 local AI companion" wording above New conversation for crisp edges and contrast.
 Keep the tagline unbroken, directly beneath the name beside the seedling when
 it cannot fit inline, including at minimum sidebar width and in the narrow drawer.
-Verify the compact main-header SwiftBonsai2 name and small companion tagline,
-including name-only narrow layouts and preview/generation status substitutions.
+Qualify the header-free conversation layout: the sidebar toggle sits beside
+Settings when docked and in a compact left rail when hidden or narrow.
+Settings stays in the sidebar footer; Find has no persistent button and its controls
+appear above the transcript only while open through Ctrl+F or a filtered history result.
+Verify mouse and keyboard access with docked, hidden and drawer navigation,
+including at 480×480, and preserve conditional warnings, Retry, background
+Show response and preview notices. Include the separate microphone/Send/Stop row
+in narrow composers. Header-removal source compiled and formatting passed in a
+47-second model-free workload within an eight-minute operation cap; AC was
+connected, battery saver off and charge 100% at both workload endpoints, without
+proving uninterrupted stability. The temporary validation driver then failed to
+locate the test executable, so interaction checks, captures and Clippy were skipped.
+The subsequent narrow action-row correction and Find's conditional Close button
+remain unrerun under the closed trial's no-retry rule. Verify Close clears highlights
+and returns focus to the composer. Final-source and native device acceptance remain pending.
 Confirm the compact footer keeps model, conversation-saving and privacy status
 on one line at minimum sidebar width, with full hover and accessible descriptions.
 Check the eight-point bottom inset in both docked and drawer layouts, with the

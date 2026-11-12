@@ -181,7 +181,13 @@ responses never restart streaming speech or finish another conversation's playba
 Stop speech remains available.
 
 [Find controls](development-guide.md#conversations-and-response-settings) search
-visible message bodies. Ctrl+F is handled before the composer and sidebar text
+visible message bodies. The conversation has no permanent top bar or Find button.
+The sidebar toggle sits beside Settings when docked, or in a compact left
+rail when hidden or narrow. Settings stays in the sidebar footer. Find controls
+appear above the transcript only while open, reached through Ctrl+F or a filtered
+history result. Warnings, Retry and background-response notices remain conditional
+above the transcript. Narrow composers put microphone and Send/Stop on their own
+row below the audio controls. Ctrl+F is handled before the composer and sidebar text
 editors, with dialogs and popups retaining priority. Selecting a filtered sidebar
 result opens the same native Find controls with the trimmed query, matching-body
 highlights and the first match selected; reselecting the current result does too.

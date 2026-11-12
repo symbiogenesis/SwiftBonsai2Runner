@@ -104,13 +104,21 @@ impl State {
     }
 
     pub(super) fn docked_navigation(&mut self, ui: &mut egui::Ui, narrow: bool) {
-        if narrow {
-            return;
-        }
         // A drawer never survives a transition back to the docked layout.
-        self.sidebar_open = false;
-        self.sidebar_focus = false;
-        if !self.appearance.sidebar_visible {
+        if !narrow {
+            self.sidebar_open = false;
+            self.sidebar_focus = false;
+        }
+        if narrow || !self.appearance.sidebar_visible {
+            egui::Panel::left("navigation-rail")
+                .exact_size(44.0)
+                .resizable(false)
+                .frame(
+                    egui::Frame::new()
+                        .fill(ui.visuals().window_fill)
+                        .inner_margin(egui::Margin::symmetric(4, 12)),
+                )
+                .show(ui, |ui| self.navigation_button(ui, narrow));
             return;
         }
         let response = egui::Panel::left("navigation")

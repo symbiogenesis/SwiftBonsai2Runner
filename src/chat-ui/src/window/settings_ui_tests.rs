@@ -52,15 +52,16 @@ fn harness(size: [f32; 2], render: bool) -> Harness<'static, Fixture> {
 }
 
 fn open_settings(chat: &mut Harness<'_, Fixture>) {
-    let mut clicked_header = false;
-    for button in chat.query_all_by_role_and_label(egui::Role::Button, "Settings") {
-        if button.rect().top() < 80.0 {
-            button.click();
-            clicked_header = true;
-            break;
-        }
+    if chat
+        .query_by_role_and_label(egui::Role::Button, "Settings")
+        .is_none()
+    {
+        chat.get_by_role_and_label(egui::Role::Button, "Conversation menu")
+            .click();
+        chat.run();
     }
-    assert!(clicked_header);
+    chat.get_by_role_and_label(egui::Role::Button, "Settings")
+        .click();
     chat.run();
     assert!(chat.state().app.show_settings);
 }

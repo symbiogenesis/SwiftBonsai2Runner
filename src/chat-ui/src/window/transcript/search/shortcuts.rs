@@ -8,11 +8,15 @@ impl Search {
         {
             return false;
         }
+        self.close();
+        true
+    }
+
+    pub(super) fn close(&mut self) {
         self.visibility = Visibility::Closed;
         self.query.clear();
         self.target = None;
         self.invalidate();
-        true
     }
 
     pub(super) fn navigate_on_enter(&mut self, ctx: &egui::Context, field_id: egui::Id) {
