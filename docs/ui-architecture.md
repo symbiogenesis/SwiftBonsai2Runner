@@ -53,6 +53,8 @@ builds/verifies the broker, then hands off text chat immediately. Speech artifac
 preparation, companion builds and fresh speech credentials continue separately
 while Swift loads and serves text chat. A speech preparation failure leaves text
 chat and its drafts/history intact; closing cancels both owned stages.
+Speech artifact preparation uses at most two concurrent workers, preserves exact
+verification and partial-download ownership, and cancels peers on failure.
 Runtime preparation downloads only a missing locked runtime; model and adapter
 provisioning remain explicit. Drafts and recovered conversations survive preparation;
 model preparation failures leave the window available. Closing cancels preparation

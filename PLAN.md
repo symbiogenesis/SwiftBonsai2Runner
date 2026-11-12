@@ -450,6 +450,8 @@ readiness after excluding worker checkouts from startup fingerprints and switchi
 shared Windows artifact hashing to CNG. Qualify staged model/speech preparation:
 text readiness and generation must proceed during speech setup, speech failures
 must preserve the model and drafts/history, and closing must stop both stages.
+Qualify bounded parallel speech artifact setup, checksum/partial-file ownership
+and peer cancellation without increasing simultaneous resident speech models.
 Retain on-demand ASR/TTS loading and no deferred playback for turns started before
 speech becomes available. Retain cold-build versus unchanged-launch
 attribution and complete checksum/cancellation controls. Qualify the CNG verifier

@@ -187,7 +187,9 @@ Text chat starts loading as soon as its runtime and broker are prepared. Speech
 downloads and native companion builds continue in the owned background worker;
 they do not gate model readiness or Send. Speech controls become available only
 after their separate preparation completes. A speech setup failure leaves text
-chat running and reports the failure in speech status. ASR and TTS model loading
+chat running and reports the failure in speech status. Speech artifact downloads
+and checks use at most two parallel workers; failure cancels and joins the peer.
+ASR and TTS model loading
 remains on demand, when transcribing or reading aloud, rather than adding their
 weight allocations to application startup. Closing the window cancels any
 remaining preparation and waits for owned processes to stop.
