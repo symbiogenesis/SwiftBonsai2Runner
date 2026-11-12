@@ -1,0 +1,41 @@
+failures:
+
+---- native_qualification::request_timing::tests::timing_mode_is_explicit_one_standard_adapter_rust_request stdout ----
+Error: "PTQ1 numerical source differs from the pinned Rust runtime; update and review capture pins first."
+
+---- native_qualification::tests::adapter_conditions_select_one_bound_pair_and_cannot_change_the_row_control stdout ----
+Error: "PTQ1 numerical source differs from the pinned Rust runtime; update and review capture pins first."
+
+---- native_qualification::tests::capture_source_cannot_substitute_an_internally_consistent_stale_checkout stdout ----
+Error: "PTQ1 numerical source differs from the pinned Rust runtime; update and review capture pins first."
+
+---- native_qualification::tests::checked_in_ptq1_capture_source_matches_released_runtime stdout ----
+
+thread 'native_qualification::tests::checked_in_ptq1_capture_source_matches_released_runtime' (6176) panicked at tools\bonsai\src\native_qualification\tests.rs:22:5:
+assertion `left == right` failed
+  left: Object {"bytes": Number(4774821), "commit": String("6b4f4520b465e5feb665a71af64e7b0e21eb750a"), "sha256": String("d02552d8203080c56e7df7cbdf5848abcd9a01225ceb43b715dbf71da7981033"), "url": String("https://github.com/symbiogenesis/prism-inference/archive/6b4f4520b465e5feb665a71af64e7b0e21eb750a.zip")}
+ right: Object {"bytes": Number(4816622), "commit": String("055c7430cb4771dfddb24ddaa30494af6ad182da"), "sha256": String("7bf185775527e51c45f693c59ac0fc5dde68663a254ca6432b4ed4b60ebaa007"), "url": String("https://github.com/symbiogenesis/prism-inference/archive/055c7430cb4771dfddb24ddaa30494af6ad182da.zip")}
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- native_qualification::tests::missing_or_expired_owner_allowances_reject_before_preparation stdout ----
+
+thread 'native_qualification::tests::missing_or_expired_owner_allowances_reject_before_preparation' (5024) panicked at tools\bonsai\src\native_qualification\tests.rs:288:9:
+assertion failed: failure.contains("remaining complete owner-job work allowance")
+
+---- native_qualification::tests::plans_keep_one_selected_ptq1_pair_and_the_fixed_row_pair stdout ----
+Error: "PTQ1 numerical source differs from the pinned Rust runtime; update and review capture pins first."
+
+---- native_qualification::tests::current_runtime_source_and_bounded_atomic_receipts_fail_closed stdout ----
+Error: "PTQ1 numerical source differs from the pinned Rust runtime; update and review capture pins first."
+
+
+failures:
+    native_qualification::request_timing::tests::timing_mode_is_explicit_one_standard_adapter_rust_request
+    native_qualification::tests::adapter_conditions_select_one_bound_pair_and_cannot_change_the_row_control
+    native_qualification::tests::capture_source_cannot_substitute_an_internally_consistent_stale_checkout
+    native_qualification::tests::checked_in_ptq1_capture_source_matches_released_runtime
+    native_qualification::tests::current_runtime_source_and_bounded_atomic_receipts_fail_closed
+    native_qualification::tests::missing_or_expired_owner_allowances_reject_before_preparation
+    native_qualification::tests::plans_keep_one_selected_ptq1_pair_and_the_fixed_row_pair
+
+test result: FAILED. 331 passed; 7 failed; 2 ignored; 0 measured; 0 filtered out; finished in 14.09s

@@ -3,6 +3,10 @@
 This is the single backlog. [Technical docs](docs/README.md) own current behavior,
 contracts, commands and evidence; completed work belongs in Git history.
 
+Have the owner push the local CI corrections and confirm Markdown standards and
+Foundation on the resulting source. The [bounded local check record](docs/evidence/ci-fixes-20261112/delivery.json)
+keeps local validation separate from pending hosted acceptance.
+
 Publish the first experimental Windows ARM64 MSI release, **v0.1.0**, after the
 owner reviews and pushes the local installer/pipeline commits to Runner `main`.
 The [release guide](docs/releases.md) records the owner-run publication command;

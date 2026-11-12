@@ -1,0 +1,42 @@
+    Checking bonsai-tools v0.1.0 (C:\a\SwiftBonsai2Runner\SwiftBonsai2Runner\tools\bonsai)
+error: this argument is passed by value, but not consumed in the function body
+  --> tools\bonsai\src\app_update\policy\tests.rs:17:23
+   |
+17 | fn selected(releases: Value) -> crate::Result<(bool, Option<Candidate>)> {
+   |                       ^^^^^
+   |
+   = help: for further information visit https://clippy.rust-lang.org/main/index.html#needless_pass_by_value
+   = note: `-D clippy::needless-pass-by-value` implied by `-D clippy::pedantic`
+   = help: to override `-D clippy::pedantic` add `#[allow(clippy::needless_pass_by_value)]`
+help: consider taking a reference instead
+   |
+17 | fn selected(releases: &Value) -> crate::Result<(bool, Option<Candidate>)> {
+   |                       +
+
+error: consider adding a `;` to the last statement for consistent formatting
+   --> tools\bonsai\src\app_update\policy\tests.rs:101:17
+    |
+101 |                 value["assets"][2]["browser_download_url"] = "https://example.com/update.msi".into()
+    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: add a `;` here: `value["assets"][2]["browser_download_url"] = "https://example.com/update.msi".into();`
+    |
+    = help: for further information visit https://clippy.rust-lang.org/main/index.html#semicolon_if_nothing_returned
+    = note: `-D clippy::semicolon-if-nothing-returned` implied by `-D clippy::pedantic`
+    = help: to override `-D clippy::pedantic` add `#[allow(clippy::semicolon_if_nothing_returned)]`
+
+error: redundant clone
+   --> tools\bonsai\src\app_update\policy\tests.rs:187:28
+    |
+187 |     let mut invalid = valid.clone();
+    |                            ^^^^^^^^ help: remove this
+    |
+note: this value is dropped without further use
+   --> tools\bonsai\src\app_update\policy\tests.rs:187:23
+    |
+187 |     let mut invalid = valid.clone();
+    |                       ^^^^^
+    = help: for further information visit https://clippy.rust-lang.org/main/index.html#redundant_clone
+    = note: `-D clippy::redundant-clone` implied by `-D clippy::nursery`
+    = help: to override `-D clippy::nursery` add `#[allow(clippy::redundant_clone)]`
+
+error: could not compile `bonsai-tools` (lib test) due to 3 previous errors
+warning: build failed, waiting for other jobs to finish...

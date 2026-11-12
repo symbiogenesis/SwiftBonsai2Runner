@@ -1,0 +1,32 @@
+    Checking bonsai-broker v0.1.0 (C:\a\SwiftBonsai2Runner\SwiftBonsai2Runner\src\broker)
+error: `format!(..)` appended to existing `String`
+   --> src\broker\tests\native_model\progress.rs:355:9
+    |
+355 | /         payload.push_str(&format!(
+356 | |             "data: {}\n\n",
+357 | |             json!({"choices":[{"delta":{"content":token},"finish_reason":null}]})
+358 | |         ));
+    | |__________^
+    |
+    = note: you may need to import the `std::fmt::Write` trait
+    = help: for further information visit https://clippy.rust-lang.org/main/index.html#format_push_string
+    = note: `-D clippy::format-push-string` implied by `-D clippy::pedantic`
+    = help: to override `-D clippy::pedantic` add `#[allow(clippy::format_push_string)]`
+help: consider using `write!` to avoid the extra allocation
+    |
+355 ~         let _ = write!(payload, "data: {}\n\n",
+356 ~             json!({"choices":[{"delta":{"content":token},"finish_reason":null}]}));
+    |
+
+error: multiply and add expressions may be calculated more efficiently and accurately
+   --> src\broker\tests\native_model\token_timing.rs:212:60
+    |
+212 |             json!({"text":index.to_string(),"milliseconds":1000.0 + f64::from(index) * 500.0}),
+    |                                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: consider using: `f64::mul_add(f64::from(index), 500.0, 1000.0)`
+    |
+    = note: the performance gain from `mul_add` may vary depending on the target architecture
+    = help: for further information visit https://clippy.rust-lang.org/main/index.html#suboptimal_flops
+    = note: `-D clippy::suboptimal-flops` implied by `-D clippy::nursery`
+    = help: to override `-D clippy::nursery` add `#[allow(clippy::suboptimal_flops)]`
+
+error: could not compile `bonsai-broker` (test "native_model") due to 2 previous errors

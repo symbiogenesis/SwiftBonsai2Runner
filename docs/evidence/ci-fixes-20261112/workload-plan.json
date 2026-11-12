@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "kind": "ci-fix-focused-local-validation-plan",
+  "declaredBeforeExecution": true,
+  "maximumAggregateSeconds": 300,
+  "conservativeEstimateSeconds": 270,
+  "reason": "Verify demonstrated Markdown, strict broker fixture and source-pin failures with existing external build artifacts; complete suites remain hosted CI work.",
+  "fixedWork": [
+    "Record GetSystemPowerStatus, source revision and hashes before the validation workload.",
+    "Run rumdl 0.3.2 check and fmt --check across the repository, cargo fmt --all --check, and Git whitespace checks; at most 25 seconds total.",
+    "Run one offline locked Release Clippy command for bonsai-broker, bonsai-tools and bonsai-chat, with all targets/features and four compiler jobs, at most 150 seconds.",
+    "Run only the model-free native_qualification::tests:: bonsai-tools library regressions offline in Release, at most 80 seconds.",
+    "If compilation fails, make only evidence-supported source corrections; do not repeat a failed command or start another trial.",
+    "Stop owned child process trees on timeout; record final power and retain exact command results, source hashes and logs with a 30-second cleanup reserve."
+  ],
+  "constraints": {
+    "retries": 0,
+    "completeSuites": false,
+    "comparisonArms": [],
+    "modelOrBenchmarkWork": false,
+    "ciDispatches": 0,
+    "gitPushes": 0,
+    "continuousPowerStabilityEstablished": false,
+    "performanceQualified": false
+  }
+}
