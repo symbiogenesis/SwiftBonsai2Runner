@@ -3,25 +3,23 @@ use super::egui;
 use egui::{Color32, Pos2, Stroke, epaint::CubicBezierShape};
 
 pub(super) fn logo(ui: &mut egui::Ui) {
-    let mut wording = egui::text::LayoutJob::default();
-    for text in [
-        egui::RichText::new("SwiftBonsai2").strong().size(14.0),
-        egui::RichText::new(" - Your private, local AI companion")
-            .size(12.0)
-            .weak(),
-    ] {
-        text.append_to(
-            &mut wording,
-            ui.style(),
-            egui::FontSelection::Default,
-            egui::Align::Center,
+    ui.horizontal_wrapped(|ui| {
+        ui.horizontal(|ui| {
+            ui.spacing_mut().item_spacing.x = 8.0;
+            mark(ui);
+            ui.add(
+                egui::Label::new(egui::RichText::new("SwiftBonsai2").strong().size(14.0)).extend(),
+            );
+        });
+        // Move the whole tagline below the logo when it cannot fit beside it.
+        ui.add(
+            egui::Label::new(
+                egui::RichText::new(" - Your private, local AI companion")
+                    .size(12.0)
+                    .weak(),
+            )
+            .extend(),
         );
-    }
-    ui.horizontal(|ui| {
-        ui.spacing_mut().item_spacing.x = 8.0;
-        mark(ui);
-        // Keep every word visible at the minimum sidebar width.
-        ui.add(egui::Label::new(wording).wrap());
     });
 }
 
