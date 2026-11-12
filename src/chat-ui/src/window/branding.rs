@@ -3,24 +3,35 @@ use super::egui;
 use egui::{Color32, Pos2, Stroke, epaint::CubicBezierShape};
 
 pub(super) fn logo(ui: &mut egui::Ui) {
-    ui.horizontal_wrapped(|ui| {
-        ui.horizontal(|ui| {
-            ui.spacing_mut().item_spacing.x = 8.0;
-            mark(ui);
-            ui.add(
-                egui::Label::new(egui::RichText::new("SwiftBonsai2").strong().size(14.0)).extend(),
-            );
-        });
-        // Move the whole tagline below the logo when it cannot fit beside it.
-        ui.add(
-            egui::Label::new(
-                egui::RichText::new(" - Your private, local AI companion")
-                    .size(12.0)
-                    .weak(),
-            )
-            .extend(),
-        );
+    ui.horizontal(|ui| {
+        ui.spacing_mut().item_spacing.x = 8.0;
+        mark(ui);
+        let mut text = wording(ui, " - ");
+        let inline_width = ui.fonts_mut(|fonts| fonts.layout_job(text.clone()).size().x);
+        if inline_width > ui.available_width() {
+            text = wording(ui, "\n");
+        }
+        // Keep both lines beside the seedling, using text line spacing only.
+        ui.add(egui::Label::new(text).extend());
     });
+}
+
+fn wording(ui: &egui::Ui, separator: &str) -> egui::text::LayoutJob {
+    let mut text = egui::text::LayoutJob::default();
+    for span in [
+        egui::RichText::new("SwiftBonsai2").strong().size(14.0),
+        egui::RichText::new(format!("{separator}Your private, local AI companion"))
+            .size(12.0)
+            .weak(),
+    ] {
+        span.append_to(
+            &mut text,
+            ui.style(),
+            egui::FontSelection::Default,
+            egui::Align::Center,
+        );
+    }
+    text
 }
 
 fn mark(ui: &mut egui::Ui) {

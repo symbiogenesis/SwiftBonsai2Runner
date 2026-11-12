@@ -286,8 +286,9 @@ layouts without losing drafts or interrupting background generation. Cover
 480×480 windows, display scaling, drawer Escape/backdrop and conversation actions,
 keyboard focus, System/Light/Dark changes and Windows high-contrast precedence.
 Check the compact sidebar seedling and its full "SwiftBonsai2 - Your private,
-local AI companion" wording above New conversation for crisp edges, contrast and
-complete wrapping at minimum sidebar width, including the narrow drawer.
+local AI companion" wording above New conversation for crisp edges and contrast.
+Keep the tagline unbroken, directly beneath the name beside the seedling when
+it cannot fit inline, including at minimum sidebar width and in the narrow drawer.
 Verify the compact main-header SwiftBonsai2 name and small companion tagline,
 including name-only narrow layouts and preview/generation status substitutions.
 Confirm the compact footer keeps model, conversation-saving and privacy status
