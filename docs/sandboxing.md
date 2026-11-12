@@ -86,8 +86,9 @@ enforce process count and committed memory; the physical-RAM watchdog remains
 necessary for mapped weights. Scratch and log storage do not acquire a disk quota
 merely by being private. Same-user processes outside the sandbox can still read
 owner-protected credentials or interfere with endpoints. Administrator/trusted
-owner compromise is outside this boundary. The daily profile remains disabled
-pending the [broker boundary](broker-policy.md) and [PLAN acceptance](../PLAN.md).
+owner compromise is outside this boundary. The development app enforces this
+policy, while daily-service isolation remains unqualified under the
+[broker boundary](broker-policy.md) and [PLAN acceptance](../PLAN.md).
 
 ## Native integration contract
 

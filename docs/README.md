@@ -5,8 +5,9 @@ developer commands, or [portable packages](chat-packages.md) to run without a
 checkout. [PLAN.md](../PLAN.md) is the single backlog; these guides own current
 behavior, technical contracts and retained evidence.
 
-The current application uses a native Rust UI, Windows ARM64 CPU inference and
-a strict local HTTP/JSON/SSE subset. Experimental runtimes, formats and
+The current application uses a native Rust UI, pinned Prism 0.1.23 inference on
+Windows ARM64, a CPU baseline with experimental X2 resident Hexagon acceleration,
+and a strict local HTTP/JSON/SSE subset. Experimental runtimes, formats and
 accelerators require separate qualification. Evidence scopes below distinguish
 implemented behavior from actual-model, device, quality and isolation acceptance.
 
@@ -36,6 +37,8 @@ implemented behavior from actual-model, device, quality and isolation acceptance
 | --- | --- |
 | [Swift memory and PTQ1](swift-memory.md) | Artifacts, census, budgets, lossless packing/allocation, numerical evidence, decision screen and approximation boundaries |
 | [Swift LoRA](swift-lora.md) | Artifact, basis, cost, storage overlay and paired device/human qualification |
+| [Adapter authoring intake](adapter-authoring-intake.md) | Authenticated authoring inputs, schema-2 intake bounds and provenance limits |
+| [Public adapter reference](adapter-public-reference.md) | One declared public-pack reconstruction and independent scalar comparison |
 | [Weight-space programming](weight-space-programming.md) | Swift applicability, compact PQ2/PTQ1 correction mechanism and evidence needed before a weight edit |
 | [Qwen reference](model-selection.md) | Selection rationale, compatibility/memory checks and stop/reopen conditions |
 | [Native Rust engine](native-rust-engine.md) | Supported graph/API, numerical/state ownership, runtime overhead and promotion evaluator |
@@ -53,6 +56,8 @@ implemented behavior from actual-model, device, quality and isolation acceptance
 | [CPU kernels and X2 screen](cpu-kernels.md) | Packed arithmetic, ISA dispatch, thread-screen controls and device evidence |
 | [Prefill, snapshots and FFN delivery](performance-deliver.md) | Source contracts, conservative resource charges and qualification limits |
 | [Paired values, bounded parsing and resident packets](performance-close.md) | Source behavior and remaining qualification boundaries |
+| [KV sharing, terminal ingestion and resident FFN](performance-finish.md) | Source changes and qualification limits before release and repin |
+| [Paired prefill, BPE reuse and tiled projections](performance-resolve.md) | Request-local reuse, native-Q2 token tiles and pending release/qualification |
 | [Adreno and OpenCL](adreno.md) | Vulkan/compute access, placement, native OpenCL query, X2 observations and source audit |
 | [Hexagon](hexagon.md) | Signed deployment, packed execution/state, memory and failure contracts |
 | [Hexagon sources and evidence](hexagon-source-audit.md) | Pinned packages, prototype placement, X2 access, signed Q2 arithmetic and SDK/public wire provenance |

@@ -4,8 +4,9 @@
 bounded HTTP I/O and single-slot scheduling. Its explicit Windows launcher owns
 the pinned Qwen reference or Swift assessment backend. The separate first-party
 client remains [native Rust](ui-architecture.md); the broker has no browser UI.
-PowerShell preflight and the daily profile remain launch-disabled. Development
-checks establish neither daily security nor actual-model qualification.
+The separate Rust `server-plan` command only prepares policy; it cannot launch
+a service. The native application and explicit development launcher can launch,
+with daily-service security and actual-model qualification still pending.
 
 The transport follows [RFC 9110](https://www.rfc-editor.org/rfc/rfc9110.html) and
 [RFC 9112](https://www.rfc-editor.org/rfc/rfc9112.html) within the subset below.
@@ -332,8 +333,7 @@ prompts, arguments or raw I/O errors.
 The Rust `credentials` command creates a fresh random directory with distinct
 random keys under an existing owner-controlled external local parent. Protected
 owner/LocalSystem ACLs exist before secret writes and are verified. Existing
-objects are never reused. It returns paths only; `-WhatIf` resolves no executable
-or credentials. Same-user/admin access and parent-owner replacement remain
+objects are never reused. It returns paths only. Same-user/admin access and parent-owner replacement remain
 outside its assurance. Partial directories remain for inspection.
 See [commands](development-guide.md#explicit-development-broker).
 
@@ -351,7 +351,7 @@ executables, models, profile JSON and overrides. The default is `reference-cpu`;
 | Swift engine | Native Rust by development default; `--publisher-engine` selects manual publisher rollback and `--native-engine` remains accepted. Reference stays on its publisher runtime. Engine options are mutually exclusive. |
 | `--native-row-workers 1\|4` | Swift Rust defaults to four; explicit one remains available. Publisher/reference defaults to one and rejects four. Readiness must match the selected worker count. |
 | `--use-repacked-ptq1` | Only the pinned current-weight export; missing/altered bytes reject. Publisher and native Rust Swift support are explicit; full end-to-end qualification remains separate. |
-| `--use-abliterate-lora` | Only the pinned adapter on publisher or native Rust Swift CPU; enables bounded per-request scale with verified readiness. Reject for reference. The app requests it by default (`-NoAbliterateLora` opts out); direct broker launch omits it. |
+| `--use-abliterate-lora` | Only the pinned adapter on publisher or native Rust Swift; enables bounded per-request scale with verified readiness. Reject for reference. The app requests it by default (`bonsai-tools chat --no-abliterate-lora` opts out); direct broker launch omits it. |
 | `--check-only` | Verify policy/artifacts and report admission without credentials or a process. |
 
 [Runtime selection](development-guide.md#runtime-selection) lists app options.

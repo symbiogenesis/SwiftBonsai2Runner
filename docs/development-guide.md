@@ -11,8 +11,12 @@ are separate developer workflows, not additional app-setup steps.
 ## Current state
 
 The app defaults to native Rust [Prism Inference](https://github.com/symbiogenesis/prism-inference)
-0.1.14, original Swift PQ2, four CPU row workers and the pinned pretrained adapter
-at scale 1.3. Publisher C++ rollback, Qwen `reference-cpu` and current-weight PTQ1
+0.1.23, original Swift PQ2, four CPU row workers and the pinned pretrained adapter
+at scale 1.3. On supported Snapdragon X2 installations, the runtime also enables
+the experimental resident Hexagon `native-q2` path, with CPU fallback when the
+signed runtime package or CDSP driver is absent. See [Hexagon policy](hexagon.md)
+for placement, resource charges and qualification limits.
+Publisher C++ rollback, Qwen `reference-cpu` and current-weight PTQ1
 use explicit immutable selections. No training is required. [Runtime selection](#runtime-selection)
 defines supported combinations; [memory](swift-memory.md) and
 [LoRA qualification](swift-lora.md#standard-profile-qualification) distinguish
@@ -91,10 +95,12 @@ invalid `-ToolPath` or `BONSAI_TOOLS_PATH` override first. Older source launches
 from the current checkout into `build/maintenance` to use the current compiler pin
 and maintenance commands.
 
-Rebuild the maintenance executable to receive the new direct CLI Rust default
-and `--publisher-engine` option. The current PowerShell facade forwards explicit
-Rust/four-worker selection by default for compatible older tools. Its
-`-NativeRowWorkers 1` option selects one Rust worker; publisher launches require one.
+Rebuild the maintenance executable to receive the current direct CLI Rust default
+and `--publisher-engine` option. The PowerShell facade forwards only options you
+supply; omitted engine/worker options use the selected executable's defaults.
+Older executables retain their own defaults. `-NativeEngine -NativeRowWorkers 4`
+selects Rust/four workers explicitly; `-NativeRowWorkers 1` selects one Rust worker
+with current tools. Publisher launches require one.
 
 The native Rust `egui`/`eframe` app follows the [UI contract](ui-architecture.md).
 The window opens before broker/speech preparation finishes, so drafting remains
@@ -133,7 +139,7 @@ a second Escape stops active generation or speech.
 | **Output cap** | Defaults to 4,096; also offers 512/1,024/2,048 reasoning-inclusive tokens within the fixed 8,192-token context and 64-token template reserve. |
 | **Abliteration scale** | Pinned adapter defaults to 1.3; choose 0-2 in 0.1 steps for the next response/every Extra effort pass without restart. Zero disables the correction. Older saved chats use 1.3; effectiveness and quality remain experimental. |
 
-Settings belong to each conversation and are retained by optional saving;
+Settings belong to each conversation and are retained while saving is enabled;
 response controls lock during generation. The broker counts the exact prompt
 for every call: controls neither estimate tokens nor discard history. A framed
 context rejection restores the prompt and keeps the model ready; lower the output
@@ -228,7 +234,12 @@ comparison and cleanup still share the five-minute owner-device budget.
 
 The launcher provisions native ARM64 Canary Qwen 2.5B and Qwen3-TTS 1.7B
 VoiceDesign/Base companions. Rust owns services, authentication, validation, WAV
-processing and process ownership; reviewed native GGML C++ engines infer on CPU.
+processing and process ownership; reviewed native GGML C++ engines provide inference.
+Canary uses CPU. TTS can select an optional local Hexagon `HTP0` backend and
+otherwise uses CPU; `BONSAIRUNNER_TTS_DEVICE=CPU` explicitly selects CPU.
+This separate speech path is not the Swift `native-q2` policy, and its presence
+checks do not establish runtime signature/hash verification, contained device
+access, audio quality or a speed advantage. See the [TTS runtime contract](../src/speech-tts/README.md).
 The four pinned Q8_0 GGUF files total about 6.7 GiB under
 `$data/speech/native/<revision>/`. Downloads resume with exact size/SHA-256
 verification; launch checks cached sizes, then each service fully hashes and holds
@@ -237,7 +248,7 @@ files before first load. Original snapshots/private runtimes are preserved.
 Download and verify without compiling or launching:
 
 ```powershell
-$speech = bonsai-tools chat --data-directory $data --speech-models-only
+$speech = bonsai-tools chat --data-directory $data --speech-models-only | ConvertFrom-Json
 $speech.CanaryModelPath
 $speech.TtsModelPath
 $speech.TtsCodecPath
@@ -255,7 +266,8 @@ tools and Windows SDK. Pinned LLVM ARM64/engine archives and all outputs stay
 outside Git; only child compiler settings change. Downloads use Windows
 `System32/curl.exe` 8.4+ with HTTPS-only redirects and resumable verified partials;
 LLVM extraction uses `System32/tar.exe`. Cached launch invokes neither download.
-`-AsrPath`/`-TtsPath` select built executables, whose services still verify models.
+`bonsai-tools chat --asr-path PATH` / `--tts-path PATH` select built executables,
+whose services still verify models.
 
 Only explicitly enabled, Windows-permitted microphone capture starts input.
 Five-second mono 16 kHz WAV clips remain in memory; capture pauses for each
@@ -299,7 +311,7 @@ a 5 GiB physical reserve and a 16 GiB Job commit ceiling. Swift retains its
 [Streaming resources](streaming-resources.md) owns queue, segmentation and playback bounds.
 
 TTS automatically reserves two logical CPUs, with at least one inference thread;
-`-TtsThreads 1` through `256` selects an explicit budget and zero restores
+`bonsai-tools chat --tts-threads 1` through `256` selects an explicit budget and zero restores
 automatic sizing. More threads do not imply better throughput. Q8_0 remains the
 default. Evaluate smaller Q4_K_M talkers with
 the unchanged Q8 codec explicitly:
@@ -318,8 +330,8 @@ the main-only TTS workflow; [speech memory](performance-expectations.md#q4-speec
 fresh/warm resource and listening review. Q4 is not qualified as equivalent to Q8;
 streaming, prefetch and warm reuse alone establish no throughput or peak-memory gain.
 
-For external services, pass `-CanaryKeyFile C:\Speech\canary.key` and/or
-`-TtsKeyFile C:\Speech\qwen-tts.key`. Default ports 8766/8767 must differ from
+For external services, pass `bonsai-tools chat --canary-key-file C:\Speech\canary.key`
+and/or `--tts-key-file C:\Speech\qwen-tts.key`. Default ports 8766/8767 must differ from
 each other and chat ports. Key-only services remain externally owned and trigger
 no unused provisioning/builds. Authenticated capabilities are checked; TTS requires
 `consistent_voice: true` and can use complete-WAV playback without streaming.
@@ -380,8 +392,8 @@ and installed-package launches retain native admission. Installed launches use [
 
 | Runtime/model | Source and installed launch options | Boundary |
 | --- | --- | --- |
-| Native Rust Prism 0.1.14, original Swift PQ2 | Development default; optional explicit `--native-engine --use-original-pq2`; pinned adapter enabled | Four CPU row workers, adapter scale 1.3. Exact artifact/readiness checks remain mandatory; full daily-use qualification is pending. |
-| Native Rust Prism 0.1.14, current-weight PTQ1 export | `--use-repacked-ptq1`, optionally `--native-engine` | Experimental opt-in; separate [PTQ1 qualification](swift-memory.md#current-weight-ptq1-option) remains pending. Missing/changed bytes reject. |
+| Native Rust Prism 0.1.23, original Swift PQ2 | Development default; optional explicit `--native-engine --use-original-pq2`; pinned adapter enabled | Four CPU row workers, adapter scale 1.3 and supported X2 resident `native-q2` acceleration. Exact artifact/readiness checks remain mandatory; full daily-use qualification is pending. |
+| Native Rust Prism 0.1.23, current-weight PTQ1 export | `--use-repacked-ptq1`, optionally `--native-engine` | Experimental opt-in; separate [PTQ1 qualification](swift-memory.md#current-weight-ptq1-option) remains pending. Missing/changed bytes reject. |
 | Publisher Prism CPU, original Swift PQ2 | `--publisher-engine`, optionally `--use-original-pq2` | Manual rollback with the same pinned adapter and response scale; no automatic fallback. |
 | Publisher Prism CPU, current-weight PTQ1 export | `--publisher-engine --use-repacked-ptq1` | Same adapter opt-out/scale. No older publisher PTQ1 substitution. |
 
@@ -423,7 +435,7 @@ Original PQ2 and adapter scale 1.3 remain the defaults. The engine selection is
 independent of the weight selection; current-release device rollback still
 requires qualification.
 
-Native Rust defaults to four row workers using the pinned 0.1.14 implementation.
+Native Rust defaults to four row workers using the pinned 0.1.23 implementation.
 `--native-row-workers 1` explicitly selects one worker. Publisher/reference
 launches default to one and reject four; no request can override this private launch setting.
 The [fixed-input comparison](evidence/row-parallel-smoke.json) preserves all logits
@@ -446,8 +458,11 @@ evidence directories private.
 
 Retained inventories cover Snapdragon X2 Elite Extreme X2E94100 and a 32 GB
 X Elite X1E-78-100; see [device evidence](cpu-kernels.md#x2-cpu-thread-screen).
-Policies still select CPU explicitly. [Hardware profiles](hardware-capabilities.md#automatic-profile-selection)
-defines qualification for automatic device/workload/objective selection, phase
+The Rust/PQ2 development policy can use resident `native-q2` acceleration on X2;
+X1 acceleration needs independent qualification. This fixed policy is separate
+from qualified automatic profile selection.
+[Hardware profiles](hardware-capabilities.md#automatic-profile-selection)
+defines qualification for device/workload/objective selection, phase
 placement, live-budget admission and CPU fallback/refusal. SKU names and TOPS
 never authorize acceleration; [PLAN.md](../PLAN.md) owns pending work.
 
@@ -753,7 +768,7 @@ native identity before frontend readiness. Ordinary 11.5 GiB Job / 15.5 GiB admi
 4 GiB watchdog, protected keys and listener checks apply. Interrupted generation
 closes admission and stops the backend; relaunch creates a fresh owned instance.
 
-The [runtime contract](native-rust-engine.md) defines release 0.1.8's supported
+The [runtime contract](native-rust-engine.md) defines the pinned release's supported
 loading, logits/state, tokenizer, sampler and recovery behavior;
 [PLAN.md](../PLAN.md#runtime-and-correctness) owns pending qualification.
 Private child protocol alone proves neither Job ownership nor same-user bypass
@@ -768,15 +783,16 @@ identities; it does not prove that the run passed or authorize publication.
 
 Download the ARM64 bundle ZIP and receipt from that run, and the source ZIP from
 `https://github.com/symbiogenesis/prism-inference/archive/<full-commit>.zip`,
-into a new system-temp lane outside Git. Use the independently reviewed revision
-and run identity, rather than copying them from an unreviewed receipt:
+into a new system-temp lane outside Git. Set `$reviewedVersion`, `$reviewedRevision`
+and `$reviewedRunId` from the independently reviewed release and run, rather than
+copying them from an unreviewed receipt:
 
 ```powershell
 & $env:BONSAI_TOOLS_PATH inference-lock --json (@{
-    receiptPath = Join-Path $lane 'prism-inference-0.1.6-aarch64-pc-windows-msvc.receipt.json'
-    archivePath = Join-Path $lane 'prism-inference-0.1.6-aarch64-pc-windows-msvc.zip'
+    receiptPath = Join-Path $lane "prism-inference-$reviewedVersion-aarch64-pc-windows-msvc.receipt.json"
+    archivePath = Join-Path $lane "prism-inference-$reviewedVersion-aarch64-pc-windows-msvc.zip"
     sourceArchivePath = Join-Path $lane 'source.zip'
-    sourceRevision = $reviewedRevision; version = '0.1.6'
+    sourceRevision = $reviewedRevision; version = $reviewedVersion
     runId = $reviewedRunId; runAttempt = 1
     outputPath = Join-Path $lane 'prism-inference.lock.candidate.json'
 } | ConvertTo-Json -Depth 64 -Compress) | ConvertFrom-Json -AsHashtable
@@ -821,5 +837,6 @@ inference or benchmark runs; the native Rust UI is built separately from inferen
 
 Default parallelism reserves two CPU threads and 2 GiB, budgets 1 GiB per compiler,
 and caps project/shared compiler workers at eight. If memory is unavailable it
-uses at most two. `-Parallel 1` through `-Parallel 12` overrides that budget.
+uses at most two. The `build-tools` request's `parallel` field accepts 1 through
+12 to override that budget.
 Incremental outputs are reused only after source/configuration checks.

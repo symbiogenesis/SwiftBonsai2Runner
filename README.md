@@ -49,9 +49,10 @@ is pending the owner's source push and GitHub release workflow run.
 ## Features
 
 - **Conversations and search:** Keep separate conversations and unsent drafts, rename
-  your chats, and find text with **Ctrl+F**. Turn on **Save conversations on this
-  device** in Settings to restore your workspace when you reopen the app; saved chats
-  are encrypted for your Windows user account. Saving is off by default.
+  your chats, and find text with **Ctrl+F**. Your workspace is saved automatically
+  and encrypted for your Windows user account. Disable **Save conversations on this
+  device** in Settings to delete the saved copy and keep future chats unsaved;
+  that choice survives restarts.
 - **Application updates:** MSI installations check GitHub releases in the
   background. Download a newer Windows ARM64 installer from Settings, then
   confirm **Install update and close**. Model downloads and local data stay in
@@ -81,7 +82,7 @@ model. For technical details, see the [UI architecture](docs/ui-architecture.md)
 | **Hardware** | Windows ARM64 laptops with Snapdragon X and X2 processors |
 | **Model** | Swift Bonsai 2 (6.71 GiB download) |
 | **Memory needed** | 15.5 GiB of free RAM (keeps 4 GiB reserved for Windows and other apps) |
-| **Conversation size** | One active reply at a time · Up to ~6,000 words (8,192 tokens) |
+| **Conversation size** | One active reply at a time · 8,192 tokens shared by history, prompt, reply and template reserve |
 | **Engine** | [Prism Inference](https://github.com/symbiogenesis/prism-inference) (Rust) on CPU, with Hexagon NPU acceleration on Snapdragon X2 |
 | **Roadmap** | [Central TODO](PLAN.md) |
 

@@ -36,13 +36,16 @@ The [development guide](development-guide.md#source-launch-caches-and-runtime-se
 owns source-launch receipts/cache rules; the [package contract](chat-packages.md#launch-without-a-checkout)
 owns verified installed launches.
 
-Swift launches default to native Rust Prism 0.1.14, original PQ2, four CPU row
+Swift launches default to native Rust Prism 0.1.23, original PQ2, four CPU row
 workers and the standard adapter at scale 1.3. `--native-engine` remains accepted;
 `--publisher-engine` selects the explicit publisher rollback. Engine options are
 mutually exclusive, and retry preserves the selected engine and representation.
 The UI identifies this as a development default with full-context/quality
 qualification pending. Selection neither waives admission nor establishes full
-release qualification. PTQ1 remains an explicit opt-in.
+release qualification. Supported X2 installations also select the experimental
+resident `native-q2` path under the [Hexagon policy](hexagon.md); CPU fallback for
+an absent signed package or CDSP driver does not change engine or representation.
+PTQ1 remains an explicit opt-in.
 
 The launcher checks/builds presentation first. After the first UI tick, an owned
 preparation worker verifies/provisions the selected pinned Rust runtime,
@@ -157,6 +160,11 @@ verified model files. Reviewed native GGML C++ cores infer in separate executabl
 to avoid mixing GGML versions. The dependency-free `bonsai-audio` codec borrows
 validated mono PCM16 WAV payloads and opens no devices; callers retain their own
 sample-rate, duration and error policies.
+
+Canary uses CPU; TTS can register an optional local Hexagon `HTP0` backend with
+CPU fallback. This is separate from Swift's resident `native-q2` acceleration.
+The [TTS contract](../src/speech-tts/README.md) records backend selection and its
+verification/qualification limits; containment and resource admission still apply.
 
 Microphone access is requested on the UI thread only after explicit action.
 Denied, cancelled or unavailable access fails closed; stale permission, capture
