@@ -9,8 +9,10 @@
 
 use crate::client::Message;
 
-/// Pinned broker policy: prompt, requested response and reserve share this limit.
+/// Legacy fixed broker limit, also used for model-free presentation previews.
 pub(crate) const CONTEXT_TOKENS: usize = 8_192;
+/// Largest unscaled context supported by the adaptive Swift runtime.
+pub(crate) const MAX_CONTEXT_TOKENS: usize = 262_144;
 /// Exact broker policy reserve, separate from the estimated rendered prompt.
 pub(crate) const RESERVE_TOKENS: usize = 64;
 
@@ -20,8 +22,37 @@ const NEXT_TURN_FRAMING_TOKENS: usize = 16;
 // in client/effort.rs. Later passes also include generated notes/drafts and are
 // deliberately outside this first-pass estimate.
 const EFFORT_PLANNING_TOKENS: usize = 192;
-const NEAR_TOKENS: usize = CONTEXT_TOKENS * 85 / 100;
 const OUTPUT_CAPS: [u32; 4] = [512, 1_024, 2_048, 4_096];
+
+/// Trusted broker observation, never a promise that the next prompt will fit.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(crate) enum Capacity {
+    /// No capacity observation is available for this model attempt yet.
+    Unknown,
+    /// A legacy runtime's fixed context bound.
+    Fixed,
+    /// Memory-backed capacity observed when a previous prompt was admitted.
+    Adaptive { observed: usize },
+}
+
+impl Capacity {
+    pub(crate) const fn tokens(self) -> Option<usize> {
+        match self {
+            Self::Unknown => None,
+            Self::Fixed => Some(CONTEXT_TOKENS),
+            Self::Adaptive { observed } => Some(observed),
+        }
+    }
+
+    /// Paint with bounded integer arithmetic, including contexts above u16::MAX.
+    pub(crate) fn fraction(self, amount: usize) -> f32 {
+        let Some(limit) = self.tokens().filter(|limit| *limit != 0) else {
+            return 0.0;
+        };
+        let scaled = amount.min(limit).saturating_mul(10_000) / limit;
+        f32::from(u16::try_from(scaled).unwrap_or(10_000)) / 10_000.0
+    }
+}
 
 /// Advisory presentation state, never an admission decision.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -34,6 +65,8 @@ pub(crate) enum Pressure {
 /// Estimated first-request occupancy with an exact selected response reservation.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) struct Estimate {
+    /// Fixed bound or a previous memory-backed admission observation.
+    pub(crate) capacity: Capacity,
     /// Committed content, retained reasoning and approximate message framing.
     pub(crate) history: usize,
     /// Trimmed draft plus approximate next-turn template framing.
@@ -62,12 +95,19 @@ impl Estimate {
             .saturating_add(output)
             .saturating_add(RESERVE_TOKENS);
         Self {
+            capacity: Capacity::Fixed,
             history,
             draft,
             workflow,
             output,
             total,
         }
+    }
+
+    #[must_use]
+    pub(crate) const fn with_capacity(mut self, capacity: Capacity) -> Self {
+        self.capacity = capacity;
+        self
     }
 
     /// Rendered input estimate before the response cap and policy reserve.
@@ -79,19 +119,28 @@ impl Estimate {
 
     /// Estimated spare capacity after reserving the complete selected response.
     pub(crate) const fn remaining(self) -> usize {
-        CONTEXT_TOKENS.saturating_sub(self.total)
+        match self.capacity.tokens() {
+            Some(limit) => limit.saturating_sub(self.total),
+            None => 0,
+        }
     }
 
     /// Estimated excess; zero also includes exact equality with the policy limit.
     pub(crate) const fn overflow(self) -> usize {
-        self.total.saturating_sub(CONTEXT_TOKENS)
+        match self.capacity.tokens() {
+            Some(limit) => self.total.saturating_sub(limit),
+            None => 0,
+        }
     }
 
     /// Distinguish comfortable, near-capacity and estimated over-capacity states.
     pub(crate) const fn pressure(self) -> Pressure {
-        if self.total > CONTEXT_TOKENS {
+        let Some(limit) = self.capacity.tokens() else {
+            return Pressure::Comfortable;
+        };
+        if self.total > limit {
             Pressure::Over
-        } else if self.total >= NEAR_TOKENS {
+        } else if self.total >= limit * 85 / 100 {
             Pressure::Near
         } else {
             Pressure::Comfortable
@@ -102,8 +151,10 @@ impl Estimate {
     ///
     /// This is an explicit user action suggestion, never a promise of admission.
     pub(crate) fn suggested_cap(self) -> Option<u32> {
-        let available =
-            CONTEXT_TOKENS.saturating_sub(self.prompt_tokens().saturating_add(RESERVE_TOKENS));
+        let available = self
+            .capacity
+            .tokens()?
+            .saturating_sub(self.prompt_tokens().saturating_add(RESERVE_TOKENS));
         OUTPUT_CAPS.into_iter().rev().find(|&cap| {
             usize::try_from(cap).is_ok_and(|cap| cap < self.output && cap <= available)
         })
@@ -227,5 +278,33 @@ mod tests {
         assert_eq!(estimate.pressure(), Pressure::Over);
         assert_eq!(estimate.remaining(), 0);
         assert_eq!(estimate.suggested_cap(), None);
+    }
+
+    #[test]
+    fn adaptive_capacity_tracks_observations_above_legacy_and_u16_limits() {
+        let estimate = Estimate::new(20_000, "next turn", 4_096, false);
+        assert_eq!(estimate.pressure(), Pressure::Over);
+        let larger = estimate.with_capacity(Capacity::Adaptive { observed: 131_072 });
+        assert_eq!(larger.pressure(), Pressure::Comfortable);
+        assert!(larger.remaining() > 100_000);
+        assert_eq!(larger.total, estimate.total);
+        assert!((larger.capacity.fraction(65_536) - 0.5).abs() < f32::EPSILON);
+        assert!((larger.capacity.fraction(usize::MAX) - 1.0).abs() < f32::EPSILON);
+        let smaller = larger.with_capacity(Capacity::Adaptive { observed: 16_384 });
+        assert_eq!(smaller.pressure(), Pressure::Over);
+        assert_eq!(smaller.overflow(), smaller.total - 16_384);
+    }
+
+    #[test]
+    fn unknown_capacity_estimates_usage_without_inventing_remaining_space() {
+        let estimate =
+            Estimate::new(20_000, "draft", 4_096, false).with_capacity(Capacity::Unknown);
+        assert!(estimate.total > CONTEXT_TOKENS);
+        assert_eq!(estimate.capacity.tokens(), None);
+        assert_eq!(estimate.pressure(), Pressure::Comfortable);
+        assert_eq!(estimate.remaining(), 0);
+        assert_eq!(estimate.overflow(), 0);
+        assert_eq!(estimate.suggested_cap(), None);
+        assert!(estimate.capacity.fraction(estimate.total).abs() < f32::EPSILON);
     }
 }

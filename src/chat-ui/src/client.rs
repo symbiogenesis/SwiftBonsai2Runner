@@ -27,6 +27,7 @@ use std::{
 
 #[cfg(test)]
 mod cancellation_tests;
+mod context_metadata;
 mod effort;
 mod event_queue;
 #[cfg(test)]
@@ -54,7 +55,7 @@ const EVIDENCE_PREFIX: &str = "Protected credentials and technical evidence: ";
 const RUNNING_MEMORY_MESSAGE: &str = "Swift stopped because its running memory requirements were no longer met. Close other apps, then select Retry model. Completed conversation turns remain in memory.";
 const PUBLISHER_INIT_FAILURE_MESSAGE: &str = "The publisher CPU runtime failed Windows initialization (0xC0000142). Retry model repeats that runtime choice. Copy any conversation or drafts you want to keep before closing. Close this app and relaunch bonsai-tools chat with --native-engine to try the experimental Rust runtime, preserving your DataDirectory and the same model and adapter options.";
 const LOCAL_CONNECTION_CLOSED: &str = "The connection to the model on this computer closed before a complete reply was received. The cause was not reported.";
-const CONTEXT_LIMIT_MESSAGE: &str = "This conversation and the selected output cap do not fit within the model's 8,192-token context limit. Choose a smaller output cap or start a new conversation, then send again.";
+const CONTEXT_LIMIT_MESSAGE: &str = "This conversation and the selected output cap do not fit the context budget available for this prompt. Close other apps to free memory, choose a smaller output cap or start a new conversation, then send again.";
 const CONTROL_TOKEN_MESSAGE: &str = "This conversation contains reserved chat markers, such as <|im_start|> or <think>. Remove them or start a new conversation before sending again.";
 const RATE_LIMIT_MESSAGE: &str =
     "Too many messages were sent in a short time. Wait a moment, then send again.";
@@ -129,6 +130,7 @@ pub(crate) enum Command {
 pub(crate) enum Event {
     Starting,
     Ready,
+    ContextCapacity(crate::context::Capacity),
     Text(String),
     Reasoning(String),
     Complete(Completion),
@@ -939,7 +941,19 @@ fn exchange(
     // The canonical request is no longer needed once sent. Release its
     // allocation before response headers or streaming backpressure can wait.
     drop(request);
-    let mut body = HttpBody::new(connection)?;
+    let response = HttpBody::new(connection);
+    if matches!(&response, Err(Failure::Rejected(CONTEXT_LIMIT_MESSAGE))) {
+        // A context rejection can mean the last observed memory budget shrank.
+        // Its fixed error envelope contains no fresh capacity observation.
+        notify(
+            events,
+            Event::ContextCapacity(crate::context::Capacity::Unknown),
+        )?;
+    }
+    let mut body = response?;
+    if let Some(capacity) = body.context_capacity {
+        notify(events, Event::ContextCapacity(capacity))?;
+    }
     let mut sse = Sse::default();
     while let Some(bytes) = body.next_payload()? {
         sse.push(bytes, &mut |text, reasoning| {
@@ -993,6 +1007,7 @@ impl ResponseKind {
 
 struct HttpBody<R> {
     reader: BufReader<R>,
+    context_capacity: Option<crate::context::Capacity>,
     framing: Framing,
     remaining: usize,
     total: usize,
@@ -1004,9 +1019,10 @@ struct HttpBody<R> {
 impl<R: Read> HttpBody<R> {
     fn new(reader: R) -> Result<Self> {
         let mut reader = BufReader::with_capacity(READ_SIZE, reader);
-        let (framing, kind) = read_head(&mut reader)?;
+        let (framing, kind, context_capacity) = read_head(&mut reader)?;
         let mut body = Self {
             reader,
+            context_capacity,
             framing,
             remaining: 0,
             total: 0,
@@ -1163,7 +1179,9 @@ fn read_line<'a>(reader: &mut impl Read, bytes: &'a mut [u8]) -> Result<&'a [u8]
     }
 }
 
-fn read_head<R: Read>(reader: &mut BufReader<R>) -> Result<(Framing, ResponseKind)> {
+fn read_head<R: Read>(
+    reader: &mut BufReader<R>,
+) -> Result<(Framing, ResponseKind, Option<crate::context::Capacity>)> {
     let available = reader.fill_buf().map_err(|_| {
         Failure::Message("The connection to the model on this computer was interrupted before a complete reply was received.")
     })?;
@@ -1199,7 +1217,7 @@ fn read_head<R: Read>(reader: &mut BufReader<R>) -> Result<(Framing, ResponseKin
     parse_head(&head)
 }
 
-fn parse_head(head: &[u8]) -> Result<(Framing, ResponseKind)> {
+fn parse_head(head: &[u8]) -> Result<(Framing, ResponseKind, Option<crate::context::Capacity>)> {
     let mut headers = [httparse::EMPTY_HEADER; 64];
     let mut response = httparse::Response::new(&mut headers);
     if !matches!(response.parse(head), Ok(httparse::Status::Complete(_)))
@@ -1224,7 +1242,9 @@ fn parse_head(head: &[u8]) -> Result<(Framing, ResponseKind)> {
     let mut length = None;
     let mut transfer = None;
     let mut retry_after = None;
+    let mut context = context_metadata::Headers::default();
     for header in response.headers {
+        context.capture(header.name, header.value)?;
         let field = if header.name.eq_ignore_ascii_case("content-type") {
             Some(&mut content_type)
         } else if header.name.eq_ignore_ascii_case("content-length") {
@@ -1290,7 +1310,7 @@ fn parse_head(head: &[u8]) -> Result<(Framing, ResponseKind)> {
             ));
         }
     };
-    Ok((framing, kind))
+    Ok((framing, kind, context.finish()?))
 }
 
 #[cfg(test)]

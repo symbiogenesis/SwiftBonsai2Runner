@@ -301,6 +301,65 @@ fn context_capacity_ring_description_tracks_drafts_and_hides_unfinished_occupanc
 }
 
 #[test]
+fn context_capacity_unknown_avoids_invented_denominator_or_headroom() {
+    let mut chat = harness([620.0, 640.0], &"a".repeat(40_000));
+    chat.state_mut().app.context_capacity = Capacity::Unknown;
+    chat.run();
+    let description = chat
+        .get_by_role_and_label(egui::Role::Button, "Context")
+        .accesskit_node()
+        .description()
+        .unwrap_or_default();
+    assert!(description.contains("checked when sending"));
+    assert!(!description.contains('%'));
+    assert!(chat.query_by_label("Start fresh").is_none());
+    assert!(
+        !chat
+            .get_by_role_and_label(egui::Role::Button, "Send  ↑")
+            .accesskit_node()
+            .is_disabled()
+    );
+    chat.get_by_role_and_label(egui::Role::Button, "Context")
+        .click();
+    chat.run();
+    assert!(
+        chat.query_by_label(
+            "Context capacity is checked when sending. No capacity observation is available yet."
+        )
+        .is_some()
+    );
+    assert_eq!(chat.state().app.input, "Keep this draft");
+    assert!(chat.state().commands.try_recv().is_err());
+}
+
+#[test]
+fn context_capacity_events_refresh_cached_estimate_without_touching_conversations() {
+    let (mut app, commands) = state();
+    app.input = "Keep this draft".into();
+    app.commit_history(history(&"a".repeat(40_000)));
+    let fixed = app.context_estimate();
+    assert_eq!(fixed.pressure(), Pressure::Over);
+    app.model = ModelLifecycle::Generating;
+    app.request_conversation = Some(app.active_conversation);
+    app.model_event(client::Event::ContextCapacity(Capacity::Adaptive {
+        observed: 131_072,
+    }));
+    let larger = app.context_estimate();
+    assert_eq!(larger.total, fixed.total);
+    assert_eq!(larger.pressure(), Pressure::Comfortable);
+    app.model_event(client::Event::ContextCapacity(Capacity::Adaptive {
+        observed: 8_192,
+    }));
+    assert_eq!(app.context_estimate().pressure(), Pressure::Over);
+    assert_eq!(app.input, "Keep this draft");
+    assert_eq!(app.committed.len(), 2);
+    assert!(commands.try_recv().is_err());
+    app.model = ModelLifecycle::Restarting;
+    app.model_event(client::Event::Starting);
+    assert_eq!(app.context_capacity, Capacity::Unknown);
+}
+
+#[test]
 fn context_capacity_popover_is_keyboard_accessible_and_scopes_extra_effort() {
     let mut chat = harness([620.0, 640.0], "Question");
     chat.state_mut().app.extra_effort = true;

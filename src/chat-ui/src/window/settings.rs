@@ -447,7 +447,7 @@ impl State {
         });
         self.recovery_dirty |= before != self.output_budget;
         ui.add_space(8.0);
-        ui.label(RichText::new("8,192-token context. The output cap includes thinking. A smaller cap leaves more room for your conversation.").small().weak());
+        ui.label(RichText::new("The context budget is checked when sending and can vary with available memory on supported runtimes. The output cap includes thinking; a smaller cap leaves more room for your conversation.").small().weak());
     }
 
     fn adapter_preferences(&mut self, ui: &mut egui::Ui) {

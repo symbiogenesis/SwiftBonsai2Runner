@@ -116,6 +116,7 @@ struct State {
     input: String,
     transcript: Transcript,
     committed: Vec<client::Message>,
+    context_capacity: crate::context::Capacity,
     context_history: Option<usize>,
     context_draft: context_capacity::DraftCache,
     conversations: Vec<Conversation>,
@@ -220,6 +221,11 @@ impl State {
             input: String::new(),
             transcript: Transcript::default(),
             committed: Vec::new(),
+            context_capacity: if config.is_some() {
+                crate::context::Capacity::Unknown
+            } else {
+                crate::context::Capacity::Fixed
+            },
             context_history: None,
             context_draft: context_capacity::DraftCache::default(),
             conversations: vec![Conversation::new(1)],
@@ -308,6 +314,7 @@ impl State {
         let mut state = Self::create(commands, events, None, None);
         state.updates = updates::Updates::for_startup(&request);
         state.preview = false;
+        state.context_capacity = crate::context::Capacity::Unknown;
         state.canary_configured = request.canary_configured;
         state.tts_configured = request.tts_configured;
         state.speech_checked = !state.canary_configured && !state.tts_configured;
@@ -413,6 +420,7 @@ impl State {
         self.worker = Some(start(config, incoming, events)?);
         self.commands = commands;
         self.events = incoming_events;
+        self.context_capacity = crate::context::Capacity::Unknown;
         self.set_status("Preparing your local model…", false);
         Ok(())
     }
@@ -554,6 +562,7 @@ impl State {
         }
         self.stop_speech();
         self.model = ModelLifecycle::Restarting;
+        self.context_capacity = crate::context::Capacity::Unknown;
         self.set_status("Restarting the local model…", false);
     }
 
@@ -803,6 +812,7 @@ impl State {
         self.recovery_dirty = true;
         match event {
             Event::Starting => {
+                self.context_capacity = crate::context::Capacity::Unknown;
                 self.model = ModelLifecycle::Preparing;
                 self.set_status("Preparing your local model…", false);
             }
@@ -816,6 +826,7 @@ impl State {
                 self.model = ModelLifecycle::Ready;
                 self.set_status("Ready when you are.", false);
             }
+            Event::ContextCapacity(capacity) => self.context_capacity = capacity,
             Event::Rejected {
                 message,
                 text,
