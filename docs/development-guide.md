@@ -272,15 +272,36 @@ this bounded styling subset does not execute code or activate generated links.
 | --- | --- |
 | **Thinking** | Off initially and in older saved chats; enables reasoning for the next response and every Extra effort pass. |
 | **Mode** | Standard makes one call. Experimental Extra effort makes at most three sequential plan/draft/review calls under one ten-minute deadline, shows stage labels and retains complete drafts. A truncated revision does not replace a complete draft; quality gains remain unproven. |
-| **Output cap** | Defaults to 4,096; also offers 512/1,024/2,048 reasoning-inclusive tokens within the fixed 8,192-token context and 64-token template reserve. |
+| **Output cap** | The composer's **Reply** selector and Settings share this conversation's cap. Defaults to 4,096; also offers 512/1,024/2,048 reasoning-inclusive tokens within the fixed 8,192-token context and 64-token template reserve. |
 | **Abliteration scale** | Pinned adapter defaults to 1.3; choose 0-2 in 0.1 steps for the next response/every Extra effort pass without restart. Zero disables the correction. Older saved chats use 1.3; effectiveness and quality remain experimental. |
 
+The composer's **Context** button shows approximate occupancy for the selected
+conversation's next Send. Open it for a segmented breakdown of committed history
+including retained reasoning, the trimmed draft and approximate template framing,
+Extra effort planning overhead when enabled, the selected reply reservation and
+the fixed 64-token reserve. The percentage and input counts are heuristic and may
+overestimate or underestimate the tokenizer. The selected reply cap, reserve and
+8,192-token limit are exact policy values; the estimate is no guarantee of fit.
+Extra effort estimates cover its planning pass only: later passes include generated
+working material that is not yet known. Message iteration can use a different
+prompt or committed prefix, so the composer estimate does not preflight those actions.
+
+At approximately 85% occupancy or estimated overflow, the details offer an explicit
+smaller supported reply cap when one fits the estimate, and **Start fresh** when a
+conversation slot is available. Starting fresh preserves the previous conversation
+and its draft. No estimate disables Send, trims history or changes a cap automatically.
+Reply controls retain the normal generation lock. When the visible conversation
+owns an active response, **Context updating** avoids presenting unfinished output
+as committed history; another selected conversation keeps its own next-draft estimate.
+Escape closes context details before Find or Stop, and Enter in those details does
+not submit the composer.
+
 Settings belong to each conversation and are retained while saving is enabled;
-response controls lock during generation. The broker counts the exact prompt
-for every call: controls neither estimate tokens nor discard history. A framed
-context rejection restores the prompt and keeps the model ready; lower the output
-cap or start a conversation. Reaching an admitted response's cap is a separate
-partial-answer outcome, after which you can explicitly ask Swift to continue.
+response controls lock during generation. The broker still counts the exact prompt
+for every call and never discards history to make it fit. A framed context rejection
+restores the prompt and keeps the model ready; lower the output cap or start a
+conversation. Reaching an admitted response's cap is a separate partial-answer
+outcome, after which you can explicitly ask Swift to continue.
 Other recognized input/burst rejections follow the [broker error contract](broker-policy.md#native-client-completion-and-recovery).
 
 ### Optional recovery and preview

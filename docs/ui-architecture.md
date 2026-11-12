@@ -124,6 +124,7 @@ remain separate from MSI application files.
 | Stop/retry | Stop freezes queued updates and wakes network waits. Retry waits for owned-backend teardown, creates fresh credentials/diagnostics and repeats artifact, identity and 15.5 GiB admission checks. Preserve completed turns and newer drafts; restore an interrupted prompt only to an empty composer. Never replay automatically or reduce the profile. If completion wins the Stop race, the visible answer and committed history agree. |
 | Rejections/failures | Recognized local input rejections restore the draft and retain readiness. Other disconnects require retry and identify no token/memory cause. [Broker policy](broker-policy.md#native-client-completion-and-recovery) defines accepted errors and completion. |
 | Response settings | Thinking, output cap and adapter scale apply to the next response and every Extra effort pass; lock controls during generation. [Settings](development-guide.md#conversations-and-response-settings) defines defaults, bounds and execution; Extra effort quality gains remain unproven. |
+| Context guidance | A native composer control estimates the selected conversation's next draft from committed content and retained reasoning, approximate framing and optional Extra effort planning overhead. Details separate estimated input from the exact reply reservation, 64-token reserve and 8,192-token limit. Estimates can be high or low and never gate Send, trim history or change settings automatically. Explicit smaller-cap and Start fresh actions retain normal setting/workspace guards and preserve the original draft/history. Exact broker admission is unchanged. |
 
 The model lifecycle has one explicit state: unavailable, preparing, ready,
 generating, awaiting teardown, stopping, retryable or restarting. Send requires ready;
@@ -157,7 +158,14 @@ Stop speech remains available.
 
 [Find controls](development-guide.md#conversations-and-response-settings) search
 visible message bodies. [Streaming resources](streaming-resources.md#native-chat-and-transcript)
-defines incremental matching, highlight/underline-cache invalidation and work bounds.
+defines incremental matching, highlight/underline-cache invalidation, context-estimate
+caching and work bounds. Context details take keyboard priority: Escape closes
+them before Find or Stop, and Enter cannot submit the background composer.
+The generation owner's context remains updating until its turn settles; browsing
+another conversation estimates that conversation's draft. Extra effort guidance
+covers only its first pass, and message iteration can select a different prompt
+or prefix. These estimates perform no network or disk work and establish neither
+exact token occupancy nor request eligibility.
 `bonsai-chat.exe --preview` uses the same presentation with marked sample content
 and no broker, credentials, microphone or speech service; it checks layout and
 interaction only.

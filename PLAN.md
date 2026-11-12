@@ -257,7 +257,14 @@ context rejection, Stop, background ownership and recovery must retain the norma
 request policy. Cover duplicate prompts, interrupted/intermediate effort output,
 transcript eviction, the 16-conversation limit, edit-modal keyboard/IME behavior,
 and styled Unicode/code selection, copying and Find across streamed replacements,
-scaling and high contrast. Focused source fixtures do not establish actual-model,
+scaling and high contrast. Qualify composer context guidance across draft edits,
+retained reasoning, recovery, branches and background generation: show heuristic
+input separately from exact reply/reserve values, keep Extra effort first-pass
+scope explicit, and retain authoritative broker rejection even when an estimate
+fits. Cover near/over-capacity suggestions, per-conversation Reply selection,
+Start fresh preserving drafts/history, cache invalidation, minimum-window layout
+and popup keyboard/assistive-technology behavior without unintended Send or Stop.
+Focused source fixtures do not establish actual-model,
 assistive-technology or daily-use acceptance; those owner-managed gates remain open.
 The bounded local iteration check passed formatting and whitespace, then stopped
 on native test compilation: pinned-egui byte-index types, one unused iteration

@@ -27,11 +27,21 @@ conversion. Limits include JSON escaping and protocol framing where stated.
 | Native transcript find | Streams scalar-lowercased UTF-8 through a linear matcher with query-sized offset/fallback arrays. Only the current tail retains continuation scratch, so appending an answer scans only its new bytes, including matches spanning appends. Ordinary appends retain completed cache entries and results in place, copying only newly discovered results. Full refreshes update BTreeMap entries in place and prune entries not visited in the current refresh, including saturated suffixes. Saturated result prefixes skip tail work until a structural/query change requires refresh. Retains no whole-message folded string or per-message-byte offset table. Preserves original UTF-8 highlights, nonoverlapping folded matches and the existing 10,000-result cap with one-match lookahead. Replacements invalidate their cached matches even when the byte length is unchanged. |
 | Native transcript highlight layouts | Uses fixed-size body/query revisions and visible match counts instead of duplicating and comparing highlight-range vectors each frame. Find navigation reuses the highlighted text galley and caches only the active result's underline glyph runs, without rebuilding all highlight sections or copying the body. Geometry and theme remain separate cache keys. Appending another message preserves completed layouts; replacement, query changes and newly exposed results invalidate affected highlights. Width and display-scale changes refresh both layout and active underline geometry. |
 | Committed history | Shares immutable content/reasoning allocations across worker, UI, queued commits, request snapshots and restored conversations; history vectors remain independent. Extra effort allocates its augmented final user task without copying preceding bodies. Shared ownership preserves recovery and HTTP JSON bytes. |
+| Composer context guidance | Caches a scalar estimate of committed content, retained reasoning and message framing with the conversation snapshot. History changes invalidate it; recovery recomputes it rather than trusting serialized estimates. A bounded draft cache keys the exact draft and response options, so unchanged frames do not rerun text estimation. These caches are skipped by recovery serialization and perform no network or disk work. Unicode-aware input estimates remain advisory; the selected reply cap and 64-token reserve stay separate from estimated input. |
 
 Extra effort retains drafts/answers through ordered lifecycle events, each bounded
 by the 4 MiB response cap. They do not bypass the incremental stream limit.
 Committed history keeps its request/response bounds. Unexpected lifecycle-capacity
 exhaustion closes the worker without blocking teardown.
+
+Context guidance uses committed model history rather than the visible transcript;
+interrupted text and intermediate effort drafts never increase its history total.
+The active response owner shows an updating state while generation is unsettled.
+Other selected conversations retain their next-draft estimates independently.
+Extra effort estimates include planning instructions but cannot account for later
+generated working material in advance. All requests retain exact broker counting
+and admission; local estimates authorize neither a request nor automatic history
+eviction, cap reduction or replay.
 
 Find retains a queued scroll only while its exact message and UTF-8 range remain
 in the current results. Response replacement, message eviction and closing the
