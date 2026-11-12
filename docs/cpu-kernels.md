@@ -83,18 +83,30 @@ comparisons. Final hosted coverage, remaining exact controls, codegen/stack
 review and complete-model state/logit/adapter/cancellation/resource acceptance
 remain required. The record qualifies no release bundle or runtime pin.
 
-A native source-bound baseline/candidate whole-request comparator is still
-missing. The [X2 thread screen](#x2-cpu-thread-screen) compares the publisher's
+A native source-bound collector, hosted preparation/evaluator and
+[Runner comparison lane](cpu-bundle-comparison.md) are now implemented locally.
+Owner publication and exact-source hosted preparation remain required before
+device execution. The [X2 thread screen](#x2-cpu-thread-screen) compares the publisher's
 `4/4` and `6/6` thread budgets; the existing one-token source timing capture is
 attribution only. Most newer CPU changes directly replace code without per-change
 selectors. Exact LUT selection is a library executor, and tiled/triangular GDN
 prefill needs its explicit graph consumer; ordinary private-service requests
 do not exercise all those paths. The selected next scope is bundle-first:
-active `0.1.23` versus exact Prism `8d2b306`, with FP16 KV, standard adapter 1.3
+active `0.1.23` versus published registry Prism `0.1.25`, with FP16 KV, standard adapter 1.3
 and four CPU workers. A bundle result cannot establish each change's individual
 benefit. Keep exact LUT, tiled/triangular prefill and latest-prefix variants
 separate. Match actual CPU-only placement, artifacts, work/output equivalence,
 per-arm power and full-state/recovery controls under the promotion policy above.
+
+The new tooling's focused verification passed strict collector analysis and
+seven controls against each API, 26 offline evaluator controls, workflow startup
+and its twelve regressions, upstream action-lock verification, PowerShell parsing
+and selected Markdown/whitespace checks. No model or performance comparison ran.
+The declared 300-second tooling allowance was not met through later temporary
+cleanup: that cleanup record reached 899.495 seconds from the original start.
+Keep the passing command observations separate from this aggregate limit failure;
+neither this check nor the earlier preflight qualifies a promotion or new README
+performance figure. The original clocks are closed without a retry.
 
 ## X1-oriented source candidates
 
