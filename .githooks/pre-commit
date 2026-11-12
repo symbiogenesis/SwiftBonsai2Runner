@@ -1,0 +1,17 @@
+#!/bin/sh
+# Validate the index: unstaged repairs must not conceal a broken workflow commit.
+set -eu
+root=$(git rev-parse --show-toplevel)
+cd "$root"
+for interpreter in python3 python; do
+    if command -v "$interpreter" >/dev/null 2>&1 \
+        && "$interpreter" -c 'import sys; sys.exit(sys.version_info < (3, 10))' >/dev/null 2>&1; then
+        exec "$interpreter" -B tools/ci/check_staged_workflows.py
+    fi
+done
+if command -v py >/dev/null 2>&1 \
+    && py -3 -c 'import sys; sys.exit(sys.version_info < (3, 10))' >/dev/null 2>&1; then
+    exec py -3 -B tools/ci/check_staged_workflows.py
+fi
+echo 'Commit blocked: Python 3.10+ is required for the offline staged workflow startup check.' >&2
+exit 1

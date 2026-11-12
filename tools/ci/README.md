@@ -236,3 +236,33 @@ When changing an action, use a disposable worktree and the same verified tool:
 Do not use `--accept-moved` in automation. Investigate moved references before
 accepting them. Local verification does not establish a hosted CI verdict, and
 the owner retains pushes and CI dispatch.
+
+### Local commit guard
+
+Enable the tracked offline pre-commit guard once per clone, after reviewing its
+contents. If `git config --get core.hooksPath` reports an existing hook directory,
+integrate this check into that hook instead of replacing it.
+
+```powershell
+git config --local core.hooksPath .githooks
+```
+
+The hook runs `python -B tools/ci/check_staged_workflows.py` with Python 3.10 or
+newer. It checks the index that will become the commit: an unstaged lockfile
+repair cannot conceal a broken staged workflow, and an unrelated unstaged edit
+cannot invalidate a correct staged snapshot. It copies only staged YAML and
+`actions.lock` to temporary storage, follows the existing startup preflight's
+same-repository dependency closure, and removes that storage afterward. Git errors,
+conflicted inputs, unsupported manifest symlinks and missing Python block the
+commit. The guard leaves the index and working tree unchanged and uses no
+network, compiler or models.
+
+Any staged YAML change selects the check because same-repository actions can
+live outside `.github/actions`; lockfile and guard changes also select it.
+Ordinary Rust and documentation edits skip the snapshot check. Hooks are local
+and can be bypassed, so keep the required pre-commit commands above, the hosted
+offline preflight and `gh actions-lock --verify`. The guard checks lock coverage
+and pin policy, not general YAML/Actions syntax or upstream provenance.
+
+Run its focused real-index regressions with
+`python -B -m unittest discover -s tools/ci -p test_staged_workflows.py`.
