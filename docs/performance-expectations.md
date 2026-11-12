@@ -96,7 +96,8 @@ Sustained speed, repeated benefit, quality and application acceptance remain pen
 
 This 0.1.22 attempt was explicitly authorized after the
 [earlier preparation failure](evidence/readme-performance-20261109/summary.json).
-That original 69.432-second clock remains closed and its receipts unchanged. No
+That original 69.432-second clock remains closed; its original receipts remain
+unchanged in Git history. No
 cross-version speedup is inferred: the November 3 observations below used direct
 sandboxed backend HTTP, while the new capture includes the public broker.
 

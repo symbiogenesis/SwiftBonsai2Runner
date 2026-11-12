@@ -1,0 +1,160 @@
+{
+  "schemaVersion": 1,
+  "kind": "consolidated-source-validation-history",
+  "historicalRecordsAtRevision": "7b37b29826b377386c1ddfe933cd4e75d6a97856",
+  "retentionScope": "Consolidates the original plan, check and delivery records. This is source-review history, not an acceptance replay archive. Raw build chatter, empty output and temporary drivers remain reconstructible only from Git history; no current gate requires their bytes. Original trial clocks remain closed.",
+  "status": "implemented-locally-installed-acceptance-pending",
+  "reviewedImplementationRevision": "e5b77d01",
+  "sourceRevisionAtStart": "cb48abd91c21c190183b171e1411cdc14fb187e5",
+  "testedSourceSha256": {
+    "src/chat-ui/src/main.rs": "083ceed726c1ec0498a685bd7efc5e042fa5c73d1881c398427856a50575e98e",
+    "src/chat-ui/src/startup.rs": "a368b403694522943701bb0914bf7b1c15dd501364f29e849334bad58168453e",
+    "src/chat-ui/src/window.rs": "af7a7ca6b5065a2aae07d3a013fbb09459f7fecb635028ab9959232e356b2621",
+    "src/chat-ui/src/window/tests.rs": "5185c4798dde62d76d4491145677b3d239435bdbcbb318a238c267689ca96655",
+    "src/chat-ui/src/window/updates.rs": "2dcdfffb61d8ec799dc0c4c250741a85165f606a460229fc3b434beb176601e7",
+    "tools/bonsai/src/app_update.rs": "d34d4d158ba1073574590e8a09d83b01e6c74186547d93c721ce7466a6e403fd",
+    "tools/bonsai/src/app_update/policy.rs": "f13806c2c79ad33fcc00f7e54442c29a3555b779d7ef17e2b6054c8a166a6403",
+    "tools/bonsai/src/app_update/policy/tests.rs": "82dfed386315f086f8df720c4cdf0a98d3354fbe34c6e2f487c40df416b9a68f",
+    "tools/bonsai/src/app_update/transfer.rs": "0a1b0f50f29589f8e2a7ea037edb6856a4e4beb6a08f06bf03d3db83a53f24c6",
+    "tools/bonsai/src/chat_launch.rs": "7a059994aa6d87c27a86caf652826623157c52a43ad43f36308853318407f6a4",
+    "tools/bonsai/src/chat_launch/tests.rs": "d163a6ce60e509e649c7e44646848d85a269927a6c801cbbc193d9896379da81",
+    "tools/bonsai/src/lib.rs": "dc51c98328f6a8073e45234415743ea46dd74fbc46049f0bfeb249a3866486cc",
+    "tools/bonsai/src/main.rs": "094c091541086047bc4d3a73a1486fafba12e6ddc83acea06092f71c6fd7d311"
+  },
+  "plan": {
+    "declaredBeforeExecution": true,
+    "maximumAggregateSeconds": 300,
+    "conservativeEstimateSeconds": 240,
+    "reason": "Verify the newly added update policy and native integration without installing an update, launching the model, or running complete suites on the owner laptop.",
+    "fixedWork": [
+      "Record source revision, source identities and GetSystemPowerStatus before work.",
+      "Check Rust formatting and syntax and lint the six changed Markdown files.",
+      "Compile and run only app_update fixture tests and the exact acknowledged-installer-handoff regression in bonsai-tools, offline with the pinned compiler and an external temporary target.",
+      "Type-check the native chat application offline if it fits the original allowance, without running the UI or model.",
+      "Stop the process tree before the original deadline, record power after work, and retain logs and the exact outcome."
+    ],
+    "constraints": {
+      "maximumCompilerJobs": 4,
+      "coreTestMaximumSeconds": 100,
+      "nativeUiCheckMaximumSeconds": 135,
+      "reserveSecondsForCleanupAndEvidence": 30,
+      "retries": 0,
+      "completeSuites": false,
+      "modelOrBenchmarkWork": false,
+      "applicationLaunch": false,
+      "msiDownloadOrInstallation": false,
+      "releaseApiRequests": false,
+      "ciDispatchOrMonitoring": false,
+      "gitPushes": false,
+      "existingInstalledExecutablesReplaced": false,
+      "newComparisonsOrPerformanceClaims": false
+    }
+  },
+  "trial": {
+    "startedUtc": "2026-11-12T05:35:22.575254+00:00",
+    "powerBefore": {
+      "observedUtc": "2026-11-12T05:35:22.575325+00:00",
+      "source": "GetSystemPowerStatus",
+      "acConnected": true,
+      "batterySaver": false,
+      "chargePercent": 99
+    },
+    "powerAfter": {
+      "observedUtc": "2026-11-12T05:37:33.845602+00:00",
+      "source": "GetSystemPowerStatus",
+      "acConnected": true,
+      "batterySaver": false,
+      "chargePercent": 99
+    },
+    "continuousPowerStabilityEstablished": false,
+    "elapsedAggregateSecondsThroughRetention": 131.271789,
+    "clockClosed": true,
+    "checks": [
+      {
+        "name": "source-revision",
+        "exitCode": 0,
+        "timedOut": false,
+        "passed": true
+      },
+      {
+        "name": "changed-rust-paths",
+        "exitCode": 0,
+        "timedOut": false,
+        "passed": true
+      },
+      {
+        "name": "rustfmt",
+        "exitCode": 0,
+        "timedOut": false,
+        "passed": true
+      },
+      {
+        "name": "markdown-check",
+        "exitCode": 0,
+        "timedOut": false,
+        "passed": true
+      },
+      {
+        "name": "markdown-format",
+        "exitCode": 0,
+        "timedOut": false,
+        "passed": true
+      },
+      {
+        "name": "diff-check",
+        "exitCode": 0,
+        "timedOut": false,
+        "passed": true
+      },
+      {
+        "name": "updater-fixtures",
+        "exitCode": 0,
+        "timedOut": false,
+        "passed": true
+      },
+      {
+        "name": "acknowledged-handoff",
+        "exitCode": 0,
+        "timedOut": false,
+        "passed": true
+      },
+      {
+        "name": "native-ui-check",
+        "exitCode": 0,
+        "timedOut": false,
+        "passed": true
+      }
+    ]
+  },
+  "limits": {
+    "comparisonArms": [],
+    "continuousPowerStabilityEstablished": false,
+    "performanceQualified": false,
+    "completeSuitesRun": false,
+    "modelOrBenchmarkWork": false,
+    "ciDispatches": 0,
+    "gitPushes": 0
+  },
+  "pending": [
+    "Full hosted analyzers and suites, including the new native UI update-state regressions.",
+    "Published-release API and download acceptance against a genuine release.",
+    "Installed Windows ARM64 UAC, MSI upgrade, cancellation/failure, data-preservation and post-install reopening acceptance.",
+    "Existing broad model, speech, performance and daily-use qualification gates in PLAN.md."
+  ],
+  "localInterpretation": {
+    "updaterPolicyAndTamperingTests": {
+      "passed": 5,
+      "failed": 0
+    },
+    "acknowledgedHandoffRegression": {
+      "passed": 1,
+      "failed": 0
+    },
+    "nativeWindowsUiTypeCheck": "passed offline in release profile",
+    "rustFormatting": "passed",
+    "markdownLintAndFormat": "passed on six changed documentation files before this evidence link was added",
+    "whitespace": "passed",
+    "sourceChangeDuringCoreCompilation": "e5b77d01 made three UI predicates const. The change preceded the subsequent successful native UI type-check; core test sources were unchanged."
+  },
+  "cleanup": "No installed executable was replaced or MSI executed. Temporary build-cache/process cleanup observations were not recorded."
+}

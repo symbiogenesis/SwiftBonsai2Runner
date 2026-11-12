@@ -239,7 +239,7 @@ Missing time/resources leaves the gate pending without a weaker retry. Isolated
 | Settled Runner `53f717e887e80fb1c4042db4296c46b67af8097f` | [Native/packed and binder](https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41172604323), [public wire](https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41172604298), [SDK review](https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41172604331), complete selected [Foundation groups](https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41172604342) passed. |
 | Prism `527d1432170ee78b258d489805b11f798121267f` | [Foundation](https://github.com/symbiogenesis/prism-inference/actions/runs/41169223029) and [runtime conformance](https://github.com/symbiogenesis/prism-inference/actions/runs/41169223028) passed. |
 
-The [single owner investigation budget](evidence/hexagon-session-next-budget.json)
+The [single owner investigation budget](evidence/hexagon-session-next-archive.json)
 includes focused compile/result checks, hosted intake, three terminal variants,
 driver-bound dispatch, full-file extraction, Q2 data verification and conservative
 setup/administration. The [credential-free archive](evidence/hexagon-session-next-archive.json)
@@ -416,7 +416,7 @@ Retain import/command/output hashes. No SDK executable/import or device code run
 | [Compile 41170405233](evidence/hexagon-public-qaic-41170405233/provenance.json) | Legacy `uint32`/`uint64` missing in modern public headers; stopped before C mock/Rust. No device diagnosis. |
 | [Standard types 41171073546](evidence/hexagon-public-qaic-41171073546/provenance.json) | Documented `--standard-types`; outputs 7920/16,963/20,248 bytes. Whole-file comparison finds only `uint32_t`/`uint64_t` and `AEEStdDef.h`→`stdint.h` substitution; 48-byte golden frame unchanged. No mock selected. |
 | [Compile 41171448060](evidence/hexagon-public-qaic-41171448060/provenance.json) | Missing `AEEResult`; stopped before C mock/Rust. Final control forces exact public `AEEStdDef.h` include, without custom typedef/generated edit/SDK input. |
-| [Passing wire 41171859264](evidence/hexagon-public-qaic-41171859264/provenance.json), `8c69947b7b98a8d406d15c639d83f926a3b643cc` | Seven source/pin identities, successful logs, headers/inputs, unchanged generated files/freezes and independent vector verified; 66 files/545,496 bytes retained. GCC 13.3.0 C mock and standalone std-only [Rust encoder](../tools/hexagon/public_idl_control.rs) agree on two calls/zero returns/no extra calls. |
+| [Passing wire 41171859264](evidence/hexagon-public-qaic-41171859264/provenance.json), `8c69947b7b98a8d406d15c639d83f926a3b643cc` | Seven source/pin identities, headers/inputs, unchanged generated files and independent vector verified; 36 raw files/270,544 bytes retained with a revised selection. Original bootstrap logs and the 66-file provenance remain in Git history. GCC 13.3.0 C mock and standalone std-only [Rust encoder](../tools/hexagon/public_idl_control.rs) agree on two calls/zero returns/no extra calls. |
 
 The fixed positive vector uses a synthetic 64-bit handle, start scalar `0x02010000`,
 one 48-byte input with seven fields at 0/8/16/20/24/32/40 and zero padding 4–7/44–47;

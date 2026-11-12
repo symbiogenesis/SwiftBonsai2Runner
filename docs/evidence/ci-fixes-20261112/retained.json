@@ -1,0 +1,272 @@
+{
+  "schemaVersion": 1,
+  "kind": "consolidated-source-validation-history",
+  "historicalRecordsAtRevision": "7b37b29826b377386c1ddfe933cd4e75d6a97856",
+  "retentionScope": "Consolidates the original plan, check and delivery records. This is source-review history, not an acceptance replay archive. Raw build chatter, empty output and temporary drivers remain reconstructible only from Git history; no current gate requires their bytes. Original trial clocks remain closed.",
+  "status": "reported-failures-corrected-locally-hosted-acceptance-pending",
+  "reviewedSourceRevision": "2a649337",
+  "sourceRevisionAtStart": "ea4d806c6db483e6ddbf5166e5c41b7ae71fecaa",
+  "testedSourceSha256": {
+    "docs/performance-expectations.md": "a118f2daf76f8b0a566f9fe906a715c9918fc8d71c93c213032d498cdd5a55be",
+    "tools/native-reference/pins.json": "78e22789a0b95b9ce75c81b51f7e260fe45ba5c7bd277987a38e934da17c5c1c",
+    "src/broker/tests/native_model/progress.rs": "48a7fe1f5e746b0ef077236d82ad8b3fde401598398925b1bad893760b81c5c9",
+    "src/broker/tests/native_model/token_timing.rs": "904905ae386a595f93b814f53557661bba89a9488100ba19bb833432acccd7d9",
+    "PLAN.md": "2cdf58b40d6dfffb0dc787bff7ec011a1ad2bdf329e4c25921f8502f135db613"
+  },
+  "plan": {
+    "declaredBeforeExecution": true,
+    "maximumAggregateSeconds": 300,
+    "conservativeEstimateSeconds": 270,
+    "reason": "Verify demonstrated Markdown, strict broker fixture and source-pin failures with existing external build artifacts; complete suites remain hosted CI work.",
+    "fixedWork": [
+      "Record GetSystemPowerStatus, source revision and hashes before the validation workload.",
+      "Run rumdl 0.3.2 check and fmt --check across the repository, cargo fmt --all --check, and Git whitespace checks; at most 25 seconds total.",
+      "Run one offline locked Release Clippy command for bonsai-broker, bonsai-tools and bonsai-chat, with all targets/features and four compiler jobs, at most 150 seconds.",
+      "Run only the model-free native_qualification::tests:: bonsai-tools library regressions offline in Release, at most 80 seconds.",
+      "If compilation fails, make only evidence-supported source corrections; do not repeat a failed command or start another trial.",
+      "Stop owned child process trees on timeout; record final power and retain exact command results, source hashes and logs with a 30-second cleanup reserve."
+    ],
+    "constraints": {
+      "retries": 0,
+      "completeSuites": false,
+      "comparisonArms": [],
+      "modelOrBenchmarkWork": false,
+      "ciDispatches": 0,
+      "gitPushes": 0,
+      "continuousPowerStabilityEstablished": false,
+      "performanceQualified": false
+    }
+  },
+  "trial": {
+    "startedUtc": "2026-11-12T06:03:00.610191+00:00",
+    "powerBefore": {
+      "observedUtc": "2026-11-12T06:03:00.610228+00:00",
+      "source": "GetSystemPowerStatus",
+      "available": true,
+      "acConnected": true,
+      "batterySaver": false,
+      "chargePercent": 100
+    },
+    "powerAfter": {
+      "observedUtc": "2026-11-12T06:04:46.997732+00:00",
+      "source": "GetSystemPowerStatus",
+      "available": true,
+      "acConnected": true,
+      "batterySaver": false,
+      "chargePercent": 100
+    },
+    "continuousPowerStabilityEstablished": false,
+    "elapsedAggregateSecondsThroughRetention": 106.388,
+    "clockClosed": true,
+    "checks": [
+      {
+        "name": "source-revision",
+        "command": [
+          "git.EXE",
+          "rev-parse",
+          "HEAD"
+        ],
+        "timeoutSeconds": 3,
+        "timedOut": false,
+        "exitCode": 0,
+        "elapsedSeconds": 0.043,
+        "passed": true
+      },
+      {
+        "name": "rumdl-version",
+        "command": [
+          "rumdl.EXE",
+          "--version"
+        ],
+        "timeoutSeconds": 3,
+        "timedOut": false,
+        "exitCode": 0,
+        "elapsedSeconds": 0.033,
+        "passed": true
+      },
+      {
+        "name": "markdown-check",
+        "command": [
+          "rumdl.EXE",
+          "check",
+          "--no-cache",
+          "."
+        ],
+        "timeoutSeconds": 7,
+        "timedOut": false,
+        "exitCode": 1,
+        "elapsedSeconds": 0.121,
+        "passed": false
+      },
+      {
+        "name": "markdown-format",
+        "command": [
+          "rumdl.EXE",
+          "fmt",
+          "--check",
+          "--no-cache",
+          "."
+        ],
+        "timeoutSeconds": 7,
+        "timedOut": false,
+        "exitCode": 0,
+        "elapsedSeconds": 0.133,
+        "passed": true
+      },
+      {
+        "name": "rust-format",
+        "command": [
+          "cargo.EXE",
+          "fmt",
+          "--all",
+          "--check"
+        ],
+        "timeoutSeconds": 7,
+        "timedOut": false,
+        "exitCode": 0,
+        "elapsedSeconds": 0.881,
+        "passed": true
+      },
+      {
+        "name": "whitespace",
+        "command": [
+          "git.EXE",
+          "diff",
+          "--check",
+          "e03ec67d"
+        ],
+        "timeoutSeconds": 3,
+        "timedOut": false,
+        "exitCode": 0,
+        "elapsedSeconds": 0.08,
+        "passed": true
+      },
+      {
+        "name": "strict-clippy",
+        "command": [
+          "cargo.EXE",
+          "clippy",
+          "--offline",
+          "--locked",
+          "--release",
+          "--manifest-path",
+          "Cargo.toml",
+          "--package",
+          "bonsai-broker",
+          "--package",
+          "bonsai-tools",
+          "--package",
+          "bonsai-chat",
+          "--all-targets",
+          "--all-features"
+        ],
+        "timeoutSeconds": 150,
+        "timedOut": false,
+        "exitCode": 101,
+        "elapsedSeconds": 43.266,
+        "passed": false
+      },
+      {
+        "name": "qualification-regressions",
+        "command": [
+          "cargo.EXE",
+          "test",
+          "--offline",
+          "--locked",
+          "--release",
+          "--manifest-path",
+          "Cargo.toml",
+          "--package",
+          "bonsai-tools",
+          "--lib",
+          "native_qualification::tests::"
+        ],
+        "timeoutSeconds": 80,
+        "timedOut": false,
+        "exitCode": 1,
+        "elapsedSeconds": 61.822,
+        "passed": false
+      }
+    ]
+  },
+  "limits": {
+    "comparisonArms": [],
+    "continuousPowerStabilityEstablished": false,
+    "performanceQualified": false,
+    "completeSuitesRun": false,
+    "modelOrBenchmarkWork": false,
+    "ciDispatches": 0,
+    "gitPushes": 0
+  },
+  "pending": [
+    "Owner push and hosted Markdown standards/Foundation acceptance for the corrected source.",
+    "All existing device, release, model, performance and daily-use gates in PLAN.md."
+  ],
+  "reportedFailures": [
+    {
+      "run": "https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/43164848172",
+      "sourceRevision": "e03ec67d1f1cbf609fb462d495ed7bdc21165221",
+      "cause": "MD013: docs/performance-expectations.md line 163 exceeded the configured 100-character limit.",
+      "correction": "bd1fb5a5 wraps the definition without changing its wording."
+    },
+    {
+      "run": "https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/42766089121",
+      "sourceRevision": "e284b91186ecb40d226697db82ff7b0b1aeff8a0",
+      "cause": "Broker native_model fixture Clippy format_push_string and suboptimal_flops errors remained in current source.",
+      "alsoConfirmedByCurrentFoundationRun": true,
+      "correction": "48b509f7 writes the SSE fixture directly into its String and uses mul_add for the exact-valued synthetic timestamp."
+    },
+    {
+      "run": "https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/42766089121",
+      "sourceRevision": "e284b91186ecb40d226697db82ff7b0b1aeff8a0",
+      "cause": "Seven maintenance qualification tests rejected the stale PTQ1 rustSource pin, which differed from the verified released runtime lock.",
+      "alsoConfirmedByCurrentFoundationRun": true,
+      "correction": "ea4d806c aligns all four source identity fields with config/prism-inference.lock.json Source for Prism 0.1.23. Historical row-parallel pins and evidence remain independent."
+    },
+    {
+      "run": "https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/43164848146",
+      "cause": "UI updater interval triggered Clippy duration_suboptimal_units.",
+      "correction": "f275b3ed uses Duration::from_hours(6), preserving the interval."
+    },
+    {
+      "run": "https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/43164848146",
+      "cause": "Updater policy fixtures triggered Clippy needless_pass_by_value, semicolon_if_nothing_returned and redundant_clone.",
+      "correction": "2a649337 borrows fixture JSON, terminates the assignment and moves the final unused fixture value, preserving assertions and coverage."
+    }
+  ],
+  "hostedEvidence": {
+    "currentFoundationRun": "https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/43164848146",
+    "currentFoundationSourceRevision": "e03ec67d1f1cbf609fb462d495ed7bdc21165221",
+    "currentFoundationCompiler": "nightly-2026-11-09-aarch64-pc-windows-msvc; rustc 1.102.0-nightly (5b7b37aef 2026-11-08)",
+    "limits": "Completed pre-correction e03ec67d artifacts only; they do not validate the corrected local commits.",
+    "maintenanceResult": "331 passed, 7 failed, 2 ignored; failures rejected stale 6b4f4520 source in place of released 055c7430."
+  },
+  "localInterpretation": {
+    "status": "stopped-without-retry-compiler-mismatch",
+    "formatting": "Pinned repository Rust formatting, rumdl fmt --check and Git whitespace checks returned zero on the initial three fixes before the final two source corrections.",
+    "markdownLint": "The overlong definition no longer appeared. The sole issue was the new PLAN.md link to this not-yet-created delivery record. This file was then created; the original failure is retained and lint was not repeated.",
+    "compilerMismatch": "The external-working-directory Cargo commands omitted an explicit toolchain selector and therefore used the machine default nightly-2026-10-22, rustc 1.101.0-nightly (1a2c4797e 2026-10-21), instead of the repository pin. No pinned-compiler success is claimed.",
+    "clippy": "The older compiler rejected a const VecDeque::is_empty call. Current hosted pinned-compiler UI compilation and all 252 UI tests passed, so no source change was made for that local error.",
+    "qualificationRegressions": "Stopped the task-owned compiler process tree after discovering the mismatch, before test execution. The process exited 1; no retry or new trial was started.",
+    "sourceBinding": "The hashes above bind the original tested sources. Final correction source hashes below received source review only; no failed command was repeated."
+  },
+  "finalSource": {
+    "schemaVersion": 1,
+    "kind": "final-ci-correction-source-identities",
+    "revision": "2a649337658f5cb4bd27da815197a3b6f7363c44",
+    "sourceSha256": {
+      "docs/performance-expectations.md": "a118f2daf76f8b0a566f9fe906a715c9918fc8d71c93c213032d498cdd5a55be",
+      "tools/native-reference/pins.json": "78e22789a0b95b9ce75c81b51f7e260fe45ba5c7bd277987a38e934da17c5c1c",
+      "src/broker/tests/native_model/progress.rs": "48a7fe1f5e746b0ef077236d82ad8b3fde401598398925b1bad893760b81c5c9",
+      "src/broker/tests/native_model/token_timing.rs": "904905ae386a595f93b814f53557661bba89a9488100ba19bb833432acccd7d9",
+      "src/chat-ui/src/window/updates.rs": "4ff3cbdc1b3823ae4cc4d5651b22d86f3b09700310ef04c1146b48b2d87fb7f8",
+      "tools/bonsai/src/app_update/policy/tests.rs": "e923e9f6444aebbbad6a01a193bd2652ecaf61f1703ab29e32e493b58a35131f"
+    },
+    "validation": "Final corrections received source review; original command results and compiler mismatch are recorded here, with no retry."
+  },
+  "diagnosticExcerpts": [
+    "PLAN.md:7:70: [MD057] Relative link docs/evidence/ci-fixes-20261112/delivery.json does not exist (the original check preceded creation of that record).",
+    "src/chat-ui/src/speech/command_queue.rs:93: error[E0015]: cannot call non-const method VecDeque::is_empty in constant functions (wrong local compiler)."
+  ],
+  "cleanup": "The qualification compiler process tree was stopped after discovering the compiler mismatch, before test execution. Temporary build-cache deletion was not recorded."
+}

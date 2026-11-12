@@ -25,6 +25,31 @@ do not qualify performance comparisons with missing or mismatched power
 conditions. Equal endpoint snapshots alone do not prove uninterrupted stability.
 Power observations share the same predeclared aggregate trial allowance.
 
+# Evidence retention
+
+Keep the smallest evidence set that supports a current claim, diagnoses an
+actionable failure or supplies a required independent replay. Follow the
+[evidence-retention policy](docs/validation.md#evidence-retention). Routine source
+edits and focused checks normally need only their commands, results and limits
+in the commit or delivery message; do not create a dated evidence bundle for
+every change.
+
+When a durable record is needed, prefer one concise summary containing the
+required identities, results (including losing/no-go outcomes), limits, budget,
+power and cleanup observations. Keep additional raw files only when a named
+acceptance gate, replay consumer or diagnosis needs them. Preserve those required
+bytes and integrity records; summary-only retention cannot replace replay inputs.
+
+Do not retain blank or whitespace-only logs, placeholder receipts, successful
+build chatter, duplicate summaries/manifests, copied repository source or
+temporary validation drivers without a concrete consumer. Record empty output,
+exit status, skipped work and unknown observations in the summary when relevant;
+a missing file never establishes success. Review an explicit file selection
+before copying from scratch or uploading; do not archive whole working trees.
+Intentionally empty fixtures or schema-required files are allowed when their
+purpose is explicit. Apply selection to retained artifacts without breaking
+collector-required intermediate files or receipt formats.
+
 # Parallel work and commits
 
 Each worker in a parallel fan-out must use its own individual Git worktree.

@@ -106,7 +106,7 @@
   "evidence": {
     "rawReceipt": "raw/session.json",
     "modelObservations": "raw/acceptance.json",
-    "manifest": "raw/retention.json",
+    "manifest": "raw/replay-selection.json",
     "finalClock": "raw/final-clock.json",
     "independentReview": "independent-review.json",
     "binaryPublication": "../prism-0123-github-20261109/summary.json",
@@ -124,5 +124,14 @@
     "fullFoundationQualified": false,
     "crossVersionSpeedupQualified": false,
     "crossVersionLimit": "One fresh short request per representation, without repeated matched trials or observed effective PQ2 placement. Keep historical measurements separate and infer no controlled runtime speedup."
+  },
+  "currentRetention": {
+    "kind": "revised-minimal-claim-replay-selection",
+    "manifest": "raw/replay-selection.json",
+    "manifestSha256": "c5931e1fdbef41461c744077dcaab59146a6f0f57c08c822b8fc787d43cd8c64",
+    "retainedFiles": 10,
+    "originalManifest": "7b37b29826b377386c1ddfe933cd4e75d6a97856:docs/evidence/readme-performance-0123-20261109/raw/retention.json",
+    "originalManifestSha256": "f510d79d931af0cdbaf0d58df338c2a4016c3d67cad15d53a6221701a7aaa750",
+    "scope": "This later selection preserves the listed measurement, power, cleanup and identity bytes unchanged. Original capture/review counts describe the original manifest, not this selection. Successful build/control output, blank logs and temporary drivers remain only in Git history at the stated revision; recorded exit codes and outcomes remain in session/summary. Offline replay verifies retained hashes and token arithmetic; it neither reproduces the original executable environment nor authorizes rerunning a closed trial."
   }
 }

@@ -275,7 +275,7 @@ default native Rust engine. `--publisher-engine` selects the explicit publisher 
 rollback; direct app/broker launches also accept `--use-repacked-ptq1`. The artifact
 handle stays verified/held through owned teardown. Arbitrary paths, checkpoint
 substitutions and missing-file fallback are unsupported. Native service support for
-PTQ1 and the approved adapter dates to the [0.1.9 prerelease](evidence/prism-019-release.json);
+PTQ1 and the approved adapter dates to the [0.1.9 prerelease](https://github.com/symbiogenesis/SwiftBonsai2Runner/blob/7b37b29826b377386c1ddfe933cd4e75d6a97856/docs/evidence/prism-019-release.json);
 implementation alone does not establish release qualification. Native chat defaults
 to four row workers, with explicit one-worker selection. Publisher rollback keeps
 its separate fixed four-thread CPU policy. Separate source-checker evidence does not qualify app TPS.

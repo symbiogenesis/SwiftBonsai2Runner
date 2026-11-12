@@ -1,7 +1,0 @@
- M docs/releases.md
- M docs/ui-architecture.md
- M tools/bonsai/src/app_update.rs
- M tools/bonsai/src/app_update/transfer.rs
- M tools/bonsai/src/chat_launch.rs
-?? docs/evidence/update-hardening-20261111/
-?? tools/bonsai/src/app_update/tests.rs

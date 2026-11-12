@@ -1,0 +1,311 @@
+{
+  "schemaVersion": 1,
+  "kind": "consolidated-source-validation-history",
+  "historicalRecordsAtRevision": "7b37b29826b377386c1ddfe933cd4e75d6a97856",
+  "retentionScope": "Consolidates the original plan, check and delivery records. This is source-review history, not an acceptance replay archive. Raw build chatter, empty output and temporary drivers remain reconstructible only from Git history; no current gate requires their bytes. Original trial clocks remain closed.",
+  "status": "implemented-locally-hosted-and-installed-acceptance-pending",
+  "implementationRevision": "b2faff2e",
+  "powerShellCorrectionRevision": "2dff870e",
+  "sourceRevisionAtStart": "00e24d66d2a1fa4d26836311fd69bdc87fb0585b",
+  "testedSourceSha256": {
+    ".github/release/Collect-Notices.ps1": "faed29f03188246cab982eaf7a1198f273f0e0c82b10192b19e9c64872067691",
+    ".github/release/Package-Release.ps1": "a46b8e576152739928286e3a0a006b52accd67aef8cd40f20c1be60f73a7c11e",
+    ".github/release/Publish-Release.ps1": "5f519606992ea5e5e7dae6c9de9983d674a670b5e266e239a731e9b8050fab95",
+    ".github/workflows/release.yml": "69009e82149596658a82ff0ece436a7d006099363b15f3740e831cc1df4961a3",
+    "scripts/release/Build-WindowsInstaller.ps1": "6227ec650ddc20815551420ed07ef630a47c369d5604f4915b59608fa79fd7ee",
+    "scripts/release/Release-Common.ps1": "3cdfb0d017e5ed6dc43ad191629f3eb716566e1d129f4b2f6c9e29046bfc788c",
+    "scripts/release/Test-ReleasePrimitives.ps1": "fd8bdb7c19034c9dc23eacf0c70b223ea8819333fa7402e2113264887db7fdc9",
+    "scripts/release/Test-WindowsInstaller.ps1": "80bd740d0bca640f18029698d9de3eba83b6a31e8ab3f7dbdd25130b2ae94f09",
+    "scripts/Start-Chat.ps1": "3bdcc4c600d85e64f1bb51795d18a55bb7a67e7d98175c69a31c9b226b53784c",
+    "src/chat-ui/src/window/updates.rs": "a773bd89059222ca1be4dcc781ede1c56754a785798994541161f58bdbf0f19b",
+    "tools/bonsai/src/app_update/policy/tests.rs": "9db760044195ba00c18959d9fcbc0136c41c53fde4c773fc61f33162c594c87a",
+    "tools/bonsai/src/app_update/policy.rs": "d2dc7eca8d247bc5897e5581aedab554a1a7623b0f375075048bbbcba3557750",
+    "tools/bonsai/src/app_update/tests.rs": "ef738c7339d7a8dc16456c0de8d7bad2c20c911d1049d5ea6c0b5d2f30d1dfa7",
+    "tools/bonsai/src/app_update/transfer.rs": "384e92fcec34c579c723ffd2b33fd75ff49fb05b57c924e49457b233ffcbfde2",
+    "tools/bonsai/src/app_update.rs": "9f64f508eca412e7283abdc1c4c9fb54588df0bd25089900e6a4775cc0544277",
+    "tools/bonsai/src/chat_launch.rs": "defe867ee342a4c3bcdf592a20ba7fcf8a0ee1a08867b7215b3cf7ccacb86191"
+  },
+  "plan": {
+    "declaredBeforeExecution": true,
+    "maximumAggregateSeconds": 300,
+    "conservativeEstimateSeconds": 255,
+    "reason": "Check focused offline updater security regressions, native UI integration and PowerShell syntax without installing software, contacting release services, or starting a model.",
+    "fixedWork": [
+      "Record source identities and GetSystemPowerStatus before checks, preserving unknown observations explicitly.",
+      "Format changed Rust, check formatting and whitespace, parse production PowerShell scripts, and lint changed Markdown within 30 seconds.",
+      "Run only bonsai-tools app_update tests and the acknowledged update-handoff regression offline in Release with at most four compiler jobs and 100 seconds per command.",
+      "Run only native UI update-result tests offline if compilation fits 80 seconds; otherwise record pending without retry. Type-check the native UI within 50 seconds if time remains.",
+      "Stop child process trees before the original deadline, record power after work, and retain exact outcomes and logs within a 25-second cleanup reserve."
+    ],
+    "constraints": {
+      "retries": 0,
+      "comparisonArms": [],
+      "completeSuites": false,
+      "modelOrBenchmarkWork": false,
+      "applicationLaunch": false,
+      "msiExecution": false,
+      "releaseApiRequests": false,
+      "ciDispatchOrMonitoring": false,
+      "gitPushes": false,
+      "existingInstalledExecutablesReplaced": false,
+      "continuousPowerStabilityEstablished": false,
+      "performanceQualified": false
+    }
+  },
+  "trial": {
+    "startedUtc": "2026-11-12T05:48:44.063937+00:00",
+    "powerBefore": {
+      "observedUtc": "2026-11-12T05:48:44.064258+00:00",
+      "source": "GetSystemPowerStatus",
+      "acConnected": true,
+      "batterySaver": false,
+      "chargePercent": 99
+    },
+    "powerAfter": {
+      "observedUtc": "2026-11-12T05:52:03.559469+00:00",
+      "source": "GetSystemPowerStatus",
+      "acConnected": true,
+      "batterySaver": false,
+      "chargePercent": 99
+    },
+    "continuousPowerStabilityEstablished": false,
+    "elapsedAggregateSecondsThroughRetention": 199.496,
+    "clockClosed": true,
+    "checks": [
+      {
+        "name": "source-revision",
+        "command": [
+          "git.exe",
+          "rev-parse",
+          "HEAD"
+        ],
+        "timedOut": false,
+        "exitCode": 0,
+        "elapsedSeconds": 0.05,
+        "passed": true
+      },
+      {
+        "name": "source-status",
+        "command": [
+          "git.exe",
+          "status",
+          "--short"
+        ],
+        "timedOut": false,
+        "exitCode": 0,
+        "elapsedSeconds": 0.063,
+        "passed": true
+      },
+      {
+        "name": "rust-format",
+        "command": [
+          "cargo.exe",
+          "fmt",
+          "--all"
+        ],
+        "timedOut": false,
+        "exitCode": 0,
+        "elapsedSeconds": 0.967,
+        "passed": true
+      },
+      {
+        "name": "rust-format-check",
+        "command": [
+          "cargo.exe",
+          "fmt",
+          "--all",
+          "--check"
+        ],
+        "timedOut": false,
+        "exitCode": 0,
+        "elapsedSeconds": 0.915,
+        "passed": true
+      },
+      {
+        "name": "powershell-ast",
+        "command": [
+          "powershell.exe",
+          "-NoLogo",
+          "-NoProfile",
+          "-NonInteractive",
+          "-ExecutionPolicy",
+          "Bypass",
+          "-File",
+          "temporary read-only parse-sources.ps1",
+          "-Root",
+          "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner"
+        ],
+        "timedOut": false,
+        "exitCode": 0,
+        "elapsedSeconds": 0.227,
+        "passed": true
+      },
+      {
+        "name": "markdown-check",
+        "command": [
+          "rumdl.exe",
+          "check",
+          "PLAN.md",
+          "docs/releases.md",
+          "docs/ui-architecture.md"
+        ],
+        "timedOut": false,
+        "exitCode": 0,
+        "elapsedSeconds": 0.069,
+        "passed": true
+      },
+      {
+        "name": "markdown-format",
+        "command": [
+          "rumdl.exe",
+          "fmt",
+          "--check",
+          "PLAN.md",
+          "docs/releases.md",
+          "docs/ui-architecture.md"
+        ],
+        "timedOut": false,
+        "exitCode": 0,
+        "elapsedSeconds": 0.077,
+        "passed": true
+      },
+      {
+        "name": "whitespace",
+        "command": [
+          "git.exe",
+          "diff",
+          "--check",
+          "60beb0f6"
+        ],
+        "timedOut": false,
+        "exitCode": 0,
+        "elapsedSeconds": 0.266,
+        "passed": true
+      },
+      {
+        "name": "updater-fixtures",
+        "command": [
+          "cargo.exe",
+          "test",
+          "--offline",
+          "--locked",
+          "--release",
+          "--package",
+          "bonsai-tools",
+          "--lib",
+          "app_update::"
+        ],
+        "timedOut": false,
+        "exitCode": 0,
+        "elapsedSeconds": 79.812,
+        "passed": true
+      },
+      {
+        "name": "acknowledged-handoff",
+        "command": [
+          "cargo.exe",
+          "test",
+          "--offline",
+          "--locked",
+          "--release",
+          "--package",
+          "bonsai-tools",
+          "--lib",
+          "chat_launch::tests::installer_handoff_requires_acknowledged_update_exit_and_ignores_ordinary_close",
+          "--",
+          "--exact"
+        ],
+        "timedOut": false,
+        "exitCode": 0,
+        "elapsedSeconds": 0.296,
+        "passed": true
+      },
+      {
+        "name": "native-ui-update-fixtures",
+        "command": [
+          "cargo.exe",
+          "test",
+          "--offline",
+          "--locked",
+          "--release",
+          "--package",
+          "bonsai-chat",
+          "window::updates::tests::"
+        ],
+        "timedOut": true,
+        "treeStopExitCode": 0,
+        "exitCode": 1,
+        "elapsedSeconds": 80.155,
+        "passed": false
+      },
+      {
+        "name": "native-ui-check",
+        "command": [
+          "cargo.exe",
+          "check",
+          "--offline",
+          "--locked",
+          "--release",
+          "--package",
+          "bonsai-chat"
+        ],
+        "timedOut": false,
+        "exitCode": 0,
+        "elapsedSeconds": 36.592,
+        "passed": true
+      }
+    ]
+  },
+  "limits": {
+    "comparisonArms": [],
+    "continuousPowerStabilityEstablished": false,
+    "performanceQualified": false,
+    "completeSuitesRun": false,
+    "modelOrBenchmarkWork": false,
+    "ciDispatches": 0,
+    "gitPushes": 0
+  },
+  "pending": [
+    "Corrected-source PowerShell runtime regression controls on 7.6+ and full hosted strict analyzers/suites.",
+    "Native UI updater regression execution; local native UI type-check passed.",
+    "Genuine published-release discovery/download and installed Windows ARM64 final revalidation, network loss, UAC, MSI upgrade and data-preservation acceptance.",
+    "Independent publisher signing remains absent; GitHub HTTPS/release metadata is still the documented trust boundary.",
+    "All pre-existing actual-model, speech, performance and daily-use acceptance in PLAN.md."
+  ],
+  "localInterpretation": {
+    "updaterSecurityFixtures": {
+      "passed": 10,
+      "failed": 0
+    },
+    "acknowledgedHandoffRegression": {
+      "passed": 1,
+      "failed": 0
+    },
+    "nativeUiTypeCheck": "passed offline in Release",
+    "nativeUiUpdateTests": "not executed: dependency compilation reached its fixed 80-second limit; taskkill /T /F returned zero and stopped the process tree",
+    "rustFormatting": "passed on tested Rust source",
+    "powerShellAst": "eight sources passed before the later UTF-8/version-only correction",
+    "markdownAndWhitespace": "passed before the final delivery record and PowerShell baseline documentation were added"
+  },
+  "powerShellRuntimeFailure": {
+    "request": "Owner identified local PowerShell 7.7 and approved targeting about 7.6 in CI.",
+    "initialInventoryCorrection": "The driver's initial PowerShell-7-unavailable field was superseded during this same aggregate interval. Elevated Get-Command found the Microsoft Store pwsh executable alias.",
+    "executable": "C:/Users/symbi/AppData/Local/Microsoft/WindowsApps/Microsoft.PowerShell_8wekyb3d8bbwe/pwsh.exe",
+    "actualVersion": "owner reported 7.7; exact runtime version was not independently recorded on the failed invocation",
+    "addedWork": "One model-free Test-ReleasePrimitives.ps1 invocation inside the original start/end power bracket. No new allowance, retry or comparison arm.",
+    "processWallSeconds": 1.4122181,
+    "independentStartAndEndTimestamps": null,
+    "result": "failed: Native argument changed at index 4 (Unicode fixture)",
+    "sourceCorrection": "Set ProcessStartInfo.StandardOutputEncoding to UTF-8 and explicitly emit UTF-8 from the fixture child. All production scripts now require 7.6 and hosted receipts report the actual version.",
+    "correctedSourceRuntimeChecks": "pending in owner-managed hosted release validation; failed invocation was not retried",
+    "diagnosticExcerpt": "Test-ReleasePrimitives.ps1:32: Native argument changed at index 4."
+  },
+  "sourceBinding": {
+    "testedSourceRevision": "00e24d66",
+    "testedSourceHashes": "testedSourceSha256 records the final uncommitted Rust sources and initial PowerShell source; no later PowerShell result is transferred.",
+    "finalRustChangesAfterTests": false,
+    "laterPowerShellChanges": "2dff870e records the source-only UTF-8 correction and 7.6 minimum after the retained runtime failure. The summary's original PowerShell hashes intentionally remain unchanged.",
+    "documentationAddedAfterChecks": true
+  },
+  "cleanup": "Timed-out native UI test compilation was stopped with taskkill /T /F (exit 0). No installed executable was replaced or MSI executed. Temporary build-cache deletion was not recorded."
+}

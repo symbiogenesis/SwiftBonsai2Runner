@@ -1,0 +1,22 @@
+[
+  {
+    "path": "acceptance.json",
+    "bytes": 34260,
+    "sha256": "8edec4b0c21345a4cc20fe96c1a1cdd0c464c28bdc5df90cf311b18763e27897"
+  },
+  {
+    "path": "final-clock.json",
+    "bytes": 620,
+    "sha256": "d92f25575ad671352efdeeb735337f7a473cf34a1f9310022ea031e79103b617"
+  },
+  {
+    "path": "offline-review.json",
+    "bytes": 661,
+    "sha256": "69e04dfc0e183fb1931b42395f12bc3aa58c9775ab0bb198a90f1ec0423eb21b"
+  },
+  {
+    "path": "session.json",
+    "bytes": 17241,
+    "sha256": "50d3e7192713e6dae2bf744067758e9023a22a12fb9c90a044e9ceb743deab2d"
+  }
+]

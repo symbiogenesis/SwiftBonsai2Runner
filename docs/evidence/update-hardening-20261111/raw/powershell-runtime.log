@@ -1,5 +1,0 @@
-Exception: C:\Users\symbi\source\repos\SwiftBonsai2Runner\scripts\release\Test-ReleasePrimitives.ps1:32
-Line |
-  32 |  … xpected[$index]) { throw "Native argument changed at index $index." }
-     |                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-     | Native argument changed at index 4.

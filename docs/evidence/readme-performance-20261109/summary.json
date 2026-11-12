@@ -26,7 +26,7 @@
       "ACTIONS_RUNNER_INPUT_TOKEN.stderr.log"
     ],
     "filenameContainsCredential": false,
-    "retention": "The original session, driver, retention manifest and final clock are unchanged. Existing misnamed logs were copied afterward for offline review, documented separately by offline-retention.json."
+    "retention": "The original capture preserved its session, driver, manifest and final clock; misnamed build logs were recovered afterward for offline review. Those original bytes now remain in Git history as identified by currentRetention."
   },
   "power": {
     "source": "GetSystemPowerStatus",
@@ -46,7 +46,7 @@
   "downloads": 0,
   "ciActions": 0,
   "correction": {
-    "source": "capture-driver-corrected.ps1",
+    "source": "7b37b29826b377386c1ddfe933cd4e75d6a97856:docs/evidence/readme-performance-20261109/capture-driver-corrected.ps1",
     "changes": [
       "Use separate StageName and credentialEnvironmentName variables.",
       "Require an explicit fresh public evidence destination.",
@@ -58,5 +58,10 @@
   },
   "performanceQualified": false,
   "currentReadmeNumbersRemainHistorical": true,
-  "nextStep": "Review the retained failure and corrected source. Another attempt requires an explicit owner exception to the no-retry rule; do not reopen this clock."
+  "nextStep": "Review the retained failure and corrected source. Another attempt requires an explicit owner exception to the no-retry rule; do not reopen this clock.",
+  "currentRetention": {
+    "kind": "historical-preparation-failure-summary",
+    "originalDirectory": "7b37b29826b377386c1ddfe933cd4e75d6a97856:docs/evidence/readme-performance-20261109/",
+    "scope": "The original failure result, budget, power observations and zero model attempts remain here. Historical session, clocks, manifests, successful build chatter and superseded drivers are retained in Git history at the stated revision. This summary cannot independently replay those original hashes or build observations, and authorizes no retry."
+  }
 }

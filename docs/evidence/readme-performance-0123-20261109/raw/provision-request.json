@@ -1,9 +1,0 @@
-{
-    "operation":  "inference",
-    "dataDirectory":  "C:\\Users\\symbi\\AppData\\Local\\SwiftBonsai2",
-    "lockPath":  "C:\\Users\\symbi\\AppData\\Local\\Temp\\SwiftBonsai-ReadmePerformance0123-20261109\\runtime-lock.json",
-    "workingDirectory":  "C:\\Users\\symbi\\AppData\\Local\\Temp\\SwiftBonsai-ReadmePerformance0123-20261109",
-    "includeCapabilities":  false,
-    "includeHelp":  false,
-    "verifyOnly":  false
-}
