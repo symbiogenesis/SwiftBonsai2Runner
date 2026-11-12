@@ -2,7 +2,7 @@
 
 Three local Prism implementations close concrete source gaps from Runner's
 attention/locality, runtime-overhead and Hexagon FFN backlog. They are integrated
-in local `main` with separate worker commits and [retained source/check identities](evidence/performance-finish-20261109/summary.json).
+in local `main`; their source history retains the implementation commits.
 Outstanding qualification remains in [PLAN.md](../PLAN.md#cpu-kernels).
 Runner still consumes its pinned 0.1.23 release. These changes require a qualified
 release and immutable repin before installed application use.
@@ -33,21 +33,12 @@ resource discount or automatic backend selection is introduced. True `N > 1`
 native-Q2 prefill needs a different matrix solver and scratch contract and remains
 open. Model-free fake-DSP transport controls do not prove signed arithmetic.
 
-The [single declared check](evidence/performance-finish-20261109/workload-plan.json)
-selected 43 Rust controls and six receipt controls within a nine-minute allowance.
-It closed after 133.379 seconds, with all six selected Prism test targets compiled,
-all six receipt controls passed and the four new six-head numerical/page controls
-passed. It then failed before attention dispatch in an inherited gate/worker
-fixture that supplied a four-channel RoPE to a pinned operator requiring 256
-channels and 64 rotary channels. The test-only correction uses actual Swift
-24-query/4-KV geometry, retains an independent gate oracle and checks the exact
-expected rounding rejection. It was source-reviewed without a retry or compile.
+Intermediate local controls passed before an inherited graph fixture failed.
+The test-only correction uses actual Swift geometry and remains source-reviewed.
+The original failed check is closed; final-source validation remains pending.
 
-The remaining 32 Prism controls and six Runner controls, strict Release analysis,
-production worker/server linking and feature-disabled compilation were not
-reached. Complete-model state/logit/adapter and cancellation acceptance, ARM64
-codegen/spills, signed NPU lifecycle/resources and matched whole-request benefit
-remain separate gates. Power snapshots report battery operation, saver off, and
-82% before to 79% after the workload; endpoint snapshots establish no uninterrupted
-stability or performance comparison. No model, accelerator call, benchmark, full
-suite, CI action or push occurred.
+Require exact controls, strict Release analysis, production linking and
+feature-disabled compilation. Complete-model state/logit/adapter and cancellation
+acceptance, ARM64 codegen/spills, signed NPU lifecycle/resources and matched
+whole-request benefit remain separate gates. Model-free source checks establish no measured
+performance benefit.

@@ -18,8 +18,8 @@ the last operation and `statistics()` exposes aggregate counts without payloads.
 at `u64::MAX`; reset and checkpoint restoration preserve diagnostics. Floating projections and
 ineligible packed operations use scalar.
 
-The local [exact state SIMD candidate](evidence/cpu-state-simd-20261103/summary.json)
-also uses safe baseline NEON for pinned GDN dot/update arithmetic and attention value
+The local state SIMD implementation also uses safe baseline NEON for pinned GDN dot/update
+arithmetic and attention value
 tiles on the same supported Windows ARM64 build. These graph helpers retain their
 scalar implementations when the feature or target is unavailable. `MatvecBackend`
 continues to govern packed projections: aligned floating projections explicitly call
@@ -118,12 +118,10 @@ stays on the caller; workers observe cancellation between rows and join before
 failed output is cleared. Its extra 16 KiB reservation is charged separately from
 existing worker stacks. Compare complete prompt cost with the ordinary
 NEON/four-worker control before choosing this path.
-The released Runner pin and opt-in prefill boundary remain unchanged. The
-[source-check record](evidence/cpu-speed-next-20261103/summary.json) separates local
-correctness evidence from pending model and performance qualification.
+Model and performance qualification remain pending; source controls do not
+establish measured benefit.
 
-The [remaining CPU source record](evidence/cpu-remaining-speed-20261103/summary.json)
-also covers direct BF16 weight consumption for Swift's recurrent alpha/beta
+The CPU implementation also covers direct BF16 weight consumption for Swift's recurrent alpha/beta
 projections. Tensor geometry is checked before row access, each weight remains
 finite-checked, and BF16 activations, rounded F32 products and the original F64
 sum/final F32 rounding are unchanged. No decoded row is materialized. Across

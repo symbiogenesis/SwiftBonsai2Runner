@@ -34,22 +34,10 @@ every output without replay. Existing logical operations and queue writes remain
 unchanged. Transient 8/16/32-token tiles pack each weight tile once instead of
 8/16/32 times, and caller output storage replaces repeated full pending outputs.
 
-Independent numerical/tokenization controls, malformed inputs, failure
-publication and production-consumer checks belong to the fixed local source
-validation. Its declaration, exact control inventory, source identities, raw
-logs and closed clock are retained in the
-[delivery record](evidence/performance-resolve-20261109/summary.json).
-
-All four selected Rust test targets compiled, and all 27 exact Rust controls
-and six receipt/source-identity controls passed. Strict Release analysis then
-stopped on one reported branch-order lint in the new NPU output initialization.
-The equivalent positive-condition correction swaps unchanged branches and was
-independently source-reviewed. It was not reformatted, compiled or tested again.
-Retain the failed check and its closed 169.466-second clock; production worker
-linking, feature-disabled compilation and final-source strict analysis were not
-completed. All 73 power observations reported battery operation and saver off,
-with 44% before and 43% after; these snapshots establish no uninterrupted power
-stability or performance comparison.
+Intermediate numerical/tokenization controls passed before strict analysis
+failed. Its branch-order correction was source-reviewed without a rerun.
+Final-source strict analysis, production linking and feature-disabled compilation
+remain pending; the source-only validation diary remains in Git history.
 
 Owning hosted checks, ARM64 code generation and stack review, complete-model
 state/logit/adapter and cancellation acceptance, signed vendor lifecycle and

@@ -1,8 +1,7 @@
 # Paired values, bounded special parsing and resident tile packets
 
 Three concrete performance source gaps from [PLAN.md](../PLAN.md) are closed in
-local Prism source. The [delivery record](evidence/performance-close-20261109/summary.json)
-binds the separate worker commits, integrated source and focused checks. Runner
+local Prism source. Runner
 continues to consume its immutable 0.1.23 release; application delivery requires
 a qualified Prism release and verified repin.
 
@@ -32,22 +31,8 @@ does not establish that missing support. Exact destination validation, terminal
 failure, conservative resources and public owned-session forwarding remain
 required.
 
-One predeclared model-free local operation covers canonical formatting, selected
-exact controls, strict Release analysis, production worker linking and
-feature-disabled compilation. Its fixed inventory, original clock, power
-observations and raw evidence belong to the delivery record. Full suites,
-benchmarks, models, accelerator calls and CI operations are excluded.
-
-The single operation applied canonical formatting and passed all six receipt
-controls, then stopped during selected test compilation on one test-only
-`unused_qualifications` error in `std::mem::size_of`. The compiler's exact
-prelude-path correction is committed and independently source-reviewed without
-a retry. The runtime and native production libraries and native test executable
-compiled, but no selected Rust control ran. Strict Release analysis, production
-worker linking and feature-disabled compilation were not reached. The failed
-59.509-second clock remains closed. All 19 power snapshots report AC connected,
-saver off and 71% charge; endpoint observations prove no uninterrupted stability
-or performance comparison. Ten retained archive members were hash-verified.
+Intermediate local checks were incomplete; their source-only validation diaries
+remain in Git history. Final-source hosted validation is still required.
 
 Source conversion, allocation and queue-write counts establish no measured
 latency, throughput or process-memory gain. Owning hosted checks, ARM64 codegen

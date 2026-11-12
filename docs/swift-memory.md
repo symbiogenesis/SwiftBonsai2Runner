@@ -174,7 +174,8 @@ rejection, before its context-error check received no complete HTTP header and s
 [published Prism 0.1.14 release](https://github.com/symbiogenesis/prism-inference/releases/tag/v0.1.14)
 includes the typed context-error fix. The
 [publication review](evidence/ptq1-context-publication-014/independent-review.json) binds its exact
-source, published archives and reviewed Runner pin; actual 0.1.14 model/service/rollback acceptance under the
+source, published archives and reviewed Runner pin; actual 0.1.14 model/service/rollback
+acceptance under the
 [combined service and original-PQ2 rollback profile](validation.md#actual-model-application-acceptance)
 remains pending. The [retained 0.1.13 source diagnostic](evidence/ptq1-numerics-41568281287.json)
 matched all 39,504,384 logits and live-state values byte for byte for one supplied token on X2

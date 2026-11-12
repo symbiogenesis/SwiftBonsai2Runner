@@ -51,8 +51,8 @@ implemented behavior from actual-model, device, quality and isolation acceptance
 | --- | --- |
 | [Hardware discovery and profiles](hardware-capabilities.md) | Implemented inventory, evidence identities, selection eligibility, phase placement and fallback |
 | [CPU kernels and X2 screen](cpu-kernels.md) | Packed arithmetic, ISA dispatch, thread-screen controls and device evidence |
-| [Prefill, snapshots and FFN delivery](performance-deliver.md) | Complete source implementations, conservative resource charges and exact local check evidence |
-| [Paired values, bounded parsing and resident packets](performance-close.md) | Three source closeouts, exact local checks and remaining qualification boundaries |
+| [Prefill, snapshots and FFN delivery](performance-deliver.md) | Source contracts, conservative resource charges and qualification limits |
+| [Paired values, bounded parsing and resident packets](performance-close.md) | Source behavior and remaining qualification boundaries |
 | [Adreno and OpenCL](adreno.md) | Vulkan/compute access, placement, native OpenCL query, X2 observations and source audit |
 | [Hexagon](hexagon.md) | Signed deployment, packed execution/state, memory and failure contracts |
 | [Hexagon sources and evidence](hexagon-source-audit.md) | Pinned packages, prototype placement, X2 access, signed Q2 arithmetic and SDK/public wire provenance |
@@ -66,3 +66,10 @@ patches in [runtime-candidates/](runtime-candidates/README.md), and charts in
 [assets/](assets/). Owning guides explain their scope and reproduction; file
 presence alone is not qualification. Add prose to its owning topic, link shared
 requirements and put outstanding work in PLAN.
+
+Keep evidence that supports current claims, records useful device failures or
+provides replay inputs consumed by tools. Completed source-review diaries,
+temporary validation drivers and duplicate build/release payloads belong in Git
+history. Trimmed historical summaries identify the original revision and state
+when raw replay requires that history; they do not qualify current source.
+The evidence tree before this cleanup is available at commit `3c03fbfe`.

@@ -15,6 +15,10 @@ and network failures, published prerelease selection, wrong-target/tampered
 metadata rejection, verified download, confirmed owned teardown and MSI handoff
 on installed Windows ARM64. Retain source-bound evidence that upgrades preserve
 model and recovery data and that source/preview launches perform no update work.
+Include final post-exit publication revalidation, cache/receipt replacement,
+network loss after confirmation and consumed-handoff launch failures in installed
+acceptance. Qualify release-script native failure handling and safe paths on the
+supported PowerShell 7 versions in owner-managed hosted validation.
 The [bounded updater checks](docs/evidence/app-updates-20261111/delivery.json)
 passed five policy/tampering fixtures, the acknowledged-handoff regression and
 the native UI type-check. They do not close installed update acceptance.
@@ -208,51 +212,14 @@ Its aggregate endpoint and power remain unknown; the tool's 0.7794621-second pro
 wall time is a separate observation. Keep that attempt closed; it supplies no new
 performance measurement.
 
-The owner now requests Prism 0.1.23 promotion, a real binary repin and then performance
-measurement. The [final-source registry check](docs/evidence/prism-0123-registry-20261109/summary.json)
-passed six receipt controls and formatting, then stopped on eight test-only strict
-Clippy errors before packaging or upload. Preserve its closed 52.8568851-second
-clock,71 AC/saver-off/99% observations and verified archive; no retry. Corrected-
-source hosted validation, normalized package verification and actual publication
-are recorded separately below.
-The [first bounded Foundation operation](docs/evidence/foundation-bundle-0123-20261109/summary.json)
-pushed the exact authorized Prism source `a7cdee9`, then stopped on an operator
-run-name identity error. Its automatic and dedicated runs are both confirmed
-cancelled, with cleanup observed137.31 seconds from the original start inside
-the300-second deadline; preserve the original raw failure and separate cleanup
-supplement. The correction passed six offline fixture controls in0.149 seconds.
-The separately approved [source-ready attempt](docs/evidence/foundation-bundle-0123-20261109-attempt2/summary.json)
-passed three version controls, six receipt controls and formatting, then failed
-strict Clippy on four additional test-only empty assertions in the Hexagon helper.
-Its202.043-second clock is closed with confirmed terminal cleanup and146 verified
-raw archive members. A separate1.659-second read-only terminal-log review retains
-the diagnostics; it did not restart CI or reopen that clock. The four assertions
-are corrected and source-reviewed locally, with production behavior unchanged.
-The explicitly approved [corrected-source Foundation operation](docs/evidence/foundation-bundle-0123-20261109-attempt3/summary.json)
-pushed `055c743`, passed nine version/receipt controls, formatting, strict Release
-all-target analysis, portable library compilation, production linking and help
-smoke checks. Its296.114-second clock is closed within the six-minute exception,
-with both owned runs terminal and all217 raw archive members independently verified.
-All415 power observations reported AC connected, saver off and99% charge; they
-establish no uninterrupted stability. The genuine nine-file bundle, five ARM64
-executables and743 canonical source blobs match the source-bound producer receipt.
-The standing five-minute default and all earlier closed clocks remain unchanged.
-The separate [registry publication](docs/evidence/prism-0123-publish-20261109/summary.json)
-passed default Cargo package/publication verification and confirmed the public
-0.1.23 checksum in40.064 seconds of its300-second allowance. Only the runtime
-crate changed; all five registry helper versions remain unchanged. The separately
-approved [GitHub prerelease delivery](docs/evidence/prism-0123-github-20261109/summary.json)
-created only `v0.1.23` at `055c743` and verified all three uploaded asset digests
-before and after publication in14.677 seconds of120. Runner selects the verified
-nine-file binary pin. The [new-version capture](docs/evidence/readme-performance-0123-20261109/summary.json)
-passed four focused controls and both eight-token requests with confirmed cleanup;
-its87.649-second clock is closed inside420 seconds. All90 recorded power
-observations reported AC connected, saver off and99% charge, without proving
-uninterrupted stability. README now records the independently recomputed0.1.23
-observations. Keep full Foundation and application acceptance independently pending;
-do not reopen the failed0.1.22 attempt or claim source reductions as measured gains.
+Runner now consumes the verified Prism 0.1.23 nine-file binary bundle at
+`055c7430cb4771dfddb24ddaa30494af6ad182da`. Historical publication identities
+remain in the [bundle summary](docs/evidence/foundation-bundle-0123-20261109-attempt3/summary.json)
+and [prerelease verification](docs/evidence/prism-0123-github-20261109/summary.json).
+Full Foundation, sustained performance and application acceptance remain pending;
+source/publication checks do not supply those verdicts.
 
-Qualify the [shared startup-timeout receipt fix](docs/evidence/ptq1-startup-timeout-20261103/summary.json)
+Qualify the shared startup-timeout receipt fix
 through owner-managed exact-source hosted preparation. An admitted extended case
 whose deadline outlasts the unchanged 600-second startup cap now retains an ordinary
 startup failure instead of unwinding before terminal evidence. Package preparation
@@ -274,51 +241,13 @@ full application analyzers/linking, the NumPy producer control, hosted execution
 actual models, original provenance and human acceptance remain separate pending
 gates. Earlier failed trials retain their original results and closed clocks.
 
-Qualify the [hosted native-link and renderer gates](docs/evidence/native-hosted-readiness-20261103/summary.json)
-on settled main through owner-managed hosted preparation with `run_device: false`.
-Publication and owner intake now require successful exact-source Release `clippy`
-and production `build` receipts covering chat, broker and maintenance tools, plus
-four exact renderer/default/deferred-rollback controls before package creation.
-Independent source review confirms the CI batching and receipt schema; it supplies
-no compiled verdict. The one local workflow-contract check stopped before any
-parser or fixture executed because PowerShell blocked its generated `-File`
-script under the machine execution policy. Retain that failed 0.848-second clock,
-raw script/fixtures and original battery/saver observations without retrying it.
-Parser, receipt-fixture, compiled regression, native-link and strict-analyzer
-acceptance remain pending; the existing installed executable is unchanged.
-
-Qualify the [daily-readiness source changes](docs/evidence/native-daily-readiness-20261103/summary.json)
-on settled main through owner-managed hosted checks. Explicit
-`--graphics-backend dx12` / `-GraphicsBackend dx12` now selects only the native
-window's renderer; omission preserves inherited selection. The separate
-`pq2-adapter-service-row4` profile prepares original-PQ2/four-worker Stop and
-fresh-owner replay without PTQ1 metadata. The UI's private broker shutdown
-handshake requires a model-cleanup acknowledgment, broker exit and outer-Job
-cleanup before Retry; PSEC models can bypass outer Job inheritance. Qualify this
-actual UI path separately from the direct broker acceptance harness.
-
-The one new local model-free check applied canonical formatting and parsed the
-launcher plus eight workflow PowerShell blocks, then stopped on a renderer
-environment-map type mismatch before any test executed. The source correction
-matches the existing String-map process contract but remains uncompiled. Keep
-the failed 15.411-second clock closed, its original battery/power observations
-and independently verified raw evidence intact. Focused controls, strict Release
-all-target analyzers, native linking and maintenance delivery remain pending;
-no installed executable changed. After exact-source hosted acceptance, retain
-one feasible owner-observed DX12 launch, model readiness, Stop/Retry and manual
-publisher rollback workload under the existing aggregate budget. No previous
-failed clock or validation pass may qualify these new changes.
-
-Validate the [Rust development-default integration](docs/evidence/rust-development-default-20261103/summary.json)
-on settled main in owner-managed checks. Its one model-free local run passed thirty
-focused selection, handoff and qualification-profile controls plus the maintenance
-Release build, then stopped on three strict analyzer findings. The small source
-corrections are applied but uncompiled; final all-target analyzers remain pending,
-including chat, which was not reached. Preserve that closed 73.123-second clock and
-its original power observations. The development selection does not close actual-model
-acceptance, and no existing maintenance installation was replaced by that failed run.
-Keep the separately recorded local delivery's tested executable identity distinct
-from the later source-only analyzer corrections; it supplies no additional test verdict.
+Complete exact-source hosted Release analyzers and production linking for native
+chat, broker and maintenance tools before preparing owner acceptance. Retain the
+renderer/default/deferred-rollback controls and digest-bound workflow receipts.
+Qualify explicit DX12 selection, original-PQ2/four-worker Stop and fresh-owner
+replay, acknowledged broker shutdown and outer-Job cleanup in the native UI.
+Earlier model-free checks and source corrections leave final-source compilation
+and actual-model acceptance pending; installed executables were not replaced.
 
 Qualify the [owner-packet controls](docs/evidence/native-owner-packet-controls-20261103/summary.json)
 on settled main through owner-managed hosted preparation: explicit connection
@@ -332,15 +261,10 @@ and must not be retried as a continuation. Retain independent aggregate power
 observations before setup and after final retention for the next owner trial;
 Rust model-case and per-owner endpoints cannot establish the earlier setup conditions.
 
-Qualify the [source-bound acceptance preparation](docs/evidence/native-primetime-preparation-20261103/summary.json)
-on settled main. Hosted preparation now requires exact-revision strict Release
-all-target Clippy for native chat, broker and maintenance tools, retaining a
-digest-bound analyzer receipt before owner-device admission. Exercise the new
-failed-cleanup receipts and shared absolute deadlines through the prepared
-service/rollback controls. The new local model-free check stopped on a formatting
-difference before any Cargo invocation; the reported correction is applied, but
-compiled tests/analyzers remain pending. Its failed result and original closed
-clock are retained; do not restart it or transfer earlier validation passes.
+Qualify exact-revision acceptance preparation, including failed-cleanup receipts
+and shared absolute deadlines. Require strict Release analyzers and their
+digest-bound receipt before owner-device admission. Earlier formatting and
+source review do not establish compiled acceptance.
 
 Complete the strict Release UI analyzer left pending by the
 [bounded local readiness validation](docs/evidence/prism-0114-primetime-validation-20261103/retention.json)
@@ -459,7 +383,7 @@ Qualify the [published Prism 0.1.14 release](https://github.com/symbiogenesis/pr
 from exact source `9e8ea3e2c042ab0c3f1a8e9596ff155e202c3c57`. The
 [publication review](docs/evidence/ptq1-context-publication-014/independent-review.json)
 verifies the tag and all four uploaded assets against owning CI. Complete Runner's
-owning integration checks against the [prepared pin identities](docs/evidence/prism-0114-pin-preparation.json). Its typed token-capacity
+owning integration checks against those published identities. Its typed token-capacity
 error preserves the private context-rejection contract; unknown counter failures
 remain failures. Hosted source checks do not establish actual-model behavior.
 Retain `ptq1-adapter-service-row4` and the
@@ -593,7 +517,7 @@ identity or nonzero application across conditions.
   rename/DELETE regression through owning native/AppContainer checks. Preserve
   the contained reader's narrower metadata rights and root exclusion; trusted
   host guards must outlive every contained reader. Final-source integration is
-  pending under the [local implementation review](docs/evidence/ptq1-local-implementation-20261103.json).
+  pending; earlier local source controls do not qualify it.
 - Bound worker scratch, PSEC-private temporary storage and stdout/stderr disk usage;
   define retention for diagnostics and credentials across retries. Qualify storage
   exhaustion and owner-loss cleanup while preserving evidence needed for review.
@@ -634,28 +558,13 @@ identity or nonzero application across conditions.
 
 ## Runtime and correctness
 
-Qualify the [CI repair](docs/evidence/ci-repair-20261103/summary.json) on settled
-main through owner-managed hosted Foundation and public-reference preparation.
-The workflow now supplies runner identity at supported step scope; numerical
-capture pins match the reviewed released runtime; artifact lifetime controls
-isolate independent private-directory and shared temporary-ancestor readers.
-Retain the new-source focused regression, analyzer and workflow receipts separately
-from the earlier closed diagnostic. Successful local checks do not establish a
-hosted verdict or authorize model/reconstruction work.
-
-Qualify the [four-lane speed source integration](docs/evidence/speed-four-source-20261103/summary.json)
-on final settled source. It implements scoped packed PQ2 activation consumption,
-explicit Runner latest-prefix selection, real packed FFN tiles and separately
-identified triangular GDN chunks, plus combined CPU efficiency controls. Forty
-focused Prism tests and selected strict Release runtime/server analyzers passed.
-The one 376.962-second local source session closed after Runner all-target analysis
-reported twenty-one preexisting thread-confined acceptance-future findings and two
-unchecked duration subtractions. Their narrow test-only source corrections, and
-three UI analyzer corrections, remain uncompiled; do not retry or extend that
-closed session. Source-bound owning checks, native application linking, explicit
-reuse lifecycle, full-model prefill/adapter/state acceptance, matched performance
-and a qualified Prism release/Runner repin remain pending. No installed runtime,
-default reset policy, numerical qualification or speed verdict changes here.
+Complete settled-main hosted Foundation and public-reference preparation after
+the workflow-context, capture-pin and artifact-lifetime fixture fixes. Preserve
+source-bound intake and independent reader-lifetime controls. Qualify packed PQ2
+activation consumption, explicit latest-prefix selection, packed FFN tiles and
+triangular GDN chunks through final-source analyzers/linking, actual-model
+state/adapter/cancellation parity and matched performance. Local source controls
+do not supply hosted, model or speed verdicts.
 
 Complete the [current-nightly Rust standards run](https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41386105716)
 for source `d2a2962`: all 12 registered crates' owning Release Clippy, rustdoc,
@@ -1250,250 +1159,28 @@ LoRA gates; calibration proves neither quality nor reduced admission.
 
 ## CPU kernels
 
-Qualify the [paired-value, bounded special-parsing and resident-packet source closeouts](docs/performance-close.md)
-through owner-managed hosted acceptance, ARM64 codegen/stack review, actual-model
-state/logit/adapter and cancellation parity, signed vendor lifecycle/resources
-and matched complete-request benefit before release and Runner repinning.
-The [delivery record](docs/evidence/performance-close-20261109/summary.json) owns
-exact implementation and local-check evidence; do not reopen the completed
-source work or infer a measured speedup from its work/storage counts.
+Qualify the completed local Prism source changes through owner-managed hosted
+checks before a qualified release and Runner repin. Current contracts cover
+[six-head prefill, shared logits and FFN packets](docs/performance-deliver.md),
+[decode locality, terminal ingestion and FFN transport](docs/performance-finish.md),
+[paired scores, request-local BPE and packed token tiles](docs/performance-resolve.md),
+and [paired values, special parsing and resident packets](docs/performance-close.md).
+Also cover GDN staging and finite-output reuse, bounded suffix drafting, immutable
+solver metadata, native packet validation and resident-weight preparation.
 
-The [paired prefill, request preparation and tiled projection closeout](docs/performance-resolve.md)
-completes three further source implementations in local Prism main: two-token
-six-head cached-key scoring, bounded request-local BPE piece results, and shared
-packed weights/output scratch across multi-operation native-Q2 token tiles.
-The [delivery record](docs/evidence/performance-resolve-20261109/summary.json)
-owns exact source and the single declared local validation. Their implementation
-work is closed. All four selected targets compiled and all 27 exact Rust controls
-plus six receipt controls passed. Strict Release analysis stopped on one reported
-branch-order lint; its equivalent correction was independently source-reviewed
-without retrying the closed 169.466-second run. Keep battery/saver-off/44% to 43%
-observations attached; production linking, feature-disabled compilation and
-final-source strict analysis remain pending. Owning hosted acceptance, ARM64
-codegen/resources, actual-model
-state/adapter/cancellation parity, vendor lifecycle and matched whole-request
-benefit remain pending before a qualified release and Runner repin. Source work
-counts establish no measured speedup or reduced admission.
+Require final-source exact numerical/failure controls, strict Release analyzers,
+portable fallback and production linking; ARM64 codegen/stack/resource review;
+complete-model state/logit/adapter and cancellation parity; signed vendor
+lifecycle; and matched complete-request benefit. Intermediate local checks were
+incomplete and their closed clocks authorize no continuation. Preserve original
+arithmetic, RNG/error precedence, transactional publication and conservative
+admission. Source work counts establish no measured speed or memory gain.
+True multi-token native-Q2 matrix prefill remains separate.
 
-Qualify the [three completed prefill, snapshot and FFN source implementations](docs/performance-deliver.md)
-on settled Prism main through owner-managed checks: complete six-head tiled-prefill
-KV locality, immutable complete runtime logits shared by rollback/prefix snapshots,
-and paired resident native-Q2 full-FFN token packets. Their implementation work is
-complete; the [delivery record](docs/evidence/performance-deliver-20261109/summary.json)
-owns exact source, focused controls, power observations and local-check results.
-All five selected targets compiled and all 38 exact Rust controls plus six receipt
-controls passed. The one local run closed at 157.160 seconds after five inherited
-strict-Release lint findings; their attribute/documentation-only corrections are
-source-reviewed without retry. Preserve that failed receipt and its closed clock,
-with battery/saver-off/63% to 60% endpoints. Final-source strict analysis, worker
-linking and feature-disabled compilation remain pending.
-Require owning hosted acceptance, complete-model state/logit/adapter and cancellation
-parity, ARM64 code generation and resources, signed vendor lifetime and matched
-complete-request benefit before release and Runner repinning. Preserve conservative
-snapshot charges, the extra six-head score reservation and simultaneous native
-chain workspace. True multi-token native-Q2 matrix prefill remains separate.
-
-Qualify the [three completed performance source implementations](docs/evidence/performance-finish-20261109/summary.json)
-on settled Prism and Runner main through owner-managed checks: complete six-head
-Swift decode locality, reset-only terminal state ingestion, and real native
-resident full-FFN-chain transport. The [implementation contract](docs/performance-finish.md)
-records their exact scope and the compatible Runner timing reader. All six selected
-Prism test targets compiled and the four new six-head controls passed. The one
-133.379-second model-free check then stopped at an inherited graph fixture whose
-four-channel RoPE geometry is unsupported by pinned Swift. Its test-only correction
-uses the actual 256-channel/64-rotary contract and is independently source-reviewed;
-no retry or recompilation followed. Preserve the closed clock and battery/saver-off
-82% to 79% endpoint observations; they qualify no performance comparison.
-Require the remaining exact controls, strict Release analysis, portable compilation
-and production linking, then full-model state/logit/adapter and cancellation parity,
-signed vendor lifetime/resources and matched complete-request benefit before release
-or Runner repinning. True multi-token native-Q2 matrix prefill remains separate.
-
-Qualify the [attention, sampler and owned-session source implementations](docs/evidence/performance-closeout-20261109/summary.json)
-on settled Prism main through owner-managed checks. Require all 38 exact controls,
-strict Release analysis, native worker linking and feature-disabled compilation,
-including the corrected dispatch-aware failure assertion. Keep the retained failed
-70.050-second local operation and its original power observations closed; do not
-retry it. Full-model state/adapter, cancellation, vendor lifecycle, resources and
-matched complete-request benefit remain pending before release and Runner repinning.
-Source work reductions establish no installed performance or qualification change.
-
-Qualify the [three validation-reuse implementations](docs/evidence/performance-complete-20261109/summary.json)
-on settled Prism main through owner-managed hosted checks. Packed CPU quantizers
-consume their existing immutable finite-input proof, the fixed Swift sampler
-reuses top-p exponentials in its distribution stage, and resident native-Q2 scalar
-and two/three-sibling projections consume finite-output evidence bound to the
-exact destination slices. Preserve original quantizer error precedence, complete
-candidate backing bits and RNG progression, arbitrary-submitter validation,
-terminal failure/publication, and conservative resource admission. The one local
-check passed formatting and six receipt controls, then stopped at compilation on
-an ambiguous native resident trait call before any selected Rust test ran. Its
-minimal explicit-trait correction was independently source-reviewed; the newer
-candidate above compiled it and passed the three exact quantizer controls and
-four selected fixed-sampler controls. Retain the original failed receipt and
-closed 71.918-second clock without retrying it.
-All recorded endpoints report AC connected, saver off and 99% charge without
-establishing uninterrupted stability. Require final
-source Release checks, portable fallback and native linking, then full-model
-state/adapter parity, vendor lifecycle and matched complete-request benefit before
-a qualified release and Runner repin. Source predicate/exponential counts establish
-no measured throughput or RAM gain; performance qualification remains pending.
-
-Qualify the [three-lane performance source changes](docs/evidence/performance-impact-20261109/summary.json)
-on settled Prism main through owner-managed hosted checks. Grouped GDN kernels
-combine private update-lane finite masks before publication, native decoder
-evaluation carries its existing finite-output proof into Runtime, and resident
-native-Q2 packets reuse populated descriptor geometry within each submission.
-Keep exact arithmetic, custom-decoder validation, complete-state rollback, packet
-bytes, operation order and conservative resource admission. The single 123.029-second
-source check passed 22 exact Rust controls and six receipt controls, then stopped
-on four test-only empty-assertion lints. Their equivalent typed-empty corrections
-are independently source-reviewed but uncompiled; retain the failed receipt and
-closed clock without retrying. All 65 power observations reported AC connected,
-saver off and 99% charge, without establishing uninterrupted stability.
-Require final-source strict Release checks, portable fallback, production linking,
-ARM64 codegen and
-stack review, actual-model logits/state/adapter and vendor lifecycle acceptance,
-then matched whole-request benefit before performance qualification or Runner
-repinning. These source work reductions establish no measured speedup.
-
-Qualify the [parallel performance and registry candidate](docs/evidence/performance-release-20261109/summary.json)
-on settled Prism main through owner-managed checks. It halves declared Swift 128-wide
-multi-token GDN row staging, uses immutable validated logits to omit redundant
-finite predicates in Greedy/Swift selection, and fills existing native-Q2
-8-operation resident sibling tail packets. Exact numerical/error/RNG contracts,
-conservative admission and serving defaults remain unchanged. The one local
-check compiled all six selected targets and passed 22 exact Rust controls and
-five receipt controls, then stopped on incompatible pinned `syn` 2/3 requirements
-in strict analysis. Its 63.152-second clock is closed within the declared
-ten-minute source/publication allowance, with AC connected, saver off and 100%
-charge at all retained endpoints; do not retry it. The narrow documented
-analyzer policy and hosted runtime-test/format-policy identity fixes subsequently
-passed the separately approved exact-source bundle checks on `055c743`, including
-strict analysis, portable fallback and production linking. Default normalized
-package verification and actual crates.io publication of0.1.23 passed separately;
-the private server's exact `=0.1.23` dependency remains unpublished. All five
-helper versions remain unchanged. Runner's verified0.1.23 binary lock selects the
-published five-executable prerelease with exact source/archive/file identities.
-Full-model state/adapter and
-cancellation parity, ARM64 codegen/resources, vendor lifecycle and matched
-whole-request benefit remain pending; source work counts establish no speedup.
-
-Follow [CPU arithmetic, dispatch and acceptance](docs/cpu-kernels.md). Pin artifacts,
-runtime, compiler, format, shapes, ISA and numerics; choose work from CI hotspot,
-bandwidth, packing and dispatch evidence.
-
-Qualify the [direct prefill, linear suffix and transient tile source changes](docs/evidence/performance-advance-20261109/summary.json)
-on settled Prism main through owner-managed hosted checks. Eligible ARM64 GDN
-prefill now reads immutable projected token rows directly, omitting the raw
-head-major staging copy (60 MiB of nominal writes plus matching reads for a
-32-token Swift tile across 48 recurrent layers). Suffix drafting uses a bounded
-64-byte reverse-Z table with linear token comparisons. Single-operation transient
-native-Q2 tiles pack weights once across their ordered token submissions instead
-of once per token; resident and multi-operation tiled dispatch are unchanged.
-The exact hosted gate now includes seven new controls and binds the documented
-incompatible Windows-binding analyzer policy into source identity.
-
-The single new model-free source check passed canonical formatting and all five
-receipt controls, then stopped at the selected compilation's 180-second cap
-before any Rust control executed. Process-tree termination and parent exit were
-confirmed; final retention closed at 185.058 seconds within the five-minute
-aggregate allowance, with AC connected, saver off and 99% charge at the aggregate
-endpoints. Preserve this failed receipt and closed clock without retrying it.
-Complete selected-target compilation, all twenty exact Rust controls, strict
-analysis, feature-disabled compilation, Release ARM64 codegen/resource review,
-actual-model state/logit/adapter and cancellation parity, and matched whole-request
-benefit in their owning lanes before release or Runner repinning. Source work
-counts establish no measured speedup, reduced admission or new default; existing
-installed runtimes remain unchanged.
-
-Qualify the [grouped GDN, suffix correction and resident solver source changes](docs/evidence/performance-progress-20261109/summary.json)
-on settled Prism main through owner-managed hosted checks. Swift's 128-wide GDN
-decode rows now use half the private staging payload, including normal four/eight-row
-groups; suffix rejection reuses its verified greedy correction; resident native-Q2
-handles retain immutable solver parameters under the existing metadata cap.
-The one 80.684-second model-free source check compiled the selected targets and
-passed all eleven exact Rust controls plus four receipt controls, then stopped
-on inherited strict-analysis findings: incompatible `windows-sys` versions and an
-overlong documentation paragraph. Its comment-only paragraph correction is source-reviewed;
-the dependency finding, final-source strict analysis and feature-disabled check remain
-pending. Preserve the failed receipt and closed clock without retrying. Require
-Release ARM64 codegen/stack review, full-model state/logit/adapter and cancellation
-parity, vendor lifecycle/resources and matched whole-request benefit before a
-qualified release or Runner repin. Source work/storage reductions qualify no speedup,
-reduced admission or speculative default; installed runtime and defaults are unchanged.
-
-Qualify the [parallel performance source candidate](docs/evidence/performance-fanout-20261109/summary.json)
-on settled Prism main through owner-managed hosted checks, Release ARM64 codegen/spill
-inspection and matched actual-model request/startup acceptance. It reuses private
-GDN multi-token decay/update staging, scans suffix history once with bounded proposal
-storage, and packs native-Q2 prewarmed weights directly into admitted resident arenas.
-Require exact state/logit/adapter and cancellation/rollback parity, complete vendor
-lifecycle/resources and matched whole-request or startup benefit before a qualified
-release and Runner repin. The extended hosted gate must retain the exact numerical,
-failure/publication, portable-fallback and source/compiler/executable identities.
-Source work/storage reductions and model-free controls establish no measured speedup,
-installed-runtime change, reduced admission or speculative-default qualification.
-
-Qualify the [follow-up performance source candidate](docs/evidence/performance-next-20261109/summary.json)
-on settled Prism main through owner-managed hosted checks. It reads full-attention
-gates from their original projection in decode and tiled prefill, retains the fixed
-Swift sampler's validated filter state, and omits unused packed-weight scratch from
-lazy native-Q2 resident preparation. Require the exact grouped/tail-head, original
-sampler-chain/RNG, copied/direct/transient packing, resource and failure controls,
-strict Release analysis, portable fallback and native linking. The one local check
-passed formatting and four receipt controls, then stopped during compilation on an
-ambiguous float type in the new attention oracle before any Rust control ran. Its
-explicit binary32 annotation is independently source-reviewed but uncompiled;
-preserve the failed receipt and closed clock without retrying. Actual-model
-state/logit/adapter parity and matched complete-request benefit remain pending
-before release or Runner repinning; source work counts qualify no speed or RAM gain.
-
-Qualify the [exact recurrent and attention SIMD source changes](docs/evidence/cpu-state-simd-20261103/summary.json)
-on settled Prism main through owner-managed checks. Pinned GDN dot/update now uses
-safe baseline NEON with native reduction/tail and first-failure mutation semantics;
-attention value tiles group adjacent channels without changing their temporal
-arithmetic or 2 KiB accumulator payload. Floating projections retain explicit scalar
-execution and diagnostics. The one new 39.363-second model-free check passed
-twenty-four focused Rust controls, including direct NEON/native captures and graph
-recovery, plus four receipt controls, then stopped on eight strict analyzer findings.
-Six typed-chunk findings and two earlier prefill/dispatch findings have source-reviewed
-corrections, which remain uncompiled. Preserve that failed receipt, closed clock and
-original battery/saver/charge observations. Require final-source exact controls,
-strict analyzers, portable fallback and production linking, then actual-model
-state/adapter parity, code-generation/spill review and matched complete-request benefit
-before a qualified release and Runner repin. No installed speedup is established.
-
-Qualify the [remaining CPU speed source changes](docs/evidence/cpu-remaining-speed-20261103/summary.json)
-on settled Prism main through owner-managed checks. Direct BF16 projections omit
-decoded-row materialization while preserving activation rounding and the original
-binary64 accumulation. Explicit packed prefill tiles now share the graph's existing
-private row-worker pool, borrowing disjoint output slices and keeping cancellation
-on the caller thread; the extra 16 KiB reservation must remain charged. Require
-exact numerical, worker-join/cancellation, graph restore and portable-fallback
-controls, strict Release analysis and production linking, then actual-model
-state/adapter parity and matched complete-request/prompt benefit before a qualified
-release and Runner repin. Source work counts establish no measured speedup;
-the installed runtime, defaults and resource admission are unchanged.
-The one 16.369-second model-free local check applied canonical formatting and
-passed four receipt controls, then stopped during compilation on an empty-slice
-type mismatch and unnecessary prelude qualification in the worker controls.
-Both narrow source corrections are applied but uncompiled. Preserve this failed
-receipt, closed clock and its original battery/saver/charge observations;
-numerical tests, strict analyzers and portable compilation remain pending.
-
-Qualify the [packed decode and SIMD prefill source changes](docs/evidence/cpu-speed-next-20261103/summary.json)
-on settled Prism main through owner-managed checks. PQ2 decode now accumulates
-bounded i16 product pairs before widening once for the final i32 reduction; tiled
-prefill now reuses baseline NEON decoded weights across tokens while preserving
-scalar forcing and PTQ1 native lanes. The single 13.333-second local check applied
-canonical formatting and passed four receipt-parser controls, then stopped before
-any numerical test ran on a private-interface visibility error. Its minimal type
-visibility correction is applied but uncompiled. Preserve that closed clock and
-its original AC/saver/charge observations. Require final-source numerical controls,
-strict Release analysis, codegen/spill inspection, actual-model state/adapter parity
-and matched request benefit before a qualified release and Runner repin. No installed
-runtime, default, resource admission or performance verdict changes here.
+Follow [CPU arithmetic, dispatch and acceptance](docs/cpu-kernels.md). Qualify
+recurrent/attention SIMD, direct BF16 projections and packed decode/prefill
+workers under those same gates, retaining scalar forcing, exact native reduction
+order, caller-thread cancellation and the extra 16 KiB worker reservation.
 
 Qualify the Prism `0.1.22` (`6b4f452`, building on `0.1.21` `90eb974`) CPU NEON and row-parallel
 source optimizations (`fb64903`..`795ee6e`, building on `fcb54af`, `386677c` and `547cf47`) on
@@ -2098,13 +1785,10 @@ pending when it cannot fit an eligible environment's limits.
 
 Qualify the [source-only Prism graph integration](https://github.com/symbiogenesis/prism-inference/tree/1e7ed92e7787b9d8b150f9bb3fb5a74fa92fb14b/tools/hexagon-runtime)
 and bounded native HMX session on settled main. Exact PTQ1/odd-block PQ2 Q8_0
-composition and complete-request operation admission now have
-[focused model-free controls](docs/evidence/hexagon-ptq1-admission-preparation.json).
-The previous integration's owning hosted Hexagon/Foundation checks passed.
-The [current residency/placement preparation](docs/evidence/hexagon-resident-preparation.json)
-retains its own hosted checks as pending until their final conclusions are reviewed;
-neither source validation establishes signed-device acceptance. Runner still pins
-the CPU release. Close signed PQ2/PTQ1 arithmetic
+composition, complete-request operation admission and residency/placement
+require final-source hosted checks; historical source controls establish no
+signed-device acceptance. Keep those identities separate from the released
+Runner pin and later device captures. Close signed PQ2/PTQ1 arithmetic
 and full-model parity, persistent serving,
 effective placement/resources and same-artifact performance before enabling NPU
 admission or calling this full acceleration.
@@ -2207,7 +1891,7 @@ promotion sequence above.
   fused double-buffer reserve covers only its declared tiles.
   Retain the prepared original-artifact external-activation probe as an optional
   diagnostic for isolating arithmetic or wire failures, with the
-  [source-bound hosted controls](docs/evidence/hexagon-original-projection-preparation.json).
+  source-bound hosted controls; model-free preparation alone supplies no device verdict.
   The live-graph control remains the acceptance baseline. Any newly selected
   diagnostic still needs its own feasible declaration.
   Enforce every-limb and final bitwise comparison,

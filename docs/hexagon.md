@@ -30,8 +30,7 @@ and committed state remain CPU-owned. This unpublished integration is separate
 from Runner's pinned CPU release. It now includes an explicit PTQ1/odd-block PQ2
 Q8_0 executor preserving native DOTPROD lanes and float order, with actual remaining
 native capacity and whole-request operation checks before new inference.
-[Focused model-free controls](evidence/hexagon-ptq1-admission-preparation.json)
-pass; broader signed PQ2/PTQ1 model execution, resource qualification and persistent
+Broader signed PQ2/PTQ1 model execution, resource qualification and persistent
 serving remain pending. The [static work ledger](evidence/hexagon-swift-operation-ledger.json)
 records the historical terminal-cap refusal. The owner-authorized
 [24,000-operation budget](evidence/hexagon-session-operation-budget.json) now
@@ -264,9 +263,6 @@ retain their CPU paths. Placement identity binds the model, executor, selected
 tensors and operation counts; whole-request admission still precedes inference.
 This remains an arithmetic compatibility bridge. Fused signed kernels, efficient
 device weight reuse, true prefill batching and daily serving remain separate work.
-The [residency preparation receipt](evidence/hexagon-resident-preparation.json)
-binds the source, focused checks and owning hosted validation without enabling a
-Runner profile or transferring qualification from the CPU release.
 
 [Preflight](../tools/bonsai/src/hexagon_tools/preflight.rs) inventories drivers and an explicit optional package without loading/installing it. It
 uses a native Rust worker with an aggregate deadline and kill-on-close Job ownership. Present
@@ -398,9 +394,6 @@ operations. Every returned limb and the final ordered CPU FMA result must match
 the CPU control before the result directory is published. These are implemented
 bounds and comparison rules; full-M signed execution, actual model activations,
 logits/state, adapters, vendor teardown and speed remain unqualified.
-The [hosted preparation receipt](evidence/hexagon-original-projection-preparation.json)
-records the successful same-source builds, model-free checks, independently
-checked executable/source/lock identities and explicit remaining device gates.
 
 Hosted preparation publishes a source-bound `hexagon-projection-probe` bundle
 alongside its model-free controls. The native `hexagon-tools` device supervisor

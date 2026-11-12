@@ -2,9 +2,7 @@
 
 Three concrete source items from [PLAN.md](../PLAN.md) are implemented in Prism:
 complete six-head tiled-prefill locality, immutable runtime logits snapshots,
-and bounded multi-token resident full-FFN packets. Their worker commits, final
-source identities and focused check results are retained in the
-[delivery record](evidence/performance-deliver-20261109/summary.json).
+and bounded multi-token resident full-FFN packets.
 Runner's installed release pin remains 0.1.23; using these changes in the
 application requires a qualified release and immutable repin.
 
@@ -32,23 +30,10 @@ sets of eight maximum-width binary32 regions for simultaneous chain lifetimes.
 The existing larger packed-weight workspace still dominates ordinary Swift
 geometry; small shapes receive the larger required reservation before allocation.
 
-The fixed local check is model-free and runs selected exact controls, strict
-Release analysis, production worker linking and feature-disabled compilation
-under one declared owner-device clock. It performs no model workload, benchmark,
-accelerator call, complete suite, CI operation or push. The delivery record
-distinguishes reached checks from pending checks and retains original power
-observations. Source copy and queue-write counts establish no measured latency,
-throughput or process-memory improvement.
-
-All five selected targets compiled and all 38 exact Rust controls and six
-receipt controls passed. Strict Release analysis then stopped on five inherited
-attribute/documentation findings, closing the original clock after 157.160
-seconds within the declared nine-minute allowance. Their narrow corrections
-were independently source-reviewed; production arithmetic and ownership bodies
-are unchanged. The failed receipt remains failed, with no rerun. Production
-worker linking and feature-disabled compilation were not reached. Power
-observations report battery operation, saver off and 63% before to 60% after;
-endpoints establish no uninterrupted stability or performance comparison.
+Intermediate local controls passed before strict analysis failed. Later narrow
+source corrections were reviewed without a rerun; final-source validation,
+production linking and feature-disabled compilation remain pending. Source copy
+and queue-write counts establish no measured latency, throughput or memory gain.
 
 Owning hosted acceptance, complete-model state/logit/adapter and cancellation
 parity, ARM64 code generation and resources, signed vendor lifetime, and matched

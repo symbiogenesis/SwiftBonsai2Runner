@@ -428,7 +428,7 @@ actual-model numerical, lifecycle and performance qualification remain pending.
 These local Prism changes require a qualified release and Runner repin before
 application use; they do not change admission or runtime defaults.
 
-The [remaining CPU source changes](evidence/cpu-remaining-speed-20261103/summary.json)
+The remaining CPU source changes
 stream BF16 alpha/beta weights directly through the existing rounded-product/F64
 sum contract. This avoids decoded-row materialization, with a nominal 90 MiB of
 scratch writes and matching rereads omitted per Swift token. Experimental packed
@@ -472,7 +472,7 @@ The [main integration record](evidence/prism-main-integration.json) binds the
 merged Windows CNG GGUF verification and explicit private-service
 `--prompt-reuse latest` changes, and the 0.1.10 release integration. Owning
 settled-main checks and reviewed released bytes qualify separately from the
-earlier [candidate controls](evidence/prism-native-gap-candidate.json).
+earlier candidate source controls.
 The hash path still verifies every selected byte through the existing handle.
 The reuse candidate retains only latest committed live state at identical adapter
 scale bits, recomputes mismatched histories and preserves transactional rollback.
@@ -495,9 +495,7 @@ the bounded evidence above. The broader
 parity and prefix-state reuse still require their own evidence. None of these
 candidates satisfies default promotion.
 
-The [initial Prism-owned service checker preparation](evidence/prism-service-checker-tools.json)
-retains a main-source/run-bound ARM64 checker and model-free controls. The
-[later preparation record](evidence/prism-parity-preparation.json) binds the added
+The [historical service preparation record](evidence/prism-parity-preparation.json) binds the added
 opt-in device job, pinned trusted Runner owner, exact same-run package intake and
 mandatory original owner deadline. The workflow's default remains hosted preparation;
 an admitted device attempt shares one five-minute allowance across intake,

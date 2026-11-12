@@ -2,18 +2,6 @@
 # Keep the current PTQ1 release decision and independent reviews portable.
 docs/evidence/token-timing-20261103/** -text -whitespace
 
-# Preserve the closed three-lane model-free source check and raw power receipts.
-docs/evidence/performance-fanout-20261109/** -text -whitespace
-
-# Preserve the follow-up source check's closed receipt and original failure bytes.
-docs/evidence/performance-next-20261109/** -text -whitespace
-
-# Preserve the new grouped-GDN/suffix/solver check's closed receipt and hashes.
-docs/evidence/performance-progress-20261109/** -text -whitespace
-
-# Preserve the direct-prefill/suffix/transient-tile check's original bytes.
-docs/evidence/performance-advance-20261109/** -text -whitespace
-
 # Preserve the closed README timing attempt, source and offline recovery hashes.
 docs/evidence/readme-performance-20261109/** -text -whitespace
 docs/evidence/readme-performance-20261109-attempt2/** -text -whitespace
@@ -36,18 +24,10 @@ docs/evidence/ptq1-primetime-*-20261103.json text eol=lf
 # Preserve the original bounded blocker-fix validation receipt and logs.
 docs/evidence/ptq1-unblock-20261103/** -text -whitespace
 
-# Preserve the closed shared-startup timeout check's raw bytes and hashes.
-docs/evidence/ptq1-startup-timeout-20261103/** -text -whitespace
-
 docs/evidence/inference-efficiency-local-20261103/** -text -whitespace
 docs/evidence/inference-efficiency-followup-20261103/** -text -whitespace
 docs/evidence/prism-0114-primetime-validation-20261103/** -text -whitespace
-docs/evidence/native-primetime-preparation-20261103/** -text -whitespace
 docs/evidence/native-owner-packet-controls-20261103/** -text -whitespace
-
-docs/evidence/native-daily-readiness-20261103/** -text -whitespace
-
-docs/evidence/native-hosted-readiness-20261103/** -text -whitespace
 docs/evidence/hexagon-advance-controls.json text eol=lf
 docs/evidence/hexagon-x2-dispatch.json text eol=lf
 docs/evidence/hexagon-x2-session-metadata.json text eol=lf
@@ -97,9 +77,6 @@ docs/evidence/ptq1-promotion-bb020f4/** -text whitespace=cr-at-eol
 # Preserve the frozen 0.1.13 score and independently reviewed partial service data.
 docs/evidence/ptq1-promotion-bb020f4-service-90a62b9-review.json -text whitespace=cr-at-eol
 
-# Preserve the checked source/release receipt bytes for the prepared 0.1.14 pin.
-docs/evidence/prism-0114-pin-preparation.json -text whitespace=cr-at-eol
-
 # Keep hosted public queue ABI inputs and Rust/C control sources portable.
 tools/hexagon/windows_queue_abi.* text eol=lf
 tools/hexagon/windows-queue-abi.lock.json text eol=lf
@@ -121,16 +98,6 @@ docs/evidence/ptq1-public-authoring-route.json -text whitespace=cr-at-eol
 # Preserve exact independently observed 0.1.14 publication metadata.
 docs/evidence/ptq1-context-publication-014/** -text -whitespace
 
-# Preserve the closed development-default validation and delivery receipt bytes.
-docs/evidence/rust-development-default-20261103/** -text whitespace=cr-at-eol
-docs/evidence/speed-four-source-20261103/** -text -whitespace
-docs/evidence/cpu-speed-next-20261103/** -text -whitespace
-docs/evidence/cpu-remaining-speed-20261103/** -text -whitespace
-docs/evidence/cpu-state-simd-20261103/** -text -whitespace
-
-# Preserve exact hosted failure and focused CI-repair validation bytes.
-docs/evidence/ci-repair-20261103/** -text -whitespace
-
 # Preserve exact HMX capture, rejected supervisor and offline-replay evidence bytes.
 docs/evidence/hexagon-hmx-session-20261103/** -text -whitespace
 
@@ -140,27 +107,3 @@ docs/evidence/hexagon-adapter-session-20261103/** -text -whitespace
 # Preserve passed adapter/cache observations and their raw SHA-256 manifest bytes.
 docs/evidence/npu-adapter-progress-20261103/** -text -whitespace
 docs/evidence/npu-host-reduction-20261103/** -text -whitespace
-
-# Preserve the source delivery declaration and raw receipt bytes.
-docs/evidence/performance-release-20261109/** -text -whitespace
-
-# Preserve the new three-lane source screen's declaration and raw receipts.
-docs/evidence/performance-impact-20261109/** -text -whitespace
-
-# Preserve the three validation-reuse lanes' closed declaration and raw hashes.
-docs/evidence/performance-complete-20261109/** -text -whitespace
-
-# Preserve the closed three-item implementation check and its recorded hashes.
-docs/evidence/performance-closeout-20261109/** -text -whitespace
-
-# Preserve the new implementation declaration and closed check's original bytes.
-docs/evidence/performance-finish-20261109/** -text -whitespace
-
-# Preserve the fixed implementation check and its original retained bytes.
-docs/evidence/performance-deliver-20261109/** -text -whitespace
-
-# Preserve the paired-prefill/BPE/multi-operation tile declaration and raw receipts.
-docs/evidence/performance-resolve-20261109/** -text -whitespace
-
-# Preserve the three-item closeout declaration, failure and original hash bytes.
-docs/evidence/performance-close-20261109/** -text -whitespace

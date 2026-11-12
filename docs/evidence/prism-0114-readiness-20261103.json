@@ -1,237 +1,163 @@
 {
-    "schemaVersion":  1,
-    "kind":  "prism-0.1.14-current-candidate-documentary-readiness-audit",
-    "recordedDate":  "2026-11-03",
-    "auditorId":  "Codex:/root/primetime_evidence",
-    "status":  "release-evidence-present-current-candidate-qualification-pending",
-    "scope":  "Read-only repository and prepared-helper source inspection, followed by structural checks of retained JSON. This is not a compiled runtime-promotion score, independent approval of a future execution packet, actual-device observation or acceptance result.",
-    "runnerSourceSnapshot":  "b24b8641b421da12d32e4addbe786941827e16ab",
-    "candidate":  {
-                      "runtimeVersion":  "0.1.14",
-                      "runtimeRevision":  "9e8ea3e2c042ab0c3f1a8e9596ff155e202c3c57",
-                      "runtimeTarget":  "aarch64-pc-windows-msvc",
-                      "runtimeArchiveBytes":  3219185,
-                      "runtimeArchiveSha256":  "9a2cd183c048c49120a8d8cf1360b24ee08695a1b92fded7dbd918dd9f576759",
-                      "runtimeServerSha256":  "223b5e7c7c7715862b75ab87c38babd671b3b3374cab34d3d09373c2c5bf0658",
-                      "weightRepresentation":  "current-repacked-PTQ1_0",
-                      "modelSha256":  "e658f0f0736a03a4549535a439f9b07254ebf8ab88ae27cbe6e52d098ca5d1f5",
-                      "originalPq2Sha256":  "5912bb739217cf25b4283a098c7b893d9baff36bdf2e72d3dbf4cb999d5633d5",
-                      "adapterSha256":  "f1669534803d340a496015f5c45125f3437b4d13ec764f40e34488ce83967f42",
-                      "adapterScale":  1.3,
-                      "nativeRowWorkers":  4,
-                      "servingStatePolicy":  "reset-every-request",
-                      "finalServingRunnerRevision":  null,
-                      "frozenExecutionPacketReady":  false,
-                      "scope":  "Intended PLAN milestone, not a newly qualified default. The final serving and harness revisions must be frozen after integrating the current parallel work. NativeEngine alone selects original PQ2 and one worker; that selection needs its own qualification."
-                  },
-    "releaseDocumentaryEvidence":  {
-                                       "publicationReview":  "docs/evidence/ptq1-context-publication-014/independent-review.json",
-                                       "exactSourceOwningReview":  "docs/evidence/ptq1-context-owning-ci-9e/independent-review.json",
-                                       "preparedPinRecord":  "docs/evidence/prism-0114-pin-preparation.json",
-                                       "currentPinFieldsMatchRetainedPublishedArm64Asset":  true,
-                                       "retainedPrismOwningChecks":  [
-                                                                         {
-                                                                             "workflow":  "Foundation",
-                                                                             "runId":  "41580496421",
-                                                                             "retainedConclusion":  "success"
-                                                                         },
-                                                                         {
-                                                                             "workflow":  "Runtime conformance",
-                                                                             "runId":  "41580660471",
-                                                                             "retainedConclusion":  "success"
-                                                                         },
-                                                                         {
-                                                                             "workflow":  "Source package",
-                                                                             "runId":  "41580658543",
-                                                                             "retainedConclusion":  "success"
-                                                                         }
-                                                                     ],
-                                       "newCiQueries":  0,
-                                       "newCiActions":  0,
-                                       "currentSettledRunnerFoundationAcceptance":  "pending-owner-managed-owning-checks",
-                                       "scope":  "Retained exact-source publication and hosted source evidence can support a future score. It does not establish current Runner integration, model behavior or promotion. No live service or CI state was queried."
-                                   },
-    "historicalScore":  {
-                            "record":  "docs/evidence/ptq1-promotion-bb020f4-service-90a62b9-review.json",
-                            "runtimeVersion":  "0.1.13",
-                            "runtimeRevision":  "cae16fa6998dac58a947eba9ae4398ed6a9fb863",
-                            "frozenServingRunnerRevision":  "bb020f45169b0698678ca5f789aef7af8cdc12b2",
-                            "serviceHarnessRevision":  "90a62b954f56aa5b1da3ab167ee3f87255477b73",
-                            "nativeRowWorkers":  4,
-                            "passed":  6,
-                            "pending":  13,
-                            "rejected":  0,
-                            "appliesAsCurrentRuntime14Score":  false,
-                            "transferredBroadDevicePasses":  [
-
-                                                             ],
-                            "scope":  "Historical counts remain bound to their original exact candidate. They must not be displayed or interpreted as the current 0.1.14 promotion result."
-                        },
-    "currentPromotion":  {
-                             "compiledEvaluatorRun":  false,
-                             "gateCounts":  null,
-                             "promotionReady":  false,
-                             "originalPq2PolicyGateCount":  17,
-                             "ptq1PolicyGateCount":  19,
-                             "policySource":  "tools/bonsai/src/runtime_promotion.rs",
-                             "unqualifiedCurrentDeviceGateIds":  [
-                                                                     "full-context-numerical-parity",
-                                                                     "prompt-sampler-termination",
-                                                                     "full-output-lifecycle-recovery",
-                                                                     "full-model-resources",
-                                                                     "adapter-basis-and-logits",
-                                                                     "adapter-standard-scale-throughput",
-                                                                     "adapter-standard-scale-quality",
-                                                                     "sandbox-and-transport",
-                                                                     "speech-offline-and-recovery",
-                                                                     "sustained-device-and-creative-acceptance",
-                                                                     "installation-and-rollback",
-                                                                     "paired-target-device-benefit",
-                                                                     "released-adapter-service-integration",
-                                                                     "original-pq2-rollback"
-                                                                 ],
-                             "packingEvidenceScope":  "The existing full-symbol/raw-scale reconstruction and copied tensor-byte receipt remains representation evidence. Independent applicability review and a compiled candidate score are required; no runtime/state/benefit verdict follows."
-                         },
-    "nextServiceAcceptance":  {
-                                  "profile":  "ptq1-adapter-service-rollback-row4",
-                                  "source":  "src/broker/tests/native_model/service_rollback.rs",
-                                  "testCase":  "service_rollback::pinned_native_ptq1_service_and_original_pq2_rollback_row4",
-                                  "workflow":  ".github/workflows/native-runtime-acceptance.yml",
-                                  "hostedPackageNamePattern":  "native-acceptance-bin-{runId}-{runAttempt}",
-                                  "packagedExecutable":  "native-model-acceptance.exe",
-                                  "sourceRequiresCiOnly":  true,
-                                  "requiresGenuineMainRunAndSourceBoundPackage":  true,
-                                  "localCiEnvironmentImpersonationAllowed":  false,
-                                  "readyExactCurrentSourceHostedPackageRetainedHere":  false,
-                                  "preparedExternalHelperDirectory":  "C:\\tmp\\Bonsai-Ptq1ServiceRollback-0114-20261102",
-                                  "preparedExternalHelperDirectoryPresentAtReview":  true,
-                                  "preparedExternalSelectionReadyForExecutionAtReview":  false,
-                                  "preparedExternalSelectionSourceAndArtifactIdentitiesBoundAtReview":  false,
-                                  "preparedHelperSourceReview":  "docs/evidence/ptq1-service-rollback-helper-preparation-independent-review.json",
-                                  "requiredObservations":  [
-                                                               "Pinned PTQ1 and adapter readiness with four effective workers; complete scale-boundary streams and invalid-scale rejection.",
-                                                               "Typed context rejection followed by healthy same-owner continuation, active interruption with a nonterminal prefix, and both PTQ1 owners reaped.",
-                                                               "Fresh credentials/readiness and exact seeded replay, without stale prepared count or adapter/scale state.",
-                                                               "A third fresh owner explicitly selects original PQ2 on the same runtime/adapter/worker policy, naturally completes the fixed answer, and leaves an empty Job and released listener.",
-                                                               "Complete original-PQ2 length/SHA verification after cleanup, retained file/ancestor guards, and before/after power observations for each owner and the aggregate workload."
-                                                           ],
-                                  "executionDisposition":  "Owner-managed owning CI and concrete package freezing remain required for this CI-only acceptance case. A separately designed local diagnostic must identify itself as local and cannot borrow a CI acceptance result. Existing closed owner clocks remain closed."
-                              },
-    "adapterPublicReference":  {
-                                   "sourceContract":  "docs/adapter-public-reference.md",
-                                   "producer":  "tools/native-reference/public_pack_reference.py",
-                                   "independentRetainedDataAuditor":  "tools/native-reference/audit_public_reference.py",
-                                   "arithmeticId":  "public-mlx-f16-inverse1024-f16-f32-dot-v1",
-                                   "completeAll48PayloadResultFoundInRetainedRepository":  false,
-                                   "scalarReplayOfActualAll48ResultPossibleFromRetainedRepository":  false,
-                                   "existingSmallReplayFixtureEvidence":  "docs/evidence/ptq1-local-validation-20261103/public-reference-replay.log",
-                                   "existingSmallReplayFixturesPassed":  6,
-                                   "newFixtureExecutionPerformed":  false,
-                                   "requiredOwnerManagedHostedAction":  "Run the one already declared public-pack reconstruction on hosted Windows ARM64 and retain all48 A vectors, producer identities, complete metrics and scalar replay. The 8.6GB public pack remains outside owner-device execution.",
-                                   "externalPrerequisites":  [
-                                                                 "Authenticate the original authoring checkpoint and adapter-bound invocation/conversion records through basis-intake.",
-                                                                 "Independently verify all48 native writer mappings and residual inputs.",
-                                                                 "Qualify loaded-zero/no-adapter identity, nonzero logits/state effect and independent human quality."
-                                                             ],
-                                   "all48PublicAComparisonPassed":  false,
-                                   "authorOriginalProvenanceQualified":  false,
-                                   "nativeWriterBasisQualified":  false
-                               },
-    "timeSavingExecutionOrder":  [
-                                     "Review retained identities and reuse complete data-only comparisons before requesting any fresh model work.",
-                                     "Freeze source and build acceptance tools on hosted CI; exclude toolchain compilation and public-pack reconstruction from the laptop workload.",
-                                     "Use one declared narrow service sequence with the minimum completion caps that still observe each required boundary; share existing owners for scale/rejection checks.",
-                                     "Keep fresh-owner replay and original-PQ2 rollback independent where ownership/reset semantics require them; preserve all cleanup and checksum reserves.",
-                                     "Estimate loading, prefill, output and all arms from retained timings before requesting the smallest useful absolute allowance under the current budget policy. Stop early when required remaining work no longer fits.",
-                                     "Retain complete losing and partial observations for offline review; do not rerun a closed clock or split a matrix to manufacture completion."
-                                 ],
-    "newModelExecutions":  0,
-    "newDeviceQueries":  0,
-    "newModelDownloads":  0,
-    "newBuildsOrTests":  0,
-    "defaultPromotionQualified":  false,
-    "experimentalLabelMayBeRemoved":  false,
-    "defaultsChanged":  false,
-    "retainedSourceAndEvidenceFiles":  [
-                                           {
-                                               "file":  "config/prism-inference.lock.json",
-                                               "bytes":  2433,
-                                               "sha256":  "8d2cf2f7cacf7795dc3283d8cd931cd50e077e6f9aac052b5c3fbc8327cd150a"
-                                           },
-                                           {
-                                               "file":  "config/swift.ptq1-export.json",
-                                               "bytes":  1165,
-                                               "sha256":  "c184dea2089127201a15595af86e61005ec5b3f9c14e8089fee5c8f630a762d5"
-                                           },
-                                           {
-                                               "file":  "config/swift-lora.lock.json",
-                                               "bytes":  2826,
-                                               "sha256":  "84bf87bd873a372ebd943dae81d3300d74ec09055d6c5fe0628873d3863ae74a"
-                                           },
-                                           {
-                                               "file":  "docs/evidence/ptq1-promotion-bb020f4-service-90a62b9-review.json",
-                                               "bytes":  10288,
-                                               "sha256":  "48c1702073c30c884dc8a57d0a8e6a009096094619ae2985302b1efe152d765e"
-                                           },
-                                           {
-                                               "file":  "docs/evidence/ptq1-context-publication-014/independent-review.json",
-                                               "bytes":  3819,
-                                               "sha256":  "02c2b78d68d63fde96b269d5fa7378c75c9099fdaa511ea574f38f9c1995137b"
-                                           },
-                                           {
-                                               "file":  "docs/evidence/ptq1-context-owning-ci-9e/independent-review.json",
-                                               "bytes":  4610,
-                                               "sha256":  "b3ceb7acad069065af35d8e0e68678b19369df0d96cfd308d1154a83bd90c880"
-                                           },
-                                           {
-                                               "file":  "docs/evidence/prism-0114-pin-preparation.json",
-                                               "bytes":  5022,
-                                               "sha256":  "3380179383a733c7e1c3c2c749d8e28473f1f8db3bb311b3ca0a32205eff0fe9"
-                                           },
-                                           {
-                                               "file":  "src/broker/tests/native_model/service_rollback.rs",
-                                               "bytes":  23700,
-                                               "sha256":  "b130adbabae5d7abcc86d5b461b7775779caf57d0b547c48488e12a1ba9372a1"
-                                           },
-                                           {
-                                               "file":  ".github/workflows/native-runtime-acceptance.yml",
-                                               "bytes":  42670,
-                                               "sha256":  "74cc720001284710ddcf56dc44d6e955f9b005d2cf697b2f5268463293b2966b"
-                                           },
-                                           {
-                                               "file":  "docs/evidence/ptq1-service-rollback-helper-preparation-independent-review.json",
-                                               "bytes":  4208,
-                                               "sha256":  "e0a81961bd6c3217f0c7f966afae9ef2a85353ab8662a8646498152617213f60"
-                                           },
-                                           {
-                                               "file":  "docs/adapter-public-reference.md",
-                                               "bytes":  7511,
-                                               "sha256":  "70e031e5645070161d171dc1d8a4bde4ce57cb82b3d6f71301e884ea19c38680"
-                                           },
-                                           {
-                                               "file":  "tools/native-reference/public_pack_reference.py",
-                                               "bytes":  20017,
-                                               "sha256":  "fcd61ff1cbd6f57893ef3328a61999ccd7b0aad059ccdadae52949d70472fe31"
-                                           },
-                                           {
-                                               "file":  "tools/native-reference/audit_public_reference.py",
-                                               "bytes":  18681,
-                                               "sha256":  "9368126dc27ddda096faa7e659d526cd9cc8d7b169fe4d891d472beafeeea3d2"
-                                           },
-                                           {
-                                               "file":  "docs/evidence/ptq1-local-validation-20261103/public-reference-replay.log",
-                                               "bytes":  109,
-                                               "sha256":  "625eb825a7c92c414e5785ae2d655534710b2cac6a072044b4bb9d6985ef61fa"
-                                           },
-                                           {
-                                               "file":  "tools/bonsai/src/runtime_promotion.rs",
-                                               "bytes":  34422,
-                                               "sha256":  "80727d3b04de9d62d238d78808a4d0b62a55819df62eb3585b82e6614cb98e76"
-                                           }
-                                       ],
-    "localStructuralCheck":  {
-                                 "status":  "passed",
-                                 "scope":  "JSON parsing, exact runtime/model/adapter/publication/owning-record identities, historical counts, known gate IDs and fail-closed qualification flags; no executable, model or device trial",
-                                 "sourceFilesChecked":  15
-                             }
+  "schemaVersion": 1,
+  "kind": "prism-0.1.14-current-candidate-documentary-readiness-audit",
+  "recordedDate": "2026-11-03",
+  "auditorId": "Codex:/root/primetime_evidence",
+  "status": "release-evidence-present-current-candidate-qualification-pending",
+  "scope": "Read-only repository and prepared-helper source inspection, followed by structural checks of retained JSON. This is not a compiled runtime-promotion score, independent approval of a future execution packet, actual-device observation or acceptance result.",
+  "runnerSourceSnapshot": "b24b8641b421da12d32e4addbe786941827e16ab",
+  "candidate": {
+    "runtimeVersion": "0.1.14",
+    "runtimeRevision": "9e8ea3e2c042ab0c3f1a8e9596ff155e202c3c57",
+    "runtimeTarget": "aarch64-pc-windows-msvc",
+    "runtimeArchiveBytes": 3219185,
+    "runtimeArchiveSha256": "9a2cd183c048c49120a8d8cf1360b24ee08695a1b92fded7dbd918dd9f576759",
+    "runtimeServerSha256": "223b5e7c7c7715862b75ab87c38babd671b3b3374cab34d3d09373c2c5bf0658",
+    "weightRepresentation": "current-repacked-PTQ1_0",
+    "modelSha256": "e658f0f0736a03a4549535a439f9b07254ebf8ab88ae27cbe6e52d098ca5d1f5",
+    "originalPq2Sha256": "5912bb739217cf25b4283a098c7b893d9baff36bdf2e72d3dbf4cb999d5633d5",
+    "adapterSha256": "f1669534803d340a496015f5c45125f3437b4d13ec764f40e34488ce83967f42",
+    "adapterScale": 1.3,
+    "nativeRowWorkers": 4,
+    "servingStatePolicy": "reset-every-request",
+    "finalServingRunnerRevision": null,
+    "frozenExecutionPacketReady": false,
+    "scope": "Intended PLAN milestone, not a newly qualified default. The final serving and harness revisions must be frozen after integrating the current parallel work. NativeEngine alone selects original PQ2 and one worker; that selection needs its own qualification."
+  },
+  "releaseDocumentaryEvidence": {
+    "publicationReview": "docs/evidence/ptq1-context-publication-014/independent-review.json",
+    "exactSourceOwningReview": "docs/evidence/ptq1-context-owning-ci-9e/independent-review.json",
+    "currentPinFieldsMatchRetainedPublishedArm64Asset": true,
+    "retainedPrismOwningChecks": [
+      {
+        "workflow": "Foundation",
+        "runId": "41580496421",
+        "retainedConclusion": "success"
+      },
+      {
+        "workflow": "Runtime conformance",
+        "runId": "41580660471",
+        "retainedConclusion": "success"
+      },
+      {
+        "workflow": "Source package",
+        "runId": "41580658543",
+        "retainedConclusion": "success"
+      }
+    ],
+    "newCiQueries": 0,
+    "newCiActions": 0,
+    "currentSettledRunnerFoundationAcceptance": "pending-owner-managed-owning-checks",
+    "scope": "Retained exact-source publication and hosted source evidence can support a future score. It does not establish current Runner integration, model behavior or promotion. No live service or CI state was queried."
+  },
+  "historicalScore": {
+    "record": "docs/evidence/ptq1-promotion-bb020f4-service-90a62b9-review.json",
+    "runtimeVersion": "0.1.13",
+    "runtimeRevision": "cae16fa6998dac58a947eba9ae4398ed6a9fb863",
+    "frozenServingRunnerRevision": "bb020f45169b0698678ca5f789aef7af8cdc12b2",
+    "serviceHarnessRevision": "90a62b954f56aa5b1da3ab167ee3f87255477b73",
+    "nativeRowWorkers": 4,
+    "passed": 6,
+    "pending": 13,
+    "rejected": 0,
+    "appliesAsCurrentRuntime14Score": false,
+    "transferredBroadDevicePasses": [],
+    "scope": "Historical counts remain bound to their original exact candidate. They must not be displayed or interpreted as the current 0.1.14 promotion result."
+  },
+  "currentPromotion": {
+    "compiledEvaluatorRun": false,
+    "gateCounts": null,
+    "promotionReady": false,
+    "originalPq2PolicyGateCount": 17,
+    "ptq1PolicyGateCount": 19,
+    "policySource": "tools/bonsai/src/runtime_promotion.rs",
+    "unqualifiedCurrentDeviceGateIds": [
+      "full-context-numerical-parity",
+      "prompt-sampler-termination",
+      "full-output-lifecycle-recovery",
+      "full-model-resources",
+      "adapter-basis-and-logits",
+      "adapter-standard-scale-throughput",
+      "adapter-standard-scale-quality",
+      "sandbox-and-transport",
+      "speech-offline-and-recovery",
+      "sustained-device-and-creative-acceptance",
+      "installation-and-rollback",
+      "paired-target-device-benefit",
+      "released-adapter-service-integration",
+      "original-pq2-rollback"
+    ],
+    "packingEvidenceScope": "The existing full-symbol/raw-scale reconstruction and copied tensor-byte receipt remains representation evidence. Independent applicability review and a compiled candidate score are required; no runtime/state/benefit verdict follows."
+  },
+  "nextServiceAcceptance": {
+    "profile": "ptq1-adapter-service-rollback-row4",
+    "source": "src/broker/tests/native_model/service_rollback.rs",
+    "testCase": "service_rollback::pinned_native_ptq1_service_and_original_pq2_rollback_row4",
+    "workflow": ".github/workflows/native-runtime-acceptance.yml",
+    "hostedPackageNamePattern": "native-acceptance-bin-{runId}-{runAttempt}",
+    "packagedExecutable": "native-model-acceptance.exe",
+    "sourceRequiresCiOnly": true,
+    "requiresGenuineMainRunAndSourceBoundPackage": true,
+    "localCiEnvironmentImpersonationAllowed": false,
+    "readyExactCurrentSourceHostedPackageRetainedHere": false,
+    "preparedExternalHelperDirectory": "C:\\tmp\\Bonsai-Ptq1ServiceRollback-0114-20261102",
+    "preparedExternalHelperDirectoryPresentAtReview": true,
+    "preparedExternalSelectionReadyForExecutionAtReview": false,
+    "preparedExternalSelectionSourceAndArtifactIdentitiesBoundAtReview": false,
+    "preparedHelperSourceReview": "docs/evidence/ptq1-service-rollback-helper-preparation-independent-review.json",
+    "requiredObservations": [
+      "Pinned PTQ1 and adapter readiness with four effective workers; complete scale-boundary streams and invalid-scale rejection.",
+      "Typed context rejection followed by healthy same-owner continuation, active interruption with a nonterminal prefix, and both PTQ1 owners reaped.",
+      "Fresh credentials/readiness and exact seeded replay, without stale prepared count or adapter/scale state.",
+      "A third fresh owner explicitly selects original PQ2 on the same runtime/adapter/worker policy, naturally completes the fixed answer, and leaves an empty Job and released listener.",
+      "Complete original-PQ2 length/SHA verification after cleanup, retained file/ancestor guards, and before/after power observations for each owner and the aggregate workload."
+    ],
+    "executionDisposition": "Owner-managed owning CI and concrete package freezing remain required for this CI-only acceptance case. A separately designed local diagnostic must identify itself as local and cannot borrow a CI acceptance result. Existing closed owner clocks remain closed."
+  },
+  "adapterPublicReference": {
+    "sourceContract": "docs/adapter-public-reference.md",
+    "producer": "tools/native-reference/public_pack_reference.py",
+    "independentRetainedDataAuditor": "tools/native-reference/audit_public_reference.py",
+    "arithmeticId": "public-mlx-f16-inverse1024-f16-f32-dot-v1",
+    "completeAll48PayloadResultFoundInRetainedRepository": false,
+    "scalarReplayOfActualAll48ResultPossibleFromRetainedRepository": false,
+    "existingSmallReplayFixtureEvidence": "docs/evidence/ptq1-local-validation-20261103/public-reference-replay.log",
+    "existingSmallReplayFixturesPassed": 6,
+    "newFixtureExecutionPerformed": false,
+    "requiredOwnerManagedHostedAction": "Run the one already declared public-pack reconstruction on hosted Windows ARM64 and retain all48 A vectors, producer identities, complete metrics and scalar replay. The 8.6GB public pack remains outside owner-device execution.",
+    "externalPrerequisites": [
+      "Authenticate the original authoring checkpoint and adapter-bound invocation/conversion records through basis-intake.",
+      "Independently verify all48 native writer mappings and residual inputs.",
+      "Qualify loaded-zero/no-adapter identity, nonzero logits/state effect and independent human quality."
+    ],
+    "all48PublicAComparisonPassed": false,
+    "authorOriginalProvenanceQualified": false,
+    "nativeWriterBasisQualified": false
+  },
+  "timeSavingExecutionOrder": [
+    "Review retained identities and reuse complete data-only comparisons before requesting any fresh model work.",
+    "Freeze source and build acceptance tools on hosted CI; exclude toolchain compilation and public-pack reconstruction from the laptop workload.",
+    "Use one declared narrow service sequence with the minimum completion caps that still observe each required boundary; share existing owners for scale/rejection checks.",
+    "Keep fresh-owner replay and original-PQ2 rollback independent where ownership/reset semantics require them; preserve all cleanup and checksum reserves.",
+    "Estimate loading, prefill, output and all arms from retained timings before requesting the smallest useful absolute allowance under the current budget policy. Stop early when required remaining work no longer fits.",
+    "Retain complete losing and partial observations for offline review; do not rerun a closed clock or split a matrix to manufacture completion."
+  ],
+  "newModelExecutions": 0,
+  "newDeviceQueries": 0,
+  "newModelDownloads": 0,
+  "newBuildsOrTests": 0,
+  "defaultPromotionQualified": false,
+  "experimentalLabelMayBeRemoved": false,
+  "defaultsChanged": false,
+  "localStructuralCheck": {
+    "status": "passed",
+    "scope": "JSON parsing, exact runtime/model/adapter/publication/owning-record identities, historical counts, known gate IDs and fail-closed qualification flags; no executable, model or device trial",
+    "sourceFilesChecked": 15
+  },
+  "retention": {
+    "kind": "historical-source-review-summary",
+    "originalGitRevision": "3c03fbfe",
+    "originalPath": "docs/evidence/prism-0114-readiness-20261103.json",
+    "scope": "Original source-file inventories and superseded preparation/review records are in Git history. This summary is not a hash manifest of current files or a new compiled, device, performance or release verdict."
+  }
 }
