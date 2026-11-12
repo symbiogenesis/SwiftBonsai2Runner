@@ -20,7 +20,7 @@ comparisons. Sequential scheduling alone provides no matrix-matrix reuse.
 | Packed decode | NEON PQ2/PTQ1 and odd-group PQ2 preserve scalar quantizers, scale order and generic PQ2's fourth symbol |
 | Prefill | Bounded 1–256-token blocks retain sequential arithmetic and whole-request rollback; block scheduling alone gives no tiled matmul reuse |
 | Checkpoints | Sealed immutable KV pages may be shared; mutable tails and complete convolution/GDN state remain independently owned, with conservative snapshot budgets |
-| Speculation & sampling | `SuffixDrafter` (`SuffixDecoding`) and `DFlash2DraftConfig` propose `1..=8` continuation tokens; `Runtime::verify_draft_block` performs checkpoint-free greedy step verification before mutating live state, while `GdnVerifyTape` records accepted per-step recurrent inputs for rollback-by-replay without pre-step `288 MiB` state clones; `Sampler` uses a streaming NEON top-k pre-filter over `248,320`-vocab logits |
+| Speculation & sampling | Generic `SuffixDrafter` proposals and greedy `Runtime::verify_draft_block` are separate from Runner serving, which disables speculation. The verifier captures a rollback checkpoint before evaluating/committing steps. `DFlash2DraftConfig` and `GdnVerifyTape` are standalone configuration/tape APIs; they do not establish an integrated trained drafter or checkpoint-free verifier. Swift sampling retains the fixed native top-20 contract. |
 
 Source map: [runtime](https://github.com/symbiogenesis/prism-inference/blob/main/src/runtime.rs),
 [decoder API](https://github.com/symbiogenesis/prism-inference/blob/main/src/lib.rs),
@@ -72,17 +72,17 @@ accounting for layouts, repacking, retained copies and scratch; published platfo
 
 ## Chunkwise Gated DeltaNet prefill
 
-The local Prism source now has explicit 8/16/32-token FFN projection tiles and a
+The pinned Prism source includes explicit 8/16/32-token FFN projection tiles and a
 separate `gdn-wy-f32-v1` triangular GDN mode, consumed by `Qwen35::ingest_block`.
 Exact tiles retain sequential recurrent arithmetic. The GDN mode batches recurrent
 input projections, preserves causal convolution and uses interval decay products
 without cumulative-product division, then reconstructs outputs and final FP32
 state. Its declared `1e-3 + 1e-3 * abs(reference)` qualification tolerance differs
 from bit identity. Both paths require explicit empty-graph selection, extra scratch
-reservation and whole-request rollback; defaults and Runner's released pin remain
-unchanged. Source controls and work counts establish no actual-model parity or
-prompt-time gain. The plan retains full-model, long-prefix, adapter and resource
-qualification before service selection or repinning.
+reservation and whole-request rollback. Source inclusion does not enable either
+mode through Runner's launch policy. Source controls and work counts establish no
+actual-model parity or prompt-time gain. The plan retains full-model, long-prefix,
+adapter and resource qualification before service selection.
 
 Packed tiles now have an exact baseline NEON integer path that shares one decoded
 weight block across tokens, honors the graph's scalar/auto/NEON policy and retains
@@ -128,7 +128,8 @@ ownership cannot create mutable cross-snapshot aliases.
 
 [SuffixDecoding](https://arxiv.org/abs/2411.04975) proposes tokens from prompt/history suffixes.
 [SpecLA](https://arxiv.org/abs/2607.16673) retains verification factors and delays commit to
-reconstruct accepted recurrent states. Consider these only after a block verifier exists. SpecLA's
+reconstruct accepted recurrent states. The generic greedy block verifier does not
+qualify this tape-based approach or stochastic verification. SpecLA's
 trained drafter/H100 evidence and reported FP32 state differences do not establish Bonsai
 compatibility or exact replay.
 
