@@ -9,7 +9,8 @@ use crate::Result;
 
 const TOOLCHAIN: &str = "nightly-2026-11-09-aarch64-pc-windows-msvc";
 const PACKAGES: [&str; 3] = ["bonsai-broker", "bonsai-chat", "bonsai-tools"];
-const SOURCES: [&str; 5] = [
+const SOURCES: [&str; 6] = [
+    ".github/actions/native-regressions/action.yml",
     ".github/workflows/native-runtime-acceptance.yml",
     "scripts/Start-Chat.ps1",
     "tools/ci/Cargo.toml",
@@ -20,7 +21,7 @@ const CONTROLS: [&str; 2] = [
     "command::native_acceptance_guard::tests::negative_fixtures_cover_receipts_and_test_output",
     "command::native_acceptance_guard::tests::workflow_receipt_requires_source_bound_complete_controls",
 ];
-const POWERSHELL_BLOCKS: u32 = 9;
+const POWERSHELL_BLOCKS: u32 = 11;
 
 #[derive(Deserialize)]
 #[serde(
@@ -469,6 +470,13 @@ mod tests {
         let valid = receipt();
         let revision = "1".repeat(40);
         workflow_receipt(valid.clone(), &revision, sources())?;
+        let without_action: Vec<_> = sources()
+            .into_iter()
+            .filter(|source| source.path != ".github/actions/native-regressions/action.yml")
+            .collect();
+        let mut missing_action = valid.clone();
+        missing_action["Sources"] = json!(without_action);
+        assert!(workflow_receipt(missing_action, &revision, without_action).is_err());
         for (pointer, replacement) in [
             ("/Success", json!(false)),
             ("/Success", json!("true")),

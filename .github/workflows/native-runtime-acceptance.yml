@@ -46,6 +46,11 @@ jobs:
     if: github.ref == 'refs/heads/main'
     runs-on: windows-11-arm
     timeout-minutes: 30
+    env:
+      # Restored Cargo outputs follow source contents across checkout timestamps.
+      # Every analyzer, linker and regression still runs for this exact source.
+      CARGO_UNSTABLE_CHECKSUM_FRESHNESS: 'true'
+      CARGO_BUILD_FINGERPRINT: content
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -55,6 +60,32 @@ jobs:
         with:
           toolchain: nightly-2026-11-09-aarch64-pc-windows-msvc
       - uses: $/.github/actions/ci-tool
+      - name: Select the native acceptance build cache identity
+        shell: pwsh
+        working-directory: ${{ runner.temp }}
+        run: |
+          Set-StrictMode -Version Latest
+          $ErrorActionPreference = 'Stop'
+          if (-not $env:ImageOS -or -not $env:ImageVersion) { throw 'Native acceptance build caching requires the hosted runner image identity.' }
+          "NATIVE_ACCEPTANCE_CACHE_HOST=$env:ImageOS-$env:ImageVersion-$([Environment]::OSVersion.Version)" >> $env:GITHUB_ENV
+      - name: Reuse compatible native acceptance compiler outputs
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          # Acceptance packages, receipts, analyzer evidence and model captures
+          # stay outside this target. A hit supplies no acceptance verdict.
+          path: ${{ runner.temp }}/Native-Acceptance-Build
+          key: native-acceptance-v1-${{ runner.os }}-${{ runner.arch }}-${{ env.NATIVE_ACCEPTANCE_CACHE_HOST }}-nightly-2026-11-09-aarch64-pc-windows-msvc-${{ hashFiles('Cargo.toml', 'Cargo.lock', '**/Cargo.toml', 'rust-toolchain.toml', '.cargo/**') }}-${{ hashFiles('src/**', 'tools/bonsai/**', 'tools/ci/**', 'config/**', 'tests/fixtures/**', '.github/workflows/native-runtime-acceptance.yml', '.github/actions/**') }}-content-v1
+          restore-keys: |
+            native-acceptance-v1-${{ runner.os }}-${{ runner.arch }}-${{ env.NATIVE_ACCEPTANCE_CACHE_HOST }}-nightly-2026-11-09-aarch64-pc-windows-msvc-${{ hashFiles('Cargo.toml', 'Cargo.lock', '**/Cargo.toml', 'rust-toolchain.toml', '.cargo/**') }}-
+      - name: Check shared regression command rejection and output controls
+        shell: pwsh
+        working-directory: ${{ runner.temp }}
+        run: |
+          Set-StrictMode -Version Latest
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          python -B (Join-Path $env:GITHUB_WORKSPACE 'tools/ci/test_native_regressions.py')
+          if ($LASTEXITCODE -ne 0) { throw 'Shared native regression command controls failed.' }
       - name: Check actual PowerShell syntax and typed receipt rejection controls
         shell: pwsh
         working-directory: ${{ runner.temp }}
@@ -62,22 +93,23 @@ jobs:
           Set-StrictMode -Version Latest
           $ErrorActionPreference = 'Stop'
           $PSNativeCommandUseErrorActionPreference = $true
-          $workflow = Join-Path $env:GITHUB_WORKSPACE '.github/workflows/native-runtime-acceptance.yml'
-          $lines = [IO.File]::ReadAllLines($workflow)
           $blocks = 0
-          for ($index = 0; $index -lt $lines.Length; $index++) {
-            if ($lines[$index] -notmatch '^(?<indent> +)run:\s*\|\s*$') { continue }
-            $indent = $Matches.indent.Length + 2
-            $body = [Collections.Generic.List[string]]::new()
-            for ($next = $index + 1; $next -lt $lines.Length; $next++) {
-              $line = $lines[$next]
-              if ($line.Trim().Length -gt 0 -and ($line.Length -lt $indent -or $line.Substring(0, $indent).Trim().Length -gt 0)) { break }
-              $body.Add($(if ($line.Length -ge $indent) { $line.Substring($indent) } else { '' }))
+          foreach ($contractSource in @('.github/workflows/native-runtime-acceptance.yml', '.github/actions/native-regressions/action.yml')) {
+            $lines = [IO.File]::ReadAllLines((Join-Path $env:GITHUB_WORKSPACE $contractSource))
+            for ($index = 0; $index -lt $lines.Length; $index++) {
+              if ($lines[$index] -notmatch '^(?<indent> +)run:\s*\|\s*$') { continue }
+              $indent = $Matches.indent.Length + 2
+              $body = [Collections.Generic.List[string]]::new()
+              for ($next = $index + 1; $next -lt $lines.Length; $next++) {
+                $line = $lines[$next]
+                if ($line.Trim().Length -gt 0 -and ($line.Length -lt $indent -or $line.Substring(0, $indent).Trim().Length -gt 0)) { break }
+                $body.Add($(if ($line.Length -ge $indent) { $line.Substring($indent) } else { '' }))
+              }
+              $tokens = $null; $parseErrors = $null
+              [Management.Automation.Language.Parser]::ParseInput(($body -join "`n"), [ref]$tokens, [ref]$parseErrors) | Out-Null
+              if ($parseErrors.Count -ne 0) { throw 'A native acceptance workflow or shared regression PowerShell block does not parse.' }
+              $blocks++
             }
-            $tokens = $null; $parseErrors = $null
-            [Management.Automation.Language.Parser]::ParseInput(($body -join "`n"), [ref]$tokens, [ref]$parseErrors) | Out-Null
-            if ($parseErrors.Count -ne 0) { throw 'A native acceptance workflow PowerShell block does not parse.' }
-            $blocks++
           }
           $tokens = $null; $parseErrors = $null
           [Management.Automation.Language.Parser]::ParseFile((Join-Path $env:GITHUB_WORKSPACE 'scripts/Start-Chat.ps1'), [ref]$tokens, [ref]$parseErrors) | Out-Null
@@ -94,7 +126,7 @@ jobs:
             & $env:BONSAI_CI_PATH native-acceptance-guard --json (@{ operation='test-output'; output=$output; exitCode=$code; expectedPassed=1 } | ConvertTo-Json -Depth 4 -Compress)
             if ($LASTEXITCODE -ne 0) { throw 'The exact typed admission regression was not executed successfully.' }
           }
-          $sources = @('.github/workflows/native-runtime-acceptance.yml', 'scripts/Start-Chat.ps1', 'tools/ci/Cargo.toml', 'tools/ci/src/command.rs', 'tools/ci/src/native_acceptance_guard.rs') | ForEach-Object {
+          $sources = @('.github/actions/native-regressions/action.yml', '.github/workflows/native-runtime-acceptance.yml', 'scripts/Start-Chat.ps1', 'tools/ci/Cargo.toml', 'tools/ci/src/command.rs', 'tools/ci/src/native_acceptance_guard.rs') | ForEach-Object {
             $bytes = [Text.UTF8Encoding]::new($false).GetBytes([IO.File]::ReadAllText((Join-Path $env:GITHUB_WORKSPACE $_)).Replace("`r`n", "`n"))
             $hash = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData($bytes)).ToLowerInvariant()
             [ordered]@{ Path=$_; Bytes=$bytes.Length; Sha256=$hash }
@@ -115,8 +147,6 @@ jobs:
         working-directory: ${{ runner.temp }}
         env:
           RUNNER_ENVIRONMENT: ${{ runner.environment }}
-          CARGO_UNSTABLE_CHECKSUM_FRESHNESS: 'true'
-          CARGO_BUILD_FINGERPRINT: content
         run: |
           Set-StrictMode -Version Latest
           $ErrorActionPreference = 'Stop'
@@ -127,34 +157,30 @@ jobs:
           # it cannot extend the closed local UI-analyzer validation session.
           & $env:BONSAI_CI_PATH rust-check --root $env:GITHUB_WORKSPACE --package bonsai-chat --package bonsai-broker --package bonsai-tools --phase clippy --phase build --toolchain nightly-2026-11-09-aarch64-pc-windows-msvc --target (Join-Path $env:RUNNER_TEMP 'Native-Acceptance-Build') --evidence $evidence --timeout-seconds 1200
           if ($LASTEXITCODE -ne 0) { throw 'Hosted strict Release analyzers or native executable linking failed; no owner-device acceptance package is admitted.' }
-      - name: Require model-free renderer, default selection and private owner shutdown controls
-        shell: pwsh
-        working-directory: ${{ runner.temp }}
-        run: |
-          Set-StrictMode -Version Latest
-          $ErrorActionPreference = 'Stop'
-          $PSNativeCommandUseErrorActionPreference = $true
-          $env:CARGO_TARGET_DIR = Join-Path $env:RUNNER_TEMP 'Native-Acceptance-Build'
-          foreach ($case in @('chat_launch::tests::graphics_backend_selection_is_explicit_and_scoped_to_the_chat_child',
-              'chat_launch::tests::graphics_backend_selection_rejects_unsupported_values_before_startup',
-              'cli::tests::graphics_backend_option_preserves_explicit_selection_and_rejects_duplicates',
-              'chat_launch::tests::development_default_and_explicit_rollback_survive_deferred_preparation')) {
-            $output = @(& cargo +nightly-2026-11-09 test --locked --release --manifest-path (Join-Path $env:GITHUB_WORKSPACE 'Cargo.toml') --package bonsai-tools --lib $case -- --exact)
-            $code = $LASTEXITCODE
-            $output | Write-Output
-            & $env:BONSAI_CI_PATH native-acceptance-guard --json (@{ operation='test-output'; output=$output; exitCode=$code; expectedPassed=1 } | ConvertTo-Json -Depth 4 -Compress)
-            if ($LASTEXITCODE -ne 0) { throw 'Exact renderer/default-selection control failed or was not executed.' }
-          }
-          $output = @(& cargo +nightly-2026-11-09 test --locked --release --manifest-path (Join-Path $env:GITHUB_WORKSPACE 'Cargo.toml') --package bonsai-broker --lib owner_shutdown_)
-          $code = $LASTEXITCODE
-          $output | Write-Output
-          & $env:BONSAI_CI_PATH native-acceptance-guard --json (@{ operation='test-output'; output=$output; exitCode=$code; expectedPassed=$null } | ConvertTo-Json -Depth 4 -Compress)
-          if ($LASTEXITCODE -ne 0) { throw 'Private owner shutdown controls failed or none were executed.' }
-          $output = @(& cargo +nightly-2026-11-09 test --locked --release --manifest-path (Join-Path $env:GITHUB_WORKSPACE 'Cargo.toml') --package bonsai-chat --bin bonsai-chat owned_broker_)
-          $code = $LASTEXITCODE
-          $output | Write-Output
-          & $env:BONSAI_CI_PATH native-acceptance-guard --json (@{ operation='test-output'; output=$output; exitCode=$code; expectedPassed=$null } | ConvertTo-Json -Depth 4 -Compress)
-          if ($LASTEXITCODE -ne 0) { throw 'Native UI owner shutdown controls failed or none were executed.' }
+      - name: Require model-free renderer and default selection controls
+        uses: $/.github/actions/native-regressions
+        with:
+          package: bonsai-tools
+          target-directory: ${{ runner.temp }}/Native-Acceptance-Build
+          selections: >-
+            [{"name":"chat_launch::tests::graphics_backend_selection_is_explicit_and_scoped_to_the_chat_child","exact":true,"expected-passed":1},
+            {"name":"chat_launch::tests::graphics_backend_selection_rejects_unsupported_values_before_startup","exact":true,"expected-passed":1},
+            {"name":"cli::tests::graphics_backend_option_preserves_explicit_selection_and_rejects_duplicates","exact":true,"expected-passed":1},
+            {"name":"chat_launch::tests::development_default_and_explicit_rollback_survive_deferred_preparation","exact":true,"expected-passed":1}]
+      - name: Require private broker owner shutdown controls
+        uses: $/.github/actions/native-regressions
+        with:
+          package: bonsai-broker
+          target-directory: ${{ runner.temp }}/Native-Acceptance-Build
+          selections: '[{"name":"owner_shutdown_","exact":false,"expected-passed":null}]'
+      - name: Require native UI owner shutdown controls
+        uses: $/.github/actions/native-regressions
+        with:
+          package: bonsai-chat
+          target-kind: bin
+          target-name: bonsai-chat
+          target-directory: ${{ runner.temp }}/Native-Acceptance-Build
+          selections: '[{"name":"owned_broker_","exact":false,"expected-passed":null}]'
       - name: Build exact acceptance binary without executing model tests
         shell: pwsh
         working-directory: ${{ runner.temp }}
@@ -274,7 +300,7 @@ jobs:
           & $env:BONSAI_CI_PATH native-acceptance-guard --json (@{ operation='analyzer'; receipt=$analyzers; revision=$env:GITHUB_SHA; compilerIdentity=$compilerIdentity } | ConvertTo-Json -Depth 12 -Compress)
           if ($LASTEXITCODE -ne 0) { throw 'Hosted analyzer/link receipt was rejected.' }
           $contract = Get-Content -LiteralPath $env:BONSAI_NATIVE_CONTRACT_RECEIPT -Raw | ConvertFrom-Json
-          $sources = @('.github/workflows/native-runtime-acceptance.yml', 'scripts/Start-Chat.ps1', 'tools/ci/Cargo.toml', 'tools/ci/src/command.rs', 'tools/ci/src/native_acceptance_guard.rs') | ForEach-Object {
+          $sources = @('.github/actions/native-regressions/action.yml', '.github/workflows/native-runtime-acceptance.yml', 'scripts/Start-Chat.ps1', 'tools/ci/Cargo.toml', 'tools/ci/src/command.rs', 'tools/ci/src/native_acceptance_guard.rs') | ForEach-Object {
             $bytes = [Text.UTF8Encoding]::new($false).GetBytes([IO.File]::ReadAllText((Join-Path $env:GITHUB_WORKSPACE $_)).Replace("`r`n", "`n"))
             $hash = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData($bytes)).ToLowerInvariant()
             [ordered]@{ Path=$_; Bytes=$bytes.Length; Sha256=$hash }
@@ -397,7 +423,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Hosted analyzer/link receipt was rejected before owner admission.' }
           $contractPath = Join-Path $package 'workflow-contract.json'
           $contract = Get-Content -LiteralPath $contractPath -Raw | ConvertFrom-Json
-          $sources = @('.github/workflows/native-runtime-acceptance.yml', 'scripts/Start-Chat.ps1', 'tools/ci/Cargo.toml', 'tools/ci/src/command.rs', 'tools/ci/src/native_acceptance_guard.rs') | ForEach-Object {
+          $sources = @('.github/actions/native-regressions/action.yml', '.github/workflows/native-runtime-acceptance.yml', 'scripts/Start-Chat.ps1', 'tools/ci/Cargo.toml', 'tools/ci/src/command.rs', 'tools/ci/src/native_acceptance_guard.rs') | ForEach-Object {
             $bytes = [Text.UTF8Encoding]::new($false).GetBytes([IO.File]::ReadAllText((Join-Path $env:GITHUB_WORKSPACE $_)).Replace("`r`n", "`n"))
             $hash = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData($bytes)).ToLowerInvariant()
             [ordered]@{ Path=$_; Bytes=$bytes.Length; Sha256=$hash }
