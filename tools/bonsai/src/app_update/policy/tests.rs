@@ -114,6 +114,39 @@ fn discovery_rejects_foreign_urls_wrong_arch_missing_digests_and_duplicate_asset
 }
 
 #[test]
+fn discovery_selects_before_asset_validation_and_never_falls_back() -> crate::Result<()> {
+    let mut incomplete = release("0.1.1");
+    incomplete["assets"] = json!([]);
+    for values in [
+        json!([incomplete, release("0.1.2")]),
+        json!([release("0.1.2"), incomplete]),
+    ] {
+        assert_eq!(
+            selected(values)?.1.ok_or("Missing newest fixture.")?.version,
+            "0.1.2"
+        );
+    }
+    let mut invalid_newest = release("0.1.3");
+    invalid_newest["assets"][2]["digest"] = Value::Null;
+    for values in [
+        json!([invalid_newest, release("0.1.2")]),
+        json!([release("0.1.2"), invalid_newest]),
+    ] {
+        assert!(selected(values).is_err());
+    }
+    Ok(())
+}
+
+#[test]
+fn discovery_rejects_ambiguous_repeated_published_versions() {
+    let mut changed = release("0.1.1");
+    changed["assets"][2]["digest"] = format!("sha256:{}", "b".repeat(64)).into();
+    assert!(selected(json!([release("0.1.1"), changed])).is_err());
+    assert!(selected(json!([changed, release("0.1.1")])).is_err());
+    assert!(selected(json!([release("0.1.1"), release("0.1.1")])).is_err());
+}
+
+#[test]
 fn manifest_requires_same_version_source_target_size_and_three_way_checksum() -> crate::Result<()> {
     let candidate = fixture()?;
     let checksum = format!("{}  {}\n", candidate.msi.sha256, candidate.msi.name);

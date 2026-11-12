@@ -120,7 +120,7 @@ pub(super) fn select(bytes: &[u8], current: &str) -> crate::Result<(bool, Option
         .as_array()
         .filter(|list| list.len() <= 100)
         .ok_or("Release response must be a bounded array.")?;
-    let mut newest = None;
+    let mut eligible = std::collections::BTreeMap::new();
     let mut published = false;
     for release in releases {
         if release["draft"].as_bool().is_none() || release["prerelease"].as_bool().is_none() {
@@ -139,32 +139,36 @@ pub(super) fn select(bytes: &[u8], current: &str) -> crate::Result<(bool, Option
         let Ok(parsed) = Version::parse(version) else {
             continue;
         };
-        if parsed <= current
-            || newest
-                .as_ref()
-                .is_some_and(|(previous, _)| parsed <= *previous)
-        {
+        if parsed <= current {
             continue;
         }
-        let release_url = format!("https://github.com/{REPOSITORY}/releases/tag/v{version}");
-        if text(release, "html_url")? != release_url {
-            return Err("Release belongs to another repository.".into());
+        if eligible.insert(parsed, (version, release)).is_some() {
+            return Err("Published release versions must be unique.".into());
         }
-        let candidate = Candidate {
-            version: version.into(),
-            release_url,
-            manifest: asset(release, version, "release-manifest.json", MAX_METADATA)?,
-            checksums: asset(release, version, "SHA256SUMS.txt", MAX_METADATA)?,
-            msi: asset(
-                release,
-                version,
-                &format!("SwiftBonsai2Runner-{version}-windows-arm64.msi"),
-                MAX_INSTALLER,
-            )?,
-        };
-        newest = Some((parsed, candidate));
     }
-    Ok((published, newest.map(|(_, candidate)| candidate)))
+    let Some((_, (version, release))) = eligible.pop_last() else {
+        return Ok((published, None));
+    };
+    // GitHub's ordering is not a numeric-version guarantee. Select first so a
+    // historical incomplete release cannot block a valid newer one depending
+    // on its position, and never fall back if the newest release is invalid.
+    let release_url = format!("https://github.com/{REPOSITORY}/releases/tag/v{version}");
+    if text(release, "html_url")? != release_url {
+        return Err("Release belongs to another repository.".into());
+    }
+    let candidate = Candidate {
+        version: version.into(),
+        release_url,
+        manifest: asset(release, version, "release-manifest.json", MAX_METADATA)?,
+        checksums: asset(release, version, "SHA256SUMS.txt", MAX_METADATA)?,
+        msi: asset(
+            release,
+            version,
+            &format!("SwiftBonsai2Runner-{version}-windows-arm64.msi"),
+            MAX_INSTALLER,
+        )?,
+    };
+    Ok((published, Some(candidate)))
 }
 
 fn checksum(bytes: &[u8], expected_name: &str) -> crate::Result<String> {
