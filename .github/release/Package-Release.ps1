@@ -33,9 +33,10 @@ $inventory = [ordered]@{
 $executables = @{}
 $builds = @()
 foreach ($lane in $inventory.Keys) {
-    $directory = Join-Path $InputDirectory "release-build-$lane"
-    $receipt = Get-Content -LiteralPath (Join-Path $directory 'build-manifest.json') -Raw | ConvertFrom-Json
-    $path = Join-Path $directory $inventory[$lane]
+    $directory = Resolve-ReleasePath (Join-Path $InputDirectory "release-build-$lane")
+    $receiptPath = Resolve-ReleasePath (Join-Path $directory 'build-manifest.json') -Kind File
+    $receipt = Get-Content -LiteralPath $receiptPath -Raw | ConvertFrom-Json
+    $path = Resolve-ReleasePath (Join-Path $directory $inventory[$lane]) -Kind File
     if ($receipt.schemaVersion -ne 1 -or $receipt.sourceRevision -cne $SourceRevision -or
         $receipt.target -cne 'aarch64-pc-windows-msvc' -or $receipt.lane -cne $lane -or
         $receipt.file -cne $inventory[$lane] -or (Get-Item -LiteralPath $path).Length -ne $receipt.bytes -or
@@ -43,7 +44,7 @@ foreach ($lane in $inventory.Keys) {
     $executables[$lane] = $path
     $builds += $receipt
 }
-$notices = Join-Path $InputDirectory 'release-build-tts/THIRD-PARTY-NOTICES.txt'
+$notices = Resolve-ReleasePath (Join-Path $InputDirectory 'release-build-tts/THIRD-PARTY-NOTICES.txt') -Kind File
 if ((Get-Item -LiteralPath $notices).Length -lt 1024) { throw 'The complete third-party notice bundle is missing.' }
 $package = Join-Path $EvidenceDirectory 'portable-package'
 $request = Join-Path $EvidenceDirectory 'create-package.json'

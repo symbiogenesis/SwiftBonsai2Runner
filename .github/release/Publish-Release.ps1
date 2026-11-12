@@ -101,7 +101,7 @@ $id = [long]$release.id
 foreach ($name in $names) {
     $path = Join-Path $AssetDirectory $name
     $uploaded = Invoke-ReleaseCommand 'gh' @('api', '--method', 'POST', "https://uploads.github.com/repos/$repository/releases/$id/assets?name=$name",
-        '--header', 'Content-Type: application/octet-stream', '--input', $path) | ConvertFrom-Json
+        '--header', 'Content-Type: application/octet-stream', '--input', $path) -TimeoutSeconds 600 | ConvertFrom-Json
     $digest = (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash.ToLowerInvariant()
     if ($uploaded.name -cne $name -or $uploaded.state -cne 'uploaded' -or $uploaded.size -ne (Get-Item -LiteralPath $path).Length -or $uploaded.digest -cne "sha256:$digest") { throw "Uploaded asset identity differs: $name. The release remains a draft." }
 }

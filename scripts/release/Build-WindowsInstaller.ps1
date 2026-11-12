@@ -48,7 +48,7 @@ try {
     Invoke-ReleaseCommand $WixPath @('build', (Join-Path $repositoryRoot 'installer/windows/Package.wxs'),
         '-arch', 'arm64', '-d', "ProductVersion=$version", '-d', "PackageId=$($package.Id)",
         '-d', "PackageDirectory=$PackageDirectory", '-d', "StageDirectory=$stage", '-d', "RepositoryRoot=$repositoryRoot",
-        '-intermediateFolder', (Join-Path $stage 'obj'), '-pdbtype', 'none', '-out', $installerPath)
+        '-intermediateFolder', (Join-Path $stage 'obj'), '-pdbtype', 'none', '-out', $installerPath) -TimeoutSeconds 600
     if (-not (Test-Path -LiteralPath $installerPath -PathType Leaf)) { throw 'WiX MSI build produced no installer.' }
     [ordered]@{
         schemaVersion = 1; version = $version; target = $toolchain.target

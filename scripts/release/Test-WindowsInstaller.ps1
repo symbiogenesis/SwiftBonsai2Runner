@@ -24,37 +24,37 @@ $summary = $null
 try {
     $installer = New-Object -ComObject WindowsInstaller.Installer
     $database = $installer.OpenDatabase($InstallerPath, 0)
-function Read-MsiProperty([string]$Name) {
-    if ($Name -cnotmatch '^[A-Za-z]+$') { throw 'Invalid MSI property name.' }
-    $query = 'SELECT `Value` FROM `Property` WHERE `Property` = ''' + $Name + ''''
-    $view = $null
-    $record = $null
-    try {
-        $view = $database.OpenView($query)
-        $view.Execute()
-        $record = $view.Fetch()
-        if ($null -eq $record) { throw "MSI property $Name is absent." }
-        [string]$record.StringData(1)
-    } finally {
-        if ($null -ne $record) { [void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($record) }
-        if ($null -ne $view) {
-            $view.Close()
-            [void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($view)
+    function Read-MsiProperty([string]$Name) {
+        if ($Name -cnotmatch '^[A-Za-z]+$') { throw 'Invalid MSI property name.' }
+        $query = 'SELECT `Value` FROM `Property` WHERE `Property` = ''' + $Name + ''''
+        $view = $null
+        $record = $null
+        try {
+            $view = $database.OpenView($query)
+            $view.Execute()
+            $record = $view.Fetch()
+            if ($null -eq $record) { throw "MSI property $Name is absent." }
+            [string]$record.StringData(1)
+        } finally {
+            if ($null -ne $record) { [void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($record) }
+            if ($null -ne $view) {
+                $view.Close()
+                [void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($view)
+            }
         }
     }
-}
-$productCode = Read-MsiProperty 'ProductCode'
-$productGuid = [guid]::Empty
-[xml]$authoring = Get-Content -LiteralPath (Join-Path $PSScriptRoot '../../installer/windows/Package.wxs') -Raw
-if ((Read-MsiProperty 'ProductVersion') -cne $ExpectedVersion -or
-    (Read-MsiProperty 'ProductName') -cne 'Swift Bonsai 2 Runner' -or
-    (Read-MsiProperty 'Manufacturer') -cne 'symbiogenesis' -or
-    (Read-MsiProperty 'UpgradeCode') -ine ('{' + [string]$authoring.Wix.Package.UpgradeCode + '}') -or
-    -not [guid]::TryParseExact($productCode, 'B', [ref]$productGuid) -or $productGuid -eq [guid]::Empty) {
-    throw 'MSI product identity mismatch.'
-}
-$summary = $database.SummaryInformation(0)
-if ([string]$summary.Property(7) -cne 'Arm64;1033') { throw 'MSI is not a native ARM64 package.' }
+    $productCode = Read-MsiProperty 'ProductCode'
+    $productGuid = [guid]::Empty
+    [xml]$authoring = Get-Content -LiteralPath (Join-Path $PSScriptRoot '../../installer/windows/Package.wxs') -Raw
+    if ((Read-MsiProperty 'ProductVersion') -cne $ExpectedVersion -or
+        (Read-MsiProperty 'ProductName') -cne 'Swift Bonsai 2 Runner' -or
+        (Read-MsiProperty 'Manufacturer') -cne 'symbiogenesis' -or
+        (Read-MsiProperty 'UpgradeCode') -ine ('{' + [string]$authoring.Wix.Package.UpgradeCode + '}') -or
+        -not [guid]::TryParseExact($productCode, 'B', [ref]$productGuid) -or $productGuid -eq [guid]::Empty) {
+        throw 'MSI product identity mismatch.'
+    }
+    $summary = $database.SummaryInformation(0)
+    if ([string]$summary.Property(7) -cne 'Arm64;1033') { throw 'MSI is not a native ARM64 package.' }
 } finally {
     foreach ($com in @($summary, $database, $installer)) {
         if ($null -ne $com) { [void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($com) }
