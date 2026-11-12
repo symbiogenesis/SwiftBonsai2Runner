@@ -344,7 +344,7 @@ impl State {
                 .weak(),
             );
         });
-        ui.add_space(8.0);
+        ui.add_space(2.0);
         if self.conversation_search.rows.is_empty() {
             ui.add_space(12.0);
             ui.label(RichText::new("No conversations found").strong());
