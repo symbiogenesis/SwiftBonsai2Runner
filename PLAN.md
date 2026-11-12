@@ -287,6 +287,8 @@ layouts without losing drafts or interrupting background generation. Cover
 keyboard focus, System/Light/Dark changes and Windows high-contrast precedence.
 Check the compact vector seedling above New conversation for crisp edges at
 display scales and adequate contrast, with the former wordmark/tagline removed.
+Verify the compact main-header SwiftBonsai2 name and small companion tagline,
+including name-only narrow layouts and preview/generation status substitutions.
 Confirm the compact footer keeps model, conversation-saving and privacy status
 on one line at minimum sidebar width, with full hover and accessible descriptions.
 Footer formatting and source review passed; native analysis stopped at the

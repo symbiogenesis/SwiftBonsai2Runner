@@ -5,7 +5,7 @@ use egui::{Color32, Pos2, Stroke, epaint::CubicBezierShape};
 pub(super) fn mark(ui: &mut egui::Ui) {
     let (rect, response) = ui.allocate_exact_size(egui::Vec2::splat(26.0), egui::Sense::hover());
     response.widget_info(|| {
-        egui::WidgetInfo::labeled(egui::Role::Image, ui.is_enabled(), "Swift Bonsai")
+        egui::WidgetInfo::labeled(egui::Role::Image, ui.is_enabled(), "SwiftBonsai2")
     });
     if !ui.is_rect_visible(rect) {
         return;

@@ -1523,7 +1523,8 @@ impl State {
         ui.horizontal(|ui| {
             self.navigation_button(ui, narrow);
             ui.vertical(|ui| {
-                ui.label(RichText::new("Swift Bonsai").strong().size(19.0));
+                ui.spacing_mut().item_spacing.y = 2.0;
+                ui.label(RichText::new("SwiftBonsai2").strong().size(18.0));
                 if !narrow {
                     ui.label(
                         RichText::new(if self.preview {
