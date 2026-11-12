@@ -1,7 +1,10 @@
 //! Real egui input/accessibility regressions with inert backend channels.
 //! GPU rendering is opt-in and writes captures only to validated external storage.
 use super::*;
-use egui_kittest::{Harness, kittest::Queryable as _};
+use egui_kittest::{
+    Harness,
+    kittest::{NodeT as _, Queryable as _},
+};
 use std::{fs, path::PathBuf};
 
 const QUESTION: &str = "I have a few ideas for a short story, but I am not sure where to start.";
@@ -252,12 +255,12 @@ fn response_speakers_stay_in_bubbles_and_support_keyboard_play_and_stop() -> io:
             speaker.top() > reasoning.bottom(),
             "Speaker {speaker:?} overlaps reasoning {reasoning:?} at {size:?}"
         );
-        chat.get_by_role_and_label(egui::Role::Button, "Read this response aloud")
-            .click();
-        chat.run();
-        assert!(chat.state().app.help.is_some());
+        assert!(
+            chat.get_by_role_and_label(egui::Role::Button, "Read this response aloud")
+                .accesskit_node()
+                .is_disabled()
+        );
         assert!(!chat.state().app.dictation_requested);
-        chat.state_mut().app.help = None;
         let (session, _commands) = speech::Session::fixture()?;
         chat.state_mut().app.speech = Some(session);
         chat.state_mut().app.speech_output = true;
@@ -277,6 +280,35 @@ fn response_speakers_stay_in_bubbles_and_support_keyboard_play_and_stop() -> io:
         chat.run();
         assert!(!chat.state().app.speaking);
         assert_eq!(chat.state().app.speaking_message, None);
+    }
+    Ok(())
+}
+
+#[test]
+fn speech_controls_follow_speech_readiness_independently_of_chat_readiness() -> io::Result<()> {
+    let mut chat = harness([1180.0, 960.0], true);
+    let (session, _commands) = speech::Session::fixture()?;
+    chat.state_mut().app.speech = Some(session);
+    for model in [ModelLifecycle::Preparing, ModelLifecycle::Ready] {
+        chat.state_mut().app.model = model;
+        for output in [false, true] {
+            chat.state_mut().app.speech_event(speech::Event::Capabilities {
+                input: false,
+                output,
+            });
+            chat.run();
+            for (role, label) in [
+                (egui::Role::Button, "Read this response aloud"),
+                (egui::Role::CheckBox, "Read aloud as responses arrive"),
+            ] {
+                assert_eq!(
+                    chat.get_by_role_and_label(role, label)
+                        .accesskit_node()
+                        .is_disabled(),
+                    !output
+                );
+            }
+        }
     }
     Ok(())
 }

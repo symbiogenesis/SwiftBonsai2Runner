@@ -788,7 +788,7 @@ impl State {
             return;
         }
         self.speech_notice = true;
-        if self.speech_output || (!self.speech_checked && self.tts_configured) {
+        if self.speech_output {
             let voice_description = self.voice_profile.trim().to_owned();
             if voice_description.is_empty() {
                 "Describe the voice in Settings before reading aloud."
@@ -801,21 +801,17 @@ impl State {
                 return;
             };
             self.stop_speech();
-            if self.speech_output {
-                if self.speech_command(speech::Command::Speak {
-                    text,
-                    voice_description,
-                }) {
-                    self.speaking = true;
-                    self.speaking_message = Some(message_id);
-                    "Reading the selected response aloud.".clone_into(&mut self.speech_status);
-                }
-            } else {
+            if self.speech_command(speech::Command::Speak {
+                text,
+                voice_description,
+            }) {
                 self.speaking = true;
                 self.speaking_message = Some(message_id);
-                "Preparing Qwen3-TTS VoiceDesign to read the selected response aloud…"
-                    .clone_into(&mut self.speech_status);
+                "Reading the selected response aloud.".clone_into(&mut self.speech_status);
             }
+        } else if !self.speech_checked && self.tts_configured {
+            "Read aloud will be available when speech preparation completes."
+                .clone_into(&mut self.speech_status);
         } else {
             let message = self.read_aloud_help();
             message.clone_into(&mut self.speech_status);
@@ -874,34 +870,14 @@ impl State {
                 self.speech_output = output;
                 match (self.speech_input, output) {
                     (true, true) => "Microphone and read aloud are ready.",
-                    (true, false) => "Microphone ready. Select a response's speaker button for setup.",
+                    (true, false) => "Microphone ready. Open Settings for read aloud setup.",
                     (false, true) => "Response speakers ready. Select Microphone for setup.",
                     (false, false) => {
-                        "Speech setup required. Select Microphone or a response's speaker button for instructions."
+                        "Speech setup required. Select Microphone or open Settings for instructions."
                     }
                 }
                 .clone_into(&mut self.speech_status);
-                if output {
-                    if self.speaking && !self.streaming_active {
-                        let voice_description = self.voice_profile.trim().to_owned();
-                        if let Some(message_id) = self.speaking_message
-                            && !voice_description.is_empty()
-                            && let Some(text) =
-                                self.transcript.speech_text(message_id).map(str::to_owned)
-                        {
-                            if self.speech_command(speech::Command::Speak {
-                                text,
-                                voice_description,
-                            }) {
-                                "Reading the selected response aloud."
-                                    .clone_into(&mut self.speech_status);
-                            }
-                        } else {
-                            self.speaking = false;
-                            self.speaking_message = None;
-                        }
-                    }
-                } else if self.speaking {
+                if !output && self.speaking {
                     self.speaking = false;
                     self.speaking_message = None;
                 }
@@ -1376,6 +1352,12 @@ impl State {
                     .small()
                     .weak(),
                 );
+                if !self.speech_output {
+                    ui.label("Read aloud becomes available after speech preparation.");
+                }
+                if ui.button("Read aloud setup").clicked() {
+                    self.help = Some(("Read aloud setup", self.read_aloud_help()));
+                }
                 ui.add_space(16.0);
                 if ui.button("Open diagnostics").clicked() {
                     self.show_diagnostics = true;
@@ -1850,7 +1832,7 @@ impl State {
                                                 ui,
                                                 width,
                                                 self.speaking_message,
-                                                true,
+                                                self.speech_output,
                                             ) {
                                                 self.toggle_read_aloud(message_id);
                                             }
@@ -2152,7 +2134,7 @@ mod startup_tests {
     }
 
     #[test]
-    fn pending_native_startup_queues_read_aloud_without_setup_popup() -> io::Result<()> {
+    fn pending_native_startup_blocks_read_aloud_until_speech_is_available() -> io::Result<()> {
         let (request, directory) = fixture()?;
         let (commands, _incoming) = mpsc::channel();
         let (_events, incoming_events) = client::event_channel();
@@ -2170,10 +2152,10 @@ mod startup_tests {
             "Enable the microphone after model startup completes."
         );
         state.toggle_streaming_read_aloud();
-        assert!(state.help.is_none() && state.streaming_read_aloud);
+        assert!(state.help.is_none() && !state.streaming_read_aloud);
         state.toggle_read_aloud(message_id);
         assert!(state.help.is_none());
-        assert!(state.speaking && state.speaking_message == Some(message_id));
+        assert!(!state.speaking && state.speaking_message.is_none());
         let (session, speech_commands) = speech::Session::fixture()?;
         state.speech = Some(session);
         state.speech_event(speech::Event::Capabilities {
@@ -2181,6 +2163,19 @@ mod startup_tests {
             output: true,
         });
         assert!(state.speech_checked && state.speech_output);
+        assert!(speech_commands.try_recv().is_err());
+        assert!(!state.model.ready());
+        state.toggle_streaming_read_aloud();
+        assert!(state.streaming_read_aloud);
+        state.toggle_read_aloud(message_id);
+        assert!(matches!(
+            speech_commands.recv_timeout(Duration::from_secs(2)).map_err(io::Error::other)?,
+            speech::Command::StopListening
+        ));
+        assert!(matches!(
+            speech_commands.recv_timeout(Duration::from_secs(2)).map_err(io::Error::other)?,
+            speech::Command::StopSpeaking
+        ));
         assert!(matches!(
             speech_commands.recv_timeout(Duration::from_secs(2)).map_err(io::Error::other)?,
             speech::Command::Speak { text, voice_description }

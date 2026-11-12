@@ -20,10 +20,15 @@ impl State {
             if self.streaming_active {
                 self.stop_speech();
             }
-        } else if !self.speech_output && (self.speech_checked || !self.tts_configured) {
-            let message = self.read_aloud_help();
-            message.clone_into(&mut self.speech_status);
-            self.help = Some(("Read aloud setup", message));
+        } else if !self.speech_output {
+            if !self.speech_checked && self.tts_configured {
+                "Read aloud will be available when speech preparation completes."
+                    .clone_into(&mut self.speech_status);
+            } else {
+                let message = self.read_aloud_help();
+                message.clone_into(&mut self.speech_status);
+                self.help = Some(("Read aloud setup", message));
+            }
         } else if self.valid_voice() {
             self.streaming_read_aloud = true;
             self.streaming_suppressed = false;
@@ -79,7 +84,10 @@ impl State {
     pub(super) fn read_aloud_controls(&mut self, ui: &mut egui::Ui) {
         let mut enabled = self.streaming_read_aloud;
         if ui
-            .checkbox(&mut enabled, "Read aloud as responses arrive")
+            .add_enabled(
+                self.speech_output || enabled,
+                egui::Checkbox::new(&mut enabled, "Read aloud as responses arrive"),
+            )
             .on_hover_text("Read new responses in short chunks using your Voice profile. Speaker buttons can replay completed responses at any time.")
             .changed()
         {
