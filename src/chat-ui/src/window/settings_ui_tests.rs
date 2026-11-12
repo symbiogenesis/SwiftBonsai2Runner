@@ -177,6 +177,7 @@ fn thinking_popup_keyboard_dismissal_keeps_the_draft_and_active_response() {
     assert!(chat.query_by_label("Thinking options").is_some());
     chat.key_press(egui::Key::Enter);
     chat.run();
+    assert!(chat.query_by_label("Thinking options").is_some());
     assert!(chat.state().app.model.busy());
     assert!(chat.state().commands.try_recv().is_err());
     chat.key_press(egui::Key::Escape);

@@ -70,6 +70,14 @@ impl State {
             self.enable_thinking || self.extra_effort,
         )
         .on_hover_text(help);
+        let opening = response.clicked()
+            && !egui::Popup::is_id_open(ui.ctx(), egui::Popup::default_response_id(&response));
+        if opening {
+            // Keyboard activation belongs to the choices after opening. If
+            // generation disables both, Enter must not toggle the still-focused
+            // opener closed and expose Stop to the following Escape.
+            response.surrender_focus();
+        }
         egui::Popup::menu(&response)
             .accessible_name("Thinking options")
             .align(egui::RectAlign::TOP_START)
@@ -87,7 +95,7 @@ impl State {
                 ui.add_space(10.0);
                 ui.separator();
                 ui.add_space(10.0);
-                self.thinking_preferences(ui);
+                self.thinking_preferences(ui, opening);
                 if self.model.busy() {
                     ui.add_space(12.0);
                     ui.label(
@@ -99,11 +107,15 @@ impl State {
             });
     }
 
-    fn thinking_preferences(&mut self, ui: &mut egui::Ui) {
+    fn thinking_preferences(&mut self, ui: &mut egui::Ui, focus: bool) {
         let changed = ui
             .add_enabled_ui(!self.model.busy(), |ui| {
                 ui.spacing_mut().interact_size.y = 28.0;
-                let mut changed = ui.checkbox(&mut self.enable_thinking, "Thinking").changed();
+                let thinking = ui.checkbox(&mut self.enable_thinking, "Thinking");
+                if focus && !self.model.busy() {
+                    thinking.request_focus();
+                }
+                let mut changed = thinking.changed();
                 ui.label(
                     RichText::new("Reason before answering. Uses part of the reply limit.")
                         .small()
@@ -389,7 +401,7 @@ impl State {
         }
         ui.add_space(8.0);
         settings_card(ui, |ui| {
-            self.thinking_preferences(ui);
+            self.thinking_preferences(ui, false);
         });
         ui.add_space(8.0);
         settings_card(ui, |ui| {
