@@ -9,7 +9,8 @@ on:
       - Cargo.toml
       - '**/Cargo.toml'
       - rust-toolchain.toml
-      - .github/actions/rust-toolchain/**
+      - '.github/**'
+      - 'tools/ci/**'
       - .github/workflows/source-checks.yml
   pull_request:
     branches: [main]
@@ -19,6 +20,34 @@ on:
 permissions:
   contents: read
 jobs:
+  actions-lock:
+    # Independent of changed-path selection so every triggered run verifies CI.
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 5
+    concurrency:
+      group: actions-lock-${{ github.event.pull_request.number || github.ref }}-${{ github.event_name == 'workflow_dispatch' && github.run_id || 'latest' }}
+      cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Download and verify the sole additional CI security tool
+        run: |
+          set -euo pipefail
+          # gh-actions-lock v0.4.1 (source 04b7a1a4d00b339dd3ff903bb4d78d4066b2bac7).
+          # Review the release and update this URL and digest together.
+          curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 --max-time 60 \
+            https://github.com/github/gh-actions-lock/releases/download/v0.4.1/linux-arm64 \
+            --output "$RUNNER_TEMP/gh-actions-lock"
+          echo 'aee61c993da36a5f09be2c77e6e4a1a22542a1b30ded4996bf8301c15dcf2b39  '"$RUNNER_TEMP/gh-actions-lock" | sha256sum --check --strict
+          chmod 700 "$RUNNER_TEMP/gh-actions-lock"
+      - name: Verify every workflow lock and upstream repository identity
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: '"$RUNNER_TEMP/gh-actions-lock" --verify'
   changes:
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 5
@@ -116,7 +145,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: ./.github/actions/rust-toolchain
+      - uses: $/.github/actions/rust-toolchain
         with:
           toolchain: nightly-2026-11-09-aarch64-unknown-linux-gnu
           components: rustfmt
@@ -230,7 +259,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: ./.github/actions/rust-toolchain
+      - uses: $/.github/actions/rust-toolchain
         id: compiler
         with:
           toolchain: nightly-2026-11-09-aarch64-unknown-linux-gnu

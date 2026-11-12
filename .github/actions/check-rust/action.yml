@@ -17,7 +17,7 @@ outputs:
 runs:
   using: composite
   steps:
-    - uses: ./.github/actions/ci-tool
+    - uses: $/.github/actions/ci-tool
     - name: Select this lane's affected registered crates
       id: packages
       shell: pwsh
@@ -33,7 +33,7 @@ runs:
         & $env:BONSAI_CI_PATH rust-select --root $env:GITHUB_WORKSPACE
     - name: Reuse the pinned native Rust compiler
       if: steps.packages.outputs.has-packages == 'true'
-      uses: ./.github/actions/rust-toolchain
+      uses: $/.github/actions/rust-toolchain
       with:
         toolchain: nightly-2026-11-09-aarch64-pc-windows-msvc
     - name: Select external Cargo cache paths
@@ -84,7 +84,7 @@ runs:
           broker-v5-${{ inputs.lane }}-${{ runner.os }}-${{ runner.arch }}-${{ env.BROKER_CACHE_HOST }}-nightly-2026-11-09-
     - name: Prepare reusable native speech compiler outputs
       if: steps.packages.outputs.has-packages == 'true' && (inputs.lane == 'asr' || inputs.lane == 'tts')
-      uses: ./.github/actions/native-speech
+      uses: $/.github/actions/native-speech
       with:
         lane: ${{ inputs.lane }}
     - name: Format, analyze, document, test and build the selected crates

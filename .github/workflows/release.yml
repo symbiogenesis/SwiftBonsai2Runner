@@ -92,9 +92,9 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: ./.github/actions/bonsai-tools
+      - uses: $/.github/actions/bonsai-tools
         if: matrix.lane == 'asr' || matrix.lane == 'tts'
-      - uses: ./.github/actions/check-rust
+      - uses: $/.github/actions/check-rust
         with:
           lane: ${{ matrix.lane }}
           packages: ${{ matrix.packages }}

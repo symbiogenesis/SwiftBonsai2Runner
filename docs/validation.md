@@ -593,6 +593,24 @@ eligible check before checkout or compilation. These read-only jobs run no compl
 model, benchmark or self-hosted job; they qualify neither native Windows behavior
 nor actual-model/device acceptance.
 
+All external actions, including those inside composite actions, retain full commit
+SHA references. The generated [action lockfile](../.github/workflows/actions.lock)
+also records upstream repository identities and transitive dependencies for every
+workflow. Same-repository composites use `$/` references, resolving to the workflow's
+own commit and allowing their dependencies to be locked. Nested references require
+self-hosted runner **v2.338.0 or newer**; owner CI must confirm that prerequisite.
+Regenerate and review the lockfile whenever workflow or composite dependencies
+change; preserve the explicit SHA references. See [the maintenance commands](../tools/ci/README.md#action-dependency-pins).
+
+The independent Source checks `actions-lock` job runs on every selected workflow
+event, including the weekly schedule, with read-only permissions and no device
+work. It verifies coverage and upstream provenance with the official
+`gh-actions-lock` v0.4.1 binary, downloaded at a fixed release URL and checked against
+a committed SHA-256 before execution. This is the only added security-tool
+dependency; no additional action, YAML library or security-linter suite is needed.
+A lockfile verifies selected identities, not the safety of their code. Review action
+and tool updates, including release version and binary digest, before accepting them.
+
 [Foundation](../.github/workflows/foundation.yml) runs on `main` pushes/manual
 dispatch, skipping root-Markdown/`docs/`-only pushes. Its [Rust planner](../tools/ci/README.md)
 reads [impact routing](../.github/ci/impact.json), selects changed packages plus

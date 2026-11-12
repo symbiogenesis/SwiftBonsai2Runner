@@ -12,6 +12,12 @@ independent hosted Windows ABI control, and the completed frozen-source row-work
 experiment is retired. Confirm the new workflow selection and retained checks in
 owner-managed hosted CI. Earlier cleanup and local checks supply no hosted verdict.
 
+Have the owner push the action-dependency hardening and confirm the independent
+Source checks lockfile verification plus the retained workflows on the resulting
+source. All external action references remain full commit SHAs; same-repository
+composites now use workflow-commit `$/` references. Confirm self-hosted runner
+v2.338.0 or newer before its lanes. Local lock verification supplies no hosted verdict.
+
 Publish the first experimental Windows ARM64 MSI release, **v0.1.0**, after the
 owner reviews and pushes the local installer/pipeline commits to Runner `main`.
 The [release guide](docs/releases.md) records the owner-run publication command;

@@ -12,7 +12,7 @@ runs:
         if ($env:RUNNER_ENVIRONMENT -cne 'github-hosted') {
           throw 'A missing CI command must be prepared on hosted CI; owner-device build setup cannot bypass the shared five-minute allowance.'
         }
-    - uses: ./.github/actions/rust-toolchain
+    - uses: $/.github/actions/rust-toolchain
       if: env.BONSAI_CI_PATH == ''
       with:
         toolchain: nightly-2026-11-09-aarch64-pc-windows-msvc

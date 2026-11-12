@@ -42,9 +42,9 @@ jobs:
         with:
           persist-credentials: false
       - name: Build or verify the exact packaged maintenance tools
-        uses: ./.github/actions/bonsai-tools
+        uses: $/.github/actions/bonsai-tools
       - name: Select the native Rust compiler
-        uses: ./.github/actions/rust-toolchain
+        uses: $/.github/actions/rust-toolchain
         with:
           toolchain: nightly-2026-11-09-aarch64-pc-windows-msvc
       - name: Capture paired TTS timing and listening samples

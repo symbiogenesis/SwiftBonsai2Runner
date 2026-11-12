@@ -24,7 +24,7 @@ jobs:
           persist-credentials: false
       - name: Select the exact native compiler
         id: compiler
-        uses: ./.github/actions/rust-toolchain
+        uses: $/.github/actions/rust-toolchain
         with:
           toolchain: nightly-2026-11-09-aarch64-pc-windows-msvc
       - name: Prepare external build, working and evidence paths

@@ -33,7 +33,7 @@ runs:
         key: bonsai-tools-executable-v2-${{ runner.os }}-${{ runner.arch }}-${{ env.BONSAI_TOOLS_CACHE_HOST }}-nightly-2026-11-09-${{ env.BONSAI_TOOLS_SOURCE_ID }}
     - name: Reuse the pinned native Rust compiler when compilation is needed
       if: steps.executable-cache.outputs.cache-hit != 'true'
-      uses: ./.github/actions/rust-toolchain
+      uses: $/.github/actions/rust-toolchain
       with:
         toolchain: nightly-2026-11-09-aarch64-pc-windows-msvc
     - name: Reuse Cargo downloads and native tool build artifacts
@@ -47,7 +47,7 @@ runs:
         key: bonsai-tools-v1-${{ runner.os }}-${{ runner.arch }}-${{ env.BONSAI_TOOLS_CACHE_HOST }}-nightly-2026-11-09-${{ hashFiles('Cargo.toml', 'Cargo.lock', 'tools/bonsai/**', 'src/cpu-policy/**', 'src/artifacts/**', 'src/windows-*/**', 'src/speech-asr/model.lock.json', 'src/speech-tts/model*.lock.json', 'config/**/*.json', 'rust-toolchain.toml') }}-content-v1
         restore-keys: |
           bonsai-tools-v1-${{ runner.os }}-${{ runner.arch }}-${{ env.BONSAI_TOOLS_CACHE_HOST }}-nightly-2026-11-09-
-    - uses: ./.github/actions/ci-tool
+    - uses: $/.github/actions/ci-tool
       if: steps.executable-cache.outputs.cache-hit != 'true'
     - name: Build the packaged CLI after build inputs change
       if: steps.executable-cache.outputs.cache-hit != 'true'
