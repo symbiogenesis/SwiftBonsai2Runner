@@ -1,7 +1,8 @@
 # Swift artifacts, memory and PTQ1
 
-**Original PQ2 on native Rust is the development default**, with four CPU row workers and the
-standard adapter at scale 1.3. Publisher rollback is explicit with `--publisher-engine`; PTQ1
+**Original PQ2 on native Rust Prism 0.1.23 is the development default**, with four CPU row
+workers, the standard adapter at scale 1.3 and the [default X2 NPU placement](hexagon.md)
+when its initialization succeeds. Publisher rollback is explicit with `--publisher-engine`; PTQ1
 remains opt-in. Bounded native CPU decode passes; creative quality, performance and daily-service
 isolation remain unqualified. The [Qwen reference](model-selection.md) has a separate lock/profile. No local training or
 fine-tuning is planned. [PLAN.md](../PLAN.md) owns outstanding qualification. This guide covers artifacts,
@@ -264,14 +265,16 @@ serialized-size disadvantage alone excludes the proposed layout.
 
 ## Supported selection and resource policy
 
-`bonsai-tools chat --use-repacked-ptq1` selects only this verified artifact on the pinned
-publisher Prism CPU server; direct app/broker launches use `--use-repacked-ptq1`. The
-artifact handle stays verified/held through owned teardown. Arbitrary paths, checkpoint
-substitutions and missing-file fallback are unsupported. The explicit experimental
-`--native-engine` route implements this selection and the approved adapter in Rust
-[0.1.9 prerelease](evidence/prism-019-release.json); service implementation alone does
-not establish release qualification. Row workers remain one unless explicitly
-selected; separate source-checker evidence does not qualify app TPS.
+`bonsai-tools chat --use-repacked-ptq1` selects only this verified artifact with the
+default native Rust engine. `--publisher-engine` selects the explicit publisher CPU
+rollback; direct app/broker launches also accept `--use-repacked-ptq1`. The artifact
+handle stays verified/held through owned teardown. Arbitrary paths, checkpoint
+substitutions and missing-file fallback are unsupported. Native service support for
+PTQ1 and the approved adapter dates to the [0.1.9 prerelease](evidence/prism-019-release.json);
+implementation alone does not establish release qualification. Native chat defaults
+to four row workers, with explicit one-worker selection. Publisher rollback keeps
+its separate fixed four-thread CPU policy. Separate source-checker evidence does not qualify app TPS.
+The default NPU placement selects original PQ2 projections, not PTQ1 tensors.
 
 Both packings retain the [CPU resource policy](#native-cpu-status), context, retry
 and recovery. Serialized savings alone do not lower admission or promote PTQ1.
@@ -280,8 +283,11 @@ and recovery. Serialized savings alone do not lower admission or promote PTQ1.
 
 Use native ARM64 PowerShell 7.6, the existing owner-selected external data directory and
 a new external report path. Select a trusted prebuilt maintenance executable from the
-evaluated main revision, replacing the example tool path below. These explicit locks
-leave the Qwen default unchanged:
+evaluated main revision, replacing the example tool path below. These are explicit
+publisher CPU assessment commands; they do not change the native Swift chat default.
+Provisioning, census, export and each model check are separate substantial operations:
+select and predeclare only work that fits one aggregate owner allowance. The blocks
+below are a command reference, not a single admitted laptop workload:
 
 ```powershell
 $maintenanceExecutable = 'C:\BonsaiTools\bonsai-tools.exe'
@@ -323,6 +329,10 @@ downloaded by these commands. The complete-process deadline includes hashing;
 leave the gate pending if setup, work and cleanup cannot fit the owner budget.
 
 ## Native CPU status
+
+This section describes the publisher CPU assessment command, not current-release
+Rust application acceptance. Its historical observations retain their original
+runtime and workload identities.
 
 The fixed check uses 8K context, FP16 K/V, F32 recurrent/convolution state, batch
 128/microbatch 64, four threads, a synthetic prompt and a 16-token cap. New owner-device
@@ -434,9 +444,10 @@ Runner's shared Windows artifact verifier streams complete SHA-256 checks throug
 RustCrypto ARM64 detector's software fallback on Windows. Verification still reads
 every byte, checks the exact length and retains the same read-only file guards;
 it does not trust timestamps or a cached model digest. This also applies to runtime,
-adapter and speech artifact verification. Native readiness speed remains to be
-measured: the separately pinned Rust inference runtime performs its own complete
-model hash using RustCrypto before loading, and that additional pass remains.
+adapter and speech artifact verification. The pinned Rust inference runtime also
+uses Windows CNG through its `native-hash` helper for its own complete model hash
+before loading. That independent pass remains; CNG dispatch does not eliminate
+verification or establish a measured startup gain.
 
 The [CPU check](../tools/bonsai/src/cpu_check.rs) selects mmap, no repack, no warmup, CPU
 buffers and 128/64 batch/microbatch. The

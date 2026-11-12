@@ -8,8 +8,10 @@ The reference is **Qwen3.8-27B UD-Q3_K_XL**, revision
 `4ca720788d1e01f1bff70c033e0d0028fd02e502`, with **Gemma 4 12B IT QAT Q4_0** as a
 literature-nominated fallback. Published evidence gives moderate confidence in the
 base-model creative preference, but low confidence in this quantization and laptop
-comfort. There is no local candidate benchmark. Default provisioning selects Qwen;
-the fallback is not selected.
+comfort. There is no local candidate benchmark. Generic model provisioning without
+a lock override selects Qwen; native chat separately selects Swift and requires its
+explicit [provisioning steps](development-guide.md#native-chat-app). The Gemma
+fallback is not selected.
 
 ## Literature gate
 
@@ -102,7 +104,9 @@ does not establish that a lower-reasoning switch works.
 
 Reject file/hash/header mismatches and unsupported graphs or types. Limit the first
 compatibility investigation to one working day and one narrow, upstream-supported
-repair. Custom quantization and backend kernels are outside this reference bring-up.
+repair. That investigation window does not extend the aggregate owner-device
+allowances in [validation](validation.md). Custom quantization and backend kernels
+are outside this reference bring-up.
 
 Reopen the reference choice if that route cannot produce correct bounded output, exceeds
 18 GiB at 8K with reuse off, or later fails creative, interactive-wait or owner-accepted

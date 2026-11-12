@@ -4,9 +4,11 @@ Chat preserves the native template and publisher's evaluated sampler, with think
 by default. These settings are not qualified as optimal for laptop use or creative
 writing. Actual-model application acceptance is pending.
 
-The development engine default is Rust Prism 0.1.14 with original Swift PQ2,
+The development engine default is Rust Prism 0.1.23 with original Swift PQ2,
 four CPU row workers and the standard adapter at scale 1.3. Publisher rollback
-is explicit with `--publisher-engine`; PTQ1 remains opt-in. This choice does not
+is explicit with `--publisher-engine`; PTQ1 remains opt-in. The native worker attempts
+[default X2 NPU acceleration](hexagon.md) and retains CPU execution when its
+initialization is unavailable. This choice does not
 qualify performance, full-context/output, quality, isolation or installation.
 
 ## Applied defaults
@@ -24,7 +26,7 @@ qualify performance, full-context/output, quality, isolation or installation.
 | Attention / recurrent state | FP16 K/V; F32 recurrent/convolution state | Preserve the current numerical baseline |
 | Context handling | Exact rendered token count; reject overflow | Preserve supplied history rather than silently shifting or truncating it |
 | RoPE | Model metadata, no override | Context extension can change short-context behavior |
-| Cache reuse / speculation | Disabled | Current memory/state and execution baseline; these are not established quality improvements |
+| Cache reuse / speculation | Disabled by default | Explicit [latest-prefix reuse](prefix-reuse.md) is available for native launches; speculation is outside Runner serving. Neither is an established quality improvement. |
 
 CPU checks, server plans and the Rust development launcher pass sampler/reasoning arguments
 explicitly. The pinned completion renderer nevertheless omits template kwargs: its single-turn

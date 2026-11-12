@@ -16,6 +16,9 @@ process ownership, provisioning and releases. It neither builds the upstream cat
 nor runs runtime algorithm/codec suites. Full suites and benchmarks are CI-only in
 the owning repository. The target is Windows ARM64 on Snapdragon X Elite; Apple is
 excluded. Hosted ARM64 results do not establish Snapdragon performance.
+The APIs and model families below are upstream conformance obligations, not
+Runner broker features. Runner retains its [fixed local API subset](broker-policy.md#public-request-contract)
+and [pinned Swift runtime boundary](native-rust-engine.md).
 
 ## Source fidelity and evidence
 

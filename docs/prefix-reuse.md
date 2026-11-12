@@ -9,10 +9,13 @@ select `latest`.
 The selection survives deferred preparation, native chat launch, broker launch
 and explicit Retry. The broker forwards only the fixed `--prompt-reuse latest`
 argument to its verified contained model worker. Capability is limited to the
-reviewed Prism 0.1.14 source
-`9e8ea3e2c042ab0c3f1a8e9596ff155e202c3c57`, whose immutable release files are
-already pinned. A version number, unreviewed repin or claimed readiness alone
-does not grant capability. Authenticated model readiness must report exactly
+reviewed active Prism 0.1.23 source
+`055c7430cb4771dfddb24ddaa30494af6ad182da` and its
+[immutable release files](../config/prism-inference.lock.json). The compiled guard
+also recognizes explicitly reviewed historical release/source pairs; it does not
+accept every 0.1.14 build or arbitrary newer release. A version number, unreviewed
+repin or claimed readiness alone does not grant capability. Authenticated model
+readiness must report exactly
 `"prompt_reuse":"latest"` when selected and omit it when disabled. Missing,
 unexpected, duplicate or malformed identities fail startup without fallback.
 

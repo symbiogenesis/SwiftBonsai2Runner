@@ -39,8 +39,10 @@ Before deletion:
    that file. Retain evidence and notices as data where needed.
 5. Keep full-model, actual-device, quality, resource, isolation and distribution
    gates pending until independently satisfied. Synthetic replay does not close
-   them. Owner-device work shares the five-minute total budget; complete suites
-   and benchmarks remain CI-only.
+   them. Owner-device work shares the [aggregate execution budget](validation.md):
+   five minutes by default, with any longer dedicated allowance predeclared under
+   that policy. Narrower controls keep their own limits. Complete suites and
+   benchmarks remain CI-only.
 
 Current [runtime conformance](prism-upstream-tests.md), [native Rust](native-rust-engine.md),
 [speech](../src/speech-tts/README.md) and [validation](validation.md) contracts remain

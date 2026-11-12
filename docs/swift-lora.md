@@ -3,13 +3,14 @@
 The native app enables the pinned OrcaRouter adapter experimentally at scale **1.3**;
 `bonsai-tools chat --no-abliterate-lora` opts out. Settings accepts 0 to 2 in 0.1 steps for the
 next response and every Extra effort pass, without reloading; zero disables correction
-but retains the adapter. Bounded native ARM64 loading/decode passes, but **Swift basis
+but retains the adapter. The active runtime is [Prism 0.1.23](native-rust-engine.md);
+historical lifecycle results below keep their original runtime identities. Bounded native ARM64 loading/decode passes, but **Swift basis
 correctness, effectiveness, quality and standard/daily-service acceptance are unqualified**.
 No optimal scale is established. The broker has an explicit development option;
 no local training is needed.
 [PLAN.md](../PLAN.md#creative-quality-adapters-and-memory) owns remaining work.
 
-The [current-release bounded lifecycle](evidence/ptq1-0113-lifecycle-41539984210/independent-review.json)
+The [historical 0.1.13 bounded lifecycle](evidence/ptq1-0113-lifecycle-41539984210/independent-review.json)
 passes on PTQ1 with Prism 0.1.13, Runner `74bef68`, and the explicitly selected
 four-worker policy. Three one-token-cap streams complete at scales 1.3, zero and
 1.3, with invalid-scale rejection and same-owner continuation. The final request
@@ -17,7 +18,7 @@ supplies the actual first response as assistant history, bound by captured conte
 and message digests. This verifies the bounded scale/history application sequence
 and owned cleanup. All three streams terminate at `length`; their short visible
 text does not prove complete-answer quality, loaded-zero/no-adapter logits identity,
-nonzero numerical application or correct native SSM basis. Serving still resets
+nonzero numerical application or correct native SSM basis. That workload resets
 state per request; generated text supplied as history is not prefix-state reuse.
 This one attempt does not qualify other worker policies, full context/output,
 performance, isolation, installation or default promotion.
@@ -225,6 +226,9 @@ source/run identities independently of the retired one-shot workflow.
 
 ## Memory and execution cost
 
+The process counters and GGML allocation behavior in this section describe the
+historical publisher CPU checks. They do not measure the active Rust/NPU path.
+
 The adapter contains **9,664,512 F32 payload bytes** (about 9.23 MiB on disk). Prism
 retains packed base weights and adds adapter branches rather than merging a dense
 replacement. Each of 128 linear sites adds two rank-1 multiplications, scale and
@@ -250,6 +254,10 @@ correction. Do not multiply per-site buffers by 128 without proving their lifeti
 overlap.
 
 ## Allocation semantics
+
+The following graph-reservation and B-storage-overlay discussion describes the
+publisher comparison engine. Native Rust graph ownership is covered separately
+in the [runtime contract](native-rust-engine.md).
 
 Adapter activation reserves the graph again after base initialization, freeing old
 compute buffers before replacement. The commit difference does not prove coexistence.

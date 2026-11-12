@@ -4,9 +4,11 @@ Reviewed **2026-10-29** against OxiBonsai
 [`1d10c48e14754ff6999158f8fa13c7c92b40b0dc`](https://github.com/cool-japan/oxibonsai/tree/1d10c48e14754ff6999158f8fa13c7c92b40b0dc)
 (v0.2.3). The downloaded source ZIP has SHA-256
 `dbdf127a1fe8e98d753fdbbad5045190e684ec08a4247a88105ccebadaca2967`. The comparison
-control is Runner's [pinned Prism 0.1.6 source and
-release](../config/prism-inference.lock.json), revision
-`02c8a24b31ac1c35f2ffd3530f6a753ce440bdc0`.
+control is Runner's then-pinned Prism 0.1.6 source, revision
+`02c8a24b31ac1c35f2ffd3530f6a753ce440bdc0`. The comparison below is historical.
+Runner's [active lock](../config/prism-inference.lock.json) now pins 0.1.23; its
+row-parallel path is already implemented and native chat selects four workers.
+Original review recommendations are not claims that those features remain absent.
 
 ## License and ownership
 
@@ -35,8 +37,8 @@ allocation bounds before input arrives and nesting depth.
 
 Runner keeps `bonsai-gguf.exe` as format authority: little-endian v3 with an explicit
 Prism dialect. Released-tool checks use the actual provisioned binary, independent
-serialized fixtures, hashing, bounded strings/arrays and malformed extents. Adopted
-The native [`descriptors` fixtures](../tools/bonsai/src/gguf/checks/parser.rs)
+serialized fixtures, hashing, bounded strings/arrays and malformed extents.
+The adopted native [`descriptors` fixtures](../tools/bonsai/src/gguf/checks/parser.rs)
 run through `gguf` operation `check` in Foundation's complete integration case:
 over-limit/`u64::MAX` tensor and metadata counts, duplicate keys/names, overlapping
 extents, plus valid distinct keys and out-of-order nonoverlapping tensors. Each
@@ -90,7 +92,7 @@ reassociated reductions would need a separately declared numerical path.
 One concrete candidate adds detail to the existing CPU work: Oxi's [two-accumulator
 loop](https://github.com/cool-japan/oxibonsai/blob/1d10c48e14754ff6999158f8fa13c7c92b40b0dc/crates/oxibonsai-kernels/src/simd_neon.rs#L750)
 breaks a serial accumulation dependency. Pinned Prism's [integer dot
-loop](https://github.com/symbiogenesis/prism-inference/blob/02c8a24b31ac1c35f2ffd3530f6a753ce440bdc0/src/kernels/neon.rs#L71)
+loop in the review control](https://github.com/symbiogenesis/prism-inference/blob/02c8a24b31ac1c35f2ffd3530f6a753ce440bdc0/src/kernels/neon.rs#L71)
 adds eight `dot16` results through one `i32x4` accumulator. A pilot could split those
 exact integer contributions across two accumulators and combine before the final
 reduction, retaining signed widening and every floating scale/add. All partial sums fit
@@ -110,7 +112,7 @@ All comparisons use `1d10c48`; none establishes Snapdragon performance.
 
 | Candidate | Source evidence and decision |
 | --- | --- |
-| Parallel projection rows over shared slices | Oxi's live [linear layers](https://github.com/cool-japan/oxibonsai/blob/1d10c48e14754ff6999158f8fa13c7c92b40b0dc/crates/oxibonsai-model/src/layers/linear.rs#L110) call Rayon row-parallel kernels. Pinned Prism's actual [prepared projection loop](https://github.com/symbiogenesis/prism-inference/blob/02c8a24b31ac1c35f2ffd3530f6a753ce440bdc0/src/kernels.rs#L1659) is serial. This is the strongest additional pilot: partition output rows, share packed weights and already prepared activations, preserve each row's arithmetic and use explicit worker budgets. |
+| Parallel projection rows over shared slices | Oxi's live [linear layers](https://github.com/cool-japan/oxibonsai/blob/1d10c48e14754ff6999158f8fa13c7c92b40b0dc/crates/oxibonsai-model/src/layers/linear.rs#L110) call Rayon row-parallel kernels. The review control's [prepared projection loop](https://github.com/symbiogenesis/prism-inference/blob/02c8a24b31ac1c35f2ffd3530f6a753ce440bdc0/src/kernels.rs#L1659) is serial. This is the strongest additional pilot: partition output rows, share packed weights and already prepared activations, preserve each row's arithmetic and use explicit worker budgets. |
 | Immutable owner plus byte-range tensor views | Oxi's [parallel kernels](https://github.com/cool-japan/oxibonsai/blob/1d10c48e14754ff6999158f8fa13c7c92b40b0dc/crates/oxibonsai-kernels/src/parallel.rs#L97) borrow weight slices. Prism already owns shared `Arc<[u8]>` tensors, but its separate [generic threadpool](https://github.com/symbiogenesis/prism-inference/blob/02c8a24b31ac1c35f2ffd3530f6a753ce440bdc0/src/backend/threadpool.rs#L188) creates copied per-worker matrix slices and is not the Swift projection path. Extend existing shared ownership when implementing row tasks; do not copy matrix payloads into tasks. |
 | Work-sized contiguous row tasks | Oxi's live [Q1 tiled path](https://github.com/cool-japan/oxibonsai/blob/1d10c48e14754ff6999158f8fa13c7c92b40b0dc/crates/oxibonsai-kernels/src/parallel_tiled.rs#L123) amortizes scheduling. Its selector ignores reduction width and guesses AArch64 cache sizes. Choose candidate task sizes from rows, row bytes, available workers and measured work. Its ternary dispatch routes both parallel strategies to flat row parallelism. |
 | Borrowed file-backed weight storage | Oxi's [weight loaders](https://github.com/cool-japan/oxibonsai/blob/1d10c48e14754ff6999158f8fa13c7c92b40b0dc/crates/oxibonsai-model/src/model/weight_loaders.rs#L132) borrow checked tensor blocks. This may reduce cold-load copying and private allocations through file-backed storage, but its [engine ownership](https://github.com/cool-japan/oxibonsai/blob/1d10c48e14754ff6999158f8fa13c7c92b40b0dc/crates/oxibonsai-runtime/src/engine.rs#L1455) deliberately leaks containers with `Box::leak`. Any Prism pilot must instead own the mapping and retained verified file normally, account for residency and release storage on failure/shutdown. |
@@ -167,8 +169,9 @@ explicit-resend policy.
 
 The [row-parallel source candidate](runtime-candidates/README.md) and [patch/base
 manifest](runtime-candidates/oxibonsai-row-parallel.json) retain the independently
-authored implementation and checks. Its newer Prism base `ff3d54d` and reviewed
-complete-tree match do not promote Runner's older release pin.
+authored implementation and checks at historical base `ff3d54d`. Later releases
+integrated row parallelism; the [current runtime contract](native-rust-engine.md#bounded-parallel-row-qualification)
+records Runner's four-worker development selection and independent qualification limits.
 
 Passing evidence has two scopes:
 
