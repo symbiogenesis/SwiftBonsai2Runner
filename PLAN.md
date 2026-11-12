@@ -15,7 +15,9 @@ and network failures, published prerelease selection, wrong-target/tampered
 metadata rejection, verified download, confirmed owned teardown and MSI handoff
 on installed Windows ARM64. Retain source-bound evidence that upgrades preserve
 model and recovery data and that source/preview launches perform no update work.
-The updater's source/fixture checks do not close installed update acceptance.
+The [bounded updater checks](docs/evidence/app-updates-20261111/delivery.json)
+passed five policy/tampering fixtures, the acknowledged-handoff regression and
+the native UI type-check. They do not close installed update acceptance.
 The no-push rule leaves source publication with the owner. The
 [local source review](docs/evidence/windows-release-20261111/delivery.json) retains
 passing final workflow, PowerShell, XML, Rust formatting and Markdown checks;

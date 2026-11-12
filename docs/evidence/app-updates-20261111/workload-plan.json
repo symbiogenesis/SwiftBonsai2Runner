@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "kind": "model-free-updater-source-validation-plan",
+  "declaredBeforeExecution": true,
+  "maximumAggregateSeconds": 300,
+  "conservativeEstimateSeconds": 240,
+  "reason": "Verify the newly added update policy and native integration without installing an update, launching the model, or running complete suites on the owner laptop.",
+  "fixedWork": [
+    "Record source revision, source identities and GetSystemPowerStatus before work.",
+    "Check Rust formatting and syntax and lint the six changed Markdown files.",
+    "Compile and run only app_update fixture tests and the exact acknowledged-installer-handoff regression in bonsai-tools, offline with the pinned compiler and an external temporary target.",
+    "Type-check the native chat application offline if it fits the original allowance, without running the UI or model.",
+    "Stop the process tree before the original deadline, record power after work, and retain logs and the exact outcome."
+  ],
+  "constraints": {
+    "maximumCompilerJobs": 4,
+    "coreTestMaximumSeconds": 100,
+    "nativeUiCheckMaximumSeconds": 135,
+    "reserveSecondsForCleanupAndEvidence": 30,
+    "retries": 0,
+    "completeSuites": false,
+    "modelOrBenchmarkWork": false,
+    "applicationLaunch": false,
+    "msiDownloadOrInstallation": false,
+    "releaseApiRequests": false,
+    "ciDispatchOrMonitoring": false,
+    "gitPushes": false,
+    "existingInstalledExecutablesReplaced": false,
+    "newComparisonsOrPerformanceClaims": false
+  },
+  "pending": [
+    "Full hosted analyzer and test gates in the release workflow.",
+    "Actual release discovery and download against a published project release.",
+    "Native installed-app shutdown, UAC, MSI upgrade, cancellation, failure recovery and data-preservation acceptance."
+  ]
+}
