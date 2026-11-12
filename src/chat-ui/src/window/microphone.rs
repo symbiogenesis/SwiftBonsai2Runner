@@ -1,8 +1,8 @@
 //! UI-thread microphone permission, capture and cancellation.
 //!
 //! No microphone API is activated until an explicit start. `WinRT` operations are
-//! polled by the egui event loop; completed clips remain in memory and recording
-//! pauses while the single local transcription request is outstanding.
+//! polled by the egui event loop; one completed utterance remains in memory for
+//! local transcription. Finishing and cancelling a recording are separate actions.
 
 use std::{
     io,
@@ -22,11 +22,12 @@ use windows::{
 };
 use windows_future::{AsyncStatus, IAsyncAction, IAsyncOperation};
 
-const CLIP_LIMIT: Duration = Duration::from_secs(5);
+// Leave headroom for polling and Windows finalization below the ASR's 30s bound.
+const CLIP_LIMIT: Duration = Duration::from_secs(25);
 const START_LIMIT: Duration = Duration::from_secs(15);
 const OPERATION_LIMIT: Duration = Duration::from_secs(45);
 const PERMISSION_LIMIT: Duration = Duration::from_mins(2);
-const MAX_WAV: u64 = 600 * 1024;
+const MAX_WAV: u64 = 1024 * 1024;
 
 pub(super) enum Event {
     Status(&'static str),
@@ -75,20 +76,8 @@ impl Lifecycle {
         self.waiting = false;
     }
 
-    const fn matches(&self, generation: u64) -> bool {
-        self.requested && self.generation == generation
-    }
-
     const fn accept_clip(&mut self) {
         self.waiting = true;
-    }
-
-    const fn resume(&mut self, generation: u64) -> bool {
-        if !self.matches(generation) || !self.waiting {
-            return false;
-        }
-        self.waiting = false;
-        true
     }
 }
 
@@ -141,7 +130,7 @@ impl AudioResource for InMemoryRandomAccessStream {
     }
 }
 
-/// A stopped recorder can be reused only by its explicitly enabled generation.
+/// Capture and stream resources belong to one explicitly enabled generation.
 struct CaptureResources<C, S> {
     capture: Option<(u64, C)>,
     stream: Option<S>,
@@ -235,20 +224,33 @@ impl Microphone {
         self.resources.close();
     }
 
-    pub(super) fn resume(&mut self, generation: u64) -> io::Result<()> {
-        if !self.lifecycle.resume(generation) {
-            return Ok(());
+    /// Finish captured audio; a second click during permission/setup cancels.
+    pub(super) fn finish(&mut self) -> io::Result<bool> {
+        if self.recording_since.is_some() {
+            self.finalize_clip().map_err(io::Error::other)?;
+            return Ok(true);
         }
-        if self
-            .check_access()
-            .and_then(|()| self.begin_clip())
-            .is_err()
+        if self.lifecycle.waiting
+            || matches!(self.pending, Some(Pending::Stop(_) | Pending::Read { .. }))
         {
-            self.stop();
-            return Err(io::Error::other(
-                "Microphone access or capture became unavailable. Enable it again to retry.",
-            ));
+            return Ok(true);
         }
+        self.stop();
+        Ok(false)
+    }
+
+    fn finalize_clip(&mut self) -> Result<(), &'static str> {
+        self.check_access()
+            .map_err(|_| "Microphone permission is unavailable.")?;
+        let capture = self
+            .resources
+            .capture_for(self.lifecycle.generation)
+            .ok_or("The microphone session ended.")?;
+        let operation = capture
+            .StopRecordAsync()
+            .map_err(|_| "Could not finalize the microphone recording.")?;
+        self.recording_since = None;
+        self.set_pending(Pending::Stop(operation));
         Ok(())
     }
 
@@ -359,15 +361,7 @@ impl Microphone {
             .recording_since
             .is_some_and(|started| started.elapsed() >= CLIP_LIMIT)
         {
-            let capture = self
-                .resources
-                .capture_for(self.lifecycle.generation)
-                .ok_or("The microphone session ended.")?;
-            let operation = capture
-                .StopRecordAsync()
-                .map_err(|_| "Could not finalize the microphone recording.")?;
-            self.recording_since = None;
-            self.set_pending(Pending::Stop(operation));
+            self.finalize_clip()?;
             return Ok(Some(Event::Status("Finalizing microphone recording...")));
         }
         Ok(None)
@@ -400,7 +394,7 @@ impl Microphone {
                     .map_err(|_| "Windows could not start microphone recording.")?;
                 self.recording_since = Some(Instant::now());
                 Ok(Some(Event::Status(
-                    "Recording microphone audio. Disable the microphone to cancel.",
+                    "Recording. Click the microphone to send; Escape cancels. Finishes after 25 seconds.",
                 )))
             }
             Pending::Stop(operation) => {
@@ -434,9 +428,8 @@ impl Microphone {
                     .map_err(|_| "The microphone clip could not be copied.")?;
                 let _result = reader.DetachStream();
                 let _result = reader.Close();
-                // StopRecordAsync already completed. Keep the initialized
-                // recorder, without recording, while this clip is transcribed.
-                self.resources.finish_clip();
+                // StopRecordAsync completed; release the device before inference.
+                self.resources.close();
                 self.lifecycle.accept_clip();
                 Ok(Some(Event::Clip {
                     generation: self.lifecycle.generation,
@@ -487,7 +480,7 @@ mod tests {
     }
 
     #[test]
-    fn completed_clip_keeps_capture_for_its_generation_until_session_stops() -> io::Result<()> {
+    fn completed_utterance_releases_capture_and_waits_without_restarting() -> io::Result<()> {
         let capture_closed = Rc::new(Cell::new(false));
         let stream_closed = Rc::new(Cell::new(false));
         let mut lifecycle = Lifecycle::default();
@@ -495,15 +488,13 @@ mod tests {
         let mut resources = CaptureResources::new();
         resources.capture = Some((generation, Resource(Rc::clone(&capture_closed))));
         resources.stream = Some(Resource(Rc::clone(&stream_closed)));
-        resources.finish_clip();
+        resources.close();
         lifecycle.accept_clip();
         assert!(stream_closed.get());
-        assert!(!capture_closed.get());
+        assert!(capture_closed.get());
         assert!(resources.stream.is_none());
-        assert!(resources.capture_for(generation).is_some());
-        assert!(lifecycle.resume(generation));
-        assert!(resources.capture_for(generation).is_some());
-        assert!(!capture_closed.get());
+        assert!(resources.capture_for(generation).is_none());
+        assert!(lifecycle.requested && lifecycle.waiting);
 
         // Revocation and explicit disabling both take this full-close path.
         lifecycle.accept_clip();
@@ -511,28 +502,25 @@ mod tests {
         resources.close();
         assert!(capture_closed.get());
         assert!(resources.capture_for(generation).is_none());
-        assert!(!lifecycle.resume(generation));
+        assert!(!lifecycle.requested && !lifecycle.waiting);
         let next = lifecycle.begin()?;
         assert!(resources.capture_for(next).is_none());
-        assert!(!lifecycle.resume(generation));
+        assert_ne!(next, generation);
         Ok(())
     }
 
     #[test]
-    fn cancellation_prevents_late_permission_or_transcription_from_resuming() -> io::Result<()> {
+    fn cancellation_invalidates_the_utterance_before_a_new_generation() -> io::Result<()> {
         let mut lifecycle = Lifecycle::default();
         let old = lifecycle.begin()?;
         lifecycle.accept_clip();
         lifecycle.stop();
-        assert!(!lifecycle.matches(old));
-        assert!(!lifecycle.resume(old));
+        assert!(!lifecycle.requested && !lifecycle.waiting);
         let current = lifecycle.begin()?;
         assert_ne!(current, old);
         lifecycle.accept_clip();
-        assert!(!lifecycle.resume(old));
-        assert!(lifecycle.resume(current));
-        assert!(!lifecycle.resume(current));
-        assert!(lifecycle.matches(current));
+        assert_eq!(lifecycle.generation, current);
+        assert!(lifecycle.requested && lifecycle.waiting);
         Ok(())
     }
 

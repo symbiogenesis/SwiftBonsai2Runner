@@ -105,13 +105,13 @@ fn configuration(
                 canary_port = Some(
                     args.next()
                         .and_then(|arg| arg.to_str().and_then(|text| text.parse::<u16>().ok()))
-                        .ok_or("Invalid Canary port.")?,
+                        .ok_or("Invalid Qwen3-ASR port.")?,
                 );
             }
             Some("--canary-key-file") if canary_key_file.is_none() => {
                 canary_key_file = args.next().map(PathBuf::from);
                 if canary_key_file.is_none() {
-                    return Err("A Canary key-file path is required.");
+                    return Err("A Qwen3-ASR key-file path is required.");
                 }
             }
             Some("--tts-port") if tts_port.is_none() => {
@@ -130,12 +130,13 @@ fn configuration(
             Some("--canary-executable") if canary_executable.is_none() => {
                 canary_executable = Some(PathBuf::from(
                     args.next()
-                        .ok_or("A native Canary executable path is required.")?,
+                        .ok_or("A native Qwen3-ASR executable path is required.")?,
                 ));
             }
             Some("--canary-model") if canary_model.is_none() => {
                 canary_model = Some(PathBuf::from(
-                    args.next().ok_or("A Canary GGUF model path is required.")?,
+                    args.next()
+                        .ok_or("A Qwen3-ASR GGUF model path is required.")?,
                 ));
             }
             Some("--tts-executable") if tts_executable.is_none() => {
@@ -210,7 +211,7 @@ fn configuration(
                     .ok_or("An external evidence directory is required.")?,
             })
         }
-        _ => return Err("Configure both native Canary launch paths with --canary-key-file."),
+        _ => return Err("Configure both native Qwen3-ASR launch paths with --canary-key-file."),
     };
     let tts_launch = match (tts_executable, tts_model, tts_codec, tts_voice_model) {
         (None, None, None, None) => None,
@@ -284,14 +285,14 @@ fn validate_configuration(
     }
     if let Some(canary) = &config.canary {
         bonsai_windows_credentials::validate_external_path(&canary.key_file)
-            .map_err(|_| "Use an expanded absolute external Canary key-file path.")?;
+            .map_err(|_| "Use an expanded absolute external Qwen3-ASR key-file path.")?;
         if !canary.key_file.is_file()
             || canary.port < 1024
             || canary.port == config.frontend_port
             || canary.port == config.backend_port
         {
             return Err(
-                "Canary needs an existing key file and a distinct unprivileged local port.",
+                "Qwen3-ASR needs an existing key file and a distinct unprivileged local port.",
             );
         }
         if let Some(launch) = &canary.launch {

@@ -458,6 +458,7 @@ fn dictation_updates_loading_drafts_and_switching_cancels_late_transcripts() {
         let (mut state, commands, _events) = state();
         state.model = phase;
         state.dictation_requested = true;
+        state.dictation_finishing = true;
         state.microphone_generation = Some(7);
         state.accept_transcript(7, "Dictated draft");
         assert_eq!(state.input, "Dictated draft");
@@ -487,26 +488,23 @@ fn cancelled_dictation_cannot_insert_a_late_transcript() {
 #[test]
 fn dictation_replaces_the_unicode_selection_and_advances_the_caret() {
     let (mut state, _commands, _events) = state();
-    state.model = ModelLifecycle::Ready;
-    state.dictation_requested = true;
-    state.microphone_generation = Some(7);
     state.input = "café 日本語 🌿 end".to_owned();
     state.composer_cursor = Some(egui::text::CCursorRange::two(
         egui::text::CCursor::new(5),
         egui::text::CCursor::new(9),
     ));
-    state.accept_transcript(7, "こんにちは");
+    assert!(state.insert_dictation("こんにちは"));
     assert_eq!(state.input, "café こんにちは 🌿 end");
     assert!(
         state
             .pending_cursor
             .is_some_and(|cursor| usize::from(cursor.primary.index) == 11 && cursor.is_empty())
     );
-    state.accept_transcript(7, "again");
+    assert!(state.insert_dictation("again"));
     assert_eq!(state.input, "café こんにちは again 🌿 end");
     state.input = "界".repeat(INPUT_LIMIT);
     state.place_composer_cursor(INPUT_LIMIT);
-    state.accept_transcript(7, "overflow");
+    assert!(!state.insert_dictation("overflow"));
     assert_eq!(state.input.chars().count(), INPUT_LIMIT);
     assert!(state.input.chars().all(|character| character == '界'));
 }
@@ -979,5 +977,147 @@ fn model_lifecycle_queued_rejection_cannot_cancel_an_explicit_restart() {
         assert_eq!(state.model, ModelLifecycle::Preparing);
         state.model_event(Event::Ready);
         assert_eq!(state.model, ModelLifecycle::Ready);
+    }
+}
+
+#[test]
+fn finished_voice_message_submits_once_through_the_normal_prompt_flow() {
+    let (mut state, commands, _events) = state();
+    state.model = ModelLifecycle::Ready;
+    state.dictation_requested = true;
+    state.dictation_finishing = true;
+    state.microphone_generation = Some(7);
+    state.accept_transcript(7, "  Explain bonsai pruning  ");
+    assert!(matches!(
+        commands.try_recv(),
+        Ok(Command::Send { text, .. }) if text == "Explain bonsai pruning"
+    ));
+    assert!(state.input.is_empty());
+    assert!(state.model.busy());
+    assert!(!state.dictation_requested && !state.dictation_finishing);
+    assert!(state.microphone_generation.is_none());
+    state.accept_transcript(7, "Duplicate recognition");
+    assert!(commands.try_recv().is_err());
+    assert_eq!(state.transcript.messages[0].body, "Explain bonsai pruning");
+}
+
+#[test]
+fn unfinished_or_stale_voice_message_cannot_submit() {
+    let (mut state, commands, _events) = state();
+    state.model = ModelLifecycle::Ready;
+    state.input = "Existing draft".to_owned();
+    state.dictation_requested = true;
+    state.microphone_generation = Some(8);
+    state.accept_transcript(8, "Unfinished recognition");
+    state.dictation_finishing = true;
+    state.accept_transcript(7, "Old recognition");
+    assert_eq!(state.input, "Existing draft");
+    assert!(commands.try_recv().is_err());
+    state.stop_speech();
+    state.accept_transcript(8, "Cancelled recognition");
+    assert_eq!(state.input, "Existing draft");
+    assert!(commands.try_recv().is_err());
+}
+
+#[test]
+fn empty_or_failed_voice_message_preserves_existing_draft_without_sending() {
+    for failed in [false, true] {
+        let (mut state, commands, _events) = state();
+        state.model = ModelLifecycle::Ready;
+        state.input = "Existing draft".to_owned();
+        state.dictation_requested = true;
+        state.dictation_finishing = true;
+        state.microphone_generation = Some(7);
+        if failed {
+            state.speech_event(speech::Event::InputFailed {
+                generation: 7,
+                message: "Recognition failed.",
+            });
+        } else {
+            state.accept_transcript(7, "  ");
+        }
+        assert_eq!(state.input, "Existing draft");
+        assert!(!state.dictation_requested && !state.dictation_finishing);
+        state.accept_transcript(7, "Late recognition");
+        assert!(commands.try_recv().is_err());
+    }
+}
+
+#[test]
+fn voice_message_kept_during_model_preparation_never_sends_on_readiness() {
+    let (mut state, commands, _events) = state();
+    state.dictation_requested = true;
+    state.dictation_finishing = true;
+    state.microphone_generation = Some(7);
+    state.accept_transcript(7, "Keep this voice draft");
+    assert_eq!(state.input, "Keep this voice draft");
+    assert!(commands.try_recv().is_err());
+    state.model_event(Event::Ready);
+    state.accept_transcript(7, "Late recognition");
+    assert_eq!(state.input, "Keep this voice draft");
+    assert!(commands.try_recv().is_err());
+}
+
+#[test]
+fn voice_message_exceeding_prompt_limit_requires_review() {
+    let (mut state, commands, _events) = state();
+    state.model = ModelLifecycle::Ready;
+    state.input = "x".repeat(INPUT_LIMIT - 2);
+    state.place_composer_cursor(INPUT_LIMIT - 2);
+    state.dictation_requested = true;
+    state.dictation_finishing = true;
+    state.microphone_generation = Some(7);
+    state.accept_transcript(7, "too long");
+    assert_eq!(state.input.chars().count(), INPUT_LIMIT);
+    assert!(state.speech_status.contains("prompt limit"));
+    assert!(commands.try_recv().is_err());
+}
+
+#[test]
+fn switching_conversations_cancels_an_inflight_voice_message() {
+    let (mut state, commands, _events) = state();
+    state.model = ModelLifecycle::Ready;
+    state.input = "Original draft".to_owned();
+    state.dictation_requested = true;
+    state.dictation_finishing = true;
+    state.microphone_generation = Some(7);
+    state.new_chat();
+    assert!(matches!(commands.try_recv(), Ok(Command::NewChat)));
+    state.accept_transcript(7, "Late recognition from previous chat");
+    assert!(state.input.is_empty());
+    assert!(state.transcript.messages.is_empty());
+    assert!(commands.try_recv().is_err());
+    assert!(!state.dictation_requested && !state.dictation_finishing);
+}
+
+#[test]
+fn busy_model_keeps_voice_message_as_a_draft_without_a_second_request() {
+    let (mut state, commands, _events) = state();
+    state.model = ModelLifecycle::Generating;
+    state.dictation_requested = true;
+    state.dictation_finishing = true;
+    state.microphone_generation = Some(7);
+    state.accept_transcript(7, "Next question");
+    assert_eq!(state.input, "Next question");
+    assert!(state.model.busy());
+    assert!(commands.try_recv().is_err());
+}
+
+#[test]
+fn voice_message_separates_spoken_words_from_an_existing_draft() {
+    for existing in ["Existing draft", "Existing draft "] {
+        let (mut state, commands, _events) = state();
+        state.model = ModelLifecycle::Ready;
+        state.input = existing.to_owned();
+        state.place_composer_cursor(state.input.chars().count());
+        state.dictation_requested = true;
+        state.dictation_finishing = true;
+        state.microphone_generation = Some(7);
+        state.accept_transcript(7, "Explain bonsai");
+        assert!(matches!(
+            commands.try_recv(),
+            Ok(Command::Send { text, .. }) if text == "Existing draft Explain bonsai"
+        ));
+        assert!(commands.try_recv().is_err());
     }
 }

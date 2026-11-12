@@ -1,4 +1,4 @@
-//! Bounded authenticated loopback adapter for the local Canary Qwen companion.
+//! Bounded authenticated loopback adapter for the local Qwen3-ASR companion.
 //!
 //! Audio and transcripts remain in memory. The supported HTTP subset uses one
 //! fixed-length response per connection, with no redirects, retries or proxies.
@@ -21,7 +21,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-const MODEL: &str = "nvidia/canary-qwen-2.5b";
+const MODEL: &str = "Qwen/Qwen3-ASR-1.7B";
 const SAMPLE_RATE: u32 = 16000;
 const CLIP_SECONDS: u32 = 30;
 const MAX_REQUEST: usize = 1024 * 1024;
@@ -85,10 +85,10 @@ impl Client {
     /// Read an existing external token file without creating or modifying it.
     pub(crate) fn new(config: &Config) -> std::result::Result<Self, &'static str> {
         if config.port < 1024 {
-            return Err("Use an unprivileged local Canary port.");
+            return Err("Use an unprivileged local Qwen3-ASR port.");
         }
         let key = bonsai_windows_credentials::RetainedCredential::open(&config.key_file).map_err(
-            |_| "Use an existing regular 64-byte lowercase hexadecimal Canary key file outside Git.",
+            |_| "Use an existing regular 64-byte lowercase hexadecimal Qwen3-ASR key file outside Git.",
         )?;
         // Path checks and retained handles do not attest ACLs or freeze mutable
         // ancestors. The companion must create its key under a protected parent.
@@ -103,7 +103,7 @@ impl Client {
         let current = AtomicU64::new(0);
         self.ready_for(0, &current)
             .map_err(|failure| match failure {
-                Failure::Cancelled => "The Canary readiness check was cancelled.",
+                Failure::Cancelled => "The Qwen3-ASR readiness check was cancelled.",
                 Failure::Message(message) => message,
             })
     }
@@ -113,7 +113,7 @@ impl Client {
         let result = self.exchange("GET", "/health", None, &[], Media::Json, &call)
             .and_then(|body| {
                 let health: Health<'_> = serde_json::from_slice(&body).map_err(|_| {
-                    Failure::Message("The Canary companion returned an invalid capability response.")
+                    Failure::Message("The Qwen3-ASR companion returned an invalid capability response.")
                 })?;
                 if health.model != MODEL
                     || !health.ready
@@ -123,7 +123,7 @@ impl Client {
                     || health.channels != 1
                 {
                     return Err(Failure::Message(
-                        "The Canary companion is not ready with the required model and audio format.",
+                        "The Qwen3-ASR companion is not ready with the required model and audio format.",
                     ));
                 }
                 Ok(())
@@ -148,7 +148,7 @@ impl Client {
         };
         if launch.codec.is_some() || launch.voice_model.is_some() {
             return Err(Failure::Message(
-                "Native Canary does not accept TTS model or codec paths.",
+                "Native Qwen3-ASR does not accept TTS model or codec paths.",
             ));
         }
         Service::start(
@@ -200,18 +200,18 @@ impl Client {
         let response = read_response(&mut stream, call, Media::Json)?;
         call.check()?;
         let transcript: Transcript<'_> = serde_json::from_slice(&response).map_err(|_| {
-            Failure::Message("The Canary companion returned an invalid transcription.")
+            Failure::Message("The Qwen3-ASR companion returned an invalid transcription.")
         })?;
         if transcript.model != MODEL {
             return Err(Failure::Message(
-                "The Canary transcription came from an unexpected model.",
+                "The Qwen3-ASR transcription came from an unexpected model.",
             ));
         }
         if transcript.text.contains('\0')
             || transcript.text.encode_utf16().take(MAX_TEXT + 1).count() > MAX_TEXT
         {
             return Err(Failure::Message(
-                "The Canary transcript exceeded the supported text limit.",
+                "The Qwen3-ASR transcript exceeded the supported text limit.",
             ));
         }
         call.check()?;
@@ -283,17 +283,19 @@ impl Client {
     ) -> Result<TcpStream> {
         call.check()?;
         let length = request_length(body).ok_or(Failure::Message(
-            "The Canary request exceeded its size limit.",
+            "The Qwen3-ASR request exceeded its size limit.",
         ))?;
         let address = SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::LOCALHOST, self.port));
         let timeout = IO_POLL.min(call.until.saturating_duration_since(Instant::now()));
         let mut stream = TcpStream::connect_timeout(&address, timeout)
-            .map_err(|_| Failure::Message("Could not connect to the local Canary companion."))?;
+            .map_err(|_| Failure::Message("Could not connect to the local Qwen3-ASR companion."))?;
         call.check()?;
         stream
             .set_read_timeout(Some(IO_POLL))
             .and_then(|()| stream.set_write_timeout(Some(IO_POLL)))
-            .map_err(|_| Failure::Message("Could not configure the Canary connection timeout."))?;
+            .map_err(|_| {
+                Failure::Message("Could not configure the Qwen3-ASR connection timeout.")
+            })?;
         let media =
             content_type.map_or_else(String::new, |media| format!("Content-Type: {media}\r\n"));
         let head = format!(
@@ -370,7 +372,7 @@ impl<'a> Call<'a> {
             Err(Failure::Cancelled)
         } else if Instant::now() >= self.until {
             Err(Failure::Message(
-                "The Canary request exceeded its time limit.",
+                "The Qwen3-ASR request exceeded its time limit.",
             ))
         } else {
             Ok(())
@@ -381,7 +383,7 @@ impl<'a> Call<'a> {
 #[cfg(test)]
 fn validate_wav(wav: &[u8]) -> Result<()> {
     let invalid = Failure::Message(
-        "Canary requires a 16 kHz mono 16-bit PCM WAV clip of at most 30 seconds.",
+        "Qwen3-ASR requires a 16 kHz mono 16-bit PCM WAV clip of at most 30 seconds.",
     );
     bonsai_audio::mono_pcm16_data(wav, SAMPLE_RATE, SAMPLE_RATE * CLIP_SECONDS)
         .map(|_| ())
@@ -397,7 +399,7 @@ struct CanonicalWav<'a> {
 
 fn normalize_wav<'a>(wav: &'a [u8], call: &Call<'_>) -> Result<CanonicalWav<'a>> {
     let invalid = Failure::Message(
-        "Canary requires a 16 kHz mono 16-bit PCM WAV clip of at most 30 seconds.",
+        "Qwen3-ASR requires a 16 kHz mono 16-bit PCM WAV clip of at most 30 seconds.",
     );
     if wav.len() < 12
         || wav.len() > MAX_REQUEST
@@ -516,11 +518,11 @@ fn boundary(wav: &CanonicalWav<'_>, call: &Call<'_>) -> Result<String> {
     // values contain a free one, so the selected boundary cannot occur in WAV
     // bytes even for adversarial PCM payloads. No random-boundary assumption.
     let count = u64::try_from(used.len())
-        .map_err(|_| Failure::Message("Could not prepare the Canary upload boundary."))?;
+        .map_err(|_| Failure::Message("Could not prepare the Qwen3-ASR upload boundary."))?;
     let counter = (0..=count)
         .find(|candidate| !used.contains(candidate))
         .ok_or(Failure::Message(
-            "Could not prepare the Canary upload boundary.",
+            "Could not prepare the Qwen3-ASR upload boundary.",
         ))?;
     call.check()?;
     Ok(format!("bonsai-canary-{counter:016x}"))
@@ -555,7 +557,7 @@ fn multipart<'a>(wav: CanonicalWav<'a>, boundary: &str) -> Result<Multipart<'a>>
     };
     if request_length(&body.parts()).is_none() {
         return Err(Failure::Message(
-            "The Canary upload exceeded its size limit.",
+            "The Qwen3-ASR upload exceeded its size limit.",
         ));
     }
     Ok(body)
@@ -577,12 +579,12 @@ fn write_all(stream: &mut impl Write, mut bytes: &[u8], call: &Call<'_>) -> Resu
         match result {
             Ok(0) => {
                 return Err(Failure::Message(
-                    "The Canary connection closed during upload.",
+                    "The Qwen3-ASR connection closed during upload.",
                 ));
             }
             Ok(count) => bytes = &bytes[count..],
             Err(error) if retry_poll(&error) => {}
-            Err(_) => return Err(Failure::Message("The Canary upload was interrupted.")),
+            Err(_) => return Err(Failure::Message("The Qwen3-ASR upload was interrupted.")),
         }
     }
     call.check()
@@ -596,12 +598,12 @@ fn read(stream: &mut TcpStream, bytes: &mut [u8], call: &Call<'_>) -> Result<usi
         match result {
             Ok(0) => {
                 return Err(Failure::Message(
-                    "The Canary response ended before its framing completed.",
+                    "The Qwen3-ASR response ended before its framing completed.",
                 ));
             }
             Ok(count) => return Ok(count),
             Err(error) if retry_poll(&error) => {}
-            Err(_) => return Err(Failure::Message("The Canary response was interrupted.")),
+            Err(_) => return Err(Failure::Message("The Qwen3-ASR response was interrupted.")),
         }
     }
 }
@@ -625,7 +627,7 @@ fn read_response(stream: &mut TcpStream, call: &Call<'_>, expected: Media) -> Re
         }
         if received.len() >= MAX_HEAD {
             return Err(Failure::Message(
-                "The Canary response header exceeded its limit.",
+                "The Qwen3-ASR response header exceeded its limit.",
             ));
         }
         let size = buffer.len().min(MAX_HEAD - received.len());
@@ -647,7 +649,7 @@ fn response_body(
     let prefix = received.len() - end;
     if prefix > length {
         return Err(Failure::Message(
-            "The Canary response exceeded its declared length.",
+            "The Qwen3-ASR response exceeded its declared length.",
         ));
     }
     // Keep the authorized header allocation, moving only coalesced payload.
@@ -664,7 +666,7 @@ fn response_body(
         let count = read(&mut received[filled..])?;
         if count == 0 {
             return Err(Failure::Message(
-                "The Canary response ended before its framing completed.",
+                "The Qwen3-ASR response ended before its framing completed.",
             ));
         }
         filled += count;
@@ -673,7 +675,7 @@ fn response_body(
 }
 
 fn response_length(head: &[u8], expected: Media) -> Result<usize> {
-    let invalid = Failure::Message("The Canary companion returned unsupported HTTP framing.");
+    let invalid = Failure::Message("The Qwen3-ASR companion returned unsupported HTTP framing.");
     if !head.starts_with(b"HTTP/1.1 ")
         || head.iter().enumerate().any(|(index, &byte)| {
             (byte == b'\n' && (index == 0 || head[index - 1] != b'\r'))
@@ -689,7 +691,7 @@ fn response_length(head: &[u8], expected: Media) -> Result<usize> {
         || response.code != Some(200)
     {
         return Err(Failure::Message(
-            "The Canary companion rejected the request.",
+            "The Qwen3-ASR companion rejected the request.",
         ));
     }
     let mut length = None;
@@ -795,7 +797,7 @@ mod tests {
             .as_nanos();
         let sequence = NEXT_PARENT.fetch_add(1, Ordering::Relaxed);
         let parent = std::env::temp_dir().join(format!(
-            "Bonsai-Canary-Protocol-{}-{stamp}-{sequence}",
+            "Bonsai-Qwen3-ASR-Protocol-{}-{stamp}-{sequence}",
             std::process::id()
         ));
         fs::create_dir(&parent)?;
@@ -885,8 +887,8 @@ mod tests {
     }
 
     #[test]
-    fn authenticated_health_and_multipart_transcription_use_exact_canary_contract() -> io::Result<()>
-    {
+    fn authenticated_health_and_multipart_transcription_use_exact_qwen_asr_contract()
+    -> io::Result<()> {
         let listener = TcpListener::bind((std::net::Ipv4Addr::LOCALHOST, 0))?;
         let (credentials, client) = client(listener.local_addr()?.port())?;
         let authorization = format!("Authorization: Bearer {}\r\n", credentials.frontend_key());
@@ -901,11 +903,11 @@ mod tests {
                     .windows(authorization.len())
                     .any(|bytes| bytes == authorization.as_bytes())
             );
-            respond(&mut stream, br#"{"model":"nvidia/canary-qwen-2.5b","ready":true,"sample_rate":16000,"max_clip_seconds":30,"input_format":"pcm_s16le_wav","channels":1}"#)?;
+            respond(&mut stream, br#"{"model":"Qwen/Qwen3-ASR-1.7B","ready":true,"sample_rate":16000,"max_clip_seconds":30,"input_format":"pcm_s16le_wav","channels":1}"#)?;
             drop(stream);
             for response in [
-                br#"{"text":"Test words","model":"nvidia/canary-qwen-2.5b"}"#.as_slice(),
-                br#"{"text":"","model":"nvidia/canary-qwen-2.5b"}"#.as_slice(),
+                br#"{"text":"Test words","model":"Qwen/Qwen3-ASR-1.7B"}"#.as_slice(),
+                br#"{"text":"","model":"Qwen/Qwen3-ASR-1.7B"}"#.as_slice(),
             ] {
                 let (mut stream, _) = listener.accept()?;
                 let upload = request(&mut stream)?;
@@ -959,6 +961,33 @@ mod tests {
                 .transcribe(7, &audio, &current)
                 .map_err(|_| io::Error::other("Silent clip failed"))?,
             ""
+        );
+        server
+            .join()
+            .map_err(|_| io::Error::other("Fake companion failed"))??;
+        Ok(())
+    }
+
+    #[test]
+    fn qwen_asr_rejects_the_previous_recognizer_identity() -> io::Result<()> {
+        let listener = TcpListener::bind((std::net::Ipv4Addr::LOCALHOST, 0))?;
+        let (_credentials, client) = client(listener.local_addr()?.port())?;
+        let server = thread::spawn(move || -> io::Result<()> {
+            for response in [
+                br#"{"model":"nvidia/canary-qwen-2.5b","ready":true,"sample_rate":16000,"max_clip_seconds":30,"input_format":"pcm_s16le_wav","channels":1}"#.as_slice(),
+                br#"{"text":"Wrong recognizer","model":"nvidia/canary-qwen-2.5b"}"#.as_slice(),
+            ] {
+                let (mut stream, _) = listener.accept()?;
+                let _request = request(&mut stream)?;
+                respond(&mut stream, response)?;
+            }
+            Ok(())
+        });
+        assert!(client.ready().is_err());
+        assert!(
+            client
+                .transcribe(7, &wav(&[0, 0])?, &AtomicU64::new(7))
+                .is_err()
         );
         server
             .join()

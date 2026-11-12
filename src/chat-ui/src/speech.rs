@@ -1,4 +1,4 @@
-//! Cancellable Canary transcription and Qwen `VoiceDesign` synthesis workers.
+//! Cancellable Qwen3-ASR transcription and Qwen `VoiceDesign` synthesis workers.
 //!
 //! Permission and microphone capture stay on the native UI thread. Finished
 //! clips and free-form voice descriptions cross this owned, text/audio boundary.
@@ -343,10 +343,12 @@ fn transcription(
         }
         return;
     }
-    let _sent = events.send(Event::Status("Transcribing with native Canary Qwen 2.5B. Microphone capture is paused; disabling it cancels model loading."));
+    let _sent = events.send(Event::Status(
+        "Transcribing with native Qwen3-ASR 1.7B. Escape cancels model loading or transcription.",
+    ));
     let result = input.map_or(
         Err(canary::Failure::Message(
-            "Canary Qwen 2.5B is unavailable. Check the native speech configuration and key file.",
+            "Qwen3-ASR 1.7B is unavailable. Check the native speech configuration and key file.",
         )),
         |input| {
             let result = input.transcribe(generation, wav, current);

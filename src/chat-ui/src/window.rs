@@ -144,6 +144,7 @@ struct State {
     voice_profile: String,
     listening: bool,
     dictation_requested: bool,
+    dictation_finishing: bool,
     microphone: Option<microphone::Microphone>,
     microphone_generation: Option<u64>,
     speaking: bool,
@@ -232,6 +233,7 @@ impl State {
             voice_profile: DEFAULT_VOICE.to_owned(),
             listening: false,
             dictation_requested: false,
+            dictation_finishing: false,
             microphone,
             microphone_generation: None,
             speaking: false,
@@ -770,15 +772,14 @@ impl State {
         }
         self.microphone_generation = None;
         self.dictation_requested = false;
+        self.dictation_finishing = false;
         self.listening = false;
     }
 
     fn toggle_dictation(&mut self) {
         self.speech_notice = true;
         if self.dictation_requested {
-            self.cancel_microphone();
-            "Microphone off. Review your message before sending."
-                .clone_into(&mut self.speech_status);
+            self.finish_dictation();
         } else if !self.speech_input && (self.speech_checked || !self.canary_configured) {
             let message = self.microphone_help();
             message.clone_into(&mut self.speech_status);
@@ -807,6 +808,29 @@ impl State {
             }
         }
         self.record(&self.speech_status.clone());
+    }
+
+    fn finish_dictation(&mut self) {
+        if self.dictation_finishing {
+            self.cancel_microphone();
+            "Voice message cancelled.".clone_into(&mut self.speech_status);
+            return;
+        }
+        match self.microphone.as_mut().map(microphone::Microphone::finish) {
+            Some(Ok(true)) => {
+                self.dictation_finishing = true;
+                "Finishing voice message… Escape cancels.".clone_into(&mut self.speech_status);
+            }
+            Some(Err(_)) => {
+                self.cancel_microphone();
+                "Could not finish microphone capture. Try again."
+                    .clone_into(&mut self.speech_status);
+            }
+            Some(Ok(false)) | None => {
+                self.cancel_microphone();
+                "Microphone off. No voice message sent.".clone_into(&mut self.speech_status);
+            }
+        }
     }
 
     fn toggle_read_aloud(&mut self, message_id: u64) {
@@ -852,11 +876,11 @@ impl State {
 
     const fn microphone_help(&self) -> &'static str {
         if !self.canary_configured {
-            "Launch bonsai-tools chat with its default speech settings to prepare native Canary Qwen 2.5B automatically. The model loads after you enable the microphone and permit Windows microphone access. See tools/canary-asr/README.md. Nothing is recording now."
+            "Launch bonsai-tools chat with its default speech settings to prepare Qwen3-ASR 1.7B automatically. Click the microphone to record, then click again to transcribe and send your message. Windows microphone permission is required. See tools/canary-asr/README.md. Nothing is recording now."
         } else if self.microphone.is_none() {
             "Windows microphone access could not initialize. Check Windows microphone privacy settings and restart the app. Nothing is recording."
         } else {
-            "Canary Qwen 2.5B is not ready. Start its service on the configured port, check its protected key file, then restart the app. See tools/canary-asr/README.md. Nothing is recording."
+            "Qwen3-ASR 1.7B is not ready. Start its service on the configured port, check its protected key file, then restart the app. See tools/canary-asr/README.md. Nothing is recording."
         }
     }
 
@@ -915,7 +939,7 @@ impl State {
             speech::Event::Listening(listening) => {
                 self.listening = listening && self.dictation_requested;
                 if self.listening {
-                    "Recording. Review transcribed text before sending."
+                    "Recording. Click the microphone to transcribe and send; Escape cancels."
                 } else if self.dictation_requested {
                     "Microphone enabled."
                 } else {
@@ -989,24 +1013,33 @@ impl State {
     fn accept_transcript(&mut self, generation: u64, text: &str) {
         if !self.dictation_requested
             || self.microphone_generation != Some(generation)
-            || self.model.busy()
+            || !self.dictation_finishing
         {
             return;
         }
-        if !text.trim().is_empty() {
-            self.insert_dictation(text.trim());
+        self.cancel_microphone();
+        let text = text.trim();
+        if text.is_empty() {
+            "No speech recognized. Your draft was kept.".clone_into(&mut self.speech_status);
+            return;
         }
-        if self
-            .microphone
-            .as_mut()
-            .is_some_and(|microphone| microphone.resume(generation).is_err())
-        {
-            self.cancel_microphone();
-            "Microphone capture became unavailable. Enable it again to retry."
+        let complete = self.insert_dictation(text);
+        if !complete {
+            "Voice message exceeds the prompt limit. Review the draft before sending."
                 .clone_into(&mut self.speech_status);
+        } else if self.model.ready()
+            && self.rename_conversation.is_none()
+            && self.delete_conversation.is_none()
+        {
+            self.submit();
+            if self.model.busy() {
+                "Voice message transcribed and sent.".clone_into(&mut self.speech_status);
+            }
         } else {
-            "Transcript ready to review. Resuming microphone…".clone_into(&mut self.speech_status);
+            "Voice message transcribed. Select Send when the model is ready."
+                .clone_into(&mut self.speech_status);
         }
+        self.focus_composer = true;
     }
 
     fn place_composer_cursor(&mut self, index: usize) {
@@ -1016,14 +1049,13 @@ impl State {
         self.pending_cursor = Some(cursor);
     }
 
-    fn insert_dictation(&mut self, text: &str) {
+    fn insert_dictation(&mut self, text: &str) -> bool {
         let length = self.input.chars().count();
         let range = self.composer_cursor.map_or(length..length, |cursor| {
             let range = cursor.as_sorted_char_range();
             usize::from(range.start).min(length)..usize::from(range.end).min(length)
         });
         let available = INPUT_LIMIT.saturating_sub(length - (range.end - range.start));
-        let phrase: String = format!("{text} ").chars().take(available).collect();
         let byte_index = |index| {
             self.input
                 .char_indices()
@@ -1031,8 +1063,30 @@ impl State {
                 .map_or(self.input.len(), |(byte, _)| byte)
         };
         let bytes = byte_index(range.start)..byte_index(range.end);
+        let prefix = if self.input[..bytes.start]
+            .chars()
+            .next_back()
+            .is_some_and(|character| !character.is_whitespace())
+        {
+            " "
+        } else {
+            ""
+        };
+        let suffix = if self.input[bytes.end..]
+            .chars()
+            .next()
+            .is_some_and(|character| !character.is_whitespace())
+        {
+            " "
+        } else {
+            ""
+        };
+        let phrase = format!("{prefix}{text}{suffix}");
+        let complete = phrase.chars().count() <= available;
+        let phrase: String = phrase.chars().take(available).collect();
         self.input.replace_range(bytes, &phrase);
         self.place_composer_cursor(range.start + phrase.chars().count());
+        complete
     }
 
     fn poll_microphone(&mut self) {
@@ -1053,8 +1107,9 @@ impl State {
                 microphone::Event::Clip { generation, wav } => {
                     if self.dictation_requested && self.microphone_generation == Some(generation) {
                         self.listening = false;
+                        self.dictation_finishing = true;
                         if self.speech_command(speech::Command::Transcribe { generation, wav }) {
-                            "Transcribing locally. Microphone capture is paused."
+                            "Transcribing with Qwen3-ASR 1.7B… Escape cancels."
                                 .clone_into(&mut self.speech_status);
                         }
                     }
@@ -1579,49 +1634,71 @@ impl State {
                     .selected(self.dictation_requested),
             )
             .accessible_name("Microphone")
-            .on_hover_text(if self.dictation_requested {
-                "Turn microphone off · cancel dictation"
+            .on_hover_text(if self.dictation_finishing {
+                "Cancel voice message · Escape"
+            } else if self.dictation_requested {
+                "Finish recording, transcribe and send · Escape cancels"
             } else {
-                "Dictate into your message · never sends automatically"
+                "Record a voice message · Qwen3-ASR 1.7B"
             });
         let center = response.rect.center();
         let stroke = ui.style().interact(&response).fg_stroke;
         let painter = ui.painter_at(response.rect);
-        painter.rect_stroke(
-            egui::Rect::from_center_size(center - egui::vec2(0.0, 3.0), egui::vec2(7.0, 12.0)),
-            4.0,
-            stroke,
-            egui::StrokeKind::Middle,
-        );
-        let cradle = [
-            (-7.0, -2.0),
-            (-7.0, 0.0),
-            (-6.5, 2.7),
-            (-5.0, 5.0),
-            (-2.7, 6.5),
-            (0.0, 7.0),
-            (2.7, 6.5),
-            (5.0, 5.0),
-            (6.5, 2.7),
-            (7.0, 0.0),
-            (7.0, -2.0),
-        ]
-        .map(|(x, y)| center + egui::vec2(x, y));
-        painter.add(egui::Shape::line(cradle.to_vec(), stroke));
-        painter.line_segment(
-            [
-                center + egui::vec2(0.0, 7.0),
-                center + egui::vec2(0.0, 10.0),
-            ],
-            stroke,
-        );
-        painter.line_segment(
-            [
-                center + egui::vec2(-4.0, 10.0),
-                center + egui::vec2(4.0, 10.0),
-            ],
-            stroke,
-        );
+        if self.dictation_finishing {
+            painter.line_segment(
+                [center - egui::vec2(5.0, 5.0), center + egui::vec2(5.0, 5.0)],
+                stroke,
+            );
+            painter.line_segment(
+                [
+                    center + egui::vec2(-5.0, 5.0),
+                    center + egui::vec2(5.0, -5.0),
+                ],
+                stroke,
+            );
+        } else if self.dictation_requested {
+            painter.rect_filled(
+                egui::Rect::from_center_size(center, egui::Vec2::splat(12.0)),
+                2.0,
+                stroke.color,
+            );
+        } else {
+            painter.rect_stroke(
+                egui::Rect::from_center_size(center - egui::vec2(0.0, 3.0), egui::vec2(7.0, 12.0)),
+                4.0,
+                stroke,
+                egui::StrokeKind::Middle,
+            );
+            let cradle = [
+                (-7.0, -2.0),
+                (-7.0, 0.0),
+                (-6.5, 2.7),
+                (-5.0, 5.0),
+                (-2.7, 6.5),
+                (0.0, 7.0),
+                (2.7, 6.5),
+                (5.0, 5.0),
+                (6.5, 2.7),
+                (7.0, 0.0),
+                (7.0, -2.0),
+            ]
+            .map(|(x, y)| center + egui::vec2(x, y));
+            painter.add(egui::Shape::line(cradle.to_vec(), stroke));
+            painter.line_segment(
+                [
+                    center + egui::vec2(0.0, 7.0),
+                    center + egui::vec2(0.0, 10.0),
+                ],
+                stroke,
+            );
+            painter.line_segment(
+                [
+                    center + egui::vec2(-4.0, 10.0),
+                    center + egui::vec2(4.0, 10.0),
+                ],
+                stroke,
+            );
+        }
         if response.clicked() {
             self.toggle_dictation();
         }
