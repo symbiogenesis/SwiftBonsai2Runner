@@ -354,6 +354,65 @@ fn argv_environment_and_native_cwd() -> io::Result<()> {
 }
 
 #[test]
+fn background_tool_job_lowers_root_and_nested_descendant_priority() -> io::Result<()> {
+    use windows_sys::Win32::System::Threading::BELOW_NORMAL_PRIORITY_CLASS;
+
+    let control = Lane::new("priority-control")?;
+    let status = Command::new(env!("CARGO_BIN_EXE_bonsai-process-test-probe"))
+        .arg("priority-report")
+        .current_dir(&control.path)
+        .creation_flags(0x0800_0000)
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status()?;
+    assert!(status.success());
+    let inherited = fs::read_to_string(control.path.join("priority.txt"))?;
+
+    for background in [false, true] {
+        let lane = Lane::new("priority-tree")?;
+        let spec = lane.spec(vec![OsString::from("priority-tree")]);
+        let tool = ToolProcessSpec {
+            executable: spec.executable,
+            arguments: spec.arguments,
+            working_directory: spec.working_directory,
+            stdout: spec.stdout,
+            stderr: spec.stderr,
+            environment: std::collections::BTreeMap::new(),
+        };
+        let process = if background {
+            OwnedProcess::start_background_tool(&tool)?
+        } else {
+            OwnedProcess::start_tool(&tool)?
+        };
+        until(|| {
+            if process.try_wait()?.is_some() {
+                return Err(io::Error::other("priority probe exited before reporting"));
+            }
+            Ok(lane.path.join("child-priority.txt").is_file())
+        })?;
+        let expected = if background {
+            BELOW_NORMAL_PRIORITY_CLASS.to_string()
+        } else {
+            inherited.clone()
+        };
+        assert_eq!(
+            fs::read_to_string(lane.path.join("root-priority.txt"))?,
+            expected
+        );
+        assert_eq!(
+            fs::read_to_string(lane.path.join("child-priority.txt"))?,
+            expected
+        );
+        assert_eq!(process.active_processes()?, 2);
+        process.stop(TIMEOUT)?;
+        assert!(process.try_wait()?.is_some());
+        assert_eq!(process.active_processes()?, 0);
+    }
+    Ok(())
+}
+
+#[test]
 fn stop_and_drop_kill_descendants_and_observe_memory() -> io::Result<()> {
     for explicitly_stop in [true, false] {
         let lane = Lane::new("tree")?;

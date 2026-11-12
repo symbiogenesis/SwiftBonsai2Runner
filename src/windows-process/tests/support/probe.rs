@@ -16,7 +16,7 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::time::Duration;
 
-use bonsai_windows_process::{OwnedProcess, ProcessSpec, SandboxPolicy};
+use bonsai_windows_process::{OwnedProcess, ProcessSpec, SandboxPolicy, ToolProcessSpec};
 use windows_sys::Win32::Networking::WinSock::WSAEACCES;
 use windows_sys::Win32::System::Diagnostics::Debug::{GetErrorMode, RaiseException, SetErrorMode};
 
@@ -45,6 +45,13 @@ fn main() -> io::Result<()> {
             fs::write("report.txt", text)?;
         }
         "sleep" => wait_forever(),
+        "priority-report" => fs::write("priority.txt", priority_class()?.to_string())?,
+        "priority-child" => {
+            fs::write("child-priority.tmp", priority_class()?.to_string())?;
+            fs::rename("child-priority.tmp", "child-priority.txt")?;
+            wait_forever();
+        }
+        "priority-tree" => priority_tree()?,
         "mitigations" => report_mitigations()?,
         "--version" | "--help" => report_inspection_mitigations()?,
         "nested-mitigations" => nested_mitigations()?,
@@ -104,6 +111,39 @@ fn main() -> io::Result<()> {
         _ => return Err(io::Error::other("unknown probe mode")),
     }
     Ok(())
+}
+
+fn priority_tree() -> io::Result<()> {
+    let directory = std::env::current_dir()?;
+    fs::write("root-priority.txt", priority_class()?.to_string())?;
+    // A compiler can establish another owned Job. The outer background Job
+    // must continue to constrain its priority without disabling nesting.
+    let _child = OwnedProcess::start_tool(&ToolProcessSpec {
+        executable: std::env::current_exe()?,
+        arguments: vec![OsString::from("priority-child")],
+        working_directory: directory.clone(),
+        stdout: directory.join("child.stdout"),
+        stderr: directory.join("child.stderr"),
+        environment: std::collections::BTreeMap::new(),
+    })?;
+    wait_forever();
+    Ok(())
+}
+
+#[allow(
+    unsafe_code,
+    reason = "Query CPU scheduling for this disposable process's borrowed pseudo handle."
+)]
+fn priority_class() -> io::Result<u32> {
+    use windows_sys::Win32::System::Threading::{GetCurrentProcess, GetPriorityClass};
+    // SAFETY: Both APIs accept the current process pseudo handle. It remains
+    // borrowed, and GetPriorityClass neither retains it nor writes through it.
+    let priority = unsafe { GetPriorityClass(GetCurrentProcess()) };
+    if priority == 0 {
+        Err(io::Error::last_os_error())
+    } else {
+        Ok(priority)
+    }
 }
 
 fn plain_owner(args: &[OsString]) -> io::Result<()> {

@@ -34,25 +34,27 @@ use windows_sys::Win32::Storage::FileSystem::{
 use windows_sys::Win32::System::JobObjects::{
     AssignProcessToJobObject, CreateJobObjectW, IsProcessInJob, JOB_OBJECT_LIMIT_ACTIVE_PROCESS,
     JOB_OBJECT_LIMIT_DIE_ON_UNHANDLED_EXCEPTION, JOB_OBJECT_LIMIT_JOB_MEMORY,
-    JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE, JOBOBJECT_BASIC_ACCOUNTING_INFORMATION,
-    JOBOBJECT_EXTENDED_LIMIT_INFORMATION, JobObjectBasicAccountingInformation,
-    JobObjectBasicProcessIdList, JobObjectExtendedLimitInformation, QueryInformationJobObject,
-    SetInformationJobObject, TerminateJobObject,
+    JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE, JOB_OBJECT_LIMIT_PRIORITY_CLASS,
+    JOBOBJECT_BASIC_ACCOUNTING_INFORMATION, JOBOBJECT_EXTENDED_LIMIT_INFORMATION,
+    JobObjectBasicAccountingInformation, JobObjectBasicProcessIdList,
+    JobObjectExtendedLimitInformation, QueryInformationJobObject, SetInformationJobObject,
+    TerminateJobObject,
 };
 use windows_sys::Win32::System::ProcessStatus::{
     K32GetProcessMemoryInfo, PROCESS_MEMORY_COUNTERS_EX,
 };
 use windows_sys::Win32::System::SystemInformation::{GlobalMemoryStatusEx, MEMORYSTATUSEX};
 use windows_sys::Win32::System::Threading::{
-    CREATE_NO_WINDOW, CREATE_SUSPENDED, CREATE_UNICODE_ENVIRONMENT, CreateProcessW,
-    DeleteProcThreadAttributeList, EXTENDED_STARTUPINFO_PRESENT, GetExitCodeProcess,
-    GetProcessMitigationPolicy, GetProcessTimes, InitializeProcThreadAttributeList,
-    LPPROC_THREAD_ATTRIBUTE_LIST, OpenProcess, PROC_THREAD_ATTRIBUTE_HANDLE_LIST,
-    PROC_THREAD_ATTRIBUTE_JOB_LIST, PROC_THREAD_ATTRIBUTE_MITIGATION_POLICY, PROCESS_INFORMATION,
-    PROCESS_MITIGATION_POLICY, PROCESS_QUERY_LIMITED_INFORMATION, PROCESS_SYNCHRONIZE,
-    ProcessExtensionPointDisablePolicy, ProcessImageLoadPolicy, ProcessSystemCallDisablePolicy,
-    ResumeThread, STARTF_USESHOWWINDOW, STARTF_USESTDHANDLES, STARTUPINFOEXW, TerminateProcess,
-    UpdateProcThreadAttribute, WaitForSingleObject,
+    BELOW_NORMAL_PRIORITY_CLASS, CREATE_NO_WINDOW, CREATE_SUSPENDED, CREATE_UNICODE_ENVIRONMENT,
+    CreateProcessW, DeleteProcThreadAttributeList, EXTENDED_STARTUPINFO_PRESENT,
+    GetExitCodeProcess, GetProcessMitigationPolicy, GetProcessTimes,
+    InitializeProcThreadAttributeList, LPPROC_THREAD_ATTRIBUTE_LIST, OpenProcess,
+    PROC_THREAD_ATTRIBUTE_HANDLE_LIST, PROC_THREAD_ATTRIBUTE_JOB_LIST,
+    PROC_THREAD_ATTRIBUTE_MITIGATION_POLICY, PROCESS_INFORMATION, PROCESS_MITIGATION_POLICY,
+    PROCESS_QUERY_LIMITED_INFORMATION, PROCESS_SYNCHRONIZE, ProcessExtensionPointDisablePolicy,
+    ProcessImageLoadPolicy, ProcessSystemCallDisablePolicy, ResumeThread, STARTF_USESHOWWINDOW,
+    STARTF_USESTDHANDLES, STARTUPINFOEXW, TerminateProcess, UpdateProcThreadAttribute,
+    WaitForSingleObject,
 };
 
 use crate::{ProcessMemory, ProcessSpec, SandboxPolicy, ToolProcessSpec, invalid};
@@ -130,7 +132,13 @@ struct LaunchSpec<'a> {
     stdout: &'a Path,
     stderr: &'a Path,
     limits: Option<(usize, u32)>,
+    priority_class: Option<u32>,
     mitigation_profile: MitigationProfile,
+}
+
+pub(super) enum ToolPriority {
+    Inherited,
+    Background,
 }
 
 #[derive(Clone, Copy, Eq, PartialEq)]
@@ -283,6 +291,7 @@ impl NativeProcess {
                 stdout: &spec.stdout,
                 stderr: &spec.stderr,
                 limits: Some((spec.memory_limit_bytes, spec.active_process_limit)),
+                priority_class: None,
                 mitigation_profile: MitigationProfile::Headless,
             },
             command,
@@ -299,6 +308,7 @@ impl NativeProcess {
                 stdout: &spec.stdout,
                 stderr: &spec.stderr,
                 limits: Some((spec.memory_limit_bytes, spec.active_process_limit)),
+                priority_class: None,
                 mitigation_profile: MitigationProfile::Inspection,
             },
             command,
@@ -321,6 +331,7 @@ impl NativeProcess {
                 stdout: &spec.stdout,
                 stderr: &spec.stderr,
                 limits: Some((spec.memory_limit_bytes, spec.active_process_limit)),
+                priority_class: None,
                 mitigation_profile: MitigationProfile::Headless,
             },
             command,
@@ -333,6 +344,7 @@ impl NativeProcess {
         spec: &ToolProcessSpec,
         command: Vec<u16>,
         environment: Option<&[u16]>,
+        priority: ToolPriority,
     ) -> io::Result<Self> {
         Self::launch(
             &LaunchSpec {
@@ -341,6 +353,10 @@ impl NativeProcess {
                 stdout: &spec.stdout,
                 stderr: &spec.stderr,
                 limits: None,
+                priority_class: match priority {
+                    ToolPriority::Inherited => None,
+                    ToolPriority::Background => Some(BELOW_NORMAL_PRIORITY_CLASS),
+                },
                 mitigation_profile: MitigationProfile::Tool,
             },
             command,
@@ -370,6 +386,13 @@ impl NativeProcess {
                 JOB_OBJECT_LIMIT_JOB_MEMORY | JOB_OBJECT_LIMIT_ACTIVE_PROCESS;
             limits.BasicLimitInformation.ActiveProcessLimit = processes;
             limits.JobMemoryLimit = memory;
+        }
+        if let Some(priority) = spec.priority_class {
+            // A Job limit applies before the first root instruction and to
+            // descendants, including compilers that create their own nested
+            // Jobs. No process-wide setting is changed on the UI/launcher.
+            limits.BasicLimitInformation.LimitFlags |= JOB_OBJECT_LIMIT_PRIORITY_CLASS;
+            limits.BasicLimitInformation.PriorityClass = priority;
         }
         // SAFETY: The handle is owned/live, class matches the initialized structure,
         // and the exact readable structure size is passed synchronously.

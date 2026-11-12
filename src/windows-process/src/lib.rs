@@ -726,6 +726,28 @@ impl OwnedProcess {
     /// Rejects invalid paths, malformed arguments or environment entries, protected
     /// system/profile overrides, existing evidence files, or native launch failures.
     pub fn start_tool(spec: &ToolProcessSpec) -> io::Result<Self> {
+        Self::start_tool_with_priority(spec, native::ToolPriority::Inherited)
+    }
+
+    /// Owns a background startup tool tree at below-normal CPU priority.
+    ///
+    /// Applies the priority limit to the complete Job before its root starts,
+    /// including compiler descendants and nested owned tools. The caller and
+    /// its other Jobs retain their scheduling policy. This changes CPU priority
+    /// only; it does not promise disk bandwidth or I/O priority isolation.
+    /// All path, environment, handle and teardown rules match [`Self::start_tool`].
+    ///
+    /// # Errors
+    /// Returns the same validation and launch failures as [`Self::start_tool`],
+    /// including failure to establish the required Job priority limit.
+    pub fn start_background_tool(spec: &ToolProcessSpec) -> io::Result<Self> {
+        Self::start_tool_with_priority(spec, native::ToolPriority::Background)
+    }
+
+    fn start_tool_with_priority(
+        spec: &ToolProcessSpec,
+        priority: native::ToolPriority,
+    ) -> io::Result<Self> {
         for path in [
             &spec.executable,
             &spec.working_directory,
@@ -739,7 +761,7 @@ impl OwnedProcess {
         }
         let command = tool_command_line(&spec.executable, &spec.arguments)?;
         let environment = native::tool_environment(&spec.environment)?;
-        native::NativeProcess::start_tool(spec, command, environment.as_deref()).map(Self)
+        native::NativeProcess::start_tool(spec, command, environment.as_deref(), priority).map(Self)
     }
 
     /// Starts a tool with explicit child-only environment removals.
@@ -763,7 +785,13 @@ impl OwnedProcess {
         }
         let command = tool_command_line(&spec.executable, &spec.arguments)?;
         let environment = native::tool_environment_with_removed(&spec.environment, removed)?;
-        native::NativeProcess::start_tool(spec, command, Some(&environment)).map(Self)
+        native::NativeProcess::start_tool(
+            spec,
+            command,
+            Some(&environment),
+            native::ToolPriority::Inherited,
+        )
+        .map(Self)
     }
 
     /// Creates evidence files, atomically assigns a suspended root, then resumes.
