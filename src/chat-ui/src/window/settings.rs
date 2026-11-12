@@ -477,7 +477,7 @@ impl State {
 
     fn voice_preferences(&mut self, ui: &mut egui::Ui) {
         ui.label(
-            RichText::new("One voice profile for read aloud across your conversations.")
+            RichText::new("One voice profile for read aloud across your conversations. Saved on this device with Windows user encryption, even when conversation saving is off.")
                 .small()
                 .weak(),
         );

@@ -54,6 +54,7 @@ mod placement;
     reason = "Audited Windows high-contrast and fatal-dialog boundary."
 )]
 mod platform;
+mod profile;
 mod read_aloud;
 mod settings;
 #[cfg(test)]
@@ -144,6 +145,7 @@ struct State {
     settings_view: settings::View,
     appearance: appearance::Preferences,
     appearance_store: Option<appearance::Store>,
+    profile_store: Option<profile::Store>,
     sidebar_open: bool,
     sidebar_focus: bool,
     help: Option<(&'static str, &'static str)>,
@@ -248,6 +250,7 @@ impl State {
             settings_view: settings::View::default(),
             appearance: appearance::Preferences::default(),
             appearance_store: None,
+            profile_store: None,
             sidebar_open: false,
             sidebar_focus: false,
             help: None,
@@ -1349,6 +1352,10 @@ impl State {
 
 impl Drop for State {
     fn drop(&mut self) {
+        if let Some(store) = &mut self.profile_store {
+            let _queued = store.queue(&self.voice_profile);
+        }
+        self.profile_store.take();
         if let Some(store) = &mut self.appearance_store {
             let _queued = store.queue(self.appearance);
         }
@@ -2061,6 +2068,7 @@ impl eframe::App for State {
         self.drain_speech_events();
         self.poll_recovery();
         self.poll_appearance(ctx);
+        self.poll_profile();
         if self.last_theme_check.elapsed() >= Duration::from_secs(1) {
             self.appearance.apply(ctx);
             self.last_theme_check = Instant::now();
@@ -2104,6 +2112,7 @@ pub(super) fn run(config: Config) -> io::Result<()> {
     let recovery = crate::recovery::Recovery::open(&config.data);
     let placement = placement::Placement::open(&config.data);
     let appearance = appearance::Store::open(&config.data);
+    let profile = profile::Store::open(&config.data);
     eframe::run_native(
         "Swift Bonsai",
         native_options(),
@@ -2117,6 +2126,7 @@ pub(super) fn run(config: Config) -> io::Result<()> {
             state.attach_recovery(recovery);
             state.attach_placement(placement, cc);
             state.attach_appearance(appearance, &cc.egui_ctx);
+            state.attach_profile(profile);
             state.worker = Some(
                 std::thread::Builder::new()
                     .name("swift-chat-client".to_owned())
@@ -2133,6 +2143,7 @@ pub(super) fn run_startup(request: crate::startup::Request) -> io::Result<bool> 
     let recovery = crate::recovery::Recovery::open(&request.data);
     let placement = placement::Placement::open(&request.data);
     let appearance = appearance::Store::open(&request.data);
+    let profile = profile::Store::open(&request.data);
     let failure = std::sync::Arc::new(std::sync::Mutex::new(None));
     let reported_failure = std::sync::Arc::clone(&failure);
     let update_exit = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
@@ -2151,6 +2162,7 @@ pub(super) fn run_startup(request: crate::startup::Request) -> io::Result<bool> 
             state.attach_recovery(recovery);
             state.attach_placement(placement, cc);
             state.attach_appearance(appearance, &cc.egui_ctx);
+            state.attach_profile(profile);
             Ok(Box::new(state))
         }),
     )

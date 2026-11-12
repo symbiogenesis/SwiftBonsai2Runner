@@ -378,13 +378,17 @@ mod tests {
         let latest = Preferences {
             theme: Theme::Light,
             text_size: 24,
+            reading_width: 1_040,
+            sidebar_width: 216.0,
             sidebar_visible: false,
-            ..initial
         };
         store.queue(latest)?;
         drop(store);
         let path = directory.join("chat-appearance.json");
         assert_eq!(read(&path)?, latest);
+        let (store, reopened) = Store::open(&directory)?;
+        assert_eq!(reopened, latest);
+        drop(store);
         for bytes in [b"{}".to_vec(), vec![b' '; 4_097]] {
             fs::write(&path, bytes)?;
             let (store, preferences) = Store::open(&directory)?;

@@ -268,7 +268,7 @@ impl State {
             }
             .clone_into(&mut self.recovery_notice);
         }
-        ui.label(RichText::new("Saves automatically with Windows user encryption in your model data folder. Restores drafts and completed history on the next launch. Turning this off removes the saved copy and keeps saving off on future launches.").small().weak());
+        ui.label(RichText::new("Saves automatically with Windows user encryption in your model data folder. Restores drafts and completed history on the next launch. Turning this off removes the saved copy and keeps saving off on future launches. Your window, appearance and voice preferences remain saved on this device.").small().weak());
         if !self.recovery_notice.is_empty() {
             ui.label(RichText::new(&self.recovery_notice).small());
         }
