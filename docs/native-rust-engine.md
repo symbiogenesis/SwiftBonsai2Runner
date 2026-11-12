@@ -332,7 +332,8 @@ comparator and native CLI recipe remain available for historical reproduction.
 The closed trial above compared one worker with four on original PQ2, the approved
 adapter at scale 1.3 and public token `[248045]`. Its five-minute aggregate and
 240-second child limits remain closed. Current-runtime correctness, lifecycle and
-benefit still require the separate [application acceptance](validation.md#actual-model-application-acceptance)
+benefit still require the separate
+[application acceptance](validation.md#actual-model-application-acceptance)
 and Prism gates in [PLAN.md](../PLAN.md), under unchanged admission, Job and
 physical-reserve limits. This retirement closes none of those gates.
 
