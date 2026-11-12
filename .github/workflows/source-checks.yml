@@ -34,6 +34,10 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      - name: Check exact startup lock coverage and full action pins offline
+        run: python3 -B tools/ci/check_workflow_startup.py
+      - name: Check startup lock regression fixtures
+        run: python3 -B -m unittest discover -s tools/ci -p test_workflow_startup.py
       - name: Download and verify the sole additional CI security tool
         run: |
           set -euo pipefail

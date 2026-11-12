@@ -61,6 +61,13 @@ Prefer the `gh` CLI for GitHub-related work when it is available, including
 repository, issue, release and Actions inspection or management. Use it within
 the owner's authorized scope and the push, pull-request and CI rules below.
 
+Before committing workflow, composite-action or `actions.lock` changes, run
+`python -B tools/ci/check_workflow_startup.py` and its focused regression command
+in [the action-pin maintenance guide](tools/ci/README.md#action-dependency-pins).
+Generate lockfiles with `gh actions-lock --no-narrow` so literal inline SHA
+references retain matching dependency keys. A startup rejection prevents CI's
+own verifier from running, so do not rely on that job as the first check.
+
 # Runner repository workflow
 
 Never push anything, including `main`, branches or tags, directly or through

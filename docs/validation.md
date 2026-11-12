@@ -600,11 +600,19 @@ workflow. Same-repository composites use `$/` references, resolving to the workf
 own commit and allowing their dependencies to be locked. Nested references require
 self-hosted runner **v2.338.0 or newer**; owner CI must confirm that prerequisite.
 Regenerate and review the lockfile whenever workflow or composite dependencies
-change; preserve the explicit SHA references. See [the maintenance commands](../tools/ci/README.md#action-dependency-pins).
+change with `gh actions-lock --no-narrow`; preserve the explicit SHA references
+and their exact matching lockfile keys. Symbolic upstream `ref` metadata alone
+does not cover an inline SHA. See [the maintenance commands](../tools/ci/README.md#action-dependency-pins).
 
 The independent Source checks `actions-lock` job runs on every selected workflow
 event, including the weekly schedule, with read-only permissions and no device
-work. It verifies coverage and upstream provenance with the official
+work. Before downloading a tool, its offline startup preflight and focused
+regressions check full inline SHA pins and exact lockfile coverage through nested
+same-repository composites. Run those checks locally before committing workflow,
+action or lockfile changes: GitHub rejects incomplete literal coverage before
+creating any jobs, including the verifier job itself. This preflight is a focused
+repository policy check, not a general YAML or GitHub workflow validator.
+The job separately verifies coverage and upstream provenance with the official
 `gh-actions-lock` v0.4.1 binary, downloaded at a fixed release URL and checked against
 a committed SHA-256 before execution. This is the only added security-tool
 dependency; no additional action, YAML library or security-linter suite is needed.

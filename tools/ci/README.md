@@ -171,10 +171,15 @@ so GitHub and the lockfile tool can inspect their dependency closure.
 
 The generated [actions.lock](../../.github/workflows/actions.lock) records the
 upstream reference, resolved commit and repository identities. Source checks run
-`gh actions-lock --verify` to reject missing, stale or unverifiable lock entries;
-the verifier does not independently enforce our inline-SHA policy. A `sha-as-ref`
-warning is expected for our deliberate full-SHA references and does not mean the
-lock verification failed.
+`gh actions-lock --verify` to reject missing, stale or unverifiable lock entries.
+The independent [startup preflight](check_workflow_startup.py) also checks the
+literal references GitHub requires before creating any jobs, including the
+dependency closure of same-repository composites, and enforces our inline-SHA
+policy. A tag-keyed lock entry does not cover an inline `@SHA` reference even when
+both resolve to the same commit. Local startup checks do not verify upstream
+provenance or replace GitHub workflow validation.
+A `sha-as-ref` warning is expected for deliberate full-SHA references; keep the
+SHA and its exact lockfile key rather than changing the reference to a tag.
 
 Use only the official `github/gh-actions-lock` tool at the version and binary
 SHA-256 recorded in Source checks. The workflow verifies the downloaded bytes
@@ -188,11 +193,21 @@ When changing an action, use a disposable worktree and the same verified tool:
 
 1. Resolve the intended upstream release to its commit and update every affected
    workflow and composite-action SHA, retaining its version comment.
-2. Run `gh actions-lock` to regenerate the lockfile. Generation may replace SHA
-   references with release tags. Review those edits and restore the corresponding
-   full commit SHA in every external `uses:` reference; keep the generated
-   symbolic upstream references inside `actions.lock` for provenance checking.
-3. Run `gh actions-lock --verify` against the complete workflow directory. Review
+2. Run `gh actions-lock --no-narrow` to regenerate the lockfile while preserving
+   inline SHA references. The generated dependency keys must match the literal
+   `uses:` references; a symbolic upstream `ref` retains provenance separately.
+   Never restore inline SHAs after generating a tag-keyed lockfile without
+   regenerating the matching entries. To repair an existing tag-keyed lockfile
+   after that mistake, run `gh actions-lock --relock --no-narrow` once to rebuild
+   the closure, and verify that reviewed commits and repository identities stay
+   unchanged. A routine generation can otherwise retain the existing tag keys.
+3. Before committing any workflow, composite action or lockfile change, run
+   `python -B tools/ci/check_workflow_startup.py` and
+   `python -B -m unittest discover -s tools/ci -p test_workflow_startup.py` from
+   the repository root. These offline checks need no compiler or downloaded tool.
+   A GitHub startup rejection also prevents its CI preflight from running, so
+   this local check is required.
+4. Run `gh actions-lock --verify` against the complete workflow directory. Review
    the workflow, composite-action and lockfile changes together, including any
    added transitive dependencies or changed repository identities.
 
