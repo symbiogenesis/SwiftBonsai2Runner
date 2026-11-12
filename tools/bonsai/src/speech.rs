@@ -251,7 +251,9 @@ mod tests {
         assert_eq!(plan["TotalBytes"], 2_185_030_624_u64);
         let pin: Value = serde_json::from_str(ASR_LOCK).map_err(|error| error.to_string())?;
         let expected = root
-            .join("speech/native/qwen3-asr")
+            .join("speech")
+            .join("native")
+            .join("qwen3-asr")
             .join(pin["revision"].as_str().ok_or("Missing ASR revision.")?)
             .join("Qwen3-ASR-1.7B-Q8_0.gguf");
         assert_eq!(plan["CanaryModelPath"], json!(expected));
