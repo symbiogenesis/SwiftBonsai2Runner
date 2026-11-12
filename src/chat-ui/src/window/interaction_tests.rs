@@ -954,7 +954,7 @@ fn capture_chat_layouts_when_requested() -> io::Result<()> {
         if name == "settings-narrow.png" {
             chat.state_mut().app.show_settings = true;
         } else if name == "sidebar-many.png" {
-            for index in 1..MAX_CONVERSATIONS {
+            for index in 1..128 {
                 chat.state_mut().app.new_chat();
                 chat.state_mut().app.conversations[index].title =
                     format!("Conversation {index}: a longer title to browse");

@@ -1,5 +1,5 @@
 //! Quiet composer guidance; estimates never participate in request admission.
-use super::{MAX_CONVERSATIONS, ModelLifecycle, OUTPUT_TOKENS, RichText, State, egui};
+use super::{ModelLifecycle, OUTPUT_TOKENS, RichText, State, egui};
 use crate::context::{self, Estimate, Pressure};
 
 #[derive(Default)]
@@ -217,7 +217,7 @@ impl State {
         }
         if ui
             .add_enabled(
-                self.model.workspace_available() && self.conversations.len() < MAX_CONVERSATIONS,
+                self.model.workspace_available(),
                 egui::Button::new("Start fresh").small(),
             )
             .on_hover_text("Open a new conversation. This conversation and its draft are kept.")

@@ -1,6 +1,6 @@
 //! Bounded conversation workspace. Locally identified interrupted replies are
 //! retained as context without replaying their original requests.
-use super::{Command, RichText, State, Transcript, client, egui};
+use super::{Command, RichText, State, Transcript, client, egui, history_search};
 
 #[derive(serde::Serialize, serde::Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -39,6 +39,8 @@ pub(super) struct Conversation {
     pub(super) title: String,
     pub(super) renamed: bool,
     pub(super) saved: Option<ConversationSnapshot>,
+    #[serde(skip)]
+    pub(super) search: history_search::MatchCache,
 }
 
 impl Conversation {
@@ -48,6 +50,7 @@ impl Conversation {
             title: "New conversation".to_owned(),
             renamed: false,
             saved: None,
+            search: history_search::MatchCache::default(),
         }
     }
 }
@@ -318,32 +321,74 @@ impl State {
     }
 
     pub(super) fn conversation_list(&mut self, ui: &mut egui::Ui) {
+        self.conversation_search_field(ui);
+        self.conversation_search.update(
+            &mut self.conversations,
+            self.active_conversation,
+            &self.transcript,
+        );
+        ui.add_space(12.0);
         ui.horizontal(|ui| {
             ui.label(RichText::new("CONVERSATIONS").small().strong().weak());
             ui.label(
-                RichText::new(self.conversations.len().to_string())
-                    .small()
-                    .weak(),
+                RichText::new(if self.conversation_search.filtered() {
+                    format!(
+                        "{} / {}",
+                        self.conversation_search.rows.len(),
+                        self.conversations.len()
+                    )
+                } else {
+                    self.conversations.len().to_string()
+                })
+                .small()
+                .weak(),
             );
         });
         ui.add_space(8.0);
+        if self.conversation_search.rows.is_empty() {
+            ui.add_space(12.0);
+            ui.label(RichText::new("No conversations found").strong());
+            ui.label(
+                RichText::new("Try another word from a title or message.")
+                    .small()
+                    .weak(),
+            );
+            return;
+        }
         let mut action = None;
-        egui::ScrollArea::vertical()
+        let mut scroll = egui::ScrollArea::vertical()
             .id_salt("conversation-list")
             .auto_shrink([false, false])
-            .min_scrolled_height(0.0)
-            .show(ui, |ui| {
-                let row_width = ui.available_width();
-                for conversation in &self.conversations {
-                    // Stable identities survive row removal and duplicate titles.
-                    ui.push_id(conversation.id, |ui| {
-                        if let Some(selected) = self.conversation_row(ui, conversation, row_width) {
-                            action = Some(selected);
-                        }
-                    });
-                    ui.add_space(4.0);
-                }
-            });
+            .min_scrolled_height(0.0);
+        // A changed query starts at its first result. Creation/selection outside
+        // search must also reveal rows that were previously outside the viewport.
+        let reset = self.conversation_search.take_scroll_reset();
+        if reset && !self.focus_composer {
+            scroll = scroll.vertical_scroll_offset(0.0);
+        } else if self.focus_composer
+            && let Some(row) = self
+                .conversation_search
+                .rows
+                .iter()
+                .position(|&index| self.conversations[index].id == self.active_conversation)
+        {
+            let offset = history_search::row_offset(row, 40.0 + ui.spacing().item_spacing.y);
+            scroll = scroll.vertical_scroll_offset((offset - ui.available_height() * 0.5).max(0.0));
+        } else if reset {
+            scroll = scroll.vertical_scroll_offset(0.0);
+        }
+        scroll.show_rows(ui, 40.0, self.conversation_search.rows.len(), |ui, rows| {
+            let row_width = ui.available_width();
+            for row in rows {
+                let conversation = &self.conversations[self.conversation_search.rows[row]];
+                // Stable identities survive row removal and duplicate titles.
+                ui.push_id(conversation.id, |ui| {
+                    if let Some(selected) = self.conversation_row(ui, conversation, row_width) {
+                        action = Some(selected);
+                    }
+                });
+            }
+        });
         match action {
             Some(ConversationAction::Select(id)) => {
                 self.switch_conversation(id);
@@ -359,6 +404,62 @@ impl State {
             Some(ConversationAction::Delete(id)) => self.delete_conversation = Some(id),
             None => {}
         }
+    }
+
+    fn conversation_search_field(&mut self, ui: &mut egui::Ui) {
+        egui::Frame::new()
+            .fill(ui.visuals().extreme_bg_color)
+            .stroke(ui.visuals().widgets.noninteractive.bg_stroke)
+            .corner_radius(8)
+            .inner_margin(egui::Margin::symmetric(10, 6))
+            .show(ui, |ui| {
+                ui.spacing_mut().item_spacing.x = 6.0;
+                ui.horizontal(|ui| {
+                    let (icon, _) =
+                        ui.allocate_exact_size(egui::vec2(16.0, 24.0), egui::Sense::hover());
+                    let center = icon.center();
+                    let stroke = egui::Stroke::new(1.5, ui.visuals().weak_text_color());
+                    ui.painter()
+                        .circle_stroke(center - egui::vec2(2.0, 2.0), 4.5, stroke);
+                    ui.painter().line_segment(
+                        [center + egui::vec2(1.5, 1.5), center + egui::vec2(6.0, 6.0)],
+                        stroke,
+                    );
+                    let clear_width = if self.conversation_search.text.is_empty() {
+                        0.0
+                    } else {
+                        30.0
+                    };
+                    let field = ui
+                        .add(
+                            egui::TextEdit::singleline(&mut self.conversation_search.text)
+                                .id(history_search::field_id())
+                                .hint_text("Search conversations")
+                                .desired_width((ui.available_width() - clear_width).max(24.0))
+                                .frame(egui::Frame::NONE)
+                                .return_key(None),
+                        )
+                        .accessible_name("Search conversations")
+                        .on_hover_text("Search conversation titles and message text");
+                    if field.clicked() || field.changed() {
+                        self.focus_composer = false;
+                    }
+                    if !self.conversation_search.text.is_empty()
+                        && ui
+                            .add(
+                                egui::Button::new("×")
+                                    .min_size(egui::Vec2::splat(24.0))
+                                    .frame_when_inactive(false),
+                            )
+                            .accessible_name("Clear conversation search")
+                            .on_hover_text("Clear search · Escape")
+                            .clicked()
+                    {
+                        self.conversation_search.clear();
+                        field.request_focus();
+                    }
+                });
+            });
     }
 
     fn conversation_row(

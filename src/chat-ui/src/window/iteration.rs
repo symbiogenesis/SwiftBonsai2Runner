@@ -1,7 +1,5 @@
 //! Explicit message iteration preserves the source conversation and exact history.
-use super::{
-    Command, Conversation, INPUT_LIMIT, MAX_CONVERSATIONS, ModelLifecycle, State, Transcript, egui,
-};
+use super::{Command, Conversation, INPUT_LIMIT, ModelLifecycle, State, Transcript, egui};
 
 const CONTINUE_PROMPT: &str = "Continue your previous response from where it stopped, without repeating what you already wrote.";
 
@@ -39,9 +37,7 @@ impl State {
             .as_ref()
             .is_some_and(super::updates::Updates::installing);
         let can_send = available && !self.preview && self.model == ModelLifecycle::Ready;
-        let can_branch = available
-            && self.model.workspace_available()
-            && self.conversations.len() < MAX_CONVERSATIONS;
+        let can_branch = available && self.model.workspace_available();
         self.transcript
             .messages
             .iter()
@@ -118,10 +114,7 @@ impl State {
     }
 
     fn branch_history(&mut self, end: usize, label: &str) -> bool {
-        if !self.model.workspace_available()
-            || self.conversations.len() >= MAX_CONVERSATIONS
-            || end > self.committed.len()
-            || !end.is_multiple_of(2)
+        if !self.model.workspace_available() || end > self.committed.len() || !end.is_multiple_of(2)
         {
             return false;
         }
@@ -157,6 +150,7 @@ impl State {
         branch.title = format!("{title} · {label}");
         branch.renamed = true;
         self.conversations.push(branch);
+        self.conversation_search.clear();
         self.transcript = transcript;
         self.committed = history;
         (
@@ -376,20 +370,9 @@ mod tests {
     }
 
     #[test]
-    fn iteration_respects_workspace_capacity_and_busy_request_ownership() {
+    fn iteration_respects_busy_request_ownership() {
         let (mut state, commands) = fixture();
         let answer = state.transcript.messages[3].id;
-        let prompt = state.transcript.messages[2].id;
-        for id in 2..=16 {
-            state.conversations.push(Conversation::new(id));
-        }
-        state.message_action(MessageAction::Regenerate(answer));
-        state.message_action(MessageAction::Edit(prompt));
-        state.message_action(MessageAction::Branch(answer));
-        assert!(commands.try_recv().is_err());
-        assert!(state.edit_message.is_none());
-        assert_eq!(state.conversations.len(), 16);
-        state.conversations.truncate(1);
         state.model = ModelLifecycle::Generating;
         state.request_conversation = Some(state.active_conversation);
         let owner = state.active_conversation;
@@ -401,6 +384,48 @@ mod tests {
         assert_ne!(state.active_conversation, owner);
         assert!(state.restore_history);
         assert!(commands.try_recv().is_err());
+    }
+
+    #[test]
+    fn conversation_history_iteration_has_no_count_cap_and_reveals_new_branches()
+    -> std::io::Result<()> {
+        for action in 0..3 {
+            let (mut state, commands) = fixture();
+            let source = state.active_conversation;
+            for _ in 1..32 {
+                state.new_chat();
+            }
+            state.switch_conversation(source);
+            while commands.try_recv().is_ok() {}
+            state.conversation_search.text = "An unrelated search".into();
+            let answer = state.transcript.messages[3].id;
+            let prompt = state.transcript.messages[2].id;
+            match action {
+                0 => state.message_action(MessageAction::Branch(answer)),
+                1 => state.message_action(MessageAction::Regenerate(answer)),
+                _ => {
+                    state.message_action(MessageAction::Edit(prompt));
+                    let mut edit = state.edit_message.take().ok_or_else(|| {
+                        std::io::Error::other("Edit must remain available after the former limit.")
+                    })?;
+                    edit.text = "A revised question".into();
+                    state.resend_edited_message(edit);
+                }
+            }
+            assert_eq!(state.conversations.len(), 33);
+            assert_ne!(state.active_conversation, source);
+            assert!(state.conversation_search.text.is_empty());
+            let original = state
+                .conversations
+                .iter()
+                .find(|item| item.id == source)
+                .and_then(|item| item.saved.as_ref());
+            assert_eq!(
+                original.map(|saved| saved.input.as_str()),
+                Some("Unsent source draft 🌱")
+            );
+        }
+        Ok(())
     }
 
     #[test]

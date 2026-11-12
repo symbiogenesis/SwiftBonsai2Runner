@@ -25,6 +25,9 @@ mod context_capacity;
 #[cfg(test)]
 mod ergonomics_tests;
 mod graphics;
+mod history_search;
+#[cfg(test)]
+mod history_search_tests;
 #[cfg(test)]
 mod interaction_tests;
 mod iteration;
@@ -70,7 +73,6 @@ const INPUT_LIMIT: usize = 32_768;
 const VOICE_LIMIT: usize = 1_024;
 const MAX_DIAGNOSTICS: usize = 128;
 const MAX_DIAGNOSTIC_CHARS: usize = 4_096;
-const MAX_CONVERSATIONS: usize = 16;
 
 fn runtime_description(config: &Config) -> String {
     let engine = if config.native_engine {
@@ -114,6 +116,7 @@ struct State {
     context_history: Option<usize>,
     context_draft: context_capacity::DraftCache,
     conversations: Vec<Conversation>,
+    conversation_search: history_search::Search,
     active_conversation: u64,
     request_conversation: Option<u64>,
     routing_request: bool,
@@ -216,6 +219,7 @@ impl State {
             context_history: None,
             context_draft: context_capacity::DraftCache::default(),
             conversations: vec![Conversation::new(1)],
+            conversation_search: history_search::Search::default(),
             active_conversation: 1,
             request_conversation: None,
             routing_request: false,
@@ -508,20 +512,19 @@ impl State {
         if !self.model.workspace_available() {
             return;
         }
-        if self.conversations.len() >= MAX_CONVERSATIONS {
-            self.set_status(
-                "You have 16 conversations open. Delete one before starting another.",
-                true,
-            );
+        let Some(next) = self.next_conversation.checked_add(1) else {
+            self.conversation_notice =
+                Some("Cannot create another conversation in this workspace.");
             return;
-        }
+        };
         self.update_worker_conversation(Command::NewChat);
         self.sidebar_open = false;
         self.stop_speech();
         self.save_conversation();
         self.conversation_notice = None;
+        self.conversation_search.clear();
         let id = self.next_conversation;
-        self.next_conversation = self.next_conversation.saturating_add(1);
+        self.next_conversation = next;
         self.conversations.push(Conversation::new(id));
         self.active_conversation = id;
         self.clear_conversation();
@@ -587,9 +590,14 @@ impl State {
             || self.delete_conversation.is_some()
             || self.edit_message.is_some()
             || self.show_settings
-            || (self.sidebar_open && ctx.content_rect().width() < navigation::DOCK_THRESHOLD)
             || egui::Popup::is_any_open(ctx)
         {
+            return;
+        }
+        if self.conversation_search.clear_on_escape(ctx) {
+            return;
+        }
+        if self.sidebar_open && ctx.content_rect().width() < navigation::DOCK_THRESHOLD {
             return;
         }
         if self.transcript.close_find_on_escape(ctx) {
@@ -1382,7 +1390,7 @@ impl State {
         }
         if ui
             .add_enabled(
-                self.model.workspace_available() && self.conversations.len() < MAX_CONVERSATIONS,
+                self.model.workspace_available(),
                 egui::Button::new("+ New conversation")
                     .min_size(egui::vec2(ui.available_width(), 44.0))
                     .corner_radius(10),
@@ -1929,9 +1937,7 @@ impl State {
         let controls = transcript::MessageControls {
             history: &self.committed,
             can_send: available && !self.preview && self.model == ModelLifecycle::Ready,
-            can_branch: available
-                && self.model.workspace_available()
-                && self.conversations.len() < MAX_CONVERSATIONS,
+            can_branch: available && self.model.workspace_available(),
         };
         match self.transcript.show_with_actions(
             ui,

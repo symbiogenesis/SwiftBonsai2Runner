@@ -796,7 +796,7 @@ fn conversation_workspace_restores_interrupted_output_as_followup_context() {
 }
 
 #[test]
-fn conversation_workspace_bounds_count_blocks_teardown_switches_and_deletes_explicitly() {
+fn conversation_history_grows_without_a_count_cap_and_preserves_teardown_guards() {
     let (mut state, commands, _events) = state();
     state.model = ModelLifecycle::Ready;
     let original = state.active_conversation;
@@ -825,14 +825,17 @@ fn conversation_workspace_bounds_count_blocks_teardown_switches_and_deletes_expl
     assert_ne!(state.active_conversation, original);
     assert_eq!(state.conversations.len(), 1);
     assert!(matches!(commands.try_recv(), Ok(Command::NewChat)));
-    for _ in 1..MAX_CONVERSATIONS {
+    for _ in 1..128 {
         state.new_chat();
         assert!(matches!(commands.try_recv(), Ok(Command::NewChat)));
     }
     state.new_chat();
-    assert_eq!(state.conversations.len(), MAX_CONVERSATIONS);
-    assert!(state.warning);
-    assert!(commands.try_recv().is_err());
+    assert_eq!(state.conversations.len(), 129);
+    assert!(!state.warning);
+    assert!(matches!(commands.try_recv(), Ok(Command::NewChat)));
+    let identities: std::collections::HashSet<_> =
+        state.conversations.iter().map(|item| item.id).collect();
+    assert_eq!(identities.len(), state.conversations.len());
 }
 
 #[test]

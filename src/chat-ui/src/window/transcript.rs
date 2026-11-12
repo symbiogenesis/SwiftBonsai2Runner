@@ -118,6 +118,8 @@ pub(super) struct Transcript {
     #[serde(skip)]
     next_id: u64,
     #[serde(skip)]
+    history_revision: u64,
+    #[serde(skip)]
     search: search::Search,
     #[cfg(test)]
     #[serde(skip)]
@@ -156,6 +158,10 @@ impl<'de> serde::Deserialize<'de> for Transcript {
 }
 
 impl Transcript {
+    pub(super) const fn history_revision(&self) -> u64 {
+        self.history_revision
+    }
+
     pub(super) fn valid_saved(&self) -> bool {
         self.messages.len() <= MAX_MESSAGES
             && self.messages.iter().fold(0_usize, |total, message| {
@@ -166,6 +172,7 @@ impl Transcript {
     }
 
     pub(super) fn clear(&mut self) {
+        self.history_revision = self.history_revision.wrapping_add(1);
         self.messages.clear();
         self.text_bytes = 0;
         self.search = search::Search::default();
@@ -173,15 +180,19 @@ impl Transcript {
 
     pub(super) fn remove_empty_response(&mut self) {
         self.search.invalidate();
-        self.messages.pop_if(|message| {
+        let removed = self.messages.pop_if(|message| {
             message.pending = false;
             message.role == Role::Assistant
                 && message.body.is_empty()
                 && message.reasoning.is_empty()
         });
+        if removed.is_some() {
+            self.history_revision = self.history_revision.wrapping_add(1);
+        }
     }
 
     pub(super) fn push(&mut self, role: Role, body: String) {
+        self.history_revision = self.history_revision.wrapping_add(1);
         self.search.invalidate();
         self.next_id = self.next_id.wrapping_add(1);
         self.text_bytes = self.text_bytes.saturating_add(body.len());
@@ -218,6 +229,7 @@ impl Transcript {
             self.push(Role::Assistant, String::new());
         }
         if let Some(message) = self.messages.last_mut() {
+            self.history_revision = self.history_revision.wrapping_add(1);
             self.search.replaced(message.id);
             self.text_bytes = self.text_bytes.saturating_sub(message.text_bytes());
             text.clone_into(&mut message.body);
@@ -244,6 +256,7 @@ impl Transcript {
             } else {
                 message.body.push_str(text);
                 if !text.is_empty() {
+                    self.history_revision = self.history_revision.wrapping_add(1);
                     message.body_revision = message.body_revision.wrapping_add(1);
                 }
             }
@@ -293,6 +306,7 @@ impl Transcript {
             removed += 1;
         }
         if removed > 0 {
+            self.history_revision = self.history_revision.wrapping_add(1);
             self.search.invalidate();
             drop(self.messages.drain(..removed));
             #[cfg(test)]
