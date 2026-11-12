@@ -287,8 +287,6 @@ pub struct BackendResources {
     pub os_peak_root_working_set_bytes: Option<usize>,
 }
 
-type RequestFuture<'a> = Pin<Box<dyn Future<Output = Result<(), ServiceError>> + 'a>>;
-
 enum Event<'a> {
     Stop(RunExit),
     Accepted(AcceptedChat<'a>),
@@ -312,7 +310,7 @@ pub async fn run(
     shutdown: impl Future<Output = std::io::Result<()>>,
 ) -> RunReport {
     let mut shutdown = pin!(shutdown);
-    let mut requests: Vec<RequestFuture<'_>> = Vec::with_capacity(service.capacity());
+    let mut requests: Vec<Pin<Box<_>>> = Vec::with_capacity(service.capacity());
     let _close_on_drop = CloseOnDrop(service);
     let mut report = RunReport {
         exit: RunExit::Shutdown,
@@ -333,7 +331,7 @@ pub async fn run(
                 }));
             }
             for (index, request) in requests.iter_mut().enumerate() {
-                if let Poll::Ready(result) = request.as_mut().poll(cx) {
+                if let Poll::Ready(result) = Future::poll(Pin::as_mut(request), cx) {
                     return Poll::Ready(Event::Completed(index, result));
                 }
             }
