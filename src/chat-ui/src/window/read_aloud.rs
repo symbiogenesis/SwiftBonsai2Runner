@@ -41,14 +41,14 @@ impl State {
             {
                 self.stop_speech();
                 self.streaming_suppressed = false;
-                self.stream_answer(&self.last_answer.clone());
+                self.stream_answer(self.last_answer.clone());
             }
         }
         self.recovery_dirty = true;
         self.record(&self.speech_status.clone());
     }
 
-    pub(super) fn stream_answer(&mut self, text: &str) {
+    pub(super) fn stream_answer(&mut self, text: String) {
         if !self.model.busy()
             || self
                 .request_conversation
@@ -77,9 +77,7 @@ impl State {
             self.speech_notice = true;
             "Reading the response as it arrives.".clone_into(&mut self.speech_status);
         }
-        self.speech_command(speech::Command::AppendStream {
-            text: text.to_owned(),
-        });
+        self.speech_command(speech::Command::AppendStream { text });
     }
 
     pub(super) fn replace_streaming_stage(&mut self) {
@@ -143,14 +141,16 @@ mod tests {
         state.toggle_streaming_read_aloud();
         state.model_event(client::Event::Reasoning("Private reasoning".to_owned()));
         state.model_event(client::Event::Draft("Retained draft".to_owned()));
-        state.model_event(client::Event::Text("Hello ".to_owned()));
+        let delta = "Hello ".to_owned();
+        let delta_pointer = delta.as_ptr();
+        state.model_event(client::Event::Text(delta));
         assert!(state.model.busy() && state.streaming_active);
         assert!(matches!(next(&commands)?, speech::Command::StopListening));
         assert!(
             matches!(next(&commands)?, speech::Command::BeginStream { voice_description } if voice_description == state.voice_profile)
         );
         assert!(
-            matches!(next(&commands)?, speech::Command::AppendStream { text } if text == "Hello ")
+            matches!(next(&commands)?, speech::Command::AppendStream { text } if text == "Hello " && text.as_ptr() == delta_pointer)
         );
         state.model_event(client::Event::Text("world.".to_owned()));
         assert!(

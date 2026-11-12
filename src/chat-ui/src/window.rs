@@ -833,7 +833,7 @@ impl State {
             Event::Text(text) | Event::RetainedAnswer(text) => {
                 self.last_answer.push_str(&text);
                 self.transcript.append(&text, false);
-                self.stream_answer(&text);
+                self.stream_answer(text);
                 self.stage
                     .unwrap_or("Writing…")
                     .clone_into(&mut self.status);
