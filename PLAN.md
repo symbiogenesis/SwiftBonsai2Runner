@@ -113,6 +113,16 @@ and its closed local allowance attached to those pending gates.
 The [bounded updater checks](docs/evidence/app-updates-20261111/retained.json)
 passed five policy/tampering fixtures, the acknowledged-handoff regression and
 the native UI type-check. They do not close installed update acceptance.
+The [first Windows release attempt](https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/43270162748)
+correctly dispatched v0.1.0 from `7f595952` and passed release validation. Its UI
+lane failed seven interaction fixtures, and TTS notice collection rejected
+AccessKit's omitted license files; packaging and publication never ran. Publish
+the local search-focus, popup focus/geometry, navigation-fixture and source-bound
+notice fixes, then rerun Windows Release for v0.1.0 on settled `main`. Local
+PowerShell/startup controls and all 22 omitted-notice source recoveries pass;
+Rust replay remains pending because the local pinned compiler is incomplete.
+These checks do not establish a successful installer or close hosted acceptance.
+
 The no-push rule leaves source publication with the owner. The
 [local source review](docs/evidence/windows-release-20261111/retained.json) retains
 passing final workflow, PowerShell, XML, Rust formatting and Markdown checks;

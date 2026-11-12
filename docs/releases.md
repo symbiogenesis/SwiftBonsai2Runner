@@ -184,6 +184,13 @@ Future updates use that same release inventory; no separate update server or
 feed must be published. Increase the workspace version and commit matching
 release notes before requesting the next release.
 
+The notice collector includes repository-root licenses omitted from some crate
+archives, using each locked archive's recorded source commit. It records immutable
+source URLs and SHA-256 digests in the notice bundle. Six egui 0.37.0 crates record
+an unavailable source commit; their narrowly scoped exception uses the reviewed
+0.37.0 release commit `841a328ba2dd8f6996beb7189ebb7fc00e668a2a` and records
+both identities. Missing or changed license material still stops publication.
+
 Only the publication job receives repository-content write permission. It
 uploads the checked assets to a draft release before publishing that release;
 the GitHub release creates the requested tag at the checked commit. No workflow
