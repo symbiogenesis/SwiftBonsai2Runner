@@ -204,7 +204,7 @@ fn repository(path: &Path) -> crate::Result<()> {
 const fn selection(canary: bool, tts: bool) -> Option<&'static str> {
     match (canary, tts) {
         (true, true) => Some("All"),
-        (true, false) => Some("Canary"),
+        (true, false) => Some("QwenAsr"),
         (false, true) => Some("QwenTts"),
         (false, false) => None,
     }
@@ -527,7 +527,7 @@ fn launch_arguments(
                 request
                     .asr_path
                     .as_ref()
-                    .ok_or("Missing Canary executable.")?,
+                    .ok_or("Missing Qwen3-ASR executable.")?,
             );
             argument(
                 &mut arguments,

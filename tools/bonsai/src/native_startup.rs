@@ -416,7 +416,7 @@ pub(crate) fn environment(data: &Path, working: &Path) -> crate::Result<Value> {
 fn packages(model: &str) -> crate::Result<Vec<String>> {
     match model.to_ascii_lowercase().as_str() {
         "all" => Ok(vec!["bonsai-speech-asr".into(), "bonsai-speech-tts".into()]),
-        "canary" => Ok(vec!["bonsai-speech-asr".into()]),
+        "qwenasr" | "canary" => Ok(vec!["bonsai-speech-asr".into()]),
         "qwentts" => Ok(vec!["bonsai-speech-tts".into()]),
         _ => Err("Unsupported native speech build selection.".into()),
     }
@@ -637,6 +637,7 @@ mod tests {
     fn native_selection_and_model_modes_reject_unsupported_requests() {
         assert_eq!(packages("All").map(|value| value.len()), Ok(2));
         assert_eq!(packages("Canary").map(|value| value.len()), Ok(1));
+        assert_eq!(packages("QwenAsr"), packages("Canary"));
         assert!(packages("other").is_err());
         assert!(
             models(

@@ -18,7 +18,7 @@ const MAX_BYTES: u64 = (1_u64 << 63) - 1;
 enum Model {
     #[default]
     All,
-    Canary,
+    QwenAsr,
     QwenTts,
 }
 
@@ -28,7 +28,7 @@ impl TryFrom<String> for Model {
     fn try_from(value: String) -> Result<Self, Self::Error> {
         match value.to_ascii_lowercase().as_str() {
             "all" => Ok(Self::All),
-            "canary" => Ok(Self::Canary),
+            "qwenasr" | "canary" => Ok(Self::QwenAsr),
             "qwentts" => Ok(Self::QwenTts),
             _ => Err("Unsupported native speech model selection.".into()),
         }
@@ -92,7 +92,9 @@ fn files(root: &Path, kind: &str, source: &str) -> crate::Result<Vec<Value>> {
     let identity: Identity =
         serde_json::from_value(pin.clone()).map_err(|error| error.to_string())?;
     let (name, directory, keys): (&str, &str, &[&str]) = match kind {
-        "Canary" => ("nvidia/canary-qwen-2.5b", "canary", &["model"]),
+        // The legacy Kind and result property remain stable for launch clients;
+        // both selectors provision only the pinned Qwen3-ASR recognition model.
+        "Canary" => ("Qwen/Qwen3-ASR-1.7B", "qwen3-asr", &["model"]),
         "QwenTts" => (
             "Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign",
             "qwen-tts",
@@ -109,6 +111,11 @@ fn files(root: &Path, kind: &str, source: &str) -> crate::Result<Vec<Value>> {
         || !is_lower_hex(&identity.revision, 40)
     {
         return Err("Invalid native speech model identity.".into());
+    }
+    if kind == "Canary"
+        && (pin["architecture"] != "qwen3_asr" || pin["quantization"] != "Q8_0")
+    {
+        return Err("Native recognition requires the pinned Qwen3-ASR 1.7B Q8_0 model.".into());
     }
     let artifacts: BTreeMap<String, Artifact> = if kind == "Canary" {
         BTreeMap::from([(
@@ -163,7 +170,7 @@ pub fn run(request: Value) -> crate::Result<Value> {
     let request: Request = serde_json::from_value(request).map_err(|error| error.to_string())?;
     validate_external_path(&request.data_directory).map_err(|error| error.to_string())?;
     let mut plans = Vec::with_capacity(4);
-    if matches!(request.model, Model::All | Model::Canary) {
+    if matches!(request.model, Model::All | Model::QwenAsr) {
         plans.extend(files(&request.data_directory, "Canary", ASR_LOCK)?);
     }
     if matches!(request.model, Model::All | Model::QwenTts) {
@@ -210,12 +217,13 @@ mod tests {
         let all = run(json!({"dataDirectory": root, "model": "All"}))?;
         let plans = all["Plans"].as_array().ok_or("Expected plans.")?;
         assert_eq!(plans.len(), 4);
-        assert_eq!(all["TotalBytes"], 7_210_981_632_u64);
+        assert_eq!(all["TotalBytes"], 6_598_463_328_u64);
         assert_eq!(all["CanaryModelPath"], plans[0]["Path"]);
         assert_eq!(all["TtsModelPath"], plans[1]["Path"]);
         assert_eq!(all["TtsCodecPath"], plans[2]["Path"]);
         assert_eq!(all["TtsVoiceModelPath"], plans[3]["Path"]);
         for (selection, count, absent) in [
+            ("QwenAsr", 1, "TtsModelPath"),
             ("Canary", 1, "TtsModelPath"),
             ("qWeNtTs", 3, "CanaryModelPath"),
         ] {
@@ -235,6 +243,31 @@ mod tests {
     }
 
     #[test]
+    fn qwen_asr_selection_keeps_legacy_fields_with_an_isolated_model_cache() -> crate::Result<()> {
+        let root = std::env::temp_dir().join("bonsai-qwen-asr-plan-uncreated");
+        let plan = run(json!({"dataDirectory": root, "model": "QwenAsr"}))?;
+        assert_eq!(
+            plan,
+            run(json!({"dataDirectory": root, "model": "Canary"}))?
+        );
+        assert_eq!(plan["TotalBytes"], 2_185_030_624_u64);
+        let pin: Value = serde_json::from_str(ASR_LOCK).map_err(|error| error.to_string())?;
+        let expected = root
+            .join("speech/native/qwen3-asr")
+            .join(pin["revision"].as_str().ok_or("Missing ASR revision.")?)
+            .join("Qwen3-ASR-1.7B-Q8_0.gguf");
+        assert_eq!(plan["CanaryModelPath"], json!(expected));
+        assert_eq!(plan["Plans"][0]["Sha256"], pin["sha256"]);
+        assert!(
+            plan["Plans"][0]["Uri"]
+                .as_str()
+                .is_some_and(|uri| uri.contains("/handy-computer/Qwen3-ASR-1.7B-gguf/resolve/"))
+        );
+        assert!(!root.exists());
+        Ok(())
+    }
+
+    #[test]
     fn native_pins_reject_identity_drift() -> crate::Result<()> {
         let root = std::env::temp_dir().join("bonsai-native-speech-pin-uncreated");
         for (field, value) in [
@@ -245,6 +278,10 @@ mod tests {
             ("sha256", json!("bad")),
             ("revision", json!("main")),
             ("model", json!("unreviewed/model")),
+            ("model", json!("nvidia/canary-qwen-2.5b")),
+            ("model", json!("Qwen/Qwen3-ASR-0.6B")),
+            ("architecture", json!("canary_qwen")),
+            ("quantization", json!("Q4_K_M")),
         ] {
             let mut pin: Value =
                 serde_json::from_str(ASR_LOCK).map_err(|error| error.to_string())?;

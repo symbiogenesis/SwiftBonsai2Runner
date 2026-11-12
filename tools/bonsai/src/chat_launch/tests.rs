@@ -628,7 +628,7 @@ fn explicit_speech_files_and_text_only_never_build_or_download_speech() -> crate
 #[test]
 fn one_owned_service_does_not_prepare_the_other_engine() -> crate::Result<()> {
     for (property, value, expected) in [
-        ("NoTts", json!(true), "Canary"),
+        ("NoTts", json!(true), "QwenAsr"),
         ("CanaryKeyFile", Value::Null, "QwenTts"),
     ] {
         let mut fixture = fixture(expected)?;

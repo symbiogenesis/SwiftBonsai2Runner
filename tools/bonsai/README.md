@@ -312,13 +312,17 @@ returns nonzero. Credential receipts contain paths only. Native execution uses
 external working directories and preserves inherited Windows/profile environment
 variables. Caller identities are observed natively when omitted for supervised work.
 
-`speech-models` validates the compiled native Canary and Qwen GGUF locks and
+`speech-models` validates the compiled native Qwen3-ASR 1.7B and Qwen3-TTS GGUF locks and
 returns the selected download plan and aggregate paths/byte total without
 networking or loading models. `speech-build` also owns native compiler/source
 preparation, selected daemon builds and explicit model provisioning in Rust.
 Provisioning uses Windows curl 8.4+ for HTTPS-only resumable downloads, verifies
 exact bytes/SHA-256, then publishes exclusively. Ordinary startup size-checks
 cached speech files; the native services verify their hashes before first use.
+Select recognition with `model: "QwenAsr"`; the legacy `Canary` selector,
+`CanaryModelPath` result and `--canary-*` connection options remain compatibility
+names for the Qwen3-ASR service. Recognition uses a separate
+`speech/native/qwen3-asr/<revision>/` cache and never substitutes Canary weights.
 
 `source-build` owns content fingerprints, executable digest receipts, immutable
 maintenance snapshots and the pinned Cargo invocation for source maintenance/chat
