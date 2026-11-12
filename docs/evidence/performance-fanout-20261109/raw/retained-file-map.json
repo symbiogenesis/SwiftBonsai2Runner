@@ -1,9 +1,0 @@
-{
-    "Reason":  "Short retained names keep checkout paths portable; original bytes, archive hashes and closed trial receipts are unchanged.",
-    "OriginalToRetainedName":  {
-                                   "runtime-deadline_tests-speculative_suffix_buffered_rounds_restore_state_after_cancel_and_delivery_failure.log":  "control-01.log",
-                                   "runtime-deadline_tests-speculative_suffix_generation_and_block_verifier_preserve_exact_greedy_state.log":  "control-02.log",
-                                   "windows-compute_native-projection_native-tests-native_q2_in_place_preparation_preserves_extents_and_atomic_publication.log":  "control-03.log",
-                                   "windows-compute_native-projection_native-tests-resident_native_q2_multi_arena_populates_secondary_buffer_and_batches_across_arenas.log":  "control-04.log"
-                               }
-}

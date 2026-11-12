@@ -1,6 +1,0 @@
-
-running 1 test
-test runtime::terminal_tests::terminal_state_only_rejects_retained_snapshots_and_expired_requests_before_work ... ok
-
-test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 215 filtered out; finished in 0.00s
-

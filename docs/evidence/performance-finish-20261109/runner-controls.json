@@ -1,8 +1,0 @@
-[
-  "native_qualification::request_timing::tests::timing_mode_is_explicit_one_standard_adapter_rust_request",
-  "native_qualification::request_timing::tests::timing_arguments_bind_fixed_public_work_and_original_deadline",
-  "native_qualification::request_timing::tests::timing_receipts_require_every_exact_identity_and_allow_sampled_stop",
-  "native_qualification::request_timing::tests::timing_receipts_reject_mixed_terminal_and_decode_work",
-  "native_qualification::request_timing::tests::timing_receipts_reject_duplicate_unknown_and_truncated_terminal_inventory",
-  "native_qualification::request_timing::tests::timing_receipts_reject_incomplete_timings_and_inconsistent_work"
-]

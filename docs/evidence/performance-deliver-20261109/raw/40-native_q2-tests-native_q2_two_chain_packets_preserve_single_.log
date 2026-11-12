@@ -1,6 +1,0 @@
-
-running 1 test
-test native_q2::tests::native_q2_two_chain_packets_preserve_single_token_descriptors_and_capacity ... ok
-
-test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 60 filtered out; finished in 0.00s
-

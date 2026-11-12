@@ -1,6 +1,0 @@
-
-running 1 test
-test speculative::tests::suffix_drafter_exhaustively_matches_length_first_overlap_and_tie_order ... ok
-
-test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 163 filtered out; finished in 0.16s
-

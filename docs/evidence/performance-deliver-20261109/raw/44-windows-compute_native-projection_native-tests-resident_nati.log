@@ -1,6 +1,0 @@
-
-running 1 test
-test windows::compute_native::projection_native::tests::resident_native_q2_full_ffn_chain_executes_all_optional_shapes_and_reuses_flush ... ok
-
-test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 60 filtered out; finished in 0.00s
-

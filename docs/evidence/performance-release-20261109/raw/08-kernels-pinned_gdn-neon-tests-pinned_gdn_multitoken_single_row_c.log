@@ -1,6 +1,0 @@
-
-running 1 test
-test kernels::pinned_gdn::neon::tests::pinned_gdn_multitoken_single_row_capacities_match_independent_scalar_bits ... ok
-
-test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 182 filtered out; finished in 0.01s
-

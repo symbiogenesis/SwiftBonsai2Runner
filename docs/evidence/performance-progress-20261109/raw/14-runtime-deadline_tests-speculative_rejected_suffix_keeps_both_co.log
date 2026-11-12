@@ -1,6 +1,0 @@
-
-running 1 test
-test runtime::deadline_tests::speculative_rejected_suffix_keeps_both_correction_cancellation_boundaries ... ok
-
-test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 171 filtered out; finished in 0.00s
-

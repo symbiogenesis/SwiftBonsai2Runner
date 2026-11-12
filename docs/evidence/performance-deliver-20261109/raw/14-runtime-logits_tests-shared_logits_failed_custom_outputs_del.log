@@ -1,6 +1,0 @@
-
-running 1 test
-test runtime::logits_tests::shared_logits_failed_custom_outputs_delivery_and_cancellation_restore_exact_snapshot ... ok
-
-test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 215 filtered out; finished in 0.00s
-
