@@ -1,0 +1,202 @@
+{
+  "schemaVersion": 1,
+  "kind": "consolidated-source-validation-history",
+  "historicalRecordsAtRevision": "7b37b29826b377386c1ddfe933cd4e75d6a97856",
+  "retentionScope": "Consolidates the original plan, check and delivery records. This is source-review history, not an acceptance replay archive. Raw build chatter, empty output and temporary drivers remain reconstructible only from Git history; no current gate requires their bytes. Original trial clocks remain closed.",
+  "status": "locally-prepared-publication-pending-owner-push",
+  "reviewedImplementationRevision": "b1fc63d8410142e0251c4267f902abda9ab0de93",
+  "sourceRevisionAtStart": "1506120792550daf3920374b0c008d5c281c8b2b",
+  "testedSourceSha256": {
+    ".github/release/Collect-Notices.ps1": "ee630f0352e6ad8cb4a604bdb3de4d444566bfed2ddacaa218f847900f3172ec",
+    ".github/release/Package-Release.ps1": "279b7daea9e785c57c9637228d71cb24f6b68ed448a6d6da3eb94c46a3cbc85a",
+    ".github/release/Publish-Release.ps1": "8238c6da528d6c36fbf78eb5016c70b47ef30882f939e12e22ffdebf8c9f24e3",
+    ".github/workflows/release.yml": "cf2a5e7ddbae41f9d5d4e8fb43abb66a79316508a93d723a472880f9c7e8fda8",
+    "docs/chat-packages.md": "c5a6f781a1b9ba9e42ea1c0ca1c4e88974666b3172d6592465e310e8f7656887",
+    "docs/README.md": "85ff15b2350e197c611bf9704ac0488d4289e02bca7628de4f6f0d1095c4dede",
+    "docs/releases/v0.1.0.md": "d3eb2f8f56eaf7c9a68a21502f590ab28a1b1fd6bd2b17aa79f93106b6d0ebc5",
+    "docs/releases.md": "bda887adb5cd400a35a58b7f2676ad63ccc62d2c022e84484203a914be3f93dd",
+    "installer/windows/Package.wxs": "eaa935f03024ae69f787dab53238765e57ec9f0d4749496aa7fcc819f3f9845a",
+    "PLAN.md": "4b16c161c113e8c1045f47edc84b78adcbc09508b0c52076c1c2be6edea20cda",
+    "README.md": "bab4f607f58cda97f8990d6435b8c72606da585e14c66bbc031c5fb72b11a73b",
+    "scripts/release/Build-WindowsInstaller.ps1": "5db6e8db0be5122ac6a00799e923e2dca7d5d4541a0d828253006d716acc7e41",
+    "scripts/release/Test-WindowsInstaller.ps1": "53bd7c424e9bf34701dd87017fa84ec7b623e8b91d353a2ccb0c5665d87092b8",
+    "tools/bonsai/src/cli.rs": "4f1c14d078a08abf9265b084b4ffe6894ab4712e4109e79c1d3748c933c416ec",
+    "tools/bonsai/src/lib.rs": "2ac818e1acf8540d4059f88c06ee35076b5376d260f579f89e645248f7e12ee3",
+    "tools/bonsai/src/main.rs": "e88c35e01c2e207b2c1ecd5053eefa2040b55ef12ba62ecfb02cc171d72b8237"
+  },
+  "plan": {
+    "declaredBeforeExecution": true,
+    "maximumAggregateSeconds": 300,
+    "conservativeEstimateSeconds": 120,
+    "reason": "Check release source and installer contracts without compiling the application, installing software, loading a model or running complete suites on the owner laptop.",
+    "fixedWork": [
+      "Record source revision and GetSystemPowerStatus before the checks.",
+      "Download actionlint 1.7.12 Windows ARM64 once, verify its official archive SHA-256 and check only the new release workflow.",
+      "Parse release PowerShell scripts with the Windows PowerShell AST parser and installer XML with Python's XML parser.",
+      "Check formatting and Rust syntax of changed launcher sources with the already installed pinned rustfmt.",
+      "Run rumdl check and format-check on the six changed documentation files.",
+      "Run git diff --check, record power after the checks and retain raw outputs and a summary."
+    ],
+    "constraints": {
+      "downloadAttempts": 1,
+      "perCommandMaximumSeconds": 30,
+      "applicationCompilation": false,
+      "localMsiBuildOrInstallation": false,
+      "modelsOrBenchmarks": false,
+      "completeSuites": false,
+      "gitPushes": false,
+      "ciDispatchOrMonitoring": false,
+      "noComparisonArms": true,
+      "reserveSecondsForRetention": 30,
+      "noRetryOrClockRestart": true
+    }
+  },
+  "trial": {
+    "startedUtc": "2026-11-12T05:18:29.755296+00:00",
+    "powerBefore": {
+      "observedUtc": "2026-11-12T05:18:29.755516+00:00",
+      "source": "GetSystemPowerStatus",
+      "acConnected": true,
+      "batterySaver": false,
+      "chargePercent": 96
+    },
+    "powerAfter": {
+      "observedUtc": "2026-11-12T05:18:31.068005+00:00",
+      "source": "GetSystemPowerStatus",
+      "acConnected": true,
+      "batterySaver": false,
+      "chargePercent": 96
+    },
+    "continuousPowerStabilityEstablished": false,
+    "elapsedAggregateSecondsThroughRetention": 1.313304,
+    "clockClosed": true,
+    "checks": [
+      {
+        "name": "source-revision",
+        "exitCode": 0,
+        "passed": true
+      },
+      {
+        "name": "actionlint",
+        "exitCode": 1,
+        "passed": false
+      },
+      {
+        "name": "installer-xml-and-toolchain-json",
+        "passed": true
+      },
+      {
+        "name": "powershell-parser",
+        "exitCode": 1,
+        "passed": false
+      },
+      {
+        "name": "launcher-rustfmt",
+        "exitCode": 0,
+        "passed": true
+      },
+      {
+        "name": "markdown-check",
+        "exitCode": 0,
+        "passed": true
+      },
+      {
+        "name": "markdown-format",
+        "exitCode": 0,
+        "passed": true
+      },
+      {
+        "name": "diff-check",
+        "exitCode": 0,
+        "passed": true
+      }
+    ]
+  },
+  "limits": {
+    "comparisonArms": [],
+    "continuousPowerStabilityEstablished": false,
+    "performanceQualified": false,
+    "completeSuitesRun": false,
+    "modelOrBenchmarkWork": false,
+    "ciDispatches": 0,
+    "gitPushes": 0
+  },
+  "pending": [
+    "Owner push of reviewed local main commits.",
+    "Hosted release build, full selected Rust checks, actual WiX compilation and MSI install/inspect/uninstall smoke.",
+    "Publication and final remote verification of the first v0.1.0 prerelease and installer assets.",
+    "Clean-machine hardware, actual-model, speech, upgrade, signing and daily-use acceptance recorded in PLAN.md."
+  ],
+  "release": {
+    "tag": "v0.1.0",
+    "prerelease": true,
+    "published": false,
+    "remoteReleaseCreated": false,
+    "platform": "Windows 11 ARM64",
+    "installer": "SwiftBonsai2Runner-0.1.0-windows-arm64.msi",
+    "signed": false
+  },
+  "actionlint": {
+    "version": "1.7.12",
+    "archive": "https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_windows_arm64.zip",
+    "sha256": "cadcf7ea4efe3a68728893813643cebe1185e5b1d4be5b96245f65c9a4d5ea41",
+    "digestSource": "https://github.com/rhysd/actionlint/releases/expanded_assets/v1.7.12"
+  },
+  "localInterpretation": {
+    "workflow": "actionlint 1.7.12 passed on corrected source",
+    "powershell": "10 release scripts and workflow run blocks parsed without executing them",
+    "installer": "WiX XML and pinned toolchain JSON parsed",
+    "rust": "pinned rustfmt syntax and formatting checks passed for the three changed launcher sources",
+    "markdown": "rumdl check and format check passed on six changed documentation files",
+    "whitespace": "git diff --check passed for the initial integrated implementation"
+  },
+  "correctionWithinOriginalAllowance": {
+    "schemaVersion": 1,
+    "kind": "source-correction-within-original-static-allowance",
+    "originalStartedUtc": "2026-11-12T05:18:29.755296+00:00",
+    "maximumAggregateSeconds": 300,
+    "newAllowanceStarted": false,
+    "powerBefore": {
+      "observedUtc": "2026-11-12T05:19:24.506225+00:00",
+      "source": "GetSystemPowerStatus",
+      "acConnected": true,
+      "batterySaver": false,
+      "chargePercent": 96
+    },
+    "checks": [
+      {
+        "name": "actionlint-corrected",
+        "exitCode": 0,
+        "passed": true
+      },
+      {
+        "name": "powershell-parser-unblocked",
+        "exitCode": 0,
+        "passed": true
+      }
+    ],
+    "correction": "Move runner.temp from workflow defaults to individual step working directories.",
+    "parserInvocationFix": "Use process-local ExecutionPolicy Bypass for a read-only AST parser.",
+    "sourceCommitBeforeCorrection": "1506120792550daf3920374b0c008d5c281c8b2b",
+    "hostedBuildAndMsiAcceptance": "pending",
+    "releasePublished": false,
+    "finalWorkflowSha256": "1ef6710b4d48cf91c2517b80ecf236a8ab4bb8f8c319bb9131e35004d9a1b4ea",
+    "powerAfter": {
+      "observedUtc": "2026-11-12T05:19:24.824054+00:00",
+      "source": "GetSystemPowerStatus",
+      "acConnected": true,
+      "batterySaver": false,
+      "chargePercent": 96
+    },
+    "continuousPowerStabilityEstablished": false,
+    "closed": true,
+    "elapsedAggregateSecondsFromOriginalStart": 55.068769,
+    "withinOriginalAllowance": true,
+    "correctedChecksPassed": true
+  },
+  "diagnosticExcerpts": [
+    "release.yml:27:28: context runner is not allowed here in workflow defaults; fixed by moving runner.temp to individual step working directories.",
+    "PowerShell AST parser initially failed: running scripts is disabled on this system (UnauthorizedAccess). Read-only invocation then passed with process-local ExecutionPolicy Bypass."
+  ],
+  "cleanup": "No application compilation, MSI build/install or model launch occurred. Temporary scratch cleanup was not recorded."
+}
