@@ -57,6 +57,7 @@ mod read_aloud;
 mod settings;
 #[cfg(test)]
 mod settings_ui_tests;
+mod sidebar_status;
 #[cfg(test)]
 mod tests;
 mod transcript;
@@ -1378,10 +1379,19 @@ fn configure(ctx: &egui::Context) {
 
 impl State {
     fn sidebar(&mut self, ui: &mut egui::Ui) {
-        egui::Panel::bottom("sidebar-footer")
-            .exact_size(146.0)
-            .frame(egui::Frame::new().inner_margin(egui::Margin::symmetric(0, 12)))
+        let previous_height = egui::containers::panel::PanelState::load(
+            ui.ctx(),
+            ui.make_persistent_id("sidebar-footer"),
+        )
+        .map(|state| state.size().y);
+        let footer = egui::Panel::bottom("sidebar-footer")
+            .frame(egui::Frame::new().inner_margin(egui::Margin::symmetric(0, 8)))
             .show(ui, |ui| self.sidebar_footer(ui));
+        // Settle the measured bottom anchor after first layout or a notice change.
+        if previous_height.is_none_or(|height| (height - footer.response.rect.height()).abs() > 0.5)
+        {
+            ui.ctx().request_repaint();
+        }
         ui.add_space(8.0);
         if !self.sidebar_open {
             ui.label(RichText::new("BONSAI").strong().size(22.0));
@@ -1405,15 +1415,16 @@ impl State {
     }
 
     fn sidebar_footer(&mut self, ui: &mut egui::Ui) {
+        ui.spacing_mut().item_spacing.y = 4.0;
         ui.separator();
-        ui.add_space(8.0);
+        ui.add_space(4.0);
         if ui
             .add_sized([ui.available_width(), 36.0], egui::Button::new("Settings"))
             .clicked()
         {
             self.open_settings(settings::Page::Response);
         }
-        ui.add_space(8.0);
+        ui.add_space(4.0);
         if self
             .updates
             .as_ref()
@@ -1421,34 +1432,7 @@ impl State {
         {
             ui.label(RichText::new("Application update available in Settings").small());
         }
-        ui.label(
-            RichText::new(if self.preview {
-                "Interface preview"
-            } else if self.model.busy() {
-                "●  Responding"
-            } else if self.model.ready() {
-                "●  Model ready"
-            } else if self.model.retryable() {
-                "●  Model paused"
-            } else if self.model.stopping() {
-                "◌  Releasing model"
-            } else if self.model.waiting_model() {
-                "◌  Preparing model"
-            } else {
-                "●  Model unavailable"
-            })
-            .small(),
-        );
-        ui.label(
-            RichText::new(if self.save_conversations {
-                "Conversation saving is on"
-            } else {
-                "Conversations stay in this window"
-            })
-            .small()
-            .weak(),
-        );
-        ui.label(RichText::new("Private · On your device").small().weak());
+        self.sidebar_status(ui);
     }
 
     fn runtime_controls(&self, ui: &mut egui::Ui) {
