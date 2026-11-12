@@ -334,6 +334,10 @@ invalidate cached matches, and virtualized large lists retain pointer/keyboard
 selection and focus in docked and narrow drawer layouts. Focused source controls
 do not close native-device, assistive-technology, actual-model or daily-use
 acceptance; those owner-managed gates remain pending.
+Complete the focused `conversation_history_` regressions and strict native
+all-target Clippy on corrected source. The initial Clippy pass stopped on lints;
+automatic approval review rejected continuation under the no-retry rule, so
+another validation pass requires explicit owner approval.
 
 Qualify the composer microphone with the pinned Qwen3-ASR 1.7B Q8_0 model on
 Windows ARM64: explicit permission, click-to-finish and 25-second completion,
