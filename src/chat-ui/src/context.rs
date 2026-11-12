@@ -2,6 +2,11 @@
 //!
 //! These intentionally inexpensive heuristics are neither exact token counts nor
 //! upper bounds. They must never gate Send, trim history or change response settings.
+#![expect(
+    clippy::redundant_pub_crate,
+    reason = "The private context estimator exposes its policy and estimates to sibling UI modules."
+)]
+
 use crate::client::Message;
 
 /// Pinned broker policy: prompt, requested response and reserve share this limit.

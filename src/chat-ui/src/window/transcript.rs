@@ -10,6 +10,7 @@ mod iteration;
 mod message_controls;
 mod search;
 
+#[derive(Clone, Copy)]
 pub(super) struct MessageControls<'a> {
     pub(super) history: &'a [super::client::Message],
     pub(super) can_send: bool,

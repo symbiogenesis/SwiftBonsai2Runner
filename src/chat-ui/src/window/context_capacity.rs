@@ -246,8 +246,8 @@ fn capacity_meter(ui: &mut egui::Ui, estimate: Estimate) {
         let end = used.min(context::CONTEXT_TOKENS);
         // Both positions are clamped to 8192, well inside exact f32 integers.
         let fraction = |value| f32::from(u16::try_from(value).unwrap_or(8192)) / 8192.0;
-        let left = rect.left() + rect.width() * fraction(start);
-        let right = rect.left() + rect.width() * fraction(end);
+        let left = rect.width().mul_add(fraction(start), rect.left());
+        let right = rect.width().mul_add(fraction(end), rect.left());
         if right > left {
             ui.painter().rect_filled(
                 egui::Rect::from_min_max(
