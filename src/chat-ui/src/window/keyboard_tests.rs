@@ -201,6 +201,8 @@ fn microphone_cancel_click_wins_over_a_queued_voice_message() {
         .center();
     // Node::click renders a hover frame before pressing. Recognition must
     // arrive during the press to exercise cancellation winning on release.
+    // Use fixed steps: run() can drain enough 0.25-second animation frames
+    // to exceed egui's 0.8-second click limit while the pointer is held.
     chat.input_mut().events.extend([
         egui::Event::PointerMoved(cancel),
         egui::Event::PointerButton {
@@ -210,12 +212,14 @@ fn microphone_cancel_click_wins_over_a_queued_voice_message() {
             modifiers: egui::Modifiers::NONE,
         },
     ]);
-    chat.run();
-    chat.state_mut().app.speech_event(speech::Event::Recognized {
-        generation: 7,
-        text: "Do not send this voice message".to_owned(),
-    });
-    chat.run();
+    chat.step();
+    chat.state_mut()
+        .app
+        .speech_event(speech::Event::Recognized {
+            generation: 7,
+            text: "Do not send this voice message".to_owned(),
+        });
+    chat.step();
     assert!(chat.state().app.dictation_requested);
     assert!(chat.state().app.pending_voice_transcript.is_some());
     assert_eq!(chat.state().app.input, "Preserve this draft");
@@ -226,6 +230,11 @@ fn microphone_cancel_click_wins_over_a_queued_voice_message() {
         pressed: false,
         modifiers: egui::Modifiers::NONE,
     });
+    chat.step();
+    assert!(
+        chat.ctx
+            .input(|input| input.pointer.button_clicked(egui::PointerButton::Primary))
+    );
     chat.run();
     assert!(!chat.state().app.dictation_requested);
     assert!(chat.state().app.pending_voice_transcript.is_none());
