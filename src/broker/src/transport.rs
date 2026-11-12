@@ -53,7 +53,7 @@ impl LoopbackBackend {
     }
 
     #[cfg(windows)]
-    pub(crate) fn enable_adaptive_context(&mut self) {
+    pub(crate) const fn enable_adaptive_context(&mut self) {
         self.policy.enable_adaptive_context();
     }
 

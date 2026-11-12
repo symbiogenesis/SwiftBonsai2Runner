@@ -44,7 +44,7 @@ impl Capacity {
         }
     }
 
-    /// Paint with bounded integer arithmetic, including contexts above u16::MAX.
+    /// Paint with bounded integer arithmetic, including contexts above `u16::MAX`.
     pub(crate) fn fraction(self, amount: usize) -> f32 {
         let Some(limit) = self.tokens().filter(|limit| *limit != 0) else {
             return 0.0;

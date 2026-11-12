@@ -266,7 +266,7 @@ fn borrowed_sse_spans_use_original_storage_and_finish_partial_vectored_writes() 
             );
             let pointer = reader.buffer().as_ptr();
             let mut client = VectoredClient::new(maximum_write);
-            write_buffered_sse_response(&mut client, &mut reader, deadline())
+            write_buffered_sse_response(&mut client, &mut reader, deadline(), None)
                 .await
                 .map_err(|_| io::Error::other("Fixture SSE was rejected."))?;
             let mut expected = SSE_HEAD.as_bytes().to_vec();
@@ -292,7 +292,7 @@ fn borrowed_sse_does_not_complete_after_read_or_vectored_write_failure() -> io::
         let mut reader = tokio::io::BufReader::with_capacity(RESPONSE_BUFFER_BYTES, source);
         let mut client = VectoredClient::new(usize::MAX);
         assert_eq!(
-            write_buffered_sse_response(&mut client, &mut reader, deadline()).await,
+            write_buffered_sse_response(&mut client, &mut reader, deadline(), None).await,
             Err(ResponseError::BackendIo)
         );
         assert!(!client.shutdown);
@@ -305,7 +305,7 @@ fn borrowed_sse_does_not_complete_after_read_or_vectored_write_failure() -> io::
         let mut client = VectoredClient::new(usize::MAX);
         client.zero = true;
         assert_eq!(
-            write_buffered_sse_response(&mut client, &mut reader, deadline()).await,
+            write_buffered_sse_response(&mut client, &mut reader, deadline(), None).await,
             Err(ResponseError::ClientIo)
         );
         assert!(!client.shutdown);
@@ -322,7 +322,8 @@ fn borrowed_sse_preserves_exact_cap_probe_and_deadline_failure() -> io::Result<(
                 io::Cursor::new(vec![b'x'; length]),
             );
             let mut client = VectoredClient::new(usize::MAX);
-            let result = write_buffered_sse_response(&mut client, &mut reader, deadline()).await;
+            let result =
+                write_buffered_sse_response(&mut client, &mut reader, deadline(), None).await;
             if length == MAX_RESPONSE_BYTES {
                 assert_eq!(result, Ok(()));
                 assert!(client.shutdown);
@@ -338,7 +339,7 @@ fn borrowed_sse_preserves_exact_cap_probe_and_deadline_failure() -> io::Result<(
         let mut reader = tokio::io::BufReader::with_capacity(RESPONSE_BUFFER_BYTES, source);
         let mut client = VectoredClient::new(usize::MAX);
         assert_eq!(
-            write_buffered_sse_response(&mut client, &mut reader, deadline()).await,
+            write_buffered_sse_response(&mut client, &mut reader, deadline(), None).await,
             Err(ResponseError::Deadline)
         );
         assert!(!client.shutdown);

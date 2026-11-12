@@ -149,7 +149,7 @@ impl LocalChatService {
 
     /// Only the launcher may enable the verified memory-backed count contract.
     #[cfg(windows)]
-    pub(crate) fn enable_adaptive_context(&mut self) {
+    pub(crate) const fn enable_adaptive_context(&mut self) {
         self.backend.enable_adaptive_context();
     }
 

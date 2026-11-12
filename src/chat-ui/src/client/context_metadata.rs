@@ -13,7 +13,7 @@ pub(super) struct Headers<'a> {
 }
 
 impl<'a> Headers<'a> {
-    pub(super) fn capture(&mut self, name: &str, value: &'a [u8]) -> Result<()> {
+    pub(super) const fn capture(&mut self, name: &str, value: &'a [u8]) -> Result<()> {
         let target = if name.eq_ignore_ascii_case("x-bonsai-context-policy") {
             &mut self.policy
         } else if name.eq_ignore_ascii_case("x-bonsai-context-tokens") {

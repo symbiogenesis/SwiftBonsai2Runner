@@ -201,7 +201,10 @@ where
     result
 }
 
-fn rejection_capacity(error: BackendError, policy: &BackendPolicy) -> Option<ContextCapacity> {
+const fn rejection_capacity(
+    error: BackendError,
+    policy: &BackendPolicy,
+) -> Option<ContextCapacity> {
     match error {
         BackendError::ContextLimit(tokens) => Some(ContextCapacity {
             tokens,
