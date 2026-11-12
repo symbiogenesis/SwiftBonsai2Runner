@@ -424,6 +424,9 @@ fn abliteration_settings_keyboard_selection_reaches_next_turn_and_locks_while_bu
     assert!((chat.state().app.abliteration_scale - 1.3).abs() < f32::EPSILON);
     chat.state_mut().app.show_settings = true;
     chat.run();
+    chat.get_by_role_and_label(egui::Role::Button, "Advanced response controls")
+        .click();
+    chat.run();
     chat.get_by_role_and_label(egui::Role::Slider, "Abliteration scale")
         .focus();
     chat.run();
@@ -451,6 +454,9 @@ fn abliteration_startup_opt_out_disables_settings_control() {
     let mut chat = harness([1180.0, 960.0], false);
     chat.state_mut().app.abliteration_enabled = false;
     chat.state_mut().app.show_settings = true;
+    chat.run();
+    chat.get_by_role_and_label(egui::Role::Button, "Advanced response controls")
+        .click();
     chat.run();
     assert!(
         chat.get_by_label("Disabled by the selected launch options.")
