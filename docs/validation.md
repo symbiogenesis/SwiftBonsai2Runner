@@ -6,6 +6,12 @@ belong to [Prism](https://github.com/symbiogenesis/prism-inference/blob/main/doc
 **Local builds, Release analyzers and focused named tests are allowed. Complete
 suites and every benchmark run only in CI; do not recreate a full suite with local filters.**
 
+The owner handles Host CI and Guest CI dispatch, monitoring and verdicts; other
+CI also needs explicit owner direction. The only standing exception is the
+single bounded Foundation release-bundle operation in [AGENTS.md](../AGENTS.md).
+Documentation of a workflow is not authorization to dispatch or query it.
+Local completion records pending CI acceptance without waiting for that CI.
+
 Owner-laptop diagnostics, model qualification and benchmarks default to five minutes
 total, preferably less. A dedicated, predeclared workload may use the smallest
 justified longer allowance, up to fifteen minutes, including preparation, intake,
@@ -245,7 +251,9 @@ Explicit `profile: ptq1-adapter-service-rollback-row4` adds an original-PQ2 roll
 to the complete five-request PTQ1 service sequence above in the same allowance.
 The existing service-only profile retains its workload. After both PTQ1 owners
 have verified empty Jobs and released listeners, a third fresh owner selects
-`--use-original-pq2` with pinned Prism 0.1.14, adapter 1.3 and four workers.
+`--use-original-pq2` with pinned Prism 0.1.23, adapter 1.3 and four workers.
+These current cases embed the active [runtime lock](../config/prism-inference.lock.json);
+historical 0.1.14 packet plans and receipts do not pin a newly built harness to 0.1.14.
 
 Both service cases retain one absolute case deadline with their outer timeout.
 The combined case gives its PTQ1 sequence an earlier deadline, withholding the
@@ -288,14 +296,15 @@ comfort, isolation and default promotion remain independent.
 The [prepared packet estimate](evidence/native-owner-packet-controls-20261103/owner-workload-plan.json)
 budgets 450 seconds conservatively for setup, three startups, five PTQ1 generation/prefix
 operations, controls, one complete PQ2 response, all three cleanup reserves, hashing
-and retention. This planning estimate has no measured 0.1.14 completion result.
+and retention. It was prepared for 0.1.14 and has no measured complete-packet
+result; recheck its feasibility for the active runtime before any new declaration.
 The smallest currently supported workflow allowance covering it is ten minutes;
 the fifteen-minute option is unnecessary for this fixed packet. An owner must
 freeze the final source, review its hosted package and all prerequisite checks,
 retain aggregate power endpoints and predeclare the allowance before execution.
 
 Explicit `profile: pq2-adapter-row4` selects original PQ2, the approved adapter at
-scale 1.3 and pinned Prism 0.1.14 with `--native-row-workers 4`. It requires exactly
+scale 1.3 and pinned Prism 0.1.23 with `--native-row-workers 4`. It requires exactly
 one four-token-cap stream, verified model/adapter readiness and owned Job/listener
 cleanup within the same budget. Its receipt binds the runtime lock, original
 model identity and adapter lock, and distinguishes the configured worker count
@@ -401,7 +410,7 @@ with four configured native row workers for both fresh owners. Its separate
 case and receipts retain that policy; the original complete-response profile
 keeps one worker. Prompt, sampler, adapter, model identities and all completion,
 cleanup and budget requirements are identical. Each sample must bind the compiled
-runtime's worker-readiness identity. For reviewed releases 0.1.11 through 0.1.13,
+runtime's worker-readiness identity. For reviewed releases 0.1.11 through 0.1.23,
 the effective graph worker budget is independently observed at readiness; missing
 or mismatched observations leave the pair pending. This does not measure executing
 threads or parallel work, and qualification does not transfer between counts.
@@ -472,7 +481,7 @@ cannot replace worker token accounting.
 
 Adapter lifecycle and paired-response receipts distinguish configured row workers
 from the effective graph budget verified at readiness. The reviewed exact
-`0.1.11`, `0.1.12` and `0.1.13` releases record that budget as independently observed after
+`0.1.11` through `0.1.23` releases record that budget as independently observed after
 successful strict readiness, bound to the compiled runtime lock and selected one/four-worker
 policy. Startup receipts and legacy releases retain an unobserved/null result.
 This observes neither executing threads nor parallel operations or device benefit.
@@ -739,9 +748,9 @@ and linking. New-nightly Clippy identified two additional updates: explicitly
 take/drop oversized speech scratch to preserve allocation release, and make the
 queue's `pending` accessor `const fn`. Both are corrected without weakening
 lints. A source-bound replay of the existing scratch-retention regression and
-new-nightly Clippy passed in a further two seconds. The corrected source is
-`d2a2962`; [PLAN.md](../PLAN.md#runtime-and-correctness) owns its pending combined
-hosted result. No model or performance qualification is transferred.
+new-nightly Clippy passed in a further two seconds. Those historical checks bind
+source `d2a2962`; [PLAN.md](../PLAN.md#runtime-and-correctness) requires settled-source
+hosted acceptance on the current compiler. No model or performance qualification is transferred.
 
 [Compiler probes](https://github.com/symbiogenesis/prism-inference/blob/main/tools/rust-trial/README.md)
 retain stable as an isolated control. Release overflow checks stay enabled and
@@ -783,7 +792,7 @@ bonsai-ci rust-check --root $PWD --package bonsai-broker --target (Join-Path $sc
 
 Choose a relevant named Rust regression, such as
 `cli::tests::bounded_input_rejects_nonobjects_truncation_and_overflow`, with
-`cargo test --package bonsai-tools --lib NAME -- --exact` and external target/working
+`cargo test --locked --release --package bonsai-tools --lib NAME -- --exact` and external target/working
 directories. `--full-tests` is reserved for main-branch GitHub Actions; benchmarks
 are always CI-only.
 

@@ -6,6 +6,9 @@ contracts, commands and evidence; completed work belongs in Git history.
 Have the owner push the local CI corrections and confirm Markdown standards and
 Foundation on the resulting source. The [bounded local check record](docs/evidence/ci-fixes-20261112/delivery.json)
 keeps local validation separate from pending hosted acceptance.
+The [workflow-cleanup delivery](docs/evidence/ci-cleanup-20261112/delivery.json)
+records the retained 16 workflows and local routing checks; its deletions also
+await the owner's push. No local documentation correction supplies a hosted verdict.
 
 Publish the first experimental Windows ARM64 MSI release, **v0.1.0**, after the
 owner reviews and pushes the local installer/pipeline commits to Runner `main`.
@@ -121,7 +124,12 @@ The PTQ1 critical path is:
    before promoting PTQ1 or claiming fully qualified runtime/representation defaults.
 
 The separate PTQ1 qualification packet freezes the published Prism 0.1.14 CPU
-runtime and one settled Runner revision. Complete hosted Runner integration and source-bound
+runtime and one settled Runner revision. This is a historical packet target:
+the current acceptance harness embeds Runner's active 0.1.23 lock. Executing
+the frozen 0.1.14 packet requires separately prepared exact-source tooling;
+otherwise prepare and review a new packet for the active release, without
+transferring earlier scores or reopening earlier clocks.
+Complete hosted Runner integration and source-bound
 acceptance preparation with `run_device: false`, which leaves the laptop lane
 available and queues no owner job. Review that exact-source package before any
 explicit device selection. The [fixed combined-packet estimate](docs/evidence/native-owner-packet-controls-20261103/owner-workload-plan.json)
@@ -209,7 +217,7 @@ CPU/NPU placement from HTTP readiness or a controlled cross-version speedup from
 either historical capture. Preserve the
 [earlier preparation failure](docs/evidence/readme-performance-20261109/summary.json),
 its original closed 69.432-second clock and AC/saver-off/99% observations separately
-from the historical0.1.22 capture's closed59.250-second clock and
+from the historical 0.1.22 capture's closed 59.250-second clock and
 AC/saver-off/98% observations. Neither clock authorizes a further trial or retry.
 
 The separately authorized [fresh 0.1.22 refresh](docs/evidence/readme-performance-20261109-refresh/summary.json)
@@ -294,8 +302,10 @@ retained from Prism 0.1.13 in the published 0.1.14 release through Runner's
 settled-main release integration and
 actual-model startup. End-to-end startup gains remain pending within the
 owner-device budget; performance comparisons and complete checks remain in owning
-CI. Complete separate registry delivery for the reviewed native-hash, GGUF 0.1.1
-and Prism 0.1.14 packages; hosted source-package checks do not publish them.
+CI. The [later registry record](docs/evidence/prism-0124-publish-20261109/summary.json)
+already retains native-hash 0.1.2, GGUF 0.1.4 and Prism 0.1.24 publication;
+the outstanding binary handoff is the 0.1.24 source/bundle repin above.
+Registry publication does not close startup or application acceptance.
 
 Qualify an explicit DX12 launch after the owner's
 [repeated native renderer failure](docs/evidence/native-renderer-20261103/summary.json).
@@ -385,19 +395,22 @@ close actual-model logits/state, writer-basis or promotion gates. Keep intake,
 verification, model work and cleanup inside one aggregate five-minute owner allowance;
 the [default-readiness audit](docs/evidence/ptq1-default-readiness.json) separates
 historical passes from current-release qualification.
-Qualify the [published Prism 0.1.14 release](https://github.com/symbiogenesis/prism-inference/releases/tag/v0.1.14)
+The historical packet targets the [published Prism 0.1.14 release](https://github.com/symbiogenesis/prism-inference/releases/tag/v0.1.14)
 from exact source `9e8ea3e2c042ab0c3f1a8e9596ff155e202c3c57`. The
 [publication review](docs/evidence/ptq1-context-publication-014/independent-review.json)
-verifies the tag and all four uploaded assets against owning CI. Complete Runner's
-owning integration checks against those published identities. Its typed token-capacity
+verifies the tag and all four uploaded assets against owning CI. Retain those
+published identities for historical review. Any new execution needs the separately
+prepared frozen tooling or a newly reviewed active-release packet described above.
+Its typed token-capacity
 error preserves the private context-rejection contract; unknown counter failures
 remain failures. Hosted source checks do not establish actual-model behavior.
 Retain `ptq1-adapter-service-row4` and the
 [reviewed three scale-boundary streams and invalid-scale rejection](docs/evidence/ptq1-service-41577882160/independent-review.json).
 The separately prepared `ptq1-adapter-service-rollback-row4`
 [workload](docs/validation.md#actual-model-application-acceptance) combines the full
-five-request PTQ1 service sequence with fresh original-PQ2 rollback on the same
-0.1.14 runtime, adapter 1.3 and four workers. It requires context rejection,
+five-request PTQ1 service sequence with fresh original-PQ2 rollback. The historical
+design used the same 0.1.14 runtime, adapter 1.3 and four workers; the linked current
+harness embeds 0.1.23. It requires context rejection,
 active interruption, both PTQ1 owners reaped, seeded fresh-owner replay, a complete
 original-PQ2 answer and post-cleanup full-file CNG verification. Its third-owner
 floor is 75 seconds, retaining 30 seconds for cleanup and 15 for file verification
@@ -409,11 +422,11 @@ Preserve per-owner power observations and distinguish missing child endpoints fr
 the retained parent endpoints. Visible output and matching prompt counts do not
 establish numerical adapter effect, full-state parity or full promotion.
 
-Use the [fresh 0.1.13 PTQ1 promotion score](docs/evidence/ptq1-promotion-bb020f4-review.json)
+Retain the [historical 0.1.13 PTQ1 promotion score](docs/evidence/ptq1-promotion-bb020f4-review.json)
 for frozen Runner `bb020f4`, current-weight PTQ1 and four workers: six independently
 reviewed documentary/packing/rollback gates pass and thirteen remain pending. Its retained
 input, policy, raw compiled score, exact CI records and independent review bind the
-current runtime and candidate. The [older 0.1.10 score](docs/evidence/ptq1-promotion-85fd2f1.json)
+historical runtime and candidate, not the active release. The [older 0.1.10 score](docs/evidence/ptq1-promotion-85fd2f1.json)
 remains historical; later application identities need their own applicability review.
 Close the thirteen required gates using actual device, independent human and
 clean-machine acceptance rather than counting narrow numerical/lifecycle checks
@@ -470,8 +483,8 @@ Independently reconstruct all 48 A factors through the predeclared public-pack
 route, authenticate original checkpoint/conversion records separately, and verify
 native SSM order; direction agreement does not close those gates.
 
-Qualify the pinned Prism 0.1.13 release beyond its bounded four-worker scale/history
-sequence before using it for promotion. Retain the 0.1.12 readiness and historical
+Extend the historical Prism 0.1.13 bounded four-worker scale/history evidence
+with separately qualified active-release evidence before promotion. Retain the 0.1.12 readiness and historical
 0.1.10 configured-worker observations at their original identities. Retain the previously released
 copy-then-scale recurrent path until the fused source candidate has actual-model
 numerical, throughput and resource evidence. Exercise the selected numerical
@@ -572,13 +585,15 @@ triangular GDN chunks through final-source analyzers/linking, actual-model
 state/adapter/cancellation parity and matched performance. Local source controls
 do not supply hosted, model or speed verdicts.
 
-Complete the [current-nightly Rust standards run](https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41386105716)
-for source `d2a2962`: all 12 registered crates' owning Release Clippy, rustdoc,
-tests and builds on `nightly-2026-11-02`. The preceding run passed its test,
+Complete settled-source Foundation for all 12 registered crates' owning Release
+Clippy, rustdoc, tests and builds on the current `nightly-2026-11-09` pin.
+The [historical standards run](https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41386105716)
+targeted source `d2a2962` on `nightly-2026-11-02`. Its preceding run passed test,
 documentation and build phases, including native speech fixtures/linking, but
 failed Clippy on an oversized-buffer reset and a newly const-capable queue
-accessor. Both corrections are pushed; the final combined hosted result is
-pending. Polonius and trait-solver behavioral gates already passed on hosted
+accessor. Both corrections were subsequently recorded; those historical results
+do not establish acceptance for the current source/compiler. Polonius and
+trait-solver behavioral gates passed on hosted
 Linux and Windows. Keep model/device and performance qualification separate.
 
 Use the [native Rust contract](docs/native-rust-engine.md). [Runtime
@@ -654,13 +669,14 @@ and retain the reset-every-request serving policy until reuse is qualified.
   reimplementing that allocation work. Qualify long-context tiled attention-value traversal under the
   [overhead
   review](docs/native-rust-engine.md#2026-literature-runtime-overhead-and-work-placement).
-- Qualify the local [inference efficiency candidates](docs/native-rust-engine.md#local-inference-efficiency-candidates):
+- Qualify the integrated [inference efficiency changes](docs/native-rust-engine.md#local-inference-efficiency-candidates):
   compact reset-state rollback checkpoints, bounded Swift top-20 sampler storage and
   direct one-column F32 adapter projections, followed by redundant empty-reset
   elimination and exact masked-attention padding pruning. Preserve exact state restoration,
   native tie/RNG behavior, floating-point bits and rejection semantics. Complete
   owning hosted checks and matched actual-model correctness/resource/request-time
-  evidence before releasing or repinning; source-level work/storage reductions do
+  evidence on the active 0.1.23 runtime, which already includes these changes;
+  do not require a future repin for source already consumed. Source-level work/storage reductions do
   not establish measured throughput, process RAM or lower admission limits.
   The four-lane source integration also fuses finite-logit validation into bounded
   selection and prepares an exact named hosted efficiency gate; require its final
@@ -693,8 +709,8 @@ and retain the reset-every-request serving policy until reuse is qualified.
 - Qualify exact prompt reuse across edits, switches, cancellation and restore: matching
   model, template, tokens and complete state, with bounded private snapshots and
   eviction. First qualify latest committed same-session state at bit-identical adapter
-  scale: the pinned serving wrapper currently resets every request and defeats the
-  generic runtime's live-prefix matcher, as recorded in the [source
+  scale: default serving resets every request, while explicit `--prompt-reuse latest`
+  enables the generic runtime's live-prefix matcher under the [source
   audit](docs/native-rust-engine.md#bounded-parallel-row-qualification). Require
   fresh-recompute parity, switched/edited histories, cancellation/rollback,
   scale-change/change-back and fault/explicit-reset recovery before changing that
@@ -824,62 +840,43 @@ not close pending hosted integration or full-model acceptance.
      Do not replace `libcdsprpc.dll` with undocumented raw `\Device\QcNspMcdm` `ioctl`
      calls that bypass FastRPC session handshakes, signed PD catalog checks, or SMMU
      `rpcmem` registration.
-  2. **Immediate hybrid NPU/CPU placement, fused CPU flash attention, and ICL prompt/codec caching
-     (completed in `src/speech-tts/build_npu.rs`)**: Run `Talker` multi-token prefill (`T_ctx`
-     tokens, 28 layers, `Q8_0`) on Hexagon `HTP0` while executing latency-critical `T = 1`
-     single-token `Talker` decode (via zero-copy `talker_cpu` GGUF views over cache-coherent
-     `HTP0` `rpcmem` `F16` KV cache) and 5-layer `CodePredictor` (`15` residual codebooks per
-     frame with `SAMPLER_TAIL_FIXED` top-k view) on host NEON CPU threads with fused
-     `ggml_flash_attn_ext` enabled, routing prompt text/reference-code projections directly to
-     `cpu_backend`, caching ICL reference codec/text streams and speaker-embedding prefixes in
-     `PromptCache`, and priming/restoring causal `CodecStateSnap` reference snapshots so synthesis
-     decodes only the generated `T_frames`.
-  3. **Pure-Rust `Talker` + `CodePredictor` + `hexagon-native-rpc` NPU backend (implemented in
-     `src/speech-tts/src/engine.rs`; actual-model & hosted qualification pending)**: Port
-     `Talker` (28-layer Qwen3 transformer, 3D MRoPE, KV cache) and `CodePredictor`
-     (5-layer residual RVQ predictor) to pure Rust in `src/speech-tts` atop the existing
-     Rust BPE tokenizer (`src/speech-tts/src/tokenizer.rs`), GGUF reader
-     (`src/speech-tts/src/gguf.rs`), and Philox/stochastic sampler
-     (`src/speech-tts/src/sampling.rs`), dispatching multi-token prefill and heavy
-     projections directly to the signed `libggml-htp-v81.so` / `v73.so` DSP skels through
-     `hexagon-native-rpc` (`dspqueue` + `htp_ops`, `HtpPrefillPacket`) without `ggml-hexagon.dll` or
-     `ggml-base.dll`, and expose optional rank-one / LoRA adapter overlays (`TalkerLoraAdapter` /
-     `LoraProjectionPatch`, reusing `prism-inference`'s adapter infrastructure) so lightweight
-     regional-accent or language LoRAs (such as `aguken-ai/qwen3-tts-indic-finetuned` variants)
-     can attach to the shared `Base` `Talker` without duplicating base model files.
-  4. **Pure-Rust 12 Hz audio codec, speaker encoder, and C/C++ build retirement (implemented in
-     `src/speech-tts/src/codec.rs` and `src/speech-tts/src/speaker_encoder.rs`; C/C++ build
-     removal gated on full-model acceptance)**: Port the 12 Hz causal ConvNeXt/SnakeBeta audio
-     decoder, ECAPA-TDNN speaker encoder, and stateful `CodecStateSnap` streaming pipeline to
-     pure Rust, then remove `qwentts.cpp` source provisioning, CMake/C++ compilation
-     (`src/speech-tts/build*.rs`), and all `ggml-*.dll` runtime dependencies once actual-model
-     and hosted acceptance pass. Support the drop-in 48 kHz decoder upgrade
-     (`takuma104/Qwen3-TTS-Tokenizer-12Hz-48kHz`, which keeps the 12 Hz 16-codebook RVQ
-     interface unchanged and appends one ~95K-parameter `< 400 KB` 2x upsampling decoder
-     block) to double synthesis output from 24 kHz to 48 kHz (`SAMPLE_RATE_48K = 48_000`,
-     `PACKET_BYTES_48K = 9_600` in `src/chat-ui/src/speech/pipeline.rs`) while 2:1-decimating
-     to 24 kHz audio (`ref_audio_24k` via `decimate_48k_to_24k` and in-place reference
-     decimation in `src/speech-tts/src/native.rs`) during `VoiceDesign` reference extraction
-     (`qt_extract_voice_ref`).
-  5. **Bonsai-style ternary `Talker` compression (`PQ2_0` / `PTQ1_0`, runtime kernels and policy
-     implemented in `src/speech-tts/src/engine.rs`; offline artifact preparation & device
-     qualification pending)**: After the pure-Rust `Talker` port (Step 3) and `Q4_K_M` baseline
-     qualification, apply offline block-1024 Sylvester Walsh–Hadamard + sign folding
-     (`input-last-dimension`, matching the 1.7B `Talker`'s `2048` hidden width via
-     `sylvester_walsh_hadamard_in_place` and `apply_hadamard_sign_fold`) and
-     Hessian/activation-calibrated group-128 ternary quantization (`PQ2_0` and lossless `PTQ1_0`
-     repack via `repack_pq2_to_ptq1` and `validate_talker_ternary_policy`) to the 28-layer
-     `Talker` `attn_q/k/v/output` and `ffn_gate/up/down` projections in the upstream
-     `Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign` and `Base` checkpoints. Keep `text_embd`,
-     `codec_embd`, `text_proj`, `codec_head` and RMS norms in `Q8_0`/`F16`/`F32`, retain `Q8_0`
-     or `Q4_K_M` for the 5-layer `CodePredictor`, and keep the 12 Hz ConvNeXt/`SnakeBeta` audio
-     codec and ECAPA-TDNN speaker encoder at `Q8_0`/`F16`. Execute the ternary `Talker`
-     projections through shared `prism-inference` Hadamard transform + `PQ2_0`/`PTQ1_0` NEON CPU
-     kernels (`f32x4` SIMD `F32`/`Q8_0` row projections, byte-unrolled `PQ2_0`/`PTQ1_0` group
-     loops, shared pre-folded Hadamard activations across `q/k/v` and `gate/up`, precomputed
-     `f32x4` NEOX `RoPE`, in-place `RMSNorm`, and `f32x4` GQA scoring/value accumulation in
-     `src/speech-tts/src/engine.rs`) and Snapdragon X2 Hexagon NPU `native-q2` (`HTP_TYPE_Q2_0`)
-     resident offload.
+  2. **Qualify native hybrid placement and caching overlays.**
+     `src/speech-tts/build_npu.rs` contains source overlays for `Talker` NPU prefill,
+     CPU single-token decode/`CodePredictor`, fused attention and prompt/codec caching.
+     Their presence does not establish successful contained HTP0 execution or consumer,
+     model, cache-lifecycle, resource and benefit acceptance. The separate runtime DLL
+     selector checks presence/exports, not signatures or hashes; qualify authenticated
+     deployment before treating it as a verified acceleration path. Retain CPU operation.
+  3. **Integrate the candidate Rust `Talker` and `CodePredictor`.**
+     `src/speech-tts/src/engine.rs` contains candidate model, projection, Hadamard,
+     cache and adapter helpers. The serving `Synthesizer` still owns `native::Context`;
+     immutable weight loading and complete pipeline integration remain implementation
+     work before hosted and actual-model parity, lifecycle and resource acceptance.
+     `HtpPrefillPacket` currently serializes a header, not a working RPC dispatcher.
+     Add and qualify explicit `hexagon-native-rpc` dispatch before claiming direct
+     signed-DSP prefill without `ggml-hexagon.dll`/`ggml-base.dll`. Candidate
+     `TalkerLoraAdapter`/`LoraProjectionPatch` types are local helpers, not integrated
+     reuse of Prism's adapter infrastructure. Bind any accent/language adapter to
+     exact weights, writer basis, independent quality review and resource limits.
+  4. **Integrate Rust codec/speaker candidates, then retire C/C++ builds.**
+     `src/speech-tts/src/codec.rs` and `src/speech-tts/src/speaker_encoder.rs` contain
+     candidate audio-decoder, codec-state and speaker-encoder helpers. Complete
+     immutable loading, serving integration and independent model/audio parity before
+     removing `qwentts.cpp`, GGML provisioning, static libraries and CMake/C++ steps.
+     The current Q8/Q4 locks still pin a 24 kHz codec. Existing 48 kHz PCM handling
+     and reference decimation do not provide a selectable verified 48 kHz model.
+     Review a proposed 48 kHz decoder's exact source, architecture, artifact and
+     license, add a new immutable lock, and qualify service/UI/reference processing
+     and resources before enabling it or claiming a drop-in upgrade.
+  5. **Prepare and qualify ternary speech artifacts after serving integration.**
+     Candidate `PQ2_0`/`PTQ1_0`, repacking and policy helpers in `engine.rs` do not
+     enable ternary TTS in the current native serving path; provisioned speech
+     artifacts remain Q8_0/Q4_K_M. After Step 3 and Q4 baseline qualification,
+     evaluate block-1024 sign/Hadamard folding and calibrated group-128 ternary
+     `Talker` projections with exact approved checkpoints. Keep embeddings, heads,
+     norms, codec and speaker precision independently specified. Integrate and
+     qualify compatible CPU kernels and signed native-Q2 offload separately;
+     neither helper presence nor Swift acceleration establishes speech support.
 
 ## Creative quality, adapters and memory
 
@@ -1375,8 +1372,10 @@ Follow [Adreno contracts](docs/adreno.md); discovery alone changes no CPU profil
   scalar PQ2-by-Q8_K control, exact grouping, raw scales and float order, separate PTQ1
   lane. Prove query and workload access under unchanged worker mitigations; refusal is a
   no-go. Follow [access/source
-  boundaries](docs/adreno.md#opencl-access-and-source-audit), hard 30-minute feasibility
-  and two-hour initial-CI caps. Charge preparation, scratch and transfers; preserve
+  boundaries](docs/adreno.md#opencl-access-and-source-audit). The 30-minute feasibility
+  and two-hour initial-CI caps apply only to eligible hosted work, never the owner's
+  laptop. Device work retains the five-minute default and justified fifteen-minute
+  aggregate ceiling. Charge preparation, scratch and transfers; preserve
   reserves. Exclude whole-model expansion and profile selection.
 - Build a separately locked pinned-Prism `GGML_VULKAN=ON` candidate with reviewed ARM64
   SDK, shader, compiler and library identities, unrelated accelerators disabled and
@@ -1475,7 +1474,7 @@ strided `tensor.data` passes while preserving exact per-128 FMA/nonfused order),
 probe and supervisor to bounded multi-projection resident placement (`1..=2` resident projections
 within the `64` MiB arena, `1..=4` streaming projections, beginning with `blk.0.ffn_up.weight`). All
 74 Prism unit tests, 14 Runner `model_device` tests, formatting, strict Release Clippy and Release
-builds passed. Under continuous AC power (`100%` charge across the outer `132.25`-second run within
+builds passed. Recorded power endpoints showed AC connected (`100%` charge at the outer endpoints of the `132.25`-second run within
 the `540.0`-second predeclared allowance, with AC, saver off and `100%` charge at all four arm
 endpoints of both device controls), `single-projection-batch4-resident` (`blk.0.ffn_up.weight`,
 `120` ops in `30` queue writes, `29,822,976` mapped bytes) and `two-projection-batch4-resident`
@@ -1530,13 +1529,16 @@ enabling all 8 128-byte HVX contexts (`HMX_Q2_HVX_WORKERS=8`, `kparams.n_threads
 `kparams.n_act_threads=4`, `div_n_act_threads=(1,0,2)`), raising `HMX_Q2_VTCM_REQUEST_BYTES` from 64
 KiB (`n_chunk=128`, `136` chunks/op) to 2 MiB (`n_chunk=4352`, `vtcm_size=1,576,960` bytes, `4`
 chunks/op with zero tail waste, `34x` fewer synchronous HMX/DMA/HVX chunk barriers), and selecting
-`HTP_POWER_MODE_BURST` (`7`) cut `nativeSubmitAndWaitMilliseconds` by `2.4x-2.8x` under continuous
-AC power (`95%` charge, saver off across the `199.09`-second run within the `300.0`-second default
+`HTP_POWER_MODE_BURST` (`7`) yielded the following diagnostic `nativeSubmitAndWaitMilliseconds`.
+Recorded endpoints showed AC connected (`95%` charge, saver off at the outer endpoints of the `199.09`-second run within the `300.0`-second default
 budget and at all four arm endpoints of both controls): `8.18`, `9.33` and `13.28` ms for
 `single-projection-batch10-resident` (`320.31-536.98` ms native evaluation vs `294.61-342.29` ms
 CPU) and `26.77`, `16.84` and `15.60` ms for `two-projection-batch10-resident` (`~7.80-8.42` ms per
 resident projection on tokens `43` and `128`, with native evaluation at `457.34` and `464.30` ms vs
-`552.44` and `553.09` ms on CPU, bitwise-equal logits/state and clean teardown). Because the signed
+`552.44` and `553.09` ms on CPU, bitwise-equal logits/state and clean teardown).
+Equal endpoint snapshots do not establish continuous AC stability. Earlier
+battery-powered controls cannot establish a qualified cross-run improvement.
+Because the signed
 generic `Q2_0` DSP binary irreducibly writes `22.28` MB of `FP32` bitplanes to DDR per projection
 (`~7.8-9.3` ms on DSP plus `~6-8` ms of host reconstruction vs `~2-3` ms per projection on 4-worker
 NEON CPU), beating 4-worker NEON CPU per projection under 0-ULP bitwise parity requires a custom
@@ -1549,14 +1551,15 @@ and dispatch the entire `[5120, 17408]` projection as a single `K=5120, M=17408,
 (`hvx_mv_params` `kernel_type=7`, `n_hvx=8`, `n_prefetch=4`, `vtcm_size=1,912,832`), plus expose the
 signed `v81` HTP opcode descriptors (`HTP_OP_RMS_NORM`, `HTP_OP_RMS_NORM_MUL`, `HTP_OP_GLU_SWIGLU`,
 `HTP_OP_UNARY_SILU`, `HTP_OP_MUL`/`ADD`/`SUB`/`DIV`, `HTP_OP_ROPE`, `HTP_OP_FLASH_ATTN_EXT`,
-`HTP_OP_SSM_CONV`, `HTP_OP_GATED_DELTA_NET`, `HTP_OP_HADAMARD`, and VTCM pass flags). Under
-continuous AC power (`99%` charge, saver off across the `32.26`-second run within the `300.0`-second
-default budget and at all four arm endpoints of both controls), DSP-side reduction shrinks
+`HTP_OP_SSM_CONV`, `HTP_OP_GATED_DELTA_NET`, `HTP_OP_HADAMARD`, and VTCM pass flags).
+Recorded endpoints showed AC connected (`99%` charge, saver off at the outer endpoints of the `32.26`-second run within the `300.0`-second
+default budget and at all four arm endpoints of both controls); uninterrupted
+stability is unknown. DSP-side reduction shrinks
 shared-memory output traffic from `22.28` MB of bitplanes to a single `69,632`-byte `F32` vector
-(`320x` less output traffic per projection, zero host bitplane reconstruction) and cuts
-`nativeSubmitAndWaitMilliseconds` to `0.9832`, `0.6769` and `0.6436` ms for
+(`320x` less output traffic per projection, zero host bitplane reconstruction).
+Recorded `nativeSubmitAndWaitMilliseconds` were `0.9832`, `0.6769` and `0.6436` ms for
 `single-projection-native-q2-resident` (`3` ops in `3` queue writes) and `1.4439`, `1.0908` and
-`1.0821` ms (`~0.541` ms per `[5120, 17408]` projection, faster than 4-worker NEON CPU's `~2-3` ms)
+`1.0821` ms (`~0.541` ms per `[5120, 17408]` projection; the separate 4-worker NEON CPU observation was `~2-3` ms)
 for `two-projection-native-q2-resident` (`6` ops in `6` queue writes, with token `128` native
 evaluation at `506.15` ms vs `516.49` ms on CPU), while matching all `248,320` vocabulary logits
 across tokens `42`, `43` and `128` with cosine similarity `0.999906-0.999974`, RMSE `0.0221-0.0286`,
@@ -1603,10 +1606,12 @@ charge across the `37.13`-second run within the `300.0`-second predeclared allow
 diagnostic observations rather than AC-qualified performance comparisons),
 `multi-layer-13proj-native-q2-scoped-flush` (`blk.0 + blk.3`, `13` projections, `39` ops in `39`
 queue writes, `237,498,368` mapped bytes with `212,336,640` resident weight bytes, `13` prepared
-tensors and `26` cache hits) reduced warm-token `nativeCheckedEvaluationMilliseconds` from `555.44`
-and `586.48` ms (at `a383e92`) to `422.49` and `446.20` ms (beating the 4-worker NEON CPU baseline's
-`463.97` and `478.07` ms on tokens `43` and `128`, and `1,386.00` ms vs `1,392.70` ms across all 3
-tokens) with `4.8742`, `4.4271` and `4.5424` ms of NPU submit-and-wait per token (`~0.341-0.375` ms
+tensors and `26` cache hits) recorded warm-token `nativeCheckedEvaluationMilliseconds` of `422.49`
+and `446.20` ms, with CPU observations of `463.97` and `478.07` ms on tokens `43` and `128`.
+Three-token totals were `1,386.00` ms native and `1,392.70` ms CPU. Historical source
+`a383e92` recorded `555.44` and `586.48` ms under different conditions; these are
+diagnostic observations, not a qualified cross-run improvement. The scoped-flush
+control recorded `4.8742`, `4.4271` and `4.5424` ms of NPU submit-and-wait per token (`~0.341-0.375` ms
 per projection), and `four-layer-25proj-native-q2-resident` (all 25 `PQ2_0` projections of the
 complete 4-layer repeating block `blk.0 + blk.1 + blk.2 + blk.3`, `75` ops in `75` queue writes,
 `452,784,128` mapped bytes with `427,622,400` resident weight bytes, `25` prepared tensors and `50`
@@ -1622,8 +1627,10 @@ battery. Do not combine those different power conditions into a streaming-versus
 comparison. The
 [independent default-feasibility review](docs/evidence/npu-default-feasibility-20261103/independent-review.json)
 retains the still-applicable lifetime, production integration and benefit blockers.
-Keep production NPU admission disabled; the longer session allowance does not
-implement persistent serving or establish a speed advantage.
+Keep those historical diagnostic paths outside qualified production admission;
+the longer session allowance alone establishes neither persistent serving nor
+a speed advantage. The separately implemented X2 `native-q2` development default
+below remains enabled with its qualification disclaimer.
 
 Qualify the 28-projection single-arena (`c574d6c`/`d8afaec` in Prism `0.1.17`, `eafcca5b` in Runner)
 and multi-arena `native-q2` resident placement expansions (`545f43d`..`e60b11f` in Prism,
@@ -1769,8 +1776,9 @@ NPU-1 remains open for the broader packet and remaining prerequisites.
   reviewer of receipts alone does not independently rerun the hardware/oracle.
   Enable only the passing explicit profile, document its supported subset and
   no-go cases, and invalidate/requalify evidence after relevant source, model,
-  adapter, driver or kernel changes. Keep normal chat on CPU and NPU admission
-  disabled until these applicable gates close.
+  adapter, driver or kernel changes. Keep full NPU production qualification pending
+  until these applicable gates close; the owner-directed X2 `native-q2`
+  development default remains enabled with explicit qualification limits.
 - [ ] **NPU-8 — Qualify later backend/family expansion separately.** Connect
   measured request-boundary CPU/GPU/NPU selection only after common-evidence,
   resource and fallback checks. Adreno comparisons require a qualified GPU path;
@@ -1904,8 +1912,9 @@ promotion sequence above.
   correlated operation counts, complete explicit cleanup and atomic publication.
   External activation bytes do not establish live-model provenance. Broader
   graph/state/logit coverage, adapter parity and end-to-end benefit remain
-  separate gates after the one-token pass. Keep production NPU admission disabled
-  until the applicable promotion sequence closes.
+  separate gates after the one-token pass. Do not promote this diagnostic path
+  until the applicable sequence closes; the separate X2 `native-q2` development
+  default does not qualify it.
 - Qualify the implemented HMX integer-bitplane packing/reconstruction control
   against the matching signed K=128/N=8 path. Its eight rows represent activation
   bits of one token, with original CPU Q8_K and per-128 FMA retained; they do not
@@ -1963,9 +1972,11 @@ promotion sequence above.
   replay or partial CPU continuation.
 - Publish scoped profiles/no-go results from paired repeated CI: short and near-limit
   prompts, full output reserve, fixed and natural completions, edited and reused state,
-  AC/battery, pressure and 15–30-minute sustained use in an eligible environment.
-  Leave that sustained gate pending when setup, work and retention cannot fit the
-  owner's aggregate ceiling; do not split it across repeated laptop trials.
+  AC/battery and pressure. A 15–30-minute sustained workload requires an eligible
+  environment outside the owner's laptop. Laptop work, including self-hosted CI,
+  retains the five-minute default and predeclared fifteen-minute aggregate ceiling.
+  Leave sustained acceptance pending when setup, work and retention cannot fit;
+  do not split it across repeated laptop trials.
   Retain raw evidence, uncertainty,
   LoRA parity, CPU rollback and [upgrade gates](docs/hexagon.md#qualification-evidence).
   Qualify Rust NPU coverage and device safety after Rust CPU parity, preserving signed
@@ -2066,13 +2077,18 @@ exclusions. Remaining areas:
   fused `RMSNorm + Sign*FWHT` / `SwiGLU + Sign*FWHT` NEON block kernels, streaming NEON
   top-k sampler pre-filter and low-jitter `parallel_tile` barrier, Hexagon NPU full
   intra-layer FFN VTCM chain (`image_ffn_full_chain_resident`) + `DMA64` stride guard +
-  hybrid CPU/NPU prefill scheduler, GDN rollback-by-replay verify tape (`GdnVerifyTape`) +
-  `DFlash2DraftConfig` + checkpoint-free greedy step verification, Adreno `Q2_0+FWHT`
-  3-processor placement planner (`plan_three_processor_placement`), `bonsai-native-hash` /
-  Windows CNG SHA-256 routing, `fearless_simd` NEON + scoped multi-row
-  `LinearProjection::forward_vec_parallel` + 4-frame TTS streaming + `FastConformer`
-  `[B, C, T, F] -> [B, T, C * F]` transpose in `bonsai-speech-tts`/`bonsai-speech-asr`, and
-  direct `memchr` NEON scanning in `bonsai-broker`/`bonsai-chat`/`bonsai-speech-service`.
+  hybrid CPU/NPU prefill scheduler, standalone GDN rollback-by-replay verify-tape
+  controls (`GdnVerifyTape`) and `DFlash2DraftConfig`, plus checkpoint-backed greedy
+  draft-block verification. The verify tape is not integrated into that runtime path.
+  Also qualify the Adreno `Q2_0+FWHT`
+  3-processor placement planner (`plan_three_processor_placement`), separately from
+  device execution. Prism uses `bonsai-native-hash`; Runner's CNG boundary is
+  `bonsai_windows_credentials::Sha256`. Candidate speech `fearless_simd` projections,
+  `LinearProjection::forward_vec_parallel`, four-frame `StreamChunkConfig` and the
+  `FastConformer` `[B, C, T, F] -> [B, T, C * F]` transpose need serving integration
+  before model qualification; these helpers do not replace active native inference.
+  Qualify direct `memchr` scanning in broker/chat/speech-service separately from
+  those candidate integrations.
 - Qualify [SIMD-JSON tape
   reuse](docs/dependency-audit.md#current-candidate-and-pending-gate) in main-only CI:
   Unicode, duplicate/unknown fields, shapes, bounds and canonical bytes; at least 5%
