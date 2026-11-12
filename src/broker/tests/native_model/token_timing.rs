@@ -209,7 +209,7 @@ fn native_token_timing_requires_source_supported_boundaries_and_positive_interva
         "connectionClosed":true,"cancelledBeforeConnectionClose":false});
     for index in 0_u32..CAP {
         progress["contentDeltas"].as_array_mut().unwrap().push(
-            json!({"text":index.to_string(),"milliseconds":1000.0 + f64::from(index) * 500.0}),
+            json!({"text":index.to_string(),"milliseconds":f64::from(index).mul_add(500.0, 1000.0)}),
         );
     }
     let measured = metrics(&progress);

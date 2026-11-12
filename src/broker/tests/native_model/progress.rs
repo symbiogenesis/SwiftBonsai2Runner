@@ -1,6 +1,7 @@
 //! Bounded public-response observations survive cancellation of a device request.
 
 use super::*;
+use std::fmt::Write as _;
 
 const RESPONSE_LIMIT: usize = 4 * 1024 * 1024;
 const EVENT_LIMIT: usize = 64 * 1024;
@@ -352,10 +353,12 @@ async fn read_response<S: tokio::io::AsyncRead + Unpin>(
 fn native_progress_token_timing_retains_fragmented_deltas_and_cancelled_prefix() {
     let mut payload = String::new();
     for token in ["1", ",", " ", "2", ",", " ", "3", ","] {
-        payload.push_str(&format!(
+        write!(
+            payload,
             "data: {}\n\n",
             json!({"choices":[{"delta":{"content":token},"finish_reason":null}]})
-        ));
+        )
+        .unwrap();
     }
     payload.push_str(concat!(
         "data: {\"choices\":[{\"delta\":{},\"finish_reason\":\"length\"}],\"usage\":{\"completion_tokens\":8}}\n\n",
