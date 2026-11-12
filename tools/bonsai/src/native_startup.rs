@@ -678,7 +678,8 @@ mod tests {
         let mut arrivals = gate.0.lock().map_err(|error| error.to_string())?;
         *arrivals += 1;
         gate.1.notify_all();
-        let (arrivals, timeout) = gate
+        let timeout;
+        (arrivals, timeout) = gate
             .1
             .wait_timeout_while(arrivals, Duration::from_secs(2), |arrivals| *arrivals < 2)
             .map_err(|error| error.to_string())?;

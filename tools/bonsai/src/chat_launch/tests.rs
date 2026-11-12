@@ -597,7 +597,7 @@ fn staged_speech_preparation_preserves_services_without_repeating_model_work() -
         recorder.fail_inference = true;
         let prepared = prepare_backend(plan(fixture.request)?, &mut recorder, &fixture.working)?;
         if external {
-            assert!(recorder.events.is_empty());
+            assert_eq!(recorder.events.len(), 0);
         } else {
             assert_eq!(
                 recorder.events,
@@ -680,7 +680,7 @@ fn staged_preparation_failures_stop_before_later_work() -> crate::Result<()> {
         .err()
         .ok_or("Expected missing prepared broker failure.")?;
     assert!(error.contains("prepared broker"));
-    assert!(recorder.events.is_empty());
+    assert_eq!(recorder.events.len(), 0);
     let mut invalid = self::fixture("staged-invalid")?;
     for stage in ["model", "speech"] {
         invalid.request["PreparationStage"] = json!(stage);
