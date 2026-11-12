@@ -68,15 +68,22 @@ independent hosted Windows ABI control, and the completed frozen-source row-work
 experiment is retired. Confirm the new workflow selection and retained checks in
 owner-managed hosted CI. Earlier cleanup and local checks supply no hosted verdict.
 
-Have the owner push the startup lockfile correction and confirm that retained
-workflows start and Source checks passes its independent offline preflight,
-regressions and upstream lock verification on the resulting source. GitHub rejected
-the earlier tag-keyed lockfile because inline SHA references lacked matching
-literal keys, before creating any jobs. Regenerate with `gh actions-lock --no-narrow`
-and run the local startup preflight before future workflow, action or lock changes.
-All external action references remain full commit SHAs; same-repository composites
-retain workflow-commit `$/` references. Confirm self-hosted runner v2.338.0 or newer
-before its lanes. Local checks supply no hosted verdict.
+The startup lockfile correction reached published source `93b55c06`: [Source checks
+passed](https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/43181569168),
+including startup preflight and upstream lock verification. [Foundation
+started](https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/43181569142)
+but failed a Windows ASR-path assertion and two UI input-event fixtures. Have the
+owner publish the fixture corrections and staged-commit guard, then qualify Source
+checks and Foundation on that resulting source. Local startup/index fixtures and
+the exact ASR/read-aloud controls pass; the microphone fixture's fixed-frame
+correction still needs replay in hosted CI. GitHub rejected the earlier
+tag-keyed lockfile before creating any jobs because inline SHA references lacked
+matching literal keys. Keep the [local guard](tools/ci/README.md#action-dependency-pins)
+enabled and regenerate with `gh actions-lock --no-narrow` before future workflow,
+action or lock changes. All external action references remain full commit SHAs;
+same-repository composites retain workflow-commit `$/` references. Confirm
+self-hosted runner v2.338.0 or newer before its lanes. The published-source pass
+does not validate later local changes.
 
 Publish the first experimental Windows ARM64 MSI release, **v0.1.0**, after the
 owner reviews and pushes the local installer/pipeline commits to Runner `main`.

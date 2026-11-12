@@ -38,6 +38,8 @@ jobs:
         run: python3 -B tools/ci/check_workflow_startup.py
       - name: Check startup lock regression fixtures
         run: python3 -B -m unittest discover -s tools/ci -p test_workflow_startup.py
+      - name: Check staged workflow guard regression fixtures
+        run: python3 -B -m unittest discover -s tools/ci -p test_staged_workflows.py
       - name: Download and verify the sole additional CI security tool
         run: |
           set -euo pipefail
