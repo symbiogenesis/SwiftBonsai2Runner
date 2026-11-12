@@ -1,5 +1,112 @@
 use super::*;
 
+#[test]
+fn model_preparation_overlaps_independent_work_and_joins_before_handoff() -> crate::Result<()> {
+    let (started, awaiting_start) = std::sync::mpsc::sync_channel(1);
+    let (release, awaiting_release) = std::sync::mpsc::sync_channel(1);
+    let verified = AtomicBool::new(false);
+    let runtime_verified = &verified;
+    let built = parallel_model_preparation(
+        move || {
+            started.send(()).map_err(|error| error.to_string())?;
+            awaiting_release
+                .recv_timeout(Duration::from_secs(2))
+                .map_err(|error| error.to_string())?;
+            runtime_verified.store(true, Ordering::Release);
+            Ok(())
+        },
+        || {
+            awaiting_start
+                .recv_timeout(Duration::from_secs(2))
+                .map_err(|error| error.to_string())?;
+            release.send(()).map_err(|error| error.to_string())?;
+            Ok(json!({"BrokerPath": "built.exe"}))
+        },
+    )?;
+    assert!(verified.load(Ordering::Acquire));
+    assert_eq!(built, json!({"BrokerPath": "built.exe"}));
+    Ok(())
+}
+
+fn wait_for_preparation_peer_failure(stopped: &AtomicBool) -> crate::Result<()> {
+    let deadline = std::time::Instant::now() + Duration::from_secs(2);
+    loop {
+        if let Err(error) = crate::startup_cancel::checkpoint() {
+            stopped.store(true, Ordering::Release);
+            return Err(error);
+        }
+        if std::time::Instant::now() >= deadline {
+            return Err("Preparation peer did not cancel.".into());
+        }
+        std::thread::yield_now();
+    }
+}
+
+#[test]
+fn model_preparation_failure_cancels_joins_peer_and_keeps_original_error() -> crate::Result<()> {
+    for runtime_fails in [true, false] {
+        let (started, awaiting_start) = std::sync::mpsc::sync_channel(1);
+        let (ready, awaiting_ready) = std::sync::mpsc::sync_channel(1);
+        let stopped = AtomicBool::new(false);
+        let runtime_stopped = &stopped;
+        let result = parallel_model_preparation(
+            move || {
+                started.send(()).map_err(|error| error.to_string())?;
+                awaiting_ready
+                    .recv_timeout(Duration::from_secs(2))
+                    .map_err(|error| error.to_string())?;
+                if runtime_fails {
+                    Err("Invalid runtime checksum.".into())
+                } else {
+                    wait_for_preparation_peer_failure(runtime_stopped)
+                }
+            },
+            || {
+                awaiting_start
+                    .recv_timeout(Duration::from_secs(2))
+                    .map_err(|error| error.to_string())?;
+                ready.send(()).map_err(|error| error.to_string())?;
+                if runtime_fails {
+                    wait_for_preparation_peer_failure(&stopped).map(|()| Value::Null)
+                } else {
+                    Err("Broker build failed.".into())
+                }
+            },
+        );
+        assert_eq!(
+            result,
+            Err(if runtime_fails {
+                "Invalid runtime checksum.".into()
+            } else {
+                "Broker build failed.".into()
+            })
+        );
+        assert!(stopped.load(Ordering::Acquire));
+        crate::startup_cancel::checkpoint()?;
+    }
+    Ok(())
+}
+
+#[test]
+fn model_preparation_unwind_cancels_and_joins_the_other_arm() {
+    let (started, awaiting_start) = std::sync::mpsc::sync_channel(1);
+    let stopped = AtomicBool::new(false);
+    let result = parallel_model_preparation(
+        move || {
+            awaiting_start
+                .recv_timeout(Duration::from_secs(2))
+                .map_err(|error| error.to_string())?;
+            std::panic::resume_unwind(Box::new("Synthetic runtime preparation unwind."));
+        },
+        || {
+            started.send(()).map_err(|error| error.to_string())?;
+            wait_for_preparation_peer_failure(&stopped).map(|()| Value::Null)
+        },
+    );
+    assert_eq!(result, Err("Model preparation worker panicked.".into()));
+    assert!(stopped.load(Ordering::Acquire));
+}
+
 // Exercise backend selection/argument policy independently of the early window
 // handoff. This records the fully prepared launch without a real UI or model.
 fn execute(plan: Plan, operations: &mut impl Operations, working: &Path) -> crate::Result<Value> {

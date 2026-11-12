@@ -454,7 +454,14 @@ Qualify bounded parallel speech artifact setup, checksum/partial-file ownership
 and peer cancellation without increasing simultaneous resident speech models.
 Retain on-demand ASR/TTS loading and no deferred playback for turns started before
 speech becomes available. Retain cold-build versus unchanged-launch
-attribution and complete checksum/cancellation controls. Qualify the CNG verifier
+attribution and complete checksum/cancellation controls. Qualify bounded 1 MiB
+sequential artifact reads on Snapdragon X1, including total
+readiness and cache effects across broker verification and contained loading.
+Qualify overlapping pinned-runtime preparation and broker builds, peer failure
+cancellation/joining, and below-normal CPU scheduling of the complete speech
+preparation Job with compiler descendants. Cover cold speech-build contention and
+unchanged launches separately; source controls establish no X1 speedup.
+Qualify the CNG verifier
 retained from Prism 0.1.13 in the published 0.1.14 release through Runner's
 settled-main release integration and
 actual-model startup. End-to-end startup gains remain pending within the

@@ -6,6 +6,10 @@ use std::collections::BTreeMap;
 use std::ffi::OsString;
 use std::fs;
 use std::path::{Component, Path, PathBuf};
+use std::sync::{
+    Arc, Mutex,
+    atomic::{AtomicBool, Ordering},
+};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use bonsai_artifacts::validate_external_path;
@@ -351,6 +355,21 @@ fn prepare(mut request: Request, native_host: bool) -> crate::Result<Plan> {
 
 trait Operations {
     fn inference(&mut self, request: &Request, working: &Path) -> crate::Result<()>;
+    fn model_apps(
+        &mut self,
+        request: &Request,
+        packages: &[&str],
+        working: &Path,
+    ) -> crate::Result<Option<Value>> {
+        if request.native_engine {
+            self.inference(request, working)?;
+        }
+        if packages.is_empty() {
+            Ok(None)
+        } else {
+            self.apps(request, packages, working).map(Some)
+        }
+    }
     fn models(&mut self, request: &Request, model: &str, working: &Path) -> crate::Result<Value>;
     fn apps(
         &mut self,
@@ -386,6 +405,33 @@ impl Operations for Native {
         crate::provision::run(inference_request(request, working))
             .map(|_| ())
             .map_err(|error| format!("The selected Rust runtime could not be prepared: {error}"))
+    }
+
+    fn model_apps(
+        &mut self,
+        request: &Request,
+        packages: &[&str],
+        working: &Path,
+    ) -> crate::Result<Option<Value>> {
+        if request.native_engine && !packages.is_empty() {
+            // The broker build consumes the release lock, not the installed
+            // runtime. Neither operation needs the other's output. Join both
+            // before handing the broker to the UI; a failure cancels its peer.
+            parallel_model_preparation(
+                || Self.inference(request, working),
+                || Self.apps(request, packages, working),
+            )
+            .map(Some)
+        } else {
+            if request.native_engine {
+                self.inference(request, working)?;
+            }
+            if packages.is_empty() {
+                Ok(None)
+            } else {
+                self.apps(request, packages, working).map(Some)
+            }
+        }
     }
 
     fn models(&mut self, request: &Request, model: &str, working: &Path) -> crate::Result<Value> {
@@ -446,6 +492,79 @@ impl Operations for Native {
         )?;
         Ok(result.code)
     }
+}
+
+#[derive(Default)]
+struct ModelPreparation {
+    cancelled: Arc<AtomicBool>,
+    failure: Mutex<Option<String>>,
+}
+
+impl ModelPreparation {
+    fn fail(&self, error: String) {
+        if let Ok(mut failure) = self.failure.lock()
+            && failure.is_none()
+        {
+            *failure = Some(error);
+        }
+        self.cancelled.store(true, Ordering::Release);
+    }
+
+    fn run<T>(&self, operation: impl FnOnce() -> crate::Result<T>) -> crate::Result<T> {
+        let mut guard = PreparationArm {
+            group: self,
+            finished: false,
+        };
+        let result = crate::startup_cancel::with_peer_cancellation(&self.cancelled, || {
+            crate::startup_cancel::checkpoint().and_then(|()| operation())
+        });
+        if let Err(error) = &result {
+            self.fail(error.clone());
+        }
+        guard.finished = true;
+        result
+    }
+}
+
+struct PreparationArm<'a> {
+    group: &'a ModelPreparation,
+    finished: bool,
+}
+
+impl Drop for PreparationArm<'_> {
+    fn drop(&mut self) {
+        if !self.finished {
+            self.group.fail("Model preparation worker panicked.".into());
+        }
+    }
+}
+
+fn parallel_model_preparation(
+    inference: impl FnOnce() -> crate::Result<()> + Send,
+    apps: impl FnOnce() -> crate::Result<Value>,
+) -> crate::Result<Value> {
+    let group = ModelPreparation::default();
+    let built = std::thread::scope(|scope| {
+        let runtime = std::thread::Builder::new()
+            .name("chat-runtime-prepare".into())
+            .spawn_scoped(scope, || group.run(inference))
+            .map_err(|error| format!("Cannot start runtime preparation: {error}"))?;
+        let built = group.run(apps);
+        match runtime.join() {
+            Ok(Ok(())) => {}
+            Ok(Err(error)) => group.fail(error),
+            Err(_) => group.fail("Model preparation worker panicked.".into()),
+        }
+        built
+    });
+    if let Some(error) = group
+        .failure
+        .into_inner()
+        .map_err(|_| "Model preparation result was poisoned.")?
+    {
+        return Err(error);
+    }
+    built
 }
 
 fn inference_request(request: &Request, working: &Path) -> Value {
@@ -617,7 +736,12 @@ fn prepare_backend(
     if request.speech_models_only {
         fs::create_dir_all(&request.data_directory).map_err(|error| error.to_string())?;
     }
-    if stage != PreparationStage::Speech && request.native_engine && !request.speech_models_only {
+    let model_apps = if stage == PreparationStage::Model && !request.speech_models_only {
+        operations.model_apps(&request, &app_packages, working)?
+    } else {
+        None
+    };
+    if stage == PreparationStage::All && request.native_engine && !request.speech_models_only {
         // Run only in the owned preparation worker after the first UI frame.
         // Provisioning checks the exact release inventory and hashes, downloads
         // only a missing runtime, and rejects altered existing installations.
@@ -632,7 +756,11 @@ fn prepare_backend(
         return models.ok_or_else(|| "Missing explicit speech provisioning result.".into());
     }
     if stage != PreparationStage::Speech && !app_packages.is_empty() {
-        let built = operations.apps(&request, &app_packages, working)?;
+        let built = if let Some(built) = model_apps {
+            built
+        } else {
+            operations.apps(&request, &app_packages, working)?
+        };
         if request.chat_path.is_none() {
             request.chat_path = Some(path_field(&built, "ChatPath")?);
         }

@@ -206,6 +206,15 @@ tools must be rebuilt from the same checkout or supplied by the same verified ap
 package. Model failures retain separate model/export guidance. Retry repeats
 verification after repair.
 
+During staged source startup, pinned runtime verification/provisioning and the
+broker build run concurrently. Both must finish successfully before the UI starts
+the broker; failure cancels and joins the peer. Full-file artifact verification
+uses at most 1 MiB of read scratch with sequential access hints, retaining full
+checksums and file guards. Speech preparation and its compiler descendants use
+below-normal CPU priority to reduce competition with model loading and text chat,
+including on Snapdragon X1. This CPU scheduling policy does not isolate disk I/O.
+Rebuild both the maintenance executable and UI to use these startup changes.
+
 If the launcher reports a missing prebuilt executable, run the maintenance build
 command it prints from the repository root, then retry. Correct or remove any
 invalid `-ToolPath` or `BONSAI_TOOLS_PATH` override first. Older source launches used

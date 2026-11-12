@@ -201,6 +201,7 @@ fn execute(
         // cold multi-gigabyte speech provisioning can legitimately exceed an
         // hour overall; only cancellation bounds the aggregate operation.
         Duration::ZERO,
+        stage == "speech",
     );
     // The original request remains the replay input; stage requests are scratch.
     let cleanup = fs::remove_file(path);
@@ -219,6 +220,7 @@ fn capture(
     spec: &ToolProcessSpec,
     cancelled: &AtomicBool,
     deadline: Duration,
+    background: bool,
 ) -> io::Result<String> {
     if cancelled.load(Ordering::Acquire) {
         return Err(io::Error::new(
@@ -226,7 +228,14 @@ fn capture(
             "Native startup was cancelled.",
         ));
     }
-    let child = Process(OwnedProcess::start_tool(spec)?);
+    // Speech setup can compile native libraries while Swift verifies/loads.
+    // Lower its complete owned Job's CPU priority so compiler descendants also
+    // yield to model startup and text requests on smaller Snapdragon systems.
+    let child = Process(if background {
+        OwnedProcess::start_background_tool(spec)?
+    } else {
+        OwnedProcess::start_tool(spec)?
+    });
     let started = Instant::now();
     let status = loop {
         if cancelled.load(Ordering::Acquire) {
@@ -560,7 +569,8 @@ mod tests {
         let spec = spec(&directory, &script)?;
         let cancelled = Arc::new(AtomicBool::new(false));
         let cancellation = Arc::clone(&cancelled);
-        let worker = thread::spawn(move || capture(&spec, &cancellation, Duration::from_secs(30)));
+        let worker =
+            thread::spawn(move || capture(&spec, &cancellation, Duration::from_secs(30), false));
         let started = Instant::now();
         while !marker.is_file() && started.elapsed() < Duration::from_secs(20) {
             thread::sleep(Duration::from_millis(20));
@@ -613,6 +623,7 @@ mod tests {
                 &spec(&directory, script)?,
                 &AtomicBool::new(false),
                 Duration::from_secs(30),
+                false,
             );
             assert!(result.is_err_and(|error| error.to_string().contains(expected)));
             fs::remove_dir_all(&directory)?;

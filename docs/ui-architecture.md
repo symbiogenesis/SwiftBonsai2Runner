@@ -48,13 +48,19 @@ an absent signed package or CDSP driver does not change engine or representation
 PTQ1 remains an explicit opt-in.
 
 The launcher checks/builds presentation first. After the first UI tick, an owned
-preparation worker verifies/provisions the selected pinned Rust runtime and
-builds/verifies the broker, then hands off text chat immediately. Speech artifact
+preparation worker verifies/provisions the selected pinned Rust runtime alongside
+building/verifying the broker, then hands off text chat after both finish. Either
+failure cancels and joins the other operation before reporting failure. Speech artifact
 preparation, companion builds and fresh speech credentials continue separately
 while Swift loads and serves text chat. A speech preparation failure leaves text
 chat and its drafts/history intact; closing cancels both owned stages.
 Speech artifact preparation uses at most two concurrent workers, preserves exact
 verification and partial-download ownership, and cancels peers on failure.
+The complete speech preparation Job, including compiler descendants, runs at
+below-normal CPU priority so it yields to model loading and text chat. This does
+not reserve disk bandwidth or change inference priority. Full-file artifact
+verification uses bounded 1 MiB sequential reads and retains complete SHA-256,
+length, cancellation and immutable-file checks before use.
 Runtime preparation downloads only a missing locked runtime; model and adapter
 provisioning remain explicit. Drafts and recovered conversations survive preparation;
 model preparation failures leave the window available. Closing cancels preparation
