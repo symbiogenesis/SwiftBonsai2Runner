@@ -33,7 +33,7 @@ impl State {
         // Include the two icons and their four-point label gaps. Only the gaps
         // between groups tighten on a narrow dock; text keeps its natural width.
         let content_width =
-            text_width(model) + text_width("History") + text_width("Private") + 32.0;
+            text_width(model) + text_width("History") + text_width("Private") + 34.0;
         let available = ui.available_width();
         let group_gap = ((available - content_width) * 0.5).clamp(0.0, 14.0);
         let inset = ((available - content_width - 2.0 * group_gap) * 0.5).max(0.0);
@@ -47,11 +47,11 @@ impl State {
                     .accessible_name(description)
                     .on_hover_text(description);
                 ui.add_space(group_gap);
+                history_indicator(ui, self.save_conversations).on_hover_text(saving_description);
+                ui.add_space(4.0);
                 ui.add(egui::Label::new(RichText::new("History").small().weak()).extend())
                     .accessible_name(saving_description)
                     .on_hover_text(saving_description);
-                ui.add_space(4.0);
-                history_indicator(ui, self.save_conversations).on_hover_text(saving_description);
                 ui.add_space(group_gap);
                 privacy_icon(ui).on_hover_text("Private · On your device");
                 ui.add_space(4.0);
@@ -64,29 +64,31 @@ impl State {
 }
 
 fn history_indicator(ui: &mut egui::Ui, enabled: bool) -> egui::Response {
-    // A small monochrome rail reads as status, without a switch control's
-    // filled capsule, accent or hover treatment. Thumb position carries state.
-    let (track, response) = ui.allocate_exact_size(egui::vec2(14.0, 8.0), egui::Sense::hover());
-    let ink = ui.visuals().weak_text_color();
-    ui.painter().line_segment(
-        [
-            egui::pos2(track.left() + 3.0, track.center().y),
-            egui::pos2(track.right() - 3.0, track.center().y),
-        ],
-        egui::Stroke::new(1.0, ink),
+    let (calendar, response) =
+        ui.allocate_exact_size(egui::Vec2::splat(16.0), egui::Sense::hover());
+    let point = |x, y| calendar.min + egui::vec2(x, y);
+    let stroke = egui::Stroke::new(1.1, ui.visuals().weak_text_color());
+    let painter = ui.painter_at(calendar);
+    painter.rect_stroke(
+        egui::Rect::from_min_max(point(1.5, 3.0), point(14.5, 14.5)),
+        1.5,
+        stroke,
+        egui::StrokeKind::Middle,
     );
-    ui.painter().circle_filled(
-        egui::pos2(
-            if enabled {
-                track.right() - 3.0
-            } else {
-                track.left() + 3.0
-            },
-            track.center().y,
-        ),
-        2.0,
-        ink,
-    );
+    for x in [5.0, 11.0] {
+        painter.line_segment([point(x, 1.0), point(x, 4.5)], stroke);
+    }
+    painter.line_segment([point(1.5, 6.0), point(14.5, 6.0)], stroke);
+    // State stays legible without relying on color or a tiny switch thumb.
+    let state_stroke = egui::Stroke::new(1.4, ui.visuals().text_color());
+    if enabled {
+        painter.add(egui::Shape::line(
+            vec![point(4.5, 10.2), point(6.8, 12.3), point(11.5, 8.0)],
+            state_stroke,
+        ));
+    } else {
+        painter.line_segment([point(2.0, 14.0), point(14.0, 2.0)], state_stroke);
+    }
     response
 }
 

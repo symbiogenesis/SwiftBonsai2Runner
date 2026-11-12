@@ -293,9 +293,12 @@ including name-only narrow layouts and preview/generation status substitutions.
 Confirm the compact footer keeps model, conversation-saving and privacy status
 on one line at minimum sidebar width, with full hover and accessible descriptions.
 Verify centered group spacing, stable model/history/privacy order, the outline
-privacy lock and the passive History rail's enabled/disabled thumb position and
-theme contrast at normal and minimum sidebar widths. Footer formatting
-and source review passed; earlier native analysis stopped at the existing
+privacy lock and the custom calendar to the left of History: a checkmark when
+saving is on and a slash when off. Verify legibility and theme contrast at normal
+and minimum sidebar widths, with full saving descriptions on hover. Calendar
+source review passed; its bounded check stopped on one Rust line wrap, corrected
+without retry. Native analysis and the calendar preview were not reached.
+Earlier footer formatting and source review passed; native analysis stopped at the existing
 `speech/command_queue.rs` const `VecDeque::is_empty` compiler error. The revised
 strip's isolated preview stopped during dependency setup on an unsupported egui
 feature; no renders were produced and neither failed operation was retried.
