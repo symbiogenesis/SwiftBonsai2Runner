@@ -9,24 +9,23 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
+. (Join-Path $PSScriptRoot 'Release-Common.ps1')
 if (-not $IsWindows -or [Runtime.InteropServices.RuntimeInformation]::OSArchitecture -ne 'Arm64') {
     throw 'Installer packaging requires Windows ARM64.'
 }
 $repositoryRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../..'))
-foreach ($path in @($PackageDirectory, $OutputDirectory, $WixPath)) {
-    if (-not [IO.Path]::IsPathFullyQualified($path)) { throw 'Packaging paths must be expanded and absolute.' }
-}
-$PackageDirectory = [IO.Path]::GetFullPath($PackageDirectory)
-$OutputDirectory = [IO.Path]::GetFullPath($OutputDirectory)
+$PackageDirectory = Resolve-ReleasePath $PackageDirectory
+$OutputDirectory = Resolve-ReleasePath $OutputDirectory -AllowMissing
+$WixPath = Resolve-ReleasePath $WixPath -Kind File
 $toolchain = Get-Content -LiteralPath (Join-Path $repositoryRoot 'installer/windows/toolchain.json') -Raw | ConvertFrom-Json
-$wixVersion = (& $WixPath --version | Out-String).Trim()
-if ($LASTEXITCODE -ne 0 -or $wixVersion -notmatch ('^' + [regex]::Escape($toolchain.wixVersion) + '(\+|$)')) {
+$wixVersion = (Invoke-ReleaseCommand $WixPath @('--version')).Trim()
+if ($wixVersion -notmatch ('^' + [regex]::Escape($toolchain.wixVersion) + '(\+|$)')) {
     throw "Installer builds require pinned WiX $($toolchain.wixVersion); found '$wixVersion'."
 }
 $tool = Join-Path $PackageDirectory 'bin/bonsai-tools.exe'
 $request = @{operation = 'inspect'; packageDirectory = $PackageDirectory; manifestSha256 = $ManifestSha256}
-$package = (& $tool chat-package --json ($request | ConvertTo-Json -Compress) | Out-String) | ConvertFrom-Json
-if ($LASTEXITCODE -ne 0 -or $package.Manifest.schemaVersion -ne 2 -or $package.Manifest.target -cne $toolchain.target) {
+$package = Invoke-ReleaseCommand $tool @('chat-package', '--json', ($request | ConvertTo-Json -Compress)) | ConvertFrom-Json
+if ($package.Manifest.schemaVersion -ne 2 -or $package.Manifest.target -cne $toolchain.target) {
     throw 'A verified schema-2 Windows ARM64 package is required.'
 }
 $version = [string]$package.Manifest.version
@@ -46,11 +45,11 @@ try {
         active = @{id = $package.Id; manifestSha256 = $ManifestSha256}
         previous = $null
     } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $stage 'active.json') -Encoding utf8NoBOM
-    & $WixPath build (Join-Path $repositoryRoot 'installer/windows/Package.wxs') `
-        -arch arm64 -d "ProductVersion=$version" -d "PackageId=$($package.Id)" `
-        -d "PackageDirectory=$PackageDirectory" -d "StageDirectory=$stage" -d "RepositoryRoot=$repositoryRoot" `
-        -intermediateFolder (Join-Path $stage 'obj') -pdbtype none -out $installerPath
-    if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $installerPath -PathType Leaf)) { throw 'WiX MSI build failed.' }
+    Invoke-ReleaseCommand $WixPath @('build', (Join-Path $repositoryRoot 'installer/windows/Package.wxs'),
+        '-arch', 'arm64', '-d', "ProductVersion=$version", '-d', "PackageId=$($package.Id)",
+        '-d', "PackageDirectory=$PackageDirectory", '-d', "StageDirectory=$stage", '-d', "RepositoryRoot=$repositoryRoot",
+        '-intermediateFolder', (Join-Path $stage 'obj'), '-pdbtype', 'none', '-out', $installerPath)
+    if (-not (Test-Path -LiteralPath $installerPath -PathType Leaf)) { throw 'WiX MSI build produced no installer.' }
     [ordered]@{
         schemaVersion = 1; version = $version; target = $toolchain.target
         sourceRevision = $package.Manifest.sourceRevision; packageId = $package.Id
@@ -60,7 +59,7 @@ try {
     } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $OutputDirectory 'installer-receipt.json') -Encoding utf8NoBOM
     $installerPath
 } finally {
-    $resolved = [IO.Path]::GetFullPath($stage)
+    $resolved = Resolve-ReleasePath $stage
     $tempRoot = [IO.Path]::GetFullPath([IO.Path]::GetTempPath()).TrimEnd('\') + '\'
     if (-not $resolved.StartsWith($tempRoot, [StringComparison]::OrdinalIgnoreCase) -or
         [IO.Path]::GetFileName($resolved) -notlike 'SwiftBonsai-Msi-*') { throw 'Refusing cleanup outside the private MSI stage.' }

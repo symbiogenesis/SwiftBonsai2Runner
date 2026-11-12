@@ -12,9 +12,16 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
-if (-not $IsWindows -or [Runtime.InteropServices.RuntimeInformation]::OSArchitecture -ne 'Arm64') { throw 'Release packaging requires native Windows ARM64.' }
+. (Join-Path $PSScriptRoot '../../scripts/release/Release-Common.ps1')
+if (-not $IsWindows -or [Runtime.InteropServices.RuntimeInformation]::OSArchitecture -ne 'Arm64' -or
+    $env:RUNNER_ENVIRONMENT -cne 'github-hosted') { throw 'Release packaging and prerequisite installation require a disposable hosted Windows ARM64 runner.' }
 if ($Tag -cnotmatch '^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$' -or $SourceRevision -cnotmatch '^[0-9a-f]{40}$') { throw 'Invalid release identity.' }
 $version = $Tag.Substring(1)
+$RepositoryRoot = Resolve-ReleasePath $RepositoryRoot
+$InputDirectory = Resolve-ReleasePath $InputDirectory
+$WixPath = Resolve-ReleasePath $WixPath -Kind File
+$OutputDirectory = Resolve-ReleasePath $OutputDirectory -AllowMissing
+$EvidenceDirectory = Resolve-ReleasePath $EvidenceDirectory -AllowMissing
 foreach ($directory in @($OutputDirectory, $EvidenceDirectory)) {
     if (Test-Path -LiteralPath $directory) { throw "Release output must be new: $directory" }
     [void][IO.Directory]::CreateDirectory($directory)
@@ -45,7 +52,7 @@ $request = Join-Path $EvidenceDirectory 'create-package.json'
     chatPath = $executables.ui; brokerPath = $executables.core; asrPath = $executables.asr
     ttsPath = $executables.tts; toolPath = $executables.maintenance; thirdPartyNoticePath = $notices
 } | ConvertTo-Json | Set-Content -LiteralPath $request -Encoding utf8NoBOM
-$creation = & $executables.maintenance chat-package --request $request | ConvertFrom-Json
+$creation = Invoke-ReleaseCommand $executables.maintenance @('chat-package', '--request', $request) | ConvertFrom-Json
 $creation | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath (Join-Path $EvidenceDirectory 'package-receipt.json') -Encoding utf8NoBOM
 $manifestDigest = (Get-FileHash -LiteralPath (Join-Path $package 'package.json') -Algorithm SHA256).Hash.ToLowerInvariant()
 if ($creation.ManifestSha256 -cne $manifestDigest) { throw 'Package creation receipt disagrees with its manifest.' }
@@ -64,15 +71,23 @@ $runtimeKey = 'HKLM:\SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\arm64'
 $runtime = Get-ItemProperty -LiteralPath $runtimeKey -ErrorAction SilentlyContinue
 if ($null -eq $runtime -or $runtime.Installed -ne 1) {
     $redist = Join-Path $EvidenceDirectory 'vc_redist.arm64.exe'
-    Invoke-WebRequest -Uri 'https://aka.ms/vc14/vc_redist.arm64.exe' -OutFile $redist
+    Invoke-WebRequest -Uri 'https://aka.ms/vc14/vc_redist.arm64.exe' -OutFile $redist -TimeoutSec 60 -MaximumRedirection 3
     $signature = Get-AuthenticodeSignature -LiteralPath $redist
     if ($signature.Status -ne 'Valid' -or $signature.SignerCertificate.Subject -notmatch '(?:^|, )O=Microsoft Corporation(?:,|$)') { throw 'The ARM64 Microsoft runtime installer signature is invalid.' }
-    $process = Start-Process -FilePath $redist -ArgumentList @('/install', '/quiet', '/norestart') -WindowStyle Hidden -Wait -PassThru
-    if ($process.ExitCode -notin @(0, 1638, 3010)) { throw "Microsoft runtime installation failed: $($process.ExitCode)" }
+    $process = Start-Process -FilePath $redist -ArgumentList @('/install', '/quiet', '/norestart') -WindowStyle Hidden -PassThru
+    try {
+        if (-not $process.WaitForExit(120000)) {
+            $process.Kill($true)
+            [void]$process.WaitForExit(5000)
+            throw 'Microsoft runtime installation exceeded its two-minute deadline.'
+        }
+        $runtimeExitCode = $process.ExitCode
+        if ($runtimeExitCode -notin @(0, 1638, 3010)) { throw "Microsoft runtime installation failed: $runtimeExitCode" }
+    } finally { $process.Dispose() }
     @{
         uri = 'https://aka.ms/vc14/vc_redist.arm64.exe'
         sha256 = (Get-FileHash -LiteralPath $redist -Algorithm SHA256).Hash.ToLowerInvariant()
-        signer = $signature.SignerCertificate.Subject; exitCode = $process.ExitCode
+        signer = $signature.SignerCertificate.Subject; exitCode = $runtimeExitCode
     } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $EvidenceDirectory 'vc-runtime.json') -Encoding utf8NoBOM
     # Keep evidence small; do not redistribute Microsoft's prerequisite installer.
     Remove-Item -LiteralPath $redist

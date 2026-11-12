@@ -9,63 +9,96 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
+. (Join-Path $PSScriptRoot 'Release-Common.ps1')
 if (-not $IsWindows -or [Runtime.InteropServices.RuntimeInformation]::OSArchitecture -ne 'Arm64' -or
     $env:RUNNER_ENVIRONMENT -cne 'github-hosted') {
     throw 'Installer smoke tests require a disposable GitHub-hosted Windows ARM64 runner.'
 }
-foreach ($path in @($InstallerPath, $EvidenceDirectory)) {
-    if (-not [IO.Path]::IsPathFullyQualified($path)) { throw 'Smoke-test paths must be expanded and absolute.' }
-}
+$InstallerPath = Resolve-ReleasePath $InstallerPath -Kind File
+$EvidenceDirectory = Resolve-ReleasePath $EvidenceDirectory -AllowMissing
+if (Test-Path -LiteralPath $EvidenceDirectory) { throw 'Smoke-test evidence must use a new directory.' }
 [void][IO.Directory]::CreateDirectory($EvidenceDirectory)
-$installer = New-Object -ComObject WindowsInstaller.Installer
-$database = $installer.OpenDatabase($InstallerPath, 0)
+$installer = $null
+$database = $null
+$summary = $null
+try {
+    $installer = New-Object -ComObject WindowsInstaller.Installer
+    $database = $installer.OpenDatabase($InstallerPath, 0)
 function Read-MsiProperty([string]$Name) {
     if ($Name -cnotmatch '^[A-Za-z]+$') { throw 'Invalid MSI property name.' }
     $query = 'SELECT `Value` FROM `Property` WHERE `Property` = ''' + $Name + ''''
-    $view = $database.OpenView($query)
+    $view = $null
+    $record = $null
     try {
+        $view = $database.OpenView($query)
         $view.Execute()
         $record = $view.Fetch()
         if ($null -eq $record) { throw "MSI property $Name is absent." }
         [string]$record.StringData(1)
-    } finally { $view.Close() }
+    } finally {
+        if ($null -ne $record) { [void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($record) }
+        if ($null -ne $view) {
+            $view.Close()
+            [void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($view)
+        }
+    }
 }
 $productCode = Read-MsiProperty 'ProductCode'
+$productGuid = [guid]::Empty
+[xml]$authoring = Get-Content -LiteralPath (Join-Path $PSScriptRoot '../../installer/windows/Package.wxs') -Raw
 if ((Read-MsiProperty 'ProductVersion') -cne $ExpectedVersion -or
-    (Read-MsiProperty 'ProductName') -cne 'Swift Bonsai 2 Runner') { throw 'MSI product identity mismatch.' }
+    (Read-MsiProperty 'ProductName') -cne 'Swift Bonsai 2 Runner' -or
+    (Read-MsiProperty 'Manufacturer') -cne 'symbiogenesis' -or
+    (Read-MsiProperty 'UpgradeCode') -ine ('{' + [string]$authoring.Wix.Package.UpgradeCode + '}') -or
+    -not [guid]::TryParseExact($productCode, 'B', [ref]$productGuid) -or $productGuid -eq [guid]::Empty) {
+    throw 'MSI product identity mismatch.'
+}
 $summary = $database.SummaryInformation(0)
 if ([string]$summary.Property(7) -cne 'Arm64;1033') { throw 'MSI is not a native ARM64 package.' }
-[void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($summary)
-[void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($database)
-[void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($installer)
+} finally {
+    foreach ($com in @($summary, $database, $installer)) {
+        if ($null -ne $com) { [void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($com) }
+    }
+}
 $installRoot = Join-Path $EvidenceDirectory 'installed'
 if (Test-Path -LiteralPath $installRoot) { throw 'Smoke installation path already exists.' }
-$userData = Join-Path $env:LOCALAPPDATA 'SwiftBonsai2'
+$userData = Resolve-ReleasePath (Join-Path $env:LOCALAPPDATA 'SwiftBonsai2') -AllowMissing
 [void][IO.Directory]::CreateDirectory($userData)
 $sentinel = Join-Path $userData ('installer-retention-' + [guid]::NewGuid().ToString('N') + '.txt')
 'Preserve user model and conversation storage across uninstall.' | Set-Content -LiteralPath $sentinel -Encoding utf8NoBOM
 $sentinelHash = (Get-FileHash -LiteralPath $sentinel -Algorithm SHA256).Hash
 function Invoke-Msi([string[]]$MsiArguments, [int[]]$AllowedExitCodes) {
-    $process = Start-Process -FilePath (Join-Path $env:WINDIR 'System32/msiexec.exe') `
-        -ArgumentList $MsiArguments -WindowStyle Hidden -PassThru
-    if (-not $process.WaitForExit(180000)) {
-        Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
-        throw 'Windows Installer exceeded the three-minute smoke-step deadline.'
+    $start = [Diagnostics.ProcessStartInfo]::new()
+    $start.FileName = Join-Path $env:WINDIR 'System32/msiexec.exe'
+    $start.UseShellExecute = $false
+    $start.CreateNoWindow = $true
+    foreach ($argument in $MsiArguments) { [void]$start.ArgumentList.Add($argument) }
+    $process = [Diagnostics.Process]::new()
+    $process.StartInfo = $start
+    try {
+        if (-not $process.Start()) { throw 'Could not start Windows Installer.' }
+        if (-not $process.WaitForExit(180000)) {
+            $process.Kill($true)
+            [void]$process.WaitForExit(5000)
+            throw 'Windows Installer exceeded the three-minute smoke-step deadline.'
+        }
+        if ($process.ExitCode -notin $AllowedExitCodes) { throw "Windows Installer failed with exit code $($process.ExitCode)." }
+    } finally {
+        $process.Dispose()
     }
-    if ($process.ExitCode -notin $AllowedExitCodes) { throw "Windows Installer failed with exit code $($process.ExitCode)." }
 }
 $attempted = $false
 $checked = $false
 try {
     $attempted = $true
-    Invoke-Msi @('/i', ('"' + $InstallerPath + '"'), '/qn', '/norestart', '/l*v',
-        ('"' + (Join-Path $EvidenceDirectory 'install.log') + '"'), ('INSTALLFOLDER="' + $installRoot + '"')) @(0, 3010)
+    Invoke-Msi @('/i', $InstallerPath, '/qn', '/norestart', '/l*v',
+        (Join-Path $EvidenceDirectory 'install.log'), "INSTALLFOLDER=$installRoot") @(0, 3010)
     $trustedTool = Join-Path $installRoot 'maintenance/bonsai-tools.exe'
-    $capabilities = (& $trustedTool --version | Out-String) | ConvertFrom-Json
-    if ($LASTEXITCODE -ne 0 -or 'installed-chat' -cnotin $capabilities.Commands) { throw 'Installed native launcher is unavailable.' }
+    $capabilities = Invoke-ReleaseCommand $trustedTool @('--version') | ConvertFrom-Json
+    if ('installed-chat' -cnotin $capabilities.Commands) { throw 'Installed native launcher is unavailable.' }
     $request = @{operation = 'installed'; installationDirectory = $installRoot} | ConvertTo-Json -Compress
-    $package = (& $trustedTool chat-package --json $request | Out-String) | ConvertFrom-Json
-    if ($LASTEXITCODE -ne 0 -or $package.Manifest.version -cne $ExpectedVersion -or
+    $package = Invoke-ReleaseCommand $trustedTool @('chat-package', '--json', $request) | ConvertFrom-Json
+    if ($package.Manifest.version -cne $ExpectedVersion -or
         $package.Manifest.target -cne 'aarch64-pc-windows-msvc' -or $package.Manifest.files.Count -ne 8 -or
         $package.Manifest.sourceRevision -cne $env:GITHUB_SHA) {
         throw 'Installed package failed native inventory and digest validation.'
@@ -90,7 +123,7 @@ try {
 } finally {
     if ($attempted) {
         Invoke-Msi @('/x', $productCode, '/qn', '/norestart', '/l*v',
-            ('"' + (Join-Path $EvidenceDirectory 'uninstall.log') + '"')) @(0, 1605, 3010)
+            (Join-Path $EvidenceDirectory 'uninstall.log')) @(0, 1605, 3010)
     }
 }
 if (-not $checked -or (Test-Path -LiteralPath (Join-Path $installRoot 'maintenance/bonsai-tools.exe')) -or

@@ -8,10 +8,15 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
+. (Join-Path $PSScriptRoot '../../scripts/release/Release-Common.ps1')
+$RepositoryRoot = Resolve-ReleasePath $RepositoryRoot
+$NativeSourceDirectory = Resolve-ReleasePath $NativeSourceDirectory
+$OutputPath = Resolve-ReleasePath $OutputPath -Kind File -AllowMissing
 
 # Read exact resolved package sources, including build dependencies. Retaining
 # extra source notices is intentional; an SPDX name alone is not a license text.
-$metadata = cargo +nightly-2026-11-09-aarch64-pc-windows-msvc metadata --locked --format-version 1 --filter-platform aarch64-pc-windows-msvc --manifest-path (Join-Path $RepositoryRoot 'Cargo.toml') | ConvertFrom-Json
+$metadata = Invoke-ReleaseCommand 'cargo' @('+nightly-2026-11-09-aarch64-pc-windows-msvc', 'metadata', '--locked', '--format-version', '1',
+    '--filter-platform', 'aarch64-pc-windows-msvc', '--manifest-path', (Join-Path $RepositoryRoot 'Cargo.toml')) | ConvertFrom-Json
 $resolved = [Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
 foreach ($node in $metadata.resolve.nodes) { [void]$resolved.Add($node.id) }
 $text = [Text.StringBuilder]::new()
