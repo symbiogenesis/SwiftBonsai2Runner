@@ -1,5 +1,10 @@
 # Resident host weight accounting
 
+This guide and its ledgers describe the historical exact HMX bitplane bridge.
+The current [X2 `native-q2` development default](../../docs/hexagon.md) uses a
+different direct-output layout and six larger arenas. Do not apply the 64 MiB
+HMX ceiling or the traffic counts below to that serving path.
+
 The experimental Prism HMX path can retain immutable, prepared weight tiles in
 an explicitly bounded mapped host arena and reuse them through opaque
 session-owned handles. Its default remains streaming. The optional arena is
@@ -55,8 +60,10 @@ Complete CPU-shadow logits/state match after every token. This explicit screen
 omits per-dot CPU replay and verifies actual native mapping/preparation counters;
 it does not establish device weight residency. CPU/native AC evaluation windows
 show no clear benefit. The separate streaming controls ran on battery, so they
-cannot qualify a streaming-versus-resident speed comparison. The next optimization
-needs fewer submissions and less reconstruction before any serving default changes.
+cannot qualify a streaming-versus-resident speed comparison. Later
+[batching and native-Q2 controls](../../docs/hexagon.md#snapdragon-x2-hexagon-npu-v81-projection-and-layer-timings)
+reduce submissions and reconstruction under their own numerical contracts;
+these original cache observations do not establish that benefit.
 
 The native descriptor still covers the entire expanded allocation with the
 unchanged `0x90` flags on every operation. The first-projection example expands
@@ -69,7 +76,7 @@ kernel's weight DMA, intermediate plane results or synchronization.
 
 An efficient complete backend still needs qualified signed kernels with fewer
 submissions and intermediate results, appropriate memory ownership and true
-multitoken prefill scheduling. Qualcomm's current
+multitoken prefill scheduling. The dated Qualcomm
 [release list](https://github.com/qualcomm/GenieX/releases) identifies the same
 `19cce6` signed HTP revision in v0.10.0 and v0.10.1-rc.1, as reviewed on
 2026-11-02. Its documented

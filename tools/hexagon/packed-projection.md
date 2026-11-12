@@ -4,8 +4,9 @@
 control for a future signed Hexagon projection. It opens no driver, loads no
 model and dispatches no DSP work. It is an operation oracle and scheduling
 candidate; inference integration belongs in Prism. The
-[source/capture manifest](packed-sources.json) binds its arithmetic to Runner's
-pinned Prism revision and independent native observations.
+[source/capture manifest](packed-sources.json) binds its arithmetic to the
+historical Prism control revision and independent native observations. That
+manifest is not the active [runtime release lock](../../config/prism-inference.lock.json).
 
 The control keeps original 34-byte PQ2 blocks, including all four symbols and
 raw finite half-scale bits. It stages complete packed tiles without a Q2 copy,

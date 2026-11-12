@@ -1,9 +1,16 @@
 # Hexagon source, placement and evidence
 
-Source reviews and scoped device evidence: **2026-10-30 through 2026-11-03**. [Hexagon contracts](hexagon.md)
-govern execution; [PLAN.md](../PLAN.md#hexagon-npu) owns outstanding work. The [experiment lock](../config/hexagon-experiment.lock.json) and separate
-[Q2 candidate lock](../config/hexagon-signed-q2-candidate.lock.json) retain exact source/package identities and keep admission disabled. Production
-CPU policy, runtime pins and backend availability are unchanged; automatic selection is absent.
+Historical source reviews and scoped device evidence below span
+**2026-10-30 through 2026-11-05**. [Hexagon contracts](hexagon.md)
+own current execution; [PLAN.md](../PLAN.md#hexagon-npu) owns outstanding work.
+Runner now pins [Prism 0.1.23](../config/prism-inference.lock.json) with the
+X2 `native-q2` 168-projection development default. The
+[experiment lock](../config/hexagon-experiment.lock.json) enables that fixed
+startup policy; the separate [Q2 candidate lock](../config/hexagon-signed-q2-candidate.lock.json)
+retains historical package/source review inputs. Older route-specific refusals
+and pending fields describe those controls, not a blanket NPU prohibition.
+Qualified automatic profile ranking, full-model service acceptance and X1
+qualification remain separate gates.
 
 X2 has generic signed-package numeric access, a native terminal FD cycle and a
 [native created/exported/started queue](evidence/hexagon-x2-queue-compute.json).
@@ -116,14 +123,17 @@ Integration belongs directly in **native Rust Prism**, retaining its loader,
 packed kernels, transforms/adapters, graph, sampler and transaction/state ownership.
 A small audited vendor driver/RPC/mapping boundary may use system bindings with
 safe ownership; it must add no C/C++ inference-library dependency. DSP kernels
-remain separately versioned/signed. GenieX is an access/deployment reference,
-not the replacement engine or a required production dependency.
+remain separately versioned/signed. The GenieX framework and ggml C++ inference
+library are not Rust engine dependencies; verified signed kernels from the
+GenieX bundle remain prerequisites for the X2 NPU path.
 
 The [Prism native boundary](https://github.com/symbiogenesis/prism-inference/tree/e83807110652cb2073676f09006ec611beb542e9/tools/hexagon-native)
-is integrated on owning `main`. `bonsai-hexagon-native` remains isolated and
-`publish = false`; the engine neither consumes nor re-exports it. Runner and Prism
-retain the same nine native library sources and source manifest. Registry/runtime
-pins and automatic selection remain unchanged by these experimental controls.
+was integrated on owning `main`. At that reviewed revision,
+`bonsai-hexagon-native` was isolated and `publish = false`; the engine did not
+consume or re-export it. Runner and Prism retained the same nine native library
+sources and source manifest. Those early experimental controls changed no
+registry/runtime pins. The later server integration and current release bundle
+are described in [Hexagon contracts](hexagon.md).
 The [boundary guide](../tools/hexagon/native_rpc/README.md) owns CLI/ABI details.
 One nonblocking process lease, fixed capability/URI/family/layout controls, guarded
 files and consuming terminal probes retain uncertain buffers/modules/driver owners.
@@ -158,9 +168,9 @@ Q8_0; PTQ1's independently pinned Q8_0 rounding/accumulation cannot substitute.
 | LoRA and rank-one additions | CPU; separate adapter gate for original input/writer basis, scale and rounding/order. |
 | Checkpoints, KV pages, convolution/recurrent matrices | CPU sole owner; no stateless device projection commits state. |
 
-First tensor: `blk.0.ffn_up.weight`, K=5120/M=17408/N=1; original PQ2 payload
+The historical first tensor was `blk.0.ffn_up.weight`, K=5120/M=17408/N=1; original PQ2 payload
 23,674,880 bytes, F32 input 20,480 and output 69,632, before alignment/RPC/
-activation/mapping/VTCM/allocator charges. Its adjacent gate may later share verified
+activation/mapping/VTCM/allocator charges. Its adjacent gate was a candidate to share verified
 preparation. Preserve original scales/symbols, Q8_K blocks and ordered per-128 FMA
 with bounded tiles/double buffers/DMA descriptors. Many small RPCs may cost more
 than they save. HMX prefill needs batched weight reuse and independent scheduling;
@@ -508,9 +518,11 @@ reduction remain unchanged. A submitted failure permanently closes the scope;
 unsupported work selects CPU before submission. The native driver dependency
 stays in unpublished helper crates outside the published CPU runtime.
 Focused model-free graph/state/adapter, exact-arithmetic and native mock checks
-pass. Exact signed-device output, effective placement, teardown, actual-model
-parity and total-cost measurements remain pending. It provides no PTQ1 arithmetic
-qualification or production eligibility. [PLAN](../PLAN.md#hexagon-npu) retains
+pass. At that integration revision, signed-device output, effective placement,
+teardown, actual-model parity and total-cost measurements were pending. The
+later [HMX controls](hexagon.md#historical-projection-controls) establish
+their specific logits/state and cleanup scope; they do not qualify PTQ1,
+full-model service or matched benefit. [PLAN](../PLAN.md#hexagon-npu) retains
 the ordering and aggregate owner-device budget.
 
 ### Batching existing signed block operations
@@ -567,14 +579,17 @@ on Prism `9f61217` and Runner `76e3b38b` prove from `v0.10.0` source that (a) `K
 weight tiling violates `PinnedSwift` per-128-block `f32::mul_add` parity because
 `core_dot_chunk_fp16` (`hmx-mm-kernels-tiled.h:966-1040`) stores accumulated outputs as
 `FP16` via `HMX_STORE_AFTER_F16` (`0xc1f90800` vs `PinnedSwift` `0xc1f90b01` on the
-2-block golden fixture, and odd integers above `2,048` lose precision in `FP16`), (b)
+2-block golden fixture, and odd integers above `2,048` lose precision in `FP16`), and (b)
 `HTP_OP_SUM_ROWS` (`sum-rows-ops.c:1-215`) reduces along `ne[0]=17408` rather than across
-`ne[1]=8` bitplanes, and (c) activating all 8 HVX workers (`n_hvx=8`, `n_threads=8`,
+`ne[1]=8` bitplanes. The device capture exercised all 8 HVX workers (`n_hvx=8`, `n_threads=8`,
 `n_act_threads=4`, `div_n_act_threads=(1,0,2)`), 2 MiB VTCM chunking (`n_chunk=4352`,
 `vtcm_size=1,576,960`, reducing chunk iterations per op from `136` to `4`), and
-`HTP_POWER_MODE_BURST` (`7`) reduces `nativeSubmitAndWaitMilliseconds` on AC power (`95%`
-charge) to `8.18-13.28` ms for 1 projection and `15.60-26.77` ms for 2 projections
+`HTP_POWER_MODE_BURST` (`7`), with AC power at the recorded endpoints (`95%`
+charge, saver off). It observed `nativeSubmitAndWaitMilliseconds` of
+`8.18-13.28` ms for 1 projection and `15.60-26.77` ms for 2 projections
 (`~7.80-8.42` ms per resident projection on cache-hit tokens `43` and `128`).
+Endpoint samples do not prove uninterrupted stability, and the earlier
+battery-powered capture cannot establish a qualified cross-power speedup.
 
 ### Static whole-model operation limit
 

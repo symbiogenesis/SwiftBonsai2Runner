@@ -1,6 +1,8 @@
 # Hexagon deployment and execution contracts
 
-On Windows ARM64 Snapdragon X2 (`v81`), `prism-inference-server` enables Hexagon NPU `native-q2`
+Runner pins [Prism 0.1.23](../config/prism-inference.lock.json), source
+`055c7430cb4771dfddb24ddaa30494af6ad182da`. On Windows ARM64 Snapdragon X2 (`v81`),
+`prism-inference-server` enables Hexagon NPU `native-q2`
 resident acceleration (`DEFAULT_NATIVE_Q2_PROJECTIONS`, the 168 `PQ2_0` projections across all 27
 initial layers `blk.0..=blk.26`, `2,888,663,040` resident weight bytes / `2,754.84` MiB across six
 `<= 480` MiB `FastRPC` weight arenas
@@ -15,19 +17,28 @@ back cleanly to 4-worker NEON CPU when unavailable. The [experimental lock](../c
 execution remains the fallback in the [Rust runtime][rust-runtime]. Full-model X1/X2 release
 qualification remains separate from this Snapdragon X2 `blk.0..=blk.26` default. See the
 [experimental lock](../config/hexagon-experiment.lock.json) for current admission metadata. [PLAN.md](../PLAN.md#hexagon-npu) owns outstanding work;
-[profile policy](hardware-capabilities.md#automatic-profile-selection) governs device/workload eligibility and interactive/battery objectives.
+[profile policy](hardware-capabilities.md#automatic-profile-selection) defines the separate,
+pending qualified selector and interactive/battery objectives. `native-q2` uses
+bounded floating-point tolerance; it does not promise the bitwise PQ2/Q8_K
+parity of the historical block-preserving controls below. The latest
+[public-broker capture](performance-expectations.md#current-swift-evidence)
+did not observe effective NPU placement.
+Multi-token prefill packets batch independent `N = 1` operations; a true
+`N > 1` matrix solver remains separate work.
+
+## Historical projection controls
 
 The [source audit, placement ledger and access evidence](hexagon-source-audit.md) distinguish signed
-reference access, the unpublished native Rust Prism boundary and the newer signed Q2 lead. The first
+reference access, the early native Rust Prism boundary and the newer signed Q2 route. The first
 Swift prototype is one stateless FFN projection. CPU-only [layout](../tools/hexagon/README.md) and
 [operation/wire controls](../tools/hexagon/packed-projection.md) qualify no signed device implementation,
 measured VTCM/traffic or inference.
 
 [Prism source `1e7ed92`](https://github.com/symbiogenesis/prism-inference/tree/1e7ed92e7787b9d8b150f9bb3fb5a74fa92fb14b/tools/hexagon-runtime)
-now connects explicit guarded-HVX and HMX bitplane executors to the real Rust
+connected explicit guarded-HVX and HMX bitplane executors to the real Rust
 graph through a borrowed session. Original quantization, transforms, adapters
-and committed state remain CPU-owned. This unpublished integration is separate
-from Runner's pinned CPU release. It now includes an explicit PTQ1/odd-block PQ2
+and committed state remain CPU-owned. This historical integration was separate
+from Runner's then-pinned CPU release. It included an explicit PTQ1/odd-block PQ2
 Q8_0 executor preserving native DOTPROD lanes and float order, with actual remaining
 native capacity and whole-request operation checks before new inference.
 Broader signed PQ2/PTQ1 model execution, resource qualification and persistent
@@ -100,7 +111,7 @@ diagnostic with no demonstrated speed benefit or release performance acceptance.
 comparison arms observed AC/saver-off endpoints; the earlier streaming and loaded-zero controls
 observed battery/saver-off endpoints. No cross-power cache benefit is claimed, and endpoints do not
 prove uninterrupted stability. Wider placement, persistent service, effective device resources,
-packaging and useful benefit remain pending; no application default changed. The separate
+packaging and useful benefit remained pending; this control changed no application default. The separate
 [exact packed-weight transpose control](evidence/npu-host-reduction-20261103/summary.json) qualifies the new local Prism `16c5e53` packing
 implementation for the same three-token streaming and resident placements with standard adapter/1.3
 and NEON/four workers. Fourteen focused controls, strict library Clippy, formatting and the Release
@@ -108,7 +119,8 @@ probe build passed. Streaming checked all 16,711,680 returned integers; both mod
 logits/state and explicitly cleaned up with empty owned Jobs. Every CPU/native arm endpoint observed
 AC, saver off and 48% charge; continuity is unknown. Resident CPU evaluation took 362-403 ms versus
 420-477 ms with native offload. These diagnostic windows establish no useful benefit or before/after
-packing speedup, and the application remains on CPU. The [signed batch-operation route](hexagon-source-audit.md#batching-existing-signed-block-operations) is now
+packing speedup. This capture predates the X2 `native-q2` development default.
+The [signed batch-operation route](hexagon-source-audit.md#batching-existing-signed-block-operations) was subsequently
 implemented on local Prism `6f31095` and verified by the
 [batch-four HMX controls](evidence/npu-batch4-controls-20261104/summary.json).
 Submitting four `K=128/N=8` operations per queue packet (`1,816` command bytes,
@@ -141,8 +153,8 @@ Prism `5136bd1` and Runner `580a0062` submit ten `K=128/N=8` operations per queu
 command bytes in an `8,192`-byte header, `n_tensors=30`, `n_ops=10`, `4` queue writes per
 projection), spin-poll `queue_read` `516` (`AEE_EWOULDBLOCK`) for up to 15 ms before sleeping, and
 partition 64-row L1-tiled 8-plane dot reconstruction across all four row workers
-(`RowParallelism::update_rows`). Under battery operation (`89%` charge, saver off across the
-`43.36`-second workload and all arm endpoints; kept separate from prior AC sessions), both
+(`RowParallelism::update_rows`). Battery power (`89%` charge, saver off) was
+observed at the `43.36`-second workload and arm endpoints, separately from prior AC sessions. Both
 `single-projection-batch10-resident` (`120` ops in `12` queue writes, `36,954,112` mapped bytes) and
 `two-projection-batch10-resident` (`240` ops in `24` queue writes, `62,021,632` mapped bytes with
 `50,135,040` resident weight bytes, `2` prepared tensors and `4` cache hits) matched complete
@@ -151,7 +163,7 @@ Device submit-and-wait dropped to `22.21-23.48` ms for 1 projection and `44.08-4
 projections (`~5.5-5.8` ms per 10-op packet), and 4-worker reconstruction kept 2-projection native
 evaluation (`513.61-537.70` ms) near 1-projection native evaluation (`487.91-529.85` ms), but each
 projection still transfers `22.28` MB of 8-plane `FP32` outputs over shared memory across 40 `K=128`
-`OP_MUL_MAT` dispatches; production admission remains disabled. The follow-up
+`OP_MUL_MAT` dispatches; this bitplane route was not promoted to the application default. The follow-up
 [static K>128 tiling, plane-reduction, and 8-HVX/2MiB-VTCM solver audit](evidence/hexagon-k-tiling-and-reduction-audit.json) (reproduced by
 `python -B tools/hexagon/verify_k_tiling_and_reduction_audit.py`) and
 [8-HVX / 2 MiB VTCM / Burst-mode HMX controls](evidence/npu-hmx-8hvx-2mib-vtcm-20261105/summary.json)
@@ -161,12 +173,13 @@ multi-block `K>128` weight tiling cannot preserve `PinnedSwift` bitwise parity (
 that `HTP_OP_SUM_ROWS` reduces along `ne[0]=17408` rather than across the 8 bitplanes (`ne[1]=8`),
 while enabling all 8 128-byte HVX contexts (`n_hvx=8`, `n_threads=8`, `n_act_threads=4`), 2 MiB VTCM
 chunking (`n_chunk=4352`, `1,576,960` VTCM bytes, `4` chunks/op instead of `136`), and
-`HTP_POWER_MODE_BURST` (`7`). Under continuous AC power (`95%` charge, saver off across the
-`199.09`-second workload within the `300`-second default budget and at all arm endpoints),
-`nativeSubmitAndWaitMilliseconds` dropped `2.4x-2.8x` to `8.18-13.28` ms for 1 projection and
+`HTP_POWER_MODE_BURST` (`7`). AC power (`95%` charge, saver off) was observed
+at the workload and arm endpoints during the `199.09`-second workload within
+the `300`-second default budget. `nativeSubmitAndWaitMilliseconds` was
+`8.18-13.28` ms for 1 projection and
 `15.60-26.77` ms for 2 projections (`16.84` ms on token `43` and `15.60` ms on token `128`,
 `~7.80-8.42` ms per resident projection) with bitwise-equal logits/state and clean teardown;
-production admission remains disabled because the signed generic `Q2_0` binary still writes `22.28`
+the bitwise HMX route remained experimental because the signed generic `Q2_0` binary still writes `22.28`
 MB of `FP32` bitplanes per projection versus `~2-3` ms on 4-worker NEON CPU under 0-ULP bitwise
 parity. Under bounded floating-point tolerance (`executionBackend: "native-q2"`,
 `integerAudit: "bounded-float-tolerance"`), the [1-op full-K native Q2_0 HVX controls](evidence/npu-native-q2-1op-20261105/summary.json) and
@@ -176,10 +189,11 @@ parity. Under bounded floating-point tolerance (`executionBackend: "native-q2"`,
 operation (`hvx_mv_params` `kernel_type=7`, `n_hvx=8`, `n_prefetch=4`, `vtcm_size=1,912,832`),
 writing back only the final `69,632`-byte `F32` output vector (`320x` less output traffic per
 projection, zero host-side bitplane reconstruction) alongside signed `v81` HTP opcode descriptors in
-`htp_ops.rs`. Under continuous AC power (`99%` charge, saver off across the `32.26`-second workload
-within the `300`-second default budget and at all arm endpoints), `nativeSubmitAndWaitMilliseconds`
-dropped to `0.6436-0.9832` ms for 1 projection (`3` ops in `3` queue writes) and `1.0821-1.4439` ms
-(`~0.541` ms per `[5120, 17408]` projection, faster than 4-worker NEON CPU's `~2-3` ms) for 2
+`htp_ops.rs`. AC power (`99%` charge, saver off) was observed at the workload
+and arm endpoints during the `32.26`-second workload within the `300`-second
+default budget. `nativeSubmitAndWaitMilliseconds` was `0.6436-0.9832` ms for
+1 projection (`3` ops in `3` queue writes) and `1.0821-1.4439` ms
+(`~0.541` ms per `[5120, 17408]` projection, compared with the 4-worker NEON CPU's `~2-3` ms) for 2
 projections (`6` ops in `6` queue writes), with cosine similarity `0.999906-0.999974`, RMSE
 `0.0221-0.0286`, exact top-1 token agreement (`1183`, `12`, `248`), and `5/5` top-5 overlap across
 tokens `42`, `43` and `128`. The [full-layer and multi-layer native Q2_0 HVX controls](evidence/npu-full-layer-native-q2-a383e92-20261105/summary.json) and
@@ -188,8 +202,9 @@ identified unscoped `HmxQ2WeightRegistry` capacity validation in `Session` const
 native `Q2_0` HVX execution across all 10 recurrent and full-attention `PQ2_0` projection geometries
 up to `K=17408` (`NATIVE_Q2_MAX_COLUMNS=17408`, `4` MiB VTCM request, `256` MiB
 `NATIVE_Q2_MAX_RESIDENT_WEIGHT_BYTES`, parallel `RowParallelism` chunk packing, and direct-output
-single-op submission): under battery operation (`90%` charge, saver off across the `32.97`-second
-trial and `60.66` seconds cumulative within the `300`-second default budget), all 6 `blk.0`
+single-op submission). Battery power (`90%` charge, saver off) was observed at
+the workload and arm endpoints; the trial took `32.97` seconds and cumulative
+work took `60.66` seconds within the `300`-second default budget. All 6 `blk.0`
 recurrent projections (`107,642,880` resident weight bytes, `18` ops in `18` queue writes) executed
 in `2.2704-2.8738` ms per token (`~0.378` ms per projection, cosine similarity `0.999893-0.999973`,
 RMSE `0.0249-0.0306`), and all 13 `blk.0 + blk.3` recurrent + full-attention projections
@@ -202,8 +217,9 @@ page-aligned active working prefix (`<= 92` KiB) on resident cache hits
 (`dirty_resident_weights == false` while keeping `bufs[0].size` at the full allocation size) and
 expand `NATIVE_Q2_MAX_RESIDENT_WEIGHT_BYTES` to `480` MiB (`503,316,480` bytes within
 `ggml-hexagon.dll` `m-size = 512` MiB), `NATIVE_Q2_RESIDENT_METADATA_BYTES` to `256` KiB, and
-`max_projections` to `26`: under battery operation (`76%` charge, saver off across the
-`37.13`-second run within the `300`-second default budget), 13-projection (`blk.0 + blk.3`)
+`max_projections` to `26`. Battery power (`76%` charge, saver off) was observed
+at the workload and arm endpoints during the `37.13`-second run within the
+`300`-second default budget. The 13-projection (`blk.0 + blk.3`)
 warm-token evaluation dropped from `555.44-586.48` ms to `422.49-446.20` ms (faster than the
 `463.97-478.07` ms 4-worker NEON CPU baseline on tokens `43` and `128`, and `1,386.00` ms vs
 `1,392.70` ms across all 3 tokens, with `4.4271-4.8742` ms NPU submit-and-wait per token), and all
@@ -236,7 +252,9 @@ bitplanes) and eliminates host bitplane reconstruction. The table below summariz
 
 Battery-operated diagnostic runs (`a383e92`, `e2349af`, `5136bd1`) are kept separate from
 AC-connected runs (`ccb1339`, `9f61217`, `ebc22c2`) and are not treated as qualified
-cross-power speed comparisons. Full-model 6-arena (`168`-projection) AC-connected
+cross-power speed comparisons. Matching power endpoints do not prove
+uninterrupted stability, and these short diagnostics do
+not qualify whole-task speedups. Full-model 6-arena (`168`-projection) AC-connected
 end-to-end service qualification remains pending in [PLAN.md](../PLAN.md#hexagon-npu). Local Prism
 also implements `image_ffn_full_chain_resident` (`NativeQ2Executor::project_f32_ffn_chain`
 chaining `ffn_gate` + `ffn_up` + `HTP_OP_UNARY_SILU` + `HTP_OP_BINARY_MUL` + `HTP_OP_HADAMARD` +
@@ -245,17 +263,18 @@ chaining `ffn_gate` + `ffn_up` + `HTP_OP_UNARY_SILU` + `HTP_OP_BINARY_MUL` + `HT
 `plan_hybrid_prefill_pipeline` (double-buffered CPU attention/GDN + NPU `168`-projection FFN
 pipeline schedule).
 
-The [logical payload ledger](evidence/hexagon-swift-traffic-ledger.json) derives 13.69 GB of signed-kernel input/result payload per all-eligible
-original-PQ2 evaluation token. The opt-in [mapped host-weight arena and graph cache](../tools/hexagon/resident-host.md) reuse immutable
-packed tiles across tokens, with a 64 MiB HMX bitplane arena ceiling (`480` MiB per arena and up to
-`6` arenas / `2,880` MiB per session for `native-q2`, `2,888,663,040` bytes / `2,754.84` MiB across
-`blk.0..=blk.26`), separate host metadata accounting and unchanged terminal operation/deadline
+The historical bitplane [logical payload ledger](evidence/hexagon-swift-traffic-ledger.json)
+derives 13.69 GB of signed-kernel input/result payload per all-eligible
+original-PQ2 evaluation token. Its opt-in [mapped host-weight arena and graph cache](../tools/hexagon/resident-host.md) reuse immutable
+packed tiles across tokens, with a 64 MiB HMX bitplane arena ceiling,
+separate host metadata accounting and unchanged terminal operation/deadline
 limits. The cache binds exact immutable source storage and geometry; complete capacity misses select
 the streaming path before preparation. Preparation or submission failure closes the scope without
 replay. This removes repeated CPU packing/copies when hits occur; the kernel payload stays
 unchanged, and every submission still covers the expanded allocation with the existing cache flags.
 Actual cache cost may increase. [Current static bounds](evidence/hexagon-resident-host-24000-ledger.json) establish no DSP residency, performance or
-production admission.
+production admission. These bitplane bounds do not describe the default
+`native-q2` direct-output path, whose six `<= 480` MiB arenas are described above.
 
 Explicit immutable projection selection supports bounded partial-graph work,
 including the original first-projection milestone, while the other projections
@@ -356,7 +375,9 @@ needs a qualified profile; refusal cannot silently shorten context or change mod
 
 Retain reviewed libraries, fixed arguments, child-only environment, authentication, exact
 Host/Origin/routes, canonical counts, one active conversation, caps, cancellation and deadlines.
-Readiness binds effective placement/resources. Strict backend requests fail explicitly; preferred
+Qualified readiness must bind effective placement/resources; the current
+authenticated serving handshake does not report effective NPU placement.
+Strict backend requests fail explicitly; preferred
 fallback precedes generation under qualified eligibility and memory/state-transition rules.
 Arbitrary inherited overrides remain unsupported. Helpers need owned lifetime, parent-death teardown
 and independent resource/isolation qualification; drivers/services are not implicitly contained by
@@ -373,8 +394,11 @@ describes burst aliasing and warning fallback for unknown modes. Utilization/ove
 Admitted 8K trials use 512/2K/near-limit prompts, full output reservation, fixed 128/512-token and
 natural creative outputs, occupied state, cancellation and failed recovery. Larger contexts qualify
 separately. Compare same-contract CPU, qualified Vulkan and NPU; retain median/p95/variance and
-separate 15–30-minute sustained runs in CI. Owner diagnostics/trials remain subject to the single
-five-minute total ceiling. Missing evidence or critical failures keep profiles experimental; absence
+separate sustained runs in owning CI. Owner-device runs, including self-hosted CI,
+default to five minutes total; only a predeclared justified workload may use the
+smallest longer allowance, up to fifteen minutes, including setup and retention.
+Sustained acceptance that cannot fit remains pending; do not schedule a
+30-minute laptop run. Missing evidence or critical failures keep profiles experimental; absence
 supplies no verdict. The [fixed native Rust compute probe](../tools/bonsai/src/hexagon_tools/device.rs) offers F32 and guarded-Q2 controls with
 separate timed/nonblocking writes, checked queue responses and poisoned output. The
 [bounded X2 capture](evidence/hexagon-x2-queue-compute.json) verified all 64 guarded integer outputs and its explicit cleanup cycle. Its

@@ -1,7 +1,11 @@
 # Hardware discovery and profile policy
 
-Runner uses CPU profiles. Discovery supplies host/runtime inventory and checked compatibility/evidence
-records; **automatic selection is not implemented**. The optional model-free probe verifies the
+Runner's development default is Rust Prism 0.1.23 with CPU inference and the
+fixed [X2 Hexagon policy](hexagon.md) when its signed package and driver are
+available. Discovery supplies host/runtime inventory and checked compatibility/evidence
+records; **automatic ranking and selection of qualified profiles is not connected to serving**.
+The fixed NPU startup policy is separate from that planned selector. The
+optional model-free probe verifies the
 runtime against the immutable [release lock](../config/prism-inference.lock.json). The [selection contract](#automatic-profile-selection)
 defines eligibility; [PLAN.md](../PLAN.md#hardware-selection) owns outstanding work.
 
@@ -206,7 +210,12 @@ OpenCL observations do not resolve Vulkan worker access.
 
 `prism-inference --capabilities` emits one v1 `prism-runtime-capabilities` record: package/version/
 compiler target, scalar support, production NEON build predicate, exact graph identity suffixes
-and unavailable Vulkan/Hexagon. `qualification` is always `unqualified`.
+and unavailable Vulkan/Hexagon. `qualification` is always `unqualified`. In the
+pinned 0.1.23 source this describes the generic runtime executable, not the
+separate server/worker's Hexagon support or effective request placement. Do not
+interpret that field as proof that the server used CPU or NPU; the
+[current capture](performance-expectations.md#current-swift-evidence) records
+effective NPU execution as unknown.
 
 Provision/probe with the Rust `provision` command using
 `{"operation":"inference","dataDirectory":"C:\\BonsaiData","includeCapabilities":true}`;
@@ -264,7 +273,9 @@ yet.
 
 ## Automatic profile selection
 
-This is the selection contract, not enabled behavior. Runner owns discovery, selection,
+This is the contract for a qualified profile selector, not enabled serving behavior.
+The fixed X2 development policy above does not implement these ranking or promotion gates.
+Runner owns discovery, selection,
 verification and admission. [Prism Inference][prism] owns kernels, graph/device/state execution
 and effective-placement reporting. Their versioned handshake keeps kernel eligibility rules
 out of the broker.

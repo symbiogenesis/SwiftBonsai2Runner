@@ -1,13 +1,16 @@
 # Adreno GPU contracts and OpenCL feasibility
 
-Inference remains CPU-only; native Windows ARM64 GPU execution is unqualified on X1/X2.
+Native Windows ARM64 Adreno GPU inference is unqualified on X1/X2. The current
+Rust runtime uses CPU inference with the separate [X2 Hexagon development
+default](hexagon.md); that NPU path establishes no GPU support.
 [PLAN.md](../PLAN.md#adreno-vulkan) owns outstanding work. The shared
 [profile policy](hardware-capabilities.md#automatic-profile-selection) governs selection,
 admission, state transitions and promotion for both Vulkan and OpenCL.
 
 ## Backend and device boundaries
 
-Pinned Prism Vulkan is the initial implementation route. Rust GPU execution has its own
+The pinned publisher C++ Vulkan backend is a reference for candidate implementations.
+Rust GPU execution has its own
 safety/coverage boundary after Rust CPU parity; reusable Rust storage does not provide GPU
 execution. PQ2 and [current-weight PTQ1](swift-memory.md#current-weight-ptq1-option) are distinct qualification lanes. The
 [Prism backend audit][prism-audit] describes packed scalar, coopmat1 and integer-dot
@@ -16,9 +19,10 @@ establish Adreno kernel or graph coverage.
 
 | Repository fact | Execution boundary |
 | --- | --- |
-| [Assessment lock](../config/swift-assessment.lock.json): 6.71 GiB PQ2, Prism `73bfe6cc485554822f80c473a3c0c4f25e80f41b`, `win-cpu-arm64` | Installed runtime is a CPU reference |
-| [Native baseline build](../tools/bonsai/src/build_tools/engine.rs) and [overlay build][overlay] disable Vulkan/OpenCL | CPU recipes do not produce an accelerated runtime |
-| [Completion](../src/cpu-policy/src/lib.rs), [server](../tools/bonsai/src/server.rs) and [broker](../src/broker/src/launch_policy.rs) use `--gpu-layers 0` / `--device none` | Drivers do not activate offload; server policy also disables KV/operation offload |
+| [Rust release lock](../config/prism-inference.lock.json): Prism 0.1.23, source `055c7430cb4771dfddb24ddaa30494af6ad182da` | CPU inference and the separate X2 Hexagon policy; no admitted Adreno inference |
+| [Assessment lock](../config/swift-assessment.lock.json): 6.71 GiB PQ2, publisher Prism `73bfe6cc485554822f80c473a3c0c4f25e80f41b`, `win-cpu-arm64` | Explicit publisher rollback remains a CPU reference |
+| [Publisher baseline build](../tools/bonsai/src/build_tools/engine.rs) and [overlay build][overlay] disable Vulkan/OpenCL | These publisher CPU recipes do not produce a GPU runtime |
+| Publisher [completion](../src/cpu-policy/src/lib.rs), [server](../tools/bonsai/src/server.rs) and [broker](../src/broker/src/launch_policy.rs) use `--gpu-layers 0` / `--device none` | Drivers do not activate publisher GPU offload; its server policy also disables KV/operation offload |
 | Rust [Doctor](hardware-capabilities.md#host-inventory) reports GPU identity/driver | Inventory does not establish loader/ICD, API features, kernels or budgets |
 
 [OpenCL access and source coverage](#opencl-access-and-source-audit) remain unqualified for Swift;
@@ -109,8 +113,11 @@ format appears in `GGML_OP_MUL_MAT` eligibility, and PQ2/PTQ1/Hadamard implement
 Generic Q1/Q4/Q8 or an installed compiler cannot supply them. Public kernels remain possible;
 this information-query/source audit selects no profile and is independent of Vulkan qualification.
 
-Scope: one installed implementation and one immutable source revision, a 30-minute feasibility
-budget, zero model/kernel compute and no prompts, tokens or projection shapes. The ten-second query
+The retained October 29 feasibility review covered one installed implementation
+and one immutable source revision under its historical 30-minute allowance,
+with zero model/kernel compute and no prompts, tokens or projection shapes.
+That clock is closed; new owner-device work follows the current
+[execution budgets](validation.md). The ten-second query
 uses a 512 MiB one-process Job and 1 MiB per-output-stream bounds, creating no context, queue,
 program, kernel or device allocation.
 
@@ -185,14 +192,16 @@ The [release asset snapshot](evidence/opencl-release-assets.json), reviewed **20
 [prism-b10787-73bfe6c](https://github.com/PrismML-Eng/llama.cpp/releases/tag/prism-b10787-73bfe6c),
 contains Windows ARM64 CPU/CUDA bundles and no OpenCL bundle. It records public names, sizes and
 reported digests without downloads; metadata proves neither executed bytes nor publisher trust.
-The shipped runtime remains the CPU archive in `config/swift-assessment.lock.json`.
+The publisher rollback remains the CPU archive in `config/swift-assessment.lock.json`;
+the application default uses the separate Rust release lock.
 
 Local Prism `bonsai-hexagon-runtime` also provides `plan_three_processor_placement`
 (`HeterogeneousPlacementPlan`, `AdrenoQ2KernelKind::WgslSubgroupShuffle` /
 `OpenClSubgroupBlockRead`), partitioning `blk.0..=blk.26` (`168` `PQ2_0` projections,
 `2,888,663,040` bytes) onto Hexagon NPU `native-q2` and `blk.27..=blk.63` (`232` `PQ2_0`
 projections, `3,967,856,640` bytes) onto Adreno X2-90 `Q2_0+FWHT` while keeping GDN/attention
-state and `lm_head` on CPU.
+state and `lm_head` on CPU. This is a placement plan, not Adreno dispatch or
+qualified application admission.
 
 The [Prism pilot contract](../PLAN.md#adreno-vulkan) requires one real Swift packed-projection shape
 against scalar CPU arithmetic and proven unchanged-policy worker access before execution. New

@@ -1,5 +1,10 @@
 # Local actual-model Hexagon probe
 
+This guide describes Runner's bounded guarded-HVX/HMX diagnostic supervisor.
+The application's later [Prism 0.1.23 `native-q2` development default](../../docs/hexagon.md)
+is a separate serving path; it does not enlarge this diagnostic's accepted
+backends, snapshot budget or original closed trial allowances.
+
 `bonsai-tools hexagon-tools --request ABSOLUTE_JSON_PATH` accepts the separate
 `model-device` operation below. This local diagnostic evaluates one to three explicit
 original-PQ2 tokens with `blk.0.ffn_up.weight` on the selected guarded HVX or HMX
@@ -200,7 +205,9 @@ integer comparisons, full logits/state bits and explicit terminal cleanup.
 Both comparison arms observed AC at their endpoints with battery saver off.
 The supervisor's 51,689 ms includes intake, model admission and both arms;
 it is not kernel timing, decode throughput or evidence of a speedup. Wider
-placement, adapters, persistent service and production admission remain pending.
+placement, adapters, persistent service and production admission were outside
+that control; subsequent scoped controls are recorded below and in the
+[execution guide](../../docs/hexagon.md).
 
 The distinct [adapter/cache controls](../../docs/evidence/npu-adapter-progress-20261103/summary.json)
 pass standard-scale-1.3 tokens [42,43,128] and loaded-zero token 42 with NEON/four
@@ -208,5 +215,6 @@ workers. A separate resident-host run passes complete state/logits parity and
 observes two cache hits, without per-dot CPU replay. Its AC CPU/native evaluation
 windows show no clear speed benefit. Original streaming and loaded-zero runs
 observed battery at their arm endpoints; retain those conditions separately.
-Broader adapter histories, resources, lifetime and production integration remain
-pending; the application default remains CPU.
+Broader adapter histories, resources, lifetime and full-model service acceptance
+remain pending. These historical captures predate the X2 `native-q2` development
+default and do not qualify its broader placement.

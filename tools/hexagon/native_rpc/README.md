@@ -1,5 +1,11 @@
 # Native Rust FastRPC capability candidate
 
+This directory retains the standalone access and diagnostic boundary. Its
+source-bound controls and earlier CPU-only observations are distinct from the
+current [Prism 0.1.23 X2 `native-q2` serving policy](../../../docs/hexagon.md).
+Later server integration does not turn a capability query or fixed fixture
+into full-model qualification.
+
 This std-only Rust boundary queries the installed Qualcomm Windows driver
 directly. It has no ggml, GenieX, QNN or C/C++ inference-library dependency. Its
 ordinary vendor call is `remote_handle_control(DSPRPC_GET_DSP_INFO, ...)` for
@@ -101,7 +107,8 @@ passed the fixed nonblocking integer control and all explicit release steps on
 X2/v81. F32 arithmetic also passed; the earlier post-close unmap refusal remains
 recorded separately. Actual original-projection inputs, model/state and adapter
 parity, selected DSP-byte identity, full vendor teardown and measured benefit
-remain independent gates. Production runtime/defaults remain on CPU.
+remain independent gates for that capture. It predates the later X2
+`native-q2` development default and cannot qualify that serving path.
 
 The terminal probe uses heap ID 25, cached allocation flags 1, offset 0, length
 4096 and `FASTRPC_MAP_STATIC=0`. The public vendor header documents that mapping
@@ -164,8 +171,8 @@ and unwinding retain every uncertain consumer through supervised process exit.
 There is no queue retry, CPU replay or native release after failure. After
 complete caller acceptance the existing explicit stop, queue-close, host-unmap,
 module-close and free sequence applies. Model, full-state, selected DSP bytes,
-full-M solver behavior, complete vendor teardown and performance remain pending;
-production admission stays disabled. The source manifest retains all exact
+full-M solver behavior, complete vendor teardown and performance remain pending
+for this diagnostic; it grants no production admission. The source manifest retains all exact
 upstream source identities and distinguishes this candidate from the fixed
 signed arithmetic observation.
 
@@ -208,8 +215,11 @@ interpretation, but rejects invalid nibbles and zero; raw values remain in the
 receipt. HVX/HMX values and VTCM page/count queries do not measure throughput or
 available allocation. Every report keeps `profileEligible: false`. The
 [X2 observations](../../../docs/hexagon-source-audit.md#observed-x2-access) include a passed native FD cycle
-and separate generic numeric dispatch; selected DSP bytes, visibility, native compute,
-PQ2/PTQ1, DMA64, complete state/teardown and performance remain unqualified. X1 is independent.
+and separate generic numeric dispatch. Those access-only observations do not
+qualify selected DSP bytes, visibility, broader model compute, PQ2/PTQ1, DMA64,
+complete state/teardown or performance. Later
+[native compute and model controls](../../../docs/hexagon.md#historical-projection-controls)
+retain their own scopes. X1 is independent.
 
 Hosted CI can build without acquiring a vendor SDK:
 
