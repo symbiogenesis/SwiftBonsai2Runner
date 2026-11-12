@@ -579,3 +579,26 @@ export. New artifacts require their own length/hash, activation, quality, compat
 and runtime evidence. The [SIMD
 review](cpu-kernels.md#cpu-kernel-research-reviewed-in-october-2026) and register also
 retain unsupported and withdrawn lattice/rotation/hardware leads.
+
+### Lossless weight and cache codecs
+
+The [November 12 survey](research-register.md#november-12-deployment-audit) adds
+lossless execution-oriented codecs alongside the older byte-coding references.
+These are conditional research inputs; [PLAN](../PLAN.md#survey-ideas-outside-the-current-laptop-backlog)
+owns activation. They change no current artifact, precision, cache policy or admission.
+
+| Codec family | Current Swift boundary |
+| --- | --- |
+| ZipServ, NF12/NyoomFloat12, ANS weight coding and Glyd | Their useful full-precision weight compression is not another packing layer over arbitrary ternary PQ2/PTQ1. Swift's current metadata contains only 47,185,920 bytes (45 MiB) of BF16 tensors beside its packed weights and F32 tensors; do not apply a BF16 percentage saving to the whole GGUF. Native consumers, licensing and complete-request benefit remain unqualified. |
+| NF12 fixed stream plus escape groups | Preserve all exceptional original BF16 values and charge their bytes/indexes. Nominal twelve-bit storage is not a universal twelve-bit bound. Bit-exact weight decoding does not establish the fused GEMM's reduction identity or identical greedy output. |
+| GAAC / ZipFusion | The inspected codecs reconstruct BF16 KV within attention. Swift retains original FP16 KV bits: a port requires its own codec, exceptional-value coverage, scratch/metadata budget and direct consumption path. It must preserve the baseline probability-rounding boundary or declare changed numerics. No GDN/convolution state compression follows from a KV result. |
+| SplitZip / AnchorKV | Transfer compression and inactive-session anchor/replay capacity address separate problems. Charge full restoration, retained anchors, exact suffix replay, temporary expanded state and metadata. Neither establishes faster ordinary local decode, and dense-model replay evidence does not establish hybrid-state restoration. |
+
+Consume compressed data within bounded tiles where an actual bottleneck justifies
+it; expanding a complete extra weight/cache copy can erase the capacity and traffic
+benefit. Account for simultaneous source, packed data, exceptions, indexes, retained
+checkpoints, asynchronous users and peak decompression scratch. Compare current
+batch-one/8K operation before extrapolating long-context or maximum-batch results.
+Exact byte reconstruction, bitwise arithmetic, target-distribution preservation and
+empirical quality retention remain separate claims. PTQ1's verified 1.173 GiB packing
+saving and its open adapter/application/benefit gates are unchanged.

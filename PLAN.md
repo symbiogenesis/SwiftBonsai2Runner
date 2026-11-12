@@ -19,7 +19,7 @@ the corresponding detailed task changes; keep every acceptance obligation below.
 | C1 / owner | Runner | Reviewed local CI corrections and startup preflight | Publish through the owner and qualify Source checks and Foundation on that source; see [publication prerequisites](#publication-and-qualification-prerequisites). |
 | A1 / qualification | Runner with pinned Prism | C1 and an exact-source acceptance package | Qualify Rust/PQ2 DX12 startup, readiness, Stop/Retry, recovery and explicit publisher rollback under [actual-model acceptance](#actual-model-acceptance). |
 | R1 / owner, integration | Prism, then Runner | Published source-bound 0.1.24 bundle | Verify source/archive/nine-file identities, repin and prepare active-release acceptance. Keep newer local CPU candidates and their helper-publication prerequisite separately identified under [CPU kernels](#cpu-kernels). |
-| R2 / qualification | Prism, then Runner | Settled candidate, required helper release and owning hosted checks | Close CPU/prefill codegen, fallback, state/adapter/cancellation and matched selected-device benefit gates, with independent X1 evidence where selected. Qualify changes already consumed in 0.1.23 without requiring another repin; see [runtime correctness](#runtime-and-correctness). |
+| R2 / implementation, qualification | Prism, then Runner | Settled candidate, required helper release and owning hosted checks | Integrate selected exact LUT consumers and genuinely batched verification; close CPU/prefill codegen, fallback, state/adapter/cancellation and matched selected-device benefit gates, with independent X1 evidence where selected. Qualify changes already consumed in 0.1.23 without another repin; follow the [inference delivery order](#lossless-inference-delivery-order). |
 | R3 / integration, qualification | Prism and Runner harnesses | Agreed execution/state identities and existing complete-state fixtures | Prepare shared state/restore and fault-control tooling independently of runtime qualification; map each prefix/prefill/speculation/accelerator path to its independent assertions and evidence. |
 | S1 / implementation, integration | Runner; Prism for shared runtime/RPC consumers | Agreed verified-loading, state, stream and transport ownership interfaces | Integrate Talker/CodePredictor, codec/speaker and signed Rust RPC through [C++ retirement](#complete-c-retirement); qualify the ordinary Q4 baseline before ternary speech and new 48 kHz artifacts. |
 | S2 / implementation, qualification | Runner | Pinned Qwen3-ASR 1.7B artifacts and replacement controls | Qualify microphone-to-Swift submission, then replace ASR's native engine and close transcript/state, cancellation, lifecycle, quality and resource gates before removing its compiler/dependency paths. |
@@ -146,10 +146,12 @@ pending evidence below. No failure may switch engine or representation automatic
 
 Prioritize usable native startup, model readiness, stop/retry and explicit rollback,
 then actual-model application acceptance, daily-service isolation, creative
-quality and comfort. Research order:
-measure batch-one bottlenecks and PTQ1 suitability; improve packed CPU projections and
-prefill; qualify exact prefix reuse and short-chain speculation; then consider precision
-changes or compatible drafters. Bounded GPU/NPU access discovery can run in parallel.
+quality and comfort. Research order after daily-use acceptance:
+qualify explicit exact latest-prefix reuse and deliver existing CPU/prefill candidates;
+use batch-one attribution to select exact LUT integration or true multi-token projection
+work; build and qualify a genuinely batched short-chain verifier and its actual sampler
+before screening compatible drafters. Keep PTQ1 benefit and precision changes separate.
+Bounded GPU/NPU access discovery can run in parallel.
 Automatic profiles require device qualification; broader Prism work needs a Swift
 dependency or chosen milestone.
 
@@ -887,6 +889,9 @@ and retain the reset-every-request serving policy until reuse is qualified.
   writeback deferral separate from precision changes and stop without a complete-cycle
   benefit; see [state-traffic
   research](docs/inference-algorithms.md#2026-state-traffic-and-verification-research).
+  Review KVBuffer v2's November update separately: large-batch gains and its BF16
+  buffers do not establish a batch-one benefit or bitwise Swift replay. Retain FP32
+  factors for the exact-contract comparison; changed arithmetic needs its own identity.
 - Qualify exact prompt reuse across edits, switches, cancellation and restore: matching
   model, template, tokens and complete state, with bounded private snapshots and
   eviction. First qualify latest committed same-session state at bit-identical adapter
@@ -901,20 +906,37 @@ and retain the reset-every-request serving policy until reuse is qualified.
   service readiness. Qualify final settled source and actual-model private-service
   reuse after the passed hosted candidate complete-logits/state replay;
   no extra retained prefix snapshots or application selection are qualified.
+  Measure repeated-history prefill and completed-request latency against fresh
+  recomputation under matched identities and power conditions; do not claim decode
+  throughput improvement from a cache hit. Keep the default unchanged until its
+  lifecycle, resource and benefit gates pass.
   Start with immutable KV pages, exact suffix replay
   and simple lookup and eviction before radix trees or sparse placement. Resolve total
   versus incremental accounting: two 149.625 MiB recurrent/convolution snapshots already
   cost **299.25 MiB before KV/metadata**, exceeding a 256 MiB total cache. Keep that
   budget and conservative per-snapshot page charges.
-- Build a short-chain CPU block verifier before proposals: complete state, partial
-  acceptance, EOS and output limits, Stop, failed commit and rollback. Establish greedy
-  parity, then conditional acceptance and residual sampling for actual temperature,
-  top-k, top-p and penalties. Distribution preservation does not promise identical RNG
-  use or seeded output.
+- Implement a genuinely batched short-chain CPU target verifier before proposals.
+  Existing `Runtime::verify_draft_block` and `generate_speculative_inner` evaluate
+  candidates sequentially; `SwiftSession::complete_speculative` is greedy and
+  `verify_stochastic_step` is a standalone helper. Their source presence establishes
+  neither target-weight reuse nor Swift sampling integration. Reuse layer-wise packed
+  projection tiles across candidates, expose per-position target logits and preserve
+  causal attention plus complete GDN/convolution state. Qualify accepted-prefix recovery,
+  partial acceptance, EOS/output limits, Stop, failed commit and rollback. Preserve the
+  declared arithmetic boundaries or identify changed numerics separately. Establish
+  greedy parity, then conditional acceptance and residual sampling for the actual
+  temperature, top-k, top-p and penalties. Distribution preservation does not promise
+  identical RNG use or seeded output. Include rejected work, checkpoints, replay and
+  output-head costs when demonstrating fewer weight passes and complete-cycle benefit.
 - After verifier qualification, try bounded prompt/history suffix proposals with a few
   short windows and no second model. Compare repetitive and creative held-out prompts,
   charging drafting, verification, commit and recovery together. Retain ordinary
   decoding; stop if acceptance cannot repay the cycle.
+  Only after a useful fixed short chain exists, screen bounded adaptive draft length
+  against that control using observed acceptance and complete-cycle cost. Keep any
+  policy deterministic under its declared inputs, preserve target correction and
+  avoid automatic startup benchmarks. AdaSpark-style tree scheduling and ReTrace
+  rejected-suffix conditioning remain conditional on the required verifier/drafter.
 - If chain recovery is material, compare snapshot/replay, saved factors and delayed
   commit using
   [SpecLA/TreeWY/RecoverSSM](docs/inference-algorithms.md#trained-parallel-proposals-and-full-state-verification).
@@ -924,10 +946,39 @@ and retain the reset-every-request serving policy until reuse is qualified.
   check target-feature interfaces when consumed. Charge both models' weights, KV,
   features, scratch, startup and prefill before provisioning. Suffix failure does not
   rule out learned drafters; Qwen naming does not prove compatibility. Record no-go if
-  none fits; exclude general training and DSpark.
+  none fits. Include the published Bonsai-specific DFlash2 artifacts in this screen:
+  verify their target layer taps, transformed shared embeddings/head and exact adapter
+  interface rather than accepting a generic Qwen configuration. Retain losing creative
+  chat results, greedy-output differences and unavailable runtime support; smaller
+  quantized draft weights alone do not qualify speed or stochastic correction. The
+  separate Qwen reference's MTP support does not add an MTP path to Swift. Do not
+  activate general training, online distillation or DSpark integration under this screen.
 - Qualify replacements against matching pinned-Prism artifacts, adapters and settings
   and all promotion gates, retaining deterministic streams where applicable. Retire old
   build, overlay and FFI paths only after acceptance.
+
+### Lossless inference delivery order
+
+The [2026-11-12 survey](docs/research-register.md#november-12-deployment-audit)
+distinguishes exact stored values,
+bitwise execution, target-distribution preservation and empirical quality retention.
+Use the existing runtime, CPU and NPU acceptance tasks above and below as the gates;
+this ordering grants no new model workload, default, release or device qualification.
+
+| Order after daily-use acceptance | Next action | Completion boundary |
+| --- | --- | --- |
+| 1 | Qualify explicit latest-prefix reuse and deliver settled existing CPU/prefill candidates. | Repeated-history prefill benefit, full state/adapter/lifecycle acceptance, reviewed release identities and repin only where needed. |
+| 2 | Use batch-one attribution to choose production exact activation LUTs, cross-token Vec-LUT or true multi-token projections. | Bounded source integration and matched whole-request benefit; existing tiled matvec and N=1 NPU packets do not establish these consumers. |
+| 3 | Implement genuinely tiled short-chain target verification and actual Swift sampler correction. | Per-position logits, complete accepted-prefix KV/GDN/convolution recovery and full-cycle benefit, with numerical and distribution contracts kept explicit. |
+| 4 | Screen short suffix proposals, then a compatible published Bonsai drafter and bounded adaptive length. | Creative and repetitive controls, admitted total memory, artifacts/features/adapter compatibility and retained losing/no-go outcomes. |
+| Conditional | Revisit compact recurrent factors, learned tree/overlap methods and lossless weight/KV codecs. | A measured relevant bottleneck, native execution route and the specific prerequisites under [survey dispositions](#survey-ideas-outside-the-current-laptop-backlog). |
+
+PTQ1 remains an independent lossless packing candidate with open benefit and adapter
+gates. Do not classify trained proposals as inherently approximate: unchanged target
+verification with valid correction can preserve its distribution. Approximate attention,
+KV/state quantization, pruning and altered target weights retain their separate lane.
+All selected comparisons retain the [owner budgets and power policy](#research-scope-and-practical-budgets)
+and owner-operated CI; catalog speedups establish no Snapdragon result.
 
 ### sglang-rs ideas for Prism integration
 
@@ -1475,7 +1526,7 @@ now included in the pinned `0.1.23` (`055c743`) release bundle:
   (`neon::dot_tq2_block`), direct `PTQ1 × Q8_K` dot products (`dot_ptq1_q8k` in
   `src/kernels.rs`), and training-free prompt/history suffix speculative decoding
   (`SuffixDraftConfig`, `SuffixDrafter` / `SuffixDecoding`), Leviathan stochastic
-  verification (`verify_stochastic_step`), and transactional short-chain block verification
+  verification helper (`verify_stochastic_step`), and transactional sequential greedy verification
   (`Runtime::generate_speculative`, `Runtime::verify_draft_block`, and
   `SwiftSession::complete_speculative` in `cada2ca`).
 - Single-write fused GDN recurrent-state row step (`pinned_gdn::step_row_from` and
@@ -1494,8 +1545,9 @@ now included in the pinned `0.1.23` (`055c743`) release bundle:
 Remaining CPU kernel, graph-level parallelism and tiled-prefill optimizations to
 implement and qualify in Prism:
 
-- Evaluate optional ARMv8.2-A `dotprod` / `i8mm` dispatch behind runtime feature
-  detection where arithmetic contracts permit.
+- Qualify the implemented optional ARMv8.2-A `dotprod` / `i8mm` source dispatch,
+  including runtime feature detection, helper publication and scalar/NEON fallbacks;
+  do not implement the existing dispatch again or infer release/device acceptance.
 - Qualify actual prompt/response latency and complete application lifecycle for the
   [shared-slice row-parallel candidate](docs/oxibonsai-reuse.md#implementation-status),
   beyond the retained [fixed-step and short service evidence](docs/native-rust-engine.md#bounded-parallel-row-qualification).
@@ -1519,6 +1571,14 @@ implement and qualify in Prism:
   into consumption order without VNNI. Compare at most two exact TL1_1/TL2_1-style LUTs
   with ternary eligibility and generic PQ2 fallback; charge preparation, overlapping
   source and repacked storage, tables, cache and startup.
+  Integrate a selected LUT into production matvec before qualification: the existing
+  `Tl1BlockLut` API has only test callers and a reexport. Share bounded activation-table
+  preparation across output rows; qualify all intermediate sums, generic PQ2's fourth
+  symbol, Q8_K/Q8_0 grouping, raw scales and floating accumulation order. Compare
+  complete preparation-plus-dot cost with ordinary packed NEON and eligible SDOT/I8MM,
+  retaining a no-go when tables or preparation erase the gain. Separately implement a
+  selected cross-token Vec-LUT consumer only if prompt attribution justifies it;
+  decoding a block once across token dots is not multi-token lookup-table execution.
   Qualify the implemented scoped PQ2 NEON digit-plane activation preparation:
   original Q8_K and packed weights stay intact, while rows and compatible siblings
   share reordered activation bytes. Charge the additional 5,280 logical scratch
@@ -2205,6 +2265,28 @@ new architectures/readers, large drafter training, full-Hessian pipelines and wh
 lattice/rotation refits. GPU results alone justify neither a laptop job nor replacing
 already-ternary Swift; bounded native preflights need the research budgets. Existing
 Thinking/effort controls remain the baseline for methods requiring training.
+
+Retain the November survey's additional lossless candidates with explicit activation
+conditions; catalog inclusion adds no training, provisioning, new serving tier or
+device workload. The [research register](docs/research-register.md#november-12-deployment-audit)
+owns source dates, limitations and losing outcomes; current [algorithm](docs/inference-algorithms.md)
+and [memory](docs/swift-memory.md#lossless-weight-and-cache-codecs) contracts own transfer limits.
+
+| Conditional follow-on | Prerequisite and disposition |
+| --- | --- |
+| DSpark/P-EAGLE, JetSpec/JetSpec++, DSpine and phrase-level heads | A useful qualified verifier, compatible published auxiliary, admitted resources and native execution. Retain as trained-proposal research; general training and current DSpark integration remain outside scope. |
+| AdaSpark, ReTrace, LongSpark, D3D and persistent drafter-head kernels | First establish a useful fixed chain/drafter. Then screen scheduling, rejected-suffix conditioning, bounded draft state or overlap only where the required target features and independent hardware resources exist. D3D's separate large draft/GPU is no assumed laptop fit. |
+| Test-Time Speculation / online draft distillation | Remains outside the current no-general-training scope. Online adaptation results do not authorize a laptop training workload or replace unchanged-target acceptance correction. |
+| ZipServ, NF12/NyoomFloat12, ANS weight coding and Glyd | Reopen for a material full-precision weight bottleneck and suitable native codec/consumer. BF16 compression cannot be applied as a claimed percentage saving to existing ternary Swift; preserve escaped values, scale bits, licensing and arithmetic identities. |
+| GAAC and ZipFusion | Require measured full-attention KV traffic at the selected context and an exact FP16 codec/consumer. Published BF16/GPU results do not qualify Swift's FP16 KV, FP32 recurrence or 8K batch-one benefit. |
+| SplitZip and AnchorKV | Reopen only for a separately selected transfer or inactive-session capacity problem. Include full decompression/reconstruction and hybrid state; capacity or naive-replay improvements do not establish ordinary decode speed. |
+
+Keep Qwen3 dense, Qwen3.5+ hybrid and similarly named Bonsai artifacts separate.
+Learned proposals can preserve the unchanged target distribution under valid correction;
+weight/KV reconstruction can be exact while a fused kernel changes floating reductions.
+Empirical quality parity, greedy-only tests and theoretical real-arithmetic equivalence
+do not close those separate contracts. TurboQuant, KV/state quantization, approximate
+attention and target pruning stay in the approximation lane.
 
 Defer DASC/Tail-Replay checkpoint omission until exact reuse and suffix recomputation
 cannot meet a real need. Wide trees, SVD caches and sparse-attention indexes need a
