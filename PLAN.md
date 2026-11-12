@@ -291,9 +291,13 @@ Verify the compact main-header SwiftBonsai2 name and small companion tagline,
 including name-only narrow layouts and preview/generation status substitutions.
 Confirm the compact footer keeps model, conversation-saving and privacy status
 on one line at minimum sidebar width, with full hover and accessible descriptions.
-Footer formatting and source review passed; native analysis stopped at the
-existing `speech/command_queue.rs` const `VecDeque::is_empty` compiler error.
-The focused sidebar interaction check and rendered previews remain unrun.
+Verify natural spacing, stable model/history/privacy order and the History switch
+glyph's enabled/disabled thumb position and theme contrast. Footer formatting
+and source review passed; earlier native analysis stopped at the existing
+`speech/command_queue.rs` const `VecDeque::is_empty` compiler error. The revised
+strip's isolated preview stopped during dependency setup on an unsupported egui
+feature; no renders were produced and neither failed operation was retried.
+The focused sidebar interaction check and rendered acceptance remain pending.
 Verify 14–24-point prose, code and thinking reflow with correct Find highlights
 and unchanged source text, adjustable reading width, and independent appearance
 persistence across restart, conversation-saving opt-out and preview. Focused
