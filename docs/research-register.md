@@ -1,8 +1,8 @@
 # Inference research and proof register
 
-Research cutoff and last source review: **2026-11-08**.
-Signed constant floor-division addendum reviewed **2026-10-30**; the other source
-reviews retain their original cutoff.
+Lossless-inference survey addendum and deployment audit reviewed **2026-11-12**.
+The earlier general survey retains its **2026-11-08** cutoff; entries below identify
+the versions reviewed. Signed constant floor-division addendum reviewed **2026-10-30**.
 The [weight-space programming assessment](weight-space-programming.md) was reviewed
 **2026-11-02** separately; it establishes no Swift quality or performance gain.
 
@@ -14,6 +14,7 @@ authoritative; [PLAN.md](../PLAN.md) alone tracks delivery work.
 
 Jump to [scope and budgets](#experiment-scope-and-budgets),
 [priorities](#priorities-for-this-model-and-hardware),
+[November 12 audit](#november-12-deployment-audit),
 [proof obligations](#mathematical-results-and-proof-obligations),
 [papers](#research-catalog), [implementations](#implementation-sources-to-inspect),
 [reports/HN](#engineering-reports-and-hacker-news-leads),
@@ -106,7 +107,33 @@ implementation before proposing existing work again; PLAN owns execution order.
 | 6 | Suffix/prompt-lookup speculation | Does creative-prose acceptance pay for block verification and recurrent recovery without second-model weights? |
 | 7 | Fusion, persistent workers, prepared plans | Does complete-request profiling justify more scheduling complexity? |
 | 8 | Adreno/Hexagon phase placement | Include signed Windows access, packed support, mappings, state handoff, duplicate weights and sustained power. |
-| Separate approximation lane | KV quantization, approximate attention/GDN, pruning, trained drafters | Compare changed precision/computation/artifacts as distinct profiles. |
+| Conditional learned-proposal lane | Compatible published trained drafters | An unchanged target with correct conditional verification can preserve its distribution; artifacts, feature interfaces, memory and complete-cycle benefit still need review. |
+| Separate approximation lane | KV quantization, approximate attention/GDN, pruning | Compare changed target precision/computation/artifacts as distinct profiles. |
+
+### November 12 deployment audit
+
+This source inspection distinguishes available mechanisms from selected behavior;
+it establishes no new performance, device or release qualification. Runner consumes
+[immutable Prism 0.1.23](../config/prism-inference.lock.json), source `055c7430`.
+The local Prism candidate inspected at `bd93df1d212e30e520f7f2d721aa625ba2269a40`
+is a separate identity. [PLAN.md](../PLAN.md#runtime-and-correctness) owns sequencing,
+implementation and acceptance; this table records the applicability findings.
+
+| Mechanism | Observed boundary | Contract |
+| --- | --- | --- |
+| Latest-prefix reuse | Implemented and explicitly selectable; omitted policy still resets every request. Latest complete state helps append-only chat; edits and switches can require recomputation. | [Prefix reuse](prefix-reuse.md); actual-model parity/lifecycle and matched benefit remain pending. |
+| Packed LUTs | `Tl1BlockLut` is exported with test callers but no production matvec caller. Cross-token Vec-LUT is not implemented; decode-once token tiling is a different mechanism. | [Packed arithmetic](cpu-kernels.md#packed-arithmetic); preserve generic PQ2's fourth symbol, Q8_K scale boundaries and float order. |
+| Speculative verification | `Runtime::verify_draft_block` and `generate_speculative_inner` evaluate candidates sequentially, once per target token. `SwiftSession::complete_speculative` is greedy; `verify_stochastic_step` is standalone. | [Speculation](inference-algorithms.md); a tiled verifier needs per-position logits, accepted-prefix KV/GDN/convolution recovery and the actual sampler contract. |
+| Trained draft interfaces | `DFlash2DraftConfig` and `GdnVerifyTape` are standalone APIs. Neither loads a drafter nor supplies batched verification; separate Qwen reference MTP support does not admit Swift MTP. | [Trained proposals](inference-algorithms.md#trained-parallel-proposals-and-full-state-verification); names and configuration scaffolding establish no artifact compatibility. |
+| NPU prompt batching | Token tiles reuse packing and existing single-token submissions; true `N > 1` native-Q2 matrix prefill remains separate. | [Tiled projections](performance-resolve.md); charge all submissions and transfers. |
+| Newer local kernels | Packed dots, transform fusion, GDN traffic reduction, preparation reuse and prefill locality include local candidates beyond the consumed release. | [CPU kernels](cpu-kernels.md) and [delivery boundaries](performance-resolve.md); source implementation alone does not update released bytes or establish benefit. |
+
+Bit-identical storage, identical floating-point execution, distribution-preserving
+sampling and similar task scores are distinct claims. Drafters may be approximate
+while exact target verification preserves the deployed distribution. Conversely,
+greedy-only verification cannot qualify Swift's temperature/top-20/top-p sampling.
+Core speculative sampling (2023), suffix decoding (2024/2025), EAGLE-3 (2025) and
+Vec-LUT's December 2025 origin retain those dates despite 2026 engineering updates.
 
 ## Mathematical results and proof obligations
 
@@ -215,7 +242,7 @@ saves 152 KiB nominal payload, not a proved process peak.
 [Goldberg](https://docs.oracle.com/cd/E19957-01/806-3568/ncg_goldberg.html) explains
 reassociation, FMA, rounding and underflow differences. Integer dots, decoded
 weights, logit tolerances, sampled-token identity and task quality are distinct
-guarantees; none implies all others. KV compression changes attention; recurrent
+guarantees; none implies all others. Lossy KV compression changes attention; recurrent
 quantization can accumulate prefix-wide error. Instantiate metric, Q/K norms,
 randomness/failure probability, dimension and horizon before using a bound:
 head/vector error does not certify creative-answer quality.
@@ -288,6 +315,11 @@ repositories are observations as of the review date, not immutable evidence.
 | L18: [T-SAR](https://past.date-conference.com/proceedings-archive/2026/DATA/705.pdf), DATE 2026; [2025 preprint](https://arxiv.org/abs/2511.13676v1) | Activation/output-persistent LUT scheduling with reorganized SIMD hardware. | Requires new ISA/datapath support; modified gem5 results do not apply as a stock-Snapdragon software patch. |
 | L19: [ExaGEMM](https://arxiv.org/abs/2607.14622v1), 2026-07-16, ICCAD 2026 acceptance listed | Cost/register-feasibility models prune low-bit layout/instruction design choices. | Hardware/compiler methodology; new ISA and simulation underlie reported gains. |
 | L20: [BITCOS / Breaking the 1.58-bit Barrier](https://arxiv.org/abs/2609.16338v1), 2026-09-14 preprint | Zero-density-dependent lossless ternary representation. | Primary reference for the existing rejected layout: Swift misses its break-even versus same-scale PTQ1. See T1 and the packing decision. |
+| L21: [ZipServ](https://arxiv.org/abs/2603.17435), 2026-03-18, ASPLOS 2026 | Hardware-aware BF16 coding with fused decompression into Tensor Core GEMM. | Lossless weight storage/execution reference for larger-precision Qwen; NVIDIA results do not qualify packed Swift or Snapdragon. |
+| L22: [NF12 implementation](https://github.com/dphnAI/nf12), [specification](https://github.com/dphnAI/nf12/blob/master/docs/SPEC.md), reviewed 2026-11-12 | NyoomFloat12-inspired nominal 12-bit BF16 stream plus escaped original groups; decoding restores exact weight bits. | Ampere-to-Blackwell CUDA implementation. GEMM accumulation can differ from cuBLAS, and serving results include slowdowns. Not a replacement for already packed ternary Swift. |
+| L23: [Approaching Shannon Bound with Lossless LLM Weight Compression](https://arxiv.org/abs/2606.15789), 2026-06-14, ISCA 2026 acceptance listed | Tile-aligned ANS decoding matches GPU GEMM consumption and frees capacity for larger batches. | Lossless coding reference; batch-capacity/throughput gains do not establish single-conversation latency or faster NEON matvec. |
+| L24: [Glyd](https://getglyd.com/), reviewed 2026-11-12 | Reconstructs exact BF16 weights during GPU execution; publishes Qwen capacity and throughput results with losing configurations. | Author implementation/report, BUSL-1.1 source; license and numerical execution need separate review. BF16 compression does not imply further equivalent savings on PQ2/PTQ1. |
+| L25: [Weights That Stay](https://arxiv.org/abs/2611.00506), 2026-10-31 preprint | Persistent megakernels retain vocabulary-projection shards across a serial drafter-head walk. | H100/B200 Qwen3 evidence; head-level gains exceed end-to-end gains. Conditional on a compatible trained drafter and verifier, with no current CPU/NPU port. |
 
 Useful counterexamples from upstream reports: [missing blocked ternary ARM
 paths](https://github.com/ggml-org/llama.cpp/issues/27276) (2026-08-17),
@@ -320,10 +352,24 @@ charging both representations and avoiding a universal ARM-kernel preference.
 | H17: [Gated DeltaNet-2](https://arxiv.org/abs/2605.22791v1), 2026-05-21 technical report | Decouples erase/write gates and changes the recurrence, with a new chunkwise derivation. | Requires new architecture/artifacts; no inference-only substitution for Swift. |
 | H18: [EAGLE-3](https://arxiv.org/abs/2503.01840), 2025-03-03; [code](https://github.com/SafeAILab/EAGLE) | Trains direct-token proposals using multi-layer target features rather than predicting only top-layer features. | Trained-drafter reference; target feature/adapter compatibility, extra memory and T6's sampling contract remain prerequisites. |
 | H19: [DFlash](https://proceedings.mlr.press/v306/chen26bv.html), ICML 2026; [v2 2026-05-28](https://arxiv.org/abs/2602.06036v2); [code](https://github.com/z-lab/dflash) | Block diffusion drafts multiple tokens in one parallel pass conditioned on target features. Includes nonzero-temperature evaluations. | Requires a compatible trained drafter and hybrid block verifier. GPU results do not establish CPU break-even or acceptance for creative prose. |
-| H20: [KVBuffer](https://arxiv.org/abs/2605.19049v1), 2026-05-18 preprint | Buffer keys/deltas/decays and defer full state writes; verify without a full state per draft position. | High conceptual priority. SGLang/Qwen3-Next on four L40S, FP32 state/FP16 buffers; no Prism bitwise-replay evidence. Charge reads/flush/materialization/conversion, and include pending updates plus convolution in checkpoints/commit. |
+| H20: [KVBuffer](https://arxiv.org/abs/2605.19049v2), v1 2026-05-18, v2 revised 2026-11-05 | Buffer keys/deltas/decays and defer full state writes; verify without a full state per draft position. V2 adds Qwen3.5/Nemotron3 evidence. | Main end-to-end gains use batches 128/512; one low-request-rate Qwen3.5 result is 1.00x. Nonzero FP32 differences preclude a bitwise claim. Charge factor reads, conversion, flush/materialization and pending convolution state; no Swift batch-one benefit is established. |
 | H21: [TreeWY](https://arxiv.org/abs/2608.20961v2), v2 2026-10-22 preprint | Ancestor-masked triangular WY verification retains pseudo-values and reconstructs the accepted path. | Candidate after verifier infrastructure. B200/vLLM/greedy with prefix caching disabled; real-arithmetic equivalence is not BF16 bit identity. Reports token differences and wider-tree latency losses. Qualify attention causality, convolution and prefix-cache integration separately. |
 | H22: [DFlash 2](https://inco.ai/blog/dflash2/), 2026-08-18 author report | Parallel candidate scoring, path selection and block-local convolution improve learned draft coherence. | Compatible trained-artifact research. Qwen3.8-27B support does not establish Swift/LoRA compatibility; expose actual conditional proposal probabilities. |
 | H23: [VeriCache](https://arxiv.org/abs/2605.17613v1), 2026-05-17 preprint | Compressed KV drafts while separately retained full KV verifies. | Greedy-output qualification; sampling needs correction. Charge transfers, verification, complete hybrid state and full-plus-compressed storage, which may increase total RAM. Multi-request overlap does not establish laptop savings. |
+| H24: [DSpark](https://arxiv.org/abs/2607.05147), 2026-07-06 | Semi-autoregressive drafting restores intra-block dependencies; confidence/load-aware verification avoids expensive unlikely suffixes. | Compatible trained-artifact reference. Production throughput/interactivity results do not establish Swift creative-prose acceptance or Snapdragon benefit. |
+| H25: [P-EAGLE and supported algorithms](https://docs.vllm.ai/projects/speculators/en/latest/user_guide/algorithms/decision_guide/), official documentation reviewed 2026-11-12 | Parallel learned proposals join EAGLE-3, DFlash/DFlash2, DSpark and native MTP in the implementation catalog. | Implementation support is engine/model-specific. MTP needs the admitted checkpoint's head; a similarly named Qwen reference cannot establish Swift support. |
+| H26: [JetSpec](https://arxiv.org/abs/2606.18394), v1 2026-06-16, v5 2026-10-03 | Learned causal parallel tree proposals improve path consistency without sequential drafting at every depth. | Qwen3/GPU research; requires compatible trained heads and real tree verification. Wider trees must repay their target work. |
+| H27: [JetSpec++](https://arxiv.org/abs/2610.19792v2), v2 2026-10-15 | Self-refinement, foresight features and pipelined drafting/verification hide draft latency while retaining target-distribution verification. | GB200 evidence; trained artifacts, feature validity, concurrency and complete-cycle costs remain prerequisites for any Swift adaptation. |
+| H28: [DSpine](https://arxiv.org/abs/2609.36173v2), v1 2026-09-28, v2 2026-10-10 | Adjacent causal injection propagates predecessor information through parallel drafter depth. | Qwen3-4B/8B evaluations include temperatures zero and one; not a plug-in change to Swift's checkpoint or verifier. |
+| H29: [D3D](https://arxiv.org/abs/2611.06425), 2026-11-04; [public drafter](https://huggingface.co/lingc8/D3D-8B-to-8B) | Standalone diffusion drafting removes dependence on fresh target hidden states, permitting asynchronous successor blocks. | Public 8B/36-layer draft and separate target/draft GPU example are poor immediate laptop fits. Charge both models and overlap resources; published Qwen3 gains do not qualify Swift. |
+| H30: [AdaSpark](https://arxiv.org/abs/2610.05774), 2026-10-05 | Learns verification cost/acceptance online, adapting tree width and mixing n-gram candidates with learned proposals. | Useful scheduling reference after a viable verifier. Preserve actual proposal probabilities, bounded observations and full fallback; no ordinary-startup tuning is authorized. |
+| H31: [ReTrace](https://arxiv.org/abs/2608.29748v2), v1 2026-08-30, v2 2026-09-05 | Conditions the next draft block on the preceding rejected suffix; rejected tokens still do not commit. | Incremental DFlash-like proposal improvement after drafter integration. Unchanged target verification remains essential. |
+| H32: [LongSpark](https://arxiv.org/abs/2609.37029v2), v1 2026-09-29, v2 2026-10-26 | Fixed-size multiscale views of target verification avoid a growing drafter context state. | Compatible trained-artifact/feature-interface research; long-context state savings do not establish benefit at Swift's 8K limit. |
+| H33: [Phrase-Level Speculative Decoding](https://arxiv.org/abs/2611.12464), 2026-11-09 preprint | A small MLP proposes phrases expanded into unchanged target tokens for tree verification. | Qwen3-4B/A5000/greedy evidence against HuggingFace generation, with a floating tie caveat. Small auxiliary memory is interesting, but training and tree/sampling integration remain separate. |
+| H34: [Test-Time Speculation](https://arxiv.org/abs/2605.09329v2), v2 2026-05-19 | Online draft distillation addresses acceptance decay during long outputs without changing the target. | New training state, compute, memory and budget obligations; outside the present published-auxiliary screen. Acceptance-length improvements alone are not end-to-end speedups. |
+| H35: [Bonsai 2 DFlash2 drafter](https://huggingface.co/naklitechie/Qwen3.8-27B-DFlash2-ternary-bonsai2), model card reviewed 2026-11-12 | Fits the ternary target's own features/generations. Published Q4 weights are about 1.14 GB; L4 gains vary by workload and Apple chat can be slower. | Greedy-only results explicitly report batched near-tie output changes. Verify target/adapter, tokenizer, feature taps and shared embedding/head; no Swift stochastic or Snapdragon qualification follows. |
+| H36: [Ternary Bonsai drafter variant](https://huggingface.co/Cyronius/Qwen3.8-27B-DFlash2-Bonsai2-ternary), model card reviewed 2026-11-12 | About 746 MB PQ2 GGUF; author reports greedy AMD-NPU acceleration in OpenFlowLM. | Runtime support is described as unreleased and specific to OpenFlowLM. Smaller draft weights do not establish Prism execution, shared-basis compatibility or target-distribution preservation. |
+| H37: [AnchorKV](https://arxiv.org/abs/2611.00117v1), submitted 2026-10-28 | Exact residual anchors reconstruct inactive-session KV by replay, exchanging capacity for resumption work. | Dense Qwen3 research; GDN not evaluated. Headline reconstruction gains compare naive replay, and full-KV service can be much faster. Low priority for one active local conversation. |
 
 The source history of H2 gives an April submission despite its May arXiv ID
 and later HTML front matter. H14's submission history likewise supplies its date.
@@ -342,6 +388,9 @@ The dates here are those inspected on the primary pages, not inferred from IDs.
 | A7: [FlashAttention-V](https://arxiv.org/abs/2608.18656v1), 2026-08-19 preprint | Head packing and register locality for scalable vectors; includes real RISC-V board work. Large headline gains also include simulated comparisons with scalar controls. | Layout watch item; RVV/SVE is not 128-bit NEON or evidence of Windows ISA availability. |
 | A8: [Reorienting the Vector Axis](https://arxiv.org/abs/2610.29489v1), 2026-10-21 preprint | Make queries the contiguous vector axis and keep polynomial coefficients out of vector registers to reduce spills. | Prefill/register-pressure inspiration; results use RISC-V with 2 KiB vector registers. |
 | A9: [LLM in a Flash](https://machinelearning.apple.com/research/efficient-large-language), December 2023 | Flash/DRAM-aware weight access, windowing and bundling for models exceeding available DRAM. | Deferred capacity research. Existing ternary zeros, SSD latency/endurance and dense access do not automatically provide useful skipped reads. |
+| A10: [GAAC](https://arxiv.org/html/2610.38210v2), v1 2026-10-28, v2 2026-11-04 | Bit-exact BF16 KV coding with reconstruction fused into attention reduces cache traffic. | Hybrid Qwen batch-one long-context results are 1.04-1.06x on DGX Spark. No FP16/NEON path; Swift has FP16 KV, 8K context and only 16 full-attention layers. Profile before prioritizing a port. |
+| A11: [ZipFusion](https://arxiv.org/html/2610.33719v1), 2026-10-24 preprint | Lossless BF16 KV reconstruction directly in registers inside attention avoids full-cache expansion. | H100/Qwen3-8B results distinguish attention, fixed-batch and maximum-batch gains; prefill/initial compression are excluded. No FP16/CPU/hybrid-state qualification. |
+| A12: [SplitZip](https://arxiv.org/html/2605.01708v3), v1 2026-05-03, v3 2026-06-23 | Bit-exact BF16 GPU KV coding reduces inter-server transfer, followed by decompression. | Disaggregated-serving transfer/TTFT results address a different bottleneck from one local active session. Reconsider only with an applicable transfer or tiering consumer. |
 
 ### Approximation, quantization theory and numerical analysis
 
@@ -507,8 +556,11 @@ complete-task accounting; UI delivery timing is not inference-kernel throughput.
 
 ### Source coverage
 
-The **2026-11-08** cutoff covers accessible papers/proceedings, original
+The general **2026-11-08** cutoff covers accessible papers/proceedings, original
 repositories, author/vendor reports and HN leads, with emphasis on 2026 work.
+The **2026-11-12** lossless-inference addendum adds the deployment audit, L21-L25,
+H24-H37 and A10-A12, and refreshes H20 to KVBuffer v2. Other entries retain their
+earlier review scope; the addendum does not revalidate every mutable source.
 This bounded search does not establish that omitted work is absent. Future
 venue acceptances remain author claims; observed PR/release status is neither
 adoption nor a pin update.
