@@ -136,9 +136,10 @@ fn priority_tree() -> io::Result<()> {
 )]
 fn priority_class() -> io::Result<u32> {
     use windows_sys::Win32::System::Threading::{GetCurrentProcess, GetPriorityClass};
-    // SAFETY: Both APIs accept the current process pseudo handle. It remains
-    // borrowed, and GetPriorityClass neither retains it nor writes through it.
-    let priority = unsafe { GetPriorityClass(GetCurrentProcess()) };
+    // SAFETY: The current process pseudo handle remains borrowed and needs no close.
+    let process = unsafe { GetCurrentProcess() };
+    // SAFETY: The query accepts this borrowed pseudo handle and retains no pointer.
+    let priority = unsafe { GetPriorityClass(process) };
     if priority == 0 {
         Err(io::Error::last_os_error())
     } else {

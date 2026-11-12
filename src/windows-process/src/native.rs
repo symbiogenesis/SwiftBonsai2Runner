@@ -136,6 +136,7 @@ struct LaunchSpec<'a> {
     mitigation_profile: MitigationProfile,
 }
 
+#[derive(Clone, Copy)]
 pub(super) enum ToolPriority {
     Inherited,
     Background,

@@ -472,6 +472,11 @@ Qualify overlapping pinned-runtime preparation and broker builds, peer failure
 cancellation/joining, and below-normal CPU scheduling of the complete speech
 preparation Job with compiler descendants. Cover cold speech-build contention and
 unchanged launches separately; source controls establish no X1 speedup.
+Diagnose and replay the two PowerShell-dependent native startup fixtures for
+descendant cancellation and bounded failure/output handling in owner-managed
+checks. The local focused replay failed both with empty child output; its three
+preparation-state controls passed. Preserve the real cancellation, output bounds
+and complete descendant teardown requirements while resolving those failures.
 Qualify the CNG verifier
 retained from Prism 0.1.13 in the published 0.1.14 release through Runner's
 settled-main release integration and
