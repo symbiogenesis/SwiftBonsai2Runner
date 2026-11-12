@@ -28,7 +28,8 @@ The target is native Windows ARM64 on Snapdragon X and X2. The active
 The [November 9 capture](evidence/readme-performance-0123-20261109/summary.json)
 retains one eight-token public-broker observation for each representation; it does
 not qualify sustained performance, actual NPU use or the complete application.
-Prism 0.1.24 crate publication does not update this binary lock; that repin remains
+The [Prism 0.1.25 registry delivery](evidence/prism-0125-publish-20261112/summary.json)
+does not update this binary lock; its source-bound bundle and both source pins remain
 in [PLAN.md](../PLAN.md).
 
 The following 0.1.14 reviews are historical acceptance inputs, not the active pin.

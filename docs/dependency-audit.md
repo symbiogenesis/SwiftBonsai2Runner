@@ -269,7 +269,7 @@ of continuing freshness. Current compiler and runtime selections are the
 [toolchain file](../rust-toolchain.toml) (nightly 2026-11-12) and
 [runtime lock](../config/prism-inference.lock.json) (Prism 0.1.23, source
 `055c7430cb4771dfddb24ddaa30494af6ad182da`). Historical checks below do not qualify
-these later selections. The pending 0.1.24 binary repin remains in PLAN.
+these later selections. The pending 0.1.25 binary repin remains in PLAN.
 
 | Dependency/tool | Reviewed selection |
 | --- | --- |
@@ -297,6 +297,13 @@ The refreshed workspace lockfile selects compatible transitive releases.
 These changes do not update external runtime/model/source locks or inherit
 historical advisory, native linking, model or performance qualification.
 Owner-managed Foundation and dependency-audit acceptance remain pending.
+
+The sibling [Prism registry refresh](evidence/prism-0125-publish-20261112/summary.json)
+published runtime 0.1.25 and all five helper updates on November 12, 2026, with
+`fancy-regex` 0.20.2, `fearless_simd` 1.2.0 and reference `tokenizers` 0.23.2.
+Runner has no Cargo dependencies on Prism or its five helpers. Its active binary
+and source locks remain at verified 0.1.23 until matching published source and binary bytes
+exist; the newer registry SIMD selection does not alter that runtime's 1.1.0 pin.
 
 The reviewed `windows-future` 0.3.2 selection is compatible with `windows`
 0.62.2, which returns its asynchronous types and requires `windows-core` 0.62.2;

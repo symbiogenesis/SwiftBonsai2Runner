@@ -18,7 +18,7 @@ the corresponding detailed task changes; keep every acceptance obligation below.
 | --- | --- | --- | --- |
 | C1 / owner | Runner | Reviewed local CI corrections and startup preflight | Publish through the owner and qualify Source checks and Foundation on that source; see [publication prerequisites](#publication-and-qualification-prerequisites). |
 | A1 / qualification | Runner with pinned Prism | C1 and an exact-source acceptance package | Qualify Rust/PQ2 DX12 startup, readiness, Stop/Retry, recovery and explicit publisher rollback under [actual-model acceptance](#actual-model-acceptance). |
-| R1 / owner, integration | Prism, then Runner | Published source-bound 0.1.24 bundle | Verify source/archive/nine-file identities, repin and prepare active-release acceptance. Keep newer local CPU candidates and their helper-publication prerequisite separately identified under [CPU kernels](#cpu-kernels). |
+| R1 / owner, integration | Prism, then Runner | Published source-bound 0.1.25 bundle | Verify source/archive/nine-file identities, advance both active source pins, and prepare active-release acceptance. The runtime and all five helpers are registry-published; binary delivery and [CPU qualification](#cpu-kernels) remain separate. |
 | R2 / implementation, qualification | Prism, then Runner | Settled candidate, required helper release and owning hosted checks | Qualify the explicit exact LUT candidate, integrate selected cross-token consumers and genuinely batched verification; close CPU/prefill codegen, fallback, state/adapter/cancellation and matched selected-device benefit gates. X2 CPU benefit may promote reviewed shared CPU paths on X1 under [cross-generation CPU promotion](docs/cpu-kernels.md#cross-generation-cpu-promotion); device-specific tuning and claims retain matching-family gates. Qualify changes already consumed in 0.1.23 without another repin; follow the [inference delivery order](#lossless-inference-delivery-order). |
 | R3 / integration, qualification | Prism and Runner harnesses | Agreed execution/state identities and existing complete-state fixtures | Prepare shared state/restore and fault-control tooling independently of runtime qualification; map each prefix/prefill/speculation/accelerator path to its independent assertions and evidence. |
 | K1 / owner, qualification | Prism, then Runner | Owner-selected K4/V4 development default, reviewed native source and matching Runner launch/readiness controls | Publish and verify a runtime bundle containing the reviewed source, then repin to activate default/required `rsq4` in Runner. Keep explicit FP16 recovery and existing admission/8K bounds. Complete the [paired quality/memory packet](docs/quantized-kv.md#first-practical-promotion-packet) for measured qualification, independently on X1/X2; it is not a prerequisite for the development default. Defer K4/V3. |
@@ -33,7 +33,7 @@ the corresponding detailed task changes; keep every acceptance obligation below.
 Freeze one coherent qualification candidate after its reviewed logical commits are
 integrated into local `main`: exact Runner/Prism revisions, compiler, release bytes,
 locks, model/adapter and selected device/driver/kernel identities. Separate the
-current 0.1.23 application packet, the requested 0.1.24 delivery, and any newer local
+current 0.1.23 application packet, the requested 0.1.25 delivery, and any newer local
 source candidate. Reuse tools and immutable inputs where their contracts permit;
 never transfer a pass across changed identities or substitute a historical packet.
 Continue later implementation in separate worktrees while that candidate is
@@ -119,15 +119,20 @@ the original context error and parser-policy block remain preserved in that reco
 Retain the exact source/assets/checksums from the first successful hosted run;
 static checks do not establish clean-machine model, speech, signing or daily-use acceptance.
 
-Complete the owner-requested Prism 0.1.24 binary repin and README performance
-refresh after owner source/bundle publication. The [registry delivery record](docs/evidence/prism-0124-publish-20261109/summary.json)
-confirms the new runtime crate and unchanged five helper versions; Runner has no
-Cargo dependency on those crates and still consumes the verified 0.1.23 binary
-bundle below. The private server's package and exact runtime pin are locally
-0.1.24 but remain unpublished with the Hexagon crates. The no-push rule leaves
-source publication with the owner; no exception was received. After a genuine
-source-bound 0.1.24 Foundation bundle exists, verify its source/archive/nine-file
-identities, update the active runtime and exact-source acceptance pins, then
+Complete the owner-requested Prism 0.1.25 binary repin and README performance
+refresh after owner source/bundle publication. The [registry delivery record](docs/evidence/prism-0125-publish-20261112/summary.json)
+confirms all six public crates and matching checksums from source
+`99bab71270b1e6a6fb6d47eec2e34b8097cdcd4c`: runtime 0.1.25,
+native-hash/ternary 0.1.3, NEON 0.1.2 and Prism/GGUF helpers 0.1.5.
+It also records the third-party refresh, tokenizers API repair, passing focused
+controls and original failed compiler preflight; complete hosted acceptance remains
+pending. Runner has no Cargo dependency on those crates and still consumes the
+verified 0.1.23 binary bundle below. The private server's package and exact runtime
+pin are locally 0.1.25 but remain unpublished with the Hexagon crates. The no-push
+rule leaves source publication with the owner. After a genuine source-bound
+0.1.25 Foundation bundle and published source/archive/nine-file identities exist,
+advance `config/prism-inference.lock.json` and
+`tools/native-reference/pins.json::rustSource` together, then
 predeclare one fresh two-representation short capture with aggregate and per-arm
 power/cleanup observations before replacing the README's measured values.
 Preserve historical fixtures and closed clocks. Complete CI, sustained performance
@@ -629,9 +634,9 @@ retained from Prism 0.1.13 in the published 0.1.14 release through Runner's
 settled-main release integration and
 actual-model startup. End-to-end startup gains remain pending within the
 owner-device budget; performance comparisons and complete checks remain in owning
-CI. The [later registry record](docs/evidence/prism-0124-publish-20261109/summary.json)
-already retains native-hash 0.1.2, GGUF 0.1.4 and Prism 0.1.24 publication;
-the outstanding binary handoff is the 0.1.24 source/bundle repin above.
+CI. The [current registry record](docs/evidence/prism-0125-publish-20261112/summary.json)
+retains native-hash 0.1.3, GGUF 0.1.5 and Prism 0.1.25 publication;
+the outstanding binary handoff is the 0.1.25 source/bundle repin above.
 Registry publication does not close startup or application acceptance.
 
 Qualify an explicit DX12 launch after the owner's
@@ -1609,9 +1614,9 @@ exact-source numerical/error controls, feature-disabled fallback, ARM64 codegen
 and resource review, complete-model/adapter/cancellation parity and matched
 selected-family CPU request benefit before release and verified binary repin.
 Apply the shared CPU applicability review; retain device-specific tuning and claims.
-Before registry delivery, publish a new `bonsai-neon-dot` helper version and
-update Prism's exact dependency pin for its new detected-capability API; the
-currently published `0.1.1` helper cannot satisfy that source consumer.
+The [0.1.25 registry delivery](docs/evidence/prism-0125-publish-20261112/summary.json)
+published `bonsai-neon-dot 0.1.2` and advanced Prism's exact dependency for its
+new detected-capability API. A verified binary repin and qualification remain pending.
 Qualify the [further X1 CPU candidates](docs/cpu-kernels.md#further-x1-cpu-candidates):
 retained optional-ISA selection for PQ2 token tiles, bounded stack error slots
 for elementwise worker dispatch, and adapter-enabled SwiGLU/down-basis
@@ -1637,9 +1642,9 @@ selected-family CPU request benefit. Include LUT construction and its 80 KiB
 table capacity at 5,120 columns in comparisons with SDOT/NEON; keep it opt-in
 and retain a no-go if total cost
 erases the benefit. LUT default selection needs matching-family benefit; its
-opt-in delivery does not block shared work reductions. Publish the new
-half-widening helper API with the existing detected-capability helper update
-before registry delivery. Release, verified
+opt-in delivery does not block shared work reductions. The new half-widening and
+detected-capability APIs are published in `bonsai-neon-dot 0.1.2`, consumed by
+registry runtime 0.1.25. Binary release, verified
 binary repin and full-model/cancellation qualification remain pending; no measured
 speedup or admission-policy change is established by source work.
 Final-source analyzers and focused controls remain unexecuted after the local
@@ -1656,8 +1661,8 @@ stack review, full-model logits/state/adapter/cancellation parity, shared CPU
 applicability and matched selected-family CPU request benefit. Charge GDN's
 repeated small key/query reads and all dispatch/preparation costs; source call
 counts and accumulator lifetimes establish
-no speedup. Publish the new complete-row helper API with the existing helper
-update before registry delivery. Release and verified Runner repin remain pending;
+no speedup. The complete-row helper API is published in `bonsai-neon-dot 0.1.2`,
+consumed by registry runtime 0.1.25. Binary release and verified Runner repin remain pending;
 preserve the current runtime, profiles and admission policy.
 The fixed local compiler/control workload stopped at inherited native helper
 errors and x64 lint findings. Their source corrections are reviewed but have
@@ -1674,9 +1679,9 @@ feature-disabled fallback and production linking, ARM64 codegen/spill/stack
 review, full-model state/logit/adapter/cancellation parity, shared CPU applicability
 and matched selected-family CPU complete-request benefit. Charge every
 preparation/dispatch cost and GDN's repeated key/query reads; source predicate, submission and accumulator
-counts establish no speedup. Publish the prepared-PQ2 helper API with the existing
-helper update before registry delivery. Release and verified Runner repin remain
-pending; preserve the current runtime, profiles and conservative admission.
+counts establish no speedup. The prepared-PQ2 helper API is published in
+`bonsai-neon-dot 0.1.2`, consumed by registry runtime 0.1.25. Binary release and
+verified Runner repin remain pending; preserve the current runtime, profiles and conservative admission.
 The fixed local check stopped at one obsolete lint expectation and two test
 assertion lints before executing tests. Their source corrections do not reopen
 that closed clock or supply final-source compiler/execution acceptance; x64,
@@ -1796,7 +1801,7 @@ Remaining CPU kernel, graph-level parallelism and tiled-prefill optimizations to
 implement and qualify in Prism:
 
 - Qualify the implemented optional ARMv8.2-A `dotprod` / `i8mm` source dispatch,
-  including runtime feature detection, helper publication and scalar/NEON fallbacks;
+  including runtime feature detection, published helper integration and scalar/NEON fallbacks;
   do not implement the existing dispatch again or infer release/device acceptance.
 - Qualify actual prompt/response latency and complete application lifecycle for the
   [shared-slice row-parallel candidate](docs/oxibonsai-reuse.md#implementation-status),

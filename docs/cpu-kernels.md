@@ -130,9 +130,9 @@ adapter and cancellation parity, and matched complete-request measurements on
 one selected family under [cross-generation CPU promotion](#cross-generation-cpu-promotion).
 Development on X2 supplies no X1 speedup verdict. Runner's verified binary pin
 and conservative admission remain unchanged; release and repin are pending.
-Registry delivery also requires publishing a new `bonsai-neon-dot` version and
-updating the runtime's exact helper dependency: published `0.1.1` does not supply
-the new capability API.
+The [0.1.25 registry delivery](evidence/prism-0125-publish-20261112/summary.json)
+published `bonsai-neon-dot 0.1.2` and advanced the runtime's exact dependency for
+the new capability API. Source-bound binary delivery and qualification remain pending.
 
 ### Further X1 CPU candidates
 
@@ -143,8 +143,8 @@ scheduling work, including paths used with the standard adapter:
   prepared activations. Four-/eight-row, four-/eight-token integer tiles and
   their token tails avoid repeated optional-ISA selection inside packed-block
   loops. Integer kernels, all four PQ2 symbols, floating scale order and the
-  baseline NEON fallback remain unchanged. The opaque helper API requires the
-  same new helper publication and exact runtime dependency update above.
+  baseline NEON fallback remain unchanged. The opaque helper API is published
+  in `bonsai-neon-dot 0.1.2` and consumed by registry runtime 0.1.25.
 - Single-, paired- and triple-buffer elementwise worker dispatches keep their
   at-most-eighteen error slots on the stack. Each dispatch removes one transient
   heap allocation while retaining the earliest failing chunk after all tasks
@@ -202,8 +202,8 @@ include table preparation, worker dispatch and all fallback costs, with losing
 or no-go outcomes retained. Apply [cross-generation CPU promotion](#cross-generation-cpu-promotion)
 to shared work reductions; LUT selection remains explicit pending matching-family
 benefit. Full-model logits/state/adapter and cancellation
-acceptance remain independent. The new half-widening API joins the existing
-helper-publication and exact-dependency prerequisite; Runner still consumes
+acceptance remain independent. The new half-widening API is published in
+`bonsai-neon-dot 0.1.2`, consumed by registry runtime 0.1.25; Runner still consumes
 its verified 0.1.23 binary until a qualified release and repin.
 
 ### Complete-row SDOT, fixed attention lanes and bounded GDN phases
@@ -218,8 +218,8 @@ Hexagon execution:
   forty integer-helper calls and forty half-widening calls with one complete-row call.
   Original Q8_K scales, all four PQ2 symbols, fused/separate arithmetic and
   136-byte prepared blocks remain unchanged. Baseline NEON, scalar and tiled
-  multi-token kernels retain their existing paths. The new safe helper API joins
-  the existing helper-publication and exact-dependency prerequisite.
+  multi-token kernels retain their existing paths. The new safe helper API is
+  published in `bonsai-neon-dot 0.1.2`, consumed by registry runtime 0.1.25.
 - Six-head and paired twelve-query attention scores consume sixteen key columns
   per loop with four fixed accumulator indices. Swift's width-256 key changes
   from thirty-two to sixteen loop iterations and query-row slices. Cached-half
@@ -292,8 +292,8 @@ review; complete-model state/logit/adapter/cancellation parity; and matched
 selected-family CPU complete-request benefit under
 [cross-generation CPU promotion](#cross-generation-cpu-promotion).
 Include preparation, dispatch and repeated input reads in timing.
-The prepared-PQ2 API joins the existing helper-publication
-and exact-dependency prerequisite. Runner continues to consume its verified
+The prepared-PQ2 API is published in `bonsai-neon-dot 0.1.2` and consumed by
+registry runtime 0.1.25. Runner continues to consume its verified
 0.1.23 bundle until release and repin; profiles and admission remain unchanged.
 
 The fixed model-free check on `750f7b3` closed after 15.026 seconds of its

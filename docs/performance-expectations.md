@@ -18,7 +18,7 @@ nor prose quality. Measure useful-answer time under the protocol below.
 
 ## Current Swift evidence
 
-The [Prism 0.1.24 crate publication](evidence/prism-0124-publish-20261109/summary.json)
+The [Prism 0.1.25 registry delivery](evidence/prism-0125-publish-20261112/summary.json)
 does not yet provide a verified Runner binary update or new model timings.
 Owner source/bundle publication, binary repinning and a fresh bounded capture
 remain in [the plan](../PLAN.md). The current measurements below apply to 0.1.23.

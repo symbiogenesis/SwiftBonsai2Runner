@@ -54,10 +54,11 @@ candidate. Keep new implementation in separate worktrees while its predecessor
 is qualified; evaluate changed dependencies explicitly before reusing evidence.
 
 The active 0.1.23 bundle already contains efficiencies whose remaining work is
-qualification. The requested 0.1.24 binary repin requires its genuine source-bound
-published bundle. Still-newer local CPU candidates need their own source review,
-including the new `bonsai-neon-dot` release required by its detected-capability
-consumer. Do not make these three delivery identities interchangeable or require
+qualification. The requested 0.1.25 binary repin requires its genuine source-bound
+published bundle. The [registry delivery](evidence/prism-0125-publish-20261112/summary.json)
+already includes every public helper, including `bonsai-neon-dot 0.1.2` for the
+detected-capability consumer. Still-newer local CPU candidates need their own
+source review. Do not make these delivery identities interchangeable or require
 a future repin for behavior already consumed by Runner. The [runtime lock update](#prepare-a-runtime-lock-update)
 and [CPU contract](cpu-kernels.md) own the exact verification steps.
 

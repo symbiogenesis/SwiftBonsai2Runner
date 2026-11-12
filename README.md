@@ -94,7 +94,7 @@ are from **November 9, 2026**, using **Prism 0.1.23**, four CPU workers and the
 standard adapter at strength 1.3 on a **Snapdragon X2 Elite Extreme** laptop.
 AC power was connected and battery saver was off at every recorded power sample.
 
-The newer [Prism 0.1.24 crate](https://crates.io/crates/prism-inference/0.1.24)
+The newer [Prism 0.1.25 crate](https://crates.io/crates/prism-inference/0.1.25)
 is published; its verified Runner binary update and new measurements are
 [pending](PLAN.md). The timings below still apply to 0.1.23.
 
