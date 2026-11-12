@@ -674,11 +674,7 @@ impl State {
             }
             return;
         }
-        let adopted = if retry_required {
-            self.adopt_interrupted()
-        } else {
-            false
-        };
+        let adopted = retry_required && self.adopt_interrupted();
         if !retry_required {
             self.transcript.clear_turn(self.committed.len());
         }

@@ -308,7 +308,7 @@ fn response_controls_preserve_limits_recover_composer_and_retain_complete_draft(
     assert!(!state.answer_complete);
     assert_eq!(state.last_answer, "Partial revision");
     assert_eq!(state.transcript.messages.len(), count);
-    assert!(state.input.is_empty());
+    assert_eq!(state.input, "");
     state.model_event(Event::Retryable("Retry the local model.".to_owned()));
     state.retry();
     assert!(matches!(commands.try_recv(), Ok(Command::Retry)));
@@ -791,7 +791,7 @@ fn conversation_workspace_restores_interrupted_output_as_followup_context() {
         matches!(commands.try_recv(), Ok(Command::RestoreChat(history)) if history.len() == 2 && history[1].content.as_ref() == "Partial answer")
     );
     assert!(state.transcript.plain_text().contains("Partial answer"));
-    assert!(state.input.is_empty());
+    assert_eq!(state.input, "");
     assert_eq!(state.committed.len(), 2);
 }
 

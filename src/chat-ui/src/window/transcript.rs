@@ -97,6 +97,10 @@ pub(super) struct Message {
     highlight_range_visits: std::cell::Cell<usize>,
 }
 
+#[expect(
+    clippy::trivially_copy_pass_by_ref,
+    reason = "Serde skip_serializing_if predicates receive a reference to the field."
+)]
 const fn is_false(value: &bool) -> bool {
     !*value
 }

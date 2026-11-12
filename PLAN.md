@@ -267,10 +267,10 @@ Qualify native message iteration and styled answers on Windows ARM64: edited and
 regenerated branches must preserve original drafts/settings and send only their
 exact committed prefix; user/assistant branching, Continue with an unsent draft,
 context rejection, Stop, background ownership and recovery must retain the normal
-  request policy. Qualify locally identified interrupted replies as followup and branch
-  context after Stop, failure and recovery, including background ownership, retained
-  drafts, completion races, legacy recovery without identity and capacity bounds.
-  Cover duplicate prompts, interrupted/intermediate effort output,
+request policy. Qualify locally identified interrupted replies as followup and branch
+context after Stop, failure and recovery, including background ownership, retained
+drafts, completion races, legacy recovery without identity and capacity bounds.
+Cover duplicate prompts, interrupted/intermediate effort output,
 transcript eviction, the 16-conversation limit, edit-modal keyboard/IME behavior,
 and styled Unicode/code selection, copying and Find across streamed replacements,
 scaling and high contrast. Qualify composer context guidance across draft edits,
