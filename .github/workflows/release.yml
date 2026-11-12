@@ -104,6 +104,7 @@ jobs:
         env:
           RELEASE_LANE: ${{ matrix.lane }}
           RELEASE_EXECUTABLE: ${{ matrix.executable }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           Set-StrictMode -Version Latest
           $ErrorActionPreference = 'Stop'

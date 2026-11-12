@@ -9,6 +9,8 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 . (Join-Path $PSScriptRoot '../../scripts/release/Release-Common.ps1')
+. (Join-Path $PSScriptRoot 'Notice-Common.ps1')
+$script:upstreamNoticeCache = @{}
 $RepositoryRoot = Resolve-ReleasePath $RepositoryRoot
 $NativeSourceDirectory = Resolve-ReleasePath $NativeSourceDirectory
 $OutputPath = Resolve-ReleasePath $OutputPath -Kind File -AllowMissing
@@ -24,7 +26,7 @@ $text = [Text.StringBuilder]::new()
 [void]$text.AppendLine('Generated from the locked Windows ARM64 dependency sources. Includes build/development dependencies conservatively; inclusion does not imply runtime use.')
 [void]$text.AppendLine('Ubuntu Light font: Copyright 2011 Canonical Ltd.')
 
-function Add-SourceNotices([string]$Label, [string]$Directory, [bool]$Required, [string]$LicenseFile = '') {
+function Add-SourceNotices([string]$Label, [string]$Directory, [bool]$Required, [string]$LicenseFile = '', [string]$Repository = '', [string]$PackageName = '', [string]$PackageVersion = '') {
     if (-not (Test-Path -LiteralPath $Directory -PathType Container)) { throw "Missing notice source: $Label" }
     $files = @(Get-ChildItem -LiteralPath $Directory -Recurse -File | Where-Object {
         $_.Name -match '^(LICENSE|LICENCE|COPYING|COPYRIGHT|NOTICE|AUTHORS)([._-].*)?$' -or
@@ -36,8 +38,10 @@ function Add-SourceNotices([string]$Label, [string]$Directory, [bool]$Required, 
         $files += Get-Item -LiteralPath $declared
     }
     $files = @($files | Sort-Object FullName -Unique)
-    if ($Required -and $files.Count -eq 0) { throw "No copyright/license text found for $Label; review this dependency before release." }
     [void]$text.AppendLine("`n===== $Label =====")
+    if ($Required -and $files.Count -eq 0) {
+        [void]$text.AppendLine((Get-UpstreamNoticeText -Directory $Directory -Repository $Repository -PackageName $PackageName -PackageVersion $PackageVersion))
+    }
     foreach ($file in $files) {
         if ($file.Length -gt 4MB) { throw "Unexpectedly large license file: $($file.FullName)" }
         $relative = [IO.Path]::GetRelativePath($Directory, $file.FullName)
@@ -49,7 +53,7 @@ function Add-SourceNotices([string]$Label, [string]$Directory, [bool]$Required, 
 foreach ($package in @($metadata.packages | Sort-Object name, version)) {
     if ($null -eq $package.source -or -not $resolved.Contains($package.id)) { continue }
     if (-not $package.license -and -not $package.license_file) { throw "Missing license declaration: $($package.id)" }
-    Add-SourceNotices "$($package.name) $($package.version) [$($package.license)] source=$($package.source)" (Split-Path -Parent $package.manifest_path) $true $package.license_file
+    Add-SourceNotices "$($package.name) $($package.version) [$($package.license)] source=$($package.source)" (Split-Path -Parent $package.manifest_path) $true $package.license_file $package.repository $package.name $package.version
 }
 
 $fonts = @($metadata.packages | Where-Object { $_.name -ceq 'epaint_default_fonts' })
