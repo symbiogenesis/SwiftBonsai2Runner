@@ -1121,6 +1121,19 @@ not close pending hosted integration or full-model acceptance.
   retrieval, embeddings only for demonstrated need. Summaries require source versions
   and author approval; vision, image critique or generation needs a matching model and
   shared-memory budget.
+- Defer [Apple's learned retrieval](https://machinelearning.apple.com/research/faster-retrieval)
+  until corpus retrieval demonstrates a need for embeddings and vector search becomes
+  a measured bottleneck. For a large, stable corpus and representative queries,
+  consider KeyNet query-vector mapping before an existing index; consider SupportNet
+  separately for cluster routing. Bind corpus, chunking, encoder and learned-model
+  identities; invalidate or requalify after changes, retaining original-query candidate
+  scoring and ordinary retrieval fallback. Evaluate multiple relevant source passages
+  and complete scene-packet quality/latency: the [paper's top-1 recovery
+  metric](https://arxiv.org/html/2603.08001v3) does not establish answer quality.
+  Account for exact-target generation, offline training, retained vectors/index and
+  auxiliary weights within native Windows ARM64 time and shared-memory budgets.
+  GPU/batched timings establish no Snapdragon benefit or generation/attention shortcut.
+  Keep this a research lead with no current dependency, runtime integration or device trial.
 
 ## Bounded calibration and optional precision
 
