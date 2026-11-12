@@ -244,9 +244,17 @@ pending gates. Full suites, benchmarks and performance captures stay in owning C
 ### Actual-model acceptance
 
 Qualify conversation switching, creation, deletion and per-conversation drafts
-during native startup and after preparation failure. Confirm the selected committed
-history reaches the ready worker without prompt replay, and late rejections cannot
-populate another conversation. Verify speech controls follow speech preparation
+during native startup, generation and after preparation failure. Confirm background
+responses, reasoning, Extra effort stages and exact history stay with their original
+conversation, while both drafts, visible selection and cursor survive. Cover
+background completion, rejection, Stop/completion races, disconnect, recovery and
+speech isolation; the generating conversation must reject deletion. Confirm the
+selected committed history reaches the ready worker before the next Send without
+prompt replay, and late rejections cannot populate another conversation.
+Run the new native `background_` state and interaction regressions in owner-managed
+CI. The bounded local all-target analyzer reported four lints, corrected locally
+without retrying the failed trial; final analyzer and test execution remain pending.
+Verify speech controls follow speech preparation
 independently of Swift readiness, retain explicit on-demand TTS loading and never
 start queued playback after preparation. Source checks do not replace native
 startup, recovery and audio acceptance.

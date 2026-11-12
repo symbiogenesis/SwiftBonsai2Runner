@@ -465,7 +465,7 @@ fn dictation_updates_loading_drafts_and_switching_cancels_late_transcripts() {
         assert!(commands.try_recv().is_err());
         state.new_chat();
         state.accept_transcript(7, "Late transcript");
-        assert!(state.input.is_empty());
+        assert_eq!(state.input, "");
         assert!(!state.dictation_requested);
     }
 }
@@ -684,7 +684,7 @@ fn conversation_workspace_late_rejection_restores_only_its_original_conversation
             retry_required: true,
         });
         assert_eq!(state.active_conversation, second);
-        assert!(state.input.is_empty());
+        assert_eq!(state.input, "");
         assert!(state.transcript.messages.is_empty());
         if !delete_original {
             state.switch_conversation(original);
@@ -779,7 +779,7 @@ fn conversation_workspace_never_promotes_interrupted_visible_output() {
 }
 
 #[test]
-fn conversation_workspace_bounds_count_blocks_busy_switches_and_deletes_explicitly() {
+fn conversation_workspace_bounds_count_blocks_teardown_switches_and_deletes_explicitly() {
     let (mut state, commands, _events) = state();
     state.model = ModelLifecycle::Ready;
     let original = state.active_conversation;
@@ -787,7 +787,6 @@ fn conversation_workspace_bounds_count_blocks_busy_switches_and_deletes_explicit
     assert!(matches!(commands.try_recv(), Ok(Command::NewChat)));
     let second = state.active_conversation;
     for phase in [
-        ModelLifecycle::Generating,
         ModelLifecycle::Stopping,
         ModelLifecycle::AwaitingTeardown,
         ModelLifecycle::Restarting,

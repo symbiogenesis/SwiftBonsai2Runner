@@ -17,6 +17,8 @@ use std::{
     time::{Duration, Instant},
 };
 
+#[cfg(test)]
+mod background_tests;
 mod graphics;
 #[cfg(test)]
 mod interaction_tests;
@@ -100,6 +102,7 @@ struct State {
     conversations: Vec<Conversation>,
     active_conversation: u64,
     request_conversation: Option<u64>,
+    routing_request: bool,
     next_conversation: u64,
     rename_conversation: Option<(u64, String)>,
     delete_conversation: Option<u64>,
@@ -186,6 +189,7 @@ impl State {
             conversations: vec![Conversation::new(1)],
             active_conversation: 1,
             request_conversation: None,
+            routing_request: false,
             next_conversation: 2,
             rename_conversation: None,
             delete_conversation: None,
@@ -443,7 +447,7 @@ impl State {
         self.active_conversation = id;
         self.clear_conversation();
         self.recovery_dirty = true;
-        if self.model.ready() {
+        if self.model == ModelLifecycle::Ready {
             self.set_status("Ready for a new conversation.", false);
         }
     }
@@ -475,9 +479,11 @@ impl State {
             return;
         }
         self.stop_speech();
-        self.model = ModelLifecycle::Stopping;
-        self.transcript.remove_empty_response();
-        self.set_status("Stopping the response…", false);
+        self.with_request_conversation(|state| {
+            state.model = ModelLifecycle::Stopping;
+            state.transcript.remove_empty_response();
+            state.set_status("Stopping the response…", false);
+        });
     }
 
     fn handle_escape(&mut self, ctx: &egui::Context) {
@@ -504,7 +510,22 @@ impl State {
     }
 
     fn fail(&mut self, message: &str) {
-        self.stop_speech();
+        if matches!(
+            self.model,
+            ModelLifecycle::Generating
+                | ModelLifecycle::Stopping
+                | ModelLifecycle::AwaitingTeardown
+        ) {
+            self.with_request_conversation(|state| state.fail_current_conversation(message));
+        } else {
+            self.fail_current_conversation(message);
+        }
+    }
+
+    fn fail_current_conversation(&mut self, message: &str) {
+        if !self.routing_request {
+            self.stop_speech();
+        }
         self.model = ModelLifecycle::Unavailable;
         self.transcript.remove_empty_response();
         self.retain_draft();
@@ -512,7 +533,8 @@ impl State {
     }
 
     fn reject(&mut self, message: &str, text: &str, retry_required: bool) {
-        if let Some(id) = self.request_conversation
+        if !self.routing_request
+            && let Some(id) = self.request_conversation
             && id != self.active_conversation
         {
             // A worker can reject a queued Send after announcing teardown.
@@ -539,7 +561,9 @@ impl State {
             self.retain_draft();
             return;
         }
-        self.stop_speech();
+        if !self.routing_request {
+            self.stop_speech();
+        }
         self.model = if retry_required {
             if self.model.retryable() {
                 ModelLifecycle::Retryable
@@ -584,6 +608,21 @@ impl State {
         if !self.model.accepts(&event) {
             return;
         }
+        if matches!(
+            self.model,
+            ModelLifecycle::Generating
+                | ModelLifecycle::Stopping
+                | ModelLifecycle::AwaitingTeardown
+        ) || matches!(event, Event::Rejected { .. })
+        {
+            self.with_request_conversation(|state| state.apply_model_event(event));
+        } else {
+            self.apply_model_event(event);
+        }
+        self.restore_selected_history();
+    }
+
+    fn apply_model_event(&mut self, event: Event) {
         self.recovery_dirty = true;
         match event {
             Event::Starting => {
@@ -597,17 +636,6 @@ impl State {
             Event::Stopping(text) => self.stopping_response(&text),
             Event::Stopped => self.stopped_response(),
             Event::Ready => {
-                if self.restore_history {
-                    self.restore_history = false;
-                    if self
-                        .commands
-                        .send(Command::RestoreChat(self.committed.clone()))
-                        .is_err()
-                    {
-                        self.fail("The model worker stopped. Close and restart the app.");
-                        return;
-                    }
-                }
                 self.model = ModelLifecycle::Ready;
                 self.set_status("Ready when you are.", false);
             }
@@ -676,7 +704,9 @@ impl State {
     }
 
     fn stopping_response(&mut self, text: &str) {
-        self.stop_speech();
+        if !self.routing_request {
+            self.stop_speech();
+        }
         self.model = ModelLifecycle::Stopping;
         if self.input.is_empty() {
             self.input = text.chars().take(INPUT_LIMIT).collect();
@@ -1269,6 +1299,31 @@ impl State {
         }
     }
 
+    fn voice_controls(&mut self, ui: &mut egui::Ui) {
+        ui.heading("Voice");
+        let label = ui.label("Voice profile");
+        ui.add_enabled(
+            !self.speaking,
+            egui::TextEdit::multiline(&mut self.voice_profile)
+                .desired_rows(3)
+                .desired_width(f32::INFINITY)
+                .char_limit(VOICE_LIMIT),
+        )
+        .labelled_by(label.id);
+        ui.label(
+            RichText::new("Describe the voice you want to hear. Applies to your next read aloud.")
+                .small()
+                .weak(),
+        );
+        if !self.speech_output {
+            ui.label("Read aloud becomes available after speech preparation.");
+        }
+        if ui.button("Read aloud setup").clicked() {
+            self.help = Some(("Read aloud setup", self.read_aloud_help()));
+        }
+        ui.add_space(16.0);
+    }
+
     fn settings(&mut self, ctx: &egui::Context) {
         if !self.show_settings {
             return;
@@ -1334,30 +1389,7 @@ impl State {
                 );
                 ui.add_space(16.0);
                 self.abliteration_controls(ui);
-                ui.heading("Voice");
-                let label = ui.label("Voice profile");
-                ui.add_enabled(
-                    !self.speaking,
-                    egui::TextEdit::multiline(&mut self.voice_profile)
-                        .desired_rows(3)
-                        .desired_width(f32::INFINITY)
-                        .char_limit(VOICE_LIMIT),
-                )
-                .labelled_by(label.id);
-                ui.label(
-                    RichText::new(
-                        "Describe the voice you want to hear. Applies to your next read aloud.",
-                    )
-                    .small()
-                    .weak(),
-                );
-                if !self.speech_output {
-                    ui.label("Read aloud becomes available after speech preparation.");
-                }
-                if ui.button("Read aloud setup").clicked() {
-                    self.help = Some(("Read aloud setup", self.read_aloud_help()));
-                }
-                ui.add_space(16.0);
+                self.voice_controls(ui);
                 if ui.button("Open diagnostics").clicked() {
                     self.show_diagnostics = true;
                 }
@@ -1431,7 +1463,7 @@ impl State {
                     RichText::new(if self.preview {
                         "Interface preview · no model or audio services"
                     } else if self.model.busy() {
-                        "Making room for your next idea…"
+                        "Responding to your message…"
                     } else {
                         "Your private, local AI companion"
                     })
@@ -1458,6 +1490,17 @@ impl State {
         });
         ui.add_space(8.0);
         ui.separator();
+        if self.model.busy()
+            && let Some(owner) = self.request_conversation
+            && owner != self.active_conversation
+        {
+            ui.horizontal_wrapped(|ui| {
+                ui.label(self.generation_status());
+                if ui.small_button("Show response").clicked() {
+                    self.switch_conversation(owner);
+                }
+            });
+        }
         if let Some(notice) = self.conversation_notice {
             ui.horizontal_wrapped(|ui| {
                 ui.label(RichText::new(notice).small());
@@ -1609,10 +1652,12 @@ impl State {
                             .max_height(160.0)
                             .show(ui, |ui| {
                                 let output = ui
-                                    .add_enabled_ui(!self.model.busy(), |ui| {
+                                    .scope(|ui| {
                                         egui::TextEdit::multiline(&mut self.input)
                                             .id_salt("composer")
-                                            .hint_text(if self.model.ready() {
+                                            .hint_text(if self.model.busy() {
+                                                "Draft your next message…"
+                                            } else if self.model.ready() {
                                                 "Ask anything…"
                                             } else if self.model.retryable() {
                                                 "Retry the model to continue…"
@@ -1650,7 +1695,7 @@ impl State {
                                         self.composer_cursor = state.cursor.char_range();
                                     }
                                 }
-                                let focus_requested = self.focus_composer && !self.model.busy();
+                                let focus_requested = self.focus_composer;
                                 if focus_requested {
                                     response.request_focus();
                                     self.focus_composer = false;
@@ -1746,19 +1791,18 @@ impl State {
                     });
                 // Text-only status should grow with its contents, without
                 // reserving the horizontal helper's button-height row.
+                let status = if self.model.busy() {
+                    self.generation_status()
+                } else if !self.model.ready() {
+                    self.status.clone()
+                } else {
+                    "Enter to send · Shift+Enter for a new line".to_owned()
+                };
                 ui.allocate_ui_with_layout(
                     egui::vec2(ui.available_width(), 0.0),
                     egui::Layout::left_to_right(egui::Align::Min).with_main_wrap(true),
                     |ui| {
-                        ui.label(
-                            RichText::new(if self.model.busy() || !self.model.ready() {
-                                &self.status
-                            } else {
-                                "Enter to send · Shift+Enter for a new line"
-                            })
-                            .small()
-                            .weak(),
-                        );
+                        ui.label(RichText::new(&status).small().weak());
                         if self.help.is_none()
                             && (self.speech_notice || self.dictation_requested || self.speaking)
                         {

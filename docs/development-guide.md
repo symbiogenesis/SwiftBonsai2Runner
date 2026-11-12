@@ -222,10 +222,19 @@ preserving newer drafts; a closed connection alone identifies no token/memory ca
 ### Conversations and response settings
 
 The sidebar holds up to 16 conversations with independent drafts and settings.
-Switch while ready/idle; use **New conversation** or the row's **actions** menu to
+Switch while ready or generating; use **New conversation** or the row's **actions** menu to
 rename, copy or delete. Deletion names its target; **Keep conversation** or
 Escape cancels, and deleting the last chat creates an empty one. Status and
 collapsible diagnostics stay outside the user/assistant transcript.
+
+While a response generates, you can draft the next message, browse another chat
+or create a conversation. Only one response runs at a time; Enter never queues a
+second request. **Stop** controls that response from any visible conversation;
+**Show response** returns to its original chat. Incoming text and completed history
+stay in that chat, and a newer draft survives completion, rejection or Stop.
+Its Delete action stays disabled until generation settles. Switching stops speech;
+background text never restarts playback. Navigation briefly locks during model
+teardown/restart, while drafts remain editable.
 
 The composer scrolls long drafts without hiding Microphone or Send/Stop.
 **Enter** sends when ready, **Shift+Enter** inserts a newline and **Ctrl+End**
@@ -400,7 +409,8 @@ loading/synthesis can lag text. **Stop speech** or manual replay suppresses
 automatic reading for that response; the next prompt re-enables it. Disabling the
 checkbox stops automatic reading while preserving manual replay. Extra effort
 reads visible stages and cancels queued audio on replacement. Conversation
-switch, generation Stop or model failure cancels speech. Saving retains the
+switch or generation Stop cancels speech. Model failure cancels the active chat's
+speech; a hidden response never interrupts manual playback in the visible chat. Saving retains the
 checkbox without replay on restore. Working drafts and reasoning are excluded.
 
 Owned speech uses separate Windows Jobs and mutual exclusion: read-aloud releases

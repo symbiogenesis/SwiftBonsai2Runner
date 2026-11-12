@@ -134,17 +134,25 @@ Events come from one ordered worker channel, replaced when attaching a worker;
 these phase guards do not add independent request or attempt identifiers.
 
 Conversation browsing, creation, deletion and drafts remain available while the
-model prepares or is unavailable. History changes during preparation are kept
-locally and the selected conversation's committed history is restored at readiness,
-without replaying a prompt. Generation, teardown and the brief unacknowledged
-restart retain conversation ownership until their queued turn events are settled.
+model prepares or is unavailable. During generation, typing, browsing and creation
+also remain available, while Send stays closed to a second request. Incoming text,
+reasoning, stages and committed history belong to the conversation that submitted
+the request, even when another conversation is visible. That conversation cannot
+be deleted until generation settles. Background progress names its conversation
+and offers Show response; Stop still controls the one active request.
+History changes during preparation or generation are coalesced locally, and the
+selected conversation's committed history is restored when the worker is ready,
+before another Send and without replaying a prompt. Teardown and the brief
+unacknowledged restart still block navigation until queued turn events settle.
 A late rejected prompt returns only to its original conversation if it still exists.
 Loading and failure status stays visible when switching conversations. Prepared
 dictation can update a draft before Swift is ready, and switching cancels capture
 and ignores late transcripts. Speech
 controls follow their separate output capability; they cannot queue playback during
 speech preparation. Once available, an explicit read action retains on-demand TTS
-model loading and authenticated readiness checks. Stop speech remains available.
+model loading and authenticated readiness checks. Switching stops playback; hidden
+responses never restart streaming speech or finish another conversation's playback.
+Stop speech remains available.
 
 [Find controls](development-guide.md#conversations-and-response-settings) search
 visible message bodies. [Streaming resources](streaming-resources.md#native-chat-and-transcript)

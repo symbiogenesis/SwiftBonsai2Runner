@@ -33,7 +33,12 @@ impl State {
             self.streaming_read_aloud = true;
             self.streaming_suppressed = false;
             "New responses will be read aloud as they arrive.".clone_into(&mut self.speech_status);
-            if self.model.busy() && !self.last_answer.is_empty() {
+            if self.model.busy()
+                && self
+                    .request_conversation
+                    .is_none_or(|id| id == self.active_conversation)
+                && !self.last_answer.is_empty()
+            {
                 self.stop_speech();
                 self.streaming_suppressed = false;
                 self.stream_answer(&self.last_answer.clone());
@@ -45,6 +50,9 @@ impl State {
 
     pub(super) fn stream_answer(&mut self, text: &str) {
         if !self.model.busy()
+            || self
+                .request_conversation
+                .is_some_and(|id| id != self.active_conversation)
             || !self.streaming_read_aloud
             || self.streaming_suppressed
             || !self.speech_output

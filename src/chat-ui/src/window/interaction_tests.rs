@@ -518,6 +518,70 @@ fn accessible_chat_controls_handle_enter_and_shift_enter() {
 }
 
 #[test]
+fn background_generation_keeps_composer_and_conversation_navigation_available() {
+    for size in [[1180.0, 860.0], [620.0, 760.0]] {
+        let mut chat = harness(size, false);
+        chat.state_mut().app.input = "Original question".into();
+        chat.state_mut().app.submit();
+        let owner = chat.state().app.active_conversation;
+        assert!(matches!(
+            chat.state().commands.try_recv(),
+            Ok(Command::Send { .. })
+        ));
+        chat.run();
+        chat.get_by_role_and_label(egui::Role::MultilineTextInput, "Message")
+            .focus();
+        chat.run();
+        chat.get_by_role_and_label(egui::Role::MultilineTextInput, "Message")
+            .type_text("Owner's next draft");
+        chat.run();
+        chat.key_press(egui::Key::Enter);
+        chat.run();
+        assert_eq!(chat.state().app.input, "Owner's next draft");
+        assert!(chat.state().commands.try_recv().is_err());
+        open_sidebar(&mut chat, size);
+        chat.get_by_role_and_label(egui::Role::Button, "+ New conversation")
+            .click();
+        chat.run();
+        let selected = chat.state().app.active_conversation;
+        assert_ne!(selected, owner);
+        chat.state_mut().app.sidebar_open = false;
+        chat.run();
+        chat.get_by_role_and_label(egui::Role::MultilineTextInput, "Message")
+            .type_text("Draft in another chat");
+        chat.run();
+        chat.key_press(egui::Key::Enter);
+        chat.run();
+        chat.state_mut()
+            .app
+            .model_event(Event::Text("Owner answer".into()));
+        chat.run();
+        assert_eq!(chat.state().app.input, "Draft in another chat");
+        assert!(chat.state().app.transcript.messages.is_empty());
+        assert!(chat.state().commands.try_recv().is_err());
+        chat.get_by_role_and_label(egui::Role::Button, "Show response")
+            .click();
+        chat.run();
+        assert_eq!(chat.state().app.active_conversation, owner);
+        assert_eq!(chat.state().app.input, "Owner's next draft");
+        assert!(
+            chat.state()
+                .app
+                .transcript
+                .plain_text()
+                .contains("Owner answer")
+        );
+        chat.get_by_role_and_label(egui::Role::Button, "Stop")
+            .click();
+        chat.run();
+        assert!(matches!(
+            chat.state().commands.try_recv(),
+            Ok(Command::Stop)
+        ));
+    }
+}
+
+#[test]
 fn conversation_controls_work_while_loading_without_sending() {
     let mut chat = harness([1180.0, 860.0], true);
     chat.state_mut().app.model = ModelLifecycle::Preparing;

@@ -26,6 +26,8 @@ pub(super) struct ConversationSnapshot {
     pub(super) abliteration_scale: f32,
     pub(super) status: String,
     pub(super) warning: bool,
+    #[serde(skip)]
+    pub(super) stage: Option<&'static str>,
 }
 
 #[derive(serde::Serialize, serde::Deserialize)]
@@ -56,10 +58,10 @@ enum ConversationAction {
 
 impl State {
     pub(super) fn update_worker_conversation(&mut self, command: Command) {
-        // Startup polling discards history commands. Coalesce local changes
-        // into the current committed snapshot and restore it at Ready instead.
+        // Startup and generation consume history commands without applying them.
+        // Coalesce navigation until the worker can accept the selected history.
         self.restore_history = true;
-        if self.preview || !self.model.ready() {
+        if self.preview || self.model != super::ModelLifecycle::Ready {
             return;
         }
         if self.commands.send(command).is_ok() {
@@ -89,6 +91,7 @@ impl State {
                 "Ready when you are.".to_owned()
             },
             warning: self.model.ready() && self.warning,
+            stage: self.stage,
         }
     }
 
@@ -137,9 +140,110 @@ impl State {
             self.status = snapshot.status;
             self.warning = snapshot.warning;
         }
-        self.stage = None;
+        self.stage = snapshot.stage;
         self.place_composer_cursor(self.input.chars().count());
         self.focus_composer = true;
+    }
+
+    // Event routing swaps only conversation content. The actual selection, Find
+    // state in its transcript, and live composer cursor/focus stay with the user.
+    pub(super) fn with_request_conversation(&mut self, action: impl FnOnce(&mut Self)) {
+        if self.routing_request {
+            action(self);
+            return;
+        }
+        let Some(owner) = self
+            .request_conversation
+            .filter(|id| *id != self.active_conversation)
+        else {
+            action(self);
+            return;
+        };
+        let Some(index) = self
+            .conversations
+            .iter()
+            .position(|value| value.id == owner)
+        else {
+            action(self);
+            return;
+        };
+        let Some(mut saved) = self.conversations[index].saved.take() else {
+            return;
+        };
+        let cursor = (
+            self.composer_cursor,
+            self.pending_cursor,
+            self.focus_composer,
+        );
+        self.swap_conversation(&mut saved);
+        let previous = (self.model, self.status.clone(), self.warning);
+        self.routing_request = true;
+        action(self);
+        self.routing_request = false;
+        // Late rejections and completion races can update a hidden transcript
+        // without changing the global stop/restart status currently on screen.
+        let changed =
+            previous.0 != self.model || previous.1 != self.status || previous.2 != self.warning;
+        let global_status =
+            (!self.model.ready() && changed).then(|| (self.status.clone(), self.warning));
+        self.swap_conversation(&mut saved);
+        self.conversations[index].saved = Some(saved);
+        (
+            self.composer_cursor,
+            self.pending_cursor,
+            self.focus_composer,
+        ) = cursor;
+        if let Some((status, warning)) = global_status {
+            self.status = status;
+            self.warning = warning;
+        }
+    }
+
+    const fn swap_conversation(&mut self, saved: &mut ConversationSnapshot) {
+        std::mem::swap(&mut self.transcript, &mut saved.transcript);
+        std::mem::swap(&mut self.committed, &mut saved.committed);
+        std::mem::swap(&mut self.input, &mut saved.input);
+        std::mem::swap(&mut self.last_answer, &mut saved.last_answer);
+        std::mem::swap(&mut self.retained_draft, &mut saved.retained_draft);
+        std::mem::swap(&mut self.answer_complete, &mut saved.answer_complete);
+        std::mem::swap(&mut self.extra_effort, &mut saved.extra_effort);
+        std::mem::swap(&mut self.enable_thinking, &mut saved.enable_thinking);
+        std::mem::swap(
+            &mut self.streaming_read_aloud,
+            &mut saved.streaming_read_aloud,
+        );
+        std::mem::swap(&mut self.output_budget, &mut saved.output_budget);
+        std::mem::swap(&mut self.abliteration_scale, &mut saved.abliteration_scale);
+        std::mem::swap(&mut self.status, &mut saved.status);
+        std::mem::swap(&mut self.warning, &mut saved.warning);
+        std::mem::swap(&mut self.stage, &mut saved.stage);
+    }
+
+    pub(super) fn restore_selected_history(&mut self) {
+        if self.restore_history && self.model == super::ModelLifecycle::Ready {
+            self.update_worker_conversation(Command::RestoreChat(self.committed.clone()));
+        }
+    }
+
+    pub(super) fn generation_status(&self) -> String {
+        if let Some(owner) = self.request_conversation
+            && owner != self.active_conversation
+            && let Some(conversation) = self.conversations.iter().find(|value| value.id == owner)
+        {
+            return format!(
+                "Responding in ‘{}’. You can draft here while you wait.",
+                conversation.title
+            );
+        }
+        format!(
+            "{} You can draft your next message while you wait.",
+            self.status
+        )
+    }
+
+    fn can_remove_conversation(&self, id: u64) -> bool {
+        self.model.workspace_available()
+            && !(self.model.busy() && self.request_conversation == Some(id))
     }
 
     pub(super) fn switch_conversation(&mut self, id: u64) {
@@ -168,7 +272,7 @@ impl State {
     }
 
     pub(super) fn remove_conversation(&mut self, id: u64) {
-        if !self.model.workspace_available() {
+        if !self.can_remove_conversation(id) {
             return;
         }
         let Some(index) = self
@@ -276,7 +380,7 @@ impl State {
                 .inner;
             // Only scroll when the composer can consume this focus request in
             // the same frame; pending focus during generation must not repaint forever.
-            if active && self.focus_composer && !self.model.busy() {
+            if active && self.focus_composer {
                 response.scroll_to_me(Some(egui::Align::Center));
             }
             if response.on_hover_text(&conversation.title).clicked() {
@@ -331,7 +435,7 @@ impl State {
         ui.separator();
         if ui
             .add_enabled(
-                self.model.workspace_available(),
+                self.can_remove_conversation(conversation.id),
                 egui::Button::new(RichText::new("Delete").color(ui.visuals().error_fg_color)),
             )
             .clicked()
@@ -411,7 +515,7 @@ impl State {
                         cancelled = ui.button("Keep conversation").clicked();
                         confirmed = ui
                             .add_enabled(
-                                self.model.workspace_available(),
+                                self.can_remove_conversation(id),
                                 egui::Button::new(RichText::new("Delete conversation").color(ui.visuals().error_fg_color)),
                             )
                             .clicked();

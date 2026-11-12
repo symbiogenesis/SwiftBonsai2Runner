@@ -24,11 +24,11 @@ impl ModelLifecycle {
     }
 
     pub(super) const fn workspace_available(self) -> bool {
-        // Generation and its final queued events still belong to the active
-        // conversation. Startup and terminal failures have no pending turn.
+        // A generating turn retains its original conversation while local
+        // navigation and drafts remain available. Teardown still settles first.
         matches!(
             self,
-            Self::Unavailable | Self::Preparing | Self::Ready | Self::Retryable
+            Self::Unavailable | Self::Preparing | Self::Ready | Self::Generating | Self::Retryable
         )
     }
 
