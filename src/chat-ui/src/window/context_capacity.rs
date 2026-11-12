@@ -56,17 +56,33 @@ impl State {
                     ui.spacing_mut().item_spacing.x = 8.0;
                     let label = ui.label(RichText::new("Message").small().weak());
                     let response = context_button(ui, estimate, pending);
+                    let frame = egui::Frame::popup(ui.style())
+                        .corner_radius(14)
+                        .inner_margin(14);
+                    // Keep details above both toolbar actions. An unconstrained
+                    // tall popup can be moved down by viewport containment and
+                    // intercept the neighboring Thinking button's pointer input.
+                    let detail_height = (response.rect.top()
+                        - ui.ctx().content_rect().top()
+                        - frame.total_margin().sum().y
+                        - 6.0)
+                        .max(0.0);
                     egui::Popup::menu(&response)
+                        .accessible_name("Context details")
                         .align(egui::RectAlign::TOP_START)
+                        .align_alternatives(&[egui::RectAlign::TOP_END])
                         .width(320.0)
                         .gap(6.0)
-                        .frame(
-                            egui::Frame::popup(ui.style())
-                                .corner_radius(14)
-                                .inner_margin(14),
-                        )
+                        .frame(frame)
                         .close_behavior(egui::PopupCloseBehavior::CloseOnClickOutside)
-                        .show(|ui| self.context_details(ui, estimate, pending));
+                        .show(|ui| {
+                            egui::ScrollArea::vertical()
+                                .id_salt("context-details")
+                                .max_height(detail_height)
+                                .min_scrolled_height(0.0)
+                                .auto_shrink([false, true])
+                                .show(ui, |ui| self.context_details(ui, estimate, pending));
+                        });
                     self.thinking_button(ui);
                     label
                 })

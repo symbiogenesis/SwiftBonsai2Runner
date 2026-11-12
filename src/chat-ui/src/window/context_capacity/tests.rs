@@ -294,7 +294,11 @@ fn context_capacity_popover_is_keyboard_accessible_and_scopes_extra_effort() {
     chat.key_press(egui::Key::Space);
     chat.run();
     assert!(chat.query_by_label("Space for this draft").is_some());
-    assert!(chat.query_by_label("First pass only. Extra effort's later passes add generated notes and drafts and need more room.").is_some());
+    let extra_effort = "First pass only. Extra effort's later passes add generated notes and drafts and need more room.";
+    chat.get_by_label(extra_effort).scroll_to_me();
+    chat.run();
+    let details = chat.get_by_label("Context details").rect();
+    assert!(details.contains_rect(chat.get_by_label(extra_effort).rect()));
     chat.key_press(egui::Key::Enter);
     chat.run();
     assert!(chat.state().commands.try_recv().is_err());
@@ -303,6 +307,30 @@ fn context_capacity_popover_is_keyboard_accessible_and_scopes_extra_effort() {
     assert!(chat.query_by_label("Space for this draft").is_none());
     assert_eq!(chat.state().app.input, "Keep this draft");
     assert!(chat.state().commands.try_recv().is_err());
+}
+
+#[test]
+fn context_capacity_details_leave_both_toolbar_actions_uncovered() {
+    for size in [[480.0, 480.0], [620.0, 640.0], [1180.0, 860.0]] {
+        let mut chat = harness(size, "Question");
+        chat.get_by_role_and_label(egui::Role::Button, "Context")
+            .click();
+        chat.run();
+        let details = chat.get_by_label("Context details").rect();
+        let bounds = egui::Rect::from_min_size(egui::Pos2::ZERO, size.into());
+        assert!(bounds.contains_rect(details));
+        for label in ["Context", "Thinking"] {
+            let action = chat.get_by_role_and_label(egui::Role::Button, label).rect();
+            assert!(!details.intersects(action));
+        }
+        chat.get_by_role_and_label(egui::Role::Button, "Thinking")
+            .click();
+        chat.run();
+        assert!(chat.query_by_label("Context details").is_none());
+        assert!(chat.query_by_label("Thinking options").is_some());
+        assert_eq!(chat.state().app.input, "Keep this draft");
+        assert!(chat.state().commands.try_recv().is_err());
+    }
 }
 
 #[test]
