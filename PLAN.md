@@ -1211,6 +1211,19 @@ development observations separate from X1 qualification.
 Before registry delivery, publish a new `bonsai-neon-dot` helper version and
 update Prism's exact dependency pin for its new detected-capability API; the
 currently published `0.1.1` helper cannot satisfy that source consumer.
+Qualify the [further X1 CPU candidates](docs/cpu-kernels.md#further-x1-cpu-candidates):
+retained optional-ISA selection for PQ2 token tiles, bounded stack error slots
+for elementwise worker dispatch, and adapter-enabled SwiGLU/down-basis
+preparation. Require exact-source numerical/error/adapter controls, strict
+Release analysis and production linking, feature-disabled fallback, ARM64
+codegen and stack/resource review, complete-model state/logit/cancellation parity
+and independent matched X1 request benefit before release and verified repin.
+Keep X2 development checks separate from X1 qualification; source work counts
+establish no latency, throughput or process-memory improvement.
+Require the corrected FFN consumer fixture to select the production arithmetic
+policy in both decode and tiled controls before scoring parity. Its initial
+mixed-policy failure and closed local clock remain in Prism history; the fixture
+correction is source-reviewed without a rerun. Final-source checks remain pending.
 
 Require final-source exact numerical/failure controls, strict Release analyzers,
 portable fallback and production linking; ARM64 codegen/stack/resource review;

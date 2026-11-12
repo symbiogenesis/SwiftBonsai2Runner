@@ -77,6 +77,34 @@ Registry delivery also requires publishing a new `bonsai-neon-dot` version and
 updating the runtime's exact helper dependency: published `0.1.1` does not supply
 the new capability API.
 
+### Further X1 CPU candidates
+
+Three additional local source candidates remove repeated CPU preparation and
+scheduling work, including paths used with the standard adapter:
+
+- PQ2 tiled prefill reuses the safely detected SDOT/I8MM capability retained by
+  prepared activations. Four-/eight-row, four-/eight-token integer tiles and
+  their token tails avoid repeated optional-ISA selection inside packed-block
+  loops. Integer kernels, all four PQ2 symbols, floating scale order and the
+  baseline NEON fallback remain unchanged. The opaque helper API requires the
+  same new helper publication and exact runtime dependency update above.
+- Single-, paired- and triple-buffer elementwise worker dispatches keep their
+  at-most-eighteen error slots on the stack. Each dispatch removes one transient
+  heap allocation while retaining the earliest failing chunk after all tasks
+  join. Slot storage stays private to the invocation, including nested calls;
+  the existing worker reservation and conservative admission remain in force.
+- Adapter-enabled CPU FFN preparation retains original-basis SwiGLU values in
+  the existing up buffer while preparing the down projection's signed Hadamard
+  basis in the existing transformed buffer. Combining those block operations
+  removes a separate worker pass. The down adapter continues to consume its
+  original-basis input; adapters and accelerator eligibility are unchanged.
+
+These are source work reductions, with no measured X1 or X2 benefit. Require
+final-source exact arithmetic, failure and adapter controls, feature-disabled
+fallback, strict Release analysis and linking, ARM64 codegen/stack review,
+complete-model state/logit/cancellation parity and matched X1 request benefit.
+Runner's immutable 0.1.23 runtime remains active until release and verified repin.
+
 ## Execution and dispatch
 
 The default `experimental-neon` feature uses [`fearless_simd` 1.1.0][fearless]'s safe core API under
