@@ -28,10 +28,13 @@ the plan, package list, boolean groups and filtered matrices;
 set and rejects planner failure, malformed results and unsuccessful selected
 jobs. Only deliberately unselected skips are permitted.
 The workflow transfers the planner's tested Linux executable to this gate rather
-than installing Rust and compiling it a second time. Maintenance is an independent
-producer; native integration and speech depend on its checked CLI artifact while the
-broker and UI lanes run concurrently. The configured aggregate still requires
-all selected jobs, including maintenance and speech.
+than installing Rust and compiling it a second time. The independent `checked-tools`
+producer owns the maintenance CLI's full checks and its same-run CLI/probe artifact.
+Speech and native integration wait for that producer while the six other maintenance
+crates, broker and UI lanes run concurrently. Package checks retain one owning lane;
+dependencies still compile wherever consumed. The configured aggregate requires all
+selected jobs, including both `checked-tools` and `maintenance`. The dependency change
+exposes concurrency; it supplies no measured hosted speedup or acceptance verdict.
 
 The routing, baseline, output and gate regressions are Rust tests. Use named
 focused selections locally with external targets/working directories; complete
@@ -84,10 +87,10 @@ summary with positive passes, zero failures and zero ignored tests. Supply
 selection. Duplicate summaries and malformed trailing content fail. `self-check`
 runs 23 receipt and 13 output fixtures without compiling or loading a model.
 
-The owning hosted workflow parses every actual PowerShell run block and the
-launcher with the native PowerShell parser, executes both exact Rust guard
-regressions, and retains a `workflow-contract.json` bound to the revision and
-five normalized LF source identities. `workflow-receipt` validates that proof
+The owning hosted workflow parses every actual PowerShell run block in the workflow
+and shared regression action, plus the launcher, with the native PowerShell parser,
+executes both exact Rust guard regressions, and retains a `workflow-contract.json`
+bound to the revision and six normalized LF source identities. `workflow-receipt` validates that proof
 before publishing or admitting an owner. These operations change no execution
 policy and do not execute the parsed launcher or owner workload.
 
@@ -97,6 +100,25 @@ analyzer/link receipt and workflow-contract receipt. The package's own
 `receipt.json` is a sixth member. Old three-file/schema-1 selections and helpers
 remain stale and cannot qualify the new source. A successful contract check
 closes no actual-model, performance, quality or promotion gate.
+
+Hosted native acceptance reuses only its external `Native-Acceptance-Build` Cargo
+outputs, keyed by native compiler, runner image/OS, manifests, locks and source inputs.
+Content freshness applies to every use of the restored target. Cache hits still run
+strict analyzers, linking, selected controls and package construction; packages,
+evidence and admission receipts are never restored from this build cache. Every
+device selection still requires its own same-run source-bound package.
+
+The [shared native regression action](../../.github/actions/native-regressions/action.yml)
+runs explicit package/target selections and submits each actual exit code and libtest
+output to `native-acceptance-guard test-output`. Exact selections require one pass;
+grouped selections require the declared positive count or a nonempty result. Missing,
+failed, ignored, duplicate or malformed output cannot pass. All selections are
+validated before the first command. It never enables ignored model tests or infers
+qualification from a cache hit. Hosted preparation runs
+`python -B tools/ci/test_native_regressions.py` on Windows
+ARM64 with PowerShell 7; these fixtures substitute inert Cargo/guard scripts and do
+not compile Rust or load models. Foundation also runs the focused
+`test_foundation_handoff.py` structural fixtures before its Rust routing/gate tests.
 
 [Source checks](../../.github/workflows/source-checks.yml) run separate portable,
 Markdown and dependency-audit jobs on hosted Linux ARM64. Pull requests to `main`

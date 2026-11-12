@@ -887,6 +887,26 @@ In particular, untimed storage checks do not qualify the 15.5 GiB admission/11.5
 Job budget. Source checks do not qualify a provisioned binary; release acceptance
 requires independently reviewed artifacts and promotion evidence.
 
+### Reusing qualification controls
+
+Reuse existing control implementations and exact applicable fixtures when extending
+prefix reuse, tiled prefill, speculative verification and accelerator recovery.
+Declare which path each observation exercises; shared tooling does not transfer a
+passing verdict between paths, releases, adapters or devices.
+
+| Shared mechanism | Reuse boundary |
+| --- | --- |
+| [Latest-prefix controls](prefix-reuse.md) and fresh-recompute comparisons | Compare complete logits, KV, recurrent/convolution state and sampler progression. Add each path's edited-history, provisional-failure, cancellation and restore cases; prefix agreement alone does not qualify tiled or speculative execution. |
+| [Native acceptance budget](../tools/bonsai/src/native_acceptance_budget.rs) | Preserve one original deadline, residual setup charge and cleanup reserves. Reusing the calculator never starts another allowance or removes an independent owner. |
+| [Power conditions](../src/cpu-policy/src/power.rs) | Retain aggregate and per-arm endpoints and explicit unknowns. Matching endpoints do not prove continuous stability or energy benefit. |
+| [Typed receipt guard](../tools/ci/src/native_acceptance_guard.rs) and [selected regression action](../.github/actions/native-regressions/action.yml) | Execute each selected control and bind fresh results to exact source/compiler/package identities. Compilation caches supply no prior check verdict. |
+| [Evidence archive](../tools/bonsai/README.md#command-boundary) and selected receipt staging | Preserve required replay bytes before temporary cleanup, then seal and retrieve the reviewed selection. Local staging is separate from durable storage deployment and independent review. |
+
+Keep path-specific numerical, adapter, ownership, resource, quality and benefit
+assertions alongside these shared controls. Reuse retained complete answers for
+rubric preparation and eligible independent review before scheduling new captures;
+historical answers retain their original identities and cannot qualify new source.
+
 ## Evidence retention
 
 Retain the smallest useful selection: evidence supporting a current claim, an
