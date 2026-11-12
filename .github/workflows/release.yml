@@ -1,0 +1,185 @@
+name: Windows Release
+run-name: Windows ARM64 release ${{ inputs.tag }}
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag matching the workspace version
+        required: true
+        type: string
+        default: v0.1.0
+      prerelease:
+        description: Mark as a prerelease while application qualification is pending
+        required: true
+        type: boolean
+        default: true
+permissions:
+  contents: read
+concurrency:
+  group: windows-release-${{ inputs.tag }}
+  cancel-in-progress: false
+env:
+  CARGO_UNSTABLE_CHECKSUM_FRESHNESS: 'true'
+  CARGO_BUILD_FINGERPRINT: content
+defaults:
+  run:
+    shell: pwsh
+    working-directory: ${{ runner.temp }}
+jobs:
+  validate:
+    if: github.ref == 'refs/heads/main' && github.repository == 'symbiogenesis/SwiftBonsai2Runner'
+    runs-on: windows-11-arm
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Validate release version, source and notes before building
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          Set-StrictMode -Version Latest
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          if ($env:RELEASE_TAG -cnotmatch '^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$') { throw 'Use vMAJOR.MINOR.PATCH without a prerelease suffix.' }
+          if ([int64]$Matches[1] -gt 255 -or [int64]$Matches[2] -gt 255 -or [int64]$Matches[3] -gt 65535) { throw 'The version exceeds Windows Installer version bounds.' }
+          $manifest = Get-Content -LiteralPath (Join-Path $env:GITHUB_WORKSPACE 'Cargo.toml') -Raw
+          $workspace = [regex]::Match($manifest, '(?ms)^\[workspace\.package\]\s*\r?\n(.*?)(?=^\[|\z)').Groups[1].Value
+          $version = [regex]::Match($workspace, '(?m)^version\s*=\s*"([0-9]+\.[0-9]+\.[0-9]+)"\s*$').Groups[1].Value
+          if ($env:RELEASE_TAG -cne "v$version") { throw 'Release tag must match the workspace package version.' }
+          $notes = Join-Path $env:GITHUB_WORKSPACE "docs/releases/$env:RELEASE_TAG.md"
+          if (-not (Test-Path -LiteralPath $notes -PathType Leaf)) { throw 'Reviewed release notes must be committed before dispatch.' }
+          $head = (git -C $env:GITHUB_WORKSPACE rev-parse HEAD).Trim()
+          if ($head -cne $env:GITHUB_SHA) { throw 'Checkout differs from the dispatched source.' }
+          $releases = @(gh api "repos/$env:GITHUB_REPOSITORY/releases" --paginate --jq '.[].tag_name')
+          if ($releases -ccontains $env:RELEASE_TAG) { throw 'A draft or published release already exists for this tag.' }
+          $tags = @(git -C $env:GITHUB_WORKSPACE tag --list $env:RELEASE_TAG)
+          if ($tags.Count -gt 0) {
+            $target = (git -C $env:GITHUB_WORKSPACE rev-parse "$env:RELEASE_TAG^{commit}").Trim()
+            if ($target -cne $env:GITHUB_SHA) { throw 'Existing release tag points to different source.' }
+          }
+  build:
+    needs: validate
+    name: Check and build / ${{ matrix.lane }}
+    runs-on: windows-11-arm
+    timeout-minutes: 50
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - lane: maintenance
+            packages: '["bonsai-tools","bonsai-ci","bonsai-artifacts","bonsai-audio","bonsai-cpu-policy","bonsai-windows-process","bonsai-windows-credentials"]'
+            executable: bonsai-tools.exe
+          - lane: core
+            packages: '["bonsai-broker","bonsai-speech-service"]'
+            executable: bonsai-broker.exe
+          - lane: ui
+            packages: '["bonsai-chat"]'
+            executable: bonsai-chat.exe
+          - lane: asr
+            packages: '["bonsai-speech-asr"]'
+            executable: bonsai-speech-asr.exe
+          - lane: tts
+            packages: '["bonsai-speech-tts"]'
+            executable: bonsai-speech-tts.exe
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/bonsai-tools
+        if: matrix.lane == 'asr' || matrix.lane == 'tts'
+      - uses: ./.github/actions/check-rust
+        with:
+          lane: ${{ matrix.lane }}
+          packages: ${{ matrix.packages }}
+          affected: ${{ matrix.packages }}
+      - name: Stage source-bound executable and complete third-party notices
+        env:
+          RELEASE_LANE: ${{ matrix.lane }}
+          RELEASE_EXECUTABLE: ${{ matrix.executable }}
+        run: |
+          Set-StrictMode -Version Latest
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          $directory = Join-Path $env:RUNNER_TEMP 'release-lane'
+          [void][IO.Directory]::CreateDirectory($directory)
+          $executable = Join-Path $directory $env:RELEASE_EXECUTABLE
+          Copy-Item -LiteralPath (Join-Path $env:CARGO_TARGET_DIR "release/$env:RELEASE_EXECUTABLE") -Destination $executable
+          @{
+            schemaVersion = 1; sourceRevision = $env:GITHUB_SHA
+            target = 'aarch64-pc-windows-msvc'; lane = $env:RELEASE_LANE
+            file = $env:RELEASE_EXECUTABLE
+            bytes = (Get-Item -LiteralPath $executable).Length
+            sha256 = (Get-FileHash -LiteralPath $executable -Algorithm SHA256).Hash.ToLowerInvariant()
+          } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $directory 'build-manifest.json') -Encoding utf8NoBOM
+          if ($env:RELEASE_LANE -ceq 'tts') {
+            & (Join-Path $env:GITHUB_WORKSPACE '.github/release/Collect-Notices.ps1') -RepositoryRoot $env:GITHUB_WORKSPACE -OutputPath (Join-Path $directory 'THIRD-PARTY-NOTICES.txt') -NativeSourceDirectory $env:BONSAI_TTS_SOURCE_DIR
+          }
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release-build-${{ matrix.lane }}
+          path: ${{ runner.temp }}/release-lane
+          if-no-files-found: error
+          retention-days: 30
+  package:
+    needs: [validate, build]
+    runs-on: windows-11-arm
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: release-build-*
+          path: ${{ runner.temp }}/release-inputs
+      - name: Install the pinned Windows Installer authoring tool
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          dotnet tool install wix --tool-path (Join-Path $env:RUNNER_TEMP 'wix') --version 7.0.1
+      - name: Assemble, install, verify and uninstall the ARM64 MSI without model work
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+          RUNNER_ENVIRONMENT: ${{ runner.environment }}
+        run: |
+          & (Join-Path $env:GITHUB_WORKSPACE '.github/release/Package-Release.ps1') -RepositoryRoot $env:GITHUB_WORKSPACE -InputDirectory (Join-Path $env:RUNNER_TEMP 'release-inputs') -OutputDirectory (Join-Path $env:RUNNER_TEMP 'release-assets') -EvidenceDirectory (Join-Path $env:RUNNER_TEMP 'release-evidence') -WixPath (Join-Path $env:RUNNER_TEMP 'wix/wix.exe') -Tag $env:RELEASE_TAG -SourceRevision $env:GITHUB_SHA
+      - name: Retain complete installer smoke evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release-installer-evidence
+          path: ${{ runner.temp }}/release-evidence
+          if-no-files-found: warn
+          retention-days: 90
+      - name: Retain publishable assets only after all installer checks pass
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: windows-release-assets
+          path: ${{ runner.temp }}/release-assets
+          if-no-files-found: error
+          retention-days: 90
+  publish:
+    needs: [validate, build, package]
+    runs-on: windows-11-arm
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: windows-release-assets
+          path: ${{ runner.temp }}/release-assets
+      - name: Verify assets, create a draft, upload and publish this exact source
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.tag }}
+          RELEASE_PRERELEASE: ${{ inputs.prerelease }}
+        run: |
+          & (Join-Path $env:GITHUB_WORKSPACE '.github/release/Publish-Release.ps1') -RepositoryRoot $env:GITHUB_WORKSPACE -AssetDirectory (Join-Path $env:RUNNER_TEMP 'release-assets') -Tag $env:RELEASE_TAG -SourceRevision $env:GITHUB_SHA -Prerelease ($env:RELEASE_PRERELEASE -ceq 'true')
