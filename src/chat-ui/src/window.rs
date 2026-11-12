@@ -295,7 +295,7 @@ impl State {
         state.abliteration_enabled = false;
         state.startup_request = Some(request);
         state.set_status(
-            "Preparing your local applications and speech files… You can draft a message now.",
+            "Preparing your local model… You can draft a message now.",
             false,
         );
         state
@@ -315,15 +315,43 @@ impl State {
         else {
             return;
         };
-        self.startup.take();
         match result {
-            Ok(config) => {
-                if let Err(error) = self.attach_configuration(config) {
+            Ok(crate::startup::Progress::Model {
+                config,
+                speech_pending,
+            }) => {
+                if !speech_pending {
+                    self.startup.take();
+                }
+                if let Err(error) = self.attach_configuration(config, speech_pending) {
+                    self.startup.take();
                     self.fail_startup(&error);
                 }
             }
-            Err(error) => self.fail_startup(&error),
+            Ok(crate::startup::Progress::Speech(result)) => {
+                self.startup.take();
+                match result {
+                    Ok(config) => self.attach_speech_configuration(&config),
+                    Err(error) => self.fail_speech_preparation(&error),
+                }
+            }
+            Err(error) => {
+                self.startup.take();
+                if self.worker.is_some() {
+                    self.fail_speech_preparation(&error);
+                } else {
+                    self.fail_startup(&error);
+                }
+            }
         }
+    }
+
+    fn fail_speech_preparation(&mut self, error: &io::Error) {
+        self.speech_checked = true;
+        "Speech preparation failed. Close and relaunch to retry speech."
+            .clone_into(&mut self.speech_status);
+        self.record(&self.speech_status.clone());
+        self.record(&error.to_string());
     }
 
     fn fail_startup(&mut self, error: &io::Error) {
@@ -337,8 +365,8 @@ impl State {
         self.record(&error.to_string());
     }
 
-    fn attach_configuration(&mut self, config: Config) -> io::Result<()> {
-        self.attach_configuration_with(config, |config, incoming, events| {
+    fn attach_configuration(&mut self, config: Config, speech_pending: bool) -> io::Result<()> {
+        self.attach_configuration_with(config, speech_pending, |config, incoming, events| {
             std::thread::Builder::new()
                 .name("swift-chat-client".to_owned())
                 .spawn(move || client::run(config, incoming, events))
@@ -348,12 +376,24 @@ impl State {
     fn attach_configuration_with(
         &mut self,
         config: Config,
+        speech_pending: bool,
         start: impl FnOnce(Config, Receiver<Command>, client::EventSender) -> io::Result<JoinHandle<()>>,
     ) -> io::Result<()> {
         let (commands, incoming) = mpsc::channel();
         let (events, incoming_events) = client::event_channel();
         self.abliteration_enabled = config.use_abliterate_lora;
         self.runtime_description = runtime_description(&config);
+        if !speech_pending {
+            self.attach_speech_configuration(&config);
+        }
+        self.worker = Some(start(config, incoming, events)?);
+        self.commands = commands;
+        self.events = incoming_events;
+        self.set_status("Preparing your local model…", false);
+        Ok(())
+    }
+
+    fn attach_speech_configuration(&mut self, config: &Config) {
         self.canary_configured = config.canary.is_some();
         self.tts_configured = config.qwen_tts.is_some();
         self.speech = speech::start(config.canary.clone(), config.qwen_tts.clone()).ok();
@@ -363,11 +403,6 @@ impl State {
             self.speaking_message = None;
         }
         self.microphone = microphone::Microphone::new().ok();
-        self.worker = Some(start(config, incoming, events)?);
-        self.commands = commands;
-        self.events = incoming_events;
-        self.set_status("Preparing your local model…", false);
-        Ok(())
     }
     fn set_status(&mut self, message: &str, warning: bool) {
         self.record(message);
@@ -449,7 +484,9 @@ impl State {
         self.input.clear();
         self.place_composer_cursor(0);
         self.model = ModelLifecycle::Generating;
-        self.streaming_suppressed = false;
+        // A turn begun without speech stays silent even if preparation finishes
+        // mid-answer. Only an explicit read or a later turn may start playback.
+        self.streaming_suppressed = !self.speech_output;
         self.set_status("Responding…", false);
     }
 
@@ -657,7 +694,7 @@ impl State {
     }
 
     fn drain_events(&mut self) {
-        if self.startup_request.is_some() || self.startup.is_some() {
+        if self.worker.is_none() && (self.startup_request.is_some() || self.startup.is_some()) {
             return;
         }
         // Bound per-frame work even when the worker refills the bounded queue.
@@ -2312,6 +2349,52 @@ mod startup_tests {
     }
 
     #[test]
+    fn model_events_and_text_chat_continue_while_speech_prepares_or_fails() -> io::Result<()> {
+        let (request, directory) = fixture()?;
+        let (commands, incoming) = mpsc::channel();
+        let (events, incoming_events) = client::event_channel();
+        let mut state = State::pending_startup(commands, incoming_events, request);
+        state.startup_request.take();
+        let (session, progress) = crate::startup::Session::fixture();
+        state.startup = Some(session);
+        state.worker = Some(std::thread::spawn(|| {}));
+        events
+            .send(Event::Ready)
+            .map_err(|()| io::Error::other("Model fixture disconnected"))?;
+        state.drain_events();
+        assert_eq!(state.model, ModelLifecycle::Ready);
+        state.input = "Chat before speech is ready".into();
+        state.submit();
+        assert!(matches!(incoming.try_recv(), Ok(Command::Send { .. })));
+        assert_eq!(state.model, ModelLifecycle::Generating);
+        assert!(state.streaming_suppressed);
+        let conversation = state.request_conversation;
+        state.input = "A newer draft".into();
+        let failure = std::sync::Arc::new(std::sync::Mutex::new(None));
+        state.startup_failure = Some(std::sync::Arc::clone(&failure));
+        progress
+            .send(Ok(crate::startup::Progress::Speech(Err(io::Error::other(
+                "Synthetic speech preparation failure",
+            )))))
+            .map_err(|_| io::Error::other("Preparation fixture disconnected"))?;
+        state.poll_startup();
+        assert!(state.startup.is_none() && state.speech_checked);
+        assert_eq!(state.model, ModelLifecycle::Generating);
+        assert_eq!(state.request_conversation, conversation);
+        assert_eq!(state.input, "A newer draft");
+        assert!(state.speech_status.contains("Speech preparation failed"));
+        assert!(
+            failure
+                .lock()
+                .map_err(|_| io::Error::other("Poisoned fixture"))?
+                .is_none()
+        );
+        drop(state);
+        fs::remove_dir_all(directory)?;
+        Ok(())
+    }
+
+    #[test]
     fn pending_native_startup_preserves_draft_through_failure_and_configuration() -> io::Result<()>
     {
         let (request, directory) = fixture()?;
@@ -2363,7 +2446,7 @@ mod startup_tests {
             canary: None,
             qwen_tts: None,
         };
-        state.attach_configuration_with(config, |_, incoming, events| {
+        state.attach_configuration_with(config, false, |_, incoming, events| {
             thread_for_fixture(incoming, events)
         })?;
         assert_eq!(state.input, "A message drafted while applications prepare");

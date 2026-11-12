@@ -148,19 +148,40 @@ impl Drop for Process {
     }
 }
 
-fn execute(request: Request, cancelled: &AtomicBool) -> io::Result<crate::client::Config> {
-    let stdout = request.working.join("chat-prepare.stdout");
-    let stderr = request.working.join("chat-prepare.stderr");
+fn execute(
+    request: &Request,
+    stage: &str,
+    broker: Option<&Path>,
+    cancelled: &AtomicBool,
+) -> io::Result<crate::client::Config> {
+    let mut payload: serde_json::Value =
+        serde_json::from_str(&bounded_text(&request.payload)?).map_err(io::Error::other)?;
+    let object = payload
+        .as_object_mut()
+        .ok_or_else(|| io::Error::other("Native startup requires an object."))?;
+    object.insert("PreparationStage".into(), stage.into());
+    if let Some(broker) = broker {
+        object.insert("BrokerPath".into(), serde_json::json!(broker));
+    }
+    let path = request.working.join(format!("chat-prepare-{stage}.json"));
+    bonsai_windows_credentials::validate_external_path(&path)?;
+    let file = fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(&path)?;
+    serde_json::to_writer(file, &payload).map_err(io::Error::other)?;
+    let stdout = request.working.join(format!("chat-prepare-{stage}.stdout"));
+    let stderr = request.working.join(format!("chat-prepare-{stage}.stderr"));
     let arguments = vec![
         "chat-prepare".into(),
         "--request".into(),
-        request.payload.into_os_string(),
+        path.clone().into_os_string(),
     ];
     let output = capture(
         &ToolProcessSpec {
-            executable: request.executable,
+            executable: request.executable.clone(),
             arguments,
-            working_directory: request.working,
+            working_directory: request.working.clone(),
             stdout,
             stderr,
             environment: BTreeMap::new(),
@@ -170,7 +191,11 @@ fn execute(request: Request, cancelled: &AtomicBool) -> io::Result<crate::client
         // cold multi-gigabyte speech provisioning can legitimately exceed an
         // hour overall; only cancellation bounds the aggregate operation.
         Duration::ZERO,
-    )?;
+    );
+    // The original request remains the replay input; stage requests are scratch.
+    let cleanup = fs::remove_file(path);
+    let output = output?;
+    cleanup?;
     let config = configuration(&output)?;
     if config.data != request.data {
         return Err(io::Error::other(
@@ -229,21 +254,74 @@ fn capture(
     bounded_text(&spec.stdout)
 }
 pub(crate) struct Session {
-    incoming: Receiver<io::Result<crate::client::Config>>,
+    incoming: Receiver<io::Result<Progress>>,
     cancelled: Arc<AtomicBool>,
     worker: Option<JoinHandle<()>>,
 }
 
+pub(crate) enum Progress {
+    Model {
+        config: crate::client::Config,
+        speech_pending: bool,
+    },
+    Speech(io::Result<crate::client::Config>),
+}
+
+fn prepare_stages(
+    request: &Request,
+    outgoing: &mpsc::SyncSender<io::Result<Progress>>,
+    cancelled: &AtomicBool,
+    mut prepare: impl FnMut(&str, Option<&Path>) -> io::Result<crate::client::Config>,
+) {
+    let config = match prepare("model", None) {
+        Ok(config) => config,
+        Err(error) => {
+            let _sent = outgoing.send(Err(error));
+            return;
+        }
+    };
+    let broker = config.broker.clone();
+    let speech_pending = request.canary_configured || request.tts_configured;
+    if outgoing
+        .send(Ok(Progress::Model {
+            config,
+            speech_pending,
+        }))
+        .is_err()
+        || !speech_pending
+        || cancelled.load(Ordering::Acquire)
+    {
+        return;
+    }
+    let _sent = outgoing.send(Ok(Progress::Speech(prepare("speech", Some(&broker)))));
+}
+
 impl Session {
+    #[cfg(test)]
+    pub(crate) fn fixture() -> (Self, mpsc::SyncSender<io::Result<Progress>>) {
+        let (outgoing, incoming) = mpsc::sync_channel(2);
+        (
+            Self {
+                incoming,
+                cancelled: Arc::new(AtomicBool::new(false)),
+                worker: None,
+            },
+            outgoing,
+        )
+    }
+
     pub(crate) fn start(request: Request) -> io::Result<Self> {
-        let (outgoing, incoming) = mpsc::sync_channel(1);
+        // Exactly two results can be produced. Neither send can block teardown
+        // when the window closes before consuming the model handoff.
+        let (outgoing, incoming) = mpsc::sync_channel(2);
         let cancelled = Arc::new(AtomicBool::new(false));
         let cancellation = Arc::clone(&cancelled);
         let worker = thread::Builder::new()
             .name("swift-chat-prepare".into())
             .spawn(move || {
-                let result = execute(request, &cancellation);
-                let _sent = outgoing.send(result);
+                prepare_stages(&request, &outgoing, &cancellation, |stage, broker| {
+                    execute(&request, stage, broker, &cancellation)
+                });
             })?;
         Ok(Self {
             incoming,
@@ -252,7 +330,7 @@ impl Session {
         })
     }
 
-    pub(crate) fn poll(&self) -> Option<io::Result<crate::client::Config>> {
+    pub(crate) fn poll(&self) -> Option<io::Result<Progress>> {
         match self.incoming.try_recv() {
             Ok(result) => Some(result),
             Err(mpsc::TryRecvError::Empty) => None,
@@ -275,6 +353,108 @@ impl Drop for Session {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn model_config() -> crate::client::Config {
+        let data = std::env::temp_dir();
+        crate::client::Config {
+            broker: data.join("broker.exe"),
+            data: data.clone(),
+            evidence: data,
+            frontend_port: 5173,
+            backend_port: 8081,
+            use_abliterate_lora: false,
+            use_repacked_ptq1: false,
+            native_engine: true,
+            native_row_workers: 4,
+            latest_prompt_reuse: false,
+            canary: None,
+            qwen_tts: None,
+        }
+    }
+
+    #[test]
+    fn model_handoff_precedes_speech_completion_and_keeps_speech_failure_separate() -> io::Result<()>
+    {
+        let config = model_config();
+        let broker = config.broker.clone();
+        let request = Request {
+            executable: config.data.join("tool.exe"),
+            payload: config.data.join("request.json"),
+            working: config.data.clone(),
+            data: config.data.clone(),
+            canary_configured: true,
+            tts_configured: true,
+        };
+        let (outgoing, incoming) = mpsc::sync_channel(2);
+        let (release, gate) = mpsc::channel();
+        let worker = thread::spawn(move || {
+            prepare_stages(
+                &request,
+                &outgoing,
+                &AtomicBool::new(false),
+                |stage, path| {
+                    if stage == "model" {
+                        assert!(path.is_none());
+                        return Ok(config.clone());
+                    }
+                    assert_eq!(stage, "speech");
+                    assert_eq!(path, Some(broker.as_path()));
+                    gate.recv_timeout(Duration::from_secs(2))
+                        .map_err(io::Error::other)?;
+                    Err(io::Error::other("Synthetic speech failure"))
+                },
+            );
+        });
+        assert!(matches!(
+            incoming.recv_timeout(Duration::from_secs(2)),
+            Ok(Ok(Progress::Model {
+                speech_pending: true,
+                ..
+            }))
+        ));
+        assert!(incoming.try_recv().is_err());
+        release.send(()).map_err(io::Error::other)?;
+        assert!(matches!(
+            incoming.recv_timeout(Duration::from_secs(2)),
+            Ok(Ok(Progress::Speech(Err(error)))) if error.to_string() == "Synthetic speech failure"
+        ));
+        worker
+            .join()
+            .map_err(|_| io::Error::other("Preparation fixture panicked"))?;
+        Ok(())
+    }
+
+    #[test]
+    fn staged_preparation_finishes_with_both_results_unread_and_skips_cancelled_speech() {
+        let config = model_config();
+        let request = Request {
+            executable: config.data.join("tool.exe"),
+            payload: config.data.join("request.json"),
+            working: config.data.clone(),
+            data: config.data.clone(),
+            canary_configured: true,
+            tts_configured: true,
+        };
+        for cancelled in [false, true] {
+            let (outgoing, incoming) = mpsc::sync_channel(2);
+            let mut stages = Vec::new();
+            prepare_stages(
+                &request,
+                &outgoing,
+                &AtomicBool::new(cancelled),
+                |stage, _| {
+                    stages.push(stage.to_owned());
+                    Ok(config.clone())
+                },
+            );
+            assert_eq!(stages.len(), if cancelled { 1 } else { 2 });
+            assert!(matches!(
+                incoming.try_recv(),
+                Ok(Ok(Progress::Model { .. }))
+            ));
+            assert_eq!(incoming.try_recv().is_ok(), !cancelled);
+        }
+    }
 
     #[test]
     fn prepared_configuration_rejects_unknown_fields_and_unbounded_arguments() {

@@ -48,11 +48,14 @@ an absent signed package or CDSP driver does not change engine or representation
 PTQ1 remains an explicit opt-in.
 
 The launcher checks/builds presentation first. After the first UI tick, an owned
-preparation worker verifies/provisions the selected pinned Rust runtime,
-builds/verifies the broker and speech companions and creates fresh credentials.
+preparation worker verifies/provisions the selected pinned Rust runtime and
+builds/verifies the broker, then hands off text chat immediately. Speech artifact
+preparation, companion builds and fresh speech credentials continue separately
+while Swift loads and serves text chat. A speech preparation failure leaves text
+chat and its drafts/history intact; closing cancels both owned stages.
 Runtime preparation downloads only a missing locked runtime; model and adapter
 provisioning remain explicit. Drafts and recovered conversations survive preparation;
-failures leave the window available. Closing cancels preparation and waits for
+model preparation failures leave the window available. Closing cancels preparation and waits for
 owned descendants. Artifact verification and memory admission precede model use.
 Owned inference and speech require [native containment](sandboxing.md), with no
 uncontained fallback. Microphone consent is a separate UI capability check.

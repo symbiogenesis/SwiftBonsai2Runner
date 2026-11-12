@@ -447,7 +447,11 @@ bounded owner-device gates and exact source/release identities below.
 
 Qualify source-launch time to the first native frame and authenticated model
 readiness after excluding worker checkouts from startup fingerprints and switching
-shared Windows artifact hashing to CNG. Retain cold-build versus unchanged-launch
+shared Windows artifact hashing to CNG. Qualify staged model/speech preparation:
+text readiness and generation must proceed during speech setup, speech failures
+must preserve the model and drafts/history, and closing must stop both stages.
+Retain on-demand ASR/TTS loading and no deferred playback for turns started before
+speech becomes available. Retain cold-build versus unchanged-launch
 attribution and complete checksum/cancellation controls. Qualify the CNG verifier
 retained from Prism 0.1.13 in the published 0.1.14 release through Runner's
 settled-main release integration and
