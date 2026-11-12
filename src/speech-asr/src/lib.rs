@@ -86,8 +86,8 @@ impl Recognizer {
         .map_err(|error| native_error(&error))?;
         let capabilities = model.capabilities().map_err(|error| native_error(&error))?;
         validate_identity(
-            model.arch(),
-            model.variant(),
+            &model.arch(),
+            &model.variant(),
             capabilities.native_sample_rate,
             capabilities
                 .languages
