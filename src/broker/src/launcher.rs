@@ -1527,15 +1527,16 @@ mod tests {
         use crate::inference::KvCache;
         let mut native = arguments();
         native.extend(["--profile", "swift-pq2-assessment"].map(OsString::from));
+        assert_eq!(
+            LaunchConfig::parse(native.clone())?.kv_cache,
+            Some(KvCache::Rsq4)
+        );
         let mut selected = native.clone();
         selected.extend(["--kv-cache", "f16"].map(OsString::from));
-        assert!(LaunchConfig::parse(selected)?.kv_cache.is_none());
+        assert_eq!(LaunchConfig::parse(selected)?.kv_cache, Some(KvCache::F16));
         selected = native.clone();
         selected.extend(["--kv-cache", "rsq4"].map(OsString::from));
-        assert_eq!(
-            LaunchConfig::parse(selected).err(),
-            Some(LaunchError::NativeRuntime)
-        );
+        assert_eq!(LaunchConfig::parse(selected)?.kv_cache, Some(KvCache::Rsq4));
         for suffix in [
             vec!["--kv-cache", "rsq4k3v"],
             vec!["--kv-cache", "F16"],

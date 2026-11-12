@@ -22,8 +22,8 @@ pub(super) const TEMPLATE_SHA256: &str =
     "c3cf9e34abf4f9e36c2d72165aa9c132d3e2a725b6c2586aaa3a8af9d7a81041";
 
 // Source review enables the policy; actual use still requires the separately
-// verified released executable in LOCK. This is the reviewed local candidate.
-const TURBOQUANT_REVISION: &str = "8d2b3067e5f17369f579857a180c01a422a58211";
+// verified released executable in LOCK. Newer versions need another source review.
+const TURBOQUANT_REVISION: &str = "99bab71270b1e6a6fb6d47eec2e34b8097cdcd4c";
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) enum KvCache {
@@ -49,7 +49,9 @@ impl KvCache {
 }
 
 fn turboquant_supported(release: &ReleasePin) -> bool {
-    release.version == "0.1.24" && release.commit == TURBOQUANT_REVISION
+    (release.version == "0.1.25" && release.commit == TURBOQUANT_REVISION)
+        || (release.version == "0.1.24"
+            && release.commit == "8d2b3067e5f17369f579857a180c01a422a58211")
 }
 
 fn select_kv_cache(
@@ -211,6 +213,7 @@ fn row_workers_supported(version: &str, workers: u8) -> Result<(), LaunchError> 
                     | "0.1.22"
                     | "0.1.23"
                     | "0.1.24"
+                    | "0.1.25"
             ))
     {
         Ok(())
@@ -286,14 +289,8 @@ mod tests {
     fn kv_cache_default_and_recovery_require_the_exact_reviewed_source() -> Result<(), LaunchError>
     {
         let mut pin = release(LOCK)?;
-        assert_eq!(select_kv_cache(&pin, None)?, None);
-        assert_eq!(select_kv_cache(&pin, Some(KvCache::F16))?, None);
-        assert_eq!(
-            select_kv_cache(&pin, Some(KvCache::Rsq4)),
-            Err(LaunchError::NativeRuntime)
-        );
-        pin.version = "0.1.24".into();
-        pin.commit = TURBOQUANT_REVISION.into();
+        assert_eq!(pin.version, "0.1.25");
+        assert_eq!(pin.commit, TURBOQUANT_REVISION);
         assert_eq!(select_kv_cache(&pin, None)?, Some(KvCache::Rsq4));
         assert_eq!(
             select_kv_cache(&pin, Some(KvCache::F16))?,
@@ -303,13 +300,22 @@ mod tests {
             select_kv_cache(&pin, Some(KvCache::Rsq4))?,
             Some(KvCache::Rsq4)
         );
+        pin.version = "0.1.23".into();
+        pin.commit = "055c7430cb4771dfddb24ddaa30494af6ad182da".into();
+        assert_eq!(select_kv_cache(&pin, None)?, None);
+        assert_eq!(select_kv_cache(&pin, Some(KvCache::F16))?, None);
+        assert_eq!(
+            select_kv_cache(&pin, Some(KvCache::Rsq4)),
+            Err(LaunchError::NativeRuntime)
+        );
+        pin.version = "0.1.25".into();
         pin.commit = "0".repeat(40);
         assert_eq!(
             select_kv_cache(&pin, Some(KvCache::Rsq4)),
             Err(LaunchError::NativeRuntime)
         );
         pin.commit = TURBOQUANT_REVISION.into();
-        pin.version = "0.1.25".into();
+        pin.version = "0.1.26".into();
         assert_eq!(
             select_kv_cache(&pin, Some(KvCache::Rsq4)),
             Err(LaunchError::NativeRuntime)
@@ -433,6 +439,7 @@ mod tests {
         for version in [
             "0.1.9", "0.1.10", "0.1.11", "0.1.12", "0.1.13", "0.1.14", "0.1.15", "0.1.16",
             "0.1.17", "0.1.18", "0.1.19", "0.1.20", "0.1.21", "0.1.22", "0.1.23", "0.1.24",
+            "0.1.25",
         ] {
             assert!(row_workers_supported(version, 1).is_ok());
             assert!(row_workers_supported(version, 4).is_ok());
@@ -445,7 +452,7 @@ mod tests {
         }
         for version in [
             "0.1.8",
-            "0.1.25",
+            "0.1.26",
             "0.1.22-dev",
             "v0.1.22",
             "0.1.22.0",

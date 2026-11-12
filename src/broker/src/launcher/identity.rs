@@ -252,7 +252,7 @@ mod tests {
         for repacked in [false, true] {
             for adapter in [false, true] {
                 let (mut model, graph) = kv_cache_model(repacked, adapter);
-                let f16 = WorkerReadiness::for_version("0.1.24", 4);
+                let f16 = WorkerReadiness::for_version("0.1.25", 4);
                 let rsq4 = f16.with_kv_cache(Some(crate::inference::KvCache::Rsq4));
                 let bytes = model_response(&model)?;
                 assert!(validate_native_identity(&bytes, repacked, adapter, rsq4).is_ok());

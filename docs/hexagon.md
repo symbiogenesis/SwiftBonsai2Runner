@@ -1,7 +1,7 @@
 # Hexagon deployment and execution contracts
 
-Runner pins [Prism 0.1.23](../config/prism-inference.lock.json), source
-`055c7430cb4771dfddb24ddaa30494af6ad182da`. On Windows ARM64 Snapdragon X2 (`v81`),
+Runner pins [Prism 0.1.25](../config/prism-inference.lock.json), source
+`99bab71270b1e6a6fb6d47eec2e34b8097cdcd4c`. On Windows ARM64 Snapdragon X2 (`v81`),
 `prism-inference-server` enables Hexagon NPU `native-q2`
 resident acceleration (`DEFAULT_NATIVE_Q2_PROJECTIONS`, the 168 `PQ2_0` projections across all 27
 initial layers `blk.0..=blk.26`, `2,888,663,040` resident weight bytes / `2,754.84` MiB across six

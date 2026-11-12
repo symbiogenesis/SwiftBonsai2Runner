@@ -267,9 +267,9 @@ All benchmarks run in CI only.
 The dependency selection below was reviewed **2026-11-01**; this date is not a claim
 of continuing freshness. Current compiler and runtime selections are the
 [toolchain file](../rust-toolchain.toml) (nightly 2026-11-12) and
-[runtime lock](../config/prism-inference.lock.json) (Prism 0.1.23, source
-`055c7430cb4771dfddb24ddaa30494af6ad182da`). Historical checks below do not qualify
-these later selections. The pending 0.1.25 binary repin remains in PLAN.
+[runtime lock](../config/prism-inference.lock.json) (Prism 0.1.25, source
+`99bab71270b1e6a6fb6d47eec2e34b8097cdcd4c`). Historical checks below do not qualify
+these later selections. Pending runtime qualification remains in PLAN.
 
 | Dependency/tool | Reviewed selection |
 | --- | --- |
@@ -302,8 +302,8 @@ The sibling [Prism registry refresh](evidence/prism-0125-publish-20261112/summar
 published runtime 0.1.25 and all five helper updates on November 12, 2026, with
 `fancy-regex` 0.20.2, `fearless_simd` 1.2.0 and reference `tokenizers` 0.23.2.
 Runner has no Cargo dependencies on Prism or its five helpers. Its active binary
-and source locks remain at verified 0.1.23 until matching published source and binary bytes
-exist; the newer registry SIMD selection does not alter that runtime's 1.1.0 pin.
+and source locks advance together to the reviewed 0.1.25 delivery. Registry
+publication alone supplies no application or performance qualification.
 
 The reviewed `windows-future` 0.3.2 selection is compatible with `windows`
 0.62.2, which returns its asynchronous types and requires `windows-core` 0.62.2;
@@ -312,7 +312,7 @@ GitHub Actions, cargo-audit, LLVM, Hexagon SDK and the then-released Prism 0.1.1
 runtime were current at that review. The later
 [Prism 0.1.13 CPU release](native-rust-engine.md#swift-cpu-supported-subset) was a historical
 pin; its startup validation change carries no measured device gain or inherited
-model qualification. Current 0.1.23 identities are recorded above. Speech source
+model qualification. Current 0.1.25 identities are recorded above. Speech source
 pins are immutable; their match to upstream heads was a dated review observation.
 Model/adapter locks and source-bound qualification controls retain their exact
 identities; newer reference/candidate artifacts need separate

@@ -4,8 +4,10 @@ Baseline NEON supports PQ2, odd-group PQ2 and PTQ1 with scalar reference/fallbac
 arithmetic, dispatch, qualification and the [X2 thread screen](#x2-cpu-thread-screen).
 Synthetic parity does not qualify whole-model parity or device speedup; pinned Prism remains the
 control engine. Runner's active [release lock](../config/prism-inference.lock.json)
-is Prism 0.1.23; local-source candidates and historical publisher screens below
+is Prism 0.1.25; source candidates and historical publisher screens below
 retain their own identities. [PLAN.md](../PLAN.md#cpu-kernels) owns outstanding work.
+The owner-requested development repin does not close the CPU qualification gates;
+the fixed CPU comparison baseline remains 0.1.23 with explicit FP16 KV.
 
 ## Cross-generation CPU promotion
 
@@ -83,16 +85,18 @@ comparisons. Final hosted coverage, remaining exact controls, codegen/stack
 review and complete-model state/logit/adapter/cancellation/resource acceptance
 remain required. The record qualifies no release bundle or runtime pin.
 
-A native source-bound collector, hosted preparation/evaluator and
-[Runner comparison lane](cpu-bundle-comparison.md) are now implemented locally.
-Owner publication and exact-source hosted preparation remain required before
-device execution. The [X2 thread screen](#x2-cpu-thread-screen) compares the publisher's
+The native source-bound collector, hosted preparation/evaluator and
+[Runner comparison lane](cpu-bundle-comparison.md) are published. Hosted
+[preparation for run 43236051696](https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/43236051696)
+passed; its queued comparison was canceled before any model started. No CPU
+performance result exists; the selected lane remains available for a future
+owner-operated workload. The [X2 thread screen](#x2-cpu-thread-screen) compares the publisher's
 `4/4` and `6/6` thread budgets; the existing one-token source timing capture is
 attribution only. Most newer CPU changes directly replace code without per-change
 selectors. Exact LUT selection is a library executor, and tiled/triangular GDN
 prefill needs its explicit graph consumer; ordinary private-service requests
 do not exercise all those paths. The selected next scope is bundle-first:
-active `0.1.23` versus published registry Prism `0.1.25`, with FP16 KV, standard adapter 1.3
+fixed `0.1.23` control versus published registry Prism `0.1.25`, with FP16 KV, standard adapter 1.3
 and four CPU workers. A bundle result cannot establish each change's individual
 benefit. Keep exact LUT, tiled/triangular prefill and latest-prefix variants
 separate. Match actual CPU-only placement, artifacts, work/output equivalence,
@@ -133,10 +137,10 @@ repeated preparation and cache pressure without requiring X2 Hexagon execution:
   The request-local piece cache and longer-piece heap path retain their bounds.
 
 These are source work/storage reductions, not measured X1 or X2 speedups.
-Runner continues to consume its immutable 0.1.23 bundle. Final-source hosted
+The 0.1.25 development bundle includes these source changes. Final-source hosted
 checks, feature-disabled fallback, ARM64 codegen/stack review, complete-model
 state/logit/adapter and cancellation parity, tokenizer/application acceptance,
-and matched complete-request benefit remain required before release and repin
+and matched complete-request benefit remain required for qualified promotion
 under [cross-generation CPU promotion](#cross-generation-cpu-promotion).
 X2 CPU evidence can support shared deployment; X1 speed claims remain unmeasured. No
 backend profile, runtime pin or memory-admission limit changes here.
@@ -174,11 +178,11 @@ These candidates need final-source hosted checks, feature-disabled and portable
 fallback, ARM64 code-generation/resource review, complete-model state/logit/
 adapter and cancellation parity, and matched complete-request measurements on
 one selected family under [cross-generation CPU promotion](#cross-generation-cpu-promotion).
-Development on X2 supplies no X1 speedup verdict. Runner's verified binary pin
-and conservative admission remain unchanged; release and repin are pending.
+Development on X2 supplies no X1 speedup verdict. Runner's 0.1.25 development
+repin supplies no performance qualification and retains conservative admission.
 The [0.1.25 registry delivery](evidence/prism-0125-publish-20261112/summary.json)
 published `bonsai-neon-dot 0.1.2` and advanced the runtime's exact dependency for
-the new capability API. Source-bound binary delivery and qualification remain pending.
+the new capability API. Actual-model/device and benefit qualification remain pending.
 
 ### Further X1 CPU candidates
 
@@ -207,7 +211,7 @@ final-source exact arithmetic, failure and adapter controls, feature-disabled
 fallback, strict Release analysis and linking, ARM64 codegen/stack review,
 complete-model state/logit/cancellation parity and matched selected-family CPU
 request benefit under [cross-generation CPU promotion](#cross-generation-cpu-promotion).
-Runner's immutable 0.1.23 runtime remains active until release and verified repin.
+The 0.1.25 development runtime includes this source; qualified promotion remains pending.
 
 ### Grouped dispatch, hardware half widening and exact LUT execution
 
@@ -249,8 +253,8 @@ or no-go outcomes retained. Apply [cross-generation CPU promotion](#cross-genera
 to shared work reductions; LUT selection remains explicit pending matching-family
 benefit. Full-model logits/state/adapter and cancellation
 acceptance remain independent. The new half-widening API is published in
-`bonsai-neon-dot 0.1.2`, consumed by registry runtime 0.1.25; Runner still consumes
-its verified 0.1.23 binary until a qualified release and repin.
+`bonsai-neon-dot 0.1.2`, consumed by the 0.1.25 registry and binary development
+deliveries. This repin does not qualify a LUT default or measured request benefit.
 
 ### Complete-row SDOT, fixed attention lanes and bounded GDN phases
 
@@ -289,8 +293,8 @@ codegen/spill/stack review, complete-model logits/state/adapter/cancellation
 parity and matched selected-family CPU complete-request benefit remain qualification
 gates under [cross-generation CPU promotion](#cross-generation-cpu-promotion).
 In particular, GDN's extra input reads must be included in that comparison.
-Runner continues to consume its verified 0.1.23 bundle until release and repin;
-neither device profiles nor conservative memory admission change.
+The 0.1.25 development bundle includes this source without a measured benefit
+claim; conservative memory admission remains unchanged.
 
 One fixed model-free local workload on `01fbf5d` closed after 40.412 seconds of
 its 300-second allowance. Native exact controls and strict analysis stopped at
@@ -339,8 +343,8 @@ selected-family CPU complete-request benefit under
 [cross-generation CPU promotion](#cross-generation-cpu-promotion).
 Include preparation, dispatch and repeated input reads in timing.
 The prepared-PQ2 API is published in `bonsai-neon-dot 0.1.2` and consumed by
-registry runtime 0.1.25. Runner continues to consume its verified
-0.1.23 bundle until release and repin; profiles and admission remain unchanged.
+registry runtime 0.1.25. Runner's development repin consumes the same reviewed
+production source; qualification remains pending and admission is unchanged.
 
 The fixed model-free check on `750f7b3` closed after 15.026 seconds of its
 300-second allowance. Strict native all-target Release Clippy stopped at an

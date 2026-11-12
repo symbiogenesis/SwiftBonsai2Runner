@@ -1,6 +1,6 @@
 # Swift artifacts, memory and PTQ1
 
-**Original PQ2 on native Rust Prism 0.1.23 is the development default**, with four CPU row
+**Original PQ2 on native Rust Prism 0.1.25 is the development default**, with four CPU row
 workers, the standard adapter at scale 1.3 and the [default X2 NPU placement](hexagon.md)
 when its initialization succeeds. Publisher rollback is explicit with `--publisher-engine`; PTQ1
 remains opt-in. Bounded native CPU decode passes; creative quality, performance and daily-service
@@ -184,7 +184,7 @@ Elite Extreme with explicit NEON, four row workers and adapter scale 1.3 (5.85 G
 commit). None of these partial checks authorizes a PTQ1 default.
 
 Those 0.1.14 plans are historical packet targets. The current combined-service
-harness embeds the active 0.1.23 lock; new execution requires either separately
+harness embeds the active 0.1.25 lock; new execution requires either separately
 prepared frozen tooling or a newly reviewed active-release packet. It cannot
 complete the earlier trial or transfer that trial's scores to the active release.
 

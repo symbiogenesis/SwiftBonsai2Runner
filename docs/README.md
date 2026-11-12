@@ -5,7 +5,7 @@ developer commands, or [portable packages](chat-packages.md) to run without a
 checkout. [PLAN.md](../PLAN.md) is the single backlog; these guides own current
 behavior, technical contracts and retained evidence.
 
-The current application uses a native Rust UI, pinned Prism 0.1.23 inference on
+The current application uses a native Rust UI, pinned Prism 0.1.25 inference on
 Windows ARM64, a CPU baseline with experimental X2 resident Hexagon acceleration,
 and a strict local HTTP/JSON/SSE subset. Experimental runtimes, formats and
 accelerators require separate qualification. Evidence scopes below distinguish

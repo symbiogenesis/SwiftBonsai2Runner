@@ -3,7 +3,7 @@
 Historical source reviews and scoped device evidence below span
 **2026-10-30 through 2026-11-05**. [Hexagon contracts](hexagon.md)
 own current execution; [PLAN.md](../PLAN.md#hexagon-npu) owns outstanding work.
-Runner now pins [Prism 0.1.23](../config/prism-inference.lock.json) with the
+Runner now pins [Prism 0.1.25](../config/prism-inference.lock.json) with the
 X2 `native-q2` 168-projection development default. The
 [experiment lock](../config/hexagon-experiment.lock.json) enables that fixed
 startup policy; the separate [Q2 candidate lock](../config/hexagon-signed-q2-candidate.lock.json)

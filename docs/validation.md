@@ -251,7 +251,7 @@ Explicit `profile: ptq1-adapter-service-rollback-row4` adds an original-PQ2 roll
 to the complete five-request PTQ1 service sequence above in the same allowance.
 The existing service-only profile retains its workload. After both PTQ1 owners
 have verified empty Jobs and released listeners, a third fresh owner selects
-`--use-original-pq2` with pinned Prism 0.1.23, adapter 1.3 and four workers.
+`--use-original-pq2` with pinned Prism 0.1.25, adapter 1.3 and four workers.
 These current cases embed the active [runtime lock](../config/prism-inference.lock.json);
 historical 0.1.14 packet plans and receipts do not pin a newly built harness to 0.1.14.
 
@@ -304,7 +304,7 @@ freeze the final source, review its hosted package and all prerequisite checks,
 retain aggregate power endpoints and predeclare the allowance before execution.
 
 Explicit `profile: pq2-adapter-row4` selects original PQ2, the approved adapter at
-scale 1.3 and pinned Prism 0.1.23 with `--native-row-workers 4`. It requires exactly
+scale 1.3 and pinned Prism 0.1.25 with `--native-row-workers 4`. It requires exactly
 one four-token-cap stream, verified model/adapter readiness and owned Job/listener
 cleanup within the same budget. Its receipt binds the runtime lock, original
 model identity and adapter lock, and distinguishes the configured worker count
@@ -410,7 +410,7 @@ with four configured native row workers for both fresh owners. Its separate
 case and receipts retain that policy; the original complete-response profile
 keeps one worker. Prompt, sampler, adapter, model identities and all completion,
 cleanup and budget requirements are identical. Each sample must bind the compiled
-runtime's worker-readiness identity. For reviewed releases 0.1.11 through 0.1.23,
+runtime's worker-readiness identity. For reviewed releases 0.1.11 through 0.1.23 and 0.1.25,
 the effective graph worker budget is independently observed at readiness; missing
 or mismatched observations leave the pair pending. This does not measure executing
 threads or parallel work, and qualification does not transfer between counts.
@@ -481,7 +481,7 @@ cannot replace worker token accounting.
 
 Adapter lifecycle and paired-response receipts distinguish configured row workers
 from the effective graph budget verified at readiness. The reviewed exact
-`0.1.11` through `0.1.23` releases record that budget as independently observed after
+`0.1.11` through `0.1.23` and `0.1.25` releases record that budget as independently observed after
 successful strict readiness, bound to the compiled runtime lock and selected one/four-worker
 policy. Startup receipts and legacy releases retain an unobserved/null result.
 This observes neither executing threads nor parallel operations or device benefit.

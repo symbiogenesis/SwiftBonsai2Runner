@@ -1,9 +1,8 @@
 # Paired values, bounded special parsing and resident tile packets
 
 Three concrete performance source gaps from [PLAN.md](../PLAN.md) are closed in
-local Prism source. Runner
-continues to consume its immutable 0.1.23 release; application delivery requires
-a qualified Prism release and verified repin.
+the reviewed Prism source consumed by Runner's 0.1.25 development pin. This
+delivery does not close actual-model, device or measured benefit gates.
 
 | Completed implementation | Production behavior | Work or storage affected |
 | --- | --- | --- |

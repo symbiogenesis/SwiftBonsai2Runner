@@ -13,7 +13,7 @@ is source delivery, without release qualification or a Runner lock override.
 The historical base is Prism main `ff3d54de662ddd951dc0ca51d9581129b55239bf`, newer
 than Runner's then-pinned `02c8a24b31ac1c35f2ffd3530f6a753ce440bdc0`. The patch retains
 that base's arithmetic, including native PTQ alias handling. Apply it only to its
-exact base when reproducing the original candidate. Runner now pins 0.1.23, which
+exact base when reproducing the original candidate. Runner now pins 0.1.25, which
 already includes row parallelism and selects four workers for native chat; see the
 [current runtime contract](../native-rust-engine.md#bounded-parallel-row-qualification).
 This retained patch's 16-worker bounds and toolchain describe its original source,

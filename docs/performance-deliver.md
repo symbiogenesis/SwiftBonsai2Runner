@@ -3,8 +3,8 @@
 Three concrete source items from [PLAN.md](../PLAN.md) are implemented in Prism:
 complete six-head tiled-prefill locality, immutable runtime logits snapshots,
 and bounded multi-token resident full-FFN packets.
-Runner's installed release pin remains 0.1.23; using these changes in the
-application requires a qualified release and immutable repin.
+Runner's 0.1.25 development pin contains these changes. Their model, device and
+performance qualification remains independent of that owner-requested delivery.
 
 | Implementation | Production behavior | Source cost and boundary |
 | --- | --- | --- |

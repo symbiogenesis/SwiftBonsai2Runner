@@ -4,8 +4,8 @@ Three local Prism implementations close concrete source gaps from Runner's
 attention/locality, runtime-overhead and Hexagon FFN backlog. They are integrated
 in local `main`; their source history retains the implementation commits.
 Outstanding qualification remains in [PLAN.md](../PLAN.md#cpu-kernels).
-Runner still consumes its pinned 0.1.23 release. These changes require a qualified
-release and immutable repin before installed application use.
+Runner's 0.1.25 development pin contains these changes. Actual-model and measured
+benefit gates remain pending; development delivery does not qualify them.
 
 | Source implementation | Production behavior | Work removed or enabled |
 | --- | --- | --- |

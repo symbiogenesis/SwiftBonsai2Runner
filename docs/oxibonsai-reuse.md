@@ -6,7 +6,7 @@ Reviewed **2026-10-29** against OxiBonsai
 `dbdf127a1fe8e98d753fdbbad5045190e684ec08a4247a88105ccebadaca2967`. The comparison
 control is Runner's then-pinned Prism 0.1.6 source, revision
 `02c8a24b31ac1c35f2ffd3530f6a753ce440bdc0`. The comparison below is historical.
-Runner's [active lock](../config/prism-inference.lock.json) now pins 0.1.23; its
+Runner's [active lock](../config/prism-inference.lock.json) now pins 0.1.25; its
 row-parallel path is already implemented and native chat selects four workers.
 Original review recommendations are not claims that those features remain absent.
 

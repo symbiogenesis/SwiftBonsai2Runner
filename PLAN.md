@@ -18,10 +18,10 @@ the corresponding detailed task changes; keep every acceptance obligation below.
 | --- | --- | --- | --- |
 | C1 / owner | Runner | Reviewed local CI corrections and startup preflight | Publish through the owner and qualify Source checks and Foundation on that source; see [publication prerequisites](#publication-and-qualification-prerequisites). |
 | A1 / qualification | Runner with pinned Prism | C1 and an exact-source acceptance package | Qualify Rust/PQ2 DX12 startup, readiness, Stop/Retry, recovery and explicit publisher rollback under [actual-model acceptance](#actual-model-acceptance). |
-| R1 / owner, integration | Prism, then Runner | Published source-bound 0.1.25 bundle | Verify source/archive/nine-file identities, advance both active source pins, and prepare active-release acceptance. The runtime and all five helpers are registry-published; binary delivery and [CPU qualification](#cpu-kernels) remain separate. |
+| R1 / owner, qualification | Runner with Prism | Published source-bound 0.1.25 prerelease and atomic runtime/source pins | Have the owner publish the reviewed Runner repin, then qualify the new active release. This is a development upgrade, not a performance promotion. Keep the fixed 0.1.23 CPU comparison baseline and all historical evidence identities unchanged. |
 | R2 / implementation, qualification | Prism, then Runner | Settled candidate, published comparison tooling and owning hosted checks | Publish and run the prepared [native CPU bundle comparison](docs/cpu-bundle-comparison.md) against registry 0.1.25; the existing X2 screen compares publisher thread counts, while one-token source timing is attribution only. Qualify the explicit exact LUT candidate, integrate selected cross-token consumers and genuinely batched verification; close CPU/prefill codegen, fallback, state/adapter/cancellation and matched selected-device benefit gates. X2 CPU benefit may promote reviewed shared CPU paths on X1 under [cross-generation CPU promotion](docs/cpu-kernels.md#cross-generation-cpu-promotion); device-specific tuning and claims retain matching-family gates. Qualify changes already consumed in 0.1.23 without another repin; follow the [inference delivery order](#lossless-inference-delivery-order). |
 | R3 / integration, qualification | Prism and Runner harnesses | Agreed execution/state identities and existing complete-state fixtures | Prepare shared state/restore and fault-control tooling independently of runtime qualification; map each prefix/prefill/speculation/accelerator path to its independent assertions and evidence. |
-| K1 / owner, qualification | Prism, then Runner | Owner-selected K4/V4 development default, reviewed native source and matching Runner launch/readiness controls | Publish and verify a runtime bundle containing the reviewed source, then repin to activate default/required `rsq4` in Runner. Keep explicit FP16 recovery and existing admission/8K bounds. Complete the [paired quality/memory packet](docs/quantized-kv.md#first-practical-promotion-packet) for measured qualification, independently on X1/X2; it is not a prerequisite for the development default. Defer K4/V3. |
+| K1 / owner, qualification | Prism, then Runner | Published 0.1.25 K4/V4 development runtime and matching local Runner repin | Have the owner publish the reviewed Runner repin, preserving explicit FP16 recovery and existing admission/8K bounds. Complete the [paired quality/memory packet](docs/quantized-kv.md#first-practical-promotion-packet) for measured qualification, independently on X1/X2; it is not a prerequisite for the development default. Defer K4/V3. |
 | S1 / implementation, integration | Runner; Prism for shared runtime/RPC consumers | Agreed verified-loading, state, stream and transport ownership interfaces | Integrate Talker/CodePredictor, codec/speaker and signed Rust RPC through [C++ retirement](#complete-c-retirement); qualify the ordinary Q4 baseline before ternary speech and new 48 kHz artifacts. |
 | S2 / implementation, qualification | Runner | Pinned Qwen3-ASR 1.7B artifacts and replacement controls | Qualify microphone-to-Swift submission, then replace ASR's native engine and close transcript/state, cancellation, lifecycle, quality and resource gates before removing its compiler/dependency paths. |
 | P1 / external, qualification | Prism and Runner | Original authoring inputs for provenance; hosted public-pack reconstruction for its separate gate | Run the declared reconstruction and independent replay while pursuing provenance intake independently; follow the PTQ1 critical path below. Neither blocks A1. |
@@ -33,7 +33,8 @@ the corresponding detailed task changes; keep every acceptance obligation below.
 Freeze one coherent qualification candidate after its reviewed logical commits are
 integrated into local `main`: exact Runner/Prism revisions, compiler, release bytes,
 locks, model/adapter and selected device/driver/kernel identities. Separate the
-current 0.1.23 application packet, the requested 0.1.25 delivery, and any newer local
+historical 0.1.23 application packet, the published 0.1.25 runtime with local
+Runner repin, and any newer local
 source candidate. Reuse tools and immutable inputs where their contracts permit;
 never transfer a pass across changed identities or substitute a historical packet.
 Continue later implementation in separate worktrees while that candidate is
@@ -119,20 +120,25 @@ the original context error and parser-policy block remain preserved in that reco
 Retain the exact source/assets/checksums from the first successful hosted run;
 static checks do not establish clean-machine model, speech, signing or daily-use acceptance.
 
-Complete the owner-requested Prism 0.1.25 binary repin and README performance
-refresh after owner source/bundle publication. The [registry delivery record](docs/evidence/prism-0125-publish-20261112/summary.json)
+The owner-requested [Prism 0.1.25 development prerelease](https://github.com/symbiogenesis/prism-inference/releases/tag/v0.1.25)
+is published from exact source `99bab71270b1e6a6fb6d47eec2e34b8097cdcd4c`.
+Its verified source/archive/nine-file identities bind the atomic Runner
+binary/exact-source repin. Have the owner publish the reviewed Runner changes;
+actual-model and performance qualification remain pending.
+The [registry delivery record](docs/evidence/prism-0125-publish-20261112/summary.json)
 confirms all six public crates and matching checksums from source
 `99bab71270b1e6a6fb6d47eec2e34b8097cdcd4c`: runtime 0.1.25,
 native-hash/ternary 0.1.3, NEON 0.1.2 and Prism/GGUF helpers 0.1.5.
 It also records the third-party refresh, tokenizers API repair, passing focused
 controls and original failed compiler preflight; complete hosted acceptance remains
-pending. Runner has no Cargo dependency on those crates and still consumes the
-verified 0.1.23 binary bundle below. The private server's package and exact runtime
-pin are locally 0.1.25 but remain unpublished with the Hexagon crates. The no-push
-rule leaves source publication with the owner. After a genuine source-bound
-0.1.25 Foundation bundle and published source/archive/nine-file identities exist,
-advance `config/prism-inference.lock.json` and
-`tools/native-reference/pins.json::rustSource` together, then
+pending. Runner has no Cargo dependency on those crates. Its prepared 0.1.25
+binary and exact-source pins bind published crate source
+`99bab71270b1e6a6fb6d47eec2e34b8097cdcd4c`, preserving all nine file identities
+and the source/archive verification requirements. Public release availability
+was verified separately from local bundle preparation; the no-push rule leaves
+Runner source publication with the owner. Keep
+`config/prism-inference.lock.json` and
+`tools/native-reference/pins.json::rustSource` synchronized. Separately,
 predeclare one fresh two-representation short capture with aggregate and per-arm
 power/cleanup observations before replacing the README's measured values.
 Preserve historical fixtures and closed clocks. Complete CI, sustained performance
@@ -143,7 +149,7 @@ PTQ1 default promotion is a **no-go under the current evidence**. Follow the
 adapter, exact-source application, device/human and benefit gates below before
 reconsidering it. Keep historical 0.1.13 scores separate from 0.1.14 acceptance.
 
-Use native Rust Prism 0.1.23 (`055c7430cb4771dfddb24ddaa30494af6ad182da`) as the project's
+Use native Rust Prism 0.1.25 (`99bab71270b1e6a6fb6d47eec2e34b8097cdcd4c`) as the project's
 development default: original Swift PQ2, four CPU row workers, the standard adapter at scale 1.3,
 and default Snapdragon X2 Hexagon NPU `native-q2` resident acceleration
 (`DEFAULT_NATIVE_Q2_PROJECTIONS`, all 168 `PQ2_0` projections across the first 27 layers
@@ -160,9 +166,10 @@ required cache for ordinary Swift sessions in reviewed new Prism source. Accept
 approximation and pending actual-model qualification for this development choice;
 do not require perfect answers or a completed paired quality/memory packet before
 selecting it. Explicit `f16` remains available for a fresh comparison/recovery
-session, with no request-level override or automatic downgrade. Runner's active
-0.1.23 bundle predates this cache and remains FP16 until the owner publishes a
-source-bound replacement and its exact verified bytes are repinned. The
+session, with no request-level override or automatic downgrade. The prepared
+0.1.25 repin activates this exact-source K4/V4 profile; the fixed 0.1.23 CPU
+comparison control keeps FP16. This development selection does not qualify
+performance, quality or cache savings. The
 [cache contract](docs/quantized-kv.md) retains measured-quality, memory and
 independent device qualification, unchanged process admission and the 8K bound.
 
@@ -224,7 +231,7 @@ The PTQ1 critical path is:
 
 The separate PTQ1 qualification packet freezes the published Prism 0.1.14 CPU
 runtime and one settled Runner revision. This is a historical packet target:
-the current acceptance harness embeds Runner's active 0.1.23 lock. Executing
+the current acceptance harness embeds Runner's prepared 0.1.25 lock. Executing
 the frozen 0.1.14 packet requires separately prepared exact-source tooling;
 otherwise prepare and review a new packet for the active release, without
 transferring earlier scores or reopening earlier clocks.
@@ -520,7 +527,7 @@ full resources or application acceptance. The user-requested matrix, one offline
 Release owner build, power observations, cleanup and final archival consumed
 473.890 seconds of one predeclared fourteen-minute allowance, with no repeated arm.
 
-Qualify sustained Prism 0.1.23 performance, repeated benefit and full application
+Qualify sustained Prism 0.1.25 performance, repeated benefit and full application
 acceptance beyond the [post-repin November 9 capture](docs/evidence/readme-performance-0123-20261109/summary.json).
 It supplies two eight-token public-broker observations with confirmed cleanup,
 not sustained decode or effective NPU execution. Keep the observed power conditions
@@ -538,8 +545,10 @@ Its aggregate endpoint and power remain unknown; the tool's 0.7794621-second pro
 wall time is a separate observation. Keep that attempt closed; it supplies no new
 performance measurement.
 
-Runner now consumes the verified Prism 0.1.23 nine-file binary bundle at
-`055c7430cb4771dfddb24ddaa30494af6ad182da`. Historical publication identities
+Runner's 0.1.25 nine-file binary pin binds
+`99bab71270b1e6a6fb6d47eec2e34b8097cdcd4c`. Its exact assets were published
+and their archive digest was verified before integration.
+Historical 0.1.23 publication identities
 remain in the [bundle summary](docs/evidence/foundation-bundle-0123-20261109-attempt3/summary.json)
 and [prerelease verification](docs/evidence/prism-0123-github-20261109/summary.json).
 Full Foundation, sustained performance and application acceptance remain pending;
@@ -742,7 +751,7 @@ The separately prepared `ptq1-adapter-service-rollback-row4`
 [workload](docs/validation.md#actual-model-application-acceptance) combines the full
 five-request PTQ1 service sequence with fresh original-PQ2 rollback. The historical
 design used the same 0.1.14 runtime, adapter 1.3 and four workers; the linked current
-harness embeds 0.1.23. It requires context rejection,
+harness embeds the prepared 0.1.25 pin. It requires context rejection,
 active interruption, both PTQ1 owners reaped, seeded fresh-owner replay, a complete
 original-PQ2 answer and post-cleanup full-file CNG verification. Its third-owner
 floor is 75 seconds, retaining 30 seconds for cleanup and 15 for file verification
@@ -1009,7 +1018,7 @@ and retain the reset-every-request serving policy until reuse is qualified.
   elimination and exact masked-attention padding pruning. Preserve exact state restoration,
   native tie/RNG behavior, floating-point bits and rejection semantics. Complete
   owning hosted checks and matched actual-model correctness/resource/request-time
-  evidence on the active 0.1.23 runtime, which already includes these changes;
+  evidence on the 0.1.25 runtime, which already includes these changes;
   do not require a future repin for source already consumed. Source-level work/storage reductions do
   not establish measured throughput, process RAM or lower admission limits.
   The four-lane source integration also fuses finite-logit validation into bounded
@@ -2194,7 +2203,7 @@ below remains enabled with its qualification disclaimer.
 Qualify the 28-projection single-arena (`c574d6c`/`d8afaec` in Prism `0.1.17`, `eafcca5b` in Runner)
 and multi-arena `native-q2` resident placement expansions (`545f43d`..`e60b11f` in Prism,
 `0cc5f7d7`..`3895fbb5` in Runner) on settled main through owning hosted checks, supervised
-AC-connected device receipts and the pinned Runner release-bundle `0.1.23` (`055c743`):
+AC-connected device receipts and the prepared Runner release-bundle `0.1.25` (`99bab712`):
 
 - Multi-arena resident weight allocation (`NATIVE_Q2_MAX_WEIGHT_ARENAS = 6`, alternating
   `[502_824_960, 460_062_720, 502_824_960, 460_062_720, 502_824_960, 460_062_720]` byte arenas up to

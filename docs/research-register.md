@@ -113,7 +113,7 @@ implementation before proposing existing work again; PLAN owns execution order.
 ### November 12 deployment audit
 
 This source inspection distinguishes available mechanisms from selected behavior;
-it establishes no new performance, device or release qualification. Runner consumes
+it establishes no new performance, device or release qualification. At that inspection, Runner consumed
 [immutable Prism 0.1.23](../config/prism-inference.lock.json), source `055c7430`.
 The local Prism candidate inspected at `bd93df1d212e30e520f7f2d721aa625ba2269a40`
 is a separate identity. [PLAN.md](../PLAN.md#runtime-and-correctness) owns sequencing,

@@ -106,8 +106,8 @@ name its exact residual basis and insertion site.
 
 The sibling Prism source inspected on 2026-11-11 is local main
 [`a1f82b5cf0d54190290972908a61f333eb5262d9`](https://github.com/symbiogenesis/prism-inference/tree/a1f82b5cf0d54190290972908a61f333eb5262d9),
-version 0.1.24. Runner's [active binary/source lock](../config/prism-inference.lock.json)
-still pins 0.1.23 at `055c7430cb4771dfddb24ddaa30494af6ad182da`. Inspection of
+version 0.1.24. At that inspection, Runner's [then-active binary/source lock](../config/prism-inference.lock.json)
+pinned 0.1.23 at `055c7430cb4771dfddb24ddaa30494af6ad182da`. Inspection of
 newer local source does not establish delivery through that pinned bundle.
 
 - [`RankOneAdapter::from_model`](https://github.com/symbiogenesis/prism-inference/blob/a1f82b5cf0d54190290972908a61f333eb5262d9/src/model/lora.rs#L129)

@@ -1,10 +1,11 @@
 # Native Snapdragon quantized KV
 
 This is the contract for the **TurboQuant-inspired K4/V4 development default
-implemented in Prism source** for Snapdragon X1 Elite and X2 Elite Extreme. It does not
-qualify a new application profile, increase Runner's 8K context limit or replace
-the pinned 0.1.23 runtime bundle. [PLAN.md](../PLAN.md#bounded-calibration-and-optional-precision)
-owns the remaining application integration, delivery and qualification work.
+implemented in Prism** for Snapdragon X1 Elite and X2 Elite Extreme. Runner's
+0.1.25 development pin activates this reviewed default without qualifying a new
+device profile or increasing the 8K context limit.
+[PLAN.md](../PLAN.md#bounded-calibration-and-optional-precision)
+owns remaining delivery and qualification work.
 
 The owner selects **K4/V4 (`rsq4`) as the development default and required cache
 for ordinary Swift sessions**. This decision accepts approximate answers and
@@ -14,10 +15,10 @@ are not prerequisites for this development default. The paired packet below
 remains the standard for a measured quality/memory qualification claim.
 
 Explicit `f16` selection starts a comparison/recovery session. A request or failed
-compressed session cannot silently choose FP16. Runner's active verified 0.1.23
-bundle still uses FP16 because it predates this implementation. The development
-selection reaches the application after delivery and repinning of the exact
-reviewed runtime bytes; it does not waive artifact verification. Qualify X1 and
+compressed session cannot silently choose FP16. Runner's reviewed 0.1.25 pin
+selects `rsq4`; the historical 0.1.23 comparison control retains FP16. The
+development selection requires the exact verified runtime bytes and never
+waives artifact verification. Qualify X1 and
 X2 separately before making device-specific benefit claims.
 
 ## Source selection and current checks

@@ -4,8 +4,8 @@ This delivery implements three remaining source costs from the
 [performance backlog](../PLAN.md): repeated cached-key conversion during
 six-head prefill, repeated BPE preparation within one request, and repeated
 native-Q2 weight packing across multi-operation token tiles. The changes live
-in local Prism `main`; Runner continues to consume its existing immutable
-0.1.23 release pin until a qualified release and repin.
+in the reviewed Prism source consumed by Runner's 0.1.25 development pin.
+Actual-model, device and measured benefit qualification remains pending.
 
 | Completed source work | Production behavior | Boundary |
 | --- | --- | --- |

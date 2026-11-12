@@ -19,9 +19,9 @@ nor prose quality. Measure useful-answer time under the protocol below.
 ## Current Swift evidence
 
 The [Prism 0.1.25 registry delivery](evidence/prism-0125-publish-20261112/summary.json)
-does not yet provide a verified Runner binary update or new model timings.
-Owner source/bundle publication, binary repinning and a fresh bounded capture
-remain in [the plan](../PLAN.md). The current measurements below apply to 0.1.23.
+and binary repin supply no new model timings. Fresh bounded acceptance remains
+in [the plan](../PLAN.md).
+The measurements below keep their original 0.1.23 identities and values.
 
 The [November 9 Prism 0.1.23 capture](evidence/readme-performance-0123-20261109/summary.json)
 followed actual crates.io publication, the verified GitHub development prerelease
@@ -145,7 +145,7 @@ commit measured **7.20 GiB** (`7,726,850,048–7,727,276,032` bytes) across all 
 Each fresh owner used the fixed prompt `Count from 1 to 100.`, thinking off,
 seed 42 and the standard Swift adapter at scale 1.3. All seven measured responses
 reported eight completion tokens and returned `1, 2, 3,` before hitting the cap.
-Runner now pins **Rust Prism `0.1.23`** (`055c743`, building on `0.1.22` `6b4f452`), which
+The historical **Rust Prism `0.1.23`** control (`055c743`, building on `0.1.22` `6b4f452`)
 includes the `0.1.15`–`0.1.22` CPU NEON, 18-worker row parallelism (`MAX_ROW_WORKERS = 18`),
 `TL1` nibble lookup tables (`Tl1BlockLut`), `TQ1_0`/`TQ2_0` LUT + NEON SIMD, direct
 `PTQ1 × Q8_K` dot kernels, multi-worker GDN/attention/conv/SwiGLU, `4x4`/`8x8` tiled-prefill

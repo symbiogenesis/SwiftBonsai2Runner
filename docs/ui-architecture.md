@@ -37,7 +37,7 @@ The [development guide](development-guide.md#source-launch-caches-and-runtime-se
 owns source-launch receipts/cache rules; the [package contract](chat-packages.md#launch-without-a-checkout)
 owns verified installed launches.
 
-Swift launches default to native Rust Prism 0.1.23, original PQ2, four CPU row
+Swift launches default to native Rust Prism 0.1.25, original PQ2, four CPU row
 workers and the standard adapter at scale 1.3. `--native-engine` remains accepted;
 `--publisher-engine` selects the explicit publisher rollback. Engine options are
 mutually exclusive, and retry preserves the selected engine and representation.
@@ -51,8 +51,10 @@ PTQ1 remains an explicit opt-in.
 The owner-selected cache default in new Swift runtime source is TurboQuant-inspired
 K4/V4 (`rsq4`), with measured quality/memory qualification pending. Runner binds
 that selection to the exact reviewed runtime source and verifies cache and startup
-graph readiness. Its active 0.1.23 bundle retains FP16 until a verified replacement
-is published and repinned. Trusted `--kv-cache f16` selects explicit recovery on a
+graph readiness. The 0.1.25 development pin activates K4/V4; the historical
+0.1.23 control used FP16. This is an owner-selected development upgrade, with
+performance and actual-model qualification still pending.
+Trusted `--kv-cache f16` selects explicit recovery on a
 new native Swift launch; retry preserves the selected cache. Requests cannot
 override it or trigger an automatic downgrade. The [cache contract](quantized-kv.md)
 keeps process admission, context limits and device qualification separate.

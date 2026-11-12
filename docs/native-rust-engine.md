@@ -4,7 +4,7 @@
 CPU runtime, tokenizer, packed kernels and hybrid graph. Runner owns the app, broker,
 provisioning and [release integration](../config/prism-inference.lock.json). The pinned
 publisher engine remains an explicit comparison/rollback. The development default
-is Rust Prism 0.1.23, original Swift PQ2, four CPU row workers and the standard
+is Rust Prism 0.1.25, original Swift PQ2, four CPU row workers and the standard
 adapter at scale 1.3. On supported X2 systems, the private worker attempts the
 [default resident Hexagon `native-q2` placement](hexagon.md); unavailable accelerator
 initialization retains the CPU path. This is a backend fallback within the same
@@ -23,14 +23,19 @@ historical service checks do not establish a reason to replace original PQ2 now.
 ## Swift CPU supported subset
 
 The target is native Windows ARM64 on Snapdragon X and X2. The active
-[release lock](../config/prism-inference.lock.json) pins **0.1.23**, source
-`055c7430cb4771dfddb24ddaa30494af6ad182da`, its archive and all nine installed files.
+[release lock](../config/prism-inference.lock.json) pins **0.1.25**, source
+`99bab71270b1e6a6fb6d47eec2e34b8097cdcd4c`, its archive and all nine installed files.
+This development upgrade activates the reviewed K4/V4 (`rsq4`) cache default;
+trusted `--kv-cache f16` retains explicit recovery. It makes no CPU speedup,
+quality/memory or full-release qualification claim.
 The [November 9 capture](evidence/readme-performance-0123-20261109/summary.json)
 retains one eight-token public-broker observation for each representation; it does
 not qualify sustained performance, actual NPU use or the complete application.
 The [Prism 0.1.25 registry delivery](evidence/prism-0125-publish-20261112/summary.json)
-does not update this binary lock; its source-bound bundle and both source pins remain
-in [PLAN.md](../PLAN.md).
+and [published experimental binary release](https://github.com/symbiogenesis/prism-inference/releases/tag/v0.1.25)
+retain separate identities. The runtime and exact-source
+numerical-capture locks advance together; [PLAN.md](../PLAN.md) keeps model,
+device and performance acceptance pending.
 
 The following 0.1.14 reviews are historical acceptance inputs, not the active pin.
 The [owning-check review](evidence/ptq1-context-owning-ci-9e/independent-review.json)
@@ -41,7 +46,7 @@ pre-generation context-capacity rejection preserves same-owner recovery and
 invalidates stale count requests; Windows artifact hashing uses CNG.
 The [0.1.14 readiness audit](evidence/prism-0114-readiness-20261103.json) keeps
 historical 0.1.13 results at their original identities. These reviews do not transfer
-full-model acceptance to 0.1.23.
+full-model acceptance to 0.1.25.
 
 The runtime inherits the 0.1.13 startup change: one complete
 immutable-payload validation pass before graph publication, including allowed unused
@@ -130,7 +135,7 @@ replace Runner's compiled binary lock.
 | Model | Exact original PQ2 from the [assessment lock](../config/swift-assessment.lock.json), or explicitly selected verified [current-weight PTQ1 export](../config/swift.ptq1-export.json); length, SHA-256 and metadata remain mandatory |
 | Weights | Dense `qwen35`; [851 tensors](../config/swift.metadata.json): 353 F32, 96 BF16 and 402 PQ2_0 or PTQ1_0, according to the selected artifact |
 | Execution | Scalar/eligible baseline NEON CPU execution; the current private worker also attempts the [X2 resident `native-q2` placement](hexagon.md). Unsupported operations reject; unavailable accelerator initialization retains CPU execution. |
-| State | One 8,192-token conversation; 16 full-attention and 48 recurrent blocks; active 0.1.23 uses FP16 K/V, reviewed new source defaults to [K4/V4](quantized-kv.md) after verified delivery/repin; F32 recurrent/convolution state and bounded allocation |
+| State | One 8,192-token conversation; 16 full-attention and 48 recurrent blocks; active 0.1.25 defaults to [K4/V4](quantized-kv.md), with explicit FP16 recovery; F32 recurrent/convolution state and bounded allocation |
 | Input/output | Verified embedded template, exact prompt tokens, supplied reasoning history, declared stops and incremental text |
 | Generation | [Inference defaults](inference-defaults.md), optional thinking with `xhigh` effort, production MT19937 draw ordering and native sampler tie behavior |
 | Lifecycle | Verified readiness, identical canonical count/generation requests, one active generation, authentication, streaming, cancellation, deadlines, reset and recovery |
@@ -381,7 +386,7 @@ subsequent dot/update order remain unchanged, with provisional state kept separa
 from committed state. Its [owning Foundation](https://github.com/symbiogenesis/prism-inference/actions/runs/41259682083)
 and [conformance](https://github.com/symbiogenesis/prism-inference/actions/runs/41259682092)
 pass, including bitwise, independent native-reference and graph recovery controls.
-The pinned 0.1.23 binary keeps the production copy-then-scale path; the fused
+The historical 0.1.23 binary keeps the production copy-then-scale path; the fused
 candidate is retained in source history and model-free controls until actual-model
 numerical, throughput and resource qualification permit release integration.
 The removed copy alone establishes no speed or memory benefit.
@@ -398,7 +403,7 @@ new weights, altered precision, accelerator setup or prefix-reuse policy.
 | 2 | Stream Swift logits through the existing native-order top-20 heap | Retains 20 candidate records (240 bytes) instead of 248,320 (2,979,840 bytes), avoiding 2,979,600 bytes of candidate payload and most per-token candidate writes. The full logits row is still checked; tie order, softmax and RNG progression must match. |
 | 3 | Stream one-column F32 projection weights directly | Removes per-row dimension checks, decoding dispatch and one-element scratch management for rank-one adapter B factors: 660,480 output channels across the standard adapter's 129 factors. The original single-product accumulation and finite-result checks remain required. |
 
-These changes are included in the active 0.1.23 source. Their original local
+These changes are included in the active 0.1.25 source. Their original local
 review used Prism commits `095976c` (one-column projections),
 `80fa071` (empty checkpoints) and `11f60ce` (bounded sampler). The
 [historical local check record](https://github.com/symbiogenesis/SwiftBonsai2Runner/blob/7b37b29826b377386c1ddfe933cd4e75d6a97856/docs/evidence/inference-efficiency-local-20261103/archive.json)
@@ -413,7 +418,7 @@ No model, benchmark or CI ran, and endpoint snapshots do not establish continuou
 power stability or measured performance.
 
 The retained November 3 checks describe those historical inputs; they do not
-qualify the later 0.1.23 release merely because it contains the changes. No
+qualify the later 0.1.25 release merely because it contains the changes. No
 end-to-end speedup is attributed to them. Current-release actual-model logits/state,
 rollback, seeded output and resource/request-time qualification remain in
 [PLAN.md](../PLAN.md). Keep the existing admission limits and
@@ -437,7 +442,7 @@ and context boundaries; hybrid graph controls cover late first-token failure,
 independent snapshots and continuation. The
 [historical follow-up record](https://github.com/symbiogenesis/SwiftBonsai2Runner/blob/7b37b29826b377386c1ddfe933cd4e75d6a97856/docs/evidence/inference-efficiency-followup-20261103/archive.json)
 records the local validation scope; its scratch-file inventory supplies no raw
-replay in the current tree. The active 0.1.23 pin contains
+replay in the current tree. The active 0.1.25 pin contains
 `94200c8` (empty resets), `03fe862` (attention padding) and `5056810` (test assertion
 correction). All 18 focused correctness tests passed, followed by a passing rerun
 of the corrected reset regression and strict Release Clippy for the library and
@@ -506,7 +511,7 @@ work. The subsequent [hosted candidate run](https://github.com/symbiogenesis/pri
 passes on Windows ARM64, Windows x64 and Linux ARM64, exercising GGUF/default-report
 and hash controls, the graph, full sampled logits/state, worker/server protocols,
 strict analyzers and documentation without weights. These are candidate source
-checks; Runner now pins 0.1.23 and exposes experimental
+checks; Runner now pins 0.1.25 and exposes experimental
 [`--prompt-reuse latest`](prefix-reuse.md) through the native launch path.
 The broker requires the exact reviewed release source and matching authenticated
 readiness; omission retains reset-every-request. No load-time or generation-speed gain is

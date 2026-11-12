@@ -9,8 +9,8 @@ select `latest`.
 The selection survives deferred preparation, native chat launch, broker launch
 and explicit Retry. The broker forwards only the fixed `--prompt-reuse latest`
 argument to its verified contained model worker. Capability is limited to the
-reviewed active Prism 0.1.23 source
-`055c7430cb4771dfddb24ddaa30494af6ad182da` and its
+reviewed active Prism 0.1.25 source
+`99bab71270b1e6a6fb6d47eec2e34b8097cdcd4c` and its
 [immutable release files](../config/prism-inference.lock.json). The compiled guard
 also recognizes explicitly reviewed historical release/source pairs; it does not
 accept every 0.1.14 build or arbitrary newer release. A version number, unreviewed

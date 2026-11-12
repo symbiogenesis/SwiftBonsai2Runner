@@ -4,7 +4,7 @@ Chat preserves the native template and publisher's evaluated sampler, with think
 by default. These settings are not qualified as optimal for laptop use or creative
 writing. Actual-model application acceptance is pending.
 
-The development engine default is Rust Prism 0.1.23 with original Swift PQ2,
+The development engine default is Rust Prism 0.1.25 with original Swift PQ2,
 four CPU row workers and the standard adapter at scale 1.3. Publisher rollback
 is explicit with `--publisher-engine`; PTQ1 remains opt-in. The native worker attempts
 [default X2 NPU acceleration](hexagon.md) and retains CPU execution when its
@@ -23,7 +23,7 @@ qualify performance, full-context/output, quality, isolation or installation.
 | Added system prompt | None | Retain publisher instructions and user-supplied task/voice constraints |
 | Generation harness | One completion, EOS honored | No automatic critique/rewrite, forced extra thinking, majority voting or best-of-N |
 | Assistant history | Preserve supplied `reasoning_content` with `preserve_thinking: true` | Both verified templates support replaying prior assistant reasoning |
-| Attention / recurrent state | Active 0.1.23 bundle: FP16 K/V. Reviewed new Swift source: K4/V4 (`rsq4`); F32 recurrent/convolution state | Owner-selected development default; requires verified runtime delivery/repin, with explicit FP16 recovery |
+| Attention / recurrent state | K4/V4 (`rsq4`) in the 0.1.25 development pin; F32 recurrent/convolution state | Owner-selected approximate cache; measured quality/memory qualification remains pending, with explicit FP16 recovery |
 | Context handling | Exact rendered token count; reject overflow | Preserve supplied history rather than silently shifting or truncating it |
 | RoPE | Model metadata, no override | Context extension can change short-context behavior |
 | Cache reuse / speculation | Disabled by default | Explicit [latest-prefix reuse](prefix-reuse.md) is available for native launches; speculation is outside Runner serving. Neither is an established quality improvement. |
@@ -91,7 +91,7 @@ Supply relevant references, audience, voice and constraints; request useful revi
 models, not arbitrary Q4/Q8 Swift caches. The owner selects the native
 [TurboQuant-inspired K4/V4 default](quantized-kv.md) for development without
 claiming completed quality or device qualification. FP16 (512 MiB at 8K) remains
-the explicit comparison/recovery option and the active 0.1.23 bundle's cache.
+the explicit comparison/recovery option and the historical 0.1.23 control's cache.
 Prefix reuse saves computation, not added knowledge/reasoning.
 
 ## Capacity and execution limits

@@ -267,6 +267,9 @@ fn pinned_native_row4_captures_separated_token_timings() {
         ) | (
             Some("0.1.23"),
             Some("055c7430cb4771dfddb24ddaa30494af6ad182da")
+        ) | (
+            Some("0.1.25"),
+            Some("99bab71270b1e6a6fb6d47eec2e34b8097cdcd4c")
         )
     ));
     let budget = case_budget();
