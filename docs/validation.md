@@ -633,9 +633,9 @@ Upstream-only coverage runs in Prism's [conformance](https://github.com/symbioge
 [standards](https://github.com/symbiogenesis/prism-inference/blob/main/.github/workflows/standards.yml)
 and [compiler](https://github.com/symbiogenesis/prism-inference/blob/main/.github/workflows/rust-nightly.yml)
 workflows, including source/backend catalogs, baseline/codec corpora, overlays and
-focused upstream diagnostics. Runner's optional [LoRA device workflow](../.github/workflows/swift-lora-qualification.yml)
-keeps its standalone tool build because it qualifies the selected application
-profile; it requires reviewed artifacts, owner-managed hardware and explicit dispatch.
+focused upstream diagnostics. Runner's [LoRA qualification contracts](swift-lora.md#fixed-acceptance-contract)
+retain their native planning and scoring commands. Actual capture requires reviewed
+artifacts and a suitable hosted Snapdragon target; qualification remains pending.
 
 ### Paired speech comparison
 

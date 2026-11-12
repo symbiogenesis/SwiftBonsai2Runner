@@ -18,6 +18,17 @@ Foundation. A focused local case is
 All owner-device setup, checks and cleanup share one five-minute aggregate
 allowance; do not run a complete suite locally.
 
+[Hexagon qualification](../../.github/workflows/hexagon-qualification.yml) owns
+current native fixture preparation and model-free policy controls. The separate
+[Windows ARM64 ABI workflow](../../.github/workflows/hexagon-windows-abi.yml) checks
+native queue layouts and the retained generated start/stop wire control.
+The duplicate X2 compute workflow and the completed SDK inventory and public
+QAIC generation workflows are retired. Their helpers, exact pins and
+[retained provenance](../../docs/hexagon-source-audit.md#sdk-inputs-recipe-and-terms)
+remain available for reproducing those historical observations. New SDK or
+wire-coverage work requires a separately reviewed hosted workload; existing
+snapshots do not close the outstanding Windows, SDK or device gates in PLAN.
+
 An optional raw PQ2 fixture can be checked with
 `--payload ABSOLUTE_FIXTURE_PATH --columns 384 --rows 2`. The fixture must contain
 exactly the declared complete rows, at most 1 MiB. This is a raw packed fixture,

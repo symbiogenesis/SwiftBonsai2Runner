@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "kind": "obsolete-ci-workflow-cleanup-delivery",
+  "status": "locally-complete-owner-push-pending",
+  "implementationRevision": "84565680a4bfbff1f1e911da005b4c773b9e466e",
+  "workflowCountBefore": 27,
+  "workflowCountAfter": 16,
+  "removedWorkflowInventory": "summary.json",
+  "retainedWorkflowOwnersAndReasons": "../../../tools/ci/README.md#workflow-scope",
+  "preserved": [
+    "All historical evidence, immutable pins and reproduction helpers.",
+    "All workflows supporting current PLAN.md acceptance, performance, provenance, containment and release gates.",
+    "Existing required Foundation check names and owner-managed device/CI controls."
+  ],
+  "localValidation": {
+    "plan": "workload-plan.json",
+    "receipt": "summary.json",
+    "closed": true,
+    "elapsedAggregateSecondsThroughRetention": 1.04,
+    "maximumAggregateSeconds": 300,
+    "retries": 0,
+    "routingAndSourceReferences": "passed; no missing routing paths, local action/workflow dependencies, changed documentation workflow links or Rust workflow includes",
+    "markdown": "rumdl check and format-check passed on all eight changed Markdown files",
+    "whitespace": "git diff --check passed",
+    "workflowLint": "actionlint 1.7.12 inspected all 16 retained workflows; exit 1 with exactly four pre-existing custom runner-label diagnostics and no other diagnostics",
+    "workflowLintDetails": {
+      "label": "swift-bonsai-snapdragon",
+      "files": [
+        ".github/workflows/hexagon-qualification.yml",
+        ".github/workflows/native-row-qualification.yml"
+      ],
+      "filesChangedByCleanup": false,
+      "rawOutput": "raw/actionlint.log",
+      "interpretation": "The standalone linter has no configuration for the existing custom self-hosted label. This cleanup does not alter those runner selections; remote runner registration was not queried."
+    },
+    "powerBeforeAndAfter": "AC connected, battery saver off, 100% charge",
+    "continuousPowerStabilityEstablished": false,
+    "performanceComparisonPerformed": false,
+    "applicationCompilationOrModels": false,
+    "completeSuitesRun": false
+  },
+  "authorization": {
+    "gitPushes": 0,
+    "ciDispatchQueryOrMonitoring": 0,
+    "pullRequests": 0
+  },
+  "publication": "Workflow deletions take effect on GitHub after the owner pushes the reviewed local main commits. Existing PLAN.md hosted/device acceptance remains pending."
+}

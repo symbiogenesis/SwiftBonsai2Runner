@@ -132,9 +132,10 @@ python -B tools/native-reference/test_compare.py NativeStateTests.test_control_b
 python -B tools/native-reference/test_compare.py NativeStateTests.test_capture_pre_read_bounds_reject_oversized_json_and_logits
 ```
 
-The main-only `ptq1-retained-numerics-audit.yml` workflow prepares a separate
-**GitHub-hosted Ubuntu file audit**, fixed to the retained numerical run
-`41568281287` at Runner `469f57b`. It downloads the original evidence archive,
+The retained-file auditor is fixed to numerical run `41568281287` at Runner
+`469f57b`. Its [completed hosted audit](../../docs/evidence/ptq1-retained-audit-41571150128/independent-review.json)
+preserves the independent payload review after retirement of the one-shot workflow.
+The auditor downloads the original evidence archive,
 verifies its authenticated producer and artifact digest, and checks every unique
 regular ZIP member against the 155 previously recorded file identities. The
 tracked inventory is copied producer metadata; it supplies expected identities
@@ -145,13 +146,13 @@ source against retained native/Rust data and requires its complete report to
 equal the original comparison, including payload, native-state, control/stdout
 hashes and the explicit NEON/four-worker/standard-1.3 condition. Its artifact
 contains the audit, file manifest, producer metadata and original/replayed
-comparison reports. Focused synthetic archive and producer rejection controls
-run on the same hosted target. No model, reference executable or checker runs.
+comparison reports. Focused synthetic controls cover archive and producer rejection.
+No model, reference executable or checker runs.
 
 A successful cloud audit preserves the original runtime/source execution;
 it supplies no new device trial, renewed owner allowance, full-context, adapter
-provenance, quality or default-promotion qualification. Adding the workflow
-alone establishes no successful integrity audit.
+provenance, quality or default-promotion qualification. This fixed auditor does
+not qualify later numerical captures.
 
 The separate [public authoring reference](../../docs/adapter-public-reference.md)
 has one predeclared all 48 A-vector reconstruction from the immutable public MLX

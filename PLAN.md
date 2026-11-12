@@ -949,8 +949,8 @@ not close pending hosted integration or full-model acceptance.
   scales separately from the scale-one, 512-token contract; one response cannot choose a
   scale. Provide a hosted Snapdragon target for the full 28-sample LoRA and
   14-sample PTQ1 matrices, or define an independently useful owner capture whose
-  complete workload fits five minutes. Their nonlaunching workflow plans leave
-  qualification pending; splitting either matrix across owner runs is unsupported.
+  complete workload fits five minutes. The native CLI plans leave qualification
+  pending; splitting either matrix across owner runs is unsupported.
 - Compare Q8_0/Q4_K_M and bounded speech thread choices through [paired device CI and
   independent listening](docs/validation.md#paired-speech-comparison). Retain quality,
   startup, first-audio, synthesis latency and resources; attribute bootstrap, warm Base

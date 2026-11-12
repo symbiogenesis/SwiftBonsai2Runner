@@ -379,9 +379,10 @@ ceiling/admission by themselves; the physical reserve stays mandatory.
 
 ## Bounded decision-screen interface
 
-The manual main-only `swift-ptq1-screen.yml` workflow retains a hosted nonlaunching
-plan and leaves capture pending. The fourteen-process matrix has no demonstrated
-complete five-minute owner bound; native capture rejects self-hosted/owner execution.
+Native `qualification` operation `screen-plan` inspects the fixed contract without
+model execution. Capture remains pending: the fourteen-process matrix has no
+demonstrated complete five-minute owner bound, and native capture rejects
+self-hosted/owner execution.
 Native `qualification` operation `screen-run` prepares verified external artifacts
 from `dataDirectory` and requires a credential-free hosted ARM64 Snapdragon target.
 Its fixed workload is one creative prompt, both
