@@ -145,6 +145,7 @@ struct State {
     listening: bool,
     dictation_requested: bool,
     dictation_finishing: bool,
+    pending_voice_transcript: Option<(u64, String)>,
     microphone: Option<microphone::Microphone>,
     microphone_generation: Option<u64>,
     speaking: bool,
@@ -234,6 +235,7 @@ impl State {
             listening: false,
             dictation_requested: false,
             dictation_finishing: false,
+            pending_voice_transcript: None,
             microphone,
             microphone_generation: None,
             speaking: false,
@@ -489,6 +491,23 @@ impl State {
     }
 
     fn handle_escape(&mut self, ctx: &egui::Context) {
+        // Voice cancellation takes effect before overlays consume Escape. Keep
+        // the key available so the same action also dismisses Find or a modal.
+        if self.dictation_requested
+            && ctx.input(|input| {
+                input.events.iter().any(|event| {
+                    matches!(event, egui::Event::Key {
+                        key: egui::Key::Escape,
+                        pressed: true,
+                        modifiers,
+                        ..
+                    } if *modifiers == egui::Modifiers::NONE)
+                })
+            })
+        {
+            self.cancel_microphone();
+            "Voice message cancelled.".clone_into(&mut self.speech_status);
+        }
         if self.rename_conversation.is_some() || self.delete_conversation.is_some() {
             return;
         }
@@ -502,6 +521,27 @@ impl State {
                 self.stop_speech();
             }
         }
+    }
+
+    fn handle_input_shortcuts(&mut self, ctx: &egui::Context) {
+        ctx.input(|input| {
+            for event in &input.events {
+                match event {
+                    egui::Event::Ime(egui::ImeEvent::Preedit { text, .. }) => {
+                        self.composing = !text.is_empty();
+                    }
+                    egui::Event::Ime(egui::ImeEvent::Commit(_)) => self.composing = false,
+                    _ => {}
+                }
+            }
+        });
+        if self.rename_conversation.is_none()
+            && self.delete_conversation.is_none()
+            && ctx.input_mut(|input| input.consume_key(egui::Modifiers::CTRL, egui::Key::N))
+        {
+            self.new_chat();
+        }
+        self.handle_escape(ctx);
     }
 
     fn retain_draft(&mut self) {
@@ -773,6 +813,7 @@ impl State {
         self.microphone_generation = None;
         self.dictation_requested = false;
         self.dictation_finishing = false;
+        self.pending_voice_transcript = None;
         self.listening = false;
     }
 
@@ -948,7 +989,13 @@ impl State {
                 .clone_into(&mut self.speech_status);
             }
             speech::Event::Recognized { generation, text } => {
-                self.accept_transcript(generation, &text);
+                if self.dictation_requested
+                    && self.dictation_finishing
+                    && self.microphone_generation == Some(generation)
+                {
+                    // User input in this frame must settle before this can send.
+                    self.pending_voice_transcript = Some((generation, text));
+                }
             }
             speech::Event::Speaking {
                 generation,
@@ -1028,6 +1075,7 @@ impl State {
             "Voice message exceeds the prompt limit. Review the draft before sending."
                 .clone_into(&mut self.speech_status);
         } else if self.model.ready()
+            && !self.composing
             && self.rename_conversation.is_none()
             && self.delete_conversation.is_none()
         {
@@ -1040,6 +1088,18 @@ impl State {
                 .clone_into(&mut self.speech_status);
         }
         self.focus_composer = true;
+    }
+
+    fn flush_voice_transcript(&mut self, ctx: &egui::Context) {
+        // A press can become a Cancel or conversation switch on release. Leave
+        // the transcript staged until the native widgets have handled that click.
+        if ctx.input(|input| input.pointer.any_down()) {
+            return;
+        }
+        if let Some((generation, text)) = self.pending_voice_transcript.take() {
+            self.accept_transcript(generation, &text);
+            ctx.request_repaint();
+        }
     }
 
     fn place_composer_cursor(&mut self, index: usize) {
@@ -2018,27 +2078,10 @@ impl eframe::App for State {
         {
             self.focus_composer = true;
         }
+        self.handle_input_shortcuts(ctx);
         self.poll_microphone();
         self.drain_speech_events();
         self.poll_recovery();
-        ctx.input(|input| {
-            for event in &input.events {
-                match event {
-                    egui::Event::Ime(egui::ImeEvent::Preedit { text, .. }) => {
-                        self.composing = !text.is_empty();
-                    }
-                    egui::Event::Ime(egui::ImeEvent::Commit(_)) => self.composing = false,
-                    _ => {}
-                }
-            }
-        });
-        if self.rename_conversation.is_none()
-            && self.delete_conversation.is_none()
-            && ctx.input_mut(|input| input.consume_key(egui::Modifiers::CTRL, egui::Key::N))
-        {
-            self.new_chat();
-        }
-        self.handle_escape(ctx);
         if self.last_theme_check.elapsed() >= Duration::from_secs(1) {
             ctx.set_visuals(platform::high_contrast_visuals().unwrap_or_else(forest_visuals));
             self.last_theme_check = Instant::now();
@@ -2063,6 +2106,7 @@ impl eframe::App for State {
 
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
         self.draw(ui);
+        self.flush_voice_transcript(ui.ctx());
     }
 }
 

@@ -27,8 +27,9 @@ fn harness() -> Harness<'static, Fixture> {
         })
         .build_ui_state(
             |ui, fixture: &mut Fixture| {
-                fixture.app.handle_escape(ui.ctx());
+                fixture.app.handle_input_shortcuts(ui.ctx());
                 fixture.app.draw(ui);
+                fixture.app.flush_voice_transcript(ui.ctx());
             },
             Fixture {
                 app,
@@ -161,6 +162,47 @@ fn conversation_dialogs_keep_background_find_and_composer_shortcuts_inert() {
     chat.key_press(egui::Key::Enter);
     chat.run();
     assert_eq!(chat.state().app.delete_conversation, Some(id));
+    assert_eq!(chat.state().app.input, "Preserve this draft");
+    assert!(chat.state().commands.try_recv().is_err());
+}
+
+#[test]
+fn find_escape_cancels_a_voice_message_before_queued_recognition_can_send() {
+    let mut chat = harness();
+    open_find(&mut chat);
+    let app = &mut chat.state_mut().app;
+    app.dictation_requested = true;
+    app.dictation_finishing = true;
+    app.microphone_generation = Some(7);
+    app.speech_event(speech::Event::Recognized {
+        generation: 7,
+        text: "Do not send this voice message".to_owned(),
+    });
+    chat.key_press(egui::Key::Escape);
+    chat.run();
+    assert!(chat.query_by_label("Find in conversation").is_none());
+    assert!(!chat.state().app.dictation_requested);
+    assert!(chat.state().app.pending_voice_transcript.is_none());
+    assert_eq!(chat.state().app.input, "Preserve this draft");
+    assert!(chat.state().commands.try_recv().is_err());
+}
+
+#[test]
+fn microphone_cancel_click_wins_over_a_queued_voice_message() {
+    let mut chat = harness();
+    let app = &mut chat.state_mut().app;
+    app.dictation_requested = true;
+    app.dictation_finishing = true;
+    app.microphone_generation = Some(7);
+    app.speech_event(speech::Event::Recognized {
+        generation: 7,
+        text: "Do not send this voice message".to_owned(),
+    });
+    chat.get_by_role_and_label(egui::Role::Button, "Microphone")
+        .click();
+    chat.run();
+    assert!(!chat.state().app.dictation_requested);
+    assert!(chat.state().app.pending_voice_transcript.is_none());
     assert_eq!(chat.state().app.input, "Preserve this draft");
     assert!(chat.state().commands.try_recv().is_err());
 }
