@@ -362,6 +362,10 @@ impl Transcript {
         self.search.query_changed(&self.messages);
     }
 
+    pub(super) fn sync_find_query(&mut self, query: &str) {
+        self.search.sync_query(query, &self.messages);
+    }
+
     pub(super) fn search_bar(&mut self, ui: &mut egui::Ui) -> bool {
         self.search.bar(ui, &self.messages)
     }

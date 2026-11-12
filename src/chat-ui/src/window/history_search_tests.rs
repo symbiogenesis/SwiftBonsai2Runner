@@ -88,6 +88,94 @@ fn open_sidebar(chat: &mut Harness<'_, Fixture>, width: f32) {
 }
 
 #[test]
+fn find_sync_sidebar_edits_update_open_result_without_reselecting() {
+    for size in [[1180.0, 860.0], [480.0, 640.0]] {
+        let mut chat = harness(size);
+        open_sidebar(&mut chat, size[0]);
+        type_query(&mut chat, "cedar");
+        chat.get_by_role_and_label(egui::Role::Button, "Garden notes")
+            .click();
+        chat.run();
+        let selected = chat.state().app.active_conversation;
+        open_sidebar(&mut chat, size[0]);
+        chat.get_by_role_and_label(egui::Role::TextInput, "Search conversations")
+            .focus();
+        chat.run();
+        chat.key_press_modifiers(egui::Modifiers::COMMAND, egui::Key::A);
+        chat.get_by_role_and_label(egui::Role::TextInput, "Search conversations")
+            .type_text("garden");
+        chat.run();
+        assert!(
+            chat.get_by_role_and_label(egui::Role::TextInput, "Search conversations")
+                .is_focused()
+        );
+        if size[0] < navigation::DOCK_THRESHOLD {
+            chat.get_by_role_and_label(egui::Role::Button, "Close conversations")
+                .click();
+            chat.run();
+        }
+        assert_eq!(chat.state().app.active_conversation, selected);
+        assert_eq!(
+            chat.get_by_role_and_label(egui::Role::TextInput, "Find in conversation")
+                .value()
+                .as_deref(),
+            Some("garden")
+        );
+        assert!(chat.get_by_label("1 of 1").rect().is_positive());
+        assert_eq!(chat.state().app.input, "An unfinished gardening draft");
+        while let Ok(command) = chat.state().commands.try_recv() {
+            assert!(!matches!(command, Command::Send { .. }));
+        }
+    }
+}
+
+#[test]
+fn find_sync_sidebar_updates_selected_chat_and_clears_without_taking_focus() {
+    let mut chat = harness([1180.0, 860.0]);
+    let selected = chat.state().app.active_conversation;
+    type_query(&mut chat, "seed");
+    assert_eq!(
+        chat.get_by_role_and_label(egui::Role::TextInput, "Find in conversation")
+            .value()
+            .as_deref(),
+        Some("seed")
+    );
+    assert!(chat.get_by_label("1 of 1").rect().is_positive());
+    type_query(&mut chat, " does not exist");
+    assert!(chat.state().app.conversation_search.rows.is_empty());
+    assert_eq!(
+        chat.get_by_role_and_label(egui::Role::TextInput, "Find in conversation")
+            .value()
+            .as_deref(),
+        Some("seed does not exist")
+    );
+    assert!(chat.get_by_label("No matches").rect().is_positive());
+    clear_query(&mut chat);
+    assert_eq!(
+        chat.get_by_role_and_label(egui::Role::TextInput, "Find in conversation")
+            .value()
+            .as_deref(),
+        Some("")
+    );
+    type_query(&mut chat, "seed");
+    chat.key_press(egui::Key::Escape);
+    chat.run();
+    assert_eq!(
+        chat.get_by_role_and_label(egui::Role::TextInput, "Find in conversation")
+            .value()
+            .as_deref(),
+        Some("")
+    );
+    assert!(
+        chat.get_by_role_and_label(egui::Role::TextInput, "Search conversations")
+            .is_focused()
+    );
+    assert_eq!(chat.state().app.active_conversation, selected);
+    assert_eq!(chat.state().app.input, DRAFT);
+    assert!(chat.state().commands.try_recv().is_err());
+}
+
+#[test]
 fn find_sync_sidebar_selection_and_reselection_open_the_same_find() {
     for size in [[1180.0, 860.0], [480.0, 640.0]] {
         let mut chat = harness(size);
@@ -119,6 +207,7 @@ fn find_sync_sidebar_selection_and_reselection_open_the_same_find() {
         assert_eq!(chat.state().app.conversation_search.text, "  ÉLAN  ");
         chat.key_press(egui::Key::Escape);
         chat.run();
+        chat.run_steps(3);
         assert!(chat.query_by_label("Find in conversation").is_none());
         open_sidebar(&mut chat, size[0]);
         chat.get_by_role_and_label(egui::Role::Button, "Garden notes")
@@ -176,6 +265,7 @@ fn find_sync_sidebar_and_find_share_unicode_and_long_phrase_matching() {
         assert!(chat.get_by_label("1 of 2").rect().is_positive());
         chat.key_press(egui::Key::F3);
         chat.run();
+        chat.run_steps(3);
         assert!(chat.get_by_label("2 of 2").rect().is_positive());
         chat.get_by_role_and_label(egui::Role::Button, "Notebook")
             .click();
@@ -382,6 +472,7 @@ fn conversation_history_new_conversation_clears_the_filter_and_preserves_the_dra
     assert_ne!(chat.state().app.active_conversation, original);
     assert_eq!(chat.state().app.conversation_search.text, "");
     assert_eq!(chat.state().app.conversation_search.rows, [0, 1, 2, 3]);
+    assert!(chat.query_by_label("Find in conversation").is_none());
     assert!(
         chat.get_by_role_and_label(egui::Role::MultilineTextInput, "Message")
             .is_focused()

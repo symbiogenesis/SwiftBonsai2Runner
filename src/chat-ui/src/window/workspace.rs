@@ -322,11 +322,18 @@ impl State {
 
     pub(super) fn conversation_list(&mut self, ui: &mut egui::Ui) {
         self.conversation_search_field(ui);
-        self.conversation_search.update(
+        let query_changed = self.conversation_search.update(
             &mut self.conversations,
             self.active_conversation,
             &self.transcript,
         );
+        if query_changed {
+            self.transcript
+                .sync_find_query(self.conversation_search.text.trim());
+            // Drawer input is drawn after the disabled workspace. Refresh its
+            // Find controls next frame without taking focus from the sidebar.
+            ui.ctx().request_repaint();
+        }
         ui.add_space(8.0);
         ui.horizontal(|ui| {
             ui.label(RichText::new("CONVERSATIONS").small().strong().weak());

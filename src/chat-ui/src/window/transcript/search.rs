@@ -98,6 +98,16 @@ impl Search {
         self.visibility = Visibility::Focus;
     }
 
+    pub(super) fn sync_query(&mut self, query: &str, messages: &[Message]) {
+        if !query.is_empty() || self.visibility != Visibility::Closed {
+            self.visibility = Visibility::Open;
+        }
+        if self.query != query {
+            query.clone_into(&mut self.query);
+            self.query_changed(messages);
+        }
+    }
+
     pub(super) fn query_changed(&mut self, messages: &[Message]) {
         self.active = 0;
         self.matches.clear();

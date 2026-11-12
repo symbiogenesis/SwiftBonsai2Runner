@@ -295,6 +295,9 @@ Ctrl+F from the composer and sidebar, including the narrow drawer and an empty
 conversation; selecting and reselecting filtered results must show the same query,
 native highlights and match navigation. Cover Unicode and long phrases,
 title-only results, preserved drafts/filter state and modal keyboard priority.
+Verify sidebar edits update the already-open conversation without reselecting a
+result or moving keyboard focus, including unmatched queries, Clear and Escape;
+unchanged queries must preserve local Find edits, dismissal and match navigation.
 Focused model-free source checks do not close actual-device UI acceptance.
 
 Qualify the responsive sidebar and Appearance preferences on Windows ARM64:

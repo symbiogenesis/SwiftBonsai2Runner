@@ -191,6 +191,10 @@ row below the audio controls. Ctrl+F is handled before the composer and sidebar 
 editors, with dialogs and popups retaining priority. Selecting a filtered sidebar
 result opens the same native Find controls with the trimmed query, matching-body
 highlights and the first match selected; reselecting the current result does too.
+Sidebar query changes also update the already-open conversation's Find and
+highlights without taking sidebar focus, even when the filtered list is empty.
+Clearing the sidebar query clears those highlights. Unchanged sidebar queries
+preserve local Find edits, dismissal and match navigation.
 Both searches use the same Unicode scalar lowercase convention. Find edits and
 dismissal leave the sidebar filter intact; title-only results report no body
 matches. [Streaming resources](streaming-resources.md#native-chat-and-transcript)

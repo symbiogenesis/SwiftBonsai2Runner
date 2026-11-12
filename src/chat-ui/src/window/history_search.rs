@@ -44,8 +44,9 @@ impl Search {
         conversations: &mut [Conversation],
         active: u64,
         transcript: &Transcript,
-    ) {
-        if self.previous != self.text {
+    ) -> bool {
+        let changed = self.previous != self.text;
+        if changed {
             self.text.clone_into(&mut self.previous);
             self.query = lowercase(self.text.trim()).into();
             self.reset_scroll = true;
@@ -65,6 +66,7 @@ impl Search {
                 self.rows.push(index);
             }
         }
+        changed
     }
 }
 

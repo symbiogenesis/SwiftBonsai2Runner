@@ -371,6 +371,38 @@ fn active_find_underline_maps_unicode_wrapping_and_newlines_without_relayout() {
 }
 
 #[test]
+fn find_sync_live_query_refreshes_highlights_without_resetting_unchanged_matches() {
+    let mut transcript = Transcript::default();
+    transcript.push(Role::User, "hit cat hit".to_owned());
+    transcript.sync_find_query("hit");
+    let mut chat = harness(transcript);
+    chat.run();
+    chat.state_mut().search.active = 1;
+    chat.state_mut().sync_find_query("hit");
+    chat.run();
+    assert_eq!(chat.state().search.active, 1);
+    chat.state_mut().sync_find_query("cat");
+    chat.run();
+    assert!(
+        chat.state().messages[0]
+            .cache
+            .as_ref()
+            .is_some_and(|cache| {
+                cache.highlights.count == 1 && cache.selected.as_ref() == Some(&(4..7))
+            })
+    );
+    chat.state_mut().sync_find_query("");
+    chat.run();
+    assert!(chat.state().search.matches.is_empty());
+    assert!(
+        chat.state().messages[0]
+            .cache
+            .as_ref()
+            .is_some_and(|cache| { cache.highlights.count == 0 && cache.underline.is_empty() })
+    );
+}
+
+#[test]
 fn find_sync_transferred_query_uses_native_highlights_and_first_match_scroll() {
     let mut transcript = Transcript::default();
     transcript.push(Role::User, "hit cat hit".to_owned());

@@ -268,6 +268,9 @@ list before closing a drawer or stopping a response. Creating a conversation or
 branch clears search so the new conversation appears. The query is temporary
 and is not restored on the next launch. Large lists render only visible rows and
 reuse cached matches while the query and searchable content are unchanged.
+Editing the sidebar search also updates Find and its highlights in the already-open
+conversation immediately, without taking focus from the sidebar. Clearing the
+sidebar query clears those highlights, including when no conversations match.
 Selecting a filtered result opens Find in that conversation with the same trimmed
 phrase, highlights matching message text and jumps to the first match. This also
 works when selecting the current conversation again. A title-only result shows
