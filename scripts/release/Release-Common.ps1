@@ -45,6 +45,9 @@ function Invoke-ReleaseCommand {
     }
     $start = [Diagnostics.ProcessStartInfo]::new()
     $start.FileName = $executable
+    $commandDirectory = Join-Path (Resolve-ReleasePath ([IO.Path]::GetTempPath())) ('SwiftBonsai-Release-Command-' + [guid]::NewGuid().ToString('N'))
+    [void][IO.Directory]::CreateDirectory($commandDirectory)
+    $start.WorkingDirectory = $commandDirectory
     $start.UseShellExecute = $false
     $start.CreateNoWindow = $true
     $start.RedirectStandardOutput = $true
@@ -67,5 +70,9 @@ function Invoke-ReleaseCommand {
         $output.GetAwaiter().GetResult()
     } finally {
         $process.Dispose()
+        # Remove only an empty directory; unexpected diagnostic files survive.
+        if (@(Get-ChildItem -LiteralPath $commandDirectory -Force).Count -eq 0) {
+            [IO.Directory]::Delete($commandDirectory)
+        }
     }
 }

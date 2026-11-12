@@ -75,7 +75,7 @@ if ($null -eq $runtime -or $runtime.Installed -ne 1) {
     Invoke-WebRequest -Uri 'https://aka.ms/vc14/vc_redist.arm64.exe' -OutFile $redist -TimeoutSec 60 -MaximumRedirection 3
     $signature = Get-AuthenticodeSignature -LiteralPath $redist
     if ($signature.Status -ne 'Valid' -or $signature.SignerCertificate.Subject -notmatch '(?:^|, )O=Microsoft Corporation(?:,|$)') { throw 'The ARM64 Microsoft runtime installer signature is invalid.' }
-    $process = Start-Process -FilePath $redist -ArgumentList @('/install', '/quiet', '/norestart') -WindowStyle Hidden -PassThru
+    $process = Start-Process -FilePath $redist -ArgumentList @('/install', '/quiet', '/norestart') -WorkingDirectory $EvidenceDirectory -WindowStyle Hidden -PassThru
     try {
         if (-not $process.WaitForExit(120000)) {
             $process.Kill($true)

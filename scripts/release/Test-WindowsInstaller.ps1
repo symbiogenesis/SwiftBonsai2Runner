@@ -21,7 +21,11 @@ if (Test-Path -LiteralPath $EvidenceDirectory) { throw 'Smoke-test evidence must
 $installer = $null
 $database = $null
 $summary = $null
+$nativeDirectory = $EvidenceDirectory
+$previousDirectory = [Environment]::CurrentDirectory
+Push-Location -LiteralPath $nativeDirectory
 try {
+    [Environment]::CurrentDirectory = $nativeDirectory
     $installer = New-Object -ComObject WindowsInstaller.Installer
     $database = $installer.OpenDatabase($InstallerPath, 0)
     function Read-MsiProperty([string]$Name) {
@@ -56,8 +60,13 @@ try {
     $summary = $database.SummaryInformation(0)
     if ([string]$summary.Property(7) -cne 'Arm64;1033') { throw 'MSI is not a native ARM64 package.' }
 } finally {
-    foreach ($com in @($summary, $database, $installer)) {
-        if ($null -ne $com) { [void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($com) }
+    try {
+        foreach ($com in @($summary, $database, $installer)) {
+            if ($null -ne $com) { [void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($com) }
+        }
+    } finally {
+        [Environment]::CurrentDirectory = $previousDirectory
+        Pop-Location
     }
 }
 $installRoot = Join-Path $EvidenceDirectory 'installed'
@@ -70,6 +79,7 @@ $sentinelHash = (Get-FileHash -LiteralPath $sentinel -Algorithm SHA256).Hash
 function Invoke-Msi([string[]]$MsiArguments, [int[]]$AllowedExitCodes) {
     $start = [Diagnostics.ProcessStartInfo]::new()
     $start.FileName = Join-Path $env:WINDIR 'System32/msiexec.exe'
+    $start.WorkingDirectory = $nativeDirectory
     $start.UseShellExecute = $false
     $start.CreateNoWindow = $true
     foreach ($argument in $MsiArguments) { [void]$start.ArgumentList.Add($argument) }
@@ -114,11 +124,26 @@ try {
         (Get-FileHash -LiteralPath $repositoryLock -Algorithm SHA256).Hash) { throw 'Installed Swift model lock changed.' }
     $shortcutPath = Join-Path ([Environment]::GetFolderPath('CommonPrograms')) 'Swift Bonsai 2 Runner.lnk'
     if (-not (Test-Path -LiteralPath $shortcutPath -PathType Leaf)) { throw 'Start Menu shortcut is missing.' }
-    $shell = New-Object -ComObject WScript.Shell
-    $shortcut = $shell.CreateShortcut($shortcutPath)
-    # Advertised shortcuts resolve their target through Windows Installer; the
-    # argument is still readable without starting the application or a model.
-    if ($shortcut.Arguments -cne 'installed-chat') { throw 'Start Menu shortcut bypasses the verified native launcher.' }
+    $shell = $null
+    $shortcut = $null
+    $previousDirectory = [Environment]::CurrentDirectory
+    Push-Location -LiteralPath $nativeDirectory
+    try {
+        [Environment]::CurrentDirectory = $nativeDirectory
+        $shell = New-Object -ComObject WScript.Shell
+        $shortcut = $shell.CreateShortcut($shortcutPath)
+        # Advertised shortcuts resolve their target through Windows Installer.
+        if ($shortcut.Arguments -cne 'installed-chat') { throw 'Start Menu shortcut bypasses the verified native launcher.' }
+    } finally {
+        try {
+            foreach ($com in @($shortcut, $shell)) {
+                if ($null -ne $com) { [void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($com) }
+            }
+        } finally {
+            [Environment]::CurrentDirectory = $previousDirectory
+            Pop-Location
+        }
+    }
     $checked = $true
 } finally {
     if ($attempted) {
