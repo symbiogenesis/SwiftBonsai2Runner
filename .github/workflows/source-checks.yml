@@ -18,11 +18,6 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
-concurrency:
-  # Scheduled audits, pushes and PRs supersede only the same event/ref lane.
-  # Every manual check keeps its own run and cannot be cancelled by a push.
-  group: source-checks-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}-${{ github.event_name == 'workflow_dispatch' && github.run_id || 'latest' }}
-  cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' }}
 jobs:
   changes:
     runs-on: ubuntu-24.04-arm
@@ -97,7 +92,13 @@ jobs:
                   print(f'- {name}: {str(enabled).lower()}', file=summary)
   portable:
     needs: changes
-    if: needs.changes.outputs.portable == 'true'
+    if: >-
+      always() && !cancelled()
+      && (github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch')
+      && (needs.changes.result != 'success' || needs.changes.outputs.portable == 'true')
+    concurrency:
+      group: portable-${{ github.event.pull_request.number || github.ref }}-${{ github.event_name == 'workflow_dispatch' && github.run_id || 'latest' }}
+      cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' }}
     # Untrusted pull requests run only on a disposable hosted runner. This
     # focused screen cannot qualify native Windows or actual-model behavior.
     runs-on: ubuntu-24.04-arm
@@ -106,6 +107,12 @@ jobs:
       run:
         shell: bash
     steps:
+      - name: Reject an unsuccessful source-check selector
+        if: needs.changes.result != 'success'
+        shell: bash
+        run: |
+          echo 'Source-check selection failed; portable checks cannot be skipped.' >&2
+          exit 1
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
@@ -154,13 +161,25 @@ jobs:
           exact_test context_admission_fails_closed_at_boundary_and_overflow --package bonsai-broker --test request_policy
   markdown:
     needs: changes
-    if: needs.changes.outputs.markdown == 'true'
+    if: >-
+      always() && !cancelled()
+      && (github.event_name == 'push' || github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch')
+      && (needs.changes.result != 'success' || needs.changes.outputs.markdown == 'true')
+    concurrency:
+      group: markdown-standards-${{ github.event.pull_request.number || github.ref }}-${{ github.event_name == 'workflow_dispatch' && github.run_id || 'latest' }}
+      cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' }}
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 10
     defaults:
       run:
         shell: bash
     steps:
+      - name: Reject an unsuccessful source-check selector
+        if: needs.changes.result != 'success'
+        shell: bash
+        run: |
+          echo 'Source-check selection failed; Markdown checks cannot be skipped.' >&2
+          exit 1
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
@@ -192,10 +211,22 @@ jobs:
           "$RUNNER_TEMP/rumdl-bin/rumdl" fmt --check --no-cache .
   audit:
     needs: changes
-    if: needs.changes.outputs.audit == 'true' && github.ref == 'refs/heads/main'
+    if: >-
+      always() && !cancelled() && github.ref == 'refs/heads/main'
+      && (github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
+      && (needs.changes.result != 'success' || needs.changes.outputs.audit == 'true')
+    concurrency:
+      group: dependency-audit-${{ github.ref }}-${{ github.event_name == 'workflow_dispatch' && github.run_id || 'latest' }}
+      cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' }}
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 15
     steps:
+      - name: Reject an unsuccessful source-check selector
+        if: needs.changes.result != 'success'
+        shell: bash
+        run: |
+          echo 'Source-check selection failed; dependency auditing cannot be skipped.' >&2
+          exit 1
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false

@@ -587,7 +587,9 @@ and fresh dependency audits on relevant main pushes and the weekly schedule.
 Changed paths select each job without a compiler; documentation-only changes skip
 portable compilation. Missing or unusable ranges select every check eligible for
 that event. Manual dispatch selects portable and Markdown checks on any branch,
-and dependency auditing on `main`. These read-only jobs run no complete suite,
+and dependency auditing on `main`. Each check supersedes only its own pending
+work, while manual checks keep independent runs. A failed selector fails every
+eligible check before checkout or compilation. These read-only jobs run no complete suite,
 model, benchmark or self-hosted job; they qualify neither native Windows behavior
 nor actual-model/device acceptance.
 

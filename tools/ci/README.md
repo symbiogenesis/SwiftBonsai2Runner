@@ -107,6 +107,8 @@ linter changes select `rumdl` against [`.rumdl.toml`](../../.rumdl.toml), while
 relevant main pushes and the weekly schedule select a fresh dependency audit.
 Manual dispatch selects portable and Markdown checks on any branch, plus the
 audit on `main`. Unknown source ranges select all checks eligible for that event.
+Each check supersedes only its own pending work; manual checks keep independent
+runs. A failed selector fails every eligible check before checkout or compilation.
 Source-checks workflow edits select every eligible check. These jobs retain read-only repository
 permissions and use no models or physical devices; Foundation and device acceptance
 remain separate requirements.
