@@ -484,7 +484,8 @@ route, authenticate original checkpoint/conversion records separately, and verif
 native SSM order; direction agreement does not close those gates.
 
 Extend the historical Prism 0.1.13 bounded four-worker scale/history evidence
-with separately qualified active-release evidence before promotion. Retain the 0.1.12 readiness and historical
+with separately qualified active-release evidence before promotion. Retain the
+0.1.12 readiness and historical
 0.1.10 configured-worker observations at their original identities. Retain the previously released
 copy-then-scale recurrent path until the fused source candidate has actual-model
 numerical, throughput and resource evidence. Exercise the selected numerical
@@ -1474,7 +1475,8 @@ strided `tensor.data` passes while preserving exact per-128 FMA/nonfused order),
 probe and supervisor to bounded multi-projection resident placement (`1..=2` resident projections
 within the `64` MiB arena, `1..=4` streaming projections, beginning with `blk.0.ffn_up.weight`). All
 74 Prism unit tests, 14 Runner `model_device` tests, formatting, strict Release Clippy and Release
-builds passed. Recorded power endpoints showed AC connected (`100%` charge at the outer endpoints of the `132.25`-second run within
+builds passed. Recorded power endpoints showed AC connected (`100%` charge at the
+outer endpoints of the `132.25`-second run within
 the `540.0`-second predeclared allowance, with AC, saver off and `100%` charge at all four arm
 endpoints of both device controls), `single-projection-batch4-resident` (`blk.0.ffn_up.weight`,
 `120` ops in `30` queue writes, `29,822,976` mapped bytes) and `two-projection-batch4-resident`
@@ -1530,7 +1532,8 @@ enabling all 8 128-byte HVX contexts (`HMX_Q2_HVX_WORKERS=8`, `kparams.n_threads
 KiB (`n_chunk=128`, `136` chunks/op) to 2 MiB (`n_chunk=4352`, `vtcm_size=1,576,960` bytes, `4`
 chunks/op with zero tail waste, `34x` fewer synchronous HMX/DMA/HVX chunk barriers), and selecting
 `HTP_POWER_MODE_BURST` (`7`) yielded the following diagnostic `nativeSubmitAndWaitMilliseconds`.
-Recorded endpoints showed AC connected (`95%` charge, saver off at the outer endpoints of the `199.09`-second run within the `300.0`-second default
+Recorded endpoints showed AC connected (`95%` charge, saver off at the outer
+endpoints of the `199.09`-second run within the `300.0`-second default
 budget and at all four arm endpoints of both controls): `8.18`, `9.33` and `13.28` ms for
 `single-projection-batch10-resident` (`320.31-536.98` ms native evaluation vs `294.61-342.29` ms
 CPU) and `26.77`, `16.84` and `15.60` ms for `two-projection-batch10-resident` (`~7.80-8.42` ms per
@@ -1552,14 +1555,16 @@ and dispatch the entire `[5120, 17408]` projection as a single `K=5120, M=17408,
 signed `v81` HTP opcode descriptors (`HTP_OP_RMS_NORM`, `HTP_OP_RMS_NORM_MUL`, `HTP_OP_GLU_SWIGLU`,
 `HTP_OP_UNARY_SILU`, `HTP_OP_MUL`/`ADD`/`SUB`/`DIV`, `HTP_OP_ROPE`, `HTP_OP_FLASH_ATTN_EXT`,
 `HTP_OP_SSM_CONV`, `HTP_OP_GATED_DELTA_NET`, `HTP_OP_HADAMARD`, and VTCM pass flags).
-Recorded endpoints showed AC connected (`99%` charge, saver off at the outer endpoints of the `32.26`-second run within the `300.0`-second
+Recorded endpoints showed AC connected (`99%` charge, saver off at the outer
+endpoints of the `32.26`-second run within the `300.0`-second
 default budget and at all four arm endpoints of both controls); uninterrupted
 stability is unknown. DSP-side reduction shrinks
 shared-memory output traffic from `22.28` MB of bitplanes to a single `69,632`-byte `F32` vector
 (`320x` less output traffic per projection, zero host bitplane reconstruction).
 Recorded `nativeSubmitAndWaitMilliseconds` were `0.9832`, `0.6769` and `0.6436` ms for
 `single-projection-native-q2-resident` (`3` ops in `3` queue writes) and `1.4439`, `1.0908` and
-`1.0821` ms (`~0.541` ms per `[5120, 17408]` projection; the separate 4-worker NEON CPU observation was `~2-3` ms)
+`1.0821` ms (`~0.541` ms per `[5120, 17408]` projection; the separate 4-worker NEON
+CPU observation was `~2-3` ms)
 for `two-projection-native-q2-resident` (`6` ops in `6` queue writes, with token `128` native
 evaluation at `506.15` ms vs `516.49` ms on CPU), while matching all `248,320` vocabulary logits
 across tokens `42`, `43` and `128` with cosine similarity `0.999906-0.999974`, RMSE `0.0221-0.0286`,
@@ -1611,7 +1616,8 @@ and `446.20` ms, with CPU observations of `463.97` and `478.07` ms on tokens `43
 Three-token totals were `1,386.00` ms native and `1,392.70` ms CPU. Historical source
 `a383e92` recorded `555.44` and `586.48` ms under different conditions; these are
 diagnostic observations, not a qualified cross-run improvement. The scoped-flush
-control recorded `4.8742`, `4.4271` and `4.5424` ms of NPU submit-and-wait per token (`~0.341-0.375` ms
+control recorded `4.8742`, `4.4271` and `4.5424` ms of NPU submit-and-wait per token
+(`~0.341-0.375` ms
 per projection), and `four-layer-25proj-native-q2-resident` (all 25 `PQ2_0` projections of the
 complete 4-layer repeating block `blk.0 + blk.1 + blk.2 + blk.3`, `75` ops in `75` queue writes,
 `452,784,128` mapped bytes with `427,622,400` resident weight bytes, `25` prepared tensors and `50`

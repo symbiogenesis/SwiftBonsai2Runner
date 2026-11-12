@@ -227,7 +227,8 @@ Exact source identities and assertion mappings remain in
 
 The serving path retains the probability pipeline, mel constants
 and resampler upstream; candidate Rust modules do not change that active path.
-Top-k/top-p ordering and mel changes need separate numerical evidence. Resampling is outside the current already-24-kHz reference
+Top-k/top-p ordering and mel changes need separate numerical evidence.
+Resampling is outside the current already-24-kHz reference
 path. Full-model speech output, quality and resource acceptance remain CI work
 under `PLAN.md`; bit parity alone makes no performance claim.
 

@@ -183,6 +183,11 @@ matched all 39,504,384 logits and live-state values byte for byte for one suppli
 Elite Extreme with explicit NEON, four row workers and adapter scale 1.3 (5.85 GiB checker peak Job
 commit). None of these partial checks authorizes a PTQ1 default.
 
+Those 0.1.14 plans are historical packet targets. The current combined-service
+harness embeds the active 0.1.23 lock; new execution requires either separately
+prepared frozen tooling or a newly reviewed active-release packet. It cannot
+complete the earlier trial or transfer that trial's scores to the active release.
+
 A reproducible correctness/security/recovery regression rejects the tested
 configuration. A performance no-go must use the predeclared device/settings and
 accepted latency/quality limits, including any capacity/energy route to promotion.

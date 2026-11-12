@@ -158,7 +158,8 @@ runtime source forbids unsafe code. See the
 
 ASR/TTS intentionally use separate executables and GGML versions. ASR disables
 Metal/optional accelerators and pins CPU-only CMake. TTS builds static CPU libraries
-with BLAS, OpenMP, KleidiAI, automatic dynamic-backend loading, tests and examples disabled. Its runtime can separately register an existing
+with BLAS, OpenMP, KleidiAI, automatic dynamic-backend loading, tests and examples
+disabled. Its runtime can separately register an existing
 local Hexagon `HTP0` DLL backend; [speech source documentation](../src/speech-tts/README.md#optional-hexagon-runtime)
 defines that unqualified selection and its verification limits. Combining their
 native libraries risks version conflicts; RustSec does not fully cover bundled C/C++.

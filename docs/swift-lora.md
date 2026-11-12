@@ -4,7 +4,8 @@ The native app enables the pinned OrcaRouter adapter experimentally at scale **1
 `bonsai-tools chat --no-abliterate-lora` opts out. Settings accepts 0 to 2 in 0.1 steps for the
 next response and every Extra effort pass, without reloading; zero disables correction
 but retains the adapter. The active runtime is [Prism 0.1.23](native-rust-engine.md);
-historical lifecycle results below keep their original runtime identities. Bounded native ARM64 loading/decode passes, but **Swift basis
+historical lifecycle results below keep their original runtime identities.
+Bounded native ARM64 loading/decode passes, but **Swift basis
 correctness, effectiveness, quality and standard/daily-service acceptance are unqualified**.
 No optimal scale is established. The broker has an explicit development option;
 no local training is needed.

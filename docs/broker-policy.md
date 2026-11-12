@@ -333,7 +333,8 @@ prompts, arguments or raw I/O errors.
 The Rust `credentials` command creates a fresh random directory with distinct
 random keys under an existing owner-controlled external local parent. Protected
 owner/LocalSystem ACLs exist before secret writes and are verified. Existing
-objects are never reused. It returns paths only. Same-user/admin access and parent-owner replacement remain
+objects are never reused. It returns paths only. Same-user/admin access and
+parent-owner replacement remain
 outside its assurance. Partial directories remain for inspection.
 See [commands](development-guide.md#explicit-development-broker).
 

@@ -29,7 +29,7 @@ or representation automatically.
 
 [Automatic profiles](hardware-capabilities.md#automatic-profile-selection),
 [Adreno](adreno.md) and [Hexagon](hexagon.md) remain unqualified.
-Inventory and `-PlanOnly` load no model and cannot promote defaults; the
+Inventory and nonlaunching policy plans load no model and cannot promote defaults; the
 [X2 thread screen](cpu-kernels.md#x2-cpu-thread-screen) runs in device CI.
 Owned UI inference/speech requires [native containment](sandboxing.md), whose
 actual-model and broker-only/same-user isolation limits still apply.

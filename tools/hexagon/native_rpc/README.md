@@ -83,7 +83,8 @@ one of the following arguments:
   limbs. Its 64 literal expected dots include all weight symbols, both guard
   signs, extreme sums and odd values above FP16's exact integer range. The
   solver requests 61,440 bytes of VTCM scratch. The supervisor selects this case
-  with `-Case GuardedQ2`; it cannot substitute F32 evidence for the Q2 gate.
+  with the native request field `"case": "GuardedQ2"`; it cannot substitute F32
+  evidence for the Q2 gate.
 - `--reference-queue-noblock-probe` and `--reference-queue-q2-noblock-probe`, each
   followed by the absolute package directory, separately select the documented
   six-argument `dspqueue_write_noblock` entry for the identical F32 or guarded-Q2
