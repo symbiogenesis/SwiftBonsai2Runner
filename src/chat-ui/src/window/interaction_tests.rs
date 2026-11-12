@@ -425,7 +425,13 @@ fn abliteration_settings_keyboard_selection_reaches_next_turn_and_locks_while_bu
     chat.state_mut().app.show_settings = true;
     chat.run();
     chat.get_by_role_and_label(egui::Role::Button, "Advanced response controls")
+        .scroll_to_me();
+    chat.run();
+    chat.get_by_role_and_label(egui::Role::Button, "Advanced response controls")
         .click();
+    chat.run();
+    chat.get_by_role_and_label(egui::Role::Slider, "Abliteration scale")
+        .scroll_to_me();
     chat.run();
     chat.get_by_role_and_label(egui::Role::Slider, "Abliteration scale")
         .focus();
@@ -456,7 +462,13 @@ fn abliteration_startup_opt_out_disables_settings_control() {
     chat.state_mut().app.show_settings = true;
     chat.run();
     chat.get_by_role_and_label(egui::Role::Button, "Advanced response controls")
+        .scroll_to_me();
+    chat.run();
+    chat.get_by_role_and_label(egui::Role::Button, "Advanced response controls")
         .click();
+    chat.run();
+    chat.get_by_role_and_label(egui::Role::Slider, "Abliteration scale")
+        .scroll_to_me();
     chat.run();
     assert!(
         chat.get_by_label("Disabled by the selected launch options.")

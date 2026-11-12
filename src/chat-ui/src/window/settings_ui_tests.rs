@@ -207,7 +207,13 @@ fn settings_response_controls_stay_locked_while_a_response_is_generating() {
             .is_disabled()
     );
     chat.get_by_role_and_label(egui::Role::Button, "Advanced response controls")
+        .scroll_to_me();
+    chat.run();
+    chat.get_by_role_and_label(egui::Role::Button, "Advanced response controls")
         .click();
+    chat.run();
+    chat.get_by_role_and_label(egui::Role::Slider, "Abliteration scale")
+        .scroll_to_me();
     chat.run();
     assert!(
         chat.get_by_role_and_label(egui::Role::Slider, "Abliteration scale")
@@ -216,6 +222,30 @@ fn settings_response_controls_stay_locked_while_a_response_is_generating() {
     );
     assert!(!chat.state().app.enable_thinking);
     assert!(chat.state().commands.try_recv().is_err());
+}
+
+#[test]
+fn settings_popup_escape_closes_the_combo_before_the_modal() {
+    for size in [[1180.0, 860.0], [620.0, 640.0]] {
+        let mut chat = harness(size, false);
+        open_settings(&mut chat);
+        chat.get_by_role_and_label(egui::Role::ComboBox, "Output cap")
+            .scroll_to_me();
+        chat.run();
+        chat.get_by_role_and_label(egui::Role::ComboBox, "Output cap")
+            .click();
+        chat.run();
+        assert!(egui::Popup::is_any_open(&chat.ctx));
+        chat.key_press(egui::Key::Escape);
+        chat.run();
+        assert!(!egui::Popup::is_any_open(&chat.ctx));
+        assert!(chat.state().app.show_settings);
+        chat.key_press(egui::Key::Escape);
+        chat.run();
+        assert!(!chat.state().app.show_settings);
+        assert_eq!(chat.state().app.input, "Keep my next draft 🌱");
+        assert!(chat.state().commands.try_recv().is_err());
+    }
 }
 
 #[test]
