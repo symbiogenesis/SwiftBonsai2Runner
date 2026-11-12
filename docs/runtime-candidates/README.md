@@ -188,13 +188,14 @@ verdict. Benchmarks and full suites remain CI-only.
 
 ### Hosted headless comparator preparation
 
-The explicit [hosted candidate workflow](../../.github/workflows/publisher-headless-candidate.yml)
-uses the native [build-tools headless publisher operation](../../tools/bonsai/src/build_tools/headless.rs)
-to apply this exact patch to the verified source archive. It builds separate
+The retired one-shot hosted candidate workflow used the native
+[build-tools headless publisher operation](../../tools/bonsai/src/build_tools/headless.rs)
+to apply this exact patch to the verified source archive. The operation remains
+available to reproduce the candidate on hosted CI. It builds separate
 `llama-completion`, `llama-server`, `llama-bench` and argument-fixture executables.
 The existing installed publisher bundle, Runner runtime locks, app selection,
-worker mitigations and filesystem grants are unchanged. The workflow has no
-owner-device job and downloads no model artifacts.
+worker mitigations and filesystem grants are unchanged. Preparation downloads
+no model artifacts and launches no owner-device job.
 
 The compiler archive and its ARM64 executables reuse the retained LLVM 23.1.4
 identities. The build records its hosted image, installed MSVC/SDK, compiler,

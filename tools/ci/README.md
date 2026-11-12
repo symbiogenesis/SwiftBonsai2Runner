@@ -37,6 +37,31 @@ The routing, baseline, output and gate regressions are Rust tests. Use named
 focused selections locally with external targets/working directories; complete
 suites remain CI-only under [the validation policy](../../docs/validation.md).
 
+## Workflow scope
+
+The retained workflows own current checks or open gates in [PLAN.md](../../PLAN.md):
+
+| Purpose | Workflows |
+| --- | --- |
+| Routine source checks | `foundation`, `premerge`, `markdown`, `dependency-audit` |
+| Windows ARM64 packaging and publication | `release` |
+| Runtime application, row-worker and numerical acceptance | `native-runtime-acceptance`, `native-row-qualification`, `native-ptq1-numerics` |
+| Independent packing and pending public-pack reconstruction | `ptq1-packing-qualification`, `ptq1-public-authoring-reference` |
+| Native accelerator and containment controls | `hexagon-qualification`, `hexagon-windows-abi`, `sandbox-qualification` |
+| Pending paired performance and dependency gates | `tts-evaluation`, `x2-cpu-evaluation`, `json-candidate` |
+
+Standalone chat, speech and runtime-parity candidate pipelines duplicated the
+production checks and builds now owned by Foundation, release and native-runtime
+acceptance. The X2 compute pipeline duplicated Hexagon qualification and the
+independently triggered Windows ABI control. These duplicate pipelines are retired.
+
+Completed one-shot publisher startup, SDK inventory, public QAIC, adapter direction
+and retained numerical audit pipelines are also retired. Their source recipes,
+immutable inputs and historical evidence remain available. LoRA/PTQ1 plan-only
+pipelines are replaced by the documented native CLI plan commands; they never
+captured model qualification. Removing these pipelines closes no pending model,
+device, provenance, performance or human acceptance gate.
+
 ## Native acceptance admission
 
 `native-acceptance-guard --json REQUEST` is the shared typed validator used by

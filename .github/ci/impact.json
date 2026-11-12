@@ -164,8 +164,6 @@
         "config/prism-inference.lock.json",
         "config/model.metadata.json",
         ".github/workflows/x2-cpu-evaluation.yml",
-        ".github/workflows/swift-lora-qualification.yml",
-        ".github/workflows/swift-ptq1-screen.yml",
         ".github/workflows/native-runtime-acceptance.yml"
       ]
     }
