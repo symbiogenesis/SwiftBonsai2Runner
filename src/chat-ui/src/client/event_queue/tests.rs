@@ -129,11 +129,7 @@ fn saturated_delivery_remains_cancellable_and_terminal_notifications_fit() -> Re
         let (started, waiting) = mpsc::channel();
         sender.0.lock().map_err(|_| Failure::Shutdown)?.wait_started = Some(started);
         let worker = thread::spawn(move || {
-            let outcome = sender.stream_until(
-                Event::Text("surplus".into()),
-                &incoming,
-                Instant::now() + Duration::from_secs(10),
-            );
+            let outcome = sender.stream(Event::Text("surplus".into()), &incoming);
             if !shutdown {
                 assert!(
                     sender
@@ -190,11 +186,7 @@ fn backpressured_delivery_resumes_with_exact_fifo_bytes_after_consumption() -> R
     sender.0.lock().map_err(|_| Failure::Shutdown)?.wait_started = Some(started);
     let (finished, outcome) = mpsc::channel();
     let worker = thread::spawn(move || {
-        let result = sender.stream_until(
-            Event::Text("resumed".into()),
-            &incoming,
-            Instant::now() + Duration::from_secs(10),
-        );
+        let result = sender.stream(Event::Text("resumed".into()), &incoming);
         assert!(finished.send(result).is_ok());
     });
     assert!(waiting.recv_timeout(Duration::from_secs(3)).is_ok());
@@ -215,14 +207,10 @@ fn backpressured_delivery_resumes_with_exact_fifo_bytes_after_consumption() -> R
 }
 
 #[test]
-fn saturation_deadline_closed_consumer_and_control_overflow_fail_without_waiting() -> Result<()> {
+fn saturated_closed_consumer_and_control_overflow_fail_without_waiting() -> Result<()> {
     let (sender, receiver) = channel();
     fill(&sender)?;
     let (_commands, incoming) = mpsc::channel();
-    assert!(matches!(
-        sender.stream_until(Event::Text("surplus".into()), &incoming, Instant::now()),
-        Err(Failure::Message(_))
-    ));
     for _ in 0..CONTROL_RESERVE {
         sender
             .send(Event::Stage("Reserved"))
@@ -231,29 +219,22 @@ fn saturation_deadline_closed_consumer_and_control_overflow_fail_without_waiting
     assert_eq!(sender.send(Event::Stopped), Err(()));
     drop(receiver);
     assert_eq!(
-        sender.stream_until(
-            Event::Text("surplus".into()),
-            &incoming,
-            Instant::now() + Duration::from_secs(10)
-        ),
+        sender.stream(Event::Text("surplus".into()), &incoming),
         Err(Failure::Shutdown)
     );
     Ok(())
 }
 
 #[test]
-fn saturated_delivery_expires_at_the_request_deadline() -> Result<()> {
+fn saturated_delivery_stops_when_command_sender_disconnects() -> Result<()> {
     let (sender, receiver) = channel();
     fill(&sender)?;
-    let (_commands, incoming) = mpsc::channel();
-    assert!(matches!(
-        sender.stream_until(
-            Event::Text("surplus".into()),
-            &incoming,
-            Instant::now() + Duration::from_millis(1)
-        ),
-        Err(Failure::Message(_))
-    ));
+    let (commands, incoming) = mpsc::channel();
+    drop(commands);
+    assert_eq!(
+        sender.stream(Event::Text("surplus".into()), &incoming),
+        Err(Failure::Shutdown)
+    );
     assert_eq!(receiver.try_iter().count(), STREAM_EVENTS);
     Ok(())
 }

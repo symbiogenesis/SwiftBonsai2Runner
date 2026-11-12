@@ -91,8 +91,7 @@ fn effort_applies_thinking_selection_to_every_stage() -> Result<()> {
             },
             &incoming,
             &events,
-            Instant::now() + DEADLINE,
-            |body, _| {
+            |body| {
                 let request: serde_json::Value = serde_json::from_slice(&body)
                     .map_err(|_| Failure::Message("invalid thinking stage JSON"))?;
                 assert_eq!(request["enable_thinking"], enable_thinking);
@@ -113,7 +112,7 @@ fn effort_applies_thinking_selection_to_every_stage() -> Result<()> {
 }
 
 #[test]
-fn effort_stages_use_fresh_original_context_and_one_deadline() -> Result<()> {
+fn effort_stages_use_fresh_original_context() -> Result<()> {
     let (_commands, incoming) = mpsc::channel();
     let (events, outgoing) = crate::client::event_channel();
     let pending = task();
@@ -132,7 +131,6 @@ fn effort_stages_use_fresh_original_context_and_one_deadline() -> Result<()> {
         ),
     ]);
     let mut requests = Vec::new();
-    let until = Instant::now() + DEADLINE;
     let (answer, completion) = run_with(
         &pending,
         ResponseOptions {
@@ -142,9 +140,7 @@ fn effort_stages_use_fresh_original_context_and_one_deadline() -> Result<()> {
         },
         &incoming,
         &events,
-        until,
-        |body, deadline| {
-            assert_eq!(deadline, until);
+        |body| {
             requests.push(
                 serde_json::from_slice::<serde_json::Value>(&body)
                     .map_err(|_| Failure::Message("invalid synthetic request"))?,
@@ -221,8 +217,7 @@ fn effort_truncation_stops_later_stages_and_keeps_complete_draft() -> Result<()>
             },
             &incoming,
             &events,
-            Instant::now() + DEADLINE,
-            |_, _| {
+            |_| {
                 let content = ["A plan", "A complete draft", "An unfinished revision"][count];
                 let completion = if count == truncated_stage {
                     Completion::TokenLimit
@@ -266,7 +261,7 @@ fn effort_truncation_stops_later_stages_and_keeps_complete_draft() -> Result<()>
 }
 
 #[test]
-fn effort_cancellation_deadline_and_request_bounds_prevent_later_calls() {
+fn effort_cancellation_and_request_bounds_prevent_later_calls() {
     let (commands, incoming) = mpsc::channel();
     let (events, _outgoing) = crate::client::event_channel();
     let mut count = 0;
@@ -279,8 +274,7 @@ fn effort_cancellation_deadline_and_request_bounds_prevent_later_calls() {
         },
         &incoming,
         &events,
-        Instant::now() + DEADLINE,
-        |_, _| {
+        |_| {
             count += 1;
             commands
                 .send(Command::Stop)
@@ -289,23 +283,6 @@ fn effort_cancellation_deadline_and_request_bounds_prevent_later_calls() {
         },
     );
     assert!(matches!(stopped, Err(Failure::Stopped)));
-    assert_eq!(count, 1);
-    let expired = run_with(
-        &task(),
-        ResponseOptions {
-            max_completion_tokens: 1024,
-            enable_thinking: false,
-            abliteration_scale: None,
-        },
-        &incoming,
-        &events,
-        Instant::now(),
-        |_, _| {
-            count += 1;
-            Ok((message("assistant", "Should not run"), Completion::Finished))
-        },
-    );
-    assert!(matches!(expired, Err(Failure::Message(_))));
     assert_eq!(count, 1);
     let oversized = vec![message("user", &"x".repeat(MAX_REQUEST))];
     let bounded = run_with(
@@ -317,8 +294,7 @@ fn effort_cancellation_deadline_and_request_bounds_prevent_later_calls() {
         },
         &incoming,
         &events,
-        Instant::now() + DEADLINE,
-        |_, _| {
+        |_| {
             count += 1;
             Ok((message("assistant", "Should not run"), Completion::Finished))
         },
@@ -341,8 +317,7 @@ fn effort_review_failure_leaves_complete_draft_visible() {
         },
         &incoming,
         &events,
-        Instant::now() + DEADLINE,
-        |_, _| {
+        |_| {
             count += 1;
             match count {
                 1 => Ok((message("assistant", "A plan"), Completion::Finished)),

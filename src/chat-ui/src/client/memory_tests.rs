@@ -110,7 +110,6 @@ fn owned_request_releases_bytes_before_response_reads_and_preserves_partial_writ
             request,
             &events,
             &incoming,
-            Instant::now() + DEADLINE,
         )?;
         assert!(dropped.get());
         assert_eq!(connection.written, expected);
@@ -147,7 +146,6 @@ fn owned_request_releases_bytes_on_partial_write_and_flush_failure() {
                 request,
                 &events,
                 &incoming,
-                Instant::now() + DEADLINE,
             )
             .is_err()
         );

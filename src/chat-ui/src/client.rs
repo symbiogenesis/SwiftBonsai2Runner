@@ -40,7 +40,7 @@ use sse::Sse;
 const POLL: Duration = Duration::from_millis(100);
 const IO_POLL: Duration = Duration::from_millis(50);
 const SOCKET_POLL: Duration = Duration::from_millis(5);
-const DEADLINE: Duration = Duration::from_mins(10);
+const STARTUP_TIMEOUT: Duration = Duration::from_mins(10);
 // Ten seconds for the broker's explicit model stop, then bounded exit polling
 // and outer-Job cleanup. All phases share this one absolute deadline.
 const BROKER_STOP: Duration = Duration::from_secs(15);
@@ -529,7 +529,7 @@ fn wait_ready(
     stdout_path: &Path,
     stderr_path: &Path,
 ) -> Result<String> {
-    let until = Instant::now() + DEADLINE;
+    let until = Instant::now() + STARTUP_TIMEOUT;
     loop {
         check_commands(commands)?;
         let output = read_bounded_file(stdout_path, MAX_HEAD)?;
@@ -798,10 +798,11 @@ fn check_commands(commands: &Receiver<Command>) -> Result<()> {
     }
 }
 
+// Generation has no elapsed-time cutoff. Every socket operation still observes
+// the same Stop/Shutdown channel, including while no response bytes arrive.
 struct Interruptible<'a> {
     stream: TcpStream,
     commands: &'a Receiver<Command>,
-    until: Instant,
     interrupted: Option<Failure>,
 }
 
@@ -813,15 +814,7 @@ impl Interruptible<'_> {
                 "Native chat request interrupted",
             ));
         }
-        let result = check_commands(self.commands).and_then(|()| {
-            if Instant::now() >= self.until {
-                Err(Failure::Message(
-                    "The local model took longer than the ten-minute request limit.",
-                ))
-            } else {
-                Ok(())
-            }
-        });
+        let result = check_commands(self.commands);
         if let Err(failure) = result {
             self.interrupted = Some(failure);
             return Err(io::Error::new(
@@ -835,11 +828,7 @@ impl Interruptible<'_> {
     fn wait(&mut self) -> io::Result<()> {
         // The socket is nonblocking: wait on the command channel instead of
         // a socket timeout, so Stop/Shutdown wake a stalled read or write.
-        let timeout = self
-            .until
-            .saturating_duration_since(Instant::now())
-            .min(SOCKET_POLL);
-        match self.commands.recv_timeout(timeout) {
+        match self.commands.recv_timeout(SOCKET_POLL) {
             Ok(Command::Stop) => self.interrupted = Some(Failure::Stopped),
             Ok(Command::Shutdown) | Err(RecvTimeoutError::Disconnected) => {
                 self.interrupted = Some(Failure::Shutdown);
@@ -905,34 +894,9 @@ fn generate(
     commands: &Receiver<Command>,
     events: &EventSender,
 ) -> Result<(Message, Completion)> {
-    generate_until(
-        port,
-        key,
-        request,
-        commands,
-        events,
-        Instant::now() + DEADLINE,
-    )
-}
-
-fn generate_until(
-    port: u16,
-    key: &str,
-    request: Vec<u8>,
-    commands: &Receiver<Command>,
-    events: &EventSender,
-    until: Instant,
-) -> Result<(Message, Completion)> {
     check_commands(commands)?;
-    if Instant::now() >= until {
-        return Err(Failure::Message(
-            "The response exceeded its overall ten-minute deadline.",
-        ));
-    }
     let address = SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::LOCALHOST, port));
-    let connect_timeout = until
-        .saturating_duration_since(Instant::now())
-        .min(Duration::from_secs(1));
+    let connect_timeout = Duration::from_secs(1);
     let connected = TcpStream::connect_timeout(&address, connect_timeout);
     check_commands(commands)?;
     let stream = connected.map_err(|_| {
@@ -945,10 +909,9 @@ fn generate_until(
     let mut connection = Interruptible {
         stream,
         commands,
-        until,
         interrupted: None,
     };
-    let outcome = exchange(&mut connection, port, key, request, events, commands, until);
+    let outcome = exchange(&mut connection, port, key, request, events, commands);
     let _checked = connection.check();
     connection.interrupted.map_or(outcome, Err)
 }
@@ -960,7 +923,6 @@ fn exchange(
     request: impl AsRef<[u8]>,
     events: &EventSender,
     commands: &Receiver<Command>,
-    until: Instant,
 ) -> Result<(Message, Completion)> {
     let header = format!(
         "POST /v1/chat/completions HTTP/1.1\r\nHost: 127.0.0.1:{port}\r\nAuthorization: Bearer {key}\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
@@ -982,10 +944,10 @@ fn exchange(
     while let Some(bytes) = body.next_payload()? {
         sse.push(bytes, &mut |text, reasoning| {
             if !text.is_empty() {
-                events.stream_until(Event::Text(text.into_owned()), commands, until)?;
+                events.stream(Event::Text(text.into_owned()), commands)?;
             }
             if !reasoning.is_empty() {
-                events.stream_until(Event::Reasoning(reasoning.into_owned()), commands, until)?;
+                events.stream(Event::Reasoning(reasoning.into_owned()), commands)?;
             }
             Ok(())
         })?;

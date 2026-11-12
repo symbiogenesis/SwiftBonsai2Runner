@@ -7,7 +7,6 @@ use std::{
         Arc, Mutex,
         mpsc::{Receiver, RecvTimeoutError, TryRecvError},
     },
-    time::Instant,
 };
 
 const STREAM_EVENTS: usize = 64;
@@ -109,20 +108,10 @@ impl EventSender {
         Ok(true)
     }
 
-    pub(super) fn stream_until(
-        &self,
-        event: Event,
-        commands: &Receiver<Command>,
-        until: Instant,
-    ) -> Result<()> {
+    pub(super) fn stream(&self, event: Event, commands: &Receiver<Command>) -> Result<()> {
         let mut event = Some(event);
         loop {
             super::check_commands(commands)?;
-            if Instant::now() >= until {
-                return Err(Failure::Message(
-                    "The local model took longer than the ten-minute request limit.",
-                ));
-            }
             if self.try_stream(&mut event)? {
                 return Ok(());
             }
@@ -134,8 +123,7 @@ impl EventSender {
             {
                 let _sent = started.send(());
             }
-            let wait = until.saturating_duration_since(Instant::now()).min(IO_POLL);
-            match commands.recv_timeout(wait) {
+            match commands.recv_timeout(IO_POLL) {
                 Ok(Command::Stop) => return Err(Failure::Stopped),
                 Ok(Command::Shutdown) | Err(RecvTimeoutError::Disconnected) => {
                     return Err(Failure::Shutdown);

@@ -1,18 +1,17 @@
 //! Bounded opt-in planning, drafting and review above the unchanged broker API.
 
 use super::{
-    Command, Completion, DEADLINE, Event, EventSender, Failure, MAX_REQUEST, Message,
-    ResponseOptions, Result, check_commands, generate_until, notify, request_byte_limit,
-    serialize_request,
+    Command, Completion, Event, EventSender, Failure, MAX_REQUEST, Message, ResponseOptions,
+    Result, check_commands, generate, notify, request_byte_limit, serialize_request,
 };
 use serde::Serialize;
-use std::{sync::mpsc::Receiver, time::Instant};
+use std::sync::mpsc::Receiver;
 
 const PLAN: &str = "Extra effort: Planning (1/3)";
 const DRAFT: &str = "Extra effort: Drafting (2/3)";
 const REVIEW: &str = "Extra effort: Reviewing (3/3)";
 
-/// Perform no more than three calls under one deadline and cancellation signal.
+/// Perform no more than three calls under one cancellation signal.
 pub(super) fn run(
     port: u16,
     key: &str,
@@ -21,15 +20,9 @@ pub(super) fn run(
     commands: &Receiver<Command>,
     events: &EventSender,
 ) -> Result<(Message, Completion)> {
-    let until = Instant::now() + DEADLINE;
-    run_with(
-        pending,
-        options,
-        commands,
-        events,
-        until,
-        |request, until| generate_until(port, key, request, commands, events, until),
-    )
+    run_with(pending, options, commands, events, |request| {
+        generate(port, key, request, commands, events)
+    })
 }
 
 #[derive(Clone, Copy, Serialize)]
@@ -92,25 +85,14 @@ fn stage_request(
     )
 }
 
-fn active(commands: &Receiver<Command>, until: Instant) -> Result<()> {
-    check_commands(commands)?;
-    if Instant::now() >= until {
-        return Err(Failure::Message(
-            "Extra effort exceeded its shared ten-minute deadline. Select Retry model to continue.",
-        ));
-    }
-    Ok(())
-}
-
 fn run_with(
     pending: &[Message],
     options: ResponseOptions,
     commands: &Receiver<Command>,
     events: &EventSender,
-    until: Instant,
-    mut generate: impl FnMut(Vec<u8>, Instant) -> Result<(Message, Completion)>,
+    mut generate: impl FnMut(Vec<u8>) -> Result<(Message, Completion)>,
 ) -> Result<(Message, Completion)> {
-    active(commands, until)?;
+    check_commands(commands)?;
     notify(events, Event::Stage(PLAN))?;
     let request = stage_request(
         pending,
@@ -122,8 +104,8 @@ fn run_with(
         },
         options,
     )?;
-    let (plan, completion) = generate(request, until)?;
-    active(commands, until)?;
+    let (plan, completion) = generate(request)?;
+    check_commands(commands)?;
     if completion == Completion::TokenLimit {
         notify(
             events,
@@ -150,8 +132,8 @@ fn run_with(
         },
         options,
     )?;
-    let (draft, completion) = generate(request, until)?;
-    active(commands, until)?;
+    let (draft, completion) = generate(request)?;
+    check_commands(commands)?;
     if completion == Completion::TokenLimit {
         notify(events, Event::Stage("Draft incomplete; review skipped"))?;
         notify(events, Event::RetainedAnswer(draft.content.to_string()))?;
@@ -164,7 +146,7 @@ fn run_with(
     }
     notify(events, Event::Draft(draft.content.to_string()))?;
 
-    active(commands, until)?;
+    check_commands(commands)?;
     notify(events, Event::Stage(REVIEW))?;
     let request = stage_request(
         pending,
@@ -177,8 +159,8 @@ fn run_with(
         },
         options,
     )?;
-    let (revision, completion) = generate(request, until)?;
-    active(commands, until)?;
+    let (revision, completion) = generate(request)?;
+    check_commands(commands)?;
     if completion == Completion::TokenLimit {
         notify(
             events,
