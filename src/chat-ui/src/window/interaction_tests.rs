@@ -84,13 +84,15 @@ fn request_conversation_deletion(chat: &mut Harness<'_, Fixture>, title: &str) {
 fn conversation_deletion_confirms_with_one_pointer_click_after_repeated_reopening() {
     for size in [[1180.0, 860.0], [620.0, 640.0]] {
         let mut chat = harness(size, false);
-        open_sidebar(&mut chat, size);
         for cycle in 0..3 {
             let id = chat.state().app.active_conversation;
             let title = format!("Conversation {cycle}");
             chat.state_mut().app.conversations[0].title = title.clone();
             chat.state_mut().app.input = format!("Unsent draft {cycle}");
             chat.run();
+            // The narrow drawer closes when the confirmation dialog opens.
+            // Each repeated deletion must enter through navigation again.
+            open_sidebar(&mut chat, size);
             request_conversation_deletion(&mut chat, &title);
             assert_eq!(chat.state().app.delete_conversation, Some(id));
             // Node::click sends pointer movement, press and release; AccessKit
@@ -125,9 +127,9 @@ fn conversation_deletion_cancel_and_escape_preserve_the_target_and_unsent_draft(
         let id = chat.state().app.active_conversation;
         chat.state_mut().app.conversations[0].title = "A draft to keep".to_owned();
         chat.state_mut().app.input = "Keep this unsent text.\nAnd this line.".to_owned();
-        open_sidebar(&mut chat, size);
         chat.run();
         for escape in [false, true] {
+            open_sidebar(&mut chat, size);
             request_conversation_deletion(&mut chat, "A draft to keep");
             if escape {
                 chat.key_press(egui::Key::Escape);
