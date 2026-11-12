@@ -341,7 +341,8 @@ impl Search {
     }
 
     pub(super) fn bar(&mut self, ui: &mut egui::Ui, messages: &[Message]) {
-        let accepts_input = ui.memory(|memory| memory.allows_interaction(ui.layer_id()));
+        let accepts_input =
+            ui.is_enabled() && ui.memory(|memory| memory.allows_interaction(ui.layer_id()));
         if accepts_input
             && ui.input_mut(|input| input.consume_key(egui::Modifiers::CTRL, egui::Key::F))
         {

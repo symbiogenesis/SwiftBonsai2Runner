@@ -9,7 +9,7 @@ impl State {
         }
         "Describe the voice in Settings before reading aloud.".clone_into(&mut self.speech_status);
         self.speech_notice = true;
-        self.show_settings = true;
+        self.open_settings(super::settings::Page::Voice);
         false
     }
 

@@ -110,6 +110,7 @@ impl State {
                             .accessible_name("Reply token limit")
                             .on_hover_text("Maximum tokens for the next reply, including thinking. Saved for this conversation.");
                     });
+                    self.response_summary(ui);
                     label
                 })
                 .inner

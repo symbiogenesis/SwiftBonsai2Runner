@@ -59,8 +59,7 @@ fn open_settings(chat: &mut Harness<'_, Fixture>) {
 }
 
 fn select_page(chat: &mut Harness<'_, Fixture>, page: &str) {
-    chat.get_by_role_and_label(egui::Role::Button, page)
-        .click();
+    chat.get_by_role_and_label(egui::Role::Button, page).click();
     chat.run();
 }
 
@@ -77,10 +76,15 @@ fn settings_modal_keeps_navigation_and_dismissal_inside_small_and_large_windows(
                 "All conversations · This device"
             };
             assert!(chat.get_by_label(scope).rect().is_positive());
-            for label in ["Response", "Voice", "Privacy", "Application", "Close settings", "Done"] {
-                let rect = chat
-                    .get_by_role_and_label(egui::Role::Button, label)
-                    .rect();
+            for label in [
+                "Response",
+                "Voice",
+                "Privacy",
+                "Application",
+                "Close settings",
+                "Done",
+            ] {
+                let rect = chat.get_by_role_and_label(egui::Role::Button, label).rect();
                 assert!(
                     rect.is_positive()
                         && rect.left() >= 0.0

@@ -1,0 +1,466 @@
+//! Scoped preferences in one responsive, keyboard-contained native surface.
+use super::{OUTPUT_TOKENS, RichText, State, VOICE_LIMIT, client, egui};
+
+#[derive(Clone, Copy, Default, Eq, Hash, PartialEq)]
+pub(super) enum Page {
+    #[default]
+    Response,
+    Voice,
+    Privacy,
+    Application,
+}
+
+impl Page {
+    const ALL: [Self; 4] = [
+        Self::Response,
+        Self::Voice,
+        Self::Privacy,
+        Self::Application,
+    ];
+
+    const fn label(self) -> &'static str {
+        match self {
+            Self::Response => "Response",
+            Self::Voice => "Voice",
+            Self::Privacy => "Privacy",
+            Self::Application => "Application",
+        }
+    }
+
+    const fn title(self) -> &'static str {
+        match self {
+            Self::Response => "Shape your next response",
+            Self::Voice => "A voice that feels right",
+            Self::Privacy => "Keep your space private",
+            Self::Application => "About your application",
+        }
+    }
+}
+
+#[derive(Default)]
+pub(super) struct View {
+    page: Page,
+    focus: bool,
+    voice_help: bool,
+}
+
+impl State {
+    pub(super) fn open_settings(&mut self, page: Page) {
+        self.settings_view.page = page;
+        self.settings_view.focus = true;
+        self.show_settings = true;
+        self.sidebar_open = false;
+        self.focus_composer = false;
+    }
+
+    fn close_settings(&mut self, ctx: &egui::Context) {
+        self.show_settings = false;
+        self.focus_composer = true;
+        ctx.request_repaint();
+    }
+
+    pub(super) fn response_summary(&mut self, ui: &mut egui::Ui) {
+        let thinking = if self.enable_thinking {
+            "Thinking on"
+        } else {
+            "Thinking off"
+        };
+        let effort = if self.extra_effort {
+            "Extra effort"
+        } else {
+            "Standard"
+        };
+        let mut summary = format!("{thinking} · {effort}");
+        if self.abliteration_enabled
+            && (self.abliteration_scale - client::DEFAULT_ABLITERATION_SCALE).abs() > f32::EPSILON
+        {
+            use std::fmt::Write as _;
+            let _written = write!(summary, " · Adapter {:.1}", self.abliteration_scale);
+        }
+        if ui
+            .add(
+                egui::Button::new(RichText::new(summary).small())
+                    .frame_when_inactive(false)
+                    .corner_radius(8),
+            )
+            .accessible_name("Response settings")
+            .on_hover_text(
+                "Response preferences for this conversation. Changes apply to your next response.",
+            )
+            .clicked()
+        {
+            self.open_settings(Page::Response);
+        }
+    }
+
+    pub(super) fn settings(&mut self, ctx: &egui::Context) {
+        if !self.show_settings {
+            return;
+        }
+        let content = ctx.content_rect();
+        let width = (content.width() - 96.0).clamp(240.0, 800.0);
+        let wide = width >= 700.0;
+        let body_height = (content.height() - if wide { 266.0 } else { 320.0 }).clamp(120.0, 470.0);
+        let visuals = ctx.style().visuals.clone();
+        let frame = egui::Frame::new()
+            .fill(visuals.window_fill)
+            .stroke(visuals.window_stroke)
+            .corner_radius(20)
+            .inner_margin(24)
+            .shadow(visuals.window_shadow);
+        let mut done = false;
+        let modal = egui::Modal::new(egui::Id::unique("settings-modal"))
+            .frame(frame)
+            .backdrop_color(egui::Color32::from_black_alpha(150))
+            .show(ctx, |ui| {
+                ui.set_width(width);
+                done |= settings_header(ui);
+                ui.add_space(16.0);
+                ui.separator();
+                ui.add_space(16.0);
+                if wide {
+                    ui.horizontal_top(|ui| {
+                        ui.vertical(|ui| {
+                            ui.set_width(156.0);
+                            self.settings_navigation(ui, false);
+                        });
+                        ui.add_space(16.0);
+                        ui.vertical(|ui| {
+                            ui.set_width((width - 182.0).max(240.0));
+                            self.settings_content(ui, body_height);
+                        });
+                    });
+                } else {
+                    self.settings_navigation(ui, true);
+                    ui.add_space(16.0);
+                    self.settings_content(ui, body_height);
+                }
+                ui.add_space(16.0);
+                ui.separator();
+                ui.add_space(12.0);
+                ui.horizontal(|ui| {
+                    ui.label(RichText::new("Changes apply immediately.").small().weak());
+                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                        done |= ui
+                            .add(
+                                egui::Button::new(
+                                    RichText::new("Done")
+                                        .color(ui.visuals().selection.stroke.color),
+                                )
+                                .fill(ui.visuals().selection.bg_fill)
+                                .min_size(egui::vec2(84.0, 36.0))
+                                .corner_radius(10),
+                            )
+                            .clicked();
+                    });
+                });
+            });
+        if done || modal.should_close() {
+            self.close_settings(ctx);
+        }
+    }
+
+    fn settings_navigation(&mut self, ui: &mut egui::Ui, horizontal: bool) {
+        let button_width = if horizontal {
+            (ui.available_width() - 3.0 * ui.spacing().item_spacing.x) / 4.0
+        } else {
+            ui.available_width()
+        };
+        let layout = if horizontal {
+            egui::Layout::left_to_right(egui::Align::Center)
+        } else {
+            egui::Layout::top_down(egui::Align::Min)
+        };
+        ui.with_layout(layout, |ui| {
+            for page in Page::ALL {
+                if !horizontal && matches!(page, Page::Response | Page::Voice) {
+                    if page == Page::Voice {
+                        ui.add_space(20.0);
+                    }
+                    ui.label(
+                        RichText::new(if page == Page::Response {
+                            "CONVERSATION"
+                        } else {
+                            "ON THIS DEVICE"
+                        })
+                        .small()
+                        .weak(),
+                    );
+                    ui.add_space(4.0);
+                }
+                let selected = self.settings_view.page == page;
+                let text = RichText::new(page.label()).color(if selected {
+                    ui.visuals().selection.stroke.color
+                } else {
+                    ui.visuals().text_color()
+                });
+                let response = ui.add_sized(
+                    [button_width, 38.0],
+                    egui::Button::selectable(selected, text).corner_radius(10),
+                );
+                if self.settings_view.focus && selected {
+                    response.request_focus();
+                    self.settings_view.focus = false;
+                }
+                if response.clicked() {
+                    self.settings_view.page = page;
+                }
+            }
+        });
+    }
+
+    fn settings_content(&mut self, ui: &mut egui::Ui, height: f32) {
+        let page = self.settings_view.page;
+        egui::ScrollArea::vertical()
+            .id_salt(("settings-content", page))
+            .min_scrolled_height(height)
+            .max_height(height)
+            .auto_shrink([false, false])
+            .show(ui, |ui| {
+                ui.horizontal(|ui| {
+                    ui.label(
+                        RichText::new(if page == Page::Response {
+                            "This conversation"
+                        } else {
+                            "All conversations · This device"
+                        })
+                        .small()
+                        .color(ui.visuals().text_color()),
+                    );
+                    if page == Page::Response
+                        && let Some(conversation) = self
+                            .conversations
+                            .iter()
+                            .find(|conversation| conversation.id == self.active_conversation)
+                    {
+                        ui.label(RichText::new("·").weak());
+                        ui.add(
+                            egui::Label::new(RichText::new(&conversation.title).small().weak())
+                                .truncate(),
+                        )
+                        .on_hover_text(&conversation.title);
+                    }
+                });
+                ui.add_space(8.0);
+                ui.label(RichText::new(page.title()).strong().size(21.0));
+                ui.add_space(16.0);
+                match page {
+                    Page::Response => self.response_preferences(ui),
+                    Page::Voice => self.voice_preferences(ui),
+                    Page::Privacy => settings_card(ui, |ui| self.recovery_controls(ui)),
+                    Page::Application => self.application_preferences(ui),
+                }
+            });
+    }
+
+    fn response_preferences(&mut self, ui: &mut egui::Ui) {
+        ui.label(RichText::new("Applies only to this conversation. Changes affect the next response and every Extra effort pass.").small().weak());
+        if self.model.busy() {
+            ui.add_space(8.0);
+            ui.label("Response controls unlock when the current response finishes.");
+        }
+        ui.add_space(12.0);
+        settings_card(ui, |ui| {
+            ui.label(RichText::new("Response style").strong());
+            ui.add_space(8.0);
+            let changed = ui.add_enabled_ui(!self.model.busy(), |ui| {
+                let mut changed = ui.checkbox(&mut self.enable_thinking, "Thinking").changed();
+                ui.label(RichText::new("Reason before answering. Thinking uses part of the reply limit.").small().weak());
+                ui.add_space(12.0);
+                changed |= ui.checkbox(&mut self.extra_effort, "Extra effort (experimental)").changed();
+                ui.label(RichText::new("Plan, draft and review in up to three passes. Takes longer; quality gains are unproven.").small().weak());
+                changed
+            }).inner;
+            self.recovery_dirty |= changed;
+        });
+        ui.add_space(12.0);
+        settings_card(ui, |ui| self.reply_preferences(ui));
+        ui.add_space(12.0);
+        settings_card(ui, |ui| {
+            egui::CollapsingHeader::new("Advanced response controls")
+                .id_salt("settings-advanced-response")
+                .show(ui, |ui| self.adapter_preferences(ui));
+        });
+    }
+
+    fn reply_preferences(&mut self, ui: &mut egui::Ui) {
+        ui.label(RichText::new("Reply length").strong());
+        ui.add_space(8.0);
+        let before = self.output_budget;
+        ui.add_enabled_ui(!self.model.busy(), |ui| {
+            ui.horizontal(|ui| {
+                let label = ui.label("Output cap");
+                egui::ComboBox::from_id_salt("output-cap")
+                    .selected_text(format!(
+                        "{} tokens",
+                        OUTPUT_TOKENS
+                            .get(self.output_budget)
+                            .copied()
+                            .unwrap_or(4096)
+                    ))
+                    .show_ui(ui, |ui| {
+                        for (index, tokens) in OUTPUT_TOKENS.iter().enumerate() {
+                            ui.selectable_value(
+                                &mut self.output_budget,
+                                index,
+                                format!("{tokens} tokens"),
+                            );
+                        }
+                    })
+                    .response
+                    .labelled_by(label.id);
+            });
+        });
+        self.recovery_dirty |= before != self.output_budget;
+        ui.add_space(8.0);
+        ui.label(RichText::new("8,192-token context. The output cap includes thinking. A smaller cap leaves more room for your conversation.").small().weak());
+    }
+
+    fn adapter_preferences(&mut self, ui: &mut egui::Ui) {
+        ui.add_space(8.0);
+        ui.label(RichText::new("Adapter strength").strong());
+        ui.label(RichText::new("Abliteration changes the pinned adapter’s contribution to the response. It is an experimental model adjustment; higher values do not establish better quality.").small().weak());
+        ui.add_space(8.0);
+        let changed = ui
+            .add_enabled_ui(!self.model.busy() && self.abliteration_enabled, |ui| {
+                ui.add(
+                    egui::Slider::new(&mut self.abliteration_scale, 0.0..=2.0)
+                        .step_by(0.1)
+                        .fixed_decimals(1)
+                        .text("Abliteration scale"),
+                )
+                .changed()
+            })
+            .inner;
+        self.recovery_dirty |= changed;
+        ui.label(
+            RichText::new(if self.abliteration_enabled {
+                "0 disables the correction. Default: 1.3. Applies to your next response."
+            } else {
+                "Disabled by the selected launch options."
+            })
+            .small()
+            .weak(),
+        );
+    }
+
+    fn voice_preferences(&mut self, ui: &mut egui::Ui) {
+        ui.label(
+            RichText::new("One voice profile for read aloud across your conversations.")
+                .small()
+                .weak(),
+        );
+        ui.add_space(12.0);
+        settings_card(ui, |ui| {
+            let label = ui.label(RichText::new("Voice profile").strong());
+            ui.add_space(8.0);
+            self.recovery_dirty |= ui
+                .add_enabled(
+                    !self.speaking,
+                    egui::TextEdit::multiline(&mut self.voice_profile)
+                        .desired_rows(4)
+                        .desired_width(f32::INFINITY)
+                        .char_limit(VOICE_LIMIT),
+                )
+                .labelled_by(label.id)
+                .changed();
+            ui.label(
+                RichText::new(
+                    "Describe the voice you want to hear. Applies to your next read aloud.",
+                )
+                .small()
+                .weak(),
+            );
+            if self.speaking {
+                ui.label("Finish or stop speech before changing the voice profile.");
+            }
+        });
+        ui.add_space(12.0);
+        settings_card(ui, |ui| {
+            ui.label(
+                RichText::new(if self.speech_output {
+                    "Read aloud is available"
+                } else {
+                    "Read aloud becomes available after speech preparation."
+                })
+                .strong(),
+            );
+            if ui.button("Read aloud setup").clicked() {
+                self.settings_view.voice_help = !self.settings_view.voice_help;
+            }
+            if self.settings_view.voice_help {
+                ui.add_space(8.0);
+                ui.label(self.read_aloud_help());
+            }
+        });
+    }
+
+    fn application_preferences(&mut self, ui: &mut egui::Ui) {
+        settings_card(ui, |ui| self.update_controls(ui));
+        ui.add_space(12.0);
+        settings_card(ui, |ui| self.runtime_controls(ui));
+        ui.add_space(12.0);
+        settings_card(ui, |ui| {
+            egui::CollapsingHeader::new("Diagnostics")
+                .id_salt("settings-diagnostics")
+                .show(ui, |ui| self.diagnostics_contents(ui));
+        });
+    }
+
+    pub(super) fn diagnostics_contents(&self, ui: &mut egui::Ui) {
+        ui.label("Recent application messages");
+        ui.label(
+            RichText::new("Kept in memory for this session. Review paths before sharing.")
+                .small()
+                .weak(),
+        );
+        if ui.button("Copy diagnostics").clicked() {
+            ui.ctx().copy_text(
+                self.diagnostics
+                    .iter()
+                    .cloned()
+                    .collect::<Vec<_>>()
+                    .join("\n\n"),
+            );
+        }
+        for message in &self.diagnostics {
+            ui.add(egui::Label::new(message).selectable(true).wrap());
+            ui.separator();
+        }
+    }
+}
+
+fn settings_header(ui: &mut egui::Ui) -> bool {
+    let mut close = false;
+    ui.horizontal(|ui| {
+        ui.vertical(|ui| {
+            ui.label(RichText::new("Settings").strong().size(24.0));
+            ui.label(RichText::new("A little more your own.").small().weak());
+        });
+        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+            close = ui
+                .add(
+                    egui::Button::new(RichText::new("×").size(22.0))
+                        .min_size(egui::vec2(36.0, 36.0))
+                        .frame_when_inactive(false)
+                        .corner_radius(10),
+                )
+                .accessible_name("Close settings")
+                .on_hover_text("Close settings · Escape")
+                .clicked();
+        });
+    });
+    close
+}
+
+fn settings_card(ui: &mut egui::Ui, contents: impl FnOnce(&mut egui::Ui)) {
+    egui::Frame::new()
+        .fill(ui.visuals().panel_fill)
+        .stroke(ui.visuals().widgets.noninteractive.bg_stroke)
+        .corner_radius(12)
+        .inner_margin(16)
+        .show(ui, |ui| {
+            ui.set_width(ui.available_width());
+            contents(ui);
+        });
+}

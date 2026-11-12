@@ -47,6 +47,9 @@ mod placement;
 )]
 mod platform;
 mod read_aloud;
+mod settings;
+#[cfg(test)]
+mod settings_ui_tests;
 #[cfg(test)]
 mod tests;
 mod transcript;
@@ -129,6 +132,7 @@ struct State {
     diagnostics: VecDeque<String>,
     show_diagnostics: bool,
     show_settings: bool,
+    settings_view: settings::View,
     sidebar_open: bool,
     help: Option<(&'static str, &'static str)>,
     extra_effort: bool,
@@ -228,6 +232,7 @@ impl State {
             diagnostics: VecDeque::new(),
             show_diagnostics: false,
             show_settings: false,
+            settings_view: settings::View::default(),
             sidebar_open: false,
             help: None,
             extra_effort: false,
@@ -571,6 +576,7 @@ impl State {
         if self.rename_conversation.is_some()
             || self.delete_conversation.is_some()
             || self.edit_message.is_some()
+            || self.show_settings
             || egui::Popup::is_any_open(ctx)
         {
             return;
@@ -605,6 +611,7 @@ impl State {
         if self.rename_conversation.is_none()
             && self.delete_conversation.is_none()
             && self.edit_message.is_none()
+            && !self.show_settings
             && ctx.input_mut(|input| input.consume_key(egui::Modifiers::CTRL, egui::Key::N))
         {
             self.new_chat();
@@ -963,7 +970,7 @@ impl State {
             if voice_description.is_empty() {
                 "Describe the voice in Settings before reading aloud."
                     .clone_into(&mut self.speech_status);
-                self.show_settings = true;
+                self.open_settings(settings::Page::Voice);
                 self.record(&self.speech_status.clone());
                 return;
             }
@@ -1364,7 +1371,7 @@ impl State {
             .add_sized([ui.available_width(), 36.0], egui::Button::new("Settings"))
             .clicked()
         {
-            self.show_settings = !self.show_settings;
+            self.open_settings(settings::Page::Response);
         }
         ui.add_space(8.0);
         if self
@@ -1402,40 +1409,6 @@ impl State {
             .weak(),
         );
         ui.label(RichText::new("Private · On your device").small().weak());
-    }
-
-    fn abliteration_controls(&mut self, ui: &mut egui::Ui) {
-        ui.heading("Abliteration");
-        ui.add_enabled_ui(!self.model.busy() && self.abliteration_enabled, |ui| {
-            ui.add(
-                egui::Slider::new(&mut self.abliteration_scale, 0.0..=2.0)
-                    .step_by(0.1)
-                    .fixed_decimals(1)
-                    .text("Abliteration scale"),
-            );
-        });
-        ui.label(
-            RichText::new(if self.abliteration_enabled {
-                "0 turns it off. Applies to your next response."
-            } else {
-                "Disabled by the selected launch options."
-            })
-            .small()
-            .weak(),
-        );
-        ui.add_space(16.0);
-    }
-
-    fn thinking_controls(&mut self, ui: &mut egui::Ui) {
-        ui.checkbox(&mut self.enable_thinking, "Thinking");
-        ui.label(
-            RichText::new(
-                "Off by default. Applies to your next response and every Extra effort pass.",
-            )
-            .small()
-            .weak(),
-        );
-        ui.add_space(8.0);
     }
 
     fn runtime_controls(&self, ui: &mut egui::Ui) {
@@ -1506,117 +1479,6 @@ impl State {
         }
     }
 
-    fn voice_controls(&mut self, ui: &mut egui::Ui) {
-        ui.heading("Voice");
-        let label = ui.label("Voice profile");
-        ui.add_enabled(
-            !self.speaking,
-            egui::TextEdit::multiline(&mut self.voice_profile)
-                .desired_rows(3)
-                .desired_width(f32::INFINITY)
-                .char_limit(VOICE_LIMIT),
-        )
-        .labelled_by(label.id);
-        ui.label(
-            RichText::new("Describe the voice you want to hear. Applies to your next read aloud.")
-                .small()
-                .weak(),
-        );
-        if !self.speech_output {
-            ui.label("Read aloud becomes available after speech preparation.");
-        }
-        if ui.button("Read aloud setup").clicked() {
-            self.help = Some(("Read aloud setup", self.read_aloud_help()));
-        }
-        ui.add_space(16.0);
-    }
-
-    fn settings(&mut self, ctx: &egui::Context) {
-        if !self.show_settings {
-            return;
-        }
-        let mut open = true;
-        egui::Window::new("Settings")
-            .open(&mut open)
-            .resizable(false)
-            .default_width(400.0)
-            .default_height(620.0)
-            .vscroll(true)
-            .max_height((ctx.content_rect().height() - 48.0).max(180.0))
-            .show(ctx, |ui| {
-                let before = (
-                    self.extra_effort,
-                    self.enable_thinking,
-                    self.output_budget,
-                    self.abliteration_scale,
-                    self.voice_profile.clone(),
-                );
-                self.recovery_controls(ui);
-                self.runtime_controls(ui);
-                self.update_controls(ui);
-                ui.heading("Response");
-                ui.add_enabled_ui(!self.model.busy(), |ui| {
-                    self.thinking_controls(ui);
-                    ui.checkbox(&mut self.extra_effort, "Extra effort (experimental)");
-                    ui.label(
-                        RichText::new(
-                            "Uses up to three passes. Takes longer; quality gains are unproven.",
-                        )
-                        .small()
-                        .weak(),
-                    );
-                    ui.add_space(8.0);
-                    ui.horizontal(|ui| {
-                        let label = ui.label("Output cap");
-                        egui::ComboBox::from_id_salt("output-cap")
-                            .selected_text(format!(
-                                "{} tokens",
-                                OUTPUT_TOKENS
-                                    .get(self.output_budget)
-                                    .copied()
-                                    .unwrap_or(4096)
-                            ))
-                            .show_ui(ui, |ui| {
-                                for (index, tokens) in OUTPUT_TOKENS.iter().enumerate() {
-                                    ui.selectable_value(
-                                        &mut self.output_budget,
-                                        index,
-                                        format!("{tokens} tokens"),
-                                    );
-                                }
-                            })
-                            .response
-                            .labelled_by(label.id);
-                    });
-                });
-                ui.label(
-                    RichText::new("8,192-token context. The output cap includes thinking.")
-                        .small()
-                        .weak(),
-                );
-                ui.add_space(16.0);
-                self.abliteration_controls(ui);
-                self.voice_controls(ui);
-                if ui.button("Open diagnostics").clicked() {
-                    self.show_diagnostics = true;
-                }
-                ui.label(
-                    RichText::new("Technical details stay outside your conversation.")
-                        .small()
-                        .weak(),
-                );
-                self.recovery_dirty |= before
-                    != (
-                        self.extra_effort,
-                        self.enable_thinking,
-                        self.output_budget,
-                        self.abliteration_scale,
-                        self.voice_profile.clone(),
-                    );
-            });
-        self.show_settings = open;
-    }
-
     fn diagnostics(&mut self, ctx: &egui::Context) {
         if !self.show_diagnostics {
             return;
@@ -1626,29 +1488,9 @@ impl State {
             .open(&mut open)
             .default_width(640.0)
             .show(ctx, |ui| {
-                ui.label("Recent application messages");
-                ui.label(
-                    RichText::new("Kept in memory for this session. Review paths before sharing.")
-                        .small()
-                        .weak(),
-                );
-                if ui.button("Copy diagnostics").clicked() {
-                    ui.ctx().copy_text(
-                        self.diagnostics
-                            .iter()
-                            .cloned()
-                            .collect::<Vec<_>>()
-                            .join("\n\n"),
-                    );
-                }
                 egui::ScrollArea::vertical()
                     .max_height(400.0)
-                    .show(ui, |ui| {
-                        for message in &self.diagnostics {
-                            ui.add(egui::Label::new(message).selectable(true).wrap());
-                            ui.separator();
-                        }
-                    });
+                    .show(ui, |ui| self.diagnostics_contents(ui));
             });
         self.show_diagnostics = open;
     }
@@ -1680,7 +1522,7 @@ impl State {
             });
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                 if ui.button("Settings").clicked() {
-                    self.show_settings = !self.show_settings;
+                    self.open_settings(settings::Page::Response);
                 }
                 if self
                     .updates
@@ -1688,7 +1530,7 @@ impl State {
                     .is_some_and(updates::Updates::available)
                     && ui.small_button("Update available").clicked()
                 {
-                    self.show_settings = true;
+                    self.open_settings(settings::Page::Application);
                 }
                 ui.add_enabled_ui(!self.transcript.messages.is_empty(), |ui| {
                     self.transcript.find_button(ui);
@@ -1924,7 +1766,7 @@ impl State {
                                         self.composer_cursor = state.cursor.char_range();
                                     }
                                 }
-                                let focus_requested = self.focus_composer;
+                                let focus_requested = self.focus_composer && !self.show_settings;
                                 if focus_requested {
                                     response.request_focus();
                                     self.focus_composer = false;
@@ -1974,6 +1816,8 @@ impl State {
                             && self.delete_conversation.is_none()
                             && self.edit_message.is_none()
                             && !egui::Popup::is_any_open(ui.ctx())
+                            && !self.show_settings
+                            && ui.is_enabled()
                             && response.has_focus()
                             && !self.composing
                             && !ime_event
@@ -2071,7 +1915,7 @@ impl State {
         }
     }
 
-    fn draw(&mut self, ui: &mut egui::Ui) {
+    fn draw_workspace(&mut self, ui: &mut egui::Ui) {
         let narrow = ui.available_width() < 900.0;
         if !narrow {
             egui::Panel::left("navigation")
@@ -2082,7 +1926,7 @@ impl State {
                         .inner_margin(18),
                 )
                 .show(ui, |ui| self.sidebar(ui));
-        } else if self.sidebar_open {
+        } else if self.sidebar_open && !self.show_settings {
             let mut open = self.sidebar_open;
             egui::Window::new("Conversations")
                 .open(&mut open)
@@ -2142,8 +1986,17 @@ impl State {
                     self.transcript.latest_button(ui, scroll.inner_rect);
                 }
             });
+    }
+
+    fn draw(&mut self, ui: &mut egui::Ui) {
+        // Disable the workspace on the first modal frame too: egui's modal
+        // focus layer is otherwise inherited only from the preceding pass.
+        ui.add_enabled_ui(!self.show_settings, |ui| self.draw_workspace(ui));
         let ctx = ui.ctx().clone();
-        self.settings(&ctx);
+        if self.show_settings {
+            self.settings(&ctx);
+            return;
+        }
         self.diagnostics(&ctx);
         self.conversation_dialogs(&ctx);
         self.iteration_dialog(&ctx);
@@ -2177,6 +2030,7 @@ impl eframe::App for State {
         self.poll_updates(ctx);
         if ((!was_ready && self.model.ready())
             || (was_busy && !self.model.busy() && self.model.ready()))
+            && !self.show_settings
             && ctx.memory(|memory| {
                 memory
                     .focused()
