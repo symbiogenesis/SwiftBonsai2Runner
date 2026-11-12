@@ -159,6 +159,12 @@ before replacing application files.
 
 ## Publish a release
 
+Release scripts and the source-launch convenience script require PowerShell
+7.6 or newer. The release workflow checks that baseline and exercises native
+argument preservation, UTF-8 output, command failures and unsafe path rejection
+before starting its build jobs. It accepts serviced newer versions without
+pinning one patch release.
+
 `AGENTS.md` reserves every Git push for the owner. Review the local commits on
 `main`, then run the following yourself from the primary checkout to publish the
 pipeline source and request the first release:

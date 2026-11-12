@@ -17,8 +17,10 @@ on installed Windows ARM64. Retain source-bound evidence that upgrades preserve
 model and recovery data and that source/preview launches perform no update work.
 Include final post-exit publication revalidation, cache/receipt replacement,
 network loss after confirmation and consumed-handoff launch failures in installed
-acceptance. Qualify release-script native failure handling and safe paths on the
-supported PowerShell 7 versions in owner-managed hosted validation.
+acceptance. Qualify release-script native failure handling, UTF-8 round trips and
+safe paths on PowerShell 7.6+ in owner-managed hosted validation, along with the
+native UI update regressions. Keep the [hardening check record](docs/evidence/update-hardening-20261111/delivery.json)
+and its closed local allowance attached to those pending gates.
 The [bounded updater checks](docs/evidence/app-updates-20261111/delivery.json)
 passed five policy/tampering fixtures, the acknowledged-handoff regression and
 the native UI type-check. They do not close installed update acceptance.

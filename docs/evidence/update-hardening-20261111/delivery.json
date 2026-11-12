@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "kind": "updater-and-powershell-hardening-local-delivery",
+  "status": "implemented-locally-hosted-and-installed-acceptance-pending",
+  "implementationRevision": "b2faff2e",
+  "powerShellCorrectionRevision": "2dff870e",
+  "workflow": "Reviewed and integrated individual worker commits from isolated worktrees into local Runner main. No pushes, pull requests, CI operations or MSI execution.",
+  "behavior": {
+    "finalInstallerAuthentication": "After acknowledged native UI exit, independently fetch the newest published release, asset metadata and source identity again. Require cached receipt and actual MSI bytes to match that fresh identity.",
+    "pathLifetime": "Use the existing VerifiedFile guard to retain the MSI and complete ancestor path through Windows Installer process creation. Launcher then exits; no claim of full installer-lifetime or compromised-same-user isolation.",
+    "authorization": "Missing handoffs fail. Consume a verified handoff before spawn so a failed spawn requires fresh confirmation and no removal error follows a successfully created installer.",
+    "releaseSelection": "Choose numeric newest before asset validation, reject duplicate eligible versions and never fall back when the newest candidate is invalid.",
+    "metadata": "Fresh ACL-protected Windows request directories; remove partial/error response bodies while retaining diagnostic logs. Atomically publish synced receipt/handoff bytes without overwriting existing files.",
+    "ui": "Canonical Windows Installer version bounds and strictly newer versions required for available, downloaded and queued results.",
+    "powerShell": "PowerShell 7.6+ baseline, typed ProcessStartInfo arguments, explicit native exit checks and UTF-8 stdout, bounded waits, non-reparse path ancestry, safe owned-stage cleanup, stronger MSI/release asset identities and native executable launcher selection.",
+    "brittlenessControls": "No new dependencies or publisher/CDN certificate pins. Preserve supported HTTPS redirects. Hosted WiX builds and large uploads have explicit 600-second limits within workflow aggregate limits, without pinning a PowerShell patch release."
+  },
+  "localValidation": {
+    "plan": "workload-plan.json",
+    "receipt": "summary.json",
+    "elapsedAggregateSecondsThroughRetention": 199.496,
+    "maximumAggregateSeconds": 300,
+    "clockClosed": true,
+    "retries": 0,
+    "updaterSecurityFixtures": { "passed": 10, "failed": 0 },
+    "acknowledgedHandoffRegression": { "passed": 1, "failed": 0 },
+    "nativeUiTypeCheck": "passed offline in Release",
+    "nativeUiUpdateTests": "not executed: dependency compilation reached its fixed 80-second limit; taskkill /T /F returned zero and stopped the process tree",
+    "rustFormatting": "passed on tested Rust source",
+    "powerShellAst": "eight sources passed before the later UTF-8/version-only correction",
+    "markdownAndWhitespace": "passed before the final delivery record and PowerShell baseline documentation were added",
+    "powerEndpoints": "AC connected, battery saver off, 99% charge before and after",
+    "continuousPowerStabilityEstablished": false,
+    "performanceQualified": false,
+    "completeSuitesRun": false
+  },
+  "ownerClarificationDuringOriginalAllowance": {
+    "request": "Owner identified local PowerShell 7.7 and approved targeting about 7.6 in CI.",
+    "initialInventoryCorrection": "The driver's initial PowerShell-7-unavailable field was superseded during this same aggregate interval. Elevated Get-Command found the Microsoft Store pwsh executable alias.",
+    "executable": "C:/Users/symbi/AppData/Local/Microsoft/WindowsApps/Microsoft.PowerShell_8wekyb3d8bbwe/pwsh.exe",
+    "actualVersion": "owner reported 7.7; exact runtime version was not independently recorded on the failed invocation",
+    "addedWork": "One model-free Test-ReleasePrimitives.ps1 invocation inside the original start/end power bracket. No new allowance, retry or comparison arm.",
+    "processWallSeconds": 1.4122181,
+    "independentStartAndEndTimestamps": null,
+    "rawLog": "raw/powershell-runtime.log",
+    "result": "failed: Native argument changed at index 4 (Unicode fixture)",
+    "sourceCorrection": "Set ProcessStartInfo.StandardOutputEncoding to UTF-8 and explicitly emit UTF-8 from the fixture child. All production scripts now require 7.6 and hosted receipts report the actual version.",
+    "correctedSourceRuntimeChecks": "pending in owner-managed hosted release validation; failed invocation was not retried"
+  },
+  "sourceBinding": {
+    "testedSourceRevision": "00e24d66",
+    "testedSourceHashes": "summary.json sourceSha256 captures the uncommitted final Rust source after formatting and the initial PowerShell source.",
+    "finalRustChangesAfterTests": false,
+    "laterPowerShellChanges": "2dff870e records the source-only UTF-8 correction and 7.6 minimum after the retained runtime failure. The summary's original PowerShell hashes intentionally remain unchanged.",
+    "documentationAddedAfterChecks": true
+  },
+  "pending": [
+    "Corrected-source PowerShell runtime regression controls on 7.6+ and full hosted strict analyzers/suites.",
+    "Native UI updater regression execution; local native UI type-check passed.",
+    "Genuine published-release discovery/download and installed Windows ARM64 final revalidation, network loss, UAC, MSI upgrade and data-preservation acceptance.",
+    "Independent publisher signing remains absent; GitHub HTTPS/release metadata is still the documented trust boundary.",
+    "All pre-existing actual-model, speech, performance and daily-use acceptance in PLAN.md."
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "kind": "updater-and-powershell-hardening-source-validation-plan",
+  "declaredBeforeExecution": true,
+  "maximumAggregateSeconds": 300,
+  "conservativeEstimateSeconds": 255,
+  "reason": "Check focused offline updater security regressions, native UI integration and PowerShell syntax without installing software, contacting release services, or starting a model.",
+  "fixedWork": [
+    "Record source identities and GetSystemPowerStatus before checks, preserving unknown observations explicitly.",
+    "Format changed Rust, check formatting and whitespace, parse production PowerShell scripts, and lint changed Markdown within 30 seconds.",
+    "Run only bonsai-tools app_update tests and the acknowledged update-handoff regression offline in Release with at most four compiler jobs and 100 seconds per command.",
+    "Run only native UI update-result tests offline if compilation fits 80 seconds; otherwise record pending without retry. Type-check the native UI within 50 seconds if time remains.",
+    "Stop child process trees before the original deadline, record power after work, and retain exact outcomes and logs within a 25-second cleanup reserve."
+  ],
+  "constraints": {
+    "retries": 0,
+    "comparisonArms": [],
+    "completeSuites": false,
+    "modelOrBenchmarkWork": false,
+    "applicationLaunch": false,
+    "msiExecution": false,
+    "releaseApiRequests": false,
+    "ciDispatchOrMonitoring": false,
+    "gitPushes": false,
+    "existingInstalledExecutablesReplaced": false,
+    "continuousPowerStabilityEstablished": false,
+    "performanceQualified": false
+  },
+  "pending": [
+    "Full hosted strict analyzers and complete suites, including supported PowerShell 7 runtime behavior.",
+    "Genuine published-release discovery and verified download.",
+    "Installed Windows ARM64 upgrade, UAC, cancellation, final network loss, handoff failure and data preservation."
+  ]
+}
