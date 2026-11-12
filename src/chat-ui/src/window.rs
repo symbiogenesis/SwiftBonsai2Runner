@@ -1395,6 +1395,7 @@ impl State {
         }
         ui.add_space(4.0);
         branding::logo(ui);
+        ui.add_space(8.0);
         if ui
             .add_enabled(
                 self.model.workspace_available(),
@@ -1407,6 +1408,7 @@ impl State {
         {
             self.new_chat();
         }
+        ui.add_space(8.0);
         self.conversation_list(ui);
     }
 
