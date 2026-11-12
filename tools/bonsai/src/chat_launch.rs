@@ -28,6 +28,15 @@ enum PromptReuse {
     Latest,
 }
 
+#[derive(Clone, Copy, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "lowercase")]
+enum PreparationStage {
+    #[default]
+    All,
+    Model,
+    Speech,
+}
+
 fn graphics_environment(backend: Option<GraphicsBackend>) -> BTreeMap<String, String> {
     let mut environment = BTreeMap::new();
     if let Some(backend) = backend {
@@ -96,6 +105,8 @@ struct Request {
     speech_models_only: bool,
     #[serde(default)]
     force_build: bool,
+    #[serde(default)]
+    preparation_stage: PreparationStage,
 }
 
 fn default_quantization() -> String {
@@ -285,6 +296,9 @@ fn prepare(mut request: Request, native_host: bool) -> crate::Result<Plan> {
     }
     if request.no_speech_models && request.speech_models_only {
         return Err("SpeechModelsOnly cannot be combined with NoSpeechModels.".into());
+    }
+    if request.speech_models_only && request.preparation_stage != PreparationStage::All {
+        return Err("SpeechModelsOnly cannot select a chat preparation stage.".into());
     }
     if request.no_tts && request.tts_key_file.is_some() {
         return Err("NoTts cannot be combined with TtsKeyFile.".into());
@@ -580,16 +594,30 @@ fn prepare_backend(
 ) -> crate::Result<Value> {
     let Plan {
         mut request,
-        own_canary,
-        own_tts,
-        model_selection,
-        native_selection,
+        mut own_canary,
+        mut own_tts,
+        mut model_selection,
+        mut native_selection,
         app_packages,
     } = plan;
+    let stage = request.preparation_stage;
+    if stage == PreparationStage::Model {
+        // Chat must not wait for unrelated speech downloads or native builds.
+        // External speech configurations also attach only with the speech stage.
+        own_canary = false;
+        own_tts = false;
+        model_selection = None;
+        native_selection = None;
+        request.canary_key_file = None;
+        request.tts_key_file = None;
+    }
+    if stage == PreparationStage::Speech && request.broker_path.is_none() {
+        return Err("Speech preparation requires the prepared broker executable.".into());
+    }
     if request.speech_models_only {
         fs::create_dir_all(&request.data_directory).map_err(|error| error.to_string())?;
     }
-    if request.native_engine && !request.speech_models_only {
+    if stage != PreparationStage::Speech && request.native_engine && !request.speech_models_only {
         // Run only in the owned preparation worker after the first UI frame.
         // Provisioning checks the exact release inventory and hashes, downloads
         // only a missing runtime, and rejects altered existing installations.
@@ -603,7 +631,7 @@ fn prepare_backend(
     if request.speech_models_only {
         return models.ok_or_else(|| "Missing explicit speech provisioning result.".into());
     }
-    if !app_packages.is_empty() {
+    if stage != PreparationStage::Speech && !app_packages.is_empty() {
         let built = operations.apps(&request, &app_packages, working)?;
         if request.chat_path.is_none() {
             request.chat_path = Some(path_field(&built, "ChatPath")?);
@@ -784,6 +812,9 @@ fn working_directory(requested: Option<&Path>) -> crate::Result<PathBuf> {
 pub fn run(value: Value) -> crate::Result<Value> {
     crate::startup_cancel::checkpoint()?;
     let request: Request = serde_json::from_value(value).map_err(|error| error.to_string())?;
+    if request.preparation_stage != PreparationStage::All {
+        return Err("PreparationStage is reserved for the owned chat preparation worker.".into());
+    }
     if !request.speech_models_only && !cfg!(all(windows, target_arch = "aarch64")) {
         return Err("Run chat in the native ARM64 executable on Windows ARM64.".into());
     }

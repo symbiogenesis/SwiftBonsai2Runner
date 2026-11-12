@@ -539,6 +539,161 @@ fn deferred_preparation_never_rebuilds_running_chat_and_keeps_backend_policy() -
 }
 
 #[test]
+fn staged_model_preparation_never_waits_for_owned_or_external_speech() -> crate::Result<()> {
+    for external in [false, true] {
+        let mut fixture = fixture("staged-model")?;
+        fixture.request["PreparationStage"] = json!("model");
+        fixture.request["NativeEngine"] = json!(true);
+        fixture.request["BrokerPath"] = Value::Null;
+        if external {
+            fixture.request["CanaryKeyFile"] = json!(fixture.root.join("external.key"));
+            fixture.request["TtsKeyFile"] = json!(fixture.root.join("external.key"));
+        }
+        let mut recorder = Recorder::new(fixture.root.clone());
+        recorder.fail_native = true;
+        let prepared = prepare_backend(plan(fixture.request)?, &mut recorder, &fixture.working)?;
+        assert_eq!(recorder.events.len(), 2);
+        assert!(matches!(recorder.events[0], Event::Inference(_)));
+        assert_eq!(
+            recorder.events[1],
+            Event::Apps(vec!["bonsai-broker".into()], false)
+        );
+        let arguments = prepared["Arguments"]
+            .as_array()
+            .ok_or("Missing arguments.")?;
+        assert!(
+            arguments
+                .iter()
+                .any(|argument| argument == "--native-engine")
+        );
+        assert!(
+            arguments
+                .iter()
+                .any(|argument| argument == "--use-original-pq2")
+        );
+        assert!(arguments.iter().any(|argument| argument == "--broker-path"));
+        assert!(arguments.iter().all(|argument| {
+            argument.as_str().is_none_or(|argument| {
+                !argument.starts_with("--canary-") && !argument.starts_with("--tts-")
+            })
+        }));
+    }
+    Ok(())
+}
+
+#[test]
+fn staged_speech_preparation_preserves_services_without_repeating_model_work() -> crate::Result<()>
+{
+    for external in [false, true] {
+        let mut fixture = fixture("staged-speech")?;
+        fixture.request["PreparationStage"] = json!("speech");
+        fixture.request["NativeEngine"] = json!(true);
+        fixture.request["ForceBuild"] = json!(true);
+        if external {
+            fixture.request["CanaryKeyFile"] = json!(fixture.root.join("external.key"));
+            fixture.request["TtsKeyFile"] = json!(fixture.root.join("external.key"));
+        }
+        let mut recorder = Recorder::new(fixture.root.clone());
+        recorder.fail_inference = true;
+        let prepared = prepare_backend(plan(fixture.request)?, &mut recorder, &fixture.working)?;
+        if external {
+            assert!(recorder.events.is_empty());
+        } else {
+            assert_eq!(
+                recorder.events,
+                [
+                    Event::Models("All".into(), false),
+                    Event::Native("All".into(), true),
+                    Event::Keys(fixture.working.join("canary-credentials")),
+                    Event::Keys(fixture.working.join("tts-credentials")),
+                ]
+            );
+        }
+        let arguments = prepared["Arguments"]
+            .as_array()
+            .ok_or("Missing arguments.")?;
+        assert!(
+            arguments
+                .iter()
+                .any(|argument| argument == "--canary-key-file")
+        );
+        assert!(
+            arguments
+                .iter()
+                .any(|argument| argument == "--tts-key-file")
+        );
+        assert_eq!(
+            arguments
+                .iter()
+                .any(|argument| argument == "--canary-executable"),
+            !external
+        );
+        assert_eq!(
+            arguments
+                .iter()
+                .any(|argument| argument == "--tts-executable"),
+            !external
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn staged_preparation_failures_stop_before_later_work() -> crate::Result<()> {
+    let mut fixture = fixture("staged-failures")?;
+    fixture.request["NativeEngine"] = json!(true);
+    fixture.request["PreparationStage"] = json!("model");
+    let mut recorder = Recorder::new(fixture.root.clone());
+    recorder.fail_inference = true;
+    assert!(
+        prepare_backend(
+            plan(fixture.request.clone())?,
+            &mut recorder,
+            &fixture.working
+        )
+        .is_err()
+    );
+    assert_eq!(recorder.events.len(), 1);
+    assert!(matches!(recorder.events[0], Event::Inference(_)));
+
+    fixture.request["PreparationStage"] = json!("speech");
+    let mut recorder = Recorder::new(fixture.root.clone());
+    recorder.fail_native = true;
+    assert!(
+        prepare_backend(
+            plan(fixture.request.clone())?,
+            &mut recorder,
+            &fixture.working
+        )
+        .is_err()
+    );
+    assert_eq!(
+        recorder.events,
+        [
+            Event::Models("All".into(), false),
+            Event::Native("All".into(), false)
+        ]
+    );
+    fixture.request["BrokerPath"] = Value::Null;
+    recorder.events.clear();
+    let error = prepare_backend(plan(fixture.request)?, &mut recorder, &fixture.working)
+        .err()
+        .ok_or("Expected missing prepared broker failure.")?;
+    assert!(error.contains("prepared broker"));
+    assert!(recorder.events.is_empty());
+    let mut invalid = self::fixture("staged-invalid")?;
+    for stage in ["model", "speech"] {
+        invalid.request["PreparationStage"] = json!(stage);
+        invalid.request["SpeechModelsOnly"] = json!(true);
+        assert!(plan(invalid.request.clone()).is_err());
+    }
+    invalid.request["SpeechModelsOnly"] = json!(false);
+    invalid.request["PreparationStage"] = json!("unknown");
+    assert!(plan(invalid.request).is_err());
+    Ok(())
+}
+
+#[test]
 fn early_window_failure_retains_nonzero_exit_and_skips_backend_work() -> crate::Result<()> {
     let fixture = fixture("early-failure")?;
     let mut recorder = Recorder::new(fixture.root.clone());
