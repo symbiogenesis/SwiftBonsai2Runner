@@ -182,9 +182,16 @@ fn streaming_read_aloud_control_is_available_during_generation_and_stops_audio()
         chat.state_mut().app.speech = Some(session);
         chat.state_mut().app.speech_output = true;
         "Older answer.".clone_into(&mut chat.state_mut().app.transcript.messages[1].body);
+        // AccessKit focus requests use the previous frame's focusable widgets.
+        // Publish the newly enabled checkbox before asking it to take focus.
+        chat.run();
         chat.get_by_role_and_label(egui::Role::CheckBox, "Read aloud as responses arrive")
             .focus();
         chat.run();
+        assert!(
+            chat.get_by_role_and_label(egui::Role::CheckBox, "Read aloud as responses arrive")
+                .is_focused()
+        );
         chat.key_press(egui::Key::Space);
         chat.run();
         assert!(chat.state().app.streaming_read_aloud);

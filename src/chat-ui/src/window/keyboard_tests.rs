@@ -194,12 +194,38 @@ fn microphone_cancel_click_wins_over_a_queued_voice_message() {
     app.dictation_requested = true;
     app.dictation_finishing = true;
     app.microphone_generation = Some(7);
-    app.speech_event(speech::Event::Recognized {
+    chat.run();
+    let cancel = chat
+        .get_by_role_and_label(egui::Role::Button, "Microphone")
+        .rect()
+        .center();
+    // Node::click renders a hover frame before pressing. Recognition must
+    // arrive during the press to exercise cancellation winning on release.
+    chat.input_mut().events.extend([
+        egui::Event::PointerMoved(cancel),
+        egui::Event::PointerButton {
+            pos: cancel,
+            button: egui::PointerButton::Primary,
+            pressed: true,
+            modifiers: egui::Modifiers::NONE,
+        },
+    ]);
+    chat.run();
+    chat.state_mut().app.speech_event(speech::Event::Recognized {
         generation: 7,
         text: "Do not send this voice message".to_owned(),
     });
-    chat.get_by_role_and_label(egui::Role::Button, "Microphone")
-        .click();
+    chat.run();
+    assert!(chat.state().app.dictation_requested);
+    assert!(chat.state().app.pending_voice_transcript.is_some());
+    assert_eq!(chat.state().app.input, "Preserve this draft");
+    assert!(chat.state().commands.try_recv().is_err());
+    chat.input_mut().events.push(egui::Event::PointerButton {
+        pos: cancel,
+        button: egui::PointerButton::Primary,
+        pressed: false,
+        modifiers: egui::Modifiers::NONE,
+    });
     chat.run();
     assert!(!chat.state().app.dictation_requested);
     assert!(chat.state().app.pending_voice_transcript.is_none());
