@@ -71,6 +71,33 @@ artifact, model, memory, context or sampler policy. Explicit
 [runtime/format and adapter choices](development-guide.md#runtime-selection) do not
 establish promotion or full-model/device qualification.
 
+### Application updates
+
+Only an MSI-installed application discovers published GitHub releases. A bounded
+background worker checks after startup and every six hours; the native Settings
+view also accepts a manual check. Source launches and preview start no update
+network requests. Update discovery sends no conversation or model data. Network,
+metadata parsing and installer downloads stay off the event loop.
+
+The maintenance executable consumes the repository's Windows ARM64 release
+manifest, checksum inventory and GitHub asset identities. It accepts only a
+strictly newer numeric version with matching source/release/architecture/file
+identities. Published experimental prereleases remain eligible; draft releases
+and non-Windows assets do not. No published release is an ordinary no-update
+state. Failure retains the running app and never substitutes an unverified file.
+
+Installation requires an explicit native confirmation and known owned teardown.
+The UI queues a verified update request for its maintenance launcher and closes
+through the ordinary persistence and process cleanup path. After the native
+window exits, the launcher revalidates the staged installer, releases its launch
+guard, starts the fixed Windows Installer handoff and exits so application files
+can be replaced. It must not install while the model owner is uncertain or
+create a detached child that escapes the existing containment contract.
+Conversation saving retains its existing opt-out; updating does not enable it.
+Windows may request administrator approval. Reopening uses the Start menu;
+automatic restart is not promised. Model/runtime downloads and local user data
+remain separate from MSI application files.
+
 ### Conversation and failure semantics
 
 | Component | Contract |

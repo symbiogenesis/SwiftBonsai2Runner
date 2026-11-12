@@ -52,6 +52,10 @@ is pending the owner's source push and GitHub release workflow run.
   your chats, and find text with **Ctrl+F**. Turn on **Save conversations on this
   device** in Settings to restore your workspace when you reopen the app; saved chats
   are encrypted for your Windows user account. Saving is off by default.
+- **Application updates:** MSI installations check GitHub releases in the
+  background. Download a newer Windows ARM64 installer from Settings, then
+  confirm **Install update and close**. Model downloads and local data stay in
+  place; see [Windows releases](docs/releases.md#automatic-update-checks).
 - **Thinking and Extra effort:** Extended **Thinking** is off by default. Turn it on
   under **Settings → Response** when you want the model to work through a request
   before answering, or use **Extra effort** to have it plan, draft, and revise its

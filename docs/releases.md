@@ -99,7 +99,46 @@ directory and are preserved on upgrade and uninstall.
 MSI upgrades follow Windows Installer's version and downgrade rules. The
 [portable package mechanism](chat-packages.md) separately supports retained
 version directories and explicit rollback; those portable activation rules are
-not the MSI update mechanism. No automatic update discovery is provided.
+not the MSI update mechanism.
+
+## Automatic update checks
+
+MSI-installed chat checks the project's published GitHub releases in the
+background at startup and every six hours while running. **Settings > Application
+updates** also provides **Check for updates**. A failed check or unavailable
+network leaves the installed application usable. Source launches and model-free
+preview do not check for or install application updates.
+
+The update feed is the existing GitHub release contract: a published Windows
+ARM64 MSI, `release-manifest.json` and `SHA256SUMS.txt` from the same release.
+The updater considers published experimental prereleases as well as full
+releases and compares numeric application versions. It never installs an equal
+or older version. A repository with no published releases simply has no update
+available; a first release is not required to add or run this code.
+
+Update discovery uses GitHub's release listing because its
+[latest-release endpoint](https://docs.github.com/en/rest/releases/releases#get-the-latest-release)
+excludes prereleases. Checks contact GitHub without sending conversation text,
+model files or a personal GitHub token. Downloads must match the expected
+repository, release version, Windows ARM64 target, MSI filename, size and SHA-256
+identities before installation is offered. The application does not run an
+executable supplied by a release to verify that release.
+
+Choose **Download update**, then **Install update and close** when ready.
+Installation requires confirmation; finish the current response first. The
+normal shutdown path must confirm teardown of owned model and speech work and
+finish local persistence before Windows Installer replaces application files.
+The maintenance launcher waits for the native window to exit and rechecks the
+staged installer before handing off. Windows may request administrator approval
+for the per-machine MSI. Conversation saving continues to honor its existing
+setting; choosing an update does not enable saving. Model downloads and existing
+user data remain outside the application installation directory.
+
+The first release remains unsigned. HTTPS and release SHA-256 checks detect
+changed or mismatched bytes within the GitHub release trust boundary; they are
+not an independent publisher signature. If verification, shutdown or installer
+handoff fails, the updater reports the failure rather than weakening checks.
+After installation, reopen the application from the Start menu.
 
 ## Publish a release
 
@@ -118,6 +157,9 @@ input is `true`. It binds the build to the dispatched commit, stages the five
 native executables and their notices, builds the ARM64 MSI, and checks install
 and uninstall on the hosted Windows runner without loading a model. Checksums
 and `release-manifest.json` identify the resulting files and source.
+Future updates use that same release inventory; no separate update server or
+feed must be published. Increase the workspace version and commit matching
+release notes before requesting the next release.
 
 Only the publication job receives repository-content write permission. It
 uploads the checked assets to a draft release before publishing that release;

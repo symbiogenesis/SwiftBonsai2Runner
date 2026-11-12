@@ -4,6 +4,10 @@ For the Windows ARM64 MSI distribution and its GitHub publication workflow, see
 [Windows releases](releases.md). The checked-directory mechanism below remains
 a separate installation and rollback option.
 
+Automatic GitHub release checks and MSI installation handoff apply only to the
+MSI-installed application. They do not replace this portable package's explicit
+manifest review, activation or retained-version rollback operations.
+
 The native `bonsai-tools chat-package` command assembles reviewed Windows ARM64
 application files, installs versioned directories, activates updates atomically
 and retains an explicit rollback choice. Installation and launch need a trusted

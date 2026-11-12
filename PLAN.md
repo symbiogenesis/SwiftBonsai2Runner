@@ -9,6 +9,13 @@ The [release guide](docs/releases.md) records the owner-run publication command;
 the [first-release notes](docs/releases/v0.1.0.md) retain the development-default
 and qualification limits. GitHub pipeline activation, a genuine hosted build,
 MSI install/uninstall acceptance and a downloadable release remain pending.
+Include the native runtime updater in that first source publication; no earlier
+release is required to implement it. Qualify startup/manual discovery, no-release
+and network failures, published prerelease selection, wrong-target/tampered
+metadata rejection, verified download, confirmed owned teardown and MSI handoff
+on installed Windows ARM64. Retain source-bound evidence that upgrades preserve
+model and recovery data and that source/preview launches perform no update work.
+The updater's source/fixture checks do not close installed update acceptance.
 The no-push rule leaves source publication with the owner. The
 [local source review](docs/evidence/windows-release-20261111/delivery.json) retains
 passing final workflow, PowerShell, XML, Rust formatting and Markdown checks;
