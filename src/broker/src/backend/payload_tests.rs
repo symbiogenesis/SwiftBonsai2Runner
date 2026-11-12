@@ -77,8 +77,8 @@ fn body(reader: BufReader<Source>, framing: Framing) -> BackendBody<Source> {
         framing,
         remaining_budget: MAX_RESPONSE_BYTES,
         metadata_bytes: 0,
-        deadline,
-        timer: Box::pin(sleep_until(deadline)),
+        deadline: deadline.into(),
+        timer: Some(Box::pin(tokio::time::sleep_until(deadline))),
     }
 }
 

@@ -6,6 +6,7 @@
 
 use crate::{
     AdmittedChat, MAX_HEADER_BYTES, MAX_HEADERS, Object, PendingChat, Rejection, configuration,
+    deadline::RequestDeadline,
     response::{MAX_RESPONSE_BYTES, valid_content_type},
     wire,
 };
@@ -23,7 +24,7 @@ use tokio::{
         AsyncBufRead, AsyncBufReadExt, AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt,
         BufReader, ReadBuf,
     },
-    time::{Instant, Sleep, sleep_until, timeout_at},
+    time::{Instant, Sleep},
 };
 
 /// Maximum time allowed for writing one backend request.
@@ -97,11 +98,12 @@ pub async fn count_and_admit<S>(
     stream: S,
     pending: PendingChat,
     policy: &BackendPolicy,
-    deadline: Instant,
+    deadline: impl Into<RequestDeadline>,
 ) -> Result<AdmittedChat, BackendError>
 where
     S: AsyncRead + AsyncWrite + Unpin + 'static,
 {
+    let deadline = deadline.into();
     let (status, body) =
         exchange(stream, &pending.body, false, COUNT_ROUTE, policy, deadline).await?;
     let context_rejected = status == StatusCode::PAYLOAD_TOO_LARGE;
@@ -178,11 +180,12 @@ pub async fn request_chat<S>(
     stream: S,
     chat: &AdmittedChat,
     policy: &BackendPolicy,
-    deadline: Instant,
+    deadline: impl Into<RequestDeadline>,
 ) -> Result<Response<BackendBody<S>>, BackendError>
 where
     S: AsyncRead + AsyncWrite + Unpin + 'static,
 {
+    let deadline = deadline.into();
     let (status, body) = exchange(
         stream,
         chat.backend_body(),
@@ -213,7 +216,7 @@ pub(crate) async fn request_chat_owned<S>(
     stream: S,
     chat: AdmittedChat,
     policy: &BackendPolicy,
-    deadline: Instant,
+    deadline: RequestDeadline,
 ) -> Result<BackendBody<S>, BackendError>
 where
     S: AsyncRead + AsyncWrite + Unpin + 'static,
@@ -236,12 +239,12 @@ async fn exchange<S, B: AsRef<[u8]>>(
     streaming: bool,
     route: &str,
     policy: &BackendPolicy,
-    deadline: Instant,
+    deadline: RequestDeadline,
 ) -> Result<(StatusCode, BackendBody<S>), BackendError>
 where
     S: AsyncRead + AsyncWrite + Unpin + 'static,
 {
-    let write_deadline = deadline.min(Instant::now() + WRITE_TIMEOUT);
+    let write_deadline = deadline.earlier(Instant::now() + WRITE_TIMEOUT);
     ensure_time(write_deadline)?;
     let head = format!(
         "POST {route} HTTP/1.1\r\nHost: {}\r\nAuthorization: {}\r\nContent-Type: application/json\r\nAccept-Encoding: identity\r\nConnection: close\r\nContent-Length: {}\r\n\r\n",
@@ -249,14 +252,15 @@ where
         policy.authorization,
         body.as_ref().len()
     );
-    timeout_at(write_deadline, async {
-        stream.write_all(head.as_bytes()).await?;
-        stream.write_all(body.as_ref()).await?;
-        stream.flush().await
-    })
-    .await
-    .map_err(|_| BackendError::Deadline)?
-    .map_err(|_| BackendError::Io)?;
+    write_deadline
+        .timeout(async {
+            stream.write_all(head.as_bytes()).await?;
+            stream.write_all(body.as_ref()).await?;
+            stream.flush().await
+        })
+        .await
+        .map_err(|_| BackendError::Deadline)?
+        .map_err(|_| BackendError::Io)?;
     ensure_time(write_deadline)?;
     // Counting borrows these exact bytes for subsequent generation. The owned
     // generation path needs no prompt storage once the complete write is flushed.
@@ -274,7 +278,7 @@ where
             remaining_budget: MAX_RESPONSE_BYTES,
             metadata_bytes: 0,
             deadline,
-            timer: Box::pin(sleep_until(deadline)),
+            timer: deadline.timer(),
         },
     ))
 }
@@ -283,10 +287,11 @@ async fn read_head<S: AsyncRead + Unpin>(
     reader: &mut BufReader<S>,
     streaming: bool,
     counting: bool,
-    deadline: Instant,
+    deadline: RequestDeadline,
 ) -> Result<(StatusCode, Framing), BackendError> {
     ensure_time(deadline)?;
-    let available = timeout_at(deadline, reader.fill_buf())
+    let available = deadline
+        .timeout(reader.fill_buf())
         .await
         .map_err(|_| BackendError::Deadline)?
         .map_err(|_| BackendError::Io)?;
@@ -311,7 +316,8 @@ async fn read_head<S: AsyncRead + Unpin>(
         if raw.len() == MAX_HEADER_BYTES {
             return Err(BackendError::HeadLimit);
         }
-        let available = timeout_at(deadline, reader.fill_buf())
+        let available = deadline
+            .timeout(reader.fill_buf())
             .await
             .map_err(|_| BackendError::Deadline)?
             .map_err(|_| BackendError::Io)?;
@@ -456,8 +462,8 @@ pub struct BackendBody<S> {
     framing: Framing,
     remaining_budget: usize,
     metadata_bytes: usize,
-    deadline: Instant,
-    timer: Pin<Box<Sleep>>,
+    deadline: RequestDeadline,
+    timer: Option<Pin<Box<Sleep>>>,
 }
 
 impl<S> BackendBody<S> {
@@ -479,7 +485,7 @@ impl<S: AsyncRead + Unpin> BackendBody<S> {
             return self.fail(io::ErrorKind::Other);
         };
         // A ready read may cross the deadline after the state-machine check.
-        if Instant::now() >= self.deadline {
+        if self.deadline.expired() {
             return self.fail(io::ErrorKind::TimedOut);
         }
         if available.is_empty() {
@@ -506,7 +512,7 @@ impl<S: AsyncRead + Unpin> BackendBody<S> {
             if ready!(Pin::new(reader).poll_read(cx, output)).is_err() {
                 return self.fail(io::ErrorKind::Other);
             }
-            if Instant::now() >= self.deadline {
+            if self.deadline.expired() {
                 return self.fail(io::ErrorKind::TimedOut);
             }
             let count = output.filled().len() - previous;
@@ -548,7 +554,12 @@ impl<S: AsyncRead + Unpin> BackendBody<S> {
             if matches!(this.framing, Framing::Failed) {
                 return this.fail(io::ErrorKind::InvalidData);
             }
-            if Instant::now() >= this.deadline || this.timer.as_mut().poll(cx).is_ready() {
+            if this.deadline.expired()
+                || this
+                    .timer
+                    .as_mut()
+                    .is_some_and(|timer| timer.as_mut().poll(cx).is_ready())
+            {
                 return this.fail(io::ErrorKind::TimedOut);
             }
             match this.framing {
@@ -674,8 +685,8 @@ impl<S: AsyncRead + Unpin> AsyncBufRead for BackendBody<S> {
     }
 }
 
-fn ensure_time(deadline: Instant) -> Result<(), BackendError> {
-    if Instant::now() >= deadline {
+fn ensure_time(deadline: RequestDeadline) -> Result<(), BackendError> {
+    if deadline.expired() {
         Err(BackendError::Deadline)
     } else {
         Ok(())

@@ -16,6 +16,7 @@
 pub mod artifacts;
 pub mod backend;
 mod configuration;
+pub mod deadline;
 #[cfg(windows)]
 mod inference;
 pub mod launch_policy;

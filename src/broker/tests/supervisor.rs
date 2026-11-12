@@ -8,7 +8,8 @@
 use bonsai_broker::{
     Rejection, RequestPolicy,
     backend::{BackendError, BackendPolicy},
-    supervisor::{BackendConnector, REQUEST_TIMEOUT, ServeError, serve_chat},
+    deadline::RequestDeadline,
+    supervisor::{BackendConnector, ServeError, serve_chat},
 };
 use std::{
     cell::{Cell, RefCell},
@@ -22,7 +23,7 @@ use std::{
 };
 use tokio::{
     io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt, DuplexStream, ReadBuf, duplex},
-    time::Instant,
+    time::{Instant, Sleep, sleep_until},
 };
 
 const CLIENT_KEY: &str = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
@@ -85,6 +86,7 @@ struct BackendStream {
     input: Vec<u8>,
     offset: usize,
     stall: bool,
+    delayed: Option<(usize, Pin<Box<Sleep>>)>,
     state: Rc<RefCell<State>>,
 }
 
@@ -94,6 +96,7 @@ impl BackendStream {
             input,
             offset: 0,
             stall: false,
+            delayed: None,
             state: Rc::new(RefCell::new(State::default())),
         }
     }
@@ -108,11 +111,25 @@ impl BackendStream {
 impl AsyncRead for BackendStream {
     fn poll_read(
         mut self: Pin<&mut Self>,
-        _cx: &mut Context<'_>,
+        cx: &mut Context<'_>,
         buffer: &mut ReadBuf<'_>,
     ) -> Poll<io::Result<()>> {
         self.state.borrow_mut().reads += 1;
-        let count = buffer.remaining().min(self.input.len() - self.offset);
+        let offset = self.offset;
+        let remaining_before_delay = match &mut self.delayed {
+            Some((after, timer)) if offset >= *after => {
+                if timer.as_mut().poll(cx).is_pending() {
+                    return Poll::Pending;
+                }
+                usize::MAX
+            }
+            Some((after, _)) => *after - offset,
+            None => usize::MAX,
+        };
+        let count = buffer
+            .remaining()
+            .min(self.input.len() - self.offset)
+            .min(remaining_before_delay);
         if count == 0 && self.stall {
             return Poll::Pending;
         }
@@ -497,15 +514,18 @@ fn disconnect_or_surplus_during_generation_drops_backend() {
             let backend = Connector::new([counter, generation]);
             let (client, mut peer, dropped) = clients();
             let policy = policy();
-            let (result, ()) = both(serve_chat(client, &policy, &backend, deadline()), async {
-                peer.write_all(&request(true)).await.unwrap();
-                response_head(&mut peer).await;
-                if surplus {
-                    peer.write_all(b"x").await.unwrap();
-                } else {
-                    peer.shutdown().await.unwrap();
-                }
-            })
+            let (result, ()) = both(
+                serve_chat(client, &policy, &backend, RequestDeadline::NONE),
+                async {
+                    peer.write_all(&request(true)).await.unwrap();
+                    response_head(&mut peer).await;
+                    if surplus {
+                        peer.write_all(b"x").await.unwrap();
+                    } else {
+                        peer.shutdown().await.unwrap();
+                    }
+                },
+            )
             .await;
             assert_eq!(result, Err(ServeError::ClientAbandoned));
             assert_eq!(backend.calls.get(), 2);
@@ -515,13 +535,83 @@ fn disconnect_or_surplus_during_generation_drops_backend() {
 }
 
 #[test]
-fn supplied_deadline_and_default_cap_cancel_connection() {
+fn untimed_generation_accepts_delayed_headers_and_body_with_virtual_time() {
     run(async {
-        for bound in [Duration::from_secs(2), REQUEST_TIMEOUT * 2] {
+        // Tokio time is paused: this tests policy without a model or wall-time wait.
+        for streaming in [false, true] {
+            for delay_body in [false, true] {
+                let payload = if streaming {
+                    b"data: [DONE]\n\n".as_slice()
+                } else {
+                    b"{}".as_slice()
+                };
+                let wire = response(payload, streaming);
+                let after = if delay_body {
+                    wire.len() - payload.len()
+                } else {
+                    0
+                };
+                let start = Instant::now();
+                let delay = Duration::from_mins(11);
+                let mut generation = BackendStream::new(wire);
+                generation.delayed = Some((after, Box::pin(sleep_until(start + delay))));
+                let state = generation.state.clone();
+                let backend =
+                    Connector::new([BackendStream::new(response(COUNT, false)), generation]);
+                let (client, mut peer, dropped) = clients();
+                let policy = policy();
+                let (result, bytes) = both(
+                    serve_chat(client, &policy, &backend, RequestDeadline::NONE),
+                    async {
+                        peer.write_all(&request(streaming)).await.unwrap();
+                        let mut bytes = Vec::new();
+                        peer.read_to_end(&mut bytes).await.unwrap();
+                        bytes
+                    },
+                )
+                .await;
+                assert_eq!(result, Ok(()));
+                assert_eq!(Instant::now() - start, delay);
+                assert!(bytes.windows(payload.len()).any(|part| part == payload));
+                assert_eq!(backend.calls.get(), 2);
+                assert!(state.borrow().dropped && dropped.get());
+            }
+        }
+    });
+}
+
+#[test]
+fn supplied_deadline_cancels_an_unfinished_connection() {
+    run(async {
+        let counter = BackendStream::stalled();
+        let state = counter.state.clone();
+        let mut backend = Connector::new([counter]);
+        backend.stall_connect = true;
+        let (client, mut peer, dropped) = clients();
+        let policy = policy();
+        let start = Instant::now();
+        let limit = Duration::from_secs(2);
+        let (result, ()) = both(
+            serve_chat(client, &policy, &backend, start + limit),
+            async {
+                peer.write_all(&request(false)).await.unwrap();
+            },
+        )
+        .await;
+        assert_eq!(result, Err(ServeError::Deadline));
+        assert_eq!(Instant::now() - start, limit);
+        assert_eq!(backend.calls.get(), 1);
+        assert!(state.borrow().dropped && dropped.get());
+    });
+}
+
+#[test]
+fn supplied_deadline_is_not_shortened_by_a_default_request_cap() {
+    run(async {
+        for bound in [Duration::from_secs(2), Duration::from_mins(20)] {
             let counter = BackendStream::stalled();
             let state = counter.state.clone();
-            let mut backend = Connector::new([counter]);
-            backend.stall_connect = true;
+            let backend = Connector::new([counter]);
             let (client, mut peer, dropped) = clients();
             let policy = policy();
             let start = Instant::now();
@@ -533,7 +623,7 @@ fn supplied_deadline_and_default_cap_cancel_connection() {
             )
             .await;
             assert_eq!(result, Err(ServeError::Deadline));
-            assert_eq!(Instant::now() - start, bound.min(REQUEST_TIMEOUT));
+            assert_eq!(Instant::now() - start, bound);
             assert_eq!(backend.calls.get(), 1);
             assert!(state.borrow().dropped && dropped.get());
         }

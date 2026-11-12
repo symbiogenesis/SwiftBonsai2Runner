@@ -7,8 +7,9 @@
 use crate::{
     Rejection, RequestPolicy,
     backend::{BackendError, BackendPolicy, count_and_admit, request_chat_owned},
+    deadline::RequestDeadline,
     reception::{
-        BudgetedChat, ReceiveError, ReceivedChat, discard_rate_body, receive_chat,
+        BudgetedChat, INTAKE_TIMEOUT, ReceiveError, ReceivedChat, discard_rate_body, receive_chat,
         receive_chat_with_budget,
     },
     response::{
@@ -16,15 +17,13 @@ use crate::{
         send_control_rejection, send_rate_rejection,
     },
     service::BurstBudget,
+    transport::CONNECT_TIMEOUT,
 };
-use std::{future::poll_fn, pin::pin, task::Poll, time::Duration};
+use std::{future::poll_fn, pin::pin, task::Poll};
 use tokio::{
     io::{AsyncRead, AsyncReadExt, AsyncWrite, split},
-    time::{Instant, sleep_until},
+    time::Instant,
 };
-
-/// Maximum elapsed time for the entire request, including intake and connection.
-pub const REQUEST_TIMEOUT: Duration = Duration::from_mins(10);
 
 /// A connector preserving one fixed private backend endpoint and HTTP policy.
 ///
@@ -52,7 +51,7 @@ pub trait BackendConnector {
 /// Value-free lifecycle errors; no prompts, credentials or I/O messages escape.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ServeError {
-    /// The supplied absolute deadline or total request cap has expired.
+    /// The explicitly supplied absolute deadline has expired.
     Deadline,
     /// The complete client request could not be received and authorized.
     Receive(ReceiveError),
@@ -67,9 +66,9 @@ pub enum ServeError {
 /// Receive, count, admit and serve exactly one client request.
 ///
 /// Requires a Tokio time driver. The caller supplies owned streams whose Drop
-/// closes their connections. A single absolute deadline bounds intake, both
-/// backend connections, counting, generation and response forwarding; this is
-/// further shortened to [`REQUEST_TIMEOUT`] from the start of this call.
+/// closes their connections. An optional caller deadline bounds the complete
+/// request. Pass [`RequestDeadline::NONE`] for ordinary chat without a total
+/// elapsed-time cap; intake, connection and write operations remain bounded.
 ///
 /// After the complete body arrives, an actual read races the entire backend
 /// pipeline. EOF, read failure and any surplus byte cancel the pipeline and drop
@@ -92,19 +91,19 @@ pub async fn serve_chat<C>(
     client: C,
     policy: &RequestPolicy,
     backend: &impl BackendConnector,
-    deadline: Instant,
+    deadline: impl Into<RequestDeadline>,
 ) -> Result<(), ServeError>
 where
     C: AsyncRead + AsyncWrite + Unpin + 'static,
 {
-    serve_chat_inner(client, policy, backend, deadline, None).await
+    serve_chat_inner(client, policy, backend, deadline.into(), None).await
 }
 
 pub(crate) async fn serve_chat_with_budget<C>(
     client: C,
     policy: &RequestPolicy,
     backend: &impl BackendConnector,
-    deadline: Instant,
+    deadline: RequestDeadline,
     budget: &BurstBudget,
 ) -> Result<(), ServeError>
 where
@@ -117,13 +116,12 @@ async fn serve_chat_inner<C>(
     client: C,
     policy: &RequestPolicy,
     backend: &impl BackendConnector,
-    deadline: Instant,
+    deadline: RequestDeadline,
     budget: Option<&BurstBudget>,
 ) -> Result<(), ServeError>
 where
     C: AsyncRead + AsyncWrite + Unpin + 'static,
 {
-    let deadline = deadline.min(Instant::now() + REQUEST_TIMEOUT);
     ensure_time(deadline)?;
     let Some(received) = receive_admitted(client, policy, deadline, budget).await? else {
         return Ok(());
@@ -134,7 +132,7 @@ where
     let mut abandoned = pin!(input.read(&mut surplus));
     let mut pipeline = Box::pin(async move {
         let counter = backend
-            .connect(deadline)
+            .connect(deadline.limit(Instant::now() + CONNECT_TIMEOUT))
             .await
             .map_err(ServeError::Backend)?;
         let chat = match count_and_admit(counter, pending, backend.policy(), deadline).await {
@@ -151,7 +149,7 @@ where
             }
         };
         let generation = backend
-            .connect(deadline)
+            .connect(deadline.limit(Instant::now() + CONNECT_TIMEOUT))
             .await
             .map_err(ServeError::Backend)?;
         let streaming = chat.streams_response();
@@ -162,11 +160,11 @@ where
             .await
             .map_err(ServeError::Response)
     });
-    let mut timer = pin!(sleep_until(deadline));
+    let mut timer = pin!(deadline.wait());
     let result = poll_fn(|cx| {
         // Explicit time checks prevent immediately-ready futures from winning
         // after expiry. Abandonment wins ties over successful pipeline progress.
-        if Instant::now() >= deadline || timer.as_mut().poll(cx).is_ready() {
+        if deadline.expired() || timer.as_mut().poll(cx).is_ready() {
             return Poll::Ready(Err(ServeError::Deadline));
         }
         if abandoned.as_mut().poll(cx).is_ready() {
@@ -182,16 +180,21 @@ where
 async fn receive_admitted<C>(
     client: C,
     policy: &RequestPolicy,
-    deadline: Instant,
+    deadline: RequestDeadline,
     budget: Option<&BurstBudget>,
 ) -> Result<Option<ReceivedChat<C>>, ServeError>
 where
     C: AsyncRead + AsyncWrite + Unpin + 'static,
 {
     if let Some(budget) = budget {
-        match receive_chat_with_budget(client, policy, deadline, budget)
-            .await
-            .map_err(ServeError::Receive)?
+        match receive_chat_with_budget(
+            client,
+            policy,
+            deadline.limit(Instant::now() + INTAKE_TIMEOUT),
+            budget,
+        )
+        .await
+        .map_err(ServeError::Receive)?
         {
             BudgetedChat::Ready(received) => Ok(Some(received)),
             BudgetedChat::RateLimited {
@@ -199,7 +202,7 @@ where
                 remaining,
                 intake_deadline,
             } => {
-                send_rate_rejection(&mut stream, intake_deadline)
+                send_rate_rejection(&mut stream, intake_deadline.into())
                     .await
                     .map_err(ServeError::Response)?;
                 discard_rate_body(&mut stream, remaining, intake_deadline)
@@ -218,15 +221,19 @@ where
             }
         }
     } else {
-        receive_chat(client, policy, deadline)
-            .await
-            .map(Some)
-            .map_err(ServeError::Receive)
+        receive_chat(
+            client,
+            policy,
+            deadline.limit(Instant::now() + INTAKE_TIMEOUT),
+        )
+        .await
+        .map(Some)
+        .map_err(ServeError::Receive)
     }
 }
 
-fn ensure_time(deadline: Instant) -> Result<(), ServeError> {
-    if Instant::now() >= deadline {
+fn ensure_time(deadline: RequestDeadline) -> Result<(), ServeError> {
+    if deadline.expired() {
         Err(ServeError::Deadline)
     } else {
         Ok(())

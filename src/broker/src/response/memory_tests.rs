@@ -82,8 +82,8 @@ fn json(length: usize) -> Vec<u8> {
     bytes
 }
 
-fn deadline() -> Instant {
-    Instant::now() + Duration::from_mins(1)
+fn deadline() -> RequestDeadline {
+    (Instant::now() + Duration::from_mins(1)).into()
 }
 
 fn runtime() -> io::Result<tokio::runtime::Runtime> {

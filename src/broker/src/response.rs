@@ -5,7 +5,7 @@
 //! truncated Content-Length/chunked bodies as errors, never clean EOF. Raw socket
 //! readers are unsuitable. No upstream headers are forwarded to the client.
 
-use crate::{AdmittedChat, Object, singleton};
+use crate::{AdmittedChat, Object, deadline::RequestDeadline, singleton};
 use http::{Response, StatusCode};
 use serde::de::IgnoredAny;
 use std::{fmt::NumBuffer, future::poll_fn, io::IoSlice, pin::Pin, task::Poll, time::Duration};
@@ -13,7 +13,7 @@ use tokio::{
     io::{
         AsyncBufRead, AsyncBufReadExt, AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt, ReadBuf,
     },
-    time::{Instant, timeout_at},
+    time::Instant,
 };
 
 /// Largest accepted decoded backend response body in bytes.
@@ -61,7 +61,7 @@ pub enum ResponseError {
 /// The caller must not have written any response bytes or begun generation.
 pub(crate) async fn send_context_rejection<W: AsyncWrite + Unpin>(
     mut client: W,
-    supervisor_deadline: Instant,
+    supervisor_deadline: RequestDeadline,
 ) -> Result<(), ResponseError> {
     const BODY: &[u8] = br#"{"error":{"code":"context_length_exceeded"}}"#;
     const HEAD: &str = concat!(
@@ -78,7 +78,7 @@ pub(crate) async fn send_context_rejection<W: AsyncWrite + Unpin>(
 /// The caller must not have contacted counting or generation endpoints.
 pub(crate) async fn send_control_rejection<W: AsyncWrite + Unpin>(
     mut client: W,
-    supervisor_deadline: Instant,
+    supervisor_deadline: RequestDeadline,
 ) -> Result<(), ResponseError> {
     const BODY: &[u8] = br#"{"error":{"code":"input_control_tokens_rejected"}}"#;
     const HEAD: &str = concat!(
@@ -95,7 +95,7 @@ pub(crate) async fn send_control_rejection<W: AsyncWrite + Unpin>(
 /// The fixed one-token-per-second budget needs at most one second to refill.
 pub(crate) async fn send_rate_rejection<W: AsyncWrite + Unpin>(
     mut client: W,
-    supervisor_deadline: Instant,
+    supervisor_deadline: RequestDeadline,
 ) -> Result<(), ResponseError> {
     const BODY: &[u8] = br#"{"error":{"code":"rate_limit_exceeded"}}"#;
     const HEAD: &str = concat!(
@@ -146,7 +146,7 @@ pub async fn send_chat_response<W, R>(
     client: W,
     backend: Response<R>,
     chat: &AdmittedChat,
-    supervisor_deadline: Instant,
+    supervisor_deadline: impl Into<RequestDeadline>,
 ) -> Result<(), ResponseError>
 where
     W: AsyncWrite + Unpin + 'static,
@@ -156,7 +156,7 @@ where
         client,
         backend,
         chat.streams_response(),
-        supervisor_deadline,
+        supervisor_deadline.into(),
     )
     .await
 }
@@ -165,7 +165,7 @@ pub(crate) async fn send_chat_response_mode<W, R>(
     mut client: W,
     backend: Response<R>,
     streaming: bool,
-    supervisor_deadline: Instant,
+    supervisor_deadline: RequestDeadline,
 ) -> Result<(), ResponseError>
 where
     W: AsyncWrite + Unpin + 'static,
@@ -188,7 +188,7 @@ pub(crate) async fn send_buffered_chat_response_mode<W, R>(
     mut client: W,
     mut body: R,
     streaming: bool,
-    supervisor_deadline: Instant,
+    supervisor_deadline: RequestDeadline,
 ) -> Result<(), ResponseError>
 where
     W: AsyncWrite + Unpin + 'static,
@@ -207,7 +207,7 @@ where
 async fn write_sse_response<W: AsyncWrite + Unpin, R: AsyncRead + Unpin>(
     client: &mut W,
     body: &mut R,
-    supervisor_deadline: Instant,
+    supervisor_deadline: RequestDeadline,
 ) -> Result<(), ResponseError> {
     write_group(client, &[SSE_HEAD.as_bytes()], supervisor_deadline, false).await?;
     // Read into the final wire frame: no per-chunk String allocation or
@@ -270,14 +270,15 @@ fn sse_frame(
 async fn write_buffered_sse_response<W: AsyncWrite + Unpin, R: AsyncBufRead + Unpin>(
     client: &mut W,
     body: &mut R,
-    deadline: Instant,
+    deadline: RequestDeadline,
 ) -> Result<(), ResponseError> {
     write_group(client, &[SSE_HEAD.as_bytes()], deadline, false).await?;
     let mut frame = [0; CHUNK_PREFIX_BYTES + RESPONSE_BUFFER_BYTES + 2];
     let mut sent = 0;
     loop {
         ensure_time(deadline)?;
-        let available = timeout_at(deadline, body.fill_buf())
+        let available = deadline
+            .timeout(body.fill_buf())
             .await
             .map_err(|_| ResponseError::Deadline)?
             .map_err(|_| ResponseError::BackendIo)?;
@@ -331,25 +332,26 @@ async fn write_buffered_sse_response<W: AsyncWrite + Unpin, R: AsyncBufRead + Un
 async fn write_vectored_group<W: AsyncWrite + Unpin>(
     client: &mut W,
     pieces: [&[u8]; 3],
-    supervisor_deadline: Instant,
+    supervisor_deadline: RequestDeadline,
 ) -> Result<(), ResponseError> {
-    let deadline = supervisor_deadline.min(Instant::now() + CLIENT_WRITE_TIMEOUT);
+    let deadline = supervisor_deadline.earlier(Instant::now() + CLIENT_WRITE_TIMEOUT);
     ensure_time(deadline)?;
-    timeout_at(deadline, async {
-        let mut slices = pieces.map(IoSlice::new);
-        let mut remaining = slices.as_mut_slice();
-        while !remaining.is_empty() {
-            let written = client.write_vectored(remaining).await?;
-            if written == 0 {
-                return Err(std::io::ErrorKind::WriteZero.into());
+    deadline
+        .timeout(async {
+            let mut slices = pieces.map(IoSlice::new);
+            let mut remaining = slices.as_mut_slice();
+            while !remaining.is_empty() {
+                let written = client.write_vectored(remaining).await?;
+                if written == 0 {
+                    return Err(std::io::ErrorKind::WriteZero.into());
+                }
+                IoSlice::advance_slices(&mut remaining, written);
             }
-            IoSlice::advance_slices(&mut remaining, written);
-        }
-        client.flush().await
-    })
-    .await
-    .map_err(|_| ResponseError::Deadline)?
-    .map_err(|_| ResponseError::ClientIo)?;
+            client.flush().await
+        })
+        .await
+        .map_err(|_| ResponseError::Deadline)?
+        .map_err(|_| ResponseError::ClientIo)?;
     ensure_time(deadline)
 }
 
@@ -366,7 +368,7 @@ enum SseReadStatus {
 async fn read_sse_group<R: AsyncRead + Unpin>(
     body: &mut R,
     buffer: &mut [u8],
-    deadline: Instant,
+    deadline: RequestDeadline,
 ) -> Result<(usize, SseReadStatus), ResponseError> {
     let mut count = read_before(body, buffer, deadline).await?;
     if count == 0 {
@@ -399,7 +401,7 @@ async fn read_sse_group<R: AsyncRead + Unpin>(
 async fn write_json_response<W: AsyncWrite + Unpin, R: AsyncRead + Unpin>(
     client: &mut W,
     body: &mut R,
-    supervisor_deadline: Instant,
+    supervisor_deadline: RequestDeadline,
 ) -> Result<(), ResponseError> {
     let bytes = collect_json(body, supervisor_deadline).await?;
     let head = format!(
@@ -444,7 +446,7 @@ pub(crate) fn valid_content_type(content_type: &[u8], streaming: bool) -> bool {
 
 async fn collect_json<R: AsyncRead + Unpin>(
     body: &mut R,
-    deadline: Instant,
+    deadline: RequestDeadline,
 ) -> Result<Vec<u8>, ResponseError> {
     // Read into the final allocation's spare capacity without staging a copy or
     // initializing bytes that the reader will immediately overwrite. Reserve
@@ -471,7 +473,8 @@ async fn collect_json<R: AsyncRead + Unpin>(
         let bound = RESPONSE_BUFFER_BYTES.min(MAX_RESPONSE_BYTES - bytes.len());
         let limit = u64::try_from(bound).map_err(|_| ResponseError::BodyLimit)?;
         let mut bounded = (&mut *body).take(limit);
-        let count = timeout_at(deadline, bounded.read_buf(&mut bytes))
+        let count = deadline
+            .timeout(bounded.read_buf(&mut bytes))
             .await
             .map_err(|_| ResponseError::Deadline)?
             .map_err(|_| ResponseError::BackendIo)?;
@@ -491,10 +494,11 @@ async fn collect_json<R: AsyncRead + Unpin>(
 async fn read_before<R: AsyncRead + Unpin>(
     body: &mut R,
     buffer: &mut [u8],
-    deadline: Instant,
+    deadline: RequestDeadline,
 ) -> Result<usize, ResponseError> {
     ensure_time(deadline)?;
-    let count = timeout_at(deadline, body.read(buffer))
+    let count = deadline
+        .timeout(body.read(buffer))
         .await
         .map_err(|_| ResponseError::Deadline)?
         .map_err(|_| ResponseError::BackendIo)?;
@@ -505,32 +509,33 @@ async fn read_before<R: AsyncRead + Unpin>(
 async fn write_group<W: AsyncWrite + Unpin>(
     client: &mut W,
     pieces: &[&[u8]],
-    supervisor_deadline: Instant,
+    supervisor_deadline: RequestDeadline,
     shutdown: bool,
 ) -> Result<(), ResponseError> {
     // One deadline covers the whole group, including all partial writes, flush
     // and (on success only) shutdown. No helper restarts it between pieces.
-    let deadline = supervisor_deadline.min(Instant::now() + CLIENT_WRITE_TIMEOUT);
+    let deadline = supervisor_deadline.earlier(Instant::now() + CLIENT_WRITE_TIMEOUT);
     ensure_time(deadline)?;
-    timeout_at(deadline, async {
-        for piece in pieces {
-            client.write_all(piece).await?;
-        }
-        client.flush().await?;
-        if shutdown {
-            client.shutdown().await?;
-        }
-        Ok::<_, std::io::Error>(())
-    })
-    .await
-    .map_err(|_| ResponseError::Deadline)?
-    .map_err(|_| ResponseError::ClientIo)?;
+    deadline
+        .timeout(async {
+            for piece in pieces {
+                client.write_all(piece).await?;
+            }
+            client.flush().await?;
+            if shutdown {
+                client.shutdown().await?;
+            }
+            Ok::<_, std::io::Error>(())
+        })
+        .await
+        .map_err(|_| ResponseError::Deadline)?
+        .map_err(|_| ResponseError::ClientIo)?;
     // timeout_at allows an immediately ready operation to win after expiry.
     ensure_time(deadline)
 }
 
-fn ensure_time(deadline: Instant) -> Result<(), ResponseError> {
-    if Instant::now() >= deadline {
+fn ensure_time(deadline: RequestDeadline) -> Result<(), ResponseError> {
+    if deadline.expired() {
         Err(ResponseError::Deadline)
     } else {
         Ok(())

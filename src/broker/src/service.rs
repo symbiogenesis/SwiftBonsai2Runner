@@ -7,8 +7,9 @@
 use crate::{
     RequestPolicy,
     backend::{BackendError, BackendPolicy},
+    deadline::RequestDeadline,
     scheduler::{GateError, RequestGate, Reservation},
-    supervisor::{BackendConnector, REQUEST_TIMEOUT, ServeError, serve_chat_with_budget},
+    supervisor::{BackendConnector, ServeError, serve_chat_with_budget},
     transport::LoopbackBackend,
 };
 use std::{
@@ -204,10 +205,10 @@ pub struct AcceptedChat<'a> {
 }
 
 impl AcceptedChat<'_> {
-    /// Wait fairly for the single active slot, then serve one bounded request.
+    /// Wait fairly for the single active slot, then serve one owned request.
     ///
-    /// Queue time counts toward the ten-minute total. Queue expiry and shutdown
-    /// drop this socket without reading a body; errors never append a second
+    /// Queue expiry and shutdown drop this socket without reading a body.
+    /// Active generation has no total elapsed-time cap; errors never append a second
     /// HTTP response. Client half-close is treated as abandonment by the
     /// supervisor, and disconnecting closes the backend transport. Once a
     /// generation connection is attempted, any failure or caller cancellation
@@ -218,12 +219,11 @@ impl AcceptedChat<'_> {
     /// # Errors
     /// Returns [`ServiceError`] for queue/deadline/shutdown or request failure.
     pub async fn serve(self) -> Result<(), ServiceError> {
-        let deadline = self.accepted + REQUEST_TIMEOUT;
-        let queue_deadline = deadline.min(self.accepted + QUEUE_TIMEOUT);
+        let queue_deadline = self.accepted + QUEUE_TIMEOUT;
         if Instant::now() >= queue_deadline {
             return Err(ServiceError::Gate(GateError::Deadline));
         }
-        let active = timeout_at(queue_deadline, self.reservation.enter(deadline))
+        let active = timeout_at(queue_deadline, self.reservation.enter(queue_deadline))
             .await
             .map_err(|_| ServiceError::Gate(GateError::Deadline))?
             .map_err(ServiceError::Gate)?;
@@ -231,33 +231,42 @@ impl AcceptedChat<'_> {
             return Err(ServiceError::Gate(GateError::Deadline));
         }
         active.check().map_err(ServiceError::Gate)?;
-        let backend = GenerationAttempt {
-            backend: &self.service.backend,
-            gate: &self.service.gate,
-            counted: AtomicBool::new(false),
-            generation: AtomicBool::new(false),
-            completed: AtomicBool::new(false),
-        };
-        let mut shutdown = pin!(self.service.gate.closed());
-        let mut serving = pin!(serve_chat_with_budget(
-            self.stream,
-            &self.service.policy,
-            &backend,
-            deadline,
-            &self.service.burst
-        ));
-        let result = poll_fn(|cx| {
-            if shutdown.as_mut().poll(cx).is_ready() {
-                return Poll::Ready(Err(ServiceError::Gate(GateError::Closed)));
+        let result = {
+            let backend = GenerationAttempt {
+                backend: &self.service.backend,
+                gate: &self.service.gate,
+                counted: AtomicBool::new(false),
+                generation: AtomicBool::new(false),
+                completed: AtomicBool::new(false),
+            };
+            let mut shutdown = pin!(self.service.gate.closed());
+            let mut serving = pin!(serve_chat_with_budget(
+                self.stream,
+                &self.service.policy,
+                &backend,
+                RequestDeadline::NONE,
+                &self.service.burst
+            ));
+            let result = poll_fn(|cx| {
+                if shutdown.as_mut().poll(cx).is_ready() {
+                    return Poll::Ready(Err(ServiceError::Gate(GateError::Closed)));
+                }
+                serving
+                    .as_mut()
+                    .poll(cx)
+                    .map(|result| result.map_err(ServiceError::Request))
+            })
+            .await;
+            backend.completed.store(result.is_ok(), Ordering::Relaxed);
+            if self.service.gate.is_closed() {
+                Err(ServiceError::Gate(GateError::Closed))
+            } else {
+                result
             }
-            serving
-                .as_mut()
-                .poll(cx)
-                .map(|result| result.map_err(ServiceError::Request))
-        })
-        .await;
-        backend.completed.store(result.is_ok(), Ordering::Relaxed);
-        active.check().map_err(ServiceError::Gate)?;
+        };
+        // Retain both permits through stream closure and cancellation latching.
+        // The admission deadline must not expire active generation.
+        drop(active);
         result
     }
 }

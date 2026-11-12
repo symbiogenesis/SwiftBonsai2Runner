@@ -123,13 +123,15 @@ pub struct Reservation<'a> {
 }
 
 impl<'a> Reservation<'a> {
-    /// Wait fairly for the sole active slot under one absolute request deadline.
+    /// Wait fairly for the sole active slot under an absolute admission deadline.
     ///
     /// Requires a Tokio time driver. Queue order follows the first polling of
     /// this future, not when the reservation was made. Dropping the future
     /// removes its queue entry and releases its accepted-request reservation.
-    /// The same deadline must cover reception, counting, generation and response
-    /// writing; calling this method must not create a fresh request-time budget.
+    /// The returned guard retains this deadline for explicit [`ActiveRequest::check`]
+    /// calls. A caller imposing a total request deadline must also pass it through
+    /// subsequent work. A caller using a queue-only deadline must instead observe
+    /// [`RequestGate::closed`] during active work without rechecking queue expiry.
     ///
     /// # Errors
     /// Returns [`GateError::Closed`] when shut down, or [`GateError::Deadline`]
