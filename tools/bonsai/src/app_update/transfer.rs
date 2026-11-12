@@ -2,16 +2,34 @@
 
 use std::{
     collections::BTreeMap,
-    fs::{self, File, OpenOptions},
-    io::{Read as _, Seek as _, SeekFrom, Write as _},
-    path::Path,
+    fs::{self, OpenOptions},
+    io::{Read as _, Write as _},
+    path::{Path, PathBuf},
     sync::OnceLock,
     time::Duration,
+};
+
+#[cfg(test)]
+use std::{
+    fs::File,
+    io::{Seek as _, SeekFrom},
 };
 
 use super::{MAX_METADATA, external, policy::Asset};
 
 static CURL: OnceLock<std::path::PathBuf> = OnceLock::new();
+
+struct TemporaryBody(PathBuf);
+
+impl Drop for TemporaryBody {
+    fn drop(&mut self) {
+        // Remove only this request's unpublished regular file. Keep diagnostics
+        // separately; neither failed HTTP responses nor partial JSON are cache.
+        if external(&self.0).is_ok() {
+            let _removed = fs::remove_file(&self.0);
+        }
+    }
+}
 
 fn curl(working: &Path) -> crate::Result<std::path::PathBuf> {
     if let Some(path) = CURL.get() {
@@ -65,7 +83,8 @@ pub(super) fn read_bounded(path: &Path, maximum: u64) -> crate::Result<Vec<u8>> 
     Ok(bytes)
 }
 
-pub(super) fn verify(file: &mut File, bytes: u64, sha256: &str) -> crate::Result<()> {
+#[cfg(test)]
+fn verify(file: &mut File, bytes: u64, sha256: &str) -> crate::Result<()> {
     if bytes == 0
         || file.metadata().map_err(|error| error.to_string())?.len() != bytes
         || !crate::identity::is_lower_hex(sha256, 64)
@@ -94,6 +113,8 @@ pub(super) fn verify(file: &mut File, bytes: u64, sha256: &str) -> crate::Result
 
 pub(super) fn write_exclusive(path: &Path, bytes: &[u8]) -> crate::Result<()> {
     external(path)?;
+    let temporary = path.with_extension(format!("{}.partial", crate::startup_process::unique()));
+    external(&temporary)?;
     let mut options = OpenOptions::new();
     options.write(true).create_new(true);
     #[cfg(windows)]
@@ -101,10 +122,18 @@ pub(super) fn write_exclusive(path: &Path, bytes: &[u8]) -> crate::Result<()> {
         use std::os::windows::fs::OpenOptionsExt as _;
         options.share_mode(0).custom_flags(0x0020_0000);
     }
-    let mut file = options.open(path).map_err(|error| error.to_string())?;
-    file.write_all(bytes)
+    let mut file = options.open(&temporary).map_err(|error| error.to_string())?;
+    let temporary = TemporaryBody(temporary);
+    let written = file
+        .write_all(bytes)
         .and_then(|()| file.sync_all())
-        .map_err(|error| error.to_string())
+        .map_err(|error| error.to_string());
+    drop(file);
+    written?;
+    external(path)?;
+    // Publish complete, durable bytes without replacing an existing handoff or
+    // receipt. A short write must never leave a corrupt final cache identity.
+    fs::hard_link(&temporary.0, path).map_err(|error| error.to_string())
 }
 
 pub(super) fn write_new_or_identical(path: &Path, bytes: &[u8]) -> crate::Result<()> {
@@ -118,12 +147,18 @@ pub(super) fn write_new_or_identical(path: &Path, bytes: &[u8]) -> crate::Result
 }
 
 pub(super) fn metadata(url: &str, working: &Path) -> crate::Result<Vec<u8>> {
+    #[cfg(windows)]
+    let directory = bonsai_windows_credentials::PrivateDirectory::create(working)
+        .map_err(|error| error.to_string())?;
+    #[cfg(windows)]
+    let working = directory.path();
     let path = working.join(format!(
         "metadata-{}.json",
         crate::startup_process::unique()
     ));
     let log = path.with_extension("log");
     external(&path)?;
+    let _body = TemporaryBody(path.clone());
     // The public API has no authentication headers. Artifact URLs are admitted
     // only by the offline canonical-project release policy before reaching here.
     let arguments = [
@@ -177,7 +212,6 @@ pub(super) fn metadata(url: &str, working: &Path) -> crate::Result<Vec<u8>> {
                 super::REPOSITORY
             )
     {
-        fs::remove_file(&path).map_err(|error| error.to_string())?;
         return Ok(b"[]".to_vec());
     }
     if result.code != 0 || result.stdout.trim() != "200" {
@@ -187,9 +221,7 @@ pub(super) fn metadata(url: &str, working: &Path) -> crate::Result<Vec<u8>> {
             result.code
         ));
     }
-    let bytes = read_bounded(&path, MAX_METADATA)?;
-    fs::remove_file(&path).map_err(|error| error.to_string())?;
-    Ok(bytes)
+    read_bounded(&path, MAX_METADATA)
 }
 
 pub(super) fn asset_metadata(asset: &Asset, working: &Path) -> crate::Result<Vec<u8>> {
@@ -215,6 +247,7 @@ mod tests {
         fs::create_dir(&root).map_err(|error| error.to_string())?;
         let path = root.join("fixture.msi");
         write_exclusive(&path, b"original")?;
+        assert!(write_exclusive(&path, b"replacement").is_err());
         write_new_or_identical(&path, b"original")?;
         assert!(write_new_or_identical(&path, b"different").is_err());
         assert!(read_bounded(&path, 7).is_err());
@@ -229,5 +262,22 @@ mod tests {
         fs::remove_file(&path)
             .and_then(|()| fs::remove_dir(&root))
             .map_err(|error| error.to_string())
+    }
+
+    #[test]
+    fn temporary_bodies_are_removed_after_early_return() -> crate::Result<()> {
+        let root = std::env::temp_dir().join(format!(
+            "Bonsai-Update-Cleanup-{}",
+            crate::startup_process::unique()
+        ));
+        fs::create_dir(&root).map_err(|error| error.to_string())?;
+        let path = root.join("response.json");
+        fs::write(&path, b"partial response").map_err(|error| error.to_string())?;
+        {
+            let _body = TemporaryBody(path.clone());
+            assert!(read_bounded(&path, 1).is_err());
+        }
+        assert!(!fs::exists(path).map_err(|error| error.to_string())?);
+        fs::remove_dir(root).map_err(|error| error.to_string())
     }
 }
