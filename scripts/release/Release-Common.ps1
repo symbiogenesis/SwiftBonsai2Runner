@@ -1,4 +1,4 @@
-#Requires -Version 7.0
+#Requires -Version 7.6
 # Shared release primitives; importing this file performs no external work.
 Set-StrictMode -Version Latest
 
@@ -48,6 +48,9 @@ function Invoke-ReleaseCommand {
     $start.UseShellExecute = $false
     $start.CreateNoWindow = $true
     $start.RedirectStandardOutput = $true
+    # Release tools emit UTF-8. ProcessStartInfo otherwise chooses the host's
+    # default decoding, which can silently change Unicode paths and JSON.
+    $start.StandardOutputEncoding = [Text.UTF8Encoding]::new($false)
     foreach ($argument in $ArgumentList) { [void]$start.ArgumentList.Add($argument) }
     $process = [Diagnostics.Process]::new()
     $process.StartInfo = $start

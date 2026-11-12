@@ -1,4 +1,4 @@
-#Requires -Version 7.0
+#Requires -Version 7.6
 # This installs software and belongs on a disposable hosted ARM64 runner only.
 [CmdletBinding()]
 param(

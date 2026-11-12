@@ -34,8 +34,9 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 0
-      - name: Check release PowerShell syntax, argument preservation and failure handling
+      - name: Check PowerShell 7.6+ release syntax, argument preservation and failure handling
         run: |
+          Write-Host "Release script baseline: PowerShell 7.6 or newer; running $($PSVersionTable.PSVersion)."
           & (Join-Path $env:GITHUB_WORKSPACE 'scripts/release/Test-ReleasePrimitives.ps1')
       - name: Validate release version, source and notes before building
         working-directory: ${{ runner.temp }}

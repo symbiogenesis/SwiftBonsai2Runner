@@ -1,4 +1,4 @@
-#Requires -Version 7.0
+#Requires -Version 7.6
 # Model-free controls; never install software or contact a remote service.
 [CmdletBinding()]
 param()
@@ -22,7 +22,7 @@ $fixture = Join-Path ([IO.Path]::GetTempPath()) ('SwiftBonsai-Release-Controls-'
 $echoScript = Join-Path $fixture 'arguments.ps1'
 $failureScript = Join-Path $fixture 'failure.ps1'
 try {
-    '[Console]::Out.Write((ConvertTo-Json -InputObject @($args) -Compress))' | Set-Content -LiteralPath $echoScript -Encoding utf8NoBOM
+    '[Console]::OutputEncoding = [Text.UTF8Encoding]::new($false); [Console]::Out.Write((ConvertTo-Json -InputObject @($args) -Compress))' | Set-Content -LiteralPath $echoScript -Encoding utf8NoBOM
     'exit 7' | Set-Content -LiteralPath $failureScript -Encoding utf8NoBOM
     $engine = (Get-Process -Id $PID).Path
     $expected = @('path with spaces', '{"quoted":"value"}', 'trailing\', 'semicolon;literal', 'Unicode-β')
@@ -50,7 +50,8 @@ try {
     }
     $null = Resolve-ReleasePath (Join-Path $fixture 'new-output') -AllowMissing
     [ordered]@{
-        schemaVersion = 1; parsedSources = $sources.Count; argumentRoundTrip = $true
+        schemaVersion = 1; powerShellVersion = $PSVersionTable.PSVersion.ToString(); minimumPowerShellVersion = '7.6'
+        parsedSources = $sources.Count; argumentRoundTrip = $true
         rejectedNonzeroExit = $rejectedExit; rejectedPaths = $rejectedPaths
         networkUsed = $false; softwareInstalled = $false
     } | ConvertTo-Json
