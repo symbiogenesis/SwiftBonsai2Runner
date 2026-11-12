@@ -9,7 +9,7 @@
     },
     {
       "path": "tools/hexagon/native_rpc/projection.rs",
-      "sha256": "7c53812707e09561ba8f476b3a51bd5dd0c6ba83ccca8c77b35fb16a817863fe"
+      "sha256": "47961bc49770699ec7c1bf69285b2461ae20d016363d1e33f94b3e1509414d45"
     },
     {
       "path": "docs/evidence/hexagon-swift-operation-ledger.json",
