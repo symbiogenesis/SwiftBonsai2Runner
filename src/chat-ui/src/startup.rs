@@ -386,6 +386,7 @@ mod tests {
             native_engine: true,
             native_row_workers: 4,
             latest_prompt_reuse: false,
+            kv_cache: None,
             canary: None,
             qwen_tts: None,
         }

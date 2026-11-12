@@ -20,6 +20,8 @@ param(
     [int]$NativeRowWorkers,
     [ValidateSet('disabled', 'latest')]
     [string]$PromptReuse,
+    [ValidateSet('f16', 'rsq4')]
+    [string]$KvCache,
     [switch]$UseRepackedPtq1,
     [switch]$UseOriginalPq2,
     [ValidateSet('dx12', 'vulkan', 'gl')]
@@ -70,5 +72,6 @@ if ($UseRepackedPtq1) { $launchArguments += '--use-repacked-ptq1' }
 if ($UseOriginalPq2) { $launchArguments += '--use-original-pq2' }
 if ($GraphicsBackend) { $launchArguments += @('--graphics-backend', $GraphicsBackend.ToLowerInvariant()) }
 if ($PromptReuse) { $launchArguments += @('--prompt-reuse', $PromptReuse.ToLowerInvariant()) }
+if ($KvCache) { $launchArguments += @('--kv-cache', $KvCache.ToLowerInvariant()) }
 & $ToolPath @launchArguments
 exit $LASTEXITCODE

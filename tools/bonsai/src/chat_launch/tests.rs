@@ -339,6 +339,49 @@ fn plan(value: Value) -> crate::Result<Plan> {
 }
 
 #[test]
+fn kv_cache_survives_deferred_preparation_and_rejects_unsupported_selection() -> crate::Result<()> {
+    let mut fixture = fixture("kv-cache")?;
+    fixture.request["NativeEngine"] = json!(true);
+    let default = plan(fixture.request.clone())?;
+    let serialized = serde_json::to_vec(&default.request).map_err(|error| error.to_string())?;
+    let restored: Request =
+        serde_json::from_slice(&serialized).map_err(|error| error.to_string())?;
+    assert!(restored.kv_cache.is_none());
+    for value in ["f16", "rsq4"] {
+        fixture.request["KvCache"] = json!(value);
+        let prepared = plan(fixture.request.clone())?;
+        let serialized =
+            serde_json::to_vec(&prepared.request).map_err(|error| error.to_string())?;
+        let restored: Request =
+            serde_json::from_slice(&serialized).map_err(|error| error.to_string())?;
+        let mut recorder = Recorder::new(fixture.root.clone());
+        let result = prepare_backend(prepare(restored, true)?, &mut recorder, &fixture.working)?;
+        let arguments = result["Arguments"].as_array().ok_or("Missing arguments.")?;
+        assert_eq!(
+            arguments
+                .array_windows::<2>()
+                .filter(|args| args[0] == "--kv-cache" && args[1] == value)
+                .count(),
+            1
+        );
+    }
+    for invalid in [
+        json!("F16"),
+        json!("rsq4k3v"),
+        json!(null),
+        json!(true),
+        json!(0),
+    ] {
+        fixture.request["KvCache"] = invalid;
+        assert!(plan(fixture.request.clone()).is_err());
+    }
+    fixture.request["KvCache"] = json!("f16");
+    fixture.request["NativeEngine"] = json!(false);
+    assert!(plan(fixture.request.clone()).is_err());
+    Ok(())
+}
+
+#[test]
 fn prompt_reuse_survives_deferred_preparation_and_rejects_unsupported_selection()
 -> crate::Result<()> {
     let mut fixture = fixture("prompt-reuse")?;

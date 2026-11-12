@@ -9,6 +9,7 @@ pub(super) struct WorkerReadiness {
     expected: u8,
     legacy_missing_allowed: bool,
     latest_prompt_reuse: bool,
+    kv_cache: Option<crate::inference::KvCache>,
 }
 
 impl WorkerReadiness {
@@ -19,11 +20,17 @@ impl WorkerReadiness {
             // later pin must report its graph's effective worker budget.
             legacy_missing_allowed: matches!(version, "0.1.8" | "0.1.9" | "0.1.10"),
             latest_prompt_reuse: false,
+            kv_cache: None,
         }
     }
 
     pub(super) const fn with_prompt_reuse(mut self, latest: bool) -> Self {
         self.latest_prompt_reuse = latest;
+        self
+    }
+
+    pub(super) const fn with_kv_cache(mut self, policy: Option<crate::inference::KvCache>) -> Self {
+        self.kv_cache = policy;
         self
     }
 
@@ -100,6 +107,39 @@ struct NativeModel<'a> {
     abliteration_scale_range: Option<[u8; 2]>,
     #[serde(default, borrow, deserialize_with = "present")]
     prompt_reuse: Option<Text<'a>>,
+    #[serde(default, borrow, deserialize_with = "present")]
+    kv_cache: Option<Text<'a>>,
+    #[serde(default, borrow, deserialize_with = "present")]
+    startup_graph_identity: Option<Text<'a>>,
+}
+
+fn cache_identity_matches(
+    model: &NativeModel<'_>,
+    workers: WorkerReadiness,
+    adapter: bool,
+) -> bool {
+    if workers.kv_cache != Some(crate::inference::KvCache::Rsq4) {
+        return model.kv_cache.is_none() && model.startup_graph_identity.is_none();
+    }
+    let mut identity = format!(
+        "{}:qwen35-text-v1:nonflash-f16:kv-rsq4-d256-rht3-v1:gdn-f32:prism-arm64-fused-v1",
+        &*model.model_sha256
+    );
+    if adapter {
+        use std::fmt::Write as _;
+        if write!(
+            identity,
+            ":rank-one-lora-v1:{}:{:08x}",
+            crate::inference::ADAPTER_SHA256,
+            1.3_f32.to_bits()
+        )
+        .is_err()
+        {
+            return false;
+        }
+    }
+    model.kv_cache.as_deref() == Some("rsq4")
+        && model.startup_graph_identity.as_deref() == Some(identity.as_str())
 }
 
 pub(super) fn validate_native_identity(
@@ -146,6 +186,7 @@ pub(super) fn validate_native_identity(
         || model.seed != 42
         || !workers.accepts(model.row_workers)
         || model.prompt_reuse.as_deref() != workers.latest_prompt_reuse.then_some("latest")
+        || !cache_identity_matches(model, workers, adapter)
         || !extensions_match
     {
         return Err(io::Error::other("native model readiness identity mismatch"));
@@ -156,6 +197,115 @@ pub(super) fn validate_native_identity(
 #[cfg(test)]
 mod tests {
     use super::{WorkerReadiness, validate_native_identity};
+
+    fn kv_cache_model(repacked: bool, adapter: bool) -> (serde_json::Value, String) {
+        use serde_json::json;
+        let hash = if repacked {
+            crate::inference::REPACKED_PTQ1_SHA256
+        } else {
+            crate::inference::MODEL_SHA256
+        };
+        let mut graph = format!(
+            "{hash}:qwen35-text-v1:nonflash-f16:kv-rsq4-d256-rht3-v1:gdn-f32:prism-arm64-fused-v1"
+        );
+        if adapter {
+            graph = format!(
+                "{graph}:rank-one-lora-v1:{}:3fa66666",
+                crate::inference::ADAPTER_SHA256
+            );
+        }
+        let mut model = json!({
+            "id": if repacked { "Swift-Bonsai-2-current-repacked-PTQ1_0" } else { "Swift-Bonsai-2-PQ2_0" },
+            "object": "model", "model_sha256": hash,
+            "template_sha256": crate::inference::TEMPLATE_SHA256,
+            "runtime": "prism-inference", "context_tokens": 8192, "seed": 42,
+            "row_workers": 4, "kv_cache": "rsq4", "startup_graph_identity": graph,
+        });
+        if repacked || adapter {
+            model["weight_representation"] = json!(if repacked {
+                "current-repacked-PTQ1_0"
+            } else {
+                "PQ2_0"
+            });
+            model["adapter_sha256"] = json!(adapter.then_some(crate::inference::ADAPTER_SHA256));
+            model["supports_abliteration_scale"] = json!(adapter);
+            if adapter {
+                model["abliteration_scale_range"] = json!([0, 2]);
+            }
+        }
+        (model, graph)
+    }
+
+    fn model_response(model: &serde_json::Value) -> Result<Vec<u8>, serde_json::Error> {
+        let body = serde_json::to_string(&serde_json::json!({"data": [model]}))?;
+        Ok(format!(
+            "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\n\r\n{body}",
+            body.len()
+        )
+        .into_bytes())
+    }
+
+    #[test]
+    fn kv_cache_readiness_binds_profile_graph_representation_and_startup_adapter()
+    -> Result<(), serde_json::Error> {
+        use serde_json::json;
+        for repacked in [false, true] {
+            for adapter in [false, true] {
+                let (mut model, graph) = kv_cache_model(repacked, adapter);
+                let f16 = WorkerReadiness::for_version("0.1.24", 4);
+                let rsq4 = f16.with_kv_cache(Some(crate::inference::KvCache::Rsq4));
+                let bytes = model_response(&model)?;
+                assert!(validate_native_identity(&bytes, repacked, adapter, rsq4).is_ok());
+                assert!(validate_native_identity(&bytes, repacked, adapter, f16).is_err());
+                for (field, replacement) in [
+                    ("kv_cache", json!("f16")),
+                    ("kv_cache", json!("rsq4k3v")),
+                    ("kv_cache", json!(null)),
+                    ("startup_graph_identity", json!("wrong-model-or-codec")),
+                    (
+                        "startup_graph_identity",
+                        json!(format!("{graph}:unexpected")),
+                    ),
+                    ("startup_graph_identity", json!(null)),
+                ] {
+                    let mut changed = model.clone();
+                    changed[field] = replacement;
+                    assert!(
+                        validate_native_identity(
+                            &model_response(&changed)?,
+                            repacked,
+                            adapter,
+                            rsq4
+                        )
+                        .is_err()
+                    );
+                }
+                for field in ["kv_cache", "startup_graph_identity"] {
+                    let mut changed = model.clone();
+                    if let Some(object) = changed.as_object_mut() {
+                        object.remove(field);
+                    }
+                    assert!(
+                        validate_native_identity(
+                            &model_response(&changed)?,
+                            repacked,
+                            adapter,
+                            rsq4
+                        )
+                        .is_err()
+                    );
+                }
+                if let Some(object) = model.as_object_mut() {
+                    object.remove("kv_cache");
+                    object.remove("startup_graph_identity");
+                }
+                let bytes = model_response(&model)?;
+                assert!(validate_native_identity(&bytes, repacked, adapter, f16).is_ok());
+                assert!(validate_native_identity(&bytes, repacked, adapter, rsq4).is_err());
+            }
+        }
+        Ok(())
+    }
 
     fn response(workers: Option<&str>) -> Vec<u8> {
         let extension =

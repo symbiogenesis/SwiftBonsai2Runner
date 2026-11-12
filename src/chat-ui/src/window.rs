@@ -2321,6 +2321,7 @@ mod startup_tests {
             native_engine: false,
             native_row_workers: 1,
             latest_prompt_reuse: false,
+            kv_cache: None,
             canary: None,
             qwen_tts: None,
         };

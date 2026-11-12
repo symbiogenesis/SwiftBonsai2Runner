@@ -61,6 +61,7 @@ fn configuration(
     let mut native_engine = None;
     let mut native_row_workers = None;
     let mut latest_prompt_reuse = None;
+    let mut kv_cache = None;
     while let Some(option) = args.next() {
         match option.to_str() {
             Some("--no-abliterate-lora") if !no_abliterate_lora => no_abliterate_lora = true,
@@ -87,6 +88,15 @@ fn configuration(
                         Some("disabled") => false,
                         Some("latest") => true,
                         _ => return Err("Prompt reuse must be disabled or latest."),
+                    },
+                );
+            }
+            Some("--kv-cache") if kv_cache.is_none() => {
+                kv_cache = Some(
+                    match args.next().as_deref().and_then(std::ffi::OsStr::to_str) {
+                        Some("f16") => client::KvCache::F16,
+                        Some("rsq4") => client::KvCache::Rsq4,
+                        _ => return Err("KV cache must be f16 or rsq4."),
                     },
                 );
             }
@@ -190,7 +200,7 @@ fn configuration(
             }
             _ => {
                 return Err(
-                    "Usage: bonsai-chat --broker-path ABSOLUTE_EXE --data-directory ABSOLUTE_DIRECTORY --evidence-directory ABSOLUTE_DIRECTORY [--frontend-port 5173] [--backend-port 8081] [--no-abliterate-lora] [--use-repacked-ptq1|--use-original-pq2] [--native-engine|--publisher-engine] [--native-row-workers 1|4] [--prompt-reuse disabled|latest] [--canary-key-file ABSOLUTE_FILE --canary-port 8766 [--canary-executable ABSOLUTE_EXE --canary-model ABSOLUTE_GGUF]] [--tts-key-file ABSOLUTE_FILE --tts-port 8767 [--tts-executable ABSOLUTE_EXE --tts-model ABSOLUTE_GGUF --tts-codec ABSOLUTE_GGUF --tts-voice-model ABSOLUTE_GGUF [--tts-quantization Q8_0|Q4_K_M] [--tts-threads 10]]]",
+                    "Usage: bonsai-chat --broker-path ABSOLUTE_EXE --data-directory ABSOLUTE_DIRECTORY --evidence-directory ABSOLUTE_DIRECTORY [--frontend-port 5173] [--backend-port 8081] [--no-abliterate-lora] [--use-repacked-ptq1|--use-original-pq2] [--native-engine|--publisher-engine] [--native-row-workers 1|4] [--prompt-reuse disabled|latest] [--kv-cache f16|rsq4] [--canary-key-file ABSOLUTE_FILE --canary-port 8766 [--canary-executable ABSOLUTE_EXE --canary-model ABSOLUTE_GGUF]] [--tts-key-file ABSOLUTE_FILE --tts-port 8767 [--tts-executable ABSOLUTE_EXE --tts-model ABSOLUTE_GGUF --tts-codec ABSOLUTE_GGUF --tts-voice-model ABSOLUTE_GGUF [--tts-quantization Q8_0|Q4_K_M] [--tts-threads 10]]]",
                 );
             }
         }
@@ -200,6 +210,9 @@ fn configuration(
     let latest_prompt_reuse = latest_prompt_reuse.unwrap_or(false);
     if latest_prompt_reuse && !native_engine {
         return Err("Latest prompt reuse requires --native-engine.");
+    }
+    if kv_cache.is_some() && !native_engine {
+        return Err("KV cache selection requires --native-engine.");
     }
     if native_row_workers == 4 && !native_engine {
         return Err("Four native row workers require --native-engine.");
@@ -254,6 +267,7 @@ fn configuration(
         native_engine,
         native_row_workers,
         latest_prompt_reuse,
+        kv_cache,
         canary: canary_key_file.map(|key_file| canary::Config {
             port: canary_port.unwrap_or(8766),
             key_file,
@@ -597,6 +611,32 @@ mod tests {
         assert!(default.native_engine);
         assert_eq!(default.native_row_workers, 4);
         assert!(!default.latest_prompt_reuse);
+        assert!(default.kv_cache.is_none());
+        for (name, policy) in [
+            ("f16", crate::client::KvCache::F16),
+            ("rsq4", crate::client::KvCache::Rsq4),
+        ] {
+            let mut selected = args.to_vec();
+            selected.extend(["--kv-cache", name].map(OsString::from));
+            assert_eq!(
+                configuration(selected.clone())
+                    .map_err(io::Error::other)?
+                    .kv_cache,
+                Some(policy)
+            );
+            selected.extend(["--kv-cache", name].map(OsString::from));
+            assert!(configuration(selected).is_err());
+        }
+        for suffix in [
+            vec!["--kv-cache"],
+            vec!["--kv-cache", "F16"],
+            vec!["--kv-cache", "rsq4k3v"],
+            vec!["--publisher-engine", "--kv-cache", "f16"],
+        ] {
+            let mut rejected = args.to_vec();
+            rejected.extend(suffix.into_iter().map(OsString::from));
+            assert!(configuration(rejected).is_err());
+        }
         for (value, latest) in [("disabled", false), ("latest", true)] {
             let mut selected = args.to_vec();
             selected.extend(["--prompt-reuse", value].map(OsString::from));
@@ -635,7 +675,7 @@ mod tests {
     }
 
     #[test]
-    fn rust_development_defaults_preserve_explicit_runtime_weight_and_adapter_choices()
+    fn kv_cache_and_rust_defaults_preserve_explicit_runtime_weight_and_adapter_choices()
     -> io::Result<()> {
         let stamp = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)

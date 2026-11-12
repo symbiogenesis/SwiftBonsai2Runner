@@ -71,6 +71,21 @@ pub(crate) fn valid_abliteration_scale(scale: f32) -> bool {
     scale.is_finite() && (0.0..=2.0).contains(&scale)
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(crate) enum KvCache {
+    F16,
+    Rsq4,
+}
+
+impl KvCache {
+    pub(crate) const fn name(self) -> &'static str {
+        match self {
+            Self::F16 => "f16",
+            Self::Rsq4 => "rsq4",
+        }
+    }
+}
+
 /// Fixed development launch inputs; paths and keys have no debug representation.
 #[derive(Clone)]
 #[expect(
@@ -88,6 +103,7 @@ pub(crate) struct Config {
     pub(crate) native_engine: bool,
     pub(crate) native_row_workers: u8,
     pub(crate) latest_prompt_reuse: bool,
+    pub(crate) kv_cache: Option<KvCache>,
     pub(crate) canary: Option<crate::canary::Config>,
     pub(crate) qwen_tts: Option<crate::tts::Config>,
 }
@@ -366,6 +382,9 @@ fn runtime_arguments(config: &Config) -> Vec<&'static str> {
     ]);
     if config.latest_prompt_reuse {
         arguments.extend(["--prompt-reuse", "latest"]);
+    }
+    if let Some(policy) = config.kv_cache {
+        arguments.extend(["--kv-cache", policy.name()]);
     }
     arguments
 }
@@ -1321,7 +1340,7 @@ mod tests {
     };
 
     #[test]
-    fn explicit_runtime_and_row_workers_preserve_model_adapter_and_publisher_rollback() {
+    fn kv_cache_and_runtime_choices_preserve_model_adapter_and_publisher_rollback() {
         let mut config = Config {
             broker: "broker.exe".into(),
             data: "data".into(),
@@ -1333,6 +1352,7 @@ mod tests {
             native_engine: false,
             native_row_workers: 1,
             latest_prompt_reuse: false,
+            kv_cache: None,
             canary: None,
             qwen_tts: None,
         };
@@ -1389,6 +1409,17 @@ mod tests {
                 "1"
             ]
         );
+        for policy in [super::KvCache::Rsq4, super::KvCache::F16] {
+            config.kv_cache = Some(policy);
+            let arguments = runtime_arguments(&config);
+            assert_eq!(
+                arguments
+                    .array_windows::<2>()
+                    .filter(|args| args == &&["--kv-cache", policy.name()])
+                    .count(),
+                1
+            );
+        }
         config.latest_prompt_reuse = true;
         let selected = runtime_arguments(&config);
         assert!(
@@ -1416,6 +1447,7 @@ mod tests {
             native_engine: true,
             native_row_workers: 4,
             latest_prompt_reuse: false,
+            kv_cache: None,
             canary: None,
             qwen_tts: None,
         };

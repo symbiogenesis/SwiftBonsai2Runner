@@ -21,6 +21,65 @@ pub(super) const ADAPTER_SHA256: &str =
 pub(super) const TEMPLATE_SHA256: &str =
     "c3cf9e34abf4f9e36c2d72165aa9c132d3e2a725b6c2586aaa3a8af9d7a81041";
 
+// Source review enables the policy; actual use still requires the separately
+// verified released executable in LOCK. This is the reviewed local candidate.
+const TURBOQUANT_REVISION: &str = "8d2b3067e5f17369f579857a180c01a422a58211";
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(super) enum KvCache {
+    F16,
+    Rsq4,
+}
+
+impl KvCache {
+    pub(super) fn parse(value: Option<&std::ffi::OsStr>) -> Result<Self, LaunchError> {
+        match value.and_then(std::ffi::OsStr::to_str) {
+            Some("f16") => Ok(Self::F16),
+            Some("rsq4") => Ok(Self::Rsq4),
+            _ => Err(LaunchError::Arguments),
+        }
+    }
+
+    pub(super) const fn name(self) -> &'static str {
+        match self {
+            Self::F16 => "f16",
+            Self::Rsq4 => "rsq4",
+        }
+    }
+}
+
+fn turboquant_supported(release: &ReleasePin) -> bool {
+    release.version == "0.1.24" && release.commit == TURBOQUANT_REVISION
+}
+
+fn select_kv_cache(
+    release: &ReleasePin,
+    requested: Option<KvCache>,
+) -> Result<Option<KvCache>, LaunchError> {
+    if turboquant_supported(release) {
+        Ok(Some(requested.unwrap_or(KvCache::Rsq4)))
+    } else if requested == Some(KvCache::Rsq4) {
+        Err(LaunchError::NativeRuntime)
+    } else {
+        // Historical servers do not accept --kv-cache; their reviewed profile
+        // already selects FP16. This is release selection, never retry fallback.
+        Ok(None)
+    }
+}
+
+pub(super) fn pinned_kv_cache(
+    native: bool,
+    requested: Option<KvCache>,
+) -> Result<Option<KvCache>, LaunchError> {
+    if native {
+        select_kv_cache(&release(LOCK)?, requested)
+    } else if requested.is_some() {
+        Err(LaunchError::Arguments)
+    } else {
+        Ok(None)
+    }
+}
+
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct ReleasePin {
@@ -151,6 +210,7 @@ fn row_workers_supported(version: &str, workers: u8) -> Result<(), LaunchError> 
                     | "0.1.21"
                     | "0.1.22"
                     | "0.1.23"
+                    | "0.1.24"
             ))
     {
         Ok(())
@@ -167,6 +227,7 @@ fn prompt_reuse_supported(release: &ReleasePin, latest: bool) -> Result<(), Laun
     // Capability is bound to reviewed source and immutable released bytes. A
     // later version must be reviewed explicitly, even if its CLI looks similar.
     if !latest
+        || turboquant_supported(release)
         || (release.version == "0.1.14"
             && release.commit == "9e8ea3e2c042ab0c3f1a8e9596ff155e202c3c57")
         || (release.version == "0.1.15"
@@ -220,6 +281,41 @@ pub(super) fn verify(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn kv_cache_default_and_recovery_require_the_exact_reviewed_source() -> Result<(), LaunchError>
+    {
+        let mut pin = release(LOCK)?;
+        assert_eq!(select_kv_cache(&pin, None)?, None);
+        assert_eq!(select_kv_cache(&pin, Some(KvCache::F16))?, None);
+        assert_eq!(
+            select_kv_cache(&pin, Some(KvCache::Rsq4)),
+            Err(LaunchError::NativeRuntime)
+        );
+        pin.version = "0.1.24".into();
+        pin.commit = TURBOQUANT_REVISION.into();
+        assert_eq!(select_kv_cache(&pin, None)?, Some(KvCache::Rsq4));
+        assert_eq!(
+            select_kv_cache(&pin, Some(KvCache::F16))?,
+            Some(KvCache::F16)
+        );
+        assert_eq!(
+            select_kv_cache(&pin, Some(KvCache::Rsq4))?,
+            Some(KvCache::Rsq4)
+        );
+        pin.commit = "0".repeat(40);
+        assert_eq!(
+            select_kv_cache(&pin, Some(KvCache::Rsq4)),
+            Err(LaunchError::NativeRuntime)
+        );
+        pin.commit = TURBOQUANT_REVISION.into();
+        pin.version = "0.1.25".into();
+        assert_eq!(
+            select_kv_cache(&pin, Some(KvCache::Rsq4)),
+            Err(LaunchError::NativeRuntime)
+        );
+        Ok(())
+    }
 
     #[test]
     fn latest_prompt_reuse_requires_exact_reviewed_release_source() -> Result<(), LaunchError> {
@@ -336,7 +432,7 @@ mod tests {
         assert!(row_workers_supported("0.1.8", 1).is_ok());
         for version in [
             "0.1.9", "0.1.10", "0.1.11", "0.1.12", "0.1.13", "0.1.14", "0.1.15", "0.1.16",
-            "0.1.17", "0.1.18", "0.1.19", "0.1.20", "0.1.21", "0.1.22", "0.1.23",
+            "0.1.17", "0.1.18", "0.1.19", "0.1.20", "0.1.21", "0.1.22", "0.1.23", "0.1.24",
         ] {
             assert!(row_workers_supported(version, 1).is_ok());
             assert!(row_workers_supported(version, 4).is_ok());
@@ -349,7 +445,7 @@ mod tests {
         }
         for version in [
             "0.1.8",
-            "0.1.24",
+            "0.1.25",
             "0.1.22-dev",
             "v0.1.22",
             "0.1.22.0",

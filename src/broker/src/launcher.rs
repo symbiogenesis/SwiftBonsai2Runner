@@ -53,6 +53,7 @@ pub const LAUNCH_USAGE: &str = concat!(
     "  [--native-engine|--publisher-engine] (Swift defaults to the pinned Rust runtime; publisher is explicit rollback)\n",
     "  [--native-row-workers 1|4] (Rust defaults to 4; publisher supports only 1)\n",
     "  [--prompt-reuse disabled|latest] (experimental exact latest-state reuse; Rust only)\n",
+    "  [--kv-cache f16|rsq4] (reviewed native runtime only; rsq4 default when supported, f16 explicit recovery)\n",
     "  [--use-abliterate-lora] (pinned adapter; request scale 0..2, default 1.3; Swift CPU only)\n",
     "  [--use-repacked-ptq1|--use-original-pq2] (mutually exclusive weight selections; Swift CPU only)\n",
     "  [--max-waiting <0..8>] [--check-only]\n",
@@ -132,6 +133,7 @@ pub struct LaunchConfig {
     native_engine: bool,
     native_row_workers: u8,
     latest_prompt_reuse: bool,
+    kv_cache: Option<crate::inference::KvCache>,
     use_abliterate_lora: bool,
     weight_representation: WeightRepresentation,
 }
@@ -155,6 +157,7 @@ impl LaunchConfig {
         let mut native_engine = None;
         let mut native_row_workers = None;
         let mut latest_prompt_reuse = None;
+        let mut kv_cache = None;
         let mut use_abliterate_lora = false;
         let mut use_repacked_ptq1 = None;
         let mut profile = None;
@@ -176,6 +179,9 @@ impl LaunchConfig {
                 }
                 Some("--prompt-reuse") if latest_prompt_reuse.is_none() => {
                     latest_prompt_reuse = Some(prompt_reuse(args.next().as_deref())?);
+                }
+                Some("--kv-cache") if kv_cache.is_none() => {
+                    kv_cache = Some(crate::inference::KvCache::parse(args.next().as_deref())?);
                 }
                 Some("--use-abliterate-lora") if !use_abliterate_lora => {
                     use_abliterate_lora = true;
@@ -215,6 +221,7 @@ impl LaunchConfig {
         let native_engine = native_engine.unwrap_or(profile == LaunchProfile::SwiftPq2Assessment);
         let native_row_workers = native_row_workers.unwrap_or(if native_engine { 4 } else { 1 });
         let latest_prompt_reuse = latest_prompt_reuse.unwrap_or(false);
+        let kv_cache = crate::inference::pinned_kv_cache(native_engine, kv_cache)?;
         let configuration = Self {
             data: data.ok_or(LaunchError::Arguments)?,
             evidence_parent: evidence_parent.ok_or(LaunchError::Arguments)?,
@@ -227,6 +234,7 @@ impl LaunchConfig {
             native_engine,
             native_row_workers,
             latest_prompt_reuse,
+            kv_cache,
             use_abliterate_lora,
             weight_representation: if use_repacked_ptq1.unwrap_or(false) {
                 WeightRepresentation::CurrentRepackedPtq1
@@ -418,6 +426,9 @@ impl LaunchConfig {
         }
         if self.latest_prompt_reuse {
             arguments.extend([OsString::from("--prompt-reuse"), OsString::from("latest")]);
+        }
+        if let Some(policy) = self.kv_cache {
+            arguments.extend([OsString::from("--kv-cache"), OsString::from(policy.name())]);
         }
         if self.uses_repacked_ptq1() {
             arguments.push("--use-repacked-ptq1".into());
@@ -659,10 +670,7 @@ impl LaunchConfig {
             self.backend_port,
             credentials.backend_key(),
             process.id(),
-            self.uses_repacked_ptq1(),
-            self.use_abliterate_lora,
-            self.native_row_workers,
-            self.latest_prompt_reuse,
+            self,
         )
         .await
         {
@@ -946,24 +954,17 @@ async fn healthy(port: u16, key: &str, process_id: u32) -> bool {
     .is_ok_and(|result| result.is_ok())
 }
 
-async fn native_identity(
-    port: u16,
-    key: &str,
-    process_id: u32,
-    repacked: bool,
-    adapter: bool,
-    row_workers: u8,
-    latest_prompt_reuse: bool,
-) -> bool {
+async fn native_identity(port: u16, key: &str, process_id: u32, config: &LaunchConfig) -> bool {
     timeout(Duration::from_secs(2), async {
         let version = crate::inference::pinned_version()
             .map_err(|_| io::Error::other("native runtime pin mismatch"))?;
         validate_native_identity(
             &exchange(port, "/v1/models", Some(key), process_id).await?,
-            repacked,
-            adapter,
-            WorkerReadiness::for_version(&version, row_workers)
-                .with_prompt_reuse(latest_prompt_reuse),
+            config.uses_repacked_ptq1(),
+            config.use_abliterate_lora,
+            WorkerReadiness::for_version(&version, config.native_row_workers)
+                .with_prompt_reuse(config.latest_prompt_reuse)
+                .with_kv_cache(config.kv_cache),
         )
     })
     .await
@@ -1517,6 +1518,61 @@ mod tests {
             LaunchConfig::parse(native).err(),
             Some(LaunchError::Arguments)
         );
+        Ok(())
+    }
+
+    #[test]
+    fn kv_cache_selection_rejects_unsupported_pins_and_reaches_only_the_native_child()
+    -> Result<(), LaunchError> {
+        use crate::inference::KvCache;
+        let mut native = arguments();
+        native.extend(["--profile", "swift-pq2-assessment"].map(OsString::from));
+        let mut selected = native.clone();
+        selected.extend(["--kv-cache", "f16"].map(OsString::from));
+        assert!(LaunchConfig::parse(selected)?.kv_cache.is_none());
+        selected = native.clone();
+        selected.extend(["--kv-cache", "rsq4"].map(OsString::from));
+        assert_eq!(
+            LaunchConfig::parse(selected).err(),
+            Some(LaunchError::NativeRuntime)
+        );
+        for suffix in [
+            vec!["--kv-cache", "rsq4k3v"],
+            vec!["--kv-cache", "F16"],
+            vec!["--kv-cache"],
+            vec!["--kv-cache", "f16", "--kv-cache", "f16"],
+            vec!["--publisher-engine", "--kv-cache", "f16"],
+        ] {
+            let mut rejected = native.clone();
+            rejected.extend(suffix.into_iter().map(OsString::from));
+            assert_eq!(
+                LaunchConfig::parse(rejected).err(),
+                Some(LaunchError::Arguments)
+            );
+        }
+        let data = std::env::temp_dir().join("Bonsai-kv-routing");
+        let key = data.join("backend.key");
+        let plan = super::LaunchPlan::for_profile_with_options(
+            &data,
+            8081,
+            &key,
+            LaunchProfile::SwiftPq2Assessment,
+            true,
+            false,
+        )
+        .map_err(|_| LaunchError::Policy)?;
+        let mut config = LaunchConfig::parse(native)?;
+        for policy in [KvCache::Rsq4, KvCache::F16] {
+            config.kv_cache = Some(policy);
+            let child = config.native_arguments(&plan, &key);
+            assert_eq!(
+                child
+                    .array_windows::<2>()
+                    .filter(|[flag, value]| flag == "--kv-cache" && value == policy.name())
+                    .count(),
+                1
+            );
+        }
         Ok(())
     }
 

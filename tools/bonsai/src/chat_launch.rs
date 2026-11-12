@@ -32,6 +32,22 @@ enum PromptReuse {
     Latest,
 }
 
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "lowercase")]
+enum KvCache {
+    F16,
+    Rsq4,
+}
+
+impl KvCache {
+    const fn name(self) -> &'static str {
+        match self {
+            Self::F16 => "f16",
+            Self::Rsq4 => "rsq4",
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "lowercase")]
 enum PreparationStage {
@@ -87,6 +103,12 @@ struct Request {
     native_row_workers: Option<u8>,
     #[serde(default)]
     prompt_reuse: PromptReuse,
+    #[serde(
+        default,
+        deserialize_with = "requested_kv_cache",
+        skip_serializing_if = "Option::is_none"
+    )]
+    kv_cache: Option<KvCache>,
     #[serde(default)]
     graphics_backend: Option<GraphicsBackend>,
     #[serde(default = "default_frontend_port")]
@@ -129,6 +151,13 @@ where
     u8::deserialize(deserializer).map(Some)
 }
 
+fn requested_kv_cache<'de, D>(deserializer: D) -> Result<Option<KvCache>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    KvCache::deserialize(deserializer).map(Some)
+}
+
 impl Request {
     const fn native_row_workers(&self) -> u8 {
         match self.native_row_workers {
@@ -145,6 +174,9 @@ impl Request {
         }
         if self.prompt_reuse == PromptReuse::Latest && !self.native_engine {
             return Err("Latest prompt reuse requires NativeEngine.".into());
+        }
+        if self.kv_cache.is_some() && !self.native_engine {
+            return Err("KvCache requires NativeEngine.".into());
         }
         self.native_row_workers = Some(workers);
         Ok(())
@@ -610,6 +642,9 @@ fn runtime_arguments(request: &Request, arguments: &mut Vec<OsString>) {
     );
     if request.prompt_reuse == PromptReuse::Latest {
         argument(arguments, "--prompt-reuse", "latest");
+    }
+    if let Some(policy) = request.kv_cache {
+        argument(arguments, "--kv-cache", policy.name());
     }
 }
 
