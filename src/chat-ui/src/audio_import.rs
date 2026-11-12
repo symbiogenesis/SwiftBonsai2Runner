@@ -83,7 +83,7 @@ struct PasteState {
 }
 /// UI-thread hook: winit consumes file-paste keys without emitting an egui event.
 pub(crate) struct PasteHook {
-    state: Box<PasteState>,
+    state: Option<Box<PasteState>>,
     _thread: PhantomData<Rc<()>>,
 }
 impl PasteHook {
@@ -101,22 +101,33 @@ impl PasteHook {
             return Err(io::Error::last_os_error());
         }
         Ok(Self {
-            state,
+            state: Some(state),
             _thread: PhantomData,
         })
     }
     pub(crate) fn poll(&self) -> bool {
-        self.state.pending.swap(false, Ordering::AcqRel)
+        self.state
+            .as_ref()
+            .is_some_and(|state| state.pending.swap(false, Ordering::AcqRel))
     }
 }
 impl Drop for PasteHook {
     fn drop(&mut self) {
-        let owner = self.state.owner.load(Ordering::Acquire);
+        let Some(state) = self.state.take() else {
+            return;
+        };
+        let owner = state.owner.load(Ordering::Acquire);
         if owner != 0 {
-            let cookie = std::ptr::from_ref(self.state.as_ref()) as usize;
+            let cookie = std::ptr::from_ref(state.as_ref()) as usize;
             // SAFETY: This !Send guard removes its subclass on the owning UI
-            // thread before freeing the callback state. Destruction clears HWND.
-            unsafe { RemoveWindowSubclass(owner as HWND, Some(paste_window_proc), cookie) };
+            // thread. Destruction clears HWND before this removal is necessary.
+            let removed =
+                unsafe { RemoveWindowSubclass(owner as HWND, Some(paste_window_proc), cookie) };
+            if removed == 0 {
+                // A failed removal leaves callback ownership uncertain. Retain
+                // this one small allocation so any later callback stays valid.
+                let _retained = Box::leak(state);
+            }
         }
     }
 }
@@ -263,8 +274,7 @@ fn pick_file(owner: isize, shared: &Shared) -> Result<Option<PathBuf>, &'static 
     let filter: Vec<u16> = "Audio files (*.mp3;*.wav;*.m4a;*.aac;*.flac;*.wma)\0*.mp3;*.wav;*.m4a;*.aac;*.flac;*.wma\0\0".encode_utf16().collect();
     let title: Vec<u16> = "Add audio prompt\0".encode_utf16().collect();
     let mut dialog = OPENFILENAMEW {
-        lStructSize: u32::try_from(size_of::<OPENFILENAMEW>())
-            .map_err(|_| CODEC_FAILURE)?,
+        lStructSize: u32::try_from(size_of::<OPENFILENAMEW>()).map_err(|_| CODEC_FAILURE)?,
         hwndOwner: owner as HWND,
         lpstrFile: name.as_mut_ptr(),
         nMaxFile: 32_768,
