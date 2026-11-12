@@ -6,6 +6,7 @@ use std::{ops::Range, sync::Arc};
 #[cfg(test)]
 mod cache_tests;
 mod formatting;
+mod iteration;
 mod message_controls;
 mod search;
 
@@ -65,6 +66,8 @@ pub(super) struct Message {
     pub(super) id: u64,
     pub(super) role: Role,
     pub(super) body: String,
+    #[serde(default)]
+    history_index: Option<usize>,
     #[serde(skip)]
     body_revision: u64,
     reasoning: String,
@@ -169,6 +172,7 @@ impl Transcript {
             id: self.next_id,
             role,
             body,
+            history_index: None,
             body_revision: 0,
             reasoning: String::new(),
             pending: role == Role::Assistant,
