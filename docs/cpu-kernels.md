@@ -62,6 +62,40 @@ and complete runtime/device-profile qualification retain their separate gates.
 Do not mix X1 and X2 records inside an existing single-family qualification
 packet or transfer historical passes across changed source identities.
 
+## Current CPU comparison readiness
+
+The [2026-11-12 source preflight](evidence/cpu-comparison-readiness-20261112/summary.json)
+binds Runner `212bd98e` and Prism `8d2b306`, independently of the historical
+attempts below. On that exact Prism source, native ARM64 and x64 strict Release
+Clippy covered the runtime, NEON helper and server with all targets; the
+feature-disabled runtime analysis and native runtime/server binary linking also
+passed. Three exact controls passed for request-local BPE reuse, prepared finite
+proof precedence/storage and aligned six-head score reductions. The fourth
+fully qualified selector matched zero tests and exited zero; it supplies no GDN
+control verdict. The harness stopped without retry and skipped the remaining
+two controls. No model, performance comparison, CI operation or promotion ran.
+
+The aggregate and command endpoints observed battery operation with saver off;
+charge fell from 78% to 75%. These snapshots establish neither uninterrupted
+conditions nor performance benefit. This separate 300-second allowance is
+closed; remaining time cannot be reused to retry the missing control or begin
+comparisons. Final hosted coverage, remaining exact controls, codegen/stack
+review and complete-model state/logit/adapter/cancellation/resource acceptance
+remain required. The record qualifies no release bundle or runtime pin.
+
+A native source-bound baseline/candidate whole-request comparator is still
+missing. The [X2 thread screen](#x2-cpu-thread-screen) compares the publisher's
+`4/4` and `6/6` thread budgets; the existing one-token source timing capture is
+attribution only. Most newer CPU changes directly replace code without per-change
+selectors. Exact LUT selection is a library executor, and tiled/triangular GDN
+prefill needs its explicit graph consumer; ordinary private-service requests
+do not exercise all those paths. The selected next scope is bundle-first:
+active `0.1.23` versus exact Prism `8d2b306`, with FP16 KV, standard adapter 1.3
+and four CPU workers. A bundle result cannot establish each change's individual
+benefit. Keep exact LUT, tiled/triangular prefill and latest-prefix variants
+separate. Match actual CPU-only placement, artifacts, work/output equivalence,
+per-arm power and full-state/recovery controls under the promotion policy above.
+
 ## X1-oriented source candidates
 
 Three further CPU changes are implemented in local Prism source. They target

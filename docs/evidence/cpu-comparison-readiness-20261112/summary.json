@@ -1,0 +1,657 @@
+{
+  "schemaVersion": 1,
+  "kind": "cpu-comparison-readiness",
+  "date": "2026-11-12",
+  "status": "local-source-analysis-and-link-passed; incomplete-focused-controls; performance-pending",
+  "identities": {
+    "runnerCommit": "212bd98e0c82496a0769802c773bf61042bab38e",
+    "prismCommit": "8d2b3067e5f17369f579857a180c01a422a58211",
+    "prismPackageVersion": "0.1.24",
+    "authenticatedPublication": {
+      "source": "Root agent authenticated GitHub API queries for the published main heads",
+      "runnerMain": "212bd98e0c82496a0769802c773bf61042bab38e",
+      "prismMain": "8d2b3067e5f17369f579857a180c01a422a58211",
+      "scope": "Publication identity only; not CI, release or qualification acceptance."
+    },
+    "activeRuntime": {
+      "version": "0.1.23",
+      "commit": "055c7430cb4771dfddb24ddaa30494af6ad182da",
+      "lock": "config/prism-inference.lock.json"
+    },
+    "toolchain": "nightly-2026-11-09-aarch64-pc-windows-msvc"
+  },
+  "plan": {
+    "declaredBeforeExecution": true,
+    "conservativeEstimateSeconds": 180,
+    "maximumAggregateSeconds": 300,
+    "fixedWork": [
+      "Strict native ARM64 all-target Release analysis of runtime, NEON helper and server.",
+      "Strict x64 fallback and feature-disabled runtime analysis.",
+      "Link native runtime/server production binaries.",
+      "Run six named exact model-free controls only if preceding prerequisites pass.",
+      "Observe power before/after aggregate and every command; include setup, cleanup and recording; stop at the first prerequisite failure without retry."
+    ],
+    "reason": "Establish source readiness for CPU comparisons before loading the model; this is not a performance workload."
+  },
+  "clock": {
+    "basis": "Worktree directory creation minus ten seconds, including prior setup; no restarted allowance.",
+    "originalDeadlineUnixMs": 1794490456161,
+    "elapsedSecondsThroughOriginalCompactRecord": 234.029,
+    "remainingSecondsAtOriginalCompactRecord": 65.971,
+    "finishedUtc": "2026-11-12T13:33:10.190311+00:00",
+    "aggregateElapsedThroughLaterCleanupAndDocumentationSeconds": null,
+    "aggregateElapsedLimit": "234.029 seconds stops at the original compact JSON. Later cleanup/documentation were not separately timed; it is not a measured final cleanup/retention total.",
+    "closed": true,
+    "retries": 0
+  },
+  "power": {
+    "before": {
+      "ac": "battery",
+      "batterySaver": "off",
+      "chargePercent": 78,
+      "batteryFlags": 1,
+      "utc": "2026-11-12T13:30:37.372890+00:00"
+    },
+    "after": {
+      "ac": "battery",
+      "batterySaver": "off",
+      "chargePercent": 75,
+      "batteryFlags": 1,
+      "utc": "2026-11-12T13:33:10.190308+00:00"
+    },
+    "scope": "Aggregate and per-command snapshots for this preflight only. All report battery operation, saver off; charge falls from 78% to 75%. Later work has no inferred power source.",
+    "continuousStabilityEstablished": false,
+    "performanceComparisonQualified": false
+  },
+  "commands": [
+    {
+      "id": "native-strict-analysis",
+      "argv": [
+        "C:\\Users\\symbi\\.cargo\\bin\\cargo.exe",
+        "+nightly-2026-11-09-aarch64-pc-windows-msvc",
+        "clippy",
+        "--manifest-path",
+        "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\prism-cpu-preflight-20261112\\Cargo.toml",
+        "--target-dir",
+        "C:\\Users\\symbi\\AppData\\Local\\Temp\\Prism-CpuPromotion-0eun03u0\\build",
+        "--locked",
+        "--offline",
+        "--release",
+        "-p",
+        "prism-inference",
+        "-p",
+        "bonsai-neon-dot",
+        "-p",
+        "prism-inference-server",
+        "--features",
+        "parallel-rows",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "seconds": 38.833,
+      "powerBefore": {
+        "ac": "battery",
+        "batterySaver": "off",
+        "chargePercent": 78,
+        "batteryFlags": 1,
+        "utc": "2026-11-12T13:30:37.372966+00:00"
+      },
+      "powerAfter": {
+        "ac": "battery",
+        "batterySaver": "off",
+        "chargePercent": 78,
+        "batteryFlags": 1,
+        "utc": "2026-11-12T13:31:16.206293+00:00"
+      },
+      "namedControlExecuted": null,
+      "result": "passed-source-analysis-or-link"
+    },
+    {
+      "id": "x64-strict-analysis",
+      "argv": [
+        "C:\\Users\\symbi\\.cargo\\bin\\cargo.exe",
+        "+nightly-2026-11-09-aarch64-pc-windows-msvc",
+        "clippy",
+        "--manifest-path",
+        "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\prism-cpu-preflight-20261112\\Cargo.toml",
+        "--target-dir",
+        "C:\\Users\\symbi\\AppData\\Local\\Temp\\Prism-CpuPromotion-0eun03u0\\build",
+        "--locked",
+        "--offline",
+        "--release",
+        "-p",
+        "prism-inference",
+        "-p",
+        "bonsai-neon-dot",
+        "-p",
+        "prism-inference-server",
+        "--target",
+        "x86_64-pc-windows-msvc",
+        "--features",
+        "parallel-rows",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "seconds": 35.244,
+      "powerBefore": {
+        "ac": "battery",
+        "batterySaver": "off",
+        "chargePercent": 78,
+        "batteryFlags": 1,
+        "utc": "2026-11-12T13:31:16.206579+00:00"
+      },
+      "powerAfter": {
+        "ac": "battery",
+        "batterySaver": "off",
+        "chargePercent": 78,
+        "batteryFlags": 1,
+        "utc": "2026-11-12T13:31:51.450690+00:00"
+      },
+      "namedControlExecuted": null,
+      "result": "passed-source-analysis-or-link"
+    },
+    {
+      "id": "portable-strict-analysis",
+      "argv": [
+        "C:\\Users\\symbi\\.cargo\\bin\\cargo.exe",
+        "+nightly-2026-11-09-aarch64-pc-windows-msvc",
+        "clippy",
+        "--manifest-path",
+        "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\prism-cpu-preflight-20261112\\Cargo.toml",
+        "--target-dir",
+        "C:\\Users\\symbi\\AppData\\Local\\Temp\\Prism-CpuPromotion-0eun03u0\\build",
+        "--locked",
+        "--offline",
+        "--release",
+        "-p",
+        "prism-inference",
+        "--no-default-features",
+        "--features",
+        "cli,parallel-rows",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "seconds": 17.89,
+      "powerBefore": {
+        "ac": "battery",
+        "batterySaver": "off",
+        "chargePercent": 78,
+        "batteryFlags": 1,
+        "utc": "2026-11-12T13:31:51.450828+00:00"
+      },
+      "powerAfter": {
+        "ac": "battery",
+        "batterySaver": "off",
+        "chargePercent": 76,
+        "batteryFlags": 1,
+        "utc": "2026-11-12T13:32:09.341351+00:00"
+      },
+      "namedControlExecuted": null,
+      "result": "passed-source-analysis-or-link"
+    },
+    {
+      "id": "production-link",
+      "argv": [
+        "C:\\Users\\symbi\\.cargo\\bin\\cargo.exe",
+        "+nightly-2026-11-09-aarch64-pc-windows-msvc",
+        "build",
+        "--manifest-path",
+        "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\prism-cpu-preflight-20261112\\Cargo.toml",
+        "--target-dir",
+        "C:\\Users\\symbi\\AppData\\Local\\Temp\\Prism-CpuPromotion-0eun03u0\\build",
+        "--locked",
+        "--offline",
+        "--release",
+        "-p",
+        "prism-inference",
+        "-p",
+        "prism-inference-server",
+        "--features",
+        "parallel-rows",
+        "--bins"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "seconds": 37.555,
+      "powerBefore": {
+        "ac": "battery",
+        "batterySaver": "off",
+        "chargePercent": 76,
+        "batteryFlags": 1,
+        "utc": "2026-11-12T13:32:09.341410+00:00"
+      },
+      "powerAfter": {
+        "ac": "battery",
+        "batterySaver": "off",
+        "chargePercent": 75,
+        "batteryFlags": 1,
+        "utc": "2026-11-12T13:32:46.896752+00:00"
+      },
+      "namedControlExecuted": null,
+      "result": "passed-source-analysis-or-link"
+    },
+    {
+      "id": "focused-control-1",
+      "argv": [
+        "C:\\Users\\symbi\\.cargo\\bin\\cargo.exe",
+        "+nightly-2026-11-09-aarch64-pc-windows-msvc",
+        "test",
+        "--manifest-path",
+        "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\prism-cpu-preflight-20261112\\Cargo.toml",
+        "--target-dir",
+        "C:\\Users\\symbi\\AppData\\Local\\Temp\\Prism-CpuPromotion-0eun03u0\\build",
+        "--locked",
+        "--offline",
+        "--release",
+        "-p",
+        "prism-inference",
+        "--features",
+        "parallel-rows",
+        "--lib",
+        "bpe::piece_cache_tests::x1_piece_cache_matches_independent_ranked_oracle_and_skips_repeated_merges",
+        "--",
+        "--exact"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "seconds": 22.639,
+      "powerBefore": {
+        "ac": "battery",
+        "batterySaver": "off",
+        "chargePercent": 75,
+        "batteryFlags": 1,
+        "utc": "2026-11-12T13:32:46.896816+00:00"
+      },
+      "powerAfter": {
+        "ac": "battery",
+        "batterySaver": "off",
+        "chargePercent": 75,
+        "batteryFlags": 1,
+        "utc": "2026-11-12T13:33:09.536130+00:00"
+      },
+      "namedControlExecuted": true,
+      "result": "passed-one-exact-control"
+    },
+    {
+      "id": "focused-control-2",
+      "argv": [
+        "C:\\Users\\symbi\\.cargo\\bin\\cargo.exe",
+        "+nightly-2026-11-09-aarch64-pc-windows-msvc",
+        "test",
+        "--manifest-path",
+        "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\prism-cpu-preflight-20261112\\Cargo.toml",
+        "--target-dir",
+        "C:\\Users\\symbi\\AppData\\Local\\Temp\\Prism-CpuPromotion-0eun03u0\\build",
+        "--locked",
+        "--offline",
+        "--release",
+        "-p",
+        "prism-inference",
+        "--features",
+        "parallel-rows",
+        "--lib",
+        "kernels::finite_activation_tests::prepared_finite_proof_preserves_preflight_precedence_and_storage",
+        "--",
+        "--exact"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "seconds": 0.24,
+      "powerBefore": {
+        "ac": "battery",
+        "batterySaver": "off",
+        "chargePercent": 75,
+        "batteryFlags": 1,
+        "utc": "2026-11-12T13:33:09.536226+00:00"
+      },
+      "powerAfter": {
+        "ac": "battery",
+        "batterySaver": "off",
+        "chargePercent": 75,
+        "batteryFlags": 1,
+        "utc": "2026-11-12T13:33:09.776178+00:00"
+      },
+      "namedControlExecuted": true,
+      "result": "passed-one-exact-control"
+    },
+    {
+      "id": "focused-control-3",
+      "argv": [
+        "C:\\Users\\symbi\\.cargo\\bin\\cargo.exe",
+        "+nightly-2026-11-09-aarch64-pc-windows-msvc",
+        "test",
+        "--manifest-path",
+        "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\prism-cpu-preflight-20261112\\Cargo.toml",
+        "--target-dir",
+        "C:\\Users\\symbi\\AppData\\Local\\Temp\\Prism-CpuPromotion-0eun03u0\\build",
+        "--locked",
+        "--offline",
+        "--release",
+        "-p",
+        "prism-inference",
+        "--features",
+        "parallel-rows",
+        "--lib",
+        "kernels::pinned_attention::six::tests::six_head_aligned_scores_keep_native_vector_reduction_bits",
+        "--",
+        "--exact"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "seconds": 0.205,
+      "powerBefore": {
+        "ac": "battery",
+        "batterySaver": "off",
+        "chargePercent": 75,
+        "batteryFlags": 1,
+        "utc": "2026-11-12T13:33:09.776248+00:00"
+      },
+      "powerAfter": {
+        "ac": "battery",
+        "batterySaver": "off",
+        "chargePercent": 75,
+        "batteryFlags": 1,
+        "utc": "2026-11-12T13:33:09.981670+00:00"
+      },
+      "namedControlExecuted": true,
+      "result": "passed-one-exact-control"
+    },
+    {
+      "id": "focused-control-4",
+      "argv": [
+        "C:\\Users\\symbi\\.cargo\\bin\\cargo.exe",
+        "+nightly-2026-11-09-aarch64-pc-windows-msvc",
+        "test",
+        "--manifest-path",
+        "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\prism-cpu-preflight-20261112\\Cargo.toml",
+        "--target-dir",
+        "C:\\Users\\symbi\\AppData\\Local\\Temp\\Prism-CpuPromotion-0eun03u0\\build",
+        "--locked",
+        "--offline",
+        "--release",
+        "-p",
+        "prism-inference",
+        "--features",
+        "parallel-rows",
+        "--lib",
+        "kernels::pinned_gdn::neon_tests::pinned_gdn_grouped_decode_capacities_keep_failure_atomic",
+        "--",
+        "--exact"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "seconds": 0.208,
+      "powerBefore": {
+        "ac": "battery",
+        "batterySaver": "off",
+        "chargePercent": 75,
+        "batteryFlags": 1,
+        "utc": "2026-11-12T13:33:09.981724+00:00"
+      },
+      "powerAfter": {
+        "ac": "battery",
+        "batterySaver": "off",
+        "chargePercent": 75,
+        "batteryFlags": 1,
+        "utc": "2026-11-12T13:33:10.190245+00:00"
+      },
+      "namedControlExecuted": false,
+      "result": "process-exited-zero-but-selector-matched-no-tests"
+    }
+  ],
+  "missingControl": {
+    "id": "focused-control-4",
+    "requestedSelector": "kernels::pinned_gdn::neon_tests::pinned_gdn_grouped_decode_capacities_keep_failure_atomic",
+    "outputSummary": "The exact selector matched zero tests; Cargo exited zero. No GDN code test failed or passed.",
+    "correctedSelectorFromSourceReview": "kernels::pinned_gdn::neon::tests::pinned_gdn_grouped_decode_capacities_keep_failure_atomic",
+    "sourceReview": [
+      "src/kernels.rs declares pinned_gdn.",
+      "src/kernels/pinned_gdn.rs declares neon from pinned_gdn_neon.rs.",
+      "src/kernels/pinned_gdn_neon.rs declares tests from pinned_gdn_neon_tests.rs.",
+      "src/kernels/pinned_gdn_neon_tests.rs contains pinned_gdn_grouped_decode_capacities_keep_failure_atomic."
+    ],
+    "correctedSelectorExecuted": false,
+    "consequence": "The harness stopped at the unexecuted required control. The original allowance is closed; no retry or resumed trial."
+  },
+  "skippedCommands": [
+    {
+      "id": "focused-control-5",
+      "argv": [
+        "C:\\Users\\symbi\\.cargo\\bin\\cargo.exe",
+        "+nightly-2026-11-09-aarch64-pc-windows-msvc",
+        "test",
+        "--manifest-path",
+        "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\prism-cpu-preflight-20261112\\Cargo.toml",
+        "--target-dir",
+        "C:\\Users\\symbi\\AppData\\Local\\Temp\\Prism-CpuPromotion-0eun03u0\\build",
+        "--locked",
+        "--offline",
+        "--release",
+        "-p",
+        "prism-inference",
+        "--features",
+        "parallel-rows",
+        "--lib",
+        "kernels::finite_activation_tests::prepared_quantizers_reuse_finite_proof_with_original_code_bits",
+        "--",
+        "--exact"
+      ],
+      "status": "not-executed",
+      "reason": "Stopped after focused-control-4 matched zero tests."
+    },
+    {
+      "id": "focused-control-6",
+      "argv": [
+        "C:\\Users\\symbi\\.cargo\\bin\\cargo.exe",
+        "+nightly-2026-11-09-aarch64-pc-windows-msvc",
+        "test",
+        "--manifest-path",
+        "C:\\Users\\symbi\\source\\repos\\SwiftBonsai2Runner\\.worktrees\\prism-cpu-preflight-20261112\\Cargo.toml",
+        "--target-dir",
+        "C:\\Users\\symbi\\AppData\\Local\\Temp\\Prism-CpuPromotion-0eun03u0\\build",
+        "--locked",
+        "--offline",
+        "--release",
+        "-p",
+        "prism-inference",
+        "--features",
+        "parallel-rows",
+        "--lib",
+        "bpe::piece_cache_tests::piece_cache_failures_preserve_output_bounds_and_missing_byte_precedence",
+        "--",
+        "--exact"
+      ],
+      "status": "not-executed",
+      "reason": "Stopped after focused-control-4 matched zero tests."
+    }
+  ],
+  "newerCpuCandidateGroups": [
+    {
+      "id": "compact-preparation",
+      "baseline": "a1f82b5",
+      "documentedCandidate": "c1c42bb",
+      "changes": [
+        "Compact prepared SDOT PQ2 activation storage (d7078d5).",
+        "Prepared width-four convolution coefficients (2c919c8).",
+        "Bounded stack BPE merges (0f4b6bf)."
+      ],
+      "selection": "Integrated source replacements; independent ablation requires matched source variants."
+    },
+    {
+      "id": "capability-and-decode-preparation",
+      "baseline": "c1c42bb",
+      "documentedCandidate": "6c305e4",
+      "changes": [
+        "Retain prepared SDOT capability (a62319c).",
+        "Retain native attention score reductions (00a2b2f).",
+        "Join decode query/key/value preparation (6c305e4)."
+      ],
+      "selection": "Integrated source replacements."
+    },
+    {
+      "id": "tiled-capability-stack-and-adapter",
+      "baseline": "6c305e4",
+      "documentedCandidate": "e525caf",
+      "changes": [
+        "Retain SDOT/I8MM selection across prefill tiles (5fc5296).",
+        "Stack worker failure slots (7844e50).",
+        "Combine adapter SwiGLU/basis preparation (ea7353b), with corrected fixture e525caf."
+      ],
+      "selection": "Integrated source replacements; tiled paths require explicit graph selection."
+    },
+    {
+      "id": "grouped-dispatch-half-and-lut",
+      "baseline": "a5ee5b6",
+      "documentedCandidate": "ae9c5a7",
+      "changes": [
+        "Joined compatible PQ2 sibling dispatch (6814fb2).",
+        "Baseline FCVTL finite-half widening (8107c53).",
+        "Bounded exact PQ2 activation LUT executor (b04876b)."
+      ],
+      "selection": "Dispatch/half changes integrated; Pq2LutExecutor is library opt-in, not an ordinary CLI/server choice."
+    },
+    {
+      "id": "complete-row-attention-and-decode-gdn",
+      "baseline": "ae9c5a7",
+      "documentedCandidate": "8504810",
+      "changes": [
+        "Complete-row SDOT consumption (4b57f57).",
+        "Fixed attention score lanes (c0da1e5).",
+        "Bounded four-row phases within eight-row GDN decode (01fbf5d), with later source corrections."
+      ],
+      "selection": "Integrated source replacements; family-sensitive tradeoffs lack individual runtime selectors."
+    },
+    {
+      "id": "scoped-pq2-tiled-qkv-and-temporal-gdn",
+      "baseline": "9ce2d39",
+      "documentedCandidate": "b98574a",
+      "changes": [
+        "Shared scoped PQ2 activation validation (750f7b3).",
+        "Joined tiled query/key/value preparation (79cd3af).",
+        "Bounded four-row temporal GDN phases (dba1853), with later source corrections."
+      ],
+      "selection": "Projection change integrated; tiled/temporal paths require explicit tiled-prefill graph selection."
+    }
+  ],
+  "candidateInventoryLimits": "Six groups contain eighteen changes. Entry-point baselines and documented candidates are source-review identities, not controlled benchmark builds or qualified individual ablations; intervening changes and corrective commits must be reviewed.",
+  "otherCpuCategories": [
+    {
+      "id": "already-active-efficiencies",
+      "items": [
+        "Empty-state rollback checkpoints; bounded top-20 sampler; direct one-column adapter projections; empty-reset elimination; masked-attention padding pruning.",
+        "Earlier NEON, row-parallel, packed-projection and tiled-prefill families listed in PLAN.md."
+      ],
+      "status": "Already consumed in active 0.1.23; still require current-source model/resource/request-time qualification without another repin."
+    },
+    {
+      "id": "new-validation-and-storage-reuse",
+      "items": [
+        "GDN finite-mask staging 0fffbb9; immutable validated logits 4fff54d.",
+        "Sampler exponential reuse 3de1183; scoped activation proof 9cae080; SIMD sampler masks 6810c0f; grouped attention publication a710017."
+      ],
+      "status": "Integrated source candidates, with no independent command-line ablation switches."
+    },
+    {
+      "id": "decode-and-request-overhead",
+      "items": [
+        "Six-head decode 5ba36b2; terminal state-only ingestion c4594af; shared immutable snapshots a01c3b9.",
+        "Request-local BPE reuse 4db0768; bounded special parsing c915bb0."
+      ],
+      "status": "Integrated serving/source candidates; distinguish exercised request paths and full-state contracts."
+    },
+    {
+      "id": "explicit-prefill",
+      "items": [
+        "Six-head tiles e015526; paired keys 02b1ed0; paired values 6386986.",
+        "Exact tiled FFN/projections and separately identified gdn-wy-f32-v1 triangular GDN."
+      ],
+      "status": "Explicit graph consumers; ordinary SwiftSession construction does not enable these tiled variants."
+    },
+    {
+      "id": "latest-prefix-reuse",
+      "items": [
+        "Runner --prompt-reuse latest."
+      ],
+      "status": "Already opt-in; compare completed repeated-history requests with fresh recomputation, separately from decode speed."
+    },
+    {
+      "id": "fused-recurrent-copy-decay",
+      "items": [
+        "Historical source candidate f1b49cd."
+      ],
+      "status": "Production remains copy-then-scale; actual-model parity/benefit and release integration remain pending."
+    },
+    {
+      "id": "speculation",
+      "items": [
+        "Suffix drafting and sequential greedy verification exist."
+      ],
+      "status": "Genuinely batched verification and actual stochastic Swift sampler integration remain implementation work."
+    }
+  ],
+  "comparisonReadiness": {
+    "nativeWholeRequestComparator": "Missing at this preflight: source-bound native baseline/candidate whole-request comparison consumer.",
+    "existingX2Screen": "Publisher CPU 4/4 versus 6/6 thread screening; not a native source candidate comparison.",
+    "existingSourceTiming": "One-token source attribution; not comparative promotion evidence.",
+    "selectedNextScope": "Bundle-first: active 0.1.23 versus exact Prism 8d2b306 integrated CPU serving path, explicit FP16 KV, standard adapter 1.3 and four workers in both arms.",
+    "separateVariants": [
+      "Exact LUT executor.",
+      "Explicit tiled/triangular GDN prefill.",
+      "Latest-prefix reuse."
+    ],
+    "requiredControls": [
+      "Reviewed baseline/candidate source and build/artifact identities.",
+      "Explicit FP16 KV; latest Prism ordinary loading now defaults to K4/V4.",
+      "Actual CPU-only execution with the same model, approved adapter 1.3, four workers, settings and equivalent work/output.",
+      "Per-arm and aggregate matched power observations under one predeclared aggregate workload allowance.",
+      "Complete-model logits/state/adapter, cancellation/rollback, resources and codegen/stack controls.",
+      "Existing benefit thresholds, repetitions and uncertainty requirements; losing/no-go outcomes retained."
+    ],
+    "attributionLimit": "A passing integrated bundle comparison would not prove that each individual source change improves performance.",
+    "deliveryPrerequisites": "Owning hosted checks, selected-model acceptance, verified release delivery and repin where needed remain pending. Registry helper API publication/exact dependency updates remain separate prerequisites."
+  },
+  "outcomes": {
+    "sourceAnalysesPassed": 3,
+    "nativeProductionLinkPassed": true,
+    "exactControlsPassed": 3,
+    "requestedControlWithZeroMatches": 1,
+    "remainingControlsSkipped": 2,
+    "modelLoads": 0,
+    "performanceComparisonsExecuted": 0,
+    "ciOperations": 0,
+    "promotions": "none",
+    "performanceVerdict": "pending; not measured; no losing or winning speed result exists"
+  },
+  "cleanup": {
+    "childOutcome": "Root reports Python waited for every selected child and finished normally; no model process started.",
+    "temporarySourceBuildAndLogs": "Source worktree and temporary scratch/build cache/logs remain working artifacts, not retained durable evidence.",
+    "laterCleanupTiming": "Unknown; outside the recorded preflight elapsed observation."
+  },
+  "retention": {
+    "selection": [
+      "summary.json"
+    ],
+    "purpose": "Current source-readiness claim, zero-test selector diagnosis and explicit remaining CPU comparison gates.",
+    "omitted": "Successful build chatter, raw temporary logs, duplicate compact report, copied source/build trees and temporary validation driver.",
+    "replayLimit": "This concise source-readiness record is not an independent acceptance replay package and does not replace future raw model/comparison receipts required by promotion gates.",
+    "reviewMethod": "Read-only source/report inspection; no additional executable checks, tests, benchmarks, model work or CI by the documentation worker."
+  },
+  "limits": [
+    "No performance comparison, model load, full suite, CI operation or promotion.",
+    "Endpoint power observations do not establish continuous stability.",
+    "Earlier historical validation clocks remain closed.",
+    "No retries are part of this workload."
+  ]
+}

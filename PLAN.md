@@ -19,7 +19,7 @@ the corresponding detailed task changes; keep every acceptance obligation below.
 | C1 / owner | Runner | Reviewed local CI corrections and startup preflight | Publish through the owner and qualify Source checks and Foundation on that source; see [publication prerequisites](#publication-and-qualification-prerequisites). |
 | A1 / qualification | Runner with pinned Prism | C1 and an exact-source acceptance package | Qualify Rust/PQ2 DX12 startup, readiness, Stop/Retry, recovery and explicit publisher rollback under [actual-model acceptance](#actual-model-acceptance). |
 | R1 / owner, integration | Prism, then Runner | Published source-bound 0.1.25 bundle | Verify source/archive/nine-file identities, advance both active source pins, and prepare active-release acceptance. The runtime and all five helpers are registry-published; binary delivery and [CPU qualification](#cpu-kernels) remain separate. |
-| R2 / implementation, qualification | Prism, then Runner | Settled candidate, required helper release and owning hosted checks | Qualify the explicit exact LUT candidate, integrate selected cross-token consumers and genuinely batched verification; close CPU/prefill codegen, fallback, state/adapter/cancellation and matched selected-device benefit gates. X2 CPU benefit may promote reviewed shared CPU paths on X1 under [cross-generation CPU promotion](docs/cpu-kernels.md#cross-generation-cpu-promotion); device-specific tuning and claims retain matching-family gates. Qualify changes already consumed in 0.1.23 without another repin; follow the [inference delivery order](#lossless-inference-delivery-order). |
+| R2 / implementation, qualification | Prism, then Runner | Settled candidate, published comparison tooling and owning hosted checks | Implement a source-bound native baseline/candidate whole-request comparison consumer; the existing X2 screen compares publisher thread counts, while one-token source timing is attribution only. Qualify the explicit exact LUT candidate, integrate selected cross-token consumers and genuinely batched verification; close CPU/prefill codegen, fallback, state/adapter/cancellation and matched selected-device benefit gates. X2 CPU benefit may promote reviewed shared CPU paths on X1 under [cross-generation CPU promotion](docs/cpu-kernels.md#cross-generation-cpu-promotion); device-specific tuning and claims retain matching-family gates. Qualify changes already consumed in 0.1.23 without another repin; follow the [inference delivery order](#lossless-inference-delivery-order). |
 | R3 / integration, qualification | Prism and Runner harnesses | Agreed execution/state identities and existing complete-state fixtures | Prepare shared state/restore and fault-control tooling independently of runtime qualification; map each prefix/prefill/speculation/accelerator path to its independent assertions and evidence. |
 | K1 / owner, qualification | Prism, then Runner | Owner-selected K4/V4 development default, reviewed native source and matching Runner launch/readiness controls | Publish and verify a runtime bundle containing the reviewed source, then repin to activate default/required `rsq4` in Runner. Keep explicit FP16 recovery and existing admission/8K bounds. Complete the [paired quality/memory packet](docs/quantized-kv.md#first-practical-promotion-packet) for measured qualification, independently on X1/X2; it is not a prerequisite for the development default. Defer K4/V3. |
 | S1 / implementation, integration | Runner; Prism for shared runtime/RPC consumers | Agreed verified-loading, state, stream and transport ownership interfaces | Integrate Talker/CodePredictor, codec/speaker and signed Rust RPC through [C++ retirement](#complete-c-retirement); qualify the ordinary Q4 baseline before ternary speech and new 48 kHz artifacts. |
@@ -1591,6 +1591,29 @@ control until matching-family evidence supports a tuned default. Accelerator,
 precision and complete device-profile qualification retain their own gates.
 If no selector preserves the control for a family-sensitive change, defer that
 candidate or implement reversible selection before shared promotion.
+
+Implement the missing source-bound native CPU baseline/candidate whole-request
+comparison consumer before scheduling promotion measurements. The existing X2
+workflow screens publisher `4/4` versus `6/6` threads; it does not compare Prism
+source candidates. One-token source timing supplies attribution, not a comparative
+promotion result. Prepare the selected bundle-first comparison of the active
+`0.1.23` CPU serving path against exact Prism `8d2b306`, with explicit FP16 KV,
+standard adapter 1.3 and four workers in both arms. Bind matched source/build
+identities, actual CPU-only execution, output/work equivalence, per-arm power
+and state/recovery controls before a new fixed workload. Most integrated changes
+lack individual ablation selectors; bundle benefit cannot attribute individual
+gains. Keep explicit LUT, tiled/triangular prefill and latest-prefix variants
+separate until their selected native consumers and controls are ready.
+
+The [2026-11-12 readiness record](docs/evidence/cpu-comparison-readiness-20261112/summary.json)
+records a separate fixed model-free check on exact Prism `8d2b306`: strict native
+and x64 analysis, feature-disabled analysis and native runtime/server binary
+linking passed, along with three exact controls. A fourth selector matched no
+test; the harness stopped and skipped the remaining two controls. That is an
+unexecuted control, not a failing code test. The original allowance is closed
+without retry, comparison or promotion. Owning hosted checks, the remaining
+controls, codegen review and actual-model state/resource/benefit gates remain
+pending; this later source result does not reopen historical attempts below.
 
 Qualify the completed local Prism source changes through owner-managed hosted
 checks before a qualified release and Runner repin. Current contracts cover
