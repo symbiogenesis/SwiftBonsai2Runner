@@ -992,7 +992,7 @@ fn finished_voice_message_submits_once_through_the_normal_prompt_flow() {
         commands.try_recv(),
         Ok(Command::Send { text, .. }) if text == "Explain bonsai pruning"
     ));
-    assert!(state.input.is_empty());
+    assert_eq!(state.input, "");
     assert!(state.model.busy());
     assert!(!state.dictation_requested && !state.dictation_finishing);
     assert!(state.microphone_generation.is_none());
@@ -1084,7 +1084,7 @@ fn switching_conversations_cancels_an_inflight_voice_message() {
     state.new_chat();
     assert!(matches!(commands.try_recv(), Ok(Command::NewChat)));
     state.accept_transcript(7, "Late recognition from previous chat");
-    assert!(state.input.is_empty());
+    assert_eq!(state.input, "");
     assert!(state.transcript.messages.is_empty());
     assert!(commands.try_recv().is_err());
     assert!(!state.dictation_requested && !state.dictation_finishing);
@@ -1201,7 +1201,7 @@ fn new_chat_shortcut_cancels_a_queued_voice_message_before_submission() {
     assert!(matches!(commands.try_recv(), Ok(Command::NewChat)));
     assert!(commands.try_recv().is_err());
     assert_eq!(state.active_conversation, 2);
-    assert!(state.input.is_empty());
+    assert_eq!(state.input, "");
 }
 
 #[test]

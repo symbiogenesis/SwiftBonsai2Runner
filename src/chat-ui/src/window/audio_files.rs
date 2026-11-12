@@ -20,13 +20,18 @@ impl State {
         match audio_import::PasteHook::new(owner) {
             Ok(hook) => self.audio_paste = Some(hook),
             Err(_) => {
-                self.record("Audio file paste is unavailable. Use the plus button to select audio.")
+                self.record(
+                    "Audio file paste is unavailable. Use the plus button to select audio.",
+                );
             }
         }
     }
 
     pub(super) fn handle_audio_paste(&mut self, ctx: &egui::Context) {
-        if !self.audio_paste.as_ref().is_some_and(|hook| hook.poll())
+        if !self
+            .audio_paste
+            .as_ref()
+            .is_some_and(audio_import::PasteHook::poll)
             || self.composing
             || self.rename_conversation.is_some()
             || self.delete_conversation.is_some()
@@ -45,7 +50,7 @@ impl State {
         ctx.input_mut(|input| {
             input
                 .events
-                .retain(|event| !matches!(event, egui::Event::Paste(_)))
+                .retain(|event| !matches!(event, egui::Event::Paste(_)));
         });
         self.start_audio_import(Source::Clipboard);
     }
@@ -189,6 +194,7 @@ mod tests {
         let (session, speech_commands) = speech::Session::fixture()?;
         state.speech = Some(session);
         state.preview = false;
+        state.model = ModelLifecycle::Preparing;
         state.speech_event(speech::Event::Capabilities {
             input: true,
             output: false,
@@ -255,12 +261,11 @@ mod tests {
             assert!(!state.audio_file_active);
             if action < 2 {
                 assert_eq!(state.input, "Existing draft");
-                assert!(requests.try_recv().is_err());
             } else {
-                assert!(state.input.is_empty());
+                assert_eq!(state.input, "");
                 assert!(matches!(requests.try_recv(), Ok(client::Command::NewChat)));
-                assert!(requests.try_recv().is_err());
             }
+            assert!(requests.try_recv().is_err());
         }
         Ok(())
     }
