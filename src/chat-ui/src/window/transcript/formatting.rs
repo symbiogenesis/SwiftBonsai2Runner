@@ -56,11 +56,9 @@ impl Builder<'_> {
                 effective.background = self.visuals.selection.bg_fill;
                 effective.color = self.visuals.selection.stroke.color;
             }
-            append_fragment(
-                &mut self.job,
-                &text[cursor - offset..until - offset],
-                effective,
-            );
+            // The pinned LayoutJob::append coalesces adjacent equal formats.
+            self.job
+                .append(&text[cursor - offset..until - offset], 0.0, effective);
             cursor = until;
         }
     }
@@ -97,19 +95,6 @@ impl Builder<'_> {
             &text[previous..],
             if delimiter.is_some() { code } else { normal },
         );
-    }
-}
-
-fn append_fragment(job: &mut egui::text::LayoutJob, text: &str, format: egui::TextFormat) {
-    // Coalesce ordinary prose and whole code blocks across line boundaries.
-    if let Some(last) = job.sections.last_mut()
-        && last.format == format
-        && last.byte_range.end == job.text.len()
-    {
-        job.text.push_str(text);
-        last.byte_range.end = job.text.len();
-    } else {
-        job.append(text, 0.0, format);
     }
 }
 
@@ -229,7 +214,7 @@ mod tests {
     fn format_at(job: &egui::text::LayoutJob, offset: usize) -> Option<&egui::TextFormat> {
         job.sections
             .iter()
-            .find(|section| section.byte_range.contains(&offset))
+            .find(|section| section.byte_range.contains(&egui::text::ByteIndex(offset)))
             .map(|section| &section.format)
     }
 
@@ -306,9 +291,9 @@ mod tests {
         let job = layout_job(source, true, 420.0, &visuals, &matches);
         assert_eq!(job.text, source);
         for section in &job.sections {
-            assert!(source.is_char_boundary(section.byte_range.start));
-            assert!(source.is_char_boundary(section.byte_range.end));
-            if section.byte_range.start >= start && section.byte_range.end <= end {
+            assert!(source.is_char_boundary(section.byte_range.start.0));
+            assert!(source.is_char_boundary(section.byte_range.end.0));
+            if section.byte_range.start.0 >= start && section.byte_range.end.0 <= end {
                 assert_eq!(section.format.background, visuals.selection.bg_fill);
                 assert_eq!(section.format.color, visuals.selection.stroke.color);
             }
