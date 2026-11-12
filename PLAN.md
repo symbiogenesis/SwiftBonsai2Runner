@@ -132,8 +132,10 @@ Have the owner predeclare that allowance before running
 Reuse one PTQ1 owner for scale/count/context controls and
 retain the required fresh owners for interruption replay and original-PQ2
 rollback. Do not remove those independent-owner checks to save startup time.
-Archive the complete raw receipts and independently review them before another
-model workload. The old 0.1.13 six-pass score cannot qualify this candidate.
+Archive the complete required acceptance/replay receipts under the
+[minimal-selection policy](docs/validation.md#evidence-retention) and independently
+review them before another model workload. The old 0.1.13 six-pass score cannot
+qualify this candidate.
 
 Keep expensive work off the laptop where possible: prepare exact tools on hosted
 ARM64, reuse verified immutable downloads, replay retained numerical data offline,

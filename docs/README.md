@@ -67,9 +67,13 @@ patches in [runtime-candidates/](runtime-candidates/README.md), and charts in
 presence alone is not qualification. Add prose to its owning topic, link shared
 requirements and put outstanding work in PLAN.
 
-Keep evidence that supports current claims, records useful device failures or
-provides replay inputs consumed by tools. Completed source-review diaries,
-temporary validation drivers and duplicate build/release payloads belong in Git
-history. Trimmed historical summaries identify the original revision and state
-when raw replay requires that history; they do not qualify current source.
+Follow the [evidence-retention policy](validation.md#evidence-retention): keep the
+smallest selection supporting current claims, actionable failures or required
+replay. Prefer one concise summary; omit blank logs, placeholder receipts and
+redundant records. Routine check results belong in the commit or delivery message.
+Required raw replay inputs and integrity records remain exact. Completed
+source-review diaries, temporary validation drivers and duplicate build/release
+payloads belong in Git history. Trimmed historical summaries identify the original
+revision and state when raw replay requires that history; they do not qualify
+current source.
 The evidence tree before this cleanup is available at commit `3c03fbfe`.

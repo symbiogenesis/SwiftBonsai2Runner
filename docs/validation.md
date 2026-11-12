@@ -846,14 +846,47 @@ requires independently reviewed artifacts and promotion evidence.
 
 ## Evidence retention
 
+Retain the smallest useful selection: evidence supporting a current claim, an
+actionable failure or a required independent replay. Routine source edits and
+focused checks normally need only commands, results and limitations in the commit
+or delivery message. Do not create a dated evidence bundle just to record that an
+edit, build or review happened.
+
+When durable evidence is warranted, prefer one concise summary with the workload
+and source/input/tool identities, selected checks and outcomes, limitations and
+pending gates. For owner-device trials, include the predeclared work/estimate and
+allowance, elapsed time and closed-clock status, required aggregate/per-arm power
+observations and cleanup outcome. Preserve losing/no-go results and unknowns as
+carefully as successes. These facts can share one record unless a consumer requires
+a particular receipt format; do not duplicate them across summary, delivery and
+status files.
+
+Capture temporary output outside the repository, then review an explicit file
+selection before committing, uploading or archiving. Omit zero-byte and
+whitespace-only logs, placeholder receipts such as empty JSON objects/arrays,
+routine successful build chatter, duplicate payloads/manifests, copied repository
+source and temporary validation drivers. Record meaningful empty output, exit
+status, missing observations or skipped work in the summary instead; absence of a
+file is never a passing result. Keep an otherwise omitted file only when its exact
+bytes are required by a named gate, replay consumer or actionable diagnosis, and
+state that purpose in the summary. Retain the smallest relevant failure excerpt;
+keep a full log only when the surrounding output is needed to review the failure.
+Do not create separate inventories or receipts solely to document omitted clutter.
+Intentionally empty fixtures and schema-required files are valid when their purpose
+is explicit. Apply selection when retaining artifacts; preserve collector-required
+intermediate files and receipt formats, and treat missing/empty required terminal
+receipts as incomplete evidence.
+
 Device acceptance, sandbox, LoRA, PTQ1, X2 CPU and TTS workflows request 90-day
 artifact retention. This extends the review window; Actions artifacts remain
 temporary, and repository or organization policy can shorten their availability.
-Before using a capture for promotion or a published claim, preserve its existing
-credential-free upload selection in durable owner-managed storage. Keep the exact
-files and their SHA-256 digests, repository revision, run URL/attempt, artifact
+Before using a capture for promotion or a published claim, preserve its minimal
+reviewed credential-free evidence selection in durable owner-managed storage.
+Keep required raw receipts and replay inputs byte-for-byte, with their SHA-256
+digests, repository revision, run URL/attempt, artifact
 identity, device/build identities and independent reviews, including losing/no-go
-results. Verify the archived bytes against the recorded digests before review.
+results. A summary cannot replace raw data required to independently verify the
+claim. Verify the archived bytes against the recorded digests before review.
 Do not expand upload selections to include credentials, private conversations,
 model weights or adapters. Run URLs and expired artifacts alone cannot reproduce
 evidence; unavailable evidence leaves the associated gate pending.
@@ -866,6 +899,13 @@ an archive. This supplies local byte-preserving archive/retrieval mechanics;
 deployment to durable owner-managed storage and capture before artifact expiry
 remain independent requirements. Integrity is separate from execution, provenance,
 independent review and promotion.
+
+Before trimming existing evidence, check documentation links, replay consumers and
+integrity manifests. Preserve required claim/replay bytes in durable storage;
+source-review history and reconstructible scratch can remain in Git history with
+an exact revision reference and explicit replay limits where needed. Never silently
+edit sealed archives, historical results or closed trial records to fit a smaller
+selection; a revised archive must be a new selection with its own integrity record.
 
 ## Promotion criteria
 
