@@ -1,0 +1,273 @@
+//! Offline release, version and cross-asset identity validation.
+
+use serde::{Deserialize, Serialize};
+use serde_json::Value;
+
+use super::{MAX_INSTALLER, MAX_METADATA, REPOSITORY, TARGET};
+
+#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
+pub(super) struct Version(u8, u8, u16);
+
+impl Version {
+    pub(super) fn parse(text: &str) -> crate::Result<Self> {
+        let parts: Vec<_> = text.split('.').collect();
+        if parts.len() != 3
+            || parts.iter().any(|part| {
+                part.is_empty()
+                    || (part.len() > 1 && part.starts_with('0'))
+                    || !part.bytes().all(|byte| byte.is_ascii_digit())
+            })
+        {
+            return Err("Updates require canonical numeric Windows Installer versions.".into());
+        }
+        Ok(Self(
+            parts[0]
+                .parse()
+                .map_err(|_| "Major version exceeds MSI bounds.")?,
+            parts[1]
+                .parse()
+                .map_err(|_| "Minor version exceeds MSI bounds.")?,
+            parts[2]
+                .parse()
+                .map_err(|_| "Patch version exceeds MSI bounds.")?,
+        ))
+    }
+
+    pub(super) fn newer_than_current(self) -> crate::Result<()> {
+        if self <= Self::parse(env!("CARGO_PKG_VERSION"))? {
+            return Err(
+                "The updater never reinstalls or downgrades the current application.".into(),
+            );
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(super) struct Asset {
+    pub(super) name: String,
+    pub(super) bytes: u64,
+    pub(super) sha256: String,
+    pub(super) url: String,
+}
+
+#[derive(Clone)]
+pub(super) struct Candidate {
+    pub(super) version: String,
+    pub(super) release_url: String,
+    pub(super) manifest: Asset,
+    pub(super) checksums: Asset,
+    pub(super) msi: Asset,
+}
+
+#[derive(Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(super) struct Installer {
+    schema_version: u32,
+    version: String,
+    source_revision: String,
+    target: String,
+    pub(super) asset: Asset,
+}
+
+fn text<'a>(value: &'a Value, key: &str) -> crate::Result<&'a str> {
+    value[key]
+        .as_str()
+        .ok_or_else(|| format!("Missing release field: {key}"))
+}
+
+fn canonical_asset(version: &str, name: &str) -> String {
+    format!("https://github.com/{REPOSITORY}/releases/download/v{version}/{name}")
+}
+
+fn asset(release: &Value, version: &str, name: &str, limit: u64) -> crate::Result<Asset> {
+    let matches: Vec<_> = release["assets"]
+        .as_array()
+        .ok_or("Missing published release assets.")?
+        .iter()
+        .filter(|asset| asset["name"] == name)
+        .collect();
+    let [entry] = matches.as_slice() else {
+        return Err(format!("Release asset is missing or repeated: {name}"));
+    };
+    let bytes = entry["size"]
+        .as_u64()
+        .filter(|bytes| *bytes > 0 && *bytes <= limit)
+        .ok_or("Release asset exceeds its byte limit.")?;
+    let sha256 = text(entry, "digest")?
+        .strip_prefix("sha256:")
+        .filter(|digest| crate::identity::is_lower_hex(digest, 64))
+        .ok_or("GitHub must report a SHA-256 identity for every update asset.")?;
+    let url = text(entry, "browser_download_url")?;
+    if url != canonical_asset(version, name) || entry["state"] != "uploaded" {
+        return Err(
+            "Update assets must be fully uploaded at the canonical project release URL.".into(),
+        );
+    }
+    Ok(Asset {
+        name: name.into(),
+        bytes,
+        sha256: sha256.into(),
+        url: url.into(),
+    })
+}
+
+pub(super) fn select(bytes: &[u8], current: &str) -> crate::Result<(bool, Option<Candidate>)> {
+    let current = Version::parse(current)?;
+    let releases: Value = serde_json::from_slice(bytes).map_err(|error| error.to_string())?;
+    let releases = releases
+        .as_array()
+        .filter(|list| list.len() <= 100)
+        .ok_or("Release response must be a bounded array.")?;
+    let mut newest = None;
+    let mut published = false;
+    for release in releases {
+        if release["draft"].as_bool().is_none() || release["prerelease"].as_bool().is_none() {
+            return Err("Invalid release visibility metadata.".into());
+        }
+        if release["draft"] == true || release["published_at"].as_str().is_none_or(str::is_empty) {
+            continue;
+        }
+        published = true;
+        let Some(version) = release["tag_name"]
+            .as_str()
+            .and_then(|tag| tag.strip_prefix('v'))
+        else {
+            continue;
+        };
+        let Ok(parsed) = Version::parse(version) else {
+            continue;
+        };
+        if parsed <= current
+            || newest
+                .as_ref()
+                .is_some_and(|(previous, _)| parsed <= *previous)
+        {
+            continue;
+        }
+        let release_url = format!("https://github.com/{REPOSITORY}/releases/tag/v{version}");
+        if text(release, "html_url")? != release_url {
+            return Err("Release belongs to another repository.".into());
+        }
+        let candidate = Candidate {
+            version: version.into(),
+            release_url,
+            manifest: asset(release, version, "release-manifest.json", MAX_METADATA)?,
+            checksums: asset(release, version, "SHA256SUMS.txt", MAX_METADATA)?,
+            msi: asset(
+                release,
+                version,
+                &format!("SwiftBonsai2Runner-{version}-windows-arm64.msi"),
+                MAX_INSTALLER,
+            )?,
+        };
+        newest = Some((parsed, candidate));
+    }
+    Ok((published, newest.map(|(_, candidate)| candidate)))
+}
+
+fn checksum(bytes: &[u8], expected_name: &str) -> crate::Result<String> {
+    let text = std::str::from_utf8(bytes).map_err(|error| error.to_string())?;
+    let mut matched = None;
+    let mut names = std::collections::BTreeSet::new();
+    for line in text.lines() {
+        let (digest, name) = line
+            .split_once("  ")
+            .ok_or("Invalid update checksum record.")?;
+        if !crate::identity::is_lower_hex(digest, 64)
+            || name.is_empty()
+            || !name
+                .bytes()
+                .all(|byte| byte.is_ascii_alphanumeric() || b"._-".contains(&byte))
+            || !names.insert(name)
+        {
+            return Err("Malformed or repeated update checksum filename.".into());
+        }
+        if name == expected_name {
+            matched = Some(digest.into());
+        }
+    }
+    matched.ok_or_else(|| "The MSI is absent from SHA256SUMS.txt.".into())
+}
+
+impl Installer {
+    pub(super) fn validate(&self, version: &str) -> crate::Result<()> {
+        Version::parse(version)?;
+        let name = format!("SwiftBonsai2Runner-{version}-windows-arm64.msi");
+        if self.schema_version != 1
+            || self.version != version
+            || self.target != TARGET
+            || !crate::identity::is_lower_hex(&self.source_revision, 40)
+            || self.asset.name != name
+            || self.asset.bytes == 0
+            || self.asset.bytes > MAX_INSTALLER
+            || !crate::identity::is_lower_hex(&self.asset.sha256, 64)
+            || self.asset.url != canonical_asset(version, &name)
+        {
+            return Err(
+                "Staged installer identity is not a newer project Windows ARM64 release.".into(),
+            );
+        }
+        Ok(())
+    }
+
+    pub(super) fn verify_source(&self, bytes: &[u8]) -> crate::Result<()> {
+        let commit: Value = serde_json::from_slice(bytes).map_err(|error| error.to_string())?;
+        if commit["sha"] != self.source_revision {
+            return Err("Published release tag and installer source revisions disagree.".into());
+        }
+        Ok(())
+    }
+}
+
+pub(super) fn installer(
+    candidate: &Candidate,
+    manifest: &[u8],
+    checksums: &[u8],
+) -> crate::Result<Installer> {
+    let manifest: Value = serde_json::from_slice(manifest).map_err(|error| error.to_string())?;
+    let expected_tag = format!("v{}", candidate.version);
+    if manifest["schemaVersion"] != 1
+        || manifest["tag"] != expected_tag
+        || manifest["version"] != candidate.version
+        || manifest["target"] != TARGET
+        || manifest["installerSmoke"] != "passed-install-inspect-uninstall-without-model"
+    {
+        return Err(
+            "Release manifest does not identify the selected checked Windows ARM64 installer."
+                .into(),
+        );
+    }
+    let source = text(&manifest, "sourceRevision")?;
+    if !crate::identity::is_lower_hex(source, 40) {
+        return Err("Release source revision is invalid.".into());
+    }
+    let assets: Vec<_> = manifest["assets"]
+        .as_array()
+        .ok_or("Release manifest assets are missing.")?
+        .iter()
+        .filter(|asset| asset["name"] == candidate.msi.name)
+        .collect();
+    let [entry] = assets.as_slice() else {
+        return Err("Manifest MSI asset is missing or repeated.".into());
+    };
+    if entry["bytes"] != candidate.msi.bytes
+        || entry["sha256"] != candidate.msi.sha256
+        || checksum(checksums, &candidate.msi.name)? != candidate.msi.sha256
+    {
+        return Err("GitHub, manifest and checksum MSI identities disagree.".into());
+    }
+    let installer = Installer {
+        schema_version: 1,
+        version: candidate.version.clone(),
+        source_revision: source.into(),
+        target: TARGET.into(),
+        asset: candidate.msi.clone(),
+    };
+    installer.validate(&candidate.version)?;
+    Ok(installer)
+}
+
+#[cfg(test)]
+mod tests;

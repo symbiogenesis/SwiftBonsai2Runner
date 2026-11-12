@@ -146,6 +146,7 @@ fn dispatch(command: &str, request: serde_json::Value) -> bonsai_tools::Result<s
         "chat-launch" => bonsai_tools::chat_launch::run(request),
         "chat-prepare" => bonsai_tools::chat_launch::prepare_run(request),
         "chat-package" => bonsai_tools::chat_package::run(request),
+        "app-update" => bonsai_tools::app_update::run(request),
         "gguf" => bonsai_tools::gguf::run(request),
         "ptq1-capture" => bonsai_tools::ptq1_capture::run(request),
         "native-qualification" => bonsai_tools::native_qualification::run(request),

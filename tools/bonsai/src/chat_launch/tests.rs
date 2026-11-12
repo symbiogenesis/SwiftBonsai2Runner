@@ -45,6 +45,7 @@ struct Recorder {
     exit_code: u32,
     fail_native: bool,
     fail_inference: bool,
+    queue_update: bool,
 }
 
 impl Recorder {
@@ -55,6 +56,7 @@ impl Recorder {
             exit_code: 0,
             fail_native: false,
             fail_inference: false,
+            queue_update: false,
         }
     }
 
@@ -133,6 +135,11 @@ impl Operations for Recorder {
         working: &Path,
         environment: &BTreeMap<String, String>,
     ) -> crate::Result<u32> {
+        if self.queue_update {
+            let startup = PathBuf::from(value_after(arguments, "--startup-request")?);
+            fs::write(startup.with_extension("update.json"), b"{}")
+                .map_err(|error| error.to_string())?;
+        }
         self.events.push(Event::Launch(
             executable.into(),
             arguments.to_vec(),
@@ -141,6 +148,33 @@ impl Operations for Recorder {
         ));
         Ok(self.exit_code)
     }
+}
+
+#[test]
+fn installer_handoff_requires_acknowledged_update_exit_and_ignores_ordinary_close()
+-> crate::Result<()> {
+    for (code, queue, accepted, handed_off) in [
+        (0, true, true, false),
+        (42, false, false, false),
+        (42, true, true, true),
+        (7, true, false, false),
+    ] {
+        let fixture = fixture("update-exit-handshake")?;
+        let mut recorder = Recorder::new(fixture.root.clone());
+        recorder.exit_code = code;
+        recorder.queue_update = queue;
+        let result = launch_pending(
+            plan(fixture.request)?.request,
+            &mut recorder,
+            &fixture.working,
+            &fixture.root.join("tools.exe"),
+        );
+        assert_eq!(result.is_ok(), accepted);
+        if let Ok(result) = result {
+            assert_eq!(result.get("UpdateHandoff").is_some(), handed_off);
+        }
+    }
+    Ok(())
 }
 
 struct Fixture {

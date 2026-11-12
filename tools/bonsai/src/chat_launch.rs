@@ -682,10 +682,21 @@ fn launch_pending(
     );
     let environment = graphics_environment(request.graphics_backend);
     let code = operations.launch(chat, &arguments, working, &environment)?;
-    if code != 0 {
+    if code != 0 && code != crate::app_update::UPDATE_EXIT_CODE {
         return Err(launch_failure(code, working));
     }
-    Ok(json!({"Status": "chat-stopped", "ExitCode": code, "EvidenceDirectory": working}))
+    let mut result =
+        json!({"Status": "chat-stopped", "ExitCode": code, "EvidenceDirectory": working});
+    if code == crate::app_update::UPDATE_EXIT_CODE {
+        let handoff = path.with_extension("update.json");
+        if !fs::exists(&handoff).map_err(|error| error.to_string())? {
+            return Err(
+                "The native application requested an update without a verified handoff.".into(),
+            );
+        }
+        result["UpdateHandoff"] = json!(handoff);
+    }
+    Ok(result)
 }
 
 fn launch_failure(code: u32, working: &Path) -> String {
@@ -776,7 +787,7 @@ pub fn run(value: Value) -> crate::Result<Value> {
     if !request.speech_models_only && !cfg!(all(windows, target_arch = "aarch64")) {
         return Err("Run chat in the native ARM64 executable on Windows ARM64.".into());
     }
-    let _instance = if request.speech_models_only {
+    let instance_guard = if request.speech_models_only {
         None
     } else {
         let directory = std::env::var_os("LOCALAPPDATA")
@@ -797,7 +808,21 @@ pub fn run(value: Value) -> crate::Result<Value> {
         return prepare_backend(plan, &mut Native, &working);
     }
     let tool = std::env::current_exe().map_err(|error| error.to_string())?;
-    launch_pending(plan.request, &mut Native, &working, &tool)
+    let mut result = launch_pending(plan.request, &mut Native, &working, &tool)?;
+    let handoff = result
+        .as_object_mut()
+        .and_then(|object| object.remove("UpdateHandoff"))
+        .and_then(|value| value.as_str().map(PathBuf::from));
+    // The native UI and its complete owned Job have already stopped. Release
+    // the launch guard before starting a separate Windows Installer process.
+    // Installer startup returns immediately so this maintenance image unlocks.
+    drop(instance_guard);
+    if let Some(handoff) = handoff {
+        if let Some(update) = crate::app_update::apply_after_exit(&handoff)? {
+            return Ok(update);
+        }
+    }
+    Ok(result)
 }
 
 /// Prepares the backend off the native UI thread and returns its validated arguments.

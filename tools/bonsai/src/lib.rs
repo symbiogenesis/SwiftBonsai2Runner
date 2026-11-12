@@ -39,6 +39,7 @@ pub const COMMANDS: &[&str] = &[
     "chat-launch",
     "chat-prepare",
     "chat-package",
+    "app-update",
     "gguf",
     "ptq1-capture",
     "native-qualification",
@@ -128,6 +129,9 @@ pub mod chat_launch;
 
 /// Installed native chat package selection and integrity checks.
 pub mod chat_package;
+
+/// Bounded application release discovery and explicit Windows Installer updates.
+pub mod app_update;
 
 /// Verified GGUF inspection, pinned Swift export and hosted integration fixtures.
 pub mod gguf;
