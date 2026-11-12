@@ -105,6 +105,47 @@ fallback, strict Release analysis and linking, ARM64 codegen/stack review,
 complete-model state/logit/cancellation parity and matched X1 request benefit.
 Runner's immutable 0.1.23 runtime remains active until release and verified repin.
 
+### Grouped dispatch, hardware half widening and exact LUT execution
+
+Local Prism source `ae9c5a785dcf9490c9573b32da7136222aa8504a` contains three
+additional X1 CPU candidates targeting repeated worker scheduling, cached-half
+conversion and packed integer work:
+
+- Compatible CPU PQ2/Q8_K sibling projections share one joined worker-pool
+  submission. Query/key/value and gate/up retain their existing scoped input
+  preparation, row partitions and packed 8/4/1-row kernels. Other geometries,
+  quantizers and external executors keep their existing paths. The group checks
+  every extent before submission and clears all sibling outputs on failure;
+  failures retain sibling/chunk order after workers join. At most four matrices
+  use seventy-two bounded task descriptors, without copying weight payloads or
+  creating a second pool.
+- Cached FP16 attention loads and four-/eight-row half-scale helpers use
+  [baseline NEON hardware widening](https://doc.rust-lang.org/stable/core/arch/aarch64/fn.vcvt_f32_f16.html)
+  through the isolated safe `bonsai-neon-dot` API. Finite
+  arrays use `FCVTL`/`FCVTL2`; arrays containing infinity or NaN use exact integer
+  decoding to preserve signs and signaling-NaN payloads. This changes conversion
+  work without changing stored precision or floating reduction order. Portable
+  decoding remains available; the raw-u32 rounding helper keeps its prior path.
+- Explicit `Pq2LutExecutor` connects activation-pair tables to the existing
+  prepared-matvec and graph projection interfaces. One 2,048-byte table per
+  128 columns serves every output row through the existing row-worker policy.
+  Tables are rebuilt for each invocation, including sibling invocations, and
+  retained capacity is bounded by the caller's maximum width: 80 KiB at 5,120
+  columns. Original Q8_K fused/separate accumulation, odd-group Q8_0 scales and
+  all four PQ2 symbols remain supported. Unsupported tensors keep CPU execution.
+  This experimental executor is never selected automatically; table construction
+  and cache traffic may erase its integer-work savings against SDOT.
+
+These implementations establish no measured X1 speedup. Require final-source
+strict Release analysis and linking, native and portable controls, exhaustive
+half-encoding parity, sibling failure/adapter/state controls and ARM64
+codegen/stack/resource review. Matched X1 complete-request measurements must
+include table preparation, worker dispatch and all fallback costs, with losing
+or no-go outcomes retained. Full-model logits/state/adapter and cancellation
+acceptance remain independent. The new half-widening API joins the existing
+helper-publication and exact-dependency prerequisite; Runner still consumes
+its verified 0.1.23 binary until a qualified release and repin.
+
 ## Execution and dispatch
 
 The default `experimental-neon` feature uses [`fearless_simd` 1.1.0][fearless]'s safe core API under
@@ -190,10 +231,12 @@ inventory.
 | Isolated `bonsai-neon-dot` (`SDOT`/`SMMLA`) & `u8x16` `PTQ1_0` | Safe boundary crate (`tools/neon-dot`) wrapping ARMv8.2-A `vdotq_s32` (`dotprod`) and `vmmlaq_s32` (`i8mm` `2x2` row-by-token tiles) behind runtime feature checks, plus non-widening `u8x16` base-3 division-by-multiplication `PTQ1_0` trit unpacking (`dot_ptq1_q80_block`, `dot_ptq1_q8k`) |
 | Fused `RMSNorm + Sign*FWHT` & `SwiGLU + Sign*FWHT` | Single-pass 16-register NEON block helpers (`rms_norm_signed_fwht_in_place`, `swiglu_signed_fwht_into`) eliminating intermediate scratch round-trips; last-layer state-only prefill (`Evaluation::full_attention_kv_only`, `Evaluation::recurrent_attention_state_only`) skips dead output-proj/FFN on `layer 63`; `parallel_tile` uses a spin-then-park completion barrier |
 
-The **2026-11-12** local-source audit found `Tl1BlockLut` construction only in
-tests, besides its public reexport. The API is not wired into production matvec,
-and no cross-token Vec-LUT consumer was found. Existing packed token tiles reuse
-decoded weight blocks; they do not implement activation-LUT execution. The
+The earlier **2026-11-12** local-source audit found `Tl1BlockLut` construction
+only in tests, besides its public reexport. The explicit `Pq2LutExecutor`
+candidate above now connects it to prepared matvec and graph execution; it is
+not an automatically selected kernel. No cross-token Vec-LUT consumer is
+implemented. Existing packed token tiles reuse decoded weight blocks; they do
+not implement activation-LUT execution. The
 [lookup contract](inference-algorithms.md#packed-lookup-kernels) distinguishes
 these mechanisms and the research register retains the original sources.
 

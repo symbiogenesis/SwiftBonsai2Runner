@@ -71,10 +71,13 @@ arbitrary tensors. Validated immutable representations may avoid repeated canoni
 arbitrary public tensors still need rejection checks. `dot(code - 1, q) = dot(code, q) - sum(q)`
 permits using `Q8KBlock.sums` under the same scale contract as lane subtraction.
 
-Local Prism's `Tl1BlockLut` supplies bounded activation-table construction, but
-the November source review found only its public reexport and test callers.
-It is not a selected production matvec path. Table availability does not
-establish shared preparation, dispatch, graph integration or measured benefit.
+The earlier November source review found only `Tl1BlockLut`'s public reexport
+and test callers. The newer explicit
+[`Pq2LutExecutor` candidate](cpu-kernels.md#grouped-dispatch-hardware-half-widening-and-exact-lut-execution)
+connects bounded table preparation shared across output rows to prepared matvec
+and graph execution. It is never selected automatically. Tables rebuild per
+invocation, including siblings; compare their full preparation/cache/dispatch
+cost with SDOT/NEON before selecting this path. No measured benefit is established.
 
 ### Vec-LUT for multiple prompt tokens
 

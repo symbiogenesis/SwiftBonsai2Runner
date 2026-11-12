@@ -128,6 +128,12 @@ implementation and acceptance; this table records the applicability findings.
 | NPU prompt batching | Token tiles reuse packing and existing single-token submissions; true `N > 1` native-Q2 matrix prefill remains separate. | [Tiled projections](performance-resolve.md); charge all submissions and transfers. |
 | Newer local kernels | Packed dots, transform fusion, GDN traffic reduction, preparation reuse and prefill locality include local candidates beyond the consumed release. | [CPU kernels](cpu-kernels.md) and [delivery boundaries](performance-resolve.md); source implementation alone does not update released bytes or establish benefit. |
 
+The later [exact-LUT source candidate](cpu-kernels.md#grouped-dispatch-hardware-half-widening-and-exact-lut-execution)
+connects `Tl1BlockLut` to explicit prepared-matvec and graph execution. It shares
+bounded activation tables across output rows and rebuilds them per invocation;
+it changes the earlier audit's caller finding without qualifying benefit or
+enabling automatic selection. Cross-token Vec-LUT remains unimplemented.
+
 Bit-identical storage, identical floating-point execution, distribution-preserving
 sampling and similar task scores are distinct claims. Drafters may be approximate
 while exact target verification preserves the deployed distribution. Conversely,

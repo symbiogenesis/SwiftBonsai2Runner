@@ -19,7 +19,7 @@ the corresponding detailed task changes; keep every acceptance obligation below.
 | C1 / owner | Runner | Reviewed local CI corrections and startup preflight | Publish through the owner and qualify Source checks and Foundation on that source; see [publication prerequisites](#publication-and-qualification-prerequisites). |
 | A1 / qualification | Runner with pinned Prism | C1 and an exact-source acceptance package | Qualify Rust/PQ2 DX12 startup, readiness, Stop/Retry, recovery and explicit publisher rollback under [actual-model acceptance](#actual-model-acceptance). |
 | R1 / owner, integration | Prism, then Runner | Published source-bound 0.1.24 bundle | Verify source/archive/nine-file identities, repin and prepare active-release acceptance. Keep newer local CPU candidates and their helper-publication prerequisite separately identified under [CPU kernels](#cpu-kernels). |
-| R2 / implementation, qualification | Prism, then Runner | Settled candidate, required helper release and owning hosted checks | Integrate selected exact LUT consumers and genuinely batched verification; close CPU/prefill codegen, fallback, state/adapter/cancellation and matched selected-device benefit gates, with independent X1 evidence where selected. Qualify changes already consumed in 0.1.23 without another repin; follow the [inference delivery order](#lossless-inference-delivery-order). |
+| R2 / implementation, qualification | Prism, then Runner | Settled candidate, required helper release and owning hosted checks | Qualify the explicit exact LUT candidate, integrate selected cross-token consumers and genuinely batched verification; close CPU/prefill codegen, fallback, state/adapter/cancellation and matched selected-device benefit gates, with independent X1 evidence where selected. Qualify changes already consumed in 0.1.23 without another repin; follow the [inference delivery order](#lossless-inference-delivery-order). |
 | R3 / integration, qualification | Prism and Runner harnesses | Agreed execution/state identities and existing complete-state fixtures | Prepare shared state/restore and fault-control tooling independently of runtime qualification; map each prefix/prefill/speculation/accelerator path to its independent assertions and evidence. |
 | S1 / implementation, integration | Runner; Prism for shared runtime/RPC consumers | Agreed verified-loading, state, stream and transport ownership interfaces | Integrate Talker/CodePredictor, codec/speaker and signed Rust RPC through [C++ retirement](#complete-c-retirement); qualify the ordinary Q4 baseline before ternary speech and new 48 kHz artifacts. |
 | S2 / implementation, qualification | Runner | Pinned Qwen3-ASR 1.7B artifacts and replacement controls | Qualify microphone-to-Swift submission, then replace ASR's native engine and close transcript/state, cancellation, lifecycle, quality and resource gates before removing its compiler/dependency paths. |
@@ -1562,6 +1562,23 @@ policy in both decode and tiled controls before scoring parity. Its initial
 mixed-policy failure and closed local clock remain in Prism history; the fixture
 correction is source-reviewed without a rerun. Final-source checks remain pending.
 
+Qualify the [grouped-dispatch, hardware-half and exact-LUT source candidates](docs/cpu-kernels.md#grouped-dispatch-hardware-half-widening-and-exact-lut-execution):
+one joined worker submission for compatible CPU PQ2/Q8_K siblings, baseline
+NEON half widening with exact exceptional/portable decoding, and explicit bounded
+`Pq2LutExecutor` consumption through prepared matvec and graph execution.
+Require exact-source numerical/error/adapter/state controls, exhaustive half-bit
+parity, native/x64 strict Release analysis and production linking, feature-disabled
+fallback, ARM64 codegen/stack/resource review and independent matched X1 request
+benefit. Include LUT construction and its 80 KiB table capacity at 5,120 columns
+in comparisons with SDOT/NEON; keep it opt-in and retain a no-go if total cost
+erases the benefit. Publish the new half-widening helper API with the existing
+detected-capability helper update before registry delivery. Release, verified
+binary repin and full-model/cancellation qualification remain pending; no measured
+speedup or admission-policy change is established by source work.
+Final-source analyzers and focused controls remain unexecuted after the local
+validation harness failed during Visual Studio environment setup. Keep that
+attempt closed; source review and formatting do not supply compiler/test verdicts.
+
 Require final-source exact numerical/failure controls, strict Release analyzers,
 portable fallback and production linking; ARM64 codegen/stack/resource review;
 complete-model state/logit/adapter and cancellation parity; signed vendor
@@ -1701,9 +1718,10 @@ implement and qualify in Prism:
   into consumption order without VNNI. Compare at most two exact TL1_1/TL2_1-style LUTs
   with ternary eligibility and generic PQ2 fallback; charge preparation, overlapping
   source and repacked storage, tables, cache and startup.
-  Integrate a selected LUT into production matvec before qualification: the existing
-  `Tl1BlockLut` API has only test callers and a reexport. Share bounded activation-table
-  preparation across output rows; qualify all intermediate sums, generic PQ2's fourth
+  Qualify the explicit `Pq2LutExecutor` candidate now connected to prepared matvec
+  and graph execution, without automatic selection. Its bounded activation-table
+  preparation is shared across output rows and rebuilt per invocation; qualify
+  all intermediate sums, generic PQ2's fourth
   symbol, Q8_K/Q8_0 grouping, raw scales and floating accumulation order. Compare
   complete preparation-plus-dot cost with ordinary packed NEON and eligible SDOT/I8MM,
   retaining a no-go when tables or preparation erase the gain. Separately implement a
