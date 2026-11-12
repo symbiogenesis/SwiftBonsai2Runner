@@ -56,7 +56,9 @@ jobs:
           key: ci-tool-v1-${{ runner.os }}-${{ runner.arch }}-nightly-2026-11-09-${{ hashFiles('Cargo.toml', 'Cargo.lock', 'tools/ci/**') }}
       - name: Check CI selection and gate regressions
         working-directory: ${{ runner.temp }}
-        run: cargo +nightly-2026-11-09 test --locked --manifest-path "$GITHUB_WORKSPACE/Cargo.toml" --package bonsai-ci
+        run: |
+          python -B "$GITHUB_WORKSPACE/tools/ci/test_foundation_handoff.py"
+          cargo +nightly-2026-11-09 test --locked --manifest-path "$GITHUB_WORKSPACE/Cargo.toml" --package bonsai-ci
       - name: Select affected crates and app groups
         id: impact
         env:
@@ -104,7 +106,24 @@ jobs:
         uses: $/.github/actions/check-rust
         with:
           lane: maintenance
-          packages: '["bonsai-artifacts","bonsai-audio","bonsai-cpu-policy","bonsai-windows-process","bonsai-windows-credentials","bonsai-tools","bonsai-ci"]'
+          packages: '["bonsai-artifacts","bonsai-audio","bonsai-cpu-policy","bonsai-windows-process","bonsai-windows-credentials","bonsai-ci"]'
+          affected: ${{ needs.changes.outputs.packages }}
+  checked-tools:
+    # Consumers need the CLI's own checked package, not unrelated maintenance tests.
+    # All dependency-crate checks remain independent requirements of Foundation.
+    if: needs.changes.outputs.tools == 'true'
+    needs: changes
+    runs-on: windows-11-arm
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Check the affected maintenance CLI package
+        uses: $/.github/actions/check-rust
+        with:
+          lane: tools
+          packages: '["bonsai-tools"]'
           affected: ${{ needs.changes.outputs.packages }}
       - name: Reuse a packaged CLI when only its consumers changed
         if: needs.changes.outputs.tools == 'true' && !contains(fromJSON(needs.changes.outputs.packages), 'bonsai-tools')
@@ -140,7 +159,7 @@ jobs:
   speech:
     name: speech / ${{ matrix.lane }}
     if: needs.changes.outputs.speech == 'true'
-    needs: [changes, maintenance]
+    needs: [changes, checked-tools]
     runs-on: windows-11-arm
     timeout-minutes: 40
     strategy:
@@ -161,7 +180,7 @@ jobs:
   # Preserve the required check name; only the planner may authorize skips.
   foundation:
     if: always() && github.ref == 'refs/heads/main'
-    needs: [changes, broker, maintenance, speech, foundation-tests, release-integration]
+    needs: [changes, broker, maintenance, checked-tools, speech, foundation-tests, release-integration]
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 10
     steps:
@@ -183,7 +202,7 @@ jobs:
   foundation-tests:
     name: Native integration
     if: needs.changes.outputs.integration == 'true'
-    needs: [changes, maintenance]
+    needs: [changes, checked-tools]
     runs-on: windows-11-arm
     timeout-minutes: 15
     steps:
@@ -193,7 +212,8 @@ jobs:
       - name: Use the checked maintenance CLI
         uses: $/.github/actions/use-bonsai-tools
       # Domain regressions (provisioning, builds, promotion and process ownership)
-      # run as native Rust tests in the maintenance producer before this handoff.
+      # run as native Rust tests in the CLI producer before this handoff.
+      # Dependency crates retain their complete independent maintenance checks.
       - name: Hexagon packed-layout and bounded inventory controls without devices
         shell: pwsh
         run: |
@@ -244,7 +264,7 @@ jobs:
           $result | ConvertTo-Json
   release-integration:
     if: needs.changes.outputs.release == 'true'
-    needs: [changes, maintenance]
+    needs: [changes, checked-tools]
     runs-on: windows-11-arm
     timeout-minutes: 10
     steps:

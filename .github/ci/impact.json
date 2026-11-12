@@ -98,10 +98,8 @@
         "bonsai-chat",
         "bonsai-speech-asr",
         "bonsai-speech-tts",
-        "bonsai-speech-service"
-      ],
-      "groups": [
-        "tools"
+        "bonsai-speech-service",
+        "bonsai-tools"
       ]
     },
     "tools": {
@@ -122,7 +120,8 @@
       "groups": [
         "broker_checks",
         "speech",
-        "maintenance"
+        "maintenance",
+        "tools"
       ]
     },
     "release": {
@@ -182,6 +181,7 @@
       "broker": "broker_checks",
       "speech": "speech",
       "maintenance": "maintenance",
+      "checked-tools": "tools",
       "foundation-tests": "integration",
       "release-integration": "release"
     }

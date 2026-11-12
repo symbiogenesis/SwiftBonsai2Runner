@@ -427,10 +427,16 @@ fn runner_ci_speech_selects_checked_tools_without_unrelated_lanes() -> TestResul
             "changed inputs",
         )?;
         assert_eq!(plan.packages, [format!("bonsai-speech-{package}")]);
-        for group in [lane, "speech", "maintenance", "tools"] {
+        for group in [lane, "speech", "tools"] {
             assert!(plan.groups[group], "{package}: {group}");
         }
-        for group in ["broker_checks", "ui", "integration", "release"] {
+        for group in [
+            "broker_checks",
+            "ui",
+            "maintenance",
+            "integration",
+            "release",
+        ] {
             assert!(!plan.groups[group], "{package}: {group}");
         }
     }
@@ -455,7 +461,7 @@ fn runner_ci_q4_lock_rebuilds_the_embedded_planner_and_tts() -> TestResult {
 }
 
 #[test]
-fn runner_ci_native_packages_and_embedded_notices_select_maintenance_checks() -> TestResult {
+fn runner_ci_native_packages_and_embedded_notices_select_checked_cli() -> TestResult {
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     let config: Value = serde_json::from_slice(&fs::read(root.join(".github/ci/impact.json"))?)?;
     for path in [
@@ -467,7 +473,8 @@ fn runner_ci_native_packages_and_embedded_notices_select_maintenance_checks() ->
         let plan = impact::select(&root, &[path.into()], false, &config, "chat packaging")?;
         assert!(!plan.full, "{path}");
         assert!(plan.packages.contains(&"bonsai-tools".to_owned()), "{path}");
-        assert!(plan.groups["maintenance"] && plan.groups["tools"], "{path}");
+        assert!(plan.groups["tools"] && plan.groups["rust_lanes"], "{path}");
+        assert!(!plan.groups["maintenance"], "{path}");
     }
     Ok(())
 }
@@ -480,7 +487,14 @@ fn runner_ci_shared_changes_assign_every_package_to_exactly_one_lane() -> TestRe
     assert!(plan.full);
     for package in &plan.packages {
         let mut owners = Vec::new();
-        for lane in ["broker", "ui", "speech_asr", "speech_tts", "maintenance"] {
+        for lane in [
+            "broker",
+            "ui",
+            "speech_asr",
+            "speech_tts",
+            "maintenance",
+            "tools",
+        ] {
             let group = &config["groups"][lane];
             let includes = group["packages"]
                 .as_array()
@@ -498,7 +512,7 @@ fn runner_ci_shared_changes_assign_every_package_to_exactly_one_lane() -> TestRe
 }
 
 #[test]
-fn runner_ci_gate_requires_independent_maintenance_and_speech_results() -> TestResult {
+fn runner_ci_gate_requires_independent_maintenance_cli_and_speech_results() -> TestResult {
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     let config: Value = serde_json::from_slice(&fs::read(root.join(".github/ci/impact.json"))?)?;
     let plan = impact::select(&root, &[], true, &config, "full")?;
@@ -510,11 +524,26 @@ fn runner_ci_gate_requires_independent_maintenance_and_speech_results() -> TestR
         needs[job] = json!({"result": "success"});
     }
     assert_eq!(gate::failures(&needs, jobs), Vec::<String>::new());
-    for job in ["maintenance", "speech"] {
-        needs[job]["result"] = json!("skipped");
-        assert!(!gate::failures(&needs, jobs).is_empty(), "{job}");
+    for job in ["maintenance", "checked-tools", "speech"] {
+        for result in ["skipped", "failure", "cancelled"] {
+            needs[job]["result"] = json!(result);
+            assert!(!gate::failures(&needs, jobs).is_empty(), "{job}: {result}");
+        }
         needs[job]["result"] = json!("success");
     }
+    Ok(())
+}
+
+#[test]
+fn runner_ci_dependency_checks_remain_independent_of_cli_production() -> TestResult {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let config: Value = serde_json::from_slice(&fs::read(root.join(".github/ci/impact.json"))?)?;
+    for path in ["src/artifacts/src/lib.rs", "src/windows-process/src/lib.rs"] {
+        let plan = impact::select(&root, &[path.into()], false, &config, "CLI dependency")?;
+        assert!(plan.packages.contains(&"bonsai-tools".to_owned()), "{path}");
+        assert!(plan.groups["maintenance"] && plan.groups["tools"], "{path}");
+    }
+    assert_eq!(config["workflows"]["foundation"]["checked-tools"], "tools");
     Ok(())
 }
 
