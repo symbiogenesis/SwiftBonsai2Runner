@@ -6,9 +6,9 @@ rust-version.workspace = true
 publish.workspace = true
 license.workspace = true
 repository.workspace = true
-keywords = ["speech", "asr", "canary", "gguf", "native"]
+keywords = ["speech", "asr", "qwen3", "gguf", "native"]
 categories = ["multimedia::audio"]
-description = "Bounded native Canary-Qwen 2.5B recognition for Bonsai speech services"
+description = "Bounded native Qwen3-ASR 1.7B recognition for Bonsai speech services"
 
 [dependencies]
 bonsai-speech-service.workspace = true

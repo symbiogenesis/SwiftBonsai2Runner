@@ -1,4 +1,4 @@
-//! Native ARM64 Canary service using verified local model files.
+//! Native ARM64 Qwen3-ASR service using verified local model files.
 #![forbid(unsafe_code)]
 
 use bonsai_speech_service::{
@@ -53,7 +53,7 @@ fn run() -> io::Result<()> {
                 include_str!("../model.lock.json"),
             )?;
             let recognizer = bonsai_speech_asr::Recognizer::load(&arguments.model)
-                .map_err(|_| io::Error::other("Native Canary model loading failed."))?;
+                .map_err(|_| io::Error::other("Native Qwen3-ASR model loading failed."))?;
             let engine = NativeEngine {
                 recognizer,
                 _models: guards,
@@ -65,7 +65,7 @@ fn run() -> io::Result<()> {
                 |port| {
                     writeln!(
                         io::stdout().lock(),
-                        "Native Canary ready at 127.0.0.1:{port}"
+                        "Native Qwen3-ASR ready at 127.0.0.1:{port}"
                     )
                 },
             )
@@ -75,14 +75,17 @@ fn run() -> io::Result<()> {
 
 fn main() -> ExitCode {
     std::panic::set_hook(Box::new(|_| {
-        let _written = writeln!(io::stderr().lock(), "Native Canary speech service failed.");
+        let _written = writeln!(
+            io::stderr().lock(),
+            "Native Qwen3-ASR speech service failed."
+        );
     }));
     if run().is_ok() {
         ExitCode::SUCCESS
     } else {
         let _written = writeln!(
             io::stderr().lock(),
-            "Native Canary speech service failed; check verified models and local configuration."
+            "Native Qwen3-ASR speech service failed; check verified models and local configuration."
         );
         ExitCode::FAILURE
     }
