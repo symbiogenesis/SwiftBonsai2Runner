@@ -276,7 +276,7 @@ impl Updates {
         })
     }
 
-    pub(super) fn available(&self) -> bool {
+    pub(super) const fn available(&self) -> bool {
         self.version.is_some()
     }
 
@@ -372,7 +372,7 @@ impl Updates {
         }
     }
 
-    pub(super) fn should_close(&self) -> bool {
+    pub(super) const fn should_close(&self) -> bool {
         self.queued
     }
 

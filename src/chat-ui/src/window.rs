@@ -1221,7 +1221,7 @@ impl State {
         ui.add_space(16.0);
     }
 
-    fn can_install_update(&self) -> bool {
+    const fn can_install_update(&self) -> bool {
         self.startup.is_none()
             && self.startup_request.is_none()
             && matches!(
