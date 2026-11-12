@@ -21,8 +21,11 @@ Jump to [scope and budgets](#experiment-scope-and-budgets),
 
 ## Existing evidence and project scope
 
-The target is native Windows ARM64 on Snapdragon X/X2; the baseline host is the
-32 GiB X1E-78-100. Swift's `qwen35`
+The target is native Windows ARM64 on Snapdragon X/X2. The original baseline
+host is the 32 GiB X1E-78-100; later [device observations](hardware-capabilities.md#automatic-profile-selection)
+and [current timing captures](performance-expectations.md#current-swift-evidence)
+use the X2 Elite Extreme X2E94100. Each device family requires independent
+qualification. Swift's `qwen35`
 graph has **16 full-attention and 48 Gated DeltaNet/convolution layers**: one
 8,192-token conversation, default packed PQ2 weights, FP16 full-attention KV and
 FP32 recurrent state; PTQ1 is a separate candidate. [Verified metadata](../config/swift.metadata.json)
@@ -66,6 +69,12 @@ closed deadlines. Hosted cloud CI retains its own workflow limits. Process one
 candidate or layer at a time, without whole-model expansion or open-ended sweeps. Preserve
 admission, physical reserves, context/output reservations and quality gates.
 These exploration budgets do not replace qualification.
+
+Retain AC connection, battery-saver and charge observations before and after
+the aggregate workload and each comparison arm. Unknown conditions remain
+unknown; later queries cannot reconstruct past power. Missing or mismatched
+power conditions disqualify performance comparisons, and matching endpoints
+do not establish uninterrupted stability.
 
 Minimize device time by reviewing retained captures offline, preparing source-bound
 tools on hosted CI, reusing verified immutable downloads, and choosing the shortest

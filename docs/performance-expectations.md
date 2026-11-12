@@ -130,12 +130,14 @@ measured seven installed Rust profiles on the Snapdragon X2 Elite Extreme:
 | Swift Bonsai 2 `PQ2_0` (explicit publisher rollback) | PrismML C++ CPU | Startup failed | Startup failed | 6.71 GiB | 11.5 GiB / — | 15.5 GiB | — |
 | Qwen3.8-27B `UD-Q3_K_XL` | llama.cpp reference | Not installed | Not installed | 12.24 GiB | 18 GiB / — | 22 GiB | — |
 
-The current release profiles use the default four CPU row workers; comparing the
+The historical release profiles above used four CPU row workers unless explicitly
+labelled otherwise. Comparing the
 `0.1.10` single-worker row (`35.59 s` TTFT, `0.64` generation tokens/s) against
-the four-worker row (`16.98 s` TTFT, `1.34` generation tokens/s) shows a **2.10x
-faster TTFT** and **2.09x faster generation rate** from four-worker row parallelism,
-while the `0.1.10` startup/prefill changes reduced four-worker TTFT from `23.00 s`
-(`0.1.9`) to `16.98 s` (`16.45–16.64 s` in `0.1.13`–`0.1.14`). Short-request peak Job
+the four-worker row (`16.98 s` TTFT, `1.34` generation tokens/s) gives observed
+ratios of **2.10x** for first-token time and **2.09x** for generation rate.
+Four-worker TTFT was `23.00 s` on `0.1.9`, `16.98 s` on `0.1.10` and
+`16.45–16.64 s` on `0.1.13`–`0.1.14`. These single fixed-order observations do
+not isolate the cause or qualify a repeated-trial speedup. Short-request peak Job
 commit measured **7.20 GiB** (`7,726,850,048–7,727,276,032` bytes) across all five
 `PQ2_0` profiles and **6.02 GiB** (`6,465,683,456–6,465,744,896` bytes) across both
 `PTQ1_0` profiles (**1.17 GiB lower peak Job commit** on short requests).
@@ -191,7 +193,9 @@ generation speed. [PLAN.md](../PLAN.md) owns pending acceptance under
 ## X1/X2 configuration evidence
 
 [Hardware policy](hardware-capabilities.md#automatic-profile-selection) owns selection, admission, phase handoff and qualified CPU
-fallback/refusal. No X2 speedup or automatic selector is accepted. Family/core counts, NPU TOPS and
+fallback/refusal. A sustained X2 speedup and qualified automatic selector remain
+unaccepted; the fixed [X2 NPU development default](hexagon.md) is separate.
+Family/core counts, NPU TOPS and
 bandwidth bounds cannot forecast TPS or energy: prefill can reuse weight tiles, while single-chat
 decode pays bandwidth, unpack/transform and dispatch costs with little reuse. Whole-model expansion
 can erase packing benefits; simultaneous processors share bandwidth and power.
