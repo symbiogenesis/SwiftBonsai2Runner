@@ -26,9 +26,9 @@ Dependency terms apply independently of the application's license.
 | `tokio` 1.54.1 | MIT | Retain copyright and permission notice. |
 | `mxc-sdk` 1.0.1 | MIT | Retain Microsoft copyright and MIT permission notice; the native PSEC integration is confined to the Windows process boundary. |
 | `flatbuffers` 25.12.19 | Apache-2.0 | Retain the selected license and notices for the fixed PSEC policy encoder. |
-| `fearless_simd` 1.1.0 | Apache-2.0 OR MIT | Direct dependency of the Runner speech crates and used by the external runtime; retain applicable license/attribution. |
+| `fearless_simd` 1.2.0 (Runner), 1.1.0 (external runtime) | Apache-2.0 OR MIT | Retain the applicable license/attribution for each independently pinned selection. |
 | `subtle` 2.6.1 | BSD-3-Clause | Retain copyright, conditions and disclaimer; respect non-endorsement. |
-| `zip` 9.2.1 | MIT | Retain the notice; enabled deflate dependencies also have permissive options. |
+| `zip` 9.5.1 | MIT | Retain the notice; enabled deflate dependencies also have permissive options. |
 | `simd-json` 0.19.0 | Apache-2.0 OR MIT | Qualification-only published crate; retain its selected license terms and the attribution in NOTICE when redistributing. |
 | `zlib-rs` | Zlib | Retain source notices and identify altered versions. |
 | `unicode-ident` | (MIT OR Apache-2.0) AND Unicode-3.0 | Include Unicode-3.0 notices as well as the selected code license. |

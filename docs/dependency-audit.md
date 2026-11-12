@@ -32,7 +32,7 @@ provide reproducibility, not continuing advisory notification.
 Artifact verification belongs in `bonsai-artifacts`; the broker has no direct `sha2` dependency.
 Windows artifact/maintenance hashing uses the shared CNG boundary in
 `bonsai-windows-credentials`; portable and test paths retain `sha2`.
-ZIP 9.2.1 disables defaults and enables only `deflate-flate2-zlib-rs`.
+ZIP 9.5.1 disables defaults and enables only `deflate-flate2-zlib-rs`.
 Upstream hardening includes [symlink extraction](https://github.com/zip-rs/zip2/pull/1116),
 [Unicode-path renaming](https://github.com/zip-rs/zip2/pull/1177) and
 [9.1.3 archive fixes](https://github.com/zip-rs/zip2/releases/tag/v9.1.3).
@@ -142,7 +142,7 @@ runtime source forbids unsafe code. See the
 | `serde`, `serde_json`, `tokio` | Retain: [JSON](#json-selection)/[runtime](#runtime-screening) screens did not qualify replacements. Tokio explicitly enables io-util/net/rt/signal/sync/time; test-util is dev-only, while MXC broadens features. |
 | `http`, `httparse` | Complementary typed policy and bounded wire parsing; no general web framework needed. |
 | `subtle` | Constant-time bearer comparison; preserve disabled release debug assertions. |
-| `sha2`, `zip` | Artifact verification and minimal deflate extraction at ZIP 9.2.1; custom extraction policy remains necessary. |
+| `sha2`, `zip` | Artifact verification and minimal deflate extraction at ZIP 9.5.1; custom extraction policy remains necessary. |
 | `socket2`, `windows-sys` | Pre-bind options/backlog/exclusive sockets and selected process/credential/audio/accessibility APIs. |
 | `windows`, `windows-future` | Compatible WinRT microphone permission/capture; distinct from windows-sys. Retain future 0.3.2 with windows 0.62.2; 0.100 is incompatible. |
 | `eframe`, `wgpu` | Native UI, accessibility, clipboard, fallback/system fonts and all three explicit Windows backends. |
@@ -150,7 +150,7 @@ runtime source forbids unsafe code. See the
 | `toml`, `ureq` | CI-only manifest parsing (parse/serde/std) and synchronous HTTPS (Windows Schannel, otherwise Rustls); ureq defaults/compression disabled. |
 | `transcribe-cpp` | Static CPU ASR, defaults disabled; reviewed CMake script downloads no source and explicitly enables MSVC optimization. |
 | `simd-json` | Exact optional qualification-only crates.io pin; ordinary requests still use serde_json. |
-| `fearless_simd` | Pinned safe SIMD (`=1.1.0` in Runner speech crates and Prism). ASR uses it in `validate_pcm`; TTS uses it in the candidate Rust `engine`/`codec` modules, which have not replaced the native serving core. Prism's `bonsai-neon-dot` kernels are a separate runtime dependency. |
+| `fearless_simd` | Pinned safe SIMD (`=1.2.0` in Runner speech crates; the external runtime retains its independent 1.1.0 pin). ASR uses it in `validate_pcm`; TTS uses it in the candidate Rust `engine`/`codec` modules, which have not replaced the native serving core. Prism's `bonsai-neon-dot` kernels are a separate runtime dependency. |
 | `memchr` | Promoted from transitive to direct (`=2.8.3`, `default-features = false`) in `bonsai-broker`, `bonsai-chat`, and `bonsai-speech-service` for NEON-vectorized HTTP header, SSE line, multipart boundary, and ASCII folded Find scanning. |
 | Windows CNG | Runner artifact and maintenance digests use `bonsai_windows_credentials::Sha256` (`BCryptHashData`); CPU dispatch belongs to the Windows provider. Prism's `bonsai-native-hash` is external to this workspace. These paths alone establish no device speedup. |
 | `mxc-sdk`, `flatbuffers` | Required security integration; pursue upstream modularity. |
@@ -266,7 +266,7 @@ All benchmarks run in CI only.
 
 The dependency selection below was reviewed **2026-11-01**; this date is not a claim
 of continuing freshness. Current compiler and runtime selections are the
-[toolchain file](../rust-toolchain.toml) (nightly 2026-11-09) and
+[toolchain file](../rust-toolchain.toml) (nightly 2026-11-12) and
 [runtime lock](../config/prism-inference.lock.json) (Prism 0.1.23, source
 `055c7430cb4771dfddb24ddaa30494af6ad182da`). Historical checks below do not qualify
 these later selections. The pending 0.1.24 binary repin remains in PLAN.
@@ -286,7 +286,17 @@ A later maintenance update selected nightly **2026-11-02** (rustc
 `3e92e1a2d`, 1.101.0-nightly), ZIP 9.2.1 and the compatible transitive packages
 then available. Its recorded `cargo update --dry-run --verbose` found no further
 compatible updates at that time. The current compiler pin has since advanced to
-2026-11-09; the old compiler and update checks are historical evidence.
+2026-11-12; the old compiler and update checks are historical evidence.
+
+The **2026-11-12** Cargo maintenance update checked all direct registry
+dependencies and selected `fearless_simd` 1.2.0, `toml` 1.2.1+spec-1.1.0,
+`ureq` 3.5.1 and `zip` 9.5.1, retaining existing feature selections and exact
+version requirements. Other direct dependencies were already at their latest
+stable releases, except the compatible `windows-future` selection below.
+The refreshed workspace lockfile selects compatible transitive releases.
+These changes do not update external runtime/model/source locks or inherit
+historical advisory, native linking, model or performance qualification.
+Owner-managed Foundation and dependency-audit acceptance remain pending.
 
 The reviewed `windows-future` 0.3.2 selection is compatible with `windows`
 0.62.2, which returns its asynchronous types and requires `windows-core` 0.62.2;

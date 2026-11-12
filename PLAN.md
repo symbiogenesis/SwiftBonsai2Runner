@@ -62,6 +62,11 @@ actual-model or performance gates.
 Have the owner push the local CI corrections and confirm Markdown standards and
 Foundation on the resulting source. The [bounded local check record](docs/evidence/ci-fixes-20261112/retained.json)
 keeps local validation separate from pending hosted acceptance.
+Qualify the 2026-11-12 Cargo dependency refresh in owner-managed Foundation and
+dependency-audit checks, including native speech SIMD consumers and bounded ZIP
+extraction. The [dependency audit](docs/dependency-audit.md#reviewed-pins-and-tooling)
+records the updated selections and the required `windows-future` compatibility pin;
+historical advisory and device results do not qualify the refreshed lockfile.
 Have the owner push the workflow retirements and consolidation: routine portable,
 Markdown and dependency checks share Source checks; Hexagon qualification owns its
 independent hosted Windows ABI control, and the completed frozen-source row-worker
