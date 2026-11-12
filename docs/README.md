@@ -36,6 +36,7 @@ implemented behavior from actual-model, device, quality and isolation acceptance
 | Guide | Contents |
 | --- | --- |
 | [Swift memory and PTQ1](swift-memory.md) | Artifacts, census, budgets, lossless packing/allocation, numerical evidence, decision screen and approximation boundaries |
+| [Native Snapdragon quantized KV](quantized-kv.md) | Experimental rotated 3/4-bit cache contract, X1/X2 boundaries, storage estimates and conditional default promotion |
 | [Swift LoRA](swift-lora.md) | Artifact, basis, cost, storage overlay and paired device/human qualification |
 | [Adapter authoring intake](adapter-authoring-intake.md) | Authenticated authoring inputs, schema-2 intake bounds and provenance limits |
 | [Public adapter reference](adapter-public-reference.md) | One declared public-pack reconstruction and independent scalar comparison |
