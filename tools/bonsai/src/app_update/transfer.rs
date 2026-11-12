@@ -17,7 +17,7 @@ use std::{
 
 use super::{MAX_METADATA, external, policy::Asset};
 
-static CURL: OnceLock<std::path::PathBuf> = OnceLock::new();
+static CURL: OnceLock<PathBuf> = OnceLock::new();
 
 struct TemporaryBody(PathBuf);
 
@@ -31,7 +31,7 @@ impl Drop for TemporaryBody {
     }
 }
 
-fn curl(working: &Path) -> crate::Result<std::path::PathBuf> {
+fn curl(working: &Path) -> crate::Result<PathBuf> {
     if let Some(path) = CURL.get() {
         return Ok(path.clone());
     }
@@ -122,7 +122,9 @@ pub(super) fn write_exclusive(path: &Path, bytes: &[u8]) -> crate::Result<()> {
         use std::os::windows::fs::OpenOptionsExt as _;
         options.share_mode(0).custom_flags(0x0020_0000);
     }
-    let mut file = options.open(&temporary).map_err(|error| error.to_string())?;
+    let mut file = options
+        .open(&temporary)
+        .map_err(|error| error.to_string())?;
     let temporary = TemporaryBody(temporary);
     let written = file
         .write_all(bytes)
