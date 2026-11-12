@@ -281,8 +281,10 @@ the separate cancellation behavior for active input.
 Source fixtures do not close these actual-device acceptance gates.
 
 Qualify the responsive sidebar and Appearance preferences on Windows ARM64:
-resize/hide/reopen the docked sidebar, then move between docked and anchored-drawer
-layouts without losing drafts or interrupting background generation. Cover
+resize/hide/reopen the docked sidebar, including a manual shrink to 216 points that
+stays fixed after release, idle frames, status changes and restart. Move between
+docked and anchored-drawer layouts without losing drafts or interrupting background
+generation. Cover
 480×480 windows, display scaling, drawer Escape/backdrop and conversation actions,
 keyboard focus, System/Light/Dark changes and Windows high-contrast precedence.
 Check the compact sidebar seedling and its full "SwiftBonsai2 - Your private,
@@ -311,8 +313,9 @@ and unchanged source text, adjustable reading width, and independent appearance
 persistence across restart, conversation-saving opt-out and preview. Focused
 model-free controls and rendered samples do not close assistive-technology,
 real-window or actual-model acceptance.
-Run the new `appearance_` and `reader_size_reflows_` controls, existing Settings
-and deletion regressions, and strict native all-target analysis on final source.
+Run the `ergonomics_sidebar_`, `profile_`, `appearance_` and `reader_size_reflows_`
+controls, existing Settings and deletion regressions, and strict native all-target
+analysis on final source.
 For optional rendered captures, set `BONSAI_ERGONOMICS_CAPTURE_DIRECTORY` to a
 directory outside Git before selecting `ergonomics_capture_when_requested`.
 The earlier local capture-path failure supplies no rendered-layout verdict.
@@ -434,7 +437,12 @@ model history while model artifact guards are active and after closing/reopening
 honors a persistent explicit saving opt-out, and never automatically replaces
 unreadable recovery or replays interrupted requests. Verify ordinary and maximized
 window bounds across close/reopen, minimized close, display/DPI changes and a removed
-monitor; geometry saving remains independent of conversation opt-out.
+monitor; geometry saving remains independent of conversation opt-out. Verify the
+device-wide encrypted voice profile survives conversation-saving opt-out and
+restart, migrates from legacy saved conversations only when the separate profile
+is absent, takes precedence when present and preserves unreadable profile bytes
+until the voice preference changes. Keep response options per conversation and
+ensure profile restoration never starts microphone capture or speech playback.
 The local run passed four artifact/encryption controls, then stopped before UI tests
 on two redundant name qualifications in the new geometry test. Those names are
 corrected and independently source-reviewed but not recompiled. The owner explicitly

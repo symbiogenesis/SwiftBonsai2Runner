@@ -416,6 +416,16 @@ Appearance, sidebar width and docked visibility persist separately in the bounde
 and remains active when conversation saving is off. Writes run on a coalescing
 worker and flush on close. Preview neither reads nor writes these preferences.
 
+Window placement, appearance, sidebar geometry and the device-wide voice profile
+form the local user profile. A manual sidebar resize remains at the chosen width
+after releasing the handle, hiding/reopening it and switching window layouts;
+wide content cannot expand it again. The voice profile saves separately with
+Windows user encryption in `DataDirectory/chat-profile.dpapi`, including when
+conversation saving is off. Existing saved conversations supply the initial voice
+preference when no separate profile exists. Response options remain specific to
+each conversation and recover with that conversation. Preview leaves all profile
+files untouched.
+
 The app supports Windows high contrast, display scaling, labelled AccessKit
 controls and selectable/copyable text. Full bidirectional editing and native-control
 accessibility parity remain unqualified. Check layout, streaming selection,
