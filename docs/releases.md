@@ -1,10 +1,11 @@
 # Windows releases
 
 Swift Bonsai 2 Runner ships as a **single portable Windows ARM64 executable**
-for Snapdragon X and X2 laptops. The prepared experimental release is **v0.2.0**;
-its [release notes](releases/v0.2.0.md) describe the development default and
-remaining acceptance limits. Publication requires the owner's source push and
-Windows Release workflow run; local changes alone do not publish a release.
+for Snapdragon X and X2 laptops. The next prepared experimental release is **v0.2.1**;
+its [release notes](releases/v0.2.1.md) describe the development default and
+remaining acceptance limits. The earlier [v0.2.0 release](https://github.com/symbiogenesis/SwiftBonsai2Runner/releases/tag/v0.2.0)
+remains available. New publication requires the owner's source push and Windows
+Release workflow run; local changes alone do not publish a release.
 
 ## Download and open
 
@@ -14,7 +15,7 @@ The complete release has three assets:
 
 | Asset | Purpose |
 | --- | --- |
-| `SwiftBonsai2Runner-0.2.0-windows-arm64.exe` | The runnable application, containing all five application executables and their notices. |
+| `SwiftBonsai2Runner-0.2.1-windows-arm64.exe` | The runnable application, containing all five application executables and their notices. |
 | `SHA256SUMS.txt` | Checksums for the executable and release manifest. |
 | `release-manifest.json` | Version, source revision, build identities and executable digest. |
 
@@ -22,8 +23,8 @@ Check the executable's SHA-256 against the checksum from the same release before
 opening it:
 
 ```powershell
-Get-FileHash .\SwiftBonsai2Runner-0.2.0-windows-arm64.exe -Algorithm SHA256
-.\SwiftBonsai2Runner-0.2.0-windows-arm64.exe
+Get-FileHash .\SwiftBonsai2Runner-0.2.1-windows-arm64.exe -Algorithm SHA256
+.\SwiftBonsai2Runner-0.2.1-windows-arm64.exe
 ```
 
 **Deploy only the `.exe`.** The verification files and any local build-summary
@@ -64,7 +65,7 @@ for this setup command and download the model lock from its exact source revisio
 Use the same data directory for setup and launch:
 
 ```powershell
-$tool = (Resolve-Path .\SwiftBonsai2Runner-0.2.0-windows-arm64.exe).Path
+$tool = (Resolve-Path .\SwiftBonsai2Runner-0.2.1-windows-arm64.exe).Path
 $release = Get-Content .\release-manifest.json -Raw | ConvertFrom-Json
 $data = Join-Path $env:LOCALAPPDATA 'SwiftBonsai2'
 New-Item -ItemType Directory -Path $data -Force | Out-Null
@@ -142,9 +143,9 @@ gh workflow run release.yml --repo symbiogenesis/SwiftBonsai2Runner --ref main -
 ```
 
 Leave `tag` blank to derive it from `workspace.package.version` in `Cargo.toml`.
-An explicit numeric version (`0.2.0`) or tag (`v0.2.0`) must match; both resolve
-to canonical `v0.2.0`, with notes at
-`docs/releases/v0.2.0.md`. A mismatch reports the requested tag, workspace version
+An explicit numeric version (`0.2.1`) or tag (`v0.2.1`) must match; both resolve
+to canonical `v0.2.1`, with notes at
+`docs/releases/v0.2.1.md`. A mismatch reports the requested tag, workspace version
 and expected tag. Increase the workspace version and commit matching notes before
 requesting the next release. `prerelease` defaults to `true`.
 
@@ -171,7 +172,7 @@ The owner can inspect the run and release with:
 
 ```powershell
 gh run list --repo symbiogenesis/SwiftBonsai2Runner --workflow release.yml --limit 5
-gh release view v0.2.0 --repo symbiogenesis/SwiftBonsai2Runner
+gh release view v0.2.1 --repo symbiogenesis/SwiftBonsai2Runner
 ```
 
 Hosted packaging checks do not qualify clean-machine startup, actual-model

@@ -28,7 +28,7 @@ the corresponding detailed task changes; keep every acceptance obligation below.
 | P1 / external, qualification | Prism and Runner | Original authoring inputs for provenance; hosted public-pack reconstruction for its separate gate | Run the declared reconstruction and independent replay while pursuing provenance intake independently; follow the PTQ1 critical path below. Neither blocks A1. |
 | N1 / qualification | Prism and Runner | Frozen NPU-1 packet and applicable signed/runtime prerequisites | Complete [NPU-1 through NPU-7](#promotion-sequence) for the selected explicit X2 profile. HMX/PTQ1/X1/GPU/automatic selection retain their separate later gates. |
 | Q1 / qualification | Runner and independent human reviewers | Exact complete-answer/audio captures and declared rubric | Prepare the [creative and speech](#creative-quality-adapters-and-memory) review packets in parallel with source work; retained output can support applicable review without another device capture. |
-| D1 / owner, qualification | Runner | Reviewed source, exact portable release assets and C1 | Publish v0.2.0 as a portable executable and close clean-machine launch, automatic release discovery/download, confirmed replacement/restart, data preservation, isolation and rollback acceptance; deploy and retrieve the selected [durable evidence](#durable-qualification-evidence). |
+| D1 / owner, qualification | Runner | Reviewed source, exact portable release assets and C1 | Publish v0.2.1 as a portable executable and close clean-machine launch, automatic release discovery/download, confirmed replacement/restart, data preservation, isolation and rollback acceptance; deploy and retrieve the selected [durable evidence](#durable-qualification-evidence). |
 | F1 / conditional | As specified in each detailed section | Its existing measured need, compatible artifact or release trigger | Retain precision research, broader profiles, optional agents, future Qwen migration and deferred Prism/dependency work in full; activation conditions and ordering remain unchanged. |
 
 Freeze one coherent qualification candidate after its reviewed logical commits are
@@ -93,10 +93,13 @@ same-repository composites retain workflow-commit `$/` references. Confirm
 self-hosted runner v2.338.0 or newer before its lanes. The published-source pass
 does not validate later local changes.
 
-Publish the owner-selected experimental Windows ARM64 release, **v0.2.0**, after the
+Publish the next experimental Windows ARM64 release, **v0.2.1**, after the
 owner reviews and pushes the local portable-release commits to Runner `main`.
+The earlier [v0.2.0 release](https://github.com/symbiogenesis/SwiftBonsai2Runner/releases/tag/v0.2.0)
+is published from `45f5070dfc37acbd02f3c900dfd56ae5fb9f1ff8`; its publication
+does not qualify the newer updater, audio or context-guidance changes.
 The [release guide](docs/releases.md) records the owner-run publication command;
-the [release notes](docs/releases/v0.2.0.md) retain the development-default
+the [release notes](docs/releases/v0.2.1.md) retain the development-default
 and qualification limits. Qualify the hosted build and exact executable,
 checksum inventory and release manifest, then verify clean-machine launch,
 terminal-free startup, automatic startup/six-hour release discovery and verified

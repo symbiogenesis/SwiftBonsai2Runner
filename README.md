@@ -37,7 +37,7 @@ If you want to switch back to the original publisher C++ engine, add
 `--publisher-engine` (or `-PublisherEngine` with the script).
 
 The [Windows release guide](docs/releases.md) describes the single executable
-containing all five application tools and the prepared v0.2.0 experimental
+containing all five application tools and the prepared v0.2.1 experimental
 release. [Local builds](docs/development-guide.md#build-a-single-executable)
 can produce the same single-file distribution. Release publication is pending the
 owner's source push and GitHub release workflow run.

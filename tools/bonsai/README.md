@@ -133,7 +133,7 @@ builds/downloads nothing; setup, verification, workers and teardown share the on
 allowance. A successful smoke does not qualify numerics, adapters or performance.
 See the [candidate examples](../../docs/runtime-candidates/README.md).
 
-The maintenance executable reports version 0.2.0, protocol 5 and its supported
+The maintenance executable reports version 0.2.1, protocol 5 and its supported
 commands through `--version`. Runtime guards remain held
 through version/help probes and complete completion batches. Older protocols are
 rejected before an operation can start.
