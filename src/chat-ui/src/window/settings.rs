@@ -534,24 +534,15 @@ impl State {
         });
         if let Some(error) = self.setup.speech_error.clone() {
             ui.add_space(8.0);
-            super::error_ui::card(
-                ui,
-                "settings-speech-setup-error",
-                "Speech setup needs attention",
-                "Text chat and your draft remain available.",
-                &error,
-                |ui| {
-                    if ui
-                        .add_enabled(
-                            self.can_retry_speech_setup(),
-                            egui::Button::new("Retry speech setup"),
-                        )
-                        .clicked()
-                    {
-                        self.retry_speech_setup();
-                    }
-                },
-            );
+            settings_card(ui, |ui| {
+                ui.label(RichText::new("Speech setup needs attention").strong());
+                super::error_ui::summary(ui, &error);
+                ui.horizontal_wrapped(|ui| {
+                    super::error_ui::copy_button(ui, "Copy error", &error);
+                    self.speech_setup_error_actions(ui, &error);
+                });
+                ui.collapsing("Details", |ui| super::error_ui::details(ui, &error));
+            });
         }
     }
 
