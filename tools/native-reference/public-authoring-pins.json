@@ -1,10 +1,10 @@
 {
-  "schemaVersion": 1,
-  "arithmeticId": "public-mlx-f16-inverse1024-f16-f32-dot-v1",
+  "schemaVersion": 2,
+  "arithmeticId": "public-mlx-f16-inverse1024-f16-rust-scalar-f32-dot-v2",
   "absoluteTolerance": 0.00001,
   "relativeTolerance": 0.00001,
-  "python": "3.14.0",
-  "numpy": "2.5.3",
+  "normalization": "scalar-f64-sum-sqrt-rounded-f32",
+  "reduction": "scalar-sequential-f32-no-fma",
   "model": {
     "filename": "model.safetensors",
     "bytes": 8595477990,

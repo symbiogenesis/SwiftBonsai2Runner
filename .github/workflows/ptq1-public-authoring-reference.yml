@@ -3,13 +3,13 @@ on:
   push:
     branches: [main]
     paths:
-      - tools/native-reference/public_pack_formats.py
-      - tools/native-reference/public_pack_reference.py
-      - tools/native-reference/test_public_pack_reference.py
-      - tools/native-reference/audit_public_reference.py
-      - tools/native-reference/test_audit_public_reference.py
+      - tools/native-reference/public_pack_formats.ps1
+      - tools/native-reference/public_pack_reference.ps1
+      - tools/native-reference/test_public_pack_reference.ps1
+      - tools/native-reference/audit_public_reference.ps1
+      - tools/native-reference/test_audit_public_reference.ps1
+      - tools/native-reference/reference_numerics.rs
       - tools/native-reference/public-authoring-pins.json
-      - tools/native-reference/public-authoring-requirements.txt
       - .github/workflows/ptq1-public-authoring-reference.yml
   workflow_dispatch:
     inputs:
@@ -28,12 +28,6 @@ jobs:
     if: github.ref == 'refs/heads/main'
     runs-on: windows-11-arm
     timeout-minutes: 60
-    env:
-      OPENBLAS_NUM_THREADS: '1'
-      OMP_NUM_THREADS: '1'
-      MKL_NUM_THREADS: '1'
-      BLIS_NUM_THREADS: '1'
-      PYTHONHASHSEED: '0'
     steps:
       - name: Require the GitHub-hosted ARM64 lane before source or dependency work
         shell: pwsh
@@ -48,24 +42,28 @@ jobs:
         id: source
         with:
           persist-credentials: false
-      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+      - uses: $/.github/actions/rust-toolchain
+        id: rust
         with:
-          python-version: '3.14.0'
-          architecture: arm64
-      - name: Install only the hashed ARM64 reference wheel
+          toolchain: nightly-2026-11-12-aarch64-pc-windows-msvc
+          components: ''
+      - name: Build the dependency-free independent numerical helper
         shell: pwsh
         run: |
-          python -B -m pip install --only-binary=:all: --require-hashes --requirement tools/native-reference/public-authoring-requirements.txt --report "$env:RUNNER_TEMP/public-authoring-evidence/numpy-pip-report.json"
+          if ($PSVersionTable.PSVersion -lt [version]'7.6') { throw 'PowerShell 7.6 or newer is required.' }
+          $numeric = Join-Path $env:RUNNER_TEMP 'bonsai-reference-numerics.exe'
+          & (Join-Path '${{ steps.rust.outputs.toolchain-path }}' 'bin/rustc.exe') --edition=2024 -D warnings -C opt-level=2 tools/native-reference/reference_numerics.rs -o $numeric
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          "BONSAI_REFERENCE_NUMERIC_TOOL=$numeric" >> $env:GITHUB_ENV
       - name: Check independent small math and malformed-input controls
         id: controls
         shell: pwsh
         run: |
-          python -B tools/native-reference/test_public_pack_reference.py *> "$env:RUNNER_TEMP/public-authoring-evidence/synthetic-tests.log"
+          pwsh -NoLogo -NoProfile -File tools/native-reference/test_public_pack_reference.ps1 *> "$env:RUNNER_TEMP/public-authoring-evidence/synthetic-tests.log"
           $testExit = $LASTEXITCODE
           Get-Content -LiteralPath "$env:RUNNER_TEMP/public-authoring-evidence/synthetic-tests.log" -Tail 80
           if ($testExit -ne 0) { exit $testExit }
-          python -B tools/native-reference/test_audit_public_reference.py *> "$env:RUNNER_TEMP/public-authoring-evidence/replay-tests.log"
+          pwsh -NoLogo -NoProfile -File tools/native-reference/test_audit_public_reference.ps1 *> "$env:RUNNER_TEMP/public-authoring-evidence/replay-tests.log"
           $replayExit = $LASTEXITCODE
           Get-Content -LiteralPath "$env:RUNNER_TEMP/public-authoring-evidence/replay-tests.log" -Tail 80
           exit $replayExit
@@ -98,14 +96,14 @@ jobs:
         env:
           RUNNER_ENVIRONMENT: ${{ runner.environment }}
         run: |
-          python -B tools/native-reference/public_pack_reference.py --data-directory "$env:RUNNER_TEMP/public-authoring-input" --evidence-directory "$env:RUNNER_TEMP/public-authoring-evidence"
+          pwsh -NoLogo -NoProfile -File tools/native-reference/public_pack_reference.ps1 -DataDirectory "$env:RUNNER_TEMP/public-authoring-input" -EvidenceDirectory "$env:RUNNER_TEMP/public-authoring-evidence"
           exit $LASTEXITCODE
-      - name: Independently replay every retained A and B comparison without NumPy
+      - name: Independently replay every retained A and B comparison with PowerShell
         if: always() && steps.source.outcome == 'success' && (steps.reconstruct.outcome == 'success' || steps.reconstruct.outcome == 'failure')
         shell: pwsh
         run: |
           if (Test-Path -LiteralPath "$env:RUNNER_TEMP/public-authoring-evidence/report.json") {
-            python -B tools/native-reference/audit_public_reference.py --evidence-directory "$env:RUNNER_TEMP/public-authoring-evidence" --adapter "$env:RUNNER_TEMP/public-authoring-input/bonsai-abliterate-lora.gguf" --direction "$env:RUNNER_TEMP/public-authoring-input/refusal_dir_fp32.bin" --expected-source-revision "$env:GITHUB_SHA" --expected-run-id "$env:GITHUB_RUN_ID" --expected-run-attempt "$env:GITHUB_RUN_ATTEMPT" > "$env:RUNNER_TEMP/public-authoring-evidence/scalar-replay.json"
+            pwsh -NoLogo -NoProfile -File tools/native-reference/audit_public_reference.ps1 -EvidenceDirectory "$env:RUNNER_TEMP/public-authoring-evidence" -Adapter "$env:RUNNER_TEMP/public-authoring-input/bonsai-abliterate-lora.gguf" -Direction "$env:RUNNER_TEMP/public-authoring-input/refusal_dir_fp32.bin" -ExpectedSourceRevision "$env:GITHUB_SHA" -ExpectedRunId "$env:GITHUB_RUN_ID" -ExpectedRunAttempt "$env:GITHUB_RUN_ATTEMPT" > "$env:RUNNER_TEMP/public-authoring-evidence/scalar-replay.json"
             exit $LASTEXITCODE
           }
           Write-Output 'No complete public result was produced; retained comparison replay remains pending.'

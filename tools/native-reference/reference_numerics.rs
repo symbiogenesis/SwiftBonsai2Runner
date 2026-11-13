@@ -359,17 +359,29 @@ fn run() -> Result<String> {
             ))
         }
         Some("self-check") if args.len() == 1 => {
+            let mut affine_cases = 0_u32;
             for bits in 0..=u16::MAX {
                 let value = half(bits);
                 if value.is_finite() {
                     require(to_half(value) == bits, "binary16 roundtrip differs")?;
+                    if value.abs() <= 32752.0 {
+                        for code in 0_u8..=2 {
+                            let product = half(to_half(f32::from(code) * value));
+                            let actual = to_half(product + half(bits ^ 0x8000));
+                            let expected = to_half(f32::from(code).mul_add(value, -value));
+                            require(actual == expected, "binary16 affine/FMA oracle differs")?;
+                            affine_cases += 1;
+                        }
+                    }
                 }
             }
             require(
                 to_half(1.000_488_3) == 0x3c00 && to_half(1.001_464_8) == 0x3c02,
                 "binary16 ties-to-even differs",
             )?;
-            Ok("{\"binary16Roundtrips\":63488,\"passed\":true}".to_owned())
+            Ok(format!(
+                "{{\"binary16Roundtrips\":63488,\"affineCases\":{affine_cases},\"passed\":true}}"
+            ))
         }
         _ => Err("unknown bounded reference operation".into()),
     }

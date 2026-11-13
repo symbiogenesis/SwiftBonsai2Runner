@@ -87,8 +87,8 @@ The owning workflow uses `operation: "capture"` and adds existing
 `dataDirectory`, `captureToolsDirectory`, `workBudgetSeconds` and the original
 `workDeadlineTick`. Source pins, hosted tool receipts, native ABI checks, model
 admission, each owned capture and bounded atomic partial receipts live in Rust.
-The independent Python full-state comparator remains an owned, deadline-bound
-child of the Rust command. No PowerShell capture wrapper remains.
+The independent PowerShell 7.6 full-state decoder and packaged Rust arithmetic helper remain owned, deadline-bound
+children of the Rust command. The hosted-prepared helper is required; no compiler runs inside a device trial.
 
 Actual execution belongs only to the main-only manual `native-ptq1-numerics.yml` workflow on a
 native ARM64 Snapdragon ephemeral runner with only the `ptq1-numerics-<run_id>` label,
@@ -123,11 +123,11 @@ smoke is established by adding this tool. Writer authoring basis remains pending
 even if all numerical values match; native writer inputs/corrections are absent.
 
 ```text
-python -B tools/native-reference/test_compare.py NativeStateTests.test_transposed_v_and_complete_recurrent_inventory_match_logical_rows
-python -B tools/native-reference/test_compare.py NativeStateTests.test_state_decoder_rejects_truncation_trailing_bytes_and_changed_schema
-python -B tools/native-reference/test_compare.py NativeStateTests.test_comparator_enforces_finite_values_exact_extents_and_original_tolerance
-python -B tools/native-reference/test_compare.py NativeStateTests.test_control_binding_rejects_changed_adapter_scale_tokens_and_backend
-python -B tools/native-reference/test_compare.py NativeStateTests.test_capture_pre_read_bounds_reject_oversized_json_and_logits
+pwsh -NoLogo -NoProfile -File tools/native-reference/test_compare.ps1 -Name test_transposed_v_and_complete_recurrent_inventory_match_logical_rows
+pwsh -NoLogo -NoProfile -File tools/native-reference/test_compare.ps1 -Name test_state_decoder_rejects_truncation_trailing_bytes_and_changed_schema
+pwsh -NoLogo -NoProfile -File tools/native-reference/test_compare.ps1 -Name test_comparator_enforces_finite_values_exact_extents_and_original_tolerance
+pwsh -NoLogo -NoProfile -File tools/native-reference/test_compare.ps1 -Name test_control_binding_rejects_changed_adapter_scale_tokens_and_backend
+pwsh -NoLogo -NoProfile -File tools/native-reference/test_compare.ps1 -Name test_capture_pre_read_bounds_reject_oversized_json_and_logits
 ```
 
 The retained-file auditor is fixed to numerical run `41568281287` at Runner
@@ -139,8 +139,9 @@ regular ZIP member against the 155 previously recorded file identities. The
 tracked inventory is copied producer metadata; it supplies expected identities
 for the cloud check and does not itself prove that retained payloads match.
 
-After checking the original comparator's SHA-256, the audit replays that exact
-source against retained native/Rust data and requires its complete report to
+After checking the original comparator source as immutable data by SHA-256, the
+audit replays the Rust/PowerShell replacement against retained native/Rust data
+and requires its complete report to
 equal the original comparison, including payload, native-state, control/stdout
 hashes and the explicit NEON/four-worker/standard-1.3 condition. Its artifact
 contains the audit, file manifest, producer metadata and original/replayed
@@ -159,3 +160,28 @@ independent synthetic controls; actual 8.6 GB intake requires explicit dispatch.
 It retains complete A files, metrics and toolchain identities, without inference
 or a full checkpoint write. A numeric match cannot authenticate the author's
 original inputs or qualify native writer mappings, logits/state or promotion.
+
+The current public reference uses PowerShell 7.6 or newer for bounded intake and
+strict JSON/GGUF/safetensors descriptors, plus the dependency-free Rust
+`bonsai-reference-numerics` executable for affine decoding, inverse Hadamard,
+binary16 storage rounding and scalar binary32 dot products. Its independent
+offline replay computes A/B comparison metrics in PowerShell and has separate
+GGUF and retained-header readers. No Python runtime, package installer or numeric
+wheel is required by either path.
+
+This migration creates schema 2 and arithmetic identity
+`public-mlx-f16-inverse1024-f16-rust-scalar-f32-dot-v2`: the direction norm uses a
+sequential binary64 sum/square root rounded once to binary32; each dot product
+uses a sequential binary32 sum with separate multiply and add operations. The
+fixed tolerances and immutable public input pins remain unchanged. Historical
+NumPy/BLAS recipe-v1 outcomes keep their original identities; their arithmetic
+and qualification do not transfer to this replacement. The public workflow must
+qualify the newly declared recipe with its hosted all-48 reconstruction and
+independent replay. Local synthetic controls establish no actual public-pack
+agreement or model qualification.
+
+For focused local controls, provide a prebuilt helper with
+`BONSAI_REFERENCE_NUMERIC_TOOL` or `-ToolPath` and select one named case. Omitting
+the selection runs all cases only under GitHub Actions. The public workflow
+builds the std-only helper with the pinned compiler; owner numerical trials
+consume its source-bound packaged executable.
