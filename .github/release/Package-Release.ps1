@@ -95,10 +95,14 @@ if ($null -eq $runtime -or $runtime.Installed -ne 1) {
 }
 & (Join-Path $RepositoryRoot 'scripts/release/Test-WindowsInstaller.ps1') -InstallerPath $msi -ExpectedVersion $version -EvidenceDirectory (Join-Path $EvidenceDirectory 'msi-smoke')
 
+$bundle = Join-Path $OutputDirectory "SwiftBonsai2Runner-$version-windows-arm64.exe"
+& (Join-Path $RepositoryRoot 'scripts/release/Build-WindowsExecutable.ps1') -PackageDirectory $package -ManifestSha256 $manifestDigest -OutputPath $bundle
+& (Join-Path $RepositoryRoot 'scripts/release/Test-WindowsExecutable.ps1') -ExecutablePath $bundle -ManifestSha256 $manifestDigest -EvidenceDirectory (Join-Path $EvidenceDirectory 'executable-smoke')
+
 $archive = Join-Path $OutputDirectory "SwiftBonsai2Runner-$version-windows-arm64.zip"
 Compress-Archive -LiteralPath $package -DestinationPath $archive -CompressionLevel Optimal
 Copy-Item -LiteralPath $notices -Destination (Join-Path $OutputDirectory 'THIRD-PARTY-NOTICES.txt')
-$assets = @($msi, $archive, (Join-Path $OutputDirectory 'THIRD-PARTY-NOTICES.txt')) | ForEach-Object {
+$assets = @($bundle, $msi, $archive, (Join-Path $OutputDirectory 'THIRD-PARTY-NOTICES.txt')) | ForEach-Object {
     @{ name = [IO.Path]::GetFileName($_); bytes = (Get-Item -LiteralPath $_).Length; sha256 = (Get-FileHash -LiteralPath $_ -Algorithm SHA256).Hash.ToLowerInvariant() }
 }
 @{
@@ -106,7 +110,8 @@ $assets = @($msi, $archive, (Join-Path $OutputDirectory 'THIRD-PARTY-NOTICES.txt
     target = 'aarch64-pc-windows-msvc'; toolchain = 'nightly-2026-11-12-aarch64-pc-windows-msvc'
     manifestSha256 = $manifestDigest; signed = $false
     runUrl = "https://github.com/$env:GITHUB_REPOSITORY/actions/runs/$env:GITHUB_RUN_ID"
-    installerSmoke = 'passed-install-inspect-uninstall-without-model'; builds = $builds; assets = $assets
+    installerSmoke = 'passed-install-inspect-uninstall-without-model'
+    executableSmoke = 'passed-inspect-extract-verify-without-model'; builds = $builds; assets = $assets
 } | ConvertTo-Json -Depth 12 | Set-Content -LiteralPath (Join-Path $OutputDirectory 'release-manifest.json') -Encoding utf8NoBOM
 $checksums = @(Get-ChildItem -LiteralPath $OutputDirectory -File | Sort-Object Name | ForEach-Object {
     '{0}  {1}' -f (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant(), $_.Name

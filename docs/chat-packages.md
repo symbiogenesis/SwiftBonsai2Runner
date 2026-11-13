@@ -1,6 +1,7 @@
 # Portable native chat packages
 
-For the Windows ARM64 MSI distribution and its GitHub publication workflow, see
+For the single-executable and Windows ARM64 MSI distributions and their GitHub
+publication workflow, see
 [Windows releases](releases.md). The checked-directory mechanism below remains
 a separate installation and rollback option.
 
@@ -74,6 +75,44 @@ SHA-256. No scripts or install hooks are included. New staging is checked before
 publication; an existing output is never replaced. Distribute the directory
 intact and retain the returned `ManifestSha256` independently. `inspect` accepts
 `packageDirectory` and `manifestSha256` for the same complete offline validation.
+
+## Bundle a package into one executable
+
+The same verified schema-2 package can become one distributable `.exe`. This
+embeds the five application executables, package metadata and notices in the
+native maintenance launcher; it preserves the separate worker processes and
+their containment. Models, adapters and inference runtime downloads stay separate.
+
+```powershell
+./scripts/release/Build-WindowsExecutable.ps1 -PackageDirectory C:\BonsaiPackages\0.1.0 -ManifestSha256 REPLACE_WITH_THE_REVIEWED_64_HEX_DIGEST -OutputPath C:\BonsaiPackages\SwiftBonsai2Runner.exe
+```
+
+The helper invokes the trusted package's maintenance binary with this request:
+
+```json
+{
+  "operation": "create",
+  "packageDirectory": "C:\\BonsaiPackages\\0.1.0",
+  "manifestSha256": "REPLACE_WITH_THE_REVIEWED_64_HEX_DIGEST",
+  "outputPath": "C:\\BonsaiPackages\\SwiftBonsai2Runner.exe"
+}
+```
+
+Use `chat-bundle --request` or `chat-bundle --json` for these operations. Creation
+rejects changed package bytes and existing output files. `inspect` accepts
+`executablePath`; `extract` accepts that path and `installationDirectory` and
+verifies the package before publication. Neither operation starts chat or loads
+a model. Review the outer executable's checksum before executing a received
+bundle; its internal checks do not independently authenticate its publisher.
+
+Open the generated executable to extract and launch its verified package through
+the native package launcher. The retained cache is under
+`%LOCALAPPDATA%\SwiftBonsai2\application-bundles\<first-24-manifest-sha256-characters>\` and is
+verified on reuse. `bundled-chat` accepts the installed launch options,
+including `--data-directory` and `--no-speech-models`, while preserving its own
+package location. Bundled launches do not enable MSI update discovery. The local
+[single-executable build](development-guide.md#build-a-single-executable) builds
+the five components and assembles this same distribution format.
 
 ## Install, update and roll back
 

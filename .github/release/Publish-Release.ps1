@@ -16,7 +16,7 @@ if ($env:GITHUB_REPOSITORY -cne 'symbiogenesis/SwiftBonsai2Runner' -or $env:GITH
 $RepositoryRoot = Resolve-ReleasePath $RepositoryRoot
 $AssetDirectory = Resolve-ReleasePath $AssetDirectory
 $version = $Tag.Substring(1)
-$names = @("SwiftBonsai2Runner-$version-windows-arm64.msi", "SwiftBonsai2Runner-$version-windows-arm64.zip", 'THIRD-PARTY-NOTICES.txt', 'release-manifest.json', 'SHA256SUMS.txt')
+$names = @("SwiftBonsai2Runner-$version-windows-arm64.exe", "SwiftBonsai2Runner-$version-windows-arm64.msi", "SwiftBonsai2Runner-$version-windows-arm64.zip", 'THIRD-PARTY-NOTICES.txt', 'release-manifest.json', 'SHA256SUMS.txt')
 $children = @(Get-ChildItem -LiteralPath $AssetDirectory -Force)
 if ($children.Count -ne $names.Count) { throw 'Release asset inventory differs from the reviewed inventory.' }
 foreach ($file in $children) {
@@ -35,8 +35,10 @@ if ($checksums.Count -ne ($names.Count - 1)) { throw 'Release checksums are inco
 $manifest = Get-Content -LiteralPath (Join-Path $AssetDirectory 'release-manifest.json') -Raw | ConvertFrom-Json
 if ($manifest.schemaVersion -ne 1 -or $manifest.tag -cne $Tag -or $manifest.version -cne $version -or
     $manifest.sourceRevision -cne $SourceRevision -or $manifest.target -cne 'aarch64-pc-windows-msvc' -or
-    $manifest.installerSmoke -cne 'passed-install-inspect-uninstall-without-model' -or $manifest.signed -ne $false) { throw 'Release manifest source, architecture or installer checks differ.' }
-$assetNames = @("SwiftBonsai2Runner-$version-windows-arm64.msi", "SwiftBonsai2Runner-$version-windows-arm64.zip", 'THIRD-PARTY-NOTICES.txt')
+    $manifest.installerSmoke -cne 'passed-install-inspect-uninstall-without-model' -or
+    $manifest.executableSmoke -cne 'passed-inspect-extract-verify-without-model' -or
+    $manifest.signed -ne $false) { throw 'Release manifest source, architecture or packaging checks differ.' }
+$assetNames = @("SwiftBonsai2Runner-$version-windows-arm64.exe", "SwiftBonsai2Runner-$version-windows-arm64.msi", "SwiftBonsai2Runner-$version-windows-arm64.zip", 'THIRD-PARTY-NOTICES.txt')
 $seenAssets = [Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
 if (@($manifest.assets).Count -ne $assetNames.Count) { throw 'Release manifest asset inventory is incomplete.' }
 foreach ($asset in $manifest.assets) {

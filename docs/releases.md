@@ -1,16 +1,73 @@
 # Windows releases
 
 Swift Bonsai 2 Runner is a **Windows ARM64 application** for Snapdragon X and X2
-laptops. Its installer uses the Windows Installer `.msi` format. The release
-workflow builds and checks native ARM64 executables on GitHub-hosted Windows.
+laptops. Releases include a single portable `.exe` containing all five application
+executables and their license notices, plus a Windows Installer `.msi` for managed
+installation. The release workflow builds and checks both on GitHub-hosted Windows.
 
 The first prepared release is the experimental **v0.1.0 prerelease**. Its
 [release notes](releases/v0.1.0.md) describe the available application and remaining
-acceptance limits. Publishing the prepared pipeline and its first installer is
+acceptance limits. Publishing the prepared pipeline and its first release assets is
 pending the owner's source push and release workflow run; local source changes
 alone do not create a downloadable release.
 
-## Install and open
+## Open the single executable
+
+After publication, download `SwiftBonsai2Runner-0.1.0-windows-arm64.exe` from the
+project's [GitHub releases](https://github.com/symbiogenesis/SwiftBonsai2Runner/releases),
+along with `SHA256SUMS.txt` and `release-manifest.json` from that release. Check
+the executable's SHA-256 against the published checksum before opening it:
+
+```powershell
+Get-FileHash .\SwiftBonsai2Runner-0.1.0-windows-arm64.exe -Algorithm SHA256
+.\SwiftBonsai2Runner-0.1.0-windows-arm64.exe
+```
+
+The native launcher extracts a verified package under
+`%LOCALAPPDATA%\SwiftBonsai2\application-bundles\<first-24-manifest-sha256-characters>\` and starts
+chat without a source checkout or compiler. It retains and rechecks that cache
+on subsequent launches. One file is distributed;
+the application still runs its UI, broker and speech workers as separate owned
+processes. The bundle includes license notices and verifies its embedded inventory
+before launch. The first release is unsigned; published SHA-256 detects changed
+bytes but does not establish independent publisher trust.
+
+Use the same serviced Windows 11 ARM64, Microsoft Visual C++ ARM64 runtime and
+model prerequisites described below. Model weights, adapters, inference runtime
+downloads and speech models remain separate. Maintenance commands remain
+available from the single executable. To provision Swift without a checkout,
+download its model lock from the release's exact source revision, then explicitly
+provision the runtime, model and adapter:
+
+```powershell
+$tool = (Resolve-Path .\SwiftBonsai2Runner-0.1.0-windows-arm64.exe).Path
+$release = Get-Content .\release-manifest.json -Raw | ConvertFrom-Json
+$data = Join-Path $env:LOCALAPPDATA 'SwiftBonsai2'
+New-Item -ItemType Directory -Path $data -Force | Out-Null
+$modelLock = Join-Path $data 'swift-assessment.lock.json'
+Invoke-WebRequest "https://raw.githubusercontent.com/symbiogenesis/SwiftBonsai2Runner/$($release.sourceRevision)/config/swift-assessment.lock.json" -OutFile $modelLock
+& $tool provision --json (@{ operation = 'inference'; dataDirectory = $data } | ConvertTo-Json -Compress)
+& $tool provision --json (@{ operation = 'model'; dataDirectory = $data; lockPath = $modelLock } | ConvertTo-Json -Compress)
+& $tool provision --json (@{ operation = 'adapter'; dataDirectory = $data } | ConvertTo-Json -Compress)
+& $tool bundled-chat --data-directory $data
+```
+
+Review `release-manifest.json` and its source identity with the release checksum
+inventory before using this command. The explicit model lock selects Swift;
+omitting it selects the separate reference model. To launch with explicit options,
+use:
+
+```powershell
+.\SwiftBonsai2Runner-0.1.0-windows-arm64.exe bundled-chat --no-speech-models
+```
+
+Portable launches do not perform MSI update discovery. Download and verify a new
+bundle to update it; existing user model and conversation data are preserved.
+After closing the application, its cached package directory can be removed to
+reclaim space; the bundle recreates it on the next launch.
+For local builds, use [the single-executable build command](development-guide.md#build-a-single-executable).
+
+## Install with Windows Installer
 
 After publication, obtain the installer from the project's
 [GitHub releases](https://github.com/symbiogenesis/SwiftBonsai2Runner/releases).
@@ -177,9 +234,11 @@ gh workflow run release.yml --repo symbiogenesis/SwiftBonsai2Runner --ref main -
 The workflow accepts a `tag` matching the numeric workspace version in
 `Cargo.toml`, with notes at `docs/releases/<tag>.md`. The default `prerelease`
 input is `true`. It binds the build to the dispatched commit, stages the five
-native executables and their notices, builds the ARM64 MSI, and checks install
-and uninstall on the hosted Windows runner without loading a model. Checksums
-and `release-manifest.json` identify the resulting files and source.
+native executables and their notices, and builds the single `.exe` and ARM64 MSI.
+The hosted Windows runner verifies bundle inspection, extraction and executable
+identities, and MSI install/uninstall, without loading a model. It also retains
+the checked-directory ZIP. Checksums and `release-manifest.json` identify every
+resulting asset and source; publication requires both packaging checks to pass.
 Future updates use that same release inventory; no separate update server or
 feed must be published. Increase the workspace version and commit matching
 release notes before requesting the next release.
