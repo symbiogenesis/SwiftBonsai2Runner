@@ -306,33 +306,37 @@ impl Context<'_> {
         let repo = &self.request.repository_directory;
         let arguments: Vec<std::ffi::OsString> = if self.request.kind == Kind::Ptq1 {
             vec![
-                "-B".into(),
-                repo.join("tools/native-reference/compare.py")
+                "-NoLogo".into(),
+                "-NoProfile".into(),
+                "-File".into(),
+                repo.join("tools/native-reference/compare.ps1")
                     .into_os_string(),
-                "--native".into(),
+                "-Native".into(),
                 self.evidence.join("native").into_os_string(),
-                "--rust".into(),
+                "-Rust".into(),
                 self.evidence
                     .join(&self.request.rust_backend)
                     .into_os_string(),
-                "--backend".into(),
+                "-Backend".into(),
                 self.request.rust_backend.clone().into(),
-                "--row-workers".into(),
+                "-RowWorkers".into(),
                 self.request.row_workers.to_string().into(),
-                "--adapter-condition".into(),
+                "-AdapterCondition".into(),
                 self.request.adapter_condition.name().into(),
-                "--output".into(),
+                "-Output".into(),
                 output.as_os_str().to_owned(),
             ]
         } else {
             vec![
-                "-B".into(),
-                repo.join("tools/row-parallel/compare.py").into_os_string(),
-                "--serial".into(),
+                "-NoLogo".into(),
+                "-NoProfile".into(),
+                "-File".into(),
+                repo.join("tools/row-parallel/compare.ps1").into_os_string(),
+                "-Serial".into(),
                 self.evidence.join("serial").into_os_string(),
-                "--parallel".into(),
+                "-Parallel".into(),
                 self.evidence.join("parallel").into_os_string(),
-                "--output".into(),
+                "-Output".into(),
                 output.as_os_str().to_owned(),
             ]
         };
@@ -341,11 +345,18 @@ impl Context<'_> {
             .checked_sub(5)
             .filter(|value| *value > 0)
             .ok_or("No comparison/cleanup allowance remains.")?;
+        let numeric_tool = std::env::current_exe()
+            .map_err(|error| error.to_string())?
+            .with_file_name("bonsai-reference-numerics.exe");
+        let environment = BTreeMap::from([(
+            std::ffi::OsString::from("BONSAI_REFERENCE_NUMERIC_TOOL"),
+            numeric_tool.into_os_string(),
+        )]);
         let result = crate::startup_process::run_with_checkpoint(
-            std::ffi::OsStr::new("python.exe"),
+            std::ffi::OsStr::new("pwsh.exe"),
             &arguments,
             &self.evidence,
-            &BTreeMap::new(),
+            &environment,
             Duration::from_secs(remaining),
             &self.evidence.join("comparison.txt"),
             || self.checkpoint(),
