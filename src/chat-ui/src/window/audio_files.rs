@@ -66,6 +66,7 @@ impl State {
             || self.scene_packets.is_open()
             || self.edit_message.is_some()
             || self.help.is_some()
+            || self.update_notification_visible(ctx)
             || !ctx.memory(|memory| {
                 memory
                     .focused()

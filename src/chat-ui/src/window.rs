@@ -709,6 +709,9 @@ impl State {
     }
 
     fn handle_escape(&mut self, ctx: &egui::Context) {
+        if self.update_notification_visible(ctx) {
+            return;
+        }
         // The transcript viewer owns Escape and all background shortcuts, even
         // on its first frame. Closing it must not also cancel or stop a request.
         if self.show_audio_transcript || self.alerts.details.is_some() {
@@ -779,6 +782,9 @@ impl State {
                 }
             }
         });
+        if self.update_notification_visible(ctx) {
+            return;
+        }
         if self.rename_conversation.is_none()
             && self.delete_conversation.is_none()
             && self.edit_message.is_none()
@@ -1712,21 +1718,36 @@ impl State {
             if ui.ctx().content_rect().width() >= navigation::DOCK_THRESHOLD {
                 self.navigation_button(ui, false);
             }
-            if ui
+            let pending = self
+                .updates
+                .as_ref()
+                .is_some_and(updates::Updates::available);
+            let response = ui
                 .add_sized([ui.available_width(), 36.0], egui::Button::new("Settings"))
-                .clicked()
-            {
-                self.open_settings(settings::Page::Response);
+                .accessible_name(if pending {
+                    "Settings, update pending"
+                } else {
+                    "Settings"
+                });
+            if pending {
+                let center = egui::pos2(response.rect.right() - 12.0, response.rect.top() + 10.0);
+                ui.painter()
+                    .circle_filled(center, 4.0, ui.visuals().selection.stroke.color);
+            }
+            let response = response.on_hover_text(if pending {
+                "Settings · update pending"
+            } else {
+                "Settings"
+            });
+            if response.clicked() {
+                self.open_settings(if pending {
+                    settings::Page::Application
+                } else {
+                    settings::Page::Response
+                });
             }
         });
         ui.add_space(4.0);
-        if self
-            .updates
-            .as_ref()
-            .is_some_and(updates::Updates::available)
-        {
-            ui.label(RichText::new("Application update available in Settings").small());
-        }
         self.sidebar_status(ui);
     }
 
@@ -1764,9 +1785,18 @@ impl State {
         if !requested {
             return;
         }
+        self.begin_update();
+    }
+
+    fn begin_update(&mut self) {
+        let Some(updates) = &mut self.updates else {
+            return;
+        };
         updates.wait_for_stop();
         self.stop_speech();
-        if self.model == ModelLifecycle::Ready {
+        if self.model.busy() {
+            self.stop_generation();
+        } else if self.model == ModelLifecycle::Ready {
             if self.commands.send(Command::Stop).is_err() {
                 self.fail("The model worker stopped. Close and restart the app before updating.");
             } else {
@@ -1774,6 +1804,72 @@ impl State {
                 self.set_status("Stopping the local model before updating...", false);
             }
         }
+    }
+
+    fn update_notification_visible(&self, ctx: &egui::Context) -> bool {
+        self.can_install_update()
+            && self
+                .updates
+                .as_ref()
+                .is_some_and(updates::Updates::notification_pending)
+            && !self.show_settings
+            && !self.show_audio_transcript
+            && !self.show_diagnostics
+            && self.alerts.details.is_none()
+            && !self.scene_packets.is_open()
+            && self.rename_conversation.is_none()
+            && self.delete_conversation.is_none()
+            && self.edit_message.is_none()
+            && self.help.is_none()
+            && !self.dictation_requested
+            && !self.speaking
+            && self.audio_import.is_none()
+            && self.pending_voice_transcript.is_none()
+            && !egui::Popup::is_any_open(ctx)
+    }
+
+    fn close_with_pending_update(&mut self, ctx: &egui::Context) {
+        if !ctx.input(|input| input.viewport().close_requested()) {
+            return;
+        }
+        if self.prepare_update_on_close() {
+            ctx.send_viewport_cmd(egui::ViewportCommand::CancelClose);
+        }
+    }
+
+    fn prepare_update_on_close(&mut self) -> bool {
+        let Some(updates) = &self.updates else {
+            return false;
+        };
+        if updates.should_close() {
+            return false;
+        }
+        if updates.closing() {
+            return updates.installing();
+        }
+        // Preparation and unknown model ownership retain ordinary shutdown.
+        // A live response can stop through the same acknowledged model teardown
+        // as explicit installation, preserving its usable partial reply.
+        let can_stop = self.startup.is_none()
+            && self.startup_request.is_none()
+            && (matches!(
+                self.model,
+                ModelLifecycle::Ready
+                    | ModelLifecycle::Generating
+                    | ModelLifecycle::Stopping
+                    | ModelLifecycle::AwaitingTeardown
+                    | ModelLifecycle::Retryable
+            ) || self.setup_stopped_for_update());
+        if can_stop
+            && self
+                .updates
+                .as_mut()
+                .is_some_and(updates::Updates::approve_on_close)
+        {
+            self.begin_update();
+            return true;
+        }
+        false
     }
 
     fn poll_updates(&mut self, ctx: &egui::Context) {
@@ -1791,6 +1887,10 @@ impl State {
             if let Some(approved) = &self.update_exit {
                 approved.store(true, std::sync::atomic::Ordering::Release);
             }
+            ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+        } else if updates.closing() && !updates.installing() {
+            // A publication/teardown failure must neither replace bytes nor
+            // trap a user who asked to exit. No approved update exit is set.
             ctx.send_viewport_cmd(egui::ViewportCommand::Close);
         }
         if let Some(message) = diagnostic {
@@ -2293,17 +2393,29 @@ impl State {
         // Disable the workspace on the first modal frame too: egui's modal
         // focus layer is otherwise inherited only from the preceding pass.
         let drawer = self.sidebar_open && ui.available_width() < navigation::DOCK_THRESHOLD;
+        let update_notification = self.update_notification_visible(ui.ctx());
         ui.add_enabled_ui(
             !self.show_settings
                 && !self.show_audio_transcript
                 && self.alerts.details.is_none()
                 && !self.scene_packets.is_open()
+                && !update_notification
                 && !drawer,
             |ui| {
                 self.draw_workspace(ui);
             },
         );
         let ctx = ui.ctx().clone();
+        if update_notification {
+            if self
+                .updates
+                .as_mut()
+                .is_some_and(|updates| updates.notification(&ctx))
+            {
+                self.begin_update();
+            }
+            return;
+        }
         if self.show_settings {
             self.settings(&ctx);
             return;
@@ -2365,6 +2477,7 @@ impl eframe::App for State {
         let was_busy = self.model.busy();
         self.poll_startup();
         self.drain_events();
+        self.close_with_pending_update(ctx);
         self.poll_updates(ctx);
         if ((!was_ready && self.model.ready())
             || (was_busy && !self.model.busy() && self.model.ready()))

@@ -17,7 +17,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-const CHECK_INTERVAL: Duration = Duration::from_hours(6);
+const CHECK_INTERVAL: Duration = Duration::from_mins(15);
 const MAX_OUTPUT: u64 = 64 * 1024;
 
 #[derive(Clone)]
@@ -221,6 +221,7 @@ fn update_request(
     operation: Operation,
     version: Option<&str>,
     identity: Option<&str>,
+    restart: bool,
 ) -> serde_json::Value {
     let mut request = if installation.portable {
         serde_json::json!({"operation": format!("portable-{}", operation.name())})
@@ -236,6 +237,7 @@ fn update_request(
             && let Some(identity) = identity
         {
             request["releaseIdentity"] = identity.into();
+            request["restart"] = restart.into();
         }
     }
     request
@@ -246,10 +248,11 @@ fn execute(
     operation: Operation,
     version: Option<&str>,
     identity: Option<&str>,
+    restart: bool,
     cancelled: &AtomicBool,
 ) -> io::Result<Response> {
     let directory = PrivateDirectory::create(&std::env::temp_dir())?;
-    let request = update_request(installation, operation, version, identity);
+    let request = update_request(installation, operation, version, identity, restart);
     let path = directory.path().join("request.json");
     fs::write(
         &path,
@@ -287,7 +290,7 @@ fn execute(
         if let Some(code) = child.0.try_wait()? {
             break Ok(code);
         }
-        thread::sleep(Duration::from_millis(20));
+        thread::sleep(Duration::from_millis(250));
     })();
     child.0.stop(Duration::from_secs(3)).map_err(|error| {
         io::Error::other(format!(
@@ -319,6 +322,7 @@ impl Task {
         operation: Operation,
         version: Option<String>,
         identity: Option<String>,
+        restart: bool,
     ) -> io::Result<Self> {
         let (outgoing, incoming) = mpsc::sync_channel(1);
         let cancelled = Arc::new(AtomicBool::new(false));
@@ -331,6 +335,7 @@ impl Task {
                     operation,
                     version.as_deref(),
                     identity.as_deref(),
+                    restart,
                     &cancellation,
                 );
                 let _sent = outgoing.send(result);
@@ -341,6 +346,32 @@ impl Task {
             cancelled,
             worker: Some(worker),
         })
+    }
+
+    fn cancel_for_close(&mut self) -> io::Result<()> {
+        self.cancelled.store(true, Ordering::Release);
+        if self
+            .worker
+            .take()
+            .is_some_and(|worker| worker.join().is_err())
+        {
+            return Err(io::Error::other(
+                "Application update process cleanup could not be confirmed. The update worker panicked during cancellation.",
+            ));
+        }
+        match self.incoming.try_recv() {
+            Ok(Err(error))
+                if error
+                    .to_string()
+                    .contains("Application update process cleanup could not be confirmed.") =>
+            {
+                Err(error)
+            }
+            Ok(_) => Ok(()),
+            Err(_) => Err(io::Error::other(
+                "Application update process cleanup could not be confirmed. The cancelled update worker returned no result.",
+            )),
+        }
     }
 }
 
@@ -368,6 +399,9 @@ pub(super) struct Updates {
     confirmed: bool,
     waiting_for_stop: bool,
     cleanup_unconfirmed: bool,
+    notified: bool,
+    deferred: bool,
+    close_requested: bool,
     next_check: Instant,
     status: String,
     error: Option<String>,
@@ -393,6 +427,9 @@ impl Updates {
             confirmed: false,
             waiting_for_stop: false,
             cleanup_unconfirmed: false,
+            notified: false,
+            deferred: false,
+            close_requested: false,
             next_check: Instant::now(),
             status: "Checking for application updates shortly.".into(),
             error: None,
@@ -429,6 +466,8 @@ impl Updates {
         if !same {
             self.confirming = false;
             self.confirmed = false;
+            self.notified = false;
+            self.deferred = false;
         }
         if !self.downloaded {
             self.release_identity = None;
@@ -457,6 +496,7 @@ impl Updates {
             operation,
             self.version.clone(),
             self.release_identity.clone(),
+            !self.close_requested,
         ) {
             Ok(task) => {
                 self.task = Some(task);
@@ -480,6 +520,7 @@ impl Updates {
         if self.task.is_none()
             && !self.installing()
             && !self.cleanup_unconfirmed
+            && !self.close_requested
             && Instant::now() >= self.next_check
         {
             self.start(Operation::Check);
@@ -512,12 +553,16 @@ impl Updates {
                 self.version = None;
                 self.release_identity = None;
                 self.downloaded = false;
+                self.confirming = false;
+                self.deferred = false;
                 self.status = "You are using the latest published version.".into();
             }
             "no-release" => {
                 self.version = None;
                 self.release_identity = None;
                 self.downloaded = false;
+                self.confirming = false;
+                self.deferred = false;
                 self.status = "No published releases yet.".into();
             }
             "downloaded" => {
@@ -533,7 +578,9 @@ impl Updates {
                     return Some("Application update: rejected a queued result without current confirmation and a verified download.".into());
                 }
                 self.queued = true;
-                self.status = if self.installation.portable {
+                self.status = if self.close_requested {
+                    "Closing Swift to replace the executable..."
+                } else if self.installation.portable {
                     "Closing Swift to replace the executable and reopen..."
                 } else {
                     "Closing Swift to open the Windows installer..."
@@ -574,6 +621,81 @@ impl Updates {
 
     pub(super) const fn should_close(&self) -> bool {
         self.queued && self.confirmed
+    }
+
+    pub(super) const fn closing(&self) -> bool {
+        self.close_requested
+    }
+
+    /// Normal close authorizes only the exact portable update previously
+    /// deferred with Later. An unfinished download never delays app shutdown.
+    pub(super) fn approve_on_close(&mut self) -> bool {
+        if !self.installation.portable
+            || !self.deferred
+            || self.cleanup_unconfirmed
+            || !self.verified_download()
+            || self.queued
+            || self
+                .task
+                .as_ref()
+                .is_some_and(|task| task.operation != Operation::Check)
+        {
+            return false;
+        }
+        // A redundant metadata check may be cancelled just as on ordinary
+        // shutdown. Queueing still freshly validates publication and staging.
+        if let Some(mut task) = self.task.take()
+            && let Err(error) = task.cancel_for_close()
+        {
+            self.operation_failed(Operation::Check, &error);
+            return false;
+        }
+        self.confirming = false;
+        self.confirmed = true;
+        self.close_requested = true;
+        self.wait_for_stop();
+        self.waiting_for_stop
+    }
+
+    fn defer(&mut self) {
+        self.notified = true;
+        self.deferred = self.installation.portable && self.verified_download();
+        self.confirming = false;
+        self.confirmed = false;
+    }
+
+    pub(super) fn notification_pending(&self) -> bool {
+        self.installation.portable
+            && self.verified_download()
+            && !self.notified
+            && !self.installing()
+            && self.task.is_none()
+            && !self.cleanup_unconfirmed
+    }
+
+    pub(super) fn notification(&mut self, ctx: &egui::Context) -> bool {
+        let mut install = false;
+        let mut later = false;
+        let width = (ctx.content_rect().width() - 64.0).clamp(240.0, 420.0);
+        let modal = egui::Modal::new(egui::Id::new("application-update-prompt")).show(ctx, |ui| {
+            ui.set_width(width);
+            ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Wrap);
+            ui.heading("Update ready");
+            ui.label(format!("Swift {} is downloaded and verified.", self.version.as_deref().unwrap_or_default()));
+            ui.label("Update now to restart Swift, or choose Later to install when you close it. Your saving setting still applies.");
+            ui.add_space(10.0);
+            ui.horizontal_wrapped(|ui| {
+                install = ui.add(update_button(ui, "Update and restart", true)).clicked();
+                later = ui.add(update_button(ui, "Later", false)).clicked();
+            });
+        });
+        if install {
+            self.notified = true;
+            self.confirmed = true;
+        } else if later || modal.should_close() {
+            self.defer();
+        }
+        install
     }
 
     pub(super) fn wait_for_stop(&mut self) {
@@ -622,7 +744,7 @@ impl Updates {
                 ui.add_space(4.0);
                 ui.label(
                     egui::RichText::new(
-                        "New releases download automatically. You choose when to install.",
+                        "New releases download automatically. Choose Update now, or Later to install when you close Swift.",
                     )
                     .small()
                     .weak(),
@@ -692,11 +814,16 @@ impl Updates {
                     {
                         self.confirming = false;
                         self.confirmed = true;
+                        self.notified = true;
                         install = true;
                     }
-                    if ui.add(update_button(ui, "Cancel update", false)).clicked() {
-                        self.confirming = false;
-                        self.confirmed = false;
+                    let decline = if self.installation.portable {
+                        "Later"
+                    } else {
+                        "Cancel update"
+                    };
+                    if ui.add(update_button(ui, decline, false)).clicked() {
+                        self.defer();
                     }
                 });
             });
@@ -704,7 +831,7 @@ impl Updates {
         ui.add_space(10.0);
         ui.label(
             egui::RichText::new(
-                "Checks GitHub at startup and every six hours. Published prereleases are included.",
+                "Checks GitHub at startup and every 15 minutes. Published prereleases are included.",
             )
             .small()
             .weak(),
@@ -818,6 +945,9 @@ mod tests {
             confirmed: false,
             waiting_for_stop: false,
             cleanup_unconfirmed: false,
+            notified: false,
+            deferred: false,
+            close_requested: false,
             next_check: Instant::now() + CHECK_INTERVAL,
             status: "Verified fixture update".into(),
             error: None,
@@ -835,6 +965,194 @@ mod tests {
             cancelled: Arc::new(AtomicBool::new(false)),
             worker: None,
         }
+    }
+
+    fn update_state() -> io::Result<(super::super::State, Receiver<crate::client::Command>)> {
+        let (commands, incoming) = mpsc::channel();
+        let (_events, events) = crate::client::event_channel();
+        let mut state = super::super::State::create(commands, events, None, None);
+        state.preview = false;
+        state.model = super::super::ModelLifecycle::Ready;
+        state.input = "Keep this draft".into();
+        state.updates = Some(update_fixture()?);
+        Ok((state, incoming))
+    }
+
+    #[test]
+    fn portable_prompt_later_keeps_settings_badge_and_owns_keyboard_shortcuts() -> io::Result<()> {
+        use egui_kittest::{Harness, kittest::Queryable as _};
+        let (state, commands) = update_state()?;
+        let original = state.active_conversation;
+        let mut harness = Harness::builder()
+            .with_size([1180.0, 860.0])
+            .with_context_setup(super::super::configure)
+            .build_ui_state(
+                |ui, state: &mut super::super::State| {
+                    state.handle_input_shortcuts(ui.ctx());
+                    state.draw(ui);
+                },
+                state,
+            );
+        assert!(harness.query_by_label("Update ready").is_some());
+        harness.key_press_modifiers(egui::Modifiers::CTRL, egui::Key::N);
+        harness.key_press_modifiers(egui::Modifiers::CTRL, egui::Key::F);
+        harness.key_press(egui::Key::Enter);
+        harness.run();
+        assert_eq!(harness.state().active_conversation, original);
+        assert_eq!(harness.state().input, "Keep this draft");
+        assert!(commands.try_recv().is_err());
+        harness.key_press(egui::Key::Escape);
+        harness.run();
+        assert!(harness.query_by_label("Update ready").is_none());
+        let updates = harness
+            .state()
+            .updates
+            .as_ref()
+            .ok_or_else(|| io::Error::other("Missing updates"))?;
+        assert!(updates.deferred && updates.downloaded);
+        assert!(!updates.notification_pending());
+        assert!(!updates.confirmed && !updates.should_close());
+        assert!(
+            harness
+                .query_by_role_and_label(egui::Role::Button, "Settings, update pending")
+                .is_some()
+        );
+        assert!(commands.try_recv().is_err());
+        harness.run_steps(2);
+        assert!(harness.query_by_label("Update ready").is_none());
+        Ok(())
+    }
+
+    #[test]
+    fn later_is_bound_to_exact_publication_and_close_never_waits_for_download() -> io::Result<()> {
+        let mut updates = update_fixture()?;
+        updates.defer();
+        let same = Response {
+            status: "available".into(),
+            version: updates.version.clone(),
+            release_identity: updates.release_identity.clone(),
+        };
+        assert!(!updates.select_candidate(same));
+        assert!(updates.deferred && !updates.notification_pending());
+        updates.task = Some(completed_task(Operation::Download, None));
+        assert!(!updates.approve_on_close());
+        assert!(!updates.closing() && !updates.confirmed);
+        updates.task.take();
+        let changed = Response {
+            status: "available".into(),
+            version: updates.version.clone(),
+            release_identity: Some("b".repeat(64)),
+        };
+        assert!(updates.select_candidate(changed));
+        assert!(!updates.deferred && !updates.notified && !updates.downloaded);
+        assert!(!updates.approve_on_close());
+        updates.release_identity = Some("b".repeat(64));
+        updates.downloaded = true;
+        assert!(updates.notification_pending());
+        updates.installation.portable = false;
+        updates.defer();
+        assert!(
+            !updates.approve_on_close(),
+            "MSI still requires explicit installation"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn deferred_close_cancels_check_and_requires_acknowledged_generation_teardown() -> io::Result<()>
+    {
+        let (mut state, commands) = update_state()?;
+        state.model = super::super::ModelLifecycle::Generating;
+        let updates = state
+            .updates
+            .as_mut()
+            .ok_or_else(|| io::Error::other("Missing updates"))?;
+        updates.defer();
+        updates.task = Some(completed_task(
+            Operation::Check,
+            Some(Err(io::Error::other("Update operation cancelled."))),
+        ));
+        assert!(state.prepare_update_on_close());
+        assert!(matches!(
+            commands.try_recv(),
+            Ok(crate::client::Command::Stop)
+        ));
+        assert_eq!(state.model, super::super::ModelLifecycle::Stopping);
+        assert!(state.prepare_update_on_close());
+        assert!(
+            commands.try_recv().is_err(),
+            "Repeated close cannot send another Stop"
+        );
+        let updates = state
+            .updates
+            .as_ref()
+            .ok_or_else(|| io::Error::other("Missing updates"))?;
+        assert!(updates.waiting_for_stop && updates.confirmed && updates.closing());
+        assert!(updates.task.is_none() && !updates.should_close());
+        let request = update_request(
+            &updates.installation,
+            Operation::Install,
+            updates.version.as_deref(),
+            updates.release_identity.as_deref(),
+            !updates.closing(),
+        );
+        assert_eq!(request["restart"], false);
+        state.fail("Synthetic unknown owned-model teardown");
+        let approved = Arc::new(AtomicBool::new(false));
+        state.update_exit = Some(Arc::clone(&approved));
+        state.poll_updates(&egui::Context::default());
+        assert!(!approved.load(Ordering::Acquire));
+        assert!(!state.prepare_update_on_close());
+        assert!(!state.updates.as_ref().is_some_and(Updates::should_close));
+        Ok(())
+    }
+
+    #[test]
+    fn pending_close_requires_deferral_verified_bytes_and_known_ownership() -> io::Result<()> {
+        let (mut state, commands) = update_state()?;
+        assert!(!state.prepare_update_on_close());
+        state
+            .updates
+            .as_mut()
+            .ok_or_else(|| io::Error::other("Missing updates"))?
+            .defer();
+        state.model = super::super::ModelLifecycle::Unavailable;
+        assert!(!state.prepare_update_on_close());
+        state.model = super::super::ModelLifecycle::Ready;
+        let updates = state
+            .updates
+            .as_mut()
+            .ok_or_else(|| io::Error::other("Missing updates"))?;
+        updates.cleanup_unconfirmed = true;
+        assert!(!state.prepare_update_on_close());
+        let updates = state
+            .updates
+            .as_mut()
+            .ok_or_else(|| io::Error::other("Missing updates"))?;
+        updates.cleanup_unconfirmed = false;
+        updates.downloaded = false;
+        assert!(!state.prepare_update_on_close());
+        assert!(commands.try_recv().is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn cancelled_check_with_unknown_cleanup_never_authorizes_close_update() -> io::Result<()> {
+        for result in [
+            None,
+            Some(Err(io::Error::other(
+                "Application update process cleanup could not be confirmed. Synthetic cancellation failure.",
+            ))),
+        ] {
+            let mut updates = update_fixture()?;
+            updates.defer();
+            updates.task = Some(completed_task(Operation::Check, result));
+            assert!(!updates.approve_on_close());
+            assert!(updates.cleanup_unconfirmed);
+            assert!(!updates.confirmed && !updates.waiting_for_stop && !updates.closing());
+            assert!(updates.task.is_none());
+        }
+        Ok(())
     }
 
     #[test]
@@ -893,7 +1211,7 @@ mod tests {
                 .is_disabled()
         );
         harness
-            .get_by_role_and_label(egui::Role::Button, "Cancel update")
+            .get_by_role_and_label(egui::Role::Button, "Later")
             .click();
         harness.run();
         assert!(!harness.state().0.confirming);
@@ -1229,6 +1547,7 @@ mod tests {
                 Operation::Check,
                 Some("0.9.0"),
                 Some(&"a".repeat(64)),
+                true,
             );
             assert!(check.get("version").is_none());
             assert_eq!(
@@ -1240,6 +1559,7 @@ mod tests {
                 Operation::Download,
                 Some("0.9.0"),
                 Some(&"a".repeat(64)),
+                true,
             );
             assert_eq!(download["version"], "0.9.0");
             assert_eq!(
@@ -1258,10 +1578,12 @@ mod tests {
                 Operation::Install,
                 Some("0.9.0"),
                 Some(&"a".repeat(64)),
+                true,
             );
             assert_eq!(install.get("releaseIdentity").is_some(), portable);
             if portable {
                 assert_eq!(install["releaseIdentity"], "a".repeat(64));
+                assert_eq!(install["restart"], true);
             }
         }
     }
