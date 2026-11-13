@@ -21,6 +21,9 @@ use std::{
 use bonsai_artifacts::validate_external_path;
 use serde_json::{Value, json};
 
+mod asr_cpu;
+pub(crate) use asr_cpu::AsrBuildTarget;
+
 const TARGET: &str = "aarch64-pc-windows-msvc";
 static NEXT_NONCE: AtomicU64 = AtomicU64::new(0);
 
@@ -85,14 +88,20 @@ pub(crate) fn host() -> crate::Result<Value> {
     Err("Native speech host identity requires native ARM64 Windows.".into())
 }
 
-fn host_cache_directory(data: &Path, repo: &Path, channel: &str, host_key: &str) -> PathBuf {
+fn host_cache_directory(
+    data: &Path,
+    repo: &Path,
+    channel: &str,
+    host_key: &str,
+    asr_architecture: &str,
+) -> PathBuf {
     // A changed receipt alone cannot invalidate Cargo's already compiled native
     // objects. Partition the complete target directory, keeping its label short
     // enough for the MSVC archive paths on ordinary Windows user profiles.
     data.join("build/native-speech")
         .join(crate::source_build::cache_key(
             repo,
-            &format!("{channel}\n{host_key}"),
+            &format!("{channel}\n{host_key}\nasr={asr_architecture}"),
         ))
 }
 
@@ -231,6 +240,7 @@ fn setup_environment(
     cmake: &Path,
     ninja: &Path,
     source: &Path,
+    asr_architecture: &str,
 ) -> crate::Result<BTreeMap<String, String>> {
     let mut environment = BTreeMap::new();
     for line in output.lines() {
@@ -292,9 +302,12 @@ fn setup_environment(
     for name in ["CMAKE_C_COMPILER_TARGET", "CMAKE_CXX_COMPILER_TARGET"] {
         environment.insert(name.into(), TARGET.into());
     }
-    let transcribe_cmake_args = transcribe_cmake_args(&environment);
+    let transcribe_cmake_args = transcribe_cmake_args(&environment, asr_architecture);
     for (name, value) in [
         ("CMAKE_GENERATOR", "Ninja"),
+        // transcribe-cpp applies inherited CMAKE_ARGS after its dedicated args.
+        // Shadow that escape hatch so it cannot defeat the selected ISA/receipt.
+        ("CMAKE_ARGS", ""),
         ("CL", "/EHsc"),
         ("CARGO_BUILD_JOBS", "4"),
         ("CMAKE_BUILD_PARALLEL_LEVEL", "4"),
@@ -316,10 +329,8 @@ fn setup_environment(
     Ok(environment)
 }
 
-fn transcribe_cmake_args(environment: &BTreeMap<String, String>) -> String {
-    let mut args = String::from(
-        "-DGGML_NATIVE=OFF -DGGML_OPENMP=OFF -DTRANSCRIBE_USE_OPENMP=OFF -DTRANSCRIBE_USE_SYSTEM_BLAS=OFF -DCMAKE_C_COMPILER_TARGET=aarch64-pc-windows-msvc -DCMAKE_CXX_COMPILER_TARGET=aarch64-pc-windows-msvc",
-    );
+fn transcribe_cmake_args(environment: &BTreeMap<String, String>, asr_architecture: &str) -> String {
+    let mut args = asr_cpu::cmake_args(asr_architecture);
     if let Some(vc_tools) = environment.get("VCToolsInstallDir") {
         let vc_bin = Path::new(vc_tools).join("bin/Hostarm64/arm64");
         let archiver = vc_bin.join("lib.exe");
@@ -351,6 +362,20 @@ fn transcribe_cmake_args(environment: &BTreeMap<String, String>) -> String {
 
 /// Prepares verified compiler/source inputs and returns a child-only environment.
 pub(crate) fn environment(data: &Path, working: &Path) -> crate::Result<Value> {
+    environment_for(data, working, host_asr_architecture(AsrBuildTarget::Host))
+}
+
+fn host_asr_architecture(target: AsrBuildTarget) -> &'static str {
+    #[cfg(windows)]
+    let observed = bonsai_windows_process::arm64_isa()
+        .ok()
+        .map(|isa| (isa.dotprod, isa.i8mm));
+    #[cfg(not(windows))]
+    let observed = None;
+    target.architecture(observed)
+}
+
+fn environment_for(data: &Path, working: &Path, asr_architecture: &str) -> crate::Result<Value> {
     crate::startup_cancel::checkpoint()?;
     require_host()?;
     external(data)?;
@@ -410,10 +435,18 @@ pub(crate) fn environment(data: &Path, working: &Path) -> crate::Result<Value> {
         "visual-studio-environment",
         60,
     )?;
-    let environment = setup_environment(&output, &compiler, &cmake, &ninja, &source)?;
+    let environment = setup_environment(
+        &output,
+        &compiler,
+        &cmake,
+        &ninja,
+        &source,
+        asr_architecture,
+    )?;
     Ok(
         json!({ "Environment": environment, "SourceDirectory": source,
-        "CompilerPath": compiler.join("bin/clang-cl.exe"), "CMakePath": cmake }),
+        "CompilerPath": compiler.join("bin/clang-cl.exe"), "CMakePath": cmake,
+        "AsrCpuArchitecture": asr_architecture }),
     )
 }
 
@@ -434,7 +467,15 @@ pub(crate) fn build(
     model: &str,
     force: bool,
 ) -> crate::Result<Value> {
-    build_with_environment(repo, data, working, model, force, &BTreeMap::new())
+    build_with_environment(
+        repo,
+        data,
+        working,
+        model,
+        force,
+        AsrBuildTarget::Host,
+        &BTreeMap::new(),
+    )
 }
 
 /// Hosted candidate builds bind exact compiler/linker overlays to the receipt.
@@ -444,6 +485,7 @@ pub(crate) fn build_with_environment(
     working: &Path,
     model: &str,
     force: bool,
+    asr_target: AsrBuildTarget,
     build_environment: &BTreeMap<String, String>,
 ) -> crate::Result<Value> {
     require_host()?;
@@ -451,10 +493,16 @@ pub(crate) fn build_with_environment(
     external(working)?;
     let channel = crate::source_build::channel(repo)?;
     let native_host = host()?;
-    let target_directory =
-        host_cache_directory(data, repo, &channel, text(&native_host, "HostCacheKey")?);
+    let asr_architecture = host_asr_architecture(asr_target);
+    let target_directory = host_cache_directory(
+        data,
+        repo,
+        &channel,
+        text(&native_host, "HostCacheKey")?,
+        asr_architecture,
+    );
     let mut identity = format!(
-        "{}\n{}\n{native_host}",
+        "{}\n{}\n{native_host}\nasr-target={asr_target:?}\nasr={asr_architecture}",
         crate::speech_build::build_plan()?,
         crate::startup_cache::digest_file(
             &std::env::current_exe().map_err(|error| error.to_string())?
@@ -476,9 +524,10 @@ pub(crate) fn build_with_environment(
     let outputs = crate::source_build::cached_build_with_timeout(
         &spec,
         || {
-            let mut overlay: BTreeMap<String, String> =
-                serde_json::from_value(environment(data, working)?["Environment"].clone())
-                    .map_err(|error| error.to_string())?;
+            let mut overlay: BTreeMap<String, String> = serde_json::from_value(
+                environment_for(data, working, asr_architecture)?["Environment"].clone(),
+            )
+            .map_err(|error| error.to_string())?;
             overlay.extend(build_environment.clone());
             Ok(overlay)
         },
@@ -490,7 +539,7 @@ pub(crate) fn build_with_environment(
     )?;
     Ok(
         json!({"AsrPath": outputs.get("bonsai-speech-asr"), "TtsPath": outputs.get("bonsai-speech-tts"),
-            "NativeBuildHost": native_host}),
+            "NativeBuildHost": native_host, "AsrCpuArchitecture": asr_architecture}),
     )
 }
 
@@ -797,7 +846,8 @@ mod tests {
         let data = Path::new("C:/data");
         let repo = Path::new("C:/source");
         let channel = "nightly-2026-11-12-aarch64-pc-windows-msvc";
-        let directory = host_cache_directory(data, repo, channel, key);
+        let architecture = "armv8-a+dotprod+i8mm";
+        let directory = host_cache_directory(data, repo, channel, key, architecture);
         assert_eq!(
             directory
                 .file_name()
@@ -827,9 +877,13 @@ mod tests {
             assert_ne!(key, changed_key);
             assert_ne!(
                 directory,
-                host_cache_directory(data, repo, channel, changed_key)
+                host_cache_directory(data, repo, channel, changed_key, architecture)
             );
         }
+        assert_ne!(
+            directory,
+            host_cache_directory(data, repo, channel, key, "armv8-a")
+        );
         assert!(
             crate::speech_build::run(json!({"operation": "host", "processorName": "injected"}))
                 .is_err()
@@ -846,11 +900,24 @@ mod tests {
             Path::new("cmake/bin/cmake.exe"),
             Path::new("ninja/ninja.exe"),
             Path::new("source"),
+            "armv8-a+dotprod+i8mm",
         )?;
         assert!(result["PATH"].ends_with(";original"));
         assert_eq!(result["CC"], result["BONSAI_TTS_COMPILER"]);
+        assert_eq!(result["CMAKE_ARGS"], "");
         assert_eq!(result["CMAKE_C_COMPILER_TARGET"], TARGET);
         assert_eq!(result["BONSAI_CMAKE_GENERATOR"], "Ninja Multi-Config");
+        for option in [
+            "-DGGML_NATIVE=OFF",
+            "-DCMAKE_C_FLAGS=/clang:-march=armv8-a+dotprod+i8mm",
+            "-DCMAKE_CXX_FLAGS=/clang:-march=armv8-a+dotprod+i8mm",
+        ] {
+            assert!(
+                result["TRANSCRIBE_CMAKE_ARGS"]
+                    .split_ascii_whitespace()
+                    .any(|arg| arg == option)
+            );
+        }
         assert!(!result.contains_key("SystemRoot"));
         assert!(!result.contains_key("APPDATA"));
         assert!(
@@ -859,7 +926,8 @@ mod tests {
                 Path::new("compiler"),
                 Path::new("cmake"),
                 Path::new("ninja"),
-                Path::new("source")
+                Path::new("source"),
+                "armv8-a",
             )
             .is_err()
         );

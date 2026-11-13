@@ -154,9 +154,16 @@ fn speech(
         ),
     ]);
     let result = crate::native_startup::build_with_environment(
-        repository, &data, &working, "All", false, &overlay,
+        repository,
+        &data,
+        &working,
+        "All",
+        false,
+        crate::native_startup::AsrBuildTarget::Portable,
+        &overlay,
     )?;
     receipt["NativeBuildHost"] = result["NativeBuildHost"].clone();
+    receipt["AsrCpuArchitecture"] = result["AsrCpuArchitecture"].clone();
     let asr = PathBuf::from(text(&result, "AsrPath")?);
     let target = asr
         .parent()
