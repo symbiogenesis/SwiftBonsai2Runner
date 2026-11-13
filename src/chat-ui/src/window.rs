@@ -59,6 +59,7 @@ mod read_aloud;
 mod settings;
 #[cfg(test)]
 mod settings_ui_tests;
+mod setup;
 mod sidebar_status;
 #[cfg(test)]
 mod tests;
@@ -108,6 +109,7 @@ struct State {
     worker: Option<JoinHandle<()>>,
     startup_request: Option<crate::startup::Request>,
     startup: Option<crate::startup::Session>,
+    setup: setup::Setup,
     startup_failure: Option<std::sync::Arc<std::sync::Mutex<Option<String>>>>,
     updates: Option<updates::Updates>,
     update_exit: Option<std::sync::Arc<std::sync::atomic::AtomicBool>>,
@@ -231,6 +233,7 @@ impl State {
             worker: None,
             startup_request: None,
             startup: None,
+            setup: setup::Setup::default(),
             startup_failure: None,
             updates: None,
             update_exit: None,
@@ -340,6 +343,12 @@ impl State {
         "Preparing runtime selection…".clone_into(&mut state.runtime_description);
         state.model = ModelLifecycle::Preparing;
         state.abliteration_enabled = false;
+        state.record(&format!(
+            "Swift Bonsai {}. Data directory: {}",
+            env!("CARGO_PKG_VERSION"),
+            request.data.display()
+        ));
+        state.setup.request = Some(request.clone());
         state.startup_request = Some(request);
         state.set_status(
             "Preparing your local model… You can draft a message now.",
@@ -355,6 +364,12 @@ impl State {
                 Err(error) => self.fail_startup(&error),
             }
         }
+        if self.worker.is_none() {
+            self.setup.progress = self
+                .startup
+                .as_ref()
+                .and_then(crate::startup::Session::progress);
+        }
         let Some(result) = self
             .startup
             .as_ref()
@@ -367,6 +382,9 @@ impl State {
                 config,
                 speech_pending,
             }) => {
+                self.setup.broker = Some(config.broker.clone());
+                self.setup.error = None;
+                self.setup.progress = None;
                 if !speech_pending {
                     self.startup.take();
                 }
@@ -395,7 +413,8 @@ impl State {
 
     fn fail_speech_preparation(&mut self, error: &io::Error) {
         self.speech_checked = true;
-        "Speech preparation failed. Close and relaunch to retry speech."
+        self.setup.speech_error = Some(error.to_string());
+        "Speech setup could not finish. Text chat is still available. Select Retry speech setup."
             .clone_into(&mut self.speech_status);
         self.record(&self.speech_status.clone());
         self.record(&error.to_string());
@@ -403,12 +422,15 @@ impl State {
 
     fn fail_startup(&mut self, error: &io::Error) {
         self.speech_checked = true;
+        self.setup.error = Some(error.to_string());
+        self.setup.progress = None;
+        self.setup.pausing = false;
         if let Some(failure) = &self.startup_failure
             && let Ok(mut failure) = failure.lock()
         {
             *failure = Some(error.to_string());
         }
-        self.fail("Preparation failed. Close this window and launch again. Your draft is still available to copy.");
+        self.fail(setup::failure_message(error));
         self.record(&error.to_string());
     }
 
@@ -441,6 +463,7 @@ impl State {
     }
 
     fn attach_speech_configuration(&mut self, config: &Config) {
+        self.setup.speech_error = None;
         self.canary_configured = config.canary.is_some();
         self.tts_configured = config.qwen_tts.is_some();
         self.speech = speech::start(config.canary.clone(), config.qwen_tts.clone()).ok();
@@ -2027,6 +2050,7 @@ impl State {
                 bottom: 12,
             }))
             .show(ui, |ui| {
+                self.setup_controls(ui);
                 self.conversation_notices(ui);
                 egui::Panel::bottom("composer-panel")
                     .frame(egui::Frame::new().inner_margin(egui::Margin {
@@ -2345,7 +2369,8 @@ mod startup_tests {
         assert_eq!(state.model, ModelLifecycle::Generating);
         assert_eq!(state.request_conversation, conversation);
         assert_eq!(state.input, "A newer draft");
-        assert!(state.speech_status.contains("Speech preparation failed"));
+        assert!(state.speech_status.contains("Retry speech setup"));
+        assert!(state.setup.speech_error.is_some());
         assert!(
             failure
                 .lock()
@@ -2420,6 +2445,84 @@ mod startup_tests {
         assert!(!state.preview && !state.model.ready());
         drop(state);
         fs::remove_dir_all(&directory)?;
+        Ok(())
+    }
+
+    #[test]
+    fn setup_retry_button_preserves_draft_history_options_and_clears_failed_exit() -> io::Result<()>
+    {
+        use egui_kittest::{
+            Harness,
+            kittest::{NodeT as _, Queryable as _},
+        };
+        let (request, directory) = fixture()?;
+        let (commands, incoming) = mpsc::channel();
+        let (_events, incoming_events) = client::event_channel();
+        let mut state = State::pending_startup(commands, incoming_events, request);
+        state.startup_request.take();
+        state.input = "Keep my setup draft 🌱".into();
+        state.enable_thinking = true;
+        state.output_budget = 1;
+        state
+            .transcript
+            .push(Role::Assistant, "Recovered conversation".into());
+        state.transcript.remove_empty_response();
+        let failure = std::sync::Arc::new(std::sync::Mutex::new(None));
+        state.startup_failure = Some(std::sync::Arc::clone(&failure));
+        state.fail_startup(&io::Error::other(
+            "Pinned download failed: connection interrupted",
+        ));
+        let mut harness = Harness::builder()
+            .with_size([480.0, 480.0])
+            .build_ui_state(|ui, state: &mut State| state.setup_controls(ui), state);
+        harness
+            .get_by_role_and_label(egui::Role::Button, "Retry setup")
+            .click();
+        harness.run();
+        let state = harness.state();
+        assert!(state.startup_request.is_some());
+        assert_eq!(state.model, ModelLifecycle::Preparing);
+        assert!(state.setup.error.is_none());
+        assert_eq!(state.input, "Keep my setup draft 🌱");
+        assert_eq!(state.transcript.messages[0].body, "Recovered conversation");
+        assert!(state.enable_thinking && state.output_budget == 1);
+        assert!(
+            incoming.try_recv().is_err(),
+            "Setup retry must never send a draft"
+        );
+        assert!(
+            failure
+                .lock()
+                .map_err(|_| io::Error::other("Poisoned fixture"))?
+                .is_none()
+        );
+        drop(harness);
+        fs::remove_dir_all(directory)?;
+        Ok(())
+    }
+
+    #[test]
+    fn setup_retry_rejects_unconfirmed_cleanup_and_existing_model_worker() -> io::Result<()> {
+        let (request, directory) = fixture()?;
+        let (commands, _incoming) = mpsc::channel();
+        let (_events, incoming_events) = client::event_channel();
+        let mut state = State::pending_startup(commands, incoming_events, request);
+        state.startup_request.take();
+        state.fail_startup(&io::Error::other(
+            "Setup process cleanup could not be confirmed.",
+        ));
+        state.retry_setup();
+        assert!(state.startup_request.is_none());
+        assert_eq!(state.model, ModelLifecycle::Unavailable);
+        state.fail_startup(&io::Error::other("download failed"));
+        state.worker = Some(std::thread::spawn(|| {}));
+        state.retry_setup();
+        assert!(
+            state.startup_request.is_none(),
+            "Never overlap model ownership with setup"
+        );
+        drop(state);
+        fs::remove_dir_all(directory)?;
         Ok(())
     }
 

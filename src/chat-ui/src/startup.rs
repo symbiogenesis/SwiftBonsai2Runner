@@ -19,6 +19,9 @@ use std::{
     time::{Duration, Instant},
 };
 
+mod progress;
+pub(crate) use progress::Status as SetupStatus;
+
 const MAX_OUTPUT: u64 = 1024 * 1024;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -27,6 +30,7 @@ enum Preparation {
     Staged,
 }
 
+#[derive(Clone)]
 pub(crate) struct Request {
     executable: PathBuf,
     payload: PathBuf,
@@ -176,12 +180,17 @@ fn execute(
     stage: &str,
     broker: Option<&Path>,
     cancelled: &AtomicBool,
+    progress: &progress::Shared,
 ) -> io::Result<crate::client::Config> {
     let mut payload: serde_json::Value =
         serde_json::from_str(&bounded_text(&request.payload)?).map_err(io::Error::other)?;
     let object = payload
         .as_object_mut()
         .ok_or_else(|| io::Error::other("Native startup requires an object."))?;
+    object.insert(
+        "WorkingDirectory".into(),
+        serde_json::json!(request.working),
+    );
     if stage != "all" {
         object.insert("PreparationStage".into(), stage.into());
     }
@@ -217,6 +226,7 @@ fn execute(
         // hour overall; only cancellation bounds the aggregate operation.
         Duration::ZERO,
         stage == "speech",
+        Some((request, progress)),
     );
     // The original request remains the replay input; stage requests are scratch.
     let cleanup = fs::remove_file(path);
@@ -236,6 +246,7 @@ fn capture(
     cancelled: &AtomicBool,
     deadline: Duration,
     background: bool,
+    progress: Option<(&Request, &progress::Shared)>,
 ) -> io::Result<String> {
     if cancelled.load(Ordering::Acquire) {
         return Err(io::Error::new(
@@ -252,7 +263,8 @@ fn capture(
         OwnedProcess::start_tool(spec)?
     });
     let started = Instant::now();
-    let status = loop {
+    let mut observed = Instant::now();
+    let outcome = (|| loop {
         if cancelled.load(Ordering::Acquire) {
             return Err(io::Error::new(
                 io::ErrorKind::Interrupted,
@@ -267,7 +279,13 @@ fn capture(
             ));
         }
         if let Some(status) = child.0.try_wait()? {
-            break status;
+            break Ok(status);
+        }
+        if observed.elapsed() >= Duration::from_millis(250) {
+            if let Some((request, progress)) = progress {
+                progress.observe(&request.working, &request.data);
+            }
+            observed = Instant::now();
         }
         if !deadline.is_zero() && started.elapsed() >= deadline {
             return Err(io::Error::new(
@@ -276,11 +294,16 @@ fn capture(
             ));
         }
         thread::sleep(Duration::from_millis(20));
-    };
-    child.0.stop(Duration::from_secs(10))?;
+    })();
+    child.0.stop(Duration::from_secs(10)).map_err(|error| {
+        io::Error::other(format!(
+            "Setup process cleanup could not be confirmed. Close Swift before trying again. {error}"
+        ))
+    })?;
+    let status = outcome?;
     if status != 0 {
         return Err(io::Error::other(format!(
-            "Preparation failed. Close this window and launch again. {} Evidence: {}",
+            "Setup could not finish. {} Diagnostics: {}",
             bounded_text(&spec.stderr)?.trim(),
             spec.working_directory.display()
         )));
@@ -291,6 +314,7 @@ pub(crate) struct Session {
     incoming: Receiver<io::Result<Progress>>,
     cancelled: Arc<AtomicBool>,
     worker: Option<JoinHandle<()>>,
+    progress: progress::Shared,
 }
 
 pub(crate) enum Progress {
@@ -340,29 +364,75 @@ impl Session {
                 incoming,
                 cancelled: Arc::new(AtomicBool::new(false)),
                 worker: None,
+                progress: progress::Shared::default(),
             },
             outgoing,
         )
     }
 
     pub(crate) fn start(request: Request) -> io::Result<Self> {
+        Self::start_mode(request, None)
+    }
+
+    pub(crate) fn start_speech(request: Request, broker: PathBuf) -> io::Result<Self> {
+        Self::start_mode(request, Some(broker))
+    }
+
+    fn start_mode(mut request: Request, broker: Option<PathBuf>) -> io::Result<Self> {
         // Exactly two results can be produced. Neither send can block teardown
         // when the window closes before consuming the model handoff.
         let (outgoing, incoming) = mpsc::sync_channel(2);
         let cancelled = Arc::new(AtomicBool::new(false));
         let cancellation = Arc::clone(&cancelled);
+        let progress = progress::Shared::default();
+        let observation = progress.clone();
         let worker = thread::Builder::new()
             .name("swift-chat-prepare".into())
             .spawn(move || {
+                let attempt = (|| {
+                    let nonce = std::time::SystemTime::now()
+                        .duration_since(std::time::UNIX_EPOCH)
+                        .map_err(io::Error::other)?
+                        .as_nanos();
+                    request.working = request
+                        .working
+                        .join(format!("setup-{}-{nonce}", std::process::id()));
+                    bonsai_windows_credentials::validate_external_path(&request.working)?;
+                    fs::create_dir(&request.working)
+                })();
+                if let Err(error) = attempt {
+                    let _sent = outgoing.send(Err(error));
+                    return;
+                }
+                if let Some(broker) = broker {
+                    let result = execute(
+                        &request,
+                        "speech",
+                        Some(&broker),
+                        &cancellation,
+                        &observation,
+                    );
+                    let _sent = outgoing.send(Ok(Progress::Speech(result)));
+                    return;
+                }
                 prepare_stages(&request, &outgoing, &cancellation, |stage, broker| {
-                    execute(&request, stage, broker, &cancellation)
+                    execute(&request, stage, broker, &cancellation, &observation)
                 });
             })?;
         Ok(Self {
             incoming,
             cancelled,
             worker: Some(worker),
+            progress,
         })
+    }
+
+    pub(crate) fn progress(&self) -> Option<SetupStatus> {
+        self.progress.latest()
+    }
+
+    pub(crate) fn cancel(&self) {
+        self.cancelled.store(true, Ordering::Release);
     }
 
     pub(crate) fn poll(&self) -> Option<io::Result<Progress>> {
@@ -370,7 +440,7 @@ impl Session {
             Ok(result) => Some(result),
             Err(mpsc::TryRecvError::Empty) => None,
             Err(mpsc::TryRecvError::Disconnected) => Some(Err(io::Error::other(
-                "Native preparation worker stopped. Close this window and launch again.",
+                "Setup process cleanup could not be confirmed. The preparation worker stopped unexpectedly. Close Swift before trying again.",
             ))),
         }
     }
@@ -388,6 +458,23 @@ impl Drop for Session {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn unexpected_setup_worker_exit_requires_close_before_retry() -> io::Result<()> {
+        let (session, outgoing) = Session::fixture();
+        drop(outgoing);
+        let error = session
+            .poll()
+            .ok_or_else(|| io::Error::other("Missing worker failure"))?
+            .err()
+            .ok_or_else(|| io::Error::other("Unexpected setup success"))?;
+        assert!(
+            error
+                .to_string()
+                .contains("Setup process cleanup could not be confirmed.")
+        );
+        Ok(())
+    }
 
     fn model_config() -> crate::client::Config {
         let data = std::env::temp_dir();
@@ -592,8 +679,9 @@ mod tests {
         let spec = spec(&directory, &script)?;
         let cancelled = Arc::new(AtomicBool::new(false));
         let cancellation = Arc::clone(&cancelled);
-        let worker =
-            thread::spawn(move || capture(&spec, &cancellation, Duration::from_secs(30), false));
+        let worker = thread::spawn(move || {
+            capture(&spec, &cancellation, Duration::from_secs(30), false, None)
+        });
         let started = Instant::now();
         while !marker.is_file() && started.elapsed() < Duration::from_secs(20) {
             thread::sleep(Duration::from_millis(20));
@@ -647,6 +735,7 @@ mod tests {
                 &AtomicBool::new(false),
                 Duration::from_secs(30),
                 false,
+                None,
             );
             assert!(result.is_err_and(|error| error.to_string().contains(expected)));
             fs::remove_dir_all(&directory)?;
