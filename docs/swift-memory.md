@@ -474,29 +474,13 @@ silently shortening a draft. Increasing transport requires a coordinated Prism
 server, message, tokenizer and worker-protocol change and a reviewed release;
 changing the desktop HTTP ceiling alone cannot deliver that capability.
 
-## Source excerpts and useful history
+## Source text in messages
 
-The native composer can build a scene packet from pasted source text. Supply a
-source title and version, search for relevant passages, review the exact excerpts
-and select which to add to the draft. Each packet identifies the source version,
-SHA-256 of its original UTF-8 text and source line ranges. Editing the source or
-query invalidates the previous search result. The manuscript and edited project
-bible remain authoritative; a content digest identifies text, not its authorship
-or factual accuracy.
-
-Search is bounded lexical matching without an embedding model, network access or
-generated summaries. Only explicit excerpt insertion changes the draft, and Send
-remains a separate action. The tool keeps conversation history intact and rejects
-an insertion that would exceed the existing draft limit. The ordinary broker
-still enforces exact token counts, output reservation, input-marker policy and
-serialized request bounds.
-
-Source text and search results are temporary. Closing the builder discards its
-source workspace; inserted excerpts become ordinary draft/conversation content
-and follow the existing recovery preference. Review sensitive material before
-insertion. Retrieval extends access to useful source material within the selected
-window; it adds no physical context capacity and supplies no measured retrieval,
-creative-quality or latency verdict.
+Paste source text directly into the message, add any title or version useful to
+the request, and review it before Send. Pasted text becomes ordinary draft and
+conversation content under the existing recovery preference. The composer
+rejects oversized insertions as a whole; the broker still enforces exact token
+counts, output reservation, input-marker policy and serialized request bounds.
 
 ## Native CPU status
 

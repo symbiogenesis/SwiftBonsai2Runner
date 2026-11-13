@@ -57,9 +57,6 @@ to create the same single-file distribution containing all five application tool
 - **Portable updates:** The app downloads and verifies newer Windows ARM64 releases.
   Confirm installation in Settings to close, replace and reopen it, preserving
   model downloads and conversations; see [Windows releases](docs/releases.md).
-- **Reviewed source excerpts:** Use **Sources** in the composer to search pasted
-  text locally, select exact passages and review them in your draft before sending.
-  Each excerpt records its source title, version, line range and complete-source hash.
 - **Thinking and Extra effort:** **Thinking** is off by default; enable it under
   **Settings → Response** for reasoning before answers. **Extra effort** plans,
   drafts and revises a reply. Each conversation remembers its choice.

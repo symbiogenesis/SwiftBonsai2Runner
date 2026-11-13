@@ -529,7 +529,6 @@ dependencies = [
  "raw-window-handle",
  "serde",
  "serde_json",
- "sha2",
  "wgpu",
  "windows",
  "windows-core",

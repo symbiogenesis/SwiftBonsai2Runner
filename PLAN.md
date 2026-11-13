@@ -282,9 +282,6 @@ under [AGENTS.md](AGENTS.md).
 - [ ] Complete [weight-space fault assessment](docs/weight-space-programming.md)
   and controls first. A diagnosed fault may activate disabled steering/capture/
   fitting, held-out quality, rollback and resource gates.
-- [ ] Qualify source-excerpt relevance, citations and author-reviewed complete
-  scene packets before adding embeddings or optional summaries. Summaries require
-  independent source/version and author approval.
 
 ### Memory and profiles
 

@@ -18,7 +18,6 @@ memchr.workspace = true
 
 [target.'cfg(windows)'.dependencies]
 bonsai-audio.workspace = true
-sha2.workspace = true
 eframe = { version = "=0.37.0", default-features = false, features = ["accesskit", "clipboard", "default_fonts", "system_fonts", "wgpu_no_default_features"] }
 # Select all supported Windows backends explicitly for eframe's shared renderer.
 wgpu = { version = "=30.0.1", default-features = false, features = ["std", "parking_lot", "dx12", "vulkan", "gles", "wgsl"] }

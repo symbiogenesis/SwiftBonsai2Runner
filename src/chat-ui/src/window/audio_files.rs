@@ -63,7 +63,6 @@ impl State {
             || self.show_settings
             || self.show_audio_transcript
             || self.alerts.details.is_some()
-            || self.scene_packets.is_open()
             || self.edit_message.is_some()
             || self.help.is_some()
             || self.update_notification_visible(ctx)
