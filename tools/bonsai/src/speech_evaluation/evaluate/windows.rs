@@ -17,6 +17,20 @@ use super::super::http::{Call, exchange};
 use super::{MODEL, Request, TEXT, VOICE, comparisons, ready, thread_grid, wave};
 use crate::native_qualification::save_report as save;
 
+fn power() -> Value {
+    bonsai_windows_process::power_status().map_or_else(
+        |_| {
+            json!({"Status": "unknown", "Source": "GetSystemPowerStatus",
+            "AcConnected": null, "BatterySaver": null, "BatteryPercent": null})
+        },
+        |status| {
+            json!({"Status": "observed", "Source": "GetSystemPowerStatus",
+            "AcConnected": status.ac_online, "BatterySaver": status.battery_saver,
+            "BatteryPercent": status.battery_percent})
+        },
+    )
+}
+
 fn external(path: &Path) -> crate::Result<()> {
     validate_external_path(path).map_err(|error| error.to_string())
 }
@@ -347,6 +361,7 @@ fn trial(prepared: &Prepared<'_>, trial: &Value, report: &mut Value) -> crate::R
     drop(listener);
     let mut session = json!({"Id": id, "Quantization": trial["Quantization"], "Threads": trial["Threads"],
         "Repetition": trial["Repetition"], "PairPosition": trial["PairPosition"], "Status": "running", "Memory": null,
+        "PowerBefore": power(), "PowerAfter": null,
         "CurrentPhase": "startup", "CompletedPhases": [], "FailedPhase": null, "Failure": null});
     report["Sessions"]
         .as_array_mut()
@@ -376,6 +391,9 @@ fn trial(prepared: &Prepared<'_>, trial: &Value, report: &mut Value) -> crate::R
         }
         Err(error) => Err(error),
     };
+    // Query after supervision/cleanup even when startup, capture or teardown
+    // fails; no later observation is assigned retrospectively to another arm.
+    session["PowerAfter"] = power();
     session["Status"] = json!(if result.is_ok() {
         "completed"
     } else {
@@ -450,8 +468,11 @@ pub(super) fn run(request: &Request) -> crate::Result<Value> {
     external(&evidence)?;
     fs::create_dir(&evidence).map_err(|error| error.to_string())?;
     let path = evidence.join("tts-evaluation.json");
-    let mut report = json!({"SchemaVersion": 2, "Revision": std::env::var("GITHUB_SHA").ok(),
+    let mut report = json!({"SchemaVersion": 3, "Revision": std::env::var("GITHUB_SHA").ok(),
         "Status": "preparing", "Phase": "preparation", "QualityVerdict": "pending-human-listening",
+        "PowerBefore": power(), "PowerAfter": null,
+        "PerformanceQualified": false,
+        "PowerObservationLimit": "Per-workload and per-arm endpoint snapshots preserve unknown AC, saver and charge observations. Equal endpoints do not prove uninterrupted stability; performance qualification remains pending.",
         "Cpu": null, "OS": null, "LogicalProcessors": available, "Architecture": "Arm64",
         "Runner": std::env::var("RUNNER_NAME").ok(), "ResponseFormat": request.response_format.name(),
         "Repetitions": request.repetitions, "Plan": plan, "Records": [], "Sessions": [], "Comparisons": [],
@@ -461,6 +482,7 @@ pub(super) fn run(request: &Request) -> crate::Result<Value> {
     save(&path, &report)?;
     let result =
         publish(&evidence).and_then(|()| execute(request, &evidence, &threads, &mut report));
+    report["PowerAfter"] = power();
     report["Status"] = json!(if result.is_ok() {
         "complete"
     } else {

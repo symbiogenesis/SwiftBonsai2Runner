@@ -119,6 +119,26 @@ fn ready(value: &Value) -> bool {
 }
 
 #[cfg(any(windows, test))]
+fn power_state(observation: &Value) -> crate::Result<(bool, bool)> {
+    if observation["Status"] != "observed"
+        || observation["Source"] != "GetSystemPowerStatus"
+        || !(observation["BatteryPercent"].is_null()
+            || observation["BatteryPercent"]
+                .as_u64()
+                .is_some_and(|value| value <= 100))
+    {
+        return Err("TTS power observations are unavailable or invalid; retain the unqualified raw session.".into());
+    }
+    let ac = observation["AcConnected"]
+        .as_bool()
+        .ok_or("TTS comparison requires an observed AC power source for every arm endpoint.")?;
+    let saver = observation["BatterySaver"]
+        .as_bool()
+        .ok_or("TTS comparison requires an observed battery-saver state for every arm endpoint.")?;
+    Ok((ac, saver))
+}
+
+#[cfg(any(windows, test))]
 fn comparisons(
     sessions: &[Value],
     threads: &[usize],
@@ -147,6 +167,12 @@ fn comparisons(
             };
             let q8 = arm("Q8_0")?;
             let q4 = arm("Q4_K_M")?;
+            let baseline = power_state(&q8["PowerBefore"])?;
+            for observation in [&q8["PowerAfter"], &q4["PowerBefore"], &q4["PowerAfter"]] {
+                if power_state(observation)? != baseline {
+                    return Err("TTS arm AC or battery-saver endpoints differ; performance comparison remains unqualified.".into());
+                }
+            }
             let difference = |field: &str| -> crate::Result<i64> {
                 let counter = |session: &Value| {
                     session["Memory"][field]
@@ -161,7 +187,9 @@ fn comparisons(
             output.push(serde_json::json!({"Threads": count, "Repetition": repetition,
                 "Q8MinusQ4PeakWorkingSetBytes": difference("PeakWorkingSetBytes")?,
                 "Q8MinusQ4PeakJobMemoryBytes": difference("PeakJobMemoryBytes")?,
-                "Definition": "Paired process-lifetime counter differences; positive means lower Q4 usage. Not isolated allocation or quality evidence."}));
+                "PowerEndpointsMatch": true, "PowerStability": "unknown-between-endpoints",
+                "PerformanceQualified": false,
+                "Definition": "Paired process-lifetime counter differences; positive means lower Q4 usage. Not isolated allocation or quality evidence. Matching power endpoints do not establish uninterrupted stability or qualify performance."}));
         }
     }
     Ok(output)

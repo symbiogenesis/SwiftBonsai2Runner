@@ -66,6 +66,8 @@ fn readiness_requires_exact_true_flags_and_pinned_model() {
 
 fn session(quantization: &str, resident: u64, committed: u64) -> Value {
     json!({"Threads": 4, "Repetition": 1, "Quantization": quantization, "Status": "completed",
+        "PowerBefore": {"Status": "observed", "Source": "GetSystemPowerStatus", "AcConnected": true, "BatterySaver": false, "BatteryPercent": 75},
+        "PowerAfter": {"Status": "observed", "Source": "GetSystemPowerStatus", "AcConnected": true, "BatterySaver": false, "BatteryPercent": 76},
         "Memory": {"Status": "completed", "PeakWorkingSetBytes": resident, "PeakJobMemoryBytes": committed}})
 }
 
@@ -75,6 +77,9 @@ fn comparisons_keep_counter_domains_and_reject_failed_or_incomplete_pairs() -> c
     let result = comparisons(&pair, &[4], 1)?;
     assert_eq!(result[0]["Q8MinusQ4PeakWorkingSetBytes"], 40);
     assert_eq!(result[0]["Q8MinusQ4PeakJobMemoryBytes"], -30);
+    assert_eq!(result[0]["PowerEndpointsMatch"], true);
+    assert_eq!(result[0]["PerformanceQualified"], false);
+    assert_eq!(result[0]["PowerStability"], "unknown-between-endpoints");
     assert!(comparisons(&pair[..1], &[4], 1).is_err());
     assert!(comparisons(&pair, &[4], 2).is_err());
     for field in ["Status", "Quantization", "Threads", "Repetition"] {
@@ -98,6 +103,49 @@ fn comparisons_keep_counter_domains_and_reject_failed_or_incomplete_pairs() -> c
     let mut duplicate = pair;
     duplicate[1] = duplicate[0].clone();
     assert!(comparisons(&duplicate, &[4], 1).is_err());
+    Ok(())
+}
+
+#[test]
+fn comparisons_reject_unknown_mismatched_and_invalid_arm_power_without_qualifying_equal_snapshots()
+-> crate::Result<()> {
+    let pair = vec![session("Q8_0", 100, 20), session("Q4_K_M", 60, 50)];
+    for arm in 0..2 {
+        for endpoint in ["PowerBefore", "PowerAfter"] {
+            for (field, invalid) in [
+                ("Status", json!("unknown")),
+                ("Source", json!("later-query")),
+                ("AcConnected", Value::Null),
+                ("AcConnected", json!(false)),
+                ("AcConnected", json!(1)),
+                ("BatterySaver", Value::Null),
+                ("BatterySaver", json!(true)),
+                ("BatteryPercent", json!(101)),
+                ("BatteryPercent", json!(-1)),
+                ("BatteryPercent", json!("75")),
+            ] {
+                let mut invalid_pair = pair.clone();
+                invalid_pair[arm][endpoint][field] = invalid;
+                assert!(
+                    comparisons(&invalid_pair, &[4], 1).is_err(),
+                    "arm {arm}, {endpoint}, {field}"
+                );
+            }
+            let mut missing = pair.clone();
+            missing[arm][endpoint] = Value::Null;
+            assert!(comparisons(&missing, &[4], 1).is_err());
+        }
+    }
+    let mut battery = pair;
+    for arm in &mut battery {
+        for endpoint in ["PowerBefore", "PowerAfter"] {
+            arm[endpoint]["AcConnected"] = json!(false);
+            arm[endpoint]["BatteryPercent"] = Value::Null;
+        }
+    }
+    let observed = comparisons(&battery, &[4], 1)?;
+    assert_eq!(observed[0]["PowerEndpointsMatch"], true);
+    assert_eq!(observed[0]["PerformanceQualified"], false);
     Ok(())
 }
 

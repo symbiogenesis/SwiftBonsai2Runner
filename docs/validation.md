@@ -362,6 +362,15 @@ observation before/after shutdown and last phase/sample count. Pre-shutdown exit
 rejects even after complete audio; an earlier failure retains precedence.
 Failed sessions cannot enter completed paired comparisons.
 
+Schema-3 receipts record `GetSystemPowerStatus` before and after the complete
+workload and each independently supervised Q8/Q4 arm, including failed arms.
+Unavailable AC, battery-saver and charge observations remain explicit unknowns.
+Paired counter comparisons reject unknown or mismatched AC/saver endpoints while
+retaining the raw sessions. Matching endpoints establish only observed endpoint
+agreement: `PowerStability` remains `unknown-between-endpoints` and
+`PerformanceQualified` remains false. Charge changes remain recorded rather than
+being treated as a performance measurement.
+
 All execution, even one short profile, remains GitHub-hosted CI-only; the native
 evaluator and supervisor reject local, self-hosted and unknown runner environments.
 The retained `snapdragon` dispatch target fails on a hosted runner before checkout,
