@@ -78,18 +78,29 @@ to the [development guide](development-guide.md#native-chat-app) and
 
 ## Update and remove
 
-The portable application checks GitHub at startup and every six
-hours, then downloads newer Windows ARM64 releases, including experimental
+The portable application checks GitHub at startup and every 15 minutes,
+then downloads newer Windows ARM64 releases, including experimental
 prereleases. **Settings > Application** also offers a manual check. Discovery
 selects the highest numeric version in the bounded catalog, excluding drafts and
 older versions. An incomplete catalog or invalid newest release fails without
 falling back. Published v0.2.0 requires manual replacement.
 
+Checks reuse unchanged metadata through conditional HTTP requests and request gzip
+compression. Network and server failures back off, including GitHub's retry and
+rate-limit instructions; cached metadata never turns a failed request into success.
+
 The updater verifies the GitHub asset digest, manifest, checksum inventory and
-tag/source revision. Choose **Install update and close**, then **Close and install**.
-Swift follows your save setting, stops owned processes, revalidates publication
-and starts the verified native helper. It atomically replaces the executable and
-reopens it with the original options and data directory. Models, runtimes, saved
+tag/source revision before offering the downloaded update. Choose to install now
+and Swift closes, replaces the executable and reopens with the original options
+and data directory. Choose **Later** to keep working: the Settings button shows a
+pending-update badge and closing Swift installs the verified update without
+reopening. The same verified release does not repeatedly prompt during the session.
+Downloads continue independently of that choice; closing before verification
+finishes exits normally without waiting for the download or replacing the app.
+
+Both installation paths follow your save setting, stop owned processes,
+revalidate publication and start the verified native helper. Unknown teardown or
+changed publication cannot authorize replacement. Models, runtimes, saved
 conversations and preferences remain separate.
 
 Failed downloads or replacement preserve the existing executable. If restart

@@ -585,7 +585,8 @@ must preserve their observable ordering, identities and failure boundaries.
 | Runtime repairs use fresh staging, preserve unrelated files, check expanded storage and restore the previous directory if publication fails | Focused `provision::tests::` runtime setup and publisher repair controls |
 | Pause beats a queued model handoff; retry preserves draft/history/options without sending; first-session persistence works; unknown cleanup disables retry and updates | `window::startup_tests::`, `window::setup::tests::` and `startup::tests::` in `bonsai-chat` |
 | Missing, unreadable and changed model bytes have distinct safe guidance; untrusted diagnostic text cannot select a recovery path | `client::tests::model_verification_guidance` and broker artifact marker controls |
-| Updates retain publication/digest/source binding, repair poisoned staging within one deadline, preserve the original on failure, and require fresh confirmation plus confirmed owned teardown | `app_update::` in `bonsai-tools` and `window::updates::tests::` in `bonsai-chat` |
+| Update discovery retains bounded numeric/prerelease selection, conditional metadata requests, compression and server-directed backoff without stale success on HTTP errors | `app_update::` in `bonsai-tools` |
+| Updates retain publication/digest/source binding, repair poisoned staging within one deadline and preserve the original on failure. Download precedes the prompt; Later leaves a Settings badge; deferred close installs without reopening, while immediate installation restarts. Both require current release authorization and confirmed owned teardown; unfinished downloads and unknown cleanup cannot activate a handoff | `app_update::` in `bonsai-tools` and `window::updates::tests::` in `bonsai-chat` |
 
 Select named controls or these focused filters under one predeclared local budget.
 Complete crate/workspace suites and real download/update acceptance remain with

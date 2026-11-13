@@ -185,7 +185,7 @@ authenticate an external manuscript or imply model quality qualification.
 
 ### Application updates
 
-Portable releases check GitHub after startup and every six hours and automatically
+Portable releases check GitHub after startup and every 15 minutes and automatically
 download the highest newer numeric version, including published prereleases.
 The native Settings view also accepts a manual check. Discovery exhausts at most
 three pages of 100 releases; a full final page fails explicitly because catalog
@@ -193,15 +193,43 @@ completeness is unknown. Drafts are excluded, and invalid newest assets never
 cause fallback. GitHub SHA-256 identities, the release manifest, checksum inventory
 and tag/source revision must agree before download or use.
 
-Replacing the executable requires native confirmation and successful owned model,
-speech and UI teardown. The launcher consumes its launch-specific handoff after
-fresh publication/staging verification and starts only the verified replacement
+Metadata requests retain HTTPS-only redirects, the GitHub JSON media type,
+application User-Agent and an explicit API version. Read-only discovery uses a fixed
+six-slot disk cache binding each body to its exact URL and SHA-256. It prefers
+`If-None-Match`, with `If-Modified-Since` as a fallback; a valid 304 reuses the bounded
+body without a cache rewrite. This user-writable cache cannot authenticate release
+publication: download, queue, launcher and replacement-helper gates request fresh
+catalog, manifest, checksum and source metadata unconditionally. During discovery,
+manifest and checksum bodies can be reused only when their length and SHA-256 match
+the revalidated catalog. Requests advertise gzip and identity; native decoding
+independently bounds the compressed and expanded
+bodies at 2 MiB, including on supported Windows curl versions predating
+decompression limits. No authentication, conversation or model data accompanies
+these requests.
+Network and HTTP failures persist an exponential cooldown across helper processes,
+honoring `Retry-After` and exhausted GitHub rate-limit reset instructions. Failed
+requests never fall back to cached success or immediately retry.
+
+After the download is verified, a native prompt offers immediate installation or
+**Later**. Later dismisses the prompt for that verified release during the session
+and leaves a pending-update badge on the bottom-left Settings button. Downloads
+do not depend on acceptance. Immediate installation closes and reopens Swift;
+closing with a deferred verified portable update replaces the executable and
+leaves the app closed. Closing during an unfinished download exits normally.
+
+Replacing the executable requires the current verified release and successful
+owned model, speech and UI teardown. Explicit immediate installation or a normal
+close with the deferred update authorizes only that release. The launcher consumes
+its launch-specific handoff after fresh publication/staging verification and starts
+only the verified replacement
 helper. This bounded helper runs from the staged new bundle, independently
 revalidates publication and staged bytes, copies and verifies a sibling file, and
 atomically replaces the original after its launcher exits. Changed originals,
 network/verification failures or exhausted sharing retries retain the old file.
-The replacement reopens with the same launch options and user data directory;
-restart failure leaves the updated executable available for manual launch.
+Immediate replacement reopens with the same launch options and user data directory;
+deferred-close replacement skips restart. The handoff and helper explicitly carry
+that choice; older launchers retain their existing restart behavior. Restart
+failure leaves the updated executable available for manual launch.
 Models, runtime downloads, conversations and preferences stay separate.
 Source and preview launches start no update discovery or installer work.
 
@@ -212,7 +240,7 @@ portable release path. Its existing confirmation, publication validation and
 process-ownership controls remain required if it is used or restored later.
 Current Windows Release does not build or publish an MSI for that updater.
 
-Legacy MSI installations check for updates after startup, every six hours or
+Legacy MSI installations check for updates after startup, every 15 minutes or
 manually in Settings. A bounded worker handles network, metadata and downloads
 off the event loop, sending no conversation/model data. Source and preview
 launches make no update requests.

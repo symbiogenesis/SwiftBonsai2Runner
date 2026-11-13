@@ -41,12 +41,15 @@ under [AGENTS.md](AGENTS.md).
   v0.2.2 baseline and the new release after publication: fresh/custom data folders,
   automatic model/adapter/runtime setup, interruption/resume, corruption repair,
   pause/retry, disk/network/permission failures and independent speech retry.
-- [ ] Qualify automatic startup/six-hour release discovery, manual checks,
-  paginated numeric/prerelease selection, incomplete/no-release/network failures,
-  changed publication and tampered staging/original bytes. Verify confirmed
-  replacement/restart, renamed executables, original options, read-only targets,
-  sharing exhaustion, restart failure, data preservation and rollback; source and
-  preview launches must stay silent. See [update behavior](docs/releases.md#update-and-remove).
+- [ ] Qualify automatic startup/15-minute release discovery, conditional metadata
+  requests, compression, server-directed backoff and manual checks. Cover paginated
+  numeric/prerelease selection, incomplete/no-release/network failures, changed
+  publication and tampered staging/original bytes. Verify background download,
+  one prompt per verified release, Later and the Settings badge, deferred replacement
+  on close without reopening, explicit replacement/restart, close during download
+  or generation, renamed executables, original options, read-only targets, sharing
+  exhaustion, restart failure, data preservation and rollback; source and preview
+  launches must stay silent. See [update behavior](docs/releases.md#update-and-remove).
 - [ ] If installer distribution is selected again, qualify the retained MSI
   updater's discovery, verified handoff, post-exit publication checks, failure
   recovery, data preservation and installed upgrade/rollback paths.
