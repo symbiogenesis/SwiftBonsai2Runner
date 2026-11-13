@@ -196,7 +196,7 @@ fn needs_caller(command: &str, request: &serde_json::Value) -> bool {
 }
 
 /// Runs the shared protocol entry with the selected Windows presentation policy.
-pub(super) fn run(graphical_launcher: bool) -> ExitCode {
+pub fn run(graphical_launcher: bool) -> ExitCode {
     let graphical = cfg!(windows)
         && graphical_launcher
         && std::env::args_os().nth(1).is_none_or(|argument| {
