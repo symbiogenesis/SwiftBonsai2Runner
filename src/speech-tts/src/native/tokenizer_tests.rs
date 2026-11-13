@@ -464,7 +464,7 @@ fn rust_tokenizer_core_and_abi_match_captured_native_observations() -> Result<()
             );
         }
     }
-    assert_eq!(reader.0, []);
+    assert_eq!(reader.0, [0_u8; 0]);
     Ok(())
 }
 

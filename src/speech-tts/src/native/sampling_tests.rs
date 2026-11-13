@@ -185,7 +185,7 @@ fn rust_sampler_helpers_match_captured_bits() -> Result<(), Box<dyn Error>> {
         output_words += logits.len() * 2;
     }
     assert_eq!(output_words, 36_540);
-    assert_eq!(remaining, []);
+    assert_eq!(remaining, [0_u8; 0]);
     Ok(())
 }
 
@@ -234,7 +234,7 @@ fn rust_greedy_argmax_matches_captured_arm64_bits() -> Result<(), Box<dyn Error>
         assert_eq!(sampled, expected, "Sample greedy case {index}.");
         assert_eq!(dump_u.to_bits(), expected_dump_bits);
     }
-    assert_eq!(remaining, []);
+    assert_eq!(remaining, [0_u8; 0]);
     // Empty storage is the explicit Rust boundary, omitted by the native capture.
     assert_eq!(bonsai_qt_greedy_argmax(std::ptr::null(), 0), 0);
     let mut empty_dump = 99.0_f32;

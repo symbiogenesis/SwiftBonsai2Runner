@@ -68,7 +68,7 @@ fn rust_philox_scalar_abi_matches_captured_bits() -> Result<(), Box<dyn Error>> 
     let cases = draw_cases();
     assert_eq!(cases.len(), RECORD_COUNT);
     let (records, remainder) = FIXTURE[16..].as_chunks::<24>();
-    assert_eq!(remainder, []);
+    assert_eq!(remainder, [0_u8; 0]);
     assert_eq!(records.len(), RECORD_COUNT);
     for (index, (record, expected_case)) in records.iter().zip(cases).enumerate() {
         let seed = i64::from_le_bytes(record[..8].try_into()?);

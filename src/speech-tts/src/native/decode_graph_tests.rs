@@ -250,7 +250,7 @@ fn rust_owned_decode_cache_rejects_invalid_calls_without_build_or_eviction() {
     for (tokens, width) in [(0, 1), (-1, 1), (4097, 1), (256, 0), (256, -1)] {
         assert!(cache.begin(tokens, width, &mut builder).is_null());
     }
-    assert_eq!(builder.state.borrow().before_build_live, []);
+    assert_eq!(builder.state.borrow().before_build_live, [0_usize; 0]);
     assert!(!cache.begin(256, 1, &mut builder).is_null());
     cache.complete();
     let callbacks: [Option<super::decode_graph::Build>; 2] = [None, Some(build)];
