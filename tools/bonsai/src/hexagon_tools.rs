@@ -752,6 +752,35 @@ fn receive(context: &mut Context, pin: &Value, name: &str, seconds: u64) -> Resu
     Ok(path)
 }
 
+fn sdk_inventory_report(
+    context: &mut Context,
+    source: &Path,
+    pin_path: &Path,
+    pin: &Value,
+) -> Result<Value> {
+    let source_digest = context.digest(source, 4 * 1024 * 1024)?;
+    let pin_digest = context.digest(pin_path, 1024 * 1024)?;
+    let supervisor = context.digest(
+        &context.repo.join("tools/bonsai/src/hexagon_tools.rs"),
+        4 * 1024 * 1024,
+    )?;
+    let functional = context.digest(
+        &context.repo.join("tools/hexagon/sdk_functional_review.ps1"),
+        4 * 1024 * 1024,
+    )?;
+    let archive_reader_sources = context.input_set(
+        &context.repo.join("tools/hexagon/sdk-reader"),
+        &["Cargo.toml", "Cargo.lock", "src/main.rs"],
+    )?;
+    let common_source = context.digest(
+        &context.repo.join("tools/hexagon/Hexagon.Common.ps1"),
+        1024 * 1024,
+    )?;
+    Ok(
+        json!({"SchemaVersion":1,"Kind":"hexagon-hosted-sdk-inventory","RunnerRevision":context.revision,"RunId":context.run,"RunAttempt":context.attempt,"HostedOnly":true,"Outcome":"pending","Stage":"reviewed-source-inputs","ElapsedMilliseconds":0,"SourceSha256":source_digest,"SupervisorSha256":supervisor,"PinSha256":pin_digest,"FunctionalReviewSourceSha256":functional,"CommonSourceSha256":common_source,"ArchiveReaderSources":archive_reader_sources,"ReviewedInputs":[],"Archive":pin["asset"],"InventoryReceiptSha256":null,"PowerShellExecutableSha256":null,"SdkCodeExecuted":false,"GeneratorExecuted":false,"GeneratedSourceUploaded":false,"ModelLoaded":false,"DeviceCodeLoaded":false,"ProfileEligible":false,"LicenseReview":"pending","GeneratorInvocationReviewed":false}),
+    )
+}
+
 fn sdk_inventory(mut context: Context) -> Result<Value> {
     let clock = Instant::now();
     let review = context.output.join("review");
@@ -772,25 +801,7 @@ fn sdk_inventory(mut context: Context) -> Result<Value> {
     {
         return Err("Reviewed SDK archive or data-only boundary changed.".into());
     }
-    let source_digest = context.digest(&source, 4 * 1024 * 1024)?;
-    let pin_digest = context.digest(&pin_path, 1024 * 1024)?;
-    let supervisor = context.digest(
-        &context.repo.join("tools/bonsai/src/hexagon_tools.rs"),
-        4 * 1024 * 1024,
-    )?;
-    let functional = context.digest(
-        &context.repo.join("tools/hexagon/sdk_functional_review.ps1"),
-        4 * 1024 * 1024,
-    )?;
-    let archive_reader_sources = context.input_set(
-        &context.repo.join("tools/hexagon/sdk-reader"),
-        &["Cargo.toml", "Cargo.lock", "src/main.rs"],
-    )?;
-    let common_source = context.digest(
-        &context.repo.join("tools/hexagon/Hexagon.Common.ps1"),
-        1024 * 1024,
-    )?;
-    let mut report = json!({"SchemaVersion":1,"Kind":"hexagon-hosted-sdk-inventory","RunnerRevision":context.revision,"RunId":context.run,"RunAttempt":context.attempt,"HostedOnly":true,"Outcome":"pending","Stage":"reviewed-source-inputs","ElapsedMilliseconds":0,"SourceSha256":source_digest,"SupervisorSha256":supervisor,"PinSha256":pin_digest,"FunctionalReviewSourceSha256":functional,"CommonSourceSha256":common_source,"ArchiveReaderSources":archive_reader_sources,"ReviewedInputs":[],"Archive":pin["asset"],"InventoryReceiptSha256":null,"PowerShellExecutableSha256":null,"SdkCodeExecuted":false,"GeneratorExecuted":false,"GeneratedSourceUploaded":false,"ModelLoaded":false,"DeviceCodeLoaded":false,"ProfileEligible":false,"LicenseReview":"pending","GeneratorInvocationReviewed":false});
+    let mut report = sdk_inventory_report(&mut context, &source, &pin_path, &pin)?;
     let result = (|| -> Result<()> {
         let (rustc, compiler_digest) = context.rustc()?;
         context.environment.extend(BTreeMap::from([
