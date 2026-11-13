@@ -119,12 +119,6 @@ bonsai-tools ptq1-packing --request ABSOLUTE_JSON_PATH
 bonsai-tools packing-qualification --request ABSOLUTE_JSON_PATH
 ```
 
-Host capability projection/CPU identities, acceptance-deadline policy, sanitized
-startup diagnostics and PTQ1 collector receipt/ABI checks live in Rust. Their
-former PowerShell modules/scripts have been removed. The offline qualification,
-PTQ1 screen, runtime promotion and inference-lock wrapper scripts have also been
-removed; invoke the native JSON commands directly as in the examples above.
-
 `host-capabilities` accepts `operation: "project"` with bounded `facts`, or `operation: "identity"`
 with the v1 `capabilities` report. Native `doctor` supplies registry, CPU-set, memory and SetupAPI
 observations; optional unavailable fields remain explicit unknowns. Rust owns projection, canonical
@@ -137,7 +131,7 @@ wall and monotonic setup time using integer ceilings. The receipt keeps
 `PreparationWallElapsedSeconds` and `PreparationMonotonicElapsedSeconds` separate;
 `PreparationElapsedSeconds` is their maximum. A supplied invalid, null or future
 job tick rejects. Legacy callers may omit it, leaving monotonic setup explicitly
-unknown; they retain the earlier wall-only calculation.
+unknown; only wall time is charged.
 Optional `wholeJobMaximumSeconds` defaults to 300 and accepts 300..900, explicitly
 declared before starting the workload. The native-runtime acceptance workflow
 offers 5/10/15 minutes, retaining a workload estimate/reason for either extension.
@@ -178,8 +172,7 @@ for cleanup/reporting. The workflow launches the native command directly and
 retains CIM as its only host observation adapter. No downloads or builds occur.
 `observeOutputProgress: true` retains the separate file/exit attribution and
 suppresses every timing ratio. Rust owns atomic partial evidence, complete sample
-identity checks, fixed-token pairing and observed-condition comparisons; the
-former X2 PowerShell controller is removed. Pure `plan`, `compare-conditions`
+identity checks, fixed-token pairing and observed-condition comparisons. Pure `plan`, `compare-conditions`
 and `compare-sample-conditions` operations remain available.
 
 `native-qualification` defaults to `captureMode: "numerical"`: `kind: "ptq1"`
@@ -255,7 +248,7 @@ independent scanning, including hashing outside the exporter's codec deadline.
 Atomic phase receipts and a digest manifest survive failure. `operation: "limits"`
 returns the fixed hosted budgets without accessing artifacts. Foundation's Rust
 suite owns admission, receipt mutation, workflow-budget and failure-retention
-controls; the former packing PowerShell module, script and tests are removed.
+controls.
 
 Requests are JSON objects read through a retained read-only handle, capped at
 16 MiB. Qualification envelopes allow 160 MiB for escaped responses; original
@@ -305,45 +298,25 @@ process policies remain separate and unchanged.
 `BootstrapProtocolVersion: 1` identifies native maintenance snapshot publication.
 These additive contracts leave the general JSON protocol at version 5.
 
-`chat-package` owns `create`, `inspect`, `install`, `rollback`, `installed` and
-`start` operations. The [package contract](../../docs/chat-packages.md) defines
-their JSON requests. New schema-2 packages contain only five native executables
-and three notices; the PowerShell packaging module, launch/install wrappers and
-their tests are retired. Rust retains schema-1 package inspection and rollback.
-`installed-chat` is the human-facing alias for `start`; it accepts an optional leading
-`--installation-directory PATH` and the installed launch options defined by the package contract.
-It never enables source-path or build overrides.
-Run the command using an independently trusted maintenance executable: package
-hashes cannot authenticate the program performing the checks. `start` verifies
-the active package and derives its fixed executable paths before native launch.
-The legacy `launch` operation still supports a caller-bound directory, ID and
-manifest digest. Caller options cannot override paths or request a source build.
-The native launcher opens the pending UI before preparing backend and speech.
+`chat-package` and `installed-chat` use the
+[package contract](../../docs/chat-packages.md), including fixed paths, trusted
+verification, in-window preparation and rejection of build/source overrides.
 
-The portable release path checks for newer published releases after startup and
-every six hours, and automatically downloads verified executable updates.
-Replacement requires native confirmation and completed owned teardown; the new
-executable reopens with the same launch options and data directory. Manual
-replacement after closing Swift remains available. Source and preview launches
-perform no update work. See [portable updates](../../docs/ui-architecture.md#application-updates)
-for publication validation, replacement and recovery behavior.
+Portable discovery, downloads, confirmation, deferred replacement and recovery
+follow the [update contract](../../docs/ui-architecture.md#application-updates).
+Source and preview launches perform no update work.
 
 `app-update` implements portable `portable-check`, `portable-download` and
 `portable-install` operations. Download selects `version`; installation also
 requires the current launch's `handoffPath`. The native launcher owns the final
 replacement-helper handoff; a queued request alone never authorizes replacement.
 
-The same command retains legacy installed-MSI `check`,
-`download` and `install` operations, outside the current portable release path.
-Requests identify `installationDirectory`; `download` also selects `version`, and
-`install` requires `version` and `handoffPath`. A queued request cannot install by itself:
-confirmed native UI exit and owned teardown must complete before the maintenance launcher
-revalidates the publication and hands off to Windows Installer. Source/preview launches
-perform no update work. See the
-[legacy updater contract](../../docs/ui-architecture.md#legacy-msi-updater)
-for publication identities, confirmation and pending legacy installed acceptance.
+MSI `check`, `download` and `install` accept `installationDirectory`; download
+also selects `version`, and install requires `version`/`handoffPath`. A queue
+alone cannot authorize installation: native confirmation, owned teardown and
+fresh publication validation must precede Windows Installer handoff.
 
-`gguf` replaces `Read-Gguf.ps1`, `Export-SwiftPtq1.ps1` and their module. Use
+`gguf` inspects models and exports PTQ1. Use
 `operation: "inspect"` with `modelPath`, optional new `outputPath`, and either
 both `expectedBytes`/`expectedSha256` or neither. Omitted identity fields use the
 compiled reference-Qwen pin. `dialect` defaults to `"Stock"`; `censusPq2: true`
@@ -363,8 +336,7 @@ or `%LOCALAPPDATA%/SwiftBonsai2`, retaining artifact guards through execution.
 Missing binaries fail; these operations never download or compile tools.
 Metadata inspection skips tensor payloads; census and export read them.
 
-`gguf` operation `check` replaces the PowerShell GGUF, PQ2 census and PTQ1
-export tests and fixture module. It requires `ggufToolPath` matching the exact
+`gguf` operation `check` runs independent GGUF/PQ2/PTQ1 fixtures. It requires `ggufToolPath` matching the exact
 compiled release digest and a new `evidenceDirectory`. `case` defaults to `all`;
 individual cases are `parser`, `strings`, `arrays`, `descriptors`, `artifact`,
 `census`, `repack` and `rejection`. Fixture execution is restricted to hosted
@@ -395,8 +367,7 @@ This option requires a trusted current maintenance tool and rejects custom locks
 Its `environment` operation selects the ASR compiler/SDK environment; `build`
 selects ASR, Rust TTS or both; `models` downloads and verifies the selected GGUFs.
 TTS-only builds use ordinary Cargo without LLVM, CMake, Qwen/GGML sources or
-native libraries. The former `stage-sources` and static-library cache operations
-are retired. Installed users receive prebuilt companions and app-owned model
+native libraries. Bundled use receives prebuilt companions and app-owned model
 setup, without running these contributor commands.
 
 The model-free `speech-build` request `{"operation":"host"}` returns the native
@@ -428,10 +399,6 @@ verification and cleanup to one 240-second allowance, within the owner budget.
 policy, installed version/help probes and optional model verification. The fixed
 profile remains launch-disabled; no request may add arguments or provision keys.
 The lower-level `server-policy` command retains the pure shared broker policy.
-
-The removed CPU/server and qualification compatibility wrappers are replaced by
-these native commands and the existing `qualification` command. Their model-free
-regressions run in Rust, retaining the independent frozen policy/scoring fixtures.
 
 Upstream partitioning and baseline policy are owned by Prism's
 [conformance policy tool](https://github.com/symbiogenesis/prism-inference/blob/main/tools/conformance-policy/README.md).
@@ -499,15 +466,12 @@ verified again and retained by the existing capture supervisor.
 Both front-door and low-level captures require credential-free main-branch hosted
 CI on an actual native Snapdragon X/X2 Elite. The 28/14-process full matrices have
 no demonstrated complete five-minute owner bound, so self-hosted/owner execution
-rejects before preparation. The former LoRA/PTQ1 plan-only workflows are retired; use
-the native nonlaunching `plan`/`screen-plan` operations directly and keep full
-qualification pending. The removed PowerShell wrappers are retired; use a prebuilt
-executable for capture operations. Never split a
-matrix across repeated owner jobs to bypass the aggregate allowance.
+rejects before preparation. Use native nonlaunching `plan`/`screen-plan` commands
+for inspection and a prebuilt tool for capture. Never partition a matrix across
+repeated owner jobs to bypass the aggregate allowance.
 
-Frozen pre-port PowerShell fixtures cover complete CPU policies, artifact identities
-and argument vectors, including Unicode prompts and adapter scale syntax. Pure
-policy and packaged command checks run in Rust.
+Frozen policy/scoring fixtures cover CPU policies, artifact identities and argument
+vectors, including Unicode prompts and adapter scales, independently of native commands.
 
 ## Development checks
 
@@ -542,8 +506,7 @@ lifecycles through `hexagon-tools`. Hexagon hosted controls run native policy,
 package-boundary, pipe-capture and progress-retention regressions and publish a
 revision/digest-bound maintenance artifact. Session/dispatch owner jobs verify
 that same-run artifact inside the existing aggregate setup clock and never
-bootstrap Cargo on the owner device. The PowerShell implementation and its
-script-only tests have been removed.
+bootstrap Cargo on the owner device.
 
 `speech-evaluation` also owns the complete hosted TTS comparison. A model-free
 `{"operation":"host-plan","repetitions":2}` request derives the bounded local
@@ -566,7 +529,7 @@ counter differences remain available; voice quality stays pending human listenin
 
 ## Hexagon preparation and bounded device probes
 
-`hexagon-tools` replaces the Hexagon PowerShell scripts and modules. Hosted-only
+`hexagon-tools` owns preparation and probe lifetimes. Hosted-only
 `build-dispatch`, `build-packed-artifact` and `sdk-inventory` requests take
 `repositoryDirectory` and a new external `outputDirectory`; the extractor also
 takes `ggufSourceDirectory`. They retain exact source/tool/lock/run identities

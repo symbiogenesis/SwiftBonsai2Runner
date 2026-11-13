@@ -289,32 +289,12 @@ eligible check before checkout or compilation. These read-only jobs run no compl
 model, benchmark or self-hosted job; they qualify neither native Windows behavior
 nor actual-model/device acceptance.
 
-All external actions, including those inside composite actions, retain full commit
-SHA references. The generated [action lockfile](../.github/workflows/actions.lock)
-also records upstream repository identities and transitive dependencies for every
-workflow. Same-repository composites use `$/` references, resolving to the workflow's
-own commit and allowing their dependencies to be locked. Nested references require
-self-hosted runner **v2.338.0 or newer**; owner CI must confirm that prerequisite.
-Regenerate and review the lockfile whenever workflow or composite dependencies
-change with `gh actions-lock --no-narrow`; preserve the explicit SHA references
-and their exact matching lockfile keys. Symbolic upstream `ref` metadata alone
-does not cover an inline SHA. See
-[the maintenance commands](../tools/ci/README.md#action-dependency-pins).
-
-The independent Source checks `actions-lock` job runs on every selected workflow
-event, including the weekly schedule, with read-only permissions and no device
-work. Before downloading a tool, its offline startup preflight and focused
-regressions check full inline SHA pins and exact lockfile coverage through nested
-same-repository composites. Run those checks locally before committing workflow,
-action or lockfile changes: GitHub rejects incomplete literal coverage before
-creating any jobs, including the verifier job itself. This preflight is a focused
-repository policy check, not a general YAML or GitHub workflow validator.
-The job separately verifies coverage and upstream provenance with the official
-`gh-actions-lock` v0.4.1 binary, downloaded at a fixed release URL and checked against
-a committed SHA-256 before execution. This is the only added security-tool
-dependency; no additional action, YAML library or security-linter suite is needed.
-A lockfile verifies selected identities, not the safety of their code. Review action
-and tool updates, including release version and binary digest, before accepting them.
+External actions and their transitive dependencies use full SHA pins and exact
+lockfile coverage. Same-repository `$/` references require self-hosted runner
+**v2.338.0 or newer**. Before committing workflow/action/lock changes, follow the
+[action-pin preflight and maintenance commands](../tools/ci/README.md#action-dependency-pins):
+GitHub startup rejection prevents its own verifier from running. Pin review and
+upstream verification remain distinct from offline startup/syntax checks.
 
 [Foundation](../.github/workflows/foundation.yml) runs on `main` pushes/manual
 dispatch, skipping root-Markdown/`docs/`-only pushes. Its [Rust planner](../tools/ci/README.md)
@@ -426,8 +406,7 @@ runtime dependency. Rust owns binary/numerical work, typed policy and validation
 and native process lifetimes. PowerShell owns small environment/command adapters
 and checks that must run before Rust bootstrap. Native application provisioning
 and supervision stay in Rust; installed use must not require PowerShell.
-Historical receipts, provenance fields and pinned external source paths retain
-their original identities. The [language guard](../tools/ci/check_owned_languages.ps1)
+Required replay receipts and pinned external source paths retain their identities. The [language guard](../tools/ci/check_owned_languages.ps1)
 checks executable source rather than deleting those records. Remaining migrations
 are tracked under [tooling implementation](../PLAN.md#tooling-implementation).
 
@@ -554,7 +533,7 @@ cannot promote a pin; follow the
 | Boundary | What focused/native evidence establishes |
 | --- | --- |
 | TTS bootstrap | `tests::voice_bootstrap_keeps_one_waveform_through_model_switch_and_releases_on_every_exit` checks Rust waveform identity/limits through Design teardown/Base extraction; failure releases once and retains at most one model. |
-| Rust speech threads | `tests::cpu_threads_reserve_ui_capacity_and_bound_explicit_overrides` checks the serving thread policy: reserve two logical CPUs, use at least one, and accept explicit 1–256 overrides. `native::cpu_threads::tests::` separately replays the retired native fallback/cast behavior; it does not define the serving default. See [CPU execution](../src/speech-tts/README.md#cpu-execution). |
+| Rust speech threads | `tests::cpu_threads_reserve_ui_capacity_and_bound_explicit_overrides` checks the serving thread policy: reserve two logical CPUs, use at least one, and accept explicit 1–256 overrides. See [CPU execution](../src/speech-tts/README.md#cpu-execution). |
 | Rust speech sampler/tokenizer | `philox::tests::`, `native::philox_tests::rust_philox_scalar_abi_matches_captured_bits`, `native::sampling_tests::` and `native::tokenizer_tests::` check independent answers and captured observations with bound fixture/input identities. Philox replay covers 4,411 observations. These Rust checks start no C++ compiler or native reference process and do not qualify complete-model codes/audio, resources or listening quality. See [sampler](../src/speech-tts/README.md#rust-sampler-port), [tokenizer](../src/speech-tts/README.md#rust-speech-tokenizer) and [retirement](cpp-retirement.md) contracts. |
 | ISA discovery | `native::isa::tests::native_isa_queries_neon_dotprod_and_neon_i8mm_independently`: exact Windows feature IDs through an injected query, without executing optional kernels. |
 | X2 conditions | `cpu_evaluation::conditions::tests::condition_comparison_rejects_known_drift_and_unknowns_without_treating_charge_as_energy`; `condition_comparison_binds_exact_native_host_even_when_core_counts_match`; `host_cpu::tests::host_identity_retains_native_cpu_kernel_and_feature_facts_separately`: reject topology/power/registry/kernel/feature drift, malformed/missing identities, legacy receipts and cross-sample changes; separate identity from live availability. |

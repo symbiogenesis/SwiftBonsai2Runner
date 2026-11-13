@@ -146,11 +146,9 @@ Rollback verifies the retained previous package before switching:
 {"operation":"rollback","installationDirectory":"C:\\BonsaiChat"}
 ```
 
-Rollback retains the displaced version, allowing an explicit switch back. An
-unchanged install preserves the previous choice. Schema-1 packages retain their
-original fixed script inventory and remain eligible for checked installation,
-inspection and rollback; new packages use schema 2. Updating does not restart a
-running app. Installation and rollback leave model and recovery data alone.
+Rollback retains the displaced version for an explicit switch back; unchanged
+installation preserves the previous choice. Installation/rollback never restarts
+a running app or changes model/recovery data.
 
 ## Launch without a checkout
 
@@ -166,14 +164,11 @@ unverified incoming distributions.
 }
 ```
 
-`start` checks the selected manifest and complete inventory, derives executable
-paths and launches the native app. Options cannot override paths or request source
-builds. Legacy `launch` remains available with `expectedDirectory`, `expectedId`
-and `expectedManifestSha256` bound before handoff.
+`start` verifies the active manifest/inventory, derives fixed executable paths and
+launches the app. Options cannot override paths or request builds. `launch` accepts
+an explicitly bound `expectedDirectory`, `expectedId` and `expectedManifestSha256`.
+Models/runtime/adapter/speech preparation runs inside the window.
 
-Current packages prepare the compiled Swift model, selected runtime, adapter and
-speech models automatically. Update older packages to receive current in-app
-setup and repair behavior; retain the same data directory.
 The adapter is enabled by default; opt out explicitly with `NoAbliterateLora: true`.
 `NoSpeechModels: true` skips automatic speech preparation; `NoTts: true` skips
 output speech. `NoAbliterateLora`,
@@ -185,16 +180,10 @@ preparation, credentials, Jobs and retry policy. Progress, Pause setup and Retry
 setup are available in the window; speech retry stays separate. No microphone
 activates at installation or launch.
 
-For current launcher builds, omitted `NativeEngine` selects the Rust development
-default with four row workers. `NativeEngine: false` explicitly selects publisher
-rollback and defaults to one worker; `NativeEngine: true` explicitly selects Rust.
-Supply `NativeRowWorkers: 1` to select one Rust worker. Older retained packages
-keep their original executable behavior; rebuild and install a matching package
-to receive the new default. A package manifest alone does not change that behavior.
-
-Set `UseRepackedPtq1: false` to select original PQ2 explicitly. The value is
-preserved through deferred startup and forwarded as `--use-original-pq2` to the
-native app and broker. No failed PTQ1 launch falls back automatically.
+[Runtime selection](development-guide.md#runtime-selection) owns engine/worker,
+cache and representation defaults. `NativeEngine: false` selects publisher;
+`UseRepackedPtq1: false` explicitly selects original PQ2 through deferred startup.
+Failed PTQ1 never falls back automatically.
 
 ## Validation
 

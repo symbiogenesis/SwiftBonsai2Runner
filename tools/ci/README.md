@@ -69,8 +69,7 @@ The source-language guard rejects owned Python files, bytecode, Python workflow
 shells/setup and literal interpreter commands. PowerShell's native parser checks
 direct calls and `Start-Process`, including quoted paths and case variants, while
 leaving strings/comments as data. Computed executable names are outside this
-static check; source review remains required. Historical evidence and external
-artifact identities retain their original names. Vendored sources are excluded.
+static check; source review remains required. Required replay inputs and external artifact identities retain their names. Vendored sources are excluded.
 Each `test_*.ps1` fixture script accepts `-Case NAME` for a focused local check;
 their complete selections remain hosted CI work.
 
@@ -78,7 +77,7 @@ Same-run checked-tool bundles use receipt schema 3, with `NumericSha256` for
 `bonsai-reference-numerics.exe` alongside the CLI and completion probe. Exact-input
 executable caches use schema 4. Native qualification verifies and holds the
 helper bytes; it never compiles a replacement during a device trial. Foundation
-runs the migrated reference, retained-audit, row and PE fixtures before publishing
+runs reference, audit, row and PE fixtures before publishing
 checked tools. PE fixtures consume that same run's checked `bonsai-tools` executable;
 the audit's binary parsing and closure policy run in Rust. CPU policy fixtures run
 in its portable source-control step.
@@ -99,7 +98,7 @@ The retained workflows own current checks or open gates in [PLAN.md](../../PLAN.
 Source checks select portable, Markdown and dependency jobs by changed paths.
 Hexagon qualification owns the independent hosted Windows ABI control.
 
-The [native CPU bundle comparison](../../docs/cpu-bundle-comparison.md) prepares
+The [native CPU bundle comparison](../cpu-bundle/README.md) prepares
 the fixed 0.1.23 control and registry 0.1.25 candidate on hosted ARM64. Its default
 is preparation only; explicit device selection requires the owner's predeclared
 ten-minute aggregate workload. The X2 thread screen compares publisher thread
