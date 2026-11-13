@@ -124,7 +124,9 @@ under [AGENTS.md](AGENTS.md).
   history, selection and keyboard focus.
 - [ ] Qualify edited/regenerated/interrupted reply branches, Continue and exact
   committed-prefix submission through Stop, recovery, background ownership,
-  completion races, eviction and capacity limits.
+  completion races, eviction and capacity limits. Include visible Retry response,
+  same-card unanswered retries, preserved composer/cursor, interrupted-answer
+  branches and explicit Reload model without automatic resend.
 - [ ] Qualify composer context estimates/rings and pending states through draft,
   reasoning, branch and recovery changes; preserve Extra effort first-pass scope,
   reply settings, Start fresh and authoritative broker rejection.

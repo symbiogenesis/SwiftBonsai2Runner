@@ -239,12 +239,23 @@ playback for a hidden response.
 | **Edit and resend / Regenerate** | Create and send a branch using the verified history prefix, preserving the original chat and draft. |
 | **Branch from here** | Create a branch without sending. A selected user message becomes the new draft. |
 | **Continue response** | Send an explicit continuation for the latest answer in context, preserving the current draft. |
+| **Retry response** | Retry the identified failed prompt using its existing message card, preserving the composer and cursor. For an interrupted partial answer, retry its original prompt in a new branch. |
+| Message **Reload model** | After teardown completes, reload the model without sending. Select Retry response when ready to retry that turn. |
 
 Sidebar queries update Find without taking focus. Editing or closing Find leaves
 the sidebar filter intact. Iteration actions require verified message positions
 and ordinary readiness/context checks; recovered messages without verified
 positions remain copyable and searchable. A locally identified interrupted answer
 can be used as context; intermediate Extra effort drafts cannot.
+
+**Retry response** appears directly beneath an identified unanswered prompt or
+interrupted answer. The original prompt can also remain in the composer for
+editing; Retry response uses the prompt in the conversation and preserves whatever
+is currently in the composer. An unanswered prompt keeps its existing card when
+retried. Starting a different message removes that prompt's retry control.
+During model preparation or teardown, retry stays disabled. After confirmed
+teardown, the control first offers **Reload model**; reloading never sends a
+message automatically. Once ready, select **Retry response** explicitly.
 
 **Settings** opens a native modal. Changes apply immediately; Done, Close or Escape
 dismisses it and restores composer focus. An open selector consumes Escape first.
@@ -296,9 +307,11 @@ response settings, voice description, transcript and exact completed history in
 workspace; a file lock permits one writer per data folder.
 An interrupted reply with a locally identified prompt and visible answer is marked
 **Interrupted** and retained as conversation context. Later prompts can reference it;
-its message menu supports Continue response and Branch from here. Stop, failure and
-recovery never automatically resend the original request. If no usable answer exists,
-the prompt remains available for review. Unbound trailing pairs enter history only
+its message menu supports Continue response and Branch from here, and its visible
+Retry response control starts a new branch from the original prompt. Stop, failure
+and recovery never automatically resend the original request. If no usable answer
+exists, a locally identified prompt retains Retry response on its existing card.
+Unbound trailing pairs enter history only
 when saved completion state and the last answer identify the interruption;
 ambiguous partial replies remain visible outside history.
 
