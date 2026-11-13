@@ -32,6 +32,7 @@ use crate::{
 
 mod kv_append;
 mod packed;
+pub(crate) mod predictor_workspace;
 pub(crate) mod row_workers;
 
 /// Number of residual acoustic codebooks predicted by `CodePredictor` (`15`).
@@ -1555,7 +1556,6 @@ impl CodePredictorModel {
     /// Predict one frame with explicit CPU workers and cancellation between layers/codebooks.
     #[expect(
         clippy::too_many_arguments,
-        clippy::too_many_lines,
         reason = "Retain the independently selected sampler, seed, worker and cancellation controls."
     )]
     pub fn predict_frame_with_control(
@@ -1569,6 +1569,40 @@ impl CodePredictorModel {
         workers: usize,
         cancel: &mut dyn FnMut() -> io::Result<()>,
     ) -> io::Result<[i32; TOTAL_CODE_GROUPS]> {
+        self.predict_frame_reusing(
+            talker_hidden,
+            c0,
+            talker_codec_embd,
+            params,
+            seed,
+            subseq_base,
+            workers,
+            cancel,
+            &mut predictor_workspace::PredictorWorkspace::default(),
+        )
+    }
+
+    #[expect(
+        clippy::too_many_arguments,
+        clippy::too_many_lines,
+        reason = "Share request-owned capacity with Talker while retaining the explicit independent sampling and cancellation inputs."
+    )]
+    pub(crate) fn predict_frame_reusing(
+        &self,
+        talker_hidden: &[f32],
+        c0: i32,
+        talker_codec_embd: &[f32],
+        params: DecoupledSamplingParams,
+        seed: i64,
+        subseq_base: i64,
+        workers: usize,
+        cancel: &mut dyn FnMut() -> io::Result<()>,
+        workspace: &mut predictor_workspace::PredictorWorkspace,
+    ) -> io::Result<[i32; TOTAL_CODE_GROUPS]> {
+        // Clear logical state even when admission below rejects. The guard also
+        // clears partial frames on cancellation, numerical errors and unwind.
+        let mut frame = workspace.frame(self.layers.len())?;
+        let (kv_caches, seen_scratch) = frame.buffers();
         if !(1..=256).contains(&workers) {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidInput,
@@ -1597,10 +1631,8 @@ impl CodePredictorModel {
         }
         let c0_emb = &talker_codec_embd[c0_emb_start..c0_emb_start + talker_dim];
 
-        let mut kv_caches = vec![LayerKvCache::default(); self.layers.len()];
         let mut codes = [0_i32; TOTAL_CODE_GROUPS];
         codes[0] = c0;
-        let mut seen_scratch = Vec::new();
 
         // Step 0 prefill: position 0 = talker_hidden, position 1 = embed(c0)
         cancel()?;
@@ -1653,7 +1685,7 @@ impl CodePredictorModel {
                         .wrapping_add(i64::try_from(g).unwrap_or(0)),
                 },
                 &[],
-                &mut seen_scratch,
+                seen_scratch,
                 None,
             )
             .ok_or_else(|| {
@@ -2152,6 +2184,100 @@ mod tests {
         assert_eq!(polls, 4);
         assert!(cancelled.is_err_and(|error| error.kind() == std::io::ErrorKind::Interrupted));
 
+        Ok(())
+    }
+
+    #[test]
+    fn predictor_workspace_matches_fresh_frames_after_edits_cancellation_errors_and_unwind()
+    -> std::io::Result<()> {
+        let mut model = code_predictor_fixture()?;
+        let embeddings = vec![0.2; 8 * 4];
+        let mut workspace = super::predictor_workspace::PredictorWorkspace::default();
+        let input = [0.1, -0.2, 0.3, 0.4];
+        let run = |model: &CodePredictorModel,
+                   hidden: &[f32],
+                   code,
+                   sequence,
+                   workspace: &mut super::predictor_workspace::PredictorWorkspace,
+                   cancel: &mut dyn FnMut() -> std::io::Result<()>| {
+            model.predict_frame_reusing(
+                hidden,
+                code,
+                &embeddings,
+                DecoupledSamplingParams::base_clone(),
+                42,
+                sequence,
+                3,
+                cancel,
+                workspace,
+            )
+        };
+        let expected = model.predict_frame(
+            &input,
+            3,
+            &embeddings,
+            DecoupledSamplingParams::base_clone(),
+            42,
+            100,
+        )?;
+        for (hidden, code, sequence) in [
+            (input, 3, 100),
+            ([0.4, 0.3, -0.2, 0.1], 7, 132),
+            (input, 3, 100),
+        ] {
+            let fresh = model.predict_frame(
+                &hidden,
+                code,
+                &embeddings,
+                DecoupledSamplingParams::base_clone(),
+                42,
+                sequence,
+            )?;
+            assert_eq!(
+                run(&model, &hidden, code, sequence, &mut workspace, &mut || Ok(
+                    ()
+                ))?,
+                fresh
+            );
+        }
+        let mut polls = 0;
+        let interrupted = run(&model, &input, 3, 100, &mut workspace, &mut || {
+            polls += 1;
+            if polls == 8 {
+                Err(std::io::Error::from(std::io::ErrorKind::Interrupted))
+            } else {
+                Ok(())
+            }
+        });
+        assert_eq!(polls, 8);
+        assert!(interrupted.is_err_and(|error| error.kind() == std::io::ErrorKind::Interrupted));
+        assert_eq!(
+            run(&model, &input, 3, 100, &mut workspace, &mut || Ok(()))?,
+            expected
+        );
+        model.lm_heads[4].bias = Some(Vec::new());
+        assert!(run(&model, &input, 3, 100, &mut workspace, &mut || Ok(())).is_err());
+        model.lm_heads[4].bias = None;
+        assert_eq!(
+            run(&model, &input, 3, 100, &mut workspace, &mut || Ok(()))?,
+            expected
+        );
+        polls = 0;
+        let unwound = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            run(&model, &input, 3, 100, &mut workspace, &mut || {
+                polls += 1;
+                if polls == 8 {
+                    std::panic::resume_unwind(Box::new("injected acoustic frame fault"));
+                }
+                Ok(())
+            })
+        }));
+        assert!(unwound.is_err());
+        assert_eq!(polls, 8);
+        assert_eq!(
+            run(&model, &input, 3, 100, &mut workspace, &mut || Ok(()))?,
+            expected
+        );
         Ok(())
     }
 

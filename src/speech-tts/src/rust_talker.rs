@@ -13,7 +13,7 @@ use std::io;
 use crate::{
     engine::{
         CodePredictorModel, DecoupledSamplingParams, LayerKvCache, LinearProjection,
-        QwenDecoderLayer, TOTAL_CODE_GROUPS, rms_norm,
+        QwenDecoderLayer, TOTAL_CODE_GROUPS, predictor_workspace::PredictorWorkspace, rms_norm,
     },
     sampling::{self, SampleTopKPParams},
     tokenizer::Tokenizer,
@@ -684,6 +684,10 @@ impl Talker {
         // The sampler marks vocabulary entries while applying repetition
         // penalties after the first frame; its workspace is caller-owned.
         let mut scratch = vec![0; self.geometry.vocab];
+        // Acoustic frames have independent sessions. Retain only their buffer
+        // capacities within this utterance; the frame guard clears all KV and
+        // sampler lengths on every return, cancellation and unwind.
+        let mut predictor_workspace = PredictorWorkspace::default();
         let mut params = if self.base {
             DecoupledSamplingParams::base_clone()
         } else {
@@ -721,7 +725,7 @@ impl Talker {
             if token == self.specials.eos {
                 return Ok(());
             }
-            let frame = self.predictor.predict_frame_with_control(
+            let frame = self.predictor.predict_frame_reusing(
                 &hidden,
                 token,
                 &self.codec_embedding,
@@ -730,6 +734,7 @@ impl Talker {
                 subsequence,
                 self.threads,
                 cancel,
+                &mut predictor_workspace,
             )?;
             sink(frame)?;
             history.push(token);

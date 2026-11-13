@@ -48,6 +48,15 @@ ConvNeXt frames share that team; short convolutions may split output channels.
 Independent ranges run concurrently, preserving accumulation order and sequential
 streaming history/overlap ownership. `--threads 1` retains serial execution.
 
+Within each utterance, CodePredictor retains its per-layer KV buffer capacities
+across acoustic frames. Each frame still begins with empty keys/values and position
+zero; completion, admission failure, cancellation, numerical failure and unwinding
+clear the logical state through one scoped guard. The workspace is released at
+the end of the utterance and preserves no generated codes or continuation across
+requests. Allocation-identity/reset and fresh-frame replay controls establish this
+ownership change; actual-model latency attribution and the observed regression
+remain unqualified until matched-power measurements run.
+
 F32/F16, Q8_0, Q4_K and Q6_K projections decode directly during multiplication,
 without whole-weight expansion or activation requantization. Four-row groups
 retain per-row rounding/accumulation; SIMD dispatch stays outside block loops.
