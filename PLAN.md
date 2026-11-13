@@ -114,16 +114,9 @@ under [AGENTS.md](AGENTS.md).
   appearance persistence across restart and conversation-saving opt-out.
 - [ ] Complete final-source native UI analysis and named ergonomics, appearance,
   profile, reader-size, Settings, deletion, context/Thinking and iteration controls.
-  Include strict Release Clippy for the control refactor and named shared Copy
-  laziness, source-identity, expiration and geometry regressions, plus composer
-  input and conversation-navigation interaction checks.
   Optional capture recipes live in [validation](docs/validation.md#focused-local-checks).
 - [ ] Qualify Find/sidebar query synchronization, Unicode/long/title-only results,
   Clear/Close, focus and preserved local Find edits/navigation across live changes.
-- [ ] Replay
-  `conversation_history_escape_clears_before_drawer_dismissal_during_generation`:
-  qualify the search-focus ownership correction through egui's Escape prepass,
-  and confirm that another focused control preserves the query.
 - [ ] Qualify more than 16 conversations, branching/saving/reopening, virtualized
   live search and bounded encrypted storage while preserving drafts, settings,
   history, selection and keyboard focus.
