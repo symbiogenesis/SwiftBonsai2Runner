@@ -842,18 +842,7 @@ fn members_exited(members: &[OwnedHandle]) -> io::Result<bool> {
     Ok(true)
 }
 
-pub(super) fn available_memory_bytes() -> io::Result<u64> {
-    let mut status = MEMORYSTATUSEX {
-        dwLength: win_size::<MEMORYSTATUSEX>(),
-        ..Default::default()
-    };
-    // SAFETY: Structure is initialized with its required exact length and writable.
-    check(unsafe { GlobalMemoryStatusEx(&raw mut status) })?;
-    Ok(status.ullAvailPhys)
-}
-
-pub(super) fn memory_status() -> io::Result<crate::MemoryStatus> {
-    use windows_sys::Win32::System::SystemInformation::GetPhysicallyInstalledSystemMemory;
+fn query_memory_status() -> io::Result<MEMORYSTATUSEX> {
     let mut status = MEMORYSTATUSEX {
         dwLength: win_size::<MEMORYSTATUSEX>(),
         ..MEMORYSTATUSEX::default()
@@ -861,6 +850,16 @@ pub(super) fn memory_status() -> io::Result<crate::MemoryStatus> {
     // SAFETY: The initialized structure has the exact advertised size, is live
     // and writable for this call, and the API retains no pointer.
     check(unsafe { GlobalMemoryStatusEx(&raw mut status) })?;
+    Ok(status)
+}
+
+pub(super) fn available_memory_bytes() -> io::Result<u64> {
+    Ok(query_memory_status()?.ullAvailPhys)
+}
+
+pub(super) fn memory_status() -> io::Result<crate::MemoryStatus> {
+    use windows_sys::Win32::System::SystemInformation::GetPhysicallyInstalledSystemMemory;
+    let status = query_memory_status()?;
     let mut installed_kib = 0_u64;
     // SAFETY: The initialized output integer is writable for this call. The API
     // retains no pointer and writes installed physical memory in KiB on success.

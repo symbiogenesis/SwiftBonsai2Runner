@@ -75,16 +75,7 @@ pub(crate) fn has_running_process(names: &[&str]) -> io::Result<bool> {
 }
 
 pub(crate) fn current_creation_time() -> io::Result<u64> {
-    // SAFETY: The process ID belongs to this live process; the returned handle is owned below.
-    let raw = unsafe {
-        super::OpenProcess(
-            super::PROCESS_QUERY_LIMITED_INFORMATION,
-            0,
-            std::process::id(),
-        )
-    };
-    let handle = super::owned(raw)?;
-    super::creation_file_time(&handle)
+    super::process_creation_time(std::process::id())
 }
 
 pub(crate) fn utc_now() -> String {
