@@ -828,6 +828,12 @@ required. Set external absolute `BONSAI_UI_CAPTURE_DIRECTORY` and select
 narrow, empty and maximum-draft/minimum-window layouts. Captures do not qualify
 native screen readers, actual-model streaming or audio.
 
+For appearance/sidebar captures, set external absolute
+`BONSAI_ERGONOMICS_CAPTURE_DIRECTORY` and select
+`ergonomics_capture_when_requested`. Related controls use `ergonomics_sidebar_`,
+`profile_`, `appearance_` and `reader_size_reflows_`; select named checks within
+the local-check policy.
+
 The [streaming/storage contract](streaming-resources.md) owns resource invariants.
 Choose one named regression from the source locations below. These untimed checks
 establish byte/pointer identity, ownership and bounded work; they measure neither
