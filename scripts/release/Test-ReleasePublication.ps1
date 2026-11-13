@@ -2,7 +2,7 @@
 # Stateful offline publication controls. Every Git/GitHub operation is mocked;
 # inert fixture executable bytes are never launched.
 [CmdletBinding()]
-param([ValidateSet('all', 'resume', 'ambiguous', 'reject')][string]$Case = 'all')
+param([ValidateSet('all', 'resume', 'ambiguous', 'reject', 'smoke')][string]$Case = 'all')
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'Release-Common.ps1')
@@ -132,6 +132,11 @@ try {
     })
     [IO.File]::WriteAllLines((Join-Path $assetDirectory $names[2]), $checksums, [Text.UTF8Encoding]::new($false))
     $uploads = @($names | ForEach-Object { "upload:$_" })
+    if ($Case -eq 'smoke') {
+        Invoke-PublicationScenario -Name partial-draft -InitialAssets 1 -ExpectedMutations ($uploads[1..2] + @('publish'))
+        Invoke-PublicationScenario -Name lost-upload-response -InitialAssets 1 -Mode UploadAmbiguous -ExpectedMutations ($uploads[1..2] + @('publish'))
+        Invoke-PublicationScenario -Name foreign-source -InitialAssets 3 -Change { param($s) $s.Release.target_commitish = 'b' * 40 } -Reject
+    }
     if ($Case -in @('all', 'resume')) {
         Invoke-PublicationScenario -Name fresh -ExpectedMutations (@('create') + $uploads + @('publish'))
         Invoke-PublicationScenario -Name empty-draft -InitialAssets 0 -ExpectedMutations ($uploads + @('publish'))
