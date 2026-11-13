@@ -3,7 +3,6 @@
 #[cfg(any(windows, test))]
 use std::fs;
 use std::fs::OpenOptions;
-use std::io::Read as _;
 #[cfg(any(windows, test))]
 use std::io::Write as _;
 use std::path::{Path, PathBuf};
@@ -144,14 +143,8 @@ fn read_bounded(path: &Path, limit: u64) -> crate::Result<Vec<u8>> {
     if !metadata.is_file() || bonsai_artifacts::is_redirect(&metadata) || metadata.len() > limit {
         return Err("Qualification input exceeds its ordinary-file byte bound.".into());
     }
-    let mut bytes = Vec::new();
-    file.take(limit + 1)
-        .read_to_end(&mut bytes)
-        .map_err(|error| error.to_string())?;
-    if u64::try_from(bytes.len()).map_err(|error| error.to_string())? > limit {
-        return Err("Qualification input grew beyond its byte bound.".into());
-    }
-    Ok(bytes)
+    crate::bounded_input::read(file, limit)
+        .map_err(|error| error.into_message("Qualification input grew beyond its byte bound."))
 }
 
 fn read_json(path: &Path, limit: u64) -> crate::Result<Value> {

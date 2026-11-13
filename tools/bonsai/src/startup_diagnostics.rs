@@ -2,7 +2,7 @@
 
 use std::{
     fs::{self, File, OpenOptions},
-    io::{Read as _, Write as _},
+    io::Write as _,
     path::{Path, PathBuf},
 };
 
@@ -106,14 +106,10 @@ fn read_bounded(path: &Path, maximum: usize) -> Result<(Vec<u8>, File), &'static
     if metadata.len() > maximum {
         return Err("read-bound-exceeded");
     }
-    let mut bytes = Vec::new();
-    (&mut file)
-        .take(maximum + 1)
-        .read_to_end(&mut bytes)
-        .map_err(|_| "read-failed")?;
-    if u64::try_from(bytes.len()).map_err(|_| "read-bound-exceeded")? > maximum {
-        return Err("read-bound-exceeded");
-    }
+    let bytes = crate::bounded_input::read(&mut file, maximum).map_err(|error| match error {
+        crate::bounded_input::Error::Bound => "read-bound-exceeded",
+        crate::bounded_input::Error::Io(_) => "read-failed",
+    })?;
     Ok((bytes, file))
 }
 

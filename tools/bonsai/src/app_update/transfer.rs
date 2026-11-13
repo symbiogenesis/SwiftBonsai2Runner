@@ -3,7 +3,7 @@
 use std::{
     collections::BTreeMap,
     fs::{self, OpenOptions},
-    io::{Read as _, Write as _},
+    io::Write as _,
     path::{Path, PathBuf},
     sync::OnceLock,
     time::Duration,
@@ -12,7 +12,7 @@ use std::{
 #[cfg(test)]
 use std::{
     fs::File,
-    io::{Seek as _, SeekFrom},
+    io::{Read as _, Seek as _, SeekFrom},
 };
 
 use super::{MAX_METADATA, external, policy::Asset};
@@ -75,14 +75,8 @@ pub(super) fn read_bounded(path: &Path, maximum: u64) -> crate::Result<Vec<u8>> 
     if file.metadata().map_err(|error| error.to_string())?.len() > maximum {
         return Err("Update metadata exceeds its byte limit.".into());
     }
-    let mut bytes = Vec::new();
-    file.take(maximum + 1)
-        .read_to_end(&mut bytes)
-        .map_err(|error| error.to_string())?;
-    if u64::try_from(bytes.len()).map_err(|error| error.to_string())? > maximum {
-        return Err("Update metadata exceeds its byte limit.".into());
-    }
-    Ok(bytes)
+    crate::bounded_input::read(file, maximum)
+        .map_err(|error| error.into_message("Update metadata exceeds its byte limit."))
 }
 
 #[cfg(test)]

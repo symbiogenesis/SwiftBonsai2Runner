@@ -4,11 +4,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use std::path::{Path, PathBuf};
 #[cfg(any(windows, test))]
-use std::{
-    fs,
-    io::{Read as _, Write as _},
-    time::Duration,
-};
+use std::{fs, io::Write as _, time::Duration};
 
 #[cfg(test)]
 mod tests;
@@ -153,14 +149,8 @@ fn read_json(path: &Path, maximum: u64) -> crate::Result<Value> {
         file.metadata().map_err(|error| error.to_string())?.len() <= maximum,
         "X2 evidence exceeds its pre-read bound.",
     )?;
-    let mut bytes = Vec::new();
-    file.take(maximum + 1)
-        .read_to_end(&mut bytes)
-        .map_err(|error| error.to_string())?;
-    require(
-        u64::try_from(bytes.len()).map_err(|error| error.to_string())? <= maximum,
-        "X2 evidence grew beyond its byte bound.",
-    )?;
+    let bytes = crate::bounded_input::read(file, maximum)
+        .map_err(|error| error.into_message("X2 evidence grew beyond its byte bound."))?;
     serde_json::from_slice(bytes.strip_prefix(&[0xef, 0xbb, 0xbf]).unwrap_or(&bytes))
         .map_err(|error| error.to_string())
 }

@@ -2,7 +2,6 @@
 
 use std::collections::BTreeMap;
 use std::fs::{File, OpenOptions};
-use std::io::Read as _;
 use std::path::{Path, PathBuf};
 
 use serde::Deserialize;
@@ -64,14 +63,8 @@ fn read_bounded(path: &Path, maximum: u64) -> crate::Result<Vec<u8>> {
     if !metadata.is_file() || bonsai_artifacts::is_redirect(&metadata) || metadata.len() > maximum {
         return Err("Capture input exceeds its fixed pre-read byte bound.".into());
     }
-    let mut bytes = Vec::new();
-    file.take(maximum + 1)
-        .read_to_end(&mut bytes)
-        .map_err(|error| error.to_string())?;
-    if u64::try_from(bytes.len()).map_err(|error| error.to_string())? > maximum {
-        return Err("Capture input exceeds its fixed pre-read byte bound.".into());
-    }
-    Ok(bytes)
+    crate::bounded_input::read(file, maximum)
+        .map_err(|error| error.into_message("Capture input exceeds its fixed pre-read byte bound."))
 }
 
 fn observations(bytes: &[u8]) -> crate::Result<BTreeMap<&str, u64>> {

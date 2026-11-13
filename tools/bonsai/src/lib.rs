@@ -192,6 +192,7 @@ pub mod provision;
 /// Model-free native host, driver and bounded tool inventory.
 pub mod doctor;
 
+mod bounded_input;
 mod identity;
 mod native_startup;
 #[cfg(windows)]
