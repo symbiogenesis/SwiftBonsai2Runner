@@ -563,7 +563,7 @@ passing verdict between paths, releases, adapters or devices.
 
 | Shared mechanism | Reuse boundary |
 | --- | --- |
-| [Latest-prefix controls](prefix-reuse.md) and fresh-recompute comparisons | Compare complete logits, KV, recurrent/convolution state and sampler progression. Add each path's edited-history, provisional-failure, cancellation and restore cases; prefix agreement alone does not qualify tiled or speculative execution. |
+| [Latest-prefix controls](native-rust-engine.md#latest-prefix-reuse) and fresh-recompute comparisons | Compare complete logits, KV, recurrent/convolution state and sampler progression. Add each path's edited-history, provisional-failure, cancellation and restore cases; prefix agreement alone does not qualify tiled or speculative execution. |
 | [Native acceptance budget](../tools/bonsai/src/native_acceptance_budget.rs) | Preserve one original deadline, residual setup charge and cleanup reserves. Reusing the calculator never starts another allowance or removes an independent owner. |
 | [Power conditions](../src/cpu-policy/src/power.rs) | Retain aggregate and per-arm endpoints and explicit unknowns. Matching endpoints do not prove continuous stability or energy benefit. |
 | [Typed receipt guard](../tools/ci/src/native_acceptance_guard.rs) and [selected regression action](../.github/actions/native-regressions/action.yml) | Execute each selected control and bind fresh results to exact source/compiler/package identities. Compilation caches supply no prior check verdict. |

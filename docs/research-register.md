@@ -238,7 +238,7 @@ retained copies before selecting a new codec.
 | Reference | Useful question and boundary |
 | --- | --- |
 | [Gated Delta Networks](https://arxiv.org/abs/2412.06464v3) | Chunkwise algebra can parallelize prompt work, but reordered floats require complete logits/state and continuation acceptance. |
-| [Sparse Prefix Caching](https://arxiv.org/abs/2605.05219v1) | Sparse checkpoints trade retained state for exact suffix recomputation in edited/branching histories. Append-only chat can first use the existing [latest prefix](prefix-reuse.md). |
+| [Sparse Prefix Caching](https://arxiv.org/abs/2605.05219v1) | Sparse checkpoints trade retained state for exact suffix recomputation in edited/branching histories. Append-only chat can first use the existing [latest prefix](native-rust-engine.md#latest-prefix-reuse). |
 | [Exact speculative sampling](https://proceedings.mlr.press/v202/leviathan23a.html), [SuffixDecoding](https://arxiv.org/abs/2411.04975v3) | Proposals need conditional target verification and accepted-prefix KV/GDN/convolution recovery. Greedy agreement does not qualify the deployed sampler. |
 | [KVBuffer](https://arxiv.org/abs/2605.19049v2) | Deferred state writes must charge factor reads, conversion, flush/materialization and pending convolution history; batch gains do not establish Swift batch-one benefit. |
 | [Bonsai DFlash2 draft](https://huggingface.co/naklitechie/Qwen3.8-27B-DFlash2-ternary-bonsai2) | A compatible trained proposal needs exact target/adapter, tokenizer, feature and shared-head identities, native resource admission and full stochastic verification. Another Bonsai target does not establish Swift compatibility. |

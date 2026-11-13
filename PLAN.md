@@ -231,7 +231,7 @@ under [AGENTS.md](AGENTS.md).
   scratch/admission, complete state, adapters, cancellation and whole-request benefit.
 - [ ] Qualify six-head/paired-token score/value reuse. Extend score/value or
   online-softmax work only if selected-context attention is a measured bottleneck.
-- [ ] Qualify explicit [latest-prefix reuse](docs/prefix-reuse.md) across service,
+- [ ] Qualify explicit [latest-prefix reuse](docs/native-rust-engine.md#latest-prefix-reuse) across service,
   broker and UI: edited/switched histories, scale changes, cancellation/faults,
   fresh-state parity, bounded eviction/resources and repeated-history benefit.
 - [ ] Qualify the batched target verifier and integrated Swift sampled suffix
@@ -425,7 +425,7 @@ under [AGENTS.md](AGENTS.md).
   under [CPU acceptance](docs/cpu-kernels.md#numerical-and-resource-acceptance).
   Publish helpers before dependent runtimes; apply [cross-generation promotion](docs/cpu-kernels.md#cross-generation-cpu-promotion)
   only within its reviewed shared-path scope.
-- [ ] Publish and run the prepared [native CPU bundle comparison](docs/cpu-bundle-comparison.md):
+- [ ] Publish and run the prepared [native CPU bundle comparison](tools/cpu-bundle/README.md):
   retain its fixed 0.1.23 baseline versus registry 0.1.25, FP16 cache, four workers
   and adapter 1.3. Keep thread screening and one-token attribution separate.
 - [ ] Qualify CPU/prefill changes already consumed by the comparison baseline
@@ -436,9 +436,9 @@ under [AGENTS.md](AGENTS.md).
   selected-cache and FP16 state/adapter/cancellation parity, codegen/resources and
   matched CPU-only complete-request benefit. Retain the pinned runtime as rollback.
 - [ ] Qualify [prepared packed-KV queries and CPU preparation reuse](docs/cpu-kernels.md#prepared-packed-kv-queries-and-cpu-preparation-reuse).
-- [ ] Qualify [X1-oriented candidates](docs/cpu-kernels.md#x1-oriented-source-candidates),
-  [next candidates](docs/cpu-kernels.md#next-cpu-candidates) and
-  [further candidates](docs/cpu-kernels.md#further-x1-cpu-candidates), retaining each
+- [ ] Qualify [CPU preparation candidates](docs/cpu-kernels.md#cpu-preparation-candidates),
+  [dispatch and attention preparation](docs/cpu-kernels.md#dispatch-and-attention-preparation) and
+  [tiled dispatch and adapters](docs/cpu-kernels.md#tiled-dispatch-and-adapter-preparation), retaining each
   path's independent integration, numerical, fallback and benefit gates.
 - [ ] Qualify [grouped dispatch, half widening and exact LUT execution](docs/cpu-kernels.md#grouped-dispatch-hardware-half-widening-and-exact-lut-execution).
 - [ ] Qualify [complete-row SDOT, fixed attention lanes and bounded GDN phases](docs/cpu-kernels.md#complete-row-sdot-fixed-attention-lanes-and-bounded-gdn-phases).

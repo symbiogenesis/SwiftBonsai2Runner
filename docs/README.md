@@ -29,7 +29,6 @@ updates and publication. [PLAN.md](../PLAN.md) is the single backlog.
 | [Weight-space programming](weight-space-programming.md) | Compact corrections and weight-edit evidence |
 | [Model selection](model-selection.md) | Qwen compatibility, memory and future MoE scope |
 | [Native Rust engine](native-rust-engine.md) | Graph/API, numerical state, overhead and evaluation |
-| [Prefix reuse](prefix-reuse.md) | Explicit launch, readiness and lifecycle |
 | [C++ retirement](cpp-retirement.md) | Native dependency boundaries and replacement controls |
 | [Prism conformance](prism-upstream-tests.md) | Independent upstream acceptance and source reuse |
 | [Runtime candidates](runtime-candidates/README.md) | Headless-startup candidate and reproduction |
