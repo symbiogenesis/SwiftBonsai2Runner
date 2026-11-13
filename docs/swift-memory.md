@@ -1,6 +1,6 @@
 # Swift artifacts, memory and PTQ1
 
-**Original PQ2 on native Rust Prism 0.1.25 is the development default**, with four
+**Original PQ2 on native Rust Prism 0.1.26 is the development default**, with four
 CPU row workers, standard adapter scale 1.3 and [X2 NPU placement](hexagon.md) when initialization
 succeeds. `--publisher-engine` explicitly selects rollback; PTQ1 remains opt-in.
 Bounded native CPU decode passes; creative quality, performance and daily-service
@@ -186,7 +186,7 @@ Elite Extreme with explicit NEON, four row workers and adapter scale 1.3 (5.85 G
 commit). None of these partial checks authorizes a PTQ1 default.
 
 Those 0.1.14 plans are historical packet targets. The current combined-service
-harness embeds the active 0.1.25 lock; new execution requires either separately
+harness embedded the then-active 0.1.25 lock; new execution requires either separately
 prepared frozen tooling or a newly reviewed active-release packet. It cannot
 complete the earlier trial or transfer that trial's scores to the active release.
 
@@ -337,17 +337,18 @@ leave the gate pending if setup, work and cleanup cannot fit the owner budget.
 
 ## Memory-selected serving context
 
-Publisher Swift serving selects its context once per model launch from available
-physical memory. Retry takes a new observation; an active model keeps its context
+Native Prism 0.1.26 and publisher Swift serving select context once per model
+launch from available physical memory. Retry takes a new observation; an active model keeps its context
 so counting, generation, readiness and the native UI use the same capacity.
-The active native Prism 0.1.25 release remains fixed at 8K, as described below.
-Serving capacity is separate from the fixed 8K qualification workloads.
+The reviewed native pin activates the paired context/memory protocol and
+selected-cache accounting. Serving capacity is separate from historical fixed-8K
+qualification workloads; those evidence identities remain unchanged.
 
 The pure planner in `bonsai-cpu-policy::context` retains the existing 4 GiB
 Windows reserve and non-context allowance from the 11.5 GiB/8K reference budget.
 Publisher sizing charges 137,344 bytes per token: two 65,536-byte FP16 KV copies
 for live and rollback state, 6,144 bytes for the publisher's 64-token/24-head
-score scratch, and 128 bytes for context metadata. The prepared native profile
+score scratch, and 128 bytes for context metadata. The reviewed native profile
 instead charges the immutable selected cache and sequential score scratch:
 
 | Sizing profile | One KV copy, bytes/token | Process growth, bytes/token | State ceiling, tokens |
@@ -369,8 +370,8 @@ Explicit tiled prefill and speculation retain separate additive reservations.
 The non-context allowance remains 11 GiB, the reference
 Job budget minus its original 512 MiB KV charge; it includes weights, adapters,
 recurrent state, transforms and runtime headroom. These are conservative source
-allowances, not measured peaks. The native cache-aware sizing is prepared for
-unreleased Prism 0.1.26; it does not change the installed release or establish measured
+allowances, not measured peaks. Native Prism 0.1.26 activates this cache-aware
+sizing through its exact reviewed release pin; this establishes no measured
 memory savings. PTQ1 receives no reduction in the fixed allowance.
 
 Capacity rounds down to 256-token pages and must accommodate the 4,096-token
@@ -380,7 +381,7 @@ reply cap plus the 64-token template reserve. It never exceeds Swift's declared
 charges. FP16's resulting state ceiling is 62,720 tokens; K4/V4's is 241,664.
 K4/V3 fits the model's 262,144-token ceiling within the same state bound.
 At 20 GiB available before launch, publisher sizing selects 37,120 tokens and
-the prepared native K4/V4 profile selects 149,760; K4/V3 selects 170,240.
+the native K4/V4 profile selects 149,760; K4/V3 selects 170,240.
 At 24 GiB available, K4/V3 reaches the model ceiling. These are calculated admission
 bounds, not measured usable capacities or long-range quality results.
 Less available RAM selects a smaller window and more can
@@ -394,29 +395,25 @@ The Job ceiling and launch admission follow the selected budget. Unknown or
 insufficient memory rejects launch, and running pressure still tears down the
 owned model. An available-memory snapshot reserves no RAM.
 
-Publisher serving can pass the selected capacity through `--ctx-size`. The pinned
-native **Prism 0.1.25** release still implements a fixed 8,192-token context and
-keeps its existing admission/Job policy. Native memory selection remains gated
-until a genuine source-bound release implements the paired `--context-tokens`
-and `--memory-limit-bytes` child interface and Runner reviews that exact release
-identity. The release gate must also bind the reviewed cache-aware accounting;
-an older FP16-only memory protocol cannot receive the smaller K4/V4 allowance.
-Local Prism source changes do not modify installed release bytes;
-startup reports this limit explicitly. No version-only guess or fabricated
-release pin enables the new protocol.
+Publisher serving passes the selected capacity through `--ctx-size`. Native
+**Prism 0.1.26**, source `3d735627df43056d3bf569002af2c23af30a3e6a`, uses paired
+`--context-tokens` and `--memory-limit-bytes` child arguments with the reviewed
+selected-cache/sequential-scratch accounting. Runner binds capability activation
+to this exact release identity; unrelated versions and an older FP16-only memory
+protocol cannot receive the smaller K4/V4 allowance. The binary archive and files
+must still match their compiled lock; a version string alone enables no protocol.
 
 Runner prepares explicit `--kv-cache rsq4k3v` selection through trusted source,
 installed and deferred launches, including Retry. A separate exact-source release
-gate keeps it unavailable with the current 0.1.25 pin. Future activation requires
+gate keeps it unavailable with the current 0.1.26 pin. Future activation requires
 review of both the K4/V3 numerical identity and the complete M1/M2 accounting
 contract; neither a version string nor a raw CLI option establishes support.
 The K4/V4 default and explicit FP16 recovery remain separate selections.
 
-The capacity-first alternative is prepared as trusted `--placement cpu` (JSON
+The capacity-first alternative is available as trusted `--placement cpu` (JSON
 `Placement: "cpu"`, PowerShell `-Placement cpu`). It survives source, installed
-and deferred setup and model Retry. The broker rejects it with the current pin;
-a separate exact-source release gate requires a runtime that skips accelerator
-initialization and reports both `placement: "cpu"` and
+and deferred setup and model Retry. Its exact-source release gate selects the
+reviewed 0.1.26 runtime, which skips accelerator initialization and reports both `placement: "cpu"` and
 `projection_backend: "cpu"` at readiness. Omission or explicit `auto` keeps the
 existing automatic placement. Explicit placement is native-only, and requests
 cannot change it. The fixed 11 GiB allowance, two-cache charge and host/startup
@@ -427,13 +424,13 @@ not a measured RAM saving or a latency result.
 Release activation must review cache selection, default four-worker support,
 latest-prefix reuse and memory-context accounting together. The exact reviewed
 memory release is also recognized by those native capability checks; unrelated
-future versions remain rejected. K4/V3 and CPU placement retain separate closed
-release gates. Verify the genuine bundle and source, update the pin and applicable
-gates, then qualify the selected combination rather than enabling a version alone.
+future versions remain rejected. K4/V3 retains its separate closed release gate;
+CPU placement is enabled only for the reviewed 0.1.26 source. Qualify each selected
+combination independently; publication does not transfer historical model evidence.
 
 For memory-sized serving, closing memory-heavy applications before a fresh launch
 or Retry can leave more RAM for the selected context. This cannot enlarge an
-already running model or the fixed-8K native release. Keep completed work before
+already running model. Historical fixed-8K releases keep their original capacity. Keep completed work before
 restarting; the planner retains the same host and startup reserves.
 
 The broker publishes the actual capacity to its owned UI. Until it is known,

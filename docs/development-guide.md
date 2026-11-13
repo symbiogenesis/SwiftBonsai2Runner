@@ -11,7 +11,7 @@ are separate developer workflows.
 ## Current state
 
 The app defaults to native Rust [Prism Inference](https://github.com/symbiogenesis/prism-inference)
-0.1.25, original Swift PQ2, four CPU row workers and the pinned pretrained adapter
+0.1.26, original Swift PQ2, four CPU row workers and the pinned pretrained adapter
 at scale 1.3. On supported Snapdragon X2 installations, the runtime also enables
 the experimental resident Hexagon `native-q2` path, with CPU fallback when the
 signed runtime package or CDSP driver is absent. See [Hexagon policy](hexagon.md)
@@ -49,10 +49,11 @@ digests, runtime archive/file locks, model/representation, adapter/scale and
 selected device/driver/kernel. A version number alone is insufficient. Continue
 implementation in separate worktrees; review changed dependencies before reusing evidence.
 
-The active 0.1.25 bundle already contains efficiencies awaiting qualification.
-Its [registry delivery](evidence/prism-0125-publish-20261112/summary.json) includes
-every public helper, including `bonsai-neon-dot 0.1.2` for detected capabilities;
-consumed behavior needs no further repin. Newer local CPU candidates need separate
+The active 0.1.26 source retains efficiencies awaiting qualification.
+The [historical 0.1.25 registry delivery](evidence/prism-0125-publish-20261112/summary.json)
+retains its original helper identities. The 0.1.26 registry package instead selects
+`bonsai-neon-dot 0.1.3`; the source-bound binary release retains its own exact
+source and archive identities. Newer local CPU candidates need separate
 source review, and binary repins require genuine source-bound published bundles.
 Follow the [runtime lock update](#prepare-a-runtime-lock-update) and
 [CPU verification contract](cpu-kernels.md).
@@ -179,7 +180,7 @@ and the remaining hosted and clean-machine acceptance gates.
 The [portable package workflow](chat-packages.md) installs reviewed prebuilt app
 files without a checkout/compiler. Source launch requires native Windows ARM64,
 the pinned Rust toolchain, a built maintenance executable, internet access for setup and
-**15.5 GiB available RAM**. Serviced Windows 11 must admit PSEC 1.1 and
+sufficient available RAM for the selected native context and launch budget. Serviced Windows 11 must admit PSEC 1.1 and
 container-hosted loopback; failed containment never falls back to caller authority.
 
 Build the maintenance executable outside Git once, then launch. The native setup
@@ -267,7 +268,7 @@ descendants and owned model
 workers. Artifact verification and memory admission still precede model use.
 
 **Stop** tears down the owned broker/backend. **Retry model** waits for teardown,
-then repeats identity, artifact and 15.5 GiB admission checks with a fresh instance
+then repeats identity, artifact and selected-memory admission checks with a fresh instance
 and retained completed turns. Retry explicitly after uncertain transport/protocol
 failures or after freeing RAM. Requests never replay automatically or fall back
 to a smaller profile. Interrupted prompts return only to an empty composer,
@@ -393,7 +394,7 @@ overestimate or underestimate the tokenizer. The selected reply cap, reserve and
 session context limit are exact policy values; the estimate is no guarantee of fit.
 The capacity comes from the owned broker and stays pending until startup reports
 it. [Memory-selected context](swift-memory.md#memory-selected-serving-context)
-defines launch-time sizing and the current pinned native runtime limitation.
+defines launch-time sizing, reserves and pending larger-context qualification.
 Extra effort estimates cover its planning pass only: later passes include generated
 working material that is not yet known. Message iteration can use a different
 prompt or committed prefix, so the composer estimate does not preflight those actions.
@@ -657,7 +658,8 @@ segments with bounded streaming playback/prefetch and stays warm at most 30 idle
 seconds after success. Stop, failure, transcription or shutdown releases it immediately;
 resource monitoring continues while warm. Each service requires 9 GiB available,
 a 5 GiB physical reserve and a 16 GiB Job commit ceiling. Swift retains its
-15.5 GiB admission/4 GiB reserve; speech failure preserves text chat and answers.
+selected context and memory admission with a 4 GiB host reserve; speech failure
+preserves text chat and answers.
 [Streaming resources](streaming-resources.md) owns queue, segmentation and playback bounds.
 
 TTS automatically reserves two logical CPUs, with at least one inference thread;
@@ -742,8 +744,8 @@ and installed-package launches retain native admission. Installed launches use [
 
 | Runtime/model | Source and installed launch options | Boundary |
 | --- | --- | --- |
-| Native Rust Prism 0.1.25, original Swift PQ2 | Development default; optional explicit `--native-engine --use-original-pq2`; pinned adapter enabled | Four CPU row workers, adapter scale 1.3, K4/V4 cache and supported X2 resident `native-q2` acceleration. Exact artifact/readiness checks remain mandatory; full daily-use qualification is pending. |
-| Native Rust Prism 0.1.25, current-weight PTQ1 export | `--use-repacked-ptq1`, optionally `--native-engine` | Experimental opt-in; separate [PTQ1 qualification](swift-memory.md#current-weight-ptq1-option) remains pending. Missing/changed bytes reject. |
+| Native Rust Prism 0.1.26, original Swift PQ2 | Development default; optional explicit `--native-engine --use-original-pq2`; pinned adapter enabled | Four CPU row workers, adapter scale 1.3, K4/V4 cache and supported X2 resident `native-q2` acceleration. Exact artifact/readiness checks remain mandatory; full daily-use qualification is pending. |
+| Native Rust Prism 0.1.26, current-weight PTQ1 export | `--use-repacked-ptq1`, optionally `--native-engine` | Experimental opt-in; separate [PTQ1 qualification](swift-memory.md#current-weight-ptq1-option) remains pending. Missing/changed bytes reject. |
 | Publisher Prism CPU, original Swift PQ2 | `--publisher-engine`, optionally `--use-original-pq2` | Manual rollback with the same pinned adapter and response scale; no automatic fallback. |
 | Publisher Prism CPU, current-weight PTQ1 export | `--publisher-engine --use-repacked-ptq1` | Same adapter opt-out/scale. No older publisher PTQ1 substitution. |
 
@@ -771,7 +773,7 @@ Rust selection; omitting it selects the current development default.
 The owner selects [TurboQuant-inspired K4/V4 (`rsq4`)](quantized-kv.md) as the
 development default in new Swift runtime source. Runner activates that default
 only for the exact reviewed runtime source after published-bundle verification
-and repinning. The 0.1.25 development pin activates it; the historical 0.1.23
+and repinning. The 0.1.26 development pin retains it; the historical 0.1.23
 control retains FP16. This upgrade supplies no measured CPU or cache benefit. Trusted
 source launches accept `--kv-cache f16|rsq4|rsq4k3v`
 (`-KvCache F16|Rsq4|Rsq4K3V` through `Start-Chat.ps1`); installed-launch JSON uses
@@ -782,9 +784,15 @@ this native cache selection. Choose `f16` on a fresh launch for comparison or
 recovery; retry preserves the cache, and client requests cannot change it.
 Cache readiness includes the expected numerical graph identity. The development
 choice accepts approximation and pending measured quality/memory qualification;
-process admission and the 8K context bound remain unchanged.
+context and process admission follow the selected-cache memory planner.
+Trusted native `--placement cpu` (installed JSON `Placement: "cpu"`,
+PowerShell `-Placement cpu`) skips accelerator initialization with the reviewed
+0.1.26 pin and survives setup and Retry. Readiness must report both CPU placement
+and CPU projection execution. Omission or `auto` retains automatic placement;
+this selection does not reduce the conservative memory allowance.
+
 The prepared `rsq4k3v` capacity option rejects the current pin. Activation requires
-a separately reviewed genuine runtime release implementing K4/V3 with the complete
+a separate exact-source review of K4/V3 with the complete
 [memory-selected context contract](swift-memory.md#memory-selected-serving-context).
 
 A publisher startup diagnostic of `process=exited-0xC0000142` means Windows failed
@@ -804,7 +812,7 @@ Original PQ2 and adapter scale 1.3 remain the defaults. The engine selection is
 independent of the weight selection; current-release device rollback still
 requires qualification.
 
-Native Rust defaults to four row workers using the pinned 0.1.25 implementation.
+Native Rust defaults to four row workers using the reviewed 0.1.26 implementation.
 `--native-row-workers 1` explicitly selects one worker. Publisher/reference
 launches default to one and reject four; no request can override this private launch setting.
 The [fixed-input comparison](evidence/row-parallel-smoke.json) preserves all logits
@@ -1076,10 +1084,12 @@ Pass `--profile swift-pq2-assessment` for Swift's original PQ2 model, provisione
 with `config/swift-assessment.lock.json`. Provision the native runtime with
 `provision` operation `inference`; publisher rollback instead uses operation
 `engine` with the Swift lock, as shown in [runtime selection](#runtime-selection).
-Swift uses batch/microbatch 128/64. The pinned native runtime retains an
-11.5 GiB Job cap and 15.5 GiB admission, including the 4 GiB physical reserve.
-Publisher Swift instead selects context and its launch budget from available
-memory under the [context policy](swift-memory.md#memory-selected-serving-context).
+Publisher Swift uses batch/microbatch 128/64. Native Prism 0.1.26 and publisher
+Swift select context and the Job/admission budget from available memory under the
+[context policy](swift-memory.md#memory-selected-serving-context). The native planner
+charges the selected cache and sequential scratch, retaining the 4 GiB host reserve
+and startup margin. The historical 11.5 GiB Job/15.5 GiB fixed-8K controls retain
+their original identities.
 Add `--use-abliterate-lora` for the pinned adapter and per-request scale (default
 1.3); the native UI requests it automatically, while direct broker launches omit it.
 Publisher Prism and the pinned native Rust service both accept the approved adapter with PQ2 or explicit
@@ -1153,8 +1163,8 @@ original Swift model or explicit verified current-weight PTQ1 export and the ver
 release. The exact approved adapter is optional; arbitrary models/adapters and backend
 overrides are unsupported.
 It retains the executable against replacement, fixes seed 42 and requires matching
-native identity before frontend readiness. Ordinary 11.5 GiB Job / 15.5 GiB admission,
-4 GiB watchdog, protected keys and listener checks apply. Interrupted generation
+native identity before frontend readiness. The selected context and Job/admission
+budget, 4 GiB watchdog, protected keys and listener checks apply. Interrupted generation
 closes admission and stops the backend; relaunch creates a fresh owned instance.
 
 The [runtime contract](native-rust-engine.md) defines the pinned release's supported

@@ -43,8 +43,10 @@ Review the release source identity before use.
 ## Prerequisites and model setup
 
 Use serviced Windows 11 ARM64 with the containment capabilities described in
-[Windows sandboxing](sandboxing.md), and leave **15.5 GiB RAM available** before
-model startup. Unsupported containment or unavailable resources stop startup.
+[Windows sandboxing](sandboxing.md). Native Prism 0.1.26 selects context and its
+launch memory budget from available RAM, retaining a 4 GiB Windows reserve and
+startup margin. Unsupported containment, unknown memory or insufficient resources
+stop startup; see [context sizing](swift-memory.md#memory-selected-serving-context).
 Install the compatible ARM64 Microsoft Visual C++ v14 runtime from
 [Microsoft's redistributable downloads](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist).
 It is a separate prerequisite for the native speech components; the bundle does

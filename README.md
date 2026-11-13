@@ -83,8 +83,8 @@ explains how to skip them or preview the app without a model. See the
 | --- | --- |
 | **Hardware** | Windows ARM64 laptops with Snapdragon X and X2 processors |
 | **Model** | Swift Bonsai 2 (6.71 GiB download) |
-| **Memory needed** | 15.5 GiB of free RAM (keeps 4 GiB reserved for Windows and other apps) |
-| **Conversation size** | One active reply at a time · 8,192 tokens shared by history, prompt, reply and template reserve |
+| **Memory needed** | Selected at model startup from available RAM, with 4 GiB reserved for Windows and other apps |
+| **Conversation size** | One active reply at a time · context selected from memory and shared by history, prompt, reply and template reserve |
 | **Engine** | [Prism Inference](https://github.com/symbiogenesis/prism-inference) (Rust) on CPU, with Hexagon NPU acceleration on Snapdragon X2 |
 | **Roadmap** | [Central TODO](PLAN.md) |
 
@@ -95,8 +95,8 @@ are from **November 9, 2026**, using **Prism 0.1.23**, four CPU workers and the
 standard adapter at strength 1.3 on a **Snapdragon X2 Elite Extreme** laptop.
 AC power was connected and battery saver was off at every recorded power sample.
 
-Runner's development build uses published [Prism 0.1.25](https://github.com/symbiogenesis/prism-inference/releases/tag/v0.1.25)
-with verified files, K4/V4 cache and explicit FP16 recovery. Its performance
+Runner's development build selects [Prism 0.1.26](https://github.com/symbiogenesis/prism-inference/releases/tag/v0.1.26)
+with verified files, memory-selected context, K4/V4 cache and explicit FP16 recovery. Its performance
 measurements remain [pending](PLAN.md); the timings below apply to **0.1.23**.
 
 | Model option | Time to first token | Generation speed | Model file size | Peak Job commit (short reply) | Free RAM required |
