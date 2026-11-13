@@ -13,8 +13,7 @@ authenticate the author's original checkpoint bytes or conversion invocation.
 `tools/native-reference/public_pack_reference.ps1` and the dependency-free Rust
 `bonsai-reference-numerics` helper implement exactly one declared recipe,
 `public-mlx-f16-inverse1024-f16-rust-scalar-f32-dot-v2`, before seeing payload results.
-Schema-2 packets distinguish this implementation from historical NumPy/BLAS v1
-results; their arithmetic identities and qualification do not transfer.
+Schema-2 packets bind this exact arithmetic identity.
 
 1. Verify the complete immutable 8,595,477,990-byte public MLX safetensors file's
    SHA-256 before reading its bounded header, then rehash a read-only handle held
@@ -87,9 +86,8 @@ model workload. The current trusted auditor automatically checks the retained
 source bundle as data, including its exact finite inventory, types, lengths and
 digests; it executes none of the archived producer code. Parsed retained recipe
 pins must equal the reviewer's independently selected recipe, and adapter/direction
-locks and payload identities still need to match. Legacy reports without a bundle
-require their original producer-identical source scripts and pins, including line
-endings. Matching a Git revision alone does not guarantee those raw bytes:
+locks and payload identities still need to match. Require the retained source bundle and matching raw producer bytes, including
+line endings:
 
 ```text
 pwsh -NoLogo -NoProfile -File tools/native-reference/audit_public_reference.ps1 -EvidenceDirectory ABSOLUTE_RETAINED_DIRECTORY -Adapter VERIFIED_APPROVED_ADAPTER -Direction VERIFIED_PUBLIC_DIRECTION -ExpectedSourceRevision FULL_REVISION -ExpectedRunId RUN_ID -ExpectedRunAttempt ATTEMPT

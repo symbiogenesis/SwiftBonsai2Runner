@@ -6,17 +6,12 @@ the single ID `[248045]`. Select one Rust backend (`auto`,
 `adapter_condition`: `standard` (default, approved adapter at 1.3), `loaded-zero`
 (approved adapter loaded at zero) or `no-adapter` (adapter loading omitted).
 Both processes use the same condition; no worker, backend or adapter matrix runs.
-**The entire owner job, including setup, loading, comparison, cleanup and
-artifact upload, has a five-minute hard limit.** Its clock starts before
-checkout/tool intake. The checked budget tool charges setup against the
-at-most-240-second work allowance, honors earlier owner deadlines and preserves
-separate teardown/upload reserves. Missing or out-of-range allowances reject
-before owner/model preparation. Rust starts its work clock before preparation
-and caps external calls by the remaining time. The parent passes the original
-monotonic deadline to the child and recalculates the watchdog after process
-startup. Receipts, startup and handoff cannot renew either deadline. Save active
-capture/comparison phases before external work; never split omitted controls
-into repeated jobs.
+The entire job has a five-minute hard limit under the
+[owner-device policy](../../AGENTS.md#owner-device-execution-budgets).
+Its clock starts before checkout/intake; the at-most-240-second work allowance
+reserves teardown/upload time. Parent and child share the original monotonic
+deadline, capped around every external call. Record active phases before work;
+startup, handoffs and receipts cannot renew the deadline.
 
 Cross-condition loaded-zero identity, changed nonzero logits, scalar, explicit NEON,
 writer authoring basis, quality, performance, full context and service remain
@@ -39,8 +34,7 @@ no inference implementation; the reference DLL engine remains native.
 type, enum, default/configured parameter and returned-aggregate observations.
 Adjacent provenance binds the exact headers, compiler, DLLs, original driver and
 license. Rust computes observations from its own declarations and the actual DLLs;
-expected records are not used to generate observations. The original C++ driver
-is removed. Focused tests retain success, every native failure phase,
+expected records are not used to generate observations. Focused tests retain success, every native failure phase,
 cleanup order, bounded output, create-new collisions and partial evidence.
 Returned native errors release acquired resources in order; an unexpected foreign
 exception aborts the isolated collector before damaged native state can be reused.
@@ -64,11 +58,10 @@ Run the separately hosted-prepared maintenance executable directly. Its adjacent
 `receipt.json` must bind its complete digest to the current Runner revision.
 
 Hosted preparation uses the pinned Rust compiler/LLD for the collector and its
-model-free tests; it no longer downloads native source headers or invokes a C++
-compiler for this tool. The native source pins remain provenance for the DLL ABI.
-Model-free collector controls distinguish omitted adapter calls from an adapter
-loaded and applied at exact positive zero, retain dependency release order and
-reject unsupported scale spellings before native loading.
+model-free controls. The native source pins identify the DLL ABI. Controls
+distinguish an omitted adapter from loaded-at-zero, retain release order and
+reject unsupported scales before native loading.
+
 Before owner model admission, both the original JSON ABI probe and the complete
 live 369-record observation set must match the frozen native control. Duplicate,
 missing, extra, changed or overflowing records reject the trial, as do changed
@@ -153,35 +146,11 @@ it supplies no new device trial, renewed owner allowance, full-context, adapter
 provenance, quality or default-promotion qualification. This fixed auditor does
 not qualify later numerical captures.
 
-The separate [public authoring reference](../../docs/adapter-public-reference.md)
-has one predeclared all 48 A-vector reconstruction from the immutable public MLX
-pack. Its main-only GitHub-hosted Windows ARM64 workflow defaults to small
-independent synthetic controls; actual 8.6 GB intake requires explicit dispatch.
-It retains complete A files, metrics and toolchain identities, without inference
-or a full checkpoint write. A numeric match cannot authenticate the author's
-original inputs or qualify native writer mappings, logits/state or promotion.
+## Public authoring reconstruction
 
-The current public reference uses PowerShell 7.6 or newer for bounded intake and
-strict JSON/GGUF/safetensors descriptors, plus the dependency-free Rust
-`bonsai-reference-numerics` executable for affine decoding, inverse Hadamard,
-binary16 storage rounding and scalar binary32 dot products. Its independent
-offline replay computes A/B comparison metrics in PowerShell and has separate
-GGUF and retained-header readers. No Python runtime, package installer or numeric
-wheel is required by either path.
-
-This migration creates schema 2 and arithmetic identity
-`public-mlx-f16-inverse1024-f16-rust-scalar-f32-dot-v2`: the direction norm uses a
-sequential binary64 sum/square root rounded once to binary32; each dot product
-uses a sequential binary32 sum with separate multiply and add operations. The
-fixed tolerances and immutable public input pins remain unchanged. Historical
-NumPy/BLAS recipe-v1 outcomes keep their original identities; their arithmetic
-and qualification do not transfer to this replacement. The public workflow must
-qualify the newly declared recipe with its hosted all-48 reconstruction and
-independent replay. Local synthetic controls establish no actual public-pack
-agreement or model qualification.
-
-For focused local controls, provide a prebuilt helper with
-`BONSAI_REFERENCE_NUMERIC_TOOL` or `-ToolPath` and select one named case. Omitting
-the selection runs all cases only under GitHub Actions. The public workflow
-builds the std-only helper with the pinned compiler; owner numerical trials
-consume its source-bound packaged executable.
+The [public reference contract](../../docs/adapter-public-reference.md) owns the
+schema-2 all-48 A-vector reconstruction, arithmetic identity, hosted execution
+and independent replay. Its PowerShell 7.6 readers use the dependency-free Rust
+`bonsai-reference-numerics` helper; owner trials require its source-bound prebuilt
+executable. Select a focused control with `BONSAI_REFERENCE_NUMERIC_TOOL` or
+`-ToolPath`; unselected complete suites run only under GitHub Actions.
