@@ -69,6 +69,12 @@ through deferred setup and Retry. The current pin rejects it before model launch
 activation requires a separate exact-source release review of K4/V3 and the paired
 context/memory accounting. Request bodies cannot select this profile.
 
+Trusted `--placement auto|cpu` also survives preparation and Retry. CPU placement
+requires a separately reviewed runtime source and readiness declaring both CPU
+placement and CPU projection execution; the current pin rejects it. Explicit
+placement is native-only. Omission preserves automatic placement. This option
+does not change the fixed memory allowance or establish recovered RAM or speed.
+
 The launcher checks/builds presentation first. After the first UI tick, an owned
 preparation worker verifies/provisions the selected pinned Rust runtime alongside
 building/verifying the broker, then hands off text chat after both finish. Either

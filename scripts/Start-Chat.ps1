@@ -22,6 +22,8 @@ param(
     [string]$PromptReuse,
     [ValidateSet('f16', 'rsq4', 'rsq4k3v')]
     [string]$KvCache,
+    [ValidateSet('auto', 'cpu')]
+    [string]$Placement,
     [switch]$UseRepackedPtq1,
     [switch]$UseOriginalPq2,
     [ValidateSet('dx12', 'vulkan', 'gl')]
@@ -73,5 +75,6 @@ if ($UseOriginalPq2) { $launchArguments += '--use-original-pq2' }
 if ($GraphicsBackend) { $launchArguments += @('--graphics-backend', $GraphicsBackend.ToLowerInvariant()) }
 if ($PromptReuse) { $launchArguments += @('--prompt-reuse', $PromptReuse.ToLowerInvariant()) }
 if ($KvCache) { $launchArguments += @('--kv-cache', $KvCache.ToLowerInvariant()) }
+if ($Placement) { $launchArguments += @('--placement', $Placement.ToLowerInvariant()) }
 & $ToolPath @launchArguments
 exit $LASTEXITCODE

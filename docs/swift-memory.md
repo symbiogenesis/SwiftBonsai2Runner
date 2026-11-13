@@ -412,6 +412,25 @@ review of both the K4/V3 numerical identity and the complete M1/M2 accounting
 contract; neither a version string nor a raw CLI option establishes support.
 The K4/V4 default and explicit FP16 recovery remain separate selections.
 
+The capacity-first alternative is prepared as trusted `--placement cpu` (JSON
+`Placement: "cpu"`, PowerShell `-Placement cpu`). It survives source, installed
+and deferred setup and model Retry. The broker rejects it with the current pin;
+a separate exact-source release gate requires a runtime that skips accelerator
+initialization and reports both `placement: "cpu"` and
+`projection_backend: "cpu"` at readiness. Omission or explicit `auto` keeps the
+existing automatic placement. Explicit placement is native-only, and requests
+cannot change it. The fixed 11 GiB allowance, two-cache charge and host/startup
+reserves stay unchanged until measurements establish distinct usable headroom.
+Omitting the roughly 2.69 GiB NPU-resident payload is a capacity investigation,
+not a measured RAM saving or a latency result.
+
+Release activation must review cache selection, default four-worker support,
+latest-prefix reuse and memory-context accounting together. The exact reviewed
+memory release is also recognized by those native capability checks; unrelated
+future versions remain rejected. K4/V3 and CPU placement retain separate closed
+release gates. Verify the genuine bundle and source, update the pin and applicable
+gates, then qualify the selected combination rather than enabling a version alone.
+
 For memory-sized serving, closing memory-heavy applications before a fresh launch
 or Retry can leave more RAM for the selected context. This cannot enlarge an
 already running model or the fixed-8K native release. Keep completed work before

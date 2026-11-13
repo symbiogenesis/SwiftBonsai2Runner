@@ -1708,6 +1708,10 @@ The [memory contract](docs/swift-memory.md#memory-selected-serving-context),
    charges FP16 and has a 62,720-token ceiling. Deliver the combined cache-aware
    M1/M2 candidate below. Preserve unknown/insufficient
    memory rejection, immediate prelaunch admission and owned-Job pressure teardown.
+   Activate the reviewed memory release consistently across default K4/V4 cache
+   selection, four-row-worker support and latest-prefix reuse. Runner's shared
+   exact-source recognition prepares those consumers; unrelated future releases
+   remain rejected, and K4/V3 and CPU placement keep separate release gates.
 2. **M2, Prism and Runner:** make process, live-state and rollback/checkpoint
    allowances depend on the selected immutable cache layout, including scales,
    page/tail metadata, codec storage and scratch. Update `MAX_CONTEXT_TOKENS`,
@@ -1821,9 +1825,13 @@ conditional ladder reaches the artifact's declared 262,144-token ceiling
   equivalent usable headroom is demonstrated, the step-3 K4/V4 example could rise
   from 149,760 to 234,752 tokens. Measure the latency tradeoff; treat this as an
   alternative to the cumulative ladder, without double-counting arenas or PTQ1.
-  The explicit Prism CPU placement candidate skips accelerator initialization;
-  deliver it through a genuine source-bound release, then carry the selection
-  through Runner setup, launch, readiness and Retry. Keep the 11 GiB fixed charge
+  The explicit Prism CPU placement candidate skips accelerator initialization.
+  Runner now carries trusted `--placement auto|cpu` through source/installed
+  setup, launch and Retry and binds readiness to both requested CPU placement
+  and effective CPU projection execution. Deliver a genuine source-bound release
+  and review its exact identity before opening the separate CPU gate; current
+  0.1.25 rejects CPU selection, and explicit placement is native-only. Qualify
+  the selected placement/cache/reuse combination. Keep the 11 GiB fixed charge
   until selected-device measurements establish distinct usable headroom. Source
   omission alone supplies no memory or performance qualification.
 - **Bounded unique-page accounting, Prism:** inspect append-only reuse before
@@ -1838,6 +1846,14 @@ conditional ladder reaches the artifact's declared 262,144-token ceiling
 - **Reply reservation guidance, Runner:** where suitable, changing the reserved
   reply from 4,096 to 1,024 admits 3,072 additional prompt tokens within the same
   total context. Keep exact broker admission and the user's selected output limit.
+- **Long-prompt intake, Runner:** remove the 32,768-character composer bottleneck
+  through a bounded native text path before claiming single-message 64K/128K
+  usability. Review recovery, editing, source insertion and request serialization
+  together, preserving complete drafts and explicit byte-limit rejection. The
+  separate 1 MiB serialized-request ceiling can constrain near-262K histories;
+  qualify representative complete Unicode and escaped-text requests against
+  both byte and exact token bounds. A larger tokenizer limit alone closes
+  neither intake gate and authorizes no silent truncation.
 - **Source-grounded retrieval and optional summaries, Runner:** extend useful
   history through the native lexical scene-packet builder, source versions and
   author-reviewed exact excerpts. Qualify representative passage relevance and

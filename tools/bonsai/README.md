@@ -68,7 +68,8 @@ $bonsai = Join-Path $target 'release/bonsai-tools.exe'
 
 `chat` is the native launch entry point; optional `scripts/Start-Chat.ps1`
 forwards to it and offers `-NativeEngine`, `-PublisherEngine`, `-NativeRowWorkers`,
-`-UseRepackedPtq1`, `-UseOriginalPq2`, `-PromptReuse`, `-KvCache` and `-GraphicsBackend`.
+`-UseRepackedPtq1`, `-UseOriginalPq2`, `-PromptReuse`, `-KvCache`, `-Placement`
+and `-GraphicsBackend`.
 The development default is Rust Prism 0.1.25, original PQ2, K4/V4 (`rsq4`) KV,
 four CPU row workers and the standard adapter at scale 1.3.
 The [runtime lock](../../config/prism-inference.lock.json) owns the exact release/source identities;
@@ -82,7 +83,7 @@ is supplied. Boolean options are `--native-engine`, `--publisher-engine`,
 `--use-repacked-ptq1`, `--use-original-pq2`,
 `--no-abliterate-lora`, `--no-tts`, `--no-speech-models`, `--speech-models-only`
 and `--force-build`. Value options are `--native-row-workers`, `--prompt-reuse`,
-`--kv-cache`, `--graphics-backend`, `--tts-quantization`,
+`--kv-cache`, `--placement`, `--graphics-backend`, `--tts-quantization`,
 `--tts-threads`, `--frontend-port`, `--backend-port`, `--canary-port`, `--tts-port`,
 `--chat-path`, `--broker-path`, `--asr-path`, `--tts-path`, `--canary-key-file`,
 `--tts-key-file` and `--working-directory`. All existing launch admission,
@@ -91,6 +92,14 @@ unchanged direct launch needs no Cargo invocation. Rebuild the maintenance
 executable after source changes to receive new defaults and options; the PowerShell
 facade forwards only supplied options. `--force-build` rebuilds application
 companions, not the running maintenance image.
+
+`--placement auto|cpu` (JSON `Placement`) preserves the trusted native inference
+placement through deferred setup and Retry. Omission and `auto` retain automatic
+placement. Explicit placement is rejected with the publisher engine. `cpu` is a
+prepared capacity-first option: the current 0.1.25 pin rejects it until a genuine
+compatible runtime receives exact-source review. It does not reduce memory
+admission or establish a capacity/latency gain. See the
+[context roadmap](../../PLAN.md#native-context-expansion-roadmap).
 
 `--graphics-backend dx12|vulkan|gl` (JSON `GraphicsBackend`) explicitly selects
 the native window renderer by overriding `WGPU_BACKEND` in the chat child only.
