@@ -1464,3 +1464,62 @@ fn ime_preedit_keeps_a_queued_voice_message_as_an_unsent_draft() {
     assert!(state.pending_voice_transcript.is_none());
     assert!(commands.try_recv().is_err());
 }
+
+#[test]
+fn speech_progress_and_cancellation_do_not_raise_error_alerts() -> io::Result<()> {
+    let (mut state, _commands, _events) = state();
+    let (session, _speech_commands) = speech::Session::fixture()?;
+    state.speech = Some(session);
+    state.speech_output = true;
+    state.model = ModelLifecycle::Ready;
+    state
+        .transcript
+        .push(Role::Assistant, "Read this answer.".into());
+    state.transcript.remove_empty_response();
+    let answer = state.transcript.messages[0].id;
+    state.toggle_read_aloud(answer);
+    assert!(state.speaking && state.speech_loading);
+    assert!(state.active_alerts().is_empty());
+    state.speech_event(speech::Event::OutputStatus {
+        generation: 2,
+        message: "Generating speech.",
+    });
+    assert!(state.active_alerts().is_empty());
+    state.speech_event(speech::Event::OutputBuffering {
+        generation: 2,
+        buffering: false,
+    });
+    assert!(state.speaking && !state.speech_loading);
+    state.speech_event(speech::Event::OutputBuffering {
+        generation: 0,
+        buffering: true,
+    });
+    assert!(
+        !state.speech_loading,
+        "Stale progress cannot restart the spinner."
+    );
+    state.toggle_read_aloud(answer);
+    assert!(!state.speaking && !state.speech_loading);
+    assert!(
+        state.active_alerts().is_empty(),
+        "An explicit stop is not an error."
+    );
+    state.speech_event(speech::Event::Failed {
+        generation: 2,
+        message: "Stale failure",
+    });
+    assert!(state.active_alerts().is_empty());
+    state.toggle_read_aloud(answer);
+    state.speech_event(speech::Event::Failed {
+        generation: 5,
+        message: "Synthesis failed.",
+    });
+    assert_eq!(state.active_alerts(), vec![error_ui::AlertKind::Speech]);
+    assert!(!state.speaking && !state.speech_loading);
+    state.toggle_read_aloud(answer);
+    assert!(
+        state.active_alerts().is_empty(),
+        "A new attempt replaces the old failure."
+    );
+    Ok(())
+}

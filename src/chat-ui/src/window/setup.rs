@@ -164,6 +164,7 @@ impl State {
             Ok(session) => {
                 self.startup = Some(session);
                 self.setup.speech_error = None;
+                self.speech_notice = false;
                 self.speech_checked = false;
                 "Preparing speech services… Text chat stays available."
                     .clone_into(&mut self.speech_status);

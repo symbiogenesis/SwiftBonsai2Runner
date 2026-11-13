@@ -93,7 +93,7 @@ impl State {
         {
             return;
         }
-        self.speech_notice = true;
+        self.speech_notice = false;
         if self.preview {
             "Audio files are unavailable in the model-free preview."
                 .clone_into(&mut self.speech_status);
@@ -577,7 +577,7 @@ impl State {
         if response.clicked() {
             if active {
                 self.cancel_audio_file();
-                self.speech_notice = true;
+                self.speech_notice = false;
             } else {
                 self.start_audio_import(Source::Picker {
                     owner: self.native_owner.unwrap_or_default(),

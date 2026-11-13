@@ -15,6 +15,8 @@ pub(super) struct MessageControls<'a> {
     pub(super) history: &'a [super::client::Message],
     pub(super) can_send: bool,
     pub(super) can_branch: bool,
+    pub(super) speech_loading: Option<u64>,
+    pub(super) speech_preparing: bool,
 }
 
 pub(super) enum TranscriptAction {
@@ -511,6 +513,7 @@ impl Message {
         ui: &mut egui::Ui,
         speaking_message: Option<u64>,
         speech_enabled: bool,
+        loading: bool,
     ) -> bool {
         let playing = speaking_message == Some(self.id);
         let label = if playing {
@@ -528,7 +531,11 @@ impl Message {
         response.widget_info(|| {
             egui::WidgetInfo::labeled(egui::Role::Button, response.enabled(), label)
         });
-        let response = response.on_hover_text(if self.pending && !playing {
+        let response = response.on_hover_text(if loading && playing {
+            "Preparing speech. Select to cancel."
+        } else if loading {
+            "Preparing speech automatically."
+        } else if self.pending && !playing {
             "Available when this response finishes"
         } else {
             label
@@ -536,7 +543,11 @@ impl Message {
         let painter = ui.painter_at(response.rect);
         let color = ui.style().interact(&response).fg_stroke.color;
         let center = response.rect.center();
-        if playing {
+        if loading {
+            egui::Spinner::new()
+                .color(color)
+                .paint_at(ui, egui::Rect::from_center_size(center, Vec2::splat(20.0)));
+        } else if playing {
             painter.rect_filled(
                 egui::Rect::from_center_size(center, Vec2::splat(10.0)),
                 1.0,

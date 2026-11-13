@@ -8,13 +8,13 @@ impl State {
             return true;
         }
         "Describe the voice in Settings before reading aloud.".clone_into(&mut self.speech_status);
-        self.speech_notice = true;
+        self.speech_notice = false;
         self.open_settings(super::settings::Page::Voice);
         false
     }
 
     pub(super) fn toggle_streaming_read_aloud(&mut self) {
-        self.speech_notice = true;
+        self.speech_notice = false;
         if self.streaming_read_aloud {
             self.streaming_read_aloud = false;
             if self.streaming_active {
@@ -73,8 +73,9 @@ impl State {
             }
             self.streaming_active = true;
             self.speaking = true;
+            self.speech_loading = true;
             self.speaking_message = self.transcript.messages.last().map(|message| message.id);
-            self.speech_notice = true;
+            self.speech_notice = false;
             "Reading the response as it arrives.".clone_into(&mut self.speech_status);
         }
         self.speech_command(speech::Command::AppendStream { text });

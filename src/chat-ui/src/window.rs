@@ -200,6 +200,7 @@ struct State {
     canary_managed: bool,
     tts_managed: bool,
     speech_status: String,
+    // Only observed failures enter the shared error panel; progress stays local.
     speech_notice: bool,
     voice_profile: String,
     listening: bool,
@@ -209,6 +210,7 @@ struct State {
     microphone: Option<microphone::Microphone>,
     microphone_generation: Option<u64>,
     speaking: bool,
+    speech_loading: bool,
     speaking_message: Option<u64>,
     streaming_read_aloud: bool,
     streaming_active: bool,
@@ -351,6 +353,7 @@ impl State {
             microphone,
             microphone_generation: None,
             speaking: false,
+            speech_loading: false,
             speaking_message: None,
             streaming_read_aloud: false,
             streaming_active: false,
@@ -517,6 +520,7 @@ impl State {
 
     fn attach_speech_configuration(&mut self, config: &Config) {
         self.setup.speech_error = None;
+        self.speech_notice = false;
         self.canary_configured = config.canary.is_some();
         self.tts_configured = config.qwen_tts.is_some();
         self.canary_managed = config
@@ -534,6 +538,7 @@ impl State {
         }
         if self.speech_checked && self.speaking {
             self.speaking = false;
+            self.speech_loading = false;
             self.speaking_message = None;
         }
         self.microphone = microphone::Microphone::new().ok();
@@ -1094,10 +1099,12 @@ impl State {
             self.cancel_microphone();
         }
         self.speaking = false;
+        self.speech_loading = false;
         self.speaking_message = None;
         self.streaming_active = false;
         self.streaming_suppressed = true;
         "Speech worker stopped. Restart the app to retry.".clone_into(&mut self.speech_status);
+        self.speech_notice = true;
         false
     }
 
@@ -1111,7 +1118,7 @@ impl State {
         self.stop_speech_output();
         if was_active {
             "Speech stopped. Microphone off.".clone_into(&mut self.speech_status);
-            self.speech_notice = true;
+            self.speech_notice = false;
         }
     }
 
@@ -1120,6 +1127,7 @@ impl State {
             let _result = session.commands.send(speech::Command::StopSpeaking);
         }
         self.speaking = false;
+        self.speech_loading = false;
         self.speaking_message = None;
         self.streaming_active = false;
         self.streaming_suppressed = true;
@@ -1153,7 +1161,7 @@ impl State {
     }
 
     fn toggle_dictation(&mut self) {
-        self.speech_notice = true;
+        self.speech_notice = false;
         if self.audio_file_active {
             self.cancel_audio_file();
         } else if self.dictation_requested {
@@ -1180,6 +1188,7 @@ impl State {
                     self.focus_composer = true;
                 }
                 Err(_) => {
+                    self.speech_notice = true;
                     "Microphone permission is unavailable. Check Windows privacy settings."
                         .clone_into(&mut self.speech_status);
                 }
@@ -1200,6 +1209,7 @@ impl State {
                 "Finishing voice message… Escape cancels.".clone_into(&mut self.speech_status);
             }
             Some(Err(_)) => {
+                self.speech_notice = true;
                 self.cancel_microphone();
                 "Could not finish microphone capture. Try again."
                     .clone_into(&mut self.speech_status);
@@ -1219,7 +1229,7 @@ impl State {
         if self.transcript.speech_text(message_id).is_none() {
             return;
         }
-        self.speech_notice = true;
+        self.speech_notice = false;
         if self.speech_output {
             let voice_description = self.voice_profile.trim().to_owned();
             if voice_description.is_empty() {
@@ -1238,6 +1248,7 @@ impl State {
                 voice_description,
             }) {
                 self.speaking = true;
+                self.speech_loading = true;
                 self.speaking_message = Some(message_id);
                 "Reading the selected response aloud.".clone_into(&mut self.speech_status);
             }
@@ -1289,9 +1300,11 @@ impl State {
                         self.cancel_microphone();
                     }
                     self.speaking = false;
+                    self.speech_loading = false;
                     self.speaking_message = None;
                     self.streaming_active = false;
                     self.streaming_suppressed = true;
+                    self.speech_notice = true;
                     "Speech unavailable. Text chat remains available."
                         .clone_into(&mut self.speech_status);
                     break;
@@ -1321,6 +1334,7 @@ impl State {
                 .clone_into(&mut self.speech_status);
                 if !output && self.speaking {
                     self.speaking = false;
+                    self.speech_loading = false;
                     self.speaking_message = None;
                 }
             }
@@ -1374,11 +1388,24 @@ impl State {
             speech::Event::Failed {
                 generation,
                 message,
-            } => self.output_status(generation, false, message),
+            } => {
+                if self.is_current_speech_output(generation) {
+                    self.speech_notice = true;
+                }
+                self.output_status(generation, false, message);
+            }
             speech::Event::OutputStatus {
                 generation,
                 message,
             } => self.output_status(generation, true, message),
+            speech::Event::OutputBuffering {
+                generation,
+                buffering,
+            } => {
+                if self.is_current_speech_output(generation) && self.speaking {
+                    self.speech_loading = buffering;
+                }
+            }
             speech::Event::InputFailed {
                 generation,
                 message,
@@ -1424,14 +1451,17 @@ impl State {
         );
     }
 
-    fn output_status(&mut self, generation: u64, speaking: bool, message: &str) {
-        if self
-            .speech
+    fn is_current_speech_output(&self, generation: u64) -> bool {
+        self.speech
             .as_ref()
             .is_some_and(|session| session.is_current_output(generation))
-        {
+    }
+
+    fn output_status(&mut self, generation: u64, speaking: bool, message: &str) {
+        if self.is_current_speech_output(generation) {
             self.speaking = speaking;
             if !speaking {
+                self.speech_loading = false;
                 self.speaking_message = None;
                 self.streaming_active = false;
                 self.streaming_suppressed = true;
@@ -1581,6 +1611,7 @@ impl State {
                 }
                 microphone::Event::Status(_) => {}
                 microphone::Event::Failed(message) => {
+                    self.speech_notice = true;
                     self.cancel_microphone();
                     message.clone_into(&mut self.speech_status);
                 }
@@ -2168,6 +2199,8 @@ impl State {
             history: &self.committed,
             can_send: available && !self.preview && self.model == ModelLifecycle::Ready,
             can_branch: available && self.model.workspace_available(),
+            speech_loading: self.speaking_message.filter(|_| self.speech_loading),
+            speech_preparing: self.tts_configured && !self.speech_checked,
         };
         match self.transcript.show_with_actions(
             ui,

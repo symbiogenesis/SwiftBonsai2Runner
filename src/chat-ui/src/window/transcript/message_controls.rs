@@ -39,7 +39,17 @@ impl Message {
                         .map(TranscriptAction::Message);
                 }
                 if self.role == Role::Assistant
-                    && self.speaker(ui, speaking_message, speech_enabled)
+                    && self.speaker(
+                        ui,
+                        speaking_message,
+                        speech_enabled,
+                        controls.is_some_and(|controls| {
+                            (controls.speech_loading == Some(self.id))
+                                || (!speech_enabled
+                                    && self.can_speak()
+                                    && controls.speech_preparing)
+                        }),
+                    )
                 {
                     action = Some(TranscriptAction::ReadAloud(self.id));
                 }

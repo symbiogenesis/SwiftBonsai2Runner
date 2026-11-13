@@ -109,6 +109,10 @@ pub(crate) enum Event {
         generation: u64,
         message: &'static str,
     },
+    OutputBuffering {
+        generation: u64,
+        buffering: bool,
+    },
     OutputStatus {
         generation: u64,
         message: &'static str,
@@ -421,6 +425,12 @@ fn render(
     }
     if let Some(pipeline) = &mut output.pipeline {
         pipeline.feed(&mut output.segments, finished);
+        if let Some(playing) = pipeline.playback_changed() {
+            let _sent = events.send(Event::OutputBuffering {
+                generation: output.generation,
+                buffering: !playing,
+            });
+        }
     }
     match output
         .pipeline

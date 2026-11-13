@@ -192,41 +192,41 @@ fn streaming_read_aloud_control_is_available_during_generation_and_stops_audio()
         "Older answer.".clone_into(&mut chat.state_mut().app.transcript.messages[1].body);
         // AccessKit focus requests use the previous frame's focusable widgets.
         // Publish the newly enabled checkbox before asking it to take focus.
-        chat.run();
+        chat.run_steps(8);
         chat.get_by_role_and_label(egui::Role::CheckBox, "Read aloud as responses arrive")
             .focus();
-        chat.run();
+        chat.run_steps(8);
         assert!(
             chat.get_by_role_and_label(egui::Role::CheckBox, "Read aloud as responses arrive")
                 .is_focused()
         );
         chat.key_press(egui::Key::Space);
-        chat.run();
+        chat.run_steps(8);
         assert!(chat.state().app.streaming_read_aloud);
         chat.state_mut().app.input = "Next answer".to_owned();
         chat.state_mut().app.submit();
         chat.state_mut()
             .app
             .model_event(Event::Text("Live answer.".to_owned()));
-        chat.run();
+        chat.run_steps(8);
         assert!(chat.state().app.model.busy() && chat.state().app.streaming_active);
         chat.get_by_role_and_label(egui::Role::Button, "Stop speech")
             .click();
-        chat.run();
+        chat.run_steps(8);
         assert!(!chat.state().app.speaking);
         assert!(chat.state().app.model.busy() && chat.state().app.streaming_read_aloud);
         chat.get_all_by_role_and_label(egui::Role::Button, "Read this response aloud")
             .next()
             .ok_or_else(|| io::Error::other("Missing older response speaker"))?
             .click();
-        chat.run();
+        chat.run_steps(8);
         assert_eq!(
             chat.state().app.speaking_message,
             Some(chat.state().app.transcript.messages[1].id)
         );
         chat.get_by_role_and_label(egui::Role::CheckBox, "Read aloud as responses arrive")
             .click();
-        chat.run();
+        chat.run_steps(8);
         assert!(!chat.state().app.streaming_read_aloud);
         assert!(chat.state().app.speaking);
     }
@@ -308,7 +308,7 @@ fn response_speakers_stay_in_bubbles_and_support_keyboard_play_and_stop() -> io:
             .app
             .transcript
             .append("Private reasoning", true);
-        chat.run();
+        chat.run_steps(8);
         assert!(
             chat.query_by_role_and_label(egui::Role::Button, "Read aloud")
                 .is_none()
@@ -328,7 +328,7 @@ fn response_speakers_stay_in_bubbles_and_support_keyboard_play_and_stop() -> io:
         );
         chat.get_by_role_and_label(egui::Role::Button, "Show thinking")
             .click();
-        chat.run();
+        chat.run_steps(8);
         let speaker = chat
             .get_by_role_and_label(egui::Role::Button, "Read this response aloud")
             .rect();
@@ -346,12 +346,12 @@ fn response_speakers_stay_in_bubbles_and_support_keyboard_play_and_stop() -> io:
         let (session, _commands) = speech::Session::fixture()?;
         chat.state_mut().app.speech = Some(session);
         chat.state_mut().app.speech_output = true;
-        chat.run();
+        chat.run_steps(8);
         chat.get_by_role_and_label(egui::Role::Button, "Read this response aloud")
             .focus();
-        chat.run();
+        chat.run_steps(8);
         chat.key_press(egui::Key::Space);
-        chat.run();
+        chat.run_steps(8);
         assert!(chat.state().app.speaking);
         assert_eq!(
             chat.state().app.speaking_message,
@@ -359,7 +359,7 @@ fn response_speakers_stay_in_bubbles_and_support_keyboard_play_and_stop() -> io:
         );
         chat.get_by_role_and_label(egui::Role::Button, "Stop reading this response")
             .click();
-        chat.run();
+        chat.run_steps(8);
         assert!(!chat.state().app.speaking);
         assert_eq!(chat.state().app.speaking_message, None);
     }
@@ -417,7 +417,7 @@ fn response_speakers_play_the_clicked_bubble_in_a_multi_answer_conversation() ->
         .transcript
         .push(Role::Assistant, "A newer answer".to_owned());
     chat.state_mut().app.transcript.remove_empty_response();
-    chat.run();
+    chat.run_steps(8);
     assert_eq!(
         chat.get_all_by_role_and_label(egui::Role::Button, "Read this response aloud")
             .count(),
@@ -429,14 +429,14 @@ fn response_speakers_play_the_clicked_bubble_in_a_multi_answer_conversation() ->
     {
         speaker.click();
     }
-    chat.run();
+    chat.run_steps(8);
     assert_eq!(
         chat.state().app.speaking_message,
         Some(chat.state().app.transcript.messages[1].id)
     );
     chat.get_by_role_and_label(egui::Role::Button, "Read this response aloud")
         .click();
-    chat.run();
+    chat.run_steps(8);
     assert_eq!(
         chat.state().app.speaking_message,
         Some(chat.state().app.transcript.messages[2].id)
@@ -1520,4 +1520,60 @@ fn audio_file_progress_is_generation_bound_and_metadata_never_finishes_import() 
     assert_eq!(app.audio_file_notice, cancelled);
     assert!(app.pending_voice_transcript.is_none());
     assert!(chat.state().commands.try_recv().is_err());
+}
+
+#[test]
+fn response_speaker_loading_is_cancellable_and_only_failures_open_alerts() -> io::Result<()> {
+    let mut chat = harness([1180.0, 960.0], true);
+    let (session, _commands) = speech::Session::fixture()?;
+    chat.state_mut().app.speech = Some(session);
+    chat.state_mut().app.speech_output = true;
+    chat.run();
+    chat.get_by_role_and_label(egui::Role::Button, "Read this response aloud")
+        .click();
+    chat.run_steps(8);
+    assert!(chat.state().app.speech_loading);
+    assert!(chat.state().app.active_alerts().is_empty());
+    assert!(
+        chat.query_by_role_and_label(egui::Role::Button, "Copy error")
+            .is_none()
+    );
+    chat.get_by_role_and_label(egui::Role::Button, "Stop reading this response")
+        .click();
+    chat.run();
+    assert!(!chat.state().app.speech_loading && !chat.state().app.speaking);
+    assert!(chat.state().app.active_alerts().is_empty());
+    chat.get_by_role_and_label(egui::Role::Button, "Read this response aloud")
+        .click();
+    chat.run_steps(8);
+    chat.state_mut().app.speech_event(speech::Event::Failed {
+        generation: 5,
+        message: "Synthesis failed.",
+    });
+    chat.run();
+    assert!(
+        chat.get_by_role_and_label(egui::Role::Button, "Copy error")
+            .rect()
+            .is_positive()
+    );
+    assert!(!chat.state().app.speech_loading);
+    Ok(())
+}
+
+#[test]
+fn speech_preparation_uses_speaker_progress_without_error_panel() {
+    let mut chat = harness([1180.0, 960.0], true);
+    chat.state_mut().app.tts_configured = true;
+    chat.state_mut().app.speech_checked = false;
+    chat.run_steps(8);
+    assert!(
+        chat.get_by_role_and_label(egui::Role::Button, "Read this response aloud")
+            .accesskit_node()
+            .is_disabled()
+    );
+    assert!(chat.state().app.active_alerts().is_empty());
+    assert!(
+        chat.query_by_role_and_label(egui::Role::Button, "Copy error")
+            .is_none()
+    );
 }

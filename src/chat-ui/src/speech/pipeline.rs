@@ -114,6 +114,8 @@ pub(super) struct Pipeline {
     segments: Option<SyncSender<String>>,
     finished: Receiver<Result<(), tts::Failure>>,
     cancelled: Arc<AtomicBool>,
+    playing: Arc<AtomicBool>,
+    notified_playing: bool,
     worker: Option<JoinHandle<()>>,
 }
 
@@ -128,16 +130,28 @@ impl Pipeline {
         let (segments, incoming) = mpsc::sync_channel(2);
         let cancelled = Arc::new(AtomicBool::new(false));
         let stop = Arc::clone(&cancelled);
+        let playing = Arc::new(AtomicBool::new(false));
+        let output_playing = Arc::clone(&playing);
         let worker = thread::Builder::new()
             .name("bonsai-tts-prefetch".to_owned())
             .spawn(move || {
-                let result = produce(&client, &incoming, &voice, generation, &current, &stop);
+                let result = produce(
+                    &client,
+                    &incoming,
+                    &voice,
+                    generation,
+                    &current,
+                    &stop,
+                    &output_playing,
+                );
                 let _sent = complete.send(result);
             })?;
         Ok(Self {
             segments: Some(segments),
             finished,
             cancelled,
+            playing,
+            notified_playing: false,
             worker: Some(worker),
         })
     }
@@ -158,6 +172,15 @@ impl Pipeline {
         if finished && queued.is_empty() {
             self.segments = None;
         }
+    }
+
+    pub(super) fn playback_changed(&mut self) -> Option<bool> {
+        let playing = self.playing.load(Ordering::Acquire);
+        if playing == self.notified_playing {
+            return None;
+        }
+        self.notified_playing = playing;
+        Some(playing)
     }
 
     pub(super) fn result(&self) -> Option<Result<(), tts::Failure>> {
@@ -185,6 +208,7 @@ fn produce(
     generation: u64,
     current: &Arc<AtomicU64>,
     stop: &Arc<AtomicBool>,
+    playing: &Arc<AtomicBool>,
 ) -> Result<(), tts::Failure> {
     let sample_rate = client.sample_rate();
     let packet_bytes = packet_bytes_for_rate(sample_rate);
@@ -192,6 +216,7 @@ fn produce(
     let (recycle, recycled) = mpsc::sync_channel(RECYCLED_PACKETS);
     let output_stop = Arc::clone(stop);
     let output_current = Arc::clone(current);
+    let output_playing = Arc::clone(playing);
     let playback = thread::Builder::new()
         .name("bonsai-tts-pcm".to_owned())
         .spawn(move || {
@@ -202,6 +227,7 @@ fn produce(
                 &output_stop,
                 recycle,
                 sample_rate,
+                &output_playing,
             );
             if result.is_err() {
                 output_stop.store(true, Ordering::Release);
@@ -460,13 +486,15 @@ fn consume_at_rate(
     stop: &AtomicBool,
     recycle: SyncSender<Vec<u8>>,
     sample_rate: u32,
+    playing: &AtomicBool,
 ) -> Result<(), tts::Failure> {
-    consume_with(
+    consume_with_progress(
         incoming,
         generation,
         current,
         stop,
         &mut WaveOutput::open_with_rate(recycle, sample_rate)?,
+        playing,
     )
 }
 
@@ -478,6 +506,7 @@ trait Output {
     fn start(&mut self) -> Result<(), tts::Failure>;
 }
 
+#[cfg(test)]
 fn consume_with(
     incoming: &Receiver<Audio>,
     generation: u64,
@@ -485,7 +514,26 @@ fn consume_with(
     stop: &AtomicBool,
     output: &mut impl Output,
 ) -> Result<(), tts::Failure> {
+    consume_with_progress(
+        incoming,
+        generation,
+        current,
+        stop,
+        output,
+        &AtomicBool::new(false),
+    )
+}
+
+fn consume_with_progress(
+    incoming: &Receiver<Audio>,
+    generation: u64,
+    current: &AtomicU64,
+    stop: &AtomicBool,
+    output: &mut impl Output,
+    playing: &AtomicBool,
+) -> Result<(), tts::Failure> {
     output.pause()?;
+    playing.store(false, Ordering::Release);
     let mut started = false;
     let mut buffered = Buffered::default();
     let mut pending = None;
@@ -499,6 +547,7 @@ fn consume_with(
                 buffered.underrun();
             }
             started = false;
+            playing.store(false, Ordering::Release);
         }
         while output.queued() < PLAYBACK_PACKETS {
             if let Some(pcm) = buffered.pop() {
@@ -510,6 +559,7 @@ fn consume_with(
                 if !started && (output.queued() >= PREROLL_PACKETS || flushed) {
                     output.start()?;
                     started = true;
+                    playing.store(true, Ordering::Release);
                 }
             } else {
                 break;
@@ -520,6 +570,7 @@ fn consume_with(
             if !started && output.queued() > 0 {
                 output.start()?;
                 started = true;
+                playing.store(true, Ordering::Release);
             }
         }
         if finished && buffered.ready.is_empty() && output.queued() == 0 {
@@ -889,7 +940,8 @@ mod tests {
         Arc, AtomicBool, AtomicU64, Audio, Buffered, Duration, Frames, HANN_BOUNDARY_SAMPLES,
         Instant, MAX_BUFFER_BYTES, Ordering, Output, PACKET_BYTES, PACKET_BYTES_48K,
         PLAYBACK_PACKETS, PREFETCH_PACKETS, PREROLL_PACKETS, SAMPLE_RATE, SAMPLE_RATE_48K,
-        VecDeque, check, consume_with, mpsc, packet_bytes_for_rate, send, smooth_segment_boundary,
+        VecDeque, check, consume_with, consume_with_progress, mpsc, packet_bytes_for_rate, send,
+        smooth_segment_boundary,
     };
     use crate::tts::Failure;
 
@@ -1335,6 +1387,8 @@ mod tests {
         starts: Vec<usize>,
         paused: bool,
         maximum: usize,
+        progress: Option<Arc<AtomicBool>>,
+        playing_observations: usize,
     }
 
     impl Output for RecordingOutput {
@@ -1352,6 +1406,10 @@ mod tests {
             if !self.paused
                 && let Some(pcm) = self.queued.pop_front()
             {
+                if let Some(progress) = &self.progress {
+                    assert!(progress.load(Ordering::Acquire));
+                    self.playing_observations += 1;
+                }
                 self.played.extend(pcm);
             }
             Ok(())
@@ -1363,10 +1421,38 @@ mod tests {
         }
 
         fn start(&mut self) -> Result<(), Failure> {
+            if let Some(progress) = &self.progress {
+                assert!(!progress.load(Ordering::Acquire));
+            }
             self.starts.push(self.queued.len());
             self.paused = false;
             Ok(())
         }
+    }
+
+    #[test]
+    fn playback_progress_tracks_output_start_and_buffering_without_an_audio_device()
+    -> Result<(), Failure> {
+        let (sender, incoming) = mpsc::sync_channel(PREFETCH_PACKETS);
+        assert!(sender.send(Audio::Frame(vec![7; PACKET_BYTES])).is_ok());
+        assert!(sender.send(Audio::SegmentEnd).is_ok());
+        drop(sender);
+        let progress = Arc::new(AtomicBool::new(true));
+        let mut output = RecordingOutput {
+            progress: Some(Arc::clone(&progress)),
+            ..RecordingOutput::default()
+        };
+        consume_with_progress(
+            &incoming,
+            4,
+            &AtomicU64::new(4),
+            &AtomicBool::new(false),
+            &mut output,
+            &progress,
+        )?;
+        assert_eq!(output.playing_observations, 1);
+        assert!(!progress.load(Ordering::Acquire));
+        Ok(())
     }
 
     #[test]
