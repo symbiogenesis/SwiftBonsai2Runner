@@ -5,34 +5,23 @@ They do not change Runner's release lock or qualify a production runtime.
 
 ## Headless UCRT argv candidate
 
-The [patch](headless-ucrt-argv.patch) fixes reproduced CPU source-build completion
-startup on Snapdragon X2 Elite Extreme: same-source control exits `0xC0000142`,
-candidate `--version` exits zero under unchanged headless policy. The
-[manifest](headless-ucrt-argv.json) and [model-free
-evidence](headless-ucrt-argv.evidence.json) bind
-source/compiler/binary/dependency/supervision identities. This upstream review artifact
-leaves Runner's lock and defaults unchanged.
+The [patch](headless-ucrt-argv.patch), [manifest](headless-ucrt-argv.json) and
+[model-free receipt](headless-ucrt-argv.evidence.json) are inputs to the candidate
+builder and startup fixture. They bind source, compiler, binary, dependency and
+supervision identities; Runner's runtime lock remains separate.
 
-The source is the MIT-licensed Prism revision
+The patch targets MIT-licensed Prism
 [`73bfe6cc485554822f80c473a3c0c4f25e80f41b`](https://github.com/PrismML-Eng/llama.cpp/tree/73bfe6cc485554822f80c473a3c0c4f25e80f41b).
-Its `common/arg.cpp` uses `CommandLineToArgvW` for Unicode argument repair. Read-only PE
-inspection confirms that this imports `SHELL32.dll` through `llama-common.dll`. The
-candidate replaces that MSVC/clang-cl path with UCRT wide argv initialization. The
-rebuilt DLL imports `_configure_wide_argv`, `__p___wargv` and `__p___argc` from
-`api-ms-win-crt-runtime-l1-1-0.dll`, and no longer imports `SHELL32.dll`. The paired
-result fixes this source-build failure, without diagnosing every possible failure of the
-independently built released binary.
+It replaces MSVC/clang-cl `CommandLineToArgvW` argument repair and its `SHELL32.dll`
+import with UCRT wide-argv initialization through `_configure_wide_argv`,
+`__p___wargv` and `__p___argc`. A thread-safe static borrows one startup table,
+preventing repeated configuration from leaking the previous allocation.
+Wildcard expansion stays disabled, UTF-8 conversion/count repair is preserved,
+and configuration failure retains empty repair. MinGW keeps shell parsing and
+`LocalFree`.
 
-UCRT configuration is guarded by a thread-safe function-local static, reusing a
-preexisting wide startup table. Reconfiguring UCRT would overwrite its pointer without
-freeing its old allocation; repeated parsing instead borrows one table. Wildcard
-expansion is disabled when this helper initializes it. Existing UTF-8 conversion and the
-argument-count repair guard remain in place. Configuration failure keeps the existing
-empty-repair fallback. MinGW retains its original shell parsing and `LocalFree` path.
-
-Compatibility covers Runner's `ProcessSpec` encoding, not arbitrary raw command lines,
-externally configured wildcard-expanding CRTs, other CRT/toolchains or MinGW.
-Integration must review UCRT entry points against its compiler/SDK.
+Compatibility covers Runner's `ProcessSpec` encoding. Arbitrary raw command
+lines, wildcard-expanding CRTs and other toolchains require separate review.
 
 ### Validation scope
 
@@ -96,9 +85,7 @@ The native
 [build-tools headless publisher operation](../../tools/bonsai/src/build_tools/headless.rs)
 applies this exact patch to the verified source archive on hosted CI. It builds separate
 `llama-completion`, `llama-server`, `llama-bench` and argument-fixture executables.
-The existing installed publisher bundle, Runner runtime locks, app selection,
-worker mitigations and filesystem grants are unchanged. Preparation downloads
-no model artifacts and launches no owner-device job.
+Preparation downloads no models and launches no owner-device job.
 
 The compiler archive and its ARM64 executables reuse the retained LLVM 23.1.4
 identities. The build records its hosted image, installed MSVC/SDK, compiler,
@@ -106,8 +93,7 @@ supervisor, CMake flags/cache and all packaged file digests. It uses four compil
 jobs and restores the publisher toolchain's global `armv8.7-a` and floating-point
 flags. Shared CPU libraries remain enabled; dynamic backend loading, OpenMP,
 optional accelerators, UI, TLS fetching and subprocess support are disabled.
-This differs from the released Clang 20 bundle and the earlier baseline-NEON
-argument pilot; numerical and performance qualification remain pending.
+Numerical and performance qualification remain pending.
 
 A bounded static PE audit checks every candidate EXE/DLL, including normal and
 delay imports, then follows mandatory system imports through the hosted image's
