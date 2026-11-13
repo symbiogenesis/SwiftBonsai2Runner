@@ -22,7 +22,7 @@ $cases=[ordered]@{
  }
  cli_checked_before_publication={
     $producer=$jobs['checked-tools']; Assert-Ci ($producer.IndexOf('uses: $/.github/actions/check-rust') -lt $producer.IndexOf('Stage the checked maintenance CLI'))
-    foreach ($fragment in @('lane: tools','SchemaVersion = 3','Revision = $env:GITHUB_SHA','ProbeSha256 = (Get-FileHash','name: bonsai-tools-windows-arm64-${{ github.sha }}')) { Assert-Ci ($producer.Contains($fragment)) $fragment }
+    foreach ($fragment in @('lane: tools','SchemaVersion = 3','Revision = $env:GITHUB_SHA','NumericSha256 = (Get-FileHash','bonsai-reference-numerics.exe','ProbeSha256 = (Get-FileHash','name: bonsai-tools-windows-arm64-${{ github.sha }}')) { Assert-Ci ($producer.Contains($fragment)) $fragment }
     $consumer=[IO.File]::ReadAllText((Join-Path $repository '.github/actions/use-bonsai-tools/action.yml')); Assert-Ci ($consumer.Contains('name: bonsai-tools-windows-arm64-${{ github.sha }}')); Assert-Ci (-not $consumer.Contains('run-id:')); Assert-Ci ($consumer.Contains('$receipt.Revision -cne $env:GITHUB_SHA'))
  }
  router_and_gate_select_producer={ Assert-CiEqual $config.workflows.foundation['checked-tools'] 'tools'; Assert-CiEqual $config.workflows.foundation.maintenance 'maintenance'; Assert-Ci ('tools' -cnotin $config.groups.maintenance.groups); Assert-Ci ('bonsai-tools' -cin $config.groups.maintenance.exclude_packages); Assert-Ci ('tools' -cin $config.groups.rust_lanes.groups) }

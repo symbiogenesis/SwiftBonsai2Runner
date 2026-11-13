@@ -41,12 +41,15 @@ jobs:
           $package = Join-Path $env:RUNNER_TEMP 'SwiftBonsai-CheckedTools'
           [void][IO.Directory]::CreateDirectory($package)
           $tool = Join-Path $package 'bonsai-tools.exe'
+          $numeric = Join-Path $package 'bonsai-reference-numerics.exe'
           $probe = Join-Path $package 'bonsai-completion-test-probe.exe'
           Copy-Item -LiteralPath $env:BONSAI_TOOLS_PATH -Destination $tool
+          Copy-Item -LiteralPath $env:BONSAI_REFERENCE_NUMERIC_TOOL -Destination $numeric
           Copy-Item -LiteralPath $env:BONSAI_COMPLETION_PROBE_PATH -Destination $probe
           @{
-            SchemaVersion = 2; Revision = $env:GITHUB_SHA
+            SchemaVersion = 3; Revision = $env:GITHUB_SHA
             Sha256 = (Get-FileHash -LiteralPath $tool -Algorithm SHA256).Hash.ToLowerInvariant()
+            NumericSha256 = (Get-FileHash -LiteralPath $numeric -Algorithm SHA256).Hash.ToLowerInvariant()
             ProbeSha256 = (Get-FileHash -LiteralPath $probe -Algorithm SHA256).Hash.ToLowerInvariant()
           } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $package 'receipt.json') -Encoding utf8NoBOM
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

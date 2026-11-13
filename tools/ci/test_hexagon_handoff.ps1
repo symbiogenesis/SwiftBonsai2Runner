@@ -14,7 +14,7 @@ $cases=[ordered]@{
  policy_checked_before_publication={
     $producer=$jobs['checked-policy']; Assert-CiEqual ([regex]::Matches($workflow,'uses: \$/\.github/actions/bonsai-tools\r?\n')).Count 1
     Assert-Ci ($producer.Contains('--package bonsai-tools --all-features --target-dir $env:BONSAI_TOOLS_TARGET --lib hexagon_')); Assert-Ci ($producer -cnotmatch 'if:.*cache-hit'); Assert-Ci ($producer.IndexOf('--lib hexagon_') -lt $producer.IndexOf('Stage the current source-bound policy executable'))
-    foreach ($fragment in @('SchemaVersion = 3','Revision = $env:GITHUB_SHA','ProbeSha256 = (Get-FileHash','name: bonsai-tools-windows-arm64-${{ github.sha }}')) { Assert-Ci ($producer.Contains($fragment)) }
+    foreach ($fragment in @('SchemaVersion = 3','Revision = $env:GITHUB_SHA','NumericSha256 = (Get-FileHash','bonsai-reference-numerics.exe','ProbeSha256 = (Get-FileHash','name: bonsai-tools-windows-arm64-${{ github.sha }}')) { Assert-Ci ($producer.Contains($fragment)) }
     foreach ($name in @('controls','artifact-binder','session-probe','inventory','dispatch')) { Assert-Ci ($jobs[$name].Contains('uses: $/.github/actions/use-bonsai-tools')) }
  }
  all_layout_and_ranking_checks_selected={
