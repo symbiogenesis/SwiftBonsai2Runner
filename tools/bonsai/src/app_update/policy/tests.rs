@@ -34,6 +34,174 @@ fn manifest(candidate: &Candidate) -> Value {
         "assets": [{"name": candidate.msi.name, "bytes": candidate.msi.bytes, "sha256": candidate.msi.sha256}]})
 }
 
+fn portable_release(version: &str) -> Value {
+    let mut value = release(version);
+    let name = Distribution::Portable.asset_name(version);
+    value["assets"][2]["name"] = name.clone().into();
+    value["assets"][2]["browser_download_url"] = canonical_asset(version, &name).into();
+    value
+}
+
+fn selected_portable(releases: &Value) -> crate::Result<(bool, Option<Candidate>)> {
+    select_portable(
+        &serde_json::to_vec(releases).map_err(|error| error.to_string())?,
+        "0.1.0",
+    )
+}
+
+fn portable_manifest(candidate: &Candidate) -> Value {
+    let mut value = manifest(candidate);
+    value["distribution"] = "portable-executable".into();
+    value["executableSmoke"] = "passed-inspect-extract-verify-without-model".into();
+    value["manifestSha256"] = "c".repeat(64).into();
+    value
+}
+
+#[test]
+fn portable_discovery_selects_newest_published_numeric_version_without_fallback()
+-> crate::Result<()> {
+    let mut draft = portable_release("0.2.0");
+    draft["draft"] = true.into();
+    let mut stable = portable_release("0.1.2");
+    stable["prerelease"] = false.into();
+    let mut historical = release("0.1.1");
+    historical["assets"] = json!([]);
+    let newest = portable_release("0.1.10");
+    for values in [
+        json!([historical, draft, stable, newest]),
+        json!([newest, stable, draft, historical]),
+    ] {
+        let candidate = selected_portable(&values)?
+            .1
+            .ok_or("Missing portable release.")?;
+        assert_eq!(candidate.version, "0.1.10");
+        assert_eq!(
+            candidate.msi.name,
+            "SwiftBonsai2Runner-0.1.10-windows-arm64.exe"
+        );
+    }
+    let mut invalid_newest = portable_release("0.1.11");
+    invalid_newest["assets"][2]["digest"] = Value::Null;
+    assert!(selected_portable(&json!([newest, invalid_newest])).is_err());
+    assert!(selected_portable(&json!([newest, newest])).is_err());
+    let (published, candidate) = selected_portable(&json!([portable_release("0.1.0")]))?;
+    assert!(published);
+    assert!(candidate.is_none());
+    let (published, candidate) = selected_portable(&json!([]))?;
+    assert!(!published);
+    assert!(candidate.is_none());
+    Ok(())
+}
+
+#[test]
+fn portable_discovery_rejects_wrong_arch_foreign_urls_missing_digests_and_duplicates()
+-> crate::Result<()> {
+    for mutation in 0..6 {
+        let mut value = portable_release("0.1.1");
+        match mutation {
+            0 => value["html_url"] = "https://github.com/other/repo/releases/tag/v0.1.1".into(),
+            1 => value["assets"][2]["name"] = "SwiftBonsai2Runner-0.1.1-windows-x64.exe".into(),
+            2 => value["assets"][2]["digest"] = Value::Null,
+            3 => {
+                value["assets"][2]["browser_download_url"] = "https://example.com/update.exe".into()
+            }
+            4 => value["assets"][2]["size"] = (MAX_INSTALLER + 1).into(),
+            _ => {
+                let repeated = value["assets"][2].clone();
+                value["assets"]
+                    .as_array_mut()
+                    .ok_or("Missing fixture assets.")?
+                    .push(repeated);
+            }
+        }
+        assert!(selected_portable(&json!([value])).is_err());
+    }
+    assert!(selected_portable(&json!([release("0.1.1")])).is_err());
+    assert!(selected(&json!([portable_release("0.1.1")])).is_err());
+    Ok(())
+}
+
+#[test]
+fn portable_manifest_binds_source_target_smoke_and_three_way_executable_identity()
+-> crate::Result<()> {
+    let candidate = selected_portable(&json!([portable_release("0.1.1")]))?
+        .1
+        .ok_or("Missing portable release.")?;
+    let valid = portable_manifest(&candidate);
+    let encoded = serde_json::to_vec(&valid).map_err(|error| error.to_string())?;
+    let checksum = format!("{}  {}\n", candidate.msi.sha256, candidate.msi.name);
+    let verified = portable(&candidate, &encoded, checksum.as_bytes())?;
+    assert_eq!(verified.distribution(), Distribution::Portable);
+    verified.validate(&candidate.version)?;
+    verified.verify_source(
+        &serde_json::to_vec(&json!({"sha": "b".repeat(40)})).map_err(|error| error.to_string())?,
+    )?;
+    assert!(
+        verified
+            .verify_source(
+                &serde_json::to_vec(&json!({"sha": "c".repeat(40)}))
+                    .map_err(|error| error.to_string())?
+            )
+            .is_err()
+    );
+    for (key, value) in [
+        ("schemaVersion", json!(2)),
+        ("tag", json!("v0.1.2")),
+        ("version", json!("0.1.2")),
+        ("target", json!("x86_64-pc-windows-msvc")),
+        ("sourceRevision", json!("main")),
+        ("distribution", json!("msi")),
+        ("executableSmoke", json!("pending")),
+        ("manifestSha256", json!("invalid")),
+    ] {
+        let mut invalid = valid.clone();
+        invalid[key] = value;
+        assert!(
+            portable(
+                &candidate,
+                &serde_json::to_vec(&invalid).map_err(|error| error.to_string())?,
+                checksum.as_bytes()
+            )
+            .is_err()
+        );
+    }
+    for mutation in 0..4 {
+        let mut invalid = valid.clone();
+        match mutation {
+            0 => invalid["assets"][0]["bytes"] = 4097.into(),
+            1 => invalid["assets"][0]["sha256"] = "b".repeat(64).into(),
+            2 => invalid["assets"][0]["name"] = "wrong.exe".into(),
+            _ => {
+                let repeated = invalid["assets"][0].clone();
+                invalid["assets"]
+                    .as_array_mut()
+                    .ok_or("Missing fixture assets.")?
+                    .push(repeated);
+            }
+        }
+        assert!(
+            portable(
+                &candidate,
+                &serde_json::to_vec(&invalid).map_err(|error| error.to_string())?,
+                checksum.as_bytes()
+            )
+            .is_err()
+        );
+    }
+    let wrong_checksum = format!("{}  {}\n", "c".repeat(64), candidate.msi.name);
+    assert!(portable(&candidate, &encoded, wrong_checksum.as_bytes()).is_err());
+    assert!(
+        portable(
+            &candidate,
+            &encoded,
+            format!("{checksum}{checksum}").as_bytes()
+        )
+        .is_err()
+    );
+    assert!(installer(&candidate, &encoded, checksum.as_bytes()).is_err());
+    Ok(())
+}
+
 #[test]
 fn versions_compare_numerically_and_reject_noncanonical_or_out_of_msi_bounds() -> crate::Result<()>
 {

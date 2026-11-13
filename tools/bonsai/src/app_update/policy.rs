@@ -5,6 +5,22 @@ use serde_json::Value;
 
 use super::{MAX_INSTALLER, MAX_METADATA, REPOSITORY, TARGET};
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(super) enum Distribution {
+    Installer,
+    Portable,
+}
+
+impl Distribution {
+    fn asset_name(self, version: &str) -> String {
+        let extension = match self {
+            Self::Installer => "msi",
+            Self::Portable => "exe",
+        };
+        format!("SwiftBonsai2Runner-{version}-windows-arm64.{extension}")
+    }
+}
+
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub(super) struct Version(u8, u8, u16);
 
@@ -126,11 +142,27 @@ fn asset(release: &Value, version: &str, name: &str, limit: u64) -> crate::Resul
 }
 
 pub(super) fn select(bytes: &[u8], current: &str) -> crate::Result<(bool, Option<Candidate>)> {
+    select_distribution(bytes, current, Distribution::Installer)
+}
+
+pub(super) fn select_portable(
+    bytes: &[u8],
+    current: &str,
+) -> crate::Result<(bool, Option<Candidate>)> {
+    select_distribution(bytes, current, Distribution::Portable)
+}
+
+fn select_distribution(
+    bytes: &[u8],
+    current: &str,
+    distribution: Distribution,
+) -> crate::Result<(bool, Option<Candidate>)> {
     let current = Version::parse(current)?;
     let releases: Value = serde_json::from_slice(bytes).map_err(|error| error.to_string())?;
     let releases = releases
         .as_array()
-        .filter(|list| list.len() <= 100)
+        // Discovery admits at most three bounded GitHub catalog pages.
+        .filter(|list| list.len() <= 300)
         .ok_or("Release response must be a bounded array.")?;
     let mut eligible = std::collections::BTreeMap::new();
     let mut published = false;
@@ -176,7 +208,7 @@ pub(super) fn select(bytes: &[u8], current: &str) -> crate::Result<(bool, Option
         msi: asset(
             release,
             version,
-            &format!("SwiftBonsai2Runner-{version}-windows-arm64.msi"),
+            &distribution.asset_name(version),
             MAX_INSTALLER,
         )?,
     };
@@ -204,13 +236,21 @@ fn checksum(bytes: &[u8], expected_name: &str) -> crate::Result<String> {
             matched = Some(digest.into());
         }
     }
-    matched.ok_or_else(|| "The MSI is absent from SHA256SUMS.txt.".into())
+    matched.ok_or_else(|| "The application update is absent from SHA256SUMS.txt.".into())
 }
 
 impl Installer {
+    pub(super) fn distribution(&self) -> Distribution {
+        if self.asset.name.ends_with(".exe") {
+            Distribution::Portable
+        } else {
+            Distribution::Installer
+        }
+    }
+
     pub(super) fn validate(&self, version: &str) -> crate::Result<()> {
         Version::parse(version)?;
-        let name = format!("SwiftBonsai2Runner-{version}-windows-arm64.msi");
+        let name = self.distribution().asset_name(version);
         if self.schema_version != 1
             || self.version != version
             || self.target != TARGET
@@ -222,7 +262,7 @@ impl Installer {
             || self.asset.url != canonical_asset(version, &name)
         {
             return Err(
-                "Staged installer identity is not a newer project Windows ARM64 release.".into(),
+                "Staged application identity is not a project Windows ARM64 release.".into(),
             );
         }
         Ok(())
@@ -231,7 +271,7 @@ impl Installer {
     pub(super) fn verify_source(&self, bytes: &[u8]) -> crate::Result<()> {
         let commit: Value = serde_json::from_slice(bytes).map_err(|error| error.to_string())?;
         if commit["sha"] != self.source_revision {
-            return Err("Published release tag and installer source revisions disagree.".into());
+            return Err("Published release tag and application source revisions disagree.".into());
         }
         Ok(())
     }
@@ -242,16 +282,48 @@ pub(super) fn installer(
     manifest: &[u8],
     checksums: &[u8],
 ) -> crate::Result<Installer> {
+    application(candidate, manifest, checksums, Distribution::Installer)
+}
+
+pub(super) fn portable(
+    candidate: &Candidate,
+    manifest: &[u8],
+    checksums: &[u8],
+) -> crate::Result<Installer> {
+    application(candidate, manifest, checksums, Distribution::Portable)
+}
+
+fn application(
+    candidate: &Candidate,
+    manifest: &[u8],
+    checksums: &[u8],
+    distribution: Distribution,
+) -> crate::Result<Installer> {
     let manifest: Value = serde_json::from_slice(manifest).map_err(|error| error.to_string())?;
     let expected_tag = format!("v{}", candidate.version);
+    let checked = match distribution {
+        Distribution::Installer => {
+            manifest["installerSmoke"] == "passed-install-inspect-uninstall-without-model"
+        }
+        Distribution::Portable => {
+            manifest["distribution"] == "portable-executable"
+                && manifest["executableSmoke"] == "passed-inspect-extract-verify-without-model"
+                && text(&manifest, "manifestSha256")
+                    .is_ok_and(|digest| crate::identity::is_lower_hex(digest, 64))
+                && manifest["assets"]
+                    .as_array()
+                    .is_some_and(|assets| assets.len() == 1)
+        }
+    };
     if manifest["schemaVersion"] != 1
         || manifest["tag"] != expected_tag
         || manifest["version"] != candidate.version
         || manifest["target"] != TARGET
-        || manifest["installerSmoke"] != "passed-install-inspect-uninstall-without-model"
+        || candidate.msi.name != distribution.asset_name(&candidate.version)
+        || !checked
     {
         return Err(
-            "Release manifest does not identify the selected checked Windows ARM64 installer."
+            "Release manifest does not identify the selected checked Windows ARM64 application."
                 .into(),
         );
     }
@@ -266,13 +338,13 @@ pub(super) fn installer(
         .filter(|asset| asset["name"] == candidate.msi.name)
         .collect();
     let [entry] = assets.as_slice() else {
-        return Err("Manifest MSI asset is missing or repeated.".into());
+        return Err("Manifest application asset is missing or repeated.".into());
     };
     if entry["bytes"] != candidate.msi.bytes
         || entry["sha256"] != candidate.msi.sha256
         || checksum(checksums, &candidate.msi.name)? != candidate.msi.sha256
     {
-        return Err("GitHub, manifest and checksum MSI identities disagree.".into());
+        return Err("GitHub, manifest and checksum application identities disagree.".into());
     }
     let installer = Installer {
         schema_version: 1,
