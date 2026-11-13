@@ -390,7 +390,12 @@ mod tests {
         drop(archive);
         for position in [200, data, original.len() - 1] {
             let mut changed = original.clone();
-            changed[position] ^= 1;
+            if position == data {
+                // BTYPE=3 is reserved; changing BFINAL alone can preserve decoded bytes.
+                changed[position] = (changed[position] & !0x06) | 0x06;
+            } else {
+                changed[position] ^= 1;
+            }
             fs::write(&executable, changed).map_err(|error| error.to_string())?;
             assert!(inspect(&executable).is_err());
             assert!(extract(&executable, &root.join("rejected")).is_err());

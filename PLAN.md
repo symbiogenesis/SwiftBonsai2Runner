@@ -132,6 +132,14 @@ bundle builder from a local checkout; local focused checks do not establish host
 publication, clean-machine prerequisites or actual-model acceptance. Preserve the
 separate-process containment and MSI-only update contracts.
 
+Complete the focused launcher/package regressions and native Clippy check on the
+settled source. Qualify deflated bundle creation and stored-entry compatibility,
+malformed compression rejection and expanded-byte limits alongside the GUI
+subsystem, command JSON and native startup-error controls. The local rebuild did
+not reach packaging before its deadline; it does not replace the earlier local
+executable or establish a size reduction. Finish the owner-directed production
+bundle without reopening the closed diagnostic allowance.
+
 The no-push rule leaves source publication with the owner. The
 [local source review](docs/evidence/windows-release-20261111/retained.json) retains
 passing final workflow, PowerShell, XML, Rust formatting and Markdown checks;

@@ -82,6 +82,11 @@ The same verified schema-2 package can become one distributable `.exe`. This
 embeds the five application executables, package metadata and notices in the
 native maintenance launcher; it preserves the separate worker processes and
 their containment. Models, adapters and inference runtime downloads stay separate.
+
+New bundles compress their payload with ZIP deflate using the existing archive
+dependency. Inspection and extraction also accept retained stored entries and keep
+the same fixed inventory, expanded-byte limits and complete SHA-256 checks. The
+launcher remains directly executable; model computation settings are unchanged.
 Use the dedicated GUI-subsystem `bonsai-launcher.exe` build as the package's
 `toolPath`; it is stored as `bin/bonsai-tools.exe`. The console maintenance build
 remains available for source tooling, while the packaged launcher opens no terminal.
