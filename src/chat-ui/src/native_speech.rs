@@ -223,11 +223,7 @@ impl Service {
             service.check()?;
             match ready() {
                 Ok(()) => {
-                    if listener_process_id(port).ok().flatten() != Some(service.process.id()) {
-                        return Err(Failure::Message(
-                            "The authenticated speech listener does not belong to the owned native service.",
-                        ));
-                    }
+                    service.check_listener(port)?;
                     call.check()?;
                     service.check()?;
                     return Ok(service);
@@ -271,6 +267,16 @@ impl Service {
             monitor: Some(monitor),
             _sandbox_directory: directory,
         })
+    }
+
+    pub(crate) fn check_listener(&self, port: u16) -> Result<(), Failure> {
+        self.check()?;
+        if listener_process_id(port).ok().flatten() != Some(self.process.id()) {
+            return Err(Failure::Message(
+                "The authenticated speech listener does not belong to the owned native service.",
+            ));
+        }
+        Ok(())
     }
 
     pub(crate) fn check(&self) -> Result<(), Failure> {
@@ -354,7 +360,7 @@ impl Drop for Service {
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use super::{Failure, GIB, RUNNING_RESERVE, START_AVAILABLE, Service, admit_memory};
     use bonsai_windows_process::{OwnedProcess, ProcessSpec, ToolProcessSpec};
     use std::{
@@ -368,25 +374,63 @@ mod tests {
 
     const RESOURCE_READY: &str = "BONSAI_RESOURCE_GUARD_READY";
 
-    fn resource_guard_executable(directory: &Path) -> io::Result<PathBuf> {
+    const RESOURCE_SOURCE: &str = r#"#![forbid(unsafe_code)]
+fn main() -> std::io::Result<()> {
+    use std::io::{Read as _, Write as _};
+    if let Some(key_path) = std::env::args_os().nth(1) {
+        let key = std::fs::read_to_string(key_path)?;
+        let listener = std::net::TcpListener::bind(("127.0.0.1", 0))?;
+        println!("BONSAI_RESOURCE_GUARD_READY {}", listener.local_addr()?.port());
+        std::io::stdout().flush()?;
+        for stream in listener.incoming() {
+            let mut stream = stream?;
+            stream.set_read_timeout(Some(std::time::Duration::from_secs(5)))?;
+            let mut header = Vec::new();
+            while !header.ends_with(b"\r\n\r\n") && header.len() < 16 * 1024 {
+                let mut byte = [0];
+                stream.read_exact(&mut byte)?;
+                header.push(byte[0]);
+            }
+            let header = String::from_utf8(header).map_err(std::io::Error::other)?;
+            if !header.lines().any(|line| line == format!("Authorization: Bearer {key}")) {
+                return Err(std::io::Error::other("Fixture authorization missing"));
+            }
+            let length = header.lines().find_map(|line| line.strip_prefix("Content-Length: "))
+                .ok_or_else(|| std::io::Error::other("Fixture request length missing"))?
+                .parse::<usize>().map_err(std::io::Error::other)?;
+            if length > 1024 * 1024 {
+                return Err(std::io::Error::other("Fixture request too large"));
+            }
+            let mut body = vec![0; length];
+            stream.read_exact(&mut body)?;
+            let response = if header.starts_with("GET /health HTTP/1.1\r\n") {
+                "{\"model\":\"Qwen/Qwen3-ASR-1.7B\",\"ready\":true,\"sample_rate\":16000,\"max_clip_seconds\":30,\"input_format\":\"pcm_s16le_wav\",\"channels\":1}"
+            } else if header.starts_with("POST /v1/audio/transcriptions HTTP/1.1\r\n")
+                && body.windows(4).any(|bytes| bytes == b"RIFF") {
+                "{\"model\":\"Qwen/Qwen3-ASR-1.7B\",\"text\":\"fresh request\"}"
+            } else {
+                return Err(std::io::Error::other("Unexpected fixture request"));
+            };
+            write!(stream, "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{response}", response.len())?;
+            stream.flush()?;
+        }
+        return Ok(());
+    }
+    println!("BONSAI_RESOURCE_GUARD_READY");
+    std::io::stdout().flush()?;
+    std::thread::sleep(std::time::Duration::from_secs(30));
+    Ok(())
+}
+"#;
+
+    pub(crate) fn resource_guard_executable(directory: &Path) -> io::Result<PathBuf> {
         // The GUI test executable imports Windows presentation DLLs and cannot
         // initialize under worker Win32k denial. Compile a std-only fixture with
         // the compiler beside the pinned Cargo that built this test instead.
         let compiler = Path::new(env!("CARGO")).with_file_name("rustc.exe");
         let source = directory.join("resource_guard.rs");
         let executable = directory.join("resource_guard.exe");
-        fs::write(
-            &source,
-            r#"#![forbid(unsafe_code)]
-fn main() -> std::io::Result<()> {
-    use std::io::Write as _;
-    println!("BONSAI_RESOURCE_GUARD_READY");
-    std::io::stdout().flush()?;
-    std::thread::sleep(std::time::Duration::from_secs(30));
-    Ok(())
-}
-"#,
-        )?;
+        fs::write(&source, RESOURCE_SOURCE)?;
         let built = (|| {
             let process = OwnedProcess::start_tool(&ToolProcessSpec {
                 executable: compiler,
@@ -431,7 +475,7 @@ fn main() -> std::io::Result<()> {
             .join("\n")
     }
 
-    fn await_resource_ready(
+    pub(crate) fn await_resource_ready(
         process: &OwnedProcess,
         directory: &Path,
         name: &str,

@@ -23,10 +23,12 @@ use std::{
 };
 mod command_queue;
 mod file_input;
+mod input;
 mod pipeline;
 mod segmentation;
 mod stream;
 
+use input::Input;
 use segmentation::segments;
 
 const POLL: Duration = Duration::from_millis(50);
@@ -307,59 +309,6 @@ fn receive_command<T>(
     }
 }
 
-struct Input {
-    client: canary::Client,
-    config: canary::Config,
-    generation: Option<u64>,
-    service: Option<Service>,
-}
-
-impl Input {
-    fn new(config: &canary::Config) -> Option<Self> {
-        let client = canary::Client::new(config).ok()?;
-        if config.launch.is_none() && client.ready().is_err() {
-            return None;
-        }
-        Some(Self {
-            client,
-            config: config.clone(),
-            generation: None,
-            service: None,
-        })
-    }
-
-    fn clear(&mut self) {
-        self.service = None;
-        self.generation = None;
-    }
-
-    fn transcribe(
-        &mut self,
-        generation: u64,
-        wav: &[u8],
-        current: &AtomicU64,
-    ) -> Result<String, canary::Failure> {
-        let call = canary::Call::new(generation, current, Duration::from_mins(15));
-        call.check()?;
-        if self.generation != Some(generation) {
-            self.clear();
-            self.service = self
-                .client
-                .start_service(&self.config, generation, wav, current)?;
-            self.generation = Some(generation);
-        }
-        if let Some(service) = &self.service {
-            service.check()?;
-        }
-        let result = self.client.transcribe(generation, wav, current);
-        if let Some(service) = &self.service {
-            service.check()?;
-        }
-        call.check()?;
-        result
-    }
-}
-
 fn transcription(
     input: Option<&mut Input>,
     generation: u64,
@@ -384,6 +333,8 @@ fn transcription(
             let result = input.transcribe(generation, wav, current);
             if result.is_err() {
                 input.clear();
+            } else {
+                input.complete(generation, current, Instant::now());
             }
             result
         },
@@ -702,12 +653,8 @@ fn run(
             }
             Err(RecvTimeoutError::Timeout) => {}
         }
-        if let Some(input) = &mut input
-            && input
-                .generation
-                .is_some_and(|generation| current_input.load(Ordering::Acquire) != generation)
-        {
-            input.clear();
+        if let Some(input) = &mut input {
+            input.maintain(current_input, Instant::now());
         }
         if let Some(active) = &mut output {
             let generation = active.generation;
@@ -911,6 +858,7 @@ mod tests {
                 config: config.clone(),
                 generation,
                 service: None,
+                warm_until: None,
             };
             let output = active.then(|| super::Output {
                 generation: 0,
@@ -1026,20 +974,15 @@ mod tests {
             launch: None,
         };
         let process = Arc::new(OwnedProcess::start(&ProcessSpec {
-            executable: std::env::current_exe()?,
-            arguments: [
-                "--exact",
-                "native_speech::tests::resource_guard_fake_service",
-                "--ignored",
-            ]
-            .map(std::ffi::OsString::from)
-            .to_vec(),
+            executable: crate::native_speech::tests::resource_guard_executable(&directory)?,
+            arguments: Vec::new(),
             working_directory: directory.clone(),
             stdout: directory.join("fake.stdout"),
             stderr: directory.join("fake.stderr"),
             memory_limit_bytes: 512 * 1024 * 1024,
             active_process_limit: 1,
         })?);
+        crate::native_speech::tests::await_resource_ready(&process, &directory, "fake")?;
         let service = crate::native_speech::Service::monitored(Arc::clone(&process), || {
             Ok(9 * 1024 * 1024 * 1024)
         })
@@ -1049,6 +992,7 @@ mod tests {
             config,
             generation: Some(41),
             service: Some(service),
+            warm_until: None,
         };
         let (events, received) = mpsc::channel();
         super::transcription(Some(&mut input), 41, &[], &AtomicU64::new(42), &events);
@@ -1056,6 +1000,9 @@ mod tests {
         assert!(input.generation.is_none());
         assert!(received.try_recv().is_err());
         assert!(process.wait_for_exit(Duration::from_secs(5))?.is_some());
+        drop(input);
+        drop(credentials);
+        std::fs::remove_dir_all(directory)?;
         Ok(())
     }
 

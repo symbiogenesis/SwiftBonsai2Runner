@@ -16,10 +16,12 @@ pub(super) fn transcribe(
         |input| run(generation, first, &mut import, current, events,
             &mut |wav| input.transcribe(generation, wav, current), &mut admit_text),
     );
-    if result.is_err()
-        && let Some(input) = input
-    {
-        input.clear();
+    if let Some(input) = input {
+        if result.is_ok() {
+            input.complete(generation, current, std::time::Instant::now());
+        } else {
+            input.clear();
+        }
     }
     if current.load(Ordering::Acquire) != generation {
         return;

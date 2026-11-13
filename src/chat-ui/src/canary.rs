@@ -108,7 +108,7 @@ impl Client {
             })
     }
 
-    fn ready_for(&self, generation: u64, current: &AtomicU64) -> Result<()> {
+    pub(crate) fn ready_for(&self, generation: u64, current: &AtomicU64) -> Result<()> {
         let call = Call::new(generation, current, READY_LIMIT);
         let result = self.exchange("GET", "/health", None, &[], Media::Json, &call)
             .and_then(|body| {
