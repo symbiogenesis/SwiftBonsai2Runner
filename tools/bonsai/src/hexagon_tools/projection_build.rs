@@ -22,7 +22,7 @@ pub(super) const INPUTS: &[&str] = &[
     "ptq1_hmx.rs",
     "ptq1_hmx_tests.rs",
     "packed-sources.json",
-    "verify_packed_fixture.py",
+    "verify_packed_fixture.ps1",
     "fixtures/swift-q8k-parity.bin",
     "fixtures/swift-q8k-parity.json",
     "fixtures/swift-ptq1-dot-parity.bin",

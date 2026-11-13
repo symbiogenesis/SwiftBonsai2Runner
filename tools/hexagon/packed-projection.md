@@ -70,7 +70,7 @@ own whole-model resource/work ledger; the PQ2 ledger does not apply.
 The two immutable independent ARM64 native-dot records cover widths 128/256
 and distinguish native lane/FMA order from grouped scalar accumulation. Their
 508 bytes and original provenance are hash-checked by
-[`verify_packed_fixture.py`](verify_packed_fixture.py). Exhaustive byte controls
+[`verify_packed_fixture.ps1`](verify_packed_fixture.ps1). Exhaustive byte controls
 exercise native aliases, sparse packed traversal and signed codes; failure and
 cancellation controls leave no published result. These CPU controls establish
 neither signed HMX arithmetic nor actual-model logits/state, adapter parity,
@@ -113,7 +113,7 @@ a complete admitted service-memory bound.
 Hosted ARM64 CI owns full controls:
 
 ```powershell
-python -B tools/hexagon/verify_packed_fixture.py
+pwsh -NoProfile -File tools/hexagon/verify_packed_fixture.ps1
 rustc --edition=2024 --test -D warnings -O tools/hexagon/packed_projection.rs -o ABSOLUTE_EXTERNAL_BUILD/packed-projection-tests.exe
 & ABSOLUTE_EXTERNAL_BUILD/packed-projection-tests.exe
 ```

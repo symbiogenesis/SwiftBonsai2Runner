@@ -1,20 +1,20 @@
 # Hexagon packed-weight audit
 
-`pq2_bridge.py` is a bounded, model-free Python audit for the first Hexagon
+`pq2_bridge.ps1` is a bounded, model-free PowerShell audit for the first Hexagon
 projection experiment. It never loads an inference engine, opens a device or
 rewrites a GGUF file. Native inference kernels and device ownership belong in
 Prism; this tool prepares an independent layout control.
 
-Run the inventory audit with Python 3.11 or later:
+Run the inventory audit with PowerShell 7.6 or later:
 
 ```powershell
-python tools/hexagon/pq2_bridge.py
+pwsh -NoProfile -File tools/hexagon/pq2_bridge.ps1
 ```
 
 The complete regression suite runs on hosted CI through
 [Hexagon prerequisites](../../.github/workflows/hexagon-qualification.yml) and
 Foundation. A focused local case is
-`python -B tools/hexagon/test_pq2_bridge.py BridgeTests.test_known_byte_fixture_splits_at_element_64_and_keeps_fourth_symbol`.
+`pwsh -NoProfile -File tools/hexagon/test_pq2_bridge.ps1 BridgeTests.test_known_byte_fixture_splits_at_element_64_and_keeps_fourth_symbol`.
 All owner-device setup, checks and cleanup share one five-minute aggregate
 allowance; do not run a complete suite locally.
 

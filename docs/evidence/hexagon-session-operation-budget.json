@@ -1,11 +1,33 @@
 {
+  "modelLoaded": false,
+  "historicalLedgerUnchanged": true,
+  "oneAllEligibleEvaluationFits": true,
+  "profileEligible": false,
+  "historicalTerminalMaximumOperations": 21760,
+  "oneHiddenPlusOneEvaluationOperations": 45912.0,
+  "remainingAfterOneAllEligibleEvaluation": 744,
+  "completeRequestAdmissionRequired": true,
+  "sourceIdentityEncoding": "UTF8-with-LF-newlines",
+  "limitations": [
+    "Static original-PQ2 counts; PTQ1, smaller row tiles and partial placement need independent accounting.",
+    "One evaluation fitting does not admit a prompt and generated reply or establish a persistent serving lifetime.",
+    "The complete unreused prompt, output reserve and prior session attempts must fit before inference.",
+    "An operation count establishes no device arithmetic, available resources, duration or performance benefit."
+  ],
   "schemaVersion": 1,
   "kind": "current-original-pq2-terminal-operation-budget",
-  "sourceIdentityEncoding": "UTF8-with-LF-newlines",
+  "evaluateOperationsPerToken": 23256.0,
+  "measuredInferenceSpeedup": null,
+  "hiddenOperationsPerToken": 22656.0,
+  "oneHiddenPlusOneEvaluationFits": false,
+  "resetReplenishesCapacity": false,
+  "terminalMaximumOperations": 24000,
+  "sessionMaximumSeconds": 120,
+  "cleanupReserveSeconds": 3,
   "sources": [
     {
-      "path": "tools/hexagon/verify_operation_budget.py",
-      "sha256": "ff81c7867d5375859674d73117a3a6a3bc1b50598447a186c1b8d93539836302"
+      "path": "tools/hexagon/verify_operation_budget.ps1",
+      "sha256": "a2943452e414620e58d6b72657bba2a3d5e6e199d0f566f34a70a4712913b70f"
     },
     {
       "path": "tools/hexagon/native_rpc/projection.rs",
@@ -16,29 +38,7 @@
       "sha256": "53be628d45e7784394ba45a92804dd22363788264f94bd394fe7f1eb0d33019c"
     }
   ],
-  "historicalLedgerUnchanged": true,
-  "historicalTerminalMaximumOperations": 21760,
-  "terminalMaximumOperations": 24000,
-  "hiddenOperationsPerToken": 22656,
-  "evaluateOperationsPerToken": 23256,
-  "oneAllEligibleEvaluationFits": true,
-  "remainingAfterOneAllEligibleEvaluation": 744,
-  "oneHiddenPlusOneEvaluationOperations": 45912,
-  "oneHiddenPlusOneEvaluationFits": false,
-  "firstProjectionOperationsPerToken": 40,
-  "maximumFirstProjectionEvaluationsByOperationsOnly": 600,
-  "sessionMaximumSeconds": 120,
-  "cleanupReserveSeconds": 3,
-  "completeRequestAdmissionRequired": true,
-  "resetReplenishesCapacity": false,
   "deviceOpened": false,
-  "modelLoaded": false,
-  "profileEligible": false,
-  "measuredInferenceSpeedup": null,
-  "limitations": [
-    "Static original-PQ2 counts; PTQ1, smaller row tiles and partial placement need independent accounting.",
-    "One evaluation fitting does not admit a prompt and generated reply or establish a persistent serving lifetime.",
-    "The complete unreused prompt, output reserve and prior session attempts must fit before inference.",
-    "An operation count establishes no device arithmetic, available resources, duration or performance benefit."
-  ]
+  "maximumFirstProjectionEvaluationsByOperationsOnly": 600,
+  "firstProjectionOperationsPerToken": 40
 }

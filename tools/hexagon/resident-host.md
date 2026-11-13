@@ -22,7 +22,7 @@ cache metadata, scale storage and temporary packing need explicit admission in
 addition to the original model and graph. The two cache limits account for
 different resources and must not be substituted for one another.
 
-Run `python -B tools/hexagon/verify_resident_traffic.py` to reproduce the retained
+Run `pwsh -NoProfile -File tools/hexagon/verify_resident_traffic.ps1` to reproduce the retained
 [current static ledger](../../docs/evidence/hexagon-resident-host-24000-ledger.json).
 The [historical ledger](https://github.com/symbiogenesis/SwiftBonsai2Runner/blob/7b37b29826b377386c1ddfe933cd4e75d6a97856/docs/evidence/hexagon-resident-host-ledger.json)
 retains the original 21,760-cap accounting. The current derivation uses the
