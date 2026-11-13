@@ -21,8 +21,9 @@ the corresponding detailed task changes; keep every acceptance obligation below.
 | R1 / owner, qualification | Runner with Prism | Published source-bound 0.1.25 prerelease and atomic runtime/source pins | Have the owner publish the reviewed Runner repin, then qualify the new active release. This is a development upgrade, not a performance promotion. Keep the fixed 0.1.23 CPU comparison baseline and all historical evidence identities unchanged. |
 | R2 / implementation, qualification | Prism, then Runner | Settled candidate, published comparison tooling and owning hosted checks | Publish and run the prepared [native CPU bundle comparison](docs/cpu-bundle-comparison.md) against registry 0.1.25; the existing X2 screen compares publisher thread counts, while one-token source timing is attribution only. Qualify the explicit exact LUT candidate, integrate selected cross-token consumers and genuinely batched verification; close CPU/prefill codegen, fallback, state/adapter/cancellation and matched selected-device benefit gates. X2 CPU benefit may promote reviewed shared CPU paths on X1 under [cross-generation CPU promotion](docs/cpu-kernels.md#cross-generation-cpu-promotion); device-specific tuning and claims retain matching-family gates. Qualify changes already consumed in 0.1.23 without another repin; follow the [inference delivery order](#lossless-inference-delivery-order). |
 | R3 / integration, qualification | Prism and Runner harnesses | Agreed execution/state identities and existing complete-state fixtures | Prepare shared state/restore and fault-control tooling independently of runtime qualification; map each prefix/prefill/speculation/accelerator path to its independent assertions and evidence. |
-| M1 / owner, qualification | Prism, then Runner | Reviewed memory-selected context source and a genuine compatible runtime release | Publish a source-bound Prism release with paired context/memory child arguments, review its exact identity and repin Runner to activate native memory sizing. Qualify selected context/admission/Job limits, unknown and changing memory, retry, UI reporting and full-state/resource behavior at the selected capacities. Current native 0.1.25 remains fixed at 8K; publisher serving uses memory selection. Historical fixed-8K controls retain their identities. |
-| K1 / owner, qualification | Prism, then Runner | Published 0.1.25 K4/V4 development runtime and matching local Runner repin | Have the owner publish the reviewed Runner repin, preserving explicit FP16 recovery and existing admission/8K bounds. Complete the [paired quality/memory packet](docs/quantized-kv.md#first-practical-promotion-packet) for measured qualification, independently on X1/X2; it is not a prerequisite for the development default. Defer K4/V3. |
+| M1 / owner, qualification | Prism, then Runner | Reviewed memory-selected context source and a genuine compatible runtime release | Publish a source-bound Prism release with paired context/memory child arguments, review its exact identity and repin Runner to activate native memory sizing under the [context expansion roadmap](#native-context-expansion-roadmap). Qualify selected context/admission/Job limits, unknown and changing memory, retry, UI reporting and full-state/resource behavior at the selected capacities. Current native 0.1.25 remains fixed at 8K; publisher serving uses memory selection. Historical fixed-8K controls retain their identities. |
+| M2 / implementation, qualification | Prism, then Runner | M1-compatible launch contract and reviewed K4/V4 storage identity | Implement cache-aware process/state/checkpoint sizing, then native sequential scratch accounting; synchronize runtime and Runner limits and qualify staged 64K/128K capacities. Follow the [cumulative estimates and conditional extensions](#native-context-expansion-roadmap); projections do not reduce current admission or qualify a larger window. |
+| K1 / owner, qualification | Prism, then Runner | Published 0.1.25 K4/V4 development runtime and matching local Runner repin | Have the owner publish the reviewed Runner repin, preserving explicit FP16 recovery and existing admission/8K bounds for this initial packet. Complete the [paired quality/memory packet](docs/quantized-kv.md#first-practical-promotion-packet) for measured qualification, independently on X1/X2; it is not a prerequisite for the development default. Follow M2 with the separately qualified K4/V3 capacity profile in the [context roadmap](#native-context-expansion-roadmap). |
 | S1 / implementation, integration | Runner; Prism for shared runtime/RPC consumers | Agreed verified-loading, state, stream and transport ownership interfaces | Integrate Talker/CodePredictor, codec/speaker and signed Rust RPC through [C++ retirement](#complete-c-retirement); qualify the ordinary Q4 baseline before ternary speech and new 48 kHz artifacts. |
 | S2 / implementation, qualification | Runner | Pinned Qwen3-ASR 1.7B artifacts and replacement controls | Qualify microphone-to-Swift submission, then replace ASR's native engine and close transcript/state, cancellation, lifecycle, quality and resource gates before removing its compiler/dependency paths. |
 | P1 / external, qualification | Prism and Runner | Original authoring inputs for provenance; hosted public-pack reconstruction for its separate gate | Run the declared reconstruction and independent replay while pursuing provenance intake independently; follow the PTQ1 critical path below. Neither blocks A1. |
@@ -240,6 +241,10 @@ compatible verified release and exact reviewed repin. Complete the M1 release,
 changing-memory and selected-capacity acceptance gates without transferring any
 historical 8K result to larger windows. Fixed qualification/comparison workloads
 retain their declared 8K controls and closed budgets.
+
+Follow the [native context expansion roadmap](#native-context-expansion-roadmap)
+for cache-aware sizing, native scratch, staged larger windows and conditional
+capacity profiles. Keep its calculated gains separate from measured acceptance.
 
 Prioritize usable native startup, model readiness, stop/retry and explicit rollback,
 then actual-model application acceptance, daily-service isolation, creative
@@ -1604,6 +1609,135 @@ not close pending hosted integration or full-model acceptance.
   GPU/batched timings establish no Snapdragon benefit or generation/attention shortcut.
   Keep this a research lead with no current dependency, runtime integration or device trial.
 
+## Native context expansion roadmap
+
+Increase useful context through M1 delivery, then M2 accounting, before optional
+capacity profiles. TurboQuant-inspired K4/V4 compresses attention KV; the separate
+planner selects one immutable capacity from available physical RAM at model launch.
+Retry observes memory again. Keep the current K4/V4 development default, explicit
+fresh-session FP16 recovery and PTQ1's existing no-go for default promotion.
+The [memory contract](docs/swift-memory.md#memory-selected-serving-context),
+[cache layout](docs/quantized-kv.md#snapdragon-execution-and-state) and
+[pure planner](src/cpu-policy/src/context.rs) define the current baseline.
+
+### Delivery order and acceptance
+
+1. **M1, Prism then Runner:** publish and verify the genuine runtime implementing
+   paired `--context-tokens`/`--memory-limit-bytes`, review its exact identity and
+   repin Runner. Native 0.1.25 remains fixed at 8,192; prepared memory selection
+   still charges FP16 and has a 62,720-token ceiling. Preserve unknown/insufficient
+   memory rejection, immediate prelaunch admission and owned-Job pressure teardown.
+2. **M2, Prism and Runner:** make process, live-state and rollback/checkpoint
+   allowances depend on the selected immutable cache layout, including scales,
+   page/tail metadata, codec storage and scratch. Update `MAX_CONTEXT_TOKENS`,
+   session validation, child argument bounds, graph/checkpoint budgets and matching
+   launcher arithmetic together. Retain two full caches as the general rollback
+   bound; an old conversation can remain live while a divergent one is computed.
+3. **M2, Prism then Runner:** replace publisher batch-score allowances with reviewed
+   native sequential scratch for that execution profile. Keep publisher and any
+   tiled-prefill allowances separate. First qualify staged **64K and 128K** windows;
+   the example below projects about 150K with K4/V4 after these first three steps.
+4. **Later capacity profile, Prism then Runner:** expose and qualify K4/V3 after
+   M2, with explicit trusted selection and profile/readiness identity. Evaluate
+   held-out retrieval, instructions and creative continuation at the selected
+   capacities, including adapter effects. Its projected 170K changes precision;
+   it does not replace K4/V4 automatically or enlarge K1's initial 8K packet.
+5. **Conditional PTQ1, Prism then Runner:** close the existing packing, adapter,
+   application, quality and benefit gates before crediting verified resident
+   savings. Its 1,259,520,000-byte file reduction alone does not establish usable
+   RAM savings. Use a separate CPU profile: current default NPU placement consumes
+   PQ2, so its acceleration contract does not transfer to PTQ1.
+6. **Conditional allocation audit, Prism and Runner:** attribute retained workspace,
+   buffers and overlapping lifetimes, then remove a demonstrated avoidable cost.
+   The additional 512 MiB below is an investigation target, with no established
+   saving. Count distinct physical bytes and keep mapped residency separate from
+   private commit; do not reuse PTQ1 or NPU savings as another allocation saving.
+7. **Runner launch guidance:** explain that closing other memory-heavy applications
+   before a fresh launch can increase selected capacity. Keep the 4 GiB host and
+   256 MiB startup reserves; never expand a running session from a later snapshot.
+
+For every larger profile, synchronize runtime/tokenizer, broker admission,
+capability/readiness and native UI capacity reporting through an exact-source
+verified release. Qualify full-state/checkpoint restoration, cancellation, edited
+and reused histories, adapter changes, Stop/Retry, changing memory and Job limits
+at the selected capacities. Count the canonical prompt, requested reply and
+64-token reserve; preserve history without silent trimming or profile fallback.
+Capacity is not long-range answer quality or acceptable prompt latency: measure
+complete requests and resource peaks independently. Retain source/device scope,
+losing/no-go outcomes and rollback; historical 8K evidence does not qualify a
+larger context. Use the existing owner execution budgets, per-arm and aggregate
+power observations and evidence-retention policy; this roadmap authorizes no CI
+operation or device trial beyond those existing rules. Preflight ingestion and
+capture cost before selecting a laptop workload; defer work that cannot fit its
+original aggregate allowance. Larger capacity targets do not imply a 64K/128K or
+262K capture fits fifteen minutes. Complete suites and benchmarks remain CI-only
+and owner-operated.
+
+### Calculated cumulative capacity
+
+This illustrative scenario starts with **20 GiB available before launch**, not
+20 GiB installed RAM. Preserve 4 GiB host reserve, 256 MiB startup margin and an
+11 GiB fixed runtime allowance until measured savings justify changing it. Charge
+two complete KV copies, 128 metadata bytes per token, 256-token page alignment,
+156,893,184 recurrent bytes and the 4 GiB live-state bound, with matching checkpoint
+guards. These are source arithmetic projections, not measured peaks or current
+release capabilities. Optional rows are conditional and cumulative only if each
+distinct saving is realized in the selected compatible profile.
+
+| Cumulative change | Additional tokens | Total context tokens |
+| --- | ---: | ---: |
+| Current native release | 0 | 8,192 |
+| M1: activate prepared memory-selected serving | 28,928 | 37,120 |
+| M2: account for actual K4/V4 records and existing batch scratch | 90,112 | 127,232 |
+| M2: charge native sequential scratch | 22,528 | 149,760 |
+| Later: select and qualify K4/V3 | 20,480 | 170,240 |
+| Conditional: realize all 1.173 GiB of PTQ1 savings as usable memory | 42,240 | 212,480 |
+| Conditional: reclaim a distinct 512 MiB of fixed allocations | 17,920 | 230,400 |
+| Conditional: free another 1 GiB before launch, making 21 GiB available | 31,744, capped | 262,144 |
+
+Reproduce by rounding down to 256 tokens the minimum of the model limit, the
+available context allocation divided by the process bytes per token, and the
+quantity (live-state allowance minus recurrent bytes) divided by state bytes per
+token.
+The available context allocation is available RAM minus host/startup reserves
+and the selected fixed allowance. FP16 live KV costs 65,536 bytes per token;
+K4/V4 costs 16,896 and K4/V3 14,848, including scales. Process charges progress
+from 137,344 to 40,064 to 34,016 bytes per token, then 29,920 with K4/V3:
+two cache copies plus 6,144 publisher or 96 native scratch bytes plus 128 metadata
+bytes. Use live KV plus 224 bytes per token for conservative state sizing.
+
+K4/V4's conservative 4 GiB state ceiling is 241,664 tokens. Its full 262,144
+requires separately reviewed larger live-state/checkpoint limits and enough
+process RAM; K4/V3 fits that model context within the 4 GiB state bound. At
+18 GiB available, steps 1-3 project 86,784 tokens; at 24 GiB they project 241,664
+with K4/V4, or 262,144 after K4/V3. The 20 GiB scenario's first three steps give
+about 18 times the current window, or 21 times after K4/V3. The complete
+conditional ladder reaches the artifact's declared 262,144-token ceiling
+(32 times 8K), without claiming measured quality, speed or capacity above it.
+
+### Alternatives and useful-history improvements
+
+- **Capacity-first CPU profile, Prism then Runner:** evaluate reducing or omitting
+  the current 2,888,663,040-byte (about 2.69 GiB) NPU-resident weight payload. If
+  equivalent usable headroom is demonstrated, the step-3 K4/V4 example could rise
+  from 149,760 to 234,752 tokens. Measure the latency tradeoff; treat this as an
+  alternative to the cumulative ladder, without double-counting arenas or PTQ1.
+- **Bounded unique-page accounting, Prism:** inspect append-only reuse before
+  reducing rollback charges. Sealed cache pages already share immutable ownership
+  and mutable tails are copied. Assign zero universal new gain to adding paging
+  or copy-on-write; divergent histories still need the general two-cache bound.
+- **Latest-prefix reuse and compatible prefill, Prism then Runner:** qualify the
+  existing explicit [latest option](docs/prefix-reuse.md) and its repeated-history
+  benefit. Assign zero direct context gain. Current tiled prefill rejects compressed
+  profiles; integrate and qualify compatibility before combining those paths.
+- **Reply reservation guidance, Runner:** where suitable, changing the reserved
+  reply from 4,096 to 1,024 admits 3,072 additional prompt tokens within the same
+  total context. Keep exact broker admission and the user's selected output limit.
+- **Source-grounded retrieval and optional summaries, Runner:** extend useful
+  history through the existing scene-packet work, source versions and author
+  approval. These select or summarize information rather than enlarge the physical
+  context; assign zero physical-capacity credit in the cumulative table.
+
 ## Bounded calibration and optional precision
 
 After exact CPU controls, use small fixed calibration samples, disjoint held-out
@@ -1626,10 +1760,10 @@ LoRA gates; calibration proves neither quality nor reduced admission.
   No actual-model comparison, measured quality/memory qualification or
   runtime-bundle publication is established by the source default decision.
   Its codec, graph and native CLI/service selection are implemented in Prism;
-  K4/V3 remains a separate later capacity experiment. Close selected-profile
-  packed-attention, scalar/NEON, exact quantized checkpoint, cancellation, prefix
-  and adapter controls; exact FP16 output/logit parity is not required. Charge
-  scales, metadata, rotations, scratch and retained copies; keep FP32
+  K4/V3 follows the separate later [context expansion roadmap](#native-context-expansion-roadmap).
+  Close selected-profile packed-attention, scalar/NEON, exact quantized checkpoint,
+  cancellation, prefix and adapter controls; exact FP16 output/logit parity is not
+  required. Charge scales, metadata, rotations, scratch and retained copies; keep FP32
   GDN/convolution state unchanged. Retain serial query-head streaming; further
   grouped-head tuning needs its own checks and measured-benefit gate.
   Use the [three-task paired packet](docs/quantized-kv.md#first-practical-promotion-packet)
@@ -1645,8 +1779,9 @@ LoRA gates; calibration proves neither quality nor reduced admission.
   Qualify X1 Elite and X2 Elite Extreme independently: a selected-device pass can
   qualify that device profile without waiting for the other. Complete exact-source
   runtime delivery/repin and matching broker/readiness/context contracts before
-  application selection, with explicit FP16 comparison/recovery and unchanged
-  process admission and 8K limit. Extend the model-free graph-contract inventory
+  initial application selection, with explicit FP16 comparison/recovery and unchanged
+  process admission and 8K limit for this packet; larger windows follow M1/M2 above.
+  Extend the model-free graph-contract inventory
   to describe rotated profiles before using discovery for their automatic
   selection; current selection uses exact reviewed source and live readiness.
   The small packet supports scoped measured
