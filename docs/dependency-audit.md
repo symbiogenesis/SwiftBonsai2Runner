@@ -125,15 +125,22 @@ They do not qualify every backend/device or inference performance; see
 
 ### Native inference source review
 
-The external Rust runtime pins optional `fearless_simd` 1.1.0 to source revision
+The earlier source review covered optional `fearless_simd` 1.1.0 at revision
 `b8a50a2c9ce03ee5384038ae8e6f45749662e2f6`, crate SHA-256
-`3296eb97d869113eaf148a6bdf01884e90b3828ad7ae2340b0f93362fc158611`, matching its
-Cargo.lock. Default `std` has no external dependencies; `libm`/the macro crate
-are unused, and there is no build script. The review covers slice/array bounds,
-widening, bitcasts, baseline NEON and the dependency's internal unsafe boundary;
-runtime source forbids unsafe code. See the
-[immutable source](https://github.com/linebender/fearless_simd/tree/b8a50a2c9ce03ee5384038ae8e6f45749662e2f6/fearless_simd),
+`3296eb97d869113eaf148a6bdf01884e90b3828ad7ae2340b0f93362fc158611`. It inspected
+slice/array bounds, widening, bitcasts, baseline NEON and the dependency's internal
+unsafe boundary; runtime source forbids unsafe code. That version's default `std`
+has no external dependencies, `libm`/the macro crate are unused and there is no
+build script. See the
+[reviewed source](https://github.com/linebender/fearless_simd/tree/b8a50a2c9ce03ee5384038ae8e6f45749662e2f6/fearless_simd),
 [SIMD contract](cpu-kernels.md) and [license terms](licensing.md#reviewed-dependencies).
+
+The active Prism 0.1.25 source and its Cargo.lock instead pin `fearless_simd`
+**1.2.0**, crate SHA-256
+`629c9d6b6f30b5604089e0980f4d924a013aacb1654a6cdf5d3d852224f68651`.
+Runner speech also pins 1.2.0 through its independent workspace lock. The older
+source review does not qualify this dependency refresh; owning hosted and native
+consumer acceptance remains pending as recorded below.
 
 ## Direct dependency decisions
 
@@ -150,7 +157,7 @@ runtime source forbids unsafe code. See the
 | `toml`, `ureq` | CI-only manifest parsing (parse/serde/std) and synchronous HTTPS (Windows Schannel, otherwise Rustls); ureq defaults/compression disabled. |
 | `transcribe-cpp` | Static CPU ASR, defaults disabled; reviewed CMake script downloads no source and explicitly enables MSVC optimization. |
 | `simd-json` | Exact optional qualification-only crates.io pin; ordinary requests still use serde_json. |
-| `fearless_simd` | Pinned safe SIMD (`=1.2.0` in Runner speech crates; the external runtime retains its independent 1.1.0 pin). ASR uses it in `validate_pcm`; TTS uses it in the candidate Rust `engine`/`codec` modules, which have not replaced the native serving core. Prism's `bonsai-neon-dot` kernels are a separate runtime dependency. |
+| `fearless_simd` | Pinned safe SIMD (`=1.2.0` in Runner speech and the active external runtime, with independent locks). ASR uses it in `validate_pcm`; TTS uses it in the candidate Rust `engine`/`codec` modules, which have not replaced the native serving core. Prism's `bonsai-neon-dot` kernels are a separate runtime dependency. |
 | `memchr` | Promoted from transitive to direct (`=2.8.3`, `default-features = false`) in `bonsai-broker`, `bonsai-chat`, and `bonsai-speech-service` for NEON-vectorized HTTP header, SSE line, multipart boundary, and ASCII folded Find scanning. |
 | Windows CNG | Runner artifact and maintenance digests use `bonsai_windows_credentials::Sha256` (`BCryptHashData`); CPU dispatch belongs to the Windows provider. Prism's `bonsai-native-hash` is external to this workspace. These paths alone establish no device speedup. |
 | `mxc-sdk`, `flatbuffers` | Required security integration; pursue upstream modularity. |
