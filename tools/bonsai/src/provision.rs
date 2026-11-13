@@ -819,7 +819,7 @@ fn repair_engine(
 
 /// Automatic chat setup may restore only its selected locked runtime. The public
 /// provisioning API continues to reject changed existing installations.
-#[cfg(test)]
+#[cfg(all(test, windows))]
 pub(crate) fn prepare_chat_runtime(value: Value) -> crate::Result<Value> {
     prepare_chat_runtime_observed(value, &mut |_, _| Ok(()))
 }
@@ -1311,6 +1311,31 @@ mod tests {
     }
 
     #[cfg(windows)]
+    fn repair_from_cached_archive_with_progress(request: Value) -> crate::Result<Value> {
+        let mut activities = Vec::new();
+        let repaired =
+            prepare_chat_runtime_observed(request.clone(), &mut |activity, artifact| {
+                activities.push((activity, artifact.is_some()));
+                Ok(())
+            })?;
+        assert!(activities.contains(&(RepairActivity::VerifyingExisting, true)));
+        assert!(activities.contains(&(RepairActivity::Publishing, false)));
+        assert!(
+            !activities
+                .iter()
+                .any(|(activity, _)| matches!(activity, RepairActivity::Downloading { .. })),
+            "Repair from a cached archive must report local preparation without a download"
+        );
+        activities.clear();
+        prepare_chat_runtime_observed(request, &mut |activity, artifact| {
+            activities.push((activity, artifact.is_some()));
+            Ok(())
+        })?;
+        assert_eq!(activities, [(RepairActivity::VerifyingExisting, false)]);
+        Ok(repaired)
+    }
+
+    #[cfg(windows)]
     #[test]
     fn inference_installation_verifies_cached_archive_and_rejects_changed_workers()
     -> crate::Result<()> {
@@ -1374,20 +1399,7 @@ mod tests {
             b"changed worker"
         );
         request["verifyOnly"] = json!(false);
-        let mut activities = Vec::new();
-        let repaired =
-            prepare_chat_runtime_observed(request.clone(), &mut |activity, artifact| {
-                activities.push((activity, artifact.is_some()));
-                Ok(())
-            })?;
-        assert!(activities.contains(&(RepairActivity::VerifyingExisting, true)));
-        assert!(activities.contains(&(RepairActivity::Publishing, false)));
-        assert!(
-            !activities
-                .iter()
-                .any(|(activity, _)| matches!(activity, RepairActivity::Downloading { .. })),
-            "Repair from a cached archive must report local preparation without a download"
-        );
+        let repaired = repair_from_cached_archive_with_progress(request.clone())?;
         assert_eq!(repaired["Verified"], true);
         assert_eq!(fs::read(worker).map_err(|error| error.to_string())?, image);
         let previous = Path::new(text(&repaired, "PreviousInvalidDirectory")?);
@@ -1395,13 +1407,6 @@ mod tests {
             fs::read(previous.join("bonsai-swift-worker.exe")).map_err(|error| error.to_string())?,
             b"changed worker"
         );
-
-        activities.clear();
-        prepare_chat_runtime_observed(request.clone(), &mut |activity, artifact| {
-            activities.push((activity, artifact.is_some()));
-            Ok(())
-        })?;
-        assert_eq!(activities, [(RepairActivity::VerifyingExisting, false)]);
 
         fs::remove_file(worker).map_err(|error| error.to_string())?;
         assert_eq!(prepare_chat_runtime(request.clone())?["Verified"], true);
@@ -1526,12 +1531,13 @@ mod tests {
         assert!(crate::install::run(json!({"schemaVersion":1,"runtime":spec})).is_err());
         let mut bad_pin = spec.clone();
         bad_pin.archive_sha256 = "0".repeat(64);
-        assert!(stage_publisher_repair(&bad_pin).is_err());
+        assert!(stage_publisher_repair(&bad_pin, &mut |_, _| Ok(())).is_err());
         assert_eq!(
             fs::read(&executable).map_err(|error| error.to_string())?,
             b"old incomplete runtime"
         );
-        let previous = stage_publisher_repair(&spec)?.ok_or("Previous runtime was lost.")?;
+        let previous = stage_publisher_repair(&spec, &mut |_, _| Ok(()))?
+            .ok_or("Previous runtime was lost.")?;
         assert_eq!(
             fs::read(previous.join("llama-server.exe")).map_err(|error| error.to_string())?,
             b"old incomplete runtime"
@@ -1547,7 +1553,7 @@ mod tests {
         );
         assert!(bonsai_artifacts::VerifiedRuntime::verify(&spec).is_ok());
         fs::write(&executable, b"changed again").map_err(|error| error.to_string())?;
-        stage_publisher_repair(&spec)?;
+        stage_publisher_repair(&spec, &mut |_, _| Ok(()))?;
         assert_eq!(
             fs::read(&executable).map_err(|error| error.to_string())?,
             image
