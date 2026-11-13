@@ -12,10 +12,8 @@ pub(crate) fn attach_parent_console() {
     let output = unsafe { GetStdHandle(STD_OUTPUT_HANDLE) };
     if !output.is_null() && output != INVALID_HANDLE_VALUE {
         // SAFETY: The borrowed handle is queried only and is never closed here.
-        if matches!(
-            unsafe { GetFileType(output) },
-            FILE_TYPE_DISK | FILE_TYPE_PIPE
-        ) {
+        let output_type = unsafe { GetFileType(output) };
+        if matches!(output_type, FILE_TYPE_DISK | FILE_TYPE_PIPE) {
             return;
         }
     }
