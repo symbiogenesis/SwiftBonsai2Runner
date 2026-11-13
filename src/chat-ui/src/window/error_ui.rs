@@ -37,8 +37,9 @@ pub(super) fn summary(ui: &mut egui::Ui, message: &str) {
 }
 
 pub(super) fn copy_button(ui: &mut egui::Ui, label: &str, message: &str) {
-    let id = ui.make_persistent_id(("error-copy", label, message));
+    let id = ui.make_persistent_id(("error-copy", label));
     super::controls::CopyButton::new(label, id)
+        .source(egui::Id::new(message))
         .show(ui, || message.to_owned())
         .on_hover_text("Copy the complete message, including details beyond the preview.");
 }

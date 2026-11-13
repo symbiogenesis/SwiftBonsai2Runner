@@ -160,6 +160,7 @@ struct State {
     warning: bool,
     alerts: error_ui::View,
     diagnostics: VecDeque<String>,
+    diagnostics_revision: u64,
     show_diagnostics: bool,
     show_settings: bool,
     settings_view: settings::View,
@@ -303,6 +304,7 @@ impl State {
             warning: false,
             alerts: error_ui::View::default(),
             diagnostics: VecDeque::new(),
+            diagnostics_revision: 0,
             show_diagnostics: false,
             show_settings: false,
             settings_view: settings::View::default(),
@@ -578,6 +580,7 @@ impl State {
             self.diagnostics
                 .push_back(message.chars().take(MAX_DIAGNOSTIC_CHARS).collect());
             self.diagnostics.retain_back(MAX_DIAGNOSTICS);
+            self.diagnostics_revision = self.diagnostics_revision.wrapping_add(1);
         }
     }
 

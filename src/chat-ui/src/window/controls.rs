@@ -7,6 +7,7 @@ use std::time::Duration;
 pub(super) struct CopyButton<'a> {
     label: &'a str,
     feedback: egui::Id,
+    source: egui::Id,
     min_size: egui::Vec2,
     corner_radius: Option<u8>,
     primary: bool,
@@ -14,16 +15,23 @@ pub(super) struct CopyButton<'a> {
 }
 
 impl<'a> CopyButton<'a> {
-    /// Bind confirmation to the caller's source identity, independent of content allocation.
+    /// Reuse one stable feedback slot for this control across source changes.
     pub(super) const fn new(label: &'a str, feedback: egui::Id) -> Self {
         Self {
             label,
             feedback,
+            source: feedback,
             min_size: egui::Vec2::ZERO,
             corner_radius: None,
             primary: false,
             confirmation_duration: Duration::from_millis(1_500),
         }
+    }
+
+    /// Invalidate confirmation when the caller's copyable content changes.
+    pub(super) const fn source(mut self, source: egui::Id) -> Self {
+        self.source = source;
+        self
     }
 
     /// Preserve the surrounding control row's geometry during confirmation.
@@ -57,8 +65,16 @@ impl<'a> CopyButton<'a> {
         contents: impl FnOnce() -> String,
     ) -> egui::Response {
         let now = ui.input(|input| input.time);
-        let until = ui.ctx().data(|data| data.get_temp::<f64>(self.feedback));
-        let copied = until.is_some_and(|until| now < until);
+        let until = ui.ctx().data_mut(|data| {
+            let feedback = data.get_temp::<CopyFeedback>(self.feedback)?;
+            if feedback.source == self.source && now < feedback.until {
+                Some(feedback.until)
+            } else {
+                data.remove::<CopyFeedback>(self.feedback);
+                None
+            }
+        });
+        let copied = until.is_some();
         // Match egui's Body-font button theme in both measurement and paint.
         let font = egui::TextStyle::Body.resolve(ui.style());
         let text_width = ui
@@ -70,6 +86,12 @@ impl<'a> CopyButton<'a> {
             )
             .size()
             .x;
+        let confirmation_width = ui
+            .painter()
+            .layout_no_wrap("Copied".to_owned(), font.clone(), ui.visuals().text_color())
+            .size()
+            .x;
+        let text_width = text_width.max(confirmation_width);
         let width = ui.spacing().button_padding.x.mul_add(2.0, text_width);
         let mut text = RichText::new(if copied { "Copied" } else { self.label }).font(font);
         if self.primary {
@@ -89,18 +111,28 @@ impl<'a> CopyButton<'a> {
             ui.ctx().data_mut(|data| {
                 data.insert_temp(
                     self.feedback,
-                    now + self.confirmation_duration.as_secs_f64(),
+                    CopyFeedback {
+                        source: self.source,
+                        until: now + self.confirmation_duration.as_secs_f64(),
+                    },
                 );
             });
             ui.ctx().request_repaint();
             ui.ctx().request_repaint_after(self.confirmation_duration);
-        } else if let Some(until) = until.filter(|_| copied) {
+        } else if let Some(until) = until {
             let remaining =
                 Duration::try_from_secs_f64(until - now).unwrap_or(self.confirmation_duration);
             ui.ctx().request_repaint_after(remaining);
         }
         response
     }
+}
+
+/// One transient confirmation per control, regardless of content revisions.
+#[derive(Clone, Copy)]
+struct CopyFeedback {
+    source: egui::Id,
+    until: f64,
 }
 
 /// A standard-sized secondary action, with its label and behavior at the call site.
@@ -265,5 +297,48 @@ mod tests {
         assert!((before.height() - after.height()).abs() < 0.5);
         control.run();
         assert_eq!(control.state().productions, 1);
+    }
+
+    #[test]
+    fn copy_button_reuses_one_feedback_slot_across_sources_and_removes_expired_confirmation() {
+        struct Fixture {
+            source: u64,
+        }
+
+        let mut control = Harness::builder()
+            .with_size([200.0, 100.0])
+            .with_context_setup(super::super::configure)
+            .build_ui_state(
+                |ui, fixture: &mut Fixture| {
+                    let slot = ui.make_persistent_id("bounded-copy-feedback");
+                    CopyButton::new("Copy", slot)
+                        .source(egui::Id::new(fixture.source))
+                        .show(ui, || format!("Payload {}", fixture.source));
+                },
+                Fixture { source: 0 },
+            );
+        for source in 0..16 {
+            control.state_mut().source = source;
+            control.step();
+            assert_eq!(control.ctx.data(|data| data.count::<CopyFeedback>()), 0);
+            let before = control
+                .get_by_role_and_label(egui::Role::Button, "Copy")
+                .rect();
+            control
+                .get_by_role_and_label(egui::Role::Button, "Copy")
+                .click();
+            control.step();
+            control.step();
+            assert_eq!(control.ctx.data(|data| data.count::<CopyFeedback>()), 1);
+            let after = control
+                .get_by_role_and_label(egui::Role::Button, "Copy")
+                .rect();
+            assert!((before.width() - after.width()).abs() < 0.5);
+            assert!((before.height() - after.height()).abs() < 0.5);
+        }
+        let expired = control.ctx.input(|input| input.time) + 2.0;
+        control.input_mut().time = Some(expired);
+        control.step();
+        assert_eq!(control.ctx.data(|data| data.count::<CopyFeedback>()), 0);
     }
 }

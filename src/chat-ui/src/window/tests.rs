@@ -700,6 +700,9 @@ fn diagnostics_are_bounded_and_separate_from_copyable_chat() {
         state.record(&format!("Technical event {index}"));
     }
     assert_eq!(state.diagnostics.len(), MAX_DIAGNOSTICS);
+    assert_eq!(state.diagnostics_revision, 200);
+    state.record("Technical event 199");
+    assert_eq!(state.diagnostics_revision, 200);
     assert_eq!(
         state.transcript.plain_text(),
         "You\nHello\n\nSwift Bonsai\nWelcome"
