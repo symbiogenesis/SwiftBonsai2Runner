@@ -1588,6 +1588,7 @@ impl CodePredictorModel {
     /// Predict one frame with explicit CPU workers and cancellation between layers/codebooks.
     #[expect(
         clippy::too_many_arguments,
+        clippy::too_many_lines,
         reason = "Retain the independently selected sampler, seed, worker and cancellation controls."
     )]
     pub fn predict_frame_with_control(
@@ -2050,9 +2051,7 @@ mod tests {
         Ok(())
     }
 
-    #[test]
-    fn code_predictor_and_prompt_cache_and_htp_prefill_packet_execute_cleanly()
-    -> std::io::Result<()> {
+    fn code_predictor_fixture() -> std::io::Result<CodePredictorModel> {
         let hidden = 4_usize;
         let vocab = 8_usize;
         let make_proj =
@@ -2086,7 +2085,7 @@ mod tests {
                 vocab,
             )?);
         }
-        let cp = CodePredictorModel {
+        Ok(CodePredictorModel {
             hidden_size: hidden,
             num_q_heads: 2,
             num_kv_heads: 2,
@@ -2100,7 +2099,15 @@ mod tests {
             norm_w: vec![1.0; hidden],
             codec_embeddings: vec![vec![0.1; vocab * hidden]; NUM_ACOUSTIC_CODEBOOKS],
             lm_heads,
-        };
+        })
+    }
+
+    #[test]
+    fn code_predictor_and_prompt_cache_and_htp_prefill_packet_execute_cleanly()
+    -> std::io::Result<()> {
+        let hidden = 4;
+        let vocab = 8;
+        let cp = code_predictor_fixture()?;
         let talker_embd = vec![0.2_f32; vocab * hidden];
         let codes = cp.predict_frame(
             &[0.1, -0.2, 0.3, 0.4],
@@ -2112,6 +2119,55 @@ mod tests {
         )?;
         assert_eq!(codes[0], 3);
         assert!(codes.iter().all(|&c| (0..8).contains(&c)));
+        let mut pcache = PromptCache::default();
+        let ref_codes = [1_i32; 32];
+        let mut codec_builds = 0_usize;
+        let _ = pcache.get_or_build_icl_reference(
+            &ref_codes,
+            2,
+            || {
+                codec_builds += 1;
+                Ok(vec![1.0; 12])
+            },
+            || Ok((vec![2.0; 8], 2)),
+        )?;
+        let _ = pcache.get_or_build_icl_reference(
+            &ref_codes,
+            2,
+            || {
+                codec_builds += 1;
+                Ok(vec![1.0; 12])
+            },
+            || Ok((vec![2.0; 8], 2)),
+        )?;
+        assert_eq!(
+            codec_builds, 1,
+            "PromptCache must reuse cached ICL streams on hit"
+        );
+
+        assert!(HtpPrefillPacket::new_talker_prefill(1, 2048, 28, HtpQuantType::Q8_0).is_err());
+        let pkt = HtpPrefillPacket::new_talker_prefill(64, 2048, 28, HtpQuantType::NativeQ2)?;
+        assert_eq!(pkt.to_le_bytes().len(), 24);
+        let _ = TalkerLoraAdapter {
+            name: "indic-en".to_owned(),
+            patches: HashMap::new(),
+        };
+        Ok(())
+    }
+
+    #[test]
+    fn predictor_workers_preserve_codes_and_cancellation_reaches_inner_layers()
+    -> std::io::Result<()> {
+        let cp = code_predictor_fixture()?;
+        let talker_embd = vec![0.2_f32; 8 * 4];
+        let codes = cp.predict_frame(
+            &[0.1, -0.2, 0.3, 0.4],
+            3,
+            &talker_embd,
+            DecoupledSamplingParams::base_clone(),
+            42,
+            100,
+        )?;
         let parallel = cp.predict_frame_with_control(
             &[0.1, -0.2, 0.3, 0.4],
             3,
@@ -2147,39 +2203,6 @@ mod tests {
         assert_eq!(polls, 4);
         assert!(cancelled.is_err_and(|error| error.kind() == std::io::ErrorKind::Interrupted));
 
-        let mut pcache = PromptCache::default();
-        let ref_codes = [1_i32; 32];
-        let mut codec_builds = 0_usize;
-        let _ = pcache.get_or_build_icl_reference(
-            &ref_codes,
-            2,
-            || {
-                codec_builds += 1;
-                Ok(vec![1.0; 12])
-            },
-            || Ok((vec![2.0; 8], 2)),
-        )?;
-        let _ = pcache.get_or_build_icl_reference(
-            &ref_codes,
-            2,
-            || {
-                codec_builds += 1;
-                Ok(vec![1.0; 12])
-            },
-            || Ok((vec![2.0; 8], 2)),
-        )?;
-        assert_eq!(
-            codec_builds, 1,
-            "PromptCache must reuse cached ICL streams on hit"
-        );
-
-        assert!(HtpPrefillPacket::new_talker_prefill(1, 2048, 28, HtpQuantType::Q8_0).is_err());
-        let pkt = HtpPrefillPacket::new_talker_prefill(64, 2048, 28, HtpQuantType::NativeQ2)?;
-        assert_eq!(pkt.to_le_bytes().len(), 24);
-        let _ = TalkerLoraAdapter {
-            name: "indic-en".to_owned(),
-            patches: HashMap::new(),
-        };
         Ok(())
     }
 

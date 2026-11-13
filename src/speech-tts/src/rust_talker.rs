@@ -1,8 +1,12 @@
 //! CPU Talker/CodePredictor serving for the pinned ordinary Qwen GGUF models.
 //!
 //! Prompt and frame ordering follows the reviewed qwentts.cpp revision recorded
-//! by ENGINE_REVISION. This module opens no files, devices or network connections.
+//! by `ENGINE_REVISION`. This module opens no files, devices or network connections.
 #![forbid(unsafe_code)]
+#![expect(
+    clippy::redundant_pub_crate,
+    reason = "Keep the serving types private to this crate."
+)]
 
 use std::io;
 
@@ -181,6 +185,10 @@ struct Prompt {
 }
 
 impl Talker {
+    #[expect(
+        clippy::too_many_lines,
+        reason = "Load and validate the complete pinned Talker/predictor tensor inventory atomically."
+    )]
     pub(crate) fn load(
         weights: &mut Weights,
         tokenizer: Tokenizer,
@@ -386,8 +394,7 @@ impl Talker {
         rows.push(prefix);
 
         let body = &ids[3..ids.len() - 5];
-        let mut trailing = vec![self.tts_pad.clone()];
-        if let Some(reference) = reference {
+        let trailing = if let Some(reference) = reference {
             let reference_ids = self.framed_ids(REFERENCE_TEXT)?;
             let mut text_rows = Vec::new();
             for &id in reference_ids[3..reference_ids.len() - 5].iter().chain(body) {
@@ -402,7 +409,7 @@ impl Talker {
             }
             let aligned = align_icl(text_rows, codec_rows, &self.tts_pad)?;
             rows.extend(aligned.rows);
-            trailing = aligned.trailing;
+            aligned.trailing
         } else {
             for &id in body {
                 cancel()?;
@@ -416,7 +423,8 @@ impl Talker {
             let mut end = self.tts_pad.clone();
             add(&mut end, self.codec_row(self.specials.bos)?)?;
             rows.push(end);
-        }
+            vec![self.tts_pad.clone()]
+        };
         if rows.len() >= MAX_CONTEXT {
             return Err(invalid("Speech prompt exceeds its context budget."));
         }
@@ -448,7 +456,7 @@ impl Talker {
     }
 
     pub(crate) fn generate(
-        &mut self,
+        &self,
         text: &str,
         instruct: Option<&str>,
         reference: Option<&Reference>,
