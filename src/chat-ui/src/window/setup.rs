@@ -173,10 +173,10 @@ impl State {
             .fill(ui.visuals().faint_bg_color)
             .stroke(ui.visuals().widgets.noninteractive.bg_stroke)
             .corner_radius(12)
-            .inner_margin(12)
+            .inner_margin(10)
             .show(ui, |ui| {
                 ui.set_width(ui.available_width());
-                ui.spacing_mut().item_spacing = egui::vec2(8.0, 6.0);
+                ui.spacing_mut().item_spacing = egui::vec2(8.0, 4.0);
                 ui.horizontal(|ui| {
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                         if let Some(startup) = &self.startup
