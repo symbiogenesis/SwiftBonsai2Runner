@@ -15,6 +15,8 @@ runs:
     - name: Verify sources and select the native child compiler environment
       shell: pwsh
       working-directory: ${{ runner.temp }}
+      env:
+        RUNNER_ENVIRONMENT: ${{ runner.environment }}
       run: |
         Set-StrictMode -Version Latest
         $ErrorActionPreference = 'Stop'
@@ -34,6 +36,7 @@ runs:
       working-directory: ${{ runner.temp }}
       env:
         STATIC_SOURCE_ID: ${{ hashFiles('Cargo.lock', 'src/speech-tts/build*.rs', 'src/speech-tts/tests/reference/*.h', 'src/speech-tts/model*.lock.json', 'config/native-speech.lock.json', 'tools/bonsai/src/native_startup.rs', 'tools/bonsai/src/speech_build.rs', '.github/actions/native-speech/action.yml', 'rust-toolchain.toml') }}
+        RUNNER_ENVIRONMENT: ${{ runner.environment }}
       run: |
         Set-StrictMode -Version Latest
         $ErrorActionPreference = 'Stop'

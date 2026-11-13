@@ -25,4 +25,4 @@ $request = @{
     manifestSha256 = $ManifestSha256; outputPath = $OutputPath
 } | ConvertTo-Json -Compress
 # Native creation validates the launcher and complete payload before publication.
-Invoke-ReleaseCommand $tool @('chat-bundle', '--json', $request) | ConvertFrom-Json
+Invoke-ReleaseCommand $tool @('chat-bundle', '--json', $request) -BuildCommand | ConvertFrom-Json

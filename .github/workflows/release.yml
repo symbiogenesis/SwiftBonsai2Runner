@@ -21,6 +21,7 @@ concurrency:
 env:
   CARGO_UNSTABLE_CHECKSUM_FRESHNESS: 'true'
   CARGO_BUILD_FINGERPRINT: content
+  BONSAI_RELEASE_BUILD: 'true'
 defaults:
   run:
     shell: pwsh
@@ -28,7 +29,6 @@ jobs:
   validate:
     if: github.ref == 'refs/heads/main' && github.repository == 'symbiogenesis/SwiftBonsai2Runner'
     runs-on: windows-11-arm
-    timeout-minutes: 5
     outputs:
       tag: ${{ steps.release.outputs.tag }}
     steps:
@@ -71,7 +71,6 @@ jobs:
     needs: validate
     name: Check and build / ${{ matrix.lane }}
     runs-on: windows-11-arm
-    timeout-minutes: 50
     strategy:
       fail-fast: false
       matrix:
@@ -97,17 +96,21 @@ jobs:
           persist-credentials: false
       - uses: $/.github/actions/bonsai-tools
         if: matrix.lane == 'asr' || matrix.lane == 'tts'
+        with:
+          github-release: 'true'
       - uses: $/.github/actions/check-rust
         with:
           lane: ${{ matrix.lane }}
           packages: ${{ matrix.packages }}
           affected: ${{ matrix.packages }}
+          github-release: 'true'
       - name: Stage source-bound executable and complete third-party notices
         working-directory: ${{ runner.temp }}
         env:
           RELEASE_LANE: ${{ matrix.lane }}
           RELEASE_EXECUTABLE: ${{ matrix.executable }}
           GH_TOKEN: ${{ github.token }}
+          RUNNER_ENVIRONMENT: ${{ runner.environment }}
         run: |
           Set-StrictMode -Version Latest
           $ErrorActionPreference = 'Stop'
@@ -136,7 +139,6 @@ jobs:
   package:
     needs: [validate, build]
     runs-on: windows-11-arm
-    timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -170,7 +172,6 @@ jobs:
   publish:
     needs: [validate, build, package]
     runs-on: windows-11-arm
-    timeout-minutes: 10
     permissions:
       contents: write
     steps:

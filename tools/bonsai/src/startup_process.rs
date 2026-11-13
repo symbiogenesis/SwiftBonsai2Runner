@@ -45,6 +45,28 @@ pub(crate) fn unique() -> String {
     )
 }
 
+fn github_release_context(value: impl Fn(&str) -> String) -> bool {
+    value("BONSAI_RELEASE_BUILD") == "true"
+        && value("GITHUB_ACTIONS") == "true"
+        && value("RUNNER_ENVIRONMENT") == "github-hosted"
+        && value("RUNNER_OS") == "Windows"
+        && value("RUNNER_ARCH") == "ARM64"
+        && value("GITHUB_REPOSITORY") == "symbiogenesis/SwiftBonsai2Runner"
+        && value("GITHUB_REF") == "refs/heads/main"
+        && value("GITHUB_WORKFLOW_REF")
+            == "symbiogenesis/SwiftBonsai2Runner/.github/workflows/release.yml@refs/heads/main"
+}
+
+// Only build/preparation callers opt in. HTTP, model and teardown deadlines keep
+// their ordinary bounds, even when running inside the release workflow.
+pub(crate) fn build_timeout(ordinary: Duration) -> Duration {
+    if github_release_context(|name| std::env::var(name).unwrap_or_default()) {
+        Duration::ZERO
+    } else {
+        ordinary
+    }
+}
+
 pub(crate) fn resolve(executable: &OsStr) -> crate::Result<PathBuf> {
     let path = Path::new(executable);
     if path.is_absolute() {
@@ -463,6 +485,34 @@ fn run_owned(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn build_deadlines_require_the_explicit_exact_hosted_release() {
+        let environment = BTreeMap::from([
+            ("BONSAI_RELEASE_BUILD", "true"),
+            ("GITHUB_ACTIONS", "true"),
+            ("RUNNER_ENVIRONMENT", "github-hosted"),
+            ("RUNNER_OS", "Windows"),
+            ("RUNNER_ARCH", "ARM64"),
+            ("GITHUB_REPOSITORY", "symbiogenesis/SwiftBonsai2Runner"),
+            ("GITHUB_REF", "refs/heads/main"),
+            (
+                "GITHUB_WORKFLOW_REF",
+                "symbiogenesis/SwiftBonsai2Runner/.github/workflows/release.yml@refs/heads/main",
+            ),
+        ]);
+        assert!(github_release_context(|name| environment[name].into()));
+        for key in environment.keys() {
+            assert!(!github_release_context(|name| {
+                if name == *key {
+                    String::new()
+                } else {
+                    environment[name].into()
+                }
+            }));
+        }
+        assert!(!github_release_context(|_| String::new()));
+    }
 
     #[test]
     fn utf8_capture_reuses_bytes_and_preserves_lossy_fallback() {

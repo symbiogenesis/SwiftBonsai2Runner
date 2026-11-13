@@ -1,7 +1,7 @@
 //! Source/host-bound static speech libraries shared by hosted Cargo phases.
 
 use super::{
-    BTreeMap, CHANNEL, OsString, Path, PathBuf, Value, execute, external, fs, github_environment,
+    BTreeMap, CHANNEL, Duration, OsString, Path, PathBuf, Value, external, fs, github_environment,
     image, json, read_json, save, stage_output,
 };
 
@@ -113,14 +113,16 @@ pub(super) fn build(
         "--target-dir".into(),
         target.as_os_str().to_owned(),
     ];
-    let build = execute(
-        &cargo,
+    let log = working.join("static-build.log");
+    let build = crate::startup_process::run(
+        cargo.as_os_str(),
         &arguments,
         working,
         &BTreeMap::new(),
-        "static-build.log",
-        1800,
-    );
+        crate::startup_process::build_timeout(Duration::from_secs(1800)),
+        &log,
+    )
+    .and_then(|output| super::checked_execution(output, &log));
     // Native compiler output stays bounded by the shared 16 MiB process policy;
     // only its last 64 KiB enters the selected evidence artifact.
     let build_receipt = json!({"SchemaVersion":1,"Scope":"hosted-speech-static-library-build-only","SourceId":source,"HostCacheKey":host,"Passed":build.is_ok(),"ModelExecuted":false});

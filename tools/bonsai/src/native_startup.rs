@@ -135,7 +135,7 @@ fn checked_process(
         arguments,
         working,
         &BTreeMap::new(),
-        Duration::from_secs(timeout),
+        crate::startup_process::build_timeout(Duration::from_secs(timeout)),
         &log,
     )?;
     if result.code != 0 {

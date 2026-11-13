@@ -58,7 +58,7 @@ try {
         chatPath = $executables.ui; brokerPath = $executables.core; asrPath = $executables.asr
         ttsPath = $executables.tts; toolPath = $executables.maintenance; thirdPartyNoticePath = $notices
     } | ConvertTo-Json -Compress
-    $creation = Invoke-ReleaseCommand $executables.maintenance @('chat-package', '--json', $request) | ConvertFrom-Json
+    $creation = Invoke-ReleaseCommand $executables.maintenance @('chat-package', '--json', $request) -BuildCommand | ConvertFrom-Json
     $manifestDigest = (Get-FileHash -LiteralPath (Join-Path $package 'package.json') -Algorithm SHA256).Hash.ToLowerInvariant()
     if ($creation.ManifestSha256 -cne $manifestDigest) { throw 'Package creation receipt disagrees with its manifest.' }
     $bundle = Join-Path $OutputDirectory "SwiftBonsai2Runner-$version-windows-arm64.exe"
