@@ -324,6 +324,25 @@
     "fullProjectionQualified": false,
     "profileEligible": false
   },
+  "q8Preparation": {
+    "status": "data-only-no-native-submission-or-serving-admission",
+    "api": "Q8Matmul",
+    "ggmlCommit": "19cce6919992fdffd92e0ac152caaf1e2b8f254e",
+    "sourceDigests": "queueComputeControl.ggmlFiles: htp-ops.h, htp-tensor.h, htp-repack.cpp, htp-kparams.cpp and matmul-ops.h",
+    "weightType": "Q8_0; type8; original-finite-half-scales-and-all-i8-codes-preserved",
+    "hostWeightLayout": "32x32 tiles, sixteen 64-byte column-pair planes then thirty-two little-endian half scales; 1088 bytes",
+    "subset": "contiguous-nonaliased-Q8_0-F32-F32; K128..8192-multiple128; M32..17408-multiple32; N1/2/4; no-bias-fusion-batching-or-chunking",
+    "solver": "HVX_QUANT_ROW6, one-HVX, HMX-disabled; prefetch16/8/4/2 against-explicit-budget",
+    "vtcm": "quantized-activation-area + max(aligned-prefetched-weight-area + N1-output-scratch, raw-activation-area); no-residency-credit",
+    "maximumMappedBytes": 67108864,
+    "controls": "independent-literal-tile-positions-and-hand-calculated-scratch; mathematical-layout-checks-not-native-captures",
+    "placement": "HybridPlan binds exact model/source/module/catalog/driver observations; no-mutation-or-fallback; complete-mutable-state-remains-CPU-owned",
+    "nativeLifetimeConsumer": "guarded-Q2 submitter consumes single-flight SubmissionTracker; attempted-writes-bound-monotonic-sequences-and-exact-buffer-identity; uncertainty-poisons-without-retry",
+    "nativeQ8SubmissionImplemented": false,
+    "signedPackageDeviceQualified": false,
+    "ttsPrefillOrSharedKvQualified": false,
+    "profileEligible": false
+  },
   "windowsAbi": [
     "https://learn.microsoft.com/en-us/windows/win32/api/winsvc/nf-winsvc-queryserviceconfigw",
     "https://learn.microsoft.com/en-us/windows/win32/api/libloaderapi/nf-libloaderapi-loadlibraryexw",

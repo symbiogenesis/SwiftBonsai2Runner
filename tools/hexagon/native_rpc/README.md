@@ -89,6 +89,35 @@ pins uncertain consumers until exit, without queue retry, CPU replay or release.
 After full acceptance, stop/close/unmap/free explicitly. Full-M solver, selected
 DSP bytes, vendor teardown, model state and performance still require acceptance.
 
+## Q8 matrix preparation and immutable placement
+
+`Q8Matmul` constructs data-only Q8_0/F32/F32 packets from the exact newer
+signed-package source in `sources.json`. Its explicit subset admits K multiples
+of 128 through 8,192, M multiples of 32 through 17,408 and N=1/2/4. It preserves
+original Q8_0 scale/code bytes in 1,088-byte tiles and selects one-HVX row-kernel
+prefetch 16/8/4/2 against an explicit VTCM budget. The complete mapping is capped
+at 64 MiB; raw activation conversion, quantized activations, weight prefetch and
+single-row output scratch are charged separately. It rejects unsupported tails,
+nonfinite scales/activations and invalid mapping identities before mutation.
+
+`HybridPlan` freezes exact source/model/module/catalog/driver observations and
+ordered, nonoverlapping tensor placements. Complete mutable KV/session state
+stays CPU-owned; HTP0 cache ownership rejects until its own complete-state provider
+exists. Construction authenticates no file and grants no native authority.
+
+The existing guarded-Q2 native submitter consumes the same single-flight tracker:
+attempted submissions receive monotonic sequences before the write; a complete
+correlated buffer/cache/numeric result is required before reusing mapped bytes.
+Refusal, cancellation, stale replies or changed mapping identities poison the
+tracker permanently without replenishing its original operation budget.
+
+The Q8 packet/solver controls are mathematical/layout checks, not native captures.
+No Q8 native submission API, TTS integration or serving admission follows from
+packet construction. Independent signed-package/device execution, exact loaded
+DSP identity, contained HTP0 supervision, Q8 activation quantization/arithmetic,
+correlated completions and teardown remain required. Q8 preparation does not
+qualify TTS prefill, shared KV, quality, listening or performance.
+
 ## Established-session mapping prerequisite
 
 `session.rs`/`session_native.rs` use `FASTRPC_GET_EFFECTIVE_DOMAIN_ID=14` and

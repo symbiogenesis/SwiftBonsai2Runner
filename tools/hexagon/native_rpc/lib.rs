@@ -15,17 +15,21 @@ use std::fmt;
 use std::path::{Path, PathBuf};
 
 mod compute;
+mod dispatch;
 mod projection;
+mod q8;
 mod session;
 mod session_mapping;
 pub use compute::{
     COMPUTE_ALLOCATION_BYTES, COMPUTE_GGML_SOURCE, COMPUTE_K, COMPUTE_M, COMPUTE_N, COMPUTE_Q2_K,
     COMPUTE_REQUEST_BYTES, COMPUTE_RESPONSE_BYTES, QueueComputeReport,
 };
+pub use dispatch::{CacheOwner, DispatchIdentity, HybridPlan, TensorPlacement};
 pub use projection::{
     GuardedQ2Submitter, Q2_PROJECTION_MAX_OPERATIONS, Q2_PROJECTION_MAX_ROWS, Q2ProjectionLimits,
     Q2ProjectionReport,
 };
+pub use q8::{Q8_MAX_MAPPED_BYTES, Q8Matmul};
 pub use session::{
     GET_EFFECTIVE_DOMAIN_ID, GET_URI, MAP_FD, MAP_FD_DELAYED, SessionPreparationReport,
 };

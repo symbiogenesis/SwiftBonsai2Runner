@@ -4,6 +4,7 @@ use super::{
     Driver, QueueBuffer, QueueRead, RemoteBuffer, WriteCall, cleanup_extent, compute, null_mut,
     open_module, write_packet,
 };
+use crate::dispatch::{BufferIdentity, SubmissionTracker};
 use crate::{
     Error, GuardedQ2Submitter, Q2ProjectionLimits, Q2ProjectionReport, SessionPreparationReport,
     projection,
@@ -158,6 +159,7 @@ pub(super) fn run(
             work_deadline,
             progress: &mut progress,
             failed: false,
+            submissions: SubmissionTracker::new(buffer_identity(&expected)?, limits.operations),
         };
         let result = work(&mut session);
         (result.is_ok(), session.failed)
@@ -207,11 +209,23 @@ struct Session<'a, P> {
     work_deadline: Instant,
     progress: &'a mut P,
     failed: bool,
+    submissions: SubmissionTracker,
+}
+
+fn buffer_identity(buffer: &QueueBuffer) -> Result<BufferIdentity, Error> {
+    Ok(BufferIdentity {
+        fd: buffer.fd,
+        bytes: buffer.size,
+        offset: buffer.offset,
+        flags: buffer.flags,
+        address: u64::try_from(buffer.pointer.addr()).map_err(|_| Error::Contract)?,
+    })
 }
 
 impl<P: FnMut(&Q2ProjectionReport)> Session<'_, P> {
     fn fail(&mut self, stage: &'static str) -> Error {
         self.failed = true;
+        self.submissions.poison();
         self.report.queue.poisoned = true;
         self.report.queue.stage = stage;
         (self.progress)(self.report);
@@ -227,7 +241,7 @@ impl<P: FnMut(&Q2ProjectionReport)> Session<'_, P> {
         false
     }
 
-    fn read(&mut self, sequence: u64) -> bool {
+    fn read(&mut self, sequence: u64) -> Option<BufferIdentity> {
         let deadline = (Instant::now() + Duration::from_secs(3)).min(self.work_deadline);
         loop {
             if Instant::now() >= deadline {
@@ -235,7 +249,7 @@ impl<P: FnMut(&Q2ProjectionReport)> Session<'_, P> {
                     self.report.deadline_expired = true;
                 }
                 let _ = self.fail("projection-read-expired-pinned");
-                return false;
+                return None;
             }
             let mut flags = u32::MAX;
             let mut count = u32::MAX;
@@ -280,8 +294,9 @@ impl<P: FnMut(&Q2ProjectionReport)> Session<'_, P> {
                 && projection::response_valid(&reply, sequence);
             if !self.report.queue.response_validated {
                 let _ = self.fail("projection-response-refused-pinned");
+                return None;
             }
-            return self.report.queue.response_validated;
+            return buffer_identity(&descriptor).ok();
         }
     }
 }
@@ -294,7 +309,7 @@ impl<P: FnMut(&Q2ProjectionReport)> GuardedQ2Submitter for Session<'_, P> {
         output: &mut [f32],
     ) -> Result<(), Error> {
         output.fill(f32::NAN);
-        if self.failed || self.report.operations_submitted >= self.limits.operations {
+        if self.failed || !self.submissions.reusable() {
             return Err(self.fail("projection-session-bound-refused-pinned"));
         }
         if !self.within_deadline() {
@@ -324,9 +339,11 @@ impl<P: FnMut(&Q2ProjectionReport)> GuardedQ2Submitter for Session<'_, P> {
         }
         self.report.queue.response_validated = false;
         self.report.queue.numeric_validated = false;
+        let Ok(sequence) = self.submissions.begin() else {
+            return Err(self.fail("projection-session-bound-refused-pinned"));
+        };
         self.report.operations_submitted += 1;
         self.report.queue.compute_submitted = true;
-        let sequence = u64::from(self.report.operations_submitted);
         let request = projection::request(sequence);
         let mut descriptor = self.expected;
         entered(self.report, "projection-queue-write-entered", self.progress);
@@ -336,9 +353,9 @@ impl<P: FnMut(&Q2ProjectionReport)> GuardedQ2Submitter for Session<'_, P> {
             return Err(self.fail("projection-write-refused-pinned"));
         }
         entered(self.report, "projection-queue-read-entered", self.progress);
-        if !self.read(sequence) {
+        let Some(completion) = self.read(sequence) else {
             return Err(Error::Contract);
-        }
+        };
         // SAFETY: exact correlated response validated same FD, full allocation,
         // pointer and cache flags. No asynchronous consumer remains, and only
         // the checked active output subsection is borrowed until copying ends.
@@ -353,6 +370,9 @@ impl<P: FnMut(&Q2ProjectionReport)> GuardedQ2Submitter for Session<'_, P> {
         }
         if !self.within_deadline() {
             return Err(Error::Contract);
+        }
+        if self.submissions.complete(sequence, completion).is_err() {
+            return Err(self.fail("projection-completion-refused-pinned"));
         }
         for (destination, value) in output.iter_mut().zip(bytes.as_chunks::<4>().0) {
             *destination = f32::from_le_bytes(*value);
@@ -551,6 +571,7 @@ mod tests {
                 },
                 progress: &mut progress,
                 failed: false,
+                submissions: SubmissionTracker::new(buffer_identity(&expected)?, limits.operations),
             };
             let mut output = [99.0; 64];
             let first = session.submit(weights, &activation, &mut output);

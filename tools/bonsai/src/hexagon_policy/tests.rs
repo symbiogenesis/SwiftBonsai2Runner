@@ -243,9 +243,11 @@ fn build_record(session: bool) -> Value {
                 "session_mapping.rs",
                 "session_mapping_native.rs",
                 "compute.rs",
+                "dispatch.rs",
                 "compute_native.rs",
                 "projection.rs",
                 "projection_native.rs",
+                "q8.rs",
                 "query.rs",
                 "sources.json"
             ]
@@ -270,9 +272,11 @@ fn check_build(record: &Value, session: bool) -> Result<Value> {
             "session_mapping.rs",
             "session_mapping_native.rs",
             "compute.rs",
+            "dispatch.rs",
             "compute_native.rs",
             "projection.rs",
             "projection_native.rs",
+            "q8.rs",
             "query.rs",
             "sources.json",
         ]
