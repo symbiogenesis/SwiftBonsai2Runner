@@ -5,11 +5,12 @@
 //! normalized mono 16 kHz samples and complete successful recognition results.
 #![forbid(unsafe_code)]
 
+mod intake;
 pub mod protocol;
 
 use fearless_simd::{Level, dispatch, f32x4, prelude::*};
 use std::{
-    fs::File,
+    fs::OpenOptions,
     io::{self, Read},
     path::Path,
     sync::Once,
@@ -70,11 +71,29 @@ impl Recognizer {
         if !path.is_absolute() {
             return Err(invalid("Use an absolute, verified Qwen3-ASR model path."));
         }
-        let mut file = File::open(path)?;
-        if !file.metadata()?.is_file() {
+        let mut options = OpenOptions::new();
+        options.read(true);
+        #[cfg(windows)]
+        {
+            use std::os::windows::fs::OpenOptionsExt as _;
+            // Deny replacement/writes during both the Rust preflight and native
+            // intake; the service's verified ancestor/file guards outlive this.
+            options.share_mode(1).custom_flags(0x0020_0000);
+        }
+        let mut file = options.open(path)?;
+        let properties = file.metadata()?;
+        if !properties.is_file() {
             return Err(invalid("The Qwen3-ASR model must be a regular file."));
         }
+        #[cfg(windows)]
+        {
+            use std::os::windows::fs::MetadataExt as _;
+            if properties.file_attributes() & 0x400 != 0 {
+                return Err(invalid("The Qwen3-ASR model must not be a reparse point."));
+            }
+        }
         validate_header(&mut file)?;
+        intake::validate(&mut file, properties.len())?;
         LOGGING.call_once(transcribe_cpp::disable_logging);
         let model = Model::load_with(
             path,

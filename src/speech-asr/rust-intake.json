@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "scope": "native-independent-gguf-v3-index-tokenizer-and-qwen3-asr-catalog-admission",
+  "nativeSource": {
+    "package": "transcribe-cpp-sys",
+    "version": "0.4.1",
+    "commit": "4d7c1ccefd39e5a9ea36cca5f8fefc6dcc14b99b",
+    "license": "MIT",
+    "files": [
+      {"path": "src/transcribe-loader.cpp", "sha256": "5927b544aebc1d0ad46d7d224a59cbc8045021c1838975de8d45fb66d59cb8bc"},
+      {"path": "src/transcribe-meta.cpp", "sha256": "dabaf8d7b3b8e1b3e11c70862be4649b432895903bd245b117ccfbb6db4dfbed"},
+      {"path": "src/transcribe-tokenizer.cpp", "sha256": "2d971710f3fbf8fe54ed9ceee1e019028df5e7c568cbecd4f3db9e936a50c775"},
+      {"path": "src/transcribe-weights-util.h", "sha256": "992318565b1d6da3cd0419ab380649a2c4300bd4b41ea79b5e6bd7a7f41b56bf"},
+      {"path": "src/arch/qwen3_asr/weights.cpp", "sha256": "a6a63261707f331ce86e95b65f0bcfba2e509c62d7273568da8729e8f4bd0fef"},
+      {"path": "ggml/include/ggml.h", "sha256": "12ee71f99db7db9b353bc02b1fbb57c344ee17c01ac5fb7952b41a637a747ea9"},
+      {"path": "ggml/src/ggml-common.h", "sha256": "0061131b615c5721fc88a78feeb22c1f8c450f1c2646a317d80796a653bf595c"}
+    ]
+  },
+  "controls": {
+    "provider": "independently-assembled-gguf-wire-cases-and-miniature-source-catalog",
+    "testFilter": "rust_asr_intake_",
+    "freshNativeExecution": false,
+    "inference": false,
+    "pinnedModelStructuralCheck": "rust_asr_intake_pinned_model_index (ignored; explicit BONSAI_ASR_INTAKE_MODEL)",
+    "authenticatesArtifact": false
+  },
+  "limits": {
+    "fileBytes": 8589934592,
+    "tensorCount": 8192,
+    "metadataCount": 65536,
+    "arrayItems": 262144,
+    "chargedMetadataBytes": 67108864,
+    "tokenOrMergeUtf8Bytes": 4096,
+    "tensorDimensions": 4
+  },
+  "pending": [
+    "complete Rust tokenizer encode/decode and independent tokenizer observations",
+    "Rust encoder/decoder inference, complete state/reset and independent numerical controls",
+    "actual-model transcription, microphone integration, listening/quality, cancellation and resources",
+    "owning hosted consumer acceptance before removing native engine or compiler dependencies"
+  ]
+}
