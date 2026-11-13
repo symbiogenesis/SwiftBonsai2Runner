@@ -515,10 +515,12 @@ implements the HMX-enabled session (`n_hmx=1`), source-derived solver/chunks and
 bounded packet/ownership controls, plus explicit HVX/HMX graph executors.
 Original CPU Q8_K preparation, transforms, adapter corrections and fused/nonfused
 reduction remain unchanged. A submitted failure permanently closes the scope;
-unsupported work selects CPU before submission. The native driver dependency
-stays in unpublished helper crates outside the published CPU runtime.
+unsupported work selects CPU before submission. At that historical integration
+revision, the native driver dependency stayed in unpublished helper crates
+outside the published CPU runtime; the current server integration is described
+in [Hexagon contracts](hexagon.md).
 Focused model-free graph/state/adapter, exact-arithmetic and native mock checks
-pass. At that integration revision, signed-device output, effective placement,
+passed. At that integration revision, signed-device output, effective placement,
 teardown, actual-model parity and total-cost measurements were pending. The
 later [HMX controls](hexagon.md#historical-projection-controls) establish
 their specific logits/state and cleanup scope; they do not qualify PTQ1,

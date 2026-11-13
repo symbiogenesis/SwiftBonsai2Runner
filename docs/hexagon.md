@@ -2,23 +2,26 @@
 
 Runner pins [Prism 0.1.25](../config/prism-inference.lock.json), source
 `99bab71270b1e6a6fb6d47eec2e34b8097cdcd4c`. On Windows ARM64 Snapdragon X2 (`v81`),
-`prism-inference-server` enables Hexagon NPU `native-q2`
-resident acceleration (`DEFAULT_NATIVE_Q2_PROJECTIONS`, the 168 `PQ2_0` projections across all 27
-initial layers `blk.0..=blk.26`, `2,888,663,040` resident weight bytes / `2,754.84` MiB across six
-`<= 480` MiB `FastRPC` weight arenas
-`[502_824_960, 460_062_720, 502_824_960, 460_062_720, 502_824_960, 460_062_720]` via
-`req.n_bufs > 1` and `tensor.bi > 0`, pre-warmed at worker startup with scoped `<= 92` KiB
-`dspqueue` cache flushes, batched 2/3-op sibling, 4/8-op multi-token tiled-prefill, and fused
-`ffn_gate + ffn_up + HTP_OP_GLU_SWIGLU` VTCM-chained submissions, and
-zero per-token fixture allocation) by default when the verified signed GenieX v0.10.0 runtime
-package (`<data_directory>/hexagon/runtime/libggml-htp-v81.so`) and CDSP driver are present, falling
-back cleanly to 4-worker NEON CPU when unavailable. The [experimental lock](../config/hexagon-experiment.lock.json) records
-`"admission": "default-x2-native-q2-resident"` and `"automaticSelection": true`. Normal CPU
-execution remains the fallback in the [Rust runtime][rust-runtime]. Full-model X1/X2 release
-qualification remains separate from this Snapdragon X2 `blk.0..=blk.26` default. See the
-[experimental lock](../config/hexagon-experiment.lock.json) for current admission metadata. [PLAN.md](../PLAN.md#hexagon-npu) owns outstanding work;
-[profile policy](hardware-capabilities.md#automatic-profile-selection) defines the separate,
-pending qualified selector and interactive/battery objectives. `native-q2` uses
+`prism-inference-server` selects experimental `native-q2` resident NPU acceleration
+when the verified signed GenieX v0.10.0 package and CDSP driver are available.
+The expected DSP file is `<data_directory>/hexagon/runtime/libggml-htp-v81.so`.
+When those prerequisites are absent, the [Rust runtime][rust-runtime] retains CPU
+inference, with four NEON row workers under Runner's default launch policy.
+
+The fixed placement (`DEFAULT_NATIVE_Q2_PROJECTIONS`) covers 168 `PQ2_0`
+projections across `blk.0..=blk.26`. Its 2,888,663,040 resident weight bytes
+(2,754.84 MiB) occupy six FastRPC arenas, each at most 480 MiB:
+`[502_824_960, 460_062_720, 502_824_960, 460_062_720, 502_824_960, 460_062_720]` bytes.
+Queue descriptors select those arenas through `req.n_bufs > 1` and `tensor.bi > 0`.
+Weights are prepared at worker startup. Submission uses scoped cache flushes of
+at most 92 KiB, 2/3-operation sibling packets, 4/8-operation prefill packets and
+fused `ffn_gate + ffn_up + HTP_OP_GLU_SWIGLU` VTCM chains, with no per-token fixture allocation.
+
+The [experimental lock](../config/hexagon-experiment.lock.json) records
+`"admission": "default-x2-native-q2-resident"` and `"automaticSelection": true`
+for this fixed development policy. Full-model X1/X2 qualification and the
+[qualified profile selector](hardware-capabilities.md#automatic-profile-selection)
+with interactive/battery objectives remain separate work in [PLAN.md](../PLAN.md#hexagon-npu). `native-q2` uses
 bounded floating-point tolerance; it does not promise the bitwise PQ2/Q8_K
 parity of the historical block-preserving controls below. The latest
 [public-broker capture](performance-expectations.md#current-swift-evidence)

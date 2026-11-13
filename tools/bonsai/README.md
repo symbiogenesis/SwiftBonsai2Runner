@@ -71,8 +71,9 @@ $bonsai = Join-Path $target 'release/bonsai-tools.exe'
 
 `chat` is the native launch entry point; optional `scripts/Start-Chat.ps1`
 forwards to it and offers `-NativeEngine`, `-PublisherEngine`, `-NativeRowWorkers`,
-`-UseRepackedPtq1`, `-UseOriginalPq2`, `-PromptReuse` and `-GraphicsBackend`. The development
-default is Rust Prism 0.1.23, original PQ2, four CPU row workers and the standard adapter at scale 1.3.
+`-UseRepackedPtq1`, `-UseOriginalPq2`, `-PromptReuse`, `-KvCache` and `-GraphicsBackend`.
+The development default is Rust Prism 0.1.25, original PQ2, K4/V4 (`rsq4`) KV,
+four CPU row workers and the standard adapter at scale 1.3.
 The [runtime lock](../../config/prism-inference.lock.json) owns the exact release/source identities;
 the [Hexagon contract](../../docs/hexagon.md) describes conditional X2 NPU acceleration.
 `--publisher-engine` selects manual publisher rollback; its worker default is one.
@@ -84,7 +85,7 @@ is supplied. Boolean options are `--native-engine`, `--publisher-engine`,
 `--use-repacked-ptq1`, `--use-original-pq2`,
 `--no-abliterate-lora`, `--no-tts`, `--no-speech-models`, `--speech-models-only`
 and `--force-build`. Value options are `--native-row-workers`, `--prompt-reuse`,
-`--graphics-backend`, `--tts-quantization`,
+`--kv-cache`, `--graphics-backend`, `--tts-quantization`,
 `--tts-threads`, `--frontend-port`, `--backend-port`, `--canary-port`, `--tts-port`,
 `--chat-path`, `--broker-path`, `--asr-path`, `--tts-path`, `--canary-key-file`,
 `--tts-key-file` and `--working-directory`. All existing launch admission,
@@ -107,6 +108,10 @@ sustained-performance, isolation and clean-machine qualification remain pending;
 makes no speed claim. JSON `NativeEngine: false` remains an explicit publisher selection.
 `--prompt-reuse disabled|latest` selects the [experimental prefix policy](../../docs/prefix-reuse.md);
 it defaults to `disabled` and `latest` requires the Rust engine.
+`--kv-cache f16|rsq4` (JSON `KvCache`) also requires Rust. Omission uses the
+pinned runtime's K4/V4 default; `f16` selects explicit FP16 recovery. Retry retains
+the selection. Neither cache mode changes the 8K context or memory admission;
+[cache qualification](../../docs/quantized-kv.md) remains separate.
 
 The two weight options are mutually exclusive. `--use-original-pq2` explicitly
 selects the pinned original Swift artifact with either engine; the current default
@@ -400,11 +405,20 @@ The legacy `launch` operation still supports a caller-bound directory, ID and
 manifest digest. Caller options cannot override paths or request a source build.
 The native launcher opens the pending UI before preparing backend and speech.
 
-Current releases update by verified manual replacement of the portable executable
-after closing Swift, while preserving the user data directory. They perform no
-automatic update discovery or installer handoff.
+The portable release path checks for newer published releases after startup and
+every six hours, and automatically downloads verified executable updates.
+Replacement requires native confirmation and completed owned teardown; the new
+executable reopens with the same launch options and data directory. Manual
+replacement after closing Swift remains available. Source and preview launches
+perform no update work. See [portable updates](../../docs/ui-architecture.md#application-updates)
+for publication validation, replacement and recovery behavior.
 
-The retained internal `app-update` command provides legacy installed-MSI `check`,
+`app-update` implements portable `portable-check`, `portable-download` and
+`portable-install` operations. Download selects `version`; installation also
+requires the current launch's `handoffPath`. The native launcher owns the final
+replacement-helper handoff; a queued request alone never authorizes replacement.
+
+The same command retains legacy installed-MSI `check`,
 `download` and `install` operations, outside the current portable release path.
 Requests identify `installationDirectory`; `download` also selects `version`, and
 `install` requires `version` and `handoffPath`. A queued request cannot install by itself:
@@ -651,18 +665,25 @@ and never load device code or admit profiles.
 (5..300). The Rust worker inventories present SetupAPI ComputeAccelerator devices
 and bounded top-level package files. Signature failures remain unverified.
 
-`device` takes a `request` object with `kind` (`dispatch`, `session`, `compute`),
+`device` takes a `request` object with `kind` (`dispatch`, `session`, `compute`,
+`projection`),
 `repositoryDirectory`, `packageDirectory`, `fixtureDirectory`, `outputDirectory`,
 `signtoolPath`, `expectedRunnerRevision` and `maximumSeconds` (1..240). Session
 accepts `referenceInitialization`; compute accepts one `case`: `F32`, `GuardedQ2`,
-`F32NoBlock` or `GuardedQ2NoBlock`. The native supervisor reserves 75 seconds
-for owned cleanup, verifies every pinned file and catalog member, retains
-immutable input handles through child exit, and records only fixed entered-stage
-markers. Windows verifies the observed DriverStore signer's trust and publisher.
-Same-run artifact provenance remains the caller's responsibility; no command
-changes OS trust, installs drivers, loads a model or qualifies Swift inference.
+`F32NoBlock` or `GuardedQ2NoBlock`. Projection requires an external
+`projectionRequestFile` under the [original-projection contract](../hexagon/packed-projection.md#artifact-bound-signed-projection-diagnostic).
+The native supervisor reserves 75 seconds for owned cleanup, verifies every
+pinned file and catalog member, retains immutable input handles through child
+exit, and records only fixed entered-stage markers. Windows verifies the observed
+DriverStore signer's trust and publisher.
+Same-run artifact provenance remains the caller's responsibility. These fixed
+device probes change no OS trust, install no driver and load no model; their
+results do not qualify Swift inference.
 All setup/intake/execution/cleanup shares the owner's five-minute total budget.
 Offline `hexagon-policy` plans and evidence validators remain available.
+The separate [`model-device` operation](../hexagon/model-probe.md) runs the bounded
+actual-model diagnostic; its inputs, snapshot limits and evidence scope differ
+from these fixed device probes.
 
 ## Practical compressed-KV review
 

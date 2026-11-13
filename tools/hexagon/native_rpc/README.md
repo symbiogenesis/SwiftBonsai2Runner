@@ -2,7 +2,7 @@
 
 This directory retains the standalone access and diagnostic boundary. Its
 source-bound controls and earlier CPU-only observations are distinct from the
-current [Prism 0.1.23 X2 `native-q2` serving policy](../../../docs/hexagon.md).
+current [Prism 0.1.25 X2 `native-q2` serving policy](../../../docs/hexagon.md).
 Later server integration does not turn a capability query or fixed fixture
 into full-model qualification.
 

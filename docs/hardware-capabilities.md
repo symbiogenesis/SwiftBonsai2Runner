@@ -210,12 +210,13 @@ OpenCL observations do not resolve Vulkan worker access.
 
 `prism-inference --capabilities` emits one v1 `prism-runtime-capabilities` record: package/version/
 compiler target, scalar support, production NEON build predicate, exact graph identity suffixes
-and unavailable Vulkan/Hexagon. `qualification` is always `unqualified`. In the
-pinned 0.1.23 source this describes the generic runtime executable, not the
-separate server/worker's Hexagon support or effective request placement. Do not
-interpret that field as proof that the server used CPU or NPU; the
-[current capture](performance-expectations.md#current-swift-evidence) records
-effective NPU execution as unknown.
+and unavailable Vulkan/Hexagon. `qualification` is always `unqualified`.
+This describes the generic runtime executable, not the separate server/worker's
+Hexagon support or effective request placement. The compiled release lock owns
+the current version. Do not interpret the generic accelerator fields as proof
+that the server used CPU or NPU. The latest retained
+[0.1.23 capture](performance-expectations.md#current-swift-evidence) records
+effective NPU execution as unknown and retains its historical runtime identity.
 
 Provision/probe with the Rust `provision` command using
 `{"operation":"inference","dataDirectory":"C:\\BonsaiData","includeCapabilities":true}`;

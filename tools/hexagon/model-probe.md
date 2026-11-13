@@ -1,18 +1,20 @@
 # Local actual-model Hexagon probe
 
-This guide describes Runner's bounded guarded-HVX/HMX diagnostic supervisor.
-The application's later [Prism 0.1.23 `native-q2` development default](../../docs/hexagon.md)
-is a separate serving path; it does not enlarge this diagnostic's accepted
-backends, snapshot budget or original closed trial allowances.
+This guide describes Runner's bounded guarded-HVX, HMX-bitplane and native-Q2
+diagnostic supervisor.
+The application's [Prism 0.1.25 `native-q2` development default](../../docs/hexagon.md)
+is a separate serving path; it does not enlarge this diagnostic's
+snapshot budget or original closed trial allowances.
 
 `bonsai-tools hexagon-tools --request ABSOLUTE_JSON_PATH` accepts the separate
 `model-device` operation below. This local diagnostic evaluates one to three explicit
-original-PQ2 tokens with `blk.0.ffn_up.weight` on the selected guarded HVX or HMX
-bitplane path, compares complete graph logits/state against its CPU shadow after
-each token, and requires explicit native cleanup. The default streaming mode also
-independently checks every returned integer limb or plane; the explicit resident
-timing mode below uses graph parity. Other projections stay on CPU. It enables no
-production backend and establishes no inference speedup or broader adapter qualification.
+original-PQ2 tokens with an explicit projection selection beginning with
+`blk.0.ffn_up.weight`. It compares each token's graph result with a CPU shadow
+and requires explicit native cleanup. Guarded-HVX/HMX require bitwise logits
+and complete-state equality; streaming also checks every returned integer limb
+or plane. Native-Q2 uses the separate bounded-logit-tolerance contract below.
+Unselected projections stay on CPU. A passing diagnostic establishes no new
+production profile, inference speedup or broader adapter qualification.
 
 ```json
 {
@@ -34,6 +36,7 @@ production backend and establishes no inference speedup or broader adapter quali
     "executionBackend": "hmx-bitplane",
     "residentHostWeights": false,
     "batchFourOperations": false,
+    "batchTenOperations": false,
     "adapterCase": "standard-scale-1.3",
     "adapterPath": "C:\\external\\bonsai-abliterate-lora.gguf",
     "cpuBackend": "neon",
@@ -52,23 +55,22 @@ its predeclared aggregate budget. Historical investigations remain closed.
 
 `tokenId` remains required. Omitting `tokenIds` selects that single token; the
 wire format permits one to eight vocabulary IDs and requires the sequence to start with
-`tokenId`. Omitting `executionBackend` selects `guarded-hvx`; the only other
-accepted value is `hmx-bitplane`. This preserves the original single-token
-request. The current probe executable emits explicit backend and sequence
-evidence even for that legacy request; older executable output without those
+`tokenId`. `executionBackend` accepts `guarded-hvx` (default), `hmx-bitplane`
+or `native-q2`. Omitted sequence/backend options preserve the original
+single-token guarded-HVX request. The current probe executable emits explicit
+backend and sequence evidence even for that legacy request; older executable output without those
 fields cannot qualify the extended supervisor.
 
-`residentHostWeights` defaults to false. Setting it to true requires the explicit
-HMX backend and selects one fixed mapped host-weight arena: 25,067,520 bytes of
-prepared weight payload in a 26,259,456-byte native mapping, with at most 65,536
-bytes of host metadata. The first token prepares one tensor; later tokens must
-hit that cache. This mode reports `integerAudit: "graph-parity-only"` and zero
-per-integer comparisons while preserving every token's complete CPU-shadow
-logits/state comparison, operation accounting and explicit native cleanup.
-The normal path retains `integerAudit: "all-returned-integers"` and its full
-integer oracle. The supervisor binds the selected mode and actual cache counters;
-it accepts missing mode/audit fields only for historical normal-path receipts.
-Mapped host reuse establishes no DSP residency or production eligibility.
+For `hmx-bitplane`, `residentHostWeights: true` selects a mapped host-weight arena (the
+default is false): 25,067,520 bytes of prepared weight payload in a 26,259,456-byte
+native mapping, with at most 65,536 bytes of host metadata. The first token prepares one
+tensor; later tokens must hit that cache. This mode reports `integerAudit:
+"graph-parity-only"` and zero per-integer comparisons while preserving every token's
+complete CPU-shadow logits/state comparison, operation accounting and explicit native
+cleanup. The normal path retains `integerAudit: "all-returned-integers"` and its full
+integer oracle. The supervisor binds the selected mode and actual cache counters; it
+accepts missing mode/audit fields only for historical normal-path receipts. Mapped host
+reuse establishes no DSP residency or production eligibility.
 
 `batchFourOperations` defaults to false. Setting it to true requires the explicit
 HMX backend and submits four independent `K=128/N=8` operations per queue packet
@@ -81,13 +83,40 @@ Logical operation accounting remains `40 * p` per token (`nativeOperationsSubmit
 `nativeQueueWritesCompleted: 10 * p * n`). All four output slices in each batch are
 validated before reconstructing any block in original 128-column order.
 
+`batchTenOperations: true` separately selects ten HMX operations per packet,
+with a 4,504-byte command in an 8,192-byte header. It retains `40 * p * n` logical
+operations but uses `4 * p * n` queue writes. The mapped allocation is
+`11,886,592 + 25,067,520 * p` bytes in resident mode, or 11,886,592 in streaming
+mode. Batch-four and batch-ten are mutually exclusive and require `hmx-bitplane`.
+These packets batch one token's bitplane work; they do not implement multi-token
+matrix prefill.
+
 `projections` defaults to `["blk.0.ffn_up.weight"]`. When explicitly supplied, it must
-contain one to two unique `[5120, 17408]` FFN projections (`blk.{0..63}.ffn_{up,gate}.weight`)
+contain, for the guarded-HVX/HMX paths, one to two unique `[5120, 17408]`
+FFN projections (`blk.{0..63}.ffn_{up,gate}.weight`)
 in resident mode (at most `50,135,040` resident weight bytes within the 64 MiB arena) or
 up to four in streaming mode, always beginning with `"blk.0.ffn_up.weight"`. For `p`
 placed projections across `n` tokens, `projectionsCompleted` equals `p * n`, and resident
 mode requires `tensorsPrepared: p`, `cacheHits: p * (n - 1)`, and
 `residentWeightBytesPrepared: 25,067,520 * p`.
+
+`native-q2` accepts up to 168 unique layer-appropriate PQ2 projections, still
+beginning with `blk.0.ffn_up.weight`: FFN up/gate/down and the matching recurrent
+or full-attention projection names in the [supervisor schema](../bonsai/src/hexagon_tools/model_device.rs).
+Its resident selection has a six-by-480-MiB weight ceiling, with exact payload
+bytes derived from each projection's geometry and up to 512 KiB of metadata.
+The reported mapping includes a 25,161,728-byte working region plus prepared
+weights. Actual runtime admission and per-arena limits remain required; the
+schema ceiling alone does not admit a placement. This path uses one native
+operation and queue write per projection/token and permits neither HMX batch flag.
+
+Native-Q2 records `integerAudit: "bounded-float-tolerance"` and performs no
+per-integer comparisons. For every token, the supervisor requires the reported
+bounded-logit pass, cosine similarity at least 0.995, RMSE at most 0.5 and maximum
+absolute difference at most 5.0. Top-1/top-5 and complete-state hashes/equality
+flags are retained observations; bitwise state equality and top-1 agreement are
+not admission requirements for this mode. This is separate from guarded/HMX
+bitwise parity and does not qualify full-model state or output quality.
 
 The unchanged 536,870,912-byte control-state budget admits at most three tokens.
 The pinned model's complete logical snapshot after token position `i` contains
@@ -119,16 +148,18 @@ and native graph arms use the selected CPU policy for their CPU-owned work.
 The supervisor requires matching terminal policy fields. These options do not
 change the projection placement or qualify the selected policy for daily service.
 
-Both selected paths admit all 40 operations per token before the first native
-graph evaluation. A two-token control therefore requires exactly 80 completed
-operations and two completed projections in the same bounded session. Guarded
-HVX compares 1,392,640 returned integers per token; streaming HMX compares 5,570,560 returned
-binary-plane values per token. The eight HMX planes decompose one token's
-quantized activation; they do not represent eight prefill tokens. The supervisor
-requires the selected backend, the exact ordered `tokenIds`, every per-token
-logit/state comparison and hash, final hashes matching the last comparison,
-complete native cleanup and an empty owned Job. HMX evidence must also carry the
-source-bound `nativeHmxBitplaneControl` result. Serialized cleanup must report
+The guarded-HVX/HMX paths reserve 40 operations per projection/token before
+native graph evaluation. For one projection, a two-token control requires 80
+completed operations and two completed projections in the same bounded session.
+Streaming guarded HVX compares 1,392,640 returned integers per projection/token;
+streaming HMX compares 5,570,560 returned binary-plane values. Resident HMX uses
+graph parity, and native-Q2 uses the bounded-tolerance checks above. The eight
+HMX planes decompose one token's quantized activation; they do not represent
+eight prefill tokens. The supervisor requires the selected backend, the exact
+ordered `tokenIds`, every per-token
+numerical comparison and complete-state hash, final hashes matching the last
+comparison, complete native cleanup and an empty owned Job. HMX evidence must
+also carry the source-bound `nativeHmxBitplaneControl` result. Serialized cleanup must report
 successful queue stop/close, unmapping and module close, completed free, and no
 poisoned allocation. `ownerPinnedUntilExit` must remain true: the native policy
 retains driver/module/catalog owners until process exit after successful

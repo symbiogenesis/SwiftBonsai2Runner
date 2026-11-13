@@ -1,10 +1,14 @@
 # Native CPU bundle comparison lane
 
 The manual [workflow](../.github/workflows/cpu-bundle-comparison.yml) prepares
-matched native CPU collectors on hosted Windows ARM64. It compares the complete
-integrated serving bundle from original Prism `0.1.23` against reviewed registry
-runtime `0.1.25`, using one collector source with explicit FP16 KV, the approved
-adapter at scale 1.3, four CPU workers, seed 42 and fixed public messages.
+matched native CPU collectors on hosted Windows ARM64. It builds the same
+collector against original Prism `0.1.23` and reviewed registry runtime `0.1.25`,
+using explicit FP16 KV, the approved adapter at scale 1.3, four CPU workers,
+seed 42 and fixed public messages. Both collectors call `SwiftSession` directly
+with no accelerator executor. Paired request timing includes preparation and
+generation; load/process timings remain separate. Broker HTTP/SSE, UI and speech
+are outside this comparison. FP16 also keeps this screen separate from the
+0.1.25 application's K4/V4 development default.
 The exact published Prism **tooling revision** is separate from the registry
 candidate's authenticated source identity. Both Runner and the new Prism tooling
 must be owner-published before this workflow can consume them. No push is part
