@@ -1792,8 +1792,8 @@ impl State {
         let response = ui
             .add_enabled(
                 self.dictation_requested || (!self.model.busy() && !self.speaking),
-                egui::Button::new("")
-                    .min_size(egui::Vec2::splat(32.0))
+                audio_files::action_button("")
+                    .min_size(egui::Vec2::splat(36.0))
                     .selected(self.dictation_requested),
             )
             .accessible_name("Microphone")
@@ -1805,7 +1805,11 @@ impl State {
                 "Record a voice message · Qwen3-ASR 1.7B"
             });
         let center = response.rect.center();
-        let stroke = ui.style().interact(&response).fg_stroke;
+        let stroke = if self.dictation_requested && response.enabled() {
+            ui.visuals().selection.stroke
+        } else {
+            ui.style().interact(&response).fg_stroke
+        };
         let painter = ui.painter_at(response.rect);
         if self.dictation_finishing {
             painter.line_segment(
@@ -2060,21 +2064,24 @@ impl State {
                 } else {
                     "Enter to send · Shift+Enter for a new line".to_owned()
                 };
-                ui.allocate_ui_with_layout(
-                    egui::vec2(ui.available_width(), 0.0),
-                    egui::Layout::left_to_right(egui::Align::Min).with_main_wrap(true),
-                    |ui| {
-                        ui.label(RichText::new(&status).small().weak());
-                        if self.help.is_none()
-                            && (self.audio_file_notice.is_none()
-                                || (!self.audio_file_active
-                                    && (self.dictation_requested || self.speaking)))
-                            && (self.speech_notice || self.dictation_requested || self.speaking)
-                        {
-                            ui.label(RichText::new(&self.speech_status).small());
-                        }
-                    },
-                );
+                if self.help.is_none()
+                    && (self.audio_file_notice.is_none()
+                        || (!self.audio_file_active
+                            && (self.dictation_requested || self.speaking)))
+                    && (self.speech_notice || self.dictation_requested || self.speaking)
+                {
+                    audio_files::notice_frame(ui)
+                        .inner_margin(egui::Margin::symmetric(12, 8))
+                        .show(ui, |ui| {
+                            ui.set_width(ui.available_width());
+                            ui.add(
+                                egui::Label::new(RichText::new(&self.speech_status).size(14.0))
+                                    .wrap(),
+                            );
+                        });
+                }
+                // Keyboard guidance stays visually separate from audio feedback.
+                ui.add(egui::Label::new(RichText::new(&status).small().weak()).wrap());
             });
         });
     }
@@ -2195,15 +2202,34 @@ impl State {
         self.audio_transcript_dialog(&ctx);
         if let Some((title, message)) = self.help {
             let mut open = true;
+            let width = (ctx.content_rect().width() - 80.0).clamp(240.0, 480.0);
             egui::Window::new(title)
                 .open(&mut open)
-                .default_width(460.0)
+                .frame(audio_files::dialog_frame(&ctx))
+                .anchor(egui::Align2::CENTER_CENTER, egui::Vec2::ZERO)
+                .collapsible(false)
+                .resizable(false)
+                .default_width(width)
+                .max_width(width)
                 .show(&ctx, |ui| {
-                    ui.label(message);
-                    if ui.button("Close").clicked() {
-                        self.help = None;
-                        self.speech_notice = false;
-                    }
+                    ui.set_width(width);
+                    ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Wrap);
+                    ui.add_space(8.0);
+                    egui::ScrollArea::vertical()
+                        .id_salt("audio-setup-help")
+                        .max_height((ctx.content_rect().height() - 180.0).clamp(80.0, 320.0))
+                        .show(ui, |ui| {
+                            ui.add(egui::Label::new(message).wrap());
+                        });
+                    ui.add_space(12.0);
+                    ui.separator();
+                    ui.add_space(4.0);
+                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                        if ui.add(audio_files::action_button("Close")).clicked() {
+                            self.help = None;
+                            self.speech_notice = false;
+                        }
+                    });
                 });
             if !open {
                 self.help = None;
