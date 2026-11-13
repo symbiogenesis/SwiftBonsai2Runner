@@ -534,6 +534,15 @@ service identities, recorder teardown and resource admission. Earlier Canary
 fixture recognition does not qualify Qwen3-ASR; source checks establish neither
 actual audio behavior nor accuracy or performance. Keep the independent native
 Rust ASR replacement and C++ retirement gates below.
+Qualify the 30-second ASR idle lease after complete successful microphone/file
+input: reuse the verified model/session across new request generations, reset
+recognition state, recheck authenticated readiness and listener ownership, and
+retain memory monitoring. Confirm success-only UI cleanup and text submission
+preserve the lease while cancellation, failure, conversation changes, TTS, expiry
+and shutdown release it; partial file success must retain active cancellation.
+Compare repeated-input end-to-end latency and resources against cold loading on
+the pinned model with matched per-arm power observations. Model-free lifecycle
+controls do not establish actual-model parity or a measured speedup.
 Qualify the ASR source-build CPU selection against its ARMv8-A control: independent
 Windows-observed DOTPROD/I8MM support, unknown-feature fallback, cache separation,
 complete transcript parity and end-to-end latency for microphone and file input.

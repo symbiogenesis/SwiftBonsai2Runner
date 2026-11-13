@@ -645,8 +645,13 @@ checkbox without replay on restore. Working drafts and reasoning are excluded.
 
 Owned speech uses separate Windows Jobs and mutual exclusion: read-aloud releases
 Qwen3-ASR before TTS loads; transcription releases TTS. Qwen3-ASR loads only after
-a captured utterance or imported audio file and stays loaded only for that input
-generation.
+a captured utterance or imported audio file. After a complete successful input,
+its verified model and session stay warm for at most 30 idle seconds, avoiding
+another full-file verification and model load for the next recording or file.
+Reuse rechecks authenticated readiness and owned listener identity; each request
+resets native recognition state. Cancellation, failure, conversation changes,
+read-aloud, idle expiry or shutdown releases the owner. Resource monitoring
+continues during the lease. Submitting completed text alone preserves the lease.
 Qwen3-TTS loads on demand after Swift startup, synthesizes sequential 256-character
 segments with bounded streaming playback/prefetch and stays warm at most 30 idle
 seconds after success. Stop, failure, transcription or shutdown releases it immediately;

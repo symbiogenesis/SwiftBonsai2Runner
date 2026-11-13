@@ -529,7 +529,11 @@ impl State {
             return;
         }
         let text = self.input.trim().to_owned();
-        self.stop_speech();
+        if self.dictation_requested {
+            self.stop_speech();
+        } else {
+            self.stop_speech_output();
+        }
         self.last_answer.clear();
         self.retained_draft.clear();
         self.stage = None;
@@ -1036,29 +1040,39 @@ impl State {
         } else {
             self.cancel_microphone();
         }
-        if let Some(session) = &self.speech {
-            let _result = session.commands.send(speech::Command::StopSpeaking);
-        }
-        self.listening = false;
-        self.dictation_requested = false;
-        self.speaking = false;
-        self.speaking_message = None;
-        self.streaming_active = false;
-        self.streaming_suppressed = true;
+        self.stop_speech_output();
         if was_active {
             "Speech stopped. Microphone off.".clone_into(&mut self.speech_status);
             self.speech_notice = true;
         }
     }
 
+    fn stop_speech_output(&mut self) {
+        if let Some(session) = &self.speech {
+            let _result = session.commands.send(speech::Command::StopSpeaking);
+        }
+        self.speaking = false;
+        self.speaking_message = None;
+        self.streaming_active = false;
+        self.streaming_suppressed = true;
+    }
+
     fn cancel_microphone(&mut self) {
+        self.release_completed_input();
+        if let Some(session) = &self.speech {
+            let _result = session.commands.send(speech::Command::StopListening);
+        }
+    }
+
+    // Successful input releases capture and UI ownership without discarding the
+    // worker's short, monitored ASR lease. Explicit cancellation also sends StopListening.
+    fn release_completed_input(&mut self) {
         if let Some(import) = &self.audio_import {
             import.cancel();
         }
         self.audio_file_active = false;
         if let Some(session) = &self.speech {
             session.set_input_generation(None);
-            let _result = session.commands.send(speech::Command::StopListening);
         }
         if let Some(microphone) = &mut self.microphone {
             microphone.stop();
@@ -1362,7 +1376,7 @@ impl State {
             return;
         }
         let from_file = self.audio_file_active;
-        self.cancel_microphone();
+        self.release_completed_input();
         let text = text.trim();
         if text.is_empty() {
             "No speech recognized. Your draft was kept.".clone_into(&mut self.speech_status);

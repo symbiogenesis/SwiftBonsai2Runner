@@ -105,7 +105,9 @@ impl State {
                     .clone_into(&mut self.speech_status);
             }
         } else {
-            self.cancel_microphone();
+            if self.dictation_requested || self.audio_import.is_some() {
+                self.cancel_microphone();
+            }
             if let Ok(import) = audio_import::Session::start(source) {
                 // Disjoint from microphone generations and speech's NO_INPUT
                 // sentinel, even after the counter wraps.
@@ -256,7 +258,7 @@ impl State {
             // conversation changes and composer input settle before submission.
             self.pending_voice_transcript = Some((generation, self.audio_file_transcript.clone()));
         } else {
-            self.cancel_microphone();
+            self.release_completed_input();
             self.audio_file_notice = Some("Transcription complete. View or copy the full transcript below. It exceeds the chat prompt size, so no message was sent. Your draft was kept.".to_owned());
         }
     }
@@ -653,6 +655,57 @@ mod tests {
         assert!(state.speech_status.starts_with("Audio file transcribed."));
         state.model_event(client::Event::Ready);
         assert!(requests.try_recv().is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn completed_input_submission_keeps_asr_until_explicit_cancellation() -> io::Result<()> {
+        for from_file in [false, true] {
+            let (mut state, commands, requests) = fixture()?;
+            state.audio_file_active = from_file;
+            state.model = ModelLifecycle::Ready;
+            state.accept_transcript(1_u64 << 63, "Next question");
+            assert!(matches!(
+                requests.try_recv(),
+                Ok(client::Command::Send { text, .. }) if text == "Next question"
+            ));
+            assert!(!state.dictation_requested && state.microphone_generation.is_none());
+            assert!(matches!(
+                commands.recv_timeout(Duration::from_secs(2)),
+                Ok(speech::Command::StopSpeaking)
+            ));
+            state.cancel_microphone();
+            assert!(matches!(
+                commands.recv_timeout(Duration::from_secs(2)),
+                Ok(speech::Command::StopListening)
+            ));
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn completed_input_draft_and_oversized_file_keep_asr_until_switch() -> io::Result<()> {
+        for oversized in [false, true] {
+            let (mut state, commands, requests) = fixture()?;
+            if oversized {
+                state.audio_file_transcript = "x".repeat(super::super::INPUT_LIMIT + 1);
+                state.finish_audio_file(1_u64 << 63);
+            } else {
+                state.accept_transcript(1_u64 << 63, "Keep as draft");
+                assert_eq!(state.input, "Keep as draft");
+            }
+            assert!(!state.dictation_requested && !state.audio_file_active);
+            assert!(requests.try_recv().is_err());
+            state.new_chat();
+            assert!(matches!(
+                commands.recv_timeout(Duration::from_secs(2)),
+                Ok(speech::Command::StopListening)
+            ));
+            assert!(matches!(
+                commands.recv_timeout(Duration::from_secs(2)),
+                Ok(speech::Command::StopSpeaking)
+            ));
+        }
         Ok(())
     }
 

@@ -316,6 +316,14 @@ deferred automatic send. Cancel, conversation changes and teardown invalidate
 late results. Speech output uses only visible assistant answers, excluding
 reasoning/private drafts.
 
+After complete successful microphone or file transcription, the owned ASR service
+may remain warm for at most 30 idle seconds. Reuse preserves verified model guards
+and resource monitoring, rechecks authenticated readiness and listener ownership,
+and resets native recognition state for the next request. Successful text
+submission preserves the lease; cancellation, errors, conversation changes,
+speech output, expiry and shutdown release it. Partial file progress never starts
+an idle lease. Loading still requires explicit captured or imported audio.
+
 The composer's native plus button selects one audio file; Ctrl+V in the focused
 composer accepts files copied from Explorer. A cancellable owned worker reads and
 normalizes MP3/WAV and Windows-supported M4A/AAC/FLAC/WMA to in-memory mono 16 kHz
