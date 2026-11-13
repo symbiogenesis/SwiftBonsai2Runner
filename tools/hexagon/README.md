@@ -14,10 +14,8 @@ pwsh -NoProfile -File tools/hexagon/pq2_bridge.ps1
 The complete regression suite runs on hosted CI through
 [Hexagon prerequisites](../../.github/workflows/hexagon-qualification.yml) and
 Foundation. A focused local case is
-`pwsh -NoProfile -File tools/hexagon/test_pq2_bridge.ps1 -Test test_known_byte_fixture_splits_at_element_64_and_keeps_fourth_symbol`
-.
-All owner-device setup, checks and cleanup share one five-minute aggregate
-allowance; do not run a complete suite locally.
+`pwsh -NoProfile -File tools/hexagon/test_pq2_bridge.ps1 -Test test_known_byte_fixture_splits_at_element_64_and_keeps_fourth_symbol`.
+Follow the [local-check and device-budget policy](../../docs/validation.md).
 
 [Hexagon qualification](../../.github/workflows/hexagon-qualification.yml) owns
 current native fixture preparation, model-free policy controls and the independent
@@ -36,7 +34,7 @@ not an entire model. JSON inventory inputs are individually capped at 1 MiB;
 all reads enforce the limit even if the file grows. The tool prints JSON to
 stdout and writes no converted weights.
 
-All audit controllers use PowerShell 7.6 or later. `sdk_inventory.ps1` uses the
+`sdk_inventory.ps1` uses the
 standalone Rust package in `sdk-reader/` to stream the pinned XZ/tar archive as
 data. Its separate exact dependency lock uses a pure Rust XZ decoder, with a
 256 MiB decoder-memory limit and fixed archive-entry, byte and selection bounds.
@@ -62,7 +60,7 @@ and duplicate its original scale bytes. There is no quantizer, scale conversion,
 ternary-only restriction or symbol reorder. The inverse rejects unequal scale
 bits, including +0 versus -0. Nonfinite scales and partial rows reject.
 
-The retained Swift inventory has 209,920,000 PQ2 blocks. This bridge increases
+The Swift inventory has 209,920,000 PQ2 blocks. This bridge increases
 packed weight storage from 7,137,280,000 to **7,557,120,000 bytes**, an additional
 **419,840,000 bytes (5.88235%)**. The arithmetic-only artifact estimate is
 7,626,008,928 bytes before changed tensor alignment. Retaining both full layouts
@@ -70,18 +68,13 @@ simultaneously costs both allocations; this estimate excludes staging, VTCM,
 activation/state buffers and device mappings. A future tiling prototype should
 bridge bounded tiles rather than persist a second whole model.
 
-Tests use a hand-written split/order fixture, every possible packed byte,
-the fourth symbol, positive/negative zero, subnormal and extreme finite scales,
-unaligned views, odd 128-weight groups, awkward rows and malformed extents.
-Decoded f32 comparison includes signed-zero bits. Inventory checks bind matching
-artifact identities and reconcile histograms, geometry and raw symbol counts.
-Metadata SHA-256 binds the retained summary, not the omitted actual sign arrays.
-
-These checks establish weight-layout compatibility only. Ordinary Q2_0 Q8_0
-activation quantization, accumulation order, Hadamard transforms, grouped SSM
-basis, LoRA, complete logits/state and signed Windows kernels still need separate
-qualification. In particular, renaming PQ2 to Q2_0 does not preserve the PQ2
-Q8_K path. No performance, admission or backend-selection decision follows.
+Layout controls cover independent split/order bytes, every packed byte, fourth
+symbols, finite scale extremes/zeros, awkward extents and malformed inputs.
+Decoded f32 checks include signed zero. Inventory reconciles artifact identity,
+histograms, geometry and symbols; metadata digests do not bind omitted sign arrays.
+These controls qualify layout only. Activation quantization, accumulation,
+transforms, LoRA, complete state and signed execution require
+[separate acceptance](../../docs/hexagon.md#qualification-evidence).
 
 The [native Rust driver boundary](native_rpc/README.md) and
 [signed-package numeric fixture](dispatch_fixture.rs) cover separate access

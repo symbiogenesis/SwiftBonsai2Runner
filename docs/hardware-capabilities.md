@@ -108,6 +108,7 @@ dependencies remain unqualified. `backend_ready` stays false and CPU digest/laun
 policy is unchanged. Failed queries leave access unknown. See Khronos
 [properties][properties], [properties2][properties2], [application API][application-api]
 and the locked [ash API][ash].
+
 ### Native OpenCL observations
 
 `nativeGraphics: true` adds `NativeOpenClObservations` from bounded `host-opencl`: GPU information

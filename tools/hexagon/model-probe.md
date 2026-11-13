@@ -3,8 +3,7 @@
 This guide describes Runner's bounded guarded-HVX, HMX-bitplane and native-Q2
 diagnostic supervisor.
 The application's [Prism 0.1.27 `native-q2` development default](../../docs/hexagon.md)
-is a separate serving path; it does not enlarge this diagnostic's
-snapshot budget or original closed trial allowances.
+is a separate serving path with independent admission and qualification.
 
 `bonsai-tools hexagon-tools --request ABSOLUTE_JSON_PATH` accepts the separate
 `model-device` operation below. This local diagnostic evaluates one to three explicit
@@ -50,16 +49,14 @@ Use a fresh output directory. The fixed child gets 195 seconds including model
 admission, the CPU arm and a native session of at most 120 seconds; the outer
 supervisor reserves another 75 seconds. Intake refuses before model execution
 when the complete child allowance no longer fits. The entire owner workload,
-including builds, intake, power snapshots and archival, must independently fit
-its predeclared aggregate budget. Historical investigations remain closed.
+including intake, power snapshots and retention, must fit its predeclared aggregate
+budget. Prepare source-bound native helpers before the owner-device trial.
 
 `tokenId` remains required. Omitting `tokenIds` selects that single token; the
 wire format permits one to eight vocabulary IDs and requires the sequence to start with
 `tokenId`. `executionBackend` accepts `guarded-hvx` (default), `hmx-bitplane`
-or `native-q2`. Omitted sequence/backend options preserve the original
-single-token guarded-HVX request. The current probe executable emits explicit
-backend and sequence evidence even for that legacy request; older executable output without those
-fields cannot qualify the extended supervisor.
+or `native-q2`. Omitting them selects a single-token guarded-HVX request. Receipts must explicitly
+bind backend and sequence.
 
 For `hmx-bitplane`, `residentHostWeights: true` selects a mapped host-weight arena (the
 default is false): 25,067,520 bytes of prepared weight payload in a 26,259,456-byte
@@ -68,9 +65,8 @@ tensor; later tokens must hit that cache. This mode reports `integerAudit:
 "graph-parity-only"` and zero per-integer comparisons while preserving every token's
 complete CPU-shadow logits/state comparison, operation accounting and explicit native
 cleanup. The normal path retains `integerAudit: "all-returned-integers"` and its full
-integer oracle. The supervisor binds the selected mode and actual cache counters; it
-accepts missing mode/audit fields only for historical normal-path receipts. Mapped host
-reuse establishes no DSP residency or production eligibility.
+integer oracle. The supervisor binds the selected mode and actual cache counters.
+Mapped host reuse establishes no DSP residency or production eligibility.
 
 `batchFourOperations` defaults to false. Setting it to true requires the explicit
 HMX backend and submits four independent `K=128/N=8` operations per queue packet
@@ -200,7 +196,7 @@ The local receipt has this closed schema:
 }
 ```
 
-Generate that receipt only after observing a successful local `cargo build
+Prepare the helper before the device workload. Generate its receipt after successful `cargo build
 --locked --release --target aarch64-pc-windows-msvc -p bonsai-hexagon-runtime
 --bin prism-hexagon-model-probe`, with its target directory outside the source
 closure. Add `--features experimental-neon,parallel-rows` for the explicit NEON,
@@ -231,6 +227,6 @@ equal endpoints do not establish uninterrupted power stability. A failed child
 retains its raw output and completed arm observations without publishing parity.
 Do not retry or claim performance from this bounded correctness workload.
 
-Current model, adapter, state, resource and persistent-service qualification remains in
+Model, adapter, state, resource and persistent-service qualification remains in
 [PLAN.md](../../PLAN.md#hexagon-npu). Correctness probes and the current tolerance-based native-Q2
 serving path are separate contracts.

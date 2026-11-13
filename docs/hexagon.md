@@ -86,6 +86,7 @@ exceeds the 32 GB contract.
 does not establish Swift PQ2/PTQ1, full-graph or signed Windows coverage. Preserve
 independent X1 mapping/HVX and X2 DMA/VTCM/HMX evidence. TOPS and utilization do
 not qualify latency, energy or complete-request benefit.
+
 ## Packed arithmetic and graph state
 
 The [assessment lock](../config/swift-assessment.lock.json) identifies original
@@ -109,6 +110,7 @@ attention/convolution/GDN state, checkpoints and deterministic continuation acro
 prefix reuse/edits, reset, cancellation and failure. Projection completion cannot
 commit a token. [Chunkwise GDN](inference-algorithms.md#chunkwise-gated-deltanet-prefill),
 cache approximation and speculation retain separate algorithm gates.
+
 ## Memory, lifecycle and failure
 
 Apply the [accelerator resource contract](hardware-capabilities.md#accelerator-storage-and-lifetime)

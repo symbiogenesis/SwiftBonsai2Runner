@@ -5,7 +5,7 @@ control for a future signed Hexagon projection. It opens no driver, loads no
 model and dispatches no DSP work. It is an operation oracle and scheduling
 candidate; inference integration belongs in Prism. The
 [source/capture manifest](packed-sources.json) binds its arithmetic to the
-historical Prism control revision and independent native observations. That
+pinned Prism control revision and independent native observations. That
 manifest is not the active [runtime release lock](../../config/prism-inference.lock.json).
 
 The control keeps original 34-byte PQ2 blocks, including all four symbols and
@@ -18,7 +18,7 @@ empty. A future asynchronous implementation must additionally retain in-use
 device buffers until verified completion/teardown; this synchronous CPU control
 does not prove that lifetime gate.
 
-The selected mode is **pinned Swift binary arithmetic**. At Prism `7aca225`,
+The selected mode is **pinned Swift binary arithmetic**. In the pinned source,
 `Arithmetic::PinnedSwift` selects `with_pinned_backend` for the exact verified
 Swift artifact identity. It uses fused magic-add Q8_K rounding and ordered
 per-PQ2-block FMA, with scalar or eligible NEON integer dots. Generic/source
@@ -91,25 +91,13 @@ per column tile, the derived ledger is:
 | Proposed activation transfer, once per 32-row tile | 3,176,960 |
 | Proposed complete output return | 69,632 |
 
-The CPU implementation uses one staging tile, reads original weights once,
-writes staging once and reads staging once. The proposed device reservation
-has two weight tiles for later double buffering; no overlap or DMA has been
-implemented. Proposed activation traffic deliberately charges every row tile,
-rather than assuming unproved cross-tile residency. A future resident-activation
-schedule may reduce this traffic only with matching lifetime/admission evidence.
-The ledger does not count DMA descriptors, session/queue storage, mappings,
-allocator overhead or actual CPU/device synchronization. Those are additional
-charges, including resources outside the Job; they must be added before timing
-or admission. An observed VTCM page size is not an effective allocation.
-
-The host ledger's private-output extent is not a complete peak-memory total.
-`output.clear()` keeps any caller-owned output capacity until final publication,
-so charge that live allocation in addition to the private pending result.
-The borrowed F32 input and weights are existing CPU allocations; optional
-`transform_input` adds another F32 vector (20,480 bytes for K5120), and caller-owned
-sign arrays, Vec metadata/capacity rounding and allocator retention add separate
-charges. The proposed VTCM figure is neither a bound on those CPU allocations nor
-a complete admitted service-memory bound.
+The CPU uses one staging tile; proposed device double buffering and DMA remain
+unimplemented. Activation traffic charges every row tile without assumed
+residency. Add descriptors, queues, mappings, allocator/stack and synchronization
+costs, including resources outside Job commit. Observed VTCM page size does not
+establish allocation. `output.clear()` retains caller capacity: charge it beside
+the private pending result. Existing F32 input/weights, optional transform vector
+(20,480 bytes at K5120), sign arrays and allocator retention are separate charges.
 
 Hosted ARM64 CI owns full controls:
 
@@ -119,21 +107,13 @@ rustc --edition=2024 --test -D warnings -O tools/hexagon/packed_projection.rs -o
 & ABSOLUTE_EXTERNAL_BUILD/packed-projection-tests.exe
 ```
 
-Cases cover complete native capture records, all packed bytes and full-range
-i8 integer bounds, signed zero/subnormal/extreme scales, nonfinite rejection,
-opposite-sign maxima ties, unaligned storage, partial row/column tiles at K5120,
-preserved reduction carry, cancellation at every tile/commit boundary, late
-invalid scales and bounded reservations/refusal. The first-projection ledger
-does not execute an actual model matrix. No timing claim follows from any case.
-The expanded numerical reference independently checks packed traversal and tile
-reduction order; it shares Q8_K preparation, half expansion and FMA arithmetic.
-It does not independently qualify those shared routines. The retained native
-captures independently bind preparation/FMA only for their original captured
-cases. The Walsh impulse control at coordinate 37 uses the closed-form parity
-of `popcount(i & 37)` to bind interior butterfly ordering across separate blocks.
-Consumption of the verified packed/sign arrays, independent transform/activation/logit/full-state
-parity, signed custom kernels, DMA64, device mapping/visibility, ownership/failure recovery,
-resources and measured whole-request benefit remain open.
+Controls cover independent native preparation/FMA captures, full-range packed/i8
+arithmetic, scales/ties, awkward/unaligned tiles, reduction carry, malformed input,
+cancellation and atomic publication. The expanded reference shares quantization,
+half expansion and FMA routines; it does not independently qualify them. Walsh
+coordinate-37 impulse checks use `popcount(i & 37)` parity to bind interior order.
+Artifact consumption, signed execution, state/adapters and whole-request benefit
+retain the [Hexagon qualification gates](../../docs/hexagon.md#qualification-evidence).
 
 ## Proposed signed-kernel tile protocol
 
@@ -179,14 +159,9 @@ derived wire extents, not observed transfers. CPU replay additionally retains
 staging capacity. It does not change the proposed VTCM reservation or prove
 device-resident activation reuse.
 
-The payload carries neither authenticated artifact identity nor trust authority.
-The trusted session owner must bind model, sign arrays, prepared input, custom
-kernel version/signature, geometry, mapping and resources before submission.
-Tests retain byte/traffic parity, awkward final tiles, independent native FMA
-bits, changed headers, malformed arithmetic, sequence faults and cancellation.
-They replay on CPU; verified artifact extraction does not close consumption through
-these controls, signed execution, DMA completion, buffer retention after submission,
-full-state parity or benefit.
+The session owner separately authenticates artifact/sign/input identity, kernel
+signature, geometry, mappings and resources. CPU corruption/sequence/cancellation
+controls do not establish device completion or asynchronous buffer ownership.
 
 ## Actual artifact extraction candidate
 
@@ -237,13 +212,10 @@ creation. Failures can retain bounded partial files; only a successful owned
 process receipt plus independently verified output digests permits intake.
 The tool reads no other tensor and writes no complete-model conversion.
 
-The [bounded actual extraction](../../docs/evidence/hexagon-swift-projection-binding.json)
-and independent output-digest checks passed. Consumption through the operation
-and device controls remains pending. The
-binding establishes original weights and signs only; activations, logits,
-complete state, adapters, signed DSP computation and performance need their
-separate evidence. Any insufficient shared time allowance leaves extraction
-pending rather than splitting its full-file verification across runs.
+The [extraction binding](../../docs/evidence/hexagon-swift-projection-binding.json)
+provides independent original-weight/sign pins. It does not authenticate
+activations or qualify consumption, full state/adapters or signed execution.
+Full-file verification must fit one aggregate allowance; never split it across runs.
 
 ## Conditional signed Q2 integer primitive
 
@@ -252,8 +224,7 @@ the Q2_0/Q8_1 arithmetic in the newer signed-package lead as an integer-dot
 primitive. Its source identity is llama.cpp
 [`19cce6919992fdffd92e0ac152caaf1e2b8f254e`](https://github.com/ggml-org/llama.cpp/tree/19cce6919992fdffd92e0ac152caaf1e2b8f254e),
 bundled by GenieX v0.10.0. That source is separate from the v0.8.0 access pin.
-This control neither changes the access package nor proves catalog membership,
-actual operation entry or numerical execution of the newer binary.
+Catalog membership and execution of that exact signed binary require separate controls.
 
 The source's
 [Q2 dot](https://github.com/ggml-org/llama.cpp/blob/19cce6919992fdffd92e0ac152caaf1e2b8f254e/ggml/src/ggml-hexagon/htp/hvx-mm-kernels-tiled.h#L1543-L1567)
@@ -306,7 +277,7 @@ signed deployment admits the constructed operation or that native Rust can
 submit its supported entry correctly.
 
 The block control exposes ordinary logical Q2 records and F32 rows. The separate
-[`q2_projection.rs`](q2_projection.rs) preparation/reduction API now packs the
+[`q2_projection.rs`](q2_projection.rs) preparation/reduction API packs the
 source-native host layout and accepts a synchronous submitter. Each host tile
 for 32 rows and K=64 is **576 bytes**: 512 symbol bytes and 64 scale bytes. DMA
 copies those 576 bytes into a **640-byte aligned VTCM destination**; host tiles
@@ -334,19 +305,11 @@ output padding, original scales, DMA, queues, mappings, synchronization and
 resources outside the Job separately. The construction uses bounded temporary
 packing and never justifies a persistent expanded whole-model copy.
 
-Model-free controls cover every packed byte, the complete i8 range, mixed codes,
-31-lane boundaries and guards, scale-one records, retained native per-block FMA
-bits and rejection of fractional, nonfinite or oversized returned dots. The
-retained FMA capture also rejects nonfused complete-projection reduction. Source
-layout fixtures distinguish the 576-byte host stride from 640-byte VTCM padding;
-complete projection replay, awkward row tails, cancellation and failed/poisoned
-submissions preserve atomic output publication. Device
-quantizer/integer parity, original artifact consumption, signed native entry,
-lifetime/rollback, complete state and performance remain pending. Fixed synthetic integer controls
-do not execute the complete original-artifact schedule or measure a speedup.
-This lead may
-avoid a custom-kernel signing requirement for a narrow exact primitive if those
-gates pass; its extra work and traffic may also make it uncompetitive.
+Model-free controls cover packed/i8 bounds, guards, scale-one records, native FMA,
+576-/640-byte layouts, full-projection replay, awkward tails and failed/poisoned/
+cancelled submissions. The conditional primitive needs independently qualified
+signed quantizer/integer results and lifetime/resource acceptance before use;
+extra work and traffic may erase any benefit.
 
 ## Artifact-bound signed projection diagnostic
 
@@ -445,10 +408,8 @@ its derived transfers are 25,067,520 weight bytes, 163,840 activation bytes and
 22,282,240 returned plane bytes. These exclude device FP16 expansion, N=8-to-32
 padding, VTCM, DMA, mappings, queue storage and allocator/stack overhead.
 
-The submitter is injected; no native HMX-enabled session or packet is supplied.
-The existing signed projection diagnostic continues to use its guarded HVX
-path. Independent model-free controls run in hosted packed-projection tests;
-both the HMX implementation and those controls are included in the immutable
-hosted source-input receipts. Signed integer parity, effective HMX placement,
-state, adapters, actual prefill, PTQ1 arithmetic and speed remain pending under
-the [HMX source lead](../../docs/hexagon-source-audit.md#packed-arithmetic-controls).
+The submitter is injected; this control supplies no native HMX session/packet.
+The signed projection diagnostic uses guarded HVX. Hosted receipts bind HMX
+source and model-free controls; signed integer parity, effective placement,
+full state/adapters and benefit retain the
+[separate HMX gates](../../docs/hexagon-source-audit.md#packed-arithmetic-controls).

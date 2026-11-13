@@ -187,6 +187,7 @@ Packed-cache equivalence is within the selected codec, not equivalence to FP16.
   precedence. Baseline NEON and portable consumers keep their own checks.
 
 Verify the exact release lock and consumer before execution.
+
 ## Execution and dispatch
 
 The default `experimental-neon` feature uses [`fearless_simd` 1.1.0][fearless]'s safe core API under
@@ -364,6 +365,7 @@ A selected implementation needs a pinned licensed reference, independent widened
 quotient/remainder checks across signs/extrema/multiples/neighbors, ARM64 codegen
 review and complete-request benefit including setup/dispatch. Keep this work
 within the chosen kernel's [backlog](../PLAN.md#cpu-kernels).
+
 ## Numerical and resource acceptance
 
 Optimized-Rust/scalar and Rust/Prism comparisons have separate purposes; an existing

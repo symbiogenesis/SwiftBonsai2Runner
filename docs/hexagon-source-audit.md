@@ -29,6 +29,7 @@ establish DSP computation, DMA visibility or vendor teardown.
 [transactional graph state](hexagon.md#packed-arithmetic-and-graph-state) retain
 independent acceptance. Device completion cannot commit a token, and cancellation
 must drain or tear down in-use buffers before discarding provisional output.
+
 ## Native Rust computation requires another reviewed boundary
 
 A compute control must bind generated-IDL marshalling, create/export one bounded queue,

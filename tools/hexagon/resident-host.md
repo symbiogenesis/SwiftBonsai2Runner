@@ -1,6 +1,6 @@
 # Resident host weight accounting
 
-This guide and its ledgers describe the historical exact HMX bitplane bridge.
+This guide defines host accounting for the experimental exact HMX bitplane bridge.
 The current [X2 `native-q2` development default](../../docs/hexagon.md) uses a
 different direct-output layout and six larger arenas. Do not apply the 64 MiB
 HMX ceiling or the traffic counts below to that serving path.
@@ -8,8 +8,7 @@ HMX ceiling or the traffic counts below to that serving path.
 The experimental Prism HMX path can retain immutable, prepared weight tiles in
 an explicitly bounded mapped host arena and reuse them through opaque
 session-owned handles. Its default remains streaming. The optional arena is
-limited to 64 MiB and does not change the terminal duration. The owner-authorized
-terminal cap is 24,000 write attempts, still shared by the entire request.
+limited to 64 MiB and does not change the terminal duration. The terminal cap is 24,000 write attempts shared by the entire request.
 This is host RAM shared with the signed kernel; it is not persistent DSP
 VTCM storage, a fused Swift kernel or a daily inference service.
 
