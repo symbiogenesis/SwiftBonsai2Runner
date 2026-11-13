@@ -158,7 +158,20 @@ impl Pipeline {
 
     pub(super) fn feed(&mut self, queued: &mut VecDeque<String>, finished: bool) {
         if let Some(sender) = &self.segments {
-            while let Some(text) = queued.pop_front() {
+            while let Some(mut text) = queued.pop_front() {
+                // Batch before the two-entry channel: punctuation need not
+                // restart synthesis when more of the answer is already ready.
+                let mut characters = text.chars().count();
+                while let Some(next) = queued.front() {
+                    let count = next.chars().count();
+                    if characters + 1 + count > super::MAX_SEGMENT {
+                        break;
+                    }
+                    text.push(' ');
+                    text.push_str(next);
+                    characters += 1 + count;
+                    let _merged = queued.pop_front();
+                }
                 match sender.try_send(text) {
                     Ok(()) => {}
                     Err(TrySendError::Full(text)) => {
@@ -284,9 +297,7 @@ fn next_segment(
         }
     };
     let mut characters = text.chars().count();
-    while !super::segmentation::ends_sentence(&text)
-        && let Ok(next) = segments.try_recv()
-    {
+    while let Ok(next) = segments.try_recv() {
         check(generation, current, stop)?;
         let count = next.chars().count();
         if characters + 1 + count > super::MAX_SEGMENT {
@@ -1046,8 +1057,7 @@ mod tests {
         let current = AtomicU64::new(4);
         let stop = AtomicBool::new(false);
         for expected in [
-            "Hello another clause.".to_owned(),
-            "Separate sentence.".to_owned(),
+            "Hello another clause. Separate sentence.".to_owned(),
             "x".repeat(super::super::MAX_SEGMENT),
             "Last.".to_owned(),
         ] {
@@ -1060,6 +1070,36 @@ mod tests {
             super::next_segment(&receiver, &mut pending, 4, &current, &stop),
             Ok(None)
         );
+    }
+
+    #[test]
+    fn punctuation_batches_before_the_bounded_channel_and_preserves_backpressure() {
+        let (sender, incoming) = mpsc::sync_channel(2);
+        let (_complete, finished) = mpsc::channel();
+        let mut pipeline = super::Pipeline {
+            segments: Some(sender),
+            finished,
+            cancelled: Arc::new(AtomicBool::new(false)),
+            playing: Arc::new(AtomicBool::new(false)),
+            notified_playing: false,
+            worker: None,
+        };
+        let sentence = "One short sentence.";
+        let per_request = (super::super::MAX_SEGMENT + 1) / (sentence.len() + 1);
+        let expected = vec![sentence; per_request].join(" ");
+        let mut queued = VecDeque::from(vec![sentence.to_owned(); per_request * 4]);
+        pipeline.feed(&mut queued, true);
+        // Two full requests enter the channel; all remaining text is retained.
+        assert_eq!(incoming.try_recv(), Ok(expected.clone()));
+        assert_eq!(incoming.try_recv(), Ok(expected.clone()));
+        assert!(incoming.try_recv().is_err());
+        assert!(pipeline.segments.is_some());
+        pipeline.feed(&mut queued, true);
+        assert_eq!(incoming.try_recv(), Ok(expected.clone()));
+        assert_eq!(incoming.try_recv(), Ok(expected));
+        assert!(queued.is_empty());
+        assert!(pipeline.segments.is_none());
+        assert!(incoming.try_recv().is_err());
     }
 
     #[test]
