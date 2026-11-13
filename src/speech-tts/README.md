@@ -112,11 +112,27 @@ those C++ libraries are linked.
 ## Optional Hexagon runtime
 
 TTS serves on the CPU. It uses no GGML DLL backend or manually installed speech
-runtime directory. Rust NPU packet
-descriptors prepare future signed execution; they do not dispatch inference or
-qualify acceleration. Swift's separate `native-q2` policy is unchanged. NPU/GPU
-serving, ternary talkers and new 48 kHz artifacts retain independent gates in
-[PLAN.md](../../PLAN.md).
+runtime directory. The unused GGML registration module and six-word
+`HtpPrefillPacket` serializer have been removed. The latter was a host-side
+placeholder, not a signed operation packet: its matrix opcode and Q2 type ID
+were incompatible with the retained signed ABI. Its former length assertion
+established no device behavior.
+
+The independent [Windows queue ABI control](../../tools/hexagon/windows_queue_abi.c)
+and [source-bound RPC controls](../../tools/hexagon/native_rpc/README.md) retain
+the actual operation, tensor, buffer and completion contracts. They remain
+separate controls; successful fixed F32 or guarded-Q2 work does not supply TTS
+Q8 prefill, shared KV, a model dispatcher or production admission.
+
+Signed TTS execution still needs exact package/catalog/driver admission and
+supervised containment, a source-bound supported Q8 tensor/solver mapping,
+immutable placement and cache ownership, validated correlated completions,
+and cancellation/failure teardown that retains uncertain buffers through
+supervised exit. CPU PTQ1 bitplanes cannot be relabelled as the signed DSP's
+tiled Q2 format. Shared cache coherence and complete Talker/CodePredictor/codec
+state must be qualified independently before any hybrid path is selected.
+Swift's separate `native-q2` policy is unchanged. NPU/GPU serving, ternary
+talkers and new 48 kHz artifacts retain independent gates in [PLAN.md](../../PLAN.md).
 
 ## Rust parameter and CPU thread helpers
 
