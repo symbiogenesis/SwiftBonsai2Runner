@@ -43,19 +43,17 @@ pub(super) fn copy_button(ui: &mut egui::Ui, label: &str, message: &str) {
         .ctx()
         .data(|data| data.get_temp::<f64>(id))
         .is_some_and(|until| now < until);
+    // Match egui 0.37's Body-font button theme in both measurement and paint.
+    let font = egui::TextStyle::Body.resolve(ui.style());
     let text_width = ui
         .painter()
-        .layout_no_wrap(
-            label.to_owned(),
-            egui::TextStyle::Button.resolve(ui.style()),
-            ui.visuals().text_color(),
-        )
+        .layout_no_wrap(label.to_owned(), font.clone(), ui.visuals().text_color())
         .size()
         .x;
     let width = ui.spacing().button_padding.x.mul_add(2.0, text_width);
     if ui
         .add(
-            egui::Button::new(if copied { "Copied" } else { label })
+            egui::Button::new(RichText::new(if copied { "Copied" } else { label }).font(font))
                 .min_size(egui::vec2(width, 0.0)),
         )
         .accessible_name(label)

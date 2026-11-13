@@ -2,6 +2,13 @@
 use super::*;
 use egui_kittest::{Harness, kittest::Queryable as _};
 
+fn configure_error_fixture(context: &egui::Context) {
+    configure(context);
+    context.add_font_provider(std::sync::Arc::new(
+        egui_system_font_provider::SystemFontProvider::new(),
+    ));
+}
+
 struct CardFixture {
     message: String,
     rect: egui::Rect,
@@ -23,7 +30,7 @@ fn error_reporting_expanded_cards_stay_bounded_and_copy_every_character() {
             .with_size(egui::vec2(width, 480.0))
             .with_theme(theme)
             .with_context_setup(|ctx| {
-                configure(ctx);
+                configure_error_fixture(ctx);
                 ctx.global_style_mut(|style| {
                     style
                         .text_styles
@@ -116,7 +123,7 @@ fn error_reporting_stacked_failures_leave_the_composer_available() {
     app.input = "Keep this draft".to_owned();
     let mut chat = Harness::builder()
         .with_size(egui::vec2(480.0, 480.0))
-        .with_context_setup(configure)
+        .with_context_setup(configure_error_fixture)
         .build_ui_state(|ui, state: &mut State| state.draw(ui), app);
     chat.run();
     let composer = chat
@@ -150,7 +157,7 @@ fn error_reporting_capture_when_requested() -> io::Result<()> {
         setup.instance_descriptor.backends = wgpu::Backends::DX12;
         let mut chat = Harness::builder()
             .with_size(size)
-            .with_context_setup(configure)
+            .with_context_setup(configure_error_fixture)
             .wgpu_setup(eframe::egui_wgpu::WgpuSetup::CreateNew(setup))
             .build_ui_state(|ui, state: &mut State| state.draw(ui), app);
         chat.state().appearance.apply(&chat.ctx);

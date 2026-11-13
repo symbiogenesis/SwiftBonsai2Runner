@@ -304,7 +304,11 @@ impl State {
                     }
                     self.copy_audio_transcript(ui, "Copy transcript", false);
                 }
-                if ui.button("Dismiss").clicked() {
+                if ui
+                    .button("Dismiss")
+                    .accessible_name("Dismiss audio status")
+                    .clicked()
+                {
                     self.audio_file_notice = None;
                     self.audio_file_transcript.clear();
                     self.audio_file_progress = None;
@@ -414,14 +418,16 @@ impl State {
         });
         // Reserve the ordinary label width so copy confirmation never moves
         // adjacent actions or changes a wrapping footer's height.
-        let font = egui::TextStyle::Button.resolve(ui.style());
+        // egui 0.37's button theme uses Body. Bind the measured and displayed
+        // font explicitly so the shorter confirmation keeps the same bounds.
+        let font = egui::TextStyle::Body.resolve(ui.style());
         let text_width = ui
             .painter()
-            .layout_no_wrap(label.to_owned(), font, ui.visuals().text_color())
+            .layout_no_wrap(label.to_owned(), font.clone(), ui.visuals().text_color())
             .size()
             .x;
         let width = ui.spacing().button_padding.x.mul_add(2.0, text_width);
-        let mut text = egui::RichText::new(if copied { "Copied" } else { label });
+        let mut text = egui::RichText::new(if copied { "Copied" } else { label }).font(font);
         if primary {
             text = text.color(ui.visuals().selection.stroke.color);
         }

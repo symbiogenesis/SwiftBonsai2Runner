@@ -42,6 +42,9 @@ impl Fixture {
 fn harness(size: [f32; 2], seeded: bool) -> Harness<'static, Fixture> {
     Harness::builder()
         .with_size(size)
+        // Newly revealed nested controls need six style-settlement frames in
+        // egui 0.37. Keep a finite allowance while preserving repaint checks.
+        .with_max_steps(8)
         .with_theme(egui::Theme::Dark)
         .with_context_setup(|context| {
             configure(context);
