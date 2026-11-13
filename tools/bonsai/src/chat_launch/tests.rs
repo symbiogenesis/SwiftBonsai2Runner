@@ -186,8 +186,13 @@ impl Recorder {
 
 impl Operations for Recorder {
     fn artifacts(&mut self, request: &Request, _working: &Path) -> crate::Result<()> {
+        // Deferred setup starts after the early UI opens, before the prepared
+        // broker handoff. A startup-request launch is that early window only.
         assert!(
-            Recorder::launch(self).is_err(),
+            self.events.iter().all(|event| {
+                !matches!(event, Event::Launch(_, arguments, ..)
+                    if !arguments.iter().any(|argument| argument == "--startup-request"))
+            }),
             "Artifacts must be ready before broker handoff."
         );
         self.artifact_requests
@@ -1259,7 +1264,7 @@ fn speech_preparation_and_early_window_never_repeat_swift_setup() -> crate::Resu
         &fixture.working,
         &fixture.root.join("tools.exe"),
     )?;
-    assert!(recorder.artifact_requests.is_empty());
+    assert_eq!(recorder.artifact_requests, Vec::<Value>::new());
 
     fixture.request["PreparationStage"] = json!("speech");
     let mut recorder = Recorder::new(fixture.root.clone());
@@ -1268,7 +1273,7 @@ fn speech_preparation_and_early_window_never_repeat_swift_setup() -> crate::Resu
         &mut recorder,
         &fixture.working,
     )?;
-    assert!(recorder.artifact_requests.is_empty());
+    assert_eq!(recorder.artifact_requests, Vec::<Value>::new());
     assert!(
         recorder
             .events
@@ -1280,7 +1285,7 @@ fn speech_preparation_and_early_window_never_repeat_swift_setup() -> crate::Resu
     fixture.request["SpeechModelsOnly"] = json!(true);
     let mut recorder = Recorder::new(fixture.root.clone());
     prepare_backend(plan(fixture.request)?, &mut recorder, &fixture.working)?;
-    assert!(recorder.artifact_requests.is_empty());
+    assert_eq!(recorder.artifact_requests, Vec::<Value>::new());
     assert!(recorder.launch().is_err());
     assert_eq!(recorder.events, [Event::Models("All".into(), true)]);
     fs::remove_dir_all(fixture.root).map_err(|error| error.to_string())

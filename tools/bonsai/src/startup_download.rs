@@ -1001,7 +1001,7 @@ mod tests {
             assert_eq!(transfers, 1);
             verify(&path, 5, &hash)?;
             assert!(!partial.exists());
-            assert!(quarantine_files(&working)?.is_empty());
+            assert_eq!(quarantine_files(&working)?, Vec::<PathBuf>::new());
         }
         Ok(())
     }
@@ -1039,7 +1039,7 @@ mod tests {
                 fs::read(&partial).map_err(|error| error.to_string())?,
                 b"wrong"
             );
-            assert!(quarantine_files(&working)?.is_empty());
+            assert_eq!(quarantine_files(&working)?, Vec::<PathBuf>::new());
         }
         Ok(())
     }
@@ -1064,7 +1064,7 @@ mod tests {
         assert_eq!(offsets, [2, 0]);
         verify(&path, 5, &hash)?;
         assert!(!partial.exists());
-        assert!(quarantine_files(&working)?.is_empty());
+        assert_eq!(quarantine_files(&working)?, Vec::<PathBuf>::new());
         Ok(())
     }
 
@@ -1094,7 +1094,7 @@ mod tests {
             fs::read(&partial).map_err(|error| error.to_string())?,
             b"again"
         );
-        assert!(quarantine_files(&working)?.is_empty());
+        assert_eq!(quarantine_files(&working)?, Vec::<PathBuf>::new());
         Ok(())
     }
 
@@ -1126,7 +1126,7 @@ mod tests {
             assert_eq!(transfers, usize::from(previous.len() > 5));
             verify(&path, 5, &hash)?;
             assert!(!partial.exists());
-            assert!(quarantine_files(&working)?.is_empty());
+            assert_eq!(quarantine_files(&working)?, Vec::<PathBuf>::new());
         }
         assert_eq!(repair_disk_required(11, 7)?, 16 * 1024 * 1024 + 4);
         assert!(repair_disk_required(5, 6).is_err());
