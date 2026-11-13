@@ -32,8 +32,8 @@ than installing Rust and compiling it a second time. The independent `checked-to
 producer owns the maintenance CLI's full checks and its same-run CLI/probe artifact.
 ASR and native integration wait for that producer while Rust-only TTS, the six other
 maintenance crates, broker and UI lanes run concurrently. The aggregate maps ASR and
-TTS to their independent selected groups and requires both results. Package checks retain one owning lane;
-dependencies still compile wherever consumed. The configured aggregate requires all
+TTS to their independent selected groups and requires both results. Package checks retain one owning
+lane; dependencies still compile wherever consumed. The configured aggregate requires all
 selected jobs, including both `checked-tools` and `maintenance`. The dependency change
 exposes concurrency; it supplies no measured hosted speedup or acceptance verdict.
 
