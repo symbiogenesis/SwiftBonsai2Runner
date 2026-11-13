@@ -36,9 +36,11 @@ open the Windows chat app with `bonsai-tools chat` or `./scripts/Start-Chat.ps1`
 If you want to switch back to the original publisher C++ engine, add
 `--publisher-engine` (or `-PublisherEngine` with the script).
 
-The [Windows installer guide](docs/releases.md) describes the Windows ARM64 MSI
-distribution and the prepared first experimental release. Installer publication
-is pending the owner's source push and GitHub release workflow run.
+The [Windows release guide](docs/releases.md) describes the single executable
+containing all five application tools, the MSI installer and the prepared first
+experimental release. [Local builds](docs/development-guide.md#build-a-single-executable)
+can produce the same single-file distribution. Release publication is pending the
+owner's source push and GitHub release workflow run.
 
 > [!NOTE]
 > **Work in progress.** The Rust engine is our default for everyday development while

@@ -123,6 +123,14 @@ PowerShell/startup controls and all 22 omitted-notice source recoveries pass;
 Rust replay remains pending because the local pinned compiler is incomplete.
 These checks do not establish a successful installer or close hosted acceptance.
 
+Include the single-file Windows executable in the next owner-run Windows Release
+acceptance. Verify the source-bound bundle, model-free extraction and executable
+inventory alongside the existing MSI install/uninstall checks, then qualify
+double-click launch on a supported clean Windows ARM64 machine. Exercise the same
+bundle builder from a local checkout; local focused checks do not establish hosted
+publication, clean-machine prerequisites or actual-model acceptance. Preserve the
+separate-process containment and MSI-only update contracts.
+
 The no-push rule leaves source publication with the owner. The
 [local source review](docs/evidence/windows-release-20261111/retained.json) retains
 passing final workflow, PowerShell, XML, Rust formatting and Markdown checks;

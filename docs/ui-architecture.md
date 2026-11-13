@@ -37,6 +37,15 @@ The [development guide](development-guide.md#source-launch-caches-and-runtime-se
 owns source-launch receipts/cache rules; the [package contract](chat-packages.md#launch-without-a-checkout)
 owns verified installed launches.
 
+The single-file Windows distribution embeds the same five application executables
+and their package manifest and notices in a native Rust launcher. Opening the
+bundle verifies its embedded inventory, extracts it into the per-user package
+cache and uses the existing verified package launch. Broker, UI and speech remain
+separate owned processes with the same containment and teardown contracts. Model,
+adapter and inference-runtime provisioning remain separate. Portable bundle
+launches use the portable package policy; MSI update discovery remains exclusive
+to MSI-installed launches.
+
 Swift launches default to native Rust Prism 0.1.25, original PQ2, four CPU row
 workers and the standard adapter at scale 1.3. `--native-engine` remains accepted;
 `--publisher-engine` selects the explicit publisher rollback. Engine options are
