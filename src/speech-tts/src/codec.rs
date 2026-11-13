@@ -15,7 +15,7 @@ use std::io;
 
 use fearless_simd::{Level, dispatch, f32x4, prelude::*};
 
-use crate::{SAMPLE_RATE, SAMPLE_RATE_48K, engine::row_workers};
+use crate::{SAMPLE_RATE, SAMPLE_RATE_48K, engine::row_workers, numerics::usize_to_f32};
 
 fn frame_workers(threads: usize, frames: usize, work: usize) -> usize {
     if frames <= 1 || work < 65_536 {
@@ -461,18 +461,6 @@ pub const TOKENIZER_HOP_48K: usize = 3840;
 pub const CODEC_SNAP_SLOTS: usize = 8;
 /// Default sliding window for the 8-layer codec pre-transformer (`72` frames).
 pub const CODEC_SLIDING_WINDOW: usize = 72;
-
-#[inline]
-fn usize_to_f32(n: usize) -> f32 {
-    u16::try_from(n).map_or_else(
-        |_| {
-            let hi = u16::try_from(n >> 16).unwrap_or(u16::MAX);
-            let lo = u16::try_from(n & 0xFFFF).unwrap_or(0);
-            f32::from(hi).mul_add(65_536.0_f32, f32::from(lo))
-        },
-        f32::from,
-    )
-}
 
 /// FNV-1a 64-bit content hash over `[K, T]` reference codes with `T` folded in,
 /// matching `pipeline_codec_ref_key` in `qwentts.cpp`.

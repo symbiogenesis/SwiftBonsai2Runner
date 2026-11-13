@@ -27,6 +27,7 @@ pub mod codec;
 mod decode_graph;
 pub mod engine;
 mod gguf;
+mod numerics;
 mod philox;
 mod sampling;
 pub mod speaker_encoder;
