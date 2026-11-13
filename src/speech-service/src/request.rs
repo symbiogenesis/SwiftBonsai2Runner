@@ -166,6 +166,12 @@ fn multipart<'a>(media: &str, body: &'a [u8]) -> Result<&'a [u8], Error> {
     let interior = body
         .strip_circumfix(start, end)
         .ok_or(Error::bad("invalid_multipart"))?;
+    // The first closing delimiter must also be the final one. Searching through
+    // the suffix catches a delimiter whose final CRLF overlaps that suffix;
+    // otherwise valid PCM could hide an earlier MIME terminator inside a file.
+    if memchr::memmem::find(&body[start.len()..], end) != Some(interior.len()) {
+        return Err(Error::bad("invalid_multipart"));
+    }
     let parts = multipart_parts(interior, separator)?;
     let mut model: Option<&'a [u8]> = None;
     let mut language: Option<&'a [u8]> = None;
@@ -275,6 +281,61 @@ mod tests {
             Some(Error::bad("invalid_multipart"))
         );
         assert_eq!(samples.len(), 0);
+    }
+
+    fn multipart_wave(payload: &[u8]) -> Result<Vec<u8>, Error> {
+        let mut body = format!(
+            "--a\r\nContent-Disposition: form-data; name=\"model\"\r\n\r\n{}\r\n--a\r\nContent-Disposition: form-data; name=\"file\"; filename=\"clip.wav\"\r\nContent-Type: audio/wav\r\n\r\n",
+            crate::ASR_MODEL
+        )
+        .into_bytes();
+        body.extend_from_slice(
+            &bonsai_audio::mono_pcm16_header(16_000, payload.len() / 2)
+                .ok_or(Error::bad("invalid_fixture"))?,
+        );
+        body.extend_from_slice(payload);
+        body.extend_from_slice(b"\r\n--a--\r\n");
+        Ok(body)
+    }
+
+    #[test]
+    fn multipart_rejects_early_closing_boundaries_and_recovers() -> Result<(), Error> {
+        let media = "multipart/form-data; boundary=a";
+        let mut samples = vec![0.5; 16];
+        for payload in [b"\r\n--a--\r\n\0".as_slice(), b"\0\r\n--a--"] {
+            let body = multipart_wave(payload)?;
+            assert_eq!(
+                transcribe(media, &body, &mut samples).err(),
+                Some(Error::bad("invalid_multipart"))
+            );
+            assert!(samples.is_empty());
+            // A rejected MIME body must not poison the next request or expose
+            // samples retained before the malformed upload.
+            assert_eq!(
+                transcribe(media, &multipart_wave(b"\0\0")?, &mut samples)?,
+                &[0.0]
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn multipart_closing_boundary_lookalikes_preserve_exact_borrowed_pcm() -> Result<(), Error> {
+        for payload in [
+            b"\r\n--ab--\r\n".as_slice(),
+            b"\r\n--a--x\r\n",
+            b"xx--a--\r\n\0",
+        ] {
+            let body = multipart_wave(payload)?;
+            let file = multipart("multipart/form-data; boundary=a", &body)?;
+            let offset = body.len() - payload.len() - 44 - b"\r\n--a--\r\n".len();
+            assert_eq!(file.as_ptr(), body[offset..].as_ptr());
+            assert_eq!(
+                bonsai_audio::mono_pcm16_data(file, 16_000, 480_000),
+                Some(payload)
+            );
+        }
+        Ok(())
     }
 
     #[test]
