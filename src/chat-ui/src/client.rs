@@ -57,6 +57,11 @@ const RUNNING_MEMORY_MESSAGE: &str = "Swift stopped because its running memory r
 const PUBLISHER_INIT_FAILURE_MESSAGE: &str = "The publisher CPU runtime failed Windows initialization (0xC0000142). Retry model repeats that runtime choice. Copy any conversation or drafts you want to keep before closing. Close this app and relaunch bonsai-tools chat with --native-engine to try the experimental Rust runtime, preserving your DataDirectory and the same model and adapter options.";
 const LOCAL_CONNECTION_CLOSED: &str = "The connection to the model on this computer closed before a complete reply was received. The cause was not reported.";
 const CONTEXT_LIMIT_MESSAGE: &str = "This conversation and the selected output cap do not fit within the model's selected context limit. Choose a smaller output cap or start a new conversation, then send again.";
+const REQUEST_LIMIT_MESSAGE: &str = "This conversation is too large for the local model's request limit. Shorten the message or start a new conversation, then send again.";
+const INVALID_REQUEST_MESSAGE: &str = "The local model could not accept this conversation or its response settings. Edit the message or start a new conversation, then send again.";
+const TOKEN_COUNT_FAILURE_MESSAGE: &str = "The local model failed while checking this conversation before generation. No reply was started.";
+const GENERATION_FAILURE_MESSAGE: &str =
+    "The local model failed while starting this reply. No reply was received.";
 const CONTROL_TOKEN_MESSAGE: &str = "This conversation contains reserved chat markers, such as <|im_start|> or <think>. Remove them or start a new conversation before sending again.";
 const RATE_LIMIT_MESSAGE: &str =
     "Too many messages were sent in a short time. Wait a moment, then send again.";
@@ -1052,19 +1057,34 @@ enum Framing {
 enum ResponseKind {
     Stream,
     ContextError,
-    ControlTokenError,
+    RequestError,
     RateError,
+    BackendError,
 }
 
 impl ResponseKind {
-    const fn rejection(self) -> Option<(&'static str, &'static str)> {
-        match self {
-            Self::Stream => None,
-            Self::ContextError => Some(("context_length_exceeded", CONTEXT_LIMIT_MESSAGE)),
-            Self::ControlTokenError => {
-                Some(("input_control_tokens_rejected", CONTROL_TOKEN_MESSAGE))
+    fn failure(self, code: &str) -> Option<Failure> {
+        match (self, code) {
+            (Self::ContextError, "context_length_exceeded") => {
+                Some(Failure::Rejected(CONTEXT_LIMIT_MESSAGE))
             }
-            Self::RateError => Some(("rate_limit_exceeded", RATE_LIMIT_MESSAGE)),
+            (Self::ContextError, "request_body_too_large") => {
+                Some(Failure::Rejected(REQUEST_LIMIT_MESSAGE))
+            }
+            (Self::RequestError, "input_control_tokens_rejected") => {
+                Some(Failure::Rejected(CONTROL_TOKEN_MESSAGE))
+            }
+            (Self::RequestError, "invalid_chat_request") => {
+                Some(Failure::Rejected(INVALID_REQUEST_MESSAGE))
+            }
+            (Self::RateError, "rate_limit_exceeded") => Some(Failure::Rejected(RATE_LIMIT_MESSAGE)),
+            (Self::BackendError, "backend_token_count_failed") => {
+                Some(Failure::Message(TOKEN_COUNT_FAILURE_MESSAGE))
+            }
+            (Self::BackendError, "backend_generation_failed") => {
+                Some(Failure::Message(GENERATION_FAILURE_MESSAGE))
+            }
+            _ => None,
         }
     }
 }
@@ -1092,13 +1112,13 @@ impl<R: Read> HttpBody<R> {
             chunk_ending: false,
             borrowed: 0,
         };
-        if let Some((code, message)) = kind.rejection() {
-            return Err(body.rejection(code, message)?);
+        if !matches!(kind, ResponseKind::Stream) {
+            return Err(body.failure(kind)?);
         }
         Ok(body)
     }
 
-    fn rejection(&mut self, code: &str, message: &'static str) -> Result<Failure> {
+    fn failure(&mut self, kind: ResponseKind) -> Result<Failure> {
         #[derive(Deserialize)]
         #[serde(deny_unknown_fields)]
         struct Envelope<'a> {
@@ -1120,10 +1140,7 @@ impl<R: Read> HttpBody<R> {
             error.extend_from_slice(bytes);
         }
         let envelope: Envelope<'_> = serde_json::from_slice(&error).map_err(|_| invalid)?;
-        if envelope.error.code != code {
-            return Err(invalid);
-        }
-        Ok(Failure::Rejected(message))
+        kind.failure(&envelope.error.code).ok_or(invalid)
     }
 
     // A payload borrows the reader's one buffer. Consume it on the next call,
@@ -1289,9 +1306,10 @@ fn parse_head(head: &[u8]) -> Result<(Framing, ResponseKind)> {
     }
     let kind = match response.code {
         Some(200) => ResponseKind::Stream,
-        Some(400) => ResponseKind::ControlTokenError,
+        Some(400) => ResponseKind::RequestError,
         Some(413) => ResponseKind::ContextError,
         Some(429) => ResponseKind::RateError,
+        Some(502) => ResponseKind::BackendError,
         _ => {
             return Err(Failure::Message(
                 "The local model rejected the request without reporting a recognized reason.",
@@ -1333,7 +1351,10 @@ fn parse_head(head: &[u8]) -> Result<(Framing, ResponseKind)> {
     let valid_media = match kind {
         ResponseKind::Stream => content_type
             .is_some_and(|value| crate::http::utf8_media_type(value, "text/event-stream")),
-        ResponseKind::ContextError | ResponseKind::ControlTokenError | ResponseKind::RateError => {
+        ResponseKind::ContextError
+        | ResponseKind::RequestError
+        | ResponseKind::RateError
+        | ResponseKind::BackendError => {
             content_type.is_some_and(|value| value.eq_ignore_ascii_case(b"application/json"))
         }
     };
@@ -1353,8 +1374,9 @@ fn parse_head(head: &[u8]) -> Result<(Framing, ResponseKind)> {
                         <= match kind {
                             ResponseKind::Stream => MAX_BODY,
                             ResponseKind::ContextError
-                            | ResponseKind::ControlTokenError
-                            | ResponseKind::RateError => MAX_ERROR_BODY,
+                            | ResponseKind::RequestError
+                            | ResponseKind::RateError
+                            | ResponseKind::BackendError => MAX_ERROR_BODY,
                         }
                 })
                 .ok_or(Failure::Message(
@@ -1981,6 +2003,65 @@ mod tests {
     }
 
     #[test]
+    fn pre_generation_failures_require_complete_status_bound_error_codes() {
+        for (status, code, failure) in [
+            (
+                "413 Content Too Large",
+                "request_body_too_large",
+                Failure::Rejected(super::REQUEST_LIMIT_MESSAGE),
+            ),
+            (
+                "400 Bad Request",
+                "invalid_chat_request",
+                Failure::Rejected(super::INVALID_REQUEST_MESSAGE),
+            ),
+            (
+                "502 Bad Gateway",
+                "backend_token_count_failed",
+                Failure::Message(super::TOKEN_COUNT_FAILURE_MESSAGE),
+            ),
+            (
+                "502 Bad Gateway",
+                "backend_generation_failed",
+                Failure::Message(super::GENERATION_FAILURE_MESSAGE),
+            ),
+        ] {
+            let body = format!(r#"{{"error":{{"code":"{code}"}}}}"#);
+            for chunked in [false, true] {
+                let wire = rejection_response(status, "", body.as_bytes(), chunked);
+                assert!(
+                    matches!(HttpBody::new(Fragmented(&wire)), Err(actual) if actual == failure)
+                );
+                assert!(matches!(
+                    HttpBody::new(Fragmented(&wire[..wire.len() - 1])),
+                    Err(Failure::Message(message)) if message != super::TOKEN_COUNT_FAILURE_MESSAGE
+                        && message != super::GENERATION_FAILURE_MESSAGE
+                ));
+                let wrong_status = if status.starts_with("502") {
+                    "400 Bad Request"
+                } else {
+                    "502 Bad Gateway"
+                };
+                let wire = rejection_response(wrong_status, "", body.as_bytes(), chunked);
+                assert!(
+                    matches!(HttpBody::new(Fragmented(&wire)), Err(actual) if actual != failure)
+                );
+                for invalid in [
+                    format!(r#"{{"error":{{"code":"{code}","code":"{code}"}}}}"#),
+                    format!(r#"{{"error":{{"code":"{code}","message":"untrusted text"}}}}"#),
+                    r#"{"error":{"code":"unknown"}}"#.to_owned(),
+                    "x".repeat(super::MAX_ERROR_BODY + 1),
+                ] {
+                    let wire = rejection_response(status, "", invalid.as_bytes(), chunked);
+                    assert!(
+                        matches!(HttpBody::new(Fragmented(&wire)), Err(actual) if actual != failure)
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
     fn security_rejections_require_exact_codes_retry_metadata_and_complete_framing() {
         for (status, headers, body, message) in [
             (
@@ -2536,8 +2617,12 @@ mod tests {
         let original = serialize_request(&history, 4096, false, None)?;
         for failure in [
             Failure::Rejected("Shorten the request."),
+            Failure::Rejected(super::REQUEST_LIMIT_MESSAGE),
+            Failure::Rejected(super::INVALID_REQUEST_MESSAGE),
             Failure::Rejected(super::CONTROL_TOKEN_MESSAGE),
             Failure::Rejected(super::RATE_LIMIT_MESSAGE),
+            Failure::Message(super::TOKEN_COUNT_FAILURE_MESSAGE),
+            Failure::Message(super::GENERATION_FAILURE_MESSAGE),
             Failure::Stopped,
             Failure::Message("Malformed response"),
         ] {

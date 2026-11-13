@@ -176,8 +176,19 @@ An exact `ContextLimit` rejection returns HTTP 413 before generation:
 `{"error":{"code":"context_length_exceeded"}}`, `Content-Type: application/json`,
 computed `Content-Length`, `Connection: close`, `Cache-Control: no-store` and
 `X-Content-Type-Options: nosniff`. No prompt, key, counter payload or native diagnostic
-is exposed. Admission remains ready for edits; other failures close the socket,
-and no error response is appended after streaming starts.
+is exposed. Admission remains ready for edits. A fully received, authenticated
+request whose canonical backend representation exceeds the byte limit returns
+HTTP 413 `request_body_too_large`; invalid chat schema or completion settings
+return HTTP 400 `invalid_chat_request`. These use the same fixed JSON envelope
+and headers, preserve readiness and never contact the backend.
+
+Before response forwarding starts, counter connection/exchange failures return
+HTTP 502 `backend_token_count_failed`; generation connection/header failures return
+HTTP 502 `backend_generation_failed`. These fixed codes identify the failed stage,
+without exposing upstream bytes or claiming a token, memory or runtime cause.
+They require explicit model retry. Generation failure still closes admission
+until owned-process cleanup completes. No error response is appended after
+streaming starts; malformed or unauthenticated intake still closes silently.
 
 ### Native client completion and recovery
 
@@ -185,10 +196,14 @@ The native SSE client accepts fragmented UTF-8 BOM, CR/LF/CRLF line endings and
 UTF-8 charset media parameters. Success requires terminal `finish_reason`,
 `[DONE]` and complete HTTP framing. `length` retains partial text with token-limit
 status; unsupported terminal reasons, error events and incomplete completion reject.
-Only bounded, fully framed HTTP 413/400/429 with the exact codes above permit
-input recovery; 429 also requires singleton `Retry-After: 1`. These restore the
+Only bounded, fully framed HTTP 413/400/429 with their matching exact codes above
+permit recovery without restarting the model; 429 also requires singleton
+`Retry-After: 1`. These restore the
 draft, preserve the ready service and require explicit edit/wait/resend. They
-never enter committed history. Other failures require backend teardown/retry.
+never enter committed history. Fully framed HTTP 502 responses accept only the
+two matching stage codes and retain restart-required failure semantics. Unknown
+codes, mismatched statuses, extra/duplicate JSON fields and incomplete framing
+cannot authorize recovery. Other failures require backend teardown/retry.
 
 ## One-request receiver
 

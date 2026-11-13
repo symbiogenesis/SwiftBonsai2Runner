@@ -104,6 +104,9 @@ under [AGENTS.md](AGENTS.md).
 - [ ] Qualify shared error selection, full-message Copy error, details/startup
   dialogs and Retry with simultaneous setup/model/speech/audio/update failures,
   preserving the composer and modal shortcut ownership.
+- [ ] Qualify pre-reply failure recovery with actual complex prompts: distinguish
+  canonical request-size/schema rejections from counter/generation stage failures,
+  preserve drafts/history and require confirmed cleanup before model retry.
 - [ ] Qualify compact message headers, thinking expansion, speech/iteration
   controls, styled Unicode/code selection, copying and Find geometry.
 - [ ] Qualify Settings scope, compact/wrapped navigation, persistence, generation
