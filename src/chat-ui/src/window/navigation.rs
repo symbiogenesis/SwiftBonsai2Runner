@@ -1,5 +1,7 @@
 //! Responsive native navigation and device-local appearance integration.
-use super::{RichText, State, appearance, egui};
+use super::{State, appearance, egui};
+
+mod controls;
 
 pub(super) const DOCK_THRESHOLD: f32 = 900.0;
 const SIDEBAR_MARGIN: egui::Margin = egui::Margin {
@@ -77,27 +79,7 @@ impl State {
         } else {
             "Show conversations"
         };
-        let response = ui
-            .add(
-                egui::Button::new("")
-                    .min_size(egui::Vec2::splat(36.0))
-                    .frame_when_inactive(false)
-                    .corner_radius(8),
-            )
-            .accessible_name(label)
-            .on_hover_text(format!("{label} · Ctrl+Shift+B"));
-        let rect = egui::Rect::from_center_size(response.rect.center(), egui::vec2(18.0, 16.0));
-        let stroke = ui.style().interact(&response).fg_stroke;
-        let painter = ui.painter_at(response.rect);
-        painter.rect_stroke(rect, 3.0, stroke, egui::StrokeKind::Middle);
-        let divider = rect.left() + 6.0;
-        painter.line_segment(
-            [
-                egui::pos2(divider, rect.top()),
-                egui::pos2(divider, rect.bottom()),
-            ],
-            stroke,
-        );
+        let response = controls::navigation_toggle(ui, label);
         if response.clicked() {
             self.toggle_navigation(ui.ctx());
         }
@@ -174,24 +156,12 @@ impl State {
             .show(ctx, |ui| {
                 ui.set_width(width - 32.0);
                 ui.set_height((content.height() - vertical_margin).max(200.0));
-                ui.horizontal(|ui| {
-                    ui.label(RichText::new("Conversations").strong().size(18.0));
-                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                        let response = ui
-                            .add(
-                                egui::Button::new("×")
-                                    .min_size(egui::Vec2::splat(36.0))
-                                    .frame_when_inactive(false),
-                            )
-                            .accessible_name("Close conversations")
-                            .on_hover_text("Close conversations · Escape");
-                        if self.sidebar_focus {
-                            response.request_focus();
-                            self.sidebar_focus = false;
-                        }
-                        close = response.clicked();
-                    });
-                });
+                let response = controls::drawer_header(ui);
+                if self.sidebar_focus {
+                    response.request_focus();
+                    self.sidebar_focus = false;
+                }
+                close = response.clicked();
                 ui.add_space(8.0);
                 self.sidebar(ui);
             });
