@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "provider": "rust-mathematical-and-symbolic-controls",
+  "scope": "automatic-language-empty-system-prompt-chunk-geometry-and-completion-boundary",
+  "nativeSource": {
+    "package": "transcribe-cpp-sys",
+    "version": "0.4.1",
+    "repository": "https://github.com/handy-computer/transcribe.cpp",
+    "commit": "4d7c1ccefd39e5a9ea36cca5f8fefc6dcc14b99b",
+    "license": "MIT",
+    "files": [
+      {
+        "path": "src/arch/qwen3_asr/model.cpp",
+        "sha256": "90aeefb27ffb74d57ed338a27c342b44f388207b8c4a111faa5673e975c43ecc",
+        "contracts": ["build_prompt_tokens", "k_gen_reserve", "k_chat_frame_tokens", "first-asr_text-envelope-split"]
+      },
+      {
+        "path": "src/arch/qwen3_asr/encoder.cpp",
+        "sha256": "88c18dc5b9e8de38dbea97d100b84f70b2cd149e7fe6fd75b52e30366825f2d9",
+        "contracts": ["aftercnn_len", "compute_encoder_timing"]
+      }
+    ]
+  },
+  "controls": {
+    "provider": "independent-literal-prompt-and-hand-calculated-integer-geometry",
+    "freshNativeExecution": false,
+    "modelInputs": false,
+    "targetSpecificNumericalClaims": false,
+    "testFilter": "rust_asr_protocol_"
+  },
+  "limits": {
+    "sessionContextTokens": 8192,
+    "minimumGenerationReserveTokens": 256,
+    "maximumMelFrames": 3000,
+    "maximumTranscriptUtf8Bytes": 32768,
+    "language": "automatic",
+    "systemContext": "empty",
+    "transcriptEnvelope": "strip-first-asr_text-separator-preserving-remainder"
+  },
+  "pending": [
+    "complete source-bound external engine and GGML file inventory before retirement",
+    "immutable independent frontend, encoder, decoder and tokenizer controls with complete input/output identities",
+    "Rust GGUF and tokenizer intake for the pinned ASR artifact",
+    "Rust log-mel frontend and CNN/transformer encoder",
+    "Rust causal decoder and complete KV/session reset",
+    "independent layerwise and transcript observations on the pinned model",
+    "microphone-to-Swift submission, cancellation, lifecycle, quality and resources",
+    "owning hosted consumer builds before removal of transcribe-cpp or native toolchain paths"
+  ]
+}
