@@ -59,6 +59,141 @@ fn long_error() -> String {
     )
 }
 
+fn collect_paint_shapes<'a>(shape: &'a egui::Shape, shapes: &mut Vec<&'a egui::Shape>) {
+    if let egui::Shape::Vec(children) = shape {
+        for child in children {
+            collect_paint_shapes(child, shapes);
+        }
+    } else {
+        shapes.push(shape);
+    }
+}
+
+fn luminance(color: egui::Color32) -> f32 {
+    let linear = egui::Rgba::from(color);
+    linear
+        .r()
+        .mul_add(0.2126, linear.g().mul_add(0.7152, 0.0722 * linear.b()))
+}
+
+fn assert_popup_text_contrast(chat: &Harness<'_, AlertFixture>, title: &str) -> io::Result<()> {
+    let row = chat.get_by_role_and_label(egui::Role::Button, title).rect();
+    let mut shapes = Vec::new();
+    for clipped in &chat.output().shapes {
+        collect_paint_shapes(&clipped.shape, &mut shapes);
+    }
+    let mut background = None;
+    let mut checked = 0;
+    for shape in shapes {
+        match shape {
+            egui::Shape::Rect(rect)
+                if rect.fill.is_opaque() && rect.rect.contains(row.center()) =>
+            {
+                background = Some(rect.fill);
+            }
+            egui::Shape::Text(text) if row.contains(text.pos) && text.galley.job.text == title => {
+                let background = luminance(background.ok_or_else(|| {
+                    io::Error::other("Popup row does not have a painted background")
+                })?);
+                for section in &text.galley.job.sections {
+                    let foreground = text.override_text_color.unwrap_or_else(|| {
+                        if section.format.color == egui::Color32::PLACEHOLDER {
+                            text.fallback_color
+                        } else {
+                            section.format.color
+                        }
+                    });
+                    let foreground = luminance(foreground);
+                    let contrast =
+                        (foreground.max(background) + 0.05) / (foreground.min(background) + 0.05);
+                    assert!(contrast >= 4.5, "{title}: rendered contrast was {contrast}");
+                    checked += 1;
+                }
+            }
+            _ => {}
+        }
+    }
+    assert!(checked > 0, "Popup row text was actually painted");
+    Ok(())
+}
+
+#[test]
+fn error_reporting_selected_popup_text_has_contrast_when_idle_and_hovered() -> io::Result<()> {
+    for theme in [egui::ThemePreference::Light, egui::ThemePreference::Dark] {
+        let mut chat = harness([480.0, 480.0], 24.0);
+        chat.ctx.set_theme(theme);
+        chat.state_mut().app.set_status("Model failed", true);
+        chat.state_mut().app.speech_notice = true;
+        chat.state_mut().app.speech_status = "Speech failed".into();
+        chat.run();
+        chat.get_by_role_and_label(egui::Role::ComboBox, "Current alert")
+            .click();
+        chat.run();
+        assert_popup_text_contrast(&chat, "Model needs attention")?;
+        chat.get_by_role_and_label(egui::Role::Button, "Model needs attention")
+            .hover();
+        chat.run();
+        assert_popup_text_contrast(&chat, "Model needs attention")?;
+    }
+    Ok(())
+}
+
+#[test]
+fn error_reporting_single_alert_omits_selector_and_prioritizes_recovery_in_tab_order() {
+    let mut chat = harness([1080.0, 780.0], 16.0);
+    chat.state_mut().app.set_status("Model failed", true);
+    chat.state_mut().app.model = ModelLifecycle::Retryable;
+    chat.run();
+    assert!(chat.get_by_label("1 alert").rect().is_positive());
+    assert!(
+        chat.get_by_label("Model needs attention")
+            .rect()
+            .is_positive()
+    );
+    assert!(
+        chat.query_by_role_and_label(egui::Role::ComboBox, "Current alert")
+            .is_none()
+    );
+    chat.get_by_role_and_label(egui::Role::Button, "Retry model")
+        .focus();
+    chat.run();
+    chat.key_press(egui::Key::Tab);
+    chat.run();
+    assert!(
+        chat.get_by_role_and_label(egui::Role::Button, "View details")
+            .is_focused()
+    );
+    chat.key_press(egui::Key::Tab);
+    chat.run();
+    assert!(
+        chat.get_by_role_and_label(egui::Role::Button, "Copy error")
+            .is_focused()
+    );
+    assert!(chat.state().commands.try_recv().is_err());
+    assert_eq!(chat.state().app.input, "Keep this draft");
+}
+
+#[test]
+fn error_reporting_popup_rows_wrap_and_fill_the_width_at_minimum_size() {
+    let mut chat = harness([480.0, 480.0], 24.0);
+    chat.state_mut().app.set_status("Model failed", true);
+    chat.state_mut().app.recovery_notice = "Could not save conversations".into();
+    chat.run();
+    chat.get_by_role_and_label(egui::Role::ComboBox, "Current alert")
+        .click();
+    chat.run();
+    let model = chat
+        .get_by_role_and_label(egui::Role::Button, "Model needs attention")
+        .rect();
+    let recovery = chat
+        .get_by_role_and_label(egui::Role::Button, "Conversation saving needs attention")
+        .rect();
+    let viewport = egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(480.0, 480.0));
+    assert!(viewport.contains_rect(model) && viewport.contains_rect(recovery));
+    assert!((model.width() - recovery.width()).abs() < 1.0);
+    assert!(recovery.height() > model.height());
+}
+
 #[test]
 fn error_reporting_shared_panel_selects_errors_and_copies_every_character() {
     for (size, theme) in [
@@ -94,7 +229,7 @@ fn error_reporting_shared_panel_selects_errors_and_copies_every_character() {
             .click();
         chat.run();
         assert_eq!(chat.state().copied.as_deref(), Some(speech.as_str()));
-        chat.get_by_role_and_label(egui::Role::Button, "Details")
+        chat.get_by_role_and_label(egui::Role::Button, "View details")
             .click();
         chat.run();
         assert!(chat.get_by_label("Error details").rect().is_positive());
@@ -235,7 +370,7 @@ fn error_reporting_details_own_shortcuts_without_stopping_generation() {
     chat.state_mut().app.speech_notice = true;
     chat.state_mut().app.speech_status = long_error();
     chat.run();
-    chat.get_by_role_and_label(egui::Role::Button, "Details")
+    chat.get_by_role_and_label(egui::Role::Button, "View details")
         .click();
     chat.run();
     let count = chat.state().app.conversations.len();

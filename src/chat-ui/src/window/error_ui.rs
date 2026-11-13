@@ -235,18 +235,42 @@ impl State {
                                 .small()
                                 .color(ui.visuals().warn_fg_color),
                         );
-                        egui::ComboBox::from_id_salt("alert-selector")
-                            .selected_text(RichText::new(selected.title()).strong())
-                            .width(ui.available_width())
-                            .truncate()
-                            .show_ui(ui, |ui| {
-                                for kind in &alerts {
-                                    ui.selectable_value(&mut selected, *kind, kind.title());
-                                }
-                            })
-                            .response
-                            .accessible_name("Current alert")
-                            .on_hover_text("Choose an alert to see its message and actions.");
+                        if alerts.len() == 1 {
+                            ui.add(
+                                egui::Label::new(RichText::new(selected.title()).strong())
+                                    .truncate(),
+                            )
+                            .on_hover_text(selected.title());
+                        } else {
+                            egui::ComboBox::from_id_salt("alert-selector")
+                                .selected_text(RichText::new(selected.title()).strong())
+                                .width(ui.available_width())
+                                .truncate()
+                                .show_ui(ui, |ui| {
+                                    ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Wrap);
+                                    for kind in &alerts {
+                                        if ui
+                                            .add_sized(
+                                                [ui.available_width(), 0.0],
+                                                egui::Button::selectable(
+                                                    selected == *kind,
+                                                    kind.title(),
+                                                )
+                                                .wrap(),
+                                            )
+                                            .clicked()
+                                        {
+                                            selected = *kind;
+                                        }
+                                    }
+                                })
+                                .response
+                                .accessible_name("Current alert")
+                                .on_hover_text(format!(
+                                    "{}\nChoose an alert to see its message and actions.",
+                                    selected.title()
+                                ));
+                        }
                     });
                     self.alerts.selection = Some(selected);
                     let (message, error) = self.alert_text(selected);
@@ -254,12 +278,12 @@ impl State {
                     let error = error.to_owned();
                     ui.push_id(selected, |ui| {
                         ui.horizontal_wrapped(|ui| {
-                            copy_button(ui, "Copy error", &error);
-                            if ui.button("Details").clicked() {
+                            self.alert_actions(ui, selected, &error);
+                            if ui.button("View details").clicked() {
                                 self.alerts.details = Some(selected);
                                 self.focus_composer = false;
                             }
-                            self.alert_actions(ui, selected, &error);
+                            copy_button(ui, "Copy error", &error);
                         });
                     });
                 });

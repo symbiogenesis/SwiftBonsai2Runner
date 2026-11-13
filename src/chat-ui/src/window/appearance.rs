@@ -127,7 +127,6 @@ fn palette(theme: egui::Theme) -> egui::Visuals {
         visuals.window_fill = Color32::from_rgb(27, 33, 31);
         visuals.extreme_bg_color = Color32::from_rgb(24, 30, 28);
         visuals.faint_bg_color = Color32::from_rgb(35, 43, 39);
-        visuals.override_text_color = Some(Color32::from_rgb(226, 232, 226));
         visuals.selection.bg_fill = Color32::from_rgb(154, 182, 150);
         visuals.selection.stroke = egui::Stroke::new(1.0, Color32::from_rgb(17, 31, 21));
         visuals.widgets.inactive.bg_fill = Color32::from_rgb(42, 51, 46);
@@ -135,13 +134,11 @@ fn palette(theme: egui::Theme) -> egui::Visuals {
         visuals.widgets.active.bg_fill = Color32::from_rgb(66, 84, 70);
         visuals.error_fg_color = Color32::from_rgb(246, 145, 145);
     } else {
-        let ink = Color32::from_rgb(39, 49, 40);
         visuals.panel_fill = Color32::from_rgb(250, 248, 242);
         visuals.window_fill = Color32::from_rgb(242, 241, 232);
         visuals.extreme_bg_color = Color32::from_rgb(255, 254, 249);
         visuals.faint_bg_color = Color32::from_rgb(235, 239, 228);
         visuals.code_bg_color = Color32::from_rgb(228, 234, 222);
-        visuals.override_text_color = Some(ink);
         visuals.weak_text_color = Some(Color32::from_rgb(94, 106, 92));
         visuals.selection.bg_fill = Color32::from_rgb(203, 222, 191);
         visuals.selection.stroke = egui::Stroke::new(1.0, Color32::from_rgb(30, 57, 33));
@@ -150,14 +147,22 @@ fn palette(theme: egui::Theme) -> egui::Visuals {
         visuals.widgets.active.bg_fill = Color32::from_rgb(199, 219, 187);
         visuals.widgets.noninteractive.bg_stroke =
             egui::Stroke::new(1.0, Color32::from_rgb(213, 218, 204));
-        visuals.widgets.noninteractive.fg_stroke.color = ink;
-        visuals.widgets.inactive.fg_stroke.color = ink;
-        visuals.widgets.hovered.fg_stroke.color = ink;
-        visuals.widgets.active.fg_stroke.color = ink;
-        visuals.widgets.open.fg_stroke.color = ink;
         visuals.warn_fg_color = Color32::from_rgb(130, 77, 15);
         visuals.error_fg_color = Color32::from_rgb(164, 48, 48);
     }
+    // A global text override also overrides the contrasting selection ink on
+    // selectable buttons, including dropdown entries. Theme ordinary widget ink
+    // instead, so selected controls can use their own foreground/background pair.
+    let ink = if theme == egui::Theme::Dark {
+        Color32::from_rgb(226, 232, 226)
+    } else {
+        Color32::from_rgb(39, 49, 40)
+    };
+    visuals.widgets.noninteractive.fg_stroke.color = ink;
+    visuals.widgets.inactive.fg_stroke.color = ink;
+    visuals.widgets.hovered.fg_stroke.color = ink;
+    visuals.widgets.active.fg_stroke.color = ink;
+    visuals.widgets.open.fg_stroke.color = ink;
     visuals
 }
 
