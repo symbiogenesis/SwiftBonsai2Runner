@@ -545,6 +545,7 @@ dependencies = [
  "bonsai-windows-process",
  "serde",
  "serde_json",
+ "sha2",
  "toml",
  "ureq",
 ]

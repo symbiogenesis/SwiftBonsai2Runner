@@ -67,6 +67,17 @@ Preserve assertions when removing their build paths. TTS's Rust build and scalar
 tokenizer and graph-lifetime fixtures have no live source-overlay generator or
 native Qwen/GGML registration dependency.
 
+ASR's [registry-package inventory](../src/speech-asr/native-sources.json) binds
+all 1,718 files in `transcribe-cpp-sys` 0.4.1 to byte lengths and SHA-256 identities,
+including GGML, platform sources, generators, build inputs and notices. It retains
+file identities rather than copied source. The Rust
+[`native-source-verify` command](../tools/ci/README.md#native-source-inventory)
+checks the complete extracted file set, original archive checksum, Cargo lock and
+upstream revision without compiling or executing the package. Only Cargo's local
+`.cargo-ok` extraction marker is excluded. This package inventory includes unused
+backend families; it does not establish the selected preprocessed/compiled source
+closure, inference parity or permission to delete native files.
+
 TTS has no signed RPC dispatcher. Its [signed-dispatch prerequisites](../src/speech-tts/README.md#optional-hexagon-runtime)
 require independent wire/Windows ABI controls before hybrid placement. Fixed
 F32/guarded-Q2 controls do not qualify Q8 prefill, shared KV or complete speech state.

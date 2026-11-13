@@ -82,6 +82,34 @@ checked tools. PE fixtures consume that same run's checked `bonsai-tools` execut
 the audit's binary parsing and closure policy run in Rust. CPU policy fixtures run
 in its portable source-control step.
 
+## Native source inventory
+
+`native-source-verify` checks the pinned ASR native package before replacement
+work. Supply absolute paths to the repository, extracted registry package and
+original cached `.crate` archive:
+
+```powershell
+& $reviewedCiTool native-source-verify --root $repositoryRoot --source $transcribeSysSource --archive $transcribeSysArchive
+```
+
+The checked-in `src/speech-asr/native-sources.json` covers every file in the
+`transcribe-cpp-sys` 0.4.1 registry package, including optional backend families,
+GGML, generated inputs, build logic and notices. The command binds the archive's
+SHA-256 to `Cargo.lock`, requires the recorded upstream VCS revision and verifies
+each file's length and SHA-256. Missing/additional files, unsafe/colliding paths,
+unsupported schemas and symbolic links/reparse points reject. Cargo's local
+`.cargo-ok` marker is the sole excluded file. Bounds are 4,096 inventory files,
+32 MiB per source file and 128 MiB aggregate source bytes. No inspected source,
+generator, compiler, driver or model is executed.
+
+The compact JSON receipt identifies the inventory, archive, source revision and
+verified file/byte counts. It qualifies package-file identity only. The selected
+preprocessed/compiled source closure, independent numerical controls, inference
+parity, actual-device behavior and owning hosted builds remain separate retirement
+gates. This command is read-only and does not replace Cargo's build or introduce
+automatic CI dispatch. Its focused model-free controls use the
+`native_source_inventory_` filter.
+
 ## Workflow scope
 
 The retained workflows own current checks or open gates in [PLAN.md](../../PLAN.md):

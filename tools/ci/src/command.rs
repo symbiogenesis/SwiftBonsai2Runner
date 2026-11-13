@@ -18,6 +18,9 @@ mod checks;
 #[path = "native_acceptance_guard.rs"]
 mod native_acceptance_guard;
 
+#[path = "native_source_inventory.rs"]
+mod native_source_inventory;
+
 const USAGE: &str = "Usage: bonsai-ci impact [--root PATH] [--config PATH] [--workflow FILE] [--before REV] [--after REV] [--full]\n       bonsai-ci gate [--root PATH] [--config PATH] --workflow NAME\n       bonsai-ci rust-select --root PATH\n       bonsai-ci rust-plan --root PATH [--package NAME] [--phase PHASE]\n       bonsai-ci rust-check --root PATH --target PATH --evidence PATH [--package NAME] [--phase PHASE]";
 
 #[derive(Default)]
@@ -142,6 +145,12 @@ fn action_outputs(plan: &impact::Plan, config: &Value, serialized: &str) -> Resu
 pub fn run(arguments: &[OsString]) -> Result<String> {
     if arguments
         .first()
+        .is_some_and(|command| command == "native-source-verify")
+    {
+        return native_source_inventory::run(arguments);
+    }
+    if arguments
+        .first()
         .is_some_and(|command| command == "native-acceptance-guard")
     {
         return native_acceptance_guard::run(arguments);
@@ -155,7 +164,7 @@ pub fn run(arguments: &[OsString]) -> Result<String> {
     }
     if arguments.len() == 1 && arguments[0] == "--help" {
         return Ok(format!(
-            "{USAGE}\n       bonsai-ci rust-select|rust-plan|rust-check (see tools/ci/README.md)\n       bonsai-ci native-acceptance-guard --json REQUEST"
+            "{USAGE}\n       bonsai-ci rust-select|rust-plan|rust-check (see tools/ci/README.md)\n       bonsai-ci native-acceptance-guard --json REQUEST\n       bonsai-ci native-source-verify --root PATH --source PATH --archive PATH"
         ));
     }
     let arguments = parse(arguments)?;
