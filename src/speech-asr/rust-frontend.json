@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "provider": "rust-mathematical-controls",
+  "scope": "qwen3-asr-whisper-log-mel-replacement-preparation",
+  "nativeSource": {
+    "package": "transcribe-cpp-sys",
+    "version": "0.4.1",
+    "repository": "https://github.com/handy-computer/transcribe.cpp",
+    "commit": "4d7c1ccefd39e5a9ea36cca5f8fefc6dcc14b99b",
+    "license": "MIT",
+    "files": [
+      { "path": "src/transcribe-mel.cpp", "sha256": "7c2aba621ba5dc29ec68f4dee968ce855c5adb93205f7abde327f3f3c6422a47" },
+      { "path": "src/transcribe-mel.h", "sha256": "22f71d947d6387b40c479a2376b5cc9290f4b3a776ed87bbb1444afcc2ce6184" },
+      { "path": "src/arch/qwen3_asr/model.cpp", "sha256": "90aeefb27ffb74d57ed338a27c342b44f388207b8c4a111faa5673e975c43ecc" }
+    ]
+  },
+  "controls": {
+    "testFilter": "rust_asr_frontend_",
+    "provider": "independent-f64-direct-dft-and-literal-mathematical-known-answers",
+    "freshNativeExecution": false,
+    "modelInputs": false,
+    "capturedTargetNumericalParity": false
+  },
+  "supportedSubset": {
+    "sampleRate": 16000,
+    "melBins": 128,
+    "fftSize": 400,
+    "windowLength": 400,
+    "hopLength": 160,
+    "preEmphasis": 0,
+    "frequencyMin": 0,
+    "frequencyMax": 8000,
+    "window": "hann_periodic-or-verified-checkpoint-f32-window",
+    "filterbank": "slaney-or-verified-checkpoint-f32-filterbank",
+    "padding": "reflect-200-samples-excluding-edge",
+    "normalization": "per_utterance-log10-floor1e-10-global-emitted-max-minus8-plus4-divide4",
+    "outputLayout": "mel-major-[128,floor(samples/160)]",
+    "minimumSamples": 201,
+    "maximumSamples": 480000,
+    "fftArithmetic": "fp32-mixed-radix-with-fp32-twiddles-and-25-point-dft-leaves",
+    "melArithmetic": "four-term-fp64-accumulation-fp32-log-boundary"
+  },
+  "pending": [
+    "verified artifact metadata and tensor integration before a Rust inference serving switch",
+    "immutable independent target frontend captures with full input/output identities",
+    "layerwise encoder, decoder and transcript parity on the pinned Q8_0 model",
+    "actual-model cancellation, lifecycle, resources, quality and owner-hosted acceptance"
+  ]
+}
