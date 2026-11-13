@@ -282,7 +282,7 @@ impl View {
                 self.task = Some(Task {
                     conversation: dialog.conversation,
                     worker,
-                })
+                });
             }
             Err(_) => dialog.notice = Some("The source search could not start. Try again."),
         }

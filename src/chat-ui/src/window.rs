@@ -230,7 +230,6 @@ impl State {
         microphone: Option<microphone::Microphone>,
         speech: Option<speech::Session>,
     ) -> Self {
-        let speech_checked = speech.is_none();
         Self {
             commands,
             events,
@@ -291,8 +290,8 @@ impl State {
             composer_id: None,
             composer_cursor: None,
             pending_cursor: None,
+            speech_checked: speech.is_none(),
             speech,
-            speech_checked,
             speech_input: false,
             audio_file_input: false,
             audio_import: None,

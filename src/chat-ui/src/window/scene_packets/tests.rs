@@ -38,8 +38,7 @@ fn scene_packet_selection_is_explicit_and_appending_preserves_draft_and_history(
         reasoning_content: None,
     });
     let mut dialog = reviewed(app.active_conversation)?;
-    assert!(!dialog.selected.is_empty());
-    assert!(dialog.selected.iter().all(|selected| !selected));
+    assert_eq!(dialog.selected, vec![false]);
     assert!(app.add_scene_packet(&dialog).is_err());
     assert_eq!(app.input, "Keep this draft 🌱");
     dialog.selected[0] = true;
