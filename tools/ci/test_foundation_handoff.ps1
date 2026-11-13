@@ -40,5 +40,11 @@ $cases=[ordered]@{
  cpu_policy_fixtures_run_on_hosted_source_lane={
     $planner=$jobs.changes; Assert-Ci ($planner.Contains('runs-on: ubuntu-24.04-arm')); Assert-Ci ($planner.Contains('pwsh -NoProfile -File "$GITHUB_WORKSPACE/tools/cpu-bundle/test_cpu_bundle.ps1"')); Assert-Ci (-not $planner.Contains('run_device')); Assert-Ci ($planner -cnotmatch 'if:.*cache-hit'); Assert-Ci ('tools/native-reference/reference_numerics.rs' -cin $config.package_inputs['bonsai-tools'])
  }
+ independent_reference_and_pe_fixtures_are_checked_before_upload={
+    $producer=$jobs['checked-tools']; $step='Check independent numerical references and static PE closure without models'
+    Assert-Ci ($producer.IndexOf('Stage the checked maintenance CLI') -lt $producer.IndexOf($step)); Assert-Ci ($producer.IndexOf($step) -lt $producer.IndexOf('Share the checked native Windows ARM64 maintenance CLI'))
+    foreach ($fragment in @('runs-on: windows-11-arm','SwiftBonsai-CheckedTools/bonsai-reference-numerics.exe','$env:BONSAI_REFERENCE_NUMERIC_TOOL = $numeric','tools/native-reference/test_compare.ps1','tools/native-reference/test_audit_retained.ps1',"'tools/row-parallel/test_compare.ps1') -ToolPath `$numeric",'tools/runtime-candidates/test_pe_closure.ps1')) { Assert-Ci ($producer.Contains($fragment)) $fragment }
+    $selection=($producer -split [regex]::Escape($step),2)[1] -split '      - name:',2; Assert-Ci ($selection[0] -cnotmatch '(?m)^\s+if:')
+ }
 }
 Invoke-CiCases $cases $Case
