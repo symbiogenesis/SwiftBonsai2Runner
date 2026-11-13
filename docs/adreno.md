@@ -12,14 +12,15 @@ admission, state transitions and promotion for both Vulkan and OpenCL.
 The pinned publisher C++ Vulkan backend is a reference for candidate implementations.
 Rust GPU execution has its own
 safety/coverage boundary after Rust CPU parity; reusable Rust storage does not provide GPU
-execution. PQ2 and [current-weight PTQ1](swift-memory.md#current-weight-ptq1-option) are distinct qualification lanes. The
+execution. PQ2 and [current-weight PTQ1](swift-memory.md#current-weight-ptq1-option) are distinct
+qualification lanes. The
 [Prism backend audit][prism-audit] describes packed scalar, coopmat1 and integer-dot
 paths/transforms, with no direct coopmat2 decoder for these formats. Source support alone does not
 establish Adreno kernel or graph coverage.
 
 | Repository fact | Execution boundary |
 | --- | --- |
-| [Rust release lock](../config/prism-inference.lock.json): Prism 0.1.25, source `99bab71270b1e6a6fb6d47eec2e34b8097cdcd4c` | CPU inference and the separate X2 Hexagon policy; no admitted Adreno inference |
+| [Rust release lock](../config/prism-inference.lock.json): Prism 0.1.27, source `1429a33772089dfd3a50a96c698b9dbe0b36836a` | CPU inference and the separate X2 Hexagon policy; no admitted Adreno inference |
 | [Assessment lock](../config/swift-assessment.lock.json): 6.71 GiB PQ2, publisher Prism `73bfe6cc485554822f80c473a3c0c4f25e80f41b`, `win-cpu-arm64` | Explicit publisher rollback remains a CPU reference |
 | [Publisher baseline build](../tools/bonsai/src/build_tools/engine.rs) and [overlay build][overlay] disable Vulkan/OpenCL | These publisher CPU recipes do not produce a GPU runtime |
 | Publisher [completion](../src/cpu-policy/src/lib.rs), [server](../tools/bonsai/src/server.rs) and [broker](../src/broker/src/launch_policy.rs) use `--gpu-layers 0` / `--device none` | Drivers do not activate publisher GPU offload; its server policy also disables KV/operation offload |
@@ -74,16 +75,18 @@ separate qualification scopes.
 ## Resources, failure and acceptance
 
 Apply [profile eligibility/lifecycle](hardware-capabilities.md#automatic-profile-selection) and
-[measurement rules](performance-expectations.md#2026-literature-measurement-and-comparison).
+[measurement rules](performance-expectations.md#measurement-and-comparison).
 Screen CPU-only, partial and maximum offload independently for prefill/decode; maximum offload
 is not automatically best. Charge cold pipeline compilation/repack, submissions/waits, transfers,
 phase/state migrations, duplicate storage and complete-task latency. Contiguous residency needs
 correct numerical/ownership contracts.
 
-The shared [accelerator resource contract](hardware-capabilities.md#accelerator-storage-and-lifetime)
+The shared
+[accelerator resource contract](hardware-capabilities.md#accelerator-storage-and-lifetime)
 owns storage accounting, asynchronous lifetimes, cache keys/invalidation and failure recovery.
 Apply it to pipelines, descriptors and reused allocations as well as compiled kernels.
-Persistent expansion pays cold-load/residency cost; precision/decoding changes need separate qualification.
+Persistent expansion pays cold-load/residency cost; precision/decoding changes need separate
+qualification.
 
 [Profile qualification](hardware-capabilities.md#qualification-scope) owns receipt identities,
 workloads, acceptance and upgrade gates. GPU attribution additionally separates pipeline first use,
@@ -94,12 +97,7 @@ sustained failures. Overlapping durations cannot be added; utilization is not en
 Native diagnostics use absolute system-temp lanes and inherited Windows system/profile variables.
 Moving source links below are leads, not build pins.
 
-## 2026 research evidence
-
-The [mobile-acceleration catalog, E1 to E3/E8](research-register.md#2026-mobile-acceleration-and-speech)
-owns the **2026-10-29** source review. For Adreno, keep internal X2 MoE assembly, public OpenCL C
-and Vulkan as separate routes. Image/texture/residency work needs observed API support, shaders
-and byte accounting; replay needs supported APIs and valid lifetimes.
+## Cross-device research limits
 
 Attribute CPU preparation, GPU service, shared-DRAM traffic and polling/wake-ups separately: faster
 kernels may leave host gaps unchanged. Residency can increase register pressure and rendering/audio
@@ -113,11 +111,7 @@ format appears in `GGML_OP_MUL_MAT` eligibility, and PQ2/PTQ1/Hadamard implement
 Generic Q1/Q4/Q8 or an installed compiler cannot supply them. Public kernels remain possible;
 this information-query/source audit selects no profile and is independent of Vulkan qualification.
 
-The retained October 29 feasibility review covered one installed implementation
-and one immutable source revision under its historical 30-minute allowance,
-with zero model/kernel compute and no prompts, tokens or projection shapes.
-That clock is closed; new owner-device work follows the current
-[execution budgets](validation.md). The ten-second query
+The ten-second query
 uses a 512 MiB one-process Job and 1 MiB per-output-stream bounds, creating no context, queue,
 program, kernel or device allocation.
 
@@ -143,7 +137,8 @@ every dependency were executed. DLL signatures, ICD dependencies and provenance 
 Global/local memory and maximum-allocation capacities are not live free-memory budgets and cannot
 change admission. `backend_ready` stays false.
 
-`bonsai-tools doctor --json '{"nativeGraphics":true}'` adds this report as `NativeOpenClObservations`.
+`bonsai-tools doctor --json '{"nativeGraphics":true}'` adds this report as
+`NativeOpenClObservations`.
 It neither builds tools nor changes the existing CPU compatibility digest or launch policy. The
 native query follows the Khronos
 [platform](https://registry.khronos.org/OpenCL/specs/unified/refpages/man/html/clGetPlatformIDs.html),
@@ -153,34 +148,11 @@ and
 [device-information](https://registry.khronos.org/OpenCL/specs/unified/refpages/man/html/clGetDeviceInfo.html)
 contracts.
 
-### Retained X2 information-query evidence
-
-The [2026-10-29 access receipt](evidence/opencl-x2-access-evidence.json) binds the tested maintenance
-executable hash and separates two model-free observations on this native Snapdragon X2 Elite Extreme
-X2E94100:
-
-- The production `host-opencl` wrapper's child exits with `3221225477`
-  (`0xC0000005`, access violation). Its capability report stays unknown and its
-  raw output files remain in external temporary evidence. No worker access or
-  loader/device capability is inferred from that failure.
-- One separately labelled ten-second ordinary-tool-policy diagnostic succeeds.
-  It reports Adreno X2-90, OpenCL and OpenCL C 3.0, an available online compiler,
-  and driver `QUALCOMM build: 863.0 Compiler DX.50.39.00`. The advertised
-  extensions include FP16 and integer-dot features. It observes a 535,112-byte
-  system loader with SHA-256
-  `b5b0c8e990c06d4477ee8d9957460b466e52e7d8bf80e413d7e41aa7039dab7f`.
-
-The successful diagnostic omits the worker's Job/mitigation envelope, exposing a policy/resource
-incompatibility without identifying its cause, DLL or mitigation. The shipped command has no
-weaker-policy retry. Neither result qualifies worker access, device compute, compiler output,
-provenance or Swift arithmetic; execution requires access under unchanged worker policy.
-
 ### Immutable public source audit
 
 The audit uses Runner's existing C++ runtime revision `73bfe6cc485554822f80c473a3c0c4f25e80f41b` in
-`PrismML-Eng/llama.cpp`. The retained [source identities](evidence/opencl-source-identities.json) bind all
-three reviewed files to their byte counts and SHA-256. No source is executed or copied into the
-application.
+`PrismML-Eng/llama.cpp`. The immutable links below identify the reviewed files; this reference code
+is not an application dependency.
 
 | Checked source | Result |
 | --- | --- |
@@ -188,12 +160,8 @@ application.
 | [Build recipe](https://github.com/PrismML-Eng/llama.cpp/blob/73bfe6cc485554822f80c473a3c0c4f25e80f41b/ggml/src/ggml-opencl/CMakeLists.txt) | Public OpenCL source kernels can be embedded; an OpenCL SDK and Python are build requirements. No accelerated Runner binary is built in this screen. |
 | [Backend documentation](https://github.com/PrismML-Eng/llama.cpp/blob/73bfe6cc485554822f80c473a3c0c4f25e80f41b/docs/backend/OPENCL.md) | Windows ARM64 and X2-90 are listed, but optional Qualcomm prebuilt kernels are a separate manually provisioned library for selected other formats. They are excluded from this public-source comparison. |
 
-The [release asset snapshot](evidence/opencl-release-assets.json), reviewed **2026-10-29** for
-[prism-b10787-73bfe6c](https://github.com/PrismML-Eng/llama.cpp/releases/tag/prism-b10787-73bfe6c),
-contains Windows ARM64 CPU/CUDA bundles and no OpenCL bundle. It records public names, sizes and
-reported digests without downloads; metadata proves neither executed bytes nor publisher trust.
-The publisher rollback remains the CPU archive in `config/swift-assessment.lock.json`;
-the application default uses the separate Rust release lock.
+The publisher rollback remains the CPU archive in `config/swift-assessment.lock.json`; the
+application default uses the separate Rust release lock.
 
 Local Prism `bonsai-hexagon-runtime` also provides `plan_three_processor_placement`
 (`HeterogeneousPlacementPlan`, `AdrenoQ2KernelKind::WgslSubgroupShuffle` /

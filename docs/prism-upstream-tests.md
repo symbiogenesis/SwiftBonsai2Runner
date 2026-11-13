@@ -7,7 +7,9 @@ guide](https://github.com/symbiogenesis/prism-inference/blob/main/docs/prism-ups
 [71-source catalog](https://github.com/symbiogenesis/prism-inference/blob/main/tools/prism/upstream/catalog.json),
 [migration inventory](https://github.com/symbiogenesis/prism-inference/blob/main/tools/prism/upstream/migration.json),
 [main-only workflow](https://github.com/symbiogenesis/prism-inference/blob/main/.github/workflows/runtime-conformance.yml)
-and [focused diagnostics](https://github.com/symbiogenesis/prism-inference/blob/main/.github/workflows/prism-focused.yml).
+and
+[focused diagnostics](https://github.com/symbiogenesis/prism-inference/blob/main/.github/workflows/prism-focused.yml)
+.
 This page defines Runner's boundary; [PLAN.md](../PLAN.md#deferred-prism-migration)
 owns deferred migration.
 
@@ -20,7 +22,8 @@ need matching-family evidence; shared CPU source promotion follows the narrower
 [cross-generation rule](cpu-kernels.md#cross-generation-cpu-promotion).
 Hosted ARM64 results do not establish Snapdragon performance.
 The APIs and model families below are upstream conformance obligations, not
-Runner broker features. Runner retains its [fixed local API subset](broker-policy.md#public-request-contract)
+Runner broker features. Runner retains its
+[fixed local API subset](broker-policy.md#public-request-contract)
 and [pinned Swift runtime boundary](native-rust-engine.md).
 
 ## Source fidelity and evidence
@@ -105,6 +108,13 @@ Jinja, PEG and typed message APIs cannot be replaced with source-specific expect
 | Capability probes | All six probes, including object/string argument fallback and usage after exceptions |
 | Tokenizers | All original decoder/loader failure cases and every source; file-wrapper/generator behavior, randomized HF references, immutable external corpora, complete SPM/BPE token and Unicode roundtrips and the original ignore-merges branch |
 
+For Swift serving, model/tokenizer identity binds the exact special-token vocabulary.
+Compare token IDs, spellings, template behavior and control-token rejection against an
+independent reference; two observations derived from the same tokenizer are not
+independent evidence. Qualify concatenated content parts, forged turn/role markers,
+literal lookalikes and malformed input without altering legitimate user text.
+The broker's supported subset remains separate from broader upstream tokenizer APIs.
+
 Apertus, Mistral-Small-3.2, Firefunction-v2, IBM Granite 3.3, Llama 3.2 and GPT-OSS have
 explicit capability-execution gaps. A reduced template sample or string-content probe
 does not establish complete chat-analysis equivalence.
@@ -164,13 +174,6 @@ qualification.
 Source reuse preserves pinned contracts/licenses and adds no framework dependency.
 Upstream comments do not authorize script execution.
 
-| Project and pinned revision | Relevant code | Decision |
-| --- | --- | --- |
-| [Camelid, `1829a7e`](https://github.com/timtoole02/Camelid/tree/1829a7e73775eb829efe8fabf46a6680897a975b), MIT | [`src/tensor/mod.rs`](https://github.com/timtoole02/Camelid/blob/1829a7e73775eb829efe8fabf46a6680897a975b/src/tensor/mod.rs), Q1/Q2 decoders; [`src/fabric/http.rs`](https://github.com/timtoole02/Camelid/blob/1829a7e73775eb829efe8fabf46a6680897a975b/src/fabric/http.rs#L352), body framing | Decoder structure and complete-body checks inform the existing Prism kernels and model resolution. Prism type 42 retains its 64-element layout; Camelid also recognizes another deployed dialect. |
-| [Candle, `12bb5d1`](https://github.com/huggingface/candle/tree/12bb5d1f6350f4ea9827d9086f213feec1f0af6a), MIT/Apache-2.0 | [`segment_anything/image_encoder.rs`](https://github.com/huggingface/candle/blob/12bb5d1f6350f4ea9827d9086f213feec1f0af6a/candle-transformers/src/models/segment_anything/image_encoder.rs#L44), [`backprop.rs`](https://github.com/huggingface/candle/blob/12bb5d1f6350f4ea9827d9086f213feec1f0af6a/candle-core/src/backprop.rs#L343), quantized types | Useful mathematical references. No code imported: relative-position addition order differs; pooling backward excludes overlapping windows and uses different tie behavior. Its flash-attention path has no CPU implementation. Quantized types do not supply equivalent native Prism IQ contracts. |
-| [mistral.rs, `9459891`](https://github.com/EricLBuehler/mistral.rs/tree/9459891e7697238225885518119682ac8209a612), MIT | [`Cargo.toml`](https://github.com/EricLBuehler/mistral.rs/blob/9459891e7697238225885518119682ac8209a612/Cargo.toml#L42), Candle kernel dependencies | No code imported. The reviewed kernels depend on Candle and add no independent exact CPU implementation for these missing Prism operations. |
-| [Prism/ggml, `b87ca72`](https://github.com/PrismML-Eng/llama.cpp/tree/b87ca7225456b06b0975b8239c66b5aecf07e37c), MIT | [`ggml.c`](https://github.com/PrismML-Eng/llama.cpp/blob/b87ca7225456b06b0975b8239c66b5aecf07e37c/ggml/src/ggml.c), [`ggml-cpu/ops.cpp`](https://github.com/PrismML-Eng/llama.cpp/blob/b87ca7225456b06b0975b8239c66b5aecf07e37c/ggml/src/ggml-cpu/ops.cpp) | Original scalar CPU contracts define windows, relative positions, scalar addition, im2col backward and pooling backward. |
-
 Camelid attribution is retained in [NOTICE](../NOTICE) and its complete [MIT
 license](https://github.com/symbiogenesis/prism-inference/blob/main/CAMELID-LICENSE.txt).
 Existing ggml attribution covers direct Prism adaptations.
@@ -196,11 +199,3 @@ unambiguous framing, decoded-body and wire-size caps. Bounded curl children term
 and are reaped on failure/overflow; invalid transfers cannot publish blobs/snapshots.
 Optional chunk-extension syntax is not fully validated. These checks do not establish
 broader CLI/download parity, full source/backend qualification or performance.
-
-Rejected sources do not supply equivalent native CPU contracts:
-
-| Source | Reason |
-| --- | --- |
-| [InfiniTensor/gguf `98f1803`](https://github.com/InfiniTensor/gguf/tree/98f180387df864b9492eb4d262ed8d88c19d57de), MIT | IQ2 implementations are placeholders. |
-| [Joshua `a0ec8a2`](https://github.com/rexlunae/joshua/tree/a0ec8a21c0816512f808e96824e45aa16b64a38b), MIT | IQ2 decoding uses a float dot that does not preserve native packed integer arithmetic. |
-| [oxillama `98f17b8`](https://github.com/cool-japan/oxillama/tree/98f17b848daefc0dcbda4d3c64681df30a4a991b), Apache-2.0; [Turbospark `cd45a15`](https://github.com/whit3rabbit/turbospark/tree/cd45a1580143fd8a939abe10b4d60bb1cb7d9a92), MIT | IQ3 decoders with float GEMV do not provide the required native packed-dot contract. |

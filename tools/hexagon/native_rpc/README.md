@@ -2,7 +2,7 @@
 
 This directory retains the standalone access and diagnostic boundary. Its
 source-bound controls and earlier CPU-only observations are distinct from the
-current [Prism 0.1.25 X2 `native-q2` serving policy](../../../docs/hexagon.md).
+current [Prism 0.1.27 X2 `native-q2` serving policy](../../../docs/hexagon.md).
 Later server integration does not turn a capability query or fixed fixture
 into full-model qualification.
 
@@ -49,8 +49,7 @@ one of the following arguments:
   allocates/maps no buffer and requests no unsigned process. Both native return
   codes and every completed stage remain distinct; an unsupported family,
   changed input structure, malformed or mismatched URI never becomes a fallback
-  domain or synthesized URI. Its [supervised X2 observation](../../../docs/evidence/hexagon-x2-session-metadata.json)
-  passed; metadata alone does not qualify signed deployment.
+  domain or synthesized URI. Metadata alone does not qualify signed deployment.
 - `--session-mapping-probe ABSOLUTE_PACKAGE_DIRECTORY`: consumes one native owner
   for the fixed signed bundled v73/v81 module in default CDSP session zero,
   then a 4096-byte **FD=2** mapping, matching unmap/free and explicit remote handle
@@ -103,14 +102,6 @@ exact explicitly selected `ADSP_LIBRARY_PATH`. It logs no names/values and mutat
 no environment. The trusted library caller and supervisor own the corresponding
 child-environment policy; these restrictions do not change the parent process.
 
-The [2026-11-01 guarded-Q2 capture](../../../docs/evidence/hexagon-x2-queue-compute.json)
-passed the fixed nonblocking integer control and all explicit release steps on
-X2/v81. F32 arithmetic also passed; the earlier post-close unmap refusal remains
-recorded separately. Actual original-projection inputs, model/state and adapter
-parity, selected DSP-byte identity, full vendor teardown and measured benefit
-remain independent gates for that capture. It predates the later X2
-`native-q2` development default and cannot qualify that serving path.
-
 The terminal probe uses heap ID 25, cached allocation flags 1, offset 0, length
 4096 and `FASTRPC_MAP_STATIC=0`. The public vendor header documents that mapping
 may implicitly open a domain session. There is no explicit remote-handle,
@@ -156,7 +147,7 @@ mutates its command descriptors. No borrowed host view spans device execution.
 `Q2ProjectionLimits` bounds rows, total writes and one absolute session clock
 including initialization, caller preparation and every operation. Its maximum
 is 24,000 write attempts and 120 seconds, including a three-second cleanup reserve.
-The owner explicitly authorized the operation increase on 2026-11-03. One
+The terminal operation cap is 24,000 attempted operations. One
 all-eligible original-PQ2 evaluation needs 23,256 operations; a hidden token plus
 evaluation needs 45,912, so full-request capacity must still reject that placement.
 The external owned
@@ -190,7 +181,8 @@ is loaded or printed. All source identities remain those in `sources.json`.
 
 Metadata mode stops before `remote_handle64_open` and supplies no search-path override.
 A basename URI does not bind loaded ELF bytes or catalog trust; an absolute URI is
-not an established Windows deployment route. The [terminal FD control](#terminal-signed-session-fd-control)
+not an established Windows deployment route. The
+[terminal FD control](#terminal-signed-session-fd-control)
 adds open under independently checked/retained package, catalog and driver identities
 and one exact child-only search directory. No catalog installation or certificate
 change is supplied; selected DSP-byte identity and vendor teardown remain pending.
@@ -215,12 +207,9 @@ The architecture decoder follows the pinned ggml low-byte packed-decimal
 interpretation, but rejects invalid nibbles and zero; raw values remain in the
 receipt. HVX/HMX values and VTCM page/count queries do not measure throughput or
 available allocation. Every report keeps `profileEligible: false`. The
-[X2 observations](../../../docs/hexagon-source-audit.md#observed-x2-access) include a passed native FD cycle
-and separate generic numeric dispatch. Those access-only observations do not
-qualify selected DSP bytes, visibility, broader model compute, PQ2/PTQ1, DMA64,
-complete state/teardown or performance. Later
-[native compute and model controls](../../../docs/hexagon.md#historical-projection-controls)
-retain their own scopes. X1 is independent.
+[Source and ABI boundaries](../../../docs/hexagon-source-audit.md) distinguish
+metadata, mapping, compute and serving qualification. A successful FD cycle establishes
+no selected DSP-byte identity, vendor teardown or complete-model acceptance.
 
 Hosted CI can build without acquiring a vendor SDK:
 
@@ -257,9 +246,8 @@ open, allocation, descriptor, FD mapping/unmapping, free and close. A marker
 records **entry**, not completion; only returned receipt codes establish completed
 operations. Model-free mock controls check exact URI/map arguments, full success,
 open/handle/allocation/descriptor/map/unmap/close refusal and retained uncertain
-lifetimes. They do not load a driver. The [corrected reference FD observation](../../../docs/evidence/hexagon-x2-native-fd-cycle.json)
-passed open/map/unmap/free/close; selected DSP bytes/visibility, vendor teardown,
-DMA64, effective VTCM, native compute and Swift arithmetic remain separate gates.
+lifetimes. They do not load a driver. Selected DSP bytes/visibility, vendor teardown, DMA64,
+effective VTCM, native compute and Swift arithmetic need separate qualification.
 Build and complete controls stay hosted-CI only.
 
 ## Explicit reference process initialization
@@ -272,15 +260,19 @@ The reference mode requests an **unsigned DSP process class**, even though only
 the exact Windows catalog-signed package is eligible for this diagnostic. It must
 not be described as signed-PD-only access or authorization for arbitrary DSP code.
 
-The [pinned public header](https://github.com/qualcomm/fastrpc/blob/a56e9d4de3614a8d8f4b0e15ff561350c4b686e3/inc/remote.h#L603-L622)
+The
+[pinned public header](https://github.com/qualcomm/fastrpc/blob/a56e9d4de3614a8d8f4b0e15ff561350c4b686e3/inc/remote.h#L603-L622)
 defines `DSPRPC_CONTROL_UNSIGNED_MODULE=2`; its two-int structure at lines389-392
 has `domain` and `enable`. The fixed control uses enable1 and the checked effective
 default-CDSP domain. It occurs after the effective-domain request, before GET_URI
-and module open, matching the [bundled reference initializer](https://github.com/ggml-org/llama.cpp/blob/94256114c229674ef96e76eb2dea596e65b43818/ggml/src/ggml-hexagon/ggml-hexagon.cpp#L3875-L3912).
+and module open, matching the
+[bundled reference initializer](https://github.com/ggml-org/llama.cpp/blob/94256114c229674ef96e76eb2dea596e65b43818/ggml/src/ggml-hexagon/ggml-hexagon.cpp#L3875-L3912)
+.
 That source unconditionally selects the unsigned PD, including Windows builds.
 This difference does not establish why an earlier module open was refused.
 
-The public [Linux implementation](https://github.com/qualcomm/fastrpc/blob/a56e9d4de3614a8d8f4b0e15ff561350c4b686e3/src/fastrpc_apps_user.c#L2434-L2454)
+The public
+[Linux implementation](https://github.com/qualcomm/fastrpc/blob/a56e9d4de3614a8d8f4b0e15ff561350c4b686e3/src/fastrpc_apps_user.c#L2434-L2454)
 changes a process-local per-domain attribute before opening a session; zero selects
 signed and nonzero unsigned. Once open, changing its class rejects. The array is
 zero-initialized at line4116. Lines2596-2616 dispatch this request; lines3238-3244

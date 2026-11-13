@@ -1,6 +1,7 @@
 # Bonsai maintenance tools
 
-`bonsai-tools` provides protected credential creation, fixed CPU and server invocation plans, bounded
+`bonsai-tools` provides protected credential creation, fixed CPU and server invocation plans,
+bounded
 completion-process supervision and LoRA qualification scoring. It forbids unsafe code and reuses the
 audited Windows boundary crates.
 
@@ -84,7 +85,7 @@ $bonsai = Join-Path $target 'release/bonsai-tools.exe'
 forwards to it and offers `-NativeEngine`, `-PublisherEngine`, `-NativeRowWorkers`,
 `-UseRepackedPtq1`, `-UseOriginalPq2`, `-PromptReuse`, `-KvCache`, `-Placement`
 and `-GraphicsBackend`.
-The development default is Rust Prism 0.1.25, original PQ2, K4/V4 (`rsq4`) KV,
+The development default is Rust Prism 0.1.27, original PQ2, K4/V4 (`rsq4`) KV,
 four CPU row workers and the standard adapter at scale 1.3.
 The [runtime lock](../../config/prism-inference.lock.json) owns the exact release/source identities;
 the [Hexagon contract](../../docs/hexagon.md) describes conditional X2 NPU acceleration.
@@ -110,7 +111,7 @@ companions, not the running maintenance image.
 `--placement auto|cpu` (JSON `Placement`) preserves the trusted native inference
 placement through deferred setup and Retry. Omission and `auto` retain automatic
 placement. Explicit placement is rejected with the publisher engine. `cpu` is a
-prepared capacity-first option: the current 0.1.25 pin rejects it until a genuine
+prepared capacity-first option: the current runtime pin rejects it until a genuine
 compatible runtime receives exact-source review. It does not reduce memory
 admission or establish a capacity/latency gain. See the
 [context roadmap](../../PLAN.md#native-context-expansion-roadmap).
@@ -125,7 +126,8 @@ automatically retry a failed renderer or establish device qualification.
 Full-context/output, creative-quality, sustained-performance, isolation and
 clean-machine qualification remain pending; the default makes no speed claim.
 JSON `NativeEngine: false` explicitly selects the publisher engine.
-`--prompt-reuse disabled|latest` selects the [experimental prefix policy](../../docs/prefix-reuse.md);
+`--prompt-reuse disabled|latest` selects the
+[experimental prefix policy](../../docs/prefix-reuse.md);
 it defaults to `disabled` and `latest` requires the Rust engine.
 `--kv-cache f16|rsq4` (JSON `KvCache`) also requires Rust. Omission uses the
 pinned runtime's K4/V4 default; `f16` selects explicit FP16 recovery. Retry retains
@@ -446,7 +448,8 @@ Requests identify `installationDirectory`; `download` also selects `version`, an
 `install` requires `version` and `handoffPath`. A queued request cannot install by itself:
 confirmed native UI exit and owned teardown must complete before the maintenance launcher
 revalidates the publication and hands off to Windows Installer. Source/preview launches
-perform no update work. See the [legacy updater contract](../../docs/ui-architecture.md#legacy-msi-updater)
+perform no update work. See the
+[legacy updater contract](../../docs/ui-architecture.md#legacy-msi-updater)
 for publication identities, confirmation and pending legacy installed acceptance.
 
 `gguf` replaces `Read-Gguf.ps1`, `Export-SwiftPtq1.ps1` and their module. Use
@@ -688,7 +691,9 @@ and bounded top-level package files. Signature failures remain unverified.
 `signtoolPath`, `expectedRunnerRevision` and `maximumSeconds` (1..240). Session
 accepts `referenceInitialization`; compute accepts one `case`: `F32`, `GuardedQ2`,
 `F32NoBlock` or `GuardedQ2NoBlock`. Projection requires an external
-`projectionRequestFile` under the [original-projection contract](../hexagon/packed-projection.md#artifact-bound-signed-projection-diagnostic).
+`projectionRequestFile` under the
+[original-projection contract](../hexagon/packed-projection.md#artifact-bound-signed-projection-diagnostic)
+.
 The native supervisor reserves 75 seconds for owned cleanup, verifies every
 pinned file and catalog member, retains immutable input handles through child
 exit, and records only fixed entered-stage markers. Windows verifies the observed
@@ -767,7 +772,8 @@ A `review` request has the same `declaration` and an `evidence` object:
 - `pairs`: exactly three records in declaration order, each with `id`, exact
   `prompt`, `baseline`, `candidate`, `quality` and `objectiveChecks`.
 - Each arm: the complete declared `identities`; `kvCache` (`f16` or `rsq4`);
-  actual distinct raw `graphIdentity` including its matching `kv-f16` or `kv-rsq4` marker; `inputTokens`,
+actual distinct raw `graphIdentity` including its matching `kv-f16` or `kv-rsq4` marker;
+`inputTokens`,
   `generatedTokens`, `occupiedTokens`; `complete: true`; full UTF-8 `answer` and
   matching `answerSha256`; complete-task `peakPrivateBytes`, `peakKvBytes`; equal
   `kvObservationTokens` at the measured cache position (at least 7,168 for the deep task), and

@@ -1,7 +1,8 @@
 # Validation
 
 Runner validates its native UI, broker, process/artifact policy, provisioning and
-released-runtime integration. [Prism](https://github.com/symbiogenesis/prism-inference/blob/main/docs/build-and-validation.md)
+released-runtime integration.
+[Prism](https://github.com/symbiogenesis/prism-inference/blob/main/docs/build-and-validation.md)
 owns algorithm/upstream conformance. **Local builds, Release analyzers and named
 focused tests are allowed. Full suites and benchmarks are CI-only; local filters
 must not reconstruct a suite.**
@@ -50,7 +51,8 @@ without proving the machine otherwise idle. [PLAN.md](../PLAN.md) owns pending a
 
 ### Actual-model application acceptance
 
-Main-only, manually dispatched [native-runtime acceptance](../.github/workflows/native-runtime-acceptance.yml)
+Main-only, manually dispatched
+[native-runtime acceptance](../.github/workflows/native-runtime-acceptance.yml)
 defaults to `run_device: false`: hosted ARM64 prepares and retains the exact-source
 analyzer receipt and acceptance package without queuing a laptop job or occupying
 the shared device lane. Review that preparation before selecting `run_device: true`
@@ -160,23 +162,16 @@ check. User messages remain the fixed public word `Hi`; the assistant message is
 the exact UTF-8 visible response from the initial scale-1.3 stream. Its text,
 SHA-256, source-message hash, finish reason and reported usage are retained and
 bound before replay. Missing visible output or an incomplete source identity
-keeps acceptance pending; no fixture text substitutes for model output. The
-earlier four/two/two-token trial reached verified readiness but exhausted its first request. This smaller
-workload preserves every required scale, rejection and history transition while
-reducing prompt and generation work. The [bounded follow-up](evidence/ptq1-0110-bounded-scale-streams.json)
-passes readiness and its first two streams in a 161.31-second complete session,
-then skips invalid-scale rejection and history/change-back to retain the required
-45-second request-and-cleanup reserve (30 seconds of cleanup plus 15 seconds of
-request headroom). Overall required acceptance fails; no continuation job
-or additional model attempt runs.
-It preserves the request deadlines, cleanup reserve and partial-evidence rules of
+keeps acceptance pending; no fixture text substitutes for model output. It preserves the request
+deadlines, cleanup reserve and partial-evidence rules of
 `pq2-adapter-lifecycle-row4`, whose user prompts and caps are unchanged. Its receipt
 binds the exact messages and completion caps, actual PTQ1 filename, byte
 count and digest plus the complete export receipt; it cannot inherit PQ2 or
 historical-release acceptance. Optional history/stalled-consumer dispatch inputs
 are rejected. Missing, skipped or cancelled required steps keep `passed: false`
 and fail after owned cleanup. This prepares a bounded qualification lane;
-actual-model evidence for its complete required sequence remains pending. It does not qualify zero/no-adapter
+actual-model evidence for its complete required sequence remains pending. It does not qualify
+zero/no-adapter
 logit identity, writer basis, generated/edited-history parity, full context/output,
 recovery, quality, benefit or daily-service isolation. Supplying the captured
 short response checks application history input only; fresh recomputation and
@@ -247,9 +242,9 @@ Explicit `profile: ptq1-adapter-service-rollback-row4` adds an original-PQ2 roll
 to the complete five-request PTQ1 service sequence above in the same allowance.
 The existing service-only profile retains its workload. After both PTQ1 owners
 have verified empty Jobs and released listeners, a third fresh owner selects
-`--use-original-pq2` with pinned Prism 0.1.25, adapter 1.3 and four workers.
+`--use-original-pq2` with pinned the active Prism release, adapter 1.3 and four workers.
 These current cases embed the active [runtime lock](../config/prism-inference.lock.json);
-historical 0.1.14 packet plans and receipts do not pin a newly built harness to 0.1.14.
+older packet receipts cannot pin or qualify a newly built harness.
 
 Both service cases retain one absolute case deadline with their outer timeout.
 The combined case gives its PTQ1 sequence an earlier deadline, withholding the
@@ -289,18 +284,14 @@ does not authorize another owner trial or reopen an earlier closed allowance.
 Performance/resource benefit, full-context numerics, provenance, human quality,
 comfort, isolation and default promotion remain independent.
 
-The [prepared packet estimate](evidence/native-owner-packet-controls-20261103/owner-workload-plan.json)
-budgets 450 seconds conservatively for setup, three startups, five PTQ1 generation/prefix
-operations, controls, one complete PQ2 response, all three cleanup reserves, hashing
-and retention. It was prepared for 0.1.14 and has no measured complete-packet
-result; recheck its feasibility for the active runtime before any new declaration.
-The smallest currently supported workflow allowance covering it is ten minutes;
-the fifteen-minute option is unnecessary for this fixed packet. An owner must
-freeze the final source, review its hosted package and all prerequisite checks,
-retain aggregate power endpoints and predeclare the allowance before execution.
-
+Before executing a combined packet, freeze the final source and review its hosted
+package and prerequisites. Declare a conservative workload estimate covering every
+startup, generation/prefix operation, cleanup reserve, full-file verification and
+retention. Select the smallest supported allowance that can fit it, retaining
+aggregate power endpoints. A previous packet estimate is no current feasibility
+measurement or permission to restart a closed trial.
 Explicit `profile: pq2-adapter-row4` selects original PQ2, the approved adapter at
-scale 1.3 and pinned Prism 0.1.25 with `--native-row-workers 4`. It requires exactly
+scale 1.3 and pinned the active Prism release with `--native-row-workers 4`. It requires exactly
 one four-token-cap stream, verified model/adapter readiness and owned Job/listener
 cleanup within the same budget. Its receipt binds the runtime lock, original
 model identity and adapter lock, and distinguishes the configured worker count
@@ -406,7 +397,8 @@ with four configured native row workers for both fresh owners. Its separate
 case and receipts retain that policy; the original complete-response profile
 keeps one worker. Prompt, sampler, adapter, model identities and all completion,
 cleanup and budget requirements are identical. Each sample must bind the compiled
-runtime's worker-readiness identity. For reviewed releases 0.1.11 through 0.1.23 and 0.1.25,
+runtime's worker-readiness identity. For a runtime that supplies the strict worker-readiness
+identity,
 the effective graph worker budget is independently observed at readiness; missing
 or mismatched observations leave the pair pending. This does not measure executing
 threads or parallel work, and qualification does not transfer between counts.
@@ -457,7 +449,8 @@ instances never reopen admission or replay the request. Optional workloads remai
 successful device CI receipts are retained. The credential-free `acceptance.json` is saved before
 startup and at each workload/cleanup/recovery phase with `passed: false`; only complete success
 changes it to true. A timeout/failure retains the latest phase and completed observations without
-claiming unrun checks. The [promotion evaluator](native-rust-engine.md#default-runtime-promotion) keeps exits independent.
+claiming unrun checks. The [promotion evaluator](native-rust-engine.md#default-runtime-promotion)
+keeps exits independent.
 
 The core PQ2 receipt saves supplied-history termination, visible bytes and reported
 usage, context rejection and same-owner reuse as each completes. Initial Stop,
@@ -476,8 +469,8 @@ reported usage and fixed failure reason before owned cleanup; events and bytes
 cannot replace worker token accounting.
 
 Adapter lifecycle and paired-response receipts distinguish configured row workers
-from the effective graph budget verified at readiness. The reviewed exact
-`0.1.11` through `0.1.23` and `0.1.25` releases record that budget as independently observed after
+from the effective graph budget verified at readiness. Supported runtime releases record that budget
+as independently observed only after
 successful strict readiness, bound to the compiled runtime lock and selected one/four-worker
 policy. Startup receipts and legacy releases retain an unobserved/null result.
 This observes neither executing threads nor parallel operations or device benefit.
@@ -619,7 +612,8 @@ self-hosted runner **v2.338.0 or newer**; owner CI must confirm that prerequisit
 Regenerate and review the lockfile whenever workflow or composite dependencies
 change with `gh actions-lock --no-narrow`; preserve the explicit SHA references
 and their exact matching lockfile keys. Symbolic upstream `ref` metadata alone
-does not cover an inline SHA. See [the maintenance commands](../tools/ci/README.md#action-dependency-pins).
+does not cover an inline SHA. See
+[the maintenance commands](../tools/ci/README.md#action-dependency-pins).
 
 The independent Source checks `actions-lock` job runs on every selected workflow
 event, including the weekly schedule, with read-only permissions and no device
@@ -692,12 +686,16 @@ reacquisition. Environment checks preserve Unicode/profile entries and reject
 protected overlays. Rust checks packages and single-instance launch. These establish
 correctness, not startup speed or inference performance.
 
-Upstream-only coverage runs in Prism's [conformance](https://github.com/symbiogenesis/prism-inference/blob/main/.github/workflows/runtime-conformance.yml),
+Upstream-only coverage runs in Prism's
+[conformance](https://github.com/symbiogenesis/prism-inference/blob/main/.github/workflows/runtime-conformance.yml)
+,
 [Foundation](https://github.com/symbiogenesis/prism-inference/blob/main/.github/workflows/foundation.yml),
 [standards](https://github.com/symbiogenesis/prism-inference/blob/main/.github/workflows/standards.yml)
-and [compiler](https://github.com/symbiogenesis/prism-inference/blob/main/.github/workflows/rust-nightly.yml)
+and
+[compiler](https://github.com/symbiogenesis/prism-inference/blob/main/.github/workflows/rust-nightly.yml)
 workflows, including source/backend catalogs, baseline/codec corpora, overlays and
-focused upstream diagnostics. Runner's [LoRA qualification contracts](swift-lora.md#fixed-acceptance-contract)
+focused upstream diagnostics. Runner's
+[LoRA qualification contracts](swift-lora.md#fixed-acceptance-contract)
 retain their native planning and scoring commands. Actual capture requires reviewed
 artifacts and a suitable hosted Snapdragon target; qualification remains pending.
 
@@ -736,9 +734,8 @@ context, phases, incomplete Stop, counter domains and prelaunch rejection.
 independent audio fixtures, readiness types, incomplete comparison pairs, hostile
 HTTP framing and original request deadlines. Evaluation requires a prebuilt tool;
 self-hosted, missing and unknown environments reject before preparation storage.
-[Hosted resource evidence](performance-expectations.md#q4-speech-resource-comparison)
-describes that CPU alone; Snapdragon conclusions need its runner and quality
-still needs independent listening.
+Hosted speech resource results establish no Snapdragon conclusion. Actual-model quality needs
+independent listening.
 
 ## Standards
 
@@ -771,8 +768,11 @@ The [pinned nightly](../rust-toolchain.toml) enables Polonius Alpha and the
 next-generation trait solver by default. Keep the dated pin reproducible across
 local builds, hosted checks and source-build receipts. Do not override these
 defaults with `-Zpolonius=off` or `-Znext-solver=coherence`.
-See the Rust team's [Polonius Alpha announcement](https://blog.rust-lang.org/2026/08/04/enabling-polonius-alpha-on-nightly/)
-and [trait solver announcement](https://blog.rust-lang.org/2026/08/21/enabling-next-solver-on-nightly/).
+See the Rust team's
+[Polonius Alpha announcement](https://blog.rust-lang.org/2026/08/04/enabling-polonius-alpha-on-nightly/)
+and
+[trait solver announcement](https://blog.rust-lang.org/2026/08/21/enabling-next-solver-on-nightly/)
+.
 
 [Compiler regressions](../tools/ci/tests/compiler.rs) require branch-sensitive
 mutable lending and recursive return-position `impl Trait` inference to compile
@@ -794,7 +794,8 @@ allowances still require their specific reason. Existing all-target Clippy,
 rustdoc and owning tests enforce the policy across supported feature profiles.
 
 Historical compiler and storage screens used earlier source, compilers and
-dependency pins. The first combined [hosted run](https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41384479280)
+dependency pins. The first combined
+[hosted run](https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41384479280)
 and subsequent focused corrections bind source `d2a2962`; they do not qualify
 the current pin. [PLAN.md](../PLAN.md#runtime-and-correctness) requires
 settled-source hosted acceptance on the current compiler, including owning
@@ -811,7 +812,8 @@ for selected packages/features in Release, through `bonsai-ci rust-check` locall
 Foundation. Missing docs, intra-doc links, markup and Rust-block lints still fail.
 JSON emits no rustdoc HTML/JS, avoiding the generated `trait.Send.js` quarantine
 trigger; this does not determine whether Defender's detection was false.
-Existing HTML caches/machine settings are untouched. Recheck the [unstable output option](https://doc.rust-lang.org/nightly/cargo/commands/cargo-doc.html#option-cargo-doc---output-format)
+Existing HTML caches/machine settings are untouched. Recheck the
+[unstable output option](https://doc.rust-lang.org/nightly/cargo/commands/cargo-doc.html#option-cargo-doc---output-format)
 on toolchain changes. Ordinary validation builds neither browsable docs nor doctests;
 complete tests retain their CI guard.
 
@@ -828,7 +830,8 @@ bonsai-ci rust-check --root $PWD --package bonsai-broker --target (Join-Path $sc
 
 Choose a relevant named Rust regression, such as
 `cli::tests::bounded_input_rejects_nonobjects_truncation_and_overflow`, with
-`cargo test --locked --release --package bonsai-tools --lib NAME -- --exact` and external target/working
+`cargo test --locked --release --package bonsai-tools --lib NAME -- --exact` and external
+target/working
 directories. `--full-tests` is reserved for main-branch GitHub Actions; benchmarks
 are always CI-only.
 
@@ -867,7 +870,8 @@ to run a complete module or reconstruct a suite locally.
 
 For promotion tooling, the Rust `release_lock` integration test (also in
 Foundation's maintenance crate checks) uses synthetic bundles without a model. Candidate generation
-cannot promote a pin; follow the [lock-update review](development-guide.md#prepare-a-runtime-lock-update).
+cannot promote a pin; follow the
+[lock-update review](development-guide.md#prepare-a-runtime-lock-update).
 
 ## Acceptance limits
 
@@ -884,8 +888,8 @@ cannot promote a pin; follow the [lock-update review](development-guide.md#prepa
 The X2 screen records CPU/power before/after each sample outside process wall
 time and rejects changed/unknown observations within or between paired boundaries,
 even if the batch returns to its initial mode. There is no inside-sample monitoring
-or energy verdict. Its retained legacy headless startup failed DLL initialization;
-inspection success does not qualify worker startup. See [X2 evidence](cpu-kernels.md#x2-cpu-thread-screen).
+or energy verdict. Inspection success does not qualify worker startup or executing-thread
+attribution.
 
 Synthetic checks establish the tested policy/parser/storage/process properties;
 native checks establish only the tested Windows behavior. Neither establishes

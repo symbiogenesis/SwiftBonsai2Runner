@@ -2,7 +2,7 @@
 
 This guide describes Runner's bounded guarded-HVX, HMX-bitplane and native-Q2
 diagnostic supervisor.
-The application's [Prism 0.1.25 `native-q2` development default](../../docs/hexagon.md)
+The application's [Prism 0.1.27 `native-q2` development default](../../docs/hexagon.md)
 is a separate serving path; it does not enlarge this diagnostic's
 snapshot budget or original closed trial allowances.
 
@@ -102,7 +102,8 @@ mode requires `tensorsPrepared: p`, `cacheHits: p * (n - 1)`, and
 
 `native-q2` accepts up to 168 unique layer-appropriate PQ2 projections, still
 beginning with `blk.0.ffn_up.weight`: FFN up/gate/down and the matching recurrent
-or full-attention projection names in the [supervisor schema](../bonsai/src/hexagon_tools/model_device.rs).
+or full-attention projection names in the
+[supervisor schema](../bonsai/src/hexagon_tools/model_device.rs).
 Its resident selection has a six-by-480-MiB weight ceiling, with exact payload
 bytes derived from each projection's geometry and up to 512 KiB of metadata.
 The reported mapping includes a 25,161,728-byte working region plus prepared
@@ -230,22 +231,6 @@ equal endpoints do not establish uninterrupted power stability. A failed child
 retains its raw output and completed arm observations without publishing parity.
 Do not retry or claim performance from this bounded correctness workload.
 
-The [2026-11-03 X2 AC receipt](../../docs/evidence/hexagon-model-device-20261103-ac/summary.json)
-passes this fixed token-42 control: all 40 submissions, 1,392,640 independent
-integer comparisons, full logits/state bits and explicit terminal cleanup.
-Both comparison arms observed AC at their endpoints with battery saver off.
-The supervisor's 51,689 ms includes intake, model admission and both arms;
-it is not kernel timing, decode throughput or evidence of a speedup. Wider
-placement, adapters, persistent service and production admission were outside
-that control; subsequent scoped controls are recorded below and in the
-[execution guide](../../docs/hexagon.md).
-
-The distinct [adapter/cache controls](../../docs/evidence/npu-adapter-progress-20261103/summary.json)
-pass standard-scale-1.3 tokens [42,43,128] and loaded-zero token 42 with NEON/four
-workers. A separate resident-host run passes complete state/logits parity and
-observes two cache hits, without per-dot CPU replay. Its AC CPU/native evaluation
-windows show no clear speed benefit. Original streaming and loaded-zero runs
-observed battery at their arm endpoints; retain those conditions separately.
-Broader adapter histories, resources, lifetime and full-model service acceptance
-remain pending. These historical captures predate the X2 `native-q2` development
-default and do not qualify its broader placement.
+Current model, adapter, state, resource and persistent-service qualification remains in
+[PLAN.md](../../PLAN.md#hexagon-npu). Correctness probes and the current tolerance-based native-Q2
+serving path are separate contracts.

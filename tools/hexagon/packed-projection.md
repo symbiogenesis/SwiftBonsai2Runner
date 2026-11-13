@@ -31,7 +31,8 @@ tile loop; they never launch the old DLL or regenerate golden bytes.
 
 The optional CPU transform takes exact explicit sign bytes, applies signs
 before each 1024-element normalized Sylvester Walsh-Hadamard block and keeps
-the input-last-dimension basis. Sign values/extent are checked; [verified extraction](../../docs/evidence/hexagon-swift-projection-binding.json)
+the input-last-dimension basis. Sign values/extent are checked;
+[verified extraction](../../docs/evidence/hexagon-swift-projection-binding.json)
 binds the original model's signs. Their consumption through this control remains
 pending; synthetic sign tests establish axis/order only. PTQ1/Q8_0 has a separate
 [native-lane control](#ptq1q8_0-native-lane-control) below. Odd-128-group PQ2, grouped recurrent permutations,
@@ -254,7 +255,8 @@ bundled by GenieX v0.10.0. That source is separate from the v0.8.0 access pin.
 This control neither changes the access package nor proves catalog membership,
 actual operation entry or numerical execution of the newer binary.
 
-The source's [Q2 dot](https://github.com/ggml-org/llama.cpp/blob/19cce6919992fdffd92e0ac152caaf1e2b8f254e/ggml/src/ggml-hexagon/htp/hvx-mm-kernels-tiled.h#L1543-L1567)
+The source's
+[Q2 dot](https://github.com/ggml-org/llama.cpp/blob/19cce6919992fdffd92e0ac152caaf1e2b8f254e/ggml/src/ggml-hexagon/htp/hvx-mm-kernels-tiled.h#L1543-L1567)
 multiplies unsigned two-bit symbols and subtracts two Q8_1 32-code block sums
 per 64-weight block. Both activation scales and sums are stored as FP16. Its
 [ordinary activation path](https://github.com/ggml-org/llama.cpp/blob/19cce6919992fdffd92e0ac152caaf1e2b8f254e/ggml/src/ggml-hexagon/htp/matmul-ops.c#L681-L704)
@@ -283,7 +285,8 @@ For each original PQ2 128-weight block it performs the following bounded work:
    into the original CPU accumulator in original block order. No original scale
    or complete projection reduction is delegated to a different floating order.
 
-The actual [quantizer](https://github.com/ggml-org/llama.cpp/blob/19cce6919992fdffd92e0ac152caaf1e2b8f254e/ggml/src/ggml-hexagon/htp/hvx-mm-kernels-tiled.h#L1-L138)
+The actual
+[quantizer](https://github.com/ggml-org/llama.cpp/blob/19cce6919992fdffd92e0ac152caaf1e2b8f254e/ggml/src/ggml-hexagon/htp/hvx-mm-kernels-tiled.h#L1-L138)
 converts inputs/maxima to FP16, forms its half scale using reciprocal-127 bits
 `0x2008`, calls a polynomial FP16 inverse and uses HVX rounding/conversion
 intrinsics. For maximum 127, the mathematical half-scale product is
@@ -293,7 +296,8 @@ inverse polynomial and conversion intrinsics.** Exact guarded input codes,
 half scales, half offsets and final integer outputs must be independently checked
 against the signed binary before this becomes an exact device adapter.
 
-Source [shape checks](https://github.com/ggml-org/llama.cpp/blob/19cce6919992fdffd92e0ac152caaf1e2b8f254e/ggml/src/ggml-hexagon/htp-kparams.cpp#L971-L995)
+Source
+[shape checks](https://github.com/ggml-org/llama.cpp/blob/19cce6919992fdffd92e0ac152caaf1e2b8f254e/ggml/src/ggml-hexagon/htp-kparams.cpp#L971-L995)
 admit contiguous ordinary Q2 weights with K divisible by 64, F32/F16 activation
 and F32 output, subject to later solver/resource checks. K=256 also respects the
 activation quantizer's 128-element padding. N=2 is a proposed HVX case: the source
@@ -338,12 +342,8 @@ layout fixtures distinguish the 576-byte host stride from 640-byte VTCM padding;
 complete projection replay, awkward row tails, cancellation and failed/poisoned
 submissions preserve atomic output publication. Device
 quantizer/integer parity, original artifact consumption, signed native entry,
-lifetime/rollback, complete state and performance remain pending beyond the
-[fixed signed Q2 device capture](../../docs/evidence/hexagon-x2-queue-compute.json).
-That X2 K=256/M=32/N=2 control verified 64 literal integer outputs, including
-guard extremes and odd values above FP16's exact integer range, and completed
-explicit stop/queue close/host unmap/module close/free. It consumed synthetic
-inputs; it did not execute this full projection schedule or measure a speedup.
+lifetime/rollback, complete state and performance remain pending. Fixed synthetic integer controls
+do not execute the complete original-artifact schedule or measure a speedup.
 This lead may
 avoid a custom-kernel signing requirement for a narrow exact primitive if those
 gates pass; its extra work and traffic may also make it uncompetitive.
@@ -451,4 +451,4 @@ path. Independent model-free controls run in hosted packed-projection tests;
 both the HMX implementation and those controls are included in the immutable
 hosted source-input receipts. Signed integer parity, effective HMX placement,
 state, adapters, actual prefill, PTQ1 arithmetic and speed remain pending under
-the [HMX source lead](../../docs/hexagon-source-audit.md#hmx-integer-bitplane-source-lead).
+the [HMX source lead](../../docs/hexagon-source-audit.md#packed-arithmetic-controls).

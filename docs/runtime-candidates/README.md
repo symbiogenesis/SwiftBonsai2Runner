@@ -1,89 +1,7 @@
 # Runtime source candidates
 
-Each patch has its own base, manifest and evidence. These source-review artifacts
-neither change Runner's release lock nor qualify a production runtime.
-
-## Row-parallel candidate
-
-The [patch](oxibonsai-row-parallel.patch) retains Prism commit
-`5ff5f3c4719362da6efcbb58114b702db282e5b2` for upstream review; the
-[manifest](oxibonsai-row-parallel.json) binds base archive and patch length/SHA-256. It
-is source delivery, without release qualification or a Runner lock override.
-
-The historical base is Prism main `ff3d54de662ddd951dc0ca51d9581129b55239bf`, newer
-than Runner's then-pinned `02c8a24b31ac1c35f2ffd3530f6a753ce440bdc0`. The patch retains
-that base's arithmetic, including native PTQ alias handling. Apply it only to its
-exact base when reproducing the original candidate. Runner now pins 0.1.25, which
-already includes row parallelism and selects four workers for native chat; see the
-[current runtime contract](../native-rust-engine.md#bounded-parallel-row-qualification).
-This retained patch's 16-worker bounds and toolchain describe its original source,
-not the current runtime's 18-worker ceiling or Runner's one/four-worker policy.
-
-### Implementation
-
-The opt-in `parallel-rows` feature adds a private persistent Rayon 1.12.0 pool.
-`--row-workers` selects an explicit budget of 1 through 16 for the Swift JSONL worker or
-private HTTP child. One retains serial execution and creates no pool; requesting
-multiple workers without the feature rejects before loading a model. Each worker
-requests a 512 KiB stack. Pool creation, stack commitments and scheduling overhead
-remain part of device resource/performance qualification.
-
-The live prepared-projection path borrows original packed weight rows and shared Q8
-activations, partitions pre-reserved output into disjoint contiguous chunks, and retains
-at most one reusable error slot per worker. It preserves each row's scalar/NEON
-arithmetic, selects the earliest failing row deterministically and clears failed output.
-Unsupported floating projections use their existing serial path. Graph reset/checkpoint
-recovery retain the chosen scheduling policy and existing cooperative cancellation
-boundaries. There is no stronger preemption claim or measured throughput gain.
-
-### Reproduce the source change
-
-Verify patch length and SHA-256 against the manifest. In a clean Prism checkout at the
-exact base, apply it with:
-
-```powershell
-git switch --detach ff3d54de662ddd951dc0ca51d9581129b55239bf
-git am C:/absolute/path/to/oxibonsai-row-parallel.patch
-```
-
-`git am` reproduces the tested commit's entire tree in an independent worktree. The patch
-includes independently authored Rust, focused checks, CI feature variants and build/CLI
-docs; runtime/docs attribute OxiBonsai's scheduling idea and pin.
-
-### Focused validation
-
-Passing validation covers formatting, Release Clippy for enabled runtime/server
-library/binary/tests, scalar-only library Clippy and Release rustdoc. Nine test
-executions cover seven cases; worker policy and server options run with the feature
-both enabled and disabled:
-
-| Target | Focused case |
-| --- | --- |
-| `parallel_rows` | `enabled::parallel_rows_preserve_packed_arithmetic_and_prepared_siblings` |
-| `parallel_rows` | `enabled::parallel_rows_clear_failed_output_and_recover_with_serial_float_fallback` |
-| runtime library | `kernels::parallel_rows::tests::pinned_parallel_rows_preserve_both_activation_contracts` |
-| runtime library | `kernels::parallel_rows::tests::row_tasks_borrow_original_storage_and_return_first_row_failure` |
-| `graph` | `graph_parallel_rows_preserve_logits_checkpoints_and_recovery` |
-| `parallel_rows` | `row_worker_policy_is_explicit_and_bounded` |
-| server library | `native_child::tests::native_child_rejects_unknown_duplicate_relative_and_unbounded_options` |
-
-Use the pinned toolchain from an external working/build directory, with an absolute
-manifest and target directory. For example:
-
-```powershell
-cargo +nightly-2026-10-22 test --release --locked --offline `
-  --manifest-path C:/absolute/prism/Cargo.toml --target-dir C:/external/build `
-  --package prism-inference --features parallel-rows --test parallel_rows `
-  enabled::parallel_rows_preserve_packed_arithmetic_and_prepared_siblings -- --exact
-```
-
-Checks cover actual Swift widths 5120/17408/6144, odd-group activation fallback, generic
-PQ2's fourth symbol, the base's PTQ aliases, malformed/nonfinite payload recovery,
-pinned accumulation, shared-storage identity and complete synthetic graph
-checkpoint/reset behavior. Full suites, benchmarks, actual-model/device qualification
-and release publication remain separate work under [PLAN.md](../../PLAN.md#cpu-kernels)
-and the [runtime lock-update
-procedure](../development-guide.md#prepare-a-runtime-lock-update).
+The headless-startup patch, manifest and immutable receipt remain build/replay inputs.
+They do not change Runner's release lock or qualify a production runtime.
 
 ## Headless UCRT argv candidate
 
@@ -116,36 +34,18 @@ Compatibility covers Runner's `ProcessSpec` encoding, not arbitrary raw command 
 externally configured wildcard-expanding CRTs, other CRT/toolchains or MinGW.
 Integration must review UCRT entry points against its compiler/SDK.
 
-### Retained checks
+### Validation scope
 
-The native ARM64 Release/Ninja build uses LLVM 23.1.4, MSVC 14.51.36231, SDK
-10.0.26100.0, CPU enabled, `GGML_NATIVE=OFF`, baseline NEON and at most four jobs. The release
-used Clang 20.1.8. No optional ISA or numerical execution is qualified.
+The manifest and immutable model-free receipt identify the original compiler,
+source patch, binary and native mitigation checks. They are build inputs for the
+candidate producer and the fixed startup fixture. They do not qualify model loading,
+numerical equivalence, actual-model state, adapters or performance on current source.
 
-Each process uses the ordinary required headless supervisor, a one-process 512 MiB
-kill-on-close Job, a ten-second deadline, 64 KiB per output stream and verified artifact
-handles retained through teardown. The control's fixed version probe fails with unsigned
-exit `3221225794`; the candidate's probe succeeds. Seven named parsing-only cases also
-succeed:
-
-- Empty prompt and a nonexistent Unicode model path.
-- Japanese, accented and supplementary-plane prompt characters.
-- Spaces, embedded quotes, trailing backslashes and backslashes before a quote.
-- Tabs/newlines, literal wildcard text and leading/trailing spaces.
-
-Every case queries and requires effective Win32k denial, extension-point denial,
-remote-image denial and low-integrity-image denial. It repeats real parsing with
-`argc=7` and synthetic parsing with `argc=5`, checks exact prompt/model bytes, and
-verifies that the CRT table pointer stays unchanged. The fixture disables the separate
-optional prompt-escape transform so it checks argument bytes. The model paths do not
-exist; only `common_params_parse` is called, with no model or backend initialization.
-The JSON-named external evidence also retains bounded fixture-failure receipts for a
-missing model option and default prompt escaping.
-
-With explicit LF settings, applying the patch to pristine pinned files reproduces all
-three tested source hashes; `.gitattributes` preserves patch bytes. External evidence
-retains build logs, controls and bounded raw receipts. Checked-in JSON excludes
-credentials, inherited environment, hostname and user paths.
+The argument fixture exercises Unicode, quoting, backslashes, whitespace and literal
+wildcards without loading a model. Every launch must require effective Win32k,
+extension-point and unsafe-image denial, a one-process 512 MiB Job, ten-second
+process deadline, 64 KiB output bounds and artifact handles held through teardown.
+Version/argument success supplies no inference or power verdict.
 
 ### Reproduce
 
@@ -174,7 +74,8 @@ cmake --build $build --target llama-completion test-headless-argv --parallel 4
 
 The fixture deliberately requires worker creation mitigations and is an explicit build
 target, outside ordinary CTest. Use Runner's existing checked maintenance tool and
-`bonsai-tools completion --request ABSOLUTE_JSON_PATH` from an external directory, with `ciOnly=false`,
+`bonsai-tools completion --request ABSOLUTE_JSON_PATH` from an external directory, with
+`ciOnly=false`,
 no runtime override, all generated EXE/DLL files listed as exact `artifacts`, the limits
 above and no model artifacts. Probe `llama-completion.exe` with only `--version`. For
 `test-headless-argv.exe`, pass `@('--model','模型/test.gguf','--seed','1','--prompt','日本語
@@ -191,10 +92,9 @@ verdict. Benchmarks and full suites remain CI-only.
 
 ### Hosted headless comparator preparation
 
-The retired one-shot hosted candidate workflow used the native
+The native
 [build-tools headless publisher operation](../../tools/bonsai/src/build_tools/headless.rs)
-to apply this exact patch to the verified source archive. The operation remains
-available to reproduce the candidate on hosted CI. It builds separate
+applies this exact patch to the verified source archive on hosted CI. It builds separate
 `llama-completion`, `llama-server`, `llama-bench` and argument-fixture executables.
 The existing installed publisher bundle, Runner runtime locks, app selection,
 worker mitigations and filesystem grants are unchanged. Preparation downloads
@@ -225,17 +125,6 @@ one-process 512 MiB Job, ten-second deadline and 64 KiB output bounds. The fixtu
 requires effective Win32k, extension-point and unsafe-image denial. Actions
 credentials are removed from the preparation child before these probes.
 
-The [2026-10-30 hosted result](../evidence/headless-publisher-startup.json) records
-all ten probes passing at Runner `e11c5a289528bc435b0a1339071a26d6063f0745`:
-completion/server version, benchmark help and seven argument fixtures under the
-unchanged mitigations. Independent review verified all 14 packaged file digests
-and 13 ARM64 binaries. The full public candidate, exact source ZIPs, bounded logs,
-probe receipts and API proofs are durably archived with a digest manifest.
-Initially unavailable job metadata later recovered; the archived run and prepare
-job API snapshots both report success. This establishes hosted model-free startup.
-Model loading, numerical and inference performance qualification and production
-runtime promotion remain pending.
-
 The resulting artifact is a source-bound candidate for review, not an installed
 runtime or a model speed result. A passed hosted preparation still needs a
 separately authorized owner-device trial within the existing five-minute total
@@ -243,16 +132,6 @@ budget and the independent numerical, adapter, resource and quality gates before
 any release or lock update.
 
 ### Bounded X2 model-free startup
-
-The [2026-10-30 owner-device receipt](../evidence/x2-owner-startup-20261030.json)
-records all ten probes passing on X2E94100 with the exact hosted bundle and final
-source-bound supervisor. Independent review checked all fourteen bundle digests,
-supervision sidecars and seven explicit mitigation confirmations. The final capture
-took 2,306 ms; it is startup evidence, without an inference performance verdict.
-The exact executed supervisor, Runner source ZIP, raw receipts, earlier capture and
-review are retained in the digest-verified owner qualification archive. Model loading,
-numerical/state/adapter qualification, release integration and production pin updates
-remain pending.
 
 The Rust [`publisher-startup` command](../../tools/bonsai/README.md)
 checks an already extracted copy of that exact hosted candidate using a prebuilt
@@ -317,14 +196,3 @@ cancellation, quality, speed or release/pin promotion. Diagnostic timing lines a
 retained only as execution evidence; no performance comparison is evaluated.
 Requested reasoning controls do not establish the embedded template's effective
 thinking mode; that remains separately unqualified.
-
-The [2026-10-30 X2 follow-up](../evidence/x2-followup-20261030.json) retains a
-successful native candidate completion: 58 prompt tokens, four sampled output
-tokens and three decode evaluations. Its original startup receipt remains failed
-because the executed parser rejected timestamp-prefixed logs after native success.
-A separate digest-bound post-run check verifies those saved counters without
-rerunning the model. The exact executed script, both attempts, supervisors, source
-snapshots and independent review are durably archived. The final parser and receipt
-repair were tested with retained logs rather than another model invocation.
-The embedded template still exposed a thinking prefix despite requesting thinking
-off; effective control and all broader qualification and release gates remain pending.

@@ -14,7 +14,8 @@ pwsh -NoProfile -File tools/hexagon/pq2_bridge.ps1
 The complete regression suite runs on hosted CI through
 [Hexagon prerequisites](../../.github/workflows/hexagon-qualification.yml) and
 Foundation. A focused local case is
-`pwsh -NoProfile -File tools/hexagon/test_pq2_bridge.ps1 -Test test_known_byte_fixture_splits_at_element_64_and_keeps_fourth_symbol`.
+`pwsh -NoProfile -File tools/hexagon/test_pq2_bridge.ps1 -Test test_known_byte_fixture_splits_at_element_64_and_keeps_fourth_symbol`
+.
 All owner-device setup, checks and cleanup share one five-minute aggregate
 allowance; do not run a complete suite locally.
 
@@ -22,12 +23,11 @@ allowance; do not run a complete suite locally.
 current native fixture preparation, model-free policy controls and the independent
 `public-native-abi` hosted job. That job checks native queue layouts and the retained
 generated start/stop wire control without depending on device preparation or admission.
-The duplicate X2 compute workflow and the completed SDK inventory and public
-QAIC generation workflows are retired. Their helpers, exact pins and
-[retained provenance](../../docs/hexagon-source-audit.md#sdk-inputs-recipe-and-terms)
-remain available for reproducing those historical observations. New SDK or
-wire-coverage work requires a separately reviewed hosted workload; existing
-snapshots do not close the outstanding Windows, SDK or device gates in PLAN.
+SDK and public-QAIC preparation helpers retain exact pins and
+[source/ABI boundaries](../../docs/hexagon-source-audit.md#sdk-inputs-recipe-and-terms).
+New SDK or wire coverage needs a separately reviewed hosted workload. Existing
+provenance snapshots cannot replace unavailable replay bytes or close the Windows,
+SDK or device gates in PLAN.
 
 An optional raw PQ2 fixture can be checked with
 `-Payload ABSOLUTE_FIXTURE_PATH -Columns 384 -Rows 2`. The fixture must contain
@@ -52,7 +52,9 @@ nonfinite JSON constants. Counts and derived storage extents must fit unsigned
 
 The layout is pinned to the unchanged native oracle
 [73bfe6cc](https://github.com/PrismML-Eng/llama.cpp/blob/73bfe6cc485554822f80c473a3c0c4f25e80f41b/ggml/src/ggml-common.h)
-and its [dequantizers](https://github.com/PrismML-Eng/llama.cpp/blob/73bfe6cc485554822f80c473a3c0c4f25e80f41b/ggml/src/ggml-quants.c).
+and its
+[dequantizers](https://github.com/PrismML-Eng/llama.cpp/blob/73bfe6cc485554822f80c473a3c0c4f25e80f41b/ggml/src/ggml-quants.c)
+.
 PQ2 uses 128 weights/34 bytes and Q2_0 uses 64 weights/18 bytes: two little-endian
 FP16 scale bytes followed by adjacent low-to-high two-bit symbols. Codes 0, 1,
 2 and 3 decode to -1, 0, +1 and +2. Split each 32-byte PQ2 symbol block in half
@@ -83,9 +85,8 @@ Q8_K path. No performance, admission or backend-selection decision follows.
 
 The [native Rust driver boundary](native_rpc/README.md) and
 [signed-package numeric fixture](dispatch_fixture.rs) cover separate access
-questions. [Observed X2 access](../../docs/hexagon-source-audit.md#observed-x2-access)
-records passed driver queries, numeric dispatch and the corrected native FD cycle,
-alongside independent STATIC/default-open refusals. Production execution is unchanged.
+questions. Metadata, mapping and compute are separate qualification boundaries; none alone qualifies
+the production serving path.
 
 The separate [packed projection operation control](packed-projection.md) keeps
 original PQ2 blocks and pinned Swift Q8_K/FMA arithmetic in a bounded CPU tile

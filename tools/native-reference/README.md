@@ -88,7 +88,8 @@ The owning workflow uses `operation: "capture"` and adds existing
 `workDeadlineTick`. Source pins, hosted tool receipts, native ABI checks, model
 admission, each owned capture and bounded atomic partial receipts live in Rust.
 The independent PowerShell 7.6 full-state decoder and packaged Rust arithmetic helper remain owned,
-deadline-bound children of the Rust command. The hosted-prepared helper is required; no compiler runs
+deadline-bound children of the Rust command. The hosted-prepared helper is required; no compiler
+runs
 inside a device trial.
 
 Actual execution belongs only to the main-only manual `native-ptq1-numerics.yml` workflow on a
@@ -132,9 +133,7 @@ pwsh -NoLogo -NoProfile -File tools/native-reference/test_compare.ps1 -Name test
 ```
 
 The retained-file auditor is fixed to numerical run `41568281287` at Runner
-`469f57b`. Its [completed hosted audit](../../docs/evidence/ptq1-retained-audit-41571150128/independent-review.json)
-preserves the independent payload review after retirement of the one-shot workflow.
-The auditor downloads the original evidence archive,
+`469f57b`. The auditor downloads the original evidence archive,
 verifies its authenticated producer and artifact digest, and checks every unique
 regular ZIP member against the 155 previously recorded file identities. The
 tracked inventory is copied producer metadata; it supplies expected identities

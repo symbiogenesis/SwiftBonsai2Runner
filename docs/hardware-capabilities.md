@@ -1,6 +1,6 @@
 # Hardware discovery and profile policy
 
-Runner's development default is Rust Prism 0.1.25 CPU inference with the fixed
+Runner's development default is Rust Prism 0.1.27 CPU inference with the fixed
 [X2 Hexagon policy](hexagon.md) when its signed package and driver are available.
 Discovery supplies host/runtime inventory and checked compatibility/evidence records;
 **automatic ranking and selection of qualified profiles is not connected to serving**.
@@ -94,7 +94,8 @@ Eligible Vulkan 1.1/core/extension queries also retain subgroup width/operations
 FP16 and integer-dot features. Application API is loader API capped at 1.3; core eligibility uses
 the lower application/device version. Unqueried fields stay null. Extension presence cannot
 qualify cooperative-matrix arithmetic or Swift operations. Cooperative-matrix execution, live
-budgets, exact SoC SKU, signed-driver readiness and complete dependencies remain unknown/unqualified.
+budgets, exact SoC SKU, signed-driver readiness and complete dependencies remain
+unknown/unqualified.
 Heap capacity is not free memory; shared physical storage counts once. `backend_ready` stays false;
 CPU digest/launch policy are unchanged. No performance/energy is measured. Queries follow
 [Khronos properties][properties], [properties2][properties2], [application API][application-api]
@@ -163,38 +164,8 @@ graphics-discovery operation is unavailable; it does not identify an attempted I
 prove that the loader reached this call, establish the cause of `VkResult -9`, or
 qualify worker access. A successful count does not identify a Vulkan-capable device.
 
-Retained **2026-10-29 X2** observations remain distinct:
-
-| Policy | Result | Retained evidence and limit |
-| --- | --- | --- |
-| Shipped headless child | Loader loaded; instance failed `VK_ERROR_INCOMPATIBLE_DRIVER` (`-9`), report unknown | Bounded stderr in external `SwiftBonsai-GpuInventory-15116-1793325174261883700`; cause/hardware support unresolved |
-| Separate ten-second `Invoke-BonsaiNativeProcess` diagnostic | Loader 1.3.301, application 1.3.0, device 1.4.295; `Qualcomm(R) Adreno(TM) X2-90 GPU`; vendor `20803`, device `909329968`, driver `2151018496`; FP16/integer-dot true, subgroup 64 | External task-lane `gpu-tool-policy.json` / `.log`; differing mitigation, provenance and worker access unproven |
-
-Neither probe ran a model, shader or benchmark. The shipped command has no tool-policy retry;
-CPU fallback and worker mitigations remain required.
-
-The [fresh structured X2 failure receipt](evidence/vulkan-x2-worker-failure.json) binds
-source `fe68af25baa713956a516b9d6d7ca7b719374d24`, the exact ARM64 Release maintenance
-executable and raw diagnostic digests. It reproduces `instance-creation` / `-9`, loader
-1.3.301 and application 1.3.0 under the unchanged headless envelope. This narrows the
-observable failure stage; it does not resolve the DLL/policy/resource cause or qualify
-GPU worker access. External raw diagnostics remain temporary rather than durably archived.
-
-The [2026-10-30 source-bound owner capture](evidence/x2-owner-startup-20261030.json)
-still fails at instance creation with `-9` under the headless policy. Its two
-24-module snapshots are identical. The bounded file observation identifies only
-the 2,499,544-byte `vulkan-1.dll` on disk; it does not identify a failing ICD or
-qualify driver access. This newer capture, its exact supervisor and Runner source,
-raw output and independent review have a digest-verified owner archive. The older
-receipt remains separate evidence.
-
-The [2026-10-30 follow-up](evidence/x2-followup-20261030.json) again retains
-instance-creation `-9` with unchanged 24-module snapshots. GDI32 appears in both,
-but the independent `GetModuleHandleExW` reference acquisition fails with Windows
-error `126`; the graphics count call is never reached. Count and NTSTATUS stay
-unknown. This preserves the exact failed lookup without proving GDI32 absent or
-identifying the Vulkan failure cause. The final tool, source and raw output are
-included in the digest-verified owner archive; GPU worker access remains unqualified.
+GPU worker access remains unqualified. A failed graphics query keeps capabilities unknown;
+diagnosing a failure never authorizes a weaker worker policy.
 
 ### Native OpenCL observations
 
@@ -202,7 +173,8 @@ included in the digest-verified owner archive; GPU worker access remains unquali
 through the absolute system loader under unchanged headless policy, with no context, queue,
 program, kernel or device allocation. It retains architecture/platform/device/driver/compiler
 facts and bounded loader size/hash; provenance stays unverified, `backend_ready: false`.
-CPU digests/launch policy ignore it. [OpenCL access and source audit](adreno.md#opencl-access-and-source-audit)
+CPU digests/launch policy ignore it.
+[OpenCL access and source audit](adreno.md#opencl-access-and-source-audit)
 owns exact bounds, identities and missing pinned PQ2/PTQ1 projections. Its pilot remains in PLAN;
 OpenCL observations do not resolve Vulkan worker access.
 
@@ -214,13 +186,12 @@ and unavailable Vulkan/Hexagon. `qualification` is always `unqualified`.
 This describes the generic runtime executable, not the separate server/worker's
 Hexagon support or effective request placement. The compiled release lock owns
 the current version. Do not interpret the generic accelerator fields as proof
-that the server used CPU or NPU. The latest retained
-[0.1.23 capture](performance-expectations.md#current-swift-evidence) records
-effective NPU execution as unknown and retains its historical runtime identity.
+that the server used CPU or NPU.
 
 Provision/probe with the Rust `provision` command using
 `{"operation":"inference","dataDirectory":"C:\\BonsaiData","includeCapabilities":true}`;
-add `verifyOnly: true` to require existing files. Results add `Capabilities`/`CapabilityVerification`,
+add `verifyOnly: true` to require existing files. Results add `Capabilities`
+/`CapabilityVerification`,
 runtime file/archive identities and external diagnostics. Verification guards stay held through
 exit. Custom locks reject; reported version/native target must match the compiled release pin.
 
@@ -248,7 +219,8 @@ graph suffixes prove neither artifact hash, portable state nor numerical/device 
 | `workload` | `context_tokens`, `minimum_prompt_tokens`, `maximum_prompt_tokens`, `maximum_output_tokens`, `state` (`fresh`/`reused`); maximum prompt plus full output fits context |
 
 SHA-256 values are 64 lowercase hex digits; Git revisions are 40. Static capability records bind
-observed facts, excluding timestamps, paths and live RAM/power; marketing family names are insufficient.
+observed facts, excluding timestamps, paths and live RAM/power; marketing family names are
+insufficient.
 
 Doctor's `CpuCompatibilityIdentity` retains canonical UTF-8 JSON/lowercase SHA-256.
 `host-capabilities` with `{"operation":"identity","capabilities":...}` reproduces it without probes.
@@ -283,9 +255,8 @@ out of the broker.
 
 ### Device classes and observed identity
 
-The recorded development target is an ASUS Zenbook A16, Snapdragon X2 Elite Extreme X2E94100.
-The [X2 CPU screen](cpu-kernels.md#x2-cpu-thread-screen) retains its 2026-10-29 inventory and phase
-thread controls; inventory establishes neither kernel eligibility nor performance/backend readiness.
+Target identities must come from the selected native inventory and matching qualification receipts;
+family names alone establish no kernel or backend readiness.
 
 | Target | Candidates | Required independent evidence |
 | --- | --- | --- |
@@ -377,7 +348,8 @@ an independently compatible CPU control.
 
 Every route preserves the [broker contract](broker-policy.md): one active conversation,
 authentication, exact counts, deadlines, cancellation, admission and daily isolation. Rust
-acceleration also preserves the [runtime's safe device/replacement boundaries](native-rust-engine.md).
+acceleration also preserves the
+[runtime's safe device/replacement boundaries](native-rust-engine.md).
 
 ### Accelerator storage and lifetime
 
@@ -409,9 +381,11 @@ driver/evidence/cache, budgets/workload boundaries, deterministic ranking, objec
 fallback, strict rejection and complete-state handoff/failure/cancellation. Simulate negative ISA
 cases; execute optional instructions/accelerators only on eligible hardware.
 
-Promotion follows the [validation criteria](validation.md#promotion-criteria), including independent [LoRA TPS/quality](swift-lora.md#standard-profile-qualification),
+Promotion follows the [validation criteria](validation.md#promotion-criteria), including
+independent [LoRA TPS/quality](swift-lora.md#standard-profile-qualification),
 installation/rollback and affected-upgrade requalification. Qualified families may coexist with
-unsupported classes and qualified CPU fallbacks. [Validation policy](validation.md) requires main-only
+unsupported classes and qualified CPU fallbacks. [Validation policy](validation.md) requires
+main-only
 matching-device CI for full suites, benchmarks and performance captures; local builds/focused
 untimed checks are allowed.
 

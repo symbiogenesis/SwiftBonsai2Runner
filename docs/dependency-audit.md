@@ -1,31 +1,9 @@
-# Dependency audit and choices
+# Dependency policy and choices
 
-Retain **Serde 1.0.229, serde_json 1.0.154, Tokio 1.54.1 and the native Rust UI**.
-The reviewed alternatives did not qualify. [PLAN.md](../PLAN.md#deferred-dependency-experiments)
-owns pending experiments; [Cargo.toml](../Cargo.toml) and [Cargo.lock](../Cargo.lock)
-own pins, and [licensing](licensing.md) owns distribution terms.
-
-## Scope and security result
-
-The reviewed scope is all 12 workspace manifests, the lockfile, direct usage,
-normal/build/dev features, cached manifests and selected build scripts, including
-Windows ARM64, all-target and optional `json-candidate` graphs. It excludes an
-exhaustive transitive/native-source audit.
-
-The **2026-10-29** audit of 490 dependencies with `cargo-audit 0.22.2 --deny yanked`
-found no known vulnerabilities or yanked packages against RustSec
-`ee1a49a2769a24a596afc1c20cb33748d2769586` (1,386 advisories). This is a dated
-snapshot, not a claim of continuing freshness.
-
-Three unmaintained-package notices remain: `zvariant 5.15.1`
-([0370](https://rustsec.org/advisories/RUSTSEC-2026-0370.html)), `zbus_names 4.3.5`
-([0371](https://rustsec.org/advisories/RUSTSEC-2026-0371.html)), and `zvariant_derive 5.15.1`
-([0372](https://rustsec.org/advisories/RUSTSEC-2026-0372.html)). They enter through
-eframe → egui-winit → AccessKit's Unix AT-SPI/zbus implementation and do not compile
-into supported Windows binaries. Upstream moved them into zbus 6; AccessKit's
-compatible requirements still select zbus 5. Keep notices visible; removing
-accessibility or forcing an incompatible major is inappropriate. Exact pins
-provide reproducibility, not continuing advisory notification.
+[Cargo.toml](../Cargo.toml), package manifests and [Cargo.lock](../Cargo.lock) own
+the exact dependency selection. [PLAN.md](../PLAN.md#deferred-dependency-experiments)
+owns pending alternatives. This guide explains current responsibilities and acceptance
+requirements; prior audit snapshots and prototype results belong in Git history.
 
 ## Dependency policy
 
@@ -46,101 +24,24 @@ blanket ignores.
 
 ## Dependency footprint and duplication
 
-The 2026-10-26 comparison uses baseline
-`f9c7ade2de57eb537f397429eed42a297740fd06`. Counts are distinct name/version pairs
-in Windows ARM64 **normal + build** trees, including internal/root crates, not
-linked code, binary size or runtime cost. Cargo feature unification means each
-executable's graph can differ from the workspace graph.
+Assess normal/build/dev dependencies and enabled features for each shipped executable
+and target. All-target lockfile counts include foreign platforms; package counts do
+not measure linked code, binary size, build cost or runtime speed. Cargo feature
+unification can broaden a dependency even when Runner disables its defaults.
 
-| Selection | Baseline | With MXC integration |
-| --- | ---: | ---: |
-| Workspace | 211 (199 external) | 262 (250 external) |
-| Chat | 162 | 228 |
-| Broker | 43 | 126 |
-| Maintenance | 35 | 123 |
-| ASR | 48 | 130 |
-| TTS | 39 | 126 |
-| CI planner | 36 | 36 |
-
-Baseline Windows counts rise to 213 with dev and 219 with all features/dev;
-all-target counts are 425/427/434 respectively. Foreign-platform lockfile entries
-do not imply those runtimes ship in Windows binaries.
-
-| Genuine baseline version duplicate | Reason |
-| --- | --- |
-| `hashbrown` 0.16.1 / 0.17.1 | GPU allocator versus other UI consumers |
-| `miniz_oxide` 0.8.9 / 0.9.1 | PNG versus flate2 |
-| `rustc-hash` 1.1.0 / 2.1.3 | Naga/wgpu versus type-map |
-| `syn` 2.0.119 / 3.0.9 | Windows/zerocopy versus newer derive macros |
-| `windows-sys` 0.52.0 / 0.61.2 | winit versus current Windows consumers |
-
-Requirements are incompatible; do not force unification with patches. MXC adds
-`base64 0.22.1` beside CI's 0.23.1 (separate executables), `getrandom 0.2.17` beside
-0.4.3, and `windows-sys 0.59.0` via winreg. Same-version log/memchr/Serde rows can
-be host/target or feature build units, not multiple library versions per executable.
-
-### MXC footprint
-
-`mxc-sdk =1.0.1` plus `flatbuffers =25.12.19` broadens every shared-process-boundary
-consumer. VM/WSL/Hyperlight features are disabled; the Nanvix download is gated
-by the disabled `microvm` feature. The SDK nevertheless unconditionally requests
-Tokio `full`, URL/IDNA/ICU, chrono, temp files, UUIDs, older random/Base64 APIs,
-broad Windows bindings and SHA-2 defaults. Cargo features are additive; our
-`default-features = false` cannot undo another crate's requests.
-
-Runner's PSEC calls use synchronous Windows APIs and generated FlatBuffers.
-The broader dependencies serve SDK Sandbox/WSLC lifecycle, proxy parsing and
-learning-mode tracing. Neither 1.0.1 nor main `ad54c69452147bd4ca15d027388ad6074903dbff`
-has a PSEC-only switch. A minimal module would need loader/handle/capability/policy
-APIs plus separated errors, UTF-16 helpers, telemetry and build dependencies;
-simply making dependencies optional breaks compilation. See the [manifest](https://github.com/microsoft/mxc/blob/v1.0.1/src/mxc-sdk/Cargo.toml).
-
-Hidden PSEC exports remain unsupported compatibility interfaces. A compile-only
-consumer of documented `v1::spawn`/`Containment::Process` also reproduced the graph
-and passed ARM64 checking. [MXC #1579](https://github.com/microsoft/mxc/issues/1579)
-requests supported backend/capability-selective builds without weakening validation.
-Dependency counts alone prove no slowdown: build tools and linker elimination
-matter. Consider a separate supervisor only if measured build/size savings justify
-its lifecycle/IPC cost; containment must remain mandatory and fail closed.
+The required MXC ProcessContainer integration broadens the shared process boundary.
+Its lifecycle and validation policy cannot be removed to reduce dependency counts.
+A separate supervisor or archive crate split needs demonstrated build/size benefit,
+reviewed ownership/IPC and unchanged containment. Native speech remains in separate
+executables with independently qualified model, cancellation and resource contracts.
 
 ### Renderer features
 
-`wgpu_no_default_features` plus a pinned direct wgpu edge selects
-`std`, `parking_lot`, `dx12`, `vulkan`, `gles`, `wgsl`. All three supported Windows
-backends remain real fallbacks; upstream `NativeOptions` selects `PRIMARY | GL`
-unless overridden by the environment.
-
-Production browser/Metal defaults are excluded. Compared with the baseline,
-the all-target chat graph has 366 rather than 368 packages; the Windows graph is
-unchanged, and GPU test dependencies still request Metal/all Windows backends.
-This establishes no size/speed gain. Removing a Windows backend requires a
-separate support/device decision.
-Font parsers, color-font rendering, `vello_cpu` and `glifo` serve actual native UI
-functionality, not an inference framework or browser frontend.
-
-Retained renderer checks cover format, Release Clippy, docs/build, ten DX12
-capture layouts and responsive default/forced-DX12 previews through closure.
-They do not qualify every backend/device or inference performance; see
-[validation evidence](#validation-and-evidence).
-
-### Native inference source review
-
-The earlier source review covered optional `fearless_simd` 1.1.0 at revision
-`b8a50a2c9ce03ee5384038ae8e6f45749662e2f6`, crate SHA-256
-`3296eb97d869113eaf148a6bdf01884e90b3828ad7ae2340b0f93362fc158611`. It inspected
-slice/array bounds, widening, bitcasts, baseline NEON and the dependency's internal
-unsafe boundary; runtime source forbids unsafe code. That version's default `std`
-has no external dependencies, `libm`/the macro crate are unused and there is no
-build script. See the
-[reviewed source](https://github.com/linebender/fearless_simd/tree/b8a50a2c9ce03ee5384038ae8e6f45749662e2f6/fearless_simd),
-[SIMD contract](cpu-kernels.md) and [license terms](licensing.md#reviewed-dependencies).
-
-The active Prism 0.1.25 source and its Cargo.lock instead pin `fearless_simd`
-**1.2.0**, crate SHA-256
-`629c9d6b6f30b5604089e0980f4d924a013aacb1654a6cdf5d3d852224f68651`.
-Runner speech also pins 1.2.0 through its independent workspace lock. The older
-source review does not qualify this dependency refresh; owning hosted and native
-consumer acceptance remains pending as recorded below.
+`wgpu_no_default_features` plus the direct wgpu edge selects Windows DX12, Vulkan and
+GLES support. Native chat explicitly selects DX12; fallback policy and device support
+are application contracts. Removing a Windows backend requires a separate support
+and qualification decision. Font parsers, color-font rendering and accessibility
+serve the native UI; they are not evidence of a browser frontend.
 
 ## Direct dependency decisions
 
@@ -177,43 +78,14 @@ feature unification/linker elimination limit likely benefit. Pending work stays 
 
 ## JSON selection
 
-The gate requires **at least 5% lower equal-weight geometric-mean time and no case
-more than 5% slower**. Six workloads cover plain/escaped small inputs,
-8/32/128-message histories and near-1 MiB bodies. Timing includes immutable-input
-preparation, schema/history validation, canonical serialization, allocations/copies
-and destruction. Discard one warmup round; rotate order over nine measured rounds.
-Unicode, duplicate/unknown fields, shape, bounds and canonical-byte correctness
-must pass before timing is interpreted.
-
-| Candidate | Time / serde_json | Worst case | Decision |
-| --- | ---: | ---: | --- |
-| serde_json | 1.0000× | 1.0000× | Retain |
-| Sonic 0.5.10 | 1.0026× | 1.1160× near limit | No qualifying gain |
-| Fused Serde visitor | 1.0408× | 1.2442× small plain | No qualifying gain |
-| SIMD-JSON 0.18.1 | Not timed | Strict Unicode mismatch | Reject |
-| Fixed source `ff8f5c8` | 1.3807× | 1.9802× near limit | No qualifying gain |
-| `ff8f5c8`, padded tape | 1.3919× | 1.7595× near limit | No qualifying gain |
-
-SIMD-JSON 0.18.1 accepted `{"messages":[{"role":"user","content":"\ud800"}]}`
-and canonicalized the lone surrogate to `\u0000`; production rejects it as
-value-free `ChatSchema`. [Fix `ff8f5c8`](https://github.com/simd-lite/simd-json/commit/ff8f5c8bb75dfc56803321c2f5a92656c7de842f)
-rejects lone high surrogates, malformed escapes and second escapes outside the
-low-surrogate range. It differs from the evaluated v0.18.1 despite the same version.
-Sonic's 3.5–4.7% history gains and the visitor's 6.9% 128-message gain did not offset
-regressions; these are workload-specific prototype decisions, not library rankings.
-
-| Fixed-source CI evidence | Runner / artifact | Supplemental scale cases |
-| --- | --- | --- |
-| [Copying path](https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/40405967479) | `9448284a4057fb70fb039520debef44250851a76`; `json-candidate-40405967479-1` | 1.7289–1.7979× production |
-| [Padded path](https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/40408246424) | `6a582c1a61ef0ebb2c28df256b08bc927cedd6f9`; `json-candidate-40408246424-1` | Up to 1.9431× production |
-
-Both Windows ARM64 Cobalt 100/pinned-nightly runs passed correctness but failed
-the original and overall screens: every original case was slower. Artifacts
-retain rounds and compiler/CPU/OS/source identities; separate runs do not isolate
-copy-removal speedup. The [padded path (#1)](https://github.com/symbiogenesis/SwiftBonsai2Runner/issues/1)
-uses `fill_tape_padded` then `Tape::deserialize` (`padded-tape-serde`), avoiding the
-Serde entry point's internal copy. Immutable-body copy, padding, allocation,
-validation, serialization and destruction remain timed.
+Production uses `serde_json`; the optional parser candidate cannot change ordinary
+requests before qualification. The gate requires at least 5% lower equal-weight
+geometric-mean time with no case more than 5% slower in both cold and reused screens.
+Six workloads cover plain/escaped small inputs, 8/32/128-message histories and near-1
+MiB bodies. Timing includes immutable-input preparation, schema/history validation,
+canonical serialization, allocations/copies and destruction. Discard one warmup round;
+rotate order over nine measured rounds. Unicode, duplicate/unknown fields, shapes,
+bounds and canonical bytes must pass before interpreting timings.
 
 ### Current candidate and pending gate
 
@@ -239,121 +111,29 @@ either being wrong. Supplemental scale cases include fallback cost. Main-only
 `json-candidate.yml` runs correctness before the original six-case and supplemental
 5%/5% gates; any case over 5% slower rejects qualification.
 **Both cold/reused screens must pass; qualification remains pending.**
-The reviewed open [AVX-512 #475](https://github.com/simd-lite/simd-json/pull/475)
-targets x86; [#479](https://github.com/simd-lite/simd-json/pull/479)/[#477](https://github.com/simd-lite/simd-json/pull/477)
-concern cleanup/`no_std`, not evidence for changing this ARM64 decision.
 
 ## Runtime screening
 
-Reused loopback echo connections used 256/4096-byte frames and one/nine concurrent
-connections, excluding setup/warmup. Ratios are geometric means of median exchange
-time, not full broker/model qualification.
-
-| Candidate | Time / Tokio | Decision |
-| --- | ---: | --- |
-| Tokio current-thread | 1.0000× | Retain |
-| smol 2.0.2 | 1.0264× | No advantage |
-| Compio 0.19.2 | 1.0214× | No advantage |
-| Blocking threads | 0.7357× | Does not qualify replacement |
-
-Blocking gains came from nine client threads versus one for async candidates;
-one-connection ratios were roughly flat (0.9702×/1.0234×). The broker admits one
-active model request. The screen omitted thread creation/stacks, HTTP policy,
-queues, disconnect cancellation and absolute deadlines.
-
-## Evidence limits
-
-The [original comparison artifact](https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/40039211957/artifacts/12538059153)
-retains hashes, calculations, exclusions and compiler/CPU/OS identities from a
-four-core Cobalt 100 Windows ARM64 host. This is broker-preparation evidence,
-not Snapdragon inference or stable-versus-nightly evidence. The pinned nightly
-supports branch-sensitive broker lending; this screen proves no compiler speedup.
-All benchmarks run in CI only.
+Tokio remains the broker runtime. A replacement must preserve bounded HTTP parsing,
+queues, one-active-request admission, disconnect cancellation and absolute deadlines.
+Include thread creation/stacks and lifecycle work when comparing blocking and async
+designs; a loopback echo microbenchmark cannot qualify the complete broker or model.
 
 ## Reviewed pins and tooling
 
-The dependency selection below was reviewed **2026-11-01**; this date is not a claim
-of continuing freshness. Current compiler and runtime selections are the
-[toolchain file](../rust-toolchain.toml) (nightly 2026-11-12) and
-[runtime lock](../config/prism-inference.lock.json) (Prism 0.1.25, source
-`99bab71270b1e6a6fb6d47eec2e34b8097cdcd4c`). Historical checks below do not qualify
-these later selections. Pending runtime qualification remains in PLAN.
-
-| Dependency/tool | Reviewed selection |
-| --- | --- |
-| `zip` | 9.2.1; minimal deflate features |
-| Optional `simd-json` | crates.io 0.19.0 at `00a71f6`; qualification pending |
-| `openssl-probe` | 0.2.2 |
-| `rustix` | 1.1.6 |
-| `schannel` | 0.1.30 |
-| `unicode-width` | 0.2.3 |
-| .NET SDK | Retired from Runner validation with the PowerShell/C# bootstrap |
-| cargo-audit / LLVM | 0.22.2 / 23.1.4; PSScriptAnalyzer retired with repository scripts |
-
-A later maintenance update selected nightly **2026-11-02** (rustc
-`3e92e1a2d`, 1.101.0-nightly), ZIP 9.2.1 and the compatible transitive packages
-then available. Its recorded `cargo update --dry-run --verbose` found no further
-compatible updates at that time. The current compiler pin has since advanced to
-2026-11-12; the old compiler and update checks are historical evidence.
-
-The **2026-11-12** Cargo maintenance update checked all direct registry
-dependencies and selected `fearless_simd` 1.2.0, `toml` 1.2.1+spec-1.1.0,
-`ureq` 3.5.1 and `zip` 9.5.1, retaining existing feature selections and exact
-version requirements. Other direct dependencies were already at their latest
-stable releases, except the compatible `windows-future` selection below.
-The refreshed workspace lockfile selects compatible transitive releases.
-These changes do not update external runtime/model/source locks or inherit
-historical advisory, native linking, model or performance qualification.
-Owner-managed Foundation and dependency-audit acceptance remain pending.
-
-The sibling [Prism registry refresh](evidence/prism-0125-publish-20261112/summary.json)
-published runtime 0.1.25 and all five helper updates on November 12, 2026, with
-`fancy-regex` 0.20.2, `fearless_simd` 1.2.0 and reference `tokenizers` 0.23.2.
-Runner has no Cargo dependencies on Prism or its five helpers. Its active binary
-and source locks advance together to the reviewed 0.1.25 delivery. Registry
-publication alone supplies no application or performance qualification.
-
-The reviewed `windows-future` 0.3.2 selection is compatible with `windows`
-0.62.2, which returns its asynchronous types and requires `windows-core` 0.62.2;
-`windows-future` 0.100.0 requires the incompatible `windows-core` 0.100 family.
-GitHub Actions, cargo-audit, LLVM, Hexagon SDK and the then-released Prism 0.1.12
-runtime were current at that review. The later
-[Prism 0.1.13 CPU release](native-rust-engine.md#swift-cpu-supported-subset) was a historical
-pin; its startup validation change carries no measured device gain or inherited
-model qualification. Current 0.1.25 identities are recorded above. Speech source
-pins are immutable; their match to upstream heads was a dated review observation.
-Model/adapter locks and source-bound qualification controls retain their exact
-identities; newer reference/candidate artifacts need separate
-[runtime review](development-guide.md#prepare-a-runtime-lock-update).
-Earlier validation and advisory snapshots below do not qualify this update;
-current hosted Foundation and dependency-audit results belong to its source revision.
+Use the exact [Rust toolchain](../rust-toolchain.toml), workspace/package manifests,
+model/source locks and action pins. A pin gives reproducibility, not continuing
+advisory coverage. Review security, source, supported-target and native-linking
+obligations independently whenever an identity changes. Follow the
+[runtime lock-update procedure](development-guide.md#prepare-a-runtime-lock-update)
+for engine releases; speech source locks have their own build and model acceptance.
 
 ## Validation and evidence
 
-The 2026-10-29 evidence covers all-feature/all-target Release Clippy, format,
-rustdoc and native builds for ten workspace packages, excluding separately
-provisioned ASR/TTS binaries. Focused Release regressions:
-
-- `tests::zipped_installation_verifies_deflated_payload_and_rejects_drift`
-- `speech_build::tests::source_staging_preserves_bytes_and_rejects_changed_archive_or_cache`
-- `json_candidate::fixed_candidate_preserves_unicode_and_rejections`
-- `json_candidate_parser::tests::reuse_preserves_parity_through_failures_and_size_changes`
-
-The earlier 62-script PSScriptAnalyzer and embedded C# checks are historical
-evidence; those implementations and validation dependencies are retired. The
-2026-10-26 evidence also covers format/Release
-Clippy/docs/build for `bonsai-artifacts`, `bonsai-broker`, `bonsai-tools`, archive
-path/expansion/hostile-source regressions, actionlint 1.7.12 and YAML/event/permission
-checks, without hosted-validation receipts. These checks establish no performance
-gain; full suites and benchmarks remain CI-only.
-Historical evidence locations under `C:\Users\symbi\AppData\Local\Temp\` follow.
-Their current availability has not been reverified; a temporary path alone is not
-durable retention or acceptance for current source.
-
-| Evidence | Path suffix |
-| --- | --- |
-| Original audit, sources, metadata and logs | `Bonsai-DependencyAudit-b2037a17954346d992abd517055f1ecb` |
-| Renderer checks | `Bonsai-WgpuRefine-2143bcc4c15b4cdfbfa4b483ea4d7937` |
-| Historical audit JSON | `Runner-DependencyAudit-ee63cbf6ce19403d9afcfef303829a94\audit.json` |
-| Rust update checks | `Runner-DependencyUpdate-1793293946274` |
-| Standards | `SwiftBonsai-Standards-4f0235a8a0164835a225fed72989ab83` |
+The owner operates dependency-audit and Foundation acceptance under
+[AGENTS.md](../AGENTS.md). Local format, Release analyzers and focused checks establish
+only their tested source/target properties. Full suites and benchmarks remain CI-only.
+Keep audit notices visible, without blanket ignores or removing accessibility merely
+to suppress dependencies. Audits do not exhaustively inspect bundled native sources,
+downloaded tools, drivers, models or every transitive build script. Qualification
+requires reviewed results bound to the current revision and selected artifacts.

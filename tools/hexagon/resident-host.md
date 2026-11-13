@@ -24,8 +24,7 @@ different resources and must not be substituted for one another.
 
 Run `pwsh -NoProfile -File tools/hexagon/verify_resident_traffic.ps1` to reproduce the retained
 [current static ledger](../../docs/evidence/hexagon-resident-host-24000-ledger.json).
-The [historical ledger](https://github.com/symbiogenesis/SwiftBonsai2Runner/blob/7b37b29826b377386c1ddfe933cd4e75d6a97856/docs/evidence/hexagon-resident-host-ledger.json)
-retains the original 21,760-cap accounting. The current derivation uses the
+The derivation uses the
 [enforced operation budget](../../docs/evidence/hexagon-session-operation-budget.json) and derives
 the packed payloads from the existing source-bound
 [streaming ledger](../../docs/evidence/hexagon-swift-traffic-ledger.json). The
@@ -53,18 +52,6 @@ counterexample, not an admitted placement. Two all-eligible evaluations exceed
 the session operation cap; a normal prompt and output reserve still need
 explicit partial placement or a separately qualified serving design.
 
-The [local adapter/cache screen](../../docs/evidence/npu-adapter-progress-20261103/summary.json)
-now exercises the first-projection cache on the signed X2 path: one tensor,
-25,067,520 prepared bytes, 65,520 metadata bytes and two hits across three tokens.
-Complete CPU-shadow logits/state match after every token. This explicit screen
-omits per-dot CPU replay and verifies actual native mapping/preparation counters;
-it does not establish device weight residency. CPU/native AC evaluation windows
-show no clear benefit. The separate streaming controls ran on battery, so they
-cannot qualify a streaming-versus-resident speed comparison. Later
-[batching and native-Q2 controls](../../docs/hexagon.md#snapdragon-x2-hexagon-npu-v81-projection-and-layer-timings)
-reduce submissions and reconstruction under their own numerical contracts;
-these original cache observations do not establish that benefit.
-
 The native descriptor still covers the entire expanded allocation with the
 unchanged `0x90` flags on every operation. The first-projection example expands
 that allocation from 1,191,936 to 26,259,456 bytes. Its forty descriptors therefore
@@ -74,16 +61,6 @@ or cache work; actual cache maintenance can grow and remains unmeasured.
 Keeping already packed host bytes must not be reported as eliminating the
 kernel's weight DMA, intermediate plane results or synchronization.
 
-An efficient complete backend still needs qualified signed kernels with fewer
-submissions and intermediate results, appropriate memory ownership and true
-multitoken prefill scheduling. The dated Qualcomm
-[release list](https://github.com/qualcomm/GenieX/releases) identifies the same
-`19cce6` signed HTP revision in v0.10.0 and v0.10.1-rc.1, as reviewed on
-2026-11-02. Its documented
-[signing operator flow](https://github.com/qualcomm/GenieX/blob/main/notes/release.md#hexagon-htp-signing)
-uses separate operator infrastructure. The alternative
-[upstream test-signing instructions](https://github.com/ggml-org/llama.cpp/blob/master/docs/backend/snapdragon/windows.md#enable-npu-driver-test-signatures)
-change machine trust and may require Secure Boot changes. Neither route is
-implied by implementing a host cache. Existing model/state, signed-device,
-teardown, resource and performance gates remain in
-[PLAN.md](../../PLAN.md#hexagon-npu).
+The current native-Q2 path has a separate layout and transport contract. Signed-kernel changes
+require reviewed distribution, ownership, state, resource and performance gates under
+[PLAN.md](../../PLAN.md#hexagon-npu). Host caching alone provides no signing authority.

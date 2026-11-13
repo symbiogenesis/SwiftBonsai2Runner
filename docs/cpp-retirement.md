@@ -48,46 +48,17 @@ Missing captures or unimplemented assertions remain visible pending/red outcomes
 
 ## Runner checked-in native files
 
-Paths below are relative to Runner. No tracked C/C++ source/header files remain
-from the initial eleven; removed controls retain their identities and observations as data.
-The separate hosted Hexagon ABI controls (`tools/hexagon/public_qaic_wire.c` and
-`windows_queue_abi.c`) remain temporary C references. They compile against pinned
-public declarations and immutable generated observations without linking an
-inference library, SDK runtime or driver. Retire their compilation only after
-independent retained ABI/wire observations and Rust replacement assertions pass
-the owning acceptance contract. They are excluded from production Rust inference
-and remain part of the retirement inventory.
-Generated private-source C++ and external dependencies are tracked separately.
+The hosted controls `tools/hexagon/public_qaic_wire.c` and `windows_queue_abi.c`
+remain C references. They compile against pinned public declarations and immutable
+generated observations without linking an inference library, SDK runtime or driver.
+Retire compilation only after independent retained ABI/wire observations and Rust
+assertions satisfy the owning contract. They are excluded from production inference.
 
-The [retained owning main run](evidence/prism-main-integration.json) passes the
-full native-linked TTS consumer's 51 tests, Release analyzers, documentation and
-build at revision `53f717e`; speech sources are unchanged through `d6c4246`.
-This closes those source integration obligations, while actual-model speech
-and external-engine retirement remain separate.
-
-| File | Replacement and exit condition |
-| --- | --- |
-| `src/speech-tts/tests/reference/philox.h` | Source removed: normalized-source SHA-256 replaces the anchor. Licensed provenance, 4,411 ordered scalar observations and independent block/rounding answers remain. The retained owning main run passes the captured-bit ABI and independent Philox controls. |
-| `src/speech-tts/tests/philox_oracle.cpp` | Source removed: Rust validates immutable records and fixture identity. Its compilation/launch and indirect sampler-oracle inclusion are removed; provenance is retained as data. |
-| `src/speech-tts/tests/reference/sampling.h` | Source removed after normalized length/SHA guard replacement. Immutable observations retain all 722 masking/penalty cases and 714 nonempty greedy cases; the complete stochastic probability pipeline (`sample_top_k_p`, `top_k_mask`, `top_p_mask`, MSVC STL tie ordering, sequential `expf` softmax, Philox draw, CDF walk, and `REPETITION_PENALTY_WINDOW = 72`) now executes in safe Rust (`src/speech-tts/src/sampling.rs`) via `bonsai_qt_sample_top_k_p`, with hosted owning-crate integration and actual-model acceptance separately pending. |
-| `src/speech-tts/tests/sampling_oracle.cpp` | Source and compilation/launch removed after complete ordered input/output replay passes in Rust, including duplicate/invalid IDs, signed zero and exceptional floats. Original and executed-driver identities, compiler/target configuration and fixture digests remain in `sampling-v1.provenance.json`. |
-| `src/speech-tts/tests/reference/bpe.h` | Source removed: normalized length/SHA guard and licensed source identity replace the anchor. Complete scanner/ID captures retain the original five model-free vocabularies; actual pinned vocabulary/model qualification remains pending. |
-| `src/speech-tts/tests/tokenizer_oracle.cpp` | Source and compile/run path removed after Rust replay of all 1,810 requests, complete ordered input bytes and scanner/merge/fallback/EOS outputs. Metadata observations and exact source/compiler/fixture identities remain in `tokenizer-v1.provenance.json`. |
-| `src/speech-tts/tests/tokenizer-gguf.h` | Source removed after the production Rust GGUF adapter/loader (`src/speech-tts/src/gguf.rs`) passes exact intake-index, duplicate/rank, missing/null/oversized/type, failed replacement and balanced-release checks in safe Rust without calling the external C `gguf_*` metadata API. |
-| `src/speech-tts/tests/tokenizer-error.h` | Logging/exception fixture removed. Rust reports registration/encoding failure and owns result cleanup, with copy refusal and safe-Rust unwind checks. The remaining native callback catches allocation exceptions before returning failure to Rust. |
-| `src/speech-tts/tests/tokenizer_lifecycle.cpp` | Source and compile/launch path removed after its assertions move to the production Rust loader, actual Box replacement and result ownership path. Exact original identities and assertion mapping remain in `tokenizer-lifecycle-v1.provenance.json`. The thin generated holder retains no-copy/no-move static assertions; bridge compilation, full hosted linkage and actual-model acceptance remain distinct checks. |
-| `src/speech-tts/tests/decode_graph_cache.cpp` | Source and native test DLL compiler/loader removed. The production Rust owner now holds one keyed graph resource, drops it before replacement, recovers from failed builds and prevents eviction/free during compute leases. Native lease teardown synchronizes before Rust completion; pipeline teardown drops the cache before persistent resources. Rust tests preserve every original allocation/window/batch/failure assertion. `decode-graph-v1.provenance.json` retains source identities and assertion mappings. Native graph construction/compute callbacks remain generated glue; owning hosted linkage and lifetime/lease controls pass in the retained main run, while model acceptance remains pending. |
-| `tools/native-reference/swift_ptq1_reference.cpp` | Replaced by the single-file Rust collector. Native source-header download and C++ compilation are removed from bundle preparation. Immutable observations retain all 369 layout/default/configuration/returned-aggregate controls; compile-time guards cover all 62 offsets, three sizes and alignments. The actual pinned-DLL probe/observations pass locally. The [source-bound hosted bundle](evidence/ptq1-collector-hosted.json) passes collector compilation and all seven Rust success/failure/output/cleanup controls. Schema-two receipts bind Rust source and controls; owner preflight compares the complete observation set before admission. Actual-model logits/state comparison remains pending. The DLL engine itself is still native and has a separate retirement gate. |
-
-[Initial capture evidence](evidence/cpp-retirement-model-free.json) retains the
-first 30 model-free checks. The [historical final source review](https://github.com/symbiogenesis/SwiftBonsai2Runner/blob/7b37b29826b377386c1ddfe933cd4e75d6a97856/docs/evidence/cpp-retirement-final-controls.json)
-binds the later source identities to 43 passing focused Rust checks, strict lint
-checks, the complete actual-DLL ABI comparison, receipt/observation rejection and
-syntax compilation of both affected pinned Qwen source units. The subsequent
-retained main run closes the full TTS owning-crate integration, including native
-bridge compilation and linked tokenizer/cache/lease controls. The source-bound
-PTQ1 collector's [hosted build/test bundle](evidence/ptq1-collector-hosted.json)
-now passes separately; actual-model gates remain pending in [PLAN.md](../PLAN.md).
+Rust speech controls retain licensed immutable Philox, sampling, tokenizer and
+lifetime observations under `src/speech-tts/tests/fixtures/`. Preserve those replay
+inputs, provenance and independent assertions. Completed port inventories and their
+check results belong in Git history. Current serving and model acceptance are defined
+by the [speech source guide](../src/speech-tts/README.md) and [PLAN.md](../PLAN.md).
 
 ## Prism checked-in native files
 
@@ -158,20 +129,14 @@ are not compiled or dispatched by the Rust TTS service. Their presence supplies
 no acceleration. Removing these historical developer paths and introducing
 signed Rust RPC keep separate inventory and acceptance obligations.
 
-Retirement also covers the Qwen/GGML TTS core and `transcribe-cpp`/`transcribe-cpp-sys`
-Qwen3-ASR core, including their separate GGML versions. Native Rust replacements
+The remaining ASR dependency is `transcribe-cpp` /`transcribe-cpp-sys`, including its bundled
+Qwen3-ASR/GGML core. Native Rust replacements
 must retain model verification, audio/token contracts, cancellation, state, output
 quality and actual-device resource acceptance. Reusing a C++ library's Rust binding
 does not satisfy this milestone.
 
-Expand each external family to exact files from its pinned source manifest before
-porting it. The replaced TTS boundaries include Qwen `src/bpe.h`'s holder/output adapter,
-decode-graph construction/compute/free callbacks and lease synchronization,
-`src/prompt-builder.h`, both sampling headers, pipeline/codec/speaker graphs and
-audio transforms. Their immutable source identities remain provenance for the
-Rust replacement and pending independent model comparisons. A Rust policy
-callback or removed test oracle does not retire
-the downloaded header, generated shim or linked engine that still contains it.
+Expand each remaining external family to exact files from its pinned source manifest before porting
+it. Preserve immutable source identities, notices and independent model comparisons.
 For Hexagon NPU speech and LLM offload, the C++ retirement boundary covers
 `qwentts.cpp`, `ggml`, `ggml-base.dll`, `ggml-cpu.dll` and `ggml-hexagon.dll`
 (replaced by pure-Rust model/codec execution and `hexagon-native-rpc` `dspqueue` +
@@ -207,7 +172,8 @@ from live compiler, download, linkage or execution requirements.
 ### MSVC startup and panic runtime
 
 TTS serving runs in Rust; Windows MSVC startup and panic support remain a
-separate dependency boundary. [Static C-runtime linkage](https://doc.rust-lang.org/reference/linkage.html#static-and-dynamic-c-runtimes)
+separate dependency boundary.
+[Static C-runtime linkage](https://doc.rust-lang.org/reference/linkage.html#static-and-dynamic-c-runtimes)
 can remove the separately installed Visual C++ DLL requirement, while embedding
 Microsoft runtime support in the executable. It does not replace those bytes
 with a Rust implementation. Inspect each shipped image's imports separately.
@@ -215,14 +181,16 @@ with a Rust implementation. Inspect each shipped image's imports separately.
 and an explicit application target keep linkage options out of host build scripts
 and procedural macros.
 
-Rust's [MSVC SEH implementation](https://github.com/rust-lang/rust/blob/main/library/panic_unwind/src/seh.rs)
+Rust's
+[MSVC SEH implementation](https://github.com/rust-lang/rust/blob/main/library/panic_unwind/src/seh.rs)
 calls `_CxxThrowException` and uses the CRT's `__CxxFrameHandler3` personality
 for stack cleanup. Both workspaces retain panic unwinding. Runner's
 `ModelPreparation` cancels and joins preparation peers after a worker panic;
 Prism's CPU worker pool catches panics, drains all active workers and returns a
 failure. Scoped cancellation and tile-completion guards also rely on unwinding
 to run their destructors. A blanket `panic = "abort"` change would alter these
-recovery contracts. [Cargo's panic-profile rules](https://doc.rust-lang.org/cargo/reference/profiles.html#panic)
+recovery contracts.
+[Cargo's panic-profile rules](https://doc.rust-lang.org/cargo/reference/profiles.html#panic)
 also explain why ordinary passing tests do not establish abort-mode release behavior.
 
 TTS's `libm` math implementation and the existing direct Windows API boundaries
