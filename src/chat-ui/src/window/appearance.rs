@@ -4,7 +4,7 @@ use egui::{Color32, FontId};
 use serde::{Deserialize, Serialize};
 use std::{
     fs::{self, File, OpenOptions},
-    io::{self, Read as _, Write as _},
+    io::{self, Write as _},
     path::Path,
     sync::{
         Arc, Mutex,
@@ -266,15 +266,8 @@ impl Drop for Store {
 }
 
 fn read(path: &Path) -> io::Result<Preferences> {
-    let mut bytes = Vec::new();
-    File::open(path)?
-        .take(MAX_BYTES + 1)
-        .read_to_end(&mut bytes)?;
-    if u64::try_from(bytes.len()).map_err(io::Error::other)? > MAX_BYTES {
-        return Err(io::Error::other(
-            "Appearance settings exceed their size limit.",
-        ));
-    }
+    let bytes = crate::bounded_file::read(File::open(path)?, MAX_BYTES)?
+        .ok_or_else(|| io::Error::other("Appearance settings exceed their size limit."))?;
     let saved: Saved = serde_json::from_slice(&bytes).map_err(io::Error::other)?;
     if saved.version != 1 || !saved.preferences.valid() {
         return Err(io::Error::other("Invalid appearance settings."));

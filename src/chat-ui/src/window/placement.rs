@@ -5,7 +5,7 @@ use raw_window_handle::{HasWindowHandle as _, RawWindowHandle};
 use serde::{Deserialize, Serialize};
 use std::{
     fs::{self, File, OpenOptions},
-    io::{self, Read as _, Write as _},
+    io::{self, Write as _},
     path::Path,
     sync::{
         Arc, Mutex,
@@ -242,11 +242,9 @@ fn read(path: &Path) -> io::Result<Option<Saved>> {
         Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(None),
         Err(error) => return Err(error),
     };
-    let mut bytes = Vec::new();
-    file.take(MAX_BYTES + 1).read_to_end(&mut bytes)?;
-    if u64::try_from(bytes.len()).map_err(io::Error::other)? > MAX_BYTES {
+    let Some(bytes) = crate::bounded_file::read(file, MAX_BYTES)? else {
         return Ok(None);
-    }
+    };
     Ok(serde_json::from_slice::<Saved>(&bytes)
         .ok()
         .filter(|saved| saved.valid()))

@@ -3,7 +3,7 @@ use super::{State, VOICE_LIMIT};
 use serde::{Deserialize, Serialize};
 use std::{
     fs::{self, File, OpenOptions},
-    io::{self, Read as _, Write as _},
+    io::{self, Write as _},
     path::Path,
     sync::{
         Arc, Mutex,
@@ -158,11 +158,8 @@ fn read(path: &Path) -> io::Result<Option<String>> {
         Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(None),
         Err(error) => return Err(error),
     };
-    let mut sealed = Vec::new();
-    file.take(MAX_SEALED + 1).read_to_end(&mut sealed)?;
-    if u64::try_from(sealed.len()).map_err(io::Error::other)? > MAX_SEALED {
-        return Err(io::Error::other("Saved profile exceeds its storage bound."));
-    }
+    let sealed = crate::bounded_file::read(file, MAX_SEALED)?
+        .ok_or_else(|| io::Error::other("Saved profile exceeds its storage bound."))?;
     let bytes = bonsai_windows_credentials::unprotect_private_data(&sealed)?;
     if bytes.len() > MAX_BYTES {
         return Err(io::Error::other("Saved profile exceeds its size limit."));

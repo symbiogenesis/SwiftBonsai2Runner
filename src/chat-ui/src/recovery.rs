@@ -361,13 +361,8 @@ fn read(path: &Path) -> io::Result<Option<Vec<u8>>> {
             "Saved conversations exceed their storage bound.",
         ));
     }
-    let mut sealed = Vec::new();
-    file.take(MAX_SEALED + 1).read_to_end(&mut sealed)?;
-    if u64::try_from(sealed.len()).map_err(io::Error::other)? > MAX_SEALED {
-        return Err(io::Error::other(
-            "Saved conversations exceed their storage bound.",
-        ));
-    }
+    let sealed = crate::bounded_file::read(file, MAX_SEALED)?
+        .ok_or_else(|| io::Error::other("Saved conversations exceed their storage bound."))?;
     bonsai_windows_credentials::unprotect_private_data(&sealed).map(Some)
 }
 
