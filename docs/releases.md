@@ -1,13 +1,11 @@
 # Windows releases
 
 Swift Bonsai 2 Runner ships as a **portable Windows ARM64 executable** for
-Snapdragon X and X2 laptops. The experimental [v0.3.0 prerelease](https://github.com/symbiogenesis/SwiftBonsai2Runner/releases/tag/v0.3.0)
-is published from `80b085d7d320493e57a4ad45d21fa9874f1d8c58`.
-[Release CI](https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/43499917247)
-passed all five Rust lanes, packaging, extraction smoke checks and publication.
-Independent downloads verified all three asset digests, source/tag identities and
-model-free extraction; the [verification record](evidence/windows-release-030-20261113/summary.json)
-retains results and limits. See the [release notes](releases/v0.3.0.md).
+Snapdragon X and X2 laptops. The current experimental release is
+[v0.3.0](https://github.com/symbiogenesis/SwiftBonsai2Runner/releases/tag/v0.3.0).
+See its [release notes](releases/v0.3.0.md) for the shipped features and limits.
+Contributor builds can include changes awaiting the next release; those
+differences are identified below.
 
 ## Download and open
 
@@ -56,8 +54,7 @@ Microphone capture requires explicit consent.
 
 The application executables include their Microsoft runtime dependencies. TTS
 inference runs in Rust on the CPU, without GGML DLLs or a separate runtime
-installer. These build guarantees still require clean-machine speech acceptance;
-historical native-engine captures do not qualify the Rust replacement.
+installer. These build guarantees still require clean-machine speech acceptance.
 
 Keep the setup window open to see the current step and download progress. **Pause
 setup** stops safely and retains partial downloads; **Retry setup** continues
@@ -91,7 +88,7 @@ then downloads newer Windows ARM64 releases, including experimental
 prereleases. **Settings > Application** also offers a manual check. Discovery
 selects the highest numeric version in the bounded catalog, excluding drafts and
 older versions. An incomplete catalog or invalid newest release fails without
-falling back. Published v0.2.0 requires manual replacement.
+falling back.
 
 Checks reuse unchanged metadata through conditional HTTP requests and request gzip
 compression. Network and server failures back off, including GitHub's retry and
@@ -129,6 +126,10 @@ For local builds of the same format, use the
 [single-executable build command](development-guide.md#build-a-single-executable).
 
 ## Publish a release
+
+The current v0.3.0 [publication-verification record](evidence/windows-release-030-20261113/summary.json)
+binds the source, workflow and downloaded asset identities. It also retains the
+failed and cancelled Foundation bundle outcomes; model/device acceptance remains separate.
 
 Release scripts require PowerShell 7.6 or newer. Before building, the workflow
 checks workflow lock coverage and tooling policy, then syntax, argument preservation,

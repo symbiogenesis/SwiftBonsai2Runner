@@ -101,7 +101,7 @@ cancellation.
 | PCM intake | Reuses a fixed 16 KiB buffer for HTTP headers, chunk framing and PCM. Parses buffered metadata without byte-sized socket reads; chunk-size lines use ten fixed bytes. A lending helper owns cursor/alignment rules and releases available even-byte prefixes immediately, retaining at most one split sample in two reader-owned bytes. Checks cancellation/deadlines even for buffered data; requires exact chunk endings, terminal framing and EOF. |
 | TTS execution | Rust owns working Talker KV for one request, resets CodePredictor KV per frame and retains the selected codec state through synthesis. Base can retain one exact reference-prefix snapshot, capped at 64 rows and 8 MiB including row keys, hidden output and layer KV; restoring its working prefix adds at most another 8 MiB before ordinary continuation growth. Copies are fallible, matching compares complete row bits, and cancellation/failure or voice replacement discards reuse. Codec convolutions and ConvNeXt share the selected bounded projection team, with per-worker patch/activation scratch and disjoint output windows; streaming context and overlap carry keep their original update order. Cancellation runs between prompt projections, decoder layers, codebooks and frame delivery. No GGML graph allocator or foreign hidden-state bridge remains in serving. The existing output ceiling and contained Job admission still apply; full Rust scratch and peak memory require separate measurement. |
 
-The TTS library documents [Rust waveform ownership and historical limits](../src/speech-tts/README.md#native-waveform-ownership)
+The TTS library documents [Rust waveform ownership](../src/speech-tts/README.md#native-waveform-ownership)
 and [voice-conditioning lifetime](../src/speech-tts/README.md#voice-conditioning).
 The companion's [HTTP contract](../tools/qwen-tts/README.md#http-contract) owns
 WAV/PCM schemas and wire completion rules.
@@ -137,9 +137,8 @@ The adaptive broker forwarding path also needs hosted comparison: a short initia
 span may add a buffered copy where direct final-frame intake previously bypassed
 the reader. Full-span borrowing and small-fragment coalescing establish behavior,
 not a measured net throughput improvement.
-TTS graph eviction trades cross-window reuse for bounded retained scratch;
-the latency cost of rebuilding windows and the complete-model memory benefit
-still need target-device qualification. These storage contracts do not qualify a
-lower model admission threshold. The Swift development profile uses 15.5 GiB
-admission and an 11.5 GiB Job cap, retaining the 4 GiB
-physical reserve, memory-pressure shutdown and full context/output reservations.
+The Rust TTS engine's complete-model memory use still needs target-device
+qualification. These storage contracts do not qualify a lower model admission
+threshold. Swift serving uses [memory-selected admission](swift-memory.md#memory-selected-serving-context),
+retaining the 4 GiB physical reserve, memory-pressure shutdown and full
+context/output reservations.

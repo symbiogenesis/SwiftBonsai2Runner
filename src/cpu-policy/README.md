@@ -23,7 +23,7 @@ reading artifacts, querying the operating system, writing files, or starting
 processes. Callers validate external storage and retain verified artifacts through
 native execution. PTQ1 and adapter choices require explicit Swift-only options.
 
-The committed fixture was frozen from PowerShell before migration. It covers all
+The committed policy fixture covers all
 five approved profile/adapter/representation combinations, whole policies, artifact
 identities, and exact argument vectors. Focused evidence and schema regressions
 exercise rejected selections. Full suites and all benchmarks remain CI-only.

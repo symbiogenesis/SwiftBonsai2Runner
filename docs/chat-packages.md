@@ -6,9 +6,9 @@ the portable Windows ARM64 `.exe` and open it. Its setup runs inside the window.
 
 Checked-directory packages use explicit install/rollback commands, without
 automatic discovery or running-app replacement. Current-source single-executable
-bundles instead use [portable updates](releases.md#update-and-remove): verified
-download, then confirmed replacement/restart. Published v0.2.0 needs manual
-replacement. Always preserve the same user data directory.
+bundles instead use [portable updates](releases.md#update-and-remove), including
+confirmed replacement/restart and deferred installation on close. Always preserve
+the same user data directory.
 
 `bonsai-tools chat-package` assembles reviewed Windows ARM64 files, installs
 versioned directories, activates updates atomically and retains a rollback choice.
@@ -47,8 +47,8 @@ supplied declarations, not proof of build provenance.
 ```json
 {
   "operation": "create",
-  "outputDirectory": "C:\\BonsaiPackages\\0.2.0",
-  "version": "0.2.0",
+  "outputDirectory": "C:\\BonsaiPackages\\0.3.0",
+  "version": "0.3.0",
   "sourceRevision": "0000000000000000000000000000000000000000",
   "chatPath": "C:\\ReviewedBuild\\bonsai-chat.exe",
   "brokerPath": "C:\\ReviewedBuild\\bonsai-broker.exe",
@@ -89,7 +89,7 @@ preserves those launcher bytes, so the portable executable carries the same icon
 without modifying its verified prefix after packaging.
 
 ```powershell
-./scripts/release/Build-WindowsExecutable.ps1 -PackageDirectory C:\BonsaiPackages\0.2.0 -ManifestSha256 REPLACE_WITH_THE_REVIEWED_64_HEX_DIGEST -OutputPath C:\BonsaiPackages\SwiftBonsai2Runner.exe
+./scripts/release/Build-WindowsExecutable.ps1 -PackageDirectory C:\BonsaiPackages\0.3.0 -ManifestSha256 REPLACE_WITH_THE_REVIEWED_64_HEX_DIGEST -OutputPath C:\BonsaiPackages\SwiftBonsai2Runner.exe
 ```
 
 The helper invokes the trusted package's maintenance binary with this request:
@@ -97,7 +97,7 @@ The helper invokes the trusted package's maintenance binary with this request:
 ```json
 {
   "operation": "create",
-  "packageDirectory": "C:\\BonsaiPackages\\0.2.0",
+  "packageDirectory": "C:\\BonsaiPackages\\0.3.0",
   "manifestSha256": "REPLACE_WITH_THE_REVIEWED_64_HEX_DIGEST",
   "outputPath": "C:\\BonsaiPackages\\SwiftBonsai2Runner.exe"
 }
@@ -116,8 +116,9 @@ the native package launcher. The retained cache is under
 verified on reuse. `bundled-chat` accepts the installed launch options,
 including `--data-directory` and `--no-speech-models`, while preserving its own
 package location. Bundled launches automatically check and download verified
-published releases; executable replacement and restart require confirmation in
-native Settings. Source and preview launches perform no update discovery. The local
+published releases. Immediate replacement restarts the app; a deferred verified
+update installs on close without reopening it. Source and preview launches perform
+no update discovery. The local
 [single-executable build](development-guide.md#build-a-single-executable) builds
 the five components and assembles this same distribution format.
 
@@ -127,7 +128,7 @@ the five components and assembles this same distribution format.
 {
   "operation": "install",
   "installationDirectory": "C:\\BonsaiChat",
-  "packageDirectory": "C:\\BonsaiPackages\\0.2.0",
+  "packageDirectory": "C:\\BonsaiPackages\\0.3.0",
   "manifestSha256": "REPLACE_WITH_THE_REVIEWED_64_HEX_DIGEST"
 }
 ```
@@ -199,7 +200,7 @@ native app and broker. No failed PTQ1 launch falls back automatically.
 
 Foundation's `bonsai-tools` suite checks creation, installation, updates,
 bidirectional rollback, legacy compatibility, write contention, tampering,
-inventory, metadata and launch handoff. Rust replaced the PowerShell tests/wrappers.
+inventory, metadata and launch handoff.
 Inert ARM64 headers and injected handoffs establish package behavior only;
 actual-model, speech, signing and daily-service acceptance remain separate.
 Complete suites are CI-only.

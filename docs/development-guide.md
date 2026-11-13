@@ -69,8 +69,9 @@ independent fixture replay or human-review preparation while source/provenance i
 
 The integrator reviews and integrates commits into each repository's local `main`, preserving
 the owner's work and qualification candidate. Workers report commands, results,
-limits and remaining gates. They never push, open routine delivery PRs or operate
-CI. Local completion does not wait for an owner verdict; hosted/device acceptance
+limits and remaining gates. They never push or open routine delivery PRs. CI is
+owner-operated except for AGENTS.md's Foundation release-bundle exception.
+Local completion does not wait for an owner verdict; hosted/device acceptance
 stays pending until supported by its own evidence.
 
 ### Speech integration interfaces
@@ -167,7 +168,7 @@ To bundle an already reviewed schema-2 package without compiling or collecting
 notices again:
 
 ```powershell
-./scripts/Build-WindowsExecutable.ps1 -PackageDirectory C:\BonsaiPackages\0.2.0 -ManifestSha256 $reviewedDigest -OutputPath C:\Bonsai\SwiftBonsai2Runner.exe
+./scripts/Build-WindowsExecutable.ps1 -PackageDirectory C:\BonsaiPackages\0.3.0 -ManifestSha256 $reviewedDigest -OutputPath C:\Bonsai\SwiftBonsai2Runner.exe
 ```
 
 The same package-to-executable helper runs in Windows Release. Local builds
@@ -247,7 +248,6 @@ preparation, and failures appear in speech status without stopping text chat.
 At most two workers download/check speech artifacts; failure cancels and joins
 the peer. ASR/TTS models load on demand for transcription or read-aloud. Closing
 cancels preparation and waits for owned processes to stop.
-Staged startup requires rebuilt maintenance tools and UI; older tools retain combined setup.
 
 Direct developer launches of `bonsai-chat.exe` also verify the selected Rust
 executable before hashing the model or creating credentials. Use the matching
@@ -266,17 +266,8 @@ including on Snapdragon X1. This CPU scheduling policy does not isolate disk I/O
 
 If the launcher reports a missing prebuilt executable, run the maintenance build
 command it prints from the repository root, then retry. Correct or remove any
-invalid `-ToolPath` or `BONSAI_TOOLS_PATH` override first. Older source launches used
-`build/tools/<fingerprint>/`; those caches are not selected automatically. Rebuild
-from the current checkout into `build/maintenance` to use the current compiler pin
-and maintenance commands.
-
-Rebuild the maintenance executable to receive the current direct CLI Rust default
-and `--publisher-engine` option. The PowerShell facade forwards only options you
-supply; omitted engine/worker options use the selected executable's defaults.
-Older executables retain their own defaults. `-NativeEngine -NativeRowWorkers 4`
-selects Rust/four workers explicitly; `-NativeRowWorkers 1` selects one Rust worker
-with current tools. Publisher launches require one.
+invalid `-ToolPath` or `BONSAI_TOOLS_PATH` override first. Rebuild from the current
+checkout into `build/maintenance` after source or compiler-pin changes.
 
 The native Rust `egui`/`eframe` app follows the [UI contract](ui-architecture.md).
 The window opens before broker/speech preparation finishes, so drafting remains
@@ -296,152 +287,89 @@ preserving newer drafts; a closed connection alone identifies no token/memory ca
 
 ### Conversations and response settings
 
-Conversations have independent drafts and settings with no count cap, including on
-branching and recovery. Storage still has an encrypted 8 MiB workspace budget
-and per-conversation message limits.
-Drag the sidebar's inner edge to resize it; its button beside Settings or
-**Ctrl+Shift+B** toggles visibility. Width and visibility are saved. Narrow windows
-use a left drawer that closes on selection, backdrop click or Escape without
-stopping a response. A compact left rail keeps the toggle accessible when hidden.
-Switch conversations while ready or generating. Use **New conversation** or a row's
-**actions** to rename, copy or delete. Deletion names its target; **Keep conversation**
-or Escape cancels. Deleting the last chat creates an empty one. Status and
-collapsible diagnostics remain outside the transcript.
+Each conversation keeps its own draft and response settings. Use the sidebar to
+switch chats, create a new one, or rename, copy and delete through a row's actions
+menu. Deleting the last chat creates an empty one. Creation and branching have no
+count cap; the encrypted workspace still has an 8 MiB saving budget and
+per-conversation message safeguards.
 
-**Search conversations** filters titles and visible messages by Unicode
-case-insensitive substring, excluding reasoning and drafts. It preserves the
-selected conversation and draft even when unmatched. **Clear** or Escape in the
-focused field restores the list before drawer dismissal or Stop. New conversations
-and branches clear search; the query is not saved. Large lists render visible rows
-and cache matches until the query or searchable content changes.
-Sidebar edits immediately update Find and highlights in the open conversation without
-moving focus; clearing removes highlights even with no matching conversations.
-Selecting or reselecting a result opens Find with the trimmed query and first body
-match selected. Title-only results show **No matches**. Editing or closing Find
-leaves the sidebar filter intact.
+Drag the sidebar's inner edge to resize it. Its toggle or **Ctrl+Shift+B** hides
+and reopens it. Narrow windows use a drawer that closes on selection, backdrop
+click or Escape. Width and docked visibility are saved separately from chats.
 
-While a response generates, you can draft the next message, browse another chat
-or create a conversation. Only one response runs at a time; Enter never queues a
-second request. **Stop** controls that response from any visible conversation;
-**Show response** returns to its original chat. Incoming text and completed history
-stay in that chat, and a newer draft survives completion, rejection or Stop.
-Its Delete action stays disabled until generation settles. Switching stops speech;
-background text never restarts playback. Navigation briefly locks during model
-teardown/restart, while drafts remain editable.
+**Search conversations** filters titles and visible message bodies by Unicode
+case-insensitive substring, excluding reasoning and drafts. Filtering preserves
+the selected chat and draft. Clear or Escape in the focused field clears the
+query before dismissing the drawer or stopping generation. New conversations and
+branches clear it; the query is not saved. Selecting a result opens Find in that
+chat. A title-only match can have no matching message body.
 
-The composer scrolls long drafts without hiding Microphone or Send/Stop.
-Drafts can contain up to 1,048,576 Unicode characters; oversized edits reject
-without inserting a partial paste. Complete requests still need to fit the
-1 MiB serialized-byte bound, exact context count and reply reservation. Long
-drafts remain editable after rejection. The separate 8 MiB recovery budget can
-reject saving a large workspace; saving failures stay visible.
-**Enter** sends when ready, **Shift+Enter** inserts a newline and **Ctrl+End**
-moves to the draft's end. **Ctrl+F** searches visible message bodies
-with Unicode case-insensitive matching, excluding reasoning. The search field and
-previous/next controls appear above the transcript only while Find is open.
-Settings is in the sidebar footer. The conversation has no permanent top bar or
-Find button. **F3/Shift+F3**
-(or **Enter/Shift+Enter** while Find is focused) moves between matches; **Latest**
-or the bottom-center down arrow returns to the newest message. **Close find** or
-**Escape** closes Find and clears highlights;
-a second Escape stops active generation or speech.
-**Ctrl+F** focuses Find from the composer or sidebar and closes an open conversation
-drawer. It also works in empty conversations. Settings, dialogs and open popups
-retain keyboard priority.
+Only one response runs at a time. While it generates, you can draft, browse or
+create another conversation. Enter cannot queue a second request. **Show response**
+returns to the generating chat; **Stop** controls it from any conversation.
+Completion, rejection and Stop preserve newer drafts. The generating chat cannot
+be deleted until it settles. Switching conversations stops speech and never starts
+playback for a hidden response.
 
-Each message's **actions** menu provides iteration tools for verified committed
-turns. **Edit and resend** opens an editor; **Create branch and send** submits
-the revised prompt in a new conversation using the preceding completed history.
-**Regenerate** creates a branch and sends the original prompt again, excluding
-its previous answer and later turns. Both retain the original conversation,
-unsent draft and response settings. Cancel/Escape leaves the source unchanged.
-**Branch from here** creates a conversation without sending: an assistant includes
-its completed turn; a user message becomes a draft after the preceding turns.
-Branches have no conversation-count cap and retain the usual recovery byte budget.
+| Control | Action |
+| --- | --- |
+| **Enter / Shift+Enter** | Send when ready / insert a newline. |
+| **Ctrl+F** | Open or focus Find for visible message bodies; excludes reasoning. |
+| **F3 / Shift+F3** | Next / previous Find match; Enter/Shift+Enter does the same while Find is focused. |
+| **Close find / Escape** | Close Find and clear its highlights. A further Escape stops generation or speech when no popup or dialog owns it. |
+| **Latest / down arrow** | Return to the newest message. |
+| Message **Copy** | Copy exact source text. Native styling keeps Markdown markers visible and never executes code or activates generated links. |
+| **Edit and resend / Regenerate** | Create and send a branch using the verified history prefix, preserving the original chat and draft. |
+| **Branch from here** | Create a branch without sending. A selected user message becomes the new draft. |
+| **Continue response** | Send an explicit continuation for the latest answer in context, preserving the current draft. |
 
-**Continue response** is available on the latest answer in conversation context when Swift is
-ready. It sends an explicit followup asking Swift to continue without repeating,
-and preserves the unsent composer draft. It uses the same context admission and
-response settings as Send. An identified interrupted reply is included in history;
-other intermediate Extra effort drafts are excluded. Older recovered messages without saved
-positions remain copyable and searchable, with iteration disabled. Newly completed
-turns gain verified positions through the normal committed-history event.
+Sidebar queries update Find without taking focus. Editing or closing Find leaves
+the sidebar filter intact. Iteration actions require verified message positions
+and the ordinary readiness/context checks; older recovered messages without those
+positions remain copyable and searchable. A locally identified interrupted answer
+can be used as context; intermediate Extra effort drafts cannot.
 
-Assistant text uses native heading, list/quote and inline/fenced code styles.
-Code is monospace; original Markdown markers remain visible. Copy, selection and
-Find retain exact source text and offsets. HTML and link-like text remain literal;
-this bounded styling subset does not execute code or activate generated links.
-
-**Settings** opens a centered native modal with side navigation in wide windows
-and wrapping categories in narrow or short windows. A compact page title and
-close button sit above the controls; the scope stays visible while scrolling.
-Its **Response** page names the selected conversation
-under **This conversation**. The other pages state **All conversations · This
-device**:
+**Settings** opens a native modal. Changes apply immediately; Done, Close or Escape
+dismisses it and restores composer focus. An open selector consumes Escape first.
+Background Send, Find and Stop shortcuts are blocked while the modal is open;
+an existing response continues.
 
 | Page | Scope and controls |
 | --- | --- |
-| **Response** | Selected conversation: Thinking, Extra effort and **Advanced response controls** for reply limits and adapter strength. |
-| **Voice** | All conversations: the shared Voice profile and read-aloud setup. |
-| **Appearance** | Device-wide System/Light/Dark theme, reading text size and maximum reading width, with a live sample and reset. Windows high contrast takes precedence. |
-| **Privacy** | All conversations: automatic encrypted saving and its persistent opt-out. |
-| **Application** | Device-wide runtime information, application updates and inline diagnostics. |
+| **Response** | Selected conversation: Thinking, Extra effort and advanced reply/adapter controls. |
+| **Voice** | Device-wide voice profile and read-aloud setup. |
+| **Appearance** | Device-wide System/Light/Dark theme, reading size/width and reset. Windows high contrast takes precedence. |
+| **Privacy** | Conversation saving and its persistent opt-out. |
+| **Application** | Runtime information, updates and diagnostics. |
 
-Changes apply immediately; **Done**, **Close** or Escape dismisses the modal
-without reverting them. Closing restores composer focus and preserves its draft.
-Escape closes an open selector before dismissing Settings. While Settings is
-open, background conversation actions, Find, Send and generation Stop shortcuts
-are blocked; active input retains its explicit cancellation behavior. A response
-already in progress continues normally. Voice setup and diagnostics expand
-inside Settings.
+The composer's **Thinking** popup also offers Thinking and Extra effort. These
+settings apply to the selected conversation and lock during generation. Escape
+closes the popup; Enter cannot send the background draft.
 
-The composer's **Thinking** popup offers **Thinking** and **Extra effort**, also
-available in **Settings > Response**. Both apply to the selected conversation and
-lock during generation. Click outside or press Escape to dismiss; Enter cannot
-send the background draft. Reply limits and adapter controls stay in advanced Settings.
-
-| Setting | Behavior |
+| Response setting | Default and behavior |
 | --- | --- |
-| **Thinking** | Off initially and in older saved chats; enables reasoning for the next response and every Extra effort pass. |
-| **Mode** | Standard makes one call. Experimental Extra effort makes at most three sequential plan/draft/review calls, shows stage labels and retains complete drafts. Neither mode has an elapsed generation-time limit; Stop cancels the active response. A truncated revision does not replace a complete draft; quality gains remain unproven. |
-| **Output cap** | Available only in **Settings > Response > Advanced response controls**, under **Reply length**. Defaults to 4,096; also offers 512/1,024/2,048 reasoning-inclusive tokens within the model session's selected context and 64-token template reserve. |
-| **Abliteration scale** | The advanced adapter disclosure in **Settings > Response** explains this experimental correction. The pinned adapter defaults to 1.3; choose 0-2 in 0.1 steps for the next response/every Extra effort pass without restart. Zero disables the correction. Older saved chats use 1.3; effectiveness and quality remain experimental. |
+| **Thinking** | Off. Enables reasoning on the next response and every Extra effort pass. |
+| **Extra effort** | Off. Makes at most three sequential plan/draft/review calls. Stage labels and complete drafts stay visible; a truncated revision does not replace a complete draft. Quality gains remain unproven. |
+| **Reply length** | 4,096 reasoning-inclusive tokens. Advanced controls also offer 512/1,024/2,048, subject to exact context admission and the 64-token reserve. |
+| **Adapter strength** | 1.3 for the pinned adapter; advanced controls offer 0–2 in 0.1 steps. Zero disables its correction for that response. Effects on quality remain experimental. |
 
-The composer's **Context:** button pairs its label with a circular occupancy indicator
-for the selected conversation's next Send. The ring includes the next reply reservation,
-fills up to its full circumference and uses a warning color near capacity. Hover or
-focus exposes an approximate percentage; an unfinished response instead shows a hollow
-ring with a dash until the estimate updates. Open it for a segmented breakdown of committed
-history including retained reasoning, the trimmed draft and approximate template framing,
-Extra effort planning overhead when enabled, the selected reply reservation and
-the fixed 64-token reserve. The input counts are heuristic and may
-overestimate or underestimate the tokenizer. The selected reply cap, reserve and
-session context limit are exact policy values; the estimate is no guarantee of fit.
-The capacity comes from the owned broker and stays pending until startup reports
-it. [Memory-selected context](swift-memory.md#memory-selected-serving-context)
-defines launch-time sizing, reserves and pending larger-context qualification.
-Extra effort estimates cover its planning pass only: later passes include generated
-working material that is not yet known. Message iteration can use a different
-prompt or committed prefix, so the composer estimate does not preflight those actions.
+**Context:** estimates the next Send, including committed history and reasoning,
+the trimmed draft, approximate framing, selected reply reservation and fixed
+64-token reserve. Capacity stays pending until the broker reports it. Extra effort
+estimates cover its first pass only; later generated working material is unknown.
+Message iteration may use a different prompt. The ring and percentage are guidance,
+not an exact token count or permission to send. Near estimated capacity, **Start
+fresh** preserves the existing conversation and draft. Guidance never trims history,
+changes reply limits or disables Send automatically.
 
-At approximately 85% occupancy or estimated overflow, a plain-language warning offers
-**Start fresh**. The details explain when a smaller reply limit may help and point
-to advanced Settings; they never change the limit. Starting fresh preserves the
-previous conversation and its draft. No estimate disables Send, trims history or
-changes a cap automatically.
-Reply controls retain the normal generation lock. When the visible conversation
-owns an active response, the space details explain that they update after the response
-finishes; another selected conversation keeps its own next-draft estimate.
-Escape closes either composer popup before Find or Stop, and Enter in those popups does
-not submit the composer.
-
-Response settings belong to each conversation and are retained while saving is
-enabled; response controls lock during generation. The broker still counts the
-exact prompt for every call and never discards history to make it fit. A framed
-context rejection restores the prompt and keeps the model ready; lower the output
-cap or start a conversation. Reaching an admitted response's cap is a separate
-partial-answer outcome, after which you can explicitly ask Swift to continue.
-Other recognized input/burst rejections follow the [broker error contract](broker-policy.md#native-client-completion-and-recovery).
+Drafts accept up to 1,048,576 Unicode characters. Oversized edits reject as a whole.
+The independent 1 MiB serialized request bound includes history and JSON escaping;
+the broker also counts the exact prompt and reserves reply space. A recognized
+input/context rejection keeps the model ready and restores the prompt only to an
+empty composer. Edit the draft, reduce the reply limit or start a conversation.
+Other uncertain failures require explicit Retry; requests never replay
+automatically. See the [broker error contract](broker-policy.md#native-client-completion-and-recovery)
+and [storage limits](streaming-resources.md#native-chat-and-transcript).
 
 ### Optional recovery and preview
 
@@ -518,12 +446,6 @@ neither the inference runtime nor the underlying driver failure. New launches
 record the selected graphics adapter/backend and any device-lost reason in the
 same retained stderr evidence.
 
-The [retained Adreno X2-90 failure](evidence/native-renderer-20261103/summary.json)
-selected Vulkan and recorded device loss with a driver-fault message before the
-upload panic. In that case, select DX12 for the next explicit attempt. Repeating
-Vulkan does not test an alternative backend. DX12 startup remains unqualified by
-that failed launch; renderer selection does not change the inference engine.
-
 The native UI supports DX12, Vulkan and OpenGL/GLES through wgpu. After rebuilding
 the maintenance executable, select one explicitly with
 `bonsai-tools chat --graphics-backend dx12` or
@@ -533,19 +455,6 @@ omitting it preserves the inherited setting and upstream adapter selection.
 The deferred request retains the requested option, while `chat.log` records
 the actual selected adapter/backend. This selects only the window renderer;
 it does not enable NPU inference or change model selection.
-
-When using an older maintenance executable without this option, preserve your
-current `WGPU_BACKEND`, set it for the attempt and restore it even when launch fails:
-
-```powershell
-$previousBackend = $env:WGPU_BACKEND
-try {
-    $env:WGPU_BACKEND = 'dx12'
-    .\scripts\Start-Chat.ps1 -NativeEngine
-} finally {
-    $env:WGPU_BACKEND = $previousBackend
-}
-```
 
 There is no automatic relaunch or request replay. A model-free `--preview` checks
 the same renderer without loading a model; device diagnostics and their setup,
@@ -627,7 +536,7 @@ Outside the viewer, Escape cancels import/transcription; conversation changes an
 closing also cancel it and discard late results. Unsupported, empty or failed audio
 leaves the existing draft intact.
 
-Each completed response's lower-right **speaker button** reads it independently,
+Each completed response's header **speaker button** reads it independently,
 including while a newer response generates. While speech loads or waits for audio,
 the active button shows a spinner and remains available to cancel. Once audio
 plays, it becomes **Stop**. Normal preparation, playback and explicit cancellation
@@ -796,8 +705,8 @@ Rust selection; omitting it selects the current development default.
 The owner selects [TurboQuant-inspired K4/V4 (`rsq4`)](quantized-kv.md) as the
 development default in new Swift runtime source. Runner activates that default
 only for the exact reviewed runtime source after published-bundle verification
-and repinning. The 0.1.27 development pin retains it; the historical 0.1.23
-control retains FP16. This upgrade supplies no measured CPU or cache benefit. Trusted
+and repinning. The 0.1.27 development pin retains it. This selection supplies no
+measured CPU or cache benefit. Trusted
 source launches accept `--kv-cache f16|rsq4|rsq4k3v`
 (`-KvCache F16|Rsq4|Rsq4K3V` through `Start-Chat.ps1`); installed-launch JSON uses
 `KvCache: "f16"`, `"rsq4"` or `"rsq4k3v"`.
@@ -839,10 +748,9 @@ requires qualification.
 Native Rust defaults to four row workers using the reviewed 0.1.27 implementation.
 `--native-row-workers 1` explicitly selects one worker. Publisher/reference
 launches default to one and reject four; no request can override this private launch setting.
-The [fixed-input comparison](evidence/row-parallel-smoke.json) preserves all logits
-and logical state bytes with a lower one-step evaluation duration. Application
-startup/streaming acceptance, complete-answer latency and broader qualification
-are separate. Keep the same model, adapter and resource limits when comparing.
+Worker arithmetic, complete-state parity, application startup/streaming and
+complete-answer latency require their own qualification. Keep the same model,
+adapter and resource limits when comparing.
 
 The [full runtime-promotion policy](native-rust-engine.md#default-runtime-promotion)
 remains unchanged and independent of this Rust/PQ2 development choice. Thinking
@@ -1115,8 +1023,8 @@ Publisher Swift uses batch/microbatch 128/64. Native Prism 0.1.27 and publisher
 Swift select context and the Job/admission budget from available memory under the
 [context policy](swift-memory.md#memory-selected-serving-context). The native planner
 charges the selected cache and sequential scratch, retaining the 4 GiB host reserve
-and startup margin. The historical 11.5 GiB Job/15.5 GiB fixed-8K controls retain
-their original identities.
+and startup margin. The separate [CPU load/decode check](#bounded-cpu-loaddecode-check)
+uses a fixed 8K context and its own budget.
 Add `--use-abliterate-lora` for the pinned adapter and per-request scale (default
 1.3); the native UI requests it automatically, while direct broker launches omit it.
 Publisher Prism and the pinned native Rust service both accept the approved adapter with PQ2 or explicit

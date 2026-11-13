@@ -25,7 +25,7 @@ outside the public interface. Output is finite mono 24 kHz PCM within the existi
 partial playback does not establish success.
 
 `Synthesizer::load` selects two fewer threads than the available CPU count, with
-a minimum of one. `load_with_threads` and companion `--threads` accept 1?256
+a minimum of one. `load_with_threads` and companion `--threads` accept 1–256
 workers. The library opens no devices or listeners. Keep it in its separately
 supervised process so admission, cancellation, deadlines and shutdown retain
 their ownership rules. The [HTTP contract](../../tools/qwen-tts/README.md#http-contract)
@@ -104,8 +104,8 @@ those C++ libraries are linked.
 
 ## Optional Hexagon runtime
 
-TTS serves on the CPU. It does not register the former local `HTP0` GGML DLL
-backend or use a manually installed speech runtime directory. Rust NPU packet
+TTS serves on the CPU. It uses no GGML DLL backend or manually installed speech
+runtime directory. Rust NPU packet
 descriptors prepare future signed execution; they do not dispatch inference or
 qualify acceleration. Swift's separate `native-q2` policy is unchanged. NPU/GPU
 serving, ternary talkers and new 48 kHz artifacts retain independent gates in
@@ -170,7 +170,7 @@ retains its original source identities and replay limits.
 
 ## Native waveform ownership
 
-Complete WAV requests now retain a Rust-owned waveform through validated PCM
+Complete WAV requests retain a Rust-owned waveform through validated PCM
 conversion and HTTP writes. Streaming requests deliver bounded PCM chunks; heard
 samples can precede a later failure. Production has no `qt_audio` allocation or
 native release call. The [resource contract](../../docs/streaming-resources.md#native-speech-generation-and-streaming)

@@ -52,11 +52,10 @@ owns verified installed launches.
 The native Rust single-file launcher embeds five application executables, their
 manifest and notices. It verifies and extracts the inventory into the per-user cache
 and uses verified package launch. Broker, UI and speech retain separate ownership,
-containment and teardown. The v0.2.2 preparation worker also provisions the compiled
-Swift weights, selected adapter and runtime before broker handoff. The v0.2.1 update
-path downloads verified releases and requires user
-confirmation before replacement, preserving the data directory. Published v0.2.0 requires
-[manual replacement](releases.md#update-and-remove).
+containment and teardown. The preparation worker provisions the compiled Swift
+weights, selected adapter and runtime before broker handoff. Portable update
+behavior is described [below](#application-updates); released-version differences
+belong in the [release guide](releases.md#update-and-remove).
 
 Swift launches default to native Rust Prism 0.1.27, original PQ2, four CPU row
 workers and the standard adapter at scale 1.3. `--native-engine` remains accepted;
@@ -69,8 +68,8 @@ resident `native-q2` path under the [Hexagon policy](hexagon.md); CPU fallback f
 an absent signed package or CDSP driver does not change engine or representation.
 PTQ1 remains an explicit opt-in.
 
-The reviewed 0.1.27 development pin retains TurboQuant-inspired K4/V4 (`rsq4`); historical
-0.1.23 used FP16. Runner binds the cache to reviewed runtime source and verifies
+The reviewed 0.1.27 development pin uses TurboQuant-inspired K4/V4 (`rsq4`).
+Runner binds the cache to reviewed runtime source and verifies
 cache/startup-graph readiness. Quality, memory, performance and actual-model
 qualification remain pending. Trusted `--kv-cache f16` selects recovery on a new
 native Swift launch; retry preserves it. Requests cannot override or automatically
@@ -91,8 +90,7 @@ can admit the 262,144-token model window when memory funds it; generic graphs
 and FP16 retain their existing state ceiling. Retry takes a new memory observation.
 The UI uses broker-reported capacity for guidance; history, reply reservation
 and exact admission remain unchanged. This source accounting does not qualify
-larger-context quality, measured peak memory or performance. Historical fixed-8K
-releases retain their own evidence and limits.
+larger-context quality, measured peak memory or performance.
 
 Trusted `--placement auto|cpu` also survives preparation and Retry. The reviewed
 0.1.27 source skips accelerator initialization for CPU placement and must report
@@ -175,7 +173,7 @@ selected capacity; a running session keeps its immutable capacity and reserves.
 
 ### Application updates
 
-Portable releases check GitHub after startup and every 15 minutes and automatically
+Current-source portable builds check GitHub after startup and every 15 minutes and automatically
 download the highest newer numeric version, including published prereleases.
 The native Settings view also accepts a manual check. Discovery exhausts at most
 three pages of 100 releases; a full final page fails explicitly because catalog
@@ -218,52 +216,19 @@ atomically replaces the original after its launcher exits. Changed originals,
 network/verification failures or exhausted sharing retries retain the old file.
 Immediate replacement reopens with the same launch options and user data directory;
 deferred-close replacement skips restart. The handoff and helper explicitly carry
-that choice; older launchers retain their existing restart behavior. Restart
+that choice. Restart
 failure leaves the updated executable available for manual launch.
 Models, runtime downloads, conversations and preferences stay separate.
 Source and preview launches start no update discovery or installer work.
 
 #### Legacy MSI updater
 
-The Rust MSI updater remains as internal compatibility code, outside the current
-portable release path. Its existing confirmation, publication validation and
-process-ownership controls remain required if it is used or restored later.
-Current Windows Release does not build or publish an MSI for that updater.
-
-Legacy MSI installations check for updates after startup, every 15 minutes or
-manually in Settings. A bounded worker handles network, metadata and downloads
-off the event loop, sending no conversation/model data. Source and preview
-launches make no update requests.
-
-The maintenance executable consumes the repository's Windows ARM64 release
-manifest, checksum inventory and GitHub asset identities. It accepts only a
-strictly newer numeric version with matching source/release/architecture/file
-identities. Published experimental prereleases remain eligible; draft releases
-and non-Windows assets do not. No published release is an ordinary no-update
-state. Failure retains the running app and never substitutes an unverified file.
-
-Installation requires an explicit native confirmation and known owned teardown.
-The UI queues a verified update request for its maintenance launcher and closes
-through the ordinary persistence and process cleanup path. After the native
-window exits, the launcher checks the published release again and requires the
-staged receipt and installer to match that fresh identity. It retains its launch
-guard, installer read handle and ancestor directory handles through the fixed
-Windows Installer process creation. The queued request is consumed before
-process creation; missing requests and final network/identity failures are errors.
-It then exits, releasing
-the guard so application files can be replaced. It must not install while model
-ownership is uncertain or create a detached child that escapes the existing
-containment contract.
-The queued request alone never authorizes installation: the native window must
-report the dedicated successful update exit after receiving its queued receipt.
-An ordinary close, cancellation, crash or cleanup failure cannot activate a
-leftover queue. Failed preparation or unknown model ownership disables in-app
-installation while discovery and downloads remain available.
-Conversation saving retains its existing opt-out; updating does not enable it.
-Windows may request administrator approval. After the installer finishes,
-reopen from the Start menu; automatic restart is not promised.
-Model/runtime downloads and local user data
-remain separate from MSI application files.
+The MSI updater is internal compatibility code. Windows Release publishes no MSI.
+If restored, it must retain explicit confirmation, fresh publication and staged-byte
+verification, successful owned teardown and the dedicated successful update exit.
+A leftover queue or ordinary close cannot authorize installation. Models and user
+data remain separate from application files; installed upgrade and rollback need
+their own qualification before selecting this distribution again.
 
 ### Conversation and failure semantics
 

@@ -44,8 +44,7 @@ licenses, Prism notices and pinned artifacts. Dependency terms apply independent
 | Prism/ggml codec, loader and native reference portions | MIT | Retain upstream MIT notices; Apache-2.0 does not replace them. |
 
 All reviewed code packages declare licenses with permissive options; fonts have
-separate terms. The retired `tools/prism` helper and cbindgen dependency are absent
-from the current workspace graph; their historical reviews describe earlier code.
+separate terms.
 
 ### Native GUI fonts
 
@@ -89,7 +88,7 @@ and root NOTICE. The optional `fearless_simd` pin, checksum and technical review
 live in the [dependency audit](dependency-audit.md#native-inference-source-review);
 its license options appear in the dependency table above.
 
-The [OxiBonsai source review](oxibonsai-reuse.md) pins v0.2.3 revision
+The reviewed OxiBonsai v0.2.3 source is revision
 `1d10c48e14754ff6999158f8fa13c7c92b40b0dc`. Its selected GGUF/NEON sources
 declare Apache-2.0, compatible with Runner's original license. Preserve COOLJAPAN
 OU (Team Kitasan) attribution and identify modifications if importing source.
@@ -106,10 +105,11 @@ modifies that exact Swift assessment source under its MIT license. Its manifest
 retains the source LICENSE digest; preserve the upstream copyright/license with
 any source or binary integration. No UCRT implementation source is distributed.
 
-Speech executables also bundle the MIT-licensed transcribe.cpp and Qwen/GGML cores;
-retain their source-specific notices from the exact [speech pins](../config/native-speech.lock.json),
+ASR includes the MIT-licensed transcribe.cpp native core. Rust TTS derives from
+reviewed Qwen/GGML source without linking those C++ engines. Retain source-specific
+notices from the exact [speech pins](../config/native-speech.lock.json),
 [ASR lock](../src/speech-asr/model.lock.json) and `src/speech-tts/LICENSE.*` files.
-These native-engine terms are separate from the speech model terms below.
+These code terms are separate from the speech model terms below.
 
 Retain each exact distribution's bundled licenses/notices. A top-level MIT
 license does not replace terms for additional included components.
