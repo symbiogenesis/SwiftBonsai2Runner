@@ -271,17 +271,27 @@ fn canonical_backend_body_respects_the_exact_private_request_byte_limit() {
         .unwrap()
         .backend_body()
         .len();
-    for extra in [0, 1] {
-        let body = serde_json::to_vec(&serde_json::json!({
-            "messages": [{"role": "user", "content": "x".repeat(MAX_BODY_BYTES - overhead + extra)}]
-        }))
-        .unwrap();
-        assert!(body.len() < MAX_BODY_BYTES);
-        if extra == 0 {
-            let admitted = prepare(&body).unwrap().admit(|_| Ok(1)).unwrap();
-            assert_eq!(admitted.backend_body().len(), MAX_BODY_BYTES);
-        } else {
-            rejected_body(&body, Rejection::BodySize);
+    for prefix in [String::new(), "\u{96e8}\u{1f331}\"\\\n".repeat(65_536)] {
+        let encoded_prefix = serde_json::to_vec(&prefix).unwrap().len() - 2;
+        for extra in [0, 1] {
+            let content = format!(
+                "{prefix}{}",
+                "x".repeat(MAX_BODY_BYTES - overhead - encoded_prefix + extra)
+            );
+            let body = serde_json::to_vec(&serde_json::json!({
+                "messages": [{"role": "user", "content": content}]
+            }))
+            .unwrap();
+            assert!(body.len() < MAX_BODY_BYTES);
+            if extra == 0 {
+                let admitted = prepare(&body).unwrap().admit(|_| Ok(1)).unwrap();
+                assert_eq!(admitted.backend_body().len(), MAX_BODY_BYTES);
+                let canonical: serde_json::Value =
+                    serde_json::from_slice(admitted.backend_body()).unwrap();
+                assert_eq!(canonical["messages"][0]["content"], content);
+            } else {
+                rejected_body(&body, Rejection::BodySize);
+            }
         }
     }
 }
@@ -718,6 +728,78 @@ fn memory_selected_context_controls_exact_admission_without_changing_request_byt
         assert!(matches!(
             RequestPolicy::with_context_tokens(8080, KEY, invalid),
             Err(Rejection::Configuration)
+        ));
+    }
+}
+
+#[test]
+fn staged_long_context_intake_preserves_unicode_and_exact_reply_reservations() {
+    // Mock counts exercise admission arithmetic only. They establish neither
+    // model tokenization nor actual-model 64K/128K usability or latency.
+    for capacity in [65_536, 131_072] {
+        let text = "\u{1f331}\"".repeat(capacity);
+        let body = serde_json::to_vec(&serde_json::json!({
+            "messages": [{"role": "user", "content": text}],
+            "max_completion_tokens": 1024,
+            "enable_thinking": false
+        }))
+        .unwrap();
+        assert!(body.len() > 32_768);
+        assert!(body.len() < MAX_BODY_BYTES);
+        let policy = RequestPolicy::with_context_tokens(8080, KEY, capacity).unwrap();
+        let exact = capacity - 1024 - TEMPLATE_MARGIN_TOKENS;
+        let pending = || {
+            policy
+                .check_head(&head(body.len()))
+                .unwrap()
+                .prepare(&body)
+                .unwrap()
+        };
+        let mut counted = Vec::new();
+        let admitted = pending()
+            .admit(|canonical| {
+                let request: serde_json::Value = serde_json::from_slice(canonical).unwrap();
+                assert_eq!(request["messages"][0]["content"], text);
+                assert_eq!(request["max_completion_tokens"], 1024);
+                counted.extend_from_slice(canonical);
+                Ok(exact)
+            })
+            .unwrap();
+        assert_eq!(admitted.backend_body(), counted);
+        assert!(matches!(
+            pending().admit(|_| Ok(exact + 1)),
+            Err(Rejection::ContextLimit)
+        ));
+        // A shorter reply admits exactly the newly released token reservation.
+        let mut larger_reply: serde_json::Value = serde_json::from_slice(&body).unwrap();
+        larger_reply["max_completion_tokens"] = serde_json::json!(4096);
+        let larger_reply = serde_json::to_vec(&larger_reply).unwrap();
+        assert!(
+            policy
+                .check_head(&head(larger_reply.len()))
+                .unwrap()
+                .prepare(&larger_reply)
+                .unwrap()
+                .admit(|_| Ok(exact - 3072))
+                .is_ok()
+        );
+        assert!(matches!(
+            policy
+                .check_head(&head(larger_reply.len()))
+                .unwrap()
+                .prepare(&larger_reply)
+                .unwrap()
+                .admit(|_| Ok(exact - 3071)),
+            Err(Rejection::ContextLimit)
+        ));
+        assert!(matches!(
+            policy
+                .check_head(&head(larger_reply.len()))
+                .unwrap()
+                .prepare(&larger_reply)
+                .unwrap()
+                .admit(|_| Ok(exact)),
+            Err(Rejection::ContextLimit)
         ));
     }
 }

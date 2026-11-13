@@ -47,6 +47,9 @@ use subtle::ConstantTimeEq;
 mod chat_controls;
 
 /// Largest accepted client or canonical backend request body in bytes.
+/// The native UI matches this bound. The pinned native runtime also limits
+/// worker frames and tokenizer input independently; a larger selected token
+/// capacity does not authorize larger serialized requests.
 pub const MAX_BODY_BYTES: usize = 1024 * 1024;
 /// Largest accepted HTTP header block in bytes.
 pub const MAX_HEADER_BYTES: usize = 16 * 1024;

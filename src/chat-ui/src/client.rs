@@ -45,6 +45,9 @@ const STARTUP_TIMEOUT: Duration = Duration::from_mins(10);
 const BROKER_STOP: Duration = Duration::from_secs(15);
 const MAX_HEAD: usize = 16 * 1024;
 const MAX_BODY: usize = 4 * 1024 * 1024;
+// Keep aligned with bonsai_broker::MAX_BODY_BYTES. The pinned native runtime's
+// worker frames and tokenizer retain independent 1 MiB limits; increasing only
+// the desktop HTTP limit would admit requests the selected runtime cannot use.
 const MAX_REQUEST: usize = 1024 * 1024;
 const MAX_EVENT: usize = 1024 * 1024;
 const MAX_ERROR_BODY: usize = 256;
@@ -855,7 +858,7 @@ fn serialize_request(
 
 const fn request_byte_limit() -> Failure {
     Failure::Rejected(
-        "This conversation exceeded the request byte limit. Shorten your message or select New conversation.",
+        "This conversation exceeded the 1 MiB request limit, including history and text escaping. Shorten your message or select New conversation. Your draft is kept.",
     )
 }
 
@@ -2606,6 +2609,95 @@ mod tests {
             incoming.try_recv(),
             Ok(Event::Complete(Completion::Finished))
         ));
+        Ok(())
+    }
+
+    #[test]
+    fn long_unicode_requests_preserve_complete_text_and_thinking_history() -> Result<(), Failure> {
+        // These sizes exercise intake for staged context profiles. Only the
+        // broker's independently supplied exact token count admits a request;
+        // repetitions here are text fixtures, never claimed token counts.
+        for repetitions in [65_536, 131_072] {
+            let text = "\u{1f331}\"".repeat(repetitions);
+            let history = [
+                Message {
+                    role: "user",
+                    content: "Keep the approved scene.".into(),
+                    reasoning_content: None,
+                },
+                Message {
+                    role: "assistant",
+                    content: "Understood.".into(),
+                    reasoning_content: Some("Prior reasoning: \u{96e8}\\\n".into()),
+                },
+                Message {
+                    role: "user",
+                    content: text.as_str().into(),
+                    reasoning_content: None,
+                },
+            ];
+            for thinking in [false, true] {
+                let body = serialize_request(&history, 1024, thinking, None)?;
+                assert!(body.len() > 32_768);
+                assert!(body.len() <= super::MAX_REQUEST);
+                let json: serde_json::Value = serde_json::from_slice(&body)
+                    .map_err(|_| Failure::Message("Long request roundtrip failed."))?;
+                assert_eq!(json["messages"][2]["content"], text);
+                assert_eq!(
+                    json["messages"][1]["reasoning_content"],
+                    history[1].reasoning_content.as_deref().unwrap_or_default()
+                );
+                assert_eq!(json["enable_thinking"], thinking);
+                assert_eq!(json["max_completion_tokens"], 1024);
+            }
+            assert_eq!(history[2].content.as_ref(), text);
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn escaped_request_overflow_returns_complete_draft_without_committing_history()
+    -> Result<(), Failure> {
+        let mut history = vec![
+            Message {
+                role: "user",
+                content: "Saved task".into(),
+                reasoning_content: None,
+            },
+            Message {
+                role: "assistant",
+                content: "Saved answer".into(),
+                reasoning_content: Some("Saved reasoning".into()),
+            },
+        ];
+        let original = serialize_request(&history, 1024, false, None)?;
+        // Decoded text fits the byte cap, but JSON escaping does not.
+        let text = "\n".repeat(super::MAX_REQUEST / 2);
+        assert!(text.len() < super::MAX_REQUEST);
+        let mut pending = history.clone();
+        pending.push(Message {
+            role: "user",
+            content: text.as_str().into(),
+            reasoning_content: None,
+        });
+        let failure = serialize_request(&pending, 1024, false, None);
+        assert_eq!(failure.err(), Some(super::request_byte_limit()));
+        let (_commands, commands) = std::sync::mpsc::channel();
+        let (events, incoming) = super::event_channel();
+        finish_turn(
+            &mut history,
+            pending,
+            &text,
+            Err(super::request_byte_limit()),
+            &events,
+            &commands,
+        )?;
+        assert_eq!(serialize_request(&history, 1024, false, None)?, original);
+        assert!(matches!(
+            incoming.try_recv(),
+            Ok(Event::Rejected { text: retained, retry_required: false, .. }) if retained == text
+        ));
+        assert!(incoming.try_recv().is_err());
         Ok(())
     }
 
