@@ -15,6 +15,9 @@ versioned directories, activates updates atomically and retains a rollback choic
 Install and launch with a trusted maintenance executable; no checkout, PowerShell
 or compiler is needed. The native preparation worker downloads and verifies
 models, adapters and the selected runtime after the window opens.
+Native speech still requires the compatible Microsoft Visual C++ ARM64 runtime;
+in-app setup does not install this system prerequisite. See
+[first-launch requirements](releases.md#first-launch-and-in-app-setup).
 
 Packages provide no signed installer or publisher authentication. Verify the
 manifest digest through a trusted channel and use an independently trusted

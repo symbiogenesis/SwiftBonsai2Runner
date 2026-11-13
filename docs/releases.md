@@ -43,6 +43,13 @@ launch memory budget from available RAM, retaining a 4 GiB Windows reserve and
 startup margin. Unsupported containment, unknown memory or insufficient resources
 stop startup; see [context sizing](swift-memory.md#memory-selected-serving-context).
 
+Native speech currently requires the compatible ARM64 Microsoft Visual C++ v14
+runtime from [Microsoft's redistributable downloads](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist).
+In-app setup prepares model and inference-runtime files; it does not install this
+system prerequisite automatically. If speech reports a missing runtime, install
+the compatible redistributable and use **Retry speech setup**. Text chat remains
+available while speech needs attention.
+
 Swift weights (about **6.71 GiB**), adapter, inference runtime and speech models
 are separate locked downloads with their own [license terms](licensing.md).
 Artifact checks and memory admission still apply. Opening the executable

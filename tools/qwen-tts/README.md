@@ -34,7 +34,7 @@ from an external working directory with absolute verified artifact and protected
 key-file paths:
 
 ```text
-bonsai-tts.exe --model C:\Speech\talker.gguf --codec C:\Speech\codec.gguf --voice-model C:\Speech\voice-talker.gguf --token-file C:\Speech\tts.key --port 8767
+bonsai-speech-tts.exe --model C:\Speech\talker.gguf --codec C:\Speech\codec.gguf --voice-model C:\Speech\voice-talker.gguf --token-file C:\Speech\tts.key --port 8767
 ```
 
 Launch with `bonsai-tools chat --tts-key-file C:\Speech\tts.key` as described in the setup guide.

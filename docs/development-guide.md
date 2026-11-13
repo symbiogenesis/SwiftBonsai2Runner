@@ -187,6 +187,11 @@ verifies the pinned Swift model, adapter, selected inference engine and speech
 models. Text chat starts as soon as its files are ready while speech preparation
 continues separately. Microphone capture and playback require explicit action.
 
+Native speech currently requires the compatible Microsoft Visual C++ ARM64
+runtime. In-app setup does not install system prerequisites automatically; follow
+the [runtime prerequisite guidance](releases.md#first-launch-and-in-app-setup)
+if speech needs it, then retry speech setup.
+
 Keep the window open to follow progress. **Pause setup** preserves partial
 downloads, and **Retry setup** resumes after the reported problem is resolved.
 Speech has its own **Retry speech setup** control in **Settings > Voice**;

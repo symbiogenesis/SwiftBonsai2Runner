@@ -29,7 +29,7 @@ built executable from an external working directory with absolute verified model
 and protected key-file paths:
 
 ```text
-bonsai-asr.exe --model C:\Speech\qwen3-asr.gguf --token-file C:\Speech\asr.key --port 8766
+bonsai-speech-asr.exe --model C:\Speech\qwen3-asr.gguf --token-file C:\Speech\asr.key --port 8766
 ```
 
 Then launch with `bonsai-tools chat --canary-key-file C:\Speech\asr.key` as described

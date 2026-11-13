@@ -31,7 +31,10 @@ Packages use GUI-subsystem `bonsai-launcher` for terminal-free startup;
 `bonsai-tools` retains its console. Both share maintenance commands and protocol.
 Model/speech workers remain separate owned processes. The app downloads and
 verifies its pinned models, adapters and inference runtime inside the native
-window; users do not run manual provisioning commands before launch. Bundle
+window; users do not run manual provisioning commands before launch. Native
+speech currently requires the compatible Microsoft Visual C++ ARM64 runtime,
+which in-app setup does not install automatically; see
+[first-launch requirements](../../docs/releases.md#first-launch-and-in-app-setup). Bundle
 integrity checks do not independently establish publisher identity; review
 published release checksums before execution.
 
