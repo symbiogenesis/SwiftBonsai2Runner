@@ -16,11 +16,7 @@
 /// Window sizes have a two-sample minimum for unusually small sample rates.
 /// This is a deterministic energy heuristic, not a speech/accuracy guarantee.
 #[must_use]
-pub fn pcm16_pause_boundary(
-    data: &[u8],
-    sample_rate: u32,
-    minimum_samples: usize,
-) -> Option<usize> {
+pub fn pcm16_pause_boundary(data: &[u8], sample_rate: u32, minimum_samples: usize) -> Option<usize> {
     if data.is_empty() || !data.len().is_multiple_of(2) || sample_rate == 0 || minimum_samples == 0 {
         return None;
     }
@@ -79,7 +75,10 @@ mod tests {
     use super::pcm16_pause_boundary;
 
     fn pcm(samples: &[i16]) -> Vec<u8> {
-        samples.iter().flat_map(|sample| sample.to_le_bytes()).collect()
+        samples
+            .iter()
+            .flat_map(|sample| sample.to_le_bytes())
+            .collect()
     }
 
     #[test]
@@ -90,7 +89,10 @@ mod tests {
         let boundary = pcm16_pause_boundary(&data, 16_000, 400_000).unwrap_or_default();
         // The cut is protected by at least half an analysis window on each side.
         assert!((432_800..=436_000).contains(&boundary));
-        assert_eq!(data[..boundary * 2].len() + data[boundary * 2..].len(), data.len());
+        assert_eq!(
+            data[..boundary * 2].len() + data[boundary * 2..].len(),
+            data.len()
+        );
         assert_eq!(pcm(&samples[..boundary]), data[..boundary * 2]);
         assert_eq!(pcm(&samples[boundary..]), data[boundary * 2..]);
     }
@@ -102,9 +104,15 @@ mod tests {
         samples[28_000..28_300].fill(0);
         let boundary = pcm16_pause_boundary(&pcm(&samples), 1_000, 25_000).unwrap_or_default();
         assert!((28_050..=28_250).contains(&boundary));
-        assert_eq!(pcm16_pause_boundary(&pcm(&samples), 1_000, 25_000), Some(boundary));
+        assert_eq!(
+            pcm16_pause_boundary(&pcm(&samples), 1_000, 25_000),
+            Some(boundary)
+        );
         samples[29_500..].fill(0);
-        assert_eq!(pcm16_pause_boundary(&pcm(&samples), 1_000, 25_000), Some(30_000));
+        assert_eq!(
+            pcm16_pause_boundary(&pcm(&samples), 1_000, 25_000),
+            Some(30_000)
+        );
     }
 
     #[test]
@@ -125,11 +133,17 @@ mod tests {
         // A relative dip alone is insufficient if it is still well above silence.
         let mut samples = vec![12_000_i16; 30_000];
         samples[27_000..27_500].fill(2_000);
-        assert_eq!(pcm16_pause_boundary(&pcm(&samples), 1_000, 25_000), Some(30_000));
+        assert_eq!(
+            pcm16_pause_boundary(&pcm(&samples), 1_000, 25_000),
+            Some(30_000)
+        );
         // A small amplitude change alone is insufficient to establish a pause.
         samples.fill(200);
         samples[27_000..27_500].fill(100);
-        assert_eq!(pcm16_pause_boundary(&pcm(&samples), 1_000, 25_000), Some(30_000));
+        assert_eq!(
+            pcm16_pause_boundary(&pcm(&samples), 1_000, 25_000),
+            Some(30_000)
+        );
     }
 
     #[test]

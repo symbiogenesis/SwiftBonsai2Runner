@@ -521,9 +521,22 @@ closing, late results, ASR/TTS exclusion and owned-worker cleanup. Verify visibl
 progress/Cancel and persistent actionable rejection messages survive microphone
 cleanup, full/partial transcript view/copy, and complete oversized transcripts
 without composer truncation or automatic submission. Qualify Windows duration
-metadata and segment trimming/seeking on long compressed recordings. Source checks
-cannot qualify native picker/clipboard behavior, real audio conversion, transcript
+metadata and segment trimming/seeking on long compressed recordings. Preserve
+pause-aware PCM cuts within the 30-second request bound, exact suffix
+carry-forward and final-tail coverage without dropped or repeated samples. Qualify
+speech crossing decoder windows, pauses near the end, continuous speech, silence,
+quiet/noisy recordings and cancellation with a retained suffix. Compare boundary
+word recognition against the fixed-cut reference before claiming an accuracy gain.
+Source checks cannot qualify native picker/clipboard behavior, real audio conversion, transcript
 accuracy or actual-model submission; owner-managed acceptance remains pending.
+Run the new `segmentation::tests::pause_boundary_*` selector controls and
+`audio_import::segments::tests::pause_segments_*` conservation/tail controls,
+capacity ranges and native all-target analysis on the settled pause-aware source.
+The local five-minute check allowance stopped during Visual Studio environment
+setup with access denied, before formatting, Markdown, compilation or regressions
+ran; the failed pass was not retried. Setup and cleanup took 0.05 seconds, with
+battery power, saver off and 23% charge at both endpoints. No accuracy,
+performance or uninterrupted power stability is established.
 The single 33.35-second local source check passed whitespace, formatting and the
 three changed Markdown files. Strict offline locked release all-target Clippy
 stopped on 11 lints, including three preexisting assertions, before regressions

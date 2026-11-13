@@ -60,18 +60,18 @@ use windows_sys::Win32::{
     },
 };
 
-const CODEC_FAILURE: &str =
-    "Could not read this audio file with the installed Windows codecs. Try a WAV or MP3 file.";
+mod segments;
+use segments::{
+    CHUNK_TOO_LONG, CODEC_FAILURE, MAX_SAMPLES, MEMORY_FAILURE, TICKS_PER_SECOND,
+    chunk_range, pause_segment, sample_duration,
+};
+
 const CANCELLED: &str = "Audio import cancelled.";
-const CHUNK_TOO_LONG: &str = "The Windows decoder returned an invalid audio segment. Transcription stopped. Your draft was kept.";
-const MEMORY_FAILURE: &str = "There is not enough available memory to decode the next audio segment. Close other apps and try again. Your draft was kept.";
-const MAX_SAMPLES: usize = 16_000 * 30;
 const MAX_CONVERTED_BYTES: u64 = 16_000 * 2 * 30 + 65_536;
-const TICKS_PER_SECOND: i64 = 10_000_000;
-const CHUNK_TICKS: i64 = 30 * TICKS_PER_SECOND;
 // At peak, the destination stream, DataReader, readback Vec and canonical WAV
-// can coexist. The decoder streams its source rather than loading the file.
-const CHUNK_WORKING_BYTES: u64 = 4 * MAX_CONVERTED_BYTES;
+// can coexist with the retained PCM allocation. Segment framing stays below
+// this peak too. The decoder streams its source rather than loading the file.
+const CHUNK_WORKING_BYTES: u64 = 5 * MAX_CONVERTED_BYTES;
 const CONVERSION_LIMIT: Duration = Duration::from_secs(45);
 const POLL: Duration = Duration::from_millis(10);
 type ImportResult = Result<Option<Chunk>, &'static str>;
@@ -509,7 +509,9 @@ fn decode_chunks(
     total: i64,
 ) -> Result<(), &'static str> {
     let mut offset = 0;
-    while let Some((start, end)) = chunk_range(offset, total) {
+    let mut pending = Vec::new();
+    let mut emitted_samples = 0_u64;
+    while let Some((start, end)) = chunk_range(offset, total, pending.len() / 2) {
         if shared.cancelled.load(Ordering::Acquire) {
             return Err(CANCELLED);
         }
@@ -527,18 +529,28 @@ fn decode_chunks(
             end,
         );
         let _closed_destination = destination.Close();
+        // Keep the decoded suffix after a pause. The next decode fills only
+        // the remaining request capacity, so samples are never reread or lost
+        // when choosing a boundary inside the normalized PCM.
+        let wav = pause_segment(&mut pending, &converted?, end == total)?;
+        let samples = u64::try_from((wav.len() - 44) / 2).map_err(|_| CHUNK_TOO_LONG)?;
+        let next_sample = emitted_samples.checked_add(samples).ok_or(CHUNK_TOO_LONG)?;
         let chunk = Chunk {
-            wav: converted?,
-            start: media_duration(start)?,
-            end: media_duration(end)?,
+            wav,
+            start: sample_duration(emitted_samples)?,
+            end: sample_duration(next_sample)?,
             total: media_duration(total)?,
             last: end == total,
         };
+        if shared.cancelled.load(Ordering::Acquire) {
+            return Err(CANCELLED);
+        }
         if sender.send(Ok(Some(chunk))).is_err() || end == total {
             return Ok(());
         }
         await_advance(shared, next)?;
         offset = end;
+        emitted_samples = next_sample;
     }
     Ok(())
 }
@@ -554,14 +566,6 @@ fn await_advance(shared: &Shared, next: &Receiver<()>) -> Result<(), &'static st
             Err(mpsc::RecvTimeoutError::Disconnected) => return Err(CANCELLED),
         }
     }
-}
-
-const fn chunk_range(start: i64, total: i64) -> Option<(i64, i64)> {
-    if start < 0 || start >= total {
-        return None;
-    }
-    let maximum = start.saturating_add(CHUNK_TICKS);
-    Some((start, if maximum < total { maximum } else { total }))
 }
 
 fn media_duration(ticks: i64) -> Result<Duration, &'static str> {
@@ -709,9 +713,8 @@ fn normalize_wave(wave: &[u8]) -> Result<Vec<u8>, &'static str> {
 #[cfg(test)]
 mod tests {
     use super::{
-        CHUNK_TICKS, CHUNK_TOO_LONG, CHUNK_WORKING_BYTES, Chunk, ImportResult, MAX_SAMPLES,
-        MEMORY_FAILURE, Session, TICKS_PER_SECOND, admit_memory, chunk_range, media_duration,
-        normalize_wave, supported_path,
+        CHUNK_TOO_LONG, CHUNK_WORKING_BYTES, Chunk, ImportResult, MAX_SAMPLES, MEMORY_FAILURE,
+        Session, admit_memory, media_duration, normalize_wave, supported_path,
     };
     use std::{
         io,
@@ -763,25 +766,8 @@ mod tests {
     }
 
     #[test]
-    fn segment_ranges_cover_long_recordings_and_keep_the_final_partial_segment() {
-        let total = 12 * 60 * 60 * TICKS_PER_SECOND + 17;
-        let mut offset = 0;
-        let mut count = 0;
-        while let Some((start, end)) = chunk_range(offset, total) {
-            assert_eq!(start, offset);
-            assert!(end > start && end - start <= CHUNK_TICKS);
-            offset = end;
-            count += 1;
-        }
-        assert_eq!(offset, total);
-        assert_eq!(count, 1441);
-        assert_eq!(chunk_range(-1, total), None);
-        assert_eq!(chunk_range(0, 0), None);
-        assert_eq!(
-            chunk_range(i64::MAX - 17, i64::MAX),
-            Some((i64::MAX - 17, i64::MAX))
-        );
-        assert_eq!(media_duration(total), Ok(Duration::new(43_200, 1_700)));
+    fn decoder_duration_keeps_subsecond_metadata_precision() {
+        assert_eq!(media_duration(432_000_000_017), Ok(Duration::new(43_200, 1_700)));
     }
 
     #[test]

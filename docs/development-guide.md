@@ -606,7 +606,11 @@ keep audio in memory and require no microphone permission. Select one file at a
 time. File size and total duration have no fixed cap; available physical memory
 and commit govern buffer and transcript allocation. The worker streams one
 mono 16 kHz PCM16 WAV segment at a time, fitting the recognizer's 30-second
-request contract, and uses the same
+request contract. It prefers a quiet pause in the final five seconds of a segment,
+carrying all audio after the cut into the next request. Without a clear pause it
+uses the full segment; the final segment keeps the complete remaining audio.
+This energy heuristic does not guarantee a speech boundary or improved accuracy.
+Import uses the same
 Qwen3-ASR 1.7B transcription path as microphone input. Transcripts replace the
 composer selection or insert at its cursor and count as ordinary text prompts:
 the app sends once when Swift is ready, or leaves a draft for explicit Send otherwise.

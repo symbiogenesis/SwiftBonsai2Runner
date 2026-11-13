@@ -318,7 +318,15 @@ normalizes MP3/WAV and Windows-supported M4A/AAC/FLAC/WMA to in-memory mono 16 k
 PCM16 WAV in sequential segments. File size and recording duration have no fixed
 admission cap: available physical RAM and commit govern decoder buffers and
 transcript growth. Each segment fits the recognizer's 30-second request contract;
-backpressure keeps one decoded segment in flight. File input requires no
+an allocation-free PCM energy scan prefers a quiet 100 ms window in its final
+five seconds. A pause needs RMS at most 256 PCM units and at most one quarter of
+the loudest searched window's RMS. Without a qualifying pause, or when the final
+window is equally quiet, the segment stays whole. The cut retains the exact PCM
+suffix, and the next decode fills only the remaining request capacity; final input flushes every
+remaining sample. Progress ranges follow emitted samples. The heuristic neither
+changes samples nor establishes transcription accuracy. Memory admission includes
+the retained PCM allocation, and backpressure keeps one decoded segment in flight.
+File input requires no
 microphone permission. A dedicated composer notice shows progress, Cancel and
 persistent actionable failures, independent of microphone cleanup notifications.
 It enters the same authenticated Qwen3-ASR and
