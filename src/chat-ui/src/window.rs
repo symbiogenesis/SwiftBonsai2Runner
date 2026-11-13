@@ -2309,14 +2309,17 @@ impl eframe::App for State {
     }
 }
 
-fn native_options() -> eframe::NativeOptions {
-    eframe::NativeOptions {
+fn native_options() -> io::Result<eframe::NativeOptions> {
+    let icon = eframe::icon_data::from_png_bytes(include_bytes!("../assets/bonsai.png"))
+        .map_err(io::Error::other)?;
+    Ok(eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
+            .with_icon(icon)
             .with_inner_size([1080.0, 780.0])
             .with_min_inner_size([480.0, 480.0]),
         renderer: eframe::Renderer::Wgpu,
         ..eframe::NativeOptions::default()
-    }
+    })
 }
 
 pub(super) fn run(config: Config) -> io::Result<()> {
@@ -2326,7 +2329,7 @@ pub(super) fn run(config: Config) -> io::Result<()> {
     let profile = profile::Store::open(&config.data);
     eframe::run_native(
         "Swift Bonsai",
-        native_options(),
+        native_options()?,
         Box::new(move |cc| {
             graphics::install(cc);
             configure(&cc.egui_ctx);
@@ -2368,7 +2371,7 @@ pub(super) fn run_startup(request: crate::startup::Request) -> io::Result<bool> 
     let approved_update = std::sync::Arc::clone(&update_exit);
     eframe::run_native(
         "Swift Bonsai",
-        native_options(),
+        native_options()?,
         Box::new(move |cc| {
             graphics::install(cc);
             configure(&cc.egui_ctx);
@@ -2396,7 +2399,7 @@ pub(super) fn run_startup(request: crate::startup::Request) -> io::Result<bool> 
 }
 /// Opens only a seeded interface; no backend, credential or audio operation runs.
 pub(super) fn run_preview() -> io::Result<()> {
-    eframe::run_native("Swift Bonsai · Preview", native_options(), Box::new(|cc| {
+    eframe::run_native("Swift Bonsai · Preview", native_options()?, Box::new(|cc| {
         graphics::install(cc);
         configure(&cc.egui_ctx);
         let (commands, _incoming) = mpsc::channel();

@@ -35,5 +35,8 @@ windows-future = "=0.3.2"
 egui_kittest = { version = "=0.37.0", features = ["wgpu"] }
 egui_system_font_provider = "=0.37.0"
 
+[target.'cfg(windows)'.build-dependencies]
+winresource = { version = "=0.1.34", default-features = false }
+
 [lints]
 workspace = true
