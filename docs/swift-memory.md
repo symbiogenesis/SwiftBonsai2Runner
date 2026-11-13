@@ -355,6 +355,7 @@ instead charges the immutable selected cache and sequential score scratch:
 | Publisher FP16 | 65,536 | 137,344 | 62,720 |
 | Native FP16 recovery | 65,536 | 131,296 | 62,720 |
 | Native K4/V4 | 16,896 | 34,016 | 241,664 |
+| Native K4/V3 capacity candidate | 14,848 | 29,920 | 262,144 (model limit) |
 
 Native process growth retains two complete caches, 96 bytes per token for
 24 F32 score rows and 128 bytes for metadata. K4/V4 records include their
@@ -377,8 +378,10 @@ reply cap plus the 64-token template reserve. It never exceeds Swift's declared
 262,144-token model context or the runtime's 4 GiB live-state bound after charging
 156,893,184 recurrent bytes plus single-copy native KV, score and metadata
 charges. FP16's resulting state ceiling is 62,720 tokens; K4/V4's is 241,664.
+K4/V3 fits the model's 262,144-token ceiling within the same state bound.
 At 20 GiB available before launch, publisher sizing selects 37,120 tokens and
-the prepared native K4/V4 profile selects 149,760. These are calculated admission
+the prepared native K4/V4 profile selects 149,760; K4/V3 selects 170,240.
+At 24 GiB available, K4/V3 reaches the model ceiling. These are calculated admission
 bounds, not measured usable capacities or long-range quality results.
 Less available RAM selects a smaller window and more can
 select a larger one, while insufficient space for a usable window rejects launch.
@@ -401,6 +404,18 @@ an older FP16-only memory protocol cannot receive the smaller K4/V4 allowance.
 Local Prism source changes do not modify installed release bytes;
 startup reports this limit explicitly. No version-only guess or fabricated
 release pin enables the new protocol.
+
+Runner prepares explicit `--kv-cache rsq4k3v` selection through trusted source,
+installed and deferred launches, including Retry. A separate exact-source release
+gate keeps it unavailable with the current 0.1.25 pin. Future activation requires
+review of both the K4/V3 numerical identity and the complete M1/M2 accounting
+contract; neither a version string nor a raw CLI option establishes support.
+The K4/V4 default and explicit FP16 recovery remain separate selections.
+
+For memory-sized serving, closing memory-heavy applications before a fresh launch
+or Retry can leave more RAM for the selected context. This cannot enlarge an
+already running model or the fixed-8K native release. Keep completed work before
+restarting; the planner retains the same host and startup reserves.
 
 The broker publishes the actual capacity to its owned UI. Until it is known,
 the Context control shows a pending capacity; afterward its estimates, meter and

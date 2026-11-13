@@ -64,6 +64,11 @@ native Swift launch; retry preserves it. Requests cannot override or automatical
 downgrade the cache. The [cache contract](quantized-kv.md) keeps admission, context
 limits and device qualification separate.
 
+Trusted launch parsing also carries the experimental `rsq4k3v` capacity selection
+through deferred setup and Retry. The current pin rejects it before model launch;
+activation requires a separate exact-source release review of K4/V3 and the paired
+context/memory accounting. Request bodies cannot select this profile.
+
 The launcher checks/builds presentation first. After the first UI tick, an owned
 preparation worker verifies/provisions the selected pinned Rust runtime alongside
 building/verifying the broker, then hands off text chat after both finish. Either

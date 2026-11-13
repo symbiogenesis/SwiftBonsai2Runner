@@ -34,8 +34,12 @@ accurate when a later request changes the adapter scale. Runner's trusted launch
 policy selects the cache from the exact reviewed runtime source and checks the
 matching cache and startup graph identity; older releases retain their FP16
 contract. Application use requires a published, verified Prism bundle with that
-source identity. The trusted launch option `--kv-cache f16|rsq4` permits explicit
-recovery without exposing precision in client request bodies.
+source identity. Trusted launch parsing accepts `--kv-cache f16|rsq4|rsq4k3v`
+without exposing precision in client request bodies. The current 0.1.25 pin admits
+`f16` and `rsq4`; `rsq4k3v` remains rejected until a separately reviewed, source-bound
+release delivers the K4/V3 profile and M1/M2 memory contract together. Its prepared
+planner charges 14,848 KV and 29,920 process bytes per token, retaining two complete
+caches, sequential scratch, metadata and the existing host/startup reserves.
 
 The model-free capability inventory still lists the FP16 graph contracts and is
 not the cache selector. Rotated-profile discovery remains follow-up integration

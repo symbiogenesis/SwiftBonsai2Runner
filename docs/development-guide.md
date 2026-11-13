@@ -768,8 +768,9 @@ development default in new Swift runtime source. Runner activates that default
 only for the exact reviewed runtime source after published-bundle verification
 and repinning. The 0.1.25 development pin activates it; the historical 0.1.23
 control retains FP16. This upgrade supplies no measured CPU or cache benefit. Trusted
-source launches accept `--kv-cache f16|rsq4` (`-KvCache F16|Rsq4` through
-`Start-Chat.ps1`); installed-launch JSON uses `KvCache: "f16"` or `"rsq4"`.
+source launches accept `--kv-cache f16|rsq4|rsq4k3v`
+(`-KvCache F16|Rsq4|Rsq4K3V` through `Start-Chat.ps1`); installed-launch JSON uses
+`KvCache: "f16"`, `"rsq4"` or `"rsq4k3v"`.
 Omission follows the pinned runtime's reviewed default. Explicit `rsq4` rejects
 an unsupported pin before starting inference. Publisher/reference launches reject
 this native cache selection. Choose `f16` on a fresh launch for comparison or
@@ -777,6 +778,9 @@ recovery; retry preserves the cache, and client requests cannot change it.
 Cache readiness includes the expected numerical graph identity. The development
 choice accepts approximation and pending measured quality/memory qualification;
 process admission and the 8K context bound remain unchanged.
+The prepared `rsq4k3v` capacity option rejects the current pin. Activation requires
+a separately reviewed genuine runtime release implementing K4/V3 with the complete
+[memory-selected context contract](swift-memory.md#memory-selected-serving-context).
 
 A publisher startup diagnostic of `process=exited-0xC0000142` means Windows failed
 runtime initialization. **Retry model** repeats the selected runtime; it does not

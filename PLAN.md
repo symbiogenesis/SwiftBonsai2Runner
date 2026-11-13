@@ -1674,8 +1674,9 @@ The [memory contract](docs/swift-memory.md#memory-selected-serving-context),
 
 1. **M1, Prism then Runner:** publish and verify the genuine runtime implementing
    paired `--context-tokens`/`--memory-limit-bytes`, review its exact identity and
-   repin Runner. Native 0.1.25 remains fixed at 8,192; prepared memory selection
-   still charges FP16 and has a 62,720-token ceiling. Preserve unknown/insufficient
+   repin Runner. Native 0.1.25 remains fixed at 8,192; the earlier M1-only baseline
+   charges FP16 and has a 62,720-token ceiling. Deliver the combined cache-aware
+   M1/M2 candidate below. Preserve unknown/insufficient
    memory rejection, immediate prelaunch admission and owned-Job pressure teardown.
 2. **M2, Prism and Runner:** make process, live-state and rollback/checkpoint
    allowances depend on the selected immutable cache layout, including scales,
@@ -1687,8 +1688,11 @@ The [memory contract](docs/swift-memory.md#memory-selected-serving-context),
    native sequential scratch for that execution profile. Keep publisher and any
    tiled-prefill allowances separate. First qualify staged **64K and 128K** windows;
    the example below projects about 150K with K4/V4 after these first three steps.
-4. **Later capacity profile, Prism then Runner:** expose and qualify K4/V3 after
-   M2, with explicit trusted selection and profile/readiness identity. Evaluate
+4. **Later capacity profile, Prism then Runner:** deliver and qualify the prepared
+   K4/V3 selection after M2. Runner carries the explicit trusted selection through
+   launch, setup and Retry, with cache-specific planner/readiness identity and a
+   separate closed exact-source release gate. Review a genuine compatible release
+   before activation; the current 0.1.25 pin rejects this option. Evaluate
    held-out retrieval, instructions and creative continuation at the selected
    capacities, including adapter effects. Its projected 170K changes precision;
    it does not replace K4/V4 automatically or enlarge K1's initial 8K packet.
@@ -1707,11 +1711,13 @@ The [memory contract](docs/swift-memory.md#memory-selected-serving-context),
    256 MiB startup reserves; never expand a running session from a later snapshot.
 
 The unreleased Prism 0.1.26 candidate implements M2 steps 2 and 3 together. Runner has
-explicit publisher FP16, native FP16 and native K4/V4 sizing profiles; Prism
+explicit publisher FP16, native FP16, native K4/V4 and native K4/V3 sizing profiles; Prism
 validates the selected cache through child parsing, worker admission and session
 construction. Native sizing retains two complete caches, charges sequential
 scratch and scales state/checkpoint budgets with the selected layout while
-preserving the 1 GiB minimum and 4 GiB graph bound. Tiled prefill and speculative
+preserving the 1 GiB minimum and 4 GiB graph bound. The K4/V3 planner projects
+170,240 tokens at 20 GiB available, and reaches the 262,144-token model ceiling
+at 24 GiB without increasing that graph bound. Tiled prefill and speculative
 verification retain their separate full reservations. The publisher arithmetic,
 installed 0.1.25 bytes, fixed native 8K limit and release gate remain unchanged.
 Publish and review the combined M1/M2 contract before enabling it; a runtime
@@ -1791,8 +1797,9 @@ conditional ladder reaches the artifact's declared 262,144-token ceiling
   or copy-on-write; divergent histories still need the general two-cache bound.
 - **Latest-prefix reuse and compatible prefill, Prism then Runner:** qualify the
   existing explicit [latest option](docs/prefix-reuse.md) and its repeated-history
-  benefit. Assign zero direct context gain. Current tiled prefill rejects compressed
-  profiles; integrate and qualify compatibility before combining those paths.
+  benefit. Assign zero direct context gain. Unreleased Prism source already supports
+  explicit K4/V4 and K4/V3 CPU tiles with causal packed attention and separate scratch
+  admission; deliver and qualify the combined reuse/prefill/state path before use.
 - **Reply reservation guidance, Runner:** where suitable, changing the reserved
   reply from 4,096 to 1,024 admits 3,072 additional prompt tokens within the same
   total context. Keep exact broker admission and the user's selected output limit.
