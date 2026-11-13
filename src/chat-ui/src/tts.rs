@@ -44,7 +44,9 @@ impl Client {
             launch: None,
         })
         .map(|client| Self(client, AtomicBool::new(false), AtomicU32::new(24_000)))
-        .map_err(|_| "The Qwen TTS endpoint or protected credential file is unavailable.")
+        .map_err(
+            |_| "Speech setup is unavailable. Open Settings > Voice and use Retry speech setup.",
+        )
     }
 
     pub(crate) fn sample_rate(&self) -> u32 {
@@ -68,7 +70,7 @@ impl Client {
             .and_then(|bytes| {
                 call.check().map_err(transport_failure)?;
                 let health: Health<'_> = serde_json::from_slice(&bytes).map_err(|_| {
-                    Failure::Message("The Qwen TTS companion returned invalid capabilities.")
+                    Failure::Message("Speech returned invalid capabilities. Use Retry speech setup in Settings > Voice.")
                 })?;
                 if health.model != MODEL
                     || !health.ready
@@ -77,10 +79,10 @@ impl Client {
                     || health.max_text_characters != MAX_TEXT
                     || health.max_voice_characters != MAX_VOICE
                 {
-                    return Err(Failure::Message("The Qwen TTS VoiceDesign model is not ready with the required audio format."));
+                    return Err(Failure::Message("Speech is not ready with the required audio format. Use Retry speech setup in Settings > Voice."));
                 }
                 if !health.consistent_voice {
-                    return Err(Failure::Message("Update the Qwen TTS companion to support a consistent voice across paragraphs and messages."));
+                    return Err(Failure::Message("Speech cannot keep a consistent voice across paragraphs and messages. Use Retry speech setup in Settings > Voice."));
                 }
                 self.1.store(health.streaming_pcm, Ordering::Release);
                 self.2.store(health.sample_rate, Ordering::Release);
@@ -105,7 +107,7 @@ impl Client {
         };
         if launch.codec.is_none() {
             return Err(Failure::Message(
-                "Native Qwen TTS requires its speech codec.",
+                "Speech setup is incomplete. Use Retry speech setup in Settings > Voice.",
             ));
         }
         Service::start_observed(
@@ -250,12 +252,39 @@ fn bounded_text(text: &str, limit: usize) -> bool {
     !text.trim().is_empty() && !text.contains('\0') && text.chars().take(limit + 1).count() <= limit
 }
 
-const fn transport_failure(failure: Failure) -> Failure {
+fn transport_failure(failure: Failure) -> Failure {
     match failure {
         Failure::Cancelled => Failure::Cancelled,
-        Failure::Message(_) => Failure::Message(
-            "The local Qwen TTS request failed. Check the VoiceDesign companion and audio settings.",
-        ),
+        Failure::Message(message) => Failure::Message(match message {
+            "Could not connect to the local Qwen3-ASR companion."
+            | "Could not configure the Qwen3-ASR connection timeout." => {
+                "Could not connect to speech. Use Retry speech setup in Settings > Voice."
+            }
+            "The Qwen3-ASR request exceeded its time limit." => {
+                "Speech generation exceeded its time limit. Select the response's speaker button to try again."
+            }
+            "The Qwen3-ASR request exceeded its size limit." => {
+                "The speech request exceeded its size limit. Try reading a shorter response."
+            }
+            "The Qwen3-ASR connection closed during upload."
+            | "The Qwen3-ASR upload was interrupted." => {
+                "The speech request was interrupted. Select the response's speaker button to try again."
+            }
+            "The Qwen3-ASR response ended before its framing completed."
+            | "The Qwen3-ASR response was interrupted."
+            | "The local speech stream was interrupted."
+            | "The local speech stream was incomplete or invalid." => {
+                "Speech ended before a complete audio stream arrived. Try the speaker button again; if this repeats, use Retry speech setup in Settings > Voice."
+            }
+            "The Qwen3-ASR response header exceeded its limit."
+            | "The Qwen3-ASR response exceeded its declared length."
+            | "The Qwen3-ASR companion returned unsupported HTTP framing." => {
+                "Speech returned an unsupported response. Use Retry speech setup in Settings > Voice."
+            }
+            // The transport only creates static, value-free messages. Preserve
+            // its HTTP distinctions and the playback sink's original failure.
+            other => other,
+        }),
     }
 }
 
@@ -538,6 +567,83 @@ mod tests {
         assert!(
             matches!(listener.accept(), Err(error) if error.kind() == io::ErrorKind::WouldBlock)
         );
+        Ok(())
+    }
+
+    #[test]
+    fn speech_protocol_errors_preserve_cause_without_echoing_server_text() -> io::Result<()> {
+        use std::sync::atomic::{AtomicBool, Ordering};
+        const FAILED: &[u8] = b"HTTP/1.1 502 Private-server-reason\r\nContent-Type: application/json\r\nContent-Length: 25\r\nConnection: close\r\n\r\n{\"error\":\"private input\"}";
+        const PCM: &[u8] = b"HTTP/1.1 200 OK\r\nContent-Type: audio/pcm\r\nTransfer-Encoding: chunked\r\nConnection: close\r\n\r\n2\r\n\x01\x00\r\n0\r\n\r\n";
+        const TRUNCATED: &[u8] = b"HTTP/1.1 200 OK\r\nContent-Type: audio/pcm\r\nTransfer-Encoding: chunked\r\nConnection: close\r\n\r\n2\r\n\x01\x00\r\n";
+        const PLAYBACK: &str = "The selected audio device is no longer available.";
+        for (response, streaming, playback_failure, expected, expected_chunks) in [
+            (FAILED, false, false, "HTTP 502", 0),
+            (FAILED, true, false, "HTTP 502", 0),
+            (TRUNCATED, true, false, "complete audio stream", 1),
+            (PCM, true, true, PLAYBACK, 1),
+        ] {
+            let listener = TcpListener::bind((std::net::Ipv4Addr::LOCALHOST, 0))?;
+            let (_credentials, client) = client(listener.local_addr()?.port())?;
+            client.1.store(streaming, Ordering::Release);
+            let server = thread::spawn(move || -> io::Result<()> {
+                let (mut stream, _) = listener.accept()?;
+                stream.set_read_timeout(Some(Duration::from_secs(3)))?;
+                let mut head = Vec::new();
+                while !head.ends_with(b"\r\n\r\n") {
+                    let mut byte = [0];
+                    stream.read_exact(&mut byte)?;
+                    head.push(byte[0]);
+                    assert!(head.len() <= 16_384);
+                }
+                let headers = std::str::from_utf8(&head).map_err(io::Error::other)?;
+                let length: usize = headers
+                    .lines()
+                    .find_map(|line| line.strip_prefix("Content-Length: "))
+                    .ok_or_else(|| io::Error::other("Missing upload length"))?
+                    .trim()
+                    .parse()
+                    .map_err(io::Error::other)?;
+                let mut body = vec![0; length];
+                stream.read_exact(&mut body)?;
+                stream.write_all(response)
+            });
+            let mut chunks = 0;
+            let result = client.synthesize_pcm(
+                "Hello.",
+                "Calm",
+                1,
+                &AtomicU64::new(1),
+                &AtomicBool::new(false),
+                |_| {
+                    chunks += 1;
+                    if playback_failure {
+                        Err(Failure::Message(PLAYBACK))
+                    } else {
+                        Ok(())
+                    }
+                },
+            );
+            let Err(Failure::Message(message)) = result else {
+                return Err(io::Error::other("Expected a classified speech failure"));
+            };
+            assert!(message.contains(expected), "Unexpected failure: {message}");
+            for private_or_misleading in [
+                "Private-server-reason",
+                "private input",
+                "VoiceDesign companion",
+                "audio settings",
+            ] {
+                assert!(!message.contains(private_or_misleading));
+            }
+            assert_eq!(chunks, expected_chunks);
+            if playback_failure {
+                assert_eq!(message, PLAYBACK);
+            }
+            server
+                .join()
+                .map_err(|_| io::Error::other("Failure server panicked"))??;
+        }
         Ok(())
     }
 }

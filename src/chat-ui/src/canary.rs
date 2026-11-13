@@ -688,12 +688,10 @@ fn response_length(head: &[u8], expected: Media) -> Result<usize> {
     let mut response = httparse::Response::new(&mut headers);
     if response.parse(head).ok() != Some(httparse::Status::Complete(head.len()))
         || response.version != Some(1)
-        || response.code != Some(200)
     {
-        return Err(Failure::Message(
-            "The Qwen3-ASR companion rejected the request.",
-        ));
+        return Err(invalid);
     }
+    response_status(response.code)?;
     let mut length = None;
     let mut media = false;
     for (index, header) in response.headers.iter().enumerate() {
@@ -734,6 +732,49 @@ fn response_length(head: &[u8], expected: Media) -> Result<usize> {
         return Err(invalid);
     }
     length.ok_or(invalid)
+}
+
+// Never include a server-controlled reason phrase or response body in errors.
+// Both buffered audio and PCM expose the same fixed, actionable distinctions.
+fn response_status(code: Option<u16>) -> Result<()> {
+    let message = match code {
+        Some(200) => return Ok(()),
+        Some(400) => {
+            "The speech service rejected the request (HTTP 400). Use Retry speech setup in Settings > Voice if this repeats."
+        }
+        Some(401) => {
+            "Speech authentication failed (HTTP 401). Use Retry speech setup in Settings > Voice."
+        }
+        Some(403) => {
+            "Speech access was denied (HTTP 403). Use Retry speech setup in Settings > Voice."
+        }
+        Some(404) => {
+            "The speech service is incompatible (HTTP 404). Use Retry speech setup in Settings > Voice."
+        }
+        Some(408) => "The speech request timed out (HTTP 408). Try again.",
+        Some(413) => "The speech request exceeded the service limit (HTTP 413). Try shorter input.",
+        Some(415) => {
+            "The speech service rejected the audio format (HTTP 415). Use Retry speech setup in Settings > Voice."
+        }
+        Some(429) => "The speech service is busy (HTTP 429). Try again shortly.",
+        Some(431) => {
+            "The speech service rejected the request headers (HTTP 431). Use Retry speech setup in Settings > Voice."
+        }
+        Some(500) => {
+            "Speech generation failed (HTTP 500). Use Retry speech setup in Settings > Voice if this repeats."
+        }
+        Some(502) => {
+            "Speech generation failed (HTTP 502). Use Retry speech setup in Settings > Voice if this repeats."
+        }
+        Some(503) => {
+            "The speech service is unavailable (HTTP 503). Use Retry speech setup in Settings > Voice."
+        }
+        Some(504) => "Speech generation timed out (HTTP 504). Try again.",
+        _ => {
+            "The speech service rejected the request with an unexpected HTTP status. Use Retry speech setup in Settings > Voice."
+        }
+    };
+    Err(Failure::Message(message))
 }
 
 #[cfg(test)]

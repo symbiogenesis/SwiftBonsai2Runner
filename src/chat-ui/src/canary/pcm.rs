@@ -1,6 +1,6 @@
 //! Strict bounded chunk framing for the documented local PCM stream.
 
-use super::{Failure, MAX_HEAD, Result};
+use super::{Failure, MAX_HEAD, Result, response_status};
 
 const MAX_PCM: usize = 48_000 * 2 * 120;
 const INVALID: Failure = Failure::Message("The local speech stream was incomplete or invalid.");
@@ -177,10 +177,10 @@ fn validate_head(head: &[u8]) -> Result<()> {
     let mut parsed = httparse::Response::new(&mut headers);
     if parsed.parse(head).ok() != Some(httparse::Status::Complete(head.len()))
         || parsed.version != Some(1)
-        || parsed.code != Some(200)
     {
         return Err(INVALID);
     }
+    response_status(parsed.code)?;
     let mut media = false;
     let mut chunked = false;
     let mut close = false;
