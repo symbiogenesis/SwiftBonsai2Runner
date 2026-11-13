@@ -88,12 +88,42 @@ function Get-PublicVectorMetrics([string]$Tool,[string]$Expected,[string]$Actual
     $result=Invoke-ReferenceNumeric $Tool @('compare',$Expected,$Actual,'f32','0',[string]$Count,'4',$Absolute.ToString('R',[Globalization.CultureInfo]::InvariantCulture),$Relative.ToString('R',[Globalization.CultureInfo]::InvariantCulture),'fma')
     return @{comparedElements=$result.elements;mismatchedElements=$result.failedElements;maximumAbsoluteDifference=$result.maximumAbsoluteError}
 }
+function Assert-PublicDirectoryPath([string]$Path) {
+    # GetFullPath normalizes traversal but does not resolve directory junctions.
+    # Inspect every existing component, including parents of a new destination,
+    # before the caller creates directories or writes intake/evidence files.
+    $current=[IO.Path]::GetFullPath($Path)
+    while($current) {
+        try {
+            $attributes=[IO.File]::GetAttributes($current)
+            Assert-Reference (-not ($attributes -band [IO.FileAttributes]::ReparsePoint)) 'reference directory path contains a redirected component'
+            Assert-Reference (($attributes -band [IO.FileAttributes]::Directory) -ne 0) 'reference directory path contains a non-directory component'
+        }catch [IO.FileNotFoundException] {
+            # Missing components are permitted for a new intake directory.
+        }catch [IO.DirectoryNotFoundException] {
+            # Continue to inspect the nearest existing parent and its ancestors.
+        }
+        $current=[IO.Path]::GetDirectoryName($current)
+    }
+}
+function Assert-PublicDirectories([string]$Data,[string]$Evidence,[string]$Temporary) {
+    Assert-Reference ([IO.Path]::IsPathFullyQualified($Temporary)) 'runner temporary directory must be absolute'
+    $comparison=if($IsWindows){[StringComparison]::OrdinalIgnoreCase}else{[StringComparison]::Ordinal}
+    $temporaryRoot=[IO.Path]::TrimEndingDirectorySeparator([IO.Path]::GetFullPath($Temporary))
+    Assert-PublicDirectoryPath $temporaryRoot
+    $prefix=$temporaryRoot+[IO.Path]::DirectorySeparatorChar
+    foreach($path in @($Data,$Evidence)) {
+        Assert-Reference ([IO.Path]::IsPathFullyQualified($path) -and [IO.Path]::GetFullPath($path).StartsWith($prefix,$comparison)) 'reference data/output must be external runner-temp directories'
+        Assert-PublicDirectoryPath $path
+    }
+    $dataPath=[IO.Path]::TrimEndingDirectorySeparator([IO.Path]::GetFullPath($Data))
+    $evidencePath=[IO.Path]::TrimEndingDirectorySeparator([IO.Path]::GetFullPath($Evidence))
+    Assert-Reference (-not [string]::Equals($dataPath,$evidencePath,$comparison) -and -not [IO.Directory]::Exists($dataPath)) 'reference data/output must be fresh separate directories'
+}
 function Invoke-PublicReference([string]$Data,[string]$Evidence,[string]$ToolPath='') {
     Assert-PublicHosted
     $tool=Get-ReferenceNumericTool $ToolPath
-    $temporary=[IO.Path]::GetFullPath($env:RUNNER_TEMP).TrimEnd('\','/')+[IO.Path]::DirectorySeparatorChar
-    foreach($path in @($Data,$Evidence)){Assert-Reference ([IO.Path]::IsPathFullyQualified($path) -and [IO.Path]::GetFullPath($path).StartsWith($temporary,[StringComparison]::OrdinalIgnoreCase)) 'reference data/output must be external runner-temp directories'}
-    Assert-Reference ([IO.Path]::GetFullPath($Data) -cne [IO.Path]::GetFullPath($Evidence) -and -not [IO.Directory]::Exists($Data)) 'reference data/output must be fresh separate directories'
+    Assert-PublicDirectories $Data $Evidence $env:RUNNER_TEMP
     [void][IO.Directory]::CreateDirectory($Data);[void][IO.Directory]::CreateDirectory($Evidence)
     Assert-Reference (-not [IO.File]::Exists((Join-Path $Evidence 'attempt.json'))) 'retain earlier reference attempts'
     $repository=[IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../..'))

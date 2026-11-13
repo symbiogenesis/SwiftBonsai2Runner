@@ -66,6 +66,28 @@ $tests=[ordered]@{
         $raw=[Text.Encoding]::UTF8.GetBytes('fixed synthetic input');$pin=@{bytes=$raw.Length;sha256=(Get-ReferenceDigest $raw)}
         foreach($received in @($raw,$raw[0..($raw.Length-2)],($raw+[byte[]]@(1)),[byte[]]::new($raw.Length))){$input=[IO.MemoryStream]::new([byte[]]$received,$false);$output=[IO.MemoryStream]::new();try{if(Test-ReferenceEqual $raw $received){Copy-PublicTransfer $input $output $pin}else{Assert-Rejected {Copy-PublicTransfer $input $output $pin}}}finally{$input.Dispose();$output.Dispose()}}
     }
+    test_directory_admission_rejects_alias_escape_and_redirected_ancestors={
+        $temporary=Join-Path $scratch 'admission';$outside=Join-Path $scratch 'admission-outside'
+        [void][IO.Directory]::CreateDirectory($temporary);[void][IO.Directory]::CreateDirectory($outside)
+        $data=Join-Path $temporary 'new/data';$evidence=Join-Path $temporary 'new/evidence'
+        Assert-PublicDirectories $data $evidence $temporary
+        Assert-Rejected {Assert-PublicDirectories 'relative' $evidence $temporary}
+        Assert-Rejected {Assert-PublicDirectories (Join-Path $outside 'data') $evidence $temporary}
+        Assert-Rejected {Assert-PublicDirectories (Join-Path $temporary '../escaped') $evidence $temporary}
+        Assert-Rejected {Assert-PublicDirectories $data $data $temporary}
+        if($IsWindows){Assert-Rejected {Assert-PublicDirectories $data $data.ToUpperInvariant() $temporary}}
+        $file=Join-Path $temporary 'file';[IO.File]::WriteAllText($file,'non-directory fixture')
+        Assert-Rejected {Assert-PublicDirectories (Join-Path $file 'data') $evidence $temporary}
+        $redirect=Join-Path $temporary 'redirect'
+        try {
+            if($IsWindows){[void](New-Item -ItemType Junction -Path $redirect -Target $outside -ErrorAction Stop)}else{[void][IO.Directory]::CreateSymbolicLink($redirect,$outside)}
+            Assert-Rejected {Assert-PublicDirectories (Join-Path $redirect 'data') $evidence $temporary}
+            Assert-Rejected {Assert-PublicDirectories $data (Join-Path $redirect 'evidence') $temporary}
+            Assert-Rejected {Assert-PublicDirectories (Join-Path $redirect 'data') (Join-Path $redirect 'evidence') $redirect}
+            Assert-Reference (-not [IO.Directory]::Exists((Join-Path $outside 'data')) -and -not [IO.Directory]::Exists((Join-Path $outside 'evidence'))) 'rejected admission wrote outside runner temp'
+        }finally{if([IO.Directory]::Exists($redirect)){[IO.Directory]::Delete($redirect)}}
+        Assert-Reference (-not [IO.Directory]::Exists((Join-Path $temporary 'new'))) 'admission created directories before validation completed'
+    }
     test_replay_bundle_preserves_exact_source_bytes_and_refuses_overwrite={
         $repository=Join-Path $scratch 'source';$evidence=Join-Path $scratch 'evidence';[void][IO.Directory]::CreateDirectory($evidence)
         foreach($relative in $script:ReplaySourceFiles){$target=Join-Path $repository $relative;[void][IO.Directory]::CreateDirectory([IO.Path]::GetDirectoryName($target));[IO.File]::WriteAllText($target,$relative+"`r`n",[Text.UTF8Encoding]::new($false))}
