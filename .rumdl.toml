@@ -2,7 +2,8 @@
 
 [global]
 flavor = "standard"
-line-length = 100
+# Source wrapping is an author preference; rendered prose wraps to the reader's viewport.
+disable = ["MD013"]
 respect-gitignore = true
 cache = false
 exclude = [
@@ -44,14 +45,6 @@ style = "fixed"
 
 [MD009]
 strict = true
-
-[MD013]
-line-length = 100
-code-blocks = false
-code-spans = true
-tables = false
-headings = false
-ignore-link-urls = true
 
 [MD029]
 style = "ordered"

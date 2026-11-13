@@ -179,6 +179,11 @@ Source-checks workflow edits select every eligible check. These jobs retain read
 permissions and use no models or physical devices; Foundation and device acceptance
 remain separate requirements.
 
+Markdown prose has no source line-length gate (`MD013` is disabled); authors may
+wrap source paragraphs for editing convenience. Both `rumdl check --no-cache .`
+and `rumdl fmt --check --no-cache .` use this policy while retaining the other
+configured heading, list, table, code-fence and link checks.
+
 Source checks share one checkout for selection, language/startup guards, workflow
 syntax and action-lock verification. A failed preflight fails every eligible
 downstream check before its checkout. Only pull-request runs supersede one another:
