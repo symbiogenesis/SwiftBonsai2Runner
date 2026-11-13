@@ -32,6 +32,10 @@ pub const RSQ4K3V_KV_BYTES_PER_TOKEN: u64 = 14_848;
 pub const STATE_LIMIT_BYTES: u64 = 4 * 1024 * 1024 * 1024;
 /// Swift's F32 recurrent/convolution state independent of attention context.
 pub const RECURRENT_BYTES: u64 = 156_893_184;
+/// Geometry-derived state/checkpoint ceiling for the explicit full-context K4/V4 candidate.
+/// Requires a separately reviewed runtime; ordinary K4/V4 retains its 4 GiB cap.
+pub const RSQ4_FULL_STATE_LIMIT_BYTES: u64 =
+    262_144_u64 * (RSQ4_KV_BYTES_PER_TOKEN + 96 + 128) + RECURRENT_BYTES;
 /// Context selection granularity, divisible by the runtime's 64-token cache pages.
 pub const CONTEXT_PAGE_TOKENS: usize = 256;
 /// Preserve room for the largest reply, template margin and a positive prompt.
@@ -50,6 +54,8 @@ pub enum SwiftContextProfile {
     NativeF16,
     /// Native K4/V4 cache with sequential attention scratch.
     NativeRsq4,
+    /// Explicit full-model K4/V4 capacity with its separately reviewed state bound.
+    NativeRsq4Full,
     /// Explicit native K4/V3 capacity profile with sequential attention scratch.
     NativeRsq4K3v,
 }
@@ -60,7 +66,7 @@ impl SwiftContextProfile {
     pub const fn kv_bytes_per_token(self) -> u64 {
         match self {
             Self::PublisherF16 | Self::NativeF16 => KV_BYTES_PER_TOKEN,
-            Self::NativeRsq4 => RSQ4_KV_BYTES_PER_TOKEN,
+            Self::NativeRsq4 | Self::NativeRsq4Full => RSQ4_KV_BYTES_PER_TOKEN,
             Self::NativeRsq4K3v => RSQ4K3V_KV_BYTES_PER_TOKEN,
         }
     }
@@ -72,7 +78,7 @@ impl SwiftContextProfile {
     pub const fn context_bytes_per_token(self) -> u64 {
         let score_rows = match self {
             Self::PublisherF16 => MAX_CONTEXT_SCORE_ROWS,
-            Self::NativeF16 | Self::NativeRsq4 | Self::NativeRsq4K3v => 24,
+            Self::NativeF16 | Self::NativeRsq4 | Self::NativeRsq4Full | Self::NativeRsq4K3v => 24,
         };
         2 * self.kv_bytes_per_token() + score_rows * 4 + 128
     }
@@ -81,6 +87,15 @@ impl SwiftContextProfile {
     #[must_use]
     pub const fn state_bytes_per_token(self) -> u64 {
         self.kv_bytes_per_token() + 24 * 4 + 128
+    }
+
+    /// Immutable graph/checkpoint ceiling selected with the reviewed runtime profile.
+    #[must_use]
+    pub const fn state_limit_bytes(self) -> u64 {
+        match self {
+            Self::NativeRsq4Full => RSQ4_FULL_STATE_LIMIT_BYTES,
+            _ => STATE_LIMIT_BYTES,
+        }
     }
 }
 
@@ -123,7 +138,7 @@ impl SwiftContextPlan {
             .and_then(|bytes| bytes.checked_sub(STARTUP_RESERVE_BYTES))
             .and_then(|bytes| bytes.checked_sub(FIXED_RUNTIME_BYTES))
             .ok_or_else(insufficient)?;
-        let state_allocation = STATE_LIMIT_BYTES
+        let state_allocation = profile.state_limit_bytes()
             .checked_sub(RECURRENT_BYTES)
             .ok_or_else(insufficient)?;
         let process_bytes = profile.context_bytes_per_token();
@@ -290,12 +305,40 @@ mod tests {
     }
 
     #[test]
+    fn full_k4v4_candidate_reaches_model_limit_without_reducing_process_or_host_charges()
+    -> Result<(), Box<dyn Error>> {
+        use SwiftContextProfile::{NativeRsq4, NativeRsq4Full};
+        assert_eq!(RSQ4_FULL_STATE_LIMIT_BYTES, 4_644_798_464);
+        assert_eq!(NativeRsq4.state_limit_bytes(), STATE_LIMIT_BYTES);
+        assert_eq!(NativeRsq4Full.state_limit_bytes(), RSQ4_FULL_STATE_LIMIT_BYTES);
+        assert_eq!(NativeRsq4Full.context_bytes_per_token(), NativeRsq4.context_bytes_per_token());
+        assert_eq!(NativeRsq4Full.state_bytes_per_token(), NativeRsq4.state_bytes_per_token());
+        let full_budget = HOST_RESERVE_BYTES
+            + STARTUP_RESERVE_BYTES
+            + FIXED_RUNTIME_BYTES
+            + u64::try_from(MODEL_CONTEXT_TOKENS)? * NativeRsq4Full.context_bytes_per_token();
+        let below = SwiftContextPlan::for_profile(full_budget - 1, NativeRsq4Full)?;
+        assert_eq!(below.context_tokens, MODEL_CONTEXT_TOKENS - CONTEXT_PAGE_TOKENS);
+        for available in [full_budget, 24 * 1024 * 1024 * 1024, u64::MAX] {
+            let full = SwiftContextPlan::for_profile(available, NativeRsq4Full)?;
+            assert_eq!(full.context_tokens, MODEL_CONTEXT_TOKENS);
+            assert_eq!(full.required_available_bytes + STARTUP_RESERVE_BYTES, full_budget);
+            assert_eq!(SwiftContextPlan::for_profile(available, NativeRsq4)?.context_tokens, 241_664);
+        }
+        let next_page = u64::try_from(MODEL_CONTEXT_TOKENS + CONTEXT_PAGE_TOKENS)?;
+        assert!(next_page * NativeRsq4Full.state_bytes_per_token() + RECURRENT_BYTES
+            > NativeRsq4Full.state_limit_bytes());
+        Ok(())
+    }
+
+    #[test]
     fn every_cache_profile_rejects_one_byte_below_its_minimum_launch_budget()
     -> Result<(), Box<dyn Error>> {
         for profile in [
             SwiftContextProfile::PublisherF16,
             SwiftContextProfile::NativeF16,
             SwiftContextProfile::NativeRsq4,
+            SwiftContextProfile::NativeRsq4Full,
             SwiftContextProfile::NativeRsq4K3v,
         ] {
             let minimum = HOST_RESERVE_BYTES
