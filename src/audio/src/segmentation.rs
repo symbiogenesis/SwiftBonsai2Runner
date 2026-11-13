@@ -16,8 +16,13 @@
 /// Window sizes have a two-sample minimum for unusually small sample rates.
 /// This is a deterministic energy heuristic, not a speech/accuracy guarantee.
 #[must_use]
-pub fn pcm16_pause_boundary(data: &[u8], sample_rate: u32, minimum_samples: usize) -> Option<usize> {
-    if data.is_empty() || !data.len().is_multiple_of(2) || sample_rate == 0 || minimum_samples == 0 {
+pub fn pcm16_pause_boundary(
+    data: &[u8],
+    sample_rate: u32,
+    minimum_samples: usize,
+) -> Option<usize> {
+    if data.is_empty() || !data.len().is_multiple_of(2) || sample_rate == 0 || minimum_samples == 0
+    {
         return None;
     }
     let samples = data.len() / 2;

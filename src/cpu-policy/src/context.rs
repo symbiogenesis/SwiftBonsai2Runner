@@ -97,41 +97,45 @@ fn insufficient() -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::error::Error;
 
     #[test]
-    fn sizing_preserves_reserves_and_rejects_less_than_one_minimum_context() {
+    fn sizing_preserves_reserves_and_rejects_less_than_one_minimum_context()
+    -> Result<(), Box<dyn Error>> {
         let minimum = HOST_RESERVE_BYTES
             + STARTUP_RESERVE_BYTES
             + FIXED_RUNTIME_BYTES
-            + u64::try_from(MIN_CONTEXT_TOKENS).unwrap() * CONTEXT_BYTES_PER_TOKEN;
+            + u64::try_from(MIN_CONTEXT_TOKENS)? * CONTEXT_BYTES_PER_TOKEN;
         assert!(SwiftContextPlan::for_available_memory(minimum - 1).is_err());
-        let plan = SwiftContextPlan::for_available_memory(minimum).unwrap();
+        let plan = SwiftContextPlan::for_available_memory(minimum)?;
         assert_eq!(plan.context_tokens, MIN_CONTEXT_TOKENS);
         assert_eq!(
             plan.required_available_bytes + STARTUP_RESERVE_BYTES,
             minimum
         );
         assert_eq!(
-            plan.required_available_bytes - u64::try_from(plan.memory_limit_bytes).unwrap(),
+            plan.required_available_bytes - u64::try_from(plan.memory_limit_bytes)?,
             HOST_RESERVE_BYTES
         );
         for unavailable in [0, HOST_RESERVE_BYTES, FIXED_RUNTIME_BYTES] {
             assert!(SwiftContextPlan::for_available_memory(unavailable).is_err());
         }
+        Ok(())
     }
 
     #[test]
-    fn more_memory_selects_more_context_until_model_or_runtime_state_cap() {
+    fn more_memory_selects_more_context_until_model_or_runtime_state_cap()
+    -> Result<(), Box<dyn Error>> {
         let gib = 1024 * 1024 * 1024;
-        let small = SwiftContextPlan::for_available_memory(16 * gib).unwrap();
-        let large = SwiftContextPlan::for_available_memory(18 * gib).unwrap();
-        let unlimited = SwiftContextPlan::for_available_memory(u64::MAX).unwrap();
+        let small = SwiftContextPlan::for_available_memory(16 * gib)?;
+        let large = SwiftContextPlan::for_available_memory(18 * gib)?;
+        let unlimited = SwiftContextPlan::for_available_memory(u64::MAX)?;
         assert!(small.context_tokens < 8_192);
         assert!(large.context_tokens > small.context_tokens);
         assert_eq!(unlimited.context_tokens, 62_720);
         assert!(unlimited.context_tokens <= MODEL_CONTEXT_TOKENS);
-        let state_bytes = u64::try_from(unlimited.context_tokens).unwrap() * STATE_BYTES_PER_TOKEN
-            + RECURRENT_BYTES;
+        let state_bytes =
+            u64::try_from(unlimited.context_tokens)? * STATE_BYTES_PER_TOKEN + RECURRENT_BYTES;
         assert!(state_bytes <= STATE_LIMIT_BYTES);
         for (available, plan) in [(16 * gib, small), (18 * gib, large)] {
             assert!(plan.required_available_bytes <= available);
@@ -141,5 +145,6 @@ mod tests {
                     < 256 * CONTEXT_BYTES_PER_TOKEN
             );
         }
+        Ok(())
     }
 }
