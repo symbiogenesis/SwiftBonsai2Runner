@@ -22,6 +22,11 @@ name = "bonsai-launcher"
 path = "src/launcher.rs"
 test = false
 
+[[bin]]
+name = "bonsai-reference-numerics"
+path = "../native-reference/reference_numerics.rs"
+test = false
+
 [features]
 test-probe = []
 
