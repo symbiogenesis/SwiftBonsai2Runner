@@ -14,9 +14,11 @@ owns deferred migration.
 Runner's [Foundation](../.github/workflows/foundation.yml) covers the app, broker,
 process ownership, provisioning and releases. It neither builds the upstream catalog
 nor runs runtime algorithm/codec suites. Full suites and benchmarks are CI-only in
-the owning repository. Runner targets Windows ARM64 on Snapdragon X and X2;
-qualify each family independently, with Apple excluded. Hosted ARM64 results do
-not establish Snapdragon performance.
+the owning repository. Runner targets Windows ARM64 on Snapdragon X and X2,
+with Apple excluded. Full device profiles and family-specific performance claims
+need matching-family evidence; shared CPU source promotion follows the narrower
+[cross-generation rule](cpu-kernels.md#cross-generation-cpu-promotion).
+Hosted ARM64 results do not establish Snapdragon performance.
 The APIs and model families below are upstream conformance obligations, not
 Runner broker features. Runner retains its [fixed local API subset](broker-policy.md#public-request-contract)
 and [pinned Swift runtime boundary](native-rust-engine.md).

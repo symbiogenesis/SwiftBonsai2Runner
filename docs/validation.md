@@ -101,10 +101,10 @@ toolchain and compiler identities before model use; failed hosted analyzer/build
 logs remain independently retained. This is a source prerequisite, and closes no
 device or promotion gate.
 
-Before those production checks, hosted preparation parses all eleven actual
-PowerShell blocks in the workflow and shared regression action, plus the launcher,
-with the native parser, exercises
-typed receipt/output negative fixtures and executes two exact Rust guard controls.
+Before those production checks, hosted preparation uses the native parser to
+check all eleven PowerShell blocks in the workflow and shared regression action,
+plus the launcher. It exercises typed receipt/output negative fixtures and
+executes two exact Rust guard controls.
 The workflow-contract receipt binds those results to the revision and normalized
 source-file hashes. Publication and owner intake both require that complete
 receipt, the exact package inventory and verified guard executable. Older schema-1
@@ -767,47 +767,18 @@ unsafe operations stay small, documented and behind safe owners. Prefer scoped
 allowances still require their specific reason. Existing all-target Clippy,
 rustdoc and owning tests enforce the policy across supported feature profiles.
 
-The 2026-11-01 focused Windows ARM64 screen completed in 87.6 seconds on
-`rustc 1.101.0-nightly (1a2c4797e 2026-10-21)`. Both compiler regressions passed;
-disabling Polonius produced E0499 and disabling the global next solver produced
-E0369, confirming the gates distinguish the required analyses. Changed-source
-formatting, Release all-target Clippy for artifacts and CI tooling, the exact
-interrupted-read/cancellation regression and a production-source tokenizer Clippy
-check passed. The tokenizer check isolated native linkage; complete owning
-speech fixtures, native linking and the remaining workspace checks stay in
-hosted Foundation. This screen ran no model, benchmark or complete suite.
-The compiler and dependency pins subsequently advanced on `main`; this local
-result retains the compiler identity above, with the combined revision requiring
-its own hosted Foundation result.
-
-The first combined [hosted run](https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41384479280)
-passed compiler behavioral gates on Linux and Windows and all selected test,
-documentation and executable-build phases, including native ASR/TTS fixtures
-and linking. New-nightly Clippy identified two additional updates: explicitly
-take/drop oversized speech scratch to preserve allocation release, and make the
-queue's `pending` accessor `const fn`. Both are corrected without weakening
-lints. A source-bound replay of the existing scratch-retention regression and
-new-nightly Clippy passed in a further two seconds. Those historical checks bind
-source `d2a2962`; [PLAN.md](../PLAN.md#runtime-and-correctness) requires settled-source
-hosted acceptance on the current compiler. No model or performance qualification is transferred.
+Historical compiler and storage screens used earlier source, compilers and
+dependency pins. The first combined [hosted run](https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41384479280)
+and subsequent focused corrections bind source `d2a2962`; they do not qualify
+the current pin. [PLAN.md](../PLAN.md#runtime-and-correctness) requires
+settled-source hosted acceptance on the current compiler, including owning
+speech fixtures and native linking. Completed local check details remain in Git
+history; no model or performance qualification transfers from them.
 
 [Compiler probes](https://github.com/symbiogenesis/prism-inference/blob/main/tools/rust-trial/README.md)
 retain stable as an isolated control. Release overflow checks stay enabled and
 debug assertions disabled to preserve
 [subtle's release contract](https://github.com/dalek-cryptography/subtle/blob/2.6.1/src/lib.rs#L50-L53).
-
-The lending-storage refactor passes owning broker and speech-service Release
-Clippy checks with all targets. Its bounded local screen passes 42 source-bound
-model-free regressions: HTTP/SSE/PCM framing and borrowing, cache ownership,
-packed replay, broker buffered caps/deadlines, speech request/storage reuse and
-waveform-owner cleanup. Transcript/Find test sources also type-check and pass
-focused Clippy checks; their executable build exceeded its local allowance.
-Source-bound harnesses retain production logic while isolating native linkage;
-these checks do not replace owning UI execution, native ASR/TTS build/link,
-rustdoc, actual-model acceptance or performance measurement. The initial broader
-analyzer capture failed draining compiler output, and linked broker test
-compilation also exceeded its bounded allowance. [PLAN.md](../PLAN.md) retains
-the remaining hosted gates.
 
 Shared `doc` planning uses `cargo doc --no-deps -Z unstable-options --output-format json`
 for selected packages/features in Release, through `bonsai-ci rust-check` locally and in
