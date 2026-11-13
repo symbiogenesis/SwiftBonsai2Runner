@@ -1156,6 +1156,28 @@ mod tests {
     }
 
     #[test]
+    fn failed_deferred_install_never_starts_another_check_while_closing() -> io::Result<()> {
+        let mut updates = update_fixture()?;
+        updates.close_requested = true;
+        updates.confirmed = true;
+        updates.task = Some(completed_task(
+            Operation::Install,
+            Some(Err(io::Error::other(
+                "Publication changed before installation",
+            ))),
+        ));
+        assert!(updates.poll().is_some());
+        assert!(updates.closing() && !updates.installing() && !updates.should_close());
+        assert!(updates.next_check <= Instant::now());
+        assert!(updates.poll().is_none());
+        assert!(
+            updates.task.is_none(),
+            "Failed closing must not start another metadata worker"
+        );
+        Ok(())
+    }
+
+    #[test]
     fn error_reporting_update_preserves_full_failure_and_clears_it_after_success() -> io::Result<()>
     {
         let mut updates = update_fixture()?;
