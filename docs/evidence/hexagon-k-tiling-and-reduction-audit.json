@@ -6,7 +6,7 @@
   "sources": [
     {
       "path": "config/hexagon-signed-q2-candidate.lock.json",
-      "sha256": "32fb0963c2752f9bf2bf8e2305ac4c26435ca8885434d72a3cffde028782d9ed"
+      "sha256": "bb7216b2d764865e43dcb26ff91294070ae0beb10eb437173636aae1c223759d"
     },
     {
       "path": "tools/hexagon/packed-sources.json",

@@ -55,9 +55,10 @@ native supervisor's owned deadline and uncertain-buffer retention. Preserve u64
 ### SDK inputs, recipe and terms
 
 The [SDK inventory lock](../tools/hexagon/sdk-inventory.lock.json) binds archive,
-selected inputs, recipe and lexical/declaration controls. Provenance summaries
-without original payloads cannot supply independent replay or close a gate.
-The public wire control below retains replay inputs; installed-driver acceptance
+selected inputs, recipe and lexical/declaration controls. The
+[candidate lock](../config/hexagon-signed-q2-candidate.lock.json) retains source/run
+identities and comparison limits; summaries cannot replace unavailable raw bytes.
+The public wire control below retains replay inputs. Installed-driver acceptance
 remains separate.
 The selected recipe uses SDK 6.7.0.0/tools 21.0.04. Its `qaic.exe` is x64, so local
 ARM64 execution would emulate. The public generator and SDK generator are different
@@ -89,7 +90,9 @@ is a direct replay input for `windows_queue_abi.ps1`. Its fixed vector uses a sy
 u64 handle, start scalar `0x02010000`, one 48-byte input with fields at
 0/8/16/20/24/32/40 and zero padding 4–7/44–47; stop scalar `0x03000000` has null
 arguments. Linux LP64 C and independent Rust agreement qualifies only that fixed
-vector. Other input closures require independent replay.
+vector. Other input closures require independent replay. The candidate lock owns
+prior no-go identities and limits; [supplemental provenance](evidence/hexagon-public-qaic-41169481882/provenance.json)
+supplies template notices, not missing replay payloads.
 
 The Windows control compiles unchanged generated start/stop code with native ARM64
 MSVC and the explicitly selected public non-Windows header branch. This establishes

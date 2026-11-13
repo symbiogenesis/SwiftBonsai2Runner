@@ -961,6 +961,10 @@ impl Codec {
         self.dac.sample_rate()
     }
 
+    pub(crate) fn discard_reference(&mut self) {
+        self.primed = None;
+    }
+
     pub(crate) fn reset(&mut self) {
         self.state = DecodeState {
             audio: CodecStreamState {

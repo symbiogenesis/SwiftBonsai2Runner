@@ -171,6 +171,7 @@ cached/uncached token counts, resources and complete logits/state against fresh
 recomputation across edits, switches, scales, page boundaries, cancellation and
 reset. Decode TPS alone cannot demonstrate saved prefill. Actual-model service
 acceptance and measured benefit remain pending.
+
 ## Acceptance ownership
 
 The [conformance contract](prism-upstream-tests.md) preserves original source inputs,

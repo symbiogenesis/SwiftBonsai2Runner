@@ -1,5 +1,5 @@
 //! Pure-Rust Qwen3-TTS engine (`Talker`, `CodePredictor`, `PromptBuilder`, `LoRA` overlays,
-//! Bonsai-style ternary `PQ2_0`/`PTQ1_0` with Hadamard folding, and `hexagon-native-rpc` NPU dispatch).
+//! and Bonsai-style ternary `PQ2_0`/`PTQ1_0` with Hadamard folding).
 //!
 //! Implements the pure-Rust execution stack for `Qwen3-TTS-12Hz-1.7B-VoiceDesign` and `Base`:
 //! - 28-layer `Talker` transformer (`RMSNorm`, GQA with QK-norm, 3D `MRoPE` / 1D NEOX `RoPE`, `SwiGLU`, KV cache).
@@ -10,8 +10,10 @@
 //! - 5-layer `CodePredictor` (`mtp_proj`, 15 residual codebooks `1..=15`) with decoupled
 //!   `subtalker_*` sampling parameters.
 //! - `PromptBuilder` and `PromptCache` with cached `icl_codec_stream` and `icl_ref_text_stream`.
-//! - `hexagon-native-rpc` NPU packet/session dispatcher (`HtpPrefillPacket`, `HtpQuantType::NativeQ2`)
-//!   preserving the system `qcnspmcdm` `libcdsprpc.dll` `FastRPC` boundary.
+//!
+//! Execution is CPU-only. Signed Hexagon dispatch, placement and shared-cache
+//! ownership require a separately qualified implementation; no queue protocol
+//! or device execution is supplied by this module.
 #![forbid(unsafe_code)]
 #![expect(
     clippy::missing_errors_doc,
@@ -197,7 +199,8 @@ pub enum WeightQuantization {
         /// Input-side Rademacher signs (`+1` or `-1`) `[in_dim]`.
         signs: Vec<i8>,
     },
-    /// Lossless dual-bitplane (`nz_mask`, `sign_mask`) ternary repack (`PTQ1_0` / `HTP_TYPE_Q2_0`).
+    /// Lossless dual-bitplane (`nz_mask`, `sign_mask`) ternary repack (`PTQ1_0`).
+    /// This CPU layout is not the signed DSP's tiled `HTP_TYPE_Q2_0` format.
     PTQ1_0 {
         /// Quantization group size (`128`).
         group_size: usize,
@@ -1744,128 +1747,15 @@ impl PromptCache {
     }
 }
 
-/// Op-code values dispatched to the signed `libggml-htp-v81.so` / `v73.so` Hexagon NPU skel
-/// over the system `qcnspmcdm` `DriverStore` `libcdsprpc.dll` `FastRPC` boundary.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-#[repr(u32)]
-pub enum HtpOpCode {
-    /// Matrix multiplication (`GGML_OP_MUL_MAT` / `HTP_OP_MUL_MAT`).
-    MulMat = 1,
-    /// RMS normalization (`GGML_OP_RMS_NORM`).
-    RmsNorm = 2,
-    /// Fused `FlashAttention` (`GGML_OP_FLASH_ATTN_EXT`).
-    FlashAttn = 3,
-    /// `SwiGLU` activation (`GGML_OP_GLU`).
-    SwiGlu = 4,
-}
-
-/// NPU tensor quantization format sent over `hexagon-native-rpc`.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-#[repr(u32)]
-pub enum HtpQuantType {
-    /// IEEE 754 `F32`.
-    F32 = 0,
-    /// IEEE 754 `F16` (used for shared `rpcmem` KV cache between `HTP0` prefill and CPU decode).
-    F16 = 1,
-    /// 32-element block `Q8_0`.
-    Q8_0 = 8,
-    /// Snapdragon X2 Hexagon NPU `native-q2` (`HTP_TYPE_Q2_0` dual-bitplane `PTQ1_0` + Hadamard).
-    NativeQ2 = 34,
-}
-
-/// Framed `hexagon-native-rpc` NPU prefill packet for `Talker` multi-token prefill (`T_ctx > 1`)
-/// over `libcdsprpc.dll` (`remote_handle64_*`, `rpcmem_*`, `dspqueue_*`).
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct HtpPrefillPacket {
-    /// Operation code.
-    pub opcode: HtpOpCode,
-    /// Weight quantization type (`Q8_0` or `NativeQ2` `HTP_TYPE_Q2_0`).
-    pub weight_quant: HtpQuantType,
-    /// KV cache format (`HtpQuantType::F16`).
-    pub kv_format: HtpQuantType,
-    /// Prefill sequence length (`T_ctx`).
-    pub seq_len: u32,
-    /// Hidden dimension (`2048` for 1.7B `Talker`).
-    pub hidden_size: u32,
-    /// Number of `Talker` transformer layers (`28`).
-    pub num_layers: u32,
-}
-
-impl HtpPrefillPacket {
-    /// Construct a hybrid NPU/CPU placement prefill packet for `HTP0`.
-    ///
-    /// Rejects `seq_len <= 1` because `T = 1` single-token `Talker` decode and
-    /// 5-layer `CodePredictor` run on host NEON CPU threads over the shared
-    /// cache-coherent `rpcmem` `F16` KV cache without `FastRPC` round-trip overhead.
-    pub fn new_talker_prefill(
-        seq_len: u32,
-        hidden_size: u32,
-        num_layers: u32,
-        weight_quant: HtpQuantType,
-    ) -> io::Result<Self> {
-        if seq_len <= 1 {
-            return Err(io::Error::new(
-                io::ErrorKind::InvalidInput,
-                "Single-token T=1 decode runs on host NEON CPU threads, not HTP0 FastRPC.",
-            ));
-        }
-        if !matches!(weight_quant, HtpQuantType::Q8_0 | HtpQuantType::NativeQ2) {
-            return Err(io::Error::new(
-                io::ErrorKind::InvalidInput,
-                "Talker HTP0 prefill requires Q8_0 or NativeQ2 (HTP_TYPE_Q2_0) weights.",
-            ));
-        }
-        Ok(Self {
-            opcode: HtpOpCode::MulMat,
-            weight_quant,
-            kv_format: HtpQuantType::F16,
-            seq_len,
-            hidden_size,
-            num_layers,
-        })
-    }
-
-    /// Serialize the packet header into a 24-byte little-endian `dspqueue` payload.
-    #[must_use]
-    pub fn to_le_bytes(&self) -> [u8; 24] {
-        let mut out = [0_u8; 24];
-        let op = match self.opcode {
-            HtpOpCode::MulMat => 1_u32,
-            HtpOpCode::RmsNorm => 2_u32,
-            HtpOpCode::FlashAttn => 3_u32,
-            HtpOpCode::SwiGlu => 4_u32,
-        };
-        let wq = match self.weight_quant {
-            HtpQuantType::F32 => 0_u32,
-            HtpQuantType::F16 => 1_u32,
-            HtpQuantType::Q8_0 => 8_u32,
-            HtpQuantType::NativeQ2 => 34_u32,
-        };
-        let kv = match self.kv_format {
-            HtpQuantType::F32 => 0_u32,
-            HtpQuantType::F16 => 1_u32,
-            HtpQuantType::Q8_0 => 8_u32,
-            HtpQuantType::NativeQ2 => 34_u32,
-        };
-        out[0..4].copy_from_slice(&op.to_le_bytes());
-        out[4..8].copy_from_slice(&wq.to_le_bytes());
-        out[8..12].copy_from_slice(&kv.to_le_bytes());
-        out[12..16].copy_from_slice(&self.seq_len.to_le_bytes());
-        out[16..20].copy_from_slice(&self.hidden_size.to_le_bytes());
-        out[20..24].copy_from_slice(&self.num_layers.to_le_bytes());
-        out
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use std::collections::HashMap;
 
     use super::{
-        CodePredictorModel, DecoupledSamplingParams, HtpPrefillPacket, HtpQuantType,
-        LinearProjection, LoraProjectionPatch, NUM_ACOUSTIC_CODEBOOKS, PromptCache,
-        QwenDecoderLayer, TalkerLoraAdapter, WeightQuantization, is_talker_ternary_eligible,
-        repack_pq2_to_ptq1, sylvester_walsh_hadamard_in_place, validate_talker_ternary_policy,
+        CodePredictorModel, DecoupledSamplingParams, LinearProjection, LoraProjectionPatch,
+        NUM_ACOUSTIC_CODEBOOKS, PromptCache, QwenDecoderLayer, TalkerLoraAdapter,
+        WeightQuantization, is_talker_ternary_eligible, repack_pq2_to_ptq1,
+        sylvester_walsh_hadamard_in_place, validate_talker_ternary_policy,
     };
 
     #[test]
@@ -2075,8 +1965,7 @@ mod tests {
     }
 
     #[test]
-    fn code_predictor_and_prompt_cache_and_htp_prefill_packet_execute_cleanly()
-    -> std::io::Result<()> {
+    fn code_predictor_and_prompt_cache_execute_cleanly() -> std::io::Result<()> {
         let hidden = 4;
         let vocab = 8;
         let cp = code_predictor_fixture()?;
@@ -2117,9 +2006,6 @@ mod tests {
             "PromptCache must reuse cached ICL streams on hit"
         );
 
-        assert!(HtpPrefillPacket::new_talker_prefill(1, 2048, 28, HtpQuantType::Q8_0).is_err());
-        let pkt = HtpPrefillPacket::new_talker_prefill(64, 2048, 28, HtpQuantType::NativeQ2)?;
-        assert_eq!(pkt.to_le_bytes().len(), 24);
         let _ = TalkerLoraAdapter {
             name: "indic-en".to_owned(),
             patches: HashMap::new(),

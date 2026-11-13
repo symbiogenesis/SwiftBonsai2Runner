@@ -9,17 +9,9 @@ tools/native-reference/fixtures/collector-abi-v1.provenance.json text eol=lf
 tools/native-reference/fixtures/LICENSE.llama-reference text eol=lf
 tools/native-reference/swift_ptq1_reference.rs text eol=lf
 
-# Preserve original hosted SDK provenance bytes.
-docs/evidence/hexagon-sdk-inventory-41168523349/*.json -text
-docs/evidence/hexagon-sdk-inventory-41168872514/*.json -text
-docs/evidence/hexagon-sdk-functional-41171339745/*.json -text
-
 # Preserve public QAIC observations, replay inputs and notices.
 docs/evidence/hexagon-public-qaic-41169481882/** -text -whitespace
-docs/evidence/hexagon-public-qaic-41170405233/** -text -whitespace
-docs/evidence/hexagon-public-qaic-41171073546/** -text -whitespace
 docs/evidence/hexagon-public-qaic-41171859264/** -text -whitespace
-docs/evidence/hexagon-public-qaic-41171448060/** -text -whitespace
 
 # Keep public queue/wire control sources and pins portable.
 tools/hexagon/public_qaic_wire.c text eol=lf

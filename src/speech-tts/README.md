@@ -48,6 +48,13 @@ instead of independently designing a voice per segment. Rust owns reference
 samples and embeddings through model handoff and releases them on failed loading
 or extraction.
 
+The production Design-to-Base handoff uses the same ownership routine as the
+independent drop-order control. It releases Design before Base weight intake and
+keeps one waveform allocation alive through speaker and acoustic extraction,
+including failure exits. Bootstrap, codec priming, missing audio after EOS,
+generation and output failures clear both the selected voice and retained codec
+reference before retry. Successful turns may reuse the exact reference prefix.
+
 ## CPU execution
 
 Packed float/half projections process four output rows together while retaining
@@ -89,9 +96,17 @@ those C++ libraries are linked.
 
 ## Optional Hexagon runtime
 
-Serving is CPU-only. Rust NPU packet descriptors prepare future signed execution
-but dispatch no inference. NPU/GPU serving, ternary talkers and 48 kHz artifacts
-have separate gates in [PLAN.md](../../PLAN.md).
+Serving is CPU-only. Signed execution requires the independent
+[Windows queue ABI](../../tools/hexagon/windows_queue_abi.c) and
+[source-bound RPC](../../tools/hexagon/native_rpc/README.md) controls, exact
+package/catalog/driver admission, contained execution, a supported Q8 tensor/solver
+mapping, immutable placement/cache ownership and validated correlated completions.
+Cancellation and failure must retain uncertain buffers through supervised exit.
+CPU PTQ1 bitplanes cannot substitute for the signed DSP's tiled Q2 format.
+
+Fixed F32/guarded-Q2 controls do not qualify Q8 prefill, shared KV coherence or
+complete Talker/CodePredictor/codec state. These requirements and NPU/GPU serving,
+ternary talkers and 48 kHz artifacts remain in [PLAN.md](../../PLAN.md).
 
 ## Rust parameter and CPU thread helpers
 

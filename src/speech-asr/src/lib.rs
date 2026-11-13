@@ -5,6 +5,8 @@
 //! normalized mono 16 kHz samples and complete successful recognition results.
 #![forbid(unsafe_code)]
 
+pub mod protocol;
+
 use fearless_simd::{Level, dispatch, f32x4, prelude::*};
 use std::{
     fs::File,
@@ -19,7 +21,6 @@ pub const SAMPLE_RATE: usize = 16_000;
 /// Longest admitted clip, in seconds.
 pub const MAX_CLIP_SECONDS: usize = 30;
 const MAX_SAMPLES: usize = SAMPLE_RATE * MAX_CLIP_SECONDS;
-const MAX_TEXT_BYTES: usize = 32 * 1024;
 const ARCHITECTURE: &str = "qwen3_asr";
 const VARIANT: &str = "qwen3-asr-1.7b";
 static LOGGING: Once = Once::new();
@@ -130,11 +131,7 @@ impl Recognizer {
         self.session.clear_cancel_token();
         check_cancelled(cancellation)?;
         let transcript = result.map_err(|error| native_error(&error))?;
-        if transcript.text.len() > MAX_TEXT_BYTES || transcript.text.contains('\0') {
-            return Err(invalid(
-                "Qwen3-ASR returned an invalid or oversized transcript.",
-            ));
-        }
+        protocol::validate_transcript(&transcript.text)?;
         Ok(transcript.text)
     }
 }

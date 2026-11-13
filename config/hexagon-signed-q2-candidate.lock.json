@@ -455,9 +455,39 @@
         "ownerArchiveDownloaded": false,
         "ownerArchiveDigestVerified": false,
         "sdkContentsExtracted": false,
-        "observation": "docs/evidence/hexagon-sdk-functional-41171339745/provenance.json",
-        "priorObservation": "docs/evidence/hexagon-sdk-inventory-41168523349/provenance.json",
-        "priorRecipeObservation": "docs/evidence/hexagon-sdk-inventory-41168872514/provenance.json"
+        "observationRetention": "historical-summary-only; original SDK inventory/recipe/comparison payloads unavailable in this checkout; independent replay and current acceptance remain pending",
+        "historicalObservations": [
+          {
+            "scope": "archive-inventory",
+            "runUrl": "https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41168523349",
+            "runAttempt": null,
+            "runnerRevision": "9f87dde4c198fff404c024bb737c0861cb3002b2",
+            "artifactId": 13029623694,
+            "artifactName": "hexagon-sdk-inventory-41168523349-1",
+            "artifactDigest": "sha256:a1e9df7f60389ce84a8f016405a3bb02c57dbdb4a63fe2cb6e1c39c417df7a20",
+            "artifactZipDigestLocallyVerified": false
+          },
+          {
+            "scope": "build-idl-recipe",
+            "runUrl": "https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41168872514",
+            "runAttempt": null,
+            "runnerRevision": "ff5f737c48b184f8dd366cf54e572c0de20e6013",
+            "artifactId": 13030197751,
+            "artifactName": "hexagon-sdk-inventory-41168872514-1",
+            "artifactDigest": "sha256:e5a9d8f0f6ed7c064b793756a893e90c9585a106752f71428c62ada4e209eb6f",
+            "artifactZipDigestLocallyVerified": false
+          },
+          {
+            "scope": "functional-token-and-NOTICE-metadata-comparison",
+            "runUrl": "https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41171339745",
+            "runAttempt": 1,
+            "runnerRevision": "5feae0d6ac2152692001f8ffcc8b3f13d2cdcf08",
+            "artifactId": 13031391717,
+            "artifactName": "hexagon-sdk-inventory-41171339745-1",
+            "artifactDigest": "sha256:ad4c836b0e302b04a85486225fd3b375a0af1f1f5e709fc1c53d5b5bcd6f123d",
+            "artifactZipDigestLocallyVerified": false
+          }
+        ]
       },
       "qaicExecutableIdentity": {
         "archivePath": "6.7.0.0/ipc/fastrpc/qaic/bin/qaic.exe",
@@ -490,7 +520,7 @@
         ],
         "effectiveImportClosureReviewed": false,
         "publicImportEquivalenceQualified": false,
-        "lexicalComparisonObservation": "docs/evidence/hexagon-sdk-functional-41171339745/provenance.json",
+        "lexicalComparisonRunId": "41171339745",
         "normalizedTokenComparisons": [
           {
             "sdkPath": "6.7.0.0/incs/remote.idl",
@@ -647,7 +677,14 @@
         },
         "legacyCCompileObservation": {
           "runId": "41170405233",
-          "observation": "docs/evidence/hexagon-public-qaic-41170405233/provenance.json",
+          "runUrl": "https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41170405233",
+          "runAttempt": null,
+          "runnerRevision": "1676c188e1305a188f63dc0a349ef55f4cdcacac",
+          "artifactId": 13030757854,
+          "artifactName": "hexagon-public-qaic-41170405233-1",
+          "artifactDigest": "sha256:7ca8f4b3ede542246babdc0c0e3bd8455052a8b8a8f053ff92b0c48d34274d42",
+          "artifactZipDigestLocallyVerified": false,
+          "originalRawPayloadsRetained": false,
           "compiled": false,
           "mockExecuted": false,
           "rustComparisonExecuted": false,
@@ -655,7 +692,14 @@
         },
         "standardTypesGenerationObservation": {
           "runId": "41171073546",
-          "observation": "docs/evidence/hexagon-public-qaic-41171073546/provenance.json",
+          "runUrl": "https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41171073546",
+          "runAttempt": null,
+          "runnerRevision": "288db2e1fce923efb63f45500592823d06657ee5",
+          "artifactId": 13030534459,
+          "artifactName": "hexagon-public-qaic-41171073546-1",
+          "artifactDigest": "sha256:b2e5eeaa4334242bc18a0316dcf2327593f76f207418d610e3c1c4e579a02526",
+          "artifactZipDigestLocallyVerified": false,
+          "originalRawPayloadsRetained": false,
           "generationCompleted": true,
           "wholeFilesReviewed": true,
           "changesOnlyDocumentedTypesAndInclude": true,
@@ -738,7 +782,14 @@
         },
         "standardTypesCCompileObservation": {
           "runId": "41171448060",
-          "observation": "docs/evidence/hexagon-public-qaic-41171448060/provenance.json",
+          "runUrl": "https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41171448060",
+          "runAttempt": null,
+          "runnerRevision": "de17d0eed1a67d912a438b5a4de5c7ee1ca32519",
+          "artifactId": 13030869102,
+          "artifactName": "hexagon-public-qaic-41171448060-1",
+          "artifactDigest": "sha256:87ca1783b254d7fd362501b04fe9751070554328a6be2464256498fc79133c03",
+          "artifactZipDigestLocallyVerified": false,
+          "originalRawPayloadsRetained": false,
           "compiled": false,
           "mockExecuted": false,
           "rustComparisonExecuted": false,
@@ -885,7 +936,7 @@
         "productTermsRenderedInReviewedPublicPages": false,
         "nextRoute": "independent-pinned-public-BSD-QAIC-source-build-and-public-import-control; SDK-equivalence-still-pending",
         "encodingAwareNoticeObservation": {
-          "observation": "docs/evidence/hexagon-sdk-functional-41171339745/provenance.json",
+          "runId": "41171339745",
           "encodingObservation": {
             "encoding": "cp1252",
             "basis": "Windows-1252-fallback-no-BOM",
@@ -963,7 +1014,7 @@
       "sdkGeneratorExecutionQualified": false,
       "publicSourceGenerationStatus": "passed-independent-public-QAIC-build-and-generation-only",
       "sdkFunctionalComparisonObservation": {
-        "observation": "docs/evidence/hexagon-sdk-functional-41171339745/provenance.json",
+        "runId": "41171339745",
         "status": "two-IDL-normalized-streams-match; queue-and-remote-header-streams-differ",
         "normalization": "C-phase2-line-splices; comment-aware-C-IDL-lexing; canonical-JSON-ASCII-token-array; explicit-preprocessor-boundaries-and-macro-adjacency; literal-include-header-names",
         "conditionalPreprocessorEvaluated": false,

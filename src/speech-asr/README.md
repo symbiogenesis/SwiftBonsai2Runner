@@ -38,3 +38,27 @@ Native device qualification of loading, transcription, microphone lifecycle,
 quality, accuracy, performance and resources remains pending. Model-free regressions cover family/variant/audio
 identity rejection, bounded input and cancellation; compilation and protocol checks
 do not establish model qualification.
+
+## Rust replacement prerequisite
+
+`protocol.rs` implements the native-independent automatic-language prompt,
+chunk/pad geometry, EOS completion boundary and first-`<asr_text>` envelope split.
+The current native engine still performs inference; the production wrapper shares
+only final transcript validation with these helpers. The prompt leaves 256 output
+tokens inside the smaller of the model context and the current 8,192-token session
+ceiling. Per-chunk three-stage convolution rounding retains 390 real audio rows
+for 3,000 mel frames in 100-frame chunks, rather than incorrectly rounding the
+whole utterance to 375 rows.
+
+The named `rust_asr_protocol_` controls use literal symbolic prompt expansion,
+hand-calculated integer geometry, UTF-8 byte bounds and incomplete/cancelled
+output rejection. They need no speech engine or model execution and are not
+captured native inference. `rust-protocol.json` binds their scope to the exact
+reviewed upstream source bytes; `LICENSE.transcribe` retains MIT attribution.
+The GGUF/tokenizer intake, numerical frontend/encoder/decoder, complete session
+reset and actual-model comparisons remain necessary before replacing the native
+engine or removing its compiler, provisioning and dependency paths. Retirement
+also requires the complete source-bound external engine/GGML file inventory and
+immutable independent frontend, encoder, decoder and tokenizer controls with
+complete input/output identities. The two source hashes here bind only these
+protocol helpers and do not stand in for that full inventory or model evidence.

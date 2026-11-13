@@ -157,7 +157,6 @@
         "tools/native-reference/**",
         ".github/workflows/native-ptq1-numerics.yml",
         ".github/workflows/ptq1-public-authoring-reference.yml",
-        "docs/evidence/headless-publisher-startup.json",
         "docs/runtime-candidates/headless-ucrt-argv.json",
         "tests/fixtures/**",
         "config/prism-inference.lock.json",

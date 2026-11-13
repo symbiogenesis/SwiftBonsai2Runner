@@ -188,6 +188,65 @@ Packed-cache equivalence is within the selected codec, not equivalence to FP16.
 
 Verify the exact release lock and consumer before execution.
 
+### Ordered packed-KV code selection
+
+Local Prism source `57de5193ce5aaad20eecfe6ce6c646b88ca7cabc` reduces
+repeated distance calculations during packed K/V encoding. Automatic encoding
+brackets the nearest entries in the existing ordered 8/16-entry codebook,
+compares the original rounded binary32 distances, and recovers the earliest
+entry when several distances round to the same minimum. It uses no midpoint
+approximation, new codebook, persistent scratch or additional allocation.
+Explicit `Quantizer::scalar` encoding retains the exhaustive search as an
+independent control.
+
+The consumer is current-token `PackedCache::prepare` for K4/V4, fitted K4/V4
+and K4/V3 caches. FP16 caches do not consume it. Native, portable and
+feature-disabled automatic encoding share the same search; no optional ISA
+or helper publication is added. Focused controls compare exhaustive selection
+at centroid/midpoint boundaries, neighboring binary32 values, extreme rounded
+ties and deterministic finite bit patterns, then compare complete packed
+records across scale extremes and fitted-scale selection.
+
+This is a source candidate, not a measured X1 speedup or a Runner repin.
+Strict native/fallback compilation, exact codec and failure controls do not
+replace complete-model state/logit/adapter/cancellation acceptance, codegen,
+resources or matched CPU-only complete-request benefit. Publication requires
+a genuine source-bound runtime bundle and reviewed Runner locks under the
+[cross-generation promotion gates](#cross-generation-cpu-promotion).
+
+### Head-scoped GDN decode and packed value result checks
+
+Two further local Prism candidates remove repeated work from ordinary CPU decode:
+
+- Eligible pinned GDN decode admits a complete head before traversing its
+  eight-row groups. Geometry and baseline-NEON selection happen once per head;
+  the existing four-row arithmetic phases, immutable committed source and
+  defensive failure replay remain unchanged. At Swift's 128-row head geometry,
+  this replaces sixteen admissions/selections with one, omitting 34,560 repeated
+  selections across 48 recurrent layers and 48 value heads per token. Completed
+  groups alone publish their output into provisional scratch; the graph retains
+  its complete-state transaction. Unsupported shapes, arithmetic profiles and
+  feature-disabled builds retain their existing grouping.
+- Packed value accumulation checks finite results during its existing update
+  loop. Native execution combines exponent-bit predicates while the four results
+  remain in NEON registers; portable execution checks each updated scalar. This
+  omits the separate scan of 256 stored results for every accumulated value row.
+  Separate binary32 multiply/add rounding, codebook/record validation, poisoned
+  scan rejection and the public single-row helper's unchanged-output failure
+  contract remain intact. No cache payload or retained scratch is added.
+
+These are source work reductions, not measured X2 speedups. Focused controls
+cover scalar-bit agreement, complete-head geometry and fallback, late failure
+and recovery, each SIMD lane's overflow detection and public failure atomicity.
+Compiled controls, strict native/x64 Release analysis and linking, feature-disabled
+execution, ARM64 codegen/resources, full-model state/logit/adapter/cancellation
+parity and matched CPU-only complete-request benefit remain pending. Apply the
+[cross-generation promotion gates](#cross-generation-cpu-promotion); X1 deployment
+and performance claims retain their applicability and measurement boundaries.
+Publish the changed NEON helper before a dependent runtime release, then prepare
+a genuine source-bound bundle and reviewed Runner repin. Runner's active 0.1.27
+bundle does not consume these local candidates.
+
 ## Execution and dispatch
 
 The default `experimental-neon` feature uses [`fearless_simd` 1.1.0][fearless]'s safe core API under

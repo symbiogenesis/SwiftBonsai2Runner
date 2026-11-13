@@ -60,12 +60,16 @@ remove the final dispatcher after every provider has migrated.
 | Publisher runtime and PTQ1 collector | The collector uses pinned native inference DLLs. A Rust driver does not replace that engine. Retire publisher locks, builders, capture routes and patches only after replacement/fallback and distribution gates pass. |
 | Hexagon | Pure Rust model/codec execution and signed `hexagon-native-rpc` replace GGML host engines. Review vendor FastRPC separately: DriverStore `libcdsprpc.dll` (`qcnspmcdm`), `remote_handle64_*`, `rpcmem_*`, `dspqueue_*` and signed `libggml-htp-v73.so` / `libggml-htp-v81.so` DSP skels. |
 
-Expand external families to exact pinned source files before porting. Remove unused
-speech overlays/extern declarations, source/build/cache actions, provisioning,
-compiler locks, Cargo edges and obsolete package notices. Prism cleanup also
-covers CMake projects/adapters, native loader/LoRA-export linkage, LLGuidance and
-codec downloads, packaging, caches and provider dispatch. Preserve assertions
-when removing their build paths.
+Expand external families to exact pinned source files before porting. Prism's
+remaining boundary includes CMake projects/adapters, native loader/LoRA-export
+linkage, LLGuidance and codec downloads, packaging, caches and provider dispatch.
+Preserve assertions when removing their build paths. TTS's Rust build and scalar,
+tokenizer and graph-lifetime fixtures have no live source-overlay generator or
+native Qwen/GGML registration dependency.
+
+TTS has no signed RPC dispatcher. Its [signed-dispatch prerequisites](../src/speech-tts/README.md#optional-hexagon-runtime)
+require independent wire/Windows ABI controls before hybrid placement. Fixed
+F32/guarded-Q2 controls do not qualify Q8 prefill, shared KV or complete speech state.
 
 Final acceptance requires source/generated-source and dependency inventories,
 binary-linkage assessment, clean hosted consumer builds without a project C++
