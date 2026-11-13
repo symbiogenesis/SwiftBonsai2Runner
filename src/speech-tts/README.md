@@ -163,9 +163,9 @@ code, allocations or additional dependencies. Both native stochastic samplers
 call its private scalar C ABI export. The build overlay replaces the complete
 native `philox.h` algorithm with that declaration and rewrites each single-draw
 call, preserving the seed, subsequence and counter arguments. The incoming source
-must match the pinned 3,552-byte LF-normalized SHA-256 identity; the implementation
-is not retained in the checkout. Changed source rejects the build. The probability
-pipeline and GGML graph stay upstream.
+must match the pinned 3,552-byte LF-normalized SHA-256 identity; the original header
+is not retained in the checkout. Changed source rejects the build. The Rust
+probability pipeline is described below; GGML graph execution remains native.
 
 Wrapping integer arithmetic, signed seed/subsequence bit patterns and separate
 f32 rounding match the pinned source. Its upper endpoint can round to `1.0`;
@@ -225,9 +225,10 @@ rewind, all batch-width pairs, partial allocation failure and final cleanup.
 Exact source identities and assertion mappings remain in
 `tests/fixtures/decode-graph-v1.provenance.json`.
 
-The serving path retains the probability pipeline, mel constants
-and resampler upstream; candidate Rust modules do not change that active path.
-Top-k/top-p ordering and mel changes need separate numerical evidence.
+The serving path uses the Rust sampler above while retaining native model/codec
+inference, mel constants and resampler. The candidate Rust engine/codec modules
+have not replaced those native operations. Changes to captured top-k/top-p
+ordering or mel arithmetic need separate numerical evidence.
 Resampling is outside the current already-24-kHz reference
 path. Full-model speech output, quality and resource acceptance remain CI work
 under `PLAN.md`; bit parity alone makes no performance claim.
@@ -250,12 +251,12 @@ leftmost merge ties, duplicate-spelling overwrites and raw encoded-byte fallback
 This is the pinned speech tokenizer; the Prism Qwen35 tokenizer has a different
 contract and is not substituted.
 
-Rust owns GGUF metadata context lifetime, typed table intake, special-key loading
-and transactional tokenizer replacement through the pinned reader's primitive C
-API. Failed intake releases the candidate and metadata while preserving the old
-owner. Native allocation exceptions abort the owned worker at a guarded unwind
-boundary. The remaining native holder releases its opaque Rust owner after joining
-the compute worker and retains compile-time no-copy/no-move assertions.
+`src/gguf.rs` reads bounded GGUF v2/v3 metadata in safe Rust; tokenizer loading
+no longer calls the native `gguf_*` metadata API. Rust owns typed table intake,
+special-key loading and transactional tokenizer replacement. Failed intake drops
+the candidate and metadata while preserving the previous tokenizer. The remaining
+native holder releases its opaque Rust owner after joining the compute worker
+and retains compile-time no-copy/no-move assertions.
 Rust also owns encoded IDs until a synchronous native callback copies them into
 the prompt builder's vector. That callback catches allocation exceptions and
 returns failure before Rust releases the result. No result handle or borrowed
