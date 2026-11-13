@@ -149,12 +149,13 @@ fn checked_process(
 }
 
 fn receive(artifact: &Value, destination: &Path, working: &Path) -> crate::Result<()> {
-    crate::startup_download::receive(
+    crate::startup_download::receive_repair_observed(
         text(artifact, "url")?,
         destination,
         bytes(artifact)?,
         text(artifact, "sha256")?,
         working,
+        &mut |_| Ok(()),
     )
 }
 
@@ -624,17 +625,18 @@ fn provision_models(
         let bytes = plan["Bytes"]
             .as_u64()
             .ok_or("Missing speech model length.")?;
-        if defer && path.exists() {
-            crate::startup_download::verify_length(path, bytes)
-        } else if verify_only {
+        if verify_only {
             crate::startup_download::verify(path, bytes, text(plan, "Sha256")?)
+        } else if defer && crate::startup_download::verify_length(path, bytes).is_ok() {
+            Ok(())
         } else {
-            crate::startup_download::receive(
+            crate::startup_download::receive_repair_observed(
                 text(plan, "Uri")?,
                 path,
                 bytes,
                 text(plan, "Sha256")?,
                 working,
+                &mut |_| Ok(()),
             )
         }
     })
@@ -1031,9 +1033,22 @@ mod tests {
                 .is_none()
         );
         assert!(provision_models(plan.clone(), true, false, &working).is_err());
-        assert!(provision_models(plan.clone(), false, false, &working).is_err());
+        fs::write(path.with_extension("gguf.partial"), b"right")
+            .map_err(|error| error.to_string())?;
+        provision_models(plan.clone(), false, false, &working)?;
+        assert_eq!(
+            fs::read(&path).map_err(|error| error.to_string())?,
+            b"right"
+        );
         fs::write(&path, b"shorter").map_err(|error| error.to_string())?;
-        assert!(provision_models(plan, false, true, &working).is_err());
+        fs::write(path.with_extension("gguf.partial"), b"right")
+            .map_err(|error| error.to_string())?;
+        provision_models(plan, false, true, &working)?;
+        assert_eq!(
+            fs::read(&path).map_err(|error| error.to_string())?,
+            b"right"
+        );
+        crate::startup_cache::remove_scratch_directory(&working)?;
         Ok(())
     }
 }
