@@ -1,15 +1,14 @@
 # Inference defaults and quality evidence
 
-Chat preserves the native template and publisher's evaluated sampler, with thinking off
-by default. These settings are not qualified as optimal for laptop use or creative
-writing. Actual-model application acceptance is pending.
+Chat preserves the native template and publisher's evaluated sampler, with thinking
+off by default. The development default is Rust Prism 0.1.25, original Swift PQ2, four CPU
+row workers and standard adapter scale 1.3. `--publisher-engine` selects publisher rollback;
+PTQ1 remains opt-in. The worker attempts [X2 NPU acceleration](hexagon.md), retaining
+CPU execution if initialization is unavailable.
 
-The development engine default is Rust Prism 0.1.25 with original Swift PQ2,
-four CPU row workers and the standard adapter at scale 1.3. Publisher rollback
-is explicit with `--publisher-engine`; PTQ1 remains opt-in. The native worker attempts
-[default X2 NPU acceleration](hexagon.md) and retains CPU execution when its
-initialization is unavailable. This choice does not
-qualify performance, full-context/output, quality, isolation or installation.
+These defaults are not qualified as optimal for laptop use or creative writing.
+Actual-model, performance, full-context/output, quality, isolation and installation
+acceptance remain pending.
 
 ## Applied defaults
 

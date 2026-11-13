@@ -1,14 +1,15 @@
 # Swift LoRA: artifact, basis and qualification
 
-The native app enables the pinned OrcaRouter adapter experimentally at scale **1.3**;
-`bonsai-tools chat --no-abliterate-lora` opts out. Settings accepts 0 to 2 in 0.1 steps for the
-next response and every Extra effort pass, without reloading; zero disables correction
-but retains the adapter. The active runtime is [Prism 0.1.25](native-rust-engine.md);
-historical lifecycle results below keep their original runtime identities.
-Bounded native ARM64 loading/decode passes, but **Swift basis
-correctness, effectiveness, quality and standard/daily-service acceptance are unqualified**.
-No optimal scale is established. The broker has an explicit development option;
-no local training is needed.
+The native app experimentally enables the pinned OrcaRouter adapter at scale **1.3**;
+`bonsai-tools chat --no-abliterate-lora` opts out. Settings accepts 0 to 2 in 0.1 steps
+for the next response and every Extra effort pass, without reloading. Zero disables
+correction while retaining the adapter. The broker exposes an explicit development
+option; no local training is needed.
+
+Bounded native ARM64 loading/decode passes, but **Swift basis correctness,
+effectiveness, quality and standard/daily-service acceptance remain unqualified**.
+No optimal scale is established. [Prism 0.1.25](native-rust-engine.md) is active;
+historical results retain their original runtime identities.
 [PLAN.md](../PLAN.md#creative-quality-adapters-and-memory) owns remaining work.
 
 The [historical 0.1.13 bounded lifecycle](evidence/ptq1-0113-lifecycle-41539984210/independent-review.json)

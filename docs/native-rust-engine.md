@@ -1,24 +1,22 @@
 # Native Rust Prism engine contract
 
 [Prism Inference](https://github.com/symbiogenesis/prism-inference) owns the safe Rust
-CPU runtime, tokenizer, packed kernels and hybrid graph. Runner owns the app, broker,
-provisioning and [release integration](../config/prism-inference.lock.json). The pinned
-publisher engine remains an explicit comparison/rollback. The development default
-is Rust Prism 0.1.25, original Swift PQ2, four CPU row workers and the standard
-adapter at scale 1.3. On supported X2 systems, the private worker attempts the
-[default resident Hexagon `native-q2` placement](hexagon.md); unavailable accelerator
-initialization retains the CPU path. This is a backend fallback within the same
-engine and representation. Use `--publisher-engine` for manual rollback; failures
-never switch engines or weights. Full release qualification remains governed by the
-[promotion contract](#default-runtime-promotion), independently of this development choice.
-[PLAN.md](../PLAN.md#runtime-and-correctness) owns outstanding work. The [native Rust
-UI](ui-architecture.md) is a separate broker client: UI availability or browser/server
-feature parity does not qualify inference.
+CPU runtime, tokenizer, packed kernels and hybrid graph. Runner owns the app,
+broker, provisioning and [release integration](../config/prism-inference.lock.json).
+The development default is Prism 0.1.25, original Swift PQ2, four CPU row workers
+and the standard adapter at scale 1.3. Supported X2 workers attempt
+[resident Hexagon `native-q2`](hexagon.md), retaining CPU execution if accelerator
+initialization is unavailable. This fallback preserves the engine and weights;
+`--publisher-engine` selects the pinned publisher comparison/rollback explicitly.
+Failures never silently switch engines or weights.
 
-This development default retains pending full-context/output, creative-quality,
-sustained-performance, daily-isolation and clean-machine acceptance. It claims no
-measured advantage. Current-weight PTQ1 remains opt-in; its packing savings and
-historical service checks do not establish a reason to replace original PQ2 now.
+Full-context/output, creative-quality, sustained-performance, daily-isolation and
+clean-machine acceptance remain pending under the
+[promotion contract](#default-runtime-promotion) and
+[PLAN.md](../PLAN.md#runtime-and-correctness). No measured advantage is claimed.
+PTQ1 remains opt-in; its packing savings and historical service checks do not
+justify replacing PQ2. The [native Rust UI](ui-architecture.md) is a separate
+broker client; UI availability and browser/server feature parity do not qualify inference.
 
 ## Swift CPU supported subset
 
@@ -37,30 +35,28 @@ retain separate identities. The runtime and exact-source
 numerical-capture locks advance together; [PLAN.md](../PLAN.md) keeps model,
 device and performance acceptance pending.
 
-The following 0.1.14 reviews are historical acceptance inputs, not the active pin.
-The [owning-check review](evidence/ptq1-context-owning-ci-9e/independent-review.json)
-binds source `9e8ea3e2c042ab0c3f1a8e9596ff155e202c3c57` and its Foundation,
-conformance and source-package results. The [publication review](evidence/ptq1-context-publication-014/independent-review.json)
-binds that publication's tag, archives, executable and license identities. The typed
-pre-generation context-capacity rejection preserves same-owner recovery and
-invalidates stale count requests; Windows artifact hashing uses CNG.
-The [0.1.14 readiness audit](evidence/prism-0114-readiness-20261103.json) keeps
-historical 0.1.13 results at their original identities. These reviews do not transfer
-full-model acceptance to 0.1.25.
+Historical 0.1.14 inputs retain their original scope:
 
-The runtime inherits the 0.1.13 startup change: one complete
-immutable-payload validation pass before graph publication, including allowed unused
-tensors, while removing repeated payload scans during shape binding. PTQ1 validation
-retains extent and finite-scale checks without decoding and discarding valid trits.
-Optional request-timing APIs and a separately [prepared diagnostic tool](https://github.com/symbiogenesis/prism-inference/actions/runs/41535596245)
-support attribution; ordinary calls add no attribution clocks. The CPU baseline
-preserves its quantization, reduction order and production copy-then-scale
-recurrent arithmetic. Accelerator execution has a separate numerical
-and device contract. The historical 0.1.12 observations establish no startup,
-throughput or memory gain for the current binaries. Registry publication and
-binary delivery remain separate.
-Release/focused integration does not establish full-context, sustained-performance,
-creative, adapter or daily-isolation acceptance.
+- [Owning-check review](evidence/ptq1-context-owning-ci-9e/independent-review.json):
+  source `9e8ea3e2c042ab0c3f1a8e9596ff155e202c3c57`, Foundation, conformance and
+  source-package results.
+- [Publication review](evidence/ptq1-context-publication-014/independent-review.json):
+  tag, archives, executable and license identities.
+- [Readiness audit](evidence/prism-0114-readiness-20261103.json): historical 0.1.13
+  results retain their identities; no full-model acceptance transfers to 0.1.25.
+
+Typed pre-generation context rejection preserves same-owner recovery and
+invalidates stale counts; Windows artifact hashing uses CNG. Startup inherits
+0.1.13's single immutable-payload validation pass before graph publication,
+including allowed unused tensors, without rescanning payloads during shape binding.
+PTQ1 keeps extent/finite-scale checks without decoding and discarding valid trits.
+Optional timing APIs and the [prepared diagnostic tool](https://github.com/symbiogenesis/prism-inference/actions/runs/41535596245)
+support attribution; ordinary calls add no attribution clocks. CPU quantization, reduction
+order and copy-then-scale recurrent arithmetic remain unchanged; accelerators
+have separate numerical/device contracts. Historical 0.1.12 observations establish
+no current startup, throughput or memory gain. Registry and binary publication
+remain separate, as do full-context, sustained-performance, creative, adapter and
+daily-isolation acceptance.
 
 Runner's opt-in [native owned request-timing mode](validation.md#bounded-source-request-attribution)
 uses the exact pinned checker source from its hosted capture package and retains
@@ -68,47 +64,38 @@ parent/Job ownership, artifact admission, the original deadline and cleanup rese
 Its fixed public request has a one-token output bound and a no-op text consumer.
 Preparing this lane supplies no actual-device attribution or released-service evidence.
 
-The first required-container X2 PTQ1/adapter attempt on 0.1.7
-[failed during backend startup](evidence/ptq1-native-service.json), before verified
-readiness or streaming. The retained receipt does not establish whether weights
-loaded. The separate numerical checker result cannot qualify this service path.
+Historical required-container X2 PTQ1/adapter attempts:
 
-The [0.1.8 replacement attempt](https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41020705958)
-passes exact model/adapter readiness and one scale-1.3 streamed request under the
-required native sandbox, followed by an empty owned Job and released listener.
-The four-token cap produces one reported output token, three visible UTF-8 bytes
-and a natural `stop`. The owner job completes in three minutes. Optional zero-scale
-and invalid-scale/reuse checks are skipped; restart, cancellation, full context/output,
-quality and resource/benefit qualification remain pending. This is an application
-smoke, not completed-answer or default-runtime acceptance.
+- [0.1.7](evidence/ptq1-native-service.json) failed during backend startup, before
+  verified readiness or streaming. Whether weights loaded is unknown; the separate
+  numerical checker does not qualify this service path.
+- [0.1.8](https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41020705958)
+  passed exact model/adapter readiness and one scale-1.3 stream under the required
+  native sandbox. With a four-token cap it reported one output token, three visible
+  UTF-8 bytes and natural `stop`. The three-minute owner job left an empty Job and
+  released listener. Optional zero-scale and invalid-scale/reuse checks were skipped.
+- [0.1.10, one worker](evidence/ptq1-0110-bounded-scale-streams.json) passed readiness
+  and one-token-cap streams at scales 1.3 and zero: both returned `Hello` with
+  `length`. Startup took 36.75 s; client requests took 40.14 and 40.35 s. The
+  45-second request-and-cleanup threshold prevented invalid-scale rejection and
+  captured-history change-back. Overall acceptance failed; owned cleanup and durable
+  selected receipts were verified, with no further model attempt.
+- [0.1.13, four workers](evidence/ptq1-0113-lifecycle-41539984210/independent-review.json)
+  passed the bounded scale/history lifecycle on X2 Elite Extreme at Runner
+  `74bef68c74417a56e38d90201b7f87ccc667a276`, run `41539984210`. Exact readiness
+  reported four effective graph workers. Three one-token-cap streams at scales
+  1.3, zero and 1.3 completed with `length`; invalid scale was rejected and the
+  same owner accepted change-back using the actual first response as assistant
+  history, with retained content/message digests. Shutdown left an empty Job and
+  released listener. Startup took 14.622 s; requests took 26.038, 25.753 and
+  55.558 s including broker and HTTP/SSE overhead. The single guarded attempt and
+  file-only review, including the earlier diagnostic charge, took 268.464 s
+  without a model retry.
 
-The [bounded 0.1.10 one-worker follow-up](evidence/ptq1-0110-bounded-scale-streams.json)
-passes verified PTQ1/adapter readiness and complete one-token-cap streams at scales
-1.3 and zero. Startup takes 36.75 seconds and the client observes requests of 40.14
-and 40.35 seconds. Both return `Hello` with `length`; these are capped streams,
-not complete-answer, decode-TPS or zero/no-adapter logits evidence. The 45-second
-request-and-cleanup threshold stops the required workload before invalid-scale rejection and
-captured-history change-back. Overall acceptance fails, with owned cleanup and
-durable selected receipts verified; no additional model attempt follows.
-
-The [bounded 0.1.13 four-worker lifecycle](evidence/ptq1-0113-lifecycle-41539984210/independent-review.json)
-passes on the X2 Elite Extreme at Runner `74bef68c74417a56e38d90201b7f87ccc667a276`
-(run `41539984210`). Exact PTQ1/adapter readiness reports an effective graph budget
-of four workers. All three one-token-cap streams at scales 1.3, zero and 1.3 complete;
-invalid scale is rejected and the same owner accepts the change-back request.
-That request supplies the actual first response as assistant history, with retained
-content and message digests. Owned shutdown leaves an empty Job and released listener.
-This closes the selected bounded scale/history lifecycle only. Each stream reports
-one output token and `length` termination; supplied generated text does not establish
-prefix-state reuse, complete-answer quality, zero/no-adapter numerical identity or
-nonzero adapter effectiveness.
-
-The captured startup is 14.622 seconds; client-observed request durations are
-26.038, 25.753 and 55.558 seconds. These observations include the recorded broker
-and HTTP/SSE overhead and establish no decode TPS or controlled speedup over the
-historical 0.1.12 attempt. The single guarded attempt and completed file-only review,
-including the earlier diagnostic charge, fit within 268.464 seconds with no model
-retry. Full state/scalar/NEON parity, context/output, resources, quality, isolation,
+These bounded application smokes establish neither complete-answer quality,
+prefix-state reuse, zero/no-adapter numerical identity, nonzero adapter effectiveness,
+decode TPS nor controlled speedup over 0.1.12. Full state/scalar/NEON parity,
+restart/cancellation, context/output, resources/benefit, quality, isolation,
 installation and default promotion remain unqualified.
 
 Version 0.1.8 uses the reviewed Windows read-consumer helper at Runner revision

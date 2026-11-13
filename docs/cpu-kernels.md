@@ -1,13 +1,13 @@
 # CPU kernels and X2 thread evaluation
 
-Baseline NEON supports PQ2, odd-group PQ2 and PTQ1 with scalar reference/fallback. This guide owns
-arithmetic, dispatch, qualification and the [X2 thread screen](#x2-cpu-thread-screen).
-Synthetic parity does not qualify whole-model parity or device speedup; pinned Prism remains the
-control engine. Runner's active [release lock](../config/prism-inference.lock.json)
-is Prism 0.1.25; source candidates and historical publisher screens below
-retain their own identities. [PLAN.md](../PLAN.md#cpu-kernels) owns outstanding work.
-The owner-requested development repin does not close the CPU qualification gates;
-the fixed CPU comparison baseline remains 0.1.23 with explicit FP16 KV.
+Baseline NEON supports PQ2, odd-group PQ2 and PTQ1 with scalar reference/fallback.
+This guide owns arithmetic, dispatch, qualification and the
+[X2 thread screen](#x2-cpu-thread-screen). Synthetic parity qualifies neither
+whole-model parity nor device speedup. Runner's active
+[release lock](../config/prism-inference.lock.json) pins Prism 0.1.25; source candidates
+and historical publisher screens retain their own identities. The fixed CPU
+comparison baseline remains 0.1.23 with explicit FP16 KV. This development repin
+closes no CPU qualification gates; [PLAN.md](../PLAN.md#cpu-kernels) owns remaining work.
 
 ## Cross-generation CPU promotion
 

@@ -106,132 +106,41 @@ host weight reuse, not demonstrated DSP residency. The original streaming defaul
 still independently audits every returned integer. Both modes retain the same
 native duration, operation, model and cleanup limits.
 
-Per-token timing now separates CPU evaluation, native graph evaluation, native submission/wait and
-the streaming integer oracle. Model loading, graph creation, device setup/cleanup and state
-capture/comparison lie outside these windows. The resident AC screen measured CPU evaluations of
-502-536 ms and native evaluations of 512-633 ms, including first-token preparation. This is a short
-diagnostic with no demonstrated speed benefit or release performance acceptance. Both resident
-comparison arms observed AC/saver-off endpoints; the earlier streaming and loaded-zero controls
-observed battery/saver-off endpoints. No cross-power cache benefit is claimed, and endpoints do not
-prove uninterrupted stability. Wider placement, persistent service, effective device resources,
-packaging and useful benefit remained pending; this control changed no application default. The separate
-[exact packed-weight transpose control](evidence/npu-host-reduction-20261103/summary.json) qualifies the new local Prism `16c5e53` packing
-implementation for the same three-token streaming and resident placements with standard adapter/1.3
-and NEON/four workers. Fourteen focused controls, strict library Clippy, formatting and the Release
-probe build passed. Streaming checked all 16,711,680 returned integers; both modes matched complete
-logits/state and explicitly cleaned up with empty owned Jobs. Every CPU/native arm endpoint observed
-AC, saver off and 48% charge; continuity is unknown. Resident CPU evaluation took 362-403 ms versus
-420-477 ms with native offload. These diagnostic windows establish no useful benefit or before/after
-packing speedup. This capture predates the X2 `native-q2` development default.
-The [signed batch-operation route](hexagon-source-audit.md#batching-existing-signed-block-operations) was subsequently
-implemented on local Prism `6f31095` and verified by the
-[batch-four HMX controls](evidence/npu-batch4-controls-20261104/summary.json).
-Submitting four `K=128/N=8` operations per queue packet (`1,816` command bytes,
-`12` tensor descriptors and `4` operation descriptors) reduces first-projection
-queue writes from 40 to 10 per token (`30` writes for `120` logical operations
-across tokens `42`, `43` and `128`). Both `batch4-streaming` (`4,755,456` mapped
-bytes, all `16,711,680` returned plane integers independently audited) and
-`batch4-resident` (`29,822,976` mapped bytes, `25,067,520` resident packed weight
-bytes prepared once with `2` cache hits) matched complete per-token CPU logits and
-logical state and completed explicit native cleanup with empty owned Jobs. All four
-arm endpoints in both device runs observed AC power, saver off and `97%` charge
-(after the outer workload clock opened on battery at `82%` and connected to AC
-during build setup). Native submit-and-wait windows dropped to `33.91-35.52` ms
-(streaming) and `31.16-32.05` ms (resident), with resident native evaluations at
-`431.31-446.33` ms versus `385.18-398.77` ms on CPU. The follow-up
-[host-reconstruction and multi-projection resident HMX controls](evidence/npu-multi-projection-20261104/summary.json)
-on local Prism `ebc22c2` and Runner `bbc63034` eliminate redundant unused streaming-weight zeroing
-on resident submissions, replace `truncf` plane validation with exact `i16` roundtrip checks, fuse
-validation into a row-major `batch_four` reconstruction loop, and verify bounded two-projection
-resident placement (`blk.0.ffn_up.weight` and `blk.0.ffn_gate.weight`, `50,135,040` resident weight
-bytes in `54,890,496` mapped bytes, `240` logical operations in `60` queue writes across tokens
-`42`, `43` and `128`) with exact per-token logits/state parity and clean teardown under AC power
-(`100%` charge at all arm endpoints). Single-projection resident native evaluation reached
-`432.66-487.59` ms (`32.53-34.22` ms submit/wait) versus `389.91-415.44` ms on CPU, while
-two-projection resident placement doubled `nativeSubmitAndWaitMilliseconds` to `64.66-66.22` ms
-(`~32.5` ms per projection) and raised native evaluation to `514.98-553.37` ms versus
-`411.89-579.56` ms on CPU. The subsequent
-[batch-ten HMX queue, bounded spin-polling and parallel L1-tiled reconstruction controls](evidence/npu-batch10-fast-queue-20261105/summary.json) on local
-Prism `5136bd1` and Runner `580a0062` submit ten `K=128/N=8` operations per queue packet (`4,504`
-command bytes in an `8,192`-byte header, `n_tensors=30`, `n_ops=10`, `4` queue writes per
-projection), spin-poll `queue_read` `516` (`AEE_EWOULDBLOCK`) for up to 15 ms before sleeping, and
-partition 64-row L1-tiled 8-plane dot reconstruction across all four row workers
-(`RowParallelism::update_rows`). Battery power (`89%` charge, saver off) was
-observed at the `43.36`-second workload and arm endpoints, separately from prior AC sessions. Both
-`single-projection-batch10-resident` (`120` ops in `12` queue writes, `36,954,112` mapped bytes) and
-`two-projection-batch10-resident` (`240` ops in `24` queue writes, `62,021,632` mapped bytes with
-`50,135,040` resident weight bytes, `2` prepared tensors and `4` cache hits) matched complete
-per-token CPU logits and logical state across tokens `42`, `43` and `128` with clean teardown.
-Device submit-and-wait dropped to `22.21-23.48` ms for 1 projection and `44.08-46.26` ms for 2
-projections (`~5.5-5.8` ms per 10-op packet), and 4-worker reconstruction kept 2-projection native
-evaluation (`513.61-537.70` ms) near 1-projection native evaluation (`487.91-529.85` ms), but each
-projection still transfers `22.28` MB of 8-plane `FP32` outputs over shared memory across 40 `K=128`
-`OP_MUL_MAT` dispatches; this bitplane route was not promoted to the application default. The follow-up
-[static K>128 tiling, plane-reduction, and 8-HVX/2MiB-VTCM solver audit](evidence/hexagon-k-tiling-and-reduction-audit.json) (reproduced by
-`python -B tools/hexagon/verify_k_tiling_and_reduction_audit.py`) and
-[8-HVX / 2 MiB VTCM / Burst-mode HMX controls](evidence/npu-hmx-8hvx-2mib-vtcm-20261105/summary.json)
-on local Prism `9f61217` and Runner `76e3b38b` prove from pinned `v0.10.0` HTP source that
-multi-block `K>128` weight tiling cannot preserve `PinnedSwift` bitwise parity (due to
-`HMX_STORE_AFTER_F16` `FP16` output truncation and non-factorable per-128-block `PQ2_0` scales) and
-that `HTP_OP_SUM_ROWS` reduces along `ne[0]=17408` rather than across the 8 bitplanes (`ne[1]=8`),
-while enabling all 8 128-byte HVX contexts (`n_hvx=8`, `n_threads=8`, `n_act_threads=4`), 2 MiB VTCM
-chunking (`n_chunk=4352`, `1,576,960` VTCM bytes, `4` chunks/op instead of `136`), and
-`HTP_POWER_MODE_BURST` (`7`). AC power (`95%` charge, saver off) was observed
-at the workload and arm endpoints during the `199.09`-second workload within
-the `300`-second default budget. `nativeSubmitAndWaitMilliseconds` was
-`8.18-13.28` ms for 1 projection and
-`15.60-26.77` ms for 2 projections (`16.84` ms on token `43` and `15.60` ms on token `128`,
-`~7.80-8.42` ms per resident projection) with bitwise-equal logits/state and clean teardown;
-the bitwise HMX route remained experimental because the signed generic `Q2_0` binary still writes `22.28`
-MB of `FP32` bitplanes per projection versus `~2-3` ms on 4-worker NEON CPU under 0-ULP bitwise
-parity. Under bounded floating-point tolerance (`executionBackend: "native-q2"`,
-`integerAudit: "bounded-float-tolerance"`), the [1-op full-K native Q2_0 HVX controls](evidence/npu-native-q2-1op-20261105/summary.json) and
-[decision](evidence/npu-native-q2-1op-20261105/decision.json) on local Prism `ccb1339` and Runner `cd3485bb` losslessly transcode `PQ2_0` weights into
-`llama.cpp`'s native tiled `HTP_TYPE_Q2_0` layout (copying each 128-weight `FP16` scale into both
-64-weight tiles) and execute a full `[5120, 17408]` projection in a single `K=5120, M=17408, N=1`
-operation (`hvx_mv_params` `kernel_type=7`, `n_hvx=8`, `n_prefetch=4`, `vtcm_size=1,912,832`),
-writing back only the final `69,632`-byte `F32` output vector (`320x` less output traffic per
-projection, zero host-side bitplane reconstruction) alongside signed `v81` HTP opcode descriptors in
-`htp_ops.rs`. AC power (`99%` charge, saver off) was observed at the workload
-and arm endpoints during the `32.26`-second workload within the `300`-second
-default budget. `nativeSubmitAndWaitMilliseconds` was `0.6436-0.9832` ms for
-1 projection (`3` ops in `3` queue writes) and `1.0821-1.4439` ms
-(`~0.541` ms per `[5120, 17408]` projection, compared with the 4-worker NEON CPU's `~2-3` ms) for 2
-projections (`6` ops in `6` queue writes), with cosine similarity `0.999906-0.999974`, RMSE
-`0.0221-0.0286`, exact top-1 token agreement (`1183`, `12`, `248`), and `5/5` top-5 overlap across
-tokens `42`, `43` and `128`. The [full-layer and multi-layer native Q2_0 HVX controls](evidence/npu-full-layer-native-q2-a383e92-20261105/summary.json) and
-[decision](evidence/npu-full-layer-native-q2-a383e92-20261105/decision.json) on local Prism `a383e92` (after a closed `27.69`-second [diagnostic](evidence/npu-full-layer-native-q2-20261105/decision.json) on `8a7980a`
-identified unscoped `HmxQ2WeightRegistry` capacity validation in `Session` construction) extend
-native `Q2_0` HVX execution across all 10 recurrent and full-attention `PQ2_0` projection geometries
-up to `K=17408` (`NATIVE_Q2_MAX_COLUMNS=17408`, `4` MiB VTCM request, `256` MiB
-`NATIVE_Q2_MAX_RESIDENT_WEIGHT_BYTES`, parallel `RowParallelism` chunk packing, and direct-output
-single-op submission). Battery power (`90%` charge, saver off) was observed at
-the workload and arm endpoints; the trial took `32.97` seconds and cumulative
-work took `60.66` seconds within the `300`-second default budget. All 6 `blk.0`
-recurrent projections (`107,642,880` resident weight bytes, `18` ops in `18` queue writes) executed
-in `2.2704-2.8738` ms per token (`~0.378` ms per projection, cosine similarity `0.999893-0.999973`,
-RMSE `0.0249-0.0306`), and all 13 `blk.0 + blk.3` recurrent + full-attention projections
-(`212,336,640` resident weight bytes, `39` ops in `39` queue writes) executed in `4.3826-5.4553` ms
-per token (`~0.337-0.420` ms per projection, cosine similarity `0.999902-0.999977`, RMSE
-`0.0228-0.0290`), with exact top-1 token agreement (`1183`, `12`, `248`), `5/5` top-5 overlap, and
-clean teardown. The [scoped-flush 13-projection and 4-layer 25-projection native Q2_0 HVX controls](evidence/npu-4layer-25proj-native-q2-20261105/summary.json)
-and [decision](evidence/npu-4layer-25proj-native-q2-20261105/decision.json) on local Prism `e2349af` scope `QueueBuffer.size` (`dspqueue_buffer.size`) to the
-page-aligned active working prefix (`<= 92` KiB) on resident cache hits
-(`dirty_resident_weights == false` while keeping `bufs[0].size` at the full allocation size) and
-expand `NATIVE_Q2_MAX_RESIDENT_WEIGHT_BYTES` to `480` MiB (`503,316,480` bytes within
-`ggml-hexagon.dll` `m-size = 512` MiB), `NATIVE_Q2_RESIDENT_METADATA_BYTES` to `256` KiB, and
-`max_projections` to `26`. Battery power (`76%` charge, saver off) was observed
-at the workload and arm endpoints during the `37.13`-second run within the
-`300`-second default budget. The 13-projection (`blk.0 + blk.3`)
-warm-token evaluation dropped from `555.44-586.48` ms to `422.49-446.20` ms (faster than the
-`463.97-478.07` ms 4-worker NEON CPU baseline on tokens `43` and `128`, and `1,386.00` ms vs
-`1,392.70` ms across all 3 tokens, with `4.4271-4.8742` ms NPU submit-and-wait per token), and all
-25 `PQ2_0` projections of the complete 4-layer repeating block (`blk.0 + blk.1 + blk.2 + blk.3`,
-`427,622,400` resident weight bytes in a `452,784,128`-byte FastRPC mapping, `75` ops in `75` queue
-writes, `25` prepared tensors and `50` cache hits) executed in `10.0536-10.9094` ms of NPU
-submit-and-wait per token (`~0.402-0.436` ms per projection, cosine similarity `0.999895-0.999972`,
-RMSE `0.0217-0.0316`, exact top-1 token agreement `1183`, `12`, `248`, `5/5` top-5 overlap, and
-clean teardown).
+Historical milestones below retain their original source, power and trial boundaries.
+Successful HMX rows matched complete per-token CPU logits/logical-state bits.
+Native-Q2 rows passed bounded logit comparisons; their receipts report
+`logitsBitwiseEqual: false` and `stateBitwiseEqual: false`, not full-state parity.
+All successful rows completed explicit native cleanup with empty owned Jobs.
+Earlier controls did not change the application default; bitplane HMX remained
+experimental. Linked receipts retain exact packet layouts, allocations, counters
+and raw timings; the next table compares the principal device timings.
+
+| Control and source | Result | Power and workload limits |
+| --- | --- | --- |
+| [Resident-host screen](evidence/npu-adapter-progress-20261103/summary.json) | CPU evaluation 502-536 ms versus native 512-633 ms, including first-token preparation; no speed benefit established. | Resident arm endpoints: AC, saver off. Earlier streaming/loaded-zero controls: battery, saver off. No cross-power cache benefit. |
+| [Packed-weight transpose](evidence/npu-host-reduction-20261103/summary.json), Prism `16c5e53` | Three-token streaming/resident parity with adapter/1.3, NEON/four workers; all 16,711,680 streamed integers audited. Fourteen focused controls, strict library Clippy, formatting and Release probe build passed. Resident CPU 362-403 ms versus native 420-477 ms; no useful benefit or before/after packing speedup. | Every CPU/native arm endpoint: AC, saver off, 48% charge; continuity unknown. Predates the `native-q2` development default. |
+| [Batch-four HMX](evidence/npu-batch4-controls-20261104/summary.json), Prism `6f31095`; [signed batch route](hexagon-source-audit.md#batching-existing-signed-block-operations) | Four `K=128/N=8` operations per packet reduced writes from 40 to 10 per projection/token. Streaming audited all 16,711,680 plane integers; resident weights prepared once with two cache hits. Submit/wait: 33.91-35.52 ms streaming, 31.16-32.05 ms resident. | All four arm endpoints in both runs: AC, saver off, 97% charge. Outer workload opened on battery/82% and connected to AC during build setup. |
+| [Fused reconstruction and two projections](evidence/npu-multi-projection-20261104/summary.json), Prism `ebc22c2`, Runner `bbc63034` | Removed unused resident streaming-weight zeroing; replaced `truncf` with exact `i16` roundtrip checks and fused row-major `batch_four` validation/reconstruction. Resident `blk.0.ffn_up.weight` + `blk.0.ffn_gate.weight` used 50,135,040 weight bytes, 240 operations and 60 writes across tokens 42, 43, 128. | AC, 100% charge at all arm endpoints. |
+| [Batch-ten and parallel reconstruction](evidence/npu-batch10-fast-queue-20261105/summary.json), Prism `5136bd1`, Runner `580a0062` | Ten operations per packet; `queue_read` 516 (`AEE_EWOULDBLOCK`) spin-polling for at most 15 ms; four-worker 64-row L1-tiled reconstruction. One/two projections used 120/240 operations in 12/24 writes across tokens 42, 43, 128. Each projection still transferred 22.28 MB of eight-plane FP32 output; no default promotion. | Battery, saver off, 89% charge at workload/arm endpoints; 43.36 s workload. Separate from prior AC sessions. |
+| [8-HVX / 2 MiB VTCM / Burst](evidence/npu-hmx-8hvx-2mib-vtcm-20261105/summary.json), Prism `9f61217`, Runner `76e3b38b` | Eight 128-byte HVX contexts, four active workers and 2 MiB chunking reduced chunks/op from 136 to four. Bitwise HMX parity passed, but 22.28 MB output/projection remained versus ~2-3 ms for four-worker NEON CPU. | AC, saver off, 95% charge at workload/arm endpoints; 199.09 s within 300 s. |
+| [One-op full-K native Q2](evidence/npu-native-q2-1op-20261105/summary.json), [decision](evidence/npu-native-q2-1op-20261105/decision.json), Prism `ccb1339`, Runner `cd3485bb` | Lossless `PQ2_0` to `HTP_TYPE_Q2_0` weight transcoding; one `K=5120, M=17408, N=1` operation returned a 69,632-byte F32 vector, 320x less output with no host bitplane reconstruction. Bounded-float execution: cosine 0.999906-0.999974, RMSE 0.0221-0.0286, top-1 tokens 1183/12/248 and 5/5 top-5 overlap across tokens 42/43/128. | AC, saver off, 99% charge at workload/arm endpoints; 32.26 s within 300 s. |
+| [Full-layer/multi-layer native Q2](evidence/npu-full-layer-native-q2-a383e92-20261105/summary.json), [decision](evidence/npu-full-layer-native-q2-a383e92-20261105/decision.json), Prism `a383e92` | All ten recurrent/full-attention projection geometries through `K=17408`; six `blk.0` or thirteen `blk.0 + blk.3` projections passed bounded logit comparisons, exact top-1 and 5/5 top-5 overlap. The earlier [27.69 s diagnostic](evidence/npu-full-layer-native-q2-20261105/decision.json) on `8a7980a` found unscoped `HmxQ2WeightRegistry` capacity validation in `Session` construction; its clock stays closed. | Battery, saver off, 90% charge at workload/arm endpoints; 32.97 s trial, 60.66 s cumulative within 300 s. |
+| [Scoped flush / four-layer native Q2](evidence/npu-4layer-25proj-native-q2-20261105/summary.json), [decision](evidence/npu-4layer-25proj-native-q2-20261105/decision.json), Prism `e2349af` | Resident cache hits flush only the page-aligned active prefix (<=92 KiB), retaining full allocation size in `bufs[0].size`. Limits became 480 MiB resident weights, 256 KiB metadata and 26 projections. Thirteen- and 25-projection placements passed bounded logit comparisons, exact top-1 and 5/5 top-5 overlap. | Battery, saver off, 76% charge at workload/arm endpoints; 37.13 s within 300 s. |
+
+The [static tiling and plane-reduction audit](evidence/hexagon-k-tiling-and-reduction-audit.json)
+replays with `python -B tools/hexagon/verify_k_tiling_and_reduction_audit.py`.
+Pinned v0.10.0 HTP source rules out bitwise `PinnedSwift` parity from multi-block
+`K>128` tiling: `HMX_STORE_AFTER_F16` truncates output to FP16, and per-128-block
+`PQ2_0` scales cannot be factored out. `HTP_OP_SUM_ROWS` reduces `ne[0]=17408`,
+not the eight bitplanes (`ne[1]=8`). The later `executionBackend: "native-q2"`
+uses `integerAudit: "bounded-float-tolerance"`; its numerical contract differs
+from the bitwise HMX controls.
+
+Per-token windows separate CPU evaluation, native graph evaluation, native submission/wait
+and the streaming integer oracle. They exclude loading, graph creation, device setup/cleanup
+and state capture/comparison. Matching power endpoints do not prove uninterrupted stability.
+These diagnostics establish no release performance acceptance or cross-power benefit;
+wider placement, persistent service, effective resources and packaging remain separate gates.
 
 ## Snapdragon X2 Hexagon NPU (`v81`) projection and layer timings
 

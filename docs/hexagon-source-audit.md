@@ -1,16 +1,15 @@
 # Hexagon source, placement and evidence
 
-Historical source reviews and scoped device evidence below span
-**2026-10-30 through 2026-11-05**. [Hexagon contracts](hexagon.md)
-own current execution; [PLAN.md](../PLAN.md#hexagon-npu) owns outstanding work.
-Runner now pins [Prism 0.1.25](../config/prism-inference.lock.json) with the
-X2 `native-q2` 168-projection development default. The
-[experiment lock](../config/hexagon-experiment.lock.json) enables that fixed
-startup policy; the separate [Q2 candidate lock](../config/hexagon-signed-q2-candidate.lock.json)
-retains historical package/source review inputs. Older route-specific refusals
-and pending fields describe those controls, not a blanket NPU prohibition.
-Qualified automatic profile ranking, full-model service acceptance and X1
-qualification remain separate gates.
+The source reviews and scoped device evidence below cover **2026-10-30 through
+2026-11-05**. [Hexagon contracts](hexagon.md) own current execution;
+[PLAN.md](../PLAN.md#hexagon-npu) owns outstanding work.
+Runner pins [Prism 0.1.25](../config/prism-inference.lock.json) with the fixed X2
+`native-q2` 168-projection development policy enabled by the
+[experiment lock](../config/hexagon-experiment.lock.json). The separate
+[Q2 candidate lock](../config/hexagon-signed-q2-candidate.lock.json) retains historical
+package/source inputs. Older refusals and pending fields apply to their named
+controls, not all NPU use. Qualified automatic ranking, full-model service
+acceptance and X1 qualification remain separate gates.
 
 X2 has generic signed-package numeric access, a native terminal FD cycle and a
 [native created/exported/started queue](evidence/hexagon-x2-queue-compute.json).

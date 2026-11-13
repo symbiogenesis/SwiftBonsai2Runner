@@ -1,12 +1,14 @@
 # Swift artifacts, memory and PTQ1
 
-**Original PQ2 on native Rust Prism 0.1.25 is the development default**, with four CPU row
-workers, the standard adapter at scale 1.3 and the [default X2 NPU placement](hexagon.md)
-when its initialization succeeds. Publisher rollback is explicit with `--publisher-engine`; PTQ1
-remains opt-in. Bounded native CPU decode passes; creative quality, performance and daily-service
-isolation remain unqualified. The [Qwen reference](model-selection.md) has a separate lock/profile. No local training or
-fine-tuning is planned. [PLAN.md](../PLAN.md) owns outstanding qualification. This guide covers artifacts,
-resource policy, lossless packing/allocation and separately labelled approximation research.
+**Original PQ2 on native Rust Prism 0.1.25 is the development default**, with four
+CPU row workers, standard adapter scale 1.3 and [X2 NPU placement](hexagon.md) when initialization
+succeeds. `--publisher-engine` explicitly selects rollback; PTQ1 remains opt-in.
+Bounded native CPU decode passes; creative quality, performance and daily-service
+isolation remain unqualified. The [Qwen reference](model-selection.md) has a separate
+lock/profile; no local training or fine-tuning is planned.
+
+This guide covers artifacts, resource policy, lossless packing/allocation and
+separately labelled approximation research. [PLAN.md](../PLAN.md) owns qualification.
 
 ## Pinned artifacts
 

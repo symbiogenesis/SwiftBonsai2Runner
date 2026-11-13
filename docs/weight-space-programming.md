@@ -174,17 +174,11 @@ activation capture and device copies still need accounting. Preserve current
 admission, Job and physical-reserve policies; payload arithmetic does not measure
 whole-process residency or establish NPU benefit.
 
-Diagnostics and model trials default to five minutes total, preferably less.
-A dedicated, predeclared workload may use the smallest justified allowance up
-to fifteen minutes, recording fixed work, a conservative estimate and the reason
-before starting. Setup, loading, every arm, before/after AC observations for the
-aggregate workload and each arm, available battery-saver/charge observations,
-cleanup and evidence retention share that clock. Unknown power stays unknown;
-missing or mismatched power cannot qualify performance comparisons. Equal
-endpoints do not prove uninterrupted stability. Preserve narrower harness limits
-and historical closed clocks; do not retry failures or split a matrix across
-allowances. Complete suites and benchmarks remain CI-only under owner control.
-This assessment authorizes no new model workload or CI operation.
+Follow the [owner-device budget and power rules](../AGENTS.md#owner-device-execution-budgets):
+five minutes total by default, with only a predeclared justified extension up to
+fifteen minutes. Narrower harness limits and closed historical clocks still apply;
+complete suites and benchmarks remain owner-operated CI work. This assessment
+authorizes no new model workload or CI operation.
 
 Future PrismML/Bonsai models, including a future Qwen4-derived release, and later
 smaller checkpoints can reuse the investigation, artifact and correction

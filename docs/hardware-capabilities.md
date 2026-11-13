@@ -1,13 +1,13 @@
 # Hardware discovery and profile policy
 
-Runner's development default is Rust Prism 0.1.25 with CPU inference and the
-fixed [X2 Hexagon policy](hexagon.md) when its signed package and driver are
-available. Discovery supplies host/runtime inventory and checked compatibility/evidence
-records; **automatic ranking and selection of qualified profiles is not connected to serving**.
-The fixed NPU startup policy is separate from that planned selector. The
-optional model-free probe verifies the
-runtime against the immutable [release lock](../config/prism-inference.lock.json). The [selection contract](#automatic-profile-selection)
-defines eligibility; [PLAN.md](../PLAN.md#hardware-selection) owns outstanding work.
+Runner's development default is Rust Prism 0.1.25 CPU inference with the fixed
+[X2 Hexagon policy](hexagon.md) when its signed package and driver are available.
+Discovery supplies host/runtime inventory and checked compatibility/evidence records;
+**automatic ranking and selection of qualified profiles is not connected to serving**.
+The optional model-free probe verifies the runtime against the immutable
+[release lock](../config/prism-inference.lock.json).
+The [selection contract](#automatic-profile-selection) defines eligibility;
+[PLAN.md](../PLAN.md#hardware-selection) owns outstanding work.
 
 ## Host inventory
 
@@ -31,14 +31,14 @@ version-probe logs need review before sharing.
 | `gpu` | SetupAPI device/vendor and driver-registry version/date | Driver signatures, API features/device budgets |
 | `npu` | SetupAPI ComputeAccelerator device/vendor and driver-registry version/date | Driver signatures, architecture/firmware/backend readiness |
 
-Each section retains source and `observed`/`partial`/`unknown` status; unknown values are null.
-Empty lists indicate successful queries; failures stay unknown. Native device inventories
-are bounded to 16 entries per class; version probes use owned processes and a shared
-90-second allowance. BIOS manufacturer/model excludes serials; capabilities omit
-hostnames, device-instance IDs and user/network inventory. SMBIOS installed bytes and
-OS-usable bytes retain their distinct sources. Live
-memory does not replace admission. Family names/driver signatures do not prove ISA, execution or
-deployment trust; emulated-process ISA cannot qualify a native runtime.
+Each section records its source and `observed`/`partial`/`unknown` status, using null
+for unknown values. Empty lists mean successful queries. Native inventories allow
+16 devices per class; owned version-probe processes share a 90-second allowance.
+BIOS manufacturer/model exclude serials; reports also omit hostnames, device-instance
+IDs and user/network inventory.
+SMBIOS installed bytes and OS-usable bytes keep distinct sources; live memory does
+not replace admission. Family names and driver signatures do not prove ISA,
+execution or deployment trust; emulated-process ISA cannot qualify a native runtime.
 
 ### Native CPU observations
 

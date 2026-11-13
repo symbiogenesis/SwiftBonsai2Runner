@@ -1,25 +1,19 @@
 # Native Snapdragon quantized KV
 
-This is the contract for the **TurboQuant-inspired K4/V4 development default
-implemented in Prism** for Snapdragon X1 Elite and X2 Elite Extreme. Runner's
-0.1.25 development pin activates this reviewed default without qualifying a new
-device profile or increasing the 8K context limit.
-[PLAN.md](../PLAN.md#bounded-calibration-and-optional-precision)
-owns remaining delivery and qualification work.
+Runner's reviewed Prism 0.1.25 pin uses **TurboQuant-inspired K4/V4 (`rsq4`)**
+as the owner-selected development default and required cache for ordinary Swift
+sessions on Snapdragon X1 Elite and X2 Elite Extreme. It accepts approximate
+answers without requiring perfect reconstruction, identical tokens, FP16 logits
+or a completed comparison packet. Actual-model quality, memory and device
+qualification remain pending; the paired packet below is required for measured
+quality/memory claims. This choice neither qualifies a new device profile nor
+increases the 8K context limit.
 
-The owner selects **K4/V4 (`rsq4`) as the development default and required cache
-for ordinary Swift sessions**. This decision accepts approximate answers and
-pending actual-model quality, memory and device qualification; perfect
-reconstruction, identical tokens, FP16 logits and a completed comparison packet
-are not prerequisites for this development default. The paired packet below
-remains the standard for a measured quality/memory qualification claim.
-
-Explicit `f16` selection starts a comparison/recovery session. A request or failed
-compressed session cannot silently choose FP16. Runner's reviewed 0.1.25 pin
-selects `rsq4`; the historical 0.1.23 comparison control retains FP16. The
-development selection requires the exact verified runtime bytes and never
-waives artifact verification. Qualify X1 and
-X2 separately before making device-specific benefit claims.
+Explicit `f16` selection starts a comparison/recovery session; requests and failed
+compressed sessions cannot silently choose FP16. The historical 0.1.23 comparison
+control retains FP16. Every selection requires exact verified runtime bytes.
+Qualify X1 and X2 separately for device-specific benefit claims;
+[PLAN.md](../PLAN.md#bounded-calibration-and-optional-precision) owns remaining work.
 
 ## Source selection and current checks
 
@@ -220,13 +214,7 @@ vice versa; the shared development selection does not transfer evidence between
 them. Record the selected source/device scope and every no-go. K4/V3, precision changes to GDN or
 convolution state and context above 8K require separate decisions.
 
-Use the existing [research budget and power rules](research-register.md#experiment-scope-and-budgets).
-Every owner-device workload defaults to five minutes total. A fixed, predeclared
-dedicated workload may take the smallest justified allowance up to fifteen
-minutes, including preparation, all comparison arms, cleanup and evidence.
-Record AC before/after the aggregate workload and each arm, plus battery saver
-and charge when available. Unknown or mismatched power disqualifies performance
-comparisons; matching endpoint readings do not prove uninterrupted stability.
-Do not retry a closed clock or split a longer matrix into repeated allowances.
-Complete suites and benchmarks remain in owner-operated CI. Retain only the
-[evidence needed](validation.md#evidence-retention) for the exact acceptance claim.
+Follow the [research budget and power rules](research-register.md#experiment-scope-and-budgets):
+five minutes total by default, with only a predeclared justified extension up to
+fifteen minutes. Complete suites and benchmarks remain owner-operated CI work.
+Retain only the [evidence needed](validation.md#evidence-retention) for the exact claim.
