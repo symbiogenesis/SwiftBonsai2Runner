@@ -113,78 +113,26 @@ Source review closes no model qualification gate.
 
 ### Direction consistency
 
-`bonsai-tools qualification` operation `basis-direction` independently checks all
-129 shipped B factors against the negative of a selected unit direction. This
-bounded check needs the approved adapter and the direction only; it can detect a
-wrong direction without inventing the missing authoring checkpoint or conversion
-record. The request contains absolute external `adapterPath` and `directionPath`
-values and an independently selected raw-file `directionSha256`.
+`qualification` operation `basis-direction` checks all 129 shipped B factors
+against a selected unit direction. Supply absolute external `adapterPath`,
+`directionPath` and an independently selected raw-file `directionSha256`.
+The direction must hold 5120 finite little-endian F32 values (20,480 bytes),
+with L2 norm within 1e-5 of one; the checker never normalizes it.
 
-The direction must already contain exactly 5120 finite little-endian F32 values
-(20,480 bytes), with L2 norm within 1e-5 of one. Supply the raw normalized vector,
-not a safetensors container. The checker does not silently normalize it or claim
-that it matches the exporter's normalization procedure. It verifies the exact
-approved adapter length/hash, independently reads all 258 named F32 factors and
-their expected shapes, and rejects missing, extra, overlapping or misnamed factors.
-For every B channel it requires
-`abs(B + direction) <= 1e-6 + 1e-6 * abs(direction)`, with the bound computed using
-F64 fused multiply-add. The receipt retains the selected input digests, norm,
-per-site B digest, compared element count, mismatch count and maximum difference.
-
-`direction-consistent` establishes agreement with the selected direction only.
-It always leaves authoring provenance, native writer basis and default promotion
-unqualified. Authenticating the direction's source, reproducing A factors and
-verifying the native SSM order still require the evidence below. Run this on
-hosted CI or charge its intake and review to the same aggregate owner allowance.
+After verifying the approved adapter and all named factors/shapes, it requires
+`abs(B + direction) <= 1e-6 + 1e-6 * abs(direction)` on every channel, using F64
+fused multiply-add for the bound. Receipts retain digests, norm, per-site counts,
+mismatches and maximum differences. Agreement proves consistency with that
+direction only, leaving original provenance, A reproduction and writer basis open.
 
 ### Authoring evidence intake
 
-`bonsai-tools qualification` operation `basis-intake` accepts an external evidence
-directory, an external `manifestPath` and its independently selected raw-byte
-`manifestSha256`. It reads the approved 9.7 MB adapter and bounded evidence files;
-it never loads a checkpoint or starts inference. Keep collection and review within
-the owner's aggregate budget, or perform reproduction and intake on hosted CI.
-
-The schema-2 manifest contains `modelSha256` for the current PTQ1 export,
-`runtimeCommit` for the pinned release, `adapter`, `checkpointManifest`,
-`conversionManifest`, `toolchainManifest`, `direction`, a nonempty `normalization`
-description, `mapping`, `absoluteTolerance`, `relativeTolerance` and `ssmSites`.
-Every artifact reference is `{ "file": "NAME", "bytes": LENGTH, "sha256": "SHA256" }`;
-files must be individual ordinary files in `evidenceDirectory`. Raw-file sizes and
-SHA-256 digests are checked. The checkpoint/conversion/toolchain manifests follow
-the [structured authoring-record contract](adapter-authoring-intake.md). Intake
-checks the actual bounded original safetensors index against every declared shard
-and all 48 canonical original SSM tensor names, shapes and payload identities. It
-also binds the exact conversion argv, exporter source and toolchain records to the
-selected checkpoint/direction/adapter/normalization. These consistency checks do
-not authenticate declarations or read checkpoint payloads. The former schema-1
-opaque-manifest intake is rejected; retained historical records remain unchanged.
-
-`mapping.nativeToAuthoring` is a permutation of all 6144 channel indices and
-`mapping.signs` contains 6144 values of either -1 or 1. Its explicit equation is
-`native[channel] = signs[channel] * authoring[nativeToAuthoring[channel]]`.
-This intake supports signed permutations only; other transforms need a separately
-reviewed comparator. `ssmSites` contains exactly the 48 SSM blocks (0 through 63,
-excluding 3, 7, ... 63), each `{ "block": N, "authoringA": ARTIFACT_REFERENCE }`.
-Each independently reproduced authoring-order A vector contains exactly 6144
-finite little-endian F32 values. Intake independently locates the named
-`blk.N.ssm_out.weight.lora_a` payload in the digest-verified adapter and compares
-every channel after the declared mapping. Both tolerances are bounded by 1e-5;
-the comparison is `abs(actual - expected) <= absoluteTolerance + relativeTolerance * abs(expected)`,
-with the right-hand bound computed using F64 fused multiply-add.
-Receipts retain each vector digest, mismatch count and maximum absolute difference.
-
-An `intake-complete` result records byte integrity and the declared all-site vector
-comparison. It always leaves `writerBasisQualified` and `defaultMayChange` false.
-Independent authoring-provenance authentication and reproduction, native writer
-input/correction captures, loaded-zero identity, nonzero application and the other
-runtime/application gates above remain required. Repeated or invented reference
-vectors cannot establish authoring provenance merely by passing this comparator.
-
-Retain the complete per-site report, native intake receipts, input locks and
-source/tool identities when reviewing a direction. Its consistency with B cannot
-authenticate the original authoring invocation or qualify native writer basis,
-model behavior or promotion.
+The [intake contract](adapter-authoring-intake.md) owns the schema-2 envelope,
+original checkpoint/conversion/toolchain records, signed channel mapping and
+all-48 A-vector comparison. Intake checks integrity and declared consistency;
+`intake-complete` leaves writer basis and promotion unqualified. Authenticate
+original provenance, reproduce factors independently and capture native writer
+inputs/corrections before closing the basis gate.
 
 ## Memory and execution cost
 
@@ -233,14 +181,9 @@ rounding stages and adapter order. Base-result reuse depends on last-use/view/ou
 constraints. Reassociation or FMA contraction can change signed zero, subnormals and
 results; bit identity is part of this contract.
 
-New local native Rust source drops the unused serialized A copy after decoding
-linear factors, while retaining serialized embedding A for exact row lookup.
-It also preserves the verified loader's B sharing in decoded immutable factors.
-The approved adapter's calculated payload reduction is 5.75 MiB plus 2.5 MiB,
-or 8.25 MiB total. The reduction preserves existing arithmetic and introduces no
-per-token decoding or sharing lookup. It is not in Runner's installed 0.1.27
-bundle; publication, actual-model resources and performance qualification remain
-pending. See the [native allocation candidates](swift-memory.md#native-allocation-candidates).
+Native allocation candidates and their calculated 8.25 MiB adapter-payload
+reduction are specified in the [memory guide](swift-memory.md#native-allocation-candidates).
+They require a verified runtime repin and actual-model qualification.
 
 Quantizing factors, reducing rank/scale, pruning sites or merging into the ternary base
 changes the correction or weights; these are outside lossless allocation work.
@@ -299,9 +242,7 @@ continuous peak-RAM measurement. The memory premium is a policy allowance, not m
 adapter allocation.
 
 The standard scorer and [PTQ1 prefix screen](swift-memory.md#bounded-decision-screen-interface)
-validate the Job cap against compiled Swift process policy. Contract-hash checks
-reject captures under the obsolete 12 GiB scoring allowance; recapture rather than
-rewrite evidence or review hashes.
+bind captures to the compiled process policy and contract hash; mismatches reject.
 
 ### Capture on the target device
 

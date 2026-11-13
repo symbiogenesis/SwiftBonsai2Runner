@@ -1,16 +1,40 @@
-# Adapter authoring record contract
+# Adapter authoring evidence intake
 
-`qualification` operation `basis-intake` uses a schema-2 envelope described in
-[the adapter guide](swift-lora.md#authoring-evidence-intake). Its three authoring
-manifests are schema-1 JSON objects with the exact fields below; unknown fields
-reject. Records describe the actual original authoring process. Do not substitute
-a later reconstruction for a missing original identity.
+`qualification` operation `basis-intake` verifies bounded evidence and compares
+all 48 shipped SSM A vectors. It loads no checkpoint and runs no inference.
+The [LoRA guide](swift-lora.md#structural-compatibility-and-unresolved-basis)
+defines the unresolved writer-basis gate.
 
-All artifact references use `{ "file": "NAME", "bytes": LENGTH, "sha256": "SHA256" }`.
-Names are individual filenames; digests are lowercase SHA-256. `source` records
-use `{ "repository": "OWNER/REPOSITORY", "revision": "IMMUTABLE_REVISION" }`,
-with a complete lowercase 40- or 64-digit revision, never a moving branch or tag.
-These are declarations for independent authentication, not proof of source access.
+## Intake envelope
+
+Supply absolute external `evidenceDirectory` and `manifestPath` plus an
+independently selected raw-file `manifestSha256`. The schema-2 envelope contains
+`modelSha256` (current PTQ1 export), `runtimeCommit`, `adapter`,
+`checkpointManifest`, `conversionManifest`, `toolchainManifest`, `direction`,
+nonempty `normalization`, `mapping`, `absoluteTolerance`, `relativeTolerance`
+and `ssmSites`. Only schema 2 is accepted.
+
+Artifact references are `{ "file": "NAME", "bytes": LENGTH, "sha256": "SHA256" }`.
+Files must be individual ordinary files in the evidence directory; lengths and
+lowercase SHA-256 digests are verified. Source records use
+`{ "repository": "OWNER/REPOSITORY", "revision": "IMMUTABLE_REVISION" }` with a
+complete lowercase 40- or 64-digit revision.
+
+`mapping.nativeToAuthoring` permutes all 6144 channels; `mapping.signs` contains
+6144 values of -1 or 1. The equation is
+`native[c] = signs[c] * authoring[nativeToAuthoring[c]]`. Other transforms are
+unsupported. `ssmSites` supplies exactly 48 `{ "block": N, "authoringA": REF }`
+records for blocks 0..63 excluding 3, 7, ... 63. Each A file holds 6144 finite
+little-endian F32 values. Intake compares every mapped channel against the named
+`blk.N.ssm_out.weight.lora_a` payload in the approved, digest-verified adapter.
+Both tolerances are at most 1e-5; the comparison is
+`abs(actual - expected) <= absoluteTolerance + relativeTolerance * abs(expected)`,
+with the bound evaluated using F64 fused multiply-add. Retain each vector's
+digest, mismatch count and maximum absolute difference.
+
+The three authoring manifests below are strict schema-1 JSON objects; unknown
+fields reject. Describe the actual original process. Declarations and later
+reconstructions cannot authenticate missing original inputs or invocations.
 
 ## Checkpoint manifest
 
