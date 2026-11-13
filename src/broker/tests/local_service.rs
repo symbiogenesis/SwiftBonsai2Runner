@@ -109,7 +109,7 @@ fn burst_limit_rejects_authenticated_headers_before_body_or_backend_and_refills(
             // Body-policy rejections spend the budget without contacting a
             // backend, so rapid malformed traffic is bounded too.
             let (wire, result) = burst_probe(&service, true, false).await;
-            if wire.is_empty() {
+            if wire.starts_with("HTTP/1.1 400 Bad Request\r\n") {
                 assert_eq!(
                     result,
                     Err(ServiceError::Request(ServeError::Receive(
@@ -117,6 +117,7 @@ fn burst_limit_rejects_authenticated_headers_before_body_or_backend_and_refills(
                     )))
                 );
                 admitted += 1;
+                assert!(wire.ends_with(r#"{"error":{"code":"invalid_chat_request"}}"#));
                 assert!(admitted < 32, "authenticated burst was not bounded");
                 continue;
             }
@@ -161,7 +162,8 @@ fn burst_limit_rejects_authenticated_headers_before_body_or_backend_and_refills(
         );
         tokio::time::sleep(Duration::from_secs(1)).await;
         let (wire, result) = burst_probe(&service, true, false).await;
-        assert_eq!(wire, "");
+        assert!(wire.starts_with("HTTP/1.1 400 Bad Request\r\n"));
+        assert!(wire.ends_with(r#"{"error":{"code":"invalid_chat_request"}}"#));
         assert_eq!(
             result,
             Err(ServiceError::Request(ServeError::Receive(
@@ -395,6 +397,74 @@ async fn generating() -> Generating {
         backend_work,
         client,
     }
+}
+
+#[test]
+fn policy_rejections_report_fixed_errors_and_keep_service_usable() {
+    run(async {
+        let backend = listener().await;
+        let service = service(&backend, 0).await;
+        let expanded = serde_json::to_vec(&serde_json::json!({
+            "messages": [{"role": "user", "content": "x".repeat(bonsai_broker::MAX_BODY_BYTES - 128)}]
+        }))
+        .unwrap();
+        assert!(expanded.len() <= bonsai_broker::MAX_BODY_BYTES);
+        for (body, rejection, status, code) in [
+            (
+                expanded.as_slice(),
+                Rejection::BodySize,
+                "HTTP/1.1 413 Content Too Large\r\n",
+                "request_body_too_large",
+            ),
+            (
+                b"{}".as_slice(),
+                Rejection::ChatSchema,
+                "HTTP/1.1 400 Bad Request\r\n",
+                "invalid_chat_request",
+            ),
+        ] {
+            let worker = Arc::clone(&service);
+            let serving = spawn_local(async move { worker.accept().await.unwrap().serve().await });
+            let mut client = TcpStream::connect(("127.0.0.1", service.port()))
+                .await
+                .unwrap();
+            send_body(&mut client, service.port(), body).await;
+            let mut bytes = Vec::new();
+            client.read_to_end(&mut bytes).await.unwrap();
+            let wire = String::from_utf8(bytes).unwrap();
+            let (head, body) = wire.split_once("\r\n\r\n").unwrap();
+            assert!(head.starts_with(status));
+            assert_eq!(body, format!(r#"{{"error":{{"code":"{code}"}}}}"#));
+            assert_eq!(
+                serving.await.unwrap(),
+                Err(ServiceError::Request(ServeError::Receive(
+                    bonsai_broker::reception::ReceiveError::Policy(rejection)
+                )))
+            );
+        }
+        assert!(
+            timeout(Duration::from_millis(20), backend.accept())
+                .await
+                .is_err()
+        );
+        let worker = Arc::clone(&service);
+        let serving = spawn_local(async move { worker.accept().await.unwrap().serve().await });
+        let backend_work = spawn_local(async move {
+            let _counted = count(&backend).await;
+            let (mut stream, _) = backend.accept().await.unwrap();
+            let _generated = read_request(&mut stream).await;
+            respond(&mut stream, br#"{"choices":[]}"#).await;
+        });
+        let mut client = TcpStream::connect(("127.0.0.1", service.port()))
+            .await
+            .unwrap();
+        send_request(&mut client, service.port()).await;
+        let mut bytes = Vec::new();
+        client.read_to_end(&mut bytes).await.unwrap();
+        assert!(bytes.starts_with(b"HTTP/1.1 200 OK\r\n"));
+        assert_eq!(serving.await.unwrap(), Ok(()));
+        backend_work.await.unwrap();
+    });
 }
 
 #[test]

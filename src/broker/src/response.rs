@@ -57,38 +57,66 @@ pub enum ResponseError {
     JsonSyntax,
 }
 
-/// Send a fixed pre-generation context admission error without private values.
-/// The caller must not have written any response bytes or begun generation.
-pub(crate) async fn send_context_rejection<W: AsyncWrite + Unpin>(
+/// Fixed, value-free failures selected before response forwarding begins.
+pub(crate) enum ErrorReply {
+    ContextLimit,
+    ControlTokens,
+    RequestBodyTooLarge,
+    InvalidChatRequest,
+    BackendTokenCountFailed,
+    BackendGenerationFailed,
+}
+
+/// Report a known failure without forwarding any private input or diagnostics.
+/// The caller must not have written any response bytes.
+pub(crate) async fn send_error_reply<W: AsyncWrite + Unpin>(
     mut client: W,
+    reply: ErrorReply,
     supervisor_deadline: RequestDeadline,
 ) -> Result<(), ResponseError> {
-    const BODY: &[u8] = br#"{"error":{"code":"context_length_exceeded"}}"#;
-    const HEAD: &str = concat!(
+    const LARGE_HEAD: &str = concat!(
         "HTTP/1.1 413 Content Too Large\r\n",
         common_headers!(),
         "Content-Type: application/json\r\nContent-Length: "
     );
-    let mut head = [0; HEAD.len() + CONTENT_LENGTH_SPACE];
-    let head = rejection_head(&mut head, HEAD.as_bytes(), BODY.len());
-    write_group(&mut client, &[head, BODY], supervisor_deadline, true).await
-}
-
-/// Reject exact model controls in a completely received, authenticated body.
-/// The caller must not have contacted counting or generation endpoints.
-pub(crate) async fn send_control_rejection<W: AsyncWrite + Unpin>(
-    mut client: W,
-    supervisor_deadline: RequestDeadline,
-) -> Result<(), ResponseError> {
-    const BODY: &[u8] = br#"{"error":{"code":"input_control_tokens_rejected"}}"#;
-    const HEAD: &str = concat!(
+    const BAD_HEAD: &str = concat!(
         "HTTP/1.1 400 Bad Request\r\n",
         common_headers!(),
         "Content-Type: application/json\r\nContent-Length: "
     );
-    let mut head = [0; HEAD.len() + CONTENT_LENGTH_SPACE];
-    let head = rejection_head(&mut head, HEAD.as_bytes(), BODY.len());
-    write_group(&mut client, &[head, BODY], supervisor_deadline, true).await
+    const BACKEND_HEAD: &str = concat!(
+        "HTTP/1.1 502 Bad Gateway\r\n",
+        common_headers!(),
+        "Content-Type: application/json\r\nContent-Length: "
+    );
+    let (prefix, body): (&str, &[u8]) = match reply {
+        ErrorReply::ContextLimit => (
+            LARGE_HEAD,
+            br#"{"error":{"code":"context_length_exceeded"}}"#,
+        ),
+        ErrorReply::ControlTokens => (
+            BAD_HEAD,
+            br#"{"error":{"code":"input_control_tokens_rejected"}}"#,
+        ),
+        ErrorReply::RequestBodyTooLarge => (
+            LARGE_HEAD,
+            br#"{"error":{"code":"request_body_too_large"}}"#,
+        ),
+        ErrorReply::InvalidChatRequest => {
+            (BAD_HEAD, br#"{"error":{"code":"invalid_chat_request"}}"#)
+        }
+        ErrorReply::BackendTokenCountFailed => (
+            BACKEND_HEAD,
+            br#"{"error":{"code":"backend_token_count_failed"}}"#,
+        ),
+        ErrorReply::BackendGenerationFailed => (
+            BACKEND_HEAD,
+            br#"{"error":{"code":"backend_generation_failed"}}"#,
+        ),
+    };
+    let mut head = [0; LARGE_HEAD.len() + CONTENT_LENGTH_SPACE];
+    let head = rejection_head(&mut head, prefix.as_bytes(), body.len());
+    write_group(&mut client, &[head, body], supervisor_deadline, true).await
 }
 
 /// Send one fixed authenticated burst denial before counting or generation.

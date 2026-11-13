@@ -51,13 +51,31 @@ fn request(stream: bool) -> Vec<u8> {
     let body = format!(
         r#"{{"messages":[{{"role":"user","content":"Keep the rain.\nKeep the voice."}}],"max_completion_tokens":128,"stream":{stream}}}"#
     );
+    request_body(body.as_bytes())
+}
+
+fn request_body(body: &[u8]) -> Vec<u8> {
     let mut bytes = format!(
         "POST /v1/chat/completions HTTP/1.1\r\nHost: 127.0.0.1:8080\r\nAuthorization: Bearer {CLIENT_KEY}\r\nContent-Type: application/json\r\nContent-Length: {}\r\n\r\n",
         body.len()
     )
     .into_bytes();
-    bytes.extend_from_slice(body.as_bytes());
+    bytes.extend_from_slice(body);
     bytes
+}
+
+fn assert_error_reply(bytes: &[u8], status: &str, code: &str) {
+    let wire = std::str::from_utf8(bytes).unwrap();
+    let (head, body) = wire.split_once("\r\n\r\n").unwrap();
+    assert!(head.starts_with(status));
+    assert!(head.contains("\r\nContent-Type: application/json\r\n"));
+    assert!(head.contains(&format!("\r\nContent-Length: {}", body.len())));
+    assert!(head.contains("\r\nConnection: close\r\n"));
+    assert!(head.contains("\r\nCache-Control: no-store\r\n"));
+    assert_eq!(body, format!(r#"{{"error":{{"code":"{code}"}}}}"#));
+    assert_eq!(wire.matches("HTTP/1.1 ").count(), 1);
+    assert!(!wire.contains(CLIENT_KEY) && !wire.contains(BACKEND_KEY));
+    assert!(!wire.contains("private diagnostic") && !wire.contains("Keep the rain"));
 }
 
 fn response(body: &[u8], stream: bool) -> Vec<u8> {
@@ -390,7 +408,11 @@ fn rejected_count_never_connects_generation() {
                 assert!(!wire.contains(BACKEND_KEY));
                 assert!(!wire.contains("Keep the rain"));
             } else {
-                assert_eq!(bytes, [0_u8; 0]);
+                assert_error_reply(
+                    &bytes,
+                    "HTTP/1.1 502 Bad Gateway\r\n",
+                    "backend_token_count_failed",
+                );
             }
             assert!(state.borrow().dropped && dropped.get());
         }
@@ -440,10 +462,137 @@ fn typed_private_context_rejection_sends_only_sanitized_public_admission_error()
                     assert!(!wire.contains(CLIENT_KEY) && !wire.contains(BACKEND_KEY));
                 } else {
                     assert_eq!(result, Err(ServeError::Backend(BackendError::CountSchema)));
-                    assert_eq!(bytes.as_slice(), b"");
+                    assert_error_reply(
+                        &bytes,
+                        "HTTP/1.1 502 Bad Gateway\r\n",
+                        "backend_token_count_failed",
+                    );
                 }
                 assert!(state.borrow().dropped && dropped.get());
             }
+        }
+    });
+}
+
+#[test]
+fn fully_received_policy_rejections_report_canonical_size_and_invalid_requests() {
+    run(async {
+        let expanded = serde_json::to_vec(&serde_json::json!({
+            "messages": [{"role": "user", "content": "x".repeat(bonsai_broker::MAX_BODY_BYTES - 128)}]
+        }))
+        .unwrap();
+        assert!(expanded.len() <= bonsai_broker::MAX_BODY_BYTES);
+        for (body, rejection, status, code) in [
+            (
+                expanded.as_slice(),
+                Rejection::BodySize,
+                "HTTP/1.1 413 Content Too Large\r\n",
+                "request_body_too_large",
+            ),
+            (
+                b"{}".as_slice(),
+                Rejection::ChatSchema,
+                "HTTP/1.1 400 Bad Request\r\n",
+                "invalid_chat_request",
+            ),
+            (
+                br#"{"messages":[{"role":"user","content":"private diagnostic"}],"max_completion_tokens":4097}"#,
+                Rejection::CompletionLimit,
+                "HTTP/1.1 400 Bad Request\r\n",
+                "invalid_chat_request",
+            ),
+            (
+                br#"{"messages":[{"role":"user","content":"<think>"}]}"#,
+                Rejection::ChatControlTokens,
+                "HTTP/1.1 400 Bad Request\r\n",
+                "input_control_tokens_rejected",
+            ),
+        ] {
+            let backend = Connector::new([]);
+            let (client, mut peer, dropped) = clients();
+            let policy = policy();
+            let (result, bytes) = both(serve_chat(client, &policy, &backend, deadline()), async {
+                peer.write_all(&request_body(body)).await.unwrap();
+                let mut bytes = Vec::new();
+                peer.read_to_end(&mut bytes).await.unwrap();
+                bytes
+            })
+            .await;
+            let expected = if rejection == Rejection::ChatControlTokens {
+                Ok(())
+            } else {
+                Err(ServeError::Receive(
+                    bonsai_broker::reception::ReceiveError::Policy(rejection),
+                ))
+            };
+            assert_eq!(result, expected);
+            assert_eq!(backend.calls.get(), 0);
+            assert_error_reply(&bytes, status, code);
+            assert!(dropped.get());
+        }
+    });
+}
+
+#[test]
+fn backend_failures_before_response_report_counting_or_generation_stage() {
+    run(async {
+        let private = b"HTTP/1.1 400 Bad Request\r\nContent-Type: application/json\r\nContent-Length: 18\r\n\r\nprivate diagnostic";
+        for (streams, calls, error, code) in [
+            (vec![], 1, BackendError::Io, "backend_token_count_failed"),
+            (
+                vec![BackendStream::new(private.to_vec())],
+                1,
+                BackendError::Metadata,
+                "backend_token_count_failed",
+            ),
+            (
+                vec![BackendStream::new(response(
+                    br#"{"private diagnostic":1}"#,
+                    false,
+                ))],
+                1,
+                BackendError::CountSchema,
+                "backend_token_count_failed",
+            ),
+            (
+                vec![BackendStream::new(response(COUNT, false))],
+                2,
+                BackendError::Io,
+                "backend_generation_failed",
+            ),
+            (
+                vec![
+                    BackendStream::new(response(COUNT, false)),
+                    BackendStream::new(private.to_vec()),
+                ],
+                2,
+                BackendError::Metadata,
+                "backend_generation_failed",
+            ),
+            (
+                vec![
+                    BackendStream::new(response(COUNT, false)),
+                    BackendStream::new(b"private diagnostic\r\n\r\n".to_vec()),
+                ],
+                2,
+                BackendError::WireSyntax,
+                "backend_generation_failed",
+            ),
+        ] {
+            let backend = Connector::new(streams);
+            let (client, mut peer, dropped) = clients();
+            let policy = policy();
+            let (result, bytes) = both(serve_chat(client, &policy, &backend, deadline()), async {
+                peer.write_all(&request(true)).await.unwrap();
+                let mut bytes = Vec::new();
+                peer.read_to_end(&mut bytes).await.unwrap();
+                bytes
+            })
+            .await;
+            assert_eq!(result, Err(ServeError::Backend(error)));
+            assert_eq!(backend.calls.get(), calls);
+            assert_error_reply(&bytes, "HTTP/1.1 502 Bad Gateway\r\n", code);
+            assert!(dropped.get());
         }
     });
 }
@@ -477,6 +626,8 @@ fn truncated_generation_does_not_append_an_admission_error() {
         assert!(wire.starts_with("HTTP/1.1 200 OK\r\n"));
         assert!(!wire.contains("413"));
         assert!(!wire.contains("context_length_exceeded"));
+        assert!(!wire.contains("backend_generation_failed"));
+        assert_eq!(wire.matches("HTTP/1.1 ").count(), 1);
         assert!(!wire.ends_with("0\r\n\r\n"));
         assert!(state.borrow().dropped && dropped.get());
     });

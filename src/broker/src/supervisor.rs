@@ -9,12 +9,12 @@ use crate::{
     backend::{BackendError, BackendPolicy, count_and_admit, request_chat_owned},
     deadline::RequestDeadline,
     reception::{
-        BudgetedChat, INTAKE_TIMEOUT, ReceiveError, ReceivedChat, discard_rate_body, receive_chat,
+        BudgetedChat, INTAKE_TIMEOUT, ReceiveError, ReceivedChat, discard_rate_body,
         receive_chat_with_budget,
     },
     response::{
-        ResponseError, send_buffered_chat_response_mode, send_context_rejection,
-        send_control_rejection, send_rate_rejection,
+        ErrorReply, ResponseError, send_buffered_chat_response_mode, send_error_reply,
+        send_rate_rejection,
     },
     service::BurstBudget,
     transport::CONNECT_TIMEOUT,
@@ -82,7 +82,9 @@ pub enum ServeError {
 /// while connecting or waiting for backend data. Backend generation/slot release
 /// after connection closure must be qualified separately. No response is retried; writes
 /// may already be partial. Exact context-limit admission rejection sends a fixed
-/// 413 JSON error before generation; other failures do not invent error responses.
+/// 413 JSON error before generation. Fully received authenticated request rejections
+/// and backend failures before response forwarding receive fixed JSON error codes.
+/// No error response is appended after response forwarding begins.
 ///
 /// # Errors
 /// Returns [`ServeError`] for request rejection, backend/response failure,
@@ -131,31 +133,44 @@ where
     let mut surplus = [0u8; 1];
     let mut abandoned = pin!(input.read(&mut surplus));
     let mut pipeline = Box::pin(async move {
-        let counter = backend
-            .connect(deadline.limit(Instant::now() + CONNECT_TIMEOUT))
-            .await
-            .map_err(ServeError::Backend)?;
-        let chat = match count_and_admit(counter, pending, backend.policy(), deadline).await {
+        let counted = async {
+            let counter = backend
+                .connect(deadline.limit(Instant::now() + CONNECT_TIMEOUT))
+                .await?;
+            count_and_admit(counter, pending, backend.policy(), deadline).await
+        }
+        .await;
+        let chat = match counted {
             Ok(chat) => chat,
             Err(error) => {
-                if error == BackendError::Admission(Rejection::ContextLimit) {
-                    // No generation connection or client response has started.
-                    // Never use this path for a failure after response forwarding.
-                    send_context_rejection(output, deadline)
-                        .await
-                        .map_err(ServeError::Response)?;
-                }
+                let reply = if error == BackendError::Admission(Rejection::ContextLimit) {
+                    ErrorReply::ContextLimit
+                } else {
+                    ErrorReply::BackendTokenCountFailed
+                };
+                send_error_reply(output, reply, deadline)
+                    .await
+                    .map_err(ServeError::Response)?;
                 return Err(ServeError::Backend(error));
             }
         };
-        let generation = backend
-            .connect(deadline.limit(Instant::now() + CONNECT_TIMEOUT))
-            .await
-            .map_err(ServeError::Backend)?;
         let streaming = chat.streams_response();
-        let response = request_chat_owned(generation, chat, backend.policy(), deadline)
-            .await
-            .map_err(ServeError::Backend)?;
+        let generated = async {
+            let generation = backend
+                .connect(deadline.limit(Instant::now() + CONNECT_TIMEOUT))
+                .await?;
+            request_chat_owned(generation, chat, backend.policy(), deadline).await
+        }
+        .await;
+        let response = match generated {
+            Ok(response) => response,
+            Err(error) => {
+                send_error_reply(output, ErrorReply::BackendGenerationFailed, deadline)
+                    .await
+                    .map_err(ServeError::Response)?;
+                return Err(ServeError::Backend(error));
+            }
+        };
         send_buffered_chat_response_mode(output, response, streaming, deadline)
             .await
             .map_err(ServeError::Response)
@@ -186,49 +201,46 @@ async fn receive_admitted<C>(
 where
     C: AsyncRead + AsyncWrite + Unpin + 'static,
 {
-    if let Some(budget) = budget {
-        match receive_chat_with_budget(
-            client,
-            policy,
-            deadline.limit(Instant::now() + INTAKE_TIMEOUT),
-            budget,
-        )
-        .await
-        .map_err(ServeError::Receive)?
-        {
-            BudgetedChat::Ready(received) => Ok(Some(received)),
-            BudgetedChat::RateLimited {
-                mut stream,
-                remaining,
-                intake_deadline,
-            } => {
-                send_rate_rejection(&mut stream, intake_deadline.into())
-                    .await
-                    .map_err(ServeError::Response)?;
-                discard_rate_body(&mut stream, remaining, intake_deadline)
-                    .await
-                    .map_err(ServeError::Receive)?;
-                Ok(None)
-            }
-            BudgetedChat::Rejected(client, Rejection::ChatControlTokens) => {
-                send_control_rejection(client, deadline)
-                    .await
-                    .map_err(ServeError::Response)?;
-                Ok(None)
-            }
-            BudgetedChat::Rejected(_client, rejection) => {
-                Err(ServeError::Receive(ReceiveError::Policy(rejection)))
-            }
+    match receive_chat_with_budget(
+        client,
+        policy,
+        deadline.limit(Instant::now() + INTAKE_TIMEOUT),
+        budget,
+    )
+    .await
+    .map_err(ServeError::Receive)?
+    {
+        BudgetedChat::Ready(received) => Ok(Some(received)),
+        BudgetedChat::RateLimited {
+            mut stream,
+            remaining,
+            intake_deadline,
+        } => {
+            send_rate_rejection(&mut stream, intake_deadline.into())
+                .await
+                .map_err(ServeError::Response)?;
+            discard_rate_body(&mut stream, remaining, intake_deadline)
+                .await
+                .map_err(ServeError::Receive)?;
+            Ok(None)
         }
-    } else {
-        receive_chat(
-            client,
-            policy,
-            deadline.limit(Instant::now() + INTAKE_TIMEOUT),
-        )
-        .await
-        .map(Some)
-        .map_err(ServeError::Receive)
+        BudgetedChat::Rejected(client, rejection) => {
+            let reply = match rejection {
+                Rejection::ChatControlTokens => ErrorReply::ControlTokens,
+                Rejection::BodySize => ErrorReply::RequestBodyTooLarge,
+                Rejection::ChatSchema | Rejection::CompletionLimit => {
+                    ErrorReply::InvalidChatRequest
+                }
+                _ => return Err(ServeError::Receive(ReceiveError::Policy(rejection))),
+            };
+            send_error_reply(client, reply, deadline)
+                .await
+                .map_err(ServeError::Response)?;
+            if rejection == Rejection::ChatControlTokens {
+                return Ok(None);
+            }
+            Err(ServeError::Receive(ReceiveError::Policy(rejection)))
+        }
     }
 }
 

@@ -108,10 +108,10 @@ pub(crate) async fn receive_chat_with_budget<R: AsyncRead + Unpin + 'static>(
     stream: R,
     policy: &RequestPolicy,
     supervisor_deadline: Instant,
-    budget: &BurstBudget,
+    budget: Option<&BurstBudget>,
 ) -> Result<BudgetedChat<R>, ReceiveError> {
     let head = receive_head(stream, policy, supervisor_deadline).await?;
-    if budget.take(Instant::now()).is_err() {
+    if budget.is_some_and(|budget| budget.take(Instant::now()).is_err()) {
         return Ok(BudgetedChat::RateLimited {
             stream: head.stream,
             remaining: head.authorized.length - (head.used - head.head_end),
