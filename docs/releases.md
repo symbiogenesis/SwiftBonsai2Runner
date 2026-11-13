@@ -51,6 +51,11 @@ No checkout, external lockfile or provisioning command is needed for the default
 model. Speech preparation follows separately; text chat can work before it finishes.
 Microphone capture requires explicit consent.
 
+The application executables include their Microsoft runtime dependencies. TTS
+inference runs in Rust on the CPU, without GGML DLLs or a separate runtime
+installer. These build guarantees still require clean-machine speech acceptance;
+historical native-engine captures do not qualify the Rust replacement.
+
 Keep the setup window open to see the current step and download progress. **Pause
 setup** stops safely and retains partial downloads; **Retry setup** continues
 without losing drafts or conversations. Closing and reopening also resumes setup.

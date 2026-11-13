@@ -549,12 +549,13 @@ comparison and cleanup still share the five-minute owner-device budget.
 
 The app prepares native ARM64 Qwen3-ASR 1.7B and Qwen3-TTS 1.7B
 VoiceDesign/Base companions. Rust owns services, authentication, validation, WAV
-processing and process ownership; reviewed native GGML C++ engines provide inference.
-Qwen3-ASR uses CPU. TTS can select an optional local Hexagon `HTP0` backend and
-otherwise uses CPU; `BONSAIRUNNER_TTS_DEVICE=CPU` explicitly selects CPU.
-This separate speech path is not the Swift `native-q2` policy, and its presence
-checks do not establish runtime signature/hash verification, contained device
-access, audio quality or a speed advantage. See the [TTS runtime contract](../src/speech-tts/README.md).
+processing and process ownership. TTS also performs Talker, acoustic prediction,
+codec and speaker inference in Rust on the CPU; it requires no native speech
+library or compiler at deployment. Qwen3-ASR retains its reviewed CPU C++ core.
+The portable application's runtime dependencies are linked into its executables;
+users do not install a separate Visual C++ speech runtime.
+Swift's `native-q2` policy is separate. TTS NPU/GPU, ternary and new 48 kHz
+artifacts retain independent gates. See the [TTS contract](../src/speech-tts/README.md).
 The four pinned Q8_0 GGUF files total about 6.1 GiB under
 `%LOCALAPPDATA%/SwiftBonsai2/speech/native/` by default; ASR uses `qwen3-asr/<revision>/`, and TTS uses
 `qwen-tts/<revision>/`. Downloads resume with exact size/SHA-256
@@ -692,8 +693,9 @@ working path, not full audio quality, latency or daily-use qualification.
 
 ### Source launch, caches and runtime selection
 
-This section covers contributor tooling. Native speech builds require the pinned
-Rust compiler, Visual Studio 18 ARM64 C++ tools and Windows SDK. These build tools
+This section covers contributor tooling. ASR builds require the pinned Rust
+compiler, Visual Studio 18 ARM64 C++ tools and Windows SDK. TTS builds through
+Cargo without GGML, CMake or external native source provisioning. These build tools
 are not required on a machine running the portable executable. Pinned LLVM
 ARM64/engine archives and all outputs stay outside Git; only child compiler settings
 change. Downloads use Windows `System32/curl.exe` 8.4+ with HTTPS-only redirects

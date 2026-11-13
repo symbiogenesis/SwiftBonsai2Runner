@@ -1,8 +1,10 @@
 # Native Qwen3-TTS VoiceDesign
 
-The speech companion uses **Qwen3-TTS 12Hz 1.7B VoiceDesign/Base** through the
-[native Rust companion](../../src/speech-tts/README.md) and a reviewed GGML C++
-core. A plain-language voice description controls synthesis; no voice preset,
+The speech companion uses **Qwen3-TTS 12Hz 1.7B VoiceDesign/Base** through
+[Rust CPU inference](../../src/speech-tts/README.md), including Talker,
+CodePredictor, codec and speaker extraction. Setup downloads its pinned models
+inside the app; no TTS native library, compiler or runtime installer is needed.
+A plain-language voice description controls synthesis; no voice preset,
 speaker file or reference recording is required.
 
 The [speech setup and operation guide](../../docs/development-guide.md#speech-setup-and-operation)
@@ -79,11 +81,11 @@ still return WAV. Older services need an update before the UI will read aloud.
 
 ## Qualification
 
-Both native compilation and actual synthetic speech generation have passed on
-Windows ARM64. These establish correctness of one path, not a performance
-measurement or broad voice/language qualification. Full suites and all benchmarks
-remain CI-only. The [optional local Hexagon runtime](../../src/speech-tts/README.md#optional-hexagon-runtime)
-can select `HTP0`; its deployment, device behavior and performance remain unqualified.
-GPU acceleration is not selected. Thread counts, quantization,
+Historical GGML compilation and speech captures do not qualify the replacement
+Rust serving path. Its actual-model numerical parity, VoiceDesign/Base output,
+quality, lifecycle and resource acceptance remain pending in
+[PLAN.md](../../PLAN.md). Full suites and all benchmarks remain CI-only.
+TTS currently uses CPU; signed Rust NPU execution, GPU acceleration, ternary
+talkers and new 48 kHz artifacts retain separate gates. Thread counts, quantization,
 streaming throughput and voice quality require separate evaluation on the target
 hardware; successful protocol tests do not establish a speedup.

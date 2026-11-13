@@ -157,19 +157,19 @@ consumer acceptance remains pending as recorded below.
 | `toml`, `ureq` | CI-only manifest parsing (parse/serde/std) and synchronous HTTPS (Windows Schannel, otherwise Rustls); ureq defaults/compression disabled. |
 | `transcribe-cpp` | Static CPU ASR, defaults disabled; reviewed CMake script downloads no source and explicitly enables MSVC optimization. |
 | `simd-json` | Exact optional qualification-only crates.io pin; ordinary requests still use serde_json. |
-| `fearless_simd` | Pinned safe SIMD (`=1.2.0` in Runner speech and the active external runtime, with independent locks). ASR uses it in `validate_pcm`; TTS uses it in the candidate Rust `engine`/`codec` modules, which have not replaced the native serving core. Prism's `bonsai-neon-dot` kernels are a separate runtime dependency. |
+| `fearless_simd` | Pinned safe SIMD (`=1.2.0` in Runner speech and the active external runtime, with independent locks). ASR uses it in `validate_pcm`; TTS uses it in the serving Rust `engine`/`codec` modules. Prism's `bonsai-neon-dot` kernels are a separate runtime dependency. |
 | `memchr` | Promoted from transitive to direct (`=2.8.3`, `default-features = false`) in `bonsai-broker`, `bonsai-chat`, and `bonsai-speech-service` for NEON-vectorized HTTP header, SSE line, multipart boundary, and ASCII folded Find scanning. |
 | Windows CNG | Runner artifact and maintenance digests use `bonsai_windows_credentials::Sha256` (`BCryptHashData`); CPU dispatch belongs to the Windows provider. Prism's `bonsai-native-hash` is external to this workspace. These paths alone establish no device speedup. |
 | `mxc-sdk`, `flatbuffers` | Required security integration; pursue upstream modularity. |
 | Internal crates | Retain shared process/credential/audio/policy/artifact boundaries; no unused direct path edge found. |
 
-ASR/TTS intentionally use separate executables and GGML versions. ASR disables
-Metal/optional accelerators and pins CPU-only CMake. TTS builds static CPU libraries
-with BLAS, OpenMP, KleidiAI, automatic dynamic-backend loading, tests and examples
-disabled. Its runtime can separately register an existing
-local Hexagon `HTP0` DLL backend; [speech source documentation](../src/speech-tts/README.md#optional-hexagon-runtime)
-defines that unqualified selection and its verification limits. Combining their
-native libraries risks version conflicts; RustSec does not fully cover bundled C/C++.
+ASR/TTS retain separate executables and ownership. ASR disables Metal/optional
+accelerators and pins CPU-only CMake; RustSec does not fully cover that bundled
+C/C++. TTS now loads ordinary pinned GGUF weights and performs inference in Rust
+on the CPU, without GGML/CMake linkage or the former local `HTP0` DLL backend.
+[Speech source documentation](../src/speech-tts/README.md#optional-hexagon-runtime)
+keeps future signed NPU work separate from current serving. This source change
+does not transfer historical device or dependency qualification to the Rust engine.
 Speech only needs `VerifiedFile` from `bonsai-artifacts`, whose ZIP APIs are
 unconditional. Splitting them may reduce standalone compile scope, but workspace
 feature unification/linker elimination limit likely benefit. Pending work stays in PLAN.
