@@ -14,12 +14,10 @@ ASR/TTS exclusion, service lifetime and resource limits.
 
 The native [model lock](../../src/speech-asr/model.lock.json) pins the conversion,
 source model revision, exact size and SHA-256. Qwen3-ASR and this conversion are
-Apache-2.0 licensed; retain attribution and the model license. The legacy
-`model.lock.json` and `tokenizer.lock.json` here describe original reference
-snapshots for the explicit Rust `provision` operation `speech-reference`; the app does not load
-them, and existing downloaded snapshots are preserved. The `canary` directory,
-`--canary-key-file`/port options, `Canary` service kind and `CanaryModelPath`
-output name remain compatibility names; they select Qwen3-ASR, not Canary.
+Apache-2.0 licensed; retain attribution and the model license. The tools-directory
+`model.lock.json` and `tokenizer.lock.json` belong to the explicit
+`speech-reference` provisioning operation. Public option/output names such as
+`--canary-key-file`, `CanaryModelPath` and the `Canary` service kind select Qwen3-ASR.
 
 ## Developer-managed service
 
@@ -63,6 +61,5 @@ and are not logged or persisted. No cloud fallback is configured.
 ## Qualification
 
 Qwen3-ASR native loading, actual-microphone transcription, quality, lifecycle and
-resource qualification remain pending. Earlier Canary build/fixture results do
-not qualify this replacement. GPU/NPU acceleration and performance remain
+resource qualification remain pending. GPU/NPU acceleration and performance remain
 unqualified. Full correctness suites and every benchmark run only in CI.

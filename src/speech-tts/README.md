@@ -1,11 +1,9 @@
 # Rust Qwen VoiceDesign inference
 
-The serving path loads the pinned Qwen3-TTS 1.7B VoiceDesign/Base GGUF artifacts
-and performs Talker, CodePredictor, codec and speaker inference in Rust on the CPU.
-It does not compile or load `qwentts.cpp`, GGML or a TTS DLL backend. The app
-prepares its model files during in-app setup; running the portable executable
-requires no TTS compiler, PowerShell provisioning or runtime installation. ASR
-has its own [build boundary](../speech-asr/README.md).
+The serving path loads pinned Qwen3-TTS 1.7B VoiceDesign/Base GGUF artifacts and
+runs Talker, CodePredictor, codec and speaker inference in Rust on CPU. The app
+prepares models in its native window. [ASR](../speech-asr/README.md) has a separate
+build boundary.
 
 `model.lock.json` pins ordinary Q8_0 talkers and codec; `model-q4.lock.json`
 selects Q4_K_M talkers with the same codec. The calling service must verify and
@@ -66,35 +64,22 @@ successful utterances. Reuse requires identical input-row bits; changed rows,
 voice replacement, cancellation or synthesis failure discard the snapshot.
 The cache does not retain generated continuation state or change sampling.
 See the [resource contract](../../docs/streaming-resources.md#native-speech-generation-and-streaming)
-for its storage bounds. These implementation changes still require pinned-model
-first-audio, steady-synthesis, listening and resource qualification in PLAN.
+for its storage bounds. Pinned-model qualification remains in [PLAN.md](../../PLAN.md).
 
 ## Native ABI and failure handling
 
-Production TTS has no foreign model-inference ABI, C++ exception boundary or native
-waveform allocator. Rust errors propagate through the owned speech service without
-exposing supplied text, descriptions or model diagnostics. Speech failure leaves
-text chat available. Request failures retain a fixed synthesis-stage label and
-the I/O error category in the app-owned service diagnostics. These distinguish
-reference generation, speaker extraction, Base loading, codec work and audio
-output without retaining request text, descriptions or raw engine errors.
-Readiness confirms initial model loading; it does not certify the first
-profile's lazy voice-reference and Base initialization.
+Rust errors retain only fixed synthesis-stage labels and I/O categories;
+request text, voice descriptions and raw model diagnostics are excluded.
+Speech failure leaves text chat available. Readiness confirms initial model
+loading; a profile lazily initializes its voice reference and Base model.
 
-Cancellation is checked during prompt projection, between
-decoder layers/codebooks and before frame delivery. The supervisor retains process
-teardown for work already executing.
-
-Historical scalar-ABI captures remain independent replay inputs. They describe
-their original source/compiler, rather than fresh C++ engine execution or
-qualification of complete Rust speech.
+Cancellation checks bracket prompt projection, decoder layers/codebooks and
+frame delivery. The supervisor owns process teardown for work already executing.
 
 ## Build boundary
 
-TTS builds through Cargo with the pinned Rust compiler and ordinary Windows linking
-tools. It needs no speech-source download, LLVM/CMake/Ninja provisioning, generated
-C++ overlay or external native speech library. These are contributor details;
-users open the portable executable and follow progress in its native window.
+TTS builds through Cargo with the pinned Rust compiler and ordinary Windows
+linking tools, without a native speech library or CMake toolchain.
 
 The Rust ports derive from reviewed `qwentts.cpp` revision
 `5916bf7c79dbb4e66fc059cdc507a79a23a28bb4` and its model layout. Retain MIT
@@ -104,12 +89,9 @@ those C++ libraries are linked.
 
 ## Optional Hexagon runtime
 
-TTS serves on the CPU. It uses no GGML DLL backend or manually installed speech
-runtime directory. Rust NPU packet
-descriptors prepare future signed execution; they do not dispatch inference or
-qualify acceleration. Swift's separate `native-q2` policy is unchanged. NPU/GPU
-serving, ternary talkers and new 48 kHz artifacts retain independent gates in
-[PLAN.md](../../PLAN.md).
+Serving is CPU-only. Rust NPU packet descriptors prepare future signed execution
+but dispatch no inference. NPU/GPU serving, ternary talkers and 48 kHz artifacts
+have separate gates in [PLAN.md](../../PLAN.md).
 
 ## Rust parameter and CPU thread helpers
 
@@ -127,21 +109,19 @@ codebooks/layers. They establish neither model parity nor usable speech on a
 fresh machine.
 
 Projection row workers reuse a bounded Rust thread pool on the inference thread
-instead of creating OS threads for every projection. Codec encoder/decoder
+owned by the inference thread. Codec encoder/decoder
 transformer projections also use the selected worker count. Packed F32/F16,
 Q8_0, Q4_K and Q6_K kernels decode directly during multiplication, with SIMD
 dispatch outside the block loop and no complete floating-point weight expansion.
 They preserve the existing block accumulation and rounding order without
-requantizing activations. Independent packed-decoder controls and worker/state
-checks cover this source change; end-to-end first audio, steady synthesis,
-Q8/Q4 listening and peak-memory qualification remain pending.
+requantizing activations. Packed-decoder and worker/state controls are separate from actual-model acceptance.
 
 ## Rust sampler port
 
 `philox.rs` retains Philox4x32-10 draws, signed seed/subsequence bit patterns and
 the reference's separate floating-point rounding. `sampling.rs` retains reserved
 token suppression, the trailing 72-token repetition window, greedy selection,
-top-k/top-p and stochastic sampling. Historical fixtures retain captured ARM64
+top-k/top-p and stochastic sampling. Independent fixtures retain captured ARM64
 tie ordering and exceptional-float cases.
 
 Every frame uses one semantic draw followed by fifteen acoustic draws. Design
@@ -165,15 +145,15 @@ projections throughout serving. Prism's text-model tokenizer is not substituted.
 The supported subset bounds UTF-8 input to 64 KiB, spellings to 4 KiB, IDs/ranks
 and table entries to one million, special tokens to 64, retained unique spelling
 bytes to 64 MiB and merge-pair probes to 64 million per encoding. Malformed
-metadata/encoding fails without publishing partial IDs. Historical provenance
-retains its original source identities and replay limits.
+metadata/encoding fails without publishing partial IDs. Fixture provenance binds source identities and replay limits.
 
 ## Native waveform ownership
 
-Complete WAV requests retain a Rust-owned waveform through validated PCM
-conversion and HTTP writes. Streaming requests deliver bounded PCM chunks; heard
-samples can precede a later failure. Production has no `qt_audio` allocation or
-native release call. The [resource contract](../../docs/streaming-resources.md#native-speech-generation-and-streaming)
-owns output limits, scratch bounds and completion. Fresh-machine startup,
+WAV requests retain Rust-owned samples through validated PCM conversion and HTTP
+writes. Streaming delivers bounded chunks and may play samples before a later
+failure. The [resource contract](../../docs/streaming-resources.md#native-speech-generation-and-streaming)
+owns output, scratch and completion bounds.
+
+Fresh-machine startup,
 actual speech, numerical parity, voice quality and combined resource acceptance
 remain pending until the named qualification work runs.

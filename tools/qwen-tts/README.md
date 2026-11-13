@@ -18,9 +18,8 @@ defines bounded segmentation and playback.
 
 The native [model lock](../../src/speech-tts/model.lock.json) pins all three files to
 immutable conversions of the named Qwen checkpoints. The models are Apache-2.0;
-preserve Qwen attribution and notices. The legacy `model.lock.json` here is only
-for the explicit original-snapshot download utility, not the app runtime.
-Existing raw snapshots and old private runtimes are not deleted or modified.
+preserve Qwen attribution and notices. The `model.lock.json` in this tools directory
+belongs to the explicit source-snapshot downloader; the app uses the native lock.
 
 `--quantization Q8_0` selects the default compiled artifact lock.
 `--quantization Q4_K_M` selects the separately reviewed four-bit VoiceDesign/Base talker lock with the
@@ -77,12 +76,11 @@ an incomplete response; played partial audio
 does not make that request successful. The client requires complete framing and
 rejects malformed, oversized or incomplete audio. Independently managed services
 must advertise `consistent_voice:true`; services without streaming support may
-still return WAV. Older services need an update before the UI will read aloud.
+still return WAV.
 
 ## Qualification
 
-Historical GGML compilation and speech captures do not qualify the replacement
-Rust serving path. Its actual-model numerical parity, VoiceDesign/Base output,
+Actual-model numerical parity, VoiceDesign/Base output,
 quality, lifecycle and resource acceptance remain pending in
 [PLAN.md](../../PLAN.md). Full suites and all benchmarks remain CI-only.
 TTS currently uses CPU; signed Rust NPU execution, GPU acceleration, ternary

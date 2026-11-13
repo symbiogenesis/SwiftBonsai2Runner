@@ -35,7 +35,6 @@ This is the transcribe.cpp conversion, not a llama.cpp multimodal split model.
 transcribe.cpp and its Rust bindings are **MIT** licensed.
 
 Native device qualification of loading, transcription, microphone lifecycle,
-quality, accuracy, performance and resources remains pending. Historical Canary
-fixtures do not qualify Qwen3-ASR. Model-free regressions cover family/variant/audio
+quality, accuracy, performance and resources remains pending. Model-free regressions cover family/variant/audio
 identity rejection, bounded input and cancellation; compilation and protocol checks
 do not establish model qualification.
