@@ -5,6 +5,7 @@
 )]
 
 use std::{
+    cell::Cell,
     collections::BTreeMap,
     ffi::OsString,
     fs::{self, File, OpenOptions},
@@ -16,6 +17,64 @@ use std::{
 use bonsai_artifacts::{
     ArtifactError, hash_reader, is_redirect, open_locked_file, validate_external_path,
 };
+
+thread_local! {
+    static REPAIR_DEADLINE: Cell<Option<Instant>> = const { Cell::new(None) };
+}
+
+struct RepairDeadline(Option<Instant>);
+
+impl Drop for RepairDeadline {
+    fn drop(&mut self) {
+        REPAIR_DEADLINE.with(|deadline| deadline.set(self.0));
+    }
+}
+
+fn repair_checkpoint() -> crate::Result<()> {
+    crate::startup_cancel::checkpoint()?;
+    REPAIR_DEADLINE.with(|deadline| {
+        if deadline.get().is_some_and(|until| Instant::now() >= until) {
+            Err("Pinned download repair exceeded its aggregate allowance. Retry resumes downloads or reuses verified files.".into())
+        } else {
+            Ok(())
+        }
+    })
+}
+
+fn with_repair_deadline<T>(
+    timeout: Duration,
+    operation: impl FnOnce(Instant) -> crate::Result<T>,
+) -> crate::Result<T> {
+    let requested = Instant::now()
+        .checked_add(timeout)
+        .ok_or("Invalid aggregate repair allowance.")?;
+    let previous = REPAIR_DEADLINE.with(Cell::get);
+    let until = previous.map_or(requested, |outer| outer.min(requested));
+    let _restore = RepairDeadline(previous);
+    REPAIR_DEADLINE.with(|deadline| deadline.set(Some(until)));
+    repair_checkpoint()?;
+    let result = operation(until);
+    repair_checkpoint()?;
+    result
+}
+
+fn repair_remaining(until: Instant) -> crate::Result<Duration> {
+    repair_checkpoint()?;
+    until
+        .checked_duration_since(Instant::now())
+        .filter(|duration| !duration.is_zero())
+        .ok_or_else(|| "Pinned download repair exceeded its aggregate allowance.".into())
+}
+
+fn repair_process_allowance(until: Instant) -> crate::Result<Duration> {
+    // startup_process retains up to five seconds for owned descendant teardown.
+    repair_remaining(until)?
+        .checked_sub(Duration::from_secs(5))
+        .filter(|duration| !duration.is_zero())
+        .ok_or_else(|| {
+            "Download repair has insufficient time left for safe process cleanup.".into()
+        })
+}
 
 fn expected(bytes: u64, sha256: &str) -> crate::Result<()> {
     if bytes == 0
@@ -29,7 +88,7 @@ fn expected(bytes: u64, sha256: &str) -> crate::Result<()> {
 }
 
 fn digest_matches(file: &mut File, bytes: u64, sha256: &str) -> crate::Result<bool> {
-    crate::startup_cancel::checkpoint()?;
+    repair_checkpoint()?;
     expected(bytes, sha256)?;
     if file.metadata().map_err(|error| error.to_string())?.len() != bytes {
         return Err("Artifact byte length differs from its lock.".into());
@@ -38,7 +97,7 @@ fn digest_matches(file: &mut File, bytes: u64, sha256: &str) -> crate::Result<bo
         .map_err(|error| error.to_string())?;
     let mut buffer = vec![0; 1024 * 1024];
     let hash = hash_reader(file, bytes, &mut buffer, &mut || {
-        crate::startup_cancel::checkpoint().map_err(|_| ArtifactError::Cancelled)
+        repair_checkpoint().map_err(|_| ArtifactError::Cancelled)
     })
     .map_err(|error| error.to_string())?;
     Ok(hash.eq_ignore_ascii_case(sha256))
@@ -243,6 +302,101 @@ pub(crate) fn receive_repair(
     receive_repair_with(uri, path, bytes, sha256, working, transfer)
 }
 
+/// Shares one absolute allowance across verification, resume and fresh restart.
+pub(crate) fn receive_repair_with_timeout(
+    uri: &str,
+    path: &Path,
+    bytes: u64,
+    sha256: &str,
+    working: &Path,
+    timeout: Duration,
+) -> crate::Result<()> {
+    with_repair_deadline(timeout, |until| {
+        receive_repair_with(
+            uri,
+            path,
+            bytes,
+            sha256,
+            working,
+            |uri, partial, offset, bytes, working| {
+                transfer_repair_until(uri, partial, offset, bytes, working, until)
+            },
+        )
+    })
+}
+
+fn repair_download_tool(working: &Path, until: Instant) -> crate::Result<PathBuf> {
+    let curl = system_tool("curl.exe")?;
+    let allowance = repair_process_allowance(until)?.min(Duration::from_secs(10));
+    let result = crate::startup_process::run_with_checkpoint(
+        curl.as_os_str(),
+        &["--disable".into(), "--version".into()],
+        working,
+        &BTreeMap::new(),
+        allowance,
+        &working.join(format!(
+            "curl-version-{}.log",
+            crate::startup_process::unique()
+        )),
+        || repair_remaining(until).map(|_| ()),
+    )?;
+    if result.code != 0 || !compatible_curl(&result.stdout) {
+        return Err(
+            "Artifact provisioning requires Windows curl 8.4 or newer for bounded downloads."
+                .into(),
+        );
+    }
+    Ok(curl)
+}
+
+fn transfer_repair_until(
+    uri: &str,
+    partial: &Path,
+    mut offset: u64,
+    bytes: u64,
+    working: &Path,
+    until: Instant,
+) -> crate::Result<()> {
+    let curl = repair_download_tool(working, until)?;
+    loop {
+        let allowance = repair_process_allowance(until)?;
+        let mut arguments = curl_arguments(uri, partial, offset, bytes);
+        let position = arguments
+            .iter()
+            .position(|value| value == "--max-time")
+            .ok_or("Missing download deadline argument.")?;
+        arguments[position + 1] = allowance.as_secs_f64().to_string().into();
+        let result = crate::startup_process::run_with_checkpoint(
+            curl.as_os_str(),
+            &arguments,
+            working,
+            &BTreeMap::new(),
+            allowance,
+            &working.join(format!("download-{}.log", crate::startup_process::unique())),
+            || repair_remaining(until).map(|_| ()),
+        )?;
+        repair_remaining(until)?;
+        if result.code == 33 && offset > 0 {
+            // A server that ignores Range gets one fresh request within this
+            // same absolute allowance; no partial responses are concatenated.
+            repair_file(partial)?
+                .set_len(0)
+                .map_err(|error| error.to_string())?;
+            offset = 0;
+            continue;
+        }
+        if result.code != 0 {
+            return Err(format!(
+                "Pinned download failed ({}): {}; partial bytes retained at {}",
+                result.code,
+                result.stderr.trim(),
+                partial.display()
+            ));
+        }
+        return Ok(());
+    }
+}
+
 enum CachedArtifact {
     Missing,
     Verified,
@@ -250,6 +404,7 @@ enum CachedArtifact {
 }
 
 fn cached_artifact(path: &Path, bytes: u64, sha256: &str) -> crate::Result<CachedArtifact> {
+    repair_checkpoint()?;
     match fs::symlink_metadata(path) {
         Ok(metadata) if metadata.is_file() && !is_redirect(&metadata) => {}
         Ok(_) => return Err("The model download location is not an ordinary file.".into()),
@@ -304,6 +459,7 @@ fn repair_parents(path: &Path) -> crate::Result<Vec<File>> {
 }
 
 fn repair_file(path: &Path) -> crate::Result<File> {
+    repair_checkpoint()?;
     validate_external_path(path).map_err(|error| error.to_string())?;
     let mut options = OpenOptions::new();
     options.read(true).write(true);
@@ -328,7 +484,7 @@ fn repair_file(path: &Path) -> crate::Result<File> {
 }
 
 fn repair_partial_offset(path: &Path, bytes: u64) -> crate::Result<u64> {
-    crate::startup_cancel::checkpoint()?;
+    repair_checkpoint()?;
     match fs::symlink_metadata(path) {
         Ok(metadata) if metadata.is_file() && !is_redirect(&metadata) => {
             let file = repair_file(path)?;
@@ -336,7 +492,7 @@ fn repair_partial_offset(path: &Path, bytes: u64) -> crate::Result<u64> {
             if length > bytes {
                 // A larger file cannot match the selected pin. Restart this
                 // one owned partial instead of accumulating quarantine copies.
-                crate::startup_cancel::checkpoint()?;
+                repair_checkpoint()?;
                 file.set_len(0).map_err(|error| error.to_string())?;
                 Ok(0)
             } else {
@@ -389,7 +545,7 @@ fn verified_repair_partial(
     let mut offset = repair_partial_offset(partial, bytes)?;
     let mut restart_resumed = offset > 0;
     loop {
-        crate::startup_cancel::checkpoint()?;
+        repair_checkpoint()?;
         if offset < bytes {
             // Free space already excludes the old file and any resumed bytes.
             // Publication renames this file, so no full-size copy is needed.
@@ -418,7 +574,7 @@ fn verified_repair_partial(
         }
         // Resume can expose an old corrupt prefix. Permit one fresh transfer;
         // a newly downloaded mismatch is never retried in an endless loop.
-        crate::startup_cancel::checkpoint()?;
+        repair_checkpoint()?;
         completed.set_len(0).map_err(|error| error.to_string())?;
         drop(completed);
         offset = 0;
@@ -427,7 +583,7 @@ fn verified_repair_partial(
 }
 
 fn publish_repair(file: &File, partial: &Path, path: &Path) -> crate::Result<()> {
-    crate::startup_cancel::checkpoint()?;
+    repair_checkpoint()?;
     validate_external_path(path).map_err(|error| error.to_string())?;
     #[cfg(windows)]
     let result = bonsai_windows_process::replace_open_file(file, path);
@@ -455,7 +611,7 @@ fn receive_repair_with(
     working: &Path,
     transfer: impl FnMut(&str, &Path, u64, u64, &Path) -> crate::Result<()>,
 ) -> crate::Result<()> {
-    crate::startup_cancel::checkpoint()?;
+    repair_checkpoint()?;
     expected(bytes, sha256)?;
     download_uri(uri)?;
     validate_external_path(path).map_err(|error| error.to_string())?;
@@ -682,6 +838,118 @@ mod tests {
                 Err(error) => Some(Err(error.to_string())),
             })
             .collect()
+    }
+
+    #[test]
+    fn setup_repair_timeout_rejects_expired_work_and_restores_outer_deadline() -> crate::Result<()>
+    {
+        let (working, path, partial, hash) = recovery_fixture()?;
+        fs::write(&path, b"old").map_err(|error| error.to_string())?;
+        assert!(
+            receive_repair_with_timeout(
+                "https://example.invalid/artifact",
+                &path,
+                5,
+                &hash,
+                &working,
+                Duration::ZERO,
+            )
+            .is_err()
+        );
+        assert_eq!(fs::read(&path).map_err(|error| error.to_string())?, b"old");
+        assert_eq!(
+            fs::read(&partial).map_err(|error| error.to_string())?,
+            b"wrong"
+        );
+        assert_eq!(REPAIR_DEADLINE.with(Cell::get), None);
+        with_repair_deadline(Duration::from_secs(60), |outer| {
+            with_repair_deadline(Duration::from_secs(120), |inner| {
+                assert_eq!(inner, outer);
+                Ok(())
+            })?;
+            assert_eq!(REPAIR_DEADLINE.with(Cell::get), Some(outer));
+            assert!(repair_process_allowance(Instant::now() + Duration::from_secs(4)).is_err());
+            Ok(())
+        })?;
+        assert_eq!(REPAIR_DEADLINE.with(Cell::get), None);
+        fs::write(&path, b"right").map_err(|error| error.to_string())?;
+        receive_repair_with_timeout(
+            "https://example.invalid/artifact",
+            &path,
+            5,
+            &hash,
+            &working,
+            Duration::from_secs(30),
+        )?;
+        Ok(())
+    }
+
+    #[test]
+    fn setup_repair_timeout_stops_before_hash_retry_or_publication() -> crate::Result<()> {
+        for replacement in [b"wrong".as_slice(), b"right"] {
+            let (working, path, partial, hash) = recovery_fixture()?;
+            fs::write(&path, b"old").map_err(|error| error.to_string())?;
+            fs::write(&partial, b"wr").map_err(|error| error.to_string())?;
+            let mut transfers = 0;
+            let result = with_repair_deadline(Duration::from_secs(60), |_| {
+                receive_repair_with(
+                    "https://example.invalid/artifact",
+                    &path,
+                    5,
+                    &hash,
+                    &working,
+                    |_, destination, offset, _, _| {
+                        transfers += 1;
+                        assert_eq!(offset, 2);
+                        fs::write(destination, replacement).map_err(|error| error.to_string())?;
+                        // Simulate the transfer consuming all its allowance
+                        // without depending on sleeps or scheduler timing.
+                        REPAIR_DEADLINE.with(|deadline| deadline.set(Some(Instant::now())));
+                        Ok(())
+                    },
+                )
+            });
+            assert!(result.is_err());
+            assert_eq!(transfers, 1);
+            assert_eq!(fs::read(&path).map_err(|error| error.to_string())?, b"old");
+            assert_eq!(
+                fs::read(&partial).map_err(|error| error.to_string())?,
+                replacement
+            );
+            assert_eq!(REPAIR_DEADLINE.with(Cell::get), None);
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn setup_repair_timeout_preserves_cancellation_and_verified_cache() -> crate::Result<()> {
+        use std::sync::{Arc, atomic::AtomicBool};
+        let (working, path, partial, hash) = recovery_fixture()?;
+        fs::write(&path, b"right").map_err(|error| error.to_string())?;
+        let cancelled = Arc::new(AtomicBool::new(true));
+        crate::startup_cancel::with_peer_cancellation(&cancelled, || {
+            assert!(
+                receive_repair_with_timeout(
+                    "https://example.invalid/artifact",
+                    &path,
+                    5,
+                    &hash,
+                    &working,
+                    Duration::from_secs(60),
+                )
+                .is_err()
+            );
+        });
+        assert_eq!(
+            fs::read(&path).map_err(|error| error.to_string())?,
+            b"right"
+        );
+        assert_eq!(
+            fs::read(&partial).map_err(|error| error.to_string())?,
+            b"wrong"
+        );
+        assert_eq!(REPAIR_DEADLINE.with(Cell::get), None);
+        Ok(())
     }
 
     #[test]
