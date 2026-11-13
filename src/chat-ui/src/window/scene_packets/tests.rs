@@ -3,7 +3,10 @@
 use super::*;
 use crate::{client, window::ModelLifecycle};
 use egui::TextBuffer as _;
-use egui_kittest::{Harness, kittest::Queryable as _};
+use egui_kittest::{
+    Harness,
+    kittest::{NodeT as _, Queryable as _},
+};
 use std::sync::mpsc;
 
 fn fixture() -> (State, mpsc::Receiver<client::Command>) {
@@ -196,7 +199,11 @@ fn scene_packet_review_adds_only_after_explicit_action_at_narrow_and_wide_sizes(
         dialog.selected[0] = true;
         chat.state_mut().app.scene_packets.dialog = Some(dialog);
         chat.run();
+        // This fixture injects populated results before the modal's first frame.
+        // Let its centered area and font metrics settle before pointer hit tests.
+        chat.run_steps(3);
         let add = chat.get_by_role_and_label(egui::Role::Button, "Add selected excerpts");
+        assert!(!add.accesskit_node().is_disabled(), "size={size:?}");
         assert!(egui::Rect::from_min_size(egui::Pos2::ZERO, size.into()).contains_rect(add.rect()));
         add.click();
         chat.run();
