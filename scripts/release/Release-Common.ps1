@@ -108,7 +108,8 @@ function Invoke-ReleaseCommand {
     param(
         [Parameter(Mandatory)][string]$FilePath,
         [string[]]$ArgumentList = @(),
-        [ValidateRange(1, 600)][int]$TimeoutSeconds = 180
+        [ValidateRange(1, 600)][int]$TimeoutSeconds = 180,
+        [hashtable]$Environment = @{}
     )
     # ArgumentList preserves JSON, spaces and quotes on every supported PS 7
     # version; explicit exit checks do not depend on a preference added later.
@@ -131,6 +132,7 @@ function Invoke-ReleaseCommand {
     $start.StandardOutputEncoding = [Text.UTF8Encoding]::new($false)
     $start.StandardErrorEncoding = [Text.UTF8Encoding]::new($false)
     foreach ($argument in $ArgumentList) { [void]$start.ArgumentList.Add($argument) }
+    foreach ($name in $Environment.Keys) { $start.Environment[$name] = $Environment[$name] }
     $process = [Diagnostics.Process]::new()
     $process.StartInfo = $start
     try {

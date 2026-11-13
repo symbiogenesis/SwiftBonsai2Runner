@@ -23,6 +23,7 @@ foreach ($source in $sources) {
 & (Join-Path $PSScriptRoot 'Test-PortableReleaseAssets.ps1')
 & (Join-Path $PSScriptRoot 'Test-ReleaseCommandFailures.ps1')
 & (Join-Path $PSScriptRoot 'Test-ReleaseCleanup.ps1')
+& (Join-Path $PSScriptRoot 'Test-ExecutableBuild.ps1')
 $fixture = Join-Path ([IO.Path]::GetTempPath()) ('SwiftBonsai-Release-Controls-' + [guid]::NewGuid().ToString('N'))
 [void][IO.Directory]::CreateDirectory($fixture)
 $echoScript = Join-Path $fixture 'arguments.ps1'
@@ -37,6 +38,9 @@ try {
     for ($index = 0; $index -lt $expected.Count; $index++) {
         if ($actual[$index] -cne $expected[$index]) { throw "Native argument changed at index $index." }
     }
+    $before = $env:BONSAI_RELEASE_ENV_PROBE
+    $probe = Invoke-ReleaseCommand $engine @('-NoLogo', '-NoProfile', '-NonInteractive', '-Command', '[Console]::Out.Write($env:BONSAI_RELEASE_ENV_PROBE)') -Environment @{ BONSAI_RELEASE_ENV_PROBE = 'child only' }
+    if ($probe -cne 'child only' -or $env:BONSAI_RELEASE_ENV_PROBE -cne $before) { throw 'Child environment isolation failed.' }
     $rejectedExit = $false
     try { Invoke-ReleaseCommand $engine @('-NoLogo', '-NoProfile', '-NonInteractive', '-File', $failureScript) }
     catch {

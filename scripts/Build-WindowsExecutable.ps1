@@ -5,6 +5,7 @@ Builds all five native application executables and bundles them into one .exe.
 .DESCRIPTION
 Uses the pinned Rust and native speech build paths, collects dependency notices,
 and packages the result without launching chat or downloading model weights.
+Reuses local caches; -TargetDirectory or CARGO_TARGET_DIR selects a CI cache root.
 Use -PackageDirectory and -ManifestSha256 to bundle a reviewed prebuilt package.
 .EXAMPLE
 ./scripts/Build-WindowsExecutable.ps1
@@ -15,6 +16,8 @@ Use -PackageDirectory and -ManifestSha256 to bundle a reviewed prebuilt package.
 param(
     [Parameter(ParameterSetName = 'Build')]
     [string]$RepositoryRoot = (Split-Path $PSScriptRoot -Parent),
+    [Parameter(ParameterSetName = 'Build')]
+    [string]$TargetDirectory = $env:CARGO_TARGET_DIR,
     [string]$DataDirectory = (Join-Path $env:LOCALAPPDATA 'SwiftBonsai2'),
     [string]$OutputPath,
     [Parameter(Mandatory, ParameterSetName = 'Package')][string]$PackageDirectory,
@@ -26,7 +29,7 @@ $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 . (Join-Path $PSScriptRoot 'release/Release-Common.ps1')
 if (-not $IsWindows -or [Runtime.InteropServices.RuntimeInformation]::OSArchitecture -ne 'Arm64') {
-    throw 'Local application builds require Windows ARM64.'
+    throw 'Application builds require Windows ARM64.'
 }
 $DataDirectory = Resolve-ReleasePath $DataDirectory -AllowMissing
 if (-not $OutputPath) { $OutputPath = Join-Path $DataDirectory 'build/distribution/SwiftBonsai2Runner.exe' }
@@ -39,6 +42,7 @@ if ($PSCmdlet.ParameterSetName -ceq 'Package') {
     return
 }
 $RepositoryRoot = Resolve-ReleasePath $RepositoryRoot
+if ($TargetDirectory) { $TargetDirectory = Resolve-ReleasePath $TargetDirectory -AllowMissing }
 $manifestPath = Resolve-ReleasePath (Join-Path $RepositoryRoot 'Cargo.toml') -Kind File
 $toolchain = Get-Content -LiteralPath (Join-Path $RepositoryRoot 'rust-toolchain.toml') -Raw
 $channel = [regex]::Match($toolchain, '(?m)^channel\s*=\s*"(nightly-[0-9]{4}-[0-9]{2}-[0-9]{2})"\s*$').Groups[1].Value
@@ -53,31 +57,37 @@ if ($revision -cnotmatch '^[0-9a-f]{40}$') { throw 'A local Git source identity 
 $scratch = Join-Path (Resolve-ReleasePath ([IO.Path]::GetTempPath())) ('SwiftBonsai-Executable-' + [guid]::NewGuid().ToString('N'))
 [void][IO.Directory]::CreateDirectory($scratch)
 try {
-    $target = Join-Path $DataDirectory 'build/maintenance'
+    $target = if ($TargetDirectory) { $TargetDirectory } else { Join-Path $DataDirectory 'build/maintenance' }
+    $arguments = @("+$channel", 'build', '--locked', '--release', '--manifest-path', $manifestPath,
+        '--package', 'bonsai-tools', '--bin', 'bonsai-tools', '--bin', 'bonsai-launcher', '--target-dir', $target)
+    $binaryDirectory = Join-Path $target 'release'
+    if ($TargetDirectory) {
+        $arguments += @('--target', 'aarch64-pc-windows-msvc')
+        $binaryDirectory = Join-Path $target 'aarch64-pc-windows-msvc/release'
+    }
     Write-Host 'Building the console maintenance tool and windowless launcher with the repository compiler pin.'
-    $null = Invoke-ReleaseCommand 'cargo' @("+$channel", 'build', '--locked', '--release', '--manifest-path', $manifestPath,
-        '--package', 'bonsai-tools', '--bin', 'bonsai-tools', '--bin', 'bonsai-launcher', '--target-dir', $target) -TimeoutSeconds 600
-    $tool = Resolve-ReleasePath (Join-Path $target 'release/bonsai-tools.exe') -Kind File
-    $launcher = Resolve-ReleasePath (Join-Path $target 'release/bonsai-launcher.exe') -Kind File
+    $null = Invoke-ReleaseCommand 'cargo' $arguments -TimeoutSeconds 600 -Environment @{
+        CARGO_BUILD_FINGERPRINT = 'content'; CARGO_UNSTABLE_CHECKSUM_FRESHNESS = 'true'
+    }
+    $tool = Resolve-ReleasePath (Join-Path $binaryDirectory 'bonsai-tools.exe') -Kind File
+    $launcher = Resolve-ReleasePath (Join-Path $binaryDirectory 'bonsai-launcher.exe') -Kind File
     $chatRequest = @{
         operation = 'chat'; repositoryRoot = $RepositoryRoot; workingDirectory = $scratch
         dataDirectory = $DataDirectory; packages = @('bonsai-chat', 'bonsai-broker')
+        targetDirectory = $(if ($TargetDirectory) { $TargetDirectory } else { $null })
     } | ConvertTo-Json -Compress
     Write-Host 'Building or verifying the native window and broker.'
     $chat = Invoke-ReleaseCommand $tool @('source-build', '--json', $chatRequest) -TimeoutSeconds 600 | ConvertFrom-Json
     $speechRequest = @{
         operation = 'build'; repositoryRoot = $RepositoryRoot; workingDirectory = $scratch
-        dataDirectory = $DataDirectory; model = 'All'
+        dataDirectory = $DataDirectory; model = 'All'; includeSources = $true
+        targetDirectory = $(if ($TargetDirectory) { $TargetDirectory } else { $null })
     } | ConvertTo-Json -Compress
     Write-Host 'Building or verifying the native ASR and TTS companions; cold compiler/source setup may take several minutes.'
     $speech = Invoke-ReleaseCommand $tool @('speech-build', '--json', $speechRequest) -TimeoutSeconds 600 | ConvertFrom-Json
-    $environmentRequest = @{
-        operation = 'environment'; dataDirectory = $DataDirectory; workingDirectory = $scratch
-    } | ConvertTo-Json -Compress
-    $native = Invoke-ReleaseCommand $tool @('speech-build', '--json', $environmentRequest) -TimeoutSeconds 600 | ConvertFrom-Json
     $notices = Join-Path $scratch 'THIRD-PARTY-NOTICES.txt'
     Write-Host 'Collecting notices from the locked Rust and native speech sources.'
-    & (Join-Path $RepositoryRoot '.github/release/Collect-Notices.ps1') -RepositoryRoot $RepositoryRoot -OutputPath $notices -NativeSourceDirectory $native.SourceDirectory
+    & (Join-Path $RepositoryRoot '.github/release/Collect-Notices.ps1') -RepositoryRoot $RepositoryRoot -OutputPath $notices -NativeSourceDirectory $speech.SourceDirectory
     $PackageDirectory = Join-Path $scratch 'package'
     $packageRequest = @{
         operation = 'create'; outputDirectory = $PackageDirectory; version = $version; sourceRevision = $revision

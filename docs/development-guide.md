@@ -141,7 +141,14 @@ the complete locked-dependency notices and writes one
 Use `-OutputPath C:\Bonsai\SwiftBonsai2Runner.exe` for another absolute output.
 Existing outputs are never overwritten; choose a new path or explicitly remove
 an earlier local build first. `-RepositoryRoot` and `-DataDirectory` select an
-alternate checkout or external build cache. Cold native compiler/source setup
+alternate checkout or local data/cache root. Existing source-launch caches remain
+the default. `-TargetDirectory` (or `CARGO_TARGET_DIR`) selects an absolute Cargo
+cache root for local builds or CI cache restoration: maintenance and chat share
+native-target artifacts there; speech keeps its required repository/compiler/host/ISA
+partition beneath that root. Cargo checks content freshness, and native receipts
+still verify source, host and executable identities. Notice collection reuses
+verified speech sources without repeating compiler or Visual Studio preparation.
+Cold native compiler/source setup
 and compilation can take several minutes; this build performs no model trial,
 application launch or CI operation.
 
