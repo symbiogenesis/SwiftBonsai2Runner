@@ -336,6 +336,24 @@ impl Reply {
                     "The model returned an unexpected completion choice.",
                 ));
             }
+            // Validate the complete event before publishing any of its text.
+            // In particular, a filtered or unsupported terminal event must not
+            // become a visible partial answer or recovered conversation context.
+            let completion = match choice.finish_reason {
+                None => None,
+                Some(reason) => Some(match reason.0.as_ref() {
+                    "stop" => Completion::Finished,
+                    "length" => Completion::TokenLimit,
+                    "content_filter" => {
+                        return Err(Failure::Message("The model filtered this response."));
+                    }
+                    _ => {
+                        return Err(Failure::Message(
+                            "The model ended with an unsupported completion reason.",
+                        ));
+                    }
+                }),
+            };
             let text = choice
                 .delta
                 .content
@@ -348,20 +366,7 @@ impl Reply {
             self.text.push_str(&text);
             self.reasoning.push_str(&reasoning);
             delta(text, reasoning)?;
-            if let Some(reason) = choice.finish_reason {
-                self.completion = Some(match reason.0.as_ref() {
-                    "stop" => Completion::Finished,
-                    "length" => Completion::TokenLimit,
-                    "content_filter" => {
-                        return Err(Failure::Message("The model filtered this response."));
-                    }
-                    _ => {
-                        return Err(Failure::Message(
-                            "The model ended with an unsupported completion reason.",
-                        ));
-                    }
-                });
-            }
+            self.completion = completion;
         }
         Ok(())
     }
@@ -370,6 +375,71 @@ impl Reply {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn terminal_payloads_are_validated_before_delivery() -> Result<()> {
+        for (reason, expected) in [
+            ("content_filter", None),
+            ("tool_calls", None),
+            ("unknown", None),
+            ("stop", Some(Completion::Finished)),
+            ("length", Some(Completion::TokenLimit)),
+        ] {
+            let mut sse = Sse::default();
+            let mut delivered = Vec::new();
+            sse.push(
+                b"data: {\"choices\":[{\"delta\":{\"content\":\"Prior answer\",\"reasoning_content\":\"Prior reasoning\"}}]}\n\n",
+                &mut |text, reasoning| {
+                    delivered.push((text.into_owned(), reasoning.into_owned()));
+                    Ok(())
+                },
+            )?;
+            let terminal = format!(
+                "data: {{\"choices\":[{{\"delta\":{{\"content\":\" terminal answer\",\"reasoning_content\":\" terminal reasoning\"}},\"finish_reason\":\"{reason}\"}}]}}\n\n"
+            );
+            let result = sse.push(terminal.as_bytes(), &mut |text, reasoning| {
+                delivered.push((text.into_owned(), reasoning.into_owned()));
+                Ok(())
+            });
+            if let Some(completion) = expected {
+                result?;
+                sse.push(b"data: [DONE]\n\n", &mut |_, _| Ok(()))?;
+                assert_eq!(sse.finish()?, completion);
+                assert_eq!(delivered.len(), 2);
+                assert_eq!(
+                    sse.into_answer(),
+                    (
+                        "Prior answer terminal answer".into(),
+                        "Prior reasoning terminal reasoning".into(),
+                    )
+                );
+            } else {
+                assert!(result.is_err(), "accepted unsupported reason {reason}");
+                assert_eq!(
+                    delivered,
+                    [("Prior answer".into(), "Prior reasoning".into())]
+                );
+                assert!(sse.finish().is_err());
+                assert!(sse.reply.completion.is_none());
+                assert_eq!(
+                    sse.into_answer(),
+                    ("Prior answer".into(), "Prior reasoning".into())
+                );
+            }
+        }
+
+        let mut sse = Sse::default();
+        assert!(
+            sse.push(
+                b"data: {\"choices\":[{\"delta\":{\"content\":\"answer\"},\"finish_reason\":\"stop\"}]}\n\n",
+                &mut |_, _| Err(Failure::Message("Synthetic cancelled delivery")),
+            )
+            .is_err()
+        );
+        assert!(sse.reply.completion.is_none());
+        assert!(sse.finish().is_err());
+        Ok(())
+    }
 
     #[test]
     fn delta_callbacks_borrow_unescaped_text_and_own_escaped_text() -> Result<()> {
