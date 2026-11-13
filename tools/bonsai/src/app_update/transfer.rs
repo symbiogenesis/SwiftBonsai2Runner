@@ -49,18 +49,7 @@ fn curl(working: &Path) -> crate::Result<PathBuf> {
             crate::startup_process::unique()
         )),
     )?;
-    let words: Vec<_> = result.stdout.split_whitespace().take(2).collect();
-    let version: Vec<_> = words
-        .get(1)
-        .unwrap_or(&"")
-        .split('.')
-        .take(2)
-        .map(str::parse::<u32>)
-        .collect();
-    if result.code != 0
-        || words.first() != Some(&"curl")
-        || !matches!(version.as_slice(), [Ok(major), Ok(minor)] if *major > 8 || (*major == 8 && *minor >= 4))
-    {
+    if result.code != 0 || !crate::startup_download::compatible_curl(&result.stdout) {
         return Err(
             "Application updates require Windows curl 8.4 or newer for bounded downloads.".into(),
         );

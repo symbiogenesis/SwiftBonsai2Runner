@@ -198,7 +198,7 @@ fn curl_arguments(uri: &str, partial: &Path, offset: u64, bytes: u64) -> Vec<OsS
     arguments
 }
 
-fn compatible_curl(output: &str) -> bool {
+pub(crate) fn compatible_curl(output: &str) -> bool {
     let mut words = output.split_whitespace();
     if words.next() != Some("curl") {
         return false;
@@ -1649,6 +1649,11 @@ mod tests {
         assert!(compatible_curl("curl 8.4.0 (Windows) libcurl/8.4.0"));
         assert!(compatible_curl("curl 9.0.0"));
         assert!(!compatible_curl("curl 8.3.1"));
+        assert!(!compatible_curl("curl 7.99.0"));
+        assert!(!compatible_curl("curl 8"));
+        assert!(!compatible_curl("curl 8.bad.0"));
+        assert!(!compatible_curl("curl 18446744073709551616.4.0"));
+        assert!(!compatible_curl("other 8.4.0"));
         assert!(!compatible_curl("unknown"));
         let arguments = curl_arguments("https://example.com/file", Path::new("partial"), 7, 11);
         assert!(
