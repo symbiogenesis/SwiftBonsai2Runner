@@ -382,6 +382,16 @@ impl State {
                 config,
                 speech_pending,
             }) => {
+                if self.setup.pausing {
+                    if !speech_pending {
+                        self.startup.take();
+                        self.fail_startup(&io::Error::new(
+                            io::ErrorKind::Interrupted,
+                            "Setup paused.",
+                        ));
+                    }
+                    return;
+                }
                 self.setup.broker = Some(config.broker.clone());
                 self.setup.error = None;
                 self.setup.progress = None;
@@ -395,6 +405,12 @@ impl State {
             }
             Ok(crate::startup::Progress::Speech(result)) => {
                 self.startup.take();
+                if self.setup.pausing && self.worker.is_none() {
+                    self.fail_startup(&result.err().unwrap_or_else(|| {
+                        io::Error::new(io::ErrorKind::Interrupted, "Setup paused.")
+                    }));
+                    return;
+                }
                 match result {
                     Ok(config) => self.attach_speech_configuration(&config),
                     Err(error) => self.fail_speech_preparation(&error),
@@ -428,7 +444,7 @@ impl State {
         if let Some(failure) = &self.startup_failure
             && let Ok(mut failure) = failure.lock()
         {
-            *failure = Some(error.to_string());
+            *failure = (error.kind() != io::ErrorKind::Interrupted).then(|| error.to_string());
         }
         self.fail(setup::failure_message(error));
         self.record(&error.to_string());
@@ -2245,7 +2261,14 @@ pub(super) fn run(config: Config) -> io::Result<()> {
     .map_err(|error| io::Error::other(error.to_string()))
 }
 
+fn prepare_startup_directory(data: &std::path::Path) -> io::Result<()> {
+    bonsai_windows_credentials::validate_external_path(data)?;
+    std::fs::create_dir_all(data)?;
+    bonsai_windows_credentials::validate_external_path(data)
+}
+
 pub(super) fn run_startup(request: crate::startup::Request) -> io::Result<bool> {
+    prepare_startup_directory(&request.data)?;
     // Retain the established recovery ordering: restore before accepting a draft.
     let recovery = crate::recovery::Recovery::open(&request.data);
     let placement = placement::Placement::open(&request.data);
@@ -2309,6 +2332,20 @@ pub(super) fn show_error(message: &str) {
 mod startup_tests {
     use super::*;
     use std::{ffi::OsString, fs, path::PathBuf};
+
+    #[test]
+    fn first_launch_custom_data_directory_opens_persistence_before_setup() -> io::Result<()> {
+        let (_request, directory) = fixture()?;
+        let data = directory.join("new-data");
+        assert!(!data.exists());
+        prepare_startup_directory(&data)?;
+        let recovery = crate::recovery::Recovery::open(&data)?;
+        let appearance = appearance::Store::open(&data)?;
+        drop(recovery);
+        drop(appearance);
+        fs::remove_dir_all(directory)?;
+        Ok(())
+    }
 
     fn fixture() -> io::Result<(crate::startup::Request, PathBuf)> {
         let directory = std::env::temp_dir().join(format!(
@@ -2523,6 +2560,70 @@ mod startup_tests {
         );
         drop(state);
         fs::remove_dir_all(directory)?;
+        Ok(())
+    }
+
+    #[test]
+    fn pausing_setup_discards_queued_model_handoff_and_keeps_speech_cleanup_gate() -> io::Result<()>
+    {
+        for speech_pending in [false, true] {
+            let (request, directory) = fixture()?;
+            let (commands, _incoming) = mpsc::channel();
+            let (_events, incoming_events) = client::event_channel();
+            let mut state = State::pending_startup(commands, incoming_events, request);
+            state.startup_request.take();
+            state.input = "Keep the draft while pausing".into();
+            state.setup.pausing = true;
+            let (session, progress) = crate::startup::Session::fixture();
+            state.startup = Some(session);
+            let config = Config {
+                broker: directory.join("broker.exe"),
+                data: directory.clone(),
+                evidence: directory.clone(),
+                frontend_port: 5173,
+                backend_port: 8081,
+                use_abliterate_lora: false,
+                use_repacked_ptq1: false,
+                native_engine: true,
+                native_row_workers: 4,
+                latest_prompt_reuse: false,
+                kv_cache: None,
+                canary: None,
+                qwen_tts: None,
+            };
+            progress
+                .send(Ok(crate::startup::Progress::Model {
+                    config,
+                    speech_pending,
+                }))
+                .map_err(|_| io::Error::other("Fixture disconnected"))?;
+            state.poll_startup();
+            assert!(
+                state.worker.is_none(),
+                "Pause must beat an unread model handoff"
+            );
+            assert_eq!(state.input, "Keep the draft while pausing");
+            if speech_pending {
+                assert!(
+                    state.startup.is_some(),
+                    "Wait for speech cleanup before retry"
+                );
+                progress
+                    .send(Ok(crate::startup::Progress::Speech(Err(io::Error::other(
+                        "Setup process cleanup could not be confirmed.",
+                    )))))
+                    .map_err(|_| io::Error::other("Fixture disconnected"))?;
+                state.poll_startup();
+                state.retry_setup();
+                assert!(state.startup_request.is_none());
+            } else {
+                assert!(state.startup.is_none());
+                state.retry_setup();
+                assert!(state.startup_request.is_some());
+            }
+            drop(state);
+            fs::remove_dir_all(directory)?;
+        }
         Ok(())
     }
 

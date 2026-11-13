@@ -27,6 +27,7 @@ pub(super) fn failure_message(error: &io::Error) -> &'static str {
         || text.contains("disk full")
         || text.contains("not enough space on the disk")
         || text.contains("os error 112")
+        || text.contains("free storage") && text.contains("is available")
     {
         "Setup needs more free storage. Free some space, then select Retry setup. Your draft is safe."
     } else if text.contains("access is denied")

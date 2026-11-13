@@ -339,6 +339,13 @@ fn prepare_stages(
             return;
         }
     };
+    if cancelled.load(Ordering::Acquire) {
+        let _sent = outgoing.send(Err(io::Error::new(
+            io::ErrorKind::Interrupted,
+            "Native startup was cancelled.",
+        )));
+        return;
+    }
     let broker = config.broker.clone();
     let speech_pending = staged && (request.canary_configured || request.tts_configured);
     if outgoing
@@ -348,8 +355,14 @@ fn prepare_stages(
         }))
         .is_err()
         || !speech_pending
-        || cancelled.load(Ordering::Acquire)
     {
+        return;
+    }
+    if cancelled.load(Ordering::Acquire) {
+        let _sent = outgoing.send(Ok(Progress::Speech(Err(io::Error::new(
+            io::ErrorKind::Interrupted,
+            "Native startup was cancelled.",
+        )))));
         return;
     }
     let _sent = outgoing.send(Ok(Progress::Speech(prepare("speech", Some(&broker)))));
@@ -589,10 +602,14 @@ mod tests {
             let prepares_speech = !cancelled && staged && speech;
             assert_eq!(stages.len(), if prepares_speech { 2 } else { 1 });
             assert_eq!(stages[0], if staged { "model" } else { "all" });
-            assert!(matches!(
-                incoming.try_recv(),
-                Ok(Ok(Progress::Model { .. }))
-            ));
+            let first = incoming.try_recv();
+            if cancelled {
+                assert!(
+                    matches!(first, Ok(Err(error)) if error.kind() == io::ErrorKind::Interrupted)
+                );
+            } else {
+                assert!(matches!(first, Ok(Ok(Progress::Model { .. }))));
+            }
             assert_eq!(incoming.try_recv().is_ok(), prepares_speech);
         }
     }
