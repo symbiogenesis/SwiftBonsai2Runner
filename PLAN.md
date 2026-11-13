@@ -116,9 +116,12 @@ release policy and the broker's fixed model-failure marker control. Tools and UI
 test harnesses stopped before test execution on fixture method/accessibility API
 errors. Those fixtures are corrected locally; their setup/update tests and
 all-target Clippy remain pending owner-hosted Foundation on the corrected source.
-The original eight-minute allowance closed after 135.7 seconds and was not retried.
-AC was connected and battery saver off at both observations, with charge 70% then
-71%; continuous stability and performance were not established.
+Check commands stopped after 135.7 seconds and were not retried. Selected scratch
+evidence and worktrees were removed; the post-cleanup observation was 325.6 seconds
+from the original start, within the same eight-minute maximum. AC was connected
+and battery saver off before/after checks and after cleanup, with charge 70%, 71%
+and 75% respectively. These separate endpoints establish neither uninterrupted
+stability nor performance. No model, installer, network or CI operation ran.
 Replay the new portable updater controls and all-target Rust analysis in hosted
 CI. The local workload (169 seconds through build-cache cleanup) passed
 pinned-compiler preflight, focused Rust formatting and six Markdown checks, then
