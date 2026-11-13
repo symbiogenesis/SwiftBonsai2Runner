@@ -643,6 +643,43 @@ fn repair_inference(request: &Request, working: &Path) -> crate::Result<Value> {
 }
 
 #[cfg(windows)]
+fn stage_publisher_repair(spec: &bonsai_artifacts::RuntimeSpec) -> crate::Result<Option<PathBuf>> {
+    let parent = spec
+        .runtime_directory
+        .parent()
+        .ok_or("Publisher runtime repair needs a parent.")?;
+    let mut candidate = spec.clone();
+    // The shared installer requires its declared destination to be absent.
+    // Leave the invalid installation intact while staging against a fresh
+    // sibling identity, then publish to the actual pinned directory below.
+    candidate.runtime_directory = parent.join(format!(
+        ".chat-runtime-candidate-{}",
+        crate::startup_process::unique()
+    ));
+    let staged = crate::install::run(json!({"schemaVersion":1,"runtime":candidate}))?;
+    let staging = Path::new(text(&staged, "StagingDirectory")?);
+    let expected = staged["RuntimeFiles"]
+        .as_array()
+        .ok_or("Missing staged runtime inventory.")?
+        .iter()
+        .map(|file| {
+            Path::new(text(file, "Path")?)
+                .strip_prefix(staging)
+                .map(Path::to_owned)
+                .map_err(|error| error.to_string())
+        })
+        .collect::<crate::Result<Vec<_>>>()?;
+    let previous = publish_repaired_runtime(staging, &spec.runtime_directory, &expected)?;
+    // A successful rename is not a verification result. Recheck the published
+    // directory against the original locked archive before returning to launch.
+    bonsai_artifacts::VerifiedRuntime::verify_with(spec, || {
+        crate::startup_cancel::checkpoint().map_err(|_| bonsai_artifacts::ArtifactError::Cancelled)
+    })
+    .map_err(|error| format!("The published runtime could not be verified: {error}"))?;
+    Ok(previous)
+}
+
+#[cfg(windows)]
 fn repair_engine(request: &Request, working: &Path) -> crate::Result<Value> {
     let lock = read_lock(request.lock_path.as_deref(), REFERENCE)?;
     model_lock(&lock)?;
@@ -687,20 +724,7 @@ fn repair_engine(request: &Request, working: &Path) -> crate::Result<Value> {
     .is_err()
     {
         crate::startup_cancel::checkpoint()?;
-        let staged = crate::install::run(json!({"schemaVersion":1,"runtime":spec}))?;
-        let staging = Path::new(text(&staged, "StagingDirectory")?);
-        let expected = staged["RuntimeFiles"]
-            .as_array()
-            .ok_or("Missing staged runtime inventory.")?
-            .iter()
-            .map(|file| {
-                Path::new(text(file, "Path")?)
-                    .strip_prefix(staging)
-                    .map(Path::to_owned)
-                    .map_err(|error| error.to_string())
-            })
-            .collect::<crate::Result<Vec<_>>>()?;
-        publish_repaired_runtime(staging, &destination, &expected)?;
+        stage_publisher_repair(&spec)?;
     }
     engine(request, working)
 }
@@ -1330,6 +1354,81 @@ mod tests {
             b"old"
         );
         assert!(!staging.exists());
+        fs::remove_dir_all(root).map_err(|error| error.to_string())
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn publisher_setup_repairs_existing_runtime_through_fresh_verified_staging() -> crate::Result<()>
+    {
+        use sha2::{Digest as _, Sha256};
+        use std::io::Cursor;
+        use zip::{ZipWriter, write::SimpleFileOptions};
+
+        let root = std::env::temp_dir().join(format!(
+            "Bonsai-PublisherRepair-{}",
+            crate::startup_process::unique()
+        ));
+        let destination = root.join("runtime");
+        fs::create_dir_all(&destination).map_err(|error| error.to_string())?;
+        let executable = destination.join("llama-server.exe");
+        fs::write(&executable, b"old incomplete runtime").map_err(|error| error.to_string())?;
+        let mut image = vec![0; 128];
+        image[..2].copy_from_slice(b"MZ");
+        image[60..64].copy_from_slice(&64_u32.to_le_bytes());
+        image[64..70].copy_from_slice(&[b'P', b'E', 0, 0, 0x64, 0xaa]);
+        let mut zip = ZipWriter::new(Cursor::new(Vec::new()));
+        for (name, bytes) in [
+            ("llama-server.exe", image.as_slice()),
+            ("share/LICENSE", b"fixture license".as_slice()),
+        ] {
+            zip.start_file(name, SimpleFileOptions::default())
+                .map_err(|error| error.to_string())?;
+            zip.write_all(bytes).map_err(|error| error.to_string())?;
+        }
+        let bytes = zip
+            .finish()
+            .map_err(|error| error.to_string())?
+            .into_inner();
+        let archive = root.join("runtime.zip");
+        fs::write(&archive, &bytes).map_err(|error| error.to_string())?;
+        let spec = bonsai_artifacts::RuntimeSpec {
+            archive_path: archive,
+            runtime_directory: destination,
+            archive_bytes: u64::try_from(bytes.len()).map_err(|error| error.to_string())?,
+            archive_sha256: crate::identity::hex(&Sha256::digest(&bytes)),
+        };
+        // Exercise the shared installer's real absent-destination requirement,
+        // so passing the existing final directory to staging regresses this test.
+        assert!(crate::install::run(json!({"schemaVersion":1,"runtime":spec})).is_err());
+        let mut bad_pin = spec.clone();
+        bad_pin.archive_sha256 = "0".repeat(64);
+        assert!(stage_publisher_repair(&bad_pin).is_err());
+        assert_eq!(
+            fs::read(&executable).map_err(|error| error.to_string())?,
+            b"old incomplete runtime"
+        );
+        let previous = stage_publisher_repair(&spec)?.ok_or("Previous runtime was lost.")?;
+        assert_eq!(
+            fs::read(previous.join("llama-server.exe")).map_err(|error| error.to_string())?,
+            b"old incomplete runtime"
+        );
+        assert_eq!(
+            fs::read(&executable).map_err(|error| error.to_string())?,
+            image
+        );
+        assert_eq!(
+            fs::read(spec.runtime_directory.join("share/LICENSE"))
+                .map_err(|error| error.to_string())?,
+            b"fixture license"
+        );
+        assert!(bonsai_artifacts::VerifiedRuntime::verify(&spec).is_ok());
+        fs::write(&executable, b"changed again").map_err(|error| error.to_string())?;
+        stage_publisher_repair(&spec)?;
+        assert_eq!(
+            fs::read(&executable).map_err(|error| error.to_string())?,
+            image
+        );
         fs::remove_dir_all(root).map_err(|error| error.to_string())
     }
 
