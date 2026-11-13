@@ -20,7 +20,7 @@ acceptance remain pending.
 | Sampler | Temperature **1**, top-p **0.95**, top-k **20**, min-p **0** | Matches Swift's published evaluation configuration and Qwen's thinking guidance |
 | Penalties | Repetition **1**, presence **0**, frequency **0** | No additional repetition/logit correction by default |
 | Added system prompt | None | Retain publisher instructions and user-supplied task/voice constraints |
-| Generation harness | One completion, EOS honored | No automatic critique/rewrite, forced extra thinking, majority voting or best-of-N |
+| Standard generation harness | One completion, EOS honored | No automatic critique/rewrite, forced extra thinking, majority voting or best-of-N; the app's opt-in Extra effort runs separate passes |
 | Assistant history | Preserve supplied `reasoning_content` with `preserve_thinking: true` | Both verified templates support replaying prior assistant reasoning |
 | Attention / recurrent state | K4/V4 (`rsq4`) in the 0.1.27 development pin; F32 recurrent/convolution state | Owner-selected approximate cache; measured quality/memory qualification remains pending, with explicit FP16 recovery |
 | Context handling | Exact rendered token count; reject overflow | Preserve supplied history rather than silently shifting or truncating it |

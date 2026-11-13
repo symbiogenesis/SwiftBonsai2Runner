@@ -84,9 +84,10 @@ The [native Rust reference](https://github.com/symbiogenesis/prism-inference/blo
 uses independently published GGUF/ternary/Prism crates. Its graph/scalar numerical
 code follows pinned Prism sources; preserve
 [PRISM-LICENSE.txt](https://github.com/symbiogenesis/prism-inference/blob/main/PRISM-LICENSE.txt)
-and root NOTICE. The optional `fearless_simd` pin, checksum and technical review
-live in the [dependency audit](dependency-audit.md#native-inference-source-review);
-its license options appear in the dependency table above.
+and root NOTICE. [Cargo.lock](../Cargo.lock) owns Runner's `fearless_simd` pin and
+checksum; the external runtime has an independent lock. See the
+[dependency choices](dependency-audit.md#direct-dependency-decisions) for its
+current consumers and the dependency table above for license options.
 
 The reviewed OxiBonsai v0.2.3 source is revision
 `1d10c48e14754ff6999158f8fa13c7c92b40b0dc`. Its selected GGUF/NEON sources

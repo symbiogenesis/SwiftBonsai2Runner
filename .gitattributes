@@ -1,36 +1,7 @@
-# Keep retained observation selection bytes stable for their recorded SHA-256.
-# Keep the current PTQ1 release decision and independent reviews portable.
-docs/evidence/token-timing-20261103/** -text -whitespace
-
-# Preserve the closed README timing attempt, source and offline recovery hashes.
-docs/evidence/readme-performance-20261109/** -text -whitespace
-docs/evidence/readme-performance-20261109-attempt2/** -text -whitespace
-
-# Preserve the explicitly authorized fresh README capture and its source receipts.
-docs/evidence/readme-performance-20261109-refresh/** -text -whitespace
-
-# Keep the final-source crates.io delivery declaration and receipts byte-identical.
-docs/evidence/prism-0123-registry-20261109/** -text -whitespace
-docs/evidence/prism-0123-publish-20261109/** -text -whitespace
-docs/evidence/foundation-bundle-0123-20261109/** -text -whitespace
-docs/evidence/foundation-bundle-0123-20261109-attempt2/** -text -whitespace
-docs/evidence/foundation-bundle-0123-20261109-attempt3/** -text -whitespace
-docs/evidence/readme-performance-0123-20261109/** -text -whitespace
-
-docs/evidence/local-throughput-20261103/** -text -whitespace
-
-docs/evidence/ptq1-primetime-*-20261103.json text eol=lf
-
-# Preserve the original bounded blocker-fix validation receipt and logs.
-docs/evidence/ptq1-unblock-20261103/** -text -whitespace
-
-docs/evidence/inference-efficiency-local-20261103/** -text -whitespace
-docs/evidence/inference-efficiency-followup-20261103/** -text -whitespace
-docs/evidence/prism-0114-primetime-validation-20261103/** -text -whitespace
-docs/evidence/native-owner-packet-controls-20261103/** -text -whitespace
+# Preserve the retained Hexagon control records and request template.
 docs/evidence/hexagon-advance-controls.json text eol=lf
-docs/evidence/hexagon-x2-dispatch.json text eol=lf
 docs/evidence/hexagon-x2-session-metadata.json text eol=lf
+docs/evidence/hexagon-adapter-session-20261103/** -text -whitespace
 
 # Keep native collector ABI observations and provenance byte-identical.
 tools/native-reference/fixtures/collector-abi-v1.txt text eol=lf
@@ -38,72 +9,21 @@ tools/native-reference/fixtures/collector-abi-v1.provenance.json text eol=lf
 tools/native-reference/fixtures/LICENSE.llama-reference text eol=lf
 tools/native-reference/swift_ptq1_reference.rs text eol=lf
 
-# Preserve original CRLF/LF bytes of retained hosted SDK inventory receipts.
+# Preserve original hosted SDK provenance bytes.
 docs/evidence/hexagon-sdk-inventory-41168523349/*.json -text
-
-# Preserve the second hosted SDK recipe/license metadata receipt bytes.
 docs/evidence/hexagon-sdk-inventory-41168872514/*.json -text
-
-# Preserve the third hosted SDK functional-token/NOTICE metadata receipt bytes.
 docs/evidence/hexagon-sdk-functional-41171339745/*.json -text
 
-# Preserve captured source/log bytes, including original observation whitespace.
+# Preserve public QAIC observations, replay inputs and notices.
 docs/evidence/hexagon-public-qaic-41169481882/** -text -whitespace
-
-# Keep public mock source/expectation pins stable across Windows and hosted Linux.
-tools/hexagon/public_qaic_wire.c text eol=lf
-tools/hexagon/public-qaic-wire.expected.json text eol=lf
-tools/hexagon/public_idl_control.rs text eol=lf
-
-# Preserve curated losing/standard-mode public observations as original data bytes.
 docs/evidence/hexagon-public-qaic-41170405233/** -text -whitespace
 docs/evidence/hexagon-public-qaic-41171073546/** -text -whitespace
-
-# Preserve final public wire evidence and the separate standard-mode compile refusal.
 docs/evidence/hexagon-public-qaic-41171859264/** -text -whitespace
 docs/evidence/hexagon-public-qaic-41171448060/** -text -whitespace
 
-# Preserve exact hosted adapter-direction inputs, result and review receipt bytes.
-docs/evidence/ptq1-direction-41530766802/*.json -text whitespace=cr-at-eol
-
-# Preserve any exact receipts from the bounded 0.1.13 lifecycle attempt.
-docs/evidence/ptq1-0113-lifecycle-*/*.json -text whitespace=cr-at-eol
-
-# Preserve the frozen bb020f4 promotion input, policy, score and reviewed raw evidence.
-docs/evidence/ptq1-promotion-bb020f4.json -text whitespace=cr-at-eol
-docs/evidence/ptq1-promotion-bb020f4-review.json -text whitespace=cr-at-eol
-docs/evidence/ptq1-promotion-bb020f4/** -text whitespace=cr-at-eol
-
-# Preserve the frozen 0.1.13 score and independently reviewed partial service data.
-docs/evidence/ptq1-promotion-bb020f4-service-90a62b9-review.json -text whitespace=cr-at-eol
-
-# Keep hosted public queue ABI inputs and Rust/C control sources portable.
+# Keep public queue/wire control sources and pins portable.
+tools/hexagon/public_qaic_wire.c text eol=lf
+tools/hexagon/public-qaic-wire.expected.json text eol=lf
+tools/hexagon/public_idl_control.rs text eol=lf
 tools/hexagon/windows_queue_abi.* text eol=lf
 tools/hexagon/windows-queue-abi.lock.json text eol=lf
-
-# Preserve original hosted retained-capture audit report bytes.
-docs/evidence/ptq1-retained-audit-*/*.json -text whitespace=cr-at-eol
-
-# Preserve selected rollback owner/build/acceptance and independent review bytes.
-docs/evidence/ptq1-rollback-41573164864/** -text whitespace=cr-at-eol
-
-# Preserve exact service trial receipts and independently retained hosted metadata.
-docs/evidence/ptq1-service-41577882160/** -text whitespace=cr-at-eol
-
-# Retain exact terminal owning-CI and main-ancestor metadata for release 0.1.14.
-docs/evidence/ptq1-context-owning-ci-9e/** -text -whitespace
-# Preserve the source-only public reconstruction route producer record bytes.
-docs/evidence/ptq1-public-authoring-route.json -text whitespace=cr-at-eol
-
-# Preserve exact independently observed 0.1.14 publication metadata.
-docs/evidence/ptq1-context-publication-014/** -text -whitespace
-
-# Preserve exact HMX capture, rejected supervisor and offline-replay evidence bytes.
-docs/evidence/hexagon-hmx-session-20261103/** -text -whitespace
-
-# Preserve failed adapter-probe receipts, power observations and raw tool output.
-docs/evidence/hexagon-adapter-session-20261103/** -text -whitespace
-
-# Preserve passed adapter/cache observations and their raw SHA-256 manifest bytes.
-docs/evidence/npu-adapter-progress-20261103/** -text -whitespace
-docs/evidence/npu-host-reduction-20261103/** -text -whitespace

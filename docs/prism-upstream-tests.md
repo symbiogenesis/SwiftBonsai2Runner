@@ -8,8 +8,7 @@ guide](https://github.com/symbiogenesis/prism-inference/blob/main/docs/prism-ups
 [migration inventory](https://github.com/symbiogenesis/prism-inference/blob/main/tools/prism/upstream/migration.json),
 [main-only workflow](https://github.com/symbiogenesis/prism-inference/blob/main/.github/workflows/runtime-conformance.yml)
 and
-[focused diagnostics](https://github.com/symbiogenesis/prism-inference/blob/main/.github/workflows/prism-focused.yml)
-.
+[focused diagnostics](https://github.com/symbiogenesis/prism-inference/blob/main/.github/workflows/prism-focused.yml).
 This page defines Runner's boundary; [PLAN.md](../PLAN.md#deferred-prism-migration)
 owns deferred migration.
 
