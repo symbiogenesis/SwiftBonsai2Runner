@@ -13,6 +13,7 @@ use bonsai_artifacts::{hash_reader, is_redirect, validate_external_path};
 use serde::Deserialize;
 use serde_json::{Value, json};
 
+use crate::hexagon_policy::{SOURCE_NAMES, TOOLCHAIN};
 use crate::{Result, identity, startup_cache, startup_process};
 
 mod device;
@@ -21,23 +22,7 @@ mod model_device;
 mod preflight;
 mod projection_build;
 
-const TOOLCHAIN: &str = "nightly-2026-11-12-aarch64-pc-windows-msvc";
 const TARGET: &str = "aarch64-pc-windows-msvc";
-const NATIVE_INPUTS: &[&str] = &[
-    "lib.rs",
-    "windows.rs",
-    "mapping.rs",
-    "session.rs",
-    "session_native.rs",
-    "session_mapping.rs",
-    "session_mapping_native.rs",
-    "compute.rs",
-    "compute_native.rs",
-    "projection.rs",
-    "projection_native.rs",
-    "query.rs",
-    "sources.json",
-];
 
 #[derive(Deserialize)]
 #[serde(
@@ -355,7 +340,7 @@ fn dispatch(mut context: Context) -> Result<Value> {
         .and_then(|()| fs::create_dir(&native_bundle))
         .map_err(|error| error.to_string())?;
     let native_source = context.repo.join("tools/hexagon/native_rpc");
-    let sources = context.input_set(&native_source, NATIVE_INPUTS)?;
+    let sources = context.input_set(&native_source, SOURCE_NAMES)?;
     let library = native.join("libhexagon_native_rpc.rlib");
     let query = native.join("native-hexagon-query.exe");
     let contract = native.join("native-hexagon-contract.exe");
