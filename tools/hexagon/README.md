@@ -27,6 +27,15 @@ New SDK or wire coverage needs a separately reviewed hosted workload. Existing
 provenance snapshots cannot replace unavailable replay bytes or close the Windows,
 SDK or device gates in PLAN.
 
+Hosted diagnostic compilation selects `rust-lld.exe` from the pinned Rust
+toolchain, matching the packed-artifact builder. Fresh build receipts bind its
+ARM64 image, size and SHA-256, and native process ownership still rejects and
+stops surviving descendants. The focused
+`hexagon_tools::tests::hexagon_hosted_compiler_closes_its_owned_process_tree`
+regression compiles the actual dispatch fixture through that strict runner and
+executes only its model-free self-test. A direct compiler/self-test check does
+not establish that regression or cold Cargo host/target process-tree acceptance.
+
 An optional raw PQ2 fixture can be checked with
 `-Payload ABSOLUTE_FIXTURE_PATH -Columns 384 -Rows 2`. The fixture must contain
 exactly the declared complete rows, at most 1 MiB. This is a raw packed fixture,

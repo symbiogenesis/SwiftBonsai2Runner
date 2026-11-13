@@ -22,8 +22,9 @@ under [AGENTS.md](AGENTS.md).
 - [ ] **C1 — Qualify current CI source.** Require owner-operated Source checks,
   Foundation and dependency-audit acceptance for the published startup,
   staged-index, ASR/UI fixture, workflow-consolidation and dependency corrections,
-  syntax/selector guards, portable compiler-cache recovery and separate hosted/device
-  scheduling. Verify cold/hit/input-change paths and independent push handoffs.
+  syntax/selector guards, portable and planner compiler-cache recovery, portable
+  environment fixtures and separate hosted/device scheduling. Verify
+  cold/hit/input-change paths, failed-regression recovery and independent push handoffs.
   Follow the [startup preflight](tools/ci/README.md#action-dependency-pins) before
   workflow changes and verify supported self-hosted runner versions.
 - [ ] Qualify Runner's checked-tools producer, shared regression runner and
@@ -31,8 +32,10 @@ under [AGENTS.md](AGENTS.md).
   fresh same-run packages, source/digest verification and every selected check.
 - [ ] Complete owning-lane compiler/analyzer and focused regression acceptance
   for centralized UI bounded reads, TTS numerical/GGUF primitives and tools
-  release/Hexagon validation. The Hexagon inventory alias correction still needs
-  compiled verification; the local Windows process-identity control passed.
+  release/Hexagon validation. The Hexagon inventory alias correction and pinned-linker
+  process-tree regression still need compiled owning-lane verification, including
+  cold Cargo host/target links; the local direct diagnostic compile/self-test and
+  Windows process-identity control passed.
 - [ ] Qualify compiler-cache recovery after failed analyzers/tests, immutable
   exact hits, cancelled/setup-failure skips and nonblocking optional saves.
   Qualify same-run publication recovery from partial drafts and ambiguous API

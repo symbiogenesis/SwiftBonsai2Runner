@@ -345,6 +345,13 @@ warm and failed-check recovery acceptance remains pending under C1.
 A self-hosted cache miss never compiles the CI bootstrap. Rust tests own feature,
 batching, selection, suite guards, caller identity and immutable publication.
 
+The Linux Foundation planner uses the same separate restore/save policy for
+compiler outputs. Its orchestration fixtures run before Cargo; only an attempted
+Cargo regression step permits an optional save, including after a regression
+failure. Setup/fixture failures, cancellation and immutable exact hits skip saves.
+Every fixture, Rust regression, impact selection and executable publication still
+runs on cache hits. The cache contains build inputs/outputs, never gate results.
+
 ## Action dependency pins
 
 Keep every external action and reusable-workflow `uses:` reference at a full
