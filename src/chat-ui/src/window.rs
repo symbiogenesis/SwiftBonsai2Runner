@@ -166,6 +166,10 @@ struct State {
     audio_import: Option<crate::audio_import::Session>,
     audio_file_generation: u64,
     audio_file_active: bool,
+    audio_file_notice: Option<String>,
+    audio_file_transcript: String,
+    audio_file_error: bool,
+    show_audio_transcript: bool,
     native_owner: Option<isize>,
     audio_paste: Option<crate::audio_import::PasteHook>,
     speech_output: bool,
@@ -271,6 +275,10 @@ impl State {
             audio_import: None,
             audio_file_generation: 0,
             audio_file_active: false,
+            audio_file_notice: None,
+            audio_file_transcript: String::new(),
+            audio_file_error: false,
+            show_audio_transcript: false,
             native_owner: None,
             audio_paste: None,
             speech_output: false,
@@ -588,8 +596,12 @@ impl State {
                 })
             })
         {
-            self.cancel_microphone();
-            "Voice message cancelled.".clone_into(&mut self.speech_status);
+            if self.audio_file_active {
+                self.cancel_audio_file();
+            } else {
+                self.cancel_microphone();
+                "Voice message cancelled.".clone_into(&mut self.speech_status);
+            }
         }
         if self.rename_conversation.is_some()
             || self.delete_conversation.is_some()
@@ -932,7 +944,13 @@ impl State {
         self.speech_input = false;
         self.audio_file_input = false;
         self.speech_output = false;
-        self.cancel_microphone();
+        if self.audio_file_active {
+            self.fail_audio_file(
+                "The speech worker stopped. Restart the app and try the recording again.",
+            );
+        } else {
+            self.cancel_microphone();
+        }
         self.speaking = false;
         self.speaking_message = None;
         self.streaming_active = false;
@@ -943,7 +961,11 @@ impl State {
 
     fn stop_speech(&mut self) {
         let was_active = self.speaking || self.dictation_requested || self.listening;
-        self.cancel_microphone();
+        if self.audio_file_active {
+            self.cancel_audio_file();
+        } else {
+            self.cancel_microphone();
+        }
         if let Some(session) = &self.speech {
             let _result = session.commands.send(speech::Command::StopSpeaking);
         }
@@ -980,7 +1002,9 @@ impl State {
 
     fn toggle_dictation(&mut self) {
         self.speech_notice = true;
-        if self.dictation_requested {
+        if self.audio_file_active {
+            self.cancel_audio_file();
+        } else if self.dictation_requested {
             self.finish_dictation();
         } else if !self.speech_input && (self.speech_checked || !self.canary_configured) {
             let message = self.microphone_help();
@@ -1105,7 +1129,11 @@ impl State {
                     self.speech_input = false;
                     self.audio_file_input = false;
                     self.speech_output = false;
-                    self.cancel_microphone();
+                    if self.audio_file_active {
+                        self.fail_audio_file("The speech worker disconnected. Restart the app and try the recording again.");
+                    } else {
+                        self.cancel_microphone();
+                    }
                     self.speaking = false;
                     self.speaking_message = None;
                     self.streaming_active = false;
@@ -1142,15 +1170,25 @@ impl State {
             }
             speech::Event::Listening(listening) => {
                 self.listening = listening && self.dictation_requested;
-                if self.listening {
+                // StopListening also acknowledges file cleanup. It must not
+                // overwrite file progress, success, cancellation or errors.
+                if !self.audio_file_active && self.listening {
                     "Recording. Click the microphone to transcribe and send; Escape cancels."
-                } else if self.dictation_requested {
-                    "Microphone enabled."
-                } else {
-                    "Microphone off."
+                        .clone_into(&mut self.speech_status);
+                } else if !self.audio_file_active && self.dictation_requested {
+                    "Microphone enabled.".clone_into(&mut self.speech_status);
                 }
-                .clone_into(&mut self.speech_status);
             }
+            speech::Event::FileProgress {
+                generation,
+                message,
+            } => {
+                if self.audio_file_active && self.microphone_generation == Some(generation) {
+                    self.audio_file_notice = Some(message);
+                }
+            }
+            speech::Event::FilePart { generation, text } => self.audio_file_part(generation, &text),
+            speech::Event::FileFinished { generation } => self.finish_audio_file(generation),
             speech::Event::Recognized { generation, text } => {
                 if self.dictation_requested
                     && self.dictation_finishing
@@ -1189,7 +1227,11 @@ impl State {
                 message,
             } => {
                 if self.dictation_requested && self.microphone_generation == Some(generation) {
-                    self.cancel_microphone();
+                    if self.audio_file_active {
+                        self.fail_audio_file(message);
+                    } else {
+                        self.cancel_microphone();
+                    }
                     message.clone_into(&mut self.speech_status);
                     self.speech_notice = true;
                 }
@@ -1232,6 +1274,13 @@ impl State {
         let text = text.trim();
         if text.is_empty() {
             "No speech recognized. Your draft was kept.".clone_into(&mut self.speech_status);
+            if from_file {
+                self.audio_file_notice = Some(self.speech_status.clone());
+            }
+            return;
+        }
+        if from_file && !self.audio_file_fits_composer(text) {
+            self.audio_file_notice = Some("Transcription complete. View or copy the full transcript below. It exceeds the chat prompt size, so no message was sent. Your draft was kept.".to_owned());
             return;
         }
         let complete = self.insert_dictation(text);
@@ -1260,6 +1309,9 @@ impl State {
                 "Voice message transcribed. Select Send when the model is ready."
             }
             .clone_into(&mut self.speech_status);
+        }
+        if from_file {
+            self.audio_file_notice = Some(self.speech_status.clone());
         }
         self.focus_composer = true;
     }
@@ -1744,6 +1796,7 @@ impl State {
             ui.add_space(margin);
             ui.vertical(|ui| {
                 ui.set_width(width);
+                self.audio_file_status(ui);
                 egui::Frame::new()
                     .fill(ui.visuals().faint_bg_color)
                     .corner_radius(14)
@@ -1905,6 +1958,9 @@ impl State {
                     |ui| {
                         ui.label(RichText::new(&status).small().weak());
                         if self.help.is_none()
+                            && (self.audio_file_notice.is_none()
+                                || (!self.audio_file_active
+                                    && (self.dictation_requested || self.speaking)))
                             && (self.speech_notice || self.dictation_requested || self.speaking)
                         {
                             ui.label(RichText::new(&self.speech_status).small());
@@ -2022,6 +2078,7 @@ impl State {
         self.diagnostics(&ctx);
         self.conversation_dialogs(&ctx);
         self.iteration_dialog(&ctx);
+        self.audio_transcript_dialog(&ctx);
         if let Some((title, message)) = self.help {
             let mut open = true;
             egui::Window::new(title)

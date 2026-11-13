@@ -497,11 +497,17 @@ in owner-managed CI.
 Qualify composer audio-file input with the pinned Qwen3-ASR 1.7B model on
 Windows ARM64: native plus-button picker, Explorer file paste with composer focus,
 MP3/WAV and installed-decoder M4A/AAC/FLAC/WMA, mono/stereo rate conversion, empty,
-malformed, unsupported, over-64-MiB and over-30-second rejection without truncation.
+malformed and unsupported files; recordings above the former 64-MiB/30-second
+limits; sequential segment/tail coverage without truncation; and admission using
+available physical RAM and commit, including unknown or falling memory.
 Confirm file import requires no microphone permission, preserves the draft on failure,
 inserts at the selection/cursor and submits exactly one ordinary text prompt when
 Swift is ready. Cover unavailable Swift without deferred send, Escape, switching,
-closing, late results, ASR/TTS exclusion and owned-worker cleanup. Source checks
+closing, late results, ASR/TTS exclusion and owned-worker cleanup. Verify visible
+progress/Cancel and persistent actionable rejection messages survive microphone
+cleanup, full/partial transcript view/copy, and complete oversized transcripts
+without composer truncation or automatic submission. Qualify Windows duration
+metadata and segment trimming/seeking on long compressed recordings. Source checks
 cannot qualify native picker/clipboard behavior, real audio conversion, transcript
 accuracy or actual-model submission; owner-managed acceptance remains pending.
 The single 33.35-second local source check passed whitespace, formatting and the
@@ -511,6 +517,14 @@ ran. Those source findings were corrected without retrying the closed trial;
 final all-target analysis and attachment/normalization regressions remain pending in
 owner-managed CI. Both power endpoints reported AC connected, battery saver off
 and 100% charge; endpoints establish no uninterrupted stability or performance.
+Replay the long-file and visible-feedback controls with the explicitly pinned
+compiler. The 164-second local pass passed source formatting, Markdown and
+whitespace, but test compilation selected the older temporary-directory compiler
+and rejected the file-session send-error type before executing tests. The error
+type is corrected locally; this closed trial was not retried. Final focused audio
+regressions and all-target analysis remain pending. Both endpoints reported
+battery power, saver off, with charge falling from 27% to 25%; no performance
+claim or continuous power stability is established.
 
 Qualify conversation switching, creation, deletion and per-conversation drafts
 during native startup, generation and after preparation failure. Confirm background

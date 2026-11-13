@@ -68,6 +68,7 @@ pub(super) fn fixture_channel() -> (Sender, mpsc::Receiver<Envelope>) {
 const fn bytes(command: &Command) -> usize {
     match command {
         Command::Transcribe { wav, .. } => wav.len(),
+        Command::TranscribeFile { first, .. } => first.wav.len(),
         Command::Speak {
             text,
             voice_description,
@@ -79,7 +80,10 @@ const fn bytes(command: &Command) -> usize {
 }
 
 const fn is_input(command: &Command) -> bool {
-    matches!(command, Command::Transcribe { .. } | Command::StopListening)
+    matches!(
+        command,
+        Command::Transcribe { .. } | Command::TranscribeFile { .. } | Command::StopListening
+    )
 }
 
 impl Queue {
@@ -148,7 +152,7 @@ impl Sender {
                 queue.stream_units = 0;
                 queue.stream = StreamState::Open;
             }
-            Command::Transcribe { .. } => {
+            Command::Transcribe { .. } | Command::TranscribeFile { .. } => {
                 queue.retain(|command| {
                     matches!(command, Command::StopListening | Command::Shutdown)
                 });

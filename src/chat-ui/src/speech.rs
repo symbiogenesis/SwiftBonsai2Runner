@@ -22,6 +22,7 @@ use std::{
     time::{Duration, Instant},
 };
 mod command_queue;
+mod file_input;
 mod pipeline;
 mod segmentation;
 mod stream;
@@ -39,6 +40,11 @@ pub(crate) enum Command {
     Transcribe {
         generation: u64,
         wav: Vec<u8>,
+    },
+    TranscribeFile {
+        generation: u64,
+        first: crate::audio_import::Chunk,
+        import: crate::audio_import::Session,
     },
     StopListening,
     Speak {
@@ -71,6 +77,17 @@ pub(crate) enum Event {
         generation: u64,
         message: &'static str,
     },
+    FileProgress {
+        generation: u64,
+        message: String,
+    },
+    FilePart {
+        generation: u64,
+        text: String,
+    },
+    FileFinished {
+        generation: u64,
+    },
     Status(&'static str),
     Speaking {
         generation: u64,
@@ -98,7 +115,7 @@ pub(crate) struct Commands {
     current_input: Arc<AtomicU64>,
 }
 impl Commands {
-    pub(crate) fn send(&self, command: Command) -> Result<(), mpsc::SendError<Command>> {
+    pub(crate) fn send(&self, command: Command) -> Result<(), mpsc::SendError<()>> {
         if matches!(
             &command,
             Command::StopListening
@@ -115,6 +132,7 @@ impl Commands {
                 | Command::StopSpeaking
                 | Command::Shutdown
                 | Command::Transcribe { .. }
+                | Command::TranscribeFile { .. }
         ) {
             self.current_output
                 .fetch_add(1, Ordering::AcqRel)
@@ -130,7 +148,10 @@ impl Commands {
                 },
                 &self.current_output,
             )
-            .map_err(|error| mpsc::SendError(error.0.command))
+            // File input owns a Send-only receiver. Failure reports channel
+            // closure without embedding that session in a Sync error object.
+            // Dropping a rejected command still cancels and joins its worker.
+            .map_err(|_| mpsc::SendError(()))
     }
 }
 
@@ -512,6 +533,33 @@ fn run(
                     input.clear();
                 }
                 let _sent = events.send(Event::Listening(false));
+            }
+            Ok(Envelope {
+                command:
+                    Command::TranscribeFile {
+                        generation,
+                        first,
+                        import,
+                    },
+                output_generation,
+            }) => {
+                if current_input.load(Ordering::Acquire) != generation {
+                    continue;
+                }
+                output = None;
+                warm = None;
+                let _sent = events.send(Event::Speaking {
+                    generation: output_generation,
+                    speaking: false,
+                });
+                file_input::transcribe(
+                    input.as_mut(),
+                    generation,
+                    first,
+                    import,
+                    current_input,
+                    events,
+                );
             }
             Ok(Envelope {
                 command:

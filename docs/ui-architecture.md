@@ -301,11 +301,19 @@ reasoning/private drafts.
 The composer's native plus button selects one audio file; Ctrl+V in the focused
 composer accepts files copied from Explorer. A cancellable owned worker reads and
 normalizes MP3/WAV and Windows-supported M4A/AAC/FLAC/WMA to in-memory mono 16 kHz
-PCM16 WAV, rejecting files over 64 MiB or audio longer than 30 seconds. File input
-requires no microphone permission. It enters the same authenticated Qwen3-ASR and
+PCM16 WAV in sequential segments. File size and recording duration have no fixed
+admission cap: available physical RAM and commit govern decoder buffers and
+transcript growth. Each segment fits the recognizer's 30-second request contract;
+backpressure keeps one decoded segment in flight. File input requires no
+microphone permission. A dedicated composer notice shows progress, Cancel and
+persistent actionable failures, independent of microphone cleanup notifications.
+It enters the same authenticated Qwen3-ASR and
 ordinary text-prompt path, preserving draft selection/cursor insertion, cancellation,
 conversation
-ownership and no deferred automatic send. File decoding adds no public API route
+ownership and no deferred automatic send. Full and partial transcripts remain
+available to view or copy until dismissed or replaced by another import; they are
+session-only. A transcript too large for the chat composer stays complete in that
+view, preserves the existing draft and sends no message. File decoding adds no public API route
 or inference-model capability.
 
 [Speech operation](development-guide.md#speech-setup-and-operation) defines

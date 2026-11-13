@@ -603,12 +603,21 @@ You can also copy an audio file in Explorer and press **Ctrl+V** while the compo
 has focus. Supported extensions are MP3, WAV, M4A, AAC, FLAC and WMA, subject to
 the installed Windows media decoders. Import and conversion run off the UI thread,
 keep audio in memory and require no microphone permission. Select one file at a
-time, at most 64 MiB and 30 seconds; larger or longer files are rejected without
-truncation. The worker converts accepted audio to mono 16 kHz PCM16 WAV and uses
-the same
+time. File size and total duration have no fixed cap; available physical memory
+and commit govern buffer and transcript allocation. The worker streams one
+mono 16 kHz PCM16 WAV segment at a time, fitting the recognizer's 30-second
+request contract, and uses the same
 Qwen3-ASR 1.7B transcription path as microphone input. Transcripts replace the
 composer selection or insert at its cursor and count as ordinary text prompts:
 the app sends once when Swift is ready, or leaves a draft for explicit Send otherwise.
+A transcript that exceeds the chat prompt size stays complete in the separate
+transcript view; it never truncates the recording or modifies the existing draft.
+The composer shows a spinner, processed audio range, total duration and **Cancel
+transcription**. Rejections and failures remain visible with a reason and next
+step, even after microphone cleanup. **View transcript** and **Copy transcript**
+also retain completed segments after a failure or cancellation. These transcripts
+stay in session memory until **Dismiss audio status** or another import; copy them
+to keep them after closing the app.
 Escape, conversation changes and closing cancel import/transcription and discard
 late results. Unsupported, empty or failed audio leaves the existing draft intact.
 

@@ -1240,3 +1240,38 @@ fn audio_file_plus_is_accessible_and_remains_inside_the_composer() {
         assert!(chat.state().commands.try_recv().is_err());
     }
 }
+
+#[test]
+fn audio_file_progress_cancel_and_rejection_are_visible_in_wide_and_narrow_windows() {
+    for size in [[1180.0, 860.0], [620.0, 640.0]] {
+        let mut chat = harness(size, false);
+        let app = &mut chat.state_mut().app;
+        app.audio_file_notice = Some("Transcribing audio: 30–60 of 3600 seconds.".to_owned());
+        app.audio_file_active = true;
+        app.dictation_requested = true;
+        app.dictation_finishing = true;
+        app.microphone_generation = Some(7);
+        app.input = "Keep draft".to_owned();
+        chat.run();
+        let status = chat.get_by_label("Audio transcription in progress").rect();
+        assert!(status.is_positive() && status.bottom() <= size[1]);
+        chat.get_by_role_and_label(egui::Role::Button, "Cancel transcription")
+            .click();
+        chat.run();
+        assert!(!chat.state().app.audio_file_active);
+        assert_eq!(chat.state().app.input, "Keep draft");
+        assert!(chat.state().commands.try_recv().is_err());
+        let app = &mut chat.state_mut().app;
+        app.audio_file_notice = Some("Not enough available memory to decode this audio. Close other apps and try again. Your draft was kept.".to_owned());
+        app.audio_file_error = true;
+        app.speech_event(speech::Event::Listening(false));
+        chat.run();
+        let error = chat.get_by_label("Audio transcription failed").rect();
+        assert!(error.is_positive() && error.bottom() <= size[1]);
+        assert!(chat.get_by_label("Not enough available memory to decode this audio. Close other apps and try again. Your draft was kept.").rect().is_positive());
+        chat.get_by_role_and_label(egui::Role::Button, "Dismiss audio status")
+            .click();
+        chat.run();
+        assert!(chat.state().app.audio_file_notice.is_none());
+    }
+}
