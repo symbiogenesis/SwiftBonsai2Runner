@@ -30,11 +30,33 @@ jobs. Only deliberately unselected skips are permitted.
 The workflow transfers the planner's tested Linux executable to this gate rather
 than installing Rust and compiling it a second time. The independent `checked-tools`
 producer owns the maintenance CLI's full checks and its same-run CLI/probe artifact.
-Speech and native integration wait for that producer while the six other maintenance
-crates, broker and UI lanes run concurrently. Package checks retain one owning lane;
+ASR and native integration wait for that producer while Rust-only TTS, the six other
+maintenance crates, broker and UI lanes run concurrently. The aggregate maps ASR and
+TTS to their independent selected groups and requires both results. Package checks retain one owning lane;
 dependencies still compile wherever consumed. The configured aggregate requires all
 selected jobs, including both `checked-tools` and `maintenance`. The dependency change
 exposes concurrency; it supplies no measured hosted speedup or acceptance verdict.
+
+The Linux planner restores locked downloads and compiler/image-isolated incremental
+outputs after source changes. It still builds the current source and runs its routing
+and gate regressions before producing a plan. Windows Release's TTS lane also skips
+the ASR compiler/tool provisioning dependency; its format, Clippy, documentation,
+complete tests, executable build and third-party notices remain required.
+
+Hexagon runs its layout and ranking controls alongside one policy-tool producer.
+Both native builders consume that run's revision/digest-verified CLI. Policy tests,
+ranking, native builds and their independent controls execute on every run, including
+cache hits. Cargo targets are cached separately from fresh run-bound bundles and
+evidence. The packed-artifact request's optional `buildTargetDirectory` selects an
+external Cargo target isolated from both source trees and the new evidence directory;
+omitting it retains the original target beneath the output directory. Owner-device
+admission, the shared mutex and its single five-minute allowance retain their contracts.
+
+Owner-managed hosted acceptance remains pending for all three workflows: check a cold
+build, an exact hit and a relevant-input miss, confirm every selected check and fresh
+receipt still runs, and compare elapsed times on matching runner images. Local fixture
+passes establish no hosted timing or complete-suite verdict; follow
+[the existing publication prerequisites](../../PLAN.md#publication-and-qualification-prerequisites).
 
 The routing, baseline, output and gate regressions are Rust tests. Use named
 focused selections locally with external targets/working directories; complete
@@ -183,6 +205,19 @@ smaller workload and timeout. This command never runs benchmarks.
 
 Foundation bootstraps this command on hosted Windows using the pinned compiler
 and a separate target/image so it can subsequently check and rebuild itself.
+A verified exact-input executable cache avoids repeated bootstrap compilation and
+Rust setup. Its receipt binds source, toolchain, runner image/OS, build overrides,
+Cargo-home configuration and the native ARM64 executable digest; it never supplies
+test or acceptance results. Changed inputs use the incremental target fallback and
+build again. Invalid receipts or executable bytes fail before selection. The shared
+toolchain action skips duplicate cache extraction/installation only for the same
+request already verified in that job, and rechecks compiler, sysroot and components
+on every invocation. No release optimization or check/test flags change.
+The packaged maintenance-tool cache includes every local dependency and embedded
+production input, including audio, pinned legacy speech locks, the diagnostic
+manifest, launcher icon and notices. Its exact executable and incremental target
+keys share the same source/build-environment identity. Exact executable caches have
+no fallback keys; restored Cargo targets still require fresh build/check commands.
 A self-hosted cache miss does not compile the CI bootstrap. The deleted
 PowerShell registry, check module and check script have no compatibility
 wrappers; feature, batching, selection and suite-guard regressions are Rust
