@@ -54,6 +54,7 @@ pub const LAUNCH_USAGE: &str = concat!(
     "  [--native-row-workers 1|4] (Rust defaults to 4; publisher supports only 1)\n",
     "  [--prompt-reuse disabled|latest] (experimental exact latest-state reuse; Rust only)\n",
     "  [--kv-cache f16|rsq4|rsq4k3v] (reviewed native runtime only; rsq4 default when supported, f16 explicit recovery)\n",
+    "  [--placement auto|cpu] (native Swift only; CPU requires a reviewed compatible release)\n",
     "  [--use-abliterate-lora] (pinned adapter; request scale 0..2, default 1.3; Swift CPU only)\n",
     "  [--use-repacked-ptq1|--use-original-pq2] (mutually exclusive weight selections; Swift CPU only)\n",
     "  [--max-waiting <0..8>] [--check-only]\n",
@@ -134,6 +135,7 @@ pub struct LaunchConfig {
     native_row_workers: u8,
     latest_prompt_reuse: bool,
     kv_cache: Option<crate::inference::KvCache>,
+    placement: crate::inference::Placement,
     use_abliterate_lora: bool,
     weight_representation: WeightRepresentation,
 }
@@ -158,6 +160,7 @@ impl LaunchConfig {
         let mut native_row_workers = None;
         let mut latest_prompt_reuse = None;
         let mut kv_cache = None;
+        let mut placement = None;
         let mut use_abliterate_lora = false;
         let mut use_repacked_ptq1 = None;
         let mut profile = None;
@@ -182,6 +185,9 @@ impl LaunchConfig {
                 }
                 Some("--kv-cache") if kv_cache.is_none() => {
                     kv_cache = Some(crate::inference::KvCache::parse(args.next().as_deref())?);
+                }
+                Some("--placement") if placement.is_none() => {
+                    placement = Some(crate::inference::Placement::parse(args.next().as_deref())?);
                 }
                 Some("--use-abliterate-lora") if !use_abliterate_lora => {
                     use_abliterate_lora = true;
@@ -222,6 +228,10 @@ impl LaunchConfig {
         let native_row_workers = native_row_workers.unwrap_or(if native_engine { 4 } else { 1 });
         let latest_prompt_reuse = latest_prompt_reuse.unwrap_or(false);
         let kv_cache = crate::inference::pinned_kv_cache(native_engine, kv_cache)?;
+        if placement.is_some() && profile != LaunchProfile::SwiftPq2Assessment {
+            return Err(LaunchError::Arguments);
+        }
+        let placement = crate::inference::pinned_placement(native_engine, placement)?;
         let configuration = Self {
             data: data.ok_or(LaunchError::Arguments)?,
             evidence_parent: evidence_parent.ok_or(LaunchError::Arguments)?,
@@ -235,6 +245,7 @@ impl LaunchConfig {
             native_row_workers,
             latest_prompt_reuse,
             kv_cache,
+            placement,
             use_abliterate_lora,
             weight_representation: if use_repacked_ptq1.unwrap_or(false) {
                 WeightRepresentation::CurrentRepackedPtq1
@@ -479,6 +490,9 @@ impl LaunchConfig {
         }
         if let Some(policy) = self.kv_cache {
             arguments.extend([OsString::from("--kv-cache"), OsString::from(policy.name())]);
+        }
+        if self.placement == crate::inference::Placement::Cpu {
+            arguments.extend([OsString::from("--placement"), OsString::from("cpu")]);
         }
         if self.uses_repacked_ptq1() {
             arguments.push("--use-repacked-ptq1".into());
@@ -1041,6 +1055,7 @@ async fn native_identity(
             WorkerReadiness::for_version(&version, config.native_row_workers)
                 .with_prompt_reuse(config.latest_prompt_reuse)
                 .with_kv_cache(config.kv_cache)
+                .with_placement(config.placement)
                 .with_context_tokens(context_tokens),
         )
     })
@@ -1654,6 +1669,78 @@ mod tests {
                     .filter(|[flag, value]| flag == "--kv-cache" && value == policy.name())
                     .count(),
                 1
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn placement_selection_is_native_only_gated_and_reaches_the_owned_child()
+    -> Result<(), LaunchError> {
+        use crate::inference::Placement;
+        let mut native = arguments();
+        native.extend(["--profile", "swift-pq2-assessment"].map(OsString::from));
+        let mut config = LaunchConfig::parse(native.clone())?;
+        assert_eq!(config.placement, Placement::Auto);
+        let mut selected = native.clone();
+        selected.extend(["--placement", "auto"].map(OsString::from));
+        assert_eq!(LaunchConfig::parse(selected)?.placement, Placement::Auto);
+        selected = native.clone();
+        selected.extend(["--placement", "cpu"].map(OsString::from));
+        assert_eq!(
+            LaunchConfig::parse(selected).err(),
+            Some(LaunchError::NativeRuntime)
+        );
+        for suffix in [
+            vec!["--placement"],
+            vec!["--placement", "CPU"],
+            vec!["--placement", ""],
+            vec!["--placement", "npu"],
+            vec!["--placement", "auto", "--placement", "cpu"],
+            vec!["--publisher-engine", "--placement", "auto"],
+            vec!["--publisher-engine", "--placement", "cpu"],
+        ] {
+            let mut rejected = native.clone();
+            rejected.extend(suffix.into_iter().map(OsString::from));
+            assert_eq!(
+                LaunchConfig::parse(rejected).err(),
+                Some(LaunchError::Arguments)
+            );
+        }
+        for placement in ["auto", "cpu"] {
+            let mut rejected = arguments();
+            rejected.extend(["--placement", placement].map(OsString::from));
+            assert_eq!(
+                LaunchConfig::parse(rejected).err(),
+                Some(LaunchError::Arguments)
+            );
+        }
+        let data = std::env::temp_dir().join("Bonsai-placement-routing");
+        let key = data.join("backend.key");
+        let plan = super::LaunchPlan::for_profile_with_options(
+            &data,
+            8081,
+            &key,
+            LaunchProfile::SwiftPq2Assessment,
+            true,
+            false,
+        )
+        .map_err(|_| LaunchError::Policy)?;
+        let admitted = config.swift_context_plan(20 * 1024 * 1024 * 1024)?;
+        for placement in [Placement::Auto, Placement::Cpu] {
+            // Model-free routing control; the immutable published pin remains gated.
+            config.placement = placement;
+            let child = config.native_arguments(&plan, &key);
+            assert_eq!(
+                child
+                    .array_windows::<2>()
+                    .filter(|[flag, value]| flag == "--placement" && value == "cpu")
+                    .count(),
+                usize::from(placement == Placement::Cpu)
+            );
+            assert_eq!(
+                config.swift_context_plan(20 * 1024 * 1024 * 1024)?,
+                admitted
             );
         }
         Ok(())

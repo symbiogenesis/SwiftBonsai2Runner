@@ -11,6 +11,7 @@ pub(super) struct WorkerReadiness {
     legacy_missing_allowed: bool,
     latest_prompt_reuse: bool,
     kv_cache: Option<crate::inference::KvCache>,
+    placement: crate::inference::Placement,
 }
 
 impl WorkerReadiness {
@@ -23,6 +24,7 @@ impl WorkerReadiness {
             legacy_missing_allowed: matches!(version, "0.1.8" | "0.1.9" | "0.1.10"),
             latest_prompt_reuse: false,
             kv_cache: None,
+            placement: crate::inference::Placement::Auto,
         }
     }
 
@@ -38,6 +40,11 @@ impl WorkerReadiness {
 
     pub(super) const fn with_context_tokens(mut self, context_tokens: usize) -> Self {
         self.context_tokens = context_tokens;
+        self
+    }
+
+    pub(super) const fn with_placement(mut self, placement: crate::inference::Placement) -> Self {
+        self.placement = placement;
         self
     }
 
@@ -118,6 +125,10 @@ struct NativeModel<'a> {
     kv_cache: Option<Text<'a>>,
     #[serde(default, borrow, deserialize_with = "present")]
     startup_graph_identity: Option<Text<'a>>,
+    #[serde(default, borrow, deserialize_with = "present")]
+    placement: Option<Text<'a>>,
+    #[serde(default, borrow, deserialize_with = "present")]
+    projection_backend: Option<Text<'a>>,
 }
 
 fn cache_identity_matches(
@@ -187,6 +198,7 @@ pub(super) fn validate_native_identity(
             && model.supports_abliteration_scale.is_none()
             && model.abliteration_scale_range.is_none()
     };
+    let placement = (workers.placement == crate::inference::Placement::Cpu).then_some("cpu");
     if &*model.id != id
         || &*model.object != "model"
         || &*model.model_sha256 != hash
@@ -197,6 +209,8 @@ pub(super) fn validate_native_identity(
         || !workers.accepts(model.row_workers)
         || model.prompt_reuse.as_deref() != workers.latest_prompt_reuse.then_some("latest")
         || !cache_identity_matches(model, workers, adapter)
+        || model.placement.as_deref() != placement
+        || model.projection_backend.as_deref() != placement
         || !extensions_match
     {
         return Err(io::Error::other("native model readiness identity mismatch"));
@@ -253,6 +267,91 @@ mod tests {
             body.len()
         )
         .into_bytes())
+    }
+
+    #[test]
+    fn cpu_placement_readiness_requires_both_requested_and_effective_cpu()
+    -> Result<(), serde_json::Error> {
+        use crate::inference::{KvCache, Placement};
+        use serde_json::json;
+
+        for repacked in [false, true] {
+            for adapter in [false, true] {
+                let (mut model, _) = kv_cache_model(repacked, adapter);
+                let auto =
+                    WorkerReadiness::for_version("0.1.25", 4).with_kv_cache(Some(KvCache::Rsq4));
+                let cpu = auto.with_placement(Placement::Cpu);
+                assert!(
+                    validate_native_identity(&model_response(&model)?, repacked, adapter, auto)
+                        .is_ok()
+                );
+                assert!(
+                    validate_native_identity(&model_response(&model)?, repacked, adapter, cpu)
+                        .is_err()
+                );
+                model["placement"] = json!("cpu");
+                model["projection_backend"] = json!("cpu");
+                let bytes = model_response(&model)?;
+                assert!(validate_native_identity(&bytes, repacked, adapter, cpu).is_ok());
+                assert!(validate_native_identity(&bytes, repacked, adapter, auto).is_err());
+                for field in ["placement", "projection_backend"] {
+                    let mut missing = model.clone();
+                    if let Some(object) = missing.as_object_mut() {
+                        object.remove(field);
+                    }
+                    assert!(
+                        validate_native_identity(
+                            &model_response(&missing)?,
+                            repacked,
+                            adapter,
+                            cpu
+                        )
+                        .is_err()
+                    );
+                    for value in [
+                        json!("auto"),
+                        json!("CPU"),
+                        json!("hexagon"),
+                        json!(null),
+                        json!(true),
+                        json!(1),
+                        json!([]),
+                    ] {
+                        let mut changed = model.clone();
+                        changed[field] = value;
+                        assert!(
+                            validate_native_identity(
+                                &model_response(&changed)?,
+                                repacked,
+                                adapter,
+                                cpu
+                            )
+                            .is_err()
+                        );
+                        assert!(
+                            validate_native_identity(
+                                &model_response(&changed)?,
+                                repacked,
+                                adapter,
+                                auto
+                            )
+                            .is_err()
+                        );
+                    }
+                }
+            }
+        }
+        let cpu = WorkerReadiness::for_version("0.1.25", 4).with_placement(Placement::Cpu);
+        for extra in [
+            "\"placement\":\"cpu\",\"projection_backend\":\"cpu\",\"placement\":\"cpu\"",
+            "\"placement\":\"cpu\",\"projection_backend\":\"cpu\",\"projection_backend\":\"cpu\"",
+        ] {
+            assert!(
+                validate_native_identity(&response(Some(&format!("4,{extra}"))), false, false, cpu)
+                    .is_err()
+            );
+        }
+        Ok(())
     }
 
     #[test]

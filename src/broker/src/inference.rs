@@ -32,6 +32,49 @@ pub(super) enum KvCache {
     Rsq4K3v,
 }
 
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub(super) enum Placement {
+    #[default]
+    Auto,
+    Cpu,
+}
+
+impl Placement {
+    pub(super) fn parse(value: Option<&std::ffi::OsStr>) -> Result<Self, LaunchError> {
+        match value.and_then(std::ffi::OsStr::to_str) {
+            Some("auto") => Ok(Self::Auto),
+            Some("cpu") => Ok(Self::Cpu),
+            _ => Err(LaunchError::Arguments),
+        }
+    }
+}
+
+// CPU placement must skip accelerator initialization and report both its
+// requested placement and effective CPU backend in a genuine reviewed release.
+// Source omission alone does not justify a smaller fixed memory allowance.
+const CPU_PLACEMENT_RELEASE: Option<(&str, &str)> = None;
+
+fn select_placement(release: &ReleasePin, requested: Placement) -> Result<Placement, LaunchError> {
+    if requested == Placement::Auto
+        || CPU_PLACEMENT_RELEASE
+            .is_some_and(|(version, commit)| release.version == version && release.commit == commit)
+    {
+        Ok(requested)
+    } else {
+        Err(LaunchError::NativeRuntime)
+    }
+}
+
+pub(super) fn pinned_placement(
+    native: bool,
+    requested: Option<Placement>,
+) -> Result<Placement, LaunchError> {
+    if !native {
+        return requested.map_or(Ok(Placement::Auto), |_| Err(LaunchError::Arguments));
+    }
+    select_placement(&release(LOCK)?, requested.unwrap_or_default())
+}
+
 impl KvCache {
     pub(super) fn parse(value: Option<&std::ffi::OsStr>) -> Result<Self, LaunchError> {
         match value.and_then(std::ffi::OsStr::to_str) {
@@ -318,6 +361,33 @@ pub(super) fn verify(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn cpu_placement_waits_for_an_exact_reviewed_release() -> Result<(), LaunchError> {
+        let mut pin = release(LOCK)?;
+        for (version, commit) in [
+            ("0.1.25", TURBOQUANT_REVISION),
+            ("0.1.26", TURBOQUANT_REVISION),
+            ("0.1.26", "0000000000000000000000000000000000000000"),
+        ] {
+            pin.version = version.into();
+            pin.commit = commit.into();
+            assert_eq!(select_placement(&pin, Placement::Auto)?, Placement::Auto);
+            assert_eq!(
+                select_placement(&pin, Placement::Cpu),
+                Err(LaunchError::NativeRuntime)
+            );
+        }
+        assert_eq!(pinned_placement(true, None)?, Placement::Auto);
+        assert_eq!(pinned_placement(false, None)?, Placement::Auto);
+        for placement in [Placement::Auto, Placement::Cpu] {
+            assert_eq!(
+                pinned_placement(false, Some(placement)),
+                Err(LaunchError::Arguments)
+            );
+        }
+        Ok(())
+    }
 
     #[test]
     fn kv_cache_default_and_recovery_require_the_exact_reviewed_source() -> Result<(), LaunchError>
