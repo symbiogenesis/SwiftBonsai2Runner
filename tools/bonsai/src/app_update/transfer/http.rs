@@ -119,11 +119,11 @@ fn headers(bytes: &[u8]) -> crate::Result<BTreeMap<String, String>> {
     Ok(headers)
 }
 
-fn decoded(bytes: &[u8], encoding: Option<&String>) -> crate::Result<Vec<u8>> {
+fn decoded(bytes: &[u8], encoding: Option<&str>) -> crate::Result<Vec<u8>> {
     if u64::try_from(bytes.len()).map_err(|error| error.to_string())? > MAX_METADATA {
         return Err("Update metadata exceeds its byte limit.".into());
     }
-    match encoding.map(String::as_str).unwrap_or("identity") {
+    match encoding.unwrap_or("identity") {
         "identity" => Ok(bytes.to_vec()),
         "gzip" => {
             let mut body = Vec::new();
@@ -190,7 +190,7 @@ fn http_date(value: &str) -> Option<u64> {
         + months[..month].iter().sum::<u64>()
         + day
         - 1;
-    Some(days * 86400 + hour * 3600 + minute * 60 + second)
+    Some(days * 86_400 + hour * 3600 + minute * 60 + second)
 }
 
 fn cooldown_delay(headers: &BTreeMap<String, String>, now: u64, failures: u32) -> u64 {
@@ -209,7 +209,7 @@ fn cooldown_delay(headers: &BTreeMap<String, String>, now: u64, failures: u32) -
         })
         .flatten();
     // No immediate retries. Repeated failures grow from 15 minutes to six hours.
-    let default = now.saturating_add(900_u64.saturating_mul(1_u64 << failures.min(5)).min(21600));
+    let default = now.saturating_add(900_u64.saturating_mul(1_u64 << failures.min(5)).min(21_600));
     default.max(retry.unwrap_or(0)).max(reset.unwrap_or(0))
 }
 
@@ -362,7 +362,7 @@ pub(super) fn metadata(
     super::require_successful_http(result.code, &result.stdout)?;
     let body = decoded(
         &super::read_bounded(&body, MAX_METADATA)?,
-        headers.get("content-encoding"),
+        headers.get("content-encoding").map(String::as_str),
     )?;
     let descriptor = Cached {
         url: url.into(),
@@ -387,8 +387,7 @@ mod tests {
     use std::io::Write as _;
 
     #[test]
-    fn update_http_cache_admits_only_exact_bounded_slots_and_conditional_headers()
-    -> crate::Result<()> {
+    fn update_http_cache_admits_only_exact_bounded_slots_and_conditional_headers() {
         let api = format!(
             "https://api.github.com/repos/{}/",
             super::super::super::REPOSITORY
@@ -421,7 +420,6 @@ mod tests {
                 .iter()
                 .any(|argument| argument.to_string_lossy().starts_with("If-Modified-Since:"))
         );
-        Ok(())
     }
 
     #[test]
@@ -434,13 +432,13 @@ mod tests {
                 .map_err(|error| error.to_string())?;
             encoder.finish().map_err(|error| error.to_string())
         };
-        let gzip = Some(String::from("gzip"));
-        assert_eq!(decoded(&compress(b"[]")?, gzip.as_ref())?, b"[]");
-        assert!(decoded(b"corrupt", gzip.as_ref()).is_err());
+        let gzip = Some("gzip");
+        assert_eq!(decoded(&compress(b"[]")?, gzip)?, b"[]");
+        assert!(decoded(b"corrupt", gzip).is_err());
         let oversized =
             vec![0; usize::try_from(MAX_METADATA).map_err(|error| error.to_string())? + 1];
-        assert!(decoded(&compress(&oversized)?, gzip.as_ref()).is_err());
-        assert!(decoded(b"[]", Some(&String::from("br"))).is_err());
+        assert!(decoded(&compress(&oversized)?, gzip).is_err());
+        assert!(decoded(b"[]", Some("br")).is_err());
         Ok(())
     }
 
@@ -453,7 +451,7 @@ mod tests {
         assert_eq!(cooldown_delay(&headers, 100, 0), 9000);
         assert_eq!(cooldown_delay(&BTreeMap::new(), 100, 0), 1000);
         assert_eq!(cooldown_delay(&BTreeMap::new(), 100, 1), 1900);
-        assert_eq!(cooldown_delay(&BTreeMap::new(), 100, 30), 21700);
+        assert_eq!(cooldown_delay(&BTreeMap::new(), 100, 30), 21_700);
         assert_eq!(http_date("Thu, 01 Jan 1970 00:00:01 GMT"), Some(1));
         assert_eq!(
             http_date("Sat, 29 Feb 2020 00:00:00 GMT"),

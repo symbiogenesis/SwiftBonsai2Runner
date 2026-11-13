@@ -223,7 +223,7 @@ fn verified_portable_release(
 type AssetMetadata = fn(&policy::Asset, &Path) -> crate::Result<Vec<u8>>;
 type Metadata = fn(&str, &Path) -> crate::Result<Vec<u8>>;
 
-fn metadata_functions(conditional: bool) -> (AssetMetadata, Metadata) {
+const fn metadata_functions(conditional: bool) -> (AssetMetadata, Metadata) {
     if conditional {
         (transfer::cached_asset_metadata, transfer::cached_metadata)
     } else {
