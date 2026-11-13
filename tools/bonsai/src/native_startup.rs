@@ -165,6 +165,7 @@ fn install_compiler(data: &Path, working: &Path, pin: &Value) -> crate::Result<P
     external(&root)?;
     fs::create_dir_all(&directory).map_err(|error| error.to_string())?;
     let _guard = crate::startup_cache::lock_file(&directory.join("compiler-provision.lock"))?;
+    crate::startup_cache::remove_abandoned_directories(&directory, "extract-")?;
     if !root.exists() {
         receive(pin, &archive, working)?;
         let tar = crate::startup_download::system_tool("tar.exe")?;
@@ -216,6 +217,7 @@ fn install_compiler(data: &Path, working: &Path, pin: &Value) -> crate::Result<P
                 stage.display()
             )
         })?;
+        crate::startup_cache::remove_scratch_directory(&stage)?;
     }
     let executables = pin["executables"]
         .as_object()

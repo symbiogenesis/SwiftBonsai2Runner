@@ -648,6 +648,10 @@ mod tests {
                 .to_string_lossy()
         ));
         fs::write(&abandoned, "{partial").map_err(|error| error.to_string())?;
+        let obsolete = spec
+            .target_directory
+            .join(format!("startup-build-{}.json.9-8-7.tmp", "0".repeat(64)));
+        fs::write(&obsolete, "{obsolete partial").map_err(|error| error.to_string())?;
         let unrelated = spec.target_directory.join("unrelated.tmp");
         fs::write(&unrelated, "keep").map_err(|error| error.to_string())?;
         let _ = cached_build_with(
@@ -656,6 +660,7 @@ mod tests {
             |_, _, _, _| Err("Warm Cargo ran.".into()),
         )?;
         assert!(!abandoned.exists());
+        assert!(!obsolete.exists());
         assert!(unrelated.exists());
         Ok(())
     }

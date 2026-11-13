@@ -753,8 +753,66 @@ fn read_receipt(
     Ok(())
 }
 
-// Called under the target-directory build lock. A crash can leave only an
-// unpublished temporary; it must never be read as a receipt or block a retry.
+fn preparation_nonce(value: &str) -> bool {
+    let mut parts = value.split('-');
+    (0..3).all(|_| {
+        parts
+            .next()
+            .is_some_and(|part| !part.is_empty() && part.bytes().all(|byte| byte.is_ascii_digit()))
+    }) && parts.next().is_none()
+}
+
+// Scratch contains only reproducible preparation bytes, never user data or
+// replay evidence. Validate every descendant instead of following redirects.
+pub(crate) fn remove_scratch_directory(path: &Path) -> crate::Result<()> {
+    validate_external_path(path).map_err(|error| error.to_string())?;
+    let metadata = match fs::symlink_metadata(path) {
+        Ok(metadata) => metadata,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(()),
+        Err(error) => return Err(error.to_string()),
+    };
+    if !metadata.is_dir() || is_redirect(&metadata) {
+        return Err("Preparation scratch must be an ordinary directory.".into());
+    }
+    for entry in fs::read_dir(path).map_err(|error| error.to_string())? {
+        let entry = entry.map_err(|error| error.to_string())?;
+        let child = entry.path();
+        validate_external_path(&child).map_err(|error| error.to_string())?;
+        let metadata = fs::symlink_metadata(&child).map_err(|error| error.to_string())?;
+        if is_redirect(&metadata) {
+            return Err("Preparation scratch contains a redirected entry.".into());
+        }
+        if metadata.is_dir() {
+            remove_scratch_directory(&child)?;
+        } else if metadata.is_file() {
+            fs::remove_file(child).map_err(|error| error.to_string())?;
+        } else {
+            return Err("Preparation scratch contains a special entry.".into());
+        }
+    }
+    fs::remove_dir(path).map_err(|error| error.to_string())
+}
+
+// The caller holds the lock for this entire namespace, so no selected arena can
+// still be owned by another preparation process.
+pub(crate) fn remove_abandoned_directories(directory: &Path, prefix: &str) -> crate::Result<()> {
+    validate_external_path(directory).map_err(|error| error.to_string())?;
+    for entry in fs::read_dir(directory).map_err(|error| error.to_string())? {
+        let entry = entry.map_err(|error| error.to_string())?;
+        if entry
+            .file_name()
+            .to_str()
+            .and_then(|name| name.strip_prefix(prefix))
+            .is_some_and(preparation_nonce)
+        {
+            remove_scratch_directory(&entry.path())?;
+        }
+    }
+    Ok(())
+}
+
+// Called under the target-directory build lock. Include obsolete identities:
+// their unpublished temporaries are never read again by current preparation.
 pub(crate) fn remove_abandoned_receipts(receipt: &Path) -> crate::Result<()> {
     validate_external_path(receipt).map_err(|error| error.to_string())?;
     let directory = receipt.parent().ok_or("Missing receipt directory.")?;
@@ -769,18 +827,16 @@ pub(crate) fn remove_abandoned_receipts(receipt: &Path) -> crate::Result<()> {
         let entry = entry.map_err(|error| error.to_string())?;
         let name = entry.file_name();
         let name = name.to_string_lossy();
-        let Some(unique) = name
-            .strip_prefix(&prefix)
-            .and_then(|name| name.strip_suffix(".tmp"))
-        else {
+        let Some(temporary) = name.strip_suffix(".tmp") else {
             continue;
         };
-        let parts = unique.split('-').collect::<Vec<_>>();
-        if parts.len() != 3
-            || parts
-                .iter()
-                .any(|part| part.is_empty() || !part.bytes().all(|byte| byte.is_ascii_digit()))
-        {
+        let unique = temporary.strip_prefix(&prefix).or_else(|| {
+            let (digest, unique) = temporary
+                .strip_prefix("startup-build-")?
+                .split_once(".json.")?;
+            crate::identity::is_lower_hex(digest, 64).then_some(unique)
+        });
+        if !unique.is_some_and(preparation_nonce) {
             continue;
         }
         let path = entry.path();
@@ -849,6 +905,33 @@ pub(crate) fn write_receipt(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn abandoned_preparation_cleanup_selects_only_owned_nonce_directories() -> crate::Result<()> {
+        let (scratch, _) = fixture()?;
+        let owned = scratch.join("extract-1-2-3");
+        let unrelated = scratch.join("extract-user-files");
+        for directory in [&owned, &unrelated] {
+            fs::create_dir_all(directory.join("nested")).map_err(|error| error.to_string())?;
+            fs::write(directory.join("nested/file"), b"retain only unrelated")
+                .map_err(|error| error.to_string())?;
+        }
+        let regular = scratch.join("extract-3-2-1");
+        fs::write(&regular, b"wrong entry type").map_err(|error| error.to_string())?;
+        assert!(remove_scratch_directory(&regular).is_err());
+        assert_eq!(
+            fs::read(&regular).map_err(|error| error.to_string())?,
+            b"wrong entry type"
+        );
+        fs::remove_file(regular).map_err(|error| error.to_string())?;
+        remove_abandoned_directories(&scratch, "extract-")?;
+        assert!(!owned.exists());
+        assert_eq!(
+            fs::read(unrelated.join("nested/file")).map_err(|error| error.to_string())?,
+            b"retain only unrelated"
+        );
+        remove_scratch_directory(&scratch)
+    }
 
     fn fixture() -> crate::Result<(PathBuf, PathBuf)> {
         let scratch = std::env::temp_dir().join(format!(

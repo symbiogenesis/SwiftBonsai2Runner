@@ -333,11 +333,9 @@ impl SourceStaging {
 
 impl Drop for SourceStaging {
     fn drop(&mut self) {
-        if validate_external_path(&self.directory).is_ok() {
-            // Remove only our empty arena. Failed writes remain as evidence;
-            // a later invocation uses a fresh sibling and ignores those bytes.
-            let _ = fs::remove_dir(&self.directory);
-        }
+        // No child process owns these files. Partial copies can be reconstructed
+        // from the pinned archive and have no independent replay consumer.
+        let _ = crate::startup_cache::remove_scratch_directory(&self.directory);
     }
 }
 
@@ -807,8 +805,7 @@ mod tests {
     }
 
     #[test]
-    fn interrupted_source_write_retains_only_external_staging_bytes_and_retry_succeeds()
-    -> TestResult {
+    fn interrupted_source_write_cleans_external_staging_bytes_and_retry_succeeds() -> TestResult {
         let scratch = scratch("interrupted")?;
         let root = scratch.join("source");
         let specs = [
@@ -836,21 +833,11 @@ mod tests {
         assert!(result.is_err());
         assert!(!canonical.exists());
         drop(staging);
-        let evidence = fs::read_dir(&arena)?.collect::<Result<Vec<_>, _>>()?;
-        assert_eq!(evidence.len(), 1);
-        assert_eq!(
-            fs::read(
-                evidence
-                    .first()
-                    .ok_or("Missing retained source evidence.")?
-                    .path()
-            )?,
-            b"partial"
-        );
+        assert!(!arena.exists());
         assert_eq!(stage_sources(&root, &specs)?["FilesVerified"], 2);
         assert_eq!(fs::read(&canonical)?, b"fixture");
         assert_eq!(stage_sources(&root, &specs)?["FilesVerified"], 2);
-        assert!(arena.exists());
+        assert!(!arena.exists());
         Ok(())
     }
 
