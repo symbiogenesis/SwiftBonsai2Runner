@@ -171,12 +171,12 @@ and the remaining hosted and clean-machine acceptance gates.
 
 The [portable package workflow](chat-packages.md) installs reviewed prebuilt app
 files without a checkout/compiler. Source launch requires native Windows ARM64,
-the pinned Rust toolchain, a built maintenance executable, Swift model/runtime files and
+the pinned Rust toolchain, a built maintenance executable, internet access for setup and
 **15.5 GiB available RAM**. Serviced Windows 11 must admit PSEC 1.1 and
 container-hosted loopback; failed containment never falls back to caller authority.
 
-Build the maintenance executable outside Git once, then provision Swift and its
-pinned adapter. Rebuild it after maintenance-source changes:
+Build the maintenance executable outside Git once, then launch. The native setup
+worker prepares Swift and its pinned adapter. Rebuild after maintenance-source changes:
 
 ```powershell
 $repo = $PWD.Path
@@ -185,9 +185,6 @@ cargo build --locked --release --manifest-path (Join-Path $repo 'Cargo.toml') --
 $env:BONSAI_TOOLS_PATH = Join-Path $target 'release/bonsai-tools.exe'
 $env:PATH = (Split-Path $env:BONSAI_TOOLS_PATH) + [IO.Path]::PathSeparator + $env:PATH
 $data = Join-Path $env:LOCALAPPDATA 'SwiftBonsai2'
-bonsai-tools provision --json (@{ operation = 'inference'; dataDirectory = $data } | ConvertTo-Json -Compress)
-bonsai-tools provision --json (@{ operation = 'model'; dataDirectory = $data; lockPath = (Join-Path $PWD 'config/swift-assessment.lock.json') } | ConvertTo-Json -Compress)
-bonsai-tools provision --json (@{ operation = 'adapter'; dataDirectory = $data } | ConvertTo-Json -Compress)
 bonsai-tools chat --data-directory $data
 ```
 
@@ -201,16 +198,18 @@ The optional convenience launcher uses the same prebuilt executable:
 It accepts `-DataDirectory` and `-ToolPath`, otherwise selecting
 `BONSAI_TOOLS_PATH`, the maintenance build above, or `bonsai-tools.exe` on PATH.
 Omitting engine options selects Rust. `-NativeEngine` remains an explicit Rust
-selection; `-PublisherEngine` selects the manual publisher rollback, after
-provisioning it as described under [runtime selection](#runtime-selection). The script
+selection; `-PublisherEngine` selects publisher rollback, prepared from its pinned
+release. See [runtime selection](#runtime-selection). The script
 only forwards to Rust and propagates its exit code; it builds or provisions nothing.
 
 When native Rust inference is selected, the Rust preparation worker verifies the
-pinned runtime after the first native frame and installs it if missing. Source-built
+pinned runtime after the first native frame and repairs it when needed. Source-built
 brokers use the checkout's exact release lock; explicit prebuilt brokers use the
-maintenance executable's compiled release lock. A changed existing installation
-fails verification and is retained. This step downloads only the small runtime;
-Swift weights and the adapter still require explicit provisioning.
+maintenance executable's compiled release lock. Replacement is staged and verified;
+unrelated files, redirected paths and access failures stop repair. Swift weights
+and the selected adapter are prepared from compiled pins before broker handoff.
+No external model lockfile is required. Explicit PTQ1 is verified without fetching
+or substituting PQ2.
 
 Text chat starts loading once its runtime and broker are ready. Speech downloads
 and builds continue in the owned background worker; controls activate after
@@ -253,8 +252,11 @@ with current tools. Publisher launches require one.
 
 The native Rust `egui`/`eframe` app follows the [UI contract](ui-architecture.md).
 The window opens before broker/speech preparation finishes, so drafting remains
-available during setup. Setup errors stay visible; close and relaunch after
-correcting them. Closing stops preparation, compiler descendants and owned model
+available during setup. Progress and setup errors stay visible; Pause and Retry
+setup preserve drafts and verified downloads. Retry requires confirmed process
+cleanup; unknown cleanup requires closing the app. Speech setup has a separate
+retry and never restarts a running text model. Closing stops preparation, compiler
+descendants and owned model
 workers. Artifact verification and memory admission still precede model use.
 
 **Stop** tears down the owned broker/backend. **Retry model** waits for teardown,
@@ -790,9 +792,11 @@ uses the same setting across engines; native quality, throughput and daily-servi
 qualification remain pending. Native HTTP remains numeric loopback
 with the [broker's strict public subset](broker-policy.md).
 
-`--frontend-port`/`--backend-port` select distinct local ports. Swift model and
-adapter provisioning remain explicit. Launch may download a missing pinned Rust
-runtime and the selected owned speech models. Keep credentials and complete
+`--frontend-port`/`--backend-port` select distinct local ports. Launch prepares the
+compiled Swift model, selected adapter and runtime automatically before broker
+handoff. Setup progress, safe Pause/Retry and separate speech retry need no shell
+commands. Explicit PTQ1 still requires its reviewed export and cannot trigger a
+PQ2 fallback. Keep credentials and complete
 evidence directories private.
 
 ## X1/X2 configuration boundary

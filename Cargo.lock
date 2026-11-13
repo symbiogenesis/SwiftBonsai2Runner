@@ -483,7 +483,7 @@ dependencies = [
 
 [[package]]
 name = "bonsai-artifacts"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "bonsai-windows-credentials",
  "bonsai-windows-process",
@@ -494,11 +494,11 @@ dependencies = [
 
 [[package]]
 name = "bonsai-audio"
-version = "0.2.1"
+version = "0.2.2"
 
 [[package]]
 name = "bonsai-broker"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "bonsai-artifacts",
  "bonsai-cpu-policy",
@@ -516,7 +516,7 @@ dependencies = [
 
 [[package]]
 name = "bonsai-chat"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "bonsai-audio",
  "bonsai-windows-credentials",
@@ -538,7 +538,7 @@ dependencies = [
 
 [[package]]
 name = "bonsai-ci"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "bonsai-artifacts",
  "bonsai-windows-process",
@@ -550,7 +550,7 @@ dependencies = [
 
 [[package]]
 name = "bonsai-cpu-policy"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "serde",
  "serde_json",
@@ -558,7 +558,7 @@ dependencies = [
 
 [[package]]
 name = "bonsai-speech-asr"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "bonsai-speech-service",
  "fearless_simd 1.2.0",
@@ -568,7 +568,7 @@ dependencies = [
 
 [[package]]
 name = "bonsai-speech-service"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "bonsai-artifacts",
  "bonsai-audio",
@@ -583,7 +583,7 @@ dependencies = [
 
 [[package]]
 name = "bonsai-speech-tts"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "bonsai-audio",
  "bonsai-speech-service",
@@ -594,7 +594,7 @@ dependencies = [
 
 [[package]]
 name = "bonsai-tools"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "bonsai-artifacts",
  "bonsai-audio",

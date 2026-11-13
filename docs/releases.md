@@ -1,19 +1,19 @@
 # Windows releases
 
 Swift Bonsai 2 Runner ships as a **portable Windows ARM64 executable** for
-Snapdragon X and X2 laptops. [v0.2.1](releases/v0.2.1.md) is prepared locally;
+Snapdragon X and X2 laptops. [v0.2.2](releases/v0.2.2.md) is prepared locally;
 publication requires the owner's source push and Windows Release workflow run.
-The published [v0.2.0 release](https://github.com/symbiogenesis/SwiftBonsai2Runner/releases/tag/v0.2.0)
+The published [v0.2.1 release](https://github.com/symbiogenesis/SwiftBonsai2Runner/releases/tag/v0.2.1)
 remains available.
 
 ## Download and open
 
 Download from [GitHub releases](https://github.com/symbiogenesis/SwiftBonsai2Runner/releases)
-after publication. The v0.2.1 release has three assets:
+after publication. The v0.2.2 release has three assets:
 
 | Asset | Purpose |
 | --- | --- |
-| `SwiftBonsai2Runner-0.2.1-windows-arm64.exe` | All five application executables and their notices. |
+| `SwiftBonsai2Runner-0.2.2-windows-arm64.exe` | All five application executables and their notices. |
 | `SHA256SUMS.txt` | Checksums for the executable and release manifest. |
 | `release-manifest.json` | Version, source revision, build identities and executable digest. |
 
@@ -21,8 +21,8 @@ Check the executable's SHA-256 against the checksum from the same release before
 opening it:
 
 ```powershell
-Get-FileHash .\SwiftBonsai2Runner-0.2.1-windows-arm64.exe -Algorithm SHA256
-.\SwiftBonsai2Runner-0.2.1-windows-arm64.exe
+Get-FileHash .\SwiftBonsai2Runner-0.2.2-windows-arm64.exe -Algorithm SHA256
+.\SwiftBonsai2Runner-0.2.2-windows-arm64.exe
 ```
 
 **Deploy only the `.exe`.** Package metadata and project/dependency notices are
@@ -52,11 +52,28 @@ not install that redistributable.
 
 Swift weights (about **6.71 GiB**), adapter, inference runtime and speech models
 are separate locked downloads with their own [license terms](licensing.md).
-Artifact checks and memory admission still apply. Preparation can download the
-pinned runtime and selected speech models; model and adapter provisioning remain
-explicit. Microphone capture requires explicit consent.
+Artifact checks and memory admission still apply. In v0.2.2, opening the executable
+prepares the compiled Swift model, adapter and selected runtime automatically.
+No checkout, external lockfile or provisioning command is needed for the default
+model. Speech preparation follows separately; text chat can work before it finishes.
+Microphone capture requires explicit consent.
 
-To provision Swift without a checkout, retain the verified `release-manifest.json`
+Keep the setup window open to see the current step and download progress. **Pause
+setup** stops safely and retains partial downloads; **Retry setup** continues
+without losing drafts or conversations. Closing and reopening also resumes setup.
+Verified files are reused. Damaged model bytes are replaced only after the new
+download verifies; unsafe paths, unreadable files and unrelated runtime files
+require attention rather than being overwritten. Allow free storage for the
+downloads and, during repair, both old and replacement files. Setup details and
+**Copy diagnostics** provide the exact failed step and selected data folder.
+
+If speech preparation fails, use **Retry speech setup** while continuing text chat.
+Its details include the Microsoft ARM64 runtime download link. The application
+does not install system prerequisites without your involvement.
+
+### Manual provisioning for older releases and advanced use
+
+For v0.2.1 or explicit manual provisioning, retain the verified `release-manifest.json`
 and download the model lock from its exact source revision. Use one data directory
 for setup and launch:
 
@@ -91,7 +108,7 @@ switch engine or representation. See the
 
 ## Update and remove
 
-Current source and prepared v0.2.1 builds check GitHub at startup and every six
+Current source and prepared v0.2.2 builds check GitHub at startup and every six
 hours, then download newer Windows ARM64 releases, including experimental
 prereleases. **Settings > Application** also offers a manual check. Discovery
 selects the highest numeric version in the bounded catalog, excluding drafts and
@@ -136,8 +153,8 @@ gh workflow run release.yml --repo symbiogenesis/SwiftBonsai2Runner --ref main -
 ```
 
 Leave `tag` blank to use `workspace.package.version` from `Cargo.toml`.
-Explicit `0.2.1` or `v0.2.1` must match that version; both select `v0.2.1` and
-`docs/releases/v0.2.1.md`. Mismatches report requested, workspace and expected
+Explicit `0.2.2` or `v0.2.2` must match that version; both select `v0.2.2` and
+`docs/releases/v0.2.2.md`. Mismatches report requested, workspace and expected
 identities. For the next release, increment the workspace version and commit
 matching notes first. `prerelease` defaults to `true`.
 

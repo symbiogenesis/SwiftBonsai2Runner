@@ -572,6 +572,26 @@ kernel, complete-answer quality, service-TPS or default-promotion claim. Actual
 device attribution remains pending until this explicit workload is captured and
 independently reviewed; it cannot continue a previous numerical matrix.
 
+### First-run setup and portable update regressions
+
+The normal Foundation crate checks collect the model-free tests below. They must
+remain executable without model weights or real release downloads; refactoring
+must preserve their observable ordering, identities and failure boundaries.
+
+| Contract | Regression owner |
+| --- | --- |
+| A fresh data folder uses compiled Swift pins, preserves explicit engine/model/adapter options and finishes setup before broker handoff; failure cannot start speech or inference | `chat_launch::tests::automatic_setup_` and `chat_launch::setup::tests::` in `bonsai-tools` |
+| Valid files need no transfer; interrupted downloads resume; corrupt originals remain until a verified atomic replacement; unsafe paths, concurrent writers and cancellation cannot publish | `startup_download::tests::setup_repair_` in `bonsai-tools` |
+| Runtime repairs use fresh staging, preserve unrelated files, check expanded storage and restore the previous directory if publication fails | Focused `provision::tests::` runtime setup and publisher repair controls |
+| Pause beats a queued model handoff; retry preserves draft/history/options without sending; first-session persistence works; unknown cleanup disables retry and updates | `window::startup_tests::`, `window::setup::tests::` and `startup::tests::` in `bonsai-chat` |
+| Missing, unreadable and changed model bytes have distinct safe guidance; untrusted diagnostic text cannot select a recovery path | `client::tests::model_verification_guidance` and broker artifact marker controls |
+| Updates retain publication/digest/source binding, repair poisoned staging within one deadline, preserve the original on failure, and require fresh confirmation plus confirmed owned teardown | `app_update::` in `bonsai-tools` and `window::updates::tests::` in `bonsai-chat` |
+
+Select named controls or these focused filters under one predeclared local budget.
+Complete crate/workspace suites and real download/update acceptance remain with
+the owner-operated CI lanes. Synthetic passes cannot establish fresh-machine,
+actual-model, public-network, replacement/restart or continuous-power acceptance.
+
 ### Foundation and routing
 
 [Source checks](../.github/workflows/source-checks.yml) provide a limited

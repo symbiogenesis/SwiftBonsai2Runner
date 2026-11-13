@@ -35,7 +35,7 @@ After [setup](docs/development-guide.md#native-chat-app), launch with
 (or `-PublisherEngine` with the script) to use the original publisher C++ engine.
 
 The [Windows release guide](docs/releases.md) covers the portable executable and
-prepared v0.2.1 experimental release, pending the owner's source push and release
+prepared v0.2.2 experimental release, pending the owner's source push and release
 workflow run. [Build locally](docs/development-guide.md#build-a-single-executable)
 to create the same single-file distribution containing all five application tools.
 
@@ -67,7 +67,8 @@ to create the same single-file distribution containing all five application tool
   aloud as responses arrive** speaks new replies while Swift writes, and each
   reply's speaker button lets you replay it anytime.
 
-The launcher downloads speech models automatically; the [setup guide](docs/development-guide.md)
+The launcher prepares the pinned Swift model, adapter, runtime and speech models
+automatically, with progress and in-app retry. The [setup guide](docs/development-guide.md)
 explains how to skip them or preview the app without a model. See the
 [UI architecture](docs/ui-architecture.md) and
 [local API](docs/broker-policy.md#public-request-contract) for technical details.

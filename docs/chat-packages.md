@@ -166,17 +166,19 @@ paths and launches the native app. Options cannot override paths or request sour
 builds. Legacy `launch` remains available with `expectedDirectory`, `expectedId`
 and `expectedManifestSha256` bound before handoff.
 
-Provision Swift model/runtime and the adapter before launch using the
-[setup commands](releases.md#prerequisites-and-model-setup), which need no checkout.
+Current packages prepare the compiled Swift model, selected runtime and adapter
+automatically before model startup. Older v0.2.1 packages need the
+[manual setup commands](releases.md#manual-provisioning-for-older-releases-and-advanced-use).
 The adapter is enabled by default; opt out explicitly with `NoAbliterateLora: true`.
 `NoSpeechModels: true` skips automatic speech preparation; `NoTts: true` skips
 output speech. `NoAbliterateLora`,
 `UseRepackedPtq1`, `NativeEngine`, `NativeRowWorkers`, `PromptReuse`, `KvCache`,
 `GraphicsBackend`, `TtsQuantization`, `TtsThreads`, `FrontendPort`, `BackendPort`,
 `CanaryPort` and `TtsPort` remain explicit settings with the native launcher's
-existing validation. Native Rust owns the per-user launch guard, runtime/speech
-preparation, credentials, Jobs and retry policy; Swift model and adapter
-provisioning remain explicit. No microphone activates at installation or launch.
+existing validation. Native Rust owns the per-user launch guard, artifact/speech
+preparation, credentials, Jobs and retry policy. Progress, Pause setup and Retry
+setup are available in the window; speech retry stays separate. No microphone
+activates at installation or launch.
 
 For current launcher builds, omitted `NativeEngine` selects the Rust development
 default with four row workers. `NativeEngine: false` explicitly selects publisher
