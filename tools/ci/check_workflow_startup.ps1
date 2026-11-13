@@ -15,7 +15,7 @@ function Read-StartupScalar([string]$Value) {
 }
 function Read-StartupReferences([string]$Source) {
     $blockIndent = -1; $number = 0
-    foreach ($line in [IO.File]::ReadAllLines($Source)) {
+    foreach ($line in [IO.File]::ReadAllLines($Source,[Text.UTF8Encoding]::new($false,$true))) {
         $number++; $indent = $line.Length - $line.TrimStart(' ').Length
         if ($blockIndent -ge 0) { if (-not $line.Trim() -or $indent -gt $blockIndent) { continue }; $blockIndent = -1 }
         if ($line.Substring(0, [Math]::Min($indent + 1, $line.Length)).Contains("`t")) { throw "${Source}:${number}: YAML indentation must use spaces" }
@@ -31,7 +31,7 @@ function Read-StartupLock([string]$Source) {
     $dependencies = [Collections.Generic.Dictionary[string,object]]::new([StringComparer]::Ordinal)
     $sections = [Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
     $section = ''; $entry = ''; $version = ''; $number = 0
-    foreach ($line in [IO.File]::ReadAllLines($Source)) {
+    foreach ($line in [IO.File]::ReadAllLines($Source,[Text.UTF8Encoding]::new($false,$true))) {
         $number++; if (-not $line.Trim() -or $line.TrimStart().StartsWith('#')) { continue }
         $indent = $line.Length - $line.TrimStart(' ').Length; $value = $line.Trim()
         try {

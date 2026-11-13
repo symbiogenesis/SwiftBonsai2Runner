@@ -20,14 +20,15 @@ function Get-CiExecutableDigest([string]$Path) {
     } finally { $stream.Dispose() }
 }
 function Read-CiCacheReceipt([string]$Path) {
-    $document=[Text.Json.JsonDocument]::Parse([IO.File]::ReadAllText($Path)); $fields=[Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
+    $raw=[IO.File]::ReadAllText($Path,[Text.UTF8Encoding]::new($false,$true))
+    $document=[Text.Json.JsonDocument]::Parse($raw); $fields=[Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
     try {
         if ($document.RootElement.ValueKind -ne [Text.Json.JsonValueKind]::Object) { throw 'The CI bootstrap receipt has unexpected fields.' }
         foreach ($property in $document.RootElement.EnumerateObject()) { if (-not $fields.Add($property.Name)) { throw "Duplicate receipt field: $($property.Name)" } }
         if ($fields.Count -ne 6 -or @($fields | Where-Object { $_ -cnotin @('schemaVersion','sourceId','hostId','toolchain','compiler','sha256') }).Count) { throw 'The CI bootstrap receipt has unexpected fields.' }
         if ($document.RootElement.GetProperty('schemaVersion').ValueKind -ne [Text.Json.JsonValueKind]::Number -or $document.RootElement.GetProperty('schemaVersion').GetRawText() -cne '1') { throw 'The CI bootstrap receipt has different build inputs.' }
     } finally { $document.Dispose() }
-    return [IO.File]::ReadAllText($Path) | ConvertFrom-Json -AsHashtable
+    return $raw | ConvertFrom-Json -AsHashtable
 }
 function Test-CiCache([string]$Package, [string]$Source, [string]$HostIdentity) {
     if ($Source -cnotmatch '^[a-f0-9]{64}$') { throw 'An exact SHA-256 source identity is required.' }
