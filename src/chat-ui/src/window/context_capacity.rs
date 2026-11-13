@@ -164,6 +164,17 @@ impl State {
             ui.label("First pass only. Extra effort's later passes add generated notes and drafts and need more room.");
         }
         ui.label(RichText::new("Reply limits are in Settings → Response → Advanced response controls. Changing them keeps your conversation and draft. Message actions use their own prompts.").small().weak());
+        if estimate.output > 1_024 {
+            ui.label(
+                RichText::new(format!(
+                    "Choosing a 1,024-token reply instead leaves {} more tokens for your prompt. The reply limit includes thinking.",
+                    tokens(estimate.output - 1_024)
+                ))
+                .small()
+                .weak(),
+            );
+        }
+        ui.label(RichText::new("Capacity is selected when the model starts. Closing memory-heavy apps before the next model start or Retry may leave room for a larger window. This model's current capacity stays fixed.").small().weak());
         if !pending && estimate.pressure() != Pressure::Comfortable {
             if estimate.suggested_cap().is_some() {
                 ui.label("A smaller reply limit could leave more room for this message.");

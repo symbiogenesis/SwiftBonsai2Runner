@@ -329,6 +329,11 @@ background text never restarts playback. Navigation briefly locks during model
 teardown/restart, while drafts remain editable.
 
 The composer scrolls long drafts without hiding Microphone or Send/Stop.
+Drafts can contain up to 1,048,576 Unicode characters; oversized edits reject
+without inserting a partial paste. Complete requests still need to fit the
+1 MiB serialized-byte bound, exact context count and reply reservation. Long
+drafts remain editable after rejection. The separate 8 MiB recovery budget can
+reject saving a large workspace; saving failures stay visible.
 **Enter** sends when ready, **Shift+Enter** inserts a newline and **Ctrl+End**
 moves to the draft's end. **Ctrl+F** searches visible message bodies
 with Unicode case-insensitive matching, excluding reasoning. The search field and

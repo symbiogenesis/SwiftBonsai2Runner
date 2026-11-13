@@ -357,6 +357,7 @@ instead charges the immutable selected cache and sequential score scratch:
 | Publisher FP16 | 65,536 | 137,344 | 62,720 |
 | Native FP16 recovery | 65,536 | 131,296 | 62,720 |
 | Native K4/V4 | 16,896 | 34,016 | 241,664 |
+| Unreleased full-context K4/V4 candidate | 16,896 | 34,016 | 262,144 (separate state allowance) |
 | Native K4/V3 capacity candidate | 14,848 | 29,920 | 262,144 (model limit) |
 
 Native process growth retains two complete caches, 96 bytes per token for
@@ -397,7 +398,7 @@ insufficient memory rejects launch, and running pressure still tears down the
 owned model. An available-memory snapshot reserves no RAM.
 
 Publisher serving passes the selected capacity through `--ctx-size`. Native
-**Prism 0.1.26**, source `3d735627df43056d3bf569002af2c23af30a3e6a`, uses paired
+**Prism 0.1.26**, source `ac941f2668ae93dba9824002b4597081457aa09f`, uses paired
 `--context-tokens` and `--memory-limit-bytes` child arguments with the reviewed
 selected-cache/sequential-scratch accounting. Runner binds capability activation
 to this exact release identity; unrelated versions and an older FP16-only memory
@@ -410,6 +411,17 @@ gate keeps it unavailable with the current 0.1.26 pin. Future activation require
 review of both the K4/V3 numerical identity and the complete M1/M2 accounting
 contract; neither a version string nor a raw CLI option establishes support.
 The K4/V4 default and explicit FP16 recovery remain separate selections.
+
+The unreleased full-context K4/V4 candidate preserves that cache precision and
+the 34,016-byte process charge. Its separate state allowance is 4,644,798,464
+bytes: 156,893,184 recurrent bytes plus 262,144 times 17,120 bytes for cache,
+sequential scores and metadata. This is 333.625 MiB above the current 4 GiB bound.
+With unchanged two-cache, fixed, host and startup charges, the planner projects
+262,144 tokens at 24 GiB available before launch. Runner's separate exact-source
+gate remains closed; the active pin retains the 241,664-token K4/V4 ceiling.
+Activation needs a genuine reviewed release with matching graph, live-state and
+checkpoint guards, followed by full-state/resource and long-range quality
+qualification. Arithmetic alone establishes no usable capacity or latency.
 
 The capacity-first alternative is available as trusted `--placement cpu` (JSON
 `Placement: "cpu"`, PowerShell `-Placement cpu`). It survives source, installed
@@ -443,10 +455,18 @@ prompt and reserves the requested reply plus 64 tokens. It never trims history,
 changes reply settings or replays a request. Larger windows and changing-memory
 startup need independent source-bound application/resource qualification; the
 historical 8K captures establish no larger-context result.
-The existing 1 MiB serialized chat-request bound also remains effective. A token
+The 1 MiB serialized chat-request bound also remains effective. A token
 capacity alone does not guarantee that every Unicode or JSON-escaped history fits
 the transport; larger-profile acceptance must check representative complete
 requests against both token and byte limits.
+The native draft path accepts up to 1,048,576 Unicode scalar characters, with
+whole-edit overflow rejection and complete rejected-draft restoration. Draft
+capacity is independent of request eligibility: serialized history, escaping,
+reply reservation and exact rendered token counts still apply. Recovery retains
+its separate 8 MiB encoded-workspace bound and reports a failure rather than
+silently shortening a draft. Increasing transport requires a coordinated Prism
+server, message, tokenizer and worker-protocol change and a reviewed release;
+changing the desktop HTTP ceiling alone cannot deliver that capability.
 
 ## Source excerpts and useful history
 

@@ -22,6 +22,7 @@ in sync with detailed tasks and preserve their acceptance obligations.
 | R3 / integration, qualification | Prism and Runner harnesses | Agreed execution/state identities and existing complete-state fixtures | Prepare shared state/restore and fault-control tooling independently of runtime qualification; map each prefix/prefill/speculation/accelerator path to its independent assertions and evidence. |
 | M1 / qualification | Prism, then Runner | Reviewed 0.1.26 memory-selected context bundle and exact Runner repin | Qualify selected context/admission/Job limits, unknown and changing memory, retry, UI reporting and full-state/resource behavior at the selected capacities under the [context expansion roadmap](#native-context-expansion-roadmap). Native serving now carries paired context/memory child arguments and reviewed M2 accounting. Historical fixed-8K controls retain their identities. |
 | M2 / qualification | Prism, then Runner | Reviewed cache-aware 0.1.26 runtime and exact Runner repin | Qualify staged 64K/128K capacities and all selected-profile state/resource gates for the integrated cache-aware process/state/checkpoint sizing and native sequential scratch accounting. Follow the [cumulative estimates and conditional extensions](#native-context-expansion-roadmap); source projections do not qualify a larger window. |
+| M3 / integration, qualification | Prism, then Runner | Focused Rust validation and genuine source-bound release of the full-context K4/V4 candidate | Complete focused source checks, deliver the precision-preserving 262,144-token state/checkpoint profile, open its separate exact-source gate only with matching released bytes, and qualify the complete larger-window state/resource and quality path. The current pin keeps its 4 GiB state ceiling. |
 | K1 / qualification | Prism, then Runner | Source-bound 0.1.26 K4/V4 development runtime and matching Runner repin | Preserve explicit FP16 recovery and historical initial 8K packet identities. Complete the [paired quality/memory packet](docs/quantized-kv.md#first-practical-promotion-packet) for measured qualification, independently on X1/X2; it is not a prerequisite for the development default. Qualify memory-selected capacities separately and retain the closed K4/V3 gate in the [context roadmap](#native-context-expansion-roadmap). |
 | S1 / qualification, implementation | Runner; Prism for signed runtime/RPC consumers | Rust CPU Talker/CodePredictor, weight loader, codec/speaker and service integration | Qualify the Rust TTS replacement against the retained controls and pinned Q8/Q4 models, including voice identity, audio, cancellation, lifecycle and resources. Signed Rust RPC remains implementation work under [C++ retirement](#complete-c-retirement); qualify ordinary Q4 before ternary speech and new 48 kHz artifacts. |
 | S2 / implementation, qualification | Runner | Pinned Qwen3-ASR 1.7B artifacts and replacement controls | Qualify microphone-to-Swift submission, then replace ASR's native engine and close transcript/state, cancellation, lifecycle, quality and resource gates before removing its compiler/dependency paths. |
@@ -1802,7 +1803,7 @@ distinct saving is realized in the selected compatible profile.
 
 | Cumulative change | Additional tokens | Total context tokens |
 | --- | ---: | ---: |
-| Current native release | 0 | 8,192 |
+| Historical fixed-8K control | 0 | 8,192 |
 | M1: activate prepared memory-selected serving | 28,928 | 37,120 |
 | M2: account for actual K4/V4 records and existing batch scratch | 90,112 | 127,232 |
 | M2: charge native sequential scratch | 22,528 | 149,760 |
@@ -1823,16 +1824,28 @@ two cache copies plus 6,144 publisher or 96 native scratch bytes plus 128 metada
 bytes. Use live KV plus 224 bytes per token for conservative state sizing.
 
 K4/V4's conservative 4 GiB state ceiling is 241,664 tokens. Its full 262,144
-requires separately reviewed larger live-state/checkpoint limits and enough
-process RAM; K4/V3 fits that model context within the 4 GiB state bound. At
+requires the separately reviewed larger live-state/checkpoint profile and enough
+process RAM; its prepared source candidate retains a closed Runner release gate.
+K4/V3 fits that model context within the 4 GiB state bound. At
 18 GiB available, steps 1-3 project 86,784 tokens; at 24 GiB they project 241,664
 with K4/V4, or 262,144 after K4/V3. The 20 GiB scenario's first three steps give
-about 18 times the current window, or 21 times after K4/V3. The complete
+about 18 times the historical 8K window, or 21 times after K4/V3. The complete
 conditional ladder reaches the artifact's declared 262,144-token ceiling
 (32 times 8K), without claiming measured quality, speed or capacity above it.
 
 ### Alternatives and useful-history improvements
 
+- **M3, full-context K4/V4, Prism then Runner:** deliver the prepared geometry-bound
+  state/checkpoint candidate through a genuine source-bound release, then review
+  and open Runner's separate full-context gate together with the matching memory
+  protocol. Its 4,644,798,464-byte state ceiling adds 333.625 MiB to the current
+  bound while preserving K4/V4 precision, the two-cache process charge and every
+  fixed/host/startup reserve. At 24 GiB available before launch, it projects the
+  full 262,144 model tokens instead of 241,664. At 20 GiB available it supplies
+  no gain over the existing 149,760-token process limit. Qualify complete state,
+  checkpoints, edited/divergent/reused histories, adapters, cancellation, resource
+  peaks, ingestion latency and held-out long-range quality. Generic/FP16 graph
+  limits stay separate. Source arithmetic does not qualify allocation or quality.
 - **Capacity-first CPU profile, Prism then Runner:** evaluate reducing or omitting
   the current 2,888,663,040-byte (about 2.69 GiB) NPU-resident weight payload. If
   equivalent usable headroom is demonstrated, the step-3 K4/V4 example could rise
@@ -1859,13 +1872,17 @@ conditional ladder reaches the artifact's declared 262,144-token ceiling
 - **Reply reservation guidance, Runner:** where suitable, changing the reserved
   reply from 4,096 to 1,024 admits 3,072 additional prompt tokens within the same
   total context. Keep exact broker admission and the user's selected output limit.
-- **Long-prompt intake, Runner:** remove the 32,768-character composer bottleneck
-  through a bounded native text path before claiming single-message 64K/128K
-  usability. Review recovery, editing, source insertion and request serialization
-  together, preserving complete drafts and explicit byte-limit rejection. The
-  separate 1 MiB serialized-request ceiling can constrain near-262K histories;
-  qualify representative complete Unicode and escaped-text requests against
-  both byte and exact token bounds. A larger tokenizer limit alone closes
+- **Long-prompt intake, Runner and Prism:** replay the focused Rust controls, then
+  qualify the native 1,048,576-character
+  draft path, whole-edit overflow rejection, undo/redo, recovery, source insertion
+  and complete rejected/interrupted-draft restoration before claiming single-message
+  64K/128K usability. Model-free Unicode/escaping and synthetic token-boundary
+  controls do not establish native responsiveness or actual-model ingestion.
+  The separate 1 MiB serialized-request ceiling still constrains large histories.
+  Before increasing it, synchronize Prism's server/message, tokenizer and worker
+  limits, publish a genuine reviewed runtime and match Runner's request and recovery
+  bounds. Qualify representative complete Unicode and escaped-text requests against
+  both byte and exact token bounds; a larger HTTP or tokenizer limit alone closes
   neither intake gate and authorizes no silent truncation.
 - **Source-grounded retrieval and optional summaries, Runner:** extend useful
   history through the native lexical scene-packet builder, source versions and

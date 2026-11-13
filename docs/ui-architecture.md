@@ -137,6 +137,28 @@ artifact, model, memory, context or sampler policy. Explicit
 [runtime/format and adapter choices](development-guide.md#runtime-selection) do not
 establish promotion or full-model/device qualification.
 
+### Long drafts and context guidance
+
+The native composer and message editor accept up to 1,048,576 Unicode scalar
+characters. Oversized paste or replacement is rejected as a whole, preserving
+the prior draft, selection and undo state; dictation and source-packet insertion
+also reject overflow without partial insertion. Rejected or interrupted prompts
+return completely to an empty composer in their original conversation. A newer
+draft is preserved instead of being overwritten.
+
+The serialized request retains its 1 MiB bound, including history and JSON
+escaping, independently of the draft limit and exact token admission. Byte-limit
+feedback keeps the complete draft for editing. The 8 MiB encoded recovery budget
+also remains independent; an oversized workspace reports a saving failure.
+Large draft support does not qualify native editing responsiveness or actual-model
+64K/128K usability.
+
+Context details explain launch-time memory selection and the extra prompt room
+released by choosing a smaller reply limit. For example, 1,024 instead of 4,096
+releases 3,072 tokens. Guidance leaves those settings under user control. Closing
+memory-heavy applications before a fresh model start or Retry may increase the
+selected capacity; a running session keeps its immutable capacity and reserves.
+
 ### Reviewed source excerpts
 
 The native composer's **Sources** action accepts pasted text, a source title and
