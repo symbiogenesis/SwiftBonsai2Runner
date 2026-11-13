@@ -53,6 +53,7 @@ pub const COMMANDS: &[&str] = &[
     "startup-diagnostics",
     "hexagon-policy",
     "publisher-startup",
+    "pe-closure",
 ];
 
 /// Returns the native maintenance protocol capabilities without reading a request.
@@ -169,6 +170,9 @@ pub mod hexagon_policy;
 
 /// Fixed archived publisher startup probes and bounded original-PQ2 smoke.
 pub mod publisher_startup;
+
+/// Bounded static ARM64 PE imports and API-set dependency closure.
+pub mod pe_closure;
 
 /// Retained caller identity for cancellation of native startup work.
 pub mod startup_cancel;

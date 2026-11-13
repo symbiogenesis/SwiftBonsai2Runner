@@ -1,9 +1,9 @@
 #requires -Version 7.6
 [CmdletBinding()]
-param([ValidateSet('candidate_gui','system_gui','optional_delay','api_alias','malformed','headers','raw_extent','namespace')][string[]]$Case = @('candidate_gui','system_gui','optional_delay','api_alias','malformed','headers','raw_extent','namespace'))
+param([ValidateSet('candidate_gui','system_gui','optional_delay','api_alias','malformed','headers','raw_extent','namespace')][string[]]$Case = @('candidate_gui','system_gui','optional_delay','api_alias','malformed','headers','raw_extent','namespace'), [string]$ToolPath = $env:BONSAI_TOOLS_PATH)
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
-. (Join-Path $PSScriptRoot 'pe_closure.ps1')
+. (Join-Path $PSScriptRoot 'pe_closure.ps1') -ToolPath $ToolPath
 function Assert($Condition, [string]$Message) { if (-not $Condition) { throw $Message } }
 function Reject([scriptblock]$Action, [string]$Pattern = '.') {
     $caught = $false
@@ -60,12 +60,13 @@ try {
                 Reject { Invoke-PeClosure $bundlePath $systemPath @{ $name = @() } } 'Unresolved API-set'
                 Reject { Invoke-PeClosure $bundlePath $systemPath @{ $name = ,@('', 'user32.dll') } } 'GUI dependency'
             }
-            malformed { [IO.File]::Delete($kernel); Reject { Invoke-PeClosure $bundlePath $systemPath @{} }; [IO.File]::WriteAllBytes($kernel, @(77,90)); Reject { Read-PeImage $kernel }; Image $kernel; $data = [IO.File]::ReadAllBytes($common); Put32 $data (0x98 + 124) 20; [IO.File]::WriteAllBytes($common, $data); Reject { Invoke-PeClosure $bundlePath $systemPath @{} } 'Unterminated import' }
-            headers { foreach ($spec in @(@(0x94,111),@(0x94,224),@((0x98 + 108),1),@((0x98 + 108),17))) { Image $common @('kernel32.dll'); $data = [IO.File]::ReadAllBytes($common); if ($spec[0] -eq 0x94) { Put16 $data $spec[0] $spec[1] } else { Put32 $data $spec[0] $spec[1] }; [IO.File]::WriteAllBytes($common, $data); Reject { Read-PeImage $common } 'optional header|directory count' } }
-            raw_extent { foreach ($directory in @(1,13)) { Image $common; $data = [IO.File]::ReadAllBytes($common); [Array]::Resize([ref]$data, ($data.Length + 4096)); Put32 $data (0x98 + 112 + $directory * 8) 0x1ff0; Put32 $data (0x98 + 116 + $directory * 8) $(if ($directory -eq 1) { 40 } else { 64 }); [IO.File]::WriteAllBytes($common, $data); Reject { Get-PeImports (Read-PeImage $common) -Delayed:($directory -eq 13) } 'extent outside raw section' } }
+            malformed { [IO.File]::Delete($kernel); Reject { Invoke-PeClosure $bundlePath $systemPath @{} }; [IO.File]::WriteAllBytes($kernel, @(77,90)); Reject { Invoke-PeClosure $bundlePath $systemPath @{} }; Image $kernel; $data = [IO.File]::ReadAllBytes($common); Put32 $data (0x98 + 124) 20; [IO.File]::WriteAllBytes($common, $data); Reject { Invoke-PeClosure $bundlePath $systemPath @{} } 'Unterminated import' }
+            headers { foreach ($spec in @(@(0x94,111),@(0x94,224),@((0x98 + 108),1),@((0x98 + 108),17))) { Image $common @('kernel32.dll'); $data = [IO.File]::ReadAllBytes($common); if ($spec[0] -eq 0x94) { Put16 $data $spec[0] $spec[1] } else { Put32 $data $spec[0] $spec[1] }; [IO.File]::WriteAllBytes($common, $data); Reject { Invoke-PeClosure $bundlePath $systemPath @{} } 'optional header|directory count' } }
+            raw_extent { foreach ($directory in @(1,13)) { Image $common; $data = [IO.File]::ReadAllBytes($common); [Array]::Resize([ref]$data, ($data.Length + 4096)); Put32 $data (0x98 + 112 + $directory * 8) 0x1ff0; Put32 $data (0x98 + 116 + $directory * 8) $(if ($directory -eq 1) { 40 } else { 64 }); [IO.File]::WriteAllBytes($common, $data); Reject { Invoke-PeClosure $bundlePath $systemPath @{} } 'extent outside raw section' } }
             namespace {
-                $schema = Join-Path $systemPath 'apisetschema.dll'; NamespaceImage $schema; $mapping = Get-PeApiSets $systemPath; Assert ($mapping['api-ms-win-core-test-l1-1-2.dll'][0][1] -eq 'kernel32.dll') 'Missing namespace host'
-                foreach ($spec in @(@(4,27),@(4,40),@(16,190),@(32,180),@(44,190),@(132,184))) { NamespaceImage $schema; $data = [IO.File]::ReadAllBytes($schema); Put32 $data (0x400 + $spec[0]) $spec[1]; [IO.File]::WriteAllBytes($schema, $data); Reject { Get-PeApiSets $systemPath } }
+                $schema = Join-Path $systemPath 'apisetschema.dll'; NamespaceImage $schema; Image $common @('api-ms-win-core-test-l1-1-2.dll'); $r = Invoke-PeClosure $bundlePath $systemPath $null
+                Assert (@($r.requiredEdges | Where-Object { $_.import -eq 'api-ms-win-core-test-l1-1-2.dll' -and $_.resolved -eq 'kernel32.dll' }).Count -eq 1) 'Missing namespace host'
+                foreach ($spec in @(@(4,27),@(4,40),@(16,190),@(32,180),@(44,190),@(132,184))) { NamespaceImage $schema; $data = [IO.File]::ReadAllBytes($schema); Put32 $data (0x400 + $spec[0]) $spec[1]; [IO.File]::WriteAllBytes($schema, $data); Reject { Invoke-PeClosure $bundlePath $systemPath $null } }
             }
         }
         Write-Output "PASS $selected"

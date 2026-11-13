@@ -399,7 +399,6 @@ pub(super) fn build(repository: &Path, output: &Path) -> crate::Result<Value> {
         let compiler = llvm.join("clang-cl.exe");
         let linker = llvm.join("lld-link.exe");
         let cmake = crate::startup_process::resolve("cmake.exe".as_ref())?;
-        let powershell = crate::startup_process::resolve("pwsh.exe".as_ref())?;
         let build = working.join("build");
         let mut flags: Vec<OsString> = vec![
             "-S".into(),
@@ -480,29 +479,22 @@ pub(super) fn build(repository: &Path, output: &Path) -> crate::Result<Value> {
             .map_err(|error| error.to_string())?;
         receipt["Phase"] = "static-import-closure".into();
         save(&receipt_path, &receipt, false)?;
-        candidate.tool(
-            &powershell,
-            &[
-                "-NoLogo".into(),
-                "-NoProfile".into(),
-                "-File".into(),
-                repository
-                    .join("tools/runtime-candidates/pe_closure.ps1")
-                    .into_os_string(),
-                "-Bundle".into(),
-                bundle.clone().into_os_string(),
-                "-System".into(),
-                crate::startup_download::system_tool("kernel32.dll")?
-                    .parent()
-                    .ok_or("Missing system directory.")?
-                    .as_os_str()
-                    .to_owned(),
-                "-Output".into(),
-                output.join("imports.json").into_os_string(),
-            ],
-            "static-imports.txt",
-            120,
-        )?;
+        let kernel = crate::startup_download::system_tool("kernel32.dll")?;
+        let imports = crate::pe_closure::run(json!({
+            "bundleDirectory":bundle,
+            "systemDirectory":kernel.parent().ok_or("Missing system directory.")?
+        }));
+        let report = match &imports {
+            Ok(report) => report.clone(),
+            Err(error) => json!({"schemaVersion":1,"status":"rejected",
+                "error":error,"modelExecuted":false}),
+        };
+        fs::write(
+            output.join("imports.json"),
+            serde_json::to_vec_pretty(&report).map_err(|error| error.to_string())?,
+        )
+        .map_err(|error| error.to_string())?;
+        imports?;
         let mut files = Vec::new();
         let mut artifacts = Vec::new();
         for entry in fs::read_dir(&bundle).map_err(|error| error.to_string())? {

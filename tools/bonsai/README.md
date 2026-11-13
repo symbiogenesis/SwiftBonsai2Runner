@@ -56,6 +56,16 @@ or `--request -` for standard input. Rust enforces the same object, size and
 schema checks for all three sources. No PowerShell module is needed for direct
 use. `--version` advertises capabilities; use a trusted source-bound build.
 
+`pe-closure` audits native ARM64 PE files without loading them. Supply
+`bundleDirectory` and `systemDirectory`; omitted or null `aliases` reads
+`apisetschema.dll`. It follows candidate normal/delay imports and recursive
+system normal imports, rejects mandatory GUI dependencies, and records optional
+system delays without following them. The schema-1 report retains bounded file
+digests, import edges and the unresolved forwarded-export scope. The optional
+`tools/runtime-candidates/pe_closure.ps1` facade accepts `-ToolPath` or
+`BONSAI_TOOLS_PATH`; synthetic fixtures can supply explicit alias maps through
+`Invoke-PeClosure`. Native build tooling calls the Rust audit directly.
+
 For a source checkout, build the maintenance executable once with the pinned
 compiler and an external target, then run it directly:
 

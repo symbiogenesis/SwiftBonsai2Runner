@@ -182,6 +182,7 @@ fn dispatch(command: &str, request: serde_json::Value) -> bonsai_tools::Result<s
         "native-acceptance-budget" => bonsai_tools::native_acceptance_budget::run(request),
         "hexagon-policy" => bonsai_tools::hexagon_policy::run(request),
         "publisher-startup" => bonsai_tools::publisher_startup::run(request),
+        "pe-closure" => bonsai_tools::pe_closure::run(request),
         "startup-diagnostics" => bonsai_tools::startup_diagnostics::run(request),
         _ => Err("Unknown maintenance command.".into()),
     }
