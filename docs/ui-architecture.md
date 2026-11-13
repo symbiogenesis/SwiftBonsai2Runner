@@ -29,6 +29,18 @@ joined shutdown. Windows high contrast, per-monitor scaling, labelled
 AccessKit controls and keyboard navigation are supported. Full bidirectional
 editing and native-control accessibility parity still require qualification.
 
+Presentation primitives live in `window/controls.rs`: theme-aware buttons,
+dialog surfaces and lazy clipboard controls. They accept borrowed presentation
+values and return egui responses; they do not depend on application state,
+services or persistence. Feature controls own their labels, availability and
+stable widget identities. Conversation rows and dialogs return actions or
+decisions for workspace controllers to apply after rendering. Settings value
+editors borrow only the preferences they edit; the window owns persistence and
+generation locks. The composer keeps text editing, cursor/focus restoration,
+IME-safe submission, responsive actions and feedback in separate helpers.
+Clipboard payloads are constructed only on activation, with caller-owned source
+identities for transient confirmation.
+
 ### Launch and ownership
 
 The native `bonsai-tools chat` command owns build reuse,
