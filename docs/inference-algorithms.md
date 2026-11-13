@@ -105,13 +105,10 @@ arbitrary tensors. Validated immutable representations may avoid repeated canoni
 arbitrary public tensors still need rejection checks. `dot(code - 1, q) = dot(code, q) - sum(q)`
 permits using `Q8KBlock.sums` under the same scale contract as lane subtraction.
 
-The earlier November source review found only `Tl1BlockLut`'s public reexport
-and test callers. The newer explicit
-[`Pq2LutExecutor` candidate](cpu-kernels.md#grouped-dispatch-hardware-half-widening-and-exact-lut-execution)
-connects bounded table preparation shared across output rows to prepared matvec
-and graph execution. It is never selected automatically. Tables rebuild per
-invocation, including siblings; compare their full preparation/cache/dispatch
-cost with SDOT/NEON before selecting this path. No measured benefit is established.
+The explicit [Pq2LutExecutor candidate](cpu-kernels.md#grouped-dispatch-hardware-half-widening-and-exact-lut-execution)
+shares bounded table preparation across output rows in prepared matvec and graph
+execution. Selection is manual. Tables rebuild per invocation, including siblings;
+compare complete preparation/cache/dispatch cost against SDOT/NEON before selecting it.
 
 ### Vec-LUT for multiple prompt tokens
 
@@ -120,10 +117,8 @@ group lookups across prompt tokens and stream cache-sized tables using bounded I
 accumulation. Transfer requires unchanged quantizers/scales, bounds for all accepted inputs and
 accounting for layouts, repacking, retained copies and scratch; published platforms do not qualify Swift.
 
-The cited work originated in December 2025 and was revised in April 2026.
-No cross-token Vec-LUT execution path was found in local Prism during the
-November review. Existing token tiles share decoded weights across tokens;
-that mechanism does not implement multi-token activation lookup tables.
+Prism's token tiles share decoded weights across tokens; they do not implement
+multi-token activation lookup tables.
 
 ## Chunkwise Gated DeltaNet prefill
 
