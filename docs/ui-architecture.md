@@ -40,7 +40,8 @@ The native Rust single-file launcher embeds five application executables, their
 manifest and notices. It verifies and extracts the inventory into the per-user cache
 and uses verified package launch. Broker, UI and speech retain separate ownership,
 containment and teardown. The v0.2.2 preparation worker also provisions the compiled
-Swift weights, selected adapter and runtime before broker handoff. The v0.2.1 update path downloads verified releases and requires user
+Swift weights, selected adapter and runtime before broker handoff. The v0.2.1 update
+path downloads verified releases and requires user
 confirmation before replacement, preserving the data directory. Published v0.2.0 requires
 [manual replacement](releases.md#update-and-remove).
 
@@ -85,7 +86,8 @@ Explicit PTQ1 remains verify-only and never falls back to PQ2. Fixed bounded sta
 reports and partial lengths are read by the preparation worker, outside the event
 loop. Pause and Retry setup preserve drafts and launch options, use fresh attempt
 directories and require confirmed owned-process cleanup; unexpected worker exits
-disable retry. Speech has its own retry path and cannot block text chat. Drafts and recovered conversations survive preparation;
+disable retry. Speech has its own retry path and cannot block text chat. Drafts and
+recovered conversations survive preparation;
 model preparation failures leave the window available. Closing cancels preparation
 and waits for owned descendants. Artifact verification and memory admission precede model use.
 Owned inference and speech require [native containment](sandboxing.md), with no

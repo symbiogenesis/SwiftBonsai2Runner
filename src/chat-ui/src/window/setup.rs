@@ -35,6 +35,7 @@ pub(super) fn failure_message(error: &io::Error) -> &'static str {
         || text.contains("permission denied")
         || text.contains("os error 5")
         || text.contains("unsafe")
+        || text.contains("artifact storage could not be opened safely")
     {
         "Setup cannot use its data folder. Check its permissions and use a local folder, then select Retry setup."
     } else if text.contains("download") || text.contains("connect") || text.contains("resolve host")
@@ -214,6 +215,7 @@ mod tests {
         assert!(failure_message(&io::Error::other("Not enough disk space")).contains("storage"));
         assert!(failure_message(&io::Error::other("Access is denied")).contains("permissions"));
         assert!(failure_message(&io::Error::other("Pinned download failed")).contains("internet"));
+        assert!(failure_message(&io::Error::other("Swift model setup failed: Artifact storage could not be opened safely. Check the internet connection, free storage and folder permissions.")).contains("permissions"));
         assert!(failure_message(&io::Error::other("Pinned download failed (6): Could not resolve host; check free disk space and folder permissions")).contains("internet"));
     }
 }

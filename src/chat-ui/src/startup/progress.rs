@@ -88,6 +88,8 @@ fn status(report: Report, data: &Path) -> Option<Status> {
             result.expected = Some(expected);
             result.message = if metadata.len() >= expected {
                 "Verifying downloaded files…".into()
+            } else if result.message.starts_with("Checking") {
+                "Checking files; a partial download is available to resume…".into()
             } else {
                 "Downloading files for Swift…".into()
             };
@@ -99,6 +101,44 @@ fn status(report: Report, data: &Path) -> Option<Status> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn setup_progress_reads_resumable_bytes_without_calling_complete_a_verified_model()
+    -> std::io::Result<()> {
+        let data = std::env::temp_dir().join(format!(
+            "Bonsai-SetupProgress-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map_err(std::io::Error::other)?
+                .as_nanos()
+        ));
+        std::fs::create_dir(&data)?;
+        let model = data.join("model.gguf");
+        let partial = data.join("model.gguf.partial");
+        let path = data.join("chat-setup-progress.json");
+        let report = serde_json::json!({"SchemaVersion":1,"Stage":"model","Message":"Downloading Swift model…","ArtifactPath":model,"ExpectedBytes":10});
+        std::fs::write(&path, report.to_string())?;
+        std::fs::write(&partial, [0; 4])?;
+        let observed =
+            read_status(&data, &data).ok_or_else(|| std::io::Error::other("Missing progress"))?;
+        assert_eq!(
+            (observed.downloaded, observed.expected),
+            (Some(4), Some(10))
+        );
+        std::fs::write(&partial, [0; 10])?;
+        let complete = read_status(&data, &data)
+            .ok_or_else(|| std::io::Error::other("Missing complete progress"))?;
+        assert_eq!(complete.message, "Verifying downloaded files…");
+        assert!(
+            !model.exists(),
+            "Progress must never publish or qualify a model"
+        );
+        std::fs::write(&path, "{".repeat(8193))?;
+        assert!(read_status(&data, &data).is_none());
+        std::fs::remove_dir_all(data)?;
+        Ok(())
+    }
 
     #[test]
     fn setup_progress_rejects_unbounded_unknown_and_external_artifacts() {
