@@ -29,8 +29,9 @@ Double-click the executable to verify, extract and launch it, or use
 `bundled-chat` with installed-chat options except `--installation-directory`.
 Packages use GUI-subsystem `bonsai-launcher` for terminal-free startup;
 `bonsai-tools` retains its console. Both share maintenance commands and protocol.
-Model/speech workers remain separate owned processes. Models, adapters, inference
-runtimes and the Microsoft ARM64 C++ runtime are separate downloads. Bundle
+Model/speech workers remain separate owned processes. The app downloads and
+verifies its pinned models, adapters and inference runtime inside the native
+window; users do not run manual provisioning commands before launch. Bundle
 integrity checks do not independently establish publisher identity; review
 published release checksums before execution.
 

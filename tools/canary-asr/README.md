@@ -21,19 +21,18 @@ them, and existing downloaded snapshots are preserved. The `canary` directory,
 `--canary-key-file`/port options, `Canary` service kind and `CanaryModelPath`
 output name remain compatibility names; they select Qwen3-ASR, not Canary.
 
-## Standalone service
+## Developer-managed service
 
-For a separately managed native companion, run its built executable from an
-external working directory, with absolute external model and protected key paths.
-`$speech` contains the verified paths returned by the setup guide's
-`bonsai-tools chat --speech-models-only` command. `$canaryKey` is an absolute
-key-file path string, not the credential value:
+Ordinary app launches prepare and own this service automatically. The following
+interface is for developers integrating a separately managed companion. Run the
+built executable from an external working directory with absolute verified model
+and protected key-file paths:
 
-```powershell
-& $asrExecutable --model $speech.CanaryModelPath --token-file $canaryKey --port 8766
+```text
+bonsai-asr.exe --model C:\Speech\qwen3-asr.gguf --token-file C:\Speech\asr.key --port 8766
 ```
 
-Then launch with `bonsai-tools chat --canary-key-file $canaryKey` as described
+Then launch with `bonsai-tools chat --canary-key-file C:\Speech\asr.key` as described
 in the setup guide. A key contains exactly 64 lowercase hex bytes without a newline,
 protected for the owner and LocalSystem.
 Never pass its value through arguments, environment variables or logs.

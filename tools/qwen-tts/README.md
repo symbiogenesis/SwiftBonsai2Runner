@@ -26,18 +26,18 @@ same Q8_0 codec. All three files must match the selected immutable lock before
 loading; arbitrary files or changed filenames cannot bypass verification. Q4
 quality and speed remain unqualified.
 
-## Standalone service
+## Developer-managed service
 
-For an independently managed native companion, run from an external working
-directory with absolute external artifact/key paths. `$speech` contains the
-verified paths returned by the setup guide's `bonsai-tools chat --speech-models-only`
-command. `$ttsKey` is an absolute key-file path string, not the credential value:
+Ordinary app launches prepare and own this service automatically. The following
+interface is for developers integrating an independently managed companion. Run
+from an external working directory with absolute verified artifact and protected
+key-file paths:
 
-```powershell
-& $ttsExecutable --model $speech.TtsModelPath --codec $speech.TtsCodecPath --voice-model $speech.TtsVoiceModelPath --token-file $ttsKey --port 8767
+```text
+bonsai-tts.exe --model C:\Speech\talker.gguf --codec C:\Speech\codec.gguf --voice-model C:\Speech\voice-talker.gguf --token-file C:\Speech\tts.key --port 8767
 ```
 
-Launch with `bonsai-tools chat --tts-key-file $ttsKey` as described in the setup guide.
+Launch with `bonsai-tools chat --tts-key-file C:\Speech\tts.key` as described in the setup guide.
 `--threads 1` through `256` selects an explicit inference budget; omitting it
 uses the library's automatic budget. Use the repository's protected development
 key tooling: exactly 64 lowercase hex bytes, no newline, owner/LocalSystem access.

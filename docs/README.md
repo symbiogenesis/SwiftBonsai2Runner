@@ -1,11 +1,12 @@
 # Documentation
 
-Start with the [development guide](development-guide.md) for setup, launch and
-developer commands, or [portable packages](chat-packages.md) to run without a
-checkout. [PLAN.md](../PLAN.md) is the single backlog; these guides own current
+Start with [Windows releases](releases.md#download-and-open): download the portable
+executable and open it; setup and retry happen inside the app. The
+[application and development guide](development-guide.md) covers controls and
+separate contributor commands. [PLAN.md](../PLAN.md) is the single backlog; these guides own current
 behavior, technical contracts and retained evidence.
 
-The app uses a native Rust UI, pinned Prism 0.1.25 on Windows ARM64, CPU inference
+The app uses a native Rust UI, pinned Prism 0.1.26 on Windows ARM64, CPU inference
 with experimental X2 resident Hexagon acceleration, and a strict local HTTP/JSON/SSE
 subset. Implementation does not establish model, device, quality or isolation
 acceptance; experimental runtimes, formats and accelerators need separate qualification.
@@ -14,9 +15,9 @@ acceptance; experimental runtimes, formats and accelerators need separate qualif
 
 | Guide | Contents |
 | --- | --- |
-| [Development](development-guide.md) | Requirements, provisioning, app/settings/speech, developer commands, build caches and runtime lock updates |
-| [Portable packages](chat-packages.md) | Assembly, installation, update, rollback and installed launch |
-| [Windows releases](releases.md) | Portable Windows ARM64 executable, confirmed updates and owner publication |
+| [Windows releases](releases.md) | Download, in-app setup and retry, confirmed updates and owner publication |
+| [Application and development](development-guide.md) | App/settings/speech controls, separate contributor builds, build caches and runtime lock updates |
+| [Portable packages](chat-packages.md) | Developer assembly, checked-directory installation, update, rollback and installed launch |
 | [Validation](validation.md) | Local-check policy, CI ownership, standards, regression coverage, acceptance and promotion |
 | [Licensing](licensing.md) | Project, dependency, model and font terms; notices and redistribution |
 

@@ -1,12 +1,15 @@
 # Development guide
 
-Run these examples from the repository root in native Windows ARM64 PowerShell
-7.6+. Use [validation](validation.md) for language standards and focused checks.
+To use Swift, [download the Windows ARM64 executable](releases.md#download-and-open)
+and open it. Model, adapter, inference-engine and speech setup happen in the app,
+with progress and retry controls. No checkout or PowerShell setup is needed.
 
-Start with [Native chat app](#native-chat-app), or [portable packages](chat-packages.md)
-without a checkout. [Inventory/provisioning](#inventory-and-provisioning),
+Start with [Native chat app](#native-chat-app) for application controls.
+The build, source-launch, [inventory/provisioning](#inventory-and-provisioning),
 [CPU checks](#bounded-cpu-loaddecode-check) and the [development broker](#explicit-development-broker)
-are separate developer workflows.
+sections are separate contributor workflows. Run their command examples from the
+repository root in native Windows ARM64 PowerShell 7.6+. Use
+[validation](validation.md) for language standards and focused checks.
 
 ## Current state
 
@@ -156,8 +159,9 @@ application launch or CI operation.
 The executable embeds the native window, broker, ASR, TTS, maintenance tool,
 package manifest and notices. Double-click it to verify and extract the package into
 the user cache and open chat without a terminal, checkout, PowerShell or compiler.
-Workers retain their containment and teardown rules. Provision model weights,
-adapters, inference runtime and Microsoft Visual C++ ARM64 runtime separately.
+Workers retain their containment and teardown rules. The app downloads and verifies
+the pinned model weights, adapter, inference runtime and speech models on first
+launch; users do not provision them before opening the executable.
 For a manual update, verify the new executable's published SHA-256, close Swift
 and replace your copy. Keep the same data directory to preserve models and data.
 
@@ -177,8 +181,24 @@ and the remaining hosted and clean-machine acceptance gates.
 
 ## Native chat app
 
-The [portable package workflow](chat-packages.md) installs reviewed prebuilt app
-files without a checkout/compiler. Source launch requires native Windows ARM64,
+Open the [portable executable](releases.md#download-and-open) on serviced Windows
+11 ARM64. The native window opens first; its setup worker then downloads and
+verifies the pinned Swift model, adapter, selected inference engine and speech
+models. Text chat starts as soon as its files are ready while speech preparation
+continues separately. Microphone capture and playback require explicit action.
+
+Keep the window open to follow progress. **Pause setup** preserves partial
+downloads, and **Retry setup** resumes after the reported problem is resolved.
+Speech has its own **Retry speech setup** control in **Settings > Voice**;
+retrying speech preserves the running text model, drafts and conversations.
+Closing and reopening also resumes preparation. Use **Copy error** or
+**Copy diagnostics** to report the failed step and selected data directory.
+Keep the same data directory across updates to retain downloads and local data.
+
+### Contributor source launch
+
+The following commands build and launch from a checkout; they are not deployment
+steps. Source launch requires native Windows ARM64,
 the pinned Rust toolchain, a built maintenance executable, internet access for setup and
 sufficient available RAM for the selected native context and launch budget.
 Serviced Windows 11 must admit PSEC 1.1 and
@@ -228,14 +248,12 @@ the peer. ASR/TTS models load on demand for transcription or read-aloud. Closing
 cancels preparation and waits for owned processes to stop.
 Staged startup requires rebuilt maintenance tools and UI; older tools retain combined setup.
 
-Direct native-app launches also verify the selected Rust executable before hashing
-the model or creating credentials. Runtime failures name the compiled Prism version
-and show a PowerShell repair command for that app's data directory. Before any
-provisioning, the command checks the maintenance tool's compiled release version,
-source commit, target and archive hash against the app's pin. Older or mismatched
+Direct developer launches of `bonsai-chat.exe` also verify the selected Rust
+executable before hashing the model or creating credentials. Use the matching
+launcher to prepare and repair its compiled runtime pin. Older or mismatched
 tools must be rebuilt from the same checkout or supplied by the same verified app
-package. Model failures retain separate model/export guidance. Retry repeats
-verification after repair.
+package. Normal portable launches perform preparation in the window; model and
+setup retries repeat verification without requiring a provisioning command.
 
 During staged source startup, pinned runtime verification/provisioning and the
 broker build run concurrently. Both must finish successfully before the UI starts
@@ -529,7 +547,7 @@ comparison and cleanup still share the five-minute owner-device budget.
 
 ### Speech setup and operation
 
-The launcher provisions native ARM64 Qwen3-ASR 1.7B and Qwen3-TTS 1.7B
+The app prepares native ARM64 Qwen3-ASR 1.7B and Qwen3-TTS 1.7B
 VoiceDesign/Base companions. Rust owns services, authentication, validation, WAV
 processing and process ownership; reviewed native GGML C++ engines provide inference.
 Qwen3-ASR uses CPU. TTS can select an optional local Hexagon `HTP0` backend and
@@ -538,37 +556,16 @@ This separate speech path is not the Swift `native-q2` policy, and its presence
 checks do not establish runtime signature/hash verification, contained device
 access, audio quality or a speed advantage. See the [TTS runtime contract](../src/speech-tts/README.md).
 The four pinned Q8_0 GGUF files total about 6.1 GiB under
-`$data/speech/native/`; ASR uses `qwen3-asr/<revision>/`, and TTS uses
+`%LOCALAPPDATA%/SwiftBonsai2/speech/native/` by default; ASR uses `qwen3-asr/<revision>/`, and TTS uses
 `qwen-tts/<revision>/`. Downloads resume with exact size/SHA-256
 verification; launch checks cached sizes, then each service fully hashes and holds
 files before first load. Original snapshots/private runtimes are preserved.
 
-Download and verify without compiling or launching:
-
-```powershell
-$speech = bonsai-tools chat --data-directory $data --speech-models-only | ConvertFrom-Json
-$speech.CanaryModelPath
-$speech.TtsModelPath
-$speech.TtsCodecPath
-$speech.TtsVoiceModelPath
-```
-
-Rust `speech-build` with `operation: "models"` and `model: "QwenAsr"` or `"QwenTts"` selects one
-engine. The legacy `"Canary"` selector, `CanaryModelPath` result and `--canary-*`
-connection options remain compatibility names for Qwen3-ASR; they do not select
-the old Canary checkpoint. Rust `provision` with `operation: "speech-reference"`
-explicitly provisions original reference snapshots, which the app no longer uses.
-`--no-tts` skips automatic TTS setup;
-`--no-speech-models` skips all automatic speech setup/downloads. Neither provisioning nor compiling
-opens a microphone.
-
-Native speech builds require the pinned Rust compiler, Visual Studio 18 ARM64 C++
-tools and Windows SDK. Pinned LLVM ARM64/engine archives and all outputs stay
-outside Git; only child compiler settings change. Downloads use Windows
-`System32/curl.exe` 8.4+ with HTTPS-only redirects and resumable verified partials;
-LLVM extraction uses `System32/tar.exe`. Cached launch invokes neither download.
-`bonsai-tools chat --asr-path PATH` / `--tts-path PATH` select built executables,
-whose services still verify models.
+Speech setup starts automatically after text preparation. Follow its progress in
+**Settings > Voice** and select **Retry speech setup** after fixing a reported
+network, storage or permissions problem. Verified downloads are reused; a speech
+failure leaves text chat available. No microphone opens during setup, and speech
+models load only when transcription or read-aloud is requested.
 
 The microphone button beside Send starts input only after explicit action and
 Windows permission. Click it again to finish the utterance; capture also finishes
@@ -695,6 +692,23 @@ working path, not full audio quality, latency or daily-use qualification.
 
 ### Source launch, caches and runtime selection
 
+This section covers contributor tooling. Native speech builds require the pinned
+Rust compiler, Visual Studio 18 ARM64 C++ tools and Windows SDK. These build tools
+are not required on a machine running the portable executable. Pinned LLVM
+ARM64/engine archives and all outputs stay outside Git; only child compiler settings
+change. Downloads use Windows `System32/curl.exe` 8.4+ with HTTPS-only redirects
+and resumable verified partials; LLVM extraction uses `System32/tar.exe`.
+
+For model-only inspection, `bonsai-tools chat --speech-models-only` returns verified
+artifact paths without building or launching companions. `speech-build` with
+`operation: "models"` and `model: "QwenAsr"` or `"QwenTts"` selects one engine.
+The legacy `"Canary"` selector, `CanaryModelPath` result and `--canary-*` connection
+options name Qwen3-ASR. The explicit `provision` operation `speech-reference`
+downloads original reference snapshots, which the app does not use.
+`--no-tts` skips automatic TTS preparation; `--no-speech-models` skips all automatic
+speech preparation. `--asr-path PATH` and `--tts-path PATH` select built executables;
+services still verify their models.
+
 `bonsai-tools chat` directly opens the native application; an owned `chat-prepare`
 worker runs after the first UI tick. Rust owns options, speech setup, builds,
 credentials, per-user admission and teardown. The maintenance executable can be
@@ -751,21 +765,10 @@ and installed-package launches retain native admission. Installed launches use [
 | Publisher Prism CPU, current-weight PTQ1 export | `--publisher-engine --use-repacked-ptq1` | Same adapter opt-out/scale. No older publisher PTQ1 substitution. |
 
 `--no-abliterate-lora` (direct app `--no-abliterate-lora`) omits the adapter and disables
-its control. Source launch prepares the native release automatically; it can also
-be provisioned explicitly:
-
-```powershell
-bonsai-tools provision --json (@{ operation = 'inference'; dataDirectory = $data } | ConvertTo-Json -Compress)
-bonsai-tools chat --data-directory $data --native-engine --no-abliterate-lora
-```
-
-For manual publisher rollback, provision its pinned engine once, then launch it
-explicitly with the same model and adapter:
-
-```powershell
-bonsai-tools provision --json (@{ operation = 'engine'; dataDirectory = $data; lockPath = (Join-Path $PWD 'config/swift-assessment.lock.json') } | ConvertTo-Json -Compress)
-bonsai-tools chat --data-directory $data --publisher-engine --use-original-pq2
-```
+its control. Launch prepares the selected pinned runtime automatically, including
+an explicitly selected publisher rollback. No prior runtime-provisioning command
+is required. Keep the same model, adapter and data-directory options when changing
+an explicit engine selection.
 
 Engine options are mutually exclusive. Installed launches retain
 `NativeEngine: false` for publisher rollback and `NativeEngine: true` for explicit
@@ -798,8 +801,8 @@ a separate exact-source review of K4/V3 with the complete
 
 A publisher startup diagnostic of `process=exited-0xC0000142` means Windows failed
 runtime initialization. **Retry model** repeats the selected runtime; it does not
-switch to Rust. Close the window and relaunch with `--native-engine` after provisioning
-with Rust `provision` operation `inference`. Retain the same data directory,
+switch to Rust. Close the window and relaunch with `--native-engine` to select Rust
+explicitly; the launcher prepares its pinned runtime. Retain the same data directory,
 model and adapter options;
 `--native-engine` alone keeps original PQ2 and the approved adapter selected.
 
@@ -850,6 +853,9 @@ placement, live-budget admission and CPU fallback/refusal. SKU names and TOPS
 never authorize acceleration; [PLAN.md](../PLAN.md) owns pending work.
 
 ## Inventory and provisioning
+
+These are contributor inspection and artifact-tool API examples. Ordinary app
+launch performs its own setup; users do not run this section before opening Swift.
 
 Use an absolute local data directory outside Git on a hard-link-capable filesystem
 such as NTFS; junctions/device paths reject. The default retains `SwiftBonsai2`

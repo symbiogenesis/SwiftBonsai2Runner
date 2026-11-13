@@ -1,8 +1,8 @@
 # Portable native chat packages
 
-This guide covers checked-directory installation and rollback. For the portable
-Windows ARM64 executable, verification sidecars and publication workflow, see
-[Windows releases](releases.md); only the `.exe` needs deployment.
+This contributor guide covers checked-directory assembly, installation and
+rollback. To use the app, follow [Windows releases](releases.md): deploy only
+the portable Windows ARM64 `.exe` and open it. Its setup runs inside the window.
 
 Checked-directory packages use explicit install/rollback commands, without
 automatic discovery or running-app replacement. Current-source single-executable
@@ -12,9 +12,9 @@ replacement. Always preserve the same user data directory.
 
 `bonsai-tools chat-package` assembles reviewed Windows ARM64 files, installs
 versioned directories, activates updates atomically and retains a rollback choice.
-Install and launch with a trusted maintenance executable and provisioned models/runtime;
-no checkout, PowerShell or compiler is needed. Native speech requires the compatible
-ARM64 Microsoft Visual C++ runtime, which the package does not install.
+Install and launch with a trusted maintenance executable; no checkout, PowerShell
+or compiler is needed. The native preparation worker downloads and verifies
+models, adapters and the selected runtime after the window opens.
 
 Packages provide no signed installer or publisher authentication. Verify the
 manifest digest through a trusted channel and use an independently trusted
@@ -161,7 +161,7 @@ unverified incoming distributions.
 {
   "operation": "start",
   "installationDirectory": "C:\\BonsaiChat",
-  "options": {"DataDirectory":"C:\\BonsaiData","NoSpeechModels":true}
+  "options": {"DataDirectory":"C:\\BonsaiData"}
 }
 ```
 
@@ -170,9 +170,9 @@ paths and launches the native app. Options cannot override paths or request sour
 builds. Legacy `launch` remains available with `expectedDirectory`, `expectedId`
 and `expectedManifestSha256` bound before handoff.
 
-Current packages prepare the compiled Swift model, selected runtime and adapter
-automatically before model startup. Older v0.2.1 packages need the
-[manual setup commands](releases.md#manual-provisioning-for-older-releases-and-advanced-use).
+Current packages prepare the compiled Swift model, selected runtime, adapter and
+speech models automatically. Update older packages to receive current in-app
+setup and repair behavior; retain the same data directory.
 The adapter is enabled by default; opt out explicitly with `NoAbliterateLora: true`.
 `NoSpeechModels: true` skips automatic speech preparation; `NoTts: true` skips
 output speech. `NoAbliterateLora`,

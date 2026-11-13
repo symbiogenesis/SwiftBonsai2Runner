@@ -17,13 +17,8 @@ The v0.3.0 release publishes three assets:
 | `SHA256SUMS.txt` | Checksums for the executable and release manifest. |
 | `release-manifest.json` | Version, source revision, build identities and executable digest. |
 
-Check the executable's SHA-256 against the checksum from the same release before
-opening it:
-
-```powershell
-Get-FileHash .\SwiftBonsai2Runner-0.3.0-windows-arm64.exe -Algorithm SHA256
-.\SwiftBonsai2Runner-0.3.0-windows-arm64.exe
-```
+Check the executable's SHA-256 against `SHA256SUMS.txt` from the same release
+using your preferred checksum tool, then double-click the executable in Explorer.
 
 **Deploy only the `.exe`.** Package metadata and project/dependency notices are
 embedded; verification files and local build summaries need not accompany it.
@@ -40,17 +35,13 @@ The experimental executable is unsigned. Checksums detect changed bytes within
 GitHub's release trust boundary; they provide no independent publisher signature.
 Review the release source identity before use.
 
-## Prerequisites and model setup
+## First launch and in-app setup
 
 Use serviced Windows 11 ARM64 with the containment capabilities described in
 [Windows sandboxing](sandboxing.md). Native Prism 0.1.26 selects context and its
 launch memory budget from available RAM, retaining a 4 GiB Windows reserve and
 startup margin. Unsupported containment, unknown memory or insufficient resources
 stop startup; see [context sizing](swift-memory.md#memory-selected-serving-context).
-Install the compatible ARM64 Microsoft Visual C++ v14 runtime from
-[Microsoft's redistributable downloads](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist).
-It is a separate prerequisite for the native speech components; the bundle does
-not install that redistributable.
 
 Swift weights (about **6.71 GiB**), adapter, inference runtime and speech models
 are separate locked downloads with their own [license terms](licensing.md).
@@ -69,44 +60,16 @@ require attention rather than being overwritten. Allow free storage for the
 downloads and, during repair, both old and replacement files. Setup details and
 **Copy diagnostics** provide the exact failed step and selected data folder.
 
-If speech preparation fails, use **Retry speech setup** while continuing text chat.
-Its details include the Microsoft ARM64 runtime download link. The application
-does not install system prerequisites without your involvement.
-
-### Manual provisioning for older releases and advanced use
-
-For v0.2.1 or explicit manual provisioning, retain the verified `release-manifest.json`
-and download the model lock from its exact source revision. Use one data directory
-for setup and launch:
-
-```powershell
-$tool = (Resolve-Path .\SwiftBonsai2Runner-0.2.1-windows-arm64.exe).Path
-$release = Get-Content .\release-manifest.json -Raw | ConvertFrom-Json
-$data = Join-Path $env:LOCALAPPDATA 'SwiftBonsai2'
-New-Item -ItemType Directory -Path $data -Force | Out-Null
-$modelLock = Join-Path $data 'swift-assessment.lock.json'
-Invoke-WebRequest "https://raw.githubusercontent.com/symbiogenesis/SwiftBonsai2Runner/$($release.sourceRevision)/config/swift-assessment.lock.json" -OutFile $modelLock
-& $tool provision --json (@{ operation = 'inference'; dataDirectory = $data } | ConvertTo-Json -Compress)
-& $tool provision --json (@{ operation = 'model'; dataDirectory = $data; lockPath = $modelLock } | ConvertTo-Json -Compress)
-& $tool provision --json (@{ operation = 'adapter'; dataDirectory = $data } | ConvertTo-Json -Compress)
-& $tool bundled-chat --data-directory $data
-```
-
-`swift-assessment.lock.json` selects Swift; omitting it selects the reference
-model. Verify the release manifest and source identity against the published
-checksum inventory before running these commands.
-
-For text-only launch without speech-model preparation, use:
-
-```powershell
-& $tool bundled-chat --data-directory $data --no-speech-models
-```
+If speech preparation fails, open **Settings > Voice** and use **Retry speech
+setup** while continuing text chat. Setup status and diagnostics stay in the app.
+To use an older deployment, update to the current executable and keep the same
+data directory rather than following obsolete manual model-setup instructions.
 
 Rust/PQ2 is the development default; publisher rollback is explicit and PTQ1 is
 opt-in. Verification rules still apply, and preparation failures never silently
-switch engine or representation. See the
-[development guide](development-guide.md#native-chat-app) and
-[package launch options](chat-packages.md#launch-without-a-checkout).
+switch engine or representation. Contributor and explicit engine options belong
+to the [development guide](development-guide.md#native-chat-app) and
+[package contract](chat-packages.md#launch-without-a-checkout).
 
 ## Update and remove
 
