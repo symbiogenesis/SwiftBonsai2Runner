@@ -327,6 +327,11 @@ impl LaunchConfig {
         use bonsai_cpu_policy::context::{SwiftContextPlan, SwiftContextProfile};
         let profile = if self.native_engine {
             match self.kv_cache {
+                Some(crate::inference::KvCache::Rsq4)
+                    if crate::inference::full_context_supported()? =>
+                {
+                    SwiftContextProfile::NativeRsq4Full
+                }
                 Some(crate::inference::KvCache::Rsq4) => SwiftContextProfile::NativeRsq4,
                 Some(crate::inference::KvCache::Rsq4K3v) => SwiftContextProfile::NativeRsq4K3v,
                 Some(crate::inference::KvCache::F16) | None => SwiftContextProfile::NativeF16,
@@ -1756,6 +1761,15 @@ mod tests {
         let available = 20 * 1024 * 1024 * 1024;
         let packed = config.swift_context_plan(available)?;
         assert_eq!(packed.context_tokens, 149_760);
+        // The unreleased full-state candidate must not relax the active
+        // runtime's 4 GiB state ceiling, even when physical RAM would fit it.
+        assert!(!crate::inference::full_context_supported()?);
+        assert_eq!(
+            config
+                .swift_context_plan(24 * 1024 * 1024 * 1024)?
+                .context_tokens,
+            241_664
+        );
         config.kv_cache = Some(KvCache::Rsq4K3v);
         let capacity = config.swift_context_plan(available)?;
         assert_eq!(capacity.context_tokens, 170_240);

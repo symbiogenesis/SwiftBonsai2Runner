@@ -138,7 +138,8 @@ impl SwiftContextPlan {
             .and_then(|bytes| bytes.checked_sub(STARTUP_RESERVE_BYTES))
             .and_then(|bytes| bytes.checked_sub(FIXED_RUNTIME_BYTES))
             .ok_or_else(insufficient)?;
-        let state_allocation = profile.state_limit_bytes()
+        let state_allocation = profile
+            .state_limit_bytes()
             .checked_sub(RECURRENT_BYTES)
             .ok_or_else(insufficient)?;
         let process_bytes = profile.context_bytes_per_token();
@@ -310,24 +311,44 @@ mod tests {
         use SwiftContextProfile::{NativeRsq4, NativeRsq4Full};
         assert_eq!(RSQ4_FULL_STATE_LIMIT_BYTES, 4_644_798_464);
         assert_eq!(NativeRsq4.state_limit_bytes(), STATE_LIMIT_BYTES);
-        assert_eq!(NativeRsq4Full.state_limit_bytes(), RSQ4_FULL_STATE_LIMIT_BYTES);
-        assert_eq!(NativeRsq4Full.context_bytes_per_token(), NativeRsq4.context_bytes_per_token());
-        assert_eq!(NativeRsq4Full.state_bytes_per_token(), NativeRsq4.state_bytes_per_token());
+        assert_eq!(
+            NativeRsq4Full.state_limit_bytes(),
+            RSQ4_FULL_STATE_LIMIT_BYTES
+        );
+        assert_eq!(
+            NativeRsq4Full.context_bytes_per_token(),
+            NativeRsq4.context_bytes_per_token()
+        );
+        assert_eq!(
+            NativeRsq4Full.state_bytes_per_token(),
+            NativeRsq4.state_bytes_per_token()
+        );
         let full_budget = HOST_RESERVE_BYTES
             + STARTUP_RESERVE_BYTES
             + FIXED_RUNTIME_BYTES
             + u64::try_from(MODEL_CONTEXT_TOKENS)? * NativeRsq4Full.context_bytes_per_token();
         let below = SwiftContextPlan::for_profile(full_budget - 1, NativeRsq4Full)?;
-        assert_eq!(below.context_tokens, MODEL_CONTEXT_TOKENS - CONTEXT_PAGE_TOKENS);
+        assert_eq!(
+            below.context_tokens,
+            MODEL_CONTEXT_TOKENS - CONTEXT_PAGE_TOKENS
+        );
         for available in [full_budget, 24 * 1024 * 1024 * 1024, u64::MAX] {
             let full = SwiftContextPlan::for_profile(available, NativeRsq4Full)?;
             assert_eq!(full.context_tokens, MODEL_CONTEXT_TOKENS);
-            assert_eq!(full.required_available_bytes + STARTUP_RESERVE_BYTES, full_budget);
-            assert_eq!(SwiftContextPlan::for_profile(available, NativeRsq4)?.context_tokens, 241_664);
+            assert_eq!(
+                full.required_available_bytes + STARTUP_RESERVE_BYTES,
+                full_budget
+            );
+            assert_eq!(
+                SwiftContextPlan::for_profile(available, NativeRsq4)?.context_tokens,
+                241_664
+            );
         }
         let next_page = u64::try_from(MODEL_CONTEXT_TOKENS + CONTEXT_PAGE_TOKENS)?;
-        assert!(next_page * NativeRsq4Full.state_bytes_per_token() + RECURRENT_BYTES
-            > NativeRsq4Full.state_limit_bytes());
+        assert!(
+            next_page * NativeRsq4Full.state_bytes_per_token() + RECURRENT_BYTES
+                > NativeRsq4Full.state_limit_bytes()
+        );
         Ok(())
     }
 

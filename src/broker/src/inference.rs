@@ -298,6 +298,27 @@ const MEMORY_CONTEXT_RELEASE: Option<(&str, &str)> =
 // can use its smaller admission charge. Existing K4/V4 releases stay unchanged.
 const K4V3_CONTEXT_RELEASE: Option<(&str, &str)> = None;
 
+// Full-model K4/V4 context needs the separately reviewed larger live-state and
+// checkpoint guards, not just the existing paired memory protocol. Keep the
+// active release on its 4 GiB state ceiling until genuine release bytes and
+// their exact source implement that contract. Precision and process charges
+// remain unchanged; this gate cannot authorize an unrelated memory release.
+const K4V4_FULL_CONTEXT_RELEASE: Option<(&str, &str)> = None;
+
+fn full_context_release_matches(release: &ReleasePin, reviewed: Option<(&str, &str)>) -> bool {
+    reviewed.is_some()
+        && MEMORY_CONTEXT_RELEASE == reviewed
+        && reviewed_release_matches(release, reviewed)
+}
+
+pub(super) fn full_context_supported() -> Result<bool, LaunchError> {
+    let pin = release(LOCK)?;
+    Ok(full_context_release_matches(
+        &pin,
+        K4V4_FULL_CONTEXT_RELEASE,
+    ))
+}
+
 fn k4v3_context_supported(release: &ReleasePin) -> bool {
     K4V3_CONTEXT_RELEASE.is_some_and(|identity| {
         MEMORY_CONTEXT_RELEASE == Some(identity)
@@ -441,6 +462,21 @@ mod tests {
             select_kv_cache(&pin, Some(KvCache::Rsq4)),
             Err(LaunchError::NativeRuntime)
         );
+        Ok(())
+    }
+
+    #[test]
+    fn full_k4v4_context_requires_its_own_aligned_source_release() -> Result<(), LaunchError> {
+        let mut pin = release(LOCK)?;
+        assert!(!full_context_supported()?);
+        assert!(!full_context_release_matches(&pin, None));
+        // A future review must align both accounting contracts. This synthetic
+        // allowance checks identity matching without opening the serving gate.
+        assert!(full_context_release_matches(&pin, MEMORY_CONTEXT_RELEASE));
+        pin.commit = "0".repeat(40);
+        assert!(!full_context_release_matches(&pin, MEMORY_CONTEXT_RELEASE));
+        let other_source = (pin.version.as_str(), pin.commit.as_str());
+        assert!(!full_context_release_matches(&pin, Some(other_source)));
         Ok(())
     }
 
