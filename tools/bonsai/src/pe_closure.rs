@@ -124,7 +124,7 @@ fn read_image(path: &Path, budget: &Budget) -> Result<Image> {
     }
     let mut reader = file.take(33_554_433);
     let mut data = Vec::new();
-    let mut buffer = [0; 65_536];
+    let mut buffer = vec![0; 65_536];
     loop {
         budget.checkpoint()?;
         let count = reader
@@ -215,7 +215,9 @@ fn mapped(image: &Image, rva: u64, size: usize) -> Result<(usize, usize)> {
 
 fn safe_module(name: &str) -> bool {
     name.len() > 4
-        && name.ends_with(".dll")
+        && Path::new(name)
+            .extension()
+            .is_some_and(|extension| extension.eq_ignore_ascii_case("dll"))
         && name.bytes().all(|byte| {
             byte.is_ascii_lowercase() || byte.is_ascii_digit() || b"_.-".contains(&byte)
         })
@@ -271,8 +273,10 @@ fn api_text(data: &[u8], offset: usize, length: usize) -> Result<String> {
         return Err("Invalid API-set name extent".into());
     }
     let units: Vec<_> = extent(data, offset, length)?
-        .chunks_exact(2)
-        .map(|unit| u16::from_le_bytes([unit[0], unit[1]]))
+        .as_chunks::<2>()
+        .0
+        .iter()
+        .map(|unit| u16::from_le_bytes(*unit))
         .collect();
     String::from_utf16(&units)
         .map(|value| value.to_lowercase())
