@@ -10,7 +10,7 @@ Creative writing · Brainstorming · Art direction
 ![UI: native Rust](https://img.shields.io/badge/UI-native_Rust-50855B?style=flat-square)
 [![License: Apache 2.0](https://img.shields.io/badge/license-Apache_2.0-50855B?style=flat-square)](LICENSE)
 
-[Get started](docs/development-guide.md) · [Documentation](#documentation) · [TODO](PLAN.md)
+[Get started](docs/releases.md#download-and-open) · [Documentation](#documentation) · [TODO](PLAN.md)
 
 </div>
 
@@ -30,9 +30,10 @@ Snapdragon X2 with its driver installed.
 [Broader hardware tuning and GPU/NPU support](docs/hardware-capabilities.md#automatic-profile-selection)
 are in progress.
 
-After [setup](docs/development-guide.md#native-chat-app), launch with
-`bonsai-tools chat` or `./scripts/Start-Chat.ps1`. Add `--publisher-engine`
-(or `-PublisherEngine` with the script) to use the original publisher C++ engine.
+Download the portable Windows ARM64 executable from
+[GitHub releases](https://github.com/symbiogenesis/SwiftBonsai2Runner/releases),
+then double-click it. The app prepares its models and engines inside the window;
+there are no PowerShell setup commands. See [first launch](docs/releases.md#first-launch-and-in-app-setup).
 
 The [Windows release guide](docs/releases.md) covers the portable executable and
 the prepared [v0.3.0 experimental release](docs/releases/v0.3.0.md). Publication
@@ -53,8 +54,8 @@ to create the same single-file distribution containing all five application tool
   and encrypted for your Windows user account. Disable **Save conversations on this
   device** in Settings to delete the saved copy and keep future chats unsaved;
   that choice survives restarts.
-- **Portable updates:** Download and verify the newer Windows ARM64 executable,
-  close Swift, then replace your copy. Keep the same data directory to preserve
+- **Portable updates:** The app downloads and verifies newer Windows ARM64 releases.
+  Confirm installation in Settings to close, replace and reopen it, preserving
   model downloads and conversations; see [Windows releases](docs/releases.md).
 - **Reviewed source excerpts:** Use **Sources** in the composer to search pasted
   text locally, select exact passages and review them in your draft before sending.
@@ -71,9 +72,11 @@ to create the same single-file distribution containing all five application tool
   aloud as responses arrive** speaks new replies while Swift writes, and each
   reply's speaker button lets you replay it anytime.
 
-The launcher prepares the pinned Swift model, adapter, runtime and speech models
-automatically, with progress and in-app retry. The [setup guide](docs/development-guide.md)
-explains how to skip them or preview the app without a model. See the
+The app prepares the pinned Swift model, adapter, inference runtime and speech
+models automatically, with progress and in-app retry. Text chat can work while
+speech finishes preparing. The [application guide](docs/development-guide.md#native-chat-app)
+explains its controls; contributor builds and model-free previews have separate
+instructions. See the
 [UI architecture](docs/ui-architecture.md) and
 [local API](docs/broker-policy.md#public-request-contract) for technical details.
 
@@ -156,7 +159,7 @@ and we are still evaluating its creative-writing quality for everyday use. See
 
 ## Documentation
 
-Start with [setup](docs/development-guide.md), [validation](docs/validation.md)
+Start with [download and setup](docs/releases.md), [validation](docs/validation.md)
 or the [project TODO](PLAN.md). The [documentation index](docs/README.md) covers
 [application design](docs/README.md#application-contracts),
 [models and runtime](docs/README.md#models-memory-and-runtime), and
