@@ -70,15 +70,13 @@ native supervisor's owned deadline and uncertain-buffer retention. Preserve u64
 ### SDK inputs, recipe and terms
 
 The [SDK inventory lock](../tools/hexagon/sdk-inventory.lock.json) binds SDK archive,
-selected inputs, recipe and lexical/declaration controls. The retained
-[archive inventory](evidence/hexagon-sdk-inventory-41168523349/provenance.json),
-[recipe observation](evidence/hexagon-sdk-inventory-41168872514/provenance.json) and
-[functional comparison](evidence/hexagon-sdk-functional-41171339745/provenance.json)
-retain producer provenance for those controls. The older SDK/generator selections
-contain provenance summaries without their complete original raw payloads; they cannot
-independently replay or close a gate. Required unavailable bytes leave acceptance pending.
-The latest wire selection below retains its live ABI replay inputs. None supplies a
-current installed-driver verdict.
+selected inputs, recipe and lexical/declaration controls. The
+[candidate lock](../config/hexagon-signed-q2-candidate.lock.json) summarizes the
+historical inventory, recipe and functional comparison with source/run/artifact
+identities and their limits. Their original raw payloads are unavailable in this
+checkout; the summaries cannot independently replay or close a gate. Required
+unavailable bytes leave acceptance pending. The latest wire selection below retains
+its live ABI replay inputs. None supplies a current installed-driver verdict.
 
 The selected recipe uses SDK 6.7.0.0/tools 21.0.04. Its `qaic.exe` is x64, so local
 ARM64 execution would emulate. The public generator and SDK generator are different
@@ -111,8 +109,12 @@ is a direct replay input for `windows_queue_abi.ps1`. Its fixed vector uses a sy
 u64 handle, start scalar `0x02010000`, one 48-byte input with fields at
 0/8/16/20/24/32/40 and zero padding 4–7/44–47; stop scalar `0x03000000` has null
 arguments. Linux LP64 C and independent Rust agreement qualifies only that fixed
-vector. Preserve earlier generator/compiler no-go observations referenced by the
-candidate lock; they diagnose the exact captured public-input closure.
+vector. The candidate lock retains earlier generator/compiler no-go outcomes and
+their source/run/artifact identities; they diagnose the captured public-input closure
+but cannot replay the unavailable original payloads. The
+[first-generation provenance](evidence/hexagon-public-qaic-41169481882/provenance.json)
+remains a supplemental-template-notice dependency of the retained wire selection;
+its listed historical payloads are absent from this checkout.
 
 The Windows control compiles unchanged generated start/stop code with native ARM64
 MSVC and the explicitly selected public non-Windows header branch. This establishes
