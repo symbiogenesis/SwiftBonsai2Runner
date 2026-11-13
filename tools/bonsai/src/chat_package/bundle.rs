@@ -199,6 +199,9 @@ fn create(directory: &Path, digest: &str, output: &Path) -> crate::Result<Value>
     if package["Manifest"]["schemaVersion"] != 2 {
         return Err("Bundling requires a schema-2 package.".into());
     }
+    for name in FILES.iter().filter(|name| name.starts_with("bin/")) {
+        super::portable::verify(&directory.join(name))?;
+    }
     bonsai_artifacts::validate_external_path(output).map_err(|error| error.to_string())?;
     if fs::exists(output).map_err(|error| error.to_string())? {
         return Err("Executable bundle output already exists.".into());

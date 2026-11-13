@@ -17,6 +17,9 @@ impl Fixture {
         image[..2].copy_from_slice(b"MZ");
         image[60..64].copy_from_slice(&128_u32.to_le_bytes());
         image[128..134].copy_from_slice(&[b'P', b'E', 0, 0, 0x64, 0xaa]);
+        image[148..150].copy_from_slice(&240_u16.to_le_bytes());
+        image[152..154].copy_from_slice(&0x020b_u16.to_le_bytes());
+        image[212..216].copy_from_slice(&512_u32.to_le_bytes());
         fs::write(root.join("input.exe"), image).map_err(|error| error.to_string())?;
         fs::write(root.join("notices.txt"), b"Reviewed fixture notices.")
             .map_err(|error| error.to_string())?;

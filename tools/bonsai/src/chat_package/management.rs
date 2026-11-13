@@ -117,6 +117,7 @@ pub(super) fn create(request: Create) -> crate::Result<Value> {
     ] {
         copy_new(source, &stage.0.join(name), 512 * 1024 * 1024)?;
         crate::startup_cache::assert_arm64(&stage.0.join(name))?;
+        super::portable::verify(&stage.0.join(name))?;
     }
     write_new(
         &stage.0.join("LICENSE"),

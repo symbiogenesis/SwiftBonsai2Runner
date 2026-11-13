@@ -47,6 +47,7 @@ const LEGACY_FILES: &[&str] = &[
 ];
 
 mod management;
+mod portable;
 
 /// Single-file executable assembly, verified extraction and portable launch.
 pub mod bundle;
@@ -494,10 +495,11 @@ mod tests {
                 pe[128..134].copy_from_slice(&[b'P', b'E', 0, 0, 0x64, 0xaa]);
                 pe[148..150].copy_from_slice(&240_u16.to_le_bytes());
                 pe[152..154].copy_from_slice(&0x020b_u16.to_le_bytes());
+                pe[212..216].copy_from_slice(&512_u32.to_le_bytes());
                 pe[220..222].copy_from_slice(&2_u16.to_le_bytes());
                 if *name == "bin/bonsai-tools.exe" {
                     let marker = bundle::LAUNCHER_PROTOCOL.as_bytes();
-                    pe[256..256 + marker.len()].copy_from_slice(marker);
+                    pe[400..400 + marker.len()].copy_from_slice(marker);
                 }
                 pe
             } else {
