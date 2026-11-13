@@ -3,10 +3,7 @@
 use super::*;
 use crate::{client, window::ModelLifecycle};
 use egui::TextBuffer as _;
-use egui_kittest::{
-    Harness,
-    kittest::{NodeT as _, Queryable as _},
-};
+use egui_kittest::{Harness, kittest::Queryable as _};
 use std::sync::mpsc;
 
 fn fixture() -> (State, mpsc::Receiver<client::Command>) {

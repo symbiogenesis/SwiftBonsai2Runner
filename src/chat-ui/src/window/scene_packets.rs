@@ -43,6 +43,10 @@ struct DeletedText {
 }
 
 impl egui::TextBuffer for SourceText {
+    fn type_id(&self) -> std::any::TypeId {
+        std::any::TypeId::of::<Self>()
+    }
+
     fn is_mutable(&self) -> bool {
         true
     }
