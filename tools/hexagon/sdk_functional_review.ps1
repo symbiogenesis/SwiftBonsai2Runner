@@ -126,7 +126,7 @@ function Get-DeclarationCandidates($Tokens,$Lines,$Limits) {
                 $methods=@(for ($j=0;$j+1 -lt $current.Count;$j++) {if ($current[$j] -cmatch '^[A-Za-z_][A-Za-z0-9_]*$' -and $current[$j+1] -ceq '(' -and $current[$j] -cnotin @('if','while','for','switch','sizeof','defined','_Alignof','__attribute__','__declspec')) {$current[$j]}}) | Sort-Object -Unique -CaseSensitive
                 $alias=$null
                 if ($current -ccontains 'typedef') {if ($callbacks.Count) {$alias=$callbacks[-1]} else {for ($j=$current.Count-2;$j -ge 0;$j--) {if ($current[$j] -cmatch '^[A-Za-z_][A-Za-z0-9_]*$') {$alias=$current[$j];break}}}}
-                $declarations.Add(@{startLine=$startLine;identifierCandidates=$names;typedefPresent=($current -ccontains 'typedef');enumPresent=($current -ccontains 'enum');typedefAliasNameCandidate=$alias;methodNameCandidates=@($methods);callbackTypedefNameCandidates=$(if ($current -ccontains 'typedef') {$callbacks} else {@()});normalizedTokenSha256=(Get-FunctionalTokenHash @($current));tokens=@($current);conditionalPreprocessorNotEvaluated=$true})
+                $declarations.Add(@{startLine=$startLine;identifierCandidates=$names;typedefPresent=($current -ccontains 'typedef');enumPresent=($current -ccontains 'enum');typedefAliasNameCandidate=$alias;methodNameCandidates=@($methods);callbackTypedefNameCandidates=@(if ($current -ccontains 'typedef') {$callbacks});normalizedTokenSha256=(Get-FunctionalTokenHash @($current));tokens=@($current);conditionalPreprocessorNotEvaluated=$true})
             }
             $current=[Collections.Generic.List[string]]::new();$startLine=$null
         }

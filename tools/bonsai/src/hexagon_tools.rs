@@ -757,7 +757,7 @@ fn sdk_inventory(mut context: Context) -> Result<Value> {
     let review = context.output.join("review");
     fs::create_dir(&review).map_err(|error| error.to_string())?;
     let pin_path = context.repo.join("tools/hexagon/sdk-inventory.lock.json");
-    let source = context.repo.join("tools/hexagon/sdk_inventory.py");
+    let source = context.repo.join("tools/hexagon/sdk_inventory.ps1");
     let pin = context.json(&pin_path, 1024 * 1024)?;
     if pin["schemaVersion"] != 1
         || pin["generatorExecutionAllowed"] != false
@@ -779,11 +779,32 @@ fn sdk_inventory(mut context: Context) -> Result<Value> {
         4 * 1024 * 1024,
     )?;
     let functional = context.digest(
-        &context.repo.join("tools/hexagon/sdk_functional_review.py"),
+        &context.repo.join("tools/hexagon/sdk_functional_review.ps1"),
         4 * 1024 * 1024,
     )?;
-    let mut report = json!({"SchemaVersion":1,"Kind":"hexagon-hosted-sdk-inventory","RunnerRevision":context.revision,"RunId":context.run,"RunAttempt":context.attempt,"HostedOnly":true,"Outcome":"pending","Stage":"reviewed-source-inputs","ElapsedMilliseconds":0,"SourceSha256":source_digest,"SupervisorSha256":supervisor,"PinSha256":pin_digest,"FunctionalReviewSourceSha256":functional,"ReviewedInputs":[],"Archive":pin["asset"],"InventoryReceiptSha256":null,"PythonExecutableSha256":null,"SdkCodeExecuted":false,"GeneratorExecuted":false,"GeneratedSourceUploaded":false,"ModelLoaded":false,"DeviceCodeLoaded":false,"ProfileEligible":false,"LicenseReview":"pending","GeneratorInvocationReviewed":false});
+    let archive_reader_sources = context.input_set(
+        &context.repo.join("tools/hexagon/sdk-reader"),
+        &["Cargo.toml", "Cargo.lock", "src/main.rs"],
+    )?;
+    let common_source = context.digest(
+        &context.repo.join("tools/hexagon/Hexagon.Common.ps1"),
+        1024 * 1024,
+    )?;
+    let mut report = json!({"SchemaVersion":1,"Kind":"hexagon-hosted-sdk-inventory","RunnerRevision":context.revision,"RunId":context.run,"RunAttempt":context.attempt,"HostedOnly":true,"Outcome":"pending","Stage":"reviewed-source-inputs","ElapsedMilliseconds":0,"SourceSha256":source_digest,"SupervisorSha256":supervisor,"PinSha256":pin_digest,"FunctionalReviewSourceSha256":functional,"CommonSourceSha256":common_source,"ArchiveReaderSources":archive_reader_sources,"ReviewedInputs":[],"Archive":pin["asset"],"InventoryReceiptSha256":null,"PowerShellExecutableSha256":null,"SdkCodeExecuted":false,"GeneratorExecuted":false,"GeneratedSourceUploaded":false,"ModelLoaded":false,"DeviceCodeLoaded":false,"ProfileEligible":false,"LicenseReview":"pending","GeneratorInvocationReviewed":false});
     let result = (|| -> Result<()> {
+        let (rustc, compiler_digest) = context.rustc()?;
+        context.environment.extend(BTreeMap::from([
+            ("RUSTC".into(), rustc.to_string_lossy().into_owned()),
+            ("RUSTUP_TOOLCHAIN".into(), TOOLCHAIN.into()),
+            ("RUSTC_WRAPPER".into(), String::new()),
+            ("RUSTC_WORKSPACE_WRAPPER".into(), String::new()),
+            (
+                "CARGO_ENCODED_RUSTFLAGS".into(),
+                "-C\u{1f}target-feature=+crt-static".into(),
+            ),
+        ]));
+        report["CompilerIdentitySha256"] = json!(compiler_digest);
+        report["RustToolchain"] = json!(TOOLCHAIN);
         let inputs = pin["reviewedInputs"]
             .as_array()
             .filter(|inputs| inputs.len() <= 32)
@@ -804,22 +825,25 @@ fn sdk_inventory(mut context: Context) -> Result<Value> {
             .as_str()
             .ok_or("SDK archive name missing.")?;
         let archive = receive(&mut context, &pin["asset"], archive_name, 240)?;
-        let python = startup_process::resolve(OsStr::new("python.exe"))?;
-        report["PythonExecutableSha256"] = json!(context.digest(&python, 256 * 1024 * 1024)?);
+        let powershell = startup_process::resolve(OsStr::new("pwsh.exe"))?;
+        report["PowerShellExecutableSha256"] =
+            json!(context.digest(&powershell, 256 * 1024 * 1024)?);
         report["Stage"] = json!("sdk-data-only-inventory");
         let inventory = review.join("sdk-inventory.json");
         let output = context.run(
-            python.as_os_str(),
+            powershell.as_os_str(),
             &[
-                "-B".into(),
+                "-NoLogo".into(),
+                "-NoProfile".into(),
+                "-File".into(),
                 source.into_os_string(),
-                "--archive".into(),
+                "-Archive".into(),
                 archive.into_os_string(),
-                "--pin".into(),
+                "-Pin".into(),
                 pin_path.into_os_string(),
-                "--output".into(),
+                "-Output".into(),
                 inventory.clone().into_os_string(),
-                "--public-input-directory".into(),
+                "-PublicInputDirectory".into(),
                 context.output.clone().into_os_string(),
             ],
             360,

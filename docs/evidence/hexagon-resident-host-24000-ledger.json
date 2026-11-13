@@ -1,123 +1,4 @@
 {
-  "measuredInferenceSpeedup": null,
-  "kind": "static-original-pq2-resident-host-payload-bounds",
-  "sources": [
-    {
-      "path": "tools/hexagon/verify_resident_traffic.ps1",
-      "sha256": "ed2d45c6bae0f72841376f6431cc3e7b7de275aea4cb4cfd61f2d7883f197d7e"
-    },
-    {
-      "path": "tools/hexagon/verify_operation_traffic.ps1",
-      "sha256": "fb2c4cd82ccb3cb8dd0e1610de12171c2f4582b77a076370570bb73fc492c76b"
-    },
-    {
-      "path": "docs/evidence/hexagon-swift-operation-ledger.json",
-      "sha256": "53be628d45e7784394ba45a92804dd22363788264f94bd394fe7f1eb0d33019c"
-    },
-    {
-      "path": "docs/evidence/hexagon-swift-traffic-ledger.json",
-      "sha256": "3665221b38d398fb0c19bc48c4865fa6fdd1323cd56d1728eae0250c8edd8848"
-    },
-    {
-      "path": "docs/evidence/hexagon-session-operation-budget.json",
-      "sha256": "37fb9c3a4dd59605c8c0ccdbd823f9dd322586ee71771b0c1b7e99f76f97ce07"
-    }
-  ],
-  "profileEligible": false,
-  "scenarios": [
-    {
-      "minimumWeightsFitServiceAllowance": true,
-      "nativeAllocationWithMinimumArenaBytes": 26259456,
-      "kernelLogicalPayloadPerTokenBytes": 47513600,
-      "minimumOriginalPlusResidentWeightBytes": 48742400,
-      "residentDescriptorCoveredExtentPerTokenBytes": 1050378240,
-      "placement": "blk.0.ffn_up.weight",
-      "baselineDescriptorCoveredExtentPerTokenBytes": 47677440,
-      "returnedPlanePayloadPerTokenBytes": 22282240,
-      "fitsMaximumResidentArena": true,
-      "baseNativeAllocationBytes": 1191936,
-      "activationPayloadPerTokenBytes": 163840,
-      "originalSelectedWeightBytes": 23674880,
-      "operationsPerToken": 40,
-      "kernelWeightPayloadPerTokenBytes": 25067520,
-      "minimumPackedResidentArenaBytes": 25067520,
-      "repeatedProjectionCases": [
-        {
-          "tokens": 1,
-          "fitsTerminalOperationCap": true,
-          "kernelLogicalPayloadBytes": 47513600,
-          "streamingCpuPackedWeightBytes": 25067520,
-          "avoidedRepeatedCpuPackingBytesUpperBound": 0,
-          "operations": 40,
-          "residentCpuPackedWeightBytesLowerBound": 25067520
-        },
-        {
-          "tokens": 8,
-          "fitsTerminalOperationCap": true,
-          "kernelLogicalPayloadBytes": 380108800,
-          "streamingCpuPackedWeightBytes": 200540160,
-          "avoidedRepeatedCpuPackingBytesUpperBound": 175472640,
-          "operations": 320,
-          "residentCpuPackedWeightBytesLowerBound": 25067520
-        },
-        {
-          "tokens": 128,
-          "fitsTerminalOperationCap": true,
-          "kernelLogicalPayloadBytes": 6081740800,
-          "streamingCpuPackedWeightBytes": 3208642560,
-          "avoidedRepeatedCpuPackingBytesUpperBound": 3183575040,
-          "operations": 5120,
-          "residentCpuPackedWeightBytesLowerBound": 25067520
-        }
-      ]
-    },
-    {
-      "minimumWeightsFitServiceAllowance": false,
-      "nativeAllocationWithMinimumArenaBytes": null,
-      "kernelLogicalPayloadPerTokenBytes": 13694386176,
-      "minimumOriginalPlusResidentWeightBytes": 13999104000,
-      "residentDescriptorCoveredExtentPerTokenBytes": null,
-      "placement": "all-eligible-original-PQ2-plus-logits-idealized",
-      "baselineDescriptorCoveredExtentPerTokenBytes": 27719663616,
-      "returnedPlanePayloadPerTokenBytes": 6399590400,
-      "fitsMaximumResidentArena": false,
-      "baseNativeAllocationBytes": 1191936,
-      "activationPayloadPerTokenBytes": 95256576,
-      "originalSelectedWeightBytes": 6799564800,
-      "operationsPerToken": 23256,
-      "kernelWeightPayloadPerTokenBytes": 7199539200,
-      "minimumPackedResidentArenaBytes": 7199539200,
-      "repeatedProjectionCases": [
-        {
-          "tokens": 1,
-          "fitsTerminalOperationCap": true,
-          "kernelLogicalPayloadBytes": 13694386176,
-          "streamingCpuPackedWeightBytes": 7199539200,
-          "avoidedRepeatedCpuPackingBytesUpperBound": 0,
-          "operations": 23256,
-          "residentCpuPackedWeightBytesLowerBound": 7199539200
-        },
-        {
-          "tokens": 8,
-          "fitsTerminalOperationCap": false,
-          "kernelLogicalPayloadBytes": 109555089408,
-          "streamingCpuPackedWeightBytes": 57596313600,
-          "avoidedRepeatedCpuPackingBytesUpperBound": 50396774400,
-          "operations": 186048,
-          "residentCpuPackedWeightBytesLowerBound": 7199539200
-        },
-        {
-          "tokens": 128,
-          "fitsTerminalOperationCap": false,
-          "kernelLogicalPayloadBytes": 1752881430528,
-          "streamingCpuPackedWeightBytes": 921541017600,
-          "avoidedRepeatedCpuPackingBytesUpperBound": 914341478400,
-          "operations": 2976768,
-          "residentCpuPackedWeightBytesLowerBound": 7199539200
-        }
-      ]
-    }
-  ],
   "sourceIdentityEncoding": "UTF8-with-LF-newlines",
   "newOwnerDeviceExecutionMilliseconds": 0,
   "limitations": [
@@ -130,19 +11,138 @@
     "No DSP weight residency, fused kernel, multitoken HMX prefill, persistent service, PTQ1 qualification or production backend is established.",
     "Repeated-token cases are arithmetic examples within operation bounds only, without a duration, numerical, model-state, resource or device acceptance claim."
   ],
-  "deviceOpened": false,
-  "modelLoaded": false,
-  "schemaVersion": 1,
+  "measuredInferenceSpeedup": null,
   "assumptions": {
+    "swiftServiceAllowanceBytes": 12348030976,
+    "residentRangeAlignmentBytes": 128,
+    "residentArena": "immutable packed weights in mapped host RAM; not DSP VTCM",
+    "maximumResidentArenaBytes": 67108864,
     "allSelectedWeightsRetainedForEveryRepeatedToken": true,
     "allocationAlignmentBytes": 4096,
     "fullAllocationQueueBufferFlags": "0x90",
-    "cacheEviction": false,
     "maximumWeightRowsPerOperation": 17408,
-    "residentRangeAlignmentBytes": 128,
-    "swiftServiceAllowanceBytes": 12348030976,
-    "terminalOperationCap": 24000,
-    "residentArena": "immutable packed weights in mapped host RAM; not DSP VTCM",
-    "maximumResidentArenaBytes": 67108864
-  }
+    "cacheEviction": false,
+    "terminalOperationCap": 24000
+  },
+  "modelLoaded": false,
+  "sources": [
+    {
+      "path": "tools/hexagon/verify_resident_traffic.ps1",
+      "sha256": "ed2d45c6bae0f72841376f6431cc3e7b7de275aea4cb4cfd61f2d7883f197d7e"
+    },
+    {
+      "path": "tools/hexagon/verify_operation_traffic.ps1",
+      "sha256": "2d6331861b8204698d1e9d31641fb602df601f69e43cb70dfcb21d9aa2c72030"
+    },
+    {
+      "path": "docs/evidence/hexagon-swift-operation-ledger.json",
+      "sha256": "53be628d45e7784394ba45a92804dd22363788264f94bd394fe7f1eb0d33019c"
+    },
+    {
+      "path": "docs/evidence/hexagon-swift-traffic-ledger.json",
+      "sha256": "979108d2f19418639e1e6ecb9f032af678ed5919519aa70d5109a793ef02e12b"
+    },
+    {
+      "path": "docs/evidence/hexagon-session-operation-budget.json",
+      "sha256": "37fb9c3a4dd59605c8c0ccdbd823f9dd322586ee71771b0c1b7e99f76f97ce07"
+    }
+  ],
+  "schemaVersion": 1,
+  "kind": "static-original-pq2-resident-host-payload-bounds",
+  "profileEligible": false,
+  "deviceOpened": false,
+  "scenarios": [
+    {
+      "minimumOriginalPlusResidentWeightBytes": 48742400,
+      "fitsMaximumResidentArena": true,
+      "operationsPerToken": 40,
+      "placement": "blk.0.ffn_up.weight",
+      "minimumWeightsFitServiceAllowance": true,
+      "originalSelectedWeightBytes": 23674880,
+      "repeatedProjectionCases": [
+        {
+          "fitsTerminalOperationCap": true,
+          "avoidedRepeatedCpuPackingBytesUpperBound": 0,
+          "kernelLogicalPayloadBytes": 47513600,
+          "tokens": 1,
+          "operations": 40,
+          "streamingCpuPackedWeightBytes": 25067520,
+          "residentCpuPackedWeightBytesLowerBound": 25067520
+        },
+        {
+          "fitsTerminalOperationCap": true,
+          "avoidedRepeatedCpuPackingBytesUpperBound": 175472640,
+          "kernelLogicalPayloadBytes": 380108800,
+          "tokens": 8,
+          "operations": 320,
+          "streamingCpuPackedWeightBytes": 200540160,
+          "residentCpuPackedWeightBytesLowerBound": 25067520
+        },
+        {
+          "fitsTerminalOperationCap": true,
+          "avoidedRepeatedCpuPackingBytesUpperBound": 3183575040,
+          "kernelLogicalPayloadBytes": 6081740800,
+          "tokens": 128,
+          "operations": 5120,
+          "streamingCpuPackedWeightBytes": 3208642560,
+          "residentCpuPackedWeightBytesLowerBound": 25067520
+        }
+      ],
+      "minimumPackedResidentArenaBytes": 25067520,
+      "kernelWeightPayloadPerTokenBytes": 25067520,
+      "activationPayloadPerTokenBytes": 163840,
+      "baseNativeAllocationBytes": 1191936,
+      "baselineDescriptorCoveredExtentPerTokenBytes": 47677440,
+      "residentDescriptorCoveredExtentPerTokenBytes": 1050378240,
+      "returnedPlanePayloadPerTokenBytes": 22282240,
+      "nativeAllocationWithMinimumArenaBytes": 26259456,
+      "kernelLogicalPayloadPerTokenBytes": 47513600
+    },
+    {
+      "minimumOriginalPlusResidentWeightBytes": 13999104000,
+      "fitsMaximumResidentArena": false,
+      "operationsPerToken": 23256,
+      "placement": "all-eligible-original-PQ2-plus-logits-idealized",
+      "minimumWeightsFitServiceAllowance": false,
+      "originalSelectedWeightBytes": 6799564800,
+      "repeatedProjectionCases": [
+        {
+          "fitsTerminalOperationCap": true,
+          "avoidedRepeatedCpuPackingBytesUpperBound": 0,
+          "kernelLogicalPayloadBytes": 13694386176,
+          "tokens": 1,
+          "operations": 23256,
+          "streamingCpuPackedWeightBytes": 7199539200,
+          "residentCpuPackedWeightBytesLowerBound": 7199539200
+        },
+        {
+          "fitsTerminalOperationCap": false,
+          "avoidedRepeatedCpuPackingBytesUpperBound": 50396774400,
+          "kernelLogicalPayloadBytes": 109555089408,
+          "tokens": 8,
+          "operations": 186048,
+          "streamingCpuPackedWeightBytes": 57596313600,
+          "residentCpuPackedWeightBytesLowerBound": 7199539200
+        },
+        {
+          "fitsTerminalOperationCap": false,
+          "avoidedRepeatedCpuPackingBytesUpperBound": 914341478400,
+          "kernelLogicalPayloadBytes": 1752881430528,
+          "tokens": 128,
+          "operations": 2976768,
+          "streamingCpuPackedWeightBytes": 921541017600,
+          "residentCpuPackedWeightBytesLowerBound": 7199539200
+        }
+      ],
+      "minimumPackedResidentArenaBytes": 7199539200,
+      "kernelWeightPayloadPerTokenBytes": 7199539200,
+      "activationPayloadPerTokenBytes": 95256576,
+      "baseNativeAllocationBytes": 1191936,
+      "baselineDescriptorCoveredExtentPerTokenBytes": 27719663616,
+      "residentDescriptorCoveredExtentPerTokenBytes": null,
+      "returnedPlanePayloadPerTokenBytes": 6399590400,
+      "nativeAllocationWithMinimumArenaBytes": null,
+      "kernelLogicalPayloadPerTokenBytes": 13694386176
+    }
+  ]
 }

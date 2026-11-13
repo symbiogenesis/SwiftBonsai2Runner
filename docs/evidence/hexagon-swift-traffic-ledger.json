@@ -1,194 +1,4 @@
 {
-  "kind": "static-original-pq2-bridge-logical-payload-ledger",
-  "deviceOpened": false,
-  "sourceIdentityEncoding": "UTF8-with-LF-newlines",
-  "profileEligible": false,
-  "measuredInferenceSpeedup": null,
-  "modelLoaded": false,
-  "projectionFamilies": [
-    {
-      "hmxActivationBytes": 10485760,
-      "guardedActivationBytes": 5242880,
-      "hmxReturnedPlaneBytes": 1426063360,
-      "originalWeightBytes": 1515192320,
-      "original128Blocks": 44564480,
-      "hmxRepackedWeightBytes": 1604321280,
-      "tensor": "blk.*.ffn_up.weight",
-      "operations": 2560,
-      "guardedReturnedLimbBytes": 356515840,
-      "guardedRepackedWeightBytes": 3208642560
-    },
-    {
-      "hmxActivationBytes": 10485760,
-      "guardedActivationBytes": 5242880,
-      "hmxReturnedPlaneBytes": 1426063360,
-      "originalWeightBytes": 1515192320,
-      "original128Blocks": 44564480,
-      "hmxRepackedWeightBytes": 1604321280,
-      "tensor": "blk.*.ffn_gate.weight",
-      "operations": 2560,
-      "guardedReturnedLimbBytes": 356515840,
-      "guardedRepackedWeightBytes": 3208642560
-    },
-    {
-      "hmxActivationBytes": 35651584,
-      "guardedActivationBytes": 17825792,
-      "hmxReturnedPlaneBytes": 1426063360,
-      "originalWeightBytes": 1515192320,
-      "original128Blocks": 44564480,
-      "hmxRepackedWeightBytes": 1604321280,
-      "tensor": "blk.*.ffn_down.weight",
-      "operations": 8704,
-      "guardedReturnedLimbBytes": 356515840,
-      "guardedRepackedWeightBytes": 3208642560
-    },
-    {
-      "hmxActivationBytes": 2621440,
-      "guardedActivationBytes": 1310720,
-      "hmxReturnedPlaneBytes": 251658240,
-      "originalWeightBytes": 267386880,
-      "original128Blocks": 7864320,
-      "hmxRepackedWeightBytes": 283115520,
-      "tensor": "blk.*.attn_q.weight",
-      "operations": 640,
-      "guardedReturnedLimbBytes": 62914560,
-      "guardedRepackedWeightBytes": 566231040
-    },
-    {
-      "hmxActivationBytes": 2621440,
-      "guardedActivationBytes": 1310720,
-      "hmxReturnedPlaneBytes": 20971520,
-      "originalWeightBytes": 22282240,
-      "original128Blocks": 655360,
-      "hmxRepackedWeightBytes": 23592960,
-      "tensor": "blk.*.attn_k.weight",
-      "operations": 640,
-      "guardedReturnedLimbBytes": 5242880,
-      "guardedRepackedWeightBytes": 47185920
-    },
-    {
-      "hmxActivationBytes": 2621440,
-      "guardedActivationBytes": 1310720,
-      "hmxReturnedPlaneBytes": 20971520,
-      "originalWeightBytes": 22282240,
-      "original128Blocks": 655360,
-      "hmxRepackedWeightBytes": 23592960,
-      "tensor": "blk.*.attn_v.weight",
-      "operations": 640,
-      "guardedReturnedLimbBytes": 5242880,
-      "guardedRepackedWeightBytes": 47185920
-    },
-    {
-      "hmxActivationBytes": 3145728,
-      "guardedActivationBytes": 1572864,
-      "hmxReturnedPlaneBytes": 125829120,
-      "originalWeightBytes": 133693440,
-      "original128Blocks": 3932160,
-      "hmxRepackedWeightBytes": 141557760,
-      "tensor": "blk.*.attn_output.weight",
-      "operations": 768,
-      "guardedReturnedLimbBytes": 31457280,
-      "guardedRepackedWeightBytes": 283115520
-    },
-    {
-      "hmxActivationBytes": 7864320,
-      "guardedActivationBytes": 3932160,
-      "hmxReturnedPlaneBytes": 629145600,
-      "originalWeightBytes": 668467200,
-      "original128Blocks": 19660800,
-      "hmxRepackedWeightBytes": 707788800,
-      "tensor": "blk.*.attn_qkv.weight",
-      "operations": 1920,
-      "guardedReturnedLimbBytes": 157286400,
-      "guardedRepackedWeightBytes": 1415577600
-    },
-    {
-      "hmxActivationBytes": 7864320,
-      "guardedActivationBytes": 3932160,
-      "hmxReturnedPlaneBytes": 377487360,
-      "originalWeightBytes": 401080320,
-      "original128Blocks": 11796480,
-      "hmxRepackedWeightBytes": 424673280,
-      "tensor": "blk.*.attn_gate.weight",
-      "operations": 1920,
-      "guardedReturnedLimbBytes": 94371840,
-      "guardedRepackedWeightBytes": 849346560
-    },
-    {
-      "hmxActivationBytes": 9437184,
-      "guardedActivationBytes": 4718592,
-      "hmxReturnedPlaneBytes": 377487360,
-      "originalWeightBytes": 401080320,
-      "original128Blocks": 11796480,
-      "hmxRepackedWeightBytes": 424673280,
-      "tensor": "blk.*.ssm_out.weight",
-      "operations": 2304,
-      "guardedReturnedLimbBytes": 94371840,
-      "guardedRepackedWeightBytes": 849346560
-    },
-    {
-      "hmxActivationBytes": 2457600,
-      "guardedActivationBytes": 1228800,
-      "hmxReturnedPlaneBytes": 317849600,
-      "originalWeightBytes": 337715200,
-      "original128Blocks": 9932800,
-      "hmxRepackedWeightBytes": 357580800,
-      "tensor": "output.weight",
-      "operations": 600,
-      "guardedReturnedLimbBytes": 79462400,
-      "guardedRepackedWeightBytes": 715161600
-    }
-  ],
-  "newOwnerDeviceExecutionMilliseconds": 0,
-  "schemaVersion": 1,
-  "sources": [
-    {
-      "sha256": "fb2c4cd82ccb3cb8dd0e1610de12171c2f4582b77a076370570bb73fc492c76b",
-      "path": "tools/hexagon/verify_operation_traffic.ps1"
-    },
-    {
-      "sha256": "368040886d28ed59f7a375b4b308df84460535a55ee68ad8122e1a80b900af4b",
-      "path": "tools/hexagon/hmx_projection.rs"
-    },
-    {
-      "sha256": "c48b0b7a2d68047f78dee890049ac04956e69fdf5b8bf5d16e6499428f7010ca",
-      "path": "tools/hexagon/q2_integer.rs"
-    },
-    {
-      "sha256": "53be628d45e7784394ba45a92804dd22363788264f94bd394fe7f1eb0d33019c",
-      "path": "docs/evidence/hexagon-swift-operation-ledger.json"
-    },
-    {
-      "sha256": "88d5c81952992356496b1d9214809282dc327ec355f18ca1e2d7486a169ddceb",
-      "path": "tools/hexagon/packed-sources.json"
-    }
-  ],
-  "factors": {
-    "hostTileRows": 32,
-    "hmxPlanesPerOriginalBlock": 8,
-    "hmxHostTilesPer32Rows": 2,
-    "guardedHostTilesPer32Rows": 4,
-    "guardedActivationBytesPerOperation": 2048,
-    "original128BlockBytes": 34,
-    "guardedLimbsPerOriginalBlock": 2,
-    "hmxActivationBytesPerOperation": 4096,
-    "f32Bytes": 4,
-    "hostTileBytes": 576
-  },
-  "scope": "one-token-forward-with-every-eligible-original-PQ2-base-projection-selected",
-  "totals": {
-    "hmxActivationBytes": 95256576,
-    "guardedActivationBytes": 47628288,
-    "hmxSubmissionAndResultPayloadBytes": 13694386176,
-    "guardedRepackedWeightBytes": 14399078400,
-    "originalWeightBytes": 6799564800,
-    "original128Blocks": 199987200,
-    "hmxRepackedWeightBytes": 7199539200,
-    "hmxReturnedPlaneBytes": 6399590400,
-    "operations": 23256,
-    "guardedReturnedLimbBytes": 1599897600,
-    "guardedSubmissionAndResultPayloadBytes": 16046604288
-  },
   "limitations": [
     "All listed original-PQ2 projections selected once, including final logits; PTQ1 is outside this derivation.",
     "Payloads follow existing source packing and result layouts, with no persistent device weight reuse.",
@@ -197,5 +7,207 @@
     "Excludes source reads, extra host copies, scale scans, preparation, reduction, queue descriptors, cache traffic, mappings and native/DSP resources.",
     "Aggregate per-token payload is not simultaneous memory residency or a capacity admission amount.",
     "Smaller row tiles may increase activation payload and operation count; partial placement changes all totals."
-  ]
+  ],
+  "newOwnerDeviceExecutionMilliseconds": 0,
+  "sources": [
+    {
+      "path": "docs/evidence/hexagon-swift-operation-ledger.json",
+      "sha256": "53be628d45e7784394ba45a92804dd22363788264f94bd394fe7f1eb0d33019c"
+    },
+    {
+      "path": "tools/hexagon/packed_projection.rs",
+      "sha256": "9652d52609364fdebaa9a31ce6e4e6cd05706eeb9bb33aeff3e00f35542bc07e"
+    },
+    {
+      "path": "tools/hexagon/q2_integer.rs",
+      "sha256": "c48b0b7a2d68047f78dee890049ac04956e69fdf5b8bf5d16e6499428f7010ca"
+    },
+    {
+      "path": "tools/hexagon/q2_projection.rs",
+      "sha256": "3d8acbe10deaf03f91e754da94e3ebd3ef63bd4bc0d43868d2029ff10910b17f"
+    },
+    {
+      "path": "tools/hexagon/hmx_projection.rs",
+      "sha256": "368040886d28ed59f7a375b4b308df84460535a55ee68ad8122e1a80b900af4b"
+    },
+    {
+      "path": "tools/hexagon/packed-sources.json",
+      "sha256": "88d5c81952992356496b1d9214809282dc327ec355f18ca1e2d7486a169ddceb"
+    },
+    {
+      "path": "tools/hexagon/verify_operation_traffic.ps1",
+      "sha256": "2d6331861b8204698d1e9d31641fb602df601f69e43cb70dfcb21d9aa2c72030"
+    },
+    {
+      "path": "tools/hexagon/Hexagon.Common.ps1",
+      "sha256": "5f9b9cfb7cdce93c033ab86d49a4f6d07974b1d09fd4acf8a1d7f20d79e680b2"
+    }
+  ],
+  "profileEligible": false,
+  "kind": "static-original-pq2-bridge-logical-payload-ledger",
+  "scope": "one-token-forward-with-every-eligible-original-PQ2-base-projection-selected",
+  "deviceOpened": false,
+  "projectionFamilies": [
+    {
+      "hmxRepackedWeightBytes": 1604321280,
+      "operations": 2560,
+      "guardedActivationBytes": 5242880,
+      "original128Blocks": 44564480,
+      "hmxReturnedPlaneBytes": 1426063360,
+      "guardedReturnedLimbBytes": 356515840,
+      "originalWeightBytes": 1515192320,
+      "guardedRepackedWeightBytes": 3208642560,
+      "tensor": "blk.*.ffn_up.weight",
+      "hmxActivationBytes": 10485760
+    },
+    {
+      "hmxRepackedWeightBytes": 1604321280,
+      "operations": 2560,
+      "guardedActivationBytes": 5242880,
+      "original128Blocks": 44564480,
+      "hmxReturnedPlaneBytes": 1426063360,
+      "guardedReturnedLimbBytes": 356515840,
+      "originalWeightBytes": 1515192320,
+      "guardedRepackedWeightBytes": 3208642560,
+      "tensor": "blk.*.ffn_gate.weight",
+      "hmxActivationBytes": 10485760
+    },
+    {
+      "hmxRepackedWeightBytes": 1604321280,
+      "operations": 8704,
+      "guardedActivationBytes": 17825792,
+      "original128Blocks": 44564480,
+      "hmxReturnedPlaneBytes": 1426063360,
+      "guardedReturnedLimbBytes": 356515840,
+      "originalWeightBytes": 1515192320,
+      "guardedRepackedWeightBytes": 3208642560,
+      "tensor": "blk.*.ffn_down.weight",
+      "hmxActivationBytes": 35651584
+    },
+    {
+      "hmxRepackedWeightBytes": 283115520,
+      "operations": 640,
+      "guardedActivationBytes": 1310720,
+      "original128Blocks": 7864320,
+      "hmxReturnedPlaneBytes": 251658240,
+      "guardedReturnedLimbBytes": 62914560,
+      "originalWeightBytes": 267386880,
+      "guardedRepackedWeightBytes": 566231040,
+      "tensor": "blk.*.attn_q.weight",
+      "hmxActivationBytes": 2621440
+    },
+    {
+      "hmxRepackedWeightBytes": 23592960,
+      "operations": 640,
+      "guardedActivationBytes": 1310720,
+      "original128Blocks": 655360,
+      "hmxReturnedPlaneBytes": 20971520,
+      "guardedReturnedLimbBytes": 5242880,
+      "originalWeightBytes": 22282240,
+      "guardedRepackedWeightBytes": 47185920,
+      "tensor": "blk.*.attn_k.weight",
+      "hmxActivationBytes": 2621440
+    },
+    {
+      "hmxRepackedWeightBytes": 23592960,
+      "operations": 640,
+      "guardedActivationBytes": 1310720,
+      "original128Blocks": 655360,
+      "hmxReturnedPlaneBytes": 20971520,
+      "guardedReturnedLimbBytes": 5242880,
+      "originalWeightBytes": 22282240,
+      "guardedRepackedWeightBytes": 47185920,
+      "tensor": "blk.*.attn_v.weight",
+      "hmxActivationBytes": 2621440
+    },
+    {
+      "hmxRepackedWeightBytes": 141557760,
+      "operations": 768,
+      "guardedActivationBytes": 1572864,
+      "original128Blocks": 3932160,
+      "hmxReturnedPlaneBytes": 125829120,
+      "guardedReturnedLimbBytes": 31457280,
+      "originalWeightBytes": 133693440,
+      "guardedRepackedWeightBytes": 283115520,
+      "tensor": "blk.*.attn_output.weight",
+      "hmxActivationBytes": 3145728
+    },
+    {
+      "hmxRepackedWeightBytes": 707788800,
+      "operations": 1920,
+      "guardedActivationBytes": 3932160,
+      "original128Blocks": 19660800,
+      "hmxReturnedPlaneBytes": 629145600,
+      "guardedReturnedLimbBytes": 157286400,
+      "originalWeightBytes": 668467200,
+      "guardedRepackedWeightBytes": 1415577600,
+      "tensor": "blk.*.attn_qkv.weight",
+      "hmxActivationBytes": 7864320
+    },
+    {
+      "hmxRepackedWeightBytes": 424673280,
+      "operations": 1920,
+      "guardedActivationBytes": 3932160,
+      "original128Blocks": 11796480,
+      "hmxReturnedPlaneBytes": 377487360,
+      "guardedReturnedLimbBytes": 94371840,
+      "originalWeightBytes": 401080320,
+      "guardedRepackedWeightBytes": 849346560,
+      "tensor": "blk.*.attn_gate.weight",
+      "hmxActivationBytes": 7864320
+    },
+    {
+      "hmxRepackedWeightBytes": 424673280,
+      "operations": 2304,
+      "guardedActivationBytes": 4718592,
+      "original128Blocks": 11796480,
+      "hmxReturnedPlaneBytes": 377487360,
+      "guardedReturnedLimbBytes": 94371840,
+      "originalWeightBytes": 401080320,
+      "guardedRepackedWeightBytes": 849346560,
+      "tensor": "blk.*.ssm_out.weight",
+      "hmxActivationBytes": 9437184
+    },
+    {
+      "hmxRepackedWeightBytes": 357580800,
+      "operations": 600,
+      "guardedActivationBytes": 1228800,
+      "original128Blocks": 9932800,
+      "hmxReturnedPlaneBytes": 317849600,
+      "guardedReturnedLimbBytes": 79462400,
+      "originalWeightBytes": 337715200,
+      "guardedRepackedWeightBytes": 715161600,
+      "tensor": "output.weight",
+      "hmxActivationBytes": 2457600
+    }
+  ],
+  "sourceIdentityEncoding": "UTF8-with-LF-newlines",
+  "schemaVersion": 1,
+  "modelLoaded": false,
+  "totals": {
+    "hmxRepackedWeightBytes": 7199539200,
+    "original128Blocks": 199987200,
+    "hmxSubmissionAndResultPayloadBytes": 13694386176,
+    "guardedActivationBytes": 47628288,
+    "operations": 23256,
+    "hmxActivationBytes": 95256576,
+    "guardedReturnedLimbBytes": 1599897600,
+    "originalWeightBytes": 6799564800,
+    "guardedSubmissionAndResultPayloadBytes": 16046604288,
+    "guardedRepackedWeightBytes": 14399078400,
+    "hmxReturnedPlaneBytes": 6399590400
+  },
+  "measuredInferenceSpeedup": null,
+  "factors": {
+    "hmxPlanesPerOriginalBlock": 8,
+    "f32Bytes": 4,
+    "original128BlockBytes": 34,
+    "hmxHostTilesPer32Rows": 2,
+    "guardedHostTilesPer32Rows": 4,
+    "hostTileBytes": 576,
+    "hmxActivationBytesPerOperation": 4096,
+    "guardedLimbsPerOriginalBlock": 2,
+    "guardedActivationBytesPerOperation": 2048,
+    "hostTileRows": 32
+  }
 }

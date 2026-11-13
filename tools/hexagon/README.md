@@ -14,7 +14,7 @@ pwsh -NoProfile -File tools/hexagon/pq2_bridge.ps1
 The complete regression suite runs on hosted CI through
 [Hexagon prerequisites](../../.github/workflows/hexagon-qualification.yml) and
 Foundation. A focused local case is
-`pwsh -NoProfile -File tools/hexagon/test_pq2_bridge.ps1 BridgeTests.test_known_byte_fixture_splits_at_element_64_and_keeps_fourth_symbol`.
+`pwsh -NoProfile -File tools/hexagon/test_pq2_bridge.ps1 -Test test_known_byte_fixture_splits_at_element_64_and_keeps_fourth_symbol`.
 All owner-device setup, checks and cleanup share one five-minute aggregate
 allowance; do not run a complete suite locally.
 
@@ -30,11 +30,21 @@ wire-coverage work requires a separately reviewed hosted workload; existing
 snapshots do not close the outstanding Windows, SDK or device gates in PLAN.
 
 An optional raw PQ2 fixture can be checked with
-`--payload ABSOLUTE_FIXTURE_PATH --columns 384 --rows 2`. The fixture must contain
+`-Payload ABSOLUTE_FIXTURE_PATH -Columns 384 -Rows 2`. The fixture must contain
 exactly the declared complete rows, at most 1 MiB. This is a raw packed fixture,
 not an entire model. JSON inventory inputs are individually capped at 1 MiB;
 all reads enforce the limit even if the file grows. The tool prints JSON to
 stdout and writes no converted weights.
+
+All audit controllers use PowerShell 7.6 or later. `sdk_inventory.ps1` uses the
+standalone Rust package in `sdk-reader/` to stream the pinned XZ/tar archive as
+data. Its separate exact dependency lock uses a pure Rust XZ decoder, with a
+256 MiB decoder-memory limit and fixed archive-entry, byte and selection bounds.
+The reader emits only selected file bytes over a pipe; it extracts no SDK paths
+and executes no SDK code. Hosted inventory builds it with `cargo build --locked`
+into external runner scratch. `-Reader` can select an already prepared executable;
+the receipt records that executable's bytes and digest. Source/compiler identity
+and hosted replay remain required for a new acceptance claim.
 
 Inventory JSON has a 64-container nesting limit and rejects duplicate names and
 nonfinite JSON constants. Counts and derived storage extents must fit unsigned

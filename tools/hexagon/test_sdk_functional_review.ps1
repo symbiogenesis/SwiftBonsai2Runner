@@ -1,6 +1,7 @@
 #Requires -Version 7.6
 param([string]$Test)
 . "$PSScriptRoot/sdk_functional_review.ps1"
+. "$PSScriptRoot/sdk_inventory.ps1" -Archive unused -Pin unused -Output unused -PublicInputDirectory unused
 . "$PSScriptRoot/Hexagon.Tests.ps1"
 $limits=@{functionalTokens=10000;functionalDeclarations=64;declarationTokens=256;preprocessorDirectives=64}
 function Tokens([string]$Text) {return ,(Get-FunctionalTokens $Text 10000).tokens}
@@ -35,5 +36,30 @@ $tests.test_known_boms_and_uncertain_windows_text_fallback={
     foreach ($encoding in @([Text.UnicodeEncoding]::new($false,$true),[Text.UTF32Encoding]::new($false,$true))) {$decoded=Get-DecodedText ([byte[]]($encoding.GetPreamble()+$encoding.GetBytes('QAIC terms')));Assert-Hexagon ($decoded.text -ceq 'QAIC terms' -and $decoded.observation.basis -ceq 'explicit-BOM' -and -not $decoded.observation.uncertain) 'explicit BOM lost'}
     $review=Get-LegalReview ([byte[]](@(147)+[Text.Encoding]::ASCII.GetBytes('QAIC')+@(148)+[Text.Encoding]::ASCII.GetBytes(' product license agreement'))) 25
     Assert-Hexagon ($review.encodingObservation.encoding -ceq 'cp1252' -and $review.encodingObservation.uncertain -and $review.termOccurrences['qaic-name'].count -eq 1 -and -not $review.keywordMatchesEstablishGrant -and -not $review.sdkToolTermsQualified -and ([regex]::Split($review.necessaryReviewExcerpt.text,'\s+')).Count -le 25) 'uncertain legal terms qualified'
+}
+$tests.test_cmake_recipe_keeps_balanced_tokens_and_pending_authority={
+    $text=@'
+# ignored (comment)
+set(HEXAGON_SDK_ROOT "C:/sdk with spaces")
+function(build_idl project)
+  helper("${HEXAGON_SDK_ROOT}/qaic" [=[literal #(content)]=])
+  message("Nonfunctional prose")
+endfunction()
+function(helper tool)
+  add_custom_command(COMMAND "${tool}" --standard-types COMMENT "omit comment prose")
+endfunction()
+'@
+    $statements=Get-CmakeStatements $text
+    Assert-Hexagon ($statements.Count -eq 8 -and $statements[0].tokens[1] -ceq '"C:/sdk with spaces"' -and $statements[2].tokens[1] -ceq '[=[literal #(content)]=]') 'CMake quoted/bracket argument changed'
+    $pin=@{limits=@{recipeFunctions=16;recipeStatements=256;recipeStatementTokens=128;recipeTokenCharacters=512}}
+    $review=Get-RecipeMetadata @{'sdk/build/cmake/hexagon_fun.cmake'=[Text.Encoding]::UTF8.GetBytes($text)} $pin
+    Assert-Hexagon ($review.functions.Count -eq 2 -and -not $review.variableExpansionExecuted -and -not $review.generatorCommandAuthorized -and $review.functions[0].statements[2].nonfunctionalMessageTextOmitted) 'recipe source authority changed'
+    Assert-Rejected {Get-CmakeStatements 'function(build_idl "unterminated)'}
+}
+$tests.test_sdk_pe_and_notice_metadata_never_grant_rights={
+    $data=[byte[]]::new(96);$data[0]=77;$data[1]=90;[Array]::Copy([BitConverter]::GetBytes([uint]64),0,$data,60,4);[Array]::Copy([byte[]]@(80,69,0,0,100,170),0,$data,64,6)
+    $pe=Get-PeMetadata $data;Assert-Hexagon ($pe.validPeHeader -and $pe.machineHex -ceq 'aa64') 'native PE header metadata changed'
+    $notice=Get-NoticeMetadata $data;Assert-Hexagon ($notice.encodingObservation.basis -ceq 'validated-PE-header; text-decoding-not-attempted' -and -not $notice.licenseRightsInterpretationReviewed) 'PE was treated as a license grant'
+    [Array]::Copy([BitConverter]::GetBytes([uint]4294967295),0,$data,60,4);Assert-Hexagon (-not (Get-PeMetadata $data).validPeHeader) 'out-of-bounds PE accepted'
 }
 Invoke-HexagonTests $tests $Test

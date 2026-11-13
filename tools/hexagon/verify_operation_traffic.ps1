@@ -4,7 +4,7 @@ param([switch]$Emit,[switch]$Write)
 $script:OperationLedger='docs/evidence/hexagon-swift-operation-ledger.json'
 $script:TrafficLedger='docs/evidence/hexagon-swift-traffic-ledger.json'
 function Get-OperationTraffic {
-    $sources=@('tools/hexagon/verify_operation_traffic.ps1','tools/hexagon/hmx_projection.rs','tools/hexagon/q2_integer.rs',$script:OperationLedger,'tools/hexagon/packed-sources.json')
+    $sources=@($script:OperationLedger,'tools/hexagon/packed_projection.rs','tools/hexagon/q2_integer.rs','tools/hexagon/q2_projection.rs','tools/hexagon/hmx_projection.rs','tools/hexagon/packed-sources.json','tools/hexagon/verify_operation_traffic.ps1','tools/hexagon/Hexagon.Common.ps1')
     $ledger=ConvertFrom-HexagonJson (Read-HexagonSource $script:OperationLedger)
     Assert-Hexagon ($ledger.artifact.tensorKind -eq 142 -and $ledger.assumptions.originalBlockColumns -eq 128 -and $ledger.assumptions.maximumWeightRowsPerOperation -eq 17408) 'original PQ2 scheduling contract changed'
     $families=@(foreach ($family in $ledger.projectionFamilies) {
