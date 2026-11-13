@@ -2,7 +2,7 @@
 use super::{
     MESSAGE_ACTION_SIZE, Message, MessageControls, RichText, Role, TranscriptAction, egui,
 };
-use crate::window::iteration::MessageAction;
+use crate::window::{controls, iteration::MessageAction};
 
 impl Message {
     pub(super) fn header(
@@ -55,9 +55,8 @@ impl Message {
                 }
                 if ui
                     .add(
-                        egui::Button::new("Copy")
-                            .min_size(egui::vec2(0.0, MESSAGE_ACTION_SIZE))
-                            .frame_when_inactive(false),
+                        controls::quiet_button("Copy")
+                            .min_size(egui::vec2(0.0, MESSAGE_ACTION_SIZE)),
                     )
                     .on_hover_text("Copy this message")
                     .clicked()
@@ -74,73 +73,76 @@ impl Message {
         ui: &mut egui::Ui,
         controls: &MessageControls<'_>,
     ) -> Option<MessageAction> {
-        let mut action = None;
-        let (response, _) = egui::containers::menu::MenuButton::from_button(
-            egui::Button::new("⋯")
-                .min_size(egui::Vec2::splat(MESSAGE_ACTION_SIZE))
-                .frame_when_inactive(false),
+        let (response, menu) = egui::containers::menu::MenuButton::from_button(
+            controls::quiet_button("⋯").min_size(egui::Vec2::splat(MESSAGE_ACTION_SIZE)),
         )
-        .ui(ui, |ui| {
-            let options =
-                self.iteration_options(controls.history, controls.can_send, controls.can_branch);
-            let mut item = |enabled, label, help, selected| {
-                if ui
-                    .add_enabled(enabled, egui::Button::new(label))
-                    .on_hover_text(help)
-                    .clicked()
-                {
-                    action = Some(selected);
-                    ui.close();
-                }
-            };
-            if self.role == Role::User {
-                item(
-                    options.edit,
-                    "Edit and resend",
-                    "Edit this prompt in a new branch. Keeps the original conversation and draft.",
-                    MessageAction::Edit(self.id),
-                );
-            } else {
-                item(
-                    options.regenerate,
-                    "Regenerate",
-                    "Generate another answer in a new branch using the original prompt.",
-                    MessageAction::Regenerate(self.id),
-                );
-                item(
-                    options.continue_response,
-                    "Continue response",
-                    "Ask Swift to continue the latest answer. Keeps your unsent draft.",
-                    MessageAction::Continue(self.id),
-                );
-            }
-            item(
-                options.branch,
-                "Branch from here",
-                "Create a conversation from this point without sending a message.",
-                MessageAction::Branch(self.id),
-            );
-            if !controls.can_branch {
-                ui.separator();
-                ui.label("Branching needs a free conversation slot and an available workspace.");
-            } else if !controls.can_send {
-                ui.separator();
-                ui.label("Sending is available when the model is ready.");
-            } else if !options.edit
-                && !options.regenerate
-                && !options.branch
-                && !options.continue_response
-            {
-                ui.separator();
-                ui.label(
-                    "These actions require a message included in Swift's conversation context.",
-                );
-            }
-        });
+        .ui(ui, |ui| self.iteration_menu(ui, controls));
         let name = format!("Actions for message {}", self.id);
         response
             .accessible_name(&name)
             .on_hover_text("Message actions");
+        menu.and_then(|response| response.inner)
+    }
+
+    fn iteration_menu(
+        &self,
+        ui: &mut egui::Ui,
+        controls: &MessageControls<'_>,
+    ) -> Option<MessageAction> {
+        let mut action = None;
+        let options =
+            self.iteration_options(controls.history, controls.can_send, controls.can_branch);
+        let mut item = |enabled, label, help, selected| {
+            if ui
+                .add_enabled(enabled, egui::Button::new(label))
+                .on_hover_text(help)
+                .clicked()
+            {
+                action = Some(selected);
+                ui.close();
+            }
+        };
+        if self.role == Role::User {
+            item(
+                options.edit,
+                "Edit and resend",
+                "Edit this prompt in a new branch. Keeps the original conversation and draft.",
+                MessageAction::Edit(self.id),
+            );
+        } else {
+            item(
+                options.regenerate,
+                "Regenerate",
+                "Generate another answer in a new branch using the original prompt.",
+                MessageAction::Regenerate(self.id),
+            );
+            item(
+                options.continue_response,
+                "Continue response",
+                "Ask Swift to continue the latest answer. Keeps your unsent draft.",
+                MessageAction::Continue(self.id),
+            );
+        }
+        item(
+            options.branch,
+            "Branch from here",
+            "Create a conversation from this point without sending a message.",
+            MessageAction::Branch(self.id),
+        );
+        if !controls.can_branch {
+            ui.separator();
+            ui.label("Branching needs a free conversation slot and an available workspace.");
+        } else if !controls.can_send {
+            ui.separator();
+            ui.label("Sending is available when the model is ready.");
+        } else if !options.edit
+            && !options.regenerate
+            && !options.branch
+            && !options.continue_response
+        {
+            ui.separator();
+            ui.label("These actions require a message included in Swift's conversation context.");
+        }
         action
     }
 }
