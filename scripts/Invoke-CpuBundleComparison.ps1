@@ -1,3 +1,4 @@
+#requires -Version 7.6
 [CmdletBinding(DefaultParameterSetName = 'Capture')]
 param(
     [Parameter(Mandatory)][string]$StartReceipt,
@@ -187,13 +188,14 @@ if ($original.candidate_commit -cne $CandidateCommit) { throw 'Owner-start candi
 $PacketDirectory = External-Path $PacketDirectory
 $ToolsPath = External-Path $ToolsPath
 $toolsReceipt = Read-Json (Join-Path ([IO.Path]::GetDirectoryName($ToolsPath)) 'receipt.json')
-if ($toolsReceipt.SchemaVersion -ne 2 -or $toolsReceipt.Revision -cne $env:GITHUB_SHA -or
-    $toolsReceipt.Sha256 -cne (File-Digest $ToolsPath)) { throw 'Checked supervisor source or executable identity differs.' }
+if ($toolsReceipt.SchemaVersion -ne 3 -or $toolsReceipt.Revision -cne $env:GITHUB_SHA -or
+    $toolsReceipt.Sha256 -cne (File-Digest $ToolsPath) -or
+    $toolsReceipt.NumericSha256 -cne (File-Digest (Join-Path ([IO.Path]::GetDirectoryName($ToolsPath)) 'bonsai-reference-numerics.exe'))) { throw 'Checked supervisor source or executable identity differs.' }
 $toolDigest = $toolsReceipt.Sha256
 $preparationPath = Join-Path $PacketDirectory 'preparation.json'
 if ((File-Digest $preparationPath) -cne $ExpectedPacketSha256) { throw 'Same-run hosted preparation digest differs.' }
 $packet = Read-Json $preparationPath
-if ($packet.schema_version -ne 1 -or $packet.kind -cne 'prism-cpu-bundle-preparation' -or
+if ($packet.schema_version -ne 2 -or $packet.kind -cne 'prism-cpu-bundle-preparation' -or
     $packet.arms.baseline.source.revision -cne $baselineCommit -or
     $packet.arms.candidate.source.revision -cne $CandidateCommit -or
     $packet.target -cne 'aarch64-pc-windows-msvc' -or $packet.output_tokens -ne 32 -or $packet.per_arm_timeout_seconds -ne 60 -or
@@ -213,7 +215,8 @@ if ($packet.orchestrator.repository -cne $env:GITHUB_REPOSITORY -or
     $packet.arms.candidate.source.kind -cne 'registry' -or
     $packet.arms.candidate.source.version -cne '0.1.25' -or
     $packet.arms.candidate.source.archive_sha256 -cne '0a117db7589a821b27c224e41aaababa5ddd2ac9852344c0a8121a0849046363' -or
-    ($packet.retained_files -join ',') -cne 'preparation.json,messages.json,evaluator.py') {
+    ($packet.retained_files -join ',') -cne 'preparation.json,messages.json,evaluator.ps1' -or
+    $packet.evaluator_language -cne 'PowerShell 7.6') {
     throw 'Preparation is foreign to this exact run or reviewed registry delivery.'
 }
 Assert-Hash $packet.tooling_source.revision 40
@@ -223,7 +226,7 @@ foreach ($source in $packet.collector_sources.GetEnumerator()) {
     if ($source.Key -cnotmatch '^examples/cpu_bundle_check(?:\.rs|/[^:]+\.rs)$') { throw 'Unreviewed collector source member.' }
     Assert-Hash $source.Value 64
 }
-if ((File-Digest (Join-Path $PacketDirectory 'evaluator.py')) -cne $packet.evaluator_sha256) { throw 'Prepared evaluator bytes differ.' }
+if ((File-Digest (Join-Path $PacketDirectory 'evaluator.ps1')) -cne $packet.evaluator_sha256) { throw 'Prepared evaluator bytes differ.' }
 $messages = Packet-Member $PacketDirectory $packet.messages.path
 if ((File-Digest $messages) -cne $packet.messages.sha256) { throw 'Fixed public messages differ.' }
 foreach ($role in @('baseline', 'candidate')) {
@@ -453,7 +456,7 @@ try {
     }
     $packetStage = Join-Path $retained 'packet'
     [void][IO.Directory]::CreateDirectory($packetStage)
-    foreach ($name in @('preparation.json', 'messages.json', 'evaluator.py')) {
+    foreach ($name in @('preparation.json', 'messages.json', 'evaluator.ps1')) {
         Copy-Item -LiteralPath (Join-Path $PacketDirectory $name) -Destination (Join-Path $packetStage $name)
     }
     $owner.retention_completed_tick = [Diagnostics.Stopwatch]::GetTimestamp()
@@ -462,11 +465,11 @@ try {
 }
 if ($captureFailure) { throw $captureFailure }
 if ((Remaining-Seconds) -lt 85) { throw 'Insufficient original budget for evaluation and bounded final upload.' }
-$evaluator = Join-Path $PacketDirectory 'evaluator.py'
-$python = (Get-Command python -CommandType Application).Source
+$evaluator = Join-Path $PacketDirectory 'evaluator.ps1'
+$powershell = Join-Path $PSHOME 'pwsh.exe'
 try {
     if ((Remaining-Seconds) -lt 85) { throw 'Insufficient original budget for evaluation and bounded final upload.' }
-    $comparison = Invoke-Sanitized $python @('-B', $evaluator, 'evaluate', '--preparation', (Join-Path $retained 'packet/preparation.json'), '--owner', (Join-Path $retained 'owner.json')) 15 70
+    $comparison = Invoke-Sanitized $powershell @('-NoLogo', '-NoProfile', '-File', $evaluator, '-Operation', 'evaluate', '-Preparation', (Join-Path $retained 'packet/preparation.json'), '-Owner', (Join-Path $retained 'owner.json')) 15 70
     [IO.File]::WriteAllText((Join-Path $retained 'comparison.json'), $comparison + "`n", $utf8)
     $comparison | Add-Content -LiteralPath $env:GITHUB_STEP_SUMMARY
     if ((Remaining-Seconds) -lt 70) { throw 'Final evidence upload and power-recording reserve is exhausted.' }

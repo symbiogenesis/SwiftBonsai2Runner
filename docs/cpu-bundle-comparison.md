@@ -9,10 +9,23 @@ with no accelerator executor. Paired request timing includes preparation and
 generation; load/process timings remain separate. Broker HTTP/SSE, UI and speech
 are outside this comparison. FP16 also keeps this screen separate from the
 0.1.25 application's K4/V4 development default.
-The exact published Prism **tooling revision** is separate from the registry
-candidate's authenticated source identity. Both Runner and the new Prism tooling
+The exact published Prism **tooling revision** supplies the Rust collector and
+is separate from the registry candidate's authenticated source identity. Runner's
+[`cpu_bundle.ps1`](../tools/cpu-bundle/cpu_bundle.ps1) owns preparation and offline
+admission using PowerShell 7.6; CI installs and executes no Python runtime.
+Both Runner and the new Prism tooling
 must be owner-published before this workflow can consume them. No push is part
 of preparation or capture.
+
+New preparation packets use schema 2 and retain `evaluator.ps1`, its SHA-256 and
+the explicit PowerShell language identity beside `preparation.json` and
+`messages.json`. Historical packets keep their original identities. Offline
+replay runs `pwsh -NoLogo -NoProfile -File evaluator.ps1 -Operation evaluate
+-Preparation ABSOLUTE_PREPARATION_JSON -Owner ABSOLUTE_OWNER_JSON` against the
+reviewed retained selection. The native evaluator uses .NET's bounded tar reader
+to compare Cargo-extracted registry files with the exact authenticated archive;
+it never extracts archive paths. Hosted preparation and owner-device acceptance
+remain separate gates.
 
 The default `run_device: false` performs hosted preparation only. Opting into
 device capture declares one fixed ten-minute workload. Each of four ABBA arms

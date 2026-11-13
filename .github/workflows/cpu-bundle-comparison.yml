@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       tooling_revision:
-        description: Exact published Prism tooling SHA containing the reviewed collector and comparator
+        description: Exact published Prism tooling SHA containing the reviewed Rust collector
         type: string
         required: true
       candidate_registry_version:
@@ -89,7 +89,7 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           $PSNativeCommandUseErrorActionPreference = $true
-          python -B -m unittest discover -s prism-tooling/.github/ci -p test_cpu_bundle.py
+          & ./tools/cpu-bundle/test_cpu_bundle.ps1
           $tokens = $null; $errors = $null
           [void][Management.Automation.Language.Parser]::ParseFile((Join-Path $env:GITHUB_WORKSPACE 'scripts/Invoke-CpuBundleComparison.ps1'), [ref]$tokens, [ref]$errors)
           if ($errors.Count) { throw ($errors | Out-String) }
@@ -105,23 +105,26 @@ jobs:
           $ErrorActionPreference = 'Stop'
           $PSNativeCommandUseErrorActionPreference = $true
           $packet = Join-Path $env:RUNNER_TEMP 'Prism-CpuBundle-Packet'
-          python -B prism-tooling/.github/ci/cpu_bundle.py prepare `
-            --baseline-root (Join-Path $env:GITHUB_WORKSPACE 'prism-baseline') `
-            --tooling-root (Join-Path $env:GITHUB_WORKSPACE 'prism-tooling') `
-            --candidate-registry-version $env:CANDIDATE_VERSION `
-            --runner-revision $env:GITHUB_SHA --output $packet
+          & ./tools/cpu-bundle/cpu_bundle.ps1 -Operation prepare `
+            -BaselineRoot (Join-Path $env:GITHUB_WORKSPACE 'prism-baseline') `
+            -ToolingRoot (Join-Path $env:GITHUB_WORKSPACE 'prism-tooling') `
+            -CandidateRegistryVersion $env:CANDIDATE_VERSION `
+            -RunnerRevision $env:GITHUB_SHA -Output $packet
           "preparation_sha256=$((Get-FileHash -LiteralPath (Join-Path $packet 'preparation.json') -Algorithm SHA256).Hash.ToLowerInvariant())" >> $env:GITHUB_OUTPUT
           # The device consumes this run's checked supervisor, never a stale tool.
           $tools = Join-Path $env:RUNNER_TEMP 'SwiftBonsai-CheckedTools'
           [void][IO.Directory]::CreateDirectory($tools)
           $tool = Join-Path $tools 'bonsai-tools.exe'
           $probe = Join-Path $tools 'bonsai-completion-test-probe.exe'
+          $numeric = Join-Path $tools 'bonsai-reference-numerics.exe'
           Copy-Item -LiteralPath $env:BONSAI_TOOLS_PATH -Destination $tool
           Copy-Item -LiteralPath $env:BONSAI_COMPLETION_PROBE_PATH -Destination $probe
+          Copy-Item -LiteralPath $env:BONSAI_REFERENCE_NUMERIC_TOOL -Destination $numeric
           @{
-            SchemaVersion = 2; Revision = $env:GITHUB_SHA
+            SchemaVersion = 3; Revision = $env:GITHUB_SHA
             Sha256 = (Get-FileHash -LiteralPath $tool -Algorithm SHA256).Hash.ToLowerInvariant()
             ProbeSha256 = (Get-FileHash -LiteralPath $probe -Algorithm SHA256).Hash.ToLowerInvariant()
+            NumericSha256 = (Get-FileHash -LiteralPath $numeric -Algorithm SHA256).Hash.ToLowerInvariant()
           } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $tools 'receipt.json') -Encoding utf8NoBOM
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
