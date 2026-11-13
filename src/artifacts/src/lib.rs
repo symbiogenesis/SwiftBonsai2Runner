@@ -35,7 +35,7 @@ fn verification_buffer(bytes: u64) -> Vec<u8> {
 }
 
 mod install;
-pub use install::stage_runtime;
+pub use install::{RuntimeStagingError, stage_runtime, stage_runtime_cleaned};
 
 /// Value-free artifact rejection; no filesystem contents enter diagnostics.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

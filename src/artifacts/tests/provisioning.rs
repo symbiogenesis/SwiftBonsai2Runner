@@ -2,7 +2,9 @@
 #![cfg(windows)]
 #![forbid(unsafe_code)]
 
-use bonsai_artifacts::{ArtifactError, RuntimeSpec, VerifiedRuntime, stage_runtime};
+use bonsai_artifacts::{
+    ArtifactError, RuntimeSpec, VerifiedRuntime, stage_runtime, stage_runtime_cleaned,
+};
 use sha2::{Digest as _, Sha256};
 use std::fs;
 use std::io::{Cursor, Write as _};
@@ -197,6 +199,31 @@ fn runtime_stage_rejects_identity_architecture_and_corrupt_payloads() -> TestRes
     );
     assert_absent(&fixture.spec.runtime_directory);
     assert!(fixture.staging.is_dir());
+    fixture.remove()
+}
+
+#[test]
+fn runtime_stage_cleanup_removes_only_its_failed_attempt() -> TestResult {
+    let mut wrong = image();
+    wrong[68..70].copy_from_slice(&0x8664_u16.to_le_bytes());
+    let bytes = archive(&[("llama-server.exe", &wrong), ("share/LICENSE", b"fixture")])?;
+    let fixture = Fixture::new(&bytes)?;
+    let error = stage_runtime_cleaned(&fixture.spec, &fixture.staging)
+        .err()
+        .ok_or("Wrong architecture unexpectedly staged")?;
+    assert_eq!(error.error(), ArtifactError::Architecture);
+    assert_eq!(error.cleanup_error(), None);
+    assert_absent(&fixture.staging);
+    assert_eq!(fs::read(&fixture.spec.archive_path)?, bytes);
+    assert!(error.to_string().contains("ARM64"));
+
+    fs::create_dir(&fixture.staging)?;
+    fs::write(fixture.staging.join("keep.txt"), b"owner data")?;
+    let error = stage_runtime_cleaned(&fixture.spec, &fixture.staging)
+        .err()
+        .ok_or("Preexisting staging unexpectedly replaced")?;
+    assert_eq!(error.error(), ArtifactError::Path);
+    assert_eq!(fs::read(fixture.staging.join("keep.txt"))?, b"owner data");
     fixture.remove()
 }
 

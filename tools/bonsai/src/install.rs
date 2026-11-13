@@ -3,7 +3,7 @@
 use std::path::PathBuf;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use bonsai_artifacts::{RuntimeSpec, stage_runtime};
+use bonsai_artifacts::{RuntimeSpec, stage_runtime_cleaned};
 use serde::Deserialize;
 use serde_json::{Value, json};
 
@@ -18,7 +18,8 @@ struct Request {
 ///
 /// # Errors
 /// Rejects unsupported schema/platform, unsafe or changed artifacts, and failed
-/// extraction. A failed staging directory is retained as evidence.
+/// extraction. Incomplete files from this attempt are removed after local handles
+/// close; a cleanup failure retains the stage and both error descriptions.
 pub fn run(request: Value) -> crate::Result<Value> {
     if !request.is_object() || !request["runtime"].is_object() {
         return Err("Runtime staging requires request and runtime objects.".into());
@@ -38,11 +39,15 @@ pub fn run(request: Value) -> crate::Result<Value> {
     let mut staging_name = name.to_os_string();
     staging_name.push(format!(".staging-{}-{stamp}", std::process::id()));
     let staging: PathBuf = destination.with_file_name(staging_name);
-    let files = stage_runtime(&request.runtime, &staging).map_err(|error| {
-        format!(
-            "{error} Incomplete runtime staging, if created, retained at {}",
-            staging.display()
-        )
+    let files = stage_runtime_cleaned(&request.runtime, &staging).map_err(|error| {
+        if error.cleanup_error().is_some() {
+            format!(
+                "{error} Incomplete runtime staging retained at {}",
+                staging.display()
+            )
+        } else {
+            error.to_string()
+        }
     })?;
     let server = files
         .iter()

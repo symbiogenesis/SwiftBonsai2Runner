@@ -2,13 +2,57 @@
 
 use super::{
     ArtifactError, HASH_BUFFER_BYTES, Installation, RuntimeSpec, VerifiedRuntimeFile, check_arm64,
-    check_locked, hold_ancestors, inspect_archive, open_locked_file, validate_external_path,
-    verify_installed_files,
+    check_locked, enumerate_installation, hold_ancestors, inspect_archive, open_locked_file,
+    validate_external_path, verify_installed_files,
 };
+use std::collections::BTreeSet;
+use std::fmt;
 use std::fs::{self, File, OpenOptions};
 use std::io::{Read, Seek, Write};
 use std::path::Path;
 use zip::ZipArchive;
+
+/// A staging failure, including any failure to remove its own incomplete files.
+#[derive(Debug)]
+pub struct RuntimeStagingError {
+    error: ArtifactError,
+    cleanup: Option<ArtifactError>,
+}
+
+impl RuntimeStagingError {
+    /// Original validation, extraction or verification failure.
+    #[must_use]
+    pub const fn error(&self) -> ArtifactError {
+        self.error
+    }
+
+    /// Failure to clean this attempt's incomplete staging, when cleanup was needed.
+    #[must_use]
+    pub const fn cleanup_error(&self) -> Option<ArtifactError> {
+        self.cleanup
+    }
+}
+
+impl From<ArtifactError> for RuntimeStagingError {
+    fn from(error: ArtifactError) -> Self {
+        Self {
+            error,
+            cleanup: None,
+        }
+    }
+}
+
+impl fmt::Display for RuntimeStagingError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Display::fmt(&self.error, formatter)?;
+        if let Some(cleanup) = self.cleanup {
+            write!(formatter, " Incomplete staging cleanup failed: {cleanup}")?;
+        }
+        Ok(())
+    }
+}
+
+impl std::error::Error for RuntimeStagingError {}
 
 /// Stage a locked ARM64 runtime ZIP in a fresh directory without executing it.
 ///
@@ -25,13 +69,38 @@ pub fn stage_runtime(
     spec: &RuntimeSpec,
     staging: &Path,
 ) -> Result<Vec<VerifiedRuntimeFile>, ArtifactError> {
+    stage_runtime_inner(spec, staging, false).map_err(|error| error.error)
+}
+
+/// Stage a locked runtime and remove this attempt's incomplete files on failure.
+///
+/// Cleanup runs after extraction and verification handles are released. It uses
+/// the same admitted ZIP inventory, rejects redirects and unknown entries, and
+/// never sweeps a preexisting path or another attempt. The pinned archive remains
+/// available to reproduce the error. Successful staging is retained for publication.
+///
+/// # Errors
+/// Returns the original staging error and any failed cleanup. Preflight failures
+/// create no staging directory and never authorize deleting an existing path.
+pub fn stage_runtime_cleaned(
+    spec: &RuntimeSpec,
+    staging: &Path,
+) -> Result<Vec<VerifiedRuntimeFile>, RuntimeStagingError> {
+    stage_runtime_inner(spec, staging, true)
+}
+
+fn stage_runtime_inner(
+    spec: &RuntimeSpec,
+    staging: &Path,
+    cleanup: bool,
+) -> Result<Vec<VerifiedRuntimeFile>, RuntimeStagingError> {
     if !cfg!(windows) {
-        return Err(ArtifactError::Configuration);
+        return Err(ArtifactError::Configuration.into());
     }
     validate_external_path(&spec.runtime_directory)?;
     validate_external_path(staging)?;
     if staging == spec.runtime_directory || staging.parent() != spec.runtime_directory.parent() {
-        return Err(ArtifactError::Path);
+        return Err(ArtifactError::Path.into());
     }
     absent(staging)?;
     absent(&spec.runtime_directory)?;
@@ -58,19 +127,51 @@ pub fn stage_runtime(
         &mut || Ok(()),
     )?;
     fs::create_dir(staging).map_err(|_| ArtifactError::Path)?;
-    extract(&mut zip, staging, &installation, &mut buffer)?;
+    let inventory = cleanup.then(|| {
+        (
+            installation.files.keys().cloned().collect::<BTreeSet<_>>(),
+            installation.directories.clone(),
+        )
+    });
+    let result = (|| {
+        extract(&mut zip, staging, &installation, &mut buffer)?;
+        let mut staging_handles = Vec::new();
+        // The same locked ZIP is unchanged since preflight; reuse its inventory.
+        let (_, files) = verify_installed_files(
+            &mut zip,
+            staging,
+            installation,
+            &mut staging_handles,
+            &mut buffer,
+            &mut || Ok(()),
+        )?;
+        Ok(files)
+    })();
+    result.map_err(|error| RuntimeStagingError {
+        error,
+        cleanup: inventory
+            .and_then(|(files, directories)| cleanup_staging(staging, &files, &directories).err()),
+    })
+}
 
-    let mut staging_handles = Vec::new();
-    // The same locked ZIP is unchanged since preflight; reuse its inventory.
-    let (_, files) = verify_installed_files(
-        &mut zip,
+fn cleanup_staging(
+    staging: &Path,
+    files: &BTreeSet<String>,
+    directories: &BTreeSet<String>,
+) -> Result<(), ArtifactError> {
+    let mut installed_files = BTreeSet::new();
+    let mut installed_directories = BTreeSet::new();
+    enumerate_installation(
         staging,
-        installation,
-        &mut staging_handles,
-        &mut buffer,
+        staging,
+        &mut installed_files,
+        &mut installed_directories,
         &mut || Ok(()),
     )?;
-    Ok(files)
+    if !installed_files.is_subset(files) || !installed_directories.is_subset(directories) {
+        return Err(ArtifactError::Installation);
+    }
+    fs::remove_dir_all(staging).map_err(|_| ArtifactError::Installation)
 }
 
 fn absent(path: &Path) -> Result<(), ArtifactError> {

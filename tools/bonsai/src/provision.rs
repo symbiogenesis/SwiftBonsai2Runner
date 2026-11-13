@@ -402,6 +402,7 @@ fn extract_inference(
     pin: &Value,
     files: &[InferenceFile],
     staging: &Path,
+    created: &mut bool,
 ) -> crate::Result<()> {
     let mut file = open_locked_file(archive_path).map_err(|error| error.to_string())?;
     let bytes = pin["bytes"]
@@ -421,6 +422,7 @@ fn extract_inference(
         return Err("Inference archive inventory differs from its lock.".into());
     }
     fs::create_dir(staging).map_err(|error| error.to_string())?;
+    *created = true;
     let mut names = BTreeSet::new();
     for index in 0..archive.len() {
         let mut entry = archive.by_index(index).map_err(|error| error.to_string())?;
@@ -460,6 +462,38 @@ fn extract_inference(
     Ok(())
 }
 
+fn prepare_inference_stage(
+    lock: &Value,
+    files: &[InferenceFile],
+    archive: &Path,
+    staging: &Path,
+    observe: &mut RuntimeObserver<'_>,
+) -> crate::Result<()> {
+    let mut created = false;
+    let result = (|| {
+        extract_inference(archive, &lock["asset"], files, staging, &mut created)?;
+        observe(RepairActivity::VerifyingExisting, None)?;
+        verify_inference(lock, files, staging)?;
+        Ok(())
+    })();
+    result.map_err(|error| {
+        if !created {
+            return error;
+        }
+        // No extraction or verification handles survive this closure. The exact
+        // current-attempt path and pinned inventory authorize cleanup even when
+        // the original failure was cancellation; its textual error is retained.
+        let expected = files.iter().map(|file| PathBuf::from(&file.name)).collect::<Vec<_>>();
+        let (files, directories) = repair_inventory(&expected);
+        let cleanup = validate_runtime_tree(staging, staging, &files, &directories, false)
+            .and_then(|()| fs::remove_dir_all(staging).map_err(|error| error.to_string()));
+        match cleanup {
+            Ok(()) => error,
+            Err(cleanup) => format!("{error} Incomplete runtime staging retained at {} because cleanup failed: {cleanup}", staging.display()),
+        }
+    })
+}
+
 fn inference(request: &Request, working: &Path) -> crate::Result<Value> {
     let lock = read_lock(request.lock_path.as_deref(), INFERENCE)?;
     let files = inference_lock(&lock)?;
@@ -484,8 +518,7 @@ fn inference(request: &Request, working: &Path) -> crate::Result<Value> {
             .ok_or("Inference installation has no parent.")?;
         fs::create_dir_all(parent).map_err(|error| error.to_string())?;
         let staging = parent.join(format!(".staging-{}", crate::startup_process::unique()));
-        extract_inference(&archive, pin, &files, &staging)?;
-        verify_inference(&lock, &files, &staging)?;
+        prepare_inference_stage(&lock, &files, &archive, &staging, &mut |_, _| Ok(()))?;
         fs::rename(&staging, &destination).map_err(|error| {
             format!(
                 "Cannot publish inference installation; staging retained at {}: {error}",
@@ -508,14 +541,28 @@ fn validate_repair_tree(
     files: &BTreeSet<PathBuf>,
     directories: &BTreeSet<PathBuf>,
 ) -> crate::Result<()> {
-    crate::startup_cancel::checkpoint()?;
+    validate_runtime_tree(root, directory, files, directories, true)
+}
+
+fn validate_runtime_tree(
+    root: &Path,
+    directory: &Path,
+    files: &BTreeSet<PathBuf>,
+    directories: &BTreeSet<PathBuf>,
+    cancellable: bool,
+) -> crate::Result<()> {
+    if cancellable {
+        crate::startup_cancel::checkpoint()?;
+    }
     validate_external_path(directory).map_err(|error| error.to_string())?;
     let metadata = fs::symlink_metadata(directory).map_err(|error| error.to_string())?;
     if !metadata.is_dir() || is_redirect(&metadata) {
         return Err("Runtime repair requires an ordinary local installation directory.".into());
     }
     for entry in fs::read_dir(directory).map_err(|error| error.to_string())? {
-        crate::startup_cancel::checkpoint()?;
+        if cancellable {
+            crate::startup_cancel::checkpoint()?;
+        }
         let path = entry.map_err(|error| error.to_string())?.path();
         validate_external_path(&path).map_err(|error| error.to_string())?;
         let relative = path.strip_prefix(root).map_err(|error| error.to_string())?;
@@ -524,7 +571,7 @@ fn validate_repair_tree(
             return Err("Runtime repair cannot replace a redirected installation entry.".into());
         }
         if metadata.is_dir() && directories.contains(relative) {
-            validate_repair_tree(root, &path, files, directories)?;
+            validate_runtime_tree(root, &path, files, directories, cancellable)?;
         } else if metadata.is_file() && files.contains(relative) {
             // Unreadable files and files held for writing are not classified as
             // corrupt. Repair never bypasses their access or sharing policy.
@@ -775,11 +822,9 @@ fn repair_inference(
     // the downloaded archive. Only the fresh expanded staging files are added.
     require_runtime_staging_space(parent, files.iter().map(|file| file.bytes).sum())?;
     let staging = parent.join(format!(".staging-{}", crate::startup_process::unique()));
-    extract_inference(&archive, pin, &files, &staging)?;
-    observe(RepairActivity::VerifyingExisting, None)?;
-    verify_inference(&lock, &files, &staging)?;
+    prepare_inference_stage(&lock, &files, &archive, &staging, observe)?;
     observe(RepairActivity::Publishing, None)?;
-    publish_repaired_runtime(&staging, &destination, &expected)?;
+    let _previous = publish_repaired_runtime(&staging, &destination, &expected)?;
     observe(RepairActivity::VerifyingExisting, None)?;
     let installed = verify_inference(&lock, &files, &destination)?;
     cleanup_invalid_runtime_directories(&destination, &expected)?;
@@ -817,7 +862,7 @@ fn stage_publisher_repair(
                 .map_err(|error| error.to_string())
         })
         .collect::<crate::Result<Vec<_>>>()?;
-    publish_repaired_runtime(staging, &spec.runtime_directory, &expected)?;
+    let _previous = publish_repaired_runtime(staging, &spec.runtime_directory, &expected)?;
     // A successful rename is not a verification result. Recheck the published
     // directory against the original locked archive before returning to launch.
     observe(RepairActivity::VerifyingExisting, None)?;
@@ -1776,15 +1821,17 @@ mod tests {
             fs::write(&archive_path, &bytes).map_err(|error| error.to_string())?;
             let pin = json!({"bytes": bytes.len(), "sha256": crate::identity::hex(&Sha256::digest(&bytes))});
             assert!(
-                extract_inference(
-                    &archive_path,
-                    &pin,
+                prepare_inference_stage(
+                    &json!({"asset": pin}),
                     &files,
-                    &root.join(format!("staging-{index}"))
+                    &archive_path,
+                    &root.join(format!("staging-{index}")),
+                    &mut |_, _| Ok(())
                 )
                 .is_err()
             );
             assert!(!root.join("escape.exe").exists());
+            assert!(!root.join(format!("staging-{index}")).exists());
         }
         fs::remove_dir_all(root).map_err(|error| error.to_string())
     }
