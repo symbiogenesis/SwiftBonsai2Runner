@@ -56,6 +56,7 @@ mod placement;
 mod platform;
 mod profile;
 mod read_aloud;
+mod scene_packets;
 mod settings;
 #[cfg(test)]
 mod settings_ui_tests;
@@ -121,6 +122,7 @@ struct State {
     context_tokens: Option<usize>,
     context_history: Option<usize>,
     context_draft: context_capacity::DraftCache,
+    scene_packets: scene_packets::View,
     conversations: Vec<Conversation>,
     conversation_search: history_search::Search,
     active_conversation: u64,
@@ -247,6 +249,7 @@ impl State {
             context_tokens: None,
             context_history: None,
             context_draft: context_capacity::DraftCache::default(),
+            scene_packets: scene_packets::View::default(),
             conversations: vec![Conversation::new(1)],
             conversation_search: history_search::Search::default(),
             active_conversation: 1,
@@ -650,6 +653,9 @@ impl State {
         if self.show_audio_transcript {
             return;
         }
+        if self.scene_packets.is_open() {
+            return;
+        }
         // Voice cancellation takes effect before overlays consume Escape. Keep
         // the key available so the same action also dismisses Find or a modal.
         if self.dictation_requested
@@ -717,12 +723,14 @@ impl State {
             && self.edit_message.is_none()
             && !self.show_settings
             && !self.show_audio_transcript
+            && !self.scene_packets.is_open()
             && ctx.input_mut(|input| input.consume_key(egui::Modifiers::CTRL, egui::Key::N))
         {
             self.new_chat();
         }
         if !self.show_settings
             && !self.show_audio_transcript
+            && !self.scene_packets.is_open()
             && self.rename_conversation.is_none()
             && self.delete_conversation.is_none()
             && self.edit_message.is_none()
@@ -1974,7 +1982,8 @@ impl State {
                                 }
                                 let focus_requested = self.focus_composer
                                     && !self.show_settings
-                                    && !self.show_audio_transcript;
+                                    && !self.show_audio_transcript
+                                    && !self.scene_packets.is_open();
                                 if focus_requested {
                                     response.request_focus();
                                     self.focus_composer = false;
@@ -2026,6 +2035,7 @@ impl State {
                             && !egui::Popup::is_any_open(ui.ctx())
                             && !self.show_settings
                             && !self.show_audio_transcript
+                            && !self.scene_packets.is_open()
                             && ui.is_enabled()
                             && response.has_focus()
                             && !self.composing
@@ -2050,6 +2060,7 @@ impl State {
                         let separate_send_row = ui.available_width() < 420.0;
                         ui.horizontal_wrapped(|ui| {
                             self.audio_file_button(ui);
+                            self.scene_packet_button(ui);
                             self.read_aloud_controls(ui);
                             if !separate_send_row {
                                 self.composer_send_controls(ui);
@@ -2188,7 +2199,10 @@ impl State {
         // focus layer is otherwise inherited only from the preceding pass.
         let drawer = self.sidebar_open && ui.available_width() < navigation::DOCK_THRESHOLD;
         ui.add_enabled_ui(
-            !self.show_settings && !self.show_audio_transcript && !drawer,
+            !self.show_settings
+                && !self.show_audio_transcript
+                && !self.scene_packets.is_open()
+                && !drawer,
             |ui| {
                 self.draw_workspace(ui);
             },
@@ -2203,6 +2217,7 @@ impl State {
         self.conversation_dialogs(&ctx);
         self.iteration_dialog(&ctx);
         self.audio_transcript_dialog(&ctx);
+        self.scene_packet_dialog(&ctx);
         if let Some((title, message)) = self.help {
             let mut open = true;
             let width = (ctx.content_rect().width() - 80.0).clamp(240.0, 480.0);
@@ -2258,6 +2273,7 @@ impl eframe::App for State {
             || (was_busy && !self.model.busy() && self.model.ready()))
             && !self.show_settings
             && !self.show_audio_transcript
+            && !self.scene_packets.is_open()
             && ctx.memory(|memory| {
                 memory
                     .focused()

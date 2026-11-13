@@ -62,6 +62,7 @@ impl State {
             || self.delete_conversation.is_some()
             || self.show_settings
             || self.show_audio_transcript
+            || self.scene_packets.is_open()
             || self.edit_message.is_some()
             || self.help.is_some()
             || !ctx.memory(|memory| {

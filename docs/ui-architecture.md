@@ -120,6 +120,28 @@ artifact, model, memory, context or sampler policy. Explicit
 [runtime/format and adapter choices](development-guide.md#runtime-selection) do not
 establish promotion or full-model/device qualification.
 
+### Reviewed source excerpts
+
+The native composer's **Sources** action accepts pasted text, a source title and
+an author-supplied version. A single bounded background task hashes and searches
+up to 1 MiB of UTF-8 source text locally; it reads no files, starts no model and
+makes no network requests. The modal offers up to eight matching exact passages
+with original line ranges and the complete source SHA-256. The author explicitly
+selects passages and chooses **Add selected excerpts**, then reviews the appended
+draft before ordinary Send. This generates no summary and changes no history,
+reply limit, tokenizer admission or physical context capacity.
+
+The modal belongs to its original conversation. Adding is disabled during a
+response and rejected if that conversation changes. The complete packet and
+existing draft must fit the composer limit; overflow leaves both unchanged.
+Closing drops the pasted source and results and clears editor undo state. A
+running search finishes within its fixed source bounds; its result is discarded,
+no second task can start meanwhile, and teardown joins the worker. Unselected
+source text is never included in recovery. Added excerpts become ordinary draft
+text and follow the existing conversation-saving and request policies. Source
+labels are author supplied; the hash identifies the pasted bytes and does not
+authenticate an external manuscript or imply model quality qualification.
+
 ### Application updates
 
 Portable releases check GitHub after startup and every six hours and automatically
