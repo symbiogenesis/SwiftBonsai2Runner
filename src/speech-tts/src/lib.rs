@@ -256,7 +256,7 @@ impl Synthesizer {
         }
         let threads = select_threads(threads, std::thread::available_parallelism()?.get())?;
         let mut codec_weights = weights::Weights::open(codec)?;
-        let codec = rust_codec::Codec::load(&mut codec_weights)?;
+        let codec = rust_codec::Codec::load(&mut codec_weights, threads)?;
         let design = load_talker(model, "voice_design", threads)?;
         Ok(Self {
             voices: VoiceCache(None),

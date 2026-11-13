@@ -172,6 +172,9 @@ struct TransformerState {
 }
 
 struct Transformer {
+    // Reuse the service's projection team for both codec graphs; waveform frame
+    // order and mutable attention/convolution state remain sequential.
+    threads: usize,
     hidden: usize,
     heads: usize,
     kv_heads: usize,
@@ -190,7 +193,7 @@ impl Transformer {
         clippy::too_many_lines,
         reason = "Load the two explicitly different pinned transformer graphs in one auditable tensor-name mapping."
     )]
-    fn load(weights: &mut Weights, decoder: bool) -> io::Result<Self> {
+    fn load(weights: &mut Weights, decoder: bool, threads: usize) -> io::Result<Self> {
         let metadata = if decoder {
             "qwen3-tts-tokenizer.decoder"
         } else {
@@ -298,6 +301,7 @@ impl Transformer {
             (None, None, None, None)
         };
         Ok(Self {
+            threads,
             hidden,
             heads,
             kv_heads,
@@ -322,7 +326,7 @@ impl Transformer {
             return Err(invalid());
         }
         let mut hidden = if let Some(proj) = &self.input {
-            proj.forward_vec(input, None)?
+            proj.forward_vec_parallel(input, None, self.threads)?
         } else {
             input.to_vec()
         };
@@ -331,9 +335,15 @@ impl Transformer {
         }
         for (layer, cache) in self.layers.iter().zip(&mut state.layers) {
             let normalized = normalize(&hidden, &layer.norm, layer.norm_bias.as_deref(), self.eps)?;
-            let mut q = layer.q.forward_vec(&normalized, None)?;
-            let mut k = layer.k.forward_vec(&normalized, None)?;
-            let v = layer.v.forward_vec(&normalized, None)?;
+            let mut q = layer
+                .q
+                .forward_vec_parallel(&normalized, None, self.threads)?;
+            let mut k = layer
+                .k
+                .forward_vec_parallel(&normalized, None, self.threads)?;
+            let v = layer
+                .v
+                .forward_vec_parallel(&normalized, None, self.threads)?;
             apply_rope_neox_in_place(
                 &mut q,
                 self.heads,
@@ -358,7 +368,9 @@ impl Transformer {
                 self.window,
                 cache,
             )?;
-            let projected = layer.output.forward_vec(&attended, None)?;
+            let projected = layer
+                .output
+                .forward_vec_parallel(&attended, None, self.threads)?;
             for ((dst, value), scale) in hidden.iter_mut().zip(projected).zip(&layer.attn_scale) {
                 *dst += value * scale;
             }
@@ -368,9 +380,11 @@ impl Transformer {
                 layer.ffn_bias.as_deref(),
                 self.eps,
             )?;
-            let mut up = layer.up.forward_vec(&normalized, None)?;
+            let mut up = layer
+                .up
+                .forward_vec_parallel(&normalized, None, self.threads)?;
             if let Some(gate) = &layer.gate {
-                let gate = gate.forward_vec(&normalized, None)?;
+                let gate = gate.forward_vec_parallel(&normalized, None, self.threads)?;
                 for (value, gate) in up.iter_mut().zip(gate) {
                     *value *= gate / (1.0 + (-gate).exp());
                 }
@@ -379,7 +393,7 @@ impl Transformer {
                     *value = gelu_erf(*value);
                 }
             }
-            let projected = layer.down.forward_vec(&up, None)?;
+            let projected = layer.down.forward_vec_parallel(&up, None, self.threads)?;
             for ((dst, value), scale) in hidden.iter_mut().zip(projected).zip(&layer.ffn_scale) {
                 *dst += value * scale;
             }
@@ -389,7 +403,7 @@ impl Transformer {
             hidden = rms_norm(&hidden, norm, self.eps)?;
         }
         if let Some(proj) = &self.output {
-            hidden = proj.forward_vec(&hidden, None)?;
+            hidden = proj.forward_vec_parallel(&hidden, None, self.threads)?;
         }
         Ok(hidden)
     }
@@ -533,7 +547,7 @@ impl Encoder {
         clippy::too_many_lines,
         reason = "Bind every pinned SEANet stage, Mimi layer and RVQ side before returning an executable reference encoder."
     )]
-    fn load(weights: &mut Weights) -> io::Result<Self> {
+    fn load(weights: &mut Weights, threads: usize) -> io::Result<Self> {
         let key = "qwen3-tts-tokenizer.encoder";
         let filters = dimension(weights, &format!("{key}.num_filters"))?;
         let hidden = dimension(weights, &format!("{key}.hidden_size"))?;
@@ -624,7 +638,7 @@ impl Encoder {
                 true,
                 PadMode::Constant,
             )?,
-            transformer: Transformer::load(weights, false)?,
+            transformer: Transformer::load(weights, false, threads)?,
             down: conv(
                 weights,
                 "tok_enc.downsample",
@@ -773,7 +787,7 @@ impl Codec {
         clippy::too_many_lines,
         reason = "Keep the complete pinned decoder tensor mapping together; each subgraph validates its own fixed geometry."
     )]
-    pub(crate) fn load(weights: &mut Weights) -> io::Result<Self> {
+    pub(crate) fn load(weights: &mut Weights, threads: usize) -> io::Result<Self> {
         for (key, expected) in [
             ("input_sample_rate", SAMPLE_RATE),
             ("output_sample_rate", SAMPLE_RATE),
@@ -813,7 +827,7 @@ impl Codec {
             true,
             PadMode::Constant,
         )?;
-        let transformer = Transformer::load(weights, true)?;
+        let transformer = Transformer::load(weights, true, threads)?;
         let mut upsample = Vec::with_capacity(2);
         for index in 0..2 {
             let name = format!("tok_dec.upsample.{index}");
@@ -913,7 +927,7 @@ impl Codec {
                 PadMode::Constant,
             )?,
         };
-        let encoder = Encoder::load(weights)?;
+        let encoder = Encoder::load(weights, threads)?;
         let mut codec = Self {
             quantizer,
             pre,
@@ -1136,6 +1150,131 @@ impl Speaker {
 #[cfg(test)]
 mod tests {
     use super::{KvState, causal_attention, codebook_major_to_frames, gelu_erf, normalize};
+
+    fn transformer_projection(
+        input: usize,
+        output: usize,
+        salt: usize,
+    ) -> std::io::Result<crate::engine::LinearProjection> {
+        let mut values = Vec::with_capacity(input * output);
+        for index in 0..input * output {
+            let phase = u16::try_from((index * 7 + salt) % 29).map_err(std::io::Error::other)?;
+            values.push(f32::from(phase).mul_add(0.001, -0.014));
+        }
+        crate::engine::LinearProjection::new(
+            "codec-fixture.weight",
+            input,
+            output,
+            crate::engine::WeightQuantization::F32(values),
+            Some(vec![0.01; output]),
+        )
+    }
+
+    fn transformer_fixture(decoder: bool) -> std::io::Result<super::Transformer> {
+        let hidden = 64;
+        let mut layers = Vec::new();
+        for salt in 0..2 {
+            layers.push(super::TransformerLayer {
+                norm: vec![1.0; hidden],
+                norm_bias: (!decoder).then(|| vec![0.01; hidden]),
+                q: transformer_projection(hidden, hidden, salt)?,
+                k: transformer_projection(hidden, hidden / 2, salt + 1)?,
+                v: transformer_projection(hidden, hidden / 2, salt + 2)?,
+                output: transformer_projection(hidden, hidden, salt + 3)?,
+                attn_scale: vec![0.9; hidden],
+                ffn_norm: vec![1.0; hidden],
+                ffn_bias: (!decoder).then(|| vec![0.02; hidden]),
+                gate: if decoder {
+                    Some(transformer_projection(hidden, hidden * 2, salt + 4)?)
+                } else {
+                    None
+                },
+                up: transformer_projection(hidden, hidden * 2, salt + 5)?,
+                down: transformer_projection(hidden * 2, hidden, salt + 6)?,
+                ffn_scale: vec![0.8; hidden],
+            });
+        }
+        Ok(super::Transformer {
+            threads: 1,
+            hidden,
+            heads: 4,
+            kv_heads: 2,
+            head_dim: 16,
+            window: decoder.then_some(2),
+            theta: 10_000.0,
+            eps: 1e-5,
+            input: Some(transformer_projection(hidden, hidden, 11)?),
+            output: Some(transformer_projection(hidden, hidden, 12)?),
+            final_norm: decoder.then(|| vec![1.0; hidden]),
+            layers,
+        })
+    }
+
+    #[test]
+    fn codec_transformer_workers_preserve_streaming_outputs_and_complete_kv_state()
+    -> std::io::Result<()> {
+        for decoder in [false, true] {
+            let mut graph = transformer_fixture(decoder)?;
+            let mut sequential = super::TransformerState::default();
+            let mut parallel = super::TransformerState::default();
+            for step in 0_u16..5 {
+                let input: Vec<_> = (0_u16..64)
+                    .map(|index| f32::from(index + step).mul_add(0.01, -0.3))
+                    .collect();
+                graph.threads = 1;
+                let expected = graph.step(&input, &mut sequential)?;
+                graph.threads = 4;
+                let actual = graph.step(&input, &mut parallel)?;
+                assert_eq!(
+                    expected
+                        .iter()
+                        .map(|value| value.to_bits())
+                        .collect::<Vec<_>>(),
+                    actual
+                        .iter()
+                        .map(|value| value.to_bits())
+                        .collect::<Vec<_>>()
+                );
+                assert_eq!(sequential.position, usize::from(step) + 1);
+                assert_eq!(sequential.position, parallel.position);
+                assert_eq!(sequential.layers.len(), parallel.layers.len());
+                for (expected, actual) in sequential.layers.iter().zip(&parallel.layers) {
+                    assert_eq!(
+                        expected
+                            .keys
+                            .iter()
+                            .map(|value| value.to_bits())
+                            .collect::<Vec<_>>(),
+                        actual
+                            .keys
+                            .iter()
+                            .map(|value| value.to_bits())
+                            .collect::<Vec<_>>()
+                    );
+                    assert_eq!(
+                        expected
+                            .values
+                            .iter()
+                            .map(|value| value.to_bits())
+                            .collect::<Vec<_>>(),
+                        actual
+                            .values
+                            .iter()
+                            .map(|value| value.to_bits())
+                            .collect::<Vec<_>>()
+                    );
+                    let retained = if decoder {
+                        usize::from(step).min(1) + 1
+                    } else {
+                        usize::from(step) + 1
+                    };
+                    assert_eq!(actual.keys.len(), retained * 32);
+                    assert_eq!(actual.values.len(), retained * 32);
+                }
+            }
+        }
+        Ok(())
+    }
 
     struct ConvFixture(std::path::PathBuf);
 
