@@ -37,5 +37,8 @@ $cases=[ordered]@{
  planner_reuses_build_but_runs_regressions={
     $planner=$jobs.changes; foreach ($fragment in @('restore-keys:','ci-tool-v2-${{ runner.os }}-${{ runner.arch }}-${{ env.ImageOS }}-${{ env.ImageVersion }}','~/.cargo/registry/cache',"'rust-toolchain.toml', '.cargo/**'",'cargo +nightly-2026-11-12 test --locked','test_native_ci_cache.ps1','test_tools_cache_inputs.ps1','test_rust_toolchain.ps1')) { Assert-Ci ($planner.Contains($fragment)) $fragment }; Assert-Ci (-not $planner.Contains('cache-hit'))
  }
+ cpu_policy_fixtures_run_on_hosted_source_lane={
+    $planner=$jobs.changes; Assert-Ci ($planner.Contains('runs-on: ubuntu-24.04-arm')); Assert-Ci ($planner.Contains('pwsh -NoProfile -File "$GITHUB_WORKSPACE/tools/cpu-bundle/test_cpu_bundle.ps1"')); Assert-Ci (-not $planner.Contains('run_device')); Assert-Ci ($planner -cnotmatch 'if:.*cache-hit'); Assert-Ci ('tools/native-reference/reference_numerics.rs' -cin $config.package_inputs['bonsai-tools'])
+ }
 }
 Invoke-CiCases $cases $Case

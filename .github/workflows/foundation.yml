@@ -68,6 +68,7 @@ jobs:
           pwsh -NoProfile -File "$GITHUB_WORKSPACE/tools/ci/test_native_ci_cache.ps1"
           pwsh -NoProfile -File "$GITHUB_WORKSPACE/tools/ci/test_tools_cache_inputs.ps1"
           pwsh -NoProfile -File "$GITHUB_WORKSPACE/tools/ci/test_rust_toolchain.ps1"
+          pwsh -NoProfile -File "$GITHUB_WORKSPACE/tools/cpu-bundle/test_cpu_bundle.ps1"
           cargo +nightly-2026-11-12 test --locked --manifest-path "$GITHUB_WORKSPACE/Cargo.toml" --package bonsai-ci
       - name: Select affected crates and app groups
         id: impact

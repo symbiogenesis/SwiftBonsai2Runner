@@ -39,6 +39,7 @@
       "config/prism-inference.lock.json"
     ],
     "bonsai-tools": [
+      "tools/native-reference/reference_numerics.rs",
       "LICENSE",
       "NOTICE",
       "config/runtime.lock.json",

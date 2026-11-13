@@ -467,6 +467,7 @@ fn runner_ci_native_packages_and_embedded_notices_select_checked_cli() -> TestRe
     for path in [
         "tools/bonsai/src/chat_package.rs",
         "tools/bonsai/src/chat_package/management.rs",
+        "tools/native-reference/reference_numerics.rs",
         "LICENSE",
         "NOTICE",
     ] {
