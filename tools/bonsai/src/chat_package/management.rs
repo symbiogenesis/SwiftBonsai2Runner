@@ -61,6 +61,8 @@ pub(super) struct Stage(pub(super) PathBuf);
 
 impl Stage {
     pub(super) fn new(parent: &Path) -> crate::Result<Self> {
+        external(parent)?;
+        fs::create_dir_all(parent).map_err(|error| error.to_string())?;
         let path = parent.join(format!(
             "package-stage-{}",
             crate::startup_process::unique()

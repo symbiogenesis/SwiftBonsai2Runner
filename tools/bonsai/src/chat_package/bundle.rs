@@ -8,7 +8,7 @@ use serde_json::{Value, json};
 use std::{
     ffi::OsString,
     fs::{self, File},
-    io::{Read as _, Seek as _, Write as _},
+    io::{Read as _, Seek as _},
     path::{Path, PathBuf},
 };
 use zip::{CompressionMethod, ZipArchive, ZipWriter, write::SimpleFileOptions};
@@ -55,15 +55,16 @@ fn archive(executable: &Path) -> crate::Result<(ZipArchive<File>, String)> {
     let mut names = std::collections::BTreeSet::new();
     for index in 0..archive.len() {
         let entry = archive.by_index(index).map_err(|error| error.to_string())?;
-        let limit = if entry.name() == "package.json" {
+        let name = entry.name().map_err(|error| error.to_string())?;
+        let limit = if name == "package.json" {
             super::MAX_METADATA_BYTES
-        } else if entry.name().starts_with("bin/") {
+        } else if name.starts_with("bin/") {
             MAX_IMAGE_BYTES
         } else {
             16 * 1024 * 1024
         };
-        if !(FILES.contains(&entry.name()) || entry.name() == "package.json")
-            || !names.insert(entry.name().to_owned())
+        if !(FILES.contains(&name.as_ref()) || name == "package.json")
+            || !names.insert(name.into_owned())
             || !entry.is_file()
             || entry.encrypted()
             || entry.compression() != CompressionMethod::Stored
@@ -112,7 +113,9 @@ fn unpack(executable: &Path, directory: &Path) -> crate::Result<Value> {
         crate::startup_cancel::checkpoint()?;
         let mut entry = archive.by_index(index).map_err(|error| error.to_string())?;
         let size = entry.size();
-        let mut output = create_file(&directory.join(entry.name()))?;
+        let mut output = create_file(
+            &directory.join(entry.name().map_err(|error| error.to_string())?.as_ref()),
+        )?;
         if std::io::copy(&mut entry.by_ref().take(size + 1), &mut output)
             .map_err(|error| error.to_string())?
             != size
