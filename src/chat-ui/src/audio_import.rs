@@ -58,8 +58,9 @@ use segments::{
 const CANCELLED: &str = "Audio import cancelled.";
 const MAX_CONVERTED_BYTES: u64 = 16_000 * 2 * 30 + 65_536;
 // Budget the callback sample/copy, one retained decoder frame, readback PCM,
-// pause suffix and canonical WAV. No complete-file audio allocation is made.
-const CHUNK_WORKING_BYTES: u64 = 5 * MAX_CONVERTED_BYTES;
+// pause suffix and canonical WAV, plus the preceding WAV being transcribed
+// while this segment is decoded. No complete-file audio allocation is made.
+const CHUNK_WORKING_BYTES: u64 = 6 * MAX_CONVERTED_BYTES;
 const CONVERSION_LIMIT: Duration = Duration::from_secs(45);
 const POLL: Duration = Duration::from_millis(10);
 type ImportResult = Result<Option<Chunk>, &'static str>;
@@ -177,18 +178,26 @@ pub(crate) struct Session {
     advance: SyncSender<()>,
     worker: Option<JoinHandle<()>>,
     complete: bool,
+    can_advance: bool,
 }
 impl Session {
     #[cfg(test)]
     pub(crate) fn fixture(chunks: Vec<ImportResult>) -> io::Result<Self> {
+        Self::fixture_observed(chunks).map(|(session, _)| session)
+    }
+
+    #[cfg(test)]
+    pub(crate) fn fixture_observed(chunks: Vec<ImportResult>) -> io::Result<(Self, Receiver<()>)> {
         let shared = Arc::new(Shared::default());
         let worker_state = Arc::clone(&shared);
         let (sender, result) = mpsc::sync_channel(1);
         let (advance, next) = mpsc::sync_channel(1);
+        let (decoded, observations) = mpsc::channel();
         let worker = thread::Builder::new()
             .name("bonsai-audio-import-fixture".to_owned())
             .spawn(move || {
                 for chunk in chunks {
+                    let _sent = decoded.send(());
                     let complete = terminal_result(&chunk);
                     if sender.send(chunk).is_err() || complete {
                         break;
@@ -198,13 +207,17 @@ impl Session {
                     }
                 }
             })?;
-        Ok(Self {
-            shared,
-            result,
-            advance,
-            worker: Some(worker),
-            complete: false,
-        })
+        Ok((
+            Self {
+                shared,
+                result,
+                advance,
+                worker: Some(worker),
+                complete: false,
+                can_advance: false,
+            },
+            observations,
+        ))
     }
 
     pub(crate) fn start(source: Source) -> io::Result<Self> {
@@ -227,6 +240,7 @@ impl Session {
             advance,
             worker: Some(worker),
             complete: false,
+            can_advance: false,
         })
     }
     pub(crate) fn poll(&mut self) -> Option<ImportResult> {
@@ -246,10 +260,17 @@ impl Session {
             }
         };
         self.complete = terminal_result(&result);
+        self.can_advance = matches!(&result, Ok(Some(chunk)) if !chunk.last);
         Some(result)
     }
-    pub(crate) fn advance(&self) {
-        let _sent = self.advance.try_send(());
+    pub(crate) fn advance(&mut self) {
+        // One consumed segment grants exactly one next decode. Duplicate or
+        // premature calls cannot fill the delivery slot and start a third
+        // segment whose blocking send would prevent joined cancellation.
+        if self.can_advance {
+            self.can_advance = false;
+            let _sent = self.advance.try_send(());
+        }
     }
     pub(crate) fn cancel(&self) {
         self.shared.cancelled.store(true, Ordering::Release);
@@ -744,6 +765,41 @@ mod tests {
         let mut failed = Session::fixture(vec![Err(MEMORY_FAILURE)])?;
         assert!(matches!(next_chunk(&mut failed)?, Err(MEMORY_FAILURE)));
         assert!(failed.poll().is_none());
+        Ok(())
+    }
+
+    #[test]
+    fn segment_prefetch_ignores_duplicate_and_premature_advance() -> io::Result<()> {
+        let (mut session, decoded) = Session::fixture_observed(vec![
+            Ok(Some(test_chunk(false))),
+            Ok(Some(test_chunk(false))),
+            Ok(Some(test_chunk(true))),
+        ])?;
+        decoded
+            .recv_timeout(Duration::from_secs(2))
+            .map_err(io::Error::other)?;
+        // No result has been consumed, so this grants no decode permit.
+        session.advance();
+        assert!(matches!(next_chunk(&mut session)?, Ok(Some(chunk)) if !chunk.last));
+        session.advance();
+        decoded
+            .recv_timeout(Duration::from_secs(2))
+            .map_err(io::Error::other)?;
+        // The worker has consumed the legitimate permit, so its permit channel
+        // is empty: backpressure alone cannot hide an accepted duplicate.
+        session.advance();
+        // Even with an extra advance, the queued second segment must remain the
+        // only lookahead. In particular Drop must not join a blocked third send.
+        let extra_decode = decoded.recv_timeout(Duration::from_millis(50));
+        if extra_decode.is_ok() {
+            // If the invariant regresses, free the queued slot before failing
+            // the assertion so this negative control cannot hang its test run.
+            let _discarded = session.poll();
+        }
+        session.cancel();
+        drop(session);
+        assert_eq!(extra_decode, Err(mpsc::RecvTimeoutError::Timeout));
+        assert!(decoded.try_recv().is_err());
         Ok(())
     }
 

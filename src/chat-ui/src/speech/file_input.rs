@@ -1,4 +1,4 @@
-//! Sequential file transcription keeps only one decoded ASR request in flight.
+//! Sequential ASR requests overlap decoding of at most one following segment.
 
 use super::{AtomicU64, Event, Input, Ordering, POLL, Sender, canary};
 use crate::audio_import::{Chunk, Session};
@@ -58,6 +58,12 @@ fn run(
                 total: chunk.total,
             }),
         });
+        // The current segment has left the importer's single delivery slot.
+        // Let its one decoder fill that slot while ASR handles this request;
+        // another advance is issued only after the prefetched segment is taken.
+        if !chunk.last {
+            import.advance();
+        }
         let text = transcribe(&chunk.wav)?;
         check(generation, current)?;
         // The response is request-bounded, while the complete transcript has no
@@ -73,7 +79,6 @@ fn run(
             return Ok(());
         }
         drop(chunk);
-        import.advance();
         let _sent = events.send(Event::FileProgress {
             generation,
             progress: None,
@@ -124,7 +129,29 @@ fn check(generation: u64, current: &AtomicU64) -> Result<(), canary::Failure> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::{io, sync::mpsc, time::Duration};
+    use std::{
+        io,
+        sync::mpsc,
+        time::{Duration, Instant},
+    };
+
+    fn first_chunk(import: &mut Session) -> io::Result<Chunk> {
+        let until = Instant::now() + Duration::from_secs(2);
+        loop {
+            if let Some(result) = import.poll() {
+                return result
+                    .map_err(io::Error::other)?
+                    .ok_or_else(|| io::Error::other("Missing first file segment"));
+            }
+            if Instant::now() >= until {
+                return Err(io::Error::new(
+                    io::ErrorKind::TimedOut,
+                    "First file segment was not delivered",
+                ));
+            }
+            std::thread::sleep(Duration::from_millis(1));
+        }
+    }
 
     fn chunk(index: u8, last: bool) -> Chunk {
         Chunk {
@@ -138,14 +165,18 @@ mod tests {
 
     #[test]
     fn audio_file_stream_transcribes_segments_in_order_including_the_tail() -> io::Result<()> {
-        let mut import =
-            Session::fixture(vec![Ok(Some(chunk(1, false))), Ok(Some(chunk(2, true)))])?;
+        let mut import = Session::fixture(vec![
+            Ok(Some(chunk(0, false))),
+            Ok(Some(chunk(1, false))),
+            Ok(Some(chunk(2, true))),
+        ])?;
+        let first = first_chunk(&mut import)?;
         let current = AtomicU64::new(7);
         let (events, incoming) = mpsc::channel();
         let mut seen = Vec::new();
         let result = run(
             7,
-            chunk(0, false),
+            first,
             &mut import,
             &current,
             &events,
@@ -169,23 +200,80 @@ mod tests {
     }
 
     #[test]
-    fn audio_file_stream_cancellation_drops_late_recognition() -> io::Result<()> {
-        let mut import = Session::fixture(vec![])?;
+    fn audio_file_stream_decodes_one_segment_ahead_during_recognition() -> io::Result<()> {
+        let (mut import, decoded) = Session::fixture_observed(vec![
+            Ok(Some(chunk(0, false))),
+            Ok(Some(chunk(1, false))),
+            Ok(Some(chunk(2, true))),
+        ])?;
+        let first = first_chunk(&mut import)?;
+        decoded
+            .recv_timeout(Duration::from_secs(2))
+            .map_err(io::Error::other)?;
+        let current = AtomicU64::new(7);
+        let (events, _incoming) = mpsc::channel();
+        let mut bounded = true;
+        let mut seen = Vec::new();
+        let result = run(
+            7,
+            first,
+            &mut import,
+            &current,
+            &events,
+            &mut |wav| {
+                seen.push(wav[0]);
+                if wav[0] < 2 {
+                    // A rendezvous establishes overlap without timing model
+                    // inference or accepting a later decode after it returns.
+                    decoded.recv_timeout(Duration::from_secs(2)).map_err(|_| {
+                        canary::Failure::Message("Next segment was not decoded during recognition.")
+                    })?;
+                    bounded &= decoded.try_recv().is_err();
+                }
+                Ok(format!("Part {}", wav[0]))
+            },
+            &mut |_| Ok(()),
+        );
+        drop(import);
+        assert_eq!(result, Ok(()));
+        assert_eq!(seen, vec![0, 1, 2]);
+        assert!(bounded);
+        Ok(())
+    }
+
+    #[test]
+    fn audio_file_stream_cancellation_discards_prefetch_and_late_recognition() -> io::Result<()> {
+        let (mut import, decoded) = Session::fixture_observed(vec![
+            Ok(Some(chunk(0, false))),
+            Ok(Some(chunk(1, false))),
+            Ok(Some(chunk(2, true))),
+        ])?;
+        let first = first_chunk(&mut import)?;
+        decoded
+            .recv_timeout(Duration::from_secs(2))
+            .map_err(io::Error::other)?;
         let current = AtomicU64::new(7);
         let (events, incoming) = mpsc::channel();
         let result = run(
             7,
-            chunk(0, true),
+            first,
             &mut import,
             &current,
             &events,
             &mut |_| {
+                decoded.recv_timeout(Duration::from_secs(2)).map_err(|_| {
+                    canary::Failure::Message("Cancellation fixture did not prefetch a segment.")
+                })?;
                 current.store(8, Ordering::Release);
                 Ok("Late text".to_owned())
             },
             &mut |_| Ok(()),
         );
+        // Joined cancellation needs no extra advance or draining of the
+        // prefetched segment, and must not decode the remaining tail.
+        drop(import);
         assert_eq!(result, Err(canary::Failure::Cancelled));
+        assert!(decoded.try_recv().is_err());
         assert!(
             !incoming
                 .try_iter()
@@ -197,12 +285,13 @@ mod tests {
     #[test]
     fn audio_file_stream_failure_keeps_completed_parts_without_finishing() -> io::Result<()> {
         let error = "The audio file could not be decoded.";
-        let mut import = Session::fixture(vec![Err(error)])?;
+        let mut import = Session::fixture(vec![Ok(Some(chunk(0, false))), Err(error)])?;
+        let first = first_chunk(&mut import)?;
         let current = AtomicU64::new(7);
         let (events, incoming) = mpsc::channel();
         let result = run(
             7,
-            chunk(0, false),
+            first,
             &mut import,
             &current,
             &events,
