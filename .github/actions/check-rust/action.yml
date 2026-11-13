@@ -103,7 +103,7 @@ runs:
         $PSNativeCommandUseErrorActionPreference = $true
         $evidence = Join-Path $env:RUNNER_TEMP ('SwiftBonsai-BrokerChecks-' + [guid]::NewGuid().ToString('N'))
         "BROKER_CHECK_EVIDENCE=$evidence" >> $env:GITHUB_ENV
-        $deadlineArguments = if ($env:GITHUB_RELEASE_BUILD -ceq 'true') { @('--github-release') } else { @('--timeout-seconds', '1800') }
+        $deadlineArguments = @(if ($env:GITHUB_RELEASE_BUILD -ceq 'true') { '--github-release' } else { '--timeout-seconds', '1800' })
         & $env:BONSAI_CI_PATH rust-check --root $env:GITHUB_WORKSPACE --group Broker --packages-json $env:BROKER_PACKAGES --target $env:CARGO_TARGET_DIR --evidence $evidence @deadlineArguments --full-tests --build
     - name: Retain this lane's correctness and analyzer evidence
       if: always() && env.BROKER_CHECK_EVIDENCE != ''
