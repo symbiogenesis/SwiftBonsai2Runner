@@ -46,7 +46,7 @@ path downloads verified releases and requires user
 confirmation before replacement, preserving the data directory. Published v0.2.0 requires
 [manual replacement](releases.md#update-and-remove).
 
-Swift launches default to native Rust Prism 0.1.26, original PQ2, four CPU row
+Swift launches default to native Rust Prism 0.1.27, original PQ2, four CPU row
 workers and the standard adapter at scale 1.3. `--native-engine` remains accepted;
 `--publisher-engine` selects the explicit publisher rollback. Engine options are
 mutually exclusive, and retry preserves the selected engine and representation.
@@ -57,7 +57,7 @@ resident `native-q2` path under the [Hexagon policy](hexagon.md); CPU fallback f
 an absent signed package or CDSP driver does not change engine or representation.
 PTQ1 remains an explicit opt-in.
 
-The reviewed 0.1.26 development pin retains TurboQuant-inspired K4/V4 (`rsq4`); historical
+The reviewed 0.1.27 development pin retains TurboQuant-inspired K4/V4 (`rsq4`); historical
 0.1.23 used FP16. Runner binds the cache to reviewed runtime source and verifies
 cache/startup-graph readiness. Quality, memory, performance and actual-model
 qualification remain pending. Trusted `--kv-cache f16` selects recovery on a new
@@ -70,18 +70,20 @@ through deferred setup and Retry. The current pin rejects it before model launch
 activation requires a separate exact-source release review of K4/V3 and the paired
 context/memory accounting. Request bodies cannot select this profile.
 
-Native Prism 0.1.26, source `ac941f2668ae93dba9824002b4597081457aa09f`, activates
+Native Prism 0.1.27, source `1429a33772089dfd3a50a96c698b9dbe0b36836a`, activates
 reviewed memory-selected context through paired context/memory child arguments.
 The broker selects context and Job/admission budgets once from available RAM,
 charges the immutable selected cache and sequential scratch, and retains the
-4 GiB host reserve and startup margin. Retry takes a new memory observation.
+4 GiB host reserve and startup margin. Its scoped Swift K4/V4 state allowance
+can admit the 262,144-token model window when memory funds it; generic graphs
+and FP16 retain their existing state ceiling. Retry takes a new memory observation.
 The UI uses broker-reported capacity for guidance; history, reply reservation
 and exact admission remain unchanged. This source accounting does not qualify
 larger-context quality, measured peak memory or performance. Historical fixed-8K
 releases retain their own evidence and limits.
 
 Trusted `--placement auto|cpu` also survives preparation and Retry. The reviewed
-0.1.26 source skips accelerator initialization for CPU placement and must report
+0.1.27 source skips accelerator initialization for CPU placement and must report
 both CPU placement and CPU projection execution at readiness. Explicit placement
 is native-only. Omission preserves automatic placement. This option retains the
 same conservative memory allowance and establishes no recovered RAM or speed.

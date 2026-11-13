@@ -32,7 +32,7 @@ pub const RSQ4K3V_KV_BYTES_PER_TOKEN: u64 = 14_848;
 pub const STATE_LIMIT_BYTES: u64 = 4 * 1024 * 1024 * 1024;
 /// Swift's F32 recurrent/convolution state independent of attention context.
 pub const RECURRENT_BYTES: u64 = 156_893_184;
-/// Geometry-derived state/checkpoint ceiling for the explicit full-context K4/V4 candidate.
+/// Geometry-derived state/checkpoint ceiling for the reviewed full-context K4/V4 profile.
 /// Requires a separately reviewed runtime; ordinary K4/V4 retains its 4 GiB cap.
 pub const RSQ4_FULL_STATE_LIMIT_BYTES: u64 =
     262_144_u64 * (RSQ4_KV_BYTES_PER_TOKEN + 96 + 128) + RECURRENT_BYTES;

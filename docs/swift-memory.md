@@ -1,6 +1,6 @@
 # Swift artifacts, memory and PTQ1
 
-**Original PQ2 on native Rust Prism 0.1.26 is the development default**, with four
+**Original PQ2 on native Rust Prism 0.1.27 is the development default**, with four
 CPU row workers, standard adapter scale 1.3 and [X2 NPU placement](hexagon.md) when initialization
 succeeds. `--publisher-engine` explicitly selects rollback; PTQ1 remains opt-in.
 Bounded native CPU decode passes; creative quality, performance and daily-service
@@ -337,7 +337,7 @@ leave the gate pending if setup, work and cleanup cannot fit the owner budget.
 
 ## Memory-selected serving context
 
-Native Prism 0.1.26 and publisher Swift serving select context once per model
+Native Prism 0.1.27 and publisher Swift serving select context once per model
 launch from available physical memory. Retry takes a new observation; an active
 model keeps its context
 so counting, generation, readiness and the native UI use the same capacity.
@@ -356,8 +356,8 @@ instead charges the immutable selected cache and sequential score scratch:
 | --- | ---: | ---: | ---: |
 | Publisher FP16 | 65,536 | 137,344 | 62,720 |
 | Native FP16 recovery | 65,536 | 131,296 | 62,720 |
-| Native K4/V4 | 16,896 | 34,016 | 241,664 |
-| Unreleased full-context K4/V4 candidate | 16,896 | 34,016 | 262,144 (separate state allowance) |
+| Historical K4/V4 profile (Prism 0.1.26) | 16,896 | 34,016 | 241,664 |
+| Reviewed full-context K4/V4 (Prism 0.1.27) | 16,896 | 34,016 | 262,144 (separate state allowance) |
 | Native K4/V3 capacity candidate | 14,848 | 29,920 | 262,144 (model limit) |
 
 Native process growth retains two complete caches, 96 bytes per token for
@@ -372,19 +372,22 @@ Explicit tiled prefill and speculation retain separate additive reservations.
 The non-context allowance remains 11 GiB, the reference
 Job budget minus its original 512 MiB KV charge; it includes weights, adapters,
 recurrent state, transforms and runtime headroom. These are conservative source
-allowances, not measured peaks. Native Prism 0.1.26 activates this cache-aware
+allowances, not measured peaks. Native Prism 0.1.27 retains this cache-aware
 sizing through its exact reviewed release pin; this establishes no measured
 memory savings. PTQ1 receives no reduction in the fixed allowance.
 
 Capacity rounds down to 256-token pages and must accommodate the 4,096-token
 reply cap plus the 64-token template reserve. It never exceeds Swift's declared
-262,144-token model context or the runtime's 4 GiB live-state bound after charging
+262,144-token model context or the selected live-state bound after charging
 156,893,184 recurrent bytes plus single-copy native KV, score and metadata
-charges. FP16's resulting state ceiling is 62,720 tokens; K4/V4's is 241,664.
-K4/V3 fits the model's 262,144-token ceiling within the same state bound.
+charges. FP16's 4 GiB state ceiling permits 62,720 tokens; the historical K4/V4
+profile permits 241,664. The reviewed Swift K4/V4 scope permits 262,144 tokens
+through its geometry-derived state allowance. The separate K4/V3 candidate fits
+the same model ceiling within 4 GiB, but its serving gate remains closed.
 At 20 GiB available before launch, publisher sizing selects 37,120 tokens and
 the native K4/V4 profile selects 149,760; K4/V3 selects 170,240.
-At 24 GiB available, K4/V3 reaches the model ceiling. These are calculated admission
+At 24 GiB available, the reviewed K4/V4 profile reaches the model ceiling.
+These are calculated admission
 bounds, not measured usable capacities or long-range quality results.
 Less available RAM selects a smaller window and more can
 select a larger one, while insufficient space for a usable window rejects launch.
@@ -398,7 +401,7 @@ insufficient memory rejects launch, and running pressure still tears down the
 owned model. An available-memory snapshot reserves no RAM.
 
 Publisher serving passes the selected capacity through `--ctx-size`. Native
-**Prism 0.1.26**, source `ac941f2668ae93dba9824002b4597081457aa09f`, uses paired
+**Prism 0.1.27**, source `1429a33772089dfd3a50a96c698b9dbe0b36836a`, uses paired
 `--context-tokens` and `--memory-limit-bytes` child arguments with the reviewed
 selected-cache/sequential-scratch accounting. Runner binds capability activation
 to this exact release identity; unrelated versions and an older FP16-only memory
@@ -407,26 +410,29 @@ must still match their compiled lock; a version string alone enables no protocol
 
 Runner prepares explicit `--kv-cache rsq4k3v` selection through trusted source,
 installed and deferred launches, including Retry. A separate exact-source release
-gate keeps it unavailable with the current 0.1.26 pin. Future activation requires
+gate keeps it unavailable with the current 0.1.27 pin. Future activation requires
 review of both the K4/V3 numerical identity and the complete M1/M2 accounting
 contract; neither a version string nor a raw CLI option establishes support.
 The K4/V4 default and explicit FP16 recovery remain separate selections.
 
-The unreleased full-context K4/V4 candidate preserves that cache precision and
+The reviewed Prism 0.1.27 full-context K4/V4 profile preserves that cache precision and
 the 34,016-byte process charge. Its separate state allowance is 4,644,798,464
 bytes: 156,893,184 recurrent bytes plus 262,144 times 17,120 bytes for cache,
-sequential scores and metadata. This is 333.625 MiB above the current 4 GiB bound.
+sequential scores and metadata. This is 333.625 MiB above the generic 4 GiB bound;
+generic graph constructors, FP16 and individual allocation/scratch limits retain
+their existing ceilings. The larger scope requires the exact verified Swift
+model identity and geometry, including all 16 attention and 48 recurrent layers.
 With unchanged two-cache, fixed, host and startup charges, the planner projects
 262,144 tokens at 24 GiB available before launch. Runner's separate exact-source
-gate remains closed; the active pin retains the 241,664-token K4/V4 ceiling.
-Activation needs a genuine reviewed release with matching graph, live-state and
-checkpoint guards, followed by full-state/resource and long-range quality
-qualification. Arithmetic alone establishes no usable capacity or latency.
+gate binds this allowance to the same reviewed release as memory sizing, with
+matching graph, live-state and checkpoint guards. Full-state/resource and
+long-range quality qualification remain pending. Arithmetic alone establishes
+no usable capacity or latency.
 
 The capacity-first alternative is available as trusted `--placement cpu` (JSON
 `Placement: "cpu"`, PowerShell `-Placement cpu`). It survives source, installed
 and deferred setup and model Retry. Its exact-source release gate selects the
-reviewed 0.1.26 runtime, which skips accelerator initialization and reports both
+reviewed 0.1.27 runtime, which skips accelerator initialization and reports both
 `placement: "cpu"` and
 `projection_backend: "cpu"` at readiness. Omission or explicit `auto` keeps the
 existing automatic placement. Explicit placement is native-only, and requests
@@ -439,7 +445,7 @@ Release activation must review cache selection, default four-worker support,
 latest-prefix reuse and memory-context accounting together. The exact reviewed
 memory release is also recognized by those native capability checks; unrelated
 future versions remain rejected. K4/V3 retains its separate closed release gate;
-CPU placement is enabled only for the reviewed 0.1.26 source. Qualify each selected
+CPU placement is enabled only for the reviewed 0.1.27 source. Qualify each selected
 combination independently; publication does not transfer historical model evidence.
 
 For memory-sized serving, closing memory-heavy applications before a fresh launch

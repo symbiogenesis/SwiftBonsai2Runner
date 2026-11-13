@@ -38,7 +38,7 @@ Review the release source identity before use.
 ## First launch and in-app setup
 
 Use serviced Windows 11 ARM64 with the containment capabilities described in
-[Windows sandboxing](sandboxing.md). Native Prism 0.1.26 selects context and its
+[Windows sandboxing](sandboxing.md). Native Prism 0.1.27 selects context and its
 launch memory budget from available RAM, retaining a 4 GiB Windows reserve and
 startup margin. Unsupported containment, unknown memory or insufficient resources
 stop startup; see [context sizing](swift-memory.md#memory-selected-serving-context).

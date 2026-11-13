@@ -98,7 +98,7 @@ are from **November 9, 2026**, using **Prism 0.1.23**, four CPU workers and the
 standard adapter at strength 1.3 on a **Snapdragon X2 Elite Extreme** laptop.
 AC power was connected and battery saver was off at every recorded power sample.
 
-Runner's development build selects [Prism 0.1.26](https://github.com/symbiogenesis/prism-inference/releases/tag/v0.1.26)
+Runner's development build selects [Prism 0.1.27](https://github.com/symbiogenesis/prism-inference/releases/tag/v0.1.27)
 with verified files, memory-selected context, K4/V4 cache and explicit FP16 recovery.
 Its performance
 measurements remain [pending](PLAN.md); the timings below apply to **0.1.23**.

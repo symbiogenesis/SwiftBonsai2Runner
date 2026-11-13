@@ -182,10 +182,12 @@ const PQ2_ADAPTER_LIFECYCLE_PROFILE: AdapterProfile = AdapterProfile {
 
 // This delivery needs its independently reviewed source as well as its version.
 // Historical fixed-source workloads retain their original release identities.
-const MEMORY_CONTEXT_REVISION: &str = "ac941f2668ae93dba9824002b4597081457aa09f";
+const MEMORY_CONTEXT_REVISION: &str = "1429a33772089dfd3a50a96c698b9dbe0b36836a";
+const LEGACY_MEMORY_CONTEXT_REVISION: &str = "ac941f2668ae93dba9824002b4597081457aa09f";
 
 fn reviewed_memory_context_release(version: Option<&str>, revision: Option<&str>) -> bool {
-    version == Some("0.1.26") && revision == Some(MEMORY_CONTEXT_REVISION)
+    (version == Some("0.1.27") && revision == Some(MEMORY_CONTEXT_REVISION))
+        || (version == Some("0.1.26") && revision == Some(LEGACY_MEMORY_CONTEXT_REVISION))
 }
 
 fn native_four_worker_release(version: Option<&str>, revision: Option<&str>) -> bool {
@@ -363,15 +365,28 @@ fn native_worker_receipts_require_exact_release_and_verified_readiness() {
 
 #[test]
 fn native_worker_receipts_require_the_reviewed_memory_context_source() {
-    assert_worker_receipt_case(Some("0.1.26"), Some(MEMORY_CONTEXT_REVISION), true, true);
+    assert_worker_receipt_case(Some("0.1.27"), Some(MEMORY_CONTEXT_REVISION), true, true);
+    assert_worker_receipt_case(
+        Some("0.1.26"),
+        Some(LEGACY_MEMORY_CONTEXT_REVISION),
+        true,
+        true,
+    );
     for revision in [
         None,
         Some("99bab71270b1e6a6fb6d47eec2e34b8097cdcd4c"),
         Some("0000000000000000000000000000000000000000"),
     ] {
-        assert_worker_receipt_case(Some("0.1.26"), revision, false, false);
+        assert_worker_receipt_case(Some("0.1.27"), revision, false, false);
     }
-    assert_worker_receipt_case(Some("0.1.27"), Some(MEMORY_CONTEXT_REVISION), false, false);
+    assert_worker_receipt_case(Some("0.1.26"), Some(MEMORY_CONTEXT_REVISION), false, false);
+    assert_worker_receipt_case(
+        Some("0.1.27"),
+        Some(LEGACY_MEMORY_CONTEXT_REVISION),
+        false,
+        false,
+    );
+    assert_worker_receipt_case(Some("0.1.28"), Some(MEMORY_CONTEXT_REVISION), false, false);
 }
 
 #[test]

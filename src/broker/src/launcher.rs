@@ -1759,14 +1759,14 @@ mod tests {
         let available = 20 * 1024 * 1024 * 1024;
         let packed = config.swift_context_plan(available)?;
         assert_eq!(packed.context_tokens, 149_760);
-        // The unreleased full-state candidate must not relax the active
-        // runtime's 4 GiB state ceiling, even when physical RAM would fit it.
-        assert!(!crate::inference::full_context_supported()?);
+        // Only the exact reviewed Swift K4/V4 state scope reaches the model
+        // ceiling; its ordinary process and host charges remain funded.
+        assert!(crate::inference::full_context_supported()?);
         assert_eq!(
             config
                 .swift_context_plan(24 * 1024 * 1024 * 1024)?
                 .context_tokens,
-            241_664
+            262_144
         );
         config.kv_cache = Some(KvCache::Rsq4K3v);
         let capacity = config.swift_context_plan(available)?;
