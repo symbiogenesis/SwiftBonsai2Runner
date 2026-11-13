@@ -1,6 +1,6 @@
 //! Versioned workspace recovery. Never restores an in-flight request.
 use super::{
-    Conversation, Duration, INPUT_LIMIT, Instant, MAX_DIAGNOSTIC_CHARS, OUTPUT_TOKENS, RichText,
+    Conversation, Duration, Instant, MAX_DIAGNOSTIC_CHARS, OUTPUT_TOKENS, RichText,
     State, Transcript, VOICE_LIMIT, client, egui, io, workspace::ConversationSnapshot,
 };
 
@@ -366,7 +366,7 @@ fn valid_parts(
     committed: &[client::Message],
 ) -> bool {
     transcript.valid_saved()
-        && input.chars().count() <= INPUT_LIMIT
+        && super::draft_buffer::fits(input)
         && output_budget < OUTPUT_TOKENS.len()
         && status.len() <= MAX_DIAGNOSTIC_CHARS * 4
         && last_answer.len() <= 4 * 1024 * 1024
@@ -393,6 +393,31 @@ mod tests {
     use super::*;
     use crate::window::ModelLifecycle;
     use crate::window::{Role, mpsc, transcript::MAX_MESSAGES};
+
+    #[test]
+    fn long_draft_recovery_retains_every_unicode_character_at_the_limit() -> io::Result<()> {
+        let mut original = state();
+        original.input = "🌱".repeat(super::super::INPUT_LIMIT);
+        let bytes = original.workspace_bytes()?;
+        let mut restored = state();
+        restored.restore_workspace(&bytes)?;
+        assert_eq!(restored.input, original.input);
+        assert_eq!(restored.input.chars().count(), super::super::INPUT_LIMIT);
+        assert!(!restored.model.busy());
+        Ok(())
+    }
+
+    #[test]
+    fn long_draft_recovery_rejects_an_extra_character_without_replacing_the_workspace() -> io::Result<()> {
+        let mut original = state();
+        original.input = "Keep this draft".into();
+        let accepted = original.workspace_bytes()?;
+        let mut saved: serde_json::Value = serde_json::from_slice(&accepted).map_err(io::Error::other)?;
+        saved["active"]["input"] = serde_json::json!("x".repeat(super::super::INPUT_LIMIT + 1));
+        assert!(original.restore_workspace(&serde_json::to_vec(&saved).map_err(io::Error::other)?).is_err());
+        assert_eq!(original.workspace_bytes()?, accepted);
+        Ok(())
+    }
 
     fn state() -> State {
         let (commands, _incoming) = mpsc::channel();

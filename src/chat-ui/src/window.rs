@@ -23,6 +23,7 @@ mod audio_files;
 mod background_tests;
 mod branding;
 mod context_capacity;
+mod draft_buffer;
 #[cfg(test)]
 mod ergonomics_tests;
 mod error_ui;
@@ -77,7 +78,9 @@ use workspace::Conversation;
 
 const OUTPUT_TOKENS: [u32; 4] = [512, 1024, 2048, 4096];
 const DEFAULT_VOICE: &str = "A warm, clear, natural adult voice with a calm conversational pace.";
-const INPUT_LIMIT: usize = 32_768;
+// Draft capacity is independent of the broker's serialized byte/token admission.
+// Four-byte Unicode scalars bound this native buffer to 4 MiB of UTF-8 text.
+const INPUT_LIMIT: usize = 1_048_576;
 const VOICE_LIMIT: usize = 1_024;
 const MAX_DIAGNOSTICS: usize = 128;
 const MAX_DIAGNOSTIC_CHARS: usize = 4_096;
@@ -582,9 +585,8 @@ impl State {
         {
             conversation.title = text
                 .split_whitespace()
-                .collect::<Vec<_>>()
-                .join(" ")
-                .chars()
+                .flat_map(|word| std::iter::once(' ').chain(word.chars()))
+                .skip(1)
                 .take(48)
                 .collect();
         }
@@ -821,8 +823,9 @@ impl State {
                 .find(|conversation| conversation.id == id)
                 .and_then(|conversation| conversation.saved.as_mut())
                 && saved.input.is_empty()
+                && draft_buffer::fits(text)
             {
-                saved.input = text.chars().take(INPUT_LIMIT).collect();
+                text.clone_into(&mut saved.input);
             }
             return;
         }
@@ -834,8 +837,8 @@ impl State {
             // A rejection can queue just before Stop or behind the first
             // teardown notice. Preserve explicit Stop/retry ownership until
             // teardown ends or the worker acknowledges the new attempt.
-            if !adopted && self.input.is_empty() {
-                self.input = text.chars().take(INPUT_LIMIT).collect();
+            if !adopted && self.input.is_empty() && draft_buffer::fits(text) {
+                text.clone_into(&mut self.input);
                 self.place_composer_cursor(self.input.chars().count());
             }
             if !adopted {
@@ -856,8 +859,8 @@ impl State {
             ModelLifecycle::Ready
         };
         self.transcript.remove_empty_response();
-        if !adopted && self.input.is_empty() {
-            self.input = text.chars().take(INPUT_LIMIT).collect();
+        if !adopted && self.input.is_empty() && draft_buffer::fits(text) {
+            text.clone_into(&mut self.input);
             self.place_composer_cursor(self.input.chars().count());
         }
         if !adopted {
@@ -998,8 +1001,8 @@ impl State {
         }
         self.model = ModelLifecycle::Stopping;
         let adopted = self.adopt_interrupted();
-        if !adopted && self.input.is_empty() {
-            self.input = text.chars().take(INPUT_LIMIT).collect();
+        if !adopted && self.input.is_empty() && draft_buffer::fits(text) {
+            text.clone_into(&mut self.input);
             self.place_composer_cursor(self.input.chars().count());
         }
         self.transcript.remove_empty_response();
@@ -1416,7 +1419,7 @@ impl State {
         }
         let complete = self.insert_dictation(text);
         if !complete {
-            "Voice message exceeds the prompt limit. Review the draft before sending."
+            "Voice message exceeds the prompt limit. Your draft was kept; no message was sent."
                 .clone_into(&mut self.speech_status);
         } else if self.model.ready()
             && !self.composing
@@ -1511,11 +1514,12 @@ impl State {
             ""
         };
         let phrase = format!("{prefix}{text}{suffix}");
-        let complete = phrase.chars().count() <= available;
-        let phrase: String = phrase.chars().take(available).collect();
+        if phrase.chars().count() > available {
+            return false;
+        }
         self.input.replace_range(bytes, &phrase);
         self.place_composer_cursor(range.start + phrase.chars().count());
-        complete
+        true
     }
 
     fn poll_microphone(&mut self) {
@@ -1936,11 +1940,15 @@ impl State {
                             .show(ui, |ui| {
                                 let output = ui
                                     .scope(|ui| {
-                                        egui::TextEdit::multiline(&mut self.input)
+                                        let id = ui.make_persistent_id("composer");
+                                        let mut buffer = draft_buffer::Buffer::new(
+                                            &mut self.input, ui.ctx(), id, INPUT_LIMIT,
+                                        );
+                                        let mut output = egui::TextEdit::multiline(&mut buffer)
                                             .font(egui::FontId::proportional(
                                                 appearance::text_size(ui.ctx()),
                                             ))
-                                            .id_salt("composer")
+                                            .id(id)
                                             .hint_text(if self.model.busy() {
                                                 "Draft your next message…"
                                             } else if self.model.ready() {
@@ -1957,12 +1965,15 @@ impl State {
                                             .desired_rows(3)
                                             .desired_width(f32::INFINITY)
                                             .frame(egui::Frame::NONE)
-                                            .char_limit(INPUT_LIMIT)
                                             .return_key(Some(egui::KeyboardShortcut::new(
                                                 egui::Modifiers::SHIFT,
                                                 egui::Key::Enter,
                                             )))
-                                            .show(ui)
+                                            .show(ui);
+                                        if buffer.finish(&mut output) {
+                                            self.set_status(draft_buffer::LIMIT_MESSAGE, true);
+                                        }
+                                        output
                                     })
                                     .inner;
                                 let response = output.response.response.labelled_by(label.id);

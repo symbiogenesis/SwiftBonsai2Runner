@@ -1081,7 +1081,7 @@ fn voice_message_kept_during_model_preparation_never_sends_on_readiness() {
 }
 
 #[test]
-fn voice_message_exceeding_prompt_limit_requires_review() {
+fn voice_message_exceeding_prompt_limit_keeps_the_complete_existing_draft() {
     let (mut state, commands, _events) = state();
     state.model = ModelLifecycle::Ready;
     state.input = "x".repeat(INPUT_LIMIT - 2);
@@ -1090,9 +1090,27 @@ fn voice_message_exceeding_prompt_limit_requires_review() {
     state.dictation_finishing = true;
     state.microphone_generation = Some(7);
     state.accept_transcript(7, "too long");
-    assert_eq!(state.input.chars().count(), INPUT_LIMIT);
+    assert_eq!(state.input, "x".repeat(INPUT_LIMIT - 2));
     assert!(state.speech_status.contains("prompt limit"));
     assert!(commands.try_recv().is_err());
+}
+
+#[test]
+fn long_request_rejection_and_stop_restore_the_complete_unicode_draft() {
+    for stopping in [false, true] {
+        let (mut state, commands, _events) = state();
+        state.model = ModelLifecycle::Ready;
+        let draft = "界🌱\\\"\n".repeat(20_000);
+        state.input.clone_from(&draft);
+        state.submit();
+        assert!(matches!(commands.try_recv(), Ok(Command::Send { text, .. }) if text == draft.trim()));
+        if stopping {
+            state.stopping_response(draft.trim());
+        } else {
+            state.reject("Serialized request exceeds the byte limit.", draft.trim(), false);
+        }
+        assert_eq!(state.input, draft.trim());
+    }
 }
 
 #[test]

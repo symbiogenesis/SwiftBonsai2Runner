@@ -744,14 +744,14 @@ fn composer_keeps_a_draft_while_the_model_prepares() {
 }
 
 #[test]
-fn maximum_drafts_keep_transcript_and_actions_visible_and_editable() {
+fn long_drafts_keep_transcript_and_actions_visible_and_editable() {
     for size in [[1180.0, 860.0], [620.0, 640.0]] {
         for line in [
             "A manuscript line with a thought.\n",
             "A wrapped manuscript passage. ",
         ] {
             let mut chat = harness(size, true);
-            let draft: String = line.chars().cycle().take(INPUT_LIMIT - 2).collect();
+            let draft: String = line.chars().cycle().take(65_536 - 2).collect();
             chat.state_mut().app.input.clone_from(&draft);
             chat.run();
             for label in ["Microphone", "Read this response aloud", "Send  ↑"] {
@@ -801,6 +801,43 @@ fn maximum_drafts_keep_transcript_and_actions_visible_and_editable() {
             assert!(stop.top() >= 0.0 && stop.bottom() <= size[1]);
         }
     }
+}
+
+#[test]
+fn oversized_composer_paste_keeps_selection_text_and_working_undo_redo() -> io::Result<()> {
+    let mut chat = harness([1180.0, 860.0], false);
+    let draft = "Keep café 🌱 and this exact draft.";
+    chat.state_mut().app.input = draft.into();
+    chat.run();
+    chat.get_by_role_and_label(egui::Role::MultilineTextInput, "Message").focus();
+    chat.run();
+    chat.key_press_modifiers(egui::Modifiers::COMMAND, egui::Key::A);
+    chat.run();
+    let id = chat.state().app.composer_id.ok_or_else(|| io::Error::other("Composer editor missing"))?;
+    let mut editor = egui::TextEdit::load_state(&chat.ctx, id).ok_or_else(|| io::Error::other("Composer state missing"))?;
+    let selection = editor.cursor.char_range().ok_or_else(|| io::Error::other("Selected draft missing"))?;
+    let older = (egui::text::CCursorRange::one(egui::text::CCursor::new(0)), "Older draft".to_owned());
+    let mut undoer = editor.undoer();
+    undoer.add_undo(&older);
+    undoer.add_undo(&(selection, draft.to_owned()));
+    editor.set_undoer(undoer);
+    editor.store(&chat.ctx, id);
+    chat.event(egui::Event::Paste("x".repeat(INPUT_LIMIT + 1)));
+    chat.run();
+    assert_eq!(chat.state().app.input, draft);
+    assert!(chat.state().app.status.contains("draft limit"));
+    assert_eq!(egui::TextEdit::load_state(&chat.ctx, id).and_then(|state| state.cursor.char_range()), Some(selection));
+    assert!(chat.state().commands.try_recv().is_err());
+
+    // The original valid history survives rollback, and TextBuffer callbacks
+    // remain safe while egui holds its undo mutex during both operations.
+    chat.key_press_modifiers(egui::Modifiers::COMMAND, egui::Key::Z);
+    chat.run();
+    assert_eq!(chat.state().app.input, "Older draft");
+    chat.key_press_modifiers(egui::Modifiers::COMMAND | egui::Modifiers::SHIFT, egui::Key::Z);
+    chat.run();
+    assert_eq!(chat.state().app.input, draft);
+    Ok(())
 }
 
 #[test]
@@ -985,7 +1022,7 @@ fn capture_chat_layouts_when_requested() -> io::Result<()> {
             chat.state_mut().app.input = "A manuscript line with a thought.\n"
                 .chars()
                 .cycle()
-                .take(INPUT_LIMIT - "\nEnd of draft.".len())
+                .take(65_536 - "\nEnd of draft.".len())
                 .collect();
             chat.state_mut().app.input.push_str("\nEnd of draft.");
         }

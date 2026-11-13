@@ -28,6 +28,7 @@ pub(super) struct EditMessage {
     pub(super) message: u64,
     pub(super) text: String,
     focus: bool,
+    limit_notice: bool,
 }
 
 impl State {
@@ -60,6 +61,7 @@ impl State {
                     message: id,
                     text: self.committed[index].content.to_string(),
                     focus: true,
+                    limit_notice: false,
                 });
                 self.focus_composer = false;
             }
@@ -211,19 +213,29 @@ impl State {
             egui::ScrollArea::vertical()
                 .max_height((ctx.content_rect().height() - 240.0).max(100.0))
                 .show(ui, |ui| {
-                    let response = ui.add(
-                        egui::TextEdit::multiline(&mut edit.text)
-                            .id_salt("edited-message")
+                    let id = ui.make_persistent_id("edited-message");
+                    let mut buffer = super::draft_buffer::Buffer::new(
+                        &mut edit.text, ui.ctx(), id, INPUT_LIMIT,
+                    );
+                    let mut output = egui::TextEdit::multiline(&mut buffer)
+                            .id(id)
                             .desired_width(f32::INFINITY)
                             .desired_rows(6)
-                            .char_limit(INPUT_LIMIT),
-                    )
-                    .labelled_by(label.id);
+                            .show(ui);
+                    if buffer.finish(&mut output) {
+                        edit.limit_notice = true;
+                    } else if output.response.response.changed() {
+                        edit.limit_notice = false;
+                    }
+                    let response = output.response.response.labelled_by(label.id);
                     if edit.focus {
                         response.request_focus();
                         edit.focus = false;
                     }
                 });
+            if edit.limit_notice {
+                ui.label(super::draft_buffer::LIMIT_MESSAGE);
+            }
             if !enabled {
                 ui.label("Return to the source conversation and wait until the model is ready to resend.");
             }
