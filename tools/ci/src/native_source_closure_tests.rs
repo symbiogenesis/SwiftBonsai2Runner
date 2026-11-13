@@ -109,7 +109,11 @@ impl Drop for Scratch {
 }
 
 fn escape(path: &str) -> String {
-    path.replace('\\', "/")
+    // canonicalize returns Windows verbatim paths; a Make capture uses ordinary
+    // absolute drive paths, not a forward-slash spelling of the NT namespace.
+    path.strip_prefix("\\\\?\\")
+        .unwrap_or(path)
+        .replace('\\', "/")
         .replace('$', "$$")
         .replace(' ', "\\ ")
         .replace('#', "\\#")
