@@ -5,442 +5,188 @@ This guide owns arithmetic, dispatch, qualification and the
 [X2 thread screen](#x2-cpu-thread-screen). Synthetic parity qualifies neither
 whole-model parity nor device speedup. Runner's active
 [release lock](../config/prism-inference.lock.json) pins Prism 0.1.27 at
-`1429a33772089dfd3a50a96c698b9dbe0b36836a`; source candidates
-and historical publisher screens retain their own identities. The fixed CPU
+`1429a33772089dfd3a50a96c698b9dbe0b36836a`; source candidates retain separate identities. The fixed CPU
 comparison baseline remains 0.1.23 with explicit FP16 KV. The current development repin
-closes no CPU qualification gates; [PLAN.md](../PLAN.md#cpu-kernels) owns remaining work.
+does not qualify CPU performance; [PLAN.md](../PLAN.md#cpu-kernels) owns remaining work.
 
 ## Cross-generation CPU promotion
 
-Shared CPU work reductions may be promoted for X1 and X2 using matched
-complete-request CPU benefit on one selected family; X2 evidence is sufficient
-without a separate X1 benchmark when the applicability review below passes.
-This permits a shared Prism release, Runner repin and enabling the reviewed
-common CPU path on X1. It does not establish a measured X1 speedup or qualify
-the complete X1 runtime/device profile.
+Shared CPU work reductions may be enabled on X1 and X2 after matched CPU-only
+complete-request benefit on one selected family and an applicability review of
+the other. This permits a common runtime repin; measured speed, energy and
+sustained-use claims remain specific to the tested device.
 
-The architectural basis is shared ARM64 execution, with baseline NEON and
-runtime-checked optional instructions in this implementation. The CPUs are not
-identical: Qualcomm's [X Elite brief][x1-brief] lists twelve Oryon cores, 42 MB
-total cache and 135 GB/s memory bandwidth; its [X2 Elite brief][x2-brief] lists
-third-generation Oryon and, for X2E-94-100, twelve prime plus six performance
-cores, 53 MB cache and 228 GB/s bandwidth. Our inference is that removing shared
-work can justify common deployment, while cache, scheduling and memory-cost
-tradeoffs can have different performance outcomes.
+The review must establish:
 
-For each shared candidate:
+- Final-source numerical, complete-state, adapter, cancellation, Release/linking
+  and resource acceptance, including native, portable and feature-disabled paths.
+  Optional SDOT/I8MM keeps checked CPU/OS detection and baseline fallback.
+- A paired same-artifact comparison charging preparation, dispatch, fallback and
+  cleanup under the [promotion criteria](validation.md#promotion-criteria),
+  [measurement rules](performance-expectations.md#measurement-and-comparison) and
+  [device budget](../AGENTS.md#owner-device-execution-budgets).
+- Why the work reduction applies without depending on the unmeasured family's
+  cache size, topology, optional ISA or increased memory admission. Source work
+  counts alone do not establish benefit.
+- An explicit control or matching-family qualification for cost tradeoffs such
+  as LUT versus SDOT, tile/cache sizes, workers/affinity or extra reads to reduce
+  register pressure. Without a selector, defer uncertain choices from shared
+  promotion.
 
-- Retain final-source correctness, numerical/error, full-state, adapter,
-  cancellation, strict Release/linking and resource gates. Review the common
-  ARM64 code path and generated code; optional SDOT/I8MM execution must retain
-  runtime CPU/OS detection and tested baseline-NEON/portable fallback. X2-only
-  features or changed X1 paths need their own applicable correctness controls.
-- Require a paired baseline/candidate CPU-only complete-request comparison on
-  the selected family, including preparation, dispatch, fallback and cleanup
-  costs. Bind the actual backend, source/build/artifacts, workload, workers and
-  matched power conditions; an unobserved CPU/NPU mixture or a microbenchmark
-  cannot supply this gate. Retain existing benefit thresholds, repetition and
-  uncertainty requirements, CI ownership and aggregate budgets.
-- Record why the work reduction applies to the reviewed X1 path without relying
-  on X2-specific cache capacity, core topology, instruction availability or
-  additional memory admission; review plausible X1 regressions without claiming
-  that this proves X1 benefit. Eliminating duplicate checks, allocations,
-  helper calls or worker submissions can qualify under this review; source
-  counts alone do not replace the selected-device benefit gate.
-- Keep cost-tradeoff choices explicit or retain the existing control on an
-  unmeasured family when applicability remains uncertain. LUT versus SDOT,
-  tile/cache sizes, worker counts/affinity and added reads to reduce register
-  pressure need matching-family benefit before changing that family's tuned
-  default. They may still ship as opt-in candidates without blocking shared
-  improvements that pass the review. If a family-sensitive candidate has no
-  selector, defer/exclude it from shared promotion or implement reversible
-  selection before claiming the previous control remains available.
+The families share ARM64/NEON but differ in core topology, cache and bandwidth;
+see Qualcomm's [X1][x1-brief] and [X2][x2-brief] briefs. A regression reopens the
+shared choice and requires verified rollback or an available explicit control.
+Keep device receipts separate. Accelerator, precision/quality, memory-admission
+and complete device-profile changes retain their own qualification gates.
 
-Receipts keep their actual device identities and results. X1-specific speed,
-energy, sustained behavior and tuning claims require X1 measurements; an X1
-regression reopens the affected shared choice and requires verified release
-rollback or an available explicit control, without assuming a runtime selector.
-Accelerator selection, precision/quality changes, memory-admission increases
-and complete runtime/device-profile qualification retain their separate gates.
-Do not mix X1 and X2 records inside an existing single-family qualification
-packet or transfer historical passes across changed source identities.
+## CPU comparison controls
 
-## Current CPU comparison readiness
+The [native CPU bundle lane](../tools/cpu-bundle/README.md) fixes Prism 0.1.23
+versus 0.1.25, FP16 KV, adapter 1.3 and four workers. It does not qualify the active
+runtime, K4/V4 default or individual optimizations. The
+[X2 thread screen](#x2-cpu-thread-screen) instead compares publisher `4/4` and
+`6/6` thread budgets. Neither supplies a qualified CPU performance result.
 
-The [native CPU bundle lane](cpu-bundle-comparison.md) compares fixed Prism
-`0.1.23` and registry `0.1.25` with FP16 KV, standard adapter 1.3 and four CPU
-workers. It is a frozen comparison packet, separate from Runner's active runtime
-and K4/V4 development default. A bundle result cannot attribute benefit to each
-change or qualify a newer release. No qualified CPU performance result is claimed.
+## Prompt and attention consumers
 
-The [X2 thread screen](#x2-cpu-thread-screen) instead compares the publisher's
-`4/4` and `6/6` thread budgets. One-token source capture supplies attribution only.
-Exact LUT, tiled/triangular GDN and latest-prefix variants require their own
-consumers and checks; ordinary service requests do not exercise every source path.
-Require exact final-source controls, native/fallback code generation and stack
-review, complete-model state/logit/adapter/cancellation parity, resource acceptance
-and matched CPU-only complete-request benefit before promotion.
+These explicit source consumers are outside ordinary Runner launch policy:
 
-## New local prompt and attention consumers
+| Consumer | Contract |
+| --- | --- |
+| Parallel quantized attention | Share the private row pool across independent query heads; preserve each head's arithmetic and complete-state transaction. Serial compressed attention is the control. |
+| `SwiftSession::load_profile_with_prefill` and private server | Explicit 8/16/32-token tiles with FP16, K4/V4 or K4/V3 cache. Pair tile size with scratch and charge the full reserve before artifact I/O. Readiness binds tile/reserve/graph; implicit Hexagon installation is skipped. Latest-prefix reuse remains explicit. |
+| Sampled suffix profile | Use the actual target sampler with the tiled verifier. Matching draws accept deterministic proposals; rejection restores complete state and replays the accepted prefix. Charge separate logits and full-prefix checkpoints in addition to tile and ordinary rollback reserves; load no second model. |
 
-These explicit source consumers are separate from Runner's ordinary launch policy
-and the fixed CPU bundle comparison:
+The [algorithm contract](inference-algorithms.md#hybrid-cache-reuse-and-speculative-state)
+owns verifier and speculative-state requirements. Triangular GDN remains a
+separate profile. All candidates below require the
+[cross-generation gates](#cross-generation-cpu-promotion); source presence does
+not establish selection, benefit or a Runner repin. New helper APIs require
+publication before dependent runtime bundles and reviewed Runner locks.
 
-- Quantized KV attention shares the existing private row pool across independent
-  query heads, preserving each head's arithmetic and complete-state transaction.
-  The current release's serial compressed-attention path remains the control.
-- `SwiftSession::load_profile_with_prefill` and the private server expose explicit
-  8/16/32-token CPU prompt tiles with the selected FP16, K4/V4 or K4/V3 cache.
-  Trusted launch arguments must pair tile size and scratch and provide
-  context/process-memory admission.
-  The entire additional reserve is charged before artifact I/O. Startup readiness
-  binds the tile, reserve and graph identity; this profile skips implicit Hexagon
-  installation and can retain explicit latest-prefix reuse. Quantized attention
-  keeps its existing causal codec; triangular GDN remains a separate profile.
-- An explicitly selected sampled suffix profile connects the tiled verifier to
-  the actual Swift sampler. Matching target draws accept deterministic proposals;
-  rejection restores complete state and replays the accepted prefix. A separate
-  logits reserve and additional full-prefix checkpoint reserve are charged in
-  addition to the tile and ordinary request rollback. No second model is loaded.
-
-These are local implementation candidates, not a runtime repin, new default or
-measured speedup. Require final-source focused/native/fallback checks, complete
-model logits/state/adapter and cancellation recovery, resource accounting and
-matched selected-device whole-request benefit. The independent batched target
-verifier and sampled suffix consumer retain their
-[algorithm contract](inference-algorithms.md#hybrid-cache-reuse-and-speculative-state).
-Runner's current bundle and launch policy do not select them.
-
-## X1-oriented source candidates
+## CPU preparation candidates
 
 ### Provisional GDN and prepared current-token KV
 
-Two further local source candidates target ordinary CPU ingestion and decode,
-including the selected K4/V4 cache, without requiring an accelerator. They are
-integrated as Prism commits `9f47043` (GDN) and `1cc5f5a` (packed KV):
+- Graph-owned eight-row GDN writes directly to an unpublished recurrent delta.
+  Committed state remains immutable until success; public defensive helpers
+  retain their failure behavior. Swift's geometry omits a nominal 144 MiB final
+  copy per token, without removing recurrent reads/writes or changing admission.
+- Packed attention prepares the current K/V once in private records and reuses
+  those bytes at final append. Layer entry, failure, commit, reset and copying
+  invalidate reuse; narrowed final-layer evaluation retains ordinary encoding.
+  Tail/page reservation still occurs at append. No new record payload is retained.
 
-- Graph-owned GDN evaluation writes eight-row arithmetic directly into its
-  unpublished recurrent-state delta instead of staging another complete copy
-  on the stack and flushing it into that delta. Committed state remains the
-  immutable source, and a failed evaluation cannot publish its delta. Public
-  defensive helpers keep their existing failure behavior. Swift's 48 recurrent
-  layers, 48 value heads and 128-by-128 matrices imply 144 MiB of final-copy
-  payload omitted per token on the eligible native path. This is a source work
-  count, not measured memory traffic, process-memory savings or latency benefit;
-  the arithmetic still reads and writes recurrent state.
-- Packed attention encodes the current key/value into the cache's existing
-  private prepared records and reuses those exact bytes at final append.
-  Successful attention seals the records for that evaluation; layer entry,
-  failure, commit, reset and copying prevent stale prepared-record reuse.
-  Narrowed final-layer evaluation keeps its ordinary encode path. This removes
-  two temporary vectors per full-attention layer and a second encoding of each
-  current key/value head, without adding another retained record payload or
-  changing the selected codec. Tail/page reservations remain at final append.
+Qualify exact native/portable arithmetic, stale-record and late-failure rejection,
+selected-cache and FP16 state/adapter/cancellation behavior, codegen and resources.
+Packed-cache equivalence is within the selected codec, not equivalence to FP16.
 
-These are exact work-reduction candidates within each selected numerical
-profile, not FP16 equivalence for packed KV or a measured X1 speedup. Require
-native and portable arithmetic/failure controls, strict Release analysis and
-linking, feature-disabled fallback and ARM64 codegen/resource review. Complete
-model logits/state/adapter/cancellation parity and matched CPU-only
-complete-request benefit remain independent gates under
-[cross-generation promotion](#cross-generation-cpu-promotion). The published
-0.1.27 runtime remains unchanged; application delivery needs a genuine
-source-bound release and reviewed repin. Memory admission stays conservative.
+### Preparation storage and tokenizer
 
-The larger prompt-time opportunities remain qualification of existing exact
-latest-prefix reuse and explicitly admitted 8/16/32-token prefill. Their
-whole-request, adapter, cancellation and resource gates remain separate from
-these ordinary-ingestion reductions; no default tile or reuse policy changes.
+- PQ2 SDOT uses compact byte planes; baseline NEON retains widened lanes.
+  Each 128-column native payload is 136 rather than 392 bytes, plus a 24-byte
+  vector header per scratch owner. Q8_K bytes and floating accumulation order
+  remain unchanged; these are logical storage counts, not process-memory savings.
+- Width-four short convolution prepares immutable coefficients at graph
+  construction without a second copy. Decode/prefill retain FMA, SiLU and history
+  order; other widths and raw-slice helpers keep their existing representation.
+- Uncached BPE pieces up to sixteen bytes merge on bounded stack storage.
+  Adjacent-rule caching preserves minimum-rank/leftmost selection, corruption
+  errors and token limits; longer pieces retain the bounded heap path.
 
-### Existing preparation candidates
+### Dispatch and attention preparation
 
-Three further CPU changes are implemented in local Prism source. They target
-repeated preparation and cache pressure without requiring X2 Hexagon execution:
+- Prepared PQ2 activations retain a safely detected SDOT capability for one-,
+  four- and eight-row consumption, avoiding feature probes inside block loops.
+  Native scratch adds eight padded header bytes; fallback remains independent.
+- Six-head and paired-token attention keep aligned native score reductions in
+  registers with scalar tails, preserving temporal FMA lanes and addition order.
+- Eligible parallel attention joins query normalization/RoPE with K/V
+  normalization, RoPE and rounding. Divisible partitions omit one submission and
+  error-slot allocation per full-attention layer. Query failures take precedence;
+  the earliest original K/V chunk wins after all workers join. Only provisional
+  scratch may change on failure.
 
-- PQ2 prepared activations keep their byte planes separate from optional widened
-  baseline-NEON storage. The existing runtime-detected SDOT route uses compact
-  byte planes without reserving unused widened lanes; baseline NEON retains
-  prepared widening. Decode and tiled prefill share this representation, with
-  original Q8_K blocks, packed weights and floating accumulation order preserved.
-  On a 64-bit native SDOT build, each 128-column payload is 136 rather than 392
-  bytes, while each scratch owner adds one 24-byte vector header. These logical
-  storage counts do not measure process memory or change admission.
-- Pinned width-four short convolution prepares immutable coefficients in place
-  at graph construction. Four-channel groups then load tap vectors directly
-  instead of transposing the same coefficients during every step. Decode and
-  tiled prefill retain original FMA, SiLU and history order; other arithmetic,
-  widths and raw-slice helper contracts retain their existing representation.
-  Preparation retains the original coefficient count without a second copy.
-- Uncached BPE pieces of at most sixteen bytes merge in bounded stack storage.
-  Cached adjacent rules update only around a completed merge, preserving
-  minimum-rank/leftmost selection, byte corruption errors and token limits.
-  The request-local piece cache and longer-piece heap path retain their bounds.
+### Tiled dispatch and adapter preparation
 
-These are source work/storage reductions, not measured X1 or X2 speedups.
-The development bundle includes these source changes. Final-source hosted
-checks, feature-disabled fallback, ARM64 codegen/stack review, complete-model
-state/logit/adapter and cancellation parity, tokenizer/application acceptance,
-and matched complete-request benefit remain required for qualified promotion
-under [cross-generation CPU promotion](#cross-generation-cpu-promotion).
-X2 CPU evidence can support shared deployment; X1 speed claims remain unmeasured. No
-backend profile, runtime pin or memory-admission limit changes here.
-
-### Next CPU candidates
-
-The next three local Prism changes target repeated CPU dispatch and attention
-work, independently of Hexagon availability:
-
-- Prepared PQ2 activations retain an opaque, safely detected SDOT capability.
-  Eligible one-, four- and eight-row consumption kernels reuse that capability
-  instead of probing CPU features again for every packed block. Original
-  activation bytes, all four PQ2 symbols and ordered floating scales remain
-  unchanged. Baseline NEON and portable fallback remain separate paths. Native
-  scratch adds one capability field (eight padded header bytes on ARM64), with
-  no per-block or weight storage increase. Multi-token prefill wrappers retain
-  their existing dispatch.
-- Six-head decode and paired-token attention scores retain the native reduction
-  tree in NEON registers for aligned key widths. The scalar finish remains for
-  tails. This removes source-level accumulator scalarization for Swift's
-  256-element keys without changing key precision, temporal FMA lanes or the
-  final addition order. Release code generation must establish actual spills
-  and instruction savings before a performance claim.
-- Eligible parallel full-attention preparation combines query normalization
-  and RoPE with key normalization/RoPE and value rounding in one worker pass.
-  When KV heads divide evenly across workers, matching query/KV partitions
-  remove one worker dispatch and transient error-slot allocation per
-  full-attention layer (sixteen of each per Swift token). Other geometries keep
-  the existing path. A cold error collector defers key/value failures until all
-  queries succeed and retains the earliest failing original KV chunk. Only
-  provisional scratch may change before a failure; committed state stays
-  transactional.
-
-These candidates need final-source hosted checks, feature-disabled and portable
-fallback, ARM64 code-generation/resource review, complete-model state/logit/
-adapter and cancellation parity, and matched complete-request measurements on
-one selected family under [cross-generation CPU promotion](#cross-generation-cpu-promotion).
-Development on X2 supplies no X1 speedup verdict. A development repin supplies
-no performance qualification and retains conservative admission.
-
-### Further X1 CPU candidates
-
-Three additional local source candidates remove repeated CPU preparation and
-scheduling work, including paths used with the standard adapter:
-
-- PQ2 tiled prefill reuses the safely detected SDOT/I8MM capability retained by
-  prepared activations. Four-/eight-row, four-/eight-token integer tiles and
-  their token tails avoid repeated optional-ISA selection inside packed-block
-  loops. Integer kernels, all four PQ2 symbols, floating scale order and the
-  baseline NEON fallback remain unchanged. The opaque helper API is published
-  in `bonsai-neon-dot 0.1.2` and consumed by the reviewed runtime dependency.
-- Single-, paired- and triple-buffer elementwise worker dispatches keep their
-  at-most-eighteen error slots on the stack. Each dispatch removes one transient
-  heap allocation while retaining the earliest failing chunk after all tasks
-  join. Slot storage stays private to the invocation, including nested calls;
-  the existing worker reservation and conservative admission remain in force.
-- Adapter-enabled CPU FFN preparation retains original-basis SwiGLU values in
-  the existing up buffer while preparing the down projection's signed Hadamard
-  basis in the existing transformed buffer. Combining those block operations
-  removes a separate worker pass. The down adapter continues to consume its
-  original-basis input; adapters and accelerator eligibility are unchanged.
-
-These are source work reductions, with no measured X1 or X2 benefit. Require
-final-source exact arithmetic, failure and adapter controls, feature-disabled
-fallback, strict Release analysis and linking, ARM64 codegen/stack review,
-complete-model state/logit/cancellation parity and matched selected-family CPU
-request benefit under [cross-generation CPU promotion](#cross-generation-cpu-promotion).
-The development runtime includes this source; qualified promotion remains pending.
+- PQ2 prefill reuses prepared SDOT/I8MM capabilities across row/token tiles and
+  tails, preserving integer kernels, symbols, scales and baseline fallback.
+- Single-, paired- and triple-buffer dispatches keep at most eighteen error
+  slots on the stack, including nested calls. All tasks join before returning
+  the earliest failing chunk; worker reservations remain conservative.
+- Adapter-enabled FFN combines original-basis SwiGLU preparation with the down
+  projection's signed Hadamard preparation in existing buffers. The down adapter
+  continues to consume original-basis input; accelerator eligibility is unchanged.
 
 ### Grouped dispatch, hardware half widening and exact LUT execution
 
-Local Prism source `ae9c5a785dcf9490c9573b32da7136222aa8504a` contains three
-additional X1 CPU candidates targeting repeated worker scheduling, cached-half
-conversion and packed integer work:
-
-- Compatible CPU PQ2/Q8_K sibling projections share one joined worker-pool
-  submission. Query/key/value and gate/up retain their existing scoped input
-  preparation, row partitions and packed 8/4/1-row kernels. Other geometries,
-  quantizers and external executors keep their existing paths. The group checks
-  every extent before submission and clears all sibling outputs on failure;
-  failures retain sibling/chunk order after workers join. At most four matrices
-  use seventy-two bounded task descriptors, without copying weight payloads or
-  creating a second pool.
-- Cached FP16 attention loads and four-/eight-row half-scale helpers use
-  [baseline NEON hardware widening](https://doc.rust-lang.org/stable/core/arch/aarch64/fn.vcvt_f32_f16.html)
-  through the isolated safe `bonsai-neon-dot` API. Finite
-  arrays use `FCVTL`/`FCVTL2`; arrays containing infinity or NaN use exact integer
-  decoding to preserve signs and signaling-NaN payloads. This changes conversion
-  work without changing stored precision or floating reduction order. Portable
-  decoding remains available; the raw-u32 rounding helper keeps its prior path.
-- Explicit `Pq2LutExecutor` connects activation-pair tables to the existing
-  prepared-matvec and graph projection interfaces. One 2,048-byte table per
-  128 columns serves every output row through the existing row-worker policy.
-  Tables are rebuilt for each invocation, including sibling invocations, and
-  retained capacity is bounded by the caller's maximum width: 80 KiB at 5,120
-  columns. Original Q8_K fused/separate accumulation, odd-group Q8_0 scales and
-  all four PQ2 symbols remain supported. Unsupported tensors keep CPU execution.
-  This experimental executor is never selected automatically; table construction
-  and cache traffic may erase its integer-work savings against SDOT.
-
-These implementations establish no measured X1 speedup. Require final-source
-strict Release analysis and linking, native and portable controls, exhaustive
-half-encoding parity, sibling failure/adapter/state controls and ARM64
-codegen/stack/resource review. Matched selected-family CPU complete-request measurements must
-include table preparation, worker dispatch and all fallback costs, with losing
-or no-go outcomes retained. Apply [cross-generation CPU promotion](#cross-generation-cpu-promotion)
-to shared work reductions; LUT selection remains explicit pending matching-family
-benefit. Full-model logits/state/adapter and cancellation
-acceptance remain independent. The new half-widening API is published in
-`bonsai-neon-dot 0.1.2`, consumed by the reviewed runtime dependency. This repin
-does not qualify a LUT default or measured request benefit.
+- Compatible PQ2/Q8_K siblings share one row-pool submission and scoped input
+  preparation. Check every extent first; clear all sibling outputs on failure
+  and retain sibling/chunk error order. At most four matrices use seventy-two
+  bounded descriptors, without weight copies or a second pool.
+- Safe `bonsai-neon-dot` FP16 helpers use baseline NEON `FCVTL`/`FCVTL2` for finite
+  arrays and exact integer decoding for infinity/NaN arrays, retaining sign and
+  signaling-NaN payloads. Portable decoding and raw-u32 rounding remain controls.
+- Explicit `Pq2LutExecutor` builds a 2,048-byte activation-pair table per 128
+  columns for all output rows. Each invocation, including siblings, rebuilds its
+  tables; retained capacity is bounded by maximum width (80 KiB at 5,120).
+  Preserve Q8_K fused/separate accumulation, odd-group Q8_0 and all PQ2 symbols.
+  Unsupported tensors stay on CPU. Include table/cache costs against SDOT before
+  selecting this executor; it is never selected automatically.
 
 ### Complete-row SDOT, fixed attention lanes and bounded GDN phases
 
-Local Prism source `8504810` adds three CPU candidates for X1, without requiring
-Hexagon execution:
-
-- Detected SDOT PQ2 consumption keeps complete one-, four- and eight-row
-  projections inside one target-feature call. Integer dots, half-scale widening
-  and ordered floating accumulation stay inside that call rather than returning
-  between every 128-column block. At width 5,120, a four-/eight-row group replaces
-  forty integer-helper calls and forty half-widening calls with one complete-row call.
-  Original Q8_K scales, all four PQ2 symbols, fused/separate arithmetic and
-  136-byte prepared blocks remain unchanged. Baseline NEON, scalar and tiled
-  multi-token kernels retain their existing paths. The new safe helper API is
-  published in `bonsai-neon-dot 0.1.2`, consumed by the reviewed runtime dependency.
-- Six-head and paired twelve-query attention scores consume sixteen key columns
-  per loop with four fixed accumulator indices. Swift's width-256 key changes
-  from thirty-two to sixteen loop iterations and query-row slices. Cached-half
-  conversion sharing, native FMA lanes, scalar tails, masked padding, reductions
-  and paired-token sharing remain unchanged. Fewer source loop operations do
-  not establish fewer machine instructions or spills.
-- Eight-row GDN decode retains its eight-row transactional staging and commits
-  through two four-row arithmetic phases. Each dot phase has sixteen live
-  accumulator vectors rather than thirty-two, leaving room for inputs on
-  ARM64's thirty-two-vector-register architecture. Every key dot still precedes
-  updates, and all eight destinations remain untouched until success. Swift's
-  private staging remains 4 KiB, plus eight scalar deltas between phases; the
-  small key/query inputs are read again for each four-row phase. Four-row decode
-  shares the same arithmetic helpers; batched token kernels are unchanged.
-
-These are source candidates, with no measured X1 speedup. Independent focused
-controls cover exact native/portable arithmetic, forced baseline consumption,
-FMA rounding, awkward extents, temporal state and late-failure publication.
-Final-source strict Release analysis, native and portable execution, ARM64
-codegen/spill/stack review, complete-model logits/state/adapter/cancellation
-parity and matched selected-family CPU complete-request benefit remain qualification
-gates under [cross-generation CPU promotion](#cross-generation-cpu-promotion).
-In particular, GDN's extra input reads must be included in that comparison.
-The development bundle includes this source without a measured benefit
-claim; conservative memory admission remains unchanged.
+- SDOT keeps complete one-/four-/eight-row projections, half widening and ordered
+  floating accumulation inside one feature call. Preserve Q8_K scales, symbols,
+  fused/separate arithmetic and 136-byte prepared blocks. Baseline NEON, scalar
+  and multi-token kernels retain their paths.
+- Six-head/paired-twelve-query attention consumes sixteen key columns per loop
+  with four fixed accumulator indices, preserving half-conversion sharing,
+  FMA lanes, masks, tails, reductions and paired-token sharing.
+- Eight-row GDN uses two four-row arithmetic phases with sixteen accumulator
+  vectors per dot phase. All key dots precede updates; publication remains atomic.
+  Keep 4 KiB staging and eight scalar deltas. Repeated key/query reads must be
+  included in benefit and codegen/spill/stack review.
 
 ### Scoped PQ2 validation, tiled Q/K/V preparation and temporal GDN
 
-Local Prism `b98574a` integrates three further CPU source candidates targeting
-repeated work in projection and prompt ingestion, without requiring X1 Hexagon
-access:
-
-- A borrowed prepared-PQ2 view checks activation scales once per projection or
-  compatible sibling group and shares that proof across row tiles. For a
-  5,120-column, 17,408-row projection with eight-row tiles, this changes 87,040
-  activation-scale finite predicates to forty. Original weight-scale, geometry
-  and result checks remain required. The immutable borrow binds the proof to
-  current activation bytes; public unprepared calls remain defensive. No
-  persistent weight copy or new activation allocation is needed.
-- Tiled full-attention preparation joins query normalization/RoPE and key/value
-  normalization, RoPE and rounding in one token-partitioned worker submission.
-  This extends the existing decode scheduling idea to prompt tiles and omits
-  sixteen submissions per ordinary Swift tile, or fifteen when the final
-  full-attention layer uses its existing KV-only narrowing. Query failures
-  retain precedence over every key/value failure, and the earliest
-  original key/value chunk wins after workers join. Only provisional scratch
-  changes before the existing state publication boundary.
-- Eight-row multi-token GDN uses four-row arithmetic phases in both source-state
-  and in-place paths. Each dot phase has sixteen accumulator vectors rather
-  than thirty-two; all eight key dots still precede updates. Original per-token
-  arithmetic, private eight-row staging and atomic destination publication
-  remain intact. The small key/query arrays are read again for the second
-  four-row phase, so lower source register pressure alone establishes no gain.
-
-These changes establish no measured X1 speedup. Require final-source native and
-portable strict Release analysis, exact arithmetic and failure controls,
-feature-disabled fallback and production linking; ARM64 codegen/spill/stack
-review; complete-model state/logit/adapter/cancellation parity; and matched
-selected-family CPU complete-request benefit under
-[cross-generation CPU promotion](#cross-generation-cpu-promotion).
-Include preparation, dispatch and repeated input reads in timing.
-The prepared-PQ2 API is published in `bonsai-neon-dot 0.1.2` and consumed by
-the reviewed runtime dependency. Runner's development repin consumes the same reviewed
-production source; qualification remains pending and admission is unchanged.
+- A borrowed prepared-PQ2 view validates activation scales once per projection
+  or sibling group. The immutable borrow binds current bytes; weight-scale,
+  geometry and result checks remain. Public unprepared calls stay defensive.
+- Tiled attention joins Q/K/V preparation in one token-partitioned submission,
+  preserving query-first and earliest-K/V error precedence and transactional state.
+- Multi-token eight-row GDN uses four-row phases for source-state and in-place
+  paths. All key dots precede updates; staging and publication stay atomic.
+  Lower source register pressure alone does not establish benefit.
 
 ### Prepared packed-KV queries and CPU preparation reuse
 
-Further local Prism source work targets repeated CPU preparation on X1 without
-requiring an accelerator or changing the selected precision:
-
-- Packed-KV attention prepares each immutable rotated query once before scanning
-  cached keys. The borrowed proof retains query/codebook validation and native
-  selection outside the history loop; each record still checks its length,
-  scale, canonical zero encoding and finite result. The public single-record
-  scoring API remains defensive. This reduces repeated validation at longer
-  contexts while preserving the existing scalar/native dot reduction.
-- Internally quantized PQ2 activations can reuse their exact per-sixteen-value
-  integer sums during packed preparation. Arbitrary public activation blocks
-  retain defensive value-derived sums; their compatibility fields do not become
-  trusted. Packed bytes, scales, accumulation and runtime ISA fallback stay the
-  same, without an additional weight or activation allocation.
-- Eligible pinned prompt convolution reads committed history directly into the
-  existing provisional next-history destination, omitting its preceding full
-  history copy. Original FMA/SiLU order and the graph's state publication boundary
-  remain required; other geometries keep their existing path.
-
-These changes are local source candidates, not measured X1 speedups or a Runner
-runtime repin. Require focused exact native/portable and failure controls,
-strict Release analysis of runtime and changed helpers on ARM64 and x64,
-feature-disabled fallback, production linking and ARM64 codegen/resource review.
-Complete-model logits/state/adapter/cancellation acceptance and matched
-CPU-only complete-request benefit remain pending under
-[cross-generation CPU promotion](#cross-generation-cpu-promotion).
-New helper APIs need publication before a dependent registry release; an exact
-source-bound runtime bundle and reviewed Runner repin are required before the
-application consumes these changes. Retain the current runtime as rollback.
+- Prepare each immutable rotated query before scanning keys, moving query/
+  codebook validation and native selection outside the history loop. Each
+  record still validates length, scale, canonical zero and finite result;
+  public single-record scoring stays defensive.
+- Internally quantized PQ2 activations reuse exact per-sixteen-value sums.
+  Arbitrary public blocks retain value-derived sums. Bytes, scales, reduction,
+  ISA fallback and allocations are unchanged.
+- Eligible prompt convolution reads committed history into provisional next
+  history without a preceding copy. Preserve FMA/SiLU and publication order;
+  other geometries keep their existing path.
 
 ### Scan-owned packed values and joined prompt projections
 
-Further local Prism CPU work targets repeated per-record and per-row-tile work
-on the shared X1/X2 path:
-
 - Packed attention owns one provisional value accumulator for the complete
-  history scan. Codebook validation and native dispatch happen once; each
-  record still checks its encoding, weight, scale and finite arithmetic. This
-  removes repeated scans of the previous 256-value sum and its per-record
-  transactional copy. Failure permanently prevents publication of that private
-  sum. The public single-record accumulation API keeps its defensive checks
-  and unchanged-output failure contract; stored precision and operation order
-  are unchanged.
-- Compatible CPU PQ2 prompt-tile siblings share one joined row-pool submission
-  and the existing prepared activations. The graph consumes this for eligible
-  projection pairs and triples, including siblings untouched by the standard
-  adapter. A targeted adapter retains sequential execution so that its failures
-  keep their original precedence. Unsupported geometry, transforms and external
-  executors retain their existing paths. This extends the explicit tiled-prefill
-  candidate; ordinary single-token ingestion does not acquire prompt tiles.
-- Prepared native PQ2 row consumption uses the helper's existing extent check
-  on the successful path. The runtime classifies malformed extents after a
-  rejection, retaining shape-error precedence without checking the same row
-  geometry twice for every one-, four- or eight-row tile. Baseline NEON and
-  portable consumers retain their existing checks.
+  history scan. Validate codebook/native dispatch once and each record's
+  encoding, weight, scale and arithmetic. Failure prevents publication;
+  public single-record accumulation keeps unchanged-output rejection.
+- Compatible prompt-tile PQ2 siblings share a row-pool submission and prepared
+  activations. Targeted adapters retain sequential failure precedence;
+  unsupported geometry/transforms/executors keep existing paths. Ordinary
+  single-token ingestion does not acquire prompt tiles.
+- Prepared native PQ2 consumption uses the helper's extent check on success
+  and classifies malformed extents after rejection, preserving shape-error
+  precedence. Baseline NEON and portable consumers keep their own checks.
 
-These are source work reductions, not measured X1 speedups. Native/portable
-exact arithmetic, corrupt-record and late-failure controls, strict Release
-analysis and linking, feature-disabled fallback and ARM64 codegen/resource
-review remain required. Complete-model logits/state/adapter/cancellation and
-matched CPU-only complete-request benefit retain the
-[cross-generation promotion gates](#cross-generation-cpu-promotion). New helper
-APIs require publication before a dependent runtime release, followed by a
-genuine source-bound bundle and reviewed Runner repin. Source presence does not
-establish selection by Runner's ordinary serving path;
-verify the exact release lock and consumer before execution.
-
+Verify the exact release lock and consumer before execution.
 ## Execution and dispatch
 
 The default `experimental-neon` feature uses [`fearless_simd` 1.1.0][fearless]'s safe core API under
@@ -603,69 +349,21 @@ assessment](swift-memory.md).
 
 ## Signed constant floor division
 
-[Ben Joffe's algorithm](https://www.benjoffe.com/fast-floordiv), published
-2026-10-27, computes signed integer division
-rounded toward negative infinity using a multiply and arithmetic shift. It is
-a candidate for a measured signed constant-divisor hotspot in Prism. Ordinary
-Rust signed `/` truncates toward zero; replacing it requires an existing floor
-contract or proof that the caller's admitted inputs give the same result.
+[Ben Joffe's algorithm](https://www.benjoffe.com/fast-floordiv) is conditional on
+an identified signed constant-divisor hotspot with floor-rounding semantics.
+No eligible production caller is identified. Unsigned indexing, power-of-two
+extents, floating scales and runtime-stride division do not supply that consumer.
 
-The [reference implementation](https://github.com/benjoffe/fastdiv/blob/main/algorithms/benjoffe.hpp)
-searches multiplier/shift pairs for both rounding directions. When both work,
-it can select the multiplier using the dividend's sign. Some divisors require
-a bounded input adjustment instead; the sign-selected formula is not universal.
-For a valid sign-selected pair `(M, S)`, the quotient is
-`(i128(x) * (M + (x >> 63))) >> S`, with an arithmetic right shift.
-Positive powers of two already reduce to an arithmetic shift. Resolve parameters
-at compile time for fixed constants; a runtime-invariant variant must prepare them
-outside the hot loop. A Rust port must use widened integer products, preserve
-full-range behavior and explicitly reject zero and the unrepresentable `i64::MIN / -1`.
-Negative-divisor floor division differs from `div_euclid`; do not use the latter
-as its general reference. The reference's `main` link is a discovery pointer;
-pin a reviewed revision and retain its license notices before copying source.
+For a proven sign-selected multiplier/shift pair, the formula is
+`(i128(x) * (M + (x >> 63))) >> S`. Some divisors require bounded adjustment;
+the formula is not universal. Preserve the full admitted range, reject zero and
+`i64::MIN / -1`, and prepare invariant parameters outside hot loops. Rust `/`
+truncates toward zero; `div_euclid` is not a general negative-divisor floor oracle.
 
-The **2026-10-30 source audit found no eligible production caller in Runner**:
-
-| Existing arithmetic | Applicability |
-| --- | --- |
-| Speech graph `(n_kv_pad + 255) / 256` in `src/speech-tts/build_overlay.rs` | Nonnegative ceiling division by a power of two |
-| Audio elapsed time `/ 48` in `src/chat-ui/src/speech/pipeline.rs` | Unsigned byte-count conversion |
-| Buffer, sample and packed-code indexing | Unsigned extents or power-of-two divisors |
-| Quantization scales and timing ratios | Floating-point division |
-
-The audit also covered the clean pinned Prism revision
-`fce300b94234c2dd70756dd4bbc33ea703848cb6`. Its
-[convolution extent calculation](https://github.com/symbiogenesis/prism-inference/blob/fce300b94234c2dd70756dd4bbc33ea703848cb6/src/backend/call.rs#L73)
-uses an `i128` numerator and a runtime stride. Its
-[backward-image divisions](https://github.com/symbiogenesis/prism-inference/blob/fce300b94234c2dd70756dd4bbc33ea703848cb6/src/backend/backward_image.rs#L90)
-use runtime strides after exact-divisibility guards. Neither is a fixed-`i64`
-replacement site. Runtime-invariant specialization would require its own setup
-and reuse-cost evidence. No runtime code or dependency pin changes follow from
-this audit, and no throughput, latency or complete-request gain has been measured.
-
-The following are conditional opportunities in existing planned work, inferred
-from the algorithm's input requirements; neither is an identified current hotspot:
-
-| Planned work | Where to check |
-| --- | --- |
-| [Tiled projection-prefill](../PLAN.md#cpu-kernels), attention tiles and [chunkwise GDN](inference-algorithms.md#chunkwise-gated-deltanet-prefill) | Signed padded or relative coordinates mapped to tile/chunk indices before conversion to `usize`, if floor rounding and a fixed non-power-of-two divisor are required. Initial 8/16/32 tiles already permit shifts; retain those choices. |
-| [Deferred Prism numerical kernels](../PLAN.md#deferred-prism-migration), when reopened for a Swift dependency | Specialized convolution/pooling coordinate mapping with an invariant stride reused across many elements. Require an admitted `i64` numerator range and unchanged rounding/rejection behavior; charge parameter setup and dispatch as well as division. |
-
-Keep this check within the chosen kernel's design and measured cost. Unsigned
-PTQ1 base-three decoding, nonnegative cache/page indices and floating quantizers
-do not become signed floor-division candidates. Any future integer requantizer
-would first need its own rounding contract; this algorithm does not preserve
-ties-to-even or ties-away rounding by itself.
-
-For a future eligible caller, compare exact results with an independent widened
-quotient/remainder reference: both signs, zero dividend, signed extrema, exact
-multiples and their neighbors, large divisors, forced round-up/down cases and
-power-of-two cases. Check optimized ARM64 code generation under the pinned Rust
-compiler; the article's C++ results do not establish Rust performance. Measure
-throughput, dependent latency and complete-request cost in owning CI under the
-[five-minute device budget](validation.md), retaining losing results. Implement
-only a justified consumer upstream; [PLAN.md](../PLAN.md#cpu-kernels) owns that gate.
-
+A selected implementation needs a pinned licensed reference, independent widened
+quotient/remainder checks across signs/extrema/multiples/neighbors, ARM64 codegen
+review and complete-request benefit including setup/dispatch. Keep this work
+within the chosen kernel's [backlog](../PLAN.md#cpu-kernels).
 ## Numerical and resource acceptance
 
 Optimized-Rust/scalar and Rust/Prism comparisons have separate purposes; an existing
@@ -724,10 +422,7 @@ Performance execution remains [CI-only](validation.md).
 
 The Rust maintenance planner selects only `6/6` decode/prefill threads against the unchanged
 `4/4` control. These are thread counts without affinity pinning; Windows chooses placement.
-One fixed short synthetic creative-writing prompt runs in two reversed pairs, at most four fresh
-processes with a 16-token cap and a 45-second per-process deadline. The former 24-process,
-two-prompt matrix is retired, not partitioned across repeated short jobs. Other budgets and long
-prompts remain pending work in PLAN. OS file cache is not flushed.
+One fixed short synthetic creative-writing prompt runs in two reversed pairs: at most four fresh processes, a 16-token cap and a 45-second process deadline. OS file cache is not flushed. Other thread budgets and long prompts remain in PLAN.
 
 All setup, verification, preflight, model loading and comparison share one at-most-240-second
 process budget within the five-minute owner job. Hosted tool compilation is outside that device job;
@@ -870,11 +565,10 @@ performance gain.
 
 LoRA and PTQ1 captures retain the observed processor name and distinguish `Snapdragon X Elite`,
 `Snapdragon X2 Elite` and `Snapdragon X2 Elite Extreme`. X2 receipts require a matching processor
-observation; relabeling historical X1 evidence rejects. Device-dependent runtime promotion gates
+observation; relabeling X1 evidence rejects. Device-dependent runtime promotion gates
 cannot combine different families. The [shared CPU promotion rule](#cross-generation-cpu-promotion)
 reuses a reviewed deployment decision, without relabeling or mixing those records.
-Existing frozen X1 contract hashes and legacy receipt shapes
-remain readable; identity observations alone do not qualify any X2 profile.
+Identity observations alone do not qualify an X2 profile.
 
 [fearless]: https://docs.rs/fearless_simd/1.1.0/fearless_simd/
 [target-feature]: https://doc.rust-lang.org/reference/attributes/codegen.html#the-target_feature-attribute
