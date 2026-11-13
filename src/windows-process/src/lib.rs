@@ -25,6 +25,21 @@ use std::time::Duration;
 )]
 mod native;
 
+/// Reuses the calling terminal for a graphical executable's command-line mode.
+///
+/// Redirected standard output is preserved. No console is ever allocated; an
+/// absent parent console leaves ordinary redirected diagnostics unchanged.
+pub fn attach_parent_console() {
+    native::presentation::attach_parent_console();
+}
+
+/// Displays a fatal graphical startup failure using a native Windows dialog.
+///
+/// The synchronous dialog retains no caller pointers and creates no console.
+pub fn show_startup_error(message: &str) {
+    native::presentation::show_error(message);
+}
+
 /// Returns this process's creation FILETIME for retained supervision identity.
 ///
 /// # Errors

@@ -1,5 +1,6 @@
 [package]
 name = "bonsai-tools"
+default-run = "bonsai-tools"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -14,6 +15,11 @@ categories = ["encoding", "science"]
 name = "bonsai-tools"
 path = "src/main.rs"
 # Exercise the CLI through integration tests without linking an empty harness.
+test = false
+
+[[bin]]
+name = "bonsai-launcher"
+path = "src/launcher.rs"
 test = false
 
 [features]

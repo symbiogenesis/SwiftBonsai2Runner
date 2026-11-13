@@ -78,6 +78,32 @@ fn archive(executable: &Path) -> crate::Result<(ZipArchive<File>, String)> {
     Ok((archive, digest))
 }
 
+fn require_windowless(file: &mut File) -> crate::Result<()> {
+    file.rewind().map_err(|error| error.to_string())?;
+    let mut dos = [0; 64];
+    file.read_exact(&mut dos)
+        .map_err(|error| error.to_string())?;
+    let offset = u64::from(u32::from_le_bytes(
+        dos[60..64].try_into().map_err(|_| "Invalid PE offset.")?,
+    ));
+    if dos[..2] != *b"MZ" || offset < 64 {
+        return Err("Invalid launcher DOS header.".into());
+    }
+    file.seek(std::io::SeekFrom::Start(offset))
+        .map_err(|error| error.to_string())?;
+    let mut pe = [0; 94];
+    file.read_exact(&mut pe)
+        .map_err(|error| error.to_string())?;
+    if pe[..6] != [b'P', b'E', 0, 0, 0x64, 0xaa]
+        || u16::from_le_bytes([pe[20], pe[21]]) < 70
+        || pe[24..26] != [0x0b, 0x02]
+        || pe[92..94] != [2, 0]
+    {
+        return Err("Bundling requires the Windows GUI-subsystem bonsai-launcher image.".into());
+    }
+    Ok(())
+}
+
 fn supports_bundle(file: &mut File) -> crate::Result<bool> {
     file.rewind().map_err(|error| error.to_string())?;
     let marker = LAUNCHER_PROTOCOL.as_bytes();
@@ -176,6 +202,7 @@ fn create(directory: &Path, digest: &str, output: &Path) -> crate::Result<Value>
     let stage = Stage::new(output.parent().ok_or("Missing bundle output parent.")?)?;
     let path = stage.0.join("application.exe");
     let mut image = super::open(&directory.join("bin/bonsai-tools.exe"))?;
+    require_windowless(&mut image)?;
     if !supports_bundle(&mut image)? {
         return Err("Maintenance executable does not support the bundle launcher protocol.".into());
     }
@@ -308,6 +335,35 @@ mod tests {
         fs::write(cached.join("NOTICE"), b"tampered").map_err(|error| error.to_string())?;
         assert!(extract(&executable, &installation).is_err());
         assert!(create(&directory, &digest, &executable).is_err());
+        fs::remove_dir_all(root).map_err(|error| error.to_string())?;
+        Ok(())
+    }
+
+    #[test]
+    fn bundle_rejects_console_launcher_before_publication() -> crate::Result<()> {
+        let (root, directory, _) = fixture()?;
+        let image_path = directory.join("bin/bonsai-tools.exe");
+        let mut image = fs::read(&image_path).map_err(|error| error.to_string())?;
+        image[220..222].copy_from_slice(&3_u16.to_le_bytes());
+        fs::write(&image_path, &image).map_err(|error| error.to_string())?;
+        let manifest_path = directory.join("package.json");
+        let mut manifest: Value =
+            serde_json::from_slice(&fs::read(&manifest_path).map_err(|error| error.to_string())?)
+                .map_err(|error| error.to_string())?;
+        let files = manifest["files"].as_array_mut().ok_or("Missing files.")?;
+        let entry = files
+            .iter_mut()
+            .find(|entry| entry["name"] == "bin/bonsai-tools.exe")
+            .ok_or("Missing launcher.")?;
+        entry["sha256"] = json!(crate::identity::sha256(&image));
+        let bytes = serde_json::to_vec(&manifest).map_err(|error| error.to_string())?;
+        fs::write(manifest_path, &bytes).map_err(|error| error.to_string())?;
+        let output = root.join("console.exe");
+        let error = create(&directory, &crate::identity::sha256(&bytes), &output)
+            .err()
+            .ok_or("A console launcher was accepted.")?;
+        assert!(error.contains("GUI-subsystem"));
+        assert!(!output.exists());
         fs::remove_dir_all(root).map_err(|error| error.to_string())?;
         Ok(())
     }

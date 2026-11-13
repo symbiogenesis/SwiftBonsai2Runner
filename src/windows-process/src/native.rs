@@ -71,6 +71,7 @@ mod job_probe;
 mod opencl;
 mod power;
 mod power_policy;
+pub(super) mod presentation;
 pub(super) mod signature;
 mod vulkan;
 
