@@ -39,95 +39,47 @@ actual-model and broker-only/same-user isolation limits still apply.
 
 ## Implementation delivery
 
-Use the [PLAN checklist](../PLAN.md) for outstanding work, prerequisites and
-acceptance requirements. Before assigning work, identify its next action:
-implementation, integration, qualification, owner/external dependency or
-conditional work. Prefer existing candidates and qualification helpers.
+[PLAN.md](../PLAN.md) owns outstanding work. Identify whether the next action is
+implementation, integration, qualification or an owner/external dependency.
+Use [AGENTS.md](../AGENTS.md) for worktrees, commits, local-main integration,
+owner-only pushes and CI ownership; local completion need not wait for CI.
 
 ### Candidate and worker ownership
 
-Before qualification, integrate reviewed changes into local `main` and freeze
-an exact candidate: Runner/Prism revisions, compiler/channel/target, executable
-digests, runtime archive/file locks, model/representation, adapter/scale and
-selected device/driver/kernel. A version number alone is insufficient. Continue
-implementation in separate worktrees; review changed dependencies before reusing evidence.
+Freeze reviewed local-main source before qualification: Runner/Prism revisions,
+compiler/channel/target, executable digests, runtime archive/file locks,
+model/representation, adapter/scale and device/driver/kernel. Versions alone are
+insufficient. Give shared pins, schemas and final serving integration one owner;
+agree producer/consumer interfaces before dependent work.
 
-Runtime repins require genuine source-bound published bundles and synchronized
-binary/exact-source locks. New local CPU candidates need separate source review;
-fixed comparison inputs retain their own identities under the
-[CPU comparison contract](cpu-bundle-comparison.md). Follow the
-[runtime lock update](#prepare-a-runtime-lock-update) and
-[CPU verification contract](cpu-kernels.md).
-
-Use one integrator and at most three workers with disjoint files and explicit
-producer/consumer interfaces across application, runtime, speech or qualification
-work. Each worker uses its own Git worktree and one commit per logical change.
-Give shared pins, receipt schemas, workflow contracts and final serving integration
-one owner. Agree interfaces before dependent work; review consumer effects before
-integrating producers. Reassign finished workers to unblocked tasks, including
-independent fixture replay or human-review preparation while source/provenance is pending.
-
-The integrator reviews and integrates commits into each repository's local `main`, preserving
-the owner's work and qualification candidate. Workers report commands, results,
-limits and remaining gates. They never push or open routine delivery PRs. CI is
-owner-operated except for AGENTS.md's Foundation release-bundle exception.
-Local completion does not wait for an owner verdict; hosted/device acceptance
-stays pending until supported by its own evidence.
+Runtime repins require genuine published bundles, synchronized binary/source locks
+and review under [runtime lock updates](#prepare-a-runtime-lock-update).
+Use the [CPU verification contract](cpu-kernels.md) and keep fixed
+[comparison inputs](cpu-bundle-comparison.md) separate from local candidates.
 
 ### Speech integration interfaces
 
-Use these interfaces for replacement work. The Rust CPU TTS service now consumes
-the weight/Talker/codec path; independent model and lifecycle acceptance remain open.
+| Boundary | Contract |
+| --- | --- |
+| Verified tensors | Immutable views bind locks, shapes, dtype, transforms and adapter identity; retain file/model guards and transactional state/sampler rollback. |
+| Codec/speaker streaming | Fix sample rate, channels, frame geometry, bounded PCM and bootstrap inputs. One owner controls mutable caches and teardown; release Design before Base. |
+| Native RPC | Typed operation/tensor/stride descriptors bind the signed FastRPC subset. Preserve in-flight buffers until terminal completion or verified teardown; serialization alone is no completion fence. |
+| Serving | One integrator owns speech-service/UI wiring, cancellation and cache invalidation. Interface completion cannot replace model, listening or resource acceptance. |
 
-| Work owner | Producer/consumer contract | Required ownership and acceptance |
-| --- | --- | --- |
-| Verified loading and Talker/CodePredictor | Immutable tensor views bind model/codec locks, shapes, dtype, transform metadata and approved adapter identity to the runtime consumer. | Retain file guards and model lifetimes; define cache/state, sampler progression and transactional cancellation/rollback. Qualify full serving integration and actual-model parity. |
-| Codec and speaker streaming | Explicit sample rate, channel/frame geometry, bounded PCM chunks and reference/bootstrap inputs connect speaker extraction, codec state and synthesis. | One owner controls mutable stream/cache state and teardown. Preserve Design-before-Base release, bounds and independent audio/lifecycle/resource review. |
-| Native Rust RPC | Typed operation/tensor/stride descriptors connect the verified model path to supported signed FastRPC execution. | Preserve the documented `libcdsprpc.dll` driver boundary, in-flight buffer lifetime, terminal completion and verified teardown. Header serialization alone is not dispatch or a completion fence. |
-| Final serving integration | The existing speech service and native UI consume one qualified pipeline through their current bounded contracts. | One integrator owns service wiring, cancellation and cache invalidation; interface completion cannot waive full pinned-model, listening or resource gates. |
-
-Prepare and qualify the ordinary Q4 baseline first while retaining the Q8
-control. Ternary Talker artifacts, new 48 kHz model locks and signed offload keep
-their separate prerequisites and qualification after baseline integration.
-Qwen3-ASR remains a separate complete Rust-engine replacement, including its
-artifact, transcript/state, cancellation, lifecycle, quality and resource gates.
-Remove C++/native dependencies and compiler provisioning only under the
-[file-family retirement contract](cpp-retirement.md). All presentation remains
-native Rust under the [UI contract](ui-architecture.md).
+Prepare Q4 speech with a Q8 control before qualifying ternary/48 kHz artifacts or
+signed offload. ASR retains independent artifact, transcript/state, lifecycle and
+quality gates. Follow [dependency retirement](cpp-retirement.md) and the
+[native UI boundary](ui-architecture.md).
 
 ### Qualification reuse and owner handoff
 
-Reuse deadline, power, identity, typed-receipt and archive tooling. Extend shared
-fixtures for complete committed state, logits, KV/GDN/convolution ownership,
-adapter identity, sampler progression and recovery. Map assertions to each
-prefix/prefill/speculation/accelerator path; shared tooling or immutable data
-cannot transfer qualification between paths. Preserve independent-owner controls,
-per-arm power and required replay inputs under [validation](validation.md) and
-[native acceptance admission](../tools/ci/README.md#native-acceptance-admission).
-
-Deliver one concrete owner handoff for a candidate, using the ordinary delivery
-message unless a durable acceptance record is required. Include:
-
-1. Reviewed local commits and exact Runner/Prism/compiler/artifact identities,
-   with the candidate's PLAN IDs and any source still awaiting publication.
-2. Exact owner commands, source refs, workflow names/inputs and their order;
-   distinguish source publication, hosted preparation, device work and release
-   publication. Use [release commands](releases.md) and the owning workflow
-   guides, with concrete reviewed values instead of an unreviewed latest ref.
-3. Expected asset/package names, receipt schemas and required digest checks,
-   plus rollback identities. Acceptance consumes its own same-run package;
-   caching compiler outputs never reuses another run's verdict or receipt.
-4. The fixed device workload, conservative estimate and smallest supported
-   allowance declared before setup; aggregate/per-arm power observations,
-   independent owners and cleanup/evidence reserves retain their existing limits.
-5. Local commands/results/limits, every pending hosted/device/human gate and
-   the explicitly selected credential-free evidence with its durable destination
-   and independently retained retrieval digest when archival is required.
-
-Follow AGENTS.md for owner-only pushes and CI operations; preparation does not
-authorize a device job. Preserve losing/no-go outcomes and closed clocks. Use
-selected-receipt staging and `evidence-archive` under
-[evidence retention](validation.md#evidence-retention).
+Reuse [qualification controls](validation.md#reusing-qualification-controls)
+without transferring verdicts between paths. Deliver exact reviewed commits,
+artifact identities and PLAN IDs; concrete owner commands/refs/workflow inputs;
+expected assets, receipt schemas/digests and rollback identities; fixed device
+work, estimate/allowance and cleanup reserves; local results/limits and pending
+hosted/device/human gates. Include only selected credential-free evidence required
+by [retention policy](validation.md#evidence-retention).
 
 ## Build a single executable
 

@@ -7,39 +7,18 @@ audited Windows boundary crates.
 
 ## Single executable builds
 
-`scripts/Build-WindowsExecutable.ps1` builds or reuses the five Windows ARM64
-application executables and produces one `SwiftBonsai2Runner.exe`, including
-their package manifest and license notices. Run it with PowerShell 7.6+ from a
-checkout with the pinned Rust compiler and native speech prerequisites. See
-[build a single executable](../../docs/development-guide.md#build-a-single-executable)
-for output selection and bundling an existing verified package.
-
-The native `chat-bundle` command accepts the usual JSON request forms:
-
-```json
-{"operation":"create","packageDirectory":"C:\\BonsaiPackages\\0.2.0","manifestSha256":"REVIEWED_64_HEX_DIGEST","outputPath":"C:\\Bonsai\\SwiftBonsai2Runner.exe"}
-```
-
-`inspect` accepts `executablePath`; `extract` accepts `executablePath` and
-`installationDirectory` and performs no model or application work. Creation
-validates the complete schema-2 package and embeds the packaged maintenance
-executable as its bootstrap. Existing outputs are never overwritten. All paths
-must be expanded absolute paths under the existing package path policy.
-
-Double-click the executable to verify, extract and launch it, or use
-`bundled-chat` with installed-chat options except `--installation-directory`.
-Packages use GUI-subsystem `bonsai-launcher` for terminal-free startup;
-`bonsai-tools` retains its console. Both share maintenance commands and protocol.
-Model/speech workers remain separate owned processes. The app downloads and
-verifies its pinned models, adapters and inference runtime inside the native
-window; users do not run manual provisioning commands before launch. Bundle
-integrity checks do not independently establish publisher identity; review
-published release checksums before execution.
+Use the [single-executable build](../../docs/development-guide.md#build-a-single-executable)
+to assemble the five native tools and notices. The
+[package contract](../../docs/chat-packages.md) owns `chat-package`, `chat-bundle`,
+verified extraction, installed launch and rollback. Both GUI-subsystem
+`bonsai-launcher` and console `bonsai-tools` expose the maintenance protocol.
 
 ## Packaged use
 
-Select Foundation's native Windows ARM64 executable from the evaluated main
-revision and extract it outside Git:
+Use a trusted source-bound Windows ARM64 executable outside Git. `--version`
+advertises commands and protocol 5; unsupported protocols reject before work.
+JSON commands accept `--json JSON_OBJECT`, `--request ABSOLUTE_JSON_PATH` or
+`--request -` for stdin, with identical size/schema checks.
 
 ```powershell
 $env:BONSAI_TOOLS_PATH = 'C:\BonsaiTools\bonsai-tools.exe'
@@ -49,120 +28,32 @@ $env:BONSAI_TOOLS_PATH = 'C:\BonsaiTools\bonsai-tools.exe'
     operation = 'file-score'; qualificationProfile = 'standard-scale-one'
     evidencePath = 'C:\Evidence\capture.json'; reviewPath = $null
 } | ConvertTo-Json -Compress)
-& $env:BONSAI_TOOLS_PATH chat --repository-root $PWD
 ```
 
-Every JSON command accepts `--json JSON_OBJECT`, `--request ABSOLUTE_JSON_PATH`,
-or `--request -` for standard input. Rust enforces the same object, size and
-schema checks for all three sources. No PowerShell module is needed for direct
-use. `--version` advertises capabilities; use a trusted source-bound build.
-
-`pe-closure` audits native ARM64 PE files without loading them. Supply
-`bundleDirectory` and `systemDirectory`; omitted or null `aliases` reads
-`apisetschema.dll`. It follows candidate normal/delay imports and recursive
-system normal imports, rejects mandatory GUI dependencies, and records optional
-system delays without following them. The schema-1 report retains bounded file
-digests, import edges and the unresolved forwarded-export scope. The optional
-`tools/runtime-candidates/pe_closure.ps1` facade accepts `-ToolPath` or
-`BONSAI_TOOLS_PATH`; synthetic fixtures can supply explicit alias maps through
-`Invoke-PeClosure`. Native build tooling supervises the native audit executable
-with a hard 120-second process cutoff, without a PowerShell child. Failed raw
-diagnostics and rejected reports remain available; successful reports retain
-one `imports.json`.
-
-For a source checkout, build the maintenance executable once with the pinned
-compiler and an external target, then run it directly:
-
-```powershell
-$repo = $PWD.Path
-$target = Join-Path $env:LOCALAPPDATA 'SwiftBonsai2/build/maintenance'
-cargo build --locked --release --manifest-path (Join-Path $repo 'Cargo.toml') --package bonsai-tools --bin bonsai-tools --target-dir $target
-$bonsai = Join-Path $target 'release/bonsai-tools.exe'
-& $bonsai chat --repository-root $repo
-```
-
-`chat` is the native launch entry point; optional `scripts/Start-Chat.ps1`
-forwards to it and offers `-NativeEngine`, `-PublisherEngine`, `-NativeRowWorkers`,
-`-UseRepackedPtq1`, `-UseOriginalPq2`, `-PromptReuse`, `-KvCache`, `-Placement`
-and `-GraphicsBackend`.
-The development default is Rust Prism 0.1.27, original PQ2, K4/V4 (`rsq4`) KV,
-four CPU row workers and the standard adapter at scale 1.3.
-The [runtime lock](../../config/prism-inference.lock.json) owns the exact release/source identities;
-the [Hexagon contract](../../docs/hexagon.md) describes conditional X2 NPU acceleration.
-`--publisher-engine` selects manual publisher rollback; its worker default is one.
-Use `--native-row-workers 1` for explicit single-worker Rust. Both engine flags
-are mutually exclusive; `--native-engine` remains accepted for explicit Rust.
-It uses the nearest Runner checkout and
-`%LOCALAPPDATA%/SwiftBonsai2` unless `--repository-root` or `--data-directory`
-is supplied. Boolean options are `--native-engine`, `--publisher-engine`,
-`--use-repacked-ptq1`, `--use-original-pq2`,
-`--no-abliterate-lora`, `--no-tts`, `--no-speech-models`, `--speech-models-only`
-and `--force-build`. Value options are `--native-row-workers`, `--prompt-reuse`,
-`--kv-cache`, `--placement`, `--graphics-backend`, `--tts-quantization`,
-`--tts-threads`, `--frontend-port`, `--backend-port`, `--canary-port`, `--tts-port`,
-`--chat-path`, `--broker-path`, `--asr-path`, `--tts-path`, `--canary-key-file`,
-`--tts-key-file` and `--working-directory`. All existing launch admission,
-cache, verification, cancellation and teardown policy remains in Rust. An
-unchanged direct launch needs no Cargo invocation. Rebuild the maintenance
-executable after source changes to receive new defaults and options; the PowerShell
-facade forwards only supplied options. `--force-build` rebuilds application
-companions, not the running maintenance image.
-
-`--placement auto|cpu` (JSON `Placement`) preserves the trusted native inference
-placement through deferred setup and Retry. Omission and `auto` retain automatic
-placement. Explicit placement is rejected with the publisher engine. `cpu` is a
-prepared capacity-first option: the current runtime pin rejects it until a genuine
-compatible runtime receives exact-source review. It does not reduce memory
-admission or establish a capacity/latency gain. See the
-[context roadmap](../../PLAN.md#native-context-expansion-roadmap).
-
-`--graphics-backend dx12|vulkan|gl` (JSON `GraphicsBackend`) explicitly selects
-the native window renderer by overriding `WGPU_BACKEND` in the chat child only.
-Omission preserves the inherited setting and upstream adapter selection. The
-selected adapter/backend remains recorded in `chat.log`; the requested option
-is retained in the deferred startup request. This does not change inference,
-automatically retry a failed renderer or establish device qualification.
-
-Full-context/output, creative-quality, sustained-performance, isolation and
-clean-machine qualification remain pending; the default makes no speed claim.
-JSON `NativeEngine: false` explicitly selects the publisher engine.
-`--prompt-reuse disabled|latest` selects the
-[experimental prefix policy](../../docs/prefix-reuse.md);
-it defaults to `disabled` and `latest` requires the Rust engine.
-`--kv-cache f16|rsq4` (JSON `KvCache`) also requires Rust. Omission uses the
-pinned runtime's K4/V4 default; `f16` selects explicit FP16 recovery. Retry retains
-the selection. Neither cache mode changes the 8K context or memory admission;
-[cache qualification](../../docs/quantized-kv.md) remains separate.
-
-The two weight options are mutually exclusive. `--use-original-pq2` explicitly
-selects the pinned original Swift artifact with either engine; the current default
-remains original PQ2. JSON and installed-package requests express the same choice
-with `UseRepackedPtq1: false`. That explicit false survives the deferred startup
-request, and each launcher/app handoff emits one concrete weight-selection flag.
-Missing or changed artifacts fail verification; no automatic format or engine
-fallback occurs. The standard adapter remains enabled at scale 1.3 unless explicitly
-changed. These controls prepare rollback selection; actual-device rollback
-qualification remains a separate gate.
+For source builds and `chat` launch options, use the
+[development guide](../../docs/development-guide.md#contributor-source-launch),
+[runtime selection](../../docs/development-guide.md#runtime-selection) and
+[source-cache contract](../../docs/development-guide.md#source-launch-caches-and-runtime-selection).
+`scripts/Start-Chat.ps1` only forwards supplied options to the native tool.
 
 Credential requests contain only `parentDirectory`, an existing absolute external
-local directory. The command creates fresh protected files and returns paths only.
-Speech provisioning/build requests go directly to `speech-build`; their former
-PowerShell wrappers have been removed. Planning never starts inference.
+local directory; results contain protected file paths, never key bytes.
+Planning commands never start inference.
 
-`publisher-startup` consumes a request with `candidateDirectory`, a fresh external
-`outputDirectory`, and `workBudgetSeconds` (45–180, default 90). It pins the archived
-hosted publisher package, runs ten fixed model-free probes on X2, and retains atomic
-schema-2 startup receipts. Optional paired `modelSmoke: true` and `dataDirectory`
-select one four-token original-PQ2 smoke with the unchanged CPU resource policy.
-Supply both caller identity fields to tie work to an external caller. The command
-builds/downloads nothing; setup, verification, workers and teardown share the one
-allowance. A successful smoke does not qualify numerics, adapters or performance.
-See the [candidate examples](../../docs/runtime-candidates/README.md).
+`pe-closure` audits ARM64 PE files without loading them. Supply `bundleDirectory`
+and `systemDirectory`; omitted/null `aliases` reads `apisetschema.dll`. It follows
+candidate normal/delay imports and recursive system normal imports, rejects GUI
+dependencies and records optional system delays without following them. The
+schema-1 report binds bounded file digests/import edges and declares unresolved
+forwarded-export scope. Native supervision has a 120-second hard cutoff; success
+retains `imports.json`, while failures retain useful diagnostics.
 
-The maintenance executable reports version 0.2.1, protocol 5 and its supported
-commands through `--version`. Runtime guards remain held
-through version/help probes and complete completion batches. Older protocols are
-rejected before an operation can start.
+`publisher-startup` accepts `candidateDirectory`, fresh external `outputDirectory`
+and `workBudgetSeconds` (45–180, default 90). Ten fixed model-free X2 probes use
+the archived hosted package. Optional `modelSmoke: true` plus `dataDirectory`
+adds one four-token original-PQ2 smoke under unchanged CPU policy. Both caller
+identity fields bind external ownership. Nothing builds/downloads; setup through
+teardown shares one allowance. See [candidate inputs](../../docs/runtime-candidates/README.md).
 
 ## Command boundary
 
