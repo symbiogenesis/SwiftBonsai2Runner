@@ -503,6 +503,7 @@ mod tests {
             native_row_workers: 4,
             latest_prompt_reuse: false,
             kv_cache: None,
+            placement: None,
             canary: None,
             qwen_tts: None,
         }

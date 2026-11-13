@@ -101,6 +101,7 @@ fn chat_options(arguments: &[OsString]) -> crate::Result<Map<String, Value>> {
             "--native-row-workers" => ("NativeRowWorkers", false, true),
             "--prompt-reuse" => ("PromptReuse", false, false),
             "--kv-cache" => ("KvCache", false, false),
+            "--placement" => ("Placement", false, false),
             "--graphics-backend" => ("GraphicsBackend", false, false),
             "--frontend-port" => ("FrontendPort", false, true),
             "--backend-port" => ("BackendPort", false, true),
@@ -202,6 +203,7 @@ pub fn installed_chat(arguments: &[OsString]) -> crate::Result<Value> {
                 | "UseRepackedPtq1"
                 | "NativeEngine"
                 | "NativeRowWorkers"
+                | "Placement"
                 | "TtsQuantization"
                 | "TtsThreads"
                 | "FrontendPort"
@@ -328,6 +330,37 @@ mod tests {
         for arguments in [
             vec!["--graphics-backend"],
             vec!["--graphics-backend", "dx12", "--graphics-backend", "vulkan"],
+        ] {
+            assert!(
+                chat_options(&arguments.into_iter().map(Into::into).collect::<Vec<_>>()).is_err()
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn placement_option_survives_source_and_installed_restart_parsing() -> crate::Result<()> {
+        assert!(chat_options(&[])?.get("Placement").is_none());
+        let root = std::env::temp_dir().join("Bonsai placement package");
+        for placement in ["auto", "cpu"] {
+            let selection = ["--placement".into(), placement.into()];
+            assert_eq!(chat_options(&selection)?["Placement"], placement);
+            let mut arguments = vec![
+                "--installation-directory".into(),
+                root.clone().into_os_string(),
+                "--data-directory".into(),
+                root.join("data").into_os_string(),
+            ];
+            arguments.extend(selection);
+            assert_eq!(
+                installed_chat(&arguments)?["options"]["Placement"],
+                placement
+            );
+        }
+        for arguments in [
+            vec!["--placement"],
+            vec!["--placement", "auto", "--placement", "cpu"],
+            vec!["--placement", "cpu", "--placement", "cpu"],
         ] {
             assert!(
                 chat_options(&arguments.into_iter().map(Into::into).collect::<Vec<_>>()).is_err()

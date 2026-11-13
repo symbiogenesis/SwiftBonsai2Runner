@@ -88,6 +88,21 @@ impl KvCache {
     }
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(crate) enum Placement {
+    Auto,
+    Cpu,
+}
+
+impl Placement {
+    pub(crate) const fn name(self) -> &'static str {
+        match self {
+            Self::Auto => "auto",
+            Self::Cpu => "cpu",
+        }
+    }
+}
+
 /// Fixed development launch inputs; paths and keys have no debug representation.
 #[derive(Clone)]
 #[expect(
@@ -106,6 +121,7 @@ pub(crate) struct Config {
     pub(crate) native_row_workers: u8,
     pub(crate) latest_prompt_reuse: bool,
     pub(crate) kv_cache: Option<KvCache>,
+    pub(crate) placement: Option<Placement>,
     pub(crate) canary: Option<crate::canary::Config>,
     pub(crate) qwen_tts: Option<crate::tts::Config>,
 }
@@ -388,6 +404,9 @@ fn runtime_arguments(config: &Config) -> Vec<&'static str> {
     }
     if let Some(policy) = config.kv_cache {
         arguments.extend(["--kv-cache", policy.name()]);
+    }
+    if let Some(placement) = config.placement {
+        arguments.extend(["--placement", placement.name()]);
     }
     arguments
 }
@@ -1424,6 +1443,7 @@ mod tests {
             native_row_workers: 1,
             latest_prompt_reuse: false,
             kv_cache: None,
+            placement: None,
             canary: None,
             qwen_tts: None,
         };
@@ -1496,7 +1516,13 @@ mod tests {
             );
         }
         config.latest_prompt_reuse = true;
+        config.placement = Some(super::Placement::Cpu);
         let selected = runtime_arguments(&config);
+        assert!(
+            selected
+                .array_windows()
+                .any(|args| args == &["--placement", "cpu"])
+        );
         assert!(
             selected
                 .array_windows()
@@ -1523,6 +1549,7 @@ mod tests {
             native_row_workers: 4,
             latest_prompt_reuse: false,
             kv_cache: None,
+            placement: None,
             canary: None,
             qwen_tts: None,
         };

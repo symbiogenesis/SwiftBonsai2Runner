@@ -361,6 +361,56 @@ fn plan(value: Value) -> crate::Result<Plan> {
 }
 
 #[test]
+fn placement_survives_deferred_preparation_and_rejects_publisher_selection() -> crate::Result<()> {
+    let mut fixture = fixture("placement")?;
+    fixture.request["NativeEngine"] = json!(true);
+    let default = plan(fixture.request.clone())?;
+    let omitted = serde_json::to_value(&default.request).map_err(|error| error.to_string())?;
+    assert!(omitted.get("Placement").is_none());
+    for value in ["auto", "cpu"] {
+        fixture.request["Placement"] = json!(value);
+        let mut recorder = Recorder::new(fixture.root.clone());
+        launch_pending(
+            plan(fixture.request.clone())?.request,
+            &mut recorder,
+            &fixture.working,
+            &fixture.root.join("maintenance.exe"),
+        )?;
+        let (_, arguments, _) = recorder.launch()?;
+        let request_path = PathBuf::from(value_after(arguments, "--startup-request")?);
+        let serialized = fs::read(&request_path).map_err(|error| error.to_string())?;
+        let restored: Request =
+            serde_json::from_slice(&serialized).map_err(|error| error.to_string())?;
+        assert_eq!(restored.placement.map(Placement::name), Some(value));
+        let result = prepare_backend(prepare(restored, true)?, &mut recorder, &fixture.working)?;
+        let arguments = result["Arguments"].as_array().ok_or("Missing arguments.")?;
+        assert_eq!(
+            arguments
+                .array_windows::<2>()
+                .filter(|args| args[0] == "--placement" && args[1] == value)
+                .count(),
+            1
+        );
+        fs::remove_file(request_path).map_err(|error| error.to_string())?;
+        fixture.request["NativeEngine"] = json!(false);
+        assert!(plan(fixture.request.clone()).is_err());
+        fixture.request["NativeEngine"] = json!(true);
+    }
+    for invalid in [
+        json!("CPU"),
+        json!("npu"),
+        json!(null),
+        json!(true),
+        json!(0),
+    ] {
+        fixture.request["Placement"] = invalid;
+        assert!(plan(fixture.request.clone()).is_err());
+    }
+    fs::remove_dir_all(&fixture.root).map_err(|error| error.to_string())?;
+    Ok(())
+}
+
+#[test]
 fn kv_cache_survives_deferred_preparation_and_rejects_unsupported_selection() -> crate::Result<()> {
     let mut fixture = fixture("kv-cache")?;
     fixture.request["NativeEngine"] = json!(true);

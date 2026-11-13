@@ -64,6 +64,7 @@ fn configuration(
     let mut native_row_workers = None;
     let mut latest_prompt_reuse = None;
     let mut kv_cache = None;
+    let mut placement = None;
     while let Some(option) = args.next() {
         match option.to_str() {
             Some("--no-abliterate-lora") if !no_abliterate_lora => no_abliterate_lora = true,
@@ -100,6 +101,15 @@ fn configuration(
                         Some("rsq4") => client::KvCache::Rsq4,
                         Some("rsq4k3v") => client::KvCache::Rsq4K3v,
                         _ => return Err("KV cache must be f16, rsq4 or rsq4k3v."),
+                    },
+                );
+            }
+            Some("--placement") if placement.is_none() => {
+                placement = Some(
+                    match args.next().as_deref().and_then(std::ffi::OsStr::to_str) {
+                        Some("auto") => client::Placement::Auto,
+                        Some("cpu") => client::Placement::Cpu,
+                        _ => return Err("Placement must be auto or cpu."),
                     },
                 );
             }
@@ -203,7 +213,7 @@ fn configuration(
             }
             _ => {
                 return Err(
-                    "Usage: bonsai-chat --broker-path ABSOLUTE_EXE --data-directory ABSOLUTE_DIRECTORY --evidence-directory ABSOLUTE_DIRECTORY [--frontend-port 5173] [--backend-port 8081] [--no-abliterate-lora] [--use-repacked-ptq1|--use-original-pq2] [--native-engine|--publisher-engine] [--native-row-workers 1|4] [--prompt-reuse disabled|latest] [--kv-cache f16|rsq4|rsq4k3v] [--canary-key-file ABSOLUTE_FILE --canary-port 8766 [--canary-executable ABSOLUTE_EXE --canary-model ABSOLUTE_GGUF]] [--tts-key-file ABSOLUTE_FILE --tts-port 8767 [--tts-executable ABSOLUTE_EXE --tts-model ABSOLUTE_GGUF --tts-codec ABSOLUTE_GGUF --tts-voice-model ABSOLUTE_GGUF [--tts-quantization Q8_0|Q4_K_M] [--tts-threads 10]]]",
+                    "Usage: bonsai-chat --broker-path ABSOLUTE_EXE --data-directory ABSOLUTE_DIRECTORY --evidence-directory ABSOLUTE_DIRECTORY [--frontend-port 5173] [--backend-port 8081] [--no-abliterate-lora] [--use-repacked-ptq1|--use-original-pq2] [--native-engine|--publisher-engine] [--native-row-workers 1|4] [--prompt-reuse disabled|latest] [--kv-cache f16|rsq4|rsq4k3v] [--placement auto|cpu] [--canary-key-file ABSOLUTE_FILE --canary-port 8766 [--canary-executable ABSOLUTE_EXE --canary-model ABSOLUTE_GGUF]] [--tts-key-file ABSOLUTE_FILE --tts-port 8767 [--tts-executable ABSOLUTE_EXE --tts-model ABSOLUTE_GGUF --tts-codec ABSOLUTE_GGUF --tts-voice-model ABSOLUTE_GGUF [--tts-quantization Q8_0|Q4_K_M] [--tts-threads 10]]]",
                 );
             }
         }
@@ -216,6 +226,9 @@ fn configuration(
     }
     if kv_cache.is_some() && !native_engine {
         return Err("KV cache selection requires --native-engine.");
+    }
+    if placement.is_some() && !native_engine {
+        return Err("Placement selection requires --native-engine.");
     }
     if native_row_workers == 4 && !native_engine {
         return Err("Four native row workers require --native-engine.");
@@ -271,6 +284,7 @@ fn configuration(
         native_row_workers,
         latest_prompt_reuse,
         kv_cache,
+        placement,
         canary: canary_key_file.map(|key_file| canary::Config {
             port: canary_port.unwrap_or(8766),
             key_file,
@@ -615,6 +629,33 @@ mod tests {
         assert_eq!(default.native_row_workers, 4);
         assert!(!default.latest_prompt_reuse);
         assert!(default.kv_cache.is_none());
+        assert!(default.placement.is_none());
+        for (name, placement) in [
+            ("auto", crate::client::Placement::Auto),
+            ("cpu", crate::client::Placement::Cpu),
+        ] {
+            let mut selected = args.to_vec();
+            selected.extend(["--placement", name].map(OsString::from));
+            assert_eq!(
+                configuration(selected.clone())
+                    .map_err(io::Error::other)?
+                    .placement,
+                Some(placement)
+            );
+            selected.extend(["--placement", name].map(OsString::from));
+            assert!(configuration(selected).is_err());
+        }
+        for suffix in [
+            vec!["--placement"],
+            vec!["--placement", "CPU"],
+            vec!["--placement", "npu"],
+            vec!["--publisher-engine", "--placement", "auto"],
+            vec!["--publisher-engine", "--placement", "cpu"],
+        ] {
+            let mut rejected = args.to_vec();
+            rejected.extend(suffix.into_iter().map(OsString::from));
+            assert!(configuration(rejected).is_err());
+        }
         for (name, policy) in [
             ("f16", crate::client::KvCache::F16),
             ("rsq4", crate::client::KvCache::Rsq4),
@@ -679,7 +720,7 @@ mod tests {
     }
 
     #[test]
-    fn kv_cache_and_rust_defaults_preserve_explicit_runtime_weight_and_adapter_choices()
+    fn placement_kv_cache_and_rust_defaults_preserve_explicit_runtime_weight_and_adapter_choices()
     -> io::Result<()> {
         let stamp = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)

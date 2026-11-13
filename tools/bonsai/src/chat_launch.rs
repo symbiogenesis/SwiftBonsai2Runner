@@ -51,6 +51,22 @@ impl KvCache {
     }
 }
 
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "lowercase")]
+enum Placement {
+    Auto,
+    Cpu,
+}
+
+impl Placement {
+    const fn name(self) -> &'static str {
+        match self {
+            Self::Auto => "auto",
+            Self::Cpu => "cpu",
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "lowercase")]
 enum PreparationStage {
@@ -112,6 +128,12 @@ struct Request {
         skip_serializing_if = "Option::is_none"
     )]
     kv_cache: Option<KvCache>,
+    #[serde(
+        default,
+        deserialize_with = "requested_placement",
+        skip_serializing_if = "Option::is_none"
+    )]
+    placement: Option<Placement>,
     #[serde(default)]
     graphics_backend: Option<GraphicsBackend>,
     #[serde(default = "default_frontend_port")]
@@ -163,6 +185,13 @@ where
     KvCache::deserialize(deserializer).map(Some)
 }
 
+fn requested_placement<'de, D>(deserializer: D) -> Result<Option<Placement>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    Placement::deserialize(deserializer).map(Some)
+}
+
 impl Request {
     const fn native_row_workers(&self) -> u8 {
         match self.native_row_workers {
@@ -182,6 +211,9 @@ impl Request {
         }
         if self.kv_cache.is_some() && !self.native_engine {
             return Err("KvCache requires NativeEngine.".into());
+        }
+        if self.placement.is_some() && !self.native_engine {
+            return Err("Placement requires NativeEngine.".into());
         }
         self.native_row_workers = Some(workers);
         Ok(())
@@ -660,6 +692,9 @@ fn runtime_arguments(request: &Request, arguments: &mut Vec<OsString>) {
     }
     if let Some(policy) = request.kv_cache {
         argument(arguments, "--kv-cache", policy.name());
+    }
+    if let Some(placement) = request.placement {
+        argument(arguments, "--placement", placement.name());
     }
 }
 
