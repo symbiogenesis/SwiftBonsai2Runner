@@ -1580,17 +1580,18 @@ impl State {
         ui.add_space(16.0);
     }
 
-    const fn can_install_update(&self) -> bool {
+    fn can_install_update(&self) -> bool {
         self.startup.is_none()
             && self.startup_request.is_none()
-            && matches!(
+            && (matches!(
                 self.model,
                 ModelLifecycle::Ready | ModelLifecycle::Retryable
-            )
+            ) || self.setup_stopped_for_update())
     }
 
     fn update_controls(&mut self, ui: &mut egui::Ui) {
         let can_install = self.can_install_update();
+        let setup_stopped = self.setup_stopped_for_update();
         let Some(updates) = &mut self.updates else {
             ui.heading("Application updates");
             ui.label("Portable releases update by replacing the application executable.");
@@ -1606,7 +1607,7 @@ impl State {
             return;
         };
         let requested = updates.controls(ui, can_install);
-        if self.model == ModelLifecycle::Unavailable {
+        if self.model == ModelLifecycle::Unavailable && !setup_stopped {
             ui.label("If model preparation failed, close Swift before updating the application.");
         }
         if !requested {
@@ -1625,10 +1626,11 @@ impl State {
     }
 
     fn poll_updates(&mut self, ctx: &egui::Context) {
+        let setup_stopped = self.setup_stopped_for_update();
         let Some(updates) = &mut self.updates else {
             return;
         };
-        if self.model == ModelLifecycle::Retryable {
+        if self.model == ModelLifecycle::Retryable || setup_stopped {
             updates.finish_stop(true);
         } else if self.model == ModelLifecycle::Unavailable {
             updates.finish_stop(false);
@@ -2343,6 +2345,48 @@ mod startup_tests {
         let appearance = appearance::Store::open(&data)?;
         drop(recovery);
         drop(appearance);
+        fs::remove_dir_all(directory)?;
+        Ok(())
+    }
+
+    #[test]
+    fn setup_failures_allow_updates_only_after_confirmed_cleanup_and_pause_exits_normally()
+    -> io::Result<()> {
+        let (request, directory) = fixture()?;
+        let (commands, _incoming) = mpsc::channel();
+        let (_events, incoming_events) = client::event_channel();
+        let mut state = State::pending_startup(commands, incoming_events, request);
+        let failure = std::sync::Arc::new(std::sync::Mutex::new(None));
+        state.startup_failure = Some(std::sync::Arc::clone(&failure));
+        assert!(!state.can_install_update());
+        state.startup_request.take();
+        state.fail_startup(&io::Error::other("Download failed"));
+        assert!(
+            state.can_install_update(),
+            "A failed download must not block an application fix"
+        );
+        state.fail_startup(&io::Error::other(
+            "Setup process cleanup could not be confirmed.",
+        ));
+        assert!(!state.can_install_update());
+        state.fail_startup(&io::Error::new(
+            io::ErrorKind::Interrupted,
+            "Paused by user",
+        ));
+        assert!(state.can_install_update());
+        assert!(
+            failure
+                .lock()
+                .map_err(|_| io::Error::other("Poisoned fixture"))?
+                .is_none(),
+            "Pausing must not turn normal close into a launch error"
+        );
+        state.worker = Some(std::thread::spawn(|| {}));
+        assert!(
+            !state.can_install_update(),
+            "Unknown model ownership must block replacement"
+        );
+        drop(state);
         fs::remove_dir_all(directory)?;
         Ok(())
     }

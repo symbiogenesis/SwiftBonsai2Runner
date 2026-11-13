@@ -46,13 +46,17 @@ pub(super) fn failure_message(error: &io::Error) -> &'static str {
 }
 
 impl State {
-    fn can_retry_setup(&self) -> bool {
+    pub(super) fn setup_stopped_for_update(&self) -> bool {
         self.setup.request.is_some()
             && self.setup.error.as_deref().is_some_and(cleanup_known)
+            && self.worker.is_none()
             && self.startup.is_none()
             && self.startup_request.is_none()
-            && self.worker.is_none()
             && self.model == ModelLifecycle::Unavailable
+    }
+
+    fn can_retry_setup(&self) -> bool {
+        self.setup_stopped_for_update()
     }
 
     pub(super) fn retry_setup(&mut self) {
