@@ -65,6 +65,7 @@ jobs:
         working-directory: ${{ runner.temp }}
         run: |
           pwsh -NoProfile -File "$GITHUB_WORKSPACE/tools/ci/test_foundation_handoff.ps1"
+          pwsh -NoProfile -File "$GITHUB_WORKSPACE/tools/ci/test_device_concurrency.ps1"
           pwsh -NoProfile -File "$GITHUB_WORKSPACE/tools/ci/test_native_ci_cache.ps1"
           pwsh -NoProfile -File "$GITHUB_WORKSPACE/tools/ci/test_tools_cache_inputs.ps1"
           pwsh -NoProfile -File "$GITHUB_WORKSPACE/tools/ci/test_rust_toolchain.ps1"

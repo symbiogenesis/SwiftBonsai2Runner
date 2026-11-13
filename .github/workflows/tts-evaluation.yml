@@ -20,9 +20,8 @@ on:
 permissions:
   contents: read
 concurrency:
-  # Preserve dispatch compatibility; the Snapdragon target rejects on a hosted
-  # runner before checkout, build or download and never queues laptop work.
-  group: ${{ inputs.target == 'snapdragon' && 'swift-lora-snapdragon' || 'tts-evaluation-hosted-arm64' }}
+  # Both accepted work and rejected legacy targets stay on hosted runners.
+  group: tts-evaluation-hosted-arm64
   cancel-in-progress: false
 jobs:
   evaluate:

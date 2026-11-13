@@ -23,7 +23,8 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: swift-lora-snapdragon
+  # Hosted preparation never occupies the shared physical-device lane.
+  group: ${{ inputs.run_device && 'swift-lora-snapdragon' || format('cpu-bundle-hosted-{0}', github.run_id) }}
   cancel-in-progress: false
 env:
   CPU_BUNDLE_RUNTIME_COMMIT: 99bab71270b1e6a6fb6d47eec2e34b8097cdcd4c

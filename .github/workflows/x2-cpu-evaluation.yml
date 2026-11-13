@@ -14,8 +14,8 @@ on:
 permissions:
   contents: read
 concurrency:
-  # All model captures share the physical laptop and its memory budget.
-  group: swift-lora-snapdragon
+  # Hosted preparation never occupies the shared physical-device lane.
+  group: ${{ inputs.run_device && 'swift-lora-snapdragon' || format('x2-cpu-hosted-{0}', github.run_id) }}
   cancel-in-progress: false
 jobs:
   prepare:
