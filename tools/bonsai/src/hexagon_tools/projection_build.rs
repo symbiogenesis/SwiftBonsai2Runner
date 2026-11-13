@@ -1,6 +1,6 @@
 //! Hosted, source-bound preparation of the original-artifact projection control.
 
-use super::{Context, TARGET, TOOLCHAIN, compile_arguments, plain, write_json};
+use super::{Context, TARGET, TOOLCHAIN, compile_arguments, linker_arguments, plain, write_json};
 use crate::Result;
 use serde_json::{Value, json};
 use std::collections::{BTreeMap, BTreeSet};
@@ -29,14 +29,25 @@ pub(super) const INPUTS: &[&str] = &[
     "fixtures/swift-ptq1-dot-parity.json",
 ];
 
-fn dependencies(context: &mut Context, rustc: &Path, output: &Path) -> Result<Vec<OsString>> {
-    context.environment.extend(BTreeMap::from([
+fn dependency_environment(rustc: &Path) -> Result<BTreeMap<String, String>> {
+    Ok(BTreeMap::from([
         ("RUSTC".into(), rustc.to_string_lossy().into_owned()),
         ("RUSTC_WRAPPER".into(), String::new()),
         ("RUSTC_WORKSPACE_WRAPPER".into(), String::new()),
         ("RUSTFLAGS".into(), String::new()),
-        ("CARGO_ENCODED_RUSTFLAGS".into(), String::new()),
-    ]));
+        (
+            "CARGO_ENCODED_RUSTFLAGS".into(),
+            linker_arguments(rustc)?
+                .iter()
+                .map(|argument| argument.to_string_lossy())
+                .collect::<Vec<_>>()
+                .join("\u{1f}"),
+        ),
+    ]))
+}
+
+fn dependencies(context: &mut Context, rustc: &Path, output: &Path) -> Result<Vec<OsString>> {
+    context.environment.extend(dependency_environment(rustc)?);
     let cargo = rustc
         .parent()
         .ok_or("Missing compiler directory.")?
@@ -185,7 +196,7 @@ pub(super) fn build(
     )?;
     let mut externs = dependencies(context, rustc, &output)?;
     let packed = output.join("libpacked_projection.rlib");
-    let mut args = compile_arguments(manifest);
+    let mut args = compile_arguments(manifest, rustc)?;
     args.extend([
         "--crate-type=lib".into(),
         "--crate-name=packed_projection".into(),
@@ -211,7 +222,7 @@ pub(super) fn build(
         (&executable, false, "probe-build.txt"),
         (&tests, true, "tests-build.txt"),
     ] {
-        let mut args = compile_arguments(manifest);
+        let mut args = compile_arguments(manifest, rustc)?;
         if test {
             args.push("--test".into());
         }
@@ -246,7 +257,7 @@ pub(super) fn build(
             "CompilerIdentitySha256":compiler_digest,"SourceFiles":sources,
             "NativeSourceFiles":native_sources,"ManifestSha256":manifest_digest,
             "DispatchLockSha256":dispatch_lock_digest,"CandidateLockSha256":candidate_lock_digest,
-            "BuildEnvironment":context.environment,"Executable":executable,
+            "BuildEnvironment":context.environment,"Linker":context.linker,"Executable":executable,
             "DependencyReceiptSha256":dependency_receipt_digest,
             "DeviceCodeLoaded":false,"ModelLoaded":false,"ProfileEligible":false,
         }),

@@ -74,6 +74,7 @@ struct Context {
     attempt: String,
     holds: Vec<File>,
     environment: BTreeMap<String, String>,
+    linker: Value,
 }
 
 fn digits(text: &str, maximum: usize) -> bool {
@@ -183,6 +184,7 @@ impl Context {
             attempt,
             holds: Vec::new(),
             environment: BTreeMap::from([("VSCMD_SKIP_SENDTELEMETRY".into(), "1".into())]),
+            linker: Value::Null,
         })
     }
     fn digest(&mut self, path: &Path, maximum: u64) -> Result<String> {
@@ -224,17 +226,14 @@ impl Context {
         Ok(output)
     }
     fn rustc(&mut self) -> Result<(PathBuf, String)> {
-        let rustup = std::env::var_os("RUSTUP_HOME")
-            .map_or_else(
-                || std::env::var_os("USERPROFILE").map(|path| PathBuf::from(path).join(".rustup")),
-                |path| Some(path.into()),
-            )
-            .ok_or("Rustup home is unavailable.")?;
-        let rustc = rustup
-            .join("toolchains")
-            .join(TOOLCHAIN)
-            .join("bin/rustc.exe");
+        let rustc = pinned_rustc()?;
         self.digest(&rustc, 256 * 1024 * 1024)?;
+        let linker = pinned_linker(&rustc)?;
+        self.linker = self.image(&linker, "rust-lld.exe", 256 * 1024 * 1024)?;
+        self.environment.insert(
+            "CARGO_TARGET_AARCH64_PC_WINDOWS_MSVC_LINKER".into(),
+            linker.to_string_lossy().into_owned(),
+        );
         let compiler = self.run(
             rustc.as_os_str(),
             &["-vV".into()],
@@ -268,8 +267,41 @@ impl Context {
     }
 }
 
-fn compile_arguments(manifest: &Path) -> Vec<OsString> {
-    [
+fn pinned_rustc() -> Result<PathBuf> {
+    let rustup = std::env::var_os("RUSTUP_HOME")
+        .map_or_else(
+            || std::env::var_os("USERPROFILE").map(|path| PathBuf::from(path).join(".rustup")),
+            |path| Some(path.into()),
+        )
+        .ok_or("Rustup home is unavailable.")?;
+    Ok(rustup
+        .join("toolchains")
+        .join(TOOLCHAIN)
+        .join("bin/rustc.exe"))
+}
+
+fn pinned_linker(rustc: &Path) -> Result<PathBuf> {
+    Ok(rustc
+        .parent()
+        .and_then(Path::parent)
+        .ok_or("Pinned compiler has no toolchain root.")?
+        .join("lib/rustlib/aarch64-pc-windows-msvc/bin/rust-lld.exe"))
+}
+
+fn linker_arguments(rustc: &Path) -> Result<[OsString; 4]> {
+    // Use the same self-contained linker as packed-artifact preparation. MSVC's
+    // default /DEBUG link can start a persistent PDB server; strict Job teardown
+    // must still reject surviving children rather than exempting that helper.
+    Ok([
+        "-C".into(),
+        format!("linker={}", pinned_linker(rustc)?.display()).into(),
+        "-C".into(),
+        "linker-flavor=lld-link".into(),
+    ])
+}
+
+fn compile_arguments(manifest: &Path, rustc: &Path) -> Result<Vec<OsString>> {
+    Ok([
         "--edition=2024",
         "--target",
         TARGET,
@@ -288,7 +320,8 @@ fn compile_arguments(manifest: &Path) -> Vec<OsString> {
         "-D".into(),
         "warnings".into(),
     ])
-    .collect()
+    .chain(linker_arguments(rustc)?)
+    .collect())
 }
 
 #[expect(
@@ -308,7 +341,7 @@ fn dispatch(mut context: Context) -> Result<Value> {
     let bundle = context.output.join("bundle");
     fs::create_dir(&bundle).map_err(|error| error.to_string())?;
     let compiled = context.output.join("hexagon-dispatch-fixture.exe");
-    let mut args = compile_arguments(&manifest);
+    let mut args = compile_arguments(&manifest, &rustc)?;
     args.extend([
         source.into_os_string(),
         "-o".into(),
@@ -332,7 +365,7 @@ fn dispatch(mut context: Context) -> Result<Value> {
         return Err("Hexagon self-check exceeded its output contract.".into());
     }
     let exe_identity = context.executable(&exe, "hexagon-dispatch-fixture.exe")?;
-    let receipt = json!({"SchemaVersion":1,"RunnerRevision":context.revision,"RunId":context.run,"RunAttempt":context.attempt,"RustToolchain":TOOLCHAIN,"Target":TARGET,"HostedBuild":true,"BuildEnvironment":context.environment,"CompilerIdentitySha256":compiler_digest,"SourceSha256":source_digest,"ManifestSha256":manifest_digest,"LockSha256":lock_digest,"Executable":exe_identity,"DeviceCodeLoaded":false,"DeviceExecutionQualified":false});
+    let receipt = json!({"SchemaVersion":1,"RunnerRevision":context.revision,"RunId":context.run,"RunAttempt":context.attempt,"RustToolchain":TOOLCHAIN,"Target":TARGET,"HostedBuild":true,"BuildEnvironment":context.environment,"Linker":context.linker,"CompilerIdentitySha256":compiler_digest,"SourceSha256":source_digest,"ManifestSha256":manifest_digest,"LockSha256":lock_digest,"Executable":exe_identity,"DeviceCodeLoaded":false,"DeviceExecutionQualified":false});
     write_json(&bundle.join("fixture-build.json"), &receipt)?;
     let native = context.output.join("native-rpc");
     let native_bundle = context.output.join("native-rpc-bundle");
@@ -377,7 +410,7 @@ fn dispatch(mut context: Context) -> Result<Value> {
             ],
         ),
     ] {
-        let mut args = compile_arguments(&manifest);
+        let mut args = compile_arguments(&manifest, &rustc)?;
         args.extend(extra);
         context.run(
             rustc.as_os_str(),
@@ -399,7 +432,7 @@ fn dispatch(mut context: Context) -> Result<Value> {
         &native.join("contract-tests.txt"),
     )?;
     let exe_identity = context.executable(&query, "native-hexagon-query.exe")?;
-    let native_receipt = json!({"SchemaVersion":1,"RunnerRevision":context.revision,"RunId":context.run,"RunAttempt":context.attempt,"RustToolchain":TOOLCHAIN,"Target":TARGET,"HostedBuild":true,"BuildEnvironment":context.environment,"CompilerIdentitySha256":compiler_digest,"SourceFiles":sources,"ManifestSha256":manifest_digest,"LockSha256":lock_digest,"Executable":exe_identity,"ExecutableSha256":exe_identity["Sha256"],"DeviceCodeLoaded":false,"DspCodeLoaded":false,"ProfileEligible":false});
+    let native_receipt = json!({"SchemaVersion":1,"RunnerRevision":context.revision,"RunId":context.run,"RunAttempt":context.attempt,"RustToolchain":TOOLCHAIN,"Target":TARGET,"HostedBuild":true,"BuildEnvironment":context.environment,"Linker":context.linker,"CompilerIdentitySha256":compiler_digest,"SourceFiles":sources,"ManifestSha256":manifest_digest,"LockSha256":lock_digest,"Executable":exe_identity,"ExecutableSha256":exe_identity["Sha256"],"DeviceCodeLoaded":false,"DspCodeLoaded":false,"ProfileEligible":false});
     write_json(&native.join("native-build.json"), &native_receipt)?;
     fs::copy(query, native_bundle.join("native-hexagon-query.exe"))
         .and_then(|_| {
@@ -432,6 +465,7 @@ fn dispatch(mut context: Context) -> Result<Value> {
     ]
     .map(Into::into)
     .into();
+    args.extend(linker_arguments(&rustc)?);
     args.extend([
         packed_source.into_os_string(),
         "-o".into(),
@@ -447,7 +481,7 @@ fn dispatch(mut context: Context) -> Result<Value> {
     let exe_identity = context.executable(&packed_test, "packed-projection-contract.exe")?;
     write_json(
         &packed.join("build.json"),
-        &json!({"SchemaVersion":1,"RunnerRevision":context.revision,"RunId":context.run,"BuildEnvironment":context.environment,"CompilerIdentitySha256":compiler_digest,"Target":TARGET,"SourceSha256":source_digest,"SourceFiles":packed_inputs,"ExecutableSha256":exe_identity["Sha256"],"ExecutionBackend":"CPU-control-only","DspCodeLoaded":false,"ProfileEligible":false}),
+        &json!({"SchemaVersion":1,"RunnerRevision":context.revision,"RunId":context.run,"BuildEnvironment":context.environment,"Linker":context.linker,"CompilerIdentitySha256":compiler_digest,"Target":TARGET,"SourceSha256":source_digest,"SourceFiles":packed_inputs,"ExecutableSha256":exe_identity["Sha256"],"ExecutionBackend":"CPU-control-only","DspCodeLoaded":false,"ProfileEligible":false}),
     )?;
     projection_build::build(&mut context, &rustc, &manifest, &compiler_digest, &library)?;
     Ok(receipt)
@@ -529,10 +563,7 @@ fn packed_artifact(
     let (rustc, compiler_digest) = context.rustc()?;
     let bin = rustc.parent().ok_or("Missing compiler directory.")?;
     let cargo = bin.join("cargo.exe");
-    let linker = bin
-        .parent()
-        .ok_or("Missing toolchain root.")?
-        .join("lib/rustlib/aarch64-pc-windows-msvc/bin/rust-lld.exe");
+    let linker = pinned_linker(&rustc)?;
     let mut images = Vec::new();
     for path in [&cargo, &rustc, &linker] {
         let name = path
@@ -901,6 +932,51 @@ pub fn run(request: Value) -> Result<Value> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[cfg(windows)]
+    #[test]
+    fn hexagon_hosted_compiler_closes_its_owned_process_tree() -> Result<()> {
+        let scratch = std::env::temp_dir().join(format!(
+            "bonsai-hexagon-linker-test-{}",
+            startup_process::unique()
+        ));
+        fs::create_dir(&scratch).map_err(|error| error.to_string())?;
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../hexagon");
+        let rustc = pinned_rustc()?;
+        let executable = scratch.join("hexagon-dispatch-fixture.exe");
+        let mut arguments = compile_arguments(&root.join("diagnostic.manifest"), &rustc)?;
+        arguments.extend([
+            root.join("dispatch_fixture.rs").into_os_string(),
+            "-o".into(),
+            executable.clone().into_os_string(),
+        ]);
+        let compiled = startup_process::run_strict(
+            rustc.as_os_str(),
+            &arguments,
+            &scratch,
+            &BTreeMap::new(),
+            Duration::from_secs(120),
+            &scratch.join("build.txt"),
+        )?;
+        assert_eq!(compiled.code, 0, "{}", compiled.stderr);
+        startup_cache::assert_arm64(&executable)?;
+        let checked = startup_process::run_strict(
+            executable.as_os_str(),
+            &["--self-test".into()],
+            &scratch,
+            &BTreeMap::new(),
+            Duration::from_secs(15),
+            &scratch.join("self-test.json"),
+        )?;
+        assert_eq!(checked.code, 0, "{}", checked.stderr);
+        let receipt: Value =
+            serde_json::from_str(&checked.stdout).map_err(|error| error.to_string())?;
+        assert_eq!(receipt["Outcome"], "passed");
+        assert_eq!(receipt["SelfTest"], true);
+        assert_eq!(receipt["ModelLoaded"], false);
+        fs::remove_dir_all(scratch).map_err(|error| error.to_string())
+    }
+
     #[test]
     fn hosted_operations_reject_without_creating_output() {
         if hosted().is_ok() {
