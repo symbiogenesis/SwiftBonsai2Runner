@@ -38,6 +38,7 @@ enum PromptReuse {
 enum KvCache {
     F16,
     Rsq4,
+    Rsq4K3v,
 }
 
 impl KvCache {
@@ -45,6 +46,7 @@ impl KvCache {
         match self {
             Self::F16 => "f16",
             Self::Rsq4 => "rsq4",
+            Self::Rsq4K3v => "rsq4k3v",
         }
     }
 }

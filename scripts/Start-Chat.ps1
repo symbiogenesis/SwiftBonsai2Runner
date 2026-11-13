@@ -20,7 +20,7 @@ param(
     [int]$NativeRowWorkers,
     [ValidateSet('disabled', 'latest')]
     [string]$PromptReuse,
-    [ValidateSet('f16', 'rsq4')]
+    [ValidateSet('f16', 'rsq4', 'rsq4k3v')]
     [string]$KvCache,
     [switch]$UseRepackedPtq1,
     [switch]$UseOriginalPq2,

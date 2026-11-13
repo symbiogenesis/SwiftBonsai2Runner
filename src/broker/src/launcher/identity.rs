@@ -125,11 +125,14 @@ fn cache_identity_matches(
     workers: WorkerReadiness,
     adapter: bool,
 ) -> bool {
-    if workers.kv_cache != Some(crate::inference::KvCache::Rsq4) {
+    let Some(policy @ (crate::inference::KvCache::Rsq4 | crate::inference::KvCache::Rsq4K3v)) =
+        workers.kv_cache
+    else {
         return model.kv_cache.is_none() && model.startup_graph_identity.is_none();
-    }
+    };
+    let cache = policy.name();
     let mut identity = format!(
-        "{}:qwen35-text-v1:nonflash-f16:kv-rsq4-d256-rht3-v1:gdn-f32:prism-arm64-fused-v1",
+        "{}:qwen35-text-v1:nonflash-f16:kv-{cache}-d256-rht3-v1:gdn-f32:prism-arm64-fused-v1",
         &*model.model_sha256
     );
     if adapter {
@@ -145,7 +148,7 @@ fn cache_identity_matches(
             return false;
         }
     }
-    model.kv_cache.as_deref() == Some("rsq4")
+    model.kv_cache.as_deref() == Some(cache)
         && model.startup_graph_identity.as_deref() == Some(identity.as_str())
 }
 
@@ -255,60 +258,75 @@ mod tests {
     #[test]
     fn kv_cache_readiness_binds_profile_graph_representation_and_startup_adapter()
     -> Result<(), serde_json::Error> {
+        use crate::inference::KvCache;
         use serde_json::json;
-        for repacked in [false, true] {
-            for adapter in [false, true] {
-                let (mut model, graph) = kv_cache_model(repacked, adapter);
-                let f16 = WorkerReadiness::for_version("0.1.25", 4);
-                let rsq4 = f16.with_kv_cache(Some(crate::inference::KvCache::Rsq4));
-                let bytes = model_response(&model)?;
-                assert!(validate_native_identity(&bytes, repacked, adapter, rsq4).is_ok());
-                assert!(validate_native_identity(&bytes, repacked, adapter, f16).is_err());
-                for (field, replacement) in [
-                    ("kv_cache", json!("f16")),
-                    ("kv_cache", json!("rsq4k3v")),
-                    ("kv_cache", json!(null)),
-                    ("startup_graph_identity", json!("wrong-model-or-codec")),
-                    (
-                        "startup_graph_identity",
-                        json!(format!("{graph}:unexpected")),
-                    ),
-                    ("startup_graph_identity", json!(null)),
-                ] {
-                    let mut changed = model.clone();
-                    changed[field] = replacement;
-                    assert!(
-                        validate_native_identity(
-                            &model_response(&changed)?,
-                            repacked,
-                            adapter,
-                            rsq4
-                        )
-                        .is_err()
-                    );
-                }
-                for field in ["kv_cache", "startup_graph_identity"] {
-                    let mut changed = model.clone();
-                    if let Some(object) = changed.as_object_mut() {
-                        object.remove(field);
+        for policy in [KvCache::Rsq4, KvCache::Rsq4K3v] {
+            for repacked in [false, true] {
+                for adapter in [false, true] {
+                    let (mut model, graph) = kv_cache_model(repacked, adapter);
+                    let graph = graph.replace("kv-rsq4-", &format!("kv-{}-", policy.name()));
+                    model["kv_cache"] = json!(policy.name());
+                    model["startup_graph_identity"] = json!(graph);
+                    let f16 = WorkerReadiness::for_version("0.1.25", 4);
+                    let selected = f16.with_kv_cache(Some(policy));
+                    let bytes = model_response(&model)?;
+                    assert!(validate_native_identity(&bytes, repacked, adapter, selected).is_ok());
+                    assert!(validate_native_identity(&bytes, repacked, adapter, f16).is_err());
+                    let other = if policy == KvCache::Rsq4 {
+                        KvCache::Rsq4K3v
+                    } else {
+                        KvCache::Rsq4
+                    };
+                    for (field, replacement) in [
+                        ("kv_cache", json!("f16")),
+                        ("kv_cache", json!(other.name())),
+                        ("kv_cache", json!(null)),
+                        ("startup_graph_identity", json!("wrong-model-or-codec")),
+                        (
+                            "startup_graph_identity",
+                            json!(format!("{graph}:unexpected")),
+                        ),
+                        (
+                            "startup_graph_identity",
+                            json!(graph.replace(policy.name(), other.name())),
+                        ),
+                        ("startup_graph_identity", json!(null)),
+                    ] {
+                        let mut changed = model.clone();
+                        changed[field] = replacement;
+                        assert!(
+                            validate_native_identity(
+                                &model_response(&changed)?,
+                                repacked,
+                                adapter,
+                                selected
+                            )
+                            .is_err()
+                        );
                     }
-                    assert!(
-                        validate_native_identity(
-                            &model_response(&changed)?,
-                            repacked,
-                            adapter,
-                            rsq4
-                        )
-                        .is_err()
-                    );
+                    for field in ["kv_cache", "startup_graph_identity"] {
+                        let mut changed = model.clone();
+                        if let Some(object) = changed.as_object_mut() {
+                            object.remove(field);
+                        }
+                        assert!(
+                            validate_native_identity(
+                                &model_response(&changed)?,
+                                repacked,
+                                adapter,
+                                selected
+                            )
+                            .is_err()
+                        );
+                    }
+                    if let Some(object) = model.as_object_mut() {
+                        object.remove("kv_cache");
+                        object.remove("startup_graph_identity");
+                    }
+                    let bytes = model_response(&model)?;
+                    assert!(validate_native_identity(&bytes, repacked, adapter, f16).is_ok());
+                    assert!(validate_native_identity(&bytes, repacked, adapter, selected).is_err());
                 }
-                if let Some(object) = model.as_object_mut() {
-                    object.remove("kv_cache");
-                    object.remove("startup_graph_identity");
-                }
-                let bytes = model_response(&model)?;
-                assert!(validate_native_identity(&bytes, repacked, adapter, f16).is_ok());
-                assert!(validate_native_identity(&bytes, repacked, adapter, rsq4).is_err());
             }
         }
         Ok(())

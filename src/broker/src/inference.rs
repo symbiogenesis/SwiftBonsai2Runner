@@ -29,6 +29,7 @@ const TURBOQUANT_REVISION: &str = "99bab71270b1e6a6fb6d47eec2e34b8097cdcd4c";
 pub(super) enum KvCache {
     F16,
     Rsq4,
+    Rsq4K3v,
 }
 
 impl KvCache {
@@ -36,6 +37,7 @@ impl KvCache {
         match value.and_then(std::ffi::OsStr::to_str) {
             Some("f16") => Ok(Self::F16),
             Some("rsq4") => Ok(Self::Rsq4),
+            Some("rsq4k3v") => Ok(Self::Rsq4K3v),
             _ => Err(LaunchError::Arguments),
         }
     }
@@ -44,6 +46,7 @@ impl KvCache {
         match self {
             Self::F16 => "f16",
             Self::Rsq4 => "rsq4",
+            Self::Rsq4K3v => "rsq4k3v",
         }
     }
 }
@@ -58,7 +61,13 @@ fn select_kv_cache(
     release: &ReleasePin,
     requested: Option<KvCache>,
 ) -> Result<Option<KvCache>, LaunchError> {
-    if turboquant_supported(release) {
+    if requested == Some(KvCache::Rsq4K3v) {
+        if k4v3_context_supported(release) {
+            Ok(requested)
+        } else {
+            Err(LaunchError::NativeRuntime)
+        }
+    } else if turboquant_supported(release) {
         Ok(Some(requested.unwrap_or(KvCache::Rsq4)))
     } else if requested == Some(KvCache::Rsq4) {
         Err(LaunchError::NativeRuntime)
@@ -228,6 +237,19 @@ fn row_workers_supported(version: &str, workers: u8) -> Result<(), LaunchError> 
 // not activate smaller process allowances. A version number alone attests neither.
 const MEMORY_CONTEXT_RELEASE: Option<(&str, &str)> = None;
 
+// K4/V3 changes precision and needs its own reviewed capacity/quality release.
+// Both gates must identify the same genuine released source before this profile
+// can use its smaller admission charge. Existing K4/V4 releases stay unchanged.
+const K4V3_CONTEXT_RELEASE: Option<(&str, &str)> = None;
+
+fn k4v3_context_supported(release: &ReleasePin) -> bool {
+    K4V3_CONTEXT_RELEASE.is_some_and(|identity| {
+        MEMORY_CONTEXT_RELEASE == Some(identity)
+            && release.version == identity.0
+            && release.commit == identity.1
+    })
+}
+
 pub(super) fn memory_context_supported() -> Result<bool, LaunchError> {
     let pin = release(LOCK)?;
     Ok(MEMORY_CONTEXT_RELEASE
@@ -331,6 +353,35 @@ mod tests {
         assert_eq!(
             select_kv_cache(&pin, Some(KvCache::Rsq4)),
             Err(LaunchError::NativeRuntime)
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn k4v3_capacity_selection_waits_for_a_separately_reviewed_memory_release()
+    -> Result<(), LaunchError> {
+        let mut pin = release(LOCK)?;
+        assert_eq!(
+            KvCache::parse(Some(std::ffi::OsStr::new("rsq4k3v")))?,
+            KvCache::Rsq4K3v
+        );
+        for (version, commit) in [
+            ("0.1.25", TURBOQUANT_REVISION),
+            ("0.1.24", "8d2b3067e5f17369f579857a180c01a422a58211"),
+            ("0.1.26", TURBOQUANT_REVISION),
+            ("0.1.26", "0000000000000000000000000000000000000000"),
+        ] {
+            pin.version = version.into();
+            pin.commit = commit.into();
+            assert!(!k4v3_context_supported(&pin));
+            assert_eq!(
+                select_kv_cache(&pin, Some(KvCache::Rsq4K3v)),
+                Err(LaunchError::NativeRuntime)
+            );
+        }
+        assert_eq!(
+            pinned_kv_cache(false, Some(KvCache::Rsq4K3v)),
+            Err(LaunchError::Arguments)
         );
         Ok(())
     }

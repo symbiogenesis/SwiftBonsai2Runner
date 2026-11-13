@@ -369,7 +369,7 @@ fn kv_cache_survives_deferred_preparation_and_rejects_unsupported_selection() ->
     let restored: Request =
         serde_json::from_slice(&serialized).map_err(|error| error.to_string())?;
     assert!(restored.kv_cache.is_none());
-    for value in ["f16", "rsq4"] {
+    for value in ["f16", "rsq4", "rsq4k3v"] {
         fixture.request["KvCache"] = json!(value);
         let prepared = plan(fixture.request.clone())?;
         let serialized =
@@ -389,7 +389,7 @@ fn kv_cache_survives_deferred_preparation_and_rejects_unsupported_selection() ->
     }
     for invalid in [
         json!("F16"),
-        json!("rsq4k3v"),
+        json!("rsq3"),
         json!(null),
         json!(true),
         json!(0),

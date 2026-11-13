@@ -75,6 +75,7 @@ pub(crate) fn valid_abliteration_scale(scale: f32) -> bool {
 pub(crate) enum KvCache {
     F16,
     Rsq4,
+    Rsq4K3v,
 }
 
 impl KvCache {
@@ -82,6 +83,7 @@ impl KvCache {
         match self {
             Self::F16 => "f16",
             Self::Rsq4 => "rsq4",
+            Self::Rsq4K3v => "rsq4k3v",
         }
     }
 }
@@ -1478,7 +1480,11 @@ mod tests {
                 "1"
             ]
         );
-        for policy in [super::KvCache::Rsq4, super::KvCache::F16] {
+        for policy in [
+            super::KvCache::Rsq4,
+            super::KvCache::F16,
+            super::KvCache::Rsq4K3v,
+        ] {
             config.kv_cache = Some(policy);
             let arguments = runtime_arguments(&config);
             assert_eq!(

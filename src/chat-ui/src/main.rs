@@ -96,7 +96,8 @@ fn configuration(
                     match args.next().as_deref().and_then(std::ffi::OsStr::to_str) {
                         Some("f16") => client::KvCache::F16,
                         Some("rsq4") => client::KvCache::Rsq4,
-                        _ => return Err("KV cache must be f16 or rsq4."),
+                        Some("rsq4k3v") => client::KvCache::Rsq4K3v,
+                        _ => return Err("KV cache must be f16, rsq4 or rsq4k3v."),
                     },
                 );
             }
@@ -200,7 +201,7 @@ fn configuration(
             }
             _ => {
                 return Err(
-                    "Usage: bonsai-chat --broker-path ABSOLUTE_EXE --data-directory ABSOLUTE_DIRECTORY --evidence-directory ABSOLUTE_DIRECTORY [--frontend-port 5173] [--backend-port 8081] [--no-abliterate-lora] [--use-repacked-ptq1|--use-original-pq2] [--native-engine|--publisher-engine] [--native-row-workers 1|4] [--prompt-reuse disabled|latest] [--kv-cache f16|rsq4] [--canary-key-file ABSOLUTE_FILE --canary-port 8766 [--canary-executable ABSOLUTE_EXE --canary-model ABSOLUTE_GGUF]] [--tts-key-file ABSOLUTE_FILE --tts-port 8767 [--tts-executable ABSOLUTE_EXE --tts-model ABSOLUTE_GGUF --tts-codec ABSOLUTE_GGUF --tts-voice-model ABSOLUTE_GGUF [--tts-quantization Q8_0|Q4_K_M] [--tts-threads 10]]]",
+                    "Usage: bonsai-chat --broker-path ABSOLUTE_EXE --data-directory ABSOLUTE_DIRECTORY --evidence-directory ABSOLUTE_DIRECTORY [--frontend-port 5173] [--backend-port 8081] [--no-abliterate-lora] [--use-repacked-ptq1|--use-original-pq2] [--native-engine|--publisher-engine] [--native-row-workers 1|4] [--prompt-reuse disabled|latest] [--kv-cache f16|rsq4|rsq4k3v] [--canary-key-file ABSOLUTE_FILE --canary-port 8766 [--canary-executable ABSOLUTE_EXE --canary-model ABSOLUTE_GGUF]] [--tts-key-file ABSOLUTE_FILE --tts-port 8767 [--tts-executable ABSOLUTE_EXE --tts-model ABSOLUTE_GGUF --tts-codec ABSOLUTE_GGUF --tts-voice-model ABSOLUTE_GGUF [--tts-quantization Q8_0|Q4_K_M] [--tts-threads 10]]]",
                 );
             }
         }
@@ -615,6 +616,7 @@ mod tests {
         for (name, policy) in [
             ("f16", crate::client::KvCache::F16),
             ("rsq4", crate::client::KvCache::Rsq4),
+            ("rsq4k3v", crate::client::KvCache::Rsq4K3v),
         ] {
             let mut selected = args.to_vec();
             selected.extend(["--kv-cache", name].map(OsString::from));
@@ -630,7 +632,7 @@ mod tests {
         for suffix in [
             vec!["--kv-cache"],
             vec!["--kv-cache", "F16"],
-            vec!["--kv-cache", "rsq4k3v"],
+            vec!["--kv-cache", "rsq3"],
             vec!["--publisher-engine", "--kv-cache", "f16"],
         ] {
             let mut rejected = args.to_vec();

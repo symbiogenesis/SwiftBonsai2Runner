@@ -53,7 +53,7 @@ pub const LAUNCH_USAGE: &str = concat!(
     "  [--native-engine|--publisher-engine] (Swift defaults to the pinned Rust runtime; publisher is explicit rollback)\n",
     "  [--native-row-workers 1|4] (Rust defaults to 4; publisher supports only 1)\n",
     "  [--prompt-reuse disabled|latest] (experimental exact latest-state reuse; Rust only)\n",
-    "  [--kv-cache f16|rsq4] (reviewed native runtime only; rsq4 default when supported, f16 explicit recovery)\n",
+    "  [--kv-cache f16|rsq4|rsq4k3v] (reviewed native runtime only; rsq4 default when supported, f16 explicit recovery)\n",
     "  [--use-abliterate-lora] (pinned adapter; request scale 0..2, default 1.3; Swift CPU only)\n",
     "  [--use-repacked-ptq1|--use-original-pq2] (mutually exclusive weight selections; Swift CPU only)\n",
     "  [--max-waiting <0..8>] [--check-only]\n",
@@ -317,6 +317,7 @@ impl LaunchConfig {
         let profile = if self.native_engine {
             match self.kv_cache {
                 Some(crate::inference::KvCache::Rsq4) => SwiftContextProfile::NativeRsq4,
+                Some(crate::inference::KvCache::Rsq4K3v) => SwiftContextProfile::NativeRsq4K3v,
                 Some(crate::inference::KvCache::F16) | None => SwiftContextProfile::NativeF16,
             }
         } else {
@@ -1614,7 +1615,6 @@ mod tests {
         selected.extend(["--kv-cache", "rsq4"].map(OsString::from));
         assert_eq!(LaunchConfig::parse(selected)?.kv_cache, Some(KvCache::Rsq4));
         for suffix in [
-            vec!["--kv-cache", "rsq4k3v"],
             vec!["--kv-cache", "F16"],
             vec!["--kv-cache"],
             vec!["--kv-cache", "f16", "--kv-cache", "f16"],
@@ -1627,6 +1627,12 @@ mod tests {
                 Some(LaunchError::Arguments)
             );
         }
+        let mut unsupported = native.clone();
+        unsupported.extend(["--kv-cache", "rsq4k3v"].map(OsString::from));
+        assert_eq!(
+            LaunchConfig::parse(unsupported).err(),
+            Some(LaunchError::NativeRuntime)
+        );
         let data = std::env::temp_dir().join("Bonsai-kv-routing");
         let key = data.join("backend.key");
         let plan = super::LaunchPlan::for_profile_with_options(
@@ -1639,7 +1645,7 @@ mod tests {
         )
         .map_err(|_| LaunchError::Policy)?;
         let mut config = LaunchConfig::parse(native)?;
-        for policy in [KvCache::Rsq4, KvCache::F16] {
+        for policy in [KvCache::Rsq4, KvCache::F16, KvCache::Rsq4K3v] {
             config.kv_cache = Some(policy);
             let child = config.native_arguments(&plan, &key);
             assert_eq!(
@@ -1666,6 +1672,10 @@ mod tests {
         let available = 20 * 1024 * 1024 * 1024;
         let packed = config.swift_context_plan(available)?;
         assert_eq!(packed.context_tokens, 149_760);
+        config.kv_cache = Some(KvCache::Rsq4K3v);
+        let capacity = config.swift_context_plan(available)?;
+        assert_eq!(capacity.context_tokens, 170_240);
+        assert!(!config.memory_context_supported()?);
         config.kv_cache = Some(KvCache::F16);
         let f16 = config.swift_context_plan(available)?;
         assert!(f16.context_tokens < packed.context_tokens);
