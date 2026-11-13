@@ -92,10 +92,10 @@ same-repository composites retain workflow-commit `$/` references. Confirm
 self-hosted runner v2.338.0 or newer before its lanes. The published-source pass
 does not validate later local changes.
 
-Publish the first experimental Windows ARM64 MSI release, **v0.1.0**, after the
+Publish the owner-selected experimental Windows ARM64 release, **v0.2.0**, after the
 owner reviews and pushes the local installer/pipeline commits to Runner `main`.
 The [release guide](docs/releases.md) records the owner-run publication command;
-the [first-release notes](docs/releases/v0.1.0.md) retain the development-default
+the [release notes](docs/releases/v0.2.0.md) retain the development-default
 and qualification limits. GitHub pipeline activation, a genuine hosted build,
 MSI install/uninstall acceptance and a downloadable release remain pending.
 Include the native runtime updater in that first source publication; no earlier
@@ -122,6 +122,14 @@ notice fixes, then rerun Windows Release for v0.1.0 on settled `main`. Local
 PowerShell/startup controls and all 22 omitted-notice source recoveries pass;
 Rust replay remains pending because the local pinned compiler is incomplete.
 These checks do not establish a successful installer or close hosted acceptance.
+
+Have the owner publish the release-policy and diagnostic corrections, review and
+explicitly acknowledge the pinned WiX 7 EULA, then qualify Windows Release on that
+source. Leaving the tag blank derives it from the workspace version; explicit
+mismatches remain errors with both identities visible. Confirm failed native
+commands retain their bounded stdout/stderr diagnostics, and retain the actual
+WiX verdict rather than treating a wrapper exit code as the cause. Local mocked
+policy/command controls do not qualify real WiX compilation or MSI install.
 
 Include the single-file Windows executable in the next owner-run Windows Release
 acceptance. Verify the source-bound bundle, model-free extraction and executable

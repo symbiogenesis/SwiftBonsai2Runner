@@ -7,15 +7,18 @@ param(
     [Parameter(Mandatory)][string]$EvidenceDirectory,
     [Parameter(Mandatory)][string]$WixPath,
     [Parameter(Mandatory)][string]$Tag,
-    [Parameter(Mandatory)][string]$SourceRevision
+    [Parameter(Mandatory)][string]$SourceRevision,
+    [switch]$AcceptWixEula
 )
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 . (Join-Path $PSScriptRoot '../../scripts/release/Release-Common.ps1')
+. (Join-Path $PSScriptRoot '../../scripts/release/Release-Policy.ps1')
 if (-not $IsWindows -or [Runtime.InteropServices.RuntimeInformation]::OSArchitecture -ne 'Arm64' -or
     $env:RUNNER_ENVIRONMENT -cne 'github-hosted') { throw 'Release packaging and prerequisite installation require a disposable hosted Windows ARM64 runner.' }
 if ($Tag -cnotmatch '^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$' -or $SourceRevision -cnotmatch '^[0-9a-f]{40}$') { throw 'Invalid release identity.' }
+Assert-WixEulaAcceptance -AcceptWixEula:$AcceptWixEula
 $version = $Tag.Substring(1)
 $RepositoryRoot = Resolve-ReleasePath $RepositoryRoot
 $InputDirectory = Resolve-ReleasePath $InputDirectory
@@ -57,7 +60,7 @@ $creation = Invoke-ReleaseCommand $executables.maintenance @('chat-package', '--
 $creation | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath (Join-Path $EvidenceDirectory 'package-receipt.json') -Encoding utf8NoBOM
 $manifestDigest = (Get-FileHash -LiteralPath (Join-Path $package 'package.json') -Algorithm SHA256).Hash.ToLowerInvariant()
 if ($creation.ManifestSha256 -cne $manifestDigest) { throw 'Package creation receipt disagrees with its manifest.' }
-& (Join-Path $RepositoryRoot 'scripts/release/Build-WindowsInstaller.ps1') -PackageDirectory $package -ManifestSha256 $manifestDigest -OutputDirectory $OutputDirectory -WixPath $WixPath
+& (Join-Path $RepositoryRoot 'scripts/release/Build-WindowsInstaller.ps1') -PackageDirectory $package -ManifestSha256 $manifestDigest -OutputDirectory $OutputDirectory -WixPath $WixPath -AcceptWixEula:$AcceptWixEula
 $installerReceipt = Join-Path $OutputDirectory 'installer-receipt.json'
 if (Test-Path -LiteralPath $installerReceipt -PathType Leaf) {
     Move-Item -LiteralPath $installerReceipt -Destination (Join-Path $EvidenceDirectory 'installer-receipt.json')

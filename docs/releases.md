@@ -5,22 +5,22 @@ laptops. Releases include a single portable `.exe` containing all five applicati
 executables and their license notices, plus a Windows Installer `.msi` for managed
 installation. The release workflow builds and checks both on GitHub-hosted Windows.
 
-The first prepared release is the experimental **v0.1.0 prerelease**. Its
-[release notes](releases/v0.1.0.md) describe the available application and remaining
+The first prepared release is the experimental **v0.2.0 prerelease**. Its
+[release notes](releases/v0.2.0.md) describe the available application and remaining
 acceptance limits. Publishing the prepared pipeline and its first release assets is
 pending the owner's source push and release workflow run; local source changes
 alone do not create a downloadable release.
 
 ## Open the single executable
 
-After publication, download `SwiftBonsai2Runner-0.1.0-windows-arm64.exe` from the
+After publication, download `SwiftBonsai2Runner-0.2.0-windows-arm64.exe` from the
 project's [GitHub releases](https://github.com/symbiogenesis/SwiftBonsai2Runner/releases),
 along with `SHA256SUMS.txt` and `release-manifest.json` from that release. Check
 the executable's SHA-256 against the published checksum before opening it:
 
 ```powershell
-Get-FileHash .\SwiftBonsai2Runner-0.1.0-windows-arm64.exe -Algorithm SHA256
-.\SwiftBonsai2Runner-0.1.0-windows-arm64.exe
+Get-FileHash .\SwiftBonsai2Runner-0.2.0-windows-arm64.exe -Algorithm SHA256
+.\SwiftBonsai2Runner-0.2.0-windows-arm64.exe
 ```
 
 The native launcher extracts a verified package under
@@ -40,7 +40,7 @@ download its model lock from the release's exact source revision, then explicitl
 provision the runtime, model and adapter:
 
 ```powershell
-$tool = (Resolve-Path .\SwiftBonsai2Runner-0.1.0-windows-arm64.exe).Path
+$tool = (Resolve-Path .\SwiftBonsai2Runner-0.2.0-windows-arm64.exe).Path
 $release = Get-Content .\release-manifest.json -Raw | ConvertFrom-Json
 $data = Join-Path $env:LOCALAPPDATA 'SwiftBonsai2'
 New-Item -ItemType Directory -Path $data -Force | Out-Null
@@ -58,7 +58,7 @@ omitting it selects the separate reference model. To launch with explicit option
 use:
 
 ```powershell
-.\SwiftBonsai2Runner-0.1.0-windows-arm64.exe bundled-chat --no-speech-models
+.\SwiftBonsai2Runner-0.2.0-windows-arm64.exe bundled-chat --no-speech-models
 ```
 
 Portable launches do not perform MSI update discovery. Download and verify a new
@@ -71,12 +71,12 @@ For local builds, use [the single-executable build command](development-guide.md
 
 After publication, obtain the installer from the project's
 [GitHub releases](https://github.com/symbiogenesis/SwiftBonsai2Runner/releases).
-Choose `SwiftBonsai2Runner-0.1.0-windows-arm64.msi`, with `SHA256SUMS.txt` and
+Choose `SwiftBonsai2Runner-0.2.0-windows-arm64.msi`, with `SHA256SUMS.txt` and
 `release-manifest.json` from the same release. Check the installer's SHA-256
 against the published checksum before opening it:
 
 ```powershell
-Get-FileHash .\SwiftBonsai2Runner-0.1.0-windows-arm64.msi -Algorithm SHA256
+Get-FileHash .\SwiftBonsai2Runner-0.2.0-windows-arm64.msi -Algorithm SHA256
 ```
 
 The Microsoft installer format does not imply Microsoft publisher signing.
@@ -226,13 +226,23 @@ pinning one patch release.
 `main`, then run the following yourself from the primary checkout to publish the
 pipeline source and request the first release:
 
+WiX 7 requires explicit acceptance of its [EULA](https://docs.firegiant.com/wix/osmf/).
+Review its terms and applicable requirements before setting `accept_wix_eula=true`
+or checking that acknowledgement in the workflow form. The default is false;
+missing acknowledgement stops validation before the build. Agents do not accept
+these terms on the owner's behalf. The installer script likewise requires the
+owner's explicit `-AcceptWixEula` switch before invoking WiX acceptance.
+
 ```powershell
 git push origin main
-gh workflow run release.yml --repo symbiogenesis/SwiftBonsai2Runner --ref main -f tag=v0.1.0 -f prerelease=true
+gh workflow run release.yml --repo symbiogenesis/SwiftBonsai2Runner --ref main -f prerelease=true -f accept_wix_eula=true
 ```
 
-The workflow accepts a `tag` matching the numeric workspace version in
-`Cargo.toml`, with notes at `docs/releases/<tag>.md`. The default `prerelease`
+Leave `tag` blank to derive it from the numeric workspace version in `Cargo.toml`,
+with notes at `docs/releases/<tag>.md`. An explicit tag must match that version;
+a mismatch reports the requested tag, workspace version and expected tag. To
+release a new version, change the workspace version and commit matching notes
+first. The default `prerelease`
 input is `true`. It binds the build to the dispatched commit, stages the five
 native executables and their notices, and builds the single `.exe` and ARM64 MSI.
 The hosted Windows runner verifies bundle inspection, extraction and executable
@@ -259,7 +269,7 @@ The owner can inspect the run and release with:
 
 ```powershell
 gh run list --repo symbiogenesis/SwiftBonsai2Runner --workflow release.yml --limit 5
-gh release view v0.1.0 --repo symbiogenesis/SwiftBonsai2Runner
+gh release view v0.2.0 --repo symbiogenesis/SwiftBonsai2Runner
 ```
 
 Keep hosted installation checks distinct from clean-machine hardware

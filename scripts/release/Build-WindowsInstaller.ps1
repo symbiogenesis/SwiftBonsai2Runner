@@ -4,20 +4,24 @@ param(
     [Parameter(Mandatory)][string]$PackageDirectory,
     [Parameter(Mandatory)][ValidatePattern('^[a-f0-9]{64}$')][string]$ManifestSha256,
     [Parameter(Mandatory)][string]$OutputDirectory,
-    [Parameter(Mandatory)][string]$WixPath
+    [Parameter(Mandatory)][string]$WixPath,
+    [switch]$AcceptWixEula
 )
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 . (Join-Path $PSScriptRoot 'Release-Common.ps1')
+. (Join-Path $PSScriptRoot 'Release-Policy.ps1')
 if (-not $IsWindows -or [Runtime.InteropServices.RuntimeInformation]::OSArchitecture -ne 'Arm64') {
     throw 'Installer packaging requires Windows ARM64.'
 }
+Assert-WixEulaAcceptance -AcceptWixEula:$AcceptWixEula
 $repositoryRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../..'))
 $PackageDirectory = Resolve-ReleasePath $PackageDirectory
 $OutputDirectory = Resolve-ReleasePath $OutputDirectory -AllowMissing
 $WixPath = Resolve-ReleasePath $WixPath -Kind File
 $toolchain = Get-Content -LiteralPath (Join-Path $repositoryRoot 'installer/windows/toolchain.json') -Raw | ConvertFrom-Json
+$null = Invoke-ReleaseCommand $WixPath @('eula', 'accept', 'wix7')
 $wixVersion = (Invoke-ReleaseCommand $WixPath @('--version')).Trim()
 if ($wixVersion -notmatch ('^' + [regex]::Escape($toolchain.wixVersion) + '(\+|$)')) {
     throw "Installer builds require pinned WiX $($toolchain.wixVersion); found '$wixVersion'."
