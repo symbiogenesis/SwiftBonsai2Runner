@@ -1,308 +1,158 @@
-# Native Rust FastRPC capability candidate
+# Native Rust FastRPC diagnostics
 
-This directory retains the standalone access and diagnostic boundary. Its
-source-bound controls and earlier CPU-only observations are distinct from the
-current [Prism 0.1.27 X2 `native-q2` serving policy](../../../docs/hexagon.md).
-Later server integration does not turn a capability query or fixed fixture
-into full-model qualification.
+This std-only Rust boundary queries the installed Qualcomm Windows driver without
+a ggml, GenieX, QNN or C/C++ inference library. It is separate from the
+[Prism serving path](../../../docs/hexagon.md). Metadata, mapping, fixed compute
+and full-model qualification have independent gates; reports keep
+`profileEligible: false`.
 
-This std-only Rust boundary queries the installed Qualcomm Windows driver
-directly. It has no ggml, GenieX, QNN or C/C++ inference-library dependency. Its
-ordinary vendor call is `remote_handle_control(DSPRPC_GET_DSP_INFO, ...)` for
-domain 3 and eight fixed read-only attributes. A separate terminal probe uses
-the fixed allocator/registration APIs described below. Neither capability/STATIC path submits a
-kernel, opens a custom DSP module, enables unsigned processes or alters power.
+## Driver ownership and trust
 
-`lib.rs` provides a safe API around the isolated audited `windows.rs` boundary.
-It resolves the fixed `qcnspmcdm` SCM service with query-only rights, derives
-`libcdsprpc.dll` inside the Windows DriverStore and rejects path traversal and
-reparse ancestors. The Windows directory comes from `GetWindowsDirectoryW`,
-rather than an inherited environment variable. A retained file handle denies
-writes/deletion through cached, no-UI Authenticode verification, restricted DLL
-loading, every completed query and unload. Dependency search is limited to the
-driver directory and System32. The session is deliberately neither Send nor
-Sync, and no raw export pointer escapes the safe API.
-A process-wide nonblocking mutex lease also permits only one native owner across
-all threads and independently created driver objects. Contention or poisoning
-rejects immediately. That lease covers unload/file close and remains pinned with
-the terminal mapping owner, so an old query cannot race a new mapping session.
+`lib.rs` exposes a safe API over audited `windows.rs`. It resolves query-only
+`qcnspmcdm` SCM metadata, derives `libcdsprpc.dll` inside DriverStore using
+`GetWindowsDirectoryW`, and rejects traversal/reparse ancestors. A read-only file
+guard denies writes/deletion through cached no-UI Authenticode verification,
+restricted loading, calls and unload. Dependencies search only the driver
+directory and System32; raw exports never escape. Sessions are neither Send nor
+Sync. A process-wide nonblocking mutex excludes concurrent owners; contention or
+poisoning rejects. Terminal owners retain the lease through process exit.
 
-Cached Authenticode acceptance is not a publisher pin, fresh revocation check,
-installed-kernel acceptance or device qualification. The trusted supervisor must
-also bind the resolved path, SHA-256, publisher and source/driver identities to
-its reviewed receipt. The Rust code validates trust again on the same retained
-file before loading; it supplies no override for a failing signature or export.
-No native query has an in-process cancellation guarantee: execute the CLI under
-an aggregate process deadline with verified parent-death ownership and teardown.
+Cached Authenticode does not supply a publisher pin, fresh revocation check or
+kernel acceptance. The trusted supervisor independently binds path, SHA-256,
+publisher, source and driver identities; library verification runs again on the
+same handle before load. Native calls have no in-process cancellation guarantee:
+use a source-bound prebuilt child, absolute aggregate deadline, parent-death
+ownership and verified teardown under the
+[device budget](../../../AGENTS.md#owner-device-execution-budgets).
 
-The separate `query.rs` child emits one bounded JSON record and accepts exactly
-one of the following arguments:
+The CLI rejects inherited `ADSP_`, `CDSP_`, `FASTRPC_`, `RPCMEM_`, `GGML_`,
+`GENIEX_`, `QNN_`, `QAIRT_` and `HEXAGON_` names case-insensitively. Only explicit
+session diagnostics permit their exact child-only `ADSP_LIBRARY_PATH`. No values
+are logged or parent environment changed.
 
-- `--self-test`: checks the 12-byte C layout and architecture decoding without
-  opening services, files or libraries.
-- `--inspect`: returns the service-derived absolute `driverDll` path without
-  loading it, for independent signature/hash checks.
-- `--query`: verifies/loads that fixed vendor driver and records each query's
-  native success/value or failure. Missing values remain null and unknown.
-- `--session-prepare`: queries the exact architecture, default-CDSP effective
-  domain and fixed bundled module URI. It opens no remote module or session,
-  allocates/maps no buffer and requests no unsigned process. Both native return
-  codes and every completed stage remain distinct; an unsupported family,
-  changed input structure, malformed or mismatched URI never becomes a fallback
-  domain or synthesized URI. Metadata alone does not qualify signed deployment.
-- `--session-mapping-probe ABSOLUTE_PACKAGE_DIRECTORY`: consumes one native owner
-  for the fixed signed bundled v73/v81 module in default CDSP session zero,
-  then a 4096-byte **FD=2** mapping, matching unmap/free and explicit remote handle
-  close. It uses the exact validated driver-returned URI and never requests an
-  unsigned process. The trusted supervisor must first verify all pinned package
-  digests/current catalog membership and independently guard the driver. Its child
-  `ADSP_LIBRARY_PATH` must equal that one directory exactly; all other inherited
-  vendor overrides remain rejected. The library retains nonreparse module,
-  catalog and INF files through the entire attempt. No DSP method or compute is
-  invoked. Selected package/URI and successful open do not independently prove
-  the exact DSP file actually loaded; that identity gate remains pending.
-- `--mapping-probe`: consumes one driver/process admission for a fixed 4096-byte
-  system-heap allocation, descriptor lookup, CPU byte check, static domain-3
-  registration, matching unmap and free. It never submits or reads DSP work.
-- `--reference-queue-compute-probe ABSOLUTE_PACKAGE_DIRECTORY`: consumes one
-  native owner for the separately pinned GenieX v0.10.0 X2/v81 package. It uses
-  the explicit reference process initializer, a single bounded queue and one
-  mapped 16 KiB allocation to submit F32 K=32/M=32/N=2 work without an inference
-  library. All 64 poisoned outputs must match independent exact signed results.
-  Correlation, response extents, counts, buffer identity/cache flags and explicit
-  stop/queue-close/module-close/unmap/free must pass. Any uncertain consumer pins
-  its allocation and owners through supervised process exit. This fixed access
-  control qualifies neither Swift arithmetic, selected DSP bytes, full vendor
-  teardown nor speed. The [compute supervisor](../../bonsai/src/hexagon_tools/device.rs)
-  requires trusted hosted ABI/build intake and independently rechecks package,
-  catalog and driver identities before native calls.
-- `--reference-queue-q2-probe ABSOLUTE_PACKAGE_DIRECTORY`: uses the same ownership
-  contract for a separately fixed Q2_0 K=256/M=32/N=2 integer control. Four
-  576-byte host tiles feed the signed HVX kernel with guarded F32 activation
-  limbs. Its 64 literal expected dots include all weight symbols, both guard
-  signs, extreme sums and odd values above FP16's exact integer range. The
-  solver requests 61,440 bytes of VTCM scratch. The supervisor selects this case
-  with the native request field `"case": "GuardedQ2"`; it cannot substitute F32
-  evidence for the Q2 gate.
-- `--reference-queue-noblock-probe` and `--reference-queue-q2-noblock-probe`, each
-  followed by the absolute package directory, separately select the documented
-  six-argument `dspqueue_write_noblock` entry for the identical F32 or guarded-Q2
-  packet. The supervisor cases are `F32NoBlock` and `GuardedQ2NoBlock`. Only the
-  selected export is resolved and called once; a refusal retains uncertain owners
-  and triggers no retry. A single bounded read/drain can still observe an exact
-  response after a write error; that observation never permits normal cleanup
-  or a complete-cycle claim, and the original error remains in the receipt.
-  This isolates the unresolved finite-timeout write return
-  14; implementation alone establishes neither its cause nor a remedy.
+## CLI controls
 
-Before driver loading, the query/mapping CLI rejects inherited names beginning
-with `ADSP_`, `CDSP_`, `FASTRPC_`, `RPCMEM_`, `GGML_`, `GENIEX_`, `QNN_`,
-`QAIRT_` or `HEXAGON_`, regardless of case. Only the new session diagnostic permits its
-exact explicitly selected `ADSP_LIBRARY_PATH`. It logs no names/values and mutates
-no environment. The trusted library caller and supervisor own the corresponding
-child-environment policy; these restrictions do not change the parent process.
+`query.rs` accepts exactly one mode and emits one bounded JSON record. Package
+arguments must be absolute. Capability/STATIC modes enable no unsigned process,
+custom DSP module, kernel or power change.
 
-The terminal probe uses heap ID 25, cached allocation flags 1, offset 0, length
-4096 and `FASTRPC_MAP_STATIC=0`. The public vendor header documents that mapping
-may implicitly open a domain session. There is no explicit remote-handle,
-module-open or unsigned-process call. A successful host allocation proves no
-registration; registration proves no DSP visibility, DMA64, DMA or compute.
-The report keeps all returned codes and completed steps separate. Mapping and
-unmapping failures pin the uncertain allocation, DLL and deny-mutation file
-guard until the supervising process dies. No native free or DLL unload follows
-uncertain use. Every later driver open/query/probe in that process rejects.
-Normal completion unregisters and frees the scratch, but every mapping attempt
-retains its DLL/file owner until supervised process death. Complete implicit-session
-teardown and failure recovery remain unqualified.
+| Mode | Fixed work |
+| --- | --- |
+| `--self-test` | Check 12-byte C layout and architecture decoding without native access. |
+| `--inspect` | Return service-derived `driverDll` for independent signature/hash review without loading it. |
+| `--query` | Verify/load the fixed driver; issue domain-3 `DSPRPC_GET_DSP_INFO` for eight read-only attributes. Keep per-call results; missing values stay null. |
+| `--session-prepare` | Query architecture, effective default-CDSP domain and bundled module URI. No module open, mapping, unsigned request or synthesized fallback URI. |
+| `--mapping-probe` | One 4096-byte heap-25 cached allocation (flags 1), descriptor/CPU check, domain-3 STATIC registration (flag 0, offset 0), matching unmap/free. |
+| `--session-mapping-probe PACKAGE` | One signed bundled v73/v81 module in default-CDSP session zero, 4096-byte FD=2 map/unmap/free and u64 handle close. Use checked driver URI; no unsigned-process request. |
+| `--reference-session-mapping-probe PACKAGE` | Same bounded session mapping with the explicit reference process initialization below. |
+| `--reference-queue-compute-probe PACKAGE` | GenieX v0.10.0 X2/v81, reference initialization, one queue/16 KiB map, F32 K32/M32/N2. All 64 poisoned outputs must match independent exact signed results. |
+| `--reference-queue-q2-probe PACKAGE` | Same ownership, Q2_0 K256/M32/N2, four 576-byte host tiles and guarded F32 activation limbs. Check all 64 expected dots, including fourth symbols/extremes; request 61,440-byte VTCM scratch. Supervisor case `GuardedQ2`. |
+| `--reference-queue-noblock-probe PACKAGE`, `--reference-queue-q2-noblock-probe PACKAGE` | Select only the six-argument `dspqueue_write_noblock` export once for identical F32/Q2 work. Supervisor cases `F32NoBlock`/`GuardedQ2NoBlock`. No retry. A bounded drain after write refusal cannot permit normal cleanup or erase the original failure. |
 
-This probe's **STATIC flag 0** is a deliberately narrow control. The pinned
-ggml host uses `FASTRPC_MAP_FD` (2) for pinned buffers and `FASTRPC_MAP_FD_DELAYED`
-(3), or a matching-SDK extended mode, for ordinary buffers inside its established
-HTP session. A STATIC refusal does not rule out those paths, DMA64/VTCM access or
-Hexagon execution. The probe never retries with another flag or opens a custom
-module to force admission. The referenced public
-[`AEEStdErr.h`](https://github.com/qualcomm/fastrpc/blob/a56e9d4de3614a8d8f4b0e15ff561350c4b686e3/inc/AEEStdErr.h#L92)
-defines host `AEE_ERPC` as `0x200` (512), a generic FastRPC implementation error.
-A matching return value supplies no underlying permission, signature, descriptor
-or hardware diagnosis; retain the exact code and mode before investigating.
+The [compute supervisor](../../bonsai/src/hexagon_tools/device.rs) requires trusted
+hosted ABI/build intake and rechecks package, catalog and driver identities.
+Session modes retain nonreparse module/catalog/INF guards and require exactly one
+child search directory. Package/URI selection does not independently prove the
+DSP bytes loaded. Responses must match correlation, extents, counts, buffer/cache
+identity and poisoned numeric output before explicit stop/queue-close/module-close/
+unmap/free. Uncertain consumers pin allocations and owners until supervised exit.
+
+STATIC registration may implicitly open a domain session. Every mapping attempt
+retains its DLL/file owner until exit, including after successful scratch cleanup;
+uncertain use forbids free/unload and further native admission. STATIC refusal
+does not rule out FD=2, delayed-FD=3, DMA64 or compute. The pinned header's
+[`AEE_ERPC`](https://github.com/qualcomm/fastrpc/blob/a56e9d4de3614a8d8f4b0e15ff561350c4b686e3/inc/AEEStdErr.h#L92)
+is generic error 512, not a permission/signature/hardware diagnosis. Keep exact
+codes and modes. Allocation alone proves neither registration nor DSP visibility.
 
 ## Bounded original-projection bridge
 
-`Driver::reference_q2_projection` supplies a separate experimental terminal
-boundary for the original-artifact projection harness. One guarded allocation,
-FD mapping, module and queue serve all synchronous operations. K=256/N=2, one
-HVX thread, the source-derived quant-row solver and 61,440-byte VTCM scratch
-remain fixed. M accepts multiples of 32 through 17,408, so the first Swift
-projection can preserve all forty original per-128 reductions with forty native
-operations rather than 21,760 32-row submissions. This scheduling arithmetic
-is not a measured speedup or a device solver qualification.
+`Driver::reference_q2_projection` uses one guarded allocation, FD mapping, module
+and queue for synchronous K256/N2 operations, one HVX thread and 61,440-byte VTCM
+scratch. M is a multiple of 32 up to 17,408. A first full Swift projection needs
+forty original-block operations. Quant-row scratch is independent of M at N2;
+the host mapping is at most 1,396,736 bytes. Regenerate tensor offsets and NaN
+poison after completion because DSP mutates descriptors; retain no borrowed host
+view across execution.
 
-The separately pinned solver and `matmul-ops.h` layout make quant-row scratch
-independent of weight M at N=2: no destination scratch is allocated. Full-M
-host mapping is bounded at 1,396,736 bytes; the start frame's mapping budget
-follows that exact single allocation. The native frame regenerates tensor
-offsets and NaN output poison after each validated completion because the DSP
-mutates its command descriptors. No borrowed host view spans device execution.
+`Q2ProjectionLimits` bounds rows, writes and one absolute session clock including
+initialization/preparation: **24,000 attempted writes, 120 seconds, three-second
+cleanup reserve**. Reset cannot replenish the cap. One all-eligible PQ2 evaluation
+uses 23,256 operations; a hidden token plus evaluation needs 45,912 and must reject.
+Outer process and aggregate owner deadlines also apply.
 
-`Q2ProjectionLimits` bounds rows, total writes and one absolute session clock
-including initialization, caller preparation and every operation. Its maximum
-is 24,000 write attempts and 120 seconds, including a three-second cleanup reserve.
-The terminal operation cap is 24,000 attempted operations. One
-all-eligible original-PQ2 evaluation needs 23,256 operations; a hidden token plus
-evaluation needs 45,912, so full-request capacity must still reject that placement.
-The external owned
-process deadline and the aggregate five-minute owner allowance still apply.
-Every operation uses a fresh monotonic sequence, exact descriptor/cache reply
-checks and complete finite/integer/bounded output validation before copying.
-The caller must also check exact signed dots against its independent oracle;
-integer-shaped incorrect outputs are insufficient. Output publication requires
-the complete caller projection and `Q2ProjectionReport::completed_cycle()`.
-
-Refused writes, stale replies, invalid outputs, expired bounds, callback errors
-and unwinding retain every uncertain consumer through supervised process exit.
-There is no queue retry, CPU replay or native release after failure. After
-complete caller acceptance the existing explicit stop, queue-close, host-unmap,
-module-close and free sequence applies. Model, full-state, selected DSP bytes,
-full-M solver behavior, complete vendor teardown and performance remain pending
-for this diagnostic; it grants no production admission. The source manifest retains all exact
-upstream source identities and distinguishes this candidate from the fixed
-signed arithmetic observation.
+Each operation requires a fresh monotonic sequence, exact descriptor/cache reply,
+finite/integer/bounded output and the caller's independent signed-dot oracle.
+Only a complete projection and `Q2ProjectionReport::completed_cycle()` permit
+publication. Refusal, stale reply, invalid output, expiry, callback error or unwind
+pins uncertain consumers until exit, without queue retry, CPU replay or release.
+After full acceptance, stop/close/unmap/free explicitly. Full-M solver, selected
+DSP bytes, vendor teardown, model state and performance still require acceptance.
 
 ## Established-session mapping prerequisite
 
-`session.rs` and `session_native.rs` encode metadata preparation:
-`FASTRPC_GET_EFFECTIVE_DOMAIN_ID=14` and `FASTRPC_GET_URI=15` for `cdsp`, session
-zero, using the exact 24-byte and 48-byte Windows ARM64 structures in the pinned
-vendor header. Architecture comes from the driver, not the processor name. The
-returned URI must match the exact v73/v81 module, `htp_iface_skel_handle_invoke`,
-module version 1.0, domain and session. Inputs, pointer fields, extents and the
-NUL-terminated output are checked after each call. No vendor-controlled string
-is loaded or printed. All source identities remain those in `sources.json`.
+`session.rs`/`session_native.rs` use `FASTRPC_GET_EFFECTIVE_DOMAIN_ID=14` and
+`FASTRPC_GET_URI=15` for `cdsp`, session zero, with exact 24-/48-byte ARM64
+structures. Decode architecture from the driver; reject invalid packed-decimal
+nibbles and zero while retaining raw values. The checked URI must match v73/v81,
+`htp_iface_skel_handle_invoke`, module version 1.0, domain and session. Verify
+inputs, pointers, extents and terminated output after every call; never load or
+print vendor-controlled strings.
 
-Metadata mode stops before `remote_handle64_open` and supplies no search-path override.
-A basename URI does not bind loaded ELF bytes or catalog trust; an absolute URI is
-not an established Windows deployment route. The
-[terminal FD control](#terminal-signed-session-fd-control)
-adds open under independently checked/retained package, catalog and driver identities
-and one exact child-only search directory. No catalog installation or certificate
-change is supplied; selected DSP-byte identity and vendor teardown remain pending.
+Metadata stops before `remote_handle64_open` and supplies no path override.
+A basename URI does not bind ELF bytes/catalog trust; an absolute URI is not an
+established Windows deployment route. Once opened, the matching effective domain
+owns every mapping tuple. Public delayed-FD=3 remains a constant: registration
+until DSP `HAP_mmap` does not prove visibility or cache maintenance. The extended
+SDK delayed flag is absent from the public header; no guessed value is exposed.
+HVX/HMX and VTCM page/count observations prove neither throughput nor available
+capacity. See [source/ABI boundaries](../../../docs/hexagon-source-audit.md).
 
-Metadata and default-session modes omit the reviewed ggml initializer's unsigned-process
-request. The separately selected [reference control](#explicit-reference-process-initialization)
-implements that request under the fixed signed-package policy; neither source nor catalog
-establishes the effective process class, which requires independent observation.
+## Terminal signed-session FD control
 
-After a verified session is established, the matching effective domain must own
-every mapping and unmapping tuple. Public FD mode 2 and delayed-FD mode 3 are
-recorded as constants, not executed by metadata preparation. The public pinned
-header describes delayed mode as registration until DSP-side `HAP_mmap`; its
-success alone does not prove DSP visibility or DMA. CPU/DSP cache maintenance
-also remains a separate ownership obligation. The ggml extended delayed flag
-and its SDK ABI are absent from this pinned public header and remain pending;
-no guessed enum value is exposed. Actual asynchronous submission, completion,
-cancellation and in-use buffer retention require the signed kernel/queue ABI
-and cannot be established by a metadata or map/unmap control.
+`session_mapping.rs` keeps metadata/open/handle/map/close/lifetime fields separate.
+`session_mapping_native.rs` uses pinned public ABI, including **u64**
+`remote_handle64_close`. STATIC and session probes share terminal admission.
+After any remote-open attempt, driver/package guards and lease stay pinned until
+exit, even after explicit close. Failed map/unmap retains scratch and module;
+missing/refused handles cannot become mapped sessions. Process death does not
+establish complete vendor teardown.
 
-The architecture decoder follows the pinned ggml low-byte packed-decimal
-interpretation, but rejects invalid nibbles and zero; raw values remain in the
-receipt. HVX/HMX values and VTCM page/count queries do not measure throughput or
-available allocation. Every report keeps `profileEligible: false`. The
-[Source and ABI boundaries](../../../docs/hexagon-source-audit.md) distinguish
-metadata, mapping, compute and serving qualification. A successful FD cycle establishes
-no selected DSP-byte identity, vendor teardown or complete-model acceptance.
+Flushed `hexagon-session:stage=...` stderr markers establish entry only; returned
+codes establish completion. Mock controls check URI/map arguments, success,
+refusal at each stage and uncertain ownership without loading a driver.
 
-Hosted CI can build without acquiring a vendor SDK:
+## Explicit reference process initialization
+
+Reference modes request an **unsigned DSP process class** under exact signed
+Windows package/catalog policy. They authorize no arbitrary DSP code or OS trust
+change. There is no automatic retry between ordinary and reference modes.
+
+The [public header](https://github.com/qualcomm/fastrpc/blob/a56e9d4de3614a8d8f4b0e15ff561350c4b686e3/inc/remote.h#L603-L622)
+defines `DSPRPC_CONTROL_UNSIGNED_MODULE=2`: two ints, `domain` and `enable`.
+Request enable1 for the independently checked default-CDSP domain after effective
+domain discovery and before GET_URI/open, following the
+[reference initializer](https://github.com/ggml-org/llama.cpp/blob/94256114c229674ef96e76eb2dea596e65b43818/ggml/src/ggml-hexagon/ggml-hexagon.cpp#L3875-L3912).
+The [Linux implementation](https://github.com/qualcomm/fastrpc/blob/a56e9d4de3614a8d8f4b0e15ff561350c4b686e3/src/fastrpc_apps_user.c#L2434-L2454)
+sets a per-domain pre-session attribute; it does not prove closed Windows behavior.
+[GenieX package-signing requirements](https://github.com/qualcomm/GenieX/blob/a5c8e7fb4a364ddcccefbf187afd1bac52d88de5/notes/run.md#L303-L342)
+remain independent.
+
+Pin owners before initialization. Require its returned code before proceeding.
+The receipt records mode, request2/size8/enable1 and raw returned
+`processInitializationDomainAfter`/`processInitializationEnableAfter` (null when
+unattempted). Returned writable bytes never configure URI/mapping or establish
+effective process class; subsequent work uses the original validated metadata.
+Refusal/incomplete URI ends the attempt without weaker retry. Entry markers and
+`unsignedProcessRequested=true` record invocation, not effective class.
+
+## Hosted build
+
+Exact source hashes and Microsoft ABI references are in [`sources.json`](sources.json).
+The binding vendors no vendor/ggml implementation. Build and full regressions
+belong to hosted CI; owner diagnostics consume prebuilt source-bound helpers.
 
 ```powershell
 rustup run nightly-2026-11-12-aarch64-pc-windows-msvc rustc --edition=2024 --crate-type=lib --crate-name=hexagon_native_rpc -D warnings -O tools/hexagon/native_rpc/lib.rs --out-dir ABSOLUTE_EXTERNAL_BUILD
 rustup run nightly-2026-11-12-aarch64-pc-windows-msvc rustc --edition=2024 -D warnings -O tools/hexagon/native_rpc/query.rs --extern hexagon_native_rpc=ABSOLUTE_EXTERNAL_BUILD/libhexagon_native_rpc.rlib -o ABSOLUTE_EXTERNAL_BUILD/hexagon-native-query.exe
 ```
-
-Full regressions are hosted-CI only. Every owner
-diagnostic's setup, loading, queries and cleanup share the existing single
-five-minute aggregate budget. This is a transfer candidate for Prism's audited
-device boundary, not a Runner production engine or a backend-availability claim.
-
-The immutable source identities, hashes and Microsoft ABI references are in
-[`sources.json`](sources.json). The code is an independently written narrow
-binding; no vendor or ggml implementation is vendored.
-
-## Terminal signed-session FD control
-
-`session_mapping.rs` retains independent metadata, module open, handle, mapping,
-close and lifetime fields. `session_mapping_native.rs` uses only the pinned
-public vendor ABI. In particular `remote_handle64_close` takes a **u64** handle
-as declared by the authoritative public `remote.h`; the reviewed reference host
-wrapper contains an inconsistent 32-bit close-pointer typedef that is not reused.
-The same process-wide terminal admission covers both STATIC and session probes.
-After any remote-open attempt the driver, package guards and lease stay pinned
-until supervised process death, including after a successful explicit handle
-close. A refused open or missing handle cannot become a mapped session. Failed
-map/unmap retains the scratch and module handle; no free or close follows uncertain
-use. Process death is not a demonstrated vendor session teardown.
-
-The CLI flushes fixed stderr `hexagon-session:stage=...` markers before native
-open, allocation, descriptor, FD mapping/unmapping, free and close. A marker
-records **entry**, not completion; only returned receipt codes establish completed
-operations. Model-free mock controls check exact URI/map arguments, full success,
-open/handle/allocation/descriptor/map/unmap/close refusal and retained uncertain
-lifetimes. They do not load a driver. Selected DSP bytes/visibility, vendor teardown, DMA64,
-effective VTCM, native compute and Swift arithmetic need separate qualification.
-Build and complete controls stay hosted-CI only.
-
-## Explicit reference process initialization
-
-The separate `--reference-session-mapping-probe ABSOLUTE_PACKAGE_DIRECTORY` and
-`Driver::reference_session_mapping_probe` select one fixed additional native step.
-The original `--session-mapping-probe` still requests no unsigned process and its
-retained observation remains independent. There is no automatic retry between them.
-The reference mode requests an **unsigned DSP process class**, even though only
-the exact Windows catalog-signed package is eligible for this diagnostic. It must
-not be described as signed-PD-only access or authorization for arbitrary DSP code.
-
-The
-[pinned public header](https://github.com/qualcomm/fastrpc/blob/a56e9d4de3614a8d8f4b0e15ff561350c4b686e3/inc/remote.h#L603-L622)
-defines `DSPRPC_CONTROL_UNSIGNED_MODULE=2`; its two-int structure at lines389-392
-has `domain` and `enable`. The fixed control uses enable1 and the checked effective
-default-CDSP domain. It occurs after the effective-domain request, before GET_URI
-and module open, matching the
-[bundled reference initializer](https://github.com/ggml-org/llama.cpp/blob/94256114c229674ef96e76eb2dea596e65b43818/ggml/src/ggml-hexagon/ggml-hexagon.cpp#L3875-L3912)
-.
-That source unconditionally selects the unsigned PD, including Windows builds.
-This difference does not establish why an earlier module open was refused.
-
-The public
-[Linux implementation](https://github.com/qualcomm/fastrpc/blob/a56e9d4de3614a8d8f4b0e15ff561350c4b686e3/src/fastrpc_apps_user.c#L2434-L2454)
-changes a process-local per-domain attribute before opening a session; zero selects
-signed and nonzero unsigned. Once open, changing its class rejects. The array is
-zero-initialized at line4116. Lines2596-2616 dispatch this request; lines3238-3244
-use its flag when constructing process attributes and lines3688/3735 use those
-attributes for shell/session initialization. This public Linux behavior does not
-prove the exact closed Windows driver implementation or complete remote teardown.
-The source manifest records its exact digest and that limitation.
-
-Windows package catalog signing is a separate requirement. The
-[pinned GenieX run guide](https://github.com/qualcomm/GenieX/blob/a5c8e7fb4a364ddcccefbf187afd1bac52d88de5/notes/run.md#L303-L342)
-requires no extra setup for its Microsoft-signed SDK, while its self-signed fallback
-requires certificate trust and test-signing changes. The reference diagnostic makes
-none of those OS, certificate or boot-policy changes and continues to require
-independent exact package/catalog checks. It still explicitly records
-`unsignedProcessRequested=true` only after its fixed runtime request is invoked.
-
-Driver, package guards and process lease become terminally pinned **before** that
-initialization attempt. Its exact return must pass before GET_URI/module open.
-The ABI accepts a writable payload and the reference caller does not inspect its
-post-call fields. The receipt retains raw `processInitializationDomainAfter` and
-`processInitializationEnableAfter` values after every returned call, including a
-refusal. They remain null when no call was attempted. These bytes never configure
-URI preparation or mapping and never prove an effective DSP process class. All
-subsequent operations use the original independently validated metadata/domain.
-The earlier source's unchanged-input rejection remains a separate observation;
-it was not a vendor refusal or evidence that the returned bytes were configuration.
-Refusal or later incomplete URI returns a separate stage with no weaker retry. The flushed
-`hexagon-session:stage=reference-process-init-entered` marker establishes entry only.
-The receipt records explicit mode selection, actual request/result and fixed request2,
-size8/enable1 independently. Tests mutate both returned fields, retain their raw
-values and prove that subsequent URI/mapping still uses the original domain3.
-Tests also cover ordering, refusal and retained ownership; further device qualification
-requires source-bound hosted builds and independent observations.
