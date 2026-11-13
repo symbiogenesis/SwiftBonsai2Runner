@@ -695,19 +695,14 @@ fn runtime_failure(diagnostic: &[u8]) -> Failure {
 fn read_bounded_file(path: &Path, limit: usize) -> Result<Vec<u8>> {
     let file = File::open(path)
         .map_err(|_| Failure::Message("A broker diagnostic or credential file is unavailable."))?;
-    let mut bytes = Vec::new();
-    file.take(
-        u64::try_from(limit + 1)
-            .map_err(|_| Failure::Message("The diagnostic limit is invalid."))?,
+    crate::bounded_file::read(
+        file,
+        u64::try_from(limit).map_err(|_| Failure::Message("The diagnostic limit is invalid."))?,
     )
-    .read_to_end(&mut bytes)
-    .map_err(|_| Failure::Message("Could not read a broker diagnostic or credential file."))?;
-    if bytes.len() > limit {
-        return Err(Failure::Message(
-            "A broker diagnostic or credential file exceeded its limit.",
-        ));
-    }
-    Ok(bytes)
+    .map_err(|_| Failure::Message("Could not read a broker diagnostic or credential file."))?
+    .ok_or(Failure::Message(
+        "A broker diagnostic or credential file exceeded its limit.",
+    ))
 }
 
 fn context_capacity(output: &[u8]) -> Result<Option<usize>> {

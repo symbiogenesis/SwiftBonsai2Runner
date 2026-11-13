@@ -1,7 +1,6 @@
 //! Bounded setup observations read by the preparation worker, never the UI loop.
 use std::{
     fs::File,
-    io::Read as _,
     path::{Path, PathBuf},
     sync::{Arc, Mutex},
 };
@@ -65,15 +64,7 @@ impl Shared {
 fn read_status(working: &Path, data: &Path) -> Option<Status> {
     let path = working.join("chat-setup-progress.json");
     bonsai_windows_credentials::validate_external_path(&path).ok()?;
-    let mut bytes = Vec::new();
-    File::open(path)
-        .ok()?
-        .take(8193)
-        .read_to_end(&mut bytes)
-        .ok()?;
-    if bytes.len() > 8192 {
-        return None;
-    }
+    let bytes = crate::bounded_file::read(File::open(path).ok()?, 8192).ok()??;
     let report: Report = serde_json::from_slice(&bytes).ok()?;
     status(report, data)
 }

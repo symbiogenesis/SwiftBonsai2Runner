@@ -5,8 +5,7 @@ use bonsai_windows_process::{OwnedProcess, ToolProcessSpec};
 use eframe::egui;
 use std::{
     collections::BTreeMap,
-    fs::{self, File},
-    io::{self, Read as _},
+    fs, io,
     path::{Path, PathBuf},
     sync::{
         Arc,
@@ -198,14 +197,7 @@ fn verified_response(
 }
 
 fn bounded_text(path: &Path) -> io::Result<String> {
-    let mut bytes = Vec::new();
-    File::open(path)?
-        .take(MAX_OUTPUT + 1)
-        .read_to_end(&mut bytes)?;
-    if u64::try_from(bytes.len()).map_err(io::Error::other)? > MAX_OUTPUT {
-        return Err(io::Error::other("Update tool output exceeded its limit."));
-    }
-    String::from_utf8(bytes).map_err(io::Error::other)
+    crate::bounded_file::text(path, MAX_OUTPUT, "Update tool output exceeded its limit.")
 }
 
 struct Process(OwnedProcess);

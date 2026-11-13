@@ -12,6 +12,8 @@
 )]
 mod audio_import;
 #[cfg(windows)]
+mod bounded_file;
+#[cfg(windows)]
 mod bounded_json;
 #[cfg(windows)]
 mod canary;
