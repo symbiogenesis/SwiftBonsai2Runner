@@ -118,8 +118,9 @@ Model selection, token-cap aliases, tools, media, other template or sampling
 controls, arbitrary LoRA selection or arrays, slots and timing overrides are
 unsupported. URLs in strings stay plain text; the broker fetches no remote content.
 
-The exported `MODEL_CAPABILITIES` contract declares text input and text output,
-the `bonsai` alias and context/completion bounds. It is a Rust contract, not a
+The exported `MODEL_CAPABILITIES` contract declares legacy default capabilities;
+`RequestPolicy::capabilities()` reports the selected session's context. Both declare
+text input/output, the `bonsai` alias and completion bounds. This is a Rust contract, not a
 discovery HTTP route. Native microphone transcription uses the separate
 [Canary speech companion](../tools/canary-asr/README.md); audio bytes never enter
 this text-model broker. A compatible verified vision projector and exact media

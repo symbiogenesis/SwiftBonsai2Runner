@@ -84,7 +84,7 @@ pub struct ModelCapabilities {
     pub max_completion_tokens: u32,
 }
 
-/// Capabilities supported by both currently released broker launch profiles.
+/// Legacy default capabilities; use [`RequestPolicy::capabilities`] for a session.
 pub const MODEL_CAPABILITIES: ModelCapabilities = ModelCapabilities {
     id: MODEL_ALIAS,
     input_modalities: &["text"],

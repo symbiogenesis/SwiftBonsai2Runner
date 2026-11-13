@@ -11,6 +11,7 @@ pub const HOST_RESERVE_BYTES: u64 = 4 * 1024 * 1024 * 1024;
 /// The final admission check still requires the Job allowance plus the 4 GiB host reserve.
 pub const STARTUP_RESERVE_BYTES: u64 = 256 * 1024 * 1024;
 /// Existing Swift allowance excluding its reference 8K FP16 KV payload.
+///
 /// This retains 11 GiB for weights, recurrence, adapters, runtime and headroom;
 /// it is conservative source accounting, not a measured peak.
 pub const FIXED_RUNTIME_BYTES: u64 = 11 * 1024 * 1024 * 1024;

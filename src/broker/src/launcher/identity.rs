@@ -558,7 +558,7 @@ mod context_tests {
         }]})
         .to_string();
         let wire = format!(
-            "HTTP/1.1 200 OK\r\nContent-Length: {}\r\n\r\n{body}",
+            "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\n\r\n{body}",
             body.len()
         );
         let selected = WorkerReadiness::for_version("0.1.25", 1).with_context_tokens(16384);
