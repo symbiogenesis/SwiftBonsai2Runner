@@ -16,7 +16,7 @@ for output selection and bundling an existing verified package.
 The native `chat-bundle` command accepts the usual JSON request forms:
 
 ```json
-{"operation":"create","packageDirectory":"C:\\BonsaiPackages\\0.1.0","manifestSha256":"REVIEWED_64_HEX_DIGEST","outputPath":"C:\\Bonsai\\SwiftBonsai2Runner.exe"}
+{"operation":"create","packageDirectory":"C:\\BonsaiPackages\\0.2.0","manifestSha256":"REVIEWED_64_HEX_DIGEST","outputPath":"C:\\Bonsai\\SwiftBonsai2Runner.exe"}
 ```
 
 `inspect` accepts `executablePath`; `extract` accepts `executablePath` and
@@ -133,7 +133,7 @@ builds/downloads nothing; setup, verification, workers and teardown share the on
 allowance. A successful smoke does not qualify numerics, adapters or performance.
 See the [candidate examples](../../docs/runtime-candidates/README.md).
 
-The maintenance executable reports version 0.1.0, protocol 5 and its supported
+The maintenance executable reports version 0.2.0, protocol 5 and its supported
 commands through `--version`. Runtime guards remain held
 through version/help probes and complete completion batches. Older protocols are
 rejected before an operation can start.
@@ -400,13 +400,18 @@ The legacy `launch` operation still supports a caller-bound directory, ID and
 manifest digest. Caller options cannot override paths or request a source build.
 The native launcher opens the pending UI before preparing backend and speech.
 
-`app-update` provides installed-MSI `check`, `download` and `install` operations.
+Current releases update by verified manual replacement of the portable executable
+after closing Swift, while preserving the user data directory. They perform no
+automatic update discovery or installer handoff.
+
+The retained internal `app-update` command provides legacy installed-MSI `check`,
+`download` and `install` operations, outside the current portable release path.
 Requests identify `installationDirectory`; `download` also selects `version`, and
 `install` requires `version` and `handoffPath`. A queued request cannot install by itself:
 confirmed native UI exit and owned teardown must complete before the maintenance launcher
 revalidates the publication and hands off to Windows Installer. Source/preview launches
-perform no update work. See the [release/update contract](../../docs/releases.md#automatic-update-checks)
-for publication identities, confirmation and pending installed acceptance.
+perform no update work. See the [legacy updater contract](../../docs/ui-architecture.md#legacy-msi-updater)
+for publication identities, confirmation and pending legacy installed acceptance.
 
 `gguf` replaces `Read-Gguf.ps1`, `Export-SwiftPtq1.ps1` and their module. Use
 `operation: "inspect"` with `modelPath`, optional new `outputPath`, and either

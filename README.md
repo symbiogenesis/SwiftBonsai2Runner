@@ -37,8 +37,8 @@ If you want to switch back to the original publisher C++ engine, add
 `--publisher-engine` (or `-PublisherEngine` with the script).
 
 The [Windows release guide](docs/releases.md) describes the single executable
-containing all five application tools, the MSI installer and the prepared first
-experimental release. [Local builds](docs/development-guide.md#build-a-single-executable)
+containing all five application tools and the prepared v0.2.0 experimental
+release. [Local builds](docs/development-guide.md#build-a-single-executable)
 can produce the same single-file distribution. Release publication is pending the
 owner's source push and GitHub release workflow run.
 
@@ -55,10 +55,9 @@ owner's source push and GitHub release workflow run.
   and encrypted for your Windows user account. Disable **Save conversations on this
   device** in Settings to delete the saved copy and keep future chats unsaved;
   that choice survives restarts.
-- **Application updates:** MSI installations check GitHub releases in the
-  background. Download a newer Windows ARM64 installer from Settings, then
-  confirm **Install update and close**. Model downloads and local data stay in
-  place; see [Windows releases](docs/releases.md#automatic-update-checks).
+- **Portable updates:** Download and verify the newer Windows ARM64 executable,
+  close Swift, then replace your copy. Keep the same data directory to preserve
+  model downloads and conversations; see [Windows releases](docs/releases.md).
 - **Thinking and Extra effort:** Extended **Thinking** is off by default. Turn it on
   under **Settings → Response** when you want the model to work through a request
   before answering, or use **Extra effort** to have it plan, draft, and revise its

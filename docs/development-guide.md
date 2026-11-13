@@ -164,14 +164,15 @@ the package into the user's application cache before starting the native chat
 launcher without opening a terminal. Separate owned worker processes retain their
 existing containment and teardown rules. Model weights, adapters, the downloaded inference runtime and
 the Microsoft Visual C++ ARM64 runtime remain separately provisioned. Extraction
-and launching need no checkout, PowerShell or compiler. Portable launches retain
-the package's explicit update policy; MSI-only automatic updates remain separate.
+and launching need no checkout, PowerShell or compiler. To update a portable
+release, verify the new executable's published SHA-256, close Swift and replace
+your copy. Keep the same data directory to preserve model downloads and local data.
 
 To bundle an already reviewed schema-2 package without compiling or collecting
 notices again:
 
 ```powershell
-./scripts/Build-WindowsExecutable.ps1 -PackageDirectory C:\BonsaiPackages\0.1.0 -ManifestSha256 $reviewedDigest -OutputPath C:\Bonsai\SwiftBonsai2Runner.exe
+./scripts/Build-WindowsExecutable.ps1 -PackageDirectory C:\BonsaiPackages\0.2.0 -ManifestSha256 $reviewedDigest -OutputPath C:\Bonsai\SwiftBonsai2Runner.exe
 ```
 
 The same package-to-executable helper runs in Windows Release. Local builds

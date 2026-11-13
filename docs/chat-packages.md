@@ -1,13 +1,15 @@
 # Portable native chat packages
 
-For the single-executable and Windows ARM64 MSI distributions and their GitHub
-publication workflow, see
-[Windows releases](releases.md). The checked-directory mechanism below remains
-a separate installation and rollback option.
+For the portable single-executable distribution and its GitHub publication
+workflow, see [Windows releases](releases.md). Current releases publish one
+Windows ARM64 executable with separate checksum and release metadata files for
+verification; those sidecars do not need deployment beside the application.
+The checked-directory mechanism below remains a separate installation and
+rollback option.
 
-Automatic GitHub release checks and MSI installation handoff apply only to the
-MSI-installed application. They do not replace this portable package's explicit
-manifest review, activation or retained-version rollback operations.
+Portable releases update by verified manual executable replacement after closing
+Swift. Keep the same user data directory to preserve downloads and conversations.
+No automatic release discovery or installer handoff runs for portable packages.
 
 The native `bonsai-tools chat-package` command assembles reviewed Windows ARM64
 application files, installs versioned directories, activates updates atomically
@@ -50,8 +52,8 @@ supplied declarations, not proof of build provenance.
 ```json
 {
   "operation": "create",
-  "outputDirectory": "C:\\BonsaiPackages\\0.1.0",
-  "version": "0.1.0",
+  "outputDirectory": "C:\\BonsaiPackages\\0.2.0",
+  "version": "0.2.0",
   "sourceRevision": "0000000000000000000000000000000000000000",
   "chatPath": "C:\\ReviewedBuild\\bonsai-chat.exe",
   "brokerPath": "C:\\ReviewedBuild\\bonsai-broker.exe",
@@ -92,7 +94,7 @@ Use the dedicated GUI-subsystem `bonsai-launcher.exe` build as the package's
 remains available for source tooling, while the packaged launcher opens no terminal.
 
 ```powershell
-./scripts/release/Build-WindowsExecutable.ps1 -PackageDirectory C:\BonsaiPackages\0.1.0 -ManifestSha256 REPLACE_WITH_THE_REVIEWED_64_HEX_DIGEST -OutputPath C:\BonsaiPackages\SwiftBonsai2Runner.exe
+./scripts/release/Build-WindowsExecutable.ps1 -PackageDirectory C:\BonsaiPackages\0.2.0 -ManifestSha256 REPLACE_WITH_THE_REVIEWED_64_HEX_DIGEST -OutputPath C:\BonsaiPackages\SwiftBonsai2Runner.exe
 ```
 
 The helper invokes the trusted package's maintenance binary with this request:
@@ -100,7 +102,7 @@ The helper invokes the trusted package's maintenance binary with this request:
 ```json
 {
   "operation": "create",
-  "packageDirectory": "C:\\BonsaiPackages\\0.1.0",
+  "packageDirectory": "C:\\BonsaiPackages\\0.2.0",
   "manifestSha256": "REPLACE_WITH_THE_REVIEWED_64_HEX_DIGEST",
   "outputPath": "C:\\BonsaiPackages\\SwiftBonsai2Runner.exe"
 }
@@ -118,7 +120,7 @@ the native package launcher. The retained cache is under
 `%LOCALAPPDATA%\SwiftBonsai2\application-bundles\<first-24-manifest-sha256-characters>\` and is
 verified on reuse. `bundled-chat` accepts the installed launch options,
 including `--data-directory` and `--no-speech-models`, while preserving its own
-package location. Bundled launches do not enable MSI update discovery. The local
+package location. Bundled launches perform no automatic update discovery. The local
 [single-executable build](development-guide.md#build-a-single-executable) builds
 the five components and assembles this same distribution format.
 
@@ -128,12 +130,12 @@ the five components and assembles this same distribution format.
 {
   "operation": "install",
   "installationDirectory": "C:\\BonsaiChat",
-  "packageDirectory": "C:\\BonsaiPackages\\0.1.0",
+  "packageDirectory": "C:\\BonsaiPackages\\0.2.0",
   "manifestSha256": "REPLACE_WITH_THE_REVIEWED_64_HEX_DIGEST"
 }
 ```
 
-The installer validates the fixed inventory, native architecture, sizes, hashes
+The package activation command validates the fixed inventory, native architecture, sizes, hashes
 and external paths before selecting a version. A single-writer lock serializes
 operations. Rust copies into private staging, verifies again, publishes a new
 version directory and atomically replaces `active.json`. Failed verification
