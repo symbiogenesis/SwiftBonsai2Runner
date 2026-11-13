@@ -203,3 +203,30 @@ linkage assessment, clean hosted consumer builds without a project C++ toolchain
 preserved qualification contracts, and no operative references to retired controls.
 Historical capture metadata and legally required notices remain distinguishable
 from live compiler, download, linkage or execution requirements.
+
+### MSVC startup and panic runtime
+
+TTS serving runs in Rust; Windows MSVC startup and panic support remain a
+separate dependency boundary. [Static C-runtime linkage](https://doc.rust-lang.org/reference/linkage.html#static-and-dynamic-c-runtimes)
+can remove the separately installed Visual C++ DLL requirement, while embedding
+Microsoft runtime support in the executable. It does not replace those bytes
+with a Rust implementation. Inspect each shipped image's imports separately.
+[Cargo's target flags](https://doc.rust-lang.org/cargo/reference/config.html#buildrustflags)
+and an explicit application target keep linkage options out of host build scripts
+and procedural macros.
+
+Rust's [MSVC SEH implementation](https://github.com/rust-lang/rust/blob/main/library/panic_unwind/src/seh.rs)
+calls `_CxxThrowException` and uses the CRT's `__CxxFrameHandler3` personality
+for stack cleanup. Both workspaces retain panic unwinding. Runner's
+`ModelPreparation` cancels and joins preparation peers after a worker panic;
+Prism's CPU worker pool catches panics, drains all active workers and returns a
+failure. Scoped cancellation and tile-completion guards also rely on unwinding
+to run their destructors. A blanket `panic = "abort"` change would alter these
+recovery contracts. [Cargo's panic-profile rules](https://doc.rust-lang.org/cargo/reference/profiles.html#panic)
+also explain why ordinary passing tests do not establish abort-mode release behavior.
+
+TTS's `libm` math implementation and the existing direct Windows API boundaries
+replace individual operations. Neither workspace wires a qualified pure Rust
+ARM64 MSVC CRT/SEH provider, and the local candidate inventory supplied no ready
+replacement. This records the existing C++ retirement boundary; the 0.3 release
+and performance-qualification gates retain their current scope.
