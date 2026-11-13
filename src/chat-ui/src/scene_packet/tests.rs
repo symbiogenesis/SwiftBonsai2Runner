@@ -1,6 +1,5 @@
 //! Exact-source, selection and bounded lexical retrieval controls.
 use super::*;
-use std::fmt::Write as _;
 
 #[test]
 fn source_revision_hashes_original_utf8_bytes_and_requires_version_labels()
