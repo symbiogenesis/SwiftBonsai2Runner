@@ -91,7 +91,7 @@ send unsupported fields; it does not claim full OpenAI SDK compatibility:
 | `messages` | Optional first system message, then alternating user/assistant turns ending on user, avoiding pinned-runtime assistant prefill. |
 | Message `content` | String or 1-128 text parts with exactly `type: "text"` and string `text`. Parts concatenate without separators before counting/generation. |
 | Assistant `reasoning_content` | Optional string, preserved/countable even when thinking is off; omitted stays omitted. Rejected on user/system messages. |
-| `abliteration_scale` | Optional numeric 0-2, default 1.3, only for the owned Swift Prism CPU launcher with verified pinned adapter (`--use-abliterate-lora`). Zero disables that request's correction. |
+| `abliteration_scale` | Optional numeric 0-2, default 1.3, only for the owned Swift launcher with verified pinned adapter (`--use-abliterate-lora`). Zero disables that request's correction. |
 
 Null, wrong types, duplicate/unknown fields at every schema level, empty part
 arrays and unknown part types reject. Scale rejects for reference,
@@ -122,9 +122,10 @@ The exported `MODEL_CAPABILITIES` contract declares legacy default capabilities;
 `RequestPolicy::capabilities()` reports the selected session's context. Both declare
 text input/output, the `bonsai` alias and completion bounds. This is a Rust contract, not a
 discovery HTTP route. Native microphone transcription uses the separate
-[Canary speech companion](../tools/canary-asr/README.md); audio bytes never enter
-this text-model broker. A compatible verified vision projector and exact media
-token admission are required before accepting image parts.
+[Qwen3-ASR speech companion](../tools/canary-asr/README.md); its directory retains
+the legacy Canary name. Audio bytes never enter this text-model broker. A
+compatible verified vision projector and exact media token admission are required
+before accepting image parts.
 
 Input is rebuilt as immutable canonical backend JSON with one completion,
 cache reuse disabled, EOS honored and the reference sampler: temperature 1,

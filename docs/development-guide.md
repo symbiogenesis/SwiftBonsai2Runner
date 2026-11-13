@@ -257,7 +257,6 @@ uses at most 1 MiB of read scratch with sequential access hints, retaining full
 checksums and file guards. Speech preparation and its compiler descendants use
 below-normal CPU priority to reduce competition with model loading and text chat,
 including on Snapdragon X1. This CPU scheduling policy does not isolate disk I/O.
-Rebuild both the maintenance executable and UI to use these startup changes.
 
 If the launcher reports a missing prebuilt executable, run the maintenance build
 command it prints from the repository root, then retry. Correct or remove any
@@ -898,12 +897,12 @@ $inference = bonsai-tools provision --json (@{ operation = 'inference'; dataDire
 $request = Join-Path $data 'inspect-request.json'
 @{ operation = 'inspect'; modelPath = (Join-Path $data 'models/4ca720788d1e01f1bff70c033e0d0028fd02e502/Qwen3.8-27B-UD-Q3_K_XL.gguf'); ggufToolPath = $inference.Gguf } |
     ConvertTo-Json | Set-Content -LiteralPath $request -Encoding utf8NoBOM
-& $maintenanceExecutable gguf --request $request
+bonsai-tools gguf --request $request
 ```
 
 The [GGUF tool](https://github.com/symbiogenesis/prism-inference/blob/main/tools/gguf/README.md) also supports explicit Prism census and
-streaming PQ2-to-PTQ1 export. Use a trusted prebuilt `bonsai-tools.exe` as
-`$maintenanceExecutable`; its [native `gguf` command](../tools/bonsai/README.md)
+streaming PQ2-to-PTQ1 export. The trusted prebuilt `bonsai-tools.exe` selected
+during setup supplies the [native `gguf` command](../tools/bonsai/README.md), which
 owns artifact defaults, policy and complete-process deadlines. `ggufToolPath`
 selects an explicit trusted GGUF executable; otherwise Rust verifies the installed
 pinned inference release without compiling or downloading.
@@ -1073,13 +1072,17 @@ try {
 Append `--check-only` for read-only artifact/policy verification and memory
 admission reporting, without credentials, a listener or a process.
 
-Pass `--profile swift-pq2-assessment` for Swift's separately pinned Prism runtime
-and original PQ2 model, provisioned with `config/swift-assessment.lock.json`.
-It fixes batch/microbatch to 128/64, an 11.5 GiB Job cap and 15.5 GiB admission,
-including the 4 GiB reserve. Add `--use-abliterate-lora` for the pinned adapter
-and per-request scale (default 1.3); the native UI requests it automatically,
-while direct broker launches omit it. Publisher Prism and the pinned native Rust
-service both accept the approved adapter with PQ2 or explicit
+Pass `--profile swift-pq2-assessment` for Swift's original PQ2 model, provisioned
+with `config/swift-assessment.lock.json`. Provision the native runtime with
+`provision` operation `inference`; publisher rollback instead uses operation
+`engine` with the Swift lock, as shown in [runtime selection](#runtime-selection).
+Swift uses batch/microbatch 128/64. The pinned native runtime retains an
+11.5 GiB Job cap and 15.5 GiB admission, including the 4 GiB physical reserve.
+Publisher Swift instead selects context and its launch budget from available
+memory under the [context policy](swift-memory.md#memory-selected-serving-context).
+Add `--use-abliterate-lora` for the pinned adapter and per-request scale (default
+1.3); the native UI requests it automatically, while direct broker launches omit it.
+Publisher Prism and the pinned native Rust service both accept the approved adapter with PQ2 or explicit
 `--use-repacked-ptq1`; native Rust verifies representation and adapter readiness.
 The [runtime-selection table](#runtime-selection) lists app options. Profile names
 are exact; arbitrary adapters, models, runtimes and inference overrides reject.
@@ -1097,22 +1100,33 @@ directory. This example explicitly retains caller authority. The native UI inste
 [sandboxing](sandboxing.md); broker-only/same-user bypass prevention and actual-model
 daily acceptance remain unqualified.
 
-## Build the CPU server from source
+## Inference runtimes and source builds
 
-### Native Rust Swift backend
+### Provision a native Rust Swift backend
 
 Provision the independently released
 [Prism Inference](https://github.com/symbiogenesis/prism-inference) Windows ARM64
 executables, then select the Swift profile in the owned launcher. Its engine
-default is Rust; the explicit `--native-engine` option remains accepted:
+default is Rust; the explicit `--native-engine` option remains accepted.
+This is a prebuilt-runtime launch, not a source build. Use `$broker` and `$scratch`
+from [development broker setup](#explicit-development-broker), and the provisioned
+Swift weights from [app setup](#native-chat-app):
 
 ```powershell
 $inference = bonsai-tools provision --json (@{ operation = 'inference'; dataDirectory = $data } | ConvertTo-Json -Compress) | ConvertFrom-Json
 bonsai-tools provision --json (@{ operation = 'inference'; dataDirectory = $data; verifyOnly = $true } | ConvertTo-Json -Compress)
-& $broker --launch-development --allow-unisolated-backend `
-    --profile swift-pq2-assessment --native-engine `
-    --data-directory $data --evidence-parent ([IO.Path]::GetTempPath()) `
-    --frontend-port 5173 --backend-port 8081 --max-waiting 2
+$previous = [Environment]::CurrentDirectory
+Push-Location $scratch
+try {
+    [Environment]::CurrentDirectory = $scratch
+    & $broker --launch-development --allow-unisolated-backend `
+        --profile swift-pq2-assessment --native-engine `
+        --data-directory $data --evidence-parent ([IO.Path]::GetTempPath()) `
+        --frontend-port 5173 --backend-port 8081 --max-waiting 2
+} finally {
+    [Environment]::CurrentDirectory = $previous
+    Pop-Location
+}
 ```
 
 The [release lock](../config/prism-inference.lock.json) pins the source revision,
@@ -1187,10 +1201,11 @@ release or replacing the repository's lock.
 Publication requires separate authorization under the session's repository
 rules. After the exact checked bundle is available at the candidate's immutable
 release URL, verify those downloaded bytes and review the candidate before
-replacing `config/prism-inference.lock.json`. Rebuild the broker, which embeds
-that lock, provision through Rust `provision` operation `inference`, and run the required checks on
-the settled `main` revision. Preserve the prior release for rollback. Packaging
-and hosted synthetic checks do not broaden the retained model/device evidence.
+replacing `config/prism-inference.lock.json`. Rebuild the maintenance tool,
+broker and native UI from that same checkout: all three embed the runtime pin.
+Provision with the rebuilt tool's `provision` operation `inference`, then run the
+required checks on the settled `main` revision. Preserve the prior release for
+rollback. Packaging and hosted synthetic checks do not broaden the retained model/device evidence.
 
 ### Publisher Prism source build
 
