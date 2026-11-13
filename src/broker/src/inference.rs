@@ -223,7 +223,9 @@ fn row_workers_supported(version: &str, workers: u8) -> Result<(), LaunchError> 
 }
 
 // Enable only after a reviewed source-bound release implements the paired
-// context/memory flags. A version number alone never attests this protocol.
+// context/memory flags AND the selected-cache/sequential-scratch accounting
+// contract in bonsai_cpu_policy::context. A protocol-only source candidate must
+// not activate smaller process allowances. A version number alone attests neither.
 const MEMORY_CONTEXT_RELEASE: Option<(&str, &str)> = None;
 
 pub(super) fn memory_context_supported() -> Result<bool, LaunchError> {

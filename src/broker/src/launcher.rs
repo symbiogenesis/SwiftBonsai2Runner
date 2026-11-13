@@ -307,12 +307,27 @@ impl LaunchConfig {
             && (!self.native_engine || crate::inference::memory_context_supported()?))
     }
 
+    // Call only after the exact released runtime's context and cache-accounting
+    // contract is admitted. Cache selection remains immutable through retry.
+    fn swift_context_plan(
+        &self,
+        available_bytes: u64,
+    ) -> Result<bonsai_cpu_policy::context::SwiftContextPlan, LaunchError> {
+        use bonsai_cpu_policy::context::{SwiftContextPlan, SwiftContextProfile};
+        let profile = if self.native_engine {
+            match self.kv_cache {
+                Some(crate::inference::KvCache::Rsq4) => SwiftContextProfile::NativeRsq4,
+                Some(crate::inference::KvCache::F16) | None => SwiftContextProfile::NativeF16,
+            }
+        } else {
+            SwiftContextProfile::PublisherF16
+        };
+        SwiftContextPlan::for_profile(available_bytes, profile).map_err(|_| LaunchError::Memory)
+    }
+
     fn initial_memory_admission(&self, plan: &LaunchPlan) -> Result<(), LaunchError> {
         if self.memory_context_supported()? {
-            bonsai_cpu_policy::context::SwiftContextPlan::for_available_memory(
-                available_memory_bytes().map_err(|_| LaunchError::Memory)?,
-            )
-            .map_err(|_| LaunchError::Memory)?;
+            self.swift_context_plan(available_memory_bytes().map_err(|_| LaunchError::Memory)?)?;
             Ok(())
         } else {
             admit(plan.required_available_bytes)
@@ -341,7 +356,7 @@ impl LaunchConfig {
         let _adapter = Self::adapter_guard(&plan)?;
         let available = available_memory_bytes().map_err(|_| LaunchError::Memory)?;
         let memory_admitted = if self.memory_context_supported()? {
-            bonsai_cpu_policy::context::SwiftContextPlan::for_available_memory(available).is_ok()
+            self.swift_context_plan(available).is_ok()
         } else {
             available >= plan.required_available_bytes
         };
@@ -624,10 +639,8 @@ impl LaunchConfig {
         )
         .map_err(|_| LaunchError::Policy)?;
         if self.memory_context_supported()? {
-            let context = bonsai_cpu_policy::context::SwiftContextPlan::for_available_memory(
-                available_memory_bytes().map_err(|_| LaunchError::Memory)?,
-            )
-            .map_err(|_| LaunchError::Memory)?;
+            let context = self
+                .swift_context_plan(available_memory_bytes().map_err(|_| LaunchError::Memory)?)?;
             plan.select_swift_context(context)
                 .map_err(|_| LaunchError::Policy)?;
         }
@@ -1637,6 +1650,39 @@ mod tests {
                 1
             );
         }
+        Ok(())
+    }
+
+    #[test]
+    fn native_context_sizing_preserves_release_gate_and_publisher_budget() -> Result<(), LaunchError>
+    {
+        use crate::inference::KvCache;
+        let mut args = arguments();
+        args.extend(["--profile", "swift-pq2-assessment"].map(OsString::from));
+        let mut config = LaunchConfig::parse(args.clone())?;
+        // The current immutable release has neither the paired launch flags nor
+        // this accounting contract. Implementing a planner cannot enlarge it.
+        assert!(!config.memory_context_supported()?);
+        let available = 20 * 1024 * 1024 * 1024;
+        let packed = config.swift_context_plan(available)?;
+        assert_eq!(packed.context_tokens, 149_760);
+        config.kv_cache = Some(KvCache::F16);
+        let f16 = config.swift_context_plan(available)?;
+        assert!(f16.context_tokens < packed.context_tokens);
+        assert!(config.swift_context_plan(0).is_err());
+        config.kv_cache = None;
+        assert_eq!(config.swift_context_plan(available)?, f16);
+
+        args.push("--publisher-engine".into());
+        let publisher = LaunchConfig::parse(args)?;
+        assert!(publisher.memory_context_supported()?);
+        let plan = publisher.swift_context_plan(available)?;
+        assert_eq!(plan.context_tokens, 37_120);
+        assert_eq!(
+            plan,
+            bonsai_cpu_policy::context::SwiftContextPlan::for_available_memory(available)
+                .map_err(|_| LaunchError::Memory)?
+        );
         Ok(())
     }
 
