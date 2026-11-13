@@ -16,7 +16,10 @@ use std::{
     path::Path,
 };
 
-use crate::engine::{LinearProjection, WeightQuantization};
+use crate::{
+    engine::{LinearProjection, WeightQuantization},
+    gguf::{read_u32, read_u64},
+};
 
 const MAX_ITEMS: u64 = 131_072;
 const MAX_METADATA_BYTES: usize = 128 * 1024 * 1024;
@@ -51,18 +54,6 @@ pub(crate) struct Weights {
     file: File,
     metadata: BTreeMap<String, Metadata>,
     tensors: BTreeMap<String, Tensor>,
-}
-
-fn read_u32(reader: &mut impl Read) -> io::Result<u32> {
-    let mut bytes = [0; 4];
-    reader.read_exact(&mut bytes)?;
-    Ok(u32::from_le_bytes(bytes))
-}
-
-fn read_u64(reader: &mut impl Read) -> io::Result<u64> {
-    let mut bytes = [0; 8];
-    reader.read_exact(&mut bytes)?;
-    Ok(u64::from_le_bytes(bytes))
 }
 
 fn text(reader: &mut impl Read, budget: &mut usize, limit: usize) -> io::Result<String> {
@@ -101,13 +92,7 @@ fn skip(reader: &mut (impl Read + Seek), bytes: u64, length: u64) -> io::Result<
 }
 
 fn scalar_width(kind: u32) -> io::Result<u64> {
-    match kind {
-        0 | 1 | 7 => Ok(1),
-        2 | 3 => Ok(2),
-        4..=6 => Ok(4),
-        10..=12 => Ok(8),
-        _ => Err(invalid()),
-    }
+    crate::gguf::scalar_width(kind).ok_or_else(invalid)
 }
 
 fn metadata_value(

@@ -1,4 +1,4 @@
-//! Pure-Rust bounded GGUF v2/v3 metadata reader for speech tokenizer tables.
+//! Bounded GGUF tokenizer metadata and shared GGUF wire primitives.
 #![forbid(unsafe_code)]
 #![expect(
     clippy::redundant_pub_crate,
@@ -137,7 +137,7 @@ impl Gguf {
     }
 }
 
-const fn scalar_width(kind: u32) -> Option<u64> {
+pub(super) const fn scalar_width(kind: u32) -> Option<u64> {
     match kind {
         TYPE_UINT8 | TYPE_INT8 | TYPE_BOOL => Some(1),
         TYPE_UINT16 | TYPE_INT16 => Some(2),
@@ -147,13 +147,13 @@ const fn scalar_width(kind: u32) -> Option<u64> {
     }
 }
 
-fn read_u32(reader: &mut impl Read) -> io::Result<u32> {
+pub(super) fn read_u32(reader: &mut impl Read) -> io::Result<u32> {
     let mut bytes = [0_u8; 4];
     reader.read_exact(&mut bytes)?;
     Ok(u32::from_le_bytes(bytes))
 }
 
-fn read_u64(reader: &mut impl Read) -> io::Result<u64> {
+pub(super) fn read_u64(reader: &mut impl Read) -> io::Result<u64> {
     let mut bytes = [0_u8; 8];
     reader.read_exact(&mut bytes)?;
     Ok(u64::from_le_bytes(bytes))
