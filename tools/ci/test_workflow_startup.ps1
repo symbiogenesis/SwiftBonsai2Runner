@@ -3,8 +3,8 @@ param([string]$Case)
 . (Join-Path $PSScriptRoot 'test_support.ps1')
 . (Join-Path $PSScriptRoot 'check_workflow_startup.ps1')
 $checkout='actions/checkout@'+('1'*40); $cache='actions/cache@'+('2'*40)
-function Write-StartupFixtureLock([string]$Root,[string]$CheckoutKey=$checkout,[bool]$IncludeCache=$true) {
-    $keys=@($CheckoutKey); if ($IncludeCache) { $keys+=$cache }
+function Write-StartupFixtureLock([string]$Root,[string]$CheckoutKey=$checkout,[bool]$IncludeCache=$true,[string]$CacheKey=$cache) {
+    $keys=@($CheckoutKey); if ($IncludeCache) { $keys+=$CacheKey }
     $lines=@("version: 'v0.0.3'",'workflows:',"    '.github/workflows/main.yml':")
     $lines+=@($keys | ForEach-Object { "        - '$_'" }); $lines+='dependencies:'
     foreach ($key in $keys) { $sha=if ($key -ceq $CheckoutKey) { '1'*40 } else { '2'*40 }; $lines+=@("    '${key}':","        ref: 'v1.0.0'","        commit: 'sha1-$sha'",'        owner_id: 1','        repo_id: 2') }
@@ -22,6 +22,35 @@ function Invoke-StartupFixture([scriptblock]$Work) {
 function Assert-StartupFailure([string]$Root,[string]$Phrase) { $failures=Test-WorkflowStartup $Root; Assert-Ci (@($failures | Where-Object { $_.Contains($Phrase) }).Count -gt 0) ($failures -join "`n") }
 $cases=[ordered]@{
  exact_sha_keys_and_nested_composite_pass={ Invoke-StartupFixture { param($r) Assert-CiEqual (Test-WorkflowStartup $r) @() } }
+ external_subactions_and_reusable_paths_share_exact_repo_sha_key={ Invoke-StartupFixture {
+    param($r)
+    $sha='2'*40
+    Write-CiFixture $r '.github/actions/cache/action.yaml' "runs:`n  using: composite`n  steps:`n    - uses: actions/cache/restore@$sha`n    - uses: actions/cache/save@$sha`n"
+    [IO.File]::AppendAllText((Join-Path $r '.github/workflows/main.yml'),"  reusable:`n    uses: actions/cache/.github/workflows/shared.yml@$sha`n")
+    Assert-CiEqual (Test-WorkflowStartup $r) @()
+    Assert-CiEqual (Get-StartupExternalLockKey ('Actions/Cache/Restore@'+('A'*40))) ('actions/cache@'+('a'*40))
+ } }
+ external_subaction_wrong_sha_or_tag_key_cannot_cover_uses={ Invoke-StartupFixture {
+    param($r)
+    $sha='2'*40
+    Write-CiFixture $r '.github/actions/cache/action.yaml' ('uses: actions/cache/restore@'+('9'*40)+"`n")
+    Assert-StartupFailure $r ('lockfile missing exact uses key actions/cache@'+('9'*40))
+    Write-CiFixture $r '.github/actions/cache/action.yaml' "uses: actions/cache/restore@$sha`n"
+    Write-StartupFixtureLock $r $checkout $true 'actions/cache@v6.1.0'
+    Assert-StartupFailure $r "lockfile missing exact uses key $cache"
+    Write-StartupFixtureLock $r
+    $path=Join-Path $r '.github/workflows/actions.lock'
+    [IO.File]::WriteAllText($path,[IO.File]::ReadAllText($path).Replace('sha1-'+$sha,'sha1-'+('9'*40)))
+    Assert-StartupFailure $r 'commit metadata disagrees'
+ } }
+ mutable_external_subaction_ref_fails_before_lock_canonicalization={ Invoke-StartupFixture {
+    param($r)
+    foreach($value in 'actions/cache/restore@v6.1.0','actions/cache/save@main',('actions/cache/save@'+('2'*39))) {
+        Write-CiFixture $r '.github/actions/cache/action.yaml' "uses: $value`n"
+        Assert-StartupFailure $r 'full 40-character commit SHA'
+        Assert-CiReject { Get-StartupExternalLockKey $value } 'full 40-character commit SHA'
+    }
+ } }
  tag_key_does_not_cover_sha_uses={ Invoke-StartupFixture { param($r) Write-StartupFixtureLock $r 'actions/checkout@v1.0.0'; Assert-StartupFailure $r "lockfile missing exact uses key $checkout" } }
  nested_dependency_requires_coverage={ Invoke-StartupFixture { param($r) Write-StartupFixtureLock $r $checkout $false; Assert-StartupFailure $r "lockfile missing exact uses key $cache" } }
  mutable_inline_reference_fails={ Invoke-StartupFixture { param($r) Write-CiFixture $r '.github/actions/cache/action.yaml' "uses: actions/cache@v1`n"; Assert-StartupFailure $r 'full 40-character commit SHA' } }

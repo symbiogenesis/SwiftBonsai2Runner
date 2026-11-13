@@ -70,12 +70,21 @@ function Read-StartupLock([string]$Source) {
     foreach ($key in $dependencies.Keys) { if ($dependencies[$key].Count -ne 4 -or -not $dependencies[$key]['ref']) { throw "${Source}: incomplete dependency metadata for $key" } }
     return @{ Workflows=$workflows; Dependencies=$dependencies }
 }
+function Get-StartupExternalLockKey([string]$Reference) {
+    # gh-actions-lock v0.4.1 serializes pins at owner/repository granularity:
+    # internal/dep/dependency.go Key() and internal/lockfile/convertor.go depToPin().
+    # Sub-action/reusable-workflow paths are traversal inputs, not lock key fields.
+    # Validate the complete reference first and retain its full commit identity;
+    # CanonicalRef/Pin.String only fold SHA spelling and owner/repository case.
+    if ($Reference -cnotmatch '^(?<repository>[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)(?:/[A-Za-z0-9_.-]+)*@(?<sha>[0-9a-fA-F]{40})$') { throw 'expected a full 40-character commit SHA for the complete external reference' }
+    return $Matches.repository.ToLowerInvariant() + '@' + $Matches.sha.ToLowerInvariant()
+}
 function Get-StartupClosure([string]$Source, $References, $Local, [string[]]$Ancestors = @()) {
     if ($Source -cin $Ancestors) { throw "${Source}: same-repository action dependency cycle" }
     foreach ($reference in $References[$Source]) {
         $key = "$Source`n$($reference.Line)"
         if ($Local.ContainsKey($key)) { Get-StartupClosure $Local[$key] $References $Local (@($Ancestors) + $Source) }
-        elseif ($reference.Value -cmatch '^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+(?:/[A-Za-z0-9_.-]+)*@[0-9a-fA-F]{40}$') { $reference.Value }
+        elseif ($reference.Value -cmatch '^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+(?:/[A-Za-z0-9_.-]+)*@[0-9a-fA-F]{40}$') { Get-StartupExternalLockKey $reference.Value }
     }
 }
 function Test-WorkflowStartup([string]$RepositoryRoot) {
