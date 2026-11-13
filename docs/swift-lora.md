@@ -6,24 +6,11 @@ for the next response and every Extra effort pass, without reloading. Zero disab
 correction while retaining the adapter. The broker exposes an explicit development
 option; no local training is needed.
 
-Bounded native ARM64 loading/decode passes, but **Swift basis correctness,
-effectiveness, quality and standard/daily-service acceptance remain unqualified**.
-No optimal scale is established. [Prism 0.1.25](native-rust-engine.md) is active;
-historical results retain their original runtime identities.
+**Swift basis correctness, effectiveness, quality and standard/daily-service
+acceptance remain unqualified**.
+No optimal scale is established. The [compiled runtime lock](../config/prism-inference.lock.json)
+identifies the selected release.
 [PLAN.md](../PLAN.md#creative-quality-adapters-and-memory) owns remaining work.
-
-The [historical 0.1.13 bounded lifecycle](evidence/ptq1-0113-lifecycle-41539984210/independent-review.json)
-passes on PTQ1 with Prism 0.1.13, Runner `74bef68`, and the explicitly selected
-four-worker policy. Three one-token-cap streams complete at scales 1.3, zero and
-1.3, with invalid-scale rejection and same-owner continuation. The final request
-supplies the actual first response as assistant history, bound by captured content
-and message digests. This verifies the bounded scale/history application sequence
-and owned cleanup. All three streams terminate at `length`; their short visible
-text does not prove complete-answer quality, loaded-zero/no-adapter logits identity,
-nonzero numerical application or correct native SSM basis. That workload resets
-state per request; generated text supplied as history is not prefix-state reuse.
-This one attempt does not qualify other worker policies, full context/output,
-performance, isolation, installation or default promotion.
 
 ## Artifact and published evidence
 
@@ -124,19 +111,6 @@ evidence. Public reconstruction can establish a candidate's numerical agreement;
 additional native/Rust agreement cannot reconstruct original-run provenance.
 Source review closes no model qualification gate.
 
-The [2026-11-02 public-source recheck](evidence/ptq1-authoring-inputs-20261102.json)
-finds the same publisher revision and no new authoring material in the inspected
-repository, releases or referenced model metadata. It records the exact required
-producer handoff: checkpoint shard/tensor identities, the original conversion and
-toolchain records bound to the approved adapter, and all-48 reproduction/mapping
-inputs for the existing intake. The selected direction's later B-factor agreement
-does not supply those missing inputs. The subsequent
-[source-only reassessment](evidence/ptq1-public-authoring-route.json) narrows the
-earlier external-only interpretation: independent A reconstruction has a public
-route even though authenticating the original authoring run remains unresolved.
-The hosted reference report keeps original provenance, native writer, logits/state
-and promotion flags false, including after a complete numerical match.
-
 ### Direction consistency
 
 `bonsai-tools qualification` operation `basis-direction` independently checks all
@@ -207,27 +181,12 @@ input/correction captures, loaded-zero identity, nonzero application and the oth
 runtime/application gates above remain required. Repeated or invented reference
 vectors cannot establish authoring provenance merely by passing this comparator.
 
-The [independently reviewed hosted comparison](evidence/ptq1-direction-41530766802/independent-review.json)
-at Runner `6c25a5d` passed all 129 sites and 660,480 channels with zero numeric
-difference. Its [complete report](evidence/ptq1-direction-41530766802/direction-comparison.json)
-binds the approved adapter and selected public direction; the
-[file manifest](evidence/ptq1-direction-41530766802/file-manifest.json) retains the
-exact extracted receipt bytes. This resolves the selected direction's consistency
-with B, leaving checkpoint/conversion provenance, A reproduction, native SSM
-mapping and model behavior unqualified.
-
-The native `basis-direction` comparator remains available for the exact approved
-adapter and [immutable public raw direction](../config/swift-lora.direction.json).
 Retain the complete per-site report, native intake receipts, input locks and
-source/tool identities when reviewing those inputs. The selected public raw vector
-cannot authenticate the original authoring invocation or qualify native writer
-basis and promotion. The completed hosted comparison above preserves its original
-source/run identities independently of the retired one-shot workflow.
+source/tool identities when reviewing a direction. Its consistency with B cannot
+authenticate the original authoring invocation or qualify native writer basis,
+model behavior or promotion.
 
 ## Memory and execution cost
-
-The process counters and GGML allocation behavior in this section describe the
-historical publisher CPU checks. They do not measure the active Rust/NPU path.
 
 The adapter contains **9,664,512 F32 payload bytes** (about 9.23 MiB on disk). Prism
 retains packed base weights and adds adapter branches rather than merging a dense
@@ -235,14 +194,8 @@ replacement. Each of 128 linear sites adds two rank-1 multiplications, scale and
 addition; the embedding uses lookup plus multiplication. Backend buffers, graph nodes,
 intermediates and changed lifetimes add overhead beyond the file's payload.
 
-Bounded 16-token checks pass with peak Job commit of **2,074,329,088 bytes**
-with the adapter and **1,487,458,304 bytes** for the base: a diagnostic difference of
-**586,870,784 bytes (559.68 MiB)**. These separate process counters exclude mapped
-weights and do not isolate adapter allocation. They establish bounded loading/decode,
-not reliable refusal changes, quality or performance.
-
-The difference does not isolate persistent buffers, workspace high-water allocations
-or graph lifetimes. The
+File payload alone does not identify persistent buffers, workspace high-water
+allocations or graph lifetimes. The
 [allocator](https://github.com/PrismML-Eng/llama.cpp/blob/73bfe6cc485554822f80c473a3c0c4f25e80f41b/ggml/src/ggml-alloc.c)
 already reuses eligible SCALE/ADD parent storage; explicit in-place calls do not
 guarantee savings. F32 factor/input multiplication needs no activation-type conversion
@@ -260,7 +213,7 @@ publisher comparison engine. Native Rust graph ownership is covered separately
 in the [runtime contract](native-rust-engine.md).
 
 Adapter activation reserves the graph again after base initialization, freeing old
-compute buffers before replacement. The commit difference does not prove coexistence.
+compute buffers before replacement. Reservation alone does not prove buffer coexistence.
 Prism Inference owns the immutable B-storage overlay,
 native regression and
 [builder](https://github.com/symbiogenesis/prism-inference/blob/main/scripts/Build-PrismEngine.ps1).
@@ -271,8 +224,8 @@ runtime does not automatically include the source overlay; Runner consumes revie
 All 129 B tensors are byte-identical F32 `[1,5120]`, SHA-256
 `1cdf553ae2623501140ec2e52c3dfa6a80d33fcfe6f91a6d3c4dcd5f887eeca0`. The overlay shares
 storage only after matching buffer type/device, shape/layout and bytes, preserving each
-target's metadata and adapter lifetime. Its saving is modest and does not resolve the
-larger counter difference.
+target's metadata and adapter lifetime. This is a source storage count,
+not measured process-memory savings.
 
 Lossless allocation changes preserve public initialization, scale-zero filtering,
 load-without-apply, fit/no-allocation estimates, dynamic changes, A's reduction, all F32
@@ -380,7 +333,7 @@ the matrix across repeated owner jobs.
 | Throughput | Native single-token **eval-run count / eval time**, from the pinned [stderr timing printer](https://github.com/PrismML-Eng/llama.cpp/blob/73bfe6cc485554822f80c473a3c0c4f25e80f41b/common/sampling.cpp), invariant decimals, missing/duplicate/invalid counters rejected. `decodeTokens` counts eval runs: final sampled tokens normally are not decoded, and a one-token prompt remainder may count. [Completion diagnostics](https://github.com/PrismML-Eng/llama.cpp/blob/73bfe6cc485554822f80c473a3c0c4f25e80f41b/tools/completion/completion.cpp) cross-check sampler accepts minus verbose-prompt tokens, including EOG; visible text is not a token counter. |
 | Limits | Exact stdout preserves reasoning, EOG and trailing newlines; EOG is not an authoritative finish reason. Wall time includes startup; first-token latency, power and thermals are absent. This small greedy corpus proves neither broad creative quality nor statistical equivalence. |
 
-Use the [complete-task measurement protocol](performance-expectations.md#2026-literature-measurement-and-comparison)
+Use the [complete-task measurement protocol](performance-expectations.md#measurement-and-comparison)
 for broader useful-completion comparisons under equal budgets.
 
 ### Independent review and correctness evidence

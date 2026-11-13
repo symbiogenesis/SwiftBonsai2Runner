@@ -3,8 +3,8 @@
 **Original PQ2 on native Rust Prism 0.1.27 is the development default**, with four
 CPU row workers, standard adapter scale 1.3 and [X2 NPU placement](hexagon.md) when initialization
 succeeds. `--publisher-engine` explicitly selects rollback; PTQ1 remains opt-in.
-Bounded native CPU decode passes; creative quality, performance and daily-service
-isolation remain unqualified. The [Qwen reference](model-selection.md) has a separate
+Creative quality, performance and daily-service isolation remain unqualified.
+The [Qwen reference](model-selection.md) has a separate
 lock/profile; no local training or fine-tuning is planned.
 
 This guide covers artifacts, resource policy, lossless packing/allocation and
@@ -63,138 +63,13 @@ its behavior, runtime cost and standard-profile qualification are independent.
 
 ## Release decision
 
-**2026-11-03: NO-GO for PTQ1 default promotion; retain experimental opt-in.**
-The reviewed candidate uses **Prism 0.1.14**, source
-`9e8ea3e2c042ab0c3f1a8e9596ff155e202c3c57`, the current-weight PTQ1 artifact,
-the standard adapter at scale **1.3**, four CPU row workers and reset every request.
-The [release decision](evidence/ptq1-primetime-decision-20261103.json) binds the
-reviewed Runner source and evidence. Required acceptance is missing, so release
-approval is withheld. The format remains experimental; this decision does not
-establish an intrinsic arithmetic, quality or performance failure.
-
-The later [blocker implementation follow-up](evidence/ptq1-unblock-20261103/summary.json)
-passes focused local controls for exact retained-source replay, shared typed hosted
-admission and failed/cancelled response identities. It improves the next evidence
-capture and leaves full hosted, model, provenance, benefit and human qualification
-pending. The frozen no-go review and historical trial results retain their own
-source identities.
-
-| Required condition | Current decision basis |
-| --- | --- |
-| Exact-source application acceptance | No accepted source-bound hosted package is retained for the reviewed Runner revision. Current production linking, strict analyzers and actual-model service/UI acceptance remain unqualified. Historical failed validation clocks stay closed. |
-| Adapter basis and application | The declared all-48 public A reconstruction has no retained complete result. Original checkpoint/invocation authentication, native writer mappings and full-model loaded-zero/nonzero controls remain unqualified. Public reconstruction alone cannot authenticate the original authoring run. |
-| Practical benefit | The one retained 0.1.13 complete-answer pair observed 35.73 seconds for PTQ1 versus 18.38 for PQ2. Missing power observations disqualify performance and resource-benefit interpretation. No matched 10% latency improvement or accepted capacity/energy benefit is established. |
-| Daily use and independent review | Full context/output, recovery, isolation, sustained resources/comfort, clean-machine installation and independent human quality acceptance remain unqualified. |
-| Complete promotion verdict | All nineteen required gates must pass for the exact candidate. No compiled 0.1.14 promotion score is claimed. The historical 0.1.13 six-pass/thirteen-pending score does not transfer. |
-
-[PLAN.md](../PLAN.md) owns the remaining work. Reconsider release
-only after authenticating the required adapter inputs, qualifying a frozen
-source-bound package and its device/human acceptance, demonstrating eligible
-benefit, retaining reproducible evidence and passing every promotion gate.
-The prepared ten-minute service/rollback workload can close a narrow operational
-milestone after its prerequisites pass; it cannot supply complete release approval.
-
-### Historical evidence
-
-The lossless representation is not rejected. The historical [decision receipt](evidence/ptq1-release-decision.json)
-binds the local and CI X2 startup failures, exact runtime/build identities and retained raw
-evidence digests. Rust service [source `27e4860`](https://github.com/symbiogenesis/prism-inference/pull/2)
-introduced PTQ1/approved-adapter profiles and passed its owning
-[Foundation](https://github.com/symbiogenesis/prism-inference/actions/runs/41009394716)
-and [conformance](https://github.com/symbiogenesis/prism-inference/actions/runs/41009394718).
-The [one-token device smoke](evidence/ptq1-rust-smoke.json) passes complete numerical
-comparison at scale 1.3 for that historical source. The retained Rust **0.1.10** integration pins
-source `749a5f5b43bf77764a29682557ec91a8de8dcdef`; the [main integration record](evidence/prism-main-integration.json)
-binds both complete upstream CI gates, published bundles, reviewed source bytes and
-the exact pin. That release's bounded lifecycle evidence uses original PQ2
-with four workers; it does not qualify PTQ1 or a different worker policy. The
-[readiness audit](evidence/ptq1-default-readiness.json) separates those identities
-and records the evidence gaps. [PLAN.md](../PLAN.md) remains the backlog.
-
-| Gate | Evidence and decision |
-| --- | --- |
-| Current-weight packing | Fresh export matches all 209,920,000 reconstructed blocks, the pinned 5,946,648,928 bytes and SHA-256 `e658f0f0736a03a4549535a439f9b07254ebf8ab88ae27cbe6e52d098ca5d1f5`. The 1,259,520,000-byte saving is real. |
-| Publisher runtime startup on X2 Elite Extreme | The exact 63-file verified package at `73bfe6cc485554822f80c473a3c0c4f25e80f41b` exits `3221225794` (`0xC0000142`) on `llama-completion.exe --version` under the ordinary required worker policy. No model option or model artifact is supplied. The 512 MiB Job and ten-second deadline retain the shared 15.5 GiB admission and 4 GiB reserve; the local minimum available physical memory is 21,811,826,688 bytes. This is a startup failure, not a capacity or PTQ1/PQ2 performance comparison. |
-| Historical Rust 0.1.6 app integration | This version accepts original PQ2 without LoRA; PTQ1 and adapter service support are absent. The earlier three-token diagnostic remains valid only for its no-adapter scope. |
-| Rust replacement source | Source `27e4860` implements explicit PTQ1/approved-adapter service and sealed scale/reset semantics. A single supplied token at scale 1.3 on X2 matches all native logits and live state exactly. This does not establish actual service, quality or resource qualification. |
-| Rust 0.1.8 required-sandbox smoke | [X2 main-only application CI](https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41020705958) passes exact readiness, one scale-1.3 streamed response and owned Job/listener cleanup in a three-minute owner job. The four-token cap yields one reported output token and three visible bytes with `stop`; zero-scale and invalid-scale/reuse checks are skipped. [History](evidence/ptq1-native-service.json) retains the earlier 0.1.7 startup failure. This does not qualify broader lifecycle, answers, quality, resources or default promotion. |
-| Historical Rust 0.1.10 release | [Exact published artifacts and reviewed pin](evidence/prism-main-integration.json) retain one worker and reset every request by default. [Bounded lifecycle acceptance](evidence/prism-0110-lifecycle-service.json) covers original PQ2 with four workers. Artifact verification and that different-format receipt do not transfer historical PTQ1 numerical/service evidence to these binaries. |
-| Historical Rust 0.1.10 PTQ1 attempt | [One-worker settled-main lifecycle attempt](evidence/ptq1-0110-service-attempt.json) reaches verified model/adapter readiness, but the first scale-1.3 request exhausts its request allowance without a completed stream receipt. Zero-scale, invalid-scale and supplied-history steps remain pending. Intake through cleanup/retention takes 168.70 seconds; owned Job/listener and ephemeral runner cleanup pass. Partial output is unknown because cancellation discards the response buffer. This is an incomplete request, with no TPS, first-token or intrinsic-format verdict. |
-| Reduced Rust 0.1.10 PTQ1 follow-up | [Two complete one-token streams](evidence/ptq1-0110-bounded-scale-streams.json) pass at scales 1.3 and zero, with verified readiness and cleanup in 161.31 seconds. Invalid-scale rejection and captured-history change-back are skipped at the 45-second request-and-cleanup threshold; overall required acceptance fails. Observed startup is 36.75 seconds and requests take about 40 seconds each. No numerical identity, complete-answer, quality, TPS or paired-benefit gate closes. |
-| Rust DLL collector replacement | [Hosted source-bound compilation and model-free controls](evidence/ptq1-collector-hosted.json) pass, including seven collector controls. Exact-source Runner Foundation [subsequently passed](https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41221140592). Actual-model capture with this collector and the current-release checker remains pending; hosted success does not establish model parity. |
-| Complete correctness, answers and sustained use | Scalar/explicit NEON trajectories, PTQ1 LoRA basis/forward execution, 8K context/4K output, recovery, independent answer quality, target-device benefit and owner-accepted comfort remain unqualified. No throughput or quality verdict was collected in this session. |
-
-The startup failure is shared by the publisher executable, so it also blocks that
-PQ2 diagnostic on this host. It is not evidence that PTQ1 arithmetic is worse.
-The supervisor's generic `ModelProcessStarted` field records executable launch;
-the fixed `--version` command did not load model weights. The corrected
-[settled-main CI run](https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41007117743)
-built the maintenance tool successfully and reproduced the same startup failure,
-with `ModelLoaded=false` and `ModelTrialsRequested=false`. Its retrieved build and
-startup artifacts are archived with exact file digests in the receipt. Both checks
-are model-free; neither establishes a performance or quality comparison. The first
-[owning CI attempt](https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41005833161)
-stopped in compiler discovery before capture; that build failure is not a PTQ1 verdict.
-
-Further app qualification must use a reviewed runtime serving the intended format
-and adapter under unchanged containment. For the publisher path, review and release a
-startup fix; the [headless UCRT source candidate](runtime-candidates/README.md#headless-ucrt-argv-candidate)
-is one lead, not a diagnosis of the independently built release. Then pass the exact
-worker preflight in settled-main device CI. For the Rust path, qualify the current
-published service and matching scalar/NEON logits and complete live state; the
-historical numerical diagnostic alone does not qualify service behavior.
-Then run the stable-condition prefix screen, the separate
-[scale-1.3 complete-response contract](swift-lora.md#standard-profile-qualification),
-full-context/output and cancellation/recovery trials, independent quality review,
-and sustained resource/comfort and installation acceptance with PQ2 rollback.
-All independent [promotion criteria](validation.md#promotion-criteria) still apply.
-
-The historical 0.1.13 four-worker one-token numerical and scale/history captures remain narrower
-than full-context scalar/NEON state qualification, immutable adapter writer-basis provenance and
-loaded-zero/nonzero controls. The existing publisher-based prefix/LoRA matrices cannot supply a
-Rust-service decision: the publisher startup gate fails on X2, and their fourteen/twenty-eight
-fresh-process workloads have not been redesigned to fit the five-minute total laptop allowance. The
-[bounded four-worker Rust-service pair](evidence/ptq1-rollback-41573164864/independent-review.json) now captures identical naturally completed tree-name answers
-and passes original-PQ2 rollback, cleanup and retained-file verification. Its fixed-order PTQ1
-request took 35.73 seconds versus 18.38 for PQ2, with lower bounded PTQ1 Job commit. AC/battery
-status was not recorded, so performance comparison is ineligible and no resource-benefit gate
-passes. Stable power conditions, repeated benefit, per-prompt throughput and independent quality
-remain separate. Do not dispatch the legacy matrices or split them across repeated owner jobs.
-Missing full-context, output, human quality, security, resource and comfort evidence remains
-pending. The offline `runtime-promotion` evaluator has a separate explicit PTQ1 policy with nineteen
-gates, binding the complete export receipt and original-PQ2 rollback identities. The
-[frozen four-worker score](evidence/ptq1-promotion-bb020f4.json) passes six independently reviewed documentary/packing/rollback gates and
-leaves thirteen pending. Its [independent review](evidence/ptq1-promotion-bb020f4/independent-final-review.json) binds the exact runtime, source, hosted packing
-and durable archive without transferring historical device results. The [delivery record](evidence/ptq1-delivery-20261101.json) also
-retains the pre-model owner no-go: no model or owner runner started, and the existing user chat
-remained open. The [0.1.13 four-worker promotion score](evidence/ptq1-promotion-bb020f4-service-90a62b9-review.json)
-retains 6 of 19 gates passed, with 13 pending for frozen candidate `bb020f4` and separately
-reviewed service harness `90a62b9`. The
-[latest bounded four-worker service trial](evidence/ptq1-service-41577882160/independent-review.json)
-passed three one-token-cap streams at scales 1.3, negative zero and 2.0, plus invalid-scale
-rejection, before its context-error check received no complete HTTP header and stopped within
-119.737 charged seconds (AC connected at parent endpoints; child after-power unknown). The
-[published Prism 0.1.14 release](https://github.com/symbiogenesis/prism-inference/releases/tag/v0.1.14)
-includes the typed context-error fix. The
-[publication review](evidence/ptq1-context-publication-014/independent-review.json) binds its exact
-source, published archives and reviewed Runner pin; actual 0.1.14 model/service/rollback
-acceptance under the
-[combined service and original-PQ2 rollback profile](validation.md#actual-model-application-acceptance)
-remains pending. The [retained 0.1.13 source diagnostic](evidence/ptq1-numerics-41568281287.json)
-matched all 39,504,384 logits and live-state values byte for byte for one supplied token on X2
-Elite Extreme with explicit NEON, four row workers and adapter scale 1.3 (5.85 GiB checker peak Job
-commit). None of these partial checks authorizes a PTQ1 default.
-
-Those 0.1.14 plans are historical packet targets. The current combined-service
-harness embedded the then-active 0.1.25 lock; new execution requires either separately
-prepared frozen tooling or a newly reviewed active-release packet. It cannot
-complete the earlier trial or transfer that trial's scores to the active release.
-
-A reproducible correctness/security/recovery regression rejects the tested
-configuration. A performance no-go must use the predeclared device/settings and
-accepted latency/quality limits, including any capacity/energy route to promotion.
-Unknown conditions or missing evidence cannot establish an intrinsic format failure.
-No default, runtime pin, admission or reserve changed with this decision.
+PTQ1 remains an experimental opt-in. Exact reconstructed weights establish
+lossless packing, not identical activation arithmetic, answers or performance.
+Promotion needs current-source application and adapter-basis acceptance, full
+context/output and recovery checks, independent quality review, eligible measured
+benefit, resource/comfort acceptance and original-PQ2 rollback. All nineteen
+PTQ1 promotion gates must pass for one frozen candidate; missing evidence leaves
+promotion pending. [PLAN.md](../PLAN.md) owns that work.
 
 ## Exact PTQ1 packing
 
@@ -225,25 +100,7 @@ Runner also provides the independent Rust verifier through
 receipt, compares every original symbol and raw scale with a separately derived
 decoder, and checks preserved metadata and non-PQ tensor bytes. Header reads,
 payload buffers and execution time are bounded. Its synthetic controls cover all
-wire bytes in every lane and malformed tensor extents. The [complete external-owner
-scan](evidence/ptq1-delivery-52f98b3.json) verified all 209,920,000 blocks, preserved
-metadata and 57,767,936 other tensor bytes in 11.88 seconds using 128 KiB of payload
-buffers, after owned model cleanup inside the same five-minute allowance. This is
-data verification, outside Actions CI; it establishes no inference speed, answer
-quality or activation/state parity.
-
-The [reviewed main-only hosted reproduction](evidence/ptq1-hosted-packing-85fd2f1.json)
-subsequently reproduced the exact pinned PTQ1 artifact and independently checked
-all 209,920,000 blocks, raw scales, preserved headers and other tensor bytes.
-Its source/run/artifact identities, selected JSON digests and durable archive were
-independently verified. The raw compiled/archived export receipt uses Windows
-CRLF; its distinct Git-blob LF digest is bound by an exact reversible line-ending
-check. These identities remain separate. This is complete packing evidence for
-that source, without activation, state, adapter-basis or performance qualification;
-later source and promotion records require their own review. The
-[fresh hosted packing check](evidence/ptq1-hosted-packing-b833d6b.json) independently matched all
-209,920,000 blocks, their original symbols and scales, and the preserved metadata and other tensor
-bytes with the pinned 0.1.13 exporter.
+wire bytes in every lane and malformed tensor extents.
 
 All converted tensor block counts are divisible by sixteen, retaining 32-byte alignment.
 Non-tensor bytes occupy the 11,120,992-byte header/data-offset region; there are no
@@ -266,9 +123,8 @@ break-even before offsets, padding or indexes. Its proposed layout would occupy
 6,158,339,606 bytes before container/index overhead, **211,690,678 bytes more** than the
 verified 5,946,648,928-byte PTQ1 export.
 
-The Cobalt 100 ARM64 synthetic prototype is also slower than PQ2, without establishing
-a universal BITCOS limit, Snapdragon behavior or full-model performance. This artifact's
-serialized-size disadvantage alone excludes the proposed layout.
+This artifact's serialized-size disadvantage alone excludes the proposed layout;
+it does not establish a universal BITCOS limit or a device-performance verdict.
 
 ## Supported selection and resource policy
 
@@ -276,14 +132,13 @@ serialized-size disadvantage alone excludes the proposed layout.
 default native Rust engine. `--publisher-engine` selects the explicit publisher CPU
 rollback; direct app/broker launches also accept `--use-repacked-ptq1`. The artifact
 handle stays verified/held through owned teardown. Arbitrary paths, checkpoint
-substitutions and missing-file fallback are unsupported. Native service support for
-PTQ1 and the approved adapter dates to the [0.1.9 prerelease](https://github.com/symbiogenesis/SwiftBonsai2Runner/blob/7b37b29826b377386c1ddfe933cd4e75d6a97856/docs/evidence/prism-019-release.json);
-implementation alone does not establish release qualification. Native chat defaults
+substitutions and missing-file fallback are unsupported. Service implementation
+alone does not establish release qualification. Native chat defaults
 to four row workers, with explicit one-worker selection. Publisher rollback keeps
 its separate fixed four-thread CPU policy. Separate source-checker evidence does not qualify app TPS.
 The default NPU placement selects original PQ2 projections, not PTQ1 tensors.
 
-Both packings retain the [CPU resource policy](#native-cpu-status), context, retry
+Both packings retain the [CPU resource policy](#memory-selected-serving-context), context, retry
 and recovery. Serialized savings alone do not lower admission or promote PTQ1.
 
 ## Reproduce the assessment
@@ -356,7 +211,6 @@ instead charges the immutable selected cache and sequential score scratch:
 | --- | ---: | ---: | ---: |
 | Publisher FP16 | 65,536 | 137,344 | 62,720 |
 | Native FP16 recovery | 65,536 | 131,296 | 62,720 |
-| Historical K4/V4 profile (Prism 0.1.26) | 16,896 | 34,016 | 241,664 |
 | Reviewed full-context K4/V4 (Prism 0.1.27) | 16,896 | 34,016 | 262,144 (separate state allowance) |
 | Native K4/V3 capacity candidate | 14,848 | 29,920 | 262,144 (model limit) |
 
@@ -380,8 +234,8 @@ Capacity rounds down to 256-token pages and must accommodate the 4,096-token
 reply cap plus the 64-token template reserve. It never exceeds Swift's declared
 262,144-token model context or the selected live-state bound after charging
 156,893,184 recurrent bytes plus single-copy native KV, score and metadata
-charges. FP16's 4 GiB state ceiling permits 62,720 tokens; the historical K4/V4
-profile permits 241,664. The reviewed Swift K4/V4 scope permits 262,144 tokens
+charges. FP16's 4 GiB state ceiling permits 62,720 tokens. The reviewed Swift
+K4/V4 scope permits 262,144 tokens
 through its geometry-derived state allowance. The separate K4/V3 candidate fits
 the same model ceiling within 4 GiB, but its serving gate remains closed.
 At 20 GiB available before launch, publisher sizing selects 37,120 tokens and
@@ -482,64 +336,27 @@ conversation content under the existing recovery preference. The composer
 rejects oversized insertions as a whole; the broker still enforces exact token
 counts, output reservation, input-marker policy and serialized request bounds.
 
-## Native CPU status
-
-This section describes the publisher CPU assessment command, not current-release
-Rust application acceptance. Its historical observations retain their original
-runtime and workload identities.
-
-The fixed check uses 8K context, FP16 K/V, F32 recurrent/convolution state, batch
-128/microbatch 64, four threads, a synthetic prompt and a 16-token cap. New owner-device
-checks require prebuilt tools, allow at most three minutes in the worker and share a
-four-minute setup/verification/execution budget, leaving cleanup inside the five-minute
-total ceiling. Historical captures used a ten-minute worker deadline. The check uses
-the embedded template/default reasoning without a system preamble:
-the template cannot render that preamble alone without a user query.
-
-| Accounting domain | Current bound |
-| --- | ---: |
-| PQ2 file + live KV/recurrent state + shared rotation + deduplicated signs/metadata | 7,904,356,704 bytes |
-| Job commit allowance | 11.5 GiB |
-| Remaining allowance for runtime/scratch/temporary allocations | 4,443,674,272 bytes |
-| Running physical reserve | 4 GiB |
-| Available physical memory required at admission | 15.5 GiB |
-
-The budget is owner-selected, not justified by measured allocation reductions.
-Full-context/4K-output peak memory remains unqualified. Qwen retains its separate 22 GiB admission requirement.
-
-PQ2 and current-weight PTQ1 both complete the bounded decode, with and without the
-approved adapter. The recorded base check reported 1,487,458,304 bytes peak Job commit.
-Job commit excludes mapped weight residency and is not total RAM; working-set/private-byte
-and available-memory watchdogs remain required. Sixteen tokens establish loading and
-decode only, not a finished answer, creative quality, throughput or daily isolation.
-
 ## Numerical and admission boundaries
 
-The distinct activation routes require full-model comparisons bound to exact
-artifact/reference, graph arithmetic, scalar/NEON backend and complete live
-KV/convolution/recurrent state, with tolerance `1e-3 + 1e-3 * abs(reference)`. Matching
-token IDs cannot override a logits/state failure.
+PQ2 and PTQ1 use different activation routes. Full-model comparisons must bind
+the exact model, adapter, reference, graph arithmetic, cache policy and
+scalar/NEON backend. Compare every logit and complete live KV, convolution and
+recurrent state under the declared tolerance; matching token IDs cannot override
+a logits/state failure. The FP16 reference bound is
+`1e-3 + 1e-3 * abs(reference)`; [K4/V4](quantized-kv.md) requires a separate
+approximate-cache quality and resource packet.
 
-| Retained evidence | Result and limit |
-| --- | --- |
-| Rust **0.1.7 source `27e4860`**, approved adapter **1.3**, automatic ARM64, supplied `[248045]` | [Main-only X2 CI](https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41012887460) matches all **129 files / 39,504,384 logits/live-state values** byte for byte; maximum absolute error zero and greedy ID matches. Work takes 153.285 seconds; earliest recorded setup through job completion is 196 seconds, below the five-minute ceiling. Uses unchanged **15.5 GiB admission / 11.5 GiB Job / 4 GiB reserve**; Rust peak Job commit is 6,283,157,504 bytes and minimum available physical memory 17,766,457,344 bytes. The [receipt](evidence/ptq1-rust-smoke.json) binds exact tools, sources, controls and retained raw evidence. No scalar/explicit NEON, zero-scale identity, changed-nonzero effect, writer-basis, service, quality or throughput qualification. |
-| Rust **0.1.6**, no adapter, automatic ARM64, supplied `[248045, 872, 198]` | All **483 files / 118,611,456 logits/live-state values** match native bytes; max absolute error zero. Greedy IDs `[198, 198, 220]` match. [Repair receipt](evidence/ptq1-arithmetic-evidence.json) binds source/checker/reference/comparison/supervision hashes and earlier failures, including 430,526 out-of-tolerance one-token values. |
-| Q8_0 repair | Matches pinned DLL scale `maximum * rounded-binary32(1/127)` and inverse `127/maximum`; resolves halfway-code divergence first localized to block 13 FFN down. Generic/PQ2 preparation is unchanged. |
-| Offline comparator | Reconstructs every KV/convolution/recurrent value from original hash-bound serialized native state; exact inventory and finite values required. Both historical failure controls were reproduced exactly first. |
-| Diagnostic resource envelope | **12 GiB admission / 8 GiB Job / 4 GiB reserve**; peak commit 6,275,977,216 bytes (5.845 GiB), minimum available physical 8,027,590,656 (7.476 GiB). Direct Rust supervision retains caller lifetime, artifact verification, output cap and deadline. Three tokens do not qualify service admission; Job commit excludes mapped weights/total RAM. |
-| Scalar control | Two supplied tokens before 180-second deadline: incomplete, not accepted. Fresh 360-second attempt rejected before launch at 9,289,871,360 available bytes versus 12 GiB required. Completed scalar/explicit NEON controls remain pending. Default-feature ARM64 build establishes NEON eligibility, without observed per-operation counters. |
+Service acceptance also requires loaded-zero/no-adapter identity, nonzero adapter
+application, full-context trajectories, complete answers, cancellation/recovery
+and same-release original-PQ2 rollback. Narrow numerical checks cannot supply
+those independent gates. The [runtime contract](native-rust-engine.md) defines the
+provisioned release and supported subset.
 
-The [Rust runtime contract](native-rust-engine.md#swift-cpu-supported-subset)
-owns the provisioned release, source revision and current CI status; the table
-above retains this diagnostic's exact version and evidence limits.
-Longer/full-context trajectories, adapters, completed app-setting answers, recovery
-and resource/comfort remain pending.
-The scale-one LoRA harness does not prove PTQ1/PQ2 answer parity at app scale 1.3.
-
-Subtracting the exact packing difference suggests **15,383,478,272 bytes** candidate
-admission only if suitability and resource evidence justify it; it is not enforced.
-Mapped residency and private commit are distinct. File savings cannot lower the Job
-ceiling/admission by themselves; the physical reserve stays mandatory.
+File savings do not reduce admission or the Job ceiling by themselves. Keep
+mapped residency, private commit and device allocations separate and preserve
+the running physical reserve. PTQ1 currently receives no discount in the fixed
+memory allowance; [memory-selected serving](#memory-selected-serving-context)
+charges the chosen context and cache independently.
 
 ## Bounded decision-screen interface
 
@@ -558,7 +375,7 @@ a retained, model-free `--version` preflight under the ordinary headless worker
 policy: ten seconds, 512 MiB Job, unchanged admission and physical reserve.
 Failure stops the screen and records no PTQ1 suitability verdict; the pinned
 publisher runtime's known X2 DLL startup failure is tracked under
-[headless startup](cpu-kernels.md#ci-availability-and-headless-startup).
+[headless startup](cpu-kernels.md#headless-startup-prerequisite).
 
 Inspect its plan without loading a model:
 
@@ -589,7 +406,7 @@ scale-one/512-token LoRA contract.
 
 This audit targets Prism `73bfe6cc485554822f80c473a3c0c4f25e80f41b`.
 Storage reductions are not measured RAM/throughput gains. Lossless changes preserve
-weights, KV precision, checkpoints, adapters and the [resource policy](#native-cpu-status).
+weights, KV precision, checkpoints, adapters and the [resource policy](#memory-selected-serving-context).
 
 ### Native allocation candidates
 
@@ -706,86 +523,16 @@ stages fallible KV copies and reuses live recurrent/convolution storage, avoidin
 149.625 MiB of transient Swift payload. This is neither measured peak RAM nor a
 steady-state saving.
 
-## 2026 state and cache research outside the lossless scope
+## Approximation boundary
 
-The [research register](research-register.md) owns versions and proof limits for
-sources reviewed through **2026-10-29**. These candidates do not change current
-packing, cache selection, FP32 recurrent state or admission. Their FP16 cache
-comparisons refer to the reference/recovery profile; the active native K4/V4
-development default has its [separate contract](quantized-kv.md). Account separately for Swift's
-16 attention and 48 recurrent layers: KV compression affects neither GDN state nor
-weights.
+KV/recurrent quantization, low-rank caches, approximate attention and weight
+codebooks change numerical or state identity. They remain separate from lossless
+PTQ1 packing and allocation reuse. Retain complete live/rollback state, scales,
+rotations, reconstruction scratch and any high-precision copies in accounting.
+Compression ratios alone do not establish usable memory or complete-request benefit.
 
-### Persistent checkpoint compression versus live-state quantization
-
-| Candidate ([register Q18–Q21](research-register.md#approximation-quantization-theory-and-numerical-analysis)) | Swift boundary |
-| --- | --- |
-| DASC | Omits checkpoint GDN heads/KDA channels, with zero-fill or approximate refresh; live state stays full precision and convolution uncompressed. Compare exact sparse checkpoints plus suffix replay first. |
-| DAMP | Mixed FP16/INT8 live state is approximate. Its 9.9-bit average and batch-16–256 results establish neither exact continuation, batch-one gain nor Swift/LoRA quality. |
-| Preserving Updates | Low-rank bypass and directional rounding address small-update loss. Charge factors/scales, merge scratch and checkpoint/rollback lifetimes; per-step MSE does not bound sequence error. |
-| Minima W4A4 | Quantizes projections/gates, retaining FP32 recurrence and per-module fused scales. Its larger NVFP4 Qwen artifact is neither four-bit state nor lossless Swift repacking; uniform stability remains unproved. |
-
-### Low-rank full-attention KV and reconstruction costs
-
-| Candidate ([register Q25–Q26](research-register.md#approximation-quantization-theory-and-numerical-analysis), [H23](research-register.md#hybrid-recurrence-prefix-caching-and-speculative-decoding)) | Representation and accounting |
-| --- | --- |
-| iS-KV | Exact recent window, approximate older SVD history; basis updates transform historical coordinates. Count bases, coefficients, protected prompt/window, FP32 updates, reconstruction and simultaneous old/new factors; persistent-KV ratios exclude weights/scratch. |
-| JoLT | Tucker cache plus rotated low-bit residual, jointly budgeted. "Near-lossless" describes empirical quality; retained batch-one A100 decode is **7.5–65.9× slower** than dense. Count decomposition, reconstruction and residual scratch. |
-| VeriCache | Compressed drafts plus full verification cache, qualified for greedy output. Count both caches, transfers, verification and hybrid state: GPU-residency savings can increase total storage, and one shared-memory request lacks the evaluated resource overlap. |
-
-An exact recent window does not make older low-rank history exact. Basis and
-coefficient/checkpoint identities must commit or roll back together. None of these
-replaces exact FP16-bit storage without separate qualification.
-
-Report `unique weights + unique KV + live recurrent state + retained checkpoints +
-pending factors/bypass + rollback + peak scratch + metadata`, with mappings/device
-allocations in separate counter domains. Reserve overlapping old/new representations
-and asynchronous users. [Algorithm constraints](inference-algorithms.md#2026-state-traffic-and-verification-research)
-cover buffered/speculative state. Approximation needs its own artifact or numerical
-profile, full-continuation/quality checks and target-device CI evidence.
-
-## 2026 entropy coding and alternative weight artifacts
-
-Lossless byte coding and new quantized weights have different contracts. Smaller files
-or lower reconstruction error do not establish fewer executable bytes or faster
-generation. Source versions and results live in the register's [compression](research-register.md#packed-projections-cpu-kernels-and-compression)
-and [quantization](research-register.md#approximation-quantization-theory-and-numerical-analysis) catalogs.
-
-| Candidate / register ID | Memory and arithmetic boundary |
-| --- | --- |
-| Shannonic / L12 | Lossless ANS can preserve symbols/scales; charge table state, independent-stream indexes and decode work. Communication wins do not prove local inference savings. |
-| QTEA / L13 | New ternary/residual artifact; charge residuals/indexes. GPU/architecture estimates do not establish CPU benefit. |
-| Tetra / L16 | Distinguish serialized bits from streamed codebook/scale/layout bytes; new weights have measured quality losses. |
-| CoS-VQ / Q27 | Shared-scale/codeword search on the Qwen base family; surrogate optimality needs true-error verification and proves no global quality/memory optimum or Swift compatibility. |
-| YAQA / Q28; FastKron / Q29 | Offline rounding/quantization: charge Hessians/factors and preprocessing. Work/depth gains do not imply faster generation. |
-| Search Your Block Floating Point Scales! / Q30 | Exhaustive legal-scale optimality differs from a heuristic short window; changing scales changes Q8_K/Q8_0 arithmetic. |
-
-Cross-block entropy coding does not contradict the independent fixed-block bound.
-Changing codebooks, scales, rotations, sparsity or residual weights is not lossless
-export. New artifacts require their own length/hash, activation, quality, compatibility
-and runtime evidence. The [SIMD
-review](cpu-kernels.md#cpu-kernel-research-reviewed-in-october-2026) and register also
-retain unsupported and withdrawn lattice/rotation/hardware leads.
-
-### Lossless weight and cache codecs
-
-The [November 12 survey](research-register.md#november-12-deployment-audit) adds
-lossless execution-oriented codecs alongside the older byte-coding references.
-These are conditional research inputs; [PLAN](../PLAN.md#survey-ideas-outside-the-current-laptop-backlog)
-owns activation. They change no current artifact, precision, cache policy or admission.
-
-| Codec family | Current Swift boundary |
-| --- | --- |
-| ZipServ, NF12/NyoomFloat12, ANS weight coding and Glyd | Their useful full-precision weight compression is not another packing layer over arbitrary ternary PQ2/PTQ1. Swift's current metadata contains only 47,185,920 bytes (45 MiB) of BF16 tensors beside its packed weights and F32 tensors; do not apply a BF16 percentage saving to the whole GGUF. Native consumers, licensing and complete-request benefit remain unqualified. |
-| NF12 fixed stream plus escape groups | Preserve all exceptional original BF16 values and charge their bytes/indexes. Nominal twelve-bit storage is not a universal twelve-bit bound. Bit-exact weight decoding does not establish the fused GEMM's reduction identity or identical greedy output. |
-| GAAC / ZipFusion | The inspected codecs reconstruct BF16 KV within attention. Swift's FP16 reference/recovery profile retains original FP16 KV bits; the active K4/V4 profile is separately lossy. An FP16 port requires its own codec, exceptional-value coverage, scratch/metadata budget and direct consumption path. It must preserve the baseline probability-rounding boundary or declare changed numerics. No GDN/convolution state compression follows from a KV result. |
-| SplitZip / AnchorKV | Transfer compression and inactive-session anchor/replay capacity address separate problems. Charge full restoration, retained anchors, exact suffix replay, temporary expanded state and metadata. Neither establishes faster ordinary local decode, and dense-model replay evidence does not establish hybrid-state restoration. |
-
-Consume compressed data within bounded tiles where an actual bottleneck justifies
-it; expanding a complete extra weight/cache copy can erase the capacity and traffic
-benefit. Account for simultaneous source, packed data, exceptions, indexes, retained
-checkpoints, asynchronous users and peak decompression scratch. Compare current
-batch-one/8K operation before extrapolating long-context or maximum-batch results.
-Exact byte reconstruction, bitwise arithmetic, target-distribution preservation and
-empirical quality retention remain separate claims. PTQ1's verified 1.173 GiB packing
-saving and its open adapter/application/benefit gates are unchanged.
+The [quantized-cache contract](quantized-kv.md) owns the current K4/V4 development
+selection and explicit FP16 recovery. [Inference constraints](inference-algorithms.md#compression-and-approximation-constraints)
+own arithmetic and error boundaries; the [research catalog](research-register.md#research-catalog)
+holds optional alternatives. Only a demonstrated bottleneck justifies another
+codec or precision experiment, with its own exact-source, quality and resource gates.

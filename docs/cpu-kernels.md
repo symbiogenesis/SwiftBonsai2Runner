@@ -67,57 +67,24 @@ packet or transfer historical passes across changed source identities.
 
 ## Current CPU comparison readiness
 
-The [2026-11-12 source preflight](evidence/cpu-comparison-readiness-20261112/summary.json)
-binds Runner `212bd98e` and Prism `8d2b306`, independently of the historical
-attempts below. On that exact Prism source, native ARM64 and x64 strict Release
-Clippy covered the runtime, NEON helper and server with all targets; the
-feature-disabled runtime analysis and native runtime/server binary linking also
-passed. Three exact controls passed for request-local BPE reuse, prepared finite
-proof precedence/storage and aligned six-head score reductions. The fourth
-fully qualified selector matched zero tests and exited zero; it supplies no GDN
-control verdict. The harness stopped without retry and skipped the remaining
-two controls. No model, performance comparison, CI operation or promotion ran.
+The [native CPU bundle lane](cpu-bundle-comparison.md) compares fixed Prism
+`0.1.23` and registry `0.1.25` with FP16 KV, standard adapter 1.3 and four CPU
+workers. It is a frozen comparison packet, separate from Runner's active runtime
+and K4/V4 development default. A bundle result cannot attribute benefit to each
+change or qualify a newer release. No qualified CPU performance result is claimed.
 
-The aggregate and command endpoints observed battery operation with saver off;
-charge fell from 78% to 75%. These snapshots establish neither uninterrupted
-conditions nor performance benefit. This separate 300-second allowance is
-closed; remaining time cannot be reused to retry the missing control or begin
-comparisons. Final hosted coverage, remaining exact controls, codegen/stack
-review and complete-model state/logit/adapter/cancellation/resource acceptance
-remain required. The record qualifies no release bundle or runtime pin.
-
-The native source-bound collector, hosted preparation/evaluator and
-[Runner comparison lane](cpu-bundle-comparison.md) are published. Hosted
-[preparation for run 43236051696](https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/43236051696)
-passed; its queued comparison was canceled before any model started. No CPU
-performance result exists; the selected lane remains available for a future
-owner-operated workload. The [X2 thread screen](#x2-cpu-thread-screen) compares the publisher's
-`4/4` and `6/6` thread budgets; the existing one-token source timing capture is
-attribution only. Most newer CPU changes directly replace code without per-change
-selectors. Exact LUT selection is a library executor, and tiled/triangular GDN
-prefill needs its explicit graph consumer; ordinary private-service requests
-do not exercise all those paths. The selected next scope is bundle-first:
-fixed `0.1.23` control versus published registry Prism `0.1.25`, with FP16 KV, standard adapter 1.3
-and four CPU workers. A bundle result cannot establish each change's individual
-benefit. Keep exact LUT, tiled/triangular prefill and latest-prefix variants
-separate. Match actual CPU-only placement, artifacts, work/output equivalence,
-per-arm power and full-state/recovery controls under the promotion policy above.
-
-The new tooling's focused verification passed strict collector analysis and
-seven controls against each API, 26 offline evaluator controls, workflow startup
-and its twelve regressions, upstream action-lock verification, PowerShell parsing
-and selected Markdown/whitespace checks. No model or performance comparison ran.
-The declared 300-second tooling allowance was not met through later temporary
-cleanup: that cleanup record reached 899.495 seconds from the original start.
-Keep the passing command observations separate from this aggregate limit failure;
-neither this check nor the earlier preflight qualifies a promotion or new README
-performance figure. The original clocks are closed without a retry.
+The [X2 thread screen](#x2-cpu-thread-screen) instead compares the publisher's
+`4/4` and `6/6` thread budgets. One-token source capture supplies attribution only.
+Exact LUT, tiled/triangular GDN and latest-prefix variants require their own
+consumers and checks; ordinary service requests do not exercise every source path.
+Require exact final-source controls, native/fallback code generation and stack
+review, complete-model state/logit/adapter/cancellation parity, resource acceptance
+and matched CPU-only complete-request benefit before promotion.
 
 ## New local prompt and attention consumers
 
-The November 13 local Prism candidate (source integration `b146491`) adds these
-consumers independently of the published 0.1.25 bundle and the fixed 0.1.23
-comparison control:
+These explicit source consumers are separate from Runner's ordinary launch policy
+and the fixed CPU bundle comparison:
 
 - Quantized KV attention shares the existing private row pool across independent
   query heads, preserving each head's arithmetic and complete-state transaction.
@@ -210,7 +177,7 @@ repeated preparation and cache pressure without requiring X2 Hexagon execution:
   The request-local piece cache and longer-piece heap path retain their bounds.
 
 These are source work/storage reductions, not measured X1 or X2 speedups.
-The 0.1.25 development bundle includes these source changes. Final-source hosted
+The development bundle includes these source changes. Final-source hosted
 checks, feature-disabled fallback, ARM64 codegen/stack review, complete-model
 state/logit/adapter and cancellation parity, tokenizer/application acceptance,
 and matched complete-request benefit remain required for qualified promotion
@@ -251,11 +218,8 @@ These candidates need final-source hosted checks, feature-disabled and portable
 fallback, ARM64 code-generation/resource review, complete-model state/logit/
 adapter and cancellation parity, and matched complete-request measurements on
 one selected family under [cross-generation CPU promotion](#cross-generation-cpu-promotion).
-Development on X2 supplies no X1 speedup verdict. Runner's 0.1.25 development
-repin supplies no performance qualification and retains conservative admission.
-The [0.1.25 registry delivery](evidence/prism-0125-publish-20261112/summary.json)
-published `bonsai-neon-dot 0.1.2` and advanced the runtime's exact dependency for
-the new capability API. Actual-model/device and benefit qualification remain pending.
+Development on X2 supplies no X1 speedup verdict. A development repin supplies
+no performance qualification and retains conservative admission.
 
 ### Further X1 CPU candidates
 
@@ -267,7 +231,7 @@ scheduling work, including paths used with the standard adapter:
   their token tails avoid repeated optional-ISA selection inside packed-block
   loops. Integer kernels, all four PQ2 symbols, floating scale order and the
   baseline NEON fallback remain unchanged. The opaque helper API is published
-  in `bonsai-neon-dot 0.1.2` and consumed by registry runtime 0.1.25.
+  in `bonsai-neon-dot 0.1.2` and consumed by the reviewed runtime dependency.
 - Single-, paired- and triple-buffer elementwise worker dispatches keep their
   at-most-eighteen error slots on the stack. Each dispatch removes one transient
   heap allocation while retaining the earliest failing chunk after all tasks
@@ -284,7 +248,7 @@ final-source exact arithmetic, failure and adapter controls, feature-disabled
 fallback, strict Release analysis and linking, ARM64 codegen/stack review,
 complete-model state/logit/cancellation parity and matched selected-family CPU
 request benefit under [cross-generation CPU promotion](#cross-generation-cpu-promotion).
-The 0.1.25 development runtime includes this source; qualified promotion remains pending.
+The development runtime includes this source; qualified promotion remains pending.
 
 ### Grouped dispatch, hardware half widening and exact LUT execution
 
@@ -326,8 +290,8 @@ or no-go outcomes retained. Apply [cross-generation CPU promotion](#cross-genera
 to shared work reductions; LUT selection remains explicit pending matching-family
 benefit. Full-model logits/state/adapter and cancellation
 acceptance remain independent. The new half-widening API is published in
-`bonsai-neon-dot 0.1.2`, consumed by the 0.1.25 registry and binary development
-deliveries. This repin does not qualify a LUT default or measured request benefit.
+`bonsai-neon-dot 0.1.2`, consumed by the reviewed runtime dependency. This repin
+does not qualify a LUT default or measured request benefit.
 
 ### Complete-row SDOT, fixed attention lanes and bounded GDN phases
 
@@ -342,7 +306,7 @@ Hexagon execution:
   Original Q8_K scales, all four PQ2 symbols, fused/separate arithmetic and
   136-byte prepared blocks remain unchanged. Baseline NEON, scalar and tiled
   multi-token kernels retain their existing paths. The new safe helper API is
-  published in `bonsai-neon-dot 0.1.2`, consumed by registry runtime 0.1.25.
+  published in `bonsai-neon-dot 0.1.2`, consumed by the reviewed runtime dependency.
 - Six-head and paired twelve-query attention scores consume sixteen key columns
   per loop with four fixed accumulator indices. Swift's width-256 key changes
   from thirty-two to sixteen loop iterations and query-row slices. Cached-half
@@ -366,19 +330,8 @@ codegen/spill/stack review, complete-model logits/state/adapter/cancellation
 parity and matched selected-family CPU complete-request benefit remain qualification
 gates under [cross-generation CPU promotion](#cross-generation-cpu-promotion).
 In particular, GDN's extra input reads must be included in that comparison.
-The 0.1.25 development bundle includes this source without a measured benefit
+The development bundle includes this source without a measured benefit
 claim; conservative memory admission remains unchanged.
-
-One fixed model-free local workload on `01fbf5d` closed after 40.412 seconds of
-its 300-second allowance. Native exact controls and strict analysis stopped at
-the pre-existing half-widening helper's missing explicit NEON function context;
-no tests executed. Strict x64 analysis found helper documentation and existing
-LUT executor lints. Source corrections are included in `8504810`, without a
-retry. Rust formatting, these Markdown files and whitespace checks passed on
-the captured source; final-source compiler and execution checks remain pending.
-Aggregate and per-command endpoints observed AC connected, saver off and 100%
-charge; they establish neither continuous stability nor performance benefit.
-No model, benchmark or CI operation ran.
 
 ### Scoped PQ2 validation, tiled Q/K/V preparation and temporal GDN
 
@@ -416,20 +369,8 @@ selected-family CPU complete-request benefit under
 [cross-generation CPU promotion](#cross-generation-cpu-promotion).
 Include preparation, dispatch and repeated input reads in timing.
 The prepared-PQ2 API is published in `bonsai-neon-dot 0.1.2` and consumed by
-registry runtime 0.1.25. Runner's development repin consumes the same reviewed
+the reviewed runtime dependency. Runner's development repin consumes the same reviewed
 production source; qualification remains pending and admission is unchanged.
-
-The fixed model-free check on `750f7b3` closed after 15.026 seconds of its
-300-second allowance. Strict native all-target Release Clippy stopped at an
-obsolete GDN line-count expectation and two test assertion lints. Source
-corrections remove that expectation and make the empty-score assertions
-explicit, without reopening the clock. No test executed; x64, feature-disabled
-analysis and production linking were skipped. Rust formatting, Markdown and
-whitespace checks passed on the captured source. Aggregate and per-command
-endpoints observed AC disconnected, saver off and 85% charge; uninterrupted
-power stability remains unknown. All selected children exited, command logs
-were removed and the external build cache was retained. No model, benchmark or
-CI operation ran. Final-source compiler and execution acceptance remain pending.
 
 ### Prepared packed-KV queries and CPU preparation reuse
 
@@ -462,18 +403,6 @@ CPU-only complete-request benefit remain pending under
 New helper APIs need publication before a dependent registry release; an exact
 source-bound runtime bundle and reviewed Runner repin are required before the
 application consumes these changes. Retain the current runtime as rollback.
-
-The fixed model-free check on Prism `9703109` closed after 16.420 seconds of its
-300-second allowance. Rust formatting passed; native all-target strict Release
-analysis stopped on documentation/test-style lints, including two existing
-speculative-buffer assertions. The source corrections were reviewed without
-retrying the workload. No regression test executed; x64 and feature-disabled
-analysis, production linking and Markdown checks were skipped. Aggregate and
-command endpoints observed AC disconnected, battery saver off and 82% charge;
-continuous power stability remains unknown. Owned commands exited and temporary
-driver/logs were removed; the external Cargo cache and one compact local summary
-were retained. No model, benchmark, CI operation or performance qualification ran.
-Final-source compiler and execution acceptance remain pending.
 
 ### Scan-owned packed values and joined prompt projections
 
@@ -508,13 +437,9 @@ review remain required. Complete-model logits/state/adapter/cancellation and
 matched CPU-only complete-request benefit retain the
 [cross-generation promotion gates](#cross-generation-cpu-promotion). New helper
 APIs require publication before a dependent runtime release, followed by a
-genuine source-bound bundle and reviewed Runner repin. Runner's active 0.1.25
-runtime does not consume this local source candidate.
-
-After source-only lint corrections, final-source native/x64 strict analysis,
-feature-disabled checks and production linking remain owner-managed hosted work.
-The fixed local validation allowance is closed; corrected source has not been
-replayed.
+genuine source-bound bundle and reviewed Runner repin. Source presence does not
+establish selection by Runner's ordinary serving path;
+verify the exact release lock and consumer before execution.
 
 ## Execution and dispatch
 
@@ -601,14 +526,11 @@ inventory.
 | Isolated `bonsai-neon-dot` (`SDOT`/`SMMLA`) & `u8x16` `PTQ1_0` | Safe boundary crate (`tools/neon-dot`) wrapping ARMv8.2-A `vdotq_s32` (`dotprod`) and `vmmlaq_s32` (`i8mm` `2x2` row-by-token tiles) behind runtime feature checks, plus non-widening `u8x16` base-3 division-by-multiplication `PTQ1_0` trit unpacking (`dot_ptq1_q80_block`, `dot_ptq1_q8k`) |
 | Fused `RMSNorm + Sign*FWHT` & `SwiGLU + Sign*FWHT` | Single-pass 16-register NEON block helpers (`rms_norm_signed_fwht_in_place`, `swiglu_signed_fwht_into`) eliminating intermediate scratch round-trips; last-layer state-only prefill (`Evaluation::full_attention_kv_only`, `Evaluation::recurrent_attention_state_only`) skips dead output-proj/FFN on `layer 63`; `parallel_tile` uses a spin-then-park completion barrier |
 
-The earlier **2026-11-12** local-source audit found `Tl1BlockLut` construction
-only in tests, besides its public reexport. The explicit `Pq2LutExecutor`
-candidate above now connects it to prepared matvec and graph execution; it is
-not an automatically selected kernel. No cross-token Vec-LUT consumer is
-implemented. Existing packed token tiles reuse decoded weight blocks; they do
-not implement activation-LUT execution. The
-[lookup contract](inference-algorithms.md#packed-lookup-kernels) distinguishes
-these mechanisms and the research register retains the original sources.
+The explicit `Pq2LutExecutor` connects bounded LUT preparation to matvec and graph
+execution; it is not automatically selected. Cross-token Vec-LUT remains a
+separate consumer. Existing packed token tiles reuse decoded weight blocks,
+which is different from activation-LUT execution. The
+[lookup contract](inference-algorithms.md#packed-lookup-kernels) distinguishes them.
 
 An integrated exact LUT path must share bounded activation preparation across
 eligible output rows and token tiles while preserving Q8_K/Q8_0 quantizers,
@@ -664,8 +586,8 @@ finite-checked, and BF16 activations, rounded F32 products and the original F64
 sum/final F32 rounding are unchanged. No decoded row is materialized. Across
 48 recurrent layers' two 5,120-by-48 matrices this avoids a nominal 90 MiB of
 F32 scratch writes and matching rereads per token; compiler behavior and actual
-traffic/latency remain unmeasured. In the historical 0.1.23 eligible NEON build,
-BF16 uses direct eight/four-row helpers through the existing row-worker pool;
+traffic/latency remain unmeasured. Eligible NEON builds use direct eight/four-row
+BF16 helpers through the existing row-worker pool;
 the unsupported-build path retains direct scalar row consumption. This does
 not require a decoded F32 row or change the conservative memory admission.
 
@@ -682,7 +604,7 @@ assessment](swift-memory.md).
 ## Signed constant floor division
 
 [Ben Joffe's algorithm](https://www.benjoffe.com/fast-floordiv), published
-2026-10-27 and reviewed here on **2026-10-30**, computes signed integer division
+2026-10-27, computes signed integer division
 rounded toward negative infinity using a multiply and arithmetic shift. It is
 a candidate for a measured signed constant-divisor hotspot in Prism. Ordinary
 Rust signed `/` truncates toward zero; replacing it requires an existing floor
@@ -784,40 +706,12 @@ correctness infrastructure; target-device CI supplies performance/thermal/energy
 threads and total core count are control settings, not universal optima; phase placement and
 mixed-device contention are part of a profile's declared scope.
 
-## CPU kernel research reviewed in October 2026
-
-The [research catalog](research-register.md#packed-projections-cpu-kernels-and-compression) owns
-sources, versions and transfer limits through **2026-10-29**. Its CPU applicability rules are:
-
-| Candidate | Constraint |
-| --- | --- |
-| Layout/LUT reuse (L1–L4, L10) | Derive NEON consumption order from lanes, quantizers and scale groups. Include unpack/preparation/dot/scale work, repacking and retained copies. Larger tables/accumulators can spill registers or evict useful cache; choose bounded tiles using complete-workload CI. |
-| Entropy coding (L12) | Charge indexes, decode dependencies, scratch and consumed bytes. Independent streams may feed kernels, but 8-bit/communication results do not establish packed-matvec benefit. |
-| Representations (L11, L13–L17) | Nonuniform codes, compensation, fitted rotations, lattices and trellises need new artifacts and separate qualification. |
-| Hardware (L18–L19) | Simulated ISA/datapath changes are outside existing Snapdragon software work. |
-
-Retain packed storage without persistent expansion, distinguish decode from genuine multi-token
-prefill and apply the intermediate/correction bounds above to every borrowed layout.
-
 ## X2 CPU thread screen
 
-The **2026-10-29 model-free inventory** identifies the development target, not a qualified speedup
-or GPU/NPU profile. Native ISA semantics live in [capability contracts](hardware-capabilities.md).
-
-| Observation | Retained value |
-| --- | --- |
-| CIM/independent hardware-registry name | `Snapdragon(R) X2 Elite Extreme - X2E94100 - Qualcomm Oryon(TM) CPU` |
-| Native toolchain/target/kernel | Pinned Rust; `aarch64-pc-windows-msvc`; Windows `10.0.26300` (`10.0.26300.0` probe display) |
-| CPU topology | 18 physical/logical cores, group 0, efficiency/scheduling classes `[0, 1]`; class numbers do not name core types |
-| Native Windows ISA | Positive NEON, dot-product and **NEON I8MM** flags; dispatched kernels still need codegen/numerical/device qualification |
-| GPU inventory | Adreno X2-90, driver `32.0.149.0` |
-| Power policy | Effective `balanced`; scheme `381b4222-f694-41f0-9685-ff5bb260df2e` |
-| Planned screen | `d6-p6`, `d4-p12`, `d8-p18`; 24 samples; `ModelProcessStarted: false` |
-
-Identity checks accept unchanged observations and reject injected AC/mode/kernel changes and legacy
-records lacking host identity. The speech-host query agrees on CPU/kernel. Reports, plans and
-comparison receipts are retained externally in `Bonsai-PerfNext3-20261029/x2-evidence`; they contain
-no model timing.
+The screen targets native Windows ARM64 on X2 Elite Extreme. Capture current
+CPU/kernel/features, topology, driver and power identities for each workload;
+stored inventory snapshots do not establish current conditions or kernel eligibility.
+Native ISA semantics live in [capability contracts](hardware-capabilities.md).
 
 The manual [X2 CPU workflow](../.github/workflows/x2-cpu-evaluation.yml) prepares exact maintenance
 tools on hosted ARM64 CI. Its default `run_device: false` performs no owner-device execution.
@@ -954,31 +848,15 @@ Two short pairs give an initial smoke, not significance or sustained qualificati
 Retain losses/failures; promising phases need complete-task, quality, responsiveness and comfort
 follow-up. The screen supplies no energy verdict, accelerator enablement or new default.
 
-#### CI availability and headless startup
+#### Headless startup prerequisite
 
-The retained **2026-10-29** GitHub Actions inventory contains zero self-hosted runners and no
-X2 screen runs. A fresh read-only `gh api repos/symbiogenesis/SwiftBonsai2Runner/actions/runners`
-query on **2026-10-30** also returned `total_count: 0` and `runners: []`. This is an inventory
-snapshot, not proof of a broken persistent configuration. Device evidence requires native ARM64
-on settled `main` and the exact `x2-cpu-<run_id>` ephemeral label; local model execution cannot
-substitute for CI. No runner was registered and no device job was dispatched for this check.
-
-The pinned legacy `llama-completion.exe --version` fails with `3221225794` (`0xC0000142`, DLL
-initialization failure) under ordinary supervision: ten seconds, 512 MiB Job, one process, all 63
-verified files held through exit and no selected/loaded model. Identity: source
-`73bfe6cc485554822f80c473a3c0c4f25e80f41b`, archive SHA-256
-`cc808b33d35c72a3bd5c69a0d609d422426feb9dce23868e77992b6c33b8ddb3`. The PE chain
-`llama-completion.exe` → `llama-completion-impl.dll` → `llama-common.dll` → `SHELL32.dll` suggests a
-shell dependency without identifying the failing DLL. External
-`Bonsai-X2-HeadlessProbe-dcbb58f9ed3440ff809d03673989ec31` retains `runtime-verification.json` and
-`verified-headless/supervision.json`. Model trials require a passing bounded worker preflight;
-inspection-only help/version cannot qualify it or authorize weaker Win32k denial.
-
-The [UCRT argv source candidate](runtime-candidates/README.md#headless-ucrt-argv-candidate) removes the shell
-import in an exact-source CPU build. Its paired control reproduces `0xC0000142`; candidate version
-and seven Unicode/quoting/ownership cases pass unchanged worker policy on X2. Source/compiler/
-imports/hashes/supervision are retained there. This model-free source result leaves provisioned
-runtime/thread defaults unchanged pending upstream release review and device CI.
+Model trials require the exact verified publisher completion binary to pass the
+bounded worker preflight under unchanged containment. Inspection-only help or
+version success cannot substitute for that launch. Diagnose a startup failure
+before timing models; never weaken Win32k denial to make it run. The
+[UCRT argv source candidate](runtime-candidates/README.md#headless-ucrt-argv-candidate)
+has a separate source, build and device-qualification contract and does not
+automatically replace the installed publisher runtime.
 
 ### Device evidence separation
 

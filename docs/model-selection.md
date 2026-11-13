@@ -10,53 +10,21 @@ literature-nominated fallback. Published evidence gives moderate confidence in t
 base-model creative preference, but low confidence in this quantization and laptop
 comfort. There is no local candidate benchmark. Generic model provisioning without
 a lock override selects Qwen; native chat separately selects Swift and requires its
-explicit [provisioning steps](development-guide.md#native-chat-app). The Gemma
+automatic [in-app setup](development-guide.md#native-chat-app). The Gemma
 fallback is not selected.
 
-## Literature gate
+## Selection boundary
 
-Published results reviewed **2026-10-22–23** favor Qwen on aggregate creative
-scores. EQ-Bench is independent of the publishers but uses LLM judging; its entries
-do not identify the exact GGUF packs pinned here.
+Published creative-writing scores motivated the Qwen reference, but they evaluate
+different serving representations and often use LLM judges. They establish no
+creative-quality ranking for the exact GGUF packs on this laptop. Swift's
+reasoning benchmarks likewise do not establish prose quality. The Gemma fallback
+is unselected; there is no local exact-artifact comparison or comfort acceptance.
 
-| Published identity | Creative Writing v3 Elo | Raw rubric /20 | Longform score |
-| --- | ---: | ---: | ---: |
-| Qwen/Qwen3.8-27B | 1671.3 | 15.50 | 53.3 |
-| google/gemma-4-12B-it | 1288.9 | 15.71 | 48.7 |
-| google/gemma-4-26B-A4B-it | 1304.6 | 16.03 | 50.7 |
-| Swift PQ2_0 / base Bonsai 2 / Qwen3.6-35B-A3B | No entry found | — | — |
-
-Sources: [Creative Writing v3](https://eqbench.com/creative_writing), [versioned
-data](https://eqbench.com/creative_writing.js?v=1.0.91), [Longform
-Writing](https://eqbench.com/creative_writing_longform.html), and [versioned longform
-data](https://eqbench.com/creative_writing_longform.js?v=1.0.9). Missing entries are
-missing evidence, not zero scores.
-
-Gemma 12B has a slightly higher raw rubric score and more weight-memory headroom.
-The [Qwen
-samples](https://eqbench.com/results/creative-writing-v3/Qwen__Qwen3.8-27B.html) and
-[Gemma
-samples](https://eqbench.com/results/creative-writing-v3/google__gemma-4-12B-it.html)
-show continuity and constraint-following weaknesses; both models' longform chapter
-scores decline. Local creative quality is unqualified.
-
-The [CW methodology](https://github.com/EQ-bench/creative-writing-bench) uses 32
-prompts, three iterations and pairwise comparisons truncated to 4,000 characters.
-Longform v1.11 names Sonnet 4.6 as judge while its repository names Sonnet 4; per-entry
-provenance remains unclear. Hardware, quantization, thinking controls and template
-revisions are not established by the rows. Typical sampling (temperature 0.7, min-p 0.1)
-also differs from publisher guidance. These English-prose scores cannot be assigned to
-UD-Q3_K_XL or QAT Q4_0, or used to establish art direction, image critique, speed or
-thermal comfort.
-
-[Swift's publisher](https://ukisai.com/swift-bonsai-2) describes an experimental release
-with uneven general-purpose behavior. Its reasoning benchmarks do not establish creative
-quality. Historical runtime-correction results do not apply automatically to its updated
-merged PQ2 artifact. The [Gemma QAT
-artifact](https://huggingface.co/google/gemma-4-12B-it-qat-q4_0-gguf) is a conventional
-publisher-produced fallback; its benchmark evidence also uses a different serving
-representation. No reviewed exact-artifact X Elite result settles creative quality or
-laptop comfort for these choices.
+Compare complete held-out tasks with exact model, template, sampler, thinking,
+quantization and termination identities. Keep human prose quality, instruction
+following, memory, useful-answer latency and thermal comfort separate. Missing
+benchmark entries mean missing evidence, not zero scores.
 
 ## Source-only compatibility and memory sanity check
 
@@ -91,7 +59,7 @@ Batch 256 / microbatch 128 also needs scratch, graph buffers and allocation over
 the subtotal is not peak residency. Reuse/checkpoints stay disabled because server
 defaults exceed this estimate. The immutable file retains its MTP block, but speculation
 and projector/vision allocations are not admitted. The guarded CPU check requires 22 GiB
-available and has refused launch on the recorded host; the profile remains
+available and refuses launch when that admission is unavailable; the profile remains
 development-only and chat-launch-disabled.
 
 Preserve and verify the embedded template. The [pinned quantizer

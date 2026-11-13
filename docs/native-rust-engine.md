@@ -1,183 +1,77 @@
 # Native Rust Prism engine contract
 
-[Prism Inference](https://github.com/symbiogenesis/prism-inference) owns the safe Rust
-CPU runtime, tokenizer, packed kernels and hybrid graph. Runner owns the app,
-broker, provisioning and [release integration](../config/prism-inference.lock.json).
-The development default is Prism 0.1.25, original Swift PQ2, four CPU row workers
-and the standard adapter at scale 1.3. Supported X2 workers attempt
-[resident Hexagon `native-q2`](hexagon.md), retaining CPU execution if accelerator
-initialization is unavailable. This fallback preserves the engine and weights;
-`--publisher-engine` selects the pinned publisher comparison/rollback explicitly.
-Failures never silently switch engines or weights.
+[Prism Inference](https://github.com/symbiogenesis/prism-inference) owns the Rust
+CPU runtime, tokenizer, packed kernels and hybrid graph. Runner owns the native
+app, broker, provisioning and release integration. The
+[compiled release lock](../config/prism-inference.lock.json) is authoritative for
+the runtime version, source, archive and installed file identities.
 
-Full-context/output, creative-quality, sustained-performance, daily-isolation and
-clean-machine acceptance remain pending under the
-[promotion contract](#default-runtime-promotion) and
-[PLAN.md](../PLAN.md#runtime-and-correctness). No measured advantage is claimed.
-PTQ1 remains opt-in; its packing savings and historical service checks do not
-justify replacing PQ2. The [native Rust UI](ui-architecture.md) is a separate
-broker client; UI availability and browser/server feature parity do not qualify inference.
+The development default is Prism **0.1.27**, original Swift PQ2, four CPU row
+workers, K4/V4 cache and the standard adapter at scale 1.3. Supported X2 workers
+attempt [resident Hexagon `native-q2`](hexagon.md), retaining CPU execution when
+accelerator initialization is unavailable. Trusted `--placement cpu` explicitly
+selects CPU execution. These placement choices preserve the engine and weights;
+`--publisher-engine` separately selects the pinned publisher rollback. Failures
+never silently switch engines, weights or cache precision.
+
+Development defaults do not establish full-context, creative-quality,
+performance, daily-isolation or clean-machine acceptance. Those gates remain in
+[PLAN.md](../PLAN.md) and the [promotion contract](#default-runtime-promotion).
+PTQ1 remains opt-in. The [native Rust UI](ui-architecture.md) is a broker client;
+UI availability does not qualify inference.
 
 ## Swift CPU supported subset
 
-The target is native Windows ARM64 on Snapdragon X and X2. The active
-[release lock](../config/prism-inference.lock.json) pins **0.1.25**, source
-`99bab71270b1e6a6fb6d47eec2e34b8097cdcd4c`, its archive and all nine installed files.
-This development upgrade activates the reviewed K4/V4 (`rsq4`) cache default;
-trusted `--kv-cache f16` retains explicit recovery. It makes no CPU speedup,
-quality/memory or full-release qualification claim.
-The [November 9 capture](evidence/readme-performance-0123-20261109/summary.json)
-retains one eight-token public-broker observation for each representation; it does
-not qualify sustained performance, actual NPU use or the complete application.
-The [Prism 0.1.25 registry delivery](evidence/prism-0125-publish-20261112/summary.json)
-and [published experimental binary release](https://github.com/symbiogenesis/prism-inference/releases/tag/v0.1.25)
-retain separate identities. The runtime and exact-source
-numerical-capture locks advance together; [PLAN.md](../PLAN.md) keeps model,
-device and performance acceptance pending.
-
-Historical 0.1.14 inputs retain their original scope:
-
-- [Owning-check review](evidence/ptq1-context-owning-ci-9e/independent-review.json):
-  source `9e8ea3e2c042ab0c3f1a8e9596ff155e202c3c57`, Foundation, conformance and
-  source-package results.
-- [Publication review](evidence/ptq1-context-publication-014/independent-review.json):
-  tag, archives, executable and license identities.
-- [Readiness audit](evidence/prism-0114-readiness-20261103.json): historical 0.1.13
-  results retain their identities; no full-model acceptance transfers to 0.1.25.
-
-Typed pre-generation context rejection preserves same-owner recovery and
-invalidates stale counts; Windows artifact hashing uses CNG. Startup inherits
-0.1.13's single immutable-payload validation pass before graph publication,
-including allowed unused tensors, without rescanning payloads during shape binding.
-PTQ1 keeps extent/finite-scale checks without decoding and discarding valid trits.
-Optional timing APIs and the [prepared diagnostic tool](https://github.com/symbiogenesis/prism-inference/actions/runs/41535596245)
-support attribution; ordinary calls add no attribution clocks. CPU quantization, reduction
-order and copy-then-scale recurrent arithmetic remain unchanged; accelerators
-have separate numerical/device contracts. Historical 0.1.12 observations establish
-no current startup, throughput or memory gain. Registry and binary publication
-remain separate, as do full-context, sustained-performance, creative, adapter and
-daily-isolation acceptance.
-
-Runner's opt-in [native owned request-timing mode](validation.md#bounded-source-request-attribution)
-uses the exact pinned checker source from its hosted capture package and retains
-parent/Job ownership, artifact admission, the original deadline and cleanup reserve.
-Its fixed public request has a one-token output bound and a no-op text consumer.
-Preparing this lane supplies no actual-device attribution or released-service evidence.
-
-Historical required-container X2 PTQ1/adapter attempts:
-
-- [0.1.7](evidence/ptq1-native-service.json) failed during backend startup, before
-  verified readiness or streaming. Whether weights loaded is unknown; the separate
-  numerical checker does not qualify this service path.
-- [0.1.8](https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41020705958)
-  passed exact model/adapter readiness and one scale-1.3 stream under the required
-  native sandbox. With a four-token cap it reported one output token, three visible
-  UTF-8 bytes and natural `stop`. The three-minute owner job left an empty Job and
-  released listener. Optional zero-scale and invalid-scale/reuse checks were skipped.
-- [0.1.10, one worker](evidence/ptq1-0110-bounded-scale-streams.json) passed readiness
-  and one-token-cap streams at scales 1.3 and zero: both returned `Hello` with
-  `length`. Startup took 36.75 s; client requests took 40.14 and 40.35 s. The
-  45-second request-and-cleanup threshold prevented invalid-scale rejection and
-  captured-history change-back. Overall acceptance failed; owned cleanup and durable
-  selected receipts were verified, with no further model attempt.
-- [0.1.13, four workers](evidence/ptq1-0113-lifecycle-41539984210/independent-review.json)
-  passed the bounded scale/history lifecycle on X2 Elite Extreme at Runner
-  `74bef68c74417a56e38d90201b7f87ccc667a276`, run `41539984210`. Exact readiness
-  reported four effective graph workers. Three one-token-cap streams at scales
-  1.3, zero and 1.3 completed with `length`; invalid scale was rejected and the
-  same owner accepted change-back using the actual first response as assistant
-  history, with retained content/message digests. Shutdown left an empty Job and
-  released listener. Startup took 14.622 s; requests took 26.038, 25.753 and
-  55.558 s including broker and HTTP/SSE overhead. The single guarded attempt and
-  file-only review, including the earlier diagnostic charge, took 268.464 s
-  without a model retry.
-
-These bounded application smokes establish neither complete-answer quality,
-prefix-state reuse, zero/no-adapter numerical identity, nonzero adapter effectiveness,
-decode TPS nor controlled speedup over 0.1.12. Full state/scalar/NEON parity,
-restart/cancellation, context/output, resources/benefit, quality, isolation,
-installation and default promotion remain unqualified.
-
-Version 0.1.8 uses the reviewed Windows read-consumer helper at Runner revision
-`abe04b4a8eff18388af96f0e75c8a8d180b81989`. Inside an actual AppContainer, it skips
-only the denied volume-root metadata check; the owner still validates ancestry,
-and local-drive, non-root, Git/reparse, exact-file and retained-handle checks remain.
-Filesystem grants and resource limits do not change. Startup diagnostics retain
-only a fixed stage, error kind and optional numeric OS code.
-
-The private server is distributed through verified binary bundles and exact source
-checkouts; publication of the public runtime crate does not publish that server or
-replace Runner's compiled binary lock.
-
-| Implementation | Evidence boundary |
-| --- | --- |
-| PTQ1 Q8_0 scale/inverse | Automatic ARM64 three-token logits/live state match native bytes; scalar/explicit NEON and broader qualification remain pending in the [PTQ1 contract](swift-memory.md#current-weight-ptq1-option). Generic/PQ2 preparation is preserved. |
-| Reused sampler candidates; 32-channel attention-value tiles with at most 2 KiB accumulator payload | Transaction clones exclude scratch; frozen sampler/graph and bitwise attention fixtures preserve arithmetic/recovery. No measured TPS or model-peak-RAM gain. |
-| Atomic checkpoint restore | Stages fallible KV copies, then restores recurrent/convolution bits into live storage, preserving independent checkpoints and failure atomicity. Avoids 156,893,184 bytes (149.625 MiB) transient Swift payload. |
-| Aligned F32/F16 projections | Native-backed operator evidence only; generic, BF16 and unqualified tails are unchanged. No broader PTQ1 or reduced-admission claim. |
-| 18-worker ceiling, `TL1` LUT, `PTQ1×Q8_K` & `SuffixDecoding` | Source commits `c8e96d7`..`cada2ca` raise `MAX_ROW_WORKERS` to 18, add `Tl1BlockLut`/`dot_ptq1_q8k`/NEON `TQ2_0`, 8-op NPU batching + fused `GluSwiglu` VTCM chaining, and `SuffixDrafter`/Leviathan/block-verifier APIs; full-model device qualification remains separate. |
-
 | Area | Contract |
 | --- | --- |
-| Model | Exact original PQ2 from the [assessment lock](../config/swift-assessment.lock.json), or explicitly selected verified [current-weight PTQ1 export](../config/swift.ptq1-export.json); length, SHA-256 and metadata remain mandatory |
-| Weights | Dense `qwen35`; [851 tensors](../config/swift.metadata.json): 353 F32, 96 BF16 and 402 PQ2_0 or PTQ1_0, according to the selected artifact |
-| Execution | Scalar/eligible baseline NEON CPU execution; the current private worker also attempts the [X2 resident `native-q2` placement](hexagon.md). Unsupported operations reject; unavailable accelerator initialization retains CPU execution. |
-| State | One 8,192-token conversation; 16 full-attention and 48 recurrent blocks; active 0.1.25 defaults to [K4/V4](quantized-kv.md), with explicit FP16 recovery; F32 recurrent/convolution state and bounded allocation |
+| Platform | Native Windows ARM64 on Snapdragon X and X2; other device profiles require independent acceptance |
+| Model | Exact original PQ2 from the [assessment lock](../config/swift-assessment.lock.json), or explicitly selected [current-weight PTQ1 export](../config/swift.ptq1-export.json); length, SHA-256 and metadata are mandatory |
+| Weights | Dense `qwen35`; [851 tensors](../config/swift.metadata.json): 353 F32, 96 BF16 and 402 PQ2_0 or PTQ1_0 |
+| Execution | Scalar or eligible NEON CPU kernels, with the explicit [X2 placement subset](hexagon.md); unsupported operations reject |
+| State | One active conversation; 16 full-attention and 48 recurrent blocks; [K4/V4](quantized-kv.md) by default, explicit FP16 recovery, F32 recurrent/convolution state |
+| Capacity | Context selected once at launch from available RAM under [cache-aware memory accounting](swift-memory.md#memory-selected-serving-context); readiness, counting and generation share that capacity |
 | Input/output | Verified embedded template, exact prompt tokens, supplied reasoning history, declared stops and incremental text |
-| Generation | [Inference defaults](inference-defaults.md), optional thinking with `xhigh` effort, production MT19937 draw ordering and native sampler tie behavior |
-| Lifecycle | Verified readiness, identical canonical count/generation requests, one active generation, authentication, streaming, cancellation, deadlines, reset and recovery |
-| Admission | 15.5 GiB available physical memory, 11.5 GiB Job commit limit and 4 GiB running physical reserve; owner-selected development budget, with full-context resource qualification pending; diagnostic allowances are not launch profiles |
+| Generation | [Inference defaults](inference-defaults.md), optional Thinking and production MT19937 draw ordering/native sampler ties; total completion cap 4,096 tokens |
+| Lifecycle | Verified readiness, canonical count/generation requests, one active generation, authentication, streaming, cancellation, deadlines, reset and recovery |
+| Admission | Selected context and Job budget, 4 GiB running physical reserve and startup margin; the fixed 8K/11.5 GiB Job/15.5 GiB admission profile remains a separate qualification control |
 
-The service implements the explicit PQ2/PTQ1 profiles with or without the exact
-approved rank-one adapter. Runner preserves `--use-repacked-ptq1` and adapter
-selection for the native Rust default or explicit `--native-engine`, retains all
-artifact handles and requires exact representation/adapter readiness. The native child receives
-`--use-repacked-ptq1` and `--abliterate-lora ABSOLUTE_PATH`; canonical count/generation
-requests bind the single adapter slot and finite scale in `[0, 2]`. With the
-default reuse policy, generation resets graph state at the prepared request's
-sealed scale; explicit `latest` selection can retain an exact committed prefix.
-Adapter-scale changes invalidate prior state and checkpoint provenance.
-Requests remain bound to their originating session
-and may be reused after an explicit session reset. Successful requests and scale
-changes preserve sampler draw progression; explicit session reset reseeds it. The old PQ2/no-adapter
-readiness shape remains supported. CPU inference is implemented in Rust; signed
-accelerator code has a separate [retirement scope](cpp-retirement.md). Failure
-never switches the selected engine or representation.
+The verified runtime source is
+`1429a33772089dfd3a50a96c698b9dbe0b36836a`. Runtime and exact-source numerical
+capture locks advance together. A version string alone grants no capability;
+archive and installed file digests must match their compiled locks. Publishing
+the public runtime crate does not publish the private server or replace Runner's
+binary lock.
 
-Private readiness in the current release and reviewed releases from 0.1.11 onward
-must report integer `row_workers`, matching the selected one- or four-worker policy
-and derived from the instantiated graph.
-Only the reviewed 0.1.8, 0.1.9 and 0.1.10 pins may omit the field. Null, coerced,
-duplicate, unsupported and mismatched values reject readiness.
-This identifies the installed projection-worker budget, without proving executed
-parallel operations, active utilization or device benefit. Historical 0.1.10
-receipts remain configured-worker observations. Updating the pin does not transfer
-their model qualification to the current release, change admission, or expose a
-public request override.
+The service supports the selected PQ2/PTQ1 profile with or without the exact
+approved rank-one adapter. Canonical count/generation requests bind its single
+adapter slot and finite scale in `[0, 2]`. The default policy resets graph state
+at the sealed scale before each request. Explicit [latest-prefix reuse](prefix-reuse.md)
+can retain a complete committed prefix; scale changes invalidate its provenance.
+Successful requests preserve sampler progression; explicit reset reseeds it.
 
-This service implementation does not qualify PTQ1 or adapters for release.
-[Exact latest-prefix reuse](prefix-reuse.md) is an explicit native launch option;
-omission retains reset-every-request. Speculation is outside Runner's serving
-subset. Default X2 NPU placement remains independently unqualified for full-model
-correctness and benefit. PTQ1, other families and adapters need separate
-qualification, including [LoRA
-TPS/quality](swift-lora.md#standard-profile-qualification). [Hardware discovery](hardware-capabilities.md)
-reports inventory; runtime kernel eligibility/`Auto` does not implement Runner's planned
-qualified-device selector.
+Private readiness must identify the instantiated row-worker budget and every
+selected capability. Missing, duplicate, coerced, unsupported or mismatched
+fields reject startup. Worker counts identify a budget, not actual utilization
+or device benefit. Historical readiness shapes remain supported only for their
+explicitly reviewed release/source pairs in the compiled capability guard.
 
-The retained FP16 Swift numerical comparisons use the unchanged
-`1e-3 + 1e-3 * abs(reference)` tolerance for logits, complete logical
-recurrent/convolution state and live FP16 KV rows against pinned native execution.
-They do not qualify the active K4/V4 cache, whose changed numerical/state identity
-requires the separate [quantized-cache packet](quantized-kv.md#first-practical-promotion-packet).
-Exact chat/tokenizer and sampler references belong to
-the source project's [prompt
-fixtures](https://github.com/symbiogenesis/prism-inference/blob/main/tests/fixtures/swift-prompt-parity.json)
-and [sampler
-fixtures](https://github.com/symbiogenesis/prism-inference/blob/main/tests/fixtures/swift-sampler.json).
-Supplied-history streaming, output-limit termination, seeded replay, context
-rejection/recovery, abandonment, shutdown and restart checks are bounded evidence; full
-8K-context/4K-output and daily acceptance remain pending.
+Typed context rejection invalidates stale counts while preserving same-owner
+recovery. Startup validates immutable payloads before graph publication, without
+rescanning them during shape binding. PTQ1 keeps extent/finite-scale checks
+without decoding and discarding valid trits. Windows hashing uses CNG through
+the retained verified file handle.
+
+The FP16 numerical reference requires logits and complete logical KV,
+recurrent and convolution state within `1e-3 + 1e-3 * abs(reference)` against
+pinned native execution. This does not qualify K4/V4's different numerical and
+state identity; it needs its [independent packet](quantized-kv.md#first-practical-promotion-packet).
+Exact prompt/tokenizer and sampler fixtures belong to Prism. Runner's serving
+subset excludes speculation and client-selected cache, worker or backend overrides.
+
+The opt-in [owned request-attribution mode](validation.md#bounded-source-request-attribution)
+uses the pinned checker from a hosted source-bound package, with retained
+parent/Job ownership, admission, deadline and cleanup reserve. Its one-token
+public request supplies attribution only, not released-service or performance acceptance.
 
 ## Numerical and replacement boundaries
 
@@ -199,8 +93,7 @@ and confines device/OS calls to audited safe boundaries; ggml pointer bindings d
 satisfy it. Source reuse needs immutable revisions, licenses/notices, hardware assumptions
 and correctness evidence.
 
-The performance objective is roughly 2× end-to-end throughput; 3–5× depends on major
-baseline inefficiencies and is a stretch hypothesis. Prefill, decode and completed-task
+Prefill, decode and completed-task
 time are separate measurements, with cold load/repacking, allocation/copying,
 synchronization, memory traffic and the measured critical path included. [Orangu's
 published results](https://mnemosyne-systems.github.io/orangu/doc/server.html#scope) on
@@ -271,204 +164,51 @@ quality, security or resource regression. Hosted ARM64 results cannot establish
 Snapdragon performance. Backend changes also require complete-state phase handoff and
 compatible state/numerical identity.
 
-## 2026 literature: runtime overhead and work placement
+## Runtime work and storage contracts
 
-Sources reviewed 2026-10-29 and their platform limits live in the
-[systems catalog](research-register.md#2026-systems-measurement-and-output-budget-work);
-none establishes a defect or new profile in the pinned runtime.
+The selected source includes the following mechanisms. Counts describe source
+work or logical payload; they establish no measured latency or process-memory gain.
+Conservative snapshot and admission charges remain in force.
 
-| Register source | Project implication |
+| Mechanism | Required behavior |
 | --- | --- |
-| S1 ProfInfer | Correlate timelines/counters before optimizing; qualify Windows instrumentation overhead separately from eBPF. |
-| S5 rvllm | Audit cache replacement, broadcasts and contiguous operations for repeated copies. Shared immutable storage and independent mutable snapshots need distinct ownership. |
-| S7 SMG | Attribute tokenization, parsing and backpressure separately from accelerator service; its broader gateway API is unnecessary here. |
-| S4 Elastic Gang | Dynamic participants need acknowledged barrier/epoch transitions; compare existing phase/thread controls before adding a scheduler. |
-| S6 Event-triggered SGLang | Measure idle polling, wake latency and active decode separately; affinity only relocates polling. |
-| S3 Beyond the Buzz | Charge state handoff, rate matching and coordination before selecting CPU/GPU/NPU phase placement. |
+| Grouped six-head decode/prefill | Reuse cached K/V conversion across the six query heads of each KV group where worker partitioning permits. Preserve each head's reduction lanes, FP16 probabilities, gates and current-token F32 K/V. Other geometries retain their own paths. |
+| Paired prefill scores/values | Consecutive prompt tokens share common cached K/V conversion. Each token retains its causal prefix and original current-token F32 values; second-only history remains FP16. Odd tails use the existing path. Private scratch may discover a later failure earlier, but incomplete work cannot publish success. |
+| Immutable logits snapshots | Checkpoints share complete immutable logits; later evaluation detaches without copying stale output. Retained snapshots cannot observe mutation. A Swift result is 248,320 F32 values (993,280 logical bytes); logical budget charges remain conservative. |
+| Reset-only terminal ingestion | When prompt reuse is disabled, ingest the final non-stop capped token without computing unused next-token logits. Complete state and sampler rollback remain transactional. EOS enters neither state nor output. Generic Runtime, prefix reuse and speculative APIs retain terminal logits. |
+| Bounded special parsing | Scan bounded windows with longest-spelling lookahead, retaining earliest-start/longest-at-start matching and borrowed UTF-8. Window boundaries create no token boundaries; failure returns no partial result. |
+| Request-local BPE reuse | Repeated short pretokenized pieces reuse exact completed token IDs within one encoding request/rule owner. Full byte comparison prevents collision reuse; long pieces bypass it. No cross-piece merges or persistent tokenizer cache. |
+| Empty reset/checkpoint | Canonical empty state avoids redundant zero filling and copying 149.625 MiB of zero recurrent/convolution payload. Nonempty state and independent checkpoints remain complete. |
+| Bounded top-20 sampling | Traverse all logits for finite-value validation while retaining only the required candidates. Preserve tie order, softmax and RNG progression; reject nonfinite tail values before drawing. |
+| Projection/preparation reuse | Stream eligible F32/BF16 weights and share only identical call-scoped activation preparation. Preserve decoded-scale, rounded-product, F64-sum and failure contracts; retained storage never substitutes for input identity. |
 
-Measure work/traffic and allocation lifetimes before changing representation, ownership,
-scheduling or fusion: preallocation can hide full-size copies, and in-place writes can
-alias snapshots.
-[Streaming contracts](streaming-resources.md) cover Runner queues/text/PCM;
-runtime experiments belong in Prism. Follow the
-[measurement guide](performance-expectations.md#2026-literature-measurement-and-comparison)
-for CI-only timing/tracing, actual-model comparisons and evidence limits.
+Terminal-ingestion receipts may use the exact legacy inventory or the reviewed
+inventory with the extra terminal phase. Reject double-counted decode/terminal
+work or EOS ingestion. The source's BPE cache is bounded at sixteen entries of
+at most 32 bytes and 32 token IDs; hits retain ordinary token-limit/error precedence.
+
+[Resident packets and prefill](hexagon.md#resident-packets-and-prefill) own the
+separate NPU transport, operation lifetime and signed-solver boundaries.
+[CPU kernels](cpu-kernels.md) owns later source candidates and dispatch policy.
 
 ## Bounded parallel-row qualification
 
-The published 0.1.8 app path uses one compute worker. The 0.1.9 through 0.1.11 prereleases
-and 0.1.12/0.1.13 releases make the existing bounded `parallel-rows` implementation available
-in their binary bundles. Prism's own runtime entry points default to one worker;
-Runner's Swift development default explicitly selects four. Feature availability
-does not qualify a worker budget or establish a performance advantage.
+Runner explicitly selects four row workers; trusted
+`bonsai-tools chat --native-row-workers 1` selects one. A persistent pool and
+readiness identity establish availability, not correctness or benefit.
 
-The full 0.1.13 release builds both runtime and private server with `parallel-rows`.
-Its persistent pool has an explicit worker budget, and private readiness reports
-the instantiated graph's budget. The retained evidence below supports keeping
-four workers as an available development selection; current-release actual-model
-correctness and complete-answer benefit remain pending. No further Prism runtime change is needed
-to enable that selection.
+For each selected source and worker policy, compare all logits and every logical
+KV, convolution and recurrent component against the declared reference, including
+finite values, exact extents, checkpoint/reset behavior and failed-request recovery.
+Retain observed dispatch separately from the configured worker budget. Require
+actual-model lifecycle, cancellation, resources and complete-answer benefit under
+[application acceptance](validation.md#actual-model-application-acceptance).
+Fixed-step timings exclude costs such as loading/snapshots and cannot supply
+application throughput or full-runtime promotion.
 
-The [first original-PQ2 trial](evidence/row-parallel-smoke.json) matches all 129 files / 39,504,384 logits and logical state values
-byte for byte at adapter scale 1.3. One forward evaluation falls from 1,553.3135 ms to 575.6722 ms,
-with 401 observed parallel projections. The CI owner job takes 125 seconds and the outer runner
-lifetime 131.13 seconds; the later explicit cleanup confirmation is also retained. These are
-fixed-step source-checker observations, not application TPS or complete performance qualification.
-Use `bonsai-tools chat --native-row-workers 1` to select one instead of the four-worker development
-default; unsupported versions/engine selections fail closed. The [published-runtime service check](evidence/pq2-native-service-row4.json)
-also starts verified 0.1.9 with original PQ2, the approved adapter at scale 1.3 and four workers
-explicitly configured under required native containment. Its one four-token-cap stream ends normally
-after one reported token; the owned Job is empty and the listener released after shutdown. The full
-owner attempt, including a setup correction and cleanup, takes 220.58 seconds without resetting its
-original five-minute deadline. This is broker/service acceptance evidence, not GUI, TPS,
-full-context or default-runtime qualification. The receipt preserves the then-unconfirmed GitHub
-verdict separately from the passed local model case.
-
-The completed row-worker workflow is retired. Its [frozen checker source](../tools/row-parallel/pins.json)
-is still `7aca2251f09acb345d4afb53d5ce411f81017745`, rather than the active runtime.
-Rebuilding that checker cannot qualify current-release row workers. The original
-workflow remains in Git history at Runner revision `ed909881`; its source pins,
-comparator and native CLI recipe remain available for historical reproduction.
-The closed trial above compared one worker with four on original PQ2, the approved
-adapter at scale 1.3 and public token `[248045]`. Its five-minute aggregate and
-240-second child limits remain closed. Current-runtime correctness, lifecycle and
-benefit still require the separate
-[application acceptance](validation.md#actual-model-application-acceptance)
-and Prism gates in [PLAN.md](../PLAN.md), under unchanged admission, Job and
-physical-reserve limits. This retirement closes none of those gates.
-
-```powershell
-& $env:BONSAI_TOOLS_PATH native-qualification --json (@{ operation = 'plan'; kind = 'rows'; repositoryDirectory = $PWD.Path } | ConvertTo-Json -Depth 64 -Compress) | ConvertFrom-Json -AsHashtable
-```
-
-The comparator requires the exact model/adapter/scale graph identity, observed
-parallel dispatch, every logical KV/convolution/recurrent component and all logits
-to match byte for byte, including finite values and exact extents. Four-worker
-packed-row and complete-state checkpoint/reset/error-recovery fixtures run in
-Prism's owning CI before any device trial. Raw evaluation durations exclude model
-loading, snapshots and output I/O. One fixed-step observation is not application
-TPS, prefill attribution, statistical benefit or promotion evidence. Exhausting
-the budget retains a failure/partial report and leaves the gate pending.
-
-At historical source `7aca225`, [session completion](https://github.com/symbiogenesis/prism-inference/blob/7aca2251f09acb345d4afb53d5ce411f81017745/src/swift_session.rs#L313)
-resets model state before every request, including unchanged adapter scale and
-no-adapter requests; [session construction](https://github.com/symbiogenesis/prism-inference/blob/7aca2251f09acb345d4afb53d5ce411f81017745/src/swift_session.rs#L174)
-also sets retained checkpoints to zero. Consequently the generic
-[runtime's exact live-prefix matcher](https://github.com/symbiogenesis/prism-inference/blob/7aca2251f09acb345d4afb53d5ce411f81017745/src/runtime.rs#L566)
-cannot reuse prior serving state. The [default block ingestion](https://github.com/symbiogenesis/prism-inference/blob/7aca2251f09acb345d4afb53d5ce411f81017745/src/lib.rs#L161)
-still evaluates tokens sequentially, so each request recomputes its supplied
-history; a 64-token prefill block is not a batched projection.
-
-Current Runner exposes same-session live-prefix reuse at an identical model/profile
-and bit-identical adapter scale through the explicit [latest option](prefix-reuse.md).
-Its actual-model qualification still requires fresh-recompute parity,
-edited/switched history, cancellation/rollback, scale changes and change-back, and
-fault/explicit-reset recovery before changing the serving reset contract. Preserve
-graph/checkpoint provenance and current memory bounds; no reuse or TPS benefit is
-established by this source audit or the single fixed-step timing.
-
-The 4,096-token output gate alone
-would require more than 17 tokens/s to fit a 240-second case before any prefill;
-even the explicitly extended 840-second case needs more than 4.88 tokens/s before
-prefill and cleanup. A longer ceiling alone does not establish feasibility.
-Estimate from measured operation costs before scheduling this workload.
-
-Prism source [`f1b49cd`](https://github.com/symbiogenesis/prism-inference/commit/f1b49cd5ae1335e9b42a0f35745f0c72775f6f6f)
-also fuses the recurrent-state copy with per-head decay, removing a separate
-144 MiB payload copy per processed Swift token. The F32 multiplications and
-subsequent dot/update order remain unchanged, with provisional state kept separate
-from committed state. Its [owning Foundation](https://github.com/symbiogenesis/prism-inference/actions/runs/41259682083)
-and [conformance](https://github.com/symbiogenesis/prism-inference/actions/runs/41259682092)
-pass, including bitwise, independent native-reference and graph recovery controls.
-The historical 0.1.23 binary keeps the production copy-then-scale path; the fused
-candidate is retained in source history and model-free controls until actual-model
-numerical, throughput and resource qualification permit release integration.
-The removed copy alone establishes no speed or memory benefit.
-
-## Local inference efficiency candidates
-
-The November 3, 2026 source review selected three small Prism changes with direct
-work or storage reductions. They apply to the existing CPU inference path without
-new weights, altered precision, accelerator setup or prefix-reuse policy.
-
-| Priority | Source change | Expected benefit and scope |
-| --- | --- | --- |
-| 1 | Represent a reset-state rollback checkpoint without copying zero recurrent/convolution buffers | Avoids 156,893,184 bytes (149.625 MiB) of Swift checkpoint payload and its copy at the start of a reset request. Live state and nonempty independent snapshots remain complete. This is an allocation reduction, not a measured process-memory peak. |
-| 2 | Stream Swift logits through the existing native-order top-20 heap | Retains 20 candidate records (240 bytes) instead of 248,320 (2,979,840 bytes), avoiding 2,979,600 bytes of candidate payload and most per-token candidate writes. The full logits row is still checked; tie order, softmax and RNG progression must match. |
-| 3 | Stream one-column F32 projection weights directly | Removes per-row dimension checks, decoding dispatch and one-element scratch management for rank-one adapter B factors: 660,480 output channels across the standard adapter's 129 factors. The original single-product accumulation and finite-result checks remain required. |
-
-These changes are included in the active 0.1.25 source. Their original local
-review used Prism commits `095976c` (one-column projections),
-`80fa071` (empty checkpoints) and `11f60ce` (bounded sampler). The
-[historical local check record](https://github.com/symbiogenesis/SwiftBonsai2Runner/blob/7b37b29826b377386c1ddfe933cd4e75d6a97856/docs/evidence/inference-efficiency-local-20261103/archive.json)
-includes 14 focused passing correctness tests and strict Release Clippy with
-`parallel-rows` enabled. Exact final source hashes match the analyzer input.
-The original 247.630-second allowance includes build, corrections and archival;
-initial lint and harness-encoding failures are recorded there. Its scratch-file
-inventory is historical; the raw logs are unavailable in the current tree and
-the record cannot supply independent replay. All captured workload
-endpoints report battery operation with saver off; charge changed from 93% to 92%.
-No model, benchmark or CI ran, and endpoint snapshots do not establish continuous
-power stability or measured performance.
-
-The retained November 3 checks describe those historical inputs; they do not
-qualify the later 0.1.25 release merely because it contains the changes. No
-end-to-end speedup is attributed to them. Current-release actual-model logits/state,
-rollback, seeded output and resource/request-time qualification remain in
-[PLAN.md](../PLAN.md). Keep the existing admission limits and
-PQ2 rollback.
-
-Larger potential gains remain exact latest-prefix reuse, packed projection and
-tiled prefill work. They need broader lifecycle or numerical qualification and
-are tracked above and in the plan; they are not prerequisites for these bounded
-reductions.
-
-A follow-up source review selected two additional small changes on November 3:
-
-| Source change | Work removed and correctness boundary |
-| --- | --- |
-| Skip `Qwen35::reset` when committed position is already zero | Avoids a redundant 149.625 MiB recurrent/convolution zero fill at runtime initialization and when default request reset is followed by empty-prefix preparation. Failed evaluations modify private scratch only; nonempty reset still clears all committed state, and adapter changes still renew provenance. Retained memory is unchanged. |
-| Prune repeated masked attention arithmetic | Keeps the first masked zero FMA for every affected accumulator lane, then omits identical repetitions. At one logical token, padding falls from 255 to 16 FMA steps per channel and softmax from 64 to one four-score group. Partial groups, signed-zero behavior, reduction order and rejection remain unchanged. These are source work counts, not latency measurements. |
-
-Independent source review checked the canonical-empty-state invariant and padding
-arithmetic. Frozen full-padding controls cover bitwise results at lane, 256-token
-and context boundaries; hybrid graph controls cover late first-token failure,
-independent snapshots and continuation. The
-[historical follow-up record](https://github.com/symbiogenesis/SwiftBonsai2Runner/blob/7b37b29826b377386c1ddfe933cd4e75d6a97856/docs/evidence/inference-efficiency-followup-20261103/archive.json)
-records the local validation scope; its scratch-file inventory supplies no raw
-replay in the current tree. The active 0.1.25 pin contains
-`94200c8` (empty resets), `03fe862` (attention padding) and `5056810` (test assertion
-correction). All 18 focused correctness tests passed, followed by a passing rerun
-of the corrected reset regression and strict Release Clippy for the library and
-graph integration target with `parallel-rows`. Initial assertion-lint and cast
-failures are recorded in that history. The single allowance closed at 101.483 seconds through
-archival; recorded endpoints show battery operation, saver off and charge changing
-from 85% to 84%.
-These snapshots do not establish continuous power stability or performance.
-Matched actual-model numerical, lifecycle and performance qualification remains
-separate from source inclusion. The historical local checks do not close those
-current-release gates or justify changing admission.
-
-The active source also streams BF16 alpha/beta weights directly through the
-existing rounded-product/F64 sum contract. This avoids decoded-row materialization,
-with a nominal 90 MiB of scratch writes and matching rereads omitted per Swift token. Experimental packed
-prefill also shares the graph's existing private row pool while preserving
-caller-thread cancellation and adding a fixed 16 KiB scheduling reservation.
-These are source work/resource counts; actual-model correctness and matched
-complete-request benefit remain unqualified. The historical bounded local
-compilation attempt failed before its two source corrections were recompiled;
-that closed attempt supplies no current numerical or performance verdict.
-
-The speed-work integration adds finite-logit validation to the bounded top-20
-selection traversal, removing the separate complete-vocabulary validation pass.
-Nonfinite logits anywhere, including discarded tail candidates, reject before
-RNG use while preserving reusable storage. The owner-operated Prism
-`inference-efficiency.yml` workflow prepares exact named model-free controls,
-source/compiler/executable-bound receipts, strict Release analyzers and native
-linking on hosted ARM64/x64 targets. A renamed, missing or ignored test rejects
-the receipt. That workflow contract alone establishes neither a successful hosted
-run nor actual-model qualification or a speedup. Production fused
-recurrent copy/decay remains excluded under its separate model gate.
+Full-output workloads need a feasibility estimate covering prefill, decoding,
+cleanup and retention under one original owner allowance. Leave an infeasible
+gate pending; a longer ceiling alone does not make the workload eligible.
 
 ## Default-runtime promotion
 
@@ -488,64 +228,6 @@ receipt, exact derived model and original PQ2 rollback identities. It retains al
 seventeen runtime/application gates and adds independently reviewed lossless-packing
 and actual-device original-PQ2 rollback gates. Its paired benefit gate compares
 PQ2 and PTQ1 on the same released engine and app settings. Scoring changes no launch default.
-
-### Integrated parity work
-
-The [main integration record](evidence/prism-main-integration.json) binds the
-merged Windows CNG GGUF verification and explicit private-service
-`--prompt-reuse latest` changes, and the 0.1.10 release integration. Owning
-settled-main checks and reviewed released bytes qualify separately from the
-earlier candidate source controls.
-The hash path still verifies every selected byte through the existing handle.
-The reuse candidate retains only latest committed live state at identical adapter
-scale bits, recomputes mismatched histories and preserves transactional rollback.
-It adds no saved-prefix cache. Omitted reuse selection retains per-request reset;
-opt-in service readiness advertises `prompt_reuse: "latest"` separately.
-
-Focused native hash vectors, cancellation/read failures and final-byte corruption
-controls pass locally. Bounded local owning compilation stopped during dependency
-work. The subsequent [hosted candidate run](https://github.com/symbiogenesis/prism-inference/actions/runs/41176550777)
-passes on Windows ARM64, Windows x64 and Linux ARM64, exercising GGUF/default-report
-and hash controls, the graph, full sampled logits/state, worker/server protocols,
-strict analyzers and documentation without weights. These are candidate source
-checks; Runner now pins 0.1.25 and exposes experimental
-[`--prompt-reuse latest`](prefix-reuse.md) through the native launch path.
-The broker requires the exact reviewed release source and matching authenticated
-readiness; omission retains reset-every-request. No load-time or generation-speed gain is
-established. The selected 0.1.13 four-worker adapter scale/history workload now has
-the bounded evidence above. The broader
-[application contract](validation.md#actual-model-application-acceptance), numerical
-parity and prefix-state reuse still require their own evidence. None of these
-candidates satisfies default promotion.
-
-The [historical service preparation record](evidence/prism-parity-preparation.json) binds the added
-opt-in device job, pinned trusted Runner owner, exact same-run package intake and
-mandatory original owner deadline. The workflow's default remains hosted preparation;
-an admitted device attempt shares one five-minute allowance across intake,
-registration, checkout, verification, model work, cleanup and retention.
-Provisional disconnect/reset replay leaves active graph cancellation and
-complete-state rollback unqualified; a checker receipt does not close the service gate.
-
-The [first owning device attempt](evidence/prism-owned-service-attempt.json) has a
-green capture step and verified owner cleanup, but the workflow fails when artifact
-creation returns `ENOTFOUND`. The runner subsequently clears its temporary receipts.
-The exact hosted package, public CI verdicts and fixed cleanup reports survive;
-the four model-case receipts do not. Intake through retained failure evidence takes
-283.3 seconds without another model attempt. This is an unqualified run, not a
-completed service gate. The follow-up durable staging fix copies only the four
-bounded, schema-checked public receipts outside runner temp before upload, preserving
-the private credential/log boundary and partial failures. Focused controls include
-simulated temp cleanup, malformed and stale receipt rejection, unsafe paths and
-secret exclusion. The preparation record tracks its owning hosted checks; the
-failed device trial is not repeated or retroactively qualified.
-
-Prism's separate source-graph `swift_model_check rollback` mode captures every
-committed token, logits and logical KV/convolution/recurrent state before reset,
-then checks continuation against fresh recomputation. Four focused controls pass,
-including rejection of deliberately incomplete recurrent restoration. Actual-model
-capture remains pending. The diagnostic uses a caller-stop logits probe and
-cooperative cancellation after a completed step; it does not qualify private HTTP
-cancellation, production sampling or interruption inside a graph kernel.
 
 ### Inspect the policy
 
@@ -610,30 +292,6 @@ changes the policy digest, so regenerate the evidence envelope. A scored gate's
 actual CI repository alongside `executionRevision` and `runUrl`.
 
 ### Required evidence
-
-The [frozen PTQ1/cfdc498 score](evidence/ptq1-promotion-cfdc498.json) retains the exact
-version-2 policy and input-manifest digest: **four documentary gates passed,
-fifteen pending, none rejected**, with `promotionReady: false`. A new independent
-applicability review reverified the unchanged released-source raw CI and nine-file
-ARM64 bundle, and current Runner Foundation
-[41271135189](https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41271135189).
-It transfers no historical PQ2 policy verdict or actual-model result. The
-[readiness audit](evidence/ptq1-default-readiness.json) binds its durable archive,
-independent review and raw score digests. Later revisions require their own review.
-
-The [frozen 0.1.10/a809 snapshot](evidence/rust-runtime-promotion-0110-a809.json)
-records the actual evaluator result: four documentary gates passed and thirteen
-pending. It binds the exact reviewed runtime release and historical Runner main
-revision; it cannot qualify later revisions or the four-worker device profile.
-The [corrected bounded device trial](evidence/prism-0110-lifecycle-service.json)
-passes all three streams on X2 with four configured workers: scale 1.3, scale zero,
-invalid-scale connection closure, then scale 1.3 with static supplied history and
-owned Stop/empty Job/released listener. Artifact intake, registration, model work
-and cleanup take 124.781 seconds. The streams report one, one and two completion
-tokens; this is lifecycle evidence, with no numerical, quality or performance
-claim. The [earlier failed attempt](evidence/prism-0110-service-attempt.json) remains
-retained. Neither receipt qualifies one-worker execution or the separate
-Prism-owned service gate.
 
 Required gates cover release provenance, runtime Foundation/conformance, Runner
 Foundation, 8K logits/full state, prompts/sampling/stops, 4K-output lifecycle/recovery,

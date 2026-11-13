@@ -32,7 +32,7 @@ Retained scratch proves storage reuse, not eliminated computation or model-level
 State-only ingestion validates every computed state value while omitting unused output/logit checks.
 Block prefill preserves cancellation/backpressure bounds and atomic commit.
 
-The **2026-11-12** source review distinguishes three guarantees: lossless storage
+The source review distinguishes three guarantees: lossless storage
 reconstructs original bits; exact execution preserves the declared arithmetic and
 state; corrected speculative sampling preserves the target distribution. The
 last guarantee does not promise seed-for-seed text identity. Similar benchmark
@@ -264,7 +264,7 @@ output differences. Neither technique is implemented in the selected runtime:
 | DFlash 2 candidate scoring/path selection | Require provisioned drafter identities and actual conditional proposal probabilities: coherent paths alone do not preserve the target distribution. Its released Qwen3.8-27B drafter is no Swift/LoRA qualification. |
 | VeriCache compressed drafts/full-KV verification | Correct stochastic acceptance separately from greedy identity. Full plus compressed KV can increase RAM; KV-only verification omits GDN/convolution recovery, and multi-request GPU overlap does not transfer to this one-request CPU runner. |
 
-The [catalog, H19/H22 to H23](research-register.md#hybrid-recurrence-prefix-caching-and-speculative-decoding)
+The [research catalog](research-register.md#hybrid-recurrence-prefix-caching-and-speculative-decoding)
 retains sources, mechanisms and evaluation scope. DFlash 2 is an author report with released
 drafters, not another peer-reviewed paper; learned components remain separate artifacts.
 

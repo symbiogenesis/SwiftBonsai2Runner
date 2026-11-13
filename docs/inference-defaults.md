@@ -1,7 +1,7 @@
 # Inference defaults and quality evidence
 
 Chat preserves the native template and publisher's evaluated sampler, with thinking
-off by default. The development default is Rust Prism 0.1.25, original Swift PQ2, four CPU
+off by default. The development default is Rust Prism 0.1.27, original Swift PQ2, four CPU
 row workers and standard adapter scale 1.3. `--publisher-engine` selects publisher rollback;
 PTQ1 remains opt-in. The worker attempts [X2 NPU acceleration](hexagon.md), retaining
 CPU execution if initialization is unavailable.
@@ -22,7 +22,7 @@ acceptance remain pending.
 | Added system prompt | None | Retain publisher instructions and user-supplied task/voice constraints |
 | Generation harness | One completion, EOS honored | No automatic critique/rewrite, forced extra thinking, majority voting or best-of-N |
 | Assistant history | Preserve supplied `reasoning_content` with `preserve_thinking: true` | Both verified templates support replaying prior assistant reasoning |
-| Attention / recurrent state | K4/V4 (`rsq4`) in the 0.1.25 development pin; F32 recurrent/convolution state | Owner-selected approximate cache; measured quality/memory qualification remains pending, with explicit FP16 recovery |
+| Attention / recurrent state | K4/V4 (`rsq4`) in the 0.1.27 development pin; F32 recurrent/convolution state | Owner-selected approximate cache; measured quality/memory qualification remains pending, with explicit FP16 recovery |
 | Context handling | Exact rendered token count; reject overflow | Preserve supplied history rather than silently shifting or truncating it |
 | RoPE | Model metadata, no override | Context extension can change short-context behavior |
 | Cache reuse / speculation | Disabled by default | Explicit [latest-prefix reuse](prefix-reuse.md) is available for native launches; speculation is outside Runner serving. Neither is an established quality improvement. |
@@ -57,8 +57,7 @@ the original task and relevant state. User instructions and approved facts stay 
 generated notes/references are data. There are no autonomous tools or open-ended manager loop.
 
 Each call retains sampler/template/exact admission at the model launch's reported
-context capacity: 8K for the active native release, or the publisher's
-memory-selected window. Reasoning-inclusive caps are 512/1,024/2,048/4,096
+memory-selected context capacity. Reasoning-inclusive caps are 512/1,024/2,048/4,096
 (default 4,096), with the broker's 64-token margin. Smaller caps leave more
 prompt room but can stop reasoning before an answer. Count included plan/draft text; reject
 overflow rather than dropping history or raising limits. Shared cancellation covers all
@@ -72,9 +71,8 @@ CI-only benchmarks.
 
 ## What the benchmarks establish
 
-[Swift's published evaluations](performance-expectations.md#current-swift-evidence) support the
-sampler baseline, with separate current-weight and historical results. They establish neither an
-optimal sampler/effort/prompt nor creative-writing gains.
+Swift's published evaluation configuration motivates the sampler baseline; it
+establishes neither an optimal sampler/effort/prompt nor creative-writing gains.
 
 [Qwen guidance](https://huggingface.co/Qwen/Qwen3.8-27B#best-practices) supports the thinking sampler,
 warns stronger presence penalties can hurt, and separately defines non-thinking settings.
@@ -97,41 +95,29 @@ Prefix reuse saves computation, not added knowledge/reasoning.
 
 ## Capacity and execution limits
 
-The active native Prism 0.1.25 release admits **8,192 total context tokens** and
-**4,096 maximum completion tokens**, including reasoning. Publisher serving instead
-selects context from available memory at launch under the
-[memory-selected context policy](swift-memory.md#memory-selected-serving-context);
-its completion cap remains 4,096. Fixed qualification workloads retain their
-declared context and output bounds. The 16-token load/decode and paired LoRA
-512-token caps are experiment controls, not chat recommendations or answer-quality
-evidence. See [broker admission](broker-policy.md).
+Native and publisher serving select context from available memory at launch under
+the [memory-selected context policy](swift-memory.md#memory-selected-serving-context).
+Both cap completions at **4,096 tokens**, including reasoning; the requested reply
+and 64-token template reserve must fit alongside the canonical prompt. Byte limits
+also apply. Fixed qualification packets retain their declared 8K context and output
+bounds; those controls do not set the application's current capacity.
 
-The native 8K window cannot reproduce Swift's 32K example; a larger publisher
-window alone does not reproduce its longer reasoning runs. Truncation may precede
-an answer and must not be labelled complete or benchmark-equivalent. Larger
-native context requires a reviewed compatible runtime release and revised
-memory/execution/quality qualification. No automatic token floor bypasses exact
-reservation. Retain native RoPE: Qwen warns static YaRN can affect short texts. More allocated
-context does not itself improve accuracy. Offload, flash, threads, batches and prefix reuse need
-backend/device evidence; other-hardware throughput is not better answer quality.
+Truncation can precede an answer and cannot count as a complete or benchmark-equivalent
+result. Larger allocated context does not establish usable capacity, accuracy or
+long-range quality. Preserve native RoPE and qualify each cache/window combination,
+full-state recovery and resources before making such claims. Offload, thread,
+batch and prefix-reuse choices need their own backend/device evidence.
 
 Optional abliteration retains [independent TPS/quality gates](swift-lora.md#standard-profile-qualification); fewer refusals
 prove neither reasoning nor prose gains. Defaults do not promote adapters, representations,
 accelerators or daily-service profiles.
 
-## 2026 literature: token budgets are a separate experiment
+## Output-budget experiments
 
-The [source register](research-register.md#2026-systems-measurement-and-output-budget-work) records
-the **2026-10-29** review. These methods change output counts/distributions, candidate answers or
-trained artifacts, so compare them separately from faster kernels:
-
-| Method | Admission boundary |
-| --- | --- |
-| ESTAR; [BudgetThinker](https://github.com/MobileLLM/BudgetThinker) | Require compatible training/components/control tokens. |
-| [Budget Guidance](https://github.com/UMass-Embodied-AGI/BudgetGuidance) | Avoids base-model fine-tuning but needs a compatible length predictor. Evaluate guided sampling, predictor overhead and creative quality separately. |
-| CASE | Saves work against multi-sample self-consistency; that does not establish a gain over the current single completion or justify parallel candidates. |
-
-Measure time/energy to a useful completed answer, including predictor work, extra prefills, failed
-attempts and human revision. Preserve selected thinking/Extra effort, exact reservations,
-cancellation and truthful truncation. These methods are disabled and unqualified on current
-Swift/LoRA. See [measurement](performance-expectations.md#2026-literature-measurement-and-comparison).
+Length prediction, guided sampling, trained budget controls and multiple-candidate
+selection change work or answer distribution. They are separate from faster
+kernels, remain unqualified for Swift and need compatible artifacts where applicable.
+Charge predictor work, extra prefills, failed attempts and human revisions to
+useful completed-answer time under the [measurement protocol](performance-expectations.md#measurement-and-comparison).
+Preserve selected Thinking/Extra effort, exact reservations, cancellation and
+truthful truncation.

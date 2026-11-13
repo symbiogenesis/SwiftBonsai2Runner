@@ -1,13 +1,13 @@
 # Native Snapdragon quantized KV
 
-Runner's reviewed Prism 0.1.25 pin uses **TurboQuant-inspired K4/V4 (`rsq4`)**
-as the owner-selected development default and required cache for ordinary Swift
+Runner's reviewed Prism 0.1.27 pin uses **TurboQuant-inspired K4/V4 (`rsq4`)**
+as the owner-selected development default for ordinary Swift
 sessions on Snapdragon X1 Elite and X2 Elite Extreme. It accepts approximate
 answers without requiring perfect reconstruction, identical tokens, FP16 logits
 or a completed comparison packet. Actual-model quality, memory and device
 qualification remain pending; the paired packet below is required for measured
-quality/memory claims. This choice neither qualifies a new device profile nor
-increases the 8K context limit.
+quality/memory claims. Device profiles and larger memory-selected windows retain
+their independent qualification gates.
 
 Explicit `f16` selection starts a comparison/recovery session; requests and failed
 compressed sessions cannot silently choose FP16. The historical 0.1.23 comparison
@@ -27,7 +27,7 @@ The raw generation CLI accepts
 its completion metadata. Tokenize mode rejects this generation-only option.
 
 `SwiftSession::load_profile_with_kv_cache` and the private server's trusted
-`--kv-cache` option expose the candidate at the existing fixed 8K service bound.
+`--kv-cache` option expose the selected cache under the [memory-selected serving bound](swift-memory.md#memory-selected-serving-context).
 Client request bodies cannot select precision. Non-FP16 readiness reports
 `kv_cache` and the actual `startup_graph_identity`; the startup label remains
 accurate when a later request changes the adapter scale. Runner's trusted launch
@@ -35,7 +35,7 @@ policy selects the cache from the exact reviewed runtime source and checks the
 matching cache and startup graph identity; older releases retain their FP16
 contract. Application use requires a published, verified Prism bundle with that
 source identity. Trusted launch parsing accepts `--kv-cache f16|rsq4|rsq4k3v`
-without exposing precision in client request bodies. The current 0.1.25 pin admits
+without exposing precision in client request bodies. The current 0.1.27 pin admits
 `f16` and `rsq4`; `rsq4k3v` remains rejected until a separately reviewed, source-bound
 release delivers the K4/V3 profile and M1/M2 memory contract together. Its prepared
 planner charges 14,848 KV and 29,920 process bytes per token, retaining two complete
@@ -47,17 +47,10 @@ work; current cache selection relies on reviewed source and live readiness.
 
 The sibling Prism checkout owns `src/kv_quant.rs`,
 `src/graph/quantized_kv.rs` and its `docs/quantized-kv.md` runtime contract.
-Runner's 0.1.25 pin consumes the reviewed codec implementation. The following
-earlier checks retain their original source identity rather than qualifying that
-release: at local Prism `a4659c0`, 30 focused Release controls passed: 12 codec, four
-packed-cache graph, four NEON-helper, six tiny hybrid-graph, one CLI policy and
-three private-service checks. The ten affected storage/graph controls passed
-again after the final allocation correction. Strict Release all-target Clippy
-passed for the runtime, server and NEON helper on native ARM64 and Windows x64,
-with `parallel-rows` and pinned nightly-2026-11-09. Formatting and changed Markdown
-checks passed. No full-model quality, long-context, performance, complete CI or
-per-device promotion verdict follows from those focused controls. The bounded
-validation and power observations are recorded in Prism's integration commit.
+Runner's 0.1.27 pin consumes the reviewed codec implementation. Model-free codec
+and graph controls do not establish full-model quality, usable
+capacity, performance or device qualification. Require current-source owning
+checks and the complete packet below for each selected profile.
 
 ## Scope and algorithm
 
@@ -125,7 +118,7 @@ Runner's trusted launch policy or its published runtime pin. The sibling Prism
 
 X1 and X2 share a runtime-detected 128-bit NEON execution path with an explicit
 scalar reference. There is no SKU-specific timing or thread-count tuning.
-The published 0.1.25 compressed-attention path streams query heads serially.
+The published 0.1.27 compressed-attention path streams query heads serially.
 New local Prism source distributes independent query heads over the existing
 private row-worker pool. Each head retains its score, softmax, value and inverse
 transform order; joined workers return the earliest failing head chunk. The
@@ -185,7 +178,7 @@ not enlarge this first comparison. The fixed packet contains three held-out task
 a deep-context factual retrieval, a practical instruction-following task and a
 canon-sensitive creative continuation. Declare the exact prompts and required
 facts/constraints before generating either arm. The retrieval case must reach at
-least 7,168 occupied tokens within the existing 8,192-token total bound; keep the
+least 7,168 occupied tokens within this packet's fixed 8,192-token total bound; keep the
 same reserved output in both arms. Do not tune the codec or replace losing prompts
 after observing results. Use the same immutable original PQ2 model, standard
 adapter at scale 1.3, prompt/template, seed, sampler, worker count, accelerator
@@ -245,7 +238,7 @@ Passing the source/lifecycle controls and paired actual-model packet qualifies
 the measured device profile. A pass on X2 leaves X1 qualification pending, and
 vice versa; the shared development selection does not transfer evidence between
 them. Record the selected source/device scope and every no-go. K4/V3, precision changes to GDN or
-convolution state and context above 8K require separate decisions.
+convolution state and windows above the packet's fixed 8K require separate qualification.
 
 Follow the [research budget and power rules](research-register.md#experiment-scope-and-budgets):
 five minutes total by default, with only a predeclared justified extension up to

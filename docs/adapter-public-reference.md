@@ -9,8 +9,6 @@ The publisher describes its evaluation checkpoint as an
 and says that the [unfolded checkpoint is not shipped](https://github.com/Continuum-AI-Corp/OrcaBonsai-27B-Uncensored/blob/703028bb7fba03496e796b144839b161cf0f5409/README.md#L680-L683).
 Those facts permit an independent public reconstruction attempt; they do not
 authenticate the author's original checkpoint bytes or conversion invocation.
-The [source-only reassessment](evidence/ptq1-public-authoring-route.json) retains
-the inspected immutable inputs and limits. Earlier reports remain historical.
 
 `tools/native-reference/public_pack_reference.ps1` and the dependency-free Rust
 `bonsai-reference-numerics` helper implement exactly one declared recipe,
@@ -109,7 +107,7 @@ candidate at the fixed bound. It would leave authenticated original-run
 provenance, authoring-to-native writer mappings and residual captures,
 loaded-zero/nonzero logits/state, human quality, performance and promotion gates
 pending. The report keeps those qualification/default flags false even on a
-numeric match. No payload has been downloaded or evaluated on the owner device.
+numeric match. Owner-device execution is outside this hosted reconstruction lane.
 
 Reproduce only through GitHub-hosted CI:
 

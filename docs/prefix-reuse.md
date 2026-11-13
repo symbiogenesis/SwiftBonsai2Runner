@@ -9,8 +9,8 @@ select `latest`.
 The selection survives deferred preparation, native chat launch, broker launch
 and explicit Retry. The broker forwards only the fixed `--prompt-reuse latest`
 argument to its verified contained model worker. Capability is limited to the
-reviewed active Prism 0.1.25 source
-`99bab71270b1e6a6fb6d47eec2e34b8097cdcd4c` and its
+reviewed active Prism 0.1.27 source
+`1429a33772089dfd3a50a96c698b9dbe0b36836a` and its
 [immutable release files](../config/prism-inference.lock.json). The compiled guard
 also recognizes explicitly reviewed historical release/source pairs; it does not
 accept every 0.1.14 build or arbitrary newer release. A version number, unreviewed
@@ -34,15 +34,10 @@ memory admission are unchanged. Per-request `cache_prompt` and other cache
 overrides remain unsupported. Reuse can reduce repeated-history prefill; it does
 not itself increase ongoing token generation speed or help unrelated prompts.
 
-The **2026-11-12** [inference survey](research-register.md#priorities-for-this-model-and-hardware)
-identifies qualification of this existing opt-in path as the first reuse
-opportunity for append-only local chat. It needs no additional saved-prefix
-snapshots, sparse checkpoint policy or radix tree. The useful comparison is
-complete multi-turn request latency with cached and uncached token counts;
-ongoing decode TPS alone cannot demonstrate the saved prefill work. Edited or
-branching histories retain the separate complete-state cache obligations in
-[the algorithm contract](inference-algorithms.md#hybrid-cache-reuse-and-speculative-state).
-The survey changes neither the reset-by-default contract nor its acceptance gates.
+Qualification should compare complete multi-turn request latency with cached
+and uncached token counts. Ongoing decode TPS alone cannot demonstrate saved
+prefill work. Append-only reuse needs no saved-prefix tree, while edited or
+branching histories retain the [complete-state obligations](inference-algorithms.md#hybrid-cache-reuse-and-speculative-state).
 
 Focused model-free controls cover CLI/schema rejection, deferred selection,
 Retry preservation, native-only routing, exact source capability and readiness
