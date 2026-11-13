@@ -5,21 +5,20 @@ contracts, commands and evidence; completed work belongs in Git history.
 
 ## Execution map
 
-Use this index to choose the next unblocked action in the detailed work below.
-The states describe work remaining: **implementation** needs production code;
-**integration** needs an existing candidate connected to its consumer;
-**qualification** needs the named evidence; **owner** needs publication or an
-owner-operated workflow; **external** needs unavailable authenticated inputs;
-**conditional** retains its existing activation condition. A candidate or local
-check is never a qualification pass. Update the state and prerequisite here when
-the corresponding detailed task changes; keep every acceptance obligation below.
+Choose the next unblocked action here, then follow its detailed task below.
+States identify what remains: **implementation** needs production code;
+**integration** connects a candidate to its consumer; **qualification** needs
+the named evidence; **owner** needs publication or an owner-operated workflow;
+**external** needs unavailable authenticated inputs; **conditional** retains its
+activation condition. Local checks do not qualify a candidate. Keep this index
+in sync with detailed tasks and preserve their acceptance obligations.
 
 | ID / next state | Owning repository | Prerequisite | Next action and acceptance gate |
 | --- | --- | --- | --- |
 | C1 / owner | Runner | Reviewed local CI corrections and startup preflight | Publish through the owner and qualify Source checks and Foundation on that source; see [publication prerequisites](#publication-and-qualification-prerequisites). |
 | A1 / qualification | Runner with pinned Prism | C1 and an exact-source acceptance package | Qualify Rust/PQ2 DX12 startup, readiness, Stop/Retry, recovery and explicit publisher rollback under [actual-model acceptance](#actual-model-acceptance). |
 | R1 / owner, qualification | Runner with Prism | Published source-bound 0.1.25 prerelease and atomic runtime/source pins | Have the owner publish the reviewed Runner repin, then qualify the new active release. This is a development upgrade, not a performance promotion. Keep the fixed 0.1.23 CPU comparison baseline and all historical evidence identities unchanged. |
-| R2 / implementation, qualification | Prism, then Runner | Settled candidate, published comparison tooling and owning hosted checks | Publish and run the prepared [native CPU bundle comparison](docs/cpu-bundle-comparison.md) against registry 0.1.25; the existing X2 screen compares publisher thread counts, while one-token source timing is attribution only. Qualify the explicit exact LUT, FP16 service tiles, packed-KV head workers and local batched target verifier; integrate sampled verification and selected cross-token consumers. Close CPU/prefill codegen, fallback, state/adapter/cancellation and matched selected-device benefit gates. X2 CPU benefit may promote reviewed shared CPU paths on X1 under [cross-generation CPU promotion](docs/cpu-kernels.md#cross-generation-cpu-promotion); device-specific tuning and claims retain matching-family gates. Qualify changes already consumed in 0.1.23 without another repin; follow the [inference delivery order](#lossless-inference-delivery-order). |
+| R2 / implementation, qualification | Prism, then Runner | Settled candidate, published comparison tooling and owning hosted checks | Publish and run the prepared [native CPU bundle comparison](docs/cpu-bundle-comparison.md) against registry 0.1.25; the existing X2 screen compares publisher thread counts, while one-token source timing is attribution only. Qualify the explicit exact LUT, selected-cache service tiles, packed-KV head workers, batched target verifier and integrated Swift sampled suffix consumer; integrate further selected cross-token consumers. Close CPU/prefill codegen, fallback, state/adapter/cancellation and matched selected-device benefit gates. X2 CPU benefit may promote reviewed shared CPU paths on X1 under [cross-generation CPU promotion](docs/cpu-kernels.md#cross-generation-cpu-promotion); device-specific tuning and claims retain matching-family gates. Qualify changes already consumed in 0.1.23 without another repin; follow the [inference delivery order](#lossless-inference-delivery-order). |
 | R3 / integration, qualification | Prism and Runner harnesses | Agreed execution/state identities and existing complete-state fixtures | Prepare shared state/restore and fault-control tooling independently of runtime qualification; map each prefix/prefill/speculation/accelerator path to its independent assertions and evidence. |
 | M1 / owner, qualification | Prism, then Runner | Reviewed memory-selected context source and a genuine compatible runtime release | Publish a source-bound Prism release with paired context/memory child arguments, review its exact identity and repin Runner to activate native memory sizing under the [context expansion roadmap](#native-context-expansion-roadmap). Qualify selected context/admission/Job limits, unknown and changing memory, retry, UI reporting and full-state/resource behavior at the selected capacities. Current native 0.1.25 remains fixed at 8K; publisher serving uses memory selection. Historical fixed-8K controls retain their identities. |
 | M2 / implementation, qualification | Prism, then Runner | M1-compatible launch contract and reviewed K4/V4 storage identity | Implement cache-aware process/state/checkpoint sizing, then native sequential scratch accounting; synchronize runtime and Runner limits and qualify staged 64K/128K capacities. Follow the [cumulative estimates and conditional extensions](#native-context-expansion-roadmap); projections do not reduce current admission or qualify a larger window. |
@@ -32,25 +31,22 @@ the corresponding detailed task changes; keep every acceptance obligation below.
 | D1 / owner, qualification | Runner | Reviewed source, exact portable release assets and C1 | Publish v0.2.1 as a portable executable and close clean-machine launch, automatic release discovery/download, confirmed replacement/restart, data preservation, isolation and rollback acceptance; deploy and retrieve the selected [durable evidence](#durable-qualification-evidence). |
 | F1 / conditional | As specified in each detailed section | Its existing measured need, compatible artifact or release trigger | Retain precision research, broader profiles, optional agents, future Qwen migration and deferred Prism/dependency work in full; activation conditions and ordering remain unchanged. |
 
-Freeze one coherent qualification candidate after its reviewed logical commits are
-integrated into local `main`: exact Runner/Prism revisions, compiler, release bytes,
-locks, model/adapter and selected device/driver/kernel identities. Separate the
-historical 0.1.23 application packet, the published 0.1.25 runtime with local
-Runner repin, and any newer local
-source candidate. Reuse tools and immutable inputs where their contracts permit;
-never transfer a pass across changed identities or substitute a historical packet.
-Continue later implementation in separate worktrees while that candidate is
-qualified. Relevant changes require an explicit applicability review and fresh
-evidence where affected, without reopening closed workloads.
+After integrating reviewed commits into local `main`, freeze a qualification
+candidate's exact Runner/Prism revisions, compiler, release bytes, locks,
+model/adapter and device/driver/kernel identities. Keep the historical 0.1.23
+packet, published 0.1.25 runtime with local Runner repin, and newer source
+candidates distinct. Reuse tools and immutable inputs only within their contracts;
+passes cannot transfer across changed identities or from historical packets.
+Continue implementation in separate worktrees. Review relevant changes for
+applicability and refresh affected evidence without reopening closed workloads.
 
-Run at most three implementation workers beside one integrator, assigning
-disjoint files/interfaces from the application, runtime, speech or qualification
-tooling work. Each worker uses an individual Git worktree and one commit per
-logical change. The integrator owns shared pins, workflow contracts and final
-serving integration, reviews each commit and leaves integrated changes on local
-`main`. Use the [delivery workflow](docs/development-guide.md#implementation-delivery)
-for candidate selection, speech interfaces and one concrete owner handoff. Local
-completion does not wait for CI, and no fan-out pushes or operates CI.
+Use at most three workers and one integrator, with disjoint files/interfaces.
+Each worker uses an individual worktree and one commit per logical change. The
+integrator owns shared pins, workflow contracts and final serving integration,
+reviews every commit and integrates into local `main`. Follow the
+[delivery workflow](docs/development-guide.md#implementation-delivery) for candidate
+selection, speech interfaces and owner handoff. Local completion does not wait
+for CI; fan-outs neither push nor operate CI.
 
 ## Publication and qualification prerequisites
 
@@ -335,20 +331,18 @@ original adapter authoring inputs remain an external prerequisite.
 ## Research scope and practical budgets
 
 Follow the [research scope, budgets and experiment
-checklist](docs/research-register.md#experiment-scope-and-budgets): existing native
-Windows ARM64 X Elite/X2 Elite hardware, independent family qualification and a
-five-minute preferred/default budget for owner-device diagnostics, model trials and
-benchmarks, including self-hosted CI. A predeclared dedicated workload may use up
-to fifteen minutes total only when its supported harness and conservative estimate
-require it; select the smallest allowance and stop as soon as its required work
-finishes. Preparation, every arm, power observations, cleanup and archival share
-one clock. Preserve historical trial limits and the smaller limits in harnesses
-that have not implemented an explicit extension. Never restart a clock or divide
-a long matrix across repeated runs. Longer or infeasible qualification stays pending.
-Apply the [promotion
-criteria](#promotion-criteria) before full qualification, representation promotion
-or changes to admission. The Rust/PQ2 development choice above retains those
-pending gates. Full suites, benchmarks and performance captures stay in owning CI.
+checklist](docs/research-register.md#experiment-scope-and-budgets): use existing
+native Windows ARM64 X Elite/X2 Elite hardware and qualify each family independently.
+Owner-device diagnostics, model trials and benchmarks, including self-hosted CI,
+default to five minutes, preferably less. A predeclared dedicated workload may use
+the smallest justified allowance up to fifteen minutes when its supported harness
+and conservative estimate require it. Preparation, every arm, power observations,
+cleanup and archival share one clock; stop when done. Preserve closed historical
+deadlines and narrower harness limits unless explicitly extended. Never restart
+clocks or split a matrix across repeated runs; infeasible qualification stays pending.
+Full suites, benchmarks and performance captures remain in owning CI. Apply the
+[promotion criteria](#promotion-criteria) before full qualification, representation
+promotion or admission changes; the Rust/PQ2 development default retains these gates.
 
 ## Application and daily service
 

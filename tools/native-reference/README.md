@@ -1,24 +1,22 @@
 # Five-minute PTQ1 correctness smoke
 
-The owner-laptop trial is one native reference plus one Rust process, each
-evaluating the single supplied ID `[248045]`. Select one Rust backend (`auto`,
+The owner-laptop trial compares one native reference and one Rust process on
+the single ID `[248045]`. Select one Rust backend (`auto`,
 `scalar` or `neon`), one row-worker count (`1`, the default, or `4`), and one
 `adapter_condition`: `standard` (default, approved adapter at 1.3), `loaded-zero`
 (approved adapter loaded at zero) or `no-adapter` (adapter loading omitted).
-Both processes use that same condition. This remains one comparison, without
-a worker, backend or adapter matrix.
+Both processes use the same condition; no worker, backend or adapter matrix runs.
 **The entire owner job, including setup, loading, comparison, cleanup and
-artifact upload, has a five-minute hard limit.** The Rust command starts its separate
-work clock before preparation and caps external calls by the remaining
-allowance. The job clock starts before checkout/tool intake; the checked budget
-tool subtracts those costs from the at-most-240-second work allowance and honors
-any earlier owner deadline, retaining separate teardown/upload reserves. A missing
-or out-of-range work allowance rejects before owner/model preparation. This is one
-bounded trial; omitted controls are not split into repeated jobs.
-The parent also passes its original monotonic work deadline into the child and
-recomputes the watchdog's remaining time after process startup. Receipt writing,
-Native process startup and handoff cannot renew either deadline. Active capture and
-comparison phases are saved before launching external work.
+artifact upload, has a five-minute hard limit.** Its clock starts before
+checkout/tool intake. The checked budget tool charges setup against the
+at-most-240-second work allowance, honors earlier owner deadlines and preserves
+separate teardown/upload reserves. Missing or out-of-range allowances reject
+before owner/model preparation. Rust starts its work clock before preparation
+and caps external calls by the remaining time. The parent passes the original
+monotonic deadline to the child and recalculates the watchdog after process
+startup. Receipts, startup and handoff cannot renew either deadline. Save active
+capture/comparison phases before external work; never split omitted controls
+into repeated jobs.
 
 Cross-condition loaded-zero identity, changed nonzero logits, scalar, explicit NEON,
 writer authoring basis, quality, performance, full context and service remain

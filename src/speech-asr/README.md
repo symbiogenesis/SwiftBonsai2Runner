@@ -5,17 +5,14 @@ through the CPU-only `transcribe-cpp` 0.4.1 binding. Its packaged native sources
 come from `handy-computer/transcribe.cpp` commit
 `4d7c1ccefd39e5a9ea36cca5f8fefc6dcc14b99b`.
 
-The service must verify and retain the exact Q8_0 file in `model.lock.json`
-before calling `Recognizer::load`. The library maps that immutable file,
-verifies `qwen3_asr` architecture, `qwen3-asr-1.7b` variant and audio capabilities,
-and reuses one
-four-thread session with an 8,192-token decoder context. It accepts normalized
-mono 16 kHz samples for at most thirty seconds and returns complete text only.
-Language is detected by the model rather than forcing English. Request
-cancellation discards partial text. This pinned Qwen3-ASR backend observes the
-native cancellation token before inference, not between decoder steps. The
-service's owned process teardown therefore bounds cancellation during active
-inference, along with its process deadline and memory limits.
+Before `Recognizer::load`, the service must verify and retain the Q8_0 file in
+`model.lock.json`. The library maps it, verifies architecture `qwen3_asr`, variant
+`qwen3-asr-1.7b` and audio capabilities, then reuses one four-thread session with
+an 8,192-token decoder context. It accepts up to thirty seconds of normalized
+mono 16 kHz audio, detects language automatically and returns complete text.
+Cancellation discards partial text. The backend checks cancellation before
+inference; owned process teardown, deadlines and memory limits bound active
+inference because it does not check between decoder steps.
 
 Windows ARM64 native builds require clang-cl and Ninja, the ARM64 MSVC libraries,
 and Windows SDK. ggml's ARM backend does not support MSVC cl.exe. Build with CPU
@@ -35,12 +32,10 @@ immutable source and conversion revisions are recorded in the lock.
 The selected Q8_0 file is 2,185,030,624 bytes. Its revision, size and SHA-256
 come from the converter publisher's public Hugging Face file metadata.
 This is the transcribe.cpp conversion, not a llama.cpp multimodal split model.
-transcribe.cpp and its Rust bindings are **MIT** licensed. Recognition
-quality, accuracy and performance still require explicit native device
-qualification; compilation and protocol tests alone do not establish them.
+transcribe.cpp and its Rust bindings are **MIT** licensed.
 
-Qwen3-ASR actual-model loading, transcription, microphone lifecycle, accuracy and
-resource qualification remain pending. Historical Canary fixture results do not
-qualify this model. Focused model-free regressions cover family/variant/audio
-identity rejection, bounded input and cancellation; they establish no model
-quality or performance result.
+Native device qualification of loading, transcription, microphone lifecycle,
+quality, accuracy, performance and resources remains pending. Historical Canary
+fixtures do not qualify Qwen3-ASR. Model-free regressions cover family/variant/audio
+identity rejection, bounded input and cancellation; compilation and protocol checks
+do not establish model qualification.

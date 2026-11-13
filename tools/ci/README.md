@@ -53,17 +53,13 @@ The retained workflows own current checks or open gates in [PLAN.md](../../PLAN.
 | Native accelerator and containment controls | `hexagon-qualification`, `sandbox-qualification` |
 | Pending paired performance and dependency gates | `cpu-bundle-comparison`, `tts-evaluation`, `x2-cpu-evaluation`, `json-candidate` |
 
-Standalone chat, speech and runtime-parity candidate pipelines duplicated the
-production checks and builds now owned by Foundation, release and native-runtime
-acceptance. The X2 compute pipeline duplicated Hexagon qualification and its
-hosted Windows ABI control. These duplicate pipelines are retired.
-
-Source checks combine portable pull-request checks, Markdown standards and the
-weekly dependency audit, selecting jobs from changed paths without compiling a
-planner. Hexagon qualification also owns its independent hosted Windows
-ABI control. The completed row-worker experiment against frozen source is retired;
-its CLI recipes and retained evidence remain available. These changes close no
-current-runtime qualification gate.
+Source checks select portable pull-request checks, Markdown standards and the
+weekly dependency audit by changed paths, without compiling a planner. Hexagon
+qualification owns the independent hosted Windows ABI control. Retired chat,
+speech and runtime-parity pipelines duplicated Foundation, release and native-runtime
+acceptance; X2 compute duplicated Hexagon qualification. The frozen-source row-worker experiment
+is also retired; its CLI recipes and evidence remain available. These retirements
+close no current-runtime qualification gate.
 
 The [native CPU bundle comparison](../../docs/cpu-bundle-comparison.md) prepares
 the fixed 0.1.23 control and registry 0.1.25 candidate on hosted ARM64. Its default
@@ -71,12 +67,11 @@ is preparation only; explicit device selection requires the owner's predeclared
 ten-minute aggregate workload. The X2 thread screen compares publisher thread
 counts and cannot substitute for that runtime-bundle comparison.
 
-Completed one-shot publisher startup, SDK inventory, public QAIC, adapter direction
-and retained numerical audit pipelines are also retired. Their source recipes,
-immutable inputs and historical evidence remain available. LoRA/PTQ1 plan-only
-pipelines are replaced by the documented native CLI plan commands; they never
-captured model qualification. Removing these pipelines closes no pending model,
-device, provenance, performance or human acceptance gate.
+Completed publisher startup, SDK inventory, public QAIC, adapter direction and
+numerical audit pipelines are retired; their recipes, immutable inputs and evidence
+remain available. Native CLI plan commands replace LoRA/PTQ1 plan-only pipelines,
+which captured no model qualification. Model, device, provenance, performance
+and human acceptance gates remain pending.
 
 ## Native acceptance admission
 

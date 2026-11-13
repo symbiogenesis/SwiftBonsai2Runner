@@ -6,11 +6,11 @@ the versions reviewed. Signed constant floor-division addendum reviewed **2026-1
 The [weight-space programming assessment](weight-space-programming.md) was reviewed
 **2026-11-11** separately; it establishes no Swift quality or performance gain.
 
-This index records mathematical results, algorithms, implementations and reports
-relevant to Swift Bonsai 2, with their assumptions and unresolved checks. Inclusion
-does not approve implementation or imply a complete search. Derivations are
-reviewable arguments, not machine-checked proofs. Topic contracts remain
-authoritative; [PLAN.md](../PLAN.md) alone tracks delivery work.
+This register records Swift Bonsai 2 research: results, algorithms, implementations
+and reports, including assumptions and unresolved checks. Inclusion neither approves
+implementation nor implies a complete search. Derivations are reviewable arguments,
+not machine-checked proofs. Topic contracts are authoritative;
+[PLAN.md](../PLAN.md) tracks delivery work.
 
 Jump to [scope and budgets](#experiment-scope-and-budgets),
 [priorities](#priorities-for-this-model-and-hardware),
@@ -48,32 +48,29 @@ leads and discussion; trace claims to originals.
 
 ## Experiment scope and budgets
 
-Use existing **Snapdragon X Elite or X2 Elite on native Windows ARM64**. Qualify
-each family independently; absent X2 hardware must not block an X Elite result.
-Record SKUs, drivers and ISAs. WSL, x64 emulation, cloud GPUs, unavailable
-proprietary kernels and future instructions are outside scope.
+Use existing **Snapdragon X Elite or X2 Elite on native Windows ARM64**. Record
+SKUs, drivers and ISAs; qualify each family independently without making X Elite
+wait for X2 hardware. Exclude WSL, x64 emulation, cloud GPUs, unavailable proprietary
+kernels and future instructions.
 
-Prefer existing weights and compatible published auxiliaries. Exclude full
-retraining, pretraining and new architectures. Bounded statistics, calibration,
-layerwise transforms and tiny auxiliary fits need a native implementation and
-measured laptop time/RAM estimate; "training-free" does not establish feasibility.
+Prefer existing weights and compatible published auxiliaries; exclude full
+retraining, pretraining and new architectures. Statistics, calibration, layerwise
+transforms and tiny auxiliary fits need bounded native implementations and measured
+laptop time/RAM estimates. "Training-free" does not establish feasibility.
 
 Predeclare candidate count, shapes, prompt/token sample, peak RAM and deadline.
-Every diagnostic, model qualification or benchmark run on the owner's laptop
-**defaults to five minutes total, preferably less**. A dedicated, predeclared
-workload may use the smallest justified longer allowance, with an absolute
-**fifteen-minute maximum**. Record its fixed work, conservative time estimate and
-reason before starting; this ceiling does not grant an automatic fifteen minutes.
-Charge setup, intake, model loading, every comparison arm, power observations,
-cleanup and evidence retention to one original clock. Self-hosted CI has the same
-policy; existing narrower tool/workflow limits remain effective until explicitly
-extended. Stop early on completion or a known no-go. Reduce the trial or leave
-qualification pending if it cannot fit; do not restart clocks, retry failures or
-divide a long matrix into repeated runs. Historical trials retain their original
-closed deadlines. Hosted cloud CI retains its own workflow limits. Process one
-candidate or layer at a time, without whole-model expansion or open-ended sweeps. Preserve
-admission, physical reserves, context/output reservations and quality gates.
-These exploration budgets do not replace qualification.
+Owner-laptop diagnostics, model qualification and benchmarks **default to five
+minutes total, preferably less**, including self-hosted CI. A dedicated workload
+may use the smallest justified longer allowance, up to **fifteen minutes**, with
+fixed work, a conservative estimate and a reason recorded before starting.
+Setup, intake, loading, all comparison arms, power observations, cleanup and
+retention share one original clock. Narrower tool/workflow limits apply unless
+explicitly extended. Stop when done or at a known no-go; reduce infeasible work
+or leave qualification pending. Never restart clocks, retry failures or split a
+matrix into repeated runs. Historical deadlines stay closed; hosted cloud CI
+keeps its own limits. Process one candidate or layer at a time, without whole-model
+expansion or open-ended sweeps. Preserve admission, physical reserves,
+context/output reservations and quality gates; exploration does not qualify a profile.
 
 Retain AC connection, battery-saver and charge observations before and after
 the aggregate workload and each comparison arm. Unknown conditions remain
@@ -81,13 +78,12 @@ unknown; later queries cannot reconstruct past power. Missing or mismatched
 power conditions disqualify performance comparisons, and matching endpoints
 do not establish uninterrupted stability.
 
-Minimize device time by reviewing retained captures offline, preparing source-bound
-tools on hosted CI, reusing verified immutable downloads, and choosing the shortest
-prompt/output that exercises each required behavior. One prepared service sequence
-may cover several lifecycle controls within its declared state contract; retain
-fresh owners where isolation, replay or rollback requires them. Estimate full-context
-and long-output work from measured prefill/decode costs before scheduling it.
-Smaller smoke checks do not replace full-length, numerical or human-quality gates.
+Reduce device time with offline capture review, hosted preparation of source-bound
+tools, verified immutable downloads and the shortest prompts/outputs that exercise
+required behavior. A prepared service sequence may cover several lifecycle controls
+within its state contract; isolation, replay or rollback may still require fresh
+owners. Estimate full-context and long-output work from measured prefill/decode
+costs. Smoke checks do not replace full-length, numerical or human-quality gates.
 
 Follow the [experiment checklist](#turning-a-lead-into-an-experiment) and
 [validation policy](validation.md): full suites, benchmarks and performance
@@ -116,15 +112,15 @@ implementation before proposing existing work again; PLAN owns execution order.
 
 ### November 12 deployment audit
 
-This source inspection distinguishes available mechanisms from selected behavior;
-it establishes no new performance, device or release qualification. At that inspection,
-Runner consumed Prism 0.1.23, source `055c7430`; the
+This inspection records available mechanisms and selected behavior without
+qualifying performance, devices or releases. Runner then consumed Prism 0.1.23,
+source `055c7430`; the
 [historical capture](evidence/readme-performance-0123-20261109/summary.json)
 retains that baseline's identity. The local Prism candidate inspected at
 `bd93df1d212e30e520f7f2d721aa625ba2269a40` is a separate identity.
 Runner's [active lock](../config/prism-inference.lock.json) now selects 0.1.25;
-that later delivery does not rewrite the audit's observations. [PLAN.md](../PLAN.md#runtime-and-correctness) owns sequencing,
-implementation and acceptance; this table records the applicability findings.
+that delivery does not rewrite this audit. [PLAN.md](../PLAN.md#runtime-and-correctness)
+owns sequencing, implementation and acceptance; this table records applicability.
 
 | Mechanism | Observed boundary | Contract |
 | --- | --- | --- |

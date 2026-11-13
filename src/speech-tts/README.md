@@ -1,17 +1,13 @@
 # Native Qwen VoiceDesign inference
 
-This library owns the native Qwen3-TTS 1.7B VoiceDesign GGML engine through a
-small Rust binding to its public C ABI. Safe Rust initializes the complete
-parameter structures, owns speech tokenization, selects bounded CPU thread counts,
-masks reserved tokens,
-applies repetition penalties and implements shared Philox random draws for the
-semantic and predictor samplers. A reviewed build helper routes these helpers
-to Rust and adds a SIMD compile guard to a private copy of the external C++ core.
-The default talker
-and codec are independently pinned Q8_0 GGUF conversions
-of the named upstream checkpoints; the calling service must verify and retain all artifact files
-before loading. Model identity, immutable URLs, byte lengths and SHA-256 values
-are recorded in `model.lock.json`.
+This library owns the native Qwen3-TTS 1.7B VoiceDesign GGML engine through its
+public C ABI. Safe Rust initializes complete parameter structures, tokenizes speech,
+bounds CPU threads, masks reserved tokens, applies repetition penalties and supplies
+Philox draws to semantic and predictor samplers. A reviewed build helper routes
+these operations to Rust and adds a SIMD compile guard in a private C++ source copy.
+The default talker and codec are independently pinned Q8_0 GGUF conversions;
+`model.lock.json` records upstream identities, immutable URLs, lengths and SHA-256
+digests. The calling service must verify and retain every artifact before loading.
 
 Only plain text plus a plain-language voice description are exposed. The native
 design context must report `voice_design`, and the reusable-speaker context must
@@ -47,13 +43,12 @@ service lifetime belong to the [speech operation guide](../../docs/development-g
 ## Voice conditioning
 
 The first request for a voice profile designs a fixed reference phrase with seed
-42. Its text never comes from the message being read. The design model is released
-before loading the separately pinned Base talker, whose speaker embedding and RVQ
-reference codes are retained in memory and supplied with the reference transcript
-to both complete and streaming synthesis. Every paragraph and message with that
-profile reuses the same conditioning. An explicit profile change creates a new
-reference; process restarts regenerate it from the same phrase, seed and profile.
-Line breaks and request/conversation IDs never choose the reference.
+42, independent of the message being read. The design model is released before
+loading the separately pinned Base talker. Its speaker embedding and RVQ codes stay
+in memory and, with the reference transcript, condition complete and streaming
+synthesis for every paragraph and message using that profile. Profile changes create
+a new reference; restarts regenerate it from the same phrase, seed and profile. Line breaks and
+request/conversation IDs never choose the reference.
 This follows Qwen's [Voice Design then Clone workflow](https://github.com/QwenLM/Qwen3-TTS#voice-design-then-clone).
 Only one talker model is resident at a time, and reference acquisition failures
 fail speech without falling back to independently designed segment voices.

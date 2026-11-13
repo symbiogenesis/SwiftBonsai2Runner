@@ -25,17 +25,14 @@ validates the complete schema-2 package and embeds the packaged maintenance
 executable as its bootstrap. Existing outputs are never overwritten. All paths
 must be expanded absolute paths under the existing package path policy.
 
-Double-click the resulting executable to verify, extract and launch it, or use
+Double-click the executable to verify, extract and launch it, or use
 `bundled-chat` with installed-chat options except `--installation-directory`.
-Application packages use the GUI-subsystem `bonsai-launcher` binary as their
-maintenance executable so startup creates no terminal. The normal `bonsai-tools`
-binary retains its console command-line behavior; both entry points share the
-same maintenance commands and protocol.
-The extracted application preserves separate owned model/speech processes.
-Models, adapters, inference-runtime downloads and the Microsoft ARM64 C++ runtime
-remain separate. Integrity checks detect changed bytes within the bundle's trust
-boundary; executing a received bundle does not independently establish its
-publisher's identity. Review published release checksums before execution.
+Packages use GUI-subsystem `bonsai-launcher` for terminal-free startup;
+`bonsai-tools` retains its console. Both share maintenance commands and protocol.
+Model/speech workers remain separate owned processes. Models, adapters, inference
+runtimes and the Microsoft ARM64 C++ runtime are separate downloads. Bundle
+integrity checks do not independently establish publisher identity; review
+published release checksums before execution.
 
 ## Packaged use
 
@@ -91,7 +88,8 @@ and `--force-build`. Value options are `--native-row-workers`, `--prompt-reuse`,
 `--tts-key-file` and `--working-directory`. All existing launch admission,
 cache, verification, cancellation and teardown policy remains in Rust. An
 unchanged direct launch needs no Cargo invocation. Rebuild the maintenance
-executable after updating its sources; `--force-build` rebuilds application
+executable after source changes to receive new defaults and options; the PowerShell
+facade forwards only supplied options. `--force-build` rebuilds application
 companions, not the running maintenance image.
 
 `--graphics-backend dx12|vulkan|gl` (JSON `GraphicsBackend`) explicitly selects
@@ -101,11 +99,9 @@ selected adapter/backend remains recorded in `chat.log`; the requested option
 is retained in the deferred startup request. This does not change inference,
 automatically retry a failed renderer or establish device qualification.
 
-Rebuild the maintenance executable after source changes to receive current launch
-defaults and options. The PowerShell facade forwards only supplied options; an older
-maintenance executable can retain older defaults. Full-context/output, creative-quality,
-sustained-performance, isolation and clean-machine qualification remain pending; this default
-makes no speed claim. JSON `NativeEngine: false` remains an explicit publisher selection.
+Full-context/output, creative-quality, sustained-performance, isolation and
+clean-machine qualification remain pending; the default makes no speed claim.
+JSON `NativeEngine: false` explicitly selects the publisher engine.
 `--prompt-reuse disabled|latest` selects the [experimental prefix policy](../../docs/prefix-reuse.md);
 it defaults to `disabled` and `latest` requires the Rust engine.
 `--kv-cache f16|rsq4` (JSON `KvCache`) also requires Rust. Omission uses the
