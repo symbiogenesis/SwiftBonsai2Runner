@@ -453,7 +453,7 @@ under [AGENTS.md](AGENTS.md).
   fallback, strict ARM64/x64 Release analysis/linking, codegen/resources,
   complete-model parity and matched X2 CPU-only request benefit. Resolve the
   supervised Cargo startup failure before claiming a local compiled-check pass;
-  retain the current released runtime as rollback.
+  retain the pinned runtime as rollback.
 - [ ] Publish and qualify [provisional GDN and prepared current-token KV](docs/cpu-kernels.md#provisional-gdn-and-prepared-current-token-kv):
   native/portable exact arithmetic, late-failure rollback, stale-record rejection,
   selected-cache and FP16 state/adapter/cancellation parity, codegen/resources and

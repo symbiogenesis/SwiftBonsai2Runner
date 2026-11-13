@@ -1059,7 +1059,7 @@ release URL, verify those downloaded bytes and review the candidate before
 replacing `config/prism-inference.lock.json`. Rebuild the maintenance tool,
 broker and native UI from that same checkout: all three embed the runtime pin.
 Provision with the rebuilt tool's `provision` operation `inference`, then run the
-required checks on the settled `main` revision. Preserve the prior release for
+required checks on the settled `main` revision. Preserve the previous runtime pin for
 rollback. Packaging and hosted synthetic checks do not broaden the retained model/device evidence.
 
 ### Publisher Prism source build
