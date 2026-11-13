@@ -384,7 +384,7 @@ impl State {
     fn copy_audio_transcript(&self, ui: &mut egui::Ui, label: &str, primary: bool) {
         let id = ui.make_persistent_id(("audio-transcript-copied", label));
         super::controls::CopyButton::new(label, id)
-            .source(egui::Id::new(self.audio_file_generation))
+            .source(egui::Id::unique(self.audio_file_generation))
             .min_size(egui::vec2(0.0, 36.0))
             .corner_radius(8)
             .primary(primary)

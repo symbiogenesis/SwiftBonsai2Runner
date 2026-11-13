@@ -312,7 +312,7 @@ mod tests {
                 |ui, fixture: &mut Fixture| {
                     let slot = ui.make_persistent_id("bounded-copy-feedback");
                     CopyButton::new("Copy", slot)
-                        .source(egui::Id::new(fixture.source))
+                        .source(egui::Id::unique(fixture.source))
                         .show(ui, || format!("Payload {}", fixture.source));
                 },
                 Fixture { source: 0 },
@@ -320,7 +320,12 @@ mod tests {
         for source in 0..16 {
             control.state_mut().source = source;
             control.step();
-            assert_eq!(control.ctx.data(|data| data.count::<CopyFeedback>()), 0);
+            assert_eq!(
+                control
+                    .ctx
+                    .data(egui::util::IdTypeMap::count::<CopyFeedback>),
+                0
+            );
             let before = control
                 .get_by_role_and_label(egui::Role::Button, "Copy")
                 .rect();
@@ -329,7 +334,12 @@ mod tests {
                 .click();
             control.step();
             control.step();
-            assert_eq!(control.ctx.data(|data| data.count::<CopyFeedback>()), 1);
+            assert_eq!(
+                control
+                    .ctx
+                    .data(egui::util::IdTypeMap::count::<CopyFeedback>),
+                1
+            );
             let after = control
                 .get_by_role_and_label(egui::Role::Button, "Copy")
                 .rect();
@@ -339,6 +349,11 @@ mod tests {
         let expired = control.ctx.input(|input| input.time) + 2.0;
         control.input_mut().time = Some(expired);
         control.step();
-        assert_eq!(control.ctx.data(|data| data.count::<CopyFeedback>()), 0);
+        assert_eq!(
+            control
+                .ctx
+                .data(egui::util::IdTypeMap::count::<CopyFeedback>),
+            0
+        );
     }
 }

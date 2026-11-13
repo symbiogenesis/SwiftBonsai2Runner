@@ -66,7 +66,7 @@ impl State {
         );
         let copied = ui.make_persistent_id("diagnostics-copy");
         super::super::controls::CopyButton::new("Copy diagnostics", copied)
-            .source(egui::Id::new(self.diagnostics_revision))
+            .source(egui::Id::unique(self.diagnostics_revision))
             .show(ui, || {
                 self.diagnostics
                     .iter()
