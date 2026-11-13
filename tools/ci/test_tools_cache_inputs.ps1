@@ -71,7 +71,9 @@ function Get-UncoveredToolsFiles([string[]]$Files,[string[]]$Patterns) {
     foreach ($file in $Files) { $covered=$false; foreach ($pattern in $Patterns) { if ([Management.Automation.WildcardPattern]::new($pattern,[Management.Automation.WildcardOptions]::CultureInvariant).IsMatch($file)) { $covered=$true; break } }; if (-not $covered) { $file } }
 }
 function Invoke-ToolsEnvironmentFixture([object[]]$Scenarios) {
-    $scratch=New-CiScratch 'bonsai-tools-identity-'; $original=@{}; foreach ($entry in [Environment]::GetEnvironmentVariables().GetEnumerator()) { $original[$entry.Key]=$entry.Value }
+    # Linux can contain both RUSTFLAGS and RustFlags. Preserve the actual names
+    # so fixture cleanup does not merge distinct ambient environment entries.
+    $scratch=New-CiScratch 'bonsai-tools-identity-'; $original=[hashtable]::new([StringComparer]::Ordinal); foreach ($entry in [Environment]::GetEnvironmentVariables().GetEnumerator()) { $original[$entry.Key]=$entry.Value }
     try {
         foreach ($name in @([Environment]::GetEnvironmentVariables().Keys)) { if ($name.ToUpperInvariant().StartsWith('RUST',[StringComparison]::Ordinal) -or $name.ToUpperInvariant().StartsWith('CARGO_',[StringComparison]::Ordinal)) { [Environment]::SetEnvironmentVariable($name,$null) } }
         $cargoDirectory=Join-Path $scratch 'cargo'; [void][IO.Directory]::CreateDirectory($cargoDirectory)
@@ -109,7 +111,26 @@ $cases=[ordered]@{
     foreach ($variable in @('RUSTFLAGS','CARGO_ENCODED_RUSTFLAGS','RUSTC','RUSTC_WRAPPER','RUSTC_WORKSPACE_WRAPPER','RUSTC_BOOTSTRAP','CARGO_INCREMENTAL','CARGO_BUILD_RUSTFLAGS','CARGO_PROFILE_RELEASE_LTO','CARGO_TARGET_AARCH64_PC_WINDOWS_MSVC_LINKER')) { $values=Invoke-ToolsEnvironmentFixture @(@{environment=@{}},@{environment=@{$variable='changed'}}); Assert-Ci ($values[0] -cne $values[1]) $variable }
     foreach ($filename in @('config','config.toml')) { $values=Invoke-ToolsEnvironmentFixture @(@{environment=@{}},@{environment=@{};$filename="[build]`njobs = 2`n"},@{environment=@{};$filename="[build]`njobs = 4`n"}); Assert-CiEqual @($values | Sort-Object -Unique).Count 3 }
  }
- mixed_case_names_have_same_build_identity={ foreach ($pair in @(@('RUSTFLAGS','RustFlags'),@('CARGO_PROFILE_RELEASE_LTO','Cargo_Profile_Release_Lto'))) { $values=Invoke-ToolsEnvironmentFixture @(@{environment=@{}},@{environment=@{$pair[0]='changed'}},@{environment=@{$pair[0]=$null;$pair[1]='changed'}},@{environment=@{$pair[1]=$null}}); Assert-CiEqual $values[0] $values[3]; Assert-CiEqual $values[1] $values[2]; Assert-Ci ($values[0] -cne $values[1]) } }
+ mixed_case_names_have_same_build_identity={
+    foreach ($pair in @(@('RUSTFLAGS','RustFlags'),@('CARGO_PROFILE_RELEASE_LTO','Cargo_Profile_Release_Lto'))) {
+        # Hash literals reject case variants even on Linux. The transition must
+        # retain both operations: remove the old spelling, then set the new one.
+        $transition=[hashtable]::new([StringComparer]::Ordinal); $transition[$pair[0]]=$null; $transition[$pair[1]]='changed'
+        $values=Invoke-ToolsEnvironmentFixture @(@{environment=@{}},@{environment=@{$pair[0]='changed'}},@{environment=$transition},@{environment=@{$pair[1]=$null}})
+        Assert-CiEqual $values[0] $values[3]; Assert-CiEqual $values[1] $values[2]; Assert-Ci ($values[0] -cne $values[1])
+    }
+ }
+ environment_fixture_restores_case_sensitive_names={
+    $names=@('CARGO_BUILD_CACHE_FIXTURE','Cargo_Build_Cache_Fixture'); $before=[hashtable]::new([StringComparer]::Ordinal)
+    foreach ($name in $names) { $before[$name]=[Environment]::GetEnvironmentVariable($name) }
+    try {
+        [Environment]::SetEnvironmentVariable($names[0],'uppercase')
+        if (-not $IsWindows) { [Environment]::SetEnvironmentVariable($names[1],'mixed-case') }
+        Invoke-ToolsEnvironmentFixture @(@{environment=@{}}) | Out-Null
+        Assert-CiEqual ([Environment]::GetEnvironmentVariable($names[0])) 'uppercase'
+        if (-not $IsWindows) { Assert-CiEqual ([Environment]::GetEnvironmentVariable($names[1])) 'mixed-case' }
+    } finally { foreach ($name in $names) { [Environment]::SetEnvironmentVariable($name,$before[$name]) } }
+ }
  metadata_and_override_paths_do_not_partition={ $values=Invoke-ToolsEnvironmentFixture @(@{environment=@{}},@{environment=@{GITHUB_RUN_ID='new-run';CARGO_TARGET_DIR='different-target';CARGO_BUILD_FINGERPRINT='mtime'}}); Assert-CiEqual $values[0] $values[1] }
 }
 Invoke-CiCases $cases $Case
