@@ -68,6 +68,13 @@ source/digests and all original maintenance, speech and integration obligations
 remain required by the aggregate gate. Local checks close none of those hosted,
 actual-model or performance gates.
 
+Have the owner publish and qualify Prism's local CI scheduling and cache changes:
+Foundation distributes correctness selectors, release packaging and mutations
+across its existing lanes; source-package and Hexagon reuse isolated compiler
+outputs. Require cold, warm and relevant-input rebuild coverage on matching
+runner images, unchanged complete checks and fresh packages/receipts. Focused
+local regressions and Cargo planning establish no hosted speedup or CI verdict.
+
 Have the owner push the local CI corrections and confirm Markdown standards and
 Foundation on the resulting source. The [bounded local check record](docs/evidence/ci-fixes-20261112/retained.json)
 keeps local validation separate from pending hosted acceptance.
