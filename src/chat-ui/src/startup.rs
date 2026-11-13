@@ -20,7 +20,7 @@ use std::{
 };
 
 mod progress;
-pub(crate) use progress::Status as SetupStatus;
+pub(crate) use progress::{Activity as SetupActivity, Kind as SetupKind, Status as SetupStatus};
 
 const MAX_OUTPUT: u64 = 1024 * 1024;
 

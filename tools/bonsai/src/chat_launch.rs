@@ -441,13 +441,15 @@ impl Operations for Native {
     }
 
     fn inference(&mut self, request: &Request, working: &Path) -> crate::Result<()> {
-        setup::status(
+        let kind = setup::kind(request)?;
+        setup::runtime_status(
             working,
-            "runtime",
-            "Checking and preparing the selected Rust runtime…",
+            kind,
+            crate::startup_download::RepairActivity::Publishing,
             None,
         )?;
-        crate::provision::prepare_chat_runtime(inference_request(request, working))
+        crate::provision::prepare_chat_runtime_observed(inference_request(request, working),
+            &mut |phase, artifact| setup::runtime_status(working, kind, phase, artifact))
             .map(|_| ())
             .map_err(|error| format!("The selected Rust runtime could not be prepared in {}: {error}. Check available disk space and folder permissions, then select Retry setup.", request.data_directory.display()))
     }

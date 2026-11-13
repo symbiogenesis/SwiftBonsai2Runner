@@ -6,9 +6,29 @@ use std::{
     sync::{Arc, Mutex},
 };
 
+/// Availability of the selected model at the beginning of this setup attempt.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub(crate) enum Kind {
+    FirstRun,
+    Existing,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub(crate) enum Activity {
+    Checking,
+    Downloading,
+    Verifying,
+    Preparing,
+    Ready,
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) struct Status {
     pub(crate) message: String,
+    pub(crate) kind: Option<Kind>,
+    pub(crate) activity: Activity,
     pub(crate) downloaded: Option<u64>,
     pub(crate) expected: Option<u64>,
 }
@@ -19,6 +39,8 @@ struct Report {
     schema_version: u32,
     stage: String,
     message: String,
+    kind: Option<Kind>,
+    activity: Option<Activity>,
     artifact_path: Option<PathBuf>,
     expected_bytes: Option<u64>,
 }
@@ -57,7 +79,7 @@ fn read_status(working: &Path, data: &Path) -> Option<Status> {
 }
 
 fn status(report: Report, data: &Path) -> Option<Status> {
-    if report.schema_version != 1
+    if !matches!(report.schema_version, 1 | 2)
         || !matches!(
             report.stage.as_str(),
             "model" | "adapter" | "runtime" | "ready"
@@ -68,32 +90,47 @@ fn status(report: Report, data: &Path) -> Option<Status> {
     {
         return None;
     }
+    // Legacy producers only report an intention. Neither their message nor a
+    // leftover partial establishes that a network transfer is running now.
+    let (activity, message, kind) = if report.schema_version == 1 {
+        let (activity, message) = match report.stage.as_str() {
+            "runtime" => (Activity::Preparing, "Preparing the runtime…"),
+            "ready" => (Activity::Ready, "Starting your local model…"),
+            "adapter" => (Activity::Checking, "Preparing model adapter files…"),
+            _ => (Activity::Checking, "Preparing Swift model files…"),
+        };
+        (activity, message.to_owned(), None)
+    } else {
+        (report.activity?, report.message, report.kind)
+    };
     let mut result = Status {
-        message: report.message,
+        message,
+        kind,
+        activity,
         downloaded: None,
         expected: None,
     };
-    if let (Some(path), Some(expected)) = (report.artifact_path, report.expected_bytes) {
-        if expected == 0 || path == data || !path.starts_with(data) {
-            return None;
+    match (report.artifact_path, report.expected_bytes) {
+        (Some(path), Some(expected)) => {
+            if expected == 0 || path == data || !path.starts_with(data) {
+                return None;
+            }
+            bonsai_windows_credentials::validate_external_path(&path).ok()?;
+            if activity == Activity::Downloading {
+                let filename = path.file_name()?.to_str()?;
+                let partial = path.with_file_name(format!("{filename}.partial"));
+                bonsai_windows_credentials::validate_external_path(&partial).ok()?;
+                let downloaded = match std::fs::metadata(partial) {
+                    Ok(metadata) if metadata.is_file() => metadata.len().min(expected),
+                    Err(error) if error.kind() == std::io::ErrorKind::NotFound => 0,
+                    _ => return None,
+                };
+                result.downloaded = Some(downloaded);
+                result.expected = Some(expected);
+            }
         }
-        bonsai_windows_credentials::validate_external_path(&path).ok()?;
-        let filename = path.file_name()?.to_str()?;
-        let partial = path.with_file_name(format!("{filename}.partial"));
-        bonsai_windows_credentials::validate_external_path(&partial).ok()?;
-        if let Ok(metadata) = std::fs::metadata(partial)
-            && metadata.is_file()
-        {
-            result.downloaded = Some(metadata.len().min(expected));
-            result.expected = Some(expected);
-            result.message = if metadata.len() >= expected {
-                "Verifying downloaded files…".into()
-            } else if result.message.starts_with("Checking") {
-                "Checking files; a partial download is available to resume…".into()
-            } else {
-                "Downloading files for Swift…".into()
-            };
-        }
+        (None, None) if activity != Activity::Downloading => {}
+        _ => return None,
     }
     Some(result)
 }
@@ -103,7 +140,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn setup_progress_reads_resumable_bytes_without_calling_complete_a_verified_model()
+    fn setup_progress_tracks_explicit_activity_and_never_mistakes_cached_partials_for_transfers()
     -> std::io::Result<()> {
         let data = std::env::temp_dir().join(format!(
             "Bonsai-SetupProgress-{}-{}",
@@ -117,23 +154,51 @@ mod tests {
         let model = data.join("model.gguf");
         let partial = data.join("model.gguf.partial");
         let path = data.join("chat-setup-progress.json");
-        let report = serde_json::json!({"SchemaVersion":1,"Stage":"model","Message":"Downloading Swift model…","ArtifactPath":model,"ExpectedBytes":10});
-        std::fs::write(&path, report.to_string())?;
+        let mut report = serde_json::json!({
+            "SchemaVersion":2,"Stage":"model","Kind":"existing",
+            "Activity":"verifying","Message":"Verifying local Swift model…",
+            "ArtifactPath":model,"ExpectedBytes":10
+        });
+        std::fs::write(&model, [0; 10])?;
         std::fs::write(&partial, [0; 4])?;
-        let observed =
-            read_status(&data, &data).ok_or_else(|| std::io::Error::other("Missing progress"))?;
+        let read = |report: &serde_json::Value| -> std::io::Result<Status> {
+            std::fs::write(&path, report.to_string())?;
+            read_status(&data, &data).ok_or_else(|| std::io::Error::other("Missing progress"))
+        };
+        let local = read(&report)?;
+        assert_eq!(local.kind, Some(Kind::Existing));
+        assert_eq!(local.activity, Activity::Verifying);
+        assert_eq!((local.downloaded, local.expected), (None, None));
+        assert_eq!(local.message, "Verifying local Swift model…");
+
+        report["Activity"] = "downloading".into();
+        report["Message"] = "Resuming Swift model download…".into();
+        let downloading = read(&report)?;
+        assert_eq!(downloading.activity, Activity::Downloading);
         assert_eq!(
-            (observed.downloaded, observed.expected),
+            (downloading.downloaded, downloading.expected),
             (Some(4), Some(10))
         );
+
         std::fs::write(&partial, [0; 10])?;
-        let complete = read_status(&data, &data)
-            .ok_or_else(|| std::io::Error::other("Missing complete progress"))?;
-        assert_eq!(complete.message, "Verifying downloaded files…");
-        assert!(
-            !model.exists(),
-            "Progress must never publish or qualify a model"
-        );
+        report["Activity"] = "verifying".into();
+        report["Message"] = "Verifying downloaded Swift model…".into();
+        let verifying = read(&report)?;
+        assert_eq!(verifying.activity, Activity::Verifying);
+        assert_eq!((verifying.downloaded, verifying.expected), (None, None));
+        assert_eq!(verifying.message, "Verifying downloaded Swift model…");
+
+        report["SchemaVersion"] = 1.into();
+        if let Some(value) = report.as_object_mut() {
+            value.remove("Activity");
+            value.remove("Kind");
+        }
+        report["Message"] = "Downloading Swift model…".into();
+        let legacy = read(&report)?;
+        assert_eq!(legacy.kind, None);
+        assert_eq!(legacy.activity, Activity::Checking);
+        assert_eq!((legacy.downloaded, legacy.expected), (None, None));
+        assert!(!legacy.message.contains("Downloading"));
         std::fs::write(&path, "{".repeat(8193))?;
         assert!(read_status(&data, &data).is_none());
         std::fs::remove_dir_all(data)?;
@@ -144,9 +209,11 @@ mod tests {
     fn setup_progress_rejects_unbounded_unknown_and_external_artifacts() {
         let data = std::env::temp_dir().join("Bonsai-Progress");
         let make = || Report {
-            schema_version: 1,
+            schema_version: 2,
             stage: "model".into(),
             message: "Checking Swift model…".into(),
+            kind: Some(Kind::FirstRun),
+            activity: Some(Activity::Checking),
             artifact_path: None,
             expected_bytes: None,
         };
@@ -161,5 +228,14 @@ mod tests {
         external.artifact_path = Some(std::env::temp_dir().join("other.bin"));
         external.expected_bytes = Some(10);
         assert!(status(external, &data).is_none());
+        let mut missing_activity = make();
+        missing_activity.activity = None;
+        assert!(status(missing_activity, &data).is_none());
+        let mut missing_artifact = make();
+        missing_artifact.activity = Some(Activity::Downloading);
+        assert!(status(missing_artifact, &data).is_none());
+        let mut missing_length = make();
+        missing_length.artifact_path = Some(data.join("model.gguf"));
+        assert!(status(missing_length, &data).is_none());
     }
 }

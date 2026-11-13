@@ -290,16 +290,29 @@ pub(crate) fn receive(
     receive_with(uri, path, bytes, sha256, working, transfer)
 }
 
-/// Repairs a missing or invalid pinned artifact without discarding the old file
-/// until its complete replacement has passed verification.
-pub(crate) fn receive_repair(
+/// Observable repair phases, emitted only when that work is about to start.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum RepairActivity {
+    /// Checking the selected existing file, before considering any partial.
+    VerifyingExisting,
+    /// Fetching missing bytes; the offset distinguishes resume from a fresh fetch.
+    Downloading { offset: u64 },
+    /// Checking the completed partial, with no network transfer in progress.
+    VerifyingDownloaded,
+    /// Publishing the verified replacement into its final location.
+    Publishing,
+}
+
+/// Prepares a pinned artifact with explicit transfer and local-work observations.
+pub(crate) fn receive_repair_observed(
     uri: &str,
     path: &Path,
     bytes: u64,
     sha256: &str,
     working: &Path,
+    observe: &mut dyn FnMut(RepairActivity) -> crate::Result<()>,
 ) -> crate::Result<()> {
-    receive_repair_with(uri, path, bytes, sha256, working, transfer)
+    receive_repair_observed_with(uri, path, bytes, sha256, working, transfer, observe)
 }
 
 /// Shares one absolute allowance across verification, resume and fresh restart.
@@ -541,6 +554,7 @@ fn verified_repair_partial(
     sha256: &str,
     working: &Path,
     mut transfer: impl FnMut(&str, &Path, u64, u64, &Path) -> crate::Result<()>,
+    observe: &mut dyn FnMut(RepairActivity) -> crate::Result<()>,
 ) -> crate::Result<File> {
     let mut offset = repair_partial_offset(partial, bytes)?;
     let mut restart_resumed = offset > 0;
@@ -550,12 +564,14 @@ fn verified_repair_partial(
             // Free space already excludes the old file and any resumed bytes.
             // Publication renames this file, so no full-size copy is needed.
             require_repair_disk(partial, bytes, offset)?;
+            observe(RepairActivity::Downloading { offset })?;
             transfer(uri, partial, offset, bytes, working).map_err(|error| {
                 format!(
                     "Setup could not finish the download. Check the internet connection, free disk space and folder permissions, then select Retry setup. Partial downloads resume automatically. {error}"
                 )
             })?;
         }
+        observe(RepairActivity::VerifyingDownloaded)?;
         let mut completed = repair_file(partial)?;
         if completed
             .metadata()
@@ -611,6 +627,18 @@ fn receive_repair_with(
     working: &Path,
     transfer: impl FnMut(&str, &Path, u64, u64, &Path) -> crate::Result<()>,
 ) -> crate::Result<()> {
+    receive_repair_observed_with(uri, path, bytes, sha256, working, transfer, &mut |_| Ok(()))
+}
+
+fn receive_repair_observed_with(
+    uri: &str,
+    path: &Path,
+    bytes: u64,
+    sha256: &str,
+    working: &Path,
+    transfer: impl FnMut(&str, &Path, u64, u64, &Path) -> crate::Result<()>,
+    observe: &mut dyn FnMut(RepairActivity) -> crate::Result<()>,
+) -> crate::Result<()> {
     repair_checkpoint()?;
     expected(bytes, sha256)?;
     download_uri(uri)?;
@@ -624,6 +652,7 @@ fn receive_repair_with(
     let filename = path.file_name().ok_or("Artifact has no filename.")?;
     let lock = path.with_file_name(format!("{}.download.lock", filename.to_string_lossy()));
     let _guard = crate::startup_cache::lock_file(&lock)?;
+    observe(RepairActivity::VerifyingExisting)?;
     let original = match cached_artifact(path, bytes, sha256)? {
         CachedArtifact::Verified => return Ok(()),
         CachedArtifact::Invalid(file) => Some(file),
@@ -631,7 +660,9 @@ fn receive_repair_with(
     };
     let partial = path.with_file_name(format!("{}.partial", filename.to_string_lossy()));
     validate_external_path(&partial).map_err(|error| error.to_string())?;
-    let completed = verified_repair_partial(uri, &partial, bytes, sha256, working, transfer)?;
+    let completed =
+        verified_repair_partial(uri, &partial, bytes, sha256, working, transfer, observe)?;
+    observe(RepairActivity::Publishing)?;
     // Windows denies replacing an open read-locked original. The verified new
     // handle and all destination ancestors remain owned during publication.
     drop(original);
@@ -838,6 +869,57 @@ mod tests {
                 Err(error) => Some(Err(error.to_string())),
             })
             .collect()
+    }
+
+    #[test]
+    fn setup_repair_observations_distinguish_local_hash_resume_and_fresh_repair()
+    -> crate::Result<()> {
+        for case in 0..3 {
+            let (working, path, partial, hash) = recovery_fixture()?;
+            if case == 0 {
+                fs::write(&path, b"right").map_err(|error| error.to_string())?;
+            } else if case == 1 {
+                fs::write(&partial, b"right").map_err(|error| error.to_string())?;
+            } else {
+                fs::write(&partial, b"wr").map_err(|error| error.to_string())?;
+            }
+            let mut observations = Vec::new();
+            let mut transfers = Vec::new();
+            receive_repair_observed_with(
+                "https://example.invalid/artifact",
+                &path,
+                5,
+                &hash,
+                &working,
+                |_, destination, offset, _, _| {
+                    transfers.push(offset);
+                    let content: &[u8] = if offset == 2 { b"wrong" } else { b"right" };
+                    fs::write(destination, content).map_err(|error| error.to_string())
+                },
+                &mut |phase| {
+                    observations.push(phase);
+                    Ok(())
+                },
+            )?;
+            use RepairActivity::{Downloading, Publishing, VerifyingDownloaded, VerifyingExisting};
+            let expected = match case {
+                0 => vec![VerifyingExisting],
+                1 => vec![VerifyingExisting, VerifyingDownloaded, Publishing],
+                _ => vec![
+                    VerifyingExisting,
+                    Downloading { offset: 2 },
+                    VerifyingDownloaded,
+                    Downloading { offset: 0 },
+                    VerifyingDownloaded,
+                    Publishing,
+                ],
+            };
+            assert_eq!(observations, expected);
+            assert_eq!(transfers, if case == 2 { vec![2, 0] } else { Vec::new() });
+            verify(&path, 5, &hash)?;
+            fs::remove_dir_all(&working).map_err(|error| error.to_string())?;
+        }
+        Ok(())
     }
 
     #[test]

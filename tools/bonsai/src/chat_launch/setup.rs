@@ -60,6 +60,8 @@ pub(super) fn status(
     working: &Path,
     stage: &str,
     message: &str,
+    kind: &str,
+    activity: &str,
     artifact: Option<(&Path, u64)>,
 ) -> crate::Result<()> {
     let path = working.join("chat-setup-progress.json");
@@ -69,7 +71,8 @@ pub(super) fn status(
         crate::startup_process::unique()
     ));
     external(&temporary)?;
-    let mut report = json!({"SchemaVersion":1,"Stage":stage,"Message":message});
+    let mut report =
+        json!({"SchemaVersion":2,"Stage":stage,"Message":message,"Kind":kind,"Activity":activity});
     if let Some((path, bytes)) = artifact {
         report["ArtifactPath"] = json!(path);
         report["ExpectedBytes"] = json!(bytes);
@@ -128,11 +131,22 @@ fn preflight(data: &Path, model: &Model) -> crate::Result<()> {
     Ok(())
 }
 
+// Availability describes this selected model, not a persistent first-launch receipt.
+pub(super) fn kind(request: &Request) -> crate::Result<&'static str> {
+    let selected = model(request)?;
+    Ok(if selected.path.exists() {
+        "existing"
+    } else {
+        "first-run"
+    })
+}
+
 fn publisher(request: &Request, working: &Path) -> crate::Result<()> {
-    status(
+    let kind = kind(request)?;
+    runtime_status(
         working,
-        "runtime",
-        "Checking and preparing the selected publisher runtime…",
+        kind,
+        crate::startup_download::RepairActivity::Publishing,
         None,
     )?;
     // Portable packages do not carry a checkout. Materialize only the compiled
@@ -150,10 +164,13 @@ fn publisher(request: &Request, working: &Path) -> crate::Result<()> {
     file.write_all(SWIFT.as_bytes())
         .map_err(|error| error.to_string())?;
     drop(file);
-    let result = crate::provision::prepare_chat_runtime(json!({
-        "operation":"engine", "dataDirectory":request.data_directory,
-        "workingDirectory":working, "lockPath":path,
-    }));
+    let result = crate::provision::prepare_chat_runtime_observed(
+        json!({
+            "operation":"engine", "dataDirectory":request.data_directory,
+            "workingDirectory":working, "lockPath":path,
+        }),
+        &mut |phase, artifact| runtime_status(working, kind, phase, artifact),
+    );
     let cleanup = fs::remove_file(&path);
     result.map_err(|error| format!("The publisher runtime could not be prepared in {}: {error}. Select Retry setup after fixing the reported problem.", request.data_directory.display()))?;
     cleanup.map_err(|error| error.to_string())?;
@@ -165,10 +182,26 @@ pub(super) fn prepare(request: &Request, working: &Path) -> crate::Result<()> {
     if !request.native_engine {
         publisher(request, working)?;
     }
+    let selected = model(request)?;
+    let kind = kind(request)?;
     prepare_weights(
         request,
         working,
-        crate::startup_download::receive_repair,
+        |url, path, bytes, hash, working| {
+            let stage = if path == selected.path {
+                "model"
+            } else {
+                "adapter"
+            };
+            crate::startup_download::receive_repair_observed(
+                url,
+                path,
+                bytes,
+                hash,
+                working,
+                &mut |activity| artifact_status(working, stage, kind, path, bytes, activity),
+            )
+        },
         crate::startup_download::verify,
     )
 }
@@ -181,17 +214,18 @@ fn prepare_weights(
 ) -> crate::Result<()> {
     let selected = model(request)?;
     preflight(&request.data_directory, &selected)?;
-    let message = if selected.url.is_none() {
-        "Verifying the explicitly selected PTQ1 export…"
-    } else if selected.path.exists() {
-        "Checking Swift model…"
+    let kind = kind(request)?;
+    let (activity, message) = if selected.url.is_none() {
+        ("verifying", "Verifying the selected PTQ1 model…")
     } else {
-        "Downloading Swift model (6.71 GiB)… You can leave this window open."
+        ("checking", "Checking Swift model files…")
     };
     status(
         working,
         "model",
         message,
+        kind,
+        activity,
         Some((&selected.path, selected.bytes)),
     )?;
     if let Some(url) = selected.url {
@@ -204,15 +238,12 @@ fn prepare_weights(
     if !request.no_abliterate_lora {
         let selected = bonsai_cpu_policy::abliterate_lora_artifact(&request.data_directory)?;
         let lock: Value = serde_json::from_str(ADAPTER).map_err(|error| error.to_string())?;
-        let message = if selected.path.exists() {
-            "Checking the model adapter…"
-        } else {
-            "Downloading the model adapter…"
-        };
         status(
             working,
             "adapter",
-            message,
+            "Checking model adapter files…",
+            kind,
+            "checking",
             Some((&selected.path, selected.bytes)),
         )?;
         receive(text(&lock["adapter"], "url")?, &selected.path, selected.bytes, &selected.sha256, working)
@@ -221,8 +252,69 @@ fn prepare_weights(
     status(
         working,
         "ready",
-        "Setup complete. Starting your local model…",
+        "Starting your local model\u{2026}",
+        kind,
+        "ready",
         None,
+    )
+}
+
+pub(super) fn runtime_status(
+    working: &Path,
+    kind: &str,
+    phase: crate::startup_download::RepairActivity,
+    artifact: Option<(&Path, u64)>,
+) -> crate::Result<()> {
+    use crate::startup_download::RepairActivity;
+    let (activity, message) = match phase {
+        RepairActivity::VerifyingExisting => ("verifying", "Checking local runtime files\u{2026}"),
+        RepairActivity::Downloading { offset: 0 } => {
+            ("downloading", "Downloading the runtime\u{2026}")
+        }
+        RepairActivity::Downloading { .. } => ("downloading", "Resuming runtime download\u{2026}"),
+        RepairActivity::VerifyingDownloaded => {
+            ("verifying", "Verifying the downloaded runtime\u{2026}")
+        }
+        RepairActivity::Publishing => ("preparing", "Preparing the runtime\u{2026}"),
+    };
+    status(working, "runtime", message, kind, activity, artifact)
+}
+
+fn artifact_status(
+    working: &Path,
+    stage: &str,
+    kind: &str,
+    path: &Path,
+    bytes: u64,
+    phase: crate::startup_download::RepairActivity,
+) -> crate::Result<()> {
+    use crate::startup_download::RepairActivity;
+    let name = if stage == "model" {
+        "Swift model"
+    } else {
+        "model adapter"
+    };
+    let (activity, message) = match phase {
+        RepairActivity::VerifyingExisting if path.exists() => {
+            ("verifying", format!("Verifying local {name}…"))
+        }
+        RepairActivity::VerifyingExisting => ("checking", format!("Checking {name} files…")),
+        RepairActivity::Downloading { offset: 0 } => {
+            ("downloading", format!("Downloading {name}…"))
+        }
+        RepairActivity::Downloading { .. } => ("downloading", format!("Resuming {name} download…")),
+        RepairActivity::VerifyingDownloaded => {
+            ("verifying", format!("Verifying downloaded {name}…"))
+        }
+        RepairActivity::Publishing => ("preparing", format!("Preparing verified {name}…")),
+    };
+    status(
+        working,
+        stage,
+        &message,
+        kind,
+        activity,
+        Some((path, bytes)),
     )
 }
 
@@ -275,7 +367,14 @@ mod tests {
             "NativeEngine":true,"UseRepackedPtq1":true,"NoAbliterateLora":true,
         }))
         .map_err(|error| error.to_string())?;
-        status(&working, "runtime", "Checking runtime", None)?;
+        status(
+            &working,
+            "runtime",
+            "Checking runtime",
+            "first-run",
+            "preparing",
+            None,
+        )?;
         let error = prepare(&request, &working)
             .err()
             .ok_or("Missing PTQ1 unexpectedly succeeded.")?;
@@ -288,6 +387,9 @@ mod tests {
                 .map_err(|error| error.to_string())?,
         )
         .map_err(|error| error.to_string())?;
+        assert_eq!(report["SchemaVersion"], 2);
+        assert_eq!(report["Kind"], "first-run");
+        assert_eq!(report["Activity"], "verifying");
         assert_eq!(report["Stage"], "model");
         assert_eq!(report["ExpectedBytes"], 5_946_648_928_u64);
         assert!(
