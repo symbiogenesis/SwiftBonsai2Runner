@@ -72,6 +72,7 @@ mod opencl;
 mod power;
 mod power_policy;
 pub(super) mod presentation;
+pub(super) mod replacement;
 pub(super) mod signature;
 mod vulkan;
 

@@ -40,6 +40,20 @@ pub fn show_startup_error(message: &str) {
     native::presentation::show_error(message);
 }
 
+/// Atomically renames an open file over an existing destination on its volume.
+///
+/// Retain the verified source handle with delete access and without write or
+/// delete sharing throughout this call. The source is selected by that handle,
+/// so replacement never reopens an attacker-replaceable source pathname.
+/// The caller validates and retains the destination's directory identity.
+///
+/// # Errors
+/// Rejects relative or invalid destination names and failed Windows replacement,
+/// including missing delete access, sharing conflicts and cross-volume moves.
+pub fn replace_open_file(file: &std::fs::File, target: &Path) -> io::Result<()> {
+    native::replacement::replace(file, target)
+}
+
 /// Returns this process's creation FILETIME for retained supervision identity.
 ///
 /// # Errors
