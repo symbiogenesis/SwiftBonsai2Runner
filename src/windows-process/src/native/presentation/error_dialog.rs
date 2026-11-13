@@ -76,14 +76,25 @@ pub(super) fn show(message: &str) {
         let short: String = message
             .chars()
             .take(160)
-            .map(|character| if character.is_control() { ' ' } else { character })
+            .map(|character| {
+                if character.is_control() {
+                    ' '
+                } else {
+                    character
+                }
+            })
             .collect();
         let fallback = terminated(&format!(
             "Swift Bonsai could not start.\n\n{short}\n\nThe detailed error controls could not open."
         ));
         // SAFETY: Both terminated strings remain live throughout the synchronous call.
         let _ = unsafe {
-            MessageBoxW(ptr::null_mut(), fallback.as_ptr(), w!("Swift Bonsai 2"), MB_OK | MB_ICONERROR)
+            MessageBoxW(
+                ptr::null_mut(),
+                fallback.as_ptr(),
+                w!("Swift Bonsai 2"),
+                MB_OK | MB_ICONERROR,
+            )
         };
     }
 }
@@ -101,16 +112,17 @@ unsafe extern "system" fn dialog_proc(
     }
     // SAFETY: Only WM_INITDIALOG above writes this dialog's private user-data slot.
     let parameter = unsafe { GetWindowLongPtrW(dialog, GWLP_USERDATA) };
-    let pointer = ptr::with_exposed_provenance::<Contents>(
-        usize::try_from(parameter).unwrap_or_default(),
-    );
+    let pointer =
+        ptr::with_exposed_provenance::<Contents>(usize::try_from(parameter).unwrap_or_default());
     if !pointer.is_null() {
         // SAFETY: The caller owns Contents for the complete modal lifetime. The
         // callback borrows it immutably and makes no reentrant mutation of it.
         let contents = unsafe { &*pointer };
         if message == WM_INITDIALOG {
             // SAFETY: PREVIEW_ID identifies the template's edit control; text stays live.
-            let _ = unsafe { SetDlgItemTextW(dialog, i32::from(PREVIEW_ID), contents.preview.as_ptr()) };
+            let _ = unsafe {
+                SetDlgItemTextW(dialog, i32::from(PREVIEW_ID), contents.preview.as_ptr())
+            };
             return 1;
         }
         if message == WM_COMMAND && wparam & 0xffff == usize::from(COPY_ID) {
@@ -125,8 +137,7 @@ unsafe extern "system" fn dialog_proc(
         }
     }
     if message == WM_CLOSE
-        || (message == WM_COMMAND
-            && matches!(i32::try_from(wparam & 0xffff), Ok(IDOK | IDCANCEL)))
+        || (message == WM_COMMAND && matches!(i32::try_from(wparam & 0xffff), Ok(IDOK | IDCANCEL)))
     {
         // SAFETY: This callback runs only for its own live modal dialog.
         let _ = unsafe { EndDialog(dialog, 0) };
@@ -195,7 +206,10 @@ fn copy(dialog: HWND, text: &[u16]) -> bool {
 
 fn push_dword(words: &mut Vec<u16>, value: u32) {
     let bytes = value.to_le_bytes();
-    words.extend([u16::from_le_bytes([bytes[0], bytes[1]]), u16::from_le_bytes([bytes[2], bytes[3]])]);
+    words.extend([
+        u16::from_le_bytes([bytes[0], bytes[1]]),
+        u16::from_le_bytes([bytes[2], bytes[3]]),
+    ]);
 }
 
 fn control(words: &mut Vec<u16>, id: u16, class: u16, style: u32, rect: [u16; 4], text: &str) {
@@ -212,23 +226,74 @@ fn control(words: &mut Vec<u16>, id: u16, class: u16, style: u32, rect: [u16; 4]
 
 fn template() -> Vec<u32> {
     let mut words = Vec::new();
-    push_dword(&mut words, WS_CAPTION | WS_SYSMENU | (DS_MODALFRAME | DS_SETFONT | DS_CENTER).cast_unsigned());
+    push_dword(
+        &mut words,
+        WS_CAPTION | WS_SYSMENU | (DS_MODALFRAME | DS_SETFONT | DS_CENTER).cast_unsigned(),
+    );
     push_dword(&mut words, 0);
     words.extend([6, 0, 0, 280, 164, 0, 0]); // Count, fixed bounds, no menu/default dialog class.
     words.extend(terminated("Swift Bonsai 2"));
     words.push(9);
     words.extend(terminated("Segoe UI"));
-    control(&mut words, 1003, 0x82, 0, [12, 10, 256, 14], "Swift Bonsai could not start");
-    control(&mut words, 1004, 0x82, 0, [12, 29, 256, 12], "Error details (preview)");
-    control(&mut words, PREVIEW_ID, 0x81, WS_BORDER | WS_TABSTOP | WS_VSCROLL | (ES_MULTILINE | ES_AUTOVSCROLL | ES_READONLY).cast_unsigned(), [12, 44, 256, 66], "");
-    control(&mut words, FEEDBACK_ID, 0x82, 0, [12, 115, 256, 18], "Copy error keeps the complete message. Review paths before sharing.");
-    control(&mut words, COPY_ID, 0x80, WS_TABSTOP, [116, 140, 82, 16], "&Copy error");
-    control(&mut words, 1, 0x80, WS_TABSTOP | BS_DEFPUSHBUTTON.cast_unsigned(), [206, 140, 62, 16], "Close");
+    control(
+        &mut words,
+        1003,
+        0x82,
+        0,
+        [12, 10, 256, 14],
+        "Swift Bonsai could not start",
+    );
+    control(
+        &mut words,
+        1004,
+        0x82,
+        0,
+        [12, 29, 256, 12],
+        "Error details (preview)",
+    );
+    control(
+        &mut words,
+        PREVIEW_ID,
+        0x81,
+        WS_BORDER
+            | WS_TABSTOP
+            | WS_VSCROLL
+            | (ES_MULTILINE | ES_AUTOVSCROLL | ES_READONLY).cast_unsigned(),
+        [12, 44, 256, 66],
+        "",
+    );
+    control(
+        &mut words,
+        FEEDBACK_ID,
+        0x82,
+        0,
+        [12, 115, 256, 18],
+        "Copy error keeps the complete message. Review paths before sharing.",
+    );
+    control(
+        &mut words,
+        COPY_ID,
+        0x80,
+        WS_TABSTOP,
+        [116, 140, 82, 16],
+        "&Copy error",
+    );
+    control(
+        &mut words,
+        1,
+        0x80,
+        WS_TABSTOP | BS_DEFPUSHBUTTON.cast_unsigned(),
+        [206, 140, 62, 16],
+        "Close",
+    );
     if !words.len().is_multiple_of(2) {
         words.push(0);
     }
     // Vec<u32> guarantees the DWORD alignment required by dialog templates.
-    words.chunks_exact(2).map(|pair| u32::from(pair[0]) | (u32::from(pair[1]) << 16)).collect()
+    words
+        .chunks_exact(2)
+        .map(|pair| u32::from(pair[0]) | (u32::from(pair[1]) << 16))
+        .collect()
 }
 
 #[cfg(test)]
@@ -240,7 +305,9 @@ mod tests {
         let message = format!("{}\0tail", "錯誤🌱\n".repeat(1000));
         let shortened = preview(&message, PREVIEW_CHARS);
         assert!(shortened.chars().count() < PREVIEW_CHARS + 100);
-        assert!(shortened.ends_with("[Preview shortened. Copy error includes the complete message.]"));
+        assert!(
+            shortened.ends_with("[Preview shortened. Copy error includes the complete message.]")
+        );
         let full = terminated(&message);
         assert_eq!(full.last(), Some(&0));
         assert_eq!(full.iter().filter(|unit| **unit == 0).count(), 1);
