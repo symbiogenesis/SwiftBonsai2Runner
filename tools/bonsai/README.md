@@ -481,28 +481,23 @@ separate from stderr. The result adds `Capabilities` and `CapabilityVerification
 including the retained evidence directory. No model is loaded or profile selected.
 This option requires a trusted current maintenance tool and rejects custom locks.
 
-`speech-build` validates the compiled native compiler/source pins, checks compiler
-archive names in bulk and stages source ZIPs. ZIP identity, complete path inventory,
-Windows aliases, entry types, expansion limits and existing cache bytes are checked
-in Rust. ZIP link entries become ordinary files containing their archived bytes.
-Its explicit `environment`, `build` and `models` operations additionally own
-downloads, compiler TAR extraction, Visual Studio environment setup and native
-process execution. Planning and source staging remain nonexecuting operations.
+`speech-build` plans the pinned ASR compiler and prepares speech model files.
+Its `environment` operation selects the ASR compiler/SDK environment; `build`
+selects ASR, Rust TTS or both; `models` downloads and verifies the selected GGUFs.
+TTS-only builds use ordinary Cargo without LLVM, CMake, Qwen/GGML sources or
+native libraries. The former `stage-sources` and static-library cache operations
+are retired. Installed users receive prebuilt companions and app-owned model
+setup, without running these contributor commands.
 
 The model-free `speech-build` request `{"operation":"host"}` returns the native
 Windows ARM64 `runner-native-speech-host` report and its full `HostCacheKey`.
 Its versioned SHA-256 identity binds CPU registry name/vendor/identifier, Windows
 kernel version, native target and positive Windows processor-feature flags from
 a bounded query. It excludes power state, parking and thread counts. Missing
-mandatory observations reject. Native speech builds partition their Cargo
-directory and receipt by this identity, so changing CPU/OS/features repeats
-native compilation instead of reusing another host's CMake or Cargo objects.
-The build result retains the report as `NativeBuildHost`; discovery does not
-qualify optional kernels or portable distribution.
-
-Its `stage-sources` operation verifies and stages the compiled Qwen/GGML archive
-pair together, then checks the complete cache inventory before returning.
-Existing source-tree redirection and extra-file rejection run inside that operation.
+mandatory observations reject. ASR builds partition their Cargo directory and
+receipt by this identity so changing CPU/OS/features repeats native compilation.
+TTS-only builds use the Rust source/compiler identity and perform no native host
+probe. Discovery does not qualify kernels or portable distribution.
 
 `cpu-check-plan` combines the shared `bonsai-cpu-policy` plan with a current
 available-memory observation. Its request contains `operation: "plan"`,
