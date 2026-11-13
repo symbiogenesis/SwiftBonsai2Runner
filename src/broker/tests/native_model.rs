@@ -1602,10 +1602,13 @@ async fn start_adapter_with_progress(
     evidence: &Path,
     observe: impl FnMut(StartupProgress),
 ) -> Result<LaunchedService, LaunchError> {
-    adapter_startup_with_timeout(
+    // Keep the launch state behind one pointer before nesting timeout and
+    // acceptance futures. Dropping this future still drops the owned startup;
+    // no task outlives cancellation or receives a separate deadline.
+    adapter_startup_with_timeout(Box::pin(
         adapter_configuration(profile, data, evidence)
             .start_with_progress(pending::<io::Result<()>>(), observe),
-    )
+    ))
     .await
 }
 
