@@ -41,9 +41,8 @@ exception aborts the isolated collector before damaged native state can be reuse
 
 `pins.json` binds native and Rust source archives and the native header. Both
 preparation and capture require the Rust source's commit, archive size, digest
-and URL to equal the current runtime lock; historical checkers cannot qualify a
-new release. Capture
-tools must be built in hosted CI and delivered with `capture-tools.json`:
+and URL to equal the current runtime lock. Build capture tools in hosted CI and
+deliver them with `capture-tools.json`:
 `SchemaVersion: 3`, `CheckerFeatures: ["parallel-rows"]`,
 `SupportedRowWorkers: [1,4]`, `RunnerRevision`, `NativeSource`, `RustSource`,
 `CollectorLanguage: rust`, `CollectorSourcePath`, `CollectorSourceSha256`,
@@ -51,9 +50,7 @@ tools must be built in hosted CI and delivered with `capture-tools.json`:
 entries (`Name`, `Bytes`, lowercase `Sha256`) for `swift-ptq1-reference.exe` and
 `swift_model_check.exe`. Rust checks the current Runner revision, source
 pins, Rust source/control digests, binary hashes/sizes and ARM64 PE architecture. Both binaries
-and their receipt are guarded during execution. A historical schema-2 receipt is
-accepted only for one worker and cannot acquire parallel capabilities through
-injected fields. There is no owner build fallback.
+and their receipt are guarded during execution. There is no owner build fallback.
 Run the separately hosted-prepared maintenance executable directly. Its adjacent
 `receipt.json` must bind its complete digest to the current Runner revision.
 
@@ -128,7 +125,7 @@ pwsh -NoLogo -NoProfile -File tools/native-reference/test_compare.ps1 -Name test
 The retained-file auditor is fixed to numerical run `41568281287` at Runner
 `469f57b`. The auditor downloads the original evidence archive,
 verifies its authenticated producer and artifact digest, and checks every unique
-regular ZIP member against the 155 previously recorded file identities. The
+regular ZIP member against the 155 frozen inventory entries. The
 tracked inventory is copied producer metadata; it supplies expected identities
 for the cloud check and does not itself prove that retained payloads match.
 

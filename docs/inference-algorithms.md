@@ -217,7 +217,7 @@ An explicitly configured private-service profile connects this consumer to
 Swift's temperature 1, top-20 and top-p 0.95 sampler. It separately charges
 verification logits and an additional complete-prefix checkpoint beside the
 request rollback. Existing phase-timing capture rejects this selection because
-its counters cannot describe speculative work. Legacy greedy APIs and the
+its counters cannot describe speculative work. Greedy APIs and the
 standalone `verify_stochastic_step` remain separate. This local candidate is not
 in Runner's runtime bundle; Runner still requires speculation to be disabled.
 Source integration establishes no serving speedup, actual-model parity or
@@ -240,8 +240,7 @@ factors with checked forward reconstruction.
 ### 2026 state-traffic and verification research
 
 The [hybrid-state catalog](research-register.md#hybrid-recurrence-prefix-caching-and-speculative-decoding)
-owns KVBuffer/TreeWY sources and negative results. The November 12 review adds
-[KVBuffer v2](https://arxiv.org/html/2605.19049v2), revised **2026-11-05**.
+owns KVBuffer/TreeWY sources and applicability. [KVBuffer v2](https://arxiv.org/html/2605.19049v2)
 Its main decoding gains use large batches; its low-request-rate Qwen3.5-4B
 result includes no throughput gain, and FP32 comparisons have nonzero state or
 output differences. Neither technique is implemented in the selected runtime:

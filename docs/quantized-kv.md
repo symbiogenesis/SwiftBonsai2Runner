@@ -7,6 +7,7 @@ paired packet below. Larger windows and each device family need separate gates.
 Explicit `f16` starts a comparison/recovery session. Requests and failed compressed
 sessions cannot silently change precision. [PLAN.md](../PLAN.md#bounded-calibration-and-optional-precision)
 owns remaining work.
+
 ## Source selection and current checks
 
 The safe codec API is `kv_quant::Quantizer::{new, scalar}`. Graph construction

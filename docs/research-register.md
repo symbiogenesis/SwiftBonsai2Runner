@@ -4,8 +4,7 @@ This register holds reusable proof obligations and optional research sources for
 Swift Bonsai 2. Topic contracts define supported behavior; [PLAN.md](../PLAN.md)
 owns outstanding work. A paper, report or source example neither approves an
 implementation nor qualifies a device/default. Derivations below are reviewable
-arguments, not machine-checked proofs. Historical reviews and trial diaries belong
-in Git history.
+arguments, not machine-checked proofs.
 
 ## Existing evidence and project scope
 
