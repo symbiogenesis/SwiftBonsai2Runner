@@ -21,50 +21,22 @@ permissions:
   contents: read
 jobs:
   actions-lock:
-    # Independent of changed-path selection so every triggered run verifies CI.
-    runs-on: ubuntu-24.04-arm
-    timeout-minutes: 5
-    concurrency:
-      group: actions-lock-${{ github.event.pull_request.number || github.ref }}-${{ github.event_name == 'workflow_dispatch' && github.run_id || 'latest' }}
-      cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' }}
-    defaults:
-      run:
-        shell: bash
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - name: Reject owned Python code and runtime setup
-        run: pwsh -NoProfile -File tools/ci/check_owned_languages.ps1
-      - name: Check source-language policy regression fixtures
-        run: pwsh -NoProfile -File tools/ci/test_owned_languages.ps1
-      - name: Check exact startup lock coverage and full action pins offline
-        run: pwsh -NoProfile -File tools/ci/check_workflow_startup.ps1
-      - name: Check startup lock regression fixtures
-        run: pwsh -NoProfile -File tools/ci/test_workflow_startup.ps1
-      - name: Check staged workflow guard regression fixtures
-        run: pwsh -NoProfile -File tools/ci/test_staged_workflows.ps1
-      - name: Download and verify the sole additional CI security tool
-        run: |
-          set -euo pipefail
-          # gh-actions-lock v0.4.1 (source 04b7a1a4d00b339dd3ff903bb4d78d4066b2bac7).
-          # Review the release and update this URL and digest together.
-          curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 --max-time 60 \
-            https://github.com/github/gh-actions-lock/releases/download/v0.4.1/linux-arm64 \
-            --output "$RUNNER_TEMP/gh-actions-lock"
-          echo 'aee61c993da36a5f09be2c77e6e4a1a22542a1b30ded4996bf8301c15dcf2b39  '"$RUNNER_TEMP/gh-actions-lock" | sha256sum --check --strict
-          chmod 700 "$RUNNER_TEMP/gh-actions-lock"
-      - name: Verify every workflow lock and upstream repository identity
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: '"$RUNNER_TEMP/gh-actions-lock" --verify'
-  changes:
-    runs-on: ubuntu-24.04-arm
-    timeout-minutes: 5
+    # One checkout selects checks and verifies CI before expensive jobs start.
     outputs:
       portable: ${{ steps.select.outputs.portable }}
       markdown: ${{ steps.select.outputs.markdown }}
       audit: ${{ steps.select.outputs.audit }}
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 5
+    concurrency:
+      # Push ranges are incremental: a later unrelated push must not cancel a
+      # selected check before this preflight can hand it off. PR ranges include
+      # the complete branch, so only PR preflights can supersede each other.
+      group: actions-lock-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}-${{ github.event_name == 'pull_request' && 'latest' || github.run_id }}
+      cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+    defaults:
+      run:
+        shell: bash
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -80,15 +52,49 @@ jobs:
           HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           & ./tools/ci/select_source_checks.ps1
+      - name: Check source-check routing regression fixtures
+        run: pwsh -NoProfile -File tools/ci/test_source_checks.ps1
+      - name: Reject owned Python code and runtime setup
+        run: pwsh -NoProfile -File tools/ci/check_owned_languages.ps1
+      - name: Check source-language policy regression fixtures
+        run: pwsh -NoProfile -File tools/ci/test_owned_languages.ps1
+      - name: Check exact startup lock coverage and full action pins offline
+        run: pwsh -NoProfile -File tools/ci/check_workflow_startup.ps1
+      - name: Check GitHub Actions syntax and expressions
+        run: pwsh -NoLogo -NoProfile -File tools/ci/check_workflow_syntax.ps1 -CheckFixtures
+      - name: Check startup lock regression fixtures
+        run: pwsh -NoProfile -File tools/ci/test_workflow_startup.ps1
+      - name: Check staged workflow guard regression fixtures
+        run: pwsh -NoProfile -File tools/ci/test_staged_workflows.ps1
+      - name: Download and verify the sole additional CI security tool
+        run: |
+          set -euo pipefail
+          # gh-actions-lock v0.4.1 (source 04b7a1a4d00b339dd3ff903bb4d78d4066b2bac7).
+          # Review the release and update this URL and digest together.
+          curl --fail --silent --show-error --location --retry 3 --retry-delay 2 --retry-max-time 90 --connect-timeout 15 --proto '=https' --tlsv1.2 --max-time 60 \
+            https://github.com/github/gh-actions-lock/releases/download/v0.4.1/linux-arm64 \
+            --output "$RUNNER_TEMP/gh-actions-lock"
+          echo 'aee61c993da36a5f09be2c77e6e4a1a22542a1b30ded4996bf8301c15dcf2b39  '"$RUNNER_TEMP/gh-actions-lock" | sha256sum --check --strict
+          chmod 700 "$RUNNER_TEMP/gh-actions-lock"
+      - name: Verify every workflow lock and upstream repository identity
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: '"$RUNNER_TEMP/gh-actions-lock" --verify'
   portable:
-    needs: changes
+    needs: actions-lock
     if: >-
       always() && !cancelled()
       && (github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch')
-      && (needs.changes.result != 'success' || needs.changes.outputs.portable == 'true')
+      && (needs.actions-lock.result != 'success' || needs.actions-lock.outputs.portable == 'true')
     concurrency:
-      group: portable-${{ github.event.pull_request.number || github.ref }}-${{ github.event_name == 'workflow_dispatch' && github.run_id || 'latest' }}
-      cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' }}
+      # Independent push preflights can finish out of order. Only cumulative PR
+      # checks may supersede one another; push, schedule and manual runs stay unique.
+      group: portable-${{ github.event.pull_request.number || github.ref }}-${{ github.event_name == 'pull_request' && 'latest' || github.run_id }}
+      cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+    env:
+      # Checkout timestamps change; Cargo must verify restored source contents.
+      CARGO_UNSTABLE_CHECKSUM_FRESHNESS: 'true'
+      CARGO_BUILD_FINGERPRINT: content
     # Untrusted pull requests run only on a disposable hosted runner. This
     # focused screen cannot qualify native Windows or actual-model behavior.
     runs-on: ubuntu-24.04-arm
@@ -97,25 +103,40 @@ jobs:
       run:
         shell: bash
     steps:
-      - name: Reject an unsuccessful source-check selector
-        if: needs.changes.result != 'success'
+      - name: Reject an unsuccessful source-check preflight
+        if: needs.actions-lock.result != 'success'
         shell: bash
         run: |
-          echo 'Source-check selection failed; portable checks cannot be skipped.' >&2
+          echo 'Source-check preflight failed; portable checks cannot be skipped.' >&2
           exit 1
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - uses: $/.github/actions/rust-toolchain
+        id: compiler
         with:
           toolchain: nightly-2026-11-12-aarch64-unknown-linux-gnu
           components: rustfmt
+      - name: Reuse portable Cargo downloads and compiler outputs
+        id: cargo-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+            ${{ runner.temp }}/SwiftBonsai-Premerge
+          key: portable-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.compiler.outputs.image-identity }}-${{ steps.compiler.outputs.compiler-identity }}-${{ hashFiles('Cargo.toml', 'Cargo.lock', '**/Cargo.toml', '.cargo/**') }}-${{ github.sha }}-content-v1
+          restore-keys: |
+            portable-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.compiler.outputs.image-identity }}-${{ steps.compiler.outputs.compiler-identity }}-${{ hashFiles('Cargo.toml', 'Cargo.lock', '**/Cargo.toml', '.cargo/**') }}-
+            portable-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.compiler.outputs.image-identity }}-${{ steps.compiler.outputs.compiler-identity }}-
       - name: Check workspace Rust formatting
         working-directory: ${{ runner.temp }}
         env:
           CARGO_TARGET_DIR: ${{ runner.temp }}/SwiftBonsai-Premerge
         run: cargo +nightly-2026-11-12 fmt --manifest-path "$GITHUB_WORKSPACE/Cargo.toml" --all -- --check
       - name: Compile portable policy, broker and CI targets
+        id: compile
         working-directory: ${{ runner.temp }}
         env:
           CARGO_TARGET_DIR: ${{ runner.temp }}/SwiftBonsai-Premerge
@@ -149,26 +170,37 @@ jobs:
           exact_test rejects_alternate_hosts_and_browser_origins --package bonsai-broker --test request_policy
           exact_test typed_schema_rejects_aliases_controls_tools_and_media --package bonsai-broker --test request_policy
           exact_test context_admission_fails_closed_at_boundary_and_overflow --package bonsai-broker --test request_policy
+      - name: Preserve portable compiler outputs after checks
+        if: ${{ !cancelled() && steps.cargo-cache.outcome == 'success' && steps.cargo-cache.outputs.cache-primary-key != '' && steps.cargo-cache.outputs.cache-hit != 'true' && (steps.compile.outcome == 'success' || steps.compile.outcome == 'failure') }}
+        continue-on-error: true
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+            ${{ runner.temp }}/SwiftBonsai-Premerge
+          key: ${{ steps.cargo-cache.outputs.cache-primary-key }}
   markdown:
-    needs: changes
+    needs: actions-lock
     if: >-
       always() && !cancelled()
       && (github.event_name == 'push' || github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch')
-      && (needs.changes.result != 'success' || needs.changes.outputs.markdown == 'true')
+      && (needs.actions-lock.result != 'success' || needs.actions-lock.outputs.markdown == 'true')
     concurrency:
-      group: markdown-standards-${{ github.event.pull_request.number || github.ref }}-${{ github.event_name == 'workflow_dispatch' && github.run_id || 'latest' }}
-      cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' }}
+      group: markdown-standards-${{ github.event.pull_request.number || github.ref }}-${{ github.event_name == 'pull_request' && 'latest' || github.run_id }}
+      cancel-in-progress: ${{ github.event_name == 'pull_request' }}
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 10
     defaults:
       run:
         shell: bash
     steps:
-      - name: Reject an unsuccessful source-check selector
-        if: needs.changes.result != 'success'
+      - name: Reject an unsuccessful source-check preflight
+        if: needs.actions-lock.result != 'success'
         shell: bash
         run: |
-          echo 'Source-check selection failed; Markdown checks cannot be skipped.' >&2
+          echo 'Source-check preflight failed; Markdown checks cannot be skipped.' >&2
           exit 1
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -186,7 +218,7 @@ jobs:
           set -euo pipefail
           asset="rumdl-v0.3.2-aarch64-unknown-linux-musl.tar.gz"
           expected="afc6dd91f1c4f2a8cf4a40ab99f8e52e06e6dddfc5334f1c1db8b158d353d143"
-          curl -fsSL --retry 3 -o "$asset" "https://github.com/rvben/rumdl/releases/download/v0.3.2/$asset"
+          curl -fsSL --retry 3 --retry-delay 2 --retry-max-time 90 --connect-timeout 15 --max-time 60 -o "$asset" "https://github.com/rvben/rumdl/releases/download/v0.3.2/$asset"
           printf '%s  %s\n' "$expected" "$asset" | sha256sum --check --strict
           mkdir -p "$RUNNER_TEMP/rumdl-bin"
           tar -xzf "$asset" -C "$RUNNER_TEMP/rumdl-bin" rumdl
@@ -200,22 +232,22 @@ jobs:
           "$RUNNER_TEMP/rumdl-bin/rumdl" check --no-cache .
           "$RUNNER_TEMP/rumdl-bin/rumdl" fmt --check --no-cache .
   audit:
-    needs: changes
+    needs: actions-lock
     if: >-
       always() && !cancelled() && github.ref == 'refs/heads/main'
       && (github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
-      && (needs.changes.result != 'success' || needs.changes.outputs.audit == 'true')
+      && (needs.actions-lock.result != 'success' || needs.actions-lock.outputs.audit == 'true')
     concurrency:
-      group: dependency-audit-${{ github.ref }}-${{ github.event_name == 'workflow_dispatch' && github.run_id || 'latest' }}
-      cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' }}
+      group: dependency-audit-${{ github.ref }}-${{ github.event_name == 'pull_request' && 'latest' || github.run_id }}
+      cancel-in-progress: ${{ github.event_name == 'pull_request' }}
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 15
     steps:
-      - name: Reject an unsuccessful source-check selector
-        if: needs.changes.result != 'success'
+      - name: Reject an unsuccessful source-check preflight
+        if: needs.actions-lock.result != 'success'
         shell: bash
         run: |
-          echo 'Source-check selection failed; dependency auditing cannot be skipped.' >&2
+          echo 'Source-check preflight failed; dependency auditing cannot be skipped.' >&2
           exit 1
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

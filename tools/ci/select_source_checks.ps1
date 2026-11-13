@@ -13,7 +13,7 @@ if ($eventName -cin @('push','pull_request')) {
         $base=$env:BASE_SHA; $head=$env:HEAD_SHA
         foreach ($sha in @($base,$head)) { if ($sha -cnotmatch '^[0-9a-fA-F]{40}$' -or $sha -cmatch '^0+$') { throw 'Missing, zero or malformed source range.' } }
         $separator=if ($eventName -ceq 'pull_request') { '...' } else { '..' }
-        $start=[Diagnostics.ProcessStartInfo]::new('git'); $start.UseShellExecute=$false; $start.RedirectStandardOutput=$true; $start.RedirectStandardError=$true
+        $start=[Diagnostics.ProcessStartInfo]::new('git'); $start.WorkingDirectory=(Get-Location).ProviderPath; $start.UseShellExecute=$false; $start.RedirectStandardOutput=$true; $start.RedirectStandardError=$true
         foreach ($arg in @('diff','--name-only','--no-renames','-z',($base+$separator+$head),'--')) { $start.ArgumentList.Add($arg) }
         $process=[Diagnostics.Process]::Start($start)
         try {
