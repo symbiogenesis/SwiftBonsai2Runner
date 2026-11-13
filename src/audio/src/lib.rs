@@ -6,6 +6,10 @@
 //! before entering this boundary. Audio stays borrowed and no devices are opened.
 #![forbid(unsafe_code)]
 
+mod segmentation;
+
+pub use segmentation::pcm16_pause_boundary;
+
 /// Admits a nonempty finite PCM chunk and returns its cumulative sample count.
 ///
 /// `previous` counts samples already admitted; `maximum` is the caller's clip
