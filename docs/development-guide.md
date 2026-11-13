@@ -392,8 +392,9 @@ artifacts retain independent gates. See the [TTS contract](../src/speech-tts/REA
 The four pinned Q8_0 GGUF files total about 6.1 GiB under
 `%LOCALAPPDATA%/SwiftBonsai2/speech/native/` by default; ASR uses `qwen3-asr/<revision>/`, and TTS uses
 `qwen-tts/<revision>/`. Downloads resume with exact size/SHA-256
-verification; launch checks cached sizes, then each service fully hashes and holds
-files before first load. Original snapshots/private runtimes are preserved.
+verification. Background speech preparation fully verifies cached files and repairs
+corrupt bytes before starting the services; each service independently hashes and
+holds files before first load. Original snapshots/private runtimes are preserved.
 
 Speech setup starts automatically after text preparation. Follow its progress in
 **Settings > Voice** and select **Retry speech setup** after fixing a reported
@@ -572,7 +573,10 @@ Source, embedded/configuration pins, locks, local dependencies, build environmen
 or executable changes invalidate receipts; unknown embedded inputs disable reuse.
 Documentation and CI changes alone do not rebuild Rust. Cargo's
 content freshness handles preserved timestamps. Each variant has an atomic receipt,
-short labels protect MSVC path space, and no startup cache cleanup is needed.
+and short labels protect MSVC path space. Build locks protect cleanup of abandoned
+receipt temporaries, including obsolete identities. Compiler preparation removes
+abandoned extraction arenas under its namespace lock; failed source-copy scratch
+is removed when its owner exits. Valid build variants remain reusable.
 A version probe is reused only for the executable digest checked during that launch.
 
 Root `.worktrees/` storage is excluded from the automatic source inventory, so
@@ -582,7 +586,8 @@ there disable receipt reuse rather than treating untracked dependencies as stabl
 
 Build cancellation, owner exit or crash closes its Windows Job and waits for
 descendants before releasing the build lock. Writes complete before source/receipt
-publication; corrupt completed partials are preserved before one fresh attempt.
+publication. Corrupt completed partials are preserved during one fresh attempt;
+successful publication removes that attempt's quarantine and redundant partial.
 Session credentials and diagnostics stay fresh. `--force-build` repeats Cargo/native
 preparation, including after external compiler/cache changes. Absolute `--chat-path`
 and `--broker-path` must select matching current builds. Unique system-temp lanes retain `source-build-*.log` and `chat.log`.
@@ -721,9 +726,17 @@ through a bounded HTTPS-only curl process and per-artifact synchronization lock.
 The verified partial remains open with writes/deletion denied through same-volume
 hard-link publication, which cannot overwrite a destination. Invalid complete
 partials are quarantined before one fresh retry; a second digest failure stops.
-Cancellation and deadlines stop the complete owned transfer. Publication failures,
-invalid bytes and failed extraction staging remain for inspection. Provisioning
-never substitutes another model/runtime.
+Cancellation and deadlines stop the complete owned transfer. Failed transfers and
+publication retain recovery bytes. A verified final artifact permits cleanup of its
+redundant partial under the download lock; persistent lock sentinels stay in place.
+Automatic runtime repair removes recognized invalid backups only after the selected
+installation verifies, preserving unknown layouts, valid immutable revisions and
+explicit rollback selections. Failed current-attempt extraction files are removed
+after local handles close; the pinned archive and original error remain available
+for diagnosis. Cleanup failures identify the retained stage and preserve both
+errors. The low-level `stage_runtime` API retains its explicit inspection contract;
+automatic provisioning uses `stage_runtime_cleaned`. Provisioning never substitutes
+another model/runtime.
 
 `bonsai-artifacts` shares ZIP, SHA-256, installed-file and PE checks between the
 broker and maintenance. Extraction rejects unsafe or duplicate paths and excessive
