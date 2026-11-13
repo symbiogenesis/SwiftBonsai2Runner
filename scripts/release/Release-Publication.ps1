@@ -99,6 +99,18 @@ function Publish-PortableRelease {
     }
     $notes = [IO.File]::ReadAllText((Join-Path $RepositoryRoot "docs/releases/$Tag.md"))
     $policy = @{ Repository = $Repository; Tag = $Tag; SourceRevision = $SourceRevision; Notes = $notes; Prerelease = $Prerelease; Assets = $assets }
+    $release = Find-PortableRemoteRelease $Repository $Tag
+    if ($null -ne $release -and $release.draft -is [bool] -and -not $release.draft) {
+        # A previous PATCH may have completed before its final readback failed.
+        # Only verify that completed publication; this path never mutates remote
+        # state and does not require main to remain at an already released SHA.
+        Assert-PortableRemoteRelease -Release $release @policy -ExpectedDraft $false -Complete
+        Confirm-PortableRemoteTag $Repository $Tag $SourceRevision -RequireExisting
+        $verified = ConvertFrom-ReleaseResponse (Invoke-ReleaseCommand 'gh' @('api', "repos/$Repository/releases/$($release.id)"))
+        Assert-PortableRemoteRelease -Release $verified @policy -ExpectedDraft $false -ExpectedId $release.id -Complete
+        Write-Host "Release $Tag is already published; exact metadata, assets and source tag verified without mutation."
+        return $verified.html_url
+    }
     $main = Invoke-ReleaseCommand 'gh' @('api', "repos/$Repository/commits/main", '--jq', '.sha')
     if ($main.Trim() -cne $SourceRevision) { throw 'Remote main advanced during the build; dispatch the settled source again.' }
     Confirm-PortableRemoteTag $Repository $Tag $SourceRevision
@@ -107,7 +119,6 @@ function Publish-PortableRelease {
         $target = (Invoke-ReleaseCommand 'git' @('-C', $RepositoryRoot, 'rev-parse', "$Tag^{commit}")).Trim()
         if ($target -cne $SourceRevision) { throw 'Release tag points to different source.' }
     }
-    $release = Find-PortableRemoteRelease $Repository $Tag
     if ($null -ne $release) {
         Assert-PortableRemoteRelease -Release $release @policy -ExpectedDraft $true
         Write-Host "Resuming verified same-source draft $Tag; matching uploaded assets will be reused."

@@ -154,8 +154,13 @@ The successful packaging job's retained assets are reused. Publication resumes
 only a draft with the exact source, release notes, title, prerelease setting and
 asset identities. It uploads missing assets and verifies existing ones without
 replacing them. Lost mutation responses trigger authoritative readback rather
-than a repeated upload or publication request. Unknown assets, changed bytes or
-metadata, a published release or advanced `main` stop recovery for review.
+than a repeated upload or publication request. If the release already published
+before a final readback failed, the same retry succeeds only after verifying all
+metadata, all three asset digests and the exact source tag without any remote
+write. This completed-release verification can succeed after `main` advances;
+draft creation, upload and publication still require the original current-main
+checks. Unknown assets, changed bytes or metadata, an absent or changed source
+tag, or advanced `main` for a draft stop recovery for review.
 A fresh dispatch still refuses an existing release; do not rebuild to recover
 an interrupted upload or delete a draft merely to bypass these checks.
 

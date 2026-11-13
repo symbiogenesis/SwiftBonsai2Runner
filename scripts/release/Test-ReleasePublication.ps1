@@ -2,7 +2,7 @@
 # Stateful offline publication controls. Every Git/GitHub operation is mocked;
 # inert fixture executable bytes are never launched.
 [CmdletBinding()]
-param([ValidateSet('all', 'resume', 'ambiguous', 'reject', 'smoke')][string]$Case = 'all')
+param([ValidateSet('all', 'resume', 'ambiguous', 'published', 'reject', 'smoke')][string]$Case = 'all')
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'Release-Common.ps1')
@@ -44,10 +44,12 @@ function Invoke-ReleaseCommand {
     if ($method -ceq 'GET') {
         if ($endpoint -ceq "repos/$repository/commits/main") {
             $script:state.MainReads++
+            if ($script:state.Mode -ceq 'MainAlreadyAdvanced') { return ('b' * 40) }
             if ($script:state.Mode -ceq 'MainAdvance' -and $script:state.MainReads -gt 1) { return ('b' * 40) }
             return $source
         }
         if ($endpoint -ceq "repos/$repository/git/matching-refs/tags/$tag") {
+            if ($script:state.TagMissing) { return '[]' }
             if ($script:state.TagChanged) { return (@(@{ref = "refs/tags/$tag"; object = @{type = 'commit'; sha = ('b' * 40)}}) | ConvertTo-Json -Depth 5 -Compress -AsArray) }
             if ($null -ne $script:state.Release -and $script:state.Release.draft -is [bool] -and -not $script:state.Release.draft) {
                 return (@(@{ref = "refs/tags/$tag"; object = @{type = 'commit'; sha = $source}}) | ConvertTo-Json -Depth 5 -Compress -AsArray)
@@ -91,8 +93,8 @@ function Invoke-ReleaseCommand {
 
 function Invoke-PublicationScenario {
     param([string]$Name, [int]$InitialAssets = -1, [string]$Mode = '', [scriptblock]$Change,
-        [switch]$Reject, [string[]]$ExpectedMutations = @())
-    $script:state = @{ Release = $null; Mode = $Mode; MainReads = 0; TagChanged = $false; DuplicateCatalog = $false; FailReadback = $false
+        [switch]$Reject, [string[]]$ExpectedMutations = @(), [int]$ExpectedMainReads = -1)
+    $script:state = @{ Release = $null; Mode = $Mode; MainReads = 0; TagChanged = $false; TagMissing = $false; DuplicateCatalog = $false; FailReadback = $false
         Mutations = [Collections.Generic.List[string]]::new() }
     if ($InitialAssets -ge 0) {
         $script:state.Release = New-MockRelease
@@ -108,6 +110,9 @@ function Invoke-PublicationScenario {
     if (-not $Reject -and ($url -cne "https://github.com/$repository/releases/tag/$tag" -or $script:state.Release.draft -ne $false)) { throw "$Name did not verify publication." }
     if (($script:state.Mutations -join '|') -cne ($ExpectedMutations -join '|')) {
         throw "$Name mutated unexpectedly: $($script:state.Mutations -join ', ')"
+    }
+    if ($ExpectedMainReads -ge 0 -and $script:state.MainReads -ne $ExpectedMainReads) {
+        throw "$Name checked main unexpectedly: $($script:state.MainReads) reads."
     }
     if (@(Get-ChildItem -LiteralPath $fixture -Directory -Filter 'SwiftBonsai-Publish-*').Count) { throw "$Name left private publication payloads behind." }
     $script:passed++
@@ -154,9 +159,19 @@ try {
         Invoke-PublicationScenario -Name unavailable-upload-readback -InitialAssets 1 -Mode UploadReadbackUnavailable -Reject -ExpectedMutations @($uploads[1])
         Invoke-PublicationScenario -Name main-advanced -InitialAssets 3 -Mode MainAdvance -Reject
     }
+    if ($Case -in @('all', 'published')) {
+        Invoke-PublicationScenario -Name published-exact -InitialAssets 3 -Change { param($s) $s.Release.draft = $false } -ExpectedMainReads 0
+        Invoke-PublicationScenario -Name published-main-advanced -InitialAssets 3 -Mode MainAlreadyAdvanced -Change { param($s) $s.Release.draft = $false } -ExpectedMainReads 0
+        Invoke-PublicationScenario -Name published-tampered -InitialAssets 3 -Change { param($s) $s.Release.draft = $false; $s.Release.assets[0].digest = 'sha256:' + ('d' * 64) } -Reject -ExpectedMainReads 0
+        Invoke-PublicationScenario -Name published-foreign-source -InitialAssets 3 -Change { param($s) $s.Release.draft = $false; $s.Release.target_commitish = 'b' * 40 } -Reject -ExpectedMainReads 0
+        Invoke-PublicationScenario -Name published-foreign-tag -InitialAssets 3 -Change { param($s) $s.Release.draft = $false; $s.TagChanged = $true } -Reject -ExpectedMainReads 0
+        Invoke-PublicationScenario -Name published-missing-tag -InitialAssets 3 -Change { param($s) $s.Release.draft = $false; $s.TagMissing = $true } -Reject -ExpectedMainReads 0
+        Invoke-PublicationScenario -Name published-incomplete -InitialAssets 2 -Change { param($s) $s.Release.draft = $false } -Reject -ExpectedMainReads 0
+        Invoke-PublicationScenario -Name draft-main-advanced -InitialAssets 3 -Mode MainAlreadyAdvanced -Reject -ExpectedMainReads 1
+    }
     if ($Case -in @('all', 'reject')) {
         $rejections = [ordered]@{
-            published = { param($s) $s.Release.draft = $false }
+            'published-foreign-source' = { param($s) $s.Release.draft = $false; $s.Release.target_commitish = 'b' * 40 }
             'foreign-source' = { param($s) $s.Release.target_commitish = 'b' * 40 }
             'changed-tag' = { param($s) $s.Release.tag_name = 'v0.3.1' }
             'changed-title' = { param($s) $s.Release.name += ' changed' }
