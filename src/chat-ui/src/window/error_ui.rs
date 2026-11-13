@@ -38,34 +38,9 @@ pub(super) fn summary(ui: &mut egui::Ui, message: &str) {
 
 pub(super) fn copy_button(ui: &mut egui::Ui, label: &str, message: &str) {
     let id = ui.make_persistent_id(("error-copy", label, message));
-    let now = ui.input(|input| input.time);
-    let copied = ui
-        .ctx()
-        .data(|data| data.get_temp::<f64>(id))
-        .is_some_and(|until| now < until);
-    // Match egui 0.37's Body-font button theme in both measurement and paint.
-    let font = egui::TextStyle::Body.resolve(ui.style());
-    let text_width = ui
-        .painter()
-        .layout_no_wrap(label.to_owned(), font.clone(), ui.visuals().text_color())
-        .size()
-        .x;
-    let width = ui.spacing().button_padding.x.mul_add(2.0, text_width);
-    if ui
-        .add(
-            egui::Button::new(RichText::new(if copied { "Copied" } else { label }).font(font))
-                .min_size(egui::vec2(width, 0.0)),
-        )
-        .accessible_name(label)
-        .on_hover_text("Copy the complete message, including details beyond the preview.")
-        .clicked()
-    {
-        ui.ctx().copy_text(message.to_owned());
-        ui.ctx().data_mut(|data| data.insert_temp(id, now + 1.5));
-        ui.ctx().request_repaint();
-        ui.ctx()
-            .request_repaint_after(std::time::Duration::from_millis(1_500));
-    }
+    super::controls::CopyButton::new(label, id)
+        .show(ui, || message.to_owned())
+        .on_hover_text("Copy the complete message, including details beyond the preview.");
 }
 
 pub(super) fn details(ui: &mut egui::Ui, message: &str) {

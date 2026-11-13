@@ -382,43 +382,14 @@ impl State {
     }
 
     fn copy_audio_transcript(&self, ui: &mut egui::Ui, label: &str, primary: bool) {
-        let id = egui::Id::unique("audio-transcript-copied");
-        let copied = ui.ctx().data(|data| data.get_temp::<(u64, f64)>(id));
-        let copied = copied.is_some_and(|(generation, time)| {
-            generation == self.audio_file_generation && ui.input(|input| input.time) - time < 2.0
-        });
-        // Reserve the ordinary label width so copy confirmation never moves
-        // adjacent actions or changes a wrapping footer's height.
-        // egui 0.37's button theme uses Body. Bind the measured and displayed
-        // font explicitly so the shorter confirmation keeps the same bounds.
-        let font = egui::TextStyle::Body.resolve(ui.style());
-        let text_width = ui
-            .painter()
-            .layout_no_wrap(label.to_owned(), font.clone(), ui.visuals().text_color())
-            .size()
-            .x;
-        let width = ui.spacing().button_padding.x.mul_add(2.0, text_width);
-        let mut text = egui::RichText::new(if copied { "Copied" } else { label }).font(font);
-        if primary {
-            text = text.color(ui.visuals().selection.stroke.color);
-        }
-        let mut button = egui::Button::new(text)
-            .min_size(egui::vec2(width, 36.0))
-            .corner_radius(8);
-        if primary {
-            button = button.fill(ui.visuals().selection.bg_fill);
-        }
-        let response = ui.add(button);
-        if response.accessible_name(label).clicked() {
-            ui.ctx().copy_text(self.audio_file_transcript.clone());
-            let now = ui.input(|input| input.time);
-            ui.ctx().data_mut(|data| {
-                data.insert_temp(id, (self.audio_file_generation, now));
-            });
-        }
-        if copied {
-            ui.ctx().request_repaint_after(Duration::from_secs(2));
-        }
+        let id =
+            ui.make_persistent_id(("audio-transcript-copied", self.audio_file_generation, label));
+        super::controls::CopyButton::new(label, id)
+            .min_size(egui::vec2(0.0, 36.0))
+            .corner_radius(8)
+            .primary(primary)
+            .confirmation_duration(Duration::from_secs(2))
+            .show(ui, || self.audio_file_transcript.clone());
     }
 
     pub(super) fn audio_transcript_dialog(&mut self, ctx: &egui::Context) {

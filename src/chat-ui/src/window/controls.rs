@@ -1,5 +1,107 @@
 //! Shared native control styling. Callers own availability, focus and actions.
 use super::{RichText, egui};
+use std::time::Duration;
+
+/// A width-stable copy action whose caller owns content identity and production.
+#[must_use]
+pub(super) struct CopyButton<'a> {
+    label: &'a str,
+    feedback: egui::Id,
+    min_size: egui::Vec2,
+    corner_radius: Option<u8>,
+    primary: bool,
+    confirmation_duration: Duration,
+}
+
+impl<'a> CopyButton<'a> {
+    /// Bind confirmation to the caller's source identity, independent of content allocation.
+    pub(super) const fn new(label: &'a str, feedback: egui::Id) -> Self {
+        Self {
+            label,
+            feedback,
+            min_size: egui::Vec2::ZERO,
+            corner_radius: None,
+            primary: false,
+            confirmation_duration: Duration::from_millis(1_500),
+        }
+    }
+
+    /// Preserve the surrounding control row's geometry during confirmation.
+    pub(super) const fn min_size(mut self, size: egui::Vec2) -> Self {
+        self.min_size = size;
+        self
+    }
+
+    /// Match the caller's control shape rather than changing its native default.
+    pub(super) const fn corner_radius(mut self, radius: u8) -> Self {
+        self.corner_radius = Some(radius);
+        self
+    }
+
+    /// Use the theme's paired selection colors for a primary action.
+    pub(super) const fn primary(mut self, primary: bool) -> Self {
+        self.primary = primary;
+        self
+    }
+
+    /// Set the duration of the caller's transient copy confirmation.
+    pub(super) const fn confirmation_duration(mut self, duration: Duration) -> Self {
+        self.confirmation_duration = duration;
+        self
+    }
+
+    /// Produce the complete clipboard payload only after activation.
+    pub(super) fn show(
+        self,
+        ui: &mut egui::Ui,
+        contents: impl FnOnce() -> String,
+    ) -> egui::Response {
+        let now = ui.input(|input| input.time);
+        let until = ui.ctx().data(|data| data.get_temp::<f64>(self.feedback));
+        let copied = until.is_some_and(|until| now < until);
+        // Match egui's Body-font button theme in both measurement and paint.
+        let font = egui::TextStyle::Body.resolve(ui.style());
+        let text_width = ui
+            .painter()
+            .layout_no_wrap(
+                self.label.to_owned(),
+                font.clone(),
+                ui.visuals().text_color(),
+            )
+            .size()
+            .x;
+        let width = ui.spacing().button_padding.x.mul_add(2.0, text_width);
+        let mut text = RichText::new(if copied { "Copied" } else { self.label }).font(font);
+        if self.primary {
+            text = text.color(ui.visuals().selection.stroke.color);
+        }
+        let mut button = egui::Button::new(text)
+            .min_size(egui::vec2(width.max(self.min_size.x), self.min_size.y));
+        if let Some(radius) = self.corner_radius {
+            button = button.corner_radius(radius);
+        }
+        if self.primary {
+            button = button.fill(ui.visuals().selection.bg_fill);
+        }
+        let response = ui.add(button).accessible_name(self.label);
+        if response.clicked() {
+            ui.ctx().copy_text(contents());
+            ui.ctx().data_mut(|data| {
+                data.insert_temp(
+                    self.feedback,
+                    now + self.confirmation_duration.as_secs_f64(),
+                );
+            });
+            ui.ctx().request_repaint();
+            ui.ctx().request_repaint_after(self.confirmation_duration);
+        } else if let Some(until) = until.filter(|_| copied) {
+            let remaining =
+                Duration::try_from_secs_f64(until - now).unwrap_or(self.confirmation_duration);
+            ui.ctx().request_repaint_after(remaining);
+        }
+        response
+    }
+}
 
 /// A standard-sized secondary action, with its label and behavior at the call site.
 pub(super) fn action_button(label: &str) -> egui::Button<'_> {
@@ -97,4 +199,71 @@ pub(super) fn toolbar_action<'a>(
         .on_hover_cursor(egui::CursorIcon::PointingHand)
     })
     .inner
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use egui_kittest::{Harness, kittest::Queryable as _};
+
+    #[test]
+    fn copy_button_builds_complete_payload_only_on_activation_and_preserves_geometry() {
+        struct Fixture {
+            payload: String,
+            productions: usize,
+            copied: Option<String>,
+        }
+
+        let mut control = Harness::builder()
+            .with_size([420.0, 100.0])
+            .with_context_setup(super::super::configure)
+            .build_ui_state(
+                |ui, fixture: &mut Fixture| {
+                    let id = ui.make_persistent_id("lazy-copy");
+                    CopyButton::new("Copy complete message", id)
+                        .min_size(egui::vec2(0.0, 36.0))
+                        .corner_radius(8)
+                        .primary(true)
+                        .confirmation_duration(Duration::from_secs(2))
+                        .show(ui, || {
+                            fixture.productions += 1;
+                            fixture.payload.clone()
+                        });
+                    ui.ctx().output(|output| {
+                        for command in &output.commands {
+                            if let egui::OutputCommand::CopyText(text) = command {
+                                fixture.copied = Some(text.clone());
+                            }
+                        }
+                    });
+                },
+                Fixture {
+                    payload: "Complete Unicode details: 日本語 🌱\r\n".repeat(1_000),
+                    productions: 0,
+                    copied: None,
+                },
+            );
+        control.run();
+        assert_eq!(control.state().productions, 0);
+        assert!(control.state().copied.is_none());
+        let before = control
+            .get_by_role_and_label(egui::Role::Button, "Copy complete message")
+            .rect();
+        control
+            .get_by_role_and_label(egui::Role::Button, "Copy complete message")
+            .click();
+        control.run();
+        assert_eq!(control.state().productions, 1);
+        assert_eq!(
+            control.state().copied.as_deref(),
+            Some(control.state().payload.as_str())
+        );
+        let after = control
+            .get_by_role_and_label(egui::Role::Button, "Copy complete message")
+            .rect();
+        assert!((before.width() - after.width()).abs() < 0.5);
+        assert!((before.height() - after.height()).abs() < 0.5);
+        control.run();
+        assert_eq!(control.state().productions, 1);
+    }
 }

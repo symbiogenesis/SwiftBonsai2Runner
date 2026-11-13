@@ -64,16 +64,22 @@ impl State {
                 .small()
                 .weak(),
         );
-        super::super::error_ui::copy_button(
-            ui,
-            "Copy diagnostics",
-            &self
-                .diagnostics
-                .iter()
-                .cloned()
-                .collect::<Vec<_>>()
-                .join("\n\n"),
-        );
+        let copied = ui.make_persistent_id((
+            "diagnostics-copy",
+            self.diagnostics.len(),
+            self.diagnostics.back(),
+        ));
+        super::super::controls::CopyButton::new("Copy diagnostics", copied)
+            .show(ui, || {
+                self.diagnostics
+                    .iter()
+                    .map(String::as_str)
+                    .collect::<Vec<_>>()
+                    .join("\n\n")
+            })
+            .on_hover_text(
+                "Copy recent application messages, including details beyond the preview.",
+            );
         ui.label(
             RichText::new("Recent previews only. Use Copy error on a notice for its full message.")
                 .small()
