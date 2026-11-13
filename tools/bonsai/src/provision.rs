@@ -611,18 +611,15 @@ fn generated_runtime_scratch(name: &str, destination: &Path) -> bool {
     let Some(suffix) = name.strip_prefix(".invalid-runtime-") else {
         return false;
     };
-    // Legacy backups have only the generated suffix. New names also bind the
-    // destination, so a different runtime selection cannot claim their cleanup.
-    runtime_scratch_suffix(suffix)
-        || destination
-            .file_name()
-            .and_then(|name| name.to_str())
-            .is_some_and(|name| {
-                suffix
-                    .strip_prefix(name)
-                    .and_then(|suffix| suffix.strip_prefix('-'))
-                    .is_some_and(runtime_scratch_suffix)
-            })
+    destination
+        .file_name()
+        .and_then(|name| name.to_str())
+        .is_some_and(|name| {
+            suffix
+                .strip_prefix(name)
+                .and_then(|suffix| suffix.strip_prefix('-'))
+                .is_some_and(runtime_scratch_suffix)
+        })
 }
 
 // The selected installation has already passed full verification and the caller
@@ -652,8 +649,7 @@ fn cleanup_invalid_runtime_directories(
         // Complete path and inventory admission precedes every recursive delete.
         // In particular, leave owner files and failed/unknown layouts untouched.
         if validate_repair_tree(&path, &path, &files, &directories).is_err() {
-            // Legacy names do not identify their original lock. Unknown layouts,
-            // inaccessible files and redirects remain preserved and cannot make
+            // Unknown layouts, inaccessible files and redirects remain preserved and cannot make
             // an independently verified current installation unavailable.
             crate::startup_cancel::checkpoint()?;
             continue;
@@ -1624,39 +1620,29 @@ mod tests {
             crate::startup_process::unique()
         ));
         let destination = root.join("current");
-        let previous = root.join(".invalid-runtime-123-456-0");
         let scoped = root.join(".invalid-runtime-current-123-456-1");
         let other_scope = root.join(".invalid-runtime-other-123-456-2");
         let unrelated = root.join(".invalid-runtime-owner-notes");
         let older = root.join("other-immutable-commit");
-        for path in [
-            &destination,
-            &previous,
-            &scoped,
-            &other_scope,
-            &unrelated,
-            &older,
-        ] {
+        for path in [&destination, &scoped, &other_scope, &unrelated, &older] {
             fs::create_dir_all(path).map_err(|error| error.to_string())?;
             fs::write(path.join("engine.exe"), b"keep").map_err(|error| error.to_string())?;
         }
         let expected = [PathBuf::from("engine.exe")];
         cleanup_invalid_runtime_directories(&destination, &expected)?;
-        assert!(!previous.exists());
         assert!(!scoped.exists());
         assert!(other_scope.join("engine.exe").is_file());
         assert!(destination.join("engine.exe").is_file());
         assert!(unrelated.join("engine.exe").is_file());
         assert!(older.join("engine.exe").is_file());
 
-        fs::create_dir(&previous).map_err(|error| error.to_string())?;
-        fs::write(previous.join("owner.txt"), b"keep owner data")
+        fs::create_dir(&scoped).map_err(|error| error.to_string())?;
+        fs::write(scoped.join("owner.txt"), b"keep owner data")
             .map_err(|error| error.to_string())?;
-        // A legacy backup from another release has no lock identity. Its
-        // different inventory must not block this verified runtime's startup.
+        // Unknown files must not block this verified runtime's startup.
         cleanup_invalid_runtime_directories(&destination, &expected)?;
         assert_eq!(
-            fs::read(previous.join("owner.txt")).map_err(|error| error.to_string())?,
+            fs::read(scoped.join("owner.txt")).map_err(|error| error.to_string())?,
             b"keep owner data"
         );
         fs::remove_dir_all(root).map_err(|error| error.to_string())
