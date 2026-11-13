@@ -87,8 +87,9 @@ The owning workflow uses `operation: "capture"` and adds existing
 `dataDirectory`, `captureToolsDirectory`, `workBudgetSeconds` and the original
 `workDeadlineTick`. Source pins, hosted tool receipts, native ABI checks, model
 admission, each owned capture and bounded atomic partial receipts live in Rust.
-The independent PowerShell 7.6 full-state decoder and packaged Rust arithmetic helper remain owned, deadline-bound
-children of the Rust command. The hosted-prepared helper is required; no compiler runs inside a device trial.
+The independent PowerShell 7.6 full-state decoder and packaged Rust arithmetic helper remain owned,
+deadline-bound children of the Rust command. The hosted-prepared helper is required; no compiler runs
+inside a device trial.
 
 Actual execution belongs only to the main-only manual `native-ptq1-numerics.yml` workflow on a
 native ARM64 Snapdragon ephemeral runner with only the `ptq1-numerics-<run_id>` label,
