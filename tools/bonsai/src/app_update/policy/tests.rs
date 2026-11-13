@@ -103,7 +103,7 @@ fn portable_discovery_rejects_wrong_arch_foreign_urls_missing_digests_and_duplic
             1 => value["assets"][2]["name"] = "SwiftBonsai2Runner-0.1.1-windows-x64.exe".into(),
             2 => value["assets"][2]["digest"] = Value::Null,
             3 => {
-                value["assets"][2]["browser_download_url"] = "https://example.com/update.exe".into()
+                value["assets"][2]["browser_download_url"] = "https://example.com/update.exe".into();
             }
             4 => value["assets"][2]["size"] = (MAX_INSTALLER + 1).into(),
             _ => {

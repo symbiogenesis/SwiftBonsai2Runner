@@ -327,7 +327,7 @@ mod tests {
 
         fn entries(&self) -> crate::Result<usize> {
             fs::read_dir(&self.0)
-                .map(|entries| entries.count())
+                .map(Iterator::count)
                 .map_err(|error| error.to_string())
         }
     }
@@ -410,7 +410,7 @@ mod tests {
         );
         let incomplete = Asset {
             bytes: asset.bytes + 1,
-            ..asset.clone()
+            ..asset
         };
         assert!(
             copy_and_replace(
