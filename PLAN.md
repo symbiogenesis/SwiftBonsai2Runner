@@ -546,6 +546,11 @@ MP3/WAV and installed-decoder M4A/AAC/FLAC/WMA, mono/stereo rate conversion, emp
 malformed and unsupported files; recordings above the former 64-MiB/30-second
 limits; sequential segment/tail coverage without truncation; and admission using
 available physical RAM and commit, including unknown or falling memory.
+Qualify one-segment decode lookahead during recognition: bounded buffering and
+memory admission, ordered complete/tail coverage, decode failure while recognition
+is active, and cancellation/owned-worker cleanup with a prefetched result. Measure
+end-to-end file latency on the pinned model with matched per-arm power observations;
+model-free overlap controls do not establish a device speedup.
 Confirm file import requires no microphone permission, preserves the draft on failure,
 inserts at the selection/cursor and submits exactly one ordinary text prompt when
 Swift is ready. Cover unavailable Swift without deferred send, Escape, switching,

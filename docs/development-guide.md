@@ -587,8 +587,11 @@ keep audio in memory and require no microphone permission. Select one file at a
 time. File size and total duration have no fixed cap; available physical memory
 and commit govern buffer and transcript allocation. One native asynchronous decoder
 reads forward through the file, without repeated seeking or transcoder setup.
-The worker streams one mono 16 kHz PCM16 WAV segment at a time, fitting the recognizer's 30-second
-request contract. It prefers a quiet pause in the final five seconds of a segment,
+The worker transcribes one mono 16 kHz PCM16 WAV segment at a time, fitting the
+recognizer's 30-second request contract. While recognition runs, the same decoder
+prepares at most one following segment, with its extra buffer included in memory
+admission. This overlaps decoding with recognition between segments. It prefers
+a quiet pause in the final five seconds of a segment,
 carrying all audio after the cut into the next request. Without a clear pause it
 uses the full segment; the final segment keeps the complete remaining audio.
 Actual decoder EOF determines completion, rather than the file's duration tags.

@@ -328,8 +328,11 @@ decoder frame of lookahead identifies actual end of stream, including an exact
 request boundary; duration metadata never truncates decoding. Final input flushes
 every remaining sample. Progress ranges follow emitted samples. The heuristic neither
 changes samples nor establishes transcription accuracy. Memory admission includes
-the retained PCM allocation and bounded decoder frame, and backpressure keeps one
-decoded segment in flight. Callback waits poll cancellation and share one deadline
+the retained PCM allocation, bounded decoder frame and one additional WAV segment.
+Recognition releases one decoder advance before each nonfinal request so decoding
+can overlap inference. Backpressure retains at most the segment being recognized
+and one following segment; recognition requests remain sequential. Callback waits
+poll cancellation and share one deadline
 per segment. Unsupported output-format changes, timeline gaps and decoder failures
 stop import explicitly. Native source creation and release remain synchronous OS
 calls; asynchronous sample waits do not make those calls preemptible.
