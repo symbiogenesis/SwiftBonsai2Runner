@@ -36,12 +36,6 @@ enum Request {
         bytes: u64,
         sha256: String,
     },
-    #[serde(rename = "stage-sources", rename_all = "camelCase")]
-    StageSources {
-        source_directory: PathBuf,
-        qwen_archive_path: PathBuf,
-        ggml_archive_path: PathBuf,
-    },
     #[serde(rename = "environment", rename_all = "camelCase")]
     Environment {
         data_directory: PathBuf,
@@ -156,28 +150,6 @@ pub fn run(request: Value) -> crate::Result<Value> {
             bytes,
             sha256,
         } => stage_source(&archive_path, &destination, &archive_root, bytes, &sha256),
-        Request::StageSources {
-            source_directory,
-            qwen_archive_path,
-            ggml_archive_path,
-        } => {
-            let pin = build_plan()?;
-            let mut sources = Vec::new();
-            for (key, archive_path, destination) in [
-                ("qwen", qwen_archive_path, source_directory.clone()),
-                ("ggml", ggml_archive_path, source_directory.join("ggml")),
-            ] {
-                let source = &pin["sources"][key];
-                sources.push(SourceSpec {
-                    archive_path,
-                    destination,
-                    archive_root: text(source, "root")?.into(),
-                    bytes: source["bytes"].as_u64().ok_or("Invalid source size.")?,
-                    sha256: text(source, "sha256")?.into(),
-                });
-            }
-            stage_sources(&source_directory, &sources)
-        }
     }
 }
 
@@ -205,11 +177,9 @@ fn artifact(value: &Value, url: &str) -> crate::Result<()> {
 }
 
 pub(crate) fn build_plan() -> crate::Result<Value> {
-    let pin: Value = serde_json::from_str(include_str!("../../../config/native-speech.lock.json"))
-        .map_err(|_| "Invalid native build lock JSON.")?;
-    let model: Value =
-        serde_json::from_str(include_str!("../../../src/speech-tts/model.lock.json"))
-            .map_err(|_| "Invalid native speech model lock JSON.")?;
+    let mut pin: Value =
+        serde_json::from_str(include_str!("../../../config/native-speech.lock.json"))
+            .map_err(|_| "Invalid native build lock JSON.")?;
     let compiler = &pin["compiler"];
     let version = text(compiler, "version")?;
     let parts: Vec<_> = version.split('.').collect();
@@ -247,44 +217,11 @@ pub(crate) fn build_plan() -> crate::Result<Value> {
             return Err("Invalid compiler executable identity.".into());
         }
     }
-    if pin["sources"]
-        .as_object()
-        .is_none_or(|sources| sources.len() != 2)
-    {
-        return Err("Invalid native source inventory.".into());
-    }
-    for key in ["qwen", "ggml"] {
-        let source = &pin["sources"][key];
-        let repository = text(source, "repository")?;
-        let revision = text(source, "revision")?;
-        let pieces: Vec<_> = repository.split('/').collect();
-        if pieces.len() != 2
-            || pieces.iter().any(|piece| {
-                piece.is_empty()
-                    || !piece
-                        .bytes()
-                        .all(|byte| byte.is_ascii_alphanumeric() || b"_.-".contains(&byte))
-            })
-            || !is_lower_hex(revision, 40)
-            || source["root"] != format!("{}-{revision}", pieces[1])
-        {
-            return Err("Invalid native source identity.".into());
-        }
-        artifact(
-            source,
-            &format!("https://codeload.github.com/{repository}/zip/{revision}"),
-        )?;
-        let (repository_key, revision_key) = if key == "qwen" {
-            ("repository", "revision")
-        } else {
-            ("ggmlRepository", "ggmlRevision")
-        };
-        if model["nativeRuntime"][repository_key] != format!("https://github.com/{repository}")
-            || model["nativeRuntime"][revision_key] != revision
-        {
-            return Err("Native source and model runtime revisions disagree.".into());
-        }
-    }
+    // Historical source identities remain in the lock as attribution only.
+    // Production TTS builds use Rust and must not request those archives.
+    pin.as_object_mut()
+        .ok_or("Invalid native build lock.")?
+        .remove("sources");
     Ok(pin)
 }
 
@@ -368,6 +305,7 @@ struct PreparedSource {
     entries: Vec<SourceEntry>,
 }
 
+#[cfg(test)]
 struct SourceSpec {
     archive_path: PathBuf,
     destination: PathBuf,
@@ -460,6 +398,7 @@ fn stage_source(
     Ok(json!({"Files": files}))
 }
 
+#[cfg(test)]
 fn stage_sources(root: &Path, specs: &[SourceSpec]) -> crate::Result<Value> {
     check_source_tree(root, None)?;
     let mut buffer = vec![0; 64 * 1024];
@@ -495,6 +434,7 @@ fn path_key(path: &Path) -> String {
         .to_lowercase()
 }
 
+#[cfg(test)]
 fn expected_files(sources: &[PreparedSource]) -> crate::Result<BTreeSet<String>> {
     let mut entries = BTreeMap::new();
     for source in sources {
@@ -1006,8 +946,9 @@ mod tests {
     }
 
     #[test]
-    fn compiled_build_pins_match_native_runtime() -> crate::Result<()> {
+    fn compiled_asr_compiler_pins_exclude_retired_tts_sources() -> crate::Result<()> {
         let pin = build_plan()?;
+        assert!(pin.get("sources").is_none());
         assert_eq!(
             pin["compiler"]["executables"]
                 .as_object()
