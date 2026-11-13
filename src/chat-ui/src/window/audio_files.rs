@@ -3,6 +3,7 @@
 use super::{State, egui, speech};
 use crate::audio_import::{self, Source};
 use raw_window_handle::{HasWindowHandle as _, RawWindowHandle};
+use std::time::Duration;
 
 impl State {
     pub(super) fn prepare_audio_paste(&mut self, frame: &eframe::Frame) {
@@ -36,6 +37,8 @@ impl State {
             || self.rename_conversation.is_some()
             || self.delete_conversation.is_some()
             || self.show_settings
+            || self.show_audio_transcript
+            || self.edit_message.is_some()
             || self.help.is_some()
             || !ctx.memory(|memory| {
                 memory
@@ -56,8 +59,15 @@ impl State {
     }
 
     fn start_audio_import(&mut self, source: Source) {
+        // A repeated paste must never replace live progress or a retained result.
+        if self.model.busy()
+            || self.speaking
+            || self.dictation_requested
+            || self.audio_import.is_some()
+        {
+            return;
+        }
         self.speech_notice = true;
-        self.audio_file_error = false;
         if self.preview {
             "Audio files are unavailable in the model-free preview."
                 .clone_into(&mut self.speech_status);
@@ -70,16 +80,8 @@ impl State {
                 "Audio files will be available after speech preparation completes."
                     .clone_into(&mut self.speech_status);
             }
-        } else if self.model.busy()
-            || self.speaking
-            || self.dictation_requested
-            || self.audio_import.is_some()
-        {
-            "Finish or cancel the current response or speech action before adding audio."
-                .clone_into(&mut self.speech_status);
         } else {
             self.cancel_microphone();
-            self.audio_file_transcript.clear();
             if let Ok(import) = audio_import::Session::start(source) {
                 // Disjoint from microphone generations and speech's NO_INPUT
                 // sentinel, even after the counter wraps.
@@ -91,10 +93,12 @@ impl State {
                 }
                 self.audio_import = Some(import);
                 self.audio_file_active = true;
+                self.audio_file_error = false;
+                self.audio_file_progress = None;
                 self.microphone_generation = Some(generation);
                 self.dictation_requested = true;
                 self.dictation_finishing = true;
-                "Opening and checking audio file. Cancel or Escape stops import."
+                "Choose an audio file. Its transcript is inserted at the cursor and sent with your draft when the model is ready; otherwise it stays in the draft. Cancel or Escape stops import."
                     .clone_into(&mut self.speech_status);
                 self.focus_composer = true;
             } else {
@@ -103,7 +107,12 @@ impl State {
                     .clone_into(&mut self.speech_status);
             }
         }
-        self.audio_file_notice = Some(self.speech_status.clone());
+        if self.audio_file_active
+            || (self.audio_file_input && self.audio_file_error)
+            || self.audio_file_notice.is_none()
+        {
+            self.audio_file_notice = Some(self.speech_status.clone());
+        }
         self.record(&self.speech_status.clone());
     }
 
@@ -124,17 +133,33 @@ impl State {
         }
         match result {
             Ok(Some(first)) => {
-                if let Some(generation) = self.microphone_generation
-                    && let Some(import) = self.audio_import.take()
-                    && self.speech_command(speech::Command::TranscribeFile {
-                        generation,
-                        first,
-                        import,
-                    })
-                {
-                    "Loading Qwen3-ASR 1.7B and transcribing audio. Cancel or Escape stops transcription."
-                        .clone_into(&mut self.speech_status);
+                let Some(generation) = self.microphone_generation else {
+                    self.fail_audio_file(
+                        "The audio request is no longer available. Try selecting the file again.",
+                    );
+                    return;
+                };
+                let Some(import) = self.audio_import.take() else {
+                    self.fail_audio_file(
+                        "The audio reader is no longer available. Try selecting the file again.",
+                    );
+                    return;
+                };
+                if !self.speech_command(speech::Command::TranscribeFile {
+                    generation,
+                    first,
+                    import,
+                }) {
+                    // speech_command already published the actionable failure.
+                    return;
                 }
+                // Keep the previous result through picker cancellation,
+                // decoding rejection and failed speech-worker handoff.
+                self.audio_file_transcript.clear();
+                self.show_audio_transcript = false;
+                self.audio_file_review_required = false;
+                "Loading the speech model and transcribing audio. When finished, the transcript is inserted at the cursor and sent with your draft if the model is ready. Cancel or Escape stops transcription."
+                    .clone_into(&mut self.speech_status);
             }
             Ok(None) => {
                 self.cancel_microphone();
@@ -157,7 +182,7 @@ impl State {
         self.audio_file_notice = Some(if self.audio_file_transcript.is_empty() {
             "Audio transcription cancelled. No message was sent. Your draft was kept.".to_owned()
         } else {
-            "Audio transcription cancelled. No message was sent. Your draft was kept. The partial transcript is available to view or copy.".to_owned()
+            "Audio transcription cancelled. No message was sent. Your draft was kept. The retained transcript is available to view or copy.".to_owned()
         });
     }
 
@@ -169,7 +194,7 @@ impl State {
             if self.audio_file_transcript.is_empty() {
                 ""
             } else {
-                " The partial transcript is available to view or copy."
+                " The retained full or partial transcript is available to view or copy."
             },
         ));
     }
@@ -241,84 +266,182 @@ impl State {
         let Some(message) = self.audio_file_notice.clone() else {
             return;
         };
-        egui::Frame::group(ui.style()).show(ui, |ui| {
-            ui.set_width(ui.available_width());
-            ui.horizontal_wrapped(|ui| {
-                if self.audio_file_active {
-                    ui.spinner();
-                }
-                ui.strong(if self.audio_file_error {
-                    "Audio transcription failed"
-                } else if self.audio_file_active {
-                    "Audio transcription in progress"
-                } else {
-                    "Audio transcription"
-                });
-                if self.audio_file_active {
-                    if ui.button("Cancel transcription").clicked() {
-                        self.cancel_audio_file();
+        egui::Frame::new()
+            .fill(ui.visuals().faint_bg_color)
+            .stroke(ui.visuals().widgets.noninteractive.bg_stroke)
+            .corner_radius(12)
+            .inner_margin(12)
+            .show(ui, |ui| {
+                // Frame margins belong inside the available composer column.
+                ui.set_width(ui.available_width());
+                ui.horizontal_wrapped(|ui| {
+                    if self.audio_file_active {
+                        ui.spinner();
                     }
-                } else if ui.button("Dismiss audio status").clicked() {
-                    self.audio_file_notice = None;
-                    self.audio_file_transcript.clear();
-                    self.show_audio_transcript = false;
+                    let title = if self.audio_file_error {
+                        egui::RichText::new("Audio transcription failed")
+                            .color(ui.visuals().error_fg_color)
+                    } else if self.audio_file_active {
+                        egui::RichText::new("Audio transcription in progress")
+                    } else {
+                        egui::RichText::new("Audio transcription")
+                    };
+                    ui.label(title.strong());
+                    if self.audio_file_active {
+                        if ui.button("Cancel transcription").clicked() {
+                            self.cancel_audio_file();
+                        }
+                    } else if ui.button("Dismiss audio status").clicked() {
+                        self.audio_file_notice = None;
+                        self.audio_file_transcript.clear();
+                        self.audio_file_progress = None;
+                        self.audio_file_error = false;
+                        self.show_audio_transcript = false;
+                    }
+                });
+                if self.audio_file_active
+                    && let Some(progress) = self.audio_file_progress
+                {
+                    let range = format!(
+                        "Processing {}-{}",
+                        audio_time(progress.start),
+                        audio_time(progress.end),
+                    );
+                    if !progress.total.is_zero() && progress.end <= progress.total {
+                        ui.label(format!(
+                            "{range} | estimated length {}",
+                            audio_time(progress.total),
+                        ));
+                        // Only earlier segments have completed. Container duration
+                        // is an estimate, so never present a percentage or an ETA.
+                        ui.add(
+                            egui::ProgressBar::new(
+                                progress.start.as_secs_f32() / progress.total.as_secs_f32(),
+                            )
+                            .animate(false),
+                        )
+                        .on_hover_text("Completed audio before the current segment. The recording length is estimated from file metadata.");
+                    } else {
+                        ui.label(format!("{range} | recording length unknown"));
+                    }
+                }
+                egui::ScrollArea::vertical()
+                    .id_salt("audio-status-message")
+                    .max_height(64.0)
+                    .show(ui, |ui| {
+                        ui.add(egui::Label::new(message).wrap());
+                    });
+                if !self.audio_file_transcript.is_empty() {
+                    if self.audio_import.is_some() {
+                        ui.weak("Your previous transcript is kept until another file is accepted.");
+                    }
+                    ui.horizontal_wrapped(|ui| {
+                        if ui.button("View transcript").clicked() {
+                            self.show_audio_transcript = true;
+                            self.focus_composer = false;
+                        }
+                        self.copy_audio_transcript(ui, "Copy transcript");
+                    });
                 }
             });
-            ui.add(egui::Label::new(message).wrap());
-            if !self.audio_file_transcript.is_empty() {
-                ui.horizontal_wrapped(|ui| {
-                    if ui.button("View transcript").clicked() {
-                        self.show_audio_transcript = true;
-                    }
-                    if ui.button("Copy transcript").clicked() {
-                        ui.ctx().copy_text(self.audio_file_transcript.clone());
-                    }
-                });
-            }
-        });
         ui.add_space(6.0);
+    }
+
+    fn copy_audio_transcript(&self, ui: &mut egui::Ui, label: &str) {
+        let id = egui::Id::unique("audio-transcript-copied");
+        if ui.button(label).clicked() {
+            ui.ctx().copy_text(self.audio_file_transcript.clone());
+            let now = ui.input(|input| input.time);
+            ui.ctx().data_mut(|data| {
+                data.insert_temp(id, (self.audio_file_generation, now));
+            });
+        }
+        let copied = ui.ctx().data(|data| data.get_temp::<(u64, f64)>(id));
+        if copied.is_some_and(|(generation, time)| {
+            generation == self.audio_file_generation && ui.input(|input| input.time) - time < 2.0
+        }) {
+            ui.label("Copied");
+            ui.ctx().request_repaint_after(Duration::from_secs(2));
+        }
     }
 
     pub(super) fn audio_transcript_dialog(&mut self, ctx: &egui::Context) {
         if !self.show_audio_transcript {
             return;
         }
-        let mut open = true;
-        egui::Window::new("Audio transcript")
-            .open(&mut open)
-            .default_width(680.0)
+        let mut close = false;
+        let modal = egui::Modal::new(egui::Id::unique("audio-transcript-modal"))
             .show(ctx, |ui| {
-                ui.label("Transcript stays in this session until you dismiss its audio status or start another import. Copy it to keep it.");
-                egui::ScrollArea::vertical().max_height(ctx.content_rect().height() * 0.6).show(ui, |ui| {
-                    ui.add(egui::TextEdit::multiline(&mut self.audio_file_transcript.as_str()).desired_width(f32::INFINITY));
+                ui.set_width((ctx.content_rect().width() - 64.0).clamp(260.0, 680.0));
+                ui.heading("Audio transcript");
+                ui.label("Kept for this session until you dismiss the audio status or transcribe another file. Copy the text to keep it.");
+                if self.audio_file_active {
+                    ui.label("Transcription continues while this view is open. If it finishes here, review the draft and select Send. Escape closes this view; use Cancel transcription to stop.");
+                }
+                ui.add_space(8.0);
+                let label = ui.label("Transcript text (read only)");
+                let viewport_height = (ctx.content_rect().height() - 280.0).clamp(80.0, 480.0);
+                let scroll = egui::ScrollArea::vertical()
+                    .id_salt("audio-transcript-scroll")
+                    .auto_shrink([false, false])
+                    .max_height(viewport_height)
+                    .show(ui, |ui| {
+                        // Borrowed &str keeps native selection/copy without any
+                        // route for editing the retained transcript.
+                        ui.add(
+                            egui::TextEdit::multiline(&mut self.audio_file_transcript.as_str())
+                                .id_salt("audio-transcript-text")
+                                .desired_width(ui.available_width())
+                                .desired_rows(4),
+                        )
+                        .labelled_by(label.id);
+                    });
+                #[cfg(test)]
+                ctx.data_mut(|data| {
+                    data.insert_temp(egui::Id::unique("audio-transcript-viewport"), scroll.inner_rect);
                 });
-                if ui.button("Copy full transcript").clicked() { ctx.copy_text(self.audio_file_transcript.clone()); }
+                #[cfg(not(test))]
+                let _scroll = scroll;
+                ui.add_space(10.0);
+                ui.horizontal_wrapped(|ui| {
+                    self.copy_audio_transcript(ui, "Copy full transcript");
+                    close = ui.button("Close transcript").clicked();
+                });
             });
-        self.show_audio_transcript = open;
+        #[cfg(test)]
+        ctx.data_mut(|data| {
+            data.insert_temp(
+                egui::Id::unique("audio-transcript-bounds"),
+                modal.response.rect,
+            );
+        });
+        if close || modal.should_close() {
+            self.show_audio_transcript = false;
+            self.focus_composer = true;
+        }
     }
 
     pub(super) fn audio_file_button(&mut self, ui: &mut egui::Ui) {
-        let response = ui.add_enabled(
-            self.audio_file_active || (!self.model.busy() && !self.speaking && !self.dictation_requested && self.audio_import.is_none()),
-            egui::Button::new("").min_size(egui::Vec2::splat(32.0)).selected(self.audio_file_active),
-        ).accessible_name("Add audio file").on_hover_text(if self.audio_file_active {
-            "Cancel audio file transcription - Escape"
-        } else {
-            "Transcribe an audio file - MP3, WAV, M4A, AAC, FLAC or WMA. Long recordings are processed in segments using available memory. You can also paste a file copied from Explorer."
-        });
-        let center = response.rect.center();
-        let stroke = ui.style().interact(&response).fg_stroke;
-        let painter = ui.painter_at(response.rect);
-        let offset = if self.audio_file_active {
-            egui::vec2(5.0, 5.0)
-        } else {
-            egui::vec2(7.0, 0.0)
-        };
-        painter.line_segment([center - offset, center + offset], stroke);
-        let perpendicular = egui::vec2(-offset.y, offset.x);
-        painter.line_segment([center - perpendicular, center + perpendicular], stroke);
+        let active = self.audio_file_active;
+        let response = ui
+            .add_enabled(
+                active
+                    || (!self.model.busy()
+                        && !self.speaking
+                        && !self.dictation_requested
+                        && self.audio_import.is_none()),
+                egui::Button::new(if active { "Cancel audio" } else { "+ Audio file" })
+                    .min_size(egui::vec2(32.0, 32.0))
+                    .selected(active),
+            )
+            .accessible_name(if active { "Cancel audio file transcription" } else { "Add audio file" })
+            .on_hover_text(if active {
+                "Cancel audio file transcription - Escape. Your draft and any retained transcript are kept."
+            } else {
+                "Transcribe an MP3, WAV, M4A, AAC, FLAC or WMA file, or paste a file copied from Explorer. The transcript is inserted at the cursor and sent with your draft if the model is ready; otherwise it stays in the draft. Microphone permission is not required. Long recordings are processed in segments."
+            });
         if response.clicked() {
-            if self.audio_file_active {
+            if active {
                 self.cancel_audio_file();
                 self.speech_notice = true;
             } else {
@@ -327,6 +450,20 @@ impl State {
                 });
             }
         }
+    }
+}
+
+fn audio_time(duration: Duration) -> String {
+    let seconds = duration.as_secs();
+    if seconds >= 3600 {
+        format!(
+            "{}:{:02}:{:02}",
+            seconds / 3600,
+            seconds / 60 % 60,
+            seconds % 60
+        )
+    } else {
+        format!("{}:{:02}", seconds / 60, seconds % 60)
     }
 }
 
@@ -545,6 +682,61 @@ mod tests {
         state.flush_voice_transcript(&egui::Context::default());
         assert_eq!(state.input, "Replacement transcript");
         assert_eq!(state.audio_file_transcript, "Replacement transcript");
+        assert!(requests.try_recv().is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn audio_file_replacement_preserves_retained_text_until_successful_handoff() -> io::Result<()> {
+        for rejected in [false, true] {
+            let (mut state, _speech_commands, requests) = fixture()?;
+            state.audio_file_transcript = "Previous transcript".to_owned();
+            state.input = "Keep draft".to_owned();
+            state.audio_import_result(if rejected {
+                Err("Unsupported audio. Choose a WAV or MP3 file.")
+            } else {
+                Ok(None)
+            });
+            assert_eq!(state.audio_file_transcript, "Previous transcript");
+            assert_eq!(state.input, "Keep draft");
+            assert!(!state.audio_file_active);
+            assert!(requests.try_recv().is_err());
+        }
+        let (mut state, speech_commands, requests) = fixture()?;
+        state.audio_file_transcript = "Previous transcript".to_owned();
+        state.audio_file_notice = Some("Current progress".to_owned());
+        state.start_audio_import(Source::Clipboard);
+        assert_eq!(state.audio_file_notice.as_deref(), Some("Current progress"));
+        assert_eq!(state.audio_file_transcript, "Previous transcript");
+        state.audio_import = Some(audio_import::Session::fixture(vec![])?);
+        state.audio_import_result(Ok(Some(chunk(vec![1, 2]))));
+        assert!(matches!(
+            speech_commands.try_recv(),
+            Ok(speech::Command::TranscribeFile { .. })
+        ));
+        assert!(state.audio_file_transcript.is_empty());
+        state.audio_file_part(1_u64 << 63, "New transcript");
+        assert_eq!(state.audio_file_transcript, "New transcript");
+        assert!(requests.try_recv().is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn audio_file_failed_handoff_keeps_previous_transcript_and_actionable_notice() -> io::Result<()>
+    {
+        let (mut state, speech_commands, requests) = fixture()?;
+        drop(speech_commands);
+        state.audio_file_transcript = "Previous transcript".to_owned();
+        state.audio_import = Some(audio_import::Session::fixture(vec![])?);
+        state.audio_import_result(Ok(Some(chunk(vec![1, 2]))));
+        assert_eq!(state.audio_file_transcript, "Previous transcript");
+        assert!(state.audio_file_error && !state.audio_file_active);
+        assert!(
+            state
+                .audio_file_notice
+                .as_deref()
+                .is_some_and(|notice| notice.contains("transcript"))
+        );
         assert!(requests.try_recv().is_err());
         Ok(())
     }
