@@ -76,7 +76,7 @@ fn original_workload_clock_never_renews_and_reserves_complete_batch() -> crate::
 
 #[test]
 fn executable_receipt_requires_current_source_revision_and_bounded_digest() -> crate::Result<()> {
-    let receipt = json!({"SchemaVersion":2,"Revision":"a".repeat(40),"Sha256":"b".repeat(64)});
+    let receipt = json!({"SchemaVersion":3,"Revision":"a".repeat(40),"Sha256":"b".repeat(64)});
     assert_eq!(
         maintenance_identity(&receipt, &"a".repeat(40), 1024)?,
         "b".repeat(64)
@@ -87,6 +87,7 @@ fn executable_receipt_requires_current_source_revision_and_bounded_digest() -> c
     }
     for (field, value) in [
         ("SchemaVersion", json!(1)),
+        ("SchemaVersion", json!(2)),
         ("Sha256", json!("invalid")),
         ("Revision", Value::Null),
     ] {

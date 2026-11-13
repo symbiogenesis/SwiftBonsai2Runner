@@ -134,7 +134,7 @@ fn maintenance_identity<'a>(
     length: u64,
 ) -> crate::Result<&'a str> {
     require(
-        receipt["SchemaVersion"] == 2
+        receipt["SchemaVersion"] == 3
             && receipt["Revision"] == revision
             && crate::identity::is_lower_hex(revision, 40)
             && (1..=134_217_728).contains(&length),

@@ -22,7 +22,7 @@ fn checked_maintenance(environment: &BTreeMap<String, String>) -> crate::Result<
             .ok_or("Maintenance executable has no parent.")?
             .join("receipt.json"),
     )?;
-    if receipt["SchemaVersion"] != 2
+    if receipt["SchemaVersion"] != 4
         || receipt["SourceId"].as_str()
             != environment
                 .get("BONSAI_TOOLS_SOURCE_ID")
