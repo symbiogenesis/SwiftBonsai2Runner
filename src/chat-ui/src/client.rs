@@ -624,8 +624,9 @@ fn model_verification_message(diagnostic: &str) -> Option<&'static str> {
 fn startup_failure(diagnostic: &[u8], native_engine: bool) -> Failure {
     let text = String::from_utf8_lossy(diagnostic);
     if let Some(message) = model_verification_message(&text) {
-        Failure::Message(message)
-    } else if native_engine
+        return Failure::Message(message);
+    }
+    if native_engine
         && text.lines().any(|line| {
             line == "Development backend launch failed: NativeRuntime."
                 || line == "Development backend launch failed: NativeRuntime. Provision the pinned Rust runtime with bonsai-tools provision, operation inference, using the same dataDirectory."

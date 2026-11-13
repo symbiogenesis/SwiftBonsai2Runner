@@ -2609,7 +2609,8 @@ mod startup_tests {
         harness
             .get_by_role_and_label(egui::Role::Button, "Retry setup")
             .click();
-        harness.run();
+        // Retried setup shows a spinner that deliberately keeps requesting frames.
+        harness.run_steps(2);
         let state = harness.state();
         assert!(state.startup_request.is_some());
         assert_eq!(state.model, ModelLifecycle::Preparing);

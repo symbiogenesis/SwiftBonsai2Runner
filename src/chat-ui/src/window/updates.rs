@@ -449,25 +449,22 @@ impl Updates {
         if operation == Operation::Check {
             self.next_check = Instant::now() + CHECK_INTERVAL;
         }
-        match Task::start(
+        if let Ok(task) = Task::start(
             self.installation.clone(),
             operation,
             self.version.clone(),
             self.release_identity.clone(),
         ) {
-            Ok(task) => {
-                self.task = Some(task);
-                self.status = match operation {
-                    Operation::Check => "Checking GitHub for updates...",
-                    Operation::Download => "Downloading and verifying the application update...",
-                    Operation::Install => "Preparing the update. The app will close when ready...",
-                }
-                .into();
+            self.task = Some(task);
+            self.status = match operation {
+                Operation::Check => "Checking GitHub for updates...",
+                Operation::Download => "Downloading and verifying the application update...",
+                Operation::Install => "Preparing the update. The app will close when ready...",
             }
-            Err(_) => {
-                self.confirmed = false;
-                self.status = "Could not start the update check. Try again.".into();
-            }
+            .into();
+        } else {
+            self.confirmed = false;
+            self.status = "Could not start the update check. Try again.".into();
         }
     }
 
@@ -959,7 +956,7 @@ mod tests {
             .ok_or_else(|| io::Error::other("Missing version"))?;
         for identity in [
             None,
-            Some("".into()),
+            Some(String::new()),
             Some("a".repeat(63)),
             Some("A".repeat(64)),
             Some("z".repeat(64)),

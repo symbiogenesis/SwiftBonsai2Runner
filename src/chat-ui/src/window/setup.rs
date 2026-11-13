@@ -128,7 +128,7 @@ impl State {
                     if let Some(progress) = &self.setup.progress {
                         ui.label(&progress.message);
                         if let (Some(downloaded), Some(expected)) = (progress.downloaded, progress.expected) {
-                            #[expect(clippy::cast_precision_loss, reason = "Approximate UI progress; artifact acceptance uses exact integer lengths and SHA-256.")]
+                            #[expect(clippy::cast_precision_loss, clippy::as_conversions, reason = "Approximate UI progress; artifact acceptance uses exact integer lengths and SHA-256.")]
                             let fraction = downloaded as f32 / expected as f32;
                             ui.add(egui::ProgressBar::new(fraction).show_percentage());
                         } else {
