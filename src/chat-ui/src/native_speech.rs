@@ -14,10 +14,10 @@ use bonsai_windows_process::{
 use std::{
     ffi::OsString,
     fs, io,
-    path::PathBuf,
+    path::{Path, PathBuf},
     sync::{
         Arc,
-        atomic::{AtomicU8, AtomicU64, Ordering},
+        atomic::{AtomicBool, AtomicU8, AtomicU64, Ordering},
         mpsc::{self, Receiver, RecvTimeoutError, Sender},
     },
     thread::{self, JoinHandle},
@@ -112,7 +112,7 @@ impl Launch {
 
     fn specification(
         &self,
-        key_file: &std::path::Path,
+        key_file: &Path,
         port: u16,
     ) -> Result<(ProcessSpec, SandboxPolicy, PrivateDirectory), Failure> {
         self.validate().map_err(Failure::Message)?;
@@ -180,6 +180,20 @@ impl Launch {
     }
 }
 
+/// A worker-owned sink for value-free service lifecycle diagnostics.
+pub(crate) type DiagnosticSink = Box<dyn Fn(String) + Send + Sync>;
+
+fn service_diagnostic(directory: &Path, exit: Option<u32>) -> String {
+    let status = exit.map_or_else(
+        || "starting; exit status pending".to_owned(),
+        |code| format!("stopped; exit code {code} (0x{code:08X})"),
+    );
+    format!(
+        "Local speech service {status}. Retained evidence: {}. Logs: service.stdout and service.stderr. Credential files are not included.",
+        directory.display()
+    )
+}
+
 /// Retaining this owner bounds one speech process independently of text chat.
 pub(crate) struct Service {
     process: Arc<OwnedProcess>,
@@ -188,17 +202,33 @@ pub(crate) struct Service {
     monitor: Option<JoinHandle<()>>,
     // Retain the owner-only evidence directory until the Job and monitor stop.
     _sandbox_directory: Option<PrivateDirectory>,
+    diagnostic_sink: Option<DiagnosticSink>,
+    evidence_directory: Option<PathBuf>,
+    exit_reported: AtomicBool,
 }
 
 impl Service {
     /// Cancellation precedes port checks, evidence creation and model loading.
     pub(crate) fn start(
         launch: &Launch,
-        key_file: &std::path::Path,
+        key_file: &Path,
+        port: u16,
+        generation: u64,
+        current: &AtomicU64,
+        ready: impl FnMut() -> Result<(), Failure>,
+    ) -> Result<Self, Failure> {
+        Self::start_observed(launch, key_file, port, generation, current, ready, None)
+    }
+
+    /// Start the service while retaining only lifecycle metadata in diagnostics.
+    pub(crate) fn start_observed(
+        launch: &Launch,
+        key_file: &Path,
         port: u16,
         generation: u64,
         current: &AtomicU64,
         mut ready: impl FnMut() -> Result<(), Failure>,
+        diagnostic_sink: Option<DiagnosticSink>,
     ) -> Result<Self, Failure> {
         let call = Call::new(generation, current, Duration::from_mins(15));
         call.check()?;
@@ -208,16 +238,22 @@ impl Service {
             .is_some()
         {
             return Err(Failure::Message(
-                "The native speech port is already occupied. Close the conflicting service or choose a distinct speech port.",
+                "Speech could not start because another local process is using its connection. Close any other copies of Swift, then select the speaker button to try again. Text chat remains available.",
             ));
         }
         admit_memory(available_memory_bytes().map_err(|_| Failure::Message("Could not check available memory before loading speech. Text chat remains available."))?)?;
         call.check()?;
         let (specification, policy, directory) = launch.specification(key_file, port)?;
+        let evidence_directory = directory.path().to_owned();
+        if let Some(record) = &diagnostic_sink {
+            record(service_diagnostic(&evidence_directory, None));
+        }
         let process = OwnedProcess::start_sandboxed(&specification, &policy)
             .map_err(|_| Failure::Message("Could not apply the native speech sandbox or start its executable. Check the retained service evidence; text chat remains available."))?;
-        let service =
+        let mut service =
             Self::monitored_in(Arc::new(process), available_memory_bytes, Some(directory))?;
+        service.diagnostic_sink = diagnostic_sink;
+        service.evidence_directory = Some(evidence_directory);
         loop {
             call.check()?;
             service.check()?;
@@ -266,6 +302,9 @@ impl Service {
             stop_monitor,
             monitor: Some(monitor),
             _sandbox_directory: directory,
+            diagnostic_sink: None,
+            evidence_directory: None,
+            exit_reported: AtomicBool::new(false),
         })
     }
 
@@ -293,12 +332,17 @@ impl Service {
             }
             _ => {}
         }
-        if self
+        if let Some(exit_code) = self
             .process
             .try_wait()
             .map_err(|_| Failure::Message("Could not inspect the native speech process."))?
-            .is_some()
         {
+            if !self.exit_reported.swap(true, Ordering::AcqRel)
+                && let (Some(record), Some(directory)) =
+                    (&self.diagnostic_sink, &self.evidence_directory)
+            {
+                record(service_diagnostic(directory, Some(exit_code)));
+            }
             if self
                 .process
                 .peak_job_memory_bytes()
@@ -309,7 +353,7 @@ impl Service {
                 ));
             }
             return Err(Failure::Message(
-                "The native speech model stopped. Check retained service evidence and enable speech again to retry; text chat remains available.",
+                "Speech stopped unexpectedly. Select the response's speaker button to try again. Text chat remains available; service details are kept in Settings > Application > Diagnostics.",
             ));
         }
         Ok(())
@@ -371,6 +415,22 @@ pub(crate) mod tests {
         thread,
         time::{Duration, Instant, SystemTime, UNIX_EPOCH},
     };
+
+    #[test]
+    fn retained_service_diagnostics_preserve_exit_status_and_fixed_log_selection() {
+        let directory = Path::new("C:/Local data/Owner's speech evidence");
+        let pending = super::service_diagnostic(directory, None);
+        assert!(pending.contains("exit status pending"));
+        let stopped = super::service_diagnostic(directory, Some(0xc000_0135));
+        assert!(stopped.contains("0xC0000135"));
+        assert!(stopped.contains("3221225781"));
+        for value in [&pending, &stopped] {
+            assert!(value.contains(&directory.display().to_string()));
+            assert!(value.contains("service.stdout and service.stderr"));
+            assert!(!value.contains("--token-file"));
+            assert!(!value.contains("Start its service"));
+        }
+    }
 
     const RESOURCE_READY: &str = "BONSAI_RESOURCE_GUARD_READY";
 

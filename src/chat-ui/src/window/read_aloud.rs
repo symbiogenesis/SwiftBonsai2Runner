@@ -27,7 +27,7 @@ impl State {
             } else {
                 let message = self.read_aloud_help();
                 message.clone_into(&mut self.speech_status);
-                self.help = Some(("Read aloud setup", message));
+                self.open_voice_setup();
             }
         } else if self.valid_voice() {
             self.streaming_read_aloud = true;

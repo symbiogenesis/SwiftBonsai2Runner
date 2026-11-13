@@ -136,20 +136,24 @@ impl State {
         );
     }
 
-    pub(super) fn retry_speech_setup(&mut self) {
-        if self.startup.is_some()
-            || self.startup_request.is_some()
-            || self
+    pub(super) fn can_retry_speech_setup(&self) -> bool {
+        self.startup.is_none()
+            && self.startup_request.is_none()
+            && !self
                 .updates
                 .as_ref()
                 .is_some_and(super::updates::Updates::installing)
-        {
-            return;
-        }
-        let Some(error) = self.setup.speech_error.as_deref() else {
-            return;
-        };
-        if !cleanup_known(error) {
+            && self
+                .setup
+                .speech_error
+                .as_deref()
+                .is_some_and(cleanup_known)
+            && self.setup.request.is_some()
+            && self.setup.broker.is_some()
+    }
+
+    pub(super) fn retry_speech_setup(&mut self) {
+        if !self.can_retry_speech_setup() {
             return;
         }
         let (Some(request), Some(broker)) = (self.setup.request.clone(), self.setup.broker.clone())
@@ -249,13 +253,7 @@ impl State {
     }
 
     pub(super) fn speech_setup_error_actions(&mut self, ui: &mut egui::Ui, error: &str) {
-        let retry = self.startup.is_none()
-            && self.startup_request.is_none()
-            && !self
-                .updates
-                .as_ref()
-                .is_some_and(super::updates::Updates::installing)
-            && cleanup_known(error);
+        let retry = self.can_retry_speech_setup() && cleanup_known(error);
         if ui
             .add_enabled(retry, egui::Button::new("Retry speech setup"))
             .clicked()

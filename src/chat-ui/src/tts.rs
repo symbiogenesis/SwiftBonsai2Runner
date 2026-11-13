@@ -11,7 +11,7 @@
 
 pub(crate) use crate::canary::Failure;
 use crate::canary::{self, Call, Media};
-use crate::native_speech::{Launch, Service};
+use crate::native_speech::{DiagnosticSink, Launch, Service};
 use serde::{Deserialize, Serialize};
 use std::{
     borrow::Cow,
@@ -95,6 +95,7 @@ impl Client {
         config: &Config,
         generation: u64,
         current: &AtomicU64,
+        diagnostics: Option<DiagnosticSink>,
     ) -> Result<Option<Service>, Failure> {
         let call = Call::new(generation, current, Duration::from_mins(15));
         call.check().map_err(transport_failure)?;
@@ -107,13 +108,14 @@ impl Client {
                 "Native Qwen TTS requires its speech codec.",
             ));
         }
-        Service::start(
+        Service::start_observed(
             launch,
             &config.key_file,
             config.port,
             generation,
             current,
             || self.ready_for(generation, current),
+            diagnostics,
         )
         .map(Some)
     }

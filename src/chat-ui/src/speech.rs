@@ -100,6 +100,7 @@ pub(crate) enum Event {
         generation: u64,
     },
     Status(&'static str),
+    Diagnostic(String),
     Speaking {
         generation: u64,
         speaking: bool,
@@ -327,7 +328,7 @@ fn transcription(
     ));
     let result = input.map_or(
         Err(canary::Failure::Message(
-            "Qwen3-ASR 1.7B is unavailable. Check the native speech configuration and key file.",
+            "Speech input is unavailable. Open Settings > Voice to review speech setup and try again.",
         )),
         |input| {
             let result = input.transcribe(generation, wav, current);
@@ -376,13 +377,21 @@ fn render(
         service.check().map_err(output_failure)?;
     }
     if !output.prepared {
-        let client = client.ok_or("Qwen3-TTS VoiceDesign is unavailable. Check its installed runtime and protected key file.")?;
+        let client = client.ok_or("Read aloud is unavailable. Open Settings > Voice to review speech setup and try again.")?;
         let config = config.ok_or("Qwen3-TTS VoiceDesign has no local configuration.")?;
         let _sent = events.send(Event::OutputStatus {
             generation: output.generation,
             message: "Loading Qwen3-TTS VoiceDesign. Stop speech cancels loading.",
         });
-        output.service = match client.start_service(config, output.generation, current) {
+        let diagnostics = events.clone();
+        output.service = match client.start_service(
+            config,
+            output.generation,
+            current,
+            Some(Box::new(move |message| {
+                let _sent = diagnostics.send(Event::Diagnostic(message));
+            })),
+        ) {
             Ok(service) => service,
             Err(tts::Failure::Cancelled) => return Ok(false),
             Err(tts::Failure::Message(message)) => return Err(message),
@@ -398,7 +407,7 @@ fn render(
     }
     if output.pipeline.is_none() {
         let client = client.ok_or(
-            "Qwen3-TTS VoiceDesign is unavailable. Check its companion service and key file.",
+            "Read aloud is unavailable. Open Settings > Voice to review speech setup and try again.",
         )?;
         output.pipeline = Some(
             pipeline::Pipeline::start(
@@ -1182,7 +1191,7 @@ mod tests {
         // process launch and dependency/model loading.
         let client = crate::tts::Client::new(&config).map_err(io::Error::other)?;
         assert!(matches!(
-            client.start_service(&config, 1, &AtomicU64::new(2)),
+            client.start_service(&config, 1, &AtomicU64::new(2), None),
             Err(crate::tts::Failure::Cancelled)
         ));
         let canary = crate::canary::Client::new(&canary_config).map_err(io::Error::other)?;

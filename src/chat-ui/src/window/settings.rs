@@ -47,6 +47,11 @@ impl State {
         self.focus_composer = false;
     }
 
+    pub(super) const fn open_voice_setup(&mut self) {
+        self.open_settings(Page::Voice);
+        self.settings_view.voice_help = true;
+    }
+
     fn close_settings(&mut self, ctx: &egui::Context) {
         self.show_settings = false;
         self.focus_composer = true;
@@ -527,6 +532,27 @@ impl State {
                 ui.label(self.read_aloud_help());
             }
         });
+        if let Some(error) = self.setup.speech_error.clone() {
+            ui.add_space(8.0);
+            super::error_ui::card(
+                ui,
+                "settings-speech-setup-error",
+                "Speech setup needs attention",
+                "Text chat and your draft remain available.",
+                &error,
+                |ui| {
+                    if ui
+                        .add_enabled(
+                            self.can_retry_speech_setup(),
+                            egui::Button::new("Retry speech setup"),
+                        )
+                        .clicked()
+                    {
+                        self.retry_speech_setup();
+                    }
+                },
+            );
+        }
     }
 
     fn application_preferences(&mut self, ui: &mut egui::Ui) {

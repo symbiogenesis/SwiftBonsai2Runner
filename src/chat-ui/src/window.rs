@@ -197,6 +197,8 @@ struct State {
     speech_output: bool,
     canary_configured: bool,
     tts_configured: bool,
+    canary_managed: bool,
+    tts_managed: bool,
     speech_status: String,
     speech_notice: bool,
     voice_profile: String,
@@ -235,10 +237,22 @@ impl State {
             state.abliteration_enabled = config.use_abliterate_lora;
             state.canary_configured = config.canary.is_some();
             state.tts_configured = config.qwen_tts.is_some();
+            state.canary_managed = config
+                .canary
+                .as_ref()
+                .is_some_and(|speech| speech.launch.is_some());
+            state.tts_managed = config
+                .qwen_tts
+                .as_ref()
+                .is_some_and(|speech| speech.launch.is_some());
         }
         state
     }
 
+    #[expect(
+        clippy::too_many_lines,
+        reason = "Keep the complete native state initialization and speech ownership flags in one transaction."
+    )]
     fn initial_state(
         commands: Sender<Command>,
         events: client::EventReceiver,
@@ -325,6 +339,8 @@ impl State {
             speech_output: false,
             canary_configured: false,
             tts_configured: false,
+            canary_managed: false,
+            tts_managed: false,
             speech_status: "Select Microphone or a response's speaker button for setup.".to_owned(),
             speech_notice: false,
             voice_profile: DEFAULT_VOICE.to_owned(),
@@ -503,14 +519,38 @@ impl State {
         self.setup.speech_error = None;
         self.canary_configured = config.canary.is_some();
         self.tts_configured = config.qwen_tts.is_some();
+        self.canary_managed = config
+            .canary
+            .as_ref()
+            .is_some_and(|speech| speech.launch.is_some());
+        self.tts_managed = config
+            .qwen_tts
+            .as_ref()
+            .is_some_and(|speech| speech.launch.is_some());
         self.speech = speech::start(config.canary.clone(), config.qwen_tts.clone()).ok();
         self.speech_checked = self.speech.is_none();
+        if self.speech_checked {
+            self.offer_speech_repair(false, false);
+        }
         if self.speech_checked && self.speaking {
             self.speaking = false;
             self.speaking_message = None;
         }
         self.microphone = microphone::Microphone::new().ok();
     }
+    fn offer_speech_repair(&mut self, input: bool, output: bool) {
+        if ((self.canary_managed && !input) || (self.tts_managed && !output))
+            && self.startup.is_none()
+            && self.startup_request.is_none()
+            && self.setup.request.is_some()
+            && self.setup.broker.is_some()
+            && self.setup.speech_error.is_none()
+        {
+            self.setup.speech_error = Some("Swift could not finish preparing speech. Select Retry speech setup to check and repair its app-managed files. Text chat and your draft remain available.".into());
+            self.speech_notice = true;
+        }
+    }
+
     fn set_status(&mut self, message: &str, warning: bool) {
         self.record(message);
         message.clone_into(&mut self.status_detail);
@@ -1207,26 +1247,28 @@ impl State {
         } else {
             let message = self.read_aloud_help();
             message.clone_into(&mut self.speech_status);
-            self.help = Some(("Read aloud setup", message));
+            self.open_voice_setup();
         }
         self.record(&self.speech_status.clone());
     }
 
     const fn microphone_help(&self) -> &'static str {
         if !self.canary_configured {
-            "Launch bonsai-tools chat with its default speech settings to prepare Qwen3-ASR 1.7B automatically. Click the microphone to record, then click again to transcribe and send your message. Windows microphone permission is required. See tools/canary-asr/README.md. Nothing is recording now."
+            "Speech input is disabled for this launch. Swift normally prepares speech automatically. Open Settings > Voice to review speech setup. Nothing is recording."
         } else if self.microphone.is_none() {
-            "Windows microphone access could not initialize. Check Windows microphone privacy settings and restart the app. Nothing is recording."
+            "Windows microphone access is unavailable. Review Windows microphone privacy settings. Nothing is recording."
         } else {
-            "Qwen3-ASR 1.7B is not ready. Start its service on the configured port, check its protected key file, then restart the app. See tools/canary-asr/README.md. Nothing is recording."
+            "Swift prepares speech input automatically. Wait for preparation to finish, or use Retry speech setup in Settings > Voice if a setup error is shown. Nothing is recording."
         }
     }
 
     const fn read_aloud_help(&self) -> &'static str {
-        if self.tts_configured {
-            "Qwen3-TTS VoiceDesign is not ready. Start its service on the configured port, check its protected key file, then restart the app. See tools/qwen-tts/README.md. Your voice description will be used when the service is ready."
+        if self.tts_configured && !self.speech_checked {
+            "Swift is preparing read aloud automatically. You can keep using text chat while it prepares."
+        } else if self.tts_configured {
+            "Swift manages read aloud automatically. If setup needs attention, use Retry speech setup in Settings > Voice. Once setup finishes, select a response's speaker button to try again. Your Voice profile chooses how it sounds."
         } else {
-            "Launch the app with bonsai-tools chat to prepare Qwen3-TTS 1.7B VoiceDesign automatically. Use its default settings without --no-tts or --no-speech-models. Selecting a response's speaker button starts the local service. Describe your desired voice in Voice profile; no preset or reference recording is required. See tools/qwen-tts/README.md."
+            "Read aloud is disabled for this launch. Swift normally prepares speech automatically with its default settings. Your conversations remain available."
         }
     }
 
@@ -1261,7 +1303,9 @@ impl State {
     fn speech_event(&mut self, event: speech::Event) {
         let previous = self.speech_status.clone();
         match event {
+            speech::Event::Diagnostic(message) => self.record(&message),
             speech::Event::Capabilities { input, output } => {
+                self.offer_speech_repair(input, output);
                 self.speech_checked = true;
                 self.speech_input = input && self.microphone.is_some();
                 self.audio_file_input = input;
@@ -1271,7 +1315,7 @@ impl State {
                     (true, false) => "Microphone ready. Open Settings for read aloud setup.",
                     (false, true) => "Response speakers ready. Select Microphone for setup.",
                     (false, false) => {
-                        "Speech setup required. Select Microphone or open Settings for instructions."
+                        "Speech is unavailable. Open Settings > Voice to review setup and retry."
                     }
                 }
                 .clone_into(&mut self.speech_status);

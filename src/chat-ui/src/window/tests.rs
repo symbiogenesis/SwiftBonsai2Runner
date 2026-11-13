@@ -321,11 +321,29 @@ fn speech_controls_stay_visible_and_explain_unconfigured_services_without_listen
     let (mut state, _commands, _events) = state();
     assert!(!state.dictation_requested);
     assert!(state.microphone.is_none());
-    assert!(state.microphone_help().contains("bonsai-tools chat"));
-    assert!(state.read_aloud_help().contains("bonsai-tools chat"));
-    assert!(state.read_aloud_help().contains("--no-tts"));
+    assert!(state.microphone_help().contains("automatically"));
+    assert!(state.read_aloud_help().contains("automatically"));
+    for configured in [false, true] {
+        state.tts_configured = configured;
+        for checked in [false, true] {
+            state.speech_checked = checked;
+            let help = state.read_aloud_help();
+            for retired in [
+                "Start its service",
+                "key file",
+                "configured port",
+                "bonsai-tools",
+                "README.md",
+                "--no-tts",
+            ] {
+                assert!(!help.contains(retired));
+            }
+        }
+    }
+    state.tts_configured = false;
     state.toggle_streaming_read_aloud();
-    assert!(state.help.is_some());
+    assert!(state.show_settings);
+    assert!(state.help.is_none());
     assert!(!state.streaming_read_aloud);
     state.help = None;
     state.toggle_dictation();
@@ -339,9 +357,118 @@ fn speech_controls_stay_visible_and_explain_unconfigured_services_without_listen
     state.transcript.remove_empty_response();
     let message_id = state.transcript.messages[0].id;
     state.toggle_read_aloud(message_id);
-    assert!(state.help.is_some());
+    assert!(state.show_settings);
+    assert!(state.help.is_none());
     assert!(!state.speaking);
     assert_eq!(state.transcript.messages.len(), 1);
+}
+
+#[test]
+fn speech_service_diagnostics_survive_later_status_updates() {
+    let (mut state, _commands, _events) = state();
+    let detail = "Speech stopped; exit code 1; retained evidence C:/Speech/service".to_owned();
+    state.speech_event(speech::Event::Diagnostic(detail.clone()));
+    state.speech_event(speech::Event::Capabilities {
+        input: false,
+        output: false,
+    });
+    assert!(state.diagnostics.iter().any(|message| message == &detail));
+    assert!(!state.speaking);
+    assert!(!state.dictation_requested);
+}
+
+#[test]
+fn failed_owned_speech_capabilities_offer_setup_retry_and_preserve_the_draft() -> io::Result<()> {
+    use egui_kittest::{
+        Harness,
+        kittest::{NodeT as _, Queryable as _},
+    };
+    use std::ffi::OsString;
+    let scratch = std::env::temp_dir().join(format!(
+        "Bonsai-SpeechCapabilityRetry-{}-{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map_err(io::Error::other)?
+            .as_nanos()
+    ));
+    std::fs::create_dir(&scratch)?;
+    let tool = scratch.join("fixture-tool.exe");
+    let payload = scratch.join("request.json");
+    std::fs::write(&tool, [])?;
+    std::fs::write(&payload, r#"{"PreparationStage":"all"}"#)?;
+    let request = crate::startup::Request::parse(&[
+        OsString::from("--startup-tool"),
+        tool.into_os_string(),
+        OsString::from("--startup-request"),
+        payload.into_os_string(),
+        OsString::from("--startup-data-directory"),
+        scratch.clone().into_os_string(),
+    ])?;
+    let (mut state, _commands, _events) = state();
+    state.input = "Keep this draft".into();
+    state.model = ModelLifecycle::Ready;
+    state.tts_configured = true;
+    state.setup.request = Some(request.clone());
+    state.setup.broker = Some(scratch.join("broker.exe"));
+    state.speech_event(speech::Event::Capabilities {
+        input: false,
+        output: false,
+    });
+    assert!(
+        state.setup.speech_error.is_none(),
+        "External services do not invoke app-owned setup"
+    );
+    state.tts_managed = true;
+    state.startup_request = Some(request);
+    state.speech_event(speech::Event::Capabilities {
+        input: false,
+        output: false,
+    });
+    assert!(
+        state.setup.speech_error.is_none(),
+        "Preparation in progress is not a failure"
+    );
+    state.startup_request.take();
+    state.speech_event(speech::Event::Capabilities {
+        input: false,
+        output: false,
+    });
+    assert!(
+        state
+            .setup
+            .speech_error
+            .as_deref()
+            .is_some_and(|message| message.contains("Retry speech setup"))
+    );
+    assert_eq!(state.input, "Keep this draft");
+    assert!(state.model.ready());
+    state.open_voice_setup();
+    let mut harness = Harness::builder()
+        .with_size([1000.0, 800.0])
+        .with_context_setup(configure)
+        .build_ui_state(|ui, app: &mut State| app.settings(ui.ctx()), state);
+    harness.run();
+    assert!(
+        !harness
+            .get_by_role_and_label(egui::Role::Button, "Retry speech setup")
+            .accesskit_node()
+            .is_disabled()
+    );
+    harness.state_mut().setup.speech_error =
+        Some("Setup process cleanup could not be confirmed.".into());
+    harness.run();
+    assert!(
+        harness
+            .get_by_role_and_label(egui::Role::Button, "Retry speech setup")
+            .accesskit_node()
+            .is_disabled()
+    );
+    assert_eq!(harness.state().input, "Keep this draft");
+    std::fs::remove_file(scratch.join("fixture-tool.exe"))?;
+    std::fs::remove_file(scratch.join("request.json"))?;
+    std::fs::remove_dir(scratch)?;
+    Ok(())
 }
 
 #[test]
