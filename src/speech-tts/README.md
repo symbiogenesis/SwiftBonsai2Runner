@@ -65,6 +65,12 @@ available. Readiness covers initial loading; voice-reference/Base setup is lazy.
 Cancellation checks bracket prompt projection, layers/codebooks and frame delivery;
 the supervisor tears down work already executing.
 
+Each decoder position publishes its KV append only after the complete layer
+returns finite output. Projection/adapter failures and unwinding truncate the
+provisional append to the previous key/value lengths and position. Invalid cache,
+head and projection/bias geometry rejects before publication. These layer-level
+controls do not replace complete-model cancellation and recovery qualification.
+
 ## Build boundary
 
 Cargo uses the pinned Rust compiler and ordinary Windows linking tools, without

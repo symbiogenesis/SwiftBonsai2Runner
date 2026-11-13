@@ -30,6 +30,7 @@ use crate::{
     sampling,
 };
 
+mod kv_append;
 mod packed;
 pub(crate) mod row_workers;
 
@@ -813,10 +814,15 @@ impl LinearProjection {
         lora: Option<&LoraProjectionPatch>,
         threads: usize,
     ) -> io::Result<Vec<f32>> {
-        if input.len() != self.in_dim {
+        if input.len() != self.in_dim
+            || self
+                .bias
+                .as_ref()
+                .is_some_and(|bias| bias.len() != self.out_dim)
+        {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidInput,
-                "LinearProjection input length mismatch.",
+                "LinearProjection input or bias length mismatch.",
             ));
         }
         let mut out = self
@@ -1246,6 +1252,7 @@ impl QwenDecoderLayer {
     }
 
     /// Run one decoder step with an explicit bounded CPU worker count.
+    /// Failed steps, including unwinding, preserve the prior KV contents and position.
     #[expect(
         clippy::too_many_arguments,
         clippy::too_many_lines,
@@ -1269,11 +1276,50 @@ impl QwenDecoderLayer {
                 "Invalid CPU worker count.",
             ));
         }
-        if num_q_heads == 0 || num_kv_heads == 0 || !num_q_heads.is_multiple_of(num_kv_heads) {
-            return Err(io::Error::new(
+        let invalid_geometry = || {
+            io::Error::new(
                 io::ErrorKind::InvalidInput,
-                "Invalid GQA head configuration.",
-            ));
+                "Invalid speech decoder geometry or state.",
+            )
+        };
+        let query_width = num_q_heads
+            .checked_mul(head_dim)
+            .ok_or_else(invalid_geometry)?;
+        let kv_width = num_kv_heads
+            .checked_mul(head_dim)
+            .ok_or_else(invalid_geometry)?;
+        if input.is_empty()
+            || num_q_heads == 0
+            || num_kv_heads == 0
+            || !num_q_heads.is_multiple_of(num_kv_heads)
+            || head_dim == 0
+            || !head_dim.is_multiple_of(2)
+            || !rope_theta.is_finite()
+            || rope_theta <= 0.0
+            || !rms_eps.is_finite()
+            || rms_eps <= 0.0
+            || self.attn_norm_w.len() != input.len()
+            || self.ffn_norm_w.len() != input.len()
+            || self.q_norm_w.len() != head_dim
+            || self.k_norm_w.len() != head_dim
+            || self.q_proj.in_dim != input.len()
+            || self.q_proj.out_dim != query_width
+            || self.k_proj.in_dim != input.len()
+            || self.k_proj.out_dim != kv_width
+            || self.v_proj.in_dim != input.len()
+            || self.v_proj.out_dim != kv_width
+            || self.o_proj.in_dim != query_width
+            || self.o_proj.out_dim != input.len()
+            || self.gate_proj.in_dim != input.len()
+            || self.up_proj.in_dim != input.len()
+            || self.gate_proj.out_dim == 0
+            || self.gate_proj.out_dim != self.up_proj.out_dim
+            || self.down_proj.in_dim != self.gate_proj.out_dim
+            || self.down_proj.out_dim != input.len()
+            || kv.seq_len.checked_mul(kv_width) != Some(kv.k.len())
+            || kv.k.len() != kv.v.len()
+        {
+            return Err(invalid_geometry());
         }
         let h_norm = rms_norm(input, &self.attn_norm_w, rms_eps)?;
         let patch = |proj: &LinearProjection| adapter.and_then(|a| a.patches.get(&proj.name));
@@ -1340,9 +1386,10 @@ impl QwenDecoderLayer {
         apply_rope_neox_in_place(&mut q, num_q_heads, head_dim, pos, rope_theta)?;
         apply_rope_neox_in_place(&mut k, num_kv_heads, head_dim, pos, rope_theta)?;
 
-        kv.k.extend_from_slice(&k);
-        kv.v.extend_from_slice(&v);
-        kv.seq_len += 1;
+        // Attention may read this provisional position, but later projection,
+        // adapter or numerical failure must not publish it for the next call.
+        let append = kv_append::KvAppend::new(kv, &k, &v)?;
+        let kv = append.cache();
 
         let total_seq = kv.seq_len;
         let kv_stride = num_kv_heads * head_dim;
@@ -1426,6 +1473,13 @@ impl QwenDecoderLayer {
             .down_proj
             .forward_vec_parallel(&swiglu, patch(&self.down_proj), workers)?;
         dispatch!(level, simd => axpy_simd(simd, 1.0_f32, &down, &mut x_res));
+        if x_res.iter().any(|value| !value.is_finite()) {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                "Nonfinite speech decoder output.",
+            ));
+        }
+        append.commit();
         Ok(x_res)
     }
 }
@@ -1690,9 +1744,9 @@ mod tests {
     use std::collections::HashMap;
 
     use super::{
-        CodePredictorModel, DecoupledSamplingParams, LinearProjection, LoraProjectionPatch,
-        NUM_ACOUSTIC_CODEBOOKS, PromptCache, QwenDecoderLayer, TalkerLoraAdapter,
-        WeightQuantization, is_talker_ternary_eligible, repack_pq2_to_ptq1,
+        CodePredictorModel, DecoupledSamplingParams, LayerKvCache, LinearProjection,
+        LoraProjectionPatch, NUM_ACOUSTIC_CODEBOOKS, PromptCache, QwenDecoderLayer,
+        TalkerLoraAdapter, WeightQuantization, is_talker_ternary_eligible, repack_pq2_to_ptq1,
         sylvester_walsh_hadamard_in_place, validate_talker_ternary_policy,
     };
 
@@ -1900,6 +1954,105 @@ mod tests {
             codec_embeddings: vec![vec![0.1; vocab * hidden]; NUM_ACOUSTIC_CODEBOOKS],
             lm_heads,
         })
+    }
+
+    #[test]
+    fn decoder_kv_failed_step_restores_complete_state_and_fresh_replay() -> std::io::Result<()> {
+        let model = code_predictor_fixture()?;
+        let layer = &model.layers[0];
+        let step = |layer: &QwenDecoderLayer, cache: &mut LayerKvCache, workers| {
+            layer.forward_step_parallel(&[0.2; 4], 2, 2, 2, 1_000_000.0, 1e-6, cache, None, workers)
+        };
+        let bits = |cache: &LayerKvCache| {
+            (
+                cache.seq_len,
+                cache.k.iter().map(|n| n.to_bits()).collect::<Vec<_>>(),
+                cache.v.iter().map(|n| n.to_bits()).collect::<Vec<_>>(),
+            )
+        };
+        let mut before = LayerKvCache::default();
+        let _ = step(layer, &mut before, 1)?;
+        let mut expected = before.clone();
+        let expected_output = step(layer, &mut expected, 1)?;
+        for workers in [1, 3] {
+            for fault in 0..7 {
+                let mut failed = layer.clone();
+                let projection = match fault {
+                    0 => &mut failed.o_proj,
+                    1 => &mut failed.gate_proj,
+                    2 => &mut failed.up_proj,
+                    _ => &mut failed.down_proj,
+                };
+                if fault >= 5 {
+                    projection.bias = Some(vec![0.0; if fault == 5 { 1 } else { 5 }]);
+                } else if let WeightQuantization::F32(weights) = &mut projection.weight {
+                    if fault == 4 {
+                        weights.fill(f32::NAN);
+                    } else {
+                        let _ = weights.pop();
+                    }
+                }
+                let mut cache = before.clone();
+                assert!(step(&failed, &mut cache, workers).is_err(), "fault {fault}");
+                assert_eq!(bits(&cache), bits(&before), "fault {fault}");
+                let output = step(layer, &mut cache, workers)?;
+                assert_eq!(bits(&cache), bits(&expected));
+                assert_eq!(
+                    output.iter().map(|n| n.to_bits()).collect::<Vec<_>>(),
+                    expected_output
+                        .iter()
+                        .map(|n| n.to_bits())
+                        .collect::<Vec<_>>()
+                );
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn decoder_kv_invalid_geometry_and_cache_reject_before_mutation() -> std::io::Result<()> {
+        let model = code_predictor_fixture()?;
+        let layer = &model.layers[0];
+        for (heads, kv_heads, dimension) in [
+            (0, 2, 2),
+            (2, 0, 2),
+            (2, 2, 0),
+            (2, 2, 3),
+            (usize::MAX, 2, 2),
+            (4, 2, 2),
+        ] {
+            let mut cache = LayerKvCache::default();
+            assert!(
+                layer
+                    .forward_step(
+                        &[0.2; 4],
+                        heads,
+                        kv_heads,
+                        dimension,
+                        1_000_000.0,
+                        1e-6,
+                        &mut cache,
+                        None
+                    )
+                    .is_err()
+            );
+            assert!(cache.k.is_empty() && cache.v.is_empty());
+            assert_eq!(cache.seq_len, 0);
+        }
+        let mut cache = LayerKvCache {
+            k: vec![-0.0],
+            v: vec![0.5],
+            seq_len: 1,
+        };
+        assert!(
+            layer
+                .forward_step(&[0.2; 4], 2, 2, 2, 1_000_000.0, 1e-6, &mut cache, None)
+                .is_err()
+        );
+        assert_eq!(cache.k[0].to_bits(), 0x8000_0000);
+        assert_eq!(cache.v, [0.5]);
+        assert_eq!(cache.seq_len, 1);
+        Ok(())
     }
 
     #[test]
