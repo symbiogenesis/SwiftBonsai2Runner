@@ -648,7 +648,7 @@ reuses one reference across segments and messages with the same profile.
 Changing the profile creates a new reference; restarts regenerate it from the
 same fixed inputs. This design does not guarantee perceived speaker identity.
 
-**Read aloud as responses arrive** is off by default per conversation. It sends
+**Always Read Aloud** is off by default per conversation. It sends
 visible answer deltas in bounded sentence/word chunks while Swift generates;
 loading/synthesis can lag text. **Stop speech** or manual replay suppresses
 automatic reading for that response; the next prompt re-enables it. Disabling the

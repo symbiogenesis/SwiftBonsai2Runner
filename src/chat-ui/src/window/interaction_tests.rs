@@ -193,11 +193,11 @@ fn streaming_read_aloud_control_is_available_during_generation_and_stops_audio()
         // AccessKit focus requests use the previous frame's focusable widgets.
         // Publish the newly enabled checkbox before asking it to take focus.
         chat.run_steps(8);
-        chat.get_by_role_and_label(egui::Role::CheckBox, "Read aloud as responses arrive")
+        chat.get_by_role_and_label(egui::Role::CheckBox, "Always Read Aloud")
             .focus();
         chat.run_steps(8);
         assert!(
-            chat.get_by_role_and_label(egui::Role::CheckBox, "Read aloud as responses arrive")
+            chat.get_by_role_and_label(egui::Role::CheckBox, "Always Read Aloud")
                 .is_focused()
         );
         chat.key_press(egui::Key::Space);
@@ -224,7 +224,7 @@ fn streaming_read_aloud_control_is_available_during_generation_and_stops_audio()
             chat.state().app.speaking_message,
             Some(chat.state().app.transcript.messages[1].id)
         );
-        chat.get_by_role_and_label(egui::Role::CheckBox, "Read aloud as responses arrive")
+        chat.get_by_role_and_label(egui::Role::CheckBox, "Always Read Aloud")
             .click();
         chat.run_steps(8);
         assert!(!chat.state().app.streaming_read_aloud);
@@ -383,7 +383,7 @@ fn speech_controls_follow_speech_readiness_independently_of_chat_readiness() -> 
             chat.run();
             for (role, label) in [
                 (egui::Role::Button, "Read this response aloud"),
-                (egui::Role::CheckBox, "Read aloud as responses arrive"),
+                (egui::Role::CheckBox, "Always Read Aloud"),
             ] {
                 assert_eq!(
                     chat.get_by_role_and_label(role, label)

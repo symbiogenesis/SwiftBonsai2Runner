@@ -93,7 +93,7 @@ impl State {
         if ui
             .add_enabled(
                 self.speech_output || enabled,
-                egui::Checkbox::new(&mut enabled, "Read aloud as responses arrive"),
+                egui::Checkbox::new(&mut enabled, "Always Read Aloud"),
             )
             .on_hover_text("Read new responses in short chunks using your Voice profile. Speaker buttons can replay completed responses at any time.")
             .changed()
