@@ -126,6 +126,17 @@ class FoundationHandoffTests(unittest.TestCase):
         self.assertRegex(release, r"uses: \$/\.github/actions/bonsai-tools\n\s+if: matrix.lane == 'asr'\n")
         self.assertIn("--all-targets", (ROOT / "tools/ci/src/checks/mod.rs").read_text(encoding="utf-8"))
 
+    def test_planner_reuses_build_outputs_but_always_runs_routing_regressions(self):
+        planner = self.jobs["changes"]
+        self.assertIn("restore-keys:", planner)
+        self.assertIn("ci-tool-v2-${{ runner.os }}-${{ runner.arch }}-${{ env.ImageOS }}-${{ env.ImageVersion }}", planner)
+        self.assertIn("~/.cargo/registry/cache", planner)
+        self.assertIn("'rust-toolchain.toml', '.cargo/**'", planner)
+        self.assertIn("cargo +nightly-2026-11-12 test --locked", planner)
+        self.assertIn("test_native_ci_cache.py", planner)
+        self.assertIn("test_rust_toolchain.py", planner)
+        self.assertNotIn("cache-hit", planner)
+
 
 if __name__ == "__main__":
     unittest.main()

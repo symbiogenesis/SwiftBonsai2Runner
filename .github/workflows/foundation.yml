@@ -52,12 +52,21 @@ jobs:
       - name: Reuse compiled CI tooling
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          path: ${{ env.CARGO_TARGET_DIR }}
-          key: ci-tool-v1-${{ runner.os }}-${{ runner.arch }}-nightly-2026-11-12-${{ hashFiles('Cargo.toml', 'Cargo.lock', 'tools/ci/**') }}
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+            ${{ env.CARGO_TARGET_DIR }}
+          key: ci-tool-v2-${{ runner.os }}-${{ runner.arch }}-${{ env.ImageOS }}-${{ env.ImageVersion }}-nightly-2026-11-12-${{ hashFiles('Cargo.toml', 'Cargo.lock', '**/Cargo.toml', 'rust-toolchain.toml', '.cargo/**') }}-${{ hashFiles('tools/ci/**') }}
+          restore-keys: |
+            ci-tool-v2-${{ runner.os }}-${{ runner.arch }}-${{ env.ImageOS }}-${{ env.ImageVersion }}-nightly-2026-11-12-${{ hashFiles('Cargo.toml', 'Cargo.lock', '**/Cargo.toml', 'rust-toolchain.toml', '.cargo/**') }}-
+            ci-tool-v2-${{ runner.os }}-${{ runner.arch }}-${{ env.ImageOS }}-${{ env.ImageVersion }}-nightly-2026-11-12-
       - name: Check CI selection and gate regressions
         working-directory: ${{ runner.temp }}
         run: |
           python -B "$GITHUB_WORKSPACE/tools/ci/test_foundation_handoff.py"
+          python -B "$GITHUB_WORKSPACE/tools/ci/test_native_ci_cache.py"
+          python -B "$GITHUB_WORKSPACE/tools/ci/test_rust_toolchain.py"
           cargo +nightly-2026-11-12 test --locked --manifest-path "$GITHUB_WORKSPACE/Cargo.toml" --package bonsai-ci
       - name: Select affected crates and app groups
         id: impact
