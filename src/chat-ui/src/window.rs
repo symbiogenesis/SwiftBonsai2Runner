@@ -2532,10 +2532,7 @@ mod startup_tests {
     #[test]
     fn setup_retry_button_preserves_draft_history_options_and_clears_failed_exit() -> io::Result<()>
     {
-        use egui_kittest::{
-            Harness,
-            kittest::{NodeT as _, Queryable as _},
-        };
+        use egui_kittest::{Harness, kittest::Queryable as _};
         let (request, directory) = fixture()?;
         let (commands, incoming) = mpsc::channel();
         let (_events, incoming_events) = client::event_channel();

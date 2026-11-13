@@ -743,6 +743,7 @@ mod tests {
         assert!(
             harness
                 .get_by_role_and_label(egui::Role::Button, "Close and install")
+                .accesskit_node()
                 .is_disabled()
         );
         harness

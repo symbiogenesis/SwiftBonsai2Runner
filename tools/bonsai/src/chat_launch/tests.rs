@@ -187,7 +187,7 @@ impl Recorder {
 impl Operations for Recorder {
     fn artifacts(&mut self, request: &Request, _working: &Path) -> crate::Result<()> {
         assert!(
-            self.launch().is_err(),
+            Recorder::launch(self).is_err(),
             "Artifacts must be ready before broker handoff."
         );
         self.artifact_requests

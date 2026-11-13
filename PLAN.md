@@ -111,6 +111,14 @@ and resume, safe pause and retry with retained drafts, disk/network/permission
 failures, independent speech retry and unchanged explicit model/engine options.
 Model-free regressions protect these contracts but do not establish live setup,
 update or actual-model acceptance.
+The v0.2.2 bounded local check passed Rust formatting, changed-document Markdown,
+release policy and the broker's fixed model-failure marker control. Tools and UI
+test harnesses stopped before test execution on fixture method/accessibility API
+errors. Those fixtures are corrected locally; their setup/update tests and
+all-target Clippy remain pending owner-hosted Foundation on the corrected source.
+The original eight-minute allowance closed after 135.7 seconds and was not retried.
+AC was connected and battery saver off at both observations, with charge 70% then
+71%; continuous stability and performance were not established.
 Replay the new portable updater controls and all-target Rust analysis in hosted
 CI. The local workload (169 seconds through build-cache cleanup) passed
 pinned-compiler preflight, focused Rust formatting and six Markdown checks, then
