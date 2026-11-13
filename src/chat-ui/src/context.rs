@@ -9,8 +9,8 @@
 
 use crate::client::Message;
 
-/// Pinned broker policy: prompt, requested response and reserve share this limit.
-pub(crate) const CONTEXT_TOKENS: usize = 8_192;
+/// Largest context declared by the pinned Swift model metadata.
+pub(crate) const MAX_CONTEXT_TOKENS: usize = 262_144;
 /// Exact broker policy reserve, separate from the estimated rendered prompt.
 pub(crate) const RESERVE_TOKENS: usize = 64;
 
@@ -20,7 +20,6 @@ const NEXT_TURN_FRAMING_TOKENS: usize = 16;
 // in client/effort.rs. Later passes also include generated notes/drafts and are
 // deliberately outside this first-pass estimate.
 const EFFORT_PLANNING_TOKENS: usize = 192;
-const NEAR_TOKENS: usize = CONTEXT_TOKENS * 85 / 100;
 const OUTPUT_CAPS: [u32; 4] = [512, 1_024, 2_048, 4_096];
 
 /// Advisory presentation state, never an admission decision.
@@ -34,6 +33,8 @@ pub(crate) enum Pressure {
 /// Estimated first-request occupancy with an exact selected response reservation.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) struct Estimate {
+    /// Selected broker capacity; unknown until this model attempt is ready.
+    pub(crate) capacity: Option<usize>,
     /// Committed content, retained reasoning and approximate message framing.
     pub(crate) history: usize,
     /// Trimmed draft plus approximate next-turn template framing.
@@ -48,7 +49,13 @@ pub(crate) struct Estimate {
 
 impl Estimate {
     /// Combine a cached committed-history estimate with the current draft/options.
-    pub(crate) fn new(history: usize, draft: &str, output_cap: u32, extra_effort: bool) -> Self {
+    pub(crate) fn new(
+        history: usize,
+        draft: &str,
+        output_cap: u32,
+        extra_effort: bool,
+        capacity: Option<usize>,
+    ) -> Self {
         let draft = text_tokens(draft.trim()).saturating_add(NEXT_TURN_FRAMING_TOKENS);
         let workflow = if extra_effort {
             EFFORT_PLANNING_TOKENS
@@ -62,6 +69,7 @@ impl Estimate {
             .saturating_add(output)
             .saturating_add(RESERVE_TOKENS);
         Self {
+            capacity,
             history,
             draft,
             workflow,
@@ -79,19 +87,28 @@ impl Estimate {
 
     /// Estimated spare capacity after reserving the complete selected response.
     pub(crate) const fn remaining(self) -> usize {
-        CONTEXT_TOKENS.saturating_sub(self.total)
+        match self.capacity {
+            Some(capacity) => capacity.saturating_sub(self.total),
+            None => 0,
+        }
     }
 
     /// Estimated excess; zero also includes exact equality with the policy limit.
     pub(crate) const fn overflow(self) -> usize {
-        self.total.saturating_sub(CONTEXT_TOKENS)
+        match self.capacity {
+            Some(capacity) => self.total.saturating_sub(capacity),
+            None => 0,
+        }
     }
 
     /// Distinguish comfortable, near-capacity and estimated over-capacity states.
     pub(crate) const fn pressure(self) -> Pressure {
-        if self.total > CONTEXT_TOKENS {
+        let Some(capacity) = self.capacity else {
+            return Pressure::Comfortable;
+        };
+        if self.total > capacity {
             Pressure::Over
-        } else if self.total >= NEAR_TOKENS {
+        } else if self.total >= capacity.saturating_mul(85) / 100 {
             Pressure::Near
         } else {
             Pressure::Comfortable
@@ -102,8 +119,9 @@ impl Estimate {
     ///
     /// This is an explicit user action suggestion, never a promise of admission.
     pub(crate) fn suggested_cap(self) -> Option<u32> {
-        let available =
-            CONTEXT_TOKENS.saturating_sub(self.prompt_tokens().saturating_add(RESERVE_TOKENS));
+        let available = self
+            .capacity?
+            .saturating_sub(self.prompt_tokens().saturating_add(RESERVE_TOKENS));
         OUTPUT_CAPS.into_iter().rev().find(|&cap| {
             usize::try_from(cap).is_ok_and(|cap| cap < self.output && cap <= available)
         })
@@ -155,15 +173,30 @@ fn text_tokens(text: &str) -> usize {
 mod tests {
     use super::*;
 
+    const CONTEXT_TOKENS: usize = 8_192;
+
+    #[test]
+    fn selected_capacity_changes_guidance_without_changing_occupancy() {
+        let small = Estimate::new(8_000, "hello", 4_096, false, Some(8_192));
+        let large = Estimate::new(8_000, "hello", 4_096, false, Some(131_072));
+        let unknown = Estimate::new(8_000, "hello", 4_096, false, None);
+        assert_eq!(small.total, large.total);
+        assert_eq!(small.pressure(), Pressure::Over);
+        assert_eq!(large.pressure(), Pressure::Comfortable);
+        assert_eq!(large.remaining(), 131_072 - large.total);
+        assert_eq!(unknown.pressure(), Pressure::Comfortable);
+        assert_eq!(unknown.suggested_cap(), None);
+    }
+
     #[test]
     fn response_reservation_and_exact_boundary_remain_distinct_from_estimation() {
         let history = CONTEXT_TOKENS - RESERVE_TOKENS - NEXT_TURN_FRAMING_TOKENS - 512;
-        let fits = Estimate::new(history, "", 512, false);
+        let fits = Estimate::new(history, "", 512, false, Some(CONTEXT_TOKENS));
         assert_eq!(fits.total, CONTEXT_TOKENS);
         assert_eq!(fits.pressure(), Pressure::Near);
         assert_eq!(fits.remaining(), 0);
         assert_eq!(fits.overflow(), 0);
-        let over = Estimate::new(history + 1, "", 512, false);
+        let over = Estimate::new(history + 1, "", 512, false, Some(CONTEXT_TOKENS));
         assert_eq!(over.pressure(), Pressure::Over);
         assert_eq!(over.overflow(), 1);
         assert_eq!(over.suggested_cap(), None);
@@ -171,15 +204,15 @@ mod tests {
 
     #[test]
     fn lower_cap_suggestion_preserves_input_and_reserve() {
-        let large = Estimate::new(5_000, "hello", 4_096, false);
+        let large = Estimate::new(5_000, "hello", 4_096, false, Some(CONTEXT_TOKENS));
         assert_eq!(large.pressure(), Pressure::Over);
         assert_eq!(large.suggested_cap(), Some(2_048));
-        let small = Estimate::new(5_000, "hello", 2_048, false);
+        let small = Estimate::new(5_000, "hello", 2_048, false, Some(CONTEXT_TOKENS));
         assert_eq!(large.prompt_tokens(), small.prompt_tokens());
         assert_eq!(large.total - small.total, 2_048);
         assert_eq!(small.overflow(), 0);
         assert_eq!(
-            Estimate::new(8_000, "hello", 4_096, false).suggested_cap(),
+            Estimate::new(8_000, "hello", 4_096, false, Some(CONTEXT_TOKENS)).suggested_cap(),
             None
         );
     }
@@ -212,9 +245,12 @@ mod tests {
 
     #[test]
     fn draft_trimming_and_extra_effort_match_their_estimated_scope() {
-        let standard = Estimate::new(0, "question", 512, false);
-        assert_eq!(standard, Estimate::new(0, " \nquestion\t ", 512, false));
-        let effort = Estimate::new(0, "question", 512, true);
+        let standard = Estimate::new(0, "question", 512, false, Some(CONTEXT_TOKENS));
+        assert_eq!(
+            standard,
+            Estimate::new(0, " \nquestion\t ", 512, false, Some(CONTEXT_TOKENS))
+        );
+        let effort = Estimate::new(0, "question", 512, true, Some(CONTEXT_TOKENS));
         assert_eq!(effort.workflow, EFFORT_PLANNING_TOKENS);
         assert_eq!(effort.total - standard.total, EFFORT_PLANNING_TOKENS);
         assert_eq!(standard.pressure(), Pressure::Comfortable);
@@ -222,7 +258,7 @@ mod tests {
 
     #[test]
     fn saturated_totals_cannot_wrap_into_available_capacity() {
-        let estimate = Estimate::new(usize::MAX, "question", u32::MAX, true);
+        let estimate = Estimate::new(usize::MAX, "question", u32::MAX, true, Some(CONTEXT_TOKENS));
         assert_eq!(estimate.total, usize::MAX);
         assert_eq!(estimate.pressure(), Pressure::Over);
         assert_eq!(estimate.remaining(), 0);

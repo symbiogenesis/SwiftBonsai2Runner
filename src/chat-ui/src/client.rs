@@ -54,7 +54,7 @@ const EVIDENCE_PREFIX: &str = "Protected credentials and technical evidence: ";
 const RUNNING_MEMORY_MESSAGE: &str = "Swift stopped because its running memory requirements were no longer met. Close other apps, then select Retry model. Completed conversation turns remain in memory.";
 const PUBLISHER_INIT_FAILURE_MESSAGE: &str = "The publisher CPU runtime failed Windows initialization (0xC0000142). Retry model repeats that runtime choice. Copy any conversation or drafts you want to keep before closing. Close this app and relaunch bonsai-tools chat with --native-engine to try the experimental Rust runtime, preserving your DataDirectory and the same model and adapter options.";
 const LOCAL_CONNECTION_CLOSED: &str = "The connection to the model on this computer closed before a complete reply was received. The cause was not reported.";
-const CONTEXT_LIMIT_MESSAGE: &str = "This conversation and the selected output cap do not fit within the model's 8,192-token context limit. Choose a smaller output cap or start a new conversation, then send again.";
+const CONTEXT_LIMIT_MESSAGE: &str = "This conversation and the selected output cap do not fit within the model's selected context limit. Choose a smaller output cap or start a new conversation, then send again.";
 const CONTROL_TOKEN_MESSAGE: &str = "This conversation contains reserved chat markers, such as <|im_start|> or <think>. Remove them or start a new conversation before sending again.";
 const RATE_LIMIT_MESSAGE: &str =
     "Too many messages were sent in a short time. Wait a moment, then send again.";
@@ -128,6 +128,7 @@ pub(crate) enum Command {
 #[derive(Clone)]
 pub(crate) enum Event {
     Starting,
+    ContextCapacity(usize),
     Ready,
     Text(String),
     Reasoning(String),
@@ -459,7 +460,8 @@ fn serve_broker(
     history: &mut Vec<Message>,
     spec: &ToolProcessSpec,
 ) -> Result<()> {
-    let key = wait_ready(broker, config, commands, &spec.stdout, &spec.stderr)?;
+    let (key, context_tokens) = wait_ready(broker, config, commands, &spec.stdout, &spec.stderr)?;
+    notify(events, Event::ContextCapacity(context_tokens))?;
     notify(events, Event::Ready)?;
     loop {
         if broker
@@ -528,12 +530,15 @@ fn wait_ready(
     commands: &Receiver<Command>,
     stdout_path: &Path,
     stderr_path: &Path,
-) -> Result<String> {
+) -> Result<(String, usize)> {
     let until = Instant::now() + STARTUP_TIMEOUT;
     loop {
         check_commands(commands)?;
         let output = read_bounded_file(stdout_path, MAX_HEAD)?;
         if let Some(directory) = evidence_directory(&output)? {
+            let context_tokens = context_capacity(&output)?.ok_or(Failure::Message(
+                "The broker did not report its selected context capacity. Rebuild the broker and retry.",
+            ))?;
             let parent = config
                 .evidence
                 .canonicalize()
@@ -555,9 +560,11 @@ fn wait_ready(
                     "The broker frontend credential has an invalid format.",
                 ));
             }
-            return String::from_utf8(key).map_err(|_| {
-                Failure::Message("The broker frontend credential has an invalid format.")
-            });
+            return String::from_utf8(key)
+                .map(|key| (key, context_tokens))
+                .map_err(|_| {
+                    Failure::Message("The broker frontend credential has an invalid format.")
+                });
         }
         if broker
             .try_wait()
@@ -652,6 +659,33 @@ fn read_bounded_file(path: &Path, limit: usize) -> Result<Vec<u8>> {
         ));
     }
     Ok(bytes)
+}
+
+fn context_capacity(output: &[u8]) -> Result<Option<usize>> {
+    let Some(end) = output.iter().rposition(|byte| *byte == b'\n') else {
+        return Ok(None);
+    };
+    let text = std::str::from_utf8(&output[..=end])
+        .map_err(|_| Failure::Message("Broker startup output was not valid UTF-8."))?;
+    let mut capacity = None;
+    for line in text.lines() {
+        if let Some(value) = line.strip_prefix("Context tokens: ") {
+            let tokens = value
+                .parse::<usize>()
+                .ok()
+                .filter(|tokens| (1..=crate::context::MAX_CONTEXT_TOKENS).contains(tokens))
+                .filter(|_| !value.is_empty() && value.bytes().all(|byte| byte.is_ascii_digit()))
+                .ok_or(Failure::Message(
+                    "The broker reported an invalid context capacity.",
+                ))?;
+            if capacity.replace(tokens).is_some() {
+                return Err(Failure::Message(
+                    "The broker reported more than one context capacity.",
+                ));
+            }
+        }
+    }
+    Ok(capacity)
 }
 
 fn evidence_directory(output: &[u8]) -> Result<Option<PathBuf>> {
@@ -1295,6 +1329,38 @@ fn parse_head(head: &[u8]) -> Result<(Framing, ResponseKind)> {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn startup_context_capacity_uses_one_complete_bounded_declaration() {
+        use super::context_capacity;
+        assert_eq!(
+            context_capacity(b"Context tokens: 131072\n"),
+            Ok(Some(131_072))
+        );
+        assert_eq!(
+            context_capacity(b"Context tokens: 262144\r\n"),
+            Ok(Some(262_144))
+        );
+        assert_eq!(context_capacity(b"Context tokens: 1310"), Ok(None));
+        assert_eq!(
+            context_capacity(b"other output\nContext tokens: 1310"),
+            Ok(None)
+        );
+        for invalid in [
+            "0",
+            "262145",
+            "+8192",
+            " 8192",
+            "8192 ",
+            "8192.0",
+            "",
+            "184467440737095516160",
+        ] {
+            assert!(context_capacity(format!("Context tokens: {invalid}\n").as_bytes()).is_err());
+        }
+        assert!(context_capacity(b"Context tokens: 8192\nContext tokens: 8192\n").is_err());
+        assert!(context_capacity(b"Context tokens: 8192\nContext tokens: 16384\n").is_err());
+    }
+
     use super::{
         Command, Completion, Config, Event, Failure, HttpBody, Message, READ_SIZE, Sse,
         evidence_directory, finish_turn, parse_head, runtime_arguments, serialize_request,

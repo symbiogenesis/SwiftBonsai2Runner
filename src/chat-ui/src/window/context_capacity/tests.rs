@@ -13,7 +13,43 @@ fn state() -> (State, mpsc::Receiver<client::Command>) {
     let mut state = State::create(commands, events, None, None);
     state.preview = false;
     state.model = ModelLifecycle::Ready;
+    state.context_tokens = Some(8_192);
     (state, incoming)
+}
+
+#[test]
+fn context_capacity_tracks_model_attempt_and_large_windows() {
+    let (mut app, _commands) = state();
+    app.input = "Retained draft".into();
+    app.commit_history(history(&"a".repeat(40_000)));
+    let old = app.context_estimate();
+    assert_eq!(old.pressure(), Pressure::Over);
+    app.model = ModelLifecycle::Preparing;
+    app.model_event(client::Event::ContextCapacity(131_072));
+    let large = app.context_estimate();
+    assert_eq!(old.total, large.total);
+    assert_eq!(large.capacity, Some(131_072));
+    assert_eq!(large.pressure(), Pressure::Comfortable);
+    assert!((fraction(65_536, 131_072) - 0.5).abs() < 0.001);
+    assert!((fraction(262_144, 262_144) - 1.0).abs() < f32::EPSILON);
+    app.model_event(client::Event::Starting);
+    assert_eq!(app.context_estimate().capacity, None);
+    assert!(app.context_pending());
+    assert_eq!(app.input, "Retained draft");
+}
+
+#[test]
+fn context_capacity_is_unknown_before_model_startup() {
+    let mut chat = harness([620.0, 640.0], "Question");
+    chat.state_mut().app.context_tokens = None;
+    chat.run();
+    let description = chat
+        .get_by_role_and_label(egui::Role::Button, "Context")
+        .accesskit_node()
+        .description()
+        .unwrap_or_default();
+    assert!(description.contains("after the model starts"));
+    assert!(!description.contains('%'));
 }
 
 fn history(text: &str) -> Vec<client::Message> {

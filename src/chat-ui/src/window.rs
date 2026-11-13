@@ -116,6 +116,7 @@ struct State {
     input: String,
     transcript: Transcript,
     committed: Vec<client::Message>,
+    context_tokens: Option<usize>,
     context_history: Option<usize>,
     context_draft: context_capacity::DraftCache,
     conversations: Vec<Conversation>,
@@ -224,6 +225,7 @@ impl State {
             input: String::new(),
             transcript: Transcript::default(),
             committed: Vec::new(),
+            context_tokens: None,
             context_history: None,
             context_draft: context_capacity::DraftCache::default(),
             conversations: vec![Conversation::new(1)],
@@ -561,6 +563,7 @@ impl State {
             return;
         }
         self.stop_speech();
+        self.context_tokens = None;
         self.model = ModelLifecycle::Restarting;
         self.set_status("Restarting the local model…", false);
     }
@@ -705,6 +708,7 @@ impl State {
                 | ModelLifecycle::Stopping
                 | ModelLifecycle::AwaitingTeardown
         ) && self.adopt_interrupted();
+        self.context_tokens = None;
         self.model = ModelLifecycle::Unavailable;
         self.transcript.remove_empty_response();
         if !adopted && !self.transcript.latest_interrupted(&self.committed) {
@@ -815,6 +819,7 @@ impl State {
         self.recovery_dirty = true;
         match event {
             Event::Starting => {
+                self.context_tokens = None;
                 self.model = ModelLifecycle::Preparing;
                 self.set_status("Preparing your local model…", false);
             }
@@ -824,6 +829,7 @@ impl State {
             }
             Event::Stopping(text) => self.stopping_response(&text),
             Event::Stopped => self.stopped_response(),
+            Event::ContextCapacity(tokens) => self.context_tokens = Some(tokens),
             Event::Ready => {
                 self.model = ModelLifecycle::Ready;
                 self.set_status("Ready when you are.", false);
@@ -912,6 +918,7 @@ impl State {
     }
 
     fn stopped_response(&mut self) {
+        self.context_tokens = None;
         self.model = ModelLifecycle::Retryable;
         self.set_status(client::STOPPED_MESSAGE, false);
         self.focus_composer = true;

@@ -19,11 +19,18 @@ impl State {
             && estimate.history == history
             && estimate.output == usize::try_from(output).unwrap_or(usize::MAX)
             && self.context_draft.extra_effort == self.extra_effort
+            && estimate.capacity == self.context_tokens
             && self.context_draft.text == self.input
         {
             return estimate;
         }
-        let estimate = Estimate::new(history, &self.input, output, self.extra_effort);
+        let estimate = Estimate::new(
+            history,
+            &self.input,
+            output,
+            self.extra_effort,
+            self.context_tokens,
+        );
         self.input.clone_into(&mut self.context_draft.text);
         self.context_draft.extra_effort = self.extra_effort;
         self.context_draft.estimate = Some(estimate);
@@ -38,13 +45,14 @@ impl State {
     }
 
     fn context_pending(&self) -> bool {
-        self.request_conversation == Some(self.active_conversation)
-            && matches!(
-                self.model,
-                ModelLifecycle::Generating
-                    | ModelLifecycle::Stopping
-                    | ModelLifecycle::AwaitingTeardown
-            )
+        self.context_tokens.is_none()
+            || (self.request_conversation == Some(self.active_conversation)
+                && matches!(
+                    self.model,
+                    ModelLifecycle::Generating
+                        | ModelLifecycle::Stopping
+                        | ModelLifecycle::AwaitingTeardown
+                ))
     }
 
     pub(super) fn context_toolbar(&mut self, ui: &mut egui::Ui) -> egui::Response {
@@ -103,7 +111,9 @@ impl State {
                 .weak(),
         );
         ui.add_space(8.0);
-        if pending {
+        if estimate.capacity.is_none() {
+            ui.label("Context capacity is available after the model starts.");
+        } else if pending {
             ui.label(
                 "Updates when this response finishes. The unfinished turn is not included below.",
             );
@@ -111,7 +121,7 @@ impl State {
             ui.label(format!(
                 "~{} of {} tokens reserved",
                 tokens(estimate.total),
-                tokens(context::CONTEXT_TOKENS)
+                tokens(estimate.capacity.unwrap_or_default())
             ));
         }
         capacity_meter(ui, estimate);
@@ -194,8 +204,9 @@ impl State {
 }
 
 fn context_button(ui: &mut egui::Ui, estimate: Estimate, pending: bool) -> egui::Response {
-    let used = u16::try_from(estimate.total.min(context::CONTEXT_TOKENS)).unwrap_or(8192);
-    let fraction = f32::from(used) / 8192.0;
+    let fraction = estimate
+        .capacity
+        .map_or(0.0, |capacity| fraction(estimate.total, capacity));
     let ring = egui::Atom::paint(egui::Vec2::splat(16.0), move |ui, args| {
         context_ring(
             ui,
@@ -207,10 +218,12 @@ fn context_button(ui: &mut egui::Ui, estimate: Estimate, pending: bool) -> egui:
     });
     let response = toolbar_action(ui, (RichText::new("Context:").size(13.0), ring), false)
         .accessible_name("Context");
-    let description = if pending {
+    let description = if estimate.capacity.is_none() {
+        "Context capacity is available after the model starts. Open for details.".to_owned()
+    } else if pending {
         "Context updates when this response finishes. Open for details.".to_owned()
     } else {
-        let percent = estimate.total.saturating_mul(100) / context::CONTEXT_TOKENS;
+        let percent = estimate.total.saturating_mul(100) / estimate.capacity.unwrap_or(1);
         format!("About {percent}% of context reserved, including the next reply. Open for details.")
     };
     let _ = response.ctx.accesskit_node_builder(response.id, |node| {
@@ -315,6 +328,9 @@ fn capacity_meter(ui: &mut egui::Ui, estimate: Estimate) {
         ui.allocate_exact_size(egui::vec2(ui.available_width(), 6.0), egui::Sense::hover());
     ui.painter()
         .rect_filled(rect, 3.0, ui.visuals().faint_bg_color);
+    let Some(capacity) = estimate.capacity else {
+        return;
+    };
     let accent = ui.visuals().selection.bg_fill;
     let mut used = 0_usize;
     for (amount, color) in [
@@ -323,13 +339,11 @@ fn capacity_meter(ui: &mut egui::Ui, estimate: Estimate) {
         (estimate.output, accent.gamma_multiply(0.55)),
         (context::RESERVE_TOKENS, ui.visuals().text_color()),
     ] {
-        let start = used.min(context::CONTEXT_TOKENS);
+        let start = used.min(capacity);
         used = used.saturating_add(amount);
-        let end = used.min(context::CONTEXT_TOKENS);
-        // Both positions are clamped to 8192, well inside exact f32 integers.
-        let fraction = |value| f32::from(u16::try_from(value).unwrap_or(8192)) / 8192.0;
-        let left = rect.width().mul_add(fraction(start), rect.left());
-        let right = rect.width().mul_add(fraction(end), rect.left());
+        let end = used.min(capacity);
+        let left = rect.width().mul_add(fraction(start, capacity), rect.left());
+        let right = rect.width().mul_add(fraction(end, capacity), rect.left());
         if right > left {
             ui.painter().rect_filled(
                 egui::Rect::from_min_max(
@@ -341,6 +355,16 @@ fn capacity_meter(ui: &mut egui::Ui, estimate: Estimate) {
             );
         }
     }
+}
+
+// Normalize before narrowing, so larger model windows cannot truncate the
+// token count. The ring needs only a bounded screen-space fraction.
+fn fraction(tokens: usize, capacity: usize) -> f32 {
+    if capacity == 0 {
+        return 0.0;
+    }
+    let units = tokens.min(capacity).saturating_mul(usize::from(u16::MAX)) / capacity;
+    f32::from(u16::try_from(units).unwrap_or(u16::MAX)) / f32::from(u16::MAX)
 }
 
 fn tokens(amount: usize) -> String {

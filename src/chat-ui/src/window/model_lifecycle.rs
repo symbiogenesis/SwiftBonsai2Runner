@@ -53,7 +53,7 @@ impl ModelLifecycle {
     pub(super) const fn accepts(self, event: &Event) -> bool {
         match event {
             Event::Starting => matches!(self, Self::Preparing | Self::Restarting),
-            Event::Ready => matches!(self, Self::Preparing),
+            Event::ContextCapacity(_) | Event::Ready => matches!(self, Self::Preparing),
             Event::Text(_)
             | Event::Reasoning(_)
             | Event::Stage(_)
