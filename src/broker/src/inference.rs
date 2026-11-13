@@ -55,10 +55,7 @@ impl Placement {
 const CPU_PLACEMENT_RELEASE: Option<(&str, &str)> = None;
 
 fn select_placement(release: &ReleasePin, requested: Placement) -> Result<Placement, LaunchError> {
-    if requested == Placement::Auto
-        || CPU_PLACEMENT_RELEASE
-            .is_some_and(|(version, commit)| release.version == version && release.commit == commit)
-    {
+    if requested == Placement::Auto || reviewed_release_matches(release, CPU_PLACEMENT_RELEASE) {
         Ok(requested)
     } else {
         Err(LaunchError::NativeRuntime)
@@ -94,10 +91,17 @@ impl KvCache {
     }
 }
 
-fn turboquant_supported(release: &ReleasePin) -> bool {
+fn reviewed_release_matches(release: &ReleasePin, identity: Option<(&str, &str)>) -> bool {
+    identity.is_some_and(|(version, commit)| release.version == version && release.commit == commit)
+}
+
+fn turboquant_supported(release: &ReleasePin, memory_release: Option<(&str, &str)>) -> bool {
     (release.version == "0.1.25" && release.commit == TURBOQUANT_REVISION)
         || (release.version == "0.1.24"
             && release.commit == "8d2b3067e5f17369f579857a180c01a422a58211")
+        // M1/M2 review includes the selected K4/V4 cache and its source-bound
+        // readiness contract; delivery must retain the ordinary cache default.
+        || reviewed_release_matches(release, memory_release)
 }
 
 fn select_kv_cache(
@@ -110,7 +114,7 @@ fn select_kv_cache(
         } else {
             Err(LaunchError::NativeRuntime)
         }
-    } else if turboquant_supported(release) {
+    } else if turboquant_supported(release, MEMORY_CONTEXT_RELEASE) {
         Ok(Some(requested.unwrap_or(KvCache::Rsq4)))
     } else if requested == Some(KvCache::Rsq4) {
         Err(LaunchError::NativeRuntime)
@@ -244,29 +248,34 @@ fn release(input: &str) -> Result<ReleasePin, LaunchError> {
     Ok(release)
 }
 
-fn row_workers_supported(version: &str, workers: u8) -> Result<(), LaunchError> {
+fn row_workers_supported(
+    release: &ReleasePin,
+    workers: u8,
+    memory_release: Option<(&str, &str)>,
+) -> Result<(), LaunchError> {
     if workers == 1
         || (workers == 4
-            && matches!(
-                version,
-                "0.1.9"
-                    | "0.1.10"
-                    | "0.1.11"
-                    | "0.1.12"
-                    | "0.1.13"
-                    | "0.1.14"
-                    | "0.1.15"
-                    | "0.1.16"
-                    | "0.1.17"
-                    | "0.1.18"
-                    | "0.1.19"
-                    | "0.1.20"
-                    | "0.1.21"
-                    | "0.1.22"
-                    | "0.1.23"
-                    | "0.1.24"
-                    | "0.1.25"
-            ))
+            && (reviewed_release_matches(release, memory_release)
+                || matches!(
+                    release.version.as_str(),
+                    "0.1.9"
+                        | "0.1.10"
+                        | "0.1.11"
+                        | "0.1.12"
+                        | "0.1.13"
+                        | "0.1.14"
+                        | "0.1.15"
+                        | "0.1.16"
+                        | "0.1.17"
+                        | "0.1.18"
+                        | "0.1.19"
+                        | "0.1.20"
+                        | "0.1.21"
+                        | "0.1.22"
+                        | "0.1.23"
+                        | "0.1.24"
+                        | "0.1.25"
+                )))
     {
         Ok(())
     } else {
@@ -278,6 +287,8 @@ fn row_workers_supported(version: &str, workers: u8) -> Result<(), LaunchError> 
 // context/memory flags AND the selected-cache/sequential-scratch accounting
 // contract in bonsai_cpu_policy::context. A protocol-only source candidate must
 // not activate smaller process allowances. A version number alone attests neither.
+// This combined review also retains four row workers, K4/V4 and latest reuse;
+// a later repin cannot silently lose those existing serving capabilities.
 const MEMORY_CONTEXT_RELEASE: Option<(&str, &str)> = None;
 
 // K4/V3 changes precision and needs its own reviewed capacity/quality release.
@@ -295,8 +306,7 @@ fn k4v3_context_supported(release: &ReleasePin) -> bool {
 
 pub(super) fn memory_context_supported() -> Result<bool, LaunchError> {
     let pin = release(LOCK)?;
-    Ok(MEMORY_CONTEXT_RELEASE
-        .is_some_and(|(version, commit)| pin.version == version && pin.commit == commit))
+    Ok(reviewed_release_matches(&pin, MEMORY_CONTEXT_RELEASE))
 }
 
 pub(super) fn pinned_version() -> Result<String, LaunchError> {
@@ -307,7 +317,7 @@ fn prompt_reuse_supported(release: &ReleasePin, latest: bool) -> Result<(), Laun
     // Capability is bound to reviewed source and immutable released bytes. A
     // later version must be reviewed explicitly, even if its CLI looks similar.
     if !latest
-        || turboquant_supported(release)
+        || turboquant_supported(release, MEMORY_CONTEXT_RELEASE)
         || (release.version == "0.1.14"
             && release.commit == "9e8ea3e2c042ab0c3f1a8e9596ff155e202c3c57")
         || (release.version == "0.1.15"
@@ -341,7 +351,7 @@ pub(super) fn verify(
     latest_prompt_reuse: bool,
 ) -> Result<(PathBuf, VerifiedFile), LaunchError> {
     let release = release(LOCK)?;
-    row_workers_supported(&release.version, row_workers)?;
+    row_workers_supported(&release, row_workers, MEMORY_CONTEXT_RELEASE)?;
     prompt_reuse_supported(&release, latest_prompt_reuse)?;
     let file = release
         .files
@@ -567,18 +577,21 @@ mod tests {
     }
 
     #[test]
-    fn four_row_workers_require_the_reviewed_parallel_release() {
-        assert!(row_workers_supported("0.1.8", 1).is_ok());
+    fn four_row_workers_require_the_reviewed_parallel_release() -> Result<(), LaunchError> {
+        let mut pin = release(LOCK)?;
+        pin.version = "0.1.8".into();
+        assert!(row_workers_supported(&pin, 1, MEMORY_CONTEXT_RELEASE).is_ok());
         for version in [
             "0.1.9", "0.1.10", "0.1.11", "0.1.12", "0.1.13", "0.1.14", "0.1.15", "0.1.16",
             "0.1.17", "0.1.18", "0.1.19", "0.1.20", "0.1.21", "0.1.22", "0.1.23", "0.1.24",
             "0.1.25",
         ] {
-            assert!(row_workers_supported(version, 1).is_ok());
-            assert!(row_workers_supported(version, 4).is_ok());
+            pin.version = version.into();
+            assert!(row_workers_supported(&pin, 1, MEMORY_CONTEXT_RELEASE).is_ok());
+            assert!(row_workers_supported(&pin, 4, MEMORY_CONTEXT_RELEASE).is_ok());
             for workers in [0, 2, 3, 5, 16, 255] {
                 assert_eq!(
-                    row_workers_supported(version, workers),
+                    row_workers_supported(&pin, workers, MEMORY_CONTEXT_RELEASE),
                     Err(LaunchError::Artifacts)
                 );
             }
@@ -638,10 +651,56 @@ mod tests {
             "",
             "latest",
         ] {
+            pin.version = version.into();
             assert_eq!(
-                row_workers_supported(version, 4),
+                row_workers_supported(&pin, 4, MEMORY_CONTEXT_RELEASE),
                 Err(LaunchError::Artifacts)
             );
         }
+        Ok(())
+    }
+
+    #[test]
+    fn reviewed_memory_release_keeps_parallel_quantized_and_reuse_prerequisites()
+    -> Result<(), LaunchError> {
+        let mut pin = release(LOCK)?;
+        let reviewed = Some(("0.1.26", "1111111111111111111111111111111111111111"));
+        pin.version = "0.1.26".into();
+        pin.commit = "1111111111111111111111111111111111111111".into();
+        assert!(reviewed_release_matches(&pin, reviewed));
+        assert!(turboquant_supported(&pin, reviewed));
+        assert!(row_workers_supported(&pin, 4, reviewed).is_ok());
+        for workers in [0, 2, 3, 5, 16, 255] {
+            assert_eq!(
+                row_workers_supported(&pin, workers, reviewed),
+                Err(LaunchError::Artifacts)
+            );
+        }
+        for identity in [
+            None,
+            Some(("0.1.27", "1111111111111111111111111111111111111111")),
+            Some(("0.1.26", TURBOQUANT_REVISION)),
+        ] {
+            assert!(!reviewed_release_matches(&pin, identity));
+            assert!(!turboquant_supported(&pin, identity));
+            assert_eq!(
+                row_workers_supported(&pin, 4, identity),
+                Err(LaunchError::Artifacts)
+            );
+            assert!(row_workers_supported(&pin, 1, identity).is_ok());
+        }
+        // Synthetic source review does not open the production gate or change
+        // the published pin. Latest reuse shares the TurboQuant source review.
+        assert!(!turboquant_supported(&pin, MEMORY_CONTEXT_RELEASE));
+        assert_eq!(
+            select_kv_cache(&pin, Some(KvCache::Rsq4)),
+            Err(LaunchError::NativeRuntime)
+        );
+        assert_eq!(
+            prompt_reuse_supported(&pin, true),
+            Err(LaunchError::Artifacts)
+        );
+        assert!(prompt_reuse_supported(&pin, false).is_ok());
+        Ok(())
     }
 }
