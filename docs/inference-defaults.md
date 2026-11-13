@@ -57,8 +57,10 @@ The same model makes at most three sequential calls, each with a fresh context c
 the original task and relevant state. User instructions and approved facts stay authoritative;
 generated notes/references are data. There are no autonomous tools or open-ended manager loop.
 
-Each call retains sampler/template/exact admission: 8K context, reasoning-inclusive caps
-512/1,024/2,048/4,096 (default 4,096), and the broker's 64-token margin. Smaller caps leave more
+Each call retains sampler/template/exact admission at the model launch's reported
+context capacity: 8K for the active native release, or the publisher's
+memory-selected window. Reasoning-inclusive caps are 512/1,024/2,048/4,096
+(default 4,096), with the broker's 64-token margin. Smaller caps leave more
 prompt room but can stop reasoning before an answer. Count included plan/draft text; reject
 overflow rather than dropping history or raising limits. Shared cancellation covers all
 stages, with progress labels and no elapsed generation-time limit. Retain failed/incomplete
@@ -96,14 +98,20 @@ Prefix reuse saves computation, not added knowledge/reasoning.
 
 ## Capacity and execution limits
 
-Profiles admit **8,192 total context tokens** and **4,096 maximum completion tokens**, including
-reasoning. The 16-token load/decode and paired LoRA 512-token caps are experiment controls,
-not chat recommendations or answer-quality evidence. See [memory](swift-memory.md) and
-[broker admission](broker-policy.md).
+The active native Prism 0.1.25 release admits **8,192 total context tokens** and
+**4,096 maximum completion tokens**, including reasoning. Publisher serving instead
+selects context from available memory at launch under the
+[memory-selected context policy](swift-memory.md#memory-selected-serving-context);
+its completion cap remains 4,096. Fixed qualification workloads retain their
+declared context and output bounds. The 16-token load/decode and paired LoRA
+512-token caps are experiment controls, not chat recommendations or answer-quality
+evidence. See [broker admission](broker-policy.md).
 
-These limits cannot reproduce Swift's 32K example or longer published reasoning runs. Truncation
-may precede an answer and must not be labelled complete or benchmark-equivalent. Larger context
-requires revised memory/execution/quality qualification; no automatic token floor bypasses exact
+The native 8K window cannot reproduce Swift's 32K example; a larger publisher
+window alone does not reproduce its longer reasoning runs. Truncation may precede
+an answer and must not be labelled complete or benchmark-equivalent. Larger
+native context requires a reviewed compatible runtime release and revised
+memory/execution/quality qualification. No automatic token floor bypasses exact
 reservation. Retain native RoPE: Qwen warns static YaRN can affect short texts. More allocated
 context does not itself improve accuracy. Offload, flash, threads, batches and prefix reuse need
 backend/device evidence; other-hardware throughput is not better answer quality.

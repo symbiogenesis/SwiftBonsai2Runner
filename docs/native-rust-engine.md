@@ -146,9 +146,11 @@ approved rank-one adapter. Runner preserves `--use-repacked-ptq1` and adapter
 selection for the native Rust default or explicit `--native-engine`, retains all
 artifact handles and requires exact representation/adapter readiness. The native child receives
 `--use-repacked-ptq1` and `--abliterate-lora ABSOLUTE_PATH`; canonical count/generation
-requests bind the single adapter slot and finite scale in `[0, 2]`. Generation
-resets graph state at the prepared request's sealed scale; each adapter request
-renews checkpoint provenance. Requests remain bound to their originating session
+requests bind the single adapter slot and finite scale in `[0, 2]`. With the
+default reuse policy, generation resets graph state at the prepared request's
+sealed scale; explicit `latest` selection can retain an exact committed prefix.
+Adapter-scale changes invalidate prior state and checkpoint provenance.
+Requests remain bound to their originating session
 and may be reused after an explicit session reset. Successful requests and scale
 changes preserve sampler draw progression; explicit session reset reseeds it. The old PQ2/no-adapter
 readiness shape remains supported. CPU inference is implemented in Rust; signed
@@ -176,9 +178,12 @@ TPS/quality](swift-lora.md#standard-profile-qualification). [Hardware discovery]
 reports inventory; runtime kernel eligibility/`Auto` does not implement Runner's planned
 qualified-device selector.
 
-Bounded Swift numerical comparisons use the unchanged `1e-3 + 1e-3 * abs(reference)`
-tolerance for logits, complete logical recurrent/convolution state and live FP16 KV rows
-against pinned native execution. Exact chat/tokenizer and sampler references belong to
+The retained FP16 Swift numerical comparisons use the unchanged
+`1e-3 + 1e-3 * abs(reference)` tolerance for logits, complete logical
+recurrent/convolution state and live FP16 KV rows against pinned native execution.
+They do not qualify the active K4/V4 cache, whose changed numerical/state identity
+requires the separate [quantized-cache packet](quantized-kv.md#first-practical-promotion-packet).
+Exact chat/tokenizer and sampler references belong to
 the source project's [prompt
 fixtures](https://github.com/symbiogenesis/prism-inference/blob/main/tests/fixtures/swift-prompt-parity.json)
 and [sampler
@@ -255,8 +260,10 @@ benefit.
 
 Matvec activation preparation is call-scoped and shared only for matching input,
 basis/permutation, width and quantizer; mixed Q8_K/Q8_0 or transformed/plain inputs stay
-separate. Full-attention state stores exact binary16 bits and widens them before scalar
-products; convolution/GDN stays FP32.
+separate. Under the FP16 reference policy, full-attention state stores exact
+binary16 bits and widens them before scalar products. The Swift development
+policy instead retains the selected K4/V4 packed representation; its checkpoints
+must preserve those exact packed bytes and scale bits. Convolution/GDN stays FP32.
 Snapshot budgets conservatively charge every referenced sealed 64-token KV page, page
 table, mutable-tail capacity and recurrent state per snapshot, without depending on
 sharing for admission.
@@ -407,7 +414,7 @@ These changes are included in the active 0.1.25 source. Their original local
 review used Prism commits `095976c` (one-column projections),
 `80fa071` (empty checkpoints) and `11f60ce` (bounded sampler). The
 [historical local check record](https://github.com/symbiogenesis/SwiftBonsai2Runner/blob/7b37b29826b377386c1ddfe933cd4e75d6a97856/docs/evidence/inference-efficiency-local-20261103/archive.json)
-include 14 focused passing correctness tests and strict Release Clippy with
+includes 14 focused passing correctness tests and strict Release Clippy with
 `parallel-rows` enabled. Exact final source hashes match the analyzer input.
 The original 247.630-second allowance includes build, corrections and archival;
 initial lint and harness-encoding failures are recorded there. Its scratch-file
@@ -483,6 +490,9 @@ runtime qualification with the pinned LoRA at scale 1.3. Its policy and scoring
 remain unchanged by the owner-directed Rust/PQ2 development default. Pending gates
 stay pending; the development disclaimer and manual publisher rollback remain in
 place. A default selection alone cannot produce `promotionReady: true`.
+The evaluator's existing full-context numerical gate still names the FP16
+reference contract; it does not score or qualify K4/V4 cache quality. That
+approximate cache needs its [independent packet](quantized-kv.md#first-practical-promotion-packet).
 It reads the compiled release/model/adapter/template locks and requires an explicit full
 Runner revision. Omitting `weightRepresentation`, or explicitly selecting
 `original-PQ2_0`, preserves the existing PQ2 policy. Select

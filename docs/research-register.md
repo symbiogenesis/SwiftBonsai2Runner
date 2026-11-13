@@ -4,7 +4,7 @@ Lossless-inference survey addendum and deployment audit reviewed **2026-11-12**.
 The earlier general survey retains its **2026-11-08** cutoff; entries below identify
 the versions reviewed. Signed constant floor-division addendum reviewed **2026-10-30**.
 The [weight-space programming assessment](weight-space-programming.md) was reviewed
-**2026-11-02** separately; it establishes no Swift quality or performance gain.
+**2026-11-11** separately; it establishes no Swift quality or performance gain.
 
 This index records mathematical results, algorithms, implementations and reports
 relevant to Swift Bonsai 2, with their assumptions and unresolved checks. Inclusion
@@ -27,10 +27,14 @@ host is the 32 GiB X1E-78-100; later [device observations](hardware-capabilities
 and [current timing captures](performance-expectations.md#current-swift-evidence)
 use the X2 Elite Extreme X2E94100. Each device family requires independent
 qualification. Swift's `qwen35`
-graph has **16 full-attention and 48 Gated DeltaNet/convolution layers**: one
-8,192-token conversation, default packed PQ2 weights, FP16 full-attention KV and
-FP32 recurrent state; PTQ1 is a separate candidate. [Verified metadata](../config/swift.metadata.json)
-and locks take precedence over similarly named paper models.
+graph has **16 full-attention and 48 Gated DeltaNet/convolution layers**. The
+active native 0.1.25 profile has one 8,192-token conversation, default packed PQ2
+weights, experimental [K4/V4 full-attention KV](quantized-kv.md) and FP32 recurrent
+state; FP16 is explicit recovery and the historical comparison baseline. PTQ1 is
+a separate opt-in. Publisher serving has a
+[memory-selected context](swift-memory.md#memory-selected-serving-context).
+[Verified metadata](../config/swift.metadata.json) and locks take precedence over
+similarly named paper models.
 
 Kernels belong in [Prism Inference](https://github.com/symbiogenesis/prism-inference);
 Runner owns provisioning, admission, orchestration and [native Rust presentation](ui-architecture.md).
@@ -113,10 +117,13 @@ implementation before proposing existing work again; PLAN owns execution order.
 ### November 12 deployment audit
 
 This source inspection distinguishes available mechanisms from selected behavior;
-it establishes no new performance, device or release qualification. At that inspection, Runner consumed
-[immutable Prism 0.1.23](../config/prism-inference.lock.json), source `055c7430`.
-The local Prism candidate inspected at `bd93df1d212e30e520f7f2d721aa625ba2269a40`
-is a separate identity. [PLAN.md](../PLAN.md#runtime-and-correctness) owns sequencing,
+it establishes no new performance, device or release qualification. At that inspection,
+Runner consumed Prism 0.1.23, source `055c7430`; the
+[historical capture](evidence/readme-performance-0123-20261109/summary.json)
+retains that baseline's identity. The local Prism candidate inspected at
+`bd93df1d212e30e520f7f2d721aa625ba2269a40` is a separate identity.
+Runner's [active lock](../config/prism-inference.lock.json) now selects 0.1.25;
+that later delivery does not rewrite the audit's observations. [PLAN.md](../PLAN.md#runtime-and-correctness) owns sequencing,
 implementation and acceptance; this table records the applicability findings.
 
 | Mechanism | Observed boundary | Contract |
@@ -132,7 +139,11 @@ The later [exact-LUT source candidate](cpu-kernels.md#grouped-dispatch-hardware-
 connects `Tl1BlockLut` to explicit prepared-matvec and graph execution. It shares
 bounded activation tables across output rows and rebuilds them per invocation;
 it changes the earlier audit's caller finding without qualifying benefit or
-enabling automatic selection. Cross-token Vec-LUT remains unimplemented.
+enabling automatic selection. Cross-token Vec-LUT remains unimplemented. The
+subsequent local tiled verifier and prompt/attention consumers retain their
+current [algorithm](inference-algorithms.md) and
+[CPU delivery](cpu-kernels.md) boundaries;
+the table above describes the earlier inspected source.
 
 Bit-identical storage, identical floating-point execution, distribution-preserving
 sampling and similar task scores are distinct claims. Drafters may be approximate
@@ -394,7 +405,7 @@ The dates here are those inspected on the primary pages, not inferred from IDs.
 | A7: [FlashAttention-V](https://arxiv.org/abs/2608.18656v1), 2026-08-19 preprint | Head packing and register locality for scalable vectors; includes real RISC-V board work. Large headline gains also include simulated comparisons with scalar controls. | Layout watch item; RVV/SVE is not 128-bit NEON or evidence of Windows ISA availability. |
 | A8: [Reorienting the Vector Axis](https://arxiv.org/abs/2610.29489v1), 2026-10-21 preprint | Make queries the contiguous vector axis and keep polynomial coefficients out of vector registers to reduce spills. | Prefill/register-pressure inspiration; results use RISC-V with 2 KiB vector registers. |
 | A9: [LLM in a Flash](https://machinelearning.apple.com/research/efficient-large-language), December 2023 | Flash/DRAM-aware weight access, windowing and bundling for models exceeding available DRAM. | Deferred capacity research. Existing ternary zeros, SSD latency/endurance and dense access do not automatically provide useful skipped reads. |
-| A10: [GAAC](https://arxiv.org/html/2610.38210v2), v1 2026-10-28, v2 2026-11-04 | Bit-exact BF16 KV coding with reconstruction fused into attention reduces cache traffic. | Hybrid Qwen batch-one long-context results are 1.04-1.06x on DGX Spark. No FP16/NEON path; Swift has FP16 KV, 8K context and only 16 full-attention layers. Profile before prioritizing a port. |
+| A10: [GAAC](https://arxiv.org/html/2610.38210v2), v1 2026-10-28, v2 2026-11-04 | Bit-exact BF16 KV coding with reconstruction fused into attention reduces cache traffic. | Hybrid Qwen batch-one long-context results are 1.04-1.06x on DGX Spark. No qualified FP16/NEON path for Swift's FP16 recovery profile, whose native context remains 8K with only 16 full-attention layers. The active K4/V4 default is a different, lossy representation. Profile before prioritizing a port. |
 | A11: [ZipFusion](https://arxiv.org/html/2610.33719v1), 2026-10-24 preprint | Lossless BF16 KV reconstruction directly in registers inside attention avoids full-cache expansion. | H100/Qwen3-8B results distinguish attention, fixed-batch and maximum-batch gains; prefill/initial compression are excluded. No FP16/CPU/hybrid-state qualification. |
 | A12: [SplitZip](https://arxiv.org/html/2605.01708v3), v1 2026-05-03, v3 2026-06-23 | Bit-exact BF16 GPU KV coding reduces inter-server transfer, followed by decompression. | Disaggregated-serving transfer/TTFT results address a different bottleneck from one local active session. Reconsider only with an applicable transfer or tiering consumer. |
 

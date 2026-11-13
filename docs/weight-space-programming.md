@@ -42,7 +42,9 @@ All three are evidence about their tested models and settings. Swift has
 different weights, dimensions and 64 layers. Directions, neuron selections,
 layer IDs and strengths cannot be copied across. Runner's
 [defaults](inference-defaults.md) also differ: thinking starts disabled, and the
-completion/context limits are 4,096/8,192 tokens. Existing application evidence
+active native release's completion/context limits are 4,096/8,192 tokens.
+Publisher serving selects its context from available memory; neither path
+reproduces the cited 32,768-token output allowance. Existing application evidence
 does not diagnose the same defect.
 
 ## Practical investigation order
@@ -106,9 +108,13 @@ name its exact residual basis and insertion site.
 
 The sibling Prism source inspected on 2026-11-11 is local main
 [`a1f82b5cf0d54190290972908a61f333eb5262d9`](https://github.com/symbiogenesis/prism-inference/tree/a1f82b5cf0d54190290972908a61f333eb5262d9),
-version 0.1.24. At that inspection, Runner's [then-active binary/source lock](../config/prism-inference.lock.json)
-pinned 0.1.23 at `055c7430cb4771dfddb24ddaa30494af6ad182da`. Inspection of
-newer local source does not establish delivery through that pinned bundle.
+version 0.1.24. At that inspection, Runner pinned 0.1.23 at
+`055c7430cb4771dfddb24ddaa30494af6ad182da`; the
+[historical capture](evidence/readme-performance-0123-20261109/summary.json)
+retains that baseline. The [active binary/source lock](../config/prism-inference.lock.json)
+now selects 0.1.25 at `99bab71270b1e6a6fb6d47eec2e34b8097cdcd4c`.
+The observations below describe the inspected source, not an acceptance verdict
+for either binary release.
 
 - [`RankOneAdapter::from_model`](https://github.com/symbiogenesis/prism-inference/blob/a1f82b5cf0d54190290972908a61f333eb5262d9/src/model/lora.rs#L129)
   accepts sparse supported FFN target pairs after metadata, shape and finite-value checks.

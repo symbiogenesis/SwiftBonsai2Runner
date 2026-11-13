@@ -204,7 +204,7 @@ trit. Conventional group-256 TQ1 cannot retain both original group-128 scales.
 Independent 128-trit blocks require `ceil(128 log2(3)) = 203` bits, or 26 whole
 code bytes: PTQ1 meets this bound before its scale. [Cross-block
 compression](inference-algorithms.md#compression-and-approximation-constraints),
-physical FP16 KV in Rust and checkpoint storage have separate contracts.
+[KV precision](quantized-kv.md) and checkpoint storage have separate contracts.
 
 The [native
 layout](https://github.com/PrismML-Eng/llama.cpp/blob/73bfe6cc485554822f80c473a3c0c4f25e80f41b/ggml/src/ggml-common.h)
@@ -335,10 +335,11 @@ leave the gate pending if setup, work and cleanup cannot fit the owner budget.
 
 ## Memory-selected serving context
 
-Swift serving selects its context once per model launch from available physical
-memory. Retry takes a new observation; an active model keeps its context so
-counting, generation, readiness and the native UI use the same capacity. This
-is separate from the fixed 8K qualification workloads below.
+Publisher Swift serving selects its context once per model launch from available
+physical memory. Retry takes a new observation; an active model keeps its context
+so counting, generation, readiness and the native UI use the same capacity.
+The active native Prism 0.1.25 release remains fixed at 8K, as described below.
+Serving capacity is separate from the fixed 8K qualification workloads.
 
 The pure planner in `bonsai-cpu-policy::context` retains the existing 4 GiB
 Windows reserve and non-context allowance from the 11.5 GiB/8K reference budget.
@@ -577,7 +578,9 @@ steady-state saving.
 
 The [research register](research-register.md) owns versions and proof limits for
 sources reviewed through **2026-10-29**. These candidates do not change current
-packing, FP16 KV/FP32 recurrent state or admission. Account separately for Swift's
+packing, cache selection, FP32 recurrent state or admission. Their FP16 cache
+comparisons refer to the reference/recovery profile; the active native K4/V4
+development default has its [separate contract](quantized-kv.md). Account separately for Swift's
 16 attention and 48 recurrent layers: KV compression affects neither GDN state nor
 weights.
 
@@ -643,7 +646,7 @@ owns activation. They change no current artifact, precision, cache policy or adm
 | --- | --- |
 | ZipServ, NF12/NyoomFloat12, ANS weight coding and Glyd | Their useful full-precision weight compression is not another packing layer over arbitrary ternary PQ2/PTQ1. Swift's current metadata contains only 47,185,920 bytes (45 MiB) of BF16 tensors beside its packed weights and F32 tensors; do not apply a BF16 percentage saving to the whole GGUF. Native consumers, licensing and complete-request benefit remain unqualified. |
 | NF12 fixed stream plus escape groups | Preserve all exceptional original BF16 values and charge their bytes/indexes. Nominal twelve-bit storage is not a universal twelve-bit bound. Bit-exact weight decoding does not establish the fused GEMM's reduction identity or identical greedy output. |
-| GAAC / ZipFusion | The inspected codecs reconstruct BF16 KV within attention. Swift retains original FP16 KV bits: a port requires its own codec, exceptional-value coverage, scratch/metadata budget and direct consumption path. It must preserve the baseline probability-rounding boundary or declare changed numerics. No GDN/convolution state compression follows from a KV result. |
+| GAAC / ZipFusion | The inspected codecs reconstruct BF16 KV within attention. Swift's FP16 reference/recovery profile retains original FP16 KV bits; the active K4/V4 profile is separately lossy. An FP16 port requires its own codec, exceptional-value coverage, scratch/metadata budget and direct consumption path. It must preserve the baseline probability-rounding boundary or declare changed numerics. No GDN/convolution state compression follows from a KV result. |
 | SplitZip / AnchorKV | Transfer compression and inactive-session anchor/replay capacity address separate problems. Charge full restoration, retained anchors, exact suffix replay, temporary expanded state and metadata. Neither establishes faster ordinary local decode, and dense-model replay evidence does not establish hybrid-state restoration. |
 
 Consume compressed data within bounded tiles where an actual bottleneck justifies
