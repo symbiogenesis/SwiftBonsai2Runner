@@ -874,6 +874,7 @@ mod tests {
     #[test]
     fn setup_repair_observations_distinguish_local_hash_resume_and_fresh_repair()
     -> crate::Result<()> {
+        use RepairActivity::{Downloading, Publishing, VerifyingDownloaded, VerifyingExisting};
         for case in 0..3 {
             let (working, path, partial, hash) = recovery_fixture()?;
             if case == 0 {
@@ -901,7 +902,6 @@ mod tests {
                     Ok(())
                 },
             )?;
-            use RepairActivity::{Downloading, Publishing, VerifyingDownloaded, VerifyingExisting};
             let expected = match case {
                 0 => vec![VerifyingExisting],
                 1 => vec![VerifyingExisting, VerifyingDownloaded, Publishing],
