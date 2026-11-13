@@ -370,6 +370,7 @@ pub(super) struct Updates {
     cleanup_unconfirmed: bool,
     next_check: Instant,
     status: String,
+    error: Option<String>,
 }
 
 impl Updates {
@@ -394,6 +395,7 @@ impl Updates {
             cleanup_unconfirmed: false,
             next_check: Instant::now(),
             status: "Checking for application updates shortly.".into(),
+            error: None,
         })
     }
 
@@ -443,28 +445,33 @@ impl Updates {
             return;
         }
         self.confirming = false;
+        self.error = None;
         if operation != Operation::Install {
             self.confirmed = false;
         }
         if operation == Operation::Check {
             self.next_check = Instant::now() + CHECK_INTERVAL;
         }
-        if let Ok(task) = Task::start(
+        match Task::start(
             self.installation.clone(),
             operation,
             self.version.clone(),
             self.release_identity.clone(),
         ) {
-            self.task = Some(task);
-            self.status = match operation {
-                Operation::Check => "Checking GitHub for updates...",
-                Operation::Download => "Downloading and verifying the application update...",
-                Operation::Install => "Preparing the update. The app will close when ready...",
+            Ok(task) => {
+                self.task = Some(task);
+                self.status = match operation {
+                    Operation::Check => "Checking GitHub for updates...",
+                    Operation::Download => "Downloading and verifying the application update...",
+                    Operation::Install => "Preparing the update. The app will close when ready...",
+                }
+                .into();
             }
-            .into();
-        } else {
-            self.confirmed = false;
-            self.status = "Could not start the update check. Try again.".into();
+            Err(error) => {
+                self.confirmed = false;
+                self.status = "Could not start the update check. Try again.".into();
+                self.error = Some(error.to_string());
+            }
         }
     }
 
@@ -494,6 +501,7 @@ impl Updates {
     }
 
     fn operation_finished(&mut self, operation: Operation, result: Response) -> Option<String> {
+        self.error = None;
         match result.status.as_str() {
             "available" => {
                 if self.select_candidate(result) {
@@ -521,6 +529,7 @@ impl Updates {
                 if operation != Operation::Install || !self.confirmed || !self.verified_download() {
                     self.confirmed = false;
                     self.status = "The update was not approved for this verified download. Check for updates and confirm again.".into();
+                    self.error = Some(self.status.clone());
                     return Some("Application update: rejected a queued result without current confirmation and a verified download.".into());
                 }
                 self.queued = true;
@@ -537,6 +546,7 @@ impl Updates {
     }
 
     fn operation_failed(&mut self, operation: Operation, error: &io::Error) -> String {
+        self.error = Some(error.to_string());
         self.cleanup_unconfirmed = error
             .to_string()
             .contains("Application update process cleanup could not be confirmed.");
@@ -590,29 +600,45 @@ impl Updates {
             self.confirmed = false;
             self.status =
                 "The model could not stop safely. Close Swift before updating manually.".into();
+            self.error = Some(self.status.clone());
+        }
+    }
+
+    fn status_controls(&self, ui: &mut egui::Ui) {
+        if let Some(error) = &self.error {
+            super::error_ui::card(
+                ui,
+                "update-error",
+                "Update needs attention",
+                &self.status,
+                error,
+                |_| {},
+            );
+        } else {
+            status_frame(ui, |ui| {
+                ui.horizontal_top(|ui| {
+                    if self.task.is_some() || self.installing() {
+                        ui.spinner();
+                    }
+                    super::error_ui::summary(ui, &self.status);
+                });
+                if self.installation.portable {
+                    ui.add_space(4.0);
+                    ui.label(
+                        egui::RichText::new(
+                            "New releases download automatically. You choose when to install.",
+                        )
+                        .small()
+                        .weak(),
+                    );
+                }
+            });
         }
     }
 
     pub(super) fn controls(&mut self, ui: &mut egui::Ui, can_install: bool) -> bool {
         update_header(ui);
-        status_frame(ui, |ui| {
-            ui.horizontal_top(|ui| {
-                if self.task.is_some() || self.installing() {
-                    ui.spinner();
-                }
-                ui.add(egui::Label::new(egui::RichText::new(&self.status).strong()).wrap());
-            });
-            if self.installation.portable {
-                ui.add_space(4.0);
-                ui.label(
-                    egui::RichText::new(
-                        "New releases download automatically. You choose when to install.",
-                    )
-                    .small()
-                    .weak(),
-                );
-            }
-        });
+        self.status_controls(ui);
         ui.add_space(10.0);
         let idle = self.task.is_none() && !self.installing() && !self.cleanup_unconfirmed;
         ui.horizontal_wrapped(|ui| {
@@ -799,6 +825,7 @@ mod tests {
             cleanup_unconfirmed: false,
             next_check: Instant::now() + CHECK_INTERVAL,
             status: "Verified fixture update".into(),
+            error: None,
         })
     }
 
@@ -813,6 +840,30 @@ mod tests {
             cancelled: Arc::new(AtomicBool::new(false)),
             worker: None,
         }
+    }
+
+    #[test]
+    fn error_reporting_update_preserves_full_failure_and_clears_it_after_success() -> io::Result<()>
+    {
+        let mut updates = update_fixture()?;
+        let message = format!(
+            "{}Final cause: denied. 日本語",
+            "nested cause\n".repeat(1_000)
+        );
+        let diagnostic =
+            updates.operation_failed(Operation::Check, &io::Error::other(message.clone()));
+        assert_eq!(updates.error.as_deref(), Some(message.as_str()));
+        assert!(diagnostic.ends_with(&message));
+        updates.operation_finished(
+            Operation::Check,
+            Response {
+                status: "current".into(),
+                version: None,
+                release_identity: None,
+            },
+        );
+        assert!(updates.error.is_none());
+        Ok(())
     }
 
     #[test]

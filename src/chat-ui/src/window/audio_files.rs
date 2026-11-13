@@ -289,10 +289,40 @@ impl State {
             <= super::INPUT_LIMIT.saturating_sub(length - (range.end - range.start))
     }
 
+    fn audio_file_error_status(&mut self, ui: &mut egui::Ui, message: &str) {
+        super::error_ui::card(
+            ui,
+            "audio-file-error",
+            "Audio transcription failed",
+            message,
+            message,
+            |ui| {
+                if !self.audio_file_transcript.is_empty() {
+                    if ui.button("View transcript").clicked() {
+                        self.show_audio_transcript = true;
+                        self.focus_composer = false;
+                    }
+                    self.copy_audio_transcript(ui, "Copy transcript", false);
+                }
+                if ui.button("Dismiss").clicked() {
+                    self.audio_file_notice = None;
+                    self.audio_file_transcript.clear();
+                    self.audio_file_progress = None;
+                    self.audio_file_error = false;
+                    self.show_audio_transcript = false;
+                }
+            },
+        );
+    }
+
     pub(super) fn audio_file_status(&mut self, ui: &mut egui::Ui) {
         let Some(message) = self.audio_file_notice.clone() else {
             return;
         };
+        if self.audio_file_error {
+            self.audio_file_error_status(ui, &message);
+            return;
+        }
         notice_frame(ui).show(ui, |ui| {
                 // Frame margins belong inside the available composer column.
                 ui.set_width(ui.available_width());
@@ -301,10 +331,7 @@ impl State {
                     if self.audio_file_active {
                         ui.spinner();
                     }
-                    let title = if self.audio_file_error {
-                        egui::RichText::new("Audio transcription failed")
-                            .color(ui.visuals().error_fg_color)
-                    } else if self.audio_file_active {
+                    let title = if self.audio_file_active {
                         egui::RichText::new("Audio transcription in progress")
                     } else {
                         egui::RichText::new("Audio transcription")

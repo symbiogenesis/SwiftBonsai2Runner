@@ -27,6 +27,8 @@ pub(super) struct ConversationSnapshot {
     #[serde(default = "client::default_abliteration_scale")]
     pub(super) abliteration_scale: f32,
     pub(super) status: String,
+    #[serde(skip)]
+    pub(super) status_detail: String,
     pub(super) warning: bool,
     #[serde(skip)]
     pub(super) stage: Option<&'static str>,
@@ -97,6 +99,11 @@ impl State {
                 "Ready when you are.".to_owned()
             },
             warning: self.model.ready() && self.warning,
+            status_detail: if self.model.ready() {
+                self.status_detail.clone()
+            } else {
+                String::new()
+            },
             stage: self.stage,
         }
     }
@@ -146,6 +153,7 @@ impl State {
         // Loading/failure status belongs to the model, not a saved transcript.
         if self.model.ready() {
             self.status = snapshot.status;
+            self.status_detail = snapshot.status_detail;
             self.warning = snapshot.warning;
         }
         self.stage = snapshot.stage;
@@ -184,16 +192,28 @@ impl State {
             self.focus_composer,
         );
         self.swap_conversation(&mut saved);
-        let previous = (self.model, self.status.clone(), self.warning);
+        let previous = (
+            self.model,
+            self.status.clone(),
+            self.warning,
+            self.status_detail.clone(),
+        );
         self.routing_request = true;
         action(self);
         self.routing_request = false;
         // Late rejections and completion races can update a hidden transcript
         // without changing the global stop/restart status currently on screen.
-        let changed =
-            previous.0 != self.model || previous.1 != self.status || previous.2 != self.warning;
-        let global_status =
-            (!self.model.ready() && changed).then(|| (self.status.clone(), self.warning));
+        let changed = previous.0 != self.model
+            || previous.1 != self.status
+            || previous.2 != self.warning
+            || previous.3 != self.status_detail;
+        let global_status = (!self.model.ready() && changed).then(|| {
+            (
+                self.status.clone(),
+                self.warning,
+                self.status_detail.clone(),
+            )
+        });
         self.swap_conversation(&mut saved);
         self.conversations[index].saved = Some(saved);
         (
@@ -201,8 +221,9 @@ impl State {
             self.pending_cursor,
             self.focus_composer,
         ) = cursor;
-        if let Some((status, warning)) = global_status {
+        if let Some((status, warning, detail)) = global_status {
             self.status = status;
+            self.status_detail = detail;
             self.warning = warning;
         }
     }
@@ -224,6 +245,7 @@ impl State {
         std::mem::swap(&mut self.output_budget, &mut saved.output_budget);
         std::mem::swap(&mut self.abliteration_scale, &mut saved.abliteration_scale);
         std::mem::swap(&mut self.status, &mut saved.status);
+        std::mem::swap(&mut self.status_detail, &mut saved.status_detail);
         std::mem::swap(&mut self.warning, &mut saved.warning);
         std::mem::swap(&mut self.stage, &mut saved.stage);
     }

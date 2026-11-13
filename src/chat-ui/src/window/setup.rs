@@ -236,87 +236,53 @@ impl State {
         if preparing {
             let _ = self.preparation_card(ui);
             ui.add_space(8.0);
-        } else if self.setup.error.is_some() {
-            egui::Frame::group(ui.style())
-                .inner_margin(12)
-                .corner_radius(12)
-                .show(ui, |ui| {
-                    ui.label(RichText::new("Setup needs attention").strong());
-                    ui.label(&self.status);
+        } else if let Some(error) = self.setup.error.clone() {
+            let status = self.status.clone();
+            super::error_ui::card(
+                ui,
+                "setup-error",
+                "Setup needs attention",
+                &status,
+                &error,
+                |ui| {
                     if ui
                         .add_enabled(self.can_retry_setup(), egui::Button::new("Retry setup"))
                         .clicked()
                     {
                         self.retry_setup();
                     }
-                    ui.collapsing("Setup details", |ui| {
-                        if let Some(error) = &self.setup.error {
-                            ui.add(
-                                egui::Label::new(
-                                    error
-                                        .chars()
-                                        .take(super::MAX_DIAGNOSTIC_CHARS)
-                                        .collect::<String>(),
-                                )
-                                .selectable(true)
-                                .wrap(),
-                            );
-                        }
-                        if ui.button("Copy diagnostics").clicked() {
-                            ui.ctx().copy_text(
-                                self.diagnostics
-                                    .iter()
-                                    .cloned()
-                                    .collect::<Vec<_>>()
-                                    .join("\n\n"),
-                            );
-                        }
-                    });
-                });
+                },
+            );
             ui.add_space(8.0);
         }
-        if self.setup.speech_error.is_some() {
-            egui::Frame::group(ui.style())
-                .inner_margin(12)
-                .show(ui, |ui| {
-                    ui.label("Speech setup could not finish. You can continue using text chat.");
+        if let Some(error) = self.setup.speech_error.clone() {
+            super::error_ui::card(
+                ui,
+                "speech-setup-error",
+                "Speech setup needs attention",
+                "Speech setup could not finish. You can continue using text chat.",
+                &error,
+                |ui| {
                     let retry = self.startup.is_none()
                         && self.startup_request.is_none()
                         && !self
                             .updates
                             .as_ref()
                             .is_some_and(super::updates::Updates::installing)
-                        && self
-                            .setup
-                            .speech_error
-                            .as_deref()
-                            .is_some_and(cleanup_known);
+                        && cleanup_known(&error);
                     if ui
                         .add_enabled(retry, egui::Button::new("Retry speech setup"))
                         .clicked()
                     {
                         self.retry_speech_setup();
                     }
-                    ui.collapsing("Speech setup details", |ui| {
-                        if let Some(error) = &self.setup.speech_error {
-                            ui.add(
-                                egui::Label::new(
-                                    error
-                                        .chars()
-                                        .take(super::MAX_DIAGNOSTIC_CHARS)
-                                        .collect::<String>(),
-                                )
-                                .selectable(true)
-                                .wrap(),
-                            );
-                        }
-                        ui.hyperlink_to(
-                            "Microsoft ARM64 runtime download",
-                            "https://aka.ms/vc14/vc_redist.arm64.exe",
-                        );
-                    });
-                });
-            ui.add_space(10.0);
+                    ui.hyperlink_to(
+                        "ARM64 runtime download",
+                        "https://aka.ms/vc14/vc_redist.arm64.exe",
+                    );
+                },
+            );
+            ui.add_space(8.0);
         }
     }
 }

@@ -548,19 +548,34 @@ impl State {
                 .small()
                 .weak(),
         );
-        if ui.button("Copy diagnostics").clicked() {
-            ui.ctx().copy_text(
-                self.diagnostics
-                    .iter()
-                    .cloned()
-                    .collect::<Vec<_>>()
-                    .join("\n\n"),
-            );
-        }
-        for message in &self.diagnostics {
-            ui.add(egui::Label::new(message).selectable(true).wrap());
-            ui.separator();
-        }
+        super::error_ui::copy_button(
+            ui,
+            "Copy diagnostics",
+            &self
+                .diagnostics
+                .iter()
+                .cloned()
+                .collect::<Vec<_>>()
+                .join("\n\n"),
+        );
+        ui.label(
+            RichText::new("Recent previews only. Use Copy error on a notice for its full message.")
+                .small()
+                .weak(),
+        );
+        egui::ScrollArea::vertical()
+            .id_salt("diagnostic-messages")
+            .max_height(240.0)
+            .min_scrolled_height(0.0)
+            .auto_shrink([false, true])
+            .show(ui, |ui| {
+                super::navigation::bounded_width(ui, |ui| {
+                    for message in &self.diagnostics {
+                        ui.add(egui::Label::new(message).selectable(true).wrap());
+                        ui.separator();
+                    }
+                });
+            });
     }
 }
 

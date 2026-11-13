@@ -307,6 +307,17 @@ share 16-point horizontal and 12-point vertical insets with a 12-point gap;
 thinking expands beneath the answer using its measured text height. Cached text
 wrapping and Find geometry use the same content insets as presentation.
 
+Failure notices share compact native cards with a two-line summary, a visible
+**Copy error** action with confirmation, and scrollable details. Preview limits
+never truncate the copied current error. Each card's content is capped at 168
+points; combined setup, model, recovery, speech and audio failures share a
+scroll area capped at 200 points and 30% of the available workspace height.
+Full model errors stay in session memory, including across conversation switches;
+recovery saves only bounded status text. Diagnostics retain bounded recent previews
+and offer a separate Copy diagnostics action. Fatal launcher/graphics failures
+use a fixed native Windows dialog with a scrollable preview and Copy error.
+An OS failure to create that dialog falls back to a short native error message.
+
 ## Interoperability belongs at the API boundary
 
 Use local LLM HTTP/JSON/SSE conventions: numeric loopback, bearer authorization,

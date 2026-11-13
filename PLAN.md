@@ -368,6 +368,18 @@ promotion or admission changes; the Rust/PQ2 development default retains these g
 
 ### Actual-model acceptance
 
+Qualify bounded error reporting at minimum and normal window sizes, display
+scaling and Windows high contrast. Verify exact full-message Copy error, copied
+feedback, keyboard access, Retry, recovery and stacked setup/model/speech/audio
+failures without displacing the composer. Include the fixed native startup
+dialog, its scrollable preview, clipboard ownership and exceptional fallback.
+The one five-minute model-free operation closed after 116 seconds: selected-file
+formatting passed, then focused Release test compilation rejected one unused test
+import. That import is corrected; the closed operation was not retried. Tests,
+synthetic captures and strict analysis remain pending in owner-managed validation.
+AC was connected, battery saver off and charge 83% at both endpoints; snapshots
+do not establish uninterrupted power. No preview artifacts or raw logs were kept.
+
 Qualify compact message headers on Windows ARM64 at normal and minimum window
 sizes, scaling and high contrast. Confirm Copy, speech play/Stop and iteration
 menus fit beside the speaker and Interrupted badge, and expanded thinking,

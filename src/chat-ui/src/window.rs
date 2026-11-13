@@ -25,6 +25,9 @@ mod branding;
 mod context_capacity;
 #[cfg(test)]
 mod ergonomics_tests;
+mod error_ui;
+#[cfg(test)]
+mod error_ui_tests;
 mod graphics;
 mod history_search;
 #[cfg(test)]
@@ -142,6 +145,7 @@ struct State {
     last_recovery_save: Instant,
     restore_history: bool,
     status: String,
+    status_detail: String,
     runtime_description: String,
     warning: bool,
     diagnostics: VecDeque<String>,
@@ -268,6 +272,7 @@ impl State {
             last_recovery_save: Instant::now(),
             restore_history: false,
             status: "Preparing your local model…".to_owned(),
+            status_detail: String::new(),
             runtime_description: "Model-free preview".to_owned(),
             warning: false,
             diagnostics: VecDeque::new(),
@@ -498,12 +503,15 @@ impl State {
     }
     fn set_status(&mut self, message: &str, warning: bool) {
         self.record(message);
-        message
+        message.clone_into(&mut self.status_detail);
+        self.status = message
             .split("Protected credentials and technical evidence:")
             .next()
             .unwrap_or(message)
             .trim()
-            .clone_into(&mut self.status);
+            .chars()
+            .take(MAX_DIAGNOSTIC_CHARS)
+            .collect();
         self.warning = warning;
     }
 
@@ -847,6 +855,7 @@ impl State {
             self.retain_draft();
         }
         self.set_status(if adopted { "Response interrupted. The partial reply is included in this conversation; retry the model to continue." } else { message }, true);
+        message.clone_into(&mut self.status_detail);
         self.focus_composer = !retry_required;
     }
 
@@ -1710,10 +1719,10 @@ impl State {
         egui::Window::new("Diagnostics")
             .open(&mut open)
             .default_width(640.0)
+            .max_width((ctx.content_rect().width() - 32.0).clamp(240.0, 640.0))
+            .max_height((ctx.content_rect().height() - 32.0).clamp(120.0, 360.0))
             .show(ctx, |ui| {
-                egui::ScrollArea::vertical()
-                    .max_height(400.0)
-                    .show(ui, |ui| self.diagnostics_contents(ui));
+                self.diagnostics_contents(ui);
             });
         self.show_diagnostics = open;
     }
@@ -1738,21 +1747,25 @@ impl State {
                 }
             });
         }
-        if self.warning || self.model.retryable() {
-            ui.horizontal_wrapped(|ui| {
-                let color = if self.warning {
-                    ui.visuals().warn_fg_color
-                } else {
-                    ui.visuals().text_color()
-                };
-                ui.label(RichText::new(&self.status).color(color));
-                if self.model.retryable() && ui.button("Retry model").clicked() {
-                    self.retry();
-                }
-                if ui.small_button("Details").clicked() {
-                    self.show_diagnostics = true;
-                }
-            });
+        if (self.warning || self.model.retryable()) && self.setup.error.is_none() {
+            let status = self.status.clone();
+            let detail = if self.status_detail.is_empty() {
+                status.clone()
+            } else {
+                self.status_detail.clone()
+            };
+            error_ui::card(
+                ui,
+                "model-error",
+                "Model needs attention",
+                &status,
+                &detail,
+                |ui| {
+                    if self.model.retryable() && ui.button("Retry model").clicked() {
+                        self.retry();
+                    }
+                },
+            );
         }
         if self.preview {
             ui.label(
@@ -1762,7 +1775,14 @@ impl State {
             );
         }
         if self.recovery_notice.starts_with("Could not") {
-            ui.label(RichText::new(&self.recovery_notice).color(ui.visuals().warn_fg_color));
+            error_ui::card(
+                ui,
+                "recovery-error",
+                "Conversation saving needs attention",
+                &self.recovery_notice,
+                &self.recovery_notice,
+                |_| {},
+            );
         }
     }
 
@@ -1916,7 +1936,9 @@ impl State {
             ui.add_space(margin);
             ui.vertical(|ui| {
                 ui.set_width(width);
-                self.audio_file_status(ui);
+                if !self.audio_file_error {
+                    self.audio_file_status(ui);
+                }
                 egui::Frame::new()
                     .fill(ui.visuals().faint_bg_color)
                     .corner_radius(14)
@@ -2079,22 +2101,21 @@ impl State {
                     "Enter to send · Shift+Enter for a new line".to_owned()
                 };
                 if self.help.is_none()
+                    && !self.speech_notice
                     && (self.audio_file_notice.is_none()
                         || (!self.audio_file_active && (self.dictation_requested || self.speaking)))
-                    && (self.speech_notice || self.dictation_requested || self.speaking)
+                    && (self.dictation_requested || self.speaking)
                 {
-                    audio_files::notice_frame(ui)
-                        .inner_margin(egui::Margin::symmetric(12, 8))
-                        .show(ui, |ui| {
-                            ui.set_width(ui.available_width());
-                            ui.add(
-                                egui::Label::new(RichText::new(&self.speech_status).size(14.0))
-                                    .wrap(),
-                            );
-                        });
+                    error_ui::summary(ui, &self.speech_status);
                 }
                 // Keyboard guidance stays visually separate from audio feedback.
-                ui.add(egui::Label::new(RichText::new(&status).small().weak()).wrap());
+                if self.model.busy()
+                    || self.model.ready()
+                    || !self.warning && self.setup.error.is_none()
+                {
+                    let preview: String = status.chars().take(320).collect();
+                    ui.add(egui::Label::new(RichText::new(preview).small().weak()).truncate());
+                }
             });
         });
     }
@@ -2122,6 +2143,35 @@ impl State {
         }
     }
 
+    fn application_notices(&mut self, ui: &mut egui::Ui) {
+        egui::ScrollArea::vertical()
+            .id_salt("application-notices")
+            .max_height((ui.available_height() * 0.3).min(200.0))
+            .min_scrolled_height(0.0)
+            .auto_shrink([false, true])
+            .show(ui, |ui| {
+                self.setup_controls(ui);
+                self.conversation_notices(ui);
+                if self.audio_file_error {
+                    self.audio_file_status(ui);
+                }
+                if self.speech_notice
+                    && self.help.is_none()
+                    && self.setup.speech_error.is_none()
+                    && self.audio_file_notice.as_deref() != Some(self.speech_status.as_str())
+                {
+                    error_ui::card(
+                        ui,
+                        "speech-error",
+                        "Speech needs attention",
+                        &self.speech_status,
+                        &self.speech_status,
+                        |_| {},
+                    );
+                }
+            });
+    }
+
     fn draw_workspace(&mut self, ui: &mut egui::Ui) {
         let narrow = ui.available_width() < navigation::DOCK_THRESHOLD;
         self.docked_navigation(ui, narrow);
@@ -2135,8 +2185,7 @@ impl State {
                 bottom: 12,
             }))
             .show(ui, |ui| {
-                self.setup_controls(ui);
-                self.conversation_notices(ui);
+                self.application_notices(ui);
                 egui::Panel::bottom("composer-panel")
                     .frame(egui::Frame::new().inner_margin(egui::Margin {
                         left: 0,
