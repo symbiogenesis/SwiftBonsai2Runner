@@ -36,7 +36,7 @@
     "maximumScratchElementsPerAllocation": 134217728
   },
   "pending": [
-    "complete pipeline owning-crate build/link and source-bound qualification consumer",
+    "complete pipeline owning-crate build/link and source-bound consumer acceptance",
     "independent native layerwise observations and full pinned-model transcript comparisons",
     "native optimized convolution/quantization/flash-attention numerical parity at declared tolerance",
     "actual-model quality, microphone integration, cancellation, lifecycle and resource acceptance"

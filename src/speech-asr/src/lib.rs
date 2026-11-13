@@ -10,6 +10,7 @@ pub mod encoder;
 pub mod frontend;
 mod intake;
 pub mod protocol;
+pub mod rust_engine;
 pub mod tokenizer;
 
 use fearless_simd::{Level, dispatch, f32x4, prelude::*};

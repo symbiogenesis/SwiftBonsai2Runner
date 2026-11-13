@@ -38,7 +38,7 @@
   "pending": [
     "independent tokenizer observations for complete pinned vocabulary and multilingual inputs",
     "owning-crate build/link and hosted acceptance",
-    "CNN/transformer encoder and causal decoder with complete session reset",
+    "integrated Rust pipeline qualification with complete encoder/decoder/session observations",
     "actual-model transcript/state, cancellation, microphone integration, quality and resources"
   ]
 }

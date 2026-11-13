@@ -123,8 +123,18 @@ f64 erf-based GELU and F32-activation Q8 projections have distinct arithmetic
 identities in `rust-encoder.json`; they do not establish native optimized-kernel
 or full-model parity.
 
-Complete end-to-end Rust inference integration,
-independent numerical observations and actual-model comparisons
-remain necessary before replacing the engine or removing native dependencies.
+`rust_engine::RustRecognizer` composes the complete Rust graph as an explicit
+qualification API. It loads all components through one immutable model-file
+handle and enforces the selected 16 kHz PCM, automatic-language prompt, native
+output-budget/repetition rules, lowest-ID greedy ties, mandatory EOS and bounded
+complete-transcript contract. Every request clears all KV/position state at
+entry and on success, failure, cancellation or unwind. It never calls or falls
+back to a native engine. Six `rust_asr_engine_` controls exercise the real tiny
+Rust frontend/CNN/transformer/decoder graph with known EOS, plus numerical driver
+boundaries and reset/cancellation. `rust-engine.json` binds its separate arithmetic
+and qualification limits. Default service/application inference remains native.
+
+Owning-crate builds, independent numerical observations and actual-model
+comparisons remain necessary before replacing serving or removing native dependencies.
 Standalone source-module checks do not establish owning-crate native build/link,
 transcript/state parity, microphone integration, quality, listening or resources.

@@ -67,6 +67,11 @@ pub struct Tokenizer {
 }
 
 impl Tokenizer {
+    /// Number of original GGUF vocabulary slots, including duplicate spellings.
+    #[must_use]
+    pub const fn vocabulary_size(&self) -> usize {
+        self.tokens.len()
+    }
     /// Admit the complete verified GGUF index and extract its tokenizer.
     ///
     /// The caller retains artifact digest verification and the immutable file

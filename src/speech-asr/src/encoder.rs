@@ -186,6 +186,11 @@ pub struct Encoder {
 }
 
 impl Encoder {
+    /// Decoder width of each complete audio row.
+    #[must_use]
+    pub const fn output_width(&self) -> usize {
+        self.config.output
+    }
     /// Read encoder weights and matching frontend tables from a verified GGUF.
     ///
     /// The caller owns SHA-256 verification and immutable artifact guards.

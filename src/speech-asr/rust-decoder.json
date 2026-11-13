@@ -38,7 +38,7 @@
     "maximumSelectedWeightBytes": 8589934592
   },
   "pending": [
-    "CNN/transformer encoder and complete frontend-to-decoder integration",
+    "integrated CNN/frontend-to-decoder owning consumer qualification",
     "complete pinned-model independent numerical and transcript observations",
     "optimized quantized arithmetic and complete native/F32/F16 state comparison at declared tolerance",
     "owning-crate hosted build/link, cancellation, quality, microphone and resource acceptance",

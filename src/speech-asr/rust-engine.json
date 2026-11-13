@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "provider": "rust-complete-asr-qualification-consumer",
+  "scope": "opt-in-gguf-tokenizer-frontend-cnn-transformer-causal-decoder-and-complete-transcript-pipeline",
+  "arithmeticIdentity": "rust-asr-scalar-f32-v1-f16-kv-f64-erfc-gelu",
+  "applicationDefault": "native-transcribe-cpp-unchanged-pending-qualification",
+  "nativeFallback": false,
+  "componentContracts": ["rust-intake.json", "rust-tokenizer.json", "rust-frontend.json", "rust-encoder.json", "rust-decoder.json", "rust-protocol.json"],
+  "nativeSource": {
+    "package": "transcribe-cpp-sys", "version": "0.4.1",
+    "repository": "https://github.com/handy-computer/transcribe.cpp",
+    "commit": "4d7c1ccefd39e5a9ea36cca5f8fefc6dcc14b99b", "license": "MIT",
+    "files": [
+      {"path": "src/arch/qwen3_asr/model.cpp", "sha256": "90aeefb27ffb74d57ed338a27c342b44f388207b8c4a111faa5673e975c43ecc"},
+      {"path": "src/transcribe-decode-budget.h", "sha256": "9e7d24c9f4a4b20ae9bb6cd00c44eb22209557fd1a764b99ebd19e0d98b91a24"},
+      {"path": "src/transcribe-repetition-guard.h", "sha256": "6fac1f376dcfa350b32964310b4ab507c5d59806718e984b8a4e62d07d65ab7b"}
+    ]
+  },
+  "controls": {
+    "provider": "literal-greedy-budget-and-repetition-answers-plus-tiny-complete-rust-graph-with-known-eos",
+    "freshNativeExecution": false, "modelInputs": false,
+    "testFilter": "rust_asr_engine_",
+    "pinnedModelParity": false, "qualityAcceptance": false, "performanceAcceptance": false
+  },
+  "semantics": {
+    "load": "absolute-regular-nonreparse-file-with-one-write-delete-denying-handle-across-all-intake",
+    "callerAuthority": "verified-lock-digest-and-ancestor-guards-required",
+    "language": "automatic-empty-system-prompt",
+    "pcm": "finite-normalized-mono-16khz-201-through-480000-samples",
+    "context": "at-most-8192-with-minimum-256-output-reserve",
+    "budget": "floor-audio-rows-times-24-over-25-at-least-256-capped-by-context-room",
+    "greedy": "finite-logits-lowest-id-on-exact-ties",
+    "completion": "eos-required-before-transcript-publication-first-asr_text-envelope-removed",
+    "repetition": "pinned-128-token-block-stop-bar-no-environment-disable",
+    "reset": "all-kv-and-position-cleared-at-request-entry-and-after-success-failure-cancellation-or-unwind"
+  },
+  "pending": [
+    "owning-crate native build/link and hosted consumer acceptance",
+    "independent pinned-vocabulary-frontend-layerwise-logit-kv-and-full-transcript observations",
+    "source-bound actual-model qualification with matched power and predeclared aggregate allowance",
+    "microphone-to-Swift integration, quality, cancellation, lifecycle and resource acceptance",
+    "optimized arithmetic and performance work before any production-default promotion",
+    "native dependencies and provisioning paths retained until every retirement gate passes"
+  ]
+}

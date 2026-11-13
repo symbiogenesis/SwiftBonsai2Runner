@@ -325,6 +325,15 @@ pub struct Model {
 }
 
 impl Model {
+    /// Return the immutable residual width, vocabulary and bounded context.
+    #[must_use]
+    pub const fn dimensions(&self) -> (usize, usize, usize) {
+        (
+            self.config.hidden,
+            self.embedding.output,
+            self.config.context,
+        )
+    }
     /// Load the complete decoder from an admitted Qwen3-ASR GGUF index.
     ///
     /// The caller owns digest verification and immutable artifact guards. This
