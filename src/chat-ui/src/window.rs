@@ -2124,7 +2124,7 @@ impl State {
             let width = (ctx.content_rect().width() - 80.0).clamp(240.0, 480.0);
             egui::Window::new(title)
                 .open(&mut open)
-                .frame(audio_files::dialog_frame(&ctx))
+                .frame(controls::dialog_frame(&ctx))
                 .anchor(egui::Align2::CENTER_CENTER, egui::Vec2::ZERO)
                 .collapsible(false)
                 .resizable(false)
@@ -2147,7 +2147,7 @@ impl State {
                         egui::vec2(ui.available_width(), 36.0),
                         egui::Layout::right_to_left(egui::Align::Center),
                         |ui| {
-                            if ui.add(audio_files::action_button("Close")).clicked() {
+                            if ui.add(controls::action_button("Close")).clicked() {
                                 self.help = None;
                                 self.speech_notice = false;
                             }

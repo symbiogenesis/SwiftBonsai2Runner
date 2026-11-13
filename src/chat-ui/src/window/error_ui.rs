@@ -321,7 +321,7 @@ impl State {
         }
         let (_, error) = self.alert_text(kind);
         let modal = egui::Modal::new(egui::Id::unique("alert-details"))
-            .frame(super::audio_files::dialog_frame(ctx))
+            .frame(super::controls::dialog_frame(ctx))
             .show(ctx, |ui| {
                 ui.set_width((ctx.content_rect().width() - 80.0).clamp(240.0, 680.0));
                 ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Wrap);

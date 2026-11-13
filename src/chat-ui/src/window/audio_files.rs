@@ -1,33 +1,13 @@
 //! Native audio attachments reuse the microphone transcription and prompt path.
 
-use super::{State, egui, speech};
+use super::{
+    State,
+    controls::{action_button, dialog_frame, notice_frame},
+    egui, speech,
+};
 use crate::audio_import::{self, Source};
 use raw_window_handle::{HasWindowHandle as _, RawWindowHandle};
 use std::time::Duration;
-
-pub(super) fn action_button(label: &str) -> egui::Button<'_> {
-    egui::Button::new(label)
-        .min_size(egui::vec2(0.0, 36.0))
-        .corner_radius(8)
-}
-
-pub(super) fn notice_frame(ui: &egui::Ui) -> egui::Frame {
-    egui::Frame::new()
-        .fill(ui.visuals().faint_bg_color)
-        .stroke(ui.visuals().widgets.noninteractive.bg_stroke)
-        .corner_radius(12)
-        .inner_margin(egui::Margin::symmetric(14, 12))
-}
-
-pub(super) fn dialog_frame(ctx: &egui::Context) -> egui::Frame {
-    let visuals = &ctx.global_style().visuals;
-    egui::Frame::new()
-        .fill(visuals.window_fill)
-        .stroke(visuals.window_stroke)
-        .shadow(visuals.window_shadow)
-        .corner_radius(16)
-        .inner_margin(20)
-}
 
 impl State {
     pub(super) fn prepare_audio_paste(&mut self, frame: &eframe::Frame) {
