@@ -73,8 +73,9 @@ runs:
         }
         "BROKER_CACHE_HOST=$hostKey" >> $env:GITHUB_ENV
     - name: Reuse locked Cargo downloads and this lane's build artifacts
+      id: cargo-cache
       if: steps.packages.outputs.has-packages == 'true'
-      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: |
           ${{ env.CARGO_HOME }}/registry/index
@@ -91,6 +92,7 @@ runs:
       with:
         lane: ${{ inputs.lane }}
     - name: Format, analyze, document, test and build the selected crates
+      id: rust-check
       env:
         RUNNER_ENVIRONMENT: ${{ runner.environment }}
         GITHUB_RELEASE_BUILD: ${{ inputs.github-release }}
@@ -113,3 +115,14 @@ runs:
         path: ${{ env.BROKER_CHECK_EVIDENCE }}
         if-no-files-found: error
         compression-level: 1
+    - name: Preserve compiler outputs after successful or failed checks
+      if: ${{ !cancelled() && steps.packages.outputs.has-packages == 'true' && steps.cargo-cache.outcome == 'success' && steps.cargo-cache.outputs.cache-primary-key != '' && steps.cargo-cache.outputs.cache-hit != 'true' && (steps.rust-check.outcome == 'success' || steps.rust-check.outcome == 'failure') }}
+      continue-on-error: true
+      uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: |
+          ${{ env.CARGO_HOME }}/registry/index
+          ${{ env.CARGO_HOME }}/registry/cache
+          ${{ env.CARGO_HOME }}/git/db
+          ${{ env.CARGO_TARGET_DIR }}
+        key: ${{ steps.cargo-cache.outputs.cache-primary-key }}

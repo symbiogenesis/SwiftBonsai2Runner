@@ -240,6 +240,13 @@ production input, including audio, pinned legacy speech locks, the diagnostic
 manifest, launcher icon and notices. Its exact executable and incremental target
 keys share the same source/build-environment identity. Exact executable caches have
 no fallback keys; restored Cargo targets still require fresh build/check commands.
+The shared Rust lanes restore and save compiler caches separately. A failed
+analyzer or test can retain compiler outputs after owned cleanup, so its repair
+can reuse dependency builds. Cancelled runs and failed cache restores do not
+save, and exact hits remain immutable. Optional save failures cannot change a
+check verdict. Cache paths contain no evidence or acceptance receipts; every
+format, analyzer, documentation, test and build command still runs. Hosted cold,
+warm and failed-check recovery acceptance remains pending under C1.
 A self-hosted cache miss does not compile the CI bootstrap. The deleted
 PowerShell registry, check module and check script have no compatibility
 wrappers; feature, batching, selection and suite-guard regressions are Rust
@@ -263,6 +270,10 @@ dependency closure of same-repository composites, and enforces our inline-SHA
 policy. A tag-keyed lock entry does not cover an inline `@SHA` reference even when
 both resolve to the same commit. Local startup checks do not verify upstream
 provenance or replace GitHub workflow validation.
+The official lock identity is `owner/repository@SHA`: sub-actions such as
+`actions/cache/restore@SHA` and external reusable-workflow paths share that exact
+repository/SHA key. The startup guard validates the entire reference before
+matching this repository key; a mutable reference or different SHA still fails.
 A `sha-as-ref` warning is expected for deliberate full-SHA references; keep the
 SHA and its exact lockfile key rather than changing the reference to a tag.
 
