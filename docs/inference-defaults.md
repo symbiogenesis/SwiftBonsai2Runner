@@ -25,7 +25,7 @@ acceptance remain pending.
 | Attention / recurrent state | K4/V4 (`rsq4`) in the 0.1.27 development pin; F32 recurrent/convolution state | Owner-selected approximate cache; measured quality/memory qualification remains pending, with explicit FP16 recovery |
 | Context handling | Exact rendered token count; reject overflow | Preserve supplied history rather than silently shifting or truncating it |
 | RoPE | Model metadata, no override | Context extension can change short-context behavior |
-| Cache reuse / speculation | Disabled by default | Explicit [latest-prefix reuse](prefix-reuse.md) is available for native launches; speculation is outside Runner serving. Neither is an established quality improvement. |
+| Cache reuse / speculation | Disabled by default | Explicit [latest-prefix reuse](native-rust-engine.md#latest-prefix-reuse) is available for native launches; speculation is outside Runner serving. Neither is an established quality improvement. |
 
 CPU checks, server plans and the Rust development launcher pass sampler/reasoning arguments
 explicitly. The pinned completion renderer nevertheless omits template kwargs: its single-turn
@@ -90,7 +90,7 @@ Supply relevant references, audience, voice and constraints; request useful revi
 models, not arbitrary Q4/Q8 Swift caches. The owner selects the native
 [TurboQuant-inspired K4/V4 default](quantized-kv.md) for development without
 claiming completed quality or device qualification. FP16 (512 MiB at 8K) remains
-the explicit comparison/recovery option and the historical 0.1.23 control's cache.
+the explicit comparison/recovery option.
 Prefix reuse saves computation, not added knowledge/reasoning.
 
 ## Capacity and execution limits

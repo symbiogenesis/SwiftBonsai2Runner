@@ -45,15 +45,14 @@ binary lock.
 The service supports the selected PQ2/PTQ1 profile with or without the exact
 approved rank-one adapter. Canonical count/generation requests bind its single
 adapter slot and finite scale in `[0, 2]`. The default policy resets graph state
-at the sealed scale before each request. Explicit [latest-prefix reuse](prefix-reuse.md)
+at the sealed scale before each request. Explicit [latest-prefix reuse](#latest-prefix-reuse)
 can retain a complete committed prefix; scale changes invalidate its provenance.
 Successful requests preserve sampler progression; explicit reset reseeds it.
 
 Private readiness must identify the instantiated row-worker budget and every
 selected capability. Missing, duplicate, coerced, unsupported or mismatched
 fields reject startup. Worker counts identify a budget, not actual utilization
-or device benefit. Historical readiness shapes remain supported only for their
-explicitly reviewed release/source pairs in the compiled capability guard.
+or device benefit. Capability depends on the compiled source/file identity guard.
 
 Typed context rejection invalidates stale counts while preserving same-owner
 recovery. Startup validates immutable payloads before graph publication, without
@@ -148,6 +147,30 @@ Snapshot budgets conservatively charge every referenced sealed 64-token KV page,
 table, mutable-tail capacity and recurrent state per snapshot, without depending on
 sharing for admission.
 
+### Latest-prefix reuse
+
+`bonsai-tools chat --prompt-reuse latest` (PowerShell
+`Start-Chat.ps1 -PromptReuse latest`) selects the native runtime's latest
+committed prefix. Omission or `disabled` resets every request. Selection survives
+preparation and Retry; publisher serving rejects `latest`. The compiled
+capability guard requires reviewed source/file identities and authenticated
+readiness `"prompt_reuse":"latest"`, omitted when disabled. Any mismatch rejects
+startup without fallback.
+
+Reuse retains current committed state and logits, with no saved-prefix tree.
+It requires an exact token prefix in the same model session and bit-identical
+adapter scale. Shortened, switched or edited nonextending histories recompute
+from empty state. Scale changes, including signed zero and change-back,
+invalidate provenance. Changing policy clears model state while preserving
+sampler progression. Reset also clears the count seal and reseeds sampling.
+Cancellation or failed provisional output restores the transaction and closes
+service admission until an acknowledged reset.
+
+Requests cannot override cache policy. Compare complete multi-turn latency,
+cached/uncached token counts, resources and complete logits/state against fresh
+recomputation across edits, switches, scales, page boundaries, cancellation and
+reset. Decode TPS alone cannot demonstrate saved prefill. Actual-model service
+acceptance and measured benefit remain pending.
 ## Acceptance ownership
 
 The [conformance contract](prism-upstream-tests.md) preserves original source inputs,
@@ -182,9 +205,7 @@ Conservative snapshot and admission charges remain in force.
 | Bounded top-20 sampling | Traverse all logits for finite-value validation while retaining only the required candidates. Preserve tie order, softmax and RNG progression; reject nonfinite tail values before drawing. |
 | Projection/preparation reuse | Stream eligible F32/BF16 weights and share only identical call-scoped activation preparation. Preserve decoded-scale, rounded-product, F64-sum and failure contracts; retained storage never substitutes for input identity. |
 
-Terminal-ingestion receipts may use the exact legacy inventory or the reviewed
-inventory with the extra terminal phase. Reject double-counted decode/terminal
-work or EOS ingestion. The source's BPE cache is bounded at sixteen entries of
+Terminal-ingestion receipts must reject double-counted decode/terminal work or EOS ingestion. The source's BPE cache is bounded at sixteen entries of
 at most 32 bytes and 32 token IDs; hits retain ordinary token-limit/error precedence.
 
 [Resident packets and prefill](hexagon.md#resident-packets-and-prefill) own the
@@ -303,7 +324,7 @@ adapter-disabled smoke checks.
 
 Device gates require self-hosted ARM64 Snapdragon X Elite, X2 Elite or X2 Elite
 Extreme evidence, with the same family across all completed device gates.
-`processorName` must match that family; only legacy X Elite receipts may omit it.
+`processorName` must match that family.
 Paired promotion requires predeclared **10% end-to-end latency benefit**, or reviewed
 capacity/energy benefit within accepted limits; same-engine LoRA TPS is independent.
 Full suites/benchmarks stay CI-only; focused local correctness checks are allowed.
@@ -390,9 +411,7 @@ The retained package is bounded to 64 MiB and uses the same external relative-pa
 locked-file and digest checks as reports. Artifact ID, owning workflow/run and
 package contents still need independent provenance review; the offline evaluator
 does not query GitHub or authenticate those claims. Separate harness fields on
-other completed gates reject. Historical version-1 snapshots remain historical
-records; regenerate pending manifests under version 2, retaining prior reports and
-reviews. Version-1 manifests cannot pass version-2 scoring.
+other completed gates reject. Only schema-2 manifests can pass scoring.
 
 ### Evaluation rules
 
