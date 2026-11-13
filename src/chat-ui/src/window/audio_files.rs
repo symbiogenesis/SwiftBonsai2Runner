@@ -730,7 +730,7 @@ mod tests {
         state.audio_import = Some(audio_import::Session::fixture(vec![])?);
         state.audio_import_result(Ok(Some(chunk(vec![1, 2]))));
         assert!(matches!(
-            speech_commands.try_recv(),
+            speech_commands.recv_timeout(Duration::from_secs(2)),
             Ok(speech::Command::TranscribeFile { .. })
         ));
         assert_eq!(state.audio_file_transcript, "");
@@ -745,6 +745,9 @@ mod tests {
     {
         let (mut state, speech_commands, requests) = fixture()?;
         drop(speech_commands);
+        // Dropping the observation channel alone leaves the fixture command
+        // worker alive. Join it before exercising an unavailable-worker handoff.
+        drop(state.speech.take());
         state.audio_file_transcript = "Previous transcript".to_owned();
         state.audio_import = Some(audio_import::Session::fixture(vec![])?);
         state.audio_import_result(Ok(Some(chunk(vec![1, 2]))));
