@@ -1286,6 +1286,11 @@ fn audio_file_progress_cancel_and_rejection_are_visible_in_wide_and_narrow_windo
         let error = chat.get_by_label("Audio transcription failed").rect();
         assert!(error.is_positive() && error.bottom() <= size[1]);
         assert!(chat.get_by_label("Not enough available memory to decode this audio. Close other apps and try again. Your draft was kept.").rect().is_positive());
+        // Wrapped failure actions can sit below the bounded notice viewport.
+        // Bring the actual pointer target into view before dispatching the click.
+        chat.get_by_role_and_label(egui::Role::Button, "Dismiss audio status")
+            .scroll_to_me();
+        chat.run();
         chat.get_by_role_and_label(egui::Role::Button, "Dismiss audio status")
             .click();
         chat.run();

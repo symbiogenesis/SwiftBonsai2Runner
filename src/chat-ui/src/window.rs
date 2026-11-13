@@ -82,6 +82,13 @@ const VOICE_LIMIT: usize = 1_024;
 const MAX_DIAGNOSTICS: usize = 128;
 const MAX_DIAGNOSTIC_CHARS: usize = 4_096;
 
+fn initial_theme_check() -> Instant {
+    // Synchronize native appearance on the first frame without waiting two seconds.
+    Instant::now()
+        .checked_sub(Duration::from_secs(2))
+        .unwrap_or_else(Instant::now)
+}
+
 fn runtime_description(config: &Config) -> String {
     let engine = if config.native_engine {
         "Rust"
@@ -331,9 +338,7 @@ impl State {
             last_answer: String::new(),
             retained_draft: String::new(),
             stage: None,
-            last_theme_check: Instant::now()
-                .checked_sub(Duration::from_secs(2))
-                .unwrap_or_else(Instant::now),
+            last_theme_check: initial_theme_check(),
         }
     }
 
@@ -2100,11 +2105,10 @@ impl State {
                 } else {
                     "Enter to send · Shift+Enter for a new line".to_owned()
                 };
-                if self.help.is_none()
+                if (self.dictation_requested || self.speaking)
+                    && (self.audio_file_notice.is_none() || !self.audio_file_active)
                     && !self.speech_notice
-                    && (self.audio_file_notice.is_none()
-                        || (!self.audio_file_active && (self.dictation_requested || self.speaking)))
-                    && (self.dictation_requested || self.speaking)
+                    && self.help.is_none()
                 {
                     error_ui::summary(ui, &self.speech_status);
                 }
