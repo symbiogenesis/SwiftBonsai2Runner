@@ -69,6 +69,29 @@ fn lexical_search_ranks_distinct_words_without_query_or_source_frequency_amplifi
 }
 
 #[test]
+fn chunk_boundaries_do_not_manufacture_whole_word_matches() -> Result<(), &'static str> {
+    let leading = format!("{}garden\n\nGarden grows.", "x".repeat(MAX_EXCERPT_CHARS));
+    let packet = Source::new("Source", "1", &leading)?.search("garden")?;
+    assert_eq!(packet.excerpts.len(), 1);
+    assert_eq!(packet.excerpts[0].text, "Garden grows.");
+
+    // No whitespace in the chunk's last half: its final 800-character token is
+    // only the prefix of an original 801-character word, not a complete match.
+    let term = "g".repeat(800);
+    let trailing = format!("{}{}g\n\n{term}", "prefix ".repeat(100), term);
+    let packet = Source::new("Source", "1", &trailing)?.search(&term)?;
+    assert_eq!(packet.excerpts.len(), 1);
+    assert_eq!(packet.excerpts[0].text, term);
+
+    let terms = query_terms("garden")?;
+    assert_eq!(score("xgardenx", 1..7, &terms), 0);
+    assert_eq!(score(" garden ", 1..7, &terms), 1);
+    assert_eq!(score("x garden ", 1..8, &terms), 1);
+    assert_eq!(score(" garden x", 0..8, &terms), 1);
+    Ok(())
+}
+
+#[test]
 fn unicode_and_line_endings_remain_exact_with_inclusive_original_line_ranges()
 -> Result<(), &'static str> {
     let text = "\r\n  \r\nÉLODIE enters.\r\n花 waits.\r\n\r\nAnother room.\n";

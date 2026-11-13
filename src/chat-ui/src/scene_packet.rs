@@ -97,7 +97,7 @@ impl Source {
         let terms = query_terms(query)?;
         let mut ranked = Vec::new();
         for (index, passage) in self.passages.iter().enumerate() {
-            let score = score(&self.text[passage.bytes.clone()], &terms);
+            let score = score(&self.text, passage.bytes.clone(), &terms);
             if score != 0 {
                 ranked.push((index, score));
             }
@@ -244,7 +244,7 @@ fn split_paragraph(
     Ok(())
 }
 
-fn words(text: &str) -> impl Iterator<Item = &str> {
+fn words(text: &str) -> impl DoubleEndedIterator<Item = &str> {
     text.split(|character: char| !character.is_alphanumeric())
         .filter(|word| !word.is_empty())
 }
@@ -263,9 +263,29 @@ fn query_terms(query: &str) -> Result<Vec<String>, &'static str> {
     Ok(terms.into_iter().collect())
 }
 
-fn score(text: &str, terms: &[String]) -> usize {
+fn score(source: &str, bytes: Range<usize>, terms: &[String]) -> usize {
+    let text = &source[bytes.clone()];
+    let mut candidates = words(text);
+    // Chunking an uninterrupted source word must not manufacture a whole-word
+    // match at either edge. Paragraph/whitespace boundaries remain searchable.
+    if text.chars().next().is_some_and(char::is_alphanumeric)
+        && source[..bytes.start]
+            .chars()
+            .next_back()
+            .is_some_and(char::is_alphanumeric)
+    {
+        let _ = candidates.next();
+    }
+    if text.chars().next_back().is_some_and(char::is_alphanumeric)
+        && source[bytes.end..]
+            .chars()
+            .next()
+            .is_some_and(char::is_alphanumeric)
+    {
+        let _ = candidates.next_back();
+    }
     let mut matched = [false; MAX_QUERY_TERMS];
-    for word in words(text) {
+    for word in candidates {
         if let Ok(index) = terms.binary_search(&word.to_lowercase()) {
             matched[index] = true;
         }
