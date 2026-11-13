@@ -4,6 +4,12 @@ on:
     branches: [main, 'codex/hexagon-**']
     paths:
       - .github/workflows/hexagon-qualification.yml
+      - .github/actions/**
+      - tools/ci/test_hexagon_handoff.py
+      - Cargo.toml
+      - Cargo.lock
+      - rust-toolchain.toml
+      - .cargo/**
       - tools/hexagon/**
       - tools/bonsai/src/hexagon_tools*
       - tools/bonsai/src/hexagon_tools/**
@@ -45,6 +51,10 @@ on:
         default: 'C:\Program Files (x86)\Windows Kits\10\bin\10.0.26100.0\arm64\signtool.exe'
 permissions:
   contents: read
+env:
+  # Restored Cargo outputs are accepted only after source-content freshness checks.
+  CARGO_UNSTABLE_CHECKSUM_FRESHNESS: 'true'
+  CARGO_BUILD_FINGERPRINT: content
 jobs:
   # Keep the ABI control independent of hosted fixture preparation and device
   # admission, while sharing the same source-change coverage and dispatch.
@@ -78,17 +88,45 @@ jobs:
           path: ${{ runner.temp }}/SwiftBonsai-Hexagon-Windows-ABI/review
           if-no-files-found: warn
           retention-days: 90
-  controls:
+  checked-policy:
+    # Compile the maintenance CLI once; both native builders use this same run.
     runs-on: windows-11-arm
     timeout-minutes: 15
+    outputs:
+      target-cache-key: ${{ steps.target-cache.outputs.key }}
+      source-id: ${{ steps.target-cache.outputs.source-id }}
+      image-identity: ${{ steps.rust.outputs.image-identity }}
+      compiler-identity: ${{ steps.rust.outputs.compiler-identity }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - uses: $/.github/actions/rust-toolchain
+        id: rust
         with:
           toolchain: nightly-2026-11-12-aarch64-pc-windows-msvc
       - uses: $/.github/actions/bonsai-tools
+      - name: Identify the policy-test Cargo cache separately from executable reuse
+        id: target-cache
+        shell: pwsh
+        env:
+          POLICY_COMPILER_ID: ${{ steps.rust.outputs.compiler-identity }}
+        working-directory: ${{ runner.temp }}
+        run: |
+          Set-StrictMode -Version Latest
+          $ErrorActionPreference = 'Stop'
+          "key=hexagon-policy-target-v1-$env:BONSAI_TOOLS_CACHE_HOST-$env:POLICY_COMPILER_ID-$env:BONSAI_TOOLS_SOURCE_ID" >> $env:GITHUB_OUTPUT
+          "source-id=$env:BONSAI_TOOLS_SOURCE_ID" >> $env:GITHUB_OUTPUT
+      - name: Reuse compiled policy tests even when the packaged CLI was cached
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ${{ env.BONSAI_TOOLS_TARGET }}
+          key: ${{ steps.target-cache.outputs.key }}
+          restore-keys: |
+            hexagon-policy-target-v1-${{ env.BONSAI_TOOLS_CACHE_HOST }}-${{ steps.rust.outputs.compiler-identity }}-
       - name: Check native Hexagon evidence policy without opening a device
         shell: pwsh
         working-directory: ${{ runner.temp }}
@@ -120,10 +158,20 @@ jobs:
           path: ${{ runner.temp }}/SwiftBonsai-HexagonPolicy
           if-no-files-found: error
           retention-days: 90
+  layout-controls:
+    runs-on: windows-11-arm
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Require one owner operation within the shared device budget
         if: (inputs.run_device && inputs.run_dispatch) || (inputs.run_session_probe && (inputs.run_device || inputs.run_dispatch)) || (inputs.reference_initialization && !inputs.run_session_probe)
         shell: pwsh
         run: throw 'Select exactly one owner operation within the shared five-minute investigation budget.'
+      - name: Check hosted handoffs and owner prerequisites offline
+        shell: pwsh
+        run: python -B tools/ci/test_hexagon_handoff.py
       - name: Validate packed layout and bounded inventory supervision without models
         shell: pwsh
         run: |
@@ -136,6 +184,27 @@ jobs:
           python -B tools/hexagon/verify_operation_traffic.py
           python -B tools/hexagon/verify_operation_budget.py
           python -B tools/hexagon/verify_resident_traffic.py
+  ranking-controls:
+    runs-on: windows-11-arm
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: $/.github/actions/rust-toolchain
+        id: rust
+        with:
+          toolchain: nightly-2026-11-12-aarch64-pc-windows-msvc
+      - name: Reuse compiler and image isolated ranking build outputs
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ${{ runner.temp }}/SwiftBonsai-Hexagon-Control-Target
+          key: hexagon-ranking-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.rust.outputs.image-identity }}-${{ steps.rust.outputs.compiler-identity }}-${{ hashFiles('Cargo.toml', 'Cargo.lock', '**/Cargo.toml', 'src/cpu-policy/**', 'config/**', '.cargo/**', 'rust-toolchain.toml') }}
+          restore-keys: |
+            hexagon-ranking-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.rust.outputs.image-identity }}-${{ steps.rust.outputs.compiler-identity }}-
       - name: Validate comparative CPU GPU NPU ranking without opening a device
         shell: pwsh
         working-directory: ${{ runner.temp }}
@@ -148,6 +217,36 @@ jobs:
           cargo +nightly-2026-11-12-aarch64-pc-windows-msvc test --manifest-path $manifest --target-dir $target --locked --release -p bonsai-cpu-policy hardware::ranking::tests
           cargo +nightly-2026-11-12-aarch64-pc-windows-msvc clippy --manifest-path $manifest --target-dir $target --locked --release -p bonsai-cpu-policy --all-targets -- -D warnings
           cargo +nightly-2026-11-12-aarch64-pc-windows-msvc fmt --manifest-path $manifest -p bonsai-cpu-policy -- --check
+  controls:
+    # Preserve all earlier control prerequisites before any owner-device intake.
+    needs: [checked-policy, layout-controls, ranking-controls]
+    runs-on: windows-11-arm
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: $/.github/actions/rust-toolchain
+        id: rust
+        with:
+          toolchain: nightly-2026-11-12-aarch64-pc-windows-msvc
+          components: ''
+      - uses: $/.github/actions/use-bonsai-tools
+      - name: Select reusable Cargo storage outside fresh hosted evidence
+        shell: pwsh
+        working-directory: ${{ runner.temp }}
+        run: |
+          "BONSAI_TOOLS_TARGET=$(Join-Path $env:RUNNER_TEMP 'SwiftBonsai-PackagedTools')" >> $env:GITHUB_ENV
+      - name: Reuse projection dependencies or this run's checked policy outputs
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ${{ env.BONSAI_TOOLS_TARGET }}
+          key: hexagon-native-target-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.rust.outputs.image-identity }}-${{ steps.rust.outputs.compiler-identity }}-${{ needs.checked-policy.outputs.source-id }}-${{ hashFiles('tools/hexagon/**', '.github/workflows/hexagon-qualification.yml') }}
+          # A runner-image rollout between jobs must not restore another host's outputs.
+          restore-keys: ${{ needs.checked-policy.outputs.image-identity == steps.rust.outputs.image-identity && needs.checked-policy.outputs.compiler-identity == steps.rust.outputs.compiler-identity && needs.checked-policy.outputs.target-cache-key || '' }}
       - name: Prepare source-bound native diagnostics and packed HVX HMX controls without a device
         shell: pwsh
         working-directory: ${{ runner.temp }}
@@ -194,6 +293,7 @@ jobs:
           if-no-files-found: error
           retention-days: 90
   artifact-binder:
+    needs: checked-policy
     runs-on: windows-11-arm
     timeout-minutes: 10
     steps:
@@ -201,9 +301,11 @@ jobs:
         with:
           persist-credentials: false
       - uses: $/.github/actions/rust-toolchain
+        id: rust
         with:
           toolchain: nightly-2026-11-12-aarch64-pc-windows-msvc
-      - uses: $/.github/actions/bonsai-tools
+          components: ''
+      - uses: $/.github/actions/use-bonsai-tools
       - name: Check out the exact Rust GGUF reader for the narrow artifact binder
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -211,6 +313,16 @@ jobs:
           ref: 7aca2251f09acb345d4afb53d5ce411f81017745
           path: .hexagon-gguf-source
           persist-credentials: false
+      - name: Reuse only the pinned GGUF binder's Cargo outputs
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ${{ runner.temp }}/SwiftBonsai-Hexagon-Artifact-Target
+          key: hexagon-binder-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.rust.outputs.image-identity }}-${{ steps.rust.outputs.compiler-identity }}-7aca2251f09acb345d4afb53d5ce411f81017745-${{ hashFiles('.hexagon-gguf-source/Cargo.lock', 'tools/hexagon/packed_artifact.rs', 'tools/hexagon/diagnostic.manifest', 'tools/bonsai/src/hexagon_tools.rs', '.github/workflows/hexagon-qualification.yml') }}
+          restore-keys: |
+            hexagon-binder-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.rust.outputs.image-identity }}-${{ steps.rust.outputs.compiler-identity }}-7aca2251f09acb345d4afb53d5ce411f81017745-
       - name: Prepare the verified projection and sign-array binder without a model
         shell: pwsh
         working-directory: ${{ runner.temp }}
@@ -220,7 +332,7 @@ jobs:
           Set-StrictMode -Version Latest
           $ErrorActionPreference = 'Stop'
           $PSNativeCommandUseErrorActionPreference = $true
-          @{ operation = 'build-packed-artifact'; repositoryDirectory = $env:GITHUB_WORKSPACE; ggufSourceDirectory = (Join-Path $env:GITHUB_WORKSPACE '.hexagon-gguf-source'); outputDirectory = (Join-Path $env:RUNNER_TEMP 'SwiftBonsai-Hexagon-Artifact') } | ConvertTo-Json -Compress | & $env:BONSAI_TOOLS_PATH hexagon-tools --request -
+          @{ operation = 'build-packed-artifact'; repositoryDirectory = $env:GITHUB_WORKSPACE; ggufSourceDirectory = (Join-Path $env:GITHUB_WORKSPACE '.hexagon-gguf-source'); outputDirectory = (Join-Path $env:RUNNER_TEMP 'SwiftBonsai-Hexagon-Artifact'); buildTargetDirectory = (Join-Path $env:RUNNER_TEMP 'SwiftBonsai-Hexagon-Artifact-Target') } | ConvertTo-Json -Compress | & $env:BONSAI_TOOLS_PATH hexagon-tools --request -
       - name: Retain the source-bound artifact binder bundle
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
