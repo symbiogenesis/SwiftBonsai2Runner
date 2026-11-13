@@ -10,12 +10,8 @@ requirements; prior audit snapshots and prototype results belong in Git history.
 Artifact verification belongs in `bonsai-artifacts`; the broker has no direct `sha2` dependency.
 Windows artifact/maintenance hashing uses the shared CNG boundary in
 `bonsai-windows-credentials`; portable and test paths retain `sha2`.
-ZIP 9.5.1 disables defaults and enables only `deflate-flate2-zlib-rs`.
-Upstream hardening includes [symlink extraction](https://github.com/zip-rs/zip2/pull/1116),
-[Unicode-path renaming](https://github.com/zip-rs/zip2/pull/1177) and
-[9.1.3 archive fixes](https://github.com/zip-rs/zip2/releases/tag/v9.1.3).
-Runner still requires bounded custom extraction; these fixes establish neither
-an exploitable Runner flaw nor a measured size/speed gain.
+ZIP disables defaults and enables only `deflate-flate2-zlib-rs`. Bounded custom
+extraction remains necessary; upstream hardening does not replace Runner policy.
 
 [The source-checks audit job](../.github/workflows/source-checks.yml) runs for relevant
 main pushes, weekly and manually. Pinned cargo-audit fetches RustSec anew;
@@ -59,22 +55,17 @@ serve the native UI; they are not evidence of a browser frontend.
 | `transcribe-cpp` | Static CPU ASR, defaults disabled; reviewed CMake script downloads no source and explicitly enables MSVC optimization. |
 | `simd-json` | Exact optional qualification-only crates.io pin; ordinary requests still use serde_json. |
 | `fearless_simd` | Pinned safe SIMD (`=1.2.0` in Runner speech and the active external runtime, with independent locks). ASR uses it in `validate_pcm`; TTS uses it in the serving Rust `engine`/`codec` modules. Prism's `bonsai-neon-dot` kernels are a separate runtime dependency. |
-| `rayon` | TTS pins `=1.12.0` for safe borrowed projection work on a reusable, explicitly bounded team owned by its calling thread. No global pool or whole-weight copies; one-worker and failed-team construction run serially. This replaces per-projection OS thread creation and requires owning hosted dependency/model acceptance. |
-| `memchr` | Promoted from transitive to direct (`=2.8.3`, `default-features = false`) in `bonsai-broker`, `bonsai-chat`, and `bonsai-speech-service` for NEON-vectorized HTTP header, SSE line, multipart boundary, and ASCII folded Find scanning. |
+| `rayon` | TTS pins `=1.12.0` for safe borrowed projection work on a reusable, explicitly bounded team owned by its calling thread. No global pool or whole-weight copies; one-worker and failed-team construction run serially. Owning hosted dependency/model acceptance remains required. |
+| `memchr` | Direct (`default-features = false`) in `bonsai-broker`, `bonsai-chat`, and `bonsai-speech-service` for NEON-vectorized HTTP header, SSE line, multipart boundary, and ASCII folded Find scanning. |
 | Windows CNG | Runner artifact and maintenance digests use `bonsai_windows_credentials::Sha256` (`BCryptHashData`); CPU dispatch belongs to the Windows provider. Prism's `bonsai-native-hash` is external to this workspace. These paths alone establish no device speedup. |
 | `mxc-sdk`, `flatbuffers` | Required security integration; pursue upstream modularity. |
 | Internal crates | Retain shared process/credential/audio/policy/artifact boundaries; no unused direct path edge found. |
 
-ASR/TTS retain separate executables and ownership. ASR disables Metal/optional
-accelerators and pins CPU-only CMake; RustSec does not fully cover that bundled
-C/C++. TTS now loads ordinary pinned GGUF weights and performs inference in Rust
-on the CPU, without GGML/CMake linkage or the former local `HTP0` DLL backend.
-[Speech source documentation](../src/speech-tts/README.md#optional-hexagon-runtime)
-keeps future signed NPU work separate from current serving. This source change
-does not transfer historical device or dependency qualification to the Rust engine.
-Speech only needs `VerifiedFile` from `bonsai-artifacts`, whose ZIP APIs are
-unconditional. Splitting them may reduce standalone compile scope, but workspace
-feature unification/linker elimination limit likely benefit. Pending work stays in PLAN.
+ASR/TTS have separate executables and ownership. ASR pins CPU-only CMake;
+RustSec does not fully cover its bundled C/C++. TTS serves in Rust on CPU under
+its [source contract](../src/speech-tts/README.md). Speech uses only `VerifiedFile`
+from `bonsai-artifacts`; splitting its unconditional ZIP APIs needs demonstrated
+build/size benefit after Cargo unification and linker elimination.
 
 ## JSON selection
 
@@ -89,14 +80,9 @@ bounds and canonical bytes must pass before interpreting timings.
 
 ### Current candidate and pending gate
 
-The optional `json-candidate` pins published **0.19.0**, upstream
-[`00a71f6`](https://github.com/simd-lite/simd-json/commit/00a71f6a931f7f365c23d7fc8d1f84ad693304d3),
-with Cargo.lock registry checksum; no submodule is required. It includes Unicode
-fixes and [PR #495](https://github.com/simd-lite/simd-json/pull/495) for
-[issue #494](https://github.com/simd-lite/simd-json/issues/494), merged 2026-10-27 as
-[`77ec801`](https://github.com/simd-lite/simd-json/commit/77ec80113f9990ef7fd89b0ee859e7415bfc4827).
-Only package-version metadata differs from that commit. `Deserializer::from_tape`
-recovers/resets tape allocation while preserving borrowing/validation.
+The optional `json-candidate` uses the exact crates.io pin and registry checksum
+in [Cargo.lock](../Cargo.lock). `Deserializer::from_tape` recovers/resets tape
+allocation while preserving borrowing and validation.
 
 `padded-tape-serde-reuse` reuses padded input, parser buffers and tape across requests:
 
