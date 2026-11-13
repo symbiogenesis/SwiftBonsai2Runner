@@ -4,7 +4,29 @@ param([string]$Case)
 $repository=Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
 $jobs=Get-CiJobBlocks ([IO.File]::ReadAllText((Join-Path $repository '.github/workflows/foundation.yml')))
 $config=[IO.File]::ReadAllText((Join-Path $repository '.github/ci/impact.json')) | ConvertFrom-Json -AsHashtable
+function Assert-FoundationPlannerGuard([string]$Job) {
+    $steps=@([regex]::Split($Job,'(?m)^      - ') | Select-Object -Skip 1)
+    Assert-Ci ($steps.Count -ge 3) 'Foundation must reject planner failure before checking out or downloading artifacts.'
+    $guard=$steps[0]
+    Assert-Ci ($guard -cmatch '(?m)^        if: needs\.changes\.result != ''success''\s*$') 'The first Foundation step must reject every unsuccessful planner result.'
+    Assert-Ci ($guard -cmatch '(?m)^        shell: pwsh\s*$') 'The planner rejection must execute in PowerShell.'
+    Assert-Ci ($guard -cmatch '(?m)^          throw ') 'Planner rejection must fail the required Foundation check.'
+    $continuation=[regex]::Match($guard,'(?m)^        continue-on-error:[ \t]*(.*)$')
+    if ($continuation.Success) { Assert-Ci ($continuation.Groups[1].Value.Trim() -cmatch '^false(?:[ \t]+#.*)?$') 'Planner rejection cannot permit failure.' }
+}
 $cases=[ordered]@{
+ planner_failure_is_reported_before_artifact_intake={
+    Assert-FoundationPlannerGuard $jobs.foundation
+    Assert-FoundationPlannerGuard ($jobs.foundation.Replace('        shell: pwsh',"        continue-on-error: false`n        shell: pwsh"))
+ }
+ planner_failure_guard_mutations_rejected={
+    $job=$jobs.foundation; $parts=[regex]::Split($job,'(?m)^      - '); $guard=$parts[1]
+    Assert-CiReject { Assert-FoundationPlannerGuard ($parts[0]+'      - '+(($parts | Select-Object -Skip 2) -join '      - ')) }
+    Assert-CiReject { Assert-FoundationPlannerGuard ($job.Replace("needs.changes.result != 'success'","needs.changes.result == 'failure'")) }
+    Assert-CiReject { Assert-FoundationPlannerGuard ($parts[0]+'      - '+$parts[2]+'      - '+$guard+'      - '+(($parts | Select-Object -Skip 3) -join '      - ')) }
+    Assert-CiReject { Assert-FoundationPlannerGuard ($job.Replace('          throw ','          Write-Output ')) }
+    foreach ($value in @('true','${{ false }}')) { Assert-CiReject { Assert-FoundationPlannerGuard ($job.Replace('        shell: pwsh',"        continue-on-error: $value`n        shell: pwsh")) } }
+ }
  consumers_wait_for_checked_cli={
     foreach ($name in @('speech','foundation-tests','release-integration')) { Assert-CiSet (Get-CiDependencies $jobs[$name]) @('changes','checked-tools') }
     foreach ($name in @('checked-tools','maintenance','speech-tts')) { Assert-CiSet (Get-CiDependencies $jobs[$name]) @('changes') }
