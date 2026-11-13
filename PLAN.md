@@ -1488,6 +1488,11 @@ not close pending hosted integration or full-model acceptance.
      including first audio, steady synthesis, exact arithmetic/state controls,
      cancellation, voice identity and peak memory. Source checks alone do not
      establish recovery from the reported Rust TTS latency regression.
+     Extend those controls to the dense float/half output-row tiles, selected-thread
+     causal/transposed convolutions and ConvNeXt, and bounded exact Base-prefix
+     reuse. Compare cold and repeated utterances, edited text, voice replacement,
+     serial execution, cancelled/failed reuse and complete streaming state; retain
+     the prefix cache's additional memory in peak-resource accounting.
      `HtpPrefillPacket` currently serializes a header, not a working RPC dispatcher.
      Add and qualify explicit `hexagon-native-rpc` dispatch before claiming direct
      signed-DSP prefill without `ggml-hexagon.dll`/`ggml-base.dll`. Candidate

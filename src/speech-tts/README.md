@@ -47,6 +47,22 @@ instead of independently designing a voice per segment. Rust owns reference
 samples and embeddings through model handoff and releases them on failed loading
 or extraction.
 
+## CPU execution
+
+Packed float/half projections process four output rows together while retaining
+each row's original accumulation order. Codec convolutions and ConvNeXt frames
+share the projection worker team and honor the selected thread count. Independent
+output ranges run concurrently; streaming history and overlap carry retain their
+sequential ownership. The serial path remains available with `--threads 1`.
+
+Base synthesis retains one bounded, exact reference-prefix snapshot between
+successful utterances. Reuse requires identical input-row bits; changed rows,
+voice replacement, cancellation or synthesis failure discard the snapshot.
+The cache does not retain generated continuation state or change sampling.
+See the [resource contract](../../docs/streaming-resources.md#native-speech-generation-and-streaming)
+for its storage bounds. These implementation changes still require pinned-model
+first-audio, steady-synthesis, listening and resource qualification in PLAN.
+
 ## Native ABI and failure handling
 
 Production TTS has no foreign model-inference ABI, C++ exception boundary or native
