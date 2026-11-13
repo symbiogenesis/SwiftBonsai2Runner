@@ -1,5 +1,5 @@
 //! Quiet composer guidance; estimates never participate in request admission.
-use super::{ModelLifecycle, OUTPUT_TOKENS, RichText, State, egui};
+use super::{ModelLifecycle, OUTPUT_TOKENS, RichText, State, controls, egui};
 use crate::context::{self, Estimate, Pressure};
 
 #[derive(Default)]
@@ -227,8 +227,9 @@ fn context_button(ui: &mut egui::Ui, estimate: Estimate, pending: bool) -> egui:
             pending,
         );
     });
-    let response = toolbar_action(ui, (RichText::new("Context:").size(13.0), ring), false)
-        .accessible_name("Context");
+    let response =
+        controls::toolbar_action(ui, (RichText::new("Context:").size(13.0), ring), false)
+            .accessible_name("Context");
     let description = if estimate.capacity.is_none() {
         "Context capacity is available after the model starts. Open for details.".to_owned()
     } else if pending {
@@ -284,54 +285,6 @@ fn context_ring(
         ui.painter()
             .add(egui::Shape::line(points, egui::Stroke::new(2.5, color)));
     }
-}
-
-/// Keep the composer's popup actions consistent across native themes.
-pub(super) fn toolbar_button(ui: &mut egui::Ui, text: &str, active: bool) -> egui::Response {
-    let color = if active {
-        ui.visuals().selection.stroke.color
-    } else {
-        ui.visuals().text_color()
-    };
-    let chevron = egui::Atom::paint(egui::Vec2::splat(8.0), move |ui, args| {
-        let center = args.rect.center();
-        ui.painter().add(egui::Shape::line(
-            vec![
-                center + egui::vec2(-2.5, -1.5),
-                center + egui::vec2(0.0, 1.0),
-                center + egui::vec2(2.5, -1.5),
-            ],
-            egui::Stroke::new(1.25, color),
-        ));
-    });
-    toolbar_action(
-        ui,
-        (RichText::new(text).size(13.0).color(color), chevron),
-        active,
-    )
-}
-
-fn toolbar_action<'a>(
-    ui: &mut egui::Ui,
-    contents: impl egui::IntoAtoms<'a>,
-    active: bool,
-) -> egui::Response {
-    use egui::class::HasClasses as _;
-
-    ui.scope(|ui| {
-        ui.spacing_mut().button_padding = egui::vec2(10.0, 6.0);
-        ui.add(
-            egui::Button::new(contents)
-                .gap(7.0)
-                .corner_radius(16)
-                .min_size(egui::vec2(0.0, 32.0))
-                // Highlight enabled thinking without announcing a toggle:
-                // activating the button opens its popup.
-                .with_class_if(egui::Button::CLASS_SELECTED, active),
-        )
-        .on_hover_cursor(egui::CursorIcon::PointingHand)
-    })
-    .inner
 }
 
 fn capacity_meter(ui: &mut egui::Ui, estimate: Estimate) {

@@ -523,9 +523,8 @@ impl Message {
         };
         let response = ui.add_enabled(
             playing || (speech_enabled && self.can_speak()),
-            egui::Button::new("")
+            super::controls::quiet_button("")
                 .min_size(Vec2::splat(MESSAGE_ACTION_SIZE))
-                .frame_when_inactive(false)
                 .selected(playing),
         );
         response.widget_info(|| {
@@ -790,9 +789,8 @@ impl Message {
                 };
                 if child
                     .add(
-                        egui::Button::new(label)
-                            .min_size(egui::vec2(0.0, MESSAGE_ACTION_SIZE))
-                            .frame_when_inactive(false),
+                        super::controls::quiet_button(label)
+                            .min_size(egui::vec2(0.0, MESSAGE_ACTION_SIZE)),
                     )
                     .clicked()
                 {

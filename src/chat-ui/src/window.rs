@@ -23,6 +23,7 @@ mod audio_files;
 mod background_tests;
 mod branding;
 mod context_capacity;
+mod controls;
 mod draft_buffer;
 #[cfg(test)]
 mod ergonomics_tests;
