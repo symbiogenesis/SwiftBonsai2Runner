@@ -48,6 +48,9 @@ const LEGACY_FILES: &[&str] = &[
 
 mod management;
 
+/// Single-file executable assembly, verified extraction and portable launch.
+pub mod bundle;
+
 #[derive(Deserialize)]
 #[serde(tag = "operation", rename_all = "kebab-case", deny_unknown_fields)]
 enum Request {
@@ -470,7 +473,7 @@ mod tests {
     use super::*;
     use std::time::{SystemTime, UNIX_EPOCH};
 
-    fn fixture() -> crate::Result<PathBuf> {
+    pub(super) fn fixture() -> crate::Result<PathBuf> {
         let nonce = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .map_err(|error| error.to_string())?
@@ -488,6 +491,10 @@ mod tests {
                 pe[..2].copy_from_slice(b"MZ");
                 pe[60..64].copy_from_slice(&128_u32.to_le_bytes());
                 pe[128..134].copy_from_slice(&[b'P', b'E', 0, 0, 0x64, 0xaa]);
+                if *name == "bin/bonsai-tools.exe" {
+                    let marker = bundle::LAUNCHER_PROTOCOL.as_bytes();
+                    pe[256..256 + marker.len()].copy_from_slice(marker);
+                }
                 pe
             } else {
                 b"fixture".to_vec()

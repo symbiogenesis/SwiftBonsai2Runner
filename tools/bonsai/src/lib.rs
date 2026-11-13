@@ -8,6 +8,8 @@ pub type Result<T> = std::result::Result<T, String>;
 pub const COMMANDS: &[&str] = &[
     "chat",
     "installed-chat",
+    "bundled-chat",
+    "chat-bundle",
     "hexagon-tools",
     "build-tools",
     "provision",
@@ -63,6 +65,7 @@ pub fn version() -> serde_json::Value {
         "Name": "bonsai-tools", "Version": env!("CARGO_PKG_VERSION"),
         "ProtocolVersion": 5, "StartupProtocolVersion": 1,
         "BootstrapProtocolVersion": 1, "ChatLaunchProtocolVersion": 1, "Commands": COMMANDS,
+        "BundleLauncherProtocol": chat_package::bundle::LAUNCHER_PROTOCOL,
         "CompiledInference": {"Version": inference["version"], "Commit": inference["commit"],
             "Target": inference["target"], "ArchiveSha256": inference["asset"]["sha256"]}
     })

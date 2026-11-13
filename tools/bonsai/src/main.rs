@@ -63,12 +63,25 @@ fn startup_command(command: &str, request: &serde_json::Value) -> bool {
 
 fn execute() -> bonsai_tools::Result<serde_json::Value> {
     let arguments: Vec<_> = std::env::args_os().skip(1).collect();
+    let bundled_command = arguments
+        .first()
+        .is_some_and(|argument| argument == "bundled-chat");
+    if bundled_command
+        || (arguments.is_empty() && bonsai_tools::chat_package::bundle::current_is_bundled()?)
+    {
+        initialize_startup(&mut serde_json::json!({}))?;
+        return bonsai_tools::chat_package::bundle::launch(if bundled_command {
+            &arguments[1..]
+        } else {
+            &[]
+        });
+    }
     if arguments.len() == 1 && arguments[0] == "--version" {
         return Ok(bonsai_tools::version());
     }
     if arguments.len() == 1 && arguments[0] == "--help" {
         return Ok(serde_json::json!({
-            "Usage": "bonsai-tools COMMAND --request ABSOLUTE_JSON_PATH | --request - | --json JSON_OBJECT; bonsai-tools chat [--repository-root PATH] [--data-directory PATH] [--native-engine|--publisher-engine] [--use-repacked-ptq1|--use-original-pq2] [--no-speech-models]; bonsai-tools installed-chat [--installation-directory PATH] [--data-directory PATH] [--no-speech-models]",
+            "Usage": "bonsai-tools COMMAND --request ABSOLUTE_JSON_PATH | --request - | --json JSON_OBJECT; bonsai-tools chat [--repository-root PATH] [--data-directory PATH] [--native-engine|--publisher-engine] [--use-repacked-ptq1|--use-original-pq2] [--no-speech-models]; bonsai-tools installed-chat [--installation-directory PATH] [--data-directory PATH] [--no-speech-models]; SwiftBonsai2Runner.exe [bundled-chat [--data-directory PATH] [--no-speech-models]]]",
             "Commands": bonsai_tools::COMMANDS,
             "Chat": "Development default: Rust engine, original PQ2, four row workers and standard adapter at scale 1.3. Full release qualification is pending; --publisher-engine selects manual rollback. All options are documented in tools/bonsai/README.md."
         }));
@@ -147,6 +160,7 @@ fn dispatch(command: &str, request: serde_json::Value) -> bonsai_tools::Result<s
         "chat-launch" => bonsai_tools::chat_launch::run(request),
         "chat-prepare" => bonsai_tools::chat_launch::prepare_run(request),
         "chat-package" => bonsai_tools::chat_package::run(request),
+        "chat-bundle" => bonsai_tools::chat_package::bundle::run(request),
         "app-update" => bonsai_tools::app_update::run(request),
         "gguf" => bonsai_tools::gguf::run(request),
         "ptq1-capture" => bonsai_tools::ptq1_capture::run(request),
