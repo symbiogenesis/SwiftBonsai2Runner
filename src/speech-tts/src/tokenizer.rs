@@ -1,8 +1,8 @@
 //! Owned byte-level tokenizer policy from pinned Qwen `src/bpe.h`.
 //!
 //! Ported from qwentts.cpp `5916bf7c79dbb4e66fc059cdc507a79a23a28bb4`,
-//! under the MIT license in `LICENSE.qwen-core`. GGUF access remains native;
-//! these owned tables, special matching, segmentation and merges are safe Rust.
+//! under the MIT license in `LICENSE.qwen-core`. GGUF access, owned tables,
+//! special matching, segmentation and merges are safe Rust.
 #![forbid(unsafe_code)]
 #![expect(
     clippy::redundant_pub_crate,
@@ -58,6 +58,44 @@ pub(super) struct Tokenizer {
 }
 
 impl Tokenizer {
+    /// Load bounded pinned tokenizer tables without a native metadata API.
+    pub(super) fn load(path: &std::path::Path) -> io::Result<Self> {
+        let metadata = crate::gguf::Gguf::open(path)?;
+        let token_key = metadata
+            .find(b"tokenizer.ggml.tokens")
+            .ok_or_else(crate::gguf::invalid)?;
+        let merge_key = metadata
+            .find(b"tokenizer.ggml.merges")
+            .ok_or_else(crate::gguf::invalid)?;
+        let mut owner = Self::new();
+        for index in 0..metadata.string_count(token_key)? {
+            owner.add_token(
+                metadata.string(token_key, index)?,
+                i32::try_from(index).map_err(io::Error::other)?,
+            )?;
+        }
+        for index in 0..metadata.string_count(merge_key)? {
+            owner.add_merge(
+                metadata.string(merge_key, index)?,
+                i32::try_from(index).map_err(io::Error::other)?,
+            )?;
+        }
+        owner.finish()?;
+        for name in [
+            b"qwen3-tts.text.im_start_id".as_slice(),
+            b"qwen3-tts.text.im_end_id",
+            b"qwen3-tts.text.tts_pad_id",
+            b"qwen3-tts.text.tts_bos_id",
+            b"qwen3-tts.text.tts_eos_id",
+        ] {
+            let key = metadata.find(name).ok_or_else(crate::gguf::invalid)?;
+            owner.add_special_id(
+                i32::try_from(metadata.u32_value(key)?).map_err(io::Error::other)?,
+            )?;
+        }
+        Ok(owner)
+    }
+
     #[cfg(test)]
     pub(super) fn token_id_for_test(&self, spelling: &[u8]) -> Option<i32> {
         self.vocabulary.get(spelling).copied()

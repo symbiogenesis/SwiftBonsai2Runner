@@ -41,22 +41,6 @@ enum Request {
         working_directory: PathBuf,
     },
     #[serde(rename_all = "camelCase")]
-    SpeechStaticBuild {
-        repository_root: PathBuf,
-        working_directory: PathBuf,
-        target_directory: PathBuf,
-        package_directory: PathBuf,
-        evidence_directory: PathBuf,
-        source_id: String,
-        host_cache_key: String,
-    },
-    #[serde(rename_all = "camelCase")]
-    SpeechStaticVerify {
-        package_directory: PathBuf,
-        source_id: String,
-        host_cache_key: String,
-    },
-    #[serde(rename_all = "camelCase")]
     Ptq1Capture {
         repository_root: PathBuf,
         output_directory: PathBuf,
@@ -439,9 +423,6 @@ pub fn run(request: Value) -> crate::Result<Value> {
         | Request::SpeechCandidate {
             repository_root, ..
         }
-        | Request::SpeechStaticBuild {
-            repository_root, ..
-        }
         | Request::Ptq1Capture {
             repository_root, ..
         }
@@ -459,7 +440,7 @@ pub fn run(request: Value) -> crate::Result<Value> {
             }
             let _manifest = input_file(&repository_root.join("Cargo.toml"))?;
         }
-        Request::SpeechEnvironment { .. } | Request::SpeechStaticVerify { .. } => {}
+        Request::SpeechEnvironment { .. } => {}
     }
     match request {
         Request::ChatCandidate {
@@ -474,28 +455,6 @@ pub fn run(request: Value) -> crate::Result<Value> {
             data_directory,
             working_directory,
         } => speech_cache::environment(&data_directory, &working_directory),
-        Request::SpeechStaticBuild {
-            repository_root,
-            working_directory,
-            target_directory,
-            package_directory,
-            evidence_directory,
-            source_id,
-            host_cache_key,
-        } => speech_cache::build(
-            &repository_root,
-            &working_directory,
-            &target_directory,
-            &package_directory,
-            &evidence_directory,
-            &source_id,
-            &host_cache_key,
-        ),
-        Request::SpeechStaticVerify {
-            package_directory,
-            source_id,
-            host_cache_key,
-        } => speech_cache::verify(&package_directory, &source_id, &host_cache_key),
         Request::Ptq1Capture {
             repository_root,
             output_directory,

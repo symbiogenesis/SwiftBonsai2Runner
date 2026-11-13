@@ -2,8 +2,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory)][string]$RepositoryRoot,
-    [Parameter(Mandatory)][string]$OutputPath,
-    [Parameter(Mandatory)][string]$NativeSourceDirectory
+    [Parameter(Mandatory)][string]$OutputPath
 )
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
@@ -12,7 +11,6 @@ $PSNativeCommandUseErrorActionPreference = $true
 . (Join-Path $PSScriptRoot 'Notice-Common.ps1')
 $script:upstreamNoticeCache = @{}
 $RepositoryRoot = Resolve-ReleasePath $RepositoryRoot
-$NativeSourceDirectory = Resolve-ReleasePath $NativeSourceDirectory
 $OutputPath = Resolve-ReleasePath $OutputPath -Kind File -AllowMissing
 
 # Read exact resolved package sources, including build dependencies. Retaining
@@ -62,7 +60,11 @@ $fontRoot = Join-Path (Split-Path -Parent $fonts[0].manifest_path) 'fonts'
 foreach ($name in @('Hack-Regular.txt', 'UFL.txt', 'emoji-icon-font-mit-license.txt', 'egui-icons.txt')) {
     if (-not (Test-Path -LiteralPath (Join-Path $fontRoot $name) -PathType Leaf)) { throw "Missing embedded font notice: $name" }
 }
-$pins = Get-Content -LiteralPath (Join-Path $RepositoryRoot 'config/native-speech.lock.json') -Raw | ConvertFrom-Json
-Add-SourceNotices "Qwen native source $($pins.sources.qwen.revision) and GGML $($pins.sources.ggml.revision)" $NativeSourceDirectory $true
-if (-not (Test-Path -LiteralPath (Join-Path $NativeSourceDirectory 'ggml/LICENSE') -PathType Leaf)) { throw 'Missing bundled GGML license.' }
+# The Rust TTS port retains upstream copyright/license attribution as data.
+# Notice collection must never download or stage a native inference source tree.
+foreach ($name in @('LICENSE.qwen-core', 'LICENSE.ggml')) {
+    $notice = Resolve-ReleasePath (Join-Path $RepositoryRoot "src/speech-tts/$name") -Kind File
+    [void]$text.AppendLine("`n===== Rust speech port provenance: $name =====")
+    [void]$text.AppendLine([IO.File]::ReadAllText($notice))
+}
 [IO.File]::WriteAllText($OutputPath, $text.ToString(), [Text.UTF8Encoding]::new($false))

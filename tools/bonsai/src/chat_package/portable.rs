@@ -30,7 +30,7 @@ struct Image<R> {
     source: R,
     length: u64,
     headers: u32,
-    image_base: u64,
+    base_address: u64,
     directories: [(u32, u32); MAX_DIRECTORIES],
     sections: Vec<Section>,
 }
@@ -66,7 +66,7 @@ impl<R: Read + Seek> Image<R> {
             source,
             length,
             headers: 0,
-            image_base: 0,
+            base_address: 0,
             directories: [(0, 0); MAX_DIRECTORIES],
             sections: Vec::new(),
         };
@@ -92,7 +92,8 @@ impl<R: Read + Seek> Image<R> {
             return Err(invalid());
         }
         image.headers = u32_at(&optional, 60)?;
-        image.image_base = u64::from_le_bytes(optional[24..32].try_into().map_err(|_| invalid())?);
+        image.base_address =
+            u64::from_le_bytes(optional[24..32].try_into().map_err(|_| invalid())?);
         let directory_count = usize::try_from(u32_at(&optional, 108)?).map_err(|_| invalid())?;
         if directory_count > MAX_DIRECTORIES || 112 + directory_count * 8 > optional_size {
             return Err(invalid());
@@ -231,7 +232,7 @@ impl<R: Read + Seek> Image<R> {
                 } else {
                     u32::try_from(
                         u64::from(name)
-                            .checked_sub(self.image_base)
+                            .checked_sub(self.base_address)
                             .ok_or_else(invalid)?,
                     )
                     .map_err(|_| invalid())?
@@ -346,8 +347,8 @@ mod tests {
     }
 
     #[test]
-    fn delayed_virtual_addresses_are_checked_without_truncating_the_image_base() -> crate::Result<()>
-    {
+    fn delayed_virtual_addresses_are_checked_without_truncating_the_base_address()
+    -> crate::Result<()> {
         let mut bytes = image(None, Some("vcruntime140.dll"));
         bytes[176..184].copy_from_slice(&0x1000_0000_u64.to_le_bytes());
         bytes[768..772].fill(0);

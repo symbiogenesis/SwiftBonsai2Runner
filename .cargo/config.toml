@@ -1,0 +1,3 @@
+# Portable application binaries carry their CRT; users install no VC++ runtime.
+[target.aarch64-pc-windows-msvc]
+rustflags = ["-C", "target-feature=+crt-static"]

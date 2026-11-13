@@ -23,7 +23,7 @@ in sync with detailed tasks and preserve their acceptance obligations.
 | M1 / owner, qualification | Prism, then Runner | Reviewed memory-selected context source and a genuine compatible runtime release | Publish the prepared Prism 0.1.26 source as a genuine source-bound bundle with paired context/memory child arguments and the reviewed M2 accounting, review its exact identity and repin Runner to activate native memory sizing under the [context expansion roadmap](#native-context-expansion-roadmap). Qualify selected context/admission/Job limits, unknown and changing memory, retry, UI reporting and full-state/resource behavior at the selected capacities. Current native 0.1.25 remains fixed at 8K; publisher serving uses memory selection. Historical fixed-8K controls retain their identities. |
 | M2 / integration, qualification | Prism, then Runner | Published M1-compatible runtime with reviewed cache-aware accounting and exact Runner repin | Deliver the prepared cache-aware process/state/checkpoint sizing and native sequential scratch accounting through the same reviewed release; qualify staged 64K/128K capacities and all selected-profile state/resource gates. Follow the [cumulative estimates and conditional extensions](#native-context-expansion-roadmap); source projections do not reduce current release admission or qualify a larger window. |
 | K1 / owner, qualification | Prism, then Runner | Published 0.1.25 K4/V4 development runtime and matching local Runner repin | Have the owner publish the reviewed Runner repin, preserving explicit FP16 recovery and existing admission/8K bounds for this initial packet. Complete the [paired quality/memory packet](docs/quantized-kv.md#first-practical-promotion-packet) for measured qualification, independently on X1/X2; it is not a prerequisite for the development default. Follow M2 with the separately qualified K4/V3 capacity profile in the [context roadmap](#native-context-expansion-roadmap). |
-| S1 / implementation, integration | Runner; Prism for shared runtime/RPC consumers | Agreed verified-loading, state, stream and transport ownership interfaces | Integrate Talker/CodePredictor, codec/speaker and signed Rust RPC through [C++ retirement](#complete-c-retirement); qualify the ordinary Q4 baseline before ternary speech and new 48 kHz artifacts. |
+| S1 / qualification, implementation | Runner; Prism for signed runtime/RPC consumers | Rust CPU Talker/CodePredictor, weight loader, codec/speaker and service integration | Qualify the Rust TTS replacement against the retained controls and pinned Q8/Q4 models, including voice identity, audio, cancellation, lifecycle and resources. Signed Rust RPC remains implementation work under [C++ retirement](#complete-c-retirement); qualify ordinary Q4 before ternary speech and new 48 kHz artifacts. |
 | S2 / implementation, qualification | Runner | Pinned Qwen3-ASR 1.7B artifacts and replacement controls | Qualify microphone-to-Swift submission, then replace ASR's native engine and close transcript/state, cancellation, lifecycle, quality and resource gates before removing its compiler/dependency paths. |
 | P1 / external, qualification | Prism and Runner | Original authoring inputs for provenance; hosted public-pack reconstruction for its separate gate | Run the declared reconstruction and independent replay while pursuing provenance intake independently; follow the PTQ1 critical path below. Neither blocks A1. |
 | N1 / qualification | Prism and Runner | Frozen NPU-1 packet and applicable signed/runtime prerequisites | Complete [NPU-1 through NPU-7](#promotion-sequence) for the selected explicit X2 profile. HMX/PTQ1/X1/GPU/automatic selection retain their separate later gates. |
@@ -49,6 +49,14 @@ selection, speech interfaces and owner handoff. Local completion does not wait
 for CI; fan-outs neither push nor operate CI.
 
 ## Publication and qualification prerequisites
+
+Qualify the Rust TTS serving replacement in owner-managed hosted builds and on
+an independent fresh installation. Retain pinned Q8 and Q4 controls, complete
+Design-to-Base voice/reference reuse, exact prompt/token ordering, audio/listening
+review, interrupted generation and owned cleanup, and peak memory observations.
+Verify that new portable binaries import no separately installed VC++ runtime or
+TTS inference DLL and that app-owned setup/retry needs no terminal. Model-free
+checks and static GGUF metadata inspection cannot establish speech correctness.
 
 Have the owner qualify the native acceptance build cache, shared regression
 runner and early checked-tools producer on their final source. Verify cache hit,
@@ -1436,18 +1444,17 @@ not close pending hosted integration or full-model acceptance.
      Do not replace `libcdsprpc.dll` with undocumented raw `\Device\QcNspMcdm` `ioctl`
      calls that bypass FastRPC session handshakes, signed PD catalog checks, or SMMU
      `rpcmem` registration.
-  2. **Qualify native hybrid placement and caching overlays.**
-     `src/speech-tts/build_npu.rs` contains source overlays for `Talker` NPU prefill,
-     CPU single-token decode/`CodePredictor`, fused attention and prompt/codec caching.
-     Their presence does not establish successful contained HTP0 execution or consumer,
-     model, cache-lifecycle, resource and benefit acceptance. The separate runtime DLL
-     selector checks presence/exports, not signatures or hashes; qualify authenticated
-     deployment before treating it as a verified acceleration path. Retain CPU operation.
+  2. **Implement and qualify Rust hybrid placement and caching.**
+     The Rust CPU service does not execute the former GGML overlays or DLL selector.
+     Direct signed RPC, immutable placement identity, fused attention and state/cache
+     ownership still require implementation and contained HTP0, model, cache-lifecycle,
+     resource and benefit acceptance. Retain the Rust CPU serving path.
   3. **Integrate the candidate Rust `Talker` and `CodePredictor`.**
-     `src/speech-tts/src/engine.rs` contains candidate model, projection, Hadamard,
-     cache and adapter helpers. The serving `Synthesizer` still owns `native::Context`;
-     immutable weight loading and complete pipeline integration remain implementation
-     work before hosted and actual-model parity, lifecycle and resource acceptance.
+     The serving `Synthesizer` now uses the Rust weight loader, Talker/CodePredictor
+     and PCM pipeline (`weights.rs`, `rust_talker.rs`, `rust_codec.rs`). Hosted
+     integration and independent actual-model parity, lifecycle and resource
+     acceptance remain pending; the Rust serving switch establishes no quality
+     or performance promotion.
      `HtpPrefillPacket` currently serializes a header, not a working RPC dispatcher.
      Add and qualify explicit `hexagon-native-rpc` dispatch before claiming direct
      signed-DSP prefill without `ggml-hexagon.dll`/`ggml-base.dll`. Candidate
@@ -1455,10 +1462,12 @@ not close pending hosted integration or full-model acceptance.
      reuse of Prism's adapter infrastructure. Bind any accent/language adapter to
      exact weights, writer basis, independent quality review and resource limits.
   4. **Integrate Rust codec/speaker candidates, then retire C/C++ builds.**
-     `src/speech-tts/src/codec.rs` and `src/speech-tts/src/speaker_encoder.rs` contain
-     candidate audio-decoder, codec-state and speaker-encoder helpers. Complete
-     immutable loading, serving integration and independent model/audio parity before
-     removing `qwentts.cpp`, GGML provisioning, static libraries and CMake/C++ steps.
+     The Rust codec/speaker implementation and GGUF loaders now feed the owned
+     TTS service. Production TTS no longer compiles or links Qwen/GGML, provisions
+     their sources, or loads backend DLLs. Qualify independent Q8/Q4 model/audio
+     parity, full-state cancellation, reference reuse and measured peak resources.
+     Retained captured controls and upstream attribution remain independent inputs;
+     ASR retains its separate C++ replacement gate.
      The current Q8/Q4 locks still pin a 24 kHz codec. Existing 48 kHz PCM handling
      and reference decimation do not provide a selectable verified 48 kHz model.
      Review a proposed 48 kHz decoder's exact source, architecture, artifact and

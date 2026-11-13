@@ -6,7 +6,7 @@ rust-version.workspace = true
 publish.workspace = true
 license.workspace = true
 repository.workspace = true
-keywords = ["speech", "tts", "qwen", "ggml", "native"]
+keywords = ["speech", "tts", "qwen", "rust", "native"]
 categories = ["multimedia::audio"]
 description = "Owned native Qwen VoiceDesign speech inference for Bonsai"
 
@@ -16,9 +16,6 @@ bonsai-speech-service.workspace = true
 fearless_simd.workspace = true
 libm = "=0.2.16"
 serde_json.workspace = true
-
-[build-dependencies]
-sha2.workspace = true
 
 [dev-dependencies]
 sha2.workspace = true

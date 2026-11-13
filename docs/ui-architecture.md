@@ -2,7 +2,8 @@
 
 The first-party UI must remain **entirely native Rust**, including state, events,
 rendering and network clients. Native OS APIs and audited Rust bindings are
-allowed; PowerShell may provision, build and launch it.
+allowed. The installed app owns first-run downloads, verification and repair in
+its native window. PowerShell remains contributor build and launch tooling.
 
 No JavaScript/TypeScript frontend, HTML/CSS UI, browser/WebView shell, Electron,
 web-rendered Tauri frontend or inference-server browser UI is allowed, including
@@ -350,15 +351,19 @@ cannot bypass ownership, admission, credentials or context limits.
 ## Speech input and output
 
 Rust owns companion HTTP/authentication, schema validation, WAV processing and
-verified model files. Reviewed native GGML C++ cores infer in separate executables
-to avoid mixing GGML versions. The dependency-free `bonsai-audio` codec borrows
+verified model files. TTS weight loading, Talker/CodePredictor, 24 kHz codec and
+speaker inference run in Rust in the owned speech executable. The ASR executable
+retains its separate reviewed native C++ core. Application executables carry the
+static CRT, so installed use requires no compiler or Visual C++ runtime installer.
+The dependency-free `bonsai-audio` codec borrows
 validated mono PCM16 WAV payloads and opens no devices; callers retain their own
 sample-rate, duration and error policies.
 
-Qwen3-ASR 1.7B uses CPU; TTS can register an optional local Hexagon `HTP0` backend with
-CPU fallback. This is separate from Swift's resident `native-q2` acceleration.
-The [TTS contract](../src/speech-tts/README.md) records backend selection and its
-verification/qualification limits; containment and resource admission still apply.
+Qwen3-ASR 1.7B and the Rust TTS engine use CPU. TTS does not load GGML backend
+DLLs or dispatch the experimental Hexagon helper. Swift's resident `native-q2`
+acceleration remains separate. The [TTS contract](../src/speech-tts/README.md)
+records the current engine and pending parity, audio-quality and resource gates;
+containment and resource admission still apply.
 
 Microphone access is requested on the UI thread only after explicit action.
 Denied, cancelled or unavailable access fails closed; stale permission, capture

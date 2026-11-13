@@ -130,6 +130,13 @@ fn production_batches_preserve_explicit_package_coverage_and_release_policy() ->
                     assert!(!check.arguments.contains(&"--all-features".into()));
                     continue;
                 }
+                assert!(
+                    check
+                        .arguments
+                        .array_windows::<2>()
+                        .any(|pair| pair[0] == "--config"
+                            && pair[1] == root.join(".cargo/config.toml").to_string_lossy())
+                );
                 for required in ["--locked", "--release", "--offline", "--all-features"] {
                     assert!(check.arguments.contains(&required.into()));
                 }

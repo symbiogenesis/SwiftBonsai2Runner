@@ -12,7 +12,6 @@ use std::{
     borrow::Cow,
     collections::BTreeMap,
     ffi::OsString,
-    fmt::Write as _,
     fs::File,
     io::{self, BufRead, BufReader, Read, Write},
     net::{Ipv4Addr, SocketAddr, SocketAddrV4, TcpStream},
@@ -318,24 +317,9 @@ fn native_runtime_guidance(data: &Path) -> String {
         serde_json::from_str(include_str!("../../../config/prism-inference.lock.json"))
             .unwrap_or_default();
     let version = lock["version"].as_str().unwrap_or("pinned");
-    let commit = lock["commit"].as_str().unwrap_or("");
-    let target = lock["target"].as_str().unwrap_or("");
-    let archive = lock["asset"]["sha256"].as_str().unwrap_or("");
-    // Pipe ASCII JSON instead of putting JSON quotes in a native argument.
-    // This also survives Windows PowerShell's legacy argument/pipe encoding.
-    let raw = serde_json::json!({"operation":"inference", "dataDirectory":data}).to_string();
-    let mut request = String::with_capacity(raw.len());
-    for unit in raw.encode_utf16() {
-        match u8::try_from(unit) {
-            Ok(byte) if byte.is_ascii() => request.push(char::from(byte)),
-            _ => {
-                let _written = write!(request, "\\u{unit:04x}");
-            }
-        }
-    }
-    let request = request.replace('\'', "''");
     format!(
-        "The selected Rust runtime (Prism {version}) is missing or failed verification. Use bonsai-tools rebuilt from this checkout or supplied by the same verified app package. This command rejects a different maintenance runtime pin before provisioning; after repair select Retry model:\n& {{\n  $bonsaiRepairTool = (Get-Command bonsai-tools.exe -CommandType Application -ErrorAction Stop).Source\n  $bonsaiRepairPin = & $bonsaiRepairTool --version | ConvertFrom-Json -ErrorAction Stop | Select-Object -ExpandProperty CompiledInference -ErrorAction SilentlyContinue\n  if ($LASTEXITCODE -ne 0 -or $null -eq $bonsaiRepairPin -or $bonsaiRepairPin.Version -cne '{version}' -or $bonsaiRepairPin.Commit -cne '{commit}' -or $bonsaiRepairPin.Target -cne '{target}' -or $bonsaiRepairPin.ArchiveSha256 -cne '{archive}') {{ throw 'Use bonsai-tools from the same checkout or verified app package; this maintenance runtime pin does not match.' }}\n'{request}' | & $bonsaiRepairTool provision --request -\n}}"
+        "The selected Rust runtime (Prism {version}) is missing or failed verification in {}. Close and reopen Swift with the same data folder to check and repair its download automatically. If preparation cannot finish, select Retry setup or Copy diagnostics. Copy any unsaved conversations or drafts before closing.",
+        data.display(),
     )
 }
 
@@ -2456,24 +2440,16 @@ mod tests {
     }
 
     #[test]
-    fn native_runtime_repair_command_preserves_the_selected_data_directory() -> Result<(), String> {
+    fn native_runtime_repair_guidance_uses_in_app_setup_and_preserves_the_selected_data_directory()
+    -> Result<(), String> {
         let data = std::path::Path::new("C:\\Local data\\Owner's Bonsai \u{1f331}");
         let guidance = super::native_runtime_guidance(data);
-        let argument = guidance
-            .split("\n'")
-            .nth(1)
-            .and_then(|value| {
-                value.strip_suffix("' | & $bonsaiRepairTool provision --request -\n}")
-            })
-            .ok_or("Missing complete repair command.")?
-            .replace("''", "'");
-        assert!(argument.is_ascii());
-        let request: serde_json::Value =
-            serde_json::from_str(&argument).map_err(|error| error.to_string())?;
-        assert_eq!(
-            request,
-            serde_json::json!({"operation":"inference", "dataDirectory":data})
-        );
+        assert!(guidance.contains(&data.display().to_string()));
+        assert!(guidance.contains("Close and reopen Swift"));
+        assert!(guidance.contains("Retry setup"));
+        assert!(guidance.contains("repair its download automatically"));
+        assert!(!guidance.contains("PowerShell"));
+        assert!(!guidance.contains("provision --"));
         let lock: serde_json::Value =
             serde_json::from_str(include_str!("../../../config/prism-inference.lock.json"))
                 .map_err(|error| error.to_string())?;
@@ -2481,25 +2457,6 @@ mod tests {
             "Prism {}",
             lock["version"].as_str().ok_or("Missing version.")?
         )));
-        for (field, value) in [
-            ("Version", &lock["version"]),
-            ("Commit", &lock["commit"]),
-            ("Target", &lock["target"]),
-            ("ArchiveSha256", &lock["asset"]["sha256"]),
-        ] {
-            assert!(guidance.contains(&format!(
-                "$bonsaiRepairPin.{field} -cne '{}'",
-                value.as_str().ok_or("Missing pin identity.")?
-            )));
-        }
-        assert!(
-            guidance
-                .find("throw '")
-                .ok_or("Missing mismatch rejection.")?
-                < guidance
-                    .find("provision --request -")
-                    .ok_or("Missing provisioning command.")?
-        );
         Ok(())
     }
 

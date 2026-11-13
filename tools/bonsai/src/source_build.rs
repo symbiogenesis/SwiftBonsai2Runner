@@ -102,7 +102,7 @@ fn outputs(spec: &BuildSpec) -> crate::Result<BTreeMap<String, PathBuf>> {
 
 fn identity(spec: &BuildSpec) -> String {
     format!(
-        "{}\n{}\n{}\n{}",
+        "crt-static-v1\n{}\n{}\n{}\n{}",
         spec.identity,
         spec.channel,
         spec.target.as_deref().unwrap_or("host"),
@@ -141,6 +141,33 @@ fn cargo_arguments(spec: &BuildSpec) -> Vec<OsString> {
         args.extend(["--package".into(), package.into()]);
     }
     args
+}
+
+/// Preserve reviewed compiler options while requiring a portable static CRT.
+fn static_runtime_environment(environment: &mut BTreeMap<String, String>) -> crate::Result<()> {
+    let mut flags = environment
+        .get("CARGO_ENCODED_RUSTFLAGS")
+        .cloned()
+        .or_else(|| std::env::var("CARGO_ENCODED_RUSTFLAGS").ok())
+        .unwrap_or_else(|| {
+            environment
+                .get("RUSTFLAGS")
+                .cloned()
+                .or_else(|| std::env::var("RUSTFLAGS").ok())
+                .unwrap_or_default()
+                .split_ascii_whitespace()
+                .collect::<Vec<_>>()
+                .join("\u{1f}")
+        });
+    if flags.contains("-crt-static") {
+        return Err("Application builds cannot disable the portable static CRT.".into());
+    }
+    if !flags.is_empty() {
+        flags.push('\u{1f}');
+    }
+    flags.push_str("-C\u{1f}target-feature=+crt-static");
+    environment.insert("CARGO_ENCODED_RUSTFLAGS".into(), flags);
+    Ok(())
 }
 
 pub(crate) fn cached_build(
@@ -214,6 +241,7 @@ fn cached_build_with(
         }
     }
     let mut environment = prepare()?;
+    static_runtime_environment(&mut environment)?;
     environment.insert("CARGO_BUILD_FINGERPRINT".into(), "content".into());
     environment.insert("CARGO_UNSTABLE_CHECKSUM_FRESHNESS".into(), "true".into());
     environment
@@ -360,6 +388,26 @@ mod tests {
         assert!(
             matches!(parsed, Request::Chat { target_directory: Some(path), .. } if path == target)
         );
+        Ok(())
+    }
+
+    #[test]
+    fn portable_build_preserves_codegen_options_and_rejects_dynamic_runtime_overrides()
+    -> crate::Result<()> {
+        let mut environment = BTreeMap::from([(
+            "CARGO_ENCODED_RUSTFLAGS".into(),
+            "-C\u{1f}opt-level=2".into(),
+        )]);
+        static_runtime_environment(&mut environment)?;
+        assert_eq!(
+            environment["CARGO_ENCODED_RUSTFLAGS"],
+            "-C\u{1f}opt-level=2\u{1f}-C\u{1f}target-feature=+crt-static"
+        );
+        environment.insert(
+            "CARGO_ENCODED_RUSTFLAGS".into(),
+            "-C\u{1f}target-feature=-crt-static".into(),
+        );
+        assert!(static_runtime_environment(&mut environment).is_err());
         Ok(())
     }
 

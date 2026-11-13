@@ -1,18 +1,14 @@
-name: Prepare cached native speech dependencies
-description: Verify pinned sources and reuse exact Qwen static libraries across Cargo's analyzer and documentation builds.
+name: Prepare native ASR compiler
+description: Prepare the pinned ASR compiler; TTS builds entirely as Rust.
 inputs:
   lane:
-    description: Native speech package lane (asr or tts).
     required: true
+    description: Application lane (only ASR requires native prerequisites).
 runs:
   using: composite
   steps:
-    - name: Reuse pinned native speech compiler and sources
-      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-      with:
-        path: ${{ runner.temp }}/SwiftBonsai-NativeSpeech
-        key: native-speech-v1-${{ runner.os }}-${{ runner.arch }}-${{ env.BROKER_CACHE_HOST }}-${{ hashFiles('config/native-speech.lock.json', 'src/speech-tts/model*.lock.json', 'tools/bonsai/src/native_startup.rs') }}
-    - name: Verify sources and select the native child compiler environment
+    - name: Select the native ASR child compiler environment
+      if: inputs.lane == 'asr'
       shell: pwsh
       working-directory: ${{ runner.temp }}
       run: |
@@ -20,46 +16,3 @@ runs:
         $ErrorActionPreference = 'Stop'
         $PSNativeCommandUseErrorActionPreference = $true
         & $env:BONSAI_TOOLS_PATH build-tools --json (@{ operation = 'speech-environment'; dataDirectory = (Join-Path $env:RUNNER_TEMP 'SwiftBonsai-NativeSpeech'); workingDirectory = $env:RUNNER_TEMP } | ConvertTo-Json -Compress)
-    - name: Reuse exact Qwen static libraries
-      id: static-cache
-      if: inputs.lane == 'tts'
-      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-      with:
-        # Only the four static libraries and their receipt; no stale CMake paths.
-        path: ${{ runner.temp }}/BQ-CI
-        key: qwen-static-v2-${{ runner.os }}-${{ runner.arch }}-${{ env.BROKER_CACHE_HOST }}-${{ hashFiles('Cargo.lock', 'src/speech-tts/build*.rs', 'src/speech-tts/tests/reference/*.h', 'src/speech-tts/model*.lock.json', 'config/native-speech.lock.json', 'tools/bonsai/src/native_startup.rs', 'tools/bonsai/src/speech_build.rs', '.github/actions/native-speech/action.yml', 'rust-toolchain.toml') }}
-    - name: Build missing static libraries with the reviewed Cargo build script
-      if: inputs.lane == 'tts' && steps.static-cache.outputs.cache-hit != 'true'
-      shell: pwsh
-      working-directory: ${{ runner.temp }}
-      env:
-        STATIC_SOURCE_ID: ${{ hashFiles('Cargo.lock', 'src/speech-tts/build*.rs', 'src/speech-tts/tests/reference/*.h', 'src/speech-tts/model*.lock.json', 'config/native-speech.lock.json', 'tools/bonsai/src/native_startup.rs', 'tools/bonsai/src/speech_build.rs', '.github/actions/native-speech/action.yml', 'rust-toolchain.toml') }}
-      run: |
-        Set-StrictMode -Version Latest
-        $ErrorActionPreference = 'Stop'
-        $PSNativeCommandUseErrorActionPreference = $true
-        & $env:BONSAI_TOOLS_PATH build-tools --json (@{
-          operation = 'speech-static-build'; repositoryRoot = $env:GITHUB_WORKSPACE
-          workingDirectory = $env:RUNNER_TEMP; targetDirectory = $env:CARGO_TARGET_DIR
-          packageDirectory = (Join-Path $env:RUNNER_TEMP 'BQ-CI'); evidenceDirectory = $env:NATIVE_SPEECH_EVIDENCE
-          sourceId = $env:STATIC_SOURCE_ID; hostCacheKey = $env:NATIVE_SPEECH_HOST_KEY
-        } | ConvertTo-Json -Compress)
-    - name: Verify and share the static libraries across Cargo phases
-      if: inputs.lane == 'tts'
-      shell: pwsh
-      working-directory: ${{ runner.temp }}
-      env:
-        STATIC_SOURCE_ID: ${{ hashFiles('Cargo.lock', 'src/speech-tts/build*.rs', 'src/speech-tts/tests/reference/*.h', 'src/speech-tts/model*.lock.json', 'config/native-speech.lock.json', 'tools/bonsai/src/native_startup.rs', 'tools/bonsai/src/speech_build.rs', '.github/actions/native-speech/action.yml', 'rust-toolchain.toml') }}
-      run: |
-        Set-StrictMode -Version Latest
-        $ErrorActionPreference = 'Stop'
-        $PSNativeCommandUseErrorActionPreference = $true
-        & $env:BONSAI_TOOLS_PATH build-tools --json (@{ operation = 'speech-static-verify'; packageDirectory = (Join-Path $env:RUNNER_TEMP 'BQ-CI'); sourceId = $env:STATIC_SOURCE_ID; hostCacheKey = $env:NATIVE_SPEECH_HOST_KEY } | ConvertTo-Json -Compress)
-    - name: Retain native preparation build evidence
-      if: always() && env.NATIVE_SPEECH_EVIDENCE != ''
-      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-      with:
-        name: native-speech-preparation-${{ inputs.lane }}-${{ github.run_id }}
-        path: ${{ env.NATIVE_SPEECH_EVIDENCE }}
-        if-no-files-found: error
-        compression-level: 1

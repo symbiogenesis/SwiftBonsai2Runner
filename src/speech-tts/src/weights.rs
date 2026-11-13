@@ -311,10 +311,6 @@ impl Weights {
         }
     }
 
-    pub(crate) fn contains(&self, name: &str) -> bool {
-        self.tensors.contains_key(name)
-    }
-
     pub(crate) fn tensor_shape(&self, name: &str) -> io::Result<&[usize]> {
         self.tensors
             .get(name)

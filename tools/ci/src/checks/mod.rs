@@ -272,6 +272,17 @@ fn arguments(
     {
         return Err("Only all-feature packages can share a Cargo compile command.".into());
     }
+    // Checks execute outside the checkout. Load its target policy explicitly;
+    // --manifest-path alone does not discover the workspace's Cargo config.
+    let root = Path::new(manifest)
+        .parent()
+        .ok_or("Missing manifest parent.")?;
+    arguments.extend([
+        "--config".into(),
+        root.join(".cargo/config.toml")
+            .to_string_lossy()
+            .into_owned(),
+    ]);
     arguments.extend(["--locked".into(), "--release".into()]);
     if offline {
         arguments.push("--offline".into());

@@ -276,10 +276,6 @@ impl State {
                     {
                         self.retry_speech_setup();
                     }
-                    ui.hyperlink_to(
-                        "ARM64 runtime download",
-                        "https://aka.ms/vc14/vc_redist.arm64.exe",
-                    );
                 },
             );
             ui.add_space(8.0);

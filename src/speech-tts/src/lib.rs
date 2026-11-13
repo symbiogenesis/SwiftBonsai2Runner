@@ -1,24 +1,29 @@
 //! Native, process-owned Qwen3-TTS voice design with reusable Base conditioning.
 //!
 //! The caller verifies and retains the pinned GGUF model artifacts before
-//! loading them. All inference runs locally through an audited static GGML
-//! boundary; this library has no network, preset-voice or audio-device
-//! dependency. Keep the engine in its separately supervised service process.
+//! loading them. Weight intake, Talker/CodePredictor, codec and speaker inference
+//! run in Rust on the CPU. This library has no network, preset-voice, external
+//! inference DLL or audio-device dependency. Keep it in its supervised process.
 #![cfg(windows)]
 
 use std::{
     ffi::{CStr, CString},
     io,
-    path::Path,
+    path::{Path, PathBuf},
 };
 
+#[cfg(test)]
 #[allow(
     unsafe_code,
-    reason = "Confine the audited Rust C ABI bindings and native audio buffer lifetime to one module."
+    reason = "Replay the retained Rust ABI controls without linking a foreign engine."
 )]
 mod native;
+mod rust_codec;
+mod rust_talker;
+mod weights;
 
 pub mod codec;
+#[cfg(test)]
 mod decode_graph;
 pub mod engine;
 mod gguf;
@@ -27,11 +32,7 @@ mod sampling;
 pub mod speaker_encoder;
 mod tokenizer;
 
-#[cfg(test)]
-#[path = "../build_overlay.rs"]
-mod build_overlay;
-
-/// Immutable native engine source revision compiled by the provisioning script.
+/// Immutable source provenance of the Qwen implementation ported into Rust.
 pub const ENGINE_REVISION: &str = "5916bf7c79dbb4e66fc059cdc507a79a23a28bb4";
 /// Exact upstream checkpoint represented by the pinned quantized GGUF files.
 pub const MODEL: &str = "Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign";
@@ -60,23 +61,25 @@ pub struct Audio {
     pub sample_rate: u32,
 }
 
-/// Complete validated mono samples retained in their native allocation.
+/// Complete validated mono samples in one Rust-owned allocation.
 ///
-/// Borrow with [`AsRef::as_ref`]. The matching native allocator releases the
-/// waveform on drop; no Rust vector or copy of the full clip is retained.
-pub struct Waveform(native::NativeSamples);
+/// Borrow with [`AsRef::as_ref`] without copying the complete waveform.
+pub struct Waveform {
+    samples: Vec<f32>,
+    sample_rate: u32,
+}
 
 impl Waveform {
     /// Sampling rate (`24_000` or `48_000` Hz) of the retained waveform.
     #[must_use]
     pub const fn sample_rate(&self) -> u32 {
-        self.0.sample_rate()
+        self.sample_rate
     }
 }
 
 impl AsRef<[f32]> for Waveform {
     fn as_ref(&self) -> &[f32] {
-        self.0.as_ref()
+        &self.samples
     }
 }
 
@@ -87,18 +90,16 @@ impl AsRef<[f32]> for Waveform {
 /// The two model contexts never coexist, preserving the speech memory policy.
 pub struct Synthesizer {
     voices: VoiceCache<Voice>,
-    design: Option<native::Context>,
-    // Retain allocations because native loaders may cache their path pointers.
-    model_path: CString,
-    codec_path: CString,
-    voice_model_path: CString,
+    design: Option<rust_talker::Talker>,
+    model_path: PathBuf,
+    voice_model_path: PathBuf,
+    codec: rust_codec::Codec,
     threads: usize,
-    sample_rate: u32,
 }
 
 struct Voice {
-    context: native::Context,
-    reference: native::VoiceReference,
+    talker: rust_talker::Talker,
+    reference: rust_talker::Reference,
 }
 
 // The cache key deliberately excludes utterance text, request identifiers,
@@ -107,9 +108,10 @@ struct Voice {
 // an unrelated voice or retain two loaded models.
 struct VoiceCache<T>(Option<(CString, T)>);
 
-// The pinned native waveform allocation is independent of its model context.
+// The waveform allocation is independent of its model context.
 // Keep its owner until synchronous Base extraction returns, including failures,
 // while releasing Design before allocating Base's model and workers.
+#[cfg(test)]
 fn finish_voice_bootstrap<C, S: AsRef<[f32]>, R>(
     design: C,
     samples: S,
@@ -140,52 +142,62 @@ impl<T> VoiceCache<T> {
     }
 }
 
+fn load_talker(path: &Path, kind: &str, threads: usize) -> io::Result<rust_talker::Talker> {
+    let mut weights = weights::Weights::open(path)?;
+    if weights.string("general.architecture")? != "qwen3-tts"
+        || weights.string("qwen3-tts.model_type")? != kind
+    {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidData,
+            "Unsupported speech model architecture.",
+        ));
+    }
+    let tokenizer = tokenizer::Tokenizer::load(path)?;
+    rust_talker::Talker::load(&mut weights, tokenizer, threads)
+}
+
 impl Synthesizer {
-    /// Load verified `VoiceDesign`, codec and Base voice-model GGUFs.
+    /// Load the verified pinned `VoiceDesign`, codec and Base GGUFs in Rust.
     ///
     /// # Errors
-    /// Rejects non-absolute or missing files, non-UTF-8 paths and a model that
-    /// cannot initialize as `VoiceDesign`. Errors contain no supplied path text.
+    /// Rejects missing, unsafe or incompatible weights and unsupported metadata.
     pub fn load(model: &Path, codec: &Path, voice_model: &Path) -> io::Result<Self> {
         Self::load_with_threads(model, codec, voice_model, None)
     }
 
-    /// Load verified weights with an optional bounded CPU compute team size.
+    /// Load verified weights with an optional CPU compute team size (1?256).
     ///
     /// The default reserves two available CPUs for the UI and text runtime.
     ///
     /// # Errors
-    /// Returns the same failures as [`Self::load`], or rejects zero, more than
-    /// 256 threads. An explicit override may oversubscribe available CPUs for
-    /// controlled evaluation; the default never does so.
+    /// Returns the same failures as [`Self::load`] or rejects an invalid team size.
     pub fn load_with_threads(
         model: &Path,
         codec: &Path,
         voice_model: &Path,
         threads: Option<usize>,
     ) -> io::Result<Self> {
-        let available = std::thread::available_parallelism()?.get();
-        let threads = select_threads(threads, available)?;
-        let sample_rate = detect_codec_sample_rate(codec);
-        let model = model_path(model)?;
-        let codec = model_path(codec)?;
-        let voice_model = model_path(voice_model)?;
-        let design = native::Context::load(&model, &codec, threads, c"voice_design")?;
+        for path in [model, codec, voice_model] {
+            let _ = model_path(path)?;
+        }
+        let threads = select_threads(threads, std::thread::available_parallelism()?.get())?;
+        let mut codec_weights = weights::Weights::open(codec)?;
+        let codec = rust_codec::Codec::load(&mut codec_weights)?;
+        let design = load_talker(model, "voice_design", threads)?;
         Ok(Self {
             voices: VoiceCache(None),
             design: Some(design),
-            model_path: model,
-            codec_path: codec,
-            voice_model_path: voice_model,
+            model_path: model.to_owned(),
+            voice_model_path: voice_model.to_owned(),
+            codec,
             threads,
-            sample_rate,
         })
     }
 
-    /// Active mono PCM output sampling rate (`24_000` or `48_000` Hz).
+    /// Active mono PCM output sampling rate (24 kHz for the pinned codec).
     #[must_use]
-    pub const fn sample_rate(&self) -> u32 {
-        self.sample_rate
+    pub fn sample_rate(&self) -> u32 {
+        self.codec.sample_rate()
     }
 
     fn voice(&mut self, profile: &CStr) -> io::Result<&mut Voice> {
@@ -193,71 +205,94 @@ impl Synthesizer {
             voices,
             design,
             model_path,
-            codec_path,
             voice_model_path,
+            codec,
             threads,
-            sample_rate: _,
         } = self;
         voices.get_or_create(profile, || {
-            let mut context = match design.take() {
-                Some(context) => context,
-                None => native::Context::load(model_path, codec_path, *threads, c"voice_design")?,
+            let talker = match design.take() {
+                Some(talker) => talker,
+                None => load_talker(model_path, "voice_design", *threads)?,
             };
-            let samples = context.design_reference(profile)?;
-            let (context, reference) = finish_voice_bootstrap(
-                context,
-                samples,
-                || native::Context::load(voice_model_path, codec_path, *threads, c"base"),
-                native::Context::extract_voice,
+            let profile = profile.to_str().map_err(io::Error::other)?;
+            let mut codes = Vec::new();
+            talker.generate(
+                rust_talker::REFERENCE_TEXT,
+                Some(profile),
+                None,
+                &mut |frame| {
+                    codes.push(frame);
+                    Ok(())
+                },
+                &mut || Ok(()),
             )?;
-            Ok(Voice { context, reference })
+            let samples = codec.decode(&codes)?;
+            let count = sample_count(&samples, 0).ok_or_else(invalid_audio)?;
+            if !(1920..=24_000 * 30).contains(&count) {
+                return Err(invalid_audio());
+            }
+            // Release Design before allocating Base; the waveform survives that
+            // model switch and supplies both speaker and acoustic conditioning.
+            drop(talker);
+            let mut weights = weights::Weights::open(voice_model_path)?;
+            if weights.string("qwen3-tts.model_type")? != "base" {
+                return Err(io::Error::new(
+                    io::ErrorKind::InvalidData,
+                    "Speech voice model must be Base.",
+                ));
+            }
+            let speaker = rust_codec::Speaker::load(&mut weights)?.extract(&samples)?;
+            let reference_codes = codec.encode_reference(&samples)?;
+            let tokenizer = tokenizer::Tokenizer::load(voice_model_path)?;
+            let talker = rust_talker::Talker::load(&mut weights, tokenizer, *threads)?;
+            drop(samples);
+            drop(weights);
+            let reference = rust_talker::Reference {
+                speaker,
+                codes: reference_codes,
+            };
+            Ok(Voice { talker, reference })
         })
     }
 
-    /// Generate speech with the reusable voice selected by its description.
+    /// Generate a complete clip using the voice selected by its description.
     ///
     /// # Errors
-    /// Rejects blank, NUL-containing or oversized text/descriptions, failed
-    /// inference and invalid, oversized or potentially token-truncated audio.
-    /// Text, voice descriptions and native error messages are never logged.
+    /// Rejects invalid input, incomplete token generation, invalid samples and
+    /// inference failures. Text and voice descriptions are never logged.
     pub fn synthesize(&mut self, text: &str, voice: &str) -> io::Result<Audio> {
-        let text = bounded_input(text, MAX_TEXT)?;
-        let voice = bounded_input(voice, MAX_VOICE)?;
-        let voice = self.voice(&voice)?;
-        let (samples, sample_rate) = voice.context.synthesize(&text, &voice.reference)?;
-        self.sample_rate = sample_rate;
+        let audio = self.synthesize_owned(text, voice)?;
         Ok(Audio {
-            samples,
-            sample_rate,
+            samples: audio.samples,
+            sample_rate: audio.sample_rate,
         })
     }
 
-    /// Generate a complete clip while retaining its original native allocation.
-    ///
-    /// The returned owner is independent of the loaded model and can be borrowed
-    /// during bounded PCM conversion without copying the full float waveform.
+    /// Generate a complete clip in a single Rust-owned waveform buffer.
     ///
     /// # Errors
-    /// Returns the same input, inference and complete-output validation failures
-    /// as [`Self::synthesize`], before returning any samples.
+    /// Returns the same failures as [`Self::synthesize`].
     pub fn synthesize_owned(&mut self, text: &str, voice: &str) -> io::Result<Waveform> {
-        let text = bounded_input(text, MAX_TEXT)?;
-        let voice = bounded_input(voice, MAX_VOICE)?;
-        let voice = self.voice(&voice)?;
-        let samples = voice.context.synthesize_owned(&text, &voice.reference)?;
-        self.sample_rate = samples.sample_rate();
-        Ok(Waveform(samples))
+        let mut samples = Vec::new();
+        self.synthesize_stream(text, voice, &mut |chunk| {
+            samples.try_reserve(chunk.len()).map_err(io::Error::other)?;
+            samples.extend_from_slice(chunk);
+            Ok(())
+        })?;
+        Ok(Waveform {
+            samples,
+            sample_rate: self.sample_rate(),
+        })
     }
 
-    /// Generate mono 24 kHz or 48 kHz chunks while inference is still running.
+    /// Generate bounded mono PCM chunks using the selected reusable voice.
     ///
-    /// The sink executes on the native worker and must return promptly. Audio
-    /// heard before a later failure remains partial; success is reported only
-    /// after final sample-count and token-ceiling validation.
+    /// Partial audio heard before an error remains partial. Success requires EOS
+    /// and complete sample validation. Sink errors stop generation immediately.
     ///
     /// # Errors
-    /// Rejects the same inputs/output failures as [`Self::synthesize`], and any
-    /// sink failure, without exposing text or native diagnostics.
+    /// Returns input, inference, output validation or sink failures without
+    /// exposing private text or model diagnostics.
     pub fn synthesize_stream(
         &mut self,
         text: &str,
@@ -265,12 +300,41 @@ impl Synthesizer {
         sink: &mut (dyn FnMut(&[f32]) -> io::Result<()> + Send),
     ) -> io::Result<()> {
         let text = bounded_input(text, MAX_TEXT)?;
-        let voice = bounded_input(voice, MAX_VOICE)?;
-        let voice = self.voice(&voice)?;
-        voice
-            .context
-            .synthesize_stream(&text, &voice.reference, sink)
+        let profile = bounded_input(voice, MAX_VOICE)?;
+        let _ = self.voice(&profile)?;
+        let Self { voices, codec, .. } = self;
+        let (_, voice) = voices.0.as_mut().ok_or_else(invalid_audio)?;
+        codec.prime_reference(&voice.reference.codes)?;
+        let mut count = 0;
+        let result = voice.talker.generate(
+            text.to_str().map_err(io::Error::other)?,
+            None,
+            Some(&voice.reference),
+            &mut |frame| {
+                let chunk = codec.decode_stream(&[frame])?;
+                count = sample_count(&chunk, count).ok_or_else(invalid_audio)?;
+                sink(&chunk)
+            },
+            &mut || Ok(()),
+        );
+        codec.reset();
+        if result.is_err() {
+            // KV, codec and sampler state from a failed turn is never reused.
+            voices.0 = None;
+        }
+        result?;
+        if count == 0 {
+            return Err(invalid_audio());
+        }
+        Ok(())
     }
+}
+
+fn invalid_audio() -> io::Error {
+    io::Error::new(
+        io::ErrorKind::InvalidData,
+        "Speech generation did not produce complete valid audio.",
+    )
 }
 
 // Shared by borrowed complete output and streaming callbacks. Native output is
@@ -288,25 +352,6 @@ fn sample_count_for_rate(samples: &[f32], previous: usize, sample_rate: u32) -> 
         return None;
     };
     bonsai_audio::finite_sample_count(samples, previous, ceiling)
-}
-
-fn detect_codec_sample_rate(codec: &Path) -> u32 {
-    let Ok(table) = gguf::Gguf::open(codec) else {
-        return SAMPLE_RATE;
-    };
-    for key in [
-        &b"qwen3-tts-tokenizer.decoder.sample_rate"[..],
-        &b"qwen3-tts-tokenizer.sample_rate"[..],
-        &b"tokenizer.ggml.sample_rate"[..],
-    ] {
-        if let Some(idx) = table.find(key)
-            && let Ok(rate) = table.u32_value(idx)
-            && is_supported_sample_rate(rate)
-        {
-            return rate;
-        }
-    }
-    SAMPLE_RATE
 }
 
 fn select_threads(requested: Option<usize>, available: usize) -> io::Result<usize> {

@@ -142,6 +142,22 @@ its existing source-level assertions and contracts through the process above.
 
 ## External engines, generators and build dependencies
 
+The default TTS service now executes its GGUF intake, Talker/CodePredictor,
+codec and speaker graphs in Rust on CPU. `build.rs` performs no native
+compilation/linking; source launch and hosted TTS builds no longer provision
+Qwen/GGML or their static libraries. Upstream MIT notices and immutable captured
+Philox/sampling/tokenizer/cache assertions remain. The former foreign-allocation,
+C++ exception and native parameter-ABI checks describe the retired boundary;
+Rust buffer ownership, bounded samples, voice bootstrap and service cancellation
+need their corresponding Rust/hosted and actual-model acceptance. No historical
+native-linked pass qualifies this replacement. Q8/Q4 model parity, listening,
+state/lifecycle and memory acceptance remain open in S1.
+
+The optional Hexagon source-overlay helper files and old extern declarations
+are not compiled or dispatched by the Rust TTS service. Their presence supplies
+no acceleration. Removing these historical developer paths and introducing
+signed Rust RPC keep separate inventory and acceptance obligations.
+
 Retirement also covers the Qwen/GGML TTS core and `transcribe-cpp`/`transcribe-cpp-sys`
 Qwen3-ASR core, including their separate GGML versions. Native Rust replacements
 must retain model verification, audio/token contracts, cancellation, state, output
@@ -149,10 +165,12 @@ quality and actual-device resource acceptance. Reusing a C++ library's Rust bind
 does not satisfy this milestone.
 
 Expand each external family to exact files from its pinned source manifest before
-porting it. Current boundaries include Qwen `src/bpe.h`'s remaining native holder/output adapter,
+porting it. The replaced TTS boundaries include Qwen `src/bpe.h`'s holder/output adapter,
 decode-graph construction/compute/free callbacks and lease synchronization,
 `src/prompt-builder.h`, both sampling headers, pipeline/codec/speaker graphs and
-audio transforms. A Rust policy callback or removed test oracle does not retire
+audio transforms. Their immutable source identities remain provenance for the
+Rust replacement and pending independent model comparisons. A Rust policy
+callback or removed test oracle does not retire
 the downloaded header, generated shim or linked engine that still contains it.
 For Hexagon NPU speech and LLM offload, the C++ retirement boundary covers
 `qwentts.cpp`, `ggml`, `ggml-base.dll`, `ggml-cpu.dll` and `ggml-hexagon.dll`

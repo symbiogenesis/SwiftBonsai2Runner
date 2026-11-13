@@ -68,6 +68,7 @@ try {
     Write-Host 'Building the console maintenance tool and windowless launcher with the repository compiler pin.'
     $null = Invoke-ReleaseCommand 'cargo' $arguments -TimeoutSeconds 600 -Environment @{
         CARGO_BUILD_FINGERPRINT = 'content'; CARGO_UNSTABLE_CHECKSUM_FRESHNESS = 'true'
+        CARGO_ENCODED_RUSTFLAGS = ('-C' + [char]0x1f + 'target-feature=+crt-static')
     }
     $tool = Resolve-ReleasePath (Join-Path $binaryDirectory 'bonsai-tools.exe') -Kind File
     $launcher = Resolve-ReleasePath (Join-Path $binaryDirectory 'bonsai-launcher.exe') -Kind File
@@ -80,14 +81,14 @@ try {
     $chat = Invoke-ReleaseCommand $tool @('source-build', '--json', $chatRequest) -TimeoutSeconds 600 | ConvertFrom-Json
     $speechRequest = @{
         operation = 'build'; repositoryRoot = $RepositoryRoot; workingDirectory = $scratch
-        dataDirectory = $DataDirectory; model = 'All'; includeSources = $true
+        dataDirectory = $DataDirectory; model = 'All'
         targetDirectory = $(if ($TargetDirectory) { $TargetDirectory } else { $null })
     } | ConvertTo-Json -Compress
-    Write-Host 'Building or verifying the native ASR and TTS companions; cold compiler/source setup may take several minutes.'
+    Write-Host 'Building native ASR and Rust TTS; cold ASR compiler setup may take several minutes.'
     $speech = Invoke-ReleaseCommand $tool @('speech-build', '--json', $speechRequest) -TimeoutSeconds 600 | ConvertFrom-Json
     $notices = Join-Path $scratch 'THIRD-PARTY-NOTICES.txt'
-    Write-Host 'Collecting notices from the locked Rust and native speech sources.'
-    & (Join-Path $RepositoryRoot '.github/release/Collect-Notices.ps1') -RepositoryRoot $RepositoryRoot -OutputPath $notices -NativeSourceDirectory $speech.SourceDirectory
+    Write-Host 'Collecting locked dependency notices and Rust speech port attribution.'
+    & (Join-Path $RepositoryRoot '.github/release/Collect-Notices.ps1') -RepositoryRoot $RepositoryRoot -OutputPath $notices
     $PackageDirectory = Join-Path $scratch 'package'
     $packageRequest = @{
         operation = 'create'; outputDirectory = $PackageDirectory; version = $version; sourceRevision = $revision

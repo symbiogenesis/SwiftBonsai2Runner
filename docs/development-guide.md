@@ -77,8 +77,8 @@ stays pending until supported by its own evidence.
 
 ### Speech integration interfaces
 
-Agree these interfaces before parallel work. They do not establish that serving
-has migrated from `native::Context`.
+Use these interfaces for replacement work. The Rust CPU TTS service now consumes
+the weight/Talker/codec path; independent model and lifecycle acceptance remain open.
 
 | Work owner | Producer/consumer contract | Required ownership and acceptance |
 | --- | --- | --- |

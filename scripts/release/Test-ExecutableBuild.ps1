@@ -9,7 +9,7 @@ if (-not $IsWindows -or [Runtime.InteropServices.RuntimeInformation]::OSArchitec
 $fixture = Join-Path ([IO.Path]::GetTempPath()) ('SwiftBonsai-Build-Controls-' + [guid]::NewGuid().ToString('N'))
 $savedTarget = $env:CARGO_TARGET_DIR
 try {
-    foreach ($relative in @('scripts/release', '.github/release', 'sources')) {
+    foreach ($relative in @('scripts/release', '.github/release')) {
         [void][IO.Directory]::CreateDirectory((Join-Path $fixture $relative))
     }
     Copy-Item -LiteralPath (Join-Path $PSScriptRoot '../Build-WindowsExecutable.ps1') -Destination (Join-Path $fixture 'scripts')
@@ -37,8 +37,8 @@ function Invoke-ReleaseCommand($FilePath, $ArgumentList, $TimeoutSeconds, $Envir
         switch -Exact ($ArgumentList[0]) {
             'source-build' { $result = @{ ChatPath = 'chat'; BrokerPath = 'broker' } }
             'speech-build' {
-                if ($request.operation -cne 'build' -or -not $request.includeSources) { throw 'Unexpected native preparation.' }
-                $result = @{ AsrPath = 'asr'; TtsPath = 'tts'; SourceDirectory = (Join-Path $request.repositoryRoot 'sources') }
+                if ($request.operation -cne 'build' -or $request.PSObject.Properties['includeSources']) { throw 'Unexpected retired TTS source preparation.' }
+                $result = @{ AsrPath = 'asr'; TtsPath = 'tts' }
             }
             'chat-package' { $result = @{ ManifestSha256 = ('b' * 64) } }
             default { throw 'Unexpected build command.' }
@@ -49,8 +49,8 @@ function Invoke-ReleaseCommand($FilePath, $ArgumentList, $TimeoutSeconds, $Envir
 }
 '@ | Set-Content -LiteralPath (Join-Path $fixture 'scripts/release/Release-Common.ps1')
     @'
-param($RepositoryRoot, $OutputPath, $NativeSourceDirectory)
-if ($NativeSourceDirectory -cne (Join-Path $RepositoryRoot 'sources')) { throw 'Notice sources changed.' }
+param($RepositoryRoot, $OutputPath)
+if ($args.Count) { throw 'Notice collection must not require native sources.' }
 [IO.File]::WriteAllText($OutputPath, 'verified notice fixture')
 '@ | Set-Content -LiteralPath (Join-Path $fixture '.github/release/Collect-Notices.ps1')
     @'
@@ -75,7 +75,8 @@ if ($ManifestSha256 -cne ('b' * 64)) { throw 'Package digest changed.' }
         $cargo = $calls[0]
         $actual = $cargo.arguments[[array]::IndexOf($cargo.arguments, '--target-dir') + 1]
         if ($actual -cne $expected -or $cargo.environment.CARGO_BUILD_FINGERPRINT -cne 'content' -or
-            $cargo.environment.CARGO_UNSTABLE_CHECKSUM_FRESHNESS -cne 'true') { throw 'Cargo cache or content freshness changed.' }
+            $cargo.environment.CARGO_UNSTABLE_CHECKSUM_FRESHNESS -cne 'true' -or
+            $cargo.environment.CARGO_ENCODED_RUSTFLAGS -cne ('-C' + [char]0x1f + 'target-feature=+crt-static')) { throw 'Cargo cache or content freshness changed.' }
         foreach ($call in $calls[1..2]) {
             $selected = if ($mode -ceq 'default') { $null } else { $expected }
             if ($call.request.targetDirectory -cne $selected) { throw 'Build cache selection was not forwarded.' }
