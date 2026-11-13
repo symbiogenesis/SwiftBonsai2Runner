@@ -67,10 +67,14 @@ fn archive(executable: &Path) -> crate::Result<(ZipArchive<File>, String)> {
             || !names.insert(name.into_owned())
             || !entry.is_file()
             || entry.encrypted()
-            || entry.compression() != CompressionMethod::Stored
+            || !matches!(
+                entry.compression(),
+                CompressionMethod::Stored | CompressionMethod::Deflated
+            )
             || entry.size() == 0
             || entry.size() > limit
-            || entry.compressed_size() != entry.size()
+            || (entry.compression() == CompressionMethod::Stored
+                && entry.compressed_size() != entry.size())
         {
             return Err("Invalid bundled package entry.".into());
         }
@@ -213,7 +217,7 @@ fn create(directory: &Path, digest: &str, output: &Path) -> crate::Result<Value>
     writer
         .set_comment(format!("{LAUNCHER_PROTOCOL}:{digest}"))
         .map_err(|error| error.to_string())?;
-    let options = SimpleFileOptions::default().compression_method(CompressionMethod::Stored);
+    let options = SimpleFileOptions::default().compression_method(CompressionMethod::Deflated);
     for name in FILES.iter().copied().chain(std::iter::once("package.json")) {
         writer
             .start_file(name, options)
@@ -384,7 +388,7 @@ mod tests {
         )
         .map_err(|error| error.to_string())?;
         drop(archive);
-        for position in [200, data + 200, original.len() - 1] {
+        for position in [200, data, original.len() - 1] {
             let mut changed = original.clone();
             changed[position] ^= 1;
             fs::write(&executable, changed).map_err(|error| error.to_string())?;
