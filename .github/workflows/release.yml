@@ -119,7 +119,7 @@ jobs:
           [void][IO.Directory]::CreateDirectory($directory)
           $executable = Join-Path $directory $env:RELEASE_EXECUTABLE
           $sourceName = if ($env:RELEASE_LANE -ceq 'maintenance') { 'bonsai-launcher.exe' } else { $env:RELEASE_EXECUTABLE }
-          Copy-Item -LiteralPath (Join-Path $env:CARGO_TARGET_DIR "release/$sourceName") -Destination $executable
+          Copy-Item -LiteralPath (Join-Path $env:CARGO_TARGET_DIR "aarch64-pc-windows-msvc/release/$sourceName") -Destination $executable
           @{
             schemaVersion = 1; sourceRevision = $env:GITHUB_SHA
             target = 'aarch64-pc-windows-msvc'; lane = $env:RELEASE_LANE

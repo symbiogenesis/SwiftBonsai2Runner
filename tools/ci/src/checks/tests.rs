@@ -1,5 +1,7 @@
 use super::*;
 
+const PINNED_TOOLCHAIN: &str = "nightly-2026-11-12-aarch64-pc-windows-msvc";
+
 fn fixture(name: &str, restricted: bool) -> Package {
     Package {
         name: name.into(),
@@ -20,7 +22,7 @@ fn restricted_features_remain_separate_and_formatting_has_no_features() -> Resul
             &[&restricted],
             phase,
             "Compatibility",
-            "pinned",
+            PINNED_TOOLCHAIN,
             "Cargo.toml",
             false,
         )?;
@@ -31,7 +33,7 @@ fn restricted_features_remain_separate_and_formatting_has_no_features() -> Resul
         &[&restricted],
         "test",
         "Compatibility",
-        "pinned",
+        PINNED_TOOLCHAIN,
         "Cargo.toml",
         false,
     )?;
@@ -41,7 +43,7 @@ fn restricted_features_remain_separate_and_formatting_has_no_features() -> Resul
         &[&restricted],
         "clippy",
         "Native",
-        "pinned",
+        PINNED_TOOLCHAIN,
         "Cargo.toml",
         false,
     )?;
@@ -50,7 +52,7 @@ fn restricted_features_remain_separate_and_formatting_has_no_features() -> Resul
         &[&all, &restricted],
         "fmt",
         "Native",
-        "pinned",
+        PINNED_TOOLCHAIN,
         "Cargo.toml",
         false,
     )?;
@@ -61,7 +63,7 @@ fn restricted_features_remain_separate_and_formatting_has_no_features() -> Resul
             &[&all, &restricted],
             "test",
             "Compatibility",
-            "pinned",
+            PINNED_TOOLCHAIN,
             "Cargo.toml",
             false
         )
@@ -77,7 +79,7 @@ fn restricted_features_remain_separate_and_formatting_has_no_features() -> Resul
         "Compatibility".into(),
     ])?;
     options.root = PathBuf::from("workspace");
-    let checks = plan(&options, &[&all, &restricted], "pinned")?;
+    let checks = plan(&options, &[&all, &restricted], PINNED_TOOLCHAIN)?;
     assert_eq!(checks.len(), 3);
     assert_eq!(checks[0].packages, ["all", "restricted"]);
     assert_eq!(checks[1].packages, ["all"]);
@@ -128,8 +130,19 @@ fn production_batches_preserve_explicit_package_coverage_and_release_policy() ->
                 if check.phase == "fmt" {
                     assert!(check.arguments.contains(&"--check".into()));
                     assert!(!check.arguments.contains(&"--all-features".into()));
+                    assert!(!check.arguments.contains(&"--target".into()));
+                    assert!(!check.arguments.contains(&"--config".into()));
                     continue;
                 }
+                assert_eq!(
+                    check
+                        .arguments
+                        .array_windows::<2>()
+                        .filter(|pair| pair[0] == "--target")
+                        .map(|pair| pair[1].as_str())
+                        .collect::<Vec<_>>(),
+                    ["aarch64-pc-windows-msvc"]
+                );
                 assert!(
                     check
                         .arguments
@@ -166,6 +179,23 @@ fn production_batches_preserve_explicit_package_coverage_and_release_policy() ->
         }
     }
     Ok(())
+}
+
+#[test]
+fn static_runtime_compile_plans_reject_nonmatching_compiler_hosts() {
+    let package = fixture("application", false);
+    for toolchain in [
+        "nightly-2026-11-12-x86_64-pc-windows-msvc",
+        "nightly-2026-11-12-aarch64-unknown-linux-gnu",
+        "nightly-2026-11-12",
+    ] {
+        for phase in ["clippy", "doc", "test", "build"] {
+            assert_eq!(
+                arguments(&[&package], phase, "Native", toolchain, "Cargo.toml", false),
+                Err("Native Rust checks require a Windows ARM64 compiler host.".into())
+            );
+        }
+    }
 }
 
 #[test]

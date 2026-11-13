@@ -16,6 +16,7 @@ mod tests;
 
 const USAGE: &str = "bonsai-ci rust-select [--root PATH]\n       bonsai-ci rust-plan|rust-check [--root PATH] [--package NAME] [--packages-json JSON] [--group All|Broker] [--profile Foundation|Compatibility|Native] [--phase fmt|clippy|doc|test|build] [--toolchain NAME] [--offline] [--full-tests] [--build] [--target PATH --evidence PATH --timeout-seconds N] [--github-release]";
 const PHASES: &[&str] = &["fmt", "clippy", "doc", "test", "build"];
+const NATIVE_TARGET: &str = "aarch64-pc-windows-msvc";
 
 #[derive(Clone, Deserialize)]
 #[serde(rename_all = "PascalCase", deny_unknown_fields)]
@@ -268,6 +269,9 @@ fn arguments(
         arguments.push("--check".into());
         return Ok(arguments);
     }
+    if !toolchain.ends_with(&format!("-{NATIVE_TARGET}")) {
+        return Err("Native Rust checks require a Windows ARM64 compiler host.".into());
+    }
     if packages.len() > 1
         && packages
             .iter()
@@ -285,6 +289,9 @@ fn arguments(
         root.join(".cargo/config.toml")
             .to_string_lossy()
             .into_owned(),
+        // An explicit target keeps static CRT flags off host proc-macro builds.
+        "--target".into(),
+        NATIVE_TARGET.into(),
     ]);
     arguments.extend(["--locked".into(), "--release".into()]);
     if offline {

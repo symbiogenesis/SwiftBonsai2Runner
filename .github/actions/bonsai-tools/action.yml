@@ -69,13 +69,13 @@ runs:
         $PSNativeCommandUseErrorActionPreference = $true
         $deadlineArguments = if ($env:GITHUB_RELEASE_BUILD -ceq 'true') { @('--github-release') } else { @() }
         & $env:BONSAI_CI_PATH rust-check --root $env:GITHUB_WORKSPACE --package bonsai-tools --phase build --target $env:BONSAI_TOOLS_TARGET --evidence $env:BONSAI_TOOLS_BUILD_EVIDENCE @deadlineArguments
-        $builtTool = Join-Path $env:BONSAI_TOOLS_TARGET 'release/bonsai-tools.exe'
+        $builtTool = Join-Path $env:BONSAI_TOOLS_TARGET 'aarch64-pc-windows-msvc/release/bonsai-tools.exe'
         if (-not [IO.File]::Exists($builtTool)) { throw 'Packaged maintenance CLI build output is missing.' }
         [void][IO.Directory]::CreateDirectory($env:BONSAI_TOOLS_PACKAGE)
         $tool = Join-Path $env:BONSAI_TOOLS_PACKAGE 'bonsai-tools.exe'
         Copy-Item -LiteralPath $builtTool -Destination $tool
         $probe = Join-Path $env:BONSAI_TOOLS_PACKAGE 'bonsai-completion-test-probe.exe'
-        Copy-Item -LiteralPath (Join-Path $env:BONSAI_TOOLS_TARGET 'release/bonsai-completion-test-probe.exe') -Destination $probe
+        Copy-Item -LiteralPath (Join-Path $env:BONSAI_TOOLS_TARGET 'aarch64-pc-windows-msvc/release/bonsai-completion-test-probe.exe') -Destination $probe
         @{
           SchemaVersion = 2
           SourceId = $env:BONSAI_TOOLS_SOURCE_ID
