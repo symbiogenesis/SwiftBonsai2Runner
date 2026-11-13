@@ -1533,7 +1533,7 @@ fn response_speaker_loading_is_cancellable_and_only_failures_open_alerts() -> io
         .click();
     chat.run_steps(8);
     assert!(chat.state().app.speech_loading);
-    assert!(chat.state().app.active_alerts().is_empty());
+    assert_eq!(chat.state().app.active_alerts(), []);
     assert!(
         chat.query_by_role_and_label(egui::Role::Button, "Copy error")
             .is_none()
@@ -1542,7 +1542,7 @@ fn response_speaker_loading_is_cancellable_and_only_failures_open_alerts() -> io
         .click();
     chat.run();
     assert!(!chat.state().app.speech_loading && !chat.state().app.speaking);
-    assert!(chat.state().app.active_alerts().is_empty());
+    assert_eq!(chat.state().app.active_alerts(), []);
     chat.get_by_role_and_label(egui::Role::Button, "Read this response aloud")
         .click();
     chat.run_steps(8);
@@ -1571,7 +1571,7 @@ fn speech_preparation_uses_speaker_progress_without_error_panel() {
             .accesskit_node()
             .is_disabled()
     );
-    assert!(chat.state().app.active_alerts().is_empty());
+    assert_eq!(chat.state().app.active_alerts(), []);
     assert!(
         chat.query_by_role_and_label(egui::Role::Button, "Copy error")
             .is_none()

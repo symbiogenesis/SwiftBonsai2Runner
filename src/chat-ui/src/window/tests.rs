@@ -1479,12 +1479,12 @@ fn speech_progress_and_cancellation_do_not_raise_error_alerts() -> io::Result<()
     let answer = state.transcript.messages[0].id;
     state.toggle_read_aloud(answer);
     assert!(state.speaking && state.speech_loading);
-    assert!(state.active_alerts().is_empty());
+    assert_eq!(state.active_alerts(), []);
     state.speech_event(speech::Event::OutputStatus {
         generation: 2,
         message: "Generating speech.",
     });
-    assert!(state.active_alerts().is_empty());
+    assert_eq!(state.active_alerts(), []);
     state.speech_event(speech::Event::OutputBuffering {
         generation: 2,
         buffering: false,
@@ -1500,15 +1500,16 @@ fn speech_progress_and_cancellation_do_not_raise_error_alerts() -> io::Result<()
     );
     state.toggle_read_aloud(answer);
     assert!(!state.speaking && !state.speech_loading);
-    assert!(
-        state.active_alerts().is_empty(),
+    assert_eq!(
+        state.active_alerts(),
+        [],
         "An explicit stop is not an error."
     );
     state.speech_event(speech::Event::Failed {
         generation: 2,
         message: "Stale failure",
     });
-    assert!(state.active_alerts().is_empty());
+    assert_eq!(state.active_alerts(), []);
     state.toggle_read_aloud(answer);
     state.speech_event(speech::Event::Failed {
         generation: 5,
@@ -1517,8 +1518,9 @@ fn speech_progress_and_cancellation_do_not_raise_error_alerts() -> io::Result<()
     assert_eq!(state.active_alerts(), vec![error_ui::AlertKind::Speech]);
     assert!(!state.speaking && !state.speech_loading);
     state.toggle_read_aloud(answer);
-    assert!(
-        state.active_alerts().is_empty(),
+    assert_eq!(
+        state.active_alerts(),
+        [],
         "A new attempt replaces the old failure."
     );
     Ok(())

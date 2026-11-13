@@ -1177,21 +1177,18 @@ impl State {
             let Some(microphone) = &mut self.microphone else {
                 return;
             };
-            match microphone.start() {
-                Ok(generation) => {
-                    if let Some(session) = &self.speech {
-                        session.set_input_generation(Some(generation));
-                    }
-                    self.microphone_generation = Some(generation);
-                    self.dictation_requested = true;
-                    "Requesting microphone permission…".clone_into(&mut self.speech_status);
-                    self.focus_composer = true;
+            if let Ok(generation) = microphone.start() {
+                if let Some(session) = &self.speech {
+                    session.set_input_generation(Some(generation));
                 }
-                Err(_) => {
-                    self.speech_notice = true;
-                    "Microphone permission is unavailable. Check Windows privacy settings."
-                        .clone_into(&mut self.speech_status);
-                }
+                self.microphone_generation = Some(generation);
+                self.dictation_requested = true;
+                "Requesting microphone permission?".clone_into(&mut self.speech_status);
+                self.focus_composer = true;
+            } else {
+                self.speech_notice = true;
+                "Microphone permission is unavailable. Check Windows privacy settings."
+                    .clone_into(&mut self.speech_status);
             }
         }
         self.record(&self.speech_status.clone());
@@ -1372,19 +1369,7 @@ impl State {
             speech::Event::Speaking {
                 generation,
                 speaking,
-            } => self.output_status(
-                generation,
-                speaking,
-                if speaking {
-                    if self.streaming_active {
-                        "Reading the response as it arrives."
-                    } else {
-                        "Reading the selected response aloud."
-                    }
-                } else {
-                    "Read aloud stopped."
-                },
-            ),
+            } => self.speaking_status(generation, speaking),
             speech::Event::Failed {
                 generation,
                 message,
@@ -1449,6 +1434,19 @@ impl State {
             }
             .to_owned(),
         );
+    }
+
+    fn speaking_status(&mut self, generation: u64, speaking: bool) {
+        let message = if speaking {
+            if self.streaming_active {
+                "Reading the response as it arrives."
+            } else {
+                "Reading the selected response aloud."
+            }
+        } else {
+            "Read aloud stopped."
+        };
+        self.output_status(generation, speaking, message);
     }
 
     fn is_current_speech_output(&self, generation: u64) -> bool {
