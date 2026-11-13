@@ -519,7 +519,10 @@ impl Operations for Native {
             model,
             &request.tts_quantization,
             false,
-            !request.speech_models_only,
+            // Preparation owns repair before speech services start. Checking only
+            // length can otherwise leave same-size corrupt files failing on every
+            // service load, beyond the setup retry path.
+            false,
             working,
         )
     }

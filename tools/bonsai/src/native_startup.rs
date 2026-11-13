@@ -1018,7 +1018,8 @@ mod tests {
     }
 
     #[test]
-    fn ordinary_model_setup_defers_only_cached_hashes() -> crate::Result<()> {
+    fn speech_model_cache_repairs_corruption_and_preserves_explicit_deferred_hashes()
+    -> crate::Result<()> {
         use sha2::{Digest as _, Sha256};
         let working = std::env::temp_dir().join(format!("Bonsai-ModelStartupTest-{}", nonce()?));
         external(&working)?;
