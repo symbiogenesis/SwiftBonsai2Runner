@@ -8,7 +8,7 @@
 
 use std::{
     ffi::{CStr, CString},
-    io,
+    fmt, io,
     path::{Path, PathBuf},
 };
 
@@ -46,6 +46,80 @@ const MAX_SAMPLES: usize = 24_000 * 120;
 const MAX_SAMPLES_48K: usize = 48_000 * 120;
 const TOKEN_CEILING_SAMPLES: usize = (1500 - 2) * 1920;
 const TOKEN_CEILING_SAMPLES_48K: usize = (1500 - 2) * 3840;
+
+#[derive(Clone, Copy, Debug)]
+enum SynthesisStage {
+    DesignModel,
+    ReferenceGeneration,
+    ReferenceDecode,
+    ReferenceValidation,
+    BaseWeights,
+    BaseMetadata,
+    SpeakerWeights,
+    SpeakerExtraction,
+    ReferenceEncoding,
+    BaseTokenizer,
+    BaseModel,
+    CodecPriming,
+    Generation,
+    CodecDecode,
+    AudioValidation,
+    AudioOutput,
+}
+
+impl SynthesisStage {
+    const fn name(self) -> &'static str {
+        match self {
+            Self::DesignModel => "VoiceDesign model loading",
+            Self::ReferenceGeneration => "voice reference generation",
+            Self::ReferenceDecode => "voice reference audio decoding",
+            Self::ReferenceValidation => "voice reference audio validation",
+            Self::BaseWeights => "Base model weight intake",
+            Self::BaseMetadata => "Base model metadata validation",
+            Self::SpeakerWeights => "speaker encoder loading",
+            Self::SpeakerExtraction => "speaker embedding extraction",
+            Self::ReferenceEncoding => "voice reference audio encoding",
+            Self::BaseTokenizer => "Base tokenizer loading",
+            Self::BaseModel => "Base model loading",
+            Self::CodecPriming => "voice reference codec priming",
+            Self::Generation => "speech token generation",
+            Self::CodecDecode => "speech audio decoding",
+            Self::AudioValidation => "speech audio validation",
+            Self::AudioOutput => "speech audio output",
+        }
+    }
+
+    fn failure(self, error: io::Error) -> io::Error {
+        if synthesis_failure_stage(&error).is_some() {
+            return error;
+        }
+        io::Error::new(error.kind(), SynthesisFailure(self))
+    }
+}
+
+#[derive(Debug)]
+struct SynthesisFailure(SynthesisStage);
+
+impl fmt::Display for SynthesisFailure {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter.write_str(self.0.name())
+    }
+}
+
+impl std::error::Error for SynthesisFailure {}
+
+/// Return a fixed, privacy-safe stage label for a synthesis failure.
+///
+/// Labels come exclusively from this library's stage enum. Arbitrary error text,
+/// model paths, request text and voice descriptions are never returned. Obtain
+/// the original category separately with [`io::Error::kind`].
+#[must_use]
+pub fn synthesis_failure_stage(error: &io::Error) -> Option<&'static str> {
+    error
+        .get_ref()?
+        .downcast_ref::<SynthesisFailure>()
+        .map(|failure| failure.0.name())
+}
 
 /// Returns `true` when `sample_rate` is a supported Qwen3-TTS output rate (`24_000` or `48_000` Hz).
 #[must_use]
@@ -212,39 +286,57 @@ impl Synthesizer {
         voices.get_or_create(profile, || {
             let talker = match design.take() {
                 Some(talker) => talker,
-                None => load_talker(model_path, "voice_design", *threads)?,
+                None => load_talker(model_path, "voice_design", *threads)
+                    .map_err(|error| SynthesisStage::DesignModel.failure(error))?,
             };
             let profile = profile.to_str().map_err(io::Error::other)?;
             let mut codes = Vec::new();
-            talker.generate(
-                rust_talker::REFERENCE_TEXT,
-                Some(profile),
-                None,
-                &mut |frame| {
-                    codes.push(frame);
-                    Ok(())
-                },
-                &mut || Ok(()),
-            )?;
-            let samples = codec.decode(&codes)?;
-            let count = sample_count(&samples, 0).ok_or_else(invalid_audio)?;
+            talker
+                .generate(
+                    rust_talker::REFERENCE_TEXT,
+                    Some(profile),
+                    None,
+                    &mut |frame| {
+                        codes.push(frame);
+                        Ok(())
+                    },
+                    &mut || Ok(()),
+                )
+                .map_err(|error| SynthesisStage::ReferenceGeneration.failure(error))?;
+            let samples = codec
+                .decode(&codes)
+                .map_err(|error| SynthesisStage::ReferenceDecode.failure(error))?;
+            let count = sample_count(&samples, 0)
+                .ok_or_else(|| SynthesisStage::ReferenceValidation.failure(invalid_audio()))?;
             if !(1920..=24_000 * 30).contains(&count) {
-                return Err(invalid_audio());
+                return Err(SynthesisStage::ReferenceValidation.failure(invalid_audio()));
             }
             // Release Design before allocating Base; the waveform survives that
             // model switch and supplies both speaker and acoustic conditioning.
             drop(talker);
-            let mut weights = weights::Weights::open(voice_model_path)?;
-            if weights.string("qwen3-tts.model_type")? != "base" {
-                return Err(io::Error::new(
+            let mut weights = weights::Weights::open(voice_model_path)
+                .map_err(|error| SynthesisStage::BaseWeights.failure(error))?;
+            if weights
+                .string("qwen3-tts.model_type")
+                .map_err(|error| SynthesisStage::BaseMetadata.failure(error))?
+                != "base"
+            {
+                return Err(SynthesisStage::BaseMetadata.failure(io::Error::new(
                     io::ErrorKind::InvalidData,
                     "Speech voice model must be Base.",
-                ));
+                )));
             }
-            let speaker = rust_codec::Speaker::load(&mut weights)?.extract(&samples)?;
-            let reference_codes = codec.encode_reference(&samples)?;
-            let tokenizer = tokenizer::Tokenizer::load(voice_model_path)?;
-            let talker = rust_talker::Talker::load(&mut weights, tokenizer, *threads)?;
+            let speaker = rust_codec::Speaker::load(&mut weights)
+                .map_err(|error| SynthesisStage::SpeakerWeights.failure(error))?
+                .extract(&samples)
+                .map_err(|error| SynthesisStage::SpeakerExtraction.failure(error))?;
+            let reference_codes = codec
+                .encode_reference(&samples)
+                .map_err(|error| SynthesisStage::ReferenceEncoding.failure(error))?;
+            let tokenizer = tokenizer::Tokenizer::load(voice_model_path)
+                .map_err(|error| SynthesisStage::BaseTokenizer.failure(error))?;
+            let talker = rust_talker::Talker::load(&mut weights, tokenizer, *threads)
+                .map_err(|error| SynthesisStage::BaseModel.failure(error))?;
             drop(samples);
             drop(weights);
             let reference = rust_talker::Reference {
@@ -304,16 +396,21 @@ impl Synthesizer {
         let _ = self.voice(&profile)?;
         let Self { voices, codec, .. } = self;
         let (_, voice) = voices.0.as_mut().ok_or_else(invalid_audio)?;
-        codec.prime_reference(&voice.reference.codes)?;
+        codec
+            .prime_reference(&voice.reference.codes)
+            .map_err(|error| SynthesisStage::CodecPriming.failure(error))?;
         let mut count = 0;
         let result = voice.talker.generate(
             text.to_str().map_err(io::Error::other)?,
             None,
             Some(&voice.reference),
             &mut |frame| {
-                let chunk = codec.decode_stream(&[frame])?;
-                count = sample_count(&chunk, count).ok_or_else(invalid_audio)?;
-                sink(&chunk)
+                let chunk = codec
+                    .decode_stream(&[frame])
+                    .map_err(|error| SynthesisStage::CodecDecode.failure(error))?;
+                count = sample_count(&chunk, count)
+                    .ok_or_else(|| SynthesisStage::AudioValidation.failure(invalid_audio()))?;
+                sink(&chunk).map_err(|error| SynthesisStage::AudioOutput.failure(error))
             },
             &mut || Ok(()),
         );
@@ -322,9 +419,9 @@ impl Synthesizer {
             // KV, codec and sampler state from a failed turn is never reused.
             voices.0 = None;
         }
-        result?;
+        result.map_err(|error| SynthesisStage::Generation.failure(error))?;
         if count == 0 {
-            return Err(invalid_audio());
+            return Err(SynthesisStage::AudioValidation.failure(invalid_audio()));
         }
         Ok(())
     }
@@ -404,10 +501,39 @@ fn bounded_input(text: &str, maximum: usize) -> io::Result<CString> {
 #[cfg(test)]
 mod tests {
     use super::{
-        MAX_TEXT, MAX_VOICE, SAMPLE_RATE, SAMPLE_RATE_48K, TOKEN_CEILING_SAMPLES,
+        MAX_TEXT, MAX_VOICE, SAMPLE_RATE, SAMPLE_RATE_48K, SynthesisStage, TOKEN_CEILING_SAMPLES,
         TOKEN_CEILING_SAMPLES_48K, VoiceCache, bounded_input, finish_voice_bootstrap,
         is_supported_sample_rate, sample_count, sample_count_for_rate, select_threads,
+        synthesis_failure_stage,
     };
+
+    #[test]
+    fn synthesis_failures_keep_typed_stage_and_kind_without_private_error_text() {
+        use std::io;
+
+        for (stage, label) in [
+            (SynthesisStage::BaseWeights, "Base model weight intake"),
+            (
+                SynthesisStage::SpeakerExtraction,
+                "speaker embedding extraction",
+            ),
+            (SynthesisStage::Generation, "speech token generation"),
+            (SynthesisStage::CodecDecode, "speech audio decoding"),
+            (SynthesisStage::AudioOutput, "speech audio output"),
+        ] {
+            let private = "private voice, request text, model path and credential";
+            let error = stage.failure(io::Error::new(io::ErrorKind::PermissionDenied, private));
+            assert_eq!(synthesis_failure_stage(&error), Some(label));
+            assert_eq!(error.kind(), io::ErrorKind::PermissionDenied);
+            assert_eq!(error.to_string(), label);
+            assert!(!format!("{error:?}").contains(private));
+            let error = SynthesisStage::Generation.failure(error);
+            assert_eq!(synthesis_failure_stage(&error), Some(label));
+            assert_eq!(error.kind(), io::ErrorKind::PermissionDenied);
+        }
+        let arbitrary = io::Error::other("speech token generation");
+        assert_eq!(synthesis_failure_stage(&arbitrary), None);
+    }
 
     #[test]
     fn voice_bootstrap_keeps_one_waveform_through_model_switch_and_releases_on_every_exit()
