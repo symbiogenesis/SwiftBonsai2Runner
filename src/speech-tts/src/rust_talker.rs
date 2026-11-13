@@ -471,7 +471,9 @@ impl Talker {
             hidden = self.forward(row, &mut caches, cancel)?;
         }
         let mut history = Vec::with_capacity(MAX_NEW_TOKENS);
-        let mut scratch = Vec::new();
+        // The sampler marks vocabulary entries while applying repetition
+        // penalties after the first frame; its workspace is caller-owned.
+        let mut scratch = vec![0; self.geometry.vocab];
         let mut params = if self.base {
             DecoupledSamplingParams::base_clone()
         } else {
@@ -688,6 +690,55 @@ mod tests {
                 row[0]
             );
         }
+    }
+
+    #[test]
+    fn reference_generation_reuses_vocabulary_workspace_through_second_sample_and_eos()
+    -> std::io::Result<()> {
+        let mut talker = prompt_fixture(false)?;
+        talker.geometry.vocab = 1026;
+        talker.codec_embedding = vec![0.0; talker.geometry.vocab];
+        // Prompt's final codec BOS produces a positive hidden state. The first
+        // emitted frame then produces a negative state, selecting EOS on the
+        // second semantic sample after repetition history becomes nonempty.
+        talker.codec_embedding[0] = -3.0;
+        talker.codec_embedding[1] = 2.0;
+        talker.tts_pad = vec![-1.0];
+        let mut head = vec![0.0; talker.geometry.vocab];
+        head[0] = 1000.0;
+        head[2] = -1000.0;
+        talker.head = LinearProjection::new(
+            "fixture.semantic",
+            1,
+            talker.geometry.vocab,
+            WeightQuantization::F32(head),
+            None,
+        )?;
+        talker.predictor.codec_embeddings = vec![vec![0.0; 2]; 15];
+        talker.predictor.lm_heads = (0..15)
+            .map(|_| {
+                LinearProjection::new(
+                    "fixture.acoustic",
+                    1,
+                    2,
+                    WeightQuantization::F32(vec![0.0; 2]),
+                    Some(vec![1000.0, -1000.0]),
+                )
+            })
+            .collect::<std::io::Result<_>>()?;
+        let mut frames = Vec::new();
+        talker.generate(
+            REFERENCE_TEXT,
+            Some("i"),
+            None,
+            &mut |frame| {
+                frames.push(frame);
+                Ok(())
+            },
+            &mut || Ok(()),
+        )?;
+        assert_eq!(frames, [[0; 16]]);
+        Ok(())
     }
 
     #[test]
