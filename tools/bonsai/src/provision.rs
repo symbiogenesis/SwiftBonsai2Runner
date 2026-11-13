@@ -498,6 +498,241 @@ fn inference(request: &Request, working: &Path) -> crate::Result<Value> {
     Ok(installed)
 }
 
+fn validate_repair_tree(
+    root: &Path,
+    directory: &Path,
+    files: &BTreeSet<PathBuf>,
+    directories: &BTreeSet<PathBuf>,
+) -> crate::Result<()> {
+    crate::startup_cancel::checkpoint()?;
+    validate_external_path(directory).map_err(|error| error.to_string())?;
+    let metadata = fs::symlink_metadata(directory).map_err(|error| error.to_string())?;
+    if !metadata.is_dir() || is_redirect(&metadata) {
+        return Err("Runtime repair requires an ordinary local installation directory.".into());
+    }
+    for entry in fs::read_dir(directory).map_err(|error| error.to_string())? {
+        crate::startup_cancel::checkpoint()?;
+        let path = entry.map_err(|error| error.to_string())?.path();
+        validate_external_path(&path).map_err(|error| error.to_string())?;
+        let relative = path.strip_prefix(root).map_err(|error| error.to_string())?;
+        let metadata = fs::symlink_metadata(&path).map_err(|error| error.to_string())?;
+        if is_redirect(&metadata) {
+            return Err("Runtime repair cannot replace a redirected installation entry.".into());
+        }
+        if metadata.is_dir() && directories.contains(relative) {
+            validate_repair_tree(root, &path, files, directories)?;
+        } else if metadata.is_file() && files.contains(relative) {
+            // Unreadable files and files held for writing are not classified as
+            // corrupt. Repair never bypasses their access or sharing policy.
+            let _readable = open_locked_file(&path).map_err(|error| error.to_string())?;
+        } else {
+            return Err(format!(
+                "Runtime repair found an unexpected entry at {}; no existing installation was replaced. Move unrelated files out of this runtime folder and select Retry setup.",
+                path.display()
+            ));
+        }
+    }
+    Ok(())
+}
+
+fn publish_repaired_runtime(
+    staging: &Path,
+    destination: &Path,
+    expected: &[PathBuf],
+) -> crate::Result<Option<PathBuf>> {
+    crate::startup_cancel::checkpoint()?;
+    validate_external_path(staging).map_err(|error| error.to_string())?;
+    validate_external_path(destination).map_err(|error| error.to_string())?;
+    let files: BTreeSet<_> = expected.iter().cloned().collect();
+    let mut directories = BTreeSet::new();
+    for file in &files {
+        let mut parent = file.parent();
+        while let Some(path) = parent.filter(|path| !path.as_os_str().is_empty()) {
+            directories.insert(path.to_owned());
+            parent = path.parent();
+        }
+    }
+    if !destination.exists() {
+        fs::rename(staging, destination).map_err(|error| {
+            format!(
+                "Cannot publish verified runtime at {}: {error}",
+                destination.display()
+            )
+        })?;
+        return Ok(None);
+    }
+    validate_repair_tree(destination, destination, &files, &directories)?;
+    let parent = destination
+        .parent()
+        .ok_or("Runtime repair needs a parent directory.")?;
+    let previous = parent.join(format!(
+        ".invalid-runtime-{}",
+        crate::startup_process::unique()
+    ));
+    validate_external_path(&previous).map_err(|error| error.to_string())?;
+    crate::startup_cancel::checkpoint()?;
+    fs::rename(destination, &previous).map_err(|error| format!("Cannot retain the previous runtime at {}: {error}. Close other apps using Swift and select Retry setup.", previous.display()))?;
+    // Do not observe cancellation between these two renames: either a verified
+    // installation is published or the original directory is restored first.
+    if let Err(error) = fs::rename(staging, destination) {
+        return match fs::rename(&previous, destination) {
+            Ok(()) => Err(format!(
+                "Runtime publication failed and the previous installation was restored: {error}"
+            )),
+            Err(restore) => Err(format!(
+                "Runtime publication failed: {error}. The previous installation is retained at {}; restoration failed: {restore}",
+                previous.display()
+            )),
+        };
+    }
+    Ok(Some(previous))
+}
+
+fn repair_inference(request: &Request, working: &Path) -> crate::Result<Value> {
+    let lock = read_lock(request.lock_path.as_deref(), INFERENCE)?;
+    let files = inference_lock(&lock)?;
+    let destination = request
+        .data_directory
+        .join("inference")
+        .join(text(&lock, "commit")?)
+        .join(text(&lock, "target")?);
+    validate_external_path(&destination).map_err(|error| error.to_string())?;
+    let parent = destination
+        .parent()
+        .ok_or("Inference repair needs a parent.")?;
+    fs::create_dir_all(parent).map_err(|error| error.to_string())?;
+    validate_external_path(parent).map_err(|error| error.to_string())?;
+    let _guard = crate::startup_cache::lock_file(&parent.join(".chat-runtime-setup.lock"))?;
+    if destination.exists()
+        && let Ok(installed) = verify_inference(&lock, &files, &destination)
+    {
+        return Ok(installed);
+    }
+    let expected: Vec<_> = files.iter().map(|file| PathBuf::from(&file.name)).collect();
+    if destination.exists() {
+        validate_repair_tree(
+            &destination,
+            &destination,
+            &expected.iter().cloned().collect(),
+            &BTreeSet::new(),
+        )?;
+    }
+    let pin = &lock["asset"];
+    let archive = request
+        .data_directory
+        .join("downloads")
+        .join(text(pin, "filename")?);
+    crate::startup_download::receive_repair(
+        text(pin, "url")?,
+        &archive,
+        pin["bytes"]
+            .as_u64()
+            .ok_or("Missing runtime archive length.")?,
+        text(pin, "sha256")?,
+        working,
+    )?;
+    let staging = parent.join(format!(".staging-{}", crate::startup_process::unique()));
+    extract_inference(&archive, pin, &files, &staging)?;
+    verify_inference(&lock, &files, &staging)?;
+    let previous = publish_repaired_runtime(&staging, &destination, &expected)?;
+    let mut installed = verify_inference(&lock, &files, &destination)?;
+    if let Some(previous) = previous {
+        installed["PreviousInvalidDirectory"] = json!(previous);
+    }
+    Ok(installed)
+}
+
+#[cfg(windows)]
+fn repair_engine(request: &Request, working: &Path) -> crate::Result<Value> {
+    let lock = read_lock(request.lock_path.as_deref(), REFERENCE)?;
+    model_lock(&lock)?;
+    let runtime = &lock["runtime"];
+    let pin = &runtime["asset"];
+    let archive = request
+        .data_directory
+        .join("downloads")
+        .join(text(pin, "filename")?);
+    let destination = request
+        .data_directory
+        .join("runtime")
+        .join(text(runtime, "commit")?);
+    validate_external_path(&destination).map_err(|error| error.to_string())?;
+    let parent = destination
+        .parent()
+        .ok_or("Publisher runtime repair needs a parent.")?;
+    fs::create_dir_all(parent).map_err(|error| error.to_string())?;
+    let _guard = crate::startup_cache::lock_file(
+        &parent.join(format!(".chat-runtime-{}.lock", text(runtime, "commit")?)),
+    )?;
+    crate::startup_download::receive_repair(
+        text(pin, "url")?,
+        &archive,
+        pin["bytes"]
+            .as_u64()
+            .ok_or("Missing runtime archive length.")?,
+        text(pin, "sha256")?,
+        working,
+    )?;
+    let spec = bonsai_artifacts::RuntimeSpec {
+        archive_path: archive,
+        runtime_directory: destination.clone(),
+        archive_bytes: pin["bytes"]
+            .as_u64()
+            .ok_or("Missing runtime archive length.")?,
+        archive_sha256: text(pin, "sha256")?.into(),
+    };
+    if bonsai_artifacts::VerifiedRuntime::verify_with(&spec, || {
+        crate::startup_cancel::checkpoint().map_err(|_| bonsai_artifacts::ArtifactError::Cancelled)
+    })
+    .is_err()
+    {
+        crate::startup_cancel::checkpoint()?;
+        let staged = crate::install::run(json!({"schemaVersion":1,"runtime":spec}))?;
+        let staging = Path::new(text(&staged, "StagingDirectory")?);
+        let expected = staged["RuntimeFiles"]
+            .as_array()
+            .ok_or("Missing staged runtime inventory.")?
+            .iter()
+            .map(|file| {
+                Path::new(text(file, "Path")?)
+                    .strip_prefix(staging)
+                    .map(Path::to_owned)
+                    .map_err(|error| error.to_string())
+            })
+            .collect::<crate::Result<Vec<_>>>()?;
+        publish_repaired_runtime(staging, &destination, &expected)?;
+    }
+    engine(request, working)
+}
+
+#[cfg(not(windows))]
+fn repair_engine(_request: &Request, _working: &Path) -> crate::Result<Value> {
+    Err("Publisher runtime setup requires Windows.".into())
+}
+
+/// Automatic chat setup may restore only its selected locked runtime. The public
+/// provisioning API continues to reject changed existing installations.
+pub(crate) fn prepare_chat_runtime(value: Value) -> crate::Result<Value> {
+    let request: Request = serde_json::from_value(value).map_err(|error| error.to_string())?;
+    validate_external_path(&request.data_directory).map_err(|error| error.to_string())?;
+    if request.verify_only
+        || request.include_capabilities
+        || request.include_help
+        || request.model != "All"
+        || request.tts_quantization != "Q8_0"
+    {
+        return Err("Automatic runtime setup received unsupported provisioning options.".into());
+    }
+    let working = working_directory(&request)?;
+    match request.operation {
+        Operation::Inference => repair_inference(&request, &working),
+        Operation::Engine => repair_engine(&request, &working),
+        _ => {
+            Err("Automatic runtime setup requires the selected native or publisher runtime.".into())
+        }
+    }
+}
+
 #[cfg(windows)]
 fn capabilities(data: &Path) -> crate::Result<Value> {
     let (id, creation) = crate::cpu_check::parent_identity(None, None)?;
@@ -1017,11 +1252,84 @@ mod tests {
         assert_eq!(run(request.clone())?["Directory"], installed["Directory"]);
         let worker = Path::new(text(&installed, "SwiftWorker")?);
         fs::write(worker, b"changed worker").map_err(|error| error.to_string())?;
-        assert!(run(request).is_err());
+        assert!(run(request.clone()).is_err());
         assert_eq!(
             fs::read(worker).map_err(|error| error.to_string())?,
             b"changed worker"
         );
+        request["verifyOnly"] = json!(false);
+        let repaired = prepare_chat_runtime(request.clone())?;
+        assert_eq!(repaired["Verified"], true);
+        assert_eq!(fs::read(worker).map_err(|error| error.to_string())?, image);
+        let previous = Path::new(text(&repaired, "PreviousInvalidDirectory")?);
+        assert_eq!(
+            fs::read(previous.join("bonsai-swift-worker.exe")).map_err(|error| error.to_string())?,
+            b"changed worker"
+        );
+
+        fs::remove_file(worker).map_err(|error| error.to_string())?;
+        assert_eq!(prepare_chat_runtime(request.clone())?["Verified"], true);
+        fs::write(worker, b"changed again").map_err(|error| error.to_string())?;
+        let unexpected = worker.with_file_name("owner-notes.txt");
+        fs::write(&unexpected, b"keep owner data").map_err(|error| error.to_string())?;
+        let error = prepare_chat_runtime(request)
+            .err()
+            .ok_or("Unexpected runtime data was replaced.")?;
+        assert!(error.contains("unexpected entry"));
+        assert_eq!(
+            fs::read(worker).map_err(|error| error.to_string())?,
+            b"changed again"
+        );
+        assert_eq!(
+            fs::read(unexpected).map_err(|error| error.to_string())?,
+            b"keep owner data"
+        );
+        fs::remove_dir_all(root).map_err(|error| error.to_string())
+    }
+
+    #[test]
+    fn runtime_setup_publication_rejects_unknown_entries_and_restores_on_publish_failure()
+    -> crate::Result<()> {
+        let root = std::env::temp_dir().join(format!(
+            "Bonsai-RuntimeRepair-{}",
+            crate::startup_process::unique()
+        ));
+        let destination = root.join("runtime");
+        let staging = root.join("verified-stage");
+        fs::create_dir_all(&destination).map_err(|error| error.to_string())?;
+        fs::create_dir(&staging).map_err(|error| error.to_string())?;
+        fs::write(destination.join("engine.exe"), b"old").map_err(|error| error.to_string())?;
+        fs::write(destination.join("owner.txt"), b"preserve").map_err(|error| error.to_string())?;
+        fs::write(staging.join("engine.exe"), b"verified").map_err(|error| error.to_string())?;
+        let expected = [PathBuf::from("engine.exe")];
+        let error = publish_repaired_runtime(&staging, &destination, &expected)
+            .err()
+            .ok_or("Unexpected file did not block replacement.")?;
+        assert!(error.contains("unexpected entry"));
+        assert_eq!(
+            fs::read(destination.join("owner.txt")).map_err(|error| error.to_string())?,
+            b"preserve"
+        );
+        fs::remove_file(destination.join("owner.txt")).map_err(|error| error.to_string())?;
+        let error = publish_repaired_runtime(&root.join("missing-stage"), &destination, &expected)
+            .err()
+            .ok_or("Missing staging unexpectedly published.")?;
+        assert!(error.contains("previous installation was restored"));
+        assert_eq!(
+            fs::read(destination.join("engine.exe")).map_err(|error| error.to_string())?,
+            b"old"
+        );
+        let previous = publish_repaired_runtime(&staging, &destination, &expected)?
+            .ok_or("Previous runtime was not retained.")?;
+        assert_eq!(
+            fs::read(destination.join("engine.exe")).map_err(|error| error.to_string())?,
+            b"verified"
+        );
+        assert_eq!(
+            fs::read(previous.join("engine.exe")).map_err(|error| error.to_string())?,
+            b"old"
+        );
+        assert!(!staging.exists());
         fs::remove_dir_all(root).map_err(|error| error.to_string())
     }
 

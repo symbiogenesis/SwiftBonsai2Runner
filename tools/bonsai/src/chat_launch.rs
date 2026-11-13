@@ -1,6 +1,7 @@
 //! Native chat startup policy and orchestration for the direct Rust launcher.
 
 mod instance;
+mod setup;
 
 use std::collections::BTreeMap;
 use std::ffi::OsString;
@@ -262,11 +263,8 @@ const fn selection(canary: bool, tts: bool) -> Option<&'static str> {
 fn validate_paths(request: &Request) -> crate::Result<()> {
     repository(&request.repository_root)?;
     external(&request.data_directory)?;
-    if !request.data_directory.is_dir() && !request.speech_models_only {
-        if request.native_engine {
-            return Err("Provision Swift with bonsai-tools provision: operation model using the Swift assessment lock, then operation inference using the same dataDirectory. See docs/development-guide.md#native-chat-app.".into());
-        }
-        return Err("Provision Swift with bonsai-tools provision: operations model and engine using the Swift assessment lock and the same dataDirectory. See docs/development-guide.md#native-chat-app.".into());
+    if request.data_directory.exists() && !request.data_directory.is_dir() {
+        return Err("The selected data location is not a directory. Choose a writable local folder for Swift.".into());
     }
     if let Some(working) = &request.working_directory {
         external(working)?;
@@ -388,6 +386,7 @@ fn prepare(mut request: Request, native_host: bool) -> crate::Result<Plan> {
 }
 
 trait Operations {
+    fn artifacts(&mut self, request: &Request, working: &Path) -> crate::Result<()>;
     fn inference(&mut self, request: &Request, working: &Path) -> crate::Result<()>;
     fn model_apps(
         &mut self,
@@ -435,10 +434,20 @@ fn path_field(value: &Value, key: &str) -> crate::Result<PathBuf> {
 }
 
 impl Operations for Native {
+    fn artifacts(&mut self, request: &Request, working: &Path) -> crate::Result<()> {
+        setup::prepare(request, working)
+    }
+
     fn inference(&mut self, request: &Request, working: &Path) -> crate::Result<()> {
-        crate::provision::run(inference_request(request, working))
+        setup::status(
+            working,
+            "runtime",
+            "Checking and preparing the selected Rust runtime…",
+            None,
+        )?;
+        crate::provision::prepare_chat_runtime(inference_request(request, working))
             .map(|_| ())
-            .map_err(|error| format!("The selected Rust runtime could not be prepared: {error}"))
+            .map_err(|error| format!("The selected Rust runtime could not be prepared in {}: {error}. Check available disk space and folder permissions, then select Retry setup.", request.data_directory.display()))
     }
 
     fn model_apps(
@@ -770,9 +779,10 @@ fn prepare_backend(
     if stage == PreparationStage::Speech && request.broker_path.is_none() {
         return Err("Speech preparation requires the prepared broker executable.".into());
     }
-    if request.speech_models_only {
-        fs::create_dir_all(&request.data_directory).map_err(|error| error.to_string())?;
-    }
+    fs::create_dir_all(&request.data_directory).map_err(|error| {
+        format!("Swift cannot create its data folder {}: {error}. Choose a writable local folder and launch again.", request.data_directory.display())
+    })?;
+    external(&request.data_directory)?;
     let model_apps = if stage == PreparationStage::Model && !request.speech_models_only {
         operations.model_apps(&request, &app_packages, working)?
     } else {
@@ -780,9 +790,12 @@ fn prepare_backend(
     };
     if stage == PreparationStage::All && request.native_engine && !request.speech_models_only {
         // Run only in the owned preparation worker after the first UI frame.
-        // Provisioning checks the exact release inventory and hashes, downloads
-        // only a missing runtime, and rejects altered existing installations.
+        // Setup checks the exact release inventory and hashes and restores only
+        // the selected pinned runtime before any model handoff.
         operations.inference(&request, working)?;
+    }
+    if stage != PreparationStage::Speech && !request.speech_models_only {
+        operations.artifacts(&request, working)?;
     }
     let models = if let Some(model) = model_selection {
         Some(operations.models(&request, model, working)?)

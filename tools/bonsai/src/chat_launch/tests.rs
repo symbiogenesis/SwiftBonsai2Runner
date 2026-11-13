@@ -149,6 +149,8 @@ enum Event {
 struct Recorder {
     root: PathBuf,
     events: Vec<Event>,
+    artifact_requests: Vec<Value>,
+    artifact_error: Option<&'static str>,
     exit_code: u32,
     fail_native: bool,
     fail_inference: bool,
@@ -160,6 +162,8 @@ impl Recorder {
         Self {
             root,
             events: Vec::new(),
+            artifact_requests: Vec::new(),
+            artifact_error: None,
             exit_code: 0,
             fail_native: false,
             fail_inference: false,
@@ -181,6 +185,19 @@ impl Recorder {
 }
 
 impl Operations for Recorder {
+    fn artifacts(&mut self, request: &Request, _working: &Path) -> crate::Result<()> {
+        assert!(
+            self.launch().is_err(),
+            "Artifacts must be ready before broker handoff."
+        );
+        self.artifact_requests
+            .push(serde_json::to_value(request).map_err(|error| error.to_string())?);
+        if let Some(error) = self.artifact_error {
+            return Err(error.into());
+        }
+        Ok(())
+    }
+
     fn inference(&mut self, request: &Request, working: &Path) -> crate::Result<()> {
         self.events
             .push(Event::Inference(inference_request(request, working)));
@@ -1128,7 +1145,6 @@ fn invalid_options_reject_before_provisioning() -> crate::Result<()> {
         json!({"TtsThreads": 257}),
         json!({"ChatPath": fixture.root.join("external.key")}),
         json!({"DataDirectory": "relative-data"}),
-        json!({"DataDirectory": fixture.root.join("missing-data")}),
         json!({"CanaryKeyFile": fixture.root.join("missing-key")}),
     ] {
         let mut request = fixture.request.clone();
@@ -1143,6 +1159,131 @@ fn invalid_options_reject_before_provisioning() -> crate::Result<()> {
     let request = serde_json::from_value(fixture.request).map_err(|error| error.to_string())?;
     assert!(prepare(request, false).is_err());
     Ok(())
+}
+
+#[test]
+fn automatic_setup_accepts_fresh_data_and_preserves_every_explicit_model_choice()
+-> crate::Result<()> {
+    let mut fixture = fixture("automatic-fresh-setup")?;
+    let data = fixture.root.join("new-data-folder");
+    fixture.request["DataDirectory"] = json!(data);
+    fixture.request["NoSpeechModels"] = json!(true);
+    fixture.request["PreparationStage"] = json!("model");
+    assert!(!data.exists());
+    for native in [false, true] {
+        for ptq1 in [false, true] {
+            for adapter in [false, true] {
+                fixture.request["NativeEngine"] = json!(native);
+                fixture.request["UseRepackedPtq1"] = json!(ptq1);
+                fixture.request["NoAbliterateLora"] = json!(!adapter);
+                let mut recorder = Recorder::new(fixture.root.clone());
+                execute(
+                    plan(fixture.request.clone())?,
+                    &mut recorder,
+                    &fixture.working,
+                )?;
+                assert!(data.is_dir());
+                assert_eq!(recorder.artifact_requests.len(), 1);
+                let setup = &recorder.artifact_requests[0];
+                assert_eq!(setup["DataDirectory"], json!(data));
+                assert_eq!(setup["NativeEngine"], native);
+                assert_eq!(setup["UseRepackedPtq1"], ptq1);
+                assert_eq!(setup["NoAbliterateLora"], !adapter);
+                assert!(setup.get("LockPath").is_none());
+                let (_, arguments, _) = recorder.launch()?;
+                assert_eq!(
+                    arguments
+                        .iter()
+                        .any(|argument| argument == "--native-engine"),
+                    native
+                );
+                assert_eq!(
+                    arguments
+                        .iter()
+                        .any(|argument| argument == "--publisher-engine"),
+                    !native
+                );
+                assert_eq!(
+                    arguments
+                        .iter()
+                        .any(|argument| argument == "--use-repacked-ptq1"),
+                    ptq1
+                );
+                assert_eq!(
+                    arguments
+                        .iter()
+                        .any(|argument| argument == "--no-abliterate-lora"),
+                    !adapter
+                );
+            }
+        }
+    }
+    fs::remove_dir_all(fixture.root).map_err(|error| error.to_string())
+}
+
+#[test]
+fn automatic_setup_failure_never_hands_off_to_broker_or_speech() -> crate::Result<()> {
+    let mut fixture = fixture("automatic-setup-failure")?;
+    for native in [false, true] {
+        fixture.request["NativeEngine"] = json!(native);
+        let mut recorder = Recorder::new(fixture.root.clone());
+        recorder.artifact_error = Some("Model download interrupted; partial retained.");
+        let result = execute(
+            plan(fixture.request.clone())?,
+            &mut recorder,
+            &fixture.working,
+        );
+        assert_eq!(
+            result,
+            Err("Model download interrupted; partial retained.".into())
+        );
+        assert_eq!(recorder.artifact_requests.len(), 1);
+        assert!(recorder.launch().is_err());
+        assert!(
+            recorder
+                .events
+                .iter()
+                .all(|event| matches!(event, Event::Inference(_)))
+        );
+    }
+    fs::remove_dir_all(fixture.root).map_err(|error| error.to_string())
+}
+
+#[test]
+fn speech_preparation_and_early_window_never_repeat_swift_setup() -> crate::Result<()> {
+    let mut fixture = fixture("automatic-setup-boundaries")?;
+    let mut recorder = Recorder::new(fixture.root.clone());
+    launch_pending(
+        plan(fixture.request.clone())?.request,
+        &mut recorder,
+        &fixture.working,
+        &fixture.root.join("tools.exe"),
+    )?;
+    assert!(recorder.artifact_requests.is_empty());
+
+    fixture.request["PreparationStage"] = json!("speech");
+    let mut recorder = Recorder::new(fixture.root.clone());
+    prepare_backend(
+        plan(fixture.request.clone())?,
+        &mut recorder,
+        &fixture.working,
+    )?;
+    assert!(recorder.artifact_requests.is_empty());
+    assert!(
+        recorder
+            .events
+            .iter()
+            .all(|event| !matches!(event, Event::Inference(_)))
+    );
+
+    fixture.request["PreparationStage"] = json!("all");
+    fixture.request["SpeechModelsOnly"] = json!(true);
+    let mut recorder = Recorder::new(fixture.root.clone());
+    prepare_backend(plan(fixture.request)?, &mut recorder, &fixture.working)?;
+    assert!(recorder.artifact_requests.is_empty());
+    assert!(recorder.launch().is_err());
+    assert_eq!(recorder.events, [Event::Models("All".into(), true)]);
+    fs::remove_dir_all(fixture.root).map_err(|error| error.to_string())
 }
 
 #[test]
