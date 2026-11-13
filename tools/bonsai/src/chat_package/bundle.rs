@@ -1,30 +1,21 @@
-//! A native maintenance image followed by one fixed, digest-checked package.
-//!
-//! The payload has no caller-controlled paths or compression. It contains a
-//! length-prefixed package manifest followed by FILES in the contract's order.
-//! Its footer binds the payload offset, length and manifest digest. The original
-//! maintenance image must equal the embedded maintenance executable byte for byte.
-
-use std::{
-    ffi::OsString,
-    fs::{self, File, OpenOptions},
-    io::{Read as _, Seek as _, SeekFrom, Write as _},
-    path::{Path, PathBuf},
+//! Single-file distributions use the existing ZIP and verified package contracts.
+use super::{
+    FILES,
+    management::{Stage, create_file},
 };
-
 use serde::Deserialize;
 use serde_json::{Value, json};
-
-use super::{FILES, Manifest, PackageFile};
-use crate::identity::Hasher;
-
-const MAGIC: &[u8; 16] = b"BONSAI-BUNDLE-V1";
-const FOOTER_BYTES: u64 = 96;
-const MAX_IMAGE_BYTES: u64 = 512 * 1024 * 1024;
-const MAX_PAYLOAD_BYTES: u64 = 5 * MAX_IMAGE_BYTES + 49 * 1024 * 1024;
+use std::{
+    ffi::OsString,
+    fs::{self, File},
+    io::{Read as _, Seek as _, Write as _},
+    path::{Path, PathBuf},
+};
+use zip::{CompressionMethod, ZipArchive, ZipWriter, write::SimpleFileOptions};
 
 /// Exact compatibility marker retained by the maintenance version receipt.
 pub const LAUNCHER_PROTOCOL: &str = "Bonsai executable bundle launcher protocol 1";
+const MAX_IMAGE_BYTES: u64 = 512 * 1024 * 1024;
 
 #[derive(Deserialize)]
 #[serde(tag = "operation", rename_all = "kebab-case", deny_unknown_fields)]
@@ -44,168 +35,46 @@ enum Request {
     },
 }
 
-struct Layout {
-    offset: u64,
-    manifest_bytes: Vec<u8>,
-    manifest: Manifest,
-    digest: String,
-}
-
-impl Layout {
-    fn receipt(&self, executable: &Path) -> Value {
-        json!({
-            "ExecutablePath": executable, "ManifestSha256": self.digest,
-            "Manifest": self.manifest,
-            "Id": format!("{}-{}-{}", self.manifest.version, self.manifest.source_revision, self.digest),
-        })
-    }
-
-    fn entry(&self, name: &str) -> crate::Result<&PackageFile> {
-        self.manifest
-            .files
-            .iter()
-            .find(|entry| entry.name == name)
-            .ok_or_else(|| "Missing bundled package file.".into())
-    }
-}
-
-fn external(path: &Path) -> crate::Result<()> {
-    bonsai_artifacts::validate_external_path(path).map_err(|error| error.to_string())
-}
-
-fn read_u64(file: &mut File) -> crate::Result<u64> {
-    let mut bytes = [0; 8];
-    file.read_exact(&mut bytes)
-        .map_err(|error| error.to_string())?;
-    Ok(u64::from_le_bytes(bytes))
-}
-
-fn footer(file: &mut File) -> crate::Result<Option<(u64, u64, String)>> {
-    let length = file.metadata().map_err(|error| error.to_string())?.len();
-    if length < FOOTER_BYTES {
-        return Ok(None);
-    }
-    file.seek(SeekFrom::End(-16))
-        .map_err(|error| error.to_string())?;
-    let mut magic = [0; 16];
-    file.read_exact(&mut magic)
-        .map_err(|error| error.to_string())?;
-    if magic != *MAGIC {
-        return Ok(None);
-    }
-    file.seek(SeekFrom::Start(length - FOOTER_BYTES))
-        .map_err(|error| error.to_string())?;
-    let offset = read_u64(file)?;
-    let payload_bytes = read_u64(file)?;
-    let mut digest = [0; 64];
-    file.read_exact(&mut digest)
-        .map_err(|error| error.to_string())?;
-    let digest = String::from_utf8(digest.to_vec()).map_err(|error| error.to_string())?;
-    if !(64..=MAX_IMAGE_BYTES).contains(&offset)
-        || payload_bytes > MAX_PAYLOAD_BYTES
-        || offset.checked_add(payload_bytes) != Some(length - FOOTER_BYTES)
-        || !crate::identity::is_lower_hex(&digest, 64)
+fn archive(executable: &Path) -> crate::Result<(ZipArchive<File>, String)> {
+    let file = super::open(executable)?;
+    if file.metadata().map_err(|error| error.to_string())?.len()
+        > 6 * MAX_IMAGE_BYTES + 50 * 1024 * 1024
     {
-        return Err("Invalid executable bundle footer.".into());
+        return Err("Executable bundle exceeds its byte limit.".into());
     }
-    Ok(Some((offset, payload_bytes, digest)))
-}
-
-fn layout(file: &mut File) -> crate::Result<Layout> {
-    let (offset, payload_bytes, digest) =
-        footer(file)?.ok_or("Executable has no bundled application.")?;
-    file.seek(SeekFrom::Start(offset))
-        .map_err(|error| error.to_string())?;
-    let metadata_bytes = read_u64(file)?;
-    if metadata_bytes == 0 || metadata_bytes > super::MAX_METADATA_BYTES {
-        return Err("Bundled package manifest exceeds its byte limit.".into());
+    let mut archive = ZipArchive::new(file).map_err(|error| error.to_string())?;
+    let comment = std::str::from_utf8(archive.comment()).map_err(|error| error.to_string())?;
+    let digest = comment
+        .strip_prefix(&format!("{LAUNCHER_PROTOCOL}:"))
+        .filter(|digest| crate::identity::is_lower_hex(digest, 64))
+        .ok_or("Invalid bundle identity.")?
+        .to_owned();
+    if archive.len() != FILES.len() + 1 {
+        return Err("Unexpected bundled package inventory.".into());
     }
-    let mut bytes = vec![0; usize::try_from(metadata_bytes).map_err(|error| error.to_string())?];
-    file.read_exact(&mut bytes)
-        .map_err(|error| error.to_string())?;
-    if crate::identity::sha256(&bytes) != digest {
-        return Err("Bundled package manifest SHA-256 mismatch.".into());
-    }
-    let manifest: Manifest =
-        serde_json::from_slice(super::json_bytes(&bytes)).map_err(|error| error.to_string())?;
-    if manifest.schema_version != 2
-        || manifest.kind != "bonsai-chat-package"
-        || manifest.target != "aarch64-pc-windows-msvc"
-        || !super::version(&manifest.version)
-        || !crate::identity::is_lower_hex(&manifest.source_revision, 40)
-        || manifest.files.len() != FILES.len()
-    {
-        return Err("Unsupported bundled package identity or inventory.".into());
-    }
-    let mut seen = std::collections::BTreeSet::new();
-    let mut expected = metadata_bytes + 8;
-    for entry in &manifest.files {
-        let limit = if entry.name.starts_with("bin/") {
+    let mut names = std::collections::BTreeSet::new();
+    for index in 0..archive.len() {
+        let entry = archive.by_index(index).map_err(|error| error.to_string())?;
+        let limit = if entry.name() == "package.json" {
+            super::MAX_METADATA_BYTES
+        } else if entry.name().starts_with("bin/") {
             MAX_IMAGE_BYTES
         } else {
             16 * 1024 * 1024
         };
-        if !FILES.contains(&entry.name.as_str())
-            || !seen.insert(&entry.name)
-            || entry.bytes == 0
-            || entry.bytes > limit
-            || !crate::identity::is_lower_hex(&entry.sha256, 64)
+        if !(FILES.contains(&entry.name()) || entry.name() == "package.json")
+            || !names.insert(entry.name().to_owned())
+            || !entry.is_file()
+            || entry.encrypted()
+            || entry.compression() != CompressionMethod::Stored
+            || entry.size() == 0
+            || entry.size() > limit
+            || entry.compressed_size() != entry.size()
         {
-            return Err("Invalid bundled package file identity.".into());
+            return Err("Invalid bundled package entry.".into());
         }
-        expected = expected
-            .checked_add(entry.bytes)
-            .ok_or("Bundle length overflow.")?;
     }
-    if expected != payload_bytes {
-        return Err("Bundled package length differs from its inventory.".into());
-    }
-    Ok(Layout {
-        offset,
-        manifest_bytes: bytes,
-        manifest,
-        digest,
-    })
-}
-
-fn transfer(
-    file: &mut File,
-    length: u64,
-    mut output: impl std::io::Write,
-) -> crate::Result<String> {
-    let mut remaining = length;
-    let mut digest = Hasher::new()?;
-    let mut buffer = vec![0; 1024 * 1024];
-    while remaining > 0 {
-        crate::startup_cancel::checkpoint()?;
-        let count =
-            usize::try_from(remaining.min(1024 * 1024)).map_err(|error| error.to_string())?;
-        file.read_exact(&mut buffer[..count])
-            .map_err(|error| error.to_string())?;
-        digest.update(&buffer[..count])?;
-        output
-            .write_all(&buffer[..count])
-            .map_err(|error| error.to_string())?;
-        remaining -= u64::try_from(count).map_err(|error| error.to_string())?;
-    }
-    digest.finalize_hex()
-}
-
-fn verify_image(file: &mut File, layout: &Layout) -> crate::Result<()> {
-    let entry = layout.entry("bin/bonsai-tools.exe")?;
-    file.rewind().map_err(|error| error.to_string())?;
-    if entry.bytes != layout.offset
-        || transfer(file, layout.offset, std::io::sink())? != entry.sha256
-    {
-        return Err("Bundle launcher differs from its embedded maintenance executable.".into());
-    }
-    file.seek(SeekFrom::Start(
-        layout.offset
-            + 8
-            + u64::try_from(layout.manifest_bytes.len()).map_err(|error| error.to_string())?,
-    ))
-    .map_err(|error| error.to_string())?;
-    Ok(())
+    Ok((archive, digest))
 }
 
 fn supports_bundle(file: &mut File) -> crate::Result<bool> {
@@ -232,178 +101,124 @@ fn supports_bundle(file: &mut File) -> crate::Result<bool> {
     }
 }
 
-struct Stage(PathBuf);
-
-impl Stage {
-    fn new(parent: &Path) -> crate::Result<Self> {
-        external(parent)?;
-        fs::create_dir_all(parent).map_err(|error| error.to_string())?;
-        let path = parent.join(format!("bundle-stage-{}", crate::startup_process::unique()));
-        external(&path)?;
-        fs::create_dir(&path).map_err(|error| error.to_string())?;
-        Ok(Self(path))
-    }
-}
-
-impl Drop for Stage {
-    fn drop(&mut self) {
-        if external(&self.0).is_ok() {
-            let _ = fs::remove_dir_all(&self.0);
+fn unpack(executable: &Path, directory: &Path) -> crate::Result<Value> {
+    let (mut archive, digest) = archive(executable)?;
+    let prefix = archive
+        .by_index(0)
+        .map_err(|error| error.to_string())?
+        .header_start();
+    fs::create_dir(directory.join("bin")).map_err(|error| error.to_string())?;
+    for index in 0..archive.len() {
+        crate::startup_cancel::checkpoint()?;
+        let mut entry = archive.by_index(index).map_err(|error| error.to_string())?;
+        let size = entry.size();
+        let mut output = create_file(&directory.join(entry.name()))?;
+        if std::io::copy(&mut entry.by_ref().take(size + 1), &mut output)
+            .map_err(|error| error.to_string())?
+            != size
+        {
+            return Err("Bundled package entry length differs.".into());
         }
+        output.sync_all().map_err(|error| error.to_string())?;
     }
+    let package = super::checked(directory, &digest)?;
+    if package["Manifest"]["schemaVersion"] != 2 {
+        return Err("Bundling requires a schema-2 package.".into());
+    }
+    let tool = super::open(&directory.join("bin/bonsai-tools.exe"))?;
+    if prefix != tool.metadata().map_err(|error| error.to_string())?.len() {
+        return Err("Bundle launcher length differs.".into());
+    }
+    let mut image = archive.into_inner();
+    image.rewind().map_err(|error| error.to_string())?;
+    let mut image = image.take(prefix);
+    let mut hash = crate::identity::Hasher::new()?;
+    let mut buffer = vec![0; 1024 * 1024];
+    loop {
+        crate::startup_cancel::checkpoint()?;
+        let count = image.read(&mut buffer).map_err(|error| error.to_string())?;
+        if count == 0 {
+            break;
+        }
+        hash.update(&buffer[..count])?;
+    }
+    if hash.finalize_hex()?
+        != crate::startup_cache::digest_file(&directory.join("bin/bonsai-tools.exe"))?
+    {
+        return Err("Bundle launcher differs from its embedded maintenance executable.".into());
+    }
+    Ok(package)
 }
 
-fn create_file(path: &Path) -> crate::Result<File> {
-    external(path)?;
-    let mut options = OpenOptions::new();
-    options.write(true).create_new(true);
-    #[cfg(windows)]
-    {
-        use std::os::windows::fs::OpenOptionsExt as _;
-        options.share_mode(0);
-    }
-    options.open(path).map_err(|error| error.to_string())
+fn inspect(executable: &Path) -> crate::Result<Value> {
+    let stage = Stage::new(&std::env::temp_dir())?;
+    let mut package = unpack(executable, &stage.0)?;
+    package
+        .as_object_mut()
+        .ok_or("Invalid package receipt.")?
+        .remove("Directory");
+    package["ExecutablePath"] = json!(executable);
+    Ok(package)
 }
 
 fn create(directory: &Path, digest: &str, output: &Path) -> crate::Result<Value> {
     let package = super::checked(directory, digest)?;
     if package["Manifest"]["schemaVersion"] != 2 {
-        return Err("Executable bundling requires a schema-2 package.".into());
+        return Err("Bundling requires a schema-2 package.".into());
     }
-    external(output)?;
+    bonsai_artifacts::validate_external_path(output).map_err(|error| error.to_string())?;
     if fs::exists(output).map_err(|error| error.to_string())? {
         return Err("Executable bundle output already exists.".into());
     }
-    let manifest_bytes = super::metadata(&directory.join("package.json"))?;
-    if crate::identity::sha256(&manifest_bytes) != digest {
-        return Err("Package manifest changed during bundling.".into());
-    }
-    let manifest: Manifest = serde_json::from_slice(super::json_bytes(&manifest_bytes))
-        .map_err(|error| error.to_string())?;
     let stage = Stage::new(output.parent().ok_or("Missing bundle output parent.")?)?;
     let path = stage.0.join("application.exe");
-    let mut destination = create_file(&path)?;
     let mut image = super::open(&directory.join("bin/bonsai-tools.exe"))?;
-    if footer(&mut image)?.is_some() {
-        return Err("Nested executable bundles are unsupported.".into());
-    }
     if !supports_bundle(&mut image)? {
         return Err("Maintenance executable does not support the bundle launcher protocol.".into());
     }
     image.rewind().map_err(|error| error.to_string())?;
-    let offset = image.metadata().map_err(|error| error.to_string())?.len();
-    let info = Layout {
-        offset,
-        manifest_bytes,
-        manifest,
-        digest: digest.into(),
-    };
-    if transfer(&mut image, offset, &mut destination)? != info.entry("bin/bonsai-tools.exe")?.sha256
-    {
-        return Err("Maintenance executable changed during bundling.".into());
-    }
-    destination
-        .write_all(
-            &u64::try_from(info.manifest_bytes.len())
-                .map_err(|error| error.to_string())?
-                .to_le_bytes(),
-        )
-        .and_then(|()| destination.write_all(&info.manifest_bytes))
+    let mut destination = create_file(&path)?;
+    std::io::copy(&mut image, &mut destination).map_err(|error| error.to_string())?;
+    let mut writer = ZipWriter::new(destination);
+    writer
+        .set_comment(format!("{LAUNCHER_PROTOCOL}:{digest}"))
         .map_err(|error| error.to_string())?;
-    let mut payload_bytes =
-        8 + u64::try_from(info.manifest_bytes.len()).map_err(|error| error.to_string())?;
-    for name in FILES {
-        let entry = info.entry(name)?;
-        let mut source = super::open(&directory.join(name))?;
-        if source.metadata().map_err(|error| error.to_string())?.len() != entry.bytes
-            || transfer(&mut source, entry.bytes, &mut destination)? != entry.sha256
-        {
-            return Err(format!("Package input changed during bundling: {name}"));
-        }
-        payload_bytes += entry.bytes;
-    }
-    for bytes in [
-        offset.to_le_bytes().as_slice(),
-        payload_bytes.to_le_bytes().as_slice(),
-        digest.as_bytes(),
-        MAGIC,
-    ] {
-        destination
-            .write_all(bytes)
+    let options = SimpleFileOptions::default().compression_method(CompressionMethod::Stored);
+    for name in FILES.iter().copied().chain(std::iter::once("package.json")) {
+        writer
+            .start_file(name, options)
+            .map_err(|error| error.to_string())?;
+        std::io::copy(&mut super::open(&directory.join(name))?, &mut writer)
             .map_err(|error| error.to_string())?;
     }
-    destination.sync_all().map_err(|error| error.to_string())?;
-    drop(destination);
-    inspect(&path)?;
-    external(output)?;
+    writer
+        .finish()
+        .and_then(|file| file.sync_all().map_err(Into::into))
+        .map_err(|error| error.to_string())?;
+    let mut receipt = inspect(&path)?;
     if fs::exists(output).map_err(|error| error.to_string())? {
         return Err("Executable bundle output already exists.".into());
     }
     fs::rename(&path, output).map_err(|error| error.to_string())?;
-    Ok(info.receipt(output))
-}
-
-fn inspect(executable: &Path) -> crate::Result<Value> {
-    let mut file = super::open(executable)?;
-    let info = layout(&mut file)?;
-    crate::startup_cache::assert_arm64(executable)?;
-    verify_image(&mut file, &info)?;
-    for name in FILES {
-        let entry = info.entry(name)?;
-        if transfer(&mut file, entry.bytes, std::io::sink())? != entry.sha256 {
-            return Err(format!("Bundled package SHA-256 mismatch: {name}"));
-        }
-    }
-    Ok(info.receipt(executable))
+    receipt["ExecutablePath"] = json!(output);
+    Ok(receipt)
 }
 
 fn extract(executable: &Path, installation: &Path) -> crate::Result<Value> {
-    let mut file = super::open(executable)?;
-    let info = layout(&mut file)?;
-    crate::startup_cache::assert_arm64(executable)?;
-    verify_image(&mut file, &info)?;
-    external(installation)?;
-    fs::create_dir_all(installation).map_err(|error| error.to_string())?;
-    let _guard = crate::startup_cache::lock_file(&installation.join("bundle.lock"))?;
-    if fs::exists(installation.join("active.json")).map_err(|error| error.to_string())? {
-        let mut cached = super::installed(installation)?;
-        if cached["ManifestSha256"] == info.digest {
-            for name in FILES {
-                let entry = info.entry(name)?;
-                if transfer(&mut file, entry.bytes, std::io::sink())? != entry.sha256 {
-                    return Err(format!("Bundled package SHA-256 mismatch: {name}"));
-                }
-            }
-            cached["InstallationDirectory"] = json!(installation);
-            return Ok(cached);
-        }
-    }
     let stage = Stage::new(installation)?;
-    fs::create_dir(stage.0.join("bin")).map_err(|error| error.to_string())?;
-    for name in FILES {
-        let entry = info.entry(name)?;
-        let mut output = create_file(&stage.0.join(name))?;
-        if transfer(&mut file, entry.bytes, &mut output)? != entry.sha256 {
-            return Err(format!("Bundled package SHA-256 mismatch: {name}"));
-        }
-        output.sync_all().map_err(|error| error.to_string())?;
-    }
-    let mut metadata = create_file(&stage.0.join("package.json"))?;
-    metadata
-        .write_all(&info.manifest_bytes)
-        .and_then(|()| metadata.sync_all())
-        .map_err(|error| error.to_string())?;
-    drop(metadata);
-    let mut result = super::management::activate(installation, Some((&stage.0, &info.digest)))?;
-    result["InstallationDirectory"] = json!(installation);
-    Ok(result)
+    let package = unpack(executable, &stage.0)?;
+    let digest = package["ManifestSha256"]
+        .as_str()
+        .ok_or("Missing package digest.")?;
+    let mut receipt = super::management::activate(installation, Some((&stage.0, digest)))?;
+    receipt["InstallationDirectory"] = json!(installation);
+    Ok(receipt)
 }
 
-/// Creates, inspects or extracts one native single-file distribution.
+/// Creates, inspects or extracts a verified single-file distribution.
 ///
 /// # Errors
-/// Rejects changed bytes, malformed identities, unsupported inventories, unsafe
-/// paths, oversized payloads and existing output files. Extraction executes no code.
+/// Rejects unsafe paths, changed bytes, invalid inventories and unsupported images.
 pub fn run(value: Value) -> crate::Result<Value> {
     match serde_json::from_value(value).map_err(|error| error.to_string())? {
         Request::Create {
@@ -419,20 +234,21 @@ pub fn run(value: Value) -> crate::Result<Value> {
     }
 }
 
-/// Reports whether the running maintenance image has an application payload.
+/// Reports whether the current image has a recognized bundle comment.
 ///
 /// # Errors
-/// Rejects an unreadable executable or a recognized, malformed bundle footer.
+/// Rejects an unavailable running executable.
 pub fn current_is_bundled() -> crate::Result<bool> {
-    let mut file = super::open(&std::env::current_exe().map_err(|error| error.to_string())?)?;
-    Ok(footer(&mut file)?.is_some())
+    let executable = std::env::current_exe().map_err(|error| error.to_string())?;
+    let file = super::open(&executable)?;
+    Ok(ZipArchive::new(file)
+        .is_ok_and(|archive| archive.comment().starts_with(LAUNCHER_PROTOCOL.as_bytes())))
 }
 
-/// Extracts the running distribution and enters the existing owned chat launcher.
+/// Extracts the current distribution and enters the existing owned chat launcher.
 ///
 /// # Errors
-/// Rejects unsafe launch overrides, unavailable per-user storage and bundle or
-/// cached-package corruption. Model/runtime preparation retains installed policy.
+/// Rejects invalid bundle bytes, cached-package corruption and unsafe launch options.
 pub fn launch(arguments: &[OsString]) -> crate::Result<Value> {
     if arguments
         .iter()
@@ -441,13 +257,12 @@ pub fn launch(arguments: &[OsString]) -> crate::Result<Value> {
         return Err("Bundled chat owns its application cache directory.".into());
     }
     let executable = std::env::current_exe().map_err(|error| error.to_string())?;
-    let mut file = super::open(&executable)?;
-    let info = layout(&mut file)?;
+    let (_, digest) = archive(&executable)?;
     let installation = PathBuf::from(
         std::env::var_os("LOCALAPPDATA").ok_or("Bundled chat requires LOCALAPPDATA.")?,
     )
     .join("SwiftBonsai2/application-bundles")
-    .join(&info.digest);
+    .join(&digest[..24]);
     let mut options = vec![
         OsString::from("--installation-directory"),
         installation.clone().into_os_string(),
@@ -465,32 +280,29 @@ mod tests {
     fn fixture() -> crate::Result<(PathBuf, PathBuf, String)> {
         let root = super::super::tests::fixture()?;
         let package = super::super::installed(&root)?;
-        let directory = PathBuf::from(package["Directory"].as_str().ok_or("Missing directory.")?);
-        let digest = package["ManifestSha256"]
-            .as_str()
-            .ok_or("Missing digest.")?
-            .to_owned();
-        Ok((root, directory, digest))
+        Ok((
+            root,
+            PathBuf::from(package["Directory"].as_str().ok_or("Missing directory.")?),
+            package["ManifestSha256"]
+                .as_str()
+                .ok_or("Missing digest.")?
+                .into(),
+        ))
     }
 
     #[test]
-    fn bundle_roundtrip_preserves_package_and_rejects_cached_tampering() -> crate::Result<()> {
+    fn zip_bundle_roundtrip_and_cached_tampering() -> crate::Result<()> {
         let (root, directory, digest) = fixture()?;
         let executable = root.join("one application.exe");
-        let created = create(&directory, &digest, &executable)?;
-        let inspected = inspect(&executable)?;
-        assert_eq!(created, inspected);
-        assert_eq!(inspected["ManifestSha256"], digest);
-        let installation = root.join("new installation");
-        let extracted = extract(&executable, &installation)?;
-        assert_eq!(extracted["Id"], created["Id"]);
-        assert_eq!(extract(&executable, &installation)?, extracted);
-        let target = PathBuf::from(
-            extracted["Directory"]
-                .as_str()
-                .ok_or("Missing directory.")?,
+        assert_eq!(
+            create(&directory, &digest, &executable)?,
+            inspect(&executable)?
         );
-        fs::write(target.join("NOTICE"), b"tampered").map_err(|error| error.to_string())?;
+        let installation = root.join("new installation");
+        let receipt = extract(&executable, &installation)?;
+        assert_eq!(extract(&executable, &installation)?, receipt);
+        let cached = PathBuf::from(receipt["Directory"].as_str().ok_or("Missing directory.")?);
+        fs::write(cached.join("NOTICE"), b"tampered").map_err(|error| error.to_string())?;
         assert!(extract(&executable, &installation).is_err());
         assert!(create(&directory, &digest, &executable).is_err());
         fs::remove_dir_all(root).map_err(|error| error.to_string())?;
@@ -498,37 +310,31 @@ mod tests {
     }
 
     #[test]
-    fn bundle_rejects_payload_bootstrap_footer_and_truncation_corruption() -> crate::Result<()> {
+    fn zip_bundle_rejects_corruption_truncation_and_unsafe_inventory() -> crate::Result<()> {
         let (root, directory, digest) = fixture()?;
         let executable = root.join("application.exe");
         create(&directory, &digest, &executable)?;
         let original = fs::read(&executable).map_err(|error| error.to_string())?;
-        let mut input = super::super::open(&executable)?;
-        let info = layout(&mut input)?;
-        drop(input);
-        let manifest_start = usize::try_from(info.offset).map_err(|error| error.to_string())? + 8;
-        for position in [
-            200,
-            manifest_start,
-            manifest_start + info.manifest_bytes.len() + 200,
-            original.len() - 96,
-        ] {
+        let (mut archive, _) = archive(&executable)?;
+        let data = usize::try_from(
+            archive
+                .by_index(0)
+                .map_err(|error| error.to_string())?
+                .data_start()
+                .ok_or("Missing ZIP data offset.")?,
+        )
+        .map_err(|error| error.to_string())?;
+        drop(archive);
+        for position in [200, data + 200, original.len() - 1] {
             let mut changed = original.clone();
             changed[position] ^= 1;
-            fs::write(&executable, &changed).map_err(|error| error.to_string())?;
+            fs::write(&executable, changed).map_err(|error| error.to_string())?;
             assert!(inspect(&executable).is_err());
             assert!(extract(&executable, &root.join("rejected")).is_err());
         }
         fs::write(&executable, &original[..original.len() - 1])
             .map_err(|error| error.to_string())?;
         assert!(inspect(&executable).is_err());
-        fs::remove_dir_all(root).map_err(|error| error.to_string())?;
-        Ok(())
-    }
-
-    #[test]
-    fn bundle_rejects_unsafe_paths_and_inventory_before_publication() -> crate::Result<()> {
-        let (root, directory, digest) = fixture()?;
         assert!(create(&directory, &digest, Path::new("relative.exe")).is_err());
         let manifest_path = directory.join("package.json");
         let mut manifest: Value =
@@ -545,7 +351,6 @@ mod tests {
             )
             .is_err()
         );
-        assert!(!root.join("rejected.exe").exists());
         fs::remove_dir_all(root).map_err(|error| error.to_string())?;
         Ok(())
     }
