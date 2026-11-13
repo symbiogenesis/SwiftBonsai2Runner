@@ -127,7 +127,8 @@ under [AGENTS.md](AGENTS.md).
   reply settings, Start fresh and authoritative broker rejection.
 - [ ] Qualify conversation switching/creation/deletion during startup, generation
   and failure: preserve drafts/cursors, route hidden responses/rejections to their
-  owner and keep speech readiness independent of text readiness.
+  owner, show vertical response activity only on the generating owner's sidebar
+  row and keep speech readiness independent of text readiness.
 - [ ] Qualify encrypted conversation, window and voice-profile persistence,
   opt-out, unreadable-byte preservation, monitor/DPI changes and no automatic
   request replay, microphone capture or playback after restore.

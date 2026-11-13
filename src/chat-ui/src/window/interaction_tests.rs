@@ -683,6 +683,94 @@ fn background_generation_keeps_composer_and_conversation_navigation_available() 
 }
 
 #[test]
+fn conversation_progress_follows_the_response_owner_and_clears_when_generation_ends() {
+    const TITLE: &str = "A long conversation title that must leave room for response progress";
+    let progress_label = format!("Receiving response in {TITLE}");
+    for size in [[1180.0, 860.0], [480.0, 640.0]] {
+        for outcome in 0..4 {
+            let mut chat = harness(size, false);
+            chat.state_mut().app.appearance.sidebar_width = 216.0;
+            chat.state_mut().app.conversations[0].title = TITLE.to_owned();
+            chat.state_mut().app.conversations[0].renamed = true;
+            open_sidebar(&mut chat, size);
+            chat.run();
+            let row = chat.get_by_role_and_label(egui::Role::Button, TITLE).rect();
+            let menu_label = format!("Actions for {TITLE}");
+            let menu = chat
+                .get_by_role_and_label(egui::Role::Button, &menu_label)
+                .rect();
+            assert!(chat.query_by_label(&progress_label).is_none());
+            chat.state_mut().app.input = "Original question".into();
+            chat.state_mut().app.submit();
+            let owner = chat.state().app.active_conversation;
+            chat.run();
+            let progress = chat
+                .get_by_role_and_label(egui::Role::ProgressIndicator, &progress_label)
+                .rect();
+            assert!(progress.height() > progress.width());
+            assert!(row.contains_rect(progress));
+            assert_eq!(
+                row,
+                chat.get_by_role_and_label(egui::Role::Button, TITLE).rect()
+            );
+            assert_eq!(
+                menu,
+                chat.get_by_role_and_label(egui::Role::Button, &menu_label)
+                    .rect()
+            );
+
+            chat.state_mut().app.new_chat();
+            let browsing = chat.state().app.active_conversation;
+            chat.state_mut().app.conversations[1].title = "Browsing conversation".into();
+            chat.state_mut().app.input = "Keep this draft".into();
+            chat.state_mut()
+                .app
+                .model_event(Event::Reasoning("Thinking".into()));
+            chat.state_mut()
+                .app
+                .model_event(Event::Text("Answer".into()));
+            chat.run();
+            open_sidebar(&mut chat, size);
+            assert!(
+                chat.query_by_label("Receiving response in Browsing conversation")
+                    .is_none()
+            );
+            // The hover-only indicator must leave its conversation clickable.
+            chat.get_by_role_and_label(egui::Role::ProgressIndicator, &progress_label)
+                .click();
+            chat.run();
+            assert_eq!(chat.state().app.active_conversation, owner);
+            open_sidebar(&mut chat, size);
+            chat.get_by_role_and_label(egui::Role::Button, "Browsing conversation")
+                .click();
+            chat.run();
+            assert_eq!(chat.state().app.active_conversation, browsing);
+            assert_eq!(chat.state().app.input, "Keep this draft");
+            open_sidebar(&mut chat, size);
+            match outcome {
+                0 => chat
+                    .state_mut()
+                    .app
+                    .model_event(Event::Complete(Completion::Finished)),
+                1 => chat.state_mut().app.stop_generation(),
+                2 => chat.state_mut().app.model_event(Event::Rejected {
+                    message: "Rejected response".into(),
+                    text: "Original question".into(),
+                    retry_required: false,
+                }),
+                _ => chat
+                    .state_mut()
+                    .app
+                    .model_event(Event::Failed("Worker failed".into())),
+            }
+            chat.run();
+            assert!(chat.query_by_label(&progress_label).is_none());
+            assert_eq!(chat.state().app.input, "Keep this draft");
+        }
+    }
+}
+
+#[test]
 fn conversation_controls_work_while_loading_without_sending() {
     let mut chat = harness([1180.0, 860.0], true);
     chat.state_mut().app.model = ModelLifecycle::Preparing;

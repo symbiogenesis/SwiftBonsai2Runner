@@ -52,6 +52,8 @@ impl State {
                     let view = Row {
                         conversation,
                         active: conversation.id == self.active_conversation,
+                        responding: self.model.busy()
+                            && self.request_conversation == Some(conversation.id),
                         reveal: self.focus_composer,
                         copy_available: transcript
                             .is_some_and(|transcript| !transcript.messages.is_empty()),

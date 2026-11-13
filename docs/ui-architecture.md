@@ -207,6 +207,9 @@ Drafting, browsing and conversation creation remain available during preparation
 failure and generation. Only one request runs: incoming content, reasoning, stages
 and history belong to its submitting conversation, which cannot be deleted until
 it settles. Show response returns to that owner; Stop controls it from any chat.
+Its sidebar row shows an animated vertical activity indicator while generating,
+including thinking and responses received while another conversation is selected.
+Completion, Stop, rejection or failure removes the indicator.
 Coalesce history changes and restore the selected history before the next Send,
 without replay. Teardown/unacknowledged restart blocks navigation until turn events
 settle. Late rejections restore only their still-existing originating conversation.

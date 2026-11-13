@@ -1,6 +1,7 @@
 //! Stateless conversation controls render borrowed values and emit intent.
 use super::Conversation;
 use crate::window::{RichText, controls, egui, history_search};
+use std::time::Duration;
 
 pub(super) const ROW_HEIGHT: f32 = 40.0;
 
@@ -18,9 +19,14 @@ pub(super) struct Availability {
     pub(super) delete: bool,
 }
 
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "Selection, response activity, focus and clipboard availability are independent row presentation inputs."
+)]
 pub(super) struct Row<'a> {
     pub(super) conversation: &'a Conversation,
     pub(super) active: bool,
+    pub(super) responding: bool,
     pub(super) reveal: bool,
     pub(super) copy_available: bool,
     pub(super) availability: Availability,
@@ -44,13 +50,22 @@ impl Row<'_> {
             });
             let response = ui
                 .add_enabled_ui(self.availability.select, |ui| {
-                    ui.add_sized(
-                        [(width - 38.0).max(40.0), ROW_HEIGHT],
-                        egui::Button::selectable(self.active, title)
-                            .right_text(())
-                            .truncate()
-                            .corner_radius(8),
-                    )
+                    let button = egui::Button::selectable(self.active, title)
+                        .truncate()
+                        .corner_radius(8);
+                    let button = if self.responding {
+                        button.right_text(egui::Atom::paint(egui::vec2(3.0, 20.0), |ui, args| {
+                            response_progress(
+                                ui,
+                                args.rect,
+                                args.fallback_text_color,
+                                &self.conversation.title,
+                            );
+                        }))
+                    } else {
+                        button.right_text(())
+                    };
+                    ui.add_sized([(width - 38.0).max(40.0), ROW_HEIGHT], button)
                 })
                 .inner;
             // Pending composer focus during generation must not repaint forever.
@@ -98,6 +113,41 @@ impl Row<'_> {
         }
         action
     }
+}
+
+#[expect(
+    clippy::as_conversions,
+    clippy::cast_possible_truncation,
+    reason = "The bounded animation phase converts the egui clock to f32 painting coordinates."
+)]
+fn response_progress(ui: &egui::Ui, rect: egui::Rect, color: egui::Color32, title: &str) {
+    if !ui.is_rect_visible(rect) {
+        return;
+    }
+    ui.interact(
+        rect,
+        ui.make_persistent_id("response-progress"),
+        egui::Sense::hover(),
+    )
+    .widget_info(|| {
+        egui::WidgetInfo::labeled(
+            egui::Role::ProgressIndicator,
+            ui.is_enabled(),
+            format!("Receiving response in {title}"),
+        )
+    });
+    ui.painter()
+        .rect_filled(rect, 2.0, color.gamma_multiply(0.25));
+    let phase = ui.input(|input| (input.time * 4.0).sin().midpoint(1.0)) as f32;
+    let top = phase.mul_add(rect.height() - 8.0, rect.top());
+    ui.painter().rect_filled(
+        egui::Rect::from_min_size(egui::pos2(rect.left(), top), egui::vec2(rect.width(), 8.0)),
+        2.0,
+        color,
+    );
+    // Keep activity moving without requesting continuous frames or waking for
+    // rows outside the virtualized list's viewport.
+    ui.ctx().request_repaint_after(Duration::from_millis(80));
 }
 
 pub(super) fn search_field(
