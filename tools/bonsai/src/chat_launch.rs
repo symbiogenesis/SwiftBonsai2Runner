@@ -133,6 +133,8 @@ struct Request {
     force_build: bool,
     #[serde(default)]
     preparation_stage: PreparationStage,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    portable_executable: Option<PathBuf>,
 }
 
 fn default_quantization() -> String {
@@ -974,7 +976,13 @@ fn working_directory(requested: Option<&Path>) -> crate::Result<PathBuf> {
 /// failed provisioning/builds, and a nonzero chat exit. Evidence remains external.
 pub fn run(value: Value) -> crate::Result<Value> {
     crate::startup_cancel::checkpoint()?;
-    let request: Request = serde_json::from_value(value).map_err(|error| error.to_string())?;
+    let mut request: Request = serde_json::from_value(value).map_err(|error| error.to_string())?;
+    // Only the running, recognized bundle can advertise portable updating.
+    request.portable_executable = if crate::chat_package::bundle::current_is_bundled()? {
+        Some(std::env::current_exe().map_err(|error| error.to_string())?)
+    } else {
+        None
+    };
     if request.preparation_stage != PreparationStage::All {
         return Err("PreparationStage is reserved for the owned chat preparation worker.".into());
     }

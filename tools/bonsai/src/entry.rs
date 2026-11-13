@@ -62,6 +62,18 @@ fn startup_command(command: &str, request: &serde_json::Value) -> bool {
 
 fn execute() -> bonsai_tools::Result<serde_json::Value> {
     let arguments: Vec<_> = std::env::args_os().skip(1).collect();
+    if arguments
+        .first()
+        .is_some_and(|argument| argument == "updated-chat")
+    {
+        if !bonsai_tools::chat_package::bundle::current_is_bundled()? {
+            return Err("Updated chat requires a verified portable bundle.".into());
+        }
+        // The bounded replacement helper exits after spawning this new root.
+        // Its lifetime must not cancel the reopened application's preparation.
+        bonsai_tools::startup_cancel::initialize(None)?;
+        return bonsai_tools::chat_package::bundle::launch(&arguments[1..]);
+    }
     let bundled_command = arguments
         .first()
         .is_some_and(|argument| argument == "bundled-chat");
@@ -206,7 +218,7 @@ pub(super) fn run(graphical_launcher: bool) -> ExitCode {
         && std::env::args_os().nth(1).is_none_or(|argument| {
             matches!(
                 argument.to_str(),
-                Some("bundled-chat" | "installed-chat" | "chat")
+                Some("bundled-chat" | "updated-chat" | "installed-chat" | "chat")
             )
         });
     #[cfg(windows)]

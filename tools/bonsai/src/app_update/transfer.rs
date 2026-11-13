@@ -210,7 +210,7 @@ pub(super) fn metadata(url: &str, working: &Path) -> crate::Result<Vec<u8>> {
         && result.stdout.trim() == "404"
         && url
             == format!(
-                "https://api.github.com/repos/{}/releases?per_page=100",
+                "https://api.github.com/repos/{}/releases?per_page=100&page=1",
                 super::REPOSITORY
             )
     {

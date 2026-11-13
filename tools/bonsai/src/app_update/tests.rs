@@ -68,3 +68,46 @@ fn missing_update_handoff_is_an_error() {
     ));
     assert!(apply_after_exit(&path).is_err());
 }
+
+#[test]
+fn release_catalog_requires_complete_pages_and_retains_later_newest_release() -> crate::Result<()> {
+    let mut calls = Vec::new();
+    let bytes = collect_releases(|page| {
+        calls.push(page);
+        serde_json::to_vec(&if page == 1 {
+            vec![json!({"tag_name": "v0.1.0"}); 100]
+        } else {
+            vec![json!({"tag_name": "v0.9.0"})]
+        })
+        .map_err(|error| error.to_string())
+    })?;
+    let entries: Vec<Value> = serde_json::from_slice(&bytes).map_err(|error| error.to_string())?;
+    assert_eq!(calls, vec![1, 2]);
+    assert_eq!(entries.len(), 101);
+    assert_eq!(entries[100]["tag_name"], "v0.9.0");
+    assert!(collect_releases(|_| Ok(b"{}".to_vec())).is_err());
+    assert!(
+        collect_releases(
+            |_| serde_json::to_vec(&vec![json!({}); 101]).map_err(|error| error.to_string())
+        )
+        .is_err()
+    );
+    let mut calls = 0;
+    assert!(
+        collect_releases(|_| {
+            calls += 1;
+            serde_json::to_vec(&vec![json!({}); 100]).map_err(|error| error.to_string())
+        })
+        .is_err()
+    );
+    assert_eq!(calls, 3);
+    assert!(
+        collect_releases(|page| if page == 1 {
+            serde_json::to_vec(&vec![json!({}); 100]).map_err(|error| error.to_string())
+        } else {
+            Err("offline".into())
+        })
+        .is_err()
+    );
+    Ok(())
+}

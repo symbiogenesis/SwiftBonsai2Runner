@@ -40,12 +40,12 @@ pub(crate) fn replace(file: &File, target: &Path) -> io::Result<()> {
     let destination = information
         .as_mut_ptr()
         .cast::<u8>()
-        .wrapping_add(name_offset)
-        .cast::<u16>();
-    // SAFETY: destination has u16 alignment at the SDK's FileName offset, and
-    // information owns at least name_offset + name_bytes initialized bytes.
-    // The separate UTF-16 source allocation cannot overlap this destination.
-    unsafe { ptr::copy_nonoverlapping(name.as_ptr(), destination, name.len()) };
+        .wrapping_add(name_offset);
+    // SAFETY: information owns at least name_offset + name_bytes initialized
+    // bytes, with the SDK's alignment for FileName. Copying the native UTF-16
+    // representation as bytes requires no pointer alignment increase. The
+    // separate source allocation cannot overlap this destination.
+    unsafe { ptr::copy_nonoverlapping(name.as_ptr().cast::<u8>(), destination, name_bytes) };
     let required = u32::try_from(required)
         .map_err(|_| super::invalid("Replacement buffer exceeds Windows bounds."))?;
     // SAFETY: The borrowed File and aligned information buffer remain alive

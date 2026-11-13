@@ -120,7 +120,9 @@ the native package launcher. The retained cache is under
 `%LOCALAPPDATA%\SwiftBonsai2\application-bundles\<first-24-manifest-sha256-characters>\` and is
 verified on reuse. `bundled-chat` accepts the installed launch options,
 including `--data-directory` and `--no-speech-models`, while preserving its own
-package location. Bundled launches perform no automatic update discovery. The local
+package location. Bundled launches automatically check and download verified
+published releases; executable replacement and restart require confirmation in
+native Settings. Source and preview launches perform no update discovery. The local
 [single-executable build](development-guide.md#build-a-single-executable) builds
 the five components and assembles this same distribution format.
 

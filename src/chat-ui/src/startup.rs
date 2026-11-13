@@ -29,6 +29,7 @@ pub(crate) struct Request {
     pub(crate) canary_configured: bool,
     pub(crate) tts_configured: bool,
     staged: bool,
+    pub(crate) portable_update: bool,
 }
 
 #[derive(Default, serde::Deserialize)]
@@ -46,6 +47,8 @@ struct RequestedSpeech {
     speech_models_only: bool,
     #[serde(default)]
     preparation_stage: Option<String>,
+    #[serde(default)]
+    portable_executable: Option<PathBuf>,
 }
 
 impl Request {
@@ -83,6 +86,7 @@ impl Request {
         // An older maintenance executable can still build this UI from source;
         // retain its combined preparation protocol until it is rebuilt too.
         let staged = speech.preparation_stage.as_deref() == Some("all");
+        let portable_update = speech.portable_executable.as_deref() == Some(executable.as_path());
         let has_canary_key = speech
             .canary_key_file
             .as_deref()
@@ -109,6 +113,7 @@ impl Request {
             canary_configured,
             tts_configured,
             staged,
+            portable_update,
         })
     }
 }
@@ -405,6 +410,7 @@ mod tests {
             canary_configured: true,
             tts_configured: true,
             staged: true,
+            portable_update: false,
         };
         let (outgoing, incoming) = mpsc::sync_channel(2);
         let (release, gate) = mpsc::channel();
@@ -456,6 +462,7 @@ mod tests {
             canary_configured: true,
             tts_configured: true,
             staged: true,
+            portable_update: false,
         };
         for (cancelled, staged, speech) in [
             (false, true, true),

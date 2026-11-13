@@ -25,9 +25,45 @@ struct Installation {
     tool: PathBuf,
     root: PathBuf,
     handoff: PathBuf,
+    portable: bool,
 }
 
 impl Installation {
+    fn for_launch(
+        tool: &Path,
+        handoff: PathBuf,
+        executable: &Path,
+        portable: bool,
+    ) -> Option<Self> {
+        let bin = executable.parent()?;
+        let versions = bin.parent()?.parent()?;
+        let root = versions.parent()?;
+        let installation = if portable {
+            if !tool.is_absolute()
+                || !handoff.is_absolute()
+                || root.parent()?.file_name()? != "application-bundles"
+            {
+                return None;
+            }
+            Self {
+                tool: tool.into(),
+                root: root.into(),
+                handoff,
+                portable: true,
+            }
+        } else {
+            Self::from_startup(tool, handoff)?
+        };
+        if executable.file_name()? != "bonsai-chat.exe"
+            || bin.file_name()? != "bin"
+            || versions.file_name()? != "versions"
+            || root != installation.root
+        {
+            return None;
+        }
+        Some(installation)
+    }
+
     fn from_startup(tool: &Path, handoff: PathBuf) -> Option<Self> {
         let maintenance = tool.parent()?;
         if !tool.is_absolute()
@@ -41,6 +77,7 @@ impl Installation {
             tool: tool.into(),
             root: maintenance.parent()?.into(),
             handoff,
+            portable: false,
         })
     }
 }
@@ -63,8 +100,8 @@ impl Operation {
 
     const fn deadline(self) -> Duration {
         match self {
-            Self::Check | Self::Install => Duration::from_secs(60),
-            Self::Download => Duration::from_secs(240),
+            Self::Check | Self::Install => Duration::from_secs(90),
+            Self::Download => Duration::from_secs(300),
         }
     }
 }
@@ -149,6 +186,25 @@ impl Drop for Process {
     }
 }
 
+fn update_request(
+    installation: &Installation,
+    operation: Operation,
+    version: Option<&str>,
+) -> serde_json::Value {
+    let mut request = if installation.portable {
+        serde_json::json!({"operation": format!("portable-{}", operation.name())})
+    } else {
+        serde_json::json!({"operation": operation.name(), "installationDirectory": installation.root})
+    };
+    if let Some(version) = version.filter(|_| operation != Operation::Check) {
+        request["version"] = version.into();
+    }
+    if operation == Operation::Install {
+        request["handoffPath"] = serde_json::json!(installation.handoff);
+    }
+    request
+}
+
 fn execute(
     installation: &Installation,
     operation: Operation,
@@ -156,15 +212,7 @@ fn execute(
     cancelled: &AtomicBool,
 ) -> io::Result<Response> {
     let directory = PrivateDirectory::create(&std::env::temp_dir())?;
-    let mut request = serde_json::json!({
-        "operation": operation.name(), "installationDirectory": installation.root,
-    });
-    if let Some(version) = version {
-        request["version"] = version.into();
-    }
-    if operation == Operation::Install {
-        request["handoffPath"] = serde_json::json!(installation.handoff);
-    }
+    let request = update_request(installation, operation, version);
     let path = directory.path().join("request.json");
     fs::write(
         &path,
@@ -269,18 +317,13 @@ pub(super) struct Updates {
 
 impl Updates {
     pub(super) fn for_startup(request: &crate::startup::Request) -> Option<Self> {
-        let installation =
-            Installation::from_startup(request.update_tool(), request.update_handoff_path())?;
         let executable = std::env::current_exe().ok()?;
-        let bin = executable.parent()?;
-        let versions = bin.parent()?.parent()?;
-        if executable.file_name()? != "bonsai-chat.exe"
-            || bin.file_name()? != "bin"
-            || versions.file_name()? != "versions"
-            || versions.parent()? != installation.root.as_path()
-        {
-            return None;
-        }
+        let installation = Installation::for_launch(
+            request.update_tool(),
+            request.update_handoff_path(),
+            &executable,
+            request.portable_update,
+        )?;
         Some(Self {
             installation,
             task: None,
@@ -320,10 +363,8 @@ impl Updates {
                 self.task = Some(task);
                 self.status = match operation {
                     Operation::Check => "Checking GitHub for updates...",
-                    Operation::Download => "Downloading and verifying the Windows installer...",
-                    Operation::Install => {
-                        "Preparing the installer. The app will close when ready..."
-                    }
+                    Operation::Download => "Downloading and verifying the application update...",
+                    Operation::Install => "Preparing the update. The app will close when ready...",
                 }
                 .into();
             }
@@ -355,6 +396,9 @@ impl Updates {
                         self.status = self.version.as_ref().map_or_else(String::new, |version| {
                             format!("Version {version} is available.")
                         });
+                        if self.installation.portable && !self.downloaded {
+                            self.start(Operation::Download);
+                        }
                     }
                     "current" => {
                         self.version = None;
@@ -372,7 +416,12 @@ impl Updates {
                     }
                     "queued" => {
                         self.queued = true;
-                        self.status = "Closing Swift to open the Windows installer...".into();
+                        self.status = if self.installation.portable {
+                            "Closing Swift to replace the executable and reopen..."
+                        } else {
+                            "Closing Swift to open the Windows installer..."
+                        }
+                        .into();
                     }
                     _ => {}
                 }
@@ -414,9 +463,12 @@ impl Updates {
 
     pub(super) fn controls(&mut self, ui: &mut egui::Ui, can_install: bool) -> bool {
         ui.heading("Application updates");
-        ui.label(format!("Installed version {}", env!("CARGO_PKG_VERSION")));
+        ui.label(format!("Application version {}", env!("CARGO_PKG_VERSION")));
         ui.label(&self.status);
         ui.label(egui::RichText::new("Checks GitHub automatically at startup and every six hours, including published prereleases.").small().weak());
+        if self.installation.portable {
+            ui.label("New releases download automatically. Replacing the executable requires your confirmation.");
+        }
         let idle = self.task.is_none() && !self.installing();
         if ui
             .add_enabled(idle, egui::Button::new("Check for updates"))
@@ -448,7 +500,9 @@ impl Updates {
         }
         let mut install = false;
         if self.confirming {
-            ui.label("The app will close. Unsaved conversations follow your saving setting. Windows may ask for administrator approval. Reopen Swift after installation.");
+            ui.label(if self.installation.portable {
+                "Swift will close, replace this executable and reopen with the same options and data directory. Unsaved conversations follow your saving setting."
+            } else { "The app will close. Unsaved conversations follow your saving setting. Windows may ask for administrator approval. Reopen Swift after installation." });
             ui.horizontal(|ui| {
                 if ui
                     .add_enabled(can_install && idle, egui::Button::new("Close and install"))
@@ -562,7 +616,38 @@ mod tests {
     }
 
     #[test]
-    fn source_and_portable_tools_do_not_enable_automatic_updates() {
+    fn repeat_checks_omit_selected_version_and_portable_requests_never_select_msi() {
+        let root = std::env::temp_dir().join("Bonsai portable request fixture");
+        let mut installation = Installation {
+            tool: root.join("Swift.exe"),
+            root: root.clone(),
+            handoff: root.join("chat-startup-fixture.update.json"),
+            portable: true,
+        };
+        for portable in [true, false] {
+            installation.portable = portable;
+            let check = update_request(&installation, Operation::Check, Some("0.9.0"));
+            assert!(check.get("version").is_none());
+            assert_eq!(
+                check["operation"],
+                if portable { "portable-check" } else { "check" }
+            );
+            let download = update_request(&installation, Operation::Download, Some("0.9.0"));
+            assert_eq!(download["version"], "0.9.0");
+            assert_eq!(
+                download["operation"],
+                if portable {
+                    "portable-download"
+                } else {
+                    "download"
+                }
+            );
+            assert_eq!(download.get("installationDirectory").is_none(), portable);
+        }
+    }
+
+    #[test]
+    fn only_maintenance_layout_enables_legacy_installer_updates() {
         let root = std::env::temp_dir().join("Bonsai update fixture");
         let handoff = root.join("session.update.json");
         assert!(
@@ -573,5 +658,24 @@ mod tests {
             Installation::from_startup(&root.join("maintenance/bonsai-tools.exe"), handoff)
                 .is_some()
         );
+    }
+
+    #[test]
+    fn portable_updates_require_explicit_bundle_launch_and_accept_renamed_executables()
+    -> io::Result<()> {
+        let root = std::env::temp_dir().join("Bonsai portable update fixture");
+        let tool = root.join("My Swift.exe");
+        let handoff = root.join("chat-startup-fixture.update.json");
+        let chat = root.join("application-bundles/digest/versions/package/bin/bonsai-chat.exe");
+        assert!(Installation::for_launch(&tool, handoff.clone(), &chat, false).is_none());
+        let selected = Installation::for_launch(&tool, handoff.clone(), &chat, true)
+            .ok_or_else(|| io::Error::other("Rejected a renamed portable launch."))?;
+        assert!(selected.portable);
+        assert_eq!(selected.tool, tool);
+        assert!(
+            Installation::for_launch(&tool, handoff, &root.join("bin/bonsai-chat.exe"), true)
+                .is_none()
+        );
+        Ok(())
     }
 }

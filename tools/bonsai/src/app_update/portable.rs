@@ -2,8 +2,8 @@
 
 use std::{
     ffi::OsString,
-    fs::{self, OpenOptions},
-    io,
+    fs::{self, File, OpenOptions},
+    io::{self, Read as _, Seek as _},
     path::{Path, PathBuf},
     process::{Command, Stdio},
     thread,
@@ -61,7 +61,7 @@ fn original(target: &Path, expected: &str) -> crate::Result<()> {
 fn validate_restart_arguments(request: &Replacement) -> crate::Result<()> {
     let arguments: Vec<_> = request.arguments.iter().map(OsString::from).collect();
     let options = match arguments.as_slice() {
-        [command, rest @ ..] if command == "bundled-chat" => rest,
+        [command, rest @ ..] if command == "bundled-chat" || command == "updated-chat" => rest,
         values => values,
     };
     if options
@@ -85,17 +85,16 @@ fn validate_restart_arguments(request: &Replacement) -> crate::Result<()> {
 }
 
 fn publish(
-    temporary: &Path,
+    temporary: &File,
     target: &Path,
     previous_sha256: &str,
-    mut rename: impl FnMut(&Path, &Path) -> io::Result<()>,
+    mut rename: impl FnMut(&File, &Path) -> io::Result<()>,
     mut retry: impl FnMut(&io::Error) -> bool,
 ) -> crate::Result<()> {
     loop {
         // Release the read lock before the atomic rename; Windows must be able
         // to replace this image once the original launcher has exited.
         original(target, previous_sha256)?;
-        external(temporary)?;
         match rename(temporary, target) {
             Ok(()) => return Ok(()),
             Err(error) if retry(&error) => {}
@@ -113,26 +112,32 @@ fn copy_and_replace(
     asset: &Asset,
     target: &Path,
     previous_sha256: &str,
-    rename: impl FnMut(&Path, &Path) -> io::Result<()>,
+    rename: impl FnMut(&File, &Path) -> io::Result<()>,
     retry: impl FnMut(&io::Error) -> bool,
 ) -> crate::Result<()> {
     original(target, previous_sha256)?;
+    let _parents = hold_parents(target)?;
     let temporary = target.with_file_name(format!(
         ".SwiftBonsai-update-{}.exe",
         crate::startup_process::unique()
     ));
     external(&temporary)?;
     let mut options = OpenOptions::new();
-    options.write(true).create_new(true);
+    options.read(true).write(true).create_new(true);
     #[cfg(windows)]
     {
         use std::os::windows::fs::OpenOptionsExt as _;
-        options.share_mode(0).custom_flags(0x0020_0000);
+        // DELETE authority permits publication through this same handle. No
+        // other opener may write, delete or swap the verified sibling.
+        options
+            .access_mode(0xc001_0000)
+            .share_mode(0)
+            .custom_flags(0x0020_0000);
     }
     let mut destination = options
         .open(&temporary)
         .map_err(|error| error.to_string())?;
-    let temporary = Temporary(temporary);
+    let _temporary = Temporary(temporary);
     let copied = (|| {
         let mut input =
             bonsai_artifacts::open_locked_file(source.path()).map_err(|error| error.to_string())?;
@@ -142,20 +147,63 @@ fn copy_and_replace(
         }
         destination.sync_all().map_err(|error| error.to_string())
     })();
-    // Close the exclusive writer even when copying fails, before Temporary
-    // removes the unpublished sibling on Windows.
+    let result = copied.and_then(|()| {
+        destination.rewind().map_err(|error| error.to_string())?;
+        let mut hasher = crate::identity::Hasher::new()?;
+        let mut buffer = vec![0; 1024 * 1024];
+        loop {
+            let count = destination
+                .read(&mut buffer)
+                .map_err(|error| error.to_string())?;
+            if count == 0 {
+                break;
+            }
+            hasher.update(&buffer[..count])?;
+        }
+        if hasher.finalize_hex()? != asset.sha256 {
+            return Err("The portable replacement copy failed SHA-256 verification.".into());
+        }
+        publish(&destination, target, previous_sha256, rename, retry)
+    });
+    // Keep exclusive byte/path ownership through native handle-based rename;
+    // close before removing an unpublished temporary file on failure.
     drop(destination);
-    copied?;
-    // The staged source remains locked, but the sibling's verification handle
-    // must close before Windows can rename that sibling over the old image.
-    drop(
-        VerifiedFile::verify(&temporary.0, asset.bytes, &asset.sha256)
-            .map_err(|error| error.to_string())?,
-    );
-    publish(&temporary.0, target, previous_sha256, rename, retry)
+    result
 }
 
-pub(super) fn replace(request: Replacement) -> crate::Result<Value> {
+fn hold_parents(path: &Path) -> crate::Result<Vec<File>> {
+    #[cfg(windows)]
+    let mut guards = Vec::new();
+    #[cfg(not(windows))]
+    let guards = Vec::new();
+    #[cfg(windows)]
+    {
+        use std::os::windows::fs::OpenOptionsExt as _;
+        for parent in path.ancestors().skip(1) {
+            let directory = OpenOptions::new()
+                .read(true)
+                .access_mode(0x81)
+                .share_mode(3)
+                .custom_flags(0x0220_0000)
+                .open(parent)
+                .map_err(|error| error.to_string())?;
+            let metadata = directory.metadata().map_err(|error| error.to_string())?;
+            if !metadata.is_dir() || bonsai_artifacts::is_redirect(&metadata) {
+                return Err(
+                    "Portable replacement parent is redirected or is not a directory.".into(),
+                );
+            }
+            guards.push(directory);
+        }
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = path;
+    }
+    Ok(guards)
+}
+
+pub(super) fn replace(request: &Replacement) -> crate::Result<Value> {
     if !cfg!(all(windows, target_arch = "aarch64")) {
         return Err("Portable application replacement requires native Windows ARM64.".into());
     }
@@ -189,7 +237,7 @@ pub(super) fn replace(request: Replacement) -> crate::Result<Value> {
         &published.asset,
         &request.target,
         &request.previous_sha256,
-        |from, to| fs::rename(from, to),
+        replace_open_file,
         |error| {
             if !matches!(error.raw_os_error(), Some(5 | 32 | 33)) || Instant::now() >= deadline {
                 return false;
@@ -201,8 +249,13 @@ pub(super) fn replace(request: Replacement) -> crate::Result<Value> {
         },
     )?;
     let mut command = Command::new(&request.target);
+    let arguments = match request.arguments.as_slice() {
+        [command, rest @ ..] if command == "bundled-chat" || command == "updated-chat" => rest,
+        values => values,
+    };
     command
-        .args(request.arguments)
+        .arg("updated-chat")
+        .args(arguments)
         .current_dir(
             request
                 .target
@@ -221,6 +274,18 @@ pub(super) fn replace(request: Replacement) -> crate::Result<Value> {
         format!("The portable executable was updated, but restarting it failed: {error}")
     })?;
     Ok(json!({"Status": "updated", "Version": request.version, "ProcessId": process.id()}))
+}
+
+fn replace_open_file(file: &File, target: &Path) -> io::Result<()> {
+    #[cfg(windows)]
+    {
+        bonsai_windows_process::replace_open_file(file, target)
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = (file, target);
+        Err(io::Error::other("Portable replacement requires Windows."))
+    }
 }
 
 #[cfg(all(test, windows))]
@@ -285,7 +350,7 @@ mod tests {
             &asset,
             &target,
             &previous,
-            |from, to| fs::rename(from, to),
+            replace_open_file,
             |_| false,
         )?;
         assert_eq!(
@@ -299,7 +364,7 @@ mod tests {
                 &asset,
                 &target,
                 &previous,
-                |from, to| fs::rename(from, to),
+                replace_open_file,
                 |_| false,
             )
             .is_err()
@@ -353,7 +418,7 @@ mod tests {
                 &incomplete,
                 &fixture.0.join("application.exe"),
                 &crate::identity::sha256(b"old executable"),
-                |from, to| fs::rename(from, to),
+                replace_open_file,
                 |_| false,
             )
             .is_err()

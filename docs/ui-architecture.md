@@ -43,8 +43,9 @@ bundle verifies its embedded inventory, extracts it into the per-user package
 cache and uses the existing verified package launch. Broker, UI and speech remain
 separate owned processes with the same containment and teardown contracts. Model,
 adapter and inference-runtime provisioning remain separate. Current releases
-distribute this portable executable; their update path is verified manual
-replacement, preserving the user data directory.
+distribute this portable executable; their update path automatically downloads
+verified releases and requires confirmation before replacement, preserving the
+user data directory.
 
 Swift launches default to native Rust Prism 0.1.25, original PQ2, four CPU row
 workers and the standard adapter at scale 1.3. `--native-engine` remains accepted;
@@ -108,12 +109,25 @@ establish promotion or full-model/device qualification.
 
 ### Application updates
 
-Current portable releases update by replacing the application executable after
-closing Swift and verifying the new download against its published SHA-256.
-The native Settings view provides those instructions and an explicit link to
-GitHub releases. Keep the same user data directory to preserve models, runtime
-downloads, conversations and preferences. Portable, source and preview launches
-start no automatic update discovery or installer work.
+Portable releases check GitHub after startup and every six hours and automatically
+download the highest newer numeric version, including published prereleases.
+The native Settings view also accepts a manual check. Discovery exhausts at most
+three pages of 100 releases; a full final page fails explicitly because catalog
+completeness is unknown. Drafts are excluded, and invalid newest assets never
+cause fallback. GitHub SHA-256 identities, the release manifest, checksum inventory
+and tag/source revision must agree before download or use.
+
+Replacing the executable requires native confirmation and successful owned model,
+speech and UI teardown. The launcher consumes its launch-specific handoff after
+fresh publication/staging verification and starts only the verified replacement
+helper. This bounded helper runs from the staged new bundle, independently
+revalidates publication and staged bytes, copies and verifies a sibling file, and
+atomically replaces the original after its launcher exits. Changed originals,
+network/verification failures or exhausted sharing retries retain the old file.
+The replacement reopens with the same launch options and user data directory;
+restart failure leaves the updated executable available for manual launch.
+Models, runtime downloads, conversations and preferences stay separate.
+Source and preview launches start no update discovery or installer work.
 
 #### Legacy MSI updater
 
@@ -122,7 +136,7 @@ portable release path. Its existing confirmation, publication validation and
 process-ownership controls remain required if it is used or restored later.
 Current Windows Release does not build or publish an MSI for that updater.
 
-Only a legacy MSI-installed application discovers published GitHub releases.
+Legacy MSI-installed applications retain their separate update path.
 A bounded background worker checks after startup and every six hours; the native Settings
 view also accepts a manual check. Source launches and preview start no update
 network requests. Update discovery sends no conversation or model data. Network,

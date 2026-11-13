@@ -94,12 +94,28 @@ never silently changes the selected engine or representation. See the
 
 ## Update and remove
 
-Portable releases use manual replacement. Download a newer executable from the
-project's releases, verify its checksum, close the running app and replace the
-old `.exe`. Reopen the replacement using the same data directory. Models, runtime
-downloads, saved conversations and preferences remain in that directory; replacing
-the executable does not remove them. Portable launches do not perform automatic
-installer discovery or installation.
+Portable releases check GitHub at startup and every six hours, including published
+experimental prereleases, and automatically download a newer Windows ARM64
+executable. Settings > Application also provides a manual check. Discovery chooses
+the highest numeric version across the bounded release catalog; drafts and older
+versions are excluded. An incomplete catalog or invalid newest release is an error,
+never a reason to fall back to an older download.
+
+Before replacement, the updater verifies the GitHub asset digest, release manifest,
+checksum inventory and tag/source revision. Choose **Install update and close**,
+then confirm **Close and install**. Swift saves according to your existing setting,
+stops its owned processes, revalidates publication and starts the verified native
+replacement helper. The helper replaces the same executable atomically and reopens
+it with the original launch options and data directory. No MSI is used. Models,
+runtime downloads, saved conversations and preferences remain separate. A failed
+download or replacement retains the existing executable; a failed restart leaves
+the updated executable available to open manually. A read-only executable location
+requires manual replacement.
+
+Manual updates remain available: download the newer executable from the project's
+releases, verify its checksum, close Swift and replace the old `.exe`. Keep the same
+data directory when reopening it. Source and preview launches perform no automatic
+update work.
 
 To remove the app, close it and delete its executable. Its cached application
 package can also be removed to reclaim space; launching the bundle again recreates

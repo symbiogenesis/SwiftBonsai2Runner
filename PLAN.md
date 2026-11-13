@@ -27,7 +27,7 @@ the corresponding detailed task changes; keep every acceptance obligation below.
 | P1 / external, qualification | Prism and Runner | Original authoring inputs for provenance; hosted public-pack reconstruction for its separate gate | Run the declared reconstruction and independent replay while pursuing provenance intake independently; follow the PTQ1 critical path below. Neither blocks A1. |
 | N1 / qualification | Prism and Runner | Frozen NPU-1 packet and applicable signed/runtime prerequisites | Complete [NPU-1 through NPU-7](#promotion-sequence) for the selected explicit X2 profile. HMX/PTQ1/X1/GPU/automatic selection retain their separate later gates. |
 | Q1 / qualification | Runner and independent human reviewers | Exact complete-answer/audio captures and declared rubric | Prepare the [creative and speech](#creative-quality-adapters-and-memory) review packets in parallel with source work; retained output can support applicable review without another device capture. |
-| D1 / owner, qualification | Runner | Reviewed source, exact portable release assets and C1 | Publish v0.2.0 as a portable executable and close clean-machine launch, verified manual replacement, data preservation, isolation and rollback acceptance; deploy and retrieve the selected [durable evidence](#durable-qualification-evidence). |
+| D1 / owner, qualification | Runner | Reviewed source, exact portable release assets and C1 | Publish v0.2.0 as a portable executable and close clean-machine launch, automatic release discovery/download, confirmed replacement/restart, data preservation, isolation and rollback acceptance; deploy and retrieve the selected [durable evidence](#durable-qualification-evidence). |
 | F1 / conditional | As specified in each detailed section | Its existing measured need, compatible artifact or release trigger | Retain precision research, broader profiles, optional agents, future Qwen migration and deferred Prism/dependency work in full; activation conditions and ordering remain unchanged. |
 
 Freeze one coherent qualification candidate after its reviewed logical commits are
@@ -98,9 +98,23 @@ The [release guide](docs/releases.md) records the owner-run publication command;
 the [release notes](docs/releases/v0.2.0.md) retain the development-default
 and qualification limits. Qualify the hosted build and exact executable,
 checksum inventory and release manifest, then verify clean-machine launch,
-terminal-free startup, manual close-and-replace updates, preserved model/recovery
-data and explicit rollback. Portable launches must not start installer/update
-discovery. Runtime and model provisioning retain their own gates.
+terminal-free startup, automatic startup/six-hour release discovery and verified
+download, confirmed close-and-replace/restart updates, preserved model/recovery
+data and explicit rollback. Qualify published prereleases, paginated numeric
+selection, incomplete-catalog/no-release/network failures, changed publication,
+tampered staging/original bytes, read-only targets, sharing retry exhaustion and
+restart failure. Verify renamed portable executables and original launch options,
+source/preview silence and no MSI invocation. Runtime and model provisioning retain
+their own gates. Local synthetic checks do not establish live update acceptance.
+Replay the new portable updater controls and all-target Rust analysis in hosted
+CI. The local workload (169 seconds through build-cache cleanup) passed
+pinned-compiler preflight, focused Rust formatting and six Markdown checks, then
+stopped on Clippy's pointer-alignment
+lint in the new native rename wrapper before updater tests ran. The byte-copy
+correction is reviewed locally; the closed workload was not retried. Both power
+snapshots reported battery operation and saver off, with charge falling from 25%
+to 24% by post-cleanup observation; setup power before the first query is unknown.
+No performance or continuous-stability claim is made.
 
 The retained native MSI updater is legacy/internal code, outside portable-only
 v0.2.0 publication. Reopen its following acceptance obligations only if the owner
@@ -144,7 +158,7 @@ double-click launch without a terminal on a supported clean Windows ARM64 machin
 including a visible native startup error when preparation fails. Exercise the same
 bundle builder from a local checkout; local focused checks do not establish hosted
 publication, clean-machine prerequisites or actual-model acceptance. Preserve the
-separate-process containment and manual-update data-preservation contracts.
+separate-process containment and update data-preservation contracts.
 
 Complete the focused launcher/package regressions and native Clippy check on the
 settled source. Qualify deflated bundle creation and stored-entry compatibility,

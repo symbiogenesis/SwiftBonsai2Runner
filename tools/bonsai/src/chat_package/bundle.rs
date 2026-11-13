@@ -279,6 +279,17 @@ pub fn current_is_bundled() -> crate::Result<bool> {
         .is_ok_and(|archive| archive.comment().starts_with(LAUNCHER_PROTOCOL.as_bytes())))
 }
 
+pub(crate) fn update_identity() -> crate::Result<(PathBuf, String)> {
+    let executable = std::env::current_exe().map_err(|error| error.to_string())?;
+    let (_, digest) = archive(&executable)?;
+    let root = PathBuf::from(
+        std::env::var_os("LOCALAPPDATA").ok_or("Bundled chat requires LOCALAPPDATA.")?,
+    )
+    .join("SwiftBonsai2/application-bundles")
+    .join(&digest[..24]);
+    Ok((root, digest))
+}
+
 /// Extracts the current distribution and enters the existing owned chat launcher.
 ///
 /// # Errors
