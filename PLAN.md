@@ -417,6 +417,10 @@ under [AGENTS.md](AGENTS.md).
 - [ ] Qualify CPU/prefill changes already consumed by the comparison baseline
   without requiring another repin; release newer candidates with exact source locks.
 - [ ] Qualify [scan-owned values and joined prompt projections](docs/cpu-kernels.md#scan-owned-packed-values-and-joined-prompt-projections).
+- [ ] Publish and qualify [provisional GDN and prepared current-token KV](docs/cpu-kernels.md#provisional-gdn-and-prepared-current-token-kv):
+  native/portable exact arithmetic, late-failure rollback, stale-record rejection,
+  selected-cache and FP16 state/adapter/cancellation parity, codegen/resources and
+  matched CPU-only complete-request benefit. Retain the released runtime as rollback.
 - [ ] Qualify [prepared packed-KV queries and CPU preparation reuse](docs/cpu-kernels.md#prepared-packed-kv-queries-and-cpu-preparation-reuse).
 - [ ] Qualify [X1-oriented candidates](docs/cpu-kernels.md#x1-oriented-source-candidates),
   [next candidates](docs/cpu-kernels.md#next-cpu-candidates) and

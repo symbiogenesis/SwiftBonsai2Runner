@@ -4,9 +4,10 @@ Baseline NEON supports PQ2, odd-group PQ2 and PTQ1 with scalar reference/fallbac
 This guide owns arithmetic, dispatch, qualification and the
 [X2 thread screen](#x2-cpu-thread-screen). Synthetic parity qualifies neither
 whole-model parity nor device speedup. Runner's active
-[release lock](../config/prism-inference.lock.json) pins Prism 0.1.25; source candidates
+[release lock](../config/prism-inference.lock.json) pins Prism 0.1.27 at
+`1429a33772089dfd3a50a96c698b9dbe0b36836a`; source candidates
 and historical publisher screens retain their own identities. The fixed CPU
-comparison baseline remains 0.1.23 with explicit FP16 KV. This development repin
+comparison baseline remains 0.1.23 with explicit FP16 KV. The current development repin
 closes no CPU qualification gates; [PLAN.md](../PLAN.md#cpu-kernels) owns remaining work.
 
 ## Cross-generation CPU promotion
@@ -144,6 +145,47 @@ verifier and sampled suffix consumer retain their
 Runner's current bundle and launch policy do not select them.
 
 ## X1-oriented source candidates
+
+### Provisional GDN and prepared current-token KV
+
+Two further local source candidates target ordinary CPU ingestion and decode,
+including the selected K4/V4 cache, without requiring an accelerator. They are
+integrated as Prism commits `9f47043` (GDN) and `1cc5f5a` (packed KV):
+
+- Graph-owned GDN evaluation writes eight-row arithmetic directly into its
+  unpublished recurrent-state delta instead of staging another complete copy
+  on the stack and flushing it into that delta. Committed state remains the
+  immutable source, and a failed evaluation cannot publish its delta. Public
+  defensive helpers keep their existing failure behavior. Swift's 48 recurrent
+  layers, 48 value heads and 128-by-128 matrices imply 144 MiB of final-copy
+  payload omitted per token on the eligible native path. This is a source work
+  count, not measured memory traffic, process-memory savings or latency benefit;
+  the arithmetic still reads and writes recurrent state.
+- Packed attention encodes the current key/value into the cache's existing
+  private prepared records and reuses those exact bytes at final append.
+  Successful attention seals the records for that evaluation; layer entry,
+  failure, commit, reset and copying prevent stale prepared-record reuse.
+  Narrowed final-layer evaluation keeps its ordinary encode path. This removes
+  two temporary vectors per full-attention layer and a second encoding of each
+  current key/value head, without adding another retained record payload or
+  changing the selected codec. Tail/page reservations remain at final append.
+
+These are exact work-reduction candidates within each selected numerical
+profile, not FP16 equivalence for packed KV or a measured X1 speedup. Require
+native and portable arithmetic/failure controls, strict Release analysis and
+linking, feature-disabled fallback and ARM64 codegen/resource review. Complete
+model logits/state/adapter/cancellation parity and matched CPU-only
+complete-request benefit remain independent gates under
+[cross-generation promotion](#cross-generation-cpu-promotion). The published
+0.1.27 runtime remains unchanged; application delivery needs a genuine
+source-bound release and reviewed repin. Memory admission stays conservative.
+
+The larger prompt-time opportunities remain qualification of existing exact
+latest-prefix reuse and explicitly admitted 8/16/32-token prefill. Their
+whole-request, adapter, cancellation and resource gates remain separate from
+these ordinary-ingestion reductions; no default tile or reuse policy changes.
+
+### Existing preparation candidates
 
 Three further CPU changes are implemented in local Prism source. They target
 repeated preparation and cache pressure without requiring X2 Hexagon execution:
