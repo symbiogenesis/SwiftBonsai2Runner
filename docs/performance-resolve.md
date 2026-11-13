@@ -1,11 +1,9 @@
-# Paired prefill, request preparation and tiled projection closeout
+# Paired prefill, request preparation and tiled projections
 
-This delivery implements three remaining source costs from the
-[performance backlog](../PLAN.md): repeated cached-key conversion during
-six-head prefill, repeated BPE preparation within one request, and repeated
-native-Q2 weight packing across multi-operation token tiles. The changes live
-in the reviewed Prism source consumed by Runner's 0.1.25 development pin.
-Actual-model, device and measured benefit qualification remains pending.
+Runner's Prism 0.1.25 development pin reuses cached-key conversion during
+six-head prefill, BPE preparation within one request and native-Q2 weight packing
+across multi-operation token tiles. Actual-model, device and measured benefit
+qualification remains in [PLAN.md](../PLAN.md).
 
 | Completed source work | Production behavior | Boundary |
 | --- | --- | --- |
@@ -34,14 +32,14 @@ every output without replay. Existing logical operations and queue writes remain
 unchanged. Transient 8/16/32-token tiles pack each weight tile once instead of
 8/16/32 times, and caller output storage replaces repeated full pending outputs.
 
-Intermediate numerical/tokenization controls passed before strict analysis
-failed. Its branch-order correction was source-reviewed without a rerun.
-Final-source strict analysis, production linking and feature-disabled compilation
-remain pending; the source-only validation diary remains in Git history.
+The [0.1.25 source-bound build](evidence/prism0125-local-release-20261112-145121/summary.json)
+records passing local strict Release analysis and native binary builds for the
+pinned source `99bab71270b1e6a6fb6d47eec2e34b8097cdcd4c`. Hosted acceptance and
+feature-disabled compilation remain separate gates.
 
 Owning hosted checks, ARM64 code generation and stack review, complete-model
 state/logit/adapter and cancellation acceptance, signed vendor lifecycle and
 matched whole-request benefit remain separate gates. Source work counts do
 not establish measured latency, throughput, process-memory savings or reduced
-admission. True N>1 native-Q2 matrix prefill remains open. No default, installed
-runtime or automatic backend-selection policy changes in this delivery.
+admission. True N>1 native-Q2 matrix prefill remains open. These implementations
+retain the existing explicit placement and backend-selection policy.

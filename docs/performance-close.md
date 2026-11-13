@@ -1,8 +1,8 @@
 # Paired values, bounded special parsing and resident tile packets
 
-Three concrete performance source gaps from [PLAN.md](../PLAN.md) are closed in
-the reviewed Prism source consumed by Runner's 0.1.25 development pin. This
-delivery does not close actual-model, device or measured benefit gates.
+Runner's Prism 0.1.25 development pin contains paired prefill-value reuse,
+bounded special-token parsing and resident tile packets. Actual-model, device
+and measured benefit gates remain in [PLAN.md](../PLAN.md).
 
 | Completed implementation | Production behavior | Work or storage affected |
 | --- | --- | --- |
@@ -30,8 +30,10 @@ does not establish that missing support. Exact destination validation, terminal
 failure, conservative resources and public owned-session forwarding remain
 required.
 
-Intermediate local checks were incomplete; their source-only validation diaries
-remain in Git history. Final-source hosted validation is still required.
+The [0.1.25 source-bound build](evidence/prism0125-local-release-20261112-145121/summary.json)
+records passing local strict Release analysis and native binary builds for the
+pinned source `99bab71270b1e6a6fb6d47eec2e34b8097cdcd4c`. Hosted acceptance and
+feature-disabled compilation remain separate gates.
 
 Source conversion, allocation and queue-write counts establish no measured
 latency, throughput or process-memory gain. Owning hosted checks, ARM64 codegen

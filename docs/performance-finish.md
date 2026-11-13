@@ -1,11 +1,8 @@
-# Completed performance source work
+# Decode KV sharing, terminal ingestion and resident FFN transport
 
-Three local Prism implementations close concrete source gaps from Runner's
-attention/locality, runtime-overhead and Hexagon FFN backlog. They are integrated
-in local `main`; their source history retains the implementation commits.
-Outstanding qualification remains in [PLAN.md](../PLAN.md#cpu-kernels).
-Runner's 0.1.25 development pin contains these changes. Actual-model and measured
-benefit gates remain pending; development delivery does not qualify them.
+Runner's Prism 0.1.25 development pin contains decode KV sharing, reset-only
+terminal ingestion and native resident FFN transport. Actual-model and measured
+benefit qualification remains in [PLAN.md](../PLAN.md#cpu-kernels).
 
 | Source implementation | Production behavior | Work removed or enabled |
 | --- | --- | --- |
@@ -33,12 +30,11 @@ resource discount or automatic backend selection is introduced. True `N > 1`
 native-Q2 prefill needs a different matrix solver and scratch contract and remains
 open. Model-free fake-DSP transport controls do not prove signed arithmetic.
 
-Intermediate local controls passed before an inherited graph fixture failed.
-The test-only correction uses actual Swift geometry and remains source-reviewed.
-The original failed check is closed; final-source validation remains pending.
-
-Require exact controls, strict Release analysis, production linking and
-feature-disabled compilation. Complete-model state/logit/adapter and cancellation
+The [0.1.25 source-bound build](evidence/prism0125-local-release-20261112-145121/summary.json)
+records passing local strict Release analysis and native binary builds for the
+pinned source `99bab71270b1e6a6fb6d47eec2e34b8097cdcd4c`. Hosted acceptance and
+feature-disabled compilation remain separate gates.
+Require exact final-source controls in owning hosted CI. Complete-model state/logit/adapter and cancellation
 acceptance, ARM64 codegen/spills, signed NPU lifecycle/resources and matched
 whole-request benefit remain separate gates. Model-free source checks establish no measured
 performance benefit.

@@ -1,8 +1,8 @@
-# Prefill, snapshot and resident FFN implementation closeout
+# Prefill locality, logits snapshots and resident FFN packets
 
-Three concrete source items from [PLAN.md](../PLAN.md) are implemented in Prism:
-complete six-head tiled-prefill locality, immutable runtime logits snapshots,
-and bounded multi-token resident full-FFN packets.
+Prism implements complete six-head tiled-prefill locality, immutable runtime
+logits snapshots and bounded multi-token resident full-FFN packets.
+[PLAN.md](../PLAN.md) owns their remaining qualification work.
 Runner's 0.1.25 development pin contains these changes. Their model, device and
 performance qualification remains independent of that owner-requested delivery.
 
@@ -30,11 +30,13 @@ sets of eight maximum-width binary32 regions for simultaneous chain lifetimes.
 The existing larger packed-weight workspace still dominates ordinary Swift
 geometry; small shapes receive the larger required reservation before allocation.
 
-Intermediate local controls passed before strict analysis failed. Later narrow
-source corrections were reviewed without a rerun; final-source validation,
-production linking and feature-disabled compilation remain pending. Source copy
-and queue-write counts establish no measured latency, throughput or memory gain.
+The [0.1.25 source-bound build](evidence/prism0125-local-release-20261112-145121/summary.json)
+records passing local strict Release analysis and native binary builds for the
+pinned source `99bab71270b1e6a6fb6d47eec2e34b8097cdcd4c`. Hosted acceptance and
+feature-disabled compilation remain separate gates.
+Source copy and queue-write counts establish no measured latency, throughput or
+memory gain.
 
 Owning hosted acceptance, complete-model state/logit/adapter and cancellation
 parity, ARM64 code generation and resources, signed vendor lifetime, and matched
-complete-request benefit remain required before a qualified release and repin.
+complete-request benefit remain required for qualification of the existing pin.
