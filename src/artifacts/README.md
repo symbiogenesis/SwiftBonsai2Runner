@@ -19,6 +19,12 @@ callers publish with a no-overwrite directory move and verify the published tree
 again before execution. Staging receipts contain paths and hashes; file guards
 end when staging returns.
 
+`stage_runtime_cleaned` provides the same staging contract with cleanup of its own
+incomplete files on failure. It checks the admitted archive inventory, preserves
+preexisting paths, and reports the original failure plus any cleanup error.
+Maintenance provisioning uses this variant; the pinned archive remains available
+for replay.
+
 Serialized descriptors and receipts contain identities, not live handles. A new
 process must re-verify the descriptor and retain its own guard. Completion checks
 that its executable belongs to the guarded runtime before starting a child, and

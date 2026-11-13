@@ -434,7 +434,9 @@ The selected completion executable must belong to that verified installation.
 to extract and verify a fresh external staging directory. It rejects unsafe
 directory entries, Windows filename aliases, collisions, incorrect ARM64 PE
 headers, and archives exceeding 4096 entries or 512 MiB expanded. It runs no probes
-and publishes no installation. Failed staging is retained for inspection.
+and publishes no installation. Failed current-attempt staging is removed after
+local handles close; cleanup failures retain the stage and report both errors.
+The pinned archive remains available to reproduce the original failure.
 Rust `provision` downloads the archive, publishes staging with a no-overwrite
 directory move, then calls `runtime-verify`. Staging receipts do not
 retain handles across that boundary; the published runtime is verified again
