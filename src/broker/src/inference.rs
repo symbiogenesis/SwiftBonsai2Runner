@@ -222,6 +222,16 @@ fn row_workers_supported(version: &str, workers: u8) -> Result<(), LaunchError> 
     }
 }
 
+// Enable only after a reviewed source-bound release implements the paired
+// context/memory flags. A version number alone never attests this protocol.
+const MEMORY_CONTEXT_RELEASE: Option<(&str, &str)> = None;
+
+pub(super) fn memory_context_supported() -> Result<bool, LaunchError> {
+    let pin = release(LOCK)?;
+    Ok(MEMORY_CONTEXT_RELEASE
+        .is_some_and(|(version, commit)| pin.version == version && pin.commit == commit))
+}
+
 pub(super) fn pinned_version() -> Result<String, LaunchError> {
     release(LOCK).map(|release| release.version)
 }

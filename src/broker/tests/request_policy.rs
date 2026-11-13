@@ -680,3 +680,44 @@ fn context_admission_fails_closed_at_boundary_and_overflow() {
         Err(Rejection::TokenCountUnavailable)
     ));
 }
+
+#[test]
+fn memory_selected_context_controls_exact_admission_without_changing_request_bytes() {
+    let large = RequestPolicy::with_context_tokens(8080, KEY, 16_384).unwrap();
+    assert_eq!(large.capabilities().context_tokens, 16_384);
+    let prepare = |policy: &RequestPolicy| {
+        policy
+            .check_head(&head(CHAT.len()))
+            .unwrap()
+            .prepare(CHAT)
+            .unwrap()
+    };
+    assert!(prepare(&large).admit(|_| Ok(12_224)).is_ok());
+    assert!(matches!(
+        prepare(&large).admit(|_| Ok(12_225)),
+        Err(Rejection::ContextLimit)
+    ));
+    assert!(matches!(
+        prepare(&policy()).admit(|_| Ok(12_224)),
+        Err(Rejection::ContextLimit)
+    ));
+    assert!(matches!(
+        prepare(&large).admit(|_| Ok(usize::MAX)),
+        Err(Rejection::ContextLimit)
+    ));
+    let small = RequestPolicy::with_context_tokens(8080, KEY, 4_352).unwrap();
+    assert!(prepare(&small).admit(|_| Ok(192)).is_ok());
+    assert!(matches!(
+        prepare(&small).admit(|_| Ok(193)),
+        Err(Rejection::ContextLimit)
+    ));
+    let legacy = prepare(&policy()).admit(|_| Ok(1)).unwrap();
+    let dynamic = prepare(&large).admit(|_| Ok(1)).unwrap();
+    assert_eq!(legacy.backend_body(), dynamic.backend_body());
+    for invalid in [0, 262_145, usize::MAX] {
+        assert!(matches!(
+            RequestPolicy::with_context_tokens(8080, KEY, invalid),
+            Err(Rejection::Configuration)
+        ));
+    }
+}

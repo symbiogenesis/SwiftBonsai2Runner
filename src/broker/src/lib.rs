@@ -60,7 +60,7 @@ pub const MAX_CONTENT_PARTS: usize = 128;
 pub const MODEL_ALIAS: &str = "bonsai";
 /// Largest allowed completion token budget.
 pub const MAX_COMPLETION_TOKENS: u32 = 4096;
-/// Total prompt and completion context budget of the pinned model.
+/// Historical fixed context used by nonlaunching fixtures and legacy runtimes.
 pub const CONTEXT_TOKENS: usize = 8192;
 /// Context reserved for template accounting differences.
 pub const TEMPLATE_MARGIN_TOKENS: usize = 64;
@@ -132,6 +132,7 @@ pub struct RequestPolicy {
     origin: String,
     authorization: [u8; 71], // "Bearer " + 64 lowercase hex characters
     pinned_abliteration: bool,
+    context_tokens: usize,
 }
 
 impl RequestPolicy {
@@ -153,7 +154,37 @@ impl RequestPolicy {
             authority,
             authorization,
             pinned_abliteration: false,
+            context_tokens: CONTEXT_TOKENS,
         })
+    }
+
+    /// Construct a policy for an already selected and verified model context.
+    ///
+    /// The trusted owner must pass the same bound to runtime construction and
+    /// readiness verification. Client requests cannot change this selection.
+    ///
+    /// # Errors
+    /// Rejects invalid credentials, ports or contexts outside Swift metadata.
+    pub fn with_context_tokens(
+        port: u16,
+        key: &str,
+        context_tokens: usize,
+    ) -> Result<Self, Rejection> {
+        if !(1..=bonsai_cpu_policy::context::MODEL_CONTEXT_TOKENS).contains(&context_tokens) {
+            return Err(Rejection::Configuration);
+        }
+        let mut policy = Self::new(port, key)?;
+        policy.context_tokens = context_tokens;
+        Ok(policy)
+    }
+
+    /// Capabilities for the owner's actual immutable context selection.
+    #[must_use]
+    pub const fn capabilities(&self) -> ModelCapabilities {
+        ModelCapabilities {
+            context_tokens: self.context_tokens,
+            ..MODEL_CAPABILITIES
+        }
     }
 
     /// Check the parsed head before the transport accepts a bounded body.
@@ -236,6 +267,7 @@ impl RequestPolicy {
         Ok(AuthorizedHead {
             length,
             pinned_abliteration: self.pinned_abliteration,
+            context_tokens: self.context_tokens,
         })
     }
 
@@ -311,6 +343,7 @@ impl RequestPolicy {
         Ok(AuthorizedHead {
             length,
             pinned_abliteration: self.pinned_abliteration,
+            context_tokens: self.context_tokens,
         })
     }
 }
@@ -328,6 +361,7 @@ fn singleton<'a>(headers: &'a HeaderMap, name: &str) -> Result<Option<&'a [u8]>,
 pub struct AuthorizedHead {
     length: usize,
     pinned_abliteration: bool,
+    context_tokens: usize,
 }
 
 impl AuthorizedHead {
@@ -424,6 +458,7 @@ impl AuthorizedHead {
             body,
             max_completion_tokens,
             stream: chat.stream,
+            context_tokens: self.context_tokens,
         })
     }
 }
@@ -685,6 +720,7 @@ pub struct PendingChat {
     body: Vec<u8>,
     max_completion_tokens: u32,
     stream: bool,
+    context_tokens: usize,
 }
 
 impl PendingChat {
@@ -711,7 +747,7 @@ impl PendingChat {
         let total = prompt
             .checked_add(completion)
             .and_then(|n| n.checked_add(TEMPLATE_MARGIN_TOKENS));
-        if total.is_none_or(|n| n > CONTEXT_TOKENS) {
+        if total.is_none_or(|n| n > self.context_tokens) {
             return Err(Rejection::ContextLimit);
         }
         Ok(AdmittedChat {

@@ -7,6 +7,7 @@ use std::{borrow::Cow, io, ops::Deref};
 #[derive(Clone, Copy)]
 pub(super) struct WorkerReadiness {
     expected: u8,
+    context_tokens: usize,
     legacy_missing_allowed: bool,
     latest_prompt_reuse: bool,
     kv_cache: Option<crate::inference::KvCache>,
@@ -16,6 +17,7 @@ impl WorkerReadiness {
     pub(super) fn for_version(version: &str, expected: u8) -> Self {
         Self {
             expected,
+            context_tokens: crate::CONTEXT_TOKENS,
             // Only these reviewed historical releases omit this identity. A
             // later pin must report its graph's effective worker budget.
             legacy_missing_allowed: matches!(version, "0.1.8" | "0.1.9" | "0.1.10"),
@@ -31,6 +33,11 @@ impl WorkerReadiness {
 
     pub(super) const fn with_kv_cache(mut self, policy: Option<crate::inference::KvCache>) -> Self {
         self.kv_cache = policy;
+        self
+    }
+
+    pub(super) const fn with_context_tokens(mut self, context_tokens: usize) -> Self {
+        self.context_tokens = context_tokens;
         self
     }
 
@@ -182,7 +189,7 @@ pub(super) fn validate_native_identity(
         || &*model.model_sha256 != hash
         || &*model.template_sha256 != crate::inference::TEMPLATE_SHA256
         || &*model.runtime != "prism-inference"
-        || model.context_tokens != crate::CONTEXT_TOKENS
+        || model.context_tokens != workers.context_tokens
         || model.seed != 42
         || !workers.accepts(model.row_workers)
         || model.prompt_reuse.as_deref() != workers.latest_prompt_reuse.then_some("latest")
@@ -533,5 +540,30 @@ mod tests {
                 .is_err()
             );
         }
+    }
+}
+
+#[cfg(test)]
+mod context_tests {
+    use super::{WorkerReadiness, validate_native_identity};
+
+    #[test]
+    fn readiness_rejects_any_context_other_than_the_selected_graph() {
+        let body = serde_json::json!({"data":[{
+            "id":"Swift-Bonsai-2-PQ2_0", "object":"model",
+            "model_sha256":crate::inference::MODEL_SHA256,
+            "template_sha256":crate::inference::TEMPLATE_SHA256,
+            "runtime":"prism-inference", "context_tokens":16384,
+            "seed":42, "row_workers":1
+        }]})
+        .to_string();
+        let wire = format!(
+            "HTTP/1.1 200 OK\r\nContent-Length: {}\r\n\r\n{body}",
+            body.len()
+        );
+        let selected = WorkerReadiness::for_version("0.1.25", 1).with_context_tokens(16384);
+        assert!(validate_native_identity(wire.as_bytes(), false, false, selected).is_ok());
+        let legacy = WorkerReadiness::for_version("0.1.25", 1);
+        assert!(validate_native_identity(wire.as_bytes(), false, false, legacy).is_err());
     }
 }

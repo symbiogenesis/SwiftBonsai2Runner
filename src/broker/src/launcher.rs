@@ -296,6 +296,29 @@ impl LaunchConfig {
         )
     }
 
+    /// Whether the selected runtime has the reviewed memory-context protocol.
+    /// Publisher Swift supports an explicit context; native releases require
+    /// exact source and release-byte review before enabling the paired flags.
+    ///
+    /// # Errors
+    /// Returns a failure if the compiled native release identity cannot be verified.
+    pub fn memory_context_supported(&self) -> Result<bool, LaunchError> {
+        Ok(self.profile == LaunchProfile::SwiftPq2Assessment
+            && (!self.native_engine || crate::inference::memory_context_supported()?))
+    }
+
+    fn initial_memory_admission(&self, plan: &LaunchPlan) -> Result<(), LaunchError> {
+        if self.memory_context_supported()? {
+            bonsai_cpu_policy::context::SwiftContextPlan::for_available_memory(
+                available_memory_bytes().map_err(|_| LaunchError::Memory)?,
+            )
+            .map_err(|_| LaunchError::Memory)?;
+            Ok(())
+        } else {
+            admit(plan.required_available_bytes)
+        }
+    }
+
     /// Verify the fixed policy and complete artifacts without creating state.
     ///
     /// # Errors
@@ -316,10 +339,13 @@ impl LaunchConfig {
         let _native_executable = self.native_executable_guard()?;
         let _artifacts = self.verify_artifacts(&plan)?;
         let _adapter = Self::adapter_guard(&plan)?;
-        Ok(LaunchCheck {
-            memory_admitted: available_memory_bytes().map_err(|_| LaunchError::Memory)?
-                >= plan.required_available_bytes,
-        })
+        let available = available_memory_bytes().map_err(|_| LaunchError::Memory)?;
+        let memory_admitted = if self.memory_context_supported()? {
+            bonsai_cpu_policy::context::SwiftContextPlan::for_available_memory(available).is_ok()
+        } else {
+            available >= plan.required_available_bytes
+        };
+        Ok(LaunchCheck { memory_admitted })
     }
 
     fn check_sandbox_support(&self) -> Result<(), LaunchError> {
@@ -421,6 +447,14 @@ impl LaunchConfig {
             OsString::from("--seed"),
             OsString::from("42"),
         ];
+        if crate::inference::memory_context_supported().unwrap_or(false) {
+            arguments.extend([
+                OsString::from("--context-tokens"),
+                OsString::from(plan.context_tokens.to_string()),
+                OsString::from("--memory-limit-bytes"),
+                OsString::from(plan.memory_limit_bytes.to_string()),
+            ]);
+        }
         if self.native_row_workers == 4 {
             arguments.extend([OsString::from("--row-workers"), OsString::from("4")]);
         }
@@ -565,7 +599,7 @@ impl LaunchConfig {
             self.uses_repacked_ptq1(),
         )
         .map_err(|_| LaunchError::Policy)?;
-        admit(preliminary.required_available_bytes)?;
+        self.initial_memory_admission(&preliminary)?;
         if self.native_engine {
             startup_timing.phase(StartupPhase::NativeRuntimeVerification);
         }
@@ -580,7 +614,7 @@ impl LaunchConfig {
         startup_timing.phase(StartupPhase::CredentialsAndRuntime);
         let credentials = PrivateCredentials::create(&self.evidence_parent)
             .map_err(|_| LaunchError::Credentials)?;
-        let plan = LaunchPlan::for_profile_with_options(
+        let mut plan = LaunchPlan::for_profile_with_options(
             &self.data,
             self.backend_port,
             credentials.backend_path(),
@@ -589,6 +623,15 @@ impl LaunchConfig {
             self.uses_repacked_ptq1(),
         )
         .map_err(|_| LaunchError::Policy)?;
+        if self.memory_context_supported()? {
+            let context = bonsai_cpu_policy::context::SwiftContextPlan::for_available_memory(
+                available_memory_bytes().map_err(|_| LaunchError::Memory)?,
+            )
+            .map_err(|_| LaunchError::Memory)?;
+            plan.select_swift_context(context)
+                .map_err(|_| LaunchError::Policy)?;
+        }
+        let context_tokens = plan.context_tokens;
         // Reserve only as a collision check; PID checks close the release/bind
         // race without ever trusting a pre-existing server on the selected port.
         let reservation =
@@ -617,11 +660,12 @@ impl LaunchConfig {
         }
         if self.native_engine {
             startup_timing.phase(StartupPhase::NativeIdentity);
-            self.confirm_native_identity(&process, &credentials).await?;
+            self.confirm_native_identity(&process, &credentials, context_tokens)
+                .await?;
         }
         startup_timing.phase(StartupPhase::FrontendBinding);
         let service = self
-            .bind_frontend(&process, &credentials, adapter.is_some())
+            .bind_frontend(&process, &credentials, adapter.is_some(), context_tokens)
             .await?;
         startup_timing.finish();
         Ok(LaunchedService {
@@ -641,6 +685,7 @@ impl LaunchConfig {
         process: &OwnedProcess,
         credentials: &PrivateCredentials,
         adapter: bool,
+        context_tokens: usize,
     ) -> Result<LocalChatService, LaunchError> {
         let Ok(mut service) = LocalChatService::bind(
             self.frontend_port,
@@ -654,6 +699,10 @@ impl LaunchConfig {
             process.stop(STOP_TIMEOUT).map_err(|_| LaunchError::Stop)?;
             return Err(LaunchError::Service);
         };
+        if service.select_context_tokens(context_tokens).is_err() {
+            process.stop(STOP_TIMEOUT).map_err(|_| LaunchError::Stop)?;
+            return Err(LaunchError::Service);
+        }
         service.require_backend_process(process.id());
         if adapter {
             service.enable_pinned_abliteration();
@@ -665,12 +714,14 @@ impl LaunchConfig {
         &self,
         process: &OwnedProcess,
         credentials: &PrivateCredentials,
+        context_tokens: usize,
     ) -> Result<(), LaunchError> {
         if !native_identity(
             self.backend_port,
             credentials.backend_key(),
             process.id(),
             self,
+            context_tokens,
         )
         .await
         {
@@ -739,6 +790,11 @@ impl LaunchedService {
     /// Bound frontend port, available only after the owned backend is ready.
     pub const fn port(&self) -> u16 {
         self.service.port()
+    }
+
+    /// Actual immutable context shared by runtime, exact admission and UI guidance.
+    pub const fn context_tokens(&self) -> usize {
+        self.service.context_tokens()
     }
 
     /// Protected evidence directory; contains credentials, so share only selected logs.
@@ -954,7 +1010,13 @@ async fn healthy(port: u16, key: &str, process_id: u32) -> bool {
     .is_ok_and(|result| result.is_ok())
 }
 
-async fn native_identity(port: u16, key: &str, process_id: u32, config: &LaunchConfig) -> bool {
+async fn native_identity(
+    port: u16,
+    key: &str,
+    process_id: u32,
+    config: &LaunchConfig,
+    context_tokens: usize,
+) -> bool {
     timeout(Duration::from_secs(2), async {
         let version = crate::inference::pinned_version()
             .map_err(|_| io::Error::other("native runtime pin mismatch"))?;
@@ -964,7 +1026,8 @@ async fn native_identity(port: u16, key: &str, process_id: u32, config: &LaunchC
             config.use_abliterate_lora,
             WorkerReadiness::for_version(&version, config.native_row_workers)
                 .with_prompt_reuse(config.latest_prompt_reuse)
-                .with_kv_cache(config.kv_cache),
+                .with_kv_cache(config.kv_cache)
+                .with_context_tokens(context_tokens),
         )
     })
     .await

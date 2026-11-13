@@ -128,6 +128,24 @@ impl LocalChatService {
         self.port
     }
 
+    /// Actual prompt, completion and template budget of this service's model.
+    pub const fn context_tokens(&self) -> usize {
+        self.policy.context_tokens
+    }
+
+    /// The owned launcher binds admission to the same context used by the child.
+    #[cfg(windows)]
+    pub(crate) fn select_context_tokens(
+        &mut self,
+        context_tokens: usize,
+    ) -> Result<(), ServiceError> {
+        if !(1..=bonsai_cpu_policy::context::MODEL_CONTEXT_TOKENS).contains(&context_tokens) {
+            return Err(ServiceError::Configuration);
+        }
+        self.policy.context_tokens = context_tokens;
+        Ok(())
+    }
+
     /// Immutable total reservation bound, including the one active request.
     ///
     /// Pending accepts and accepted handles share this bound. This is not a

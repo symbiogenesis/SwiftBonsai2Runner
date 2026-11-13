@@ -126,8 +126,33 @@ pub struct LaunchPlan {
     pub required_available_bytes: u64,
     /// Job memory ceiling in bytes.
     pub memory_limit_bytes: usize,
+    /// Immutable prompt, response and template bound selected for the model.
+    pub context_tokens: usize,
 }
 impl LaunchPlan {
+    /// Apply a trusted memory-derived Swift context to this interactive launch.
+    /// Fixed qualification argument builders remain unchanged.
+    #[cfg(windows)]
+    pub(crate) fn select_swift_context(
+        &mut self,
+        context: bonsai_cpu_policy::context::SwiftContextPlan,
+    ) -> Result<(), PolicyError> {
+        let index = self
+            .arguments
+            .iter()
+            .position(|argument| argument == "--ctx-size")
+            .ok_or(PolicyError::Configuration)?;
+        let argument = self
+            .arguments
+            .get_mut(index + 1)
+            .ok_or(PolicyError::Configuration)?;
+        *argument = context.context_tokens.to_string().into();
+        self.context_tokens = context.context_tokens;
+        self.memory_limit_bytes = context.memory_limit_bytes;
+        self.required_available_bytes = context.required_available_bytes;
+        Ok(())
+    }
+
     /// Build the sole reviewed development plan. This never launches or writes.
     /// The separate launcher must require its explicit development opt-in.
     ///
@@ -239,6 +264,7 @@ impl LaunchPlan {
             key_file: key_file.to_path_buf(),
             required_available_bytes: profile.required_available_bytes(),
             memory_limit_bytes: profile.memory_limit_bytes(),
+            context_tokens: crate::CONTEXT_TOKENS,
         })
     }
 }

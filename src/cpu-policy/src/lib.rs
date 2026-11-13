@@ -19,6 +19,9 @@ pub mod hardware;
 /// Pure power-observation formatting and endpoint comparison; never queries or changes settings.
 pub mod power;
 
+/// Conservative memory-aware context sizing for owned interactive Swift launches.
+pub mod context;
+
 const REFERENCE_LOCK: &str = include_str!("../../../config/runtime.lock.json");
 const SWIFT_LOCK: &str = include_str!("../../../config/swift-assessment.lock.json");
 const ADAPTER_LOCK: &str = include_str!("../../../config/swift-lora.lock.json");

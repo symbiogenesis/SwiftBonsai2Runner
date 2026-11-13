@@ -104,6 +104,11 @@ fn launched(args: Vec<OsString>) -> ExitCode {
     };
     runtime.block_on(async {
         let mut shutdown = std::pin::pin!(owner_shutdown::shutdown(owner_control.as_ref()));
+        let context_note = if configuration.uses_native_engine()
+            && !configuration.memory_context_supported().unwrap_or(false)
+        {
+            "Memory-aware native context awaits a compatible verified runtime release.\n"
+        } else { "" };
         let owner = match configuration.start(shutdown.as_mut()).await {
             Ok(owner) => owner,
             Err(error) => {
@@ -114,8 +119,8 @@ fn launched(args: Vec<OsString>) -> ExitCode {
             }
         };
         let notice = format!(
-            "DEVELOPMENT ONLY: owned {profile_name} backend ready; listening on http://127.0.0.1:{}.\nProtected credentials and technical evidence: {}\n{containment} Ctrl-C stops the complete owned Job.\n",
-            owner.port(), owner.evidence_directory().display()
+            "DEVELOPMENT ONLY: owned {profile_name} backend ready; listening on http://127.0.0.1:{}.\nContext tokens: {}\n{context_note}Protected credentials and technical evidence: {}\n{containment} Ctrl-C stops the complete owned Job.\n",
+            owner.port(), owner.context_tokens(), owner.evidence_directory().display()
         );
         let notified = std::io::stdout().write_all(notice.as_bytes()).is_ok();
         let result = if notified {

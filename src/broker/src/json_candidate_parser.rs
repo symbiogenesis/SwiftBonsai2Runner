@@ -86,6 +86,7 @@ mod tests {
         let head = || AuthorizedHead {
             length: declared_length,
             pinned_abliteration: pinned,
+            context_tokens: crate::CONTEXT_TOKENS,
         };
         let summarize =
             |chat: crate::PendingChat| (chat.body, chat.max_completion_tokens, chat.stream);
@@ -134,6 +135,7 @@ mod tests {
                     AuthorizedHead {
                         length: oversized.len(),
                         pinned_abliteration: false,
+                        context_tokens: crate::CONTEXT_TOKENS,
                     },
                     &oversized,
                 )

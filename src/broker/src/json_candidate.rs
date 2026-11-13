@@ -11,6 +11,7 @@ fn canonical(body: &[u8], candidate: bool, pinned: bool) -> Result<Vec<u8>, Reje
     let head = AuthorizedHead {
         length: body.len(),
         pinned_abliteration: pinned,
+        context_tokens: crate::CONTEXT_TOKENS,
     };
     if candidate {
         head.prepare_simd_json(body)
@@ -41,6 +42,7 @@ fn reused_canonical(
             AuthorizedHead {
                 length: body.len(),
                 pinned_abliteration: pinned,
+                context_tokens: crate::CONTEXT_TOKENS,
             },
             body,
         )
