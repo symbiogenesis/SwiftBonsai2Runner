@@ -677,7 +677,7 @@ impl Updates {
         let mut install = false;
         let mut later = false;
         let width = (ctx.content_rect().width() - 64.0).clamp(240.0, 420.0);
-        let modal = egui::Modal::new(egui::Id::new("application-update-prompt")).show(ctx, |ui| {
+        let modal = egui::Modal::new(egui::Id::unique("application-update-prompt")).show(ctx, |ui| {
             ui.set_width(width);
             ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Wrap);
             ui.heading("Update ready");
