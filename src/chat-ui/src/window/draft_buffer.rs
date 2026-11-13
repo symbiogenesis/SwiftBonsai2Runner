@@ -15,7 +15,7 @@ const MAX_UNDO_POINTS: usize = 8;
 
 pub(super) const LIMIT_MESSAGE: &str = "This edit exceeds the 1,048,576-character draft limit. Your draft was kept. Paste a smaller passage.";
 
-/// A TextEdit may delete the selection before inserting pasted or IME text.
+/// A `TextEdit` may delete the selection before inserting pasted or IME text.
 /// Retain its pre-edit bytes on mutation and snapshot undo state only on frames
 /// with potential edits, so an oversized replacement can reject the entire
 /// frame without losing the draft. Idle frames copy neither text nor history.
