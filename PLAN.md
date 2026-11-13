@@ -1971,6 +1971,19 @@ LoRA gates; calibration proves neither quality nor reduced admission.
 
 ## CPU kernels
 
+Deliver and qualify the local [scan-owned packed-value, joined prompt-projection
+and scoped-check candidates](docs/cpu-kernels.md#scan-owned-packed-values-and-joined-prompt-projections).
+Retain per-record encoding/scale/result checks, sticky failure of private sums,
+public atomic failure, joined cancellation and existing geometry/adapter-error
+precedence. Qualify eligible tiled CPU siblings separately from ordinary
+single-token ingestion, including standard-adapter no-op targets. Require exact
+native/portable and late-failure controls, strict runtime/helper Release analysis,
+feature-disabled fallback, production linking, ARM64 codegen/resource review,
+complete-model state/logit/adapter/cancellation acceptance and matched CPU-only
+complete-request benefit. Publish new helper APIs before dependent packages,
+then deliver a genuine source-bound bundle and reviewed Runner repin; source
+work counts establish no measured X1 speedup.
+
 Deliver and qualify the local [prepared packed-KV query and CPU preparation
 reuse candidates](docs/cpu-kernels.md#prepared-packed-kv-queries-and-cpu-preparation-reuse):
 one borrowed query proof per packed-attention head, exact internal Q8_K sum reuse

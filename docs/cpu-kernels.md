@@ -433,6 +433,42 @@ driver/logs were removed; the external Cargo cache and one compact local summary
 were retained. No model, benchmark, CI operation or performance qualification ran.
 Final-source compiler and execution acceptance remain pending.
 
+### Scan-owned packed values and joined prompt projections
+
+Further local Prism CPU work targets repeated per-record and per-row-tile work
+on the shared X1/X2 path:
+
+- Packed attention owns one provisional value accumulator for the complete
+  history scan. Codebook validation and native dispatch happen once; each
+  record still checks its encoding, weight, scale and finite arithmetic. This
+  removes repeated scans of the previous 256-value sum and its per-record
+  transactional copy. Failure permanently prevents publication of that private
+  sum. The public single-record accumulation API keeps its defensive checks
+  and unchanged-output failure contract; stored precision and operation order
+  are unchanged.
+- Compatible CPU PQ2 prompt-tile siblings share one joined row-pool submission
+  and the existing prepared activations. The graph consumes this for eligible
+  projection pairs and triples, including siblings untouched by the standard
+  adapter. A targeted adapter retains sequential execution so that its failures
+  keep their original precedence. Unsupported geometry, transforms and external
+  executors retain their existing paths. This extends the explicit tiled-prefill
+  candidate; ordinary single-token ingestion does not acquire prompt tiles.
+- Prepared native PQ2 row consumption uses the helper's existing extent check
+  on the successful path. The runtime classifies malformed extents after a
+  rejection, retaining shape-error precedence without checking the same row
+  geometry twice for every one-, four- or eight-row tile. Baseline NEON and
+  portable consumers retain their existing checks.
+
+These are source work reductions, not measured X1 speedups. Native/portable
+exact arithmetic, corrupt-record and late-failure controls, strict Release
+analysis and linking, feature-disabled fallback and ARM64 codegen/resource
+review remain required. Complete-model logits/state/adapter/cancellation and
+matched CPU-only complete-request benefit retain the
+[cross-generation promotion gates](#cross-generation-cpu-promotion). New helper
+APIs require publication before a dependent runtime release, followed by a
+genuine source-bound bundle and reviewed Runner repin. Runner's active 0.1.25
+runtime does not consume this local source candidate.
+
 ## Execution and dispatch
 
 The default `experimental-neon` feature uses [`fearless_simd` 1.1.0][fearless]'s safe core API under
