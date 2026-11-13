@@ -20,7 +20,9 @@ under [AGENTS.md](AGENTS.md).
   Public reconstruction and replay retain P1's schema-2 scalar-v2 identity.
 - [ ] **C1 — Qualify current CI source.** Require owner-operated Source checks,
   Foundation and dependency-audit acceptance for the published startup,
-  staged-index, ASR/UI fixture, workflow-consolidation and dependency corrections.
+  staged-index, ASR/UI fixture, workflow-consolidation and dependency corrections,
+  syntax/selector guards, portable compiler-cache recovery and separate hosted/device
+  scheduling. Verify cold/hit/input-change paths and independent push handoffs.
   Follow the [startup preflight](tools/ci/README.md#action-dependency-pins) before
   workflow changes and verify supported self-hosted runner versions.
 - [ ] Qualify Runner's checked-tools producer, shared regression runner and

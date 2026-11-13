@@ -168,11 +168,28 @@ linter changes select `rumdl` against [`.rumdl.toml`](../../.rumdl.toml), while
 relevant main pushes and the weekly schedule select a fresh dependency audit.
 Manual dispatch selects portable and Markdown checks on any branch, plus the
 audit on `main`. Unknown source ranges select all checks eligible for that event.
-Each check supersedes only its own pending work; manual checks keep independent
-runs. A failed selector fails every eligible check before checkout or compilation.
+Pull-request checks supersede only their own pending work; other eligible events
+keep independent runs. A failed preflight fails every eligible check before checkout or compilation.
 Source-checks workflow edits select every eligible check. These jobs retain read-only repository
 permissions and use no models or physical devices; Foundation and device acceptance
 remain separate requirements.
+
+Source checks share one checkout for selection, language/startup guards, workflow
+syntax and action-lock verification. A failed preflight fails every eligible
+downstream check before its checkout. Only pull-request runs supersede one another:
+their source range is cumulative. Push, weekly and manual runs use independent
+groups, so incremental push coverage survives a later unrelated push and an older
+preflight cannot cancel a newer result after finishing out of order.
+
+The portable screen restores compiler outputs isolated by image, compiler and
+locked inputs, with Cargo content freshness enabled. Every selected check still
+runs. Failed compilation/tests can preserve useful outputs; cancelled runs,
+setup failures and exact hits do not save, and an optional save cannot change
+the check verdict. Hosted cold/hit/input-change acceptance remains pending.
+
+Preparation-only X2 and CPU-bundle dispatches use separate hosted concurrency
+groups. Only explicit device requests reserve the shared laptop lane; rejected
+legacy TTS targets also stay hosted. Device budgets and admission remain unchanged.
 
 ## Native Rust checks
 
@@ -270,6 +287,23 @@ dependency closure of same-repository composites, and enforces our inline-SHA
 policy. A tag-keyed lock entry does not cover an inline `@SHA` reference even when
 both resolve to the same commit. Local startup checks do not verify upstream
 provenance or replace GitHub workflow validation.
+
+The separate [syntax check](check_workflow_syntax.ps1) uses checksum-pinned
+[actionlint 1.7.12](https://github.com/rhysd/actionlint/releases/tag/v1.7.12) to
+reject malformed YAML, expressions, job dependencies and local action inputs.
+It downloads a small standalone binary with bounded retries, verifies the archive,
+and removes its scratch directory afterward. Optional shellcheck and pyflakes
+integrations are disabled, so checks are consistent without extra runtimes.
+The older parser receives only actual `$/` action references normalized to `./`
+in memory; embedded scripts and original files are preserved. The startup guard
+continues to validate the original pins and dependency closure independently.
+
+Run `pwsh -NoProfile -File tools/ci/check_workflow_syntax.ps1` locally, or supply
+`-ActionlintPath C:\Tools\actionlint.exe` for an already trusted offline binary
+at that version. Hosted preflight adds `-CheckFixtures` to run the syntax mutation
+controls with the same binary. A focused local control adds, for example,
+`-CheckFixtures -FixtureCase syntax_checks_normalized_local_action_inputs`.
+
 The official lock identity is `owner/repository@SHA`: sub-actions such as
 `actions/cache/restore@SHA` and external reusable-workflow paths share that exact
 repository/SHA key. The startup guard validates the entire reference before
