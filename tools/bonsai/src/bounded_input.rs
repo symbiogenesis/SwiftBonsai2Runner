@@ -1,4 +1,8 @@
 //! Byte-limited reads; callers retain file admission, decoding and handle ownership.
+#![expect(
+    clippy::redundant_pub_crate,
+    reason = "Private maintenance modules expose only a crate-local implementation API."
+)]
 
 use std::io::{self, Read};
 

@@ -1,4 +1,8 @@
 //! Basic PE machine probing; file admission and architecture policy stay with callers.
+#![expect(
+    clippy::redundant_pub_crate,
+    reason = "Private maintenance modules expose only a crate-local implementation API."
+)]
 
 use std::io::{self, Read, Seek, SeekFrom};
 
