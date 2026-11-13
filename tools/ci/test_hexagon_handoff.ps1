@@ -3,7 +3,7 @@ param([string]$Case)
 . (Join-Path $PSScriptRoot 'test_support.ps1')
 $repository=Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
 $workflow=[IO.File]::ReadAllText((Join-Path $repository '.github/workflows/hexagon-qualification.yml')); $jobs=Get-CiJobBlocks $workflow
-function Get-HexagonCaches([string]$Job) { return @([regex]::Split($Job,'(?m)^      - ') | Where-Object { $_.Contains('uses: actions/cache@') }) }
+function Get-HexagonCaches([string]$Job) { return ,@([regex]::Split($Job,'(?m)^      - ') | Where-Object { $_.Contains('uses: actions/cache@') }) }
 $cases=[ordered]@{
  independent_controls_and_intake_prerequisites={
     foreach ($name in @('checked-policy','layout-controls','ranking-controls','public-native-abi')) { Assert-CiSet (Get-CiDependencies $jobs[$name]) @() }
