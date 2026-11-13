@@ -1278,7 +1278,7 @@ fn audio_file_progress_cancel_and_rejection_are_visible_in_wide_and_narrow_windo
 }
 
 #[test]
-fn audio_transcript_modal_stays_bounded_as_a_long_recording_arrives() {
+fn audio_transcript_modal_stays_bounded_as_a_long_recording_arrives() -> io::Result<()> {
     for size in [[480.0, 480.0], [620.0, 640.0], [1180.0, 860.0]] {
         let mut chat = harness(size, false);
         let app = &mut chat.state_mut().app;
@@ -1302,12 +1302,13 @@ fn audio_transcript_modal_stays_bounded_as_a_long_recording_arrives() {
             chat.run_steps(2);
             let (modal, viewport) = chat.ctx.data(|data| {
                 (
-                    data.get_temp::<egui::Rect>(egui::Id::unique("audio-transcript-bounds"))
-                        .expect("modal bounds"),
-                    data.get_temp::<egui::Rect>(egui::Id::unique("audio-transcript-viewport"))
-                        .expect("transcript viewport"),
+                    data.get_temp::<egui::Rect>(egui::Id::unique("audio-transcript-bounds")),
+                    data.get_temp::<egui::Rect>(egui::Id::unique("audio-transcript-viewport")),
                 )
             });
+            let modal = modal.ok_or_else(|| io::Error::other("Missing modal bounds"))?;
+            let viewport =
+                viewport.ok_or_else(|| io::Error::other("Missing transcript viewport"))?;
             assert!(bounds.contains_rect(modal), "{size:?}: {modal:?}");
             assert!(modal.contains_rect(viewport));
             let close = chat
@@ -1327,6 +1328,7 @@ fn audio_transcript_modal_stays_bounded_as_a_long_recording_arrives() {
         assert_eq!(chat.state().app.input, "Keep draft");
         assert!(chat.state().commands.try_recv().is_err());
     }
+    Ok(())
 }
 
 #[test]
