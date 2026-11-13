@@ -543,6 +543,11 @@ and shutdown release it; partial file success must retain active cancellation.
 Compare repeated-input end-to-end latency and resources against cold loading on
 the pinned model with matched per-arm power observations. Model-free lifecycle
 controls do not establish actual-model parity or a measured speedup.
+The bounded local source pass completed eight focused lifecycle/UI regressions,
+formatting, Markdown and whitespace checks. Strict all-target Clippy stopped on
+two lease-fixture time subtractions and an existing audio action-width expression.
+Those findings were corrected without retrying the closed pass; final strict
+analysis remains pending in owner-managed CI.
 Qualify the ASR source-build CPU selection against its ARMv8-A control: independent
 Windows-observed DOTPROD/I8MM support, unknown-feature fallback, cache separation,
 complete transcript parity and end-to-end latency for microphone and file input.
