@@ -7,7 +7,7 @@ use std::{io, path::PathBuf};
 pub(super) struct Setup {
     pub(super) request: Option<crate::startup::Request>,
     pub(super) broker: Option<PathBuf>,
-    pub(super) progress: Option<crate::startup::SetupStatus>,
+    pub(super) progress: Option<SetupStatus>,
     pub(super) error: Option<String>,
     pub(super) speech_error: Option<String>,
     pub(super) pausing: bool,
@@ -331,10 +331,7 @@ mod tests {
         reason = "Keep native setup phase transitions, layout bounds and pause behavior in one model-free fixture."
     )]
     fn setup_card_separates_downloads_from_local_preparation_and_fits_narrow_layouts() {
-        use egui_kittest::{
-            Harness,
-            kittest::{NodeT as _, Queryable as _},
-        };
+        use egui_kittest::{Harness, kittest::Queryable as _};
         struct Fixture {
             app: State,
             card: egui::Rect,
@@ -413,7 +410,10 @@ mod tests {
                 );
                 assert_eq!(
                     harness
-                        .query_by_label("50% · 1.00 GiB / 2.00 GiB")
+                        .query_by_role_and_label(
+                            egui::Role::ProgressIndicator,
+                            "50% · 1.00 GiB / 2.00 GiB"
+                        )
                         .is_some(),
                     downloading
                 );
@@ -441,7 +441,10 @@ mod tests {
             assert!(harness.query_by_label("Stopping setup safely…").is_some());
             assert!(
                 harness
-                    .query_by_label("50% · 1.00 GiB / 2.00 GiB")
+                    .query_by_role_and_label(
+                        egui::Role::ProgressIndicator,
+                        "50% · 1.00 GiB / 2.00 GiB"
+                    )
                     .is_none()
             );
         }
