@@ -50,6 +50,13 @@ instead of independently designing a voice per segment. Rust owns reference
 samples and embeddings through model handoff and releases them on failed loading
 or extraction.
 
+The production Design-to-Base handoff uses the same ownership routine as the
+independent drop-order control. It releases Design before Base weight intake and
+keeps one waveform allocation alive through speaker and acoustic extraction,
+including failure exits. Bootstrap, codec priming, missing audio after EOS,
+generation and output failures clear both the selected voice and retained codec
+reference before retry. Successful turns may reuse the exact reference prefix.
+
 ## CPU execution
 
 Packed float/half projections process four output rows together while retaining

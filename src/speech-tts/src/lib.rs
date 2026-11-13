@@ -185,13 +185,12 @@ struct VoiceCache<T>(Option<(CString, T)>);
 // The waveform allocation is independent of its model context.
 // Keep its owner until synchronous Base extraction returns, including failures,
 // while releasing Design before allocating Base's model and workers.
-#[cfg(test)]
-fn finish_voice_bootstrap<C, S: AsRef<[f32]>, R>(
-    design: C,
+fn finish_voice_bootstrap<D, B, S: AsRef<[f32]>, R>(
+    design: D,
     samples: S,
-    load_base: impl FnOnce() -> io::Result<C>,
-    extract: impl FnOnce(&mut C, &[f32]) -> io::Result<R>,
-) -> io::Result<(C, R)> {
+    load_base: impl FnOnce() -> io::Result<B>,
+    extract: impl FnOnce(&mut B, &[f32]) -> io::Result<R>,
+) -> io::Result<(B, R)> {
     drop(design);
     let mut base = load_base()?;
     let reference = extract(&mut base, samples.as_ref())?;
@@ -311,39 +310,46 @@ impl Synthesizer {
             if !(1920..=24_000 * 30).contains(&count) {
                 return Err(SynthesisStage::ReferenceValidation.failure(invalid_audio()));
             }
-            // Release Design before allocating Base; the waveform survives that
-            // model switch and supplies both speaker and acoustic conditioning.
-            drop(talker);
-            let mut weights = weights::Weights::open(voice_model_path)
-                .map_err(|error| SynthesisStage::BaseWeights.failure(error))?;
-            if weights
-                .string("qwen3-tts.model_type")
-                .map_err(|error| SynthesisStage::BaseMetadata.failure(error))?
-                != "base"
-            {
-                return Err(SynthesisStage::BaseMetadata.failure(io::Error::new(
-                    io::ErrorKind::InvalidData,
-                    "Speech voice model must be Base.",
-                )));
-            }
-            let speaker = rust_codec::Speaker::load(&mut weights)
-                .map_err(|error| SynthesisStage::SpeakerWeights.failure(error))?
-                .extract(&samples)
-                .map_err(|error| SynthesisStage::SpeakerExtraction.failure(error))?;
-            let reference_codes = codec
-                .encode_reference(&samples)
-                .map_err(|error| SynthesisStage::ReferenceEncoding.failure(error))?;
-            let tokenizer = tokenizer::Tokenizer::load(voice_model_path)
-                .map_err(|error| SynthesisStage::BaseTokenizer.failure(error))?;
-            let talker = rust_talker::Talker::load(&mut weights, tokenizer, *threads)
-                .map_err(|error| SynthesisStage::BaseModel.failure(error))?;
-            drop(samples);
-            drop(weights);
-            let reference = rust_talker::Reference {
-                speaker,
-                codes: reference_codes,
-            };
-            Ok(Voice { talker, reference })
+            // This is the same ownership handoff exercised by the independent
+            // drop-order control: Design is gone before Base intake, and one
+            // waveform survives through both speaker and acoustic extraction.
+            let (_, voice) = finish_voice_bootstrap(
+                talker,
+                samples,
+                || {
+                    weights::Weights::open(voice_model_path)
+                        .map_err(|error| SynthesisStage::BaseWeights.failure(error))
+                },
+                |weights, samples| {
+                    if weights
+                        .string("qwen3-tts.model_type")
+                        .map_err(|error| SynthesisStage::BaseMetadata.failure(error))?
+                        != "base"
+                    {
+                        return Err(SynthesisStage::BaseMetadata.failure(io::Error::new(
+                            io::ErrorKind::InvalidData,
+                            "Speech voice model must be Base.",
+                        )));
+                    }
+                    let speaker = rust_codec::Speaker::load(weights)
+                        .map_err(|error| SynthesisStage::SpeakerWeights.failure(error))?
+                        .extract(samples)
+                        .map_err(|error| SynthesisStage::SpeakerExtraction.failure(error))?;
+                    let reference_codes = codec
+                        .encode_reference(samples)
+                        .map_err(|error| SynthesisStage::ReferenceEncoding.failure(error))?;
+                    let tokenizer = tokenizer::Tokenizer::load(voice_model_path)
+                        .map_err(|error| SynthesisStage::BaseTokenizer.failure(error))?;
+                    let talker = rust_talker::Talker::load(weights, tokenizer, *threads)
+                        .map_err(|error| SynthesisStage::BaseModel.failure(error))?;
+                    let reference = rust_talker::Reference {
+                        speaker,
+                        codes: reference_codes,
+                    };
+                    Ok(Voice { talker, reference })
+                },
+            )?;
+            Ok(voice)
         })
     }
 
@@ -393,37 +399,45 @@ impl Synthesizer {
     ) -> io::Result<()> {
         let text = bounded_input(text, MAX_TEXT)?;
         let profile = bounded_input(voice, MAX_VOICE)?;
-        let _ = self.voice(&profile)?;
-        let Self { voices, codec, .. } = self;
-        let (_, voice) = voices.0.as_mut().ok_or_else(invalid_audio)?;
-        codec
-            .prime_reference(&voice.reference.codes)
-            .map_err(|error| SynthesisStage::CodecPriming.failure(error))?;
-        let mut count = 0;
-        let result = voice.talker.generate(
-            text.to_str().map_err(io::Error::other)?,
-            None,
-            Some(&voice.reference),
-            &mut |frame| {
-                let chunk = codec
-                    .decode_stream(&[frame])
-                    .map_err(|error| SynthesisStage::CodecDecode.failure(error))?;
-                count = sample_count(&chunk, count)
-                    .ok_or_else(|| SynthesisStage::AudioValidation.failure(invalid_audio()))?;
-                sink(&chunk).map_err(|error| SynthesisStage::AudioOutput.failure(error))
-            },
-            &mut || Ok(()),
-        );
-        codec.reset();
+        let result = (|| {
+            let _ = self.voice(&profile)?;
+            let Self { voices, codec, .. } = self;
+            let (_, voice) = voices.0.as_mut().ok_or_else(invalid_audio)?;
+            codec
+                .prime_reference(&voice.reference.codes)
+                .map_err(|error| SynthesisStage::CodecPriming.failure(error))?;
+            let mut count = 0;
+            voice
+                .talker
+                .generate(
+                    text.to_str().map_err(io::Error::other)?,
+                    None,
+                    Some(&voice.reference),
+                    &mut |frame| {
+                        let chunk = codec
+                            .decode_stream(&[frame])
+                            .map_err(|error| SynthesisStage::CodecDecode.failure(error))?;
+                        count = sample_count(&chunk, count).ok_or_else(|| {
+                            SynthesisStage::AudioValidation.failure(invalid_audio())
+                        })?;
+                        sink(&chunk).map_err(|error| SynthesisStage::AudioOutput.failure(error))
+                    },
+                    &mut || Ok(()),
+                )
+                .map_err(|error| SynthesisStage::Generation.failure(error))?;
+            if count == 0 {
+                return Err(SynthesisStage::AudioValidation.failure(invalid_audio()));
+            }
+            Ok(())
+        })();
+        self.codec.reset();
         if result.is_err() {
-            // KV, codec and sampler state from a failed turn is never reused.
-            voices.0 = None;
+            // Bootstrap, priming, EOS-without-audio and sink failures all use
+            // this exit. No partially computed state survives into a retry.
+            self.codec.discard_reference();
+            self.voices.0 = None;
         }
-        result.map_err(|error| SynthesisStage::Generation.failure(error))?;
-        if count == 0 {
-            return Err(SynthesisStage::AudioValidation.failure(invalid_audio()));
-        }
-        Ok(())
+        result
     }
 }
 
