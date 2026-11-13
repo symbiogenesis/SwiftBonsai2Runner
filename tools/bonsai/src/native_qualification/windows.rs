@@ -349,8 +349,11 @@ impl Context<'_> {
             .map_err(|error| error.to_string())?
             .with_file_name("bonsai-reference-numerics.exe");
         let environment = BTreeMap::from([(
-            std::ffi::OsString::from("BONSAI_REFERENCE_NUMERIC_TOOL"),
-            numeric_tool.into_os_string(),
+            "BONSAI_REFERENCE_NUMERIC_TOOL".to_owned(),
+            numeric_tool
+                .to_str()
+                .ok_or("Numeric helper path must be Unicode.")?
+                .to_owned(),
         )]);
         let result = crate::startup_process::run_with_checkpoint(
             std::ffi::OsStr::new("pwsh.exe"),
@@ -474,13 +477,20 @@ fn intake(context: &mut Context<'_>) -> crate::Result<Value> {
     context.hold(maintenance_pin)?;
     let maintenance = read_json(&maintenance_path, 65_536)?;
     let executable_pin = context.hash_file(&executable, 134_217_728)?;
-    if maintenance["SchemaVersion"] != 2
+    if maintenance["SchemaVersion"] != 3
         || maintenance["Revision"] != revision
         || maintenance["Sha256"] != executable_pin["sha256"]
     {
         return Err("Maintenance executable differs from the checked Runner revision.".into());
     }
     context.hold(executable_pin)?;
+    let numeric_path = executable.with_file_name("bonsai-reference-numerics.exe");
+    let numeric_pin = context.hash_file(&numeric_path, 134_217_728)?;
+    if maintenance["NumericSha256"] != numeric_pin["sha256"] {
+        return Err("Numeric helper differs from the checked Runner receipt.".into());
+    }
+    context.hold(numeric_pin)?;
+    crate::startup_cache::assert_arm64(&numeric_path)?;
     fs::copy(
         maintenance_path,
         context.evidence.join("maintenance-tools.json"),
