@@ -1338,7 +1338,9 @@ fn audio_file_progress_cancel_and_rejection_are_visible_in_wide_and_narrow_windo
         app.audio_file_error = true;
         app.speech_event(speech::Event::Listening(false));
         chat.run();
-        let error = chat.get_by_label("Audio transcription failed").rect();
+        let alert = chat.get_by_role_and_label(egui::Role::ComboBox, "Current alert");
+        assert_eq!(alert.value().as_deref(), Some("Audio transcription failed"));
+        let error = alert.rect();
         assert!(error.is_positive() && error.bottom() <= size[1]);
         assert!(chat.get_by_label("Not enough available memory to decode this audio. Close other apps and try again. Your draft was kept.").rect().is_positive());
         // Wrapped failure actions can sit below the bounded notice viewport.
