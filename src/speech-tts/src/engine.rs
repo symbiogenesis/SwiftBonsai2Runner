@@ -904,11 +904,8 @@ impl LinearProjection {
                 }
                 let compute_slice = |row_offset: usize, destination: &mut [f32]| {
                     dispatch!(level, simd => {
-                        for (local, value) in destination.iter_mut().enumerate() {
-                            let offset = (row_offset + local) * row_bytes;
-                            let row = &bytes[offset..offset + row_bytes];
-                            *value = packed::row(simd, *ggml_type, row, input, *value);
-                        }
+                        let offset = row_offset * row_bytes;
+                        packed::rows(simd, *ggml_type, &bytes[offset..], input, destination);
                     });
                 };
                 run_row_chunks(&mut out, worker_count, compute_slice);

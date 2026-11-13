@@ -143,6 +143,63 @@ fn q6_k<S: Simd>(simd: S, source: &[u8], input: &[f32]) -> f32 {
     dot.finish()
 }
 
+// Interleave four ordinary floating-point rows, retaining one output per SIMD
+// lane. Each lane still adds its products from left to right without FMA, so
+// this removes the scalar accumulation bottleneck without changing its bits.
+#[inline(always)]
+pub(super) fn rows<S: Simd>(
+    simd: S,
+    kind: u32,
+    source: &[u8],
+    input: &[f32],
+    destination: &mut [f32],
+) {
+    let (block, size) = match kind {
+        0 => (1, 4),
+        1 => (1, 2),
+        8 => (32, 34),
+        12 => (256, 144),
+        14 => (256, 210),
+        _ => {
+            destination.fill(f32::NAN);
+            return;
+        }
+    };
+    let row_bytes = input.len() / block * size;
+    let mut processed = 0;
+    if matches!(kind, 0 | 1) {
+        for output in destination.as_chunks_mut::<4>().0 {
+            let start = processed * row_bytes;
+            let mut sum = f32x4::from_slice(simd, output);
+            for (column, &value) in input.iter().enumerate() {
+                let weights = f32x4::from_fn(simd, |lane| {
+                    let offset = start + lane * row_bytes + column * size;
+                    if kind == 0 {
+                        f32::from_le_bytes([
+                            source[offset],
+                            source[offset + 1],
+                            source[offset + 2],
+                            source[offset + 3],
+                        ])
+                    } else {
+                        half(&source[offset..])
+                    }
+                });
+                let products = weights * f32x4::splat(simd, value);
+                sum += products;
+            }
+            sum.store_slice(output);
+            processed += 4;
+        }
+    }
+    for (source, output) in source[processed * row_bytes..]
+        .chunks_exact(row_bytes)
+        .zip(&mut destination[processed..])
+    {
+        *output = row(simd, kind, source, input, *output);
+    }
+}
+
 // Validated callers supply complete rows of a supported type. F32/F16 preserve
 // their original separately rounded multiplication and left-to-right summation.
 #[inline(always)]
@@ -224,6 +281,77 @@ mod tests {
         engine::{LinearProjection, WeightQuantization, f32_dot_simd},
         weights::{decode_block, packed_layout},
     };
+
+    #[test]
+    fn packed_float_row_tiles_preserve_independent_sequential_rounding() -> io::Result<()> {
+        let half_rows = [
+            [0x3c00_u16, 0x3c00, 0x3c00, 0x3c00, 1, 0x3555, 0xb955],
+            [0xbc00, 0x8000, 0x3c00, 0x3c01, 0x0400, 0x8001, 0],
+            [0x3555, 0xb955, 0x3c01, 0xbc01, 0x8000, 1, 0x0400],
+        ];
+        for kind in [0, 1] {
+            for row_count in [1, 3, 4, 5, 8, 19] {
+                let mut bytes = Vec::new();
+                let mut rows = Vec::new();
+                for index in 0..row_count {
+                    let mut weights = Vec::new();
+                    for bits in half_rows[index % half_rows.len()] {
+                        let value = crate::weights::half(&bits.to_le_bytes());
+                        weights.push(value);
+                        if kind == 0 {
+                            bytes.extend_from_slice(&value.to_le_bytes());
+                        } else {
+                            bytes.extend_from_slice(&bits.to_le_bytes());
+                        }
+                    }
+                    rows.push(weights);
+                }
+                let bias: Vec<f32> = (0..row_count)
+                    .map(|index| [-0.0, 0.0, 0.75][index % 3])
+                    .collect();
+                let projection = LinearProjection::new(
+                    "packed-independent-rows",
+                    7,
+                    row_count,
+                    WeightQuantization::Packed {
+                        ggml_type: kind,
+                        bytes,
+                    },
+                    Some(bias.clone()),
+                )?;
+                for input in [
+                    [16_777_216.0, 1.0, -16_777_216.0, 1.0, -1.0, 0.0, -0.0],
+                    [-0.0; 7],
+                    [0.0; 7],
+                    [1.000_976_6, -1.25, 0.7, -0.3, 0.125, -0.0625, 0.03125],
+                ] {
+                    let expected: Vec<u32> = rows
+                        .iter()
+                        .zip(&bias)
+                        .map(|(weights, bias)| {
+                            weights
+                                .iter()
+                                .zip(input)
+                                .fold(*bias, |sum, (weight, value)| sum + weight * value)
+                                .to_bits()
+                        })
+                        .collect();
+                    for workers in [1, 3, 18] {
+                        let actual = projection.forward_vec_parallel(&input, None, workers)?;
+                        assert_eq!(
+                            actual
+                                .iter()
+                                .map(|value| value.to_bits())
+                                .collect::<Vec<_>>(),
+                            expected,
+                            "GGUF type {kind}, rows {row_count}, workers {workers}",
+                        );
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
 
     #[test]
     fn packed_direct_kernels_match_decoded_block_rounding_and_workers() -> io::Result<()> {
