@@ -280,6 +280,15 @@ rounding stages and adapter order. Base-result reuse depends on last-use/view/ou
 constraints. Reassociation or FMA contraction can change signed zero, subnormals and
 results; bit identity is part of this contract.
 
+New local native Rust source drops the unused serialized A copy after decoding
+linear factors, while retaining serialized embedding A for exact row lookup.
+It also preserves the verified loader's B sharing in decoded immutable factors.
+The approved adapter's calculated payload reduction is 5.75 MiB plus 2.5 MiB,
+or 8.25 MiB total. The reduction preserves existing arithmetic and introduces no
+per-token decoding or sharing lookup. It is not in Runner's installed 0.1.27
+bundle; publication, actual-model resources and performance qualification remain
+pending. See the [native allocation candidates](swift-memory.md#native-allocation-candidates).
+
 Quantizing factors, reducing rank/scale, pruning sites or merging into the ternary base
 changes the correction or weights; these are outside lossless allocation work.
 

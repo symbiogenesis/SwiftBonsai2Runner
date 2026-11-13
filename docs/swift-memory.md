@@ -607,6 +607,42 @@ This audit targets Prism `73bfe6cc485554822f80c473a3c0c4f25e80f41b`.
 Storage reductions are not measured RAM/throughput gains. Lossless changes preserve
 weights, KV precision, checkpoints, adapters and the [resource policy](#native-cpu-status).
 
+### Native allocation candidates
+
+The newer local Rust allocation work removes redundant storage without changing
+the selected model weights, cache precision, floating-point operations or worker
+count. It requires a reviewed, published runtime bundle before Runner can consume
+it; the installed 0.1.27 bundle does not contain these changes.
+
+| Candidate | Source-derived storage reduction | Remaining boundary |
+| --- | ---: | --- |
+| Retain serialized A only for embedding lookup; retain decoded A for linear adapter sites | 6,029,312 bytes (5.75 MiB) for the approved adapter | Preserve factor validation, embedding row access and every linear reduction/scale/add stage. |
+| Preserve the loader's exact B-factor sharing in decoded immutable storage | 2,621,440 bytes (2.5 MiB) for the approved adapter | Share only matching kind/layout and the same immutable source allocation; preserve signed zero and dynamic scales. |
+| Reuse packed-attention score scratch across serial heads within each worker chunk | At four workers and 24 query heads: 640 KiB at 8K, 5 MiB at 64K, 20 MiB at 262,144 occupied tokens | Keep the existing head partition, per-head arithmetic and joined failure handling; cache precision and conservative admission charges stay unchanged. |
+
+The adapter reductions total 8.25 MiB of payload. Combined with the four-worker
+score reduction, the calculated payload reduction is 8.875 MiB at 8K or
+28.25 MiB at the model's full window. These are allocation calculations, not
+measured whole-process peaks or established performance results. Actual retained
+score capacity follows the largest evaluated history and allocation growth.
+Source controls and complete-model/resource/performance acceptance remain
+separate gates; unchanged arithmetic does not itself prove unchanged latency.
+
+Existing checkpoints already share sealed KV pages, omit canonical-zero
+recurrent payloads, reuse live recurrent buffers during restore and share retained
+logits. Those implemented savings cannot be counted again. Sharing mutable tails
+or recurrent state would require independent rollback storage or copying during
+generation, so no further saving is credited to it.
+
+The larger exact-storage opportunity remains PTQ1's verified 1.173 GiB weight
+packing reduction. Current PTQ1 serving uses Q8_0 activations rather than PQ2's
+Q8_K contract. The standalone `dot_ptq1_q8k` helper is not a serving path and
+does not preserve the pinned PQ2 fused reduction. A suitable integrated execution
+path, independent full-state/adapter controls and matched performance evidence
+are required before treating that packing as a no-loss, no-performance-cost
+runtime saving. Neither the lossy K4/V4-versus-FP16 comparison nor omission of
+NPU payloads supplies that guarantee; their separate gates remain in PLAN.
+
 ### Mapping and startup
 
 Runner's shared Windows artifact verifier streams complete SHA-256 checks through

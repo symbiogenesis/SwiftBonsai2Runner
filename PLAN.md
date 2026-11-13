@@ -305,9 +305,12 @@ under [AGENTS.md](AGENTS.md).
   installation before reconsidering [PTQ1 default promotion](docs/swift-memory.md#release-decision).
 - [ ] Qualify source request-timing attribution after owning hosted checks; use
   actual operation measurements before selecting hotspots.
-- [ ] Investigate adapter reservation/rank-one allocator counters and lossless
-  accumulation, preserving rounding/order, dynamic scales and load-without-apply
-  under [allocation semantics](docs/swift-lora.md#allocation-semantics).
+- [ ] Publish and qualify native adapter allocation reuse: omit unused serialized
+  linear A copies and preserve exact decoded B sharing. Verify the calculated
+  8.25 MiB approved-adapter payload reduction against process resources and
+  unchanged request performance, rounding/order, dynamic scales and
+  load-without-apply under [allocation semantics](docs/swift-lora.md#allocation-semantics).
+  Keep publisher reservation/allocator attribution separate.
 - [ ] Qualify the development Qwen reference service only when its 18 GiB runtime
   budget plus 4 GiB host reserve is admissible; retain explicit model selection.
 - [ ] Qualify creative/daily/long-context/battery profiles with complete-request
@@ -340,6 +343,12 @@ under [AGENTS.md](AGENTS.md).
 - [ ] If allocation measurements identify avoidable retained workspace or overlap,
   remove it and qualify actual usable savings. Credit PTQ1 resident savings and
   unique-page sharing only when measured, without double-counting physical bytes.
+- [ ] Publish and qualify packed-attention score reuse across serial heads within
+  each worker chunk: exact per-head/state/failure behavior, retained capacities,
+  adapters, cancellation and unchanged complete-request performance. The
+  [native allocation candidate](docs/swift-memory.md#native-allocation-candidates)
+  projects 20 MiB less scratch at 262,144 tokens/four workers; retain conservative
+  admission charges until actual usable savings are measured.
 - [ ] Qualify native long drafts, whole-edit rejection, undo/redo, recovery,
   source insertion and complete rejected/interrupted-draft restoration. Before
   raising serialized request limits, coordinate Prism server/message/tokenizer/
