@@ -44,6 +44,7 @@ $cases=[ordered]@{
     $producer=$jobs['checked-tools']; $step='Check independent numerical references and static PE closure without models'
     Assert-Ci ($producer.IndexOf('Stage the checked maintenance CLI') -lt $producer.IndexOf($step)); Assert-Ci ($producer.IndexOf($step) -lt $producer.IndexOf('Share the checked native Windows ARM64 maintenance CLI'))
     foreach ($fragment in @('runs-on: windows-11-arm','SwiftBonsai-CheckedTools/bonsai-reference-numerics.exe','$env:BONSAI_REFERENCE_NUMERIC_TOOL = $numeric','tools/native-reference/test_compare.ps1','tools/native-reference/test_audit_retained.ps1',"'tools/row-parallel/test_compare.ps1') -ToolPath `$numeric",'tools/runtime-candidates/test_pe_closure.ps1')) { Assert-Ci ($producer.Contains($fragment)) $fragment }
+    Assert-Ci ($producer.Contains("'tools/runtime-candidates/test_pe_closure.ps1') -ToolPath (Join-Path `$env:RUNNER_TEMP 'SwiftBonsai-CheckedTools/bonsai-tools.exe')")) 'PE fixtures must consume the same-run checked native CLI.'
     $selection=($producer -split [regex]::Escape($step),2)[1] -split '      - name:',2; Assert-Ci ($selection[0] -cnotmatch '(?m)^\s+if:')
  }
 }

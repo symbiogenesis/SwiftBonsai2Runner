@@ -66,7 +66,10 @@ Repository tooling and CI need Rust and PowerShell 7.6 or newer. They do not
 install or invoke a Python runtime. Standalone PowerShell startup/index/cache
 guards run before any Rust bootstrap, using .NET APIs without downloaded modules.
 The source-language guard rejects owned Python files, bytecode, Python workflow
-shells/setup and direct interpreter commands; historical evidence and external
+shells/setup and literal interpreter commands. PowerShell's native parser checks
+direct calls and `Start-Process`, including quoted paths and case variants, while
+leaving strings/comments as data. Computed executable names are outside this
+static check; source review remains required. Historical evidence and external
 artifact identities retain their original names. Vendored sources are excluded.
 Each `test_*.ps1` fixture script accepts `-Case NAME` for a focused local check;
 their complete selections remain hosted CI work.
@@ -76,7 +79,9 @@ Same-run checked-tool bundles use receipt schema 3, with `NumericSha256` for
 executable caches use schema 4. Native qualification verifies and holds the
 helper bytes; it never compiles a replacement during a device trial. Foundation
 runs the migrated reference, retained-audit, row and PE fixtures before publishing
-checked tools. CPU policy fixtures run in its portable source-control step.
+checked tools. PE fixtures consume that same run's checked `bonsai-tools` executable;
+the audit's binary parsing and closure policy run in Rust. CPU policy fixtures run
+in its portable source-control step.
 
 ## Workflow scope
 
