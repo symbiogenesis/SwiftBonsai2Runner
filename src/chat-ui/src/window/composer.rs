@@ -126,7 +126,7 @@ impl State {
 
     fn track_composer_editor(
         &mut self,
-        ui: &mut egui::Ui,
+        ui: &egui::Ui,
         output: egui::text_edit::TextEditOutput,
         label: egui::Id,
     ) -> (egui::Response, Option<egui::Rect>) {
@@ -174,7 +174,7 @@ impl State {
         (response, caret)
     }
 
-    fn composer_enter(&mut self, ui: &mut egui::Ui, response: &egui::Response) {
+    fn composer_enter(&mut self, ui: &egui::Ui, response: &egui::Response) {
         let ime_event = ui.input(|input| {
             input
                 .events

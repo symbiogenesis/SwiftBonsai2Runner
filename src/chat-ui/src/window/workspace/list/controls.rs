@@ -4,6 +4,7 @@ use crate::window::{RichText, controls, egui, history_search};
 
 pub(super) const ROW_HEIGHT: f32 = 40.0;
 
+#[derive(Clone, Copy)]
 pub(super) enum Action {
     Select(u64),
     Rename(u64),
