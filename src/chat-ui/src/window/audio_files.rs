@@ -5,6 +5,30 @@ use crate::audio_import::{self, Source};
 use raw_window_handle::{HasWindowHandle as _, RawWindowHandle};
 use std::time::Duration;
 
+pub(super) fn action_button(label: &str) -> egui::Button<'_> {
+    egui::Button::new(label)
+        .min_size(egui::vec2(0.0, 36.0))
+        .corner_radius(8)
+}
+
+pub(super) fn notice_frame(ui: &egui::Ui) -> egui::Frame {
+    egui::Frame::new()
+        .fill(ui.visuals().faint_bg_color)
+        .stroke(ui.visuals().widgets.noninteractive.bg_stroke)
+        .corner_radius(12)
+        .inner_margin(egui::Margin::symmetric(14, 12))
+}
+
+pub(super) fn dialog_frame(ctx: &egui::Context) -> egui::Frame {
+    let visuals = &ctx.global_style().visuals;
+    egui::Frame::new()
+        .fill(visuals.window_fill)
+        .stroke(visuals.window_stroke)
+        .shadow(visuals.window_shadow)
+        .corner_radius(16)
+        .inner_margin(20)
+}
+
 impl State {
     pub(super) fn prepare_audio_paste(&mut self, frame: &eframe::Frame) {
         if self.preview || self.native_owner.is_some() {
@@ -266,14 +290,10 @@ impl State {
         let Some(message) = self.audio_file_notice.clone() else {
             return;
         };
-        egui::Frame::new()
-            .fill(ui.visuals().faint_bg_color)
-            .stroke(ui.visuals().widgets.noninteractive.bg_stroke)
-            .corner_radius(12)
-            .inner_margin(12)
-            .show(ui, |ui| {
+        notice_frame(ui).show(ui, |ui| {
                 // Frame margins belong inside the available composer column.
                 ui.set_width(ui.available_width());
+                ui.spacing_mut().item_spacing = egui::vec2(8.0, 8.0);
                 ui.horizontal_wrapped(|ui| {
                     if self.audio_file_active {
                         ui.spinner();
@@ -287,17 +307,6 @@ impl State {
                         egui::RichText::new("Audio transcription")
                     };
                     ui.label(title.strong());
-                    if self.audio_file_active {
-                        if ui.button("Cancel transcription").clicked() {
-                            self.cancel_audio_file();
-                        }
-                    } else if ui.button("Dismiss audio status").clicked() {
-                        self.audio_file_notice = None;
-                        self.audio_file_transcript.clear();
-                        self.audio_file_progress = None;
-                        self.audio_file_error = false;
-                        self.show_audio_transcript = false;
-                    }
                 });
                 if self.audio_file_active
                     && let Some(progress) = self.audio_file_progress
@@ -308,21 +317,22 @@ impl State {
                         audio_time(progress.end),
                     );
                     if !progress.total.is_zero() && progress.end <= progress.total {
-                        ui.label(format!(
-                            "{range} | estimated length {}",
+                        ui.label(egui::RichText::new(format!(
+                            "{range} · estimated length {}",
                             audio_time(progress.total),
-                        ));
+                        )).small().weak());
                         // Only earlier segments have completed. Container duration
                         // is an estimate, so never present a percentage or an ETA.
                         ui.add(
                             egui::ProgressBar::new(
                                 progress.start.as_secs_f32() / progress.total.as_secs_f32(),
                             )
+                            .desired_height(6.0)
                             .animate(false),
                         )
                         .on_hover_text("Completed audio before the current segment. The recording length is estimated from file metadata.");
                     } else {
-                        ui.label(format!("{range} | recording length unknown"));
+                        ui.label(egui::RichText::new(format!("{range} · recording length unknown")).small().weak());
                     }
                 }
                 egui::ScrollArea::vertical()
@@ -331,36 +341,75 @@ impl State {
                     .show(ui, |ui| {
                         ui.add(egui::Label::new(message).wrap());
                     });
-                if !self.audio_file_transcript.is_empty() {
-                    if self.audio_import.is_some() {
-                        ui.weak("Your previous transcript is kept until another file is accepted.");
-                    }
-                    ui.horizontal_wrapped(|ui| {
-                        if ui.button("View transcript").clicked() {
+                let has_transcript = !self.audio_file_transcript.is_empty();
+                if has_transcript && self.audio_import.is_some() {
+                    ui.weak("Your previous transcript is kept until another file is accepted.");
+                }
+                ui.horizontal_wrapped(|ui| {
+                    if has_transcript {
+                        if ui.add(action_button("View transcript")).clicked() {
                             self.show_audio_transcript = true;
                             self.focus_composer = false;
                         }
-                        self.copy_audio_transcript(ui, "Copy transcript");
-                    });
-                }
+                        self.copy_audio_transcript(ui, "Copy transcript", false);
+                    }
+                    if self.audio_file_active {
+                        if ui.add(action_button("Cancel"))
+                            .accessible_name("Cancel transcription")
+                            .on_hover_text("Cancel transcription · Escape")
+                            .clicked()
+                        {
+                            self.cancel_audio_file();
+                        }
+                    } else if ui.add(action_button("Dismiss").frame_when_inactive(false))
+                        .accessible_name("Dismiss audio status")
+                        .clicked()
+                    {
+                        self.audio_file_notice = None;
+                        self.audio_file_transcript.clear();
+                        self.audio_file_progress = None;
+                        self.audio_file_error = false;
+                        self.show_audio_transcript = false;
+                    }
+                });
             });
-        ui.add_space(6.0);
+        ui.add_space(8.0);
     }
 
-    fn copy_audio_transcript(&self, ui: &mut egui::Ui, label: &str) {
+    fn copy_audio_transcript(&self, ui: &mut egui::Ui, label: &str, primary: bool) {
         let id = egui::Id::unique("audio-transcript-copied");
-        if ui.button(label).clicked() {
+        let copied = ui.ctx().data(|data| data.get_temp::<(u64, f64)>(id));
+        let copied = copied.is_some_and(|(generation, time)| {
+            generation == self.audio_file_generation && ui.input(|input| input.time) - time < 2.0
+        });
+        // Reserve the ordinary label width so copy confirmation never moves
+        // adjacent actions or changes a wrapping footer's height.
+        let font = egui::TextStyle::Button.resolve(ui.style());
+        let width = ui
+            .painter()
+            .layout_no_wrap(label.to_owned(), font, ui.visuals().text_color())
+            .size()
+            .x
+            + ui.spacing().button_padding.x * 2.0;
+        let mut text = egui::RichText::new(if copied { "Copied" } else { label });
+        if primary {
+            text = text.color(ui.visuals().selection.stroke.color);
+        }
+        let mut button = egui::Button::new(text)
+            .min_size(egui::vec2(width, 36.0))
+            .corner_radius(8);
+        if primary {
+            button = button.fill(ui.visuals().selection.bg_fill);
+        }
+        let response = ui.add(button);
+        if response.accessible_name(label).clicked() {
             ui.ctx().copy_text(self.audio_file_transcript.clone());
             let now = ui.input(|input| input.time);
             ui.ctx().data_mut(|data| {
                 data.insert_temp(id, (self.audio_file_generation, now));
             });
         }
-        let copied = ui.ctx().data(|data| data.get_temp::<(u64, f64)>(id));
-        if copied.is_some_and(|(generation, time)| {
-            generation == self.audio_file_generation && ui.input(|input| input.time) - time < 2.0
-        }) {
-            ui.label("Copied");
+        if copied {
             ui.ctx().request_repaint_after(Duration::from_secs(2));
         }
     }
@@ -369,67 +418,10 @@ impl State {
         if !self.show_audio_transcript {
             return;
         }
-        let mut close = false;
-        let modal = egui::Modal::new(egui::Id::unique("audio-transcript-modal")).show(ctx, |ui| {
-            ui.set_width((ctx.content_rect().width() - 64.0).clamp(260.0, 680.0));
-            let content_top = ui.cursor().top();
-            ui.heading("Audio transcript");
-            ui.label("Session only. Copy the text to keep it.");
-            if self.audio_file_active {
-                ui.label(
-                    "Still transcribing. If it finishes here, review the draft before sending.",
-                );
-            }
-            ui.weak("Escape closes this view.");
-            ui.add_space(8.0);
-            let label = ui.label("Transcript text (read only)");
-            // Header wrapping and text scaling consume real space. Reserve
-            // footer/frame/screen margins before admitting the text viewport.
-            let header_height = ui.cursor().top() - content_top;
-            let viewport_height =
-                (ctx.content_rect().height() - header_height - 112.0).clamp(40.0, 480.0);
-            let scroll = egui::ScrollArea::vertical()
-                .id_salt("audio-transcript-scroll")
-                .auto_shrink([false, false])
-                .stick_to_bottom(self.audio_file_active)
-                // A modal inherits its previous frame's available size. Reserve
-                // the admitted height so transcript growth cannot resize it.
-                .min_scrolled_height(viewport_height)
-                .max_height(viewport_height)
-                .show(ui, |ui| {
-                    // Borrowed &str keeps native selection/copy without any
-                    // route for editing the retained transcript.
-                    ui.add(
-                        egui::TextEdit::multiline(&mut self.audio_file_transcript.as_str())
-                            .id_salt("audio-transcript-text")
-                            .desired_width(ui.available_width())
-                            .desired_rows(4),
-                    )
-                    .labelled_by(label.id);
-                });
-            #[cfg(test)]
-            ctx.data_mut(|data| {
-                data.insert_temp(
-                    egui::Id::unique("audio-transcript-viewport"),
-                    scroll.inner_rect,
-                );
-            });
-            #[cfg(not(test))]
-            let _ = scroll;
-            ui.add_space(10.0);
-            ui.horizontal_wrapped(|ui| {
-                self.copy_audio_transcript(ui, "Copy full transcript");
-                if self.audio_file_active
-                    && ui
-                        .button("Cancel transcription")
-                        .accessible_name("Cancel transcription in viewer")
-                        .clicked()
-                {
-                    self.cancel_audio_file();
-                }
-                close = ui.button("Close transcript").clicked();
-            });
-        });
+        let modal = egui::Modal::new(egui::Id::unique("audio-transcript-modal"))
+            .frame(dialog_frame(ctx))
+            .backdrop_color(egui::Color32::from_black_alpha(150))
+            .show(ctx, |ui| self.audio_transcript_contents(ui));
         #[cfg(test)]
         ctx.data_mut(|data| {
             data.insert_temp(
@@ -437,10 +429,104 @@ impl State {
                 modal.response.rect,
             );
         });
-        if close || modal.should_close() {
+        if modal.inner || modal.should_close() {
             self.show_audio_transcript = false;
             self.focus_composer = true;
         }
+    }
+
+    fn audio_transcript_contents(&mut self, ui: &mut egui::Ui) -> bool {
+        ui.set_width((ui.ctx().content_rect().width() - 80.0).clamp(240.0, 680.0));
+        ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Wrap);
+        ui.spacing_mut().item_spacing = egui::vec2(8.0, 8.0);
+        let content_top = ui.cursor().top();
+        ui.label(egui::RichText::new("Audio transcript").strong().size(22.0));
+        ui.label(egui::RichText::new("Session only. Copy the text to keep it.").weak());
+        if self.audio_file_active {
+            notice_frame(ui).show(ui, |ui| {
+                ui.set_width(ui.available_width());
+                ui.label(
+                    "Still transcribing. If it finishes here, review the draft before sending.",
+                );
+            });
+        }
+        ui.add_space(4.0);
+        let label = ui.label(
+            egui::RichText::new("Transcript text (read only)")
+                .small()
+                .strong(),
+        );
+        // Header wrapping and text scaling consume real space. Reserve both
+        // possible footer rows, document/frame insets and screen margins.
+        let header_height = ui.cursor().top() - content_top;
+        let height = (ui.ctx().content_rect().height() - header_height - 184.0).clamp(40.0, 480.0);
+        self.audio_transcript_text(ui, label.id, height);
+        ui.add_space(4.0);
+        ui.separator();
+        ui.add_space(4.0);
+        let mut close = false;
+        ui.horizontal_wrapped(|ui| {
+            self.copy_audio_transcript(ui, "Copy full transcript", true);
+            if self.audio_file_active
+                && ui
+                    .add(action_button("Cancel"))
+                    .accessible_name("Cancel transcription in viewer")
+                    .on_hover_text("Cancel transcription · Escape closes the viewer")
+                    .clicked()
+            {
+                self.cancel_audio_file();
+            }
+            close = ui
+                .add(action_button("Close").frame_when_inactive(false))
+                .accessible_name("Close transcript")
+                .on_hover_text("Close transcript · Escape")
+                .clicked();
+        });
+        close
+    }
+
+    fn audio_transcript_text(&self, ui: &mut egui::Ui, label: egui::Id, height: f32) {
+        let scroll = egui::Frame::new()
+            .fill(ui.visuals().extreme_bg_color)
+            .stroke(ui.visuals().widgets.noninteractive.bg_stroke)
+            .corner_radius(10)
+            .inner_margin(12)
+            .show(ui, |ui| {
+                ui.set_width(ui.available_width());
+                egui::ScrollArea::vertical()
+                    .id_salt("audio-transcript-scroll")
+                    .auto_shrink([false, false])
+                    .stick_to_bottom(self.audio_file_active)
+                    // Reserve the admitted height so transcript growth cannot
+                    // resize the modal or move its footer.
+                    .min_scrolled_height(height)
+                    .max_height(height)
+                    .show(ui, |ui| {
+                        // Borrowed &str keeps selection/copy without editing.
+                        ui.add(
+                            egui::TextEdit::multiline(&mut self.audio_file_transcript.as_str())
+                                .id_salt("audio-transcript-text")
+                                .frame(false)
+                                .font(egui::FontId::proportional(super::appearance::text_size(
+                                    ui.ctx(),
+                                )))
+                                .hint_text("Recognized speech will appear here.")
+                                .desired_width(ui.available_width())
+                                .desired_rows(4),
+                        )
+                        .labelled_by(label);
+                    })
+            })
+            .inner;
+        #[cfg(test)]
+        ui.ctx().data_mut(|data| {
+            data.insert_temp(
+                egui::Id::unique("audio-transcript-viewport"),
+                scroll.inner_rect,
+            );
+        });
+        #[cfg(not(test))]
+        let _ = scroll;
     }
 
     pub(super) fn audio_file_button(&mut self, ui: &mut egui::Ui) {
@@ -452,8 +538,7 @@ impl State {
                         && !self.speaking
                         && !self.dictation_requested
                         && self.audio_import.is_none()),
-                egui::Button::new(if active { "Cancel audio" } else { "+ Audio file" })
-                    .min_size(egui::vec2(32.0, 32.0))
+                action_button(if active { "Cancel audio" } else { "+ Audio file" })
                     .selected(active),
             )
             .accessible_name(if active { "Cancel audio file transcription" } else { "Add audio file" })

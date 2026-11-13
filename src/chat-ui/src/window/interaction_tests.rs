@@ -1294,7 +1294,7 @@ fn audio_transcript_modal_stays_bounded_as_a_long_recording_arrives() -> io::Res
         // Include long unbroken text as well as paragraphs: neither may expand
         // the viewport or move the action row as recognition appends more text.
         for part in [
-            "First segment.\n".to_owned(),
+            "Let's start with the main idea. A little space between thoughts makes the conversation easier to follow.\n\nWe can review the details together, then decide what comes next.\n".to_owned(),
             "word ".repeat(3000),
             "界".repeat(16000),
         ] {
@@ -1327,8 +1327,34 @@ fn audio_transcript_modal_stays_bounded_as_a_long_recording_arrives() -> io::Res
                 assert_eq!(modal, first, "transcript growth changed the modal bounds");
             } else {
                 initial = Some(modal);
+                if let Some(value) = std::env::var_os("BONSAI_UI_CAPTURE_DIRECTORY") {
+                    let directory = capture_directory(value)?;
+                    fs::create_dir_all(&directory)?;
+                    chat.render().map_err(io::Error::other)?
+                        .save(directory.join(format!("audio-transcript-{}.png", size[0])))
+                        .map_err(io::Error::other)?;
+                }
             }
         }
+        let copy_before = chat
+            .get_by_role_and_label(egui::Role::Button, "Copy full transcript")
+            .rect();
+        let close_before = chat
+            .get_by_role_and_label(egui::Role::Button, "Close transcript")
+            .rect();
+        chat.get_by_role_and_label(egui::Role::Button, "Copy full transcript")
+            .click();
+        chat.run_steps(2);
+        assert_eq!(
+            chat.get_by_role_and_label(egui::Role::Button, "Copy full transcript")
+                .rect(),
+            copy_before
+        );
+        assert_eq!(
+            chat.get_by_role_and_label(egui::Role::Button, "Close transcript")
+                .rect(),
+            close_before
+        );
         let retained = chat.state().app.audio_file_transcript.clone();
         chat.get_by_role_and_label(egui::Role::Button, "Cancel transcription in viewer")
             .click();
